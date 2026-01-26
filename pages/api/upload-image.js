@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { withAuth } from '../../lib/auth';
 import { saveImage } from '../../lib/db';
+import { IncomingForm } from 'formidable';
 
 export default withAuth(async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -13,45 +14,57 @@ export default withAuth(async function handler(req, res) {
     const uploadDir = path.join(process.cwd(), 'public', 'uploads');
     await fs.mkdir(uploadDir, { recursive: true });
 
-    // For this simple implementation, we'll just save the file
-    // In a real application, you'd want to use a proper file upload library
-    // like multer or next-connect with multer
-
-    const data = await new Promise((resolve, reject) => {
-      let data = '';
-      req.on('data', chunk => {
-        data += chunk;
-      });
-      req.on('end', () => resolve(data));
-      req.on('error', reject);
+    // Use formidable for secure file upload handling
+    const form = new IncomingForm({
+      uploadDir: uploadDir,
+      keepExtensions: true,
+      maxFileSize: 5 * 1024 * 1024, // 5MB max file size
+      filter: ({ name, originalFilename, mimetype }) => {
+        // Only allow image files
+        const validMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+        return validMimeTypes.includes(mimetype);
+      }
     });
 
-    // Simple file handling - in production, use proper multipart form handling
-    const boundary = req.headers['content-type'].split('boundary=')[1];
-    const parts = data.split(`--${boundary}`);
-    const filePart = parts.find(part => part.includes('filename='));
-
-    if (filePart) {
-      const fileContent = filePart.split('\r\n\r\n')[1];
-      const filename = `hero-image-${Date.now()}.jpg`;
-      const filePath = path.join(uploadDir, filename);
-
-      // Save file to disk
-      await fs.writeFile(filePath, fileContent, 'binary');
-
-      // Save image info to database
-      const fileSize = fileContent.length;
-      const userId = req.user?.userId || null;
-
-      await saveImage(filename, filePath, 'hero', fileSize, userId);
-
-      return res.status(200).json({
-        message: 'Imagem atualizada com sucesso!',
-        filename: filename
+    // Parse the form data
+    const [fields, files] = await new Promise((resolve, reject) => {
+      form.parse(req, (err, fields, files) => {
+        if (err) {
+          console.error('Form parsing error:', err);
+          return reject(new Error('Erro ao processar o upload da imagem'));
+        }
+        resolve([fields, files]);
       });
+    });
+
+    // Check if we have the image file
+    const imageFile = files.image?.[0];
+    if (!imageFile) {
+      return res.status(400).json({ message: 'Nenhum arquivo de imagem enviado' });
     }
 
-    return res.status(400).json({ message: 'Nenhum arquivo enviado' });
+    // Generate a unique filename
+    const timestamp = Date.now();
+    const ext = path.extname(imageFile.originalFilename) || '.jpg';
+    const filename = `hero-image-${timestamp}${ext}`;
+    const filePath = path.join(uploadDir, filename);
+
+    // Rename the file to our desired filename
+    await fs.rename(imageFile.filepath, filePath);
+
+    // Save image info to database with relative path
+    const fileSize = imageFile.size;
+    const userId = req.user?.userId || null;
+    const relativePath = `/uploads/${filename}`;
+
+    await saveImage(filename, relativePath, 'hero', fileSize, userId);
+
+    return res.status(200).json({
+      message: 'Imagem atualizada com sucesso!',
+      filename: filename,
+      path: relativePath,
+      note: 'A imagem será automaticamente redimensionada para se ajustar ao container (1100x320) mantendo a proporção'
+    });
 
   } catch (error) {
     console.error('Error uploading image:', error);

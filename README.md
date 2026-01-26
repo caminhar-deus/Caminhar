@@ -75,6 +75,34 @@ caminhar/
    - Página principal: http://localhost:3000
    - Painel administrativo: http://localhost:3000/admin
 
+## Upload de Imagens
+
+### Requisitos de Imagem:
+- **Formatos suportados**: JPEG, JPG, PNG, WebP
+- **Tamanho máximo**: 5MB
+- **Dimensões recomendadas**: 1100x320 pixels (ou qualquer proporção)
+- **Redimensionamento automático**: As imagens são automaticamente ajustadas para caber no container mantendo a proporção
+
+### Como fazer upload:
+1. Acesse o painel administrativo em `/admin`
+2. Faça login com as credenciais admin/password
+3. Na seção "Imagem Principal", selecione uma imagem
+4. Clique em "Atualizar Imagem"
+5. A imagem será processada e exibida automaticamente na página principal
+
+### Comportamento de Redimensionamento:
+- **Imagens menores**: Serão esticadas para preencher o container (1100x320) mantendo a proporção
+- **Imagens maiores**: Serão reduzidas para caber no container mantendo a proporção
+- **Todas as imagens**: Usam `object-fit: cover` para preencher o espaço sem distorção
+- **Qualidade preservada**: Nenhuma compressão adicional é aplicada
+
+### Solução Técnica:
+- **Biblioteca**: Usa `formidable` para parsing seguro de multipart/form-data
+- **Processamento**: Dados binários são manipulados corretamente como buffers
+- **Armazenamento**: Imagens são salvas com nomes únicos baseados em timestamp
+- **Cache**: Sistema de cache-busting evita problemas de cache do navegador
+- **Segurança**: Validação de MIME types e extensões de arquivo
+
 ## Credenciais de Acesso
 
 - **Usuário**: `admin`

@@ -43,7 +43,7 @@ export default function Home() {
 
         <div className={styles.imageContainer}>
           <img
-            src="/api/placeholder-image"
+            src={`/api/placeholder-image?t=${Date.now()}`}
             alt="Caminhar com Deus"
             className={styles.heroImage}
             loading="lazy"
