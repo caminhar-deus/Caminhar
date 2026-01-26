@@ -1,0 +1,164 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f8f9fa;
+}
+
+.main {
+  flex: 1;
+  padding: 40px 0;
+}
+
+/* Login styles */
+.loginContainer {
+  max-width: 400px;
+  margin: 0 auto;
+  text-align: center;
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.loginForm {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.3s ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.button:hover {
+  background-color: #0056b3;
+}
+
+/* Admin panel styles */
+.adminPanel {
+  max-width: 800px;
+  margin: 0 auto;
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.adminPanel h1 {
+  color: #2c3e50;
+  margin-bottom: 30px;
+  font-size: 2rem;
+  text-align: center;
+}
+
+.formGroup {
+  margin-bottom: 30px;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.preview {
+  margin-top: 40px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.preview h3 {
+  margin-bottom: 20px;
+  color: #495057;
+  font-size: 1.2rem;
+}
+
+.previewContent {
+  text-align: center;
+}
+
+.previewContent h2 {
+  font-size: 2rem;
+  color: #2c3e50;
+  margin-bottom: 10px;
+}
+
+.previewContent p {
+  color: #6c757d;
+  font-size: 1.1rem;
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+
+.previewImage {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .loginContainer, .adminPanel {
+    margin: 20px;
+    padding: 20px;
+  }
+
+  .adminPanel h1 {
+    font-size: 1.5rem;
+  }
+
+  .previewContent h2 {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .loginContainer, .adminPanel {
+    margin: 10px;
+    padding: 15px;
+  }
+
+  .adminPanel h1 {
+    font-size: 1.2rem;
+  }
+
+  .previewContent h2 {
+    font-size: 1.2rem;
+  }
+}
