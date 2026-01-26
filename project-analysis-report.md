@@ -44,7 +44,7 @@
 ### 1. Hardcoded Secrets - RESOLVED ✅
 - ✅ JWT secret now uses environment variables (`process.env.JWT_SECRET`)
 - ✅ Fallback provided for development: `caminhar-com-deus-secret-key-2026`
-- ✅ Proper .env support implemented with `dotenv` package
+- ✅ Proper .env support implemented with Next.js built-in environment variable support
 
 ### 2. Default Credentials - RESOLVED ✅
 - ✅ Admin credentials now use environment variables (`ADMIN_USERNAME`, `ADMIN_PASSWORD`)
