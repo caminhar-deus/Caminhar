@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { withAuth } from '../../lib/auth';
+import { saveImage } from '../../lib/db';
 
 export default withAuth(async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -35,7 +36,14 @@ export default withAuth(async function handler(req, res) {
       const filename = `hero-image-${Date.now()}.jpg`;
       const filePath = path.join(uploadDir, filename);
 
+      // Save file to disk
       await fs.writeFile(filePath, fileContent, 'binary');
+
+      // Save image info to database
+      const fileSize = fileContent.length;
+      const userId = req.user?.userId || null;
+
+      await saveImage(filename, filePath, 'hero', fileSize, userId);
 
       return res.status(200).json({
         message: 'Imagem atualizada com sucesso!',
@@ -49,7 +57,7 @@ export default withAuth(async function handler(req, res) {
     console.error('Error uploading image:', error);
     return res.status(500).json({ message: 'Erro ao fazer upload da imagem' });
   }
-}
+});
 
 export const config = {
   api: {

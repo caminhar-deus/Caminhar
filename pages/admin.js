@@ -12,13 +12,44 @@ export default function Admin() {
   const [imageFile, setImageFile] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const router = useRouter();
 
   // Check authentication status on component mount
   useEffect(() => {
-    // In a real app, you would check the auth token here
-    // For this demo, we'll keep the simple state management
+    // Check if user is authenticated by checking for token
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/auth/check', {
+          method: 'GET',
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          setIsAuthenticated(true);
+          await loadSettings();
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+      }
+    };
+
+    checkAuth();
   }, []);
+
+  // Load settings from database
+  const loadSettings = async () => {
+    try {
+      const response = await fetch('/api/settings');
+      if (response.ok) {
+        const settings = await response.json();
+        setTitle(settings.site_title || 'O Caminhar com Deus');
+        setSubtitle(settings.site_subtitle || 'Reflexões e ensinamentos sobre a fé, espiritualidade e a jornada cristã');
+      }
+    } catch (error) {
+      console.error('Failed to load settings:', error);
+    }
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -72,6 +103,46 @@ export default function Admin() {
     } catch (error) {
       console.error('Error:', error);
       alert('Erro ao fazer upload da imagem');
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    setSaving(true);
+    try {
+      // Save title setting
+      await fetch('/api/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          key: 'site_title',
+          value: title,
+          type: 'string',
+          description: 'Website title'
+        }),
+      });
+
+      // Save subtitle setting
+      await fetch('/api/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          key: 'site_subtitle',
+          value: subtitle,
+          type: 'string',
+          description: 'Website subtitle'
+        }),
+      });
+
+      alert('Configurações salvas com sucesso!');
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      alert('Erro ao salvar configurações');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -151,6 +222,16 @@ export default function Admin() {
             />
             <button onClick={handleImageUpload} className={styles.button}>
               Atualizar Imagem
+            </button>
+          </div>
+
+          <div className={styles.formGroup}>
+            <button
+              onClick={handleSaveSettings}
+              className={styles.button}
+              disabled={saving}
+            >
+              {saving ? 'Salvando...' : 'Salvar Configurações'}
             </button>
           </div>
 

@@ -7,13 +7,15 @@ export default async function handler(req, res) {
 
   try {
     // Clear the auth cookie
-    serialize('token', '', {
+    const cookie = serialize('token', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       expires: new Date(0), // Set to past date to expire
       path: '/',
     });
+
+    res.setHeader('Set-Cookie', cookie);
 
     return res.status(200).json({
       message: 'Logout realizado com sucesso'

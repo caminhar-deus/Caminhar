@@ -1,21 +1,43 @@
 import Head from 'next/head';
 import styles from '../styles/Home.module.css';
 import dynamic from 'next/dynamic';
+import { useState, useEffect } from 'react';
 
 export default function Home() {
+  const [title, setTitle] = useState('O Caminhar com Deus');
+  const [subtitle, setSubtitle] = useState('Reflexões e ensinamentos sobre a fé, espiritualidade e a jornada cristã');
+
+  useEffect(() => {
+    // Load settings from database
+    const loadSettings = async () => {
+      try {
+        const response = await fetch('/api/settings');
+        if (response.ok) {
+          const settings = await response.json();
+          setTitle(settings.site_title || 'O Caminhar com Deus');
+          setSubtitle(settings.site_subtitle || 'Reflexões e ensinamentos sobre a fé, espiritualidade e a jornada cristã');
+        }
+      } catch (error) {
+        console.error('Failed to load settings:', error);
+      }
+    };
+
+    loadSettings();
+  }, []);
+
   return (
     <div className={styles.container}>
       <Head>
-        <title>O Caminhar com Deus</title>
-        <meta name="description" content="Reflexões e ensinamentos sobre a fé, espiritualidade e a jornada cristã" />
+        <title>{title}</title>
+        <meta name="description" content={subtitle} />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
       <main className={styles.main}>
         <div className={styles.header}>
-          <h1 className={styles.title}>O Caminhar com Deus</h1>
+          <h1 className={styles.title}>{title}</h1>
           <p className={styles.subtitle}>
-            Reflexões e ensinamentos sobre a fé, espiritualidade e a jornada cristã
+            {subtitle}
           </p>
         </div>
 
