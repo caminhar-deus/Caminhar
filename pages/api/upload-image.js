@@ -1,7 +1,8 @@
 import { promises as fs } from 'fs';
 import path from 'path';
+import { withAuth } from '../../lib/auth';
 
-export default async function handler(req, res) {
+export default withAuth(async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Método não permitido' });
   }
@@ -52,6 +53,6 @@ export default async function handler(req, res) {
 
 export const config = {
   api: {
-    bodyParser: false,
-  },
+    bodyParser: false
+  }
 };

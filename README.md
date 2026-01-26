@@ -112,6 +112,16 @@ Para publicar no Hostinger:
 - Acessibilidade para leitores de tela
 - Desempenho otimizado para dispositivos móveis
 
+✅ **Sistema de Autenticação Robusto**:
+- **JWT Authentication**: Token-based authentication com JSON Web Tokens
+- **Password Hashing**: Senhas armazenadas com bcrypt (10 rounds)
+- **HTTP-only Cookies**: Cookies seguros para armazenamento de tokens
+- **Session Management**: Controle de sessão com expiração de 1 hora
+- **Protected Routes**: Middleware de autenticação para rotas protegidas
+- **Login/Logout API**: Endpoints seguros para autenticação
+- **CSRF Protection**: Configuração de cookies com SameSite=strict
+- **Role-based Access**: Suporte para diferentes níveis de acesso
+
 ## Licença
 
 Este projeto está licenciado sem restrições. Sinta-se livre para usar e modificar.

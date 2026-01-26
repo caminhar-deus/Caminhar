@@ -1,5 +1,6 @@
 import Head from 'next/head';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import styles from '../styles/Admin.module.css';
 
 export default function Admin() {
@@ -9,14 +10,44 @@ export default function Admin() {
   const [title, setTitle] = useState('O Caminhar com Deus');
   const [subtitle, setSubtitle] = useState('Reflexões e ensinamentos sobre a fé, espiritualidade e a jornada cristã');
   const [imageFile, setImageFile] = useState(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  const handleLogin = (e) => {
+  // Check authentication status on component mount
+  useEffect(() => {
+    // In a real app, you would check the auth token here
+    // For this demo, we'll keep the simple state management
+  }, []);
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-    // Simple authentication - in production, use proper auth
-    if (username === 'admin' && password === 'password') {
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Falha no login');
+      }
+
+      const data = await response.json();
       setIsAuthenticated(true);
-    } else {
-      alert('Credenciais inválidas');
+      console.log('Login successful:', data.user);
+
+    } catch (error) {
+      setError(error.message);
+      console.error('Login failed:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
