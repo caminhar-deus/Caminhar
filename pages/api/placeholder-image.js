@@ -12,12 +12,15 @@ export default async function handler(req, res) {
     const latestImage = imageFiles.sort().pop();
 
     if (latestImage) {
-      // Serve the uploaded image
+      // Serve the uploaded image with aggressive caching
       const imagePath = path.join(uploadDir, latestImage);
       const imageBuffer = await fs.readFile(imagePath);
 
+      // Set aggressive caching headers for better performance
       res.setHeader('Content-Type', 'image/jpeg');
-      res.setHeader('Cache-Control', 'public, max-age=3600');
+      res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
+      res.setHeader('ETag', `"${latestImage}"`);
+      res.setHeader('Last-Modified', new Date().toUTCString());
       res.send(imageBuffer);
     } else {
       // Serve a default placeholder image
@@ -35,7 +38,7 @@ export default async function handler(req, res) {
       `;
 
       res.setHeader('Content-Type', 'image/svg+xml');
-      res.setHeader('Cache-Control', 'public, max-age=3600');
+      res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
       res.send(svg);
     }
   } catch (error) {

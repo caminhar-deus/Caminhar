@@ -19,10 +19,11 @@ export default function Home() {
         </div>
 
         <div className={styles.imageContainer}>
-          <img 
-            src="/api/placeholder-image" 
-            alt="Caminhar com Deus" 
+          <img
+            src="/api/placeholder-image"
+            alt="Caminhar com Deus"
             className={styles.heroImage}
+            loading="lazy"
           />
         </div>
       </main>
