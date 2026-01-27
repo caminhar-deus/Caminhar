@@ -1,6 +1,7 @@
 import { getAuthCookie, verifyToken } from '../../../lib/auth';
+import { apiMiddleware } from '../../../lib/middleware';
 
-export default async function handler(req, res) {
+const handler = async function (req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Método não permitido' });
   }
@@ -29,4 +30,6 @@ export default async function handler(req, res) {
     console.error('Error in auth check:', error);
     return res.status(500).json({ authenticated: false, message: 'Erro no servidor' });
   }
-}
+};
+
+export default apiMiddleware(handler);

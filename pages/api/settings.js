@@ -7,7 +7,7 @@ import { apiMiddleware, authenticatedApiMiddleware, errorHandlingMiddleware } fr
  * @version 1.0
  * @public
  */
-export default errorHandlingMiddleware(apiMiddleware(async function handler(req, res) {
+const handler = async function (req, res) {
   try {
     switch (req.method) {
       case 'GET':
@@ -34,7 +34,11 @@ export default errorHandlingMiddleware(apiMiddleware(async function handler(req,
       timestamp: new Date().toISOString()
     });
   }
-}));
+};
+
+// Create the middleware chain
+const apiHandler = apiMiddleware(handler);
+export default errorHandlingMiddleware(apiHandler);
 
 /**
  * Handle GET request - get all settings or specific setting
