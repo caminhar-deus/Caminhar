@@ -176,6 +176,11 @@ export default function Admin() {
               <button type="submit" className={styles.button}>
                 Entrar
               </button>
+              {error && (
+                <div className={styles.error}>
+                  {error}
+                </div>
+              )}
             </form>
           </div>
         </main>
