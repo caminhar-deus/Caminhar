@@ -10,6 +10,7 @@ Um site cristão moderno e dinâmico para compartilhar reflexões e ensinamentos
 - **Gerenciamento de Configurações**: Interface para editar título, subtítulo e outras configurações
 - **Design Moderno**: Interface limpa, responsiva e otimizada para performance
 - **Sistema de Autenticação**: JWT com cookies HTTP-only e bcrypt para segurança
+- **Backup Automático**: Sistema de backup automático do banco de dados com compressão, rotação e agendamento
 
 ## Tecnologias Utilizadas
 
@@ -74,6 +75,12 @@ caminhar/
 4. **Acessar o site**:
    - Página principal: http://localhost:3000
    - Painel administrativo: http://localhost:3000/admin
+
+5. **Inicializar o sistema de backup automático** (opcional):
+   ```bash
+   npm run init-backup
+   ```
+   Isso iniciará o sistema de backup automático com backups diários às 2 AM.
 
 ## Upload de Imagens
 
@@ -321,7 +328,9 @@ Para publicar em produção:
 - **Comentários**: Sistema de comentários para interação dos usuários
 - **Newsletter**: Sistema de inscrição e envio de newsletters
 - **Multilíngue**: Suporte para múltiplos idiomas (Português, Inglês, Espanhol)
-- **Backup Automático**: Sistema de backup automático do banco de dados
+
+### Prioridade Baixa
+- **Backup Automático**: ✅ **IMPLEMENTADO** - Sistema de backup automático do banco de dados com compressão, rotação e agendamento
 
 ### Prioridade Média
 - **Integração com Redes Sociais**: Compartilhamento e login social
@@ -368,6 +377,14 @@ Para publicar em produção:
 - **Nomes Únicos**: Baseado em timestamp para evitar conflitos
 - **Armazenamento Seguro**: Diretório protegido
 - **Visualização Instantânea**: Preview antes do upload
+
+### 6. **Sistema de Backup Automático** ✅
+- **Backup Diário**: Agendamento automático às 2 AM
+- **Compressão**: Backups compactados com gzip para economia de espaço
+- **Rotação Automática**: Mantém até 10 versões de backup
+- **Logging Completo**: Registros detalhados de todas as operações
+- **Restaurar Fácil**: Sistema de restauração com backup de segurança
+- **Monitoramento**: Verificação automática e limpeza de backups antigos
 
 ## 📊 Métricas de Performance Atuais
 
