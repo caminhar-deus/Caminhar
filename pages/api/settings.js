@@ -1,10 +1,13 @@
 import { getSetting, setSetting, getAllSettings } from '../../lib/db';
+import { apiMiddleware, authenticatedApiMiddleware, errorHandlingMiddleware } from '../../lib/middleware';
 
 /**
  * Settings API endpoint
  * Handles CRUD operations for website settings
+ * @version 1.0
+ * @public
  */
-export default async function handler(req, res) {
+export default errorHandlingMiddleware(apiMiddleware(async function handler(req, res) {
   try {
     switch (req.method) {
       case 'GET':
@@ -17,13 +20,21 @@ export default async function handler(req, res) {
         await handlePut(req, res);
         break;
       default:
-        res.status(405).json({ message: 'Método não permitido' });
+        res.status(405).json({
+          error: 'Method Not Allowed',
+          message: 'Método não permitido',
+          timestamp: new Date().toISOString()
+        });
     }
   } catch (error) {
     console.error('Error in settings API:', error);
-    res.status(500).json({ message: 'Erro no servidor' });
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'Erro no servidor',
+      timestamp: new Date().toISOString()
+    });
   }
-}
+}));
 
 /**
  * Handle GET request - get all settings or specific setting
