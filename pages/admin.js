@@ -65,12 +65,13 @@ export default function Admin() {
         body: JSON.stringify({ username, password }),
       });
 
+      // Read the response body once
+      const data = await response.json();
+
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.message || 'Falha no login');
       }
 
-      const data = await response.json();
       setIsAuthenticated(true);
       console.log('Login successful:', data.user);
 
