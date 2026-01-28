@@ -1,90 +1,46 @@
-import { getSetting, setSetting, getAllSettings } from '../../lib/db';
-import { apiMiddleware, authenticatedApiMiddleware, errorHandlingMiddleware } from '../../lib/middleware';
+import { withAuth } from '../../lib/auth';
+import { query } from '../../lib/db';
 
-/**
- * Settings API endpoint
- * Handles CRUD operations for website settings
- * @version 1.0
- * @public
- */
-const handler = async function (req, res) {
+async function handler(req, res) {
   try {
-    switch (req.method) {
-      case 'GET':
-        await handleGet(req, res);
-        break;
-      case 'POST':
-        await handlePost(req, res);
-        break;
-      case 'PUT':
-        await handlePut(req, res);
-        break;
-      default:
-        res.status(405).json({
-          error: 'Method Not Allowed',
-          message: 'Método não permitido',
-          timestamp: new Date().toISOString()
-        });
+    // GET: Listar configurações
+    if (req.method === 'GET') {
+      const { key } = req.query;
+      
+      if (key) {
+        const result = await query('SELECT * FROM settings WHERE key = $1', [key]);
+        if (result.rows.length === 0) {
+          return res.status(404).json({ message: 'Configuração não encontrada' });
+        }
+        return res.status(200).json(result.rows[0]);
+      }
+
+      const result = await query('SELECT * FROM settings');
+      // Converte array de settings para objeto { key: value } para facilitar uso no frontend
+      const settings = result.rows.reduce((acc, curr) => {
+        acc[curr.key] = curr.value;
+        return acc;
+      }, {});
+      
+      return res.status(200).json(settings);
+    }
+
+    // PUT: Atualizar configuração
+    if (req.method === 'PUT') {
+      const { key, value, type, description } = req.body;
+      
+      await query(
+        `INSERT INTO settings (key, value, type, description, updated_at) 
+         VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP) 
+         ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = CURRENT_TIMESTAMP`,
+        [key, value, type || 'string', description || '']
+      );
+      
+      return res.status(200).json({ message: 'Configuração salva com sucesso' });
     }
   } catch (error) {
-    console.error('Error in settings API:', error);
-    res.status(500).json({
-      error: 'Internal Server Error',
-      message: 'Erro no servidor',
-      timestamp: new Date().toISOString()
-    });
-  }
-};
-
-// Create the middleware chain
-const apiHandler = apiMiddleware(handler);
-export default errorHandlingMiddleware(apiHandler);
-
-/**
- * Handle GET request - get all settings or specific setting
- */
-async function handleGet(req, res) {
-  const { key } = req.query;
-
-  if (key) {
-    // Get specific setting
-    const value = await getSetting(key);
-    if (value !== null) {
-      res.status(200).json({ key, value });
-    } else {
-      res.status(404).json({ message: 'Configuração não encontrada' });
-    }
-  } else {
-    // Get all settings
-    const settings = await getAllSettings();
-    res.status(200).json(settings);
+    return res.status(500).json({ message: 'Erro interno', error: error.message });
   }
 }
 
-/**
- * Handle POST request - create new setting
- */
-async function handlePost(req, res) {
-  const { key, value, type = 'string', description = '' } = req.body;
-
-  if (!key || !value) {
-    return res.status(400).json({ message: 'Chave e valor são obrigatórios' });
-  }
-
-  const result = await setSetting(key, value, type, description);
-  res.status(201).json({ key, value: result });
-}
-
-/**
- * Handle PUT request - update existing setting
- */
-async function handlePut(req, res) {
-  const { key, value, type, description } = req.body;
-
-  if (!key || !value) {
-    return res.status(400).json({ message: 'Chave e valor são obrigatórios' });
-  }
-
-  const result = await setSetting(key, value, type, description);
-  res.status(200).json({ key, value: result });
-}
+export default withAuth(handler); // Protege a rota (exceto GET se necessário, mas aqui protegemos tudo ou ajustamos conforme auth.js)

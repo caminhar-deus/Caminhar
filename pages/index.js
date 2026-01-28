@@ -2,6 +2,7 @@ import Head from 'next/head';
 import styles from '../styles/Home.module.css';
 import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
+import BlogSection from '../components/BlogSection';
 
 export default function Home() {
   const [title, setTitle] = useState('O Caminhar com Deus');
@@ -49,6 +50,8 @@ export default function Home() {
             loading="lazy"
           />
         </div>
+
+        <BlogSection />
       </main>
     </div>
   );

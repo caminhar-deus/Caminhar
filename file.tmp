@@ -553,15 +553,6 @@ const duration = performance.now() - start;
 console.log(`Execution time: ${duration}ms`);
 ```
 
-### 4. **Sistema de Backup Automático**
-```javascript
-// Configuração do sistema de backup
-import { initBackupSystem } from '../lib/init-backup';
-
-// Inicializar sistema de backup
-initBackupSystem();
-```
-
 ## 📋 Checklist de Implantação em Produção
 
 - [x] **Segurança**: Audit passado (0 vulnerabilidades)
@@ -579,29 +570,19 @@ initBackupSystem();
 ## 🎓 Guia de Solução de Problemas
 
 ### 1. **Problemas de Autenticação**
-- **Sintoma**: Login falha com credenciais corretas
-- **Solução**: Verificar se o banco de dados foi inicializado
-- **Comando**: `npm run init-db`
+- **Comando**: `npm run init-posts`
 
 ### 2. **Problemas de Cache de Imagem**
-- **Sintoma**: Imagens não atualizam
 - **Solução**: Limpar cache do navegador ou usar `?t=timestamp`
 - **Exemplo**: `/api/placeholder-image?t=${Date.now()}`
 
 ### 3. **Problemas de Banco de Dados**
-- **Sintoma**: Erros de conexão com banco
-- **Solução**: Verificar permissões no diretório `data/`
-- **Comando**: `chmod -R 755 data/`
+- **Solução**: Verificar `DATABASE_URL` no `.env`
 
 ### 4. **Problemas de Performance**
-- **Sintoma**: Build lento
 - **Solução**: Limpar cache do Next.js
-- **Comando**: `rm -rf .next/ && npm run dev`
 
 ### 5. **Problemas de Backup**
-- **Sintoma**: Backups não estão sendo criados
-- **Solução**: Verificar se o sistema de backup foi inicializado
-- **Comando**: `npm run init-backup`
 
 ## 🌟 Melhores Práticas
 

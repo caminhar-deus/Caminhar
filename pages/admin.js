@@ -2,6 +2,9 @@ import Head from 'next/head';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import styles from '../styles/Admin.module.css';
+import AdminPostManager from '../components/AdminPostManager';
+import AdminRateLimit from '../components/AdminRateLimit';
+import AdminIntegrityCheck from '../components/AdminIntegrityCheck';
 
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -13,6 +16,7 @@ export default function Admin() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState('posts');
   const router = useRouter();
 
   // Check authentication status on component mount
@@ -199,62 +203,96 @@ export default function Admin() {
         <div className={styles.adminPanel}>
           <h1>Painel Administrativo</h1>
 
-          <div className={styles.formGroup}>
-            <label>Título da Página</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className={styles.input}
-            />
-          </div>
-
-          <div className={styles.formGroup}>
-            <label>Subtítulo</label>
-            <textarea
-              value={subtitle}
-              onChange={(e) => setSubtitle(e.target.value)}
-              className={styles.textarea}
-            />
-          </div>
-
-          <div className={styles.formGroup}>
-            <label>Imagem Principal (1100x320)</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setImageFile(e.target.files[0])}
-              className={styles.input}
-            />
-            <button onClick={handleImageUpload} className={styles.button}>
-              Atualizar Imagem
-            </button>
-          </div>
-
-          <div className={styles.formGroup}>
+          <div className={styles.tabs}>
             <button
-              onClick={handleSaveSettings}
-              className={styles.button}
-              disabled={saving}
+              className={`${styles.tabButton} ${activeTab === 'posts' ? styles.activeTab : ''}`}
+              onClick={() => setActiveTab('posts')}
             >
-              {saving ? 'Salvando...' : 'Salvar Configurações'}
+              Post/Artigos
+            </button>
+            <button
+              className={`${styles.tabButton} ${activeTab === 'header' ? styles.activeTab : ''}`}
+              onClick={() => setActiveTab('header')}
+            >
+              Configurações de Cabeçalho
+            </button>
+            <button
+              className={`${styles.tabButton} ${activeTab === 'security' ? styles.activeTab : ''}`}
+              onClick={() => setActiveTab('security')}
+            >
+              Segurança
             </button>
           </div>
 
-          <div className={styles.preview}>
-            <h3>Visualização</h3>
-            <div className={styles.previewContent}>
-              <h2>{title}</h2>
-              <p>{subtitle}</p>
-              {imageFile && (
-                <img
-                  src={URL.createObjectURL(imageFile)}
-                  alt="Preview"
-                  className={styles.previewImage}
+          {activeTab === 'header' && (
+            <>
+              <div className={styles.formGroup}>
+                <label>Título da Página</label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className={styles.input}
                 />
-              )}
-            </div>
-          </div>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Subtítulo</label>
+                <textarea
+                  value={subtitle}
+                  onChange={(e) => setSubtitle(e.target.value)}
+                  className={styles.textarea}
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Imagem Principal (1100x320)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setImageFile(e.target.files[0])}
+                  className={styles.input}
+                />
+                <button onClick={handleImageUpload} className={styles.button}>
+                  Atualizar Imagem
+                </button>
+              </div>
+
+              <div className={styles.formGroup}>
+                <button
+                  onClick={handleSaveSettings}
+                  className={styles.button}
+                  disabled={saving}
+                >
+                  {saving ? 'Salvando...' : 'Salvar Configurações'}
+                </button>
+              </div>
+
+              <div className={styles.preview}>
+                <h3>Visualização</h3>
+                <div className={styles.previewContent}>
+                  <h2>{title}</h2>
+                  <p>{subtitle}</p>
+                  {imageFile && (
+                    <img
+                      src={URL.createObjectURL(imageFile)}
+                      alt="Preview"
+                      className={styles.previewImage}
+                    />
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'posts' && (
+            <AdminPostManager />
+          )}
+
+          {activeTab === 'security' && (
+            <AdminRateLimit />
+            <AdminIntegrityCheck />
+          )}
         </div>
       </main>
     </div>

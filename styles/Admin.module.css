@@ -150,6 +150,29 @@
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
+/* Tabs styles */
+.tabs {
+  display: flex;
+  margin-bottom: 30px;
+  border-bottom: 1px solid #ddd;
+}
+
+.tabButton {
+  background: none;
+  border: none;
+  padding: 15px 20px;
+  cursor: pointer;
+  font-size: 16px;
+  color: #555;
+  transition: color 0.3s, border-bottom 0.3s;
+  border-bottom: 3px solid transparent;
+}
+
+.tabButton.activeTab {
+  color: #007bff;
+  border-bottom: 3px solid #007bff;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .loginContainer, .adminPanel {
