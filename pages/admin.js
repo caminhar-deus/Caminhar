@@ -45,7 +45,9 @@ export default function Admin() {
   // Load settings from database
   const loadSettings = async () => {
     try {
-      const response = await fetch('/api/settings');
+      const response = await fetch('/api/settings', {
+        credentials: 'include'
+      });
       if (response.ok) {
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
@@ -139,6 +141,7 @@ export default function Admin() {
       // Save title setting
       await fetch('/api/settings', {
         method: 'PUT',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -153,6 +156,7 @@ export default function Admin() {
       // Save subtitle setting
       await fetch('/api/settings', {
         method: 'PUT',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },

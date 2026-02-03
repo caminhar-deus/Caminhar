@@ -23,7 +23,9 @@ export default function AdminPostManager() {
 
   const fetchPosts = async () => {
     try {
-      const response = await fetch('/api/admin/posts');
+      const response = await fetch('/api/admin/posts', {
+        credentials: 'include'
+      });
       
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
@@ -102,6 +104,7 @@ export default function AdminPostManager() {
     try {
         const res = await fetch('/api/admin/posts', {
             method,
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body)
         });
@@ -141,6 +144,7 @@ export default function AdminPostManager() {
     try {
         const res = await fetch('/api/admin/posts', {
             method: 'DELETE',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id })
         });
