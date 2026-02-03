@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import styles from '../styles/Blog.module.css';
 
 export default function BlogSection() {
@@ -67,9 +68,9 @@ export default function BlogSection() {
                   <span className={styles.date}>
                     {new Date(post.created_at).toLocaleDateString('pt-BR')}
                   </span>
-                  <span className={styles.readMore}>
+                  <Link href={`/blog/${post.slug}`} className={styles.readMore}>
                     Ler mais →
-                  </span>
+                  </Link>
                 </div>
               </div>
             </article>
