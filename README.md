@@ -278,30 +278,13 @@ Por padrão, o sistema usa as credenciais do arquivo `.env`. Se o arquivo não e
 
 ## Configuração para Produção
 
-Para publicar em produção:
+Para instruções detalhadas sobre como publicar o projeto, consulte o guia dedicado:
 
-1. **Build do projeto**:
-   ```bash
-   npm run build
-   ```
+📄 **[Guia de Deploy (DEPLOY.md)](./DEPLOY.md)**
 
-2. **Iniciar o servidor**:
-   ```bash
-   npm start
-   ```
-
-3. **Variáveis de ambiente** (recomendado para produção):
-   ```bash
-   # Configure em um arquivo .env
-   JWT_SECRET=seu-secret-key-aqui
-   NODE_ENV=production
-   ```
-
-4. **Configurações de segurança**:
-   - Configure HTTPS para conexões seguras
-   - Configure CORS apropriadamente
-   - Configure chaves de autenticação seguras
-   - Configure armazenamento de arquivos em cloud storage
+### Resumo Rápido:
+1.  **VPS (Hostinger, DigitalOcean, etc.)**: **Recomendado**. Mantém o sistema de uploads local funcionando sem alterações de código. O guia inclui um passo a passo detalhado para Hostinger.
+2.  **Vercel**: Requer migração do sistema de uploads para armazenamento em nuvem (S3/Blob), pois o sistema de arquivos da Vercel é temporário.
 
 ## Funcionalidades Implementadas
 
@@ -649,7 +632,7 @@ npm run restore
 ### 1. **Documentação Oficial**
 - [Next.js Documentation](https://nextjs.org/docs)
 - [React Documentation](https://react.dev/learn)
-- [SQLite Documentation](https://www.sqlite.org/docs.html)
+- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
 - [JWT Documentation](https://jwt.io/introduction)
 
 ### 2. **Ferramentas Recomendadas**
