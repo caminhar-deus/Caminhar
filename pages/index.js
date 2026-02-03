@@ -51,7 +51,7 @@ export default function Home() {
           />
         </div>
 
-        <BlogSection />
+        <BlogSection limit={3} />
       </main>
     </div>
   );

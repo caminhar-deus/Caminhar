@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import styles from '../styles/Blog.module.css';
 
-export default function BlogSection() {
+export default function BlogSection({ limit }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -32,6 +32,8 @@ export default function BlogSection() {
     return null;
   }
 
+  const displayedPosts = limit ? posts.slice(0, limit) : posts;
+
   return (
     <section className={styles.section}>
       <div className={styles.container}>
@@ -41,7 +43,7 @@ export default function BlogSection() {
         </div>
 
         <div className={styles.grid}>
-          {posts.map((post) => (
+          {displayedPosts.map((post) => (
             <article key={post.id} className={styles.card}>
               <div className={styles.imageContainer}>
                 <img 
@@ -76,6 +78,23 @@ export default function BlogSection() {
             </article>
           ))}
         </div>
+
+        {limit && posts.length > limit && (
+          <div style={{ textAlign: 'center', marginTop: '40px' }}>
+            <Link href="/blog" style={{
+              display: 'inline-block',
+              padding: '12px 24px',
+              backgroundColor: '#f5f5f5',
+              color: '#333',
+              textDecoration: 'none',
+              borderRadius: '6px',
+              fontWeight: '500',
+              transition: 'all 0.2s ease'
+            }}>
+              Ver todas as postagens
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   );
