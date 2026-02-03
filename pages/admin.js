@@ -5,6 +5,7 @@ import styles from '../styles/Admin.module.css';
 import AdminPostManager from '../components/AdminPostManager';
 import AdminRateLimit from '../components/AdminRateLimit';
 import AdminIntegrityCheck from '../components/AdminIntegrityCheck';
+import AdminBackupManager from '../components/AdminBackupManager';
 
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -325,6 +326,7 @@ export default function Admin() {
             <>
               <AdminRateLimit />
               <AdminIntegrityCheck />
+              <AdminBackupManager />
             </>
           )}
         </div>
