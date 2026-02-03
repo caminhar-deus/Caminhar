@@ -1,8 +1,8 @@
 # Relatório de Análise Técnica do Projeto
 
-**Data da Análise:** 28/01/2026
+**Data da Análise:** 03/02/2026
 **Projeto:** O Caminhar com Deus
-**Versão:** 1.0.0
+**Versão:** 1.1.0
 
 ## 1. Visão Geral da Arquitetura
 
@@ -17,7 +17,7 @@ O projeto é uma aplicação web moderna construída sobre o framework **Next.js
 
 ## 2. Análise de Migração (SQLite -> PostgreSQL)
 
-A migração foi concluída com sucesso para resolver gargalos de escrita identificados durante testes de carga.
+A migração foi concluída e consolidada com sucesso, resolvendo definitivamente os gargalos de escrita identificados anteriormente. O sistema agora opera nativamente com PostgreSQL.
 
 ### Mudanças Críticas:
 - **Driver de Banco**: Substituição de `sqlite3` por `pg`.
@@ -37,7 +37,7 @@ O projeto implementa várias camadas de segurança robustas:
 
 - **Proteção de API (Rate Limiting)**:
   - Middleware implementado em `middleware.js`.
-  - Estratégia híbrida: Redis (persistente/distribuído) com fallback para Memória.
+  - Estratégia híbrida validada: Redis (persistente/distribuído) com fallback automático para Memória (Map) em caso de indisponibilidade.
   - Proteção contra força bruta na rota de login (`/api/auth/login`).
   - Sistema de Whitelist para IPs administrativos.
   - Logs de auditoria para bloqueios e desbloqueios manuais.
@@ -65,7 +65,7 @@ O projeto agora conta com uma suíte de testes abrangente:
 
 - **Testes Unitários**: Focados em componentes isolados e lógica de utilitários.
 - **Testes de Integração**: Verificam o fluxo completo das APIs usando mocks de banco de dados (`node-mocks-http`).
-- **Testes de Carga**: Scripts `k6` para simular tráfego real e estresse.
+- **Testes de Carga**: Scripts `k6` otimizados para cenários de escrita concorrente (PostgreSQL).
 - **CI/CD**: Workflow do GitHub Actions configurado para rodar testes a cada push.
 
 ## 6. Recomendações Futuras
@@ -76,4 +76,4 @@ O projeto agora conta com uma suíte de testes abrangente:
 
 ## 7. Conclusão
 
-O projeto "O Caminhar com Deus" atingiu um nível de maturidade técnica elevado. A transição para PostgreSQL removeu as limitações de escalabilidade anteriores, e a infraestrutura de testes garante que novas funcionalidades possam ser adicionadas com segurança. O sistema está pronto para deploy em ambiente de produção.
+O projeto "O Caminhar com Deus" atingiu um nível de maturidade técnica elevado e estabilidade comprovada. A transição para PostgreSQL removeu as limitações de escalabilidade anteriores, e a infraestrutura de testes (Unitários, Integração e Carga) garante a confiabilidade contínua. O sistema está pronto e validado para produção.
