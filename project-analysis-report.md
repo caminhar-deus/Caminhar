@@ -25,6 +25,7 @@ A migração foi concluída e consolidada com sucesso, resolvendo definitivament
 - **Sintaxe SQL**: Adaptação de queries para sintaxe PostgreSQL (ex: `$1` placeholders, `RETURNING *`, `TIMESTAMPTZ`).
 - **Scripts de Migração**: Criação de `lib/migrate-sqlite-pg.js` para transferir dados legados.
 - **Verificação**: Implementação de endpoint `/api/admin/verify-migration` e interface visual para garantir integridade dos dados pós-migração.
+- **Backup UI**: Integração completa do sistema de backups ao painel administrativo (`/admin`), permitindo criação e visualização de backups via interface.
 
 ## 3. Análise de Segurança
 
@@ -58,6 +59,7 @@ Os testes realizados indicaram melhorias significativas após a migração para 
 - **Imagens**: Cache-Control agressivo (24h), Lazy Loading nativo.
 - **Banco de Dados**: Índices em colunas de busca (`slug`, `username`).
 - **Build**: Code splitting automático do Next.js.
+- **Paginação**: Implementada no Blog para reduzir payload inicial e melhorar tempo de carregamento.
 
 ## 5. Estratégia de Testes
 
@@ -65,6 +67,7 @@ O projeto agora conta com uma suíte de testes abrangente:
 
 - **Testes Unitários**: Focados em componentes isolados e lógica de utilitários.
 - **Testes de Integração**: Verificam o fluxo completo das APIs usando `node-mocks-http`. A suíte de testes para o endpoint de upload, por exemplo, valida múltiplos cenários, incluindo sucesso, arquivos inválidos (tipo/tamanho) e ausência de arquivo, garantindo a robustez da API.
+- **Testes de Sistema**: Validação completa do fluxo de backup e restauração (`backup.test.js`), incluindo mocks do sistema de arquivos e execução de comandos do sistema (`pg_dump`).
 - **Testes de Carga**: Scripts `k6` otimizados para cenários de escrita concorrente (PostgreSQL).
 - **CI/CD**: Workflow do GitHub Actions configurado para rodar testes a cada push.
 

@@ -22,8 +22,9 @@ Estes testes verificam a lógica de componentes individuais e endpoints da API. 
 
 **Principais áreas cobertas:**
 - **Componentes**: `AdminPostManager`, `BlogIndex`, `BlogPost`.
+- **Sistema de Backup**: Testes de criação, rotação e restauração (`lib/backup.js`).
 - **Middleware**: Rate Limiting (com fallback Redis/Memória) e Whitelist.
-- **APIs**: `/api/admin/posts`, `/api/settings`, `/api/v1/status`, e `/api/upload-image` (cobrança de casos de sucesso, falha por falta de arquivo, tipo de arquivo inválido e tamanho excedido).
+- **APIs**: `/api/admin/posts`, `/api/admin/backups`, `/api/settings`, `/api/v1/status`, e `/api/upload-image` (cobrança de casos de sucesso, falha por falta de arquivo, tipo de arquivo inválido e tamanho excedido).
 
 #### Como Executar:
 

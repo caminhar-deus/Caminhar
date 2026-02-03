@@ -11,6 +11,8 @@ Um site cristão moderno e dinâmico para compartilhar reflexões e ensinamentos
 - **Design Moderno**: Interface limpa, responsiva e otimizada para performance
 - **Sistema de Autenticação**: JWT com cookies HTTP-only e bcrypt para segurança
 - **Backup Automático**: Sistema de backup automático do banco de dados com compressão, rotação e agendamento
+- **Blog Completo**: Paginação, compartilhamento em redes sociais (WhatsApp, Facebook) e navegação otimizada
+- **Segurança Avançada**: Rate limiting, proteção contra força bruta e gerenciamento de backups via UI
 - **API RESTful**: Endpoints organizados em `/api/v1/` para consumo externo
 
 ## Tecnologias Utilizadas
@@ -37,6 +39,9 @@ caminhar/
 │       │   ├── check.js         # Verificação de autenticação
 │       │   ├── login.js         # Endpoint de login
 │       │   └── logout.js        # Endpoint de logout
+│       ├── admin/
+│       │   ├── backups.js       # API de gerenciamento de backups
+│       │   └── posts.js         # API de gerenciamento de posts
 │       ├── settings.js          # API para gerenciamento de configurações
 │       ├── upload-image.js      # API para upload de imagens
 │       └── placeholder-image.js # API para servir imagens
@@ -47,6 +52,10 @@ caminhar/
 │           └── auth/
 │               ├── login.js     # Endpoint de login RESTful
 │               └── check.js     # Endpoint de verificação RESTful
+├── components/
+│   ├── AdminBackupManager.js    # UI de gerenciamento de backups
+│   ├── PostCard.js              # Componente de card de post reutilizável
+│   └── ...
 ├── lib/
 │   ├── auth.js                  # Sistema de autenticação
 │   ├── db.js                    # Gerenciamento de banco de dados
@@ -422,6 +431,12 @@ Para instruções detalhadas sobre como publicar o projeto, consulte o guia dedi
 - **Status System**: Endpoint para verificar saúde do sistema
 - **Autenticação**: Endpoints de login e verificação RESTful
 - **Configurações**: Endpoint para gerenciamento de configurações
+
+### 8. **Melhorias no Blog** ✅
+- **Paginação**: Navegação eficiente entre páginas de artigos
+- **Compartilhamento**: Botões nativos para WhatsApp, Facebook e cópia de link
+- **Componentização**: Refatoração com `PostCard` para reuso de código
+- **UX**: Navegação intuitiva "Voltar para Home" e "Ver todas as postagens"
 
 ## 📊 Métricas de Performance Atuais
 
