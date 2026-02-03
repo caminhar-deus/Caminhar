@@ -92,7 +92,7 @@ export default function Admin() {
 
     } catch (error) {
       setError(error.message);
-      console.error('Login failed:', error);
+      console.warn('Login failed:', error);
     } finally {
       setLoading(false);
     }
@@ -110,6 +110,7 @@ export default function Admin() {
       const response = await fetch('/api/upload-image', {
         method: 'POST',
         body: formData,
+        credentials: 'include',
       });
 
       if (response.ok) {

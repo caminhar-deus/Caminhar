@@ -63,14 +63,16 @@ export default function AdminPostManager() {
     try {
       const res = await fetch('/api/upload-image', {
         method: 'POST',
-        body: formData
+        body: formData,
+        credentials: 'include'
       });
       
       if (res.ok) {
         const data = await res.json();
         setFormData(prev => ({ ...prev, image_url: data.path }));
       } else {
-        alert('Erro ao fazer upload da imagem');
+        const errorData = await res.json().catch(() => ({}));
+        alert(errorData.error || errorData.message || `Erro ${res.status}: Falha no upload`);
       }
     } catch (err) {
       console.error(err);
