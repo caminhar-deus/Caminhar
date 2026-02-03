@@ -1,7 +1,9 @@
 import { createMocks } from 'node-mocks-http';
-import handler from '../../../pages/api/upload-image';
-import formidable from 'formidable';
 import fs from 'fs';
+import { TextEncoder, TextDecoder } from 'util';
+
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder;
 
 // Mock do Formidable para simular o processamento do upload
 jest.mock('formidable');
@@ -17,7 +19,7 @@ jest.mock('fs', () => ({
 }));
 
 // Mock da Autenticação
-jest.mock('../../../lib/auth', () => ({
+jest.mock('./lib/auth.js', () => ({
   withAuth: (fn) => (req, res) => {
     req.user = { username: 'admin' };
     return fn(req, res);
@@ -25,6 +27,14 @@ jest.mock('../../../lib/auth', () => ({
 }));
 
 describe('API de Upload de Imagem (/api/upload-image)', () => {
+  let handler;
+  let formidable;
+
+  beforeAll(async () => {
+    formidable = await import('formidable');
+    handler = (await import('./pages/api/upload-image.js')).default;
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
   });

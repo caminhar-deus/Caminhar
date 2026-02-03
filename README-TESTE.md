@@ -22,8 +22,8 @@ Estes testes verificam a lógica de componentes individuais e endpoints da API. 
 
 **Principais áreas cobertas:**
 - **Componentes**: `AdminPostManager`, `BlogIndex`, `BlogPost`.
-- **APIs**: `/api/admin/posts`, `/api/settings`, `/api/upload-image`, `/api/v1/status`.
 - **Middleware**: Rate Limiting (com fallback Redis/Memória) e Whitelist.
+- **APIs**: `/api/admin/posts`, `/api/settings`, `/api/v1/status`, e `/api/upload-image` (cobrança de casos de sucesso, falha por falta de arquivo, tipo de arquivo inválido e tamanho excedido).
 
 #### Como Executar:
 

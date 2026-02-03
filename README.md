@@ -121,7 +121,7 @@ caminhar/
 - **Processamento**: Dados binários são manipulados corretamente como buffers
 - **Armazenamento**: Imagens são salvas com nomes únicos baseados em timestamp
 - **Cache**: Sistema de cache-busting evita problemas de cache do navegador
-- **Segurança**: Validação de MIME types e extensões de arquivo
+- **Segurança**: Validação robusta no servidor de tipos MIME (JPEG, PNG, etc.) e tamanho máximo de arquivo (5MB).
 
 ## Configuração de Ambiente
 

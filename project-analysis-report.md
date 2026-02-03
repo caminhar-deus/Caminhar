@@ -44,7 +44,7 @@ O projeto implementa várias camadas de segurança robustas:
 
 - **Validação de Dados**:
   - Uso da biblioteca `zod` para validação de schemas em rotas de escrita (POST/PUT).
-  - Validação rigorosa de uploads de imagem (MIME type, extensão e magic bytes implícitos via bibliotecas).
+  - Validação rigorosa de uploads de imagem no servidor, cobrindo **MIME type**, **tamanho do arquivo** e tratamento de erros, garantindo que apenas arquivos válidos sejam processados e salvos.
 
 ## 4. Análise de Performance
 
@@ -64,7 +64,7 @@ Os testes realizados indicaram melhorias significativas após a migração para 
 O projeto agora conta com uma suíte de testes abrangente:
 
 - **Testes Unitários**: Focados em componentes isolados e lógica de utilitários.
-- **Testes de Integração**: Verificam o fluxo completo das APIs usando mocks de banco de dados (`node-mocks-http`).
+- **Testes de Integração**: Verificam o fluxo completo das APIs usando `node-mocks-http`. A suíte de testes para o endpoint de upload, por exemplo, valida múltiplos cenários, incluindo sucesso, arquivos inválidos (tipo/tamanho) e ausência de arquivo, garantindo a robustez da API.
 - **Testes de Carga**: Scripts `k6` otimizados para cenários de escrita concorrente (PostgreSQL).
 - **CI/CD**: Workflow do GitHub Actions configurado para rodar testes a cada push.
 

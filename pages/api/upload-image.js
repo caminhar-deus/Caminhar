@@ -42,9 +42,27 @@ async function handler(req, res) {
       return res.status(400).json({ message: 'No image uploaded' });
     }
 
+    // Validação de Mimetype
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(imageFile.mimetype)) {
+      try { await fs.promises.unlink(imageFile.filepath); } catch (e) {}
+      return res.status(400).json({ message: 'Formato de arquivo inválido' });
+    }
+
+    // Validação de Tamanho (5MB)
+    if (imageFile.size > 5 * 1024 * 1024) {
+      try { await fs.promises.unlink(imageFile.filepath); } catch (e) {}
+      return res.status(400).json({ message: 'Arquivo muito grande (tamanho máximo 5MB)' });
+    }
+
+    // Renomear arquivo com timestamp
+    const ext = path.extname(imageFile.originalFilename || imageFile.newFilename || '.jpg');
+    const newFilename = `post-image-${Date.now()}${ext}`;
+    const newPath = path.join(uploadDir, newFilename);
+    await fs.promises.rename(imageFile.filepath, newPath);
+
     // Get relative path for public access
-    const fileName = path.basename(imageFile.filepath);
-    const publicPath = `/uploads/${fileName}`;
+    const publicPath = `/uploads/${newFilename}`;
 
     // Check upload type to decide if we should update settings
     const uploadType = Array.isArray(fields.uploadType) ? fields.uploadType[0] : fields.uploadType;
