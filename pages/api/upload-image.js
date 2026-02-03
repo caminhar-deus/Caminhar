@@ -1,98 +1,65 @@
-import { promises as fs } from 'fs';
-import path from 'path';
-import { withAuth } from '../../lib/auth';
-import { saveImage } from '../../lib/db';
 import { IncomingForm } from 'formidable';
+import fs from 'fs';
+import path from 'path';
+import { updateSetting } from '../../lib/db';
+import { withAuth } from '../../lib/auth';
 
-export default withAuth(async function handler(req, res) {
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
+async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Método não permitido' });
+    return res.status(405).json({ message: 'Method not allowed' });
   }
 
   try {
-    // Create uploads directory if it doesn't exist
+    // Ensure upload directory exists
     const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-    await fs.mkdir(uploadDir, { recursive: true });
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
 
-    // Use formidable for secure file upload handling
     const form = new IncomingForm({
-      uploadDir: uploadDir,
+      uploadDir,
       keepExtensions: true,
-      maxFileSize: 5 * 1024 * 1024, // 5MB max file size
-      filter: ({ name, originalFilename, mimetype }) => {
-        // Only allow image files
-        const validMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-        return validMimeTypes.includes(mimetype);
-      }
+      maxFileSize: 5 * 1024 * 1024, // 5MB
     });
 
-    // Parse the form data
     const [fields, files] = await new Promise((resolve, reject) => {
       form.parse(req, (err, fields, files) => {
-        if (err) {
-          console.error('Form parsing error:', err);
-          return reject(new Error('Erro ao processar o upload da imagem'));
-        }
+        if (err) reject(err);
         resolve([fields, files]);
       });
     });
 
-    // Check if we have the image file
-    const imageFile = files.image?.[0];
+    // Formidable v3 returns an array of files
+    const imageFile = files.image?.[0] || files.image;
+    
     if (!imageFile) {
-      return res.status(400).json({ message: 'Nenhum arquivo de imagem enviado' });
+      return res.status(400).json({ message: 'No image uploaded' });
     }
 
-    // Validação de segurança para o mimetype, mesmo que o formidable já filtre.
-    const validMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!validMimeTypes.includes(imageFile.mimetype)) {
-      // Remove o arquivo inválido que foi salvo temporariamente pelo formidable
-      await fs.unlink(imageFile.filepath);
-      return res.status(400).json({ message: 'Tipo de arquivo inválido. Apenas imagens são permitidas.' });
+    // Get relative path for public access
+    const fileName = path.basename(imageFile.filepath);
+    const publicPath = `/uploads/${fileName}`;
+
+    // Check upload type to decide if we should update settings
+    const uploadType = Array.isArray(fields.uploadType) ? fields.uploadType[0] : fields.uploadType;
+
+    if (uploadType === 'site_image') {
+      // Update setting in database only for site header
+      await updateSetting('site_image', publicPath, 'image', 'Main site image');
     }
 
-    // Validação de tamanho do arquivo (5MB)
-    const MAX_FILE_SIZE = 5 * 1024 * 1024;
-    if (imageFile.size > MAX_FILE_SIZE) {
-      await fs.unlink(imageFile.filepath);
-      return res.status(400).json({ message: 'Arquivo muito grande. O tamanho máximo permitido é 5MB.' });
-    }
-
-    // Determine image type and prefix
-    const type = fields.type?.[0] || 'hero';
-    const prefix = type === 'post' ? 'post-image-' : 'hero-image-';
-
-    // Generate a unique filename
-    const timestamp = Date.now();
-    const ext = path.extname(imageFile.originalFilename) || '.jpg';
-    const filename = `${prefix}${timestamp}${ext}`;
-    const filePath = path.join(uploadDir, filename);
-
-    // Rename the file to our desired filename
-    await fs.rename(imageFile.filepath, filePath);
-
-    // Save image info to database with relative path
-    const fileSize = imageFile.size;
-    const userId = req.user?.userId || null;
-    const relativePath = `/uploads/${filename}`;
-
-    await saveImage(filename, relativePath, type, fileSize, userId);
-
-    return res.status(200).json({
-      message: 'Imagem atualizada com sucesso!',
-      filename: filename,
-      path: relativePath,
-      note: 'A imagem será automaticamente redimensionada para se ajustar ao container (1100x320) mantendo a proporção'
-    });
+    return res.status(200).json({ success: true, path: publicPath });
 
   } catch (error) {
-    console.error('Error uploading image:', error);
-    return res.status(500).json({ message: 'Erro ao fazer upload da imagem' });
+    console.error('Upload error:', error);
+    return res.status(500).json({ message: 'Error uploading image' });
   }
-});
+}
 
-export const config = {
-  api: {
-    bodyParser: false
-  }
-};
+export default withAuth(handler);

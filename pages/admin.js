@@ -13,6 +13,7 @@ export default function Admin() {
   const [title, setTitle] = useState('O Caminhar com Deus');
   const [subtitle, setSubtitle] = useState('Reflexões e ensinamentos sobre a fé, espiritualidade e a jornada cristã');
   const [imageFile, setImageFile] = useState(null);
+  const [currentImageUrl, setCurrentImageUrl] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -46,9 +47,13 @@ export default function Admin() {
     try {
       const response = await fetch('/api/settings');
       if (response.ok) {
-        const settings = await response.json();
-        setTitle(settings.site_title || 'O Caminhar com Deus');
-        setSubtitle(settings.site_subtitle || 'Reflexões e ensinamentos sobre a fé, espiritualidade e a jornada cristã');
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const settings = await response.json();
+          setTitle(settings.site_title || 'O Caminhar com Deus');
+          setSubtitle(settings.site_subtitle || 'Reflexões e ensinamentos sobre a fé, espiritualidade e a jornada cristã');
+          if (settings.site_image) setCurrentImageUrl(settings.site_image);
+        }
       }
     } catch (error) {
       console.error('Failed to load settings:', error);
@@ -69,11 +74,17 @@ export default function Admin() {
         body: JSON.stringify({ username, password }),
       });
 
-      // Read the response body once
-      const data = await response.json();
+      let data;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        // Se não for JSON (ex: erro 404 ou 500 HTML), lança um erro legível
+        throw new Error(`Erro de conexão com o servidor (${response.status})`);
+      }
 
       if (!response.ok) {
-        throw new Error(data.message || 'Falha no login');
+        throw new Error((data && data.message) || 'Falha no login');
       }
 
       setIsAuthenticated(true);
@@ -93,6 +104,7 @@ export default function Admin() {
 
     const formData = new FormData();
     formData.append('image', imageFile);
+    formData.append('uploadType', 'site_image');
 
     try {
       const response = await fetch('/api/upload-image', {
@@ -101,7 +113,16 @@ export default function Admin() {
       });
 
       if (response.ok) {
-        alert('Imagem atualizada com sucesso!');
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const data = await response.json();
+          if (data.path) setCurrentImageUrl(data.path);
+          setImageFile(null);
+          alert('Imagem atualizada com sucesso!');
+        } else {
+          console.error('Resposta inválida do servidor (não é JSON)');
+          alert('Erro: O servidor retornou uma resposta inválida.');
+        }
       } else {
         alert('Erro ao atualizar imagem');
       }
@@ -273,10 +294,16 @@ export default function Admin() {
                 <div className={styles.previewContent}>
                   <h2>{title}</h2>
                   <p>{subtitle}</p>
-                  {imageFile && (
+                  {imageFile ? (
                     <img
                       src={URL.createObjectURL(imageFile)}
                       alt="Preview"
+                      className={styles.previewImage}
+                    />
+                  ) : currentImageUrl && (
+                    <img
+                      src={currentImageUrl}
+                      alt="Current Header"
                       className={styles.previewImage}
                     />
                   )}
@@ -290,8 +317,10 @@ export default function Admin() {
           )}
 
           {activeTab === 'security' && (
-            <AdminRateLimit />
-            <AdminIntegrityCheck />
+            <>
+              <AdminRateLimit />
+              <AdminIntegrityCheck />
+            </>
           )}
         </div>
       </main>
