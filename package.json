@@ -18,6 +18,7 @@
     "init-db": "node lib/init-server.js",
     "init-backup": "node lib/init-backup.js",
     "create-backup": "node -e \"import('./lib/backup.js').then(m => m.createBackup()).catch(console.error)\"",
+    "restore-backup": "node lib/restore-backup.js",
     "init-posts": "node lib/init-posts.js",
     "clean-test-db": "node lib/clean-test-db.js",
     "test:load": "k6 run load-tests/health-check.js",

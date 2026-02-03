@@ -497,7 +497,7 @@ import { createBackup, restoreBackup } from '../lib/backup';
 await createBackup();
 
 // Restaurar backup
-await restoreBackup('backup-file.db.gz');
+await restoreBackup('caminhar-pg-backup_YYYY-MM-DD_HH-mm-ss.sql.gz');
 ```
 
 ### 6. **API RESTful** ✅
@@ -621,10 +621,10 @@ npm prune
 ### 4. **Backup**
 ```bash
 # Criar backup manual
-npm run backup
+npm run create-backup
 
 # Restaurar backup
-npm run restore
+npm run restore-backup <nome-do-arquivo>
 ```
 
 ## 📚 Recursos Adicionais

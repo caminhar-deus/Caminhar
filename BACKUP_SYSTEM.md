@@ -2,7 +2,7 @@
 
 ## Overview
 
-This automatic database backup system provides comprehensive backup and restore functionality for the Caminhar application's SQLite database.
+This automatic database backup system provides comprehensive backup and restore functionality for the Caminhar application's **PostgreSQL** database.
 
 ## Features
 
@@ -17,6 +17,7 @@ This automatic database backup system provides comprehensive backup and restore 
 
 - `lib/backup.js` - Main backup system implementation
 - `lib/init-backup.js` - Backup system initialization script
+- `lib/restore-backup.js` - Helper script for restoring backups
 - `data/backups/` - Backup storage directory
 - `data/backups/backup.log` - Backup operation logs
 
@@ -48,7 +49,7 @@ node -e "import('./lib/backup.js').then(m => m.getAvailableBackups().then(consol
 ### Restoring from Backup
 
 ```bash
-node -e "import('./lib/backup.js').then(m => m.restoreBackup('backup_filename.db.gz').then(() => console.log('Restore complete')).catch(console.error))"
+npm run restore-backup caminhar-pg-backup_YYYY-MM-DD_HH-mm-ss.sql.gz
 ```
 
 ### Viewing Backup Logs

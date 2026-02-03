@@ -254,9 +254,35 @@ Após configurar as variáveis, a Vercel fará o build e deploy automaticamente.
 
 ---
 
-## Checklist de Segurança Pós-Deploy
+## 7. Pós-Deploy: Tarefas de Manutenção
 
-- [ ] **HTTPS**: Ativado (Certbot no VPS / Automático na Vercel).
-- [ ] **Senhas**: Senha de admin forte configurada no `.env`.
-- [ ] **Backups**: Script de backup configurado (no VPS, adicione ao crontab).
-- [ ] **Logs**: Monitorar logs do PM2 ou Dashboard da Vercel.
+### Configuração de Backup Automático (Cron)
+
+Para automatizar o script de backup na sua VPS, use o `cron`.
+
+1.  **Encontre os caminhos absolutos** para o Node e o npm (o `cron` precisa deles):
+    ```bash
+    which node
+    which npm
+    ```
+
+2.  **Abra o editor do cron**:
+    ```bash
+    crontab -e
+    ```
+
+3.  **Adicione a seguinte linha** no final do arquivo, ajustando os caminhos conforme necessário:
+    ```bash
+    # Executa o backup do projeto "O Caminhar com Deus" todos os dias às 2 da manhã
+    0 2 * * * cd /home/seu_usuario/caminhar && /usr/bin/node /usr/bin/npm run create-backup >> /home/seu_usuario/caminhar/data/backups/cron.log 2>&1
+    ```
+    Isso irá executar o backup diariamente e salvar um log da operação.
+
+---
+
+## Checklist de Segurança e Operações Pós-Deploy
+
+- [x] **HTTPS**: Ativado com Certbot.
+- [x] **Senhas**: Senha de admin forte configurada no arquivo `.env`.
+- [x] **Backups**: Tarefa `cron` configurada para backup diário automático.
+- [ ] **Logs**: Monitorar logs da aplicação (`pm2 logs caminhar`) e do cron (`/data/backups/cron.log`).
