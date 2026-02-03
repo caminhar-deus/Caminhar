@@ -1,18 +1,10 @@
 import { NextResponse } from 'next/server';
-import { Redis } from '@upstash/redis';
+import { redis } from './lib/redis';
 
 // Armazenamento em memória para o Rate Limiting
 // Nota: Em ambientes serverless (como Vercel), este Map é recriado por instância/lambda.
 // Para servidores Node.js persistentes (VPS) ou desenvolvimento local, funciona perfeitamente.
 const ipRateLimit = new Map();
-
-// Inicializa o cliente Redis se as variáveis de ambiente estiverem configuradas
-const redis = (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
-  ? new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN,
-    })
-  : null;
 
 // Configuração: 5 tentativas a cada 15 minutos
 const RATE_LIMIT_WINDOW = 15 * 60; // 15 minutos em segundos
