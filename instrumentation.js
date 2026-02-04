@@ -1,22 +1,22 @@
 /**
- * Next.js 16 Instrumentation File
- * This runs at server startup and initializes the database and authentication system
- * 
- * IMPORTANT: This file should not import heavy Node.js modules to avoid Edge Runtime warnings.
- * The actual initialization is done in a separate module to prevent import issues.
+ * Next.js Instrumentation File
+ * @see https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation
+ *
+ * This file runs at server startup. We use it to initialize server-side components
+ * like the database connection and authentication system.
  */
 
 export async function register() {
-  try {
-    console.log('Next.js instrumentation: Initializing server...');
-    
-    // Import and initialize server only when needed to avoid Edge Runtime issues
-    const { initializeServer } = await import('./lib/init-server.js');
-    await initializeServer();
-    
-    console.log('Next.js instrumentation: Server initialized successfully');
-  } catch (error) {
-    console.error('Next.js instrumentation: Failed to initialize server:', error);
-    // Don't throw to prevent Next.js from failing to start
+  // We must only run server-side initializations in the 'nodejs' runtime.
+  // The 'edge' runtime does not support Node.js APIs like 'crypto' or 'pg'.
+  if (process.env.NEXT_RUNTIME === 'nodejs') {
+    try {
+      console.log('Next.js instrumentation: Initializing server for Node.js runtime...');
+      const { initializeServer } = await import('./lib/init-server.js');
+      await initializeServer();
+      console.log('Next.js instrumentation: Server initialized successfully.');
+    } catch (error) {
+      console.error('Next.js instrumentation: Failed to initialize server:', error);
+    }
   }
 }
