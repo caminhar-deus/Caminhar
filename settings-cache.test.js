@@ -1,0 +1,118 @@
+import { createMocks } from 'node-mocks-http';
+import handler from './pages/api/v1/settings';
+import * as db from './lib/db';
+import * as auth from './lib/auth';
+import { redis } from './lib/redis';
+
+// Mock das dependências
+jest.mock('./lib/db', () => ({
+  getSetting: jest.fn(),
+  setSetting: jest.fn(),
+  getAllSettings: jest.fn(),
+}));
+jest.mock('./lib/auth', () => ({
+  getAuthToken: jest.fn(),
+  verifyToken: jest.fn(),
+}));
+
+// Mock do Redis (simulando comportamento em memória para testes)
+jest.mock('./lib/redis', () => {
+  const store = new Map();
+  return {
+    redis: {
+      get: jest.fn((key) => Promise.resolve(store.get(key) || null)),
+      set: jest.fn((key, value) => Promise.resolve(store.set(key, value))),
+      del: jest.fn((key) => {
+        store.delete(key);
+        return Promise.resolve(1);
+      }),
+      // Métodos auxiliares para verificação interna nos testes
+      _store: store,
+      _reset: () => store.clear()
+    }
+  };
+});
+
+describe('Integração de Cache da API de Configurações (v1)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    redis._reset();
+
+    // Setup Auth Mock (Admin por padrão para permitir todas operações)
+    auth.getAuthToken.mockReturnValue('valid-token');
+    auth.verifyToken.mockReturnValue({ role: 'admin', username: 'admin' });
+
+    // Setup DB Mock
+    db.getAllSettings.mockResolvedValue([
+      { key: 'site_title', value: 'Test Site', type: 'string' },
+      { key: 'site_description', value: 'Test Description', type: 'string' }
+    ]);
+    db.getSetting.mockImplementation((key) => {
+      if (key === 'site_title') return 'Test Site';
+      return null;
+    });
+    db.setSetting.mockResolvedValue('New Value');
+  });
+
+  it('deve buscar do banco e salvar no cache na primeira requisição (Cache Miss)', async () => {
+    const { req, res } = createMocks({
+      method: 'GET',
+    });
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(200);
+    // Verifica se foi ao banco de dados
+    expect(db.getAllSettings).toHaveBeenCalledTimes(1);
+    // Verifica se salvou no Redis
+    expect(redis.set).toHaveBeenCalledWith(
+      'settings:v1:all',
+      expect.stringContaining('Test Site'), // O cache armazena string JSON
+      expect.objectContaining({ ex: 1800 }) // TTL de 30 minutos, conforme SETTINGS_CACHE_TTL
+    );
+  });
+
+  it('deve buscar do cache e NÃO ir ao banco na segunda requisição (Cache Hit)', async () => {
+    // 1. Primeira requisição para popular o cache
+    const { req: req1, res: res1 } = createMocks({ method: 'GET' });
+    await handler(req1, res1);
+    
+    // Limpa contadores do mock do DB para isolar a próxima verificação
+    db.getAllSettings.mockClear();
+
+    // 2. Segunda requisição
+    const { req: req2, res: res2 } = createMocks({ method: 'GET' });
+    await handler(req2, res2);
+
+    expect(res2._getStatusCode()).toBe(200);
+    const data = res2._getJSONData().data;
+    expect(data).toHaveLength(2);
+    
+    // O ponto crucial: NÃO deve ter chamado o banco novamente
+    expect(db.getAllSettings).not.toHaveBeenCalled();
+    // Deve ter buscado do Redis
+    expect(redis.get).toHaveBeenCalledWith('settings:v1:all');
+  });
+
+  it('deve invalidar o cache ao atualizar uma configuração (PUT)', async () => {
+    // 1. Popula o cache via GET
+    const { req: reqGet, res: resGet } = createMocks({ method: 'GET' });
+    await handler(reqGet, resGet);
+    expect(redis._store.has('settings:v1:all')).toBe(true);
+
+    // 2. Atualiza uma configuração via PUT
+    const { req: reqPut, res: resPut } = createMocks({
+      method: 'PUT',
+      body: { key: 'site_title', value: 'Updated Title', type: 'string' }
+    });
+
+    await handler(reqPut, resPut);
+
+    expect(resPut._getStatusCode()).toBe(200);
+    
+    // 3. Verifica se o cache foi invalidado (deletado)
+    expect(redis.del).toHaveBeenCalledWith('settings:v1:all');
+    expect(redis.del).toHaveBeenCalledWith('settings:v1:site_title');
+    expect(redis._store.has('settings:v1:all')).toBe(false);
+  });
+});

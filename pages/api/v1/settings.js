@@ -1,5 +1,9 @@
 import { getSetting, setSetting, getAllSettings } from '../../../lib/db';
 import { getAuthToken, verifyToken } from '../../../lib/auth';
+import { getOrSetCache, invalidateCache } from '../../../lib/cache';
+
+// Configuração de TTL para Settings (ex: 30 minutos)
+const SETTINGS_CACHE_TTL = 1800;
 
 /**
  * External Settings API endpoint (v1)
@@ -77,12 +81,12 @@ async function handleGet(req, res) {
   }
 
   if (key) {
-    // Get specific setting
-    const value = await getSetting(key);
+    // Get specific setting from cache or DB
+    const value = await getOrSetCache(`settings:v1:${key}`, () => getSetting(key), SETTINGS_CACHE_TTL);
     if (value !== null) {
       res.status(200).json({
         success: true,
-        data: { key, value },
+        data: { key, value: value },
         timestamp: new Date().toISOString()
       });
     } else {
@@ -93,8 +97,8 @@ async function handleGet(req, res) {
       });
     }
   } else {
-    // Get all settings
-    const settings = await getAllSettings();
+    // Get all settings from cache or DB
+    const settings = await getOrSetCache('settings:v1:all', getAllSettings, SETTINGS_CACHE_TTL);
     res.status(200).json({
       success: true,
       data: settings,
@@ -129,6 +133,11 @@ async function handlePost(req, res) {
   }
 
   const result = await setSetting(key, value, type, description);
+
+  // Invalidate cache
+  await invalidateCache('settings:v1:all');
+  await invalidateCache(`settings:v1:${key}`);
+
   res.status(201).json({
     success: true,
     data: { key, value: result },
@@ -162,6 +171,11 @@ async function handlePut(req, res) {
   }
 
   const result = await setSetting(key, value, type, description);
+
+  // Invalidate cache
+  await invalidateCache('settings:v1:all');
+  await invalidateCache(`settings:v1:${key}`);
+
   res.status(200).json({
     success: true,
     data: { key, value: result },
