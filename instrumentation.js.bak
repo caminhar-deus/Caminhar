@@ -20,3 +20,14 @@ export async function register() {
     }
   }
 }
+
+// Export a default function to ensure the module is properly parsed
+export default function instrumentation() {
+  // This function can be used for additional instrumentation if needed
+}
+
+// Ensure the module is properly exported for Next.js
+module.exports = {
+  register,
+  default: instrumentation
+};

@@ -1,6 +1,6 @@
-import { createMocks } from 'node-mocks-http';
-import fs from 'fs';
-import { TextEncoder, TextDecoder } from 'util';
+const { createMocks } = require('node-mocks-http');
+const fs = require('fs');
+const { TextEncoder, TextDecoder } = require('util');
 
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
@@ -31,8 +31,8 @@ describe('API de Upload de Imagem (/api/upload-image)', () => {
   let formidable;
 
   beforeAll(async () => {
-    formidable = await import('formidable');
-    handler = (await import('./pages/api/upload-image.js')).default;
+    formidable = require('formidable');
+    handler = require('../../../pages/api/upload-image').default;
   });
 
   beforeEach(() => {

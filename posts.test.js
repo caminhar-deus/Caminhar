@@ -1,6 +1,6 @@
-import { createMocks } from 'node-mocks-http';
-import handler from '../../../../pages/api/admin/posts';
-import { query } from '../../../../lib/db';
+const { createMocks } = require('node-mocks-http');
+const handler = require('../../../pages/api/admin/posts').default;
+const { query } = require('../../../lib/db');
 
 // Mock do lib/db
 jest.mock('../../../../lib/db', () => ({

@@ -1,6 +1,6 @@
-import { createMocks } from 'node-mocks-http';
-import handler from '../../../../pages/api/admin/verify-migration';
-import { query } from '../../../../lib/db';
+const { createMocks } = require('node-mocks-http');
+const handler = require('../../../pages/api/admin/verify-migration').default;
+const { query } = require('../../../lib/db');
 
 // Mock do banco de dados (PostgreSQL via pg)
 jest.mock('../../../../lib/db', () => ({

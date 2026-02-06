@@ -1,5 +1,5 @@
-import { createMocks } from 'node-mocks-http';
-import handler from '../../../../pages/api/v1/health';
+const { createMocks } = require('node-mocks-http');
+const handler = require('../../../pages/api/v1/health').default;
 
 describe('API Health Check (/api/v1/health)', () => {
   test('Deve retornar 200 OK', async () => {

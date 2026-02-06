@@ -1,8 +1,8 @@
-import { createMocks } from 'node-mocks-http';
-import handler from './pages/api/v1/settings';
-import * as db from './lib/db';
-import * as auth from './lib/auth';
-import { redis } from './lib/redis';
+const { createMocks } = require('node-mocks-http');
+const handler = require('../../../pages/api/v1/settings').default;
+const db = require('../../../lib/db');
+const auth = require('../../../lib/auth');
+const { redis } = require('../../../lib/redis');
 
 // Mock das dependências
 jest.mock('./lib/db', () => ({

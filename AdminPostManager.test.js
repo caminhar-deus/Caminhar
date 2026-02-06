@@ -1,5 +1,5 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import AdminPostManager from '../../components/AdminPostManager';
+const { render, screen, waitFor, fireEvent } = require('@testing-library/react');
+const AdminPostManager = require('../../components/AdminPostManager').default;
 
 // Mock do fetch global para evitar chamadas reais à API durante o teste
 global.fetch = jest.fn(() =>
@@ -15,7 +15,7 @@ describe('AdminPostManager', () => {
   });
 
   it('renderiza corretamente o título, seções e formulário', async () => {
-    render(<AdminPostManager />);
+    render(React.createElement(AdminPostManager));
 
     // Verifica se o título principal está presente
     expect(screen.getByText('Gerenciar Artigos')).toBeInTheDocument();
@@ -49,7 +49,7 @@ describe('AdminPostManager', () => {
       });
     });
 
-    render(<AdminPostManager />);
+    render(React.createElement(AdminPostManager));
 
     // Preenche os campos do formulário
     fireEvent.change(screen.getByLabelText(/Título/i), { target: { value: 'Meu Novo Post' } });

@@ -1,17 +1,19 @@
-import { render, screen } from '@testing-library/react';
-import BlogIndex from '../../../pages/blog/index';
+const { render, screen } = require('@testing-library/react');
+const BlogIndex = require('../../../pages/blog/index').default;
 
 // Mock do next/link para evitar erros de contexto do roteador
 jest.mock('next/link', () => {
+  const React = require('react');
   return ({ children, href }) => {
-    return <a href={href}>{children}</a>;
+    return React.createElement('a', { href }, children);
   };
 });
 
 // Mock do next/head para evitar erros de renderização fora do _document
 jest.mock('next/head', () => {
+  const React = require('react');
   return ({ children }) => {
-    return <>{children}</>;
+    return React.createElement(React.Fragment, null, children);
   };
 });
 
@@ -40,7 +42,7 @@ describe('Página do Blog (BlogIndex)', () => {
       }
     ];
 
-    render(<BlogIndex posts={mockPosts} />);
+    render(React.createElement(BlogIndex, { posts: mockPosts }));
 
     // Verifica cabeçalho principal
     expect(screen.getByRole('heading', { name: /Blog/i })).toBeInTheDocument();
@@ -58,7 +60,7 @@ describe('Página do Blog (BlogIndex)', () => {
   });
 
   it('deve exibir mensagem amigável quando não houver posts', () => {
-    render(<BlogIndex posts={[]} />);
+    render(React.createElement(BlogIndex, { posts: [] }));
 
     expect(screen.getByText('Nenhum post publicado ainda.')).toBeInTheDocument();
   });

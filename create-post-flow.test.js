@@ -1,10 +1,10 @@
-import { createMocks } from 'node-mocks-http';
-import uploadHandler from '../../pages/api/upload-image';
-import postsHandler from '../../pages/api/admin/posts';
-import formidable from 'formidable';
-import fs from 'fs';
-import { open } from 'sqlite';
-import { saveImage } from '../../lib/db';
+const { createMocks } = require('node-mocks-http');
+const uploadHandler = require('../../../pages/api/upload-image').default;
+const postsHandler = require('../../../pages/api/admin/posts').default;
+const formidable = require('formidable');
+const fs = require('fs');
+const { open } = require('sqlite');
+const { saveImage } = require('../../lib/db');
 
 // --- Mocks das Dependências ---
 

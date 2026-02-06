@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals';
+// Remove duplicate jest declaration - Jest globals are already available
 
 // 1. Mock do child_process
 // Definimos a implementação diretamente na fábrica para evitar problemas de hoisting
@@ -32,13 +32,14 @@ let restoreBackup;
 
 describe('Sistema de Backup e Restauração (PostgreSQL)', () => {
   beforeAll(async () => {
-    // Import mocks dynamically to ensure we get the mocked versions
-    const fsModule = await import('fs');
+    // Import mocks dinamicamente para garantir que obtemos as versões mockadas
+    const fsModule = require('fs');
     fs = fsModule.default;
-    const cpModule = await import('child_process');
+    const cpModule = require('child_process');
     exec = cpModule.exec;
 
-    const backupModule = await import('./lib/backup.js');
+    // Importamos o módulo usando require() para evitar problemas com import.meta.url
+    const backupModule = require('./lib/backup.js');
     createBackup = backupModule.createBackup;
     restoreBackup = backupModule.restoreBackup;
   });

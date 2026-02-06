@@ -10,7 +10,7 @@ const ipRateLimit = new Map();
 const RATE_LIMIT_WINDOW = 15 * 60; // 15 minutos em segundos
 const MAX_ATTEMPTS = 5;
 
-export async function middleware(request) {
+export async function proxy(request) {
   // Identifica o IP do cliente
   // request.ip funciona na maioria dos hostings Next.js
   // x-forwarded-for é necessário se estiver atrás de um proxy (Nginx, etc)

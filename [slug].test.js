@@ -1,16 +1,18 @@
-import { render, screen } from '@testing-library/react';
-import BlogPost from '../../../pages/blog/[slug]';
+const { render, screen } = require('@testing-library/react');
+const BlogPost = require('../../../pages/blog/[slug]').default;
 
 // Mocks do Next.js
 jest.mock('next/link', () => {
+  const React = require('react');
   return ({ children, href }) => {
-    return <a href={href}>{children}</a>;
+    return React.createElement('a', { href }, children);
   };
 });
 
 jest.mock('next/head', () => {
+  const React = require('react');
   return ({ children }) => {
-    return <>{children}</>;
+    return React.createElement(React.Fragment, null, children);
   };
 });
 
@@ -27,7 +29,7 @@ describe('Página de Post Individual (BlogPost)', () => {
   };
 
   it('deve renderizar o conteúdo do post corretamente', () => {
-    render(<BlogPost post={mockPost} />);
+    render(React.createElement(BlogPost, { post: mockPost }));
 
     // Verifica Título (h1)
     expect(screen.getByRole('heading', { name: /Post de Teste/i, level: 1 })).toBeInTheDocument();
@@ -49,7 +51,7 @@ describe('Página de Post Individual (BlogPost)', () => {
   });
 
   it('deve renderizar os botões de compartilhamento com as URLs corretas', () => {
-    render(<BlogPost post={mockPost} />);
+    render(React.createElement(BlogPost, { post: mockPost }));
 
     const whatsappLink = screen.getByText('WhatsApp').closest('a');
     const facebookLink = screen.getByText('Facebook').closest('a');
@@ -68,7 +70,7 @@ describe('Página de Post Individual (BlogPost)', () => {
 
   it('não deve renderizar imagem se não houver URL', () => {
     const postWithoutImage = { ...mockPost, image_url: null };
-    render(<BlogPost post={postWithoutImage} />);
+    render(React.createElement(BlogPost, { post: postWithoutImage }));
 
     // Garante que a imagem não está no documento
     const img = screen.queryByRole('img', { name: /Post de Teste/i });
