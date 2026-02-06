@@ -3,8 +3,6 @@ const uploadHandler = require('../../../pages/api/upload-image').default;
 const postsHandler = require('../../../pages/api/admin/posts').default;
 const formidable = require('formidable');
 const fs = require('fs');
-const { open } = require('sqlite');
-const { saveImage } = require('../../lib/db');
 
 // --- Mocks das Dependências ---
 
@@ -21,21 +19,13 @@ jest.mock('fs', () => ({
   existsSync: jest.fn().mockReturnValue(true),
 }));
 
-// Mock do SQLite (Banco de Dados)
-jest.mock('sqlite', () => ({
-  open: jest.fn(),
-}));
-jest.mock('sqlite3', () => ({
-  Database: jest.fn(),
-}));
-
-// Mock do lib/db (usado pelo upload-image para salvar metadados)
-jest.mock('../../lib/db', () => ({
-  saveImage: jest.fn().mockResolvedValue(true),
+// Mock do PostgreSQL (Banco de Dados)
+jest.mock('../../../lib/db', () => ({
+  query: jest.fn(),
 }));
 
 // Mock da Autenticação (Bypass)
-jest.mock('../../lib/auth', () => ({
+jest.mock('../../../lib/auth', () => ({
   withAuth: (fn) => (req, res) => {
     req.user = { userId: 1, username: 'admin' };
     return fn(req, res);
@@ -48,13 +38,9 @@ describe('Integração: Fluxo de Criação de Post com Imagem', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     
-    // Configuração do mock do banco de dados para os posts
-    mockDb = {
-      run: jest.fn(),
-      get: jest.fn(),
-      close: jest.fn(),
-    };
-    open.mockResolvedValue(mockDb);
+    // Configuração do mock do banco de dados PostgreSQL
+    const db = require('../../../lib/db');
+    db.query.mockResolvedValue({ rows: [{ id: 123, title: 'Post de Integração' }] });
   });
 
   test('Deve fazer upload de imagem e criar post com a URL retornada', async () => {
@@ -112,8 +98,8 @@ describe('Integração: Fluxo de Criação de Post com Imagem', () => {
     });
 
     // Mock do retorno do banco após inserção
-    mockDb.run.mockResolvedValue({ lastID: 123 });
-    mockDb.get.mockResolvedValue({ id: 123, ...postData });
+    const db = require('../../../lib/db');
+    db.query.mockResolvedValue({ rows: [{ id: 123, ...postData }] });
 
     await postsHandler(postReq, postRes);
 
@@ -125,13 +111,13 @@ describe('Integração: Fluxo de Criação de Post com Imagem', () => {
     expect(createdPost.image_url).toBe(imageUrl); // Confirma que a URL persistiu
 
     // Verifica se o comando SQL de inserção recebeu a URL correta
-    expect(mockDb.run).toHaveBeenCalledWith(
+    expect(db.query).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO posts'),
       expect.arrayContaining([
         postData.title,
         postData.slug,
         imageUrl, // A URL da imagem deve estar nos parâmetros
-        1 // published true -> 1
+        true // published true
       ])
     );
   });

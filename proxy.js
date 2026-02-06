@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import { redis } from './lib/redis';
+const { NextResponse } = require('next/server');
+const { redis } = require('./lib/redis');
 
 // Armazenamento em memória para o Rate Limiting
 // Nota: Em ambientes serverless (como Vercel), este Map é recriado por instância/lambda.

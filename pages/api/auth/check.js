@@ -1,19 +1,14 @@
-import { getAuthCookie, verifyToken } from '../../../lib/auth';
+import { authenticatedApiMiddleware } from '../../../lib/middleware.js';
 
-export default function handler(req, res) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ message: 'Method not allowed' });
-  }
-
-  const token = getAuthCookie(req);
-  if (!token) {
-    return res.status(401).json({ message: 'Not authenticated' });
-  }
-
-  const user = verifyToken(token);
-  if (!user) {
-    return res.status(401).json({ message: 'Invalid token' });
-  }
-
-  return res.status(200).json({ user });
-}
+export default authenticatedApiMiddleware(async (req, res) => {
+  // The authentication is already handled by authenticatedApiMiddleware
+  // req.user contains the decoded token information
+  
+  return res.status(200).json({ 
+    user: { 
+      id: req.user.userId, 
+      username: req.user.username, 
+      role: req.user.role 
+    } 
+  });
+});

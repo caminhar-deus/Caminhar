@@ -424,6 +424,7 @@ Para instruções detalhadas sobre como publicar o projeto, consulte o guia dedi
 - **Logging Completo**: Registros detalhados de todas as operações
 - **Restaurar Fácil**: Sistema de restauração com backup de segurança
 - **Monitoramento**: Verificação automática e limpeza de backups antigos
+- **Interface Administrativa**: Painel completo para gerenciamento de backups via UI
 
 ### 7. **API RESTful** ✅
 - **Endpoints Organizados**: `/api/v1/` para consumo externo
@@ -437,6 +438,21 @@ Para instruções detalhadas sobre como publicar o projeto, consulte o guia dedi
 - **Compartilhamento**: Botões nativos para WhatsApp, Facebook e cópia de link
 - **Componentização**: Refatoração com `PostCard` para reuso de código
 - **UX**: Navegação intuitiva "Voltar para Home" e "Ver todas as postagens"
+
+### 9. **Sistema de Testes** ✅
+- **Testes Unitários**: Componentes e lógica isolada
+- **Testes de Integração**: Fluxos completos de APIs
+- **Testes de Carga**: k6 para validação de performance
+- **CI/CD**: GitHub Actions para integração contínua
+- **Cobertura**: Testes para upload, backup, autenticação e endpoints
+
+### 10. **Migração para PostgreSQL** ✅
+- **Driver**: Substituição de SQLite por PostgreSQL (`pg` driver)
+- **Connection Pool**: Gerenciamento eficiente de conexões
+- **Sintaxe SQL**: Adaptação para PostgreSQL (placeholders, tipos)
+- **Migração de Dados**: Script para transferência de dados legados
+- **Verificação**: Endpoint e interface para validar integridade pós-migração
+- **Performance**: Eliminação de bloqueios de tabela e melhor concorrência
 
 ## 📊 Métricas de Performance Atuais
 

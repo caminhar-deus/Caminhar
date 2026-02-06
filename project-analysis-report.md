@@ -14,6 +14,8 @@ O projeto é uma aplicação web moderna construída sobre o framework **Next.js
 - **Banco de Dados**: PostgreSQL com connection pooling (`pg` driver).
 - **Cache/Rate Limit**: Redis (via Upstash) ou Memória (fallback).
 - **Autenticação**: JWT (JSON Web Tokens) com cookies HTTP-only.
+- **Sistema de Testes**: Jest, React Testing Library, k6 para carga.
+- **CI/CD**: GitHub Actions para integração contínua.
 
 ## 2. Análise de Migração (SQLite -> PostgreSQL)
 
@@ -70,12 +72,18 @@ O projeto agora conta com uma suíte de testes abrangente:
 - **Testes de Sistema**: Validação completa do fluxo de backup e restauração (`backup.test.js`), incluindo mocks do sistema de arquivos e execução de comandos do sistema (`pg_dump`).
 - **Testes de Carga**: Scripts `k6` otimizados para cenários de escrita concorrente (PostgreSQL).
 - **CI/CD**: Workflow do GitHub Actions configurado para rodar testes a cada push.
+- **Testes de Migração**: Validação da migração SQLite → PostgreSQL.
+- **Testes de Autenticação**: Validação de tokens JWT e cookies HTTP-only.
+- **Testes de Validação**: Uso de `zod` para schemas de entrada.
 
 ## 6. Recomendações Futuras
 
 1. **Monitoramento**: Integrar uma ferramenta de APM (Application Performance Monitoring) como Sentry ou New Relic para produção.
 2. **Backup Off-site**: Configurar o script de backup para enviar os arquivos `.gz` para um bucket S3 ou similar.
 3. **Cache de API**: Implementar cache via Redis para rotas de leitura frequente (`GET /api/v1/settings`, `GET /blog`).
+4. **Testes de Segurança**: Implementar testes de segurança (OWASP) para validar proteções contra ataques comuns.
+5. **Performance**: Considerar implementação de CDN para imagens e recursos estáticos.
+6. **Documentação**: Expandir documentação de API com exemplos de uso e integração.
 
 ## 7. Conclusão
 

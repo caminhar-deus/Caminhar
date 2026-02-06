@@ -1,8 +1,8 @@
-import { IncomingForm } from 'formidable';
-import fs from 'fs';
-import path from 'path';
-import { updateSetting } from '../../lib/db';
-import { withAuth } from '../../lib/auth';
+const { IncomingForm } = require('formidable');
+const fs = require('fs');
+const path = require('path');
+const { updateSetting } = require('../../lib/db');
+const { withAuth } = require('../../lib/auth');
 
 export const config = {
   api: {

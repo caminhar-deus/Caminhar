@@ -9,6 +9,8 @@ Este documento detalha a estratégia de testes, ferramentas utilizadas e procedi
 - **node-mocks-http**: Para simular requisições e respostas HTTP em testes de API.
 - **k6**: Para testes de carga e performance.
 - **GitHub Actions**: Para Integração Contínua (CI).
+- **PostgreSQL**: Banco de dados relacional para testes de integração realistas.
+- **Redis (Upstash)**: Para testes de rate limiting e cache em ambiente real.
 
 ---
 
@@ -25,6 +27,9 @@ Estes testes verificam a lógica de componentes individuais e endpoints da API. 
 - **Sistema de Backup**: Testes de criação, rotação e restauração (`lib/backup.js`).
 - **Middleware**: Rate Limiting (com fallback Redis/Memória) e Whitelist.
 - **APIs**: `/api/admin/posts`, `/api/admin/backups`, `/api/settings`, `/api/v1/status`, e `/api/upload-image` (cobrança de casos de sucesso, falha por falta de arquivo, tipo de arquivo inválido e tamanho excedido).
+- **Migração de Banco de Dados**: Testes para validação da migração SQLite → PostgreSQL.
+- **Autenticação JWT**: Testes de validação de tokens e cookies HTTP-only.
+- **Validação de Dados**: Testes com `zod` para schemas de entrada.
 
 #### Como Executar:
 
@@ -106,6 +111,8 @@ O projeto possui um workflow do GitHub Actions configurado em `.github/workflows
 **O que ele faz:**
 1. Instala dependências (`npm install`).
 2. Executa a suíte de testes completa (`npm test`).
+3. Valida a qualidade do código com linting.
+4. Gera relatórios de cobertura de testes.
 
 ---
 
