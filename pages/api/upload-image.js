@@ -1,8 +1,10 @@
-const { IncomingForm } = require('formidable');
-const fs = require('fs');
-const path = require('path');
-const { updateSetting } = require('../../lib/db');
-const { withAuth } = require('../../lib/auth');
+import formidable from 'formidable';
+import fs from 'fs';
+import path from 'path';
+import { updateSetting } from '../../lib/db.js';
+import { withAuth } from '../../lib/auth.js';
+
+const { IncomingForm } = formidable;
 
 export const config = {
   api: {

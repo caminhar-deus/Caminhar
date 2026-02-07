@@ -1,22 +1,23 @@
-const { createMocks } = require('node-mocks-http');
-const handler = require('../../../pages/api/v1/settings').default;
-const db = require('../../../lib/db');
-const auth = require('../../../lib/auth');
-const { redis } = require('../../../lib/redis');
+import { jest, describe, beforeEach, it, expect } from '@jest/globals';
+import { createMocks } from 'node-mocks-http';
+import handler from './pages/api/v1/settings.js';
+import * as db from './lib/db.js';
+import * as auth from './lib/auth.js';
+import { redis } from './lib/redis.js';
 
 // Mock das dependências
-jest.mock('./lib/db', () => ({
+jest.mock('./lib/db.js', () => ({
   getSetting: jest.fn(),
   setSetting: jest.fn(),
   getAllSettings: jest.fn(),
 }));
-jest.mock('./lib/auth', () => ({
+jest.mock('./lib/auth.js', () => ({
   getAuthToken: jest.fn(),
   verifyToken: jest.fn(),
 }));
 
 // Mock do Redis (simulando comportamento em memória para testes)
-jest.mock('./lib/redis', () => {
+jest.mock('./lib/redis.js', () => {
   const store = new Map();
   return {
     redis: {

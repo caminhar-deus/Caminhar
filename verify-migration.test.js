@@ -1,14 +1,15 @@
-const { createMocks } = require('node-mocks-http');
-const handler = require('../../../pages/api/admin/verify-migration').default;
-const { query } = require('../../../lib/db');
+import { jest, describe, beforeEach, test, expect } from '@jest/globals';
+import { createMocks } from 'node-mocks-http';
+import handler from './pages/api/admin/verify-migration.js';
+import { query } from './lib/db.js';
 
 // Mock do banco de dados (PostgreSQL via pg)
-jest.mock('../../../../lib/db', () => ({
+jest.mock('./lib/db.js', () => ({
   query: jest.fn(),
 }));
 
 // Mock da autenticação
-jest.mock('../../../../lib/auth', () => ({
+jest.mock('./lib/auth.js', () => ({
   withAuth: (fn) => (req, res) => {
     req.user = { username: 'admin' };
     return fn(req, res);

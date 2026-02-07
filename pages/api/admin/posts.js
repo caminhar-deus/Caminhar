@@ -1,5 +1,5 @@
-import { getAllPosts, createPost, updatePost, deletePost } from '../../../lib/db';
-import { withAuth } from '../../../lib/auth';
+import { getAllPosts, createPost, updatePost, deletePost } from '../../../lib/db.js';
+import { withAuth } from '../../../lib/auth.js';
 
 async function handler(req, res) {
   try {

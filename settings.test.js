@@ -1,16 +1,17 @@
-const { createMocks } = require('node-mocks-http');
-const handler = require('../../pages/api/settings').default;
-const { query } = require('../../lib/db');
+import { jest, describe, beforeEach, test, expect } from '@jest/globals';
+import { createMocks } from 'node-mocks-http';
+import handler from './pages/api/settings.js';
+import { query } from './lib/db.js';
 
 // Mock do lib/db
-jest.mock('../../../lib/db', () => ({
+jest.mock('./lib/db.js', () => ({
   query: jest.fn(),
 }));
 
 // Mock da Autenticação para simular proteção de rota
 // Diferente do teste de posts, aqui implementamos uma lógica simples
 // para verificar se o handler realmente exige autenticação.
-jest.mock('../../../lib/auth', () => ({
+jest.mock('./lib/auth.js', () => ({
   withAuth: (fn) => (req, res) => {
     // Simula verificação de token
     if (req.headers.authorization === 'Bearer valid-token') {

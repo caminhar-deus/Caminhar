@@ -1,6 +1,9 @@
-const { createMocks } = require('node-mocks-http');
-const fs = require('fs');
-const { TextEncoder, TextDecoder } = require('util');
+import { jest, describe, beforeAll, beforeEach, test, expect } from '@jest/globals';
+import { createMocks } from 'node-mocks-http';
+import fs from 'fs';
+import { TextEncoder, TextDecoder } from 'util';
+import formidable from 'formidable';
+import handler from './pages/api/upload-image.js';
 
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
@@ -27,14 +30,6 @@ jest.mock('./lib/auth.js', () => ({
 }));
 
 describe('API de Upload de Imagem (/api/upload-image)', () => {
-  let handler;
-  let formidable;
-
-  beforeAll(async () => {
-    formidable = require('formidable');
-    handler = require('../../../pages/api/upload-image').default;
-  });
-
   beforeEach(() => {
     jest.clearAllMocks();
   });

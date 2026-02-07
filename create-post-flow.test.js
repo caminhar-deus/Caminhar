@@ -1,8 +1,10 @@
-const { createMocks } = require('node-mocks-http');
-const uploadHandler = require('../../../pages/api/upload-image').default;
-const postsHandler = require('../../../pages/api/admin/posts').default;
-const formidable = require('formidable');
-const fs = require('fs');
+import { jest, describe, beforeEach, test, expect } from '@jest/globals';
+import { createMocks } from 'node-mocks-http';
+import uploadHandler from './pages/api/upload-image.js';
+import postsHandler from './pages/api/admin/posts.js';
+import formidable from 'formidable';
+import fs from 'fs';
+import * as dbModule from './lib/db.js';
 
 // --- Mocks das Dependências ---
 
@@ -20,12 +22,12 @@ jest.mock('fs', () => ({
 }));
 
 // Mock do PostgreSQL (Banco de Dados)
-jest.mock('../../../lib/db', () => ({
+jest.mock('./lib/db.js', () => ({
   query: jest.fn(),
 }));
 
 // Mock da Autenticação (Bypass)
-jest.mock('../../../lib/auth', () => ({
+jest.mock('./lib/auth.js', () => ({
   withAuth: (fn) => (req, res) => {
     req.user = { userId: 1, username: 'admin' };
     return fn(req, res);
@@ -33,14 +35,11 @@ jest.mock('../../../lib/auth', () => ({
 }));
 
 describe('Integração: Fluxo de Criação de Post com Imagem', () => {
-  let mockDb;
-
   beforeEach(() => {
     jest.clearAllMocks();
     
     // Configuração do mock do banco de dados PostgreSQL
-    const db = require('../../../lib/db');
-    db.query.mockResolvedValue({ rows: [{ id: 123, title: 'Post de Integração' }] });
+    dbModule.query.mockResolvedValue({ rows: [{ id: 123, title: 'Post de Integração' }] });
   });
 
   test('Deve fazer upload de imagem e criar post com a URL retornada', async () => {
@@ -98,8 +97,7 @@ describe('Integração: Fluxo de Criação de Post com Imagem', () => {
     });
 
     // Mock do retorno do banco após inserção
-    const db = require('../../../lib/db');
-    db.query.mockResolvedValue({ rows: [{ id: 123, ...postData }] });
+    dbModule.query.mockResolvedValue({ rows: [{ id: 123, ...postData }] });
 
     await postsHandler(postReq, postRes);
 
@@ -111,7 +109,7 @@ describe('Integração: Fluxo de Criação de Post com Imagem', () => {
     expect(createdPost.image_url).toBe(imageUrl); // Confirma que a URL persistiu
 
     // Verifica se o comando SQL de inserção recebeu a URL correta
-    expect(db.query).toHaveBeenCalledWith(
+    expect(dbModule.query).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO posts'),
       expect.arrayContaining([
         postData.title,

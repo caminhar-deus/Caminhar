@@ -1,5 +1,6 @@
-const { proxy } = require('../proxy');
-const { NextResponse } = require('next/server');
+import { jest, describe, beforeAll, afterAll, beforeEach, it, expect } from '@jest/globals';
+import { proxy as middleware } from './proxy.js';
+import { NextResponse } from 'next/server';
 
 // Mock do NextResponse do Next.js
 jest.mock('next/server', () => ({

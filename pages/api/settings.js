@@ -1,5 +1,5 @@
-import { getSettings, updateSetting } from '../../lib/db';
-import { withAuth } from '../../lib/auth';
+import { getSettings, updateSetting } from '../../lib/db.js';
+import { withAuth } from '../../lib/auth.js';
 
 async function handler(req, res) {
   if (req.method === 'GET') {

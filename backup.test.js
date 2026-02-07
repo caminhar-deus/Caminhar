@@ -1,4 +1,7 @@
-// Remove duplicate jest declaration - Jest globals are already available
+import { jest, describe, it, expect, beforeAll, beforeEach } from '@jest/globals';
+import fs from 'fs';
+import { exec } from 'child_process';
+import { createBackup, restoreBackup } from './lib/backup.js';
 
 // 1. Mock do child_process
 // Definimos a implementação diretamente na fábrica para evitar problemas de hoisting
@@ -25,25 +28,7 @@ jest.mock('fs', () => {
   };
 });
 
-let fs;
-let exec;
-let createBackup;
-let restoreBackup;
-
 describe('Sistema de Backup e Restauração (PostgreSQL)', () => {
-  beforeAll(async () => {
-    // Import mocks dinamicamente para garantir que obtemos as versões mockadas
-    const fsModule = require('fs');
-    fs = fsModule.default;
-    const cpModule = require('child_process');
-    exec = cpModule.exec;
-
-    // Importamos o módulo usando require() para evitar problemas com import.meta.url
-    const backupModule = require('./lib/backup.js');
-    createBackup = backupModule.createBackup;
-    restoreBackup = backupModule.restoreBackup;
-  });
-
   beforeEach(() => {
     // Limpa todos os mocks antes de cada teste
     jest.clearAllMocks();
@@ -55,7 +40,8 @@ describe('Sistema de Backup e Restauração (PostgreSQL)', () => {
     fs.existsSync.mockReturnValue(true);
     fs.readdirSync.mockReturnValue([]);
     fs.readFileSync.mockReturnValue(''); // Evita erro de 'split' of undefined no log
-    exec.mockImplementation((cmd, cb) => cb(null, 'stdout', ''));
+    // exec é um mock function, podemos acessar sua implementação
+    exec.mockImplementation((cmd, cb) => cb(null, 'stdout', '')); 
   });
 
   describe('createBackup', () => {

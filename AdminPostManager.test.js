@@ -1,5 +1,7 @@
-const { render, screen, waitFor, fireEvent } = require('@testing-library/react');
-const AdminPostManager = require('../../components/AdminPostManager').default;
+import { jest, describe, beforeEach, it, expect } from '@jest/globals';
+import React from 'react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import AdminPostManager from './components/AdminPostManager.js';
 
 // Mock do fetch global para evitar chamadas reais à API durante o teste
 global.fetch = jest.fn(() =>

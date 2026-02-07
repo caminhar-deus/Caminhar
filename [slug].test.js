@@ -1,16 +1,18 @@
-const { render, screen } = require('@testing-library/react');
-const BlogPost = require('../../../pages/blog/[slug]').default;
+import { jest, describe, it, expect } from '@jest/globals';
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import BlogPost from './pages/blog/[slug].js';
 
 // Mocks do Next.js
 jest.mock('next/link', () => {
-  const React = require('react');
+  // const React = require('react'); // React is already imported
   return ({ children, href }) => {
     return React.createElement('a', { href }, children);
   };
 });
 
 jest.mock('next/head', () => {
-  const React = require('react');
+  // const React = require('react');
   return ({ children }) => {
     return React.createElement(React.Fragment, null, children);
   };

@@ -5,26 +5,15 @@ export default {
   ],
   // Configure Jest to handle ES modules and JSX with Babel
   transform: {
-    '^.+\\.jsx?$': ['babel-jest', {
-      presets: [
-        ['@babel/preset-env', { targets: { node: 'current' } }],
-        ['@babel/preset-react', { runtime: 'automatic' }]
-      ]
-    }]
+    '^.+\\.(js|jsx|mjs)$': ['babel-jest', { configFile: './babel.jest.config.js' }]
   },
   transformIgnorePatterns: [
     '/node_modules/(?!node-mocks-http/)'
   ],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
-  globalTeardown: '<rootDir>/jest.teardown.cjs',
+  globalTeardown: '<rootDir>/jest.teardown.js',
   moduleNameMapper: {
-    '^(\\.{1,2}/.*)\\.js$': '$1',
     '^@/(.*)$': '<rootDir>/$1'
   },
-  moduleFileExtensions: ['js', 'jsx', 'json', 'node'],
-  globals: {
-    'ts-jest': {
-      useESM: true
-    }
-  }
+  moduleFileExtensions: ['js', 'jsx', 'json', 'node']
 };

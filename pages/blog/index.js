@@ -1,7 +1,7 @@
 import Head from 'next/head';
 import Link from 'next/link';
 import styles from '../../styles/Blog.module.css';
-import PostCard from '../../components/PostCard';
+import PostCard from '../../components/PostCard.js';
 
 export async function getServerSideProps({ query }) {
   try {

@@ -1,9 +1,11 @@
-const { render, screen } = require('@testing-library/react');
-const BlogIndex = require('../../../pages/blog/index').default;
+import { jest, describe, it, expect } from '@jest/globals';
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import BlogIndex from './pages/blog/index.js';
 
 // Mock do next/link para evitar erros de contexto do roteador
 jest.mock('next/link', () => {
-  const React = require('react');
+  // const React = require('react');
   return ({ children, href }) => {
     return React.createElement('a', { href }, children);
   };
@@ -11,7 +13,7 @@ jest.mock('next/link', () => {
 
 // Mock do next/head para evitar erros de renderização fora do _document
 jest.mock('next/head', () => {
-  const React = require('react');
+  // const React = require('react');
   return ({ children }) => {
     return React.createElement(React.Fragment, null, children);
   };

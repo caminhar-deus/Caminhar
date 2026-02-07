@@ -1,6 +1,6 @@
-const { getSetting, setSetting, getAllSettings } = require('../../../lib/db');
-const { getAuthToken, verifyToken } = require('../../../lib/auth');
-const { getOrSetCache, invalidateCache } = require('../../../lib/cache');
+import { getSetting, setSetting, getAllSettings } from '../../../lib/db.js';
+import { getAuthToken, verifyToken } from '../../../lib/auth.js';
+import { getOrSetCache, invalidateCache } from '../../../lib/cache.js';
 
 // Configuração de TTL para Settings (ex: 30 minutos)
 const SETTINGS_CACHE_TTL = 1800;
