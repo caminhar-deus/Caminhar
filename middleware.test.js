@@ -1,3 +1,7 @@
+/**
+ * @jest-environment node
+ */
+
 import { jest, describe, beforeAll, afterAll, beforeEach, it, expect } from '@jest/globals';
 import { proxy as middleware } from './proxy.js';
 import { NextResponse } from 'next/server';

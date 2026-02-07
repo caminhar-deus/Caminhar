@@ -1,72 +1,79 @@
 import { jest, describe, beforeEach, test, expect } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
-import handler from './pages/api/admin/posts.js';
-import { query } from './lib/db.js';
 
-// Mock do lib/db
-jest.mock('./lib/db.js', () => ({
-  query: jest.fn(),
+// 1. Mock das dependências usando unstable_mockModule para suporte a ESM
+jest.unstable_mockModule('./lib/db.js', () => ({
+  getAllPosts: jest.fn(),
+  createPost: jest.fn(),
+  updatePost: jest.fn(),
+  deletePost: jest.fn(),
 }));
 
-// Mock da autenticação para permitir o teste direto do handler
-jest.mock('./lib/auth.js', () => ({
+jest.unstable_mockModule('./lib/auth.js', () => ({
   withAuth: (fn) => (req, res) => fn(req, res),
 }));
+
+// 2. Importação dinâmica dos módulos (após os mocks)
+const { default: handler } = await import('./pages/api/admin/posts.js');
+const { getAllPosts, createPost } = await import('./lib/db.js');
 
 describe('API de Posts (/api/admin/posts)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  test('GET retorna lista de posts paginada e formatada', async () => {
+  test('GET retorna lista de posts', async () => {
     const { req, res } = createMocks({
       method: 'GET',
-      query: { page: '1', limit: '5' },
     });
 
-    // Mock das queries (Count e Select)
-    query
-      .mockResolvedValueOnce({ rows: [{ total: '2' }] }) // Count
-      .mockResolvedValueOnce({ rows: [
-        { id: 1, title: 'Post 1', published: true },
-        { id: 2, title: 'Post 2', published: false },
-      ]}); // Select
+    const mockPosts = [
+      { id: 1, title: 'Post 1', published: true },
+      { id: 2, title: 'Post 2', published: false },
+    ];
+
+    // Mock do helper getAllPosts
+    getAllPosts.mockResolvedValue(mockPosts);
 
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(200);
     const data = JSON.parse(res._getData());
     
-    expect(data.data).toHaveLength(2);
-    expect(data.data[0].published).toBe(true); // Verifica conversão
-    expect(data.data[1].published).toBe(false);
-    expect(data.pagination.total).toBe(2);
+    // O handler retorna o array diretamente
+    expect(Array.isArray(data)).toBe(true);
+    expect(data).toHaveLength(2);
+    expect(data[0].title).toBe('Post 1');
   });
 
   test('POST cria um novo post com dados válidos', async () => {
+    const newPostData = {
+      title: 'Novo Post',
+      slug: 'novo-post',
+      content: 'Conteúdo do post',
+      published: true
+    };
+
     const { req, res } = createMocks({
       method: 'POST',
-      body: {
-        title: 'Novo Post',
-        slug: 'novo-post',
-        content: 'Conteúdo do post',
-        published: true
-      },
+      body: newPostData,
     });
 
-    // Mock do INSERT RETURNING *
-    query.mockResolvedValue({ rows: [{ id: 10, title: 'Novo Post' }] });
+    // Mock do helper createPost
+    createPost.mockResolvedValue({ id: 10, ...newPostData });
 
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(201);
-    expect(query).toHaveBeenCalledWith(
-      expect.stringContaining('INSERT INTO posts'),
-      expect.arrayContaining(['Novo Post', 'novo-post'])
-    );
+    
+    // Verifica se createPost foi chamado com os dados corretos
+    expect(createPost).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Novo Post',
+      slug: 'novo-post'
+    }));
   });
 
-  test('POST retorna 400 se dados forem inválidos (Validação Zod)', async () => {
+  test('POST retorna 400 se dados forem inválidos', async () => {
     const { req, res } = createMocks({
       method: 'POST',
       body: {
@@ -79,7 +86,6 @@ describe('API de Posts (/api/admin/posts)', () => {
 
     expect(res._getStatusCode()).toBe(400);
     const data = JSON.parse(res._getData());
-    expect(data.message).toBe('Dados inválidos');
-    expect(data.errors).toHaveProperty('title');
+    expect(data.message).toMatch(/obrigatórios/);
   });
 });

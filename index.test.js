@@ -5,17 +5,15 @@ import BlogIndex from './pages/blog/index.js';
 
 // Mock do next/link para evitar erros de contexto do roteador
 jest.mock('next/link', () => {
-  // const React = require('react');
-  return ({ children, href }) => {
-    return React.createElement('a', { href }, children);
+  return ({ children }) => {
+    return children;
   };
 });
 
 // Mock do next/head para evitar erros de renderização fora do _document
 jest.mock('next/head', () => {
-  // const React = require('react');
   return ({ children }) => {
-    return React.createElement(React.Fragment, null, children);
+    return children;
   };
 });
 

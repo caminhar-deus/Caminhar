@@ -1,5 +1,6 @@
-const { createMocks } = require('node-mocks-http');
-const handler = require('../../../pages/api/v1/health').default;
+import { describe, test, expect } from '@jest/globals';
+import { createMocks } from 'node-mocks-http';
+import handler from '../../../pages/api/v1/health.js';
 
 describe('API Health Check (/api/v1/health)', () => {
   test('Deve retornar 200 OK', async () => {

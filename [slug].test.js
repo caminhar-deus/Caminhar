@@ -5,16 +5,14 @@ import BlogPost from './pages/blog/[slug].js';
 
 // Mocks do Next.js
 jest.mock('next/link', () => {
-  // const React = require('react'); // React is already imported
-  return ({ children, href }) => {
-    return React.createElement('a', { href }, children);
+  return ({ children }) => {
+    return children;
   };
 });
 
 jest.mock('next/head', () => {
-  // const React = require('react');
   return ({ children }) => {
-    return React.createElement(React.Fragment, null, children);
+    return children;
   };
 });
 

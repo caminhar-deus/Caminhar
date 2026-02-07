@@ -1,5 +1,5 @@
 export default {
-  testEnvironment: 'node',
+  testEnvironment: 'jsdom',
   testMatch: [
     '**/*.test.js'
   ],
@@ -13,7 +13,8 @@ export default {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   globalTeardown: '<rootDir>/jest.teardown.js',
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/$1'
+    '^@/(.*)$': '<rootDir>/$1',
+    '\\.css$': '<rootDir>/__mocks__/styleMock.js'
   },
   moduleFileExtensions: ['js', 'jsx', 'json', 'node']
 };

@@ -1,9 +1,10 @@
-const { createMocks } = require('node-mocks-http');
-const handler = require('../../../pages/api/v1/status').default;
-const { query } = require('../../../lib/db');
+import { jest, describe, beforeEach, test, expect } from '@jest/globals';
+import { createMocks } from 'node-mocks-http';
+import handler from '../../../pages/api/v1/status.js';
+import { query } from '../../../lib/db.js';
 
 // Mock do lib/db
-jest.mock('../../../../lib/db', () => ({
+jest.mock('../../../lib/db.js', () => ({
   query: jest.fn(),
 }));
 

@@ -1,8 +1,8 @@
 # Relatório de Análise Técnica do Projeto
 
-**Data da Análise:** 03/02/2026
+**Data da Análise:** 07/02/2026
 **Projeto:** O Caminhar com Deus
-**Versão:** 1.1.0
+**Versão:** 1.2.0
 
 ## 1. Visão Geral da Arquitetura
 
@@ -29,7 +29,17 @@ A migração foi concluída e consolidada com sucesso, resolvendo definitivament
 - **Verificação**: Implementação de endpoint `/api/admin/verify-migration` e interface visual para garantir integridade dos dados pós-migração.
 - **Backup UI**: Integração completa do sistema de backups ao painel administrativo (`/admin`), permitindo criação e visualização de backups via interface.
 
-## 3. Análise de Segurança
+## 3. Modernização da Stack (ESM + Turbopack)
+
+Em 07/02/2026, foi concluída a migração total do projeto para **ES Modules (ESM)** e a otimização do build com **Turbopack**.
+
+### Mudanças Realizadas:
+- **ES Modules Nativo**: O projeto agora roda com `"type": "module"` no `package.json`. Todos os arquivos `.js` utilizam sintaxe `import`/`export` padrão do ECMAScript, eliminando dependências de CommonJS (`require`).
+- **Jest com Suporte a ESM**: A suíte de testes foi configurada para rodar nativamente em ESM (`NODE_OPTIONS=--experimental-vm-modules`), garantindo compatibilidade com o código da aplicação sem necessidade de transpilação excessiva.
+- **Configuração Isolada do Babel**: Para evitar conflitos com o compilador do Next.js (SWC/Turbopack), a configuração do Babel foi movida para `babel.jest.config.js`, sendo utilizada exclusivamente pelo Jest. Isso permitiu que o comando `next dev --turbo` funcionasse corretamente, aproveitando a performance do Turbopack.
+- **Padronização de Imports**: Todos os imports locais agora utilizam extensões explícitas (`.js`), conforme exigido pela especificação ESM.
+
+## 4. Análise de Segurança
 
 O projeto implementa várias camadas de segurança robustas:
 
@@ -49,7 +59,7 @@ O projeto implementa várias camadas de segurança robustas:
   - Uso da biblioteca `zod` para validação de schemas em rotas de escrita (POST/PUT).
   - Validação rigorosa de uploads de imagem no servidor, cobrindo **MIME type**, **tamanho do arquivo** e tratamento de erros, garantindo que apenas arquivos válidos sejam processados e salvos.
 
-## 4. Análise de Performance
+## 5. Análise de Performance
 
 ### Testes de Carga (k6)
 Os testes realizados indicaram melhorias significativas após a migração para PostgreSQL:
@@ -63,7 +73,7 @@ Os testes realizados indicaram melhorias significativas após a migração para 
 - **Build**: Code splitting automático do Next.js.
 - **Paginação**: Implementada no Blog para reduzir payload inicial e melhorar tempo de carregamento.
 
-## 5. Estratégia de Testes
+## 6. Estratégia de Testes
 
 O projeto agora conta com uma suíte de testes abrangente:
 
@@ -76,7 +86,7 @@ O projeto agora conta com uma suíte de testes abrangente:
 - **Testes de Autenticação**: Validação de tokens JWT e cookies HTTP-only.
 - **Testes de Validação**: Uso de `zod` para schemas de entrada.
 
-## 6. Recomendações Futuras
+## 7. Recomendações Futuras
 
 1. **Monitoramento**: Integrar uma ferramenta de APM (Application Performance Monitoring) como Sentry ou New Relic para produção.
 2. **Backup Off-site**: Configurar o script de backup para enviar os arquivos `.gz` para um bucket S3 ou similar.
@@ -85,6 +95,6 @@ O projeto agora conta com uma suíte de testes abrangente:
 5. **Performance**: Considerar implementação de CDN para imagens e recursos estáticos.
 6. **Documentação**: Expandir documentação de API com exemplos de uso e integração.
 
-## 7. Conclusão
+## 8. Conclusão
 
 O projeto "O Caminhar com Deus" atingiu um nível de maturidade técnica elevado e estabilidade comprovada. A transição para PostgreSQL removeu as limitações de escalabilidade anteriores, e a infraestrutura de testes (Unitários, Integração e Carga) garante a confiabilidade contínua. O sistema está pronto e validado para produção.

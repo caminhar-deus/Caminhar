@@ -4,7 +4,7 @@ Este documento detalha a estratégia de testes, ferramentas utilizadas e procedi
 
 ## 🛠 Ferramentas Utilizadas
 
-- **Jest**: Framework principal para testes unitários e de integração.
+- **Jest**: Framework principal para testes unitários e de integração (Configurado para ES Modules).
 - **React Testing Library**: Para testar componentes React e interações do usuário.
 - **node-mocks-http**: Para simular requisições e respostas HTTP em testes de API.
 - **k6**: Para testes de carga e performance.
@@ -30,6 +30,12 @@ Estes testes verificam a lógica de componentes individuais e endpoints da API. 
 - **Migração de Banco de Dados**: Testes para validação da migração SQLite → PostgreSQL.
 - **Autenticação JWT**: Testes de validação de tokens e cookies HTTP-only.
 - **Validação de Dados**: Testes com `zod` para schemas de entrada.
+
+### Configuração ESM (ES Modules)
+
+O projeto foi migrado para ES Modules. O Jest é executado com a flag `--experimental-vm-modules` (configurada automaticamente no script `npm test`).
+
+**Nota:** O Jest utiliza um arquivo de configuração Babel isolado (`babel.jest.config.js`) para evitar conflitos com o Turbopack do Next.js.
 
 #### Como Executar:
 

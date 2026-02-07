@@ -8,6 +8,9 @@ global.fetch = jest.fn(() =>
   Promise.resolve({
     ok: true,
     json: () => Promise.resolve([]),
+    headers: {
+      get: (name) => name === 'content-type' ? 'application/json' : null
+    }
   })
 );
 
@@ -42,12 +45,18 @@ describe('AdminPostManager', () => {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({ id: 1, title: 'Meu Novo Post' }),
+          headers: {
+            get: (name) => name === 'content-type' ? 'application/json' : null
+          }
         });
       }
       // Default para GET (lista inicial)
       return Promise.resolve({
         ok: true,
         json: () => Promise.resolve([]),
+        headers: {
+          get: (name) => name === 'content-type' ? 'application/json' : null
+        }
       });
     });
 

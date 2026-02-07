@@ -1,16 +1,17 @@
-const { createMocks } = require('node-mocks-http');
-const handler = require('../../../pages/api/admin/cache').default;
-const auth = require('../../../lib/auth');
-const { redis } = require('../../../lib/redis');
+import { jest, describe, beforeEach, it, expect } from '@jest/globals';
+import { createMocks } from 'node-mocks-http';
+import handler from '../../../pages/api/admin/cache.js';
+import * as auth from '../../../lib/auth.js';
+import { redis } from '../../../lib/redis.js';
 
 // Mock das dependências
-jest.mock('../../../lib/auth', () => ({
+jest.mock('../../../lib/auth.js', () => ({
   getAuthToken: jest.fn(),
   verifyToken: jest.fn(),
 }));
 
 // Mock do Redis para verificar se flushdb é chamado
-jest.mock('../../../lib/redis', () => ({
+jest.mock('../../../lib/redis.js', () => ({
   redis: {
     flushdb: jest.fn().mockResolvedValue('OK'),
   }

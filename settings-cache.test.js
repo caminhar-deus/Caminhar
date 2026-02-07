@@ -7,6 +7,7 @@ import { redis } from './lib/redis.js';
 
 // Mock das dependências
 jest.mock('./lib/db.js', () => ({
+  __esModule: true,
   getSetting: jest.fn(),
   setSetting: jest.fn(),
   getAllSettings: jest.fn(),

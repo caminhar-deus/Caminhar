@@ -1,25 +1,21 @@
-import { jest, describe, it, expect, beforeAll, beforeEach } from '@jest/globals';
-import fs from 'fs';
-import { exec } from 'child_process';
-import { createBackup, restoreBackup } from './lib/backup.js';
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
-// 1. Mock do child_process
-// Definimos a implementação diretamente na fábrica para evitar problemas de hoisting
-jest.mock('child_process', () => ({
+// 1. Mock do child_process usando unstable_mockModule para ESM
+jest.unstable_mockModule('child_process', () => ({
   exec: jest.fn((command, callback) => callback(null, 'stdout', ''))
 }));
 
-// 2. Mock do fs - Manual mock para as funções síncronas utilizadas
-jest.mock('fs', () => {
+// 2. Mock do fs usando unstable_mockModule para ESM
+jest.unstable_mockModule('fs', () => {
   const mockFs = {
-    existsSync: jest.fn(),
+    existsSync: jest.fn().mockReturnValue(true),
     mkdirSync: jest.fn(),
     appendFileSync: jest.fn(),
-    readFileSync: jest.fn(),
+    readFileSync: jest.fn().mockReturnValue(''),
     writeFileSync: jest.fn(),
-    readdirSync: jest.fn(),
+    readdirSync: jest.fn().mockReturnValue([]),
     unlinkSync: jest.fn(),
-    statSync: jest.fn(),
+    statSync: jest.fn().mockReturnValue({ size: 100 }),
   };
   return {
     __esModule: true,
@@ -27,6 +23,11 @@ jest.mock('fs', () => {
     ...mockFs,
   };
 });
+
+// Importação dinâmica após a definição dos mocks
+const { exec } = await import('child_process');
+const fs = (await import('fs')).default;
+const { createBackup, restoreBackup } = await import('./lib/backup.js');
 
 describe('Sistema de Backup e Restauração (PostgreSQL)', () => {
   beforeEach(() => {
