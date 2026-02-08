@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import styles from '../styles/ContentTabs.module.css';
 import BlogSection from './BlogSection';
+import MusicGallery from './MusicGallery';
 
 export default function ContentTabs() {
   const [activeTab, setActiveTab] = useState('reflexoes');
@@ -18,8 +19,9 @@ export default function ContentTabs() {
     switch (activeTab) {
       case 'reflexoes':
         return <BlogSection limit={3} />;
-      case 'projeto1':
       case 'musicas':
+        return <MusicGallery />;
+      case 'projeto1':
       case 'videos':
       case 'projeto2':
         return <PlaceholderContent tabId={activeTab} />;

@@ -1,0 +1,72 @@
+/* Music Gallery Styles */
+.galleryContainer {
+  width: 100%;
+  padding: 2rem 0;
+}
+
+.galleryGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+  width: 100%;
+}
+
+/* Tablet landscape */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .galleryGrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+/* Tablet portrait */
+@media (max-width: 768px) and (min-width: 481px) {
+  .galleryGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .galleryContainer {
+    padding: 1.5rem 0;
+  }
+
+  .galleryGrid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+/* Small mobile */
+@media (max-width: 360px) {
+  .galleryContainer {
+    padding: 1rem 0;
+  }
+
+  .galleryGrid {
+    gap: 1.25rem;
+  }
+}
+
+/* Medium mobile */
+@media (min-width: 361px) and (max-width: 480px) {
+  .galleryGrid {
+    gap: 1.5rem;
+  }
+}
+
+/* Large mobile */
+@media (min-width: 481px) and (max-width: 768px) {
+  .galleryGrid {
+    gap: 1.5rem;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1025px) {
+  .galleryGrid {
+    gap: 2rem;
+  }
+}
