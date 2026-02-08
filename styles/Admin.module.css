@@ -78,7 +78,7 @@
 
 /* Admin panel styles */
 .adminPanel {
-  max-width: 800px;
+  max-width: 1000px;
   margin: 0 auto;
   background: white;
   padding: 40px;
@@ -171,6 +171,325 @@
 .tabButton.activeTab {
   color: #007bff;
   border-bottom: 3px solid #007bff;
+}
+
+/* Sub Navigation */
+.subNavigation {
+  margin-bottom: 30px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+}
+
+.subNavigation h3 {
+  margin: 0 0 15px 0;
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.subNavLinks {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.subNavLink {
+  display: block;
+  padding: 12px 16px;
+  background-color: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  color: #2c3e50;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.subNavLink:hover {
+  background-color: #e9ecef;
+  border-color: #007bff;
+  transform: translateX(4px);
+}
+
+/* Table Styles */
+.tableContainer {
+  overflow-x: auto;
+  margin-bottom: 30px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.table th,
+.table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.table tr:hover {
+  background-color: #f8f9fa;
+}
+
+.tableImage {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.videoPreview {
+  background-color: #000;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #e9ecef;
+}
+
+.link {
+  color: #007bff;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.editButton {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.editButton:hover {
+  background-color: #218838;
+}
+
+.deleteButton {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.deleteButton:hover {
+  background-color: #c82333;
+}
+
+.addButton {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.addButton:hover {
+  background-color: #218838;
+}
+
+/* Section Header */
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.sectionHeader h2 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+/* Empty State */
+.emptyState {
+  text-align: center;
+  padding: 30px 20px;
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+}
+
+.emptyState p {
+  color: #6c757d;
+  margin-bottom: 20px;
+  font-size: 1.1rem;
+}
+
+/* Navigation */
+.navigation {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.navLink {
+  color: #007bff;
+  text-decoration: none;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.navLink:hover {
+  text-decoration: underline;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.header h1 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.logoutButton {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.logoutButton:hover {
+  background-color: #c82333;
+}
+
+/* Placeholder Styles */
+.placeholderContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+.placeholderCard {
+  text-align: center;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+  max-width: 400px;
+}
+
+.placeholderIcon {
+  font-size: 3rem;
+  margin-bottom: 15px;
+}
+
+.placeholderCard h3 {
+  margin: 0 0 10px 0;
+  color: #2c3e50;
+}
+
+.placeholderCard p {
+  margin: 0 0 20px 0;
+  color: #6c757d;
+  line-height: 1.6;
+}
+
+.placeholderImage {
+  margin-bottom: 20px;
+}
+
+.imagePlaceholder {
+  width: 200px;
+  height: 120px;
+  background-color: #e9ecef;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 15px auto;
+  color: #6c757d;
+  font-size: 14px;
+  border: 1px dashed #adb5bd;
+}
+
+.placeholderActions {
+  display: flex;
+  justify-content: center;
+}
+
+.placeholderButton {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Info Box */
+.infoBox {
+  background-color: #e9ecef;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #dee2e6;
+}
+
+.infoBox h3 {
+  margin: 0 0 15px 0;
+  color: #2c3e50;
+}
+
+.infoBox ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.infoBox li {
+  margin-bottom: 8px;
+  color: #495057;
 }
 
 /* Responsive design */

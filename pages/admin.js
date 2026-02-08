@@ -250,6 +250,24 @@ export default function Admin() {
             >
               Segurança
             </button>
+            <button
+              className={`${styles.tabButton} ${activeTab === 'musicas' ? styles.activeTab : ''}`}
+              onClick={() => setActiveTab('musicas')}
+            >
+              🎵 Gestão de Músicas
+            </button>
+            <button
+              className={`${styles.tabButton} ${activeTab === 'videos' ? styles.activeTab : ''}`}
+              onClick={() => setActiveTab('videos')}
+            >
+              🎬 Gestão de Vídeos
+            </button>
+            <button
+              className={`${styles.tabButton} ${activeTab === 'projetos' ? styles.activeTab : ''}`}
+              onClick={() => setActiveTab('projetos')}
+            >
+              🏗️ Projetos Futuros
+            </button>
           </div>
 
           {activeTab === 'header' && (
@@ -330,6 +348,281 @@ export default function Admin() {
               <AdminBackupManager />
               <AdminCacheManager />
             </>
+          )}
+
+          {activeTab === 'musicas' && (
+            <div className={styles.content}>
+              <div className={styles.sectionHeader}>
+                <h2>Gestão de Músicas</h2>
+                <button className={styles.addButton}>
+                  + Nova Música
+                </button>
+              </div>
+
+              <div className={styles.tableContainer}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Título</th>
+                      <th>Artista</th>
+                      <th>Imagem</th>
+                      <th>Spotify URL</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>1</td>
+                      <td>Espírito Santo</td>
+                      <td>Gabriel Guedes de Almeida</td>
+                      <td>
+                        <img 
+                          src="https://i.scdn.co/image/ab67616d0000b273145506915870515754553533" 
+                          alt="Espírito Santo"
+                          className={styles.tableImage}
+                        />
+                      </td>
+                      <td>
+                        <a 
+                          href="https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className={styles.link}
+                        >
+                          Ver no Spotify
+                        </a>
+                      </td>
+                      <td>
+                        <div className={styles.actionButtons}>
+                          <button className={styles.editButton}>Editar</button>
+                          <button className={styles.deleteButton}>Excluir</button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>2</td>
+                      <td>Aos Olhos do Pai</td>
+                      <td>Gabriel Guedes de Almeida</td>
+                      <td>
+                        <img 
+                          src="https://i.scdn.co/image/ab67616d0000b273145506915870515754553533" 
+                          alt="Aos Olhos do Pai"
+                          className={styles.tableImage}
+                        />
+                      </td>
+                      <td>
+                        <a 
+                          href="https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className={styles.link}
+                        >
+                          Ver no Spotify
+                        </a>
+                      </td>
+                      <td>
+                        <div className={styles.actionButtons}>
+                          <button className={styles.editButton}>Editar</button>
+                          <button className={styles.deleteButton}>Excluir</button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>3</td>
+                      <td>Teu Espírito</td>
+                      <td>Gabriel Guedes de Almeida</td>
+                      <td>
+                        <img 
+                          src="https://i.scdn.co/image/ab67616d0000b273145506915870515754553533" 
+                          alt="Teu Espírito"
+                          className={styles.tableImage}
+                        />
+                      </td>
+                      <td>
+                        <a 
+                          href="https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className={styles.link}
+                        >
+                          Ver no Spotify
+                        </a>
+                      </td>
+                      <td>
+                        <div className={styles.actionButtons}>
+                          <button className={styles.editButton}>Editar</button>
+                          <button className={styles.deleteButton}>Excluir</button>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'videos' && (
+            <div className={styles.content}>
+              <div className={styles.sectionHeader}>
+                <h2>Gestão de Vídeos</h2>
+                <button className={styles.addButton}>
+                  + Novo Vídeo
+                </button>
+              </div>
+
+              <div className={styles.tableContainer}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Título</th>
+                      <th>YouTube URL</th>
+                      <th>Preview</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>1</td>
+                      <td>Espírito Santo - Mensagem Poderosa</td>
+                      <td>
+                        <a 
+                          href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className={styles.link}
+                        >
+                          Ver no YouTube
+                        </a>
+                      </td>
+                      <td>
+                        <div className={styles.videoPreview}>
+                          <iframe
+                            src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=0"
+                            width="120"
+                            height="67.5"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            title="Preview Espírito Santo - Mensagem Poderosa"
+                          ></iframe>
+                        </div>
+                      </td>
+                      <td>
+                        <div className={styles.actionButtons}>
+                          <button className={styles.editButton}>Editar</button>
+                          <button className={styles.deleteButton}>Excluir</button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>2</td>
+                      <td>Aos Olhos do Pai - Louvor e Adoração</td>
+                      <td>
+                        <a 
+                          href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className={styles.link}
+                        >
+                          Ver no YouTube
+                        </a>
+                      </td>
+                      <td>
+                        <div className={styles.videoPreview}>
+                          <iframe
+                            src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=0"
+                            width="120"
+                            height="67.5"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            title="Preview Aos Olhos do Pai - Louvor e Adoração"
+                          ></iframe>
+                        </div>
+                      </td>
+                      <td>
+                        <div className={styles.actionButtons}>
+                          <button className={styles.editButton}>Editar</button>
+                          <button className={styles.deleteButton}>Excluir</button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>3</td>
+                      <td>Teu Espírito - Ministério de Louvor</td>
+                      <td>
+                        <a 
+                          href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className={styles.link}
+                        >
+                          Ver no YouTube
+                        </a>
+                      </td>
+                      <td>
+                        <div className={styles.videoPreview}>
+                          <iframe
+                            src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=0"
+                            width="120"
+                            height="67.5"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            title="Preview Teu Espírito - Ministério de Louvor"
+                          ></iframe>
+                        </div>
+                      </td>
+                      <td>
+                        <div className={styles.actionButtons}>
+                          <button className={styles.editButton}>Editar</button>
+                          <button className={styles.deleteButton}>Excluir</button>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'projetos' && (
+            <div className={styles.content}>
+              <div className={styles.sectionHeader}>
+                <h2>Projetos Futuros</h2>
+              </div>
+
+              <div className={styles.placeholderContainer}>
+                <div className={styles.placeholderCard}>
+                  <div className={styles.placeholderIcon}>🏗️</div>
+                  <h3>Em Desenvolvimento</h3>
+                  <p>Esta área está em desenvolvimento e será implementada em breve.</p>
+                  <div className={styles.placeholderImage}>
+                    <div className={styles.imagePlaceholder}>
+                      <span>Conteúdo será implementado</span>
+                    </div>
+                  </div>
+                  <div className={styles.placeholderActions}>
+                    <button className={styles.placeholderButton} disabled>
+                      Em Breve
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.infoBox}>
+                <h3>Próximos Projetos</h3>
+                <ul>
+                  <li>Área de Downloads</li>
+                  <li>Eventos e Agenda</li>
+                  <li>Testemunhos</li>
+                  <li>Ministérios</li>
+                  <li>Loja Virtual</li>
+                </ul>
+              </div>
+            </div>
           )}
         </div>
       </main>
