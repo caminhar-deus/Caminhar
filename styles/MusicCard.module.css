@@ -52,11 +52,13 @@
   overflow: hidden;
   background: #f8f9fa;
   border: 1px solid #e9ecef;
+  min-height: 80px;
 }
 
 .spotifyEmbed {
   border: none;
   border-radius: 8px;
+  min-height: 80px;
 }
 
 .titulo {
