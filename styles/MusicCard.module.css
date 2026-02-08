@@ -46,6 +46,19 @@
   flex-grow: 1;
 }
 
+.spotifyContainer {
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+}
+
+.spotifyEmbed {
+  border: none;
+  border-radius: 8px;
+}
+
 .titulo {
   font-size: 1.1rem;
   font-weight: 600;
