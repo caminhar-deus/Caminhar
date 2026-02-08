@@ -1,0 +1,188 @@
+/* Content Tabs Styles */
+.tabsSection {
+  padding: 2rem 0;
+  background-color: #f8f9fa;
+  width: 100%;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.tabsContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 2rem;
+  position: relative;
+  overflow-x: auto;
+  padding-bottom: 10px;
+}
+
+/* Hide scrollbar for webkit browsers */
+.tabsContainer::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE and Edge */
+.tabsContainer {
+  -ms-overflow-style: none;
+}
+
+.tabButton {
+  background: none;
+  border: none;
+  padding: 12px 24px;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  position: relative;
+  margin: 0 5px;
+  border-radius: 6px;
+}
+
+.tabButton:hover {
+  color: #333;
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.tabButton:disabled {
+  cursor: not-allowed;
+  color: #ccc;
+  background-color: transparent;
+}
+
+.tabButton:disabled:hover {
+  color: #ccc;
+  background-color: transparent;
+}
+
+.tabButton.active {
+  color: #2c3e50;
+  font-weight: 600;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.tabButton.active::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 3px;
+  background-color: #2c3e50;
+  border-radius: 2px;
+}
+
+.contentContainer {
+  min-height: 400px;
+}
+
+/* Placeholder Styles */
+.placeholderContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+}
+
+.placeholderCard {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  max-width: 600px;
+  width: 100%;
+}
+
+.placeholderTitle {
+  font-size: 1.5rem;
+  color: #2c3e50;
+  margin-bottom: 1rem;
+}
+
+.placeholderText {
+  color: #666;
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+.placeholderImage {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 2px dashed #dee2e6;
+}
+
+.imagePlaceholder {
+  color: #999;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .tabsContainer {
+    padding: 0 10px;
+  }
+
+  .tabButton {
+    padding: 10px 16px;
+    font-size: 1rem;
+    margin: 0 3px;
+  }
+
+  .placeholderCard {
+    padding: 1.5rem;
+  }
+
+  .placeholderTitle {
+    font-size: 1.25rem;
+  }
+
+  .placeholderText {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .tabsSection {
+    padding: 1.5rem 0;
+  }
+
+  .tabButton {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+
+  .placeholderCard {
+    padding: 1rem;
+  }
+
+  .placeholderTitle {
+    font-size: 1.1rem;
+  }
+
+  .placeholderText {
+    font-size: 0.9rem;
+  }
+}
+
+/* Tablet landscape */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .tabButton {
+    padding: 12px 20px;
+    font-size: 1.05rem;
+  }
+}
