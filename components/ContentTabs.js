@@ -3,6 +3,7 @@ import Link from 'next/link';
 import styles from '../styles/ContentTabs.module.css';
 import BlogSection from './BlogSection';
 import MusicGallery from './MusicGallery';
+import VideoGallery from './VideoGallery';
 
 export default function ContentTabs() {
   const [activeTab, setActiveTab] = useState('reflexoes');
@@ -21,8 +22,9 @@ export default function ContentTabs() {
         return <BlogSection limit={3} />;
       case 'musicas':
         return <MusicGallery />;
-      case 'projeto1':
       case 'videos':
+        return <VideoGallery />;
+      case 'projeto1':
       case 'projeto2':
         return <PlaceholderContent tabId={activeTab} />;
       default:
