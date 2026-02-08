@@ -1,8 +1,6 @@
 import { jest, describe, beforeEach, it, expect } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../../../pages/api/admin/cache.js';
-import * as auth from '../../../lib/auth.js';
-import { redis } from '../../../lib/redis.js';
 
 // Mock das dependências
 jest.mock('../../../lib/auth.js', () => ({
@@ -16,6 +14,10 @@ jest.mock('../../../lib/redis.js', () => ({
     flushdb: jest.fn().mockResolvedValue('OK'),
   }
 }));
+
+// Import the mocked modules
+const auth = jest.requireMock('../../../lib/auth.js');
+const redis = jest.requireMock('../../../lib/redis.js').redis;
 
 describe('Endpoint de Limpeza de Cache (/api/admin/cache)', () => {
   beforeEach(() => {

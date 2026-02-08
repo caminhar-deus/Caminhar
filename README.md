@@ -14,6 +14,10 @@ Um site cristão moderno e dinâmico para compartilhar reflexões e ensinamentos
 - **Blog Completo**: Paginação, compartilhamento em redes sociais (WhatsApp, Facebook) e navegação otimizada
 - **Segurança Avançada**: Rate limiting, proteção contra força bruta e gerenciamento de backups via UI
 - **API RESTful**: Endpoints organizados em `/api/v1/` para consumo externo
+- **ContentTabs**: Sistema de navegação com 5 abas (Reflexões & Estudos, Em Desenvolvimento)
+- **ES Modules**: Projeto totalmente migrado para ES modules para compatibilidade moderna
+- **Testes Unitários**: Infraestrutura de testes modernizada com Jest e React Testing Library
+- **Cache de Imagens**: Sistema de cache otimizado para melhor performance
 
 ## Tecnologias Utilizadas
 

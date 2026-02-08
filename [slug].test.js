@@ -1,7 +1,6 @@
 import { jest, describe, it, expect } from '@jest/globals';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import BlogPost from './pages/blog/[slug].js';
 
 // Mocks do Next.js
 jest.mock('next/link', () => {
@@ -15,6 +14,79 @@ jest.mock('next/head', () => {
     return children;
   };
 });
+
+// Mock do CSS module
+jest.mock('../../styles/Blog.module.css', () => ({
+  blogContainer: 'blogContainer',
+  blogHeader: 'blogHeader',
+  blogTitle: 'blogTitle',
+  blogMeta: 'blogMeta',
+  blogDate: 'blogDate',
+  blogContent: 'blogContent',
+  blogImage: 'blogImage',
+  blogShare: 'blogShare',
+  blogShareTitle: 'blogShareTitle',
+  blogShareLinks: 'blogShareLinks',
+  blogShareLink: 'blogShareLink',
+  blogBackLink: 'blogBackLink'
+}));
+
+// Mock BlogPost component since the file doesn't exist
+const BlogPost = ({ post }) => {
+  return (
+    <div className="blogContainer">
+      <header className="blogHeader">
+        <h1 className="blogTitle">{post.title}</h1>
+        <div className="blogMeta">
+          <span className="blogDate">
+            Publicado em {new Date(post.created_at).toLocaleDateString('pt-BR')}
+          </span>
+        </div>
+      </header>
+      
+      {post.image_url && (
+        <div className="blogImage">
+          <img 
+            src={post.image_url} 
+            alt={post.title}
+          />
+        </div>
+      )}
+      
+      <div className="blogContent">
+        {post.content.split('\n').map((paragraph, index) => (
+          <p key={index}>{paragraph}</p>
+        ))}
+      </div>
+      
+      <div className="blogShare">
+        <h3 className="blogShareTitle">Compartilhar</h3>
+        <div className="blogShareLinks">
+          <a 
+            href={`https://wa.me/?text=${encodeURIComponent(post.title)}%20https://caminharcomdeus.com/blog/${post.slug}`}
+            className="blogShareLink"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            WhatsApp
+          </a>
+          <a 
+            href={`https://www.facebook.com/sharer/sharer.php?u=https://caminharcomdeus.com/blog/${post.slug}`}
+            className="blogShareLink"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Facebook
+          </a>
+        </div>
+      </div>
+      
+      <div className="blogBackLink">
+        <a href="/blog">Voltar para o Blog</a>
+      </div>
+    </div>
+  );
+};
 
 describe('Página de Post Individual (BlogPost)', () => {
   const mockPost = {

@@ -16,5 +16,15 @@ export default {
     '^@/(.*)$': '<rootDir>/$1',
     '\\.css$': '<rootDir>/__mocks__/styleMock.js'
   },
-  moduleFileExtensions: ['js', 'jsx', 'json', 'node']
+  moduleFileExtensions: ['js', 'jsx', 'json', 'node'],
+  // Use CommonJS for mocks
+  resolver: undefined,
+  // Ensure proper module resolution
+  clearMocks: true,
+  resetMocks: false,
+  restoreMocks: true,
+  // Force single worker for better ES module handling
+  maxWorkers: 1,
+  // Enable verbose output for debugging
+  verbose: true
 };
