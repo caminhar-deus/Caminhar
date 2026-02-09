@@ -30,7 +30,9 @@ Estes testes verificam a lógica de componentes individuais e endpoints da API. 
 - **Migração de Banco de Dados**: Testes para validação da migração SQLite → PostgreSQL.
 - **Autenticação JWT**: Testes de validação de tokens e cookies HTTP-only.
 - **Validação de Dados**: Testes com `zod` para schemas de entrada.
-- **ContentTabs**: Sistema de navegação com 5 abas (Reflexões & Estudos, Em Desenvolvimento).
+- **ContentTabs**: Sistema de navegação com 5 abas (Reflexões & Estudos, Músicas, Vídeos, Em Desenvolvimento).
+- **Spotify Integration**: Testes para integração completa com Spotify.
+- **Music Management**: Testes para sistema completo de gestão de músicas.
 - **ES Modules**: Testes de compatibilidade e funcionalidade de módulos ES.
 - **Cache de Imagens**: Sistema de cache otimizado para melhor performance.
 

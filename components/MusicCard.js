@@ -24,27 +24,21 @@ export default function MusicCard({ musica }) {
 
   return (
     <div className={styles.musicCard}>
-      <div className={styles.imageContainer}>
-        <img 
-          src={musica.url_imagem} 
-          alt={`${musica.titulo} - ${musica.artista}`}
-          className={styles.albumArt}
-          loading="lazy"
-        />
-      </div>
-      
       <div className={styles.content}>
         <h3 className={styles.titulo}>{musica.titulo}</h3>
         <p className={styles.artista}>{musica.artista}</p>
         
         <div className={styles.spotifyContainer}>
           <iframe
-            src={getSpotifyEmbedUrl(musica.url_spotify)}
+            data-testid="embed-iframe"
+            style={{ borderRadius: '12px' }}
+            src={`${getSpotifyEmbedUrl(musica.url_spotify)}?utm_source=generator&theme=0`}
             width="100%"
-            height="80"
+            height="352"
             frameBorder="0"
-            allowtransparency="true"
-            allow="encrypted-media"
+            allowfullscreen=""
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            loading="lazy"
             title={`Player do Spotify para ${musica.titulo}`}
             className={styles.spotifyEmbed}
           ></iframe>

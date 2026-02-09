@@ -1,90 +1,49 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import MusicCard from './MusicCard';
 import styles from '../styles/MusicGallery.module.css';
 
-// Dados temporários (Mock) para testar a interface
-const musicasMock = [
-  {
-    id: 1,
-    titulo: 'Espírito Santo',
-    artista: 'Gabriel Guedes de Almeida',
-    url_imagem: 'https://i.scdn.co/image/ab67616d0000b273145506915870515754553533',
-    url_spotify: 'https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b'
-  },
-  {
-    id: 2,
-    titulo: 'Aos Olhos do Pai',
-    artista: 'Gabriel Guedes de Almeida',
-    url_imagem: 'https://i.scdn.co/image/ab67616d0000b273145506915870515754553533',
-    url_spotify: 'https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b'
-  },
-  {
-    id: 3,
-    titulo: 'Teu Espírito',
-    artista: 'Gabriel Guedes de Almeida',
-    url_imagem: 'https://i.scdn.co/image/ab67616d0000b273145506915870515754553533',
-    url_spotify: 'https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b'
-  },
-  {
-    id: 4,
-    titulo: 'Santo Espírito',
-    artista: 'Gabriel Guedes de Almeida',
-    url_imagem: 'https://i.scdn.co/image/ab67616d0000b273145506915870515754553533',
-    url_spotify: 'https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b'
-  },
-  {
-    id: 5,
-    titulo: 'Espírito Santo (Ao Vivo)',
-    artista: 'Gabriel Guedes de Almeida',
-    url_imagem: 'https://i.scdn.co/image/ab67616d0000b273145506915870515754553533',
-    url_spotify: 'https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b'
-  },
-  {
-    id: 6,
-    titulo: 'Espírito Santo (Acústico)',
-    artista: 'Gabriel Guedes de Almeida',
-    url_imagem: 'https://i.scdn.co/image/ab67616d0000b273145506915870515754553533',
-    url_spotify: 'https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b'
-  },
-  {
-    id: 7,
-    titulo: 'Grande É o Senhor',
-    artista: 'Aline Barros',
-    url_imagem: 'https://i.scdn.co/image/ab67616d0000b273145506915870515754553533',
-    url_spotify: 'https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b'
-  },
-  {
-    id: 8,
-    titulo: 'Deus de Promessas',
-    artista: 'Diante do Trono',
-    url_imagem: 'https://i.scdn.co/image/ab67616d0000b273145506915870515754553533',
-    url_spotify: 'https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b'
-  },
-  {
-    id: 9,
-    titulo: 'Ressuscita-me',
-    artista: 'Ana Paula Valadão',
-    url_imagem: 'https://i.scdn.co/image/ab67616d0000b273145506915870515754553533',
-    url_spotify: 'https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b'
-  }
-];
-
 export default function MusicGallery() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [musicas, setMusicas] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  // Carrega as músicas do banco de dados
+  useEffect(() => {
+    const loadMusicas = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/admin/musicas');
+        if (response.ok) {
+          const data = await response.json();
+          setMusicas(data);
+        } else {
+          throw new Error('Erro ao carregar músicas');
+        }
+      } catch (error) {
+        console.error('Error loading musicas:', error);
+        setError('Erro ao carregar músicas');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadMusicas();
+  }, []);
 
   // Filtra as músicas com base no termo de busca
   const filteredMusicas = useMemo(() => {
     if (!searchTerm.trim()) {
-      return musicasMock;
+      return musicas;
     }
 
     const term = searchTerm.toLowerCase().trim();
     
-    return musicasMock.filter(musica => 
+    return musicas.filter(musica => 
       musica.titulo.toLowerCase().includes(term) ||
       musica.artista.toLowerCase().includes(term)
     );
-  }, [searchTerm]);
+  }, [searchTerm, musicas]);
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
@@ -124,7 +83,7 @@ export default function MusicGallery() {
             </span>
           ) : (
             <span className={styles.totalCount}>
-              {musicasMock.length} músicas disponíveis
+              {musicas.length} músicas disponíveis
             </span>
           )}
         </div>
@@ -136,6 +95,20 @@ export default function MusicGallery() {
           filteredMusicas.map((musica) => (
             <MusicCard key={musica.id} musica={musica} />
           ))
+        ) : loading ? (
+          <div className={styles.loading}>
+            <div className={styles.loadingIcon}>🎵</div>
+            <p>Carregando músicas...</p>
+          </div>
+        ) : error ? (
+          <div className={styles.error}>
+            <div className={styles.errorIcon}>⚠️</div>
+            <h3>Erro ao carregar músicas</h3>
+            <p>{error}</p>
+            <button onClick={() => window.location.reload()} className={styles.retryButton}>
+              Tentar novamente
+            </button>
+          </div>
         ) : (
           <div className={styles.noResults}>
             <div className={styles.noResultsIcon}>🎵</div>

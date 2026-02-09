@@ -44,9 +44,9 @@ Em 07/02/2026, foi concluída a migração total do projeto para **ES Modules (E
 Implementado sistema de cache para rotas de leitura frequente, seguindo o padrão **Cache-Aside**.
 
 ### Estratégia de Cache:
-- **Rotas Cacheadas**: `GET /api/v1/settings` (TTL: 30 minutos) e `GET /api/v1/posts` (TTL: 1 hora)
-- **Estrutura de Chaves**: Namespaces organizados (`settings:v1:all`, `posts:public:all`)
-- **Invalidação**: Cache é invalidado automaticamente ao atualizar configurações ou posts
+- **Rotas Cacheadas**: `GET /api/v1/settings` (TTL: 30 minutos), `GET /api/v1/posts` (TTL: 1 hora), `GET /api/admin/musicas` (TTL: 15 minutos)
+- **Estrutura de Chaves**: Namespaces organizados (`settings:v1:all`, `posts:public:all`, `musicas:admin:all`)
+- **Invalidação**: Cache é invalidado automaticamente ao atualizar configurações, posts ou músicas
 - **Fallback**: Sistema continua operando normalmente caso o Redis falhe
 
 ### Benefícios:
@@ -65,7 +65,9 @@ Implementado novo sistema de navegação com 5 abas para organização do conte�
 
 ### Estrutura do ContentTabs:
 - **Reflexões & Estudos**: Exibe o feed de posts do blog (BlogSection)
-- **Em Desenvolvimento**: 4 abas desativadas (Estudos Bíblicos, Cursos, Eventos, Comunidade)
+- **Músicas**: Exibe o MusicGallery com integração Spotify completa
+- **Vídeos**: Exibe o VideoGallery (placeholder)
+- **Em Desenvolvimento**: 2 abas desativadas (Projetos Futuros 01, Projetos Futuros 02)
 - **Design Responsivo**: Layout adaptativo para mobile e desktop
 - **Estilização Moderna**: CSS Modules com hover effects e transições suaves
 
@@ -80,11 +82,13 @@ Implementado novo sistema de navegação com 5 abas para organização do conte�
 O projeto agora conta com uma suíte de testes abrangente e modernizada:
 
 ### Testes Unitários:
-- **Componentes**: ContentTabs, PostCard, AdminBackupManager
+- **Componentes**: ContentTabs, PostCard, AdminBackupManager, MusicCard, MusicGallery
 - **Sistema de Backup**: Testes completos para criação, rotação e restauração de backups
 - **APIs**: Testes para todas as endpoints RESTful em `/api/v1/`
 - **Autenticação**: Testes JWT com cookies HTTP-only
 - **Cache**: Testes para sistema de cache de imagens
+- **Spotify Integration**: Testes para integração completa com Spotify
+- **Music Management**: Testes para sistema completo de gestão de músicas
 
 ### Testes de Integração:
 - **PostgreSQL**: Mocks atualizados para refletir a nova estrutura de banco de dados
