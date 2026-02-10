@@ -257,6 +257,8 @@
   border-radius: 6px;
   overflow: hidden;
   border: 1px solid #e9ecef;
+  max-width: 100%;
+  width: fit-content;
 }
 
 .link {

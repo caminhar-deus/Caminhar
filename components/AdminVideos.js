@@ -12,7 +12,8 @@ export default function AdminVideos() {
   // Form state
   const [formData, setFormData] = useState({
     titulo: '',
-    url_youtube: ''
+    url_youtube: '',
+    descricao: ''
   });
 
   // Load videos on component mount
@@ -59,6 +60,16 @@ export default function AdminVideos() {
       const method = isEditing ? 'PUT' : 'POST';
       const url = isEditing ? '/api/admin/videos' : '/api/admin/videos';
       
+      console.log('Enviando dados para API:', {
+        method,
+        url,
+        formData,
+        body: JSON.stringify({
+          ...formData,
+          id: isEditing ? editingId : undefined
+        })
+      });
+      
       const response = await fetch(url, {
         method,
         headers: {
@@ -74,7 +85,7 @@ export default function AdminVideos() {
       if (response.ok) {
         const data = await response.json();
         setSuccess(isEditing ? 'Vídeo atualizado com sucesso!' : 'Vídeo criado com sucesso!');
-        setFormData({ titulo: '', url_youtube: '' });
+        setFormData({ titulo: '', url_youtube: '', descricao: '' });
         setIsEditing(false);
         setEditingId(null);
         loadVideos();
@@ -93,7 +104,8 @@ export default function AdminVideos() {
   const handleEdit = (video) => {
     setFormData({
       titulo: video.titulo,
-      url_youtube: video.url_youtube
+      url_youtube: video.url_youtube,
+      descricao: video.descricao || ''
     });
     setIsEditing(true);
     setEditingId(video.id);
@@ -134,7 +146,7 @@ export default function AdminVideos() {
   };
 
   const handleCancel = () => {
-    setFormData({ titulo: '', url_youtube: '' });
+    setFormData({ titulo: '', url_youtube: '', descricao: '' });
     setIsEditing(false);
     setEditingId(null);
   };
@@ -164,7 +176,7 @@ export default function AdminVideos() {
           </button>
           <button 
             onClick={() => {
-              setFormData({ titulo: '', url_youtube: '' });
+              setFormData({ titulo: '', url_youtube: '', descricao: '' });
               setIsEditing(false);
               setEditingId(null);
             }} 
@@ -195,6 +207,20 @@ export default function AdminVideos() {
           
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
+              <label>Descrição</label>
+              <textarea
+                name="descricao"
+                value={formData.descricao}
+                onChange={handleInputChange}
+                className={styles.input}
+                rows="3"
+                style={{ resize: 'vertical', minHeight: '80px', fontFamily: 'inherit' }}
+              />
+            </div>
+          </div>
+          
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}>
               <label>URL do YouTube</label>
               <input
                 type="url"
@@ -206,7 +232,7 @@ export default function AdminVideos() {
                 placeholder="https://www.youtube.com/watch?v=..."
               />
               <small className={styles.formHint}>
-                O sistema tratará automaticamente para gerar o link de embed
+                Formatos aceitos: youtube.com/watch?v=ID, youtu.be/ID, youtube.com/embed/ID, youtube.com/shorts/ID
               </small>
             </div>
           </div>
@@ -218,8 +244,8 @@ export default function AdminVideos() {
               <div className={styles.videoPreview}>
                 <iframe
                   src={getYouTubePreviewUrl(formData.url_youtube)}
-                  width="240"
-                  height="135"
+                  width="320"
+                  height="180"
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen

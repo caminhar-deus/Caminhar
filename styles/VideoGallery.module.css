@@ -206,6 +206,62 @@
   box-shadow: 0 6px 12px rgba(255, 0, 0, 0.4);
 }
 
+/* Loading and Error States */
+.loading {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px 20px;
+  color: #6c757d;
+}
+
+.loadingSpinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e9ecef;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading p {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.error {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px 20px;
+  color: #721c24;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 12px;
+}
+
+.errorIcon {
+  font-size: 3rem;
+  margin-bottom: 15px;
+  display: block;
+}
+
+.error h3 {
+  margin: 0 0 10px 0;
+  color: #721c24;
+  font-size: 1.5rem;
+}
+
+.error p {
+  margin: 0;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
 /* Responsive Search */
 @media (max-width: 768px) {
   .searchContainer {

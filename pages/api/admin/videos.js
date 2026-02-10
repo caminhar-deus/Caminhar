@@ -29,21 +29,28 @@ export default async function handler(req, res) {
 
     case 'POST':
       try {
-        const { titulo, url_youtube } = req.body;
+        const { titulo, url_youtube, descricao } = req.body;
 
         if (!titulo || !url_youtube) {
           return res.status(400).json({ message: 'Título e URL do YouTube são obrigatórios' });
         }
 
+        // Debug: Log the URL being received
+        console.log('URL recebida para validação:', url_youtube);
+        
         // Validate YouTube URL format
-        const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+        const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+        console.log('Regex test result:', youtubeRegex.test(url_youtube));
+        
         if (!youtubeRegex.test(url_youtube)) {
+          console.log('URL falhou na validação');
           return res.status(400).json({ message: 'URL do YouTube inválida' });
         }
 
         const novoVideo = await createVideo({
           titulo,
-          url_youtube
+          url_youtube,
+          descricao
         });
 
         res.status(201).json(novoVideo);
@@ -55,7 +62,7 @@ export default async function handler(req, res) {
 
     case 'PUT':
       try {
-        const { id, titulo, url_youtube } = req.body;
+        const { id, titulo, url_youtube, descricao } = req.body;
 
         if (!id) {
           return res.status(400).json({ message: 'ID é obrigatório' });
@@ -66,14 +73,15 @@ export default async function handler(req, res) {
         }
 
         // Validate YouTube URL format
-        const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+        const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
         if (!youtubeRegex.test(url_youtube)) {
           return res.status(400).json({ message: 'URL do YouTube inválida' });
         }
 
         const videoAtualizado = await updateVideo(id, {
           titulo,
-          url_youtube
+          url_youtube,
+          descricao
         });
 
         if (!videoAtualizado) {
