@@ -1,25 +1,12 @@
 import { getAllMusicas, createMusica, updateMusica, deleteMusica } from '../../../lib/musicas.js';
+import { withAuth } from '../../../lib/auth.js';
 
-export default async function handler(req, res) {
-  // Check authentication
-  const origin = req.headers.origin || req.headers.host || 'http://localhost:3000';
-  const baseUrl = origin.startsWith('http') ? origin : `http://${origin}`;
-  
-  const authResponse = await fetch(`${baseUrl}/api/auth/check`, {
-    method: 'GET',
-    headers: {
-      'Cookie': req.headers.cookie || ''
-    }
-  });
-
-  if (!authResponse.ok) {
-    return res.status(401).json({ message: 'Não autorizado' });
-  }
-
+async function handler(req, res) {
   switch (req.method) {
     case 'GET':
       try {
-        const musicas = await getAllMusicas();
+        const { search } = req.query;
+        const musicas = await getAllMusicas(search);
         res.status(200).json(musicas);
       } catch (error) {
         console.error('Error fetching musicas:', error);
@@ -29,17 +16,23 @@ export default async function handler(req, res) {
 
     case 'POST':
       try {
-        const { titulo, artista, url_imagem, url_spotify } = req.body;
+        const { titulo, artista, url_imagem, url_spotify, publicado } = req.body;
 
         if (!titulo || !artista || !url_spotify) {
           return res.status(400).json({ message: 'Título, artista e URL do Spotify são obrigatórios' });
+        }
+
+        // Validação básica de URL do Spotify
+        if (!url_spotify.includes('spotify.com') && !url_spotify.includes('spotify:')) {
+          return res.status(400).json({ message: 'URL do Spotify inválida' });
         }
 
         const novaMusica = await createMusica({
           titulo,
           artista,
           url_imagem,
-          url_spotify
+          url_spotify,
+          publicado: publicado !== undefined ? publicado : false // Default false se não enviado
         });
 
         res.status(201).json(novaMusica);
@@ -51,7 +44,7 @@ export default async function handler(req, res) {
 
     case 'PUT':
       try {
-        const { id, titulo, artista, url_imagem, url_spotify } = req.body;
+        const { id, titulo, artista, url_imagem, url_spotify, publicado } = req.body;
 
         if (!id) {
           return res.status(400).json({ message: 'ID é obrigatório' });
@@ -61,11 +54,17 @@ export default async function handler(req, res) {
           return res.status(400).json({ message: 'Título, artista e URL do Spotify são obrigatórios' });
         }
 
+        // Validação básica de URL do Spotify
+        if (!url_spotify.includes('spotify.com') && !url_spotify.includes('spotify:')) {
+          return res.status(400).json({ message: 'URL do Spotify inválida' });
+        }
+
         const musicaAtualizada = await updateMusica(id, {
           titulo,
           artista,
           url_imagem,
-          url_spotify
+          url_spotify,
+          publicado
         });
 
         if (!musicaAtualizada) {
@@ -105,3 +104,5 @@ export default async function handler(req, res) {
       res.status(405).end(`Método ${req.method} não permitido`);
   }
 }
+
+export default withAuth(handler);

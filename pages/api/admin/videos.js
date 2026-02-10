@@ -1,28 +1,15 @@
 import { getPaginatedVideos, createVideo, updateVideo, deleteVideo } from '../../../lib/videos.js';
+import { withAuth } from '../../../lib/auth.js';
 
-export default async function handler(req, res) {
-  // Check authentication
-  const origin = req.headers.origin || req.headers.host || 'http://localhost:3000';
-  const baseUrl = origin.startsWith('http') ? origin : `http://${origin}`;
-  
-  const authResponse = await fetch(`${baseUrl}/api/auth/check`, {
-    method: 'GET',
-    headers: {
-      'Cookie': req.headers.cookie || ''
-    }
-  });
-
-  if (!authResponse.ok) {
-    return res.status(401).json({ message: 'Não autorizado' });
-  }
-
+async function handler(req, res) {
   switch (req.method) {
     case 'GET':
       try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
+        const search = req.query.search || '';
         
-        const result = await getPaginatedVideos(page, limit);
+        const result = await getPaginatedVideos(page, limit, search);
         res.status(200).json(result);
       } catch (error) {
         console.error('Error fetching videos:', error);
@@ -134,3 +121,5 @@ export default async function handler(req, res) {
       res.status(405).end(`Método ${req.method} não permitido`);
   }
 }
+
+export default withAuth(handler);

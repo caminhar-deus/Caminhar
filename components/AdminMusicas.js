@@ -14,7 +14,8 @@ export default function AdminMusicas() {
     titulo: '',
     artista: '',
     url_imagem: '',
-    url_spotify: ''
+    url_spotify: '',
+    publicado: false
   });
 
   // Load musicas on component mount
@@ -44,10 +45,10 @@ export default function AdminMusicas() {
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
@@ -76,7 +77,7 @@ export default function AdminMusicas() {
       if (response.ok) {
         const data = await response.json();
         setSuccess(isEditing ? 'Música atualizada com sucesso!' : 'Música criada com sucesso!');
-        setFormData({ titulo: '', artista: '', url_imagem: '', url_spotify: '' });
+        setFormData({ titulo: '', artista: '', url_imagem: '', url_spotify: '', publicado: false });
         setIsEditing(false);
         setEditingId(null);
         loadMusicas();
@@ -97,7 +98,8 @@ export default function AdminMusicas() {
       titulo: musica.titulo,
       artista: musica.artista,
       url_imagem: musica.url_imagem || '',
-      url_spotify: musica.url_spotify
+      url_spotify: musica.url_spotify,
+      publicado: musica.publicado
     });
     setIsEditing(true);
     setEditingId(musica.id);
@@ -138,7 +140,7 @@ export default function AdminMusicas() {
   };
 
   const handleCancel = () => {
-    setFormData({ titulo: '', artista: '', url_imagem: '', url_spotify: '' });
+    setFormData({ titulo: '', artista: '', url_imagem: '', url_spotify: '', publicado: false });
     setIsEditing(false);
     setEditingId(null);
   };
@@ -157,7 +159,7 @@ export default function AdminMusicas() {
           </button>
           <button 
             onClick={() => {
-              setFormData({ titulo: '', artista: '', url_imagem: '', url_spotify: '' });
+              setFormData({ titulo: '', artista: '', url_imagem: '', url_spotify: '', publicado: false });
               setIsEditing(false);
               setEditingId(null);
             }} 
@@ -210,6 +212,24 @@ export default function AdminMusicas() {
             />
           </div>
 
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  name="publicado"
+                  checked={formData.publicado}
+                  onChange={handleInputChange}
+                  style={{ width: 'auto', margin: 0 }}
+                />
+                Publicar música imediatamente
+              </label>
+              <small className={styles.formHint}>
+                Se desmarcado, a música será salva como rascunho.
+              </small>
+            </div>
+          </div>
+
           <div className={styles.formActions}>
             <button 
               type="submit" 
@@ -244,6 +264,7 @@ export default function AdminMusicas() {
               <th>Título</th>
               <th>Artista</th>
               <th>Spotify URL</th>
+              <th>Status</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -278,6 +299,18 @@ export default function AdminMusicas() {
                     </div>
                   </td>
                   <td>
+                    <span style={{
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      fontSize: '0.85rem',
+                      backgroundColor: musica.publicado ? '#d4edda' : '#fff3cd',
+                      color: musica.publicado ? '#155724' : '#856404',
+                      border: `1px solid ${musica.publicado ? '#c3e6cb' : '#ffeeba'}`
+                    }}>
+                      {musica.publicado ? 'Publicado' : 'Rascunho'}
+                    </span>
+                  </td>
+                  <td>
                     <div className={styles.actionButtons}>
                       <button 
                         className={styles.editButton}
@@ -297,7 +330,7 @@ export default function AdminMusicas() {
               ))
             ) : (
               <tr>
-                <td colSpan="5" className={styles.emptyStateRow}>
+                <td colSpan="6" className={styles.emptyStateRow}>
                   Nenhuma música cadastrada ainda.
                 </td>
               </tr>

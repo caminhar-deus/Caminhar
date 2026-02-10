@@ -3,13 +3,10 @@ import { createMocks } from 'node-mocks-http';
 import handler from '../pages/api/admin/videos';
 import { createVideo, updateVideo } from '../lib/videos';
 
-// Mock do fetch global para simular autenticação bem-sucedida
-global.fetch = jest.fn(() =>
-  Promise.resolve({
-    ok: true,
-    json: () => Promise.resolve({ authenticated: true }),
-  })
-);
+// Mock do módulo de autenticação para ignorar a verificação de token neste teste
+jest.mock('../lib/auth', () => ({
+  withAuth: (handler) => (req, res) => handler(req, res),
+}));
 
 // Mock das funções do lib/videos para não acessar o banco de dados
 jest.mock('../lib/videos', () => ({

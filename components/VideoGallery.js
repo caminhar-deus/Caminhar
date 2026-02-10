@@ -1,124 +1,103 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import VideoCard from './VideoCard';
 import styles from '../styles/VideoGallery.module.css';
 
 export default function VideoGallery() {
+  const [searchTerm, setSearchTerm] = useState('');
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
 
-  // Carrega os vídeos do banco de dados
-  useEffect(() => {
-    const loadVideos = async () => {
+  // Função para carregar vídeos da API
+  const loadVideos = async (term = '') => {
+    try {
       setLoading(true);
-      try {
-        const response = await fetch('/api/videos');
-        if (response.ok) {
-          const data = await response.json();
-          setVideos(data);
-        } else {
-          throw new Error('Erro ao carregar vídeos');
-        }
-      } catch (error) {
-        console.error('Error loading videos:', error);
-        setError('Erro ao carregar vídeos');
-      } finally {
-        setLoading(false);
+      setError('');
+      
+      // Constrói a URL com o parâmetro de busca se existir
+      const url = term 
+        ? `/api/videos?search=${encodeURIComponent(term)}` 
+        : '/api/videos';
+        
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        setVideos(data);
+      } else {
+        throw new Error('Erro ao carregar vídeos');
       }
-    };
+    } catch (error) {
+      console.error('Error loading videos:', error);
+      setError('Erro ao carregar vídeos. Por favor, tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  // Carrega vídeos iniciais na montagem do componente
+  useEffect(() => {
     loadVideos();
   }, []);
 
-  // Filtra os vídeos com base no termo de busca
-  const filteredVideos = useMemo(() => {
-    if (!searchTerm.trim()) {
-      return videos;
-    }
-
-    const term = searchTerm.toLowerCase().trim();
-    
-    return videos.filter(video => 
-      video.titulo.toLowerCase().includes(term)
-    );
-  }, [searchTerm, videos]);
-
-  const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value);
+  const handleSearch = (e) => {
+    e.preventDefault();
+    loadVideos(searchTerm);
   };
 
   const clearSearch = () => {
     setSearchTerm('');
+    loadVideos('');
   };
 
   return (
     <div className={styles.galleryContainer}>
-      {/* Campo de busca */}
       <div className={styles.searchContainer}>
-        <div className={styles.searchWrapper}>
+        <form onSubmit={handleSearch} className={styles.searchWrapper}>
           <input
             type="text"
-            placeholder="Pesquisar por vídeo..."
+            placeholder="Pesquisar por título..."
             value={searchTerm}
-            onChange={handleSearchChange}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className={styles.searchInput}
-            aria-label="Campo de busca de vídeos"
           />
           {searchTerm && (
-            <button
-              onClick={clearSearch}
-              className={styles.clearButton}
-              aria-label="Limpar busca"
-            >
+            <button type="button" onClick={clearSearch} className={styles.clearButton} aria-label="Limpar busca">
               ✕
             </button>
           )}
-        </div>
-        <div className={styles.searchInfo}>
-          {searchTerm ? (
-            <span className={styles.resultCount}>
-              {filteredVideos.length} resultado{filteredVideos.length !== 1 ? 's' : ''}
-            </span>
-          ) : (
-            <span className={styles.totalCount}>
-              {videos.length} vídeos disponíveis
-            </span>
-          )}
-        </div>
+          <button type="submit" className={styles.searchButton}>
+            Buscar
+          </button>
+        </form>
       </div>
 
-      {/* Resultados da busca */}
       <div className={styles.galleryGrid}>
         {loading ? (
           <div className={styles.loading}>
-            <div className={styles.loadingSpinner}></div>
+            <div className={styles.loadingIcon}>🎬</div>
             <p>Carregando vídeos...</p>
           </div>
         ) : error ? (
           <div className={styles.error}>
-            <div className={styles.errorIcon}>⚠️</div>
-            <h3>Erro ao carregar vídeos</h3>
             <p>{error}</p>
+            <button onClick={() => loadVideos(searchTerm)} className={styles.retryButton}>
+              Tentar novamente
+            </button>
           </div>
-        ) : videos.length === 0 ? (
-          <div className={styles.noResults}>
-            <div className={styles.noResultsIcon}>🎬</div>
-            <h3>Nenhum vídeo cadastrado</h3>
-            <p>Ainda não há vídeos cadastrados. Cadastre o primeiro vídeo no painel administrativo.</p>
-          </div>
-        ) : filteredVideos.length > 0 ? (
-          filteredVideos.map((video) => (
+        ) : videos.length > 0 ? (
+          videos.map((video) => (
             <VideoCard key={video.id} video={video} />
           ))
         ) : (
           <div className={styles.noResults}>
             <div className={styles.noResultsIcon}>🎬</div>
             <h3>Nenhum vídeo encontrado</h3>
-            <p>Tente buscar por outro título de vídeo.</p>
-            <button onClick={clearSearch} className={styles.clearSearchButton}>
-              Limpar busca
-            </button>
+            <p>Tente buscar por outro termo.</p>
+            {searchTerm && (
+              <button onClick={clearSearch} className={styles.retryButton}>
+                Limpar busca
+              </button>
+            )}
           </div>
         )}
       </div>
