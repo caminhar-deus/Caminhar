@@ -46,6 +46,7 @@ export default function VideoCard({ video }) {
             allowFullScreen
             title={`Player do YouTube para ${video.titulo}`}
             className={styles.youtubeEmbed}
+            loading="lazy"
           ></iframe>
         ) : (
           <div className={styles.noVideoPlaceholder}>

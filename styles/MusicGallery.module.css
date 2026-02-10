@@ -96,6 +96,7 @@
   background-color: #fff;
   transition: all 0.3s ease;
   outline: none;
+  touch-action: manipulation;
 }
 
 .searchInput::placeholder {
@@ -125,12 +126,17 @@
   justify-content: center;
   width: 2rem;
   height: 2rem;
+  touch-action: manipulation;
 }
 
 .clearButton:hover {
   background-color: #f8f9fa;
   color: #2c3e50;
   transform: scale(1.1);
+}
+
+.clearButton:active {
+  transform: scale(0.95);
 }
 
 .searchInfo {

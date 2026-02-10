@@ -38,32 +38,20 @@ export default function AdminMusicas() {
     checkAuth();
   }, [router]);
 
-  // Load mock musicas data
-  const loadMusicas = () => {
-    const mockMusicas = [
-      {
-        id: 1,
-        titulo: 'Espírito Santo',
-        artista: 'Gabriel Guedes de Almeida',
-        url_imagem: 'https://i.scdn.co/image/ab67616d0000b273145506915870515754553533',
-        url_spotify: 'https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b'
-      },
-      {
-        id: 2,
-        titulo: 'Aos Olhos do Pai',
-        artista: 'Gabriel Guedes de Almeida',
-        url_imagem: 'https://i.scdn.co/image/ab67616d0000b273145506915870515754553533',
-        url_spotify: 'https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b'
-      },
-      {
-        id: 3,
-        titulo: 'Teu Espírito',
-        artista: 'Gabriel Guedes de Almeida',
-        url_imagem: 'https://i.scdn.co/image/ab67616d0000b273145506915870515754553533',
-        url_spotify: 'https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b'
+  // Load musicas data from API
+  const loadMusicas = async () => {
+    try {
+      const response = await fetch('/api/musicas');
+      if (response.ok) {
+        const data = await response.json();
+        setMusicas(data);
+      } else {
+        throw new Error('Erro ao carregar músicas');
       }
-    ];
-    setMusicas(mockMusicas);
+    } catch (error) {
+      console.error('Error loading musicas:', error);
+      setError('Erro ao carregar músicas');
+    }
   };
 
   const handleLogin = async (e) => {

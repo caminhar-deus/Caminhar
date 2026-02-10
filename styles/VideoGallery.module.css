@@ -27,6 +27,7 @@
   border-radius: 8px;
   font-size: 1rem;
   transition: all 0.2s ease;
+  touch-action: manipulation;
 }
 
 .searchInput:focus {
@@ -47,6 +48,15 @@
   font-size: 1.2rem;
   padding: 0.25rem;
   line-height: 1;
+  touch-action: manipulation;
+}
+
+.clearButton:hover {
+  color: #3498db;
+}
+
+.clearButton:active {
+  transform: translateY(-50%) scale(0.95);
 }
 
 .searchButton {
@@ -58,10 +68,15 @@
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s;
+  touch-action: manipulation;
 }
 
 .searchButton:hover {
   background-color: #2980b9;
+}
+
+.searchButton:active {
+  transform: scale(0.98);
 }
 
 .galleryGrid {

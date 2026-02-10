@@ -38,26 +38,20 @@ export default function AdminVideos() {
     checkAuth();
   }, [router]);
 
-  // Load mock videos data
-  const loadVideos = () => {
-    const mockVideos = [
-      {
-        id: 1,
-        titulo: 'Espírito Santo - Mensagem Poderosa',
-        url_youtube_embed: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
-      },
-      {
-        id: 2,
-        titulo: 'Aos Olhos do Pai - Louvor e Adoração',
-        url_youtube_embed: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
-      },
-      {
-        id: 3,
-        titulo: 'Teu Espírito - Ministério de Louvor',
-        url_youtube_embed: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+  // Load videos data from API
+  const loadVideos = async () => {
+    try {
+      const response = await fetch('/api/videos');
+      if (response.ok) {
+        const data = await response.json();
+        setVideos(data);
+      } else {
+        throw new Error('Erro ao carregar vídeos');
       }
-    ];
-    setVideos(mockVideos);
+    } catch (error) {
+      console.error('Error loading videos:', error);
+      setError('Erro ao carregar vídeos');
+    }
   };
 
   const handleLogin = async (e) => {

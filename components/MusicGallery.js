@@ -13,6 +13,7 @@ export default function MusicGallery() {
     const loadMusicas = async () => {
       try {
         setLoading(true);
+        setError('');
         const response = await fetch('/api/musicas');
         if (response.ok) {
           const data = await response.json();
