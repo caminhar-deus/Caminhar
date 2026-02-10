@@ -1,3 +1,6 @@
+/**
+ * @jest-environment jsdom
+ */
 import { jest, describe, beforeEach, it, expect } from '@jest/globals';
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
