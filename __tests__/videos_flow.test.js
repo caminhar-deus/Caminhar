@@ -64,19 +64,25 @@ describe('Integração: Fluxo Completo de Vídeos (API + DB)', () => {
     });
 
     // Mock do retorno do SELECT no banco (retorna o vídeo criado)
-    query.mockResolvedValueOnce({
-      rows: [{ id: 1, ...newVideo, created_at: new Date().toISOString() }]
-    });
+    // Precisamos mockar duas chamadas: uma para os vídeos e outra para a contagem total (paginação)
+    query
+      .mockResolvedValueOnce({
+        rows: [{ id: 1, ...newVideo, created_at: new Date().toISOString() }]
+      })
+      .mockResolvedValueOnce({
+        rows: [{ count: '1' }]
+      });
 
     await handler(listReq, listRes);
 
     // Verificações da Listagem
     expect(listRes._getStatusCode()).toBe(200);
     const listData = JSON.parse(listRes._getData());
-    expect(Array.isArray(listData)).toBe(true);
-    expect(listData[0].titulo).toBe(newVideo.titulo);
+    expect(Array.isArray(listData.videos)).toBe(true);
+    expect(listData.videos[0].titulo).toBe(newVideo.titulo);
     expect(query).toHaveBeenCalledWith(
-      expect.stringContaining('SELECT * FROM videos')
+      expect.stringContaining('SELECT * FROM videos'),
+      expect.anything()
     );
 
     // =================================================================

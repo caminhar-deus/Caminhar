@@ -69,6 +69,30 @@
   text-overflow: ellipsis;
 }
 
+.expanded {
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  overflow: visible;
+}
+
+.readMoreBtn {
+  background: transparent;
+  border: none;
+  color: #6c757d;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0;
+  margin-top: 0.25rem;
+  transition: color 0.2s;
+}
+
+.readMoreBtn:hover {
+  color: #2c3e50;
+  text-decoration: underline;
+}
+
 .youtubeButton {
   background: #ff0000;
   color: white;

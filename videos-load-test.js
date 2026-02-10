@@ -35,22 +35,37 @@ export function setup() {
 }
 
 export default function (token) {
-  // Realiza a requisição GET para listar os vídeos
-  const res = http.get(`${BASE_URL}/api/admin/videos`, {
+  const params = {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-    tags: { name: 'ListVideos' },
+  };
+
+  // 1. Requisita a primeira página (padrão)
+  const res = http.get(`${BASE_URL}/api/admin/videos`, {
+    ...params,
+    tags: { name: 'ListVideos_Page1' },
   });
 
-  // Validações
   check(res, {
     'status é 200': (r) => r.status === 200,
-    'retornou lista (array)': (r) => Array.isArray(r.json()),
-    'tempo de resposta < 300ms': (r) => r.timings.duration < 300,
+    'retornou objeto com videos': (r) => Array.isArray(r.json().videos),
+    'retornou metadados de paginação': (r) => r.json().pagination !== undefined,
+    'página 1 tempo < 300ms': (r) => r.timings.duration < 300,
   });
 
-  // Pausa aleatória entre 1s e 2s para simular comportamento humano
+  // 2. Requisita a segunda página com limite específico
+  const resPage2 = http.get(`${BASE_URL}/api/admin/videos?page=2&limit=5`, {
+    ...params,
+    tags: { name: 'ListVideos_Page2' },
+  });
+
+  check(resPage2, {
+    'página 2 status é 200': (r) => r.status === 200,
+    'está na página 2': (r) => r.json().pagination.page === 2,
+    'limite é 5': (r) => r.json().pagination.limit === 5,
+  });
+
   sleep(Math.random() * 1 + 1);
 }

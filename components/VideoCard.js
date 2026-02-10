@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import styles from '../styles/VideoCard.module.css';
 
 export default function VideoCard({ video }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   const handleYoutubeClick = (e) => {
     e.preventDefault();
     // Abre o link do YouTube em uma nova aba
@@ -54,7 +57,21 @@ export default function VideoCard({ video }) {
       
       <div className={styles.content}>
         <h3 className={styles.titulo}>{video.titulo}</h3>
-        {video.descricao && <p className={styles.descricao}>{video.descricao}</p>}
+        {video.descricao && (
+          <div>
+            <p className={`${styles.descricao} ${isExpanded ? styles.expanded : ''}`}>
+              {video.descricao}
+            </p>
+            {video.descricao.length > 120 && (
+              <button 
+                className={styles.readMoreBtn}
+                onClick={() => setIsExpanded(!isExpanded)}
+              >
+                {isExpanded ? 'Ler menos' : 'Ler mais'}
+              </button>
+            )}
+          </div>
+        )}
         
         {video.url_youtube && (
           <button 

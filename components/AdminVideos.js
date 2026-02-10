@@ -8,29 +8,34 @@ export default function AdminVideos() {
   const [success, setSuccess] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   
   // Form state
   const [formData, setFormData] = useState({
     titulo: '',
     url_youtube: '',
-    descricao: ''
+    descricao: '',
+    publicado: false
   });
 
   // Load videos on component mount
   useEffect(() => {
-    loadVideos();
+    loadVideos(1);
   }, []);
 
-  const loadVideos = async () => {
+  const loadVideos = async (page = 1) => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/videos', {
+      const response = await fetch(`/api/admin/videos?page=${page}&limit=10`, {
         credentials: 'include'
       });
 
       if (response.ok) {
         const data = await response.json();
-        setVideos(data);
+        setVideos(data.videos);
+        setTotalPages(data.pagination.totalPages);
+        setCurrentPage(data.pagination.page);
       } else {
         throw new Error('Erro ao carregar vídeos');
       }
@@ -43,10 +48,10 @@ export default function AdminVideos() {
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
@@ -85,10 +90,10 @@ export default function AdminVideos() {
       if (response.ok) {
         const data = await response.json();
         setSuccess(isEditing ? 'Vídeo atualizado com sucesso!' : 'Vídeo criado com sucesso!');
-        setFormData({ titulo: '', url_youtube: '', descricao: '' });
+        setFormData({ titulo: '', url_youtube: '', descricao: '', publicado: false });
         setIsEditing(false);
         setEditingId(null);
-        loadVideos();
+        loadVideos(isEditing ? currentPage : 1);
       } else {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Erro ao salvar vídeo');
@@ -105,7 +110,8 @@ export default function AdminVideos() {
     setFormData({
       titulo: video.titulo,
       url_youtube: video.url_youtube,
-      descricao: video.descricao || ''
+      descricao: video.descricao || '',
+      publicado: video.publicado
     });
     setIsEditing(true);
     setEditingId(video.id);
@@ -132,7 +138,7 @@ export default function AdminVideos() {
 
       if (response.ok) {
         setSuccess('Vídeo excluído com sucesso!');
-        loadVideos();
+        loadVideos(currentPage);
       } else {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Erro ao excluir vídeo');
@@ -146,7 +152,7 @@ export default function AdminVideos() {
   };
 
   const handleCancel = () => {
-    setFormData({ titulo: '', url_youtube: '', descricao: '' });
+    setFormData({ titulo: '', url_youtube: '', descricao: '', publicado: false });
     setIsEditing(false);
     setEditingId(null);
   };
@@ -176,7 +182,7 @@ export default function AdminVideos() {
           </button>
           <button 
             onClick={() => {
-              setFormData({ titulo: '', url_youtube: '', descricao: '' });
+              setFormData({ titulo: '', url_youtube: '', descricao: '', publicado: false });
               setIsEditing(false);
               setEditingId(null);
             }} 
@@ -214,8 +220,12 @@ export default function AdminVideos() {
                 onChange={handleInputChange}
                 className={styles.input}
                 rows="3"
+                maxLength={500}
                 style={{ resize: 'vertical', minHeight: '80px', fontFamily: 'inherit' }}
               />
+              <small className={styles.formHint} style={{ display: 'block', textAlign: 'right' }}>
+                {formData.descricao.length}/500 caracteres
+              </small>
             </div>
           </div>
           
@@ -233,6 +243,24 @@ export default function AdminVideos() {
               />
               <small className={styles.formHint}>
                 Formatos aceitos: youtube.com/watch?v=ID, youtu.be/ID, youtube.com/embed/ID, youtube.com/shorts/ID
+              </small>
+            </div>
+          </div>
+
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  name="publicado"
+                  checked={formData.publicado}
+                  onChange={handleInputChange}
+                  style={{ width: 'auto', margin: 0 }}
+                />
+                Publicar vídeo imediatamente
+              </label>
+              <small className={styles.formHint}>
+                Se desmarcado, o vídeo será salvo como rascunho.
               </small>
             </div>
           </div>
@@ -289,6 +317,7 @@ export default function AdminVideos() {
               <th>Título</th>
               <th>YouTube URL</th>
               <th>Preview</th>
+              <th>Status</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -326,6 +355,18 @@ export default function AdminVideos() {
                     )}
                   </td>
                   <td>
+                    <span style={{
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      fontSize: '0.85rem',
+                      backgroundColor: video.publicado ? '#d4edda' : '#fff3cd',
+                      color: video.publicado ? '#155724' : '#856404',
+                      border: `1px solid ${video.publicado ? '#c3e6cb' : '#ffeeba'}`
+                    }}>
+                      {video.publicado ? 'Publicado' : 'Rascunho'}
+                    </span>
+                  </td>
+                  <td>
                     <div className={styles.actionButtons}>
                       <button 
                         className={styles.editButton}
@@ -353,6 +394,31 @@ export default function AdminVideos() {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '1.5rem' }}>
+          <button
+            onClick={() => loadVideos(currentPage - 1)}
+            disabled={currentPage === 1 || loading}
+            className={styles.cancelButton}
+            style={{ opacity: currentPage === 1 ? 0.5 : 1, cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
+          >
+            Anterior
+          </button>
+          <span style={{ fontSize: '0.9rem', color: '#666' }}>
+            Página {currentPage} de {totalPages}
+          </span>
+          <button
+            onClick={() => loadVideos(currentPage + 1)}
+            disabled={currentPage === totalPages || loading}
+            className={styles.cancelButton}
+            style={{ opacity: currentPage === totalPages ? 0.5 : 1, cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' }}
+          >
+            Próxima
+          </button>
+        </div>
+      )}
     </div>
   );
 }

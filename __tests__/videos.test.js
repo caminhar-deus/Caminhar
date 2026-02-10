@@ -65,4 +65,60 @@ describe('Funcionalidade de Descrição nos Vídeos', () => {
       ])
     );
   });
+
+  test('createVideo deve salvar o status de publicado corretamente', async () => {
+    const videoData = {
+      titulo: 'Vídeo Rascunho',
+      url_youtube: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      descricao: 'Teste de rascunho',
+      publicado: false
+    };
+
+    query.mockResolvedValueOnce({
+      rows: [{ id: 1, ...videoData }]
+    });
+
+    const result = await createVideo(videoData);
+
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining('INSERT INTO videos'),
+      expect.arrayContaining([
+        videoData.titulo,
+        videoData.url_youtube,
+        videoData.descricao,
+        videoData.publicado
+      ])
+    );
+    
+    expect(result).toEqual(expect.objectContaining({
+      publicado: false
+    }));
+  });
+
+  test('updateVideo deve atualizar o status de publicado', async () => {
+    const id = 1;
+    const updateData = {
+      titulo: 'Vídeo Publicado',
+      url_youtube: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      descricao: 'Agora publicado',
+      publicado: true
+    };
+
+    query.mockResolvedValueOnce({
+      rows: [{ id, ...updateData }]
+    });
+
+    await updateVideo(id, updateData);
+
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining('UPDATE videos'),
+      expect.arrayContaining([
+        updateData.titulo,
+        updateData.url_youtube,
+        updateData.descricao,
+        updateData.publicado,
+        id
+      ])
+    );
+  });
 });

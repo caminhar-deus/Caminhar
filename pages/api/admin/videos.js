@@ -1,4 +1,4 @@
-import { getAllVideos, createVideo, updateVideo, deleteVideo } from '../../../lib/videos.js';
+import { getPaginatedVideos, createVideo, updateVideo, deleteVideo } from '../../../lib/videos.js';
 
 export default async function handler(req, res) {
   // Check authentication
@@ -19,8 +19,11 @@ export default async function handler(req, res) {
   switch (req.method) {
     case 'GET':
       try {
-        const videos = await getAllVideos();
-        res.status(200).json(videos);
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        
+        const result = await getPaginatedVideos(page, limit);
+        res.status(200).json(result);
       } catch (error) {
         console.error('Error fetching videos:', error);
         res.status(500).json({ message: 'Erro ao buscar vídeos' });
@@ -29,10 +32,14 @@ export default async function handler(req, res) {
 
     case 'POST':
       try {
-        const { titulo, url_youtube, descricao } = req.body;
+        const { titulo, url_youtube, descricao, publicado } = req.body;
 
         if (!titulo || !url_youtube) {
           return res.status(400).json({ message: 'Título e URL do YouTube são obrigatórios' });
+        }
+
+        if (descricao && descricao.length > 500) {
+          return res.status(400).json({ message: 'A descrição deve ter no máximo 500 caracteres' });
         }
 
         // Debug: Log the URL being received
@@ -50,19 +57,20 @@ export default async function handler(req, res) {
         const novoVideo = await createVideo({
           titulo,
           url_youtube,
-          descricao
+          descricao,
+          publicado: publicado !== undefined ? publicado : false // Default false se não enviado
         });
 
         res.status(201).json(novoVideo);
       } catch (error) {
         console.error('Error creating video:', error);
-        res.status(500).json({ message: 'Erro ao criar vídeo' });
+        res.status(500).json({ message: error.message || 'Erro ao criar vídeo' });
       }
       break;
 
     case 'PUT':
       try {
-        const { id, titulo, url_youtube, descricao } = req.body;
+        const { id, titulo, url_youtube, descricao, publicado } = req.body;
 
         if (!id) {
           return res.status(400).json({ message: 'ID é obrigatório' });
@@ -70,6 +78,10 @@ export default async function handler(req, res) {
 
         if (!titulo || !url_youtube) {
           return res.status(400).json({ message: 'Título e URL do YouTube são obrigatórios' });
+        }
+
+        if (descricao && descricao.length > 500) {
+          return res.status(400).json({ message: 'A descrição deve ter no máximo 500 caracteres' });
         }
 
         // Validate YouTube URL format
@@ -81,7 +93,8 @@ export default async function handler(req, res) {
         const videoAtualizado = await updateVideo(id, {
           titulo,
           url_youtube,
-          descricao
+          descricao,
+          publicado
         });
 
         if (!videoAtualizado) {
@@ -91,7 +104,7 @@ export default async function handler(req, res) {
         res.status(200).json(videoAtualizado);
       } catch (error) {
         console.error('Error updating video:', error);
-        res.status(500).json({ message: 'Erro ao atualizar vídeo' });
+        res.status(500).json({ message: error.message || 'Erro ao atualizar vídeo' });
       }
       break;
 
