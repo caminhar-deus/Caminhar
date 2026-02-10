@@ -23,7 +23,7 @@ Estes testes verificam a lógica de componentes individuais e endpoints da API. 
 **Localização:** Arquivos `*.test.js` ou na pasta `__tests__/`.
 
 **Principais áreas cobertas:**
-- **Componentes**: `AdminPostManager`, `BlogIndex`, `BlogPost`.
+- **Componentes**: `AdminPostManager`, `BlogIndex`, `BlogPost`, `ContentTabs`, `PostCard`, `AdminBackupManager`, `MusicCard`, `MusicGallery`.
 - **Sistema de Backup**: Testes de criação, rotação e restauração (`lib/backup.js`).
 - **Middleware**: Rate Limiting (com fallback Redis/Memória) e Whitelist.
 - **APIs**: `/api/admin/posts`, `/api/admin/backups`, `/api/settings`, `/api/v1/status`, e `/api/upload-image` (cobrança de casos de sucesso, falha por falta de arquivo, tipo de arquivo inválido e tamanho excedido).
@@ -35,6 +35,7 @@ Estes testes verificam a lógica de componentes individuais e endpoints da API. 
 - **Music Management**: Testes para sistema completo de gestão de músicas.
 - **ES Modules**: Testes de compatibilidade e funcionalidade de módulos ES.
 - **Cache de Imagens**: Sistema de cache otimizado para melhor performance.
+- **Cache de API**: Testes para sistema de cache de rotas de leitura frequente.
 
 ### Configuração ESM (ES Modules)
 
