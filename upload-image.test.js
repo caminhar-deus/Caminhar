@@ -21,14 +21,20 @@ jest.mock('fs', () => ({
 // Mock da Autenticação
 jest.mock('./lib/auth.js', () => ({
   withAuth: (fn) => (req, res) => {
-    req.user = { username: 'admin' };
+    req.user = { id: 1, username: 'admin' };
     return fn(req, res);
   },
+}));
+
+// Mock do Banco de Dados
+jest.mock('./lib/db.js', () => ({
+  saveImage: jest.fn(),
 }));
 
 // Import the mocked modules
 const formidable = jest.requireMock('formidable');
 const fs = jest.requireMock('fs');
+const db = jest.requireMock('./lib/db.js');
 
 // Mock handler function since the file doesn't exist
 const handler = async (req, res) => {
@@ -80,9 +86,13 @@ const handler = async (req, res) => {
 
     // Move file
     await fs.promises.rename(file.filepath, destination);
+    
+    // Save metadata to database
+    const relativePath = `/uploads/${filename}`;
+    await db.saveImage(filename, relativePath, type, file.size, req.user?.id);
 
     res.status(200).json({
-      path: `/uploads/${filename}`,
+      path: relativePath,
       message: 'Upload realizado com sucesso'
     });
   } catch (error) {
@@ -258,5 +268,49 @@ describe('API de Upload de Imagem (/api/upload-image)', () => {
     );
 
     dateSpy.mockRestore();
+  });
+
+  test('Deve chamar saveImage no banco de dados com os metadados corretos', async () => {
+    const mockFile = {
+      originalFilename: 'db-test.jpg',
+      filepath: '/tmp/db-test.jpg',
+      newFilename: 'db-test.jpg',
+      mimetype: 'image/jpeg',
+      size: 2048
+    };
+
+    formidable.IncomingForm.mockImplementation(() => ({
+      parse: jest.fn((req, cb) => {
+        cb(null, { type: 'post' }, { image: [mockFile] });
+      }),
+      uploadDir: '/tmp',
+      keepExtensions: true,
+      on: jest.fn(),
+    }));
+
+    const { req, res } = createMocks({
+      method: 'POST',
+      headers: { 'content-type': 'multipart/form-data;' },
+    });
+
+    // Simula usuário autenticado para garantir que o ID do usuário seja passado para saveImage
+    req.user = { id: 1, username: 'admin' };
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(200);
+
+    // Verifica se saveImage foi chamado
+    expect(db.saveImage).toHaveBeenCalledTimes(1);
+    
+    // Verifica os argumentos: filename, path, type, size, userId
+    // O filename gerado contém timestamp, então usamos stringContaining
+    expect(db.saveImage).toHaveBeenCalledWith(
+      expect.stringContaining('post-image-'), // filename
+      expect.stringContaining('/uploads/post-image-'), // relativePath
+      'post-image', // type
+      2048, // size
+      1 // userId (do mock de auth)
+    );
   });
 });
