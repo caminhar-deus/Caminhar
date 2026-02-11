@@ -9,11 +9,11 @@ export default function ContentTabs() {
   const [activeTab, setActiveTab] = useState('reflexoes');
 
   const tabs = [
-    { id: 'reflexoes', label: 'Reflexões & Estudos', active: true },
-    { id: 'projeto1', label: 'Em Desenvolvimento', active: false },
-    { id: 'musicas', label: 'Músicas', active: false },
-    { id: 'videos', label: 'Vídeos', active: false },
-    { id: 'projeto2', label: 'Em Desenvolvimento', active: false }
+    { id: 'reflexoes', label: 'Reflexões & Estudos', active: true, icon: '📖' },
+    { id: 'projeto1', label: 'Em Desenvolvimento', active: false, icon: '🏗️' },
+    { id: 'musicas', label: 'Músicas', active: false, icon: '🎵' },
+    { id: 'videos', label: 'Vídeos', active: false, icon: '🎬' },
+    { id: 'projeto2', label: 'Em Desenvolvimento', active: false, icon: '🏗️' }
   ];
 
   const renderContent = () => {
@@ -50,6 +50,7 @@ export default function ContentTabs() {
               aria-selected={activeTab === tab.id}
               disabled={tab.id === 'projeto1' || tab.id === 'projeto2'}
             >
+              <span className={styles.tabIcon}>{tab.icon}</span>
               {tab.label}
             </button>
           ))}
