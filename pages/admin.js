@@ -238,42 +238,49 @@ export default function Admin() {
               className={`${styles.tabButton} ${activeTab === 'posts' ? styles.activeTab : ''}`}
               onClick={() => setActiveTab('posts')}
             >
+              <span className="icon">📝</span>
               Posts/Artigos
             </button>
             <button
               className={`${styles.tabButton} ${activeTab === 'projetos01' ? styles.activeTab : ''}`}
               disabled
             >
+              <span className="icon">🏗️</span>
               Projetos Futuros 01
             </button>
             <button
               className={`${styles.tabButton} ${activeTab === 'musicas' ? styles.activeTab : ''}`}
               onClick={() => setActiveTab('musicas')}
             >
-              🎵 Gestão de Músicas
+              <span className="icon">🎵</span>
+              Gestão de Músicas
             </button>
             <button
               className={`${styles.tabButton} ${activeTab === 'videos' ? styles.activeTab : ''}`}
               onClick={() => setActiveTab('videos')}
             >
-              🎬 Gestão de Vídeos
+              <span className="icon">🎬</span>
+              Gestão de Vídeos
             </button>
             <button
               className={`${styles.tabButton} ${activeTab === 'projetos02' ? styles.activeTab : ''}`}
               disabled
             >
+              <span className="icon">🏗️</span>
               Projetos Futuros 02
             </button>
             <button
               className={`${styles.tabButton} ${activeTab === 'header' ? styles.activeTab : ''}`}
               onClick={() => setActiveTab('header')}
             >
+              <span className="icon">🎨</span>
               Configuração de Cabeçalho
             </button>
             <button
               className={`${styles.tabButton} ${activeTab === 'security' ? styles.activeTab : ''}`}
               onClick={() => setActiveTab('security')}
             >
+              <span className="icon">🔒</span>
               Segurança
             </button>
           </div>
