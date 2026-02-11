@@ -492,6 +492,154 @@ npm run test:mobile
 
 ---
 
+### 18. **Testes de Cache e Performance** ✅
+
+Estes testes verificam a eficácia e correção do sistema de cache.
+
+**Principais verificações:**
+- **Cache Miss/Hit**: Verificação de comportamento de cache.
+- **Invalidação de Cache**: Cache é invalidado corretamente após atualizações.
+- **Tempo de Vida do Cache**: TTL correto para diferentes tipos de cache.
+- **Cache de Imagens**: Performance e correção do cache de imagens.
+- **Cache de API**: Sistema de cache para rotas de leitura frequente.
+- **Redis Integration**: Testes para integração com Redis (Upstash).
+- **Fallback Seguro**: Sistema continua operando se Redis falhar.
+
+#### Como Executar:
+
+Testes de cache:
+```bash
+npm run test:cache
+```
+
+---
+
+### 19. **Testes de ContentTabs - Sistema de Navegação** ✅
+
+Estes testes verificam o sistema de navegação com 5 abas.
+
+**Principais verificações:**
+- **Testes de Componentes**: Validação completa do sistema de navegação com 5 abas
+- **Testes de Transição**: Verificação de animações de fade-in ao alternar entre abas
+- **Testes de Carregamento**: Validação de estados de loading para Músicas e Vídeos
+- **Testes de Erro**: Tratamento de erros e mensagens amigáveis para conteúdo indisponível
+- **Testes de Performance**: Carregamento sob demanda das abas
+- **Testes de Responsividade**: Layouts perfeitos para dispositivos touch
+
+#### Como Executar:
+
+Testes de ContentTabs:
+```bash
+npm run test:content-tabs
+```
+
+---
+
+### 20. **Testes de Spotify Integration** ✅
+
+Estes testes verificam a integração completa com Spotify.
+
+**Principais verificações:**
+- **Testes de Integração**: Validação completa da integração com Spotify
+- **Testes de Conversão**: Verificação da conversão automática de URLs para embeds
+- **Testes de Lazy Loading**: Validação do carregamento inteligente dos players
+- **Testes de UX**: Botão "Ouvir no Spotify" para abertura em nova aba
+- **Testes de Busca**: Filtros por título e artista nas músicas
+- **Testes de Player**: Reprodução e controle de músicas via embed
+
+#### Como Executar:
+
+Testes de Spotify:
+```bash
+npm run test:spotify
+```
+
+---
+
+### 21. **Testes de YouTube Integration** ✅
+
+Estes testes verificam a integração completa com YouTube.
+
+**Principais verificações:**
+- **Testes de Integração**: Validação completa da integração com YouTube
+- **Testes de Conversão**: Verificação da conversão automática de URLs para embeds
+- **Testes de Lazy Loading**: Validação do carregamento inteligente dos players
+- **Testes de UX**: Botão "Assistir no YouTube" para abertura em nova aba
+- **Testes de Busca**: Filtros por título nos vídeos
+- **Testes de Player**: Reprodução e controle de vídeos via embed
+
+#### Como Executar:
+
+Testes de YouTube:
+```bash
+npm run test:youtube
+```
+
+---
+
+### 22. **Testes de Modernização ESM + Turbopack** ✅
+
+Estes testes verificam a compatibilidade e funcionalidade da modernização para ES modules.
+
+**Principais verificações:**
+- **ES Modules**: Projeto totalmente compatível com ES modules
+- **Jest com ESM**: Suporte nativo a ES modules sem flags experimentais
+- **Turbopack Integration**: Build ultra-rápido para desenvolvimento
+- **Babel Isolado**: Configuração separada para evitar conflitos com Turbopack
+- **Imports Modernos**: Extensões explícitas (.js) conforme especificação ESM
+- **Build Performance**: Tempo de build otimizado com Turbopack
+
+#### Como Executar:
+
+Testes de modernização:
+```bash
+npm run test:modernization
+```
+
+---
+
+### 23. **Testes de Integrações Externas Avançadas** ✅
+
+Estes testes verificam a integração com serviços externos.
+
+**Principais integrações testadas:**
+- **Spotify API Integration**: Sistema completo de gestão de músicas com preview de player
+- **YouTube API Integration**: Sistema completo de gestão de vídeos com preview de player
+- **Redis Cache Integration**: Sistema de cache para rotas de leitura frequente
+- **PostgreSQL Integration**: Banco de dados relacional robusto e escalável
+- **Upstash Redis**: Cache e rate limiting em nuvem para produção
+- **Cloudflare**: CDN e proteção DDoS
+
+#### Como Executar:
+
+Testes de integrações externas:
+```bash
+npm run test:external-integrations
+```
+
+---
+
+### 24. **Testes de Documentação** ✅
+
+Estes testes verificam a qualidade e completude da documentação.
+
+**Principais verificações:**
+- **README Atualizado**: Documentação completa sobre todas as funcionalidades
+- **README-TESTE**: Documentação detalhada da infraestrutura de testes
+- **BACKUP_SYSTEM**: Documentação do sistema de backup automático
+- **CACHE_IMPLEMENTATION**: Documentação do sistema de cache
+- **DEPLOY**: Guia completo de deploy para VPS e Vercel
+- **API Documentation**: Documentação completa da API RESTful v1.2.0
+
+#### Como Executar:
+
+Testes de documentação:
+```bash
+npm run test:documentation
+```
+
+---
+
 ### Configuração ESM (ES Modules)
 
 O projeto foi migrado para ES Modules. O Jest é executado sem a flag `--experimental-vm-modules` (configurada automaticamente no script `npm test`).

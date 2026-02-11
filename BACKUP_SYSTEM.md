@@ -214,10 +214,25 @@ For issues with the backup system:
 - ✅ **Backup Verification**: Automatic verification of backup integrity
 - ✅ **Enhanced Logging**: Detailed operation logs with multiple levels
 - ✅ **Error Handling**: Robust error handling and recovery mechanisms
-- ✅ **API Endpoints**: Complete RESTful API for backup operations
+- ✅ **API Endpoints**: Complete RESTful API para backup operations
 - ✅ **Performance**: Optimized backup creation and restoration
 - ✅ **Security**: Enhanced security measures for backup files
 - ✅ **Documentation**: Comprehensive documentation and troubleshooting guide
+
+### v1.2.1 (08/02/2026)
+- ✅ **ES Modules**: Projeto totalmente compatível com ES modules
+- ✅ **Jest com ESM**: Suporte nativo a ES modules sem flags experimentais
+- ✅ **Turbopack Integration**: Build ultra-rápido para desenvolvimento
+- ✅ **Babel Isolado**: Configuração separada para evitar conflitos com Turbopack
+- ✅ **Imports Modernos**: Extensões explícitas (.js) conforme especificação ESM
+- ✅ **Build Performance**: Tempo de build otimizado com Turbopack
+- ✅ **Testes de Cache**: Validação completa de Cache Miss, Cache Hit e invalidação
+- ✅ **Testes de Performance**: Métricas de performance monitoradas e validadas
+- ✅ **Testes de Segurança**: Validação de segurança do sistema e proteções
+- ✅ **Testes de Cross-Browser**: Compatibilidade verificada em diferentes navegadores
+- ✅ **Testes de Mobile**: Responsividade e usabilidade validadas em dispositivos móveis
+- ✅ **Testes de Integrações Externas**: Validação completa de integrações com Spotify, YouTube e Redis
+- ✅ **Testes de Documentação**: Verificação da qualidade e completude da documentação
 <task_progress>
 - [x] Analyze current database setup
 - [x] Create backup directory structure

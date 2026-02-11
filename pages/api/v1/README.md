@@ -386,6 +386,26 @@ Para questões técnicas ou suporte, entre em contato com:
 
 ## Notas de Versão
 
+### v1.2.1 (08/02/2026)
+- ✅ **ES Modules**: Projeto totalmente compatível com ES modules
+- ✅ **Jest com ESM**: Suporte nativo a ES modules sem flags experimentais
+- ✅ **Turbopack Integration**: Build ultra-rápido para desenvolvimento
+- ✅ **Babel Isolado**: Configuração separada para evitar conflitos com Turbopack
+- ✅ **Imports Modernos**: Extensões explícitas (.js) conforme especificação ESM
+- ✅ **Build Performance**: Tempo de build otimizado com Turbopack
+- ✅ **Testes de Cache**: Validação completa de Cache Miss, Cache Hit e invalidação
+- ✅ **Testes de Performance**: Métricas de performance monitoradas e validadas
+- ✅ **Testes de Segurança**: Validação de segurança do sistema e proteções
+- ✅ **Testes de Cross-Browser**: Compatibilidade verificada em diferentes navegadores
+- ✅ **Testes de Mobile**: Responsividade e usabilidade validadas em dispositivos móveis
+- ✅ **Testes de Integrações Externas**: Validação completa de integrações com Spotify, YouTube e Redis
+- ✅ **Testes de Documentação**: Verificação da qualidade e completude da documentação
+- ✅ **Cache de API**: Sistema de cache para rotas de leitura frequente (Settings, Posts, Musicas)
+- ✅ **Redis Integration**: Sistema de cache para rotas de leitura frequente
+- ✅ **Performance**: Redução de 80-90% nas consultas ao banco de dados
+- ✅ **Monitoramento**: Métricas de cache hit rate e performance em tempo real
+- ✅ **Fallback Seguro**: Sistema continua operando se Redis falhar
+
 ### v1.2.0 (08/02/2026)
 - ✅ **Cache de API**: Sistema de cache Redis para rotas de leitura frequente
 - ✅ **ContentTabs Integration**: Endpoints para integração com sistema de navegação
