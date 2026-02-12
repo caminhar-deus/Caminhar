@@ -9,7 +9,6 @@ import { extractCriticalCSS } from '../components/Performance/CriticalCSS';
  * - Preconnect para domínios críticos
  * - DNS prefetch
  * - CSS crítico inline
- * - Favicons para todas plataformas
  * - Meta tags de segurança e performance
  */
 
@@ -75,31 +74,8 @@ export default function Document() {
           "
         />
 
-        {/* Favicons para todas plataformas */}
+        {/* Favicon básico */}
         <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png" />
-        <link rel="apple-touch-icon" sizes="60x60" href="/apple-touch-icon-60x60.png" />
-        <link rel="apple-touch-icon" sizes="72x72" href="/apple-touch-icon-72x72.png" />
-        <link rel="apple-touch-icon" sizes="76x76" href="/apple-touch-icon-76x76.png" />
-        <link rel="apple-touch-icon" sizes="114x114" href="/apple-touch-icon-114x114.png" />
-        <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png" />
-        <link rel="apple-touch-icon" sizes="144x144" href="/apple-touch-icon-144x144.png" />
-        <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png" />
-        
-        {/* Ícones para Android/Chrome */}
-        <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png" />
-        <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png" />
-        
-        {/* Microsoft Tile */}
-        <meta name="msapplication-TileImage" content="/mstile-144x144.png" />
-        <meta name="msapplication-TileColor" content="#2c3e50" />
-        <meta name="msapplication-config" content="/browserconfig.xml" />
-
-        {/* PWA Manifest */}
-        <link rel="manifest" href="/manifest.json" />
         
         {/* Theme Color para navegadores */}
         <meta name="theme-color" content="#2c3e50" media="(prefers-color-scheme: light)" />
@@ -118,31 +94,6 @@ export default function Document() {
 
         {/* Canonical base */}
         <link rel="canonical" href={siteConfig.url} />
-
-        {/* Alternate - RSS Feed */}
-        <link 
-          rel="alternate" 
-          type="application/rss+xml" 
-          title={`${siteConfig.name} - Feed RSS`}
-          href="/feed.xml" 
-        />
-        
-        {/* Alternate - Sitemap */}
-        <link 
-          rel="sitemap" 
-          type="application/xml" 
-          title="Sitemap" 
-          href="/sitemap.xml" 
-        />
-
-        {/* Preload de recursos críticos */}
-        <link 
-          rel="preload" 
-          href="/fonts/main-font.woff2" 
-          as="font" 
-          type="font/woff2" 
-          crossOrigin="anonymous" 
-        />
       </Head>
       
       <body>
