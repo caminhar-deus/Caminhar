@@ -17,7 +17,9 @@ export default function MusicGallery() {
         const response = await fetch('/api/musicas');
         if (response.ok) {
           const data = await response.json();
-          setMusicas(data);
+          // Verifica se data é um array ou objeto com data.data
+          const musicasArray = Array.isArray(data) ? data : (data.data || []);
+          setMusicas(musicasArray);
         } else {
           throw new Error('Erro ao carregar músicas');
         }
@@ -90,13 +92,9 @@ export default function MusicGallery() {
         </div>
       </div>
 
-      {/* Resultados da busca */}
+      {/* Resultados da busca - ORDEM CORRIGIDA */}
       <div className={styles.galleryGrid}>
-        {filteredMusicas.length > 0 ? (
-          filteredMusicas.map((musica) => (
-            <MusicCard key={musica.id} musica={musica} />
-          ))
-        ) : loading ? (
+        {loading ? (
           <div className={styles.loading}>
             <div className={styles.loadingIcon}>🎵</div>
             <p>Carregando músicas...</p>
@@ -110,6 +108,10 @@ export default function MusicGallery() {
               Tentar novamente
             </button>
           </div>
+        ) : filteredMusicas.length > 0 ? (
+          filteredMusicas.map((musica) => (
+            <MusicCard key={musica.id} musica={musica} />
+          ))
         ) : (
           <div className={styles.noResults}>
             <div className={styles.noResultsIcon}>🎵</div>

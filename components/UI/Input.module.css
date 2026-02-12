@@ -1,0 +1,168 @@
+/* Input Base */
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  width: 100%;
+}
+
+.label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #171717;
+}
+
+.required {
+  color: #ef4444;
+  margin-left: 0.25rem;
+}
+
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input {
+  width: 100%;
+  font-family: inherit;
+  font-size: 0.875rem;
+  color: #171717;
+  background-color: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 0.75rem;
+  transition: all 150ms ease;
+  outline: none;
+}
+
+.input::placeholder {
+  color: #a3a3a3;
+}
+
+.input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.input:disabled {
+  background-color: #f5f5f5;
+  color: #737373;
+  cursor: not-allowed;
+}
+
+/* Sizes */
+.sm .input {
+  height: 2rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.md .input {
+  height: 2.5rem;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.lg .input {
+  height: 3rem;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+}
+
+/* Variants */
+.filled {
+  background-color: #f5f5f5;
+  border-color: transparent;
+}
+
+.filled:focus {
+  background-color: white;
+}
+
+.flushed {
+  border-radius: 0;
+  border: none;
+  border-bottom: 2px solid #e5e5e5;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.flushed:focus {
+  border-color: #2563eb;
+  box-shadow: none;
+}
+
+/* Addons */
+.leftAddon,
+.rightAddon {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #737373;
+  pointer-events: none;
+}
+
+.leftAddon {
+  left: 0.75rem;
+}
+
+.rightAddon {
+  right: 0.75rem;
+}
+
+.sm .hasLeftAddon {
+  padding-left: 2.25rem;
+}
+
+.sm .hasRightAddon {
+  padding-right: 2.25rem;
+}
+
+.md .hasLeftAddon {
+  padding-left: 2.5rem;
+}
+
+.md .hasRightAddon {
+  padding-right: 2.5rem;
+}
+
+.lg .hasLeftAddon {
+  padding-left: 3rem;
+}
+
+.lg .hasRightAddon {
+  padding-right: 3rem;
+}
+
+/* Error State */
+.hasError .input {
+  border-color: #ef4444;
+}
+
+.hasError .input:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.hasError .leftAddon,
+.hasError .rightAddon {
+  color: #ef4444;
+}
+
+.errorMessage {
+  font-size: 0.75rem;
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.errorMessage::before {
+  content: '⚠';
+}
+
+.helperText {
+  font-size: 0.75rem;
+  color: #737373;
+}

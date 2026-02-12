@@ -1731,3 +1731,81 @@ Contribuições são bem-vindas! Siga estas etapas:
 3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
 4. Push para a branch (`git push origin feature/AmazingFeature`)
 5. Abra um Pull Request
+---
+
+## 🧪 Arquitetura de Testes
+
+Este projeto possui uma **Test Suite Architecture** completa para testes com Jest e React Testing Library.
+
+### Estrutura
+
+```
+tests/
+├── setup.js              # Configuração centralizada
+├── factories/            # Geradores de dados de teste
+│   ├── post.js
+│   ├── music.js
+│   ├── video.js
+│   └── user.js
+├── helpers/              # Utilitários para testes
+│   ├── api.js            # Helpers para testes de API
+│   ├── render.js         # Helpers para testes de componentes
+│   └── auth.js           # Helpers de autenticação
+├── mocks/                # Mocks reutilizáveis
+│   ├── next.js
+│   ├── fetch.js
+│   └── db.js
+├── matchers/             # Matchers customizados Jest
+└── examples/             # Exemplos de uso
+    ├── api-example.test.js
+    ├── component-example.test.js
+    └── simple-test.test.js
+```
+
+### Uso Rápido
+
+```javascript
+// Importar factories
+import { postFactory, createPostInput } from './tests/factories/post.js';
+
+// Gerar dados
+const post = postFactory();           // Post completo
+const input = createPostInput();      // Dados para criação
+const posts = postFactory.list(5);    // Lista de 5 posts
+
+// Helpers de API
+import { 
+  createPostRequest, 
+  expectStatus, 
+  expectJson 
+} from './tests/helpers/api.js';
+
+import { mockAuthenticatedAdmin } from './tests/helpers/auth.js';
+
+const { headers } = mockAuthenticatedAdmin();
+const { req, res } = createPostRequest(postData, headers);
+
+expect(res).toHaveStatus(201);
+expect(res).toBeValidJSON({ title: postData.title });
+```
+
+### Documentação Completa
+
+Consulte `tests/README.md` para documentação completa da arquitetura de testes.
+
+### Executar Testes
+
+```bash
+# Todos os testes
+npm test
+
+# Testes específicos
+npm test -- tests/examples/simple-test.test.js
+
+# Watch mode
+npm run test:watch
+
+# Com cobertura
+npm run test:ci
+```
+

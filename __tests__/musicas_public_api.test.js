@@ -28,8 +28,20 @@ describe('API Pública de Músicas (/api/musicas)', () => {
 
     await handler(req, res);
 
+    const responseData = JSON.parse(res._getData());
+    
     expect(res._getStatusCode()).toBe(200);
-    expect(JSON.parse(res._getData())).toEqual(mockMusicas);
+    // Verifica o formato padronizado da API
+    expect(responseData).toMatchObject({
+      success: true,
+      data: mockMusicas,
+      meta: expect.objectContaining({
+        timestamp: expect.any(String),
+        requestId: expect.any(String),
+        count: 2,
+        search: null,
+      }),
+    });
     // Verifica se a função foi chamada sem termo de busca
     expect(getPublishedMusicas).toHaveBeenCalledWith(undefined);
   });
@@ -45,7 +57,12 @@ describe('API Pública de Músicas (/api/musicas)', () => {
 
     await handler(req, res);
 
+    const responseData = JSON.parse(res._getData());
+    
     expect(res._getStatusCode()).toBe(200);
+    expect(responseData.success).toBe(true);
+    expect(responseData.data).toEqual([]);
+    expect(responseData.meta.search).toBe(searchTerm);
     expect(getPublishedMusicas).toHaveBeenCalledWith(searchTerm);
   });
 
@@ -56,7 +73,14 @@ describe('API Pública de Músicas (/api/musicas)', () => {
 
     await handler(req, res);
 
+    const responseData = JSON.parse(res._getData());
+    
     expect(res._getStatusCode()).toBe(405);
+    expect(responseData.success).toBe(false);
+    expect(responseData.error).toMatchObject({
+      code: 'METHOD_NOT_ALLOWED',
+      message: expect.stringContaining('POST'),
+    });
   });
 
   it('deve retornar erro 500 em caso de falha interna', async () => {
@@ -71,8 +95,21 @@ describe('API Pública de Músicas (/api/musicas)', () => {
 
     await handler(req, res);
 
+    const responseData = JSON.parse(res._getData());
+    
     expect(res._getStatusCode()).toBe(500);
-    expect(JSON.parse(res._getData())).toEqual({ message: 'Erro ao buscar músicas' });
+    // Verifica o formato padronizado de erro
+    expect(responseData).toMatchObject({
+      success: false,
+      error: {
+        code: expect.any(String),
+        message: expect.any(String),
+      },
+      meta: expect.objectContaining({
+        timestamp: expect.any(String),
+        requestId: expect.any(String),
+      }),
+    });
 
     // Restaura o console.error original
     consoleSpy.mockRestore();

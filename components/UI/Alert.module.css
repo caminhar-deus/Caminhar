@@ -1,0 +1,185 @@
+/* Alert Base */
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  position: relative;
+}
+
+.icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
+  line-height: 1.4;
+}
+
+.description {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.description > *:last-child {
+  margin-bottom: 0;
+}
+
+/* Close Button */
+.closeButton {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 0.375rem;
+  transition: all 150ms ease;
+  margin-top: -0.25rem;
+  margin-right: -0.25rem;
+}
+
+/* Variants - Subtle (default) */
+.subtle {
+  background-color: #f5f5f5;
+}
+
+.subtle.info {
+  background-color: #eff6ff;
+  color: #1e40af;
+}
+
+.subtle.success {
+  background-color: #ecfdf5;
+  color: #065f46;
+}
+
+.subtle.warning {
+  background-color: #fffbeb;
+  color: #92400e;
+}
+
+.subtle.error {
+  background-color: #fef2f2;
+  color: #991b1b;
+}
+
+/* Variant - Solid */
+.solid.info {
+  background-color: #2563eb;
+  color: white;
+}
+
+.solid.success {
+  background-color: #10b981;
+  color: white;
+}
+
+.solid.warning {
+  background-color: #f59e0b;
+  color: white;
+}
+
+.solid.error {
+  background-color: #ef4444;
+  color: white;
+}
+
+/* Variant - Left Accent */
+.leftAccent {
+  border-left: 4px solid;
+  background-color: #f5f5f5;
+}
+
+.leftAccent.info {
+  border-left-color: #2563eb;
+  color: #1e40af;
+}
+
+.leftAccent.success {
+  border-left-color: #10b981;
+  color: #065f46;
+}
+
+.leftAccent.warning {
+  border-left-color: #f59e0b;
+  color: #92400e;
+}
+
+.leftAccent.error {
+  border-left-color: #ef4444;
+  color: #991b1b;
+}
+
+/* Variant - Top Accent */
+.topAccent {
+  border-top: 4px solid;
+  background-color: #f5f5f5;
+}
+
+.topAccent.info {
+  border-top-color: #2563eb;
+  color: #1e40af;
+}
+
+.topAccent.success {
+  border-top-color: #10b981;
+  color: #065f46;
+}
+
+.topAccent.warning {
+  border-top-color: #f59e0b;
+  color: #92400e;
+}
+
+.topAccent.error {
+  border-top-color: #ef4444;
+  color: #991b1b;
+}
+
+/* Close button colors for subtle variant */
+.subtle .closeButton {
+  color: currentColor;
+  opacity: 0.6;
+}
+
+.subtle .closeButton:hover {
+  opacity: 1;
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Close button colors for solid variant */
+.solid .closeButton {
+  color: currentColor;
+  opacity: 0.8;
+}
+
+.solid .closeButton:hover {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Closable padding adjustment */
+.closable {
+  padding-right: 2.5rem;
+}
+
+/* Icon alignment adjustment for alerts without title */
+.alert:not(:has(.title)) .icon {
+  margin-top: 0.125rem;
+}

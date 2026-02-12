@@ -1,0 +1,215 @@
+/* Badge Base */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  font-weight: 500;
+  font-family: inherit;
+  border-radius: 9999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.content {
+  line-height: 1;
+}
+
+.leftIcon,
+.rightIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Sizes */
+.sm {
+  height: 1.25rem;
+  padding: 0 0.5rem;
+  font-size: 0.75rem;
+}
+
+.sm .leftIcon,
+.sm .rightIcon {
+  font-size: 0.625rem;
+}
+
+.md {
+  height: 1.5rem;
+  padding: 0 0.625rem;
+  font-size: 0.875rem;
+}
+
+.md .leftIcon,
+.md .rightIcon {
+  font-size: 0.75rem;
+}
+
+.lg {
+  height: 1.75rem;
+  padding: 0 0.75rem;
+  font-size: 0.875rem;
+}
+
+.lg .leftIcon,
+.lg .rightIcon {
+  font-size: 0.875rem;
+}
+
+/* Dot variant */
+.dot {
+  padding: 0;
+}
+
+.sm.dot {
+  width: 0.5rem;
+  height: 0.5rem;
+}
+
+.md.dot {
+  width: 0.625rem;
+  height: 0.625rem;
+}
+
+.lg.dot {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+/* Variants */
+.default {
+  background-color: #f5f5f5;
+  color: #171717;
+  border: 1px solid #e5e5e5;
+}
+
+.primary {
+  background-color: #2563eb;
+  color: white;
+}
+
+.secondary {
+  background-color: #d4af37;
+  color: white;
+}
+
+.success {
+  background-color: #10b981;
+  color: white;
+}
+
+.error {
+  background-color: #ef4444;
+  color: white;
+}
+
+.warning {
+  background-color: #f59e0b;
+  color: white;
+}
+
+.info {
+  background-color: #3b82f6;
+  color: white;
+}
+
+/* Outline variants */
+.outline {
+  background-color: transparent;
+  border-width: 1px;
+  border-style: solid;
+}
+
+.outline.default {
+  border-color: #e5e5e5;
+  color: #171717;
+}
+
+.outline.primary {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.outline.success {
+  border-color: #10b981;
+  color: #10b981;
+}
+
+.outline.error {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.outline.warning {
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+
+/* Soft/Solid variants (lighter background) */
+.soft.default {
+  background-color: #f5f5f5;
+  color: #171717;
+}
+
+.soft.primary {
+  background-color: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+}
+
+.soft.success {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.soft.error {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.soft.warning {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+/* Pulse Animation */
+.pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Positioning (for use with relative parent) */
+.topRight {
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translate(50%, -50%);
+}
+
+.topLeft {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translate(-50%, -50%);
+}
+
+.bottomRight {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  transform: translate(50%, 50%);
+}
+
+.bottomLeft {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  transform: translate(-50%, 50%);
+}

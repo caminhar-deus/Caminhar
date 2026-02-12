@@ -1,0 +1,180 @@
+/* Design System Demo Page Styles */
+
+.page {
+  min-height: 100vh;
+  background-color: #fafafa;
+}
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  color: white;
+  padding: 1.5rem 0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* Main Content */
+.main {
+  padding: 3rem 0;
+}
+
+/* Section Styles */
+.section {
+  background: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.sectionTitle {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #171717;
+  margin: 0 0 0.5rem 0;
+}
+
+.sectionDescription {
+  font-size: 1.125rem;
+  color: #737373;
+  margin: 0 0 2rem 0;
+}
+
+.subsectionTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #171717;
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #e5e5e5;
+}
+
+.componentGroup {
+  margin-bottom: 1.5rem;
+}
+
+.componentGroup:last-child {
+  margin-bottom: 0;
+}
+
+.groupLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #737373;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 0.75rem 0;
+}
+
+/* Color Palette Demo */
+.paletteLabel {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #525252;
+  margin: 0 0 0.5rem 0;
+}
+
+.colorRow {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.colorBox {
+  width: 80px;
+  height: 60px;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Primary Colors */
+.primary50 { background-color: #eff6ff; color: #1e40af; }
+.primary100 { background-color: #dbeafe; color: #1e40af; }
+.primary200 { background-color: #bfdbfe; color: #1e40af; }
+.primary500 { background-color: #2563eb; }
+.primary700 { background-color: #1e40af; }
+.primary900 { background-color: #1e3a8a; }
+
+/* Secondary Colors */
+.secondary50 { background-color: #fefdf9; color: #6a4f24; }
+.secondary200 { background-color: #faf0c8; color: #6a4f24; }
+.secondary500 { background-color: #d4af37; }
+.secondary700 { background-color: #967628; }
+
+/* Feedback Colors */
+.success { background-color: #10b981; }
+.error { background-color: #ef4444; }
+.warning { background-color: #f59e0b; }
+.info { background-color: #3b82f6; }
+
+/* Demo Components */
+.demoStack {
+  padding: 1rem;
+  background-color: #f5f5f5;
+  border-radius: 0.5rem;
+}
+
+.demoBox {
+  background-color: #2563eb;
+  color: white;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  text-align: center;
+  font-weight: 500;
+}
+
+.docList {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.docList li {
+  margin-bottom: 0.5rem;
+  color: #525252;
+}
+
+/* Footer */
+.footer {
+  background-color: #171717;
+  color: #a3a3a3;
+  padding: 2rem 0;
+  text-align: center;
+  margin-top: 3rem;
+}
+
+.footer p {
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .main {
+    padding: 2rem 0;
+  }
+
+  .section {
+    padding: 1.5rem;
+  }
+
+  .sectionTitle {
+    font-size: 1.5rem;
+  }
+
+  .colorBox {
+    width: 60px;
+    height: 50px;
+    font-size: 0.625rem;
+  }
+}

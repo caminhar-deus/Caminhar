@@ -1,0 +1,206 @@
+/* Stack Base */
+.stack {
+  display: flex;
+}
+
+/* Direction */
+.column {
+  flex-direction: column;
+}
+
+.row {
+  flex-direction: row;
+}
+
+/* Display */
+.inline {
+  display: inline-flex;
+}
+
+/* Spacing */
+.spacingNone > * + * {
+  margin-top: 0;
+  margin-left: 0;
+}
+
+.spacingXs > * + * {
+  margin-top: 0.5rem;
+}
+
+.spacingXs.row > * + * {
+  margin-top: 0;
+  margin-left: 0.5rem;
+}
+
+.spacingSm > * + * {
+  margin-top: 0.75rem;
+}
+
+.spacingSm.row > * + * {
+  margin-top: 0;
+  margin-left: 0.75rem;
+}
+
+.spacingMd > * + * {
+  margin-top: 1rem;
+}
+
+.spacingMd.row > * + * {
+  margin-top: 0;
+  margin-left: 1rem;
+}
+
+.spacingLg > * + * {
+  margin-top: 1.5rem;
+}
+
+.spacingLg.row > * + * {
+  margin-top: 0;
+  margin-left: 1.5rem;
+}
+
+.spacingXl > * + * {
+  margin-top: 2rem;
+}
+
+.spacingXl.row > * + * {
+  margin-top: 0;
+  margin-left: 2rem;
+}
+
+.spacing2xl > * + * {
+  margin-top: 3rem;
+}
+
+.spacing2xl.row > * + * {
+  margin-top: 0;
+  margin-left: 3rem;
+}
+
+/* Align Items */
+.alignStart {
+  align-items: flex-start;
+}
+
+.alignCenter {
+  align-items: center;
+}
+
+.alignEnd {
+  align-items: flex-end;
+}
+
+.alignStretch {
+  align-items: stretch;
+}
+
+.alignBaseline {
+  align-items: baseline;
+}
+
+/* Justify Content */
+.justifyStart {
+  justify-content: flex-start;
+}
+
+.justifyCenter {
+  justify-content: center;
+}
+
+.justifyEnd {
+  justify-content: flex-end;
+}
+
+.justifyBetween {
+  justify-content: space-between;
+}
+
+.justifyAround {
+  justify-content: space-around;
+}
+
+.justifyEvenly {
+  justify-content: space-evenly;
+}
+
+/* Wrap */
+.wrap {
+  flex-wrap: wrap;
+}
+
+/* Item */
+.item {
+  min-width: 0;
+  min-height: 0;
+}
+
+.grow {
+  flex-grow: 1;
+}
+
+.shrink {
+  flex-shrink: 1;
+}
+
+.itemAlignStart {
+  align-self: flex-start;
+}
+
+.itemAlignCenter {
+  align-self: center;
+}
+
+.itemAlignEnd {
+  align-self: flex-end;
+}
+
+.itemAlignStretch {
+  align-self: stretch;
+}
+
+/* Divider */
+.divider {
+  border: 0;
+  background-color: #e5e5e5;
+}
+
+.column > .divider {
+  width: 100%;
+  height: 1px;
+  margin: 0;
+}
+
+.row > .divider {
+  width: 1px;
+  height: auto;
+  align-self: stretch;
+  margin: 0;
+}
+
+/* Responsive - Stack horizontal vira vertical em mobile */
+@media (max-width: 768px) {
+  .row.responsive {
+    flex-direction: column;
+  }
+
+  .row.responsive > * + * {
+    margin-left: 0;
+    margin-top: 1rem;
+  }
+
+  .row.responsive.spacingXs > * + * {
+    margin-top: 0.5rem;
+  }
+
+  .row.responsive.spacingSm > * + * {
+    margin-top: 0.75rem;
+  }
+
+  .row.responsive.spacingLg > * + * {
+    margin-top: 1.5rem;
+  }
+
+  .row.responsive.spacingXl > * + * {
+    margin-top: 2rem;
+  }
+}
