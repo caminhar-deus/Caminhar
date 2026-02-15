@@ -8,7 +8,7 @@ jest.mock('jsonwebtoken', () => ({
 
 // Mock da lógica de backup para não executar comandos reais.
 // Assumimos que existe uma função `listBackups` que o endpoint utiliza.
-jest.mock('./lib/backup.js', () => ({ //
+jest.mock('../lib/backup.js', () => ({ //
   listBackups: jest.fn().mockResolvedValue([{ file: 'backup-teste.sql.gz', size: 1024 }]), //
   createBackup: jest.fn().mockResolvedValue('/path/to/new-backup.sql.gz'), //
   restoreBackup: jest.fn().mockResolvedValue(true),
@@ -38,7 +38,7 @@ const withAuth = (handler) => async (req, res) => {
 // Simulação do handler da API de backups, pois o arquivo não foi fornecido.
 // Assumimos que ele responde a GET para listar os backups.
 const backupsHandler = async (req, res) => {
-  const backupLib = jest.requireMock('./lib/backup.js');
+  const backupLib = jest.requireMock('../lib/backup.js');
   const { url, method, body } = req;
 
   // Simula um roteador mais robusto que verifica o método e a URL exata
@@ -117,7 +117,7 @@ describe('API de Backups (/api/admin/backups)', () => {
     const jwt = jest.requireMock('jsonwebtoken');
     jwt.verify.mockReturnValue({ userId: 1, username: 'admin' });
 
-    const backupLib = jest.requireMock('./lib/backup.js'); //
+    const backupLib = jest.requireMock('../lib/backup.js'); //
     backupLib.createBackup.mockResolvedValue('/path/to/new-backup.sql.gz'); //
 
     await protectedBackupsApiRoute(req, res);
@@ -141,7 +141,7 @@ describe('API de Backups (/api/admin/backups)', () => {
     const jwt = jest.requireMock('jsonwebtoken');
     jwt.verify.mockReturnValue({ userId: 1, username: 'admin' });
 
-    const backupLib = jest.requireMock('./lib/backup.js');
+    const backupLib = jest.requireMock('../lib/backup.js');
 
     await protectedBackupsApiRoute(req, res);
 

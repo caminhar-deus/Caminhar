@@ -2,11 +2,11 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 
 // Mock da biblioteca de posts
-jest.mock('./lib/posts', () => ({
+jest.mock('../lib/posts', () => ({
   createPost: jest.fn(),
 }), { virtual: true });
 
-const postsLib = jest.requireMock('./lib/posts');
+const postsLib = jest.requireMock('../lib/posts');
 
 // Simulação do handler da API para fins de teste de integração da lógica de criação
 // Isso valida como o controller processa a requisição POST

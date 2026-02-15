@@ -16,7 +16,7 @@ jest.mock('next/head', () => {
 });
 
 // Mock do CSS module
-jest.mock('../../styles/Blog.module.css', () => ({
+jest.mock('../styles/Blog.module.css', () => ({
   blogContainer: 'blogContainer',
   blogHeader: 'blogHeader',
   blogTitle: 'blogTitle',

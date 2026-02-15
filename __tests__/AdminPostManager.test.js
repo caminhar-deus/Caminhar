@@ -3,7 +3,7 @@ import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 
 // Mock do CSS module
-jest.mock('./styles/Admin.module.css', () => ({
+jest.mock('../styles/Admin.module.css', () => ({
   adminContainer: 'adminContainer',
   adminHeader: 'adminHeader',
   adminTitle: 'adminTitle',

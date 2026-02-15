@@ -2,11 +2,11 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 
 // Mock da biblioteca de posts
-jest.mock('./lib/posts', () => ({
+jest.mock('../lib/posts', () => ({
   updatePost: jest.fn(),
 }), { virtual: true });
 
-const postsLib = jest.requireMock('./lib/posts');
+const postsLib = jest.requireMock('../lib/posts');
 
 // Simulação do handler da API para fins de teste de integração da lógica de atualização
 // Isso valida como o controller processa a requisição PUT

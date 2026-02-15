@@ -3,11 +3,11 @@ import { createMocks } from 'node-mocks-http';
 
 // Mock da biblioteca de vídeos
 // Assumimos que existe uma função getVideos que aceita (page, limit)
-jest.mock('./lib/videos', () => ({
+jest.mock('../lib/videos', () => ({
   getVideos: jest.fn(),
 }), { virtual: true });
 
-const videosLib = jest.requireMock('./lib/videos');
+const videosLib = jest.requireMock('../lib/videos');
 
 // Simulação do handler da API para fins de teste de integração da lógica de paginação
 // Isso valida como o controller processa os parâmetros e formata a resposta
