@@ -1,10 +1,8 @@
 import React from 'react';
 import AdminCrudBase from './AdminCrudBase';
 import TextField from './fields/TextField';
-import TextAreaField from './fields/TextAreaField';
 import UrlField from './fields/UrlField';
 import ToggleField from './fields/ToggleField';
-import styles from '../../styles/Admin.module.css';
 import { z } from 'zod';
 
 /**
@@ -15,14 +13,6 @@ const videoSchema = z.object({
   url_youtube: z.string().min(1, 'URL do YouTube é obrigatória'),
   descricao: z.string().max(500, 'Descrição deve ter no máximo 500 caracteres').optional()
 });
-
-/**
- * Extrai ID do YouTube da URL
- */
-const getYouTubeId = (url) => {
-  const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-  return match ? match[1] : null;
-};
 
 /**
  * Configuração dos campos do formulário
@@ -38,22 +28,24 @@ const fields = [
   },
   {
     name: 'descricao',
-    component: TextAreaField,
+    component: TextField,
     label: 'Descrição',
+    type: 'textarea',
     rows: 3,
     maxLength: 500,
-    placeholder: 'Descreva o vídeo...',
-    gridColumn: 'span 2'
+    placeholder: 'Descrição do vídeo (máximo 500 caracteres)',
+    gridColumn: 'span 2',
+    hint: 'Use até 500 caracteres para descrever o vídeo'
   },
   {
     name: 'url_youtube',
     component: UrlField,
-    label: 'URL do YouTube',
+    label: 'Link do YouTube',
     required: true,
     platform: 'youtube',
     showPreview: true,
     gridColumn: 'span 2',
-    hint: 'Formatos aceitos: youtube.com/watch?v=ID, youtu.be/ID, youtube.com/shorts/ID'
+    hint: 'Formato: https://www.youtube.com/watch?v=...'
   },
   {
     name: 'publicado',
@@ -74,37 +66,30 @@ const columns = [
     key: 'url_youtube',
     header: 'YouTube',
     render: (item) => (
-      <a 
-        href={item.url_youtube} 
-        target="_blank" 
-        rel="noopener noreferrer"
-        style={{ color: '#FF0000', textDecoration: 'none', fontWeight: 500 }}
-      >
-        ▶️ Abrir no YouTube
-      </a>
-    )
-  },
-  {
-    key: 'preview',
-    header: 'Preview',
-    render: (item) => {
-      const videoId = getYouTubeId(item.url_youtube);
-      if (!videoId) return <span style={{ color: '#6c757d', fontStyle: 'italic' }}>URL inválida</span>;
-      
-      return (
-        <div className={styles.videoPreview}>
+      <div>
+        <a 
+          href={item.url_youtube} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          style={{ color: '#ff0000', textDecoration: 'none', fontWeight: 500 }}
+        >
+          📺 Abrir no YouTube
+        </a>
+        <div style={{ marginTop: '10px' }}>
           <iframe
-            src={`https://www.youtube.com/embed/${videoId}?autoplay=0`}
-            width="120"
-            height="67.5"
+            data-testid="embed-iframe"
+            style={{ borderRadius: '8px' }}
+            src={`https://www.youtube.com/embed/${item.url_youtube.split('/').pop().split('?')[0]}?autoplay=0`}
+            width="100%"
+            height="160"
             frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
-            title={`Preview ${item.titulo}`}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            loading="lazy"
           />
         </div>
-      );
-    }
+      </div>
+    )
   },
   { key: 'publicado', header: 'Status' }
 ];
@@ -122,7 +107,8 @@ const initialFormData = {
 /**
  * AdminVideosNew - Componente refatorado usando AdminCrudBase
  * 
- * Demonstra uso de paginação e campos complexos.
+ * Exemplo de uso do sistema CRUD reutilizável para gerenciamento de vídeos.
+ * Demonstra como configurar campos, colunas e validação.
  */
 export default function AdminVideosNew() {
   return (

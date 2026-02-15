@@ -4,8 +4,6 @@ import path from 'path';
 import { updateSetting } from '../../lib/db.js';
 import { withAuth } from '../../lib/auth.js';
 
-const { IncomingForm } = formidable;
-
 export const config = {
   api: {
     bodyParser: false,
@@ -24,7 +22,7 @@ async function handler(req, res) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
-    const form = new IncomingForm({
+    const form = formidable({
       uploadDir,
       keepExtensions: true,
       maxFileSize: 5 * 1024 * 1024, // 5MB

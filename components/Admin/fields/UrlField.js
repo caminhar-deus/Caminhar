@@ -42,7 +42,7 @@ export default function UrlField({
 
   // Extrai ID do Spotify
   const getSpotifyId = useCallback((url) => {
-    const match = url.match(/(?:spotify\.com\/track\/|spotify:track:)([^"&?\/\s]+)/);
+    const match = url.match(/(?:spotify\.com\/(?:intl-\w+\/)?track\/|spotify:track:)([^"&?\/\s]+)/);
     return match ? match[1] : null;
   }, []);
 

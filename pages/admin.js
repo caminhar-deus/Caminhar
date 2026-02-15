@@ -2,13 +2,13 @@ import Head from 'next/head';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import styles from '../styles/Admin.module.css';
-import AdminPostManager from '../components/AdminPostManager';
+import AdminPostsNew from '../components/Admin/AdminPostsNew';
 import AdminRateLimit from '../components/AdminRateLimit';
 import AdminIntegrityCheck from '../components/AdminIntegrityCheck';
 import AdminBackupManager from '../components/AdminBackupManager';
 import AdminCacheManager from '../components/AdminCacheManager';
-import AdminMusicas from '../components/AdminMusicas';
-import AdminVideos from '../components/AdminVideos';
+import AdminMusicasNew from '../components/Admin/AdminMusicasNew';
+import AdminVideosNew from '../components/Admin/AdminVideosNew';
 
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -353,7 +353,7 @@ export default function Admin() {
           )}
 
           {activeTab === 'posts' && (
-            <AdminPostManager />
+            <AdminPostsNew />
           )}
 
           {activeTab === 'security' && (
@@ -366,11 +366,11 @@ export default function Admin() {
           )}
 
           {activeTab === 'musicas' && (
-            <AdminMusicas />
+            <AdminMusicasNew />
           )}
 
           {activeTab === 'videos' && (
-            <AdminVideos />
+            <AdminVideosNew />
           )}
 
           {activeTab === 'projetos01' && (

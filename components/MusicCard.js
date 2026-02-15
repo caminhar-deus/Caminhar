@@ -10,8 +10,8 @@ export default function MusicCard({ musica }) {
   // Converte URL do Spotify para embed
   const getSpotifyEmbedUrl = (spotifyUrl) => {
     try {
-      // Extrai o ID da música da URL
-      const match = spotifyUrl.match(/track\/([a-zA-Z0-9]+)(\?|$)/);
+      // Extrai o ID da música da URL (suporta URLs internacionais)
+      const match = spotifyUrl.match(/(?:spotify\.com\/(?:intl-\w+\/)?track\/|spotify:track:)([a-zA-Z0-9]+)/);
       if (match && match[1]) {
         return `https://open.spotify.com/embed/track/${match[1]}`;
       }
