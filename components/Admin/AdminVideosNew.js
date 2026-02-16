@@ -3,6 +3,7 @@ import AdminCrudBase from './AdminCrudBase';
 import TextField from './fields/TextField';
 import UrlField from './fields/UrlField';
 import ToggleField from './fields/ToggleField';
+import ImageUploadField from './fields/ImageUploadField';
 import { z } from 'zod';
 
 /**
@@ -11,7 +12,8 @@ import { z } from 'zod';
 const videoSchema = z.object({
   titulo: z.string().min(1, 'Título é obrigatório'),
   url_youtube: z.string().min(1, 'URL do YouTube é obrigatória'),
-  descricao: z.string().max(500, 'Descrição deve ter no máximo 500 caracteres').optional()
+  descricao: z.string().max(500, 'Descrição deve ter no máximo 500 caracteres').optional(),
+  thumbnail: z.string().optional()
 });
 
 /**
@@ -46,6 +48,15 @@ const fields = [
     showPreview: true,
     gridColumn: 'span 2',
     hint: 'Formato: https://www.youtube.com/watch?v=...'
+  },
+  {
+    name: 'thumbnail',
+    component: ImageUploadField,
+    label: 'Capa Personalizada',
+    placeholder: 'https://... ou faça upload',
+    uploadType: 'post',
+    gridColumn: 'span 2',
+    hint: 'Opcional. Se vazio, usará a miniatura padrão do YouTube.'
   },
   {
     name: 'publicado',
@@ -101,6 +112,7 @@ const initialFormData = {
   titulo: '',
   descricao: '',
   url_youtube: '',
+  thumbnail: '',
   publicado: false
 };
 

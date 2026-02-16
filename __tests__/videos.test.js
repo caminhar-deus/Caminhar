@@ -15,7 +15,8 @@ describe('Funcionalidade de Descrição nos Vídeos', () => {
     const videoData = {
       titulo: 'Vídeo de Teste',
       url_youtube: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-      descricao: 'Esta é uma descrição de teste para validar o banco de dados.'
+      descricao: 'Esta é uma descrição de teste para validar o banco de dados.',
+      thumbnail: '/uploads/thumb-teste.jpg'
     };
 
     // Simula o retorno do banco de dados
@@ -31,7 +32,8 @@ describe('Funcionalidade de Descrição nos Vídeos', () => {
       expect.arrayContaining([
         videoData.titulo, 
         videoData.url_youtube, 
-        videoData.descricao // O ponto crucial: verifica se a descrição foi passada para a query
+        videoData.descricao, // O ponto crucial: verifica se a descrição foi passada para a query
+        videoData.thumbnail
       ])
     );
     
@@ -45,7 +47,8 @@ describe('Funcionalidade de Descrição nos Vídeos', () => {
     const updateData = {
       titulo: 'Vídeo Atualizado',
       url_youtube: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-      descricao: 'Descrição atualizada com sucesso.'
+      descricao: 'Descrição atualizada com sucesso.',
+      thumbnail: '/uploads/thumb-updated.jpg'
     };
 
     query.mockResolvedValueOnce({
@@ -61,6 +64,7 @@ describe('Funcionalidade de Descrição nos Vídeos', () => {
         updateData.titulo, 
         updateData.url_youtube, 
         updateData.descricao, 
+        updateData.thumbnail,
         id
       ])
     );

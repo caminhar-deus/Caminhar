@@ -90,6 +90,17 @@ export default function LazyIframe({
     return null;
   };
 
+  // Garante URL de embed correta para YouTube
+  const getEmbedSrc = () => {
+    if (provider === 'youtube') {
+      const videoId = src.match(/(?:youtube\.com\/embed\/|youtu\.be\/|youtube\.com\/watch\?v=)([^&?\s]+)/)?.[1];
+      if (videoId) {
+        return `https://www.youtube.com/embed/${videoId}`;
+      }
+    }
+    return src;
+  };
+
   const thumbUrl = getThumbnail();
   const shouldShowPlaceholder = !isVisible || !isIntersecting;
 
@@ -192,7 +203,7 @@ export default function LazyIframe({
       {(isVisible || isIntersecting) && (
         <iframe
           ref={iframeRef}
-          src={src}
+          src={getEmbedSrc()}
           title={title}
           allow={allow}
           allowFullScreen

@@ -1,6 +1,7 @@
 import Head from 'next/head';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/router';
+import Cropper from 'react-easy-crop';
 import styles from '../styles/Admin.module.css';
 import AdminPostsNew from '../components/Admin/AdminPostsNew';
 import AdminRateLimit from '../components/AdminRateLimit';
@@ -10,6 +11,67 @@ import AdminCacheManager from '../components/AdminCacheManager';
 import AdminMusicasNew from '../components/Admin/AdminMusicasNew';
 import AdminVideosNew from '../components/Admin/AdminVideosNew';
 
+// Função utilitária para redimensionar imagens no navegador
+const resizeImage = (file, maxWidth = 1100, quality = 0.8) => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob((blob) => {
+          const resizedFile = new File([blob], file.name, {
+            type: file.type,
+            lastModified: Date.now(),
+          });
+          resolve(resizedFile);
+        }, file.type, quality);
+      };
+    };
+  });
+};
+
+// Função utilitária para recortar a imagem (Crop)
+const getCroppedImg = (imageSrc, pixelCrop) => {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.src = imageSrc;
+    image.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = pixelCrop.width;
+      canvas.height = pixelCrop.height;
+      const ctx = canvas.getContext('2d');
+
+      ctx.drawImage(
+        image,
+        pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height,
+        0, 0, pixelCrop.width, pixelCrop.height
+      );
+
+      canvas.toBlob((blob) => {
+        if (!blob) return reject(new Error('Canvas is empty'));
+        resolve(new File([blob], 'cropped.webp', { type: 'image/webp' }));
+      }, 'image/webp', 0.95);
+    };
+    image.onerror = reject;
+  });
+};
+
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState('');
@@ -17,12 +79,21 @@ export default function Admin() {
   const [title, setTitle] = useState('O Caminhar com Deus');
   const [subtitle, setSubtitle] = useState('Reflexões e ensinamentos sobre a fé, espiritualidade e a jornada cristã');
   const [imageFile, setImageFile] = useState(null);
+  const [originalSize, setOriginalSize] = useState(0);
   const [currentImageUrl, setCurrentImageUrl] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('posts');
   const router = useRouter();
+  const fileInputRef = useRef(null);
+
+  // Estados para o Cropper
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [isCropping, setIsCropping] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState(null);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
 
   // Check authentication status on component mount
   useEffect(() => {
@@ -125,6 +196,8 @@ export default function Admin() {
           const data = await response.json();
           if (data.path) setCurrentImageUrl(data.path);
           setImageFile(null);
+          setOriginalSize(0);
+          if (fileInputRef.current) fileInputRef.current.value = '';
           alert('Imagem atualizada com sucesso!');
         } else {
           console.error('Resposta inválida do servidor (não é JSON)');
@@ -136,6 +209,33 @@ export default function Admin() {
     } catch (error) {
       console.error('Error:', error);
       alert('Erro ao fazer upload da imagem');
+    }
+  };
+
+  const handleCancelSelection = () => {
+    setImageFile(null);
+    setOriginalSize(0);
+    setIsCropping(false);
+    setCropImageSrc(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const handleCropConfirm = async () => {
+    try {
+      const croppedImage = await getCroppedImg(cropImageSrc, croppedAreaPixels);
+      // Redimensiona após o crop para garantir largura máxima de 1100px
+      const resizedFile = await resizeImage(croppedImage);
+      setImageFile(resizedFile);
+      setIsCropping(false);
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao recortar imagem');
     }
   };
 
@@ -309,24 +409,114 @@ export default function Admin() {
               <div className={styles.formGroup}>
                 <label>Imagem Principal (1100x320)</label>
                 <input
+                  ref={fileInputRef}
                   type="file"
                   accept="image/*"
-                  onChange={(e) => setImageFile(e.target.files[0])}
+                  onChange={async (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      // Limite de segurança para processamento no navegador (10MB)
+                      if (file.size > 10 * 1024 * 1024) {
+                        alert('O arquivo é muito grande para ser processado (>10MB).');
+                        e.target.value = '';
+                        setImageFile(null);
+                        setOriginalSize(0);
+                        return;
+                      }
+
+                      setOriginalSize(file.size);
+                      
+                      // Lê o arquivo para o Cropper
+                      const reader = new FileReader();
+                      reader.addEventListener('load', () => {
+                        setCropImageSrc(reader.result);
+                        setIsCropping(true);
+                      });
+                      reader.readAsDataURL(file);
+                    }
+                  }}
                   className={styles.input}
                 />
-                <button onClick={handleImageUpload} className={styles.button}>
-                  Atualizar Imagem
-                </button>
+                
+                {isCropping && cropImageSrc ? (
+                  <div style={{ margin: '20px 0', border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden' }}>
+                    <div style={{ position: 'relative', height: 400, width: '100%', background: '#333' }}>
+                      <Cropper
+                        image={cropImageSrc}
+                        crop={crop}
+                        zoom={zoom}
+                        aspect={1100 / 320}
+                        onCropChange={setCrop}
+                        onCropComplete={onCropComplete}
+                        onZoomChange={setZoom}
+                      />
+                    </div>
+                    <div style={{ padding: '15px', background: '#f8f9fa', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>Zoom:</span>
+                      <input
+                        type="range"
+                        value={zoom}
+                        min={1}
+                        max={3}
+                        step={0.1}
+                        aria-labelledby="Zoom"
+                        onChange={(e) => setZoom(e.target.value)}
+                        style={{ flex: 1 }}
+                      />
+                      <button 
+                        onClick={handleCropConfirm}
+                        className={styles.button}
+                        style={{ padding: '8px 20px', fontSize: '0.9rem' }}
+                      >
+                        Recortar & Confirmar
+                      </button>
+                    </div>
+                  </div>
+                ) : imageFile && (
+                  <div style={{ margin: '15px 0' }}>
+                    <p style={{ marginBottom: '5px', fontSize: '0.9rem', color: '#666' }}>Pré-visualização da seleção:</p>
+                    <div style={{ fontSize: '0.85rem', color: '#555', marginBottom: '10px', background: '#f8f9fa', padding: '10px', borderRadius: '6px', border: '1px solid #e9ecef' }}>
+                      <div>📦 <strong>Original:</strong> {(originalSize / 1024).toFixed(2)} KB</div>
+                      <div>✨ <strong>Otimizado:</strong> {(imageFile.size / 1024).toFixed(2)} KB</div>
+                      <div style={{ color: '#28a745', marginTop: '4px', fontWeight: '600' }}>📉 Economia de {originalSize > 0 ? ((1 - imageFile.size / originalSize) * 100).toFixed(0) : 0}%</div>
+                    </div>
+                    <img 
+                      src={URL.createObjectURL(imageFile)} 
+                      alt="Pré-visualização" 
+                      style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '4px', border: '1px solid #ccc' }}
+                    />
+                  </div>
+                )}
+                {(imageFile || isCropping) && (
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+                    <button 
+                      onClick={handleCancelSelection} 
+                      className={styles.button}
+                      style={{ backgroundColor: '#6c757d' }}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className={styles.formGroup}>
-                <button
-                  onClick={handleSaveSettings}
-                  className={styles.button}
-                  disabled={saving}
-                >
-                  {saving ? 'Salvando...' : 'Salvar Configurações'}
-                </button>
+                <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+                  <button 
+                    onClick={handleImageUpload} 
+                    className={styles.button}
+                    disabled={!imageFile || isCropping}
+                  >
+                    Atualizar Imagem
+                  </button>
+                  <button
+                    onClick={handleSaveSettings}
+                    className={styles.button}
+                    disabled={saving}
+                  >
+                    {saving ? 'Salvando...' : 'Salvar Configurações'}
+                  </button>
+                </div>
               </div>
 
               <div className={styles.preview}>

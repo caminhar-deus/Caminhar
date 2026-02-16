@@ -1,88 +1,50 @@
-import { useState } from 'react';
-import styles from '../styles/VideoCard.module.css';
+import React from 'react';
+import LazyIframe from './Performance/LazyIframe';
 
+/**
+ * Componente VideoCard
+ * Responsável por exibir um vídeo individual na lista.
+ * 
+ * Integração com Thumbnail Personalizada:
+ * O componente recebe o objeto 'video' completo. Passamos 'video.thumbnail'
+ * para o LazyIframe. Se existir (não for null), o LazyIframe usará essa imagem
+ * como capa. Se for null, ele usará a capa padrão do YouTube gerada pelo ID.
+ */
 export default function VideoCard({ video }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  const handleYoutubeClick = (e) => {
-    e.preventDefault();
-    // Abre o link do YouTube em uma nova aba
-    if (video.url_youtube) {
-      window.open(video.url_youtube, '_blank', 'noopener,noreferrer');
-    }
-  };
-
-  // Converte URL do YouTube para embed
-  const getYoutubeEmbedUrl = (youtubeUrl) => {
-    try {
-      if (!youtubeUrl) {
-        return '';
-      }
-      
-      // Extrai o ID do vídeo da URL
-      const match = youtubeUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-      if (match && match[1]) {
-        return `https://www.youtube.com/embed/${match[1]}?autoplay=0&rel=0`;
-      }
-      
-      // Se não conseguir extrair o ID, tenta usar a URL original
-      return youtubeUrl;
-    } catch (error) {
-      console.error('Erro ao converter URL do YouTube:', error);
-      return youtubeUrl;
-    }
-  };
-
   return (
-    <div className={styles.videoCard}>
-      <div className={styles.videoContainer}>
-        {video.url_youtube ? (
-          <iframe
-            src={getYoutubeEmbedUrl(video.url_youtube)}
-            width="100%"
-            height="100%"
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            title={`Player do YouTube para ${video.titulo}`}
-            className={styles.youtubeEmbed}
-            loading="lazy"
-          ></iframe>
-        ) : (
-          <div className={styles.noVideoPlaceholder}>
-            <span className={styles.noVideoIcon}>🎬</span>
-            <p>Vídeo não disponível</p>
-          </div>
-        )}
-      </div>
-      
-      <div className={styles.content}>
-        <h3 className={styles.titulo}>{video.titulo}</h3>
+    <div style={{ 
+      border: '1px solid #eaeaea', 
+      borderRadius: '12px', 
+      overflow: 'hidden',
+      backgroundColor: '#fff',
+      boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
+      transition: 'transform 0.2s ease',
+      height: '100%'
+    }}>
+      <LazyIframe
+        src={video.url_youtube}
+        title={video.titulo}
+        thumbnail={video.thumbnail} // ✅ AQUI: Passa a capa personalizada do banco
+        provider="youtube"
+        aspectRatio="16/9"
+      />
+      <div style={{ padding: '16px' }}>
+        <h3 style={{ margin: '0 0 8px 0', fontSize: '1.1rem', fontWeight: 600 }}>
+          {video.titulo}
+        </h3>
         {video.descricao && (
-          <div>
-            <p className={`${styles.descricao} ${isExpanded ? styles.expanded : ''}`}>
-              {video.descricao}
-            </p>
-            {video.descricao.length > 120 && (
-              <button 
-                className={styles.readMoreBtn}
-                onClick={() => setIsExpanded(!isExpanded)}
-              >
-                {isExpanded ? 'Ler menos' : 'Ler mais'}
-              </button>
-            )}
-          </div>
-        )}
-        
-        {video.url_youtube && (
-          <button 
-            className={styles.youtubeButton}
-            onClick={handleYoutubeClick}
-            aria-label={`Assistir ${video.titulo} no YouTube`}
-          >
-            <span className={styles.youtubeIcon}>▶️</span>
-            Assistir no YouTube
-          </button>
+          <p style={{ 
+            margin: 0, 
+            color: '#666', 
+            fontSize: '0.9rem', 
+            lineHeight: '1.5',
+            display: '-webkit-box',
+            WebkitLineClamp: 3,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden'
+          }}>
+            {video.descricao}
+          </p>
         )}
       </div>
     </div>
