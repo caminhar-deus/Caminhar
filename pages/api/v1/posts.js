@@ -1,15 +1,19 @@
-import { getOrSetCache } from '../../../lib/cache';
-import db from '../../../lib/db';
+import { getOrSetCache, invalidateCache } from '../../../lib/cache';
+import * as db from '../../../lib/db';
+import { getAuthToken, verifyToken } from '../../../lib/auth';
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ 
-      success: false, 
-      error: 'Method Not Allowed', 
-      message: 'Apenas método GET é permitido' 
-    });
+  switch (req.method) {
+    case 'GET':
+      return handleGet(req, res);
+    case 'POST':
+      return handlePost(req, res);
+    default:
+      return res.status(405).json({ success: false, message: 'Method Not Allowed' });
   }
+}
 
+async function handleGet(req, res) {
   try {
     // Cache key: 'posts:public:all'
     // TTL: 3600 segundos (1 hora)
@@ -36,5 +40,39 @@ export default async function handler(req, res) {
       error: 'Internal Server Error', 
       message: 'Erro ao carregar postagens' 
     });
+  }
+}
+
+async function handlePost(req, res) {
+  try {
+    const token = getAuthToken(req);
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'Não autenticado' });
+    }
+
+    const user = verifyToken(token);
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Token inválido' });
+    }
+
+    // Validação básica
+    const { title, slug, content } = req.body;
+    if (!title || !slug || !content) {
+      return res.status(400).json({ success: false, message: 'Campos obrigatórios faltando' });
+    }
+
+    const newPost = await db.createPost(req.body);
+
+    // Invalida o cache da lista pública
+    await invalidateCache('posts:public:all');
+
+    return res.status(201).json({
+      success: true,
+      data: newPost,
+      message: 'Post criado com sucesso'
+    });
+  } catch (error) {
+    console.error('Erro ao criar post:', error);
+    return res.status(500).json({ success: false, message: 'Erro ao criar post' });
   }
 }

@@ -97,6 +97,11 @@ export default function (data) {
   });
 
   check(updateRes, { 'UPDATE: status é 200': (r) => r.status === 200 }, { flow: 'update_video' });
+  if (updateRes.status !== 200) {
+    console.error(`Falha ao atualizar vídeo. Status: ${updateRes.status}, Corpo: ${updateRes.body}`);
+    // Aborta a iteração se a atualização falhar, pois o delete pode não fazer sentido.
+    return;
+  }
 
   sleep(1);
 
@@ -107,6 +112,10 @@ export default function (data) {
   });
 
   check(deleteRes, { 'DELETE: status é 200': (r) => r.status === 200 }, { flow: 'delete_video' });
+  if (deleteRes.status !== 200) {
+    console.error(`Falha ao deletar vídeo. Status: ${deleteRes.status}, Corpo: ${deleteRes.body}`);
+    // Apenas loga o erro, mas a iteração pode continuar, pois já está no final.
+  }
 
   sleep(2); // Aguarda antes da próxima iteração
 }

@@ -1,25 +1,53 @@
 import { promises as fs } from 'fs';
 import path from 'path';
+import { getSetting } from '../../lib/db.js';
 
 export default async function handler(req, res) {
   try {
-    // Check if there's a custom image uploaded
     const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-    const files = await fs.readdir(uploadDir).catch(() => []);
+    let filename = null;
 
-    // Find the latest image file
-    const imageFiles = files.filter(file => file.startsWith('hero-image-'));
-    const latestImage = imageFiles.sort().pop();
+    // 1. Tenta buscar a imagem definida nas configurações do banco de dados
+    try {
+      // Tenta buscar a configuração 'site_image' (onde o diagnóstico mostrou que está salva)
+      const dbImage = await getSetting('site_image');
+      
+      if (dbImage && typeof dbImage === 'string') {
+        // dbImage geralmente é '/uploads/post-image-123.png', pegamos só o nome do arquivo
+        filename = path.basename(dbImage);
+      }
+    } catch (dbError) {
+      console.warn('Aviso: Não foi possível ler a configuração do banco:', dbError.message);
+    }
 
-    if (latestImage) {
+    // 2. Fallback: Se não achou no banco, procura o arquivo mais recente na pasta
+    if (!filename) {
+      const files = await fs.readdir(uploadDir).catch(() => []);
+      
+      // Procura por arquivos com prefixo antigo (hero-) ou novo (post-)
+      const imageFiles = files.filter(file => 
+        file.startsWith('hero-image-') || file.startsWith('post-image-')
+      );
+      
+      // Pega o último (mais recente pelo nome/timestamp)
+      if (imageFiles.length > 0) {
+        filename = imageFiles.sort().pop();
+      }
+    }
+
+    if (filename) {
       // Serve the uploaded image with aggressive caching
-      const imagePath = path.join(uploadDir, latestImage);
+      const imagePath = path.join(uploadDir, filename);
       const imageBuffer = await fs.readFile(imagePath);
 
       // Set aggressive caching headers for better performance
-      res.setHeader('Content-Type', 'image/jpeg');
+      // Detecta tipo básico pela extensão ou assume jpeg
+      const ext = path.extname(filename).toLowerCase();
+      const contentType = ext === '.png' ? 'image/png' : (ext === '.webp' ? 'image/webp' : 'image/jpeg');
+      
+      res.setHeader('Content-Type', contentType);
       res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
-      res.setHeader('ETag', `"${latestImage}"`);
+      res.setHeader('ETag', `"${filename}"`);
       res.setHeader('Last-Modified', new Date().toUTCString());
       res.send(imageBuffer);
     } else {

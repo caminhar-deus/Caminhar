@@ -22,11 +22,11 @@ export const options = {
 
 const BASE_URL = 'http://localhost:3000';
 const USERNAME = __ENV.ADMIN_USERNAME || 'admin';
-const PASSWORD = __ENV.ADMIN_PASSWORD || 'password';
+const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
 
 export function setup() {
   // Login para obter token (necessário para /api/v1/settings)
-  const loginRes = http.post(`${BASE_URL}/api/auth/login`, JSON.stringify({
+  const loginRes = http.post(`${BASE_URL}/api/v1/auth/login`, JSON.stringify({
     username: USERNAME,
     password: PASSWORD,
   }), {
@@ -37,7 +37,7 @@ export function setup() {
     throw new Error(`Falha no login de setup: ${loginRes.status} ${loginRes.body}`);
   }
 
-  return loginRes.json('token');
+  return loginRes.json('data.token');
 }
 
 export default function (token) {

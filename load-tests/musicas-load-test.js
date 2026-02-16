@@ -17,12 +17,12 @@ export const options = {
 
 const BASE_URL = 'http://localhost:3000';
 const USERNAME = __ENV.ADMIN_USERNAME || 'admin';
-const PASSWORD = __ENV.ADMIN_PASSWORD || 'password';
+const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
 
 // A função setup roda uma vez antes do teste iniciar para preparar o ambiente (login)
 export function setup() {
   const loginRes = http.post(
-    `${BASE_URL}/api/auth/login`,
+    `${BASE_URL}/api/v1/auth/login`,
     JSON.stringify({ username: USERNAME, password: PASSWORD }),
     { headers: { 'Content-Type': 'application/json' } }
   );
@@ -31,7 +31,7 @@ export function setup() {
     throw new Error(`Falha no login: ${loginRes.status} ${loginRes.body}`);
   }
 
-  return loginRes.json('token');
+  return loginRes.json('data.token');
 }
 
 export default function (token) {
@@ -40,31 +40,15 @@ export default function (token) {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
+    tags: { name: 'ListMusicas' },
   };
 
-  // 1. Requisita a primeira página (padrão)
-  const res = http.get(`${BASE_URL}/api/admin/videos`, {
-    ...params,
-    tags: { name: 'ListVideos_Page1' },
-  });
+  const res = http.get(`${BASE_URL}/api/v1/admin/musicas`, params);
 
   check(res, {
     'status é 200': (r) => r.status === 200,
-    'retornou objeto com videos': (r) => Array.isArray(r.json().videos),
-    'retornou metadados de paginação': (r) => r.json().pagination !== undefined,
-    'página 1 tempo < 300ms': (r) => r.timings.duration < 300,
-  });
-
-  // 2. Requisita a segunda página com limite específico
-  const resPage2 = http.get(`${BASE_URL}/api/admin/videos?page=2&limit=5`, {
-    ...params,
-    tags: { name: 'ListVideos_Page2' },
-  });
-
-  check(resPage2, {
-    'página 2 status é 200': (r) => r.status === 200,
-    'está na página 2': (r) => r.json().pagination.page === 2,
-    'limite é 5': (r) => r.json().pagination.limit === 5,
+    'retornou lista (array)': (r) => Array.isArray(r.json()),
+    'tempo de resposta < 300ms': (r) => r.timings.duration < 300,
   });
 
   sleep(Math.random() * 1 + 1);
