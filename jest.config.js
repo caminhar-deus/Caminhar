@@ -14,11 +14,11 @@ export default {
   
   // Configure Jest to handle ES modules and JSX with Babel
   transform: {
-    '^.+\.(js|jsx|mjs)$': ['babel-jest', { configFile: './babel.jest.config.js' }]
+    '^.+\.(js|jsx|mjs|cjs)$': ['babel-jest', { configFile: './babel.jest.config.js' }]
   },
   
   transformIgnorePatterns: [
-    '/node_modules/(?!node-mocks-http/)',
+    '/node_modules/(?!node-mocks-http|@faker-js|url|pg)',
     '/node_modules/(?!@faker-js/)'  // Permite transformar @faker-js
   ],
   

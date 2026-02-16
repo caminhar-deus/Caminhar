@@ -17,12 +17,12 @@ jest.mock('fs', () => ({
 }));
 
 // Mock do PostgreSQL (Banco de Dados)
-jest.mock('./lib/db.js', () => ({
+jest.mock('../lib/db.js', () => ({
   query: jest.fn(),
 }));
 
 // Mock da Autenticação (Bypass)
-jest.mock('./lib/auth.js', () => ({
+jest.mock('../lib/auth.js', () => ({
   withAuth: (fn) => (req, res) => {
     req.user = { userId: 1, username: 'admin' };
     return fn(req, res);
@@ -32,8 +32,8 @@ jest.mock('./lib/auth.js', () => ({
 // Import the mocked modules
 const formidable = jest.requireMock('formidable');
 const fs = jest.requireMock('fs');
-const dbModule = jest.requireMock('./lib/db.js');
-const auth = jest.requireMock('./lib/auth.js');
+const dbModule = jest.requireMock('../lib/db.js');
+const auth = jest.requireMock('../lib/auth.js');
 
 // Mock upload handler function since the file doesn't exist
 const uploadHandler = async (req, res) => {

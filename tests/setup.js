@@ -10,6 +10,7 @@
  * - Polyfills para ambiente Node.js/JSDOM
  */
 
+// Import jest-dom matchers for extended assertions
 import '@testing-library/jest-dom';
 import { TextEncoder, TextDecoder } from 'util';
 import { cleanup } from '@testing-library/react';
