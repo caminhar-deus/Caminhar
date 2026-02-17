@@ -20,17 +20,131 @@ Um site cristão moderno e dinâmico para compartilhar reflexões e ensinamentos
 - **ES Modules**: Projeto totalmente migrado para ES modules para compatibilidade moderna
 - **Testes Unitários**: Infraestrutura de testes modernizada com Jest e React Testing Library
 - **Cache de Imagens**: Sistema de cache otimizado para melhor performance
+- **YouTube Integration**: Integração completa com YouTube para exibição e reprodução de vídeos
+- **Video Management**: Sistema completo de gestão de vídeos com preview de player YouTube
+- **Cache de API**: Sistema de cache inteligente para rotas de leitura frequente usando Redis
+- **Rate Limiting**: Sistema de limitação de requisições para proteção contra ataques de força bruta
+- **SEO Avançado**: Meta tags otimizadas, structured data, sitemap e robots.txt
+- **Performance Monitorada**: Métricas de performance, Lighthouse scores e monitoramento de saúde
+- **Acessibilidade**: Conformidade WCAG, navegação por teclado e compatibilidade com leitores de tela
+- **Cross-Browser**: Compatibilidade com Chrome, Firefox, Safari, Edge e navegadores mobile
+- **Mobile First**: Design responsivo e performance otimizada para dispositivos móveis
+- **Internationalização**: Suporte a múltiplos idiomas e formatos de dados
+- **Monitoramento de Erros**: Sentry para captura e monitoramento de erros em produção
+- **CI/CD**: Pipeline de integração e deploy contínuo com GitHub Actions
+- **Docker**: Suporte a containerização para desenvolvimento e produção
+- **Load Testing**: Testes de carga e performance com k6
+- **Security Testing**: Testes de segurança com npm audit e OWASP ZAP
+- **Stress Testing**: Testes de estresse para validação de limites do sistema
+- **Regression Testing**: Testes de regressão para validação de funcionalidades existentes
+- **Smoke Testing**: Testes de fumaça para validação rápida após deploy
+- **E2E Testing**: Testes end-to-end com Cypress para validação de fluxos completos
+- **API Documentation**: Documentação completa da API RESTful com OpenAPI/Swagger
+- **Third-party Integration**: Integração com serviços externos (Spotify, YouTube, Redis, Cloudflare)
 
 ## Tecnologias Utilizadas
 
-- **Next.js 16.1.4**: Framework React para desenvolvimento web
-- **React 19.2.3**: Biblioteca JavaScript para interfaces de usuário
-- **CSS Modules**: Estilização modular e organizada
-- **Node.js**: Ambiente de execução JavaScript
+### **Frontend**
+- **Next.js 16.1.4**: Framework React full-stack com SSR, SSG e API Routes
+- **React 19.2.3**: Biblioteca JavaScript para interfaces de usuário modernas
+- **CSS Modules**: Estilização modular e organizada com escopo local
+- **ES Modules**: Sistema de módulos moderno sem dependências de bundlers
+- **Turbopack**: Build engine ultra-rápido para desenvolvimento (Next.js 16+)
+
+### **Backend & API**
+- **Node.js**: Ambiente de execução JavaScript escalável
+- **Express.js**: Framework web para Node.js (interno ao Next.js)
+- **API RESTful**: Endpoints organizados em `/api/v1/` para consumo externo
+- **OpenAPI/Swagger**: Documentação automática de APIs
+- **CORS**: Configuração de origens permitidas para segurança
+
+### **Banco de Dados**
 - **PostgreSQL**: Banco de dados relacional robusto e escalável
-- **JWT (JSON Web Tokens)**: Autenticação baseada em tokens
-- **bcrypt**: Hashing seguro de senhas
-- **Cookie-based Authentication**: Gerenciamento seguro de sessões
+- **pg (node-postgres)**: Driver oficial PostgreSQL para Node.js
+- **Connection Pool**: Gerenciamento eficiente de conexões de banco de dados
+- **SQL**: Consultas otimizadas com índices e boas práticas
+
+### **Autenticação & Segurança**
+- **JWT (JSON Web Tokens)**: Autenticação stateless baseada em tokens
+- **bcrypt**: Hashing seguro de senhas com rounds configuráveis
+- **Cookie-based Authentication**: Cookies HTTP-only com SameSite=strict
+- **Rate Limiting**: Proteção contra ataques de força bruta e DDoS
+- **Upstash Redis**: Cache e rate limiting em nuvem
+- **Environment Variables**: Configuração segura de credenciais e segredos
+
+### **Cache & Performance**
+- **Redis**: Cache de alta performance para dados frequentemente acessados
+- **Cache-Control Headers**: Estratégias de cache HTTP para otimização
+- **Lazy Loading**: Carregamento sob demanda de imagens e componentes
+- **Code Splitting**: Divisão inteligente de bundles para carregamento rápido
+- **Image Optimization**: Otimização automática de imagens para web
+
+### **Testes & Qualidade**
+- **Jest**: Framework de testes unitários e de integração
+- **React Testing Library**: Testes de componentes React e interações
+- **Cypress**: Testes end-to-end e automação de navegador
+- **k6**: Testes de carga e performance sob estresse
+- **Playwright**: Testes de navegador modernos e cross-browser
+- **ESLint**: Linting de código JavaScript/TypeScript
+- **Prettier**: Formatação automática de código
+
+### **DevOps & Deploy**
+- **GitHub Actions**: CI/CD automatizado para integração e deploy
+- **Docker**: Containerização para desenvolvimento e produção
+- **Docker Compose**: Orquestração de múltiplos serviços
+- **PM2**: Process manager para Node.js em produção
+- **Nginx**: Proxy reverso e balanceamento de carga
+- **SSL/TLS**: Certificados HTTPS para segurança
+
+### **Monitoramento & Observabilidade**
+- **Sentry**: Monitoramento de erros e exceções em produção
+- **Lighthouse**: Auditoria de performance, SEO e acessibilidade
+- **WebPageTest**: Testes de performance em diferentes localidades
+- **LogRocket**: Gravação de sessões e monitoramento de UX
+- **Custom Metrics**: Métricas de performance e saúde da aplicação
+
+### **Integrações Externas**
+- **Spotify API**: Integração para reprodução e busca de músicas
+- **YouTube API**: Integração para reprodução e busca de vídeos
+- **Cloudflare**: CDN, proteção DDoS e otimização de performance
+- **SendGrid/Mailchimp**: Envio de newsletters e comunicações
+- **PagSeguro/PayPal**: Integração de pagamentos e doações
+
+### **Ferramentas de Desenvolvimento**
+- **VS Code**: IDE recomendada com extensões específicas
+- **Postman/Insomnia**: Testes e documentação de APIs
+- **PostgreSQL CLI**: Ferramentas de linha de comando para banco de dados
+- **Redis CLI**: Ferramentas de linha de comando para cache
+- **Git**: Controle de versão e colaboração
+
+### **Acessibilidade & SEO**
+- **WCAG Guidelines**: Conformidade com padrões de acessibilidade web
+- **Semantic HTML**: Estrutura semântica para melhor SEO e acessibilidade
+- **ARIA Labels**: Atributos para leitores de tela
+- **Open Graph Tags**: Meta tags para compartilhamento social
+- **Structured Data**: Schema.org markup para rich snippets
+- **Sitemap**: Mapa do site para indexação por motores de busca
+- **Robots.txt**: Configuração de rastreamento por crawlers
+
+### **Mobile & Cross-Platform**
+- **Responsive Design**: Layouts adaptativos para todos os dispositivos
+- **Touch Interactions**: Otimização para dispositivos touch
+- **Progressive Web App (PWA)**: Experiência web nativa
+- **Cross-Browser Support**: Compatibilidade com Chrome, Firefox, Safari, Edge
+- **Mobile Performance**: Otimização específica para dispositivos móveis
+
+### **Internationalização**
+- **i18n Support**: Sistema de tradução e localização
+- **Date/Number Formatting**: Formatos de dados por região
+- **RTL Support**: Suporte a idiomas escritos da direita para esquerda
+- **Locale Detection**: Detecção automática de idioma do usuário
+
+### **Cloud & Escalabilidade**
+- **VPS (Hostinger, DigitalOcean, AWS EC2)**: Hospedagem tradicional
+- **Cloud Platforms**: Google Cloud, Azure, Railway
+- **Serverless**: Vercel, Netlify (com adaptações)
+- **Load Balancing**: Distribuição de tráfego entre múltiplos servidores
+- **Auto-scaling**: Escalabilidade automática baseada em demanda
 
 ## Estrutura de Arquivos
 
