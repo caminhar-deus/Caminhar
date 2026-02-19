@@ -379,30 +379,406 @@ caminhar/
 
 ## Como Executar
 
-1. **Instalar dependências**:
-   ```bash
-   npm install
-   ```
+### 🚀 **Método Rápido (Recomendado)**
 
-2. **Configurar Variáveis de Ambiente**:
-   Copie o arquivo `.env.example` para `.env` e configure a `DATABASE_URL` do seu PostgreSQL.
-   ```bash
-   cp .env.example .env
-   ```
+#### **1. Configurar Variáveis de Ambiente**
+```bash
+# Copiar arquivo de exemplo
+cp .env.example .env
 
-3. **Inicializar o Banco de Dados**:
-   ```bash
-   npm run init-posts
-   ```
+# Editar o arquivo .env com suas configurações
+# - DATABASE_URL: Conexão PostgreSQL
+# - JWT_SECRET: Chave secreta para JWT (gerar com: openssl rand -hex 32)
+# - ADMIN_USERNAME: Nome de usuário admin
+# - ADMIN_PASSWORD: Senha do admin
+```
 
-4. **Iniciar o servidor de desenvolvimento**:
-   ```bash
-   npm run dev
-   ```
+#### **2. Instalar Dependências**
+```bash
+npm install
+```
 
-5. **Acessar o site**:
-   - Página principal: http://localhost:3000
-   - Painel administrativo: http://localhost:3000/admin
+#### **3. Inicializar Banco de Dados**
+```bash
+# Inicializar tabelas e dados padrão
+npm run init-posts
+
+# (Opcional) Inicializar sistema de backup
+npm run init-backup
+```
+
+#### **4. Iniciar Servidor de Desenvolvimento**
+```bash
+# Modo desenvolvimento padrão
+npm run dev
+
+# Modo desenvolvimento com análise de bundle
+npm run dev:analyze
+
+# Modo desenvolvimento com monitoramento de performance
+npm run dev:perf
+```
+
+#### **5. Acessar o Site**
+- **Página Principal**: http://localhost:3000
+- **Painel Administrativo**: http://localhost:3000/admin
+- **Sistema de Design**: http://localhost:3000/design-system
+
+#### **6. Credenciais de Acesso**
+- **Usuário**: `admin` (ou configurado em `.env`)
+- **Senha**: `password` (ou configurado em `.env`)
+
+---
+
+### 🐳 **Método Docker (Ambiente Isolado)**
+
+#### **1. Configurar Variáveis de Ambiente**
+```bash
+cp .env.example .env
+# Editar .env conforme necessário
+```
+
+#### **2. Iniciar Ambiente Docker**
+```bash
+# Iniciar todos os serviços (PostgreSQL, Redis, App)
+docker-compose up -d
+
+# Verificar status dos serviços
+docker-compose ps
+```
+
+#### **3. Inicializar Banco de Dados**
+```bash
+# Executar dentro do container
+docker-compose exec app npm run init-posts
+```
+
+#### **4. Acessar o Site**
+- **Página Principal**: http://localhost:3000
+- **Painel Administrativo**: http://localhost:3000/admin
+
+#### **5. Comandos Docker Úteis**
+```bash
+# Ver logs em tempo real
+docker-compose logs -f app
+
+# Executar comandos no container
+docker-compose exec app npm run dev
+
+# Parar serviços
+docker-compose down
+
+# Limpar volumes e imagens
+docker-compose down -v --rmi all
+```
+
+---
+
+### 🛠️ **Comandos de Desenvolvimento**
+
+#### **Comandos Básicos**
+```bash
+# Iniciar desenvolvimento
+npm run dev
+
+# Build de produção
+npm run build
+
+# Iniciar produção
+npm run start
+
+# Limpar cache e build
+npm run clean
+```
+
+#### **Comandos de Banco de Dados**
+```bash
+# Inicializar banco de dados
+npm run init-posts
+
+# Inicializar backup system
+npm run init-backup
+
+# Criar backup manual
+npm run create-backup
+
+# Restaurar backup
+npm run restore-backup <nome-do-arquivo>
+
+# Limpar banco de testes
+npm run clean-test-db
+```
+
+#### **Comandos de Testes**
+```bash
+# Executar todos os testes
+npm test
+
+# Testes em modo watch
+npm run test:watch
+
+# Testes com cobertura
+npm run test:coverage
+
+# Testes de carga
+npm run test:load
+
+# Testes de segurança
+npm run test:security
+
+# Testes de performance
+npm run test:performance
+
+# Testes E2E (Cypress)
+npm run cypress:open
+npm run cypress:run
+```
+
+#### **Comandos de Análise**
+```bash
+# Análise de bundle
+npm run analyze
+
+# Análise de bundle em produção
+npm run analyze:prod
+
+# Verificação de dependências
+npm audit
+
+# Verificação de ambiente
+npm run check-env
+
+# Linting
+npm run lint
+
+# Formatação
+npm run format
+```
+
+#### **Comandos de Docker**
+```bash
+# Iniciar ambiente completo
+npm run docker:up
+
+# Parar ambiente
+npm run docker:down
+
+# Limpar ambiente
+npm run docker:clean
+
+# Executar testes em Docker
+npm run docker:test
+
+# Build de produção Docker
+npm run docker:build
+```
+
+---
+
+### 🔧 **Configuração Avançada**
+
+#### **Variáveis de Ambiente Obrigatórias**
+```env
+# Banco de Dados
+DATABASE_URL="postgresql://user:password@localhost:5432/caminhar"
+
+# Segurança
+JWT_SECRET="sua-chave-secreta-aqui"
+
+# Admin
+ADMIN_USERNAME="admin"
+ADMIN_PASSWORD="senha-segura-aqui"
+```
+
+#### **Variáveis de Ambiente Opcionais**
+```env
+# Redis para Cache e Rate Limiting
+UPSTASH_REDIS_REST_URL="https://seu-redis.upstash.io"
+UPSTASH_REDIS_REST_TOKEN="seu-token-aqui"
+
+# Configurações de CORS
+ALLOWED_ORIGINS="http://localhost:3000,https://seu-dominio.com"
+
+# Configurações de IP Whitelist
+ADMIN_IP_WHITELIST="127.0.0.1,::1"
+
+# Configurações de Site
+SITE_URL="http://localhost:3000"
+
+# Configurações de Ambiente
+NODE_ENV="development"
+```
+
+#### **Configuração de IDE**
+```bash
+# Extensões recomendadas para VS Code
+code --install-extension esbenp.prettier-vscode
+code --install-extension dbaeumer.vscode-eslint
+code --install-extension ms-vscode.vscode-typescript-next
+code --install-extension bradlc.vscode-tailwindcss
+code --install-extension ms-vscode.vscode-json
+```
+
+---
+
+### 🧪 **Fluxo de Desenvolvimento Recomendado**
+
+#### **1. Setup Inicial**
+```bash
+# 1. Clonar repositório
+git clone <url-do-repositorio>
+cd caminhar
+
+# 2. Configurar ambiente
+cp .env.example .env
+# Editar .env com suas configurações
+
+# 3. Instalar dependências
+npm install
+
+# 4. Inicializar banco de dados
+npm run init-posts
+```
+
+#### **2. Desenvolvimento Diário**
+```bash
+# 1. Iniciar desenvolvimento
+npm run dev
+
+# 2. Verificar ambiente
+npm run check-env
+
+# 3. Executar testes
+npm test
+
+# 4. Verificar linting
+npm run lint
+```
+
+#### **3. Antes de Commitar**
+```bash
+# 1. Formatar código
+npm run format
+
+# 2. Executar testes
+npm test
+
+# 3. Verificar cobertura
+npm run test:coverage
+
+# 4. Verificar dependências
+npm audit
+
+# 5. Build de produção
+npm run build
+```
+
+---
+
+### 🚨 **Solução de Problemas Comuns**
+
+#### **Problemas de Banco de Dados**
+```bash
+# Verificar conexão
+psql $DATABASE_URL -c "SELECT version();"
+
+# Re-inicializar banco
+npm run init-posts --force
+
+# Verificar permissões
+chmod -R 755 data/
+```
+
+#### **Problemas de Dependências**
+```bash
+# Limpar cache npm
+npm cache clean --force
+
+# Reinstalar dependências
+rm -rf node_modules package-lock.json
+npm install
+
+# Verificar vulnerabilidades
+npm audit fix
+```
+
+#### **Problemas de Build**
+```bash
+# Limpar cache do Next.js
+rm -rf .next/
+
+# Limpar cache geral
+npm run clean
+
+# Build limpo
+npm run build:clean
+```
+
+#### **Problemas de Docker**
+```bash
+# Verificar logs
+docker-compose logs app
+
+# Rebuild imagens
+docker-compose build --no-cache
+
+# Limpar volumes
+docker-compose down -v
+```
+
+---
+
+### 📊 **Métricas de Performance**
+
+#### **Tempos de Build**
+- **Desenvolvimento**: ~11 segundos
+- **Produção**: ~15 segundos
+- **Startup**: ~3 segundos
+
+#### **Cobertura de Testes**
+- **Mínimo**: 80%
+- **Atual**: >90%
+- **Objetivo**: 95%
+
+#### **Performance**
+- **Lighthouse Score**: >90
+- **First Contentful Paint**: <1.5s
+- **Largest Contentful Paint**: <2.5s
+- **Cumulative Layout Shift**: <0.1
+
+---
+
+### 🎯 **Próximos Passos**
+
+1. **Explorar Funcionalidades**:
+   - Acessar o painel administrativo
+   - Testar upload de imagens
+   - Explorar o sistema de design
+
+2. **Configurar para Produção**:
+   - Gerar chaves JWT seguras
+   - Configurar banco de dados em produção
+   - Definir variáveis de ambiente de produção
+
+3. **Personalizar**:
+   - Modificar estilos em `styles/`
+   - Adicionar novas funcionalidades
+   - Configurar integrações externas
+
+4. **Deploy**:
+   - Consultar `DEPLOY.md` para opções de deploy
+   - Configurar CI/CD
+   - Monitorar performance e segurança
+
+---
+
+### 📚 **Documentação Adicional**
+
+- **[Guia de Deploy](./DEPLOY.md)**: Instruções detalhadas de deploy
+- **[Documentação de Testes](./README-TESTE.md)**: Infraestrutura de testes
+- **[Documentação de Backup](./BACKUP_SYSTEM.md)**: Sistema de backup automático
+- **[Documentação de Cache](./CACHE_IMPLEMENTATION.md)**: Sistema de cache
+- **[API Documentation](./pages/api/v1/README.md)**: Documentação da API RESTful
 
 ## Upload de Imagens
 
