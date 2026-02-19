@@ -150,14 +150,16 @@ Um site cristão moderno e dinâmico para compartilhar reflexões e ensinamentos
 
 ```
 caminhar/
-├── pages/
+├── pages/                       # Páginas do Next.js
 │   ├── _app.js                  # Configuração global do Next.js
+│   ├── _document.js             # Documento HTML base
 │   ├── index.js                 # Página principal (HOME)
 │   ├── admin.js                 # Painel administrativo
+│   ├── design-system.js         # Sistema de design
 │   ├── blog/                    # Páginas do blog
 │   │   ├── index.js             # Página de listagem de posts
 │   │   └── [slug].js            # Página de post individual
-│   └── api/
+│   └── api/                     # API Routes do Next.js
 │       ├── auth/                # Endpoints de autenticação
 │       │   ├── check.js         # Verificação de autenticação
 │       │   ├── login.js         # Endpoint de login
@@ -196,75 +198,183 @@ caminhar/
 │   ├── MusicGallery.js          # Galeria de músicas
 │   ├── PostCard.js              # Componente de card de post reutilizável
 │   ├── VideoCard.js             # Componente de card de vídeo
-│   └── VideoGallery.js          # Galeria de vídeos
+│   ├── VideoGallery.js          # Galeria de vídeos
+│   ├── Admin/                   # Componentes administrativos
+│   ├── Layout/                  # Componentes de layout
+│   ├── Performance/             # Componentes de performance
+│   └── SEO/                     # Componentes de SEO
+│   └── UI/                      # Componentes de interface
 ├── lib/                         # Bibliotecas e utilitários
+│   ├── add-thumbnail-to-videos.js # Adiciona miniaturas a vídeos
 │   ├── auth.js                  # Sistema de autenticação
+│   ├── backup-posts.js          # Backup de posts
 │   ├── backup.js                # Sistema de backup automático
+│   ├── backup.available.test.js # Testes de disponibilidade de backup
+│   ├── backup.cleanup.test.js   # Testes de limpeza de backup
+│   ├── backup.logs.test.js      # Testes de logs de backup
+│   ├── backup.operations.test.js # Testes de operações de backup
 │   ├── cache.js                 # Sistema de cache
 │   ├── check-env.js             # Verificação de variáveis de ambiente
+│   ├── clean-k6-videos.js       # Limpeza de dados de teste k6
 │   ├── clean-load-test-posts.js # Limpeza de dados de teste
+│   ├── clean-orphaned-images.js # Limpeza de imagens órfãs
 │   ├── clean-test-db.js         # Limpeza do banco de testes
-│   ├── create-musica-index.js   # Criação de índice para músicas
-│   ├── create-video-index.js    # Criação de índice para vídeos
 │   ├── db.js                    # Gerenciamento de banco de dados
+│   ├── db.saveImage.test.js     # Testes de salvamento de imagens
+│   ├── diagnose-hero.js         # Diagnóstico de hero
+│   ├── find-unused.js           # Encontra arquivos não utilizados
+│   ├── fix-hero-key.js          # Corrige chave hero
+│   ├── hooks/                   # Hooks personalizados
+│   │   ├── index.js             # Exportação de hooks
+│   │   ├── useAdminCrud.js      # Hook para CRUD administrativo
+│   │   ├── usePerformanceMetrics.js # Hook para métricas de performance
+│   │   └── useTheme.js          # Hook para tema
 │   ├── init-backup.js           # Inicialização do sistema de backup
 │   ├── init-posts.js            # Inicialização da tabela de posts
-│   ├── migrate-musicas-published.js  # Migração de músicas publicadas
-│   ├── migrate-sqlite-pg.js     # Script de migração de SQLite para PostgreSQL
-│   ├── migrate-videos-published.js   # Migração de vídeos publicados
-│   ├── migrate-videos.js        # Migração de dados de vídeos
+│   ├── init-server.js           # Inicialização do servidor
+│   ├── init-videos.js           # Inicialização da tabela de vídeos
+│   ├── list-settings.js         # Lista de configurações
+│   ├── list-table-columns.js    # Lista de colunas de tabelas
+│   ├── middleware.js            # Middleware de autenticação
+│   ├── musicas.create.test.js   # Testes de criação de músicas
+│   ├── musicas.delete.test.js   # Testes de exclusão de músicas
 │   ├── musicas.js               # Biblioteca de gerenciamento de músicas
+│   ├── musicas.query.test.js    # Testes de consulta de músicas
+│   ├── musicas.update.test.js   # Testes de atualização de músicas
+│   ├── populate-video-thumbnails.js # Popula miniaturas de vídeos
+│   ├── posts.create.test.js     # Testes de criação de posts
+│   ├── posts.delete.test.js     # Testes de exclusão de posts
 │   ├── posts.js                 # Biblioteca de gerenciamento de posts
+│   ├── posts.query.test.js      # Testes de consulta de posts
+│   ├── posts.update.test.js     # Testes de atualização de posts
 │   ├── redis.js                 # Configuração do Redis
 │   ├── reset-password.js        # Sistema de redefinição de senha
 │   ├── restore-backup.js        # Sistema de restauração de backups
+│   ├── restore-posts.js         # Restauração de posts
+│   ├── update-setting.js        # Atualização de configurações
+│   ├── verify-db-functions.js   # Verificação de funções do banco
+│   ├── videos.create.test.js    # Testes de criação de vídeos
+│   ├── videos.delete.test.js    # Testes de exclusão de vídeos
 │   ├── videos.js                # Biblioteca de gerenciamento de vídeos
-│   └── middleware.js            # Middleware de autenticação
+│   ├── videos.query.test.js     # Testes de consulta de vídeos
+│   └── videos.update.test.js    # Testes de atualização de vídeos
 ├── data/                        # Dados do projeto
 │   ├── caminhar.db              # Banco de dados principal
 │   └── backups/                 # Backups do banco de dados
+├── examples/                    # Exemplos de implementação
+│   ├── blog-post-seo-example.js # Exemplo de SEO para posts de blog
+│   ├── homepage-seo-example.js  # Exemplo de SEO para página inicial
+│   ├── musicas-seo-example.js   # Exemplo de SEO para músicas
+│   └── videos-seo-example.js    # Exemplo de SEO para vídeos
+├── public/                      # Arquivos estáticos
+│   └── uploads/                 # Imagens uploadadas
 ├── styles/                      # Estilos CSS Modules
 │   ├── Admin.module.css         # Estilos da página ADMIN
 │   ├── Blog.module.css          # Estilos da página de blog
 │   ├── ContentTabs.module.css   # Estilos do sistema de abas
+│   ├── DesignSystem.module.css  # Estilos do sistema de design
+│   ├── globals-refactored.css   # Estilos globais refatorados
 │   ├── globals.css              # Estilos globais
 │   ├── Home.module.css          # Estilos da página HOME
 │   ├── MusicCard.module.css     # Estilos do card de música
 │   ├── MusicGallery.module.css  # Estilos da galeria de músicas
 │   ├── VideoCard.module.css     # Estilos do card de vídeo
-│   └── VideoGallery.module.css  # Estilos da galeria de vídeos
-├── public/                      # Arquivos estáticos
-│   └── uploads/                 # Imagens uploadadas
+│   ├── VideoGallery.module.css  # Estilos da galeria de vídeos
+│   └── tokens/                  # Tokens de design
 ├── __tests__/                   # Testes unitários e de integração
+│   ├── AdminPostManager.test.js # Testes do gerenciador de posts
 │   ├── auth_check.test.js       # Testes de autenticação
-│   ├── musicas_flow.test.js     # Testes de fluxo de músicas
-│   ├── musicas_lib.test.js      # Testes da biblioteca de músicas
-│   ├── musicas_public_api.test.js    # Testes da API pública de músicas
-│   ├── musicas_public_db_integration.test.js  # Testes de integração com banco
-│   ├── videos_flow.test.js      # Testes de fluxo de vídeos
-│   ├── videos_lib.test.js       # Testes da biblioteca de vídeos
-│   ├── videos_public_api.test.js     # Testes da API pública de vídeos
-│   ├── videos_public_db_integration.test.js  # Testes de integração com banco
-│   ├── videos_validation.test.js     # Testes de validação de vídeos
-│   └── videos.test.js           # Testes gerais de vídeos
+│   ├── auth.test.js             # Testes de autenticação
+│   ├── auth.v1.check.test.js    # Testes de autenticação v1
+│   ├── auth.v1.login.test.js    # Testes de login v1
+│   ├── backups.api.test.js      # Testes da API de backups
+│   ├── clean-orphaned-images.test.js # Testes de limpeza de imagens órfãs
+│   ├── clean-test-db.test.js    # Testes de limpeza do banco de testes
+│   ├── create-post-flow.test.js # Testes de fluxo de criação de posts
+│   ├── db.test.js               # Testes do banco de dados
+│   ├── find-unused.test.js      # Testes de arquivos não utilizados
+│   ├── index.test.js            # Testes do index
+│   ├── middleware.test.js       # Testes do middleware
+│   ├── musicas.create.api.test.js # Testes da API de criação de músicas
+│   ├── musicas.delete.api.test.js # Testes da API de exclusão de músicas
+│   ├── musicas.pagination.api.test.js # Testes da API de paginação de músicas
+│   ├── musicas.update.api.test.js # Testes da API de atualização de músicas
+│   ├── posts.create.api.test.js # Testes da API de criação de posts
+│   ├── posts.delete.api.test.js # Testes da API de exclusão de posts
+│   ├── posts.pagination.api.test.js # Testes da API de paginação de posts
+│   ├── posts.update.api.test.js # Testes da API de atualização de posts
+│   ├── posts.test.js            # Testes de posts
+│   ├── rate-limit.js            # Testes de rate limiting
+│   ├── settings-cache.test.js   # Testes de cache de configurações
+│   ├── settings.test.js         # Testes de configurações
+│   ├── status.api.test.js       # Testes da API de status
+│   ├── upload-image.test.js     # Testes de upload de imagens
+│   ├── verify-migration.js      # Testes de verificação de migração
+│   ├── verify-migration.test.js # Testes de verificação de migração
+│   ├── videos-crud-test.js      # Testes CRUD de vídeos
+│   ├── videos.delete.api.test.js # Testes da API de exclusão de vídeos
+│   ├── videos.pagination.test.js # Testes da API de paginação de vídeos
+│   └── videos.test.js           # Testes de vídeos
 ├── __mocks__/                   # Mocks para testes
+│   ├── cookie.js                # Mock de cookies
 │   └── styleMock.js             # Mock para estilos CSS
+├── load-tests/                  # Testes de carga
+│   ├── authenticated-flow.js    # Fluxo autenticado
+│   ├── cache-performance-test.js # Testes de performance de cache
+│   ├── create-post-flow.js      # Fluxo de criação de posts
+│   ├── health-check.js          # Verificação de saúde
+│   ├── musicas-load-test.js     # Testes de carga de músicas
+│   ├── upload-flow.js           # Fluxo de upload
+│   ├── videos-crud-test.js      # Testes CRUD de vídeos
+│   └── videos-load-test.js      # Testes de carga de vídeos
 ├── .env.example                 # Exemplo de arquivo de variáveis de ambiente
 ├── .gitignore                   # Configuração de arquivos ignorados pelo git
+├── ARCHITECTURE.md              # Documentação da arquitetura
 ├── babel.jest.config.js         # Configuração do Babel para Jest
 ├── BACKUP_SYSTEM.md             # Documentação do sistema de backup
 ├── CACHE_IMPLEMENTATION.md      # Documentação da implementação de cache
 ├── ci.yml                       # Configuração de CI/CD
+├── cleanup-test-data.js         # Limpeza de dados de teste
+├── cookies.txt                  # Cookies de teste
 ├── DEPLOY.md                    # Guia de deploy
-├── instrumentation.js.bak       # Backup de configuração de instrumentação
+├── file.tmp                     # Arquivo temporário
+├── index.js                     # Arquivo principal
 ├── jest.config.js               # Configuração do Jest
 ├── jest.setup.js                # Setup do Jest
 ├── jest.teardown.js             # Teardown do Jest
-├── jest.teardown.cjs            # Teardown do Jest (CommonJS)
-├── package.json                 # Dependências e scripts
+├── middleware.test.js           # Testes do middleware
+├── musicas.create.api.test.js   # Testes da API de criação de músicas
+├── musicas.delete.api.test.js   # Testes da API de exclusão de músicas
+├── musicas.pagination.api.test.js # Testes da API de paginação de músicas
+├── musicas.update.api.test.js   # Testes da API de atualização de músicas
+├── next-sitemap.config.js       # Configuração do sitemap
+├── next.config.js               # Configuração do Next.js
 ├── package-lock.json            # Lockfile de dependências
+├── package.json                 # Dependências e scripts
+├── posts.delete.api.test.js     # Testes da API de exclusão de posts
+├── posts.pagination.api.test.js # Testes da API de paginação de posts
+├── posts.test.js                # Testes de posts
+├── posts.update.api.test.js     # Testes da API de atualização de posts
+├── proxy.js                     # Proxy de desenvolvimento
+├── rate-limit.js                # Sistema de rate limiting
+├── README-TESTE.md              # Documentação dos testes
+├── README.md                    # Este arquivo
+├── SEO_README.md                # Documentação de SEO
+├── SEO_TOOLKIT_DOCUMENTATION.md # Documentação do toolkit de SEO
+├── settings.api.test.js         # Testes da API de configurações
+├── settings.test.js             # Testes de configurações
+├── status.api.test.js           # Testes da API de status
 ├── styleMock.js                 # Mock para estilos (raiz)
-└── README.md                    # Este arquivo
+├── test-api.js                  # Testes da API
+├── test-rate-limit.js           # Testes do rate limiting
+├── upload-image.test.js         # Testes de upload de imagens
+├── verify-migration.js          # Verificação de migração
+├── verify-migration.test.js     # Testes de verificação de migração
+├── videos-crud-test.js          # Testes CRUD de vídeos
+├── videos.delete.api.test.js    # Testes da API de exclusão de vídeos
+├── videos.pagination.test.js    # Testes da API de paginação de vídeos
+├── videos.test.js               # Testes de vídeos
+└── videos.update.api.test.js    # Testes da API de atualização de vídeos
 ```
 
 ## Como Executar
