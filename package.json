@@ -42,6 +42,7 @@
     "test:load:auth": "k6 run -e ADMIN_USERNAME=admin -e ADMIN_PASSWORD=123456 load-tests/authenticated-flow.js",
     "test:load:write": "k6 run -e ADMIN_USERNAME=admin -e ADMIN_PASSWORD=123456 load-tests/create-post-flow.js",
     "clean:load-posts": "node scripts/clean-load-test-posts.js",
+    "clean:images": "node scripts/clean-orphaned-images.js",
     "test:load:write-and-clean": "npm run test:load:write && npm run clean:load-posts",
     "test:load:videos": "k6 run -e ADMIN_USERNAME=admin -e ADMIN_PASSWORD=123456 load-tests/videos-load-test.js",
     "test:load:videos-crud": "k6 run -e ADMIN_USERNAME=admin -e ADMIN_PASSWORD=123456 load-tests/videos-crud-test.js",

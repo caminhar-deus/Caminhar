@@ -21,7 +21,7 @@ jest.mock('pg', () => {
 });
 
 // Importa a função a ser testada
-import { cleanOrphanedImages } from '../lib/clean-orphaned-images.js';
+import { cleanOrphanedImages } from '../scripts/clean-orphaned-images.js';
 
 // Captura a função 'query' do mock da instância do Pool
 const mockQuery = Pool.mock.results[0].value.query;

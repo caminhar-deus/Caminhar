@@ -184,6 +184,10 @@ caminhar/
 │           └── auth/            # Endpoints de autenticação RESTful
 │               ├── login.js     # Endpoint de login RESTful
 │               └── check.js     # Endpoint de verificação RESTful
+├── docs/                        # Documentação do projeto
+│   ├── ARCHITECTURE.md          # Documentação da arquitetura
+│   ├── DEPLOY.md                # Guia de deploy
+│   └── README-TESTE.md          # Documentação dos testes
 ├── components/                  # Componentes React reutilizáveis
 │   ├── AdminBackupManager.js    # UI de gerenciamento de backups
 │   ├── AdminCacheManager.js     # UI de gerenciamento de cache
@@ -217,12 +221,10 @@ caminhar/
 │   ├── check-env.js             # Verificação de variáveis de ambiente
 │   ├── clean-k6-videos.js       # Limpeza de dados de teste k6
 │   ├── clean-load-test-posts.js # Limpeza de dados de teste
-│   ├── clean-orphaned-images.js # Limpeza de imagens órfãs
 │   ├── clean-test-db.js         # Limpeza do banco de testes
 │   ├── db.js                    # Gerenciamento de banco de dados
 │   ├── db.saveImage.test.js     # Testes de salvamento de imagens
 │   ├── diagnose-hero.js         # Diagnóstico de hero
-│   ├── find-unused.js           # Encontra arquivos não utilizados
 │   ├── fix-hero-key.js          # Corrige chave hero
 │   ├── hooks/                   # Hooks personalizados
 │   │   ├── index.js             # Exportação de hooks
@@ -281,6 +283,8 @@ caminhar/
 │   ├── VideoCard.module.css     # Estilos do card de vídeo
 │   ├── VideoGallery.module.css  # Estilos da galeria de vídeos
 │   └── tokens/                  # Tokens de design
+├── scripts/                     # Scripts de manutenção e utilitários
+│   └── find-unused.js           # Encontra arquivos não utilizados
 ├── __tests__/                   # Testes unitários e de integração
 │   ├── AdminPostManager.test.js # Testes do gerenciador de posts
 │   ├── auth_check.test.js       # Testes de autenticação
@@ -329,14 +333,12 @@ caminhar/
 │   └── videos-load-test.js      # Testes de carga de vídeos
 ├── .env.example                 # Exemplo de arquivo de variáveis de ambiente
 ├── .gitignore                   # Configuração de arquivos ignorados pelo git
-├── ARCHITECTURE.md              # Documentação da arquitetura
 ├── babel.jest.config.js         # Configuração do Babel para Jest
 ├── BACKUP_SYSTEM.md             # Documentação do sistema de backup
 ├── CACHE_IMPLEMENTATION.md      # Documentação da implementação de cache
 ├── ci.yml                       # Configuração de CI/CD
 ├── cleanup-test-data.js         # Limpeza de dados de teste
 ├── cookies.txt                  # Cookies de teste
-├── DEPLOY.md                    # Guia de deploy
 ├── file.tmp                     # Arquivo temporário
 ├── index.js                     # Arquivo principal
 ├── jest.config.js               # Configuração do Jest
@@ -357,7 +359,6 @@ caminhar/
 ├── posts.update.api.test.js     # Testes da API de atualização de posts
 ├── proxy.js                     # Proxy de desenvolvimento
 ├── rate-limit.js                # Sistema de rate limiting
-├── README-TESTE.md              # Documentação dos testes
 ├── README.md                    # Este arquivo
 ├── SEO_README.md                # Documentação de SEO
 ├── SEO_TOOLKIT_DOCUMENTATION.md # Documentação do toolkit de SEO
@@ -507,6 +508,9 @@ npm run restore-backup <nome-do-arquivo>
 
 # Limpar banco de testes
 npm run clean-test-db
+
+# Limpar imagens órfãs de teste
+npm run clean:images
 ```
 
 #### **Comandos de Testes**
@@ -774,8 +778,8 @@ docker-compose down -v
 
 ### 📚 **Documentação Adicional**
 
-- **[Guia de Deploy](./DEPLOY.md)**: Instruções detalhadas de deploy
-- **[Documentação de Testes](./README-TESTE.md)**: Infraestrutura de testes
+- **[Guia de Deploy](./docs/DEPLOY.md)**: Instruções detalhadas de deploy
+- **[Documentação de Testes](./docs/README-TESTE.md)**: Infraestrutura de testes
 - **[Documentação de Backup](./BACKUP_SYSTEM.md)**: Sistema de backup automático
 - **[Documentação de Cache](./CACHE_IMPLEMENTATION.md)**: Sistema de cache
 - **[API Documentation](./pages/api/v1/README.md)**: Documentação da API RESTful
@@ -1428,7 +1432,7 @@ Por padrão, o sistema usa as credenciais do arquivo `.env`. Se o arquivo não e
 
 Para instruções detalhadas sobre como publicar o projeto, consulte o guia dedicado:
 
-📄 **[Guia de Deploy (DEPLOY.md)](./DEPLOY.md)**
+📄 **[Guia de Deploy (DEPLOY.md)](./docs/DEPLOY.md)**
 
 ### Resumo Rápido:
 1.  **VPS (Hostinger, DigitalOcean, etc.)**: **Recomendado**. Mantém o sistema de uploads local funcionando sem alterações de código. O guia inclui um passo a passo detalhado para Hostinger.
@@ -1662,7 +1666,7 @@ Para instruções detalhadas sobre como publicar o projeto, consulte o guia dedi
 - **README-TESTE**: Documentação detalhada da infraestrutura de testes
 - **BACKUP_SYSTEM**: Documentação do sistema de backup automático
 - **CACHE_IMPLEMENTATION**: Documentação do sistema de cache
-- **DEPLOY**: Guia completo de deploy para VPS e Vercel
+- **docs/DEPLOY**: Guia completo de deploy para VPS e Vercel
 - **API Documentation**: Documentação completa da API RESTful v1.2.0
 
 ## 📊 Métricas de Performance Atuais
@@ -2408,4 +2412,3 @@ npm run test:watch
 # Com cobertura
 npm run test:ci
 ```
-
