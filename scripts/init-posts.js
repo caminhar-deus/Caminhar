@@ -1,8 +1,23 @@
-import 'dotenv/config';
-import { query, closeDatabase } from './db.js';
+import fs from 'fs';
+import dotenv from 'dotenv';
+
+// Carrega variáveis de ambiente, priorizando .env.local (comum em Next.js)
+if (fs.existsSync('.env.local')) {
+  dotenv.config({ path: '.env.local' });
+}
+dotenv.config();
 
 async function initPosts() {
+  const { query, closeDatabase } = await import('../lib/db.js');
   try {
+    // Verifica se a string de conexão existe
+    if (!process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL não definida. Verifique se o arquivo .env ou .env.local existe e contém a variável.');
+    }
+
+    console.log('⚠️  Garantindo um schema limpo. Removendo tabela de posts se existir...');
+    await query(`DROP TABLE IF EXISTS posts CASCADE;`);
+
     console.log('🚀 Criando tabela de posts...');
     
     await query(`
@@ -14,6 +29,7 @@ async function initPosts() {
         content TEXT,
         image_url VARCHAR(255),
         published BOOLEAN DEFAULT false,
+        views INTEGER DEFAULT 0 NOT NULL,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );

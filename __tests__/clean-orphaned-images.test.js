@@ -1,13 +1,30 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import fs from 'fs';
 import path from 'path';
+import { Pool } from 'pg';
 
 // Mock das dependências externas
 jest.mock('fs');
 jest.mock('dotenv');
 
+// Mock do módulo 'pg' para evitar conexões reais com o banco
+jest.mock('pg', () => {
+  const mPool = {
+    query: jest.fn(),
+    end: jest.fn(),
+    on: jest.fn(),
+    connect: jest.fn(),
+  };
+  return {
+    Pool: jest.fn(() => mPool),
+  };
+});
+
 // Importa a função a ser testada
 import { cleanOrphanedImages } from '../lib/clean-orphaned-images.js';
+
+// Captura a função 'query' do mock da instância do Pool
+const mockQuery = Pool.mock.results[0].value.query;
 
 describe('cleanOrphanedImages', () => {
   beforeEach(() => {
@@ -15,13 +32,6 @@ describe('cleanOrphanedImages', () => {
   });
 
   it('deve remover arquivos órfãos', async () => {
-    // Mock do Pool do PostgreSQL
-    const mockQuery = jest.fn();
-    Pool.mockImplementation(() => ({
-      query: mockQuery,
-      end: jest.fn(),
-    }));
-
     // Mock do sistema de arquivos
     fs.existsSync.mockReturnValue(true);
     fs.readdirSync.mockReturnValue(['post-image-1.jpg', 'post-image-2.jpg', 'used-image.jpg']);
@@ -49,12 +59,6 @@ describe('cleanOrphanedImages', () => {
   });
 
   it('deve lidar com erros de banco de dados', async () => {
-    const mockQuery = jest.fn();
-    Pool.mockImplementation(() => ({
-      query: mockQuery,
-      end: jest.fn(),
-    }));
-
     mockQuery.mockRejectedValue(new Error('Database error'));
     fs.existsSync.mockReturnValue(true);
     fs.readdirSync.mockReturnValue(['post-image-1.jpg']);
@@ -64,12 +68,6 @@ describe('cleanOrphanedImages', () => {
   });
 
   it('deve continuar se uma coluna não existir em uma tabela', async () => {
-    const mockQuery = jest.fn();
-    Pool.mockImplementation(() => ({
-      query: mockQuery,
-      end: jest.fn(),
-    }));
-
     // Simula um erro de coluna inexistente
     mockQuery.mockRejectedValueOnce({ code: '42703' });
     mockQuery.mockResolvedValue({ rows: [] }); //mock segunda chamada
@@ -83,6 +81,7 @@ describe('cleanOrphanedImages', () => {
   it('não deve deletar arquivos que não começam com post-image ou hero-image', async () => {
     fs.existsSync.mockReturnValue(true);
     fs.readdirSync.mockReturnValue(['not-a-test-image.jpg']);
+    mockQuery.mockResolvedValue({ rows: [] });
     await cleanOrphanedImages();
     expect(fs.unlinkSync).not.toHaveBeenCalled();
   });

@@ -1,8 +1,19 @@
-import 'dotenv/config';
-import { query, closeDatabase } from './db.js';
+import fs from 'fs';
+import dotenv from 'dotenv';
+
+// Carrega variáveis de ambiente, priorizando .env.local
+if (fs.existsSync('.env.local')) {
+  dotenv.config({ path: '.env.local' });
+}
+dotenv.config();
 
 async function initVideos() {
+  const { query, closeDatabase } = await import('../lib/db.js');
+
   try {
+    console.log('⚠️  Garantindo um schema limpo. Removendo tabela de vídeos se existir...');
+    await query(`DROP TABLE IF EXISTS videos CASCADE;`);
+
     console.log('🚀 Criando tabela de vídeos...');
     
     await query(`

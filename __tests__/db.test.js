@@ -66,7 +66,7 @@ describe('db.js', () => {
       pool.query.mockResolvedValue(mockResult);
 
       const result = await getRecentPosts(5);
-      expect(pool.query).toHaveBeenCalledWith(expect.stringContaining('SELECT * FROM posts WHERE published = true'), [5]);
+      expect(pool.query).toHaveBeenCalledWith(expect.stringContaining('SELECT * FROM posts WHERE published = true'), [5, 0]);
       expect(result).toEqual(mockResult.rows);
     });
   });

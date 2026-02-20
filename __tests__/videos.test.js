@@ -1,13 +1,25 @@
-import { createVideo, updateVideo } from '../lib/videos';
-import { query } from '../lib/db';
+import { jest, describe, test, expect, beforeEach } from '@jest/globals';
+import { Pool } from 'pg';
+import { createVideo, updateVideo } from '../lib/db.js';
 
-// Mock do módulo de banco de dados para não precisar de um banco real rodando
-jest.mock('../lib/db', () => ({
-  query: jest.fn(),
-}));
+// Mock do módulo 'pg'
+jest.mock('pg', () => {
+  const mPool = {
+    query: jest.fn(),
+    end: jest.fn(),
+    on: jest.fn(),
+    connect: jest.fn(),
+  };
+  return {
+    Pool: jest.fn(() => mPool),
+  };
+});
+
+// Captura a função 'query' do mock da instância do Pool
+const mockQuery = Pool.mock.results[0].value.query;
 
 describe('Funcionalidade de Descrição nos Vídeos', () => {
-  afterEach(() => {
+  beforeEach(() => {
     jest.clearAllMocks();
   });
 
@@ -16,24 +28,24 @@ describe('Funcionalidade de Descrição nos Vídeos', () => {
       titulo: 'Vídeo de Teste',
       url_youtube: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
       descricao: 'Esta é uma descrição de teste para validar o banco de dados.',
-      thumbnail: '/uploads/thumb-teste.jpg'
+      publicado: false
     };
 
     // Simula o retorno do banco de dados
-    query.mockResolvedValueOnce({
+    mockQuery.mockResolvedValueOnce({
       rows: [{ id: 1, ...videoData }]
     });
 
     const result = await createVideo(videoData);
 
     // Verifica se a função query foi chamada com os parâmetros corretos (incluindo a descrição)
-    expect(query).toHaveBeenCalledWith(
+    expect(mockQuery).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO videos'),
       expect.arrayContaining([
         videoData.titulo, 
         videoData.url_youtube, 
-        videoData.descricao, // O ponto crucial: verifica se a descrição foi passada para a query
-        videoData.thumbnail
+        videoData.descricao,
+        videoData.publicado
       ])
     );
     
@@ -48,23 +60,23 @@ describe('Funcionalidade de Descrição nos Vídeos', () => {
       titulo: 'Vídeo Atualizado',
       url_youtube: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
       descricao: 'Descrição atualizada com sucesso.',
-      thumbnail: '/uploads/thumb-updated.jpg'
+      publicado: true
     };
 
-    query.mockResolvedValueOnce({
+    mockQuery.mockResolvedValueOnce({
       rows: [{ id, ...updateData }]
     });
 
     await updateVideo(id, updateData);
 
     // Verifica se a query SQL de update contém o campo descricao
-    expect(query).toHaveBeenCalledWith(
+    expect(mockQuery).toHaveBeenCalledWith(
       expect.stringContaining('UPDATE videos'),
       expect.arrayContaining([
         updateData.titulo, 
         updateData.url_youtube, 
         updateData.descricao, 
-        updateData.thumbnail,
+        updateData.publicado,
         id
       ])
     );
@@ -78,13 +90,13 @@ describe('Funcionalidade de Descrição nos Vídeos', () => {
       publicado: false
     };
 
-    query.mockResolvedValueOnce({
+    mockQuery.mockResolvedValueOnce({
       rows: [{ id: 1, ...videoData }]
     });
 
     const result = await createVideo(videoData);
 
-    expect(query).toHaveBeenCalledWith(
+    expect(mockQuery).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO videos'),
       expect.arrayContaining([
         videoData.titulo,
@@ -108,13 +120,13 @@ describe('Funcionalidade de Descrição nos Vídeos', () => {
       publicado: true
     };
 
-    query.mockResolvedValueOnce({
+    mockQuery.mockResolvedValueOnce({
       rows: [{ id, ...updateData }]
     });
 
     await updateVideo(id, updateData);
 
-    expect(query).toHaveBeenCalledWith(
+    expect(mockQuery).toHaveBeenCalledWith(
       expect.stringContaining('UPDATE videos'),
       expect.arrayContaining([
         updateData.titulo,

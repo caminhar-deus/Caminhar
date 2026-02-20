@@ -1,6 +1,6 @@
 import { invalidateCache } from '../../../../lib/cache.js';
 import { getAuthToken, verifyToken } from '../../../../lib/auth.js';
-import { updateVideo, deleteVideo } from '../../../../lib/videos.js';
+import { updateVideo, deleteVideo } from '../../../../lib/db.js';
 
 export default async function handler(req, res) {
   const token = getAuthToken(req);
@@ -32,7 +32,15 @@ export default async function handler(req, res) {
 
 async function handlePut(req, res, videoId) {
   try {
-    const updatedVideo = await updateVideo(videoId, req.body);
+    // Sanitize input to ensure no undefined values are passed
+    const { titulo, url_youtube, descricao, publicado } = req.body;
+    const videoData = {
+      titulo,
+      url_youtube,
+      descricao: descricao ?? null,
+      publicado: publicado ?? false
+    };
+    const updatedVideo = await updateVideo(videoId, videoData);
     if (!updatedVideo) {
       return res.status(404).json({ success: false, message: 'Vídeo não encontrado' });
     }

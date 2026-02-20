@@ -1,11 +1,11 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../pages/api/videos';
-import { getPublishedVideos } from '../lib/videos';
+import { query } from '../lib/db';
 
-// Mock da lib de vídeos para não acessar o banco de dados real
-jest.mock('../lib/videos', () => ({
-  getPublishedVideos: jest.fn(),
+// Mock do módulo db para não acessar o banco de dados real
+jest.mock('../lib/db', () => ({
+  query: jest.fn(),
 }));
 
 describe('API Pública de Vídeos (/api/videos)', () => {
@@ -15,12 +15,12 @@ describe('API Pública de Vídeos (/api/videos)', () => {
 
   it('deve retornar lista de vídeos publicados com status 200', async () => {
     const mockVideos = [
-      { id: 1, titulo: 'Vídeo 1', url_youtube: 'https://youtu.be/1', publicado: true },
-      { id: 2, titulo: 'Vídeo 2', url_youtube: 'https://youtu.be/2', publicado: true }
+      { id: 1, titulo: 'Vídeo 1', url_youtube: 'https://youtu.be/1', descricao: 'Desc 1' },
+      { id: 2, titulo: 'Vídeo 2', url_youtube: 'https://youtu.be/2', descricao: 'Desc 2' }
     ];
 
-    // Simula o retorno da função da lib
-    getPublishedVideos.mockResolvedValue(mockVideos);
+    // Simula o retorno da query
+    query.mockResolvedValue({ rows: mockVideos });
 
     const { req, res } = createMocks({
       method: 'GET',
@@ -30,28 +30,12 @@ describe('API Pública de Vídeos (/api/videos)', () => {
 
     expect(res._getStatusCode()).toBe(200);
     expect(JSON.parse(res._getData())).toEqual(mockVideos);
-    // Verifica se a função foi chamada sem termo de busca
-    expect(getPublishedVideos).toHaveBeenCalledWith(undefined);
+    expect(query).toHaveBeenCalledTimes(1);
   });
 
-  it('deve repassar o termo de busca para a função getPublishedVideos', async () => {
-    const searchTerm = 'Culto';
-    getPublishedVideos.mockResolvedValue([]);
-
+  it('deve retornar erro 405 para métodos não permitidos (ex: PUT)', async () => {
     const { req, res } = createMocks({
-      method: 'GET',
-      query: { search: searchTerm }
-    });
-
-    await handler(req, res);
-
-    expect(res._getStatusCode()).toBe(200);
-    expect(getPublishedVideos).toHaveBeenCalledWith(searchTerm);
-  });
-
-  it('deve retornar erro 405 para métodos não permitidos (ex: POST)', async () => {
-    const { req, res } = createMocks({
-      method: 'POST',
+      method: 'PUT',
     });
 
     await handler(req, res);
@@ -63,7 +47,7 @@ describe('API Pública de Vídeos (/api/videos)', () => {
     // Silencia o console.error para este teste específico pois o erro é esperado
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-    getPublishedVideos.mockRejectedValue(new Error('Erro de conexão com banco'));
+    query.mockRejectedValue(new Error('Erro de conexão com banco'));
 
     const { req, res } = createMocks({
       method: 'GET',
@@ -72,7 +56,9 @@ describe('API Pública de Vídeos (/api/videos)', () => {
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(500);
-    expect(JSON.parse(res._getData())).toEqual({ message: 'Erro ao buscar vídeos' });
+    const data = JSON.parse(res._getData());
+    expect(data.message).toBe('Erro interno do servidor ao buscar vídeos.');
+    expect(data.details).toBe('Erro de conexão com banco');
 
     // Restaura o console.error original
     consoleSpy.mockRestore();

@@ -1,13 +1,16 @@
-import { getAllMusicas, createMusica, updateMusica, deleteMusica } from '../../../lib/musicas.js';
+import { getPaginatedMusicas, createMusica, updateMusica, deleteMusica } from '../../../lib/db.js';
 import { withAuth } from '../../../lib/auth.js';
 
 async function handler(req, res) {
   switch (req.method) {
     case 'GET':
       try {
-        const { search } = req.query;
-        const musicas = await getAllMusicas(search);
-        res.status(200).json(musicas);
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const search = req.query.search || '';
+        
+        const result = await getPaginatedMusicas(page, limit, search);
+        res.status(200).json(result);
       } catch (error) {
         console.error('Error fetching musicas:', error);
         res.status(500).json({ message: 'Erro ao buscar músicas' });
@@ -16,7 +19,7 @@ async function handler(req, res) {
 
     case 'POST':
       try {
-        const { titulo, artista, url_imagem, url_spotify, publicado } = req.body;
+        const { titulo, artista, descricao, url_spotify, publicado } = req.body;
 
         if (!titulo || !artista || !url_spotify) {
           return res.status(400).json({ message: 'Título, artista e URL do Spotify são obrigatórios' });
@@ -30,7 +33,7 @@ async function handler(req, res) {
         const novaMusica = await createMusica({
           titulo,
           artista,
-          url_imagem,
+          descricao,
           url_spotify,
           publicado: publicado !== undefined ? publicado : false // Default false se não enviado
         });
@@ -38,13 +41,13 @@ async function handler(req, res) {
         res.status(201).json(novaMusica);
       } catch (error) {
         console.error('Error creating musica:', error);
-        res.status(500).json({ message: 'Erro ao criar música' });
+        res.status(500).json({ message: 'Erro ao criar música', details: error.message });
       }
       break;
 
     case 'PUT':
       try {
-        const { id, titulo, artista, url_imagem, url_spotify, publicado } = req.body;
+        const { id, titulo, artista, descricao, url_spotify, publicado } = req.body;
 
         if (!id) {
           return res.status(400).json({ message: 'ID é obrigatório' });
@@ -62,7 +65,7 @@ async function handler(req, res) {
         const musicaAtualizada = await updateMusica(id, {
           titulo,
           artista,
-          url_imagem,
+          descricao,
           url_spotify,
           publicado
         });
@@ -74,7 +77,7 @@ async function handler(req, res) {
         res.status(200).json(musicaAtualizada);
       } catch (error) {
         console.error('Error updating musica:', error);
-        res.status(500).json({ message: 'Erro ao atualizar música' });
+        res.status(500).json({ message: 'Erro ao atualizar música', details: error.message });
       }
       break;
 
@@ -95,7 +98,7 @@ async function handler(req, res) {
         res.status(200).json({ message: 'Música excluída com sucesso' });
       } catch (error) {
         console.error('Error deleting musica:', error);
-        res.status(500).json({ message: 'Erro ao excluir música' });
+        res.status(500).json({ message: 'Erro ao excluir música', details: error.message });
       }
       break;
 

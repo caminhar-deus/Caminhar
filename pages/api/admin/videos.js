@@ -1,4 +1,4 @@
-import { getPaginatedVideos, createVideo, updateVideo, deleteVideo } from '../../../lib/videos.js';
+import { getPaginatedVideos, createVideo, updateVideo, deleteVideo } from '../../../lib/db.js';
 import { withAuth } from '../../../lib/auth.js';
 
 async function handler(req, res) {

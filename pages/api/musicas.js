@@ -1,76 +1,34 @@
-/**
- * @fileoverview API de Músicas - Versão Refatorada
- * 
- * Demonstração do uso do API Response Standardizer.
- * Endpoints para listar músicas publicadas com suporte a busca.
- * 
- * @module pages/api/musicas
- * @author API Standardizer Team
- * @version 2.0.0
- */
+import { query } from '../../lib/db';
 
-import { z } from 'zod';
-import { getPublishedMusicas } from '../../lib/musicas.js';
-import { success, handleError } from '../../lib/api/response.js';
-import { validateQuery, createPaginationSchema, createSearchSchema } from '../../lib/api/validate.js';
-import { composeMiddleware, withMethod, withRateLimit, withCors, withErrorHandler, withCache } from '../../lib/api/middleware.js';
-
-// Schema de validação para query parameters
-const musicasQuerySchema = z.object({
-  ...createSearchSchema({ minLength: 2, maxLength: 100 }).shape,
-});
-
-/**
- * Handler principal da API de músicas
- * @param {import('http').IncomingMessage} req - Requisição HTTP
- * @param {import('http').ServerResponse} res - Resposta HTTP
- */
-async function handler(req, res) {
-  const { search } = req.query;
+export default async function handler(req, res) {
+  if (req.method !== 'GET') {
+    res.setHeader('Allow', ['GET']);
+    return res.status(405).json({ message: `Method ${req.method} Not Allowed` });
+  }
 
   try {
-    // Busca músicas publicadas (com ou sem termo de busca)
-    const musicas = await getPublishedMusicas(search);
+    const { search, page: pageStr, limit: limitStr } = req.query;
+    const page = parseInt(pageStr) || 1;
+    const limit = parseInt(limitStr) || 10;
+    const offset = (page - 1) * limit;
 
-    // Retorna resposta padronizada
-    return success(res, musicas, {
-      count: musicas.length,
-      search: search || null,
-    });
+    let text = 'SELECT id, titulo, artista, url_spotify, descricao FROM musicas WHERE publicado = true';
+    const params = [];
+    let paramIndex = 1;
 
+    if (search) {
+      text += ` AND (titulo ILIKE $${paramIndex} OR artista ILIKE $${paramIndex})`;
+      params.push(`%${search.toLowerCase()}%`);
+      paramIndex++;
+    }
+
+    text += ` ORDER BY created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    params.push(limit, offset);
+
+    const result = await query(text, params);
+    return res.status(200).json(result.rows);
   } catch (error) {
-    console.error('Error fetching musicas:', error);
-    throw error; // Será capturado pelo withErrorHandler
+    console.error('API Error fetching musicas:', error);
+    return res.status(500).json({ message: 'Erro interno do servidor ao buscar músicas.', details: error.message });
   }
 }
-
-/**
- * Exporta handler com middlewares compostos
- * 
- * Ordem de execução (de fora para dentro):
- * 1. withErrorHandler - Captura erros
- * 2. withCache - Adiciona headers de cache
- * 3. withRateLimit - Rate limiting (100 req/15min)
- * 4. withCors - CORS headers
- * 5. withMethod - Só permite GET
- * 6. validateQuery - Valida query parameters
- * 7. handler - Lógica principal
- */
-export default composeMiddleware(
-  withErrorHandler({ includeStack: process.env.NODE_ENV === 'development' }),
-  withCache(60), // Cache de 1 minuto para GET
-  withRateLimit({ maxRequests: 100, windowMs: 15 * 60 * 1000 }),
-  withCors({ origins: ['*'] }),
-  withMethod(['GET']),
-  validateQuery(musicasQuerySchema)
-)(handler);
-
-/**
- * Configuração do Next.js
- * Desabilita body parser pois GET não tem body
- */
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};

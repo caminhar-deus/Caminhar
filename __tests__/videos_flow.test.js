@@ -1,11 +1,14 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../pages/api/admin/videos';
-import { query } from '../lib/db';
+import { createVideo, getPaginatedVideos, deleteVideo } from '../lib/db';
 
 // Mock do banco de dados
 jest.mock('../lib/db', () => ({
-  query: jest.fn(),
+  // Mock as funções que o handler realmente importa e usa
+  createVideo: jest.fn(),
+  getPaginatedVideos: jest.fn(),
+  deleteVideo: jest.fn(),
 }));
 
 // Mock do módulo de autenticação para ignorar a verificação de token neste teste
@@ -35,9 +38,7 @@ describe('Integração: Fluxo Completo de Vídeos (API + DB)', () => {
     });
 
     // Mock do retorno do INSERT no banco
-    query.mockResolvedValueOnce({
-      rows: [{ id: 1, ...newVideo, created_at: new Date().toISOString() }]
-    });
+    createVideo.mockResolvedValueOnce({ id: 1, ...newVideo, created_at: new Date().toISOString() });
 
     await handler(createReq, createRes);
 
@@ -45,12 +46,7 @@ describe('Integração: Fluxo Completo de Vídeos (API + DB)', () => {
     expect(createRes._getStatusCode()).toBe(201);
     const createdData = JSON.parse(createRes._getData());
     expect(createdData).toEqual(expect.objectContaining(newVideo));
-    
-    // Verifica se o SQL de INSERT foi gerado corretamente
-    expect(query).toHaveBeenCalledWith(
-      expect.stringContaining('INSERT INTO videos'),
-      expect.arrayContaining([newVideo.titulo, newVideo.url_youtube, newVideo.descricao])
-    );
+    expect(createVideo).toHaveBeenCalledWith(expect.objectContaining({ titulo: newVideo.titulo }));
 
     // =================================================================
     // PASSO 2: LISTAR VÍDEOS (GET)
@@ -61,14 +57,10 @@ describe('Integração: Fluxo Completo de Vídeos (API + DB)', () => {
     });
 
     // Mock do retorno do SELECT no banco (retorna o vídeo criado)
-    // Precisamos mockar duas chamadas: uma para os vídeos e outra para a contagem total (paginação)
-    query
-      .mockResolvedValueOnce({
-        rows: [{ id: 1, ...newVideo, created_at: new Date().toISOString() }]
-      })
-      .mockResolvedValueOnce({
-        rows: [{ count: '1' }]
-      });
+    getPaginatedVideos.mockResolvedValueOnce({
+      videos: [{ id: 1, ...newVideo, created_at: new Date().toISOString() }],
+      pagination: { total: 1, totalPages: 1 }
+    });
 
     await handler(listReq, listRes);
 
@@ -77,10 +69,7 @@ describe('Integração: Fluxo Completo de Vídeos (API + DB)', () => {
     const listData = JSON.parse(listRes._getData());
     expect(Array.isArray(listData.videos)).toBe(true);
     expect(listData.videos[0].titulo).toBe(newVideo.titulo);
-    expect(query).toHaveBeenCalledWith(
-      expect.stringContaining('SELECT * FROM videos'),
-      expect.anything()
-    );
+    expect(getPaginatedVideos).toHaveBeenCalled();
 
     // =================================================================
     // PASSO 3: EXCLUIR VÍDEO (DELETE)
@@ -92,19 +81,14 @@ describe('Integração: Fluxo Completo de Vídeos (API + DB)', () => {
     });
 
     // Mock do retorno do DELETE no banco
-    query.mockResolvedValueOnce({
-      rows: [{ id: 1 }]
-    });
+    deleteVideo.mockResolvedValueOnce({ id: 1 });
 
     await handler(deleteReq, deleteRes);
 
     // Verificações da Exclusão
     expect(deleteRes._getStatusCode()).toBe(200);
     expect(JSON.parse(deleteRes._getData())).toEqual({ message: 'Vídeo excluído com sucesso' });
-    expect(query).toHaveBeenCalledWith(
-      expect.stringContaining('DELETE FROM videos'),
-      expect.arrayContaining([1])
-    );
+    expect(deleteVideo).toHaveBeenCalledWith(1);
   });
 
   it('deve filtrar vídeos por termo de busca', async () => {
@@ -116,28 +100,20 @@ describe('Integração: Fluxo Completo de Vídeos (API + DB)', () => {
     });
 
     // Mock do retorno do SELECT no banco (precisa de 2 mocks: dados e count)
-    query
-      .mockResolvedValueOnce({
-        rows: [{ 
-          id: 1, 
-          titulo: 'Vídeo de Teste', 
-          url_youtube: 'https://youtube.com/watch?v=123',
-          created_at: new Date().toISOString() 
-        }]
-      })
-      .mockResolvedValueOnce({
-        rows: [{ count: '1' }]
-      });
+    getPaginatedVideos.mockResolvedValueOnce({
+      videos: [{ id: 1, titulo: 'Vídeo de Teste' }],
+      pagination: { total: 1, totalPages: 1 }
+    });
 
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(200);
     
     // Verifica se a query foi chamada com o filtro WHERE LIKE e o parâmetro correto
-    // Nota: $3 é usado porque $1 e $2 são limit e offset
-    expect(query).toHaveBeenCalledWith(
-      expect.stringContaining('WHERE LOWER(titulo) LIKE $3'),
-      expect.arrayContaining([`%${searchTerm.toLowerCase()}%`])
+    expect(getPaginatedVideos).toHaveBeenCalledWith(
+      expect.any(Number), // page
+      expect.any(Number), // limit
+      searchTerm
     );
   });
 });

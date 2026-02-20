@@ -1,5 +1,6 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
+import exec from 'k6/execution';
 
 export const options = {
   stages: [
@@ -22,6 +23,13 @@ const USERNAME = __ENV.ADMIN_USERNAME || 'admin';
 const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
 const BASE_URL = 'http://localhost:3000';
 
+export function setup() {
+  const res = http.get(BASE_URL);
+  if (res.status === 0) {
+    exec.test.abort(`❌ Conexão recusada em ${BASE_URL}. O servidor está rodando? (npm run dev)`);
+  }
+}
+
 export default function () {
   // --- 1. Login e obtenção do token ---
   const loginRes = http.post(
@@ -33,9 +41,13 @@ export default function () {
     }
   );
 
+  if (loginRes.status === 0) {
+    exec.test.abort('❌ Conexão perdida com o servidor.');
+  }
+
   const loginOk = check(loginRes, {
     'login bem-sucedido': (r) => r.status === 200,
-    'token recebido': (r) => r.json('data.token') !== undefined,
+    'token recebido': (r) => r.status === 200 && r.json('data.token') !== undefined,
   }, { flow: 'login' });
 
   // Aborta a iteração se o login falhar

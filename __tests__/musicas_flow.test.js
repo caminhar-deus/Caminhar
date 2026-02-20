@@ -1,11 +1,13 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../pages/api/admin/musicas';
-import { query } from '../lib/db';
+import { createMusica, getPaginatedMusicas, deleteMusica } from '../lib/db';
 
 // Mock do banco de dados
 jest.mock('../lib/db', () => ({
-  query: jest.fn(),
+  createMusica: jest.fn(),
+  getPaginatedMusicas: jest.fn(),
+  deleteMusica: jest.fn(),
 }));
 
 // Mock do módulo de autenticação para ignorar a verificação de token neste teste
@@ -25,7 +27,7 @@ describe('Integração: Fluxo Completo de Músicas (API + DB)', () => {
     const newMusica = {
       titulo: 'Música de Teste',
       artista: 'Artista Teste',
-      url_imagem: 'https://exemplo.com/capa.jpg',
+      descricao: 'Descrição teste',
       url_spotify: 'https://open.spotify.com/track/123456789',
       publicado: false
     };
@@ -37,9 +39,7 @@ describe('Integração: Fluxo Completo de Músicas (API + DB)', () => {
     });
 
     // Mock do retorno do INSERT no banco
-    query.mockResolvedValueOnce({
-      rows: [{ id: 1, ...newMusica, created_at: new Date().toISOString() }]
-    });
+    createMusica.mockResolvedValueOnce({ id: 1, ...newMusica, created_at: new Date().toISOString() });
 
     await handler(createReq, createRes);
 
@@ -47,18 +47,7 @@ describe('Integração: Fluxo Completo de Músicas (API + DB)', () => {
     expect(createRes._getStatusCode()).toBe(201);
     const createdData = JSON.parse(createRes._getData());
     expect(createdData).toEqual(expect.objectContaining(newMusica));
-    
-    // Verifica se o SQL de INSERT foi gerado corretamente
-    expect(query).toHaveBeenCalledWith(
-      expect.stringContaining('INSERT INTO musicas'),
-      expect.arrayContaining([
-        newMusica.titulo, 
-        newMusica.artista, 
-        newMusica.url_imagem, 
-        newMusica.url_spotify,
-        newMusica.publicado
-      ])
-    );
+    expect(createMusica).toHaveBeenCalledWith(expect.objectContaining({ titulo: newMusica.titulo }));
 
     // =================================================================
     // PASSO 2: LISTAR MÚSICAS (GET)
@@ -69,8 +58,9 @@ describe('Integração: Fluxo Completo de Músicas (API + DB)', () => {
     });
 
     // Mock do retorno do SELECT no banco
-    query.mockResolvedValueOnce({
-      rows: [{ id: 1, ...newMusica, created_at: new Date().toISOString() }]
+    getPaginatedMusicas.mockResolvedValueOnce({
+      musicas: [{ id: 1, ...newMusica, created_at: new Date().toISOString() }],
+      pagination: { total: 1, totalPages: 1 }
     });
 
     await handler(listReq, listRes);
@@ -78,12 +68,9 @@ describe('Integração: Fluxo Completo de Músicas (API + DB)', () => {
     // Verificações da Listagem
     expect(listRes._getStatusCode()).toBe(200);
     const listData = JSON.parse(listRes._getData());
-    expect(Array.isArray(listData)).toBe(true);
-    expect(listData[0].titulo).toBe(newMusica.titulo);
-    expect(query).toHaveBeenCalledWith(
-      expect.stringContaining('SELECT * FROM musicas'),
-      expect.anything() // params (pode ser undefined ou array vazio dependendo da implementação)
-    );
+    expect(Array.isArray(listData.musicas)).toBe(true);
+    expect(listData.musicas[0].titulo).toBe(newMusica.titulo);
+    expect(getPaginatedMusicas).toHaveBeenCalled();
 
     // =================================================================
     // PASSO 3: EXCLUIR MÚSICA (DELETE)
@@ -95,19 +82,14 @@ describe('Integração: Fluxo Completo de Músicas (API + DB)', () => {
     });
 
     // Mock do retorno do DELETE no banco
-    query.mockResolvedValueOnce({
-      rows: [{ id: 1 }]
-    });
+    deleteMusica.mockResolvedValueOnce({ id: 1 });
 
     await handler(deleteReq, deleteRes);
 
     // Verificações da Exclusão
     expect(deleteRes._getStatusCode()).toBe(200);
     expect(JSON.parse(deleteRes._getData())).toEqual({ message: 'Música excluída com sucesso' });
-    expect(query).toHaveBeenCalledWith(
-      expect.stringContaining('DELETE FROM musicas'),
-      expect.arrayContaining([1])
-    );
+    expect(deleteMusica).toHaveBeenCalledWith(1);
   });
 
   it('deve retornar erro 400 se a URL do Spotify for inválida', async () => {
@@ -134,14 +116,9 @@ describe('Integração: Fluxo Completo de Músicas (API + DB)', () => {
     });
 
     // Mock do retorno do SELECT no banco
-    query.mockResolvedValueOnce({
-      rows: [{ 
-        id: 1, 
-        titulo: 'Música de Teste', 
-        artista: 'Artista Teste', 
-        url_spotify: 'https://open.spotify.com/track/123',
-        created_at: new Date().toISOString() 
-      }]
+    getPaginatedMusicas.mockResolvedValueOnce({
+      musicas: [{ id: 1, titulo: 'Música de Teste' }],
+      pagination: { total: 1, totalPages: 1 }
     });
 
     await handler(req, res);
@@ -149,9 +126,10 @@ describe('Integração: Fluxo Completo de Músicas (API + DB)', () => {
     expect(res._getStatusCode()).toBe(200);
     
     // Verifica se a query foi chamada com o filtro WHERE LIKE e o parâmetro correto
-    expect(query).toHaveBeenCalledWith(
-      expect.stringContaining('WHERE LOWER(titulo) LIKE $1 OR LOWER(artista) LIKE $1'),
-      expect.arrayContaining([`%${searchTerm.toLowerCase()}%`])
+    expect(getPaginatedMusicas).toHaveBeenCalledWith(
+      expect.any(Number),
+      expect.any(Number),
+      searchTerm
     );
   });
 });

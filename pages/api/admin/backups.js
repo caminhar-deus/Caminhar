@@ -1,4 +1,4 @@
-import { createBackup } from '../../../lib/backup';
+import { createBackup } from '../../../scripts/backup';
 import { withAuth } from '../../../lib/auth';
 import fs from 'fs';
 import path from 'path';
