@@ -683,6 +683,7 @@ npm run build
 - **[Documentação de Cache](./CACHE_IMPLEMENTATION.md)**: Sistema de cache
 - **[API Documentation](./pages/api/v1/README.md)**: Documentação da API RESTful
 - **[Guia de Solução de Problemas](#-guia-de-solução-de-problemas)**: Diagnóstico e resolução de erros
+- **[Changelog](./CHANGELOG.md)**: Histórico de versões e alterações
 
 ## Upload de Imagens
 
