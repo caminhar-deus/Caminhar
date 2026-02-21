@@ -684,6 +684,12 @@ npm run build
 
 ## Upload de Imagens
 
+### ⚠️ Aviso Importante sobre Persistência
+O sistema atual utiliza **armazenamento local** em disco (`/public/uploads`).
+
+- **VPS/Docker**: ✅ Funciona perfeitamente (disco persistente).
+- **Serverless (Vercel/Netlify)**: ❌ **Não funcionará**. O sistema de arquivos é temporário. Para usar em Serverless, é necessário refatorar o `pages/api/upload-image.js` para usar AWS S3, Cloudinary ou Vercel Blob.
+
 ### Requisitos de Imagem:
 - **Formatos suportados**: JPEG, JPG, PNG, WebP
 - **Tamanho máximo**: 5MB
@@ -741,8 +747,9 @@ JWT_SECRET="change-me-to-a-secure-random-string"
 ADMIN_USERNAME="admin"
 ADMIN_PASSWORD="secure_password_here"
 
-# Configuração do Redis (Upstash) para Rate Limiting persistente
-# Se não definido, o Rate Limit funcionará em memória (reinicia com o servidor)
+# Configuração do Redis (Upstash) para Cache e Rate Limiting
+# Se definido, o sistema usará Redis para cache de API e controle de requisições (recomendado para produção).
+# Se NÃO definido, o sistema usará cache em memória (Map) que é resetado ao reiniciar o servidor.
 UPSTASH_REDIS_REST_URL=""
 UPSTASH_REDIS_REST_TOKEN=""
 
@@ -770,8 +777,8 @@ NODE_ENV="development"
 #### Opcionais
 - **ADMIN_USERNAME**: Nome de usuário do administrador (padrão: admin)
 - **ADMIN_PASSWORD**: Senha do administrador (padrão: password)
-- **UPSTASH_REDIS_REST_URL**: URL do Redis para Rate Limiting persistente
-- **UPSTASH_REDIS_REST_TOKEN**: Token de autenticação do Redis
+- **UPSTASH_REDIS_REST_URL**: URL do Redis (Upstash) para Cache e Rate Limiting.
+- **UPSTASH_REDIS_REST_TOKEN**: Token de autenticação do Redis.
 - **ADMIN_IP_WHITELIST**: IPs que não serão bloqueados pelo Rate Limit (separados por vírgula)
 - **SITE_URL**: URL base do site para SEO e geração de Sitemap
 - **ALLOWED_ORIGINS**: Origens CORS permitidas para a API pública (separadas por vírgula)
@@ -793,7 +800,13 @@ NODE_ENV="development"
    ```
 
 3. **DATABASE_URL**: Use credenciais diferentes de desenvolvimento
-4. **UPSTASH_REDIS**: Configure apenas se precisar de Rate Limiting persistente
+4. **UPSTASH_REDIS**: Altamente recomendado para produção para garantir persistência do Cache e Rate Limiting entre deploys.
+
+### Comportamento do Cache (Redis vs Memória)
+
+O sistema implementa uma estratégia de **Cache-Aside** inteligente:
+- **Com Redis** (`UPSTASH_REDIS_...` definidos): O cache é compartilhado entre instâncias (serverless/cluster) e persiste após deploys. Ideal para produção.
+- **Sem Redis** (Variáveis vazias): O sistema faz fallback automático para **Memória (LRU Cache)**. Funciona bem para desenvolvimento ou instâncias únicas (VPS), mas o cache é perdido ao reiniciar o servidor.
 
 ### Validação de Ambiente
 
@@ -839,14 +852,10 @@ Para um guia detalhado, consulte **Guia de Deploy**.
 
 ### ☁️ **Método Alternativo: Vercel (Serverless)**
 
-**Aviso**: Requer adaptações significativas no código
+**⚠️ Limitação Crítica**: O sistema de uploads nativo **não funcionará** na Vercel sem modificações.
 
 **Alterações Necessárias**:
-```javascript
-// O sistema de arquivos da Vercel é efêmero.
-// O sistema de upload de imagens deve ser migrado para um serviço de armazenamento em nuvem,
-// como AWS S3, Vercel Blob Storage ou Cloudinary.
-```
+Para implantar na Vercel, você **deve** migrar o armazenamento de imagens para um serviço externo (AWS S3, Vercel Blob, Cloudinary), pois o sistema de arquivos da Vercel é efêmero e deletará os uploads após a execução da função.
 
 **Configuração da Vercel**:
 ```json
@@ -1052,7 +1061,7 @@ Para instruções detalhadas de deploy, consulte:
 ### 🔐 Problemas de Autenticação
 - **Sintoma**: Login falha com credenciais corretas
 - **Solução**: Verificar se o banco de dados foi inicializado
-- **Comando**: `npm run init-db`
+- **Comando**: `npm run init-posts`
 - **Diagnóstico**: Verificar logs de autenticação em `npm run dev`
 
 - **Sintoma**: Cookies não são salvos ou expiram rapidamente
@@ -1072,7 +1081,7 @@ Para instruções detalhadas de deploy, consulte:
 
 - **Sintoma**: Tabelas não criadas ou migrações falhando
 - **Solução**: Re-inicializar banco de dados
-- **Comando**: `npm run init-posts --force`
+- **Comando**: `npm run init-posts`
 
 - **Sintoma**: Erros de permissão no PostgreSQL
 - **Solução**: Verificar credenciais e permissões do usuário
@@ -1110,6 +1119,11 @@ Para instruções detalhadas de deploy, consulte:
 - **Solução**: Verificar permissões no diretório `public/uploads/`
 - **Comando**: `chmod -R 755 public/uploads/`
 - **Solução**: Limpar cache do navegador
+
+- **Sintoma**: Imagens desaparecem após novo deploy (Vercel/Netlify)
+- **Causa**: Ambiente Serverless possui sistema de arquivos temporário (efêmero).
+- **Solução**: Migrar uploads para AWS S3, Cloudinary ou Vercel Blob.
+- **Referência**: Consulte `docs/DEPLOY.md` para detalhes de implementação.
 
 ### 💾 Problemas de Backup
 - **Sintoma**: Backups não estão sendo criados
@@ -1205,6 +1219,9 @@ Para instruções detalhadas de deploy, consulte:
 ### 🛠️ Comandos Úteis de Diagnóstico
 
 ```bash
+# Verificar variáveis de ambiente obrigatórias
+npm run check-env
+
 # Verificar status do banco de dados
 psql $DATABASE_URL -c "SELECT version();"
 

@@ -63,8 +63,6 @@ Certifique-se que o Postgres está rodando e o banco foi criado. Em seguida, ini
 
 ```bash
 npm run init-posts
-# Se tiver dados legados para migrar:
-# npm run migrate-db
 ```
 
 ### 4. Build e Execução
