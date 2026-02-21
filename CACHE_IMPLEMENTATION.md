@@ -102,11 +102,9 @@ O sistema inclui:
 
 ## Configuração do Redis
 
-O Redis é configurado via variáveis de ambiente:
-- `REDIS_URL`: URL de conexão com o Redis
-- `REDIS_PASSWORD`: Senha de autenticação (se necessário)
-- `UPSTASH_REDIS_REST_URL`: URL do Upstash Redis (alternativa)
-- `UPSTASH_REDIS_REST_TOKEN`: Token de autenticação do Upstash
+O sistema utiliza o cliente HTTP do Upstash. Configure as seguintes variáveis:
+- `UPSTASH_REDIS_REST_URL`: URL REST do banco Redis
+- `UPSTASH_REDIS_REST_TOKEN`: Token de autenticação
 
 ## Testes
 

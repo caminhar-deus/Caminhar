@@ -276,30 +276,16 @@ Para automatizar o script de backup na sua VPS, use o `cron`.
     ```
     Isso irá executar o backup diariamente e salvar um log da operação.
 
-### Configuração de Cache Redis (Opcional)
+### Configuração de Cache (Upstash Redis)
 
-Para melhor performance em produção, configure o Redis:
+O projeto utiliza o driver `@upstash/redis` (HTTP), ideal para ambientes Serverless e VPS sem necessidade de gerenciar o serviço Redis localmente.
 
-1.  **Instale o Redis**:
+1.  **Crie um banco no Upstash**: Acesse console.upstash.com.
+2.  **Obtenha as credenciais**: Copie a `UPSTASH_REDIS_REST_URL` e o `UPSTASH_REDIS_REST_TOKEN`.
+3.  **Configure no `.env`**:
     ```bash
-    sudo apt install -y redis-server
-    sudo systemctl enable redis-server
-    sudo systemctl start redis-server
-    ```
-
-2.  **Configure as variáveis de ambiente**:
-    ```bash
-    # No seu .env, adicione:
-    REDIS_URL=redis://localhost:6379
-    # Ou para Upstash Redis:
-    UPSTASH_REDIS_REST_URL=https://seu-projeto.upstash.io
-    UPSTASH_REDIS_REST_TOKEN=seu-token
-    ```
-
-3.  **Teste a conexão**:
-    ```bash
-    redis-cli ping
-    # Deve retornar "PONG"
+    UPSTASH_REDIS_REST_URL="https://seu-projeto.upstash.io"
+    UPSTASH_REDIS_REST_TOKEN="seu-token-secreto"
     ```
 
 ### Monitoramento e Performance
@@ -370,7 +356,7 @@ Para melhor performance em produção, configure o Redis:
 - [x] **HTTPS**: Ativado com Certbot.
 - [x] **Senhas**: Senha de admin forte configurada no arquivo `.env`.
 - [x] **Backups**: Tarefa `cron` configurada para backup diário automático.
-- [x] **Redis**: Configurado e protegido com senha.
+- [x] **Redis**: Variáveis do Upstash configuradas no `.env`.
 - [x] **Firewall**: Configurado com UFW (apenas portas 22, 80, 443).
 - [x] **Usuário**: Aplicação rodando com usuário não-root.
 - [x] **Permissões**: Permissões de arquivos corretas.

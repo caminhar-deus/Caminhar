@@ -1,5 +1,7 @@
 # O Caminhar com Deus
 
+![Build Status](https://github.com/caminhar-deus/Caminhar/actions/workflows/ci.yml/badge.svg)
+
 Um site cristão moderno e dinâmico para compartilhar reflexões e ensinamentos sobre fé, espiritualidade e a jornada cristã.
 
 ## ✨ Funcionalidades Principais
@@ -1031,30 +1033,30 @@ Para instruções detalhadas de deploy, consulte:
 5. **Documentação**: Mantenha documentação de deploy e procedimentos atualizada
 6. **Equipe**: Treine a equipe em procedimentos de deploy e troubleshooting
 
-## Melhorias Futuras
+## 🔮 Roadmap e Melhorias Futuras
 
-### Prioridade Alta
-- **Sistema de Comentários**: Implementar sistema de comentários para interação dos usuários nos posts
-- **Newsletter**: Sistema de inscrição e envio de newsletters automatizadas
-- **Multilíngue**: Suporte para múltiplos idiomas (Português, Inglês, Espanhol)
-- **Busca Avançada**: Sistema de busca por conteúdo, tags e categorias
-- **Estatísticas de Acesso**: Dashboard com métricas de visitas, engajamento e performance
+### 🏗️ Infraestrutura e Engenharia
+- **Backup Off-site**: Automatizar envio de backups para armazenamento em nuvem (AWS S3, Google Cloud Storage) para proteção contra falhas de hardware.
+- **Monitoramento (APM)**: Integrar ferramentas como Sentry ou New Relic para monitoramento de erros e performance em tempo real.
+- **CDN**: Implementar Content Delivery Network (Cloudflare) para otimizar a entrega de imagens e assets estáticos globalmente.
+- **Segurança Avançada**: Implementar testes automatizados OWASP ZAP no pipeline de CI/CD.
 
-### Prioridade Média
-- **Integração com Redes Sociais**: Compartilhamento avançado e login social (Google, Facebook)
-- **Sistema de Tags e Categorias**: Organização avançada de conteúdo por categorias e tags
-- **Webhooks**: Integração com serviços externos para automação de fluxos
-- **Sistema de Doações**: Integração com gateways de pagamento (PagSeguro, PayPal)
-- **Calendário de Eventos**: Sistema de eventos e agenda de atividades da comunidade
+### ✨ Funcionalidades (Produto)
+#### Prioridade Alta
+- **Expansão do ContentTabs**: Implementar as abas "Em Desenvolvimento" (Estudos Bíblicos, Cursos, Eventos).
+- **Sistema de Comentários**: Implementar interação dos usuários nos posts com sistema de moderação.
+- **Newsletter**: Sistema de inscrição e envio de emails automatizados.
+- **Busca Avançada**: Pesquisa global por conteúdo, tags e categorias.
 
-### Prioridade Baixa
-- **Tema Escuro**: Opção de tema escuro/claro para melhor experiência do usuário
-- **Notificações Push**: Sistema de notificações para novos conteúdos e atualizações
-- **Perfis de Usuário**: Perfis personalizados para usuários com histórico de interações
-- **Sistema de Avaliação**: Avaliação por estrelas e feedbacks para posts e conteúdos
-- **Integração com Podcasts**: Sistema de gerenciamento e exibição de podcasts
-- **Chat ao Vivo**: Sistema de chat para suporte e comunicação em tempo real
-- **Gamificação**: Sistema de pontos, conquistas e recompensas para engajamento
+#### Prioridade Média
+- **Multilíngue**: Suporte a internacionalização (i18n) para Inglês e Espanhol.
+- **Integração Social**: Login com Google/Facebook e compartilhamento avançado.
+- **Webhooks**: Integração com serviços externos (Zapier, IFTTT).
+
+#### Prioridade Baixa
+- **Tema Escuro**: Alternância de tema (Dark/Light mode).
+- **Gamificação**: Sistema de pontos e conquistas para engajamento.
+- **PWA**: Transformar o site em Progressive Web App instalável.
 
 ## 🎓 Guia de Solução de Problemas
 
@@ -1178,9 +1180,8 @@ Para instruções detalhadas de deploy, consulte:
 - **Solução**: Verificar configuração de cache em `lib/cache.js`
 
 - **Sintoma**: Redis não respondendo
-- **Solução**: Verificar conexão com Redis
-- **Comando**: `redis-cli ping` (se Redis local)
-- **Solução**: Verificar UPSTASH_REDIS_REST_URL e token
+- **Solução**: Verificar se as variáveis `UPSTASH_REDIS_REST_URL` e `TOKEN` estão corretas no `.env`.
+- **Diagnóstico**: Verificar se o console do Upstash mostra atividade/conexões.
 
 ### 🚀 Problemas de Deploy em Produção
 - **Sintoma**: Erro ao iniciar em produção
@@ -1218,36 +1219,46 @@ Para instruções detalhadas de deploy, consulte:
 
 ### 🛠️ Comandos Úteis de Diagnóstico
 
+#### 🔍 Sistema e Ambiente
 ```bash
 # Verificar variáveis de ambiente obrigatórias
 npm run check-env
 
+# Testar API status (Health Check)
+curl -v http://localhost:3000/api/v1/status
+
+# Verificar logs em tempo real (Filtrando erros)
+npm run dev 2>&1 | grep -E "(ERROR|WARN)"
+```
+
+#### 🗄️ Banco de Dados e Backups
+```bash
 # Verificar status do banco de dados
 psql $DATABASE_URL -c "SELECT version();"
 
 # Verificar conexões ativas
 psql $DATABASE_URL -c "SELECT * FROM pg_stat_activity;"
 
-# Verificar tamanho do banco
-psql $DATABASE_URL -c "SELECT pg_size_pretty(pg_database_size(current_database()));"
+# Verificar integridade de um arquivo de backup (gzip)
+gzip -t data/backups/caminhar-pg-backup_YYYY-MM-DD_HH-mm-ss.sql.gz
+```
 
-# Testar API status
-curl -v http://localhost:3000/api/v1/status
+#### 🚀 Performance e Carga
+```bash
+# Executar teste de carga básico (Health Check)
+npm run test:load
 
-# Testar autenticação
-curl -v -H "Authorization: Bearer seu_token" http://localhost:3000/api/auth/check
+# Analisar tamanho do bundle (Next.js Bundle Analyzer)
+npm run analyze
+```
 
-# Verificar logs em tempo real
-npm run dev 2>&1 | grep -E "(ERROR|WARN|INFO)"
+#### 🛡️ Segurança e Manutenção
+```bash
+# Auditoria de vulnerabilidades em dependências
+npm audit
 
-# Verificar uso de memória
-ps aux | grep node
-
-# Verificar espaço em disco
-df -h
-
-# Verificar permissões de arquivos
-ls -la data/ public/uploads/
+# Limpar cache do Next.js (Hard Reset)
+rm -rf .next/ && npm run dev
 ```
 
 ### 📝 Procedimentos de Troubleshooting
