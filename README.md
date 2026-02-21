@@ -166,7 +166,6 @@ caminhar/
 │   ├── videos.query.test.js     # Testes de consulta de vídeos
 │   └── videos.update.test.js    # Testes de atualização de vídeos
 ├── data/                        # Dados do projeto
-│   ├── caminhar.db              # Banco de dados principal
 │   └── backups/                 # Backups do banco de dados
 ├── examples/                    # Exemplos de implementação
 │   ├── blog-post-seo-example.js # Exemplo de SEO para posts de blog
@@ -1067,14 +1066,13 @@ Para instruções detalhadas de deploy, consulte:
 
 ### 🗄️ Problemas de Banco de Dados
 - **Sintoma**: Erros de conexão com banco
-- **Solução**: Verificar permissões no diretório `data/`
-- **Comando**: `chmod -R 755 data/`
+- **Solução**: Verificar se o serviço PostgreSQL está rodando
+- **Comando**: `docker-compose ps` ou `sudo systemctl status postgresql`
 - **Diagnóstico**: Verificar conexão PostgreSQL: `psql $DATABASE_URL`
 
 - **Sintoma**: Tabelas não criadas ou migrações falhando
 - **Solução**: Re-inicializar banco de dados
 - **Comando**: `npm run init-posts --force`
-- **Comando**: `npm run migrate-sqlite-pg` (se estiver migrando)
 
 - **Sintoma**: Erros de permissão no PostgreSQL
 - **Solução**: Verificar credenciais e permissões do usuário
