@@ -1293,6 +1293,256 @@ NODE_ENV="development"
 
 O sistema valida automaticamente as variáveis obrigatórias no início da aplicação. Se alguma variável estiver faltando, o servidor não iniciará e exibirá mensagens de erro claras indicando quais variáveis precisam ser configuradas.
 
+## Configuração para Produção
+
+### 🚀 **Método Recomendado: VPS (Hostinger, DigitalOcean, AWS EC2)**
+
+**Vantagens**:
+- Sistema de uploads local funciona sem alterações de código
+- Controle total sobre o ambiente
+- Performance consistente
+- Backup e monitoramento flexíveis
+
+**Configuração Básica**:
+```bash
+# 1. Configurar variáveis de ambiente para produção
+DATABASE_URL="postgresql://prod_user:prod_password@prod_host:5432/caminhar_prod"
+JWT_SECRET="sua-chave-secreta-gerada-com-openssl-rand-hex-32"
+ADMIN_USERNAME="admin"
+ADMIN_PASSWORD="senha-forte-gerada-com-openssl-rand-base64-16"
+SITE_URL="https://seusite.com"
+ALLOWED_ORIGINS="https://seusite.com,https://www.seusite.com"
+NODE_ENV="production"
+
+# 2. Configurar Redis para cache e rate limiting (opcional mas recomendado)
+UPSTASH_REDIS_REST_URL="https://seu-redis.upstash.io"
+UPSTASH_REDIS_REST_TOKEN="seu-token-aqui"
+
+# 3. Configurar whitelist de IPs administrativos
+ADMIN_IP_WHITELIST="seu-ip-admin,ip-backup"
+
+# 4. SSL/TLS obrigatório
+# - Certificado SSL gratuito com Let's Encrypt
+# - Configuração de HTTPS obrigatória
+```
+
+**Passos de Deploy**:
+1. **Provisionar VPS** (2GB RAM, 40GB SSD recomendado)
+2. **Instalar dependências**: Node.js 20+, PostgreSQL, Redis (opcional)
+3. **Configurar banco de dados**: PostgreSQL com SSL
+4. **Configurar variáveis de ambiente**: Arquivo `.env` seguro
+5. **Configurar proxy reverso**: Nginx com SSL
+6. **Configurar process manager**: PM2 para Node.js
+7. **Configurar backup**: Sistema automático de backup
+8. **Configurar monitoramento**: Health checks e alertas
+
+**Performance Otimizada**:
+- **Cache**: Redis para cache de API e rate limiting
+- **CDN**: Cloudflare para arquivos estáticos
+- **Compressão**: gzip/br compression habilitada
+- **SSL**: Certificado SSL/TLS obrigatório
+- **Firewall**: Configuração de firewall de aplicação
+
+### ☁️ **Método Alternativo: Vercel (Serverless)**
+
+**Aviso**: Requer adaptações significativas no código
+
+**Alterações Necessárias**:
+```javascript
+// 1. Migrar sistema de uploads para armazenamento em nuvem
+// Substituir upload local por:
+// - AWS S3
+// - Vercel Blob Storage
+// - Cloudinary
+// - Outro serviço de armazenamento em nuvem
+
+// 2. Configurar variáveis de ambiente no dashboard da Vercel
+// - DATABASE_URL: Conexão PostgreSQL (Vercel Postgres ou Neon)
+// - JWT_SECRET: Chave secreta
+// - BLOB_READ_WRITE_TOKEN: Token para armazenamento em nuvem
+// - CLOUDINARY_URL: URL do Cloudinary (se usar)
+// - AWS_ACCESS_KEY_ID: Chave AWS (se usar S3)
+
+// 3. Adaptar código de upload
+// - Substituir fs.writeFile por upload para cloud
+// - Atualizar URLs de imagens para CDN
+// - Configurar CORS para uploads
+```
+
+**Configuração da Vercel**:
+```json
+// vercel.json
+{
+  "functions": {
+    "pages/api/**/*.js": {
+      "maxDuration": 30
+    }
+  },
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
+```
+
+**Desvantagens**:
+- Sistema de uploads requer reescrita completa
+- Custo de armazenamento em nuvem
+- Latência maior para uploads
+- Complexidade de configuração
+
+### 📋 **Checklist de Configuração para Produção**
+
+#### 🔒 **Segurança**
+- [ ] **HTTPS obrigatório**: Certificado SSL/TLS ativo
+- [ ] **JWT_SECRET seguro**: Gerado com `openssl rand -hex 32`
+- [ ] **Senhas fortes**: ADMIN_PASSWORD com complexidade adequada
+- [ ] **Firewall configurado**: Regras de segurança de rede
+- [ ] **CORS restrito**: ALLOWED_ORIGINS apenas para domínios necessários
+- [ ] **Rate Limiting**: Configurado para proteção contra ataques
+- [ ] **Backup automático**: Sistema de backup diário configurado
+
+#### 🗄️ **Banco de Dados**
+- [ ] **PostgreSQL em produção**: Conexão segura com SSL
+- [ ] **Pool de conexões**: Configuração otimizada para carga
+- [ ] **Backups configurados**: Backup automático e restauração testada
+- [ ] **Monitoramento**: Métricas de performance e saúde
+- [ ] **Segurança**: Credenciais diferentes de desenvolvimento
+
+#### 🌐 **Infraestrutura**
+- [ ] **Servidor provisionado**: VPS com recursos adequados
+- [ ] **Proxy reverso**: Nginx/Apache configurado
+- [ ] **Process manager**: PM2/Forever para Node.js
+- [ ] **Sistema de arquivos**: Estratégia para uploads persistentes
+- [ ] **Redis (opcional)**: Cache e rate limiting em produção
+- [ ] **CDN (recomendado)**: Cloudflare ou similar para arquivos estáticos
+
+#### 🚀 **Deploy**
+- [ ] **Variáveis de ambiente**: Todas configuradas e seguras
+- [ ] **Build de produção**: `npm run build` sem erros
+- [ ] **Health checks**: Endpoints de saúde configurados
+- [ ] **Logs configurados**: Sistema de logs e monitoramento
+- [ ] **CI/CD**: Pipeline de deploy automatizado
+- [ ] **Testes de produção**: Validação em ambiente staging
+
+#### 📊 **Monitoramento**
+- [ ] **Health checks**: Monitoramento de saúde da aplicação
+- [ ] **Métricas de performance**: Lighthouse, WebPageTest
+- [ ] **Alertas configurados**: Notificações para falhas críticas
+- [ ] **Logs centralizados**: Sentry, LogRocket ou similar
+- [ ] **Backup verification**: Verificação automática de backups
+
+#### 🧪 **Testes de Produção**
+- [ ] **Testes de carga**: k6 para validar performance sob estresse
+- [ ] **Testes de segurança**: npm audit, OWASP ZAP
+- [ ] **Testes de integração**: Fluxos completos validados
+- [ ] **Testes de backup**: Restauração de backup testada
+- [ ] **Testes de performance**: Métricas de Core Web Vitals
+
+### 📈 **Métricas de Performance em Produção**
+
+#### **Objetivos de Performance**
+- **First Contentful Paint**: < 1.5s
+- **Largest Contentful Paint**: < 2.5s
+- **Cumulative Layout Shift**: < 0.1
+- **First Input Delay**: < 100ms
+- **Time to Interactive**: < 3.5s
+
+#### **Monitoramento Contínuo**
+- **Lighthouse CI**: Integração contínua de performance
+- **WebPageTest**: Testes regulares de performance
+- **Google Analytics**: Métricas de usuário e engajamento
+- **Sentry**: Monitoramento de erros e exceções
+
+### 🛠️ **Comandos de Deploy em Produção**
+
+#### **Deploy em VPS**
+```bash
+# 1. Atualizar código
+git pull origin main
+
+# 2. Instalar dependências
+npm install --production
+
+# 3. Build de produção
+npm run build
+
+# 4. Iniciar aplicação
+pm2 start npm --name "caminhar" -- start
+
+# 5. Configurar startup
+pm2 startup
+pm2 save
+
+# 6. Verificar status
+pm2 status
+pm2 logs caminhar
+```
+
+#### **Deploy na Vercel**
+```bash
+# 1. Configurar projeto
+vercel login
+vercel init
+
+# 2. Configurar variáveis de ambiente
+vercel env add DATABASE_URL production
+vercel env add JWT_SECRET production
+# ... outras variáveis
+
+# 3. Deploy
+vercel --prod
+
+# 4. Verificar deploy
+vercel status
+```
+
+### 🚨 **Problemas Comuns em Produção**
+
+#### **Problemas de Banco de Dados**
+- **Conexão timeout**: Verificar pool de conexões e firewall
+- **SSL errors**: Verificar certificados SSL do PostgreSQL
+- **Performance lenta**: Verificar índices e consultas
+
+#### **Problemas de Upload**
+- **Permissões**: Verificar permissões do diretório `public/uploads/`
+- **Espaço em disco**: Monitorar espaço disponível
+- **Tamanho de arquivos**: Verificar limites de upload
+
+#### **Problemas de Cache**
+- **Redis timeout**: Verificar conexão com Redis
+- **Cache stale**: Configurar TTL adequado
+- **Memória**: Monitorar uso de memória do Redis
+
+#### **Problemas de Segurança**
+- **Rate limiting**: Ajustar limites para tráfego real
+- **CORS errors**: Verificar ALLOWED_ORIGINS
+- **JWT errors**: Verificar JWT_SECRET e expiração
+
+### 📚 **Documentação de Deploy**
+
+Para instruções detalhadas de deploy, consulte:
+
+📄 **[Guia de Deploy Completo (docs/DEPLOY.md)](./docs/DEPLOY.md)**
+
+**Conteúdo do Guia**:
+- Deploy passo-a-passo em VPS
+- Configuração de SSL/TLS
+- Configuração de banco de dados
+- Configuração de cache e performance
+- Monitoramento e manutenção
+- Troubleshooting avançado
+- Segurança em produção
+- Escalabilidade e otimização
+
+### 🎯 **Recomendações Finais**
+
+1. **Teste em staging**: Sempre teste em ambiente staging antes de produção
+2. **Monitoramento contínuo**: Configure monitoramento de performance e erros
+3. **Backups regulares**: Teste restauração de backups regularmente
+4. **Atualizações de segurança**: Mantenha dependências e sistema atualizados
+5. **Documentação**: Mantenha documentação de deploy e procedimentos atualizada
+6. **Equipe**: Treine a equipe em procedimentos de deploy e troubleshooting
+
 ### Testes de Configuração de Ambiente
 
 O sistema possui testes completos para validar a configuração de ambiente e garantir que todas as variáveis estejam corretamente configuradas:
