@@ -588,7 +588,7 @@ npm run docker:build
 
 ---
 
-###  **Configuração de IDE**
+### 💻 **Configuração de IDE**
 ```bash
 # Extensões recomendadas para VS Code
 code --install-extension esbenp.prettier-vscode
@@ -1413,3 +1413,19 @@ expect(res).toBeValidJSON({ title: postData.title });
 ### Documentação Completa
 
 Consulte `tests/README.md` para documentação completa da arquitetura de testes.
+
+### Executar Testes
+
+```bash
+# Todos os testes
+npm test
+
+# Testes específicos
+npm test -- tests/examples/simple-test.test.js
+
+# Watch mode
+npm run test:watch
+
+# Com cobertura
+npm run test:ci
+```
