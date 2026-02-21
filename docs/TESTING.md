@@ -684,7 +684,7 @@ Estes testes verificam a qualidade e completude da documentação.
 
 **Principais verificações:**
 - **README Atualizado**: Documentação completa sobre todas as funcionalidades
-- **README-TESTE**: Documentação detalhada da infraestrutura de testes
+- **TESTING.md**: Documentação detalhada da infraestrutura de testes
 - **BACKUP_SYSTEM**: Documentação do sistema de backup automático
 - **CACHE_IMPLEMENTATION**: Documentação do sistema de cache
 - **DEPLOY**: Guia completo de deploy para VPS e Vercel

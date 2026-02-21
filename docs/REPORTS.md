@@ -265,7 +265,7 @@ O projeto "O Caminhar com Deus" atingiu um nível de maturidade técnica elevado
 - **Testes**: ✅ Completos (cobertura >90%, testes de carga validados)
 - **Modernização**: ✅ Total (ES modules, Turbopack, arquitetura atualizada)
 - **CI/CD**: ✅ Funcional (pipeline de integração contínua operacional)
-- **Documentação**: ✅ Completa (README, README-TESTE e relatórios atualizados)
+- **Documentação**: ✅ Completa (README, TESTING.md e relatórios atualizados)
 
 ### Métricas de Performance Atuais
 

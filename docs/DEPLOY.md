@@ -526,7 +526,7 @@ df -h
 
 ### Documentação
 - [x] **README**: Documentação principal atualizada.
-- [x] **README-TESTE**: Documentação de testes completa.
+- [x] **TESTING.md**: Documentação de testes completa.
 - [x] **BACKUP_SYSTEM**: Documentação do sistema de backup.
 - [x] **CACHE_IMPLEMENTATION**: Documentação do sistema de cache.
 - [x] **project-analysis-report**: Relatório de análise técnica atualizado.

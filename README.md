@@ -5,18 +5,18 @@ Um site cristão moderno e dinâmico para compartilhar reflexões e ensinamentos
 
 ## 📖 Índice de Documentação
 
-Para detalhes técnicos específicos, consulte as documentações dedicadas na pasta `docs/`:
+Para detalhes técnicos específicos, consulte as documentações dedicadas na pasta `docs/`. Cada documento inclui visão geral, comandos essenciais e guias práticos:
 
-| Documentação | Descrição |
-|--------------|-----------|
-| **[Arquitetura](docs/ARCHITECTURE.md)** | Estrutura do projeto, fluxo de dados e decisões técnicas. |
-| **[Guia de Deploy](docs/DEPLOY.md)** | Instruções de produção (VPS, Vercel), variáveis de ambiente e troubleshooting. |
-| **[Testes & Qualidade](docs/TESTING.md)** | Guia de testes (Unitários, E2E, Carga), comandos e estratégias. |
-| **[API Reference](pages/api/v1/README.md)** | Documentação da API RESTful pública (v1). |
-| **[Sistema de Backup](docs/BACKUP.md)** | Detalhes do sistema automático de backup e restauração. |
-| **[Cache & Performance](docs/CACHE.md)** | Implementação de Cache (Redis) e estratégias de performance. |
-| **[SEO Toolkit](docs/SEO.md)** | Guia de otimização para motores de busca e Core Web Vitals. |
-| **[Relatórios Técnicos](docs/REPORTS.md)** | Análises de migração, benchmarks e relatórios de evolução. |
+| Documentação | Visão Geral | Comandos Essenciais | Público-Alvo |
+|--------------|-------------|-------------------|--------------|
+| **[Arquitetura](docs/ARCHITECTURE.md)** | Estrutura modular, fluxo de dados e decisões técnicas. Documentação completa de módulos, design system e padrões de desenvolvimento. | `npm run dev`, `npm run build` | Desenvolvedores, Arquitetos |
+| **[Guia de Deploy](docs/DEPLOY.md)** | Deploy para VPS e Vercel, configuração de ambiente, variáveis críticas e troubleshooting avançado. | `npm run deploy:vercel`, `npm run deploy:vps` | DevOps, Administradores |
+| **[Testes & Qualidade](docs/TESTING.md)** | Estratégia completa: Unitários (Jest), E2E (Cypress), Carga (k6), Segurança, Performance. Cobertura >90%. | `npm test`, `npm run cypress:run`, `npm run test:load` | QA, Desenvolvedores |
+| **[API Reference](pages/api/v1/README.md)** | API RESTful pública v1.2.0: endpoints, schemas, autenticação, rate limiting e exemplos de uso. | `curl`, `fetch`, `axios` | Desenvolvedores Frontend, Integrações |
+| **[Sistema de Backup](docs/BACKUP.md)** | Sistema automático de backup: criação, rotação, restauração, validação e monitoramento. | `npm run backup:create`, `npm run backup:restore` | Administradores, DevOps |
+| **[Cache & Performance](docs/CACHE.md)** | Cache Redis avançado: estratégias, TTL, invalidação, monitoramento e otimização de performance. | `redis-cli`, `npm run test:cache` | Desenvolvedores, DevOps |
+| **[SEO Toolkit](docs/SEO.md)** | Otimização completa: Core Web Vitals, Schema.org, meta tags, performance e estratégias de ranqueamento. | `npm run test:seo`, `lighthouse` | Marketing, Desenvolvedores |
+| **[Relatórios Técnicos](docs/REPORTS.md)** | Análises detalhadas: migração SQLite→PostgreSQL, benchmarks de performance, métricas de qualidade e evolução do projeto. | `npm run generate:report` | Gerentes, Stakeholders |
 
 ---
 
