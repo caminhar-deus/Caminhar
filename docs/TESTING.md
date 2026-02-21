@@ -92,6 +92,65 @@ Este documento detalha a estratégia de testes, ferramentas utilizadas e procedi
 - **express-rate-limit**: Sistema de rate limiting.
 - **compression**: Compressão gzip/br para respostas HTTP.
 
+### 📋 Comandos de Testes Principais
+
+**Testes Unitários e de Integração:**
+```bash
+npm test                    # Executa todos os testes
+npm run test:watch          # Executa testes em modo watch
+npm run test:coverage       # Executa testes com cobertura
+npm run test:coverage:watch # Executa testes com cobertura em modo watch
+```
+
+**Testes E2E (Cypress):**
+```bash
+npm run cypress:open        # Abre Cypress em modo interativo
+npm run cypress:run         # Executa Cypress em modo headless
+```
+
+**Testes de Carga (k6):**
+```bash
+npm run test:load           # Teste de health check
+npm run test:load:auth      # Teste de fluxo autenticado
+npm run test:load:write     # Teste de fluxo de escrita
+npm run test:load:upload    # Teste de upload em massa
+npm run test:load:cache     # Teste de cache
+```
+
+**Testes Específicos:**
+```bash
+npm run test:security       # Testes de segurança
+npm run test:performance    # Testes de performance
+npm run test:accessibility  # Testes de acessibilidade
+npm run test:cache          # Testes de cache
+npm run test:rate-limit     # Testes de rate limiting
+npm run test:upload         # Testes de upload
+npm run test:api            # Testes de API
+npm run test:database       # Testes de banco de dados
+npm run test:third-party    # Testes de integrações externas
+npm run test:cross-browser  # Testes cross-browser
+npm run test:mobile         # Testes mobile
+npm run test:content-tabs   # Testes de ContentTabs
+npm run test:spotify        # Testes de Spotify
+npm run test:youtube        # Testes de YouTube
+npm run test:modernization  # Testes de modernização ESM
+npm run test:external-integrations # Testes de integrações externas avançadas
+npm run test:documentation  # Testes de documentação
+```
+
+**Testes de Banco de Dados:**
+```bash
+npm run setup:test-db       # Configura banco de dados de teste
+npm run clean:load-posts    # Limpa dados de teste de carga
+```
+
+**Testes em Docker:**
+```bash
+npm run docker:test:up      # Inicia ambiente de teste Docker
+npm run docker:test:down    # Para ambiente de teste Docker
+npm run docker:test:clean   # Limpa ambiente de teste Docker
+```
+
 ---
 
 ## 🧪 Tipos de Testes

@@ -11,6 +11,54 @@ O projeto atualmente utiliza **armazenamento local** para imagens (`/public/uplo
 
 ---
 
+## 📋 Configuração de Ambiente (.env)
+
+### Variáveis Obrigatórias
+```bash
+# Conexão com o banco de dados PostgreSQL
+DATABASE_URL="postgresql://usuario:senha@localhost:5432/caminhar_prod"
+
+# Chave secreta para assinar tokens JWT
+JWT_SECRET="sua-chave-secreta-muito-forte-aqui"
+
+# Ambiente de execução
+NODE_ENV="production"
+```
+
+### Variáveis Opcionais
+```bash
+# Credenciais iniciais do administrador
+ADMIN_USERNAME="admin"
+ADMIN_PASSWORD="senha-forte-aqui"
+
+# Configuração do Redis (Upstash) para Rate Limiting persistente
+UPSTASH_REDIS_REST_URL="https://seu-projeto.upstash.io"
+UPSTASH_REDIS_REST_TOKEN="seu-token-secreto"
+
+# Whitelist de IPs para o Rate Limit
+ADMIN_IP_WHITELIST="127.0.0.1,::1"
+
+# URL base do site para geração de Sitemap e SEO
+SITE_URL="https://seu-dominio.com"
+
+# Configuração de CORS (para API pública v1)
+ALLOWED_ORIGINS="https://seu-dominio.com"
+```
+
+### Como Configurar
+```bash
+# Copiar o modelo
+cp .env.example .env
+
+# Editar o arquivo
+nano .env
+
+# Ou usar editor de texto
+code .env
+```
+
+---
+
 ## Opção 1: Deploy em VPS Genérica (Recomendado para a arquitetura atual)
 
 Ideal para DigitalOcean, AWS EC2, Hetzner, Linode, etc.
@@ -254,32 +302,36 @@ Após configurar as variáveis, a Vercel fará o build e deploy automaticamente.
 
 ## 7. Pós-Deploy: Tarefas de Manutenção
 
-### Configuração de Backup Automático (Cron)
+### Sistema de Backup Automático
 
-Para automatizar o script de backup na sua VPS, use o `cron`.
+O projeto inclui um sistema de backup automático completo. Consulte a documentação detalhada em [Sistema de Backup](docs/BACKUP.md).
 
-1.  **Encontre os caminhos absolutos** para o Node e o npm (o `cron` precisa deles):
-    ```bash
-    which node
-    which npm
-    ```
+**Comandos Principais:**
+```bash
+# Iniciar o sistema de backup
+npm run init-backup
 
-2.  **Abra o editor do cron**:
-    ```bash
-    crontab -e
-    ```
+# Criar backup manual
+npm run create-backup
 
-3.  **Adicione a seguinte linha** no final do arquivo, ajustando os caminhos conforme necessário:
-    ```bash
-    # Executa o backup do projeto "O Caminhar com Deus" todos os dias às 2 da manhã
-    0 2 * * * cd /home/seu_usuario/caminhar && /usr/bin/node /usr/bin/npm run create-backup >> /home/seu_usuario/caminhar/data/backups/cron.log 2>&1
-    ```
-    Isso irá executar o backup diariamente e salvar um log da operação.
+# Verificar integridade do backup
+npm run verify-backup nome-do-backup.sql.gz
 
-### Configuração de Cache (Upstash Redis)
+# Restaurar backup
+npm run restore-backup nome-do-backup.sql.gz
+```
 
-O projeto utiliza o driver `@upstash/redis` (HTTP), ideal para ambientes Serverless e VPS sem necessidade de gerenciar o serviço Redis localmente.
+**Configuração Automática (Cron):**
+```bash
+# Adicione ao crontab para backup diário às 2 AM
+0 2 * * * cd /home/seu_usuario/caminhar && /usr/bin/node /usr/bin/npm run create-backup >> /home/seu_usuario/caminhar/data/backups/cron.log 2>&1
+```
 
+### Sistema de Cache (Upstash Redis)
+
+O projeto inclui um sistema de cache avançado. Consulte a documentação detalhada em [Cache & Performance](docs/CACHE.md).
+
+**Configuração:**
 1.  **Crie um banco no Upstash**: Acesse console.upstash.com.
 2.  **Obtenha as credenciais**: Copie a `UPSTASH_REDIS_REST_URL` e o `UPSTASH_REDIS_REST_TOKEN`.
 3.  **Configure no `.env`**:
@@ -287,6 +339,18 @@ O projeto utiliza o driver `@upstash/redis` (HTTP), ideal para ambientes Serverl
     UPSTASH_REDIS_REST_URL="https://seu-projeto.upstash.io"
     UPSTASH_REDIS_REST_TOKEN="seu-token-secreto"
     ```
+
+**Comandos de Gerenciamento:**
+```bash
+# Limpar cache manualmente
+npm run clear-cache
+
+# Verificar status do cache
+npm run check-cache
+
+# Monitorar métricas de cache
+npm run cache-metrics
+```
 
 ### Monitoramento e Performance
 
@@ -350,7 +414,81 @@ O projeto utiliza o driver `@upstash/redis` (HTTP), ideal para ambientes Serverl
 
 ---
 
-## Checklist de Segurança e Operações Pós-Deploy
+## 🚨 Troubleshooting (Problemas Comuns)
+
+### Erros de Banco de Dados
+```bash
+# Verificar conexão com PostgreSQL
+sudo systemctl status postgresql
+sudo -u postgres psql -c "SELECT version();"
+
+# Verificar permissões do banco
+sudo -u postgres psql -c "SELECT datname, datistemplate FROM pg_database;"
+
+# Testar conexão da aplicação
+npm run check-db-status
+```
+
+### Erros de Cache Redis
+```bash
+# Verificar conexão com Upstash
+npm run check-cache
+
+# Limpar cache se houver problemas
+npm run clear-cache
+
+# Verificar logs de cache
+npm run cache-logs
+```
+
+### Erros de Build
+```bash
+# Limpar cache de build
+rm -rf .next/
+npm run build
+
+# Verificar dependências
+npm ls
+npm outdated
+```
+
+### Erros de Nginx
+```bash
+# Testar configuração
+sudo nginx -t
+
+# Verificar logs
+sudo tail -f /var/log/nginx/error.log
+
+# Reiniciar serviço
+sudo systemctl restart nginx
+```
+
+### Erros de PM2
+```bash
+# Verificar status da aplicação
+pm2 status
+
+# Ver logs da aplicação
+pm2 logs caminhar
+
+# Reiniciar aplicação
+pm2 restart caminhar
+```
+
+### Erros de Backup
+```bash
+# Verificar logs de backup
+tail -f /home/seu_usuario/caminhar/data/backups/cron.log
+
+# Testar backup manualmente
+npm run create-backup
+
+# Verificar espaço em disco
+df -h
+```
+
+## 📋 Checklist de Segurança e Operações Pós-Deploy
 
 ### Segurança
 - [x] **HTTPS**: Ativado com Certbot.

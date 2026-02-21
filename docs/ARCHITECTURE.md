@@ -157,7 +157,7 @@ lib/api/
 ### 3. **SEO & Performance Toolkit**
 **Local:** `components/SEO/`, `components/Performance/`
 
-Otimização completa para SEO e Core Web Vitals.
+Otimização completa para SEO e Core Web Vitals. Consulte a documentação detalhada em [SEO Toolkit](docs/SEO.md).
 
 ```
 components/SEO/
@@ -186,9 +186,46 @@ hooks/
 └── usePerformanceMetrics.js  # Monitora LCP, FID, CLS, FCP, TTFB
 ```
 
+**Benefícios:**
+- SEO avançado com Schema.org
+- Core Web Vitals otimizados
+- Performance de carregamento
+- Experiência do usuário melhorada
+
 ---
 
-### 4. **Test Suite Architecture**
+### 4. **Cache & Performance System**
+**Local:** `lib/cache.js`, `lib/redis.js`
+
+Sistema de cache avançado com Redis para otimização de performance. Consulte a documentação detalhada em [Cache & Performance](docs/CACHE.md).
+
+```
+lib/
+├── cache.js                  # Sistema de cache com Redis
+├── redis.js                  # Configuração do cliente Redis
+└── middleware.js             # Middleware de cache
+
+pages/api/
+├── v1/settings.js            # Cache TTL: 30 minutos
+├── v1/posts.js               # Cache TTL: 1 hora
+└── admin/musicas.js          # Cache TTL: 15 minutos
+```
+
+**Estratégias de Cache:**
+- **Cache-Aside Pattern**: Busca inteligente entre cache e banco
+- **TTL Configurável**: Tempos de expiração por tipo de dado
+- **Invalidação Seletiva**: Cache invalidado apenas quando necessário
+- **Fallback Seguro**: Sistema continua operando se Redis falhar
+
+**Benefícios:**
+- Redução de 80-90% nas consultas ao banco de dados
+- Resposta rápida mesmo com alta demanda
+- Escalabilidade melhorada
+- Métricas de performance monitoradas
+
+---
+
+### 5. **Test Suite Architecture**
 **Local:** `tests/`
 
 Infraestrutura completa para testes eficientes.
@@ -221,7 +258,7 @@ tests/
 
 ---
 
-### 5. **Design System Foundation**
+### 6. **Design System Foundation**
 **Local:** `styles/tokens/`, `components/UI/`
 
 Sistema de design completo com tokens e componentes base.
@@ -318,10 +355,10 @@ caminhar/
 │   │   ├── AdminPostsNew.js
 │   │   ├── fields/
 │   │   └── hooks/useAdminCrud.js
-│   ├── SEO/                 # ✅ SEO Toolkit
+│   ├── SEO/                 # ✅ SEO Toolkit (docs/SEO.md)
 │   │   ├── Head.js
 │   │   └── StructuredData/
-│   ├── Performance/         # ✅ Performance Components
+│   ├── Performance/         # ✅ Performance Components (docs/CACHE.md)
 │   │   ├── ImageOptimized.js
 │   │   ├── LazyIframe.js
 │   │   ├── PreloadResources.js
@@ -343,11 +380,12 @@ caminhar/
 │   │   ├── response.js
 │   │   ├── middleware.js
 │   │   └── validate.js
-│   ├── seo/                 # ✅ SEO Config
+│   ├── seo/                 # ✅ SEO Config (docs/SEO.md)
 │   │   ├── config.js
 │   │   └── utils.js
+│   ├── cache.js             # ✅ Cache System (docs/CACHE.md)
+│   ├── redis.js             # ✅ Redis Configuration (docs/CACHE.md)
 │   ├── auth.js
-│   ├── cache.js
 │   ├── db.js
 │   ├── musicas.js
 │   ├── videos.js
