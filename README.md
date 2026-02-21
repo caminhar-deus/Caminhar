@@ -588,41 +588,7 @@ npm run docker:build
 
 ---
 
-### 🔧 **Configuração Avançada**
-
-#### **Variáveis de Ambiente Obrigatórias**
-```env
-# Banco de Dados
-DATABASE_URL="postgresql://user:password@localhost:5432/caminhar"
-
-# Segurança
-JWT_SECRET="sua-chave-secreta-aqui"
-
-# Admin
-ADMIN_USERNAME="admin"
-ADMIN_PASSWORD="senha-segura-aqui"
-```
-
-#### **Variáveis de Ambiente Opcionais**
-```env
-# Redis para Cache e Rate Limiting
-UPSTASH_REDIS_REST_URL="https://seu-redis.upstash.io"
-UPSTASH_REDIS_REST_TOKEN="seu-token-aqui"
-
-# Configurações de CORS
-ALLOWED_ORIGINS="http://localhost:3000,https://seu-dominio.com"
-
-# Configurações de IP Whitelist
-ADMIN_IP_WHITELIST="127.0.0.1,::1"
-
-# Configurações de Site
-SITE_URL="http://localhost:3000"
-
-# Configurações de Ambiente
-NODE_ENV="development"
-```
-
-#### **Configuração de IDE**
+###  **Configuração de IDE**
 ```bash
 # Extensões recomendadas para VS Code
 code --install-extension esbenp.prettier-vscode
@@ -708,7 +674,7 @@ npm run build
 
 ---
 
-### 📚 **Documentação Adicional**
+### 📖 **Documentação do Projeto**
 
 - **[Guia de Deploy](./docs/DEPLOY.md)**: Instruções detalhadas de deploy
 - **[Documentação de Testes](./docs/README-TESTE.md)**: Infraestrutura de testes
@@ -1447,19 +1413,3 @@ expect(res).toBeValidJSON({ title: postData.title });
 ### Documentação Completa
 
 Consulte `tests/README.md` para documentação completa da arquitetura de testes.
-
-### Executar Testes
-
-```bash
-# Todos os testes
-npm test
-
-# Testes específicos
-npm test -- tests/examples/simple-test.test.js
-
-# Watch mode
-npm run test:watch
-
-# Com cobertura
-npm run test:ci
-```
