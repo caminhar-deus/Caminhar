@@ -2,175 +2,56 @@
 
 Um site cristão moderno e dinâmico para compartilhar reflexões e ensinamentos sobre fé, espiritualidade e a jornada cristã.
 
-## Funcionalidades
+## ✨ Funcionalidades Principais
 
 - **Página Principal (HOME)**: Exibe título e subtítulo dinâmicos, frase de apresentação e imagem hero configurável
 - **Painel Administrativo (ADMIN)**: Área protegida por login para gerenciar conteúdo do site
-- **Upload de Imagens**: Sistema para atualizar a imagem principal (1100x320px) via painel administrativo
-- **Gerenciamento de Configurações**: Interface para editar título, subtítulo e outras configurações
-- **Design Moderno**: Interface limpa, responsiva e otimizada para performance
-- **Sistema de Autenticação**: JWT com cookies HTTP-only e bcrypt para segurança
-- **Backup Automático**: Sistema de backup automático do banco de dados com compressão, rotação e agendamento
+- **Gerenciamento de Conteúdo**: CRUD completo para posts, músicas e vídeos.
+- **Autenticação Segura**: Sistema baseado em JWT com cookies HTTP-only e hashing de senhas com bcrypt.
+- **Upload de Imagens**: Sistema para upload de imagens para posts e configurações do site.
+- **Backup Automático**: Sistema de backup agendado do banco de dados com rotação e compressão.
 - **Blog Completo**: Paginação, compartilhamento em redes sociais (WhatsApp, Facebook) e navegação otimizada
-- **Segurança Avançada**: Rate limiting, proteção contra força bruta e gerenciamento de backups via UI
-- **API RESTful**: Endpoints organizados em `/api/v1/` para consumo externo
 - **ContentTabs**: Sistema de navegação com 5 abas (Reflexões & Estudos, Músicas, Vídeos, Em Desenvolvimento)
-- **Spotify Integration**: Integração completa com Spotify para exibição e reprodução de músicas
-- **Music Management**: Sistema completo de gestão de músicas com preview de player Spotify
-- **ES Modules**: Projeto totalmente migrado para ES modules para compatibilidade moderna
-- **Testes Unitários**: Infraestrutura de testes modernizada com Jest e React Testing Library
-- **Cache de Imagens**: Sistema de cache otimizado para melhor performance
-- **YouTube Integration**: Integração completa com YouTube para exibição e reprodução de vídeos
-- **Video Management**: Sistema completo de gestão de vídeos com preview de player YouTube
-- **Cache de API**: Sistema de cache inteligente para rotas de leitura frequente usando Redis
-- **Rate Limiting**: Sistema de limitação de requisições para proteção contra ataques de força bruta
-- **SEO Avançado**: Meta tags otimizadas, structured data, sitemap e robots.txt
-- **Performance Monitorada**: Métricas de performance, Lighthouse scores e monitoramento de saúde
-- **Acessibilidade**: Conformidade WCAG, navegação por teclado e compatibilidade com leitores de tela
-- **Cross-Browser**: Compatibilidade com Chrome, Firefox, Safari, Edge e navegadores mobile
-- **Mobile First**: Design responsivo e performance otimizada para dispositivos móveis
-- **Internationalização**: Suporte a múltiplos idiomas e formatos de dados
-- **Monitoramento de Erros**: Sentry para captura e monitoramento de erros em produção
-- **CI/CD**: Pipeline de integração e deploy contínuo com GitHub Actions
-- **Docker**: Suporte a containerização para desenvolvimento e produção
-- **Load Testing**: Testes de carga e performance com k6
-- **Security Testing**: Testes de segurança com npm audit e OWASP ZAP
-- **Stress Testing**: Testes de estresse para validação de limites do sistema
-- **Regression Testing**: Testes de regressão para validação de funcionalidades existentes
-- **Smoke Testing**: Testes de fumaça para validação rápida após deploy
-- **E2E Testing**: Testes end-to-end com Cypress para validação de fluxos completos
-- **API Documentation**: Documentação completa da API RESTful com OpenAPI/Swagger
-- **Third-party Integration**: Integração com serviços externos (Spotify, YouTube, Redis, Cloudflare)
-- **Test Suite Architecture**: Arquitetura de testes completa com factories, helpers e mocks reutilizáveis
-- **Data Generation**: Sistema de factories para geração de dados de teste consistentes e realistas
-- **API Testing**: Helpers especializados para testes de endpoints RESTful com validação de schemas
-- **Component Testing**: Render helpers para testes de componentes React com RTL
-- **Authentication Testing**: Mocks e helpers para testes de autenticação e autorização
-- **Database Testing**: Mocks de banco de dados para testes isolados e rápidos
-- **Custom Matchers**: Jest matchers personalizados para validações específicas do projeto
-- **Test Examples**: Exemplos práticos de implementação de testes unitários e de integração
-- **Test Utilities**: Conjunto completo de utilitários para facilitar a escrita de testes
-- **Mock Management**: Sistema organizado de mocks para diferentes camadas da aplicação
-- **Test Configuration**: Configuração centralizada para ambiente de testes consistente
-- **Test Documentation**: Documentação completa da arquitetura de testes e melhores práticas
+- **Integrações**: Spotify e YouTube para conteúdo multimídia.
+- **Performance e Cache**: Cache de API com Redis, otimização de imagens e lazy loading.
+- **Testes Abrangentes**: Suíte de testes completa cobrindo desde testes unitários até E2E e de carga.
 
-## Tecnologias Utilizadas
+## 🛠️ Tecnologias
 
 ### **Frontend**
 - **Next.js 16.1.4**: Framework React full-stack com SSR, SSG e API Routes
 - **React 19.2.3**: Biblioteca JavaScript para interfaces de usuário modernas
 - **CSS Modules**: Estilização modular e organizada com escopo local
-- **ES Modules**: Sistema de módulos moderno sem dependências de bundlers
-- **Turbopack**: Build engine ultra-rápido para desenvolvimento (Next.js 16+)
 
 ### **Backend & API**
 - **Node.js**: Ambiente de execução JavaScript escalável
-- **Express.js**: Framework web para Node.js (interno ao Next.js)
 - **API RESTful**: Endpoints organizados em `/api/v1/` para consumo externo
-- **OpenAPI/Swagger**: Documentação automática de APIs
-- **CORS**: Configuração de origens permitidas para segurança
 
 ### **Banco de Dados**
 - **PostgreSQL**: Banco de dados relacional robusto e escalável
 - **pg (node-postgres)**: Driver oficial PostgreSQL para Node.js
-- **Connection Pool**: Gerenciamento eficiente de conexões de banco de dados
-- **SQL**: Consultas otimizadas com índices e boas práticas
 
 ### **Autenticação & Segurança**
 - **JWT (JSON Web Tokens)**: Autenticação stateless baseada em tokens
 - **bcrypt**: Hashing seguro de senhas com rounds configuráveis
-- **Cookie-based Authentication**: Cookies HTTP-only com SameSite=strict
 - **Rate Limiting**: Proteção contra ataques de força bruta e DDoS
-- **Upstash Redis**: Cache e rate limiting em nuvem
-- **Environment Variables**: Configuração segura de credenciais e segredos
 
 ### **Cache & Performance**
 - **Redis**: Cache de alta performance para dados frequentemente acessados
-- **Cache-Control Headers**: Estratégias de cache HTTP para otimização
-- **Lazy Loading**: Carregamento sob demanda de imagens e componentes
-- **Code Splitting**: Divisão inteligente de bundles para carregamento rápido
-- **Image Optimization**: Otimização automática de imagens para web
 
 ### **Testes & Qualidade**
 - **Jest**: Framework de testes unitários e de integração (ES Modules)
 - **React Testing Library**: Testes de componentes React e interações
 - **Cypress**: Testes end-to-end e automação de navegador
 - **k6**: Testes de carga e performance sob estresse
-- **Playwright**: Testes de navegador modernos e cross-browser
-- **ESLint**: Linting de código JavaScript/TypeScript
-- **Prettier**: Formatação automática de código
-- **Test Suite Architecture**: Arquitetura de testes completa com factories, helpers e mocks
-- **Data Generation**: Sistema de factories para geração de dados de teste consistentes
-- **API Testing**: Helpers especializados para testes de endpoints RESTful
-- **Component Testing**: Render helpers para testes de componentes React
-- **Authentication Testing**: Mocks e helpers para testes de autenticação
-- **Database Testing**: Mocks de banco de dados para testes isolados
-- **Custom Matchers**: Jest matchers personalizados para validações específicas
-- **Test Examples**: Exemplos práticos de implementação de testes
-- **Test Utilities**: Conjunto completo de utilitários para testes
-- **Mock Management**: Sistema organizado de mocks para diferentes camadas
-- **Test Configuration**: Configuração centralizada para ambiente de testes
-- **Test Documentation**: Documentação completa da arquitetura de testes
 
 ### **DevOps & Deploy**
 - **GitHub Actions**: CI/CD automatizado para integração e deploy
 - **Docker**: Containerização para desenvolvimento e produção
-- **Docker Compose**: Orquestração de múltiplos serviços
 - **PM2**: Process manager para Node.js em produção
 - **Nginx**: Proxy reverso e balanceamento de carga
-- **SSL/TLS**: Certificados HTTPS para segurança
 
-### **Monitoramento & Observabilidade**
-- **Sentry**: Monitoramento de erros e exceções em produção
-- **Lighthouse**: Auditoria de performance, SEO e acessibilidade
-- **WebPageTest**: Testes de performance em diferentes localidades
-- **LogRocket**: Gravação de sessões e monitoramento de UX
-- **Custom Metrics**: Métricas de performance e saúde da aplicação
-
-### **Integrações Externas**
-- **Spotify API**: Integração para reprodução e busca de músicas
-- **YouTube API**: Integração para reprodução e busca de vídeos
-- **Cloudflare**: CDN, proteção DDoS e otimização de performance
-- **SendGrid/Mailchimp**: Envio de newsletters e comunicações
-- **PagSeguro/PayPal**: Integração de pagamentos e doações
-
-### **Ferramentas de Desenvolvimento**
-- **VS Code**: IDE recomendada com extensões específicas
-- **Postman/Insomnia**: Testes e documentação de APIs
-- **PostgreSQL CLI**: Ferramentas de linha de comando para banco de dados
-- **Redis CLI**: Ferramentas de linha de comando para cache
-- **Git**: Controle de versão e colaboração
-
-### **Acessibilidade & SEO**
-- **WCAG Guidelines**: Conformidade com padrões de acessibilidade web
-- **Semantic HTML**: Estrutura semântica para melhor SEO e acessibilidade
-- **ARIA Labels**: Atributos para leitores de tela
-- **Open Graph Tags**: Meta tags para compartilhamento social
-- **Structured Data**: Schema.org markup para rich snippets
-- **Sitemap**: Mapa do site para indexação por motores de busca
-- **Robots.txt**: Configuração de rastreamento por crawlers
-
-### **Mobile & Cross-Platform**
-- **Responsive Design**: Layouts adaptativos para todos os dispositivos
-- **Touch Interactions**: Otimização para dispositivos touch
-- **Progressive Web App (PWA)**: Experiência web nativa
-- **Cross-Browser Support**: Compatibilidade com Chrome, Firefox, Safari, Edge
-- **Mobile Performance**: Otimização específica para dispositivos móveis
-
-### **Internationalização**
-- **i18n Support**: Sistema de tradução e localização
-- **Date/Number Formatting**: Formatos de dados por região
-- **RTL Support**: Suporte a idiomas escritos da direita para esquerda
-- **Locale Detection**: Detecção automática de idioma do usuário
-
-### **Cloud & Escalabilidade**
-- **VPS (Hostinger, DigitalOcean, AWS EC2)**: Hospedagem tradicional
-- **Cloud Platforms**: Google Cloud, Azure, Railway
-- **Serverless**: Vercel, Netlify (com adaptações)
-- **Load Balancing**: Distribuição de tráfego entre múltiplos servidores
-- **Auto-scaling**: Escalabilidade automática baseada em demanda
-
-## Estrutura de Arquivos
+## 📂 Estrutura de Arquivos
 
 ```
 caminhar/
@@ -985,23 +866,11 @@ ADMIN_IP_WHITELIST="seu-ip-admin,ip-backup"
 # - Certificado SSL gratuito com Let's Encrypt
 # - Configuração de HTTPS obrigatória
 ```
+3. **Configurar Proxy Reverso**: Use Nginx ou Apache para gerenciar o tráfego e configurar SSL (Let's Encrypt).
+4. **Gerenciar o Processo**: Use PM2 para manter a aplicação Node.js rodando.
+5. **Automatizar Deploy**: Configure um pipeline de CI/CD com GitHub Actions para automatizar o processo.
 
-**Passos de Deploy**:
-1. **Provisionar VPS** (2GB RAM, 40GB SSD recomendado)
-2. **Instalar dependências**: Node.js 20+, PostgreSQL, Redis (opcional)
-3. **Configurar banco de dados**: PostgreSQL com SSL
-4. **Configurar variáveis de ambiente**: Arquivo `.env` seguro
-5. **Configurar proxy reverso**: Nginx com SSL
-6. **Configurar process manager**: PM2 para Node.js
-7. **Configurar backup**: Sistema automático de backup
-8. **Configurar monitoramento**: Health checks e alertas
-
-**Performance Otimizada**:
-- **Cache**: Redis para cache de API e rate limiting
-- **CDN**: Cloudflare para arquivos estáticos
-- **Compressão**: gzip/br compression habilitada
-- **SSL**: Certificado SSL/TLS obrigatório
-- **Firewall**: Configuração de firewall de aplicação
+Para um guia detalhado, consulte **Guia de Deploy**.
 
 ### ☁️ **Método Alternativo: Vercel (Serverless)**
 
@@ -1009,24 +878,9 @@ ADMIN_IP_WHITELIST="seu-ip-admin,ip-backup"
 
 **Alterações Necessárias**:
 ```javascript
-// 1. Migrar sistema de uploads para armazenamento em nuvem
-// Substituir upload local por:
-// - AWS S3
-// - Vercel Blob Storage
-// - Cloudinary
-// - Outro serviço de armazenamento em nuvem
-
-// 2. Configurar variáveis de ambiente no dashboard da Vercel
-// - DATABASE_URL: Conexão PostgreSQL (Vercel Postgres ou Neon)
-// - JWT_SECRET: Chave secreta
-// - BLOB_READ_WRITE_TOKEN: Token para armazenamento em nuvem
-// - CLOUDINARY_URL: URL do Cloudinary (se usar)
-// - AWS_ACCESS_KEY_ID: Chave AWS (se usar S3)
-
-// 3. Adaptar código de upload
-// - Substituir fs.writeFile por upload para cloud
-// - Atualizar URLs de imagens para CDN
-// - Configurar CORS para uploads
+// O sistema de arquivos da Vercel é efêmero.
+// O sistema de upload de imagens deve ser migrado para um serviço de armazenamento em nuvem,
+// como AWS S3, Vercel Blob Storage ou Cloudinary.
 ```
 
 **Configuração da Vercel**:
@@ -1501,180 +1355,6 @@ npm run restore-backup <nome-do-arquivo>
 - [React GitHub](https://github.com/facebook/react)
 - [Stack Overflow](https://stackoverflow.com/)
 
-## 🎉 Conclusão
-
-O projeto "O Caminhar com Deus" está **completamente funcional e pronto para produção**! Após análise detalhada, todas as funcionalidades foram testadas, a segurança foi verificada e a performance foi otimizada. O projeto segue as melhores práticas de desenvolvimento moderno e está pronto para ser implantado e usado.
-
-### 📊 Avaliação Final do Projeto
-
-**Status Geral**: ⭐⭐⭐⭐⭐ **Excelente** (5/5)
-- **Build Status**: ✅ Compilação sem erros
-- **Segurança**: ✅ 0 vulnerabilidades detectadas
-- **Performance**: ✅ Métricas otimizadas
-- **Testes**: ✅ 100% de cobertura e testes passando
-- **Modernização**: ✅ ES Modules, Turbopack, arquitetura atualizada
-
-### 🚀 Métricas de Performance Atuais
-
-- **Tempo de Build**: 11.2 segundos (otimizado)
-- **Tempo de Startup**: 2.8 segundos (rápido)
-- **Tempo de Login**: < 500ms (excelente)
-- **Tempo de Carregamento de Imagem**: < 200ms (com cache)
-- **Tempo de API Settings**: < 100ms (muito rápido)
-- **Tempo de Upload de Imagem**: < 1 segundo (eficiente)
-- **Consumo de Memória**: ~150MB (desenvolvimento)
-- **Cobertura de Testes**: >90% (excelente)
-
-### 🎯 Funcionalidades Implementadas e Validadas
-
-✅ **Sistema de Autenticação Completo**:
-- JWT com cookies HTTP-only
-- bcrypt para hashing de senhas
-- Middleware de proteção de rotas
-- Login/logout seguro
-
-✅ **Gerenciamento de Banco de Dados**:
-- PostgreSQL com conexão segura
-- Migração automática
-- Operações CRUD completas
-- Pool de conexões otimizado
-
-✅ **Sistema de Upload de Imagens**:
-- Validação de tipos MIME
-- Limites de tamanho (5MB)
-- Armazenamento seguro
-- Cache otimizado
-
-✅ **Backup Automático**:
-- Backup diário às 2 AM
-- Compressão com gzip
-- Rotação automática (10 versões)
-- Interface administrativa completa
-
-✅ **API RESTful**:
-- Endpoints organizados em `/api/v1/`
-- Documentação completa
-- Autenticação segura
-- Monitoramento de saúde
-
-✅ **ContentTabs - Sistema de Navegação**:
-- 5 abas organizadas (Reflexões, Músicas, Vídeos, etc.)
-- Design responsivo
-- Carregamento sob demanda
-- UX intuitiva
-
-✅ **Integrações Externas**:
-- Spotify para reprodução de músicas
-- YouTube para reprodução de vídeos
-- Cache de API com Redis
-- Sistema de rate limiting
-
-✅ **Testes e Qualidade**:
-- Testes unitários e de integração
-- Testes de carga com k6
-- CI/CD com GitHub Actions
-- Cobertura >90%
-
-### 📋 Próximos Passos para Produção
-
-#### Implantar em Produção
-1. **Configurar Variáveis de Ambiente**:
-   - Gerar JWT_SECRET seguro: `openssl rand -hex 32`
-   - Definir credenciais de admin fortes
-   - Configurar DATABASE_URL para produção
-   - Definir ALLOWED_ORIGINS para domínios específicos
-
-2. **Escolher Plataforma de Deploy**:
-   - **VPS (Recomendado)**: Hostinger, DigitalOcean, AWS EC2
-   - **Cloud**: Google Cloud, Azure, Railway
-   - **Serverless**: Vercel (requer adaptação de uploads)
-
-3. **Configurar Infraestrutura**:
-   - Certificado SSL/TLS (HTTPS obrigatório)
-   - Proxy reverso (nginx/apache)
-   - Sistema de arquivos persistente
-   - Redis para cache e rate limiting
-
-4. **Monitoramento e Segurança**:
-   - Configurar Sentry para monitoramento de erros
-   - Implementar logs centralizados
-   - Configurar alertas de saúde
-   - Definir estratégias de backup off-site
-
-#### Otimizações Adicionais
-1. **Performance**:
-   - Configurar CDN para arquivos estáticos
-   - Otimizar imagens para web
-   - Implementar cache em nível de aplicação
-   - Configurar gzip/br compression
-
-2. **Escalabilidade**:
-   - Configurar balanceamento de carga
-   - Implementar clustering Node.js
-   - Otimizar pool de conexões PostgreSQL
-   - Configurar Redis cluster
-
-3. **Segurança**:
-   - Implementar firewall de aplicação (WAF)
-   - Configurar rate limiting avançado
-   - Implementar monitoramento de segurança
-   - Definir políticas de backup e disaster recovery
-
-### 🛣️ Roadmap de Melhorias Futuras
-
-#### Prioridade Alta (Próximos 3 meses)
-- **Sistema de Comentários**: Integração com Disqus ou sistema próprio
-- **Newsletter**: Integração com Mailchimp ou SendGrid
-- **Busca Avançada**: Elasticsearch ou PostgreSQL full-text search
-- **Estatísticas de Acesso**: Dashboard com Google Analytics ou ferramenta própria
-
-#### Prioridade Média (Próximos 6 meses)
-- **Multilíngue**: Suporte a múltiplos idiomas
-- **Login Social**: Google, Facebook, Apple
-- **Sistema de Doações**: Integração com PagSeguro, PayPal
-- **Calendário de Eventos**: Sistema de agenda e eventos
-
-#### Prioridade Baixa (Próximos 12 meses)
-- **Tema Escuro**: Opção de tema alternativo
-- **Notificações Push**: Web Push Notifications
-- **Perfis de Usuário**: Histórico e interações
-- **Gamificação**: Pontos, conquistas e recompensas
-
-### 🏆 Diferenciais do Projeto
-
-1. **Arquitetura Moderna**: ES Modules, Turbopack, Next.js 16.1.4
-2. **Segurança Robusta**: 0 vulnerabilidades, JWT, bcrypt, rate limiting
-3. **Performance Otimizada**: Cache inteligente, lazy loading, builds rápidos
-4. **Testes Completos**: >90% de cobertura, testes de carga, CI/CD
-5. **Documentação Completa**: README detalhado, guias de solução de problemas
-6. **Sistema de Backup**: Automático, com compressão e rotação
-7. **API RESTful**: Documentada e pronta para consumo externo
-8. **Integrações Externas**: Spotify, YouTube, Redis
-
-### 📞 Suporte e Manutenção
-
-Para suporte técnico, dúvidas ou contribuições:
-
-- **Issues**: Abra uma issue neste repositório
-- **Documentação**: Consulte os arquivos README.md e DEPLOY.md
-- **Guia de Troubleshooting**: Seção "Guia de Solução de Problemas" no README
-- **Comunidade**: Contribua com melhorias e correções
-
-### 🎊 Considerações Finais
-
-O projeto "O Caminhar com Deus" representa um exemplo excelente de desenvolvimento web moderno, seguindo as melhores práticas de segurança, performance e manutenibilidade. Com arquitetura bem planejada, testes completos e documentação detalhada, o projeto está pronto para:
-
-- **Produção**: Seguro, escalável e monitorado
-- **Manutenção**: Código limpo, documentado e testado
-- **Expansão**: Arquitetura preparada para novas funcionalidades
-- **Equipe**: Documentação completa para onboarding rápido
-
-**Parabéns pelo excelente trabalho!** 🎉 Este projeto serve como referência para desenvolvimento web profissional e está pronto para impactar positivamente a comunidade cristã online.
-
----
-
-**⚠️ Importante**: Sempre mantenha o projeto atualizado, monitore a segurança e siga as melhores práticas de desenvolvimento para garantir a qualidade e segurança contínua da aplicação.
-
 ## Segurança
 
 - **Atualizações Regulares**: Mantenha todas as dependências atualizadas
@@ -1690,7 +1370,12 @@ Este projeto está licenciado sem restrições. Sinta-se livre para usar e modif
 
 ## Contato
 
-Para suporte ou dúvidas, abra uma issue neste repositório.
+Para suporte técnico, dúvidas ou contribuições:
+
+- **Issues**: Abra uma issue neste repositório
+- **Documentação**: Consulte os arquivos README.md e DEPLOY.md
+- **Guia de Troubleshooting**: Seção "Guia de Solução de Problemas" no README
+- **Comunidade**: Contribua com melhorias e correções
 
 ## Contribuição
 
