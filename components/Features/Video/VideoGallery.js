@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import VideoCard from './VideoCard';
-import styles from '../styles/VideoGallery.module.css';
+import styles from './styles/VideoGallery.module.css';
 
 export default function VideoGallery() {
   const [searchTerm, setSearchTerm] = useState('');

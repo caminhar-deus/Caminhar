@@ -1,5 +1,6 @@
 import React from 'react';
-import LazyIframe from './Performance/LazyIframe';
+import { LazyIframe } from '../../Performance';
+import styles from './styles/VideoCard.module.css';
 
 /**
  * Componente VideoCard

@@ -1,4 +1,4 @@
-import styles from '../styles/MusicCard.module.css';
+import styles from './styles/MusicCard.module.css';
 
 export default function MusicCard({ musica }) {
   const handleSpotifyClick = (e) => {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import styles from '../styles/Blog.module.css';
+import styles from './styles/Blog.module.css';
 import PostCard from './PostCard';
 
 export default function BlogSection({ limit }) {

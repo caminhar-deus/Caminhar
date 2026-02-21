@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import MusicCard from './MusicCard';
-import styles from '../styles/MusicGallery.module.css';
+import styles from './styles/MusicGallery.module.css';
 
 export default function MusicGallery() {
   const [searchTerm, setSearchTerm] = useState('');
