@@ -412,6 +412,12 @@ npm run cache-metrics
     find /var/log -name "*.log" -type f -mtime +30 -delete
     ```
 
+4.  **Verificação de Links**:
+    ```bash
+    # Verificar links quebrados periodicamente
+    npm run check:links
+    ```
+
 ---
 
 ## 🚨 Troubleshooting (Problemas Comuns)

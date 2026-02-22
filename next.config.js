@@ -1,7 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: true,
+  poweredByHeader: false, // Security: Hide Next.js header
+
   // Configure runtime settings to avoid Edge Runtime warnings
-  serverExternalPackages: ['sqlite3', 'bcryptjs', 'jsonwebtoken'],
+  serverExternalPackages: ['bcryptjs', 'jsonwebtoken'],
   
   // Configure webpack to handle Node.js modules properly (fallback for non-Turbopack builds)
   webpack: (config, { isServer }) => {
@@ -22,6 +25,35 @@ const nextConfig = {
   // Configure headers for CORS and security
   async headers() {
     return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload',
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+          },
+        ],
+      },
       {
         source: '/api/:path*',
         headers: [

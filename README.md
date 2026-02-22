@@ -1,5 +1,6 @@
 
 # O Caminhar com Deus
+[![Link Checker](https://github.com/caminhar-deus/Caminhar/actions/workflows/check-links.yml/badge.svg)](https://github.com/caminhar-deus/Caminhar/actions/workflows/check-links.yml)
 
 Um site cristão moderno e dinâmico para compartilhar reflexões e ensinamentos sobre fé, espiritualidade e a jornada cristã.
 

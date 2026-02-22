@@ -414,6 +414,24 @@ Estes testes simulam múltiplos usuários acessando o sistema simultaneamente pa
     k6 run load-tests/videos-sort-test.js
     ```
 
+27. **Validação de CSP Nonce**:
+    Verifica se o header Content-Security-Policy contém um nonce válido e dinâmico.
+    ```bash
+    k6 run load-tests/csp-nonce-test.js
+    ```
+
+28. **Verificação de Status (DB/Redis)**:
+    Valida se a API de status retorna informações de conexão do Banco de Dados e Redis.
+    ```bash
+    k6 run load-tests/status-check-test.js
+    ```
+
+29. **Busca de Posts por Data**:
+    Valida se a API de posts permite filtrar por intervalo de datas (range).
+    ```bash
+    k6 run load-tests/posts-date-range-test.js
+    ```
+
 #### Relatórios e Visualização
 
 A partir da versão 1.5.0, os testes k6 geram automaticamente dois arquivos na pasta `reports/k6-summaries/`:

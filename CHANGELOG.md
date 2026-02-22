@@ -32,7 +32,11 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
   - `musicas-filter-test.js`: Validação de filtros por artista na API de músicas.
   - `musicas-search-test.js`: Validação de busca por título na API de músicas.
   - `videos-sort-test.js`: Validação de ordenação cronológica na API de vídeos.
+  - `csp-nonce-test.js`: Validação de segurança para garantir nonces dinâmicos na CSP.
+  - `status-check-test.js`: Validação de integridade e conectividade (DB/Redis) na API de status.
+  - `posts-date-range-test.js`: Validação de filtro por intervalo de datas na API de posts.
   - `clean-k6-reports.js`: Script de manutenção para rotação e limpeza automática de relatórios antigos (>7 dias).
+  - `check-broken-links.js`: Crawler para verificação de links quebrados (404) em todo o site.
 - **Configuração Flexível**: Suporte a arquivo `env-config.json` para gerenciar variáveis de ambiente dos testes sem poluir a linha de comando.
 
 ### Refatoração (Architecture Cleanup)

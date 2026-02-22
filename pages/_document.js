@@ -1,4 +1,4 @@
-import { Html, Head, Main, NextScript } from 'next/document';
+import Document, { Html, Head, Main, NextScript } from 'next/document';
 import { siteConfig } from '../lib/seo/config';
 import { extractCriticalCSS } from '../components/Performance/CriticalCSS';
 
@@ -12,12 +12,13 @@ import { extractCriticalCSS } from '../components/Performance/CriticalCSS';
  * - Meta tags de segurança e performance
  */
 
-export default function Document() {
+export default function MyDocument(props) {
+  const { nonce } = props;
   const criticalCSS = extractCriticalCSS();
 
   return (
     <Html lang={siteConfig.language}>
-      <Head>
+      <Head nonce={nonce}>
         {/* Preconnect crítico (deve ser no head) */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -40,25 +41,6 @@ export default function Document() {
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta name="referrer" content="origin-when-cross-origin" />
         
-        {/* Content Security Policy (ajuste conforme necessário) */}
-        <meta 
-          httpEquiv="Content-Security-Policy" 
-          content="
-            default-src 'self';
-            script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.youtube.com https://open.spotify.com https://*.googletagmanager.com;
-            style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-            font-src 'self' https://fonts.gstatic.com;
-            img-src 'self' data: https: blob: https://img.youtube.com https://i.scdn.co https://*.googleusercontent.com;
-            media-src 'self' https: blob:;
-            connect-src 'self' https:;
-            frame-src 'self' https://www.youtube.com https://open.spotify.com https://*.youtube.com;
-            object-src 'none';
-            base-uri 'self';
-            form-action 'self';
-            upgrade-insecure-requests;
-          "
-        />
-
         {/* Permissions Policy */}
         <meta 
           httpEquiv="Permissions-Policy" 
@@ -98,10 +80,11 @@ export default function Document() {
       
       <body>
         <Main />
-        <NextScript />
+        <NextScript nonce={nonce} />
         
         {/* Script para remover CSS crítico após carregamento */}
         <script
+          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
@@ -127,3 +110,9 @@ export default function Document() {
     </Html>
   );
 }
+
+MyDocument.getInitialProps = async (ctx) => {
+  const initialProps = await Document.getInitialProps(ctx);
+  const nonce = ctx.req?.headers['x-nonce'];
+  return { ...initialProps, nonce };
+};

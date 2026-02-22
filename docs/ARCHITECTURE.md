@@ -423,6 +423,10 @@ caminhar/
 │   ├── admin.js
 │   ├── blog/
 │   └── api/
+├── scripts/                 # ✅ Maintenance Scripts
+│   ├── check-broken-links.js
+│   ├── clean-k6-reports.js
+│   └── ...
 └── ...
 ```
 

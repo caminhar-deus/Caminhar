@@ -108,6 +108,7 @@ O projeto agora conta com uma suíte de testes abrangente e modernizada:
 - **Performance**: Validação de performance sob estresse
 - **Escalabilidade**: Testes de concorrência e latência
 - **Manutenção**: Scripts automatizados para limpeza de massa de dados e relatórios antigos.
+- **Qualidade de Links**: Crawler automatizado para detecção de links quebrados (404).
 
 ### CI/CD:
 - **GitHub Actions**: Workflow configurado para rodar testes a cada push
