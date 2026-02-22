@@ -4,10 +4,10 @@ import { useRouter } from 'next/router';
 import Cropper from 'react-easy-crop';
 import styles from '../styles/Admin.module.css';
 import AdminPostsNew from '../components/Admin/AdminPostsNew';
-import AdminRateLimit from '../components/AdminRateLimit';
-import AdminIntegrityCheck from '../components/AdminIntegrityCheck';
-import AdminBackupManager from '../components/AdminBackupManager';
-import AdminCacheManager from '../components/AdminCacheManager';
+import RateLimitViewer from '../components/Admin/Tools/RateLimitViewer';
+import IntegrityCheck from '../components/Admin/Tools/IntegrityCheck';
+import BackupManager from '../components/Admin/Managers/BackupManager';
+import CacheManager from '../components/Admin/Managers/CacheManager';
 import AdminMusicasNew from '../components/Admin/AdminMusicasNew';
 import AdminVideosNew from '../components/Admin/AdminVideosNew';
 
@@ -548,10 +548,10 @@ export default function Admin() {
 
           {activeTab === 'security' && (
             <>
-              <AdminRateLimit />
-              <AdminIntegrityCheck />
-              <AdminBackupManager />
-              <AdminCacheManager />
+              <RateLimitViewer />
+              <IntegrityCheck />
+              <BackupManager />
+              <CacheManager />
             </>
           )}
 
