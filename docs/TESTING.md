@@ -114,7 +114,7 @@ npm run test:load           # Teste de health check
 npm run test:load:auth      # Teste de fluxo autenticado
 npm run test:load:write     # Teste de fluxo de escrita
 npm run test:load:upload    # Teste de upload em massa
-npm run test:load:cache     # Teste de cache
+npm run test:load:safe      # Execução segura de testes de carga (script shell)
 ```
 
 **Testes Específicos:**
@@ -432,6 +432,29 @@ Estes testes simulam múltiplos usuários acessando o sistema simultaneamente pa
     k6 run load-tests/posts-date-range-test.js
     ```
 
+30. **CRUD de Vídeos**:
+    Valida o ciclo de vida completo (Criação, Leitura, Atualização, Deleção) de vídeos sob carga.
+    ```bash
+    npm run test:load:videos-crud
+    ```
+
+31. **CRUD de Músicas**:
+    Valida o ciclo de vida completo (Criação, Leitura, Atualização, Deleção) de músicas sob carga.
+    ```bash
+    npm run test:load:musicas-crud
+    ```
+
+32. **Carga de Leitura de Vídeos**:
+    Simula múltiplos usuários acessando a lista de vídeos para validar performance de leitura.
+    ```bash
+    npm run test:load:videos
+    ```
+
+**Geração de Relatório Consolidado**:
+```bash
+npm run report:load         # Gera um relatório consolidado dos testes de carga
+```
+
 #### Relatórios e Visualização
 
 A partir da versão 1.5.0, os testes k6 geram automaticamente dois arquivos na pasta `reports/k6-summaries/`:
@@ -659,6 +682,11 @@ Estes testes verificam a integridade e performance do banco de dados.
 - **Conexões**: Pool de conexões funciona corretamente.
 - **Backup/Restore**: Sistemas de backup e restauração.
 
+**Validação de Schema**:
+```bash
+npm run validate-schema     # Verifica a integridade do schema do banco de dados
+```
+
 #### Como Executar:
 
 Testes de banco de dados:
@@ -871,6 +899,17 @@ Estes testes verificam a qualidade e completude da documentação.
 Testes de documentação:
 ```bash
 npm run test:documentation
+```
+
+---
+
+### 25. **Análise Estática de Código**
+
+Ferramentas para manter a base de código limpa e organizada.
+
+**Encontrar Arquivos Não Utilizados**:
+```bash
+npm run find-unused         # Lista arquivos que não parecem ser importados no projeto
 ```
 
 ---

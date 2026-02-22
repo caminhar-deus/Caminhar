@@ -426,7 +426,10 @@ caminhar/
 ├── scripts/                 # ✅ Maintenance Scripts
 │   ├── check-broken-links.js
 │   ├── clean-k6-reports.js
-│   └── ...
+│   ├── clean-orphaned-images.js
+│   ├── monitor-disk-space.js
+│   ├── find-unused.js
+│   └── validate-schema.js
 └── ...
 ```
 

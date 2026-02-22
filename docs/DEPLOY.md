@@ -314,9 +314,6 @@ npm run init-backup
 # Criar backup manual
 npm run create-backup
 
-# Verificar integridade do backup
-npm run verify-backup nome-do-backup.sql.gz
-
 # Restaurar backup
 npm run restore-backup nome-do-backup.sql.gz
 ```
@@ -416,6 +413,18 @@ npm run cache-metrics
     ```bash
     # Verificar links quebrados periodicamente
     npm run check:links
+    ```
+
+5.  **Limpeza de Imagens Órfãs**:
+    ```bash
+    # Remove imagens da pasta uploads que não estão referenciadas no banco de dados
+    npm run clean:images
+    ```
+
+6.  **Monitoramento de Disco**:
+    ```bash
+    # Verifica o espaço em disco disponível e alerta se estiver crítico
+    npm run monitor:disk
     ```
 
 ---

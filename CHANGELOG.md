@@ -4,8 +4,6 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), e este projeto adere ao [Versionamento Semântico](https://semver.org/spec/v2.0.0.html).
 
-## [1.4.0] - 2026-02-22
-
 ## [1.5.0] - 2026-02-22
 
 ### Testes de Carga e Performance (k6)
@@ -36,7 +34,15 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
   - `status-check-test.js`: Validação de integridade e conectividade (DB/Redis) na API de status.
   - `posts-date-range-test.js`: Validação de filtro por intervalo de datas na API de posts.
   - `clean-k6-reports.js`: Script de manutenção para rotação e limpeza automática de relatórios antigos (>7 dias).
+  - `videos-crud-test.js`: Teste de carga para o fluxo completo (CRUD) de vídeos.
+  - `musicas-crud-test.js`: Teste de carga para o fluxo completo (CRUD) de músicas.
+  - `videos-load-test.js`: Teste de performance de leitura para a API de vídeos.
   - `check-broken-links.js`: Crawler para verificação de links quebrados (404) em todo o site.
+  - `clean-orphaned-images.js`: Script para remoção de imagens não utilizadas no banco de dados.
+  - `monitor-disk-space.js`: Utilitário para monitoramento de espaço em disco no servidor.
+  - `find-unused.js`: Ferramenta de análise estática para identificar arquivos mortos.
+  - `validate-schema.js`: Script de validação de integridade do schema do banco de dados.
+  - `run-load-tests.sh`: Script shell para orquestração segura de testes de carga.
 - **Configuração Flexível**: Suporte a arquivo `env-config.json` para gerenciar variáveis de ambiente dos testes sem poluir a linha de comando.
 
 ### Refatoração (Architecture Cleanup)
