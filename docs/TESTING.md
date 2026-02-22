@@ -283,7 +283,7 @@ Estes testes simulam múltiplos usuários acessando o sistema simultaneamente pa
    ```
 
 5. **Teste de Upload em Massa**:
-   Simula múltiplos uploads simultâneos de imagens.
+   Simula múltiplos uploads simultâneos de imagens e valida a persistência do arquivo no disco.
    ```bash
    npm run test:load:upload
    ```
@@ -293,6 +293,134 @@ Estes testes simulam múltiplos usuários acessando o sistema simultaneamente pa
    ```bash
    npm run test:load:cache
    ```
+
+7. **Teste de Busca de Conteúdo**:
+   Valida se a API de busca retorna resultados relevantes para os termos pesquisados.
+   ```bash
+   k6 run load-tests/search-content-test.js
+   ```
+
+8. **Teste de Estresse Combinado**:
+   Executa carga progressiva (CRUD) enquanto monitora o uso de memória da API. Gera relatório HTML.
+   ```bash
+   k6 run load-tests/stress-test-combined.js
+   ```
+
+9. **Simulação de DDoS**:
+   Simula um ataque de negação de serviço na rota de busca.
+   ```bash
+   k6 run load-tests/ddos-search-test.js
+   ```
+
+10. **Teste de IP Spoofing**:
+    Testa a robustez do Rate Limit simulando múltiplos IPs.
+    ```bash
+    k6 run load-tests/ip-spoofing-test.js
+    ```
+
+11. **Teste de Recuperação (Chaos)**:
+    Monitora o tempo de recuperação do sistema após falha.
+    ```bash
+    k6 run load-tests/recovery-test.js
+    ```
+
+12. **Validação de Headers de Cache**:
+    Verifica diretivas de cache (`s-maxage`, `stale-while-revalidate`).
+    ```bash
+    k6 run load-tests/cache-headers-test.js
+    ```
+
+13. **Teste Negativo de Login**:
+    Verifica se a API rejeita credenciais inválidas corretamente (401).
+    ```bash
+    k6 run load-tests/login-negative-test.js
+    ```
+
+14. **Teste de Rate Limit**:
+    Verifica se a API retorna 429 após exceder o limite de requisições.
+    ```bash
+    k6 run load-tests/rate-limit-test.js
+    ```
+
+15. **Verificação de Backup**:
+    Valida a integridade binária (Magic Bytes) dos arquivos de backup.
+    ```bash
+    k6 run load-tests/backup-verification-test.js
+    ```
+
+16. **Validação de Paginação**:
+    Verifica se a paginação da API de posts retorna resultados distintos entre páginas.
+    ```bash
+    k6 run load-tests/pagination-test.js
+    ```
+
+17. **Filtro de Vídeos**:
+    Valida se a API de vídeos filtra corretamente os resultados por título.
+    ```bash
+    k6 run load-tests/videos-filter-test.js
+    ```
+
+18. **Validação de URL de Vídeo**:
+    Verifica se a API rejeita URLs que não sejam do YouTube.
+    ```bash
+    k6 run load-tests/video-validation-test.js
+    ```
+
+19. **Ordenação de Músicas**:
+    Valida se a API de músicas ordena corretamente por data de criação.
+    ```bash
+    k6 run load-tests/musicas-sort-test.js
+    ```
+
+20. **Busca de Posts por Tag**:
+    Valida se a API de posts filtra corretamente por tags.
+    ```bash
+    k6 run load-tests/posts-tags-test.js
+    ```
+
+21. **Paginação por Cursor (Keyset)**:
+    Valida se a API de posts suporta paginação eficiente via cursor.
+    ```bash
+    k6 run load-tests/posts-cursor-pagination-test.js
+    ```
+
+#### Relatórios e Visualização
+
+A partir da versão 1.5.0, os testes k6 geram automaticamente dois arquivos na pasta `reports/k6-summaries/`:
+1. **JSON**: Dados brutos para análise de máquina.
+2. **HTML**: Dashboard visual com gráficos de tendências e tabelas de performance.
+
+**Segurança:** Todos os relatórios passam por uma função de sanitização que remove automaticamente tokens JWT e dados sensíveis antes de salvar no disco.
+
+**Manutenção Automática:**
+Um script de limpeza (`clean-k6-reports.js`) é executado automaticamente antes dos testes de carga para remover relatórios com mais de 7 dias, mantendo o diretório organizado.
+
+#### Configuração de Ambiente (Data Driven)
+
+Para evitar passar credenciais via linha de comando, você pode usar o arquivo `load-tests/env-config.json`:
+
+```json
+{
+    "BASE_URL": "http://localhost:3000",
+    "ADMIN_USERNAME": "admin",
+    "ADMIN_PASSWORD": "123456"
+}
+```
+
+Execução com arquivo de configuração:
+```bash
+k6 run -e CONFIG_FILE=./load-tests/env-config.json load-tests/stress-test-combined.js
+```
+
+### Notificações no Slack
+
+O pipeline de testes de carga (`load-tests.yml`) está configurado para enviar alertas no Slack em caso de falha.
+
+**Configuração Necessária:**
+1. Crie um **Incoming Webhook** no seu workspace do Slack.
+2. Adicione a URL do webhook como um **Secret** no repositório do GitHub com o nome `SLACK_WEBHOOK`.
+
+O alerta incluirá um link para a execução do workflow, onde os relatórios de erro podem ser baixados.
 
 ---
 

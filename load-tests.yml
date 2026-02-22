@@ -1,0 +1,103 @@
+name: Load Tests (k6)
+
+on:
+  schedule:
+    # Executa todos os dias às 03:00 UTC (madrugada no Brasil)
+    - cron: '0 3 * * *'
+  workflow_dispatch: # Permite execução manual via interface do GitHub
+
+jobs:
+  performance-test:
+    name: Run k6 Load Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      # Serviço PostgreSQL para o teste (isolado)
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: caminhar_test
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      # Serviço Redis para Rate Limiting/Cache
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Create Reports Directory
+        run: mkdir -p reports/k6-summaries
+
+      - name: Setup Test Database
+        run: npm run setup:test-db
+        env:
+          # Configuração para conectar ao serviço Postgres do GitHub Actions
+          TEST_DB_HOST: localhost
+          TEST_DB_PORT: 5432
+          TEST_DB_NAME: caminhar_test
+          TEST_DB_USER: test_user
+          TEST_DB_PASS: test_password
+
+      - name: Build Application
+        run: npm run build
+        env:
+          DATABASE_URL: postgres://test_user:test_password@localhost:5432/caminhar_test
+          JWT_SECRET: test-secret-for-build
+
+      - name: Start Application (Background)
+        run: |
+          npm start &
+          npx wait-on http://localhost:3000 --timeout 60000
+        env:
+          PORT: 3000
+          NODE_ENV: production
+          DATABASE_URL: postgres://test_user:test_password@localhost:5432/caminhar_test
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-jwt-secret-for-load-tests
+          ADMIN_USERNAME: admin
+          ADMIN_PASSWORD: password123
+          LOG_LEVEL: error # Reduz ruído nos logs durante carga alta
+
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Run Stress Test (Combined)
+        run: k6 run load-tests/stress-test-combined.js
+        env:
+          BASE_URL: http://localhost:3000
+          ADMIN_USERNAME: admin
+          ADMIN_PASSWORD: password123
+
+      - name: Upload Test Reports
+        if: always() # Executa mesmo se os testes falharem para podermos analisar o motivo
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-load-test-reports
+          path: reports/k6-summaries/
+          retention-days: 30

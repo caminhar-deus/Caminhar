@@ -1,5 +1,6 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
+import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 
 // --- Opções do Teste ---
 export const options = {
@@ -118,4 +119,15 @@ export default function (data) {
   }
 
   sleep(2); // Aguarda antes da próxima iteração
+}
+
+export function handleSummary(data) {
+  if (data.setup_data && data.setup_data.token) {
+    data.setup_data.token = "*** TOKEN OCULTO ***";
+  }
+
+  return {
+    'stdout': textSummary(data, { indent: ' ', enableColors: true }),
+    './reports/k6-summaries/CRUD_de_Vídeos.json': JSON.stringify(data, null, 4),
+  };
 }

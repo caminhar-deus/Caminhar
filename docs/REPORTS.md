@@ -103,8 +103,11 @@ O projeto agora conta com uma suíte de testes abrangente e modernizada:
 
 ### Testes de Carga:
 - **k6 Scripts**: Otimizados para cenários de escrita concorrente (PostgreSQL)
+- **Relatórios Visuais**: Geração automática de dashboards HTML para análise de tendências.
+- **Cenários Avançados**: Inclusão de testes de DDoS, IP Spoofing, Monitoramento de Memória, Chaos Testing e Segurança (Rate Limit/Auth).
 - **Performance**: Validação de performance sob estresse
 - **Escalabilidade**: Testes de concorrência e latência
+- **Manutenção**: Scripts automatizados para limpeza de massa de dados e relatórios antigos.
 
 ### CI/CD:
 - **GitHub Actions**: Workflow configurado para rodar testes a cada push
@@ -278,6 +281,7 @@ O projeto "O Caminhar com Deus" atingiu um nível de maturidade técnica elevado
 - **Tempo de Upload de Imagem**: < 1 segundo (depende do tamanho)
 - **Tempo de Backup**: ~2-5 segundos (depende do tamanho do banco)
 - **Tempo de Testes**: ~15 segundos (todos os testes)
+- **Relatórios de Carga**: Disponíveis em HTML e JSON com sanitização de dados sensíveis.
 - **Cobertura de Testes**: >90%
 
 💾 **Consumo de Recursos**:
