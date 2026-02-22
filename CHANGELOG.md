@@ -27,6 +27,11 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
   - `musicas-sort-test.js`: Validação de ordenação cronológica na API de músicas.
   - `posts-tags-test.js`: Validação de filtro por tags na API de posts.
   - `posts-cursor-pagination-test.js`: Validação de paginação eficiente (keyset) na API de posts.
+  - `videos-pagination-test.js`: Validação funcional da lógica de paginação da API de vídeos.
+  - `musicas-pagination-test.js`: Validação funcional da lógica de paginação da API de músicas.
+  - `musicas-filter-test.js`: Validação de filtros por artista na API de músicas.
+  - `musicas-search-test.js`: Validação de busca por título na API de músicas.
+  - `videos-sort-test.js`: Validação de ordenação cronológica na API de vídeos.
   - `clean-k6-reports.js`: Script de manutenção para rotação e limpeza automática de relatórios antigos (>7 dias).
 - **Configuração Flexível**: Suporte a arquivo `env-config.json` para gerenciar variáveis de ambiente dos testes sem poluir a linha de comando.
 

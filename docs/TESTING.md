@@ -384,6 +384,36 @@ Estes testes simulam múltiplos usuários acessando o sistema simultaneamente pa
     k6 run load-tests/posts-cursor-pagination-test.js
     ```
 
+22. **Paginação de Vídeos**:
+    Valida se a paginação da API de vídeos retorna resultados distintos entre páginas.
+    ```bash
+    k6 run load-tests/videos-pagination-test.js
+    ```
+
+23. **Paginação de Músicas**:
+    Valida se a paginação da API de músicas retorna resultados distintos entre páginas.
+    ```bash
+    k6 run load-tests/musicas-pagination-test.js
+    ```
+
+24. **Filtro de Músicas por Artista**:
+    Valida se a API de músicas filtra corretamente os resultados por artista.
+    ```bash
+    k6 run load-tests/musicas-filter-test.js
+    ```
+
+25. **Busca de Músicas por Título**:
+    Valida se a API de músicas permite buscar músicas pelo título.
+    ```bash
+    k6 run load-tests/musicas-search-test.js
+    ```
+
+26. **Ordenação de Vídeos**:
+    Valida se a API de vídeos ordena corretamente por data de criação/publicação.
+    ```bash
+    k6 run load-tests/videos-sort-test.js
+    ```
+
 #### Relatórios e Visualização
 
 A partir da versão 1.5.0, os testes k6 geram automaticamente dois arquivos na pasta `reports/k6-summaries/`:
