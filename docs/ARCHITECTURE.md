@@ -353,6 +353,8 @@ caminhar/
 │   │   ├── AdminMusicasNew.js
 │   │   ├── AdminVideosNew.js
 │   │   ├── AdminPostsNew.js
+│   │   ├── Managers/        # ✅ Gerenciadores (Backup, Cache)
+│   │   ├── Tools/           # ✅ Ferramentas (Integrity, RateLimit)
 │   │   ├── fields/
 │   │   └── hooks/useAdminCrud.js
 │   ├── SEO/                 # ✅ SEO Toolkit (docs/SEO.md)
@@ -369,10 +371,11 @@ caminhar/
 │   │   ├── Card.js
 │   │   └── ...
 │   ├── Layout/              # ✅ Layout Components
-│   ├── ContentTabs.js
-│   ├── BlogSection.js
-│   ├── MusicGallery.js
-│   ├── VideoGallery.js
+│   ├── Features/            # ✅ Feature Components
+│   │   ├── Blog/
+│   │   ├── Music/
+│   │   ├── Video/
+│   │   └── ContentTabs/
 │   └── ...
 ├── lib/
 │   ├── api/                 # ✅ API Standardizer
@@ -383,13 +386,15 @@ caminhar/
 │   ├── seo/                 # ✅ SEO Config (docs/SEO.md)
 │   │   ├── config.js
 │   │   └── utils.js
+│   ├── middleware/          # ✅ Middlewares Isolados (RateLimit Proxy)
 │   ├── cache.js             # ✅ Cache System (docs/CACHE.md)
 │   ├── redis.js             # ✅ Redis Configuration (docs/CACHE.md)
 │   ├── auth.js
 │   ├── db.js
-│   ├── musicas.js
-│   ├── videos.js
-│   └── posts.js
+│   └── domain/              # ✅ Domain Logic
+│       ├── musicas.js
+│       ├── videos.js
+│       └── posts.js
 ├── hooks/                   # ✅ Custom Hooks
 │   ├── useAdminCrud.js
 │   ├── useTheme.js
@@ -404,6 +409,8 @@ caminhar/
 │   ├── globals.css
 │   └── ...
 ├── tests/                   # ✅ Test Infrastructure
+│   ├── unit/                # ✅ Unit Tests
+│   ├── integration/         # ✅ Integration Tests
 │   ├── factories/
 │   ├── helpers/
 │   ├── mocks/

@@ -4,6 +4,16 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), e este projeto adere ao [Versionamento Semântico](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-02-22
+
+### Refatoração (Architecture Cleanup)
+- **Organização de Testes**: Centralização de todos os testes na pasta `tests/`, divididos em `unit/` e `integration/`.
+- **Limpeza da Raiz**: Remoção de arquivos de teste e scripts soltos na raiz do projeto.
+- **Estrutura da Lib**: Organização da pasta `lib/` removendo testes e scripts de manutenção, mantendo apenas lógica de domínio e infraestrutura.
+- **Componentes Admin**: Reorganização dos componentes administrativos em subpastas `Managers/` e `Tools/` dentro de `components/Admin/`.
+- **Scripts**: Centralização de scripts utilitários e de manutenção na pasta `scripts/`, organizados por categoria (`db`, `auth`, `maintenance`, `utils`).
+- **Load Tests**: Movimentação de testes de carga k6 para a pasta dedicada `load-tests/`.
+
 ## [1.3.0] - 2026-02-21
 
 ### Adicionado

@@ -386,6 +386,10 @@ Para questões técnicas ou suporte, entre em contato com:
 
 ## Notas de Versão
 
+### v1.4.0 (22/02/2026)
+- ✅ **Refatoração Estrutural**: Reorganização completa de pastas de testes, scripts e componentes administrativos.
+- ✅ **Limpeza**: Remoção de arquivos de teste da raiz e da pasta lib.
+
 ### v1.2.1 (08/02/2026)
 - ✅ **ES Modules**: Projeto totalmente compatível com ES modules
 - ✅ **Jest com ESM**: Suporte nativo a ES modules sem flags experimentais
