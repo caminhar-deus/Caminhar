@@ -304,53 +304,15 @@ Após configurar as variáveis, a Vercel fará o build e deploy automaticamente.
 
 ### Sistema de Backup Automático
 
-O projeto inclui um sistema de backup automático completo. Consulte a documentação detalhada em [Sistema de Backup](docs/BACKUP.md).
+O projeto inclui um sistema de backup automático completo para o banco de dados PostgreSQL. Para instruções detalhadas sobre configuração, criação manual, restauração e agendamento, consulte a documentação dedicada:
 
-**Comandos Principais:**
-```bash
-# Iniciar o sistema de backup
-npm run init-backup
-
-# Criar backup manual
-npm run create-backup
-
-# Verificar integridade do backup
-npm run verify-backup nome-do-backup.sql.gz
-
-# Restaurar backup
-npm run restore-backup nome-do-backup.sql.gz
-```
-
-**Configuração Automática (Cron):**
-```bash
-# Adicione ao crontab para backup diário às 2 AM
-0 2 * * * cd /home/seu_usuario/caminhar && /usr/bin/node /usr/bin/npm run create-backup >> /home/seu_usuario/caminhar/data/backups/cron.log 2>&1
-```
+👉 Sistema de Backup e Restauração
 
 ### Sistema de Cache (Upstash Redis)
 
-O projeto inclui um sistema de cache avançado. Consulte a documentação detalhada em [Cache & Performance](docs/CACHE.md).
+O projeto utiliza Redis (via Upstash) para cache de alta performance e Rate Limiting. Para detalhes sobre configuração, estratégias de invalidação e monitoramento, consulte o guia específico:
 
-**Configuração:**
-1.  **Crie um banco no Upstash**: Acesse console.upstash.com.
-2.  **Obtenha as credenciais**: Copie a `UPSTASH_REDIS_REST_URL` e o `UPSTASH_REDIS_REST_TOKEN`.
-3.  **Configure no `.env`**:
-    ```bash
-    UPSTASH_REDIS_REST_URL="https://seu-projeto.upstash.io"
-    UPSTASH_REDIS_REST_TOKEN="seu-token-secreto"
-    ```
-
-**Comandos de Gerenciamento:**
-```bash
-# Limpar cache manualmente
-npm run clear-cache
-
-# Verificar status do cache
-npm run check-cache
-
-# Monitorar métricas de cache
-npm run cache-metrics
-```
+👉 Cache & Performance
 
 ### Monitoramento e Performance
 
@@ -526,10 +488,10 @@ df -h
 
 ### Documentação
 - [x] **README**: Documentação principal atualizada.
-- [x] **TESTING.md**: Documentação de testes completa.
-- [x] **BACKUP_SYSTEM**: Documentação do sistema de backup.
-- [x] **CACHE_IMPLEMENTATION**: Documentação do sistema de cache.
-- [x] **project-analysis-report**: Relatório de análise técnica atualizado.
+- [x] TESTING.md: Documentação de testes completa.
+- [x] BACKUP.md: Documentação do sistema de backup.
+- [x] CACHE.md: Documentação do sistema de cache.
+- [x] REPORTS.md: Relatório de análise técnica atualizado.
 
 ---
 

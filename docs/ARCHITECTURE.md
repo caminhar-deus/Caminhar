@@ -1,12 +1,23 @@
 # 🏗️ Arquitetura do Projeto - O Caminhar com Deus
 
-## Visão Geral da Arquitetura Reestruturada
+## 1. Visão Geral
 
-Esta documentação descreve a nova arquitetura do projeto após a refatoração estrutural realizada pelo Arquiteto Principal (Kimi-k2.5) com auxílio de Especialistas KAT-Coder-Pro.
+O projeto é uma aplicação web moderna construída sobre o framework **Next.js 16**, utilizando **React 19** para a interface do usuário. A arquitetura evoluiu de um banco de dados baseado em arquivo (SQLite) para um sistema de banco de dados relacional robusto (**PostgreSQL**), visando escalabilidade e performance.
+
+Esta documentação descreve a arquitetura do projeto após a refatoração estrutural, focada em modularidade, performance e manutenibilidade.
+
+### Componentes Principais:
+- **Frontend**: Next.js (Pages Router), React, CSS Modules.
+- **Backend**: API Routes do Next.js (Serverless Functions).
+- **Banco de Dados**: PostgreSQL com connection pooling (`pg` driver).
+- **Cache/Rate Limit**: Redis (via Upstash) com fallback para memória.
+- **Autenticação**: JWT (JSON Web Tokens) com cookies HTTP-only.
+- **Sistema de Testes**: Jest, React Testing Library, k6 para carga.
+- **CI/CD**: GitHub Actions para integração contínua.
 
 ---
 
-## 📊 Diagrama de Arquitetura
+## 2. Diagrama de Arquitetura
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -82,7 +93,53 @@ Esta documentação descreve a nova arquitetura do projeto após a refatoração
 
 ---
 
-## 🎯 Módulos Arquiteturais Criados
+## 3. Fluxo de Requisição da API (Rate Limit & Cache)
+
+O diagrama abaixo ilustra como uma requisição à API é processada, mostrando a interação entre o Rate Limiter e o Cache Layer antes de chegar à lógica da aplicação.
+
+```
+[ Cliente ]
+     |
+     | 1. Requisição (ex: GET /api/v1/posts)
+     ▼
+[ Middleware Next.js ]
+     |
+     | 2. Verifica Rate Limit
+     ▼
+┌────────────────────┐
+│  Rate Limiter      │
+│ (Redis/Upstash)    │
+└────────┬───────────┘
+         |
+         ├─[ Limite Excedido? ]─(Sim)──> [ Resposta 429 Too Many Requests ]
+         |
+    (Não)| 3. Limite OK, continua
+         ▼
+┌────────────────────┐
+│   Cache Layer      │
+│ (Redis/Upstash)    │
+└────────┬───────────┘
+         |
+         ├─[ Dado em Cache? ]─(Sim, Cache Hit)──> [ Resposta 200 OK (do Cache) ]
+         |
+    (Não)| 4. Cache Miss, continua
+         ▼
+[ API Handler ]
+     |
+     | 5. Consulta o Banco de Dados
+     ▼
+┌────────────────────┐      ┌────────────────────┐
+│   Banco de Dados   ├──────►   Cache Layer      │
+│   (PostgreSQL)     │ 7. Salva│ (Redis/Upstash)    │
+└────────┬───────────┘      └────────────────────┘
+         | 6. Retorna dados
+         ▼
+[ Resposta 200 OK (do DB) ]
+```
+
+---
+
+## 4. Módulos Arquiteturais Criados
 
 ### 1. **CRUD Admin Component Generator**
 **Local:** `components/Admin/`
@@ -157,7 +214,7 @@ lib/api/
 ### 3. **SEO & Performance Toolkit**
 **Local:** `components/SEO/`, `components/Performance/`
 
-Otimização completa para SEO e Core Web Vitals. Consulte a documentação detalhada em [SEO Toolkit](docs/SEO.md).
+Otimização completa para SEO e Core Web Vitals. Consulte a documentação detalhada em SEO Toolkit.
 
 ```
 components/SEO/

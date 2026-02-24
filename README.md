@@ -9,14 +9,15 @@ Para detalhes técnicos específicos, consulte as documentações dedicadas na p
 
 | Documentação | Visão Geral | Comandos Essenciais | Público-Alvo |
 |--------------|-------------|-------------------|--------------|
-| **[Arquitetura](docs/ARCHITECTURE.md)** | Estrutura modular, fluxo de dados e decisões técnicas. Documentação completa de módulos, design system e padrões de desenvolvimento. | `npm run dev`, `npm run build` | Desenvolvedores, Arquitetos |
-| **[Guia de Deploy](docs/DEPLOY.md)** | Deploy para VPS e Vercel, configuração de ambiente, variáveis críticas e troubleshooting avançado. | `npm run deploy:vercel`, `npm run deploy:vps` | DevOps, Administradores |
-| **[Testes & Qualidade](docs/TESTING.md)** | Estratégia completa: Unitários (Jest), E2E (Cypress), Carga (k6), Segurança, Performance. Cobertura >90%. | `npm test`, `npm run cypress:run`, `npm run test:load` | QA, Desenvolvedores |
-| **[API Reference](pages/api/v1/README.md)** | API RESTful pública v1.2.0: endpoints, schemas, autenticação, rate limiting e exemplos de uso. | `curl`, `fetch`, `axios` | Desenvolvedores Frontend, Integrações |
-| **[Sistema de Backup](docs/BACKUP.md)** | Sistema automático de backup: criação, rotação, restauração, validação e monitoramento. | `npm run backup:create`, `npm run backup:restore` | Administradores, DevOps |
-| **[Cache & Performance](docs/CACHE.md)** | Cache Redis avançado: estratégias, TTL, invalidação, monitoramento e otimização de performance. | `redis-cli`, `npm run test:cache` | Desenvolvedores, DevOps |
-| **[SEO Toolkit](docs/SEO.md)** | Otimização completa: Core Web Vitals, Schema.org, meta tags, performance e estratégias de ranqueamento. | `npm run test:seo`, `lighthouse` | Marketing, Desenvolvedores |
-| **[Relatórios Técnicos](docs/REPORTS.md)** | Análises detalhadas: migração SQLite→PostgreSQL, benchmarks de performance, métricas de qualidade e evolução do projeto. | `npm run generate:report` | Gerentes, Stakeholders |
+| **Arquitetura** | Visão completa da estrutura do projeto, incluindo Frontend, Backend, fluxo de dados, Design System e padrões de código. | `npm run dev`, `npm run build` | Desenvolvedores, Arquitetos |
+| **Guia de Deploy** | Passo a passo para implantar a aplicação em servidores (VPS, Hostinger) e na Vercel. Inclui configuração de ambiente e Nginx. | `pm2 start`, `nginx -t` | DevOps, Administradores |
+| **Testes & Qualidade** | Detalhes sobre a suíte de testes: unitários (Jest), integração, carga (k6) e E2E (Cypress). Garante mais de 90% de cobertura. | `npm test`, `npm run cypress:run`, `npm run test:load` | QA, Desenvolvedores |
+| **API Reference** | Documentação da API RESTful (v1) para consumo externo. Detalha endpoints, autenticação, schemas e exemplos. | `curl`, `fetch` | Desenvolvedores Frontend, Integrações |
+| **Sistema de Backup** | Guia do sistema de backups automáticos do PostgreSQL, incluindo comandos para criar, restaurar e verificar backups. | `npm run create-backup`, `npm run restore-backup` | Administradores, DevOps |
+| **Cache & Performance** | Explicação da estratégia de cache com Redis (Upstash), incluindo chaves, TTLs e invalidação para otimizar a performance. | `npm run clear-cache` | Desenvolvedores, DevOps |
+| **SEO Toolkit** | Documentação do kit de SEO, cobrindo componentes de meta tags, dados estruturados (Schema.org) e otimização de performance. | `npm run test:seo` | Marketing, Desenvolvedores |
+| **Relatórios Técnicos** | Histórico de análises técnicas, benchmarks de performance (k6), e relatórios de migração e evolução da arquitetura. | `k6 run ...` | Gerentes, Stakeholders |
+| **Segurança** | Políticas de segurança, autenticação, proteção de API e infraestrutura. | `npm run test:security` | Security Ops, Desenvolvedores |
 
 ---
 
@@ -29,14 +30,7 @@ Para detalhes técnicos específicos, consulte as documentações dedicadas na p
 - **Performance**: Cache de API (Redis), otimização de imagens e lazy loading.
 - **Segurança**: Autenticação JWT, Cookies HTTP-only e proteção contra força bruta.
 
-## 🛠️ Tecnologias (Resumo)
-
-- **Frontend**: Next.js 16, React 19, CSS Modules.
-- **Backend**: Node.js (API Routes), PostgreSQL.
-- **Infraestrutura**: Docker, Redis (Upstash), Nginx, PM2.
-- **Qualidade**: Jest, Cypress, k6, GitHub Actions.
-
-## 🚀 Como Executar (Quickstart)
+##  Como Executar (Quickstart)
 
 ### Pré-requisitos
 - Node.js 18+

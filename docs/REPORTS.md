@@ -4,20 +4,7 @@
 **Projeto:** O Caminhar com Deus
 **Versão:** 1.2.0
 
-## 1. Visão Geral da Arquitetura
-
-O projeto é uma aplicação web moderna construída sobre o framework **Next.js 16.1.4**, utilizando **React 19** para a interface do usuário. A arquitetura evoluiu recentemente de um banco de dados baseado em arquivo (SQLite) para um sistema de banco de dados relacional robusto (**PostgreSQL**), visando escalabilidade e performance em ambientes de alta concorrência.
-
-### Componentes Principais:
-- **Frontend**: Next.js (Pages Router), React, CSS Modules.
-- **Backend**: API Routes do Next.js (Serverless Functions).
-- **Banco de Dados**: PostgreSQL com connection pooling (`pg` driver).
-- **Cache/Rate Limit**: Redis (via Upstash) ou Memória (fallback).
-- **Autenticação**: JWT (JSON Web Tokens) com cookies HTTP-only.
-- **Sistema de Testes**: Jest, React Testing Library, k6 para carga.
-- **CI/CD**: GitHub Actions para integração contínua.
-
-## 2. Análise de Migração (SQLite -> PostgreSQL)
+## Relatório 1: Análise de Migração (SQLite -> PostgreSQL)
 
 A migração foi concluída e consolidada com sucesso, resolvendo definitivamente os gargalos de escrita identificados anteriormente. O sistema agora opera nativamente com PostgreSQL.
 
@@ -29,154 +16,15 @@ A migração foi concluída e consolidada com sucesso, resolvendo definitivament
 - **Verificação**: Implementação de endpoint `/api/admin/verify-migration` e interface visual para garantir integridade dos dados pós-migração.
 - **Backup UI**: Integração completa do sistema de backups ao painel administrativo (`/admin`), permitindo criação e visualização de backups via interface.
 
-## 3. Modernização da Stack (ESM + Turbopack)
-
-Em 07/02/2026, foi concluída a migração total do projeto para **ES Modules (ESM)** e a otimização do build com **Turbopack**.
-
-### Mudanças Realizadas:
-- **ES Modules Nativo**: O projeto agora roda com `"type": "module"` no `package.json`. Todos os arquivos `.js` utilizam sintaxe `import`/`export` padrão do ECMAScript, eliminando dependências de CommonJS (`require`).
-- **Jest com Suporte a ESM**: A suíte de testes foi configurada para rodar nativamente em ESM, sem a necessidade da flag `--experimental-vm-modules`, garantindo compatibilidade total com ES modules.
-- **Configuração Isolada do Babel**: Para evitar conflitos com o compilador do Next.js (SWC/Turbopack), a configuração do Babel foi movida para `babel.jest.config.js`, sendo utilizada exclusivamente pelo Jest. Isso permitiu que o comando `next dev --turbo` funcionasse corretamente, aproveitando a performance do Turbopack.
-- **Padronização de Imports**: Todos os imports locais agora utilizam extensões explícitas (`.js`), conforme exigido pela especificação ESM.
-
-## 4. Cache de API com Redis
-
-Implementado sistema de cache para rotas de leitura frequente, seguindo o padrão **Cache-Aside**.
-
-### Estratégia de Cache:
-- **Rotas Cacheadas**: `GET /api/v1/settings` (TTL: 30 minutos), `GET /api/v1/posts` (TTL: 1 hora), `GET /api/admin/musicas` (TTL: 15 minutos)
-- **Estrutura de Chaves**: Namespaces organizados (`settings:v1:all`, `posts:public:all`, `musicas:admin:all`)
-- **Invalidação**: Cache é invalidado automaticamente ao atualizar configurações, posts ou músicas
-- **Fallback**: Sistema continua operando normalmente caso o Redis falhe
-
-### Benefícios:
-- Redução de 80-90% nas consultas ao banco de dados
-- Resposta mais rápida para visitantes frequentes
-- Melhor performance em conexões lentas e móveis
-- Escalabilidade para alto volume de tráfego
-
-### Testes de Cache:
-- Testes de integração validam Cache Miss, Cache Hit e invalidação automática
-- Mock do Redis em memória para testes unitários
-
-## 5. ContentTabs - Sistema de Navegação
-
-Implementado novo sistema de navegação com 5 abas para organização do conteúdo.
-
-### Estrutura do ContentTabs:
-- **Reflexões & Estudos**: Exibe o feed de posts do blog (BlogSection)
-- **Músicas**: Exibe o MusicGallery com integração Spotify completa
-- **Vídeos**: Exibe o VideoGallery (placeholder)
-- **Em Desenvolvimento**: 2 abas desativadas (Projetos Futuros 01, Projetos Futuros 02)
-- **Design Responsivo**: Layout adaptativo para mobile e desktop
-- **Estilização Moderna**: CSS Modules com hover effects e transições suaves
-
-### Benefícios:
-- **Organização**: Estrutura clara para expansão futura
-- **UX**: Navegação intuitiva e visualmente atraente
-- **Performance**: Carregamento sob demanda das abas
-- **Manutenção**: Código modular e reutilizável
-
-## 6. Sistema de Testes Modernizado
-
-O projeto agora conta com uma suíte de testes abrangente e modernizada:
-
-### Testes Unitários:
-- **Componentes**: ContentTabs, PostCard, AdminBackupManager, MusicCard, MusicGallery
-- **Sistema de Backup**: Testes completos para criação, rotação e restauração de backups
-- **APIs**: Testes para todas as endpoints RESTful em `/api/v1/`
-- **Autenticação**: Testes JWT com cookies HTTP-only
-- **Cache**: Testes para sistema de cache de imagens
-- **Spotify Integration**: Testes para integração completa com Spotify
-- **Music Management**: Testes para sistema completo de gestão de músicas
-
-### Testes de Integração:
-- **PostgreSQL**: Mocks atualizados para refletir a nova estrutura de banco de dados
-- **Migração de Dados**: Testes para validação da migração SQLite → PostgreSQL
-- **Rate Limiting**: Testes para sistema de limitação de requisições
-- **Upload de Imagens**: Testes para validação de tipos MIME e tamanho de arquivos
-
-### Testes de Sistema:
-- **Backup e Restauração**: Validação completa do fluxo de backup e restauração (`backup.test.js`)
-- **Autenticação**: Validação de tokens JWT e cookies HTTP-only
-- **Validação de Dados**: Uso de `zod` para schemas de entrada
-
-### Testes de Carga:
-- **k6 Scripts**: Otimizados para cenários de escrita concorrente (PostgreSQL)
-- **Relatórios Visuais**: Geração automática de dashboards HTML para análise de tendências.
-- **Cenários Avançados**: Inclusão de testes de DDoS, IP Spoofing, Monitoramento de Memória, Chaos Testing e Segurança (Rate Limit/Auth).
-- **Performance**: Validação de performance sob estresse
-- **Escalabilidade**: Testes de concorrência e latência
-- **Manutenção**: Scripts automatizados para limpeza de massa de dados e relatórios antigos.
-
-### CI/CD:
-- **GitHub Actions**: Workflow configurado para rodar testes a cada push
-- **Cobertura**: >90% de cobertura de código
-- **Performance**: Métricas de performance monitoradas continuamente
-
-### Testes de ContentTabs - Sistema de Navegação:
-- **Testes de Componentes**: Validação completa do sistema de navegação com 5 abas
-- **Testes de Transição**: Verificação de animações de fade-in ao alternar entre abas
-- **Testes de Carregamento**: Validação de estados de loading para Músicas e Vídeos
-- **Testes de Erro**: Tratamento de erros e mensagens amigáveis para conteúdo indisponível
-
-### Testes de Spotify Integration:
-- **Testes de Integração**: Validação completa da integração com Spotify
-- **Testes de Conversão**: Verificação da conversão automática de URLs para embeds
-- **Testes de Lazy Loading**: Validação do carregamento inteligente dos players
-- **Testes de UX**: Botão "Ouvir no Spotify" para abertura em nova aba
-
-### Testes de YouTube Integration:
-- **Testes de Integração**: Validação completa da integração com YouTube
-- **Testes de Conversão**: Verificação da conversão automática de URLs para embeds
-- **Testes de Lazy Loading**: Validação do carregamento inteligente dos players
-- **Testes de UX**: Botão "Assistir no YouTube" para abertura em nova aba
-
-### Testes de Polimento Visual e Técnico:
-- **Testes de Animações**: Validação de transições suaves ao alternar entre abas
-- **Testes de Estados de Carregamento**: Verificação de skeletons e spinners elegantes
-- **Testes de Tratamento de Erros**: Mensagens amigáveis e placeholders
-- **Testes de Performance**: Lazy loading para iframes
-- **Testes de Responsividade**: Layouts perfeitos para dispositivos touch
-- **Testes de Limpeza de Código**: Remoção de dados mock e integração real com API
-
-## 7. Análise de Segurança
-
-O projeto implementa várias camadas de segurança robustas:
-
-- **Autenticação**:
-  - Uso de `bcrypt` para hashing de senhas.
-  - Tokens JWT assinados com chave secreta configurável via `.env`.
-  - Cookies com flag `HttpOnly` e `SameSite=Strict` para mitigar XSS e CSRF.
-
-- **Proteção de API (Rate Limiting)**:
-  - Middleware implementado em `middleware.js`.
-  - Estratégia híbrida validada: Redis (persistente/distribuído) com fallback automático para Memória (Map) em caso de indisponibilidade.
-  - Proteção contra força bruta na rota de login (`/api/auth/login`).
-  - Sistema de Whitelist para IPs administrativos.
-  - Logs de auditoria para bloqueios e desbloqueios manuais.
-
-- **Validação de Dados**:
-  - Uso da biblioteca `zod` para validação de schemas em rotas de escrita (POST/PUT).
-  - Validação rigorosa de uploads de imagem no servidor, cobrindo **MIME type**, **tamanho do arquivo** e tratamento de erros, garantindo que apenas arquivos válidos sejam processados e salvos.
-
-## 8. Análise de Performance
+## Relatório 2: Análise de Performance (Pós-Migração)
 
 ### Testes de Carga (k6)
 Os testes realizados indicaram melhorias significativas após a migração para PostgreSQL:
 - **Latência**: Redução no p95 de latência em operações de escrita concorrente.
 - **Concorrência**: Capacidade de lidar com múltiplos usuários virtuais (VUs) sem bloqueios de tabela (table locks) que ocorriam no SQLite.
 - **Health Check**: Endpoint `/api/v1/health` responde em <100ms consistentemente.
-
-### Otimizações Implementadas:
-- **Imagens**: Cache-Control agressivo (24h), Lazy Loading nativo.
-- **Banco de Dados**: Índices em colunas de busca (`slug`, `username`).
-- **Build**: Code splitting automático do Next.js.
-- **Paginação**: Implementada no Blog para reduzir payload inicial e melhorar tempo de carregamento.
-- **Cache de API**: Sistema de cache para rotas de leitura frequente reduz consultas ao banco em 80-90%
-- **ContentTabs**: Carregamento sob demanda das abas para melhor performance
-
-## 9. Métricas de Performance Atuais
+ 
+## Relatório 3: Benchmark de Métricas (08/02/2026)
 
 📈 **Benchmark (08/02/2026)**:
 - **Tempo de Build**: 11.2 segundos
@@ -194,7 +42,7 @@ Os testes realizados indicaram melhorias significativas após a migração para 
 - **Armazenamento de Imagens**: Otimizado por arquivo
 - **Backups**: ~50-200KB (comprimidos)
 
-## 10. Recomendações Futuras
+## Relatório 4: Recomendações (Pós-Análise)
 
 1. **Monitoramento**: Integrar uma ferramenta de APM (Application Performance Monitoring) como Sentry ou New Relic para produção.
 2. **Backup Off-site**: Configurar o script de backup para enviar os arquivos `.gz` para um bucket S3 ou similar.
@@ -204,7 +52,7 @@ Os testes realizados indicaram melhorias significativas após a migração para 
 6. **Documentação**: Expandir documentação de API com exemplos de uso e integração.
 7. **ContentTabs**: Implementar as funcionalidades das abas "Em Desenvolvimento" (Estudos Bíblicos, Cursos, Eventos, Comunidade).
 
-## 11. Conclusão
+## Conclusão da Análise de 08/02/2026
 
 O projeto "O Caminhar com Deus" atingiu um nível de maturidade técnica elevado e estabilidade comprovada. A transição para PostgreSQL removeu as limitações de escalabilidade anteriores, e a infraestrutura de testes (Unitários, Integração e Carga) garante a confiabilidade contínua. O sistema está pronto e validado para produção.
 
