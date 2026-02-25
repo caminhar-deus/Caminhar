@@ -82,7 +82,7 @@ describe('getPaginatedMusicas (Query SQL)', () => {
     const dataQueryCall = calls.find(call => call[0].includes('SELECT * FROM musicas'));
     const [text, values] = dataQueryCall;
 
-    expect(text).toContain('WHERE (LOWER(titulo) LIKE $3 OR LOWER(artista) LIKE $3)');
-    expect(values[2]).toBe('%louvor%');
+    expect(text).toContain('WHERE (LOWER(titulo) LIKE $1 OR LOWER(artista) LIKE $1)');
+    expect(values[0]).toBe('%louvor%');
   });
 });

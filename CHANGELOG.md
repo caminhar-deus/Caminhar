@@ -17,6 +17,10 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
   - Reorganização dos componentes administrativos em `components/Admin/Managers` e `Tools`.
   - Centralização de scripts utilitários em `scripts/`.
 
+### Corrigido
+- **Paginação de Músicas**: Correção na função `getPaginatedMusicas` que impedia a exibição de músicas no painel administrativo devido a uma construção incorreta da query SQL quando nenhum termo de busca era fornecido.
+- **Scripts de Cache**: Melhoria no feedback do script `clear-cache.js` para ambientes sem Redis configurado.
+
 ## [1.3.0] - 2026-02-21
 
 ### Adicionado

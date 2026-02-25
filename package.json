@@ -30,6 +30,8 @@
     "backup:restore": "node scripts/restore-backup.js",
     "seed:all": "node scripts/seed-all.js",
     "migrate": "node scripts/migrations/001-add-views-to-posts.js",
+    "cache:clear": "node scripts/clear-cache.js",
+    "db:clear:musicas": "node scripts/clear-musicas.js",
     "validate-schema": "node scripts/validate-schema.js",
     "monitor:disk": "node scripts/monitor-disk-space.js",
     "clean:reports": "node scripts/clean-k6-reports.js",

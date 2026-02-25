@@ -168,6 +168,7 @@ Estes testes verificam a lógica de funções e componentes individuais de forma
 - **Hooks Personalizados**: Testes para hooks como `useAuth`, `useSettings`, etc.
 - **Validação de Dados**: Testes com `zod` para schemas de entrada.
 - **ES Modules**: Testes de compatibilidade e funcionalidade de módulos ES.
+- **Banco de Dados (Mock)**: Testes unitários para construção de queries SQL (`getPaginatedMusicas`).
 
 #### Como Executar:
 

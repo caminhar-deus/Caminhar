@@ -1,6 +1,6 @@
 import Head from 'next/head';
 import Link from 'next/link';
-import { query } from '../../lib/db';
+import { query } from '../lib/db.js';
 
 export default function BlogPost({ post }) {
   // Define a URL base do site (fallback para localhost se não estiver definida)
