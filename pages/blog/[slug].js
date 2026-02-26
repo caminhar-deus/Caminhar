@@ -79,11 +79,11 @@ export default function BlogPost() {
         </header>
 
         {post.image_url && (
-          <div style={{ marginBottom: '40px', borderRadius: '12px', overflow: 'hidden' }}>
+          <div style={{ marginBottom: '40px', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#f0f2f5' }}>
             <img 
               src={post.image_url} 
               alt={post.title} 
-              style={{ width: '100%', height: 'auto', maxHeight: '500px', objectFit: 'cover' }} 
+              style={{ width: '100%', height: 'auto', maxHeight: '65vh', objectFit: 'contain' }} 
             />
           </div>
         )}
