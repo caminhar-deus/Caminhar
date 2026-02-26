@@ -10,6 +10,7 @@ export default function BlogPost() {
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentUrl, setCurrentUrl] = useState('');
+  const [isImageZoomed, setIsImageZoomed] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -36,6 +37,20 @@ export default function BlogPost() {
 
   useEffect(() => {
     setCurrentUrl(window.location.href);
+  }, []);
+
+  // Efeito para fechar a imagem com a tecla 'Esc'
+  useEffect(() => {
+    const handleEsc = (event) => {
+      if (event.key === 'Escape') {
+        setIsImageZoomed(false);
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+
+    return () => {
+      window.removeEventListener('keydown', handleEsc);
+    };
   }, []);
 
   if (loading) {
@@ -79,13 +94,43 @@ export default function BlogPost() {
         </header>
 
         {post.image_url && (
-          <div style={{ marginBottom: '40px', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#f0f2f5' }}>
-            <img 
-              src={post.image_url} 
-              alt={post.title} 
-              style={{ width: '100%', height: 'auto', maxHeight: '65vh', objectFit: 'contain' }} 
-            />
-          </div>
+          <>
+            <div 
+              style={{ marginBottom: '40px', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#f0f2f5', cursor: 'zoom-in' }}
+              onClick={() => setIsImageZoomed(true)}
+            >
+              <img 
+                src={post.image_url} 
+                alt={post.title} 
+                style={{ width: '100%', height: 'auto', maxHeight: '65vh', objectFit: 'contain', display: 'block' }} 
+              />
+            </div>
+
+            {isImageZoomed && (
+              <div 
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  backgroundColor: 'rgba(0, 0, 0, 0.85)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 1000,
+                  cursor: 'zoom-out'
+                }}
+                onClick={() => setIsImageZoomed(false)}
+              >
+                <img 
+                  src={post.image_url} 
+                  alt={post.title}
+                  style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', boxShadow: '0 0 30px rgba(0,0,0,0.5)' }}
+                />
+              </div>
+            )}
+          </>
         )}
 
         <div style={{ fontSize: '1.1rem', lineHeight: '1.8', color: '#333', whiteSpace: 'pre-wrap' }}>

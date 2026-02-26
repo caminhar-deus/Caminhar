@@ -4,6 +4,17 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), e este projeto adere ao [Versionamento Semântico](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-02-26
+
+### Adicionado
+- **ID na Listagem de Posts**: A tabela de posts no painel administrativo agora exibe a coluna "ID", facilitando a identificação e depuração.
+- **Zoom de Imagem (Lightbox)**: Implementada a funcionalidade de ampliação (lightbox) para a imagem de capa na página de um post. O usuário pode clicar na imagem para vê-la em tela cheia e fechar com 'Esc' ou clicando fora.
+
+### Alterado
+- **Exibição de Imagem do Post**: A imagem de capa na página do artigo agora utiliza `object-fit: contain` para ser exibida por completo, sem cortes, melhorando a visualização da arte.
+
+---
+
 ## [1.5.0] - 2026-02-22
 
 ### Adicionado

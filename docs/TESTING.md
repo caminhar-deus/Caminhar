@@ -224,8 +224,11 @@ Estes testes simulam o comportamento real do usuário, navegando pela aplicaçã
 
 **Principais fluxos testados:**
 - **Autenticação Completa**: Login, logout, sessão persistente.
-- **Upload de Imagens**: Fluxo completo de upload, validação e exibição.
 - **Gerenciamento de Posts**: Criação, edição, exclusão de posts.
+- **Exibição da Coluna 'ID'**: Verifica se a coluna de ID aparece corretamente na tabela de posts do admin.
+- **Upload e Exibição de Imagens**: Fluxo completo de upload, validação e exibição de imagens de posts e da imagem principal.
+- **Visualização de Imagem do Post**: Valida que a imagem do post é exibida por completo (`contain`) e não cortada.
+- **Funcionalidade de Zoom (Lightbox)**: Testa o clique para ampliar a imagem do post e o fechamento da visualização.
 - **Navegação do Sistema**: Fluxo entre as 5 abas do ContentTabs.
 - **Integrações Externas**: Testes de reprodução de músicas e vídeos.
 - **Responsividade**: Testes em diferentes tamanhos de tela.

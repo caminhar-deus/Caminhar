@@ -90,6 +90,11 @@ const fields = [
  */
 const columns = [
   { 
+    key: 'id', 
+    header: 'ID',
+    width: '60px'
+  },
+  { 
     key: 'title', 
     header: 'Título',
     render: (item) => (
