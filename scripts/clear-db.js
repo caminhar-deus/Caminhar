@@ -1,5 +1,6 @@
 import fs from 'fs';
 import dotenv from 'dotenv';
+import path from 'path';
 
 // Carrega variáveis de ambiente
 if (fs.existsSync('.env.local')) {
@@ -23,6 +24,22 @@ async function clearDatabase() {
     `);
     
     console.log('✅ Banco de dados limpo com sucesso! (Estrutura mantida, dados removidos)');
+
+    console.log('🗑️  Limpando diretório de uploads...');
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+    if (fs.existsSync(uploadDir)) {
+      const files = fs.readdirSync(uploadDir);
+      for (const file of files) {
+        // Evita apagar o próprio diretório ou arquivos de controle como .gitkeep
+        if (file !== '.gitkeep') {
+          fs.unlinkSync(path.join(uploadDir, file));
+        }
+      }
+      console.log('✅ Diretório de uploads limpo.');
+    } else {
+      console.log('ℹ️  Diretório de uploads não encontrado, nada a limpar.');
+    }
+
   } catch (error) {
     console.error('❌ Erro ao limpar o banco de dados:', error);
     process.exit(1);
