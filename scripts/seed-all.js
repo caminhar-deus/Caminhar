@@ -49,7 +49,7 @@ async function seedAll() {
     try {
       // Executa o comando de reset que já existe no package.json
       // O stdio: 'inherit' garante que os logs do processo filho sejam exibidos no terminal atual.
-      execSync('npm run reset:db:force', { stdio: 'inherit' });
+      execSync('npm run db:reset', { stdio: 'inherit' });
       console.log('✅ Banco de dados resetado com sucesso.');
     } catch (error) {
       console.error('❌ Falha ao resetar o banco de dados. Abortando.');
