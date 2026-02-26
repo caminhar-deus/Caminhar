@@ -389,6 +389,12 @@ sudo -u postgres psql -c "SELECT datname, datistemplate FROM pg_database;"
 
 # Testar conexão da aplicação
 npm run check-db-status
+
+# Limpar completamente o banco de dados (ação destrutiva)
+# Útil para resetar o ambiente de desenvolvimento para um estado limpo.
+# ATENÇÃO: Apaga todos os posts, usuários, configurações, etc.
+npm run db:clear
+
 ```
 
 ### Erros de Cache Redis

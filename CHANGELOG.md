@@ -7,10 +7,16 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [1.5.0] - 2026-02-22
 
 ### Adicionado
+- **Scripts de Banco de Dados**: Novos comandos para gerenciamento de dados:
+  - `npm run db:clear`: Limpa todos os dados de todas as tabelas e o diretório de uploads.
+  - `npm run db:clear:musicas`: Limpa apenas a tabela de músicas.
+  - `npm run db:reset:password`: Atalho para redefinir a senha de um usuário.
 - **Testes de Carga (k6)**: Implementação de relatórios visuais HTML, sanitização de segurança e 26 novos cenários avançados (DDoS, Stress, IP Spoofing, etc.). Consulte `docs/TESTING.md` para a lista completa.
 - **Configuração de Testes**: Suporte a arquivo `env-config.json` para variáveis de ambiente em testes de carga.
 
 ### Alterado
+- **Scripts**: O script `seed-all.js` foi corrigido para chamar `npm run db:reset` corretamente.
+- **Scripts**: O script `db:clear` foi aprimorado para também limpar o diretório `public/uploads`.
 - **Refatoração Estrutural**:
   - Centralização de todos os testes na pasta `tests/`.
   - Limpeza da raiz do projeto e organização da pasta `lib/`.
@@ -18,6 +24,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
   - Centralização de scripts utilitários em `scripts/`.
 
 ### Corrigido
+- **Layout do Admin**: Ajustes de CSS para corrigir espaçamento e quebra de linha nas abas do painel administrativo, melhorando a responsividade.
 - **Paginação de Músicas**: Correção na função `getPaginatedMusicas` que impedia a exibição de músicas no painel administrativo devido a uma construção incorreta da query SQL quando nenhum termo de busca era fornecido.
 - **Scripts de Cache**: Melhoria no feedback do script `clear-cache.js` para ambientes sem Redis configurado.
 
