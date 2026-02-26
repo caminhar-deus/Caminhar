@@ -55,24 +55,25 @@ async function handler(req, res) {
       return res.status(400).json({ message: 'Arquivo muito grande (tamanho máximo 5MB)' });
     }
 
+    // Check upload type to decide filename prefix
+    const uploadType = Array.isArray(fields.uploadType) ? fields.uploadType[0] : fields.uploadType;
+    const prefix = uploadType === 'setting_home_image' ? 'hero-image-' : 'post-image-';
+
     // Renomear arquivo com timestamp
     const ext = path.extname(imageFile.originalFilename || imageFile.newFilename || '.jpg');
-    const newFilename = `post-image-${Date.now()}${ext}`;
+    const newFilename = `${prefix}${Date.now()}${ext}`;
     const newPath = path.join(uploadDir, newFilename);
     await fs.promises.rename(imageFile.filepath, newPath);
 
     // Get relative path for public access
     const publicPath = `/uploads/${newFilename}`;
 
-    // Check upload type to decide if we should update settings
-    const uploadType = Array.isArray(fields.uploadType) ? fields.uploadType[0] : fields.uploadType;
-
-    if (uploadType === 'site_image') {
+    if (uploadType === 'setting_home_image') {
       // Update setting in database only for site header
-      await updateSetting('site_image', publicPath, 'image', 'Main site image');
+      await updateSetting('home_image_url', publicPath, 'image', 'Imagem principal da home');
     }
 
-    return res.status(200).json({ success: true, path: publicPath });
+    return res.status(200).json({ success: true, path: publicPath, imageUrl: publicPath });
 
   } catch (error) {
     console.error('Upload error:', error);

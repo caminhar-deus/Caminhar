@@ -129,7 +129,7 @@ export default function Admin() {
           const settings = await response.json();
           setTitle(settings.site_title || 'O Caminhar com Deus');
           setSubtitle(settings.site_subtitle || 'Reflexões e ensinamentos sobre a fé, espiritualidade e a jornada cristã');
-          if (settings.site_image) setCurrentImageUrl(settings.site_image);
+          if (settings.home_image_url) setCurrentImageUrl(settings.home_image_url);
         }
       }
     } catch (error) {
@@ -181,7 +181,7 @@ export default function Admin() {
 
     const formData = new FormData();
     formData.append('image', imageFile);
-    formData.append('uploadType', 'site_image');
+    formData.append('uploadType', 'setting_home_image');
 
     try {
       const response = await fetch('/api/upload-image', {

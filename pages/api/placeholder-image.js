@@ -9,8 +9,8 @@ export default async function handler(req, res) {
 
     // 1. Tenta buscar a imagem definida nas configurações do banco de dados
     try {
-      // Tenta buscar a configuração 'site_image' (onde o diagnóstico mostrou que está salva)
-      const dbImage = await getSetting('site_image');
+      // Tenta buscar a configuração da imagem principal
+      const dbImage = await getSetting('home_image_url');
       
       if (dbImage && typeof dbImage === 'string') {
         // dbImage geralmente é '/uploads/post-image-123.png', pegamos só o nome do arquivo
@@ -26,7 +26,7 @@ export default async function handler(req, res) {
       
       // Procura por arquivos com prefixo antigo (hero-) ou novo (post-)
       const imageFiles = files.filter(file => 
-        file.startsWith('hero-image-') || file.startsWith('post-image-')
+        file.startsWith('hero-image-')
       );
       
       // Pega o último (mais recente pelo nome/timestamp)

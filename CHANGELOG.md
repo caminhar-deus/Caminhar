@@ -24,6 +24,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
   - Centralização de scripts utilitários em `scripts/`.
 
 ### Corrigido
+- **Upload de Imagem**: Corrigido bug crítico onde o upload de uma imagem para um novo post substituía a imagem principal do site. A API de upload agora diferencia os tipos de imagem (`post` vs. `setting_home_image`) e salva os arquivos com prefixos distintos (`post-image-` vs. `hero-image-`).
 - **Layout do Admin**: Ajustes de CSS para corrigir espaçamento e quebra de linha nas abas do painel administrativo, melhorando a responsividade.
 - **Paginação de Músicas**: Correção na função `getPaginatedMusicas` que impedia a exibição de músicas no painel administrativo devido a uma construção incorreta da query SQL quando nenhum termo de busca era fornecido.
 - **Scripts de Cache**: Melhoria no feedback do script `clear-cache.js` para ambientes sem Redis configurado.
