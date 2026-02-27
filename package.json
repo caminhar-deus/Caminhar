@@ -4,6 +4,9 @@
   "description": "",
   "type": "module",
   "main": "index.js",
+  "engines": {
+    "node": "24.14.0"
+  },
   "scripts": {
     "check-env": "node scripts/check-env.js",
     "dev": "npm run check-env && next dev --turbo",
