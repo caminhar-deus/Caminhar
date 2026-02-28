@@ -23,17 +23,32 @@ import { cleanup } from '@testing-library/react';
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
 
-// Polyfill Request/Response/Headers para JSDOM (necessário para Next.js Middleware & API tests)
-if (typeof global.Request === 'undefined') {
+// Polyfill ReadableStream (necessário para undici funcionar corretamente)
+if (typeof globalThis.ReadableStream === 'undefined') {
   try {
-    const undici = require('undici');
-    if (undici && undici.Request) {
-      global.Request = undici.Request;
-      global.Response = undici.Response;
-      global.Headers = undici.Headers;
-    }
+    const { ReadableStream } = require('node:stream/web');
+    globalThis.ReadableStream = ReadableStream;
+  } catch (e) {}
+}
+
+// Polyfill MessageChannel/MessagePort (necessário para undici em alguns ambientes)
+if (typeof globalThis.MessageChannel === 'undefined') {
+  try {
+    const { MessageChannel, MessagePort } = require('node:worker_threads');
+    globalThis.MessageChannel = MessageChannel;
+    globalThis.MessagePort = MessagePort;
+  } catch (e) {}
+}
+
+// Polyfill Request/Response/Headers para JSDOM (necessário para Next.js Middleware & API tests)
+if (!globalThis.Request) {
+  try {
+    const { Request, Response, Headers } = require('undici');
+    globalThis.Request = Request;
+    globalThis.Response = Response;
+    globalThis.Headers = Headers;
   } catch (error) {
-    console.warn('⚠️ undici not found, Request/Response/Headers polyfills skipped.');
+    console.warn('⚠️ undici not found, Request/Response/Headers polyfills skipped. Error:', error.message);
   }
 }
 
@@ -147,133 +162,6 @@ afterAll(() => {
 // Limpa o DOM após cada teste para evitar vazamento de estado
 afterEach(() => {
   cleanup();
-});
-
-// ============================================================================
-// MATCHERS CUSTOMIZADOS
-// ============================================================================
-
-/**
- * Verifica se a resposta HTTP tem o status esperado
- * Uso: expect(res).toHaveStatus(200)
- */
-expect.extend({
-  toHaveStatus(received, expected) {
-    const status = received.status || received._getStatusCode?.() || received.statusCode;
-    const pass = status === expected;
-    
-    if (pass) {
-      return {
-        message: () => `expected status not to be ${expected}`,
-        pass: true,
-      };
-    }
-    return {
-      message: () => `expected status to be ${expected}, but received ${status}`,
-      pass: false,
-    };
-  },
-});
-
-/**
- * Verifica se a resposta contém JSON válido e opcionalmente dados esperados
- * Uso: expect(res).toBeValidJSON() ou expect(res).toBeValidJSON({ id: 1 })
- */
-expect.extend({
-  toBeValidJSON(received, expected) {
-    let data;
-    try {
-      const body = received.data || received._getData?.() || received.body;
-      data = typeof body === 'string' ? JSON.parse(body) : body;
-    } catch (e) {
-      return {
-        message: () => `expected valid JSON, but parsing failed: ${e.message}`,
-        pass: false,
-      };
-    }
-
-    if (expected !== undefined) {
-      const pass = this.equals(data, expect.objectContaining(expected));
-      if (!pass) {
-        return {
-          message: () => `expected JSON to match ${this.printExpected(expected)}, but got ${this.printReceived(data)}`,
-          pass: false,
-        };
-      }
-    }
-
-    return {
-      message: () => `expected invalid JSON`,
-      pass: true,
-    };
-  },
-});
-
-/**
- * Verifica se a resposta tem o header esperado
- * Uso: expect(res).toHaveHeader('content-type', 'application/json')
- */
-expect.extend({
-  toHaveHeader(received, headerName, expectedValue) {
-    const headers = received.headers || received.getHeaders?.() || {};
-    const actualValue = headers[headerName.toLowerCase()];
-    
-    if (expectedValue === undefined) {
-      const pass = actualValue !== undefined;
-      return {
-        message: () => pass 
-          ? `expected header "${headerName}" not to exist`
-          : `expected header "${headerName}" to exist`,
-        pass,
-      };
-    }
-
-    const pass = actualValue === expectedValue || 
-      (Array.isArray(actualValue) && actualValue.includes(expectedValue));
-    
-    return {
-      message: () => pass
-        ? `expected header "${headerName}" not to be "${expectedValue}"`
-        : `expected header "${headerName}" to be "${expectedValue}", but got "${actualValue}"`,
-      pass,
-    };
-  },
-});
-
-/**
- * Verifica se uma data está no formato ISO 8601 válido
- * Uso: expect(dateString).toBeISODate()
- */
-expect.extend({
-  toBeISODate(received) {
-    const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/;
-    const pass = typeof received === 'string' && isoDateRegex.test(received);
-    
-    return {
-      message: () => pass
-        ? `expected "${received}" not to be a valid ISO date`
-        : `expected "${received}" to be a valid ISO date`,
-      pass,
-    };
-  },
-});
-
-/**
- * Verifica se um objeto tem todas as propriedades esperadas
- * Uso: expect(obj).toHaveProperties(['id', 'name', 'email'])
- */
-expect.extend({
-  toHaveProperties(received, properties) {
-    const missing = properties.filter(prop => !(prop in received));
-    const pass = missing.length === 0;
-    
-    return {
-      message: () => pass
-        ? `expected object not to have properties ${this.printExpected(properties)}`
-        : `expected object to have properties, but missing: ${this.printExpected(missing)}`,
-      pass,
-    };
-  },
 });
 
 // ============================================================================

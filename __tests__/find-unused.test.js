@@ -3,7 +3,12 @@ import fs from 'fs';
 import path from 'path';
 
 // Mock de dependências externas
-jest.mock('fs');
+jest.mock('fs', () => ({
+  existsSync: jest.fn(),
+  readdirSync: jest.fn(),
+  statSync: jest.fn(),
+  readFileSync: jest.fn().mockReturnValue('{}'), // Retorna JSON válido para evitar erro ao ler package.json
+}));
 jest.mock('path');
 
 // Importa a função a ser testada
