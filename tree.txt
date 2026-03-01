@@ -194,7 +194,6 @@
 │   ├── health-check.js
 │   ├── ip-spoofing-test.js
 │   ├── login-negative-test.js
-│   ├── memory-monitor.js
 │   ├── musicas-crud-test.js
 │   ├── musicas-filter-test.js
 │   ├── musicas-load-test.js
@@ -208,9 +207,7 @@
 │   ├── recovery-test.js
 │   ├── search-content-test.js
 │   ├── stress-test-combined.js
-│   ├── stress-test.js
 │   ├── upload-flow.js
-│   ├── videos-crud.js
 │   ├── videos-crud-test.js
 │   ├── videos-filter-test.js
 │   ├── videos-load-test.js
@@ -283,14 +280,37 @@
 ├── README.md
 ├── reports
 │   ├── k6-summaries
+│   │   ├── backup_verification_test.json
+│   │   ├── cache_headers_test.html
+│   │   ├── cache_headers_test.json
 │   │   ├── Carga_de_Músicas_(Leitura).json
 │   │   ├── Carga_de_Vídeos_(Leitura).json
 │   │   ├── Criação_de_Posts_(Escrita).json
 │   │   ├── CRUD_de_Músicas.html
 │   │   ├── CRUD_de_Músicas.json
 │   │   ├── CRUD_de_Vídeos.json
+│   │   ├── ddos_search_test.json
 │   │   ├── Fluxo_Autenticado.json
-│   │   └── memory_monitor.json
+│   │   ├── ip_spoofing_test.json
+│   │   ├── login_negative_test.json
+│   │   ├── musicas_filter_test.json
+│   │   ├── musicas_pagination_test.json
+│   │   ├── musicas_search_test.json
+│   │   ├── musicas_sort_test.json
+│   │   ├── pagination_test.json
+│   │   ├── posts_cursor_pagination_test.json
+│   │   ├── posts_tags_test.json
+│   │   ├── rate_limit_test.json
+│   │   ├── recovery_test.json
+│   │   ├── search_content_test.json
+│   │   ├── stress-test-combined.html
+│   │   ├── stress-test-combined.json
+│   │   ├── upload-flow-summary.json
+│   │   ├── videos_filter_test.json
+│   │   ├── videos_pagination_test.json
+│   │   ├── videos_sort_test.html
+│   │   ├── videos_sort_test.json
+│   │   └── video_validation_test.json
 │   └── load-report-1771550191786.html
 ├── scripts
 │   ├── auth
@@ -488,4 +508,4 @@
 │       └── middleware.test.js
 └── tree.txt
 
-83 directories, 406 files
+83 directories, 426 files
