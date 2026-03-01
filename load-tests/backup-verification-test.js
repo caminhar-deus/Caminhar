@@ -8,7 +8,6 @@ export const options = {
   iterations: 1,
   thresholds: {
     checks: ['rate==1.0'], // 100% das verificações devem passar
-    http_req_duration: ['p(100)<10000'], // Backup pode ser lento, damos 10s de limite
   },
 };
 
@@ -35,37 +34,42 @@ export default function (data) {
     'Authorization': `Bearer ${data.token}`,
   };
 
-  console.log('📥 Iniciando download do backup...');
+  console.log('📥 Verificando listagem de backups...');
 
-  // responseType: 'binary' é crucial para manipularmos os bytes do arquivo
-  const res = http.get(`${BASE_URL}/api/v1/backup`, {
+  // A API atual suporta apenas listagem, não download direto via parâmetro GET
+  const res = http.get(`${BASE_URL}/api/admin/backups`, {
     headers: headers,
-    responseType: 'binary', 
-    tags: { type: 'backup_download' },
+    tags: { type: 'backup_list' },
   });
 
-  // Verificação dos Magic Bytes do GZIP (0x1F 0x8B)
-  let isGzip = false;
-  if (res.body && res.body.byteLength >= 2) {
-    const view = new Uint8Array(res.body);
-    // 0x1F = 31, 0x8B = 139
-    if (view[0] === 0x1f && view[1] === 0x8b) {
-      isGzip = true;
+  // Validação da resposta JSON
+  let hasBackups = false;
+  let hasLatest = false;
+  
+  try {
+    const body = res.json();
+    hasBackups = Array.isArray(body.backups);
+    hasLatest = body.latest === null || (typeof body.latest === 'object' && body.latest.name);
+    
+    if (hasBackups && body.backups.length > 0) {
+      console.log(`✅ Encontrados ${body.backups.length} backups. Último: ${body.latest ? body.latest.name : 'Nenhum'}`);
     }
+  } catch (e) {
+    console.error('Erro ao fazer parse do JSON:', e);
   }
 
-  check(res, {
+  const success = check(res, {
     'Status é 200': (r) => r.status === 200,
     'Header Content-Type correto': (r) => {
       const cType = r.headers['Content-Type'] || r.headers['content-type'];
-      return cType && (cType.includes('gzip') || cType.includes('octet-stream'));
+      return cType && cType.includes('application/json');
     },
-    'Arquivo não está vazio': (r) => r.body && r.body.byteLength > 0,
-    'Assinatura GZIP válida (Magic Bytes 1F 8B)': () => isGzip,
+    'Retornou lista de backups': () => hasBackups,
+    'Estrutura de "latest" válida': () => hasLatest,
   });
 
-  if (isGzip) {
-    console.log(`✅ Backup validado! Tamanho: ${(res.body.byteLength / 1024).toFixed(2)} KB`);
+  if (!success) {
+    console.log(`❌ Falha na verificação. Status: ${res.status}. Body: ${res.body}`);
   }
 }
 

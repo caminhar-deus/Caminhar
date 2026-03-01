@@ -1,0 +1,491 @@
+.
+├── babel.jest.config.js
+├── CHANGELOG.md
+├── ci.yml
+├── components
+│   ├── Admin
+│   │   ├── AdminCrudBase.js
+│   │   ├── AdminMusicasNew.js
+│   │   ├── AdminPostsNew.js
+│   │   ├── AdminVideosNew.js
+│   │   ├── fields
+│   │   │   ├── ImageUploadField.js
+│   │   │   ├── TextAreaField.js
+│   │   │   ├── TextField.js
+│   │   │   ├── ToggleField.js
+│   │   │   └── UrlField.js
+│   │   ├── index.js
+│   │   ├── Managers
+│   │   │   ├── BackupManager.js
+│   │   │   └── CacheManager.js
+│   │   ├── README.md
+│   │   └── Tools
+│   │       ├── IntegrityCheck.js
+│   │       └── RateLimitViewer.js
+│   ├── Features
+│   │   ├── Blog
+│   │   │   ├── BlogSection.js
+│   │   │   ├── PostCard.js
+│   │   │   └── styles
+│   │   │       └── Blog.module.css
+│   │   ├── ContentTabs
+│   │   │   ├── ContentTabs.module.css
+│   │   │   └── index.js
+│   │   ├── Music
+│   │   │   ├── MusicCard.js
+│   │   │   ├── MusicGallery.js
+│   │   │   └── styles
+│   │   │       ├── MusicCard.module.css
+│   │   │       └── MusicGallery.module.css
+│   │   └── Video
+│   │       ├── styles
+│   │       │   ├── VideoCard.module.css
+│   │       │   └── VideoGallery.module.css
+│   │       ├── VideoCard.js
+│   │       └── VideoGallery.js
+│   ├── Layout
+│   │   ├── Container.js
+│   │   ├── Container.module.css
+│   │   ├── Grid.js
+│   │   ├── Grid.module.css
+│   │   ├── index.js
+│   │   ├── Sidebar.js
+│   │   ├── Sidebar.module.css
+│   │   ├── Stack.js
+│   │   └── Stack.module.css
+│   ├── Performance
+│   │   ├── CriticalCSS.js
+│   │   ├── ImageOptimized.js
+│   │   ├── index.js
+│   │   ├── LazyIframe.js
+│   │   └── PreloadResources.js
+│   ├── SEO
+│   │   ├── Head.js
+│   │   ├── index.js
+│   │   └── StructuredData
+│   │       ├── ArticleSchema.js
+│   │       ├── BreadcrumbSchema.js
+│   │       ├── index.js
+│   │       ├── MusicSchema.js
+│   │       ├── OrganizationSchema.js
+│   │       ├── VideoSchema.js
+│   │       └── WebsiteSchema.js
+│   └── UI
+│       ├── Alert.js
+│       ├── Alert.module.css
+│       ├── Badge.js
+│       ├── Badge.module.css
+│       ├── Button.js
+│       ├── Button.module.css
+│       ├── Card.js
+│       ├── Card.module.css
+│       ├── index.js
+│       ├── Input.js
+│       ├── Input.module.css
+│       ├── Modal.js
+│       ├── Modal.module.css
+│       ├── README.md
+│       ├── Select.js
+│       ├── Select.module.css
+│       ├── Spinner.js
+│       ├── Spinner.module.css
+│       ├── TextArea.js
+│       ├── TextArea.module.css
+│       ├── Toast.js
+│       └── Toast.module.css
+├── coverage
+│   ├── base.css
+│   ├── block-navigation.js
+│   ├── clover.xml
+│   ├── coverage-final.json
+│   ├── favicon.png
+│   ├── index.html
+│   ├── lcov-report
+│   │   ├── base.css
+│   │   ├── block-navigation.js
+│   │   ├── favicon.png
+│   │   ├── index.html
+│   │   ├── prettify.css
+│   │   ├── prettify.js
+│   │   ├── sort-arrow-sprite.png
+│   │   └── sorter.js
+│   ├── prettify.css
+│   ├── prettify.js
+│   ├── sort-arrow-sprite.png
+│   └── sorter.js
+├── cypress
+│   ├── e2e
+│   │   └── image_zoom.cy.js
+│   ├── screenshots
+│   └── videos
+├── cypress.config.js
+├── data
+│   ├── backups
+│   │   ├── backup.log
+│   │   ├── caminhar-db-backup_2026-01-26_23-44-49.db.gz
+│   │   ├── caminhar-pg-backup_2026-02-03_09-49-05.sql.gz
+│   │   ├── caminhar-pg-backup_2026-02-03_19-03-03.sql.gz
+│   │   ├── caminhar-pg-backup_2026-02-19_17-57-39.sql.gz
+│   │   ├── caminhar-pg-backup_2026-02-19_18-04-26.sql.gz
+│   │   ├── caminhar-pg-backup_2026-02-19_18-49-48.sql.gz
+│   │   ├── caminhar-pg-backup_2026-02-19_19-23-27.sql.gz
+│   │   ├── caminhar-pg-backup_2026-02-19_20-47-46.sql.gz
+│   │   ├── caminhar-pg-backup_2026-02-19_20-51-53.sql.gz
+│   │   ├── caminhar-pg-backup_2026-02-26_18-36-07.sql.gz
+│   │   ├── cron.log
+│   │   ├── posts-backup-2026-02-16T01-34-56-945Z.json
+│   │   ├── pre-restore-backup_2026-02-19_18-07-00.sql.gz
+│   │   └── pre-restore-backup_2026-02-19_20-53-02.sql.gz
+│   └── caminhar.db
+├── docs
+│   ├── API.md
+│   ├── ARCHITECTURE.md
+│   ├── BACKUP.md
+│   ├── CACHE.md
+│   ├── DEPLOY.md
+│   ├── REPORTS.md
+│   ├── SECURITY.md
+│   ├── SEO.md
+│   └── TESTING.md
+├── examples
+│   ├── blog-post-seo-example.js
+│   ├── homepage-seo-example.js
+│   ├── musicas-seo-example.js
+│   └── videos-seo-example.js
+├── hooks
+│   ├── index.js
+│   ├── useAdminCrud.js
+│   ├── usePerformanceMetrics.js
+│   └── useTheme.js
+├── index.js
+├── jest.config.js
+├── jest.setup.js
+├── jest.teardown.js
+├── lib
+│   ├── api
+│   │   ├── errors.js
+│   │   ├── index.js
+│   │   ├── middleware.js
+│   │   ├── README.md
+│   │   ├── response.js
+│   │   └── validate.js
+│   ├── auth.js
+│   ├── cache.js
+│   ├── db.js
+│   ├── domain
+│   │   ├── musicas
+│   │   ├── posts
+│   │   └── videos
+│   ├── middleware
+│   │   └── rate-limit-proxy.js
+│   ├── middleware.js
+│   ├── posts.js
+│   ├── redis.js
+│   └── seo
+│       └── config.js
+├── load-tests
+│   ├── authenticated-flow.js
+│   ├── backup-verification-test.js
+│   ├── cache-headers-test.js
+│   ├── cache-performance-test.js
+│   ├── create-post-flow.js
+│   ├── ddos-search-test.js
+│   ├── env-config.json
+│   ├── health-check.js
+│   ├── ip-spoofing-test.js
+│   ├── login-negative-test.js
+│   ├── memory-monitor.js
+│   ├── musicas-crud-test.js
+│   ├── musicas-filter-test.js
+│   ├── musicas-load-test.js
+│   ├── musicas-pagination-test.js
+│   ├── musicas-search-test.js
+│   ├── musicas-sort-test.js
+│   ├── pagination-test.js
+│   ├── posts-cursor-pagination-test.js
+│   ├── posts-tags-test.js
+│   ├── rate-limit-test.js
+│   ├── recovery-test.js
+│   ├── search-content-test.js
+│   ├── stress-test-combined.js
+│   ├── stress-test.js
+│   ├── upload-flow.js
+│   ├── videos-crud.js
+│   ├── videos-crud-test.js
+│   ├── videos-filter-test.js
+│   ├── videos-load-test.js
+│   ├── videos-pagination-test.js
+│   ├── videos-sort-test.js
+│   └── video-validation-test.js
+├── load-tests.yml
+├── __mocks__
+│   ├── cookie.js
+│   └── styleMock.js
+├── next.config.js
+├── next-sitemap.config.js
+├── package.json
+├── package-lock.json
+├── pages
+│   ├── admin
+│   │   ├── musicas-new.js
+│   │   ├── posts-new.js
+│   │   ├── projetos.js
+│   │   ├── videos.js
+│   │   └── videos-new.js
+│   ├── admin.js
+│   ├── api
+│   │   ├── admin
+│   │   │   ├── backups.js
+│   │   │   ├── cache.js
+│   │   │   ├── cache.test.js
+│   │   │   ├── musicas.js
+│   │   │   ├── posts.js
+│   │   │   ├── rate-limit.js
+│   │   │   └── videos.js
+│   │   ├── auth
+│   │   │   ├── check.js
+│   │   │   ├── login.js
+│   │   │   ├── login.v2.js
+│   │   │   └── logout.js
+│   │   ├── cleanup-test-data.js
+│   │   ├── musicas.js
+│   │   ├── placeholder-image.js
+│   │   ├── posts.js
+│   │   ├── settings.js
+│   │   ├── upload-image.js
+│   │   ├── v1
+│   │   │   ├── auth
+│   │   │   │   ├── check.js
+│   │   │   │   └── login.js
+│   │   │   ├── health.js
+│   │   │   ├── health.test.js
+│   │   │   ├── posts.js
+│   │   │   ├── settings.js
+│   │   │   ├── status.js
+│   │   │   ├── status.test.js
+│   │   │   ├── videos
+│   │   │   │   └── [id].js
+│   │   │   └── videos.js
+│   │   └── videos.js
+│   ├── _app.js
+│   ├── blog
+│   │   ├── index.js
+│   │   └── [slug].js
+│   ├── design-system.js
+│   ├── _document.js
+│   ├── index.js
+│   └── [slug].js
+├── public
+│   └── uploads
+│       ├── hero-image-1772141705599.webp
+│       └── post-image-1772105143883.png
+├── rate-limit-proxy.js
+├── README.md
+├── reports
+│   ├── k6-summaries
+│   │   ├── Carga_de_Músicas_(Leitura).json
+│   │   ├── Carga_de_Vídeos_(Leitura).json
+│   │   ├── Criação_de_Posts_(Escrita).json
+│   │   ├── CRUD_de_Músicas.html
+│   │   ├── CRUD_de_Músicas.json
+│   │   ├── CRUD_de_Vídeos.json
+│   │   ├── Fluxo_Autenticado.json
+│   │   └── memory_monitor.json
+│   └── load-report-1771550191786.html
+├── scripts
+│   ├── auth
+│   │   └── reset-password.js
+│   ├── backup.js
+│   ├── check-db-status.js
+│   ├── check-env.js
+│   ├── clean-k6-reports.js
+│   ├── clean-load-test-posts.js
+│   ├── clean-orphaned-images.js
+│   ├── clean-test-db.js
+│   ├── clear-cache.js
+│   ├── clear-db.js
+│   ├── clear-musicas.js
+│   ├── create-backup.js
+│   ├── cron-backup.js
+│   ├── db
+│   │   ├── verify-db-functions.js
+│   │   └── verify-migration.js
+│   ├── db-shell.js
+│   ├── diagnostics
+│   │   └── diagnose-hero.js
+│   ├── find-unused.js
+│   ├── generate-load-report.js
+│   ├── init-backup.js
+│   ├── init-musicas.js
+│   ├── init-posts.js
+│   ├── init-server.js
+│   ├── init-videos.js
+│   ├── maintenance
+│   │   ├── add-thumbnail-to-videos.js
+│   │   ├── backup-posts.js
+│   │   ├── clean-k6-videos.js
+│   │   ├── fix-hero-key.js
+│   │   ├── populate-video-thumbnails.js
+│   │   └── restore-posts.js
+│   ├── migrations
+│   │   └── 001-add-views-to-posts.js
+│   ├── monitor-disk-space.js
+│   ├── reset-admin-password.js
+│   ├── restore-backup.js
+│   ├── run-load-tests.sh
+│   ├── seed-all.js
+│   ├── seed-musicas.js
+│   ├── seed-posts.js
+│   ├── seed-videos.js
+│   ├── tests
+│   │   ├── manual-api-test.js
+│   │   └── manual-rate-limit.js
+│   ├── utils
+│   │   ├── cleanup-test-data.js
+│   │   ├── list-settings.js
+│   │   ├── list-table-columns.js
+│   │   └── update-setting.js
+│   └── validate-schema.js
+├── SEO_TOOLKIT_DOCUMENTATION.md
+├── styleMock.js
+├── styles
+│   ├── Admin.module.css
+│   ├── Blog.module.css
+│   ├── ContentTabs.module.css
+│   ├── DesignSystem.module.css
+│   ├── globals.css
+│   ├── globals-refactored.css
+│   ├── Home.module.css
+│   ├── MusicCard.module.css
+│   ├── MusicGallery.module.css
+│   ├── tokens
+│   │   ├── animations.js
+│   │   ├── borders.js
+│   │   ├── breakpoints.js
+│   │   ├── colors.js
+│   │   ├── index.js
+│   │   ├── opacity.js
+│   │   ├── README.md
+│   │   ├── shadows.js
+│   │   ├── sizes.js
+│   │   ├── spacing.js
+│   │   ├── typography.js
+│   │   └── zIndex.js
+│   ├── VideoCard.module.css
+│   └── VideoGallery.module.css
+├── __tests__
+│   ├── AdminPostManager.test.js
+│   ├── auth_check.test.js
+│   ├── auth.test.js
+│   ├── backups.api.test.js
+│   ├── clean-orphaned-images.test.js
+│   ├── clean-test-db.test.js
+│   ├── create-post-flow.test.js
+│   ├── db.test.js
+│   ├── find-unused.test.js
+│   ├── index.test.js
+│   ├── middleware.test.js
+│   ├── musicas.create.api.test.js
+│   ├── musicas.delete.api.test.js
+│   ├── musicas_flow.test.js
+│   ├── musicas.pagination.api.test.js
+│   ├── musicas_public_api.test.js
+│   ├── musicas_public_db_integration.test.js
+│   ├── musicas.update.api.test.js
+│   ├── posts.create.api.test.js
+│   ├── posts.integration.test.js
+│   ├── posts.update.api.test.js
+│   ├── settings-cache.test.js
+│   ├── [slug].test.js
+│   ├── status.api.test.js
+│   ├── upload-image.test.js
+│   ├── videos.create.api.test.js
+│   ├── videos.delete.api.test.js
+│   ├── videos_flow.test.js
+│   ├── videos.pagination.api.test.js
+│   ├── videos_public_api.test.js
+│   ├── videos_public_db_integration.test.js
+│   ├── videos.test.js
+│   └── videos_validation.test.js
+├── tests
+│   ├── examples
+│   │   ├── api-example.test.js
+│   │   ├── component-example.test.js
+│   │   └── simple-test.test.js
+│   ├── factories
+│   │   ├── index.js
+│   │   ├── music.js
+│   │   ├── post.js
+│   │   ├── user.js
+│   │   └── video.js
+│   ├── helpers
+│   │   ├── api.js
+│   │   ├── auth.js
+│   │   ├── index.js
+│   │   └── render.js
+│   ├── integration
+│   │   ├── api
+│   │   │   ├── musicas.create.test.js
+│   │   │   ├── musicas.delete.test.js
+│   │   │   ├── musicas.pagination.test.js
+│   │   │   ├── musicas.update.test.js
+│   │   │   ├── posts.delete.test.js
+│   │   │   ├── posts.general.test.js
+│   │   │   ├── posts.pagination.test.js
+│   │   │   ├── settings.api.test.js
+│   │   │   ├── settings.general.test.js
+│   │   │   ├── status.api.test.js
+│   │   │   ├── upload-image.test.js
+│   │   │   └── videos.delete.test.js
+│   │   ├── auth
+│   │   │   ├── auth.test.js
+│   │   │   ├── auth.v1.check.test.js
+│   │   │   └── auth.v1.login.test.js
+│   │   └── scripts
+│   │       └── verify-migration.test.js
+│   ├── matchers
+│   │   ├── index.js
+│   │   ├── toBeISODate.js
+│   │   ├── toBeValidJSON.js
+│   │   ├── toHaveHeader.js
+│   │   └── toHaveStatus.js
+│   ├── mocks
+│   │   ├── db.js
+│   │   ├── fetch.js
+│   │   ├── index.js
+│   │   └── next.js
+│   ├── README.md
+│   ├── setup.js
+│   └── unit
+│       ├── lib
+│       │   ├── api
+│       │   │   ├── errors.test.js
+│       │   │   └── response.test.js
+│       │   ├── backup
+│       │   │   ├── backup.available.test.js
+│       │   │   ├── backup.cleanup.test.js
+│       │   │   ├── backup.logs.test.js
+│       │   │   └── backup.operations.test.js
+│       │   ├── db
+│       │   │   └── saveImage.test.js
+│       │   ├── db.test.js
+│       │   └── domain
+│       │       ├── musicas
+│       │       │   ├── musicas.create.test.js
+│       │       │   ├── musicas.delete.test.js
+│       │       │   ├── musicas.query.test.js
+│       │       │   └── musicas.update.test.js
+│       │       ├── posts
+│       │       │   ├── posts.create.test.js
+│       │       │   ├── posts.delete.test.js
+│       │       │   ├── posts.query.test.js
+│       │       │   └── posts.update.test.js
+│       │       └── videos
+│       │           ├── videos.create.test.js
+│       │           ├── videos.delete.test.js
+│       │           ├── videos.query.test.js
+│       │           └── videos.update.test.js
+│       └── middleware.test.js
+└── tree.txt
+
+83 directories, 406 files

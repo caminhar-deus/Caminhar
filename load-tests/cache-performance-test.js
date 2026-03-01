@@ -55,7 +55,7 @@ export default function (token) {
 
   // 2. Teste Posts (Público + Cache)
   // Esta rota usa getOrSetCache com chave 'posts:public:all'
-  const postsRes = http.get(`${BASE_URL}/api/v1/posts`, {
+  const postsRes = http.get(`${BASE_URL}/api/posts`, {
     tags: { type: 'cached_posts' },
   });
 

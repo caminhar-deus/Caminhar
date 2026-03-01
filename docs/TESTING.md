@@ -198,6 +198,7 @@ Estes testes verificam a integração entre diferentes partes do sistema, como A
 - **Middleware**: Rate Limiting (com fallback Redis/Memória) e Whitelist.
 - **APIs**: `/api/admin/posts`, `/api/admin/backups`, `/api/settings`, `/api/v1/status`, e `/api/upload-image`.
 - **Migração de Banco de Dados**: Testes para validação da migração SQLite → PostgreSQL.
+- **Gerenciamento de Vídeos**: Testes de integração para criação, exclusão e paginação de vídeos (`/api/videos`).
 - **Autenticação JWT**: Testes de validação de tokens e cookies HTTP-only.
 - **Upload de Arquivos**: Testes para validação de tipos MIME, tamanho de arquivos e armazenamento.
 - **Cache de Imagens**: Sistema de cache otimizado para melhor performance.
@@ -261,6 +262,16 @@ Estes testes simulam múltiplos usuários acessando o sistema simultaneamente pa
 
 #### Cenários Disponíveis:
 
+**Execução Completa (Todos os Cenários)**:
+
+Executa todos os testes de carga em sequência, limpando os relatórios antigos antes de começar. É o comando recomendado para uma validação completa.
+
+```bash
+npm run test:load:all
+```
+
+---
+
 1. **Health Check (Básico)**:
    Verifica se a API responde rapidamente.
    ```bash
@@ -301,19 +312,19 @@ Estes testes simulam múltiplos usuários acessando o sistema simultaneamente pa
 7. **Teste de Busca de Conteúdo**:
    Valida se a API de busca retorna resultados relevantes para os termos pesquisados.
    ```bash
-   k6 run load-tests/search-content-test.js
+   npm run test:load:search
    ```
 
 8. **Teste de Estresse Combinado**:
    Executa carga progressiva (CRUD) enquanto monitora o uso de memória da API. Gera relatório HTML.
    ```bash
-   k6 run load-tests/stress-test-combined.js
+   npm run test:load:stress
    ```
 
 9. **Simulação de DDoS**:
    Simula um ataque de negação de serviço na rota de busca.
    ```bash
-   k6 run load-tests/ddos-search-test.js
+   npm run test:load:ddos
    ```
 
 10. **Teste de IP Spoofing**:
@@ -325,13 +336,13 @@ Estes testes simulam múltiplos usuários acessando o sistema simultaneamente pa
 11. **Teste de Recuperação (Chaos)**:
     Monitora o tempo de recuperação do sistema após falha.
     ```bash
-    k6 run load-tests/recovery-test.js
+    npm run test:load:recovery
     ```
 
 12. **Validação de Headers de Cache**:
     Verifica diretivas de cache (`s-maxage`, `stale-while-revalidate`).
     ```bash
-    k6 run load-tests/cache-headers-test.js
+    npm run test:load:cache:headers
     ```
 
 13. **Teste Negativo de Login**:
@@ -343,13 +354,13 @@ Estes testes simulam múltiplos usuários acessando o sistema simultaneamente pa
 14. **Teste de Rate Limit**:
     Verifica se a API retorna 429 após exceder o limite de requisições.
     ```bash
-    k6 run load-tests/rate-limit-test.js
+    npm run test:load:ratelimit
     ```
 
 15. **Verificação de Backup**:
     Valida a integridade binária (Magic Bytes) dos arquivos de backup.
     ```bash
-    k6 run load-tests/backup-verification-test.js
+    npm run test:load:backup
     ```
 
 16. **Validação de Paginação**:
@@ -361,7 +372,7 @@ Estes testes simulam múltiplos usuários acessando o sistema simultaneamente pa
 17. **Filtro de Vídeos**:
     Valida se a API de vídeos filtra corretamente os resultados por título.
     ```bash
-    k6 run load-tests/videos-filter-test.js
+    npm run test:load:videos:filter
     ```
 
 18. **Validação de URL de Vídeo**:
@@ -379,13 +390,13 @@ Estes testes simulam múltiplos usuários acessando o sistema simultaneamente pa
 20. **Busca de Posts por Tag**:
     Valida se a API de posts filtra corretamente por tags.
     ```bash
-    k6 run load-tests/posts-tags-test.js
+    npm run test:load:posts:tags
     ```
 
 21. **Paginação por Cursor (Keyset)**:
     Valida se a API de posts suporta paginação eficiente via cursor.
     ```bash
-    k6 run load-tests/posts-cursor-pagination-test.js
+    npm run test:load:posts:cursor
     ```
 
 22. **Paginação de Vídeos**:
@@ -403,19 +414,19 @@ Estes testes simulam múltiplos usuários acessando o sistema simultaneamente pa
 24. **Filtro de Músicas por Artista**:
     Valida se a API de músicas filtra corretamente os resultados por artista.
     ```bash
-    k6 run load-tests/musicas-filter-test.js
+    npm run test:load:musicas:filter
     ```
 
 25. **Busca de Músicas por Título**:
     Valida se a API de músicas permite buscar músicas pelo título.
     ```bash
-    k6 run load-tests/musicas-search-test.js
+    npm run test:load:musicas:search
     ```
 
 26. **Ordenação de Vídeos**:
     Valida se a API de vídeos ordena corretamente por data de criação/publicação.
     ```bash
-    k6 run load-tests/videos-sort-test.js
+    npm run test:load:videos:sort
     ```
 
 #### Relatórios e Visualização

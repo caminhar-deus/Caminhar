@@ -4,9 +4,9 @@
 
 O sistema implementa cache via Redis para rotas de leitura frequente, seguindo o padrão **Cache-Aside**. O cache está configurado para as seguintes rotas:
 
-- `GET /api/v1/settings` - Configurações do site (TTL: 30 minutos)
-- `GET /api/v1/posts` - Posts públicos do blog (TTL: 1 hora)
-- `GET /api/admin/musicas` - Músicas do admin (TTL: 15 minutos)
+- `GET /api/settings` - Configurações do site (TTL: 30 minutos)
+- `GET /api/posts` - Posts públicos do blog (TTL: 1 hora)
+- `GET /api/musicas` - Músicas públicas (TTL: 1 hora)
 
 ## Arquitetura
 
@@ -14,15 +14,15 @@ O sistema implementa cache via Redis para rotas de leitura frequente, seguindo o
 
 As chaves no Redis seguem um padrão de namespace:
 
-- **Settings**: `settings:v1:all` (todas as configurações) e `settings:v1:{key}` (configuração específica)
+- **Settings**: `settings:all` (todas as configurações) e `settings:{key}` (configuração específica)
 - **Posts**: `posts:public:all` (todos os posts públicos)
-- **Musicas**: `musicas:admin:all` (todas as músicas do admin)
+- **Musicas**: `musicas:public:all` (todas as músicas públicas)
 
 ### TTL (Time To Live)
 
 - **Settings**: 1800 segundos (30 minutos) - Configurações mudam raramente
 - **Posts**: 3600 segundos (1 hora) - Conteúdo de blog é estático após publicação
-- **Musicas**: 900 segundos (15 minutos) - Dados administrativos podem mudar com mais frequência
+- **Musicas**: 3600 segundos (1 hora) - Conteúdo público estático
 
 ## Implementação
 

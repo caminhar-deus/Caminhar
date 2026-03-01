@@ -123,7 +123,7 @@ export function stressTestFlow(data) {
   
   http.put(`${BASE_URL}/api/v1/videos/${videoId}`, updatePayload, { 
     headers: authHeaders, 
-    tags: { flow: 'stress_update' } 
+    tags: { flow: 'stress_update', name: 'UpdateVideo' } 
   });
 
   sleep(0.5);
@@ -131,7 +131,7 @@ export function stressTestFlow(data) {
   // 3. DELETAR (DELETE)
   http.del(`${BASE_URL}/api/v1/videos/${videoId}`, null, { 
     headers: authHeaders, 
-    tags: { flow: 'stress_delete' } 
+    tags: { flow: 'stress_delete', name: 'DeleteVideo' } 
   });
 }
 

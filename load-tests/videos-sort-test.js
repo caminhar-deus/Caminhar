@@ -17,18 +17,25 @@ const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
 export default function () {
   // Solicita vídeos ordenados por data de criação decrescente (mais recentes primeiro)
   // Assume que a API suporta ?sort=created_at&order=desc
-  const res = http.get(`${BASE_URL}/api/v1/videos?sort=created_at&order=desc`);
+  // Ajustado para a rota pública correta (/api/videos) em vez de /api/v1/videos
+  const res = http.get(`${BASE_URL}/api/videos?sort=created_at&order=desc`);
 
   check(res, {
     'Status é 200': (r) => r.status === 200,
     'Retornou lista de vídeos': (r) => {
-      const body = r.json();
-      return Array.isArray(body.data) || Array.isArray(body);
+      try {
+        const body = r.json();
+        return Array.isArray(body.data) || Array.isArray(body);
+      } catch (e) {
+        return false;
+      }
     },
     'Ordenação correta (Decrescente)': (r) => {
-      const body = r.json();
+      let body; try { body = r.json(); } catch (e) { return false; }
       const videos = body.data || body;
       
+      if (!Array.isArray(videos)) return false;
+
       if (videos.length < 2) {
         console.warn('⚠️ Poucos vídeos para validar ordenação. Adicione mais dados.');
         return true; // Não é falha, mas inconclusivo

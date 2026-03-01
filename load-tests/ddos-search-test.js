@@ -37,8 +37,8 @@ export default function () {
   const uniqueParam = Date.now(); 
 
   // Dispara a requisição GET contra a rota de posts (busca)
-  const res = http.get(`${BASE_URL}/api/v1/posts?search=${term}&_t=${uniqueParam}`, {
-    tags: { type: 'ddos_search' },
+  const res = http.get(`${BASE_URL}/api/posts?search=${encodeURIComponent(term)}&_t=${uniqueParam}`, {
+    tags: { type: 'ddos_search', name: 'DDoS_Search' },
   });
 
   // Alimenta a métrica: true se for erro 5xx, false caso contrário

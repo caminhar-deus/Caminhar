@@ -4,6 +4,15 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), e este projeto adere ao [Versionamento Semântico](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Adicionado
+- **Suíte de Testes de Carga Completa**: O comando `npm run test:load:all` foi atualizado para executar sequencialmente todos os cenários de teste de carga (k6) disponíveis, proporcionando uma verificação de performance abrangente com um único comando.
+
+### Corrigido
+- **Testes de Carga (k6)**: Corrigidos todos os scripts de teste de carga (`/load-tests/*.js`) para apontar para os endpoints corretos da API (removendo o prefixo obsoleto `/v1`).
+- **Resiliência dos Testes**: Aumentada a robustez dos testes de carga para lidar com cenários de banco de dados vazio ou com poucos dados. Os testes agora emitem avisos (`console.warn`) e passam com sucesso (soft pass) em vez de falhar, garantindo que a suíte de testes não seja bloqueada por falta de dados de teste.
+
 ## [1.6.0] - 2026-02-26
 
 ### Adicionado

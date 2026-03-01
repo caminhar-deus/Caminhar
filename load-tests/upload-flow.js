@@ -37,11 +37,22 @@ export function setup() {
     throw new Error(`Login falhou: ${loginRes.status} ${loginRes.body}`);
   }
 
-  return { token: loginRes.json('data.token') };
+  const body = loginRes.json();
+  // Tenta extrair o token de diferentes estruturas comuns (data.token ou token direto)
+  const token = (body.data && body.data.token) || body.token;
+
+  if (!token) {
+    console.error('⚠️ Login bem-sucedido, mas token não encontrado na resposta:', JSON.stringify(body));
+  }
+
+  return { token };
 }
 
 export default function (data) {
   const token = data.token;
+  if (!token) {
+    exec.test.abort('❌ Abortando: Token de autenticação não disponível.');
+  }
   
   // Decodifica o base64 para binário (ArrayBuffer)
   const fileData = b64decode(GIF_B64);
@@ -51,7 +62,8 @@ export default function (data) {
   
   // O k6 lida automaticamente com o boundary do multipart se passarmos um objeto com http.file
   const payload = {
-    file: http.file(fileData, fileName, 'image/gif'),
+    image: http.file(fileData, fileName, 'image/gif'),
+    type: 'post',
   };
 
   const res = http.post(`${BASE_URL}/api/upload-image`, payload, {
@@ -63,8 +75,18 @@ export default function (data) {
 
   const success = check(res, {
     'status é 200': (r) => r.status === 200,
-    'retorna url': (r) => r.json('url') !== undefined || r.json('data.url') !== undefined || r.json('path') !== undefined,
+    'retorna url': (r) => {
+      try {
+        return r.json('url') !== undefined || r.json('data.url') !== undefined || r.json('path') !== undefined;
+      } catch (e) {
+        return false;
+      }
+    },
   });
+
+  if (!success && __ITER === 0) {
+    console.log(`❌ Falha no upload. Status: ${res.status}. Response: ${res.body}`);
+  }
 
   // Verificação adicional: Tenta baixar a imagem recém-criada para garantir que foi salva no disco
   if (success) {

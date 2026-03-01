@@ -15,7 +15,8 @@ const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
 
 export default function () {
   // 1. Requisita a Página 1 (limit=5)
-  const resPage1 = http.get(`${BASE_URL}/api/v1/posts?page=1&limit=5`);
+  // Ajustado para a rota pública correta (/api/posts) em vez de /api/v1/posts
+  const resPage1 = http.get(`${BASE_URL}/api/posts?page=1&limit=5`);
   
   check(resPage1, {
     'Página 1: status 200': (r) => r.status === 200,
@@ -24,13 +25,13 @@ export default function () {
   });
 
   const postsPage1 = resPage1.json('data') || resPage1.json();
-  // Extrai os IDs da página 1 para comparação
-  const idsPage1 = postsPage1.map(p => p.id);
+  // Extrai os IDs da página 1 para comparação (com verificação de segurança)
+  const idsPage1 = Array.isArray(postsPage1) ? postsPage1.map(p => p.id) : [];
 
   sleep(1);
 
   // 2. Requisita a Página 2 (limit=5)
-  const resPage2 = http.get(`${BASE_URL}/api/v1/posts?page=2&limit=5`);
+  const resPage2 = http.get(`${BASE_URL}/api/posts?page=2&limit=5`);
 
   check(resPage2, {
     'Página 2: status 200': (r) => r.status === 200,
