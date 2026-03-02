@@ -152,6 +152,7 @@
 │   ├── homepage-seo-example.js
 │   ├── musicas-seo-example.js
 │   └── videos-seo-example.js
+├── GEMINI.md
 ├── hooks
 │   ├── index.js
 │   ├── useAdminCrud.js
@@ -367,6 +368,7 @@
 │   │   └── update-setting.js
 │   └── validate-schema.js
 ├── SEO_TOOLKIT_DOCUMENTATION.md
+├── skills-lock.json
 ├── styleMock.js
 ├── styles
 │   ├── Admin.module.css
@@ -508,4 +510,4 @@
 │       └── middleware.test.js
 └── tree.txt
 
-83 directories, 426 files
+83 directories, 428 files
