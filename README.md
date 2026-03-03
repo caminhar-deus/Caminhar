@@ -11,12 +11,12 @@ Para detalhes técnicos específicos, consulte as documentações dedicadas na p
 |--------------|-------------|-------------------|--------------|
 | **Arquitetura** | Visão completa da estrutura do projeto, incluindo Frontend, Backend, fluxo de dados, Design System e padrões de código. | `npm run dev`, `npm run build` | Desenvolvedores, Arquitetos |
 | **Guia de Deploy** | Passo a passo para implantar a aplicação em servidores (VPS, Hostinger) e na Vercel. Inclui configuração de ambiente e Nginx. | `pm2 start`, `nginx -t` | DevOps, Administradores |
-| **Testes & Qualidade** | Detalhes sobre a suíte de testes: unitários (Jest), integração, carga (k6) e E2E (Cypress). Garante mais de 90% de cobertura. | `npm test`, `npm run cypress:run`, `npm run test:load` | QA, Desenvolvedores |
+| **Testes & Qualidade** | Detalhes sobre a suíte de testes: unitários (Jest), integração, carga (k6) e E2E (Cypress). Garante mais de 90% de cobertura. | `npm test`, `npm run cypress:run`, `npm run test:load:all` | QA, Desenvolvedores |
 | **API Reference** | Documentação da API RESTful (v1) para consumo externo. Detalha endpoints, autenticação, schemas e exemplos. | `curl`, `fetch` | Desenvolvedores Frontend, Integrações |
 | **Sistema de Backup** | Guia do sistema de backups automáticos do PostgreSQL, incluindo comandos para criar, restaurar e verificar backups. | `npm run create-backup`, `npm run restore-backup` | Administradores, DevOps |
 | **Cache & Performance** | Explicação da estratégia de cache com Redis (Upstash), incluindo chaves, TTLs e invalidação para otimizar a performance. | `npm run clear-cache` | Desenvolvedores, DevOps |
 | **SEO Toolkit** | Documentação do kit de SEO, cobrindo componentes de meta tags, dados estruturados (Schema.org) e otimização de performance. | `npm run test:seo` | Marketing, Desenvolvedores |
-| **Relatórios Técnicos** | Histórico de análises técnicas, benchmarks de performance (k6), e relatórios de migração e evolução da arquitetura. | `k6 run ...` | Gerentes, Stakeholders |
+| **Relatórios Técnicos** | Histórico de análises técnicas, benchmarks de performance (k6), e relatórios de migração e evolução da arquitetura. | `npm run test:load:all` | Gerentes, Stakeholders |
 | **Segurança** | Políticas de segurança, autenticação, proteção de API e infraestrutura. | `npm run test:security` | Security Ops, Desenvolvedores |
 
 ---
@@ -26,6 +26,7 @@ Para detalhes técnicos específicos, consulte as documentações dedicadas na p
 - **Página Principal (HOME)**: Exibe título e subtítulo dinâmicos, frase de apresentação e imagem hero configurável.
 - **Painel Administrativo (ADMIN)**: Área protegida para gerenciar posts, músicas, vídeos e backups.
 - **ContentTabs**: Navegação organizada em abas (Reflexões, Músicas, Vídeos).
+- **Lightbox de Imagens**: Visualização expandida de imagens nos posts com zoom e navegação intuitiva.
 - **Integrações**: Suporte a Spotify e YouTube.
 - **Performance**: Cache de API (Redis), otimização de imagens e lazy loading.
 - **Segurança**: Autenticação JWT, Cookies HTTP-only e proteção contra força bruta.
