@@ -1,4 +1,6 @@
-# 🛡️ Segurança - O Caminhar com Deus
+# 🛡️ Segurança - O Caminhar com Deus v1.2.1
+
+## 🚀 Versão: v1.2.1
 
 Este documento descreve as práticas, políticas e implementações de segurança adotadas no projeto "O Caminhar com Deus".
 
@@ -71,6 +73,72 @@ Para proteger contra ataques de força bruta e DDoS (Negação de Serviço), imp
 ### Logs
 - **Auditoria**: Logs de acesso e erro são mantidos para auditoria forense em caso de incidentes.
 - **Privacidade**: Garantimos que dados sensíveis (PII, senhas, tokens) não sejam logados.
+
+## 8. Escopo de Segurança
+
+### Cobertura
+- Aplicações web e APIs
+- Infraestrutura e servidores
+- Banco de Dados e backups
+- Uploads e arquivos estáticos
+- Autenticação e autorização
+
+### Exclusões
+- Segurança física dos servidores
+- Segurança de redes de terceiros
+- Segurança de dispositivos dos usuários
+
+## 9. Resposta a Incidentes de Segurança
+
+### Procedimentos
+1. **Identificação**: Detecção de incidente de segurança
+2. **Contenção**: Isolamento da ameaça
+3. **Eradicação**: Remoção da causa raiz
+4. **Recuperação**: Restauração dos serviços
+5. **Lições Aprendidas**: Análise pós-incidente
+
+### Comunicação
+- **Internamente**: Comunicação imediata com equipe de segurança
+- **Externamente**: Comunicação com usuários conforme necessidade
+- **Autoridades**: Notificação conforme requisitos legais
+
+## 10. Conformidade Legal
+
+### LGPD (Lei Geral de Proteção de Dados)
+- Tratamento de dados pessoais conforme requisitos da LGPD
+- Direitos dos titulares de dados garantidos
+- Notificação de incidentes em até 72 horas
+
+### GDPR (Regulamento Geral de Proteção de Dados)
+- Conformidade para usuários da União Europeia
+- Consentimento informado para tratamento de dados
+- Direito de acesso, retificação e exclusão de dados
+
+## 11. Exemplos de Código Seguro
+
+### Validação de Entrada
+```javascript
+// Seguro: Uso de Zod para validação
+const schema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8)
+});
+
+// Inseguro: Validação manual
+// if (req.body.email && req.body.password) { ... }
+```
+
+### Consulta ao Banco de Dados
+```javascript
+// Seguro: Queries parametrizadas
+const result = await db.query(
+  'SELECT * FROM users WHERE email = $1',
+  [email]
+);
+
+// Inseguro: Concatenação direta
+// const result = await db.query(`SELECT * FROM users WHERE email = '${email}'`);
+```
 
 ## 7. Política de Vulnerabilidades
 

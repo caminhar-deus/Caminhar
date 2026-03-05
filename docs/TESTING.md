@@ -1,4 +1,6 @@
-# Documentação de Testes - O Caminhar com Deus
+# Documentação de Testes - O Caminhar com Deus v1.2.1
+
+## 🚀 Versão: v1.2.1
 
 Este documento detalha a estratégia de testes, ferramentas utilizadas e procedimentos para garantir a qualidade e estabilidade do projeto.
 
@@ -11,6 +13,593 @@ Este documento detalha a estratégia de testes, ferramentas utilizadas e procedi
 - **k6**: Para testes de carga e performance.
 - **Cypress**: Para testes end-to-end e automação de navegador.
 - **Playwright**: Para testes de navegador modernos e cross-browser.
+
+## 📝 Exemplos de Código de Testes
+
+### Teste Unitário de Componente
+```javascript
+// Exemplo de teste unitário para ContentTabs
+describe('ContentTabs', () => {
+  test('should render correctly', () => {
+    render(<ContentTabs />);
+    expect(screen.getByText('Reflexões & Estudos')).toBeInTheDocument();
+    expect(screen.getByText('Músicas')).toBeInTheDocument();
+    expect(screen.getByText('Vídeos')).toBeInTheDocument();
+  });
+
+  test('should switch tabs correctly', async () => {
+    render(<ContentTabs />);
+    
+    const musicasTab = screen.getByText('Músicas');
+    await userEvent.click(musicasTab);
+    
+    expect(screen.getByText('Carregando músicas...')).toBeInTheDocument();
+  });
+});
+```
+
+### Teste de API com node-mocks-http
+```javascript
+// Exemplo de teste de API para upload de imagem
+const handler = require('../pages/api/upload-image');
+
+describe('/api/upload-image', () => {
+  test('should upload image successfully', async () => {
+    const req = createMocks({
+      method: 'POST',
+      headers: {
+        'content-type': 'multipart/form-data'
+      },
+      body: mockFormData
+    });
+
+    const res = createMocks();
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(200);
+    expect(res._getJSONData()).toEqual({
+      success: true,
+      filename: 'test-image.jpg'
+    });
+  });
+
+  test('should reject invalid file type', async () => {
+    const req = createMocks({
+      method: 'POST',
+      headers: {
+        'content-type': 'multipart/form-data'
+      },
+      body: mockInvalidFormData
+    });
+
+    const res = createMocks();
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(400);
+    expect(res._getJSONData()).toEqual({
+      error: 'Tipo de arquivo não permitido'
+    });
+  });
+});
+```
+
+### Teste de Integração com PostgreSQL
+```javascript
+// Exemplo de teste de integração para posts
+const { Pool } = require('pg');
+
+describe('Posts Integration', () => {
+  let pool;
+
+  beforeAll(async () => {
+    pool = new Pool({
+      host: process.env.TEST_DB_HOST,
+      port: process.env.TEST_DB_PORT,
+      database: process.env.TEST_DB_NAME,
+      user: process.env.TEST_DB_USER,
+      password: process.env.TEST_DB_PASS
+    });
+  });
+
+  afterAll(async () => {
+    await pool.end();
+  });
+
+  test('should create and retrieve post', async () => {
+    const postData = {
+      title: 'Test Post',
+      content: 'Test Content',
+      published: true
+    };
+
+    const result = await pool.query(
+      'INSERT INTO posts (title, content, published) VALUES ($1, $2, $3) RETURNING *',
+      [postData.title, postData.content, postData.published]
+    );
+
+    expect(result.rows[0].title).toBe(postData.title);
+    expect(result.rows[0].content).toBe(postData.content);
+    expect(result.rows[0].published).toBe(postData.published);
+  });
+});
+```
+
+### Teste de Cache com Redis
+```javascript
+// Exemplo de teste de cache
+const Redis = require('ioredis');
+
+describe('Cache System', () => {
+  let redis;
+
+  beforeAll(() => {
+    redis = new Redis(process.env.TEST_REDIS_URL);
+  });
+
+  afterAll(async () => {
+    await redis.flushall();
+    await redis.disconnect();
+  });
+
+  test('should cache and retrieve data', async () => {
+    const key = 'test-key';
+    const value = { data: 'test-value' };
+
+    await redis.set(key, JSON.stringify(value), 'EX', 300);
+
+    const cached = await redis.get(key);
+    expect(JSON.parse(cached)).toEqual(value);
+  });
+
+  test('should handle cache miss', async () => {
+    const key = 'non-existent-key';
+    const cached = await redis.get(key);
+    expect(cached).toBeNull();
+  });
+});
+```
+
+### Teste E2E com Cypress
+```javascript
+// Exemplo de teste E2E para autenticação
+describe('Authentication Flow', () => {
+  beforeEach(() => {
+    cy.visit('/admin');
+  });
+
+  it('should login successfully', () => {
+    cy.get('[data-cy=username]').type('admin');
+    cy.get('[data-cy=password]').type('test123');
+    cy.get('[data-cy=login-button]').click();
+
+    cy.url().should('include', '/admin');
+    cy.get('[data-cy=dashboard]').should('be.visible');
+  });
+
+  it('should show error for invalid credentials', () => {
+    cy.get('[data-cy=username]').type('admin');
+    cy.get('[data-cy=password]').type('wrong-password');
+    cy.get('[data-cy=login-button]').click();
+
+    cy.get('[data-cy=error-message]').should('contain', 'Credenciais inválidas');
+  });
+});
+```
+
+### Teste de Carga com k6
+```javascript
+// Exemplo de teste de carga para API de posts
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+export const options = {
+  stages: [
+    { duration: '30s', target: 20 },
+    { duration: '1m', target: 20 },
+    { duration: '30s', target: 0 }
+  ],
+  thresholds: {
+    http_req_duration: ['p(95)<500'],
+    http_req_failed: ['rate<0.01']
+  }
+};
+
+export default function() {
+  const response = http.get(`${__ENV.BASE_URL}/api/v1/posts`);
+  
+  check(response, {
+    'status is 200': (r) => r.status === 200,
+    'response time < 500ms': (r) => r.timings.duration < 500,
+    'has posts data': (r) => JSON.parse(r.body).posts.length > 0
+  });
+
+  sleep(1);
+}
+```
+
+## 🔧 Configuração de Mocks
+
+### Mocks de Banco de Dados
+```javascript
+// __mocks__/pg.js
+const mockQuery = jest.fn();
+const mockPool = {
+  query: mockQuery,
+  connect: jest.fn(),
+  end: jest.fn()
+};
+
+module.exports = {
+  Pool: jest.fn(() => mockPool),
+  mockQuery
+};
+```
+
+### Mocks de Redis
+```javascript
+// __mocks__/redis.js
+const mockRedis = {
+  get: jest.fn(),
+  set: jest.fn(),
+  del: jest.fn(),
+  exists: jest.fn(),
+  expire: jest.fn(),
+  flushall: jest.fn()
+};
+
+module.exports = jest.fn(() => mockRedis);
+```
+
+### Mocks de Autenticação
+```javascript
+// __mocks__/bcrypt.js
+module.exports = {
+  hash: jest.fn().mockResolvedValue('hashed-password'),
+  compare: jest.fn().mockResolvedValue(true)
+};
+
+// __mocks__/jsonwebtoken.js
+module.exports = {
+  sign: jest.fn().mockReturnValue('mock-jwt-token'),
+  verify: jest.fn().mockReturnValue({ userId: 1, username: 'admin' })
+};
+```
+
+### Mocks Globais
+```javascript
+// jest.setup.js
+jest.mock('pg');
+jest.mock('redis');
+jest.mock('bcrypt');
+jest.mock('jsonwebtoken');
+
+// Mocks específicos por teste
+beforeEach(() => {
+  jest.clearAllMocks();
+});
+```
+
+## 📊 Gerenciamento de Dados de Teste
+
+### Fixtures de Teste
+```javascript
+// fixtures/posts.js
+module.exports = {
+  validPost: {
+    title: 'Test Post',
+    content: 'Test Content',
+    published: true
+  },
+  invalidPost: {
+    title: '',
+    content: '',
+    published: null
+  }
+};
+```
+
+### Factories de Teste
+```javascript
+// factories/postFactory.js
+function createPost(overrides = {}) {
+  return {
+    title: 'Test Post',
+    content: 'Test Content',
+    published: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides
+  };
+}
+
+module.exports = { createPost };
+```
+
+### Seeds de Teste
+```javascript
+// seeds/test-seeds.js
+const { Pool } = require('pg');
+
+async function seedTestDatabase() {
+  const pool = new Pool({
+    host: process.env.TEST_DB_HOST,
+    port: process.env.TEST_DB_PORT,
+    database: process.env.TEST_DB_NAME,
+    user: process.env.TEST_DB_USER,
+    password: process.env.TEST_DB_PASS
+  });
+
+  // Inserir dados de teste
+  await pool.query(`
+    INSERT INTO posts (title, content, published) VALUES
+    ('Post de Teste 1', 'Conteúdo de teste 1', true),
+    ('Post de Teste 2', 'Conteúdo de teste 2', false)
+    ON CONFLICT DO NOTHING;
+  `);
+
+  await pool.query(`
+    INSERT INTO musicas (title, artist, spotify_url, created_at) VALUES
+    ('Música de Teste 1', 'Artista 1', 'https://open.spotify.com/track/123', NOW()),
+    ('Música de Teste 2', 'Artista 2', 'https://open.spotify.com/track/456', NOW())
+    ON CONFLICT DO NOTHING;
+  `);
+
+  await pool.end();
+}
+
+module.exports = { seedTestDatabase };
+```
+
+### Limpeza de Dados de Teste
+```javascript
+// scripts/cleanup-test-data.js
+const { Pool } = require('pg');
+
+async function cleanupTestData() {
+  const pool = new Pool({
+    host: process.env.TEST_DB_HOST,
+    port: process.env.TEST_DB_PORT,
+    database: process.env.TEST_DB_NAME,
+    user: process.env.TEST_DB_USER,
+    password: process.env.TEST_DB_PASS
+  });
+
+  // Limpar dados de teste
+  await pool.query('DELETE FROM posts WHERE title LIKE \'%Teste%\';');
+  await pool.query('DELETE FROM musicas WHERE title LIKE \'%Teste%\';');
+  await pool.query('DELETE FROM videos WHERE title LIKE \'%Teste%\';');
+
+  await pool.end();
+}
+
+if (require.main === module) {
+  cleanupTestData().catch(console.error);
+}
+
+module.exports = { cleanupTestData };
+```
+
+### Configuração de Dados de Teste
+```javascript
+// jest.setup.js
+const { seedTestDatabase } = require('./seeds/test-seeds');
+
+beforeAll(async () => {
+  await seedTestDatabase();
+});
+
+afterAll(async () => {
+  const { cleanupTestData } = require('./scripts/cleanup-test-data');
+  await cleanupTestData();
+});
+```
+
+## 📝 Exemplos de Código de Testes
+
+### Teste Unitário de Componente
+```javascript
+// Exemplo de teste unitário para ContentTabs
+describe('ContentTabs', () => {
+  test('should render correctly', () => {
+    render(<ContentTabs />);
+    expect(screen.getByText('Reflexões & Estudos')).toBeInTheDocument();
+    expect(screen.getByText('Músicas')).toBeInTheDocument();
+    expect(screen.getByText('Vídeos')).toBeInTheDocument();
+  });
+
+  test('should switch tabs correctly', async () => {
+    render(<ContentTabs />);
+    
+    const musicasTab = screen.getByText('Músicas');
+    await userEvent.click(musicasTab);
+    
+    expect(screen.getByText('Carregando músicas...')).toBeInTheDocument();
+  });
+});
+```
+
+### Teste de API com node-mocks-http
+```javascript
+// Exemplo de teste de API para upload de imagem
+const handler = require('../pages/api/upload-image');
+
+describe('/api/upload-image', () => {
+  test('should upload image successfully', async () => {
+    const req = createMocks({
+      method: 'POST',
+      headers: {
+        'content-type': 'multipart/form-data'
+      },
+      body: mockFormData
+    });
+
+    const res = createMocks();
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(200);
+    expect(res._getJSONData()).toEqual({
+      success: true,
+      filename: 'test-image.jpg'
+    });
+  });
+
+  test('should reject invalid file type', async () => {
+    const req = createMocks({
+      method: 'POST',
+      headers: {
+        'content-type': 'multipart/form-data'
+      },
+      body: mockInvalidFormData
+    });
+
+    const res = createMocks();
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(400);
+    expect(res._getJSONData()).toEqual({
+      error: 'Tipo de arquivo não permitido'
+    });
+  });
+});
+```
+
+### Teste de Integração com PostgreSQL
+```javascript
+// Exemplo de teste de integração para posts
+const { Pool } = require('pg');
+
+describe('Posts Integration', () => {
+  let pool;
+
+  beforeAll(async () => {
+    pool = new Pool({
+      host: process.env.TEST_DB_HOST,
+      port: process.env.TEST_DB_PORT,
+      database: process.env.TEST_DB_NAME,
+      user: process.env.TEST_DB_USER,
+      password: process.env.TEST_DB_PASS
+    });
+  });
+
+  afterAll(async () => {
+    await pool.end();
+  });
+
+  test('should create and retrieve post', async () => {
+    const postData = {
+      title: 'Test Post',
+      content: 'Test Content',
+      published: true
+    };
+
+    const result = await pool.query(
+      'INSERT INTO posts (title, content, published) VALUES ($1, $2, $3) RETURNING *',
+      [postData.title, postData.content, postData.published]
+    );
+
+    expect(result.rows[0].title).toBe(postData.title);
+    expect(result.rows[0].content).toBe(postData.content);
+    expect(result.rows[0].published).toBe(postData.published);
+  });
+});
+```
+
+### Teste de Cache com Redis
+```javascript
+// Exemplo de teste de cache
+const Redis = require('ioredis');
+
+describe('Cache System', () => {
+  let redis;
+
+  beforeAll(() => {
+    redis = new Redis(process.env.TEST_REDIS_URL);
+  });
+
+  afterAll(async () => {
+    await redis.flushall();
+    await redis.disconnect();
+  });
+
+  test('should cache and retrieve data', async () => {
+    const key = 'test-key';
+    const value = { data: 'test-value' };
+
+    await redis.set(key, JSON.stringify(value), 'EX', 300);
+
+    const cached = await redis.get(key);
+    expect(JSON.parse(cached)).toEqual(value);
+  });
+
+  test('should handle cache miss', async () => {
+    const key = 'non-existent-key';
+    const cached = await redis.get(key);
+    expect(cached).toBeNull();
+  });
+});
+```
+
+### Teste E2E com Cypress
+```javascript
+// Exemplo de teste E2E para autenticação
+describe('Authentication Flow', () => {
+  beforeEach(() => {
+    cy.visit('/admin');
+  });
+
+  it('should login successfully', () => {
+    cy.get('[data-cy=username]').type('admin');
+    cy.get('[data-cy=password]').type('test123');
+    cy.get('[data-cy=login-button]').click();
+
+    cy.url().should('include', '/admin');
+    cy.get('[data-cy=dashboard]').should('be.visible');
+  });
+
+  it('should show error for invalid credentials', () => {
+    cy.get('[data-cy=username]').type('admin');
+    cy.get('[data-cy=password]').type('wrong-password');
+    cy.get('[data-cy=login-button]').click();
+
+    cy.get('[data-cy=error-message]').should('contain', 'Credenciais inválidas');
+  });
+});
+```
+
+### Teste de Carga com k6
+```javascript
+// Exemplo de teste de carga para API de posts
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+export const options = {
+  stages: [
+    { duration: '30s', target: 20 },
+    { duration: '1m', target: 20 },
+    { duration: '30s', target: 0 }
+  ],
+  thresholds: {
+    http_req_duration: ['p(95)<500'],
+    http_req_failed: ['rate<0.01']
+  }
+};
+
+export default function() {
+  const response = http.get(`${__ENV.BASE_URL}/api/v1/posts`);
+  
+  check(response, {
+    'status is 200': (r) => r.status === 200,
+    'response time < 500ms': (r) => r.timings.duration < 500,
+    'has posts data': (r) => JSON.parse(r.body).posts.length > 0
+  });
+
+  sleep(1);
+}
+```
 
 ### 🔄 Integração Contínua e Deploy
 - **GitHub Actions**: Para Integração Contínua (CI) e Deploy Automatizado.

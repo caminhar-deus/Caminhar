@@ -1,4 +1,6 @@
-# Cache de API com Redis
+# Cache de API com Redis v1.2.1
+
+## 🚀 Versão: v1.2.1
 
 ## Visão Geral
 
@@ -100,6 +102,11 @@ O sistema inclui:
 - TTL configurável para diferentes tipos de dados
 - Métricas de performance (Cache Hit Rate, Cache Miss Rate)
 
+## Dependências do Sistema de Cache
+- @upstash/redis: ^1.26.4
+- @upstash/ratelimit: ^0.3.0
+- node-fetch: ^3.3.2
+
 ## Configuração do Redis
 
 O sistema utiliza o cliente HTTP do Upstash. Configure as seguintes variáveis:
@@ -112,6 +119,14 @@ Os testes de cache estão implementados em:
 - `settings-cache.test.js`: Testes de integração para cache de configurações
 - `musicas-cache.test.js`: Testes de integração para cache de músicas
 - Testes verificam Cache Miss, Cache Hit e invalidação de cache
+
+## 📦 ES Modules Support
+
+O sistema de cache é totalmente compatível com ES modules:
+- Importações modernas com extensões (.js)
+- Suporte nativo a ES modules sem flags experimentais
+- Integração com Turbopack para build rápido
+- Configuração Babel isolada para evitar conflitos
 
 ## Estratégia de Cache
 
@@ -136,6 +151,30 @@ Os testes de cache estão implementados em:
 - **Lazy Loading**: Carregamento sob demanda das abas
 - **Compression**: Compressão de dados em cache para economia de memória
 - **Connection Pooling**: Pool de conexões Redis para melhor performance
+
+## 🔧 Troubleshooting Avançado
+
+### Problemas Comuns:
+
+**Redis Connection:**
+- Verificar variáveis de ambiente UPSTASH_REDIS
+- Testar conexão com `redis.ping()`
+- Verificar firewall e políticas de rede
+
+**Cache Miss High:**
+- Verificar TTL e estratégias de invalidação
+- Analisar padrões de acesso
+- Ajustar TTL conforme necessidade
+
+**Memory Usage:**
+- Monitorar uso de memória do Redis
+- Configurar alertas para >80% de uso
+- Implementar limpeza automática de cache antigo
+
+**Performance Issues:**
+- Verificar latência do Redis
+- Analisar tempo de resposta das APIs
+- Monitorar carga no banco de dados
 
 ## Considerações de Segurança
 

@@ -1,5 +1,7 @@
 # 🏗️ Arquitetura do Projeto - O Caminhar com Deus
 
+## 🚀 Versão: v2.0.0
+
 ## 1. Visão Geral
 
 O projeto é uma aplicação web moderna construída sobre o framework **Next.js 16**, utilizando **React 19** para a interface do usuário. A arquitetura evoluiu de um banco de dados baseado em arquivo (SQLite) para um sistema de banco de dados relacional robusto (**PostgreSQL**), visando escalabilidade e performance.
@@ -645,6 +647,77 @@ describe('POST /api/posts', () => {
 | **Manutenibilidade** | Complexa | Simples | **Alta** |
 
 ---
+
+## 🔧 Solução de Problemas Arquiteturais
+
+### Problemas Comuns
+
+#### Performance
+- **LCP alto**: Verifique imagens hero e critical CSS
+- **CLS alto**: Definir dimensões fixas para imagens e iframes
+- **FID alto**: Reduzir JavaScript bloqueante
+- **Cache miss frequente**: Ajustar TTL e estratégias de invalidação
+
+#### Cache
+- **Redis indisponível**: Sistema fallback para memória
+- **Cache stale**: Estratégias de invalidação proativa
+- **TTL inadequado**: Ajustar tempos por tipo de dado
+
+#### Testes
+- **Mocks inconsistentes**: Usar infraestrutura de mocks centralizada
+- **Setup repetido**: Utilizar helpers e factories
+- **Matchers faltantes**: Adicionar matchers customizados
+
+#### Design System
+- **Tokens inconsistentes**: Usar useTheme hook
+- **Componentes duplicados**: Reutilizar componentes base
+- **Estilos espalhados**: Centralizar em styles/tokens/
+
+## 🔄 Guia de Migração
+
+### De v1 para v2
+
+#### 1. Migrar CRUDs para AdminCrudBase
+```javascript
+// Antigo: ~500 linhas de código
+// Novo: ~100 linhas com configuração
+const config = {
+  apiEndpoint: '/api/admin/musicas',
+  title: 'Gerenciamento de Músicas',
+  fields: [...],
+  columns: [...]
+};
+return <AdminCrudBase {...config} />;
+```
+
+#### 2. Padronizar APIs com API Standardizer
+```javascript
+// Antigo: Respostas inconsistentes
+// Novo: Formato padronizado
+import { success, serverError } from '../../lib/api';
+return success(res, data);
+```
+
+#### 3. Implementar Cache com Redis
+```javascript
+// Antigo: Consultas diretas ao banco
+// Novo: Cache-Aside Pattern
+const data = await cache.get(key) || await db.query();
+```
+
+#### 4. Migrar para Design System
+```javascript
+// Antigo: Estilos inline e CSS Modules
+// Novo: Componentes padronizados
+import { Button, Input, Card } from '../../components/UI';
+```
+
+#### 5. Usar Infraestrutura de Testes
+```javascript
+// Antigo: Setup manual e mocks repetidos
+// Novo: Factories e helpers reutilizáveis
+import { createMocks, expectStatus } from '../helpers';
+```
 
 ## 🔄 Próximos Passos Recomendados
 

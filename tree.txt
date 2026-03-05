@@ -146,6 +146,7 @@
 │   ├── REPORTS.md
 │   ├── SECURITY.md
 │   ├── SEO.md
+│   ├── SEO_TOOLKIT.md
 │   └── TESTING.md
 ├── examples
 │   ├── blog-post-seo-example.js
@@ -367,7 +368,6 @@
 │   │   ├── list-table-columns.js
 │   │   └── update-setting.js
 │   └── validate-schema.js
-├── SEO_TOOLKIT_DOCUMENTATION.md
 ├── skills-lock.json
 ├── styleMock.js
 ├── styles

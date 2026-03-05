@@ -1,4 +1,6 @@
-# Guia de Deploy - O Caminhar com Deus
+# Guia de Deploy - O Caminhar com Deus v1.2.1
+
+## 🚀 Versão: v1.2.1
 
 Este guia cobre os procedimentos para implantar a aplicação em dois ambientes comuns: **VPS (Virtual Private Server)** e **Vercel**.
 
@@ -63,6 +65,13 @@ code .env
 
 Ideal para DigitalOcean, AWS EC2, Hetzner, Linode, etc.
 
+### Dependências de Deploy
+- Node.js: ^20.0.0
+- PostgreSQL: ^14.0
+- Nginx: ^1.18.0
+- PM2: ^5.0.0
+- Certbot: ^1.0.0
+
 ### Pré-requisitos no Servidor
 - Node.js v20+
 - PostgreSQL
@@ -126,6 +135,14 @@ pm2 start npm --name "caminhar" -- start
 pm2 startup
 pm2 save
 ```
+
+## 📦 ES Modules no Deploy
+
+O projeto é totalmente compatível com ES modules:
+- **Build Process**: Otimizado com Turbopack para desenvolvimento rápido
+- **Importações Modernas**: Extensões explícitas (.js) conforme especificação ESM
+- **Configuração Babel**: Isolada para evitar conflitos com Turbopack
+- **Performance**: Tempo de build otimizado e desenvolvimento mais rápido
 
 ### 5. Configuração do Nginx (Proxy Reverso)
 
@@ -297,6 +314,52 @@ Como mencionado, o upload local falhará. Você deve:
 
 ### 4. Deploy
 Após configurar as variáveis, a Vercel fará o build e deploy automaticamente.
+
+## 🚀 CI/CD Examples
+
+### GitHub Actions para VPS
+```yaml
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Deploy to VPS
+        run: |
+          ssh user@server "cd /path && git pull && npm install && npm run build && pm2 restart caminhar"
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+```
+
+### GitHub Actions para Vercel
+```yaml
+name: Deploy to Vercel
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ./caminhar
+```
 
 ---
 

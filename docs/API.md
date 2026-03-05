@@ -1,6 +1,8 @@
-# Caminhar API v1 - Documentação
+# Caminhar API v1.2.1 - Documentação
 
 Bem-vindo à documentação da API RESTful do Caminhar para consumo externo.
+
+## 🚀 Versão: v1.2.1
 
 ## Visão Geral
 
@@ -16,6 +18,14 @@ A API Caminhar v1 fornece acesso programático aos recursos do sistema Caminhar.
 - **Documentação completa**: Exemplos e especificações
 
 ## Configuração Base
+
+### Dependências da API
+- express: ^4.18.0
+- jsonwebtoken: ^9.0.0
+- bcryptjs: ^2.4.3
+- cors: ^2.8.5
+- express-rate-limit: ^7.1.5
+- redis: ^4.6.10
 
 ### URL Base
 
@@ -363,6 +373,37 @@ curl -X GET https://api.caminhar.com/v1/settings \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer SEU_TOKEN_JWT"
 ```
+
+## 🧪 Testes de API
+
+### Testes de Integração
+- **Jest**: Testes de endpoints com supertest
+- **Mocking**: Mock de banco de dados e Redis
+- **Performance**: Testes de carga com k6
+- **Cache**: Testes de cache hit/miss e invalidação
+- **Segurança**: Testes de autenticação e autorização
+
+### Testes de Carga
+```bash
+# Testes de carga com k6
+npm run test:load
+```
+
+### Testes de Integração
+```bash
+# Testes de integração
+npm run test:integration
+```
+
+## 📋 Especificação OpenAPI
+
+Disponível em: `/api/v1/docs` (Swagger UI)
+
+### Endpoints Documentados
+- **Autenticação**: Login, verificação de token
+- **Configurações**: CRUD de settings
+- **Status**: Informações do sistema
+- **Cache**: Endpoints com cache habilitado
 
 ## Segurança
 

@@ -2,6 +2,8 @@
 
 > Kit completo de SEO e Performance para Next.js, otimizado para Core Web Vitals e ranqueamento orgânico.
 
+## 🚀 Versão: v1.0.0
+
 ## 🎯 Objetivo
 
 Alcançar mais pessoas através de excelente SEO técnico e experiência de usuário rápida.
@@ -44,10 +46,15 @@ examples/
 
 ## 🚀 Instalação Rápida
 
-### 1. Instalar dependência
+### 1. Instalar dependências
 ```bash
 npm install web-vitals
 ```
+
+### Dependências Necessárias
+- web-vitals: ^3.5.0
+- next: ^16.1.4
+- react: ^19.2.3
 
 ### 2. Configurar variável de ambiente
 ```bash
@@ -123,6 +130,13 @@ O toolkit monitora automaticamente:
 - **FCP** - First Contentful Paint (primeiro elemento visível)
 - **TTFB** - Time to First Byte (tempo de resposta do servidor)
 
+### Métricas de Performance Alvo
+- **LCP**: < 2.5s
+- **FID**: < 100ms
+- **CLS**: < 0.1
+- **FCP**: < 1.8s
+- **TTFB**: < 800ms
+
 ### Monitorar métricas
 ```javascript
 import usePerformanceMetrics from '../hooks/usePerformanceMetrics';
@@ -180,7 +194,7 @@ Cada tipo de conteúdo tem seu schema:
 
 ## 📖 Documentação Completa
 
-Veja `SEO_TOOLKIT_DOCUMENTATION.md` para:
+Veja `SEO_TOOLKIT.md` para:
 - Lista completa de meta tags
 - Todas as props de cada componente
 - Exemplos de uso avançados
@@ -221,12 +235,24 @@ npx lighthouse http://localhost:3000
 4. [Twitter Card Validator](https://cards-dev.twitter.com/validator)
 5. [Google Rich Results Test](https://search.google.com/test/rich-results)
 
+## 🔧 Solução de Problemas Comuns
+
+### Problemas de SEO
+- **Meta tags não aparecendo**: Verifique o build de produção
+- **Schema.org não validado**: Use o validator do Google
+- **Imagens não indexadas**: Verifique alt texts e lazy loading
+
+### Problemas de Performance
+- **LCP alto**: Otimizar imagens hero e critical CSS
+- **CLS alto**: Definir dimensões fixas para imagens e iframes
+- **FID alto**: Reduzir JavaScript bloqueante
+
 ## 🤝 Contribuição
 
 Para adicionar novos schemas ou melhorias:
 1. Criar arquivo em `components/SEO/StructuredData/`
 2. Adicionar export em `components/SEO/StructuredData/index.js`
-3. Documentar props no `SEO_TOOLKIT_DOCUMENTATION.md`
+3. Documentar props no `SEO_TOOLKIT.md`
 4. Criar exemplo em `examples/`
 
 ---

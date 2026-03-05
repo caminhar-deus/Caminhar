@@ -1,4 +1,12 @@
-# Caminhar Database Backup System
+# Caminhar Database Backup System v1.2.1
+
+## 🚀 Versão: v1.2.1
+
+## Dependências do Sistema de Backup
+- pg: ^8.11.0
+- node-cron: ^3.0.2
+- fs-extra: ^11.1.1
+- zlib: ^1.0.7
 
 ## Overview
 
@@ -158,6 +166,40 @@ If backups fail:
 - **Disk Full**: Clean up old backups or increase storage capacity
 - **Database Connection**: Verify PostgreSQL connection string and credentials
 - **Compression Error**: Check if gzip is available on the system
+
+## 🧪 Testes do Sistema de Backup
+
+### Testes de Integridade
+- **Backup Creation**: Testes de criação de backup
+- **Restore Process**: Testes de processo de restauração
+- **Compression**: Testes de compressão e descompressão
+- **Verification**: Testes de verificação de integridade
+
+### Testes de Performance
+```bash
+# Testes de performance de backup
+npm run test:backup:performance
+
+# Testes de integração de backup
+npm run test:backup:integration
+
+# Testes de carga de backup
+npm run test:backup:load
+```
+
+## 📊 Monitoramento Avançado
+
+### Métricas de Performance
+- **Backup Time**: Tempo de criação de backup
+- **Compression Ratio**: Taxa de compressão
+- **Storage Usage**: Uso de armazenamento
+- **Success Rate**: Taxa de sucesso de backups
+
+### Alertas de Monitoramento
+- **Backup Failures**: Alertas para falhas de backup
+- **Disk Space**: Alertas para espaço em disco insuficiente
+- **Performance Degradation**: Alertas para degradação de performance
+- **Security Issues**: Alertas para problemas de segurança
 
 ## Security
 

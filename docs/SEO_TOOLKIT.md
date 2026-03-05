@@ -2,6 +2,8 @@
 
 Kit completo de SEO e Performance para Next.js - Otimizado para Core Web Vitals e ranqueamento orgânico.
 
+## 🚀 Versão: v1.0.0
+
 ## 📦 Componentes
 
 ### 1. SEOHead (`components/SEO/Head.js`)
@@ -398,6 +400,11 @@ export default function BlogPost({ post }) {
 
 ## 🔧 Instalação
 
+### Dependências Necessárias
+- web-vitals: ^3.5.0
+- next: ^16.1.4
+- react: ^19.2.3
+
 1. **Instale a dependência web-vitals:**
 ```bash
 npm install web-vitals
@@ -460,6 +467,77 @@ npx lighthouse http://localhost:3000 --output=html
 - HTTPS ativo
 
 ---
+
+## 🔧 Solução de Problemas Comuns
+
+### Problemas de SEO
+- **Meta tags não aparecendo**: Verifique o build de produção
+- **Schema.org não validado**: Use o validator do Google
+- **Imagens não indexadas**: Verifique alt texts e lazy loading
+
+### Problemas de Performance
+- **LCP alto**: Otimizar imagens hero e critical CSS
+- **CLS alto**: Definir dimensões fixas para imagens e iframes
+- **FID alto**: Reduzir JavaScript bloqueante
+
+### Problemas de Implementação
+- **Componentes não renderizando**: Verifique imports e dependências
+- **Erros de TypeScript**: Instale tipos @types/web-vitals
+- **Build falhando**: Verifique configuração do next.config.js
+
+## 🔄 Guia de Migração
+
+### De next/head para SEOHead
+1. **Substituir imports:**
+```javascript
+// Antigo
+import Head from 'next/head';
+
+// Novo
+import SEOHead from '../components/SEO/Head';
+```
+
+2. **Mapear props equivalentes:**
+```javascript
+// Antigo
+<Head>
+  <title>{title}</title>
+  <meta name="description" content={description} />
+</Head>
+
+// Novo
+<SEOHead title={title} description={description} />
+```
+
+3. **Testar meta tags geradas:**
+- Verifique HTML gerado no build
+- Teste no Google Search Console
+- Valide Schema.org
+
+### De next/image para ImageOptimized
+1. **Substituir imports:**
+```javascript
+// Antigo
+import Image from 'next/image';
+
+// Novo
+import { ImageOptimized } from '../components/Performance';
+```
+
+2. **Atualizar props:**
+```javascript
+// Antigo
+<Image src="/img.jpg" alt="..." width={800} height={600} />
+
+// Novo
+<ImageOptimized src="/img.jpg" alt="..." width={800} height={600} />
+```
+
+3. **Otimizar imagens críticas:**
+```javascript
+// Imagens hero
+<ImageOptimized src="/hero.jpg" alt="..." critical priority />
+```
 
 ## 📝 Notas de Versão
 
