@@ -160,7 +160,14 @@ components/Admin/
 │   ├── ImageUploadField.js   # Upload com preview
 │   ├── ToggleField.js        # Switch booleano
 │   └── UrlField.js           # URL com validação e preview
-└── hooks/useAdminCrud.js     # Hook reutilizável para lógica CRUD
+├── hooks/useAdminCrud.js     # Hook reutilizável para lógica CRUD
+├── Managers/                 # Gerenciadores administrativos
+│   ├── BackupManager.js      # Sistema de backup
+│   └── CacheManager.js       # Sistema de cache
+├── Tools/                    # Ferramentas administrativas
+│   ├── IntegrityChecker.js   # Verificador de integridade
+│   └── RateLimitChecker.js   # Monitor de rate limiting
+└── README.md                 # Documentação do módulo
 ```
 
 **Benefícios:**
@@ -183,9 +190,7 @@ lib/api/
 ├── middleware.js             # Composição de middlewares
 ├── validate.js               # Validação com Zod
 ├── index.js                  # Exportações centralizadas
-└── __tests__/                # Testes unitários
-    ├── errors.test.js
-    └── response.test.js
+└── README.md                 # Documentação do módulo
 ```
 
 **Formato de Resposta:**
@@ -292,6 +297,7 @@ Infraestrutura completa para testes eficientes.
 ```
 tests/
 ├── setup.js                  # Configuração centralizada Jest
+├── README.md                 # Documentação da infraestrutura de testes
 ├── factories/                # Geradores de dados de teste
 │   ├── post.js
 │   ├── music.js
@@ -334,7 +340,8 @@ styles/tokens/
 ├── zIndex.js                 # Camadas z-index
 ├── sizes.js                  # Tamanhos de componentes
 ├── opacity.js                # Opacidades
-└── index.js                  # Exportações
+├── index.js                  # Exportações
+└── README.md                 # Documentação do Design System
 
 components/UI/
 ├── Button.js                 # 6 variantes, 4 tamanhos
@@ -346,7 +353,8 @@ components/UI/
 ├── Spinner.js                # 3 variantes
 ├── Badge.js                  # 7 variantes
 ├── Alert.js                  # Feedback messages
-└── index.js                  # Exportações
+├── index.js                  # Exportações
+└── README.md                 # Documentação dos componentes
 
 components/Layout/
 ├── Container.js              # Container centralizado
@@ -732,10 +740,10 @@ import { createMocks, expectStatus } from '../helpers';
 
 ## 📚 Documentação Adicional
 
-- `components/Admin/README.md` - Guia do CRUD Admin Generator
-- `lib/api/README.md` - Guia do API Standardizer
-- `tests/README.md` - Guia da infraestrutura de testes
-- `styles/tokens/README.md` - Guia do Design System
+- `components/Admin/README.md` - Guia do CRUD Admin Generator ✅
+- `lib/api/README.md` - Guia do API Standardizer ✅
+- `tests/README.md` - Guia da infraestrutura de testes ✅
+- `styles/tokens/README.md` - Guia do Design System ✅
 
 ---
 
@@ -756,6 +764,8 @@ import { createMocks, expectStatus } from '../helpers';
   - `components/Admin/AdminPostsNew.js` ✅
   - `components/Admin/fields/` ✅
   - `components/Admin/hooks/useAdminCrud.js` ✅
+  - `components/Admin/Managers/` ✅
+  - `components/Admin/Tools/` ✅
 
 - **API Standardizer** - Estrutura completa confirmada
   - `lib/api/errors.js` ✅

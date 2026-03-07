@@ -304,6 +304,228 @@ Authorization: Bearer SEU_TOKEN_JWT
 | 429 | Too Many Requests - Limite de requisições excedido |
 | 500 | Internal Server Error - Erro no servidor |
 
+## Endpoints da API v1.2.1
+
+### Health Check
+
+**Endpoint:** `GET /api/v1/health`
+
+**Descrição:** Verifica rapidamente se a API está respondendo (sem processamento pesado).
+
+**Resposta de Sucesso (200):**
+```json
+{
+  "status": "ok"
+}
+```
+
+### Posts
+
+**Endpoint:** `GET /api/v1/posts`
+
+**Descrição:** Lista todos os posts publicados, ordenados por data de criação (descendente).
+
+**Headers Requeridos:**
+```
+Authorization: Bearer SEU_TOKEN_JWT (opcional para acesso público)
+```
+
+**Resposta de Sucesso (200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "title": "Título do Post",
+      "slug": "titulo-do-post",
+      "summary": "Resumo do post",
+      "image_url": "https://...",
+      "created_at": "2026-01-27T00:00:00.000Z"
+    }
+  ],
+  "timestamp": "2026-01-27T00:00:00.000Z"
+}
+```
+
+**Endpoint:** `POST /api/v1/posts`
+
+**Descrição:** Cria um novo post (requer autenticação).
+
+**Headers Requeridos:**
+```
+Authorization: Bearer SEU_TOKEN_JWT
+Content-Type: application/json
+```
+
+**Corpo da Requisição:**
+```json
+{
+  "title": "Título do Post",
+  "slug": "titulo-do-post",
+  "content": "Conteúdo do post",
+  "summary": "Resumo do post",
+  "image_url": "https://...",
+  "published": true
+}
+```
+
+**Resposta de Sucesso (201):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "title": "Título do Post",
+    "slug": "titulo-do-post",
+    "content": "Conteúdo do post",
+    "summary": "Resumo do post",
+    "image_url": "https://...",
+    "published": true,
+    "created_at": "2026-01-27T00:00:00.000Z",
+    "updated_at": "2026-01-27T00:00:00.000Z"
+  },
+  "message": "Post criado com sucesso",
+  "timestamp": "2026-01-27T00:00:00.000Z"
+}
+```
+
+### Videos
+
+**Endpoint:** `GET /api/v1/videos`
+
+**Descrição:** Lista vídeos com paginação.
+
+**Headers Requeridos:**
+```
+Authorization: Bearer SEU_TOKEN_JWT (opcional para acesso público)
+```
+
+**Parâmetros de Consulta (Opcional):**
+- `page`: Número da página (padrão: 1)
+- `limit`: Quantidade de itens por página (padrão: 10)
+
+**Resposta de Sucesso (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "videos": [
+      {
+        "id": 1,
+        "titulo": "Título do Vídeo",
+        "url_youtube": "https://...",
+        "descricao": "Descrição do vídeo",
+        "publicado": true,
+        "created_at": "2026-01-27T00:00:00.000Z",
+        "updated_at": "2026-01-27T00:00:00.000Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 50,
+      "totalPages": 5
+    }
+  },
+  "timestamp": "2026-01-27T00:00:00.000Z"
+}
+```
+
+**Endpoint:** `POST /api/v1/videos`
+
+**Descrição:** Cria um novo vídeo (requer autenticação).
+
+**Headers Requeridos:**
+```
+Authorization: Bearer SEU_TOKEN_JWT
+Content-Type: application/json
+```
+
+**Corpo da Requisição:**
+```json
+{
+  "titulo": "Título do Vídeo",
+  "url_youtube": "https://...",
+  "descricao": "Descrição do vídeo",
+  "publicado": true
+}
+```
+
+**Resposta de Sucesso (201):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "titulo": "Título do Vídeo",
+    "url_youtube": "https://...",
+    "descricao": "Descrição do vídeo",
+    "publicado": true,
+    "created_at": "2026-01-27T00:00:00.000Z",
+    "updated_at": "2026-01-27T00:00:00.000Z"
+  },
+  "message": "Vídeo criado com sucesso",
+  "timestamp": "2026-01-27T00:00:00.000Z"
+}
+```
+
+**Endpoint:** `PUT /api/v1/videos/{id}`
+
+**Descrição:** Atualiza um vídeo existente (requer autenticação).
+
+**Headers Requeridos:**
+```
+Authorization: Bearer SEU_TOKEN_JWT
+Content-Type: application/json
+```
+
+**Corpo da Requisição:**
+```json
+{
+  "titulo": "Novo Título",
+  "url_youtube": "https://...",
+  "descricao": "Nova descrição",
+  "publicado": false
+}
+```
+
+**Resposta de Sucesso (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "titulo": "Novo Título",
+    "url_youtube": "https://...",
+    "descricao": "Nova descrição",
+    "publicado": false,
+    "created_at": "2026-01-27T00:00:00.000Z",
+    "updated_at": "2026-01-27T00:00:00.000Z"
+  },
+  "message": "Vídeo atualizado com sucesso",
+  "timestamp": "2026-01-27T00:00:00.000Z"
+}
+```
+
+**Endpoint:** `DELETE /api/v1/videos/{id}`
+
+**Descrição:** Deleta um vídeo existente (requer autenticação).
+
+**Headers Requeridos:**
+```
+Authorization: Bearer SEU_TOKEN_JWT
+```
+
+**Resposta de Sucesso (200):**
+```json
+{
+  "success": true,
+  "message": "Vídeo deletado com sucesso",
+  "timestamp": "2026-01-27T00:00:00.000Z"
+}
+```
+
 ## Rate Limiting
 
 A API implementa rate limiting para prevenir abuso:
@@ -424,6 +646,7 @@ Para questões técnicas ou suporte, entre em contato com:
 
 - **v1.0**: Versão inicial com autenticação, settings e status
 - **v1.2.0**: Versão atualizada com cache, ContentTabs e integrações
+- **v1.2.1**: Versão atual com endpoints de Posts, Videos, Health Check e cache avançado
 
 ## Notas de Versão
 
@@ -450,6 +673,8 @@ Para questões técnicas ou suporte, entre em contato com:
 - ✅ **Performance**: Redução de 80-90% nas consultas ao banco de dados
 - ✅ **Monitoramento**: Métricas de cache hit rate e performance em tempo real
 - ✅ **Fallback Seguro**: Sistema continua operando se Redis falhar
+- ✅ **Novos Endpoints**: Adição dos endpoints de Posts, Videos e Health Check
+- ✅ **Documentação Atualizada**: Documentação completa dos novos endpoints e funcionalidades
 
 ### v1.2.0 (08/02/2026)
 - ✅ **Cache de API**: Sistema de cache Redis para rotas de leitura frequente

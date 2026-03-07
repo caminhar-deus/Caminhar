@@ -41,7 +41,7 @@ export default function AdminVideos() {
   // Load videos data from API
   const loadVideos = async () => {
     try {
-      const response = await fetch('/api/videos');
+      const response = await fetch('/api/v1/videos');
       if (response.ok) {
         const data = await response.json();
         setVideos(data);

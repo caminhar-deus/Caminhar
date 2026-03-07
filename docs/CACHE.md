@@ -1,6 +1,6 @@
-# Cache de API com Redis v1.2.1
+# Cache de API com Redis v1.4.0
 
-## 🚀 Versão: v1.2.1
+## 🚀 Versão: v1.4.0
 
 ## Visão Geral
 
@@ -216,7 +216,7 @@ O sistema de cache é especialmente benéfico para o ContentTabs:
 - ✅ **Fallback**: Sistema robusto de fallback para falhas do Redis
 - ✅ **Documentação**: Documentação completa do sistema de cache
 
-### v1.2.1 (08/02/2026)
+### v1.4.0
 - ✅ **ES Modules**: Projeto totalmente compatível com ES modules
 - ✅ **Jest com ESM**: Suporte nativo a ES modules sem flags experimentais
 - ✅ **Turbopack Integration**: Build ultra-rápido para desenvolvimento
@@ -235,3 +235,16 @@ O sistema de cache é especialmente benéfico para o ContentTabs:
 - ✅ **Performance**: Redução de 80-90% nas consultas ao banco de dados
 - ✅ **Monitoramento**: Métricas de cache hit rate e performance em tempo real
 - ✅ **Fallback Seguro**: Sistema continua operando se Redis falhar
+- ✅ **Spotify Integration**: Sistema completo de integração com Spotify para reprodução de músicas
+- ✅ **YouTube Integration**: Sistema completo de integração com YouTube para reprodução de vídeos
+- ✅ **Sistema de Upload de Imagens**: Sistema robusto com validação de tipos MIME e tamanho de arquivos
+- ✅ **Sistema de Backup Automático**: Backup diário com compressão, rotação e interface administrativa
+- ✅ **API RESTful v1.4.0**: Endpoints organizados e documentados para consumo externo
+- ✅ **Polimento Visual e Técnico**: Animações, transições e tratamento de erros aprimorados
+- ✅ **Testes de Integrações Externas**: Validação completa de integrações com Spotify, YouTube e Redis
+- ✅ **Testes de Documentação**: Verificação da qualidade e completude da documentação
+- ✅ **Modernização ESM + Turbopack**: Projeto totalmente compatível com ES modules sem flags experimentais
+- ✅ **Testes de Performance**: Métricas de performance monitoradas e validadas
+- ✅ **Testes de Segurança**: Validação de segurança do sistema e proteções
+- ✅ **Testes de Cross-Browser**: Compatibilidade verificada em diferentes navegadores
+- ✅ **Testes de Mobile**: Responsividade e usabilidade validadas em dispositivos móveis

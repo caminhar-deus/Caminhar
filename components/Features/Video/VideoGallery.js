@@ -16,13 +16,19 @@ export default function VideoGallery() {
       
       // Constrói a URL com o parâmetro de busca se existir
       const url = term 
-        ? `/api/videos?search=${encodeURIComponent(term)}` 
-        : '/api/videos';
+        ? `/api/v1/videos?search=${encodeURIComponent(term)}` 
+        : '/api/v1/videos';
         
       const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
-        setVideos(data);
+        // Verifica se a resposta tem a estrutura da API v1
+        if (data.success && data.data && data.data.videos) {
+          setVideos(data.data.videos);
+        } else {
+          // Caso seja a estrutura antiga (array direto)
+          setVideos(data);
+        }
       } else {
         throw new Error('Erro ao carregar vídeos');
       }

@@ -26,11 +26,11 @@ This automatic database backup system provides comprehensive backup and restore 
 
 ## Files Created
 
-- `lib/backup.js` - Main backup system implementation
-- `lib/init-backup.js` - Backup system initialization script
-- `lib/restore-backup.js` - Helper script for restoring backups
-- `lib/verify-backup.js` - Backup verification system
-- `components/AdminBackupManager.js` - UI component for backup management
+- `scripts/backup.js` - Main backup system implementation
+- `scripts/init-backup.js` - Backup system initialization script
+- `scripts/create-backup.js` - Script for creating manual backups
+- `scripts/restore-backup.js` - Script for restoring backups
+- `components/Admin/Managers/BackupManager.js` - UI component for backup management
 - `pages/api/admin/backups.js` - API endpoint for backup operations
 - `data/backups/` - Backup storage directory
 - `data/backups/backup.log` - Backup operation logs
@@ -57,37 +57,31 @@ npm run create-backup
 ### Viewing Available Backups
 
 ```bash
-node -e "import('./lib/backup.js').then(m => m.getAvailableBackups().then(console.log).catch(console.error))"
+node -e "import('./scripts/backup.js').then(m => m.getAvailableBackups().then(console.log).catch(console.error))"
 ```
 
 ### Restoring from Backup
 
 ```bash
-npm run restore-backup caminhar-pg-backup_YYYY-MM-DD_HH-mm-ss.sql.gz
+npm run backup:restore caminhar-pg-backup_YYYY-MM-DD_HH-mm-ss.sql.gz
 ```
 
 ### Viewing Backup Logs
 
 ```bash
-node -e "import('./lib/backup.js').then(m => m.getBackupLogs().then(console.log).catch(console.error))"
-```
-
-### Verifying Backup Integrity
-
-```bash
-npm run verify-backup caminhar-pg-backup_YYYY-MM-DD_HH-mm-ss.sql.gz
+node -e "import('./scripts/backup.js').then(m => m.getBackupLogs().then(console.log).catch(console.error))"
 ```
 
 ## Configuration
 
-The backup system can be configured by modifying the `BACKUP_CONFIG` object in `lib/backup.js`:
+The backup system can be configured by modifying the `BACKUP_CONFIG` object in `scripts/backup.js`:
 
 ```javascript
 const BACKUP_CONFIG = {
   maxBackups: 10, // Maximum number of backups to keep
   backupInterval: '0 2 * * *', // Daily at 2 AM (cron format)
   compressBackups: true, // Whether to compress backups
-  backupPrefix: 'caminhar-db-backup',
+  backupPrefix: 'caminhar-pg-backup',
   verifyBackups: true, // Whether to verify backup integrity
   logRetentionDays: 30 // Number of days to keep logs
 };
@@ -102,7 +96,7 @@ The system uses a cron-like scheduling pattern:
 ## Backup Files
 
 Backup files are stored in `data/backups/` with the naming pattern:
-`caminhar-db-backup_YYYY-MM-DD_HH-MM-SS.db.gz`
+`caminhar-pg-backup_YYYY-MM-DD_HH-MM-SS.sql.gz`
 
 ## Database Restoration
 

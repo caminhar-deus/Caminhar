@@ -1,6 +1,6 @@
-# 🛡️ Segurança - O Caminhar com Deus v1.2.1
+# 🛡️ Segurança - O Caminhar com Deus v1.4.0
 
-## 🚀 Versão: v1.2.1
+## 🚀 Versão: v1.4.0
 
 Este documento descreve as práticas, políticas e implementações de segurança adotadas no projeto "O Caminhar com Deus".
 
@@ -74,7 +74,7 @@ Para proteger contra ataques de força bruta e DDoS (Negação de Serviço), imp
 - **Auditoria**: Logs de acesso e erro são mantidos para auditoria forense em caso de incidentes.
 - **Privacidade**: Garantimos que dados sensíveis (PII, senhas, tokens) não sejam logados.
 
-## 8. Escopo de Segurança
+## 7. Escopo de Segurança
 
 ### Cobertura
 - Aplicações web e APIs
@@ -88,7 +88,7 @@ Para proteger contra ataques de força bruta e DDoS (Negação de Serviço), imp
 - Segurança de redes de terceiros
 - Segurança de dispositivos dos usuários
 
-## 9. Resposta a Incidentes de Segurança
+## 8. Resposta a Incidentes de Segurança
 
 ### Procedimentos
 1. **Identificação**: Detecção de incidente de segurança
@@ -102,7 +102,7 @@ Para proteger contra ataques de força bruta e DDoS (Negação de Serviço), imp
 - **Externamente**: Comunicação com usuários conforme necessidade
 - **Autoridades**: Notificação conforme requisitos legais
 
-## 10. Conformidade Legal
+## 9. Conformidade Legal
 
 ### LGPD (Lei Geral de Proteção de Dados)
 - Tratamento de dados pessoais conforme requisitos da LGPD
@@ -114,7 +114,7 @@ Para proteger contra ataques de força bruta e DDoS (Negação de Serviço), imp
 - Consentimento informado para tratamento de dados
 - Direito de acesso, retificação e exclusão de dados
 
-## 11. Exemplos de Código Seguro
+## 10. Exemplos de Código Seguro
 
 ### Validação de Entrada
 ```javascript
@@ -140,7 +140,7 @@ const result = await db.query(
 // const result = await db.query(`SELECT * FROM users WHERE email = '${email}'`);
 ```
 
-## 7. Política de Vulnerabilidades
+## 11. Política de Vulnerabilidades
 
 Se você descobrir uma vulnerabilidade de segurança neste projeto, por favor, **NÃO** abra uma issue pública.
 Envie um e-mail para `security@caminhar.com` ou entre em contato diretamente com os mantenedores.

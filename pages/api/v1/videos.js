@@ -1,5 +1,5 @@
 import { getOrSetCache, invalidateCache } from '../../../lib/cache';
-import * as db from '../../../lib/db'; // Correção do import (import * as db)
+import * as db from '../../../lib/db';
 import { getAuthToken, verifyToken } from '../../../lib/auth';
 
 export default async function handler(req, res) {
@@ -23,14 +23,14 @@ async function handleGet(req, res) {
     const cacheKey = `videos:public:page:${page}:limit:${limit}`;
 
     const data = await getOrSetCache(cacheKey, async () => {
-      // Busca vídeos com paginação
+      // Busca vídeos com paginação - APENAS VÍDEOS PUBLICADOS
       const videosResult = await db.query(
-        `SELECT * FROM videos ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
+        `SELECT * FROM videos WHERE publicado = true ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
         [limit, offset]
       );
       
-      // Conta o total de vídeos para metadados de paginação
-      const countResult = await db.query('SELECT COUNT(*) FROM videos');
+      // Conta o total de vídeos publicados para metadados de paginação
+      const countResult = await db.query('SELECT COUNT(*) FROM videos WHERE publicado = true');
       const total = parseInt(countResult.rows[0].count);
 
       return {
@@ -83,7 +83,8 @@ async function handlePost(req, res) {
     const newVideo = result.rows[0];
 
     // Invalida o cache de listagem
-    await invalidateCache('videos:public:*');
+    await invalidateCache('videos:public:page:*');
+    await invalidateCache('videos:public:all');
 
     return res.status(201).json({
       success: true,

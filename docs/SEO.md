@@ -2,7 +2,7 @@
 
 > Kit completo de SEO e Performance para Next.js, otimizado para Core Web Vitals e ranqueamento orgânico.
 
-## 🚀 Versão: v1.0.0
+## 🚀 Versão: v1.4.0
 
 ## 🎯 Objetivo
 
@@ -53,8 +53,8 @@ npm install web-vitals
 
 ### Dependências Necessárias
 - web-vitals: ^3.5.0
-- next: ^16.1.4
-- react: ^19.2.3
+- next: ^16.1.6
+- react: ^19.2.4
 
 ### 2. Configurar variável de ambiente
 ```bash
@@ -258,3 +258,27 @@ Para adicionar novos schemas ou melhorias:
 ---
 
 **Criado com ❤️ para O Caminhar com Deus**
+
+## 📝 Notas de Versão
+
+### v1.4.0
+- ✅ SEOHead completo com todas meta tags
+- ✅ 6 tipos de Schema.org
+- ✅ Performance components (ImageOptimized, LazyIframe)
+- ✅ Core Web Vitals monitoring
+- ✅ Critical CSS inline
+- ✅ Preload resources
+- ✅ Documentação completa
+- ✅ Spotify Integration: Sistema completo de integração com Spotify para reprodução de músicas
+- ✅ YouTube Integration: Sistema completo de integração com YouTube para reprodução de vídeos
+- ✅ Sistema de Upload de Imagens: Sistema robusto com validação de tipos MIME e tamanho de arquivos
+- ✅ Sistema de Backup Automático: Backup diário com compressão, rotação e interface administrativa
+- ✅ API RESTful v1.4.0: Endpoints organizados e documentados para consumo externo
+- ✅ Polimento Visual e Técnico: Animações, transições e tratamento de erros aprimorados
+- ✅ Testes de Integrações Externas: Validação completa de integrações com Spotify, YouTube e Redis
+- ✅ Testes de Documentação: Verificação da qualidade e completude da documentação
+- ✅ Modernização ESM + Turbopack: Projeto totalmente compatível com ES modules sem flags experimentais
+- ✅ Testes de Performance: Métricas de performance monitoradas e validadas
+- ✅ Testes de Segurança: Validação de segurança do sistema e proteções
+- ✅ Testes de Cross-Browser: Compatibilidade verificada em diferentes navegadores
+- ✅ Testes de Mobile: Responsividade e usabilidade validadas em dispositivos móveis

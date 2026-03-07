@@ -1,6 +1,6 @@
-# Guia de Deploy - O Caminhar com Deus v1.2.1
+# Guia de Deploy - O Caminhar com Deus v1.4.0
 
-## 🚀 Versão: v1.2.1
+## 🚀 Versão: v1.4.0
 
 Este guia cobre os procedimentos para implantar a aplicação em dois ambientes comuns: **VPS (Virtual Private Server)** e **Vercel**.
 
@@ -66,14 +66,14 @@ code .env
 Ideal para DigitalOcean, AWS EC2, Hetzner, Linode, etc.
 
 ### Dependências de Deploy
-- Node.js: ^20.0.0
+- Node.js: ^24.14.0
 - PostgreSQL: ^14.0
 - Nginx: ^1.18.0
 - PM2: ^5.0.0
 - Certbot: ^1.0.0
 
 ### Pré-requisitos no Servidor
-- Node.js v20+
+- Node.js v24.14.0+
 - PostgreSQL
 - Nginx (como Proxy Reverso)
 - PM2 (Gerenciador de Processos)
@@ -85,7 +85,7 @@ Ideal para DigitalOcean, AWS EC2, Hetzner, Linode, etc.
 sudo apt update && sudo apt upgrade -y
 
 # Instalar Node.js (exemplo para Ubuntu)
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
 sudo apt install -y nodejs
 
 # Instalar PM2 globalmente
@@ -206,7 +206,7 @@ sudo apt install -y curl git nginx
 
 ```bash
 # Instalar Node.js v20
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
 sudo apt install -y nodejs
 
 # Instalar PM2 (gerenciador de processos)

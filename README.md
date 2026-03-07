@@ -39,6 +39,9 @@ Para detalhes técnicos específicos, consulte as documentações dedicadas na p
 - **Segurança**: Autenticação JWT, Cookies HTTP-only, Rate Limiting avançado, 0 vulnerabilidades
 - **Backup Automático**: Sistema de backup diário com compressão e rotação automática
 - **SEO Completo**: Schema.org, Open Graph, Twitter Cards, Core Web Vitals
+- **Upload de Imagens**: Sistema robusto com validação de tipos MIME e tamanho de arquivos
+- **API RESTful v1.4.0**: Endpoints organizados e documentados para consumo externo
+- **Polimento Visual e Técnico**: Animações, transições e tratamento de erros aprimorados
 
 ##  Como Executar (Quickstart)
 
@@ -88,6 +91,10 @@ docker-compose exec app npm run db:init
 ✅ API RESTful para consumo externo  
 ✅ Pipeline CI/CD funcional  
 ✅ Arquitetura moderna e escalável  
+✅ Testes de Integrações Externas (Spotify, YouTube, Redis)  
+✅ Testes de Performance e Segurança  
+✅ Testes de Cross-Browser e Mobile  
+✅ Modernização ESM + Turbopack
 
 ## 🤝 Contribuição
 

@@ -1,12 +1,21 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
-import handler from '../pages/api/videos';
-import { query } from '../lib/db';
+import handler from '../pages/api/v1/videos';
 
 // Mock do módulo db para não acessar o banco de dados real
 jest.mock('../lib/db', () => ({
   query: jest.fn(),
 }));
+
+// Mock do cache para evitar dependências externas
+jest.mock('../lib/cache', () => ({
+  getOrSetCache: jest.fn(),
+  invalidateCache: jest.fn(),
+}));
+
+// Import dos mocks para usar nas funções
+const { query } = require('../lib/db');
+const { getOrSetCache } = require('../lib/cache');
 
 describe('API Pública de Vídeos (/api/videos)', () => {
   beforeEach(() => {
@@ -19,8 +28,11 @@ describe('API Pública de Vídeos (/api/videos)', () => {
       { id: 2, titulo: 'Vídeo 2', url_youtube: 'https://youtu.be/2', descricao: 'Desc 2' }
     ];
 
-    // Simula o retorno da query
-    query.mockResolvedValue({ rows: mockVideos });
+    // Mock do cache para retornar os dados simulados
+    getOrSetCache.mockResolvedValue({
+      videos: mockVideos,
+      pagination: { page: 1, limit: 10, total: 2, totalPages: 1 }
+    });
 
     const { req, res } = createMocks({
       method: 'GET',
@@ -29,8 +41,11 @@ describe('API Pública de Vídeos (/api/videos)', () => {
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(200);
-    expect(JSON.parse(res._getData())).toEqual(mockVideos);
-    expect(query).toHaveBeenCalledTimes(1);
+    const responseData = JSON.parse(res._getData());
+    expect(responseData.success).toBe(true);
+    expect(responseData.data.videos).toEqual(mockVideos);
+    expect(responseData.data.pagination).toBeDefined();
+    expect(getOrSetCache).toHaveBeenCalledTimes(1);
   });
 
   it('deve retornar erro 405 para métodos não permitidos (ex: PUT)', async () => {
@@ -47,7 +62,8 @@ describe('API Pública de Vídeos (/api/videos)', () => {
     // Silencia o console.error para este teste específico pois o erro é esperado
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-    query.mockRejectedValue(new Error('Erro de conexão com banco'));
+    // Mock do cache para retornar erro
+    getOrSetCache.mockRejectedValue(new Error('Erro de conexão com banco'));
 
     const { req, res } = createMocks({
       method: 'GET',
@@ -57,8 +73,8 @@ describe('API Pública de Vídeos (/api/videos)', () => {
 
     expect(res._getStatusCode()).toBe(500);
     const data = JSON.parse(res._getData());
-    expect(data.message).toBe('Erro interno do servidor ao buscar vídeos.');
-    expect(data.details).toBe('Erro de conexão com banco');
+    expect(data.success).toBe(false);
+    expect(data.message).toBe('Erro interno do servidor');
 
     // Restaura o console.error original
     consoleSpy.mockRestore();
