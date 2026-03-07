@@ -19,9 +19,10 @@
 │   │   │   ├── BackupManager.js
 │   │   │   └── CacheManager.js
 │   │   ├── README.md
-│   │   └── Tools
-│   │       ├── IntegrityCheck.js
-│   │       └── RateLimitViewer.js
+│   │   ├── Tools
+│   │   │   ├── IntegrityCheck.js
+│   │   │   └── RateLimitViewer.js
+│   │   └── withAdminAuth.js
 │   ├── Features
 │   │   ├── Blog
 │   │   │   ├── BlogSection.js
@@ -122,20 +123,8 @@
 ├── data
 │   ├── backups
 │   │   ├── backup.log
-│   │   ├── caminhar-db-backup_2026-01-26_23-44-49.db.gz
-│   │   ├── caminhar-pg-backup_2026-02-03_09-49-05.sql.gz
-│   │   ├── caminhar-pg-backup_2026-02-03_19-03-03.sql.gz
-│   │   ├── caminhar-pg-backup_2026-02-19_17-57-39.sql.gz
-│   │   ├── caminhar-pg-backup_2026-02-19_18-04-26.sql.gz
-│   │   ├── caminhar-pg-backup_2026-02-19_18-49-48.sql.gz
-│   │   ├── caminhar-pg-backup_2026-02-19_19-23-27.sql.gz
-│   │   ├── caminhar-pg-backup_2026-02-19_20-47-46.sql.gz
-│   │   ├── caminhar-pg-backup_2026-02-19_20-51-53.sql.gz
-│   │   ├── caminhar-pg-backup_2026-02-26_18-36-07.sql.gz
-│   │   ├── cron.log
-│   │   ├── posts-backup-2026-02-16T01-34-56-945Z.json
-│   │   ├── pre-restore-backup_2026-02-19_18-07-00.sql.gz
-│   │   └── pre-restore-backup_2026-02-19_20-53-02.sql.gz
+│   │   ├── caminhar-pg-backup_2026-03-07_11-20-04.sql.gz
+│   │   └── posts-backup-2026-02-16T01-34-56-945Z.json
 │   └── caminhar.db
 ├── docs
 │   ├── API.md
@@ -334,7 +323,11 @@
 │   │   └── verify-migration.js
 │   ├── db-shell.js
 │   ├── diagnostics
-│   │   └── diagnose-hero.js
+│   │   ├── check-musicas-schema.js
+│   │   ├── check-videos-schema.js
+│   │   ├── count-posts.js
+│   │   ├── diagnose-hero.js
+│   │   └── list-last-posts.js
 │   ├── find-unused.js
 │   ├── generate-load-report.js
 │   ├── init-backup.js
@@ -510,4 +503,4 @@
 │       └── middleware.test.js
 └── tree.txt
 
-83 directories, 428 files
+83 directories, 421 files
