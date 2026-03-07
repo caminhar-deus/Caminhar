@@ -10,6 +10,14 @@ async function handler(req, res) {
         const search = req.query.search || '';
         
         const result = await getPaginatedVideos(page, limit, search);
+
+        // Log para diagnóstico: Verifique isso no terminal onde o servidor está rodando
+        console.log('🔍 Admin Videos GET:', { 
+          total: result.pagination.total, 
+          retornados: result.videos.length,
+          primeiroItem: result.videos[0] ? result.videos[0].titulo : 'Nenhum'
+        });
+
         res.status(200).json(result);
       } catch (error) {
         console.error('Error fetching videos:', error);

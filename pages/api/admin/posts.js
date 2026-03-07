@@ -16,6 +16,14 @@ async function handler(req, res) {
         const search = req.query.search || '';
         
         const result = await getPaginatedPosts(page, limit, search);
+        
+        // Log para diagnóstico: Verifique isso no terminal onde o servidor está rodando
+        console.log('🔍 Admin Posts GET:', { 
+          total: result.pagination.total, 
+          retornados: result.posts.length,
+          primeiroItem: result.posts[0] ? result.posts[0].title : 'Nenhum'
+        });
+
         res.status(200).json(result);
       } catch (error) {
         console.error('Error fetching posts:', error);
