@@ -145,14 +145,7 @@ export default function AdminCrudBase({
     // Valores booleanos (status)
     if (typeof value === 'boolean') {
       return (
-        <span style={{
-          padding: '4px 8px',
-          borderRadius: '4px',
-          fontSize: '0.85rem',
-          backgroundColor: value ? '#d4edda' : '#fff3cd',
-          color: value ? '#155724' : '#856404',
-          border: `1px solid ${value ? '#c3e6cb' : '#ffeeba'}`
-        }}>
+        <span className={`${styles.statusBadge} ${value ? styles.statusPublished : styles.statusDraft}`}>
           {value ? 'Publicado' : 'Rascunho'}
         </span>
       );
@@ -173,7 +166,7 @@ export default function AdminCrudBase({
     }
 
     // Valor padrão
-    return value || <span style={{ color: '#6c757d', fontStyle: 'italic' }}>-</span>;
+    return value || <span className={styles.emptyCell}>-</span>;
   };
 
   return (
@@ -213,7 +206,7 @@ export default function AdminCrudBase({
           onSubmit={(e) => handleSubmit(e, validateForm)} 
           className={styles.form}
         >
-          <div className={styles.formRow} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div className={styles.formRow}>
             {fields.map(renderField)}
           </div>
 
@@ -292,36 +285,22 @@ export default function AdminCrudBase({
 
       {/* Paginação */}
       {usePagination && totalPages > 1 && (
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          gap: '1rem', 
-          marginTop: '1.5rem' 
-        }}>
+        <div className={styles.pagination}>
           <button
             onClick={() => goToPage(currentPage - 1)}
             disabled={currentPage === 1 || loading}
-            className={styles.cancelButton}
-            style={{ 
-              opacity: currentPage === 1 ? 0.5 : 1, 
-              cursor: currentPage === 1 ? 'not-allowed' : 'pointer' 
-            }}
+            className={styles.paginationButton}
             type="button"
           >
             Anterior
           </button>
-          <span style={{ fontSize: '0.9rem', color: '#666' }}>
+          <span className={styles.paginationInfo}>
             Página {currentPage} de {totalPages}
           </span>
           <button
             onClick={() => goToPage(currentPage + 1)}
             disabled={currentPage === totalPages || loading}
-            className={styles.cancelButton}
-            style={{ 
-              opacity: currentPage === totalPages ? 0.5 : 1, 
-              cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' 
-            }}
+            className={styles.paginationButton}
             type="button"
           >
             Próxima

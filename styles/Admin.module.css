@@ -685,6 +685,92 @@
   font-size: 12px;
 }
 
+/* === ADDITIONS FOR AdminCrudBase & AdminMusicasNew === */
+
+/* Status Badge */
+.statusBadge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  text-align: center;
+  display: inline-block;
+}
+
+.statusPublished {
+  background-color: #d4edda;
+  color: #155724;
+  border-color: #c3e6cb;
+}
+
+.statusDraft {
+  background-color: #fff3cd;
+  color: #856404;
+  border-color: #ffeeba;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.paginationButton {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease, opacity 0.3s ease;
+}
+
+.paginationButton:hover:not(:disabled) {
+  background-color: #5a6268;
+}
+
+.paginationButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.paginationInfo {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+/* Custom Cell Renderers */
+.emptyCell {
+  color: #6c757d;
+  font-style: italic;
+}
+
+.spotifyLink {
+  color: #1DB954;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.spotifyLink:hover {
+  color: #1ed760;
+}
+
+.embedContainer {
+  margin-top: 10px;
+}
+
+.spotifyEmbed {
+  border-radius: 12px;
+  border: none;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .loginContainer, .adminPanel {

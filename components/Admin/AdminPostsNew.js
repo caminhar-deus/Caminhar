@@ -13,7 +13,9 @@ const postSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório').max(200, 'Título deve ter no máximo 200 caracteres'),
   slug: z.string().min(1, 'Slug é obrigatório').regex(/^[a-z0-9-]+$/, 'Slug deve conter apenas letras minúsculas, números e hífens'),
   excerpt: z.string().max(500, 'Resumo deve ter no máximo 500 caracteres').optional(),
-  content: z.string().optional()
+  content: z.string().optional(),
+  image_url: z.string().optional(),
+  published: z.boolean().optional()
 });
 
 /**
@@ -158,6 +160,17 @@ const initialFormData = {
  */
 export default function AdminPostsNew() {
   /**
+   * Função de validação customizada
+   * Impede publicação de posts sem imagem
+   */
+  const validatePost = (formData) => {
+    if (formData.published && !formData.image_url) {
+      return 'Para publicar um post, é necessário vincular uma imagem de capa.';
+    }
+    return null;
+  };
+
+  /**
    * Renderizador customizado para campos especiais
    * Implementa geração automática de slug a partir do título
    */
@@ -222,6 +235,7 @@ export default function AdminPostsNew() {
       columns={columns}
       initialFormData={initialFormData}
       validationSchema={postSchema}
+      validate={validatePost}
       renderCustomFormField={renderCustomFormField}
       newButtonText="+ Novo Post"
       saveButtonText="Salvar"

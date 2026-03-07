@@ -53,12 +53,17 @@
   background: #f8f9fa;
   border: 1px solid #e9ecef;
   min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .spotifyEmbed {
   border: none;
-  border-radius: 8px;
-  min-height: 80px;
+  /* 
+    O border-radius é herdado do container (.spotifyContainer) que tem overflow: hidden.
+    A altura é definida diretamente no iframe (height="80"), tornando min-height redundante.
+  */
 }
 
 .titulo {

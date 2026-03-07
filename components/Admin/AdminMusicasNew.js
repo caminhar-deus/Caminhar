@@ -1,4 +1,5 @@
 import React from 'react';
+import styles from '../../styles/Admin.module.css';
 import AdminCrudBase from './AdminCrudBase';
 import TextField from './fields/TextField';
 import UrlField from './fields/UrlField';
@@ -65,18 +66,18 @@ const columns = [
     header: 'Spotify',
     render: (item) => (
       <div>
-        <a 
-          href={item.url_spotify} 
-          target="_blank" 
+        <a
+          href={item.url_spotify}
+          target="_blank"
           rel="noopener noreferrer"
-          style={{ color: '#1DB954', textDecoration: 'none', fontWeight: 500 }}
+          className={styles.spotifyLink}
         >
           🎵 Abrir no Spotify
         </a>
-        <div style={{ marginTop: '10px' }}>
+        <div className={styles.embedContainer}>
           <iframe
             data-testid="embed-iframe"
-            style={{ borderRadius: '12px' }}
+            className={styles.spotifyEmbed}
             src={`https://open.spotify.com/embed/track/${item.url_spotify.split('/').pop().split('?')[0]}?utm_source=generator&theme=0`}
             width="100%"
             height="80"

@@ -7,9 +7,12 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Cache por 60 segundos (fresco), permite uso de cache antigo por mais 5 minutos enquanto revalida
+    res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+
     const { search, page: pageStr, limit: limitStr } = req.query;
-    const page = parseInt(pageStr) || 1;
-    const limit = parseInt(limitStr) || 10;
+    const page = Math.max(1, parseInt(pageStr) || 1);
+    const limit = Math.max(1, parseInt(limitStr) || 10);
     const offset = (page - 1) * limit;
 
     let text = 'SELECT id, titulo, artista, url_spotify, descricao FROM musicas WHERE publicado = true';
@@ -17,8 +20,9 @@ export default async function handler(req, res) {
     let paramIndex = 1;
 
     if (search) {
+      const searchStr = Array.isArray(search) ? search[0] : search;
       text += ` AND (titulo ILIKE $${paramIndex} OR artista ILIKE $${paramIndex})`;
-      params.push(`%${search.toLowerCase()}%`);
+      params.push(`%${searchStr.toLowerCase()}%`);
       paramIndex++;
     }
 
