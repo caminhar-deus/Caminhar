@@ -42,8 +42,8 @@ export default function (data) {
     publicado: false
   });
 
-  // Ajustado para a rota pública correta (/api/videos) em vez de /api/v1/videos
-  const resValid = http.post(`${BASE_URL}/api/videos`, validPayload, { headers });
+  // Ajustado para a rota pública correta (/api/v1/videos)
+  const resValid = http.post(`${BASE_URL}/api/v1/videos`, validPayload, { headers });
   
   check(resValid, {
     'URL Válida: status é 201': (r) => r.status === 201,
@@ -59,7 +59,7 @@ export default function (data) {
     publicado: false
   });
 
-  const resInvalidDomain = http.post(`${BASE_URL}/api/videos`, invalidDomainPayload, { headers });
+  const resInvalidDomain = http.post(`${BASE_URL}/api/v1/videos`, invalidDomainPayload, { headers });
 
   check(resInvalidDomain, {
     'Domínio Inválido: status é 400': (r) => {
@@ -82,7 +82,7 @@ export default function (data) {
     publicado: false
   });
 
-  const resMalformed = http.post(`${BASE_URL}/api/videos`, malformedPayload, { headers });
+  const resMalformed = http.post(`${BASE_URL}/api/v1/videos`, malformedPayload, { headers });
 
   check(resMalformed, {
     'URL Malformada: status é 400': (r) => {

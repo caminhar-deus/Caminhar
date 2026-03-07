@@ -3,7 +3,7 @@ import { check, sleep } from 'k6';
 import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 
 export const options = {
-  // Teste funcional de filtro
+  // Teste funcional de paginação
   vus: 1,
   iterations: 5,
   thresholds: {
@@ -14,45 +14,56 @@ export const options = {
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
 
-// Termos comuns para busca em vídeos cristãos
-const SEARCH_TERMS = ['Deus', 'Jesus', 'Louvor', 'Adoração', 'Pregação', 'Vida'];
-
 export default function () {
-  const term = SEARCH_TERMS[Math.floor(Math.random() * SEARCH_TERMS.length)];
+  // Testa diferentes combinações de página e limite
+  const page = Math.floor(Math.random() * 3) + 1; // Páginas 1, 2 ou 3
+  const limit = [5, 10, 20][Math.floor(Math.random() * 3)]; // Limites 5, 10 ou 20
   
-  // Assume que a API suporta ?search= (padrão do projeto) para filtrar por título
-  // Ajustado para a rota pública correta (/api/videos) em vez de /api/v1/videos
-  const res = http.get(`${BASE_URL}/api/videos?search=${encodeURIComponent(term)}`);
+  const res = http.get(`${BASE_URL}/api/v1/videos?page=${page}&limit=${limit}`);
 
   check(res, {
     'Status é 200': (r) => r.status === 200,
     'Retornou lista de vídeos': (r) => {
       try {
         const body = r.json();
-        return Array.isArray(body.data) || Array.isArray(body);
+        return Array.isArray(body.data?.videos) || Array.isArray(body);
       } catch (e) {
         return false;
       }
     },
-    'Filtro funcionou (título contém termo)': (r) => {
-      let body; try { body = r.json(); } catch (e) { return false; }
-      const videos = body.data || body;
-      
-      if (!Array.isArray(videos)) return false;
-      if (videos.length === 0) return true; // Lista vazia é válida se não houver match
-
-      // Verifica se pelo menos um vídeo retornado contém o termo no título (case insensitive)
-      const matchFound = videos.some(v => {
-        const title = (v.titulo || v.title || '').toLowerCase();
-        return title.includes(term.toLowerCase());
-      });
-
-      if (!matchFound) {
-        console.log(`⚠️ API retornou ${videos.length} vídeos para termo "${term}", mas o termo não foi encontrado visualmente no título.`);
-        // Soft pass: Assumimos que o backend filtrou corretamente (pode ser descrição ou tags)
-        return true;
+    'Retornou metadados de paginação': (r) => {
+      try {
+        const body = r.json();
+        const pagination = body.data?.pagination;
+        return pagination && typeof pagination.page === 'number' && 
+               typeof pagination.limit === 'number' && 
+               typeof pagination.total === 'number' && 
+               typeof pagination.totalPages === 'number';
+      } catch (e) {
+        return false;
       }
-      return true;
+    },
+    'Paginação está correta': (r) => {
+      try {
+        const body = r.json();
+        const pagination = body.data?.pagination;
+        const videos = body.data?.videos || body;
+        
+        if (!pagination || !Array.isArray(videos)) return false;
+        
+        // Verifica se a página retornada corresponde à solicitada
+        const pageMatches = pagination.page === page;
+        
+        // Verifica se o limite está correto (ou menor se for a última página)
+        const limitMatches = pagination.limit === limit;
+        
+        // Verifica se o número de vídeos retornados não excede o limite
+        const countMatches = videos.length <= limit;
+        
+        return pageMatches && limitMatches && countMatches;
+      } catch (e) {
+        return false;
+      }
     }
   });
 

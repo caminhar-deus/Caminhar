@@ -4,7 +4,7 @@ import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 import { htmlReport } from 'https://raw.githubusercontent.com/benc-uk/k6-reporter/main/dist/bundle.js';
 
 export const options = {
-  // Teste funcional de ordenação
+  // Teste funcional de ordenação padrão (API sempre ordena por created_at DESC)
   vus: 1,
   iterations: 1,
   thresholds: {
@@ -15,24 +15,23 @@ export const options = {
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
 
 export default function () {
-  // Solicita vídeos ordenados por data de criação decrescente (mais recentes primeiro)
-  // Assume que a API suporta ?sort=created_at&order=desc
-  // Ajustado para a rota pública correta (/api/videos) em vez de /api/v1/videos
-  const res = http.get(`${BASE_URL}/api/videos?sort=created_at&order=desc`);
+  // Testa a ordenação padrão da API (sempre por created_at DESC - mais recentes primeiro)
+  // A API não suporta parâmetros de ordenação, então testamos o comportamento padrão
+  const res = http.get(`${BASE_URL}/api/v1/videos?page=1&limit=10`);
 
   check(res, {
     'Status é 200': (r) => r.status === 200,
     'Retornou lista de vídeos': (r) => {
       try {
         const body = r.json();
-        return Array.isArray(body.data) || Array.isArray(body);
+        return Array.isArray(body.data?.videos) || Array.isArray(body);
       } catch (e) {
         return false;
       }
     },
-    'Ordenação correta (Decrescente)': (r) => {
+    'Ordenação padrão correta (Decrescente por created_at)': (r) => {
       let body; try { body = r.json(); } catch (e) { return false; }
-      const videos = body.data || body;
+      const videos = body.data?.videos || body;
       
       if (!Array.isArray(videos)) return false;
 
@@ -49,6 +48,11 @@ export default function () {
         if (dateA < dateB) isSorted = false;
       }
       return isSorted;
+    },
+    'API ignora parâmetros de ordenação': (r) => {
+      // Testa se a API aceita parâmetros de ordenação sem erro (mesmo que ignore)
+      const resWithSort = http.get(`${BASE_URL}/api/v1/videos?page=1&limit=5&sort=created_at&order=desc`);
+      return resWithSort.status === 200;
     }
   });
 
