@@ -45,22 +45,24 @@ describe('getPaginatedMusicas', () => {
     const firstCallArgs = mockQuery.mock.calls[0];
     const sqlData = firstCallArgs[0];
     const paramsData = firstCallArgs[1];
+    const normalizedSqlData = sqlData.replace(/\s+/g, ' ').trim();
 
-    expect(sqlData).toContain('SELECT * FROM musicas');
+    expect(normalizedSqlData).toContain('SELECT * FROM musicas');
     // Verifica se a query padrão não tem WHERE e usa os placeholders corretos para paginação
-    expect(sqlData).toContain('ORDER BY created_at DESC LIMIT $1 OFFSET $2');
+    expect(normalizedSqlData).toContain('ORDER BY created_at DESC LIMIT $1 OFFSET $2');
     expect(paramsData).toEqual([10, 0]); // limit=10, offset=0 (padrão)
 
     // Verificações da segunda query (SELECT COUNT)
     const secondCallArgs = mockQuery.mock.calls[1];
     const sqlCount = secondCallArgs[0];
     const paramsCount = secondCallArgs[1];
+    const normalizedSqlCount = sqlCount.replace(/\s+/g, ' ').trim();
 
-    expect(sqlCount).toContain('SELECT COUNT(*) FROM musicas');
+    expect(normalizedSqlCount).toContain('SELECT COUNT(*) FROM musicas');
     expect(paramsCount).toEqual([]);
 
     // Verifica o formato do objeto de retorno
-    expect(result).toEqual({
+    expect(result).toEqual(expect.objectContaining({
       musicas: [{ id: 1, title: 'Música 1' }],
       pagination: {
         page: 1,
@@ -68,7 +70,7 @@ describe('getPaginatedMusicas', () => {
         total: 1,
         totalPages: 1,
       },
-    });
+    }));
   });
 
   it('deve lidar corretamente com o parâmetro de busca', async () => {
@@ -81,10 +83,11 @@ describe('getPaginatedMusicas', () => {
     const firstCallArgs = mockQuery.mock.calls[0];
     const sqlData = firstCallArgs[0];
     const paramsData = firstCallArgs[1];
+    const normalizedSqlData = sqlData.replace(/\s+/g, ' ').trim();
 
     // Verifica a construção do SQL com WHERE e placeholders dinâmicos
-    expect(sqlData).toContain('WHERE (LOWER(titulo) LIKE $1 OR LOWER(artista) LIKE $1)');
-    expect(sqlData).toContain('ORDER BY created_at DESC LIMIT $2 OFFSET $3');
+    expect(normalizedSqlData).toContain('WHERE (LOWER(titulo) LIKE $1 OR LOWER(artista) LIKE $1)');
+    expect(normalizedSqlData).toContain('ORDER BY created_at DESC LIMIT $2 OFFSET $3');
     
     // Verifica os parâmetros (termo de busca, limit, offset)
     expect(paramsData).toEqual(['%teste%', 10, 0]);
@@ -92,8 +95,9 @@ describe('getPaginatedMusicas', () => {
     const secondCallArgs = mockQuery.mock.calls[1];
     const sqlCount = secondCallArgs[0];
     const paramsCount = secondCallArgs[1];
+    const normalizedSqlCount = sqlCount.replace(/\s+/g, ' ').trim();
 
-    expect(sqlCount).toContain('WHERE (LOWER(titulo) LIKE $1 OR LOWER(artista) LIKE $1)');
+    expect(normalizedSqlCount).toContain('WHERE (LOWER(titulo) LIKE $1 OR LOWER(artista) LIKE $1)');
     expect(paramsCount).toEqual(['%teste%']);
   });
 

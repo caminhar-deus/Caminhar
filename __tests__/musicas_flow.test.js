@@ -10,6 +10,11 @@ jest.mock('../lib/db', () => ({
   deleteMusica: jest.fn(),
 }));
 
+// Mock do cache para evitar erro de importação do Redis/uncrypto
+jest.mock('../lib/cache', () => ({
+  invalidateCache: jest.fn(),
+}));
+
 // Mock do módulo de autenticação para ignorar a verificação de token neste teste
 jest.mock('../lib/auth', () => ({
   withAuth: (handler) => (req, res) => handler(req, res),
