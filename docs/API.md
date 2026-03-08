@@ -1,8 +1,8 @@
-# Caminhar API v1.4.0 - Documentação
+# Caminhar API v1.7.0 - Documentação
 
 Bem-vindo à documentação da API RESTful do Caminhar para consumo externo.
 
-## 🚀 Versão: v1.4.0
+## 🚀 Versão: v1.7.0
 
 ## Visão Geral
 

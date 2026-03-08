@@ -2,7 +2,7 @@
 # O Caminhar com Deus
 
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)](https://github.com/caminhar-deus/Caminhar/actions)
-[![Version](https://img.shields.io/badge/Version-1.4.0-blue)](https://github.com/caminhar-deus/Caminhar/releases)
+[![Version](https://img.shields.io/badge/Version-1.7.0-blue)](https://github.com/caminhar-deus/Caminhar/releases)
 [![Node.js](https://img.shields.io/badge/Node.js-24.14.0-green)](https://nodejs.org/)
 
 Um site cristão moderno e dinâmico para compartilhar reflexões e ensinamentos sobre fé, espiritualidade e a jornada cristã.

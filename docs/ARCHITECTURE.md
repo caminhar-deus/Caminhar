@@ -1,6 +1,6 @@
 # 🏗️ Arquitetura do Projeto - O Caminhar com Deus
 
-## 🚀 Versão: v1.4.0
+## 🚀 Versão: v1.7.0
 
 ## 1. Visão Geral
 

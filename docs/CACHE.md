@@ -1,6 +1,6 @@
 # 🗄️ Sistema de Cache com Redis - O Caminhar com Deus
 
-## 🚀 Versão: v1.4.0
+## 🚀 Versão: v1.7.0
 
 ## Visão Geral
 

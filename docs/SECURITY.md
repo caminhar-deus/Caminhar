@@ -1,6 +1,6 @@
 # 🛡️ Segurança - O Caminhar com Deus
 
-## 🚀 Versão: v1.4.0
+## 🚀 Versão: v1.7.0
 
 Este documento descreve as práticas, políticas e implementações de segurança adotadas no projeto "O Caminhar com Deus".
 

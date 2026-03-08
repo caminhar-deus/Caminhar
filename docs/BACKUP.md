@@ -1,6 +1,6 @@
 # 🗄️ Sistema de Backup do Banco de Dados - O Caminhar com Deus
 
-## 🚀 Versão: v1.4.0
+## 🚀 Versão: v1.7.0
 
 ## Dependências do Sistema de Backup
 - pg: ^8.11.0 (PostgreSQL driver)

@@ -1,6 +1,6 @@
 # 🚀 Guia de Deploy - O Caminhar com Deus
 
-## 🚀 Versão: v1.4.0
+## 🚀 Versão: v1.7.0
 
 Este guia cobre os procedimentos para implantar a aplicação em dois ambientes comuns: **VPS (Virtual Private Server)** e **Vercel**.
 
