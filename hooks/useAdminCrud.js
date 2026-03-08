@@ -22,7 +22,9 @@ export function useAdminCrud({
     setError('');
     try {
       const url = usePagination ? `${apiEndpoint}?page=${page}&limit=${itemsPerPage}` : apiEndpoint;
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        credentials: 'include' // *** CORREÇÃO: Envia cookies de autenticação ***
+      });
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || `Erro ao buscar dados: ${response.statusText}`);
