@@ -102,7 +102,22 @@ const columns = [
       </div>
     )
   },
-  { key: 'publicado', header: 'Status' }
+  {
+    key: 'publicado',
+    header: 'Status',
+    render: (item) => (
+      <span style={{
+        padding: '4px 8px',
+        borderRadius: '4px',
+        fontSize: '0.85rem',
+        backgroundColor: item.publicado ? '#d4edda' : '#fff3cd',
+        color: item.publicado ? '#155724' : '#856404',
+        border: `1px solid ${item.publicado ? '#c3e6cb' : '#ffeeba'}`
+      }}>
+        {item.publicado ? '✅ Publicado' : '📝 Rascunho'}
+      </span>
+    )
+  }
 ];
 
 /**
