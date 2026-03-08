@@ -1,4 +1,4 @@
-# 🚀 SEO & Performance Toolkit
+# 🚀 SEO & Performance Toolkit - Documentação Completa
 
 Kit completo de SEO e Performance para Next.js - Otimizado para Core Web Vitals e ranqueamento orgânico.
 
@@ -365,6 +365,99 @@ export default function BlogPost({ post }) {
 }
 ```
 
+### Página de Música Completa
+
+```javascript
+import SEOHead from '../components/SEO/Head';
+import { MusicSchema, OrganizationSchema } from '../components/SEO/StructuredData';
+import { ImageOptimized, LazyIframe } from '../components/Performance';
+import usePerformanceMetrics from '../hooks/usePerformanceMetrics';
+
+export default function MusicaPage({ musica }) {
+  usePerformanceMetrics({ reportToAnalytics: true });
+  
+  return (
+    <>
+      <SEOHead
+        title={`${musica.titulo} - ${musica.artista}`}
+        description={`Ouça ${musica.titulo} de ${musica.artista}`}
+        image={musica.capa}
+      />
+      
+      <OrganizationSchema />
+      <MusicSchema
+        title={musica.titulo}
+        artist={musica.artista}
+        album={musica.album}
+        image={musica.capa}
+        url={`https://caminhar.com/musicas/${musica.id}`}
+        spotifyId={musica.spotify_id}
+        genre={musica.genero}
+      />
+      
+      <main>
+        <ImageOptimized src={musica.capa} alt={musica.titulo} critical priority />
+        <h1>{musica.titulo}</h1>
+        <p>Artista: {musica.artista}</p>
+        <p>Álbum: {musica.album}</p>
+        
+        <LazyIframe
+          src={`https://open.spotify.com/embed/track/${musica.spotify_id}`}
+          provider="spotify"
+          aspectRatio="100/152"
+        />
+      </main>
+    </>
+  );
+}
+```
+
+### Página de Vídeo Completa
+
+```javascript
+import SEOHead from '../components/SEO/Head';
+import { VideoSchema, OrganizationSchema } from '../components/SEO/StructuredData';
+import { ImageOptimized, LazyIframe } from '../components/Performance';
+import usePerformanceMetrics from '../hooks/usePerformanceMetrics';
+
+export default function VideoPage({ video }) {
+  usePerformanceMetrics({ reportToAnalytics: true });
+  
+  return (
+    <>
+      <SEOHead
+        title={video.titulo}
+        description={video.descricao}
+        image={video.thumbnail}
+      />
+      
+      <OrganizationSchema />
+      <VideoSchema
+        title={video.titulo}
+        description={video.descricao}
+        thumbnail={video.thumbnail}
+        url={`https://caminhar.com/videos/${video.id}`}
+        youtubeId={video.youtube_id}
+        views={video.visualizacoes}
+      />
+      
+      <main>
+        <ImageOptimized src={video.thumbnail} alt={video.titulo} critical priority />
+        <h1>{video.titulo}</h1>
+        <p>{video.descricao}</p>
+        
+        <LazyIframe
+          src={`https://www.youtube.com/embed/${video.youtube_id}`}
+          provider="youtube"
+          thumbnail={video.thumbnail}
+          placeholderText="▶ Assistir vídeo"
+        />
+      </main>
+    </>
+  );
+}
+```
+
 ---
 
 ## 📋 Checklist SEO
@@ -586,6 +679,13 @@ import { ImageOptimized } from '../components/Performance';
 ```
 
 ## 📝 Notas de Versão
+
+### v1.7.0
+- ✅ Documentação completa e organizada
+- ✅ Guia rápido separado (SEO.md)
+- ✅ Exemplos de uso avançados
+- ✅ Configurações detalhadas
+- ✅ Guia de migração completo
 
 ### v1.4.0
 - ✅ SEOHead completo com todas meta tags
