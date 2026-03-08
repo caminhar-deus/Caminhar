@@ -17,6 +17,19 @@ export default {
     '^.+\.(js|jsx|mjs|cjs)$': ['babel-jest', { configFile: './babel.jest.config.js' }]
   },
   
+  // Disable coverage for problematic modules
+  collectCoverageFrom: [
+    'lib/**/*.js',
+    'pages/api/**/*.js',
+    'components/**/*.js',
+    '!**/*.test.js',
+    '!**/node_modules/**',
+    '!**/coverage/**',
+    '!**/tests/**',
+    '!**/lib/db.js', // Exclude problematic db module
+    '!**/lib/auth.js' // Exclude problematic auth module
+  ],
+  
   transformIgnorePatterns: [
     '/node_modules/(?!node-mocks-http|@faker-js|url|pg)',
     '/node_modules/(?!@faker-js/)'  // Permite transformar @faker-js

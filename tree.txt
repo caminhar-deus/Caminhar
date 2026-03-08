@@ -225,7 +225,6 @@
 │   │   ├── admin
 │   │   │   ├── backups.js
 │   │   │   ├── cache.js
-│   │   │   ├── cache.test.js
 │   │   │   ├── musicas.js
 │   │   │   ├── posts.js
 │   │   │   ├── rate-limit.js
@@ -246,11 +245,9 @@
 │   │       │   ├── check.js
 │   │       │   └── login.js
 │   │       ├── health.js
-│   │       ├── health.test.js
 │   │       ├── posts.js
 │   │       ├── settings.js
 │   │       ├── status.js
-│   │       ├── status.test.js
 │   │       ├── videos
 │   │       │   └── [id].js
 │   │       └── videos.js
@@ -385,6 +382,12 @@
 │   └── VideoGallery.module.css
 ├── __tests__
 │   ├── AdminPostManager.test.js
+│   ├── api
+│   │   ├── admin
+│   │   │   └── cache.test.js
+│   │   └── v1
+│   │       ├── health.test.js
+│   │       └── status.test.js
 │   ├── auth_check.test.js
 │   ├── auth.test.js
 │   ├── backups.api.test.js
@@ -498,4 +501,4 @@
 │       └── middleware.test.js
 └── tree.txt
 
-83 directories, 416 files
+86 directories, 416 files
