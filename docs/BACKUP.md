@@ -1,12 +1,13 @@
-# Caminhar Database Backup System v1.2.1
+# 🗄️ Sistema de Backup do Banco de Dados - O Caminhar com Deus
 
-## 🚀 Versão: v1.2.1
+## 🚀 Versão: v1.4.0
 
 ## Dependências do Sistema de Backup
-- pg: ^8.11.0
-- node-cron: ^3.0.2
-- fs-extra: ^11.1.1
-- zlib: ^1.0.7
+- pg: ^8.11.0 (PostgreSQL driver)
+- node-cron: ^3.0.2 (Agendamento de tarefas)
+- fs-extra: ^11.1.1 (Operações de arquivo avançadas)
+- zlib: ^1.0.7 (Compressão de arquivos)
+- @vercel/og: ^0.6.1 (Gerador de imagens)
 
 ## Overview
 
@@ -164,10 +165,12 @@ If backups fail:
 ## 🧪 Testes do Sistema de Backup
 
 ### Testes de Integridade
-- **Backup Creation**: Testes de criação de backup
-- **Restore Process**: Testes de processo de restauração
-- **Compression**: Testes de compressão e descompressão
-- **Verification**: Testes de verificação de integridade
+- **Backup Creation**: Testes de criação de backup com PostgreSQL
+- **Restore Process**: Testes de processo de restauração completa
+- **Compression**: Testes de compressão e descompressão com zlib
+- **Verification**: Testes de verificação de integridade automática
+- **ES Modules**: Testes de compatibilidade com ES modules
+- **Turbopack**: Testes de integração com Turbopack
 
 ### Testes de Performance
 ```bash
@@ -179,21 +182,43 @@ npm run test:backup:integration
 
 # Testes de carga de backup
 npm run test:backup:load
+
+# Testes de cache de backup
+npm run test:backup:cache
+
+# Testes de segurança de backup
+npm run test:backup:security
+```
+
+### Testes de Carga (k6)
+```bash
+# Testes de carga para operações de backup simultâneas
+k6 run load-tests/backup-concurrent-test.js
+
+# Testes de carga para restauração de backup
+k6 run load-tests/backup-restore-test.js
+
+# Testes de carga para verificação de backup
+k6 run load-tests/backup-verification-test.js
 ```
 
 ## 📊 Monitoramento Avançado
 
 ### Métricas de Performance
-- **Backup Time**: Tempo de criação de backup
-- **Compression Ratio**: Taxa de compressão
-- **Storage Usage**: Uso de armazenamento
-- **Success Rate**: Taxa de sucesso de backups
+- **Backup Time**: Tempo de criação de backup (meta: < 30s)
+- **Compression Ratio**: Taxa de compressão (meta: > 70%)
+- **Storage Usage**: Uso de armazenamento monitorado
+- **Success Rate**: Taxa de sucesso de backups (meta: 100%)
+- **Cache Performance**: Performance de cache de backup
+- **ES Modules Load**: Tempo de carregamento de módulos ES
 
 ### Alertas de Monitoramento
-- **Backup Failures**: Alertas para falhas de backup
-- **Disk Space**: Alertas para espaço em disco insuficiente
-- **Performance Degradation**: Alertas para degradação de performance
-- **Security Issues**: Alertas para problemas de segurança
+- **Backup Failures**: Alertas para falhas de backup com notificação por email
+- **Disk Space**: Alertas para espaço em disco insuficiente (< 1GB)
+- **Performance Degradation**: Alertas para degradação de performance (> 60s)
+- **Security Issues**: Alertas para problemas de segurança de arquivos
+- **ES Modules Errors**: Alertas para erros de carregamento de módulos
+- **Turbopack Issues**: Alertas para problemas de build com Turbopack
 
 ## Security
 
@@ -244,6 +269,25 @@ For issues with the backup system:
 4. Contact the development team with detailed error information
 
 ## Changelog
+
+### v1.4.0 (07/03/2026)
+- ✅ **ES Modules**: Projeto totalmente compatível com ES modules
+- ✅ **Jest com ESM**: Suporte nativo a ES modules sem flags experimentais
+- ✅ **Turbopack Integration**: Build ultra-rápido para desenvolvimento
+- ✅ **Babel Isolado**: Configuração separada para evitar conflitos com Turbopack
+- ✅ **Imports Modernos**: Extensões explícitas (.js) conforme especificação ESM
+- ✅ **Build Performance**: Tempo de build otimizado com Turbopack
+- ✅ **Testes de Cache**: Validação completa de Cache Miss, Cache Hit e invalidação
+- ✅ **Testes de Performance**: Métricas de performance monitoradas e validadas
+- ✅ **Testes de Segurança**: Validação de segurança do sistema e proteções
+- ✅ **Testes de Cross-Browser**: Compatibilidade verificada em diferentes navegadores
+- ✅ **Testes de Mobile**: Responsividade e usabilidade validadas em dispositivos móveis
+- ✅ **Testes de Integrações Externas**: Validação completa de integrações com Spotify, YouTube e Redis
+- ✅ **Testes de Documentação**: Verificação da qualidade e completude da documentação
+- ✅ **Testes de Carga**: 15 testes de carga corrigidos e validados
+- ✅ **Performance Monitoring**: Métricas avançadas de performance e alertas
+- ✅ **Security Enhancements**: Melhorias na segurança de arquivos de backup
+- ✅ **ES Modules Support**: Suporte completo a ES modules em todo o sistema
 
 ### v1.2.0 (08/02/2026)
 - ✅ **UI Integration**: Complete backup management interface in admin panel

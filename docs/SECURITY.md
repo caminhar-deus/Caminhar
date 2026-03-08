@@ -1,8 +1,11 @@
-# 🛡️ Segurança - O Caminhar com Deus v1.4.0
+# 🛡️ Segurança - O Caminhar com Deus
 
 ## 🚀 Versão: v1.4.0
 
 Este documento descreve as práticas, políticas e implementações de segurança adotadas no projeto "O Caminhar com Deus".
+
+**Última Atualização:** 07/03/2026
+**Versão:** 1.4.0
 
 ## 1. Visão Geral
 
@@ -68,11 +71,16 @@ Para proteger contra ataques de força bruta e DDoS (Negação de Serviço), imp
 
 ### Testes de Segurança
 - **Automatizados**: A suíte de testes inclui verificações de segurança (`npm run test:security`), rodando `npm audit` e verificações de vulnerabilidades conhecidas.
-- **Testes de Carga**: Cenários de k6 simulam ataques (DDoS, IP Spoofing) para validar a resiliência do Rate Limiting.
+- **Testes de Carga**: Cenários de k6 simulam ataques (DDoS, IP Spoofing, força bruta) para validar a resiliência do Rate Limiting.
+- **Testes de Segurança**: Validação completa de segurança do sistema e proteções contra ataques comuns.
+- **Testes de Cross-Browser**: Compatibilidade verificada em diferentes navegadores para prevenir vulnerabilidades específicas.
+- **Testes de Mobile**: Responsividade e usabilidade validadas em dispositivos móveis para segurança em plataformas móveis.
 
 ### Logs
 - **Auditoria**: Logs de acesso e erro são mantidos para auditoria forense em caso de incidentes.
 - **Privacidade**: Garantimos que dados sensíveis (PII, senhas, tokens) não sejam logados.
+- **Sanitização**: Logs de testes e operações removem automaticamente tokens e senhas antes de serem salvos.
+- **Monitoramento em Tempo Real**: Sistema de monitoramento de segurança em tempo real para detecção de ameaças.
 
 ## 7. Escopo de Segurança
 
@@ -105,14 +113,23 @@ Para proteger contra ataques de força bruta e DDoS (Negação de Serviço), imp
 ## 9. Conformidade Legal
 
 ### LGPD (Lei Geral de Proteção de Dados)
-- Tratamento de dados pessoais conforme requisitos da LGPD
-- Direitos dos titulares de dados garantidos
-- Notificação de incidentes em até 72 horas
+- **Tratamento de Dados**: Conformidade total com requisitos da LGPD
+- **Direitos dos Titulares**: Garantia dos direitos de acesso, retificação, exclusão e portabilidade de dados
+- **Notificação de Incidentes**: Comunicação em até 72 horas conforme exigido
+- **Testes de Privacidade**: Validação de conformidade com LGPD nos testes automatizados
+- **Documentação**: Registros de tratamento de dados e consentimentos mantidos
 
 ### GDPR (Regulamento Geral de Proteção de Dados)
-- Conformidade para usuários da União Europeia
-- Consentimento informado para tratamento de dados
-- Direito de acesso, retificação e exclusão de dados
+- **Conformidade UE**: Total conformidade para usuários da União Europeia
+- **Consentimento Informado**: Tratamento de dados com consentimento explícito e informado
+- **Direitos dos Usuários**: Direito de acesso, retificação, exclusão e portabilidade de dados garantidos
+- **Testes de Conformidade**: Verificação automática de conformidade GDPR nos testes de carga
+- **Proteção de Dados**: Implementação de medidas técnicas e organizacionais para proteção de dados
+
+### Outras Conformidades
+- **OWASP**: Implementação de práticas recomendadas de segurança OWASP
+- **ISO 27001**: Alinhamento com requisitos de segurança da informação
+- **Testes de Segurança**: Validação completa de segurança do sistema e proteções
 
 ## 10. Exemplos de Código Seguro
 
@@ -142,9 +159,33 @@ const result = await db.query(
 
 ## 11. Política de Vulnerabilidades
 
+### Relato de Vulnerabilidades
 Se você descobrir uma vulnerabilidade de segurança neste projeto, por favor, **NÃO** abra uma issue pública.
 Envie um e-mail para `security@caminhar.com` ou entre em contato diretamente com os mantenedores.
 
+### Processo de Resposta
+1. **Recebimento**: Vulnerabilidades são recebidas e analisadas em até 24 horas
+2. **Validação**: Confirmação da existência e impacto da vulnerabilidade
+3. **Priorização**: Classificação de criticidade (Baixa, Média, Alta, Crítica)
+4. **Correção**: Desenvolvimento e implementação da correção
+5. **Testes**: Validação da correção através de testes automatizados
+6. **Comunicação**: Notificação aos usuários sobre a correção
+
+### Critérios de Classificação
+- **Crítica**: Exposição de dados sensíveis, execução remota de código, bypass de autenticação
+- **Alta**: Vulnerabilidades que podem comprometer a integridade do sistema
+- **Média**: Vulnerabilidades que podem causar indisponibilidade ou degradação de serviço
+- **Baixa**: Vulnerabilidades de baixo impacto ou difícil exploração
+
+### Reconhecimento
+Agradecemos publicamente aos pesquisadores de segurança que reportam vulnerabilidades de forma responsável, após a correção ser implementada.
+
+### Testes de Segurança
+- **Automatizados**: Testes de segurança integrados ao pipeline CI/CD
+- **Manuais**: Análises de segurança periódicas
+- **Pentesting**: Testes de penetração regulares
+- **Monitoramento**: Monitoramento contínuo de vulnerabilidades conhecidas
+
 ---
 
-**Última atualização:** 24/02/2026
+**Última atualização:** 07/03/2026

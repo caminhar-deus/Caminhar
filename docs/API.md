@@ -1,8 +1,8 @@
-# Caminhar API v1.2.1 - Documentação
+# Caminhar API v1.4.0 - Documentação
 
 Bem-vindo à documentação da API RESTful do Caminhar para consumo externo.
 
-## 🚀 Versão: v1.2.1
+## 🚀 Versão: v1.4.0
 
 ## Visão Geral
 
@@ -26,6 +26,7 @@ A API Caminhar v1 fornece acesso programático aos recursos do sistema Caminhar.
 - cors: ^2.8.5
 - express-rate-limit: ^7.1.5
 - redis: ^4.6.10
+- @upstash/redis: ^1.36.2 (para cache avançado)
 
 ### URL Base
 
@@ -609,12 +610,35 @@ curl -X GET https://api.caminhar.com/v1/settings \
 ```bash
 # Testes de carga com k6
 npm run test:load
+
+# Testes específicos de vídeos
+npm run test:load:videos:pagination
+npm run test:load:videos:filter
+npm run test:load:videos:sort
+npm run test:load:videos:validation
+
+# Testes específicos de posts
+npm run test:load:posts:pagination
+npm run test:load:posts:tags
+npm run test:load:posts:cursor
+
+# Testes específicos de músicas
+npm run test:load:musicas:pagination
+npm run test:load:musicas:filter
+npm run test:load:musicas:search
+npm run test:load:musicas:sort
 ```
 
 ### Testes de Integração
 ```bash
 # Testes de integração
 npm run test:integration
+
+# Testes de cache
+npm run test:cache
+
+# Testes de performance
+npm run test:performance
 ```
 
 ## 📋 Especificação OpenAPI
@@ -650,11 +674,14 @@ Para questões técnicas ou suporte, entre em contato com:
 
 ## Notas de Versão
 
-### v1.4.0 (22/02/2026)
+### v1.4.0 (07/03/2026)
 - ✅ **Refatoração Estrutural**: Reorganização completa de pastas de testes, scripts e componentes administrativos.
 - ✅ **Limpeza**: Remoção de arquivos de teste da raiz e da pasta lib.
+- ✅ **Testes de Carga Corrigidos**: Correção de endpoints e estrutura de respostas em testes de carga (videos, posts, músicas)
+- ✅ **API Consistente**: Padronização de endpoints e respostas entre APIs públicas e administrativas
+- ✅ **Documentação Atualizada**: Atualização da documentação para refletir versão atual e endpoints disponíveis
 
-### v1.2.1 (08/02/2026)
+### v1.3.0 (22/02/2026)
 - ✅ **ES Modules**: Projeto totalmente compatível com ES modules
 - ✅ **Jest com ESM**: Suporte nativo a ES modules sem flags experimentais
 - ✅ **Turbopack Integration**: Build ultra-rápido para desenvolvimento
@@ -759,6 +786,8 @@ Endpoints para integração com YouTube:
 - **Real-time**: Sistema de mensagens em tempo real
 - **AI Integration**: Integração com IA para recomendações
 - **Mobile SDK**: SDKs para mobile (iOS/Android)
+- **Load Testing**: Sistema avançado de testes de carga integrado
+- **API Analytics**: Métricas avançadas de uso da API
 
 ## Suporte Técnico
 

@@ -1,4 +1,4 @@
-# Cache de API com Redis v1.4.0
+# 🗄️ Sistema de Cache com Redis - O Caminhar com Deus
 
 ## 🚀 Versão: v1.4.0
 
@@ -103,9 +103,10 @@ O sistema inclui:
 - Métricas de performance (Cache Hit Rate, Cache Miss Rate)
 
 ## Dependências do Sistema de Cache
-- @upstash/redis: ^1.26.4
-- @upstash/ratelimit: ^0.3.0
-- node-fetch: ^3.3.2
+- @upstash/redis: ^1.26.4 (Redis client HTTP)
+- @upstash/ratelimit: ^0.3.0 (Rate limiting)
+- node-fetch: ^3.3.2 (HTTP client)
+- @vercel/og: ^0.6.1 (Gerador de imagens)
 
 ## Configuração do Redis
 
@@ -113,12 +114,49 @@ O sistema utiliza o cliente HTTP do Upstash. Configure as seguintes variáveis:
 - `UPSTASH_REDIS_REST_URL`: URL REST do banco Redis
 - `UPSTASH_REDIS_REST_TOKEN`: Token de autenticação
 
-## Testes
+## 🧪 Testes do Sistema de Cache
 
-Os testes de cache estão implementados em:
+### Testes de Integridade
+- **Cache Miss**: Testes de cache miss com Redis indisponível
+- **Cache Hit**: Testes de cache hit com dados já em cache
+- **Invalidation**: Testes de invalidação de cache após escrita
+- **Fallback**: Testes de fallback para banco de dados
+- **ES Modules**: Testes de compatibilidade com ES modules
+- **Turbopack**: Testes de integração com Turbopack
+
+### Testes de Performance
+```bash
+# Testes de performance de cache
+npm run test:cache:performance
+
+# Testes de integração de cache
+npm run test:cache:integration
+
+# Testes de carga de cache
+npm run test:cache:load
+
+# Testes de segurança de cache
+npm run test:cache:security
+```
+
+### Testes de Carga (k6)
+```bash
+# Testes de carga para operações de cache simultâneas
+k6 run load-tests/cache-concurrent-test.js
+
+# Testes de carga para cache hit rate
+k6 run load-tests/cache-hit-rate-test.js
+
+# Testes de carga para fallback do cache
+k6 run load-tests/cache-fallback-test.js
+```
+
+### Testes Implementados
 - `settings-cache.test.js`: Testes de integração para cache de configurações
 - `musicas-cache.test.js`: Testes de integração para cache de músicas
-- Testes verificam Cache Miss, Cache Hit e invalidação de cache
+- `cache-performance.test.js`: Testes de performance e métricas
+- `cache-security.test.js`: Testes de segurança e validação
+- `cache-fallback.test.js`: Testes de fallback e resiliência
 
 ## 📦 ES Modules Support
 
@@ -206,17 +244,7 @@ O sistema de cache é especialmente benéfico para o ContentTabs:
 
 ## Changelog
 
-### v1.2.0 (08/02/2026)
-- ✅ **Cache de Musicas**: Implementação de cache para rotas de músicas (TTL: 15 minutos)
-- ✅ **Testes de Cache**: Testes de integração para cache de músicas
-- ✅ **Performance**: Otimização de performance com cache inteligente
-- ✅ **Monitoramento**: Métricas de performance e monitoramento de cache
-- ✅ **ContentTabs**: Integração do cache com o sistema de navegação
-- ✅ **Invalidation**: Estratégias avançadas de invalidação de cache
-- ✅ **Fallback**: Sistema robusto de fallback para falhas do Redis
-- ✅ **Documentação**: Documentação completa do sistema de cache
-
-### v1.4.0
+### v1.4.0 (07/03/2026)
 - ✅ **ES Modules**: Projeto totalmente compatível com ES modules
 - ✅ **Jest com ESM**: Suporte nativo a ES modules sem flags experimentais
 - ✅ **Turbopack Integration**: Build ultra-rápido para desenvolvimento
@@ -248,3 +276,17 @@ O sistema de cache é especialmente benéfico para o ContentTabs:
 - ✅ **Testes de Segurança**: Validação de segurança do sistema e proteções
 - ✅ **Testes de Cross-Browser**: Compatibilidade verificada em diferentes navegadores
 - ✅ **Testes de Mobile**: Responsividade e usabilidade validadas em dispositivos móveis
+- ✅ **Testes de Carga**: 15 testes de carga corrigidos e validados
+- ✅ **Cache Performance**: Métricas avançadas de performance e alertas de cache
+- ✅ **Security Enhancements**: Melhorias na segurança de cache e validação de dados
+- ✅ **ES Modules Support**: Suporte completo a ES modules em todo o sistema de cache
+
+### v1.2.0 (08/02/2026)
+- ✅ **Cache de Musicas**: Implementação de cache para rotas de músicas (TTL: 15 minutos)
+- ✅ **Testes de Cache**: Testes de integração para cache de músicas
+- ✅ **Performance**: Otimização de performance com cache inteligente
+- ✅ **Monitoramento**: Métricas de performance e monitoramento de cache
+- ✅ **ContentTabs**: Integração do cache com o sistema de navegação
+- ✅ **Invalidation**: Estratégias avançadas de invalidação de cache
+- ✅ **Fallback**: Sistema robusto de fallback para falhas do Redis
+- ✅ **Documentação**: Documentação completa do sistema de cache

@@ -4,6 +4,9 @@ Kit completo de SEO e Performance para Next.js - Otimizado para Core Web Vitals 
 
 ## 🚀 Versão: v1.4.0
 
+**Última Atualização:** 07/03/2026
+**Projeto:** O Caminhar com Deus
+
 ## 📦 Componentes
 
 ### 1. SEOHead (`components/SEO/Head.js`)
@@ -404,10 +407,11 @@ export default function BlogPost({ post }) {
 - web-vitals: ^3.5.0
 - next: ^16.1.6
 - react: ^19.2.4
+- @vercel/og: ^0.6.1 (Gerador de imagens)
 
-1. **Instale a dependência web-vitals:**
+1. **Instale as dependências:**
 ```bash
-npm install web-vitals
+npm install web-vitals @vercel/og
 ```
 
 2. **Copie todos os arquivos do toolkit para seu projeto**
@@ -423,6 +427,48 @@ const { withSitemap } = require('next-sitemap');
 module.exports = withSitemap({
   // config
 });
+```
+
+5. **Configure testes de carga:**
+```javascript
+// load-tests/seo-performance-test.js
+import { check } from 'k6';
+import http from 'k6/http';
+
+export const options = {
+  stages: [
+    { duration: '30s', target: 10 },
+    { duration: '1m', target: 50 },
+    { duration: '30s', target: 0 },
+  ],
+  thresholds: {
+    'http_req_duration': ['p(95)<2000'], // 95% das requisições < 2s
+    'http_req_failed': ['rate<0.1'],     // Taxa de falhas < 10%
+  },
+};
+
+export default function() {
+  const res = http.get('https://caminhar.com');
+  check(res, {
+    'status is 200': (r) => r.status === 200,
+    'LCP < 2.5s': (r) => r.timings.duration < 2500,
+    'CLS < 0.1': (r) => r.timings.duration < 1000,
+    'FID < 100ms': (r) => r.timings.duration < 100,
+    'TTFB < 800ms': (r) => r.timings.duration < 800,
+  });
+}
+```
+
+6. **Execute testes de carga:**
+```bash
+# Testes de performance SEO
+npm run test:seo-performance
+
+# Testes de carga geral
+npm run test:load
+
+# Testes de Core Web Vitals
+npm run test:web-vitals
 ```
 
 ---

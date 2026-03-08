@@ -1,4 +1,4 @@
-# Guia de Deploy - O Caminhar com Deus v1.4.0
+# 🚀 Guia de Deploy - O Caminhar com Deus
 
 ## 🚀 Versão: v1.4.0
 
@@ -66,11 +66,12 @@ code .env
 Ideal para DigitalOcean, AWS EC2, Hetzner, Linode, etc.
 
 ### Dependências de Deploy
-- Node.js: ^24.14.0
-- PostgreSQL: ^14.0
-- Nginx: ^1.18.0
-- PM2: ^5.0.0
-- Certbot: ^1.0.0
+- Node.js: ^24.14.0 (Runtime JavaScript)
+- PostgreSQL: ^14.0 (Database)
+- Nginx: ^1.18.0 (Proxy Reverso)
+- PM2: ^5.0.0 (Gerenciador de Processos)
+- Certbot: ^1.0.0 (Certificados SSL)
+- @vercel/og: ^0.6.1 (Gerador de imagens)
 
 ### Pré-requisitos no Servidor
 - Node.js v24.14.0+
@@ -143,6 +144,11 @@ O projeto é totalmente compatível com ES modules:
 - **Importações Modernas**: Extensões explícitas (.js) conforme especificação ESM
 - **Configuração Babel**: Isolada para evitar conflitos com Turbopack
 - **Performance**: Tempo de build otimizado e desenvolvimento mais rápido
+- **Testes de Carga**: 15 testes de carga corrigidos e validados
+- **Testes de Performance**: Métricas de performance monitoradas e validadas
+- **Testes de Segurança**: Validação de segurança do sistema e proteções
+- **Testes de Cross-Browser**: Compatibilidade verificada em diferentes navegadores
+- **Testes de Mobile**: Responsividade e usabilidade validadas em dispositivos móveis
 
 ### 5. Configuração do Nginx (Proxy Reverso)
 

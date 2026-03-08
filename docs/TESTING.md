@@ -1,6 +1,9 @@
-# Documentação de Testes - O Caminhar com Deus v1.4.0
+# 📚 Documentação de Testes - O Caminhar com Deus
 
 ## 🚀 Versão: v1.4.0
+
+**Última Atualização:** 07/03/2026
+**Projeto:** O Caminhar com Deus
 
 Este documento detalha a estratégia de testes, ferramentas utilizadas e procedimentos para garantir a qualidade e estabilidade do projeto.
 
@@ -10,9 +13,28 @@ Este documento detalha a estratégia de testes, ferramentas utilizadas e procedi
 - **Jest**: Framework principal para testes unitários e de integração (Configurado para ES Modules).
 - **React Testing Library**: Para testar componentes React e interações do usuário.
 - **node-mocks-http**: Para simular requisições e respostas HTTP em testes de API.
-- **k6**: Para testes de carga e performance.
+- **k6**: Para testes de carga e performance (com relatórios HTML/JSON).
 - **Cypress**: Para testes end-to-end e automação de navegador.
 - **Playwright**: Para testes de navegador modernos e cross-browser.
+- **@vercel/og**: Para geração de imagens Open Graph.
+
+### 📊 Ferramentas de Performance
+- **Lighthouse**: Auditoria de performance, SEO e acessibilidade.
+- **WebPageTest**: Testes de performance em diferentes localidades.
+- **Sentry**: Monitoramento de erros e performance em produção.
+- **LogRocket**: Gravação de sessões de usuários e debug remoto.
+
+### 🔒 Ferramentas de Segurança
+- **OWASP ZAP**: Ferramenta de teste de segurança web.
+- **Snyk**: Verificação de vulnerabilidades em dependências.
+- **npm audit**: Auditoria de segurança de pacotes npm.
+- **Helmet.js**: Middleware de segurança para Express/Next.js.
+
+### 🌐 APIs e Integrações
+- **Spotify API**: Integração para reprodução de músicas.
+- **YouTube API**: Integração para reprodução de vídeos.
+- **Upstash Redis**: Cache e rate limiting em nuvem.
+- **Cloudflare**: CDN e proteção DDoS.
 
 ## 📝 Exemplos de Código de Testes
 
@@ -726,8 +748,22 @@ npm run cypress:run         # Executa Cypress em modo headless
 npm run test:load           # Teste de health check
 npm run test:load:auth      # Teste de fluxo autenticado
 npm run test:load:write     # Teste de fluxo de escrita
+npm run test:load:write-and-clean # Teste de escrita com limpeza automática
 npm run test:load:upload    # Teste de upload em massa
 npm run test:load:cache     # Teste de cache
+npm run test:load:search    # Teste de busca de conteúdo
+npm run test:load:stress    # Teste de estresse combinado
+npm run test:load:ddos      # Simulação de DDoS
+npm run test:load:ratelimit # Teste de rate limiting
+npm run test:load:backup    # Verificação de backup
+npm run test:load:pagination # Validação de paginação
+npm run test:load:videos:filter # Filtro de vídeos
+npm run test:load:musicas:filter # Filtro de músicas
+npm run test:load:musicas:search # Busca de músicas
+npm run test:load:videos:sort # Ordenação de vídeos
+npm run test:load:musicas:sort # Ordenação de músicas
+npm run test:load:posts:tags # Busca de posts por tag
+npm run test:load:posts:cursor # Paginação por cursor
 ```
 
 **Testes Específicos:**
@@ -762,6 +798,16 @@ npm run clean:load-posts    # Limpa dados de teste de carga
 npm run docker:test:up      # Inicia ambiente de teste Docker
 npm run docker:test:down    # Para ambiente de teste Docker
 npm run docker:test:clean   # Limpa ambiente de teste Docker
+```
+
+**Testes de Carga Avançados:**
+```bash
+npm run test:load:all       # Execução completa (todos os cenários)
+npm run test:load:cache:headers # Validação de headers de cache
+npm run test:load:recovery  # Teste de recuperação (chaos)
+npm run test:load:ip-spoofing # Teste de IP spoofing
+npm run test:load:login-negative # Teste negativo de login
+npm run test:load:video-validation # Validação de URL de vídeo
 ```
 
 ---

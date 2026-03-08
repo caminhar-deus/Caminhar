@@ -241,20 +241,19 @@
 │   │   ├── posts.js
 │   │   ├── settings.js
 │   │   ├── upload-image.js
-│   │   ├── v1
-│   │   │   ├── auth
-│   │   │   │   ├── check.js
-│   │   │   │   └── login.js
-│   │   │   ├── health.js
-│   │   │   ├── health.test.js
-│   │   │   ├── posts.js
-│   │   │   ├── settings.js
-│   │   │   ├── status.js
-│   │   │   ├── status.test.js
-│   │   │   ├── videos
-│   │   │   │   └── [id].js
-│   │   │   └── videos.js
-│   │   └── videos.js
+│   │   └── v1
+│   │       ├── auth
+│   │       │   ├── check.js
+│   │       │   └── login.js
+│   │       ├── health.js
+│   │       ├── health.test.js
+│   │       ├── posts.js
+│   │       ├── settings.js
+│   │       ├── status.js
+│   │       ├── status.test.js
+│   │       ├── videos
+│   │       │   └── [id].js
+│   │       └── videos.js
 │   ├── _app.js
 │   ├── blog
 │   │   ├── index.js
@@ -274,14 +273,10 @@
 │   │   ├── backup_verification_test.json
 │   │   ├── cache_headers_test.html
 │   │   ├── cache_headers_test.json
-│   │   ├── Carga_de_Músicas_(Leitura).json
-│   │   ├── Carga_de_Vídeos_(Leitura).json
-│   │   ├── Criação_de_Posts_(Escrita).json
 │   │   ├── CRUD_de_Músicas.html
 │   │   ├── CRUD_de_Músicas.json
 │   │   ├── CRUD_de_Vídeos.json
 │   │   ├── ddos_search_test.json
-│   │   ├── Fluxo_Autenticado.json
 │   │   ├── ip_spoofing_test.json
 │   │   ├── login_negative_test.json
 │   │   ├── musicas_filter_test.json
@@ -503,4 +498,4 @@
 │       └── middleware.test.js
 └── tree.txt
 
-83 directories, 421 files
+83 directories, 416 files

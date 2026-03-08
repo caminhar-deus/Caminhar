@@ -15,7 +15,7 @@ Para detalhes técnicos específicos, consulte as documentações dedicadas na p
 |--------------|-------------|-------------------|--------------|
 | **Arquitetura** | Visão completa da estrutura do projeto, incluindo Frontend, Backend, fluxo de dados, Design System e padrões de código. | `npm run dev`, `npm run build` | Desenvolvedores, Arquitetos |
 | **Guia de Deploy** | Passo a passo para implantar a aplicação em servidores (VPS, Hostinger) e na Vercel. Inclui configuração de ambiente e Nginx. | `pm2 start`, `nginx -t` | DevOps, Administradores |
-| **Testes & Qualidade** | Detalhes sobre a suíte de testes: unitários (Jest), integração, carga (k6) e E2E (Cypress). 41 testes passando (100% de sucesso), >90% de cobertura. | `npm test`, `npm run cypress:run`, `npm run test:load:all` | QA, Desenvolvedores |
+| **Testes & Qualidade** | Detalhes sobre a suíte de testes: unitários (Jest), integração, carga (k6) e E2E (Cypress). 41 testes passando (100% de sucesso), >90% de cobertura. Testes de carga validam performance e funcionalidade de vídeos, posts e músicas. | `npm test`, `npm run cypress:run`, `npm run test:load:all` | QA, Desenvolvedores |
 | **API Reference** | Documentação da API RESTful (v1) para consumo externo. Detalha endpoints, autenticação, schemas e exemplos. | `curl`, `fetch` | Desenvolvedores Frontend, Integrações |
 | **Sistema de Backup** | Guia do sistema de backups automáticos do PostgreSQL, incluindo comandos para criar, restaurar e verificar backups. | `npm run create-backup`, `npm run restore-backup` | Administradores, DevOps |
 | **Cache & Performance** | Explicação da estratégia de cache com Redis (Upstash), incluindo chaves, TTLs e invalidação para otimizar a performance. | `npm run clear-cache` | Desenvolvedores, DevOps |
@@ -41,6 +41,7 @@ Para detalhes técnicos específicos, consulte as documentações dedicadas na p
 - **SEO Completo**: Schema.org, Open Graph, Twitter Cards, Core Web Vitals
 - **Upload de Imagens**: Sistema robusto com validação de tipos MIME e tamanho de arquivos
 - **API RESTful v1.4.0**: Endpoints organizados e documentados para consumo externo
+- **Testes de Carga**: 15 testes de carga (k6) validando performance, paginacão, validação e funcionalidades de vídeos, posts e músicas
 - **Polimento Visual e Técnico**: Animações, transições e tratamento de erros aprimorados
 
 ##  Como Executar (Quickstart)
@@ -94,6 +95,7 @@ docker-compose exec app npm run db:init
 ✅ Testes de Integrações Externas (Spotify, YouTube, Redis)  
 ✅ Testes de Performance e Segurança  
 ✅ Testes de Cross-Browser e Mobile  
+✅ Testes de Carga (k6) - Videos, Posts, Músicas  
 ✅ Modernização ESM + Turbopack
 
 ## 🤝 Contribuição
