@@ -101,6 +101,7 @@
 │   ├── coverage-final.json
 │   ├── favicon.png
 │   ├── index.html
+│   ├── lcov.info
 │   ├── lcov-report
 │   │   ├── base.css
 │   │   ├── block-navigation.js
@@ -284,7 +285,6 @@
 │   │   ├── posts_cursor_pagination_test.json
 │   │   ├── posts_tags_test.json
 │   │   ├── rate_limit_test.json
-│   │   ├── recovery_test.json
 │   │   ├── search_content_test.json
 │   │   ├── stress-test-combined.html
 │   │   ├── stress-test-combined.json
