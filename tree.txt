@@ -132,6 +132,7 @@
 │   ├── ARCHITECTURE.md
 │   ├── BACKUP.md
 │   ├── CACHE.md
+│   ├── DB_EXAMPLE.md
 │   ├── DEPLOY.md
 │   ├── REPORTS.md
 │   ├── SECURITY.md
@@ -163,6 +164,7 @@
 │   │   └── validate.js
 │   ├── auth.js
 │   ├── cache.js
+│   ├── db-example.js
 │   ├── db.js
 │   ├── domain
 │   │   ├── musicas
@@ -501,4 +503,4 @@
 │       └── middleware.test.js
 └── tree.txt
 
-86 directories, 416 files
+86 directories, 418 files

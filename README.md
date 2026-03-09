@@ -23,6 +23,7 @@ Para detalhes técnicos específicos, consulte as documentações dedicadas na p
 | **SEO_TOOLKIT** | Documentação completa do kit de SEO e performance, incluindo componentes, schemas e exemplos de uso. | `npm run test:seo` | Marketing, Desenvolvedores |
 | **Relatórios Técnicos** | Histórico de análises técnicas, benchmarks de performance (k6), e relatórios de migração e evolução da arquitetura. | `npm run test:load:all` | Gerentes, Stakeholders |
 | **Segurança** | Políticas de segurança, autenticação, proteção de API e infraestrutura. | `npm run test:security` | Security Ops, Desenvolvedores |
+| **DB Example** | Exemplo de implementação de banco de dados seguindo boas práticas de arquitetura, com logging estruturado, transações seguras e operações CRUD genéricas. | `npm run test:db` | Desenvolvedores, Arquitetos |
 
 ---
 
@@ -43,6 +44,7 @@ Para detalhes técnicos específicos, consulte as documentações dedicadas na p
 - **API RESTful v1.4.0**: Endpoints organizados e documentados para consumo externo
 - **Testes de Carga**: 15 testes de carga (k6) validando performance, paginacão, validação e funcionalidades de vídeos, posts e músicas
 - **Polimento Visual e Técnico**: Animações, transições e tratamento de erros aprimorados
+- **Exemplo de Banco de Dados**: Implementação de referência com boas práticas de arquitetura, logging estruturado, transações seguras e operações CRUD genéricas
 
 ##  Como Executar (Quickstart)
 
