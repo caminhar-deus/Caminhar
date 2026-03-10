@@ -22,6 +22,7 @@
     "test:coverage": "jest --coverage",
     "test:coverage:watch": "jest --coverage --watch",
     "test:ci": "jest --ci --coverage --maxWorkers=1",
+    "test:db": "jest tests/unit/lib/db.test.js",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
     "db:init": "node scripts/init-server.js",

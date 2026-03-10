@@ -2,6 +2,9 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { Pool } from 'pg';
 import { query, closeDatabase, saveImage, getRecentPosts, getAllPosts, createPost, updateSetting, setSetting, updatePost, deletePost, getSettings, getSetting, getAllSettings } from '../lib/db';
 
+// Helper para normalizar queries SQL, removendo espaços extras e quebras de linha
+const normalizeSql = (sql) => sql.replace(/\s+/g, ' ').trim();
+
 // Mock the pg module
 jest.mock('pg', () => {
   const mockPool = {
@@ -54,7 +57,13 @@ describe('db.js', () => {
       pool.query.mockResolvedValue(mockResult);
 
       const result = await saveImage('test.jpg', '/uploads/test.jpg', 'post', 1024, 1);
-      expect(pool.query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO images'), expect.any(Array));
+      const expectedSql = `
+        INSERT INTO images(filename, path, type, size, user_id)
+        VALUES($1, $2, $3, $4, $5)
+        RETURNING *;
+      `;
+      expect(normalizeSql(pool.query.mock.calls[0][0])).toBe(normalizeSql(expectedSql));
+      expect(pool.query.mock.calls[0][1]).toEqual(['test.jpg', '/uploads/test.jpg', 'post', 1024, 1]);
       expect(result).toEqual(mockResult.rows[0]);
     });
   });
@@ -66,7 +75,9 @@ describe('db.js', () => {
       pool.query.mockResolvedValue(mockResult);
 
       const result = await getRecentPosts(5);
-      expect(pool.query).toHaveBeenCalledWith(expect.stringContaining('SELECT * FROM posts WHERE published = true'), [5, 0]);
+      const expectedSql = 'SELECT * FROM posts WHERE published = true ORDER BY created_at DESC LIMIT $1 OFFSET $2';
+      expect(normalizeSql(pool.query.mock.calls[0][0])).toBe(normalizeSql(expectedSql));
+      expect(pool.query.mock.calls[0][1]).toEqual([5, 0]);
       expect(result).toEqual(mockResult.rows);
     });
   });
@@ -78,7 +89,9 @@ describe('db.js', () => {
       pool.query.mockResolvedValue(mockResult);
 
       const result = await getAllPosts();
-      expect(pool.query).toHaveBeenCalledWith(expect.stringContaining('SELECT * FROM posts ORDER BY created_at DESC'), undefined);
+      const expectedSql = 'SELECT * FROM posts ORDER BY created_at DESC';
+      expect(normalizeSql(pool.query.mock.calls[0][0])).toBe(normalizeSql(expectedSql));
+      expect(pool.query.mock.calls[0][1]).toBeUndefined();
       expect(result).toEqual(mockResult.rows);
     });
   });
@@ -91,7 +104,13 @@ describe('db.js', () => {
 
       const postData = { title: 'Test Post', slug: 'test-post', excerpt: 'Test excerpt', content: 'Test content', image_url: '/uploads/test.jpg', published: true };
       const result = await createPost(postData);
-      expect(pool.query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO posts'), expect.any(Array));
+      const expectedSql = `
+        INSERT INTO posts (title, slug, excerpt, content, image_url, published)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING *
+      `;
+      expect(normalizeSql(pool.query.mock.calls[0][0])).toBe(normalizeSql(expectedSql));
+      expect(pool.query.mock.calls[0][1]).toEqual(['Test Post', 'test-post', 'Test excerpt', 'Test content', '/uploads/test.jpg', true]);
       expect(result).toEqual(mockResult.rows[0]);
     });
   });
@@ -103,7 +122,15 @@ describe('db.js', () => {
       pool.query.mockResolvedValue(mockResult);
 
       const result = await updateSetting('test_setting', 'test_value', 'string', 'Test description');
-      expect(pool.query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO settings'), expect.any(Array));
+      const expectedSql = `
+        INSERT INTO settings (key, value, type, description, updated_at)
+        VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+        ON CONFLICT (key) 
+        DO UPDATE SET value = $2, updated_at = CURRENT_TIMESTAMP
+        RETURNING *
+      `;
+      expect(normalizeSql(pool.query.mock.calls[0][0])).toBe(normalizeSql(expectedSql));
+      expect(pool.query.mock.calls[0][1]).toEqual(['test_setting', 'test_value', 'string', 'Test description']);
       expect(result).toEqual(mockResult.rows[0]);
     });
 
@@ -123,7 +150,14 @@ describe('db.js', () => {
       pool.query.mockResolvedValue(mockResult);
 
       const result = await setSetting('test_setting', 'test_value', 'string', 'Test description');
-      expect(pool.query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO settings'), expect.any(Array));
+      const expectedSql = `
+        INSERT INTO settings (key, value, type, description, updated_at)
+        VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+        ON CONFLICT (key) 
+        DO UPDATE SET value = $2, updated_at = CURRENT_TIMESTAMP
+        RETURNING *
+      `;
+      expect(normalizeSql(pool.query.mock.calls[0][0])).toBe(normalizeSql(expectedSql));
       expect(result).toEqual(mockResult.rows[0]);
     });
   });
@@ -136,7 +170,14 @@ describe('db.js', () => {
 
       const postData = { title: 'Updated Post', slug: 'updated-post', excerpt: 'Updated excerpt', content: 'Updated content', image_url: '/uploads/updated.jpg', published: false };
       const result = await updatePost(1, postData);
-      expect(pool.query).toHaveBeenCalledWith(expect.stringContaining('UPDATE posts'), expect.any(Array));
+      const expectedSql = `
+        UPDATE posts
+        SET title = $1, slug = $2, excerpt = $3, content = $4, image_url = $5, published = $6, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $7
+        RETURNING *
+      `;
+      expect(normalizeSql(pool.query.mock.calls[0][0])).toBe(normalizeSql(expectedSql));
+      expect(pool.query.mock.calls[0][1]).toEqual(['Updated Post', 'updated-post', 'Updated excerpt', 'Updated content', '/uploads/updated.jpg', false, 1]);
       expect(result).toEqual(mockResult.rows[0]);
     });
   });
@@ -148,7 +189,9 @@ describe('db.js', () => {
       pool.query.mockResolvedValue(mockResult);
 
       const result = await deletePost(1);
-      expect(pool.query).toHaveBeenCalledWith(expect.stringContaining('DELETE FROM posts WHERE id = $1'), [1]);
+      const expectedSql = 'DELETE FROM posts WHERE id = $1 RETURNING id';
+      expect(normalizeSql(pool.query.mock.calls[0][0])).toBe(normalizeSql(expectedSql));
+      expect(pool.query.mock.calls[0][1]).toEqual([1]);
       expect(result).toEqual(mockResult.rows[0]);
     });
   });
@@ -160,7 +203,9 @@ describe('db.js', () => {
       pool.query.mockResolvedValue(mockResult);
 
       const result = await getSettings();
-      expect(pool.query).toHaveBeenCalledWith(expect.stringContaining('SELECT * FROM settings'), undefined);
+      const expectedSql = 'SELECT * FROM settings';
+      expect(normalizeSql(pool.query.mock.calls[0][0])).toBe(normalizeSql(expectedSql));
+      expect(pool.query.mock.calls[0][1]).toBeUndefined();
       expect(result).toEqual({ setting1: 'value1', setting2: 'value2' });
     });
   });
@@ -172,7 +217,9 @@ describe('db.js', () => {
       pool.query.mockResolvedValue(mockResult);
 
       const result = await getSetting('setting1');
-      expect(pool.query).toHaveBeenCalledWith(expect.stringContaining('SELECT value FROM settings WHERE key = $1'), ['setting1']);
+      const expectedSql = 'SELECT value FROM settings WHERE key = $1';
+      expect(normalizeSql(pool.query.mock.calls[0][0])).toBe(normalizeSql(expectedSql));
+      expect(pool.query.mock.calls[0][1]).toEqual(['setting1']);
       expect(result).toBe('value1');
     });
     
@@ -190,7 +237,9 @@ describe('db.js', () => {
       pool.query.mockResolvedValue(mockResult);
 
       const result = await getSetting('nonexistent');
-      expect(pool.query).toHaveBeenCalledWith(expect.stringContaining('SELECT value FROM settings WHERE key = $1'), ['nonexistent']);
+      const expectedSql = 'SELECT value FROM settings WHERE key = $1';
+      expect(normalizeSql(pool.query.mock.calls[0][0])).toBe(normalizeSql(expectedSql));
+      expect(pool.query.mock.calls[0][1]).toEqual(['nonexistent']);
       expect(result).toBeNull();
     });
   });
@@ -202,7 +251,9 @@ describe('db.js', () => {
       pool.query.mockResolvedValue(mockResult);
 
       const result = await getAllSettings();
-      expect(pool.query).toHaveBeenCalledWith(expect.stringContaining('SELECT * FROM settings'), undefined);
+      const expectedSql = 'SELECT * FROM settings';
+      expect(normalizeSql(pool.query.mock.calls[0][0])).toBe(normalizeSql(expectedSql));
+      expect(pool.query.mock.calls[0][1]).toBeUndefined();
       expect(result).toEqual(mockResult.rows);
     });
 
