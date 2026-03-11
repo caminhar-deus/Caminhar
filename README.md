@@ -1,119 +1,89 @@
+# Caminhar com Deus
 
-# O Caminhar com Deus
+Um site cristão moderno para compartilhar reflexões, músicas e vídeos sobre fé e espiritualidade.
 
-[![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)](https://github.com/caminhar-deus/Caminhar/actions)
-[![Version](https://img.shields.io/badge/Version-1.7.0-blue)](https://github.com/caminhar-deus/Caminhar/releases)
-[![Node.js](https://img.shields.io/badge/Node.js-24.14.0-green)](https://nodejs.org/)
-
-Um site cristão moderno e dinâmico para compartilhar reflexões e ensinamentos sobre fé, espiritualidade e a jornada cristã.
-
-## 📖 Índice de Documentação
-
-Para detalhes técnicos específicos, consulte as documentações dedicadas na pasta `docs/`. Cada documento inclui visão geral, comandos essenciais e guias práticos:
-
-| Documentação | Visão Geral | Comandos Essenciais | Público-Alvo |
-|--------------|-------------|-------------------|--------------|
-| **Arquitetura** | Visão completa da estrutura do projeto, incluindo Frontend, Backend, fluxo de dados, Design System e padrões de código. | `npm run dev`, `npm run build` | Desenvolvedores, Arquitetos |
-| **Guia de Deploy** | Passo a passo para implantar a aplicação em servidores (VPS, Hostinger) e na Vercel. Inclui configuração de ambiente e Nginx. | `pm2 start`, `nginx -t` | DevOps, Administradores |
-| **Testes & Qualidade** | Detalhes sobre a suíte de testes: unitários (Jest), integração, carga (k6) e E2E (Cypress). 41 testes passando (100% de sucesso), >90% de cobertura. Testes de carga validam performance e funcionalidade de vídeos, posts e músicas. | `npm test`, `npm run cypress:run`, `npm run test:load:all` | QA, Desenvolvedores |
-| **API Reference** | Documentação da API RESTful (v1) para consumo externo. Detalha endpoints, autenticação, schemas e exemplos. | `curl`, `fetch` | Desenvolvedores Frontend, Integrações |
-| **Sistema de Backup** | Guia do sistema de backups automáticos do PostgreSQL, incluindo comandos para criar, restaurar e verificar backups. | `npm run create-backup`, `npm run restore-backup` | Administradores, DevOps |
-| **Cache & Performance** | Explicação da estratégia de cache com Redis (Upstash), incluindo chaves, TTLs e invalidação para otimizar a performance. | `npm run clear-cache` | Desenvolvedores, DevOps |
-| **SEO Toolkit** | Documentação do kit de SEO, cobrindo componentes de meta tags, dados estruturados (Schema.org) e otimização de performance. | `npm run test:seo` | Marketing, Desenvolvedores |
-| **SEO_TOOLKIT** | Documentação completa do kit de SEO e performance, incluindo componentes, schemas e exemplos de uso. | `npm run test:seo` | Marketing, Desenvolvedores |
-| **Relatórios Técnicos** | Histórico de análises técnicas, benchmarks de performance (k6), e relatórios de migração e evolução da arquitetura. | `npm run test:load:all` | Gerentes, Stakeholders |
-| **Segurança** | Políticas de segurança, autenticação, proteção de API e infraestrutura. | `npm run test:security` | Security Ops, Desenvolvedores |
-| **DB Example** | Exemplo de implementação de banco de dados seguindo boas práticas de arquitetura, com logging estruturado, transações seguras e operações CRUD genéricas. | `npm run test:db` | Desenvolvedores, Arquitetos |
-
----
-
-## ✨ Funcionalidades Principais
-
-- **ContentTabs**: Sistema de navegação moderno com 5 abas (Reflexões, Músicas, Vídeos, Em Desenvolvimento)
-- **Spotify Integration**: Integração completa para reprodução de músicas
-- **YouTube Integration**: Integração completa para reprodução de vídeos
-- **Página Principal (HOME)**: Exibe título e subtítulo dinâmicos, frase de apresentação e imagem hero configurável
-- **Painel Administrativo (ADMIN)**: Área protegida para gerenciar posts, músicas, vídeos e backups
-- **Lightbox de Imagens**: Visualização expandida de imagens nos posts com zoom e navegação intuitiva
-- **Cache de API**: Sistema avançado com Redis (80-90% redução nas consultas ao banco)
-- **Performance**: Core Web Vitals otimizados, build com Turbopack, lazy loading
-- **Segurança**: Autenticação JWT, Cookies HTTP-only, Rate Limiting avançado, 0 vulnerabilidades
-- **Backup Automático**: Sistema de backup diário com compressão e rotação automática
-- **SEO Completo**: Schema.org, Open Graph, Twitter Cards, Core Web Vitals
-- **Upload de Imagens**: Sistema robusto com validação de tipos MIME e tamanho de arquivos
-- **API RESTful v1.4.0**: Endpoints organizados e documentados para consumo externo
-- **Testes de Carga**: 15 testes de carga (k6) validando performance, paginacão, validação e funcionalidades de vídeos, posts e músicas
-- **Polimento Visual e Técnico**: Animações, transições e tratamento de erros aprimorados
-- **Exemplo de Banco de Dados**: Implementação de referência com boas práticas de arquitetura, logging estruturado, transações seguras e operações CRUD genéricas
-
-##  Como Executar (Quickstart)
+## 🚀 Como Iniciar
 
 ### Pré-requisitos
 - Node.js 24.14.0+
-- PostgreSQL (Local ou Docker)
+- PostgreSQL
 
-### Passo a Passo
-
-1.  **Configurar Variáveis de Ambiente**
-    ```bash
-    cp .env.example .env
-    # Edite o .env com suas credenciais do banco de dados (DATABASE_URL) e JWT_SECRET
-    ```
-
-2.  **Instalar Dependências**
-    ```bash
-    npm install
-    ```
-
-3.  **Inicializar Banco de Dados**
-    ```bash
-    npm run db:init
-    ```
-
-4.  **Iniciar Servidor de Desenvolvimento**
-    ```bash
-    npm run dev
-    ```
-    Acesse: `http://localhost:3000`
-
-### 🐳 Via Docker (Alternativa)
+### Instalação
 ```bash
-docker-compose up -d
-docker-compose exec app npm run db:init
+# 1. Clonar e instalar dependências
+npm install
+
+# 2. Configurar ambiente
+cp .env.example .env
+# Editar .env com DATABASE_URL e JWT_SECRET
+
+# 3. Iniciar banco de dados
+npm run db:init
+
+# 4. Iniciar aplicação
+npm run dev
 ```
 
-## 🎯 Status de Produção
+Acesse: http://localhost:3000
 
-**Prontidão para Produção: 100%**
+## 📋 Funcionalidades
 
-✅ Todos os recursos funcionando  
-✅ Segurança verificada (0 vulnerabilidades)  
-✅ Performance otimizada  
-✅ Documentação completa  
-✅ Sistema de backup automático  
-✅ API RESTful para consumo externo  
-✅ Pipeline CI/CD funcional  
-✅ Arquitetura moderna e escalável  
-✅ Testes de Integrações Externas (Spotify, YouTube, Redis)  
-✅ Testes de Performance e Segurança  
-✅ Testes de Cross-Browser e Mobile  
-✅ Testes de Carga (k6) - Videos, Posts, Músicas  
-✅ Modernização ESM + Turbopack
+- **ContentTabs**: Navegação por abas (Reflexões, Músicas, Vídeos)
+- **Spotify Integration**: Reprodução de músicas
+- **YouTube Integration**: Reprodução de vídeos
+- **Admin Panel**: Área protegida para gerenciar conteúdo
+- **Lightbox**: Visualização expandida de imagens
+- **Cache**: Sistema com Redis para alta performance
+- **SEO**: Meta tags, Schema.org e Open Graph
+- **Backup**: Sistema automático de backups
+
+## 🛠️ Comandos Úteis
+
+```bash
+# Desenvolvimento
+npm run dev
+npm run build
+npm start
+
+# Banco de dados
+npm run db:init
+npm run db:shell
+
+# Testes
+npm test
+npm run cypress:run
+npm run test:load:all
+
+# Administração
+npm run create-backup
+npm run restore-backup
+npm run clear-cache
+```
+
+## 📁 Estrutura de Arquivos
+
+```
+├── pages/          # Páginas da aplicação
+├── components/     # Componentes React
+├── lib/           # Lógica de negócio
+├── api/           # Endpoints da API
+├── styles/        # Estilos CSS
+├── tests/         # Testes automatizados
+└── docs/          # Documentação técnica
+```
 
 ## 🤝 Contribuição
 
-Contribuições são bem-vindas! Consulte o Guia de Testes antes de submeter um PR.
-
-1. Fork o projeto
-2. Crie sua feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
+1. Fork o repositório
+2. Crie uma branch: `git checkout -b feature/nome`
+3. Faça commit: `git commit -m 'Adiciona feature'`
+4. Push: `git push origin feature/nome`
 5. Abra um Pull Request
 
 ## 📄 Licença
 
-Este projeto está licenciado sem restrições. Sinta-se livre para usar e modificar.
+MIT License - uso livre e modificações permitidas.
 
-## 📞 Contato
+## 📞 Suporte
 
-Para suporte técnico ou dúvidas, abra uma issue neste repositório.
+Para dúvidas ou suporte, abra uma issue no repositório.

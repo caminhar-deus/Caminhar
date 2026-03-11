@@ -1,45 +1,43 @@
-# 📚 Exemplo de lib/db.js - Boas Práticas de Arquitetura
+# Exemplo de lib/db.js - Boas Práticas de Arquitetura
 
-## 🚀 Visão Geral
+## Visão Geral
 
-Este documento descreve o arquivo `lib/db-example.js`, que serve como exemplo de implementação de um módulo de banco de dados seguindo as boas práticas de arquitetura estabelecidas no projeto.
+Exemplo de implementação de módulo de banco de dados seguindo boas práticas de arquitetura.
 
-## 📁 Localização
+## Localização
 
 - **Arquivo:** `lib/db-example.js`
 - **Propósito:** Exemplo de implementação de banco de dados
 - **Referência:** `lib/db.js` (implementação real)
 
-## 🎯 Boas Práticas Implementadas
+## Boas Práticas Implementadas
 
-### 1. **Connection Pool Otimizado**
+### 1. Connection Pool Otimizado
 
 ```javascript
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? {
-    rejectUnauthorized: false // Permite conexão com certificados auto-assinados
+    rejectUnauthorized: false
   } : undefined,
-  // Configurações de performance
-  max: 20,              // Máximo de conexões no pool
-  min: 2,               // Mínimo de conexões no pool
-  idleTimeoutMillis: 30000, // Tempo de timeout de conexões ociosas
-  connectionTimeoutMillis: 2000, // Tempo de timeout de conexão
+  max: 20,              // Máximo de conexões
+  min: 2,               // Mínimo de conexões
+  idleTimeoutMillis: 30000, // Timeout de conexões ociosas
+  connectionTimeoutMillis: 2000 // Timeout de conexão
 });
 ```
 
 **Benefícios:**
-- **Performance**: Pool de conexões reutilizáveis
-- **Escalabilidade**: Configurações ajustáveis para diferentes ambientes
-- **Segurança**: SSL configurado para produção
-- **Monitoramento**: Timeouts para evitar conexões pendentes
+- Performance: Pool de conexões reutilizáveis
+- Escalabilidade: Configurações ajustáveis
+- Segurança: SSL configurado para produção
+- Monitoramento: Timeouts para evitar conexões pendentes
 
-### 2. **Logging Estruturado**
+### 2. Logging Estruturado
 
 ```javascript
 import { logger } from './middleware.js';
 
-// Exemplo de logging de consulta
 logger.info('Executando consulta SQL', {
   query: text.replace(/\s+/g, ' ').trim(),
   params: params.length > 0 ? params : undefined,
@@ -48,31 +46,29 @@ logger.info('Executando consulta SQL', {
 ```
 
 **Benefícios:**
-- **Debug**: Rastreamento completo de consultas
-- **Performance**: Medição de tempo de execução
-- **Monitoramento**: Logs estruturados para análise
-- **Auditoria**: Histórico de operações
+- Debug: Rastreamento completo de consultas
+- Performance: Medição de tempo de execução
+- Monitoramento: Logs estruturados para análise
 
-### 3. **Tratamento de Erros Robusto**
+### 3. Tratamento de Erros Robusto
 
 ```javascript
 /**
  * Interface de Erro de Banco de Dados
  * @typedef {Object} DatabaseError
- * @property {string} code - Código do erro (ex: '23505' para unique_violation)
+ * @property {string} code - Código do erro
  * @property {string} message - Mensagem de erro detalhada
- * @property {string} detail - Detalhes adicionais do erro
+ * @property {string} detail - Detalhes adicionais
  * @property {string} hint - Sugestão de correção
  */
 ```
 
 **Benefícios:**
-- **Tipagem**: Interfaces TypeScript para melhor desenvolvimento
-- **Detalhamento**: Informações completas sobre erros
-- **Recuperação**: Dados para tratamento de falhas específicas
-- **Monitoramento**: Códigos de erro para alertas
+- Tipagem: Interfaces para melhor desenvolvimento
+- Detalhamento: Informações completas sobre erros
+- Recuperação: Dados para tratamento de falhas específicas
 
-### 4. **Transações Seguras**
+### 4. Transações Seguras
 
 ```javascript
 export async function transaction(callback) {
@@ -98,21 +94,13 @@ export async function transaction(callback) {
 ```
 
 **Benefícios:**
-- **Atomicidade**: Operações completas ou nada
-- **Consistência**: Rollback automático em falhas
-- **Logging**: Registro de falhas de transação
-- **Recursos**: Liberação correta de conexões
+- Atomicidade: Operações completas ou nada
+- Consistência: Rollback automático em falhas
+- Logging: Registro de falhas de transação
 
-### 5. **Operações CRUD Genéricas**
+### 5. Operações CRUD Genéricas
 
 ```javascript
-/**
- * Cria um registro em uma tabela.
- * @param {string} table - Nome da tabela
- * @param {Object} data - Dados a serem inseridos
- * @param {Array} returning - Campos a serem retornados (default: ['*'])
- * @returns {Promise<Object>} Registro criado
- */
 export async function createRecord(table, data, returning = ['*']) {
   const fields = Object.keys(data);
   const values = Object.values(data);
@@ -131,12 +119,11 @@ export async function createRecord(table, data, returning = ['*']) {
 ```
 
 **Benefícios:**
-- **Reutilização**: Operações genéricas para qualquer tabela
-- **Flexibilidade**: Campos retornados configuráveis
-- **Performance**: Consultas preparadas com placeholders
-- **Consistência**: Padrão uniforme de operações
+- Reutilização: Operações genéricas para qualquer tabela
+- Flexibilidade: Campos retornados configuráveis
+- Performance: Consultas preparadas com placeholders
 
-### 6. **Paginação Inteligente**
+### 6. Paginação Inteligente
 
 ```javascript
 export async function readRecords(table, options = {}) {
@@ -148,11 +135,7 @@ export async function readRecords(table, options = {}) {
     select = ['*']
   } = options;
 
-  // ... lógica de construção da consulta
-
   const result = await query(text, params);
-  
-  // Contagem total para paginação
   const countResult = await query(countText, Object.values(where));
   const total = parseInt(countResult.rows[0].total, 10);
   const totalPages = Math.ceil(total / limit);
@@ -172,12 +155,11 @@ export async function readRecords(table, options = {}) {
 ```
 
 **Benefícios:**
-- **Performance**: Consultas otimizadas com LIMIT/OFFSET
-- **UX**: Informações completas de paginação
-- **Flexibilidade**: Filtros, ordenação e seleção configuráveis
-- **Eficiência**: Contagem separada para melhor performance
+- Performance: Consultas otimizadas com LIMIT/OFFSET
+- UX: Informações completas de paginação
+- Flexibilidade: Filtros, ordenação e seleção configuráveis
 
-### 7. **Health Check e Monitoramento**
+### 7. Health Check e Monitoramento
 
 ```javascript
 export async function healthCheck() {
@@ -218,12 +200,11 @@ export async function getDatabaseInfo() {
 ```
 
 **Benefícios:**
-- **Monitoramento**: Verificação de saúde do banco
-- **Performance**: Métricas de conexões e tamanho
-- **Debug**: Informações detalhadas para troubleshooting
-- **Alertas**: Dados para sistemas de monitoramento
+- Monitoramento: Verificação de saúde do banco
+- Performance: Métricas de conexões e tamanho
+- Debug: Informações detalhadas para troubleshooting
 
-## 🔧 Como Usar
+## Como Usar
 
 ### Importação
 
@@ -232,7 +213,6 @@ export async function getDatabaseInfo() {
 import { query, transaction, createRecord } from '../lib/db-example.js';
 
 // Importar objeto db completo
-import { db } from '../lib/db-example.js';
 import db from '../lib/db-example.js'; // default export
 ```
 
@@ -281,7 +261,7 @@ const post = await createPost({
 });
 ```
 
-## 📊 Comparação com Implementação Atual
+## Comparação com Implementação Atual
 
 | Funcionalidade | lib/db.js (Atual) | lib/db-example.js (Exemplo) |
 |---------------|-------------------|---------------------------|
@@ -296,16 +276,16 @@ const post = await createPost({
 | **Tipagem** | ❌ Não tipado | ✅ Tipado |
 | **Documentação** | ❌ Limitada | ✅ Completa |
 
-## 🎯 Próximos Passos
+## Próximos Passos
 
-### 1. **Migrar para a Nova Estrutura**
+### 1. Migrar para a Nova Estrutura
 ```bash
 # Copiar funcionalidades do exemplo para o arquivo real
 cp lib/db-example.js lib/db.js
 # Ajustar imports e configurações específicas
 ```
 
-### 2. **Adicionar Testes**
+### 2. Adicionar Testes
 ```javascript
 // tests/db.test.js
 import { query, transaction, healthCheck } from '../lib/db.js';
@@ -318,7 +298,7 @@ describe('Database Module', () => {
 });
 ```
 
-### 3. **Integrar com Cache**
+### 3. Integrar com Cache
 ```javascript
 // Integrar com lib/cache.js
 import { getOrSetCache } from './cache.js';
@@ -329,7 +309,7 @@ export async function getCachedPosts(limit = 10, page = 1) {
 }
 ```
 
-### 4. **Adicionar Métricas**
+### 4. Adicionar Métricas
 ```javascript
 // Integrar com monitoring
 import { metrics } from './monitoring.js';
@@ -348,22 +328,18 @@ export async function queryWithMetrics(text, params = []) {
 }
 ```
 
-## 📚 Documentação Relacionada
+## Documentação Relacionada
 
 - [Arquitetura do Projeto](ARCHITECTURE.md)
 - [Cache & Performance](CACHE.md)
 - [API Standardizer](API.md)
 - [Test Infrastructure](TESTING.md)
 
-## 🤝 Contribuição
+## Contribuição
 
 Para contribuir com melhorias no módulo de banco de dados:
 
-1. **Teste as mudanças** com a infraestrutura de testes
-2. **Atualize a documentação** conforme necessário
-3. **Siga os padrões** de tipagem e logging
-4. **Considere a performance** em todas as operações
-
----
-
-**Exemplo criado com base na arquitetura v1.7.0** 🏗️
+1. Teste as mudanças com a infraestrutura de testes
+2. Atualize a documentação conforme necessário
+3. Siga os padrões de tipagem e logging
+4. Considere a performance em todas as operações

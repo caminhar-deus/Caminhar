@@ -1,5 +1,5 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import pg from 'pg';
+import { Pool } from 'pg';
 import { saveImage } from '../../../../lib/db.js';
 
 // Mock do pg definido dentro da factory para evitar ReferenceError e permitir importação estática
@@ -10,10 +10,8 @@ jest.mock('pg', () => {
     end: jest.fn(),
     on: jest.fn(),
   };
-  const Pool = jest.fn(() => mockPool);
   return {
-    default: { Pool },
-    Pool,
+    Pool: jest.fn(() => mockPool),
   };
 });
 
@@ -25,7 +23,7 @@ describe('saveImage (Salvar Imagem)', () => {
 
   it('deve salvar os metadados da imagem corretamente no banco de dados', async () => {
     // Recupera o mock da query através da instância do Pool mockado
-    const pool = new pg.Pool();
+    const pool = new Pool();
     const mockQuery = pool.query;
 
     const filename = 'test-image.png';

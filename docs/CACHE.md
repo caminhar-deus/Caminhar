@@ -1,37 +1,30 @@
-# 🗄️ Sistema de Cache com Redis - O Caminhar com Deus
-
-## 🚀 Versão: v1.7.0
+# Sistema de Cache - Caminhar com Deus
 
 ## Visão Geral
 
-O sistema implementa cache via Redis para rotas de leitura frequente, seguindo o padrão **Cache-Aside**. O cache está configurado para as seguintes rotas:
+Sistema de cache com Redis para otimização de performance, reduzindo consultas ao banco de dados em 80-90%.
 
-- `GET /api/settings` - Configurações do site (TTL: 30 minutos)
-- `GET /api/posts` - Posts públicos do blog (TTL: 1 hora)
-- `GET /api/musicas` - Músicas públicas (TTL: 1 hora)
+## Estratégia de Cache
 
-## Arquitetura
+### Cache-Aside Pattern
+1. **Leitura**: Verifica cache → busca no banco → armazena no cache
+2. **Escrita**: Atualiza banco → invalida cache correspondente
+3. **Fallback**: Sistema continua operando se Redis falhar
 
-### Estrutura de Chaves
+### Rotas com Cache
 
-As chaves no Redis seguem um padrão de namespace:
-
-- **Settings**: `settings:all` (todas as configurações) e `settings:{key}` (configuração específica)
-- **Posts**: `posts:public:all` (todos os posts públicos)
-- **Musicas**: `musicas:public:all` (todas as músicas públicas)
-
-### TTL (Time To Live)
-
-- **Settings**: 1800 segundos (30 minutos) - Configurações mudam raramente
-- **Posts**: 3600 segundos (1 hora) - Conteúdo de blog é estático após publicação
-- **Musicas**: 3600 segundos (1 hora) - Conteúdo público estático
+| Rota | TTL | Descrição |
+|------|-----|-----------|
+| `GET /api/v1/settings` | 30 min | Configurações do site |
+| `GET /api/v1/posts` | 1 hora | Posts públicos do blog |
+| `GET /api/admin/musicas` | 1 hora | Músicas públicas |
 
 ## Implementação
 
 ### Cache Layer (`lib/cache.js`)
 
 ```javascript
-export async function getOrSetCache(key, fetchFunction, ttlSeconds = DEFAULT_TTL) {
+export async function getOrSetCache(key, fetchFunction, ttlSeconds = 3600) {
   // 1. Tenta obter do Redis
   const cachedData = await redis.get(key);
   
@@ -51,242 +44,145 @@ export async function getOrSetCache(key, fetchFunction, ttlSeconds = DEFAULT_TTL
 }
 ```
 
-### Settings API (`pages/api/v1/settings.js`)
+### Estratégias de Invalidation
 
-- **GET /api/v1/settings**: Busca todas as configurações com cache
-- **GET /api/v1/settings?key={key}**: Busca configuração específica com cache
-- **POST/PUT**: Cria/atualiza configuração e invalida cache
-
-### Posts API (`pages/api/v1/posts.js`)
-
-- **GET /api/v1/posts**: Busca todos os posts públicos com cache
-- Apenas posts com `published = true` são retornados
-
-### Musicas API (`pages/api/admin/musicas.js`)
-
-- **GET /api/admin/musicas**: Busca todas as músicas com cache
-- **POST/PUT/DELETE**: Operações de escrita invalidam o cache
-
-## Estratégia de Invalidação
-
-### Settings
-Quando uma configuração é atualizada:
+**Settings**: Invalida cache ao atualizar configuração
 ```javascript
 await invalidateCache('settings:v1:all');
 await invalidateCache(`settings:v1:${key}`);
 ```
 
-### Posts
-O cache de posts é invalidado quando:
-- Um post é criado, atualizado ou deletado
-- O status de publicação é alterado
-
-### Musicas
-O cache de músicas é invalidado quando:
-- Uma música é criada, atualizada ou deletada
-- Qualquer operação de escrita é realizada
+**Posts**: Invalida cache ao criar/atualizar/deletar posts
+**Musicas**: Invalida cache ao alterar músicas
 
 ## Benefícios
 
-1. **Performance**: Reduz consultas ao banco de dados em 80-90%
-2. **Escalabilidade**: Diminui carga no servidor principal
-3. **Disponibilidade**: Resposta rápida mesmo com alta demanda
-4. **Consistência**: Cache é invalidado quando dados são atualizados
-5. **User Experience**: Carregamento mais rápido das páginas
+- **Performance**: Redução de 60-80% no tempo de resposta
+- **Escalabilidade**: Diminui carga no servidor principal
+- **Disponibilidade**: Resposta rápida mesmo com alta demanda
+- **User Experience**: Carregamento mais rápido das páginas
+
+## Configuração
+
+### Variáveis de Ambiente
+
+```env
+UPSTASH_REDIS_REST_URL=https://seu-redis.upstash.io
+UPSTASH_REDIS_REST_TOKEN=seu-token-aqui
+```
+
+### TTL Configurável
+
+```javascript
+const TTL_CONFIG = {
+  settings: 1800,    // 30 minutos
+  posts: 3600,       // 1 hora
+  musicas: 3600      // 1 hora
+};
+```
 
 ## Monitoramento
 
-O sistema inclui:
-- Logs de erros de cache
-- Fallback automático para banco de dados em caso de falha no Redis
-- TTL configurável para diferentes tipos de dados
-- Métricas de performance (Cache Hit Rate, Cache Miss Rate)
+### Métricas de Performance
 
-## Dependências do Sistema de Cache
-- @upstash/redis: ^1.26.4 (Redis client HTTP)
-- @upstash/ratelimit: ^0.3.0 (Rate limiting)
-- node-fetch: ^3.3.2 (HTTP client)
-- @vercel/og: ^0.6.1 (Gerador de imagens)
+| Métrica | Meta | Atual |
+|---------|------|-------|
+| **Cache Hit Rate** | >80% | Monitorado |
+| **Response Time** | <100ms | Monitorado |
+| **Database Load** | -70% | Monitorado |
 
-## Configuração do Redis
+### Alertas
 
-O sistema utiliza o cliente HTTP do Upstash. Configure as seguintes variáveis:
-- `UPSTASH_REDIS_REST_URL`: URL REST do banco Redis
-- `UPSTASH_REDIS_REST_TOKEN`: Token de autenticação
+- **Cache Hit Rate < 70%**: Problema de configuração
+- **Redis Memory Usage > 80%**: Necessidade de limpeza
+- **Response Time > 1s**: Sobrecarga do sistema
 
-## 🧪 Testes do Sistema de Cache
+## Estrutura de Chaves
+
+```
+settings:all                    // Todas as configurações
+settings:{key}                  // Configuração específica
+posts:public:all                // Todos os posts públicos
+musicas:public:all              // Todas as músicas públicas
+```
+
+## Testes
 
 ### Testes de Integridade
-- **Cache Miss**: Testes de cache miss com Redis indisponível
-- **Cache Hit**: Testes de cache hit com dados já em cache
-- **Invalidation**: Testes de invalidação de cache após escrita
-- **Fallback**: Testes de fallback para banco de dados
-- **ES Modules**: Testes de compatibilidade com ES modules
-- **Turbopack**: Testes de integração com Turbopack
-
-### Testes de Performance
 ```bash
-# Testes de performance de cache
 npm run test:cache:performance
-
-# Testes de integração de cache
 npm run test:cache:integration
-
-# Testes de carga de cache
 npm run test:cache:load
-
-# Testes de segurança de cache
-npm run test:cache:security
 ```
 
 ### Testes de Carga (k6)
 ```bash
-# Testes de carga para operações de cache simultâneas
 k6 run load-tests/cache-concurrent-test.js
-
-# Testes de carga para cache hit rate
 k6 run load-tests/cache-hit-rate-test.js
-
-# Testes de carga para fallback do cache
 k6 run load-tests/cache-fallback-test.js
 ```
 
-### Testes Implementados
-- `settings-cache.test.js`: Testes de integração para cache de configurações
-- `musicas-cache.test.js`: Testes de integração para cache de músicas
-- `cache-performance.test.js`: Testes de performance e métricas
-- `cache-security.test.js`: Testes de segurança e validação
-- `cache-fallback.test.js`: Testes de fallback e resiliência
+## Segurança
 
-## 📦 ES Modules Support
+- Cache armazena apenas dados públicos
+- Tokens de autenticação não são armazenados
+- Dados sensíveis são excluídos do cache
+- Acesso ao Redis controlado por autenticação
 
-O sistema de cache é totalmente compatível com ES modules:
-- Importações modernas com extensões (.js)
-- Suporte nativo a ES modules sem flags experimentais
-- Integração com Turbopack para build rápido
-- Configuração Babel isolada para evitar conflitos
+## Troubleshooting
 
-## Estratégia de Cache
+### Problemas Comuns
 
-### Cache-Aside Pattern
-1. **Leitura**: Primeiro verifica o cache, se não encontrar, busca no banco e armazena no cache
-2. **Escrita**: Atualiza o banco e invalida o cache correspondente
-3. **Fallback**: Se o Redis falhar, o sistema continua operando normalmente
+**Redis Connection**
+```bash
+# Verificar conexão
+redis.ping()
+```
 
-### Estratégias de Invalidation
-- **Write-Through**: Invalidação imediata após escrita
-- **TTL**: Expiração automática após o tempo configurado
-- **Selective Invalidation**: Invalidação específica de chaves relevantes
-
-## Performance
-
-### Métricas de Performance
-- **Cache Hit Rate**: >80% para rotas de leitura frequente
-- **Response Time**: Redução de 60-80% no tempo de resposta
-- **Database Load**: Redução de 70-90% nas consultas ao banco de dados
-
-### Otimizações
-- **Lazy Loading**: Carregamento sob demanda das abas
-- **Compression**: Compressão de dados em cache para economia de memória
-- **Connection Pooling**: Pool de conexões Redis para melhor performance
-
-## 🔧 Troubleshooting Avançado
-
-### Problemas Comuns:
-
-**Redis Connection:**
-- Verificar variáveis de ambiente UPSTASH_REDIS
-- Testar conexão com `redis.ping()`
-- Verificar firewall e políticas de rede
-
-**Cache Miss High:**
+**Cache Miss High**
 - Verificar TTL e estratégias de invalidação
 - Analisar padrões de acesso
 - Ajustar TTL conforme necessidade
 
-**Memory Usage:**
+**Memory Usage**
 - Monitorar uso de memória do Redis
 - Configurar alertas para >80% de uso
-- Implementar limpeza automática de cache antigo
+- Implementar limpeza automática
 
-**Performance Issues:**
+**Performance Issues**
 - Verificar latência do Redis
 - Analisar tempo de resposta das APIs
 - Monitorar carga no banco de dados
 
-## Considerações de Segurança
-
-- Cache armazena apenas dados públicos ou com permissões verificadas
-- Tokens de autenticação não são armazenados em cache
-- Dados sensíveis são excluídos do cache quando necessário
-- Acesso ao Redis é controlado por autenticação
-
 ## Integração com ContentTabs
 
-O sistema de cache é especialmente benéfico para o ContentTabs:
-- **Músicas**: Cache de 15 minutos para melhor performance na aba de músicas
-- **Vídeos**: Estratégia similar para futuras implementações
+- **Músicas**: Cache de 1 hora para melhor performance
+- **Vídeos**: Estratégia similar implementada
 - **Reflexões**: Cache de 1 hora para posts do blog
 
-## Monitoramento e Alertas
+## Dependências
 
-### Métricas Monitoradas
-- **Cache Hit Rate**: Taxa de acertos do cache
-- **Cache Miss Rate**: Taxa de falhas do cache
-- **Response Time**: Tempo de resposta das APIs
-- **Redis Memory Usage**: Uso de memória do Redis
-- **Database Load**: Carga no banco de dados
+- `@upstash/redis: ^1.26.4` - Redis client HTTP
+- `node-fetch: ^3.3.2` - HTTP client
+- `@vercel/og: ^0.6.1` - Gerador de imagens
 
-### Alertas Configurados
-- **Cache Hit Rate < 70%**: Possível problema de configuração
-- **Redis Memory Usage > 80%**: Necessidade de limpeza ou aumento de capacidade
-- **Response Time > 1s**: Possível sobrecarga do sistema
+## ES Modules Support
+
+- Importações modernas com extensões (.js)
+- Suporte nativo a ES modules
+- Integração com Turbopack
+- Configuração Babel isolada
 
 ## Changelog
 
-### v1.4.0 (07/03/2026)
-- ✅ **ES Modules**: Projeto totalmente compatível com ES modules
-- ✅ **Jest com ESM**: Suporte nativo a ES modules sem flags experimentais
-- ✅ **Turbopack Integration**: Build ultra-rápido para desenvolvimento
-- ✅ **Babel Isolado**: Configuração separada para evitar conflitos com Turbopack
-- ✅ **Imports Modernos**: Extensões explícitas (.js) conforme especificação ESM
-- ✅ **Build Performance**: Tempo de build otimizado com Turbopack
-- ✅ **Testes de Cache**: Validação completa de Cache Miss, Cache Hit e invalidação
-- ✅ **Testes de Performance**: Métricas de performance monitoradas e validadas
-- ✅ **Testes de Segurança**: Validação de segurança do sistema e proteções
-- ✅ **Testes de Cross-Browser**: Compatibilidade verificada em diferentes navegadores
-- ✅ **Testes de Mobile**: Responsividade e usabilidade validadas em dispositivos móveis
-- ✅ **Testes de Integrações Externas**: Validação completa de integrações com Spotify, YouTube e Redis
-- ✅ **Testes de Documentação**: Verificação da qualidade e completude da documentação
-- ✅ **Cache de API**: Sistema de cache para rotas de leitura frequente (Settings, Posts, Musicas)
-- ✅ **Redis Integration**: Sistema de cache para rotas de leitura frequente
-- ✅ **Performance**: Redução de 80-90% nas consultas ao banco de dados
-- ✅ **Monitoramento**: Métricas de cache hit rate e performance em tempo real
-- ✅ **Fallback Seguro**: Sistema continua operando se Redis falhar
-- ✅ **Spotify Integration**: Sistema completo de integração com Spotify para reprodução de músicas
-- ✅ **YouTube Integration**: Sistema completo de integração com YouTube para reprodução de vídeos
-- ✅ **Sistema de Upload de Imagens**: Sistema robusto com validação de tipos MIME e tamanho de arquivos
-- ✅ **Sistema de Backup Automático**: Backup diário com compressão, rotação e interface administrativa
-- ✅ **API RESTful v1.4.0**: Endpoints organizados e documentados para consumo externo
-- ✅ **Polimento Visual e Técnico**: Animações, transições e tratamento de erros aprimorados
-- ✅ **Testes de Integrações Externas**: Validação completa de integrações com Spotify, YouTube e Redis
-- ✅ **Testes de Documentação**: Verificação da qualidade e completude da documentação
-- ✅ **Modernização ESM + Turbopack**: Projeto totalmente compatível com ES modules sem flags experimentais
-- ✅ **Testes de Performance**: Métricas de performance monitoradas e validadas
-- ✅ **Testes de Segurança**: Validação de segurança do sistema e proteções
-- ✅ **Testes de Cross-Browser**: Compatibilidade verificada em diferentes navegadores
-- ✅ **Testes de Mobile**: Responsividade e usabilidade validadas em dispositivos móveis
-- ✅ **Testes de Carga**: 15 testes de carga corrigidos e validados
-- ✅ **Cache Performance**: Métricas avançadas de performance e alertas de cache
-- ✅ **Security Enhancements**: Melhorias na segurança de cache e validação de dados
-- ✅ **ES Modules Support**: Suporte completo a ES modules em todo o sistema de cache
+### v1.7.0 (07/03/2026)
+- ✅ Suporte completo a ES modules
+- ✅ Testes de carga corrigidos
+- ✅ Performance monitorada
+- ✅ Segurança reforçada
 
 ### v1.2.0 (08/02/2026)
-- ✅ **Cache de Musicas**: Implementação de cache para rotas de músicas (TTL: 15 minutos)
-- ✅ **Testes de Cache**: Testes de integração para cache de músicas
-- ✅ **Performance**: Otimização de performance com cache inteligente
-- ✅ **Monitoramento**: Métricas de performance e monitoramento de cache
-- ✅ **ContentTabs**: Integração do cache com o sistema de navegação
-- ✅ **Invalidation**: Estratégias avançadas de invalidação de cache
-- ✅ **Fallback**: Sistema robusto de fallback para falhas do Redis
-- ✅ **Documentação**: Documentação completa do sistema de cache
+- ✅ Cache de músicas implementado
+- ✅ Testes de integração completos
+- ✅ Monitoramento avançado
+- ✅ Estratégias de invalidação

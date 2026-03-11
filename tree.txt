@@ -136,7 +136,6 @@
 │   ├── DEPLOY.md
 │   ├── REPORTS.md
 │   ├── SECURITY.md
-│   ├── SEO.md
 │   ├── SEO_TOOLKIT.md
 │   └── TESTING.md
 ├── examples
@@ -504,4 +503,4 @@
 │       └── middleware.test.js
 └── tree.txt
 
-86 directories, 419 files
+86 directories, 418 files

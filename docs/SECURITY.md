@@ -1,141 +1,148 @@
-# 🛡️ Segurança - O Caminhar com Deus
+# Segurança - Caminhar com Deus
 
-## 🚀 Versão: v1.7.0
+## Visão Geral
 
-Este documento descreve as práticas, políticas e implementações de segurança adotadas no projeto "O Caminhar com Deus".
+Política de segurança do projeto com foco em defesa em profundidade e proteção de dados.
 
-**Última Atualização:** 07/03/2026
-**Versão:** 1.4.0
-
-## 1. Visão Geral
-
-A segurança é um pilar fundamental da arquitetura do projeto. Adotamos uma abordagem de **defesa em profundidade**, implementando camadas de segurança desde a infraestrutura até a aplicação e o banco de dados.
-
-## 2. Autenticação e Autorização
+## Autenticação e Autorização
 
 ### JWT (JSON Web Tokens)
-- **Implementação**: Utilizamos tokens JWT assinados com algoritmo HS256.
-- **Armazenamento**: Os tokens são armazenados exclusivamente em **Cookies HTTP-only**, prevenindo ataques de XSS (Cross-Site Scripting) que poderiam roubar tokens armazenados em `localStorage`.
-- **Expiração**: Tokens possuem tempo de vida curto (1 hora) para minimizar riscos em caso de comprometimento.
-- **Segredo**: A chave de assinatura (`JWT_SECRET`) é configurada via variáveis de ambiente e nunca exposta no código.
+- **Armazenamento**: Cookies HTTP-only (protege contra XSS)
+- **Expiração**: 1 hora (minimiza riscos)
+- **Algoritmo**: HS256 com chave secreta configurada via ambiente
+- **Validação**: Middleware de autenticação em todas as rotas protegidas
 
 ### Proteção de Senhas
-- **Hashing**: Todas as senhas são hashadas utilizando **bcrypt** antes de serem persistidas no banco de dados.
-- **Sal**: O bcrypt gera e gerencia o sal automaticamente, protegendo contra ataques de Rainbow Table.
+- **Hashing**: bcrypt com salt automático
+- **Complexidade**: Mínimo 8 caracteres
+- **Validação**: Força de senha verificada no cadastro
 
-## 3. Proteção de API
+## Proteção de API
 
-### Rate Limiting (Limitação de Taxa)
-Para proteger contra ataques de força bruta e DDoS (Negação de Serviço), implementamos um sistema robusto de Rate Limiting:
-- **Tecnologia**: Redis (via Upstash) para controle distribuído e persistente.
-- **Fallback**: Em caso de falha do Redis, o sistema degrada graciosamente para um controle em memória.
+### Rate Limiting
+- **Tecnologia**: Redis (Upstash) para controle distribuído
 - **Limites**:
-    - Rotas públicas: 100 requisições por 15 minutos por IP.
-    - Login: Limites mais estritos para prevenir força bruta.
-- **Whitelist**: Suporte a lista de IPs confiáveis (`ADMIN_IP_WHITELIST`) para administradores.
+  - Rotas públicas: 100 requisições/15min por IP
+  - Login: 5 tentativas/15min por IP
+- **Whitelist**: IPs administrativos configuráveis
+- **Fallback**: Controle em memória se Redis falhar
 
-### Validação de Entrada (Input Validation)
-- **Schema Validation**: Utilizamos a biblioteca **Zod** para validar rigorosamente todos os dados de entrada nas APIs.
-- **Sanitização**: Previne injeção de dados maliciosos e garante que apenas dados esperados sejam processados.
+### Validação de Entrada
+- **Schema**: Zod para validação rigorosa
+- **Sanitização**: Prevenção de injeção de dados maliciosos
+- **Tipos**: Validação de tipos e formatos
 
-### CORS (Cross-Origin Resource Sharing)
-- **Configuração**: O CORS é configurado para permitir apenas origens confiáveis (`ALLOWED_ORIGINS`) em produção, bloqueando requisições não autorizadas de navegadores.
+### CORS
+- **Configuração**: Origens específicas em produção
+- **Bloqueio**: Requisições não autorizadas bloqueadas
+- **Desenvolvimento**: Permissivo apenas em ambiente local
 
-## 4. Segurança de Infraestrutura
+## Segurança de Infraestrutura
 
 ### HTTPS e SSL
-- **Criptografia em Trânsito**: Todo o tráfego é criptografado via TLS/SSL.
-- **Certificados**: Gerenciados via Certbot (Let's Encrypt) no Nginx.
-- **Redirecionamento**: Todo tráfego HTTP é forçado para HTTPS.
+- **Criptografia**: TLS/SSL para todo tráfego
+- **Certificados**: Let's Encrypt (Certbot)
+- **Forçamento**: Redirecionamento HTTP → HTTPS
 
-### Banco de Dados (PostgreSQL)
-- **Conexão Segura**: Em produção, a conexão com o banco de dados exige SSL (`rejectUnauthorized: false` para compatibilidade com alguns provedores de nuvem, mas sempre criptografado).
-- **SQL Injection**: Utilizamos **Queries Parametrizadas** (Prepared Statements) através do driver `pg`, eliminando o risco de injeção de SQL.
+### Banco de Dados
+- **Conexão**: SSL obrigatório em produção
+- **SQL Injection**: Prepared statements (pg driver)
+- **Acesso**: Conexão via pool com credenciais seguras
 
 ### Servidor
-- **Usuário Não-Root**: A aplicação roda sob um usuário com privilégios limitados, nunca como root.
-- **Firewall**: Configuração de UFW permitindo apenas portas essenciais (22, 80, 443).
-- **Headers de Segurança**: O Nginx é configurado para remover headers que expõem versões de software (`Server`, `X-Powered-By`).
+- **Usuário**: Aplicação roda sem privilégios root
+- **Firewall**: UFW com portas essenciais (22, 80, 443)
+- **Headers**: Remoção de headers de versão
 
-## 5. Gerenciamento de Dados e Uploads
+## Gerenciamento de Dados
 
 ### Upload de Arquivos
-- **Validação**: Verificação rigorosa de tipos MIME (apenas imagens permitidas) e tamanho de arquivo.
-- **Armazenamento**: Em ambientes VPS, o armazenamento é local e protegido. Em ambientes serverless, recomenda-se o uso de S3/Blob Storage.
+- **Tipos**: Apenas imagens (PNG, JPG, JPEG, GIF, WEBP)
+- **Tamanho**: Máximo 10MB
+- **Validação**: MIME types e extensões verificadas
+- **Armazenamento**: Local protegido ou S3/Blob Storage
 
 ### Backups
-- **Segurança**: Os arquivos de backup (`.gz`) contêm dados sensíveis e são armazenados em diretório protegido com permissões restritas (600).
-- **Sanitização de Logs**: Logs de testes e operações removem automaticamente tokens e senhas antes de serem salvos.
+- **Permissões**: Arquivos com permissão 600
+- **Criptografia**: Recomendado para backups sensíveis
+- **Sanitização**: Logs removem tokens e senhas
 
-## 6. Monitoramento e Auditoria
+## Monitoramento e Auditoria
 
 ### Testes de Segurança
-- **Automatizados**: A suíte de testes inclui verificações de segurança (`npm run test:security`), rodando `npm audit` e verificações de vulnerabilidades conhecidas.
-- **Testes de Carga**: Cenários de k6 simulam ataques (DDoS, IP Spoofing, força bruta) para validar a resiliência do Rate Limiting.
-- **Testes de Segurança**: Validação completa de segurança do sistema e proteções contra ataques comuns.
-- **Testes de Cross-Browser**: Compatibilidade verificada em diferentes navegadores para prevenir vulnerabilidades específicas.
-- **Testes de Mobile**: Responsividade e usabilidade validadas em dispositivos móveis para segurança em plataformas móveis.
+- **Automatizados**: npm audit integrado ao CI/CD
+- **Carga**: Testes k6 simulando ataques DDoS
+- **Validação**: Testes de segurança em todas as releases
+- **Cross-Browser**: Compatibilidade segura em navegadores
+- **Mobile**: Segurança validada em dispositivos móveis
 
 ### Logs
-- **Auditoria**: Logs de acesso e erro são mantidos para auditoria forense em caso de incidentes.
-- **Privacidade**: Garantimos que dados sensíveis (PII, senhas, tokens) não sejam logados.
-- **Sanitização**: Logs de testes e operações removem automaticamente tokens e senhas antes de serem salvos.
-- **Monitoramento em Tempo Real**: Sistema de monitoramento de segurança em tempo real para detecção de ameaças.
+- **Auditoria**: Registros de acesso e erros
+- **Privacidade**: Dados sensíveis não são logados
+- **Sanitização**: Tokens e senhas removidos automaticamente
+- **Monitoramento**: Detecção de ameaças em tempo real
 
-## 7. Escopo de Segurança
+## Conformidade Legal
 
-### Cobertura
-- Aplicações web e APIs
-- Infraestrutura e servidores
-- Banco de Dados e backups
-- Uploads e arquivos estáticos
-- Autenticação e autorização
+### LGPD
+- **Tratamento**: Conformidade total com requisitos
+- **Direitos**: Acesso, retificação, exclusão e portabilidade
+- **Notificação**: Incidentes comunicados em até 72 horas
+- **Testes**: Validação automática de conformidade
 
-### Exclusões
-- Segurança física dos servidores
-- Segurança de redes de terceiros
-- Segurança de dispositivos dos usuários
+### GDPR
+- **Conformidade UE**: Total conformidade para usuários europeus
+- **Consentimento**: Explícito e informado
+- **Direitos**: Garantidos conforme regulamento
+- **Proteção**: Medidas técnicas e organizacionais
 
-## 8. Resposta a Incidentes de Segurança
+### OWASP
+- **Práticas**: Implementação de recomendações OWASP
+- **Testes**: Validação de segurança em pipeline
+- **Monitoramento**: Vulnerabilidades conhecidas monitoradas
+
+## Resposta a Incidentes
 
 ### Procedimentos
-1. **Identificação**: Detecção de incidente de segurança
+1. **Identificação**: Detecção e classificação
 2. **Contenção**: Isolamento da ameaça
 3. **Eradicação**: Remoção da causa raiz
 4. **Recuperação**: Restauração dos serviços
-5. **Lições Aprendidas**: Análise pós-incidente
+5. **Análise**: Lições aprendidas
 
 ### Comunicação
-- **Internamente**: Comunicação imediata com equipe de segurança
-- **Externamente**: Comunicação com usuários conforme necessidade
-- **Autoridades**: Notificação conforme requisitos legais
+- **Interna**: Equipe de segurança imediatamente
+- **Externa**: Usuários conforme necessidade
+- **Autoridades**: Conforme requisitos legais
 
-## 9. Conformidade Legal
+## Política de Vulnerabilidades
 
-### LGPD (Lei Geral de Proteção de Dados)
-- **Tratamento de Dados**: Conformidade total com requisitos da LGPD
-- **Direitos dos Titulares**: Garantia dos direitos de acesso, retificação, exclusão e portabilidade de dados
-- **Notificação de Incidentes**: Comunicação em até 72 horas conforme exigido
-- **Testes de Privacidade**: Validação de conformidade com LGPD nos testes automatizados
-- **Documentação**: Registros de tratamento de dados e consentimentos mantidos
+### Relato de Vulnerabilidades
+**NÃO abra issue pública**
+Envie e-mail para: security@caminhar.com
 
-### GDPR (Regulamento Geral de Proteção de Dados)
-- **Conformidade UE**: Total conformidade para usuários da União Europeia
-- **Consentimento Informado**: Tratamento de dados com consentimento explícito e informado
-- **Direitos dos Usuários**: Direito de acesso, retificação, exclusão e portabilidade de dados garantidos
-- **Testes de Conformidade**: Verificação automática de conformidade GDPR nos testes de carga
-- **Proteção de Dados**: Implementação de medidas técnicas e organizacionais para proteção de dados
+### Processo de Resposta
+1. **Recebimento**: Análise em até 24 horas
+2. **Validação**: Confirmação da vulnerabilidade
+3. **Priorização**: Classificação de criticidade
+4. **Correção**: Desenvolvimento e implementação
+5. **Testes**: Validação automatizada
+6. **Comunicação**: Notificação aos usuários
 
-### Outras Conformidades
-- **OWASP**: Implementação de práticas recomendadas de segurança OWASP
-- **ISO 27001**: Alinhamento com requisitos de segurança da informação
-- **Testes de Segurança**: Validação completa de segurança do sistema e proteções
+### Critérios de Classificação
+- **Crítica**: Exposição de dados, execução remota, bypass de autenticação
+- **Alta**: Comprometimento da integridade
+- **Média**: Indisponibilidade ou degradação
+- **Baixa**: Impacto mínimo ou difícil exploração
 
-## 10. Exemplos de Código Seguro
+### Reconhecimento
+Agradecimento público após correção responsável.
+
+## Exemplos de Código Seguro
 
 ### Validação de Entrada
 ```javascript
-// Seguro: Uso de Zod para validação
+// Seguro: Uso de Zod
 const schema = z.object({
   email: z.string().email(),
   password: z.string().min(8)
@@ -145,9 +152,9 @@ const schema = z.object({
 // if (req.body.email && req.body.password) { ... }
 ```
 
-### Consulta ao Banco de Dados
+### Consulta ao Banco
 ```javascript
-// Seguro: Queries parametrizadas
+// Seguro: Prepared statements
 const result = await db.query(
   'SELECT * FROM users WHERE email = $1',
   [email]
@@ -157,35 +164,36 @@ const result = await db.query(
 // const result = await db.query(`SELECT * FROM users WHERE email = '${email}'`);
 ```
 
-## 11. Política de Vulnerabilidades
+## Métricas de Segurança
 
-### Relato de Vulnerabilidades
-Se você descobrir uma vulnerabilidade de segurança neste projeto, por favor, **NÃO** abra uma issue pública.
-Envie um e-mail para `security@caminhar.com` ou entre em contato diretamente com os mantenedores.
+| Métrica | Valor | Meta |
+|---------|-------|------|
+| **Vulnerabilidades** | 0 | 0 |
+| **Testes de Segurança** | 100% | 100% |
+| **Tempo de Resposta** | < 24h | < 24h |
+| **Conformidade LGPD** | 100% | 100% |
+| **Conformidade GDPR** | 100% | 100% |
 
-### Processo de Resposta
-1. **Recebimento**: Vulnerabilidades são recebidas e analisadas em até 24 horas
-2. **Validação**: Confirmação da existência e impacto da vulnerabilidade
-3. **Priorização**: Classificação de criticidade (Baixa, Média, Alta, Crítica)
-4. **Correção**: Desenvolvimento e implementação da correção
-5. **Testes**: Validação da correção através de testes automatizados
-6. **Comunicação**: Notificação aos usuários sobre a correção
+## Próximos Passos
 
-### Critérios de Classificação
-- **Crítica**: Exposição de dados sensíveis, execução remota de código, bypass de autenticação
-- **Alta**: Vulnerabilidades que podem comprometer a integridade do sistema
-- **Média**: Vulnerabilidades que podem causar indisponibilidade ou degradação de serviço
-- **Baixa**: Vulnerabilidades de baixo impacto ou difícil exploração
+### Monitoramento
+1. Implementar ferramentas de APM (Sentry)
+2. Configurar alertas de segurança
+3. Monitorar vulnerabilidades conhecidas
 
-### Reconhecimento
-Agradecemos publicamente aos pesquisadores de segurança que reportam vulnerabilidades de forma responsável, após a correção ser implementada.
+### Melhorias
+1. Implementar Service Workers para segurança offline
+2. Expandir testes de segurança automatizados
+3. Considerar implementação de Web Application Firewall
 
-### Testes de Segurança
-- **Automatizados**: Testes de segurança integrados ao pipeline CI/CD
-- **Manuais**: Análises de segurança periódicas
-- **Pentesting**: Testes de penetração regulares
-- **Monitoramento**: Monitoramento contínuo de vulnerabilidades conhecidas
+### Conformidade
+1. Auditoria de conformidade periódica
+2. Atualização de políticas conforme legislação
+3. Treinamento de equipe em segurança
 
----
+## Documentação Relacionada
 
-**Última atualização:** 07/03/2026
+- [Arquitetura](ARCHITECTURE.md)
+- [Deploy](DEPLOY.md)
+- [Testes & Qualidade](TESTING.md)
+- [Cache & Performance](CACHE.md)

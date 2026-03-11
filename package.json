@@ -129,7 +129,6 @@
     "jest-watch-typeahead": "^3.0.1",
     "next-sitemap": "^4.2.3",
     "node-mocks-http": "^1.17.2",
-    "package": "^1.0.1",
     "undici": "^7.22.0"
   },
   "overrides": {
