@@ -98,6 +98,86 @@
 │   ├── base.css
 │   ├── block-navigation.js
 │   ├── clover.xml
+│   ├── components
+│   │   ├── Admin
+│   │   │   ├── AdminCrudBase.js.html
+│   │   │   ├── AdminMusicasNew.js.html
+│   │   │   ├── AdminPostsNew.js.html
+│   │   │   ├── AdminVideosNew.js.html
+│   │   │   ├── fields
+│   │   │   │   ├── ImageUploadField.js.html
+│   │   │   │   ├── index.html
+│   │   │   │   ├── TextAreaField.js.html
+│   │   │   │   ├── TextField.js.html
+│   │   │   │   ├── ToggleField.js.html
+│   │   │   │   └── UrlField.js.html
+│   │   │   ├── index.html
+│   │   │   ├── index.js.html
+│   │   │   ├── Managers
+│   │   │   │   ├── BackupManager.js.html
+│   │   │   │   ├── CacheManager.js.html
+│   │   │   │   └── index.html
+│   │   │   ├── Tools
+│   │   │   │   ├── index.html
+│   │   │   │   ├── IntegrityCheck.js.html
+│   │   │   │   └── RateLimitViewer.js.html
+│   │   │   └── withAdminAuth.js.html
+│   │   ├── Features
+│   │   │   ├── Blog
+│   │   │   │   ├── BlogSection.js.html
+│   │   │   │   ├── index.html
+│   │   │   │   └── PostCard.js.html
+│   │   │   ├── ContentTabs
+│   │   │   │   ├── index.html
+│   │   │   │   └── index.js.html
+│   │   │   ├── Music
+│   │   │   │   ├── index.html
+│   │   │   │   ├── MusicCard.js.html
+│   │   │   │   └── MusicGallery.js.html
+│   │   │   └── Video
+│   │   │       ├── index.html
+│   │   │       ├── VideoCard.js.html
+│   │   │       └── VideoGallery.js.html
+│   │   ├── Layout
+│   │   │   ├── Container.js.html
+│   │   │   ├── Grid.js.html
+│   │   │   ├── index.html
+│   │   │   ├── index.js.html
+│   │   │   ├── Sidebar.js.html
+│   │   │   └── Stack.js.html
+│   │   ├── Performance
+│   │   │   ├── CriticalCSS.js.html
+│   │   │   ├── ImageOptimized.js.html
+│   │   │   ├── index.html
+│   │   │   ├── index.js.html
+│   │   │   ├── LazyIframe.js.html
+│   │   │   └── PreloadResources.js.html
+│   │   ├── SEO
+│   │   │   ├── Head.js.html
+│   │   │   ├── index.html
+│   │   │   ├── index.js.html
+│   │   │   └── StructuredData
+│   │   │       ├── ArticleSchema.js.html
+│   │   │       ├── BreadcrumbSchema.js.html
+│   │   │       ├── index.html
+│   │   │       ├── index.js.html
+│   │   │       ├── MusicSchema.js.html
+│   │   │       ├── OrganizationSchema.js.html
+│   │   │       ├── VideoSchema.js.html
+│   │   │       └── WebsiteSchema.js.html
+│   │   └── UI
+│   │       ├── Alert.js.html
+│   │       ├── Badge.js.html
+│   │       ├── Button.js.html
+│   │       ├── Card.js.html
+│   │       ├── index.html
+│   │       ├── index.js.html
+│   │       ├── Input.js.html
+│   │       ├── Modal.js.html
+│   │       ├── Select.js.html
+│   │       ├── Spinner.js.html
+│   │       ├── TextArea.js.html
+│   │       └── Toast.js.html
 │   ├── coverage-final.json
 │   ├── favicon.png
 │   ├── index.html
@@ -105,12 +185,206 @@
 │   ├── lcov-report
 │   │   ├── base.css
 │   │   ├── block-navigation.js
+│   │   ├── components
+│   │   │   ├── Admin
+│   │   │   │   ├── AdminCrudBase.js.html
+│   │   │   │   ├── AdminMusicasNew.js.html
+│   │   │   │   ├── AdminPostsNew.js.html
+│   │   │   │   ├── AdminVideosNew.js.html
+│   │   │   │   ├── fields
+│   │   │   │   │   ├── ImageUploadField.js.html
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   ├── TextAreaField.js.html
+│   │   │   │   │   ├── TextField.js.html
+│   │   │   │   │   ├── ToggleField.js.html
+│   │   │   │   │   └── UrlField.js.html
+│   │   │   │   ├── index.html
+│   │   │   │   ├── index.js.html
+│   │   │   │   ├── Managers
+│   │   │   │   │   ├── BackupManager.js.html
+│   │   │   │   │   ├── CacheManager.js.html
+│   │   │   │   │   └── index.html
+│   │   │   │   ├── Tools
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   ├── IntegrityCheck.js.html
+│   │   │   │   │   └── RateLimitViewer.js.html
+│   │   │   │   └── withAdminAuth.js.html
+│   │   │   ├── Features
+│   │   │   │   ├── Blog
+│   │   │   │   │   ├── BlogSection.js.html
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   └── PostCard.js.html
+│   │   │   │   ├── ContentTabs
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   └── index.js.html
+│   │   │   │   ├── Music
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   ├── MusicCard.js.html
+│   │   │   │   │   └── MusicGallery.js.html
+│   │   │   │   └── Video
+│   │   │   │       ├── index.html
+│   │   │   │       ├── VideoCard.js.html
+│   │   │   │       └── VideoGallery.js.html
+│   │   │   ├── Layout
+│   │   │   │   ├── Container.js.html
+│   │   │   │   ├── Grid.js.html
+│   │   │   │   ├── index.html
+│   │   │   │   ├── index.js.html
+│   │   │   │   ├── Sidebar.js.html
+│   │   │   │   └── Stack.js.html
+│   │   │   ├── Performance
+│   │   │   │   ├── CriticalCSS.js.html
+│   │   │   │   ├── ImageOptimized.js.html
+│   │   │   │   ├── index.html
+│   │   │   │   ├── index.js.html
+│   │   │   │   ├── LazyIframe.js.html
+│   │   │   │   └── PreloadResources.js.html
+│   │   │   ├── SEO
+│   │   │   │   ├── Head.js.html
+│   │   │   │   ├── index.html
+│   │   │   │   ├── index.js.html
+│   │   │   │   └── StructuredData
+│   │   │   │       ├── ArticleSchema.js.html
+│   │   │   │       ├── BreadcrumbSchema.js.html
+│   │   │   │       ├── index.html
+│   │   │   │       ├── index.js.html
+│   │   │   │       ├── MusicSchema.js.html
+│   │   │   │       ├── OrganizationSchema.js.html
+│   │   │   │       ├── VideoSchema.js.html
+│   │   │   │       └── WebsiteSchema.js.html
+│   │   │   └── UI
+│   │   │       ├── Alert.js.html
+│   │   │       ├── Badge.js.html
+│   │   │       ├── Button.js.html
+│   │   │       ├── Card.js.html
+│   │   │       ├── index.html
+│   │   │       ├── index.js.html
+│   │   │       ├── Input.js.html
+│   │   │       ├── Modal.js.html
+│   │   │       ├── Select.js.html
+│   │   │       ├── Spinner.js.html
+│   │   │       ├── TextArea.js.html
+│   │   │       └── Toast.js.html
 │   │   ├── favicon.png
 │   │   ├── index.html
+│   │   ├── lib
+│   │   │   ├── api
+│   │   │   │   ├── errors.js.html
+│   │   │   │   ├── index.html
+│   │   │   │   ├── index.js.html
+│   │   │   │   ├── middleware.js.html
+│   │   │   │   ├── response.js.html
+│   │   │   │   └── validate.js.html
+│   │   │   ├── cache.js.html
+│   │   │   ├── db-example.js.html
+│   │   │   ├── index.html
+│   │   │   ├── middleware
+│   │   │   │   ├── index.html
+│   │   │   │   └── rate-limit-proxy.js.html
+│   │   │   ├── middleware.js.html
+│   │   │   ├── posts.js.html
+│   │   │   ├── redis.js.html
+│   │   │   └── seo
+│   │   │       ├── config.js.html
+│   │   │       └── index.html
+│   │   ├── pages
+│   │   │   └── api
+│   │   │       ├── admin
+│   │   │       │   ├── backups.js.html
+│   │   │       │   ├── cache.js.html
+│   │   │       │   ├── index.html
+│   │   │       │   ├── musicas.js.html
+│   │   │       │   ├── posts.js.html
+│   │   │       │   ├── rate-limit.js.html
+│   │   │       │   └── videos.js.html
+│   │   │       ├── auth
+│   │   │       │   ├── check.js.html
+│   │   │       │   ├── index.html
+│   │   │       │   ├── login.js.html
+│   │   │       │   ├── login.v2.js.html
+│   │   │       │   └── logout.js.html
+│   │   │       ├── cleanup-test-data.js.html
+│   │   │       ├── index.html
+│   │   │       ├── musicas.js.html
+│   │   │       ├── placeholder-image.js.html
+│   │   │       ├── posts.js.html
+│   │   │       ├── settings.js.html
+│   │   │       ├── upload-image.js.html
+│   │   │       └── v1
+│   │   │           ├── auth
+│   │   │           │   ├── check.js.html
+│   │   │           │   ├── index.html
+│   │   │           │   └── login.js.html
+│   │   │           ├── health.js.html
+│   │   │           ├── index.html
+│   │   │           ├── posts.js.html
+│   │   │           ├── settings.js.html
+│   │   │           ├── status.js.html
+│   │   │           ├── videos
+│   │   │           │   ├── [id].js.html
+│   │   │           │   └── index.html
+│   │   │           └── videos.js.html
 │   │   ├── prettify.css
 │   │   ├── prettify.js
 │   │   ├── sort-arrow-sprite.png
 │   │   └── sorter.js
+│   ├── lib
+│   │   ├── api
+│   │   │   ├── errors.js.html
+│   │   │   ├── index.html
+│   │   │   ├── index.js.html
+│   │   │   ├── middleware.js.html
+│   │   │   ├── response.js.html
+│   │   │   └── validate.js.html
+│   │   ├── cache.js.html
+│   │   ├── db-example.js.html
+│   │   ├── index.html
+│   │   ├── middleware
+│   │   │   ├── index.html
+│   │   │   └── rate-limit-proxy.js.html
+│   │   ├── middleware.js.html
+│   │   ├── posts.js.html
+│   │   ├── redis.js.html
+│   │   └── seo
+│   │       ├── config.js.html
+│   │       └── index.html
+│   ├── pages
+│   │   └── api
+│   │       ├── admin
+│   │       │   ├── backups.js.html
+│   │       │   ├── cache.js.html
+│   │       │   ├── index.html
+│   │       │   ├── musicas.js.html
+│   │       │   ├── posts.js.html
+│   │       │   ├── rate-limit.js.html
+│   │       │   └── videos.js.html
+│   │       ├── auth
+│   │       │   ├── check.js.html
+│   │       │   ├── index.html
+│   │       │   ├── login.js.html
+│   │       │   ├── login.v2.js.html
+│   │       │   └── logout.js.html
+│   │       ├── cleanup-test-data.js.html
+│   │       ├── index.html
+│   │       ├── musicas.js.html
+│   │       ├── placeholder-image.js.html
+│   │       ├── posts.js.html
+│   │       ├── settings.js.html
+│   │       ├── upload-image.js.html
+│   │       └── v1
+│   │           ├── auth
+│   │           │   ├── check.js.html
+│   │           │   ├── index.html
+│   │           │   └── login.js.html
+│   │           ├── health.js.html
+│   │           ├── index.html
+│   │           ├── posts.js.html
+│   │           ├── settings.js.html
+│   │           ├── status.js.html
+│   │           ├── videos
+│   │           │   ├── [id].js.html
+│   │           │   └── index.html
+│   │           └── videos.js.html
 │   ├── prettify.css
 │   ├── prettify.js
 │   ├── sort-arrow-sprite.png
@@ -392,7 +666,6 @@
 │   ├── auth_check.test.js
 │   ├── auth.test.js
 │   ├── backups.api.test.js
-│   ├── clean-orphaned-images.test.js
 │   ├── clean-test-db.test.js
 │   ├── create-post-flow.test.js
 │   ├── db.test.js
@@ -481,6 +754,8 @@
 │       │   │   ├── backup.logs.test.js
 │       │   │   └── backup.operations.test.js
 │       │   ├── db
+│       │   │   ├── createPost.test.js
+│       │   │   ├── getAllPosts.test.js
 │       │   │   └── saveImage.test.js
 │       │   ├── db-example.test.js
 │       │   ├── db.test.js
@@ -491,7 +766,6 @@
 │       │       │   ├── musicas.query.test.js
 │       │       │   └── musicas.update.test.js
 │       │       ├── posts
-│       │       │   ├── posts.create.test.js
 │       │       │   ├── posts.delete.test.js
 │       │       │   ├── posts.query.test.js
 │       │       │   └── posts.update.test.js
@@ -500,7 +774,9 @@
 │       │           ├── videos.delete.test.js
 │       │           ├── videos.query.test.js
 │       │           └── videos.update.test.js
-│       └── middleware.test.js
+│       ├── middleware.test.js
+│       └── scripts
+│           └── clean-orphaned-images.test.js
 └── tree.txt
 
-86 directories, 418 files
+139 directories, 641 files
