@@ -2,27 +2,15 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { Pool } from 'pg';
 import { createPost } from '../../../../lib/db.js';
 
-// Mock do 'pg' para isolar o banco de dados, consistente com outros testes de db
-jest.mock('pg', () => {
-  const mockQuery = jest.fn();
-  const mockPool = {
-    query: mockQuery,
-    end: jest.fn(),
-    on: jest.fn(),
-  };
-  return {
-    Pool: jest.fn(() => mockPool),
-  };
-});
+// Mock do 'pg' (automático via __mocks__/pg.js)
+jest.mock('pg');
 
 describe('createPost', () => {
-  let pool;
   let mockQuery;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    pool = new Pool();
-    mockQuery = pool.query;
+    mockQuery = new Pool().query;
+    mockQuery.mockReset();
   });
 
   it('deve criar um novo post com os dados corretos', async () => {
@@ -90,8 +78,16 @@ describe('createPost', () => {
     const dbError = new Error('Erro de inserção no DB');
     mockQuery.mockRejectedValue(dbError);
 
+    // Silencia o console.error para este teste
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
     const postData = { title: 'Post que falha', slug: 'post-que-falha', content: '...' };
 
     await expect(createPost(postData)).rejects.toThrow('Erro de inserção no DB');
+
+    // Verifica se o erro foi logado, sem poluir o console
+    expect(consoleErrorSpy).toHaveBeenCalled();
+
+    consoleErrorSpy.mockRestore();
   });
 });

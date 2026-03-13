@@ -446,7 +446,6 @@
 │   ├── middleware
 │   │   └── rate-limit-proxy.js
 │   ├── middleware.js
-│   ├── posts.js
 │   ├── redis.js
 │   └── seo
 │       └── config.js
@@ -484,6 +483,7 @@
 ├── load-tests.yml
 ├── __mocks__
 │   ├── cookie.js
+│   ├── pg.js
 │   └── styleMock.js
 ├── next.config.js
 ├── next-sitemap.config.js
@@ -664,11 +664,9 @@
 │   │       ├── health.test.js
 │   │       └── status.test.js
 │   ├── auth_check.test.js
-│   ├── auth.test.js
 │   ├── backups.api.test.js
 │   ├── clean-test-db.test.js
 │   ├── create-post-flow.test.js
-│   ├── db.test.js
 │   ├── find-unused.test.js
 │   ├── index.test.js
 │   ├── middleware.test.js
@@ -696,7 +694,6 @@
 │   └── videos_validation.test.js
 ├── tests
 │   ├── examples
-│   │   ├── api-example.test.js
 │   │   ├── component-example.test.js
 │   │   └── simple-test.test.js
 │   ├── factories
@@ -718,7 +715,6 @@
 │   │   │   ├── musicas.update.test.js
 │   │   │   ├── posts.delete.test.js
 │   │   │   ├── posts.general.test.js
-│   │   │   ├── posts.pagination.test.js
 │   │   │   ├── settings.api.test.js
 │   │   │   ├── settings.general.test.js
 │   │   │   ├── status.api.test.js
@@ -729,7 +725,6 @@
 │   │   │   ├── auth.v1.check.test.js
 │   │   │   └── auth.v1.login.test.js
 │   │   └── scripts
-│   │       └── verify-migration.test.js
 │   ├── matchers
 │   │   ├── index.js
 │   │   ├── toBeISODate.js
@@ -748,6 +743,7 @@
 │       │   ├── api
 │       │   │   ├── errors.test.js
 │       │   │   └── response.test.js
+│       │   ├── auth.test.js
 │       │   ├── backup
 │       │   │   ├── backup.available.test.js
 │       │   │   ├── backup.cleanup.test.js
@@ -755,28 +751,18 @@
 │       │   │   └── backup.operations.test.js
 │       │   ├── db
 │       │   │   ├── createPost.test.js
+│       │   │   ├── deletePost.test.js
 │       │   │   ├── getAllPosts.test.js
-│       │   │   └── saveImage.test.js
+│       │   │   ├── getPaginatedPosts.test.js
+│       │   │   ├── query.test.js
+│       │   │   ├── saveImage.test.js
+│       │   │   ├── settings.test.js
+│       │   │   └── updatePost.test.js
 │       │   ├── db-example.test.js
-│       │   ├── db.test.js
-│       │   └── domain
-│       │       ├── musicas
-│       │       │   ├── musicas.create.test.js
-│       │       │   ├── musicas.delete.test.js
-│       │       │   ├── musicas.query.test.js
-│       │       │   └── musicas.update.test.js
-│       │       ├── posts
-│       │       │   ├── posts.delete.test.js
-│       │       │   ├── posts.query.test.js
-│       │       │   └── posts.update.test.js
-│       │       └── videos
-│       │           ├── videos.create.test.js
-│       │           ├── videos.delete.test.js
-│       │           ├── videos.query.test.js
-│       │           └── videos.update.test.js
+│       │   └── db.test.js
 │       ├── middleware.test.js
 │       └── scripts
 │           └── clean-orphaned-images.test.js
 └── tree.txt
 
-139 directories, 641 files
+135 directories, 631 files

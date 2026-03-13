@@ -1,5 +1,4 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-
 // Mock das dependências de sistema
 jest.mock('fs', () => ({
   existsSync: jest.fn(),
@@ -83,8 +82,12 @@ describe('Operações de Backup (lib/backup.js)', () => {
     it('deve criar backup de segurança e restaurar o banco', async () => {
       const backupFile = 'backup-test.sql.gz';
       
+      // Silencia o console.warn para este teste
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
       await restoreBackup(backupFile);
       
+      expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('ATENÇÃO'));
       expect(child_process.exec).toHaveBeenCalledTimes(2);
       
       // 1. Backup de segurança
@@ -97,6 +100,8 @@ describe('Operações de Backup (lib/backup.js)', () => {
       expect(restoreCmd).toContain('gunzip <');
       expect(restoreCmd).toContain(backupFile);
       expect(restoreCmd).toContain('psql');
+
+      consoleWarnSpy.mockRestore();
     });
 
     it('deve falhar se o arquivo de backup não existir', async () => {
@@ -107,7 +112,18 @@ describe('Operações de Backup (lib/backup.js)', () => {
            return false;
        });
        
+       // Silencia o console.error para este teste, pois a falha é esperada
+       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
        await expect(restoreBackup('missing.sql.gz')).rejects.toThrow('Backup file not found');
+
+       // Opcional, mas bom: verifica se a função de log de erro foi chamada
+       expect(consoleErrorSpy).toHaveBeenCalledWith(
+         expect.stringContaining('Erro ao restaurar o backup'),
+         expect.any(Error)
+       );
+
+       consoleErrorSpy.mockRestore();
     });
   });
 });

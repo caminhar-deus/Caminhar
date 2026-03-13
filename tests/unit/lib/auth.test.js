@@ -2,13 +2,15 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { createMocks } from 'node-mocks-http';
-import { hashPassword, verifyPassword, generateToken, verifyToken, setAuthCookie, getAuthCookie, withAuth, authenticate, initializeAuth, getAuthToken } from '../lib/auth';
-import { query } from '../lib/db';
+// Caminhos ajustados para a nova estrutura e adicionado extensão .js
+import { hashPassword, verifyPassword, generateToken, verifyToken, setAuthCookie, getAuthCookie, withAuth, authenticate, initializeAuth, getAuthToken } from '../../../lib/auth.js';
+import { query } from '../../../lib/db.js';
 
 // Mock external dependencies
 jest.mock('bcryptjs');
 jest.mock('jsonwebtoken');
-jest.mock('../lib/db', () => ({
+// Mock do módulo de DB para isolar a lógica de autenticação
+jest.mock('../../../lib/db.js', () => ({
   query: jest.fn(),
 }));
 
@@ -168,12 +170,19 @@ describe('auth.js', () => {
   });
 
   it('initializeAuth deve tratar erros ao criar o usuário admin', async () => {
+    // Silencia o console.error para este teste
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
     query.mockRejectedValue(new Error('Erro ao criar usuário'));
     bcrypt.hash.mockResolvedValue('hashedPassword');
 
     await expect(initializeAuth()).rejects.toThrow(
       'Erro ao criar usuário'
     );
+
+    // Verifica se o erro foi logado e restaura o console
+    expect(consoleErrorSpy).toHaveBeenCalled();
+    consoleErrorSpy.mockRestore();
   });
 
   it('initializeAuth não deve criar o usuário admin se ele já existir', async () => {

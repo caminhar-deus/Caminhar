@@ -2,27 +2,15 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { Pool } from 'pg';
 import { getAllPosts } from '../../../../lib/db.js';
 
-// O mock do 'pg' será o mesmo usado nos outros testes de DB
-jest.mock('pg', () => {
-  const mockQuery = jest.fn();
-  const mockPool = {
-    query: mockQuery,
-    end: jest.fn(),
-    on: jest.fn(),
-  };
-  return {
-    Pool: jest.fn(() => mockPool),
-  };
-});
+// Mock do 'pg' (automático via __mocks__/pg.js)
+jest.mock('pg');
 
 describe('getAllPosts', () => {
-  let pool;
   let mockQuery;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    pool = new Pool();
-    mockQuery = pool.query;
+    mockQuery = new Pool().query;
+    mockQuery.mockReset();
   });
 
   it('deve retornar uma lista de posts do banco de dados', async () => {
@@ -56,7 +44,16 @@ describe('getAllPosts', () => {
     const dbError = new Error('DB Error');
     mockQuery.mockRejectedValue(dbError);
 
+    // Silencia o console.error para este teste específico para evitar poluir o log
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
     // Garante que a função propaga o erro para quem a chamou
     await expect(getAllPosts()).rejects.toThrow('DB Error');
+
+    // Opcional, mas recomendado: Verifica se o erro foi de fato logado pela função 'query'
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error executing query', { text: 'SELECT * FROM posts ORDER BY created_at DESC' });
+
+    // Restaura a implementação original do console.error
+    consoleErrorSpy.mockRestore();
   });
 });
