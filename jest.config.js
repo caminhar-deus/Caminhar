@@ -51,15 +51,14 @@ export default {
     '^@helpers/(.*)$': '<rootDir>/tests/helpers/$1',
     '^@mocks/(.*)$': '<rootDir>/tests/mocks/$1',
     '^@matchers/(.*)$': '<rootDir>/tests/matchers/$1',
-    '^cookie$': '<rootDir>/__mocks__/cookie.js'
   },
   
   moduleFileExtensions: ['js', 'jsx', 'json', 'node'],
   
   clearMocks: true,
-  resetMocks: false,
+  resetMocks: true,
   restoreMocks: true,
-  
+  cache: true,
   maxWorkers: 1, // Mantido 1 para melhor estabilidade com módulos ESM
   verbose: true,
   testTimeout: 10000

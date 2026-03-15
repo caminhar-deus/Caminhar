@@ -1,16 +1,16 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { Pool } from 'pg';
+import { mockQuery } from 'pg';
 import { updateSetting, setSetting, getSetting, getSettings, getAllSettings } from '../../../../lib/db.js';
 
 // Mock do 'pg' (automático via __mocks__/pg.js)
 jest.mock('pg');
 
 describe('Settings Operations', () => {
-  let mockQuery;
-
   beforeEach(() => {
-    mockQuery = new Pool().query;
+    jest.clearAllMocks();
     mockQuery.mockReset();
+    // Define um retorno padrão para evitar erros de 'undefined' em chamadas não mockadas
+    mockQuery.mockResolvedValue({ rows: [], rowCount: 0 });
   });
 
   describe('updateSetting', () => {
@@ -64,7 +64,6 @@ describe('Settings Operations', () => {
       });
 
       it('deve retornar null se a configuração não existir', async () => {
-          mockQuery.mockResolvedValue({ rows: [] });
           const result = await getSetting('missing_key');
           expect(result).toBeNull();
       });

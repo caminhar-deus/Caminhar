@@ -1,0 +1,23 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Componente Header deve corresponder ao snapshot 1`] = `
+<div>
+  <header>
+    <h1>
+      Caminhar com Deus
+    </h1>
+    <nav>
+      <a
+        href="/"
+      >
+        Início
+      </a>
+      <a
+        href="/posts"
+      >
+        Posts
+      </a>
+    </nav>
+  </header>
+</div>
+`;

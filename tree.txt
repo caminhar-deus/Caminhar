@@ -629,6 +629,7 @@
 │   │   └── update-setting.js
 │   └── validate-schema.js
 ├── skills-lock.json
+├── __snapshots__
 ├── styleMock.js
 ├── styles
 │   ├── Admin.module.css
@@ -676,7 +677,6 @@
 │   ├── musicas.pagination.api.test.js
 │   ├── musicas_public_api.test.js
 │   ├── musicas_public_db_integration.test.js
-│   ├── musicas.update.api.test.js
 │   ├── posts.create.api.test.js
 │   ├── posts.integration.test.js
 │   ├── posts.update.api.test.js
@@ -719,7 +719,8 @@
 │   │   │   ├── settings.general.test.js
 │   │   │   ├── status.api.test.js
 │   │   │   ├── upload-image.test.js
-│   │   │   └── videos.delete.test.js
+│   │   │   ├── videos.delete.test.js
+│   │   │   └── videos.test.js
 │   │   ├── auth
 │   │   │   ├── auth.test.js
 │   │   │   ├── auth.v1.check.test.js
@@ -739,10 +740,16 @@
 │   ├── README.md
 │   ├── setup.js
 │   └── unit
+│       ├── components
+│       │   ├── Header.test.js
+│       │   ├── SeoPerformance.test.js
+│       │   └── __snapshots__
+│       │       └── Header.test.js.snap
 │       ├── lib
 │       │   ├── api
 │       │   │   ├── errors.test.js
-│       │   │   └── response.test.js
+│       │   │   ├── response.test.js
+│       │   │   └── validate.test.js
 │       │   ├── auth.test.js
 │       │   ├── backup
 │       │   │   ├── backup.available.test.js
@@ -754,15 +761,15 @@
 │       │   │   ├── deletePost.test.js
 │       │   │   ├── getAllPosts.test.js
 │       │   │   ├── getPaginatedPosts.test.js
+│       │   │   ├── musicas.test.js
 │       │   │   ├── query.test.js
 │       │   │   ├── saveImage.test.js
 │       │   │   ├── settings.test.js
 │       │   │   └── updatePost.test.js
-│       │   ├── db-example.test.js
-│       │   └── db.test.js
+│       │   └── db-example.test.js
 │       ├── middleware.test.js
 │       └── scripts
 │           └── clean-orphaned-images.test.js
 └── tree.txt
 
-135 directories, 631 files
+138 directories, 635 files

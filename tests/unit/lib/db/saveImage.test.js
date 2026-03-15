@@ -1,17 +1,16 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { Pool } from 'pg';
+import { mockQuery } from 'pg';
 import { saveImage } from '../../../../lib/db.js';
 
 // Mock do 'pg' (automático via __mocks__/pg.js)
 jest.mock('pg');
 
-
 describe('saveImage (Salvar Imagem)', () => {
-  let mockQuery;
-
   beforeEach(() => {
-    mockQuery = new Pool().query;
+    jest.clearAllMocks();
     mockQuery.mockReset();
+    // Define um retorno padrão para evitar erros de 'undefined' em chamadas não mockadas
+    mockQuery.mockResolvedValue({ rows: [], rowCount: 0 });
   });
 
   it('deve salvar os metadados da imagem corretamente no banco de dados', async () => {

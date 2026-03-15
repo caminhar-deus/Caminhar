@@ -1,17 +1,17 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { Pool } from 'pg';
+import { mockQuery } from 'pg';
 import { query } from '../../../../lib/db.js';
 
 // Mock do 'pg' (automático via __mocks__/pg.js)
 jest.mock('pg');
 
 describe('Base Query Wrapper', () => {
-    let mockQuery;
-
     beforeEach(() => {
         // Reseta o mock para garantir um estado limpo para cada teste
-        mockQuery = new Pool().query;
+        jest.clearAllMocks();
         mockQuery.mockReset();
+        // Define um retorno padrão para robustez
+        mockQuery.mockResolvedValue({ rows: [], rowCount: 0 });
     });
 
     it('deve executar uma query SQL com sucesso', async () => {

@@ -95,6 +95,14 @@ describe('Integração de Cache da API de Configurações (v1)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     redis._reset();
+    
+    // Restaurar implementações do Redis pois resetMocks: true no jest.config.js as remove
+    redis.get.mockImplementation((key) => Promise.resolve(redis._store.get(key) || null));
+    redis.set.mockImplementation((key, value) => Promise.resolve(redis._store.set(key, value)));
+    redis.del.mockImplementation((key) => {
+      redis._store.delete(key);
+      return Promise.resolve(1);
+    });
 
     // Setup Auth Mock (Admin por padrão para permitir todas operações)
     auth.getAuthToken.mockReturnValue('valid-token');

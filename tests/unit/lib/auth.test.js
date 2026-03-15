@@ -2,6 +2,7 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { createMocks } from 'node-mocks-http';
+import * as cookie from 'cookie';
 // Caminhos ajustados para a nova estrutura e adicionado extensão .js
 import { hashPassword, verifyPassword, generateToken, verifyToken, setAuthCookie, getAuthCookie, withAuth, authenticate, initializeAuth, getAuthToken } from '../../../lib/auth.js';
 import { query } from '../../../lib/db.js';
@@ -13,11 +14,29 @@ jest.mock('jsonwebtoken');
 jest.mock('../../../lib/db.js', () => ({
   query: jest.fn(),
 }));
+// Mock do módulo 'cookie' para evitar problemas de interoperabilidade CJS/ESM no Jest.
+// Isso fornece implementações simples de 'parse' e 'serialize' apenas para este teste.
+jest.mock('cookie', () => ({
+  parse: jest.fn((str) => {
+    if (!str) return {};
+    return Object.fromEntries(str.split(';').map(c => c.trim().split('=')));
+  }),
+  serialize: jest.fn((name, val) => `${name}=${val}`),
+}));
 
 describe('auth.js', () => {
   // Clear mocks before each test
   beforeEach(() => {
     jest.clearAllMocks();
+    // Devido à configuração `resetMocks: true` no jest.config.js, a implementação
+    // do mock de 'cookie' é removida antes de cada teste. Precisamos restaurá-la.
+    // O import `* as cookie` acima nos dá acesso ao objeto mockado para reconfigurá-lo.
+    cookie.parse.mockImplementation((str) => {
+      if (!str) return {};
+      // Simulação simples para 'key=value; key2=value2'
+      return Object.fromEntries(str.split(';').map(c => c.trim().split('=')));
+    });
+    cookie.serialize.mockImplementation((name, val) => `${name}=${val}`);
   });
 
   it('hashPassword returns a hash', async () => {

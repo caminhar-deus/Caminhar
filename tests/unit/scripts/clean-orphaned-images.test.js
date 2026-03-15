@@ -1,6 +1,6 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import fs from 'fs';
-import { Pool } from 'pg';
+import { mockQuery } from 'pg';
 
 // Mock das dependências externas
 jest.mock('fs');
@@ -13,13 +13,11 @@ jest.mock('pg');
 import { cleanOrphanedImages } from '../../../scripts/clean-orphaned-images.js';
 
 describe('cleanOrphanedImages', () => {
-  let mockQuery;
-
   beforeEach(() => {
     jest.clearAllMocks();
-    mockQuery = new Pool().query;
     mockQuery.mockReset();
-    mockQuery.mockResolvedValue({ rows: [] });
+    // Define um retorno padrão para evitar erros de 'undefined' em chamadas não mockadas
+    mockQuery.mockResolvedValue({ rows: [], rowCount: 0 });
   });
 
   it('deve remover arquivos órfãos', async () => {

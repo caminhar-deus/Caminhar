@@ -1,16 +1,16 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { Pool } from 'pg';
+import { mockQuery } from 'pg';
 import { getAllPosts } from '../../../../lib/db.js';
 
 // Mock do 'pg' (automático via __mocks__/pg.js)
 jest.mock('pg');
 
 describe('getAllPosts', () => {
-  let mockQuery;
-
   beforeEach(() => {
-    mockQuery = new Pool().query;
+    jest.clearAllMocks();
     mockQuery.mockReset();
+    // Define um retorno padrão para evitar erros de 'undefined' em chamadas não mockadas
+    mockQuery.mockResolvedValue({ rows: [], rowCount: 0 });
   });
 
   it('deve retornar uma lista de posts do banco de dados', async () => {
@@ -31,8 +31,6 @@ describe('getAllPosts', () => {
   });
 
   it('deve retornar um array vazio se não houver posts', async () => {
-    mockQuery.mockResolvedValue({ rows: [], rowCount: 0 });
-
     const posts = await getAllPosts();
 
     expect(mockQuery).toHaveBeenCalledWith('SELECT * FROM posts ORDER BY created_at DESC', undefined);

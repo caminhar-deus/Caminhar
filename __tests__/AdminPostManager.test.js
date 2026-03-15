@@ -165,20 +165,21 @@ const AdminPostManager = () => {
   );
 };
 
-// Mock do fetch global para evitar chamadas reais à API durante o teste
-global.fetch = jest.fn(() =>
-  Promise.resolve({
-    ok: true,
-    json: () => Promise.resolve([]),
-    headers: {
-      get: (name) => name === 'content-type' ? 'application/json' : null
-    }
-  })
-);
+// Mock do fetch global
+global.fetch = jest.fn();
 
 describe('AdminPostManager', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Restaura a implementação padrão do fetch antes de cada teste,
+    // pois `resetMocks: true` no jest.config.js a limpa.
+    global.fetch.mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve([]), // Retorna uma lista vazia por padrão para GET
+        headers: { get: (name) => name === 'content-type' ? 'application/json' : null }
+      })
+    );
   });
 
   it('renderiza corretamente o título, seções e formulário', async () => {

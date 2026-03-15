@@ -1,16 +1,16 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { Pool } from 'pg';
+import { mockQuery } from 'pg';
 import { deletePost } from '../../../../lib/db.js';
 
 // Mock do 'pg' (automático via __mocks__/pg.js)
 jest.mock('pg');
 
 describe('deletePost', () => {
-  let mockQuery;
-
   beforeEach(() => {
-    mockQuery = new Pool().query;
+    jest.clearAllMocks();
     mockQuery.mockReset();
+    // Define um retorno padrão para evitar erros de 'undefined' em chamadas não mockadas
+    mockQuery.mockResolvedValue({ rows: [], rowCount: 0 });
   });
 
   it('deve deletar um post pelo ID e retornar o ID removido', async () => {
@@ -30,9 +30,6 @@ describe('deletePost', () => {
   });
 
   it('deve retornar undefined se o post a ser deletado não existir', async () => {
-    // Simula que nenhum registro foi encontrado/deletado
-    mockQuery.mockResolvedValue({ rows: [] });
-
     const result = await deletePost(999);
     expect(result).toBeUndefined();
   });
