@@ -577,6 +577,7 @@
 │   ├── backup.js
 │   ├── check-db-status.js
 │   ├── check-env.js
+│   ├── check-server.js
 │   ├── clean-k6-reports.js
 │   ├── clean-load-test-posts.js
 │   ├── clean-orphaned-images.js
@@ -765,4 +766,4 @@
 │       └── videos_validation.test.js
 └── tree.txt
 
-136 directories, 630 files
+136 directories, 631 files

@@ -23,10 +23,20 @@ jobs:
           POSTGRES_PASSWORD: test_password
         ports:
           - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
       redis:
         image: redis:7-alpine
         ports:
           - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout Repository
@@ -63,6 +73,15 @@ jobs:
               });
             }
 
+      - name: Setup Test Database
+        run: npm run setup:test-db
+        env:
+          TEST_DB_HOST: localhost
+          TEST_DB_PORT: 5432
+          TEST_DB_NAME: caminhar_test
+          TEST_DB_USER: test_user
+          TEST_DB_PASS: test_password
+
       - name: Run Tests, Check Coverage & Capture Output
         id: run_tests
         # Ajustado temporariamente para a realidade atual (20%) para evitar bloqueio injusto de PRs.
@@ -96,3 +115,11 @@ jobs:
               repo: context.repo.repo,
               body: comment
             });
+
+      - name: Upload Coverage HTML Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jest-coverage-report
+          path: coverage/
+          retention-days: 7

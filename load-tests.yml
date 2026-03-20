@@ -51,6 +51,14 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
+      - name: Restore Next.js Build Cache
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('package-lock.json') }}-${{ hashFiles('**/*.[jt]s', '**/*.[jt]sx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('package-lock.json') }}-
+
       - name: Create Reports Directory
         run: mkdir -p reports/k6-summaries
 
@@ -63,6 +71,11 @@ jobs:
           TEST_DB_NAME: caminhar_test
           TEST_DB_USER: test_user
           TEST_DB_PASS: test_password
+
+      - name: Seed Test Database
+        run: node scripts/seed-all.js
+        env:
+          DATABASE_URL: postgres://test_user:test_password@localhost:5432/caminhar_test
 
       - name: Build Application
         run: npm run build
