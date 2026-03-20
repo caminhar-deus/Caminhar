@@ -10,7 +10,7 @@ Este documento descreve a estratégia de testes do projeto, abrangendo testes un
 
 **Objetivo**: Testar componentes e funções isoladamente.
 
-**Localização**: Arquivos `*.test.js` e pasta `__tests__/`
+**Localização**: Arquivos `*.test.js` e subpastas em `tests/unit/`
 
 **Comandos**:
 ```bash
@@ -64,6 +64,7 @@ npm run cypress:run         # Modo headless
 
 **Cenários disponíveis**:
 ```bash
+npm run test:load:all       # Roda todos os cenários sequencialmente
 npm run test:load           # Health check básico
 npm run test:load:auth      # Fluxo autenticado
 npm run test:load:write     # Criação de posts

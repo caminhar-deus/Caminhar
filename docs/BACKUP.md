@@ -27,7 +27,7 @@ npm run create-backup
 
 ### Restaurar Backup
 ```bash
-npm run backup:restore nome-arquivo.sql.gz
+npm run restore-backup nome-arquivo.sql.gz
 ```
 
 ### Listar Backups Disponíveis

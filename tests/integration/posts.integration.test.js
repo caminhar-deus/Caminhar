@@ -16,8 +16,8 @@ jest.mock('pg', () => {
   };
 });
 
-import { getRecentPosts, getAllPosts } from '../lib/db.js';
-import handler from '../pages/api/posts.js';
+import { getRecentPosts, getAllPosts } from '../../lib/db.js';
+import handler from '../../pages/api/posts.js';
 
 // Captura a função 'query' do mock da instância do Pool criada ao importar db.js
 const mockQuery = Pool.mock.results[0].value.query;

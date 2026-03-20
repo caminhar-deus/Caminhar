@@ -535,6 +535,7 @@
 │   ├── _document.js
 │   ├── index.js
 │   └── [slug].js
+├── pr-coverage.yml
 ├── public
 │   └── uploads
 │       ├── hero-image-1772141705599.webp
@@ -656,42 +657,6 @@
 │   │   └── zIndex.js
 │   ├── VideoCard.module.css
 │   └── VideoGallery.module.css
-├── __tests__
-│   ├── AdminPostManager.test.js
-│   ├── api
-│   │   ├── admin
-│   │   │   └── cache.test.js
-│   │   └── v1
-│   │       ├── health.test.js
-│   │       └── status.test.js
-│   ├── auth_check.test.js
-│   ├── backups.api.test.js
-│   ├── clean-test-db.test.js
-│   ├── create-post-flow.test.js
-│   ├── find-unused.test.js
-│   ├── index.test.js
-│   ├── middleware.test.js
-│   ├── musicas.create.api.test.js
-│   ├── musicas.delete.api.test.js
-│   ├── musicas_flow.test.js
-│   ├── musicas.pagination.api.test.js
-│   ├── musicas_public_api.test.js
-│   ├── musicas_public_db_integration.test.js
-│   ├── posts.create.api.test.js
-│   ├── posts.integration.test.js
-│   ├── posts.update.api.test.js
-│   ├── settings-cache.test.js
-│   ├── [slug].test.js
-│   ├── status.api.test.js
-│   ├── upload-image.test.js
-│   ├── videos.create.api.test.js
-│   ├── videos.delete.api.test.js
-│   ├── videos_flow.test.js
-│   ├── videos.pagination.api.test.js
-│   ├── videos_public_api.test.js
-│   ├── videos_public_db_integration.test.js
-│   ├── videos.test.js
-│   └── videos_validation.test.js
 ├── tests
 │   ├── examples
 │   │   ├── component-example.test.js
@@ -709,23 +674,39 @@
 │   │   └── render.js
 │   ├── integration
 │   │   ├── api
+│   │   │   ├── admin
+│   │   │   │   └── cache.test.js
+│   │   │   ├── backups.api.test.js
 │   │   │   ├── musicas.create.test.js
 │   │   │   ├── musicas.delete.test.js
 │   │   │   ├── musicas.pagination.test.js
 │   │   │   ├── musicas.update.test.js
+│   │   │   ├── posts.create.api.test.js
 │   │   │   ├── posts.delete.test.js
 │   │   │   ├── posts.general.test.js
+│   │   │   ├── posts.update.api.test.js
 │   │   │   ├── settings.api.test.js
 │   │   │   ├── settings.general.test.js
 │   │   │   ├── status.api.test.js
 │   │   │   ├── upload-image.test.js
+│   │   │   ├── v1
+│   │   │   │   ├── health.test.js
+│   │   │   │   └── status.test.js
+│   │   │   ├── videos.create.api.test.js
 │   │   │   ├── videos.delete.test.js
+│   │   │   ├── videos.pagination.api.test.js
 │   │   │   └── videos.test.js
 │   │   ├── auth
 │   │   │   ├── auth.test.js
 │   │   │   ├── auth.v1.check.test.js
 │   │   │   └── auth.v1.login.test.js
-│   │   └── scripts
+│   │   ├── create-post-flow.test.js
+│   │   ├── musicas_flow.test.js
+│   │   ├── musicas_public_db_integration.test.js
+│   │   ├── posts.integration.test.js
+│   │   ├── scripts
+│   │   ├── videos_flow.test.js
+│   │   └── videos_public_db_integration.test.js
 │   ├── matchers
 │   │   ├── index.js
 │   │   ├── toBeISODate.js
@@ -740,11 +721,18 @@
 │   ├── README.md
 │   ├── setup.js
 │   └── unit
+│       ├── AdminPostManager.test.js
+│       ├── auth_check.test.js
+│       ├── clean-test-db.test.js
 │       ├── components
+│       │   ├── Button.test.js
 │       │   ├── Header.test.js
 │       │   ├── SeoPerformance.test.js
-│       │   └── __snapshots__
-│       │       └── Header.test.js.snap
+│       │   ├── __snapshots__
+│       │   │   └── Header.test.js.snap
+│       │   └── withAdminAuth.test.js
+│       ├── find-unused.test.js
+│       ├── index.test.js
 │       ├── lib
 │       │   ├── api
 │       │   │   ├── errors.test.js
@@ -768,8 +756,13 @@
 │       │   │   └── updatePost.test.js
 │       │   └── db-example.test.js
 │       ├── middleware.test.js
-│       └── scripts
-│           └── clean-orphaned-images.test.js
+│       ├── musicas_public_api.test.js
+│       ├── scripts
+│       │   └── clean-orphaned-images.test.js
+│       ├── settings-cache.test.js
+│       ├── [slug].test.js
+│       ├── videos_public_api.test.js
+│       └── videos_validation.test.js
 └── tree.txt
 
-138 directories, 635 files
+136 directories, 630 files

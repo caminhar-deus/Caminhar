@@ -156,6 +156,35 @@ describe('API Validation Middleware (lib/api/validate.js)', () => {
           expect(req.params).toEqual({ id: '123e4567-e89b-12d3-a456-426614174000' });
           expect(handler).toHaveBeenCalled();
       });
+
+      it('deve retornar erro se params forem inválidos', async () => {
+          req.query = { id: 'nao-e-uuid' };
+          
+          const middleware = validateParams(schema)(handler);
+          await middleware(req, res);
+          
+          expect(handler).not.toHaveBeenCalled();
+          expect(validationError).toHaveBeenCalledWith(
+              res, 
+              'Erro de validação nos parâmetros da rota', 
+              expect.any(Array)
+          );
+      });
+
+      it('deve tratar erros inesperados (não-Zod) na validação dos params', async () => {
+          req.query = { id: '123e4567-e89b-12d3-a456-426614174000' };
+          const errorSchema = { parse: () => { throw new Error('Erro Inesperado nos Params'); } };
+          const middleware = validateParams(errorSchema)(handler);
+          
+          const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+          
+          await middleware(req, res);
+          
+          expect(validationError).toHaveBeenCalledWith(res, 'Erro ao validar parâmetros da rota');
+          expect(consoleSpy).toHaveBeenCalledWith('Erro inesperado na validação dos params:', expect.any(Error));
+          consoleSpy.mockRestore();
+      });
+
   });
 
   describe('validateHeaders', () => {
@@ -179,18 +208,37 @@ describe('API Validation Middleware (lib/api/validate.js)', () => {
       });
   });
 
+  it('deve tratar erros inesperados (não-Zod) na validação dos headers', async () => {
+      req.headers = { 'X-API-KEY': 'minha-senha-secreta' };
+      const errorSchema = { parse: () => { throw new Error('Erro Inesperado nos Headers'); } };
+      const middleware = validateHeaders(errorSchema)(handler);
+      
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      
+      await middleware(req, res);
+      
+      expect(validationError).toHaveBeenCalledWith(res, 'Erro ao validar headers');
+      expect(consoleSpy).toHaveBeenCalledWith('Erro inesperado na validação dos headers:', expect.any(Error));
+      consoleSpy.mockRestore();
+  });
+
   describe('validateRequest (Composto)', () => {
       const schemas = {
           body: z.object({ title: z.string() }),
-          query: z.object({ version: z.string() })
+          query: z.object({ version: z.string() }),
+          params: z.object({ id: z.string().uuid() }),
       };
 
       it('deve validar body e query com sucesso', async () => {
+          const successSchemas = {
+            body: schemas.body,
+            query: schemas.query,
+          };
           req.method = 'POST';
           req.body = { title: 'Post' };
           req.query = { version: '1.0' };
           
-          const middleware = validateRequest(schemas)(handler);
+          const middleware = validateRequest(successSchemas)(handler);
           await middleware(req, res);
           expect(handler).toHaveBeenCalled();
       });
@@ -199,6 +247,7 @@ describe('API Validation Middleware (lib/api/validate.js)', () => {
           req.method = 'POST';
           req.body = { title: 123 }; // Erro no body
           req.query = { version: 1 }; // Erro na query
+          req.query.id = 'nao-e-uuid'; // Erro nos params
           
           const middleware = validateRequest(schemas)(handler);
           await middleware(req, res);
@@ -208,7 +257,8 @@ describe('API Validation Middleware (lib/api/validate.js)', () => {
           
           expect(errors).toEqual(expect.arrayContaining([
               expect.objectContaining({ location: 'body', field: 'title' }),
-              expect.objectContaining({ location: 'query', field: 'version' })
+              expect.objectContaining({ location: 'query', field: 'version' }),
+              expect.objectContaining({ location: 'params', field: 'id' }),
           ]));
       });
   });
@@ -234,6 +284,11 @@ describe('API Validation Middleware (lib/api/validate.js)', () => {
           it('deve validar tamanho mínimo da busca', () => {
               expect(() => schema.parse({ search: 'oi' })).toThrow();
               expect(schema.parse({ search: 'olá' })).toEqual({ search: 'olá' });
+          });
+
+          it('deve validar tamanho máximo da busca', () => {
+              const longSearch = 'a'.repeat(101); // maxLength padrão é 100
+              expect(() => schema.parse({ search: longSearch })).toThrow();
           });
       });
   });

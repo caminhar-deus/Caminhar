@@ -54,7 +54,11 @@ Content-Type: application/json
 - Headers: `Authorization: Bearer SEU_TOKEN_JWT`
 - Resposta: `{ "authenticated": true, "user": { "userId": 1 } }`
 
-### Status
+### Health e Status
+
+**GET /api/v1/health**
+- Verificação rápida de disponibilidade do serviço (Health Check)
+- Resposta: `{ "status": "ok", "timestamp": "2026-03-20T12:00:00.000Z" }`
 
 **GET /api/v1/status**
 - Retorna status da API e sistema

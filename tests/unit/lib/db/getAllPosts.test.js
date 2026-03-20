@@ -23,7 +23,7 @@ describe('getAllPosts', () => {
     const posts = await getAllPosts();
 
     // Verifica se a query SQL correta foi executada
-    expect(mockQuery).toHaveBeenCalledWith('SELECT * FROM posts ORDER BY created_at DESC', undefined);
+    expect(mockQuery).toHaveBeenCalledWith('SELECT * FROM posts ORDER BY created_at DESC', []);
     
     // Verifica se o resultado corresponde ao mock
     expect(posts).toEqual(mockPosts);
@@ -33,7 +33,7 @@ describe('getAllPosts', () => {
   it('deve retornar um array vazio se não houver posts', async () => {
     const posts = await getAllPosts();
 
-    expect(mockQuery).toHaveBeenCalledWith('SELECT * FROM posts ORDER BY created_at DESC', undefined);
+    expect(mockQuery).toHaveBeenCalledWith('SELECT * FROM posts ORDER BY created_at DESC', []);
     expect(posts).toEqual([]);
     expect(posts.length).toBe(0);
   });
@@ -49,7 +49,12 @@ describe('getAllPosts', () => {
     await expect(getAllPosts()).rejects.toThrow('DB Error');
 
     // Opcional, mas recomendado: Verifica se o erro foi de fato logado pela função 'query'
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Error executing query', { text: 'SELECT * FROM posts ORDER BY created_at DESC' });
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Erro ao executar consulta SQL', {
+      code: undefined,
+      duration: expect.any(String),
+      message: 'DB Error',
+      query: 'SELECT * FROM posts ORDER BY created_at DESC'
+    });
 
     // Restaura a implementação original do console.error
     consoleErrorSpy.mockRestore();

@@ -44,7 +44,12 @@ describe('deletePost', () => {
     await expect(deletePost(1)).rejects.toThrow('Erro de chave estrangeira');
 
     // Verifica se o erro foi de fato logado pela função 'query'
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Error executing query', { text: 'DELETE FROM posts WHERE id = $1 RETURNING id' });
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Erro ao executar consulta SQL', {
+      code: undefined,
+      duration: expect.any(String),
+      message: 'Erro de chave estrangeira',
+      query: 'DELETE FROM posts WHERE id = $1 RETURNING id'
+    });
 
     consoleErrorSpy.mockRestore();
   });

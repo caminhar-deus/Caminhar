@@ -2,6 +2,10 @@ import { getPaginatedMusicas, createMusica, updateMusica, deleteMusica } from '.
 import { withAuth } from '../../../lib/auth.js';
 import { invalidateCache } from '../../../lib/cache.js';
 
+const isValidSpotifyUrl = (url) => {
+  return url.includes('spotify.com') || url.includes('spotify:');
+};
+
 async function handler(req, res) {
   switch (req.method) {
     case 'GET':
@@ -38,7 +42,7 @@ async function handler(req, res) {
         }
 
         // Validação básica de URL do Spotify
-        if (!url_spotify.includes('spotify.com') && !url_spotify.includes('spotify:')) {
+        if (!isValidSpotifyUrl(url_spotify)) {
           return res.status(400).json({ message: 'URL do Spotify inválida' });
         }
 
@@ -73,7 +77,7 @@ async function handler(req, res) {
         }
 
         // Validação básica de URL do Spotify
-        if (!url_spotify.includes('spotify.com') && !url_spotify.includes('spotify:')) {
+        if (!isValidSpotifyUrl(url_spotify)) {
           return res.status(400).json({ message: 'URL do Spotify inválida' });
         }
 

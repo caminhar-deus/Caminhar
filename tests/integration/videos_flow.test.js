@@ -1,10 +1,10 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
-import handler from '../pages/api/admin/videos';
-import { createVideo, getPaginatedVideos, deleteVideo } from '../lib/db';
+import handler from '../../pages/api/admin/videos';
+import { createVideo, getPaginatedVideos, deleteVideo } from '../../lib/db';
 
 // Mock do banco de dados
-jest.mock('../lib/db', () => ({
+jest.mock('../../lib/db', () => ({
   // Mock as funções que o handler realmente importa e usa
   createVideo: jest.fn(),
   getPaginatedVideos: jest.fn(),
@@ -12,7 +12,7 @@ jest.mock('../lib/db', () => ({
 }));
 
 // Mock do módulo de autenticação para ignorar a verificação de token neste teste
-jest.mock('../lib/auth', () => ({
+jest.mock('../../lib/auth', () => ({
   withAuth: (handler) => (req, res) => handler(req, res),
 }));
 

@@ -1,6 +1,11 @@
 import { getPaginatedVideos, createVideo, updateVideo, deleteVideo } from '../../../lib/db.js';
 import { withAuth } from '../../../lib/auth.js';
 
+const isValidYouTubeUrl = (url) => {
+  const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+  return youtubeRegex.test(url);
+};
+
 async function handler(req, res) {
   switch (req.method) {
     case 'GET':
@@ -40,11 +45,7 @@ async function handler(req, res) {
         // Debug: Log the URL being received
         console.log('URL recebida para validação:', url_youtube);
         
-        // Validate YouTube URL format
-        const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-        console.log('Regex test result:', youtubeRegex.test(url_youtube));
-        
-        if (!youtubeRegex.test(url_youtube)) {
+        if (!isValidYouTubeUrl(url_youtube)) {
           console.log('URL falhou na validação');
           return res.status(400).json({ message: 'URL do YouTube inválida' });
         }
@@ -79,9 +80,7 @@ async function handler(req, res) {
           return res.status(400).json({ message: 'A descrição deve ter no máximo 500 caracteres' });
         }
 
-        // Validate YouTube URL format
-        const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-        if (!youtubeRegex.test(url_youtube)) {
+        if (!isValidYouTubeUrl(url_youtube)) {
           return res.status(400).json({ message: 'URL do YouTube inválida' });
         }
 

@@ -1,14 +1,14 @@
 import { jest, describe, beforeEach, test, expect } from '@jest/globals';
 import { createGetRequest, executeHandler } from '@tests/helpers/api.js';
-import handler from '../../../pages/api/v1/status.js';
+import handler from '../../../../pages/api/v1/status.js';
 
 // Mock do lib/db
-jest.mock('../../../lib/db.js', () => ({
+jest.mock('../../../../lib/db.js', () => ({
   query: jest.fn(),
 }));
 
 // Import the mocked modules
-const db = jest.requireMock('../../../lib/db.js');
+const db = jest.requireMock('../../../../lib/db.js');
 
 describe('API Status (/api/v1/status)', () => {
   beforeEach(() => {

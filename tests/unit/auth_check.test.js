@@ -1,10 +1,10 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
-import handler from '../pages/api/auth/check';
+import handler from '../../pages/api/auth/check';
 
 // Mock do middleware de autenticação para ignorar a verificação de token real
 // e permitir injetar o usuário diretamente no request
-jest.mock('../lib/auth', () => ({
+jest.mock('../../lib/auth', () => ({
   withAuth: (handler) => (req, res) => {
     // O middleware real verificaria o token e definiria req.user.
     // Aqui, assumimos que o teste define req.user antes de chamar o handler.

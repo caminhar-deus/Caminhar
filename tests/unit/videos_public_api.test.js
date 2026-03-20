@@ -1,21 +1,21 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
-import handler from '../pages/api/v1/videos';
+import handler from '../../pages/api/v1/videos';
 
 // Mock do módulo db para não acessar o banco de dados real
-jest.mock('../lib/db', () => ({
+jest.mock('../../lib/db', () => ({
   query: jest.fn(),
 }));
 
 // Mock do cache para evitar dependências externas
-jest.mock('../lib/cache', () => ({
+jest.mock('../../lib/cache', () => ({
   getOrSetCache: jest.fn(),
   invalidateCache: jest.fn(),
 }));
 
 // Import dos mocks para usar nas funções
-const { query } = require('../lib/db');
-const { getOrSetCache } = require('../lib/cache');
+const { query } = require('../../lib/db');
+const { getOrSetCache } = require('../../lib/cache');
 
 describe('API Pública de Vídeos (/api/videos)', () => {
   beforeEach(() => {

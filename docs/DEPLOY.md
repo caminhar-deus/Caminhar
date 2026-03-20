@@ -82,7 +82,7 @@ nano .env
 3. **Banco de Dados**
 ```bash
 # Inicializar banco
-npm run init-posts
+npm run db:init
 ```
 
 4. **Build e Execução**

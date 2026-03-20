@@ -1,6 +1,6 @@
 import { describe, test, expect } from '@jest/globals';
 import { createGetRequest, executeHandler } from '@tests/helpers/api.js';
-import handler from '../../../pages/api/v1/health.js';
+import handler from '../../../../pages/api/v1/health.js';
 
 describe('API Health Check (/api/v1/health)', () => {
   test('Deve retornar 200 OK', async () => {

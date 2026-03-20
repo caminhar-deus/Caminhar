@@ -12,11 +12,11 @@ jest.mock('fs', () => ({
 jest.mock('path');
 
 // Importa a função a ser testada
-import { getAllFiles } from '../scripts/find-unused.js'; // Ajuste o caminho se necessário
+import { getAllFiles } from '../../scripts/find-unused.js'; // Ajuste o caminho se necessário
 
 // Mock the main script execution to prevent side effects during testing
-jest.mock('../scripts/find-unused.js', () => {
-  const actual = jest.requireActual('../scripts/find-unused.js');
+jest.mock('../../scripts/find-unused.js', () => {
+  const actual = jest.requireActual('../../scripts/find-unused.js');
   return {
     ...actual,
     // Mock the main script execution but keep the function

@@ -12,7 +12,7 @@ jest.mock('cookie', () => ({
 jest.mock('jsonwebtoken');
 
 import videosHandler from '../../../pages/api/admin/videos.js';
-import { createVideo, updateVideo, deleteVideo } from '../../../lib/db.js';
+import { getPaginatedVideos, createVideo, updateVideo, deleteVideo } from '../../../lib/db.js';
 import * as cookie from 'cookie';
 
 describe('API de Vídeos (/api/admin/videos)', () => {
@@ -34,6 +34,56 @@ describe('API de Vídeos (/api/admin/videos)', () => {
 
     // Configuração padrão de autenticação bem-sucedida para a maioria dos testes
     jwt.verify.mockReturnValue({ role: 'admin' });
+  });
+
+  describe('GET', () => {
+    it('deve retornar uma lista paginada de vídeos', async () => {
+      const mockVideos = {
+        videos: [
+          { id: 1, titulo: 'Vídeo 1', url_youtube: 'https://youtu.be/12345678901' },
+          { id: 2, titulo: 'Vídeo 2', url_youtube: 'https://youtu.be/12345678902' }
+        ],
+        pagination: {
+          page: 1,
+          limit: 10,
+          total: 2,
+          totalPages: 1
+        }
+      };
+
+      getPaginatedVideos.mockResolvedValue(mockVideos);
+
+      const { req, res } = createMocks({
+        method: 'GET',
+        headers: { 'Authorization': 'Bearer valid-token' },
+        query: { page: '1', limit: '10' }
+      });
+
+      await videosHandler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      expect(res._getJSONData()).toEqual(mockVideos);
+      expect(getPaginatedVideos).toHaveBeenCalledWith(1, 10, '');
+    });
+
+    it('deve lidar com erros ao buscar vídeos', async () => {
+      const dbError = new Error('Erro de banco de dados');
+      getPaginatedVideos.mockRejectedValue(dbError);
+
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      const { req, res } = createMocks({
+        method: 'GET',
+        headers: { 'Authorization': 'Bearer valid-token' },
+      });
+
+      await videosHandler(req, res);
+
+      expect(res._getStatusCode()).toBe(500);
+      expect(res._getJSONData()).toEqual({ message: 'Erro ao buscar vídeos' });
+      expect(consoleSpy).toHaveBeenCalledWith('Error fetching videos:', dbError);
+      consoleSpy.mockRestore();
+    });
   });
 
   it('deve retornar 401 Unauthorized se a autenticação falhar', async () => {

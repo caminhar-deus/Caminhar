@@ -1,10 +1,10 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
-import handler from '../pages/api/musicas';
-import { query } from '../lib/db';
+import handler from '../../pages/api/musicas';
+import { query } from '../../lib/db';
 
 // Mock do banco de dados (simulando a camada mais baixa)
-jest.mock('../lib/db', () => ({
+jest.mock('../../lib/db', () => ({
   query: jest.fn(),
 }));
 

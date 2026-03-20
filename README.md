@@ -1,12 +1,15 @@
 # Caminhar com Deus
 
-Um site cristão moderno para compartilhar reflexões, músicas e vídeos sobre fé e espiritualidade.
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
+
+Um site cristão moderno construído com Next.js 16 e React 19 para compartilhar reflexões, músicas e vídeos sobre fé e espiritualidade.
 
 ## 🚀 Como Iniciar
 
 ### Pré-requisitos
-- Node.js 24.14.0+
-- PostgreSQL
+- Node.js 20.0.0+ (Recomendado 24.14.0+)
+- PostgreSQL 15+
+- Redis 7+
 
 ### Instalação
 ```bash
@@ -15,7 +18,7 @@ npm install
 
 # 2. Configurar ambiente
 cp .env.example .env
-# Editar .env com DATABASE_URL e JWT_SECRET
+# Editar .env com DATABASE_URL, REDIS_URL e JWT_SECRET
 
 # 3. Iniciar banco de dados
 npm run db:init
@@ -32,10 +35,12 @@ Acesse: http://localhost:3000
 - **Spotify Integration**: Reprodução de músicas
 - **YouTube Integration**: Reprodução de vídeos
 - **Admin Panel**: Área protegida para gerenciar conteúdo
+- **API RESTful**: API pública documentada (v1) para consumo externo
 - **Lightbox**: Visualização expandida de imagens
-- **Cache**: Sistema com Redis para alta performance
+- **Cache e Segurança**: Sistema distribuído com Redis para alta performance e Rate Limiting
 - **SEO**: Meta tags, Schema.org e Open Graph
 - **Backup**: Sistema automático de backups
+- **Qualidade**: Cobertura de testes automatizados com Jest, Cypress e k6 (testes de carga)
 
 ## 🛠️ Comandos Úteis
 
@@ -48,6 +53,9 @@ npm start
 # Banco de dados
 npm run db:init
 npm run db:shell
+npm run db:clear
+npm run db:clear:musicas
+npm run db:reset:password
 
 # Testes
 npm test

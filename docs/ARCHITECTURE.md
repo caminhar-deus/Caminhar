@@ -78,13 +78,18 @@ Aplicação web moderna construída com Next.js 16, React 19 e PostgreSQL. Arqui
 - Helpers reutilizáveis
 - Mocks centralizados
 - Matchers customizados
-- 15 testes de carga validados
+- +25 testes de carga validados
 
 ### 6. Design System Foundation
 - Tokens de design centralizados
 - Componentes UI reutilizáveis
 - Sistema de cores e tipografia
 - Responsividade garantida
+
+### 7. Sistema de Backup e Retenção
+- Backups automatizados do PostgreSQL (diários)
+- Compressão (gzip) e rotação inteligente (retenção de até 10 versões)
+- Interface administrativa e rotinas de validação de integridade
 
 ## Estrutura de Pastas
 

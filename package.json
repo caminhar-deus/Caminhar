@@ -91,7 +91,7 @@
   "homepage": "https://github.com/caminhar-deus/Caminhar#readme",
   "dependencies": {
     "@jest/globals": "^30.3.0",
-    "@next/env": "^16.1.6",
+    "@next/env": "^16.2.0",
     "@upstash/redis": "^1.37.0",
     "axios": "^1.13.6",
     "bcryptjs": "^3.0.3",
@@ -100,8 +100,9 @@
     "date-fns": "^4.1.0",
     "dotenv": "^17.3.1",
     "formidable": "^3.5.4",
+    "jsdom": "^29.0.0",
     "jsonwebtoken": "^9.0.3",
-    "next": "^16.1.6",
+    "next": "^16.2.0",
     "pg": "^8.20.0",
     "prop-types": "^15.8.1",
     "react": "^19.2.4",
@@ -114,7 +115,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",
-    "@babel/preset-env": "^7.29.0",
+    "@babel/preset-env": "^7.29.2",
     "@babel/preset-react": "^7.28.5",
     "@faker-js/faker": "^10.3.0",
     "@jest/reporters": "^30.3.0",
@@ -130,11 +131,12 @@
     "jest-watch-typeahead": "^3.0.1",
     "next-sitemap": "^4.2.3",
     "node-mocks-http": "^1.17.2",
-    "undici": "^7.24.3"
+    "undici": "^7.24.5"
   },
   "overrides": {
     "tar": "^7.4.3",
     "glob": "^13.0.6",
-    "minimatch": "^10.2.2"
+    "minimatch": "^10.2.2",
+    "whatwg-encoding": "^3.1.1"
   }
 }
