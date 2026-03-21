@@ -36,7 +36,7 @@ export default function MusicCard({ musica }) {
             width="100%"
             height="352"
             frameBorder="0"
-            allowfullscreen=""
+            allowFullScreen
             allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
             loading="lazy"
             title={`Player do Spotify para ${musica.titulo}`}

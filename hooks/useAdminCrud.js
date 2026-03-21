@@ -25,9 +25,16 @@ export function useAdminCrud({
       const response = await fetch(url, {
         credentials: 'include' // *** CORREÇÃO: Envia cookies de autenticação ***
       });
+      
+      // Se a sessão do usuário expirou (1 hora), recarrega a página para voltar ao Login
+      if (response.status === 401) {
+        window.location.reload();
+        return;
+      }
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `Erro ao buscar dados: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || `Erro ao buscar dados: ${response.statusText}`);
       }
       const result = await response.json();
       
@@ -101,8 +108,13 @@ export function useAdminCrud({
         body,
       });
 
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.message || 'Ocorreu um erro ao salvar.');
+      if (response.status === 401) {
+        window.location.reload();
+        return;
+      }
+
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || result.message || 'Ocorreu um erro ao salvar.');
 
       resetForm();
       await fetchData(isEditing ? currentPage : 1); // Volta para a primeira página ao criar novo item
@@ -127,9 +139,15 @@ export function useAdminCrud({
         credentials: 'include',
         body: JSON.stringify({ id }),
       });
+
+      if (response.status === 401) {
+        window.location.reload();
+        return;
+      }
+
       if (!response.ok) {
-        const result = await response.json();
-        throw new Error(result.message || 'Erro ao excluir.');
+        const result = await response.json().catch(() => ({}));
+        throw new Error(result.error || result.message || 'Erro ao excluir.');
       }
       await fetchData(currentPage); // Recarrega os dados da página atual
     } catch (err) {

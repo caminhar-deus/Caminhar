@@ -6,6 +6,7 @@
 │   ├── Admin
 │   │   ├── AdminCrudBase.js
 │   │   ├── AdminDashboard.js
+│   │   ├── AdminLogs.js
 │   │   ├── AdminMusicasNew.js
 │   │   ├── AdminPostsNew.js
 │   │   ├── AdminProducts.js
@@ -108,6 +109,7 @@
 │   │   ├── Admin
 │   │   │   ├── AdminCrudBase.js.html
 │   │   │   ├── AdminDashboard.js.html
+│   │   │   ├── AdminLogs.js.html
 │   │   │   ├── AdminMusicasNew.js.html
 │   │   │   ├── AdminPostsNew.js.html
 │   │   │   ├── AdminProducts.js.html
@@ -202,6 +204,7 @@
 │   │   │   ├── Admin
 │   │   │   │   ├── AdminCrudBase.js.html
 │   │   │   │   ├── AdminDashboard.js.html
+│   │   │   │   ├── AdminLogs.js.html
 │   │   │   │   ├── AdminMusicasNew.js.html
 │   │   │   │   ├── AdminPostsNew.js.html
 │   │   │   │   ├── AdminProducts.js.html
@@ -313,7 +316,10 @@
 │   │   │       │   ├── backups.js.html
 │   │   │       │   ├── cache.js.html
 │   │   │       │   ├── fetch-ml.js.html
+│   │   │       │   ├── fetch-spotify.js.html
+│   │   │       │   ├── fetch-youtube.js.html
 │   │   │       │   ├── index.html
+│   │   │       │   ├── logs.js.html
 │   │   │       │   ├── musicas.js.html
 │   │   │       │   ├── posts.js.html
 │   │   │       │   ├── rate-limit.js.html
@@ -378,7 +384,10 @@
 │   │       │   ├── backups.js.html
 │   │       │   ├── cache.js.html
 │   │       │   ├── fetch-ml.js.html
+│   │       │   ├── fetch-spotify.js.html
+│   │       │   ├── fetch-youtube.js.html
 │   │       │   ├── index.html
+│   │       │   ├── logs.js.html
 │   │       │   ├── musicas.js.html
 │   │       │   ├── posts.js.html
 │   │       │   ├── rate-limit.js.html
@@ -528,6 +537,9 @@
 │   │   │   ├── backups.js
 │   │   │   ├── cache.js
 │   │   │   ├── fetch-ml.js
+│   │   │   ├── fetch-spotify.js
+│   │   │   ├── fetch-youtube.js
+│   │   │   ├── logs.js
 │   │   │   ├── musicas.js
 │   │   │   ├── posts.js
 │   │   │   ├── rate-limit.js
@@ -615,6 +627,7 @@
 │   ├── clear-cache.js
 │   ├── clear-db.js
 │   ├── clear-musicas.js
+│   ├── consolidate-k6-reports.js
 │   ├── create-backup.js
 │   ├── cron-backup.js
 │   ├── db
@@ -647,7 +660,10 @@
 │   │   ├── 003-add-position-to-products.js
 │   │   ├── 004-add-published-to-products.js
 │   │   ├── 005-add-last-login-to-users.js
-│   │   └── 006-create-activity-logs.js
+│   │   ├── 006-create-activity-logs.js
+│   │   ├── 007-add-position-to-musicas.js
+│   │   ├── 008-add-position-to-videos.js
+│   │   └── 009-add-position-to-posts.js
 │   ├── monitor-disk-space.js
 │   ├── reset-admin-password.js
 │   ├── restore-backup.js
@@ -802,4 +818,4 @@
 │       └── videos_validation.test.js
 └── tree.txt
 
-139 directories, 664 files
+139 directories, 680 files

@@ -120,19 +120,7 @@ const columns = [
   },
   { 
     key: 'published', 
-    header: 'Status',
-    render: (item) => (
-      <span style={{
-        padding: '4px 8px',
-        borderRadius: '4px',
-        fontSize: '0.85rem',
-        backgroundColor: item.published ? '#d4edda' : '#fff3cd',
-        color: item.published ? '#155724' : '#856404',
-        border: `1px solid ${item.published ? '#c3e6cb' : '#ffeeba'}`
-      }}>
-        {item.published ? '✅ Publicado' : '📝 Rascunho'}
-      </span>
-    )
+    header: 'Status'
   },
   { 
     key: 'created_at', 
@@ -159,6 +147,23 @@ const initialFormData = {
  * Demonstra uso de upload de imagens e geração automática de slug.
  */
 export default function AdminPostsNew() {
+  // Função responsável por calcular o offset em relação à página e salvar no DB de forma silenciosa
+  const handleReorder = async (reorderedItems, currentPage = 1, itemsPerPage = 10) => {
+    const offset = (currentPage - 1) * itemsPerPage;
+    const payload = reorderedItems.map((item, index) => ({ id: item.id, position: offset + index }));
+    
+    try {
+      const response = await fetch('/api/admin/posts', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reorder', items: payload })
+      });
+      if (!response.ok) throw new Error('Falha ao reordenar');
+    } catch (error) {
+      console.error('Erro ao salvar reordenação:', error);
+    }
+  };
+
   /**
    * Função de validação customizada
    * Impede publicação de posts sem imagem
@@ -241,6 +246,10 @@ export default function AdminPostsNew() {
       saveButtonText="Salvar"
       updateButtonText="Atualizar"
       emptyMessage="Nenhum post encontrado."
+      searchable={true}
+      exportable={true}
+      reorderable={true}
+      onReorder={handleReorder}
     />
   );
 }

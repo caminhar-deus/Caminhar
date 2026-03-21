@@ -51,7 +51,10 @@ export default function (data) {
 
   // Gera dados únicos para esta iteração para evitar conflitos
   const uniqueId = `${__VU}-${__ITER}`; // ID do Usuário Virtual + Número da Iteração
-  const videoUrl = `https://www.youtube.com/watch?v=test${uniqueId}`;
+  
+  // O YouTube exige que o ID do vídeo tenha exatamente 11 caracteres para passar na validação Regex da API
+  const paddedVideoId = `k6${__VU}x${__ITER}`.padStart(11, '0').slice(-11);
+  const videoUrl = `https://www.youtube.com/watch?v=${paddedVideoId}`;
   const videoTitle = `Video de Teste K6 ${uniqueId}`;
 
   // --- 1. CRIAR (POST) ---
@@ -62,7 +65,7 @@ export default function (data) {
     publicado: false,
   });
 
-  const createRes = http.post(`${BASE_URL}/api/v1/videos`, createPayload, {
+  const createRes = http.post(`${BASE_URL}/api/admin/videos`, createPayload, {
     headers: authHeaders,
     tags: { flow: 'create_video' },
   });
@@ -72,8 +75,8 @@ export default function (data) {
     'CREATE: status é 201': (r) => r.status === 201,
     'CREATE: retorna o ID do vídeo': (r) => {
       const body = r.json();
-      if (body && body.data && body.data.id) {
-        videoId = body.data.id;
+      if (body && body.id) {
+        videoId = body.id;
         return true;
       }
       return false;
@@ -90,9 +93,9 @@ export default function (data) {
 
   // --- 2. ATUALIZAR (PUT) ---
   const updatedTitle = `Video Atualizado K6 ${uniqueId}`;
-  const updatePayload = JSON.stringify({ titulo: updatedTitle, url_youtube: videoUrl, publicado: false });
+  const updatePayload = JSON.stringify({ id: videoId, titulo: updatedTitle, url_youtube: videoUrl, publicado: false });
 
-  const updateRes = http.put(`${BASE_URL}/api/v1/videos/${videoId}`, updatePayload, {
+  const updateRes = http.put(`${BASE_URL}/api/admin/videos`, updatePayload, {
     headers: authHeaders,
     tags: { flow: 'update_video' },
   });
@@ -107,7 +110,8 @@ export default function (data) {
   sleep(1);
 
   // --- 3. DELETAR (DELETE) ---
-  const deleteRes = http.del(`${BASE_URL}/api/v1/videos/${videoId}`, null, {
+  const deletePayload = JSON.stringify({ id: videoId });
+  const deleteRes = http.del(`${BASE_URL}/api/admin/videos`, deletePayload, {
     headers: authHeaders,
     tags: { flow: 'delete_video' },
   });
@@ -119,6 +123,27 @@ export default function (data) {
   }
 
   sleep(2); // Aguarda antes da próxima iteração
+}
+
+export function teardown(data) {
+  if (!data || !data.token) return;
+  
+  const authHeaders = {
+    'Authorization': `Bearer ${data.token}`,
+    'Content-Type': 'application/json',
+  };
+  
+  // Função de Limpeza (Vassoura): apaga qualquer vídeo fantasma deixado por VUs interrompidos
+  const res = http.get(`${BASE_URL}/api/admin/videos?limit=100`, { headers: authHeaders });
+  if (res.status === 200) {
+    const body = res.json();
+    const videos = body.videos || body.data || [];
+    for (const video of videos) {
+      if (video.titulo && video.titulo.includes('K6')) {
+        http.del(`${BASE_URL}/api/admin/videos`, JSON.stringify({ id: video.id }), { headers: authHeaders });
+      }
+    }
+  }
 }
 
 export function handleSummary(data) {

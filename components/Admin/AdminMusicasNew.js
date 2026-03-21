@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import toast from 'react-hot-toast';
 import styles from '../../styles/Admin.module.css';
 import AdminCrudBase from './AdminCrudBase';
 import TextField from './fields/TextField';
@@ -92,23 +93,9 @@ const columns = [
   },
   {
     key: 'publicado',
-    header: 'Status',
-    render: (item) => (
-      <span style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '6px',
-        padding: '4px 8px',
-        borderRadius: '4px',
-        fontSize: '0.85rem',
-        backgroundColor: item.publicado ? '#d4edda' : '#fff3cd',
-        color: item.publicado ? '#155724' : '#856404',
-        border: `1px solid ${item.publicado ? '#c3e6cb' : '#ffeeba'}`,
-        whiteSpace: 'nowrap'
-      }}>
-        {item.publicado ? '✅ Publicado' : '📝 Rascunho'}
-      </span>
-    )
+    header: 'Status'
+    // Removida a renderização customizada para que o AdminCrudBase
+    // aplique automaticamente o botão de (Ligar/Desligar) nativo!
   }
 ];
 
@@ -129,6 +116,83 @@ const initialFormData = {
  * Demonstra como configurar campos, colunas e validação.
  */
 export default function AdminMusicasNew() {
+  const [isFetchingSpotify, setIsFetchingSpotify] = useState(false);
+
+  // Função responsável por calcular o offset em relação à página e salvar no DB de forma silenciosa
+  const handleReorder = async (reorderedItems, currentPage = 1, itemsPerPage = 10) => {
+    const offset = (currentPage - 1) * itemsPerPage;
+    const payload = reorderedItems.map((item, index) => ({ id: item.id, position: offset + index }));
+    
+    try {
+      const response = await fetch('/api/admin/musicas', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reorder', items: payload })
+      });
+      if (!response.ok) throw new Error('Falha ao reordenar');
+    } catch (error) {
+      console.error('Erro ao salvar reordenação:', error);
+    }
+  };
+
+  // Função para buscar dados do Spotify
+  const handleFetchSpotify = async (url, setFieldValue) => {
+    if (!url || !url.includes('spotify')) {
+      toast.error('Cole um link válido do Spotify primeiro!');
+      return;
+    }
+    
+    setIsFetchingSpotify(true);
+    const loadingToast = toast.loading('Buscando dados no Spotify...');
+
+    try {
+      const res = await fetch('/api/admin/fetch-spotify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Falha na busca.');
+      }
+
+      const data = await res.json();
+
+      // Preenche os formulários
+      setFieldValue('titulo', data.title);
+      setFieldValue('artista', data.artist);
+
+      toast.success('Música encontrada!', { id: loadingToast });
+    } catch (error) {
+      toast.error(error.message, { id: loadingToast });
+    } finally {
+      setIsFetchingSpotify(false);
+    }
+  };
+
+  // Intercepta a renderização do campo para adicionar o botão
+  const renderCustomFormField = (fieldConfig, formData, handleInputChange, setFieldValue) => {
+    if (fieldConfig.name === 'url_spotify') {
+      const { name, component: Component, gridColumn, ...props } = fieldConfig;
+      return (
+        <div key={name} style={{ gridColumn: gridColumn || 'span 1', position: 'relative' }}>
+          <button
+            type="button"
+            onClick={() => handleFetchSpotify(formData[name], setFieldValue)}
+            disabled={isFetchingSpotify}
+            title="Puxar Título e Artista automaticamente"
+            style={{ position: 'absolute', right: '0', top: '0', padding: '4px 10px', backgroundColor: '#1DB954', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold', fontSize: '11px', cursor: isFetchingSpotify ? 'not-allowed' : 'pointer', opacity: isFetchingSpotify ? 0.7 : 1, zIndex: 10 }}
+          >
+            {isFetchingSpotify ? '⏳ Buscando...' : '⚡ Puxar Dados'}
+          </button>
+          <Component name={name} value={formData[name] ?? ''} onChange={handleInputChange} {...props} />
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <AdminCrudBase
       apiEndpoint="/api/admin/musicas"
@@ -141,6 +205,11 @@ export default function AdminMusicasNew() {
       saveButtonText="Cadastrar Música"
       updateButtonText="Atualizar Música"
       emptyMessage="Nenhuma música cadastrada ainda."
+      searchable={true}
+      exportable={true}
+      reorderable={true}
+      onReorder={handleReorder}
+      renderCustomFormField={renderCustomFormField}
     />
   );
 }

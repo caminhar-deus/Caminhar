@@ -30,7 +30,7 @@ describe('Funções de Músicas (DB)', () => {
       // Verifica a chamada da query de dados (independente da ordem do Promise.all)
       const dataCall = mockQuery.mock.calls.find(call => call[0].includes('SELECT * FROM musicas'));
       const normalizedSqlData = dataCall[0].replace(/\s+/g, ' ').trim();
-      expect(normalizedSqlData).toContain('ORDER BY created_at DESC LIMIT $1 OFFSET $2');
+      expect(normalizedSqlData).toContain('ORDER BY position ASC, created_at DESC LIMIT $1 OFFSET $2');
       expect(dataCall[1]).toEqual([10, 0]); // Padrão: limit=10, offset=0
 
       // Verifica a chamada da query de contagem

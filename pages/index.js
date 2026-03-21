@@ -6,8 +6,12 @@ import ContentTabs from '../components/Features/ContentTabs';
 export default function Home() {
   const [title, setTitle] = useState('O Caminhar com Deus');
   const [subtitle, setSubtitle] = useState('Reflexões e ensinamentos sobre a fé, espiritualidade e a jornada cristã');
+  const [imageSrc, setImageSrc] = useState('/api/placeholder-image');
 
   useEffect(() => {
+    // Atualiza a URL da imagem no lado do cliente para evitar Hydration Mismatch
+    setImageSrc(`/api/placeholder-image?t=${Date.now()}`);
+
     // Load settings from database
     const loadSettings = async () => {
       try {
@@ -43,7 +47,7 @@ export default function Home() {
 
         <div className={styles.imageContainer}>
           <img
-            src={`/api/placeholder-image?t=${Date.now()}`}
+            src={imageSrc}
             alt="Caminhar com Deus"
             className={styles.heroImage}
             loading="lazy"

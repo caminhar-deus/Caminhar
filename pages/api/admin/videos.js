@@ -1,4 +1,4 @@
-import { getPaginatedVideos, createVideo, updateVideo, deleteVideo } from '../../../lib/db.js';
+import { getPaginatedVideos, createVideo, updateVideo, deleteVideo, updateRecords, logActivity } from '../../../lib/db.js';
 import { withAuth } from '../../../lib/auth.js';
 
 const isValidYouTubeUrl = (url) => {
@@ -7,6 +7,9 @@ const isValidYouTubeUrl = (url) => {
 };
 
 async function handler(req, res) {
+  const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
+  const user = req.user; // Extraído automaticamente pelo middleware withAuth
+
   switch (req.method) {
     case 'GET':
       try {
@@ -57,6 +60,8 @@ async function handler(req, res) {
           publicado: publicado !== undefined ? publicado : false // Default false se não enviado
         });
 
+        if (user) await logActivity(user.username, 'CREATE', 'VIDEO', novoVideo.id, `Criou o vídeo: ${titulo}`, ip);
+
         res.status(201).json(novoVideo);
       } catch (error) {
         console.error('Error creating video:', error);
@@ -66,6 +71,15 @@ async function handler(req, res) {
 
     case 'PUT':
       try {
+        // Intercepta ação customizada de reordenação em massa (Drag & Drop)
+        if (req.body.action === 'reorder') {
+          const { items } = req.body;
+          for (const item of items) {
+            await updateRecords('videos', { position: item.position }, { id: item.id });
+          }
+          return res.status(200).json({ success: true, message: 'Ordem atualizada' });
+        }
+
         const { id, titulo, url_youtube, descricao, publicado } = req.body;
 
         if (!id) {
@@ -95,6 +109,8 @@ async function handler(req, res) {
           return res.status(404).json({ message: 'Vídeo não encontrado' });
         }
 
+        if (user) await logActivity(user.username, 'UPDATE', 'VIDEO', id, `Atualizou o vídeo: ${titulo}`, ip);
+
         res.status(200).json(videoAtualizado);
       } catch (error) {
         console.error('Error updating video:', error);
@@ -115,6 +131,8 @@ async function handler(req, res) {
         if (!resultado) {
           return res.status(404).json({ message: 'Vídeo não encontrado' });
         }
+
+        if (user) await logActivity(user.username, 'DELETE', 'VIDEO', id, `Removeu o vídeo ID: ${id}`, ip);
 
         res.status(200).json({ message: 'Vídeo excluído com sucesso' });
       } catch (error) {

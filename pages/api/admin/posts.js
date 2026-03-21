@@ -1,9 +1,11 @@
-import { getPaginatedPosts, createPost, updatePost, deletePost } from '../../../lib/db.js';
+import { getPaginatedPosts, createPost, updatePost, deletePost, logActivity, updateRecords } from '../../../lib/db.js';
 import { withAuth } from '../../../lib/auth.js';
 import { invalidateCache } from '../../../lib/cache.js';
 
 async function handler(req, res) {
   const { method } = req;
+  const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
+  const user = req.user; // Usuário logado fornecido pelo middleware withAuth
 
   switch (method) {
     case 'GET':
@@ -40,6 +42,9 @@ async function handler(req, res) {
         }
 
         const newPost = await createPost({ title, slug, excerpt, content, image_url, published });
+        
+        if (user) await logActivity(user.username, 'CREATE', 'POST', newPost.id, `Criou o artigo: ${title}`, ip);
+        
         // Invalida o cache público se um novo post for criado
         await invalidateCache('posts:public:all');
         res.status(201).json(newPost);
@@ -51,6 +56,15 @@ async function handler(req, res) {
 
     case 'PUT':
       try {
+        // Intercepta ação customizada de reordenação em massa (Drag & Drop)
+        if (req.body.action === 'reorder') {
+          const { items } = req.body;
+          for (const item of items) {
+            await updateRecords('posts', { position: item.position }, { id: item.id });
+          }
+          return res.status(200).json({ success: true, message: 'Ordem atualizada' });
+        }
+
         const { id, title, slug, excerpt, content, image_url, published } = req.body;
         
         if (!id) {
@@ -61,6 +75,9 @@ async function handler(req, res) {
         if (!updatedPost) {
           return res.status(404).json({ message: 'Post não encontrado' });
         }
+        
+        if (user) await logActivity(user.username, 'UPDATE', 'POST', id, `Atualizou o artigo: ${title}`, ip);
+        
         await invalidateCache('posts:public:all');
         res.status(200).json(updatedPost);
       } catch (error) {
@@ -80,6 +97,9 @@ async function handler(req, res) {
         if (!deleted) {
           return res.status(404).json({ message: 'Post não encontrado' });
         }
+        
+        if (user) await logActivity(user.username, 'DELETE', 'POST', id, `Removeu o artigo ID: ${id}`, ip);
+        
         await invalidateCache('posts:public:all');
         res.status(200).json({ success: true });
       } catch (error) {

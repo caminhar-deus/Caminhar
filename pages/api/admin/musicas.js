@@ -1,4 +1,4 @@
-import { getPaginatedMusicas, createMusica, updateMusica, deleteMusica } from '../../../lib/db.js';
+import { getPaginatedMusicas, createMusica, updateMusica, deleteMusica, updateRecords, logActivity } from '../../../lib/db.js';
 import { withAuth } from '../../../lib/auth.js';
 import { invalidateCache } from '../../../lib/cache.js';
 
@@ -7,6 +7,9 @@ const isValidSpotifyUrl = (url) => {
 };
 
 async function handler(req, res) {
+  const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
+  const user = req.user; // Extraído automaticamente pelo seu middleware withAuth
+
   switch (req.method) {
     case 'GET':
       try {
@@ -54,6 +57,8 @@ async function handler(req, res) {
           publicado: publicado !== undefined ? publicado : false // Default false se não enviado
         });
 
+        if (user) await logActivity(user.username, 'CREATE', 'MUSIC', novaMusica.id, `Criou a música: ${titulo}`, ip);
+
         // Invalida o cache para atualizar a listagem imediatamente
         await invalidateCache('musicas');
 
@@ -66,6 +71,16 @@ async function handler(req, res) {
 
     case 'PUT':
       try {
+        // Intercepta ação customizada de reordenação em massa (Drag & Drop)
+        if (req.body.action === 'reorder') {
+          const { items } = req.body;
+          for (const item of items) {
+            await updateRecords('musicas', { position: item.position }, { id: item.id });
+          }
+          await invalidateCache('musicas');
+          return res.status(200).json({ success: true, message: 'Ordem atualizada' });
+        }
+
         const { id, titulo, artista, descricao, url_spotify, publicado } = req.body;
 
         if (!id) {
@@ -93,6 +108,8 @@ async function handler(req, res) {
           return res.status(404).json({ message: 'Música não encontrada' });
         }
 
+        if (user) await logActivity(user.username, 'UPDATE', 'MUSIC', id, `Atualizou a música: ${titulo}`, ip);
+
         // Invalida o cache após atualização
         await invalidateCache('musicas');
 
@@ -116,6 +133,8 @@ async function handler(req, res) {
         if (!resultado) {
           return res.status(404).json({ message: 'Música não encontrada' });
         }
+
+        if (user) await logActivity(user.username, 'DELETE', 'MUSIC', id, `Removeu a música ID: ${id}`, ip);
 
         // Invalida o cache após exclusão
         await invalidateCache('musicas');

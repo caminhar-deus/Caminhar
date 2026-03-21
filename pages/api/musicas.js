@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     const limit = Math.max(1, parseInt(limitStr) || 10);
     const offset = (page - 1) * limit;
 
-    let text = 'SELECT id, titulo, artista, url_spotify, descricao FROM musicas WHERE publicado = true';
+    let text = 'SELECT id, titulo, artista, url_spotify, descricao, position FROM musicas WHERE publicado = true';
     const params = [];
     let paramIndex = 1;
 
@@ -26,7 +26,7 @@ export default async function handler(req, res) {
       paramIndex++;
     }
 
-    text += ` ORDER BY created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    text += ` ORDER BY position ASC, created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
     params.push(limit, offset);
 
     const result = await query(text, params);

@@ -174,7 +174,7 @@ export default function Admin() {
 
     } catch (error) {
       setError(error.message);
-      console.warn('Login failed:', error);
+      console.warn('Login failed:', error.message);
     } finally {
       setLoading(false);
     }

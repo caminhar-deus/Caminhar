@@ -79,7 +79,10 @@ export function stressTestFlow(data) {
   };
 
   const uniqueId = `${__VU}-${__ITER}`;
-  const videoUrl = `https://www.youtube.com/watch?v=stress${uniqueId}`;
+  
+  // O YouTube exige que o ID do vídeo tenha exatamente 11 caracteres para passar na validação Regex da API
+  const paddedVideoId = `st${__VU}x${__ITER}`.padStart(11, '0').slice(-11);
+  const videoUrl = `https://www.youtube.com/watch?v=${paddedVideoId}`;
   const videoTitle = `Video de Estresse K6 ${uniqueId}`;
 
   // 1. CRIAR (POST)
@@ -90,7 +93,7 @@ export function stressTestFlow(data) {
     publicado: false,
   });
 
-  const createRes = http.post(`${BASE_URL}/api/v1/videos`, createPayload, {
+  const createRes = http.post(`${BASE_URL}/api/admin/videos`, createPayload, {
     headers: authHeaders,
     tags: { flow: 'stress_create' },
   });
@@ -101,8 +104,8 @@ export function stressTestFlow(data) {
     'CREATE: retorna o ID': (r) => {
       if (r.status === 201 && r.body) {
         const body = r.json();
-        if (body && body.data && body.data.id) {
-          videoId = body.data.id;
+        if (body && body.id) {
+          videoId = body.id;
           return true;
         }
       }
@@ -116,12 +119,13 @@ export function stressTestFlow(data) {
 
   // 2. UPDATE (PUT)
   const updatePayload = JSON.stringify({ 
+    id: videoId,
     titulo: `Video Atualizado ${uniqueId}`, 
     url_youtube: videoUrl, 
     publicado: false 
   });
   
-  http.put(`${BASE_URL}/api/v1/videos/${videoId}`, updatePayload, { 
+  http.put(`${BASE_URL}/api/admin/videos`, updatePayload, { 
     headers: authHeaders, 
     tags: { flow: 'stress_update', name: 'UpdateVideo' } 
   });
@@ -129,7 +133,8 @@ export function stressTestFlow(data) {
   sleep(0.5);
 
   // 3. DELETAR (DELETE)
-  http.del(`${BASE_URL}/api/v1/videos/${videoId}`, null, { 
+  const deletePayload = JSON.stringify({ id: videoId });
+  http.del(`${BASE_URL}/api/admin/videos`, deletePayload, { 
     headers: authHeaders, 
     tags: { flow: 'stress_delete', name: 'DeleteVideo' } 
   });
@@ -146,6 +151,26 @@ export function memoryMonitorFlow() {
     MemoryHeapUsed.add(memory.heapUsed);
   }
   sleep(1);
+}
+
+// --- Função de Limpeza (Teardown) ---
+export function teardown(data) {
+  if (!data || !data.token) return;
+  const authHeaders = {
+    'Authorization': `Bearer ${data.token}`,
+    'Content-Type': 'application/json',
+  };
+  
+  const res = http.get(`${BASE_URL}/api/admin/videos?limit=100`, { headers: authHeaders });
+  if (res.status === 200) {
+    const body = res.json();
+    const videos = body.videos || body.data || [];
+    for (const video of videos) {
+      if (video.titulo && (video.titulo.includes('K6') || video.titulo.includes('Estresse'))) {
+        http.del(`${BASE_URL}/api/admin/videos`, JSON.stringify({ id: video.id }), { headers: authHeaders });
+      }
+    }
+  }
 }
 
 // --- Handle Summary ---

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import toast from 'react-hot-toast';
 import AdminCrudBase from './AdminCrudBase';
 import TextField from './fields/TextField';
 import UrlField from './fields/UrlField';
@@ -104,19 +105,7 @@ const columns = [
   },
   {
     key: 'publicado',
-    header: 'Status',
-    render: (item) => (
-      <span style={{
-        padding: '4px 8px',
-        borderRadius: '4px',
-        fontSize: '0.85rem',
-        backgroundColor: item.publicado ? '#d4edda' : '#fff3cd',
-        color: item.publicado ? '#155724' : '#856404',
-        border: `1px solid ${item.publicado ? '#c3e6cb' : '#ffeeba'}`
-      }}>
-        {item.publicado ? '✅ Publicado' : '📝 Rascunho'}
-      </span>
-    )
+    header: 'Status'
   }
 ];
 
@@ -138,6 +127,82 @@ const initialFormData = {
  * Demonstra como configurar campos, colunas e validação.
  */
 export default function AdminVideosNew() {
+  const [isFetchingYoutube, setIsFetchingYoutube] = useState(false);
+
+  // Função responsável por calcular o offset em relação à página e salvar no DB de forma silenciosa
+  const handleReorder = async (reorderedItems, currentPage = 1, itemsPerPage = 10) => {
+    const offset = (currentPage - 1) * itemsPerPage;
+    const payload = reorderedItems.map((item, index) => ({ id: item.id, position: offset + index }));
+    
+    try {
+      const response = await fetch('/api/admin/videos', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reorder', items: payload })
+      });
+      if (!response.ok) throw new Error('Falha ao reordenar');
+    } catch (error) {
+      console.error('Erro ao salvar reordenação:', error);
+    }
+  };
+
+  // Função para buscar dados do YouTube
+  const handleFetchYoutube = async (url, setFieldValue) => {
+    if (!url || (!url.includes('youtube.com') && !url.includes('youtu.be'))) {
+      toast.error('Cole um link válido do YouTube primeiro!');
+      return;
+    }
+    
+    setIsFetchingYoutube(true);
+    const loadingToast = toast.loading('Buscando dados no YouTube...');
+
+    try {
+      const res = await fetch('/api/admin/fetch-youtube', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Falha na busca.');
+      }
+
+      const data = await res.json();
+
+      // Preenche o formulário
+      setFieldValue('titulo', data.title);
+
+      toast.success('Vídeo encontrado!', { id: loadingToast });
+    } catch (error) {
+      toast.error(error.message, { id: loadingToast });
+    } finally {
+      setIsFetchingYoutube(false);
+    }
+  };
+
+  // Intercepta a renderização do campo para adicionar o botão
+  const renderCustomFormField = (fieldConfig, formData, handleInputChange, setFieldValue) => {
+    if (fieldConfig.name === 'url_youtube') {
+      const { name, component: Component, gridColumn, ...props } = fieldConfig;
+      return (
+        <div key={name} style={{ gridColumn: gridColumn || 'span 1', position: 'relative' }}>
+          <button
+            type="button"
+            onClick={() => handleFetchYoutube(formData[name], setFieldValue)}
+            disabled={isFetchingYoutube}
+            title="Puxar Título automaticamente"
+            style={{ position: 'absolute', right: '0', top: '0', padding: '4px 10px', backgroundColor: '#ff0000', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold', fontSize: '11px', cursor: isFetchingYoutube ? 'not-allowed' : 'pointer', opacity: isFetchingYoutube ? 0.7 : 1, zIndex: 10 }}
+          >
+            {isFetchingYoutube ? '⏳ Buscando...' : '⚡ Puxar Dados'}
+          </button>
+          <Component name={name} value={formData[name] ?? ''} onChange={handleInputChange} {...props} />
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <AdminCrudBase
       apiEndpoint="/api/admin/videos"
@@ -152,6 +217,11 @@ export default function AdminVideosNew() {
       saveButtonText="Cadastrar Vídeo"
       updateButtonText="Atualizar Vídeo"
       emptyMessage="Nenhum vídeo cadastrado ainda."
+      searchable={true}
+      exportable={true}
+      reorderable={true}
+      onReorder={handleReorder}
+      renderCustomFormField={renderCustomFormField}
     />
   );
 }

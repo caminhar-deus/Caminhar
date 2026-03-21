@@ -31,7 +31,7 @@ describe('API Pública de Músicas (/api/musicas)', () => {
     expect(res._getStatusCode()).toBe(200);
     expect(JSON.parse(res._getData())).toEqual(mockMusicas);
     expect(query).toHaveBeenCalledWith(
-      'SELECT id, titulo, artista, url_spotify, descricao FROM musicas WHERE publicado = true ORDER BY created_at DESC LIMIT $1 OFFSET $2',
+      'SELECT id, titulo, artista, url_spotify, descricao, position FROM musicas WHERE publicado = true ORDER BY position ASC, created_at DESC LIMIT $1 OFFSET $2',
       [10, 0] // Default limit and offset
     );
   });
@@ -49,7 +49,7 @@ describe('API Pública de Músicas (/api/musicas)', () => {
 
     expect(res._getStatusCode()).toBe(200);
     expect(query).toHaveBeenCalledWith(
-      'SELECT id, titulo, artista, url_spotify, descricao FROM musicas WHERE publicado = true AND (titulo ILIKE $1 OR artista ILIKE $1) ORDER BY created_at DESC LIMIT $2 OFFSET $3',
+      'SELECT id, titulo, artista, url_spotify, descricao, position FROM musicas WHERE publicado = true AND (titulo ILIKE $1 OR artista ILIKE $1) ORDER BY position ASC, created_at DESC LIMIT $2 OFFSET $3',
       [`%${searchTerm.toLowerCase()}%`, 10, 0]
     );
   });
@@ -66,7 +66,7 @@ describe('API Pública de Músicas (/api/musicas)', () => {
 
     expect(res._getStatusCode()).toBe(200);
     expect(query).toHaveBeenCalledWith(
-      'SELECT id, titulo, artista, url_spotify, descricao FROM musicas WHERE publicado = true ORDER BY created_at DESC LIMIT $1 OFFSET $2',
+      'SELECT id, titulo, artista, url_spotify, descricao, position FROM musicas WHERE publicado = true ORDER BY position ASC, created_at DESC LIMIT $1 OFFSET $2',
       [5, 10] // limit 5, offset (3-1)*5 = 10
     );
   });

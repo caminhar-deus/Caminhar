@@ -126,6 +126,12 @@ export default function AdminCrudBase({
     const csvRows = displayedItems.map(item => {
       return columns.map(col => {
         let val = item[col.key];
+        
+        // Formata valores booleanos (Status) para ficarem amigáveis no Excel
+        if (typeof val === 'boolean') {
+          val = val ? 'Publicado' : 'Rascunho';
+        }
+        
         if (val === null || val === undefined) val = '';
         val = String(val).replace(/"/g, '""'); // Escapa aspas
         if (val.includes(',') || val.includes('"') || val.includes('\n')) {
