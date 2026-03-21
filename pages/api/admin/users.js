@@ -1,9 +1,10 @@
-import { query, createRecord, updateRecords, deleteRecords } from '../../../lib/db';
+import { query, createRecord, updateRecords, deleteRecords, logActivity } from '../../../lib/db';
 import { getAuthToken, verifyToken, hashPassword } from '../../../lib/auth';
 import { checkRateLimit } from '../../../lib/cache';
 
 export default async function handler(req, res) {
   const { method } = req;
+  const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
 
   // 1. Verificação de Segurança e Autenticação
   const token = getAuthToken(req);
@@ -14,7 +15,6 @@ export default async function handler(req, res) {
 
   // 2. Proteção contra requisições massivas (Rate Limit) nas mutações
   if (['POST', 'PUT', 'DELETE'].includes(method)) {
-    const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
     const isRateLimited = await checkRateLimit(ip, 'api:admin:users', 30, 60000);
     if (isRateLimited) return res.status(429).json({ error: 'Muitas requisições. Tente novamente mais tarde.' });
   }
@@ -60,6 +60,9 @@ export default async function handler(req, res) {
 
         const hashedPassword = await hashPassword(password);
         const newUser = await createRecord('users', { username, password: hashedPassword, role: role || 'admin' }, ['id', 'username', 'role']);
+        
+        await logActivity(user.username, 'CREATE', 'USER', newUser.id, `Criou o usuário admin: ${username}`, ip);
+        
         return res.status(201).json(newUser);
 
       case 'PUT':
@@ -76,6 +79,9 @@ export default async function handler(req, res) {
         }
 
         const updatedUsers = await updateRecords('users', updateData, { id: updateId }, ['id', 'username', 'role']);
+        
+        await logActivity(user.username, 'UPDATE', 'USER', updateId, `Atualizou o usuário: ${updatedUsers[0]?.username}`, ip);
+        
         return res.status(200).json(updatedUsers[0] || {});
 
       case 'DELETE':
@@ -84,6 +90,9 @@ export default async function handler(req, res) {
         if (deleteId === user.userId) return res.status(400).json({ error: 'Você não pode excluir sua própria conta enquanto está logado nela.' });
 
         await deleteRecords('users', { id: deleteId });
+        
+        await logActivity(user.username, 'DELETE', 'USER', deleteId, `Removeu o usuário ID: ${deleteId}`, ip);
+        
         return res.status(200).json({ success: true, message: 'Usuário removido com sucesso.' });
     }
   } catch (error) {

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import toast from 'react-hot-toast';
 import AdminCrudBase from './AdminCrudBase';
 import TextField from './fields/TextField';
 import TextAreaField from './fields/TextAreaField';
@@ -117,6 +118,69 @@ const initialFormData = {
   };
 
 export default function AdminProducts() {
+  const [isFetchingML, setIsFetchingML] = useState(false);
+
+  const handleFetchML = async (url, setFieldValue) => {
+    if (!url) {
+      toast.error('Cole o link do Mercado Livre no campo primeiro!');
+      return;
+    }
+    
+    setIsFetchingML(true);
+    const loadingToast = toast.loading('Pescando dados no Mercado Livre...');
+
+    try {
+      const res = await fetch('/api/admin/fetch-ml', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Falha na busca.');
+      }
+
+      const data = await res.json();
+
+      // Preenche os formulários magicamente!
+      setFieldValue('title', data.title);
+      setFieldValue('price', `R$ ${data.price.toFixed(2).replace('.', ',')}`);
+      setFieldValue('images', data.images);
+      if (data.description) {
+        setFieldValue('description', data.description);
+      }
+
+      toast.success('Mágica concluída! Revise os dados.', { id: loadingToast });
+    } catch (error) {
+      toast.error(error.message, { id: loadingToast });
+    } finally {
+      setIsFetchingML(false);
+    }
+  };
+
+  // Intercepta a renderização do campo para adicionar o botão
+  const renderCustomFormField = (fieldConfig, formData, handleInputChange, setFieldValue) => {
+    if (fieldConfig.name === 'link_ml') {
+      const { name, component: Component, gridColumn, ...props } = fieldConfig;
+      return (
+        <div key={name} style={{ gridColumn: gridColumn || 'span 1', position: 'relative' }}>
+          <button
+            type="button"
+            onClick={() => handleFetchML(formData[name], setFieldValue)}
+            disabled={isFetchingML}
+            title="Puxar Título, Preço e Imagens automaticamente"
+            style={{ position: 'absolute', right: '0', top: '0', padding: '4px 10px', backgroundColor: '#ffe600', color: '#333', border: 'none', borderRadius: '4px', fontWeight: 'bold', fontSize: '11px', cursor: isFetchingML ? 'not-allowed' : 'pointer', opacity: isFetchingML ? 0.7 : 1, zIndex: 10 }}
+          >
+            {isFetchingML ? '⏳ Buscando...' : '⚡ Puxar Dados'}
+          </button>
+          <Component name={name} value={formData[name] ?? ''} onChange={handleInputChange} {...props} />
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <AdminCrudBase
       // Aponta para a API que criamos no próximo passo
@@ -134,6 +198,7 @@ export default function AdminProducts() {
       reorderable={true}
       onReorder={handleReorder}
       exportable={true}
+      renderCustomFormField={renderCustomFormField}
     />
   );
 }

@@ -14,7 +14,7 @@ export default function MusicGallery() {
       try {
         setLoading(true);
         setError('');
-        const response = await fetch('/api/musicas');
+        const response = await fetch('/api/musicas?public=true');
         if (response.ok) {
           const data = await response.json();
           // Verifica se data é um array ou objeto com data.data

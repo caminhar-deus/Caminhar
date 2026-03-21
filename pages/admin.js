@@ -14,6 +14,7 @@ import AdminProducts from '../components/Admin/AdminProducts';
 import toast, { Toaster } from 'react-hot-toast';
 import AdminDashboard from '../components/Admin/AdminDashboard';
 import AdminUsers from '../components/Admin/AdminUsers';
+import AdminLogs from '../components/Admin/AdminLogs';
 
 // Função utilitária para redimensionar imagens no navegador
 const resizeImage = (file, maxWidth = 1100, quality = 0.8) => {
@@ -396,6 +397,13 @@ export default function Admin() {
               <span className="icon">👥</span>
               Usuários
             </button>
+            <button
+              className={`${styles.tabButton} ${activeTab === 'logs' ? styles.activeTab : ''}`}
+              onClick={() => setActiveTab('logs')}
+            >
+              <span className="icon">📜</span>
+              Auditoria
+            </button>
           </div>
 
           {activeTab === 'header' && (
@@ -574,6 +582,10 @@ export default function Admin() {
           
           {activeTab === 'users' && (
             <AdminUsers />
+          )}
+          
+          {activeTab === 'logs' && (
+            <AdminLogs />
           )}
 
           {activeTab === 'musicas' && (

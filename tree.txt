@@ -107,8 +107,11 @@
 │   ├── components
 │   │   ├── Admin
 │   │   │   ├── AdminCrudBase.js.html
+│   │   │   ├── AdminDashboard.js.html
 │   │   │   ├── AdminMusicasNew.js.html
 │   │   │   ├── AdminPostsNew.js.html
+│   │   │   ├── AdminProducts.js.html
+│   │   │   ├── AdminUsers.js.html
 │   │   │   ├── AdminVideosNew.js.html
 │   │   │   ├── fields
 │   │   │   │   ├── ImageUploadField.js.html
@@ -158,6 +161,10 @@
 │   │   │   ├── index.js.html
 │   │   │   ├── LazyIframe.js.html
 │   │   │   └── PreloadResources.js.html
+│   │   ├── Products
+│   │   │   ├── index.html
+│   │   │   ├── ProductCard.js.html
+│   │   │   └── ProductList.js.html
 │   │   ├── SEO
 │   │   │   ├── Head.js.html
 │   │   │   ├── index.html
@@ -194,8 +201,11 @@
 │   │   ├── components
 │   │   │   ├── Admin
 │   │   │   │   ├── AdminCrudBase.js.html
+│   │   │   │   ├── AdminDashboard.js.html
 │   │   │   │   ├── AdminMusicasNew.js.html
 │   │   │   │   ├── AdminPostsNew.js.html
+│   │   │   │   ├── AdminProducts.js.html
+│   │   │   │   ├── AdminUsers.js.html
 │   │   │   │   ├── AdminVideosNew.js.html
 │   │   │   │   ├── fields
 │   │   │   │   │   ├── ImageUploadField.js.html
@@ -245,6 +255,10 @@
 │   │   │   │   ├── index.js.html
 │   │   │   │   ├── LazyIframe.js.html
 │   │   │   │   └── PreloadResources.js.html
+│   │   │   ├── Products
+│   │   │   │   ├── index.html
+│   │   │   │   ├── ProductCard.js.html
+│   │   │   │   └── ProductList.js.html
 │   │   │   ├── SEO
 │   │   │   │   ├── Head.js.html
 │   │   │   │   ├── index.html
@@ -298,10 +312,13 @@
 │   │   │       ├── admin
 │   │   │       │   ├── backups.js.html
 │   │   │       │   ├── cache.js.html
+│   │   │       │   ├── fetch-ml.js.html
 │   │   │       │   ├── index.html
 │   │   │       │   ├── musicas.js.html
 │   │   │       │   ├── posts.js.html
 │   │   │       │   ├── rate-limit.js.html
+│   │   │       │   ├── stats.js.html
+│   │   │       │   ├── users.js.html
 │   │   │       │   └── videos.js.html
 │   │   │       ├── auth
 │   │   │       │   ├── check.js.html
@@ -314,6 +331,7 @@
 │   │   │       ├── musicas.js.html
 │   │   │       ├── placeholder-image.js.html
 │   │   │       ├── posts.js.html
+│   │   │       ├── products.js.html
 │   │   │       ├── settings.js.html
 │   │   │       ├── upload-image.js.html
 │   │   │       └── v1
@@ -359,10 +377,13 @@
 │   │       ├── admin
 │   │       │   ├── backups.js.html
 │   │       │   ├── cache.js.html
+│   │       │   ├── fetch-ml.js.html
 │   │       │   ├── index.html
 │   │       │   ├── musicas.js.html
 │   │       │   ├── posts.js.html
 │   │       │   ├── rate-limit.js.html
+│   │       │   ├── stats.js.html
+│   │       │   ├── users.js.html
 │   │       │   └── videos.js.html
 │   │       ├── auth
 │   │       │   ├── check.js.html
@@ -375,6 +396,7 @@
 │   │       ├── musicas.js.html
 │   │       ├── placeholder-image.js.html
 │   │       ├── posts.js.html
+│   │       ├── products.js.html
 │   │       ├── settings.js.html
 │   │       ├── upload-image.js.html
 │   │       └── v1
@@ -499,14 +521,13 @@
 │   ├── admin
 │   │   ├── musicas-new.js
 │   │   ├── posts-new.js
-│   │   ├── projetos.js
-│   │   ├── videos.js
 │   │   └── videos-new.js
 │   ├── admin.js
 │   ├── api
 │   │   ├── admin
 │   │   │   ├── backups.js
 │   │   │   ├── cache.js
+│   │   │   ├── fetch-ml.js
 │   │   │   ├── musicas.js
 │   │   │   ├── posts.js
 │   │   │   ├── rate-limit.js
@@ -624,7 +645,9 @@
 │   │   ├── 001-add-views-to-posts.js
 │   │   ├── 002-create-products-table.js
 │   │   ├── 003-add-position-to-products.js
-│   │   └── 004-add-published-to-products.js
+│   │   ├── 004-add-published-to-products.js
+│   │   ├── 005-add-last-login-to-users.js
+│   │   └── 006-create-activity-logs.js
 │   ├── monitor-disk-space.js
 │   ├── reset-admin-password.js
 │   ├── restore-backup.js
@@ -779,4 +802,4 @@
 │       └── videos_validation.test.js
 └── tree.txt
 
-137 directories, 643 files
+139 directories, 664 files

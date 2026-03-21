@@ -16,8 +16,8 @@ export default function VideoGallery() {
       
       // Constrói a URL com o parâmetro de busca se existir
       const url = term 
-        ? `/api/v1/videos?search=${encodeURIComponent(term)}` 
-        : '/api/v1/videos';
+        ? `/api/v1/videos?public=true&search=${encodeURIComponent(term)}` 
+        : '/api/v1/videos?public=true';
         
       const response = await fetch(url);
       if (response.ok) {

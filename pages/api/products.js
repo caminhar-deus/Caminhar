@@ -1,4 +1,4 @@
-import { query, createRecord, updateRecords, deleteRecords } from '../../lib/db';
+import { query, createRecord, updateRecords, deleteRecords, logActivity } from '../../lib/db';
 import { getAuthToken, verifyToken } from '../../lib/auth';
 import { invalidateCache, checkRateLimit } from '../../lib/cache';
 
@@ -7,10 +7,12 @@ export default async function handler(req, res) {
 
   console.log(`\n📦 [API Products] Nova requisição recebida: ${method}`);
 
+  let user = null;
+  const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
+
   // Protege as rotas de modificação (Criação, Edição e Exclusão)
   if (['POST', 'PUT', 'DELETE'].includes(method)) {
     // --- 🛡️ RATE LIMITING DISTRIBUÍDO COM FALLBACK ---
-    const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
     const isRateLimited = await checkRateLimit(ip, 'api:products', 30, 60000); // 30 requisições / minuto
 
     if (isRateLimited) {
@@ -21,7 +23,7 @@ export default async function handler(req, res) {
     const token = getAuthToken(req);
     if (!token) return res.status(401).json({ error: 'Não autenticado' });
     
-    const user = verifyToken(token);
+    user = verifyToken(token);
     if (!user) return res.status(401).json({ error: 'Token inválido' });
   }
 
@@ -64,14 +66,16 @@ export default async function handler(req, res) {
           countParams.push(maxPrice);
         }
         
-        // Oculta rascunhos para visitantes públicos (apenas admins logados veem tudo)
+        // Oculta rascunhos para visitantes públicos ou quando a requisição é explicitamente da vitrine (frontend)
         let isAdmin = false;
         try {
           const token = getAuthToken(req);
           if (token && verifyToken(token)) isAdmin = true;
         } catch (e) {}
         
-        if (!isAdmin) {
+        const isPublicRequest = req.query.public === 'true';
+
+        if (!isAdmin || isPublicRequest) {
           conditions.push('published = true');
         }
         
@@ -107,6 +111,8 @@ export default async function handler(req, res) {
         
         const newProduct = await createRecord('products', newData);
         
+        if (user) await logActivity(user.username, 'CREATE', 'PRODUCT', newProduct.id, `Criou o produto: ${newData.title}`, ip);
+        
         // Limpa o cache global de produtos no Redis
         await invalidateCache('products:public:all');
         
@@ -141,6 +147,8 @@ export default async function handler(req, res) {
 
         const updatedProducts = await updateRecords('products', updateData, { id: updateId });
         
+        if (user) await logActivity(user.username, 'UPDATE', 'PRODUCT', updateId, `Atualizou o produto: ${updateData.title || updateId}`, ip);
+        
         // Limpa o cache global de produtos no Redis
         await invalidateCache('products:public:all');
         
@@ -152,6 +160,8 @@ export default async function handler(req, res) {
         console.log(`📦 [API Products] DELETE - Removendo produto ID ${deleteId}`);
         
         await deleteRecords('products', { id: deleteId });
+        
+        if (user) await logActivity(user.username, 'DELETE', 'PRODUCT', deleteId, `Removeu um produto (ID: ${deleteId})`, ip);
         
         // Limpa o cache global de produtos no Redis
         await invalidateCache('products:public:all');

@@ -733,6 +733,21 @@
   border-color: #ffeeba;
 }
 
+.statusToggle {
+  cursor: pointer;
+  transition: transform 0.1s ease, filter 0.2s ease;
+  font-family: inherit;
+}
+
+.statusToggle:hover {
+  filter: brightness(0.95);
+  transform: scale(1.03);
+}
+
+.statusToggle:active {
+  transform: scale(0.97);
+}
+
 /* Pagination */
 .pagination {
   display: flex;

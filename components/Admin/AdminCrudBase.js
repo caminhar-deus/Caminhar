@@ -29,6 +29,7 @@ import toast from 'react-hot-toast';
  * @param {boolean} [props.reorderable=false] - Habilita reordenação (Drag & Drop)
  * @param {Function} [props.onReorder] - Callback disparado ao reordenar
  * @param {boolean} [props.exportable=false] - Habilita botão de exportar para CSV
+ * @param {boolean} [props.readOnly=false] - Desativa formulário e edição (Somente Leitura)
  */
 export default function AdminCrudBase({
   apiEndpoint,
@@ -50,7 +51,8 @@ export default function AdminCrudBase({
   searchable = false,
   reorderable = false,
   onReorder,
-  exportable = false
+  exportable = false,
+  readOnly = false
 }) {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -145,6 +147,30 @@ export default function AdminCrudBase({
     document.body.removeChild(link);
   };
 
+  // Função para alternar booleanos (como Rascunho/Publicado) com 1 clique
+  const handleToggleBoolean = async (item, key, currentValue) => {
+    const newValue = !currentValue;
+    const previousItems = [...localItems];
+    
+    // Atualização otimista na interface (muda na hora sem esperar o servidor)
+    setLocalItems(localItems.map(i => i.id === item.id ? { ...i, [key]: newValue } : i));
+    
+    const loadingToast = toast.loading('Atualizando status...');
+    try {
+      const payload = { ...item, [key]: newValue };
+      const response = await fetch(apiEndpoint, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) throw new Error('Falha na API');
+      toast.success('Status alterado com sucesso!', { id: loadingToast });
+    } catch (error) {
+      setLocalItems(previousItems); // Reverte visualmente em caso de falha
+      toast.error('Erro ao alterar status.', { id: loadingToast });
+    }
+  };
+
   // Função de validação
   const validateForm = () => {
     // Validação com Zod
@@ -223,10 +249,15 @@ export default function AdminCrudBase({
     // Valores booleanos (status)
     if (typeof value === 'boolean') {
       return (
-        <span className={`${styles.statusBadge} ${value ? styles.statusPublished : styles.statusDraft}`}>
+        <button 
+          type="button"
+          onClick={() => handleToggleBoolean(item, key, value)}
+          className={`${styles.statusBadge} ${value ? styles.statusPublished : styles.statusDraft} ${styles.statusToggle}`}
+          title="Clique para alterar o status rapidamente"
+        >
           <span style={{ display: 'flex', alignItems: 'center' }}>{value ? '✅' : '📝'}</span>
           <span>{value ? 'Publicado' : 'Rascunho'}</span>
-        </span>
+        </button>
       );
     }
 
@@ -297,6 +328,7 @@ export default function AdminCrudBase({
               Cancelar
             </button>
           )}
+          {!readOnly && (
           <button 
             onClick={() => {
               resetForm();
@@ -309,11 +341,13 @@ export default function AdminCrudBase({
           >
             {newButtonText}
           </button>
+          )}
         </div>
         </div>
       </div>
 
       {/* Formulário */}
+      {!readOnly && (
       <div id="crud-form" className={styles.formSection}>
         <form 
           onSubmit={(e) => handleSubmit(e, validateForm)} 
@@ -334,6 +368,7 @@ export default function AdminCrudBase({
           </div>
         </form>
       </div>
+      )}
 
       {/* Tabela */}
       <div className={styles.tableContainer}>
@@ -346,7 +381,7 @@ export default function AdminCrudBase({
                   {col.header}
                 </th>
               ))}
-              <th style={{ width: '120px' }}>Ações</th>
+              {!readOnly && <th style={{ width: '120px' }}>Ações</th>}
             </tr>
           </thead>
           <tbody>
@@ -396,6 +431,7 @@ export default function AdminCrudBase({
                       {renderCell(item, col)}
                     </td>
                   ))}
+                  {!readOnly && (
                   <td>
                     <div className={styles.actionButtons}>
                       <button 
@@ -419,12 +455,13 @@ export default function AdminCrudBase({
                       </button>
                     </div>
                   </td>
+                  )}
                 </tr>
               ))
             ) : (
               <tr>
                 <td 
-                  colSpan={columns.length + (reorderable && !searchTerm ? 2 : 1)} 
+                  colSpan={columns.length + (reorderable && !searchTerm ? 1 : 0) + (readOnly ? 0 : 1)} 
                   className={styles.emptyStateRow}
                 >
                   {emptyMessage}
@@ -495,5 +532,8 @@ AdminCrudBase.propTypes = {
   emptyMessage: PropTypes.string,
   onSuccess: PropTypes.func,
   validate: PropTypes.func,
-  searchable: PropTypes.bool
+  searchable: PropTypes.bool,
+  reorderable: PropTypes.bool,
+  exportable: PropTypes.bool,
+  readOnly: PropTypes.bool
 };

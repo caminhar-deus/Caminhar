@@ -76,7 +76,15 @@ export default function AdminDashboard({ setActiveTab }) {
       tabId: 'projetos02',
       details: `✅ ${stats.productsPublished || 0} Pub | 📝 ${stats.productsDraft || 0} Rasc`
     },
-    { key: 'users', label: 'Usuários', count: stats.users, icon: '👥', color: '#6f42c1', tabId: 'users' }
+    { 
+      key: 'users', 
+      label: 'Usuários', 
+      count: stats.users, 
+      icon: '👥', 
+      color: '#6f42c1', 
+      tabId: 'users',
+      details: `Ativos: Hoje (${stats.usersToday || 0}) • Mês (${stats.usersMonth || 0}) • Ano (${stats.usersYear || 0})`
+    }
   ];
 
   return (

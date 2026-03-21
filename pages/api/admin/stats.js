@@ -20,7 +20,8 @@ export default async function handler(req, res) {
       productsPubRes, productsDraftRes, usersRes,
       postsPubRes, postsDraftRes,
       musicasPubRes, musicasDraftRes,
-      videosPubRes, videosDraftRes
+      videosPubRes, videosDraftRes,
+      usersTodayRes, usersMonthRes, usersYearRes
     ] = await Promise.all([
       query('SELECT COUNT(*) FROM posts'),
       query('SELECT COUNT(*) FROM musicas'),
@@ -34,7 +35,10 @@ export default async function handler(req, res) {
       query('SELECT COUNT(*) FROM musicas WHERE publicado = true'),
       query('SELECT COUNT(*) FROM musicas WHERE publicado = false'),
       query('SELECT COUNT(*) FROM videos WHERE publicado = true'),
-      query('SELECT COUNT(*) FROM videos WHERE publicado = false')
+      query('SELECT COUNT(*) FROM videos WHERE publicado = false'),
+      query('SELECT COUNT(*) FROM users WHERE last_login >= CURRENT_DATE'), // Logados Hoje
+      query("SELECT COUNT(*) FROM users WHERE last_login >= date_trunc('month', CURRENT_DATE)"), // Logados no Mês
+      query("SELECT COUNT(*) FROM users WHERE last_login >= date_trunc('year', CURRENT_DATE)") // Logados no Ano
     ]);
 
     return res.status(200).json({
@@ -51,6 +55,9 @@ export default async function handler(req, res) {
       productsPublished: parseInt(productsPubRes?.rows[0]?.count || 0, 10),
       productsDraft: parseInt(productsDraftRes?.rows[0]?.count || 0, 10),
       users: parseInt(usersRes?.rows[0]?.count || 0, 10),
+      usersToday: parseInt(usersTodayRes?.rows[0]?.count || 0, 10),
+      usersMonth: parseInt(usersMonthRes?.rows[0]?.count || 0, 10),
+      usersYear: parseInt(usersYearRes?.rows[0]?.count || 0, 10),
     });
   } catch (error) {
     console.error('Erro ao buscar estatísticas do painel:', error);

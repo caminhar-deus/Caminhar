@@ -30,7 +30,7 @@ export default function ProductList() {
     const fetchProducts = async () => {
       setLoading(true);
       try {
-        let url = `/api/products?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(debouncedSearch)}`;
+        let url = `/api/products?page=${currentPage}&limit=${itemsPerPage}&public=true&search=${encodeURIComponent(debouncedSearch)}`;
         if (debouncedMin) url += `&minPrice=${debouncedMin}`;
         if (debouncedMax) url += `&maxPrice=${debouncedMax}`;
         

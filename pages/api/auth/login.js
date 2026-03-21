@@ -1,5 +1,6 @@
 import { authenticate, generateToken, setAuthCookie } from '../../../lib/auth';
 import { checkRateLimit } from '../../../lib/cache';
+import { query } from '../../../lib/db';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -26,6 +27,9 @@ export default async function handler(req, res) {
     if (!user) {
       return res.status(401).json({ message: 'Credenciais inválidas' });
     }
+
+    // Registra o momento do login para as estatísticas do Dashboard
+    await query('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1', [user.id]);
 
     const token = generateToken(user);
     setAuthCookie(res, token);

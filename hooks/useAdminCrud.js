@@ -97,6 +97,7 @@ export function useAdminCrud({
       const response = await fetch(apiEndpoint, {
         method,
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body,
       });
 
@@ -123,6 +124,7 @@ export function useAdminCrud({
       const response = await fetch(apiEndpoint, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ id }),
       });
       if (!response.ok) {
