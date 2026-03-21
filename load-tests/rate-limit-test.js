@@ -46,7 +46,7 @@ export default function () {
   };
 
   // Dispara contra a rota de login, que geralmente é a mais protegida
-  const res = http.post(`${BASE_URL}/api/v1/auth/login`, payload, params);
+  const res = http.post(`${BASE_URL}/api/auth/login`, payload, params);
 
   if (res.status === 429) {
     RateLimitHits.add(1);

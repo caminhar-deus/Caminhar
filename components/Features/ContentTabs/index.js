@@ -4,6 +4,7 @@ import styles from './ContentTabs.module.css';
 import BlogSection from '../Blog/BlogSection';
 import MusicGallery from '../Music/MusicGallery';
 import VideoGallery from '../Video/VideoGallery';
+import ProductList from '../../Products/ProductList';
 
 export default function ContentTabs() {
   const [activeTab, setActiveTab] = useState('reflexoes');
@@ -13,19 +14,20 @@ export default function ContentTabs() {
     { id: 'projeto1', label: 'Em Desenvolvimento', active: false, icon: '🏗️' },
     { id: 'musicas', label: 'Músicas', active: false, icon: '🎵' },
     { id: 'videos', label: 'Vídeos', active: false, icon: '🎬' },
-    { id: 'projeto2', label: 'Em Desenvolvimento', active: false, icon: '🏗️' }
+    { id: 'produtos', label: 'Produtos Religiosos', active: false, icon: '📦' }
   ];
 
   const renderContent = () => {
     switch (activeTab) {
       case 'reflexoes':
         return <BlogSection limit={3} />;
+      case 'produtos':
+        return <ProductList />;
       case 'musicas':
         return <MusicGallery />;
       case 'videos':
         return <VideoGallery />;
       case 'projeto1':
-      case 'projeto2':
         return <PlaceholderContent tabId={activeTab} />;
       default:
         return <BlogSection limit={3} />;
@@ -43,12 +45,12 @@ export default function ContentTabs() {
                 activeTab === tab.id ? styles.active : ''
               }`}
               onClick={() => {
-                if (tab.id !== 'projeto1' && tab.id !== 'projeto2') {
+                if (tab.id !== 'projeto1') {
                   setActiveTab(tab.id);
                 }
               }}
               aria-selected={activeTab === tab.id}
-              disabled={tab.id === 'projeto1' || tab.id === 'projeto2'}
+              disabled={tab.id === 'projeto1'}
             >
               <span className={styles.tabIcon}>{tab.icon}</span>
               {tab.label}
@@ -76,10 +78,6 @@ function PlaceholderContent({ tabId }) {
     },
     'videos': {
       title: 'Vídeos',
-      description: 'Conteúdo será implementado em breve'
-    },
-    'projeto2': {
-      title: 'Projeto Futuro',
       description: 'Conteúdo será implementado em breve'
     }
   };

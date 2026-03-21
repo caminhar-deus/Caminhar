@@ -5,8 +5,11 @@
 ├── components
 │   ├── Admin
 │   │   ├── AdminCrudBase.js
+│   │   ├── AdminDashboard.js
 │   │   ├── AdminMusicasNew.js
 │   │   ├── AdminPostsNew.js
+│   │   ├── AdminProducts.js
+│   │   ├── AdminUsers.js
 │   │   ├── AdminVideosNew.js
 │   │   ├── fields
 │   │   │   ├── ImageUploadField.js
@@ -60,6 +63,9 @@
 │   │   ├── index.js
 │   │   ├── LazyIframe.js
 │   │   └── PreloadResources.js
+│   ├── Products
+│   │   ├── ProductCard.js
+│   │   └── ProductList.js
 │   ├── SEO
 │   │   ├── Head.js
 │   │   ├── index.js
@@ -504,6 +510,8 @@
 │   │   │   ├── musicas.js
 │   │   │   ├── posts.js
 │   │   │   ├── rate-limit.js
+│   │   │   ├── stats.js
+│   │   │   ├── users.js
 │   │   │   └── videos.js
 │   │   ├── auth
 │   │   │   ├── check.js
@@ -514,6 +522,7 @@
 │   │   ├── musicas.js
 │   │   ├── placeholder-image.js
 │   │   ├── posts.js
+│   │   ├── products.js
 │   │   ├── settings.js
 │   │   ├── upload-image.js
 │   │   └── v1
@@ -612,7 +621,10 @@
 │   │   ├── populate-video-thumbnails.js
 │   │   └── restore-posts.js
 │   ├── migrations
-│   │   └── 001-add-views-to-posts.js
+│   │   ├── 001-add-views-to-posts.js
+│   │   ├── 002-create-products-table.js
+│   │   ├── 003-add-position-to-products.js
+│   │   └── 004-add-published-to-products.js
 │   ├── monitor-disk-space.js
 │   ├── reset-admin-password.js
 │   ├── restore-backup.js
@@ -620,6 +632,7 @@
 │   ├── seed-all.js
 │   ├── seed-musicas.js
 │   ├── seed-posts.js
+│   ├── seed-products.js
 │   ├── seed-videos.js
 │   ├── tests
 │   │   ├── manual-api-test.js
@@ -766,4 +779,4 @@
 │       └── videos_validation.test.js
 └── tree.txt
 
-136 directories, 631 files
+137 directories, 643 files

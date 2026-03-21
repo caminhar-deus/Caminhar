@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useAdminCrud } from '../../hooks/useAdminCrud';
 import styles from '../../styles/Admin.module.css';
+import toast from 'react-hot-toast';
 
 /**
  * Componente base genérico para CRUD administrativo
@@ -24,6 +25,10 @@ import styles from '../../styles/Admin.module.css';
  * @param {string} [props.emptyMessage='Nenhum item cadastrado'] - Mensagem de lista vazia
  * @param {Function} [props.onSuccess] - Callback após sucesso
  * @param {Function} [props.validate] - Função de validação customizada
+ * @param {boolean} [props.searchable=false] - Se exibe barra de busca local
+ * @param {boolean} [props.reorderable=false] - Habilita reordenação (Drag & Drop)
+ * @param {Function} [props.onReorder] - Callback disparado ao reordenar
+ * @param {boolean} [props.exportable=false] - Habilita botão de exportar para CSV
  */
 export default function AdminCrudBase({
   apiEndpoint,
@@ -41,8 +46,23 @@ export default function AdminCrudBase({
   updateButtonText = 'Atualizar',
   emptyMessage = 'Nenhum item cadastrado ainda.',
   onSuccess,
-  validate
+  validate,
+  searchable = false,
+  reorderable = false,
+  onReorder,
+  exportable = false
 }) {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const [localItems, setLocalItems] = useState([]);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
+
+  // Wrapper para exibir notificações de sucesso automaticamente
+  const handleSuccessWrapper = useCallback(() => {
+    toast.success('Operação realizada com sucesso!');
+    if (onSuccess) onSuccess();
+  }, [onSuccess]);
+
   // Usa o hook de CRUD
   const {
     items,
@@ -64,8 +84,66 @@ export default function AdminCrudBase({
     initialFormData,
     usePagination,
     itemsPerPage,
-    onSuccess
+    onSuccess: handleSuccessWrapper
   });
+
+  // Efeito para exibir notificações de erro automaticamente
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
+  }, [error]);
+
+  // Sincroniza estado local com a API para permitir Drag & Drop instantâneo na UI
+  useEffect(() => {
+    setLocalItems(items);
+  }, [items]);
+
+  // Filtro local dinâmico e ultra-rápido para a tabela
+  const displayedItems = searchable && searchTerm
+    ? localItems.filter(item => {
+        const searchableText = Object.values(item)
+          .filter(val => typeof val === 'string' || typeof val === 'number')
+          .join(' ')
+          .toLowerCase();
+        return searchableText.includes(searchTerm.toLowerCase());
+      })
+    : localItems;
+
+  // Função para exportar os dados visíveis para CSV
+  const handleExportCSV = () => {
+    if (!displayedItems || displayedItems.length === 0) {
+      toast.error('Não há dados para exportar.');
+      return;
+    }
+
+    // Prepara os cabeçalhos
+    const headers = columns.map(col => col.header);
+
+    // Prepara as linhas com tratamento para caracteres especiais
+    const csvRows = displayedItems.map(item => {
+      return columns.map(col => {
+        let val = item[col.key];
+        if (val === null || val === undefined) val = '';
+        val = String(val).replace(/"/g, '""'); // Escapa aspas
+        if (val.includes(',') || val.includes('"') || val.includes('\n')) {
+          val = `"${val}"`; // Envolve em aspas se necessário
+        }
+        return val;
+      }).join(',');
+    });
+
+    const csvContent = [headers.join(','), ...csvRows].join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' }); // \uFEFF garante compatibilidade com Excel (BOM)
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${title.replace(/\s+/g, '_').toLowerCase()}_export.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // Função de validação
   const validateForm = () => {
@@ -146,7 +224,8 @@ export default function AdminCrudBase({
     if (typeof value === 'boolean') {
       return (
         <span className={`${styles.statusBadge} ${value ? styles.statusPublished : styles.statusDraft}`}>
-          {value ? 'Publicado' : 'Rascunho'}
+          <span style={{ display: 'flex', alignItems: 'center' }}>{value ? '✅' : '📝'}</span>
+          <span>{value ? 'Publicado' : 'Rascunho'}</span>
         </span>
       );
     }
@@ -174,7 +253,40 @@ export default function AdminCrudBase({
       {/* Header */}
       <div className={styles.sectionHeader}>
         <h2>{title}</h2>
-        <div className={styles.formActions}>
+        <div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
+          {searchable && (
+            <div style={{ position: 'relative' }}>
+              <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#a0aec0', display: 'flex' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+                </svg>
+              </span>
+              <input 
+                type="text"
+                placeholder="Buscar item..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{ 
+                  padding: '8px 12px 8px 34px', 
+                  borderRadius: '6px', 
+                  border: '1px solid #e2e8f0', 
+                  fontSize: '0.9rem',
+                  outline: 'none',
+                  minWidth: '220px'
+                }}
+              />
+            </div>
+          )}
+          <div className={styles.formActions}>
+          {exportable && (
+            <button 
+              onClick={handleExportCSV}
+              className={styles.exportButton}
+              type="button"
+            >
+              Exportar CSV
+            </button>
+          )}
           {isEditing && (
             <button 
               onClick={resetForm}
@@ -197,6 +309,7 @@ export default function AdminCrudBase({
           >
             {newButtonText}
           </button>
+        </div>
         </div>
       </div>
 
@@ -227,6 +340,7 @@ export default function AdminCrudBase({
         <table className={styles.table}>
           <thead>
             <tr>
+              {reorderable && !searchTerm && <th style={{ width: '40px', textAlign: 'center', color: '#6c757d' }}>☰</th>}
               {columns.map(col => (
                 <th key={col.key} style={col.width ? { width: col.width } : {}}>
                   {col.header}
@@ -236,9 +350,47 @@ export default function AdminCrudBase({
             </tr>
           </thead>
           <tbody>
-            {items.length > 0 ? (
-              items.map((item) => (
-                <tr key={item.id}>
+            {displayedItems.length > 0 ? (
+              displayedItems.map((item, index) => (
+                <tr 
+                  key={item.id}
+                  draggable={reorderable && !searchTerm}
+                  onDragStart={(e) => {
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', index.toString());
+                  }}
+                  onDragOver={(e) => {
+                    if (reorderable && !searchTerm) {
+                      e.preventDefault();
+                      setDragOverIndex(index);
+                    }
+                  }}
+                  onDragLeave={() => setDragOverIndex(null)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setDragOverIndex(null);
+                    if (!reorderable || searchTerm) return;
+                    const fromIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
+                    if (fromIndex !== index) {
+                      const newItems = [...localItems];
+                      const [movedItem] = newItems.splice(fromIndex, 1);
+                      newItems.splice(index, 0, movedItem);
+                      setLocalItems(newItems);
+                      if (onReorder) onReorder(newItems, currentPage, itemsPerPage);
+                    }
+                  }}
+                  style={{ 
+                    cursor: reorderable && !searchTerm ? 'move' : 'default',
+                    backgroundColor: dragOverIndex === index ? '#f8f9fa' : '',
+                    borderTop: dragOverIndex === index ? '2px solid #007bff' : '',
+                    transition: 'background-color 0.2s ease'
+                  }}
+                >
+                  {reorderable && !searchTerm && (
+                    <td style={{ width: '40px', color: '#adb5bd', textAlign: 'center', cursor: 'grab' }}>
+                      ⣿
+                    </td>
+                  )}
                   {columns.map(col => (
                     <td key={`${item.id}-${col.key}`}>
                       {renderCell(item, col)}
@@ -272,7 +424,7 @@ export default function AdminCrudBase({
             ) : (
               <tr>
                 <td 
-                  colSpan={columns.length + 1} 
+                  colSpan={columns.length + (reorderable && !searchTerm ? 2 : 1)} 
                   className={styles.emptyStateRow}
                 >
                   {emptyMessage}
@@ -342,5 +494,6 @@ AdminCrudBase.propTypes = {
   updateButtonText: PropTypes.string,
   emptyMessage: PropTypes.string,
   onSuccess: PropTypes.func,
-  validate: PropTypes.func
+  validate: PropTypes.func,
+  searchable: PropTypes.bool
 };

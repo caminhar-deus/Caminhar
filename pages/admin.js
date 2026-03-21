@@ -10,6 +10,10 @@ import BackupManager from '../components/Admin/Managers/BackupManager';
 import CacheManager from '../components/Admin/Managers/CacheManager';
 import AdminMusicasNew from '../components/Admin/AdminMusicasNew';
 import AdminVideosNew from '../components/Admin/AdminVideosNew';
+import AdminProducts from '../components/Admin/AdminProducts';
+import toast, { Toaster } from 'react-hot-toast';
+import AdminDashboard from '../components/Admin/AdminDashboard';
+import AdminUsers from '../components/Admin/AdminUsers';
 
 // Função utilitária para redimensionar imagens no navegador
 const resizeImage = (file, maxWidth = 1100, quality = 0.8) => {
@@ -84,7 +88,7 @@ export default function Admin() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState('posts');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const router = useRouter();
   const fileInputRef = useRef(null);
 
@@ -198,17 +202,17 @@ export default function Admin() {
           setImageFile(null);
           setOriginalSize(0);
           if (fileInputRef.current) fileInputRef.current.value = '';
-          alert('Imagem atualizada com sucesso!');
+          toast.success('Imagem atualizada com sucesso!');
         } else {
           console.error('Resposta inválida do servidor (não é JSON)');
-          alert('Erro: O servidor retornou uma resposta inválida.');
+          toast.error('Erro: O servidor retornou uma resposta inválida.');
         }
       } else {
-        alert('Erro ao atualizar imagem');
+        toast.error('Erro ao atualizar imagem');
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Erro ao fazer upload da imagem');
+      toast.error('Erro ao fazer upload da imagem');
     }
   };
 
@@ -235,7 +239,7 @@ export default function Admin() {
       setIsCropping(false);
     } catch (e) {
       console.error(e);
-      alert('Erro ao recortar imagem');
+      toast.error('Erro ao recortar imagem');
     }
   };
 
@@ -272,10 +276,10 @@ export default function Admin() {
         }),
       });
 
-      alert('Configurações salvas com sucesso!');
+      toast.success('Configurações salvas com sucesso!');
     } catch (error) {
       console.error('Error saving settings:', error);
-      alert('Erro ao salvar configurações');
+      toast.error('Erro ao salvar configurações');
     } finally {
       setSaving(false);
     }
@@ -287,6 +291,7 @@ export default function Admin() {
         <Head>
           <title>Admin - O Caminhar com Deus</title>
         </Head>
+        <Toaster position="top-right" />
 
         <main className={styles.main}>
           <div className={styles.loginContainer}>
@@ -328,6 +333,7 @@ export default function Admin() {
       <Head>
         <title>Admin - O Caminhar com Deus</title>
       </Head>
+      <Toaster position="top-right" />
 
       <main className={styles.main}>
         <div className={styles.adminPanel}>
@@ -335,18 +341,18 @@ export default function Admin() {
 
           <div className={styles.tabs}>
             <button
+              className={`${styles.tabButton} ${activeTab === 'dashboard' ? styles.activeTab : ''}`}
+              onClick={() => setActiveTab('dashboard')}
+            >
+              <span className="icon">📊</span>
+              Visão Geral
+            </button>
+            <button
               className={`${styles.tabButton} ${activeTab === 'posts' ? styles.activeTab : ''}`}
               onClick={() => setActiveTab('posts')}
             >
               <span className="icon">📝</span>
               Posts/Artigos
-            </button>
-            <button
-              className={`${styles.tabButton} ${activeTab === 'projetos01' ? styles.activeTab : ''}`}
-              disabled
-            >
-              <span className="icon">🏗️</span>
-              Projetos Futuros 01
             </button>
             <button
               className={`${styles.tabButton} ${activeTab === 'musicas' ? styles.activeTab : ''}`}
@@ -364,10 +370,10 @@ export default function Admin() {
             </button>
             <button
               className={`${styles.tabButton} ${activeTab === 'projetos02' ? styles.activeTab : ''}`}
-              disabled
+              onClick={() => setActiveTab('projetos02')}
             >
-              <span className="icon">🏗️</span>
-              Projetos Futuros 02
+              <span className="icon">📦</span>
+              Gestão de Produtos
             </button>
             <button
               className={`${styles.tabButton} ${activeTab === 'header' ? styles.activeTab : ''}`}
@@ -382,6 +388,13 @@ export default function Admin() {
             >
               <span className="icon">🔒</span>
               Segurança
+            </button>
+            <button
+              className={`${styles.tabButton} ${activeTab === 'users' ? styles.activeTab : ''}`}
+              onClick={() => setActiveTab('users')}
+            >
+              <span className="icon">👥</span>
+              Usuários
             </button>
           </div>
 
@@ -541,6 +554,10 @@ export default function Admin() {
               </div>
             </>
           )}
+          
+          {activeTab === 'dashboard' && (
+            <AdminDashboard setActiveTab={setActiveTab} />
+          )}
 
           {activeTab === 'posts' && (
             <AdminPostsNew />
@@ -553,6 +570,10 @@ export default function Admin() {
               <BackupManager />
               <CacheManager />
             </>
+          )}
+          
+          {activeTab === 'users' && (
+            <AdminUsers />
           )}
 
           {activeTab === 'musicas' && (
@@ -600,36 +621,7 @@ export default function Admin() {
 
           {activeTab === 'projetos02' && (
             <div className={styles.content}>
-              <div className={styles.sectionHeader}>
-                <h2>Projetos Futuros 02</h2>
-              </div>
-
-              <div className={styles.placeholderContainer}>
-                <div className={styles.placeholderCard}>
-                  <div className={styles.placeholderIcon}>🏗️</div>
-                  <h3>Em Desenvolvimento</h3>
-                  <p>Esta área está em desenvolvimento e será implementada em breve.</p>
-                  <div className={styles.placeholderImage}>
-                    <div className={styles.imagePlaceholder}>
-                      <span>Conteúdo será implementado</span>
-                    </div>
-                  </div>
-                  <div className={styles.placeholderActions}>
-                    <button className={styles.placeholderButton} disabled>
-                      Em Breve
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className={styles.infoBox}>
-                <h3>Próximos Projetos</h3>
-                <ul>
-                  <li>Ministérios</li>
-                  <li>Loja Virtual</li>
-                  <li>Outros projetos</li>
-                </ul>
-              </div>
+              <AdminProducts />
             </div>
           )}
         </div>
