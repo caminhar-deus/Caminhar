@@ -31,10 +31,15 @@ export default async function handler(req, res) {
     // Registra o momento do login para as estatísticas do Dashboard
     await query('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1', [user.id]);
 
+    // Busca as permissões atreladas ao cargo do usuário
+    const roleQuery = await query('SELECT permissions FROM roles WHERE name = $1', [user.role], { log: false });
+    const permissions = roleQuery.rows[0]?.permissions || [];
+    user.permissions = permissions;
+
     const token = generateToken(user);
     setAuthCookie(res, token);
 
-    return res.status(200).json({ user: { id: user.id, username: user.username, role: user.role } });
+    return res.status(200).json({ user: { id: user.id, username: user.username, role: user.role, permissions: user.permissions } });
   } catch (error) {
     console.error('Login error:', error);
     return res.status(500).json({ message: 'Erro interno do servidor' });

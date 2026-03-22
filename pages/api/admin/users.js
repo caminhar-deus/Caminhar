@@ -11,15 +11,27 @@ export default async function handler(req, res) {
   if (!token) return res.status(401).json({ error: 'Não autenticado' });
   
   const user = verifyToken(token);
-  if (!user || user.role !== 'admin') return res.status(403).json({ error: 'Acesso negado' });
-
-  // 2. Proteção contra requisições massivas (Rate Limit) nas mutações
-  if (['POST', 'PUT', 'DELETE'].includes(method)) {
-    const isRateLimited = await checkRateLimit(ip, 'api:admin:users', 30, 60000);
-    if (isRateLimited) return res.status(429).json({ error: 'Muitas requisições. Tente novamente mais tarde.' });
+  if (!user) {
+    return res.status(401).json({ error: 'Não autorizado. Token ausente ou inválido.' });
   }
 
   try {
+    // 2. Busca as permissões atualizadas do cargo do usuário no banco de dados
+    const roleQuery = await query('SELECT permissions FROM roles WHERE name = $1', [user.role], { log: false });
+    const userPermissions = roleQuery.rows[0]?.permissions || [];
+    
+    // 3. O cargo "admin" tem passe livre, ou o cargo precisa ter a permissão de "Segurança" ou "Usuários"
+    const isSuperAdmin = user.role === 'admin';
+    if (!isSuperAdmin && !userPermissions.includes('Segurança') && !userPermissions.includes('Usuários')) {
+      return res.status(403).json({ error: 'Acesso negado. Requer permissão de Usuários ou Segurança.' });
+    }
+
+    // 4. Proteção contra requisições massivas (Rate Limit) nas mutações
+    if (['POST', 'PUT', 'DELETE'].includes(method)) {
+      const isRateLimited = await checkRateLimit(ip, 'api:admin:users', 30, 60000);
+      if (isRateLimited) return res.status(429).json({ error: 'Muitas requisições. Tente novamente mais tarde.' });
+    }
+
     switch (method) {
       case 'GET':
         const page = parseInt(req.query.page || '1', 10);

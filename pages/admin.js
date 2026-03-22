@@ -14,7 +14,7 @@ import AdminProducts from '../components/Admin/AdminProducts';
 import toast, { Toaster } from 'react-hot-toast';
 import AdminDashboard from '../components/Admin/AdminDashboard';
 import AdminUsers from '../components/Admin/AdminUsers';
-import AdminLogs from '../components/Admin/AdminLogs';
+import AdminAudit from '../components/Admin/AdminAudit';
 
 // Função utilitária para redimensionar imagens no navegador
 const resizeImage = (file, maxWidth = 1100, quality = 0.8) => {
@@ -79,6 +79,7 @@ const getCroppedImg = (imageSrc, pixelCrop) => {
 
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [title, setTitle] = useState('O Caminhar com Deus');
@@ -111,6 +112,12 @@ export default function Admin() {
         });
 
         if (response.ok) {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            // Tenta resgatar as propriedades se a API retornar dentro da chave "user" ou se retornar o objeto direto.
+            setCurrentUser(data.user || data);
+          }
           setIsAuthenticated(true);
           await loadSettings();
         }
@@ -169,6 +176,7 @@ export default function Admin() {
         throw new Error((data && data.message) || 'Falha no login');
       }
 
+      setCurrentUser(data.user);
       setIsAuthenticated(true);
       console.log('Login successful:', data.user);
 
@@ -286,6 +294,13 @@ export default function Admin() {
     }
   };
 
+  // Verifica se o usuário tem a permissão para acessar uma funcionalidade
+  const hasPermission = (permission) => {
+    if (!currentUser) return false;
+    if (currentUser.role === 'admin') return true; // Administradores super-usuários sempre tem acesso a tudo
+    return Array.isArray(currentUser.permissions) && currentUser.permissions.includes(permission);
+  };
+
   if (!isAuthenticated) {
     return (
       <div className={styles.container}>
@@ -341,69 +356,95 @@ export default function Admin() {
           <h1>Painel Administrativo</h1>
 
           <div className={styles.tabs}>
-            <button
-              className={`${styles.tabButton} ${activeTab === 'dashboard' ? styles.activeTab : ''}`}
-              onClick={() => setActiveTab('dashboard')}
-            >
-              <span className="icon">📊</span>
-              Visão Geral
-            </button>
-            <button
-              className={`${styles.tabButton} ${activeTab === 'posts' ? styles.activeTab : ''}`}
-              onClick={() => setActiveTab('posts')}
-            >
-              <span className="icon">📝</span>
-              Posts/Artigos
-            </button>
-            <button
-              className={`${styles.tabButton} ${activeTab === 'musicas' ? styles.activeTab : ''}`}
-              onClick={() => setActiveTab('musicas')}
-            >
-              <span className="icon">🎵</span>
-              Gestão de Músicas
-            </button>
-            <button
-              className={`${styles.tabButton} ${activeTab === 'videos' ? styles.activeTab : ''}`}
-              onClick={() => setActiveTab('videos')}
-            >
-              <span className="icon">🎬</span>
-              Gestão de Vídeos
-            </button>
-            <button
-              className={`${styles.tabButton} ${activeTab === 'projetos02' ? styles.activeTab : ''}`}
-              onClick={() => setActiveTab('projetos02')}
-            >
-              <span className="icon">📦</span>
-              Gestão de Produtos
-            </button>
-            <button
-              className={`${styles.tabButton} ${activeTab === 'header' ? styles.activeTab : ''}`}
-              onClick={() => setActiveTab('header')}
-            >
-              <span className="icon">🎨</span>
-              Configuração de Cabeçalho
-            </button>
-            <button
-              className={`${styles.tabButton} ${activeTab === 'security' ? styles.activeTab : ''}`}
-              onClick={() => setActiveTab('security')}
-            >
-              <span className="icon">🔒</span>
-              Segurança
-            </button>
-            <button
-              className={`${styles.tabButton} ${activeTab === 'users' ? styles.activeTab : ''}`}
-              onClick={() => setActiveTab('users')}
-            >
-              <span className="icon">👥</span>
-              Usuários
-            </button>
-            <button
-              className={`${styles.tabButton} ${activeTab === 'logs' ? styles.activeTab : ''}`}
-              onClick={() => setActiveTab('logs')}
-            >
-              <span className="icon">📜</span>
-              Auditoria
-            </button>
+            {hasPermission('Visão Geral') && (
+              <button
+                className={`${styles.tabButton} ${activeTab === 'dashboard' ? styles.activeTab : ''}`}
+                onClick={() => setActiveTab('dashboard')}
+              >
+                <span className="icon">📊</span>
+                Visão Geral
+              </button>
+            )}
+            
+            {hasPermission('Posts/Artigos') && (
+              <button
+                className={`${styles.tabButton} ${activeTab === 'posts' ? styles.activeTab : ''}`}
+                onClick={() => setActiveTab('posts')}
+              >
+                <span className="icon">📝</span>
+                Posts/Artigos
+              </button>
+            )}
+            
+            {hasPermission('Gestão de Músicas') && (
+              <button
+                className={`${styles.tabButton} ${activeTab === 'musicas' ? styles.activeTab : ''}`}
+                onClick={() => setActiveTab('musicas')}
+              >
+                <span className="icon">🎵</span>
+                Gestão de Músicas
+              </button>
+            )}
+            
+            {hasPermission('Gestão de Vídeos') && (
+              <button
+                className={`${styles.tabButton} ${activeTab === 'videos' ? styles.activeTab : ''}`}
+                onClick={() => setActiveTab('videos')}
+              >
+                <span className="icon">🎬</span>
+                Gestão de Vídeos
+              </button>
+            )}
+            
+            {hasPermission('Gestão de Produtos') && (
+              <button
+                className={`${styles.tabButton} ${activeTab === 'projetos02' ? styles.activeTab : ''}`}
+                onClick={() => setActiveTab('projetos02')}
+              >
+                <span className="icon">📦</span>
+                Gestão de Produtos
+              </button>
+            )}
+            
+            {hasPermission('Configuração de Cabeçalho') && (
+              <button
+                className={`${styles.tabButton} ${activeTab === 'header' ? styles.activeTab : ''}`}
+                onClick={() => setActiveTab('header')}
+              >
+                <span className="icon">🎨</span>
+                Configuração de Cabeçalho
+              </button>
+            )}
+            
+            {hasPermission('Segurança') && (
+              <button
+                className={`${styles.tabButton} ${activeTab === 'security' ? styles.activeTab : ''}`}
+                onClick={() => setActiveTab('security')}
+              >
+                <span className="icon">🔒</span>
+                Segurança
+              </button>
+            )}
+            
+            {hasPermission('Usuários') && (
+              <button
+                className={`${styles.tabButton} ${activeTab === 'users' ? styles.activeTab : ''}`}
+                onClick={() => setActiveTab('users')}
+              >
+                <span className="icon">👥</span>
+                Usuários
+              </button>
+            )}
+            
+            {hasPermission('Auditoria') && (
+              <button
+                className={`${styles.tabButton} ${activeTab === 'logs' ? styles.activeTab : ''}`}
+                onClick={() => setActiveTab('logs')}
+              >
+                <span className="icon">📜</span>
+                Auditoria
+              </button>
+            )}
           </div>
 
           {activeTab === 'header' && (
@@ -585,7 +626,7 @@ export default function Admin() {
           )}
           
           {activeTab === 'logs' && (
-            <AdminLogs />
+            <AdminAudit />
           )}
 
           {activeTab === 'musicas' && (

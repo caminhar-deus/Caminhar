@@ -29,6 +29,9 @@ import toast from 'react-hot-toast';
  * @param {boolean} [props.reorderable=false] - Habilita reordenação (Drag & Drop)
  * @param {Function} [props.onReorder] - Callback disparado ao reordenar
  * @param {boolean} [props.exportable=false] - Habilita botão de exportar para CSV
+ * @param {boolean} [props.showItemCount=false] - Exibe a contagem total de itens abaixo do título
+ * @param {string} [props.itemNameSingular='item'] - Nome do item no singular
+ * @param {string} [props.itemNamePlural='itens'] - Nome do item no plural
  * @param {boolean} [props.readOnly=false] - Desativa formulário e edição (Somente Leitura)
  */
 export default function AdminCrudBase({
@@ -52,6 +55,9 @@ export default function AdminCrudBase({
   reorderable = false,
   onReorder,
   exportable = false,
+  showItemCount = false,
+  itemNameSingular = 'item',
+  itemNamePlural = 'itens',
   readOnly = false
 }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -286,10 +292,17 @@ export default function AdminCrudBase({
   };
 
   return (
-    <div className={styles.content}>
+    <div className={styles.content} style={{ minHeight: '700px', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <div className={styles.sectionHeader}>
-        <h2>{title}</h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+          <h2 style={{ margin: 0 }}>{title}</h2>
+          {showItemCount && (
+            <span style={{ fontSize: '0.9rem', color: '#6b7280', fontWeight: '500' }}>
+              Total: {localItems.length} {localItems.length === 1 ? itemNameSingular : itemNamePlural}
+            </span>
+          )}
+        </div>
         <div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
           {searchable && (
             <div style={{ position: 'relative' }}>
@@ -377,9 +390,9 @@ export default function AdminCrudBase({
       )}
 
       {/* Tabela */}
-      <div className={styles.tableContainer}>
+      <div className={styles.tableContainer} style={{ flex: 1, overflowY: 'auto', maxHeight: '600px' }}>
         <table className={styles.table}>
-          <thead>
+          <thead style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: '#f8f9fa', boxShadow: 'inset 0 -2px 0 #e2e8f0' }}>
             <tr>
               {reorderable && !searchTerm && <th style={{ width: '40px', textAlign: 'center', color: '#6c757d' }}>☰</th>}
               {columns.map(col => (
@@ -541,5 +554,8 @@ AdminCrudBase.propTypes = {
   searchable: PropTypes.bool,
   reorderable: PropTypes.bool,
   exportable: PropTypes.bool,
+  showItemCount: PropTypes.bool,
+  itemNameSingular: PropTypes.string,
+  itemNamePlural: PropTypes.string,
   readOnly: PropTypes.bool
 };

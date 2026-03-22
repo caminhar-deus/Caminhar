@@ -4,13 +4,15 @@
 ├── ci.yml
 ├── components
 │   ├── Admin
+│   │   ├── AdminAudit.js
 │   │   ├── AdminCrudBase.js
 │   │   ├── AdminDashboard.js
-│   │   ├── AdminLogs.js
 │   │   ├── AdminMusicasNew.js
 │   │   ├── AdminPostsNew.js
 │   │   ├── AdminProducts.js
+│   │   ├── AdminRolesTab.js
 │   │   ├── AdminUsers.js
+│   │   ├── AdminUsersTab.js
 │   │   ├── AdminVideosNew.js
 │   │   ├── fields
 │   │   │   ├── ImageUploadField.js
@@ -107,13 +109,16 @@
 │   ├── clover.xml
 │   ├── components
 │   │   ├── Admin
+│   │   │   ├── AdminAudit.js.html
 │   │   │   ├── AdminCrudBase.js.html
 │   │   │   ├── AdminDashboard.js.html
 │   │   │   ├── AdminLogs.js.html
 │   │   │   ├── AdminMusicasNew.js.html
 │   │   │   ├── AdminPostsNew.js.html
 │   │   │   ├── AdminProducts.js.html
+│   │   │   ├── AdminRolesTab.js.html
 │   │   │   ├── AdminUsers.js.html
+│   │   │   ├── AdminUsersTab.js.html
 │   │   │   ├── AdminVideosNew.js.html
 │   │   │   ├── fields
 │   │   │   │   ├── ImageUploadField.js.html
@@ -202,13 +207,16 @@
 │   │   ├── block-navigation.js
 │   │   ├── components
 │   │   │   ├── Admin
+│   │   │   │   ├── AdminAudit.js.html
 │   │   │   │   ├── AdminCrudBase.js.html
 │   │   │   │   ├── AdminDashboard.js.html
 │   │   │   │   ├── AdminLogs.js.html
 │   │   │   │   ├── AdminMusicasNew.js.html
 │   │   │   │   ├── AdminPostsNew.js.html
 │   │   │   │   ├── AdminProducts.js.html
+│   │   │   │   ├── AdminRolesTab.js.html
 │   │   │   │   ├── AdminUsers.js.html
+│   │   │   │   ├── AdminUsersTab.js.html
 │   │   │   │   ├── AdminVideosNew.js.html
 │   │   │   │   ├── fields
 │   │   │   │   │   ├── ImageUploadField.js.html
@@ -313,6 +321,7 @@
 │   │   ├── pages
 │   │   │   └── api
 │   │   │       ├── admin
+│   │   │       │   ├── audit.js.html
 │   │   │       │   ├── backups.js.html
 │   │   │       │   ├── cache.js.html
 │   │   │       │   ├── fetch-ml.js.html
@@ -323,6 +332,7 @@
 │   │   │       │   ├── musicas.js.html
 │   │   │       │   ├── posts.js.html
 │   │   │       │   ├── rate-limit.js.html
+│   │   │       │   ├── roles.js.html
 │   │   │       │   ├── stats.js.html
 │   │   │       │   ├── users.js.html
 │   │   │       │   └── videos.js.html
@@ -381,6 +391,7 @@
 │   ├── pages
 │   │   └── api
 │   │       ├── admin
+│   │       │   ├── audit.js.html
 │   │       │   ├── backups.js.html
 │   │       │   ├── cache.js.html
 │   │       │   ├── fetch-ml.js.html
@@ -391,6 +402,7 @@
 │   │       │   ├── musicas.js.html
 │   │       │   ├── posts.js.html
 │   │       │   ├── rate-limit.js.html
+│   │       │   ├── roles.js.html
 │   │       │   ├── stats.js.html
 │   │       │   ├── users.js.html
 │   │       │   └── videos.js.html
@@ -534,22 +546,22 @@
 │   ├── admin.js
 │   ├── api
 │   │   ├── admin
+│   │   │   ├── audit.js
 │   │   │   ├── backups.js
 │   │   │   ├── cache.js
 │   │   │   ├── fetch-ml.js
 │   │   │   ├── fetch-spotify.js
 │   │   │   ├── fetch-youtube.js
-│   │   │   ├── logs.js
 │   │   │   ├── musicas.js
 │   │   │   ├── posts.js
 │   │   │   ├── rate-limit.js
+│   │   │   ├── roles.js
 │   │   │   ├── stats.js
 │   │   │   ├── users.js
 │   │   │   └── videos.js
 │   │   ├── auth
 │   │   │   ├── check.js
 │   │   │   ├── login.js
-│   │   │   ├── login.v2.js
 │   │   │   └── logout.js
 │   │   ├── cleanup-test-data.js
 │   │   ├── musicas.js
@@ -818,4 +830,4 @@
 │       └── videos_validation.test.js
 └── tree.txt
 
-139 directories, 680 files
+139 directories, 692 files
