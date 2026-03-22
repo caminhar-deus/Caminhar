@@ -64,10 +64,12 @@ export default function AdminCrudBase({
 
   const [localItems, setLocalItems] = useState([]);
   const [dragOverIndex, setDragOverIndex] = useState(null);
+  const [isFormVisible, setIsFormVisible] = useState(false);
 
   // Wrapper para exibir notificações de sucesso automaticamente
   const handleSuccessWrapper = useCallback(() => {
     toast.success('Operação realizada com sucesso!');
+    setIsFormVisible(false);
     if (onSuccess) onSuccess();
   }, [onSuccess]);
 
@@ -228,6 +230,7 @@ export default function AdminCrudBase({
         <Component
           name={name}
           value={fieldValue}
+          checked={!!fieldValue}
           onChange={handleInputChange}
           error={fieldError}
           {...props}
@@ -365,9 +368,12 @@ export default function AdminCrudBase({
               Exportar CSV
             </button>
           )}
-          {isEditing && (
+          {isFormVisible && (
             <button 
-              onClick={resetForm}
+              onClick={() => {
+                resetForm();
+                setIsFormVisible(false);
+              }}
               className={styles.cancelButton}
               disabled={loading}
               type="button"
@@ -375,12 +381,13 @@ export default function AdminCrudBase({
               Cancelar
             </button>
           )}
-          {!readOnly && (
+          {!readOnly && !isFormVisible && (
           <button 
             onClick={() => {
               resetForm();
+              setIsFormVisible(true);
               // Scroll para o formulário
-              document.getElementById('crud-form')?.scrollIntoView({ behavior: 'smooth' });
+              setTimeout(() => document.getElementById('crud-form')?.scrollIntoView({ behavior: 'smooth' }), 50);
             }}
             className={styles.addButton}
             disabled={loading}
@@ -394,7 +401,7 @@ export default function AdminCrudBase({
       </div>
 
       {/* Formulário */}
-      {!readOnly && (
+      {!readOnly && isFormVisible && (
       <div id="crud-form" className={styles.formSection}>
         <form 
           onSubmit={(e) => handleSubmit(e, validateForm)} 
@@ -506,7 +513,8 @@ export default function AdminCrudBase({
                         className={styles.editButton}
                         onClick={() => {
                           handleEdit(item);
-                          document.getElementById('crud-form')?.scrollIntoView({ behavior: 'smooth' });
+                          setIsFormVisible(true);
+                          setTimeout(() => document.getElementById('crud-form')?.scrollIntoView({ behavior: 'smooth' }), 50);
                         }}
                         disabled={loading}
                         type="button"

@@ -54,7 +54,7 @@ export function useAdminCrud({
 
     } catch (err) {
       setError(err.message);
-      console.error("Erro ao buscar dados:", err);
+      console.error("Erro ao buscar dados:", err.message);
     } finally {
       setLoading(false);
     }
@@ -78,7 +78,15 @@ export function useAdminCrud({
 
   const handleEdit = (item) => {
     setIsEditing(item.id);
-    setFormData(item);
+    
+    // Mescla os dados recebidos com o initialFormData para garantir que todos os campos existam.
+    // Converte nulls para evitar falhas de preenchimento (uncontrolled input) no React.
+    const safeData = { ...initialFormData, id: item.id };
+    for (const key in item) {
+      if (item[key] !== null && item[key] !== undefined) safeData[key] = item[key];
+    }
+    
+    setFormData(safeData);
   };
 
   const resetForm = () => {
@@ -126,7 +134,7 @@ export function useAdminCrud({
 
     } catch (err) {
       setError(err.message);
-      console.error("Erro ao submeter:", err);
+      console.error("Erro ao submeter:", err.message);
     } finally {
       setLoading(false);
     }
@@ -157,7 +165,7 @@ export function useAdminCrud({
       await fetchData(currentPage); // Recarrega os dados da página atual
     } catch (err) {
       setError(err.message);
-      console.error("Erro ao excluir:", err);
+      console.error("Erro ao excluir:", err.message);
     } finally {
       setLoading(false);
     }

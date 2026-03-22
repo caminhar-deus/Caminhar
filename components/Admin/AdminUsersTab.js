@@ -19,7 +19,7 @@ const validateUser = (data) => {
 };
 
 // Componente customizado para buscar e listar os cargos dinamicamente
-const RoleSelectField = ({ value, onChange, label, error, hint, gridColumn }) => {
+const RoleSelectField = ({ name, value, onChange, label, error, hint, gridColumn }) => {
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -51,8 +51,9 @@ const RoleSelectField = ({ value, onChange, label, error, hint, gridColumn }) =>
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', gridColumn }}>
       <label style={{ fontWeight: '600', fontSize: '0.9rem', color: '#374151' }}>{label}</label>
       <select
+        name={name}
         value={value || ''}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={onChange}
         style={{
           padding: '10px', borderRadius: '6px', backgroundColor: '#f9fafb',
           border: `1px solid ${error ? '#ef4444' : '#d1d5db'}`, width: '100%', fontSize: '0.95rem'

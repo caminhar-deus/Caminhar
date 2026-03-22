@@ -486,7 +486,7 @@ export default function Admin() {
             )}
           </div>
 
-          {activeTab === 'header' && (
+          {activeTab === 'header' && hasPermission('Configuração de Cabeçalho') && (
             <>
               <div className={styles.formGroup}>
                 <label>Título da Página</label>
@@ -643,15 +643,15 @@ export default function Admin() {
             </>
           )}
           
-          {activeTab === 'dashboard' && (
+          {activeTab === 'dashboard' && hasPermission('Visão Geral') && (
             <AdminDashboard setActiveTab={setActiveTab} />
           )}
 
-          {activeTab === 'posts' && (
+          {activeTab === 'posts' && hasPermission('Posts/Artigos') && (
             <AdminPostsNew />
           )}
 
-          {activeTab === 'security' && (
+          {activeTab === 'security' && hasPermission('Segurança') && (
             <>
               <RateLimitViewer />
               <IntegrityCheck />
@@ -660,19 +660,19 @@ export default function Admin() {
             </>
           )}
           
-          {activeTab === 'users' && (
+          {activeTab === 'users' && hasPermission('Usuários') && (
             <AdminUsers />
           )}
           
-          {activeTab === 'logs' && (
+          {activeTab === 'logs' && hasPermission('Auditoria') && (
             <AdminAudit />
           )}
 
-          {activeTab === 'musicas' && (
+          {activeTab === 'musicas' && hasPermission('Gestão de Músicas') && (
             <AdminMusicasNew />
           )}
 
-          {activeTab === 'videos' && (
+          {activeTab === 'videos' && hasPermission('Gestão de Vídeos') && (
             <AdminVideosNew />
           )}
 
@@ -711,7 +711,7 @@ export default function Admin() {
             </div>
           )}
 
-          {activeTab === 'projetos02' && (
+          {activeTab === 'projetos02' && hasPermission('Gestão de Produtos') && (
             <div className={styles.content}>
               <AdminProducts />
             </div>

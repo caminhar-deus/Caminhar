@@ -10,14 +10,14 @@ const permissionsList = [
 ];
 
 // Componente customizado para selecionar as permissões do cargo via Checkboxes
-const PermissionsSelectField = ({ value, onChange, label, error, gridColumn }) => {
+const PermissionsSelectField = ({ name, value, onChange, label, error, gridColumn }) => {
   const selected = Array.isArray(value) ? value : [];
 
   const togglePerm = (perm) => {
     if (selected.includes(perm)) {
-      onChange(selected.filter(p => p !== perm));
+      onChange({ target: { name, value: selected.filter(p => p !== perm) } });
     } else {
-      onChange([...selected, perm]);
+      onChange({ target: { name, value: [...selected, perm] } });
     }
   };
 
