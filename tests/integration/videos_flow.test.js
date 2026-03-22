@@ -1,7 +1,7 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../../pages/api/admin/videos';
-import { createVideo, getPaginatedVideos, deleteVideo } from '../../lib/db';
+import { createVideo, getPaginatedVideos, deleteVideo, query, logActivity } from '../../lib/db';
 
 // Mock do banco de dados
 jest.mock('../../lib/db', () => ({
@@ -9,6 +9,8 @@ jest.mock('../../lib/db', () => ({
   createVideo: jest.fn(),
   getPaginatedVideos: jest.fn(),
   deleteVideo: jest.fn(),
+  query: jest.fn(),
+  logActivity: jest.fn(),
 }));
 
 // Mock do módulo de autenticação para ignorar a verificação de token neste teste
@@ -19,6 +21,8 @@ jest.mock('../../lib/auth', () => ({
 describe('Integração: Fluxo Completo de Vídeos (API + DB)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    query.mockResolvedValue({ rows: [{ titulo: 'Vídeo de Integração' }] });
+    logActivity.mockResolvedValue();
   });
 
   it('deve realizar o ciclo completo: criar, listar e excluir um vídeo', async () => {

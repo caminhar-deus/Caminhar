@@ -1,13 +1,15 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../../pages/api/admin/musicas';
-import { createMusica, getPaginatedMusicas, deleteMusica } from '../../lib/db';
+import { createMusica, getPaginatedMusicas, deleteMusica, query, logActivity } from '../../lib/db';
 
 // Mock do banco de dados
 jest.mock('../../lib/db', () => ({
   createMusica: jest.fn(),
   getPaginatedMusicas: jest.fn(),
   deleteMusica: jest.fn(),
+  query: jest.fn(),
+  logActivity: jest.fn(),
 }));
 
 // Mock do cache para evitar erro de importação do Redis/uncrypto
@@ -23,6 +25,8 @@ jest.mock('../../lib/auth', () => ({
 describe('Integração: Fluxo Completo de Músicas (API + DB)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    query.mockResolvedValue({ rows: [{ titulo: 'Música de Teste' }] });
+    logActivity.mockResolvedValue();
   });
 
   it('deve realizar o ciclo completo: criar, listar e excluir uma música', async () => {

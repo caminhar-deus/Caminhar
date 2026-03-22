@@ -143,59 +143,6 @@ export default function LazyIframe({
               backgroundColor: thumbUrl ? 'rgba(0,0,0,0.4)' : 'transparent',
             }}
           />
-          
-          {/* Botão Play */}
-          <div
-            style={{
-              position: 'relative',
-              zIndex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '20px',
-              textAlign: 'center',
-            }}
-          >
-            <div
-              style={{
-                width: '80px',
-                height: '80px',
-                borderRadius: '50%',
-                backgroundColor: provider === 'youtube' ? '#FF0000' : '#1DB954',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-              }}
-              className="play-button"
-            >
-              <svg
-                width="32"
-                height="32"
-                viewBox="0 0 24 24"
-                fill="white"
-                style={{ marginLeft: provider === 'youtube' ? '4px' : '0' }}
-              >
-                {provider === 'youtube' ? (
-                  <path d="M8 5v14l11-7z" />
-                ) : (
-                  <path d="M8 5v14l11-7z" />
-                )}
-              </svg>
-            </div>
-            <span
-              style={{
-                color: 'white',
-                fontSize: '16px',
-                fontWeight: 500,
-                textShadow: '0 2px 4px rgba(0,0,0,0.5)',
-              }}
-            >
-              {placeholderText}
-            </span>
-          </div>
         </div>
       )}
 
@@ -222,12 +169,6 @@ export default function LazyIframe({
         />
       )}
 
-      <style jsx>{`
-        .play-button:hover {
-          transform: scale(1.1);
-          box-shadow: 0 6px 30px rgba(0,0,0,0.4);
-        }
-      `}</style>
     </div>
   );
 }

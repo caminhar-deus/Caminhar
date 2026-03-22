@@ -65,6 +65,7 @@ const columns = [
   {
     key: 'url_spotify',
     header: 'Spotify',
+    width: '350px',
     render: (item) => (
       <div>
         <a
@@ -75,17 +76,18 @@ const columns = [
         >
           🎵 Abrir no Spotify
         </a>
-        <div className={styles.embedContainer}>
+        <div style={{ marginTop: '10px', minWidth: '300px' }}>
           <iframe
             data-testid="embed-iframe"
-            className={styles.spotifyEmbed}
+            style={{ borderRadius: '12px', overflow: 'hidden', background: 'transparent' }}
             src={`https://open.spotify.com/embed/track/${item.url_spotify.split('/').pop().split('?')[0]}?utm_source=generator&theme=0`}
             width="100%"
-            height="80"
+            height="152"
             frameBorder="0"
             allowFullScreen
             allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
             loading="lazy"
+            scrolling="no"
           />
         </div>
       </div>

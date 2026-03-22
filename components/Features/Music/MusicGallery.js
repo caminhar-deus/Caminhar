@@ -8,6 +8,10 @@ export default function MusicGallery() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Estados da Paginação Local
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6; // Quantidade de músicas a serem exibidas por vez
+
   // Carrega as músicas do banco de dados
   useEffect(() => {
     const loadMusicas = async () => {
@@ -48,12 +52,21 @@ export default function MusicGallery() {
     );
   }, [searchTerm, musicas]);
 
+  // Calcula e extrai apenas as músicas da página atual
+  const totalPages = Math.ceil(filteredMusicas.length / itemsPerPage) || 1;
+  const paginatedMusicas = filteredMusicas.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
+    setCurrentPage(1); // Volta para a página 1 ao pesquisar
   };
 
   const clearSearch = () => {
     setSearchTerm('');
+    setCurrentPage(1); // Volta para a página 1 ao limpar
   };
 
   return (
@@ -108,8 +121,8 @@ export default function MusicGallery() {
               Tentar novamente
             </button>
           </div>
-        ) : filteredMusicas.length > 0 ? (
-          filteredMusicas.map((musica) => (
+        ) : paginatedMusicas.length > 0 ? (
+          paginatedMusicas.map((musica) => (
             <MusicCard key={musica.id} musica={musica} />
           ))
         ) : (
@@ -123,6 +136,41 @@ export default function MusicGallery() {
           </div>
         )}
       </div>
+
+      {/* Controles de Paginação */}
+      {!loading && !error && totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', marginTop: '40px', paddingBottom: '20px' }}>
+          <button 
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
+            disabled={currentPage === 1}
+            style={{ 
+              padding: '10px 20px', borderRadius: '8px', fontWeight: '500',
+              border: '1px solid #d1d5db', backgroundColor: currentPage === 1 ? '#f3f4f6' : '#fff',
+              color: currentPage === 1 ? '#9ca3af' : '#374151', cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            Anterior
+          </button>
+          
+          <span style={{ fontWeight: '500', color: '#4b5563' }}>
+            Página {currentPage} de {totalPages}
+          </span>
+          
+          <button 
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} 
+            disabled={currentPage === totalPages}
+            style={{ 
+              padding: '10px 20px', borderRadius: '8px', fontWeight: '500',
+              border: '1px solid #d1d5db', backgroundColor: currentPage === totalPages ? '#f3f4f6' : '#fff',
+              color: currentPage === totalPages ? '#9ca3af' : '#374151', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            Próxima
+          </button>
+        </div>
+      )}
     </div>
   );
 }

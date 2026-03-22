@@ -12,7 +12,7 @@ jest.mock('cookie', () => ({
 jest.mock('jsonwebtoken');
 
 import videosHandler from '../../../pages/api/admin/videos.js';
-import { getPaginatedVideos, createVideo, updateVideo, deleteVideo } from '../../../lib/db.js';
+import { getPaginatedVideos, createVideo, updateVideo, deleteVideo, query, logActivity } from '../../../lib/db.js';
 import * as cookie from 'cookie';
 
 describe('API de Vídeos (/api/admin/videos)', () => {
@@ -34,6 +34,10 @@ describe('API de Vídeos (/api/admin/videos)', () => {
 
     // Configuração padrão de autenticação bem-sucedida para a maioria dos testes
     jwt.verify.mockReturnValue({ role: 'admin' });
+
+    // Retorno simulado padrão para a consulta ao banco de dados e logs
+    query.mockResolvedValue({ rows: [{ titulo: 'Vídeo Teste' }] });
+    logActivity.mockResolvedValue();
   });
 
   describe('GET', () => {
