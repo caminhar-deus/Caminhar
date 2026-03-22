@@ -1,4 +1,4 @@
-import { getPaginatedVideos, createVideo, updateVideo, deleteVideo, updateRecords, logActivity } from '../../../lib/db.js';
+import { getPaginatedVideos, createVideo, updateVideo, deleteVideo, updateRecords, logActivity, query } from '../../../lib/db.js';
 import { withAuth } from '../../../lib/auth.js';
 
 const isValidYouTubeUrl = (url) => {
@@ -35,7 +35,7 @@ async function handler(req, res) {
 
     case 'POST':
       try {
-        const { titulo, url_youtube, descricao, publicado } = req.body;
+        const { titulo, url_youtube, descricao, publicado, thumbnail } = req.body;
 
         if (!titulo || !url_youtube) {
           return res.status(400).json({ message: 'Título e URL do YouTube são obrigatórios' });
@@ -57,10 +57,11 @@ async function handler(req, res) {
           titulo,
           url_youtube,
           descricao,
-          publicado: publicado !== undefined ? publicado : false // Default false se não enviado
+          publicado: publicado !== undefined ? publicado : false, // Default false se não enviado
+          thumbnail
         });
 
-        if (user) await logActivity(user.username, 'CREATE', 'VIDEO', novoVideo.id, `Criou o vídeo: ${titulo}`, ip);
+        if (user) await logActivity(user.username, 'CRIAR VÍDEO', 'VIDEO', novoVideo.id, `Criou o vídeo: ${titulo}`, ip);
 
         res.status(201).json(novoVideo);
       } catch (error) {
@@ -80,7 +81,7 @@ async function handler(req, res) {
           return res.status(200).json({ success: true, message: 'Ordem atualizada' });
         }
 
-        const { id, titulo, url_youtube, descricao, publicado } = req.body;
+        const { id, titulo, url_youtube, descricao, publicado, thumbnail } = req.body;
 
         if (!id) {
           return res.status(400).json({ message: 'ID é obrigatório' });
@@ -102,14 +103,15 @@ async function handler(req, res) {
           titulo,
           url_youtube,
           descricao,
-          publicado
+          publicado,
+          thumbnail
         });
 
         if (!videoAtualizado) {
           return res.status(404).json({ message: 'Vídeo não encontrado' });
         }
 
-        if (user) await logActivity(user.username, 'UPDATE', 'VIDEO', id, `Atualizou o vídeo: ${titulo}`, ip);
+        if (user) await logActivity(user.username, 'ATUALIZAR VÍDEO', 'VIDEO', id, `Atualizou o vídeo: ${titulo}`, ip);
 
         res.status(200).json(videoAtualizado);
       } catch (error) {
@@ -126,13 +128,16 @@ async function handler(req, res) {
           return res.status(400).json({ message: 'ID é obrigatório' });
         }
 
+        const videoQueryToDel = await query('SELECT titulo FROM videos WHERE id = $1', [id]);
+        const tituloVideo = videoQueryToDel.rows[0]?.titulo || id;
+
         const resultado = await deleteVideo(id);
 
         if (!resultado) {
           return res.status(404).json({ message: 'Vídeo não encontrado' });
         }
 
-        if (user) await logActivity(user.username, 'DELETE', 'VIDEO', id, `Removeu o vídeo ID: ${id}`, ip);
+        if (user) await logActivity(user.username, 'EXCLUIR VÍDEO', 'VIDEO', id, `Removeu o vídeo: ${tituloVideo}`, ip);
 
         res.status(200).json({ message: 'Vídeo excluído com sucesso' });
       } catch (error) {

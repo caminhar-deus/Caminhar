@@ -73,7 +73,7 @@ export default async function handler(req, res) {
         const hashedPassword = await hashPassword(password);
         const newUser = await createRecord('users', { username, password: hashedPassword, role: role || 'admin' }, ['id', 'username', 'role']);
         
-        await logActivity(user.username, 'CREATE', 'USER', newUser.id, `Criou o usuário admin: ${username}`, ip);
+        await logActivity(user.username, 'CRIAR USUÁRIO', 'USER', newUser.id, `Criou o usuário: ${username}`, ip);
         
         return res.status(201).json(newUser);
 
@@ -92,7 +92,7 @@ export default async function handler(req, res) {
 
         const updatedUsers = await updateRecords('users', updateData, { id: updateId }, ['id', 'username', 'role']);
         
-        await logActivity(user.username, 'UPDATE', 'USER', updateId, `Atualizou o usuário: ${updatedUsers[0]?.username}`, ip);
+        await logActivity(user.username, 'ATUALIZAR USUÁRIO', 'USER', updateId, `Atualizou o usuário: ${updatedUsers[0]?.username}`, ip);
         
         return res.status(200).json(updatedUsers[0] || {});
 
@@ -101,9 +101,13 @@ export default async function handler(req, res) {
         
         if (deleteId === user.userId) return res.status(400).json({ error: 'Você não pode excluir sua própria conta enquanto está logado nela.' });
 
+        // Busca o nome do usuário antes de deletar para o Log
+        const userQueryToDel = await query('SELECT username FROM users WHERE id = $1', [deleteId]);
+        const deletedUsername = userQueryToDel.rows[0]?.username || deleteId;
+
         await deleteRecords('users', { id: deleteId });
         
-        await logActivity(user.username, 'DELETE', 'USER', deleteId, `Removeu o usuário ID: ${deleteId}`, ip);
+        await logActivity(user.username, 'EXCLUIR USUÁRIO', 'USER', deleteId, `Removeu o usuário: ${deletedUsername}`, ip);
         
         return res.status(200).json({ success: true, message: 'Usuário removido com sucesso.' });
     }

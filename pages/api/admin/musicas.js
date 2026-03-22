@@ -1,4 +1,4 @@
-import { getPaginatedMusicas, createMusica, updateMusica, deleteMusica, updateRecords, logActivity } from '../../../lib/db.js';
+import { getPaginatedMusicas, createMusica, updateMusica, deleteMusica, updateRecords, logActivity, query } from '../../../lib/db.js';
 import { withAuth } from '../../../lib/auth.js';
 import { invalidateCache } from '../../../lib/cache.js';
 
@@ -57,7 +57,7 @@ async function handler(req, res) {
           publicado: publicado !== undefined ? publicado : false // Default false se não enviado
         });
 
-        if (user) await logActivity(user.username, 'CREATE', 'MUSIC', novaMusica.id, `Criou a música: ${titulo}`, ip);
+        if (user) await logActivity(user.username, 'CRIAR MÚSICA', 'MUSIC', novaMusica.id, `Criou a música: ${titulo}`, ip);
 
         // Invalida o cache para atualizar a listagem imediatamente
         await invalidateCache('musicas');
@@ -108,7 +108,7 @@ async function handler(req, res) {
           return res.status(404).json({ message: 'Música não encontrada' });
         }
 
-        if (user) await logActivity(user.username, 'UPDATE', 'MUSIC', id, `Atualizou a música: ${titulo}`, ip);
+        if (user) await logActivity(user.username, 'ATUALIZAR MÚSICA', 'MUSIC', id, `Atualizou a música: ${titulo}`, ip);
 
         // Invalida o cache após atualização
         await invalidateCache('musicas');
@@ -128,13 +128,16 @@ async function handler(req, res) {
           return res.status(400).json({ message: 'ID é obrigatório' });
         }
 
+        const musicaQueryToDel = await query('SELECT titulo FROM musicas WHERE id = $1', [id]);
+        const tituloMusica = musicaQueryToDel.rows[0]?.titulo || id;
+
         const resultado = await deleteMusica(id);
 
         if (!resultado) {
           return res.status(404).json({ message: 'Música não encontrada' });
         }
 
-        if (user) await logActivity(user.username, 'DELETE', 'MUSIC', id, `Removeu a música ID: ${id}`, ip);
+        if (user) await logActivity(user.username, 'EXCLUIR MÚSICA', 'MUSIC', id, `Removeu a música: ${tituloMusica}`, ip);
 
         // Invalida o cache após exclusão
         await invalidateCache('musicas');

@@ -1,4 +1,4 @@
-import { getPaginatedPosts, createPost, updatePost, deletePost, logActivity, updateRecords } from '../../../lib/db.js';
+import { getPaginatedPosts, createPost, updatePost, deletePost, logActivity, updateRecords, query } from '../../../lib/db.js';
 import { withAuth } from '../../../lib/auth.js';
 import { invalidateCache } from '../../../lib/cache.js';
 
@@ -43,7 +43,7 @@ async function handler(req, res) {
 
         const newPost = await createPost({ title, slug, excerpt, content, image_url, published });
         
-        if (user) await logActivity(user.username, 'CREATE', 'POST', newPost.id, `Criou o artigo: ${title}`, ip);
+        if (user) await logActivity(user.username, 'CRIAR POST', 'POST', newPost.id, `Criou o artigo: ${title}`, ip);
         
         // Invalida o cache público se um novo post for criado
         await invalidateCache('posts:public:all');
@@ -76,7 +76,7 @@ async function handler(req, res) {
           return res.status(404).json({ message: 'Post não encontrado' });
         }
         
-        if (user) await logActivity(user.username, 'UPDATE', 'POST', id, `Atualizou o artigo: ${title}`, ip);
+        if (user) await logActivity(user.username, 'ATUALIZAR POST', 'POST', id, `Atualizou o artigo: ${title}`, ip);
         
         await invalidateCache('posts:public:all');
         res.status(200).json(updatedPost);
@@ -93,12 +93,15 @@ async function handler(req, res) {
           return res.status(400).json({ message: 'ID do post é obrigatório' });
         }
 
+        const postQueryToDel = await query('SELECT title FROM posts WHERE id = $1', [id]);
+        const titlePost = postQueryToDel.rows[0]?.title || id;
+
         const deleted = await deletePost(id);
         if (!deleted) {
           return res.status(404).json({ message: 'Post não encontrado' });
         }
         
-        if (user) await logActivity(user.username, 'DELETE', 'POST', id, `Removeu o artigo ID: ${id}`, ip);
+        if (user) await logActivity(user.username, 'EXCLUIR POST', 'POST', id, `Removeu o artigo: ${titlePost}`, ip);
         
         await invalidateCache('posts:public:all');
         res.status(200).json({ success: true });

@@ -67,8 +67,11 @@ export default async function handler(req, res) {
 
       case 'DELETE':
         const deleteId = req.body.id || parseInt(req.query.id);
+        // Busca o nome do cargo antes de deletar para gravar no log
+        const roleQueryToDel = await query('SELECT name FROM roles WHERE id = $1', [deleteId]);
+        const roleName = roleQueryToDel.rows[0]?.name || deleteId;
         await deleteRecords('roles', { id: deleteId });
-        await logActivity(user.username, 'EXCLUIR CARGO', 'ROLE', deleteId, `Removeu um cargo (ID: ${deleteId})`, ip);
+        await logActivity(user.username, 'EXCLUIR CARGO', 'ROLE', deleteId, `Removeu o cargo: ${roleName}`, ip);
         return res.status(200).json({ success: true, message: 'Cargo removido com sucesso' });
 
       default:

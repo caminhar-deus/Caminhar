@@ -73,7 +73,28 @@ const fields = [
  */
 const columns = [
   { key: 'id', header: 'ID', width: '60px' },
-  { key: 'titulo', header: 'Título' },
+  { 
+    key: 'titulo', 
+    header: 'Título',
+    render: (item) => (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        {item.thumbnail && (
+          <img 
+            src={item.thumbnail} 
+            alt="Capa" 
+            style={{ 
+              width: '40px', 
+              height: '40px', 
+              objectFit: 'cover', 
+              borderRadius: '4px',
+              border: '1px solid #e9ecef'
+            }} 
+          />
+        )}
+        <span style={{ fontWeight: 500 }}>{item.titulo}</span>
+      </div>
+    )
+  },
   {
     key: 'url_youtube',
     header: 'YouTube',

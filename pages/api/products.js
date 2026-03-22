@@ -111,7 +111,7 @@ export default async function handler(req, res) {
         
         const newProduct = await createRecord('products', newData);
         
-        if (user) await logActivity(user.username, 'CREATE', 'PRODUCT', newProduct.id, `Criou o produto: ${newData.title}`, ip);
+        if (user) await logActivity(user.username, 'CRIAR PRODUTO', 'PRODUCT', newProduct.id, `Criou o produto: ${newData.title}`, ip);
         
         // Limpa o cache global de produtos no Redis
         await invalidateCache('products:public:all');
@@ -147,7 +147,7 @@ export default async function handler(req, res) {
 
         const updatedProducts = await updateRecords('products', updateData, { id: updateId });
         
-        if (user) await logActivity(user.username, 'UPDATE', 'PRODUCT', updateId, `Atualizou o produto: ${updateData.title || updateId}`, ip);
+        if (user) await logActivity(user.username, 'ATUALIZAR PRODUTO', 'PRODUCT', updateId, `Atualizou o produto: ${updateData.title || updateId}`, ip);
         
         // Limpa o cache global de produtos no Redis
         await invalidateCache('products:public:all');
@@ -159,9 +159,12 @@ export default async function handler(req, res) {
         const deleteId = req.body.id || parseInt(req.query.id);
         console.log(`📦 [API Products] DELETE - Removendo produto ID ${deleteId}`);
         
+        const productQueryToDel = await query('SELECT title FROM products WHERE id = $1', [deleteId]);
+        const titleProduct = productQueryToDel.rows[0]?.title || deleteId;
+
         await deleteRecords('products', { id: deleteId });
         
-        if (user) await logActivity(user.username, 'DELETE', 'PRODUCT', deleteId, `Removeu um produto (ID: ${deleteId})`, ip);
+        if (user) await logActivity(user.username, 'EXCLUIR PRODUTO', 'PRODUCT', deleteId, `Removeu o produto: ${titleProduct}`, ip);
         
         // Limpa o cache global de produtos no Redis
         await invalidateCache('products:public:all');
