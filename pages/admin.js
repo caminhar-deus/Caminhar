@@ -301,11 +301,29 @@ export default function Admin() {
     return Array.isArray(currentUser.permissions) && currentUser.permissions.includes(permission);
   };
 
+  // Função responsável por encerrar a sessão
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (error) {
+      console.error('Erro ao sair:', error);
+    }
+    setIsAuthenticated(false);
+    setCurrentUser(null);
+    router.reload(); // Força o recarregamento da página para limpar todo o estado e voltar à tela de login
+  };
+
   if (!isAuthenticated) {
     return (
       <div className={styles.container}>
         <Head>
           <title>Admin - O Caminhar com Deus</title>
+          <style>{`
+            /* Força a barra de rolagem para evitar o solavanco da página */
+            html, body {
+              overflow-y: scroll !important;
+            }
+          `}</style>
         </Head>
         <Toaster position="top-right" />
 
@@ -348,12 +366,33 @@ export default function Admin() {
     <div className={styles.container}>
       <Head>
         <title>Admin - O Caminhar com Deus</title>
+        <style>{`
+          /* Força a barra de rolagem para evitar o solavanco da página */
+          html, body {
+            overflow-y: scroll !important;
+          }
+        `}</style>
       </Head>
       <Toaster position="top-right" />
 
       <main className={styles.main}>
         <div className={styles.adminPanel}>
-          <h1>Painel Administrativo</h1>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
+            <h1 style={{ margin: 0 }}>Painel Administrativo</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              {currentUser && (
+                <span style={{ fontSize: '0.95rem', color: '#4b5563', fontWeight: '500' }}>
+                  Olá, <strong>{currentUser.username}</strong>
+                </span>
+              )}
+              <button 
+                onClick={handleLogout}
+                style={{ backgroundColor: '#ef4444', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.2s' }}
+              >
+                Sair / Logout
+              </button>
+            </div>
+          </div>
 
           <div className={styles.tabs}>
             {hasPermission('Visão Geral') && (

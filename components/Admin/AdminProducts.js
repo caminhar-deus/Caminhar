@@ -74,7 +74,16 @@ const fields = [
 /** Configuração das colunas da tabela do Admin */
 const columns = [
   { key: 'id', header: 'ID', width: '60px' },
-  { key: 'published', header: 'Status', width: '100px' },
+  { 
+    key: 'published', 
+    header: 'Status', 
+    width: '120px',
+    activeBgColor: '#fef3c7', // Fundo amarelo/laranja claro
+    activeColor: '#92400e', // Texto laranja escuro
+    activeIcon: '🛒',
+    inactiveBgColor: '#f3f4f6',
+    inactiveIcon: '📦'
+  },
   { key: 'title', header: 'Produto', render: (item) => <strong>{item.title}</strong> },
   { key: 'price', header: 'Valor' },
   { 
@@ -199,6 +208,9 @@ export default function AdminProducts() {
       onReorder={handleReorder}
       exportable={true}
       renderCustomFormField={renderCustomFormField}
+      showItemCount={true}
+      itemNameSingular="produto cadastrado"
+      itemNamePlural="produtos cadastrados"
     />
   );
 }

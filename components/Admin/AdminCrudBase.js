@@ -260,15 +260,31 @@ export default function AdminCrudBase({
 
     // Valores booleanos (status)
     if (typeof value === 'boolean') {
+      const activeBgColor = column.activeBgColor || '';
+      const activeColor = column.activeColor || '';
+      const inactiveBgColor = column.inactiveBgColor || '';
+      const inactiveColor = column.inactiveColor || '';
+      const activeText = column.activeText || 'Publicado';
+      const inactiveText = column.inactiveText || 'Rascunho';
+      const activeIcon = column.activeIcon || '✅';
+      const inactiveIcon = column.inactiveIcon || '📝';
+
+      const customStyle = {};
+      if (value && activeBgColor) customStyle.backgroundColor = activeBgColor;
+      if (value && activeColor) customStyle.color = activeColor;
+      if (!value && inactiveBgColor) customStyle.backgroundColor = inactiveBgColor;
+      if (!value && inactiveColor) customStyle.color = inactiveColor;
+
       return (
         <button 
           type="button"
           onClick={() => handleToggleBoolean(item, key, value)}
           className={`${styles.statusBadge} ${value ? styles.statusPublished : styles.statusDraft} ${styles.statusToggle}`}
+          style={Object.keys(customStyle).length > 0 ? customStyle : undefined}
           title="Clique para alterar o status rapidamente"
         >
-          <span style={{ display: 'flex', alignItems: 'center' }}>{value ? '✅' : '📝'}</span>
-          <span>{value ? 'Publicado' : 'Rascunho'}</span>
+          <span style={{ display: 'flex', alignItems: 'center' }}>{value ? activeIcon : inactiveIcon}</span>
+          <span>{value ? activeText : inactiveText}</span>
         </button>
       );
     }
@@ -293,6 +309,18 @@ export default function AdminCrudBase({
 
   return (
     <div className={styles.content} style={{ minHeight: '700px', display: 'flex', flexDirection: 'column' }}>
+      <style>{`
+        @keyframes skeleton-pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+        .skeleton-box {
+          height: 20px;
+          background-color: #e2e8f0;
+          border-radius: 4px;
+          animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+      `}</style>
       {/* Header */}
       <div className={styles.sectionHeader}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
@@ -404,7 +432,28 @@ export default function AdminCrudBase({
             </tr>
           </thead>
           <tbody>
-            {displayedItems.length > 0 ? (
+            {loading && localItems.length === 0 ? (
+              Array.from({ length: 5 }).map((_, index) => (
+                <tr key={`skeleton-${index}`}>
+                  {reorderable && !searchTerm && (
+                    <td><div className="skeleton-box" style={{ width: '20px', margin: '0 auto' }}></div></td>
+                  )}
+                  {columns.map(col => (
+                    <td key={`skeleton-col-${col.key}`}>
+                      <div className="skeleton-box" style={{ width: col.width ? '100%' : '80%' }}></div>
+                    </td>
+                  ))}
+                  {!readOnly && (
+                    <td>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <div className="skeleton-box" style={{ height: '32px', width: '60px' }}></div>
+                        <div className="skeleton-box" style={{ height: '32px', width: '60px' }}></div>
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              ))
+            ) : displayedItems.length > 0 ? (
               displayedItems.map((item, index) => (
                 <tr 
                   key={item.id}

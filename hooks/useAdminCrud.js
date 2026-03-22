@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/router';
+import toast from 'react-hot-toast';
 
 export function useAdminCrud({
   apiEndpoint,
@@ -7,6 +9,7 @@ export function useAdminCrud({
   itemsPerPage = 10,
   onSuccess
 }) {
+  const router = useRouter();
   const [items, setItems] = useState([]);
   const [formData, setFormData] = useState(initialFormData);
   const [isEditing, setIsEditing] = useState(null); // Armazena o ID do item em edição
@@ -26,9 +29,9 @@ export function useAdminCrud({
         credentials: 'include' // *** CORREÇÃO: Envia cookies de autenticação ***
       });
       
-      // Se a sessão do usuário expirou (1 hora), recarrega a página para voltar ao Login
       if (response.status === 401) {
-        window.location.reload();
+        toast.error('Sessão expirada. Faça login novamente.');
+        router.reload();
         return;
       }
 
@@ -109,7 +112,8 @@ export function useAdminCrud({
       });
 
       if (response.status === 401) {
-        window.location.reload();
+        toast.error('Sessão expirada. Faça login novamente.');
+        router.reload();
         return;
       }
 
@@ -141,7 +145,8 @@ export function useAdminCrud({
       });
 
       if (response.status === 401) {
-        window.location.reload();
+        toast.error('Sessão expirada. Faça login novamente.');
+        router.reload();
         return;
       }
 

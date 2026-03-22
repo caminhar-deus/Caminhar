@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { useRouter } from 'next/router';
 
 export default function AdminAudit() {
   const [logs, setLogs] = useState([]);
@@ -9,6 +10,7 @@ export default function AdminAudit() {
   const [endDate, setEndDate] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const router = useRouter();
 
   const fetchLogs = (targetPage = 1) => {
     setLoading(true);
@@ -19,9 +21,17 @@ export default function AdminAudit() {
     if (startDate) params.append('startDate', startDate);
     if (endDate) params.append('endDate', endDate);
 
-    fetch(`/api/admin/audit?${params.toString()}`)
+    fetch(`/api/admin/audit?${params.toString()}`, { credentials: 'include' })
       .then(async res => {
-        if (!res.ok) throw new Error(`Erro na API (${res.status})`);
+        if (res.status === 401) {
+          toast.error('Sessão expirada. Faça login novamente.');
+          router.reload(); // Recarrega a página para voltar à tela de login
+          throw new Error('Acesso não autorizado');
+        }
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `Erro na API (${res.status})`);
+        }
         const contentType = res.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
           throw new Error('A resposta do servidor não é um JSON válido');
@@ -33,7 +43,7 @@ export default function AdminAudit() {
         setPage(resData.pagination?.page || 1);
         setTotalPages(resData.pagination?.totalPages || 1);
       })
-      .catch(err => console.error('Erro ao buscar logs de auditoria:', err))
+      .catch(err => toast.error(err.message))
       .finally(() => setLoading(false));
   };
 
@@ -85,6 +95,18 @@ export default function AdminAudit() {
 
   return (
     <div style={{ padding: '20px', backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e5e7eb', minHeight: '700px', display: 'flex', flexDirection: 'column' }}>
+      <style>{`
+        @keyframes skeleton-pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+        .skeleton-box {
+          height: 20px;
+          background-color: #e2e8f0;
+          border-radius: 4px;
+          animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+      `}</style>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px' }}>
         <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#111827', margin: 0 }}>Histórico Global de Auditoria</h2>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -127,8 +149,15 @@ export default function AdminAudit() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              <tr><td colSpan="4" style={{ padding: '30px', textAlign: 'center', color: '#6b7280' }}>Carregando trilha de auditoria...</td></tr>
+            {loading && logs.length === 0 ? (
+              Array.from({ length: 8 }).map((_, index) => (
+                <tr key={`skeleton-${index}`} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <td style={{ padding: '12px 16px' }}><div className="skeleton-box" style={{ width: '130px' }}></div></td>
+                  <td style={{ padding: '12px 16px' }}><div className="skeleton-box" style={{ width: '80px' }}></div></td>
+                  <td style={{ padding: '12px 16px' }}><div className="skeleton-box" style={{ width: '100px' }}></div></td>
+                  <td style={{ padding: '12px 16px' }}><div className="skeleton-box" style={{ width: '100%', maxWidth: '300px' }}></div></td>
+                </tr>
+              ))
             ) : filteredLogs.length === 0 ? (
               <tr><td colSpan="4" style={{ padding: '30px', textAlign: 'center', color: '#6b7280' }}>Nenhum registro de log encontrado.</td></tr>
             ) : (

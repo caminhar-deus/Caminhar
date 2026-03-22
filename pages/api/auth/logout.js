@@ -1,28 +1,8 @@
-import { serialize } from 'cookie';
-
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Método não permitido' });
-  }
-
-  try {
-    // Clear the auth cookie
-    const cookie = serialize('token', '', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      expires: new Date(0), // Set to past date to expire
-      path: '/',
-    });
-
-    res.setHeader('Set-Cookie', cookie);
-
-    return res.status(200).json({
-      message: 'Logout realizado com sucesso'
-    });
-
-  } catch (error) {
-    console.error('Logout error:', error);
-    return res.status(500).json({ message: 'Erro no servidor' });
-  }
+export default function handler(req, res) {
+  // Limpa o cookie definindo a data de expiração para o passado
+  res.setHeader('Set-Cookie', [
+    'token=; Path=/; HttpOnly; SameSite=Strict; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
+  ]);
+  
+  return res.status(200).json({ success: true, message: 'Deslogado com sucesso' });
 }

@@ -86,6 +86,7 @@ export default function AdminRolesTab() {
   return (
     <AdminCrudBase apiEndpoint="/api/admin/roles" title="Gestão de Cargos e Permissões"
       fields={fields} columns={columns} initialFormData={{ name: '', permissions: [] }}
-      validationSchema={roleSchema} newButtonText="+ Novo Cargo" searchable={false} />
+      validationSchema={roleSchema} newButtonText="+ Novo Cargo" searchable={false}
+      showItemCount={true} itemNameSingular="cargo cadastrado" itemNamePlural="cargos cadastrados" />
   );
 }

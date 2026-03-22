@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import AdminCrudBase from './AdminCrudBase';
 import TextField from './fields/TextField';
 import { z } from 'zod';
+import toast from 'react-hot-toast';
+import { useRouter } from 'next/router';
 
 const userSchema = z.object({
   username: z.string().min(3, 'O usuário/email deve ter no mínimo 3 caracteres'),
@@ -20,11 +22,20 @@ const validateUser = (data) => {
 const RoleSelectField = ({ value, onChange, label, error, hint, gridColumn }) => {
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
-    fetch('/api/admin/roles')
+    fetch('/api/admin/roles', { credentials: 'include' })
       .then(async res => {
-        if (!res.ok) throw new Error(`Erro na API (${res.status})`);
+        if (res.status === 401) {
+          toast.error('Sessão expirada. Faça login novamente.');
+          router.reload(); // Recarrega a página para voltar à tela de login
+          throw new Error('Acesso não autorizado');
+        }
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `Erro na API (${res.status})`);
+        }
         const contentType = res.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
           throw new Error('A resposta do servidor não é um JSON válido');
@@ -32,7 +43,7 @@ const RoleSelectField = ({ value, onChange, label, error, hint, gridColumn }) =>
         return res.json();
       })
       .then(data => setRoles(Array.isArray(data) ? data : (data.data || [])))
-      .catch(err => console.error("Erro ao buscar cargos:", err))
+      .catch(err => toast.error(err.message))
       .finally(() => setLoading(false));
   }, []);
 

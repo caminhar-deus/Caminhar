@@ -93,9 +93,12 @@ const columns = [
   },
   {
     key: 'publicado',
-    header: 'Status'
-    // Removida a renderização customizada para que o AdminCrudBase
-    // aplique automaticamente o botão de (Ligar/Desligar) nativo!
+    header: 'Status',
+    activeBgColor: '#dcfce3', // Fundo verde claro (Estilo Spotify)
+    activeColor: '#166534', // Texto verde escuro
+    activeIcon: '🎵',
+    inactiveBgColor: '#f3f4f6', // Fundo cinza padrão
+    inactiveIcon: '⏸️'
   }
 ];
 
@@ -210,6 +213,9 @@ export default function AdminMusicasNew() {
       reorderable={true}
       onReorder={handleReorder}
       renderCustomFormField={renderCustomFormField}
+      showItemCount={true}
+      itemNameSingular="música cadastrada"
+      itemNamePlural="músicas cadastradas"
     />
   );
 }

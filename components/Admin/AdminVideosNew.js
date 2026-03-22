@@ -105,7 +105,13 @@ const columns = [
   },
   {
     key: 'publicado',
-    header: 'Status'
+    header: 'Status',
+    // Customizando as cores especificamente para a aba de Vídeos (Estilo Youtube)
+    activeBgColor: '#fee2e2', // Fundo vermelho claro
+    activeColor: '#991b1b', // Texto vermelho escuro
+    activeIcon: '🎬',
+    inactiveBgColor: '#f3f4f6', // Fundo cinza padrão
+    inactiveIcon: '⏸️'
   }
 ];
 
@@ -222,6 +228,9 @@ export default function AdminVideosNew() {
       reorderable={true}
       onReorder={handleReorder}
       renderCustomFormField={renderCustomFormField}
+      showItemCount={true}
+      itemNameSingular="vídeo cadastrado"
+      itemNamePlural="vídeos cadastrados"
     />
   );
 }

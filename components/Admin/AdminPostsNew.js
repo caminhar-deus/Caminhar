@@ -120,7 +120,12 @@ const columns = [
   },
   { 
     key: 'published', 
-    header: 'Status'
+    header: 'Status',
+    activeBgColor: '#e0f2fe', // Fundo azul claro
+    activeColor: '#0369a1', // Texto azul escuro
+    activeIcon: '📰', // Ícone de Jornal
+    inactiveBgColor: '#f3f4f6', // Fundo cinza padrão
+    inactiveIcon: '📝' // Ícone de rascunho
   },
   { 
     key: 'created_at', 
@@ -250,6 +255,9 @@ export default function AdminPostsNew() {
       exportable={true}
       reorderable={true}
       onReorder={handleReorder}
+      showItemCount={true}
+      itemNameSingular="post cadastrado"
+      itemNamePlural="posts cadastrados"
     />
   );
 }
