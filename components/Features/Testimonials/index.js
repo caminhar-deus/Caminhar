@@ -22,6 +22,8 @@ export default function Testimonials() {
   const [dicas, setDicas] = useState(fallbackData);
   const [loading, setLoading] = useState(true);
   const scrollRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
 
   useEffect(() => {
     const fetchDicas = async () => {
@@ -41,6 +43,24 @@ export default function Testimonials() {
     };
     fetchDicas();
   }, []);
+
+  // Verifica a posição da rolagem para mostrar/esconder as setas
+  const handleScroll = () => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      // Mostra a seta da esquerda se não estiver no começo (com uma pequena margem de segurança)
+      setCanScrollLeft(scrollLeft > 1);
+      // Mostra a seta da direita se a posição atual + largura visível for menor que o total
+      setCanScrollRight(Math.ceil(scrollLeft + clientWidth) < scrollWidth - 1);
+    }
+  };
+
+  // Atualiza as setas caso a janela seja redimensionada ou as dicas mudem
+  useEffect(() => {
+    handleScroll();
+    window.addEventListener('resize', handleScroll);
+    return () => window.removeEventListener('resize', handleScroll);
+  }, [dicas]);
 
   // Variável que checa se temos itens suficientes para habilitar o modo carrossel
   const hasCarousel = dicas.length > 3;
@@ -65,7 +85,7 @@ export default function Testimonials() {
       </div>
 
       <div style={{ position: 'relative', maxWidth: '1200px', margin: '0 auto' }}>
-        {hasCarousel && (
+        {hasCarousel && canScrollLeft && (
           <button onClick={() => scroll('left')} className="nav-button left" aria-label="Anterior">
             ❮
           </button>
@@ -73,6 +93,7 @@ export default function Testimonials() {
 
         <div 
           ref={scrollRef}
+          onScroll={handleScroll}
           className={`dicas-container ${hasCarousel ? 'carousel' : 'grid'}`}
         >
         {dicas.map((dica) => (
@@ -95,7 +116,7 @@ export default function Testimonials() {
         ))}
         </div>
 
-        {hasCarousel && (
+        {hasCarousel && canScrollRight && (
           <button onClick={() => scroll('right')} className="nav-button right" aria-label="Próxima">
             ❯
           </button>

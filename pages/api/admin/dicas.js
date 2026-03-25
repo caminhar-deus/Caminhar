@@ -47,8 +47,12 @@ async function handler(req, res) {
     case 'DELETE':
       try {
         const { id } = req.body;
+        
+        const dicaQueryToDel = await query('SELECT name FROM dicas WHERE id = $1', [id]);
+        const nameDica = dicaQueryToDel.rows[0]?.name || id;
+
         await query('DELETE FROM dicas WHERE id = $1', [id]);
-        if (user) await logActivity(user.username, 'EXCLUIR DICA', 'DELETE', id, `Removeu a dica ID: ${id}`, ip);
+        if (user) await logActivity(user.username, 'EXCLUIR DICA', 'DELETE', id, `Removeu a dica: ${nameDica}`, ip);
         res.status(200).json({ success: true });
       } catch (error) {
         res.status(500).json({ message: 'Erro ao excluir dica' });

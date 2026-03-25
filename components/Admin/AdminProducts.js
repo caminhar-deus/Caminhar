@@ -84,6 +84,23 @@ const columns = [
     inactiveBgColor: '#f3f4f6',
     inactiveIcon: '📦'
   },
+  { 
+    key: 'image_preview', 
+    header: 'Imagem', 
+    width: '80px',
+    render: (item) => {
+      const firstImage = item.images ? item.images.split('\n')[0].trim() : null;
+      return firstImage ? (
+        <img 
+          src={firstImage} 
+          alt={item.title} 
+          style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #e2e8f0' }} 
+        />
+      ) : (
+        <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>Sem foto</span>
+      );
+    }
+  },
   { key: 'title', header: 'Produto', render: (item) => <strong>{item.title}</strong> },
   { key: 'price', header: 'Valor' },
   { 
