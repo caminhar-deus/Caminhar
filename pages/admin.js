@@ -11,6 +11,7 @@ import CacheManager from '../components/Admin/Managers/CacheManager';
 import AdminMusicas from '../components/Admin/AdminMusicas';
 import AdminVideos from '../components/Admin/AdminVideos';
 import AdminProducts from '../components/Admin/AdminProducts';
+import AdminDicas from '../components/Admin/AdminDicas';
 import toast, { Toaster } from 'react-hot-toast';
 import AdminDashboard from '../components/Admin/AdminDashboard';
 import AdminUsers from '../components/Admin/AdminUsers';
@@ -444,6 +445,16 @@ export default function Admin() {
                 Gestão de Produtos
               </button>
             )}
+
+            {hasPermission('Gestão de Dicas') && (
+              <button
+                className={`${styles.tabButton} ${activeTab === 'dicas' ? styles.activeTab : ''}`}
+                onClick={() => setActiveTab('dicas')}
+              >
+                <span className="icon">💡</span>
+                Dicas do Dia
+              </button>
+            )}
             
             {hasPermission('Configuração de Cabeçalho') && (
               <button
@@ -676,45 +687,12 @@ export default function Admin() {
             <AdminVideos />
           )}
 
-          {activeTab === 'projetos01' && (
-            <div className={styles.content}>
-              <div className={styles.sectionHeader}>
-                <h2>Projetos Futuros 01</h2>
-              </div>
-
-              <div className={styles.placeholderContainer}>
-                <div className={styles.placeholderCard}>
-                  <div className={styles.placeholderIcon}>🏗️</div>
-                  <h3>Em Desenvolvimento</h3>
-                  <p>Esta área está em desenvolvimento e será implementada em breve.</p>
-                  <div className={styles.placeholderImage}>
-                    <div className={styles.imagePlaceholder}>
-                      <span>Conteúdo será implementado</span>
-                    </div>
-                  </div>
-                  <div className={styles.placeholderActions}>
-                    <button className={styles.placeholderButton} disabled>
-                      Em Breve
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className={styles.infoBox}>
-                <h3>Próximos Projetos</h3>
-                <ul>
-                  <li>Área de Downloads</li>
-                  <li>Eventos e Agenda</li>
-                  <li>Testemunhos</li>
-                </ul>
-              </div>
-            </div>
+          {activeTab === 'dicas' && hasPermission('Gestão de Dicas') && (
+            <AdminDicas />
           )}
 
           {activeTab === 'projetos02' && hasPermission('Gestão de Produtos') && (
-            <div className={styles.content}>
-              <AdminProducts />
-            </div>
+            <AdminProducts />
           )}
         </div>
       </main>

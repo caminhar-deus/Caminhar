@@ -6,7 +6,7 @@ import { z } from 'zod';
 // Permissões solicitadas para a configuração
 const permissionsList = [
   'Visão Geral', 'Posts/Artigos', 'Gestão de Músicas', 'Gestão de Vídeos',
-  'Gestão de Produtos', 'Configuração de Cabeçalho', 'Segurança', 'Usuários', 'Auditoria'
+  'Gestão de Produtos', 'Gestão de Dicas', 'Configuração de Cabeçalho', 'Segurança', 'Usuários', 'Auditoria'
 ];
 
 // Componente customizado para selecionar as permissões do cargo via Checkboxes

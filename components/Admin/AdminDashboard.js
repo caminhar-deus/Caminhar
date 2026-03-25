@@ -37,7 +37,7 @@ export default function AdminDashboard({ setActiveTab }) {
     );
   }
 
-  const maxVal = Math.max(stats.posts, stats.musicas, stats.videos, stats.products, stats.users, 1); // Garante que nunca seja 0
+  const maxVal = Math.max(stats.posts || 0, stats.musicas || 0, stats.videos || 0, stats.products || 0, stats.users || 0, stats.dicas || 0, 1); // Garante que nunca seja 0
 
   const statItems = [
     { 
@@ -75,6 +75,15 @@ export default function AdminDashboard({ setActiveTab }) {
       color: '#ff9900', 
       tabId: 'projetos02',
       details: `✅ ${stats.productsPublished || 0} Pub | 📝 ${stats.productsDraft || 0} Rasc`
+    },
+    { 
+      key: 'dicas', 
+      label: 'Dicas', 
+      count: stats.dicas || 0, 
+      icon: '💡', 
+      color: '#f59e0b', 
+      tabId: 'dicas',
+      details: `✅ ${stats.dicasPublished || 0} Pub | 📝 ${stats.dicasDraft || 0} Rasc`
     },
     { 
       key: 'users', 

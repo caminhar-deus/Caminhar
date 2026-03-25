@@ -7,6 +7,7 @@
 │   │   ├── AdminAudit.js
 │   │   ├── AdminCrudBase.js
 │   │   ├── AdminDashboard.js
+│   │   ├── AdminDicas.js
 │   │   ├── AdminMusicas.js
 │   │   ├── AdminPosts.js
 │   │   ├── AdminProducts.js
@@ -552,6 +553,7 @@
 │   │   │   ├── audit.js
 │   │   │   ├── backups.js
 │   │   │   ├── cache.js
+│   │   │   ├── dicas.js
 │   │   │   ├── fetch-ml.js
 │   │   │   ├── fetch-spotify.js
 │   │   │   ├── fetch-youtube.js
@@ -567,6 +569,7 @@
 │   │   │   ├── login.js
 │   │   │   └── logout.js
 │   │   ├── cleanup-test-data.js
+│   │   ├── dicas.js
 │   │   ├── musicas.js
 │   │   ├── placeholder-image.js
 │   │   ├── posts.js
@@ -658,6 +661,7 @@
 │   ├── find-unused.js
 │   ├── generate-load-report.js
 │   ├── init-backup.js
+│   ├── init-dicas.js
 │   ├── init-musicas.js
 │   ├── init-posts.js
 │   ├── init-server.js
@@ -836,4 +840,4 @@
 │       └── videos_validation.test.js
 └── tree.txt
 
-140 directories, 697 files
+140 directories, 701 files
