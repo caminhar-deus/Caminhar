@@ -5,16 +5,15 @@
 ├── components
 │   ├── Admin
 │   │   ├── AdminAudit.js
-│   │   ├── AdminAuditTab.js
 │   │   ├── AdminCrudBase.js
 │   │   ├── AdminDashboard.js
-│   │   ├── AdminMusicasNew.js
-│   │   ├── AdminPostsNew.js
+│   │   ├── AdminMusicas.js
+│   │   ├── AdminPosts.js
 │   │   ├── AdminProducts.js
 │   │   ├── AdminRolesTab.js
 │   │   ├── AdminUsers.js
 │   │   ├── AdminUsersTab.js
-│   │   ├── AdminVideosNew.js
+│   │   ├── AdminVideos.js
 │   │   ├── fields
 │   │   │   ├── ImageUploadField.js
 │   │   │   ├── TextAreaField.js
@@ -45,6 +44,8 @@
 │   │   │   └── styles
 │   │   │       ├── MusicCard.module.css
 │   │   │       └── MusicGallery.module.css
+│   │   ├── Testimonials
+│   │   │   └── index.js
 │   │   └── Video
 │   │       ├── styles
 │   │       │   ├── VideoCard.module.css
@@ -115,12 +116,15 @@
 │   │   │   ├── AdminCrudBase.js.html
 │   │   │   ├── AdminDashboard.js.html
 │   │   │   ├── AdminLogs.js.html
+│   │   │   ├── AdminMusicas.js.html
 │   │   │   ├── AdminMusicasNew.js.html
+│   │   │   ├── AdminPosts.js.html
 │   │   │   ├── AdminPostsNew.js.html
 │   │   │   ├── AdminProducts.js.html
 │   │   │   ├── AdminRolesTab.js.html
 │   │   │   ├── AdminUsers.js.html
 │   │   │   ├── AdminUsersTab.js.html
+│   │   │   ├── AdminVideos.js.html
 │   │   │   ├── AdminVideosNew.js.html
 │   │   │   ├── fields
 │   │   │   │   ├── ImageUploadField.js.html
@@ -214,12 +218,15 @@
 │   │   │   │   ├── AdminCrudBase.js.html
 │   │   │   │   ├── AdminDashboard.js.html
 │   │   │   │   ├── AdminLogs.js.html
+│   │   │   │   ├── AdminMusicas.js.html
 │   │   │   │   ├── AdminMusicasNew.js.html
+│   │   │   │   ├── AdminPosts.js.html
 │   │   │   │   ├── AdminPostsNew.js.html
 │   │   │   │   ├── AdminProducts.js.html
 │   │   │   │   ├── AdminRolesTab.js.html
 │   │   │   │   ├── AdminUsers.js.html
 │   │   │   │   ├── AdminUsersTab.js.html
+│   │   │   │   ├── AdminVideos.js.html
 │   │   │   │   ├── AdminVideosNew.js.html
 │   │   │   │   ├── fields
 │   │   │   │   │   ├── ImageUploadField.js.html
@@ -475,7 +482,6 @@
 │   ├── useAdminCrud.js
 │   ├── usePerformanceMetrics.js
 │   └── useTheme.js
-├── index.js
 ├── jest.config.js
 ├── jest.setup.js
 ├── jest.teardown.js
@@ -489,14 +495,12 @@
 │   │   └── validate.js
 │   ├── auth.js
 │   ├── cache.js
-│   ├── db-example.js
 │   ├── db.js
 │   ├── domain
 │   │   ├── musicas
 │   │   ├── posts
 │   │   └── videos
 │   ├── middleware
-│   │   └── rate-limit-proxy.js
 │   ├── middleware.js
 │   ├── redis.js
 │   └── seo
@@ -542,10 +546,6 @@
 ├── package.json
 ├── package-lock.json
 ├── pages
-│   ├── admin
-│   │   ├── musicas-new.js
-│   │   ├── posts-new.js
-│   │   └── videos-new.js
 │   ├── admin.js
 │   ├── api
 │   │   ├── admin
@@ -743,7 +743,10 @@
 │   ├── integration
 │   │   ├── api
 │   │   │   ├── admin
-│   │   │   │   └── cache.test.js
+│   │   │   │   ├── cache.test.js
+│   │   │   │   └── posts.test.js
+│   │   │   ├── auth
+│   │   │   │   └── login.test.js
 │   │   │   ├── backups.api.test.js
 │   │   │   ├── musicas.create.test.js
 │   │   │   ├── musicas.delete.test.js
@@ -789,7 +792,7 @@
 │   ├── README.md
 │   ├── setup.js
 │   └── unit
-│       ├── AdminPostManager.test.js
+│       ├── AdminPosts.test.js
 │       ├── auth_check.test.js
 │       ├── clean-test-db.test.js
 │       ├── components
@@ -804,6 +807,7 @@
 │       ├── lib
 │       │   ├── api
 │       │   │   ├── errors.test.js
+│       │   │   ├── middleware.test.js
 │       │   │   ├── response.test.js
 │       │   │   └── validate.test.js
 │       │   ├── auth.test.js
@@ -812,17 +816,16 @@
 │       │   │   ├── backup.cleanup.test.js
 │       │   │   ├── backup.logs.test.js
 │       │   │   └── backup.operations.test.js
-│       │   ├── db
-│       │   │   ├── createPost.test.js
-│       │   │   ├── deletePost.test.js
-│       │   │   ├── getAllPosts.test.js
-│       │   │   ├── getPaginatedPosts.test.js
-│       │   │   ├── musicas.test.js
-│       │   │   ├── query.test.js
-│       │   │   ├── saveImage.test.js
-│       │   │   ├── settings.test.js
-│       │   │   └── updatePost.test.js
-│       │   └── db-example.test.js
+│       │   └── db
+│       │       ├── createPost.test.js
+│       │       ├── deletePost.test.js
+│       │       ├── getAllPosts.test.js
+│       │       ├── getPaginatedPosts.test.js
+│       │       ├── musicas.test.js
+│       │       ├── query.test.js
+│       │       ├── saveImage.test.js
+│       │       ├── settings.test.js
+│       │       └── updatePost.test.js
 │       ├── middleware.test.js
 │       ├── musicas_public_api.test.js
 │       ├── scripts
@@ -833,4 +836,4 @@
 │       └── videos_validation.test.js
 └── tree.txt
 
-139 directories, 695 files
+140 directories, 697 files

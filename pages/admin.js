@@ -3,13 +3,13 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Cropper from 'react-easy-crop';
 import styles from '../styles/Admin.module.css';
-import AdminPostsNew from '../components/Admin/AdminPostsNew';
+import AdminPosts from '../components/Admin/AdminPosts';
 import RateLimitViewer from '../components/Admin/Tools/RateLimitViewer';
 import IntegrityCheck from '../components/Admin/Tools/IntegrityCheck';
 import BackupManager from '../components/Admin/Managers/BackupManager';
 import CacheManager from '../components/Admin/Managers/CacheManager';
-import AdminMusicasNew from '../components/Admin/AdminMusicasNew';
-import AdminVideosNew from '../components/Admin/AdminVideosNew';
+import AdminMusicas from '../components/Admin/AdminMusicas';
+import AdminVideos from '../components/Admin/AdminVideos';
 import AdminProducts from '../components/Admin/AdminProducts';
 import toast, { Toaster } from 'react-hot-toast';
 import AdminDashboard from '../components/Admin/AdminDashboard';
@@ -648,7 +648,7 @@ export default function Admin() {
           )}
 
           {activeTab === 'posts' && hasPermission('Posts/Artigos') && (
-            <AdminPostsNew />
+            <AdminPosts />
           )}
 
           {activeTab === 'security' && hasPermission('Segurança') && (
@@ -669,11 +669,11 @@ export default function Admin() {
           )}
 
           {activeTab === 'musicas' && hasPermission('Gestão de Músicas') && (
-            <AdminMusicasNew />
+            <AdminMusicas />
           )}
 
           {activeTab === 'videos' && hasPermission('Gestão de Vídeos') && (
-            <AdminVideosNew />
+            <AdminVideos />
           )}
 
           {activeTab === 'projetos01' && (

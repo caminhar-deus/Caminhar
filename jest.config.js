@@ -23,7 +23,6 @@ export default {
   collectCoverageFrom: [
     'lib/**/*.js',
     'pages/api/**/*.js',
-    'components/**/*.js',
     '!**/*.test.js',
     '!**/node_modules/**',
     '!**/coverage/**',

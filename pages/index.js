@@ -2,6 +2,7 @@ import Head from 'next/head';
 import styles from '../styles/Home.module.css';
 import { useState, useEffect } from 'react';
 import ContentTabs from '../components/Features/ContentTabs';
+import Testimonials from '../components/Features/Testimonials';
 
 export default function Home() {
   const [title, setTitle] = useState('O Caminhar com Deus');
@@ -55,6 +56,8 @@ export default function Home() {
         </div>
 
         <ContentTabs />
+        
+        <Testimonials />
       </main>
     </div>
   );
