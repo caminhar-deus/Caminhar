@@ -11,7 +11,9 @@ const permissionsList = [
 
 // Componente customizado para selecionar as permissões do cargo via Checkboxes
 const PermissionsSelectField = ({ name, value, onChange, label, error, gridColumn }) => {
-  const selected = Array.isArray(value) ? value : [];
+  // Normaliza permissões antigas e remove duplicatas (ex: 'Dicas' para 'Gestão de Dicas')
+  const rawSelected = Array.isArray(value) ? value : [];
+  const selected = [...new Set(rawSelected.map(p => p === 'Dicas' ? 'Gestão de Dicas' : p))];
 
   const togglePerm = (perm) => {
     if (selected.includes(perm)) {
@@ -67,7 +69,9 @@ const columns = [
   {
     key: 'permissions', header: 'Permissões Vinculadas',
     render: (item) => {
-      const perms = Array.isArray(item.permissions) ? item.permissions : [];
+      const rawPerms = Array.isArray(item.permissions) ? item.permissions : [];
+      // Normaliza para exibição e filtra apenas as permissões válidas da lista atual
+      const perms = [...new Set(rawPerms.map(p => p === 'Dicas' ? 'Gestão de Dicas' : p))].filter(p => permissionsList.includes(p));
       return (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
           {perms.map(p => (
