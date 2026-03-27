@@ -1,4 +1,5 @@
 import { authenticate, generateToken } from '../../../../lib/auth';
+import { query } from '../../../../lib/db';
 
 /**
  * External Authentication Login Endpoint (v1)
@@ -35,6 +36,17 @@ export default async function handler(req, res) {
             message: 'Credenciais inválidas',
             timestamp: new Date().toISOString()
           });
+        }
+
+        // Atualiza o timestamp de último login para o usuário
+        // Envolvemos em try/catch para não impedir o login em caso de falha
+        try {
+          await query(
+            'UPDATE users SET last_login_at = NOW() WHERE id = $1',
+            [user.id]
+          );
+        } catch (updateError) {
+          console.error('Falha ao atualizar o timestamp de login:', updateError);
         }
 
         // Generate JWT token

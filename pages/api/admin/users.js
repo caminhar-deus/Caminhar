@@ -59,7 +59,7 @@ export default async function handler(req, res) {
         const totalPages = Math.ceil(total / limit) || 1;
 
         // Nunca retorna as senhas (mesmo em hash) para o Frontend por segurança
-        const dataRes = await query(`SELECT id, username, role, created_at FROM users ${whereClause} ORDER BY id ASC LIMIT $${limitIdx} OFFSET $${offsetIdx}`, params);
+        const dataRes = await query(`SELECT id, username, role, created_at, last_login_at FROM users ${whereClause} ORDER BY id ASC LIMIT $${limitIdx} OFFSET $${offsetIdx}`, params);
 
         return res.status(200).json({ data: dataRes?.rows || [], pagination: { page, limit, total, totalPages } });
 

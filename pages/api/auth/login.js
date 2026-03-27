@@ -28,8 +28,15 @@ export default async function handler(req, res) {
       return res.status(401).json({ message: 'Credenciais inválidas' });
     }
 
-    // Registra o momento do login para as estatísticas do Dashboard
-    await query('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1', [user.id]);
+    // Atualiza o timestamp de último login para o usuário
+    // Envolvemos em try/catch para não impedir o login em caso de falha
+    try {
+      // CORREÇÃO: Usando a coluna correta "last_login_at"
+      await query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
+    } catch (updateError) {
+      // É importante logar o erro, mas não impedir o login por causa disso
+      console.error('Falha ao atualizar o timestamp de login:', updateError);
+    }
 
     // Busca as permissões atreladas ao cargo do usuário
     const roleQuery = await query('SELECT permissions FROM roles WHERE name = $1', [user.role], { log: false });

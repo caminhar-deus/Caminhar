@@ -701,6 +701,7 @@
 │   │   ├── list-table-columns.js
 │   │   └── update-setting.js
 │   └── validate-schema.js
+├── shared
 ├── skills-lock.json
 ├── __snapshots__
 ├── styleMock.js
@@ -752,6 +753,7 @@
 │   │   │   ├── auth
 │   │   │   │   └── login.test.js
 │   │   │   ├── backups.api.test.js
+│   │   │   ├── login.test.js
 │   │   │   ├── musicas.create.test.js
 │   │   │   ├── musicas.delete.test.js
 │   │   │   ├── musicas.pagination.test.js
@@ -762,6 +764,7 @@
 │   │   │   ├── posts.update.api.test.js
 │   │   │   ├── settings.api.test.js
 │   │   │   ├── settings.general.test.js
+│   │   │   ├── stats.test.js
 │   │   │   ├── status.api.test.js
 │   │   │   ├── upload-image.test.js
 │   │   │   ├── v1
@@ -840,4 +843,4 @@
 │       └── videos_validation.test.js
 └── tree.txt
 
-140 directories, 701 files
+141 directories, 703 files

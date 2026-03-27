@@ -6,10 +6,10 @@ loadEnvConfig(process.cwd());
 const { query } = await import('../../lib/db.js');
 
 async function migrate() {
-  console.log('Iniciando migração: Adicionar coluna last_login na tabela users...');
+  console.log('Iniciando migração: Adicionar coluna last_login_at na tabela users...');
   try {
-    await query('ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMP WITH TIME ZONE;');
-    console.log('✅ Coluna "last_login" adicionada com sucesso!');
+    await query('ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP WITH TIME ZONE;');
+    console.log('✅ Coluna "last_login_at" adicionada com sucesso!');
     process.exit(0);
   } catch (error) {
     console.error('❌ Erro:', error);

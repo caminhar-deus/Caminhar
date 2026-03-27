@@ -3,6 +3,8 @@ import AdminCrudBase from './AdminCrudBase';
 import TextField from './fields/TextField';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { useRouter } from 'next/router';
 
 const userSchema = z.object({
@@ -16,6 +18,22 @@ const validateUser = (data) => {
     return 'A senha deve ter no mínimo 6 caracteres para criar um novo acesso.';
   }
   return null;
+};
+
+// Função para formatar a data de forma amigável
+const formatLastLogin = (dateString) => {
+  if (!dateString) {
+    return <span style={{ color: '#888' }}>Nunca</span>;
+  }
+  try {
+    // Formata a data para um formato relativo (ex: "há 2 horas")
+    return formatDistanceToNow(new Date(dateString), {
+      addSuffix: true, // Adiciona o "há" na frente
+      locale: ptBR,    // Usa o formato em português
+    });
+  } catch (error) {
+    return <span style={{ color: 'red' }}>Data inválida</span>;
+  }
 };
 
 // Componente customizado para buscar e listar os cargos dinamicamente
@@ -102,7 +120,12 @@ const columns = [
       <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem', fontWeight: 'bold', backgroundColor: '#f3f4f6', color: '#374151' }}>
         {item.role}
       </span>
-  )}
+  )},
+  { 
+    key: 'last_login_at', 
+    header: 'Último Login', 
+    render: (item) => formatLastLogin(item.last_login_at) 
+  }
 ];
 
 export default function AdminUsersTab() {

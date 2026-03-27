@@ -37,9 +37,9 @@ export default async function handler(req, res) {
       query('SELECT COUNT(*) FROM musicas WHERE publicado = false'),
       query('SELECT COUNT(*) FROM videos WHERE publicado = true'),
       query('SELECT COUNT(*) FROM videos WHERE publicado = false'),
-      query('SELECT COUNT(*) FROM users WHERE last_login >= CURRENT_DATE'), // Logados Hoje
-      query("SELECT COUNT(*) FROM users WHERE last_login >= date_trunc('month', CURRENT_DATE)"), // Logados no Mês
-      query("SELECT COUNT(*) FROM users WHERE last_login >= date_trunc('year', CURRENT_DATE)"), // Logados no Ano
+      query('SELECT COUNT(*) FROM users WHERE last_login_at >= CURRENT_DATE'), // Logados Hoje
+      query("SELECT COUNT(*) FROM users WHERE last_login_at >= date_trunc('month', CURRENT_DATE)"), // Logados no Mês
+      query("SELECT COUNT(*) FROM users WHERE last_login_at >= date_trunc('year', CURRENT_DATE)"), // Logados no Ano
       query('SELECT COUNT(*) FROM dicas'),
       query('SELECT COUNT(*) FROM dicas WHERE published = true'),
       query('SELECT COUNT(*) FROM dicas WHERE published = false')
