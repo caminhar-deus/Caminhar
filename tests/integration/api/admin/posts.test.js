@@ -15,13 +15,15 @@ jest.mock('../../../../lib/db', () => ({
 }));
 
 jest.mock('../../../../lib/cache', () => ({
-  invalidateCache: jest.fn()
+  invalidateCache: jest.fn(),
+  checkRateLimit: jest.fn().mockResolvedValue(false), // Mock para o rate limit
 }));
 
 // Ignora verificação de Token real
 jest.mock('../../../../lib/auth', () => ({
   withAuth: (fn) => (req, res) => {
-    req.user = { username: 'admin_test' };
+    // Adiciona um 'role' para testar a lógica de permissão da API
+    req.user = { username: 'test_editor', role: 'editor' };
     return fn(req, res);
   }
 }));
@@ -29,6 +31,9 @@ jest.mock('../../../../lib/auth', () => ({
 describe('Integração: API de Admin Posts (/api/admin/posts)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Mock padrão para a consulta de permissões para evitar TypeErrors.
+    // Simula um usuário com as permissões necessárias para os testes.
+    query.mockResolvedValue({ rows: [{ permissions: ['Posts/Artigos'] }] });
   });
 
   it('GET: deve retornar a lista paginada de posts', async () => {
@@ -65,7 +70,10 @@ describe('Integração: API de Admin Posts (/api/admin/posts)', () => {
 
   it('DELETE: deve excluir um post com sucesso', async () => {
     const { req, res } = createMocks({ method: 'DELETE', body: { id: 1 } });
-    query.mockResolvedValueOnce({ rows: [{ title: 'Post Antigo' }] }); // Consulta para o Log
+    // A primeira chamada a query é para permissões (mockada no beforeEach, mas sobrescrita aqui para clareza)
+    // A segunda chamada é para buscar o título para o log de auditoria
+    query.mockResolvedValueOnce({ rows: [{ permissions: ['Posts/Artigos'] }] })
+         .mockResolvedValueOnce({ rows: [{ title: 'Post Antigo' }] });
     deletePost.mockResolvedValueOnce({ id: 1 });
     
     await handler(req, res);

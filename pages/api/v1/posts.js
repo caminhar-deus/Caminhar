@@ -1,6 +1,15 @@
 import { getOrSetCache, invalidateCache } from '../../../lib/cache';
 import * as db from '../../../lib/db';
 import { getAuthToken, verifyToken } from '../../../lib/auth';
+import { z } from 'zod';
+
+// Reutiliza o mesmo schema de validação do endpoint de admin para consistência
+const postCreateSchema = z.object({
+  title: z.string().min(1, 'Título é obrigatório'),
+  slug: z.string().min(1, 'Slug é obrigatório'),
+  content: z.string().min(1, 'Conteúdo é obrigatório'),
+  // Adicione outros campos conforme necessário (excerpt, image_url, etc.)
+});
 
 export default async function handler(req, res) {
   switch (req.method) {
@@ -19,7 +28,7 @@ async function handleGet(req, res) {
     // TTL: 3600 segundos (1 hora)
     const posts = await getOrSetCache('posts:public:all', async () => {
       // Busca apenas posts publicados, ordenados por data
-      const result = await db.query(
+      const result = await db.query( // Assumindo que db.query existe e funciona
         `SELECT id, title, slug, summary, image_url, created_at 
          FROM posts 
          WHERE published = true 
@@ -55,13 +64,20 @@ async function handlePost(req, res) {
       return res.status(401).json({ success: false, message: 'Token inválido' });
     }
 
-    // Validação básica
-    const { title, slug, content } = req.body;
-    if (!title || !slug || !content) {
-      return res.status(400).json({ success: false, message: 'Campos obrigatórios faltando' });
+    // NOTA: Considerar adicionar verificação de role/permissão aqui se necessário.
+    // Ex: if (user.role !== 'api_user') { ... }
+
+    // Validação de entrada robusta com Zod
+    const validationResult = postCreateSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Dados inválidos para criação de post', 
+        errors: validationResult.error.flatten().fieldErrors 
+      });
     }
 
-    const newPost = await db.createPost(req.body);
+    const newPost = await db.createPost(validationResult.data);
 
     // Invalida o cache da lista pública
     await invalidateCache('posts:public:all');

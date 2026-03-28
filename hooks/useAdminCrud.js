@@ -14,7 +14,7 @@ export function useAdminCrud({
   const [formData, setFormData] = useState(initialFormData);
   const [isEditing, setIsEditing] = useState(null); // Armazena o ID do item em edição
   const [loading, setLoading] = useState(true); // Começa como true na primeira carga
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
   
   // Estado da paginação
   const [currentPage, setCurrentPage] = useState(1);
@@ -22,7 +22,7 @@ export function useAdminCrud({
 
   const fetchData = useCallback(async (page = 1) => {
     setLoading(true);
-    setError('');
+    setError(null);
     try {
       const url = usePagination ? `${apiEndpoint}?page=${page}&limit=${itemsPerPage}` : apiEndpoint;
       const response = await fetch(url, {
@@ -53,7 +53,7 @@ export function useAdminCrud({
       }
 
     } catch (err) {
-      setError(err.message);
+      setError({ message: err.message });
       console.error("Erro ao buscar dados:", err.message);
     } finally {
       setLoading(false);
@@ -96,22 +96,18 @@ export function useAdminCrud({
 
   const handleSubmit = async (e, validate) => {
     e.preventDefault();
-    
-    const validationError = validate ? validate() : null;
-    if (validationError) {
-      setError(validationError);
-      // Limpa o erro após alguns segundos
-      setTimeout(() => setError(''), 5000);
-      return;
-    }
 
     setLoading(true);
-    setError('');
-
-    const method = isEditing ? 'PUT' : 'POST';
-    const body = JSON.stringify(isEditing ? { ...formData, id: isEditing } : formData);
+    setError(null);
 
     try {
+      // A validação agora é executada dentro do try/catch.
+      // Se falhar, ela lançará um erro que será pego pelo bloco catch.
+      if (validate) validate();
+
+      const method = isEditing ? 'PUT' : 'POST';
+      const body = JSON.stringify(isEditing ? { ...formData, id: isEditing } : formData);
+
       const response = await fetch(apiEndpoint, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -126,15 +122,26 @@ export function useAdminCrud({
       }
 
       const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(result.error || result.message || 'Ocorreu um erro ao salvar.');
+      if (!response.ok) {
+        // Cria um erro que inclui os detalhes de validação da API
+        const error = new Error(result.message || result.error || 'Ocorreu um erro ao salvar.');
+        error.errors = result.errors; // Anexa o objeto de erros de campo
+        throw error;
+      }
 
+      toast.success(isEditing ? 'Item atualizado com sucesso!' : 'Item criado com sucesso!');
       resetForm();
       await fetchData(isEditing ? currentPage : 1); // Volta para a primeira página ao criar novo item
       if (onSuccess) onSuccess(result);
 
     } catch (err) {
-      setError(err.message);
-      console.error("Erro ao submeter:", err.message);
+      // Armazena o objeto de erro completo no estado para ser usado na UI
+      const errorPayload = { message: err.message };
+      if (err.errors) {
+        errorPayload.errors = err.errors;
+      }
+      setError(errorPayload);
+      console.error("Erro ao submeter:", err);
     } finally {
       setLoading(false);
     }

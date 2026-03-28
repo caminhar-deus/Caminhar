@@ -14,7 +14,10 @@ const postSchema = z.object({
   slug: z.string().min(1, 'Slug é obrigatório').regex(/^[a-z0-9-]+$/, 'Slug deve conter apenas letras minúsculas, números e hífens'),
   excerpt: z.string().max(500, 'Resumo deve ter no máximo 500 caracteres').optional(),
   content: z.string().optional(),
-  image_url: z.string().optional(),
+  image_url: z.string().refine(val => 
+    !val || val === '' || val.startsWith('http') || val.startsWith('/'), {
+    message: 'Por favor, insira uma URL completa (https://...) ou um caminho local válido (/uploads/...).'
+  }).optional(),
   published: z.boolean().optional()
 });
 
@@ -175,34 +178,35 @@ export default function AdminPostsNew() {
    */
   const validatePost = (formData) => {
     if (formData.published && !formData.image_url) {
-      return 'Para publicar um post, é necessário vincular uma imagem de capa.';
+      // Lança um erro estruturado para ser pego pelo hook e exibido no campo correto.
+      const error = new Error('Para publicar um post, é necessário vincular uma imagem de capa.');
+      error.errors = {
+        image_url: ['A imagem de capa é obrigatória para posts publicados.']
+      };
+      throw error;
     }
-    return null;
   };
 
   /**
    * Renderizador customizado para campos especiais
    * Implementa geração automática de slug a partir do título
    */
-  const renderCustomFormField = (fieldConfig, formData, handleInputChange, setFieldValue) => {
+  const renderCustomFormField = (fieldConfig, formData, handleInputChange, setFieldValue, error) => {
     // Campo de slug com geração automática
     if (fieldConfig.name === 'slug') {
-      const handleTitleBlur = () => {
-        if (!formData.slug && formData.title) {
-          setFieldValue('slug', generateSlug(formData.title));
-        }
-      };
+      const fieldError = error?.errors?.[fieldConfig.name]?.[0];
 
       return (
         <div key="slug" style={{ gridColumn: fieldConfig.gridColumn || 'span 1' }}>
           <fieldConfig.component
             name="slug"
             label={fieldConfig.label}
-            value={formData.slug}
+            value={formData.slug ?? ''}
             onChange={handleInputChange}
             required={fieldConfig.required}
             placeholder={fieldConfig.placeholder}
             hint={fieldConfig.hint}
+            error={fieldError}
           />
         </div>
       );
@@ -210,18 +214,15 @@ export default function AdminPostsNew() {
 
     // Campo de título com onBlur para gerar slug
     if (fieldConfig.name === 'title') {
-      const originalOnChange = handleInputChange;
-      const handleChangeWithBlur = (e) => {
-        originalOnChange(e);
-      };
+      const fieldError = error?.errors?.[fieldConfig.name]?.[0];
 
       return (
         <div key="title" style={{ gridColumn: fieldConfig.gridColumn || 'span 1' }}>
           <TextField
             name="title"
             label={fieldConfig.label}
-            value={formData.title}
-            onChange={handleChangeWithBlur}
+            value={formData.title ?? ''}
+            onChange={handleInputChange}
             onBlur={() => {
               if (!formData.slug && formData.title) {
                 setFieldValue('slug', generateSlug(formData.title));
@@ -229,6 +230,7 @@ export default function AdminPostsNew() {
             }}
             required={fieldConfig.required}
             placeholder={fieldConfig.placeholder}
+            error={fieldError}
           />
         </div>
       );

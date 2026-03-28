@@ -14,10 +14,22 @@ const userSchema = z.object({
 });
 
 const validateUser = (data) => {
+  // Validação para novos usuários: a senha é obrigatória e deve ter no mínimo 6 caracteres.
   if (!data.id && (!data.password || data.password.trim().length < 6)) {
-    return 'A senha deve ter no mínimo 6 caracteres para criar um novo acesso.';
+    const error = new Error('A senha é obrigatória e deve ter no mínimo 6 caracteres.');
+    error.errors = {
+      password: ['A senha deve ter no mínimo 6 caracteres para novos usuários.']
+    };
+    throw error;
   }
-  return null;
+  // Validação para atualização: se uma nova senha for fornecida, ela também deve ter no mínimo 6 caracteres.
+  if (data.id && data.password && data.password.trim().length > 0 && data.password.trim().length < 6) {
+    const error = new Error('A nova senha deve ter no mínimo 6 caracteres.');
+    error.errors = {
+      password: ['A nova senha deve ter no mínimo 6 caracteres.']
+    };
+    throw error;
+  }
 };
 
 // Função para formatar a data de forma amigável

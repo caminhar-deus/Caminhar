@@ -93,7 +93,7 @@
     "@jest/globals": "^30.3.0",
     "@next/env": "^16.2.1",
     "@upstash/redis": "^1.37.0",
-    "axios": "^1.13.6",
+    "axios": "^1.14.0",
     "bcryptjs": "^3.0.3",
     "cookie": "^1.1.1",
     "cors": "^2.8.6",

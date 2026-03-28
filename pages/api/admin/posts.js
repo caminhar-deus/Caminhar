@@ -9,7 +9,10 @@ const postCreateSchema = z.object({
   slug: z.string().min(1, 'Slug é obrigatório'),
   excerpt: z.string().optional(),
   content: z.string().optional(),
-  image_url: z.string().url('URL da imagem inválida').optional().or(z.literal('')), // Permite string vazia ou URL válida
+  image_url: z.string().refine(val => 
+    !val || val === '' || val.startsWith('http') || val.startsWith('/'), {
+    message: 'A URL da imagem deve ser um link completo (https://...) ou um caminho local válido (/uploads/...).'
+  }).optional(),
   published: z.boolean().optional(),
 });
 
@@ -18,7 +21,10 @@ const postUpdateDataSchema = z.object({ // Schema para os dados do corpo da requ
   slug: z.string().min(1, 'Slug não pode ser vazio').optional(),
   excerpt: z.string().optional(),
   content: z.string().optional(),
-  image_url: z.string().url('URL da imagem inválida').optional().or(z.literal('')),
+  image_url: z.string().refine(val => 
+    !val || val === '' || val.startsWith('http') || val.startsWith('/'), {
+    message: 'A URL da imagem deve ser um link completo (https://...) ou um caminho local válido (/uploads/...).'
+  }).optional(),
   published: z.boolean().optional(),
 });
 
@@ -70,13 +76,6 @@ async function handler(req, res) {
         
         const result = await getPaginatedPosts(page, limit, search);
         
-        // Log para diagnóstico: Verifique isso no terminal onde o servidor está rodando
-        console.log('🔍 Admin Posts GET:', { 
-          total: result.pagination.total, 
-          retornados: result.posts.length,
-          primeiroItem: result.posts[0] ? result.posts[0].title : 'Nenhum'
-        });
-
         res.status(200).json(result);
       } catch (error) {
         console.error('Error fetching posts:', error);
@@ -155,7 +154,7 @@ async function handler(req, res) {
           return res.status(404).json({ message: 'Post não encontrado' });
         }
         
-        if (user) await logActivity(user.username, 'ATUALIZAR POST', 'POST', id, `Atualizou o artigo: ${title}`, ip);
+        if (user) await logActivity(user.username, 'ATUALIZAR POST', 'POST', postId, `Atualizou o artigo: ${updatedPost.title}`, ip);
         
         await invalidateCache('posts:public:all');
         res.status(200).json(updatedPost);

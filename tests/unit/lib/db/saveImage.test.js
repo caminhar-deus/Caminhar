@@ -1,6 +1,6 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { mockQuery } from 'pg';
-import { saveImage } from '../../../../lib/db.js';
+import { mockQuery, restorePoolImplementation } from 'pg';
+import { saveImage, resetPool } from '../../../../lib/db.js';
 
 // Mock do 'pg' (automático via __mocks__/pg.js)
 jest.mock('pg');
@@ -8,7 +8,8 @@ jest.mock('pg');
 describe('saveImage (Salvar Imagem)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockQuery.mockReset();
+    restorePoolImplementation(); // Restaura Pool após clearAllMocks apagar sua implementação
+    resetPool();                 // Descarta o pool cacheado para forçar new Pool() no próximo uso
     // Define um retorno padrão para evitar erros de 'undefined' em chamadas não mockadas
     mockQuery.mockResolvedValue({ rows: [], rowCount: 0 });
   });

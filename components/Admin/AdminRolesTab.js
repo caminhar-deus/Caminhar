@@ -28,7 +28,7 @@ const PermissionsSelectField = ({ name, value, onChange, label, error, gridColum
       <label style={{ fontWeight: '600', fontSize: '0.9rem', color: '#374151' }}>{label}</label>
       <div style={{
         display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-        gap: '12px', padding: '16px', border: '1px solid #d1d5db', borderRadius: '6px', backgroundColor: '#f9fafb'
+        gap: '12px', padding: '16px', border: `1px solid ${error ? '#ef4444' : '#d1d5db'}`, borderRadius: '6px', backgroundColor: '#f9fafb', transition: 'border-color 0.2s ease-in-out'
       }}>
         {permissionsList.map(perm => (
           <label key={perm} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem' }}>

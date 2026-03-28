@@ -99,8 +99,15 @@ export default function AdminCrudBase({
 
   // Efeito para exibir notificações de erro automaticamente
   useEffect(() => {
-    if (error) {
-      toast.error(error);
+    if (error?.message) {
+      // Mostra um toast genérico apenas se não houver erros de campo específicos,
+      // ou um mais amigável se for um erro de validação.
+      if (error.errors) {
+        // Se for um erro de validação com detalhes de campo, mostra um toast que guia o usuário.
+        toast.error('Verifique os campos em vermelho no formulário.');
+      } else {
+        toast.error(error.message);
+      }
     }
   }, [error]);
 
@@ -189,29 +196,26 @@ export default function AdminCrudBase({
   const validateForm = () => {
     // Validação com Zod
     if (validationSchema) {
-      try {
-        validationSchema.parse(formData);
-      } catch (err) {
-        if (err.errors && err.errors.length > 0) {
-          return err.errors[0].message;
-        }
+      const result = validationSchema.safeParse(formData);
+      if (!result.success) {
+        // Lança um erro estruturado, idêntico ao da API, para ser capturado pelo handleSubmit.
+        const error = new Error('Dados inválidos. Verifique os campos do formulário.');
+        error.errors = result.error.flatten().fieldErrors;
+        throw error;
       }
     }
     
     // Validação customizada
     if (validate) {
-      const customError = validate(formData);
-      if (customError) return customError;
+      validate(formData);
     }
-    
-    return null;
   };
 
   // Renderiza um campo do formulário
   const renderField = (fieldConfig) => {
     // Se tem renderizador customizado para este campo
     if (renderCustomFormField) {
-      const customField = renderCustomFormField(fieldConfig, formData, handleInputChange, setFieldValue);
+      const customField = renderCustomFormField(fieldConfig, formData, handleInputChange, setFieldValue, error);
       if (customField) return customField;
     }
 
@@ -223,7 +227,8 @@ export default function AdminCrudBase({
     }
 
     const fieldValue = formData[name] ?? '';
-    const fieldError = error && error.includes(name) ? error : '';
+    // Extrai a mensagem de erro específica para este campo, se existir.
+    const fieldError = error?.errors?.[name]?.[0];
 
     return (
       <div key={name} style={{ gridColumn: gridColumn || 'span 1' }}>

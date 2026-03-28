@@ -21,8 +21,12 @@ export default function BlogPost() {
         // (Idealmente, sua API teria um endpoint específico como /api/posts?slug=...)
         const res = await fetch('/api/posts');
         if (res.ok) {
-          const posts = await res.json();
-          const foundPost = posts.find(p => p.slug === slug);
+          const responseData = await res.json();
+          // CORREÇÃO: Acessar a propriedade 'data' que contém o array de posts
+          let foundPost = null;
+          if (responseData.success && Array.isArray(responseData.data)) {
+            foundPost = responseData.data.find(p => p.slug === slug);
+          }
           setPost(foundPost || null);
         }
       } catch (error) {

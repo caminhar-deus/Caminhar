@@ -1,4 +1,6 @@
 import { getRecentPosts } from '../../lib/db.js';
+import { getOrSetCache } from '../../lib/cache.js';
+import { z } from 'zod';
 
 export default async function handler(req, res) {
   // Permite apenas método GET
@@ -8,16 +10,35 @@ export default async function handler(req, res) {
   }
 
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    // Validação de entrada com Zod para maior robustez
+    const querySchema = z.object({
+      page: z.coerce.number().int().positive().default(1),
+      limit: z.coerce.number().int().positive().default(10),
+    });
 
-    // Busca apenas posts publicados (lógica encapsulada no getRecentPosts)
-    const posts = await getRecentPosts(limit, page);
+    const validation = querySchema.safeParse(req.query);
+    if (!validation.success) {
+      return res.status(400).json({ success: false, message: 'Parâmetros inválidos', errors: validation.error.flatten().fieldErrors });
+    }
+
+    const { page, limit } = validation.data;
+    const cacheKey = `posts:public:page:${page}:limit:${limit}`;
+
+    // Implementa cache para melhorar a performance
+    const result = await getOrSetCache(cacheKey, async () => {
+      // A função que busca os dados só será executada se não houver cache
+      return await getRecentPosts(limit, page);
+    }, 3600); // Cache de 1 hora
     
-    // Retorna os dados como JSON
-    return res.status(200).json(posts);
+    // Retorna os dados em um formato padronizado
+    return res.status(200).json({
+      success: true,
+      data: result.data,
+      pagination: result.pagination,
+    });
   } catch (error) {
     console.error('API Error fetching posts:', error);
-    return res.status(500).json({ message: 'Erro interno ao carregar posts' });
+    // Resposta de erro padronizada
+    return res.status(500).json({ success: false, message: 'Erro interno ao carregar posts' });
   }
 }

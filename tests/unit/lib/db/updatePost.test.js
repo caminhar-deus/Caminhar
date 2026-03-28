@@ -1,6 +1,6 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { mockQuery } from 'pg';
-import { updatePost } from '../../../../lib/db.js';
+import { mockQuery, restorePoolImplementation } from 'pg';
+import { updatePost, resetPool } from '../../../../lib/db.js';
 
 // Mock do 'pg' (automático via __mocks__/pg.js)
 jest.mock('pg');
@@ -8,8 +8,8 @@ jest.mock('pg');
 describe('updatePost', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockQuery.mockReset();
-    // Define um retorno padrão para evitar erros de 'undefined' em chamadas não mockadas
+    restorePoolImplementation();
+    resetPool();
     mockQuery.mockResolvedValue({ rows: [], rowCount: 0 });
   });
 

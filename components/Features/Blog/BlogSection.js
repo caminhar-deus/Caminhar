@@ -12,8 +12,18 @@ export default function BlogSection({ limit }) {
       try {
         const res = await fetch('/api/posts');
         if (res.ok) {
-          const data = await res.json();
-          setPosts(data);
+          const responseData = await res.json();
+          // CRITICAL FIX: Access the 'data' property from the API response
+          if (responseData.success && Array.isArray(responseData.data)) {
+            setPosts(responseData.data);
+          } else {
+            console.error('API returned success: false or data is not an array:', responseData);
+            setPosts([]); // Ensure posts is an array even on API logic error
+          }
+        } else {
+          const errorData = await res.json();
+          console.error('API Error fetching posts:', res.status, errorData.message || 'Unknown error');
+          setPosts([]); // Set to empty array on HTTP error
         }
       } catch (error) {
         console.error('Erro ao carregar posts:', error);

@@ -1,16 +1,15 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { mockQuery } from 'pg';
-import { query } from '../../../../lib/db.js';
+import { mockQuery, restorePoolImplementation } from 'pg';
+import { query, resetPool } from '../../../../lib/db.js';
 
 // Mock do 'pg' (automático via __mocks__/pg.js)
 jest.mock('pg');
 
 describe('Base Query Wrapper', () => {
     beforeEach(() => {
-        // Reseta o mock para garantir um estado limpo para cada teste
         jest.clearAllMocks();
-        mockQuery.mockReset();
-        // Define um retorno padrão para robustez
+        restorePoolImplementation();
+        resetPool();
         mockQuery.mockResolvedValue({ rows: [], rowCount: 0 });
     });
 
