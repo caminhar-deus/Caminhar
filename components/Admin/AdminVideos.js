@@ -98,6 +98,7 @@ const columns = [
   {
     key: 'url_youtube',
     header: 'YouTube',
+    width: '350px',
     render: (item) => (
       <div>
         <a 
@@ -114,7 +115,7 @@ const columns = [
             style={{ borderRadius: '8px' }}
             src={`https://www.youtube.com/embed/${item.url_youtube.split('/').pop().split('?')[0]}?autoplay=0`}
             width="100%"
-            height="160"
+            height="200"
             frameBorder="0"
             allowFullScreen
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
