@@ -1,45 +1,40 @@
-# Sistema de Cache - Caminhar com Deus
+# Sistema de Cache
 
 ## Visão Geral
 
-Sistema de cache com Redis para otimização de performance, reduzindo consultas ao banco de dados em 80-90%.
+O sistema de cache do projeto utiliza **Redis (via Upstash)** para otimizar a performance da aplicação, reduzindo drasticamente o número de consultas ao banco de dados PostgreSQL. O objetivo é entregar respostas mais rápidas para requisições frequentes e diminuir a carga no servidor.
 
 ## Estratégia de Cache
 
-### Cache-Aside Pattern
-1. **Leitura**: Verifica cache → busca no banco → armazena no cache
-2. **Escrita**: Atualiza banco → invalida cache correspondente
-3. **Fallback**: Sistema continua operando se Redis falhar
+A implementação segue o padrão **Cache-Aside**:
 
-### Rotas com Cache
+1.  **Leitura:** A aplicação primeiro tenta buscar os dados no cache (Redis).
+2.  **Cache Hit:** Se os dados são encontrados, eles são retornados imediatamente ao cliente.
+3.  **Cache Miss:** Se os dados não estão no cache, a aplicação busca a informação no banco de dados, salva uma cópia no Redis com um tempo de vida (TTL) definido, e então retorna os dados ao cliente.
 
-| Rota | TTL | Descrição |
-|------|-----|-----------|
-| `GET /api/v1/settings` | 30 min | Configurações do site |
-| `GET /api/v1/posts` | 1 hora | Posts públicos do blog |
-| `GET /api/admin/musicas` | 1 hora | Músicas públicas |
+O sistema também possui um **fallback seguro**: se o Redis estiver indisponível, a aplicação continua funcionando, buscando os dados diretamente do banco de dados, garantindo a disponibilidade do serviço.
 
-## Implementação
+## Implementação Principal
 
-### Cache Layer (`lib/cache.js`)
+A lógica central está encapsulada na função `getOrSetCache` em `lib/cache.js`.
 
 ```javascript
 export async function getOrSetCache(key, fetchFunction, ttlSeconds = 3600) {
   // 1. Tenta obter do Redis
   const cachedData = await redis.get(key);
-  
+
   if (cachedData) {
     return JSON.parse(cachedData); // Cache Hit
   }
-  
+
   // 2. Busca do banco de dados (Cache Miss)
   const data = await fetchFunction();
-  
+
   // 3. Salva no Redis com TTL
   if (data) {
     await redis.set(key, JSON.stringify(data), { ex: ttlSeconds });
   }
-  
+
   return data;
 }
 ```

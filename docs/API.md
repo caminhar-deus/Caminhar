@@ -1,186 +1,90 @@
-# API Caminhar com Deus
+# Documentação da API - Projeto Caminhar
 
-Documentação da API RESTful para consumo externo.
+Este documento descreve os principais endpoints da API do projeto, divididos entre a API Pública (para consumo do site) e a API Administrativa (para o painel de gestão).
 
-## Visão Geral
+## Autenticação
 
-A API Caminhar fornece acesso programático aos recursos do sistema. Projetada para consumo externo por aplicativos clientes e sistemas integrados.
+- **API Pública**: Os endpoints são abertos, mas protegidos por um sistema de *Rate Limiting* para evitar abuso.
+- **API Administrativa**: Todos os endpoints em `/api/admin/*` são protegidos e exigem um token JWT válido no cabeçalho `Authorization`.
+  ```
+  Authorization: Bearer <seu-token-jwt>
+  ```
 
-## Configuração
+---
 
-### URL Base
-```
-https://seu-dominio.com/api/v1/
-```
+## 1. API Pública
 
-### Headers Requeridos
-```
-Authorization: Bearer SEU_TOKEN_JWT
-Content-Type: application/json
-```
+Endpoints otimizados para performance, com cache, para servir o conteúdo do site.
 
-### Respostas Padrão
+### `GET /api/posts`
 
-**Sucesso:**
+Retorna uma lista paginada de posts publicados. Suporta busca por termo.
+
+**Parâmetros (Query)**:
+
+- `page` (opcional): Número da página. Padrão: `1`.
+- `limit` (opcional): Itens por página. Padrão: `10`, Máximo: `100`.
+- `search` (opcional): Termo para buscar no título e conteúdo dos posts.
+
+**Exemplo de Resposta (Sucesso `200 OK`)**:
+
 ```json
 {
   "success": true,
-  "data": { ... },
-  "message": "Mensagem descritiva",
-  "timestamp": "2026-01-27T00:00:00.000Z"
+  "data": [
+    {
+      "id": 1,
+      "title": "Título do Post",
+      "slug": "titulo-do-post",
+      "excerpt": "Um breve resumo do post...",
+      "image_url": "/uploads/imagem.png",
+      "published": true,
+      "created_at": "2026-03-29T12:00:00.000Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 1,
+    "totalPages": 1
+  }
 }
 ```
 
-**Erro:**
-```json
-{
-  "error": "Tipo de erro",
-  "message": "Mensagem de erro",
-  "timestamp": "2026-01-27T00:00:00.000Z"
-}
-```
+---
 
-## Endpoints Principais
+## 2. API Administrativa
 
-### Autenticação
+Endpoints para gerenciar o conteúdo através do painel de administração.
 
-**POST /api/v1/auth/login**
-- Autentica usuário e retorna token JWT
-- Corpo: `{ "username": "admin", "password": "senha" }`
-- Resposta: `{ "token": "eyJ...", "expires_in": 3600 }`
+### Recurso: Posts (`/api/admin/posts`)
 
-**GET /api/v1/auth/check**
-- Valida token JWT
-- Headers: `Authorization: Bearer SEU_TOKEN_JWT`
-- Resposta: `{ "authenticated": true, "user": { "userId": 1 } }`
+- **`GET /`**: Retorna uma lista paginada de **todos** os posts (publicados e rascunhos).
+- **`POST /`**: Cria um novo post.
+- **`PUT /`**: Atualiza um post existente.
+- **`DELETE /`**: Deleta um post.
 
-### Health e Status
+### Recurso: Vídeos (`/api/admin/videos`)
 
-**GET /api/v1/health**
-- Verificação rápida de disponibilidade do serviço (Health Check)
-- Resposta: `{ "status": "ok", "timestamp": "2026-03-20T12:00:00.000Z" }`
+- **`GET /`**: Retorna uma lista paginada de todos os vídeos.
+- **`POST /`**: Cria um novo vídeo.
+- **`PUT /`**: Atualiza um vídeo existente ou reordena a lista.
+- **`DELETE /`**: Deleta um vídeo.
 
-**GET /api/v1/status**
-- Retorna status da API e sistema
-- Resposta: `{ "api": { "version": "1.0", "status": "operational" } }`
+### Recurso: Configurações (`/api/settings`)
 
-### Posts
+- **`GET /`**: Retorna todas as configurações do site.
+- **`PUT /`**: Atualiza uma ou mais configurações.
 
-**GET /api/v1/posts**
-- Lista todos os posts publicados
-- Headers: `Authorization: Bearer SEU_TOKEN_JWT` (opcional)
-- Resposta: `{ "data": [{ "id": 1, "title": "Título", "slug": "titulo" }] }`
+### Utilitários
 
-**POST /api/v1/posts**
-- Cria novo post (requer autenticação)
-- Headers: `Authorization: Bearer SEU_TOKEN_JWT`
-- Corpo: `{ "title": "Título", "content": "Conteúdo", "published": true }`
+#### `POST /api/upload-image`
 
-### Vídeos
+Realiza o upload de uma imagem para o servidor. Espera um `multipart/form-data`.
 
-**GET /api/v1/videos**
-- Lista vídeos com paginação
-- Parâmetros: `page=1&limit=10`
-- Resposta: `{ "data": { "videos": [...], "pagination": { "page": 1, "total": 50 } } }`
+#### `POST /api/admin/fetch-youtube`
 
-**POST /api/v1/videos**
-- Cria novo vídeo (requer autenticação)
-- Corpo: `{ "titulo": "Título", "url_youtube": "https://...", "publicado": true }`
+Busca metadados (como o título) de um vídeo do YouTube a partir de uma URL.
 
-**PUT /api/v1/videos/{id}**
-- Atualiza vídeo existente
-- Corpo: `{ "titulo": "Novo Título", "publicado": false }`
-
-**DELETE /api/v1/videos/{id}**
-- Deleta vídeo existente
-- Resposta: `{ "message": "Vídeo deletado com sucesso" }`
-
-### Configurações
-
-**GET /api/v1/settings**
-- Lista todas as configurações
-- Headers: `Authorization: Bearer SEU_TOKEN_JWT`
-- Parâmetro: `key=chave_específica` (opcional)
-
-**POST /api/v1/settings**
-- Cria nova configuração
-- Corpo: `{ "key": "chave", "value": "valor", "type": "string" }`
-
-**PUT /api/v1/settings**
-- Atualiza configuração existente
-- Corpo: `{ "key": "chave", "value": "novo_valor" }`
-
-## Códigos de Status
-
-| Código | Descrição |
-|--------|-----------|
-| 200 | OK - Requisição bem-sucedida |
-| 201 | Created - Recurso criado |
-| 400 | Bad Request - Dados inválidos |
-| 401 | Unauthorized - Autenticação requerida |
-| 403 | Forbidden - Permissões insuficientes |
-| 404 | Not Found - Recurso não encontrado |
-| 429 | Too Many Requests - Limite excedido |
-| 500 | Internal Server Error - Erro no servidor |
-
-## Rate Limiting
-
-- Limite: 100 requisições por 15 minutos por endpoint
-- Header: `Retry-After` quando limite excedido
-- Status: 429 Too Many Requests
-
-## Exemplos de Uso
-
-### JavaScript
-```javascript
-// Login
-const response = await fetch('/api/v1/auth/login', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ username: 'admin', password: 'senha' })
-});
-const { token } = await response.json();
-
-// Acessar endpoint protegido
-const posts = await fetch('/api/v1/posts', {
-  headers: { 'Authorization': `Bearer ${token}` }
-});
-```
-
-### cURL
-```bash
-# Login
-curl -X POST /api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"senha"}'
-
-# Acessar endpoint protegido
-curl -X GET /api/v1/settings \
-  -H "Authorization: Bearer SEU_TOKEN_JWT"
-```
-
-## Segurança
-
-- HTTPS obrigatório
-- Tokens JWT expiram após 1 hora
-- CORS configurável
-- Rate limiting para proteção contra abuso
-- Validação de entrada em todos os endpoints
-
-## Cache
-
-- Sistema de cache Redis para endpoints de leitura
-- Cache hit rate: >80% para configurações
-- Response time: <100ms (cache hit), <500ms (cache miss)
-- Dados públicos apenas em cache
-
-## Versões
-
-- **v1.0**: Autenticação, settings, status
-- **v1.2.0**: Posts, vídeos, cache avançado
-- **v1.7.0**: Testes completos, arquitetura de testes
-
-## Suporte
-
-- Email: suporte@caminhar.com
-- GitHub: https://github.com/caminhar-deus/Caminhar
+- **Corpo da Requisição**: `{"url": "https://www.youtube.com/watch?v=..."}`
+- **Resposta de Sucesso**: `{"title": "Título do Vídeo"}`

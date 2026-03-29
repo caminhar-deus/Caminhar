@@ -1,46 +1,35 @@
-# Guia de Deploy - Caminhar com Deus
+# Guia de Deploy
 
 ## Visão Geral
 
-Guia completo para deploy da aplicação em VPS e Vercel, com foco em produção segura e performática.
+Este guia cobre o processo de deploy da aplicação em dois ambientes principais: **VPS (Virtual Private Server)** e **Vercel**.
 
 ## Aviso Importante sobre Uploads
 
-**Armazenamento local**: O projeto usa `/public/uploads` para imagens.
+O sistema de upload de imagens foi projetado para salvar arquivos localmente no diretório `/public/uploads`.
 
 - **VPS**: ✅ Funciona perfeitamente
 - **Vercel/Serverless**: ❌ Não funciona para uploads (sistema de arquivos temporário)
 
-Para Vercel, é necessário refatorar `pages/api/upload-image.js` para usar serviços externos como AWS S3, Vercel Blob ou Cloudinary.
+Para fazer o deploy em plataformas serverless como a Vercel, é **obrigatório** refatorar a rota `pages/api/upload-image.js` para utilizar um serviço de armazenamento de objetos, como **AWS S3**, **Vercel Blob** ou **Cloudinary**.
 
 ## Configuração de Ambiente
 
-### Variáveis Obrigatórias
+As seguintes variáveis de ambiente são essenciais para a execução em produção. Crie um arquivo `.env` no servidor ou configure-as na interface da sua plataforma de hospedagem.
 
 ```env
 # Conexão com PostgreSQL
 DATABASE_URL="postgresql://usuario:senha@localhost:5432/caminhar_prod"
 
-# Chave secreta JWT
+# Chave secreta para assinar os tokens JWT
 JWT_SECRET="sua-chave-secreta-muito-forte-aqui"
 
-# Ambiente
-NODE_ENV="production"
-```
-
-### Variáveis Opcionais
-
-```env
-# Credenciais administrativas
-ADMIN_USERNAME="admin"
-ADMIN_PASSWORD="senha-forte-aqui"
-
-# Configuração Redis (Upstash)
+# Configuração do Redis (opcional, mas recomendado para performance)
 UPSTASH_REDIS_REST_URL="https://seu-projeto.upstash.io"
 UPSTASH_REDIS_REST_TOKEN="seu-token-secreto"
 
-# Configuração CORS
-ALLOWED_ORIGINS="https://seu-dominio.com"
+# Ambiente de execução
+NODE_ENV="production"
 ```
 
 ## Deploy em VPS

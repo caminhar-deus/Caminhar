@@ -1,29 +1,17 @@
-# Arquitetura do Projeto - Caminhar com Deus
+# Arquitetura do Projeto - Caminhar
 
 ## Visão Geral
 
-Aplicação web moderna construída com Next.js 16, React 19 e PostgreSQL. Arquitetura modular focada em performance, escalabilidade e manutenibilidade.
+A arquitetura do projeto Caminhar é baseada em uma stack moderna com Next.js, projetada para ser performática, escalável e de fácil manutenção. Ela separa claramente as responsabilidades em camadas: apresentação (Frontend), lógica de negócio (Backend) e dados (Data Layer).
 
-## Componentes Principais
+## Princípios da Arquitetura
 
-### Frontend
-- **Next.js 16** - Framework principal
-- **React 19** - Interface do usuário
-- **CSS Modules** - Estilização
-- **ES Modules** - Sistema de módulos
+- **Performance:** Respostas rápidas através de cache (Redis), otimização de queries e renderização no servidor.
+- **Escalabilidade:** Capacidade de lidar com picos de tráfego através de rate limiting e uma infraestrutura serverless-friendly.
+- **Manutenibilidade:** Código modular e bem documentado, com uma suíte de testes robusta para garantir a estabilidade.
+- **Segurança:** Defesa em profundidade, com autenticação JWT, validação de entrada e proteção contra ataques comuns.
 
-### Backend
-- **API Routes** - Serverless Functions
-- **PostgreSQL** - Banco de dados relacional
-- **Redis** - Cache e rate limiting
-- **JWT** - Autenticação
-
-### Testes
-- **Jest** - Testes unitários e de integração
-- **k6** - Testes de carga
-- **React Testing Library** - Testes de componentes
-
-## Estrutura de Arquitetura
+## Diagrama da Arquitetura
 
 ```
 ┌─────────────────────────────────────────┐

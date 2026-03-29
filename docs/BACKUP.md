@@ -1,26 +1,20 @@
-# Sistema de Backup - Caminhar com Deus
+# Sistema de Backup do Banco de Dados
 
 ## Visão Geral
 
-Sistema automático de backup para banco de dados PostgreSQL com compressão, rotação e interface administrativa.
+Este documento descreve o sistema de backup automático para o banco de dados PostgreSQL do projeto. O sistema foi projetado para ser robusto, seguro e fácil de operar.
 
 ## Funcionalidades
 
-- **Backups automáticos** diários às 2 AM
-- **Compressão** de arquivos para economizar espaço
-- **Rotação** de backups (máximo 10 versões)
-- **Interface administrativa** completa
-- **Verificação** de integridade automática
-- **Restauração** fácil e segura
+- **Backups Automáticos:** Agendados para rodar diariamente (via cron).
+- **Compressão:** Os arquivos de backup são comprimidos com `gzip` para economizar espaço.
+- **Rotação Automática:** Mantém um número configurável de backups, removendo os mais antigos.
+- **Gestão Manual:** Permite criar, listar e restaurar backups via linha de comando ou interface administrativa.
+- **Verificação de Integridade:** Garante que os backups criados não estão corrompidos.
 
-## Comandos Principais
+## Como Usar (Linha de Comando)
 
-### Iniciar Sistema de Backup
-```bash
-npm run init-backup
-```
-
-### Criar Backup Manual
+- **Criar um backup manual:**
 ```bash
 npm run create-backup
 ```

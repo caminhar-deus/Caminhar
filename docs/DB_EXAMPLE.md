@@ -1,19 +1,103 @@
-# Exemplo de lib/db.js - Boas Práticas de Arquitetura
+# Módulo de Banco de Dados: Boas Práticas
 
 ## Visão Geral
 
-Exemplo de implementação de módulo de banco de dados seguindo boas práticas de arquitetura.
+Este documento apresenta um exemplo de implementação para um módulo de banco de dados (`lib/db.js`) em Node.js com PostgreSQL. O design foca em performance, segurança e manutenibilidade, servindo como um guia de boas práticas para o projeto.
 
-## Localização
+## Princípios e Funcionalidades
 
-- **Arquivo:** `lib/db-example.js`
-- **Propósito:** Exemplo de implementação de banco de dados
-- **Referência:** `lib/db.js` (implementação real)
+- **Connection Pooling:** Utiliza um pool de conexões (`pg.Pool`) para reutilizar conexões, reduzindo a latência e o overhead de estabelecer novas conexões a cada query.
+- **Transações Seguras:** Oferece uma função `transaction` que garante a atomicidade das operações (ACID). Em caso de erro, um `ROLLBACK` é executado automaticamente, prevenindo inconsistências nos dados.
+- **Logging Opcional:** A função `query` inclui uma opção `log: true` para imprimir detalhes da consulta, parâmetros e tempo de execução, facilitando o debug e a otimização de performance.
+- **Health Check:** Expõe uma função `healthCheck` para verificar a conectividade com o banco de dados, essencial para sistemas de monitoramento.
 
-## Boas Práticas Implementadas
+## Implementação de Exemplo (`lib/db.js`)
 
-### 1. Connection Pool Otimizado
+Abaixo está um exemplo completo da implementação do módulo, que pode ser usado como referência.
 
+```javascript
+import { Pool } from 'pg';
+
+// Pool de conexões para melhor performance.
+let pool = null;
+
+function getPool() {
+  if (!pool) {
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
+      max: 20,
+      min: 2,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+    });
+  }
+  return pool;
+}
+
+/**
+ * Executa uma consulta SQL de forma segura e performática.
+ * @param {string} text - A query SQL.
+ * @param {Array} [params=[]] - Os parâmetros para a query.
+ * @param {object} [options={}] - Opções como { log: boolean, client: pg.Client }.
+ * @returns {Promise<QueryResult>} O resultado do banco de dados.
+ */
+export async function query(text, params = [], options = {}) {
+  const { log = false, client } = options;
+  const start = Date.now();
+  
+  try {
+    const db = client || getPool();
+    const res = await db.query(text, params);
+    const duration = Date.now() - start;
+
+    if (log) {
+      console.log('Consulta SQL executada', {
+        duration: `${duration}ms`,
+        query: text.replace(/\s+/g, ' ').trim(),
+        rows: res.rowCount,
+      });
+    }
+    return res;
+  } catch (error) {
+    console.error('Erro ao executar consulta SQL', { error: error.message });
+    throw error;
+  }
+}
+
+/**
+ * Executa uma transação com rollback automático em caso de erro.
+ * @param {Function} callback - Função que recebe o client da transação.
+ * @returns {Promise<*>} O resultado da transação.
+ */
+export async function transaction(callback) {
+  const client = await getPool().connect();
+  try {
+    await client.query('BEGIN');
+    const result = await callback(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Transação falhou e foi revertida', { error: error.message });
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Verifica a saúde da conexão com o banco de dados.
+ * @returns {Promise<boolean>} True se a conexão está saudável.
+ */
+export async function healthCheck() {
+  try {
+    const result = await query('SELECT 1 as health_check', [], { log: false });
+    return result?.rows?.health_check === 1;
+  } catch (error) {
+    return false;
+  }
+}
 ```javascript
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,

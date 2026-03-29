@@ -1,97 +1,92 @@
-# Caminhar com Deus
+# Projeto Caminhar
 
-![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
+O "Caminhar" é uma plataforma de conteúdo moderna e performática, construída com Next.js, focada em oferecer uma experiência de leitura e administração de alta qualidade.
 
-Um site cristão moderno construído com Next.js 16 e React 19 para compartilhar reflexões, músicas e vídeos sobre fé e espiritualidade.
+## ✨ Visão Geral
 
-## 🚀 Como Iniciar
+Este projeto serve como um sistema de gerenciamento de conteúdo (CMS) completo, com uma API pública otimizada para performance e um painel administrativo robusto para gestão de posts, vídeos e outras mídias.
+
+### Funcionalidades Principais
+
+- **Gestão de Conteúdo**: CRUD completo para posts/artigos, vídeos e músicas.
+- **Painel Administrativo**: Interface centralizada para gerenciar todo o conteúdo, usuários e configurações do site.
+- **API Pública**: Endpoints otimizados com cache (Redis) e proteção contra abuso (Rate Limiting) para servir o conteúdo ao público.
+- **Sistema de Testes**: Suíte de testes completa, incluindo testes unitários, de integração e de carga (performance e estresse).
+- **Autenticação**: Sistema seguro baseado em JWT para proteger as rotas administrativas.
+
+## 🚀 Tecnologias Utilizadas
+
+- **Frontend**: Next.js / React
+- **Backend**: Node.js (via Next.js API Routes)
+- **Banco de Dados**: PostgreSQL
+- **Cache & Rate Limiting**: Redis
+- **Testes Unitários/Integração**: Jest & React Testing Library
+- **Testes de Carga**: k6 (Grafana)
+- **Estilização**: CSS Modules
+
+## 🏁 Como Começar
+
+Siga os passos abaixo para configurar e executar o projeto em seu ambiente local.
 
 ### Pré-requisitos
-- Node.js 20.0.0+ (Recomendado 24.14.0+)
-- PostgreSQL 15+
-- Redis 7+
 
-### Instalação
+- [Node.js](https://nodejs.org/) (versão 20 ou superior)
+- [Docker](https://www.docker.com/) (para rodar o banco de dados e o Redis facilmente)
+
+### 1. Instalação
+
+Clone o repositório e instale as dependências:
+
 ```bash
-# 1. Clonar e instalar dependências
-npm install
+git clone <url-do-repositorio>
+cd Caminhar
+npm ci
+```
 
-# 2. Configurar ambiente
-cp .env.example .env
-# Editar .env com DATABASE_URL, REDIS_URL e JWT_SECRET
+### 2. Configuração do Ambiente
 
-# 3. Iniciar banco de dados
-npm run db:init
+Inicie os serviços de banco de dados e cache com Docker Compose:
 
-# 4. Iniciar aplicação
+```bash
+docker-compose up -d
+```
+
+Crie um arquivo `.env.local` na raiz do projeto, copiando o conteúdo de `.env.example`, e preencha as variáveis de ambiente necessárias.
+
+### 3. Banco de Dados
+
+Execute as migrações para criar a estrutura do banco de dados de desenvolvimento:
+
+```bash
+npm run setup:dev-db
+```
+
+### 4. Executando o Projeto
+
+Inicie o servidor de desenvolvimento:
+
+```bash
 npm run dev
 ```
 
-Acesse: http://localhost:3000
+A aplicação estará disponível em `http://localhost:3000`.
 
-## 📋 Funcionalidades
+## 🧪 Testes
 
-- **ContentTabs**: Navegação por abas (Reflexões, Músicas, Vídeos)
-- **Spotify Integration**: Reprodução de músicas
-- **YouTube Integration**: Reprodução de vídeos
-- **Admin Panel**: Área protegida para gerenciar conteúdo
-- **API RESTful**: API pública documentada (v1) para consumo externo
-- **Lightbox**: Visualização expandida de imagens
-- **Cache e Segurança**: Sistema distribuído com Redis para alta performance e Rate Limiting
-- **SEO**: Meta tags, Schema.org e Open Graph
-- **Backup**: Sistema automático de backups
-- **Qualidade**: Cobertura de testes automatizados com Jest, Cypress e k6 (testes de carga)
+O projeto possui uma suíte de testes abrangente.
 
-## 🛠️ Comandos Úteis
+- **Executar todos os testes (unitários e integração)**:
+  ```bash
+  npm test
+  ```
 
-```bash
-# Desenvolvimento
-npm run dev
-npm run build
-npm start
+- **Executar um arquivo de teste específico**:
+  ```bash
+  npm test tests/caminho/para/o/arquivo.test.js
+  ```
 
-# Banco de dados
-npm run db:init
-npm run db:shell
-npm run db:clear
-npm run db:clear:musicas
-npm run db:reset:password
-
-# Testes
-npm test
-npm run cypress:run
-npm run test:load:all
-
-# Administração
-npm run create-backup
-npm run restore-backup
-npm run clear-cache
-```
-
-## 📁 Estrutura de Arquivos
-
-```
-├── pages/          # Páginas da aplicação
-├── components/     # Componentes React
-├── lib/           # Lógica de negócio
-├── api/           # Endpoints da API
-├── styles/        # Estilos CSS
-├── tests/         # Testes automatizados
-└── docs/          # Documentação técnica
-```
-
-## 🤝 Contribuição
-
-1. Fork o repositório
-2. Crie uma branch: `git checkout -b feature/nome`
-3. Faça commit: `git commit -m 'Adiciona feature'`
-4. Push: `git push origin feature/nome`
-5. Abra um Pull Request
-
-## 📄 Licença
-
-MIT License - uso livre e modificações permitidas.
-
-## 📞 Suporte
-
-Para dúvidas ou suporte, abra uma issue no repositório.
+- **Executar testes de carga (requer k6 instalado)**:
+  ```bash
+  # Exemplo de teste de estresse
+  npm run test:load:stress
+  ```

@@ -1,195 +1,77 @@
-# Segurança - Caminhar com Deus
+# Política de Segurança
 
 ## Visão Geral
 
-Política de segurança do projeto com foco em defesa em profundidade e proteção de dados.
+Este documento descreve as principais práticas e políticas de segurança adotadas no projeto, com foco em defesa em profundidade e proteção de dados.
 
 ## Autenticação e Autorização
 
 ### JWT (JSON Web Tokens)
-- **Armazenamento**: Cookies HTTP-only (protege contra XSS)
-- **Expiração**: 1 hora (minimiza riscos)
-- **Algoritmo**: HS256 com chave secreta configurada via ambiente
-- **Validação**: Middleware de autenticação em todas as rotas protegidas
+- **Armazenamento:** Tokens são armazenados em cookies `HttpOnly` para proteção contra ataques XSS.
+- **Expiração:** Tokens têm um tempo de vida curto (1 hora) para minimizar o risco em caso de comprometimento.
+- **Validação:** Um middleware de autenticação verifica a validade do token em todas as rotas administrativas.
 
 ### Proteção de Senhas
-- **Hashing**: bcrypt com salt automático
-- **Complexidade**: Mínimo 8 caracteres
-- **Validação**: Força de senha verificada no cadastro
+- **Hashing:** Senhas são armazenadas usando o algoritmo `bcrypt` com um *salt* gerado automaticamente.
+- **Complexidade:** Exigência de senhas com no mínimo 8 caracteres.
 
 ## Proteção de API
 
 ### Rate Limiting
-- **Tecnologia**: Redis (Upstash) para controle distribuído
-- **Limites**:
-  - Rotas públicas: 100 requisições/15min por IP
-  - Login: 5 tentativas/15min por IP
-- **Whitelist**: IPs administrativos configuráveis
-- **Fallback**: Controle em memória se Redis falhar
+- **Tecnologia:** Utiliza Redis para controle distribuído de requisições, com fallback para a memória local caso o Redis falhe.
+- **Limites:** Rotas públicas e de autenticação possuem limites de requisições por IP para mitigar ataques de força bruta e DDoS.
 
 ### Validação de Entrada
-- **Schema**: Zod para validação rigorosa
-- **Sanitização**: Prevenção de injeção de dados maliciosos
-- **Tipos**: Validação de tipos e formatos
+- **Schema:** A biblioteca **Zod** é utilizada para validar rigorosamente todos os dados de entrada nas APIs, prevenindo dados malformados e ataques de injeção.
 
 ### CORS
-- **Configuração**: Origens específicas em produção
-- **Bloqueio**: Requisições não autorizadas bloqueadas
-- **Desenvolvimento**: Permissivo apenas em ambiente local
+- **Configuração:** A política de Cross-Origin Resource Sharing (CORS) é configurada para permitir requisições apenas de origens confiáveis em ambiente de produção.
 
 ## Segurança de Infraestrutura
 
 ### HTTPS e SSL
-- **Criptografia**: TLS/SSL para todo tráfego
-- **Certificados**: Let's Encrypt (Certbot)
-- **Forçamento**: Redirecionamento HTTP → HTTPS
+- **Criptografia:** Todo o tráfego é criptografado com TLS/SSL (HTTPS), com certificados gerenciados pelo Let's Encrypt (Certbot).
 
 ### Banco de Dados
-- **Conexão**: SSL obrigatório em produção
-- **SQL Injection**: Prepared statements (pg driver)
-- **Acesso**: Conexão via pool com credenciais seguras
+- **Conexão:** A conexão com o PostgreSQL em produção exige SSL.
+- **SQL Injection:** O uso de *prepared statements* (consultas parametrizadas) através do driver `pg` previne ataques de SQL Injection.
 
 ### Servidor
-- **Usuário**: Aplicação roda sem privilégios root
-- **Firewall**: UFW com portas essenciais (22, 80, 443)
-- **Headers**: Remoção de headers de versão
+- **Usuário:** A aplicação é executada com um usuário sem privilégios de root.
+- **Firewall:** O firewall do servidor (UFW) é configurado para permitir tráfego apenas nas portas essenciais (22, 80, 443).
 
 ## Gerenciamento de Dados
 
 ### Upload de Arquivos
-- **Tipos**: Apenas imagens (PNG, JPG, JPEG, GIF, WEBP)
-- **Tamanho**: Máximo 10MB
-- **Validação**: MIME types e extensões verificadas
-- **Armazenamento**: Local protegido ou S3/Blob Storage
+- **Validação:** O sistema valida o tipo (MIME type) e o tamanho dos arquivos enviados (máximo de 10MB para imagens).
+- **Armazenamento:** Os arquivos são armazenados em um diretório local protegido. Para ambientes serverless, a recomendação é usar um serviço de armazenamento de objetos como AWS S3.
 
 ### Backups
-- **Permissões**: Arquivos com permissão 600
-- **Criptografia**: Recomendado para backups sensíveis
-- **Sanitização**: Logs removem tokens e senhas
+- **Permissões:** Os arquivos de backup são criados com permissões restritas (600).
+- **Segurança:** Recomenda-se que os backups sejam armazenados em um local externo e seguro, com criptografia em repouso.
 
 ## Monitoramento e Auditoria
 
 ### Testes de Segurança
-- **Automatizados**: npm audit integrado ao CI/CD
-- **Carga**: Testes k6 simulando ataques DDoS
-- **Validação**: Testes de segurança em todas as releases
-- **Cross-Browser**: Compatibilidade segura em navegadores
-- **Mobile**: Segurança validada em dispositivos móveis
+- **Análise de Dependências:** O comando `npm audit` é executado na pipeline de CI/CD para detectar vulnerabilidades em pacotes de terceiros.
+- **Testes de Carga:** Testes com k6 simulam ataques DDoS para validar a eficácia do Rate Limiting e a estabilidade do servidor.
 
 ### Logs
-- **Auditoria**: Registros de acesso e erros
-- **Privacidade**: Dados sensíveis não são logados
-- **Sanitização**: Tokens e senhas removidos automaticamente
-- **Monitoramento**: Detecção de ameaças em tempo real
+- **Privacidade:** O sistema evita registrar dados sensíveis (como senhas ou tokens) nos logs da aplicação.
 
-## Conformidade Legal
+## Política de Relato de Vulnerabilidades
 
-### LGPD
-- **Tratamento**: Conformidade total com requisitos
-- **Direitos**: Acesso, retificação, exclusão e portabilidade
-- **Notificação**: Incidentes comunicados em até 72 horas
-- **Testes**: Validação automática de conformidade
+A segurança da nossa aplicação é uma prioridade. Se você acredita ter encontrado uma vulnerabilidade, por favor, siga os passos abaixo.
 
-### GDPR
-- **Conformidade UE**: Total conformidade para usuários europeus
-- **Consentimento**: Explícito e informado
-- **Direitos**: Garantidos conforme regulamento
-- **Proteção**: Medidas técnicas e organizacionais
+### Como Reportar
 
-### OWASP
-- **Práticas**: Implementação de recomendações OWASP
-- **Testes**: Validação de segurança em pipeline
-- **Monitoramento**: Vulnerabilidades conhecidas monitoradas
+**NÃO abra uma issue pública no GitHub.**
 
-## Resposta a Incidentes
+Envie um e-mail detalhado para: **security@caminhar.com**
 
-### Procedimentos
-1. **Identificação**: Detecção e classificação
-2. **Contenção**: Isolamento da ameaça
-3. **Eradicação**: Remoção da causa raiz
-4. **Recuperação**: Restauração dos serviços
-5. **Análise**: Lições aprendidas
+Inclua uma descrição clara da vulnerabilidade, os passos para reproduzi-la e, se possível, o impacto potencial.
 
-### Comunicação
-- **Interna**: Equipe de segurança imediatamente
-- **Externa**: Usuários conforme necessidade
-- **Autoridades**: Conforme requisitos legais
-
-## Política de Vulnerabilidades
-
-### Relato de Vulnerabilidades
-**NÃO abra issue pública**
-Envie e-mail para: security@caminhar.com
-
-### Processo de Resposta
-1. **Recebimento**: Análise em até 24 horas
-2. **Validação**: Confirmação da vulnerabilidade
-3. **Priorização**: Classificação de criticidade
-4. **Correção**: Desenvolvimento e implementação
-5. **Testes**: Validação automatizada
-6. **Comunicação**: Notificação aos usuários
-
-### Critérios de Classificação
-- **Crítica**: Exposição de dados, execução remota, bypass de autenticação
-- **Alta**: Comprometimento da integridade
-- **Média**: Indisponibilidade ou degradação
-- **Baixa**: Impacto mínimo ou difícil exploração
-
-### Reconhecimento
-Agradecimento público após correção responsável.
-
-## Exemplos de Código Seguro
-
-### Validação de Entrada
-```javascript
-// Seguro: Uso de Zod
-const schema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8)
-});
-
-// Inseguro: Validação manual
-// if (req.body.email && req.body.password) { ... }
-```
-
-### Consulta ao Banco
-```javascript
-// Seguro: Prepared statements
-const result = await db.query(
-  'SELECT * FROM users WHERE email = $1',
-  [email]
-);
-
-// Inseguro: Concatenação direta
-// const result = await db.query(`SELECT * FROM users WHERE email = '${email}'`);
-```
-
-## Métricas de Segurança
-
-| Métrica | Valor | Meta |
-|---------|-------|------|
-| **Vulnerabilidades** | 0 | 0 |
-| **Testes de Segurança** | 100% | 100% |
-| **Tempo de Resposta** | < 24h | < 24h |
-| **Conformidade LGPD** | 100% | 100% |
-| **Conformidade GDPR** | 100% | 100% |
-
-## Próximos Passos
-
-### Monitoramento
-1. Implementar ferramentas de APM (Sentry)
-2. Configurar alertas de segurança
-3. Monitorar vulnerabilidades conhecidas
-
-### Melhorias
-1. Implementar Service Workers para segurança offline
-2. Expandir testes de segurança automatizados
-3. Considerar implementação de Web Application Firewall
-
-### Conformidade
-1. Auditoria de conformidade periódica
-2. Atualização de políticas conforme legislação
-3. Treinamento de equipe em segurança
+Nossa equipe analisará o relato e responderá em até 48 horas. Agradecemos publicamente os pesquisadores que seguem esta política de divulgação responsável.
 
 ## Documentação Relacionada
 
