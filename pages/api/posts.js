@@ -1,45 +1,53 @@
 import { getRecentPosts } from '../../lib/domain/posts.js';
-import { getOrSetCache } from '../../lib/cache.js';
-import { z } from 'zod';
+import { getOrSetCache, checkRateLimit } from '../../lib/cache.js';
 
+/**
+ * API route handler for fetching posts
+ * GET /api/posts?page=1&limit=10
+ */
 export default async function handler(req, res) {
-  // Permite apenas método GET
+  // Apenas método GET é permitido
   if (req.method !== 'GET') {
-    res.setHeader('Allow', ['GET']);
-    return res.status(405).json({ message: `Method ${req.method} Not Allowed` });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    // Validação de entrada com Zod para maior robustez
-    const querySchema = z.object({
-      page: z.coerce.number().int().positive().default(1),
-      limit: z.coerce.number().int().positive().default(10),
-    });
+    const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
 
-    const validation = querySchema.safeParse(req.query);
-    if (!validation.success) {
-      return res.status(400).json({ success: false, message: 'Parâmetros inválidos', errors: validation.error.flatten().fieldErrors });
+    // Verifica rate limit
+    const isRateLimited = await checkRateLimit(ip, 'api:public:posts');
+    if (isRateLimited) {
+      return res.status(429).json({ error: 'Too many requests' });
     }
 
-    const { page, limit } = validation.data;
-    const cacheKey = `posts:public:page:${page}:limit:${limit}`;
+    // Extrai parâmetros de query
+    // Corrigido para tratar '0' como um valor válido para validação, em vez de usar o default.
+    // O `||` resultava em `1` quando o valor era `0`, que é "falsy".
+    const parsedPage = parseInt(req.query.page);
+    const page = !isNaN(parsedPage) ? parsedPage : 1;
 
-    // Implementa cache para melhorar a performance
+    const parsedLimit = parseInt(req.query.limit);
+    const limit = !isNaN(parsedLimit) ? parsedLimit : 10;
+
+    // Validação básica
+    if (page < 1 || limit < 1 || limit > 100) {
+      return res.status(400).json({ error: 'Invalid pagination parameters' });
+    }
+
+    // Busca posts com cache
+    const cacheKey = `posts:${page}:${limit}`;
     const result = await getOrSetCache(cacheKey, async () => {
-      // A função que busca os dados só será executada se não houver cache
       return await getRecentPosts(limit, page);
-    }, 3600); // Cache de 1 hora
-    
-    // Garante que, mesmo que o cache ou a função de domínio retornem algo inesperado, a API não quebre.
-    // Retorna os dados em um formato padronizado
+    });
+
+    // Retorna a resposta no formato padronizado esperado pelo frontend,
+    // incluindo um indicador de sucesso.
     return res.status(200).json({
       success: true,
-      data: result?.data || [],
-      pagination: result?.pagination || {},
+      ...result,
     });
   } catch (error) {
-    console.error('API Error fetching posts:', error);
-    // Resposta de erro padronizada
-    return res.status(500).json({ success: false, message: 'Erro interno ao carregar posts' });
+    console.error('Error fetching posts:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }
