@@ -1,75 +1,61 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 
-export function useAdminCrud({
+/**
+ * Hook reutilizável para operações CRUD em painéis administrativos.
+ * Centraliza a lógica de fetch, create, update, delete, paginação e estado de formulário.
+ * 
+ * @param {object} config - Configuração do hook.
+ * @param {string} config.apiEndpoint - O endpoint da API para as operações.
+ * @param {object} config.initialFormData - O estado inicial para o formulário de criação.
+ * @param {boolean} [config.usePagination=false] - Habilita a lógica de paginação.
+ * @param {number} [config.itemsPerPage=10] - Quantidade de itens por página.
+ * @param {function} [config.onSuccess] - Callback executado após uma operação bem-sucedida.
+ * @returns Um objeto contendo o estado e os manipuladores para o CRUD.
+ */
+export const useAdminCrud = ({
   apiEndpoint,
   initialFormData,
   usePagination = false,
   itemsPerPage = 10,
-  onSuccess
-}) {
-  const router = useRouter();
+  onSuccess,
+}) => {
   const [items, setItems] = useState([]);
-  const [formData, setFormData] = useState(initialFormData);
-  const [isEditing, setIsEditing] = useState(null); // Armazena o ID do item em edição
-  const [loading, setLoading] = useState(true); // Começa como true na primeira carga
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
-  // Estado da paginação
+  const [formData, setFormData] = useState(initialFormData);
+  const [isEditing, setIsEditing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  const fetchData = useCallback(async (page = 1) => {
+  const fetchItems = useCallback(async (page = 1) => {
     setLoading(true);
-    setError(null);
     try {
       const url = usePagination ? `${apiEndpoint}?page=${page}&limit=${itemsPerPage}` : apiEndpoint;
-      const response = await fetch(url, {
-        credentials: 'include' // *** CORREÇÃO: Envia cookies de autenticação ***
-      });
+      const response = await fetch(url, { credentials: 'include' });
+      if (!response.ok) throw new Error('Falha ao buscar dados da API');
       
-      if (response.status === 401) {
-        toast.error('Sessão expirada. Faça login novamente.');
-        router.reload();
-        return;
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || errorData.message || `Erro ao buscar dados: ${response.statusText}`);
-      }
-      const result = await response.json();
+      const data = await response.json();
+      setItems(data.data || []);
       
-      // *** PONTO CRÍTICO DA CORREÇÃO ***
-      // Procura pela propriedade `data` (ou `musicas`, `videos`, etc.) na resposta da API.
-      // Isso torna o hook compatível com a estrutura da sua API.
-      const dataArray = result.data || result.musicas || result.videos || result.posts || [];
-      setItems(dataArray);
-
-      if (usePagination && result.pagination) {
-        setCurrentPage(result.pagination.page);
-        setTotalPages(result.pagination.totalPages);
+      if (usePagination && data.pagination) {
+        setCurrentPage(data.pagination.page);
+        setTotalPages(data.pagination.totalPages);
       }
-
     } catch (err) {
       setError({ message: err.message });
-      console.error("Erro ao buscar dados:", err.message);
     } finally {
       setLoading(false);
     }
   }, [apiEndpoint, usePagination, itemsPerPage]);
 
   useEffect(() => {
-    fetchData(currentPage);
-  }, [fetchData, currentPage]);
+    fetchItems(1);
+  }, [fetchItems]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' || type === 'toggle' ? checked : value
-    }));
+    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
   const setFieldValue = (name, value) => {
@@ -77,110 +63,85 @@ export function useAdminCrud({
   };
 
   const handleEdit = (item) => {
-    setIsEditing(item.id);
-    
-    // Mescla os dados recebidos com o initialFormData para garantir que todos os campos existam.
-    // Converte nulls para evitar falhas de preenchimento (uncontrolled input) no React.
-    const safeData = { ...initialFormData, id: item.id };
-    for (const key in item) {
-      if (item[key] !== null && item[key] !== undefined) safeData[key] = item[key];
-    }
-    
-    setFormData(safeData);
-  };
-
-  const resetForm = () => {
-    setIsEditing(null);
-    setFormData(initialFormData);
-  };
-
-  const handleSubmit = async (e, validate) => {
-    e.preventDefault();
-
-    setLoading(true);
+    setIsEditing(true);
+    setFormData(item);
     setError(null);
+  };
+
+  const resetForm = useCallback(() => {
+    setIsEditing(false);
+    setFormData(initialFormData);
+    setError(null);
+  }, [initialFormData]);
+
+  const handleSubmit = async (e, customValidator) => {
+    e.preventDefault();
+    setError(null);
+    const loadingToastId = toast.loading(isEditing ? 'Atualizando item...' : 'Criando item...');
 
     try {
-      // A validação agora é executada dentro do try/catch.
-      // Se falhar, ela lançará um erro que será pego pelo bloco catch.
-      if (validate) validate();
+      if (customValidator) customValidator();
 
       const method = isEditing ? 'PUT' : 'POST';
-      const body = JSON.stringify(isEditing ? { ...formData, id: isEditing } : formData);
+      const body = JSON.stringify(formData);
 
       const response = await fetch(apiEndpoint, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body,
       });
 
-      if (response.status === 401) {
-        toast.error('Sessão expirada. Faça login novamente.');
-        router.reload();
-        return;
-      }
+      const data = await response.json();
 
-      const result = await response.json().catch(() => ({}));
       if (!response.ok) {
-        // Cria um erro que inclui os detalhes de validação da API
-        const error = new Error(result.message || result.error || 'Ocorreu um erro ao salvar.');
-        error.errors = result.errors; // Anexa o objeto de erros de campo
-        throw error;
+        const apiError = new Error(data.error || 'Ocorreu um erro na API.');
+        if (data.details) {
+          apiError.errors = data.details.reduce((acc, curr) => {
+            acc[curr.field] = [curr.message];
+            return acc;
+          }, {});
+        }
+        throw apiError;
       }
 
-      toast.success(isEditing ? 'Item atualizado com sucesso!' : 'Item criado com sucesso!');
+      // CORREÇÃO: Unifica as notificações de sucesso em uma única chamada e corrige o texto.
+      toast.success(isEditing ? 'Item atualizado com sucesso!' : 'Item criado com sucesso!', { id: loadingToastId });
+
       resetForm();
-      await fetchData(isEditing ? currentPage : 1); // Volta para a primeira página ao criar novo item
-      if (onSuccess) onSuccess(result);
+      fetchItems(isEditing ? currentPage : 1); // Volta para a primeira página ao criar
+      if (onSuccess) {
+        onSuccess(data.data);
+      }
 
     } catch (err) {
-      // Armazena o objeto de erro completo no estado para ser usado na UI
-      const errorPayload = { message: err.message };
-      if (err.errors) {
-        errorPayload.errors = err.errors;
-      }
-      setError(errorPayload);
-      console.error("Erro ao submeter:", err);
-    } finally {
-      setLoading(false);
+      setError(err);
+      toast.error(err.message || 'Falha na operação.', { id: loadingToastId });
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Tem certeza que deseja excluir este item?')) return;
-    
-    setLoading(true);
+    if (!window.confirm('Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.')) return;
+
+    const loadingToastId = toast.loading('Excluindo item...');
     try {
-      const response = await fetch(apiEndpoint, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ id }),
-      });
-
-      if (response.status === 401) {
-        toast.error('Sessão expirada. Faça login novamente.');
-        router.reload();
-        return;
-      }
-
-      if (!response.ok) {
-        const result = await response.json().catch(() => ({}));
-        throw new Error(result.error || result.message || 'Erro ao excluir.');
-      }
-      await fetchData(currentPage); // Recarrega os dados da página atual
+      const response = await fetch(`${apiEndpoint}?id=${id}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Falha ao excluir');
+      
+      toast.success('Item excluído com sucesso!', { id: loadingToastId });
+      fetchItems(currentPage);
     } catch (err) {
-      setError(err.message);
-      console.error("Erro ao excluir:", err.message);
-    } finally {
-      setLoading(false);
+      toast.error(err.message, { id: loadingToastId });
     }
   };
 
   const goToPage = (page) => {
-    if (page > 0 && page <= totalPages) setCurrentPage(page);
+    if (page > 0 && page <= totalPages) {
+      fetchItems(page);
+    }
   };
 
-  return { items, loading, error, formData, isEditing, currentPage, totalPages, handleInputChange, setFieldValue, handleEdit, handleSubmit, handleDelete, resetForm, goToPage };
-}
+  return {
+    items, loading, error, formData, isEditing, currentPage, totalPages,
+    handleInputChange, setFieldValue, handleEdit, handleSubmit, handleDelete, resetForm, goToPage
+  };
+};

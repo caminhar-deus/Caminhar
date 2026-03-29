@@ -68,7 +68,9 @@ export default function AdminCrudBase({
 
   // Wrapper para exibir notificações de sucesso automaticamente
   const handleSuccessWrapper = useCallback(() => {
-    toast.success('Operação realizada com sucesso!');
+    // A notificação de sucesso foi removida deste ponto para evitar a exibição de duas mensagens.
+    // O sistema já possui uma notificação genérica para operações bem-sucedidas.
+    // toast.success('Operação realizada com sucesso!');
     setIsFormVisible(false);
     if (onSuccess) onSuccess();
   }, [onSuccess]);

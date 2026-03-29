@@ -37,7 +37,8 @@ describe('getPaginatedPosts', () => {
     expect(postsCallArgs[1]).toEqual([10, 0]); // limit 10, offset 0
 
     expect(result).toEqual({
-      posts: [{ id: 1, title: 'Post 1' }],
+      // A chave foi alterada para 'data' para manter consistência com o hook useAdminCrud
+      data: [{ id: 1, title: 'Post 1' }],
       pagination: {
         page: 1,
         limit: 10,
