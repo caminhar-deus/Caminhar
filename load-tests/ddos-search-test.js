@@ -14,10 +14,9 @@ export const options = {
     { duration: '10s', target: 0 },   // Encerra
   ],
   thresholds: {
-    // Em um teste de DDoS, monitoramos principalmente a estabilidade.
-    // Se o servidor começar a retornar 500 ou demorar muito, o ataque teve "sucesso" em degradar o serviço.
-    http_req_failed: ['rate<0.5'], // Alerta apenas se mais de 50% das requisições falharem
-    
+    // O threshold 'http_req_failed' foi removido. Em um teste de DDoS, é esperado
+    // que a maioria das requisições falhe com status 429 (Too Many Requests),
+    // o que é um comportamento desejado e não um erro do servidor.
     // Configuração para ABORTAR o teste se erros 500 passarem de 10%
     'errors_500': [{ threshold: 'rate<0.10', abortOnFail: true, delayAbortEval: '5s' }],
   },

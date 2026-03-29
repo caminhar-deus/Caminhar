@@ -53,7 +53,7 @@ describe('Integração de Posts (API/DB)', () => {
 
     expect(res._getStatusCode()).toBe(200);
     expect(getRecentPosts).toHaveBeenCalledTimes(1);
-    expect(getRecentPosts).toHaveBeenCalledWith(10, 1);
+    expect(getRecentPosts).toHaveBeenCalledWith(10, 1, '');
     
     const jsonData = JSON.parse(res._getData());
     expect(jsonData.data).toHaveLength(1);
@@ -81,7 +81,7 @@ describe('Integração de Posts (API/DB)', () => {
 
     expect(res._getStatusCode()).toBe(200);
     expect(getRecentPosts).toHaveBeenCalledTimes(1);
-    expect(getRecentPosts).toHaveBeenCalledWith(5, 2);
+    expect(getRecentPosts).toHaveBeenCalledWith(5, 2, '');
     
     const jsonData = JSON.parse(res._getData());
     expect(jsonData.pagination.page).toBe(2);
@@ -196,7 +196,7 @@ describe('Integração de Posts (API/DB)', () => {
 
     expect(res._getStatusCode()).toBe(200);
     // Deve usar valores padrão: page=1, limit=10
-    expect(getRecentPosts).toHaveBeenCalledWith(10, 1);
+    expect(getRecentPosts).toHaveBeenCalledWith(10, 1, '');
   });
 
   it('Endpoint API /api/posts deve chamar getOrSetCache com a chave correta', async () => {
@@ -218,5 +218,28 @@ describe('Integração de Posts (API/DB)', () => {
     // Verifica a chave do cache
     const cacheKey = getOrSetCache.mock.calls[0][0];
     expect(cacheKey).toBe('posts:2:5');
+  });
+
+  it('Endpoint API /api/posts deve lidar com o parâmetro de busca', async () => {
+    const { req, res } = createMocks({
+      method: 'GET',
+      query: { search: 'test-term' }
+    });
+
+    getRecentPosts.mockResolvedValue({
+      data: [{ id: 2, title: 'Post com test-term' }],
+      pagination: { page: 1, limit: 10, total: 1, totalPages: 1 },
+    });
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(200);
+    expect(getRecentPosts).toHaveBeenCalledTimes(1);
+    // Verifica se getRecentPosts foi chamado com o termo de busca
+    expect(getRecentPosts).toHaveBeenCalledWith(10, 1, 'test-term');
+    
+    // Verifica se a chave de cache inclui o termo de busca
+    const cacheKey = getOrSetCache.mock.calls[0][0];
+    expect(cacheKey).toBe('posts:1:10:test-term');
   });
 });
