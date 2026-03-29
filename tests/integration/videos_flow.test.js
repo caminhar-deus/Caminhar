@@ -1,27 +1,32 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../../pages/api/admin/videos';
-import { createVideo, getPaginatedVideos, deleteVideo, query, logActivity } from '../../lib/db';
+import { createVideo, getPaginatedVideos, deleteVideo } from '../../lib/domain/videos.js';
+import { logActivity } from '../../lib/domain/audit.js';
 
-// Mock do banco de dados
-jest.mock('../../lib/db', () => ({
-  // Mock as funções que o handler realmente importa e usa
+// Mock das dependências de domínio, que são as dependências diretas do handler.
+// Isso isola o teste do handler da implementação real do banco de dados.
+jest.mock('../../lib/domain/videos.js', () => ({
   createVideo: jest.fn(),
   getPaginatedVideos: jest.fn(),
   deleteVideo: jest.fn(),
-  query: jest.fn(),
+}));
+jest.mock('../../lib/domain/audit.js', () => ({
   logActivity: jest.fn(),
 }));
 
 // Mock do módulo de autenticação para ignorar a verificação de token neste teste
 jest.mock('../../lib/auth', () => ({
-  withAuth: (handler) => (req, res) => handler(req, res),
+  withAuth: (handler) => (req, res) => {
+    // Simula um usuário autenticado para os testes, que é o que o middleware real faz.
+    req.user = { username: 'test-admin', role: 'admin' };
+    return handler(req, res);
+  },
 }));
 
 describe('Integração: Fluxo Completo de Vídeos (API + DB)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    query.mockResolvedValue({ rows: [{ titulo: 'Vídeo de Integração' }] });
     logActivity.mockResolvedValue();
   });
 

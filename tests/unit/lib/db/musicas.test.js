@@ -1,6 +1,7 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { mockQuery, restorePoolImplementation } from 'pg';
-import { getPaginatedMusicas, createMusica, updateMusica, deleteMusica, getAllMusicas, resetPool } from '../../../../lib/db.js';
+import { resetPool } from '../../../../lib/db.js';
+import { getPaginatedMusicas, createMusica, updateMusica, deleteMusica, getAllMusicas } from '../../../../lib/domain/musicas.js';
 
 // Mock do 'pg' (automático via __mocks__/pg.js)
 jest.mock('pg');
@@ -89,10 +90,13 @@ describe('Funções de Músicas (DB)', () => {
 
       const result = await createMusica(novaMusica);
 
-      expect(mockQuery).toHaveBeenCalledWith(
-        expect.stringContaining('INSERT INTO musicas'),
-        [novaMusica.titulo, novaMusica.artista, novaMusica.descricao, novaMusica.url_spotify, novaMusica.publicado]
-      );
+      expect(mockQuery).toHaveBeenCalledTimes(1);
+      const [text, values] = mockQuery.mock.calls[0];
+
+      const normalizedText = text.replace(/\s+/g, ' ').trim();
+      expect(normalizedText).toContain('INSERT INTO musicas (titulo, artista, descricao, url_spotify, publicado, created_at) VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP) RETURNING *');
+      expect(values).toEqual([novaMusica.titulo, novaMusica.artista, novaMusica.descricao, novaMusica.url_spotify, novaMusica.publicado]);
+
       expect(result).toEqual(mockDbResponse);
     });
 
@@ -120,13 +124,13 @@ describe('Funções de Músicas (DB)', () => {
 
       const result = await updateMusica(id, atualizacao);
 
-      expect(mockQuery).toHaveBeenCalledWith(
-        expect.stringContaining('UPDATE musicas'),
-        expect.arrayContaining([atualizacao.titulo, atualizacao.artista, id])
-      );
-      // Verifica a ordem exata dos parâmetros incluindo os nulos implícitos
-      const params = mockQuery.mock.calls[0][1];
-      expect(params).toEqual([atualizacao.titulo, atualizacao.artista, null, null, false, id]);
+      expect(mockQuery).toHaveBeenCalledTimes(1);
+      const [text, values] = mockQuery.mock.calls[0];
+
+      const normalizedText = text.replace(/\s+/g, ' ').trim();
+      expect(normalizedText).toContain('UPDATE musicas SET titulo = $1, artista = $2, descricao = $3, url_spotify = $4, publicado = $5, updated_at = CURRENT_TIMESTAMP WHERE id = $6 RETURNING *');
+
+      expect(values).toEqual([atualizacao.titulo, atualizacao.artista, null, null, false, id]);
       
       expect(result).toEqual({ id, ...atualizacao });
     });
@@ -138,7 +142,12 @@ describe('Funções de Músicas (DB)', () => {
 
       const result = await deleteMusica(123);
 
-      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('DELETE FROM musicas WHERE id = $1'), [123]);
+      expect(mockQuery).toHaveBeenCalledTimes(1);
+      const [text, values] = mockQuery.mock.calls[0];
+
+      const normalizedText = text.replace(/\s+/g, ' ').trim();
+      expect(normalizedText).toBe('DELETE FROM musicas WHERE id = $1 RETURNING id');
+      expect(values).toEqual([123]);
       expect(result).toEqual({ id: 123 });
     });
   });
@@ -147,13 +156,21 @@ describe('Funções de Músicas (DB)', () => {
     it('deve retornar todas as músicas quando sem busca', async () => {
       mockQuery.mockResolvedValue({ rows: [] });
       await getAllMusicas();
-      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('SELECT * FROM musicas ORDER BY'), []);
+
+      expect(mockQuery).toHaveBeenCalledTimes(1);
+      const [text, values] = mockQuery.mock.calls[0];
+      const normalizedText = text.replace(/\s+/g, ' ').trim();
+      expect(normalizedText).toBe('SELECT * FROM musicas ORDER BY position ASC, created_at DESC');
+      expect(values).toEqual([]);
     });
 
     it('deve filtrar por termo de busca', async () => {
       mockQuery.mockResolvedValue({ rows: [] });
       await getAllMusicas('Rock');
-      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('WHERE LOWER(titulo) LIKE $1'), ['%rock%']);
+      const [text, values] = mockQuery.mock.calls[0];
+      const normalizedText = text.replace(/\s+/g, ' ').trim();
+      expect(normalizedText).toBe('SELECT * FROM musicas WHERE LOWER(titulo) LIKE $1 OR LOWER(artista) LIKE $1 ORDER BY position ASC, created_at DESC');
+      expect(values).toEqual(['%rock%']);
     });
   });
 });

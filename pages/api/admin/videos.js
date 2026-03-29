@@ -1,154 +1,114 @@
-import { getPaginatedVideos, createVideo, updateVideo, deleteVideo, updateRecords, logActivity, query } from '../../../lib/db.js';
 import { withAuth } from '../../../lib/auth.js';
+import { getPaginatedVideos, createVideo, updateVideo, deleteVideo } from '../../../lib/domain/videos.js';
+import { logActivity } from '../../../lib/domain/audit.js';
+import { z } from 'zod';
 
-const isValidYouTubeUrl = (url) => {
-  const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-  return youtubeRegex.test(url);
-};
+// Zod schemas for robust input validation
+const videoUpdateSchema = z.object({
+  titulo: z.string().optional(),
+  url_youtube: z.string().optional(),
+  descricao: z.string().max(500, { message: 'A descrição deve ter no máximo 500 caracteres' }).optional(),
+  publicado: z.boolean().optional(),
+  thumbnail: z.string().optional(),
+});
+
+const videoCreateSchema = videoUpdateSchema.superRefine((data, ctx) => {
+  // Validação customizada para campos obrigatórios, que oferece mais controle sobre as mensagens de erro.
+  if (!data.titulo || data.titulo.trim() === '') {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'O campo Título é obrigatório.',
+      path: ['titulo'],
+    });
+  }
+  if (!data.url_youtube || data.url_youtube.trim() === '') {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'O campo URL do YouTube é obrigatório.',
+      path: ['url_youtube'],
+    });
+  }
+
+  // Validação de formato da URL do YouTube, apenas se o campo existir
+  if (data.url_youtube) {
+    const isYoutubeUrl = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/.test(data.url_youtube);
+    if (!isYoutubeUrl) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'URL do YouTube inválida',
+        path: ['url_youtube'],
+      });
+    }
+  }
+});
+
+// The original `videoSchema` is now split into `videoCreateSchema` (for POST) and `videoUpdateSchema` (for PUT)
 
 async function handler(req, res) {
+  const { method, body, query: reqQuery, user } = req;
   const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
-  const user = req.user; // Extraído automaticamente pelo middleware withAuth
 
-  switch (req.method) {
-    case 'GET':
-      try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        const search = req.query.search || '';
-        
-        const result = await getPaginatedVideos(page, limit, search);
-
-        // Log para diagnóstico: Verifique isso no terminal onde o servidor está rodando
-        console.log('🔍 Admin Videos GET:', { 
-          total: result.pagination.total, 
-          retornados: result.videos.length,
-          primeiroItem: result.videos[0] ? result.videos[0].titulo : 'Nenhum'
-        });
-
-        res.status(200).json(result);
-      } catch (error) {
-        console.error('Error fetching videos:', error);
-        res.status(500).json({ message: 'Erro ao buscar vídeos' });
+  try {
+    switch (method) {
+      case 'GET': {
+        const { page = 1, limit = 10, search = '' } = reqQuery;
+        const result = await getPaginatedVideos(Number(page), Number(limit), search);
+        return res.status(200).json(result);
       }
-      break;
 
-    case 'POST':
-      try {
-        const { titulo, url_youtube, descricao, publicado, thumbnail } = req.body;
-
-        if (!titulo || !url_youtube) {
-          return res.status(400).json({ message: 'Título e URL do YouTube são obrigatórios' });
+      case 'POST': {
+        const validation = videoCreateSchema.safeParse(body);
+        if (!validation.success) {
+          const firstErrorMessage = validation.error.issues[0]?.message;
+          return res.status(400).json({ message: firstErrorMessage || 'Campos obrigatórios: titulo, url_youtube' });
         }
-
-        if (descricao && descricao.length > 500) {
-          return res.status(400).json({ message: 'A descrição deve ter no máximo 500 caracteres' });
-        }
-
-        // Debug: Log the URL being received
-        console.log('URL recebida para validação:', url_youtube);
         
-        if (!isValidYouTubeUrl(url_youtube)) {
-          console.log('URL falhou na validação');
-          return res.status(400).json({ message: 'URL do YouTube inválida' });
-        }
-
-        const novoVideo = await createVideo({
-          titulo,
-          url_youtube,
-          descricao,
-          publicado: publicado !== undefined ? publicado : false, // Default false se não enviado
-          thumbnail
-        });
-
-        if (user) await logActivity(user.username, 'CRIAR VÍDEO', 'VIDEO', novoVideo.id, `Criou o vídeo: ${titulo}`, ip);
-
-        res.status(201).json(novoVideo);
-      } catch (error) {
-        console.error('Error creating video:', error);
-        res.status(500).json({ message: error.message || 'Erro ao criar vídeo' });
+        const newVideo = await createVideo(validation.data);
+        await logActivity(user.username, 'CREATE', 'VIDEO', newVideo.id, `Criou o vídeo: ${newVideo.titulo}`, ip);
+        return res.status(201).json(newVideo);
       }
-      break;
 
-    case 'PUT':
-      try {
-        // Intercepta ação customizada de reordenação em massa (Drag & Drop)
-        if (req.body.action === 'reorder') {
-          const { items } = req.body;
-          for (const item of items) {
-            await updateRecords('videos', { position: item.position }, { id: item.id });
-          }
-          return res.status(200).json({ success: true, message: 'Ordem atualizada' });
-        }
-
-        const { id, titulo, url_youtube, descricao, publicado, thumbnail } = req.body;
-
+      case 'PUT': {
+        const { id, ...updateData } = body;
         if (!id) {
           return res.status(400).json({ message: 'ID é obrigatório' });
         }
-
-        if (!titulo || !url_youtube) {
-          return res.status(400).json({ message: 'Título e URL do YouTube são obrigatórios' });
+        
+        const validation = videoUpdateSchema.safeParse(updateData);
+        if (!validation.success) {
+            const firstErrorMessage = validation.error.issues[0]?.message;
+            return res.status(400).json({ message: firstErrorMessage || 'Dados de atualização inválidos' });
         }
 
-        if (descricao && descricao.length > 500) {
-          return res.status(400).json({ message: 'A descrição deve ter no máximo 500 caracteres' });
-        }
-
-        if (!isValidYouTubeUrl(url_youtube)) {
-          return res.status(400).json({ message: 'URL do YouTube inválida' });
-        }
-
-        const videoAtualizado = await updateVideo(id, {
-          titulo,
-          url_youtube,
-          descricao,
-          publicado,
-          thumbnail
-        });
-
-        if (!videoAtualizado) {
+        const updatedVideo = await updateVideo(id, validation.data);
+        if (!updatedVideo) {
           return res.status(404).json({ message: 'Vídeo não encontrado' });
         }
-
-        if (user) await logActivity(user.username, 'ATUALIZAR VÍDEO', 'VIDEO', id, `Atualizou o vídeo: ${titulo}`, ip);
-
-        res.status(200).json(videoAtualizado);
-      } catch (error) {
-        console.error('Error updating video:', error);
-        res.status(500).json({ message: error.message || 'Erro ao atualizar vídeo' });
+        await logActivity(user.username, 'UPDATE', 'VIDEO', id, `Atualizou o vídeo: ${updatedVideo.titulo}`, ip);
+        return res.status(200).json(updatedVideo);
       }
-      break;
 
-    case 'DELETE':
-      try {
-        const { id } = req.body;
-
+      case 'DELETE': {
+        const { id } = body;
         if (!id) {
           return res.status(400).json({ message: 'ID é obrigatório' });
         }
-
-        const videoQueryToDel = await query('SELECT titulo FROM videos WHERE id = $1', [id]);
-        const tituloVideo = videoQueryToDel.rows[0]?.titulo || id;
-
-        const resultado = await deleteVideo(id);
-
-        if (!resultado) {
+        const deletedVideo = await deleteVideo(id);
+        if (!deletedVideo) {
           return res.status(404).json({ message: 'Vídeo não encontrado' });
         }
-
-        if (user) await logActivity(user.username, 'EXCLUIR VÍDEO', 'VIDEO', id, `Removeu o vídeo: ${tituloVideo}`, ip);
-
-        res.status(200).json({ message: 'Vídeo excluído com sucesso' });
-      } catch (error) {
-        console.error('Error deleting video:', error);
-        res.status(500).json({ message: 'Erro ao excluir vídeo' });
+        await logActivity(user.username, 'DELETE', 'VIDEO', id, `Excluiu o vídeo ID: ${id}`, ip);
+        return res.status(200).json({ message: 'Vídeo excluído com sucesso' });
       }
-      break;
 
-    default:
-      res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
-      res.status(405).end(`Método ${req.method} não permitido`);
+      default:
+        res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
+        return res.status(405).json({ message: `Method ${method} Not Allowed` });
+    }
+  } catch (error) {
+    console.error(`Error handling ${method} /api/admin/videos:`, error);
+    const message = `Erro ao ${method === 'GET' ? 'buscar' : method === 'POST' ? 'criar' : method === 'PUT' ? 'atualizar' : 'excluir'} vídeos`;
+    return res.status(500).json({ message });
   }
 }
 

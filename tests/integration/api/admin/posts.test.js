@@ -1,18 +1,28 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../../../../pages/api/admin/posts';
-import { getPaginatedPosts, createPost, updatePost, deletePost, logActivity, updateRecords, query } from '../../../../lib/db';
-import { invalidateCache } from '../../../../lib/cache';
 
-jest.mock('../../../../lib/db', () => ({
+// Mock das dependências diretas do handler, que agora vêm da camada de domínio/crud
+jest.mock('../../../../lib/domain/posts.js', () => ({
   getPaginatedPosts: jest.fn(),
   createPost: jest.fn(),
   updatePost: jest.fn(),
   deletePost: jest.fn(),
-  logActivity: jest.fn(),
-  updateRecords: jest.fn(),
-  query: jest.fn()
 }));
+jest.mock('../../../../lib/domain/audit.js', () => ({
+  logActivity: jest.fn(),
+}));
+jest.mock('../../../../lib/crud.js', () => ({
+  updateRecords: jest.fn(),
+}));
+jest.mock('../../../../lib/db.js', () => ({
+  query: jest.fn(),
+}));
+import { invalidateCache } from '../../../../lib/cache';
+import { getPaginatedPosts, createPost, updatePost, deletePost } from '../../../../lib/domain/posts.js';
+import { logActivity } from '../../../../lib/domain/audit.js';
+import { updateRecords } from '../../../../lib/crud.js';
+import { query } from '../../../../lib/db.js';
 
 jest.mock('../../../../lib/cache', () => ({
   invalidateCache: jest.fn(),
@@ -73,7 +83,7 @@ describe('Integração: API de Admin Posts (/api/admin/posts)', () => {
     // A primeira chamada a query é para permissões (mockada no beforeEach, mas sobrescrita aqui para clareza)
     // A segunda chamada é para buscar o título para o log de auditoria
     query.mockResolvedValueOnce({ rows: [{ permissions: ['Posts/Artigos'] }] })
-         .mockResolvedValueOnce({ rows: [{ title: 'Post Antigo' }] });
+         .mockResolvedValueOnce({ rows: [{ title: 'Post Antigo' }], rowCount: 1 });
     deletePost.mockResolvedValueOnce({ id: 1 });
     
     await handler(req, res);

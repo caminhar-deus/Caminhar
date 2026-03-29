@@ -1,4 +1,7 @@
-import { getPaginatedPosts, createPost, updatePost, deletePost, logActivity, updateRecords, query } from '../../../lib/db.js';
+import { getPaginatedPosts, createPost, updatePost, deletePost } from '../../../lib/domain/posts.js';
+import { logActivity } from '../../../lib/domain/audit.js';
+import { updateRecords } from '../../../lib/crud.js';
+import { query } from '../../../lib/db.js';
 import { withAuth } from '../../../lib/auth.js';
 import { invalidateCache, checkRateLimit } from '../../../lib/cache.js'; // Importar checkRateLimit
 import { z } from 'zod'; // Importar Zod para validação de esquema

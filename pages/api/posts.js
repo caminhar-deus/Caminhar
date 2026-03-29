@@ -1,4 +1,4 @@
-import { getRecentPosts } from '../../lib/db.js';
+import { getRecentPosts } from '../../lib/domain/posts.js';
 import { getOrSetCache } from '../../lib/cache.js';
 import { z } from 'zod';
 
@@ -30,11 +30,12 @@ export default async function handler(req, res) {
       return await getRecentPosts(limit, page);
     }, 3600); // Cache de 1 hora
     
+    // Garante que, mesmo que o cache ou a função de domínio retornem algo inesperado, a API não quebre.
     // Retorna os dados em um formato padronizado
     return res.status(200).json({
       success: true,
-      data: result.data,
-      pagination: result.pagination,
+      data: result?.data || [],
+      pagination: result?.pagination || {},
     });
   } catch (error) {
     console.error('API Error fetching posts:', error);

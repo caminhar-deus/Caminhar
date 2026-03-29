@@ -1,12 +1,12 @@
-import { getPaginatedMusicas } from '../../lib/domain/musicas.js';
+import { getPaginatedVideos } from '../../lib/domain/videos.js';
 import { z } from 'zod';
 
 /**
- * Handles GET requests to fetch paginated and published music data.
+ * Handles GET requests to fetch paginated and published video data.
  */
 async function handleGet(req, res) {
   try {
-    // Valida e sanitiza os parâmetros de entrada com Zod para maior robustez.
+    // Validate and sanitize input parameters with Zod for robustness.
     const querySchema = z.object({
       page: z.coerce.number().int().positive().default(1),
       limit: z.coerce.number().int().positive().default(10),
@@ -24,31 +24,31 @@ async function handleGet(req, res) {
 
     const { page, limit, search } = validation.data;
 
-    // Define uma política de cache para a resposta.
+    // Set a caching policy for the response.
     res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
 
-    // Busca os dados utilizando a função de domínio, garantindo que apenas músicas publicadas sejam retornadas.
-    const result = await getPaginatedMusicas(page, limit, search, true);
+    // Fetch data using the domain function, ensuring only published videos are returned.
+    const result = await getPaginatedVideos(page, limit, search, true);
 
-    // Retorna os dados em um formato padronizado e estruturado.
+    // Return data in a standardized and structured format.
     return res.status(200).json({
       success: true,
       data: result.data,
       pagination: result.pagination,
     });
   } catch (error) {
-    console.error('API Error fetching musicas:', error);
-    // Resposta de erro padronizada.
+    console.error('API Error fetching videos:', error);
+    // Standardized error response.
     return res.status(500).json({
       success: false,
-      message: 'Erro interno do servidor ao buscar músicas.',
+      message: 'Erro interno do servidor ao buscar vídeos.',
     });
   }
 }
 
 /**
- * Handler principal da rota /api/musicas.
- * Direciona as requisições para o handler do método HTTP correspondente.
+ * Main handler for the /api/videos route.
+ * Dispatches requests to the appropriate method handler.
  */
 export default async function handler(req, res) {
   switch (req.method) {

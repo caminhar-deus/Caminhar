@@ -3,7 +3,15 @@ import { createMocks } from 'node-mocks-http';
 import jwt from 'jsonwebtoken';
 
 // Mock das dependências externas antes de qualquer importação
-jest.mock('../../../lib/db.js');
+jest.mock('../../../lib/domain/videos.js', () => ({
+  getPaginatedVideos: jest.fn(),
+  createVideo: jest.fn(),
+  updateVideo: jest.fn(),
+  deleteVideo: jest.fn(),
+}));
+jest.mock('../../../lib/domain/audit.js', () => ({
+  logActivity: jest.fn(),
+}));
 jest.mock('cookie', () => ({
   // Fornecemos funções de mock vazias que serão implementadas no beforeEach
   parse: jest.fn(),
@@ -12,7 +20,8 @@ jest.mock('cookie', () => ({
 jest.mock('jsonwebtoken');
 
 import videosHandler from '../../../pages/api/admin/videos.js';
-import { getPaginatedVideos, createVideo, updateVideo, deleteVideo, query, logActivity } from '../../../lib/db.js';
+import { getPaginatedVideos, createVideo, updateVideo, deleteVideo } from '../../../lib/domain/videos.js';
+import { logActivity } from '../../../lib/domain/audit.js';
 import * as cookie from 'cookie';
 
 describe('API de Vídeos (/api/admin/videos)', () => {
@@ -35,8 +44,7 @@ describe('API de Vídeos (/api/admin/videos)', () => {
     // Configuração padrão de autenticação bem-sucedida para a maioria dos testes
     jwt.verify.mockReturnValue({ role: 'admin' });
 
-    // Retorno simulado padrão para a consulta ao banco de dados e logs
-    query.mockResolvedValue({ rows: [{ titulo: 'Vídeo Teste' }] });
+    // Retorno simulado padrão para o log de atividade
     logActivity.mockResolvedValue();
   });
 
@@ -85,7 +93,7 @@ describe('API de Vídeos (/api/admin/videos)', () => {
 
       expect(res._getStatusCode()).toBe(500);
       expect(res._getJSONData()).toEqual({ message: 'Erro ao buscar vídeos' });
-      expect(consoleSpy).toHaveBeenCalledWith('Error fetching videos:', dbError);
+      expect(consoleSpy).toHaveBeenCalledWith('Error handling GET /api/admin/videos:', dbError);
       consoleSpy.mockRestore();
     });
   });
@@ -150,7 +158,7 @@ describe('API de Vídeos (/api/admin/videos)', () => {
       await videosHandler(req, res);
 
       expect(res._getStatusCode()).toBe(400);
-      expect(res._getJSONData().message).toContain('obrigatórios');
+      expect(res._getJSONData().message).toContain('obrigatório');
       expect(createVideo).not.toHaveBeenCalled();
     });
 

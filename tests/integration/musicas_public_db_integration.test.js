@@ -1,7 +1,7 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../../pages/api/musicas';
-import { query } from '../../lib/db';
+import { query } from '../../lib/db.js';
 
 // Mock do banco de dados (simulando a camada mais baixa)
 jest.mock('../../lib/db', () => ({
@@ -11,6 +11,14 @@ jest.mock('../../lib/db', () => ({
 describe('Integração API Pública: Validação de Segurança (Banco de Dados)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Define um mock de implementação padrão que cobre as duas chamadas (dados e contagem)
+    // feitas por getPaginatedMusicas, evitando o TypeError que causa o erro 500.
+    query.mockImplementation((sql) => {
+      if (sql.includes('COUNT(*)')) {
+        return Promise.resolve({ rows: [{ count: '0' }] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
   });
 
   it('deve garantir que a query SQL inclua "WHERE publicado = true"', async () => {
@@ -18,22 +26,15 @@ describe('Integração API Pública: Validação de Segurança (Banco de Dados)'
       method: 'GET',
     });
 
-    // Mock do retorno do banco
-    query.mockResolvedValueOnce({
-      rows: [
-        { id: 1, titulo: 'Música Publicada', publicado: true }
-      ]
-    });
-
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(200);
     
     // Verifica se a query enviada ao banco realmente contém o filtro de segurança
-    expect(query).toHaveBeenCalledWith(
-      expect.stringContaining('WHERE publicado = true'),
-      expect.any(Array)
-    );
+    const dataCall = query.mock.calls.find(call => call[0].includes('SELECT *'));
+    const countCall = query.mock.calls.find(call => call[0].includes('COUNT(*)'));
+    expect(dataCall[0]).toContain('WHERE publicado = true');
+    expect(countCall[0]).toContain('WHERE publicado = true');
   });
 
   it('deve manter o filtro "publicado = true" mesmo quando houver busca', async () => {
@@ -42,16 +43,13 @@ describe('Integração API Pública: Validação de Segurança (Banco de Dados)'
       query: { search: 'Hino' }
     });
 
-    query.mockResolvedValueOnce({ rows: [] });
-
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(200);
 
     // Verifica se ambos os filtros estão presentes na query (segurança + busca)
-    expect(query).toHaveBeenCalledWith(
-      expect.stringContaining('WHERE publicado = true AND'),
-      expect.arrayContaining(['%hino%'])
-    );
+    const dataCall = query.mock.calls.find(call => call[0].includes('SELECT *'));
+    expect(dataCall[0]).toContain('WHERE publicado = true AND');
+    expect(dataCall[1]).toEqual(expect.arrayContaining(['%hino%']));
   });
 });

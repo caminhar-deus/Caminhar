@@ -1,6 +1,7 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { mockQuery, restorePoolImplementation } from 'pg';
-import { deletePost, resetPool } from '../../../../lib/db.js';
+import { resetPool } from '../../../../lib/db.js';
+import { deletePost } from '../../../../lib/domain/posts.js';
 
 // Mock do 'pg' (automático via __mocks__/pg.js)
 jest.mock('pg');
@@ -24,7 +25,9 @@ describe('deletePost', () => {
     expect(mockQuery).toHaveBeenCalledTimes(1);
     const [text, values] = mockQuery.mock.calls[0];
 
-    expect(text).toContain('DELETE FROM posts WHERE id = $1');
+    // Normaliza o SQL para remover espaços/quebras de linha extras, tornando o teste mais robusto.
+    const normalizedText = text.replace(/\s+/g, ' ').trim();
+    expect(normalizedText).toBe('DELETE FROM posts WHERE id = $1 RETURNING id');
     expect(values).toEqual([postId]);
     expect(result).toEqual({ id: postId });
   });

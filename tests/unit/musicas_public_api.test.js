@@ -1,16 +1,22 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../../pages/api/musicas';
-import { query } from '../../lib/db';
+import { getPaginatedMusicas } from '../../lib/domain/musicas.js';
 
-// Mock do módulo db para não acessar o banco de dados real
-jest.mock('../../lib/db', () => ({
-  query: jest.fn(),
+// Mock da camada de domínio, que é a dependência direta do handler da API.
+// Isso isola o teste do handler da implementação do banco de dados.
+jest.mock('../../lib/domain/musicas.js', () => ({
+  getPaginatedMusicas: jest.fn(),
 }));
 
 describe('API Pública de Músicas (/api/musicas)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Fornece um mock padrão para evitar erros em testes que não dependem de dados específicos.
+    getPaginatedMusicas.mockResolvedValue({
+      data: [],
+      pagination: { page: 1, limit: 10, total: 0, totalPages: 1 },
+    });
   });
 
   it('deve retornar lista de músicas publicadas com status 200', async () => {
@@ -19,8 +25,11 @@ describe('API Pública de Músicas (/api/musicas)', () => {
       { id: 2, titulo: 'Música 2', artista: 'Artista B', publicado: true }
     ];
 
-    // Simula o retorno da query
-    query.mockResolvedValue({ rows: mockMusicas });
+    // Simula o retorno da função de domínio
+    getPaginatedMusicas.mockResolvedValue({
+      data: mockMusicas,
+      pagination: { page: 1, limit: 10, total: 2, totalPages: 1 },
+    });
 
     const { req, res } = createMocks({
       method: 'GET',
@@ -29,16 +38,24 @@ describe('API Pública de Músicas (/api/musicas)', () => {
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(200);
-    expect(JSON.parse(res._getData())).toEqual(mockMusicas);
-    expect(query).toHaveBeenCalledWith(
-      'SELECT id, titulo, artista, url_spotify, descricao, position FROM musicas WHERE publicado = true ORDER BY position ASC, created_at DESC LIMIT $1 OFFSET $2',
-      [10, 0] // Default limit and offset
+    const responseData = JSON.parse(res._getData());
+
+    // Verifica a estrutura da resposta padronizada
+    expect(responseData.success).toBe(true);
+    expect(responseData.data).toEqual(mockMusicas);
+    expect(responseData.pagination).toEqual({ page: 1, limit: 10, total: 2, totalPages: 1 });
+
+    // Verifica se a função de domínio foi chamada com os parâmetros corretos
+    expect(getPaginatedMusicas).toHaveBeenCalledWith(
+      1,    // page default
+      10,   // limit default
+      undefined, // search default
+      true  // publishedOnly = true
     );
   });
 
   it('deve filtrar por termo de busca', async () => {
     const searchTerm = 'Hino';
-    query.mockResolvedValue({ rows: [] });
 
     const { req, res } = createMocks({
       method: 'GET',
@@ -48,15 +65,15 @@ describe('API Pública de Músicas (/api/musicas)', () => {
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(200);
-    expect(query).toHaveBeenCalledWith(
-      'SELECT id, titulo, artista, url_spotify, descricao, position FROM musicas WHERE publicado = true AND (titulo ILIKE $1 OR artista ILIKE $1) ORDER BY position ASC, created_at DESC LIMIT $2 OFFSET $3',
-      [`%${searchTerm.toLowerCase()}%`, 10, 0]
+    expect(getPaginatedMusicas).toHaveBeenCalledWith(
+      1,
+      10,
+      searchTerm,
+      true
     );
   });
 
   it('deve suportar paginação', async () => {
-    query.mockResolvedValue({ rows: [] });
-
     const { req, res } = createMocks({
       method: 'GET',
       query: { page: '3', limit: '5' }
@@ -65,9 +82,11 @@ describe('API Pública de Músicas (/api/musicas)', () => {
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(200);
-    expect(query).toHaveBeenCalledWith(
-      'SELECT id, titulo, artista, url_spotify, descricao, position FROM musicas WHERE publicado = true ORDER BY position ASC, created_at DESC LIMIT $1 OFFSET $2',
-      [5, 10] // limit 5, offset (3-1)*5 = 10
+    expect(getPaginatedMusicas).toHaveBeenCalledWith(
+      3,    // page
+      5,    // limit
+      undefined,
+      true
     );
   });
 
@@ -79,14 +98,14 @@ describe('API Pública de Músicas (/api/musicas)', () => {
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(405);
-    expect(JSON.parse(res._getData())).toEqual({ message: 'Method POST Not Allowed' });
+    expect(JSON.parse(res._getData()).message).toContain('Method POST Not Allowed');
   });
 
   it('deve retornar erro 500 em caso de falha interna', async () => {
     // Silencia o console.error para este teste específico pois o erro é esperado
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-    query.mockRejectedValue(new Error('Erro de conexão com banco'));
+    getPaginatedMusicas.mockRejectedValue(new Error('Erro de conexão com banco'));
 
     const { req, res } = createMocks({
       method: 'GET',
@@ -96,8 +115,8 @@ describe('API Pública de Músicas (/api/musicas)', () => {
 
     expect(res._getStatusCode()).toBe(500);
     const data = JSON.parse(res._getData());
+    expect(data.success).toBe(false);
     expect(data.message).toBe('Erro interno do servidor ao buscar músicas.');
-    expect(data.details).toBe('Erro de conexão com banco');
 
     // Restaura o console.error original
     consoleSpy.mockRestore();

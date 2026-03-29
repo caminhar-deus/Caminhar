@@ -1,4 +1,7 @@
-import { getPaginatedMusicas, createMusica, updateMusica, deleteMusica, updateRecords, logActivity, query } from '../../../lib/db.js';
+import { getPaginatedMusicas, createMusica, updateMusica, deleteMusica } from '../../../lib/domain/musicas.js';
+import { updateRecords } from '../../../lib/crud.js';
+import { logActivity } from '../../../lib/domain/audit.js';
+import { query } from '../../../lib/db.js';
 import { withAuth } from '../../../lib/auth.js';
 import { invalidateCache } from '../../../lib/cache.js';
 
@@ -128,16 +131,18 @@ async function handler(req, res) {
           return res.status(400).json({ message: 'ID é obrigatório' });
         }
 
-        const musicaQueryToDel = await query('SELECT titulo FROM musicas WHERE id = $1', [id]);
-        const tituloMusica = musicaQueryToDel.rows[0]?.titulo || id;
+        // Chama a exclusão primeiro, solicitando o título para o log de auditoria.
+        // Isso remove a dependência direta da função `query` do handler.
+        const deletedMusica = await deleteMusica(id, { returning: ['id', 'titulo'] });
 
-        const resultado = await deleteMusica(id);
-
-        if (!resultado) {
+        if (!deletedMusica) {
           return res.status(404).json({ message: 'Música não encontrada' });
         }
 
-        if (user) await logActivity(user.username, 'EXCLUIR MÚSICA', 'MUSIC', id, `Removeu a música: ${tituloMusica}`, ip);
+        if (user) {
+          const tituloMusica = deletedMusica.titulo || id;
+          await logActivity(user.username, 'EXCLUIR MÚSICA', 'MUSIC', id, `Removeu a música: ${tituloMusica}`, ip);
+        }
 
         // Invalida o cache após exclusão
         await invalidateCache('musicas');

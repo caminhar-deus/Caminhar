@@ -1,6 +1,7 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { mockQuery, restorePoolImplementation } from 'pg';
-import { updateSetting, setSetting, getSetting, getSettings, getAllSettings, resetPool } from '../../../../lib/db.js';
+import { resetPool } from '../../../../lib/db.js';
+import { updateSetting, setSetting, getSetting, getSettings, getAllSettings } from '../../../../lib/domain/settings.js';
 
 // Mock do 'pg' (automático via __mocks__/pg.js)
 jest.mock('pg');
@@ -20,10 +21,18 @@ describe('Settings Operations', () => {
 
       const result = await updateSetting('site_name', 'Caminhar', 'string', 'Nome do site');
 
-      expect(mockQuery).toHaveBeenCalledWith(
-        expect.stringContaining('INSERT INTO settings'),
-        ['site_name', 'Caminhar', 'string', 'Nome do site']
-      );
+      expect(mockQuery).toHaveBeenCalledTimes(1);
+      const [text, values] = mockQuery.mock.calls[0];
+
+      // Normaliza o SQL para remover espaços/quebras de linha extras, tornando o teste mais robusto.
+      const normalizedText = text.replace(/\s+/g, ' ').trim();
+      const expectedSql = 'INSERT INTO settings (key, value, type, description, updated_at) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP) ON CONFLICT (key) DO UPDATE SET value = $5, type = $6, description = $7, updated_at = CURRENT_TIMESTAMP RETURNING *';
+      expect(normalizedText).toBe(expectedSql);
+
+      // Verifica os parâmetros para INSERT e UPDATE, que agora são 7 no total.
+      const expectedValues = ['site_name', 'Caminhar', 'string', 'Nome do site', 'Caminhar', 'string', 'Nome do site'];
+      expect(values).toEqual(expectedValues);
+
       expect(result).toEqual(mockResult.rows[0]);
     });
 

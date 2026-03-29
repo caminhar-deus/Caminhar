@@ -1,19 +1,25 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../../pages/api/admin/videos';
-import { createVideo, updateVideo } from '../../lib/db';
+import { createVideo, updateVideo } from '../../lib/domain/videos.js';
+import { logActivity } from '../../lib/domain/audit.js';
 
 // Mock do módulo de autenticação para ignorar a verificação de token neste teste
 jest.mock('../../lib/auth', () => ({
-  withAuth: (handler) => (req, res) => handler(req, res),
+  withAuth: (handler) => (req, res) => {
+    // Simula um usuário autenticado para os testes, que é o que o middleware real faz.
+    req.user = { username: 'test-admin', role: 'admin' };
+    return handler(req, res);
+  },
 }));
 
-// Mock das funções do lib/db para não acessar o banco de dados
-jest.mock('../../lib/db', () => ({
+// Mock das funções de domínio, que são as dependências diretas do handler
+jest.mock('../../lib/domain/videos.js', () => ({
   createVideo: jest.fn(),
   updateVideo: jest.fn(),
-  getPaginatedVideos: jest.fn(),
-  deleteVideo: jest.fn(),
+}));
+jest.mock('../../lib/domain/audit.js', () => ({
+  logActivity: jest.fn(),
 }));
 
 describe('Validação de API de Vídeos - Limite de Caracteres', () => {
@@ -66,6 +72,7 @@ describe('Validação de API de Vídeos - Limite de Caracteres', () => {
 
   it('deve permitir descrição com 500 caracteres exatos', async () => {
     createVideo.mockResolvedValue({ id: 1, titulo: 'Sucesso' });
+    logActivity.mockResolvedValue();
 
     const { req, res } = createMocks({
       method: 'POST',
@@ -85,6 +92,7 @@ describe('Validação de API de Vídeos - Limite de Caracteres', () => {
   it('deve retornar erro 404 ao tentar atualizar um vídeo inexistente', async () => {
     // Simula que o vídeo não foi encontrado (retorna null)
     updateVideo.mockResolvedValue(null);
+    logActivity.mockResolvedValue();
 
     const { req, res } = createMocks({
       method: 'PUT',

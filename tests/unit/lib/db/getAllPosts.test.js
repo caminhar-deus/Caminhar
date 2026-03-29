@@ -1,6 +1,7 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { mockQuery, restorePoolImplementation } from 'pg';
-import { getAllPosts, resetPool } from '../../../../lib/db.js';
+import { resetPool } from '../../../../lib/db.js';
+import { getAllPosts } from '../../../../lib/domain/posts.js';
 
 // Mock do 'pg' (automático via __mocks__/pg.js)
 jest.mock('pg');

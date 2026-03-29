@@ -1,6 +1,7 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { mockQuery, restorePoolImplementation } from 'pg';
-import { saveImage, resetPool } from '../../../../lib/db.js';
+import { resetPool } from '../../../../lib/db.js';
+import { saveImage } from '../../../../lib/domain/images.js';
 
 // Mock do 'pg' (automático via __mocks__/pg.js)
 jest.mock('pg');
@@ -44,8 +45,10 @@ describe('saveImage (Salvar Imagem)', () => {
     // Verifica os argumentos da query
     const [text, params] = mockQuery.mock.calls[0];
     
-    expect(text).toContain('INSERT INTO images');
-    expect(text).toContain('VALUES($1, $2, $3, $4, $5)');
+    // Normaliza o SQL para remover espaços/quebras de linha extras, tornando o teste mais robusto.
+    const normalizedText = text.replace(/\s+/g, ' ').trim();
+    expect(normalizedText).toBe('INSERT INTO images (filename, path, type, size, user_id) VALUES ($1, $2, $3, $4, $5) RETURNING *');
+
     expect(params).toEqual([filename, relativePath, type, fileSize, userId]);
     
     // Verifica o retorno

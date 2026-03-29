@@ -1,14 +1,16 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../../pages/api/admin/musicas';
-import { createMusica, getPaginatedMusicas, deleteMusica, query, logActivity } from '../../lib/db';
+import { createMusica, getPaginatedMusicas, deleteMusica } from '../../lib/domain/musicas.js';
+import { logActivity } from '../../lib/domain/audit.js';
 
-// Mock do banco de dados
-jest.mock('../../lib/db', () => ({
+// Mock das dependências de domínio, que são as dependências diretas do handler.
+jest.mock('../../lib/domain/musicas.js', () => ({
   createMusica: jest.fn(),
   getPaginatedMusicas: jest.fn(),
   deleteMusica: jest.fn(),
-  query: jest.fn(),
+}));
+jest.mock('../../lib/domain/audit.js', () => ({
   logActivity: jest.fn(),
 }));
 
@@ -19,13 +21,16 @@ jest.mock('../../lib/cache', () => ({
 
 // Mock do módulo de autenticação para ignorar a verificação de token neste teste
 jest.mock('../../lib/auth', () => ({
-  withAuth: (handler) => (req, res) => handler(req, res),
+  withAuth: (handler) => (req, res) => {
+    // Simula um usuário autenticado para os testes, que é o que o middleware real faz.
+    req.user = { username: 'test-admin', role: 'admin' };
+    return handler(req, res);
+  },
 }));
 
 describe('Integração: Fluxo Completo de Músicas (API + DB)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    query.mockResolvedValue({ rows: [{ titulo: 'Música de Teste' }] });
     logActivity.mockResolvedValue();
   });
 
@@ -91,14 +96,14 @@ describe('Integração: Fluxo Completo de Músicas (API + DB)', () => {
     });
 
     // Mock do retorno do DELETE no banco
-    deleteMusica.mockResolvedValueOnce({ id: 1 });
+    deleteMusica.mockResolvedValueOnce({ id: 1, titulo: newMusica.titulo });
 
     await handler(deleteReq, deleteRes);
 
     // Verificações da Exclusão
     expect(deleteRes._getStatusCode()).toBe(200);
     expect(JSON.parse(deleteRes._getData())).toEqual({ message: 'Música excluída com sucesso' });
-    expect(deleteMusica).toHaveBeenCalledWith(1);
+    expect(deleteMusica).toHaveBeenCalledWith(1, { returning: ['id', 'titulo'] });
   });
 
   it('deve retornar erro 400 se a URL do Spotify for inválida', async () => {
