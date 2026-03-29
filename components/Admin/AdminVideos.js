@@ -18,6 +18,20 @@ const videoSchema = z.object({
 });
 
 /**
+ * Extrai de forma robusta o ID de um vídeo a partir de diferentes formatos de URL do YouTube.
+ * @param {string} url - A URL do YouTube.
+ * @returns {string} O ID do vídeo, ou uma string vazia se não for encontrado.
+ */
+const getYoutubeVideoId = (url) => {
+  if (!url) return '';
+  // Regex para cobrir os formatos mais comuns de URL do YouTube (padrão, curto, embed, etc.)
+  const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+  const match = url.match(regex);
+  
+  return match ? match[1] : '';
+};
+
+/**
  * Configuração dos campos do formulário
  */
 const fields = [
@@ -99,31 +113,35 @@ const columns = [
     key: 'url_youtube',
     header: 'YouTube',
     width: '350px',
-    render: (item) => (
-      <div>
-        <a 
-          href={item.url_youtube} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          style={{ color: '#ff0000', textDecoration: 'none', fontWeight: 500 }}
-        >
-          📺 Abrir no YouTube
-        </a>
-        <div style={{ marginTop: '10px' }}>
-          <iframe
-            data-testid="embed-iframe"
-            style={{ borderRadius: '8px' }}
-            src={`https://www.youtube.com/embed/${item.url_youtube.split('/').pop().split('?')[0]}?autoplay=0`}
-            width="100%"
-            height="200"
-            frameBorder="0"
-            allowFullScreen
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            loading="lazy"
-          />
+    render: (item) => {
+      const videoId = getYoutubeVideoId(item.url_youtube);
+      return (
+        <div>
+          <a 
+            href={item.url_youtube} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            style={{ color: '#ff0000', textDecoration: 'none', fontWeight: 500 }}
+          >
+            📺 Abrir no YouTube
+          </a>
+          <div style={{ marginTop: '10px' }}>
+            <iframe
+              data-testid="embed-iframe"
+              style={{ borderRadius: '8px' }}
+              src={videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=0` : ''}
+              title={`Pré-visualização do vídeo ${item.titulo}`}
+              width="100%"
+              height="200"
+              frameBorder="0"
+              allowFullScreen
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              loading="lazy"
+            />
+          </div>
         </div>
-      </div>
-    )
+      );
+    }
   },
   {
     key: 'publicado',
