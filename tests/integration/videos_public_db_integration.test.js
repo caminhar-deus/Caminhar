@@ -2,10 +2,19 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../../pages/api/videos.js';
 import { query } from '../../lib/db.js';
+import { getOrSetCache, checkRateLimit } from '../../lib/cache.js';
 
 // Mock do banco de dados (simulando a camada mais baixa)
 jest.mock('../../lib/db', () => ({
   query: jest.fn(),
+}));
+
+// Mock da camada de cache para evitar o carregamento do 'redis' e o erro de ESM.
+jest.mock('../../lib/cache.js', () => ({
+  getOrSetCache: jest.fn(async (key, fetchFunction) => {
+    return await fetchFunction();
+  }),
+  checkRateLimit: jest.fn().mockResolvedValue(false),
 }));
 
 describe('Integração API Pública: Validação de Segurança (Banco de Dados) - Vídeos', () => {
@@ -18,6 +27,10 @@ describe('Integração API Pública: Validação de Segurança (Banco de Dados) 
         return Promise.resolve({ rows: [{ count: '0' }] });
       }
       return Promise.resolve({ rows: [] });
+    });
+    checkRateLimit.mockResolvedValue(false);
+    getOrSetCache.mockImplementation(async (key, fetchFunction) => {
+      return await fetchFunction();
     });
   });
 

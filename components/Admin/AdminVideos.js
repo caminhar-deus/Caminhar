@@ -125,20 +125,22 @@ const columns = [
           >
             📺 Abrir no YouTube
           </a>
-          <div style={{ marginTop: '10px' }}>
-            <iframe
-              data-testid="embed-iframe"
-              style={{ borderRadius: '8px' }}
-              src={videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=0` : ''}
-              title={`Pré-visualização do vídeo ${item.titulo}`}
-              width="100%"
-              height="200"
-              frameBorder="0"
-              allowFullScreen
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              loading="lazy"
-            />
-          </div>
+          {videoId && (
+            <div style={{ marginTop: '10px' }}>
+              <iframe
+                data-testid="embed-iframe"
+                style={{ borderRadius: '8px' }}
+                src={`https://www.youtube.com/embed/${videoId}?autoplay=0`}
+                title={`Pré-visualização do vídeo ${item.titulo}`}
+                width="100%"
+                height="200"
+                frameBorder="0"
+                allowFullScreen
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                loading="lazy"
+              />
+            </div>
+          )}
         </div>
       );
     }
@@ -162,7 +164,7 @@ const initialFormData = {
   titulo: '',
   descricao: '',
   url_youtube: '',
-  thumbnail: '',
+  thumbnail: null,
   publicado: false
 };
 

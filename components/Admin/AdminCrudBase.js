@@ -228,7 +228,10 @@ export default function AdminCrudBase({
       return null;
     }
 
-    const fieldValue = formData[name] ?? '';
+    // Passa o valor do formulário diretamente para o componente de campo.
+    // A coerção para string vazia (`?? ''`) foi removida para permitir que
+    // componentes como ImageUploadField recebam `null` e evitem renderizar <img src="">.
+    const fieldValue = formData[name];
     // Extrai a mensagem de erro específica para este campo, se existir.
     const fieldError = error?.errors?.[name]?.[0];
 

@@ -2,7 +2,6 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../../pages/api/admin/videos';
 import { createVideo, updateVideo } from '../../lib/domain/videos.js';
-import { logActivity } from '../../lib/domain/audit.js';
 
 // Mock do módulo de autenticação para ignorar a verificação de token neste teste
 jest.mock('../../lib/auth', () => ({
@@ -17,9 +16,9 @@ jest.mock('../../lib/auth', () => ({
 jest.mock('../../lib/domain/videos.js', () => ({
   createVideo: jest.fn(),
   updateVideo: jest.fn(),
-}));
-jest.mock('../../lib/domain/audit.js', () => ({
-  logActivity: jest.fn(),
+  getPaginatedVideos: jest.fn(),
+  deleteVideo: jest.fn(),
+  reorderVideos: jest.fn(),
 }));
 
 describe('Validação de API de Vídeos - Limite de Caracteres', () => {
@@ -35,17 +34,14 @@ describe('Validação de API de Vídeos - Limite de Caracteres', () => {
         url_youtube: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
         descricao: 'a'.repeat(501) // 501 caracteres
       },
-      headers: { host: 'localhost:3000' }
     });
 
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(400);
-    expect(JSON.parse(res._getData())).toEqual(
-      expect.objectContaining({
-        message: 'A descrição deve ter no máximo 500 caracteres'
-      })
-    );
+    expect(JSON.parse(res._getData())).toEqual({
+      message: 'Descrição deve ter no máximo 500 caracteres'
+    });
   });
 
   it('deve retornar erro 400 quando a descrição excede 500 caracteres (PUT)', async () => {
@@ -57,22 +53,18 @@ describe('Validação de API de Vídeos - Limite de Caracteres', () => {
         url_youtube: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
         descricao: 'a'.repeat(501)
       },
-      headers: { host: 'localhost:3000' }
     });
 
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(400);
-    expect(JSON.parse(res._getData())).toEqual(
-      expect.objectContaining({
-        message: 'A descrição deve ter no máximo 500 caracteres'
-      })
-    );
+    expect(JSON.parse(res._getData())).toEqual({
+      message: 'Descrição deve ter no máximo 500 caracteres'
+    });
   });
 
   it('deve permitir descrição com 500 caracteres exatos', async () => {
     createVideo.mockResolvedValue({ id: 1, titulo: 'Sucesso' });
-    logActivity.mockResolvedValue();
 
     const { req, res } = createMocks({
       method: 'POST',
@@ -81,7 +73,6 @@ describe('Validação de API de Vídeos - Limite de Caracteres', () => {
         url_youtube: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
         descricao: 'a'.repeat(500)
       },
-      headers: { host: 'localhost:3000' }
     });
 
     await handler(req, res);
@@ -92,7 +83,6 @@ describe('Validação de API de Vídeos - Limite de Caracteres', () => {
   it('deve retornar erro 404 ao tentar atualizar um vídeo inexistente', async () => {
     // Simula que o vídeo não foi encontrado (retorna null)
     updateVideo.mockResolvedValue(null);
-    logActivity.mockResolvedValue();
 
     const { req, res } = createMocks({
       method: 'PUT',
@@ -102,7 +92,6 @@ describe('Validação de API de Vídeos - Limite de Caracteres', () => {
         url_youtube: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
         descricao: 'Descrição válida'
       },
-      headers: { host: 'localhost:3000' }
     });
 
     await handler(req, res);

@@ -92,8 +92,8 @@ describe('API de Vídeos (/api/admin/videos)', () => {
       await videosHandler(req, res);
 
       expect(res._getStatusCode()).toBe(500);
-      expect(res._getJSONData()).toEqual({ message: 'Erro ao buscar vídeos' });
-      expect(consoleSpy).toHaveBeenCalledWith('Error handling GET /api/admin/videos:', dbError);
+      expect(res._getJSONData()).toEqual({ message: 'Erro interno ao processar a requisição de vídeos.' });
+      expect(consoleSpy).toHaveBeenCalledWith('Erro ao manusear GET /api/admin/videos:', dbError);
       consoleSpy.mockRestore();
     });
   });
@@ -152,13 +152,16 @@ describe('API de Vídeos (/api/admin/videos)', () => {
         headers: {
           'Authorization': 'Bearer valid-token',
         },
-        body: { titulo: 'Vídeo sem URL' }, // url_youtube faltando
+        // Envia uma string vazia para acionar a validação de `min(1)` do Zod
+        // e obter a mensagem de erro customizada.
+        body: { titulo: 'Vídeo sem URL', url_youtube: '' },
       });
 
       await videosHandler(req, res);
 
       expect(res._getStatusCode()).toBe(400);
-      expect(res._getJSONData().message).toContain('obrigatório');
+      // A asserção foi ajustada para ser mais específica, garantindo a mensagem de erro exata.
+      expect(res._getJSONData().message).toBe('URL do YouTube é obrigatória');
       expect(createVideo).not.toHaveBeenCalled();
     });
 
@@ -236,7 +239,7 @@ describe('API de Vídeos (/api/admin/videos)', () => {
       await videosHandler(req, res);
 
       expect(res._getStatusCode()).toBe(400);
-      expect(res._getJSONData().message).toBe('ID é obrigatório');
+      expect(res._getJSONData().message).toBe('ID é obrigatório para atualização');
     });
   });
 
