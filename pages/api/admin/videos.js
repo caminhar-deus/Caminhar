@@ -1,5 +1,6 @@
 import { withAuth } from '../../../lib/auth.js';
 import { getPaginatedVideos, createVideo, updateVideo, deleteVideo, reorderVideos } from '../../../lib/domain/videos.js';
+import { invalidateCache } from '../../../lib/cache.js';
 import { z } from 'zod';
 
 // Schema de validação para garantir a integridade dos dados.
@@ -41,12 +42,14 @@ async function handler(req, res) {
             return res.status(400).json({ message: 'URL do YouTube inválida' });
         }
         const newVideo = await createVideo(req.body);
+        await invalidateCache('public_videos:*');
         return res.status(201).json(newVideo);
       }
 
       case 'PUT': {
         if (req.body.action === 'reorder') {
             await reorderVideos(req.body.items);
+            await invalidateCache('public_videos:*');
             return res.status(200).json({ message: 'Ordem atualizada com sucesso' });
         }
 
@@ -70,6 +73,7 @@ async function handler(req, res) {
         if (!updatedVideo) {
             return res.status(404).json({ message: 'Vídeo não encontrado' });
         }
+        await invalidateCache('public_videos:*');
         return res.status(200).json(updatedVideo);
       }
 
@@ -84,6 +88,7 @@ async function handler(req, res) {
         if (!deletedVideo) {
             return res.status(404).json({ message: 'Vídeo não encontrado' });
         }
+        await invalidateCache('public_videos:*');
         return res.status(200).json({ message: 'Vídeo excluído com sucesso' });
       }
 

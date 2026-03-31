@@ -21,6 +21,11 @@ jest.mock('../../lib/domain/videos.js', () => ({
   reorderVideos: jest.fn(),
 }));
 
+// Mock da camada de cache para evitar o carregamento do 'redis' e o erro de ESM.
+jest.mock('../../lib/cache.js', () => ({
+  invalidateCache: jest.fn(),
+}));
+
 describe('Validação de API de Vídeos - Limite de Caracteres', () => {
   beforeEach(() => {
     jest.clearAllMocks();

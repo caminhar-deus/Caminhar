@@ -1,6 +1,21 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import VideoCard from './VideoCard';
 import styles from './styles/VideoGallery.module.css';
+
+// Otimização: Hook para "debouncing", que aguarda o usuário parar de digitar
+// para então fazer a requisição à API, evitando chamadas excessivas.
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+  return debouncedValue;
+}
 
 export default function VideoGallery() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -8,68 +23,55 @@ export default function VideoGallery() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Estados da Paginação Local
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6; // Exibindo 6 vídeos por página (igual músicas)
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const itemsPerPage = 6;
 
-  // Função para carregar vídeos da API
-  const loadVideos = async () => {
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  const loadVideos = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
-        
-      const response = await fetch('/api/v1/videos?public=true');
-      if (response.ok) {
-        const data = await response.json();
-        // Verifica se a resposta tem a estrutura da API v1
-        if (data.success && data.data && data.data.videos) {
-          setVideos(data.data.videos);
-        } else {
-          // Caso seja a estrutura antiga (array direto)
-          setVideos(data.videos || data.data || data);
-        }
+
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: itemsPerPage.toString(),
+        search: debouncedSearchTerm,
+      });
+
+      const response = await fetch(`/api/videos?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error('Falha ao buscar vídeos da API.');
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setVideos(data.data || []);
+        setTotalPages(data.pagination?.totalPages || 1);
+        setTotalItems(data.pagination?.total || 0);
       } else {
-        throw new Error('Erro ao carregar vídeos');
+        throw new Error(data.error || 'A API retornou um erro inesperado.');
       }
     } catch (error) {
       console.error('Error loading videos:', error);
       setError('Erro ao carregar vídeos. Por favor, tente novamente.');
+      setVideos([]);
+      setTotalPages(1);
+      setTotalItems(0);
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, debouncedSearchTerm, itemsPerPage]);
 
-  // Carrega vídeos iniciais na montagem do componente
   useEffect(() => {
     loadVideos();
-  }, []);
-
-  // Filtra os vídeos com base no termo de busca instantaneamente
-  const filteredVideos = useMemo(() => {
-    if (!searchTerm.trim()) return videos;
-    
-    const term = searchTerm.toLowerCase().trim();
-    return videos.filter(video => 
-      (video.titulo && video.titulo.toLowerCase().includes(term)) ||
-      (video.descricao && video.descricao.toLowerCase().includes(term))
-    );
-  }, [searchTerm, videos]);
-
-  // Calcula e extrai apenas os vídeos da página atual
-  const totalPages = Math.ceil(filteredVideos.length / itemsPerPage) || 1;
-  const paginatedVideos = filteredVideos.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-    setCurrentPage(1);
-  };
+  }, [loadVideos]);
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
-    setCurrentPage(1); // Volta para a página 1 ao digitar
+    setCurrentPage(1);
   };
 
   const clearSearch = () => {
@@ -80,26 +82,29 @@ export default function VideoGallery() {
   return (
     <div className={styles.galleryContainer}>
       <div className={styles.searchContainer}>
-        <form onSubmit={handleSearch} className={styles.searchWrapper}>
+        <div className={styles.searchWrapper}>
           <input
             type="text"
             placeholder="Pesquisar por título ou descrição..."
             value={searchTerm}
             onChange={handleSearchChange}
             className={styles.searchInput}
+            aria-label="Campo de busca de vídeos"
           />
           {searchTerm && (
-            <button type="button" onClick={clearSearch} className={styles.clearButton} aria-label="Limpar busca">
+            <button
+              onClick={clearSearch}
+              className={styles.clearButton}
+              aria-label="Limpar busca"
+            >
               ✕
             </button>
           )}
-        </form>
-        <div style={{ marginTop: '10px', fontSize: '0.9rem', color: '#6b7280' }}>
-          {searchTerm ? (
-            <span>{filteredVideos.length} resultado{filteredVideos.length !== 1 ? 's' : ''}</span>
-          ) : (
-            <span>{videos.length} vídeos disponíveis</span>
-          )}
+        </div>
+        <div className={styles.searchInfo}>
+          <span className={styles.totalCount}>
+            {totalItems} vídeo{totalItems !== 1 ? 's' : ''} {debouncedSearchTerm ? 'encontrado(s)' : 'disponível(is)'}
+          </span>
         </div>
       </div>
 
@@ -112,12 +117,12 @@ export default function VideoGallery() {
         ) : error ? (
           <div className={styles.error}>
             <p>{error}</p>
-            <button onClick={() => loadVideos()} className={styles.retryButton}>
+            <button onClick={loadVideos} className={styles.retryButton}>
               Tentar novamente
             </button>
           </div>
-        ) : paginatedVideos.length > 0 ? (
-          paginatedVideos.map((video) => (
+        ) : videos.length > 0 ? (
+          videos.map((video) => (
             <VideoCard key={video.id} video={video} />
           ))
         ) : (

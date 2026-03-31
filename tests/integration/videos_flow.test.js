@@ -14,6 +14,9 @@ jest.mock('../../lib/domain/videos.js', () => ({
 jest.mock('../../lib/domain/audit.js', () => ({
   logActivity: jest.fn(),
 }));
+jest.mock('../../lib/cache.js', () => ({
+  invalidateCache: jest.fn(),
+}));
 
 // Mock do módulo de autenticação para ignorar a verificação de token neste teste
 jest.mock('../../lib/auth', () => ({
