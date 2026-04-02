@@ -46,11 +46,20 @@ export function setup() {
   return loginRes.json('data.token');
 }
 
+// Função auxiliar para gerar um endereço IPv4 aleatório
+function getRandomIP() {
+  const octet = () => Math.floor(Math.random() * 255);
+  return `${octet()}.${octet()}.${octet()}.${octet()}`;
+}
+
 export default function (token) {
+  const virtualIP = getRandomIP();
   const params = {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
+      // Adiciona IP spoofing para evitar o Rate Limit durante o teste de carga
+      'X-Forwarded-For': virtualIP,
     },
     tags: { name: 'ListMusicas' },
   };

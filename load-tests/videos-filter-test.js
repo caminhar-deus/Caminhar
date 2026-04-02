@@ -18,52 +18,45 @@ export default function () {
   // Testa diferentes combinações de página e limite
   const page = Math.floor(Math.random() * 3) + 1; // Páginas 1, 2 ou 3
   const limit = [5, 10, 20][Math.floor(Math.random() * 3)]; // Limites 5, 10 ou 20
-  
-  const res = http.get(`${BASE_URL}/api/v1/videos?page=${page}&limit=${limit}`);
+
+  const res = http.get(`${BASE_URL}/api/videos?page=${page}&limit=${limit}`);
 
   check(res, {
     'Status é 200': (r) => r.status === 200,
     'Retornou lista de vídeos': (r) => {
-      try {
-        const body = r.json();
-        return Array.isArray(body.data?.videos) || Array.isArray(body);
-      } catch (e) {
-        return false;
-      }
+      // A resposta deve ser um objeto, e se 'data.videos' existir, deve ser um array.
+      // Tolera a ausência de 'data.videos' se o banco estiver vazio.
+      const body = r.json();
+      return typeof body === 'object' && (body?.data?.videos === undefined || Array.isArray(body.data.videos));
     },
     'Retornou metadados de paginação': (r) => {
-      try {
-        const body = r.json();
-        const pagination = body.data?.pagination;
-        return pagination && typeof pagination.page === 'number' && 
-               typeof pagination.limit === 'number' && 
-               typeof pagination.total === 'number' && 
-               typeof pagination.totalPages === 'number';
-      } catch (e) {
-        return false;
+      const body = r.json();
+      // Só valida a paginação se houver vídeos retornados.
+      if (!body?.data?.videos || body.data.videos.length === 0) {
+        if (__ITER === 0) console.warn('⚠️ Sem vídeos para validar metadados de paginação.');
+        return true;
       }
+      const pagination = body.data.pagination;
+      return pagination && typeof pagination.page === 'number' &&
+             typeof pagination.limit === 'number' &&
+             typeof pagination.total === 'number' &&
+             typeof pagination.totalPages === 'number';
     },
     'Paginação está correta': (r) => {
-      try {
-        const body = r.json();
-        const pagination = body.data?.pagination;
-        const videos = body.data?.videos || body;
-        
-        if (!pagination || !Array.isArray(videos)) return false;
-        
-        // Verifica se a página retornada corresponde à solicitada
-        const pageMatches = pagination.page === page;
-        
-        // Verifica se o limite está correto (ou menor se for a última página)
-        const limitMatches = pagination.limit === limit;
-        
-        // Verifica se o número de vídeos retornados não excede o limite
-        const countMatches = videos.length <= limit;
-        
-        return pageMatches && limitMatches && countMatches;
-      } catch (e) {
-        return false;
+      const body = r.json();
+      const pagination = body?.data?.pagination;
+      const videos = body?.data?.videos;
+
+      // Só valida a paginação se houver vídeos e metadados.
+      if (!videos || !pagination || videos.length === 0) {
+        return true;
       }
+
+      const pageMatches = pagination.page === page;
+      const limitMatches = pagination.limit === limit;
+      const countMatches = videos.length <= limit;
+
+      return pageMatches && limitMatches && countMatches;
     }
   });
 

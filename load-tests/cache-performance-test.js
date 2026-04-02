@@ -1,5 +1,6 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
+import exec from 'k6/execution';
 
 export const options = {
   // Cenário de teste de cache:
@@ -20,48 +21,71 @@ export const options = {
   },
 };
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
 const USERNAME = __ENV.ADMIN_USERNAME || 'admin';
 const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
 
 export function setup() {
+  const res = http.get(BASE_URL);
+  if (res.status === 0) {
+    exec.test.abort(`❌ Conexão recusada em ${BASE_URL}. O servidor está rodando?`);
+  }
+
   // Login para obter token (necessário para /api/v1/settings)
   const loginRes = http.post(`${BASE_URL}/api/v1/auth/login`, JSON.stringify({
     username: USERNAME,
     password: PASSWORD,
   }), {
+    // Sem X-Forwarded-For aqui para evitar interferir no login que pode ter seu próprio rate limit
     headers: { 'Content-Type': 'application/json' },
   });
 
   if (loginRes.status !== 200) {
-    throw new Error(`Falha no login de setup: ${loginRes.status} ${loginRes.body}`);
+    exec.test.abort(`Falha no login de setup: ${loginRes.status} ${loginRes.body}`);
   }
 
   return loginRes.json('data.token');
 }
 
+// Função auxiliar para gerar um endereço IPv4 aleatório
+function getRandomIP() {
+  const octet = () => Math.floor(Math.random() * 255);
+  return `${octet()}.${octet()}.${octet()}.${octet()}`;
+}
+
 export default function (token) {
+  const virtualIP = getRandomIP();
+  const spoofedHeaders = {
+    // Simula IP diferente para evitar rate limit
+    'X-Forwarded-For': virtualIP,
+  };
+
   // 1. Teste Settings (Autenticado + Cache)
   // Esta rota usa getOrSetCache com chave 'settings:v1:all' ou específica
   const settingsRes = http.get(`${BASE_URL}/api/v1/settings`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}`, ...spoofedHeaders },
     tags: { type: 'cached_settings' },
   });
 
   check(settingsRes, {
     'settings status 200': (r) => r.status === 200,
     'settings cache hit (<100ms)': (r) => r.timings.duration < 100,
+    'settings response body is valid': (r) =>
+      r.status === 200 && r.json('id') !== undefined,
   });
 
   // 2. Teste Posts (Público + Cache)
   // Esta rota usa getOrSetCache com chave 'posts:public:all'
   const postsRes = http.get(`${BASE_URL}/api/posts`, {
+    headers: { ...spoofedHeaders }, // Adiciona o cabeçalho para evitar rate limit em rotas públicas
     tags: { type: 'cached_posts' },
   });
 
   check(postsRes, {
     'posts status 200': (r) => r.status === 200,
     'posts cache hit (<100ms)': (r) => r.timings.duration < 100,
+    'posts response body is valid': (r) =>
+      r.status === 200 && Array.isArray(r.json('data') || r.json()),
   });
 
   sleep(1);

@@ -20,13 +20,13 @@ export default function () {
   
   check(resPage1, {
     'Página 1: status 200': (r) => r.status === 200,
-    'Página 1: retornou array': (r) => { try { return Array.isArray(r.json('data') || r.json()); } catch(e) { return false; } },
+    'Página 1: retornou array': (r) => Array.isArray(r.json('data') || r.json()),
   });
 
-  let musicasPage1 = [];
-  try { musicasPage1 = resPage1.json('data') || resPage1.json(); } catch(e) {}
+  // Tenta obter os dados da resposta, garantindo que seja um array para evitar erros posteriores.
+  const musicasPage1 = resPage1.json('data') || resPage1.json() || [];
 
-  if (!Array.isArray(musicasPage1) || musicasPage1.length === 0) {
+  if (musicasPage1.length === 0) {
     console.warn('⚠️ Página 1 vazia. Adicione músicas ao banco para testar a lógica de paginação.');
     return;
   }
@@ -41,10 +41,11 @@ export default function () {
 
   check(resPage2, {
     'Página 2: status 200': (r) => r.status === 200,
-    'Página 2: retornou array': (r) => { try { return Array.isArray(r.json('data') || r.json()); } catch(e) { return false; } },
+    'Página 2: retornou array': (r) => Array.isArray(r.json('data') || r.json()),
   });
 
-  const musicasPage2 = resPage2.json('data') || resPage2.json();
+  // Garante que musicasPage2 seja um array.
+  const musicasPage2 = resPage2.json('data') || resPage2.json() || [];
   
   // Se a página 2 estiver vazia (poucos músicas no banco), o teste passa com aviso
   if (musicasPage2.length === 0) {

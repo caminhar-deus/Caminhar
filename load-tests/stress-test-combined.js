@@ -70,12 +70,19 @@ export function setup() {
   return { token: loginRes.json('data.token') };
 }
 
+// Função auxiliar para gerar um endereço IPv4 aleatório
+function getRandomIP() {
+  const octet = () => Math.floor(Math.random() * 255);
+  return `${octet()}.${octet()}.${octet()}.${octet()}`;
+}
+
 // --- Função do Cenário de Estresse ---
 export function stressTestFlow(data) {
   const token = data.token;
   const authHeaders = {
     'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json',
+    'X-Forwarded-For': getRandomIP(), // Evita Rate Limit baseado em IP
   };
 
   const uniqueId = `${__VU}-${__ITER}`;

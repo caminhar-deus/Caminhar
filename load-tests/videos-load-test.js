@@ -34,16 +34,25 @@ export function setup() {
   return loginRes.json('data.token');
 }
 
+// Função auxiliar para gerar um endereço IPv4 aleatório
+function getRandomIP() {
+  const octet = () => Math.floor(Math.random() * 255);
+  return `${octet()}.${octet()}.${octet()}.${octet()}`;
+}
+
 export default function (token) {
+  const virtualIP = getRandomIP();
   const params = {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
+      // Adiciona IP spoofing para evitar o Rate Limit durante o teste de carga
+      'X-Forwarded-For': virtualIP,
     },
   };
 
   // 1. Requisita a primeira página (padrão)
-  const res = http.get(`${BASE_URL}/api/v1/videos`, {
+  const res = http.get(`${BASE_URL}/api/videos`, {
     ...params,
     tags: { name: 'ListVideos_Page1' },
   });
@@ -60,7 +69,7 @@ export default function (token) {
   });
 
   // 2. Requisita a segunda página com limite específico
-  const resPage2 = http.get(`${BASE_URL}/api/v1/videos?page=2&limit=5`, {
+  const resPage2 = http.get(`${BASE_URL}/api/videos?page=2&limit=5`, {
     ...params,
     tags: { name: 'ListVideos_Page2' },
   });
