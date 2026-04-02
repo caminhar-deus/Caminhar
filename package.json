@@ -98,7 +98,7 @@
     "cookie": "^1.1.1",
     "cors": "^2.8.6",
     "date-fns": "^4.1.0",
-    "dotenv": "^17.3.1",
+    "dotenv": "^17.4.0",
     "formidable": "^3.5.4",
     "jsdom": "^29.0.1",
     "jsonwebtoken": "^9.0.3",
@@ -131,7 +131,7 @@
     "jest-watch-typeahead": "^3.0.1",
     "next-sitemap": "^4.2.3",
     "node-mocks-http": "^1.17.2",
-    "undici": "^7.24.6"
+    "undici": "^7.24.7"
   },
   "overrides": {
     "tar": "^7.4.3",

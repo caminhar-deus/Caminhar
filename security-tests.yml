@@ -1,0 +1,123 @@
+name: Security Tests (k6)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: # Permite execução manual via interface do GitHub
+
+jobs:
+  security-test:
+    name: Run k6 Security Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      # Serviço PostgreSQL para o teste (isolado)
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: caminhar_test
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      # Serviço Redis para Rate Limiting/Cache
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Create Reports Directory
+        run: mkdir -p reports/k6-summaries
+
+      - name: Setup Test Database
+        run: npm run setup:test-db
+        env:
+          TEST_DB_HOST: localhost
+          TEST_DB_PORT: 5432
+          TEST_DB_NAME: caminhar_test
+          TEST_DB_USER: test_user
+          TEST_DB_PASS: test_password
+
+      - name: Seed Test Database
+        run: node scripts/seed-all.js
+        env:
+          DATABASE_URL: postgres://test_user:test_password@localhost:5432/caminhar_test
+
+      - name: Build Application
+        run: npm run build
+        env:
+          DATABASE_URL: postgres://test_user:test_password@localhost:5432/caminhar_test
+          JWT_SECRET: test-secret-for-build
+
+      - name: Start Application (Background)
+        run: |
+          npm start &
+          npx wait-on http://localhost:3000 --timeout 60000
+        env:
+          PORT: 3000
+          NODE_ENV: production
+          DATABASE_URL: postgres://test_user:test_password@localhost:5432/caminhar_test
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-jwt-secret-for-load-tests
+          ADMIN_USERNAME: admin
+          ADMIN_PASSWORD: password123
+          LOG_LEVEL: error # Reduz ruído nos logs durante carga alta
+
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Run DDOS Search Test
+        run: k6 run load-tests/ddos-search-test.js
+        env:
+          BASE_URL: http://localhost:3000
+
+      - name: Run Rate Limit Test
+        run: k6 run load-tests/rate-limit-test.js
+        env:
+          BASE_URL: http://localhost:3000
+
+      - name: Run Login Negative Test
+        run: k6 run load-tests/login-negative-test.js
+        env:
+          BASE_URL: http://localhost:3000
+          ADMIN_USERNAME: admin
+          ADMIN_PASSWORD: password123
+
+      - name: Run IP Spoofing Test
+        run: k6 run load-tests/ip-spoofing-test.js
+        env:
+          BASE_URL: http://localhost:3000
+
+      - name: Upload Security Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-security-test-reports
+          path: reports/k6-summaries/
+          retention-days: 30

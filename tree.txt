@@ -657,6 +657,7 @@
 │   │   ├── posts_cursor_pagination_test.json
 │   │   ├── posts_tags_test.json
 │   │   ├── rate_limit_test.json
+│   │   ├── recovery_test.json
 │   │   ├── search_content_test.json
 │   │   ├── stress-test-combined.html
 │   │   ├── stress-test-combined.json
@@ -737,6 +738,7 @@
 │   │   ├── list-table-columns.js
 │   │   └── update-setting.js
 │   └── validate-schema.js
+├── security-tests.yml
 ├── shared
 ├── skills-lock.json
 ├── __snapshots__
@@ -879,4 +881,4 @@
 │       └── videos_validation.test.js
 └── tree.txt
 
-143 directories, 737 files
+143 directories, 739 files

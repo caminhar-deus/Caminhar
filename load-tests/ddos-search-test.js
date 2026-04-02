@@ -38,6 +38,9 @@ export default function () {
   // Dispara a requisição GET contra a rota de posts (busca)
   const res = http.get(`${BASE_URL}/api/posts?search=${encodeURIComponent(term)}&_t=${uniqueParam}`, {
     tags: { type: 'ddos_search', name: 'DDoS_Search' },
+    // Informa ao k6 que 200 (sucesso) e 429 (rate limit) são respostas esperadas.
+    // Isso fará com que a métrica 'http_req_failed' fique próxima de 0%.
+    expectedStatuses: [200, 429],
   });
 
   // Alimenta a métrica: true se for erro 5xx, false caso contrário

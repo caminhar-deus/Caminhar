@@ -61,7 +61,10 @@ export default function (data) {
     publicado: false
   });
 
-  const resInvalidDomain = http.post(`${BASE_URL}/api/admin/videos`, invalidDomainPayload, { headers });
+  const resInvalidDomain = http.post(`${BASE_URL}/api/admin/videos`, invalidDomainPayload, {
+    headers,
+    expectedStatuses: [400, 201], // Informa ao k6 que 400 é esperado (e 201 para o warning)
+  });
 
   check(resInvalidDomain, {
     'Domínio Inválido: status é 400': (r) => {
@@ -84,7 +87,10 @@ export default function (data) {
     publicado: false
   });
 
-  const resMalformed = http.post(`${BASE_URL}/api/admin/videos`, malformedPayload, { headers });
+  const resMalformed = http.post(`${BASE_URL}/api/admin/videos`, malformedPayload, {
+    headers,
+    expectedStatuses: [400, 201], // Informa ao k6 que 400 é esperado (e 201 para o warning)
+  });
 
   check(resMalformed, {
     'URL Malformada: status é 400': (r) => {

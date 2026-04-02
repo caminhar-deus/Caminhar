@@ -70,8 +70,10 @@ export default function (token) {
   check(settingsRes, {
     'settings status 200': (r) => r.status === 200,
     'settings cache hit (<100ms)': (r) => r.timings.duration < 100,
-    'settings response body is valid': (r) =>
-      r.status === 200 && r.json('id') !== undefined,
+    'settings response body is valid': (r) => {
+      // Verifica se a resposta é um objeto JSON não vazio, que é o esperado para as configurações.
+      return r.status === 200 && typeof r.json() === 'object' && Object.keys(r.json()).length > 0;
+    },
   });
 
   // 2. Teste Posts (Público + Cache)

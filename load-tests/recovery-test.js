@@ -32,13 +32,20 @@ let failureStartTime = 0;
 export default function () {
   // Tenta acessar uma rota que depende estritamente do banco de dados (ex: listagem de posts)
   // Se o banco cair, o Next.js/PG deve retornar erro 500 ou timeout
-  // Corrigido para a rota pública correta, que é /api/posts
-  const res = http.get(`${BASE_URL}/api/posts`);
+  const res = http.get(`${BASE_URL}/api/posts`, {
+    // Informa ao k6 que esperamos sucesso (200) ou erros de servidor (5xx).
+    // Isso evita que erros 5xx contem como 'http_req_failed', pois são esperados neste teste.
+    expectedStatuses: { min: 200, max: 599 },
+  });
 
   // Consideramos "Saudável" se retornar 200 OK
   const isHealthy = res.status === 200;
 
   if (isHealthy) {
+    check(res, {
+      'Sistema está saudável (Status 200)': (r) => r.status === 200,
+    });
+
     if (isSystemDown) {
       // O sistema voltou! Calculamos o tempo que ficou fora.
       const now = Date.now();
@@ -54,6 +61,10 @@ export default function () {
     }
     // Se já estava saudável, continua monitorando silenciosamente
   } else {
+    check(res, {
+      'Sistema em estado de falha (Status != 200)': (r) => r.status !== 200,
+    });
+
     // O sistema falhou (500, 502, 503, 504 ou timeout)
     if (!isSystemDown) {
       // Primeira falha detectada
@@ -68,7 +79,7 @@ export default function () {
 
 export function handleSummary(data) {
   const recoveries = data.metrics.recovery_count ? data.metrics.recovery_count.values.count : 0;
-  if (recoveries === 0) {
+  if (recoveries === 0 && data.metrics.checks) {
     const checks = data.metrics.checks.values;
     // Se não houve recuperações e todos os checks passaram, o sistema estava estável.
     if (checks.passes > 0 && checks.fails === 0) {
