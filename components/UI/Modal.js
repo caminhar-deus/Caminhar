@@ -27,13 +27,13 @@ export const Modal = ({
 }) => {
   // Prevenir scroll do body
   useEffect(() => {
-    if (preventScroll && isOpen) {
+    if (preventScroll && isOpen && document.body) {
       document.body.style.overflow = 'hidden';
-    } else {
+    } else if (document.body) {
       document.body.style.overflow = '';
     }
     return () => {
-      document.body.style.overflow = '';
+      if (document.body) document.body.style.overflow = '';
     };
   }, [isOpen, preventScroll]);
 
@@ -103,7 +103,7 @@ export const Modal = ({
   );
 
   // Usar portal para renderizar no body
-  if (typeof window !== 'undefined') {
+  if (typeof window !== 'undefined' && document.body) {
     return ReactDOM.createPortal(modal, document.body);
   }
   return modal;

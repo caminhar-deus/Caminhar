@@ -116,6 +116,7 @@
 │   │   │   ├── AdminAuditTab.js.html
 │   │   │   ├── AdminCrudBase.js.html
 │   │   │   ├── AdminDashboard.js.html
+│   │   │   ├── AdminDicas.js.html
 │   │   │   ├── AdminLogs.js.html
 │   │   │   ├── AdminMusicas.js.html
 │   │   │   ├── AdminMusicasNew.js.html
@@ -157,6 +158,9 @@
 │   │   │   │   ├── index.html
 │   │   │   │   ├── MusicCard.js.html
 │   │   │   │   └── MusicGallery.js.html
+│   │   │   ├── Testimonials
+│   │   │   │   ├── index.html
+│   │   │   │   └── index.js.html
 │   │   │   └── Video
 │   │   │       ├── index.html
 │   │   │       ├── VideoCard.js.html
@@ -218,6 +222,7 @@
 │   │   │   │   ├── AdminAuditTab.js.html
 │   │   │   │   ├── AdminCrudBase.js.html
 │   │   │   │   ├── AdminDashboard.js.html
+│   │   │   │   ├── AdminDicas.js.html
 │   │   │   │   ├── AdminLogs.js.html
 │   │   │   │   ├── AdminMusicas.js.html
 │   │   │   │   ├── AdminMusicasNew.js.html
@@ -259,6 +264,9 @@
 │   │   │   │   │   ├── index.html
 │   │   │   │   │   ├── MusicCard.js.html
 │   │   │   │   │   └── MusicGallery.js.html
+│   │   │   │   ├── Testimonials
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   └── index.js.html
 │   │   │   │   └── Video
 │   │   │   │       ├── index.html
 │   │   │   │       ├── VideoCard.js.html
@@ -317,9 +325,11 @@
 │   │   │   │   ├── middleware.js.html
 │   │   │   │   ├── response.js.html
 │   │   │   │   └── validate.js.html
+│   │   │   ├── auth.js.html
 │   │   │   ├── cache.js.html
 │   │   │   ├── crud.js.html
 │   │   │   ├── db-example.js.html
+│   │   │   ├── db.js.html
 │   │   │   ├── domain
 │   │   │   │   ├── audit.js.html
 │   │   │   │   ├── images.js.html
@@ -399,9 +409,11 @@
 │   │   │   ├── middleware.js.html
 │   │   │   ├── response.js.html
 │   │   │   └── validate.js.html
+│   │   ├── auth.js.html
 │   │   ├── cache.js.html
 │   │   ├── crud.js.html
 │   │   ├── db-example.js.html
+│   │   ├── db.js.html
 │   │   ├── domain
 │   │   │   ├── audit.js.html
 │   │   │   ├── images.js.html
@@ -786,28 +798,55 @@
 │   ├── integration
 │   │   ├── api
 │   │   │   ├── admin
+│   │   │   │   ├── audit.test.js
+│   │   │   │   ├── backups.test.js
 │   │   │   │   ├── cache.test.js
-│   │   │   │   └── posts.test.js
+│   │   │   │   ├── dicas.test.js
+│   │   │   │   ├── fetch-ml.test.js
+│   │   │   │   ├── fetch-spotify.test.js
+│   │   │   │   ├── fetch-youtube.test.js
+│   │   │   │   ├── musicas.test.js
+│   │   │   │   ├── posts.test.js
+│   │   │   │   ├── rate-limit.test.js
+│   │   │   │   ├── roles.test.js
+│   │   │   │   ├── users.create.test.js
+│   │   │   │   └── users.test.js
+│   │   │   ├── audit.test.js
 │   │   │   ├── auth
-│   │   │   │   └── login.test.js
+│   │   │   │   ├── login.test.js
+│   │   │   │   └── logout.test.js
 │   │   │   ├── backups.api.test.js
+│   │   │   ├── cleanup-test-data.test.js
+│   │   │   ├── dicas.test.js
 │   │   │   ├── login.test.js
 │   │   │   ├── musicas.create.test.js
 │   │   │   ├── musicas.delete.test.js
 │   │   │   ├── musicas.pagination.test.js
+│   │   │   ├── musicas.test.js
 │   │   │   ├── musicas.update.test.js
+│   │   │   ├── placeholder-image.test.js
 │   │   │   ├── posts.create.api.test.js
 │   │   │   ├── posts.delete.test.js
 │   │   │   ├── posts.general.test.js
+│   │   │   ├── posts.test.js
 │   │   │   ├── posts.update.api.test.js
+│   │   │   ├── products.test.js
 │   │   │   ├── settings.api.test.js
 │   │   │   ├── settings.general.test.js
+│   │   │   ├── settings.test.js
 │   │   │   ├── stats.test.js
 │   │   │   ├── status.api.test.js
 │   │   │   ├── upload-image.test.js
 │   │   │   ├── v1
+│   │   │   │   ├── auth
+│   │   │   │   │   ├── check.test.js
+│   │   │   │   │   └── login.test.js
 │   │   │   │   ├── health.test.js
-│   │   │   │   └── status.test.js
+│   │   │   │   ├── posts.test.js
+│   │   │   │   ├── settings.test.js
+│   │   │   │   ├── status.test.js
+│   │   │   │   └── videos
+│   │   │   │       └── [id].test.js
 │   │   │   ├── videos.create.api.test.js
 │   │   │   ├── videos.delete.test.js
 │   │   │   ├── videos.pagination.api.test.js
@@ -841,12 +880,80 @@
 │       ├── auth_check.test.js
 │       ├── clean-test-db.test.js
 │       ├── components
+│       │   ├── Admin
+│       │   │   ├── AdminAudit.test.js
+│       │   │   ├── AdminCrudBase.test.js
+│       │   │   ├── AdminDashboard.test.js
+│       │   │   ├── AdminDicas.test.js
+│       │   │   ├── AdminMusicas.test.js
+│       │   │   ├── AdminPosts.test.js
+│       │   │   ├── AdminProducts.test.js
+│       │   │   ├── AdminRolesTab.test.js
+│       │   │   ├── AdminUsersTab.test.js
+│       │   │   ├── AdminUsers.test.js
+│       │   │   ├── AdminVideos.test.js
+│       │   │   ├── ImageUploadField.test.js
+│       │   │   ├── index.test.js
+│       │   │   ├── TextAreaField.test.js
+│       │   │   ├── TextField.test.js
+│       │   │   ├── ToggleField.test.js
+│       │   │   ├── UrlField.test.js
+│       │   │   └── withAdminAuth.test.js
 │       │   ├── Button.test.js
+│       │   ├── Features
+│       │   │   ├── Blog
+│       │   │   │   ├── BlogSection.test.js
+│       │   │   │   └── PostCard.test.js
+│       │   │   ├── ContentTabs
+│       │   │   │   └── ContentTabs.test.js
+│       │   │   ├── Music
+│       │   │   │   └── MusicGallery.test.js
+│       │   │   └── Video
+│       │   │       └── VideoGallery.test.js
 │       │   ├── Header.test.js
+│       │   ├── Layout
+│       │   │   ├── Container.test.js
+│       │   │   ├── Grid.test.js
+│       │   │   ├── Sidebar.test.js
+│       │   │   └── Stack.test.js
+│       │   ├── Performance
+│       │   │   ├── CriticalCSS.test.js
+│       │   │   ├── ImageOptimized.test.js
+│       │   │   ├── index.test.js
+│       │   │   ├── LazyIframe.test.js
+│       │   │   └── PreloadResources.test.js
+│       │   ├── Products
+│       │   │   ├── ProductCard.test.js
+│       │   │   └── ProductList.test.js
+│       │   ├── SEO
+│       │   │   ├── ArticleSchema.test.js
+│       │   │   ├── BreadcrumbSchema.test.js
+│       │   │   ├── Head.test.js
+│       │   │   ├── index.test.js
+│       │   │   ├── MusicSchema.test.js
+│       │   │   ├── OrganizationSchema.test.js
+│       │   │   ├── VideoSchema.test.js
+│       │   │   └── WebsiteSchema.test.js
 │       │   ├── SeoPerformance.test.js
 │       │   ├── __snapshots__
 │       │   │   └── Header.test.js.snap
+│       │   ├── UI
+│       │   │   ├── Alert.test.js
+│       │   │   ├── Badge.test.js
+│       │   │   ├── Button.test.js
+│       │   │   ├── Card.test.js
+│       │   │   ├── index.test.js
+│       │   │   ├── Input.test.js
+│       │   │   ├── Modal.test.js
+│       │   │   ├── Select.test.js
+│       │   │   ├── Spinner.test.js
+│       │   │   ├── TextArea.test.js
+│       │   │   └── Toast.test.js
 │       │   └── withAdminAuth.test.js
+│       ├── domain
+│       │   ├── posts.test.js
+│       │   ├── settings.test.js
+│       │   └── videos.test.js
 │       ├── find-unused.test.js
 │       ├── index.test.js
 │       ├── lib
@@ -861,16 +968,21 @@
 │       │   │   ├── backup.cleanup.test.js
 │       │   │   ├── backup.logs.test.js
 │       │   │   └── backup.operations.test.js
-│       │   └── db
-│       │       ├── createPost.test.js
-│       │       ├── deletePost.test.js
-│       │       ├── getAllPosts.test.js
-│       │       ├── getPaginatedPosts.test.js
-│       │       ├── musicas.test.js
-│       │       ├── query.test.js
-│       │       ├── saveImage.test.js
-│       │       ├── settings.test.js
-│       │       └── updatePost.test.js
+│       │   ├── cache.test.js
+│       │   ├── crud.test.js
+│       │   ├── db
+│       │   │   ├── createPost.test.js
+│       │   │   ├── deletePost.test.js
+│       │   │   ├── getAllPosts.test.js
+│       │   │   ├── getPaginatedPosts.test.js
+│       │   │   ├── musicas.test.js
+│       │   │   ├── query.test.js
+│       │   │   ├── saveImage.test.js
+│       │   │   ├── settings.test.js
+│       │   │   └── updatePost.test.js
+│       │   ├── db.test.js
+│       │   └── seo
+│       │       └── config.test.js
 │       ├── middleware.test.js
 │       ├── musicas_public_api.test.js
 │       ├── scripts
@@ -881,4 +993,4 @@
 │       └── videos_validation.test.js
 └── tree.txt
 
-143 directories, 739 files
+160 directories, 834 files

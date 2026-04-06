@@ -31,6 +31,7 @@ export default async function handler(req, res) {
         // Authenticate user
         const user = await authenticate(username, password);
         if (!user) {
+          console.warn(`[Auth V1] Falha na tentativa de login para o usuário: "${username}"`);
           return res.status(401).json({
             error: 'Unauthorized',
             message: 'Credenciais inválidas',

@@ -75,12 +75,8 @@ export default function UrlField({
     const newValue = e.target.value;
     onChange(e);
     
-    if (newValue) {
-      const error = validateUrl(newValue);
-      setValidationError(error);
-    } else {
-      setValidationError('');
-    }
+    const error = validateUrl(newValue);
+    setValidationError(error);
   };
 
   // Gera preview baseado na plataforma

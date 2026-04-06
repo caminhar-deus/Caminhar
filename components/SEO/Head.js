@@ -134,12 +134,16 @@ export default function SEOHead({
       
       {/* Additional Twitter for Articles */}
       {type === 'article' && (
-        <meta name="twitter:label1" content="Escrito por" />
-        <meta name="twitter:data1" content={author || siteName} />
+        <>
+          <meta name="twitter:label1" content="Escrito por" />
+          <meta name="twitter:data1" content={author || siteName} />
+        </>
       )}
       {type === 'article' && publishedAt && (
-        <meta name="twitter:label2" content="Publicado em" />
-        <meta name="twitter:data2" content={new Date(publishedAt).toLocaleDateString('pt-BR')} />
+        <>
+          <meta name="twitter:label2" content="Publicado em" />
+          <meta name="twitter:data2" content={new Date(publishedAt).toLocaleDateString('pt-BR')} />
+        </>
       )}
       
       {/* Favicons */}

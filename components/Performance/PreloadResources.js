@@ -70,7 +70,7 @@ export default function PreloadResources({
           href={image}
           as="image"
           type={image.endsWith('.webp') ? 'image/webp' : image.endsWith('.png') ? 'image/png' : 'image/jpeg'}
-          fetchpriority="high"
+          fetchPriority="high"
         />
       ))}
 

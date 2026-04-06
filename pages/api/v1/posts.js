@@ -43,7 +43,7 @@ async function handleGet(req, res) {
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error('Erro ao buscar posts:', error);
+    console.error('❌ [API V1 Posts] Erro ao buscar posts:', error);
     return res.status(500).json({ 
       success: false, 
       error: 'Internal Server Error', 

@@ -6,7 +6,10 @@ global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
 
 // Mock do Formidable para simular o processamento do upload
-jest.mock('formidable');
+jest.mock('formidable', () => ({
+  __esModule: true,
+  default: jest.fn(),
+}));
 
 // Mock do File System para simular a movimentação do arquivo
 jest.mock('fs', () => ({
@@ -16,93 +19,30 @@ jest.mock('fs', () => ({
     unlink: jest.fn().mockResolvedValue(undefined),
   },
   existsSync: jest.fn().mockReturnValue(true),
+  mkdirSync: jest.fn(),
 }));
 
-// Mock da Autenticação
-jest.mock('../../../lib/auth.js', () => ({
-  withAuth: (fn) => (req, res) => {
-    req.user = { id: 1, username: 'admin' };
-    return fn(req, res);
-  },
+// Mock do middleware de autenticação externo
+jest.mock('../../../lib/middleware.js', () => ({
+  externalAuthMiddleware: (fn) => (req, res) => fn(req, res),
 }));
 
 // Mock do Banco de Dados
 jest.mock('../../../lib/db.js', () => ({
-  saveImage: jest.fn(),
+  updateSetting: jest.fn(),
 }));
 
-// Import the mocked modules
-const formidable = jest.requireMock('formidable');
-const fs = jest.requireMock('fs');
-const db = jest.requireMock('../../../lib/db.js');
-
-// Mock handler function since the file doesn't exist
-const handler = async (req, res) => {
-  try {
-    if (req.method !== 'POST') {
-      res.status(405).json({ error: 'Método não permitido' });
-      return;
-    }
-
-    // Simulate formidable parsing
-    const form = new formidable.IncomingForm();
-    form.uploadDir = '/tmp';
-    form.keepExtensions = true;
-
-    const parseResult = await new Promise((resolve, reject) => {
-      form.parse(req, (err, fields, files) => {
-        if (err) reject(err);
-        else resolve({ fields, files });
-      });
-    });
-
-    const { fields, files } = parseResult;
-
-    if (!files.image || !files.image[0]) {
-      res.status(400).json({ message: 'Nenhum arquivo enviado' });
-      return;
-    }
-
-    const file = files.image[0];
-
-    // Validate file type
-    if (!file.mimetype.startsWith('image/')) {
-      res.status(400).json({ message: 'Apenas arquivos de imagem são permitidos' });
-      return;
-    }
-
-    // Validate file size (5MB limit)
-    if (file.size > 5 * 1024 * 1024) {
-      res.status(400).json({ message: 'Tamanho máximo de arquivo é 5MB' });
-      return;
-    }
-
-    // Generate filename
-    const timestamp = Date.now();
-    const type = fields.type === 'post' ? 'post-image' : 'hero-image';
-    const extension = file.originalFilename.split('.').pop();
-    const filename = `${type}-${timestamp}.${extension}`;
-    const destination = `public/uploads/${filename}`;
-
-    // Move file
-    await fs.promises.rename(file.filepath, destination);
-    
-    // Save metadata to database
-    const relativePath = `/uploads/${filename}`;
-    await db.saveImage(filename, relativePath, type, file.size, req.user?.id);
-
-    res.status(200).json({
-      path: relativePath,
-      message: 'Upload realizado com sucesso'
-    });
-  } catch (error) {
-    res.status(500).json({ message: 'Erro ao processar upload' });
-  }
-};
+import handler from '../../../pages/api/upload-image.js';
+import formidable from 'formidable';
+import fs from 'fs';
+import { updateSetting } from '../../../lib/db.js';
 
 describe('API de Upload de Imagem (/api/upload-image)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    fs.existsSync.mockReturnValue(true);
+    fs.promises.rename.mockResolvedValue(undefined);
+    fs.promises.unlink.mockResolvedValue(undefined);
   });
 
   test('POST deve processar upload de imagem corretamente', async () => {
@@ -116,7 +56,7 @@ describe('API de Upload de Imagem (/api/upload-image)', () => {
     };
 
     // Configura o mock do formidable
-    formidable.IncomingForm.mockImplementation(() => ({
+    formidable.mockImplementation(() => ({
       parse: jest.fn((req, cb) => {
         // Simula sucesso no parse: (err, fields, files)
         // Formidable v3 retorna arrays para arquivos
@@ -140,17 +80,16 @@ describe('API de Upload de Imagem (/api/upload-image)', () => {
     expect(res._getStatusCode()).toBe(200);
     const data = JSON.parse(res._getData());
     
-    // Verifica se retornou o caminho da imagem
+    expect(data.success).toBe(true);
     expect(data).toHaveProperty('path');
     expect(data.path).toContain('/uploads/');
     expect(data.path).toContain('.jpg');
 
-    // Verifica se o arquivo foi movido do temp para o destino final
     expect(fs.promises.rename).toHaveBeenCalled();
   });
 
   test('Deve retornar 400 se nenhum arquivo for enviado', async () => {
-    formidable.IncomingForm.mockImplementation(() => ({
+    formidable.mockImplementation(() => ({
       parse: jest.fn((req, cb) => {
         cb(null, {}, {}); // Sem arquivos
       }),
@@ -159,6 +98,7 @@ describe('API de Upload de Imagem (/api/upload-image)', () => {
     const { req, res } = createMocks({ method: 'POST' });
     await handler(req, res);
     expect(res._getStatusCode()).toBe(400);
+    expect(JSON.parse(res._getData()).message).toBe('No image uploaded');
   });
 
   test('Deve retornar 400 se o arquivo não for uma imagem (validação de mimetype)', async () => {
@@ -170,7 +110,7 @@ describe('API de Upload de Imagem (/api/upload-image)', () => {
       size: 1024
     };
 
-    formidable.IncomingForm.mockImplementation(() => ({
+    formidable.mockImplementation(() => ({
       parse: jest.fn((req, cb) => {
         cb(null, { type: 'post' }, { image: [mockFile] });
       }),
@@ -188,6 +128,7 @@ describe('API de Upload de Imagem (/api/upload-image)', () => {
 
     await handler(req, res);
     expect(res._getStatusCode()).toBe(400);
+    expect(JSON.parse(res._getData()).message).toBe('Formato de arquivo inválido');
   });
 
   test('Deve retornar 400 se o arquivo for maior que 5MB', async () => {
@@ -199,7 +140,7 @@ describe('API de Upload de Imagem (/api/upload-image)', () => {
       size: 6 * 1024 * 1024 // 6MB
     };
 
-    formidable.IncomingForm.mockImplementation(() => ({
+    formidable.mockImplementation(() => ({
       parse: jest.fn((req, cb) => {
         cb(null, { type: 'post' }, { image: [mockFile] });
       }),
@@ -217,7 +158,7 @@ describe('API de Upload de Imagem (/api/upload-image)', () => {
 
     await handler(req, res);
     expect(res._getStatusCode()).toBe(400);
-    expect(JSON.parse(res._getData()).message).toContain('Tamanho máximo');
+    expect(JSON.parse(res._getData()).message).toContain('tamanho máximo 5MB');
   });
 
   test('Deve salvar o arquivo no diretório correto com o nome gerado corretamente', async () => {
@@ -233,7 +174,7 @@ describe('API de Upload de Imagem (/api/upload-image)', () => {
       size: 1024
     };
 
-    formidable.IncomingForm.mockImplementation(() => ({
+    formidable.mockImplementation(() => ({
       parse: jest.fn((req, cb) => {
         // type: 'post' define o prefixo como 'post-image-'
         cb(null, { type: 'post' }, { image: [mockFile] });
@@ -270,18 +211,18 @@ describe('API de Upload de Imagem (/api/upload-image)', () => {
     dateSpy.mockRestore();
   });
 
-  test('Deve chamar saveImage no banco de dados com os metadados corretos', async () => {
+  test('Deve chamar updateSetting no banco de dados se for upload do hero-image', async () => {
     const mockFile = {
       originalFilename: 'db-test.jpg',
       filepath: '/tmp/db-test.jpg',
       newFilename: 'db-test.jpg',
       mimetype: 'image/jpeg',
-      size: 2048
+      size: 1024
     };
 
-    formidable.IncomingForm.mockImplementation(() => ({
+    formidable.mockImplementation(() => ({
       parse: jest.fn((req, cb) => {
-        cb(null, { type: 'post' }, { image: [mockFile] });
+        cb(null, { uploadType: 'setting_home_image' }, { image: [mockFile] });
       }),
       uploadDir: '/tmp',
       keepExtensions: true,
@@ -293,24 +234,36 @@ describe('API de Upload de Imagem (/api/upload-image)', () => {
       headers: { 'content-type': 'multipart/form-data;' },
     });
 
-    // Simula usuário autenticado para garantir que o ID do usuário seja passado para saveImage
-    req.user = { id: 1, username: 'admin' };
-
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(200);
 
-    // Verifica se saveImage foi chamado
-    expect(db.saveImage).toHaveBeenCalledTimes(1);
-    
-    // Verifica os argumentos: filename, path, type, size, userId
-    // O filename gerado contém timestamp, então usamos stringContaining
-    expect(db.saveImage).toHaveBeenCalledWith(
-      expect.stringContaining('post-image-'), // filename
-      expect.stringContaining('/uploads/post-image-'), // relativePath
-      'post-image', // type
-      2048, // size
-      1 // userId (do mock de auth)
+    expect(updateSetting).toHaveBeenCalledTimes(1);
+    expect(updateSetting).toHaveBeenCalledWith(
+      'home_image_url', 
+      expect.stringContaining('/uploads/hero-image-'), 
+      'image', 
+      'Imagem principal da home'
     );
+  });
+
+  test('Deve retornar 500 se o parse falhar', async () => {
+    formidable.mockImplementation(() => ({
+      parse: jest.fn((req, cb) => {
+        cb(new Error('Erro de parsing'));
+      }),
+    }));
+
+    const { req, res } = createMocks({ method: 'POST' });
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    await handler(req, res);
+    expect(res._getStatusCode()).toBe(500);
+    consoleSpy.mockRestore();
+  });
+  
+  test('Deve retornar 405 se método não for POST', async () => {
+    const { req, res } = createMocks({ method: 'GET' });
+    await handler(req, res);
+    expect(res._getStatusCode()).toBe(405);
   });
 });

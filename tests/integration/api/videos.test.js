@@ -1,287 +1,84 @@
-import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
-import jwt from 'jsonwebtoken';
+import handler from '../../../pages/api/videos.js';
+import { getPublicPaginatedVideos } from '../../../lib/domain/videos.js';
+import { getOrSetCache, checkRateLimit } from '../../../lib/cache.js';
 
-// Mock das dependências externas antes de qualquer importação
 jest.mock('../../../lib/domain/videos.js', () => ({
-  getPaginatedVideos: jest.fn(),
-  createVideo: jest.fn(),
-  updateVideo: jest.fn(),
-  deleteVideo: jest.fn(),
+  getPublicPaginatedVideos: jest.fn()
 }));
-jest.mock('../../../lib/domain/audit.js', () => ({
-  logActivity: jest.fn(),
-}));
+
 jest.mock('../../../lib/cache.js', () => ({
-  invalidateCache: jest.fn(),
+  getOrSetCache: jest.fn((key, cb) => cb()),
+  checkRateLimit: jest.fn()
 }));
-jest.mock('cookie', () => ({
-  // Fornecemos funções de mock vazias que serão implementadas no beforeEach
-  parse: jest.fn(),
-  serialize: jest.fn(),
-}));
-jest.mock('jsonwebtoken');
 
-import videosHandler from '../../../pages/api/admin/videos.js';
-import { getPaginatedVideos, createVideo, updateVideo, deleteVideo } from '../../../lib/domain/videos.js';
-import { logActivity } from '../../../lib/domain/audit.js';
-import * as cookie from 'cookie';
+describe('API Pública - Vídeos (/api/videos)', () => {
+  const originalConsoleError = console.error;
 
-describe('API de Vídeos (/api/admin/videos)', () => {
-  beforeEach(() => {
-    // Limpa todos os mocks antes de cada teste para garantir isolamento
-    jest.clearAllMocks();
-
-    // Restaura a implementação do mock de 'cookie' que é limpa pelo `resetMocks: true`.
-    // Isso garante que o `lib/auth.js` real possa chamar `parse` e `serialize` sem erro.
-    cookie.parse.mockImplementation((str = '') => {
-      if (!str) return {};
-      return str.split(';').filter(Boolean).reduce((acc, c) => {
-        const [key, val] = c.trim().split('=');
-        acc[key] = val;
-        return acc;
-      }, {});
-    });
-    cookie.serialize.mockImplementation((name, val) => `${name}=${val}`);
-
-    // Configuração padrão de autenticação bem-sucedida para a maioria dos testes
-    jwt.verify.mockReturnValue({ role: 'admin' });
-
-    // Retorno simulado padrão para o log de atividade
-    logActivity.mockResolvedValue();
+  beforeAll(() => {
+    console.error = () => {};
   });
 
-  describe('GET', () => {
-    it('deve retornar uma lista paginada de vídeos', async () => {
-      const mockVideos = {
-        videos: [
-          { id: 1, titulo: 'Vídeo 1', url_youtube: 'https://youtu.be/12345678901' },
-          { id: 2, titulo: 'Vídeo 2', url_youtube: 'https://youtu.be/12345678902' }
-        ],
-        pagination: {
-          page: 1,
-          limit: 10,
-          total: 2,
-          totalPages: 1
-        }
-      };
-
-      getPaginatedVideos.mockResolvedValue(mockVideos);
-
-      const { req, res } = createMocks({
-        method: 'GET',
-        headers: { 'Authorization': 'Bearer valid-token' },
-        query: { page: '1', limit: '10' }
-      });
-
-      await videosHandler(req, res);
-
-      expect(res._getStatusCode()).toBe(200);
-      expect(res._getJSONData()).toEqual(mockVideos);
-      expect(getPaginatedVideos).toHaveBeenCalledWith(1, 10, '');
-    });
-
-    it('deve lidar com erros ao buscar vídeos', async () => {
-      const dbError = new Error('Erro de banco de dados');
-      getPaginatedVideos.mockRejectedValue(dbError);
-
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
-      const { req, res } = createMocks({
-        method: 'GET',
-        headers: { 'Authorization': 'Bearer valid-token' },
-      });
-
-      await videosHandler(req, res);
-
-      expect(res._getStatusCode()).toBe(500);
-      expect(res._getJSONData()).toEqual({ message: 'Erro interno ao processar a requisição de vídeos.' });
-      expect(consoleSpy).toHaveBeenCalledWith('Erro ao manusear GET /api/admin/videos:', dbError);
-      consoleSpy.mockRestore();
-    });
+  afterAll(() => {
+    console.error = originalConsoleError;
   });
 
-  it('deve retornar 401 Unauthorized se a autenticação falhar', async () => {
-    // Sobrescreve o mock para simular falha na verificação do token
-    jwt.verify.mockImplementation(() => {
-      throw new Error('Invalid token');
-    });
-
-    const { req, res } = createMocks({
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer invalid-token',
-      },
-      body: { titulo: 'Vídeo Teste' },
-    });
-
-    await videosHandler(req, res);
-
-    expect(res._getStatusCode()).toBe(401);
-    expect(res._getJSONData().message).toContain('Token inválido');
+  beforeEach(() => { 
+    jest.clearAllMocks(); 
+    getOrSetCache.mockImplementation(async (key, cb) => await cb());
   });
 
-  describe('POST', () => {
-    it('deve criar um novo vídeo com sucesso', async () => {
-      const videoData = {
-        titulo: 'Novo Vídeo',
-        url_youtube: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-        descricao: 'Descrição do vídeo',
-        publicado: true,
-      };
-      const mockVideoCriado = { id: 1, ...videoData };
-
-      // Configura o mock do DB para retornar o vídeo criado
-      createVideo.mockResolvedValue(mockVideoCriado);
-
-      const { req, res } = createMocks({
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer valid-token',
-        },
-        body: videoData,
-      });
-
-      await videosHandler(req, res);
-
-      expect(res._getStatusCode()).toBe(201);
-      expect(res._getJSONData()).toEqual(mockVideoCriado);
-      expect(createVideo).toHaveBeenCalledWith(videoData);
-    });
-
-    it('deve retornar 400 se campos obrigatórios estiverem faltando', async () => {
-      const { req, res } = createMocks({
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer valid-token',
-        },
-        // Envia uma string vazia para acionar a validação de `min(1)` do Zod
-        // e obter a mensagem de erro customizada.
-        body: { titulo: 'Vídeo sem URL', url_youtube: '' },
-      });
-
-      await videosHandler(req, res);
-
-      expect(res._getStatusCode()).toBe(400);
-      // A asserção foi ajustada para ser mais específica, garantindo a mensagem de erro exata.
-      expect(res._getJSONData().message).toBe('URL do YouTube é obrigatória');
-      expect(createVideo).not.toHaveBeenCalled();
-    });
-
-    it('deve retornar 400 para uma URL do YouTube inválida', async () => {
-      const { req, res } = createMocks({
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer valid-token',
-        },
-        body: {
-          titulo: 'URL Inválida',
-          url_youtube: 'https://google.com',
-        },
-      });
-
-      await videosHandler(req, res);
-
-      expect(res._getStatusCode()).toBe(400);
-      expect(res._getJSONData().message).toBe('URL do YouTube inválida');
-    });
+  it('deve retornar 405 para métodos diferentes de GET', async () => {
+    const { req, res } = createMocks({ method: 'POST' });
+    await handler(req, res);
+    expect(res._getStatusCode()).toBe(405);
   });
 
-  describe('PUT', () => {
-    it('deve atualizar um vídeo existente com sucesso', async () => {
-      const videoUpdateData = {
-        id: 1,
-        titulo: 'Vídeo Atualizado',
-        url_youtube: 'https://www.youtube.com/watch?v=updated1234',
-        publicado: false,
-      };
-      updateVideo.mockResolvedValue(videoUpdateData);
-
-      const { req, res } = createMocks({
-        method: 'PUT',
-        headers: {
-          'Authorization': 'Bearer valid-token',
-        },
-        body: videoUpdateData,
-      });
-
-      await videosHandler(req, res);
-
-      expect(res._getStatusCode()).toBe(200);
-      expect(res._getJSONData()).toEqual(videoUpdateData);
-      expect(updateVideo).toHaveBeenCalledWith(videoUpdateData.id, expect.any(Object));
-    });
-
-    it('deve retornar 404 se o vídeo a ser atualizado não for encontrado', async () => {
-      // Mock para simular que o vídeo não foi encontrado no DB
-      updateVideo.mockResolvedValue(null);
-
-      const { req, res } = createMocks({
-        method: 'PUT',
-        headers: {
-          'Authorization': 'Bearer valid-token',
-        },
-        body: { id: 999, titulo: 'Inexistente', url_youtube: 'https://www.youtube.com/watch?v=fakeid12345' },
-      });
-
-      await videosHandler(req, res);
-
-      expect(res._getStatusCode()).toBe(404);
-      expect(res._getJSONData().message).toBe('Vídeo não encontrado');
-    });
-
-    it('deve retornar 400 se o ID não for fornecido na atualização', async () => {
-      const { req, res } = createMocks({
-        method: 'PUT',
-        headers: {
-          'Authorization': 'Bearer valid-token',
-        },
-        body: { titulo: 'Vídeo sem ID', url_youtube: 'https://youtube.com/no-id' },
-      });
-
-      await videosHandler(req, res);
-
-      expect(res._getStatusCode()).toBe(400);
-      expect(res._getJSONData().message).toBe('ID é obrigatório para atualização');
-    });
+  it('deve retornar 400 para parâmetros de paginação fora dos limites', async () => {
+    const { req, res } = createMocks({ method: 'GET', query: { page: 0 } });
+    await handler(req, res);
+    expect(res._getStatusCode()).toBe(400);
   });
 
-  describe('DELETE', () => {
-    it('deve excluir um vídeo com sucesso', async () => {
-      // Mock para simular que o delete retornou o item deletado
-      deleteVideo.mockResolvedValue({ id: 1 });
+  it('deve retornar 429 se exceder rate limit', async () => {
+    checkRateLimit.mockResolvedValueOnce(true);
+    const { req, res } = createMocks({ method: 'GET' });
+    await handler(req, res);
+    expect(res._getStatusCode()).toBe(429);
+  });
 
-      const { req, res } = createMocks({
-        method: 'DELETE',
-        headers: {
-          'Authorization': 'Bearer valid-token',
-        },
-        body: { id: 1 },
-      });
+  it('deve retornar 200 com os dados corretos obtidos via domínio e cache', async () => {
+    checkRateLimit.mockResolvedValueOnce(false);
+    getPublicPaginatedVideos.mockResolvedValueOnce({ data: [{ id: 1 }] });
+    
+    const { req, res } = createMocks({ method: 'GET', query: { search: 'aula' } });
+    await handler(req, res);
+    
+    expect(res._getStatusCode()).toBe(200);
+    expect(res._getJSONData().success).toBe(true);
+    expect(res._getJSONData().data).toHaveLength(1);
+    expect(getPublicPaginatedVideos).toHaveBeenCalledWith(1, 10, 'aula');
+  });
 
-      await videosHandler(req, res);
+  it('deve usar page e limit default se receber strings não numéricas e omitir search na cacheKey', async () => {
+    checkRateLimit.mockResolvedValueOnce(false);
+    getPublicPaginatedVideos.mockResolvedValueOnce({ data: [] });
+    
+    // Envia 'abc' e 'xyz' em vez de números, e omite search
+    const { req, res } = createMocks({ method: 'GET', query: { page: 'abc', limit: 'xyz' } });
+    await handler(req, res);
+    
+    expect(res._getStatusCode()).toBe(200);
+    expect(getPublicPaginatedVideos).toHaveBeenCalledWith(1, 10, '');
+  });
 
-      expect(res._getStatusCode()).toBe(200);
-      expect(res._getJSONData().message).toBe('Vídeo excluído com sucesso');
-      expect(deleteVideo).toHaveBeenCalledWith(1);
-    });
-
-    it('deve retornar 404 se o vídeo a ser excluído não for encontrado', async () => {
-      // Mock para simular que o vídeo não foi encontrado
-      deleteVideo.mockResolvedValue(null);
-
-      const { req, res } = createMocks({
-        method: 'DELETE',
-        headers: {
-          'Authorization': 'Bearer valid-token',
-        },
-        body: { id: 999 },
-      });
-
-      await videosHandler(req, res);
-
-      expect(res._getStatusCode()).toBe(404);
-      expect(res._getJSONData().message).toBe('Vídeo não encontrado');
-    });
+  it('deve extrair IP de cabeçalhos alternativos (x-forwarded-for) e propagar erro 500', async () => {
+    checkRateLimit.mockRejectedValueOnce(new Error('Erro Interno de Rate Limit'));
+    
+    const { req, res } = createMocks({ method: 'GET', headers: { 'x-forwarded-for': '192.168.0.1, 10.0.0.1' } });
+    await handler(req, res);
+    
+    expect(res._getStatusCode()).toBe(500);
   });
 });

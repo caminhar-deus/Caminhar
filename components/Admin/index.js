@@ -12,9 +12,9 @@
 export { default as AdminCrudBase } from './AdminCrudBase';
 
 // Componentes Refatorados
-export { default as AdminMusicasNew } from './AdminMusicasNew';
-export { default as AdminVideosNew } from './AdminVideosNew';
-export { default as AdminPostsNew } from './AdminPostsNew';
+export { default as AdminMusicasNew } from './AdminMusicas';
+export { default as AdminVideosNew } from './AdminVideos';
+export { default as AdminPostsNew } from './AdminPosts';
 
 // Campos de Formulário
 export { default as TextField } from './fields/TextField';
