@@ -24,11 +24,15 @@
 │   │   ├── index.js
 │   │   ├── Managers
 │   │   │   ├── BackupManager.js
-│   │   │   └── CacheManager.js
+│   │   │   ├── BackupManager.test.js
+│   │   │   ├── CacheManager.js
+│   │   │   └── CacheManager.test.js
 │   │   ├── README.md
 │   │   ├── Tools
 │   │   │   ├── IntegrityCheck.js
-│   │   │   └── RateLimitViewer.js
+│   │   │   ├── IntegrityCheck.test.js
+│   │   │   ├── RateLimitViewer.js
+│   │   │   └── RateLimitViewer.test.js
 │   │   └── withAdminAuth.js
 │   ├── Features
 │   │   ├── Blog
@@ -41,17 +45,20 @@
 │   │   │   └── index.js
 │   │   ├── Music
 │   │   │   ├── MusicCard.js
+│   │   │   ├── MusicCard.test.js
 │   │   │   ├── MusicGallery.js
 │   │   │   └── styles
 │   │   │       ├── MusicCard.module.css
 │   │   │       └── MusicGallery.module.css
 │   │   ├── Testimonials
-│   │   │   └── index.js
+│   │   │   ├── index.js
+│   │   │   └── index.test.js
 │   │   └── Video
 │   │       ├── styles
 │   │       │   ├── VideoCard.module.css
 │   │       │   └── VideoGallery.module.css
 │   │       ├── VideoCard.js
+│   │       ├── VideoCard.test.js
 │   │       └── VideoGallery.js
 │   ├── Layout
 │   │   ├── Container.js
@@ -75,6 +82,7 @@
 │   ├── SEO
 │   │   ├── Head.js
 │   │   ├── index.js
+│   │   ├── index.test.js
 │   │   └── StructuredData
 │   │       ├── ArticleSchema.js
 │   │       ├── BreadcrumbSchema.js
@@ -810,7 +818,8 @@
 │   │   │   │   ├── rate-limit.test.js
 │   │   │   │   ├── roles.test.js
 │   │   │   │   ├── users.create.test.js
-│   │   │   │   └── users.test.js
+│   │   │   │   ├── users.test.js
+│   │   │   │   └── videos.test.js
 │   │   │   ├── audit.test.js
 │   │   │   ├── auth
 │   │   │   │   ├── login.test.js
@@ -959,6 +968,7 @@
 │       ├── lib
 │       │   ├── api
 │       │   │   ├── errors.test.js
+│       │   │   ├── index.test.js
 │       │   │   ├── middleware.test.js
 │       │   │   ├── response.test.js
 │       │   │   └── validate.test.js
@@ -981,6 +991,8 @@
 │       │   │   ├── settings.test.js
 │       │   │   └── updatePost.test.js
 │       │   ├── db.test.js
+│       │   ├── middleware.test.js
+│       │   ├── redis.test.js
 │       │   └── seo
 │       │       └── config.test.js
 │       ├── middleware.test.js
@@ -993,4 +1005,4 @@
 │       └── videos_validation.test.js
 └── tree.txt
 
-160 directories, 834 files
+160 directories, 846 files

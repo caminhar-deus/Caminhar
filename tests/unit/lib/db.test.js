@@ -82,4 +82,34 @@ describe('Library - Database', () => {
     await closeDatabase();
     expect(mockPoolInstance.end).toHaveBeenCalled();
   });
+
+  it('deve usar SSL em ambiente de produção', async () => {
+    const origEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    resetPool(); // Força a recriação do pool
+    mockPoolInstance.query.mockResolvedValueOnce({ rows: [] });
+    
+    await query('SELECT 1');
+    
+    expect(Pool).toHaveBeenCalledWith(expect.objectContaining({
+      ssl: { rejectUnauthorized: false }
+    }));
+    
+    process.env.NODE_ENV = origEnv;
+  });
+
+  it('closeDatabase: propaga erro se falhar', async () => {
+    mockPoolInstance.end.mockRejectedValueOnce(new Error('Close Error'));
+    await expect(closeDatabase()).rejects.toThrow('Close Error');
+  });
+
+  it('healthCheck: retorna falso se ocorrer erro na consulta', async () => {
+    mockPoolInstance.query.mockRejectedValueOnce(new Error('Health Error'));
+    expect(await healthCheck()).toBe(false);
+  });
+
+  it('getDatabaseInfo: propaga erro se falhar', async () => {
+    mockPoolInstance.query.mockRejectedValueOnce(new Error('Info Error'));
+    await expect(getDatabaseInfo()).rejects.toThrow('Info Error');
+  });
 });

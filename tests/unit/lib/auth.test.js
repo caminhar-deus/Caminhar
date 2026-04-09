@@ -1,4 +1,4 @@
-import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach, beforeAll, afterAll } from '@jest/globals';
 import { hashPassword, verifyPassword, generateToken, verifyToken, setAuthCookie, getAuthCookie, getAuthToken, authenticate, withAuth, initializeAuth } from '../../../lib/auth.js';
 import { query } from '../../../lib/db.js';
 
@@ -16,6 +16,19 @@ jest.mock('cookie', () => ({
 }));
 
 describe('Library - Auth', () => {
+  const originalConsoleLog = console.log;
+  const originalConsoleError = console.error;
+
+  beforeAll(() => {
+    console.log = () => {};
+    console.error = () => {};
+  });
+
+  afterAll(() => {
+    console.log = originalConsoleLog;
+    console.error = originalConsoleError;
+  });
+
   beforeEach(() => { jest.clearAllMocks(); });
 
   it('hashPassword e verifyPassword: deve encriptar e validar corretamente', async () => {
@@ -87,5 +100,21 @@ describe('Library - Auth', () => {
     query.mockResolvedValue({ rows: [{ id: 1, role: 'user' }] }); // Admin com role errada
     await initializeAuth();
     expect(query).toHaveBeenCalledWith(expect.stringContaining('UPDATE users SET role'), expect.any(Array));
+  });
+
+  it('initializeAuth: lança erro se credenciais de admin não estiverem no env', async () => {
+    delete process.env.ADMIN_USERNAME;
+    await expect(initializeAuth()).rejects.toThrow('ADMIN_USERNAME and ADMIN_PASSWORD environment variables must be set');
+  });
+
+  it('initializeAuth: repassa erros do banco de dados e loga no console', async () => {
+    process.env.ADMIN_USERNAME = 'admin';
+    process.env.ADMIN_PASSWORD = 'password';
+    query.mockRejectedValueOnce(new Error('DB Error'));
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    
+    await expect(initializeAuth()).rejects.toThrow('DB Error');
+    expect(consoleSpy).toHaveBeenCalled();
+    consoleSpy.mockRestore();
   });
 });

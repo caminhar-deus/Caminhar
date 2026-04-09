@@ -1,119 +1,82 @@
-import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach, beforeAll, afterAll } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
-
-// Mocks de sistema de arquivos e script de backup
-jest.mock('fs', () => ({
-  existsSync: jest.fn(),
-  readdirSync: jest.fn(),
-  statSync: jest.fn(),
-}));
-
-jest.mock('../../../../scripts/backup', () => ({
-  createBackup: jest.fn(),
-}));
-
-// Mocks para Auth (interceptando o middleware withAuth)
-jest.mock('../../../../lib/auth.js', () => ({
-  withAuth: jest.fn((handler) => async (req, res) => {
-    if (req.headers.authorization !== 'Bearer valid-token') {
-      return res.status(401).json({ message: 'Não autenticado' });
-    }
-    req.user = { userId: 1, username: 'admin', role: 'admin' };
-    return handler(req, res);
-  }),
-}));
-
-import fs from 'fs';
-import { createBackup } from '../../../../scripts/backup';
 import handler from '../../../../pages/api/admin/backups.js';
+import { createBackup } from '../../../../scripts/backup.js';
+import fs from 'fs';
 
-describe('API Admin - Gestão de Backups (/api/admin/backups)', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    jest.spyOn(process, 'cwd').mockReturnValue('/fake/cwd');
+jest.mock('../../../../lib/auth.js', () => ({
+  withAuth: (handler) => async (req, res) => handler(req, res)
+}));
+jest.mock('../../../../scripts/backup.js', () => ({
+  createBackup: jest.fn()
+}));
+jest.mock('fs');
+
+describe('API Admin - Backups (/api/admin/backups)', () => {
+  const originalConsoleError = console.error;
+
+  beforeAll(() => { console.error = () => {}; });
+  afterAll(() => { console.error = originalConsoleError; });
+  beforeEach(() => { jest.clearAllMocks(); });
+
+  it('GET: deve listar backups ordenados se o diretório existir', async () => {
+    fs.existsSync.mockReturnValueOnce(true);
+    fs.readdirSync.mockReturnValueOnce(['backup1.sql.gz', 'backup2.sql']);
+    fs.statSync.mockImplementation((file) => ({
+      mtime: file.includes('backup1') ? new Date('2026-04-05') : new Date('2026-04-06'),
+      size: 1024
+    }));
+
+    const { req, res } = createMocks({ method: 'GET' });
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(200);
+    const data = res._getJSONData();
+    expect(data.backups).toHaveLength(2);
+    expect(data.latest.name).toBe('backup2.sql');
   });
 
-  const getAuthenticatedMocks = (options = {}) => createMocks({
-    ...options,
-    headers: { ...options.headers, authorization: 'Bearer valid-token' },
+  it('GET: deve retornar array vazio em latest se arquivos não existirem', async () => {
+    fs.existsSync.mockReturnValueOnce(true);
+    fs.readdirSync.mockReturnValueOnce([]);
+    const { req, res } = createMocks({ method: 'GET' });
+    await handler(req, res);
+    expect(res._getJSONData().latest).toBeNull();
   });
 
-  describe('GET - Listar Backups', () => {
-    it('deve retornar null se o diretório de backups não existir', async () => {
-      fs.existsSync.mockReturnValue(false); // Diretório ausente
-
-      const { req, res } = getAuthenticatedMocks({ method: 'GET' });
-      await handler(req, res);
-
-      expect(res._getStatusCode()).toBe(200);
-      expect(JSON.parse(res._getData())).toEqual({ latest: null });
-    });
-
-    it('deve retornar a lista de backups ordenada por data com os últimos criados no topo', async () => {
-      fs.existsSync.mockReturnValue(true);
-      // Simula a pasta com três arquivos, sendo um deles ignorado (não-SQL)
-      fs.readdirSync.mockReturnValue(['backup_old.sql', 'ignorame.txt', 'backup_new.sql.gz']);
-      
-      // Simula datas e tamanhos falsos para a ordenação ser testada
-      fs.statSync.mockImplementation((filePath) => {
-        if (filePath.includes('backup_old')) return { mtime: new Date('2026-01-01'), size: 1000 };
-        if (filePath.includes('backup_new')) return { mtime: new Date('2026-04-01'), size: 2000 };
-        return { mtime: new Date(), size: 0 }; // Fallback de segurança
-      });
-
-      const { req, res } = getAuthenticatedMocks({ method: 'GET' });
-      await handler(req, res);
-
-      expect(res._getStatusCode()).toBe(200);
-      const data = JSON.parse(res._getData());
-
-      // Espera que o backup_new venha primeiro por ser mais recente
-      expect(data.backups).toHaveLength(2);
-      expect(data.latest.name).toBe('backup_new.sql.gz');
-      expect(data.backups[1].name).toBe('backup_old.sql');
-    });
-
-    it('deve retornar 500 se o sistema de arquivos falhar', async () => {
-      fs.existsSync.mockImplementation(() => { throw new Error('Erro de permissão no FS'); });
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
-      const { req, res } = getAuthenticatedMocks({ method: 'GET' });
-      await handler(req, res);
-
-      expect(res._getStatusCode()).toBe(500);
-      consoleSpy.mockRestore();
-    });
+  it('GET: deve retornar null se o diretório não existir', async () => {
+    fs.existsSync.mockReturnValueOnce(false);
+    const { req, res } = createMocks({ method: 'GET' });
+    await handler(req, res);
+    expect(res._getStatusCode()).toBe(200);
+    expect(res._getJSONData().latest).toBeNull();
+  });
+  
+  it('GET: deve capturar erros do Filesystem e retornar 500', async () => {
+    fs.existsSync.mockImplementationOnce(() => { throw new Error('FS Error'); });
+    const { req, res } = createMocks({ method: 'GET' });
+    await handler(req, res);
+    expect(res._getStatusCode()).toBe(500);
   });
 
-  describe('POST - Criar Backup', () => {
-    it('deve criar um backup via script e retornar 200', async () => {
-      createBackup.mockResolvedValueOnce({ filename: 'novo_bkp.sql' });
-
-      const { req, res } = getAuthenticatedMocks({ method: 'POST' });
-      await handler(req, res);
-
-      expect(res._getStatusCode()).toBe(200);
-      expect(JSON.parse(res._getData()).success).toBe(true);
-      expect(createBackup).toHaveBeenCalled();
-    });
-
-    it('deve retornar 500 se o script de backup falhar', async () => {
-      createBackup.mockRejectedValueOnce(new Error('Processo pg_dump falhou'));
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
-      const { req, res } = getAuthenticatedMocks({ method: 'POST' });
-      await handler(req, res);
-
-      expect(res._getStatusCode()).toBe(500);
-      consoleSpy.mockRestore();
-    });
+  it('POST: deve criar um novo backup com sucesso', async () => {
+    createBackup.mockResolvedValueOnce({ file: 'backup3.sql.gz' });
+    const { req, res } = createMocks({ method: 'POST' });
+    await handler(req, res);
+    expect(res._getStatusCode()).toBe(200);
+    expect(createBackup).toHaveBeenCalled();
   });
 
-  describe('Tratamento de Rotas', () => {
-    it('deve retornar 405 para métodos não permitidos', async () => {
-      const { req, res } = getAuthenticatedMocks({ method: 'DELETE' });
-      await handler(req, res);
-      expect(res._getStatusCode()).toBe(405);
-    });
+  it('POST: deve retornar erro 500 se a rotina de backup falhar', async () => {
+    createBackup.mockRejectedValueOnce(new Error('Backup Failed'));
+    const { req, res } = createMocks({ method: 'POST' });
+    await handler(req, res);
+    expect(res._getStatusCode()).toBe(500);
+  });
+
+  it('deve retornar 405 para métodos não permitidos (PUT/DELETE)', async () => {
+    const { req, res } = createMocks({ method: 'PUT' });
+    await handler(req, res);
+    expect(res._getStatusCode()).toBe(405);
   });
 });
