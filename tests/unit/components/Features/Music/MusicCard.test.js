@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, jest, beforeAll, afterAll, beforeEach } from '@jest/globals';
-import MusicCard from './MusicCard.js';
+import MusicCard from '../../../../../components/Features/Music/MusicCard.js';
 
 describe('Componentes Features - Music - MusicCard', () => {
   const originalConsoleError = console.error;

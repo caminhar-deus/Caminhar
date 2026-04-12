@@ -24,15 +24,11 @@
 │   │   ├── index.js
 │   │   ├── Managers
 │   │   │   ├── BackupManager.js
-│   │   │   ├── BackupManager.test.js
-│   │   │   ├── CacheManager.js
-│   │   │   └── CacheManager.test.js
+│   │   │   └── CacheManager.js
 │   │   ├── README.md
 │   │   ├── Tools
 │   │   │   ├── IntegrityCheck.js
-│   │   │   ├── IntegrityCheck.test.js
-│   │   │   ├── RateLimitViewer.js
-│   │   │   └── RateLimitViewer.test.js
+│   │   │   └── RateLimitViewer.js
 │   │   └── withAdminAuth.js
 │   ├── Features
 │   │   ├── Blog
@@ -45,20 +41,17 @@
 │   │   │   └── index.js
 │   │   ├── Music
 │   │   │   ├── MusicCard.js
-│   │   │   ├── MusicCard.test.js
 │   │   │   ├── MusicGallery.js
 │   │   │   └── styles
 │   │   │       ├── MusicCard.module.css
 │   │   │       └── MusicGallery.module.css
 │   │   ├── Testimonials
-│   │   │   ├── index.js
-│   │   │   └── index.test.js
+│   │   │   └── index.js
 │   │   └── Video
 │   │       ├── styles
 │   │       │   ├── VideoCard.module.css
 │   │       │   └── VideoGallery.module.css
 │   │       ├── VideoCard.js
-│   │       ├── VideoCard.test.js
 │   │       └── VideoGallery.js
 │   ├── Layout
 │   │   ├── Container.js
@@ -82,7 +75,6 @@
 │   ├── SEO
 │   │   ├── Head.js
 │   │   ├── index.js
-│   │   ├── index.test.js
 │   │   └── StructuredData
 │   │       ├── ArticleSchema.js
 │   │       ├── BreadcrumbSchema.js
@@ -512,6 +504,7 @@
 │   ├── CACHE.md
 │   ├── DB_EXAMPLE.md
 │   ├── DEPLOY.md
+│   ├── DESIGN_TOKENS.md
 │   ├── REPORTS.md
 │   ├── SECURITY.md
 │   ├── SEO_TOOLKIT.md
@@ -535,7 +528,6 @@
 │   │   ├── errors.js
 │   │   ├── index.js
 │   │   ├── middleware.js
-│   │   ├── README.md
 │   │   ├── response.js
 │   │   └── validate.js
 │   ├── auth.js
@@ -780,7 +772,6 @@
 │   │   ├── colors.js
 │   │   ├── index.js
 │   │   ├── opacity.js
-│   │   ├── README.md
 │   │   ├── shadows.js
 │   │   ├── sizes.js
 │   │   ├── spacing.js
@@ -882,7 +873,6 @@
 │   │   ├── fetch.js
 │   │   ├── index.js
 │   │   └── next.js
-│   ├── README.md
 │   ├── setup.js
 │   └── unit
 │       ├── AdminPosts.test.js
@@ -890,6 +880,7 @@
 │       ├── clean-test-db.test.js
 │       ├── components
 │       │   ├── Admin
+│       │   │   ├── AdminAudit.edge.test.js
 │       │   │   ├── AdminAudit.test.js
 │       │   │   ├── AdminCrudBase.test.js
 │       │   │   ├── AdminDashboard.test.js
@@ -898,14 +889,21 @@
 │       │   │   ├── AdminPosts.test.js
 │       │   │   ├── AdminProducts.test.js
 │       │   │   ├── AdminRolesTab.test.js
+│       │   │   ├── AdminUsersTab.edge.test.js
 │       │   │   ├── AdminUsersTab.test.js
 │       │   │   ├── AdminUsers.test.js
 │       │   │   ├── AdminVideos.test.js
 │       │   │   ├── ImageUploadField.test.js
 │       │   │   ├── index.test.js
+│       │   │   ├── Managers
+│       │   │   │   ├── BackupManager.test.js
+│       │   │   │   └── CacheManager.test.js
 │       │   │   ├── TextAreaField.test.js
 │       │   │   ├── TextField.test.js
 │       │   │   ├── ToggleField.test.js
+│       │   │   ├── Tools
+│       │   │   │   ├── IntegrityCheck.test.js
+│       │   │   │   └── RateLimitViewer.test.js
 │       │   │   ├── UrlField.test.js
 │       │   │   └── withAdminAuth.test.js
 │       │   ├── Button.test.js
@@ -916,13 +914,19 @@
 │       │   │   ├── ContentTabs
 │       │   │   │   └── ContentTabs.test.js
 │       │   │   ├── Music
+│       │   │   │   ├── MusicCard.test.js
+│       │   │   │   ├── MusicGallery.edge.test.js
 │       │   │   │   └── MusicGallery.test.js
+│       │   │   ├── Testimonials
+│       │   │   │   └── index.test.js
 │       │   │   └── Video
+│       │   │       ├── VideoCard.test.js
 │       │   │       └── VideoGallery.test.js
 │       │   ├── Header.test.js
 │       │   ├── Layout
 │       │   │   ├── Container.test.js
 │       │   │   ├── Grid.test.js
+│       │   │   ├── index.test.js
 │       │   │   ├── Sidebar.test.js
 │       │   │   └── Stack.test.js
 │       │   ├── Performance
@@ -997,6 +1001,20 @@
 │       │       └── config.test.js
 │       ├── middleware.test.js
 │       ├── musicas_public_api.test.js
+│       ├── pages
+│       │   └── api
+│       │       ├── admin
+│       │       │   ├── dicas.edge.test.js
+│       │       │   ├── fetch-ml.edge.test.js
+│       │       │   ├── fetch-spotify.edge.test.js
+│       │       │   ├── posts.edge.test.js
+│       │       │   ├── rate-limit.test.js
+│       │       │   ├── roles.edge.test.js
+│       │       │   └── stats.edge.test.js
+│       │       ├── auth
+│       │       │   └── login.edge.test.js
+│       │       ├── products.edge.test.js
+│       │       └── upload-image.edge.test.js
 │       ├── scripts
 │       │   └── clean-orphaned-images.test.js
 │       ├── settings-cache.test.js
@@ -1005,4 +1023,4 @@
 │       └── videos_validation.test.js
 └── tree.txt
 
-160 directories, 846 files
+167 directories, 857 files

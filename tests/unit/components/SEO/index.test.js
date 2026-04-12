@@ -1,15 +1,34 @@
 import { describe, it, expect } from '@jest/globals';
-import * as LayoutComponents from '../../../../components/Layout/index.js';
+import DefaultExport, {
+  SEOHead,
+  OrganizationSchema,
+  WebsiteSchema,
+  ArticleSchema,
+  BreadcrumbSchema,
+  MusicSchema,
+  VideoSchema,
+  siteConfig,
+  getCanonicalUrl,
+  getImageUrl
+} from '../../../../components/SEO/index.js';
 
-describe('Layout Components Index', () => {
-  it('deve exportar todos os componentes de layout corretamente (nomeados e default)', () => {
-    expect(LayoutComponents.Container).toBeDefined();
-    expect(LayoutComponents.Grid).toBeDefined();
-    expect(LayoutComponents.Stack).toBeDefined();
-    expect(LayoutComponents.Sidebar).toBeDefined();
+describe('Componentes SEO - Index Exports', () => {
+  it('deve re-exportar todos os componentes e configurações de SEO corretamente', () => {
+    // Valida se o export default é o mesmo que o SEOHead
+    expect(DefaultExport).toBeDefined();
+    expect(SEOHead).toBeDefined();
+    expect(DefaultExport).toBe(SEOHead);
     
-    expect(LayoutComponents.ContainerDefault).toBeDefined();
-    expect(LayoutComponents.GridDefault).toBeDefined();
-    expect(LayoutComponents.StackDefault).toBeDefined();
+    // Valida se re-exportou os schemas e as configs
+    expect(OrganizationSchema).toBeDefined();
+    expect(WebsiteSchema).toBeDefined();
+    expect(ArticleSchema).toBeDefined();
+    expect(BreadcrumbSchema).toBeDefined();
+    expect(MusicSchema).toBeDefined();
+    expect(VideoSchema).toBeDefined();
+    
+    expect(siteConfig).toBeDefined();
+    expect(getCanonicalUrl).toBeDefined();
+    expect(getImageUrl).toBeDefined();
   });
 });

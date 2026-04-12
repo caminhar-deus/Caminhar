@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from '@jest/globals';
-import IntegrityCheck from './IntegrityCheck.js';
+import IntegrityCheck from '../../../../../components/Admin/Tools/IntegrityCheck.js';
 
 describe('Componentes Admin - Tools - IntegrityCheck', () => {
   it('deve renderizar o título e o texto descritivo corretamente', () => {

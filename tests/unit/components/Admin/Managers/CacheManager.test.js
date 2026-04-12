@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, beforeAll, afterAll } from '@jest/globals';
-import CacheManager from './CacheManager.js';
+import CacheManager from '../../../../../components/Admin/Managers/CacheManager.js';
 import toast from 'react-hot-toast';
 
 // Mockando o Toast para interceptarmos as mensagens

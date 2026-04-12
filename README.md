@@ -28,6 +28,15 @@ Este projeto serve como um sistema de gerenciamento de conteúdo (CMS) completo,
 
 Siga os passos abaixo para configurar e executar o projeto em seu ambiente local.
 
+## 📚 Documentação Completa
+
+Para aprofundar em áreas específicas do projeto, consulte nossa documentação dedicada na pasta `/docs`:
+
+- Padrões de API e Respostas (API.md)
+- Design Tokens e Estilização (DESIGN_TOKENS.md)
+- Diretrizes de Testes (TESTING.md)
+- Ferramentas e Boas Práticas de SEO (SEO_TOOLKIT.md)
+
 ### Pré-requisitos
 
 - [Node.js](https://nodejs.org/) (versão 20 ou superior)

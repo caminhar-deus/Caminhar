@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, beforeAll, afterAll } from '@jest/globals';
-import BackupManager from './BackupManager.js';
+import BackupManager from '../../../../../components/Admin/Managers/BackupManager.js';
 
 // Mocks globais para Fetch e Window.Confirm
 const mockFetch = jest.fn();

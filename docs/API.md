@@ -1,90 +1,268 @@
-# Documentação da API - Projeto Caminhar
+# API Response Standardizer
 
-Este documento descreve os principais endpoints da API do projeto, divididos entre a API Pública (para consumo do site) e a API Administrativa (para o painel de gestão).
+Sistema de padronização de respostas da API para o projeto "O Caminhar com Deus".
 
-## Autenticação
+## 📁 Estrutura
 
-- **API Pública**: Os endpoints são abertos, mas protegidos por um sistema de *Rate Limiting* para evitar abuso.
-- **API Administrativa**: Todos os endpoints em `/api/admin/*` são protegidos e exigem um token JWT válido no cabeçalho `Authorization`.
-  ```
-  Authorization: Bearer <seu-token-jwt>
-  ```
+```
+lib/api/
+├── errors.js       # Classes de erro customizadas
+├── response.js     # Utilitários de resposta padronizados
+├── validate.js     # Middlewares de validação com Zod
+├── middleware.js   # Composição de middlewares
+└── README.md       # Esta documentação
+```
 
----
+## 🚀 Uso Rápido
 
-## 1. API Pública
+### API Pública (apenas GET)
 
-Endpoints otimizados para performance, com cache, para servir o conteúdo do site.
+```javascript
+import { success } from '../../lib/api/response.js';
+import { composeMiddleware, withMethod, publicApi } from '../../lib/api/middleware.js';
 
-### `GET /api/posts`
+async function handler(req, res) {
+  const data = await getData();
+  return success(res, data);
+}
 
-Retorna uma lista paginada de posts publicados. Suporta busca por termo.
+export default publicApi(handler);
+```
 
-**Parâmetros (Query)**:
+### API Protegida (autenticação + CRUD)
 
-- `page` (opcional): Número da página. Padrão: `1`.
-- `limit` (opcional): Itens por página. Padrão: `10`, Máximo: `100`.
-- `search` (opcional): Termo para buscar no título e conteúdo dos posts.
+```javascript
+import { protectedApi } from '../../lib/api/middleware.js';
+import { created, success, noContent } from '../../lib/api/response.js';
 
-**Exemplo de Resposta (Sucesso `200 OK`)**:
+async function handler(req, res) {
+  switch (req.method) {
+    case 'POST':
+      const item = await createItem(req.body);
+      return created(res, item, `/api/items/${item.id}`);
+    
+    case 'GET':
+      return success(res, await getItems());
+    
+    case 'DELETE':
+      await deleteItem(req.query.id);
+      return noContent(res);
+  }
+}
+
+export default protectedApi(handler, {
+  roles: ['admin'],
+  methods: ['GET', 'POST', 'DELETE'],
+});
+```
+
+## 📦 Módulos
+
+### `errors.js` - Classes de Erro
+
+```javascript
+import { 
+  ValidationError, 
+  NotFoundError, 
+  AuthenticationError,
+  ForbiddenError,
+  ConflictError 
+} from '../../lib/api/errors.js';
+
+// No código
+if (!user) {
+  throw new NotFoundError('Usuário', userId);
+}
+
+if (!isValid) {
+  throw new ValidationError('Dados inválidos', [
+    { field: 'email', message: 'Email inválido' }
+  ]);
+}
+
+// O middleware withErrorHandler converte automaticamente para resposta HTTP
+```
+
+### `response.js` - Respostas Padronizadas
+
+#### Sucesso
+
+```javascript
+import { success, paginated, created, noContent } from '../../lib/api/response.js';
+
+// 200 OK
+success(res, { id: 1, nome: 'Item' });
+
+// 200 OK com paginação
+paginated(res, items, { page: 1, limit: 10, total: 100 });
+
+// 201 Created
+created(res, newItem, '/api/items/123');
+
+// 204 No Content
+noContent(res);
+```
+
+#### Erros
+
+```javascript
+import { 
+  badRequest, 
+  unauthorized, 
+  forbidden, 
+  notFound,
+  conflict,
+  serverError 
+} from '../../lib/api/response.js';
+
+badRequest(res, 'Dados inválidos', errors);
+unauthorized(res, 'Token expirado');
+forbidden(res);
+notFound(res, 'Música', 123);
+conflict(res, 'Email já existe');
+serverError(res);
+```
+
+### `validate.js` - Validação com Zod
+
+```javascript
+import { z } from 'zod';
+import { 
+  validateBody, 
+  validateQuery,
+  createPaginationSchema 
+} from '../../lib/api/validate.js';
+
+// Schema de paginação padrão
+const querySchema = createPaginationSchema({ defaultLimit: 20 });
+
+// Schema customizado
+const bodySchema = z.object({
+  titulo: z.string().min(1, 'Título é obrigatório'),
+  email: z.string().email('Email inválido'),
+  idade: z.number().min(18).optional(),
+});
+
+// Uso com composeMiddleware
+export default composeMiddleware(
+  validateQuery(querySchema),
+  validateBody(bodySchema),
+  handler
+);
+```
+
+### `middleware.js` - Composição de Middlewares
+
+```javascript
+import { 
+  composeMiddleware,
+  withAuth,
+  withRateLimit,
+  withMethod,
+  withCors,
+  withCache,
+  withErrorHandler,
+} from '../../lib/api/middleware.js';
+
+export default composeMiddleware(
+  withErrorHandler({ includeStack: process.env.NODE_ENV === 'development' }),
+  withCache(60),                    // Cache 1 minuto
+  withRateLimit({ maxRequests: 100 }),
+  withCors({ origins: ['*'] }),
+  withMethod(['GET', 'POST']),
+  withAuth({ roles: ['admin'] }),   // Opcional: controle de roles
+  handler
+);
+```
+
+## 📝 Formatos de Resposta
+
+### Sucesso
 
 ```json
 {
   "success": true,
-  "data": [
-    {
-      "id": 1,
-      "title": "Título do Post",
-      "slug": "titulo-do-post",
-      "excerpt": "Um breve resumo do post...",
-      "image_url": "/uploads/imagem.png",
-      "published": true,
-      "created_at": "2026-03-29T12:00:00.000Z"
-    }
-  ],
-  "pagination": {
-    "page": 1,
-    "limit": 10,
-    "total": 1,
-    "totalPages": 1
+  "data": { ... },
+  "meta": {
+    "timestamp": "2026-02-12T10:00:00.000Z",
+    "requestId": "550e8400-e29b-41d4-a716-446655440000"
   }
 }
 ```
 
+### Sucesso Paginado
+
+```json
+{
+  "success": true,
+  "data": [ ... ],
+  "meta": {
+    "timestamp": "2026-02-12T10:00:00.000Z",
+    "requestId": "550e8400-e29b-41d4-a716-446655440000",
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 100,
+      "totalPages": 10,
+      "hasNext": true,
+      "hasPrev": false
+    }
+  }
+}
+```
+
+### Erro
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Dados inválidos",
+    "details": [
+      { "field": "email", "message": "Email inválido" }
+    ]
+  },
+  "meta": {
+    "timestamp": "2026-02-12T10:00:00.000Z",
+    "requestId": "550e8400-e29b-41d4-a716-446655440000"
+  }
+}
+```
+
+## 🧪 Testes
+
+```bash
+# Executar testes da API
+npm test -- lib/api/__tests__/
+
+# Com cobertura
+npm run test:ci -- lib/api/__tests__/
+```
+
+## 🔗 Exemplo Completo
+
+Veja `pages/api/musicas.js` para uma implementação completa usando todos os padrões.
+
+## 📚 Códigos HTTP
+
+| Código | Função | Uso |
+|--------|--------|-----|
+| 200 | `success()`, `paginated()`, `updated()` | GET, PUT, DELETE com dados |
+| 201 | `created()` | POST sucesso |
+| 204 | `noContent()`, `deleted()`, `updated()` | DELETE/PUT sem dados |
+| 400 | `badRequest()`, `validationError()` | Dados inválidos |
+| 401 | `unauthorized()` | Não autenticado |
+| 403 | `forbidden()` | Sem permissão |
+| 404 | `notFound()` | Recurso não encontrado |
+| 405 | `methodNotAllowed()` | Método não permitido |
+| 409 | `conflict()` | Conflito de dados |
+| 429 | `tooManyRequests()` | Rate limit excedido |
+| 500 | `serverError()` | Erro interno |
+| 503 | `serviceUnavailable()` | Serviço indisponível |
+
 ---
 
-## 2. API Administrativa
-
-Endpoints para gerenciar o conteúdo através do painel de administração.
-
-### Recurso: Posts (`/api/admin/posts`)
-
-- **`GET /`**: Retorna uma lista paginada de **todos** os posts (publicados e rascunhos).
-- **`POST /`**: Cria um novo post.
-- **`PUT /`**: Atualiza um post existente.
-- **`DELETE /`**: Deleta um post.
-
-### Recurso: Vídeos (`/api/admin/videos`)
-
-- **`GET /`**: Retorna uma lista paginada de todos os vídeos.
-- **`POST /`**: Cria um novo vídeo.
-- **`PUT /`**: Atualiza um vídeo existente ou reordena a lista.
-- **`DELETE /`**: Deleta um vídeo.
-
-### Recurso: Configurações (`/api/settings`)
-
-- **`GET /`**: Retorna todas as configurações do site.
-- **`PUT /`**: Atualiza uma ou mais configurações.
-
-### Utilitários
-
-#### `POST /api/upload-image`
-
-Realiza o upload de uma imagem para o servidor. Espera um `multipart/form-data`.
-
-#### `POST /api/admin/fetch-youtube`
-
-Busca metadados (como o título) de um vídeo do YouTube a partir de uma URL.
-
-- **Corpo da Requisição**: `{"url": "https://www.youtube.com/watch?v=..."}`
-- **Resposta de Sucesso**: `{"title": "Título do Vídeo"}`
+**Versão:** 1.0.0  
+**Autor:** API Standardizer Team  
+**Licença:** ISC

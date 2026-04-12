@@ -1,10 +1,10 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, jest } from '@jest/globals';
-import VideoCard from './VideoCard.js';
+import VideoCard from '../../../../../components/Features/Video/VideoCard.js';
 
 // Mock do componente LazyIframe para isolar o teste e não carregar um iframe real
-jest.mock('../../Performance', () => ({
+jest.mock('../../../../../components/Performance', () => ({
   LazyIframe: ({ src, title, thumbnail }) => (
     <div data-testid="mock-lazy-iframe" data-src={src} data-title={title} data-thumbnail={thumbnail || 'null'}>
       Mock Iframe

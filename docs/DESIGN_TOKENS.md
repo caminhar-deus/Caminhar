@@ -25,12 +25,12 @@ tokens/
 ```javascript
 import { colors } from './tokens';
 
-colors.primary[500]  // #2563eb - Cor principal
+colors.primary  // #2563eb - Cor principal
 ```
 
 ### Secundárias (Dourado Luz)
 ```javascript
-colors.secondary[500]  // #d4af37 - Dourado divino
+colors.secondary  // #d4af37 - Dourado divino
 ```
 
 ### Feedback
@@ -54,7 +54,7 @@ colors.spiritual.love    // Amor
 import tokens from '@/styles/tokens';
 
 // Acessar cores
-const primaryColor = tokens.colors.primary[500];
+const primaryColor = tokens.colors.primary;
 
 // Acessar espaçamentos
 const padding = tokens.spacing.space.md;

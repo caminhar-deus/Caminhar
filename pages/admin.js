@@ -104,12 +104,15 @@ export default function Admin() {
 
   // Check authentication status on component mount
   useEffect(() => {
+    const controller = new AbortController();
+
     // Check if user is authenticated by checking for token
     const checkAuth = async () => {
       try {
         const response = await fetch('/api/auth/check', {
           method: 'GET',
-          credentials: 'include'
+          credentials: 'include',
+          signal: controller.signal
         });
 
         if (response.ok) {
@@ -123,11 +126,18 @@ export default function Admin() {
           await loadSettings();
         }
       } catch (error) {
-        console.error('Auth check failed:', error);
+        if (error.name === 'AbortError') {
+          // Ignora o erro se a requisição foi cancelada intencionalmente pelo React
+          console.log('Verificação de autenticação cancelada pelo React.');
+        } else {
+          console.error('Auth check failed:', error);
+        }
       }
     };
 
     checkAuth();
+
+    return () => controller.abort();
   }, []);
 
   // Load settings from database

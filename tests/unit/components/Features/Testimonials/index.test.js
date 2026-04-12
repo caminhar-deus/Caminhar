@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, jest, beforeAll, afterAll, beforeEach } from '@jest/globals';
-import Testimonials from './index.js';
+import Testimonials from '../../../../../components/Features/Testimonials/index.js';
 
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
