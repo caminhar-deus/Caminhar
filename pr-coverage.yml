@@ -51,6 +51,9 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
+      - name: Run Knip (Dead Code Analysis)
+        run: npm run knip
+
       - name: Remove Old Coverage Comments
         uses: actions/github-script@v7
         with:

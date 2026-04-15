@@ -523,6 +523,7 @@
 ├── jest.config.js
 ├── jest.setup.js
 ├── jest.teardown.js
+├── knip.json
 ├── lib
 │   ├── api
 │   │   ├── errors.js
@@ -707,7 +708,6 @@
 │   │   ├── count-posts.js
 │   │   ├── diagnose-hero.js
 │   │   └── list-last-posts.js
-│   ├── find-unused.js
 │   ├── generate-load-report.js
 │   ├── init-backup.js
 │   ├── init-dicas.js
@@ -875,8 +875,6 @@
 │   │   └── next.js
 │   ├── setup.js
 │   └── unit
-│       ├── AdminPosts.test.js
-│       ├── auth_check.test.js
 │       ├── clean-test-db.test.js
 │       ├── components
 │       │   ├── Admin
@@ -906,7 +904,6 @@
 │       │   │   │   └── RateLimitViewer.test.js
 │       │   │   ├── UrlField.test.js
 │       │   │   └── withAdminAuth.test.js
-│       │   ├── Button.test.js
 │       │   ├── Features
 │       │   │   ├── Blog
 │       │   │   │   ├── BlogSection.test.js
@@ -950,24 +947,22 @@
 │       │   ├── SeoPerformance.test.js
 │       │   ├── __snapshots__
 │       │   │   └── Header.test.js.snap
-│       │   ├── UI
-│       │   │   ├── Alert.test.js
-│       │   │   ├── Badge.test.js
-│       │   │   ├── Button.test.js
-│       │   │   ├── Card.test.js
-│       │   │   ├── index.test.js
-│       │   │   ├── Input.test.js
-│       │   │   ├── Modal.test.js
-│       │   │   ├── Select.test.js
-│       │   │   ├── Spinner.test.js
-│       │   │   ├── TextArea.test.js
-│       │   │   └── Toast.test.js
-│       │   └── withAdminAuth.test.js
+│       │   └── UI
+│       │       ├── Alert.test.js
+│       │       ├── Badge.test.js
+│       │       ├── Button.test.js
+│       │       ├── Card.test.js
+│       │       ├── index.test.js
+│       │       ├── Input.test.js
+│       │       ├── Modal.test.js
+│       │       ├── Select.test.js
+│       │       ├── Spinner.test.js
+│       │       ├── TextArea.test.js
+│       │       └── Toast.test.js
 │       ├── domain
 │       │   ├── posts.test.js
 │       │   ├── settings.test.js
 │       │   └── videos.test.js
-│       ├── find-unused.test.js
 │       ├── index.test.js
 │       ├── lib
 │       │   ├── api
@@ -999,8 +994,6 @@
 │       │   ├── redis.test.js
 │       │   └── seo
 │       │       └── config.test.js
-│       ├── middleware.test.js
-│       ├── musicas_public_api.test.js
 │       ├── pages
 │       │   └── api
 │       │       ├── admin
@@ -1019,8 +1012,7 @@
 │       │   └── clean-orphaned-images.test.js
 │       ├── settings-cache.test.js
 │       ├── [slug].test.js
-│       ├── videos_public_api.test.js
 │       └── videos_validation.test.js
 └── tree.txt
 
-167 directories, 857 files
+167 directories, 849 files

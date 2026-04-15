@@ -1,0 +1,32 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "ignore": [
+    "tests/**",
+    "load-tests/**",
+    "scripts/**",
+    "examples/**",
+    "styles/tokens/**",
+    "hooks/**",
+    "*.config.js",
+    "jest.setup.js",
+    "styleMock.js",
+    "rate-limit-proxy.js"
+  ],
+  "ignoreBinaries": [
+    "kill-port",
+    "k6"
+  ],
+  "ignoreDependencies": [
+    "@babel/preset-env",
+    "@babel/preset-react",
+    "@faker-js/faker",
+    "@jest/reporters",
+    "jest-watch-typeahead",
+    "jsdom",
+    "web-vitals"
+  ],
+  "ignoreExportsUsedInFile": true,
+  "rules": {
+    "duplicates": "off"
+  }
+}

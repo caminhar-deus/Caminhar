@@ -3,7 +3,6 @@
   "version": "1.4.0",
   "description": "",
   "type": "module",
-  "main": "index.js",
   "engines": {
     "node": "24.14.1"
   },
@@ -16,7 +15,8 @@
     "dev:clean": "npx kill-port 3000 && rm -rf .next && rm -f babel.config.js babel.config.cjs && npm run dev",
     "analyze": "next build --analyze",
     "lint": "next lint",
-    "find-unused": "node scripts/find-unused.js",
+    "knip": "knip",
+    "knip:watch": "knip --watch",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -93,12 +93,11 @@
     "@jest/globals": "^30.3.0",
     "@next/env": "^16.2.3",
     "@upstash/redis": "^1.37.0",
-    "axios": "^1.15.0",
     "bcryptjs": "^3.0.3",
     "cookie": "^1.1.1",
     "cors": "^2.8.6",
     "date-fns": "^4.1.0",
-    "dotenv": "^17.4.1",
+    "dotenv": "^17.4.2",
     "formidable": "^3.5.4",
     "jsdom": "^29.0.2",
     "jsonwebtoken": "^9.0.3",
@@ -109,7 +108,6 @@
     "react-dom": "^19.2.5",
     "react-easy-crop": "^5.5.7",
     "react-hot-toast": "^2.6.0",
-    "sqlite": "^5.1.1",
     "web-vitals": "^5.2.0",
     "zod": "^4.3.6"
   },
@@ -124,14 +122,13 @@
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "babel-jest": "^30.3.0",
-    "cross-env": "^10.1.0",
     "cypress": "^15.13.1",
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",
     "jest-watch-typeahead": "^3.0.1",
     "next-sitemap": "^4.2.3",
     "node-mocks-http": "^1.17.2",
-    "undici": "^8.0.2"
+    "undici": "^8.1.0"
   },
   "overrides": {
     "tar": "^7.4.3",
