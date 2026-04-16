@@ -126,6 +126,7 @@
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",
     "jest-watch-typeahead": "^3.0.1",
+    "knip": "^6.4.1",
     "next-sitemap": "^4.2.3",
     "node-mocks-http": "^1.17.2",
     "undici": "^8.1.0"
