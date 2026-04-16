@@ -54,6 +54,17 @@ describe('API Admin - Gestão de Usuários (/api/admin/users)', () => {
       expect(res._getStatusCode()).toBe(401);
     });
 
+    it('deve retornar 401 se o token for inválido ou expirado', async () => {
+      getAuthToken.mockReturnValue('token-invalido');
+      verifyToken.mockReturnValue(null); // Simula um token que não pode ser verificado
+
+      const { req, res } = createMocks({ method: 'GET' });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(401);
+      expect(JSON.parse(res._getData()).error).toContain('Token ausente ou inválido');
+    });
+
     it('deve retornar 403 se o usuário não for admin e não tiver a permissão necessária', async () => {
       verifyToken.mockReturnValue({ userId: 2, username: 'editor', role: 'comum' });
       query.mockImplementationOnce(async () => ({ rows: [{ permissions: ['Posts/Artigos'] }] }));

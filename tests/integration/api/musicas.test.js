@@ -39,4 +39,21 @@ describe('API Pública - Músicas (/api/musicas)', () => {
     expect(responseData.data).toHaveLength(1);
     expect(getPaginatedMusicas).toHaveBeenCalledWith(1, 10, 'Hino', true);
   });
+
+  it('deve retornar 500 em caso de erro no servidor', async () => {
+    // Simula uma falha na camada de domínio (ex: banco de dados caiu)
+    getPaginatedMusicas.mockRejectedValueOnce(new Error('Erro de conexão com o banco'));
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { req, res } = createMocks({ method: 'GET' });
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(500);
+    const responseData = res._getJSONData();
+    expect(responseData.success).toBe(false);
+    expect(responseData.message).toBe('Erro interno do servidor ao buscar músicas.');
+    expect(consoleSpy).toHaveBeenCalledWith('API Error fetching musicas:', expect.any(Error));
+
+    consoleSpy.mockRestore();
+  });
 });

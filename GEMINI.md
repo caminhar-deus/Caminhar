@@ -7,3 +7,6 @@ Siga rigorosamente as instruções de padrões Vercel localizadas em:
 - /home/qa/Projeto/Caminhar/.agents/skills/nodejs-backend-patterns/SKILL.md
 - /home/qa/Projeto/Caminhar/.agents/skills/supabase-postgres-best-practices/SKILL.md
 - /home/qa/Projeto/Caminhar/.agents/skills/ui-ux-pro-max/SKILL.md
+- /home/qa/Projeto/Caminhar/.agents/skills/startup-metrics-framework/SKILL.md
+- /home/qa/Projeto/Caminhar/.agents/skills/ckm-ui-styling/SKILL.md
+- /home/qa/Projeto/Caminhar/.agents/skills/prompt-engineering-patterns/SKILL.md

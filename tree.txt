@@ -609,7 +609,6 @@
 │   │   │   ├── users.js
 │   │   │   └── videos.js
 │   │   ├── auth
-│   │   │   ├── check.js
 │   │   │   ├── login.js
 │   │   │   └── logout.js
 │   │   ├── cleanup-test-data.js
@@ -1015,4 +1014,4 @@
 │       └── videos_validation.test.js
 └── tree.txt
 
-167 directories, 849 files
+167 directories, 848 files

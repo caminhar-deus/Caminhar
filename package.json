@@ -91,7 +91,7 @@
   "homepage": "https://github.com/caminhar-deus/Caminhar#readme",
   "dependencies": {
     "@jest/globals": "^30.3.0",
-    "@next/env": "^16.2.3",
+    "@next/env": "^16.2.4",
     "@upstash/redis": "^1.37.0",
     "bcryptjs": "^3.0.3",
     "cookie": "^1.1.1",
@@ -101,7 +101,7 @@
     "formidable": "^3.5.4",
     "jsdom": "^29.0.2",
     "jsonwebtoken": "^9.0.3",
-    "next": "^16.2.3",
+    "next": "^16.2.4",
     "pg": "^8.20.0",
     "prop-types": "^15.8.1",
     "react": "^19.2.5",

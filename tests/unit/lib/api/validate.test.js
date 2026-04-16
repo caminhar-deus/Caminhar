@@ -48,6 +48,11 @@ describe('API Validation Middleware (lib/api/validate.js)', () => {
         expect.objectContaining({ field: 'age', message: expect.any(String) })
       ]));
     });
+
+    it('deve retornar array vazio se receber nulo ou objeto sem issues', () => {
+      expect(formatZodErrors(null)).toEqual([]);
+      expect(formatZodErrors({ message: 'Erro genérico sem issues' })).toEqual([]);
+    });
   });
 
   describe('validateBody', () => {
@@ -140,6 +145,20 @@ describe('API Validation Middleware (lib/api/validate.js)', () => {
         'Erro ao validar parâmetros da URL', 
         expect.any(Array)
       );
+    });
+
+    it('deve tratar erros inesperados (não-Zod) na validação da query', async () => {
+      const errorSchema = { parse: () => { throw new Error('Erro Inesperado na Query'); } };
+      const middleware = validateQuery(errorSchema)(handler);
+      
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      
+      await middleware(req, res);
+      
+      expect(validationError).toHaveBeenCalledWith(res, 'Erro ao validar parâmetros da URL');
+      expect(consoleSpy).toHaveBeenCalledWith('Erro inesperado na validação dos query params:', expect.any(Error));
+      
+      consoleSpy.mockRestore();
     });
   });
 
@@ -261,6 +280,18 @@ describe('API Validation Middleware (lib/api/validate.js)', () => {
               expect.objectContaining({ location: 'params', field: 'id' }),
           ]));
       });
+
+    it('deve validar params com sucesso e assinalar ao req.params', async () => {
+      const paramSchema = { params: schemas.params };
+      req.method = 'GET';
+      req.query = { id: '123e4567-e89b-12d3-a456-426614174000' };
+      
+      const middleware = validateRequest(paramSchema)(handler);
+      await middleware(req, res);
+      
+      expect(handler).toHaveBeenCalled();
+      expect(req.params).toEqual({ id: '123e4567-e89b-12d3-a456-426614174000' });
+    });
   });
 
   describe('Helpers de Schema', () => {
