@@ -508,6 +508,7 @@
 │   ├── REPORTS.md
 │   ├── SECURITY.md
 │   ├── SEO_TOOLKIT.md
+│   ├── TESTING_ERRO_REPORT.md
 │   └── TESTING.md
 ├── examples
 │   ├── blog-post-seo-example.js
@@ -1014,4 +1015,4 @@
 │       └── videos_validation.test.js
 └── tree.txt
 
-167 directories, 848 files
+167 directories, 849 files

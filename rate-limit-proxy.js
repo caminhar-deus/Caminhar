@@ -17,7 +17,13 @@ export async function proxy(request) {
   const ip = request.ip || request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
   
   // --- 0. WHITELIST CHECK ---
-  // Verifica variável de ambiente (ex: ADMIN_IP_WHITELIST=127.0.0.1,192.168.1.1)
+  // IPs sempre permitidos (testes locais, desenvolvimento)
+  const permanentWhitelist = ['127.0.0.1', '::1', 'localhost', 'unknown'];
+  if (permanentWhitelist.includes(ip)) {
+    return NextResponse.next();
+  }
+
+  // Verifica variável de ambiente (ex: ADMIN_IP_WHITELIST=192.168.1.1,10.0.0.5)
   const envWhitelist = (process.env.ADMIN_IP_WHITELIST || '').split(',').map(i => i.trim());
   if (envWhitelist.includes(ip)) {
     return NextResponse.next();

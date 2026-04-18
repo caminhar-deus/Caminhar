@@ -12,7 +12,7 @@ const videoSchema = z.object({
   publicado: z.boolean().optional()
 });
 
-const youtubeUrlRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)/;
+const youtubeUrlRegex = /^https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=[\w-]{11}|youtu\.be\/[\w-]{11})(?:[&\?].*)?$/;
 
 async function handler(req, res) {
   // Garante que apenas administradores possam acessar esta rota.

@@ -85,11 +85,11 @@ describe('Library - Cache & Rate Limit', () => {
 
   it('checkRateLimit: usa Redis e limita acessos quando atinge a cota', async () => {
     mockRedis.incr.mockResolvedValueOnce(1); // Primeiro acesso
-    expect(await checkRateLimit('127.0.0.1', 'auth', 2)).toBe(false);
+    expect(await checkRateLimit('192.168.1.100', 'auth', 2)).toBe(false);
     expect(mockRedis.expire).toHaveBeenCalled();
 
     mockRedis.incr.mockResolvedValueOnce(3); // Ultrapassou a cota
-    expect(await checkRateLimit('127.0.0.1', 'auth', 2)).toBe(true);
+    expect(await checkRateLimit('192.168.1.100', 'auth', 2)).toBe(true);
   });
 
   it('checkRateLimit: usa Map em memória local como fallback se o Redis estiver offline', async () => {

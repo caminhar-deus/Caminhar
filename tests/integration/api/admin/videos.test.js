@@ -46,7 +46,7 @@ describe('API Admin - Vídeos (/api/admin/videos)', () => {
   });
 
   it('POST: deve criar vídeo e invalidar cache', async () => {
-    const body = { titulo: 'Novo', url_youtube: 'https://youtube.com/watch?v=123' };
+    const body = { titulo: 'Novo', url_youtube: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' };
     createVideo.mockResolvedValueOnce({ id: 1, ...body });
     const { req, res } = createMocks({ method: 'POST', body });
     await handler(req, res);

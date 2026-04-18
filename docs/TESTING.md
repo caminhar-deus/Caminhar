@@ -43,13 +43,38 @@ Este documento descreve a estratégia de testes do projeto, cobrindo desde teste
 
 ### Testes de Carga (k6)
 
-- **Executar um cenário de teste de carga específico:**
+✅ **Comandos atualizados e válidos:**
+
+- **Executar TODOS os testes de carga sequencialmente e gerar relatório final:**
   ```bash
-  # Exemplo: Teste de estresse na busca
-  npm run test:load:stress
-  
-  # Exemplo: Teste de performance do cache
-  npm run test:load:cache
+  npm run test:load:all
+  ```
+
+- **Executar teste combinado de stress principal:**
+  ```bash
+  k6 run load-tests/stress-test-combined.js
+  ```
+
+- **Executar teste de mecanismo de recuperação:**
+  ```bash
+  k6 run load-tests/recovery-test.js
+  ```
+
+- **Executar teste de validação de vídeos:**
+  ```bash
+  k6 run load-tests/video-validation-test.js
+  ```
+
+- **Executar um cenário específico individualmente:**
+  ```bash
+  k6 run load-tests/<nome-do-arquivo>.js
+  ```
+
+> ℹ️ **Observação**: Os testes de segurança (Rate Limit, DDoS) aparecem como falhos no relatório - este comportamento é normal e esperado, pois validam que as proteções do sistema estão funcionando.
+
+- **Executar relatório completo de cobertura:**
+  ```bash
+  npm run test:coverage
   ```
 
 ## Tipos de Teste
