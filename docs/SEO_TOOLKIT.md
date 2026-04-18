@@ -2,46 +2,37 @@
 
 ## Visão Geral
 
-Este documento descreve o conjunto de ferramentas e componentes de SEO (Search Engine Optimization) implementados no projeto. O objetivo é garantir que o conteúdo seja facilmente descoberto e corretamente indexado pelos motores de busca, como Google e Bing.
+Guia rápido sobre as ferramentas de SEO (Search Engine Optimization) do projeto, garantindo que o conteúdo seja corretamente indexado pelos motores de busca.
 
 ## Funcionalidades Principais
 
-- **Meta Tags Dinâmicas:** Geração automática de tags essenciais (`title`, `description`) e de redes sociais (`Open Graph` para Facebook/LinkedIn, `Twitter Cards` para Twitter).
-- **URLs Canônicas:** Definição de uma URL preferencial para cada página, evitando conteúdo duplicado.
-- **Dados Estruturados (Schema.org):** Implementação de JSON-LD para descrever o conteúdo de forma que os motores de busca entendam o contexto (ex: artigos, vídeos).
-- **Sitemap Dinâmico:** Geração automática de `sitemap.xml`, que lista todas as URLs públicas do site para facilitar o rastreamento.
-- **Robots.txt Otimizado:** Arquivo que instrui os robôs dos motores de busca sobre quais páginas podem ou não ser rastreadas.
+- **Meta Tags Dinâmicas:** Geração automática de `title`, `description`, `Open Graph` e `Twitter Cards`.
+- **Dados Estruturados (Schema.org):** Implementação de JSON-LD para descrever o contexto do conteúdo (artigos, vídeos, etc.).
+- **URLs Canônicas:** Evita conteúdo duplicado definindo uma URL preferencial para cada página.
+- **Sitemap e Robots.txt:** Geração automática de `sitemap.xml` e `robots.txt` para guiar os buscadores.
 
 ## Implementação
 
-A maior parte da lógica de SEO está centralizada no componente `<Seo />`, localizado em `components/SEO/Seo.js`.
-
-Este componente recebe propriedades (props) e gera dinamicamente todas as meta tags necessárias no `<head>` da página.
+A lógica está centralizada no componente `<Seo />` (`components/SEO/Head.js`). Ele recebe `props` e gera dinamicamente todas as tags necessárias no `<head>` da página.
 
 **Exemplo de uso em uma página:**
 
 ```jsx
-import Seo from '../components/SEO/Seo';
+import Seo from '@/components/SEO/Head';
 
 export default function PostPage({ post }) {
   return (
     <>
       <Seo
         title={post.title}
-        description={post.excerpt}
-        imageUrl={post.image_url}
-        canonicalUrl={`https://seu-dominio.com/posts/${post.slug}`}
-        schema={{
-          '@type': 'Article',
-          'headline': post.title,
-          'datePublished': post.created_at,
-          'image': post.image_url
-        }}
+        description={post.description}
+        image={post.image_url}
+        canonical={`https://seu-dominio.com/posts/${post.slug}`}
       />
       
       <article>
         <h1>{post.title}</h1>
-        {/* ... resto do conteúdo ... */}
+        {/* ... */}
       </article>
     </>
   );

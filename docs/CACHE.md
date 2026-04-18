@@ -2,41 +2,23 @@
 
 ## Visão Geral
 
-O sistema de cache do projeto utiliza **Redis (via Upstash)** para otimizar a performance da aplicação, reduzindo drasticamente o número de consultas ao banco de dados PostgreSQL. O objetivo é entregar respostas mais rápidas para requisições frequentes e diminuir a carga no servidor.
+O projeto utiliza **Redis (via Upstash)** para aplicar a estratégia de **Cache-Aside**. Isso reduz as consultas ao PostgreSQL e acelera drasticamente o tempo de resposta das APIs. Se o Redis estiver indisponível, a aplicação possui um fallback seguro e busca os dados diretamente do banco.
 
-## Estratégia de Cache
+## Como Funciona (Cache-Aside)
 
-A implementação segue o padrão **Cache-Aside**:
+1. **Leitura:** Tenta buscar os dados no Redis.
+2. **Cache Hit:** Se encontrar, retorna imediatamente ao cliente.
+3. **Cache Miss:** Se não encontrar, busca no banco, salva no Redis com um tempo de expiração (TTL) e retorna ao cliente.
 
-1.  **Leitura:** A aplicação primeiro tenta buscar os dados no cache (Redis).
-2.  **Cache Hit:** Se os dados são encontrados, eles são retornados imediatamente ao cliente.
-3.  **Cache Miss:** Se os dados não estão no cache, a aplicação busca a informação no banco de dados, salva uma cópia no Redis com um tempo de vida (TTL) definido, e então retorna os dados ao cliente.
-
-O sistema também possui um **fallback seguro**: se o Redis estiver indisponível, a aplicação continua funcionando, buscando os dados diretamente do banco de dados, garantindo a disponibilidade do serviço.
-
-## Implementação Principal
+## Uso no Código
 
 A lógica central está encapsulada na função `getOrSetCache` em `lib/cache.js`.
 
 ```javascript
-export async function getOrSetCache(key, fetchFunction, ttlSeconds = 3600) {
-  // 1. Tenta obter do Redis
-  const cachedData = await redis.get(key);
+import { getOrSetCache } from '../../lib/cache.js';
 
-  if (cachedData) {
-    return JSON.parse(cachedData); // Cache Hit
-  }
-
-  // 2. Busca do banco de dados (Cache Miss)
-  const data = await fetchFunction();
-
-  // 3. Salva no Redis com TTL
-  if (data) {
-    await redis.set(key, JSON.stringify(data), { ex: ttlSeconds });
-  }
-
-  return data;
-}
+// Exemplo: Cache de 1 hora (3600 segundos)
+const posts = await getOrSetCache('posts:recentes', fetchPostsDb, 3600);
 ```
 
 ### Estratégias de Invalidation

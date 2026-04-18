@@ -1,184 +1,43 @@
-# Sistema de Backup do Banco de Dados
+# Sistema de Backup
 
 ## Visão Geral
 
-Este documento descreve o sistema de backup automático para o banco de dados PostgreSQL do projeto. O sistema foi projetado para ser robusto, seguro e fácil de operar.
+Este documento descreve o sistema de backup para o banco de dados PostgreSQL do projeto, projetado para ser robusto e fácil de operar.
 
-## Funcionalidades
+## Funcionalidades Principais
 
-- **Backups Automáticos:** Agendados para rodar diariamente (via cron).
-- **Compressão:** Os arquivos de backup são comprimidos com `gzip` para economizar espaço.
-- **Rotação Automática:** Mantém um número configurável de backups, removendo os mais antigos.
-- **Gestão Manual:** Permite criar, listar e restaurar backups via linha de comando ou interface administrativa.
-- **Verificação de Integridade:** Garante que os backups criados não estão corrompidos.
+- **Backups Automáticos:** Agendados para rodar diariamente.
+- **Compressão:** Os arquivos são comprimidos com `gzip` para economizar espaço.
+- **Rotação Automática:** Mantém os 10 backups mais recentes, removendo os antigos.
+- **Gestão Manual:** Permite criar e restaurar backups via linha de comando ou painel admin.
 
 ## Como Usar (Linha de Comando)
 
-- **Criar um backup manual:**
-```bash
-npm run create-backup
-```
-
-### Restaurar Backup
-```bash
-npm run restore-backup nome-arquivo.sql.gz
-```
-
-### Listar Backups Disponíveis
-```bash
-node -e "import('./scripts/backup.js').then(m => m.getAvailableBackups().then(console.log))"
-```
-
-### Visualizar Logs
-```bash
-cat data/backups/backup.log
-```
-
-## Configuração
-
-Arquivo: `scripts/backup.js`
-
-```javascript
-const BACKUP_CONFIG = {
-  maxBackups: 10,                    // Máximo de backups
-  backupInterval: '0 2 * * *',       // Diariamente às 2 AM
-  compressBackups: true,             // Comprimir backups
-  backupPrefix: 'caminhar-pg-backup', // Prefixo dos arquivos
-  verifyBackups: true,               // Verificar integridade
-  logRetentionDays: 30               // Dias para manter logs
-};
-```
-
-## Estrutura de Arquivos
-
-```
-data/backups/
-├── caminhar-pg-backup_2026-03-07_02-00-00.sql.gz
-├── caminhar-pg-backup_2026-03-08_02-00-00.sql.gz
-└── backup.log
-```
-
-## Interface Administrativa
-
-Acesse: `/admin` → Seção de Backups
-
-### Funcionalidades:
-- Listar todos os backups disponíveis
-- Criar backup manual com indicador de progresso
-- Restaurar backup com confirmação
-- Excluir backups antigos
-- Visualizar logs de operações
-- Monitorar saúde do sistema
-
-## API Endpoints
-
-- `GET /api/admin/backups` - Listar backups
-- `POST /api/admin/backups` - Criar backup
-- `DELETE /api/admin/backups/:filename` - Excluir backup
-- `POST /api/admin/backups/restore` - Restaurar backup
-- `GET /api/admin/backups/logs` - Obter logs
-
-## Monitoramento
-
-### Métricas de Performance
-- **Tempo de backup**: < 30 segundos
-- **Taxa de compressão**: > 70%
-- **Taxa de sucesso**: 100%
-- **Uso de armazenamento**: Monitorado
-
-### Alertas
-- Falhas de backup
-- Espaço em disco insuficiente (< 1GB)
-- Degradação de performance (> 60s)
-- Problemas de segurança
+- **Criar um backup:**
+  ```bash
+  npm run backup:create
+  ```
+- **Restaurar um backup:**
+  ```bash
+  npm run backup:restore [nome-do-arquivo.sql.gz]
+  ```
 
 ## Segurança
 
-- Permissões de arquivos: 600 (somente leitura/escrita para owner)
-- Verificação de integridade automática
-- Criptografia recomendada para backups sensíveis
-- Controle de acesso às operações
+- **Permissões:** Arquivos de backup são criados com permissões restritas.
+- **Acesso:** As operações de backup via API exigem autenticação de administrador.
+- **Recomendação:** Armazene cópias dos backups em um local externo e seguro.
 
 ## Troubleshooting
 
-### Problemas Comuns
+| Problema | Solução |
+|---|---|
+| **Permissão Negada** | Verifique as permissões de escrita no diretório `data/backups/`. |
+| **Falha de Conexão** | Certifique-se de que o PostgreSQL está rodando e as credenciais no `.env` estão corretas. |
+| **Espaço em Disco** | Remova backups antigos manualmente ou ajuste a configuração de rotação. |
 
-**Permissão negada**
-```bash
-chmod 755 data/backups/
-```
+## Documentação Relacionada
 
-**Espaço em disco insuficiente**
-```bash
-# Limpar backups antigos
-npm run backup:cleanup
-```
-
-**Falha na conexão com PostgreSQL**
-```bash
-# Verificar conexão
-psql -h localhost -U usuario -d banco
-```
-
-**Erro de compressão**
-```bash
-# Verificar gzip
-which gzip
-```
-
-## Testes
-
-### Testes de Integridade
-```bash
-npm run test:backup:performance
-npm run test:backup:integration
-npm run test:backup:load
-```
-
-### Testes de Carga (k6)
-```bash
-k6 run load-tests/backup-concurrent-test.js
-k6 run load-tests/backup-restore-test.js
-```
-
-## Melhores Práticas
-
-1. **Testar restauração** regularmente
-2. **Armazenar backups** em locais diferentes
-3. **Documentar** procedimentos de backup/restore
-4. **Monitorar** espaço em disco
-5. **Criptografar** backups sensíveis
-6. **Manter histórico** de versões
-
-## Integração CI/CD
-
-```yaml
-- name: Create Database Backup
-  run: npm run create-backup
-  if: github.ref == 'refs/heads/main'
-
-- name: Verify Backup
-  run: npm run verify-backup $(ls data/backups/*.gz | tail -1)
-```
-
-## Suporte
-
-Para problemas com o sistema de backup:
-1. Verifique os logs em `data/backups/backup.log`
-2. Confira os requisitos do sistema
-3. Verifique as permissões de arquivos
-4. Entre em contato com a equipe de desenvolvimento
-
-## Changelog
-
-### v1.7.0 (07/03/2026)
-- ✅ Suporte completo a ES modules
-- ✅ Testes de carga corrigidos
-- ✅ Performance monitorada
-- ✅ Segurança reforçada
-
-### v1.2.0 (08/02/2026)
-- ✅ Interface administrativa completa
-- ✅ Verificação automática de integridade
-- ✅ API RESTful completa
-- ✅ Sistema de logs detalhado
+- Arquitetura do Projeto
+- Guia de Deploy
+- Testes e Qualidade

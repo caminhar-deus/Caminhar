@@ -2,29 +2,23 @@
 
 ## Visão Geral
 
-Este guia cobre o processo de deploy da aplicação em dois ambientes principais: **VPS (Virtual Private Server)** e **Vercel**.
+Este guia cobre o processo de deploy da aplicação em **VPS (com PM2)** e na **Vercel**.
 
-## Aviso Importante sobre Uploads
+> **⚠️ Aviso Importante sobre Uploads**
+> O sistema de upload de imagens salva arquivos localmente (`/public/uploads`). Isso **não funciona** em ambientes serverless como a Vercel. Para usar a Vercel, é **obrigatório** refatorar a API de upload (`pages/api/upload-image.js`) para usar um serviço de armazenamento externo (ex: AWS S3, Vercel Blob).
 
-O sistema de upload de imagens foi projetado para salvar arquivos localmente no diretório `/public/uploads`.
+## 1. Configuração de Ambiente
 
-- **VPS**: ✅ Funciona perfeitamente
-- **Vercel/Serverless**: ❌ Não funciona para uploads (sistema de arquivos temporário)
-
-Para fazer o deploy em plataformas serverless como a Vercel, é **obrigatório** refatorar a rota `pages/api/upload-image.js` para utilizar um serviço de armazenamento de objetos, como **AWS S3**, **Vercel Blob** ou **Cloudinary**.
-
-## Configuração de Ambiente
-
-As seguintes variáveis de ambiente são essenciais para a execução em produção. Crie um arquivo `.env` no servidor ou configure-as na interface da sua plataforma de hospedagem.
+Crie um arquivo `.env.local` no servidor com as seguintes variáveis essenciais:
 
 ```env
-# Conexão com PostgreSQL
-DATABASE_URL="postgresql://usuario:senha@localhost:5432/caminhar_prod"
+# Conexão com PostgreSQL de produção
+DATABASE_URL="postgresql://user:pass@host:port/db_prod"
 
 # Chave secreta para assinar os tokens JWT
 JWT_SECRET="sua-chave-secreta-muito-forte-aqui"
 
-# Configuração do Redis (opcional, mas recomendado para performance)
+# Configuração do Redis (recomendado para performance)
 UPSTASH_REDIS_REST_URL="https://seu-projeto.upstash.io"
 UPSTASH_REDIS_REST_TOKEN="seu-token-secreto"
 

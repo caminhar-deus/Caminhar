@@ -1,45 +1,26 @@
 # Projeto Caminhar
 
+[![Status do Build](https://github.com/caminhar-deus/Caminhar/actions/workflows/pr-coverage.yml/badge.svg)](https://github.com/caminhar-deus/Caminhar/actions/workflows/pr-coverage.yml)
+
 O "Caminhar" é uma plataforma de conteúdo moderna e performática, construída com Next.js, focada em oferecer uma experiência de leitura e administração de alta qualidade.
 
 ## ✨ Visão Geral
 
-Este projeto serve como um sistema de gerenciamento de conteúdo (CMS) completo, com uma API pública otimizada para performance e um painel administrativo robusto para gestão de posts, vídeos e outras mídias.
-
-### Funcionalidades Principais
-
-- **Gestão de Conteúdo**: CRUD completo para posts/artigos, vídeos e músicas.
-- **Painel Administrativo**: Interface centralizada para gerenciar todo o conteúdo, usuários e configurações do site.
-- **API Pública**: Endpoints otimizados com cache (Redis) e proteção contra abuso (Rate Limiting) para servir o conteúdo ao público.
-- **Sistema de Testes**: Suíte de testes completa, incluindo testes unitários, de integração e de carga (performance e estresse).
-- **Autenticação**: Sistema seguro baseado em JWT para proteger as rotas administrativas.
-
-## 🚀 Tecnologias Utilizadas
+## ✨ Tecnologias Principais
 
 - **Frontend**: Next.js / React
 - **Backend**: Node.js (via Next.js API Routes)
 - **Banco de Dados**: PostgreSQL
-- **Cache & Rate Limiting**: Redis
-- **Testes Unitários/Integração**: Jest & React Testing Library
-- **Testes de Carga**: k6 (Grafana)
-- **Estilização**: CSS Modules
+- **Cache**: Redis
+- **Testes**: Jest, React Testing Library & k6
 
-## 🏁 Como Começar
+## 🚀 Começando
 
-Siga os passos abaixo para configurar e executar o projeto em seu ambiente local.
-
-## 📚 Documentação Completa
-
-Para aprofundar em áreas específicas do projeto, consulte nossa documentação dedicada na pasta `/docs`:
-
-- Padrões de API e Respostas (API.md)
-- Design Tokens e Estilização (DESIGN_TOKENS.md)
-- Diretrizes de Testes (TESTING.md)
-- Ferramentas e Boas Práticas de SEO (SEO_TOOLKIT.md)
+Siga os passos para configurar e executar o projeto localmente.
 
 ### Pré-requisitos
 
-- [Node.js](https://nodejs.org/) (versão 20 ou superior)
+- Node.js (v20+)
 - [Docker](https://www.docker.com/) (para rodar o banco de dados e o Redis facilmente)
 
 ### 1. Instalação
@@ -47,7 +28,7 @@ Para aprofundar em áreas específicas do projeto, consulte nossa documentação
 Clone o repositório e instale as dependências:
 
 ```bash
-git clone <url-do-repositorio>
+git clone https://github.com/caminhar-deus/Caminhar.git
 cd Caminhar
 npm ci
 ```

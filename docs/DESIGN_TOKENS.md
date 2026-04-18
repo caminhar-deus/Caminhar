@@ -1,76 +1,68 @@
-# Design Tokens - O Caminhar com Deus
+# Design Tokens
 
-Sistema completo de tokens de design para o site "O Caminhar com Deus".
+Guia rápido para os tokens de design (cores, espaçamentos, fontes) utilizados no projeto. Os tokens garantem consistência visual e facilitam a manutenção do estilo da aplicação.
 
-## Estrutura
+## Como Usar
 
-```
-tokens/
-├── colors.js      # Paleta de cores completa
-├── spacing.js     # Espaçamentos e paddings
-├── typography.js  # Tipografia
-├── borders.js     # Bordas e raios
-├── shadows.js     # Sombras
-├── breakpoints.js # Pontos de quebra
-├── animations.js  # Animações e transições
-├── zIndex.js      # Camadas z-index
-├── sizes.js       # Tamanhos de componentes
-├── opacity.js     # Opacidades
-└── index.js       # Exportações centralizadas
-```
-
-## Cores
-
-### Primárias (Azul Serenidade)
-```javascript
-import { colors } from './tokens';
-
-colors.primary  // #2563eb - Cor principal
-```
-
-### Secundárias (Dourado Luz)
-```javascript
-colors.secondary  // #d4af37 - Dourado divino
-```
-
-### Feedback
-- `success` - Verde esperança (#10B981)
-- `error` - Vermelho atenção (#EF4444)
-- `warning` - Âmbar reflexão (#F59E0B)
-- `info` - Azul calma (#3B82F6)
-
-### Espirituais
-```javascript
-colors.spiritual.light   // Luz divina
-colors.spiritual.peace   // Paz interior
-colors.spiritual.faith   // Fé
-colors.spiritual.hope    // Esperança
-colors.spiritual.love    // Amor
-```
-
-## Uso Básico
+Todos os tokens estão centralizados e podem ser importados diretamente no seu componente JavaScript/React.
 
 ```javascript
 import tokens from '@/styles/tokens';
 
-// Acessar cores
-const primaryColor = tokens.colors.primary;
-
-// Acessar espaçamentos
-const padding = tokens.spacing.space.md;
-
-// Acessar tipografia
-const fontSize = tokens.typography.fontSize.lg;
+function MeuComponente() {
+  return (
+    <div style={{ 
+      backgroundColor: tokens.colors.primary.main,
+      padding: tokens.spacing.md,
+      fontSize: tokens.typography.fontSize.lg,
+      borderRadius: tokens.borders.radius.md,
+    }}>
+      Conteúdo
+    </div>
+  );
+}
 ```
+
+## Referência de Tokens
+
+### Cores (`tokens.colors`)
+
+| Categoria | Token | Valor | Descrição |
+|---|---|---|---|
+| **Primária** | `primary.main` | `#2563eb` | Azul principal, usado em botões e links. |
+| **Secundária** | `secondary.main` | `#d4af37` | Dourado, para detalhes e destaques. |
+| **Feedback** | `success` | `#10B981` | Verde para sucesso. |
+| | `error` | `#EF4444` | Vermelho para erros. |
+| | `warning` | `#F59E0B` | Âmbar para avisos. |
+| **Texto** | `text.primary` | `#111827` | Cor principal para textos. |
+| | `text.secondary` | `#6B7280` | Cor para textos secundários. |
+| **Fundo** | `background.default` | `#FFFFFF` | Fundo principal da página. |
+| | `background.paper` | `#F9FAFB` | Fundo para cards e seções. |
+
+### Espaçamentos (`tokens.spacing`)
+
+Use para `padding`, `margin` e `gap`.
+
+- `tokens.spacing.xs` (4px)
+- `tokens.spacing.sm` (8px)
+- `tokens.spacing.md` (16px)
+- `tokens.spacing.lg` (24px)
+- `tokens.spacing.xl` (32px)
+
+### Tipografia (`tokens.typography`)
+
+- **Font Family**: `tokens.typography.fontFamily.sans`
+- **Font Size**: `sm`, `base`, `lg`, `xl`
+- **Font Weight**: `normal`, `medium`, `bold`
 
 ## Integração com CSS
 
-As variáveis CSS em `globals-refactored.css` usam estes tokens como base.
+Os tokens também são expostos como variáveis CSS globais para uso direto em arquivos `.css`.
 
 ```css
-.my-component {
-  color: var(--color-primary-500);
-  padding: var(--space-4);
-  font-size: var(--font-size-base);
+.meu-componente {
+  background-color: var(--color-primary-main);
+  padding: var(--spacing-md);
+  font-size: var(--font-size-lg);
 }
 ```

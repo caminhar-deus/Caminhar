@@ -1,39 +1,33 @@
-# Arquitetura do Projeto - Caminhar
+# Arquitetura do Projeto
 
 ## Visão Geral
 
-A arquitetura do projeto Caminhar é baseada em uma stack moderna com Next.js, projetada para ser performática, escalável e de fácil manutenção. Ela separa claramente as responsabilidades em camadas: apresentação (Frontend), lógica de negócio (Backend) e dados (Data Layer).
+O "Caminhar" utiliza uma arquitetura moderna e serverless baseada em **Next.js**. O sistema é dividido de forma clara em três camadas principais: **Frontend** (apresentação), **API** (lógica de negócios) e **Dados** (armazenamento e cache).
 
-## Princípios da Arquitetura
+## Princípios Core
 
-- **Performance:** Respostas rápidas através de cache (Redis), otimização de queries e renderização no servidor.
-- **Escalabilidade:** Capacidade de lidar com picos de tráfego através de rate limiting e uma infraestrutura serverless-friendly.
-- **Manutenibilidade:** Código modular e bem documentado, com uma suíte de testes robusta para garantir a estabilidade.
-- **Segurança:** Defesa em profundidade, com autenticação JWT, validação de entrada e proteção contra ataques comuns.
+- **Performance:** Uso intensivo de cache (Redis) e consultas otimizadas ao banco.
+- **Segurança:** Autenticação JWT, validação rigorosa de dados (Zod) e proteção contra abusos (Rate Limiting).
+- **Manutenibilidade:** Respostas de API padronizadas, componentes reutilizáveis e alta cobertura de testes automatizados.
 
-## Diagrama da Arquitetura
+## Diagrama Simplificado
 
-```
-┌─────────────────────────────────────────┐
-│              Frontend                   │
-│  ┌─────────────┬─────────────┬─────────┤
-│  │   Pages     │ Components  │  SEO    │
-│  │             │             │         │
-└─────────────────────────────────────────┘
-                    │
-┌─────────────────────────────────────────┐
-│              API Layer                  │
-│  ┌─────────────┬─────────────┬─────────┤
-│  │   Routes    │ Middleware  │ Cache   │
-│  │             │             │         │
-└─────────────────────────────────────────┘
-                    │
-┌─────────────────────────────────────────┐
-│              Data Layer                 │
-│  ┌─────────────┬─────────────┬─────────┤
-│  │ PostgreSQL  │   Redis     │ Auth    │
-│  │             │             │         │
-└─────────────────────────────────────────┘
+```text
+[ Cliente / Navegador ]
+          │
+┌─────────▼─────────┐
+│     Frontend      │ (Componentes, Layout, SEO)
+└─────────┬─────────┘
+          │
+┌─────────▼─────────┐
+│       API         │ (Rotas, Middlewares, Validação)
+└─────────┬─────────┘
+          │
+┌─────────▼─────────┐
+│  Camada de Dados  │
+│ ├─ Redis (Cache)  │
+│ └─ PostgreSQL (DB)│
+└───────────────────┘
 ```
 
 ## Módulos Principais

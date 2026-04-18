@@ -1,8 +1,10 @@
 # Política de Segurança
 
 ## Visão Geral
+Visão rápida das medidas e práticas implementadas para proteger a aplicação, a API e os dados.
 
 Este documento descreve as principais práticas e políticas de segurança adotadas no projeto, com foco em defesa em profundidade e proteção de dados.
+## 🛡️ Medidas Principais
 
 ## Autenticação e Autorização
 
@@ -58,6 +60,21 @@ Este documento descreve as principais práticas e políticas de segurança adota
 
 ### Logs
 - **Privacidade:** O sistema evita registrar dados sensíveis (como senhas ou tokens) nos logs da aplicação.
+### 1. Autenticação e Acesso
+- **JWT (JSON Web Tokens):** Tokens de vida curta (1 hora) armazenados em cookies `HttpOnly` para evitar ataques XSS no painel administrativo.
+- **Senhas Seguras:** Criptografadas com hash irreversível (`bcrypt`) contendo *salt* automático.
+
+### 2. Proteção da API
+- **Rate Limiting (Anti-DDoS):** Controle de requisições por IP usando Redis (com fallback para memória local). Bloqueia ataques de força bruta e abusos.
+- **Validação de Dados:** Uso sistemático da biblioteca **Zod** (`lib/api/validate.js`) para validar e sanitizar todas as entradas, prevenindo dados malformados.
+- **CORS Restrito:** Permite acesso à API apenas por domínios (`origins`) previamente configurados na lista de confiáveis.
+
+### 3. Infraestrutura e Banco de Dados
+- **Prevenção a SQL Injection:** Uso exclusivo de consultas parametrizadas (`$1, $2`) através da camada `lib/db.js`, sem concatenação direta de strings.
+- **Comunicação Segura:** HTTPS (SSL/TLS) obrigatório e forçado em produção.
+
+### 4. Upload de Arquivos
+- **Validação Rigorosa:** Verificação do `MIME type` aceitando apenas imagens conhecidas (jpeg, png, webp, gif) e bloqueando arquivos maiores que 5MB.
 
 ## Política de Relato de Vulnerabilidades
 
@@ -72,10 +89,13 @@ Envie um e-mail detalhado para: **security@caminhar.com**
 Inclua uma descrição clara da vulnerabilidade, os passos para reproduzi-la e, se possível, o impacto potencial.
 
 Nossa equipe analisará o relato e responderá em até 48 horas. Agradecemos publicamente os pesquisadores que seguem esta política de divulgação responsável.
+Se você acredita ter encontrado uma vulnerabilidade, por favor, siga os passos:
+1. Envie um e-mail detalhado para **security@caminhar.com**.
+2. Inclua os passos necessários para reproduzir a falha e o impacto potencial percebido.
+3. Nossa equipe analisará e retornará o contato em até 48 horas.
 
 ## Documentação Relacionada
 
 - [Arquitetura](ARCHITECTURE.md)
 - [Deploy](DEPLOY.md)
-- [Testes & Qualidade](TESTING.md)
 - [Cache & Performance](CACHE.md)

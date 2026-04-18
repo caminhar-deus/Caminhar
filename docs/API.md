@@ -1,32 +1,25 @@
-# API Response Standardizer
+# Padrões da API
 
-Sistema de padronização de respostas da API para o projeto "O Caminhar com Deus".
+Guia rápido sobre a padronização de respostas, tratamento de erros, validações e middlewares para a API do projeto.
 
-## 📁 Estrutura
-
-```
-lib/api/
-├── errors.js       # Classes de erro customizadas
-├── response.js     # Utilitários de resposta padronizados
-├── validate.js     # Middlewares de validação com Zod
-├── middleware.js   # Composição de middlewares
-└── README.md       # Esta documentação
-```
+## 📁 Estrutura (`lib/api/`)
+- `errors.js`: Classes de erro customizadas (ex: `NotFoundError`).
+- `response.js`: Funções de formatação de resposta HTTP (ex: `success()`, `badRequest()`).
+- `validate.js`: Middlewares de validação de dados utilizando Zod.
+- `middleware.js`: Funções de composição de rotas (`publicApi`, `protectedApi`).
 
 ## 🚀 Uso Rápido
 
-### API Pública (apenas GET)
+### API Pública (GET)
 
 ```javascript
 import { success } from '../../lib/api/response.js';
-import { composeMiddleware, withMethod, publicApi } from '../../lib/api/middleware.js';
+import { publicApi } from '../../lib/api/middleware.js';
 
-async function handler(req, res) {
+export default publicApi(async (req, res) => {
   const data = await getData();
   return success(res, data);
-}
-
-export default publicApi(handler);
+});
 ```
 
 ### API Protegida (autenticação + CRUD)

@@ -1,286 +1,31 @@
-# Módulo de Banco de Dados: Boas Práticas
+# Padrões de Banco de Dados
 
 ## Visão Geral
 
-Este documento apresenta um exemplo de implementação para um módulo de banco de dados (`lib/db.js`) em Node.js com PostgreSQL. O design foca em performance, segurança e manutenibilidade, servindo como um guia de boas práticas para o projeto.
+Este documento descreve as práticas e utilitários implementados nos módulos centrais de banco de dados (`lib/db.js` e `lib/crud.js`). A arquitetura foca em segurança (prevenção de SQL Injection), performance (Connection Pooling) e estabilidade (Transações ACID).
 
-## Princípios e Funcionalidades
+## Funcionalidades Principais
 
-- **Connection Pooling:** Utiliza um pool de conexões (`pg.Pool`) para reutilizar conexões, reduzindo a latência e o overhead de estabelecer novas conexões a cada query.
-- **Transações Seguras:** Oferece uma função `transaction` que garante a atomicidade das operações (ACID). Em caso de erro, um `ROLLBACK` é executado automaticamente, prevenindo inconsistências nos dados.
-- **Logging Opcional:** A função `query` inclui uma opção `log: true` para imprimir detalhes da consulta, parâmetros e tempo de execução, facilitando o debug e a otimização de performance.
-- **Health Check:** Expõe uma função `healthCheck` para verificar a conectividade com o banco de dados, essencial para sistemas de monitoramento.
+- **Connection Pooling:** Reutiliza conexões ativas do PostgreSQL para evitar sobrecarga no servidor.
+- **Transações Automáticas:** Função `transaction` com controle de `BEGIN`, `COMMIT` e `ROLLBACK` automático em caso de erros.
+- **CRUD Dinâmico:** Funções utilitárias seguras para `INSERT`, `UPDATE` e `DELETE` sem a necessidade de escrever strings SQL inteiras.
+- **Health Checks:** Utilitários embutidos para checar a saúde, tamanho e conexões ativas do banco.
 
-## Implementação de Exemplo (`lib/db.js`)
+## Exemplos de Uso
 
-Abaixo está um exemplo completo da implementação do módulo, que pode ser usado como referência.
-
-```javascript
-import { Pool } from 'pg';
-
-// Pool de conexões para melhor performance.
-let pool = null;
-
-function getPool() {
-  if (!pool) {
-    pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
-      max: 20,
-      min: 2,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 2000,
-    });
-  }
-  return pool;
-}
-
-/**
- * Executa uma consulta SQL de forma segura e performática.
- * @param {string} text - A query SQL.
- * @param {Array} [params=[]] - Os parâmetros para a query.
- * @param {object} [options={}] - Opções como { log: boolean, client: pg.Client }.
- * @returns {Promise<QueryResult>} O resultado do banco de dados.
- */
-export async function query(text, params = [], options = {}) {
-  const { log = false, client } = options;
-  const start = Date.now();
-  
-  try {
-    const db = client || getPool();
-    const res = await db.query(text, params);
-    const duration = Date.now() - start;
-
-    if (log) {
-      console.log('Consulta SQL executada', {
-        duration: `${duration}ms`,
-        query: text.replace(/\s+/g, ' ').trim(),
-        rows: res.rowCount,
-      });
-    }
-    return res;
-  } catch (error) {
-    console.error('Erro ao executar consulta SQL', { error: error.message });
-    throw error;
-  }
-}
-
-/**
- * Executa uma transação com rollback automático em caso de erro.
- * @param {Function} callback - Função que recebe o client da transação.
- * @returns {Promise<*>} O resultado da transação.
- */
-export async function transaction(callback) {
-  const client = await getPool().connect();
-  try {
-    await client.query('BEGIN');
-    const result = await callback(client);
-    await client.query('COMMIT');
-    return result;
-  } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Transação falhou e foi revertida', { error: error.message });
-    throw error;
-  } finally {
-    client.release();
-  }
-}
-
-/**
- * Verifica a saúde da conexão com o banco de dados.
- * @returns {Promise<boolean>} True se a conexão está saudável.
- */
-export async function healthCheck() {
-  try {
-    const result = await query('SELECT 1 as health_check', [], { log: false });
-    return result?.rows?.health_check === 1;
-  } catch (error) {
-    return false;
-  }
-}
-```javascript
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? {
-    rejectUnauthorized: false
-  } : undefined,
-  max: 20,              // Máximo de conexões
-  min: 2,               // Mínimo de conexões
-  idleTimeoutMillis: 30000, // Timeout de conexões ociosas
-  connectionTimeoutMillis: 2000 // Timeout de conexão
-});
-```
-
-**Benefícios:**
-- Performance: Pool de conexões reutilizáveis
-- Escalabilidade: Configurações ajustáveis
-- Segurança: SSL configurado para produção
-- Monitoramento: Timeouts para evitar conexões pendentes
-
-### 2. Logging Estruturado
+### 1. Consulta Simples (`query`)
 
 ```javascript
-import { logger } from './middleware.js';
+import { query } from '../../lib/db.js';
 
-logger.info('Executando consulta SQL', {
-  query: text.replace(/\s+/g, ' ').trim(),
-  params: params.length > 0 ? params : undefined,
-  timestamp: new Date().toISOString()
-});
-```
-
-**Benefícios:**
-- Debug: Rastreamento completo de consultas
-- Performance: Medição de tempo de execução
-- Monitoramento: Logs estruturados para análise
-
-### 3. Tratamento de Erros Robusto
-
-```javascript
-/**
- * Interface de Erro de Banco de Dados
- * @typedef {Object} DatabaseError
- * @property {string} code - Código do erro
- * @property {string} message - Mensagem de erro detalhada
- * @property {string} detail - Detalhes adicionais
- * @property {string} hint - Sugestão de correção
- */
-```
-
-**Benefícios:**
-- Tipagem: Interfaces para melhor desenvolvimento
-- Detalhamento: Informações completas sobre erros
-- Recuperação: Dados para tratamento de falhas específicas
-
-### 4. Transações Seguras
-
-```javascript
-export async function transaction(callback) {
-  const client = await pool.connect();
-  
-  try {
-    await client.query('BEGIN');
-    const result = await callback(client);
-    await client.query('COMMIT');
-    return result;
-  } catch (error) {
-    await client.query('ROLLBACK');
-    logger.error('Transação falhou e foi revertida', {
-      error: error.message,
-      code: error.code,
-      timestamp: new Date().toISOString()
-    });
-    throw error;
-  } finally {
-    client.release();
-  }
-}
-```
-
-**Benefícios:**
-- Atomicidade: Operações completas ou nada
-- Consistência: Rollback automático em falhas
-- Logging: Registro de falhas de transação
-
-### 5. Operações CRUD Genéricas
-
-```javascript
-export async function createRecord(table, data, returning = ['*']) {
-  const fields = Object.keys(data);
-  const values = Object.values(data);
-  const placeholders = fields.map((_, index) => `$${index + 1}`).join(', ');
-  const returningClause = returning.join(', ');
-  
-  const text = `
-    INSERT INTO ${table} (${fields.join(', ')})
-    VALUES (${placeholders})
-    RETURNING ${returningClause}
-  `;
-  
-  const result = await query(text, values);
-  return result.rows[0];
-}
-```
-
-**Benefícios:**
-- Reutilização: Operações genéricas para qualquer tabela
-- Flexibilidade: Campos retornados configuráveis
-- Performance: Consultas preparadas com placeholders
-
-### 6. Paginação Inteligente
-
-```javascript
-export async function readRecords(table, options = {}) {
-  const {
-    where = {},
-    orderBy = [],
-    limit = 10,
-    offset = 0,
-    select = ['*']
-  } = options;
-
-  const result = await query(text, params);
-  const countResult = await query(countText, Object.values(where));
-  const total = parseInt(countResult.rows[0].total, 10);
-  const totalPages = Math.ceil(total / limit);
-
-  return {
-    data: result.rows,
-    pagination: {
-      page: Math.floor(offset / limit) + 1,
-      limit,
-      total,
-      totalPages,
-      hasNext: offset + limit < total,
-      hasPrev: offset > 0
-    }
-  };
-}
-```
-
-**Benefícios:**
-- Performance: Consultas otimizadas com LIMIT/OFFSET
-- UX: Informações completas de paginação
-- Flexibilidade: Filtros, ordenação e seleção configuráveis
-
-### 7. Health Check e Monitoramento
-
-```javascript
-export async function healthCheck() {
-  try {
-    const result = await query('SELECT 1 as health_check', [], { log: false });
-    return result && result.rows.length > 0 && result.rows[0].health_check === 1;
-  } catch (error) {
-    logger.error('Health check do banco de dados falhou', {
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
-    return false;
-  }
-}
-
-export async function getDatabaseInfo() {
-  try {
-    const [version, connections, size] = await Promise.all([
-      query('SELECT version() as version', [], { log: false }),
-      query('SELECT count(*) as active_connections FROM pg_stat_activity WHERE state = \'active\'', [], { log: false }),
-      query('SELECT pg_database_size(current_database()) as size_bytes', [], { log: false })
-    ]);
-
-    return {
-      version: version.rows[0].version,
-      activeConnections: parseInt(connections.rows[0].active_connections, 10),
-      sizeBytes: parseInt(size.rows[0].size_bytes, 10),
-      timestamp: new Date().toISOString()
-    };
-  } catch (error) {
-    logger.error('Erro ao obter informações do banco de dados', {
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
-    throw error;
-  }
-}
+// Os parâmetros são sempre passados em um array (segundo argumento) para evitar injeção de SQL.
+// Você pode habilitar log para debugar a consulta definindo { log: true }.
+const result = await query(
+  'SELECT id, username FROM users WHERE role = $1 AND active = $2', 
+  ['admin', true],
+  { log: true }
+);
+console.log(result.rows);
 ```
 
 **Benefícios:**
