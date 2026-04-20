@@ -25,7 +25,6 @@
 │   │   ├── Managers
 │   │   │   ├── BackupManager.js
 │   │   │   └── CacheManager.js
-│   │   ├── README.md
 │   │   ├── Tools
 │   │   │   ├── IntegrityCheck.js
 │   │   │   └── RateLimitViewer.js
@@ -486,10 +485,8 @@
 │   ├── sort-arrow-sprite.png
 │   └── sorter.js
 ├── cypress
-│   ├── e2e
-│   │   └── image_zoom.cy.js
-│   ├── screenshots
-│   └── videos
+│   └── e2e
+│       └── image_zoom.cy.js
 ├── cypress.config.js
 ├── data
 │   ├── backups
@@ -505,11 +502,19 @@
 │   ├── DB_EXAMPLE.md
 │   ├── DEPLOY.md
 │   ├── DESIGN_TOKENS.md
+│   ├── PROJECT_components_Admin_fields_Managers_Tools.md
+│   ├── PROJECT_components_Admin.md
+│   ├── PROJECT_mocks.md
+│   ├── PROJECT_RAIZ.md
 │   ├── REPORTS.md
 │   ├── SECURITY.md
 │   ├── SEO_TOOLKIT.md
 │   ├── TESTING_ERRO_REPORT.md
-│   └── TESTING.md
+│   ├── TESTING.md
+│   ├── UPGRADE_components_Admin_fields_Managers_Tools.md
+│   ├── UPGRADE_components_Admin.md
+│   ├── UPGRADE_mocks.md
+│   └── UPGRADE_RAIZ.md
 ├── examples
 │   ├── blog-post-seo-example.js
 │   ├── homepage-seo-example.js
@@ -539,14 +544,10 @@
 │   ├── domain
 │   │   ├── audit.js
 │   │   ├── images.js
-│   │   ├── musicas
 │   │   ├── musicas.js
-│   │   ├── posts
 │   │   ├── posts.js
 │   │   ├── settings.js
-│   │   ├── videos
 │   │   └── videos.js
-│   ├── middleware
 │   ├── middleware.js
 │   ├── redis.js
 │   └── seo
@@ -751,9 +752,7 @@
 │   │   └── update-setting.js
 │   └── validate-schema.js
 ├── security-tests.yml
-├── shared
 ├── skills-lock.json
-├── __snapshots__
 ├── styleMock.js
 ├── styles
 │   ├── Admin.module.css
@@ -859,7 +858,6 @@
 │   │   ├── musicas_flow.test.js
 │   │   ├── musicas_public_db_integration.test.js
 │   │   ├── posts.integration.test.js
-│   │   ├── scripts
 │   │   ├── videos_flow.test.js
 │   │   └── videos_public_db_integration.test.js
 │   ├── matchers
@@ -1015,4 +1013,4 @@
 │       └── videos_validation.test.js
 └── tree.txt
 
-167 directories, 849 files
+158 directories, 856 files
