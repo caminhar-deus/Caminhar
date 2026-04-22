@@ -2,6 +2,52 @@
 
 Registro de alterações e atualizações do projeto Caminhar com Deus.
 
+O formato deste documento segue o padrão [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
+e o projeto adota [Versionamento Semântico](https://semver.org/lang/pt-BR/).
+
+---
+
+## [Não Publicado / Unreleased]
+
+> Alterações desenvolvidas mas ainda não lançadas em versão oficial.
+
+---
+
+## [1.8.0] - 2026-04-21
+
+### Adicionado
+- Arquitetura completa de documentação automática do projeto
+- Sistema de gerenciamento de skills e capacidades do agente
+- Integração completa com Cline/Conductor para desenvolvimento autônomo
+- Relatórios detalhados de testes de carga com dashboards HTML
+- Sistema de auditoria e logs estruturados
+- Pipeline de segurança com análise estática de código
+- Sistema de rate limit proxy avançado
+- Validação de uploads de vídeo e integração com CDN
+
+### Alterado
+- Atualização completa das dependências do projeto
+- Reorganização da estrutura de diretórios `docs/` com mais de 40 arquivos de documentação
+- Melhorias significativas na performance do cache Redis
+- Otimização das queries do banco de dados PostgreSQL
+- Refatoração dos hooks e libs para melhor testabilidade
+- Aprimoramento dos testes unitários e de integração
+
+### Corrigido
+- Correção de vulnerabilidades de segurança identificadas
+- Resolução de race conditions no sistema de cache
+- Correção do fluxo de autenticação JWT
+- Ajustes de layout e responsividade no painel administrativo
+- Correção dos scripts de backup e restore
+- Resolução de memory leaks nos testes de carga
+
+### Dependências
+- Atualizadas todas as dependências para versões estáveis
+- Adicionadas ferramentas de análise de qualidade de código
+- Melhorias no sistema de build e CI/CD
+
+---
+
 ## [1.7.0] - 2026-03-07
 
 ### Adicionado
