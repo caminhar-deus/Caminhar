@@ -45,7 +45,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '24.14.1'
           cache: 'npm'
 
       - name: Install Dependencies
@@ -88,7 +88,7 @@ jobs:
       - name: Run Tests, Check Coverage & Capture Output
         id: run_tests
         # O uso do "tee" salva a saída em um arquivo texto sem esconder a execução do console
-        run: npx jest --coverage --coverageThreshold='{"global":{"branches":20,"functions":20,"lines":20,"statements":20}}' | tee coverage-output.txt
+        run: npx jest --coverage | tee coverage-output.txt
         env:
           # Variáveis necessárias conforme docs/TESTING.md
           TEST_DB_HOST: localhost

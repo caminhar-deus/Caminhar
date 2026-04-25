@@ -139,7 +139,7 @@
     "claude-api": {
       "source": "anthropics/skills",
       "sourceType": "github",
-      "computedHash": "8de16d25507b51d530a287e642c2641fe600ad78d836599575960b4d74ddf5fd"
+      "computedHash": "fe6c64489b954a17d24e3828f79165b230b2a24224d6310ad995061264ca2a3b"
     },
     "code-review-excellence": {
       "source": "wshobson/agents",

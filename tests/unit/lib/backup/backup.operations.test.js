@@ -69,7 +69,8 @@ describe('Operações de Backup (lib/backup.js)', () => {
         await createBackup();
         
         // Espera que unlinkSync seja chamado para os arquivos excedentes
-        expect(fs.unlinkSync).toHaveBeenCalledTimes(2);
+        // 2 backups antigos * 2 arquivos cada (backup + hash) = 4 chamadas
+        expect(fs.unlinkSync).toHaveBeenCalledTimes(6);
     });
     
     it('deve logar o sucesso da operação', async () => {
@@ -82,6 +83,19 @@ describe('Operações de Backup (lib/backup.js)', () => {
     it('deve criar backup de segurança e restaurar o banco', async () => {
       const backupFile = 'backup-test.sql.gz';
       
+      // Mock para simular que arquivo de hash não existe (para testes antigos)
+      fs.existsSync.mockImplementation((path) => {
+        if (path.endsWith('.sha256')) return false;
+        return true;
+      });
+      
+      // Hash SHA-256 de string vazia para compatibilidade com o mock
+      const emptyHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+      fs.readFileSync.mockImplementation((path) => {
+        if (path.endsWith('.sha256')) return emptyHash;
+        return '';
+      });
+
       // Silencia o console.warn para este teste
       const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 

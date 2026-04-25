@@ -33,9 +33,18 @@ export default {
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
 
+  // ✅ Threshold mínimo de cobertura baseado nos valores reais atuais com buffer de segurança
+  coverageThreshold: {
+    global: {
+      branches: 92,
+      functions: 95,
+      lines: 98,
+      statements: 98
+    }
+  },
+
   transformIgnorePatterns: [
-    '/node_modules/(?!node-mocks-http|@faker-js|url|pg)',
-    '/node_modules/(?!@faker-js/)'
+    '/node_modules/(?!node-mocks-http|@faker-js|url|pg)'
   ],
   
   setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],

@@ -11,11 +11,12 @@
     "*.config.js",
     "jest.setup.js",
     "styleMock.js",
-    "rate-limit-proxy.js"
+    "rate-limit-proxy.js",
+    "pages/**"
   ],
   "ignoreBinaries": [
     "kill-port",
-    "k6",
+    "k6"
   ],
   "ignoreDependencies": [
     "@babel/preset-env",

@@ -420,6 +420,7 @@ Limpeza automática de backups antigos para manter apenas os últimos 10 arquivo
 
 ### ✅ Casos de Borda Testados
 ✅ Quando existem mais de 10 backups, apenas os 2 mais antigos são removidos
+✅ Cada backup removido apaga também os arquivos `.sql.gz`, `.sha256` e `.enc` correspondentes (total 6 chamadas unlinkSync)
 ✅ Quando existem 10 ou menos backups, nenhum arquivo é apagado
 ✅ Arquivos que não seguem o padrão de nome são completamente ignorados
 ✅ Ordenação é sempre baseada no timestamp extraído do nome do arquivo
@@ -477,6 +478,9 @@ Funções principais para criação e restauração de backups PostgreSQL.
 ✅ Antes de restaurar, é criado um backup de segurança automático
 ✅ Restauração falha imediatamente se arquivo não existir
 ✅ Todas operações são logadas no arquivo de histórico
+✅ ✅ **NOVO:** Geração automática de hash SHA-256 para cada backup
+✅ ✅ **NOVO:** Verificação automática de integridade antes da restauração
+✅ ✅ **NOVO:** Arquivos hash são removidos automaticamente junto com os backups antigos
 
 ### ✅ Garantias
 ✅ Nenhuma restauração é feita sem backup de segurança prévio

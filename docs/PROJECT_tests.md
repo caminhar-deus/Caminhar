@@ -24,6 +24,7 @@ Análise completa e objetiva dos arquivos do diretório `/tests` do projeto.
 | `/tests/matchers/toBeValidJSON.js` | Matcher | Validação de JSON em respostas |
 | `/tests/matchers/toHaveHeader.js` | Matcher | Validação de headers HTTP |
 | `/tests/matchers/toHaveStatus.js` | Matcher | Validação de status code HTTP |
+| `/tests/matchers/toHaveProperties.js` | Matcher | Validação de propriedades em objetos |
 | `/tests/mocks/db.js` | Mock | Mocks para operações de banco de dados |
 | `/tests/mocks/fetch.js` | Mock | Mocks para requisições fetch API |
 | `/tests/mocks/index.js` | Mock | Ponto de exportação central dos mocks |
@@ -78,9 +79,9 @@ Arquivo de demonstração da **arquitetura de testes** do projeto. Mostra como u
 | Categoria | Funcionalidades |
 |-----------|-----------------|
 | **Factories** | `postFactory`, `musicFactory`, `videoFactory`, `userFactory`, `adminFactory` |
-| **API Helpers** | `createGetRequest`, `createPostRequest`, `expectStatus`, `expectJson` |
+| **API Helpers** | `createGetRequest`, `createPostRequest`, `executeHandler` |
 | **Auth Helpers** | `createAuthToken`, `mockAuthenticatedUser`, `mockAuthenticatedAdmin` |
-| **Matchers Customizados** | `toBeISODate()`, `toHaveHeader()`, `toHaveStatus()` |
+| **Matchers Customizados** | `toBeISODate()`, `toHaveHeader()`, `toHaveStatus()`, `toBeValidJSON()`, `toHaveProperties()` |
 | **Mocks** | `mockQuery`, `mockFetchSuccess` |
 
 ### Fluxo de Teste Integrado:
@@ -280,12 +281,6 @@ Abstrai a complexidade do `node-mocks-http` e fornece helpers para validação d
 #### ✅ Validação de Respostas:
 | Função | Descrição |
 |--------|-----------|
-| `expectStatus()` | Verifica status HTTP |
-| `expectJson()` | Verifica e extrai JSON da resposta |
-| `expectArray()` | Verifica se resposta é um array |
-| `expectHeader()` | Verifica existência e valor de header |
-| `expectError()` | Verifica resposta de erro |
-| `expectPaginatedResponse()` | Valida resposta com paginação |
 | `executeHandler()` | Executa handler de API e retorna resultado |
 
 ---
@@ -412,6 +407,7 @@ Arquivo responsável por **registrar e importar todos os matchers customizados**
 | `toBeValidJSON()` | Verifica se o corpo contém JSON válido |
 | `toHaveHeader()` | Verifica existência e valor de header |
 | `toBeISODate()` | Verifica se string é data ISO 8601 válida |
+| `toHaveProperties()` | Verifica existência de propriedades em objetos |
 
 ### Uso:
 ```javascript
@@ -508,7 +504,43 @@ expect(res).toHaveStatus(500);
 
 ---
 
-## 17. 🎭 `/tests/mocks/db.js`
+## 17. ✅ `/tests/matchers/toHaveProperties.js`
+
+### Propósito
+Matcher customizado para **verificar existência de múltiplas propriedades em objetos**. Verifica recursivamente a estrutura de objetos aninhados.
+
+### Características:
+✅ 68 linhas de código
+✅ Suporta múltiplas propriedades em uma única chamada
+✅ Validação recursiva de propriedades aninhadas
+✅ Suporta verificação de tipos (string, number, boolean, object, array)
+✅ Mensagens de erro detalhadas indicando exatamente qual propriedade está faltando
+
+### Funções Disponíveis:
+| Função | Descrição |
+|--------|-----------|
+| `toHaveProperties()` | Verifica existência de propriedades |
+| `toHaveAllProperties()` | Verifica que NÃO existem propriedades extras |
+
+### Uso:
+```javascript
+// Verifica propriedades simples
+expect(user).toHaveProperties(['id', 'name', 'email']);
+
+// Verifica propriedades aninhadas
+expect(post).toHaveProperties({
+  id: 'number',
+  title: 'string',
+  author: {
+    id: 'number',
+    name: 'string'
+  }
+});
+```
+
+---
+
+## 18. 🎭 `/tests/mocks/db.js`
 
 ### Propósito
 Conjunto completo de **mocks para operações de banco de dados PostgreSQL**.
@@ -538,7 +570,7 @@ Simula queries, transactions, pool de conexões e resultados paginados.
 
 ---
 
-## 18. 🎭 `/tests/mocks/fetch.js`
+## 19. 🎭 `/tests/mocks/fetch.js`
 
 ### Propósito
 Mocks para **simulação de requisições fetch API**.
@@ -566,7 +598,7 @@ Suporta diferentes status de erro, rotas dinâmicas e respostas sequenciais.
 
 ---
 
-## 19. 🎭 `/tests/mocks/index.js`
+## 20. 🎭 `/tests/mocks/index.js`
 
 ### Propósito
 Arquivo de barril central para **exportação de todos os mocks** do projeto.
@@ -585,7 +617,7 @@ export * from './db.js';
 
 ---
 
-## 20. 🎭 `/tests/mocks/next.js`
+## 21. 🎭 `/tests/mocks/next.js`
 
 ### Propósito
 Mocks completos para **todos os componentes e hooks do Next.js**.
@@ -614,7 +646,7 @@ Elimina a necessidade de configurar mocks repetidamente nos testes.
 
 ---
 
-## 21. ⚙️ `/tests/setup.js`
+## 22. ⚙️ `/tests/setup.js`
 
 ### Propósito
 Arquivo de **setup centralizado de todo o ambiente de testes**.
@@ -634,9 +666,23 @@ Arquivo de **setup centralizado de todo o ambiente de testes**.
 | **Polyfills** | `TextEncoder`, `TextDecoder`, `ReadableStream`, `Request`, `Response`, `Headers`, `localStorage`, `matchMedia`, `IntersectionObserver`, `ResizeObserver` |
 | **RTL Config** | Timeout para queries, configuração de erros |
 | **Cleanup** | Limpeza automática do DOM após cada teste |
-| **Matchers** | Registro de todos os 5 matchers customizados |
+| **Matchers** | Importação do arquivo `/tests/matchers/index.js` com todos os 5 matchers customizados |
 | **Globais** | `global.wait()`, `global.suppressWarnings()` |
 | **Filtros** | Supressão de warnings conhecidos e irrelevantes |
+
+---
+
+## ✅ Alterações Implementadas (24/04/2026)
+
+> 📋 Atualizações realizadas nos arquivos de teste:
+
+| Arquivo | Ação Realizada |
+|---|---|
+| `/tests/setup.js` | Removido 207 linhas de código duplicado dos matchers, agora importa apenas o `/tests/matchers/index.js` |
+| `/tests/matchers/index.js` | Adicionado o import para o novo matcher `toHaveProperties.js` |
+| `/tests/examples/simple-test.test.js` | Atualizado para utilizar os matchers nativos do Jest ao invés dos helpers duplicados |
+| `/tests/helpers/api.js` | Removidas as funções duplicadas: `expectStatus`, `expectJson`, `expectHeader`, `expectError`, `expectArray`, `expectPaginatedResponse` |
+| `/tests/matchers/toHaveProperties.js` | ✨ Novo arquivo adicionado com o matcher de validação de propriedades em objetos |
 
 ---
 

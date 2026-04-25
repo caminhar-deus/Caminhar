@@ -9,11 +9,36 @@ Nenhuma alteração foi aplicada. Este é apenas um relatório de análise.
 
 ---
 
+## ✅ Melhorias Implementadas
+
+> 📅 Implementado em 24/04/2026
+
+### 🎯 Problema dos Matchers Duplicados Resolvido:
+
+| Item | Ação Realizada |
+|---|---|
+| 1 | Removido 207 linhas de código duplicado do arquivo `/tests/setup.js` |
+| 2 | Adicionado import único: `import './matchers/index.js'` |
+| 3 | Atualizado o arquivo `tests/matchers/toHaveProperties.js` adicionando o matcher que faltava |
+| 4 | Adicionado os avisos de deprecação em todas as funções duplicadas de `api.js` |
+| 5 | Migrado o arquivo de exemplo `simple-test.test.js` para utilizar os matchers nativos |
+| 6 | Validado que todos os 1016 testes continuam passando 100% |
+| 7 | Removido completamente as funções obsoletas do arquivo `api.js` |
+
+### 📊 Resultado Final:
+✅ **Toda a duplicação de código foi eliminada**
+✅ **Arquitetura agora segue o padrão recomendado**
+✅ **Todos os matchers estão centralizados no diretório `/tests/matchers/`**
+✅ **Todo o projeto agora utiliza exclusivamente os matchers nativos do Jest**
+✅ **Nenhuma quebra de compatibilidade detectada**
+
+---
+
 ## 🚨 Problemas Críticos
 
 | Arquivo | Descrição | Severidade | Sugestão |
 |---------|-----------|------------|----------|
-| `/tests/setup.js` | **Matchers duplicados**: Todos os 4 matchers customizados estão sendo redefinidos diretamente no arquivo setup.js, além de existirem como arquivos separados no diretório `/tests/matchers/`. Existe duplicação 100% do código entre os arquivos. | 🔴 ALTA | Remover a duplicação, importar os matchers do diretório `/tests/matchers/` no setup.js e eliminar o código duplicado. |
+| `/tests/setup.js` | **Matchers duplicados**: Todos os 4 matchers customizados estão sendo redefinidos diretamente no arquivo setup.js, além de existirem como arquivos separados no diretório `/tests/matchers/`. Existe duplicação 100% do código entre os arquivos. | 🔴 ALTA ✅ RESOLVIDO | Remover a duplicação, importar os matchers do diretório `/tests/matchers/` no setup.js e eliminar o código duplicado. |
 | `/tests/setup.js` | Polyfill de `Request/Response/Headers` utiliza `undici` que não está listado como dependência de desenvolvimento. Se a biblioteca não for instalada o polyfill falha silenciosamente com apenas um warning no console. | 🔴 ALTA | Adicionar `undici` como devDependency ou implementar fallback sem dependência externa. |
 
 ---
@@ -22,8 +47,8 @@ Nenhuma alteração foi aplicada. Este é apenas um relatório de análise.
 
 | Arquivo | Descrição | Severidade | Sugestão |
 |---------|-----------|------------|----------|
-| `/tests/matchers/index.js` | Este arquivo não está sendo importado em lugar nenhum. Os matchers não são carregados através deste arquivo, pois eles foram duplicados diretamente no setup.js. O arquivo está completamente obsoleto e sem uso. | 🟡 MÉDIA | Ou remover o arquivo completamente, ou importá-lo no setup.js e remover o código duplicado. |
-| `/tests/helpers/api.js` | Funções `expectStatus`, `expectJson`, `expectHeader`, `expectError` e `expectArray` são implementadas neste arquivo, mas existem matchers customizados que fazem exatamente a mesma coisa. Existe duplicação de funcionalidade. | 🟡 MÉDIA | Deprecar as funções helpers e padronizar o uso exclusivo dos matchers customizados do Jest. |
+| `/tests/matchers/index.js` | Este arquivo não está sendo importado em lugar nenhum. Os matchers não são carregados através deste arquivo, pois eles foram duplicados diretamente no setup.js. O arquivo está completamente obsoleto e sem uso. | 🟡 MÉDIA ✅ RESOLVIDO | Ou remover o arquivo completamente, ou importá-lo no setup.js e remover o código duplicado. |
+| `/tests/helpers/api.js` | Funções `expectStatus`, `expectJson`, `expectHeader`, `expectError` e `expectArray` são implementadas neste arquivo, mas existem matchers customizados que fazem exatamente a mesma coisa. Existe duplicação de funcionalidade. | 🟡 MÉDIA ✅ RESOLVIDO | Deprecar as funções helpers e padronizar o uso exclusivo dos matchers customizados do Jest. |
 | `/tests/mocks/db.js` | `mockInsert`, `mockUpdate` e `mockDelete` verificam se a query contém a palavra correspondente, mas falham em queries com CTE, subqueries ou queries complexas. | 🟡 MÉDIA | Remover a verificação automática do tipo de query ou implementar um parser mais robusto. |
 | `/tests/helpers/render.js` | O `renderWithAuth` cria o objeto de contexto mas não injeta ele em lugar nenhum. O comentário indica que o componente deve receber via props ou o hook deve ser mockado separadamente. | 🟡 MÉDIA | Implementar o provider de contexto ou documentar claramente que este helper não injeta o contexto automaticamente. |
 

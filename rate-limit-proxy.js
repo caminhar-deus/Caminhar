@@ -73,7 +73,16 @@ export async function proxy(request) {
     const now = Date.now();
     const windowMs = RATE_LIMIT_WINDOW * 1000;
 
-    if (ipRateLimit.size > 10000) ipRateLimit.clear();
+    if (ipRateLimit.size > 10000) {
+      const now = Date.now();
+      const windowMs = RATE_LIMIT_WINDOW * 1000;
+      
+      for (const [ip, record] of ipRateLimit) {
+        if (now - record.startTime > windowMs) {
+          ipRateLimit.delete(ip);
+        }
+      }
+    }
 
     let record = ipRateLimit.get(ip);
     if (!record) {
@@ -98,6 +107,49 @@ export async function proxy(request) {
     
     // Registra a tentativa bloqueada no log do servidor
     console.warn(`[SECURITY] ⛔ Tentativa de login bloqueada (Rate Limit) | IP: ${ip} | UA: ${request.headers.get('user-agent') || 'Unknown'} | Data: ${new Date().toISOString()}`);
+
+    // ✅ Sistema de Banimento Progressivo + Notificação Webhook
+    if (redis) {
+      try {
+        // Contador de quantas vezes este IP já foi bloqueado nas últimas 24h
+        const blockCountKey = `rate_limit:block_count:${ip}`;
+        const blockCount = await redis.incr(blockCountKey);
+        await redis.expire(blockCountKey, 24 * 60 * 60);
+
+        // Aumenta tempo de bloqueio progressivamente para IPs reincidentes
+        if (blockCount > 1) {
+          const multiplier = Math.min(Math.pow(2, blockCount - 1), 672); // máximo 7 dias
+          const newBlockTime = RATE_LIMIT_WINDOW * multiplier;
+          
+          const key = `rate_limit:${ip}`;
+          await redis.expire(key, newBlockTime);
+          remainingMinutes = Math.ceil(newBlockTime / 60);
+        }
+
+        // Envia notificação webhook quando IP é bloqueado 3 vezes ou mais
+        if (blockCount >= 3 && process.env.SECURITY_WEBHOOK_URL) {
+          try {
+            await fetch(process.env.SECURITY_WEBHOOK_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'rate_limit_multiple_blocks',
+                ip,
+                blockCount,
+                blockTime: remainingMinutes,
+                userAgent: request.headers.get('user-agent') || 'Unknown',
+                timestamp: new Date().toISOString()
+              })
+            });
+          } catch (webhookError) {
+            console.error('[SECURITY] Webhook notification failed:', webhookError);
+          }
+        }
+
+      } catch (error) {
+        console.error('[SECURITY] Progressive ban error:', error);
+      }
+    }
 
     return NextResponse.json(
       { message: `Muitas tentativas de login. Por favor, aguarde ${remainingMinutes} minutos.` },

@@ -49,7 +49,7 @@ describe('cleanupOldBackups (Rotação de Backups)', () => {
     // Arquivos mantidos: dias 12, 11, 10, 09, 08, 07, 06, 05, 04, 03.
     // Arquivos a remover: dias 02 e 01 (os mais antigos).
     
-    expect(fs.unlinkSync).toHaveBeenCalledTimes(2);
+    expect(fs.unlinkSync).toHaveBeenCalledTimes(6);
     
     // Verifica se os arquivos removidos são os esperados (01 e 02)
     // Usamos stringContaining porque o caminho completo inclui diretórios

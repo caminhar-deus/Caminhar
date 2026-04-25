@@ -483,6 +483,7 @@
 │   ├── prettify.js
 │   ├── sort-arrow-sprite.png
 │   └── sorter.js
+├── coverage-output.log
 ├── cypress
 │   └── e2e
 │       └── image_zoom.cy.js
@@ -897,6 +898,7 @@
 │   │   ├── toBeISODate.js
 │   │   ├── toBeValidJSON.js
 │   │   ├── toHaveHeader.js
+│   │   ├── toHaveProperties.js
 │   │   └── toHaveStatus.js
 │   ├── mocks
 │   │   ├── db.js
@@ -1043,6 +1045,7 @@
 │       ├── settings-cache.test.js
 │       ├── [slug].test.js
 │       └── videos_validation.test.js
+├── tests-output.log
 └── tree.txt
 
-158 directories, 888 files
+158 directories, 891 files

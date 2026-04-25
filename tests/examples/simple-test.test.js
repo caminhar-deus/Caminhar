@@ -16,8 +16,6 @@ import {
   createApiMocks,
   createGetRequest,
   createPostRequest,
-  expectStatus,
-  expectJson,
   expectArray,
 } from '../helpers/api.js';
 
@@ -124,20 +122,19 @@ describe('Test Suite Architecture - Demonstração', () => {
       expect(req.body).toEqual(body);
     });
 
-    it('expectStatus deve verificar status', () => {
+    it('toHaveStatus deve verificar status', () => {
       const { res } = createGetRequest();
       res.statusCode = 201;
       
       expect(res).toHaveStatus(201);
     });
 
-    it('expectJson deve verificar JSON', () => {
+    it('toBeValidJSON deve verificar JSON', () => {
       const { res } = createGetRequest();
       res.statusCode = 200;
       res._getData = () => JSON.stringify({ id: 1, name: 'Test' });
       
-      const data = expectJson(res);
-      expect(data).toEqual({ id: 1, name: 'Test' });
+      expect(res).toBeValidJSON({ id: 1, name: 'Test' });
     });
   });
 
@@ -229,7 +226,9 @@ describe('Teste Integrado - Fluxo Completo', () => {
     // 5. Verificar resposta
     expect(res).toHaveStatus(201);
     
-    const data = expectJson(res);
+    expect(res).toBeValidJSON();
+    
+    const data = JSON.parse(res._getData());
     expect(data.title).toBe('Meu Post de Teste');
     expect(data.published).toBe(true);
     expect(data.created_at).toBeISODate();

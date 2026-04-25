@@ -21,8 +21,8 @@ Este relatório contém sugestões de melhorias, ajustes e correções identific
 
 | Item | Descrição | Motivo | Impacto |
 |---|---|---|---|
-| 1 | **Implementar validação de hash em todos os backups** | Atualmente apenas a integridade básica é verificada. Adicionar checksum SHA-256 para cada arquivo de backup e verificar automaticamente antes da restauração. | 🚨 Crítico - Previne restauração de backups corrompidos que passaram na verificação básica |
-| 2 | **Adicionar criptografia em repouso para backups locais** | Arquivos de backup atualmente estão armazenados sem criptografia no mesmo servidor da aplicação. Qualquer comprometimento do servidor expõe todos os dados históricos. | 🔒 Segurança - Dados sensíveis permanecem protegidos mesmo em caso de vazamento de acesso ao sistema de arquivos |
+| 1 | ✅ **APLICADO** Implementar validação de hash em todos os backups | Implementado checksum SHA-256 para cada arquivo de backup e verificação automática antes da restauração. | ✅ Concluído - Nenhuma restauração de backup corrompido mais é possível | ✅ Implementado
+| 2 | ✅ **APLICADO** Adicionar criptografia em repouso para backups locais | Implementado AES-256-GCM com chave de 32 bytes, autenticação e descriptografia automática na restauração | ✅ Implementado |
 | 3 | **Implementar monitoramento de falhas de backup** | Atualmente falhas de backup são registradas somente no arquivo log. Adicionar alerta automático (email, slack, webhook) quando qualquer backup falhar. | ⚠️ Operacional - Garante que problemas são detectados imediatamente, não somente quando for necessário restaurar |
 
 ---

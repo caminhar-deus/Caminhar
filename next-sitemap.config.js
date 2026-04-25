@@ -105,17 +105,46 @@ export default {
   additionalPaths: async (config) => {
     const result = [];
     
-    // Aqui você pode adicionar URLs dinâmicas do banco de dados
-    // Por exemplo:
-    // const posts = await fetchPosts();
-    // posts.forEach(post => {
-    //   result.push({
-    //     loc: `/blog/${post.slug}`,
-    //     changefreq: 'weekly',
-    //     priority: 0.8,
-    //     lastmod: post.updatedAt,
-    //   });
-    // });
+    // Importar conexão com o banco
+    const { query } = await import('./lib/db.js');
+
+    try {
+      // ✅ Buscar todos os posts publicados
+      const posts = await query('SELECT slug, updated_at FROM posts WHERE published = true');
+      posts.rows.forEach(post => {
+        result.push({
+          loc: `/blog/${post.slug}`,
+          changefreq: 'weekly',
+          priority: 0.8,
+          lastmod: new Date(post.updated_at).toISOString(),
+        });
+      });
+
+      // ✅ Buscar todas as músicas publicadas
+      const musicas = await query('SELECT slug, updated_at FROM musicas WHERE published = true');
+      musicas.rows.forEach(musica => {
+        result.push({
+          loc: `/musicas/${musica.slug}`,
+          changefreq: 'weekly',
+          priority: 0.7,
+          lastmod: new Date(musica.updated_at).toISOString(),
+        });
+      });
+
+      // ✅ Buscar todos os vídeos publicados
+      const videos = await query('SELECT slug, updated_at FROM videos WHERE published = true');
+      videos.rows.forEach(video => {
+        result.push({
+          loc: `/videos/${video.slug}`,
+          changefreq: 'weekly',
+          priority: 0.7,
+          lastmod: new Date(video.updated_at).toISOString(),
+        });
+      });
+
+    } catch (error) {
+      console.warn('⚠️ Aviso ao gerar sitemap dinâmico:', error.message);
+    }
     
     return result;
   },

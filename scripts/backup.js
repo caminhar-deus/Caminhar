@@ -67,8 +67,38 @@ async function createBackup() {
       });
     });
 
+    // Calcular hash SHA-256 do arquivo de backup
+    const crypto = await import('crypto');
+    const fileBuffer = fs.readFileSync(backupPath);
+    const hash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
+    fs.writeFileSync(`${backupPath}.sha256`, hash);
+
+    // ✅ Criptografia em repouso AES-256-GCM
+    if (process.env.BACKUP_ENCRYPTION_KEY) {
+      try {
+        const key = Buffer.from(process.env.BACKUP_ENCRYPTION_KEY, 'hex');
+        const iv = crypto.randomBytes(12);
+        const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+        
+        const encrypted = Buffer.concat([
+          iv, 
+          cipher.update(fileBuffer), 
+          cipher.final(), 
+          cipher.getAuthTag()
+        ]);
+        
+        fs.writeFileSync(`${backupPath}.enc`, encrypted);
+        fs.unlinkSync(backupPath);
+        
+        console.log(`✅ Backup criptografado com sucesso: ${backupPath}.enc`);
+        
+      } catch (cryptoError) {
+        console.error('⚠️ Erro ao criptografar backup, mantendo arquivo original:', cryptoError.message);
+      }
+    }
+
     // Log the backup operation
-    await logBackupOperation('SUCCESS', backupFilename);
+    await logBackupOperation('SUCCESS', `${backupFilename} | hash: ${hash.substring(0, 12)}...`);
 
     // Clean up old backups
     await cleanupOldBackups();
@@ -107,7 +137,9 @@ async function logBackupOperation(status, message) {
 async function cleanupOldBackups() {
   try {
     const files = fs.readdirSync(BACKUP_DIR)
-      .filter(file => file.startsWith(BACKUP_CONFIG.backupPrefix) && file.endsWith('.sql.gz'))
+      .filter(file => file.startsWith(BACKUP_CONFIG.backupPrefix) && (file.endsWith('.sql.gz') || file.endsWith('.enc')))
+      .map(file => file.replace('.enc', ''))
+      .filter((file, index, self) => self.indexOf(file) === index) // Remove duplicatas
       .sort((a, b) => {
         // Sort by timestamp in filename (newest first)
         const timestampA = a.match(/(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})/)?.[0];
@@ -121,8 +153,14 @@ async function cleanupOldBackups() {
 
       for (const file of filesToRemove) {
         const filePath = path.join(BACKUP_DIR, file);
-        fs.unlinkSync(filePath);
-        console.log(`Removed old backup: ${filePath}`);
+        const encPath = `${filePath}.enc`;
+        const hashPath = `${filePath}.sha256`;
+        
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        if (fs.existsSync(encPath)) fs.unlinkSync(encPath);
+        if (fs.existsSync(hashPath)) fs.unlinkSync(hashPath);
+        
+        console.log(`Removed old backup: ${file}`);
         await logBackupOperation('INFO', `Removed old backup: ${file}`);
       }
     }
@@ -138,9 +176,15 @@ async function cleanupOldBackups() {
 async function restoreBackup(backupFilename) {
   try {
     await ensureBackupDirectory();
-    const backupPath = path.join(BACKUP_DIR, backupFilename);
+    let backupPath = path.join(BACKUP_DIR, backupFilename);
+    
+    // Se usuário passou arquivo .enc, ajustar o nome base
+    if (backupFilename.endsWith('.enc')) {
+      backupFilename = backupFilename.replace('.enc', '');
+      backupPath = path.join(BACKUP_DIR, backupFilename);
+    }
 
-    if (!fs.existsSync(backupPath)) {
+    if (!fs.existsSync(backupPath) && !fs.existsSync(`${backupPath}.enc`)) {
       throw new Error(`Backup file not found: ${backupFilename}`);
     }
 
@@ -160,6 +204,51 @@ async function restoreBackup(backupFilename) {
         resolve(stdout);
       });
     });
+
+    // ✅ Verificar integridade do backup antes de restaurar
+    const crypto = await import('crypto');
+    const hashPath = `${backupPath}.sha256`;
+    
+    // ✅ Descriptografar backup se estiver criptografado
+    if (process.env.BACKUP_ENCRYPTION_KEY && !fs.existsSync(backupPath) && fs.existsSync(`${backupPath}.enc`)) {
+      try {
+        console.log('🔓 Descriptografando backup...');
+        
+        const key = Buffer.from(process.env.BACKUP_ENCRYPTION_KEY, 'hex');
+        const encrypted = fs.readFileSync(`${backupPath}.enc`);
+        
+        const iv = encrypted.subarray(0, 12);
+        const authTag = encrypted.subarray(encrypted.length - 16);
+        const ciphertext = encrypted.subarray(12, encrypted.length - 16);
+        
+        const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+        decipher.setAuthTag(authTag);
+        
+        const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+        fs.writeFileSync(backupPath, decrypted);
+        
+        console.log('✅ Backup descriptografado com sucesso.');
+        
+      } catch (cryptoError) {
+        throw new Error(`❌ Falha ao descriptografar backup: ${cryptoError.message}`);
+      }
+    }
+    
+    if (fs.existsSync(hashPath)) {
+      console.log('🔍 Verificando integridade do backup...');
+      
+      const expectedHash = fs.readFileSync(hashPath, 'utf8').trim();
+      const fileBuffer = fs.readFileSync(backupPath);
+      const actualHash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
+
+      if (expectedHash !== actualHash) {
+        throw new Error(`❌ BACKUP CORROMPIDO! Hash não confere.\nEsperado: ${expectedHash}\nRecebido: ${actualHash}`);
+      }
+      
+      console.log('✅ Integridade do backup verificada com sucesso.');
+    } else {
+      console.warn('⚠️ Arquivo de hash não encontrado. Continuando sem verificação de integridade.');
+    }
 
     // 2. Proceed with the restore
     console.log(`🔄 Restaurando banco de dados a partir de ${backupFilename}...`);
@@ -196,7 +285,9 @@ async function getAvailableBackups() {
     await ensureBackupDirectory();
 
     const files = fs.readdirSync(BACKUP_DIR)
-      .filter(file => file.startsWith(BACKUP_CONFIG.backupPrefix) && file.endsWith('.sql.gz'))
+      .filter(file => file.startsWith(BACKUP_CONFIG.backupPrefix) && (file.endsWith('.sql.gz') || file.endsWith('.enc')))
+      .map(file => file.replace('.enc', ''))
+      .filter((file, index, self) => self.indexOf(file) === index) // Remove duplicatas
       .sort((a, b) => {
         // Sort by timestamp in filename (newest first)
         const timestampA = a.match(/(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})/)?.[0];

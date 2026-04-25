@@ -9,3 +9,4 @@ import './toHaveStatus.js';
 import './toBeValidJSON.js';
 import './toHaveHeader.js';
 import './toBeISODate.js';
+import './toHaveProperties.js';

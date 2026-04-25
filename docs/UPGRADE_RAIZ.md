@@ -19,11 +19,11 @@
 
 | Arquivo | Problema Identificado | Sugestão de Correção | Prioridade
 |---------|------------------------|-----------------------|-----------
-| `pr-coverage.yml` | Linha 36: Duplicata na lista `transformIgnorePatterns` com duas entradas repetidas | Remover a segunda linha redundante `'/node_modules/(?!@faker-js/)'` | 🟡 Média
-| `rate-limit-proxy.js` | Linha 76: Limpa o Map inteiro quando ultrapassa 10.000 entradas, removendo inclusive registros válidos | Implementar limpeza seletiva apenas de registros expirados | 🟠 Alta
-| `package.json` | Versão Node.js definida é `24.14.1` mas CI usa `20.x` nas pipelines | Uniformizar versão do Node.js em todos os ambientes | 🟠 Alta
-| `load-tests.yml` | Node.js versão 20 enquanto projeto usa 24.14.1 | Atualizar pipeline para usar a mesma versão Node.js do projeto | 🟡 Média
-| `ci.yml` | Também usa Node.js 20.x diferente do projeto | Atualizar versão do Node para alinhamento | 🟡 Média
+| `jest.config.js` | ✅ **CORRIGIDO** Linha 36: Duplicata na lista `transformIgnorePatterns` com duas entradas repetidas | Removida a segunda linha redundante `'/node_modules/(?!@faker-js/)'` | ✅ Concluído
+| `rate-limit-proxy.js` | ✅ **CORRIGIDO** Linha 76: Limpa o Map inteiro quando ultrapassa 10.000 entradas, removendo inclusive registros válidos | Implementado limpeza seletiva apenas de registros expirados | ✅ Concluído
+| `package.json` | ✅ **CORRIGIDO** Versão Node.js definida é `24.14.1` mas CI usava `20.x` nas pipelines | Uniformizada versão Node.js `24.14.1` em TODOS os ambientes | ✅ Concluído
+| `load-tests.yml` | ✅ **CORRIGIDO** Node.js versão 20 enquanto projeto usa 24.14.1 | Atualizado para usar a mesma versão Node.js do projeto | ✅ Concluído
+| `ci.yml` | ✅ **CORRIGIDO** Também usava Node.js 20.x diferente do projeto | Atualizado versão do Node para alinhamento | ✅ Concluído
 
 ---
 
@@ -32,29 +32,32 @@
 ### 🔹 Testes e Qualidade
 | Arquivo | Sugestão | Benefício
 |---------|----------|----------
-| `jest.config.js` | Aumentar gradualmente o threshold de cobertura de 20% para 30% → 40% → 50% ao longo do tempo | Melhoria contínua da qualidade do código
-| `jest.teardown.js` | Implementar limpeza de conexões abertas do banco e Redis após execução dos testes | Evita vazamento de conexões e processos zumbis
-| `knip.json` | Adicionar regra para verificar arquivos não utilizados na pasta `/pages` | Encontra rotas órfãs e código morto
+| `jest.config.js` | ✅ **ATUALIZADO** Valor threshold ajustado para valores reais do projeto: 92% branches, 95% funções, 98% linhas e statements | Proteção efetiva contra redução da qualidade dos testes | ✅ Implementado
+| `jest.teardown.js` | ✅ **APLICADO** Implementado limpeza de conexões abertas do banco e Redis após execução dos testes | Evita vazamento de conexões e processos zumbis | ✅ Implementado
+| `package.json` | ✅ **APLICADO** Adicionado comandos separados `test:log` e `test:coverage:log` para gravação de logs dos testes | O usuário escolhe quando gerar o log | ✅ Implementado
+| `knip.json` | ✅ **APLICADO** Adicionado exceção para pasta `/pages` pois são rotas automáticas do Next.js | Elimina falsos positivos no Knip | ✅ Implementado
 
 ### 🔹 Segurança
 | Arquivo | Sugestão | Benefício
 |---------|----------|----------
-| `rate-limit-proxy.js` | Adicionar notificação via webhook quando um IP for bloqueado mais de 3 vezes | Detecção proativa de ataques de brute force
-| `rate-limit-proxy.js` | Implementar banimento temporário progressivo para IPs reincidentes | Aumenta efetividade da proteção
-| `next.config.js` | Adicionar headers de segurança padrão (CSP, X-Frame-Options, HSTS) | Proteção padrão contra vulnerabilidades web comuns
+| `rate-limit-proxy.js` | ✅ **APLICADO** Adicionar notificação via webhook quando um IP for bloqueado mais de 3 vezes | Detecção proativa de ataques de brute force | ✅ Implementado
+| `rate-limit-proxy.js` | ✅ **APLICADO** Implementado banimento temporário progressivo para IPs reincidentes | Aumenta efetividade da proteção | ✅ Implementado
+| `next.config.js` | ✅ **APLICADO** Adicionado headers de segurança padrão (X-Frame-Options, HSTS, X-Content-Type-Options, Referrer-Policy, Permissions-Policy) | Proteção padrão contra vulnerabilidades web comuns | ✅ Implementado
 
 ### 🔹 Performance
 | Arquivo | Sugestão | Benefício
 |---------|----------|----------
 | `jest.config.js` | Aumentar `maxWorkers` para `50%` dos cores da CPU | Acelera execução dos testes em máquinas com múltiplos cores
-| `next-sitemap.config.js` | Implementar a geração dinâmica de URLs do banco de dados na função `additionalPaths` | Sitemap automático com todo o conteúdo real do projeto
+| `next-sitemap.config.js` | ✅ **APLICADO** Implementado geração dinâmica de URLs do banco de dados na função `additionalPaths` | Sitemap automático com todos os posts, músicas e vídeos | ✅ Implementado
 
 ---
 
 ## ⚙️ Ajustes de Configuração
 
 ### 🔹 CI/CD Pipelines
-✅ **Uniformização de versões:** Todas as 3 pipelines (`ci.yml`, `load-tests.yml`, `pr-coverage.yml`, `security-tests.yml`) atualmente usam versões diferentes do Node.js. Recomendação: usar **exatamente a mesma versão** definida no `package.json` (24.14.1) em todos os ambientes.
+✅ **Uniformização de versões:** Todas as 3 pipelines (`ci.yml`, `load-tests.yml`, `pr-coverage.yml`, `security-tests.yml`) ✅ **ATUALIZADAS** para usar exatamente a mesma versão Node.js `24.14.1` em todos os ambientes.
+
+✅ **Centralização configuração Jest:** Removido threshold duplicado inline do `pr-coverage.yml`, agora todos os ambientes usam a configuração centralizada do `jest.config.js`
 
 ✅ **Cache compartilhado:** Todas as pipelines tem cache de dependências implementado individualmente. Podem ser otimizadas para usar o mesmo cache com chave padrão.
 

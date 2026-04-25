@@ -3,6 +3,12 @@
  * Utilitários para testes de API
  * 
  * Estes helpers simplificam a criação de mocks HTTP e verificação de respostas.
+ * 
+ * NOTA: Para verificações de resposta (status, JSON, headers), utilize os
+ * matchers nativos do Jest disponíveis globalmente:
+ *   - expect(res).toHaveStatus(status)
+ *   - expect(res).toBeValidJSON(expected)
+ *   - expect(res).toHaveHeader(name, value)
  */
 
 import { createMocks } from 'node-mocks-http';
@@ -81,117 +87,6 @@ export const createPatchRequest = (body = {}, headers = {}) =>
   createApiMocks({ method: 'PATCH', body, headers });
 
 /**
- * Verifica se a resposta tem o status esperado
- * @param {Object} res - Objeto de resposta do node-mocks-http
- * @param {number} expectedStatus - Status esperado (default: 200)
- */
-export const expectStatus = (res, expectedStatus = 200) => {
-  const status = res._getStatusCode();
-  if (status !== expectedStatus) {
-    throw new Error(
-      `Expected status ${expectedStatus}, but got ${status}\n` +
-      `Response body: ${res._getData()}`
-    );
-  }
-};
-
-/**
- * Verifica se a resposta contém JSON válido e opcionalmente dados esperados
- * @param {Object} res - Objeto de resposta
- * @param {Object|Array} expected - Dados esperados (opcional)
- * @returns {Object|Array} Dados parseados
- */
-export const expectJson = (res, expected) => {
-  const data = res._getData();
-  let parsed;
-  
-  try {
-    parsed = JSON.parse(data);
-  } catch (e) {
-    throw new Error(`Invalid JSON in response: ${data}`);
-  }
-  
-  if (expected !== undefined) {
-    const pass = JSON.stringify(parsed) === JSON.stringify(expected) ||
-      (typeof expected === 'object' && 
-       Object.keys(expected).every(key => parsed[key] === expected[key]));
-    
-    if (!pass) {
-      throw new Error(
-        `JSON mismatch:\n` +
-        `Expected: ${JSON.stringify(expected, null, 2)}\n` +
-        `Received: ${JSON.stringify(parsed, null, 2)}`
-      );
-    }
-  }
-  
-  return parsed;
-};
-
-/**
- * Verifica se a resposta é um array
- * @param {Object} res - Objeto de resposta
- * @param {number} minLength - Tamanho mínimo esperado (opcional)
- */
-export const expectArray = (res, minLength) => {
-  const data = expectJson(res);
-  
-  if (!Array.isArray(data)) {
-    throw new Error(`Expected array, but got ${typeof data}`);
-  }
-  
-  if (minLength !== undefined && data.length < minLength) {
-    throw new Error(`Expected array with at least ${minLength} items, but got ${data.length}`);
-  }
-  
-  return data;
-};
-
-/**
- * Verifica se a resposta tem o header esperado
- * @param {Object} res - Objeto de resposta
- * @param {string} headerName - Nome do header
- * @param {string} expectedValue - Valor esperado (opcional)
- */
-export const expectHeader = (res, headerName, expectedValue) => {
-  const headers = res.getHeaders?.() || res._getHeaders?.() || {};
-  const actualValue = headers[headerName.toLowerCase()];
-  
-  if (expectedValue === undefined) {
-    if (actualValue === undefined) {
-      throw new Error(`Expected header "${headerName}" to exist`);
-    }
-  } else if (actualValue !== expectedValue) {
-    throw new Error(
-      `Expected header "${headerName}" to be "${expectedValue}", but got "${actualValue}"`
-    );
-  }
-};
-
-/**
- * Verifica se a resposta é um erro
- * @param {Object} res - Objeto de resposta
- * @param {number} expectedStatus - Status de erro esperado (default: 400)
- * @param {string} expectedMessage - Mensagem de erro esperada (opcional)
- */
-export const expectError = (res, expectedStatus = 400, expectedMessage) => {
-  expectStatus(res, expectedStatus);
-  const data = expectJson(res);
-  
-  if (!data.message && !data.error) {
-    throw new Error(`Expected error response with 'message' or 'error' field`);
-  }
-  
-  const message = data.message || data.error;
-  
-  if (expectedMessage && !message.includes(expectedMessage)) {
-    throw new Error(`Expected error message to include "${expectedMessage}", but got "${message}"`);
-  }
-  
-  return data;
-};
-
-/**
  * Executa um handler de API e retorna a resposta
  * @param {Function} handler - Handler da API
  * @param {Object} req - Request object
@@ -200,9 +95,10 @@ export const expectError = (res, expectedStatus = 400, expectedMessage) => {
  */
 export const executeHandler = async (handler, req, res) => {
   await handler(req, res);
+  const data = res._getData();
   return {
     status: res._getStatusCode(),
-    data: expectJson(res),
+    data: data ? JSON.parse(data) : null,
     headers: res.getHeaders?.() || res._getHeaders?.() || {},
   };
 };
@@ -262,34 +158,3 @@ export const getResponseBody = (res) => {
   }
 };
 
-/**
- * Verifica se a resposta paginada está correta
- * @param {Object} res - Response object
- * @param {Object} expected - Valores esperados
- * @param {number} expected.page - Página esperada
- * @param {number} expected.limit - Limite por página
- * @param {number} expected.total - Total de itens
- */
-export const expectPaginatedResponse = (res, expected) => {
-  const data = expectJson(res);
-  
-  if (!data.pagination && !data.meta) {
-    throw new Error('Expected paginated response with pagination or meta field');
-  }
-  
-  const pagination = data.pagination || data.meta;
-  
-  if (expected.page !== undefined && pagination.page !== expected.page) {
-    throw new Error(`Expected page ${expected.page}, but got ${pagination.page}`);
-  }
-  
-  if (expected.limit !== undefined && pagination.limit !== expected.limit) {
-    throw new Error(`Expected limit ${expected.limit}, but got ${pagination.limit}`);
-  }
-  
-  if (expected.total !== undefined && pagination.total !== expected.total) {
-    throw new Error(`Expected total ${expected.total}, but got ${pagination.total}`);
-  }
-  
-  return data;
-};
