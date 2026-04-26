@@ -11,8 +11,26 @@ export default function BlogSection({ limit }) {
     async function fetchPosts() {
       try {
         const res = await fetch('/api/posts');
+        
+        // ✅ Validação defensiva: Verificar se a resposta é realmente JSON
+        const contentType = res.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          console.error(`API /api/posts retornou conteúdo inválido. Esperado JSON, recebido: ${contentType}`);
+          console.error('Isso geralmente significa que a rota API quebrou e retornou página HTML de erro');
+          setPosts([]);
+          return;
+        }
+
         if (res.ok) {
-          const responseData = await res.json();
+          let responseData;
+          try {
+            responseData = await res.json();
+          } catch (jsonError) {
+            console.error('Falha ao parsear JSON da resposta da API mesmo com Content-Type correto:', jsonError);
+            setPosts([]);
+            return;
+          }
+
           // CRITICAL FIX: Access the 'data' property from the API response
           if (responseData.success && Array.isArray(responseData.data)) {
             setPosts(responseData.data);
@@ -21,12 +39,21 @@ export default function BlogSection({ limit }) {
             setPosts([]); // Ensure posts is an array even on API logic error
           }
         } else {
-          const errorData = await res.json();
+          let errorData;
+          try {
+            errorData = await res.json();
+          } catch (jsonError) {
+            console.error(`API retornou erro HTTP ${res.status} mas conteúdo não é JSON válido`);
+            setPosts([]);
+            return;
+          }
+          
           console.error('API Error fetching posts:', res.status, errorData.message || 'Unknown error');
           setPosts([]); // Set to empty array on HTTP error
         }
       } catch (error) {
         console.error('Erro ao carregar posts:', error);
+        setPosts([]);
       } finally {
         setLoading(false);
       }

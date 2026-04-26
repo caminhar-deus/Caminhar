@@ -85,6 +85,15 @@ Camada de cache com Redis e fallback transparente, além de sistema de rate limi
 ✅ Todos erros de cache são logados mas nunca quebram o fluxo principal
 ✅ TTL padrão de 3600 segundos (1 hora)
 
+### ✅ Melhorias implementadas (26/04/2026)
+| Problema resolvido | Ação |
+|---|---|
+| Teste esperava comportamento antigo incorreto | Atualizado teste para esperar lançamento de erro na função `clearAllCache()` quando Redis não está conectado |
+| Inconsistência de comportamento | Agora a função `clearAllCache()` é transparente e retorna erro em caso de falha |
+| Falsa sensação de sucesso | Administrador agora sempre sabe se o cache foi realmente limpo |
+
+⚠️ Todas as outras funções continuam com fallback silencioso que é o comportamento desejado. Apenas a operação de limpeza total do cache foi alterada para ser transparente.
+
 ---
 
 ## 📁 `crud.test.js` - Utilitários CRUD Genéricos

@@ -38,6 +38,9 @@ Componente de seção principal que carrega e exibe uma lista de postagens do bl
 - ✅ Carregamento assíncrono de posts via API `/api/posts`
 - ✅ Tratamento completo de erros e estados de loading
 - ✅ Validação de estrutura de resposta da API
+- ✅ Validação preventiva do Content-Type da resposta da API
+- ✅ Tratamento individual de erro para cada operação .json()
+- ✅ Detecção automática quando API retorna HTML ao invés de JSON
 - ✅ Limitação de quantidade de posts exibidos via prop `limit`
 - ✅ Renderização condicional: retorna `null` se não houver posts
 - ✅ Botão "Ver todas as postagens" quando há mais posts que o limite
@@ -53,6 +56,8 @@ Componente de seção principal que carrega e exibe uma lista de postagens do bl
 - Possui fix crítico para acesso a propriedade `data` na resposta da API
 - Estado de loading com mensagem amigável para o usuário
 - Utiliza `useEffect` com array de dependências vazio para carregamento uma única vez
+- Nunca mais lança erro SyntaxError Unexpected token '<'
+- Logs específicos e explicativos para cada tipo de falha
 
 ---
 

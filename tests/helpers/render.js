@@ -8,6 +8,7 @@
 import React from 'react';
 import { render as rtlRender, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { AuthContext } from '../../hooks/useAuth';
 
 // =============================================================================
 // MOCKS DE MÓDULOS (devem estar no nível do módulo)
@@ -115,11 +116,13 @@ export const renderWithAuth = (ui, options = {}) => {
     loading: false,
   };
   
-  // Wrapper que injeta o contexto via prop drilling ou Context API
+  // Wrapper que injeta o contexto de autenticação
   const Wrapper = ({ children }) => {
-    // Se houver um hook useAuth, ele precisa ser mockado no teste
-    // ou o componente deve receber os dados via props
-    return <>{children}</>;
+    return (
+      <AuthContext.Provider value={authContext}>
+        {children}
+      </AuthContext.Provider>
+    );
   };
   
   return {

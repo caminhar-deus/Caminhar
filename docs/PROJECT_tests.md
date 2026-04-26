@@ -352,12 +352,13 @@ Conjunto de helpers para **renderização de componentes React nos testes**.
 Configura automaticamente todos os providers necessários (Router, Auth, Toast).
 
 ### Características:
-✅ 266 linhas de código
+✅ 275 linhas de código
 ✅ Wrapper sobre `@testing-library/react`
 ✅ Integração com `userEvent` já configurada
 ✅ Mock nativo do Next.js Router
 ✅ Helpers para viewport responsivo
 ✅ Utilitários para formulários e animações
+✅ ✅ **Injeta automaticamente o `AuthContext` para todos os testes de autenticação**
 
 ### Funções Disponíveis:
 
@@ -366,7 +367,7 @@ Configura automaticamente todos os providers necessários (Router, Auth, Toast).
 |--------|-----------|
 | `renderWithProviders()` | Renderiza componente com providers básicos |
 | `renderWithRouter()` | Renderiza com Next.js Router mockado |
-| `renderWithAuth()` | Renderiza com contexto de autenticação |
+| `renderWithAuth()` | Renderiza com contexto de autenticação, injeta automaticamente o `AuthContext` do hook `useAuth` |
 | `renderWithToast()` | Renderiza com provider do react-hot-toast |
 
 #### 📱 Responsividade:

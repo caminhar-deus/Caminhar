@@ -557,6 +557,7 @@
 ├── hooks
 │   ├── index.js
 │   ├── useAdminCrud.js
+│   ├── useAuth.js
 │   ├── usePerformanceMetrics.js
 │   └── useTheme.js
 ├── jest.config.js
@@ -1048,4 +1049,4 @@
 ├── tests-output.log
 └── tree.txt
 
-158 directories, 891 files
+158 directories, 892 files

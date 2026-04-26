@@ -78,7 +78,9 @@ export default async function handler(req, res) {
         return res.status(201).json(newUser);
 
       case 'PUT':
-        const updateId = req.body.id || parseInt(req.query.id);
+        const updateId = parseInt(req.body.id || req.query.id, 10);
+        if (isNaN(updateId)) return res.status(400).json({ error: 'ID inválido' });
+        
         const updateData = { ...req.body };
         delete updateData.id;
         delete updateData.created_at;
@@ -98,6 +100,7 @@ export default async function handler(req, res) {
 
       case 'DELETE':
         const deleteId = parseInt(req.body.id || req.query.id, 10);
+        if (isNaN(deleteId)) return res.status(400).json({ error: 'ID inválido' });
         
         if (deleteId === user.userId) return res.status(400).json({ error: 'Você não pode excluir sua própria conta enquanto está logado nela.' });
 
@@ -110,6 +113,9 @@ export default async function handler(req, res) {
         await logActivity(user.username, 'EXCLUIR USUÁRIO', 'USER', deleteId, `Removeu o usuário: ${deletedUsername}`, ip);
         
         return res.status(200).json({ success: true, message: 'Usuário removido com sucesso.' });
+
+      default:
+        return res.status(405).json({ error: 'Método não permitido' });
     }
   } catch (error) {
     console.error('❌ [API Users] Error:', error);

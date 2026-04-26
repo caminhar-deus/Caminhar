@@ -87,12 +87,12 @@ Pipeline de Integração Contínua (CI) configurado para GitHub Actions.
 
 ### Funcionamento
 - Executado automaticamente em **todo Push e Pull Request** para as branches `main` e `master`
-- Ambiente: Ubuntu Latest com Node.js 20.x
+- Ambiente: Ubuntu Latest com Node.js 24.15.0
 - Passos executados:
   1. Checkout do repositório
   2. Instalação do Node.js com cache de dependências
   3. Instalação das dependências npm
-  4. Execução da suíte completa de testes
+  4. Execução da suíte completa de testes usando `npm run test:ci` com configurações otimizadas para CI
 
 ### Pontos Chave
 ✅ Gate de qualidade: nenhum código que quebre testes pode ser mergeado  
@@ -285,7 +285,7 @@ Arquivo manifesto do projeto Node.js - ponto central de configuração.
 
 ### Conteúdo
 - **Versão atual**: 1.4.0
-- **Engine**: Node.js 24.14.1 (versão exata travada)
+- **Engine**: Node.js 24.15.0 (versão exata travada)
 - **Mais de 80 scripts** organizados por categoria:
   - Desenvolvimento e Build
   - Testes unitários, integração e E2E

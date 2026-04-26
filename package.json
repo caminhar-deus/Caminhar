@@ -4,7 +4,7 @@
   "description": "",
   "type": "module",
   "engines": {
-    "node": "24.14.1"
+    "node": "24.15.0"
   },
   "scripts": {
     "check-env": "node scripts/check-env.js",
@@ -128,7 +128,7 @@
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",
     "jest-watch-typeahead": "^3.0.1",
-    "knip": "^6.6.3",
+    "knip": "^6.7.0",
     "next-sitemap": "^4.2.3",
     "node-mocks-http": "^1.17.2",
     "undici": "^8.1.0"
@@ -137,6 +137,8 @@
     "tar": "^7.4.3",
     "glob": "^13.0.6",
     "minimatch": "^10.2.2",
+    "postcss": "^8.5.10",
+    "uuid": "^14.0.0",
     "whatwg-encoding": "^3.1.1"
   }
 }

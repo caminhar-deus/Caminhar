@@ -25,6 +25,8 @@ Arquivo de entrada e índice público dos hooks. Gerencia as exportações ofici
 #### Conteúdo:
 ✅ Exporta `useTheme` como named export
 ✅ Exporta `useThemeDefault` como default export
+✅ Exporta `useAuth`, `AuthContext`, `AuthProvider` do arquivo `/hooks/useAuth.js`
+✅ Exporta `useAuthDefault` como default export
 ✅ Apenas re-exportações, nenhuma lógica
 
 #### Observação:
@@ -130,6 +132,37 @@ Hook de gerenciamento de tema e acesso centralizado aos Design Tokens do projeto
 
 ---
 
+### 5. 🔐 `/hooks/useAuth.js`
+
+#### Propósito
+Hook de autenticação e contexto global para gerenciamento de sessão de usuário. Fornece funções de login, logout e verificação de autenticação para toda a aplicação.
+
+#### Funcionalidades:
+✅ Contexto `AuthContext` global para toda a aplicação
+✅ Provider `AuthProvider` para envolver a aplicação
+✅ Verificação automática de autenticação na montagem
+✅ Funções de login e logout integradas com a API
+✅ Estados de loading e usuário autenticado
+✅ Integração nativa com os endpoints de autenticação
+
+#### API:
+| Retorno | Descrição |
+|---|---|
+| `user` | Dados do usuário autenticado ou `null` |
+| `isAuthenticated` | Booleano indicando se usuário está logado |
+| `loading` | Estado de carregamento durante verificação inicial |
+| `login(username, password)` | Função para realizar login |
+| `logout()` | Função para realizar logout |
+
+#### Características:
+- ✅ Implementado seguindo padrões React Context API
+- ✅ Trata erros de conexão silenciosamente
+- ✅ Suporta SSR e hidratação correta
+- ✅ Nenhuma dependência externa
+- ✅ Utilizado automaticamente pelo helper `renderWithAuth()` nos testes
+
+---
+
 ## 📌 Observações Gerais
 1. ✅ Todos os hooks seguem padrão funcional moderno do React
 2. ✅ Possuem documentação JSDoc completa
@@ -146,6 +179,7 @@ Hook de gerenciamento de tema e acesso centralizado aos Design Tokens do projeto
 | `useAdminCrud` | Todos os componentes em `/components/Admin/` |
 | `usePerformanceMetrics` | `_app.js`, painel administrativo |
 | `useTheme` | Todos os componentes UI, páginas e layout |
+| `useAuth` | Todos os componentes públicos, áreas privadas, sistema de login |
 
 ---
 

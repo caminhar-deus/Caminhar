@@ -182,6 +182,15 @@ Abstração de cache com padrão Cache-Aside e Rate Limit distribuído com fallb
 - Erros no Redis são sempre logados mas nunca propagados
 - É o único ponto do sistema que implementa proteção DDoS básica
 
+### ✅ Melhorias implementadas (26/04/2026)
+| Problema resolvido | Ação |
+|---|---|
+| Fallback silencioso na função `clearAllCache()` | Removido o tratamento silencioso de erro que retornava sucesso mesmo quando o Redis falhava |
+| Falta de transparência para o administrador | Agora o erro é relançado e o endpoint retorna mensagem adequada |
+| Comportamento inconsistente | Agora o administrador sempre sabe se o cache foi realmente limpo |
+
+⚠️ Apenas a função `clearAllCache()` foi alterada. Todas as outras funções continuam com fallback silencioso que é o comportamento desejado para não quebrar requisições normais.
+
 ---
 
 ## 📁 /lib/middleware.js

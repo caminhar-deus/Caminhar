@@ -110,7 +110,8 @@ export default async function handler(req, res) {
             } else if (title.includes(' - R$')) {
               const parts = title.split(' - R$');
               title = parts[0].trim();
-              price = parseFloat(parts[1].trim().replace('.', '').replace(',', '.'));
+              const parsedPrice = parseFloat(parts[1].trim().replace('.', '').replace(',', '.'));
+              price = isNaN(parsedPrice) ? 0 : parsedPrice;
             }
 
             foundData = {

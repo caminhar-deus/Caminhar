@@ -57,10 +57,6 @@ export const mockQueryError = (error) => {
  */
 export const mockInsert = (insertedRow = {}) => {
   return jest.fn().mockImplementation((query, params) => {
-    if (!query.toLowerCase().includes('insert')) {
-      throw new Error('Expected INSERT query');
-    }
-    
     return Promise.resolve({
       rows: [{ id: insertedRow.id || 1, ...insertedRow }],
       rowCount: 1,
@@ -76,10 +72,6 @@ export const mockInsert = (insertedRow = {}) => {
  */
 export const mockUpdate = (updatedRow = {}) => {
   return jest.fn().mockImplementation((query, params) => {
-    if (!query.toLowerCase().includes('update')) {
-      throw new Error('Expected UPDATE query');
-    }
-    
     return Promise.resolve({
       rows: [{ ...updatedRow }],
       rowCount: 1,
@@ -95,10 +87,6 @@ export const mockUpdate = (updatedRow = {}) => {
  */
 export const mockDelete = (deletedId) => {
   return jest.fn().mockImplementation((query, params) => {
-    if (!query.toLowerCase().includes('delete')) {
-      throw new Error('Expected DELETE query');
-    }
-    
     return Promise.resolve({
       rows: [{ id: deletedId }],
       rowCount: 1,

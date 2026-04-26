@@ -78,7 +78,7 @@ describe('Library - Cache & Rate Limit', () => {
   it('invalidateCache e clearAllCache: fazem bypass se o Redis não estiver instanciado', async () => {
     mockSimulateNoRedis = true;
     await invalidateCache('key');
-    await clearAllCache();
+    await expect(clearAllCache()).rejects.toThrow('Redis não está conectado ou configurado');
     expect(mockRedis.del).not.toHaveBeenCalled();
     expect(mockRedis.flushdb).not.toHaveBeenCalled();
   });
@@ -100,5 +100,38 @@ describe('Library - Cache & Rate Limit', () => {
   it('checkRateLimit: faz bypass para in-memory se o Redis não estiver instanciado', async () => {
     mockSimulateNoRedis = true;
     expect(await checkRateLimit('127.0.0.3', 'api_no_redis', 0)).toBe(true); // Estoura limite local
+  });
+
+  // ✅ NOVOS TESTES ADICIONADOS (PASSO 4)
+  it('clearAllCache: não relança erro quando flushdb falha', async () => {
+    mockRedis.flushdb.mockRejectedValueOnce(new Error('Redis falhou'));
+    
+    // Não deve lançar exceção
+    await expect(clearAllCache()).resolves.not.toThrow();
+    
+    expect(mockRedis.flushdb).toHaveBeenCalled();
+  });
+
+  it('checkRateLimit: whitelist permanente funciona corretamente', async () => {
+    // Testa todos os IPs da whitelist
+    const whitelistIPs = ['127.0.0.1', '::1', 'localhost', 'unknown'];
+    
+    for (const ip of whitelistIPs) {
+      // Mesmo com limite 0, nunca deve bloquear
+      expect(await checkRateLimit(ip, 'test_endpoint', 0)).toBe(false);
+    }
+  });
+
+  it('checkRateLimit: NX flag no expire é chamada corretamente', async () => {
+    mockRedis.incr.mockResolvedValueOnce(1);
+    
+    await checkRateLimit('192.168.1.50', 'new_endpoint', 10);
+    
+    // Verifica que o expire é chamado com flag NX
+    expect(mockRedis.expire).toHaveBeenCalledWith(
+      'ratelimit:new_endpoint:192.168.1.50',
+      60,
+      'NX'
+    );
   });
 });

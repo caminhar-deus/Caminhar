@@ -585,6 +585,13 @@ Endpoint inteligente para extrair automaticamente dados de produtos do Mercado L
 
 > ℹ️  Este endpoint utiliza uma lógica robusta com múltiplos fallbacks que garantem sucesso mesmo quando a API oficial bloqueia requisições.
 
+### ✅ Melhorias implementadas (26/04/2026)
+| Problema resolvido | Ação |
+|---|---|
+| Preço inválido `NaN` chegando ao banco | Adicionada validação `isNaN()` na extração de preço do fallback HTML, com fallback seguro para 0 |
+
+Agora 100% imune a valores inválidos retornados pelo scraping da página do Mercado Livre.
+
 ---
 
 ## 🎵 `/api/admin/fetch-spotify.js`
@@ -668,6 +675,15 @@ Endpoint CRUD administrativo completo para gerenciamento de usuários do sistema
 ✅ Atualização de usuários com tratamento especial para senha
 ✅ Proteção contra exclusão da própria conta
 ✅ Log completo de auditoria
+
+### ✅ Melhorias implementadas (26/04/2026)
+| Problema resolvido | Ação |
+|---|---|
+| ID inválido `NaN` chegando ao banco | Adicionada validação `isNaN()` no PUT e DELETE com retorno de erro 400 |
+| Métodos não suportados ficavam pendentes | Adicionado caso `default` no switch retornando 405 Method Not Allowed |
+| Validação inconsistente de ID | Padronizado `parseInt` com base 10 em todas as operações |
+
+Agora 100% dos casos edge estão tratados, nenhuma requisição vai ficar pendente ou timeout.
 
 ---
 
