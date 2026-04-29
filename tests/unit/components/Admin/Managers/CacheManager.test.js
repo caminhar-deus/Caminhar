@@ -32,6 +32,18 @@ describe('Componentes Admin - CacheManager', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     toast.loading.mockReturnValue('id_toast_123');
+
+    // Mock para a requisição GET automática no mount do componente (métricas)
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        redisConnected: true,
+        redisErrors: 0,
+        fallbackActivations: 0,
+        lastFallbackTime: null,
+        localMapSize: 0
+      })
+    });
   });
 
   it('deve renderizar o painel e o botão corretamente', () => {
@@ -48,7 +60,7 @@ describe('Componentes Admin - CacheManager', () => {
     
     expect(window.confirm).toHaveBeenCalled();
     expect(toast.loading).not.toHaveBeenCalled();
-    expect(mockFetch).not.toHaveBeenCalled();
+    expect(mockFetch).toHaveBeenCalledTimes(1); // Apenas a requisição GET automática no mount
   });
 
   it('deve chamar a API e exibir um Toast de sucesso', async () => {
@@ -69,7 +81,8 @@ describe('Componentes Admin - CacheManager', () => {
 
     // Após a promessa resolver
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith('/api/admin/cache', expect.objectContaining({ method: 'POST' }));
+      expect(mockFetch).toHaveBeenCalledTimes(2); // GET mount + POST clique
+      expect(mockFetch).toHaveBeenNthCalledWith(2, '/api/admin/cache', expect.objectContaining({ method: 'POST' }));
       expect(toast.success).toHaveBeenCalledWith('Cache limpo com sucesso no Redis', { id: 'id_toast_123' });
     });
   });

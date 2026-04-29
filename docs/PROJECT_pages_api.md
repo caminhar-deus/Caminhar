@@ -838,20 +838,28 @@ Endpoint administrativo para listagem e criação de backups do banco de dados.
 ## 🗑️ `/api/admin/cache.js`
 
 ### Propósito Geral
-Endpoint administrativo para limpeza completa do cache Redis.
+Endpoint administrativo para **monitoramento em tempo real** e limpeza completa do cache Redis.
 
 ### Características
 | Item | Detalhe |
 |------|---------|
-| Métodos HTTP permitidos | `POST`, `DELETE` |
+| Métodos HTTP permitidos | `GET`, `POST`, `DELETE` |
 | Autenticação | ✅ Obrigatória |
 | Permissão | Apenas Administrador |
-| Ação | Executa `FLUSHDB` no Redis |
+| Ação | `GET`: Métricas em tempo real | `POST/DELETE`: Executa `FLUSHDB` no Redis |
 
 ### Funcionamento
-1.  Valida autenticação e confirma que o usuário é administrador
-2.  Executa limpeza completa de todas as chaves no cache Redis
-3.  Retorna confirmação com timestamp da operação
+1.  **Método `GET`**: Retorna métricas de monitoramento do Cache e Rate Limit:
+    - Status de conexão do Redis
+    - Contador de erros do Redis
+    - Quantas vezes o fallback local foi ativado
+    - Data e hora da última falha
+    - Tamanho atual do mapa em memória
+
+2.  **Métodos `POST/DELETE`**:
+    - Valida autenticação e confirma que o usuário é administrador
+    - Executa limpeza completa de todas as chaves no cache Redis
+    - Retorna confirmação com timestamp da operação
 
 ### Respostas
 | Status | Descrição |

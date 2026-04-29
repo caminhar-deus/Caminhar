@@ -144,7 +144,9 @@ beforeAll(() => {
       typeof args[0] === 'string' &&
       (
         args[0].includes('Warning: ReactDOM.render is no longer supported') ||
-        args[0].includes('Warning: React.createFactory()')
+        args[0].includes('Warning: React.createFactory()') ||
+        args[0].includes('API /api/posts retornou conteúdo inválido') ||
+        args[0].includes('Isso geralmente significa que a rota API quebrou')
       )
     ) {
       return;

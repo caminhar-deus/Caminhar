@@ -12,11 +12,20 @@
 | Categoria | Quantidade |
 |-----------|------------|
 | Arquivos Analisados | 21 |
-| Total de Testes | 76 |
+| Total de Testes | 80 |
 | Pontos Positivos Encontrados | 18 |
-| Melhorias Sugeridas | 12 |
+| Melhorias Sugeridas | 11 |
 | Correções Necessárias | 4 |
-| Oportunidades de Otimização | 6 |
+| Oportunidades de Otimização | 5 |
+
+---
+
+## ✅ Melhorias Implementadas
+
+### 🔔 Toast.test.js
+- **Validação de Persistência**: Adicionado caso de teste para garantir que notificações com `duration: 0` não fecham automaticamente.
+- **Refatoração DRY**: Aplicado `it.each()` nos testes de status (`info`, `warning`, `error`), reduzindo a complexidade ciclomática e duplicação no arquivo de teste.
+- **Correção de Sintaxe**: Ajustada a chamada dinâmica do hook `toast[status]` para evitar erros de referência em tempo de execução.
 
 ---
 
@@ -62,10 +71,9 @@
 | `Alert.test.js` | Não testa a prop `autoClose` e timeout de fechamento automático |
 | `Badge.test.js` | Não testa todas as posições disponíveis do componente |
 | `Modal.test.js` | Não testa o comportamento quando `closeOnOverlayClick = false` |
-| `Toast.test.js` | Não testa o comportamento quando `duration = 0` (nunca fecha) |
 
 ### 🔹 Otimizações Existentes:
-1. **TODOS** os arquivos: Adicionar `it.each()` para testes com múltiplas variantes ao invés de `rerender`
+1. **Restante dos arquivos**: Adicionar `it.each()` para testes com múltiplas variantes (Iniciado com sucesso em `Toast.test.js`).
 2. **Head.test.js:** Separar os 8 testes em grupos por categoria para melhor organização
 3. **Modal.test.js:** Extrair mock do document.body para função reutilizável
 4. **TextArea.test.js:** Testar o comportamento de auto resize com múltiplas linhas

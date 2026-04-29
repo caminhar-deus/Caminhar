@@ -1,12 +1,29 @@
 import { getAuthToken, verifyToken } from '../../../lib/auth';
-import { clearAllCache } from '../../../lib/cache';
+import { clearAllCache, getCacheMetrics } from '../../../lib/cache';
 
 export default async function handler(req, res) {
+  // GET - Retorna métricas do cache
+  if (req.method === 'GET') {
+    // Autenticação
+    const token = getAuthToken(req);
+    if (!token) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
+    const decoded = verifyToken(token);
+    if (!decoded || decoded.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    const metrics = getCacheMetrics();
+    return res.status(200).json(metrics);
+  }
+
   // Permite POST (ação) ou DELETE (recurso)
   if (req.method !== 'POST' && req.method !== 'DELETE') {
     return res.status(405).json({
       error: 'Method Not Allowed',
-      message: 'Método não permitido. Use POST ou DELETE.',
+      message: 'Método não permitido. Use GET, POST ou DELETE.',
       timestamp: new Date().toISOString()
     });
   }

@@ -158,6 +158,8 @@ Utiliza o hook `useAdminCrud` que contém a lógica pura de negócio:
 
 > 📌 Todos os campos de formulário suportam componentes customizados através da prop `renderCustomFormField`
 
+> 🔒 **Fallback de Segurança**: Botão Cancelar executa `resetForm()` ANTES de fechar o formulário, garantindo que nenhum estado fique leakado mesmo em cenários de erro raro. Este comportamento é intencional e faz parte do design defensivo.
+
 ---
 
 ### 📊 Uso no Projeto

@@ -1,8 +1,26 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 
 export default function AdminCacheManager() {
   const [loading, setLoading] = useState(false);
+  const [cacheMetrics, setCacheMetrics] = useState(null);
+
+  useEffect(() => {
+    // Carrega as métricas quando o componente é montado
+    const fetchMetrics = async () => {
+      try {
+        const res = await fetch('/api/admin/cache', { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          setCacheMetrics(data);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar métricas do cache:', error);
+      }
+    };
+
+    fetchMetrics();
+  }, []);
 
   const handleClearCache = async () => {
     if (!window.confirm('Tem certeza que deseja limpar todo o cache do Redis? Isso pode afetar temporariamente a performance do site.')) {
@@ -60,6 +78,23 @@ export default function AdminCacheManager() {
       >
         {loading ? 'Limpando...' : 'Limpar Cache Redis'}
       </button>
+
+      {cacheMetrics && (
+        <div style={{ marginTop: '1.5rem' }}>
+          <h3 style={{ fontSize: '1rem', marginBottom: '0.8rem' }}>📊 Status do Cache Redis</h3>
+          <div style={{ backgroundColor: cacheMetrics.redisConnected ? '#e8f5e9' : '#ffebee', padding: '15px', borderRadius: '6px', border: '1px solid #e9ecef' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '8px', color: cacheMetrics.redisConnected ? '#2e7d32' : '#c62828' }}>
+              {cacheMetrics.redisConnected ? '✅ Redis Conectado' : '❌ Redis Desconectado'}
+            </div>
+            <div style={{ fontSize: '0.9em', color: '#555', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+              <div>⚠️ Erros: {cacheMetrics.redisErrors}</div>
+              <div>🔄 Fallbacks: {cacheMetrics.fallbackActivations}</div>
+              <div>📍 Tamanho Local: {cacheMetrics.localMapSize} entradas</div>
+              <div>⏱️ Última Falha: {cacheMetrics.lastFallbackTime ? new Date(cacheMetrics.lastFallbackTime).toLocaleString('pt-BR') : 'Nenhuma'}</div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

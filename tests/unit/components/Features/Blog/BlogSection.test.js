@@ -40,7 +40,11 @@ describe('Componente Front-End - BlogSection', () => {
   });
 
   it('deve retornar null (não renderizar nada) se não houver posts', async () => {
-    global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ success: true, data: [] }) });
+    global.fetch.mockResolvedValueOnce({ 
+      ok: true, 
+      json: async () => ({ success: true, data: [] }),
+      headers: { get: jest.fn().mockReturnValue('application/json') }
+    });
     const { container } = render(<BlogSection />);
     
     await waitFor(() => expect(screen.queryByText('Carregando reflexões...')).not.toBeInTheDocument());
@@ -48,7 +52,11 @@ describe('Componente Front-End - BlogSection', () => {
   });
 
   it('deve renderizar os posts carregados da API', async () => {
-    global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ success: true, data: mockPosts }) });
+    global.fetch.mockResolvedValueOnce({ 
+      ok: true, 
+      json: async () => ({ success: true, data: mockPosts }),
+      headers: { get: jest.fn().mockReturnValue('application/json') }
+    });
     render(<BlogSection />);
     
     await waitFor(() => {
@@ -58,7 +66,11 @@ describe('Componente Front-End - BlogSection', () => {
   });
 
   it('deve respeitar a propriedade limit e mostrar botão de ver todos se houverem mais posts', async () => {
-    global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ success: true, data: mockPosts }) });
+    global.fetch.mockResolvedValueOnce({ 
+      ok: true, 
+      json: async () => ({ success: true, data: mockPosts }),
+      headers: { get: jest.fn().mockReturnValue('application/json') }
+    });
     render(<BlogSection limit={2} />);
     
     await waitFor(() => {
@@ -68,7 +80,11 @@ describe('Componente Front-End - BlogSection', () => {
   });
 
   it('não deve mostrar botão de ver todos se limit for maior que a quantidade de posts', async () => {
-    global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ success: true, data: mockPosts }) });
+    global.fetch.mockResolvedValueOnce({ 
+      ok: true, 
+      json: async () => ({ success: true, data: mockPosts }),
+      headers: { get: jest.fn().mockReturnValue('application/json') }
+    });
     render(<BlogSection limit={5} />);
     
     await waitFor(() => {
@@ -79,7 +95,11 @@ describe('Componente Front-End - BlogSection', () => {
 
   it('deve lidar silenciosamente com erros de lógica da API (sucesso: false)', async () => {
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ success: false }) });
+    global.fetch.mockResolvedValueOnce({ 
+      ok: true, 
+      json: async () => ({ success: false }),
+      headers: { get: jest.fn().mockReturnValue('application/json') }
+    });
     render(<BlogSection />);
     await waitFor(() => expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('API returned success: false'), expect.any(Object)));
     consoleSpy.mockRestore();
@@ -87,7 +107,12 @@ describe('Componente Front-End - BlogSection', () => {
 
   it('deve lidar silenciosamente com erros HTTP (ex: 500) com retorno JSON', async () => {
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    global.fetch.mockResolvedValueOnce({ ok: false, status: 500, json: async () => ({ message: 'Erro no servidor' }) });
+    global.fetch.mockResolvedValueOnce({ 
+      ok: false, 
+      status: 500, 
+      json: async () => ({ message: 'Erro no servidor' }),
+      headers: { get: jest.fn().mockReturnValue('application/json') }
+    });
     render(<BlogSection />);
     await waitFor(() => expect(consoleSpy).toHaveBeenCalledWith('API Error fetching posts:', 500, 'Erro no servidor'));
     consoleSpy.mockRestore();
@@ -95,7 +120,12 @@ describe('Componente Front-End - BlogSection', () => {
 
   it('deve usar fallback "Unknown error" se a API retornar erro HTTP sem mensagem', async () => {
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    global.fetch.mockResolvedValueOnce({ ok: false, status: 404, json: async () => ({}) }); // JSON vazio
+    global.fetch.mockResolvedValueOnce({ 
+      ok: false, 
+      status: 404, 
+      json: async () => ({ }),
+      headers: { get: jest.fn().mockReturnValue('application/json') }
+    }); // JSON vazio
     render(<BlogSection />);
     await waitFor(() => expect(consoleSpy).toHaveBeenCalledWith('API Error fetching posts:', 404, 'Unknown error'));
     consoleSpy.mockRestore();
@@ -103,10 +133,16 @@ describe('Componente Front-End - BlogSection', () => {
 
   it('deve lidar silenciosamente com falha de rede ou JSON inválido', async () => {
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    global.fetch.mockResolvedValueOnce({ ok: false, status: 500, json: () => Promise.reject(new Error('Unparsable')) });
+    global.fetch.mockResolvedValueOnce({ 
+      ok: false, 
+      status: 500, 
+      json: () => Promise.reject(new Error('Unparsable')),
+      headers: { get: jest.fn().mockReturnValue('application/json') }
+    });
     render(<BlogSection />);
-    // O catch principal vai capturar essa quebra no res.json()
-    await waitFor(() => expect(consoleSpy).toHaveBeenCalledWith('Erro ao carregar posts:', expect.any(Error)));
+    await waitFor(() => expect(consoleSpy).toHaveBeenCalledWith(
+      'API retornou erro HTTP 500 mas conteúdo não é JSON válido'
+    ));
     consoleSpy.mockRestore();
   });
 });

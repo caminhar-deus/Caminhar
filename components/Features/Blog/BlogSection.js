@@ -13,7 +13,7 @@ export default function BlogSection({ limit }) {
         const res = await fetch('/api/posts');
         
         // ✅ Validação defensiva: Verificar se a resposta é realmente JSON
-        const contentType = res.headers.get('content-type') || '';
+        const contentType = res.headers?.get?.('content-type') || '';
         if (!contentType.includes('application/json')) {
           console.error(`API /api/posts retornou conteúdo inválido. Esperado JSON, recebido: ${contentType}`);
           console.error('Isso geralmente significa que a rota API quebrou e retornou página HTML de erro');

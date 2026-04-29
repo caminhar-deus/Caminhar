@@ -199,4 +199,41 @@ describe('API Admin - Gestão de Usuários (/api/admin/users)', () => {
     expect(res._getStatusCode()).toBe(500);
     consoleSpy.mockRestore();
   });
+
+  it('✅ EDGE CASE: deve bloquear acesso se usuário tem cargo mas sem permissão correta', async () => {
+    verifyToken.mockReturnValue({ userId: 5, username: 'user', role: 'editor' });
+    
+    // Cargo existe mas só tem permissão de Posts, não de Usuários
+    query.mockImplementationOnce(async () => ({ rows: [{ permissions: ['Posts/Artigos', 'Configurações'] }] }));
+    
+    const { req, res } = createMocks({ method: 'GET' });
+    await handler(req, res);
+    
+    expect(res._getStatusCode()).toBe(403);
+  });
+
+  it('✅ EDGE CASE: deve impedir que o usuário delete a própria conta logada', async () => {
+    verifyToken.mockReturnValue({ userId: 42, username: 'usuario_test', role: 'admin' });
+    
+    // Tenta deletar o proprio ID 42
+    const { req, res } = createMocks({ method: 'DELETE', body: { id: 42 } });
+    await handler(req, res);
+    
+    expect(res._getStatusCode()).toBe(400);
+  });
+
+  it('✅ EDGE CASE: deve retornar totalPages = 1 mesmo se total = 0', async () => {
+    query.mockImplementation(async (sql) => {
+      if (sql.includes('SELECT permissions FROM roles')) return { rows: [{ permissions: ['Usuários'] }] };
+      if (sql.includes('SELECT COUNT(*)')) return { rows: [{ count: '0' }] }; // Zero registros
+      if (sql.includes('SELECT id, username, role')) return { rows: [] };
+      return { rows: [] };
+    });
+
+    const { req, res } = createMocks({ method: 'GET', query: { page: '1', limit: '10' } });
+    await handler(req, res);
+    
+    const response = JSON.parse(res._getData());
+    expect(response.pagination.totalPages).toBe(1); // Não pode ser zero
+  });
 });

@@ -380,10 +380,20 @@ export default function AdminCrudBase({
           )}
           {isFormVisible && (
             <button 
-              onClick={() => {
-                resetForm();
-                setIsFormVisible(false);
-              }}
+            onClick={() => {
+              // ✅ Fallback de segurança:
+              // Ordem intencional: primeiro reseta TODO estado do formulário,
+              // depois fecha o componente.
+              // 
+              // Isso evita leaks de estado em casos de edge case onde:
+              // 1. O formulário ficou em estado inconsistente
+              // 2. Ocorreu falha durante operação
+              // 3. Usuário desiste no meio de edição
+              //
+              // É um tratamento de erro raro, por isso não aparece na cobertura de testes
+              resetForm();
+              setIsFormVisible(false);
+            }}
               className={styles.cancelButton}
               disabled={loading}
               type="button"

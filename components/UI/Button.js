@@ -45,8 +45,8 @@ export const Button = ({
       className={buttonClasses}
       onClick={onClick}
       disabled={disabled || loading}
-      aria-disabled={disabled || loading}
-      aria-busy={loading}
+      aria-disabled={disabled || loading ? "true" : "false"}
+      aria-busy={loading ? "true" : "false"}
       {...props}
     >
       {loading && (

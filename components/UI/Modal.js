@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import styles from './Modal.module.css';
 
@@ -25,6 +25,9 @@ export const Modal = ({
   preventScroll = true,
   className = '',
 }) => {
+  const modalRef = useRef(null);
+  const previousFocusRef = useRef(null);
+
   // Prevenir scroll do body
   useEffect(() => {
     if (preventScroll && isOpen && document.body) {
@@ -37,10 +40,66 @@ export const Modal = ({
     };
   }, [isOpen, preventScroll]);
 
-  // Fechar com ESC
+  // Gerenciar Foco (Focus Trap) - Implementação própria
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // Salvar elemento com foco anterior
+    previousFocusRef.current = document.activeElement;
+    
+    // Focar no modal após montagem
+    const timer = setTimeout(() => {
+      if (modalRef.current) {
+        const focusableSelector = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+        const focusableElements = modalRef.current.querySelectorAll(focusableSelector);
+        
+        if (focusableElements.length > 0) {
+          focusableElements[0].focus();
+        } else {
+          modalRef.current.focus();
+        }
+      }
+    }, 10);
+
+    return () => {
+      clearTimeout(timer);
+      // Restaurar foco ao elemento anterior quando fechar
+      if (previousFocusRef.current && typeof previousFocusRef.current.focus === 'function') {
+        previousFocusRef.current.focus();
+      }
+    };
+  }, [isOpen]);
+
+  // Gerenciar Teclado (ESC e Tab para focus trap)
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Escape') {
       onClose?.();
+      return;
+    }
+
+    // Focus trap: manter foco dentro do modal com Tab
+    if (e.key === 'Tab' && modalRef.current) {
+      const focusableSelector = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+      const focusableElements = Array.from(
+        modalRef.current.querySelectorAll(focusableSelector)
+      );
+
+      if (focusableElements.length === 0) return;
+
+      const firstFocusable = focusableElements[0];
+      const lastFocusable = focusableElements[focusableElements.length - 1];
+      const currentFocused = document.activeElement;
+
+      // Shift + Tab no primeiro elemento: vai para o último
+      if (e.shiftKey && currentFocused === firstFocusable) {
+        e.preventDefault();
+        lastFocusable.focus();
+      } 
+      // Tab no último elemento: vai para o primeiro
+      else if (!e.shiftKey && currentFocused === lastFocusable) {
+        e.preventDefault();
+        firstFocusable.focus();
+      }
     }
   }, [onClose]);
 
@@ -71,7 +130,12 @@ export const Modal = ({
 
   const modal = (
     <div className={styles.overlay} onClick={handleOverlayClick} role="dialog" aria-modal="true">
-      <div className={modalClasses} onClick={(e) => e.stopPropagation()}>
+      <div 
+        ref={modalRef}
+        className={modalClasses} 
+        onClick={(e) => e.stopPropagation()}
+        tabIndex="-1"
+      >
         {(title || showCloseButton) && (
           <div className={styles.header}>
             {title && (

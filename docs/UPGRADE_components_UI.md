@@ -1,13 +1,24 @@
 # Relatório de Análise e Sugestões de Melhoria
 ## Componentes UI - Projeto Caminhar
 
-Última atualização: 20/04/2026
+Última atualização: 29/04/2026
 Análise baseada em: `/components/UI/*`
 
 ---
 
 ## 🎯 Objetivo
-Este documento contém sugestões de melhorias, ajustes e correções identificadas durante a análise técnica dos componentes UI. Nenhuma alteração foi aplicada, este é apenas um relatório de recomendações.
+Este documento contém o acompanhamento de melhorias, ajustes e correções dos componentes UI.
+
+---
+
+## ✅ Melhorias Implementadas
+
+### 🔘 Button
+- **Loading State**: Corrigido o uso dos atributos ARIA (`aria-busy`, `aria-disabled`) como strings literais (`"true"`/`"false"`) para garantir compatibilidade máxima com tecnologias assistivas durante o estado de carregamento.
+- **Testes Unitários**: Implementação de testes de unidade cobrindo interações e acessibilidade.
+
+### 🪟 Modal
+- **Focus Trap**: Implementado o gerenciamento de foco para garantir que a navegação por teclado permaneça restrita ao modal quando aberto, melhorando a acessibilidade.
 
 ---
 
@@ -19,6 +30,14 @@ Este documento contém sugestões de melhorias, ajustes e correções identifica
 | ✅ BAIXO | Melhoria de código, otimização ou refatoração |
 
 ---
+
+### 📊 Resumo Geral de Pendências
+| Nível | Quantidade de Itens |
+|-------|----------------------|
+| 🔴 ALTO | 3 |
+| ⚠️ MÉDIO | 17 |
+| ✅ BAIXO | 18 |
+| **TOTAL** | **38 itens** |
 
 ---
 
@@ -57,14 +76,12 @@ Este documento contém sugestões de melhorias, ajustes e correções identifica
 ### 🔘 Button
 | Nível | Item | Descrição |
 |-------|------|-----------|
-| 🔴 ALTO | Loading State | Quando `loading=true` o botão fica desabilitado mas `aria-disabled` não é atualizado adequadamente |
 | ⚠️ MÉDIO | Ripple Effect | O CSS tem estilo para efeito ripple mas não existe implementação no componente |
 | ✅ BAIXO | Spinner Duplicado | O spinner do botão é duplicado com o componente Spinner |
 
 ### 💡 Sugestões:
-1. Corrigir atributos ARIA no estado loading
-2. Implementar ou remover o efeito ripple do CSS
-3. Utilizar o componente Spinner nativo ao invés de duplicar código
+1. Implementar ou remover o efeito ripple do CSS
+2. Utilizar o componente Spinner nativo ao invés de duplicar código
 
 ---
 
@@ -99,15 +116,13 @@ Este documento contém sugestões de melhorias, ajustes e correções identifica
 ### 🪟 Modal
 | Nível | Item | Descrição |
 |-------|------|-----------|
-| 🔴 ALTO | Focus Trap | Não existe gerenciamento de foco. O foco continua navegando pelo fundo da página quando o modal está aberto |
 | ⚠️ MÉDIO | Scroll Lock | Quando existem múltiplos modais abertos o scroll é restaurado quando qualquer um deles fecha |
 | ⚠️ MÉDIO | Event Listener | O listener de keydown não é removido adequadamente se o componente for desmontado sem fechar |
 | ✅ BAIXO | Body Overflow | Não salva o valor original do overflow do body, sempre restaura para vazio |
 
 ### 💡 Sugestões:
-1. Implementar foco trap nativo ou utilizar biblioteca padrão
-2. Adicionar contador de referência para bloqueio de scroll
-3. Armazenar estado original do overflow do body antes de modificar
+1. Adicionar contador de referência para bloqueio de scroll
+2. Armazenar estado original do overflow do body antes de modificar
 
 ---
 
@@ -183,23 +198,13 @@ Este documento contém sugestões de melhorias, ajustes e correções identifica
 ### ✅ Baixo Impacto
 1. **Consistência de Nomenclatura**: Existem inconsistências entre kebab-case e camelCase nas propriedades
 2. **Tipos**: Nenhum componente tem validação de tipos ou Typescript
-3. **Testes**: Não existem testes unitários para nenhum componente
-
----
-
-## 📊 Resumo Geral
-| Nível | Quantidade de Itens |
-|-------|----------------------|
-| 🔴 ALTO | 5 |
-| ⚠️ MÉDIO | 17 |
-| ✅ BAIXO | 18 |
-| **TOTAL** | **40 itens** |
+3. **Testes**: Cobertura de testes unitários em andamento (iniciado por Button e Toast).
 
 ---
 
 ## 🎯 Priorização Recomendada
-1. 🔴 Primeiro: Correções de acessibilidade e bugs de comportamento
-2. ⚠️ Segundo: Ajustes de usabilidade e consistência
-3. ✅ Terceiro: Refatorações, otimizações e melhorias de código
+1. 🔴 Correções de acessibilidade e bugs de comportamento (Foco em Modal e TextArea)
+2. ⚠️ Ajustes de usabilidade e consistência
+3. ✅ Refatorações, otimizações e melhorias de código
 
 Nenhum destes itens é crítico ou impede o funcionamento dos componentes. Todos são melhorias incrementais para aumentar qualidade, manutenibilidade e padrões.

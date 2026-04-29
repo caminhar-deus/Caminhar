@@ -62,6 +62,18 @@ Seção que carrega posts do blog diretamente da API, gerencia estado de loading
 
 ---
 
+### 🛠️ Correção Aplicada 26/04/2026
+| Item | Detalhe |
+|---|---|
+| ✅ **Problema** | Todos os testes falhavam com `TypeError: Cannot read properties of undefined (reading 'get')` |
+| ✅ **Causa Raiz** | Componente possuia validação defensiva para `Content-Type` que acessava `res.headers.get()`, porém os mocks do `fetch` nos testes não implementavam o objeto `headers`. O código caia diretamente no catch geral antes de chegar em qualquer fluxo que os testes esperavam. |
+| ✅ **Ajuste 1** | **Componente**: Adicionado optional chaining `res.headers?.get?.()` para máxima segurança |
+| ✅ **Ajuste 2** | **Testes**: Adicionado objeto `headers` com mock da função `get()` em todos os mockResolvedValueOnce |
+| ✅ **Resultado** | Todos os 10 testes passam sem nenhuma outra alteração. |
+
+
+---
+
 ## 🔹 PostCard.test.js
 
 ### 📋 Informações Gerais

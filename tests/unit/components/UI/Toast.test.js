@@ -40,6 +40,20 @@ describe('Componente UI - Toast', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it('não deve fechar automaticamente quando a duração for 0 (persistente)', () => {
+    const onClose = jest.fn();
+    render(<Toast isOpen={true} title="Persistente" duration={0} onClose={onClose} />);
+    
+    expect(screen.getByText('Persistente')).toBeInTheDocument();
+
+    // Avança um tempo longo (ex: 10 segundos)
+    act(() => jest.advanceTimersByTime(10000));
+    
+    // Verifica que o onClose NÃO foi chamado e o Toast ainda está no documento
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByText('Persistente')).toBeInTheDocument();
+  });
+
   it('hook useToast deve adicionar e remover toasts', () => {
     render(<HookTestComponent />);
     fireEvent.click(screen.getByText('Add'));
@@ -48,20 +62,44 @@ describe('Componente UI - Toast', () => {
     expect(screen.queryByText('Sucesso')).not.toBeInTheDocument();
   });
 
-  it('hook useToast deve suportar todos os tipos de status (info, warning, error)', () => {
-    const TestTypes = () => {
-      const { toast } = useToast();
-      return (
-        <div>
-          <button onClick={() => toast.info({ title: 'I' })}>I</button>
-          <button onClick={() => toast.warning({ title: 'W' })}>W</button>
-          <button onClick={() => toast.error({ title: 'E' })}>E</button>
-        </div>
-      );
-    };
-    render(<TestTypes />);
-    fireEvent.click(screen.getByText('I'));
-    fireEvent.click(screen.getByText('W'));
-    fireEvent.click(screen.getByText('E'));
+  it.each(['info', 'warning', 'error'])(
+    'hook useToast deve suportar o status %s',
+    (status) => {
+      const TestTypes = () => {
+        const { toast } = useToast();
+        return (
+          <button onClick={() => toast[status]({ title: status })}>{status}</button>
+        );
+      };
+      render(<TestTypes />);
+      fireEvent.click(screen.getByText(status));
+    }
+  );
+
+  it('deve renderizar o Toast.Container com diferentes posições e className customizada', () => {
+    // Teste padrão
+    const { rerender } = render(
+      <Toast.Container>
+        <Toast isOpen title="Teste 1" />
+        <Toast isOpen title="Teste 2" />
+      </Toast.Container>
+    );
+
+    expect(screen.getByText('Teste 1')).toBeInTheDocument();
+    expect(screen.getByText('Teste 2')).toBeInTheDocument();
+
+    // Teste com posição customizada
+    rerender(
+      <Toast.Container position="bottom-left">
+        <Toast isOpen title="Teste Posição" />
+      </Toast.Container>
+    );
+
+    // Teste com className customizada
+    rerender(
+      <Toast.Container className="custom-class-name">
+        <Toast isOpen title="Teste Custom" />
+      </Toast.Container>
+    );
   });
 });

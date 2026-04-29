@@ -19,8 +19,8 @@ Este documento contém análise técnica dos testes de integração implementado
 | `posts.test.js` | `/api/admin/posts` | 14 | CRUD Posts, RBAC, Rate Limit, validações Zod |
 | `rate-limit.test.js` | `/api/admin/rate-limit` | 10 | Gestão de limites, whitelist, logs, exportação CSV |
 | `roles.test.js` | `/api/admin/roles` | 8 | Gestão de cargos e permissões RBAC |
-| `users.create.test.js` | `/api/admin/users` | 3 | Criação de usuários, validações, segurança |
-| `users.test.js` | `/api/admin/users` | 12 | CRUD completo usuários, proteção lockout |
+| `users.create.test.js` | `/api/admin/users` | 3 | Validação de criação, hash automático, segurança |
+| `users.test.js` | `/api/admin/users` | 12 | CRUD completo, RBAC, Rate Limit, Anti-lockout |
 | `videos.test.js` | `/api/admin/videos` | 13 | CRUD Vídeos, validação URL YouTube, cache |
 | `login.test.js` | `/api/auth/login` | 4 | Autenticação, rate limit, cookies |
 | `logout.test.js` | `/api/auth/logout` | 1 | Encerramento de sessão |
@@ -134,11 +134,13 @@ Testa a API de limpeza de cache global do sistema. Valida permissões e comporta
 
 ### 🧪 Cobertura de Testes
 1. **Validações de Acesso**
-   - ✅ Bloqueio de métodos GET/PUT (405)
+   - ✅ Método GET requer autenticação admin e retorna métricas
+   - ✅ Bloqueio de método PUT (405)
    - ✅ Retorno 401 sem token de autenticação
    - ✅ Retorno 403 para usuários não administradores
 
 2. **Funcionalidade**
+   - ✅ Método GET retorna métricas de monitoramento em tempo real
    - ✅ Limpeza de cache executada com sucesso para métodos POST e DELETE
    - ✅ Tratamento de erro quando serviço Redis falha
 
@@ -390,24 +392,21 @@ Testa a API de gestão de cargos e permissões do sistema RBAC.
 ## 🔍 Teste: `/tests/integration/api/admin/users.create.test.js`
 
 ### ✅ Propósito
-Testa a funcionalidade de criação de novos usuários administrativos, com foco exclusivo no método POST.
+Validação técnica isolada da criação de novos perfis administrativos via método POST.
 
 ### 🧪 Cobertura de Testes
-1. **Casos de Sucesso**
-   - ✅ Criação de usuário com dados válidos
-   - ✅ Valida que senha nunca é retornada na resposta
-   - ✅ Confirmação que senha é armazenada hasheada
-   - ✅ Registro automático de auditoria
+1. **Fluxos de Sucesso**
+   - ✅ Inserção de dados válidos com hash de senha imediato.
+   - ✅ Garantia de privacidade: senha omitida na resposta JSON.
+   - ✅ Rastreabilidade: log de auditoria disparado automaticamente.
 
-2. **Casos de Erro**
-   - ✅ Retorno 400 para nome de usuário já existente
-   - ✅ Retorno 403 para usuários sem permissão adequada
+2. **Controle de Exceções**
+   - ✅ Prevenção de duplicidade: erro 400 para usernames já existentes.
+   - ✅ Proteção de rota: erro 403 para usuários sem privilégios de gestão.
 
 ### 💡 Destaques Técnicos
-- Teste focado exclusivamente em uma única operação
-- Valida segurança do fluxo de criação
-- Verifica que campos sensíveis não são expostos
-- Mocks na ordem correta de execução das queries
+- Foco em atomicidade e segurança na criação de identidades.
+- Verificação rigorosa contra exposição de segredos (secrets).
 
 ---
 
@@ -418,31 +417,28 @@ Testa a funcionalidade de criação de novos usuários administrativos, com foco
 ## 🔍 Teste: `/tests/integration/api/admin/users.test.js`
 
 ### ✅ Propósito
-Testa a API de gestão completa de usuários administrativos, com foco em segurança e proteções.
+Validação do ciclo de vida completo (CRUD) de usuários e gestão de segurança administrativa.
 
 ### 🧪 Cobertura de Testes
-1. **Segurança**
-   - ✅ Autenticação e validação de token
-   - ✅ Validação RBAC por permissões
-   - ✅ Rate Limit aplicado em mutações
-   - ✅ Proteção anti-lockout: impedimento de excluir própria conta
+1. **Segurança e Acesso**
+   - ✅ Autenticação JWT e validação de permissões RBAC.
+   - ✅ Proteção Anti-lockout: impede que usuários deletem a própria conta.
+   - ✅ Rate Limit em operações de mutação (POST, PUT, DELETE).
 
-2. **Operações CRUD**
-   - ✅ **GET**: Listagem paginada com busca
-   - ✅ **POST**: Criação com hash de senha automático
-   - ✅ **PUT**: Atualização com tratamento especial para senha
-   - ✅ **DELETE**: Remoção segura
+2. **Operações Administrativas**
+   - ✅ **GET**: Listagem com paginação e busca case-insensitive.
+   - ✅ **POST**: Criação com hash de senha automatizado.
+   - ✅ **PUT**: Atualização flexível (senha opcional com hash condicional).
+   - ✅ **DELETE**: Exclusão definitiva com registro em auditoria.
 
-3. **Funcionalidades Especiais**
-   - ✅ Senha é automaticamente hasheada apenas quando fornecida
-   - ✅ Campo password é removido do payload quando vazio
-   - ✅ Busca case insensitive por nome de usuário
+3. **Tratamento de Dados**
+   - ✅ Sanitização de payload: remoção de campos de senha vazios em atualizações.
+   - ✅ Busca otimizada por nome de usuário.
 
 ### 💡 Destaques Técnicos
-- 12 testes independentes
-- Implementa proteção contra exclusão acidental do próprio usuário
-- Valida que senha nunca é retornada na resposta
-- Tratamento inteligente de atualização de senha
+- 12 casos de teste independentes cobrindo fluxos críticos.
+- Foco em prevenção de erros humanos (lockout) e integridade de credenciais.
+- Validação de não exposição de dados sensíveis em payloads de resposta.
 
 ---
 

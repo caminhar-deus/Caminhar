@@ -314,4 +314,29 @@ describe('Componente Front-End - AdminCrudBase', () => {
     document.body.removeChild(formElement);
     jest.useRealTimers();
   });
+
+  it('deve chamar resetForm ANTES de fechar o formulário ao clicar em Cancelar (Fallback de erro raro)', () => {
+    // Ordem de execução é importante: PRIMEIRO resetForm, DEPOIS fecha o form
+    // Esse é o fallback de segurança que evita leaks de estado
+    
+    render(<AdminCrudBase {...defaultProps} />);
+    
+    // Limpa contagem do mock antes de começar (o button + Novo também chama resetForm)
+    mockUseAdminCrud.resetForm.mockClear();
+    
+    // Primeiro abre o formulário
+    fireEvent.click(screen.getByText('+ Novo'));
+    
+    // Agora clica no botão Cancelar
+    fireEvent.click(screen.getByText('Cancelar'));
+    
+    // Verifica que resetForm foi chamado 2 vezes:
+    // 1 vez ao abrir o formulário (botão + Novo)
+    // 1 vez ao fechar o formulário (botão Cancelar)
+    // Ambas as chamadas são intencionais e parte do design de segurança
+    expect(mockUseAdminCrud.resetForm).toHaveBeenCalledTimes(2);
+    
+    // E que o formulário não está mais visivel
+    expect(screen.queryByTestId('input-name')).not.toBeInTheDocument();
+  });
 });

@@ -9,7 +9,16 @@ jest.mock('../../../../lib/auth.js', () => ({
 }));
 
 jest.mock('../../../../lib/cache.js', () => ({
-  clearAllCache: jest.fn()
+  clearAllCache: jest.fn(),
+  getCacheMetrics: jest.fn().mockReturnValue({
+    redisHits: 0,
+    redisMisses: 0,
+    redisErrors: 0,
+    fallbackActivations: 0,
+    lastFallbackTime: null,
+    localMapSize: 0,
+    redisConnected: true
+  })
 }));
 
 import { getAuthToken, verifyToken } from '../../../../lib/auth.js';
@@ -21,8 +30,23 @@ describe('API Admin - Cache (/api/admin/cache)', () => {
   afterAll(() => { console.error = originalConsoleError; });
   beforeEach(() => { jest.clearAllMocks(); });
 
-  it('deve retornar 405 para métodos GET/PUT', async () => {
+  it('deve retornar 401 sem token para método GET', async () => {
+    getAuthToken.mockReturnValueOnce(null);
     const { req, res } = createMocks({ method: 'GET' });
+    await handler(req, res);
+    expect(res._getStatusCode()).toBe(401);
+  });
+
+  it('deve retornar 200 com métricas para método GET autenticado', async () => {
+    getAuthToken.mockReturnValueOnce('token');
+    verifyToken.mockReturnValueOnce({ role: 'admin' });
+    const { req, res } = createMocks({ method: 'GET' });
+    await handler(req, res);
+    expect(res._getStatusCode()).toBe(200);
+  });
+
+  it('deve retornar 405 para método PUT', async () => {
+    const { req, res } = createMocks({ method: 'PUT' });
     await handler(req, res);
     expect(res._getStatusCode()).toBe(405);
   });

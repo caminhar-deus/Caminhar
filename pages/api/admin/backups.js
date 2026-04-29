@@ -28,7 +28,10 @@ async function handler(req, res) {
 
       const latest = files.length > 0 ? files[0] : null;
 
-      return res.status(200).json({ latest, backups: files });
+      return res.status(200).json({ 
+        latest, 
+        backups: files
+      });
     } catch (error) {
       console.error('Error listing backups:', error);
       return res.status(500).json({ message: 'Erro ao listar backups' });

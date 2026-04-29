@@ -241,18 +241,23 @@ Componente para visualização e criação de backups do banco de dados diretame
 ### 7. 🗄️ CacheManager.js
 
 ### Propósito
-Componente para limpeza do cache Redis do sistema.
+Componente para **monitoramento em tempo real** e limpeza do cache Redis do sistema.
 
 ### Principais Características
 ✅ Aviso de confirmação com alerta sobre impacto na performance
 ✅ Feedback visual usando react-hot-toast
 ✅ Estado de loading durante operação
 ✅ Tratamento completo de erros
+✅ Monitoramento em tempo real do status do Redis
+✅ Exibe métricas de erros, fallbacks e estatísticas
+✅ Status visual colorido (verde/vermelho) conforme conectividade
+✅ Carrega dados automaticamente ao abrir a aba
 
 ### Funcionalidades
-- Executa requisição POST para `/api/admin/cache`
-- Limpa 100% do cache Redis
-- Mostra toast de loading, sucesso ou erro
+- **Método GET**: Busca e exibe métricas de monitoramento do cache
+- **Método POST/DELETE**: Executa limpeza completa do cache Redis
+- Exibe status de conexão, contador de erros, ativações de fallback e última falha
+- Mostra toast de loading, sucesso ou erro nas operações
 
 ### Observações
 - Botão em cor vermelha para indicar ação destrutiva

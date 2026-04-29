@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, jest } from '@jest/globals';
 import Modal from '../../../../components/UI/Modal.js';
 
@@ -38,6 +38,50 @@ describe('Componente UI - Modal', () => {
     
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('deve manter o foco dentro do modal (Focus Trap)', async () => {
+    const onClose = jest.fn();
+    // Criar um elemento que "abriu" o modal
+    const trigger = document.createElement('button');
+    document.body.appendChild(trigger);
+    trigger.focus();
+
+    const { unmount } = render(
+      <Modal isOpen={true} onClose={onClose} showCloseButton={true}>
+        <input data-testid="first-input" />
+        <button data-testid="last-button">Submit</button>
+      </Modal>
+    );
+
+    const closeBtn = screen.getByLabelText('Fechar modal');
+    const firstInput = screen.getByTestId('first-input');
+    const lastBtn = screen.getByTestId('last-button');
+
+    // Aguarda o foco inicial ser aplicado (devido ao setTimeout no useEffect)
+    await waitFor(() => {
+      expect(document.activeElement).toBe(closeBtn);
+    });
+
+    // Simula Tab no último elemento (deve ir para o primeiro)
+    lastBtn.focus();
+    fireEvent.keyDown(lastBtn, { key: 'Tab', shiftKey: false });
+    expect(document.activeElement).toBe(closeBtn);
+
+    // Simula Shift+Tab no primeiro elemento (deve ir para o último)
+    closeBtn.focus();
+    fireEvent.keyDown(closeBtn, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(lastBtn);
+
+    unmount();
+    
+    // Aguarda a restauração do foco após unmount
+    await waitFor(() => {
+      expect(document.activeElement).toBe(trigger);
+    });
+
+    // Limpa o elemento de teste do DOM
+    document.body.removeChild(trigger);
   });
 
   it('deve renderizar o footer e aplicar classes preventScroll no body', () => {

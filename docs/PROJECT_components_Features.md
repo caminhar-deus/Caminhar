@@ -38,7 +38,7 @@ Componente de seção principal que carrega e exibe uma lista de postagens do bl
 - ✅ Carregamento assíncrono de posts via API `/api/posts`
 - ✅ Tratamento completo de erros e estados de loading
 - ✅ Validação de estrutura de resposta da API
-- ✅ Validação preventiva do Content-Type da resposta da API
+- ✅ Validação resiliente do Content-Type (Optional Chaining)
 - ✅ Tratamento individual de erro para cada operação .json()
 - ✅ Detecção automática quando API retorna HTML ao invés de JSON
 - ✅ Limitação de quantidade de posts exibidos via prop `limit`
@@ -52,12 +52,11 @@ Componente de seção principal que carrega e exibe uma lista de postagens do bl
 | `limit` | `Number` | ❌ | Quantidade máxima de posts a serem exibidos |
 
 #### Pontos Técnicos Importantes:
-- Garante que `posts` sempre seja um array, mesmo em caso de falha na API
-- Possui fix crítico para acesso a propriedade `data` na resposta da API
-- Estado de loading com mensagem amigável para o usuário
-- Utiliza `useEffect` com array de dependências vazio para carregamento uma única vez
-- Nunca mais lança erro SyntaxError Unexpected token '<'
-- Logs específicos e explicativos para cada tipo de falha
+- **Resiliência de Rede**: Utiliza optional chaining (`res.headers?.get?.()`) para acessar metadados da resposta com segurança, evitando exceções em ambientes de teste ou proxies.
+- **Normalização de Dados**: Trata automaticamente respostas brutas ou encapsuladas (chave `data`), garantindo que o estado seja sempre um array válido.
+- **Parsing Defensivo**: Implementa blocos try/catch granulares para capturar falhas de serialização JSON, eliminando erros de sintaxe causados por retornos HTML inesperados.
+- **UX e Performance**: Gerencia estados de carregamento e exibe mensagens de erro amigáveis; utiliza efeitos isolados para evitar requisições duplicadas na montagem.
+- **Rastreabilidade**: Sistema de logs detalhados no console para facilitar o diagnóstico rápido de falhas de comunicação ou formato.
 
 ---
 

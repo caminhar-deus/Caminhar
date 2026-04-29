@@ -155,7 +155,7 @@ Componente base de botão padrão do Design System. Implementa todos estados, va
 - ✅ Modo largura total
 - ✅ Suporte a ícones esquerda e direita
 - ✅ Animações de transição e feedback
-- ✅ Acessibilidade completa com `aria-busy` e `aria-disabled`
+- ✅ Acessibilidade: atributos ARIA (`aria-busy`, `aria-disabled`) como strings literais para compatibilidade máxima
 - ✅ Foco visível para navegação por teclado
 
 ### 🎛️ Propriedades
@@ -230,42 +230,6 @@ Rodapé com alinhamento configurável
 - Suporta múltiplos elementos
 - Separação automática do conteúdo
 
----
-
----
-
-## <a id="index"></a> 📦 Index de Exportações
-
-### 📁 Arquivo
-`/components/UI/index.js` - 27 linhas
-
-### 🎯 Propósito
-Arquivo barril centralizado para importação de todos componentes UI. Permite importações limpas e padronizadas em todo o projeto.
-
-### 📤 Exportações Disponíveis
-```javascript
-// Exportações nomeadas (recomendado)
-import { Button, Card, Badge, Alert, Input, TextArea, Select, Modal, Spinner, Toast, useToast } from '@/components/UI';
-
-// Exportações padrão
-import Button from '@/components/UI/Button';
-```
-
-### ✅ Componentes Disponíveis
-✅ Button ✅ Input ✅ TextArea ✅ Select ✅ Card ✅ Modal ✅ Spinner ✅ Badge ✅ Alert ✅ Toast + hook useToast
-
----
-
-## 📌 Padrões Gerais Observados
-✅ Todos componentes utilizam CSS Modules
-✅ Zero dependências externas para ícones
-✅ Acessibilidade implementada nativamente
-✅ Valores padrão sensatos para todas propriedades
-✅ Suporte a classes customizadas para sobreposição
-✅ Interface declarativa e auto-documentada
-✅ Tratamento seguro de props opcionais
-✅ Separação clara entre lógica e estilos
-✅ Arquivo barril centralizado para importações
 ---
 
 ---
@@ -359,22 +323,7 @@ Componente de janela modal acessível, com backdrop, animações e comportamento
 - Fallback de renderização para SSR
 - Scroll automático no conteúdo interno
 - Ajustes responsivos para telas pequenas
-
----
-
-## 📌 Padrões Gerais Observados
-✅ Todos componentes utilizam CSS Modules
-✅ Zero dependências externas para ícones
-✅ Acessibilidade implementada nativamente
-✅ Valores padrão sensatos para todas propriedades
-✅ Suporte a classes customizadas para sobreposição
-✅ Interface declarativa e auto-documentada
-✅ Tratamento seguro de props opcionais
-✅ Separação clara entre lógica e estilos
-✅ Arquivo barril centralizado para importações
-✅ Padrões consistentes entre todos componentes
-✅ Suporte nativo a refs e formulários
-✅ React Portal para modais
+- ✅ Gerenciamento de foco (Focus Trap) para acessibilidade
 ---
 
 ---
@@ -461,23 +410,6 @@ Container com altura mínima e spinner centralizado
 
 #### 🎭 Spinner.Overlay
 Overlay full screen com fundo semi-transparente e blur
-
----
-
-## 📌 Padrões Gerais Observados
-✅ Todos componentes utilizam CSS Modules
-✅ Zero dependências externas para ícones
-✅ Acessibilidade implementada nativamente
-✅ Valores padrão sensatos para todas propriedades
-✅ Suporte a classes customizadas para sobreposição
-✅ Interface declarativa e auto-documentada
-✅ Tratamento seguro de props opcionais
-✅ Separação clara entre lógica e estilos
-✅ Arquivo barril centralizado para importações
-✅ Padrões consistentes entre todos componentes
-✅ Suporte nativo a refs e formulários
-✅ React Portal para modais
-✅ Tratamento de side effects com useEffect
 ---
 
 ---
@@ -542,6 +474,8 @@ Sistema completo de notificações temporárias com hook integrado e gerenciamen
 - ✅ 4 status: `info`, `success`, `warning`, `error`
 - ✅ 6 posições fixas na tela
 - ✅ Fechamento automático com duração configurável
+- ✅ Persistência de notificação quando `duration: 0`
+- ✅ Suporte a múltiplas instâncias e posições customizadas via `Toast.Container`
 - ✅ Barra de progresso visual do tempo restante
 - ✅ Animações de entrada e saída
 - ✅ Hook `useToast` nativo para gerenciamento
@@ -580,6 +514,30 @@ Container para empilhamento de múltiplos toasts
 
 ---
 
+---
+
+## <a id="index"></a> 📦 Index de Exportações
+
+### 📁 Arquivo
+`/components/UI/index.js` - 27 linhas
+
+### 🎯 Propósito
+Arquivo barril centralizado para importação de todos componentes UI. Permite importações limpas e padronizadas em todo o projeto.
+
+### 📤 Exportações Disponíveis
+```javascript
+// Exportações nomeadas (recomendado)
+import { Button, Card, Badge, Alert, Input, TextArea, Select, Modal, Spinner, Toast, useToast } from '@/components/UI';
+
+// Exportações padrão
+import Button from '@/components/UI/Button';
+```
+
+### ✅ Componentes Disponíveis
+✅ Button ✅ Input ✅ TextArea ✅ Select ✅ Card ✅ Modal ✅ Spinner ✅ Badge ✅ Alert ✅ Toast + hook useToast
+
+---
+
 ## 📌 Padrões Gerais Observados
 ✅ Todos componentes utilizam CSS Modules
 ✅ Zero dependências externas para ícones
@@ -591,9 +549,9 @@ Container para empilhamento de múltiplos toasts
 ✅ Separação clara entre lógica e estilos
 ✅ Arquivo barril centralizado para importações
 ✅ Padrões consistentes entre todos componentes
-✅ Suporte nativo a refs e formulários
-✅ React Portal para modais
-✅ Tratamento de side effects com useEffect
-✅ Animações CSS nativas sem bibliotecas
-✅ Hooks customizados para lógica complexa
-✅ Responsividade nativa em todos componentes
+✅ Suporte nativo a refs e formulários (`forwardRef`)
+✅ Utilização de React Portal para modais e overlays
+✅ Gerenciamento de efeitos colaterais com `useEffect`
+✅ Animações CSS nativas otimizadas
+✅ Hooks customizados para lógica complexa (ex: `useToast`, `useAuth`)
+✅ Responsividade nativa "mobile-first" em todos componentes

@@ -2,7 +2,7 @@
 
 > **Data da Análise:** 21/04/2026  
 > **Versão:** 1.0  
-> **Arquivos Analisados:** 4 arquivos de teste unitário de componentes
+> **Arquivos Analisados:** 21 arquivos de teste unitário de componentes
 
 ---
 
@@ -11,7 +11,7 @@
 | Arquivo | Componente | Total de Testes | Cobertura Funcional |
 |---------|------------|-----------------|---------------------|
 | `ProductCard.test.js` | ProductCard | 5 | 100% das funcionalidades |
-| `ProductList.test.js` | ProductList | 6 | 100% das funcionalidades |
+| `ProductList.test.js` | ProductList | 7 | 100% das funcionalidades |
 | `ArticleSchema.test.js` | ArticleSchema | 2 | 100% dos casos de uso |
 | `BreadcrumbSchema.test.js` | BreadcrumbSchema | 3 | 100% dos casos de uso |
 | `Head.test.js` | SEOHead | 8 | 100% das funcionalidades |
@@ -22,7 +22,7 @@
 | `WebsiteSchema.test.js` | WebsiteSchema | 1 | 100% dos casos de uso |
 | `Alert.test.js` | Alert | 3 | 100% das funcionalidades |
 | `Badge.test.js` | Badge | 4 | 100% das funcionalidades |
-| `Button.test.js` | Button | 2 | 100% das funcionalidades |
+| `Button.test.js` | Button | 3 | 100% das funcionalidades |
 | `Card.test.js` | Card | 4 | 100% das funcionalidades |
 | `index.test.js` | UI Index Exports | 1 | Validação de exports |
 | `Input.test.js` | Input | 2 | 100% das funcionalidades |
@@ -30,7 +30,7 @@
 | `Select.test.js` | Select | 3 | 100% das funcionalidades |
 | `Spinner.test.js` | Spinner | 3 | 100% das funcionalidades |
 | `TextArea.test.js` | TextArea | 4 | 100% das funcionalidades |
-| `Toast.test.js` | Toast | 4 | 100% das funcionalidades |
+| `Toast.test.js` | Toast | 8 | 100% das funcionalidades |
 
 ---
 
@@ -82,7 +82,6 @@
 - Cobertura total: 155 linhas de código
 
 ---
-
 ## 3. 🔍 ArticleSchema.test.js
 **Arquivo:** `/tests/unit/components/SEO/ArticleSchema.test.js`
 **Propósito:** Componente de Dados Estruturados JSON-LD para Artigos (Google SEO)
@@ -101,7 +100,6 @@
 - Cobertura total: 39 linhas de código
 
 ---
-
 ## 4. 🔍 BreadcrumbSchema.test.js
 **Arquivo:** `/tests/unit/components/SEO/BreadcrumbSchema.test.js`
 **Propósito:** Componente de Dados Estruturados JSON-LD para Breadcrumb (Migalha de Pão)
@@ -167,8 +165,7 @@
 - Cobertura total: 122 linhas de código
 
 ---
-
-## 6. 🔍 index.test.js
+## 6. 🔍 index.test.js (SEO)
 **Arquivo:** `/tests/unit/components/SEO/index.test.js`
 **Propósito:** Arquivo barril de exportação de todos os componentes SEO
 
@@ -185,7 +182,6 @@
 - Cobertura total: 34 linhas de código
 
 ---
-
 ## 7. 🔍 MusicSchema.test.js
 **Arquivo:** `/tests/unit/components/SEO/MusicSchema.test.js`
 **Propósito:** Dados Estruturados JSON-LD para Músicas e Gravações
@@ -203,7 +199,6 @@
 - Cobertura total: 36 linhas de código
 
 ---
-
 ## 8. 🔍 OrganizationSchema.test.js
 **Arquivo:** `/tests/unit/components/SEO/OrganizationSchema.test.js`
 **Propósito:** Dados Estruturados JSON-LD para Organização / Site
@@ -220,8 +215,6 @@
 - Cobertura total: 16 linhas de código
 
 ---
-
-
 ---
 
 ## 9. 🔍 VideoSchema.test.js
@@ -241,7 +234,6 @@
 - Cobertura total: 36 linhas de código
 
 ---
-
 ## 10. 🔍 WebsiteSchema.test.js
 **Arquivo:** `/tests/unit/components/SEO/WebsiteSchema.test.js`
 **Propósito:** Dados Estruturados JSON-LD para Site com Busca Sitelinks
@@ -258,7 +250,6 @@
 - Cobertura total: 17 linhas de código
 
 ---
-
 ## 11. 🎨 Alert.test.js
 **Arquivo:** `/tests/unit/components/UI/Alert.test.js`
 **Propósito:** Componente UI de Alerta e Notificação
@@ -277,7 +268,6 @@
 - Cobertura total: 33 linhas de código
 
 ---
-
 ## 12. 🎨 Badge.test.js
 **Arquivo:** `/tests/unit/components/UI/Badge.test.js`
 **Propósito:** Componente UI de Badge, Contador e Indicador
@@ -297,8 +287,6 @@
 - Cobertura total: 38 linhas de código
 
 ---
-
-
 ---
 
 ## 13. 🎨 Button.test.js
@@ -311,6 +299,8 @@
 |----|---------------|--------------------------|
 | 1 | Renderização Básica | Exibe texto, ícones esquerdo/direito, fullWidth e executa callback onClick |
 | 2 | Modo Loading | Aplica `aria-busy`, desabilita botão, oculta ícones e previne cliques |
+| 3 | Validação de atributos ARIA quando desabilitado via prop | Garante que `aria-disabled` e `aria-busy` são strings literais e o botão está desabilitado |
+
 
 ### 📌 Observações Técnicas:
 - Valida comportamento negativo (não executa onClick enquanto loading)
@@ -318,7 +308,6 @@
 - Cobertura total: 30 linhas de código
 
 ---
-
 ## 14. 🎨 Card.test.js
 **Arquivo:** `/tests/unit/components/UI/Card.test.js`
 **Propósito:** Componente UI de Cartão Composto
@@ -338,7 +327,6 @@
 - Cobertura total: 41 linhas de código
 
 ---
-
 ## 15. 🎨 index.test.js (UI)
 **Arquivo:** `/tests/unit/components/UI/index.test.js`
 **Propósito:** Arquivo barril de exportação dos componentes UI
@@ -355,7 +343,6 @@
 - Cobertura total: 15 linhas de código
 
 ---
-
 ## 16. 🎨 Input.test.js
 **Arquivo:** `/tests/unit/components/UI/Input.test.js`
 **Propósito:** Componente UI de Campo de Entrada
@@ -373,8 +360,6 @@
 - Cobertura total: 26 linhas de código
 
 ---
-
-
 ---
 
 ## 17. 🎨 Modal.test.js
@@ -390,10 +375,12 @@
 | 3 | Fechamento | Executa onClose ao clicar no botão X, no overlay ou pressionar Escape |
 | 4 | Footer e PreventScroll | Adiciona `overflow: hidden` no body e remove ao desmontar |
 | 5 | Compatibilidade SSR | Renderiza corretamente sem portal quando document.body não existe |
+| 6 | Focus Trap | Garante que a navegação por teclado permaneça restrita ao modal aberto |
 
 ### 📌 Observações Técnicas:
 - Testa todos os métodos de fechamento padrão
 - Valida limpeza de efeitos colaterais no body
+- Valida gerenciamento de foco assíncrono (Focus Trap)
 - Cobertura total: 64 linhas de código
 
 ---
@@ -464,16 +451,27 @@
 
 | ID | Caso de Teste | Funcionalidade Validada |
 |----|---------------|--------------------------|
-| 1 | Auto Fechamento | Fecha automaticamente após duração definida |
+| 1 | Auto Fechamento | Renderiza o toast e fecha automaticamente após a duração definida |
 | 2 | Fechamento Manual | Botão de fechar com callback onClose |
 | 3 | Hook useToast | Gerenciamento de estado global: adicionar, remover toasts |
-| 4 | Tipos de Status | Suporta variantes success, info, warning, error |
+| 4 | Status Info | Valida suporte do hook ao status informacional |
+| 5 | Status Warning | Valida suporte do hook ao status de aviso |
+| 6 | Status Error | Valida suporte do hook ao status de erro |
+| 7 | Persistência | Notificação não fecha automaticamente quando a duração é definida como zero (persistente) |
+| 8 | Container | Suporte a múltiplas instâncias e posições customizadas via Toast.Container |
 
 ### 📌 Observações Técnicas:
 - Usa `jest.useFakeTimers()` para controlar timeout de fechamento
 - Testa ciclo completo de animação entrada/saída
 - Componente + Hook integrado
-- Cobertura total: 67 linhas de código
+- Cobertura total: 100% das funcionalidades e casos de borda
+
+### ✅ Casos de Borda Testados:
+- Garantia de que `onClose` não é disparado automaticamente em Toasts persistentes (`duration: 0`)
+- Renderização correta em múltiplas posições (`top-right`, `bottom-left`, etc.) via `Toast.Container`
+
+### ✅ Garantias:
+- Notificações de erro ou aviso crítico podem ser configuradas para exigir ação manual do usuário
 
 ---
 

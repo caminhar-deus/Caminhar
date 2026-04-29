@@ -21,10 +21,20 @@ describe('Componente UI - Button', () => {
     
     const btn = screen.getByRole('button');
     expect(btn).toHaveAttribute('aria-busy', 'true');
+    expect(btn).toHaveAttribute('aria-disabled', 'true');
     expect(btn).toBeDisabled();
     expect(screen.queryByText('L')).not.toBeInTheDocument();
     
     fireEvent.click(btn);
     expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it('deve validar atributos ARIA como strings quando desabilitado via prop', () => {
+    render(<Button disabled>Bloqueado</Button>);
+    const btn = screen.getByRole('button');
+    
+    expect(btn).toHaveAttribute('aria-disabled', 'true');
+    expect(btn).toHaveAttribute('aria-busy', 'false');
+    expect(btn).toBeDisabled();
   });
 });
