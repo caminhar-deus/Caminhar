@@ -1,14 +1,60 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import tokens from '../styles/tokens';
 
 /**
+ * Converte cor hex para rgba.
+ * Função utilitária pura, testável e reutilizável fora do hook.
+ *
+ * @param {string} hex - Cor em formato hexadecimal (ex: "#ff0000")
+ * @param {number} alpha - Opacidade entre 0 e 1
+ * @returns {string} Cor no formato rgba
+ */
+function hexToRgba(hex, alpha) {
+  const cleanHex = hex.replace('#', '');
+  const r = parseInt(cleanHex.substr(0, 2), 16);
+  const g = parseInt(cleanHex.substr(2, 2), 16);
+  const b = parseInt(cleanHex.substr(4, 2), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+/**
+ * @typedef {Object} ThemeReturn
+ * @property {string} theme - Tema atual ("light" | "dark")
+ * @property {boolean} isDark - Se o tema escuro está ativo
+ * @property {boolean} isLight - Se o tema claro está ativo
+ * @property {boolean} mounted - Se o hook já foi montado (SSR guard)
+ * @property {function} toggleTheme - Alterna entre light/dark com debounce de 300ms
+ * @property {function} setTheme - Define tema específico
+ * @property {Object} tokens - Tokens completos de design
+ * @property {Object} colors - Tokens de cor
+ * @property {Object} spacing - Tokens de espaçamento
+ * @property {Object} typography - Tokens de tipografia
+ * @property {Object} borders - Tokens de bordas
+ * @property {Object} shadows - Tokens de sombras
+ * @property {Object} breakpoints - Tokens de breakpoints
+ * @property {Object} animations - Tokens de animação
+ * @property {function} getColor - Obtém cor com opacidade opcional
+ * @property {function} getSpacing - Obtém valor de espaçamento
+ * @property {function} getFontSize - Obtém tamanho de fonte
+ * @property {function} getShadow - Obtém sombra
+ * @property {function} getRadius - Obtém raio de borda
+ * @property {function} getBreakpoint - Obtém valor de breakpoint
+ * @property {function} isMobile - Verifica se é mobile
+ * @property {function} isTablet - Verifica se é tablet
+ * @property {function} isDesktop - Verifica se é desktop
+ */
+
+/**
  * useTheme - Hook para acessar tokens e gerenciar tema
- * @returns {object} - Tokens e funções de tema
+ * @returns {ThemeReturn} - Tokens e funções de tema
  */
 export const useTheme = () => {
   // Estado do tema (light/dark)
   const [theme, setTheme] = useState('light');
   const [mounted, setMounted] = useState(false);
+
+  // Ref para debounce do toggleTheme
+  const lastToggleRef = useRef(0);
 
   // Detectar preferência do sistema
   useEffect(() => {
@@ -35,11 +81,17 @@ export const useTheme = () => {
     } else {
       document.documentElement.classList.remove('dark');
     }
+
+    // Dispara evento customizado para código fora do React
+    window.dispatchEvent(new CustomEvent('themeChange', { detail: { theme } }));
   }, [theme, mounted]);
 
-  // Toggle tema
+  // Toggle tema com debounce para prevenir múltiplas trocas rápidas
   const toggleTheme = useCallback(() => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))
+    const now = Date.now();
+    if (now - lastToggleRef.current < 300) return; // debounce de 300ms
+    lastToggleRef.current = now;
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   }, []);
 
   // Set tema específico
@@ -54,18 +106,18 @@ export const useTheme = () => {
     
     for (const key of keys) {
       color = color?.[key];
-      if (!color) return null;
+      if (!color) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(`[useTheme] Token de cor não encontrado: "${path}"`);
+        }
+        return null;
+      }
     }
     
     if (typeof color !== 'string') return color;
     
     if (alpha < 1) {
-      // Converte hex para rgba
-      const hex = color.replace('#', '');
-      const r = parseInt(hex.substr(0, 2), 16);
-      const g = parseInt(hex.substr(2, 2), 16);
-      const b = parseInt(hex.substr(4, 2), 16);
-      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      return hexToRgba(color, alpha);
     }
     
     return color;
@@ -73,22 +125,38 @@ export const useTheme = () => {
 
   // Helper para spacing
   const getSpacing = useCallback((key) => {
-    return tokens.spacing.space[key] || tokens.spacing.spacing[key] || key;
+    const value = tokens.spacing.space[key] || tokens.spacing.spacing[key];
+    if (!value && process.env.NODE_ENV === 'development') {
+      console.warn(`[useTheme] Token de espaçamento não encontrado: "${key}"`);
+    }
+    return value || key;
   }, []);
 
   // Helper para font size
   const getFontSize = useCallback((key) => {
-    return tokens.typography.fontSize[key] || key;
+    const value = tokens.typography.fontSize[key];
+    if (!value && process.env.NODE_ENV === 'development') {
+      console.warn(`[useTheme] Token de tamanho de fonte não encontrado: "${key}"`);
+    }
+    return value || key;
   }, []);
 
   // Helper para shadow
   const getShadow = useCallback((key) => {
-    return tokens.shadows.shadows[key] || tokens.shadows.shadow[key] || key;
+    const value = tokens.shadows.shadows[key] || tokens.shadows.shadow[key];
+    if (!value && process.env.NODE_ENV === 'development') {
+      console.warn(`[useTheme] Token de sombra não encontrado: "${key}"`);
+    }
+    return value || key;
   }, []);
 
   // Helper para border radius
   const getRadius = useCallback((key) => {
-    return tokens.borders.radius[key] || tokens.borders.borderRadius[key] || key;
+    const value = tokens.borders.radius[key] || tokens.borders.borderRadius[key];
+    if (!value && process.env.NODE_ENV === 'development') {
+      console.warn(`[useTheme] Token de raio de borda não encontrado: "${key}"`);
+    }
+    return value || key;
   }, []);
 
   // Helper para breakpoint
@@ -113,7 +181,7 @@ export const useTheme = () => {
     return window.innerWidth >= tokens.breakpoints.breakpoints.lg;
   }, []);
 
-  return {
+  return useMemo(() => ({
     // Estado
     theme,
     isDark: theme === 'dark',
@@ -144,7 +212,22 @@ export const useTheme = () => {
     isMobile,
     isTablet,
     isDesktop,
-  };
+  }), [
+    theme,
+    mounted,
+    toggleTheme,
+    setThemeValue,
+    tokens,
+    getColor,
+    getSpacing,
+    getFontSize,
+    getShadow,
+    getRadius,
+    getBreakpoint,
+    isMobile,
+    isTablet,
+    isDesktop,
+  ]);
 };
 
 export default useTheme;

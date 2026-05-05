@@ -1,6 +1,6 @@
 # Documentação Componentes UI
 Projeto: Caminhar
-Última atualização: 20/04/2026
+Última atualização: 01/05/2026
 
 ---
 
@@ -26,7 +26,7 @@ Projeto: Caminhar
 ### 📁 Arquivos
 | Arquivo | Tipo | Linhas |
 |---------|------|--------|
-| `/components/UI/Alert.js` | Componente React | 96 |
+| `/components/UI/Alert.js` | Componente React | 100 |
 | `/components/UI/Alert.module.css` | Estilos CSS Modules | 185 |
 
 ### 🎯 Propósito
@@ -52,6 +52,11 @@ Componente de alerta para exibição de mensagens de feedback, avisos, erros e i
 | `closable` | boolean | `false` | Habilita botão de fechar |
 | `onClose` | function | - | Callback executado ao fechar |
 | `className` | string | `''` | Classes CSS adicionais |
+
+### 📤 Exportações Adicionais
+| Exportação | Tipo | Descrição |
+|------------|------|-----------|
+| `defaultIcons` | Object | Objeto com ícones SVG padrão por status, para reutilização em outros componentes |
 
 ### 🎨 Estilos Implementados
 | Variante | Descrição |
@@ -200,8 +205,9 @@ Componente container versátil para exibição de conteúdo agrupado. Suporta es
 - ✅ Área de mídia nativa com auto detecção de imagem
 - ✅ Sub-componentes estruturados: `Card.Header` e `Card.Footer`
 - ✅ Modo hover com animação de elevação
-- ✅ Modo clicável com acessibilidade
+- ✅ Modo clicável com acessibilidade completa (teclado Enter + Space)
 - ✅ Efeito de zoom automático na imagem no hover
+- ✅ Modo fullWidth para ocupar 100% da largura
 
 ### 🎛️ Propriedades
 | Propriedade | Tipo | Padrão | Descrição |
@@ -214,6 +220,7 @@ Componente container versátil para exibição de conteúdo agrupado. Suporta es
 | `footer` | ReactNode | - | Conteúdo do rodapé |
 | `hoverable` | boolean | `false` | Habilita efeito hover |
 | `clickable` | boolean | `false` | Cursor de clique |
+| `fullWidth` | boolean | `false` | Ocupa 100% da largura disponível |
 | `onClick` | function | - | Handler de clique |
 
 ### 📦 Sub-componentes Inclusos
@@ -428,12 +435,15 @@ Componente de área de texto multi-linha com suporte a auto-redimensionamento, c
 ### ✅ Principais Características
 - ✅ Implementado com `forwardRef`
 - ✅ 3 tamanhos: `sm`, `md`, `lg`
-- ✅ Auto-redimensionamento automático
+- ✅ Auto-redimensionamento automático com suporte a `minRows` e `maxRows`
+- ✅ Limite mínimo e máximo de altura no auto resize
+- ✅ Controle automático de overflow quando atinge limite máximo
 - ✅ Contador de caracteres nativo
-- ✅ Limite máximo de caracteres
+- ✅ Limite máximo de caracteres com opção de bloqueio
 - ✅ Estado de erro e mensagem
 - ✅ Texto de ajuda
 - ✅ Controle de redimensionamento manual
+- ✅ Limpeza automática de estilos quando autoResize é desabilitado
 - ✅ Mesma API e padrões do componente Input
 
 ### 🎛️ Propriedades
@@ -446,10 +456,13 @@ Componente de área de texto multi-linha com suporte a auto-redimensionamento, c
 | `autoResize` | boolean | `false` | Redimensiona automaticamente conforme conteúdo |
 | `size` | string | `md` | Tamanho do campo |
 | `maxLength` | number | - | Limite máximo de caracteres |
+| `blockOnLimit` | boolean | `false` | Bloqueia digitação quando atingir maxLength |
 | `showCount` | boolean | `false` | Mostra contador de caracteres |
 
 ### 🎨 Comportamento Visual
-- Ajuste automático de altura no auto-resize
+- Ajuste automático de altura respeitando limites minRows / maxRows
+- Ativa scroll automaticamente quando atinge altura máxima
+- Limpa todos estilos inline quando autoResize é desativado
 - Contador muda de cor quando ultrapassa o limite
 - Alinhamento lado a lado de mensagem e contador
 - Números tabulares para contagem consistente
@@ -464,7 +477,7 @@ Componente de área de texto multi-linha com suporte a auto-redimensionamento, c
 ### 📁 Arquivos
 | Arquivo | Tipo | Linhas |
 |---------|------|--------|
-| `/components/UI/Toast.js` | Componente React | 159 |
+| `/components/UI/Toast.js` | Componente React | 137 |
 | `/components/UI/Toast.module.css` | Estilos CSS Modules | 229 |
 
 ### 🎯 Propósito
@@ -527,14 +540,14 @@ Arquivo barril centralizado para importação de todos componentes UI. Permite i
 ### 📤 Exportações Disponíveis
 ```javascript
 // Exportações nomeadas (recomendado)
-import { Button, Card, Badge, Alert, Input, TextArea, Select, Modal, Spinner, Toast, useToast } from '@/components/UI';
+import { Button, Card, Badge, Alert, defaultIcons, Input, TextArea, Select, Modal, Spinner, Toast, useToast } from '@/components/UI';
 
 // Exportações padrão
 import Button from '@/components/UI/Button';
 ```
 
 ### ✅ Componentes Disponíveis
-✅ Button ✅ Input ✅ TextArea ✅ Select ✅ Card ✅ Modal ✅ Spinner ✅ Badge ✅ Alert ✅ Toast + hook useToast
+✅ Button ✅ Input ✅ TextArea ✅ Select ✅ Card ✅ Modal ✅ Spinner ✅ Badge ✅ Alert ✅ defaultIcons ✅ Toast ✅ useToast
 
 ---
 

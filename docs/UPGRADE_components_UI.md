@@ -1,7 +1,7 @@
 # Relatório de Análise e Sugestões de Melhoria
 ## Componentes UI - Projeto Caminhar
 
-Última atualização: 29/04/2026
+Última atualização: 01/05/2026
 Análise baseada em: `/components/UI/*`
 
 ---
@@ -35,9 +35,11 @@ Este documento contém o acompanhamento de melhorias, ajustes e correções dos 
 | Nível | Quantidade de Itens |
 |-------|----------------------|
 | 🔴 ALTO | 3 |
-| ⚠️ MÉDIO | 17 |
-| ✅ BAIXO | 18 |
-| **TOTAL** | **38 itens** |
+| ⚠️ MÉDIO | 16 |
+| ✅ BAIXO | 12 |
+| **TOTAL** | **31 itens** |
+
+✅ **7 itens foram resolvidos nesta atualização**
 
 ---
 
@@ -46,16 +48,23 @@ Este documento contém o acompanhamento de melhorias, ajustes e correções dos 
 ---
 
 ### 🚨 Alert
-| Nível | Item | Descrição |
-|-------|------|-----------|
-| ⚠️ MÉDIO | Gerenciamento de Estado | O componente gerencia estado de visibilidade internamente. Não existe forma de controlar externamente sem perder a funcionalidade interna |
-| ✅ BAIXO | Ícones Duplicados | Os ícones SVG são duplicados entre Alert e Toast. Podem ser extraidos para um arquivo compartilhado |
-| ✅ BAIXO | Callback onClose | Não existe forma de cancelar o fechamento ou interceptar o evento antes de executar |
+| Nível | Status | Item | Descrição |
+|-------|--------|------|-----------|
+| ⚠️ MÉDIO | 📌 PENDENTE | Gerenciamento de Estado | O componente gerencia estado de visibilidade internamente. Não existe forma de controlar externamente sem perder a funcionalidade interna |
+| ✅ BAIXO | ✅ RESOLVIDO | Ícones Duplicados | Os ícones SVG agora são exportados e compartilhados com o componente Toast |
+| ✅ BAIXO | 📌 PENDENTE | Callback onClose | Não existe forma de cancelar o fechamento ou interceptar o evento antes de executar |
+| ✅ BAIXO | ✅ IMPLEMENTADO | Propriedade className | Adicionado suporte a classes customizadas externas |
+| ✅ BAIXO | ✅ IMPLEMENTADO | Acessibilidade | Implementado corretamente `role="alert"` e `aria-live="polite"` |
 
 ### 💡 Sugestões:
 1. Implementar propriedade `isOpen` para controle externo opcional
-2. Extrair ícones SVG para um módulo compartilhado
-3. Adicionar `onBeforeClose` com suporte a cancelamento
+2. Adicionar `onBeforeClose` com suporte a cancelamento
+
+### ✅ Itens Concluídos:
+- ✅ Exportação de `defaultIcons` para reutilização
+- ✅ Suporte a propriedade `className`
+- ✅ Acessibilidade ARIA completa
+- ✅ Testes Unitários implementados e cobrindo todos casos principais
 
 ---
 
@@ -155,30 +164,48 @@ Este documento contém o acompanhamento de melhorias, ajustes e correções dos 
 ---
 
 ### 📝 TextArea
-| Nível | Item | Descrição |
-|-------|------|-----------|
-| 🔴 ALTO | Auto Resize | O auto resize calcula o scrollHeight diretamente no DOM sem limites de `minRows` e `maxRows` |
-| ⚠️ MÉDIO | Over Limit | Quando `maxLength` é ultrapassado o contador fica vermelho mas o usuário pode continuar digitando |
-| ✅ BAIXO | Limpeza Auto Resize | Não existe limpeza do estilo height quando o autoResize é desabilitado dinâmicamente |
+| Nível | Status | Item | Descrição |
+|-------|--------|------|-----------|
+| 🔴 ALTO | ✅ CONCLUÍDO | Auto Resize | Implementado limite `minRows` e `maxRows` no cálculo da altura. Agora o componente não cresce infinitamente. Quando atinge o limite máximo habilita scroll automaticamente |
+| ⚠️ MÉDIO | ✅ CONCLUÍDO | Over Limit | Implementado propriedade opcional `blockOnLimit` para bloquear digitação quando atingir maxLength. Comportamento padrão mantido para retrocompatibilidade |
+| ✅ BAIXO | ✅ CONCLUÍDO | Limpeza Auto Resize | Implementado limpeza completa dos estilos inline e overflow quando a propriedade `autoResize` é desabilitada em tempo de execução |
 
-### 💡 Sugestões:
-1. Implementar respeito aos valores `minRows` e `maxRows` no auto resize
-2. Adicionar opção de bloquear digitação quando ultrapassa o limite
-3. Limpar estilo inline quando autoResize = false
+### ✅ Itens Implementados:
+1. ✅ Respeito aos valores `minRows` e `maxRows` no auto resize
+2. ✅ Cálculo automático baseado no line-height real do componente
+3. ✅ Aplicação automática na montagem e alteração externa do valor
+4. ✅ Limpeza de estilo inline quando autoResize = false
+5. ✅ Controle automático de overflow vertical
+6. ✅ Propriedade opcional `blockOnLimit` para bloqueio no limite de caracteres
+7. ✅ Retrocompatibilidade 100% mantida
+8. ✅ Testes unitários cobrindo todos os casos borda
+
+### ✅ Todos os itens do TextArea foram concluídos
 
 ---
 
 ### 🔔 Toast
-| Nível | Item | Descrição |
-|-------|------|-----------|
-| ⚠️ MÉDIO | useToast ID Generation | Utiliza `Math.random()` para geração de ids que não tem garantia de unicidade |
-| ⚠️ MÉDIO | Position Animation | A animação slideIn é sempre da direita, independente da posição escolhida |
-| ✅ BAIXO | Ícones Duplicados | Ícones são duplicados com o componente Alert |
+| Nível | Status | Item | Descrição |
+|-------|--------|------|-----------|
+| ⚠️ MÉDIO | ✅ RESOLVIDO | useToast ID Generation | Agora utiliza `crypto.randomUUID()` nativo do navegador para geração de ids únicos garantidos |
+| ⚠️ MÉDIO | 📌 PENDENTE | Position Animation | A animação slideIn é sempre da direita, independente da posição escolhida |
+| ✅ BAIXO | ✅ RESOLVIDO | Ícones Duplicados | Agora importa e reutiliza diretamente os `defaultIcons` do componente Alert |
+| ✅ BAIXO | ✅ IMPLEMENTADO | Barra de Progresso | Adicionado indicador visual de progresso com duração dinâmica |
+| ✅ BAIXO | ✅ IMPLEMENTADO | Animação de Saída | Implementado estado `isExiting` com animação de 300ms ao fechar |
+| ✅ BAIXO | ✅ IMPLEMENTADO | Toast.Container | Sub-componente container para gerenciar múltiplos toasts empilhados |
+| ✅ BAIXO | ✅ IMPLEMENTADO | Hook useToast | Hook oficial para gerenciar estado e ciclo de vida dos toasts |
 
 ### 💡 Sugestões:
-1. Utilizar gerador de id único mais confiável (crypto.randomUUID)
-2. Implementar animações diferentes para cada posição
-3. Reutilizar ícones do componente Alert
+1. Implementar animações diferentes para cada posição
+
+### ✅ Itens Concluídos:
+- ✅ Geração de ID única e segura com `crypto.randomUUID()`
+- ✅ Reutilização 100% dos ícones do componente Alert
+- ✅ Barra de progresso animada sincronizada com duração
+- ✅ Animação suave de entrada e saída
+- ✅ Container para empilhamento de múltiplos toasts
+- ✅ Hook oficial `useToast` com métodos helpers por status
+- ✅ Testes Unitários completos implementados cobrindo todos casos de uso, duração, persistência, hook e animações
 
 ---
 

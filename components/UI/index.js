@@ -11,7 +11,7 @@ export { Card } from './Card';
 export { Modal } from './Modal';
 export { Spinner } from './Spinner';
 export { Badge } from './Badge';
-export { Alert } from './Alert';
+export { Alert, defaultIcons } from './Alert';
 export { Toast, useToast } from './Toast';
 
 // Re-exportações padrão

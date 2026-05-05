@@ -11,6 +11,7 @@ import styles from './Card.module.css';
  * @param {string} mediaAlt - Alt text para a mídia
  * @param {boolean} hoverable - Efeito hover
  * @param {boolean} clickable - Cursor pointer
+ * @param {boolean} fullWidth - Ocupa 100% da largura disponível
  * @param {function} onClick - Handler de click
  */
 export const Card = ({
@@ -23,6 +24,7 @@ export const Card = ({
   mediaAlt,
   hoverable = false,
   clickable = false,
+  fullWidth = false,
   onClick,
   className = '',
   ...props
@@ -33,16 +35,27 @@ export const Card = ({
     styles[size],
     hoverable && styles.hoverable,
     clickable && styles.clickable,
+    fullWidth && styles.fullWidth,
     (onClick || clickable) && styles.interactive,
     className,
   ]
     .filter(Boolean)
     .join(' ');
 
+  const handleKeyDown = (e) => {
+    if (!onClick) return;
+    
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick(e);
+    }
+  };
+
   return (
     <div
       className={cardClasses}
       onClick={onClick}
+      onKeyDown={handleKeyDown}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
       {...props}

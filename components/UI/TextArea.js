@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useEffect, useRef } from 'react';
 import styles from './TextArea.module.css';
 
 /**
@@ -16,6 +16,7 @@ import styles from './TextArea.module.css';
  * @param {string} helperText - Texto de ajuda
  * @param {number} maxLength - Comprimento máximo
  * @param {boolean} showCount - Mostrar contador de caracteres
+ * @param {boolean} blockOnLimit - Bloquear digitação quando atingir maxLength
  */
 export const TextArea = forwardRef(({
   rows = 4,
@@ -29,8 +30,9 @@ export const TextArea = forwardRef(({
   label,
   required,
   helperText,
-  maxLength,
-  showCount = false,
+   maxLength,
+   showCount = false,
+   blockOnLimit = false,
   className = '',
   onChange,
   value,
@@ -55,14 +57,75 @@ export const TextArea = forwardRef(({
   const currentLength = (value || defaultValue || '').length;
   const isOverLimit = maxLength && currentLength > maxLength;
 
+  const internalRef = useRef(null);
+
+  const calculateHeight = (textarea) => {
+    if (!autoResize) {
+      textarea.style.height = '';
+      return;
+    }
+
+    const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight);
+    const minHeight = minRows ? minRows * lineHeight : null;
+    const maxHeight = maxRows ? maxRows * lineHeight : null;
+
+    textarea.style.height = 'auto';
+    let calculatedHeight = textarea.scrollHeight;
+
+    if (minHeight && calculatedHeight < minHeight) {
+      calculatedHeight = minHeight;
+    }
+
+    if (maxHeight && calculatedHeight > maxHeight) {
+      calculatedHeight = maxHeight;
+      textarea.style.overflowY = 'auto';
+    } else {
+      textarea.style.overflowY = 'hidden';
+    }
+
+    textarea.style.height = `${calculatedHeight}px`;
+  };
+
+  const handleKeyDown = (e) => {
+    if (!blockOnLimit || !maxLength) return;
+    
+    const currentValue = value || defaultValue || '';
+    
+    // Permite teclas de navegação, edição e atalhos
+    const allowedKeys = [
+      'Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+      'Home', 'End', 'Tab', 'Escape', 'Enter'
+    ];
+    
+    if (allowedKeys.includes(e.key) || e.ctrlKey || e.metaKey) {
+      return;
+    }
+    
+    // Bloqueia se já atingiu ou ultrapassou o limite
+    if (currentValue.length >= maxLength) {
+      e.preventDefault();
+    }
+  };
+
   const handleChange = (e) => {
     if (autoResize) {
-      const textarea = e.target;
-      textarea.style.height = 'auto';
-      textarea.style.height = `${textarea.scrollHeight}px`;
+      calculateHeight(e.target);
     }
     onChange?.(e);
   };
+
+  useEffect(() => {
+    const textarea = internalRef.current || ref?.current;
+    if (!textarea) return;
+
+    if (!autoResize) {
+      textarea.style.height = '';
+      textarea.style.overflowY = '';
+      return;
+    }
+
+    calculateHeight(textarea);
+  }, [autoResize, minRows, maxRows, value, defaultValue]);
 
   return (
     <div className={wrapperClasses}>
@@ -73,16 +136,24 @@ export const TextArea = forwardRef(({
         </label>
       )}
       <textarea
-        ref={ref}
+        ref={(node) => {
+          internalRef.current = node;
+          if (typeof ref === 'function') {
+            ref(node);
+          } else if (ref) {
+            ref.current = node;
+          }
+        }}
         id={textareaId}
         className={styles.textarea}
         rows={rows}
         aria-invalid={error}
         aria-describedby={error ? errorId : helperText ? helperId : undefined}
         onChange={handleChange}
+        onKeyDown={handleKeyDown}
         value={value}
         defaultValue={defaultValue}
-        maxLength={maxLength}
+        maxLength={!blockOnLimit ? maxLength : undefined}
         {...props}
       />
       <div className={styles.footer}>

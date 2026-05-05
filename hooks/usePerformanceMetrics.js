@@ -1,9 +1,30 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
+
+/**
+ * @typedef {Object} PerformanceMetricsConfig
+ * @property {function} [onReport] - Callback chamado a cada métrica reportada
+ * @property {boolean} [reportToAnalytics=false] - Envia métricas para analytics via sendBeacon/fetch
+ * @property {string} [analyticsEndpoint='/api/analytics/web-vitals'] - Endpoint de analytics
+ * @property {boolean} [debug] - Habilita logs de debug (default: true em desenvolvimento)
+ */
+
+/**
+ * @typedef {Object} PerformanceMetricsReturn
+ * @property {function} reportMetric - Reporta uma métrica individual
+ * @property {function} getMetrics - Retorna métricas acumuladas
+ * @property {function} reportAllMetrics - Força report de todas as métricas atuais
+ * @property {Object} metrics - Métricas correntes
+ * @property {Object} WEB_VITAL_METRICS - Constantes das métricas suportadas
+ * @property {Object} THRESHOLDS - Thresholds de avaliação Google
+ * @property {function} getRating - Classifica valor conforme threshold
+ * @property {function} formatMetric - Formata valor conforme unidade
+ */
 
 /**
  * usePerformanceMetrics - Hook para monitorar Core Web Vitals e métricas de performance
  * 
- * Retorna um objeto com funções para reportar métricas e o estado atual.
+ * @param {PerformanceMetricsConfig} options - Opções de configuração
+ * @returns {PerformanceMetricsReturn} Objeto com funções para reportar e acessar métricas
  * 
  * Uso:
  * const { reportMetrics, metrics } = usePerformanceMetrics({
@@ -59,6 +80,9 @@ function formatMetric(name, value) {
   return Number(value.toFixed(3));
 }
 
+const MAX_HISTORY_SIZE = 50;
+const METRICS_CACHE_MS = 60_000; // 1 minuto de cache para evitar reports duplicados
+
 export default function usePerformanceMetrics(options = {}) {
   const {
     onReport,
@@ -67,19 +91,30 @@ export default function usePerformanceMetrics(options = {}) {
     debug = process.env.NODE_ENV === 'development',
   } = options;
 
-  // Store for accumulated metrics
-  const metricsStore = {
-    current: {},
-    history: [],
-  };
+  // Store for accumulated metrics (useRef para evitar recriação e não causar re-render)
+  const metricsStoreRef = useRef({ current: {}, history: [] });
+  const metricsStore = metricsStoreRef.current;
+
+  // Cache de timestamps por nome de métrica para evitar reports duplicados
+  const lastReportedRef = useRef({});
 
   // Report individual metric
   const reportMetric = useCallback((metric) => {
     const { name, value, rating, delta, entries, navigationType } = metric;
-    
+
+    // Cache check: ignora se mesma métrica foi reportada há menos de 1 minuto
+    const formattedValue = formatMetric(name, value);
+    const lastReported = lastReportedRef.current[name];
+    if (lastReported && (Date.now() - lastReported.timestamp < METRICS_CACHE_MS) && lastReported.value === formattedValue) {
+      if (debug) {
+        console.log(`[Web Vitals] Cache hit for ${name}: ${formattedValue}${THRESHOLDS[name]?.unit || ''} — skipped`);
+      }
+      return null;
+    }
+
     const reportData = {
       name,
-      value: formatMetric(name, value),
+      value: formattedValue,
       rating,
       delta,
       navigationType,
@@ -94,9 +129,17 @@ export default function usePerformanceMetrics(options = {}) {
       deviceMemory: typeof navigator !== 'undefined' ? navigator.deviceMemory : null,
     };
 
+    // Atualiza cache
+    lastReportedRef.current[name] = { timestamp: Date.now(), value: formattedValue };
+
     // Store in local store
     metricsStore.current[name] = reportData;
     metricsStore.history.push(reportData);
+
+    // Limitar histórico para evitar memory leak
+    if (metricsStore.history.length > MAX_HISTORY_SIZE) {
+      metricsStore.history.shift();
+    }
 
     // Debug logging
     if (debug) {
@@ -112,10 +155,12 @@ export default function usePerformanceMetrics(options = {}) {
       if (navigator.sendBeacon) {
         navigator.sendBeacon(analyticsEndpoint, JSON.stringify(reportData));
       } else {
+        const analyticsAbort = new AbortController();
         fetch(analyticsEndpoint, {
           method: 'POST',
           body: JSON.stringify(reportData),
           keepalive: true,
+          signal: analyticsAbort.signal,
         }).catch(() => {
           // Silently fail - analytics não é crítico
         });
@@ -123,7 +168,7 @@ export default function usePerformanceMetrics(options = {}) {
     }
 
     return reportData;
-  }, [onReport, reportToAnalytics, analyticsEndpoint, debug, metricsStore]);
+  }, [onReport, reportToAnalytics, analyticsEndpoint, debug]);
 
   // Get all accumulated metrics
   const getMetrics = useCallback(() => ({
@@ -132,7 +177,7 @@ export default function usePerformanceMetrics(options = {}) {
       acc[m.name] = m;
       return acc;
     }, {}),
-  }), [metricsStore]);
+  }));
 
   // Force report all current metrics
   const reportAllMetrics = useCallback(() => {

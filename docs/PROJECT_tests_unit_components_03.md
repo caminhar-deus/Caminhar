@@ -1,7 +1,7 @@
 # Documentação Testes Unitários - Componentes (Parte 03)
 
-> **Data da Análise:** 21/04/2026  
-> **Versão:** 1.0  
+> **Data da Análise:** 01/05/2026  
+> **Versão:** 1.1  
 > **Arquivos Analisados:** 21 arquivos de teste unitário de componentes
 
 ---
@@ -23,14 +23,14 @@
 | `Alert.test.js` | Alert | 3 | 100% das funcionalidades |
 | `Badge.test.js` | Badge | 4 | 100% das funcionalidades |
 | `Button.test.js` | Button | 3 | 100% das funcionalidades |
-| `Card.test.js` | Card | 4 | 100% das funcionalidades |
+| `Card.test.js` | Card | 8 | 100% das funcionalidades |
 | `index.test.js` | UI Index Exports | 1 | Validação de exports |
 | `Input.test.js` | Input | 2 | 100% das funcionalidades |
 | `Modal.test.js` | Modal | 6 | 100% das funcionalidades |
 | `Select.test.js` | Select | 3 | 100% das funcionalidades |
 | `Spinner.test.js` | Spinner | 3 | 100% das funcionalidades |
-| `TextArea.test.js` | TextArea | 4 | 100% das funcionalidades |
-| `Toast.test.js` | Toast | 8 | 100% das funcionalidades |
+| `TextArea.test.js` | TextArea | 12 | 100% das funcionalidades |
+| `Toast.test.js` | Toast | 6 | 100% das funcionalidades |
 
 ---
 
@@ -320,11 +320,17 @@
 | 2 | Media | Suporta tanto URL de imagem quanto componente React customizado |
 | 3 | Modo Clickable | Adiciona role=button e executa onClick automaticamente |
 | 4 | Subcomponentes | Valida renderização de `Card.Header` e `Card.Footer` |
+| 5 | Propriedade fullWidth | Aceita propriedade e renderiza sem erros |
+| 6 | Tecla Enter | Executa onClick quando tecla Enter é pressionada |
+| 7 | Tecla Space | Executa onClick quando tecla Space é pressionada e previne scroll padrão |
+| 8 | Outras teclas | Não executa onClick para outras teclas |
 
 ### 📌 Observações Técnicas:
 - Componente composto com subcomponentes aninhados
 - Usa `rerender` para testar múltiplas variantes
-- Cobertura total: 41 linhas de código
+- Mock do `Event.prototype.preventDefault` para validação de comportamento
+- Cobertura total: 107 linhas de código
+- 100% das funcionalidades e casos borda cobertos
 
 ---
 ## 15. 🎨 index.test.js (UI)
@@ -335,7 +341,7 @@
 
 | ID | Caso de Teste | Funcionalidade Validada |
 |----|---------------|--------------------------|
-| 1 | Validação Exports | Verifica que todos os 8 componentes UI estão sendo exportados corretamente |
+| 1 | Validação Exports | Verifica que todos os 12 componentes/utilitários UI estão sendo exportados corretamente incluindo `defaultIcons` e `useToast` |
 
 ### 📌 Observações Técnicas:
 - Garante integridade da API pública do módulo UI
@@ -435,11 +441,22 @@
 | 2 | Auto Resize | Ajusta altura automaticamente de acordo com conteúdo |
 | 3 | Contador de Caracteres | Exibe `x / max` e atualiza em tempo real |
 | 4 | Estado de Erro | Alterna entre helperText e mensagem de erro |
+| 5 | Limite minRows | Garante altura mínima no auto resize |
+| 6 | Limite maxRows | Garante altura máxima e ativa scroll automaticamente |
+| 7 | Limpeza Auto Resize | Remove estilos inline quando autoResize é desabilitado dinamicamente |
+| 8 | Auto Resize na montagem | Aplica ajuste de altura automaticamente quando componente é carregado |
+| 9 | Bloqueio no limite | Bloqueia digitação quando `blockOnLimit=true` e atinge maxLength |
+| 10 | Teclas permitidas | Permite Backspace, Delete e navegação mesmo quando bloqueado |
+| 11 | Comportamento padrão | Não bloqueia digitação quando `blockOnLimit=false` por padrão |
+| 12 | Sem maxLength | Não faz nada quando blockOnLimit está ativo mas não tem limite definido |
 
 ### 📌 Observações Técnicas:
 - Mock do `scrollHeight` para testar comportamento de auto resize
+- Mock do `Event.prototype.preventDefault` para validação de bloqueio
+- Usa `act()` para testar alterações dinâmicas de propriedades
 - Suporta `defaultValue` corretamente
-- Cobertura total: 46 linhas de código
+- Cobertura total: 156 linhas de código
+- 100% das branches e linhas cobertas
 
 ---
 
@@ -454,11 +471,9 @@
 | 1 | Auto Fechamento | Renderiza o toast e fecha automaticamente após a duração definida |
 | 2 | Fechamento Manual | Botão de fechar com callback onClose |
 | 3 | Hook useToast | Gerenciamento de estado global: adicionar, remover toasts |
-| 4 | Status Info | Valida suporte do hook ao status informacional |
-| 5 | Status Warning | Valida suporte do hook ao status de aviso |
-| 6 | Status Error | Valida suporte do hook ao status de erro |
-| 7 | Persistência | Notificação não fecha automaticamente quando a duração é definida como zero (persistente) |
-| 8 | Container | Suporte a múltiplas instâncias e posições customizadas via Toast.Container |
+| 4 | Todos Status | Valida suporte do hook a todos 4 status: info, success, warning, error |
+| 5 | Persistência | Notificação não fecha automaticamente quando a duração é definida como zero (persistente) |
+| 6 | Container | Suporte a múltiplas instâncias e posições customizadas via Toast.Container |
 
 ### 📌 Observações Técnicas:
 - Usa `jest.useFakeTimers()` para controlar timeout de fechamento

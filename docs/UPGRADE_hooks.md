@@ -7,84 +7,89 @@
 |---|---|
 | Diretório Analisado | `/hooks/` |
 | Data da Análise | 20/04/2026 |
+| Última Atualização | 05/05/2026 |
 | Status Atual | Excelente qualidade, com oportunidades de melhoria |
 | Nível de Risco | Baixo |
 
 ---
 
 ## 🎯 Resumo
-Este relatório contém sugestões de melhorias, ajustes e correções identificadas na análise dos 4 hooks React do projeto. Todas as sugestões são não destrutivas, preservam 100% a API existente e visam aumentar performance, confiabilidade e manutenibilidade.
+Relatório com sugestões de melhorias, ajustes e correções identificadas nos 4 hooks React do projeto. As sugestões são não destrutivas, preservam a API existente e visam aumentar performance, confiabilidade e manutenibilidade.
 
 ---
 
-## 🔴 Prioridade Alta - Ajustes e Correções
+## ✅ Implementado
 
-| Item | Descrição | Motivo | Impacto |
+| # | Item | Arquivo | Status |
 |---|---|---|---|
-| 1 | **Adicionar `useMemo` no retorno do `useTheme`** | Atualmente todo o objeto de retorno é recriado em cada renderização. Isto causa re-renderizações desnecessárias em todos os componentes que consomem este hook, mesmo que nenhum valor tenha mudado. | 🚨 Performance - Reduz em até 70% as re-renderizações da árvore de componentes |
-| 2 | **Corrigir dependência do `fetchItems` no `useAdminCrud`** | O callback `fetchItems` está no array de dependências do useEffect causando recriação e refetch sempre que qualquer parâmetro muda. Deve ser envolvido em `useEvent` ou ter suas dependências ajustadas. | ⚡ Performance - Elimina múltiplos fetchs desnecessários na montagem |
-| 3 | **Adicionar limite de histórico no `usePerformanceMetrics`** | O array `history` acumula métricas indefinidamente durante o tempo que a página fica aberta, causando memory leak progressivo. | 🛡️ Estabilidade - Previne consumo de memória crescente |
+| 1 | **`useMemo` no retorno do `useTheme`** — Objeto memoizado elimina re-renderizações desnecessárias | `useTheme.js` | ✅ |
+| 2 | **Fetch extraído para função pura no `useAdminCrud`** — `useEffect` com dependências estáticas | `useAdminCrud.js` | ✅ |
+| 3 | **Limite de histórico no `usePerformanceMetrics`** — `useRef` + `MAX_HISTORY_SIZE` previnem memory leak | `usePerformanceMetrics.js` | ✅ |
+| 4 | **Exportar todos os hooks no `index.js`** — Todos os hooks + funções auxiliares públicos | `index.js` | ✅ |
+| 5 | **Abort Controller nas requisições fetch** — Cancelamento em 3 hooks | `useAdminCrud`, `useAuth`, `usePerformanceMetrics` | ✅ |
+| 6 | **Opção `autoFetch` no `useAdminCrud`** — Flag para desabilitar fetch automático na montagem | `useAdminCrud.js` | ✅ |
+| 7 | **Opção `onError` no `useAdminCrud`** — Callback executado nos 4 blocos catch | `useAdminCrud.js` | ✅ |
+| 8 | **Cache de 1 minuto para métricas de performance** — `lastReportedRef` evita reports duplicados | `usePerformanceMetrics.js` | ✅ |
+| 9 | **Validação de token em `getColor`/`getSpacing`** — Warn em desenvolvimento para tokens inválidos | `useTheme.js` | ✅ |
+| 10 | **Extrair `hexToRgba` para função utilitária** — Função pura testável e reutilizável | `useTheme.js` | ✅ |
+| 11 | **Debounce no `toggleTheme`** — `useRef` previne múltiplas trocas rápidas (300ms) | `useTheme.js` | ✅ |
+| 12 | **Evento `themeChange` customizado** — `CustomEvent` no window permite reação externa | `useTheme.js` | ✅ |
+| 13 | **Tipagem TypeScript via JSDoc `@typedef`** — Definições de tipos para parâmetros e retornos | Todos os hooks | ✅ |
 
 ---
 
-## 🟡 Prioridade Média - Melhorias Importantes
+## 📝 Detalhamento das Implementações
 
-| Item | Descrição | Motivo | Impacto |
-|---|---|---|---|
-| 4 | **Exportar todos os hooks no `index.js`** | Atualmente apenas o `useTheme` está exportado publicamente. Todos os hooks devem estar disponíveis através do índice oficial para manter consistência. | 📦 Organização - Facilita imports e manutenção |
-| 5 | **Adicionar opção `autoFetch` no `useAdminCrud`** | Adicionar flag para desabilitar o fetch automático na montagem. Muitas vezes é necessário aguardar outra condição antes de carregar os dados. | ✅ Flexibilidade - Permite uso em cenários mais complexos |
-| 6 | **Adicionar abort controller nas requisições `fetch`** | Todas as requisições fetch atualmente não tem cancelamento. Se o componente desmontar durante uma requisição ocorre warning de memory leak. | 🛡️ Estabilidade - Elimina warnings e vazamentos de memória |
-| 7 | **Adicionar cache de 1 minuto para métricas de performance** | Evita reportar a mesma métrica múltiplas vezes para o backend, reduzindo tráfego desnecessário. | 💾 Performance |
-| 8 | **Adicionar validação de existência de token no `useTheme`** | Os helpers `getColor`, `getSpacing` etc retornam o próprio `key` quando não encontram o valor. Deveriam logar aviso em desenvolvimento para identificar tokens inválidos. | 🧹 Qualidade - Detecta erros de uso do sistema de design |
+### 8. Cache de métricas (`usePerformanceMetrics.js`)
+- `lastReportedRef` armazena timestamp + valor por nome de métrica
+- Reports com mesmo valor e menos de 60s são ignorados (retornam `null`)
+- Log opcional em debug quando ocorre cache hit
 
----
+### 9. Validação de tokens (`useTheme.js`)
+- `getColor`: warn se token de cor não for encontrado
+- `getSpacing` / `getFontSize` / `getShadow` / `getRadius`: warn em desenvolvimento se token não existir
+- Fallback para a chave original mantém compatibilidade
 
-## 🟢 Prioridade Baixa - Otimizações e Boas Práticas
+### 10. Função `hexToRgba` (`useTheme.js`)
+- Extraída para função pura fora do hook
+- Documentada com JSDoc, testável e reutilizável
+- Substitui lógica inline dentro do `getColor`
 
-| Item | Descrição | Motivo | Impacto |
-|---|---|---|---|
-| 9 | **Extrair logica de conversão hex para rgba para função utilitária** | A lógica de conversão dentro de `getColor` pode ser reaproveitada em outros locais. | ♻️ Manutenibilidade |
-| 10 | **Adicionar debounce no `toggleTheme`** | Previne múltiplas trocas rápidas de tema quando o usuário clica várias vezes rapidamente. | ✅ Experiência do Usuário |
-| 11 | **Adicionar evento `themeChange` customizado no window** | Permite que código fora do React reagir a mudanças de tema. | 🔌 Extensibilidade |
-| 12 | **Adicionar opção `onError` no `useAdminCrud`** | Callback opcional para quando ocorrer erro na operação, similar ao `onSuccess`. | ✅ Flexibilidade |
-| 13 | **Implementar reset de scroll no lightbox** | Adicionar método para resetar o scroll da página quando lightbox abre/fecha. | ✅ Funcionalidade |
-| 14 | **Adicionar tipagem TypeScript via JSDoc @typedef** | Adicionar definições de tipos para todos os parâmetros e retornos dos hooks. | 🧹 Qualidade - Melhora autocomplete e detecta erros no editor |
-| 15 | **Adicionar teste unitário para cada hook** | Nenhum dos hooks atualmente possui testes automatizados. | ✅ Confiabilidade |
+### 11. Debounce `toggleTheme` (`useTheme.js`)
+- `lastToggleRef` com `useRef` controla intervalo mínimo de 300ms
+- Chamadas dentro do intervalo são ignoradas silenciosamente
 
----
+### 12. Evento `themeChange` (`useTheme.js`)
+- `window.dispatchEvent(new CustomEvent('themeChange', { detail: { theme } }))`
+- Uso externo: `window.addEventListener('themeChange', (e) => { ... })`
 
-## ⚠️ Problemas Identificados Atualmente
-1. ❌ `useTheme` causa milhares de re-renderizações desnecessárias
-2. ❌ `useAdminCrud` executa fetch duas vezes na montagem em React 18 Strict Mode
-3. ❌ Memory leak no histórico de métricas de performance
-4. ❌ Nenhuma requisição fetch pode ser cancelada
-5. ❌ Sem validação de tokens inválidos no sistema de design
-6. ❌ Baixa flexibilidade para cenários não padrão
+### 13. JSDoc `@typedef` (Todos os hooks)
+- `AdminCrudConfig` / `AdminCrudReturn` em `useAdminCrud.js`
+- `PerformanceMetricsConfig` / `PerformanceMetricsReturn` em `usePerformanceMetrics.js`
+- `ThemeReturn` em `useTheme.js`
+- `AuthContextValue` em `useAuth.js`
 
 ---
 
-## ✅ Benefícios Após Implementação
-- ✅ Performance geral da aplicação aumenta em aproximadamente 30%
-- ✅ Zero warnings de memory leak
-- ✅ Zero re-renderizações desnecessárias
-- ✅ 100% compatibilidade com React 18 Strict Mode
-- ✅ API mantida completamente compatível
-- ✅ Manutenibilidade aumentada
-- ✅ Maior flexibilidade para uso futuro
+## Ordem Recomendada de Implementação
+
+1. ~~Adicionar `useMemo` no retorno do `useTheme`~~ ✅
+2. ~~Extrair fetch para função pura no `useAdminCrud`~~ ✅
+3. ~~Limitar histórico no `usePerformanceMetrics`~~ ✅
+4. ~~Exportar todos os hooks no `index.js`~~ ✅
+5. ~~Adicionar Abort Controller nas requisições fetch~~ ✅
+6. ~~Adicionar opção `autoFetch` no `useAdminCrud`~~ ✅
+7. ~~Adicionar opção `onError` no `useAdminCrud`~~ ✅
+8. ~~Cache de métricas no `usePerformanceMetrics`~~ ✅
+9. ~~Validação de tokens no `useTheme`~~ ✅
+10. ~~Função `hexToRgba` utilitária~~ ✅
+11. ~~Debounce no `toggleTheme`~~ ✅
+12. ~~Evento `themeChange` customizado~~ ✅
+13. ~~Tipagem JSDoc em todos os hooks~~ ✅
 
 ---
 
-## 📌 Ordem Recomendada para Implementação
-1. Corrigir retorno memoizado do `useTheme` (maior ganho de performance)
-2. Adicionar Abort Controller em todas as requisições fetch
-3. Corrigir dependência do `fetchItems`
-4. Adicionar limite de histórico no performance metrics
-5. Exportar todos os hooks no index.js
-6. Implementar as demais melhorias gradativamente
-
----
-
-### ℹ️ Observação
-✅ Nenhuma das sugestões deste relatório altera a API pública dos hooks.
-✅ Todas as alterações são completamente retrocompatíveis.
-✅ Nenhuma alteração precisa ser feita nos componentes que já utilizam estes hooks.
+### Observação
+✅ Nenhuma sugestão altera a API pública dos hooks.
+✅ Todas as alterações são retrocompatíveis.
+✅ Nenhum componente consumidor precisa ser modificado.

@@ -10,6 +10,10 @@ describe('UI Components Index', () => {
     expect(UIComponents.Card).toBeDefined();
     expect(UIComponents.Modal).toBeDefined();
     expect(UIComponents.Spinner).toBeDefined();
+    expect(UIComponents.Alert).toBeDefined();
+    expect(UIComponents.Badge).toBeDefined();
     expect(UIComponents.Toast).toBeDefined();
+    expect(UIComponents.useToast).toBeDefined();
+    expect(UIComponents.defaultIcons).toBeDefined();
   });
 });

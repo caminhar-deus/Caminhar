@@ -38,4 +38,47 @@ describe('Componente UI - Card', () => {
     render(<Card.Footer align="center">Foo</Card.Footer>);
     expect(screen.getByText('Foo')).toBeInTheDocument();
   });
+
+  it('deve aceitar propriedade fullWidth', () => {
+    // No ambiente de teste os CSS Modules são mockados, portanto não validamos a classe final
+    // Apenas verificamos que a propriedade é aceita e o componente renderiza sem erros
+    render(<Card fullWidth>Conteudo</Card>);
+    
+    expect(screen.getByText('Conteudo')).toBeInTheDocument();
+  });
+
+  it('deve acionar onClick quando tecla Enter for pressionada', () => {
+    const onClick = jest.fn();
+    render(<Card onClick={onClick}>C</Card>);
+    const card = screen.getByRole('button');
+
+    fireEvent.keyDown(card, { key: 'Enter' });
+    expect(onClick).toHaveBeenCalled();
+  });
+
+  it('deve acionar onClick quando tecla Space for pressionada e prevenir comportamento padrão', () => {
+    const onClick = jest.fn();
+    const preventDefault = jest.spyOn(Event.prototype, 'preventDefault');
+    
+    render(<Card onClick={onClick}>C</Card>);
+    const card = screen.getByRole('button');
+
+    fireEvent.keyDown(card, { key: ' ' });
+    expect(onClick).toHaveBeenCalled();
+    expect(preventDefault).toHaveBeenCalled();
+    
+    preventDefault.mockRestore();
+  });
+
+  it('não deve acionar onClick para outras teclas', () => {
+    const onClick = jest.fn();
+    render(<Card onClick={onClick}>C</Card>);
+    const card = screen.getByRole('button');
+
+    fireEvent.keyDown(card, { key: 'Tab' });
+    fireEvent.keyDown(card, { key: 'Escape' });
+    fireEvent.keyDown(card, { key: 'ArrowDown' });
+    
+    expect(onClick).not.toHaveBeenCalled();
+  });
 });

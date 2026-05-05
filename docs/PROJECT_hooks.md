@@ -24,14 +24,15 @@ Arquivo de entrada e índice público dos hooks. Gerencia as exportações ofici
 
 #### Conteúdo:
 ✅ Exporta `useTheme` como named export
-✅ Exporta `useThemeDefault` como default export
+✅ Exporta `useAdminCrud` como named export
+✅ Exporta `usePerformanceMetrics`, `reportWebVitals`, `detectPerformanceIssues` como named export
 ✅ Exporta `useAuth`, `AuthContext`, `AuthProvider` do arquivo `/hooks/useAuth.js`
-✅ Exporta `useAuthDefault` como default export
+✅ Exporta `useThemeDefault` e `useAuthDefault` como default export
 ✅ Apenas re-exportações, nenhuma lógica
 
 #### Observação:
-- Apenas o `useTheme` está oficialmente exportado publicamente
-- Demais hooks são importados diretamente pelo caminho completo
+- ✅ Todos os 4 hooks agora estão exportados publicamente
+- Também exporta funções auxiliares: `reportWebVitals` e `detectPerformanceIssues`
 
 ---
 
@@ -40,14 +41,14 @@ Arquivo de entrada e índice público dos hooks. Gerencia as exportações ofici
 Hook genérico e reutilizável para todas as operações CRUD nos painéis administrativos. Centraliza 100% da lógica repetitiva de listagem, criação, edição e exclusão.
 
 #### Funcionalidades:
-✅ Fetch automático de dados na montagem
+✅ Fetch automático de dados na montagem (configurável via `autoFetch`)
 ✅ Estados de loading, erro e formulário
 ✅ Manipulação de inputs e formulário
 ✅ Modo edição / criação
 ✅ Paginação integrada
 ✅ Tratamento de erros da API
 ✅ Integração nativa com toast notifications
-✅ Callbacks de sucesso customizáveis
+✅ Callbacks de sucesso (`onSuccess`) e erro (`onError`)
 
 #### API:
 | Parâmetro | Padrão | Descrição |
@@ -56,13 +57,19 @@ Hook genérico e reutilizável para todas as operações CRUD nos painéis admin
 | `initialFormData` | Obrigatório | Estado inicial do formulário |
 | `usePagination` | `false` | Habilita lógica de paginação |
 | `itemsPerPage` | `10` | Itens por página |
+| `autoFetch` | `true` | Habilita fetch automático na montagem |
 | `onSuccess` | Opcional | Callback após operação bem sucedida |
+| `onError` | Opcional | Callback executado em caso de erro |
 
 #### Retorno:
 `items, loading, error, formData, isEditing, currentPage, totalPages, handleInputChange, setFieldValue, handleEdit, handleSubmit, handleDelete, resetForm, goToPage`
 
 #### Características:
-- 🔄 Utiliza `useCallback` para evitar re-renderizações desnecessárias
+- 🔄 `useEffect` com dependências estáveis — elimina re-fetches desnecessários na montagem
+- 🧹 Lógica de fetch extraída para função pura (`fetchItemsFromAPI`), testável independentemente
+- 🛡️ Abort Controller em todas as requisições (fetch inicial, submit e delete) — cancela ao desmontar
+- 🚫 Flag `autoFetch` permite controle granular: defina `false` para buscar dados manualmente via `fetchItems()`
+- 🔔 Callback `onError` executado em todos os 4 cenários de falha (fetch inicial, refresh, submit e delete)
 - ✅ Trata erros de validação da API automaticamente
 - 🚀 Volta para página 1 automaticamente ao criar novo item
 - 🧹 Reseta formulário automaticamente após sucesso
@@ -95,6 +102,11 @@ Hook completo para monitoramento de performance e Core Web Vitals. Coleta, forma
 - ✅ Falha silenciosamente, analytics nunca quebra a aplicação
 - 📱 Detecta tipo de conexão e modo economia de dados
 - ⚠️ Alerta automaticamente sobre recursos que demoram mais de 1s
+- 🛡️ Histórico limitado a 50 entradas (`MAX_HISTORY_SIZE`) para prevenir memory leak
+- 💾 Cache de 1 minuto (`METRICS_CACHE_MS`) evita reports duplicados da mesma métrica com mesmo valor
+- ♻️ `metricsStore` em `useRef` — não causa re-renderizações e é estável entre ciclos
+- 🧹 Dependências do `reportMetric` simplificadas (sem referência ao store)
+- 🔌 Abort Controller no fetch de fallback do analytics — evita warning ao desmontar
 - Disponibiliza funções standalone para uso fora de componentes React
 
 ---
@@ -127,7 +139,12 @@ Hook de gerenciamento de tema e acesso centralizado aos Design Tokens do projeto
 #### Características:
 - ⚡ Evita hidratação incorreta com flag `mounted`
 - ✅ Suporta tanto atributo `data-theme` quanto classe `dark`
-- 🔄 Nenhuma re-renderização desnecessária
+- 🚀 Retorno memoizado com `useMemo` para eliminar re-renderizações desnecessárias
+- ✅ Todos os helpers envolvidos em `useCallback` com dependências estáveis
+- 🛡️ Debounce de 300ms no `toggleTheme` via `useRef` — previne múltiplas trocas rápidas
+- 🔔 Validação de tokens em desenvolvimento: warn via console para tokens inexistentes
+- ♻️ Função `hexToRgba` extraída para utilitário puro — testável e reutilizável
+- 🔌 Evento customizado `themeChange` disparado no `window` — permite código externo reagir a mudanças de tema
 - Único hook utilizado em toda a aplicação para qualquer valor de design
 
 ---
@@ -158,6 +175,7 @@ Hook de autenticação e contexto global para gerenciamento de sessão de usuár
 - ✅ Implementado seguindo padrões React Context API
 - ✅ Trata erros de conexão silenciosamente
 - ✅ Suporta SSR e hidratação correta
+- ✅ Abort Controller nas 3 requisições (login, logout, checkAuth) — prevenindo memory leak
 - ✅ Nenhuma dependência externa
 - ✅ Utilizado automaticamente pelo helper `renderWithAuth()` nos testes
 
@@ -166,7 +184,7 @@ Hook de autenticação e contexto global para gerenciamento de sessão de usuár
 ## 📌 Observações Gerais
 1. ✅ Todos os hooks seguem padrão funcional moderno do React
 2. ✅ Possuem documentação JSDoc completa
-3. ✅ Utilizam corretamente `useCallback` e `useEffect`
+3. ✅ Utilizam corretamente `useMemo`, `useCallback` e `useEffect`
 4. ✅ Tratam adequadamente casos de SSR / window undefined
 5. ✅ Nenhuma dependência externa desnecessária
 6. ✅ Padrão consistente em todos os arquivos
@@ -185,7 +203,8 @@ Hook de autenticação e contexto global para gerenciamento de sessão de usuár
 
 ## 🛠️ Padrões Adotados
 - Named exports são preferidos ao invés de default export
-- Todas as funções retornadas são memoizadas
+- Objetos de retorno memoizados com `useMemo` para evitar re-renderizações
+- Funções retornadas memoizadas com `useCallback`
 - Efeitos sempre possuem array de dependências correto
 - Tratamento de erro consistente
 - Nenhuma lógica de negócio dentro dos hooks, apenas lógica de UI e estado

@@ -2,23 +2,63 @@ import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 
 /**
+ * Função pura para buscar dados da API.
+ * Separada do hook para ser testável e reutilizável sem dependências do React.
+ */
+async function fetchItemsFromAPI(apiEndpoint, usePagination, itemsPerPage, page = 1, signal) {
+  const url = usePagination
+    ? `${apiEndpoint}?page=${page}&limit=${itemsPerPage}`
+    : apiEndpoint;
+  const response = await fetch(url, { credentials: 'include', signal });
+  if (!response.ok) throw new Error('Falha ao buscar dados da API');
+  const data = await response.json();
+  return { items: data.data || [], pagination: data.pagination };
+}
+
+/**
+ * @typedef {Object} AdminCrudConfig
+ * @property {string} apiEndpoint - Endereço da API para este CRUD
+ * @property {Object} initialFormData - Estado inicial do formulário
+ * @property {boolean} [usePagination=false] - Habilita lógica de paginação
+ * @property {number} [itemsPerPage=10] - Itens por página
+ * @property {boolean} [autoFetch=true] - Habilita fetch automático na montagem
+ * @property {function} [onSuccess] - Callback após operação bem sucedida
+ * @property {function} [onError] - Callback executado em caso de erro
+ */
+
+/**
+ * @typedef {Object} AdminCrudReturn
+ * @property {Array} items - Lista de itens
+ * @property {boolean} loading - Estado de carregamento
+ * @property {Object|null} error - Erro da operação
+ * @property {Object} formData - Dados do formulário
+ * @property {boolean} isEditing - Modo edição ativo
+ * @property {number} currentPage - Página atual
+ * @property {number} totalPages - Total de páginas
+ * @property {function} handleInputChange - Manipula mudança em inputs
+ * @property {function} setFieldValue - Define valor de campo específico
+ * @property {function} handleEdit - Inicia modo edição
+ * @property {function} handleSubmit - Envia formulário
+ * @property {function} handleDelete - Exclui item
+ * @property {function} resetForm - Reseta formulário
+ * @property {function} goToPage - Navega para página específica
+ */
+
+/**
  * Hook reutilizável para operações CRUD em painéis administrativos.
  * Centraliza a lógica de fetch, create, update, delete, paginação e estado de formulário.
  * 
- * @param {object} config - Configuração do hook.
- * @param {string} config.apiEndpoint - O endpoint da API para as operações.
- * @param {object} config.initialFormData - O estado inicial para o formulário de criação.
- * @param {boolean} [config.usePagination=false] - Habilita a lógica de paginação.
- * @param {number} [config.itemsPerPage=10] - Quantidade de itens por página.
- * @param {function} [config.onSuccess] - Callback executado após uma operação bem-sucedida.
- * @returns Um objeto contendo o estado e os manipuladores para o CRUD.
+ * @param {AdminCrudConfig} config - Configuração do hook
+ * @returns {AdminCrudReturn} Objeto contendo estado e manipuladores para o CRUD
  */
 export const useAdminCrud = ({
   apiEndpoint,
   initialFormData,
   usePagination = false,
   itemsPerPage = 10,
+  autoFetch = true,
   onSuccess,
+  onError,
 }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,30 +68,58 @@ export const useAdminCrud = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
+  // Fetch inicial com dependências estáveis e suporte a cancelamento
+  useEffect(() => {
+    if (!autoFetch) return;
+
+    const abortController = new AbortController();
+    let cancelled = false;
+
+    const loadItems = async () => {
+      setLoading(true);
+      try {
+        const result = await fetchItemsFromAPI(apiEndpoint, usePagination, itemsPerPage, 1, abortController.signal);
+        if (cancelled) return;
+        setItems(result.items);
+        if (usePagination && result.pagination) {
+          setCurrentPage(result.pagination.page);
+          setTotalPages(result.pagination.totalPages);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError({ message: err.message });
+          if (onError) onError(err);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    loadItems();
+
+    return () => {
+      cancelled = true;
+      abortController.abort();
+    };
+  }, [apiEndpoint, usePagination, itemsPerPage, autoFetch, onError]);
+
+  // Callback para re-fetch (usado em handleSubmit, handleDelete e goToPage)
   const fetchItems = useCallback(async (page = 1) => {
     setLoading(true);
     try {
-      const url = usePagination ? `${apiEndpoint}?page=${page}&limit=${itemsPerPage}` : apiEndpoint;
-      const response = await fetch(url, { credentials: 'include' });
-      if (!response.ok) throw new Error('Falha ao buscar dados da API');
-      
-      const data = await response.json();
-      setItems(data.data || []);
-      
-      if (usePagination && data.pagination) {
-        setCurrentPage(data.pagination.page);
-        setTotalPages(data.pagination.totalPages);
+      const result = await fetchItemsFromAPI(apiEndpoint, usePagination, itemsPerPage, page);
+      setItems(result.items);
+      if (usePagination && result.pagination) {
+        setCurrentPage(result.pagination.page);
+        setTotalPages(result.pagination.totalPages);
       }
     } catch (err) {
       setError({ message: err.message });
+      if (onError) onError(err);
     } finally {
       setLoading(false);
     }
   }, [apiEndpoint, usePagination, itemsPerPage]);
-
-  useEffect(() => {
-    fetchItems(1);
-  }, [fetchItems]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -116,6 +184,7 @@ export const useAdminCrud = ({
     } catch (err) {
       setError(err);
       toast.error(err.message || 'Falha na operação.', { id: loadingToastId });
+      if (onError) onError(err);
     }
   };
 
@@ -123,14 +192,16 @@ export const useAdminCrud = ({
     if (!window.confirm('Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.')) return;
 
     const loadingToastId = toast.loading('Excluindo item...');
+    const abortController = new AbortController();
     try {
-      const response = await fetch(`${apiEndpoint}?id=${id}`, { method: 'DELETE' });
+      const response = await fetch(`${apiEndpoint}?id=${id}`, { method: 'DELETE', signal: abortController.signal });
       if (!response.ok) throw new Error('Falha ao excluir');
       
       toast.success('Item excluído com sucesso!', { id: loadingToastId });
       fetchItems(currentPage);
     } catch (err) {
       toast.error(err.message, { id: loadingToastId });
+      if (onError) onError(err);
     }
   };
 

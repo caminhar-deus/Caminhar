@@ -3,6 +3,15 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import Toast, { useToast } from '../../../../components/UI/Toast.js';
 
+// Mock do crypto.randomUUID para ambiente de teste
+beforeAll(() => {
+  Object.defineProperty(global, 'crypto', {
+    value: {
+      randomUUID: jest.fn(() => 'test-uuid-' + Math.random().toString(36).substr(2, 9))
+    }
+  });
+});
+
 const HookTestComponent = () => {
   const { toasts, toast, removeToast } = useToast();
   return (
