@@ -80,10 +80,10 @@ Componente para exibição individual de cada produto, com carrossel de imagens,
 | Característica | Valor |
 |---|---|
 | **Tipo** | Componente container / smart component |
-| **Dependências** | React, ProductCard |
-| **Estado interno** | 10 estados locais |
-| **Linhas** | 186 |
-| **Gerenciamento de dados** | ✅ Fetch próprio da API |
+| **Dependências** | React, ProductCard, `useApiFetch`, `useDebounce` |
+| **Estado interno** | 6 estados locais (-4 com hooks) |
+| **Linhas** | 167 |
+| **Gerenciamento de dados** | ✅ `useApiFetch` (via `/hooks/useApiFetch.js`) |
 
 #### Propósito
 Componente principal da página de produtos, responsável por listagem completa, filtros, busca e paginação.
@@ -100,10 +100,10 @@ Componente principal da página de produtos, responsável por listagem completa,
 
 #### Fluxo de Dados:
 1. Usuário interage com filtros
-2. Debounce aguarda 500ms sem interação
-3. Estado debounced é atualizado
-4. Effect dispara requisição para `/api/products`
-5. Resultado é ordenado no frontend
+2. `useDebounce` aguarda 500ms sem interação
+3. Estado debounced é atualizado (reseta página para 1 via `useEffect`)
+4. `useApiFetch` re-executa fetch com as novas dependências (`deps`)
+5. Resultado é transformado (ordenado por position + id) via `transform`
 6. Produtos são renderizados com `ProductCard`
 
 #### Observações Técnicas:
@@ -408,4 +408,4 @@ export { default as VideoSchema } from './VideoSchema';
 
 ---
 
-*Última atualização: 20/04/2026*
+*Última atualização: 06/05/2026*

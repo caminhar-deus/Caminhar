@@ -1,7 +1,7 @@
 # Documentação dos Componentes Features
 
 **Arquivo:** `/docs/PROJECT_components_Features.md`  
-**Última atualização:** 20/04/2026  
+**Última atualização:** 05/05/2026  
 **Módulo:** `/components/Features/`
 
 ---
@@ -35,12 +35,10 @@ Este módulo contém componentes de funcionalidades principais da plataforma, se
 Componente de seção principal que carrega e exibe uma lista de postagens do blog. É o ponto de entrada para exibição de artigos na plataforma.
 
 #### Funcionalidades:
-- ✅ Carregamento assíncrono de posts via API `/api/posts`
-- ✅ Tratamento completo de erros e estados de loading
-- ✅ Validação de estrutura de resposta da API
-- ✅ Validação resiliente do Content-Type (Optional Chaining)
-- ✅ Tratamento individual de erro para cada operação .json()
-- ✅ Detecção automática quando API retorna HTML ao invés de JSON
+- ✅ Carregamento assíncrono de posts via hook `useApiFetch('/api/posts')`
+- ✅ Estados de loading e erro gerenciados pelo hook
+- ✅ Transformação de dados via `transform` para extrair array de posts
+- ✅ Callback `onError` para logging de erros
 - ✅ Limitação de quantidade de posts exibidos via prop `limit`
 - ✅ Renderização condicional: retorna `null` se não houver posts
 - ✅ Botão "Ver todas as postagens" quando há mais posts que o limite
@@ -51,12 +49,13 @@ Componente de seção principal que carrega e exibe uma lista de postagens do bl
 |------|------|-------------|-----------|
 | `limit` | `Number` | ❌ | Quantidade máxima de posts a serem exibidos |
 
+#### Dependências:
+- `useApiFetch` (via `/hooks/useApiFetch.js`)
+
 #### Pontos Técnicos Importantes:
-- **Resiliência de Rede**: Utiliza optional chaining (`res.headers?.get?.()`) para acessar metadados da resposta com segurança, evitando exceções em ambientes de teste ou proxies.
-- **Normalização de Dados**: Trata automaticamente respostas brutas ou encapsuladas (chave `data`), garantindo que o estado seja sempre um array válido.
-- **Parsing Defensivo**: Implementa blocos try/catch granulares para capturar falhas de serialização JSON, eliminando erros de sintaxe causados por retornos HTML inesperados.
-- **UX e Performance**: Gerencia estados de carregamento e exibe mensagens de erro amigáveis; utiliza efeitos isolados para evitar requisições duplicadas na montagem.
-- **Rastreabilidade**: Sistema de logs detalhados no console para facilitar o diagnóstico rápido de falhas de comunicação ou formato.
+- **Fetch centralizado**: Utiliza `useApiFetch` que gerencia estados de loading/error automaticamente
+- **Transformação de dados**: O parâmetro `transform` extrai `responseData.data` e valida se é um array
+- **Código reduzido**: Fetch manual de ~55 linhas substituído por 1 chamada de hook
 
 ---
 
@@ -235,7 +234,7 @@ Componente de card individual para exibição de músicas com integração nativ
 Galeria completa de músicas com sistema de busca, paginação local e tratamento completo de estados. É o componente principal para listagem e filtro de músicas.
 
 #### Funcionalidades:
-- ✅ Carregamento assíncrono de músicas via API `/api/musicas?public=true`
+- ✅ Carregamento assíncrono de músicas via hook `useApiFetch('/api/musicas?public=true')`
 - ✅ Busca em tempo real por título ou artista
 - ✅ Paginação local com 6 itens por página
 - ✅ Filtragem otimizada com `useMemo`
@@ -245,19 +244,22 @@ Galeria completa de músicas com sistema de busca, paginação local e tratament
 - ✅ Reset automático para página 1 ao pesquisar
 - ✅ Integração nativa com componente `MusicCard`
 
+#### Dependências:
+- `useApiFetch` (via `/hooks/useApiFetch.js`)
+
 #### Estados:
 | Estado | Função |
 |--------|--------|
 | `searchTerm` | Termo de busca digitado pelo usuário |
-| `musicas` | Array completo de músicas carregadas |
+| `musicas` | Array completo de músicas carregadas (via `useApiFetch`) |
 | `currentPage` | Página atual da paginação |
-| `loading`, `error` | Estados de carregamento e erro |
+| `loading`, `error` | Estados gerenciados pelo `useApiFetch` |
 
 #### Pontos Técnicos Importantes:
 - Paginação é feita 100% no lado cliente
 - Busca é case-insensitive e trim automático
 - `useMemo` evita recálculos desnecessários no filtro
-- Possui fallback para diferentes formatos de resposta da API
+- Fetch centralizado via `useApiFetch` com `transform` para normalizar resposta da API
 - Ordem correta de renderização dos estados
 
 ---
@@ -349,18 +351,22 @@ Componente de card individual para exibição de vídeos com integração nativa
 Galeria completa de vídeos com sistema de busca otimizado, paginação no servidor e debounce inteligente.
 
 #### Funcionalidades:
-- ✅ Busca com debounce de 300ms para evitar requisições excessivas
-- ✅ Paginação server-side com 6 itens por página
+- ✅ Busca com debounce de 300ms via `useDebounce` (hook compartilhado)
+- ✅ Paginação server-side com 6 itens por página via `useApiFetch`
 - ✅ Tratamento completo de estados: loading, erro, sem resultados
-- ✅ Hook customizado `useDebounce` implementado internamente
-- ✅ `useCallback` para otimização de memória
+- ✅ Fetch com dependências reativas (`deps: [currentPage, debouncedSearchTerm]`)
+- ✅ Função `refetch` para recarregar manualmente (botão "Tentar novamente")
 - ✅ Reseta automaticamente para página 1 ao pesquisar
 - ✅ Integração nativa com componente `VideoCard`
+
+#### Dependências:
+- `useApiFetch` (via `/hooks/useApiFetch.js`)
+- `useDebounce` (via `/hooks/useDebounce.js`)
 
 #### Características Únicas:
 - Única galeria que utiliza paginação no lado servidor
 - Debounce previne múltiplas chamadas API enquanto o usuário digita
-- Todas as requisições incluem parâmetros de paginação e busca
+- `useDebounce` extraído para hook standalone (removido código inline)
 
 ---
 
@@ -407,7 +413,7 @@ Componente de Dicas do Dia com sistema inteligente de carrossel que alterna auto
 
 #### Funcionalidades:
 - ✅ Dados fallback embarcados para funcionamento offline
-- ✅ Carregamento dinâmico via API `/api/dicas`
+- ✅ Carregamento dinâmico via hook `useApiFetch('/api/dicas')` com fallback
 - ✅ Modo automático: Grid até 3 itens, Carrossel acima de 3 itens
 - ✅ Navegação com setas que aparecem dinamicamente
 - ✅ Scroll suave com comportamento nativo do navegador
@@ -415,11 +421,14 @@ Componente de Dicas do Dia com sistema inteligente de carrossel que alterna auto
 - ✅ Atualização automática das setas no resize da janela
 - ✅ CSS-in-JS nativo com `style jsx`
 
+#### Dependências:
+- `useApiFetch` (via `/hooks/useApiFetch.js`)
+
 #### Características Únicas:
 - Único componente Features que utiliza CSS-in-JS
 - Não possui arquivo .css externo
 - Implementa lógica condicional de layout
-- Dados de fallback sempre disponíveis mesmo se API falhar
+- Dados de fallback sempre disponíveis mesmo se API falhar (via `initialData` + fallback estático)
 - Setas de navegação só aparecem se realmente for possível rolar
 
 ---
@@ -441,16 +450,16 @@ Componente de Dicas do Dia com sistema inteligente de carrossel que alterna auto
 
 ## 📋 Dependências
 
-| Componente | Dependências Internas |
-|------------|------------------------|
-| BlogSection | PostCard |
-| MusicGallery | MusicCard |
-| VideoGallery | VideoCard |
-| ContentTabs | BlogSection, MusicGallery, VideoGallery, ProductList |
-| PostCard | Nenhuma |
-| MusicCard | Nenhuma |
-| VideoCard | LazyIframe (Performance) |
-| Testimonials | Nenhuma |
+| Componente | Dependências Internas | Hooks do Projeto |
+|------------|------------------------|------------------|
+| BlogSection | PostCard | `useApiFetch` |
+| MusicGallery | MusicCard | `useApiFetch` |
+| VideoGallery | VideoCard | `useApiFetch`, `useDebounce` |
+| ContentTabs | BlogSection, MusicGallery, VideoGallery, ProductList | — |
+| PostCard | Nenhuma | — |
+| MusicCard | Nenhuma | — |
+| VideoCard | LazyIframe (Performance) | — |
+| Testimonials | Nenhuma | `useApiFetch` |
 
 ---
 

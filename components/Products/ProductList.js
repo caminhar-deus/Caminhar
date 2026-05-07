@@ -1,62 +1,43 @@
 import React, { useState, useEffect } from 'react';
+import { useApiFetch, useDebounce } from '@/hooks';
 import ProductCard from './ProductCard';
 
 export default function ProductList() {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
-  const [debouncedMin, setDebouncedMin] = useState('');
-  const [debouncedMax, setDebouncedMax] = useState('');
-  const itemsPerPage = 12; // Define quantos produtos aparecerão por página
+  const itemsPerPage = 12;
 
-  // Efeito de Debounce: Aguarda 500ms após o usuário parar de digitar para chamar a API
+  const debouncedSearch = useDebounce(searchTerm, 500);
+  const debouncedMin = useDebounce(minPrice, 500);
+  const debouncedMax = useDebounce(maxPrice, 500);
+
+  // Reseta para página 1 quando os filtros debounced mudam
   useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearch(searchTerm);
-      setDebouncedMin(minPrice);
-      setDebouncedMax(maxPrice);
-      setCurrentPage(1); // Reseta para a página 1 ao fazer uma nova busca
-    }, 500);
-    return () => clearTimeout(handler);
-  }, [searchTerm, minPrice, maxPrice]);
+    setCurrentPage(1);
+  }, [debouncedSearch, debouncedMin, debouncedMax]);
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      setLoading(true);
-      try {
-        let url = `/api/products?page=${currentPage}&limit=${itemsPerPage}&public=true&search=${encodeURIComponent(debouncedSearch)}`;
-        if (debouncedMin) url += `&minPrice=${debouncedMin}`;
-        if (debouncedMax) url += `&maxPrice=${debouncedMax}`;
-        
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('Erro ao carregar produtos');
-        
-        const result = await response.json();
-        
-        // Garante a ordenação no Front-end do mais novo para o mais antigo (maior ID)
-        const sortedProducts = (result.data || []).sort((a, b) => {
-          const posA = a.position ?? 9999;
-          const posB = b.position ?? 9999;
-          if (posA === posB) return b.id - a.id;
-          return posA - posB;
-        });
-        setProducts(sortedProducts);
-        setTotalPages(result.pagination?.totalPages || 1);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+  let url = `/api/products?page=${currentPage}&limit=${itemsPerPage}&public=true&search=${encodeURIComponent(debouncedSearch)}`;
+  if (debouncedMin) url += `&minPrice=${debouncedMin}`;
+  if (debouncedMax) url += `&maxPrice=${debouncedMax}`;
 
-    fetchProducts();
-  }, [currentPage, debouncedSearch, debouncedMin, debouncedMax]);
+  const { data: responseData, loading, error } = useApiFetch(url, {
+    deps: [currentPage, debouncedSearch, debouncedMin, debouncedMax],
+    transform: (result) => {
+      // Garante a ordenação do mais novo para o mais antigo (maior ID)
+      const products = (result.data || []).sort((a, b) => {
+        const posA = a.position ?? 9999;
+        const posB = b.position ?? 9999;
+        if (posA === posB) return b.id - a.id;
+        return posA - posB;
+      });
+      return { products, totalPages: result.pagination?.totalPages || 1 };
+    },
+  });
+
+  const products = responseData?.products || [];
+  const totalPages = responseData?.totalPages || 1;
 
   return (
     <div>
@@ -116,9 +97,9 @@ export default function ProductList() {
         </div>
       </div>
 
-      {/* Container com altura mínima para evitar Layout Shift ao carregar ou trocar de página */}
+      {/* Container com altura mínima para evitar Layout Shift */}
       <div style={{ minHeight: '600px' }}>
-        {/* Tratamento de Estados (Erro, Loading, Vazio) */}
+        {/* Tratamento de Estados */}
         {error && <div style={{ textAlign: 'center', color: 'red', padding: '40px' }}>❌ {error}</div>}
         {loading && !error && <div style={{ textAlign: 'center', padding: '40px' }}>⏳ Buscando produtos...</div>}
         {!loading && !error && products.length === 0 && (

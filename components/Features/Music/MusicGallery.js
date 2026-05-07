@@ -1,42 +1,22 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
+import { useApiFetch } from '@/hooks';
 import MusicCard from './MusicCard';
 import styles from './styles/MusicGallery.module.css';
 
 export default function MusicGallery() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [musicas, setMusicas] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { data: musicasData, loading, error } = useApiFetch('/api/musicas?public=true', {
+    transform: (result) => {
+      const musicasArray = Array.isArray(result) ? result : (result.data || []);
+      return musicasArray;
+    },
+  });
+
+  const musicas = musicasData || [];
 
   // Estados da Paginação Local
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6; // Quantidade de músicas a serem exibidas por vez
-
-  // Carrega as músicas do banco de dados
-  useEffect(() => {
-    const loadMusicas = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        const response = await fetch('/api/musicas?public=true');
-        if (response.ok) {
-          const data = await response.json();
-          // Verifica se data é um array ou objeto com data.data
-          const musicasArray = Array.isArray(data) ? data : (data.data || []);
-          setMusicas(musicasArray);
-        } else {
-          throw new Error('Erro ao carregar músicas');
-        }
-      } catch (error) {
-        console.error('Error loading musicas:', error);
-        setError('Erro ao carregar músicas');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadMusicas();
-  }, []);
 
   // Filtra as músicas com base no termo de busca
   const filteredMusicas = useMemo(() => {
@@ -105,7 +85,7 @@ export default function MusicGallery() {
         </div>
       </div>
 
-      {/* Resultados da busca - ORDEM CORRIGIDA */}
+      {/* Resultados da busca */}
       <div className={styles.galleryGrid}>
         {loading ? (
           <div className={styles.loading}>

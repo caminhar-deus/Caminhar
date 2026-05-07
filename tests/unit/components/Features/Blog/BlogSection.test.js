@@ -43,7 +43,6 @@ describe('Componente Front-End - BlogSection', () => {
     global.fetch.mockResolvedValueOnce({ 
       ok: true, 
       json: async () => ({ success: true, data: [] }),
-      headers: { get: jest.fn().mockReturnValue('application/json') }
     });
     const { container } = render(<BlogSection />);
     
@@ -55,7 +54,6 @@ describe('Componente Front-End - BlogSection', () => {
     global.fetch.mockResolvedValueOnce({ 
       ok: true, 
       json: async () => ({ success: true, data: mockPosts }),
-      headers: { get: jest.fn().mockReturnValue('application/json') }
     });
     render(<BlogSection />);
     
@@ -69,7 +67,6 @@ describe('Componente Front-End - BlogSection', () => {
     global.fetch.mockResolvedValueOnce({ 
       ok: true, 
       json: async () => ({ success: true, data: mockPosts }),
-      headers: { get: jest.fn().mockReturnValue('application/json') }
     });
     render(<BlogSection limit={2} />);
     
@@ -83,7 +80,6 @@ describe('Componente Front-End - BlogSection', () => {
     global.fetch.mockResolvedValueOnce({ 
       ok: true, 
       json: async () => ({ success: true, data: mockPosts }),
-      headers: { get: jest.fn().mockReturnValue('application/json') }
     });
     render(<BlogSection limit={5} />);
     
@@ -98,7 +94,6 @@ describe('Componente Front-End - BlogSection', () => {
     global.fetch.mockResolvedValueOnce({ 
       ok: true, 
       json: async () => ({ success: false }),
-      headers: { get: jest.fn().mockReturnValue('application/json') }
     });
     render(<BlogSection />);
     await waitFor(() => expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('API returned success: false'), expect.any(Object)));
@@ -111,10 +106,9 @@ describe('Componente Front-End - BlogSection', () => {
       ok: false, 
       status: 500, 
       json: async () => ({ message: 'Erro no servidor' }),
-      headers: { get: jest.fn().mockReturnValue('application/json') }
     });
     render(<BlogSection />);
-    await waitFor(() => expect(consoleSpy).toHaveBeenCalledWith('API Error fetching posts:', 500, 'Erro no servidor'));
+    await waitFor(() => expect(consoleSpy).toHaveBeenCalledWith('Erro ao carregar posts:', expect.objectContaining({ message: 'Erro no servidor' })));
     consoleSpy.mockRestore();
   });
 
@@ -124,10 +118,9 @@ describe('Componente Front-End - BlogSection', () => {
       ok: false, 
       status: 404, 
       json: async () => ({ }),
-      headers: { get: jest.fn().mockReturnValue('application/json') }
     }); // JSON vazio
     render(<BlogSection />);
-    await waitFor(() => expect(consoleSpy).toHaveBeenCalledWith('API Error fetching posts:', 404, 'Unknown error'));
+    await waitFor(() => expect(consoleSpy).toHaveBeenCalledWith('Erro ao carregar posts:', expect.objectContaining({ message: 'Erro HTTP 404' })));
     consoleSpy.mockRestore();
   });
 
@@ -137,11 +130,10 @@ describe('Componente Front-End - BlogSection', () => {
       ok: false, 
       status: 500, 
       json: () => Promise.reject(new Error('Unparsable')),
-      headers: { get: jest.fn().mockReturnValue('application/json') }
     });
     render(<BlogSection />);
     await waitFor(() => expect(consoleSpy).toHaveBeenCalledWith(
-      'API retornou erro HTTP 500 mas conteúdo não é JSON válido'
+      'Erro ao carregar posts:', expect.objectContaining({ message: 'Erro HTTP 500' })
     ));
     consoleSpy.mockRestore();
   });

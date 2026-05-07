@@ -1,6 +1,6 @@
 # Documentação Testes Unitários - Componentes (Parte 03)
 
-> **Data da Análise:** 01/05/2026  
+> **Data da Análise:** 01/05/2026 | **Última atualização:** 06/05/2026  
 > **Versão:** 1.1  
 > **Arquivos Analisados:** 21 arquivos de teste unitário de componentes
 

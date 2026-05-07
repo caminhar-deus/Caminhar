@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useApiFetch } from '@/hooks';
 
 const fallbackData = [
   {
@@ -19,38 +20,27 @@ const fallbackData = [
 ];
 
 export default function Testimonials() {
-  const [dicas, setDicas] = useState(fallbackData);
-  const [loading, setLoading] = useState(true);
+  const { data: apiDicas, loading } = useApiFetch('/api/dicas', {
+    initialData: [],
+    transform: (result) => {
+      if (result && result.length > 0) return result;
+      return [];
+    },
+    onError: (err) => console.error('Erro ao buscar as dicas do dia:', err),
+  });
+
+  // Usa dados da API se disponíveis, senão fallback
+  const dicas = apiDicas.length > 0 ? apiDicas : fallbackData;
+
   const scrollRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
-
-  useEffect(() => {
-    const fetchDicas = async () => {
-      try {
-        const res = await fetch('/api/dicas');
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.length > 0) {
-            setDicas(data); // Substitui os dados fixos pelos do Banco de Dados!
-          }
-        }
-      } catch (error) {
-        console.error('Erro ao buscar as dicas do dia:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDicas();
-  }, []);
 
   // Verifica a posição da rolagem para mostrar/esconder as setas
   const handleScroll = () => {
     if (scrollRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-      // Mostra a seta da esquerda se não estiver no começo (com uma pequena margem de segurança)
       setCanScrollLeft(scrollLeft > 1);
-      // Mostra a seta da direita se a posição atual + largura visível for menor que o total
       setCanScrollRight(Math.ceil(scrollLeft + clientWidth) < scrollWidth - 1);
     }
   };
@@ -62,12 +52,11 @@ export default function Testimonials() {
     return () => window.removeEventListener('resize', handleScroll);
   }, [dicas]);
 
-  // Variável que checa se temos itens suficientes para habilitar o modo carrossel
   const hasCarousel = dicas.length > 3;
 
   const scroll = (direction) => {
     if (scrollRef.current) {
-      const scrollAmount = 340; // Movimento aproximado da largura do card + espaçamento
+      const scrollAmount = 340;
       scrollRef.current.scrollBy({
         left: direction === 'left' ? -scrollAmount : scrollAmount,
         behavior: 'smooth'
@@ -126,7 +115,7 @@ export default function Testimonials() {
       <style jsx>{`
         .dicas-container {
           gap: 2rem;
-          padding: 1rem 0; /* O padding evita que a sombra "vaze" nas laterais do overflow */
+          padding: 1rem 0;
         }
         .dicas-container.grid {
           display: grid;
@@ -137,11 +126,11 @@ export default function Testimonials() {
           flex-wrap: nowrap;
           overflow-x: auto;
           scroll-behavior: smooth;
-          -ms-overflow-style: none; /* Esconde a barra de rolagem no IE e Edge */
-          scrollbar-width: none; /* Esconde a barra no Firefox */
+          -ms-overflow-style: none;
+          scrollbar-width: none;
         }
         .dicas-container.carousel::-webkit-scrollbar {
-          display: none; /* Esconde a barra nativa do Chrome/Safari */
+          display: none;
         }
         .dica-card {
           background-color: #ffffff;

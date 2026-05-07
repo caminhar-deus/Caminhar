@@ -679,19 +679,35 @@ Este componente implementa todo o sistema de gerenciamento de usuários do paine
 |---|---|
 | **Tipo** | Higher-Order Component (HOC) |
 | **Propósito** | Camada de segurança e proteção de rotas administrativas |
-| **Linhas de Código** | 135 |
+| **Linhas de Código** | 117 |
 | **Status** | Produção |
+| **Dependências** | `useAdminAuth` Hook (via `/hooks/useAdminAuth.js`) |
 
 ---
 
 ### ✅ Principais Características
 
 ✅ **Protege automaticamente qualquer página administrativa**  
-✅ **Gerencia ciclo completo de autenticação**  
+✅ **Gerencia ciclo completo de autenticação via hook `useAdminAuth`**  
 ✅ **Inclui formulário de login nativo**  
 ✅ **Layout padrão administrativo com cabeçalho e logout**  
 ✅ **Verificação de autenticação em primeiro render**  
-✅ **Tratamento de sessão expirada**
+✅ **Estados de loading/error do login gerenciados pelo hook**
+
+---
+
+### 🔌 Integração com Hook
+
+Consome o hook `useAdminAuth` que unifica toda a lógica de autenticação:
+
+| Funcionalidade | Hook Responsável |
+|---|---|
+| Verificação de sessão | `useAdminAuth().isChecking` |
+| Estado autenticado | `useAdminAuth().isAuthenticated` |
+| Login | `useAdminAuth().handleLogin(username, password)` |
+| Logout com redirect | `useAdminAuth().handleLogout()` |
+| Loading do login | `useAdminAuth().loginLoading` |
+| Erro do login | `useAdminAuth().loginError` |
 
 ---
 
@@ -699,4 +715,4 @@ Este componente implementa todo o sistema de gerenciamento de usuários do paine
 
 ---
 
-> Última atualização da documentação: 20/04/2026
+> Última atualização da documentação: 05/05/2026

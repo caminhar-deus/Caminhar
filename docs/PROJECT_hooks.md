@@ -27,11 +27,14 @@ Arquivo de entrada e índice público dos hooks. Gerencia as exportações ofici
 ✅ Exporta `useAdminCrud` como named export
 ✅ Exporta `usePerformanceMetrics`, `reportWebVitals`, `detectPerformanceIssues` como named export
 ✅ Exporta `useAuth`, `AuthContext`, `AuthProvider` do arquivo `/hooks/useAuth.js`
-✅ Exporta `useThemeDefault` e `useAuthDefault` como default export
+✅ Exporta `useApiFetch` como named export
+✅ Exporta `useDebounce` como named export
+✅ Exporta `useAdminAuth` como named export
+✅ Exporta `useThemeDefault`, `useAuthDefault`, `useApiFetchDefault`, `useDebounceDefault`, `useAdminAuthDefault` como default export
 ✅ Apenas re-exportações, nenhuma lógica
 
 #### Observação:
-- ✅ Todos os 4 hooks agora estão exportados publicamente
+- ✅ Todos os 7 hooks agora estão exportados publicamente
 - Também exporta funções auxiliares: `reportWebVitals` e `detectPerformanceIssues`
 
 ---
@@ -181,6 +184,94 @@ Hook de autenticação e contexto global para gerenciamento de sessão de usuár
 
 ---
 
+### 6. 🔄 `/hooks/useApiFetch.js`
+
+#### Propósito
+Hook genérico para fetch de API com estados de loading/error. Centraliza o padrão `useState` + `useEffect` + fetch manual que se repetia em 5 componentes.
+
+#### Funcionalidades:
+✅ Fetch automático com estados loading/error
+✅ Suporte a dependências customizadas para re-fetch
+✅ Função `refetch` para recarregar manualmente
+✅ Função `setData` para definir dados manualmente
+✅ `transform` para processar resposta da API
+✅ Callback `onError` para tratamento de erros
+
+#### API:
+| Parâmetro | Padrão | Descrição |
+|---|---|---|
+| `url` | Obrigatório | Endpoint da API |
+| `options` | `{}` | Opções do fetch (method, body, headers) |
+| `deps` | `[]` | Dependências para re-executar o fetch |
+| `transform` | Opcional | Função para transformar dados da resposta |
+| `initialData` | `null` | Valor inicial para `data` |
+| `onError` | Opcional | Callback em caso de erro |
+
+#### Retorno:
+`{ data, loading, error, refetch, setData }`
+
+#### Componentes que utilizam:
+- `components/Features/Blog/BlogSection.js`
+- `components/Features/Music/MusicGallery.js`
+- `components/Features/Video/VideoGallery.js`
+- `components/Products/ProductList.js`
+- `components/Features/Testimonials/index.js`
+
+---
+
+### 7. ⏱️ `/hooks/useDebounce.js`
+
+#### Propósito
+Hook de debounce reutilizável. Aguarda o usuário parar de digitar antes de atualizar o valor, evitando chamadas excessivas à API.
+
+#### Funcionalidades:
+✅ Delay configurável (default 300ms)
+✅ Cleanup automático do timeout ao desmontar
+✅ Leve e sem dependências externas
+
+#### API:
+| Parâmetro | Padrão | Descrição |
+|---|---|---|
+| `value` | Obrigatório | Valor a ser debounced |
+| `delay` | `300` | Tempo em ms de espera |
+
+#### Retorno:
+Valor atualizado após o delay
+
+#### Componentes que utilizam:
+- `components/Features/Video/VideoGallery.js`
+- `components/Products/ProductList.js`
+
+### 8. 🔐 `/hooks/useAdminAuth.js`
+
+#### Propósito
+Hook de autenticação para área administrativa. Unifica verificação de sessão, login e logout com redirect. Substitui a lógica que estava duplicada no HOC `withAdminAuth`.
+
+#### Funcionalidades:
+✅ Verificação automática de autenticação na montagem
+✅ Login com estados de loading/error
+✅ Logout com redirect para `/admin`
+✅ Compartilhamento de estado entre HOC e formulário de login
+✅ Tratamento de erros de conexão
+
+#### API:
+| Retorno | Descrição |
+|---|---|
+| `isAuthenticated` | Se o usuário está autenticado |
+| `isChecking` | Estado de verificação inicial |
+| `handleLogin(username, password)` | Função de login |
+| `handleLogout()` | Função de logout com redirect |
+| `loginLoading` | Estado de carregamento do login |
+| `loginError` | Mensagem de erro do login ou `null` |
+
+#### Características:
+- ✅ Substitui lógica manual de `useState`/`useEffect` que estava no HOC
+- ✅ `LoginForm` recebe funções como props (componente presentacional)
+- ✅ Unifica o fluxo de autenticação admin em um único hook
+- ✅ HOC `withAdminAuth` refatorado para consumir o hook
+
+---
+
 ## 📌 Observações Gerais
 1. ✅ Todos os hooks seguem padrão funcional moderno do React
 2. ✅ Possuem documentação JSDoc completa
@@ -198,6 +289,9 @@ Hook de autenticação e contexto global para gerenciamento de sessão de usuár
 | `usePerformanceMetrics` | `_app.js`, painel administrativo |
 | `useTheme` | Todos os componentes UI, páginas e layout |
 | `useAuth` | Todos os componentes públicos, áreas privadas, sistema de login |
+| `useApiFetch` | `BlogSection`, `MusicGallery`, `VideoGallery`, `ProductList`, `Testimonials` |
+| `useDebounce` | `VideoGallery`, `ProductList` |
+| `useAdminAuth` | `withAdminAuth` (HOC) → todos os componentes Admin protegidos |
 
 ---
 

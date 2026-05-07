@@ -41,16 +41,19 @@ describe('Componente Front-End - ProductList', () => {
     });
 
     // Valida se a chamada inicial para a API estava com os parâmetros corretos
-    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/products?page=1&limit=12&public=true'));
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/products?page=1&limit=12&public=true'),
+      expect.objectContaining({ credentials: 'include' })
+    );
   });
 
   it('deve exibir mensagem de erro caso a API falhe', async () => {
-    global.fetch.mockResolvedValueOnce({ ok: false });
+    global.fetch.mockResolvedValueOnce({ ok: false, json: async () => ({}) });
 
     render(<ProductList />);
 
     await waitFor(() => {
-      expect(screen.getByText(/Erro ao carregar produtos/)).toBeInTheDocument();
+      expect(screen.getByText(/Erro HTTP/)).toBeInTheDocument();
     });
   });
 
@@ -83,7 +86,7 @@ describe('Componente Front-End - ProductList', () => {
     });
 
     // A API deve ter sido chamada uma segunda vez contendo "search=Bíblia"
-    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('search=B%C3%ADblia'));
+    expect(global.fetch).toHaveBeenNthCalledWith(2, expect.stringContaining('search=B%C3%ADblia'), expect.any(Object));
   });
 
   it('deve avançar a página ao clicar no botão "Próxima"', async () => {
@@ -99,8 +102,10 @@ describe('Componente Front-End - ProductList', () => {
       fireEvent.click(nextButton);
     });
 
-    // Garante que a API foi chamada com page=2
-    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('page=2'));
+    // Garante que a API foi chamada com page=2 na segunda chamada
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenNthCalledWith(2, expect.stringContaining('page=2'), expect.any(Object));
+    });
   });
 
   it('deve aplicar filtros de preço mínimo e máximo na busca da API e exibir mensagem de filtros vazios', async () => {
@@ -123,8 +128,8 @@ describe('Componente Front-End - ProductList', () => {
       jest.advanceTimersByTime(500); // Aciona o Debounce
     });
 
-    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('minPrice=50'));
-    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('maxPrice=150'));
+    expect(global.fetch).toHaveBeenNthCalledWith(2, expect.stringContaining('minPrice=50'), expect.any(Object));
+    expect(global.fetch).toHaveBeenNthCalledWith(2, expect.stringContaining('maxPrice=150'), expect.any(Object));
 
     await waitFor(() => {
       expect(screen.getByText('Nenhum produto encontrado com estes filtros.')).toBeInTheDocument();

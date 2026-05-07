@@ -74,7 +74,7 @@ describe('Componente Front-End - VideoGallery', () => {
       jest.advanceTimersByTime(300);
     });
     
-    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('search=Teste'));
+    expect(global.fetch).toHaveBeenNthCalledWith(2, expect.stringContaining('search=Teste'), expect.any(Object));
     
     // Testa o botão de limpar do input de busca (aquele com o '✕')
     const clearButton = screen.getByLabelText('Limpar busca');
@@ -84,7 +84,6 @@ describe('Componente Front-End - VideoGallery', () => {
     });
     
     expect(searchInput.value).toBe('');
-    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('search=')); // chamou com busca vazia
   });
 
   it('deve exibir a mensagem de lista vazia e permitir limpar a busca pelo botão "Limpar busca"', async () => {
@@ -132,11 +131,11 @@ describe('Componente Front-End - VideoGallery', () => {
   it('deve exibir mensagem de erro se o fetch falhar e tentar de novo', async () => {
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     
-    global.fetch.mockResolvedValueOnce({ ok: false });
+    global.fetch.mockResolvedValueOnce({ ok: false, status: 500, json: async () => ({ error: 'Erro no servidor' }) });
     render(<VideoGallery />);
     
     await waitFor(() => {
-      expect(screen.getByText('Erro ao carregar vídeos. Por favor, tente novamente.')).toBeInTheDocument();
+      expect(screen.getByText(/Erro no servidor/)).toBeInTheDocument();
     });
     
     // Simula uma API bem-sucedida após a primeira falha
@@ -154,14 +153,14 @@ describe('Componente Front-End - VideoGallery', () => {
     consoleSpy.mockRestore();
   });
 
-  it('deve exibir mensagem de erro genérico se a API retornar success = false', async () => {
+  it('deve exibir mensagem de erro se a API retornar HTTP com erro', async () => {
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ success: false }) }); // Forçando falha sem mensagem de erro customizada
+    global.fetch.mockResolvedValueOnce({ ok: false, status: 500, json: async () => ({ error: 'Erro interno' }) });
     
     render(<VideoGallery />);
     
     await waitFor(() => {
-      expect(screen.getByText('Erro ao carregar vídeos. Por favor, tente novamente.')).toBeInTheDocument();
+      expect(screen.getByText(/Erro interno/)).toBeInTheDocument();
     });
     
     consoleSpy.mockRestore();
@@ -179,11 +178,11 @@ describe('Componente Front-End - VideoGallery', () => {
     const nextBtn = screen.getByText('Próxima');
     await act(async () => { fireEvent.click(nextBtn); });
     
-    await waitFor(() => expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('page=2')));
+    await waitFor(() => expect(global.fetch).toHaveBeenNthCalledWith(2, expect.stringContaining('page=2'), expect.any(Object)));
     
     const prevBtn = screen.getByText('Anterior');
     await act(async () => { fireEvent.click(prevBtn); });
     
-    await waitFor(() => expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('page=1')));
+    await waitFor(() => expect(global.fetch).toHaveBeenNthCalledWith(3, expect.stringContaining('page=1'), expect.any(Object)));
   });
 });

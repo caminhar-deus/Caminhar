@@ -556,13 +556,17 @@
 ├── GEMINI.md
 ├── hooks
 │   ├── index.js
+│   ├── useAdminAuth.js
 │   ├── useAdminCrud.js
+│   ├── useApiFetch.js
 │   ├── useAuth.js
+│   ├── useDebounce.js
 │   ├── usePerformanceMetrics.js
 │   └── useTheme.js
 ├── jest.config.js
 ├── jest.setup.js
 ├── jest.teardown.js
+├── jsconfig.json
 ├── knip.json
 ├── lib
 │   ├── api
@@ -1049,4 +1053,4 @@
 ├── tests-output.log
 └── tree.txt
 
-158 directories, 892 files
+158 directories, 896 files

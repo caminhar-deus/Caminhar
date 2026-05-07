@@ -3,19 +3,26 @@
  * Configuração centralizada para todos os testes
  * 
  * Este arquivo configura:
- * - Mocks globais (fetch, localStorage)
+ * - Mocks globais (fetch, localStorage, crypto)
  * - Setup do React Testing Library
  * - Cleanup automático
  * - Matchers customizados
  * - Polyfills para ambiente Node.js/JSDOM
  */
 
-// Import jest-dom matchers for extended assertions
-import '@testing-library/jest-dom';
-// Import custom matchers
-import './matchers/index.js';
+// ============================================================================
+// IMPORTS
+// ============================================================================
+
+// Polyfills
 import { TextEncoder, TextDecoder } from 'util';
-import { cleanup } from '@testing-library/react';
+
+// Testing Library
+import '@testing-library/jest-dom';
+import { configure, cleanup } from '@testing-library/react';
+
+// Custom matchers
+import './matchers/index.js';
 
 // ============================================================================
 // POLYFILLS
@@ -30,7 +37,9 @@ if (typeof globalThis.ReadableStream === 'undefined') {
   try {
     const { ReadableStream } = require('node:stream/web');
     globalThis.ReadableStream = ReadableStream;
-  } catch (e) {}
+  } catch (e) {
+    console.warn(`⚠️ Polyfill ReadableStream failed: ${e.message}`);
+  }
 }
 
 // Polyfill MessageChannel/MessagePort (necessário para undici em alguns ambientes)
@@ -39,7 +48,9 @@ if (typeof globalThis.MessageChannel === 'undefined') {
     const { MessageChannel, MessagePort } = require('node:worker_threads');
     globalThis.MessageChannel = MessageChannel;
     globalThis.MessagePort = MessagePort;
-  } catch (e) {}
+  } catch (e) {
+    console.warn(`⚠️ Polyfill MessageChannel failed: ${e.message}`);
+  }
 }
 
 // Polyfill Request/Response/Headers para JSDOM (necessário para Next.js Middleware & API tests)
@@ -113,12 +124,20 @@ if (typeof global.scrollTo === 'undefined') {
   global.scrollTo = jest.fn();
 }
 
+// Mock global crypto.randomUUID para evitar duplicação em cada teste
+if (typeof global.crypto === 'undefined' || !global.crypto.randomUUID) {
+  Object.defineProperty(global, 'crypto', {
+    value: {
+      randomUUID: jest.fn(() => 'test-uuid-' + Math.random().toString(36).substr(2, 9)),
+    },
+    writable: true,
+    configurable: true,
+  });
+}
+
 // ============================================================================
 // CONFIGURAÇÃO DO REACT TESTING LIBRARY
 // ============================================================================
-
-// Configuração do screen para debugging mais fácil
-import { configure } from '@testing-library/react';
 
 configure({
   // Tempo máximo de espera para findBy queries
@@ -135,35 +154,36 @@ configure({
 // MOCK GLOBAIS
 // ============================================================================
 
-// Mock do console.error para reduzir ruído em testes
-const originalError = console.error;
-beforeAll(() => {
-  console.error = (...args) => {
-    // Filtra erros conhecidos que não são relevantes para testes
-    if (
-      typeof args[0] === 'string' &&
-      (
-        args[0].includes('Warning: ReactDOM.render is no longer supported') ||
-        args[0].includes('Warning: React.createFactory()') ||
-        args[0].includes('API /api/posts retornou conteúdo inválido') ||
-        args[0].includes('Isso geralmente significa que a rota API quebrou')
-      )
-    ) {
-      return;
-    }
-    originalError.call(console, ...args);
-  };
-});
+// Substituição direta do console.error para filtrar warnings conhecidos
+// Não usa jest.spyOn para evitar conflitos com o ciclo de restauração do Jest entre suítes de teste
+const originalConsoleError = console.error;
 
-afterAll(() => {
-  console.error = originalError;
-});
+const REACT_DEPRECATION_WARNINGS = [
+  'Warning: ReactDOM.render is no longer supported',
+  'Warning: React.createFactory()',
+];
+
+const KNOWN_API_WARNINGS = [
+  'API /api/posts retornou conteúdo inválido',
+  'Isso geralmente significa que a rota API quebrou',
+];
+
+const ALL_FILTERS = [...REACT_DEPRECATION_WARNINGS, ...KNOWN_API_WARNINGS];
+
+console.error = (...args) => {
+  if (
+    typeof args[0] === 'string' &&
+    ALL_FILTERS.some(pattern => args[0].includes(pattern))
+  ) {
+    return;
+  }
+  originalConsoleError.call(console, ...args);
+};
 
 // ============================================================================
 // CLEANUP AUTOMÁTICO
 // ============================================================================
 
-// Limpa o DOM após cada teste para evitar vazamento de estado
 afterEach(() => {
   cleanup();
 });
@@ -208,4 +228,3 @@ global.suppressWarnings = async (fn, patterns) => {
 console.log('🧪 Test Suite Architecture loaded');
 console.log('📦 Node.js version:', process.version);
 console.log('🎯 Environment:', process.env.NODE_ENV || 'test');
-
