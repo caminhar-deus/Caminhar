@@ -131,6 +131,15 @@
   height: 0.375rem;
 }
 
+.md.dots {
+  gap: 0.25rem;
+}
+
+.md .dot {
+  width: 0.5rem;
+  height: 0.5rem;
+}
+
 .lg .dot {
   width: 0.625rem;
   height: 0.625rem;

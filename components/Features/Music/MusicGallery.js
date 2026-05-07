@@ -1,155 +1,114 @@
-import { useState, useMemo } from 'react';
-import { useApiFetch } from '@/hooks';
+import { useState } from 'react';
+import { useApiFetch, useDebounce } from '@/hooks';
 import MusicCard from './MusicCard';
 import styles from './styles/MusicGallery.module.css';
 
 export default function MusicGallery() {
   const [searchTerm, setSearchTerm] = useState('');
-  const { data: musicasData, loading, error } = useApiFetch('/api/musicas?public=true', {
-    transform: (result) => {
-      const musicasArray = Array.isArray(result) ? result : (result.data || []);
-      return musicasArray;
-    },
-  });
-
-  const musicas = musicasData || [];
-
-  // Estados da Paginação Local
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6; // Quantidade de músicas a serem exibidas por vez
 
-  // Filtra as músicas com base no termo de busca
-  const filteredMusicas = useMemo(() => {
-    if (!searchTerm.trim()) {
-      return musicas;
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  const { data: musicasResponse, loading, error } = useApiFetch(
+    `/api/musicas?public=true&page=${currentPage}&limit=6&search=${debouncedSearchTerm}`,
+    {
+      deps: [currentPage],
+      transform: (result) => {
+        return result;
+      },
     }
-
-    const term = searchTerm.toLowerCase().trim();
-    
-    return musicas.filter(musica => 
-      musica.titulo.toLowerCase().includes(term) ||
-      musica.artista.toLowerCase().includes(term)
-    );
-  }, [searchTerm, musicas]);
-
-  // Calcula e extrai apenas as músicas da página atual
-  const totalPages = Math.ceil(filteredMusicas.length / itemsPerPage) || 1;
-  const paginatedMusicas = filteredMusicas.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
   );
 
-  const handleSearchChange = (e) => {
+  // Extrai o array de músicas com fallback para diferentes formatos de resposta
+  const musicas = Array.isArray(musicasResponse)
+    ? musicasResponse
+    : musicasResponse?.data || [];
+
+  // Extrai dados de paginação com fallback
+  const totalPages = musicasResponse?.totalPages
+    || (musicasResponse?.pagination?.totalPages)
+    || Math.ceil((musicasResponse?.total || musicasResponse?.pagination?.total || musicas.length) / 6)
+    || 1;
+
+  const totalItems = musicasResponse?.total
+    || musicasResponse?.pagination?.total
+    || musicas.length;
+
+  const handleSearch = (e) => {
     setSearchTerm(e.target.value);
-    setCurrentPage(1); // Volta para a página 1 ao pesquisar
+    setCurrentPage(1);
   };
 
-  const clearSearch = () => {
-    setSearchTerm('');
-    setCurrentPage(1); // Volta para a página 1 ao limpar
+  const goToPage = (page) => {
+    setCurrentPage(page);
   };
 
   return (
     <div className={styles.galleryContainer}>
-      {/* Campo de busca */}
       <div className={styles.searchContainer}>
-        <div className={styles.searchWrapper}>
-          <input
-            type="text"
-            placeholder="Pesquisar por música ou artista..."
-            value={searchTerm}
-            onChange={handleSearchChange}
-            className={styles.searchInput}
-            aria-label="Campo de busca de músicas"
-          />
-          {searchTerm && (
-            <button
-              onClick={clearSearch}
-              className={styles.clearButton}
-              aria-label="Limpar busca"
-            >
-              ✕
-            </button>
-          )}
-        </div>
-        <div className={styles.searchInfo}>
-          {searchTerm ? (
-            <span className={styles.resultCount}>
-              {filteredMusicas.length} resultado{filteredMusicas.length !== 1 ? 's' : ''}
-            </span>
-          ) : (
-            <span className={styles.totalCount}>
-              {musicas.length} músicas disponíveis
-            </span>
-          )}
-        </div>
+        <input
+          type="text"
+          placeholder="Pesquisar por música ou artista..."
+          value={searchTerm}
+          onChange={handleSearch}
+          className={styles.searchInput}
+          aria-label="Buscar música ou artista"
+        />
       </div>
 
-      {/* Resultados da busca */}
-      <div className={styles.galleryGrid}>
-        {loading ? (
-          <div className={styles.loading}>
-            <div className={styles.loadingIcon}>🎵</div>
-            <p>Carregando músicas...</p>
-          </div>
-        ) : error ? (
-          <div className={styles.error}>
-            <div className={styles.errorIcon}>⚠️</div>
-            <h3>Erro ao carregar músicas</h3>
-            <p>{error}</p>
-            <button onClick={() => window.location.reload()} className={styles.retryButton}>
-              Tentar novamente
-            </button>
-          </div>
-        ) : paginatedMusicas.length > 0 ? (
-          paginatedMusicas.map((musica) => (
-            <MusicCard key={musica.id} musica={musica} />
-          ))
-        ) : (
-          <div className={styles.noResults}>
-            <div className={styles.noResultsIcon}>🎵</div>
-            <h3>Nenhuma música encontrada</h3>
-            <p>Tente buscar por outro artista ou nome de música.</p>
-            <button onClick={clearSearch} className={styles.clearSearchButton}>
-              Limpar busca
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Controles de Paginação */}
-      {!loading && !error && totalPages > 1 && (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', marginTop: '40px', paddingBottom: '20px' }}>
-          <button 
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
-            disabled={currentPage === 1}
-            style={{ 
-              padding: '10px 20px', borderRadius: '8px', fontWeight: '500',
-              border: '1px solid #d1d5db', backgroundColor: currentPage === 1 ? '#f3f4f6' : '#fff',
-              color: currentPage === 1 ? '#9ca3af' : '#374151', cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s'
-            }}
-          >
-            Anterior
-          </button>
-          
-          <span style={{ fontWeight: '500', color: '#4b5563' }}>
-            Página {currentPage} de {totalPages}
-          </span>
-          
-          <button 
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} 
-            disabled={currentPage === totalPages}
-            style={{ 
-              padding: '10px 20px', borderRadius: '8px', fontWeight: '500',
-              border: '1px solid #d1d5db', backgroundColor: currentPage === totalPages ? '#f3f4f6' : '#fff',
-              color: currentPage === totalPages ? '#9ca3af' : '#374151', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s'
-            }}
-          >
-            Próxima
-          </button>
+      {loading && (
+        <div className={styles.loading}>
+          <div className={styles.loadingIcon}>🎵</div>
+          <p>Carregando músicas...</p>
         </div>
+      )}
+
+      {error && (
+        <div className={styles.error}>
+          <p>Erro ao carregar músicas. Tente novamente.</p>
+        </div>
+      )}
+
+      {!loading && !error && musicas.length === 0 && (
+        <div className={styles.noResults}>
+          <div className={styles.noResultsIcon}>🔍</div>
+          <p>Nenhuma música encontrada.</p>
+        </div>
+      )}
+
+      {!loading && !error && musicas.length > 0 && (
+        <>
+          <div className={styles.galleryGrid}>
+            {musicas.map((musica, index) => (
+              <MusicCard key={musica.id || index} musica={musica} />
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className={styles.pagination}>
+              <button
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage <= 1}
+                className={`${styles.pageButton} ${currentPage <= 1 ? styles.pageButtonDisabled : ''}`}
+                aria-label="Página anterior"
+              >
+                ❮ Anterior
+              </button>
+              <span className={styles.pageInfo}>
+                Página {currentPage} de {totalPages}
+                {totalItems && <span className={styles.totalInfo}> ({totalItems} músicas)</span>}
+              </span>
+              <button
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage >= totalPages}
+                className={`${styles.pageButton} ${currentPage >= totalPages ? styles.pageButtonDisabled : ''}`}
+                aria-label="Próxima página"
+              >
+                Próxima ❯
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

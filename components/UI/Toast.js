@@ -51,11 +51,24 @@ export const Toast = ({
 
   if (!isVisible) return null;
 
+  // Mapeia posição para animação de saída correspondente
+  const getExitAnimation = (pos) => {
+    const exitMap = {
+      'top-right': 'exitRight',
+      'bottom-right': 'exitRight',
+      'top-left': 'exitLeft',
+      'bottom-left': 'exitLeft',
+      'top-center': 'exitUp',
+      'bottom-center': 'exitDown',
+    };
+    return exitMap[pos] || 'exiting';
+  };
+
   const toastClasses = [
     styles.toast,
     styles[status],
     styles[position],
-    isExiting && styles.exiting,
+    isExiting && styles[getExitAnimation(position)],
     className,
   ]
     .filter(Boolean)

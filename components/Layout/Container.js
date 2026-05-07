@@ -7,6 +7,7 @@ import styles from './Container.module.css';
  * @param {boolean} centered - Centralizar horizontalmente
  * @param {boolean} fluid - Largura 100% com padding
  * @param {string} as - Elemento HTML (div, section, article, etc)
+ * @param {string} padding - Padding personalizado ('none' | 'sm' | 'md' | 'lg'). Se não fornecido, usa padding padrão responsivo.
  */
 export const Container = ({
   children,
@@ -14,14 +15,20 @@ export const Container = ({
   centered = true,
   fluid = false,
   as: Component = 'div',
+  padding,
   className = '',
   ...props
 }) => {
+  const paddingClass = padding
+    ? styles[`padding${padding.charAt(0).toUpperCase() + padding.slice(1)}`]
+    : null;
+
   const containerClasses = [
     styles.container,
     !fluid && styles[size],
     fluid && styles.fluid,
     centered && styles.centered,
+    paddingClass,
     className,
   ]
     .filter(Boolean)

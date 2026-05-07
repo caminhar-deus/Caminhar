@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import styles from './Button.module.css';
+import { Spinner } from './Spinner.js';
 
 /**
  * Button - Componente base de botão
@@ -12,6 +13,7 @@ import styles from './Button.module.css';
  * @param {ReactNode} rightIcon - Ícone à direita
  * @param {function} onClick - Handler de click
  * @param {string} type - 'button' | 'submit' | 'reset'
+ * @param {boolean} ripple - Habilita efeito ripple no clique (default: true)
  */
 export const Button = ({
   children,
@@ -24,9 +26,31 @@ export const Button = ({
   rightIcon,
   onClick,
   type = 'button',
+  ripple = true,
   className = '',
   ...props
 }) => {
+  const [ripples, setRipples] = useState([]);
+  const buttonRef = useRef(null);
+  const rippleIdRef = useRef(0);
+
+  const handleClick = useCallback((e) => {
+    if (ripple && !disabled && !loading && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const id = rippleIdRef.current++;
+
+      setRipples((prev) => [...prev, { x, y, id }]);
+
+      setTimeout(() => {
+        setRipples((prev) => prev.filter((r) => r.id !== id));
+      }, 600);
+    }
+
+    onClick?.(e);
+  }, [ripple, disabled, loading, onClick]);
+
   const buttonClasses = [
     styles.button,
     styles[variant],
@@ -34,6 +58,7 @@ export const Button = ({
     fullWidth && styles.fullWidth,
     loading && styles.loading,
     (disabled || loading) && styles.disabled,
+
     className,
   ]
     .filter(Boolean)
@@ -41,20 +66,25 @@ export const Button = ({
 
   return (
     <button
+      ref={buttonRef}
       type={type}
       className={buttonClasses}
-      onClick={onClick}
+      onClick={handleClick}
       disabled={disabled || loading}
       aria-disabled={disabled || loading ? "true" : "false"}
       aria-busy={loading ? "true" : "false"}
       {...props}
     >
+      {ripples.map((r) => (
+        <span
+          key={r.id}
+          className={styles.ripple}
+          style={{ left: r.x, top: r.y }}
+        />
+      ))}
       {loading && (
         <span className={styles.spinner} aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" strokeLinecap="round" className={styles.spinnerTrack} />
-            <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="4" strokeLinecap="round" className={styles.spinnerArc} />
-          </svg>
+          <Spinner size="sm" />
         </span>
       )}
       {!loading && leftIcon && (

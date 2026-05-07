@@ -11,7 +11,27 @@
   max-width: 400px;
   position: relative;
   overflow: hidden;
-  animation: slideIn 0.3s ease-out;
+}
+
+/* Animações por posição */
+.toast.topRight,
+.toast.bottomRight {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.toast.topLeft,
+.toast.bottomLeft {
+  animation: slideInLeft 0.3s ease-out;
+}
+
+.toast.bottomCenter,
+.toast.bottomRight {
+  animation: slideInUp 0.3s ease-out;
+}
+
+.toast.topCenter,
+.toast.topLeft {
+  animation: slideInDown 0.3s ease-out;
 }
 
 /* Status Colors */
@@ -166,13 +186,29 @@
   flex-direction: column-reverse;
 }
 
-/* Exit animation */
+/* Exit animations por posição */
 .exiting {
   animation: slideOut 0.3s ease-out forwards;
 }
 
-/* Animations */
-@keyframes slideIn {
+.exitRight {
+  animation: slideOutRight 0.3s ease-out forwards;
+}
+
+.exitLeft {
+  animation: slideOutLeft 0.3s ease-out forwards;
+}
+
+.exitUp {
+  animation: slideOutUp 0.3s ease-out forwards;
+}
+
+.exitDown {
+  animation: slideOutDown 0.3s ease-out forwards;
+}
+
+/* Animations - Slide In */
+@keyframes slideInRight {
   from {
     opacity: 0;
     transform: translateX(100%);
@@ -183,7 +219,41 @@
   }
 }
 
-@keyframes slideOut {
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animations - Slide Out */
+@keyframes slideOutRight {
   from {
     opacity: 1;
     transform: translateX(0);
@@ -191,6 +261,39 @@
   to {
     opacity: 0;
     transform: translateX(100%);
+  }
+}
+
+@keyframes slideOutLeft {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes slideOutDown {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+}
+
+@keyframes slideOutUp {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-100%);
   }
 }
 

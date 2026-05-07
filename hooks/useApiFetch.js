@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 /**
  * @typedef {Object} ApiFetchOptions
@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from 'react';
  * @property {Array} [deps=[]] - Dependências para re-executar o fetch
  * @property {function} [transform] - Função para transformar os dados da resposta
  * @property {*} [initialData=null] - Valor inicial para data
+ * @property {number} [staleTime] - Tempo em ms para considerar dados "frescos" e pular o fetch
  * @property {function} [onError] - Callback em caso de erro
  */
 
@@ -23,63 +24,75 @@ import { useState, useEffect, useCallback } from 'react';
  * Centraliza o padrão useState + useEffect + fetch + loading/error,
  * eliminando repetição em múltiplos componentes.
  *
- * @param {string} url - Endpoint da API
- * @param {ApiFetchOptions} [config={}] - Configurações opcionais
+ * @param {string} url - URL da API
+ * @param {ApiFetchOptions} [config={}] - Configurações
  * @returns {ApiFetchReturn}
- *
- * @example
- * const { data: posts, loading } = useApiFetch('/api/posts');
- * const { data: videos, loading, refetch } = useApiFetch('/api/videos', { deps: [page, search] });
  */
-export function useApiFetch(url, config = {}) {
+export const useApiFetch = (url, config = {}) => {
   const {
     options = {},
     deps = [],
     transform,
     initialData = null,
+    staleTime,
     onError,
   } = config;
 
   const [data, setData] = useState(initialData);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const lastFetchRef = useRef(0);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(url, {
-        credentials: 'include',
-        ...options,
-      });
+      const response = await fetch(url, options);
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || errorData.error || `Erro HTTP ${response.status}`);
+      if (!response.ok && response.status !== 304) {
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          // resposta sem corpo JSON
+        }
+        const errorMsg = errorData?.message || errorData?.error || `Erro HTTP ${response.status}`;
+        throw new Error(errorMsg);
       }
 
       let result = await response.json();
 
-      // Aplica transform se fornecido
-      if (transform) {
+      if (typeof transform === 'function') {
         result = transform(result);
       }
 
       setData(result);
+      lastFetchRef.current = Date.now();
     } catch (err) {
-      setError(err.message);
-      if (onError) onError(err);
+      const errorMessage = err.message || 'Erro desconhecido ao buscar dados';
+      setError(errorMessage);
+
+      if (typeof onError === 'function') {
+        onError(err);
+      }
     } finally {
       setLoading(false);
     }
-  }, [url, ...deps]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [url, JSON.stringify(options), ...deps]);
 
   useEffect(() => {
+    if (staleTime && lastFetchRef.current > 0) {
+      const elapsed = Date.now() - lastFetchRef.current;
+      if (elapsed < staleTime) {
+        setLoading(false);
+        return;
+      }
+    }
     fetchData();
-  }, [fetchData]);
+  }, [fetchData, staleTime]);
 
   return { data, loading, error, refetch: fetchData, setData };
-}
+};
 
 export default useApiFetch;

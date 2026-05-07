@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styles from './Sidebar.module.css';
 
 /**
@@ -11,19 +11,56 @@ import styles from './Sidebar.module.css';
  * @param {string} width - Largura da sidebar ('sm' | 'md' | 'lg')
  * @param {boolean} collapsible - Permite colapsar
  * @param {boolean} mobileOverlay - Mostrar overlay em mobile
+ * @param {boolean} mobileOpen - Estado mobile controlado externamente (opcional)
+ * @param {function} onMobileToggle - Handler para toggle mobile
+ * @param {number} breakpoint - Breakpoint em px para modo mobile (default: 1024)
+ * @param {boolean} persistCollapsed - Persistir estado colapsado no localStorage
  */
 export const Sidebar = ({
   sidebar,
   children,
-  collapsed = false,
+  collapsed: collapsedProp = false,
   onCollapse,
   position = 'left',
   width = 'md',
   collapsible = true,
   mobileOverlay = true,
+  mobileOpen: mobileOpenProp,
+  onMobileToggle,
+  breakpoint = 1024,
+  persistCollapsed = false,
   className = '',
 }) => {
-  const [mobileOpen, setMobileOpen] = useState(false);
+  // Estado collapsed: se persistCollapsed, inicializa do localStorage
+  const [internalCollapsed, setInternalCollapsed] = useState(() => {
+    if (persistCollapsed) {
+      try {
+        const saved = localStorage.getItem('sidebar-collapsed');
+        return saved !== null ? JSON.parse(saved) : collapsedProp;
+      } catch {
+        return collapsedProp;
+      }
+    }
+    return collapsedProp;
+  });
+
+  // Sincroniza prop externa com estado interno
+  const collapsed = collapsedProp !== undefined ? collapsedProp : internalCollapsed;
+
+  const [internalMobileOpen, setInternalMobileOpen] = useState(false);
+  const isMobileControlled = mobileOpenProp !== undefined;
+  const mobileOpen = isMobileControlled ? mobileOpenProp : internalMobileOpen;
+
+  // Persiste estado collapsed quando muda
+  useEffect(() => {
+    if (persistCollapsed) {
+      try {
+        localStorage.setItem('sidebar-collapsed', JSON.stringify(collapsed));
+      } catch {
+        // localStorage indisponível
+      }
+    }
+  }, [collapsed, persistCollapsed]);
 
   const containerClasses = [
     styles.container,
@@ -45,15 +82,23 @@ export const Sidebar = ({
     .join(' ');
 
   const handleMobileToggle = () => {
-    setMobileOpen(!mobileOpen);
+    if (isMobileControlled) {
+      onMobileToggle?.(!mobileOpen);
+    } else {
+      setInternalMobileOpen(!mobileOpen);
+    }
   };
 
   const handleCollapse = () => {
-    onCollapse?.(!collapsed);
+    const newCollapsed = !collapsed;
+    if (collapsedProp === undefined) {
+      setInternalCollapsed(newCollapsed);
+    }
+    onCollapse?.(newCollapsed);
   };
 
   return (
-    <div className={containerClasses}>
+    <div className={containerClasses} style={{ '--sidebar-breakpoint': `${breakpoint}px` }}>
       {/* Mobile Toggle Button */}
       {collapsible && (
         <button
@@ -76,7 +121,13 @@ export const Sidebar = ({
       {mobileOverlay && mobileOpen && (
         <div
           className={styles.overlay}
-          onClick={() => setMobileOpen(false)}
+          onClick={() => {
+            if (isMobileControlled) {
+              onMobileToggle?.(false);
+            } else {
+              setInternalMobileOpen(false);
+            }
+          }}
           aria-hidden="true"
         />
       )}
@@ -91,9 +142,9 @@ export const Sidebar = ({
           >
             <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
               {position === 'left' ? (
-                <path d={collapsed ? "M13 5l7 7-7 7M5 5l7 7-7 7" : "M11 19l-7-7 7-7m8 14l-7-7 7-7"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d={collapsed ? "M15 19l-7-7 7-7" : "M9 5l7 7-7 7"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               ) : (
-                <path d={collapsed ? "M11 19l-7-7 7-7m8 14l-7-7 7-7" : "M13 5l7 7-7 7M5 5l7 7-7 7"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d={collapsed ? "M9 5l7 7-7 7" : "M15 19l-7-7 7-7"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               )}
             </svg>
           </button>
@@ -104,7 +155,7 @@ export const Sidebar = ({
       </aside>
 
       {/* Main Content */}
-      <main className={styles.main}>
+      <main className={`${styles.main} ${styles.mainContent}`}>
         {children}
       </main>
     </div>

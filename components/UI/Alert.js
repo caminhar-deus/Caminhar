@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styles from './Alert.module.css';
 
 /**
@@ -10,6 +10,8 @@ import styles from './Alert.module.css';
  * @param {ReactNode} icon - Ícone customizado
  * @param {boolean} closable - Permite fechar
  * @param {function} onClose - Handler ao fechar
+ * @param {boolean} isOpen - Se fornecido, controla externamente a visibilidade do alerta (substitui o estado interno)
+ * @param {function} onBeforeClose - Handler chamado antes de fechar. Se retornar `false`, o fechamento é cancelado.
  * 
  * @exports defaultIcons - Ícones padrão por status (exportação nomeada)
  */
@@ -46,12 +48,24 @@ export const Alert = ({
   icon,
   closable = false,
   onClose,
+  isOpen: controlledIsOpen,
+  onBeforeClose,
   className = '',
 }) => {
-  const [isVisible, setIsVisible] = useState(true);
+  const [internalIsVisible, setInternalIsVisible] = useState(true);
+
+  // Se isOpen for passado como prop, usa controle externo; senão, usa interno
+  const isControlled = controlledIsOpen !== undefined;
+  const isVisible = isControlled ? controlledIsOpen : internalIsVisible;
 
   const handleClose = () => {
-    setIsVisible(false);
+    if (onBeforeClose) {
+      const shouldClose = onBeforeClose();
+      if (shouldClose === false) return;
+    }
+    if (!isControlled) {
+      setInternalIsVisible(false);
+    }
     onClose?.();
   };
 

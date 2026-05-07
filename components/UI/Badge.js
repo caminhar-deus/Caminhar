@@ -2,8 +2,17 @@ import React from 'react';
 import styles from './Badge.module.css';
 
 /**
+ * Converte string kebab-case para camelCase
+ * Exemplo: 'top-right' → 'topRight'
+ * @param {string} str
+ * @returns {string}
+ */
+const kebabToCamel = (str) =>
+  str.replace(/-([a-z])/g, (_, char) => char.toUpperCase());
+
+/**
  * Badge - Componente de insígnia/etiqueta
- * @param {string} variant - 'default' | 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'info'
+ * @param {string} variant - 'default' | 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'info' | 'outline' | 'soft'
  * @param {string} size - 'sm' | 'md' | 'lg'
  * @param {ReactNode} children - Conteúdo do badge
  * @param {ReactNode} leftIcon - Ícone à esquerda
@@ -24,13 +33,16 @@ export const Badge = ({
   className = '',
   ...props
 }) => {
+  // Normaliza position de kebab-case para camelCase (ex: 'top-right' → 'topRight')
+  const normalizedPosition = position ? kebabToCamel(position) : null;
+
   const badgeClasses = [
     styles.badge,
     styles[variant],
     styles[size],
     dot && styles.dot,
     pulse && styles.pulse,
-    position && styles[position],
+    normalizedPosition && styles[normalizedPosition],
     className,
   ]
     .filter(Boolean)

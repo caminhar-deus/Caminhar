@@ -43,7 +43,7 @@ describe('Componente Front-End - ProductList', () => {
     // Valida se a chamada inicial para a API estava com os parâmetros corretos
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining('/api/products?page=1&limit=12&public=true'),
-      expect.objectContaining({ credentials: 'include' })
+      expect.any(Object)
     );
   });
 

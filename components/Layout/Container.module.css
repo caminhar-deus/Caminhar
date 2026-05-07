@@ -24,6 +24,10 @@
   max-width: 1280px;
 }
 
+.\32xl {
+  max-width: 1536px;
+}
+
 .full {
   max-width: 100%;
 }
@@ -37,6 +41,23 @@
 /* Fluid - Full width with consistent padding */
 .fluid {
   max-width: none;
+}
+
+/* Padding personalizado */
+.paddingNone {
+  padding: 0;
+}
+
+.paddingSm {
+  padding: 0.5rem;
+}
+
+.paddingMd {
+  padding: 1rem;
+}
+
+.paddingLg {
+  padding: 2rem;
 }
 
 /* Responsive padding */
@@ -82,8 +103,22 @@
   padding: 2rem 1rem;
 }
 
+@media (min-width: 640px) {
+  .article {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
 @media (min-width: 768px) {
   .article {
     padding: 3rem 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .article {
+    padding-left: 2rem;
+    padding-right: 2rem;
   }
 }

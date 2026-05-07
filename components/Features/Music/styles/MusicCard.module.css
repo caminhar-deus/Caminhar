@@ -1,10 +1,6 @@
 /* Music Card Styles */
 .musicCard {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  transition: all 0.3s ease;
+  composes: cardBase from '../../../../styles/shared/Card.module.css';
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -12,8 +8,6 @@
 }
 
 .musicCard:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
   border-color: rgba(0, 0, 0, 0.1);
 }
 

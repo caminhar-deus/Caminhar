@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useState } from 'react';
 import styles from './Input.module.css';
 
 /**
@@ -12,6 +12,8 @@ import styles from './Input.module.css';
  * @param {string} label - Label do input
  * @param {boolean} required - Campo obrigatório
  * @param {string} helperText - Texto de ajuda
+ * @param {boolean} clearable - Permite limpar o input (mostra botão X quando há valor)
+ * @param {function} onClear - Handler chamado ao clicar no botão de limpar
  */
 export const Input = forwardRef(({
   size = 'md',
@@ -23,13 +25,43 @@ export const Input = forwardRef(({
   label,
   required,
   helperText,
+  clearable = false,
+  onClear,
   className = '',
   id,
+  value,
+  onChange,
   ...props
 }, ref) => {
   const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
   const errorId = `${inputId}-error`;
   const helperId = `${inputId}-helper`;
+
+  const [internalValue, setInternalValue] = useState('');
+  const isControlled = value !== undefined;
+  const currentValue = isControlled ? value : internalValue;
+
+  const handleChange = (e) => {
+    if (!isControlled) {
+      setInternalValue(e.target.value);
+    }
+    onChange?.(e);
+  };
+
+  const handleClear = () => {
+    if (!isControlled) {
+      setInternalValue('');
+    }
+    onClear?.();
+    // Dispara evento de change com valor vazio
+    if (onChange) {
+      const event = {
+        target: { value: '' },
+        currentTarget: { value: '' },
+      };
+      onChange(event);
+    }
+  };
 
   const wrapperClasses = [
     styles.wrapper,
@@ -44,6 +76,7 @@ export const Input = forwardRef(({
     styles.input,
     styles[variant],
     leftAddon && styles.hasLeftAddon,
+    clearable && styles.hasClearable,
     rightAddon && styles.hasRightAddon,
   ]
     .filter(Boolean)
@@ -69,8 +102,23 @@ export const Input = forwardRef(({
           className={inputClasses}
           aria-invalid={error}
           aria-describedby={error ? errorId : helperText ? helperId : undefined}
+          value={isControlled ? value : undefined}
+          onChange={handleChange}
           {...props}
         />
+        {clearable && currentValue && (
+          <button
+            type="button"
+            className={styles.clearButton}
+            onClick={handleClear}
+            aria-label="Limpar campo"
+            tabIndex={-1}
+          >
+            <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+              <path d="M18 6 6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </button>
+        )}
         {rightAddon && (
           <span className={styles.rightAddon} aria-hidden="true">
             {rightAddon}

@@ -2,6 +2,10 @@ import React, { useEffect, useCallback, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import styles from './Modal.module.css';
 
+// Contador de referência para gerenciar scroll lock com múltiplos modais
+let modalCount = 0;
+let originalBodyOverflow = '';
+
 /**
  * Modal - Componente base de modal
  * @param {boolean} isOpen - Controla visibilidade
@@ -28,31 +32,43 @@ export const Modal = ({
   const modalRef = useRef(null);
   const previousFocusRef = useRef(null);
 
-  // Prevenir scroll do body
+  // Prevenir scroll do body com contador de referência
   useEffect(() => {
-    if (preventScroll && isOpen && document.body) {
-      document.body.style.overflow = 'hidden';
-    } else if (document.body) {
-      document.body.style.overflow = '';
+    if (preventScroll) {
+      if (isOpen) {
+        if (modalCount === 0) {
+          originalBodyOverflow = document.body?.style.overflow || '';
+        }
+        modalCount++;
+        if (document.body) {
+          document.body.style.overflow = 'hidden';
+        }
+      }
     }
     return () => {
-      if (document.body) document.body.style.overflow = '';
+      if (preventScroll && isOpen) {
+        modalCount--;
+        if (modalCount <= 0) {
+          modalCount = 0;
+          if (document.body) {
+            document.body.style.overflow = originalBodyOverflow;
+          }
+        }
+      }
     };
   }, [isOpen, preventScroll]);
 
-  // Gerenciar Foco (Focus Trap) - Implementação própria
+  // Gerenciar Foco (Focus Trap)
   useEffect(() => {
     if (!isOpen) return;
 
-    // Salvar elemento com foco anterior
     previousFocusRef.current = document.activeElement;
-    
-    // Focar no modal após montagem
+
     const timer = setTimeout(() => {
       if (modalRef.current) {
         const focusableSelector = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
         const focusableElements = modalRef.current.querySelectorAll(focusableSelector);
-        
+
         if (focusableElements.length > 0) {
           focusableElements[0].focus();
         } else {
@@ -63,7 +79,6 @@ export const Modal = ({
 
     return () => {
       clearTimeout(timer);
-      // Restaurar foco ao elemento anterior quando fechar
       if (previousFocusRef.current && typeof previousFocusRef.current.focus === 'function') {
         previousFocusRef.current.focus();
       }
@@ -77,7 +92,6 @@ export const Modal = ({
       return;
     }
 
-    // Focus trap: manter foco dentro do modal com Tab
     if (e.key === 'Tab' && modalRef.current) {
       const focusableSelector = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
       const focusableElements = Array.from(
@@ -90,13 +104,10 @@ export const Modal = ({
       const lastFocusable = focusableElements[focusableElements.length - 1];
       const currentFocused = document.activeElement;
 
-      // Shift + Tab no primeiro elemento: vai para o último
       if (e.shiftKey && currentFocused === firstFocusable) {
         e.preventDefault();
         lastFocusable.focus();
-      } 
-      // Tab no último elemento: vai para o primeiro
-      else if (!e.shiftKey && currentFocused === lastFocusable) {
+      } else if (!e.shiftKey && currentFocused === lastFocusable) {
         e.preventDefault();
         firstFocusable.focus();
       }
@@ -130,9 +141,9 @@ export const Modal = ({
 
   const modal = (
     <div className={styles.overlay} onClick={handleOverlayClick} role="dialog" aria-modal="true">
-      <div 
+      <div
         ref={modalRef}
-        className={modalClasses} 
+        className={modalClasses}
         onClick={(e) => e.stopPropagation()}
         tabIndex="-1"
       >

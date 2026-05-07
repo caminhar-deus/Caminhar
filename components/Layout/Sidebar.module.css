@@ -300,8 +300,8 @@
   z-index: 1099;
 }
 
-/* Mobile Styles */
-@media (max-width: 1024px) {
+/* Mobile Styles - usa variável CSS com fallback 1024px */
+@media (max-width: calc(var(--sidebar-breakpoint, 1024px))) {
   .mobileToggle {
     display: flex;
   }
@@ -319,9 +319,15 @@
   }
 
   .main {
-    margin-left: 0 !important;
-    margin-right: 0 !important;
+    margin-left: 0;
+    margin-right: 0;
     padding-top: 4rem;
+  }
+
+  /* Aumenta especificidade para evitar conflitos */
+  .main.mainContent {
+    margin-left: 0;
+    margin-right: 0;
   }
 
   .overlay {
@@ -333,11 +339,14 @@
   }
 
   /* Reset collapsed state on mobile */
-  .sidebarCollapsed {
-    width: 260px !important;
+  .sidebarCollapsed.sidebar {
+    width: 260px;
   }
 
-  .sidebarCollapsed .navLabel,
+  .sidebarCollapsed .navLabel {
+    display: block;
+  }
+
   .sidebarCollapsed .sectionTitle {
     display: block;
   }
@@ -356,7 +365,7 @@
   }
 
   .main {
-    margin-left: 0 !important;
-    margin-right: 0 !important;
+    margin-left: 0;
+    margin-right: 0;
   }
 }

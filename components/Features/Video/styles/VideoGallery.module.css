@@ -17,6 +17,7 @@
   max-width: 600px;
   display: flex;
   gap: 0.5rem;
+  align-items: center;
 }
 
 .searchInput {
@@ -38,7 +39,7 @@
 
 .clearButton {
   position: absolute;
-  right: 100px; /* Ajustado para não sobrepor o botão de buscar */
+  right: 5.5rem;
   top: 50%;
   transform: translateY(-50%);
   background: none;
@@ -69,6 +70,8 @@
   cursor: pointer;
   transition: background-color 0.2s;
   touch-action: manipulation;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .searchButton:hover {
@@ -112,9 +115,5 @@
 @media (max-width: 768px) {
   .galleryGrid {
     grid-template-columns: 1fr;
-  }
-  
-  .clearButton {
-    right: 90px;
   }
 }

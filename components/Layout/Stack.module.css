@@ -158,6 +158,13 @@
   align-self: stretch;
 }
 
+/* Spacer */
+.spacer {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
 /* Divider */
 .divider {
   border: 0;

@@ -17,6 +17,8 @@ export const Spinner = ({
   centered = false,
   className = '',
 }) => {
+  // Normaliza label para acessibilidade
+  const accessibilityLabel = label || 'Carregando...';
   const spinnerClasses = [
     styles.spinner,
     styles[variant],

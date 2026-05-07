@@ -64,6 +64,8 @@ export const Card = ({
         <div className={styles.media}>
           {typeof media === 'string' ? (
             <img src={media} alt={mediaAlt || ''} className={styles.mediaImage} />
+          ) : React.isValidElement(media) ? (
+            React.cloneElement(media, { alt: mediaAlt || '' })
           ) : (
             media
           )}

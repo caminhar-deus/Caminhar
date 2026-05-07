@@ -4,32 +4,58 @@ import styles from './Grid.module.css';
 /**
  * Grid - Sistema de grid flexível
  * @param {number} columns - Número de colunas (1-12)
- * @param {string} gap - Espaçamento entre itens ('xs' | 'sm' | 'md' | 'lg' | 'xl')
+ * @param {string} gap - Espaçamento entre itens ('none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl')
+ * @param {string} rowGap - Espaçamento entre linhas ('none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'). Sobrescreve gap para row-gap.
+ * @param {string} columnGap - Espaçamento entre colunas ('none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'). Adicional ao gap.
  * @param {string} align - Alinhamento vertical ('start' | 'center' | 'end' | 'stretch')
  * @param {string} justify - Alinhamento horizontal ('start' | 'center' | 'end' | 'between' | 'around' | 'evenly')
+ * @param {boolean|object} responsive - Habilita responsividade. Se objeto, usa { default, sm, md, lg, xl } como breakpoints.
  */
 export const Grid = ({
   children,
   columns = 3,
   gap = 'md',
+  rowGap,
+  columnGap,
   align = 'stretch',
   justify = 'start',
+  responsive,
   className = '',
   ...props
 }) => {
+  const gapClass = rowGap
+    ? styles[`rowGap${rowGap.charAt(0).toUpperCase() + rowGap.slice(1)}`]
+    : styles[`gap${gap.charAt(0).toUpperCase() + gap.slice(1)}`];
+
+  const columnGapClass = columnGap
+    ? styles[`columnGap${columnGap.charAt(0).toUpperCase() + columnGap.slice(1)}`]
+    : null;
+
+  const responsiveStyle = responsive
+    ? {
+        '--cols-default': (typeof responsive === 'object' ? responsive.default : columns) || 1,
+        '--cols-sm': (typeof responsive === 'object' ? responsive.sm : columns) || (typeof responsive === 'object' ? responsive.default : columns) || 1,
+        '--cols-md': (typeof responsive === 'object' ? responsive.md : columns) || (typeof responsive === 'object' ? responsive.sm : columns) || (typeof responsive === 'object' ? responsive.default : columns) || 1,
+        '--cols-lg': (typeof responsive === 'object' ? responsive.lg : columns) || (typeof responsive === 'object' ? responsive.md : columns) || (typeof responsive === 'object' ? responsive.sm : columns) || (typeof responsive === 'object' ? responsive.default : columns) || 1,
+        '--cols-xl': (typeof responsive === 'object' ? responsive.xl : columns) || (typeof responsive === 'object' ? responsive.lg : columns) || (typeof responsive === 'object' ? responsive.md : columns) || (typeof responsive === 'object' ? responsive.sm : columns) || (typeof responsive === 'object' ? responsive.default : columns) || 1,
+      }
+    : undefined;
+
   const gridClasses = [
     styles.grid,
-    styles[`cols${columns}`],
-    styles[`gap${gap.charAt(0).toUpperCase() + gap.slice(1)}`],
+    !responsive && styles[`cols${columns}`],
+    gapClass,
+    columnGapClass,
     styles[`align${align.charAt(0).toUpperCase() + align.slice(1)}`],
     styles[`justify${justify.charAt(0).toUpperCase() + justify.slice(1)}`],
+    responsive && styles.responsive,
     className,
   ]
     .filter(Boolean)
     .join(' ');
 
   return (
-    <div className={gridClasses} {...props}>
+    <div className={gridClasses} style={responsiveStyle} {...props}>
       {children}
     </div>
   );

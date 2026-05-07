@@ -32,11 +32,7 @@
 }
 
 .card {
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-  transition: transform 0.2s, box-shadow 0.2s;
+  composes: cardBase from '../../../../styles/shared/Card.module.css';
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -44,7 +40,6 @@
 
 .card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 15px rgba(0,0,0,0.1);
 }
 
 .imageContainer {
