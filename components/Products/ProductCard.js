@@ -1,14 +1,73 @@
-import React, { useState } from 'react';
+import React, { memo, useState, useEffect, useRef, useCallback } from 'react';
 
-export default function ProductCard({ product }) {
+// Estilos globais injetados para :focus-visible e :hover
+const globalProductStyles = `
+  .product-nav-btn:focus-visible,
+  .product-close-btn:focus-visible,
+  .product-link-btn:focus-visible {
+    box-shadow: 0 0 0 3px #2c3e50 !important;
+    outline: 2px solid #2c3e50 !important;
+    outline-offset: 2px !important;
+  }
+  .product-nav-btn:hover {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    transform: translateY(-50%) scale(1.1) !important;
+  }
+  .product-link-btn:hover {
+    opacity: 0.85 !important;
+    transform: translateY(-1px) !important;
+  }
+  .product-close-btn:hover {
+    opacity: 0.7 !important;
+  }
+`;
+
+const ProductCard = memo(function ProductCard({ product }) {
+  // Injetar estilos globais para focus-visible
+  useEffect(() => {
+    const styleId = 'product-card-focus-styles';
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = globalProductStyles;
+      document.head.appendChild(style);
+    }
+  }, []);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imageLoading, setImageLoading] = useState(true);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const lightboxRef = useRef(null);
   
   // Transforma o texto (URLs separadas por quebra de linha) em um array
   const images = product.images 
     ? product.images.split('\n').map(url => url.trim()).filter(Boolean) 
     : [];
+
+  // Foco no lightbox ao abrir e tecla ESC para fechar
+  useEffect(() => {
+    if (isLightboxOpen) {
+      const timer = setTimeout(() => {
+        if (lightboxRef.current) {
+          const firstBtn = lightboxRef.current.querySelector('button');
+          if (firstBtn) firstBtn.focus();
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isLightboxOpen]);
+
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === 'Escape') {
+      setIsLightboxOpen(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isLightboxOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isLightboxOpen, handleKeyDown]);
 
   const nextImage = () => {
     setImageLoading(true);
@@ -50,6 +109,7 @@ export default function ProductCard({ product }) {
             <img 
               src={images[currentImageIndex]} 
               alt={product.title}
+              loading={currentImageIndex === 0 ? 'eager' : 'lazy'}
               onLoad={() => setImageLoading(false)}
               onClick={() => setIsLightboxOpen(true)}
               style={{ width: '100%', height: '100%', objectFit: 'contain', opacity: imageLoading ? 0 : 1, transition: 'opacity 0.3s ease', cursor: 'pointer' }} 
@@ -61,8 +121,8 @@ export default function ProductCard({ product }) {
         
         {images.length > 1 && (
           <>
-            <button onClick={prevImage} style={navButtonStyle('left')}>◀</button>
-            <button onClick={nextImage} style={navButtonStyle('right')}>▶</button>
+            <button onClick={prevImage} className="product-nav-btn" style={navButtonStyle('left')} aria-label="Imagem anterior">◀</button>
+            <button onClick={nextImage} className="product-nav-btn" style={navButtonStyle('right')} aria-label="Próxima imagem">▶</button>
             <div style={{ position: 'absolute', bottom: '10px', width: '100%', textAlign: 'center', color: '#555', fontSize: '12px' }}>
               {currentImageIndex + 1} / {images.length}
             </div>
@@ -88,7 +148,7 @@ export default function ProductCard({ product }) {
         {/* Links de Compra */}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           {product.link_ml && (
-            <a href={product.link_ml} target="_blank" rel="noreferrer" style={linkStyle('#ffe600', '#333')}>
+            <a href={product.link_ml} target="_blank" rel="noreferrer" className="product-link-btn" style={linkStyle('#ffe600', '#333')}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="m11 17 2 2a1 1 0 1 0 3-3"/><path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06 7.06l-1.27 1.27"/><path d="m3 3 2 2-2 2 1.5 1.5L3 8l2.5 2.5a1 1 0 0 0 3-3l-2.5-2.5L8 3l-2 2Z"/>
               </svg>
@@ -96,7 +156,7 @@ export default function ProductCard({ product }) {
             </a>
           )}
           {product.link_shopee && (
-            <a href={product.link_shopee} target="_blank" rel="noreferrer" style={linkStyle('#ee4d2d', '#fff')}>
+            <a href={product.link_shopee} target="_blank" rel="noreferrer" className="product-link-btn" style={linkStyle('#ee4d2d', '#fff')}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>
               </svg>
@@ -104,7 +164,7 @@ export default function ProductCard({ product }) {
             </a>
           )}
           {product.link_amazon && (
-            <a href={product.link_amazon} target="_blank" rel="noreferrer" style={linkStyle('#ff9900', '#fff')}>
+            <a href={product.link_amazon} target="_blank" rel="noreferrer" className="product-link-btn" style={linkStyle('#ff9900', '#fff')}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>
               </svg>
@@ -118,6 +178,10 @@ export default function ProductCard({ product }) {
     {/* Lightbox / Tela Cheia */}
     {isLightboxOpen && images.length > 0 && (
       <div 
+        ref={lightboxRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Visualização ampliada da imagem"
         style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           backgroundColor: 'rgba(0, 0, 0, 0.85)', zIndex: 9999,
@@ -128,8 +192,10 @@ export default function ProductCard({ product }) {
       >
         <button 
           onClick={() => setIsLightboxOpen(false)}
-          style={{ position: 'absolute', top: '20px', right: '30px', background: 'transparent', border: 'none', color: '#fff', fontSize: '40px', cursor: 'pointer', zIndex: 10000 }}
+          className="product-close-btn"
+          style={lightboxCloseButtonStyle}
           title="Fechar"
+          aria-label="Fechar visualização ampliada"
         >
           &times;
         </button>
@@ -141,15 +207,17 @@ export default function ProductCard({ product }) {
         />
         {images.length > 1 && (
           <>
-            <button onClick={(e) => { e.stopPropagation(); prevImage(); }} style={{ ...navButtonStyle('left'), width: '50px', height: '50px', fontSize: '24px' }}>◀</button>
-            <button onClick={(e) => { e.stopPropagation(); nextImage(); }} style={{ ...navButtonStyle('right'), width: '50px', height: '50px', fontSize: '24px' }}>▶</button>
+            <button onClick={(e) => { e.stopPropagation(); prevImage(); }} className="product-nav-btn" style={{ ...navButtonStyle('left'), width: '50px', height: '50px', fontSize: '24px' }} aria-label="Imagem anterior">◀</button>
+            <button onClick={(e) => { e.stopPropagation(); nextImage(); }} className="product-nav-btn" style={{ ...navButtonStyle('right'), width: '50px', height: '50px', fontSize: '24px' }} aria-label="Próxima imagem">▶</button>
           </>
         )}
       </div>
     )}
     </>
   );
-}
+});
+
+export default ProductCard;
 
 // Estilos auxiliares para manter o componente autocontido
 const navButtonStyle = (side) => ({
@@ -158,8 +226,18 @@ const navButtonStyle = (side) => ({
   [side]: '10px',
   transform: 'translateY(-50%)',
   backgroundColor: 'rgba(255, 255, 255, 0.8)',
-  border: 'none', borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer'
+  border: 'none', borderRadius: '50%', width: '30px', height: '30px', cursor: 'pointer',
+  outline: 'none',
+  boxShadow: '0 0 0 0 rgba(0, 0, 0, 0)',
+  transition: 'box-shadow 0.2s ease, background-color 0.2s ease',
 });
+const lightboxCloseButtonStyle = {
+  position: 'absolute', top: '20px', right: '30px',
+  background: 'transparent', border: 'none', color: '#fff',
+  fontSize: '40px', cursor: 'pointer', zIndex: 10000,
+  outline: 'none', padding: '8px',
+  transition: 'opacity 0.2s ease',
+};
 const linkStyle = (bg, color) => ({ 
   flex: 1, 
   display: 'flex', 
@@ -173,5 +251,8 @@ const linkStyle = (bg, color) => ({
   borderRadius: '4px', 
   textDecoration: 'none', 
   fontWeight: 'bold', 
-  fontSize: '0.85rem' 
+  fontSize: '0.85rem',
+  outline: 'none',
+  transition: 'box-shadow 0.2s ease, opacity 0.2s ease',
 });
+
