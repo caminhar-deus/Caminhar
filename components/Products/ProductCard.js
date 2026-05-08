@@ -134,6 +134,7 @@ export default function ProductCard({ product }) {
           &times;
         </button>
         <img 
+          key={currentImageIndex}
           src={images[currentImageIndex]} alt={product.title}
           style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain' }}
           onClick={(e) => e.stopPropagation()} 

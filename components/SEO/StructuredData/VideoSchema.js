@@ -1,4 +1,4 @@
-import { siteConfig, siteUrl, formatSchemaDate, getImageUrl } from '../../../lib/seo/config';
+import { siteConfig, siteUrl, formatSchemaDate, getImageUrl, sanitizeJsonLd } from '../../../lib/seo/config';
 
 /**
  * VideoSchema - Schema.org para vídeos (VideoObject)
@@ -91,7 +91,7 @@ export default function VideoSchema({
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: sanitizeJsonLd(schema) }}
     />
   );
 }

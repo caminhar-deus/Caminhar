@@ -1,4 +1,4 @@
-import { siteConfig, siteUrl } from '../../../lib/seo/config';
+import { siteConfig, siteUrl, sanitizeJsonLd } from '../../../lib/seo/config';
 
 /**
  * BreadcrumbSchema - Schema.org para breadcrumbs/navegação
@@ -46,7 +46,7 @@ export default function BreadcrumbSchema({ items }) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: sanitizeJsonLd(schema) }}
     />
   );
 }

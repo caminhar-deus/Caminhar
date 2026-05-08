@@ -1,4 +1,4 @@
-import { siteConfig, siteUrl } from '../../../lib/seo/config';
+import { siteConfig, siteUrl, sanitizeJsonLd } from '../../../lib/seo/config';
 
 /**
  * WebsiteSchema - Schema.org para o website
@@ -41,7 +41,7 @@ export default function WebsiteSchema({
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: sanitizeJsonLd(schema) }}
     />
   );
 }

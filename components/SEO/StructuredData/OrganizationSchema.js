@@ -1,4 +1,4 @@
-import { siteConfig, siteUrl } from '../../../lib/seo/config';
+import { siteConfig, siteUrl, sanitizeJsonLd } from '../../../lib/seo/config';
 
 /**
  * OrganizationSchema - Schema.org para a organização
@@ -49,7 +49,7 @@ export default function OrganizationSchema({
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: sanitizeJsonLd(schema) }}
     />
   );
 }
