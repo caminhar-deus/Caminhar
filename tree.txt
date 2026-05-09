@@ -70,7 +70,8 @@
 │   │   └── PreloadResources.js
 │   ├── Products
 │   │   ├── ProductCard.js
-│   │   └── ProductList.js
+│   │   ├── ProductList.js
+│   │   └── styles.js
 │   ├── SEO
 │   │   ├── Head.js
 │   │   ├── index.js
@@ -102,6 +103,7 @@
 │       ├── Spinner.module.css
 │       ├── StateHandler.js
 │       ├── StateHandler.module.css
+│       ├── StateMessages.js
 │       ├── TextArea.js
 │       ├── TextArea.module.css
 │       ├── Toast.js
@@ -593,7 +595,8 @@
 │   ├── middleware.js
 │   ├── redis.js
 │   └── seo
-│       └── config.js
+│       ├── config.js
+│       └── helpers.js
 ├── load-tests
 │   ├── authenticated-flow.js
 │   ├── backup-verification-test.js
@@ -1059,4 +1062,4 @@
 ├── tests-output.log
 └── tree.txt
 
-159 directories, 901 files
+159 directories, 904 files

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useApiFetch, useDebounce } from '@/hooks';
 import ProductCard from './ProductCard';
+import { inputStyle, buttonBaseStyle } from './styles';
+import { ErrorMessage, LoadingMessage, EmptyMessage } from '../UI/StateMessages';
 
 export default function ProductList() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -54,14 +56,7 @@ export default function ProductList() {
             placeholder="Buscar produtos por nome..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              width: '100%', padding: '14px 16px 14px 46px',
-              borderRadius: '8px', border: '1px solid #e2e8f0',
-              fontSize: '1rem', outline: 'none',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-              transition: 'all 0.2s ease', backgroundColor: '#fff',
-              color: '#2d3748'
-            }}
+            style={inputStyle('46px')}
           />
         </div>
         
@@ -71,28 +66,14 @@ export default function ProductList() {
             placeholder="Mín (R$)" 
             value={minPrice}
             onChange={(e) => setMinPrice(e.target.value)}
-            style={{
-              width: '100%', padding: '14px 16px',
-              borderRadius: '8px', border: '1px solid #e2e8f0',
-              fontSize: '1rem', outline: 'none',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-              transition: 'all 0.2s ease', backgroundColor: '#fff',
-              color: '#2d3748'
-            }}
+            style={inputStyle()}
           />
           <input 
             type="number" 
             placeholder="Máx (R$)" 
             value={maxPrice}
             onChange={(e) => setMaxPrice(e.target.value)}
-            style={{
-              width: '100%', padding: '14px 16px',
-              borderRadius: '8px', border: '1px solid #e2e8f0',
-              fontSize: '1rem', outline: 'none',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-              transition: 'all 0.2s ease', backgroundColor: '#fff',
-              color: '#2d3748'
-            }}
+            style={inputStyle()}
           />
         </div>
       </div>
@@ -100,12 +81,10 @@ export default function ProductList() {
       {/* Container com altura mínima para evitar Layout Shift */}
       <div style={{ minHeight: '600px' }}>
         {/* Tratamento de Estados */}
-        {error && <div style={{ textAlign: 'center', color: 'red', padding: '40px' }}>❌ {error}</div>}
-        {loading && !error && <div style={{ textAlign: 'center', padding: '40px' }}>⏳ Buscando produtos...</div>}
+        {error && <ErrorMessage message={error} />}
+        {loading && !error && <LoadingMessage text="Buscando produtos..." />}
         {!loading && !error && products.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-            {debouncedSearch || debouncedMin || debouncedMax ? 'Nenhum produto encontrado com estes filtros.' : 'Nenhum produto cadastrado no momento.'}
-          </div>
+          <EmptyMessage message={debouncedSearch || debouncedMin || debouncedMax ? 'Nenhum produto encontrado com estes filtros.' : 'Nenhum produto cadastrado no momento.'} />
         )}
   
         {/* Listagem de Produtos */}
@@ -122,30 +101,34 @@ export default function ProductList() {
               ))}
             </div>
   
-            {/* Controles de Paginação */}
-            {totalPages > 1 && (
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '30px', paddingBottom: '20px' }}>
-                <button 
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                  style={paginationButtonStyle(currentPage === 1)}
-                >
-                  Anterior
-                </button>
-                
-                <span style={{ display: 'flex', alignItems: 'center', fontSize: '0.95rem', color: '#555', fontWeight: '500' }}>
-                  Página {currentPage} de {totalPages}
-                </span>
-                
-                <button 
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                  style={paginationButtonStyle(currentPage === totalPages)}
-                >
-                  Próxima
-                </button>
-              </div>
-            )}
+            {/* Controles de Paginação — sempre no DOM para evitar layout shift */}
+            <div style={{ 
+              display: 'flex', justifyContent: 'center', gap: '16px', 
+              marginTop: '30px', paddingBottom: '20px',
+              visibility: totalPages > 1 ? 'visible' : 'hidden',
+              pointerEvents: totalPages > 1 ? 'auto' : 'none',
+              minHeight: '48px', alignItems: 'center'
+            }}>
+              <button 
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                style={paginationButtonStyle(currentPage === 1)}
+              >
+                Anterior
+              </button>
+              
+              <span style={{ display: 'flex', alignItems: 'center', fontSize: '0.95rem', color: '#555', fontWeight: '500' }}>
+                Página {currentPage} de {totalPages}
+              </span>
+              
+              <button 
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                style={paginationButtonStyle(currentPage === totalPages)}
+              >
+                Próxima
+              </button>
+            </div>
           </>
         )}
       </div>
@@ -154,14 +137,9 @@ export default function ProductList() {
 }
 
 // Estilos auxiliares para os botões de paginação
-const paginationButtonStyle = (disabled) => ({
-  padding: '8px 20px',
-  borderRadius: '6px',
-  border: '1px solid #e2e8f0',
+const paginationButtonStyle = (disabled) => buttonBaseStyle({
   backgroundColor: disabled ? '#f7fafc' : '#fff',
   color: disabled ? '#a0aec0' : '#2d3748',
   cursor: disabled ? 'not-allowed' : 'pointer',
-  fontWeight: '600',
-  transition: 'all 0.2s ease',
-  boxShadow: disabled ? 'none' : '0 1px 3px rgba(0,0,0,0.1)'
+  boxShadow: disabled ? 'none' : '0 1px 3px rgba(0,0,0,0.1)',
 });

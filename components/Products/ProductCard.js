@@ -1,4 +1,7 @@
 import React, { memo, useState, useEffect, useRef, useCallback } from 'react';
+import PropTypes from 'prop-types';
+import { parseImages } from '../../lib/seo/helpers';
+import { buttonBaseStyle } from './styles';
 
 // Estilos globais injetados para :focus-visible e :hover
 const globalProductStyles = `
@@ -38,10 +41,7 @@ const ProductCard = memo(function ProductCard({ product }) {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const lightboxRef = useRef(null);
   
-  // Transforma o texto (URLs separadas por quebra de linha) em um array
-  const images = product.images 
-    ? product.images.split('\n').map(url => url.trim()).filter(Boolean) 
-    : [];
+  const images = parseImages(product.images);
 
   // Foco no lightbox ao abrir e tecla ESC para fechar
   useEffect(() => {
@@ -81,7 +81,7 @@ const ProductCard = memo(function ProductCard({ product }) {
 
   return (
     <>
-      <div style={{
+      <div itemScope itemType="https://schema.org/Product" style={{
       border: '1px solid #eaeaea',
       borderRadius: '8px',
       overflow: 'hidden',
@@ -109,6 +109,7 @@ const ProductCard = memo(function ProductCard({ product }) {
             <img 
               src={images[currentImageIndex]} 
               alt={product.title}
+              itemProp="image"
               loading={currentImageIndex === 0 ? 'eager' : 'lazy'}
               onLoad={() => setImageLoading(false)}
               onClick={() => setIsLightboxOpen(true)}
@@ -132,8 +133,8 @@ const ProductCard = memo(function ProductCard({ product }) {
 
       {/* Informações do Produto */}
       <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
-        <h3 style={{ margin: '0 0 8px 0', fontSize: '1.2rem' }}>{product.title}</h3>
-        <p style={{ 
+        <h3 itemProp="name" style={{ margin: '0 0 8px 0', fontSize: '1.2rem' }}>{product.title}</h3>
+        <p itemProp="description" style={{ 
           margin: '0 0 16px 0', 
           color: '#666', 
           fontSize: '0.9rem', 
@@ -143,7 +144,9 @@ const ProductCard = memo(function ProductCard({ product }) {
           WebkitBoxOrient: 'vertical',
           overflow: 'hidden'
         }} title={product.description}>{product.description}</p>
-        <strong style={{ fontSize: '1.3rem', color: '#2c3e50', marginBottom: '16px' }}>{product.price}</strong>
+        <strong itemProp="offers" itemScope itemType="https://schema.org/Offer" style={{ fontSize: '1.3rem', color: '#2c3e50', marginBottom: '16px' }}>
+          <span itemProp="price">{product.price}</span>
+        </strong>
         
         {/* Links de Compra */}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -157,16 +160,84 @@ const ProductCard = memo(function ProductCard({ product }) {
           )}
           {product.link_shopee && (
             <a href={product.link_shopee} target="_blank" rel="noreferrer" className="product-link-btn" style={linkStyle('#ee4d2d', '#fff')}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>
+              {/* Ícone oficial Shopee */}
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 48 48"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                {/* Sacola/corpo */}
+                <path
+                  d="M12 8L8 14v24a4 4 0 0 0 4 4h24a4 4 0 0 0 4-4V14l-4-6H12Z"
+                  fill="#fff"
+                  stroke="#fff"
+                  strokeWidth="1.5"
+                />
+                {/* Alça esquerda */}
+                <path
+                  d="M16 8V4a2 2 0 0 1 2-2h4"
+                  stroke="#fff"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                />
+                {/* Alça direita */}
+                <path
+                  d="M26 2h4a2 2 0 0 1 2 2v4"
+                  stroke="#fff"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                />
+                {/* Letra S */}
+                <path
+                  d="M18 20c0-2 1.5-3 3-3s3 1 3 2.5-1.5 3.5-3 4.5-3 2-3 4 1.5 3 3 3 3-1 3-3"
+                  stroke="#ee4d2d"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                />
               </svg>
               Shopee
             </a>
           )}
           {product.link_amazon && (
             <a href={product.link_amazon} target="_blank" rel="noreferrer" className="product-link-btn" style={linkStyle('#ff9900', '#fff')}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>
+              {/* Ícone oficial Amazon */}
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 48 48"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                {/* Letra "a" minúscula estilizada (sorriso Amazon) */}
+                <path
+                  d="M24 4C12.954 4 4 12.954 4 24s8.954 20 20 20 20-8.954 20-20S35.046 4 24 4Z"
+                  fill="#fff"
+                />
+                {/* Seta sorriso */}
+                <path
+                  d="M10 28c3 4 8 7 14 7s11-3 14-7"
+                  stroke="#ff9900"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  fill="none"
+                />
+                {/* Texto "amazon" estilizado */}
+                <text
+                  x="24"
+                  y="22"
+                  textAnchor="middle"
+                  fontSize="11"
+                  fontWeight="bold"
+                  fontFamily="Arial, sans-serif"
+                  fill="#ff9900"
+                  letterSpacing="0.5"
+                >
+                  amazon
+                </text>
               </svg>
               Amazon
             </a>
@@ -201,7 +272,7 @@ const ProductCard = memo(function ProductCard({ product }) {
         </button>
         <img 
           key={currentImageIndex}
-          src={images[currentImageIndex]} alt={product.title}
+          src={images[currentImageIndex]} alt={`${product.title} - Imagem ${currentImageIndex + 1}`}
           style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain' }}
           onClick={(e) => e.stopPropagation()} 
         />
@@ -216,6 +287,20 @@ const ProductCard = memo(function ProductCard({ product }) {
     </>
   );
 });
+
+ProductCard.propTypes = {
+  product: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+    title: PropTypes.string.isRequired,
+    description: PropTypes.string,
+    price: PropTypes.string,
+    images: PropTypes.string,
+    link_ml: PropTypes.string,
+    link_shopee: PropTypes.string,
+    link_amazon: PropTypes.string,
+    position: PropTypes.number,
+  }).isRequired,
+};
 
 export default ProductCard;
 
@@ -238,21 +323,22 @@ const lightboxCloseButtonStyle = {
   outline: 'none', padding: '8px',
   transition: 'opacity 0.2s ease',
 };
-const linkStyle = (bg, color) => ({ 
-  flex: 1, 
-  display: 'flex', 
-  alignItems: 'center', 
-  justifyContent: 'center', 
-  gap: '6px', 
-  minWidth: '100px', 
-  backgroundColor: bg, 
-  color, 
-  padding: '8px', 
-  borderRadius: '4px', 
-  textDecoration: 'none', 
-  fontWeight: 'bold', 
+const linkStyle = (bg, color) => buttonBaseStyle({
+  flex: 1,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '6px',
+  minWidth: '100px',
+  backgroundColor: bg,
+  color,
+  padding: '8px',
+  borderRadius: '4px',
+  border: 'none',
+  textDecoration: 'none',
+  fontWeight: 'bold',
   fontSize: '0.85rem',
-  outline: 'none',
+  cursor: 'pointer',
   transition: 'box-shadow 0.2s ease, opacity 0.2s ease',
 });
 

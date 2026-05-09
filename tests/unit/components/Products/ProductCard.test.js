@@ -88,7 +88,7 @@ describe('Componente Front-End - ProductCard', () => {
     expect(closeButton).toBeInTheDocument();
     
     // Testa a propagação (clicar na imagem grande dentro do lightbox NÃO deve fechá-lo)
-    const lightboxImage = screen.getAllByAltText('Bíblia Sagrada')[1];
+    const lightboxImage = screen.getByAltText('Bíblia Sagrada - Imagem 1');
     fireEvent.click(lightboxImage);
     expect(screen.getByTitle('Fechar')).toBeInTheDocument(); 
     

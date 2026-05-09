@@ -63,15 +63,6 @@ export default function SEOHead({
   
   // Keywords combinadas
   const allKeywords = [...new Set([...tags, ...keywords])];
-  
-  // Metadados de artigo
-  const articleMeta = type === 'article' ? {
-    'article:published_time': publishedAt,
-    'article:modified_time': modifiedAt,
-    'article:author': author,
-    'article:section': section,
-    'article:tag': tags,
-  } : {};
 
   return (
     <Head>
