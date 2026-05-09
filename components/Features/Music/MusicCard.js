@@ -24,6 +24,7 @@ export default function MusicCard({ musica }) {
 
   return (
     <BaseCard
+      hoverable
       media={
         <div style={{ padding: '16px', minWidth: '280px' }}>
           <iframe

@@ -124,7 +124,7 @@ const ProductCard = memo(function ProductCard({ product }) {
 
   return (
     <>
-      <BaseCard itemScope itemType="https://schema.org/Product" media={cardMedia}>
+      <BaseCard hoverable itemScope itemType="https://schema.org/Product" media={cardMedia}>
         <h3 itemProp="name" style={{ margin: '0 0 8px 0', fontSize: '1.2rem' }}>{product.title}</h3>
         <p itemProp="description" style={{ 
           margin: '0 0 16px 0', 

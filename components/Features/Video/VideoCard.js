@@ -14,6 +14,7 @@ import BaseCard from '../../UI/BaseCard';
 export default function VideoCard({ video }) {
   return (
     <BaseCard
+      hoverable
       media={
         <LazyIframe
           src={video.url_youtube}
