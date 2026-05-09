@@ -125,10 +125,10 @@
     "@testing-library/user-event": "^14.6.1",
     "babel-jest": "^30.4.1",
     "cypress": "^15.14.2",
-    "jest": "^30.4.1",
+    "jest": "^30.4.2",
     "jest-environment-jsdom": "^30.4.1",
     "jest-watch-typeahead": "^3.0.1",
-    "knip": "^6.12.1",
+    "knip": "^6.12.2",
     "next-sitemap": "^4.2.3",
     "node-mocks-http": "^1.17.2",
     "undici": "^8.2.0"

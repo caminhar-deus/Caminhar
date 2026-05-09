@@ -2,6 +2,7 @@ import React, { memo, useState, useEffect, useRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { parseImages } from '../../lib/seo/helpers';
 import { buttonBaseStyle } from './styles';
+import BaseCard from '../UI/BaseCard';
 
 // Estilos globais injetados para :focus-visible e :hover
 const globalProductStyles = `
@@ -79,60 +80,51 @@ const ProductCard = memo(function ProductCard({ product }) {
     setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
+  const cardMedia = (
+    <div style={{ position: 'relative', height: '250px', backgroundColor: '#f9f9f9' }}>
+      {images.length > 0 ? (
+        <>
+          {imageLoading && (
+            <div style={{
+              position: 'absolute',
+              top: 0, left: 0, right: 0, bottom: 0,
+              backgroundColor: '#eee',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#aaa',
+              fontSize: '0.9rem'
+            }}>
+              ⏳ Carregando...
+            </div>
+          )}
+          <img 
+            src={images[currentImageIndex]} 
+            alt={product.title}
+            itemProp="image"
+            loading={currentImageIndex === 0 ? 'eager' : 'lazy'}
+            onLoad={() => setImageLoading(false)}
+            onClick={() => setIsLightboxOpen(true)}
+            style={{ width: '100%', height: '100%', objectFit: 'contain', opacity: imageLoading ? 0 : 1, transition: 'opacity 0.3s ease', cursor: 'pointer' }} 
+          />
+        </>
+      ) : (
+        <div style={{ padding: '20px', textAlign: 'center', color: '#999', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Sem imagem</div>
+      )}
+      
+      {images.length > 1 && (
+        <>
+          <button onClick={prevImage} className="product-nav-btn" style={navButtonStyle('left')} aria-label="Imagem anterior">◀</button>
+          <button onClick={nextImage} className="product-nav-btn" style={navButtonStyle('right')} aria-label="Próxima imagem">▶</button>
+          <div style={{ position: 'absolute', bottom: '10px', width: '100%', textAlign: 'center', color: '#555', fontSize: '12px' }}>
+            {currentImageIndex + 1} / {images.length}
+          </div>
+        </>
+      )}
+    </div>
+  );
+
   return (
     <>
-      <div itemScope itemType="https://schema.org/Product" style={{
-      border: '1px solid #eaeaea',
-      borderRadius: '8px',
-      overflow: 'hidden',
-      display: 'flex',
-      flexDirection: 'column',
-      backgroundColor: '#fff',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-    }}>
-      {/* Carrossel de Imagens */}
-      <div style={{ position: 'relative', height: '250px', backgroundColor: '#f9f9f9' }}>
-        {images.length > 0 ? (
-          <>
-            {imageLoading && (
-              <div style={{
-                position: 'absolute',
-                top: 0, left: 0, right: 0, bottom: 0,
-                backgroundColor: '#eee',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#aaa',
-                fontSize: '0.9rem'
-              }}>
-                ⏳ Carregando...
-              </div>
-            )}
-            <img 
-              src={images[currentImageIndex]} 
-              alt={product.title}
-              itemProp="image"
-              loading={currentImageIndex === 0 ? 'eager' : 'lazy'}
-              onLoad={() => setImageLoading(false)}
-              onClick={() => setIsLightboxOpen(true)}
-              style={{ width: '100%', height: '100%', objectFit: 'contain', opacity: imageLoading ? 0 : 1, transition: 'opacity 0.3s ease', cursor: 'pointer' }} 
-            />
-          </>
-        ) : (
-          <div style={{ padding: '20px', textAlign: 'center', color: '#999', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Sem imagem</div>
-        )}
-        
-        {images.length > 1 && (
-          <>
-            <button onClick={prevImage} className="product-nav-btn" style={navButtonStyle('left')} aria-label="Imagem anterior">◀</button>
-            <button onClick={nextImage} className="product-nav-btn" style={navButtonStyle('right')} aria-label="Próxima imagem">▶</button>
-            <div style={{ position: 'absolute', bottom: '10px', width: '100%', textAlign: 'center', color: '#555', fontSize: '12px' }}>
-              {currentImageIndex + 1} / {images.length}
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Informações do Produto */}
-      <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+      <BaseCard itemScope itemType="https://schema.org/Product" media={cardMedia}>
         <h3 itemProp="name" style={{ margin: '0 0 8px 0', fontSize: '1.2rem' }}>{product.title}</h3>
         <p itemProp="description" style={{ 
           margin: '0 0 16px 0', 
@@ -168,36 +160,10 @@ const ProductCard = memo(function ProductCard({ product }) {
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
               >
-                {/* Sacola/corpo */}
-                <path
-                  d="M12 8L8 14v24a4 4 0 0 0 4 4h24a4 4 0 0 0 4-4V14l-4-6H12Z"
-                  fill="#fff"
-                  stroke="#fff"
-                  strokeWidth="1.5"
-                />
-                {/* Alça esquerda */}
-                <path
-                  d="M16 8V4a2 2 0 0 1 2-2h4"
-                  stroke="#fff"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                />
-                {/* Alça direita */}
-                <path
-                  d="M26 2h4a2 2 0 0 1 2 2v4"
-                  stroke="#fff"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                />
-                {/* Letra S */}
-                <path
-                  d="M18 20c0-2 1.5-3 3-3s3 1 3 2.5-1.5 3.5-3 4.5-3 2-3 4 1.5 3 3 3 3-1 3-3"
-                  stroke="#ee4d2d"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  fill="none"
-                />
+                <path d="M12 8L8 14v24a4 4 0 0 0 4 4h24a4 4 0 0 0 4-4V14l-4-6H12Z" fill="#fff" stroke="#fff" strokeWidth="1.5" />
+                <path d="M16 8V4a2 2 0 0 1 2-2h4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" />
+                <path d="M26 2h4a2 2 0 0 1 2 2v4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" />
+                <path d="M18 20c0-2 1.5-3 3-3s3 1 3 2.5-1.5 3.5-3 4.5-3 2-3 4 1.5 3 3 3 3-1 3-3" stroke="#ee4d2d" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
               </svg>
               Shopee
             </a>
@@ -212,78 +178,54 @@ const ProductCard = memo(function ProductCard({ product }) {
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
               >
-                {/* Letra "a" minúscula estilizada (sorriso Amazon) */}
-                <path
-                  d="M24 4C12.954 4 4 12.954 4 24s8.954 20 20 20 20-8.954 20-20S35.046 4 24 4Z"
-                  fill="#fff"
-                />
-                {/* Seta sorriso */}
-                <path
-                  d="M10 28c3 4 8 7 14 7s11-3 14-7"
-                  stroke="#ff9900"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  fill="none"
-                />
-                {/* Texto "amazon" estilizado */}
-                <text
-                  x="24"
-                  y="22"
-                  textAnchor="middle"
-                  fontSize="11"
-                  fontWeight="bold"
-                  fontFamily="Arial, sans-serif"
-                  fill="#ff9900"
-                  letterSpacing="0.5"
-                >
-                  amazon
-                </text>
+                <path d="M24 4C12.954 4 4 12.954 4 24s8.954 20 20 20 20-8.954 20-20S35.046 4 24 4Z" fill="#fff" />
+                <path d="M10 28c3 4 8 7 14 7s11-3 14-7" stroke="#ff9900" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+                <text x="24" y="22" textAnchor="middle" fontSize="11" fontWeight="bold" fontFamily="Arial, sans-serif" fill="#ff9900" letterSpacing="0.5">amazon</text>
               </svg>
               Amazon
             </a>
           )}
         </div>
-      </div>
-    </div>
+      </BaseCard>
 
-    {/* Lightbox / Tela Cheia */}
-    {isLightboxOpen && images.length > 0 && (
-      <div 
-        ref={lightboxRef}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Visualização ampliada da imagem"
-        style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.85)', zIndex: 9999,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          backdropFilter: 'blur(5px)'
-        }}
-        onClick={() => setIsLightboxOpen(false)}
-      >
-        <button 
+      {/* Lightbox / Tela Cheia */}
+      {isLightboxOpen && images.length > 0 && (
+        <div 
+          ref={lightboxRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Visualização ampliada da imagem"
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.85)', zIndex: 9999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            backdropFilter: 'blur(5px)'
+          }}
           onClick={() => setIsLightboxOpen(false)}
-          className="product-close-btn"
-          style={lightboxCloseButtonStyle}
-          title="Fechar"
-          aria-label="Fechar visualização ampliada"
         >
-          &times;
-        </button>
-        <img 
-          key={currentImageIndex}
-          src={images[currentImageIndex]} alt={`${product.title} - Imagem ${currentImageIndex + 1}`}
-          style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain' }}
-          onClick={(e) => e.stopPropagation()} 
-        />
-        {images.length > 1 && (
-          <>
-            <button onClick={(e) => { e.stopPropagation(); prevImage(); }} className="product-nav-btn" style={{ ...navButtonStyle('left'), width: '50px', height: '50px', fontSize: '24px' }} aria-label="Imagem anterior">◀</button>
-            <button onClick={(e) => { e.stopPropagation(); nextImage(); }} className="product-nav-btn" style={{ ...navButtonStyle('right'), width: '50px', height: '50px', fontSize: '24px' }} aria-label="Próxima imagem">▶</button>
-          </>
-        )}
-      </div>
-    )}
+          <button 
+            onClick={() => setIsLightboxOpen(false)}
+            className="product-close-btn"
+            style={lightboxCloseButtonStyle}
+            title="Fechar"
+            aria-label="Fechar visualização ampliada"
+          >
+            &times;
+          </button>
+          <img 
+            key={currentImageIndex}
+            src={images[currentImageIndex]} alt={`${product.title} - Imagem ${currentImageIndex + 1}`}
+            style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain' }}
+            onClick={(e) => e.stopPropagation()} 
+          />
+          {images.length > 1 && (
+            <>
+              <button onClick={(e) => { e.stopPropagation(); prevImage(); }} className="product-nav-btn" style={{ ...navButtonStyle('left'), width: '50px', height: '50px', fontSize: '24px' }} aria-label="Imagem anterior">◀</button>
+              <button onClick={(e) => { e.stopPropagation(); nextImage(); }} className="product-nav-btn" style={{ ...navButtonStyle('right'), width: '50px', height: '50px', fontSize: '24px' }} aria-label="Próxima imagem">▶</button>
+            </>
+          )}
+        </div>
+      )}
     </>
   );
 });
@@ -341,4 +283,3 @@ const linkStyle = (bg, color) => buttonBaseStyle({
   cursor: 'pointer',
   transition: 'box-shadow 0.2s ease, opacity 0.2s ease',
 });
-

@@ -42,13 +42,11 @@
 │   │   │   ├── MusicCard.js
 │   │   │   ├── MusicGallery.js
 │   │   │   └── styles
-│   │   │       ├── MusicCard.module.css
 │   │   │       └── MusicGallery.module.css
 │   │   ├── Testimonials
 │   │   │   └── index.js
 │   │   └── Video
 │   │       ├── styles
-│   │       │   ├── VideoCard.module.css
 │   │       │   └── VideoGallery.module.css
 │   │       ├── VideoCard.js
 │   │       └── VideoGallery.js
@@ -88,6 +86,7 @@
 │       ├── Alert.module.css
 │       ├── Badge.js
 │       ├── Badge.module.css
+│       ├── BaseCard.js
 │       ├── Button.js
 │       ├── Button.module.css
 │       ├── Card.js
@@ -1062,4 +1061,4 @@
 ├── tests-output.log
 └── tree.txt
 
-159 directories, 904 files
+159 directories, 903 files

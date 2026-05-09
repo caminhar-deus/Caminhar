@@ -1,4 +1,4 @@
-import styles from './styles/MusicCard.module.css';
+import BaseCard from '../../UI/BaseCard';
 
 export default function MusicCard({ musica }) {
   const handleSpotifyClick = (e) => {
@@ -23,12 +23,9 @@ export default function MusicCard({ musica }) {
   };
 
   return (
-    <div className={styles.musicCard}>
-      <div className={styles.content}>
-        <h3 className={styles.titulo}>{musica.titulo}</h3>
-        <p className={styles.artista}>{musica.artista}</p>
-        
-        <div className={styles.spotifyContainer} style={{ minWidth: '280px' }}>
+    <BaseCard
+      media={
+        <div style={{ padding: '16px', minWidth: '280px' }}>
           <iframe
             data-testid="embed-iframe"
             style={{ borderRadius: '12px', overflow: 'hidden', background: 'transparent' }}
@@ -41,19 +38,30 @@ export default function MusicCard({ musica }) {
             loading="lazy"
             scrolling="no"
             title={`Player do Spotify para ${musica.titulo}`}
-            className={styles.spotifyEmbed}
           ></iframe>
         </div>
-        
-        <button 
-          className={styles.spotifyButton}
-          onClick={handleSpotifyClick}
-          aria-label={`Ouvir ${musica.titulo} no Spotify`}
-        >
-          <span className={styles.spotifyIcon}>🎵</span>
-          Ouvir no Spotify
-        </button>
-      </div>
-    </div>
+      }
+    >
+      <h3 style={{ margin: '0 0 4px 0', fontSize: '1.1rem' }}>{musica.titulo}</h3>
+      <p style={{ margin: '0 0 12px 0', color: '#666', fontSize: '0.9rem' }}>{musica.artista}</p>
+      
+      <button 
+        onClick={handleSpotifyClick}
+        aria-label={`Ouvir ${musica.titulo} no Spotify`}
+        style={{
+          padding: '8px 16px',
+          borderRadius: '6px',
+          border: 'none',
+          backgroundColor: '#1DB954',
+          color: '#fff',
+          fontWeight: 'bold',
+          cursor: 'pointer',
+          fontSize: '0.85rem',
+          transition: 'opacity 0.2s ease',
+        }}
+      >
+        🎵 Ouvir no Spotify
+      </button>
+    </BaseCard>
   );
 }
