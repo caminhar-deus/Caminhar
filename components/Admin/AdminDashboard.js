@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import styles from '../../styles/Admin.module.css';
+import styles from './styles/Admin.module.css';
 
 export default function AdminDashboard({ setActiveTab }) {
   const [stats, setStats] = useState(null);

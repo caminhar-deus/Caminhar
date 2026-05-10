@@ -25,6 +25,8 @@
 │   │   ├── Managers
 │   │   │   ├── BackupManager.js
 │   │   │   └── CacheManager.js
+│   │   ├── styles
+│   │   │   └── Admin.module.css
 │   │   ├── Tools
 │   │   │   ├── IntegrityCheck.js
 │   │   │   └── RateLimitViewer.js
@@ -686,7 +688,11 @@
 │   ├── design-system.js
 │   ├── _document.js
 │   ├── index.js
-│   └── [slug].js
+│   ├── [slug].js
+│   └── styles
+│       ├── DesignSystem.module.css
+│       ├── globals.css
+│       └── Home.module.css
 ├── pr-coverage.yml
 ├── public
 │   └── uploads
@@ -803,10 +809,6 @@
 ├── skills-lock.json
 ├── styleMock.js
 ├── styles
-│   ├── Admin.module.css
-│   ├── DesignSystem.module.css
-│   ├── globals.css
-│   ├── Home.module.css
 │   └── tokens
 │       ├── animations.js
 │       ├── borders.js
@@ -1056,4 +1058,4 @@
 ├── tests-output.log
 └── tree.txt
 
-160 directories, 897 files
+162 directories, 897 files

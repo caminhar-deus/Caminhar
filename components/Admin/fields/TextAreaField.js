@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import styles from '../../../styles/Admin.module.css';
+import styles from '../styles/Admin.module.css';
 
 /**
  * Campo de textarea reutilizável

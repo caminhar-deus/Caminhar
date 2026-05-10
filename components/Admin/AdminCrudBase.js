@@ -1,7 +1,7 @@
 import React, { useEffect, useCallback, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useAdminCrud } from '../../hooks/useAdminCrud';
-import styles from '../../styles/Admin.module.css';
+import styles from './styles/Admin.module.css';
 import toast from 'react-hot-toast';
 
 /**

@@ -2,7 +2,7 @@ import Head from 'next/head';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Cropper from 'react-easy-crop';
-import styles from '../styles/Admin.module.css';
+import styles from '../components/Admin/styles/Admin.module.css';
 import AdminPosts from '../components/Admin/AdminPosts';
 import RateLimitViewer from '../components/Admin/Tools/RateLimitViewer';
 import IntegrityCheck from '../components/Admin/Tools/IntegrityCheck';

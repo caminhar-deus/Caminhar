@@ -1,7 +1,7 @@
 import Head from 'next/head';
 import { useState } from 'react';
 import { useAdminAuth } from '@/hooks';
-import styles from '../../styles/Admin.module.css';
+import styles from './styles/Admin.module.css';
 
 /**
  * Higher-Order Component (HOC) para proteger páginas administrativas.
