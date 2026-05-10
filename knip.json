@@ -1,18 +1,19 @@
 {
-  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "$schema": "./schema.knip.json",
+  "paths": {
+    "@/*": ["./*"]
+  },
   "ignore": [
     "tests/**",
     "load-tests/**",
     "scripts/**",
     "examples/**",
     "styles/tokens/**",
-    "hooks/**",
     ".agents/**",
     "*.config.js",
     "jest.setup.js",
     "styleMock.js",
-    "rate-limit-proxy.js",
-    "pages/**"
+    "rate-limit-proxy.js"
   ],
   "ignoreBinaries": [
     "kill-port",
@@ -24,8 +25,7 @@
     "@faker-js/faker",
     "@jest/reporters",
     "jest-watch-typeahead",
-    "jsdom",
-    "web-vitals"
+    "jsdom"
   ],
   "ignoreExportsUsedInFile": true,
   "rules": {
