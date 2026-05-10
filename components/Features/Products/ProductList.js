@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApiFetch, useDebounce } from '@/hooks';
 import ProductCard from './ProductCard';
 import { inputStyle, buttonBaseStyle } from './styles';
-import { ErrorMessage, LoadingMessage, EmptyMessage } from '../UI/StateMessages';
+import { ErrorMessage, LoadingMessage, EmptyMessage } from '../../UI/StateMessages';
 
 export default function ProductList() {
   const [currentPage, setCurrentPage] = useState(1);

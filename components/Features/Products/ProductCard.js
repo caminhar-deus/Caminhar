@@ -1,8 +1,8 @@
 import React, { memo, useState, useEffect, useRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { parseImages } from '../../lib/seo/helpers';
-import BaseCard from '../UI/BaseCard';
-import styles from './ProductCard.module.css';
+import { parseImages } from '../../../lib/seo/helpers';
+import BaseCard from '../../UI/BaseCard';
+import styles from './styles/ProductCard.module.css';
 
 const ProductCard = memo(function ProductCard({ product }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);

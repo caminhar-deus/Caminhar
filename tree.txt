@@ -36,14 +36,21 @@
 │   │   │   └── styles
 │   │   │       └── Blog.module.css
 │   │   ├── ContentTabs
-│   │   │   ├── ContentTabs.module.css
-│   │   │   └── index.js
+│   │   │   ├── index.js
+│   │   │   └── styles
+│   │   │       └── ContentTabs.module.css
 │   │   ├── Music
 │   │   │   ├── MusicCard.js
 │   │   │   ├── MusicGallery.js
 │   │   │   └── styles
 │   │   │       ├── MusicCard.module.css
 │   │   │       └── MusicGallery.module.css
+│   │   ├── Products
+│   │   │   ├── ProductCard.js
+│   │   │   ├── ProductList.js
+│   │   │   ├── styles
+│   │   │   │   └── ProductCard.module.css
+│   │   │   └── styles.js
 │   │   ├── Testimonials
 │   │   │   └── index.js
 │   │   └── Video
@@ -67,11 +74,6 @@
 │   │   ├── index.js
 │   │   ├── LazyIframe.js
 │   │   └── PreloadResources.js
-│   ├── Products
-│   │   ├── ProductCard.js
-│   │   ├── ProductCard.module.css
-│   │   ├── ProductList.js
-│   │   └── styles.js
 │   ├── SEO
 │   │   ├── Head.js
 │   │   ├── index.js
@@ -1054,4 +1056,4 @@
 ├── tests-output.log
 └── tree.txt
 
-158 directories, 897 files
+160 directories, 897 files

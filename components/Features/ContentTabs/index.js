@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import Link from 'next/link';
-import styles from './ContentTabs.module.css';
+import styles from './styles/ContentTabs.module.css';
 import BlogSection from '../Blog/BlogSection';
 import MusicGallery from '../Music/MusicGallery';
 import VideoGallery from '../Video/VideoGallery';
-import ProductList from '../../Products/ProductList';
+import ProductList from '../Products/ProductList';
 
 export default function ContentTabs() {
   const [activeTab, setActiveTab] = useState('reflexoes');
