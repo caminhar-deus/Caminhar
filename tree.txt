@@ -773,6 +773,7 @@
 │   ├── monitor-disk-space.js
 │   ├── reset-admin-password.js
 │   ├── restore-backup.js
+│   ├── run-all-load-tests.js
 │   ├── run-load-tests.sh
 │   ├── seed-all.js
 │   ├── seed-musicas.js
@@ -790,7 +791,6 @@
 │   └── validate-schema.js
 ├── security-tests.yml
 ├── skills-lock.json
-├── styleMock.js
 ├── tests
 │   ├── examples
 │   │   ├── component-example.test.js

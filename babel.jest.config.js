@@ -9,13 +9,5 @@ export default {
   ],
   plugins: [
     '@babel/plugin-transform-modules-commonjs'
-  ],
-  // Disable istanbul plugin for test files to avoid Babel conflicts
-  env: {
-    test: {
-      plugins: [
-        '@babel/plugin-transform-modules-commonjs'
-      ]
-    }
-  }
+  ]
 };

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { redis } from '../redis.js';
+import { redis } from './lib/redis.js';
 
 // Armazenamento em memória para o Rate Limiting
 // Nota: Em ambientes serverless (como Vercel), este Map é recriado por instância/lambda.
@@ -74,9 +74,6 @@ export async function proxy(request) {
     const windowMs = RATE_LIMIT_WINDOW * 1000;
 
     if (ipRateLimit.size > 10000) {
-      const now = Date.now();
-      const windowMs = RATE_LIMIT_WINDOW * 1000;
-      
       for (const [ip, record] of ipRateLimit) {
         if (now - record.startTime > windowMs) {
           ipRateLimit.delete(ip);

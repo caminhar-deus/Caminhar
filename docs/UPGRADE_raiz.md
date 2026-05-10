@@ -2,21 +2,19 @@
 
 ## Visão Geral
 
-Este documento lista correções, melhorias de performance, inconsistências e duplicidades identificadas nos arquivos localizados na raiz do projeto. Nenhuma correção foi aplicada, apenas reportada.
+Este documento lista correções, melhorias de performance, inconsistências e duplicidades identificadas nos arquivos localizados na raiz do projeto. Itens marcados com ✅ foram corrigidos.
 
 ---
 
 ## 1. `babel.jest.config.js`
 
-### 🔴 Redundância: Plugin duplicado `@babel/plugin-transform-modules-commonjs`
+### ✅ Corrigido: Plugin duplicado `@babel/plugin-transform-modules-commonjs`
 
-O plugin `@babel/plugin-transform-modules-commonjs` aparece duas vezes:
-- Na lista de `plugins` principal (linha 11)
-- Na seção `env.test.plugins` (linha 17)
+O plugin `@babel/plugin-transform-modules-commonjs` aparecia duas vezes:
+- Na lista de `plugins` principal
+- Na seção `env.test.plugins`
 
-**Impacto:** Configuração redundante e desnecessária. O preset-env com `modules: 'auto'` já gerencia a transformação de módulos quando necessário.
-
-**Sugestão:** Remover uma das ocorrências, mantendo apenas na raiz.
+**Correção aplicada:** Removida a seção `env.test.plugins` inteira. O escopo `env.test` herda os plugins da raiz automaticamente, e o `preset-env` com `modules: 'auto'` já gerencia a transformação de módulos quando necessário.
 
 ---
 
@@ -42,83 +40,80 @@ Os thresholds atuais são muito altos (branches 92%, functions 95%, lines 98%, s
 
 ## 3. `rate-limit-proxy.js`
 
-### 🔴 Duplicação de variáveis (Shadowing)
+### ✅ Corrigido: Shadowing de variáveis
 
-Nas linhas 76-80, as variáveis `now` e `windowMs` são declaradas novamente dentro do bloco de limpeza do Map de rate limit em memória, mesmo já tendo sido declaradas nas linhas 74-75. Isso cria shadowing desnecessário e confunde a leitura.
+Nas linhas 76-78, as variáveis `now` e `windowMs` eram redeclaradas com `const` dentro do bloco de limpeza do Map de rate limit em memória, mesmo já tendo sido declaradas no escopo externo. Isso criava shadowing desnecessário.
 
-```javascript
-// Linhas 73-85 (trecho afetado)
-if (ipRateLimit.size > 10000) {
-  const now = Date.now();       // REDECLARADA
-  const windowMs = RATE_LIMIT_WINDOW * 1000; // REDECLARADA
+**Correção aplicada:** Removidas as declarações duplicadas de `now` e `windowMs` de dentro do bloco `if (ipRateLimit.size > 10000)`.
 
-  for (const [ip, record] of ipRateLimit) {
-    if (now - record.startTime > windowMs) {
-      ipRateLimit.delete(ip);
-    }
-  }
-}
-```
+### ✅ Corrigido: Import com caminho relativo inconsistente
 
-**Sugestão:** Remover as declarações duplicadas (`const now = Date.now()` e `const windowMs = RATE_LIMIT_WINDOW * 1000`) de dentro do bloco `if`, pois elas já existem no escopo externo (linhas 74-75).
+O arquivo está na raiz mas importava `{ redis }` de `'../redis.js'`, que não existe na estrutura atual.
 
-### 🟡 Import com caminho relativo inconsistente
-
-O arquivo está na raiz mas importa `{ redis }` de `'../redis.js'`. Isso sugere que espera-se que este arquivo seja executado de dentro de um diretório `lib/middleware/` ou similar, mas está posicionado na raiz.
-
-**Sugestão:** Verificar se o caminho de import está correto para a localização atual do arquivo ou mover o arquivo para a localização apropriada dentro da estrutura do projeto (ex: `lib/middleware/`).
+**Correção aplicada:** Alterado o caminho de `'../redis.js'` para `'./lib/redis.js'`.
 
 ---
 
 ## 4. `package.json`
 
-### 🔴 Manutenibilidade: Script `test:load:all` extremamente longo
+### ✅ Corrigido: Script `test:load:all` extremamente longo
 
-O script `test:load:all` (linha 56) contém mais de 30 comandos encadeados com `&&`, formando uma linha de script extremamente longa e difícil de manter.
+O script `test:load:all` continha mais de 30 comandos encadeados com `&&` em uma única linha.
 
-**Impacto:** Difícil leitura, edição e manutenção. Qualquer alteração exige localizar o comando específico dentro da string gigante.
-
-**Sugestão:** Criar um script separado em `scripts/run-all-load-tests.js` que execute cada teste programaticamente, tornando a manutenção mais simples e legível.
+**Correção aplicada:** Criado o arquivo `scripts/run-all-load-tests.js` que executa programaticamente cada teste. O script no `package.json` agora contém apenas: `"node scripts/run-all-load-tests.js"`.
 
 ### 🟡 Versões de Node.js inconsistentes
 
-O `package.json` define `"node": "24.15.0"` como engine, mas:
-- `ci.yml` usa `node-version: [24.15.0]`
-- `load-tests.yml` usa `node-version: '24.14.1'`
-- `pr-coverage.yml` usa `node-version: '24.14.1'`
-- `security-tests.yml` usa `node-version: '20'`
+~~O `package.json` define `"node": "24.15.0"` como engine, mas:~~
+~~- `ci.yml` usa `node-version: [24.15.0]`~~
+~~- `load-tests.yml` usa `node-version: '24.14.1'`~~
+~~- `pr-coverage.yml` usa `node-version: '24.14.1'`~~
+~~- `security-tests.yml` usa `node-version: '20'`~~
 
-**Impacto:** Inconsistência entre ambientes. Testes de segurança rodam em Node.js 20 enquanto o resto do projeto espera Node.js 24.
+~~**Impacto:** Inconsistência entre ambientes.~~
 
-**Sugestão:** Padronizar a versão do Node.js em todos os workflows do GitHub Actions para a mesma versão definida em `package.json` (`24.15.0`).
+~~**Sugestão:** Padronizar a versão do Node.js em todos os workflows do GitHub Actions para a mesma versão definida em `package.json` (`24.15.0`).~~
+
+**(Movido para seção 5 - resolvido via Composite Action)**
 
 ---
 
 ## 5. GitHub Actions Workflows (`*.yml`)
 
-### 🔴 Duplicação de Configuração entre Workflows
+### ✅ Corrigido: Duplicação de Configuração entre Workflows
 
-Os quatro workflows (`ci.yml`, `load-tests.yml`, `pr-coverage.yml`, `security-tests.yml`) compartilham significativa duplicação:
-
-- **Serviços PostgreSQL e Redis:** Repetidos em 3 workflows (`load-tests.yml`, `pr-coverage.yml`, `security-tests.yml`)
+Os quatro workflows (`ci.yml`, `load-tests.yml`, `pr-coverage.yml`, `security-tests.yml`) compartilhavam significativa duplicação:
 - **Setup do Node.js:** Repetido em todos os 4 workflows
 - **Instalação de dependências (`npm ci` ou `npm install`):** Repetido em todos os 4 workflows
-- **Setup do banco de dados de teste:** Repetido em 3 workflows
 
-**Impacto:** Manutenção difícil e propensa a erros. Qualquer alteração precisa ser replicada em múltiplos arquivos.
+**Correção aplicada:**
+1. Criado Composite Action em `.github/actions/setup/action.yml` que unifica setup do Node.js (com cache `'npm'`) + instalação de dependências (`npm ci`).
+2. Todos os 4 workflows agora usam `uses: ./.github/actions/setup`.
+3. `ci.yml` alterado de `npm install` para `npm ci` (via Composite Action).
 
-**Sugestão:** Extrair os passos comuns para um Composite Action do GitHub Actions reutilizável, ou criar um workflow reutilizável chamado por outros workflows.
+### ✅ Corrigido: Caching diferente em cada workflow
 
-### 🟡 Caching diferente em cada workflow
+- `ci.yml`: usava `cache: 'npm'` do `setup-node`
+- `load-tests.yml`: usava `actions/cache@v4` para `node_modules` + cache do Next.js
+- `pr-coverage.yml`: usava `cache: 'npm'` do `setup-node`
+- `security-tests.yml`: não usava cache
 
-- `ci.yml`: usa `cache: 'npm'` do `setup-node`
-- `load-tests.yml`: usa `actions/cache@v4` para `node_modules` + cache do Next.js
-- `pr-coverage.yml`: usa `cache: 'npm'` do `setup-node`
-- `security-tests.yml`: não usa cache
+**Correção aplicada:** Todos os workflows agora usam `cache: 'npm'` via Composite Action. Cache do Next.js mantido em `load-tests.yml` por ser específico.
 
-**Impacto:** Perda de oportunidade de acelerar a execução dos workflows que não usam cache.
+### ✅ Corrigido: Versões de Node.js inconsistentes
 
-**Sugestão:** Padronizar a estratégia de cache entre todos os workflows.
+- ~~`ci.yml`: `24.15.0`~~
+- ~~`load-tests.yml`: `24.14.1`~~
+- ~~`pr-coverage.yml`: `24.14.1`~~
+- ~~`security-tests.yml`: `20`~~
+
+**Correção aplicada:** Todos os workflows agora usam a versão `24.15.0` (padrão definido no Composite Action).
+
+### 🟡 Serviços PostgreSQL e Redis ainda duplicados
+
+Os serviços PostgreSQL e Redis continuam duplicados em `load-tests.yml`, `pr-coverage.yml` e `security-tests.yml`.
+
+**Sugestão:** Criar um segundo Composite Action para setup do ambiente de teste completo (services + DB + build + start), se aplicável.
 
 ---
 
@@ -200,34 +195,34 @@ O arquivo `tree.txt` contém um snapshot da estrutura de diretórios. Este tipo 
 
 ## 12. `styleMock.js`
 
-### 🔴 Duplicidade com `__mocks__/styleMock.js`
+### ✅ Corrigido: Duplicidade com `__mocks__/styleMock.js`
 
-Existem dois arquivos com o mesmo propósito e conteúdo:
+Existiam dois arquivos com o mesmo propósito e conteúdo:
 - `/styleMock.js` (raiz) → `export default {};`
 - `/__mocks__/styleMock.js` → mesmo conteúdo
 
-**Impacto:** Duplicação desnecessária. Ambos servem para mockar CSS nos testes.
-
-**Sugestão:** Manter apenas um dos arquivos e ajustar a referência no `jest.config.js` conforme necessário.
+**Correção aplicada:** O `jest.config.js` já referencia `'<rootDir>/__mocks__/styleMock.js'`. Portanto, o arquivo `/styleMock.js` da raiz foi removido, mantendo apenas o do diretório `__mocks__/`.
 
 ---
 
 ## Resumo
 
-| Prioridade | Arquivo | Problema |
-|---|---|---|
-| 🔴 Alta | `babel.jest.config.js` | Plugin duplicado |
-| 🔴 Alta | `rate-limit-proxy.js` | Shadowing de variáveis |
-| 🔴 Alta | `rate-limit-proxy.js` | Import com caminho inconsistente |
-| 🔴 Alta | `package.json` | Script `test:load:all` gigante |
-| 🔴 Alta | `docs/*.yml` | Duplicação entre workflows |
-| 🔴 Alta | `styleMock.js` | Duplicidade com `__mocks__/styleMock.js` |
-| 🟡 Média | `jest.config.js` | `maxWorkers: 1` lento |
-| 🟡 Média | `jest.config.js` | Thresholds elevados |
-| 🟡 Média | `package.json` | Versões Node.js inconsistentes |
-| 🟡 Média | `next-sitemap.config.js` | Import não utilizado |
-| 🟡 Média | `next.config.js` | CORS com fallback `'*'` |
-| 🟡 Média | `GEMINI.md` | Caminhos absolutos |
-| 🟡 Média | `tree.txt` | Snapshot estático desatualizado |
-| 🟡 Média | `schema.knip.json` | 943 linhas na raiz |
-| 🟡 Média | `skills-lock.json` | 945 linhas na raiz |
+| Prioridade | Arquivo | Problema | Status |
+|---|---|---|---|
+| 🔴 Alta | `babel.jest.config.js` | Plugin duplicado | ✅ Corrigido |
+| 🔴 Alta | `rate-limit-proxy.js` | Shadowing de variáveis | ✅ Corrigido |
+| 🔴 Alta | `rate-limit-proxy.js` | Import com caminho inconsistente | ✅ Corrigido |
+| 🔴 Alta | `package.json` | Script `test:load:all` gigante | ✅ Corrigido |
+| 🔴 Alta | `docs/*.yml` | Duplicação entre workflows | ✅ Corrigido |
+| 🔴 Alta | `docs/*.yml` | Versões Node.js inconsistentes | ✅ Corrigido |
+| 🔴 Alta | `docs/*.yml` | Caching diferente em cada workflow | ✅ Corrigido |
+| 🔴 Alta | `styleMock.js` | Duplicidade com `__mocks__/styleMock.js` | ✅ Corrigido |
+| 🟡 Média | `jest.config.js` | `maxWorkers: 1` lento | Pendente |
+| 🟡 Média | `jest.config.js` | Thresholds elevados | Pendente |
+| 🟡 Média | `next-sitemap.config.js` | Import não utilizado | Pendente |
+| 🟡 Média | `next.config.js` | CORS com fallback `'*'` | Pendente |
+| 🟡 Média | `GEMINI.md` | Caminhos absolutos | Pendente |
+| 🟡 Média | `tree.txt` | Snapshot estático desatualizado | Pendente |
+| 🟡 Média | `schema.knip.json` | 943 linhas na raiz | Pendente |
+| 🟡 Média | `skills-lock.json` | 945 linhas na raiz | Pendente |
+| 🟡 Média | `docs/*.yml` | Serviços PG/Redis duplicados | Pendente |

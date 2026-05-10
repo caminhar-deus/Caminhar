@@ -35,6 +35,7 @@ scripts/
 ├── monitor-disk-space.js
 ├── reset-admin-password.js
 ├── restore-backup.js
+├── run-all-load-tests.js
 ├── run-load-tests.sh
 ├── seed-all.js
 ├── seed-musicas.js
@@ -239,6 +240,11 @@ scripts/
 - **Propósito:** Valida se o schema do banco de dados corresponde ao esperado pelo código. Define um schema esperado para as tabelas (`posts`, `videos`, `musicas`, `users`, `settings`, `images`) com suas colunas, e verifica cada uma no PostgreSQL usando `information_schema`. Gera saída clara com `✅` para OK e `❌` para discrepâncias.
 - **Dependências:** `fs`, `dotenv`, `pg`
 
+### `scripts/run-all-load-tests.js`
+- **Localização:** `/home/qa/Projeto/Caminhar/scripts/run-all-load-tests.js`
+- **Propósito:** Orquestrador que executa todos os testes de carga (k6) sequencialmente. Substitui o script inline `test:load:all` do `package.json` que continha mais de 30 comandos encadeados. Executa cada teste npm via `execSync`, com parada em caso de falha e relatório consolidado ao final.
+- **Dependências:** `child_process`
+
 ### `scripts/run-load-tests.sh`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/run-load-tests.sh`
 - **Propósito:** Shell script que verifica se o servidor está online (via `curl`) e então executa `npm run test:load:all` para iniciar a bateria completa de testes de carga. Fornece feedback visual com emojis.
@@ -429,7 +435,7 @@ scripts/
 | **Limpeza** | 6 | `clean-*`, `clear-*` |
 | **Validação/Diagnóstico** | 3 | `check-db-status.js`, `check-env.js`, `validate-schema.js` + 5 em `diagnostics/` |
 | **Migrações** | 9 | `001` a `009` em `migrations/` |
-| **Testes de Carga** | 3 | `generate-load-report.js`, `run-load-tests.sh`, `consolidate-k6-reports.js` |
+| **Testes de Carga** | 4 | `run-all-load-tests.js`, `generate-load-report.js`, `run-load-tests.sh`, `consolidate-k6-reports.js` |
 | **Monitoramento** | 1 | `monitor-disk-space.js` |
 | **Utilidades** | 4 | `db-shell.js`, `check-server.js`, `reset-admin-password.js` + 4 em `utils/` |
 | **Manutenção** | 6 | `maintenance/` |
