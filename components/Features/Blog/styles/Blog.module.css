@@ -32,6 +32,60 @@
   gap: 2rem;
 }
 
+/* PostCard Styles */
+.category {
+  font-size: 0.75rem;
+  color: #1976d2;
+  background-color: #e3f2fd;
+  padding: 0.25rem 0.75rem;
+  border-radius: 50px;
+  font-weight: 600;
+  text-transform: uppercase;
+  display: inline-block;
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.cardTitle {
+  font-size: 1.25rem;
+  margin: 0 0 0.8rem 0;
+  color: #2c3e50;
+  line-height: 1.4;
+}
+
+.excerpt {
+  color: #666;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+  flex: 1;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+  margin-top: auto;
+}
+
+.date {
+  font-size: 0.85rem;
+  color: #999;
+}
+
+.readMore {
+  color: #0070f3;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.readMore:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 768px) {
   .section {
     padding: 3rem 1rem;

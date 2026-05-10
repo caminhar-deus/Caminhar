@@ -42,6 +42,7 @@
 │   │   │   ├── MusicCard.js
 │   │   │   ├── MusicGallery.js
 │   │   │   └── styles
+│   │   │       ├── MusicCard.module.css
 │   │   │       └── MusicGallery.module.css
 │   │   ├── Testimonials
 │   │   │   └── index.js
@@ -68,6 +69,7 @@
 │   │   └── PreloadResources.js
 │   ├── Products
 │   │   ├── ProductCard.js
+│   │   ├── ProductCard.module.css
 │   │   ├── ProductList.js
 │   │   └── styles.js
 │   ├── SEO
@@ -87,10 +89,10 @@
 │       ├── Badge.js
 │       ├── Badge.module.css
 │       ├── BaseCard.js
+│       ├── BaseCard.module.css
 │       ├── Button.js
 │       ├── Button.module.css
 │       ├── Card.js
-│       ├── Card.module.css
 │       ├── index.js
 │       ├── Input.js
 │       ├── Input.module.css
@@ -676,6 +678,7 @@
 │   │   └── videos.js
 │   ├── _app.js
 │   ├── blog
+│   │   ├── Blog.module.css
 │   │   ├── index.js
 │   │   └── [slug].js
 │   ├── design-system.js
@@ -799,26 +802,21 @@
 ├── styleMock.js
 ├── styles
 │   ├── Admin.module.css
-│   ├── Blog.module.css
 │   ├── DesignSystem.module.css
 │   ├── globals.css
 │   ├── Home.module.css
-│   ├── MusicGallery.module.css
-│   ├── shared
-│   │   └── Card.module.css
-│   ├── tokens
-│   │   ├── animations.js
-│   │   ├── borders.js
-│   │   ├── breakpoints.js
-│   │   ├── colors.js
-│   │   ├── index.js
-│   │   ├── opacity.js
-│   │   ├── shadows.js
-│   │   ├── sizes.js
-│   │   ├── spacing.js
-│   │   ├── typography.js
-│   │   └── zIndex.js
-│   └── VideoGallery.module.css
+│   └── tokens
+│       ├── animations.js
+│       ├── borders.js
+│       ├── breakpoints.js
+│       ├── colors.js
+│       ├── index.js
+│       ├── opacity.js
+│       ├── shadows.js
+│       ├── sizes.js
+│       ├── spacing.js
+│       ├── typography.js
+│       └── zIndex.js
 ├── tests
 │   ├── examples
 │   │   ├── component-example.test.js
@@ -1056,4 +1054,4 @@
 ├── tests-output.log
 └── tree.txt
 
-159 directories, 898 files
+158 directories, 897 files
