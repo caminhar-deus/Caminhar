@@ -1,0 +1,468 @@
+# Análise de Melhorias - `/components`
+
+> **Data:** 10/05/2026  
+> **Objetivo:** Reportar correções, melhorias, problemas de performance e duplicidade de código identificados na análise dos componentes. **Sem aplicação de correções.**
+
+---
+
+## Índice
+
+1. [Admin](#1-admin)
+2. [Features](#2-features)
+3. [Layout](#3-layout)
+4. [Performance](#4-performance)
+5. [SEO](#5-seo)
+6. [UI (Design System)](#6-ui-design-system)
+
+---
+
+## 1. Admin
+
+### 1.1 AdminCrudBase.js
+
+**Localização:** `components/Admin/AdminCrudBase.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Duplicidade** | A lógica de exportação CSV em `AdminCrudBase.js` (linhas 133-171) é **quase idêntica** à encontrada em `AdminAudit.js` (linhas 61-94). Ambos geram CSV com BOM, criam Blob, link temporário e download. Sugere-se extrair para um helper/módulo compartilhado em `lib/` ou `utils/`. |
+| 2 | **Duplicidade** | O CSS de animação skeleton (`@keyframes skeleton-pulse` e classe `.skeleton-box`) está duplicado em `AdminCrudBase.js` (linhas 326-335) e `AdminAudit.js` (linhas 98-108). Deveria estar centralizado no CSS module. |
+| 3 | **Performance** | O toggle de status (`handleToggleBoolean`, linha 174) envia o objeto `item` completo no body da requisição PUT, incluindo campos desnecessários. Poderia enviar apenas `{ id, [key]: newValue }`. |
+| 4 | **Manutenção** | A função `handleToggleBoolean` (linha 174) faz fetch direto para o endpoint, ignorando o hook `useAdminCrud` que já encapsula chamadas à API. Isso quebra a abstração e cria inconsistência. |
+| 5 | **PropTypes** | O campo `apiEndpoint` não está documentado como PropTypes.string.isRequired no JSDoc, embora esteja nas PropTypes. |
+| 6 | **Segurança** | A validação customizada (`validate`, linha 211) é chamada sem try/catch em `validateForm()`. Se lançar um erro não estruturado, o fluxo pode quebrar. |
+| 7 | **Acessibilidade** | O botão de ordenação Drag & Drop não possui `aria-grabbed` ou descrição adequada para leitores de tela. |
+
+### 1.2 AdminDashboard.js
+
+**Localização:** `components/Admin/AdminDashboard.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Performance** | O fetch de stats (`/api/admin/stats`) não possui cache ou debounce. Em toda montagem do componente, uma requisição é feita. Se o dashboard for remontado, há chamada desnecessária. |
+| 2 | **Resiliência** | Não há tratamento para resposta não-JSON da API (ex: erro 500 HTML). |
+| 3 | **Manutenção** | O array `statItems` (linha 42) é recriado a cada renderização. Poderia ser memoizado com `useMemo`. |
+
+### 1.3 AdminAudit.js
+
+**Localização:** `components/Admin/AdminAudit.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Duplicidade** | Lógica de exportação CSV duplicada com `AdminCrudBase` (ver item 1.1 #1). |
+| 2 | **Performance** | O filtro local (`filteredLogs`, linha 54) é executado a cada renderização, mesmo quando `logs` ou `search` não mudam. Poderia usar `useMemo`. |
+| 3 | **UX** | O botão "Atualizar" não desabilita durante o loading, permitindo múltiplos cliques e múltiplas requisições simultâneas. |
+| 4 | **Tratamento de erro** | Se o servidor retornar status 401 com corpo JSON inválido, o `router.reload()` (linha 28) é chamado mesmo após o `throw`, mas a mensagem de toast pode não aparecer. |
+
+### 1.4 AdminDicas.js
+
+**Localização:** `components/Admin/AdminDicas.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Manutenção** | O componente é simples e bem estruturado, sem problemas significativos. |
+
+### 1.5 AdminMusicas.js
+
+**Localização:** `components/Admin/AdminMusicas.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Duplicidade** | A função `handleReorder` (linha 127) é **quase idêntica** em `AdminMusicas.js`, `AdminPosts.js`, `AdminVideos.js` e `AdminProducts.js`. Todos calculam offset, constroem payload e fazem PUT no endpoint. Deveria ser um helper compartilhado. |
+| 2 | **Duplicidade** | O padrão `renderCustomFormField` com botão "Puxar Dados" (linhas 180-199) se repete em `AdminMusicas.js`, `AdminVideos.js` e `AdminProducts.js`. As únicas diferenças são: endpoint da API, cor do botão e campos preenchidos. Poderia ser abstraído. |
+| 3 | **UX** | O botão "Puxar Dados" do Spotify (linha 185) está posicionado com `position: absolute`, que pode sobrepor o label do campo em telas menores. |
+
+### 1.6 AdminPosts.js
+
+**Localização:** `components/Admin/AdminPosts.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Duplicidade** | `handleReorder` duplicado (idem item 1.5 #1). |
+| 2 | **Manutenção** | A função `validatePost` (linha 179) tem lógica acoplada ao componente. A regra de negócio "post publicado precisa de imagem" poderia estar no schema Zod. |
+| 3 | **Acessibilidade** | O campo slug editável com geração automática (linha 226) não sinaliza ao usuário que o slug foi gerado. Poderia haver feedback visual. |
+
+### 1.7 AdminProducts.js
+
+**Localização:** `components/Admin/AdminProducts.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Duplicidade** | `handleReorder` duplicado (idem item 1.5 #1). |
+| 2 | **Duplicidade** | `renderCustomFormField` duplicado (idem item 1.5 #2). |
+| 3 | **Manutenção** | O endpoint da API de produtos é `/api/products`, enquanto os demais usam `/api/admin/*`. Inconsistência na URL. |
+| 4 | **Manutenção** | `handleReorder` de Products (linha 130) está **fora** do componente (export default na linha 146), diferentemente dos outros. Isso quebra o padrão. |
+| 5 | **Manutenção** | O componente `CheckboxWrapper` (linha 21) é definido inline, mas é equivalente funcional ao `ToggleField` já existente em `Admin/fields/ToggleField.js`. Duplicidade de componente. |
+| 6 | **Performance** | O preço é armazenado como string formatada (`R$ 89,90`) vinda da API do ML. Isso pode causar problemas de ordenação e cálculos. |
+
+### 1.8 AdminRolesTab.js
+
+**Localização:** `components/Admin/AdminRolesTab.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Performance** | O array `permissionsList` (linha 7) é recriado a cada importação. Poderia ser `const` com Object.freeze ou em arquivo separado. |
+
+### 1.9 AdminUsers.js
+
+**Localização:** `components/Admin/AdminUsers.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Acessibilidade** | O sistema de abas (linhas 16-35) não possui `role="tablist"`, `role="tab"` ou `aria-selected` nos botões, prejudicando navegação por leitores de tela. |
+| 2 | **Performance** | `AdminUsersTab` e `AdminRolesTab` são importados e renderizados mesmo quando a aba não está ativa. Poderia usar lazy loading dinâmico. |
+
+### 1.10 AdminUsersTab.js
+
+**Localização:** `components/Admin/AdminUsersTab.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Performance** | O `RoleSelectField` (linha 52) faz fetch dos cargos a cada montagem. Se houver múltiplos usuários na página, múltiplas requisições são feitas. Poderia usar cache ou estado global. |
+| 2 | **Duplicidade** | A lógica de verificação de 401 e reload (linhas 60-63) é duplicada em `AdminAudit.js` (linhas 27-29). |
+| 3 | **Acessibilidade** | O `select` customizado (linha 83) não possui `aria-describedby` linkado ao hint. |
+
+### 1.11 AdminVideos.js
+
+**Localização:** `components/Admin/AdminVideos.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Duplicidade** | A regex de extração de ID do YouTube (linha 28) é duplicada em `LazyIframe.js` (linha 84) e `UrlField.js` (linha 39). Deveria ser um helper centralizado. |
+| 2 | **Duplicidade** | `handleReorder` duplicado (idem item 1.5 #1). |
+| 3 | **Duplicidade** | `renderCustomFormField` duplicado (idem item 1.5 #2). |
+| 4 | **Performance** | O embed de vídeo na tabela (linhas 130-141) carrega o iframe do YouTube já na listagem, o que pode ser pesado. Poderia ser lazy. |
+
+### 1.12 withAdminAuth.js
+
+**Localização:** `components/Admin/withAdminAuth.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Manutenção** | O HOC usa `import { useAdminAuth } from '@/hooks'` com alias `@`, mas alguns componentes usam caminhos relativos. Inconsistência. |
+| 2 | **Performance** | O componente `LoginForm` é redefinido dentro do escopo do HOC a cada renderização. Poderia ser definido fora. |
+
+### 1.13 Fields (Admin)
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Duplicidade** | `TextAreaField.js` (Admin/fields) e `TextArea.js` (UI) são funcionalmente equivalentes: ambos têm label, placeholder, required, error, hint, maxLength. Diferenças mínimas (estilo, rows default). Deveriam ser unificados. |
+| 2 | **Duplicidade** | `TextField.js` (Admin/fields) e `Input.js` (UI) também são muito similares. Ambos fornecem input com label, error, hint, required. A versão Admin tem menos funcionalidades (sem addons, sem clearable). |
+| 3 | **Segurança** | `ImageUploadField.js` (linha 72): usa `alert()` para erros de upload. Em produção, `alert()` bloqueia a UI e não é estilizável. Deveria usar o sistema de toasts. |
+| 4 | **Manutenção** | O `onUpload` customizado (linhas 42-50) recebe o File, mas o callback não recebe o `uploadType`, limitando a flexibilidade. |
+
+### 1.14 Managers
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **UX** | `BackupManager.js` (linha 29): usa `confirm()` nativo, que bloqueia a UI. Deveria usar modal confirmação do design system. |
+| 2 | **UX** | `CacheManager.js` (linha 26): também usa `window.confirm()`. |
+| 3 | **Manutenção** | `CacheManager.js`: o fetch das métricas (linha 12) não aponta `credentials: 'include'` explicitamente, ao contrário dos demais componentes. |
+
+### 1.15 Tools
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Manutenção** | `IntegrityCheck.js` e `RateLimitViewer.js` são placeholders sem funcionalidade real. Podem dar falsa impressão de funcionalidade implementada. |
+
+### 1.16 Admin.module.css
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Manutenção** | O CSS (904 linhas) está extenso e mistura estilos de login, tabela, formulário, dashboard, placeholders, etc. Poderia ser dividido em módulos menores. |
+| 2 | **Performance** | Algumas classes utilizam `!important` (linhas 18, 23) que devem ser evitadas quando possível. |
+| 3 | **Manutenção** | Classes `.formGroup` e `.input` são definidas duas vezes (linhas 98-110 e 575-600; linhas 30-43 e 587-600), causando sobrescrita. |
+
+---
+
+## 2. Features
+
+### 2.1 Blog
+
+**Localização:** `components/Features/Blog/`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Performance** | `BlogSection.js` não tem `useMemo` para `displayedPosts`. O `slice` é recalculado a cada render. |
+| 2 | **Acessibilidade** | `PostCard.js` (linha 11): a imagem não tem `alt` descritivo (usa `post.title` como alt, mas o atributo está vazio). |
+| 3 | **SEO** | `PostCard.js` (linha 41): o link para `/blog/${post.slug}` não possui `aria-label` ou `title` descritivo. |
+
+### 2.2 ContentTabs
+
+**Localização:** `components/Features/ContentTabs/`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Performance** | `BlogSection`, `MusicGallery`, `VideoGallery` e `ProductList` são importados estaticamente e todos fazem fetch de API ao montar, mesmo que a aba não esteja visível. |
+| 2 | **Duplicidade** | O componente `PlaceholderContent` (linha 69) é inline e tem fallbacks que não são mais usados (já que as abas música/vídeo/produtos estão ativas). Pode ser removido ou simplificado. |
+| 3 | **Acessibilidade** | As abas não possuem `aria-controls` vinculando o botão ao painel de conteúdo correspondente. |
+
+### 2.3 Music
+
+**Localização:** `components/Features/Music/`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Resiliência** | `MusicGallery.js` (linhas 28-31): a lógica de paginação tem múltiplos fallbacks encadeados que podem resultar em comportamento imprevisível com dados inconsistentes. |
+| 2 | **Duplicate** | `MusicCard.js` (linhas 10-21) e `UrlField.js` (linhas 44-47) têm quase a mesma regex de extração de ID do Spotify. |
+| 3 | **Performance** | O embed Spotify carrega o player mesmo sem interação do usuário. `LazyIframe` não é usado aqui (ao contrário de VideoCard). |
+
+### 2.4 Products
+
+**Localização:** `components/Features/Products/`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Performance** | `ProductCard.js` (linha 41): o lightbox adiciona/remove event listener de `keydown` a cada abertura/fechamento. Poderia usar abordagem com ref. |
+| 2 | **Performance** | `ProductList.js` (linha 14): usa `useDebounce` triplo (search, minPrice, maxPrice). Três debounces separados podem causar requisições desnecessárias. |
+| 3 | **Acessibilidade** | O lightbox (linhas 129-158) não tem `aria-hidden="true"` nos elementos atrás do modal quando aberto (apenas no overlay). |
+| 4 | **Manutenção** | `styles.js` (linha 10): `inputStyle` usa `paddingLeft` como string template direto, sem validação de segurança. |
+
+### 2.5 Testimonials
+
+**Localização:** `components/Features/Testimonials/`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Manutenção** | O CSS está inline via `<style jsx>` (linhas 115-182) e não como CSS module, diferentemente do restante do projeto. Inconsistência. |
+| 2 | **Performance** | O event listener `resize` (linha 51) não tem debounce, podendo causar chamadas excessivas em redimensionamento. |
+| 3 | **Acessibilidade** | Os botões de navegação do carrossel (linhas 78, 109) não têm `aria-controls` ou referência ao container. |
+
+### 2.6 Video
+
+**Localização:** `components/Features/Video/`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Manutenção** | `VideoGallery.js` (linhas 99-129): os estilos dos botões de paginação estão inline, diferentemente do padrão do projeto que usa CSS modules. |
+| 2 | **Duplicidade** | A estrutura de `MusicGallery.js` e `VideoGallery.js` é muito similar (busca, paginação, estados). Ambas poderiam usar um componente base de galeria. |
+
+---
+
+## 3. Layout
+
+### 3.1 Container.js
+
+**Localização:** `components/Layout/Container.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Manutenção** | BEM estruturado, sem problemas significativos. |
+
+### 3.2 Grid.js
+
+**Localização:** `components/Layout/Grid.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Manutenção** | A lógica de fallback para CSS custom properties (linhas 36-41) é repetitiva e difícil de manter. Poderia usar uma função auxiliar. |
+| 2 | **Duplicidade** | Os `responsiveStyle` em `Grid.js` (linhas 34-42) e `Grid.Responsive` (linhas 149-155) calculam a mesma lógica de cascata de breakpoints. |
+
+### 3.3 Stack.js
+
+**Localização:** `components/Layout/Stack.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Manutenção** | Componente bem estruturado. Sem problemas significativos. |
+
+### 3.4 Sidebar.js
+
+**Localização:** `components/Layout/Sidebar.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Performance** | O `useEffect` que persiste collapsed (linha 55-63) executa a cada mudança de `collapsed`. Como `localStorage.setItem` é síncrono, pode causar pequenos delays. Poderia ser debounced. |
+| 2 | **Acessibilidade** | O overlay mobile (linha 121) tem `aria-hidden="true"`, mas o conteúdo principal atrás do overlay ainda pode receber foco via Tab. Deveria usar `inert` ou `aria-hidden` no container pai. |
+| 3 | **Manutenção** | O seletor CSS `+ .main` e `~ .main` (Sidebar.module.css, linhas 124-145) pode causar problemas de especificidade. A margem do main é controlada por seletores de irmãos, o que é frágil. |
+
+### 3.5 Stack.module.css
+
+**Localização:** `components/Layout/Stack.module.css`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Performance** | O spacing usa seletor `> * + *` (adjacent sibling), que é funcional mas pode ter impacto em performance com muitos filhos animados. O uso de `gap` seria mais performático. |
+
+---
+
+## 4. Performance
+
+### 4.1 CriticalCSS.js
+
+**Localização:** `components/Performance/CriticalCSS.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Manutenção** | O CSS inline (linhas 26-94) está em formato de string não minificada dentro do JS. Difícil de manter e debugar. |
+| 2 | **Manutenção** | O helper `removeCriticalCSS` (linha 101) remove o style pelo ID, mas não há fallback se o CSS principal falhar ao carregar. |
+
+### 4.2 ImageOptimized.js
+
+**Localização:** `components/Performance/ImageOptimized.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Performance** | O skeleton loader (linhas 88-97) renderiza um div `absolute` com `inset: 0`. Se a imagem falhar, o skeleton permanece visível junto com o fallback. |
+| 2 | **Manutenção** | O CSS da animação pulse (linhas 121-130) usa `<style jsx>` do Next.js, que gera hash único. Isso impede cache de CSS compartilhado. |
+
+### 4.3 LazyIframe.js
+
+**Localização:** `components/Performance/LazyIframe.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Duplicidade** | A regex de extração de ID do YouTube (linha 84) é duplicada em `AdminVideos.js` (linha 28) e `UrlField.js` (linha 39). |
+| 2 | **UX** | O placeholder de thumbnail (linhas 122-147) exibe um fundo escuro com overlay, mas não tem botão de "play" visível para o usuário saber que pode clicar. |
+| 3 | **Acessibilidade** | O placeholder (linha 124) é um `div` com `onClick`, mas não tem `role="button"` ou `tabIndex`. Não é acessível por teclado. |
+
+### 4.4 PreloadResources.js
+
+**Localização:** `components/Performance/PreloadResources.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Performance** | Gera tags `dns-prefetch` e `preconnect` para os mesmos domínios simultaneamente. `preconnect` já inclui `dns-prefetch`, então `dns-prefetch` é redundante. |
+| 2 | **Manutenção** | A função `getCriticalResources` (linha 103) retorna dados estáticos que podem ficar desatualizados conforme a página muda. |
+
+---
+
+## 5. SEO
+
+### 5.1 Head.js
+
+**Localização:** `components/SEO/Head.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Performance** | Gera tags `preconnect` e `dns-prefetch` para YouTube e Spotify em TODAS as páginas, mesmo quando não há conteúdo dessas plataformas. |
+| 2 | **Manutenção** | Os `preconnect` e `dns-prefetch` (linhas 147-155) duplicam a funcionalidade de `PreloadResources.js`, causando potencial duplicidade de tags no `<head>`. |
+| 3 | **SEO** | A URL canônica (linha 49) não remove trailing slash. Isso pode causar conteúdo duplicado se a página for acessada com/sem barra. |
+
+### 5.2 StructuredData
+
+**Localização:** `components/SEO/StructuredData/`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Duplicidade** | Todos os componentes de StructuredData repetem `sanitizeJsonLd`, `siteConfig`, `siteUrl`, `formatSchemaDate`, `getImageUrl` importados de `lib/seo/config`. Código boilerplate alto. |
+| 2 | **Manutenção** | Todos esses componentes importam de `../../../lib/seo/config`, que é um caminho relativo longo. Poderia usar alias `@/lib/seo/config`. |
+
+---
+
+## 6. UI (Design System)
+
+### 6.1 Button.js
+
+**Localização:** `components/UI/Button.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Acessibilidade** | O efeito ripple (linhas 37-48) adiciona elementos `span` ao DOM que não são ocultos de leitores de tela. Deveriam ter `aria-hidden="true"`. |
+| 2 | **Performance** | O estado `ripples` (useState) armazena objetos de ripple que são removidos após 600ms via `setTimeout`. Se muitos cliques forem feitos rapidamente, pode causar acúmulo. |
+| 3 | **Manutenção** | `Button` importa `Spinner` de `./Spinner.js` diretamente, mas o `index.js` também exporta Spinner. Inconsistência de import. |
+
+### 6.2 Input.js
+
+**Localização:** `components/UI/Input.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Manutenção** | O campo `Input` gera IDs aleatórios (linha 36) se nenhum ID for fornecido. Isso quebra a hidratação SSR (Next.js), pois o ID gerado no servidor difere do cliente. |
+
+### 6.3 TextArea.js
+
+**Localização:** `components/UI/TextArea.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Manutenção** | Mesmo problema de ID aleatório que `Input.js` (linha 43). Quebra hidratação SSR. |
+| 2 | **Performance** | `useEffect` (linha 117) recalcula altura em cada mudança de `value`. Se `autoResize` estiver desativado, ainda executa lógica desnecessária. |
+
+### 6.4 Select.js
+
+**Localização:** `components/UI/Select.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Manutenção** | Mesmo problema de ID aleatório (linha 36). Quebra hidratação SSR. |
+| 2 | **Performance** | O modo custom renderiza um `input` de busca quando `searchable` está ativo, mas não corta a busca assíncrona se o usuário fechar o dropdown rapidamente. |
+| 3 | **Manutenção** | O componente alterna entre render nativo e custom dependendo de `searchable || clearable`, mas o modo nativo não suporta `clearable`. |
+
+### 6.5 Modal.js
+
+**Localização:** `components/UI/Modal.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Acessibilidade** | O modal não usa `aria-labelledby` ou `aria-describedby` para associar título e descrição. |
+| 2 | **Performance** | O focus trap usa `querySelectorAll` com seletor complexo a cada Tab (linhas 96-113). Poderia ser cacheado. |
+| 3 | **Manutenção** | O seletor de foco (linhas 69, 96) está duplicado. Deveria ser uma constante ou hook. |
+| 4 | **Segurança** | O `document.body.style.overflow` (linha 44) sobrescreve qualquer estilo inline preexistente. `originalBodyOverflow` captura apenas o primeiro valor. |
+
+### 6.6 Card.js / BaseCard.js
+
+**Localização:** `components/UI/Card.js` e `components/UI/BaseCard.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Manutenção** | `Card.js` é apenas um wrapper que passa props para `BaseCard`. A existência de ambos pode causar confusão sobre qual usar. |
+| 2 | **Acessibilidade** | `BaseCard.js` (linha 69): quando `onClick` é fornecido, o card recebe `role="button"` e `tabIndex={0}`, mas não há indicação visual de foco via teclado. |
+| 3 | **Acessibilidade** | O `role="button"` em um `<div>` pode não ser anunciado corretamente por todos os leitores de tela como elemento interativo. |
+
+### 6.7 Badge.js
+
+**Localização:** `components/UI/Badge.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Manutenção** | A função `kebabToCamel` (linha 10) é simples e poderia ser substituída por CSS diretamente (ex: `top-right` → classe CSS). |
+| 2 | **Acessibilidade** | `Badge.Dot` (linha 97) usa `aria-label="Notificação"` genérico, sem contexto do que a notificação significa. |
+
+### 6.8 Alert.js
+
+**Localização:** `components/UI/Alert.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Manutenção** | A variável `icons` (linha 84) recebe `defaultIcons` desnecessariamente (já importada). |
+| 2 | **Acessibilidade** | O alerta usa `role="alert"` com `aria-live="polite"`. Para alertas críticos, `role="alertdialog"` seria mais apropriado. |
+
+### 6.9 Toast.js
+
+**Localização:** `components/UI/Toast.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Performance** | O hook `useToast` (linha 127) gera IDs com `crypto.randomUUID()`. Esse método não está disponível em ambientes sem crypto (ex: alguns navegadores antigos). |
+| 2 | **Acessibilidade** | O toast usa `role="status"` com `aria-live="polite"`, mas não anuncia o status (ex: "sucesso", "erro") de forma clara para leitores de tela. |
+| 3 | **Duplicidade** | `Toast` e `Alert` compartilham a mesma estrutura (ícone, título, descrição, close). Diferença principal é temporário vs. permanente. |
+
+### 6.10 Spinner.js
+
+**Localização:** `components/UI/Spinner.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Acessibilidade** | O `role="status"` e `aria-label` estão no container, mas o texto do label (linha 34) é passado corretamente para `aria-label`. Sem problemas graves. |
+
+### 6.11 StateMessages.js
+
+**Localização:** `components/UI/StateMessages.js`
+
+| # | Tipo | Descrição |
+|---|------|-----------|
+| 1 | **Manutenção** | `LoadingMessage` usa emoji ⏳ como indicador visual. Leitores de tela podem anunciar isso, o que pode ser confuso. |
+| 2 | **Duplicidade** | `EmptyMessage` e `ErrorMessage` são similares, diferindo apenas na cor. Poderiam ser um único componente configurável. |
+
+---
+
+## Resumo Consolidado
+
+| Categoria | Quantidade | Principais Ocorrências |
+|-----------|-----------|------------------------|
+| **Duplicidade** | ~15 ocorrências | CSV export, reorder, renderCustomFormField, regex YouTube/Spotify, TextArea vs TextAreaField, CSS skeleton, alert() vs modal |
+| **Performance** | ~12 ocorrências | Fetch sem cache, filtros sem useMemo, debounce excessivo, imports estáticos de conteúdo não-visível, ripple acumulado |
+| **Acessibilidade** | ~10 ocorrências | Abas sem aria, lightbox focus, modal sem labelledby, ripple não oculto, placeholder sem role button |
+| **Manutenção** | ~14 ocorrências | IDs aleatórios quebrando SSR, endpoints inconsistentes, CSS inline vs modules, placeholders não-funcionais, estilos duplicados no CSS module |
+| **Segurança** | ~2 ocorrências | Uso de `alert()`, overflow inline sobrescrito |
+| **UX** | ~3 ocorrências | Botão "Puxar Dados" sobreposto, uso de `confirm()` nativo, embed pesado na tabela |
