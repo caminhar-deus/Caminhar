@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import tokens from '../styles/tokens';
+import tokens from '../pages/styles/tokens';
 
 /**
  * Converte cor hex para rgba.
