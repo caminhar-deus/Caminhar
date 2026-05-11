@@ -42,13 +42,24 @@ export const useApiFetch = (url, config = {}) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const lastFetchRef = useRef(0);
+  const optionsRef = useRef(options);
+  const depsKeyRef = useRef(JSON.stringify(options));
+
+  // Estabiliza a referência de options: só atualiza quando o conteúdo serializado mudar
+  useEffect(() => {
+    const serialized = JSON.stringify(options);
+    if (depsKeyRef.current !== serialized) {
+      depsKeyRef.current = serialized;
+      optionsRef.current = options;
+    }
+  }, [JSON.stringify(options)]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(url, options);
+      const response = await fetch(url, optionsRef.current);
 
       if (!response.ok && response.status !== 304) {
         let errorData;
@@ -79,7 +90,7 @@ export const useApiFetch = (url, config = {}) => {
     } finally {
       setLoading(false);
     }
-  }, [url, JSON.stringify(options), ...deps]);
+  }, [url, depsKeyRef.current, ...deps]);
 
   useEffect(() => {
     if (staleTime && lastFetchRef.current > 0) {

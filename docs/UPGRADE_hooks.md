@@ -71,21 +71,21 @@ Ambas chamavam `fetchItemsFromAPI`, tratavam loading, paginação e erros de for
 
 ## 2. Problemas de Performance
 
-### 2.1 `/hooks/useAdminCrud.js` — `apiEndpoint` como Dependência de `useEffect`
+### 2.1 `/hooks/useAdminCrud.js` — `apiEndpoint` como Dependência de `useEffect` ✅ CORRIGIDO
 
 **Arquivo:** `/hooks/useAdminCrud.js`
 
-**Problema:** `apiEndpoint` é dependência do `useEffect`. Por ser uma string, não causa re-render desnecessário em si, mas se o componente pai recriar o objeto de configuração, o hook inteiro refaz o fetch inicial.
+**Problema:** `apiEndpoint` era dependência do `useEffect` com lógica de fetch duplicada. Com a refatoração da seção 1.3 (que substituiu o `useEffect` por uma chamada a `fetchItems(1)`), o impacto dessa dependência foi mitigado.
 
-**Recomendação:** Manter `apiEndpoint` como string estável. Conscientizar consumidores do hook para não recriar configurações em cada render.
+**Solução aplicada:** Resolvido como parte da correção de duplicidade de código (seção 1.3).
 
 ---
 
-### 2.2 `/hooks/useApiFetch.js` — `JSON.stringify(options)` como Dependência
+### 2.2 `/hooks/useApiFetch.js` — `JSON.stringify(options)` como Dependência ✅ CORRIGIDO
 
 **Arquivo:** `/hooks/useApiFetch.js`
 
-**Problema:** `JSON.stringify(options)` como dependência do `useCallback` força a recriação da função `fetchData` sempre que `options` muda, mesmo que o conteúdo serializado seja idêntico (objetos recriados com mesmas propriedades).
+**Problema:** `JSON.stringify(options)` como dependência do `useCallback` forçava a recriação da função `fetchData` sempre que `options` mudava, mesmo que o conteúdo serializado fosse idêntico (objetos recriados com mesmas propriedades a cada render do pai).
 
 ```js
 const fetchData = useCallback(async () => {
@@ -93,15 +93,19 @@ const fetchData = useCallback(async () => {
 }, [url, JSON.stringify(options), ...deps]);
 ```
 
-**Recomendação:** Usar `useRef` para armazenar a última versão de `options` e comparar manualmente, ou estabilizar a referência de `options` no consumidor com `useMemo`.
+**Solução aplicada:** Substituído por estratégia com `useRef`:
+- `optionsRef` armazena a referência estável de `options`
+- `depsKeyRef` compara serializações via `useEffect`
+- `fetchData` depende de `depsKeyRef.current` em vez de `JSON.stringify(options)`
+- O callback usa `optionsRef.current` no corpo da função
 
 ---
 
-### 2.3 `/hooks/usePerformanceMetrics.js` — Falta de Cleanup nos Observers
+### 2.3 `/hooks/usePerformanceMetrics.js` — Falta de Cleanup nos Observers ✅ CORRIGIDO
 
 **Arquivo:** `/hooks/usePerformanceMetrics.js`
 
-**Problema:** Os `PerformanceObserver` para `longtask` e `resource` não são desconectados no cleanup do `useEffect`. Embora observers sejam limpos quando o componente desmonta em alguns navegadores, a especificação não garante.
+**Problema:** Os `PerformanceObserver` para `longtask` e `resource` não eram desconectados no cleanup do `useEffect`. Embora observers sejam limpos quando o componente desmonta em alguns navegadores, a especificação não garante.
 
 ```js
 return () => {
@@ -109,17 +113,29 @@ return () => {
 };
 ```
 
-**Recomendação:** Armazenar referências dos observers em variáveis e chamar `observer.disconnect()` no cleanup.
+**Solução aplicada:** Adicionado array `observers` que coleta as referências dos observers criados. No cleanup, todos são desconectados explicitamente:
+
+```js
+const observers = [];
+// ... criação dos observers com observers.push(...)
+return () => {
+  observers.forEach((observer) => observer.disconnect());
+};
+```
 
 ---
 
-### 2.4 `/hooks/useTheme.js` — `toggleTheme` com Debounce Manual vs Hook `useDebounce`
+### 2.4 `/hooks/useTheme.js` — `toggleTheme` com Debounce Manual vs Hook `useThrottle` ✅ CORRIGIDO
 
 **Arquivo:** `/hooks/useTheme.js`
 
-**Problema:** O debounce do `toggleTheme` é implementado manualmente com `useRef` e timestamp, enquanto o projeto já possui um hook `useDebounce` dedicado. Inconsistência de implementação.
+**Problema:** O throttle do `toggleTheme` era implementado manualmente com `useRef` e timestamp, enquanto o projeto já possuía um hook `useDebounce` dedicado. A implementação manual era um **throttle** (ignora chamadas rápidas), mas era chamada incorretamente de "debounce" (que atrasa a execução). Isso causava inconsistência e confusão em revisões de código.
 
-**Recomendação:** Avaliar se o `useDebounce` existente poderia ser utilizado ou se a abordagem atual (ignorar chamadas, não atrasar) é intencional e deve ser mantida.
+**Solução aplicada:** 
+- Criado hook `useThrottle` em `/hooks/useThrottle.js` seguindo o mesmo padrão de `useDebounce`
+- `toggleTheme` agora usa `useThrottle` em vez da implementação manual
+- Comentário corrigido de "debounce" para "throttle"
+- `useThrottle` exportado em `/hooks/index.js`
 
 ---
 
@@ -349,4 +365,8 @@ O nome sugere que forçaria o envio de todas as métricas, mas apenas retorna os
 | 1.1 | `hooks/index.js` | Removidas exportações duplicadas com sufixo `Default` | 10/05/2026 |
 | 1.2 | `hooks/useAdminAuth.js` + `hooks/useAuth.js` | `useAdminAuth` refatorado para consumir `AuthContext`; `credentials: 'include'` adicionado em `useAuth` | 10/05/2026 |
 | 1.3 | `hooks/useAdminCrud.js` | `useEffect` inicial simplificado para chamar `fetchItems(1)` | 10/05/2026 |
+| 2.1 | `hooks/useAdminCrud.js` | Resolvido como parte da correção 1.3 | 10/05/2026 |
+| 2.2 | `hooks/useApiFetch.js` | `JSON.stringify(options)` substituído por estratégia com `useRef` | 10/05/2026 |
+| 2.3 | `hooks/usePerformanceMetrics.js` | Adicionado `observer.disconnect()` no cleanup | 10/05/2026 |
+| 2.4 | `hooks/useTheme.js` | Criado `useThrottle` e substituída implementação manual | 10/05/2026 |
 | 3.1 | `hooks/useAdminAuth.js` | `useRouter()` movido para fora de condicional | 10/05/2026 |

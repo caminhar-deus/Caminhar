@@ -9,4 +9,5 @@ export { useAdminCrud } from './useAdminCrud';
 export { default as usePerformanceMetrics, reportWebVitals, detectPerformanceIssues } from './usePerformanceMetrics';
 export { useApiFetch } from './useApiFetch';
 export { useDebounce } from './useDebounce';
+export { useThrottle } from './useThrottle';
 export { useAdminAuth } from './useAdminAuth';

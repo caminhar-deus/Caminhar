@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import tokens from '../pages/styles/tokens';
+import { useThrottle } from './useThrottle';
 
 /**
  * Converte cor hex para rgba.
@@ -23,7 +24,7 @@ function hexToRgba(hex, alpha) {
  * @property {boolean} isDark - Se o tema escuro está ativo
  * @property {boolean} isLight - Se o tema claro está ativo
  * @property {boolean} mounted - Se o hook já foi montado (SSR guard)
- * @property {function} toggleTheme - Alterna entre light/dark com debounce de 300ms
+ * @property {function} toggleTheme - Alterna entre light/dark com throttle de 300ms
  * @property {function} setTheme - Define tema específico
  * @property {Object} tokens - Tokens completos de design
  * @property {Object} colors - Tokens de cor
@@ -52,9 +53,6 @@ export const useTheme = () => {
   // Estado do tema (light/dark)
   const [theme, setTheme] = useState('light');
   const [mounted, setMounted] = useState(false);
-
-  // Ref para debounce do toggleTheme
-  const lastToggleRef = useRef(0);
 
   // Detectar preferência do sistema
   useEffect(() => {
@@ -86,13 +84,10 @@ export const useTheme = () => {
     window.dispatchEvent(new CustomEvent('themeChange', { detail: { theme } }));
   }, [theme, mounted]);
 
-  // Toggle tema com debounce para prevenir múltiplas trocas rápidas
-  const toggleTheme = useCallback(() => {
-    const now = Date.now();
-    if (now - lastToggleRef.current < 300) return; // debounce de 300ms
-    lastToggleRef.current = now;
+  // Toggle tema com throttle para prevenir múltiplas trocas rápidas
+  const toggleTheme = useThrottle(() => {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
-  }, []);
+  }, 300);
 
   // Set tema específico
   const setThemeValue = useCallback((newTheme) => {

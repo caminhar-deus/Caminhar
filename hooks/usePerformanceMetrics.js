@@ -243,6 +243,8 @@ export default function usePerformanceMetrics(options = {}) {
 
     initWebVitals();
 
+    const observers = [];
+
     // Performance Observer para métricas adicionais
     if ('PerformanceObserver' in window) {
       // Long tasks (TBT)
@@ -266,6 +268,7 @@ export default function usePerformanceMetrics(options = {}) {
         });
 
         longTaskObserver.observe({ entryTypes: ['longtask'] });
+        observers.push(longTaskObserver);
       } catch (e) {
         // Long tasks não suportado
       }
@@ -285,14 +288,15 @@ export default function usePerformanceMetrics(options = {}) {
         });
 
         resourceObserver.observe({ entryTypes: ['resource'] });
+        observers.push(resourceObserver);
       } catch (e) {
         // Resource timing não suportado
       }
     }
 
-    // Cleanup
+    // Cleanup: desconecta observers explicitamente para evitar vazamentos
     return () => {
-      // Observers são automaticamente limpos quando o componente desmonta
+      observers.forEach((observer) => observer.disconnect());
     };
   }, [reportMetric, debug]);
 

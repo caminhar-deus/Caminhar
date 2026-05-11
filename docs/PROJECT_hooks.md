@@ -14,7 +14,8 @@
 5. [`/hooks/useAdminCrud.js`](#5-hooksuseadmincrudjs)
 6. [`/hooks/useApiFetch.js`](#6-hooksuseapifetchjs)
 7. [`/hooks/useDebounce.js`](#7-hooksusedebouncejs)
-8. [`/hooks/usePerformanceMetrics.js`](#8-hooksuseperformancemetricsjs)
+8. [`/hooks/useThrottle.js`](#8-hooksusethrottlejs)
+9. [`/hooks/usePerformanceMetrics.js`](#9-hooksuseperformancemetricsjs)
 
 ---
 
@@ -23,7 +24,7 @@
 **Propósito:** Arquivo de barreira (barrel file) que centraliza e reexporta todos os hooks do diretório. Serve como ponto único de importação para consumidores externos.
 
 **Funcionamento:**
-- Reexporta hooks nomeados: `useTheme`, `useAuth`, `useAdminCrud`, `usePerformanceMetrics`, `useApiFetch`, `useDebounce`, `useAdminAuth`.
+- Reexporta hooks nomeados: `useTheme`, `useAuth`, `useAdminCrud`, `usePerformanceMetrics`, `useApiFetch`, `useDebounce`, `useThrottle`, `useAdminAuth`.
 - Também exporta `AuthContext` e `AuthProvider` (definidos em `useAuth.js`).
 - Possui reexportação descrita como "Design System", indicando que estes hooks são parte integrante de um sistema de design.
 - **Nota:** As reexportações padrão com sufixo `Default` foram removidas para eliminar duplicidade na API pública.
@@ -38,7 +39,7 @@
 - **Estado:** Mantém `theme` ("light" | "dark") e `mounted` (indicador de hidratação SSR).
 - **Inicialização:** Na montagem, lê `localStorage('theme')`. Se não existir, respeita `prefers-color-scheme: dark` do sistema.
 - **Aplicação do tema:** Sincroniza `data-theme` no `<html>`, classe `.dark`, `localStorage` e dispara evento customizado `themeChange` no `window`.
-- **toggleTheme:** Alterna entre light/dark com debounce manual de 300ms via `useRef` para evitar múltiplas trocas rápidas.
+- **toggleTheme:** Alterna entre light/dark com throttle de 300ms via hook `useThrottle` para evitar múltiplas trocas rápidas.
 - **Helpers de tokens:**
   - `getColor(path, alpha)` — Navega por `tokens.colors` usando notação dot-path, com suporte a opacidade via `hexToRgba`.
   - `getSpacing(key)` — Busca em `tokens.spacing.space` e fallback `tokens.spacing.spacing`.
@@ -49,6 +50,7 @@
   - `isMobile()`, `isTablet()`, `isDesktop()` — Verificações síncronas de viewport.
 - **Performance:** Todo o retorno é memoizado com `useMemo` e dependências explícitas.
 - **Warnings em desenvolvimento:** Exibe `console.warn` quando tokens não são encontrados.
+- **Dependências:** `pages/styles/tokens`, `useThrottle`.
 
 ---
 
@@ -101,9 +103,10 @@
 
 **Funcionamento:**
 - **Configuração:** Aceita `url`, `options`, `deps`, `transform`, `initialData`, `staleTime`, `onError`.
+- **Estabilização de options:** Usa `optionsRef` + `depsKeyRef` para comparar serializações e evitar recriação desnecessária da função `fetchData` (substitui `JSON.stringify(options)` direto na dependência).
 - **fetchData:** Função memoizada via `useCallback`. Lida com códigos HTTP (inclusive 304), extrai mensagens de erro do corpo da resposta, aplica função `transform` se fornecida.
 - **Cache simples (staleTime):** Se `staleTime` é definido e passou menos tempo que o configurado desde o último fetch, pula a requisição.
-- **Dependências:** Inclui `url`, `options` serializado com `JSON.stringify` e `deps` fornecidas pelo usuário.
+- **Dependências:** Inclui `url`, `depsKeyRef.current` e `deps` fornecidas pelo usuário.
 - **Retorno:** `{ data, loading, error, refetch, setData }`.
 
 ---
@@ -120,13 +123,25 @@
 
 ---
 
-## 8. `/hooks/usePerformanceMetrics.js`
+## 8. `/hooks/useThrottle.js`
+
+**Propósito:** Hook de throttle reutilizável. Limita a frequência de chamada de uma função, ignorando chamadas que ocorrerem dentro do intervalo especificado.
+
+**Funcionamento:**
+- Recebe `fn` (função a ser throttled) e `delay` (default 300ms).
+- Internamente usa `useRef` para armazenar timestamp da última chamada e `useCallback` para memoizar a função com throttle.
+- Diferença de debounce: debounce atrasa a execução, throttle ignora chamadas rápidas consecutivas.
+- Útil para eventos de clique, scroll, resize e toggle de tema.
+
+---
+
+## 9. `/hooks/usePerformanceMetrics.js`
 
 **Propósito:** Hook avançado para monitoramento de Core Web Vitals (LCP, FID, CLS, INP, FCP, TTFB, TBT) e métricas de performance adicionais.
 
 **Funcionamento:**
 - **Biblioteca externa:** Importa dinamicamente `web-vitals` para registrar callbacks das métricas oficiais.
-- **PerformanceObserver:** Monitora `longtask` (para TBT) e `resource` (para recursos lentos > 1s).
+- **PerformanceObserver:** Monitora `longtask` (para TBT) e `resource` (para recursos lentos > 1s). Os observers são desconectados explicitamente no cleanup para evitar vazamentos.
 - **Cache de métricas:** Evita reportar a mesma métrica em menos de 1 minuto (`METRICS_CACHE_MS`).
 - **Histórico limitado:** Armazena até 50 entradas no histórico (`MAX_HISTORY_SIZE`).
 - **Envio para analytics:** Usa `navigator.sendBeacon` (preferencial) ou `fetch` com `keepalive`.
@@ -145,10 +160,11 @@
 | Arquivo | Localização | Tipo | Complexidade | Dependências Externas |
 |---|---|---|---|---|
 | `index.js` | `/hooks/index.js` | Barrel | Baixa | Nenhuma |
-| `useTheme.js` | `/hooks/useTheme.js` | Hook de estado + tokens | Alta | `pages/styles/tokens` |
+| `useTheme.js` | `/hooks/useTheme.js` | Hook de estado + tokens | Alta | `pages/styles/tokens`, `useThrottle` |
 | `useAuth.js` | `/hooks/useAuth.js` | Context + Hook | Média | Nenhuma |
 | `useAdminAuth.js` | `/hooks/useAdminAuth.js` | Hook de autenticação | Média | `next/router` |
 | `useAdminCrud.js` | `/hooks/useAdminCrud.js` | Hook de CRUD | Alta | `react-hot-toast` |
 | `useApiFetch.js` | `/hooks/useApiFetch.js` | Hook de fetch | Média | Nenhuma |
 | `useDebounce.js` | `/hooks/useDebounce.js` | Hook utilitário | Baixa | Nenhuma |
+| `useThrottle.js` | `/hooks/useThrottle.js` | Hook utilitário | Baixa | Nenhuma |
 | `usePerformanceMetrics.js` | `/hooks/usePerformanceMetrics.js` | Hook de performance | Alta | `web-vitals` (dynamic import) |
