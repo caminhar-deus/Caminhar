@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { getSetting } from '../../lib/db.js';
+import { getSetting } from '../../lib/domain/settings.js';
 
 export default async function handler(req, res) {
   try {

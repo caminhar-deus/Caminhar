@@ -1,6 +1,6 @@
 # Análise da Pasta `lib/`
 
-> **Data da análise:** 10/05/2026
+> **Data da análise:** 11/05/2026
 > **Projeto:** O Caminhar com Deus
 > **Objetivo:** Documentar de forma objetiva e clara todos os arquivos da pasta `lib/`, suas responsabilidades e propósitos.
 
@@ -13,14 +13,15 @@
    - [lib/cache.js](#12-libcachejs)
    - [lib/crud.js](#13-libcrudjs)
    - [lib/db.js](#14-libdbjs)
-   - [lib/middleware.js](#15-libmiddlewarejs)
+   - [lib/middleware.js](#15-libmiddlewarejs) — **DEPRECIADO**
    - [lib/redis.js](#16-libredisjs)
 2. [Subpasta `lib/api/`](#2-subpasta-libapi)
    - [lib/api/errors.js](#21-libapierrorsjs)
    - [lib/api/index.js](#22-libapiindexjs)
    - [lib/api/middleware.js](#23-libapimiddlewarejs)
    - [lib/api/response.js](#24-libapiresponsejs)
-   - [lib/api/validate.js](#25-libapivalidatejs)
+   - [lib/api/utils.js](#25-libapiutilsjs)
+   - [lib/api/validate.js](#26-libapivalidatejs)
 3. [Subpasta `lib/domain/`](#3-subpasta-libdomain)
    - [lib/domain/audit.js](#31-libdomainauditjs)
    - [lib/domain/images.js](#32-libdomainimagesjs)
@@ -51,7 +52,7 @@
 - `withAuth(handler)` — Middleware que protege handlers exigindo token válido.
 - `initializeAuth()` — Cria a tabela `users` (se não existir), faz migração da coluna `role`, e cria o admin padrão via variáveis de ambiente.
 
-**Observações:** Utiliza `jsonwebtoken`, `bcryptjs` e `cookie`. Possui fallback para compatibilidade CJS/ESM no módulo `cookie` (linha 7-8). O JWT_SECRET tem fallback para string fixa em desenvolvimento.
+**Observações:** Utiliza `jsonwebtoken`, `bcryptjs` e `cookie`. Possui fallback para compatibilidade CJS/ESM no módulo `cookie` (linha 7-8). O `JWT_SECRET` é obrigatório em produção — se não definido, lança erro. Em desenvolvimento, usa fallback com aviso explícito.
 
 ---
 
@@ -62,12 +63,13 @@
 **Propósito:** Camada de cache com Redis (Upstash) e fallback local. Centraliza operações de cache (get/set/invalidate) e inclui sistema de rate limit distribuído com fallback para memória local.
 
 **Funções principais:**
-- `getOrSetCache(key, fetchFunction, ttlSeconds)` — Padrão "Cache-Aside": tenta Redis, em caso de miss executa a função de fetch, salva no Redis e retorna. TTL padrão de 1 hora.
+- `getOrSetCache(key, fetchFunction, ttlSeconds)` — Padrão "Cache-Aside": tenta Redis, em caso de miss executa a função de fetch, salva no Redis e retorna. TTL padrão de 1 hora. Incrementa `redisHits` e `redisMisses` nas métricas.
 - `invalidateCache(keyPattern)` / `clearAllCache()` — Invalida chave específica ou limpa todo o cache Redis (FLUSHDB).
-- `checkRateLimit(ip, endpoint, limit, windowMs)` — Rate limit distribuído via Redis (INCR + EXPIRE) com fallback em Map local. Possui whitelist para IPs locais.
+- `checkRateLimit(ip, endpoint, limit, windowMs)` — Rate limit distribuído via Redis (INCR + EXPIRE) com fallback em Map local. Aceita `limit` como função dinâmica. Possui whitelist para IPs locais.
 - `getCacheMetrics()` — Retorna métricas de monitoramento (hits, misses, erros, tamanho do Map local).
+- `cleanupRateLimitTimer()` — Limpa o timer de limpeza periódica (usado em testes).
 
-**Observações:** Inclui limpeza periódica do Map local a cada 1 minuto via `setInterval`. Proteção contra memory leak: limpa o Map se exceder 5000 entradas. O rate limit tem fallback completo caso o Redis falhe.
+**Observações:** Inclui limpeza periódica do Map local a cada 1 minuto via `setInterval` com referência armazenada para cleanup. Proteção contra memory leak: limpa o Map se exceder 5000 entradas. O rate limit tem fallback completo caso o Redis falhe. As métricas `redisHits` e `redisMisses` são incrementadas corretamente.
 
 ---
 
@@ -107,25 +109,27 @@
 - `closeDatabase()` — Fecha o pool de conexões.
 - `resetPool()` — Reseta o pool (usado em testes para recriar a conexão com mocks).
 
-**Observações:** Pool configurado com lazy initialization (criado apenas no primeiro uso) para compatibilidade com Jest. Pool configurado com max: 20, min: 2, idleTimeout: 30s, connectionTimeout: 2s. SSL habilitado em produção. Re-exporta funções de `domain/`, `crud.js` e `audit.js` para backward compatibility.
+**Observações:** Pool configurado com lazy initialization (criado apenas no primeiro uso) para compatibilidade com Jest. Pool configurado com max: 20, min: 2, idleTimeout: 30s, connectionTimeout: 2s. SSL habilitado em produção. Re-exports removidos — importe diretamente dos módulos de origem (`./crud.js`, `./domain/settings.js`, `./domain/audit.js`, `./domain/posts.js`).
 
 ---
 
-### 1.5 `lib/middleware.js`
+### 1.5 `lib/middleware.js` — **DEPRECIADO**
 
 **Localização:** `/lib/middleware.js`
 
-**Propósito:** Middlewares gerais para as APIs Next.js. Inclui CORS, autenticação, rate limiting (em memória), tratamento de erros e logging.
+**Status:** **DEPRECIADO**. Use `lib/api/middleware.js` no lugar.
 
-**Funções principais:**
-- `runMiddleware(req, res, fn)` — Helper para executar middlewares no padrão Express/Next.js.
-- `apiMiddleware(handler)` — Middleware principal que aplica CORS, trata OPTIONS e adiciona headers padrão (`Content-Type`, `X-API-Version`).
-- `authenticatedApiMiddleware(handler)` — Combina `apiMiddleware` + `withAuth`.
-- `externalAuthMiddleware(handler)` — Middleware para APIs externas: extrai token do header ou cookie, verifica e anexa ao request.
-- `rateLimitMiddleware(handler)` — Rate limit simples em memória (100 req/15 min) com Map. Verifica IP via `x-forwarded-for`.
-- `errorHandlingMiddleware(handler)` — Tratamento de erros padronizado com mapeamento de tipos (`ValidationError`, `UnauthorizedError`, etc.).
+**Propósito (original):** Middlewares gerais para as APIs Next.js. Inclui CORS, autenticação, rate limiting (em memória), tratamento de erros e logging.
 
-**Observações:** Utiliza o pacote `cors` para configuração CORS. Possui objeto `logger` exportado com métodos info/error/warn. O rate limit usa Map local (não Redis) — diferente do `lib/cache.js` que usa Redis + fallback.
+**Guia de migração:**
+- `apiMiddleware(handler)` → `composeMiddleware(withCors(), withErrorHandler(), handler)`
+- `authenticatedApiMiddleware` → `composeMiddleware(withCors(), withAuth(), handler)`
+- `externalAuthMiddleware` → `withAuth()`
+- `rateLimitMiddleware` → `withRateLimit()`
+- `errorHandlingMiddleware` → `withErrorHandler()`
+- `logger` → `withLogger()`
+
+**Observações:** Mantido temporariamente para compatibilidade com consumidores existentes. Será removido em versão futura. Consumidores atuais: `pages/api/upload-image.js` e arquivos de teste.
 
 ---
 
@@ -172,7 +176,7 @@
 | `ServiceUnavailableError` | 503 | SERVICE_UNAVAILABLE | Serviço temporariamente fora |
 | `MethodNotAllowedError` | 405 | METHOD_NOT_ALLOWED | Método HTTP não permitido |
 
-**Observações:** Cada classe possui `toJSON()` que retorna formato padronizado com `success`, `error.code`, `error.message`, `details`, `meta.timestamp` e `meta.requestId`. Gera UUID v4 interno para rastreamento.
+**Observações:** Cada classe possui `toJSON()` que retorna formato padronizado com `success`, `error.code`, `error.message`, `details`, `meta.timestamp` e `meta.requestId`. Utiliza `generateUUID` de `lib/api/utils.js` para rastreamento. O `NotFoundError` agora exibe corretamente o ID: numérico como `(id: 123)` e string como `'admin'`.
 
 ---
 
@@ -180,9 +184,9 @@
 
 **Localização:** `/lib/api/index.js`
 
-**Propósito:** Ponto de exportação centralizada de todos os submódulos de `lib/api/` (errors, response, validate, middleware). Simplifica imports com uma única linha.
+**Propósito:** Ponto de exportação centralizada de todos os submódulos de `lib/api/` (errors, response, utils, validate, middleware). Simplifica imports com uma única linha.
 
-**Re-exporta:** Todas as classes de erro, funções de resposta, funções de validação e middlewares. Também exporta um objeto `default` com todos os módulos agrupados.
+**Re-exporta:** Todas as classes de erro, funções de resposta, utilitários, funções de validação e middlewares. Também exporta um objeto `default` com todos os módulos agrupados.
 
 ---
 
@@ -190,7 +194,7 @@
 
 **Localização:** `/lib/api/middleware.js`
 
-**Propósito:** Sistema de composição de middlewares para APIs Next.js. Diferente do `lib/middleware.js` (que é mais genérico), este módulo foca em middlewares encadeáveis e reutilizáveis.
+**Propósito:** Sistema de composição de middlewares para APIs Next.js. Este é o módulo padrão de middlewares do projeto (o `lib/middleware.js` está depreciado).
 
 **Funções/Middlewares:**
 
@@ -200,7 +204,7 @@
 | `withMethod(allowedMethods)` | Restringe métodos HTTP permitidos |
 | `withAuth(options)` | Autenticação com suporte a roles e API Key |
 | `withOptionalAuth()` | Autenticação opcional (não bloqueia anônimos) |
-| `withRateLimit(options)` | Rate limit em memória com suporte a função customizada para limite |
+| `withRateLimit(options)` | Rate limit via `checkRateLimit` de `lib/cache.js` (Redis + fallback em memória) |
 | `withCors(options)` | CORS configurável |
 | `withErrorHandler(options)` | Captura e padroniza erros |
 | `withLogger(options)` | Logging de requisições com duração |
@@ -209,8 +213,9 @@
 | `withCache(maxAge)` | Cache simples via header `Cache-Control` |
 | `publicApi(handler, options)` | Combinação pronta para APIs públicas |
 | `protectedApi(handler, options)` | Combinação pronta para APIs autenticadas |
+| `cleanupTimers()` | Limpa timers ativos (usado em testes) |
 
-**Observações:** O `composeMiddleware` usa `reduceRight` para aplicar middlewares de trás para frente, garantindo a ordem correta de execução. O rate limit possui cleanup periódico a cada 5 minutos. Suporta `maxRequests` como função para limites dinâmicos baseados no request.
+**Observações:** O `composeMiddleware` usa `reduceRight` para aplicar middlewares de trás para frente. O `withRateLimit` agora utiliza `checkRateLimit` de `lib/cache.js`, unificando as 3 implementações de rate limit que existiam anteriormente. Suporta `maxRequests` como função para limites dinâmicos. Exporta `cleanupTimers()` para limpeza em testes.
 
 ---
 
@@ -248,11 +253,25 @@
 | `serviceUnavailable(res, message, retryAfter, meta)` | 503 | Serviço indisponível |
 | `handleError(res, error, includeStack)` | — | Tratamento genérico de erros |
 
-**Observações:** Todas as respostas incluem `meta.timestamp`, `meta.requestId`. Suporte a stack trace em desenvolvimento. A função `handleError` detecta automaticamente erros com `toJSON()` e erros comuns.
+**Observações:** Todas as respostas incluem `meta.timestamp`, `meta.requestId`. Suporte a stack trace em desenvolvimento. A função `handleError` detecta automaticamente erros com `toJSON()` e erros comuns. Utiliza `generateUUID` e `generateMeta` de `lib/api/utils.js`. O `notFound` agora exibe corretamente o ID: numérico como `(id: 123)` e string como `'admin'`.
 
 ---
 
-### 2.5 `lib/api/validate.js`
+### 2.5 `lib/api/utils.js`
+
+**Localização:** `/lib/api/utils.js`
+
+**Propósito:** Utilitários compartilhados entre os módulos da API, eliminando duplicação de código.
+
+**Funções:**
+- `generateUUID()` — Gera UUID v4 simples para rastreamento de requisições.
+- `generateMeta(customMeta)` — Gera metadados padrão com `timestamp` e `requestId`.
+
+**Observações:** Criado para eliminar a duplicação da função `generateUUID` que existia em `lib/api/errors.js` e `lib/api/response.js`. Ambos os módulos agora importam de `utils.js`.
+
+---
+
+### 2.6 `lib/api/validate.js`
 
 **Localização:** `/lib/api/validate.js`
 

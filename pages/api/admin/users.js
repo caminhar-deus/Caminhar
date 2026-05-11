@@ -1,4 +1,6 @@
-import { query, createRecord, updateRecords, deleteRecords, logActivity } from '../../../lib/db';
+import { query } from '../../../lib/db';
+import { createRecord, updateRecords, deleteRecords } from '../../../lib/crud';
+import { logActivity } from '../../../lib/domain/audit';
 import { getAuthToken, verifyToken, hashPassword } from '../../../lib/auth';
 import { checkRateLimit } from '../../../lib/cache';
 

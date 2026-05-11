@@ -1,6 +1,6 @@
 # Relatório de Melhorias e Correções - `/pages`
 
-> **Data:** 10/05/2026
+> **Data:** 11/05/2026 (atualizado)
 > **Objetivo:** Reportar problemas de duplicidade, inconsistências, oportunidades de melhoria de performance e correções necessárias nos arquivos da pasta `/pages`. Nenhuma correção deve ser aplicada; apenas reportar.
 
 ---
@@ -147,10 +147,12 @@
 ### 2.3 Rate Limiting Aplicado de Forma Inconsistente
 
 **Arquivos:**
-- `api/posts.js`, `api/videos.js`, `api/products.js`: têm rate limiting
+- `api/posts.js`, `api/videos.js`, `api/products.js`: têm rate limiting (apenas em mutações no products.js)
 - `api/musicas.js`, `api/dicas.js`, `api/settings.js`: **não** têm rate limiting
 - `api/auth/login.js`: tem rate limiting por IP (5 tentativas/min)
 - `api/v1/auth/login.js`: **não** tem rate limiting
+
+**Item corrigido (11/05):** `api/products.js` — GET público (`?public=true`) agora permite requisições sem autenticação. A autenticação foi movida para dentro do switch/case, sendo exigida apenas em POST, PUT e DELETE. GET público ignora verificação de token.
 
 **Impacto:** Alguns endpoints públicos estão desprotegidos contra abuso.
 

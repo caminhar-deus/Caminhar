@@ -1,6 +1,6 @@
 import { invalidateCache } from '../../../../lib/cache.js';
 import { getAuthToken, verifyToken } from '../../../../lib/auth.js';
-import { updateVideo, deleteVideo } from '../../../../lib/db.js';
+import { updateVideo, deleteVideo } from '../../../../lib/domain/videos.js';
 
 export default async function handler(req, res) {
   const token = getAuthToken(req);

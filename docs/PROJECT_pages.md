@@ -136,11 +136,13 @@
 - **Localização:** `/pages/api/products.js`
 - **Propósito:** CRUD completo de produtos.
 - **Funcionalidades:**
-  - GET: Lista produtos com paginação, cache e rate limiting; filtro por destaque
-  - POST: Cria produto (protegido por JWT) com validação de campos obrigatórios
-  - PUT: Atualiza produto (protegido por JWT) com reordenação automática via `sort_order`
-  - DELETE: Remove produto (protegido por JWT) com reordenação dos demais
-  - Cache e rate limiting em todas as operações
+  - GET público (`?public=true`): Lista produtos sem autenticação, com paginação e formatação de moeda para Real (R$)
+  - GET admin (sem `public`): Lista produtos com paginação, protegido por JWT
+  - POST: Cria produto (protegido por JWT) com validação de campos obrigatórios e cálculo automático de posição
+  - PUT: Atualiza produto (protegido por JWT)
+  - DELETE: Remove produto (protegido por JWT)
+  - Cache e rate limiting em operações de criação/atualização/exclusão
+  - Log de auditoria em todas as mutações
 
 ### `/pages/api/settings.js`
 - **Localização:** `/pages/api/settings.js`

@@ -1,4 +1,5 @@
-import { query, logActivity } from '../../../lib/db.js';
+import { query } from '../../../lib/db.js';
+import { logActivity } from '../../../lib/domain/audit.js';
 import { withAuth } from '../../../lib/auth.js';
 
 async function handler(req, res) {

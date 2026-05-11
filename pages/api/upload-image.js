@@ -1,7 +1,7 @@
 import formidable from 'formidable';
 import fs from 'fs';
 import path from 'path';
-import { updateSetting } from '../../lib/db.js';
+import { updateSetting } from '../../lib/domain/settings.js';
 import { externalAuthMiddleware } from '../../lib/middleware.js';
 
 export const config = {

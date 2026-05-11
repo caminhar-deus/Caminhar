@@ -1,4 +1,4 @@
-import { getSetting, setSetting, getAllSettings } from '../../../lib/db.js';
+import { getSetting, setSetting, getAllSettings } from '../../../lib/domain/settings.js';
 import { getAuthToken, verifyToken } from '../../../lib/auth.js';
 import { getOrSetCache, invalidateCache } from '../../../lib/cache.js';
 

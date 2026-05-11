@@ -1,5 +1,6 @@
+import { query } from '../../../lib/db';
+import { createPost } from '../../../lib/domain/posts';
 import { getOrSetCache, invalidateCache } from '../../../lib/cache';
-import * as db from '../../../lib/db';
 import { getAuthToken, verifyToken } from '../../../lib/auth';
 import { z } from 'zod';
 
@@ -28,10 +29,10 @@ async function handleGet(req, res) {
     // TTL: 3600 segundos (1 hora)
     const posts = await getOrSetCache('posts:public:all', async () => {
       // Busca apenas posts publicados, ordenados por data
-      const result = await db.query( // Assumindo que db.query existe e funciona
-        `SELECT id, title, slug, summary, image_url, created_at 
-         FROM posts 
-         WHERE published = true 
+      const result = await query(
+        `SELECT id, title, slug, summary, image_url, created_at
+         FROM posts
+         WHERE published = true
          ORDER BY created_at DESC`
       );
       return result.rows;
@@ -44,10 +45,10 @@ async function handleGet(req, res) {
     });
   } catch (error) {
     console.error('❌ [API V1 Posts] Erro ao buscar posts:', error);
-    return res.status(500).json({ 
-      success: false, 
-      error: 'Internal Server Error', 
-      message: 'Erro ao carregar postagens' 
+    return res.status(500).json({
+      success: false,
+      error: 'Internal Server Error',
+      message: 'Erro ao carregar postagens'
     });
   }
 }
@@ -64,20 +65,17 @@ async function handlePost(req, res) {
       return res.status(401).json({ success: false, message: 'Token inválido' });
     }
 
-    // NOTA: Considerar adicionar verificação de role/permissão aqui se necessário.
-    // Ex: if (user.role !== 'api_user') { ... }
-
     // Validação de entrada robusta com Zod
     const validationResult = postCreateSchema.safeParse(req.body);
     if (!validationResult.success) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Dados inválidos para criação de post', 
-        errors: validationResult.error.flatten().fieldErrors 
+      return res.status(400).json({
+        success: false,
+        message: 'Dados inválidos para criação de post',
+        errors: validationResult.error.flatten().fieldErrors
       });
     }
 
-    const newPost = await db.createPost(validationResult.data);
+    const newPost = await createPost(validationResult.data);
 
     // Invalida o cache da lista pública
     await invalidateCache('posts:public:all');
