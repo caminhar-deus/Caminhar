@@ -23,15 +23,11 @@ Mock da biblioteca `cookie` (pacote npm), responsável por serializar (`serializ
 
 ### 🧪 Utilização nos testes
 
-Utilizado indiretamente. O arquivo de teste `tests/unit/lib/auth.test.js` faz **mock inline** da biblioteca `cookie` em vez de usar este mock automático:
-
+Ativado pelo arquivo `tests/unit/lib/auth.test.js` através de `jest.mock('cookie')`, que dispara o uso automático do mock manual em `__mocks__/cookie.js`:
 ```js
-jest.mock('cookie', () => ({
-  parse: (str) => { ... }
-}));
+jest.mock('cookie');
 ```
-
-Isso indica que o mock em `__mocks__/cookie.js` **pode não estar sendo utilizado** atualmente, servindo mais como um mock genérico disponível caso necessário.
+Utilizado pelas funções `setAuthCookie` e `getAuthCookie` em `lib/auth.js`.
 
 ### 🧩 Interface exportada
 
@@ -121,7 +117,7 @@ Isso faz com que qualquer importação de arquivo `.css` nos componentes seja su
 
 | Arquivo | Propósito | Status de Uso |
 |---|---|---|
-| `__mocks__/cookie.js` | Mock da lib `cookie` (parse/serialize) | ❓ Subutilizado — testes usam mock inline |
+| `__mocks__/cookie.js` | Mock da lib `cookie` (parse/serialize) | ✅ Ativo — via `jest.mock('cookie')` em `auth.test.js` |
 | `__mocks__/pg.js` | Mock do `pg.Pool` para consultas SQL | ✅ Ativo — referenciado por 10 testes |
 | `__mocks__/styleMock.js` | Mock de arquivos `.css` | ✅ Ativo — via `moduleNameMapper` no Jest |
 

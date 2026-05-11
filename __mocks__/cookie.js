@@ -8,7 +8,7 @@ export const serialize = jest.fn((name, value, options = {}) => {
   if (options.httpOnly) cookie += '; HttpOnly';
   if (options.secure) cookie += '; Secure';
   if (options.sameSite) cookie += `; SameSite=${options.sameSite}`;
-  if (options.maxAge) cookie += `; Max-Age=${options.maxAge}`;
+  if (options.maxAge !== undefined) cookie += `; Max-Age=${options.maxAge}`;
   if (options.path) cookie += `; Path=${options.path}`;
   return cookie;
 });
@@ -20,8 +20,13 @@ export const parse = jest.fn((cookieHeader = '') => {
   const pairs = cookieHeader.split(';');
   
   for (const pair of pairs) {
-    const [name, value] = pair.trim().split('=');
-    if (name && value !== undefined) {
+    const trimmed = pair.trim();
+    const sepIndex = trimmed.indexOf('=');
+    if (sepIndex === -1) continue;
+    
+    const name = trimmed.slice(0, sepIndex);
+    const value = trimmed.slice(sepIndex + 1);
+    if (name) {
       cookies[name] = decodeURIComponent(value);
     }
   }

@@ -34,6 +34,12 @@ Os thresholds foram reduzidos de 92%/95%/98%/98% para valores mais realistas (80
 
 **Correção aplicada:** Thresholds ajustados para `branches: 80, functions: 85, lines: 90, statements: 90`.
 
+### ✅ Corrigido: `resetMocks: true` removido para compatibilidade com mocks manuais
+
+A config `resetMocks: true` apagava as implementações de todos os `jest.fn()`, incluindo a implementação do `Pool` em `__mocks__/pg.js`, exigindo `restorePoolImplementation()` manual nos testes.
+
+**Correção aplicada:** Removido `resetMocks: true` do `jest.config.js`. Mantido `clearMocks: true` (limpa apenas chamadas, sem apagar implementações) e `restoreMocks: true`.
+
 ---
 
 ## 3. `rate-limit-proxy.js`
@@ -211,6 +217,7 @@ Existiam dois arquivos com o mesmo propósito e conteúdo:
 | 🔴 Alta | `styleMock.js` | Duplicidade com `__mocks__/styleMock.js` | ✅ Corrigido |
 | 🟡 Média | `jest.config.js` | `maxWorkers: 1` lento | Mantido |
 | 🟡 Média | `jest.config.js` | Thresholds elevados | ✅ Corrigido |
+| 🟡 Média | `jest.config.js` | `resetMocks: true` conflita com mocks manuais | ✅ Corrigido |
 | 🟡 Média | `next-sitemap.config.js` | Import não utilizado | ✅ Corrigido |
 | 🟡 Média | `next.config.js` | CORS com fallback `'*'` | ✅ Corrigido |
 | 🟡 Média | `GEMINI.md` | Caminhos absolutos | ✅ Corrigido |

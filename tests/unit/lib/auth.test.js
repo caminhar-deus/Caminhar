@@ -3,17 +3,7 @@ import { hashPassword, verifyPassword, generateToken, verifyToken, setAuthCookie
 import { query } from '../../../lib/db.js';
 
 jest.mock('../../../lib/db.js', () => ({ query: jest.fn() }));
-jest.mock('cookie', () => ({
-  parse: (str) => {
-    if (!str) return {};
-    return str.split(';').reduce((acc, val) => {
-      const [k, v] = val.split('=');
-      if (k && v) acc[k.trim()] = v.trim();
-      return acc;
-    }, {});
-  },
-  serialize: (name, val) => `${name}=${val}`
-}));
+jest.mock('cookie');
 
 describe('Library - Auth', () => {
   const originalConsoleLog = console.log;

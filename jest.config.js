@@ -63,7 +63,6 @@ export default {
   moduleFileExtensions: ['js', 'jsx', 'json', 'node'],
   
   clearMocks: true,
-  resetMocks: true,
   restoreMocks: true,
   cache: true,
   maxWorkers: 1, // Mantido 1 para melhor estabilidade com módulos ESM
