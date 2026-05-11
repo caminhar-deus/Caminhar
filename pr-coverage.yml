@@ -71,13 +71,9 @@ jobs:
             }
 
       - name: Setup Test Database
-        run: npm run setup:test-db
-        env:
-          TEST_DB_HOST: localhost
-          TEST_DB_PORT: 5432
-          TEST_DB_NAME: caminhar_test
-          TEST_DB_USER: test_user
-          TEST_DB_PASS: test_password
+        uses: ./.github/actions/setup-db
+        with:
+          seed: 'false'
 
       - name: Run Tests, Check Coverage & Capture Output
         id: run_tests

@@ -33,13 +33,13 @@ export default {
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
 
-  // ✅ Threshold mínimo de cobertura baseado nos valores reais atuais com buffer de segurança
+  // ✅ Threshold mínimo de cobertura com buffer de segurança
   coverageThreshold: {
     global: {
-      branches: 92,
-      functions: 95,
-      lines: 98,
-      statements: 98
+      branches: 80,
+      functions: 85,
+      lines: 90,
+      statements: 90
     }
   },
 

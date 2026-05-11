@@ -54,7 +54,7 @@ Esta documentação descreve todos os arquivos localizados na raiz do projeto `/
 **Propósito:** Documento de contexto para instruções específicas de padrões de desenvolvimento Vercel, utilizado como referência para assistentes de IA (como o Gemini) durante o desenvolvimento.
 
 **Principais características:**
-- Referencia arquivos de skills em `/home/qa/Projeto/Caminhar/.agents/skills/`
+- Referencia arquivos de skills em `.agents/skills/` (caminhos relativos)
 - Skills incluem: Next.js, cache components, composition patterns, React best practices, Node.js backend patterns, Supabase, UI/UX, startup metrics e prompt engineering
 
 ---
@@ -69,7 +69,7 @@ Esta documentação descreve todos os arquivos localizados na raiz do projeto `/
 - Ambiente `jsdom` para testes de componentes React
 - Transformação via Babel para arquivos `.js`, `.jsx`, `.mjs`, `.cjs`
 - Cobertura com provider V8 (evitando conflitos com Istanbul)
-- Thresholds mínimos: branches 92%, functions 95%, lines 98%, statements 98%
+- Thresholds mínimos: branches 80%, functions 85%, lines 90%, statements 90%
 - Mapeamento de aliases: `@/` → raiz, `@tests/`, `@factories/`, `@helpers/`, `@mocks/`, `@matchers/`
 - Timeout de 10s, verbose mode, maxWorkers: 1
 
@@ -140,7 +140,9 @@ Esta documentação descreve todos os arquivos localizados na raiz do projeto `/
 **Principais características:**
 - Agenda cron: diariamente às 03:00 UTC
 - Serviços PostgreSQL 15 e Redis 7 Alpine
-- Build completo da aplicação Next.js
+- Usa Composite Action `.github/actions/setup` para Node.js + cache npm
+- Usa Composite Action `.github/actions/setup-db` para setup + seed do banco
+- Build completo da aplicação Next.js com cache de build
 - Executa `stress-test-combined.js` via k6
 - Upload de relatórios como artefatos com retenção de 30 dias
 
@@ -202,6 +204,8 @@ Esta documentação descreve todos os arquivos localizados na raiz do projeto `/
 **Principais características:**
 - Executa em PRs para branch `main`
 - Serviços PostgreSQL 15 e Redis 7 Alpine
+- Usa Composite Action `.github/actions/setup` para Node.js + cache npm
+- Usa Composite Action `.github/actions/setup-db` para setup do banco
 - Remove comentários antigos de cobertura antes de postar novos
 - Executa Knip para análise de código morto
 - Posta comentário automático no PR em caso de falha
@@ -250,9 +254,10 @@ Esta documentação descreve todos os arquivos localizados na raiz do projeto `/
 **Principais características:**
 - Executa em pushes/PRs para `main` e manualmente
 - Serviços PostgreSQL 15 e Redis 7 Alpine
-- Build completo e seed do banco de dados
+- Usa Composite Action `.github/actions/setup` para Node.js + cache npm (Node.js 24.15.0)
+- Usa Composite Action `.github/actions/setup-db` para setup + seed do banco
+- Build completo da aplicação
 - Testes executados: DDOS Search, Rate Limit, Login Negative, IP Spoofing
-- Node.js versão 20
 - Upload de relatórios com retenção de 30 dias
 
 ---
@@ -271,19 +276,7 @@ Esta documentação descreve todos os arquivos localizados na raiz do projeto `/
 
 ---
 
-## 19. `styleMock.js`
-
-**Localização:** `/home/qa/Projeto/Caminhar/styleMock.js`
-
-**Propósito:** Mock simples para arquivos `.css` nos testes Jest. Retorna um objeto vazio para evitar que o Jest tente processar CSS como JavaScript.
-
-**Principais características:**
-- Exporta objeto vazio (`export default {};`)
-- Referenciado em `jest.config.js` via `moduleNameMapper` para arquivos `.css`
-
----
-
-## 20. `tree.txt`
+## 19. `tree.txt`
 
 **Localização:** `/home/qa/Projeto/Caminhar/tree.txt`
 
@@ -296,7 +289,7 @@ Esta documentação descreve todos os arquivos localizados na raiz do projeto `/
 
 ---
 
-## 21. `package-lock.json`
+## 20. `package-lock.json`
 
 **Localização:** `/home/qa/Projeto/Caminhar/package-lock.json`
 
@@ -309,7 +302,7 @@ Esta documentação descreve todos os arquivos localizados na raiz do projeto `/
 
 ---
 
-## 22. `CHANGELOG.md` (não lido, mas presente na `tree.txt`)
+## 21. `CHANGELOG.md` (não lido, mas presente na `tree.txt`)
 
 **Localização:** `/home/qa/Projeto/Caminhar/CHANGELOG.md`
 
@@ -317,8 +310,36 @@ Esta documentação descreve todos os arquivos localizados na raiz do projeto `/
 
 ---
 
-## 23. `README.md` (não lido, mas presente na `tree.txt`)
+## 22. `README.md` (não lido, mas presente na `tree.txt`)
 
 **Localização:** `/home/qa/Projeto/Caminhar/README.md`
 
 **Propósito:** Documento de README padrão do repositório, contendo informações sobre o projeto, instruções de instalação e uso. (Arquivo não analisado em detalhes.)
+
+---
+
+## 23. `.github/actions/setup-db/action.yml`
+
+**Localização:** `/home/qa/Projeto/Caminhar/.github/actions/setup-db/action.yml`
+
+**Propósito:** Composite Action do GitHub Actions para setup do banco de dados de teste, utilizado pelos workflows `load-tests.yml`, `pr-coverage.yml` e `security-tests.yml`.
+
+**Principais características:**
+- Executa `npm run setup:test-db` para criar tabelas do banco
+- Executa `node scripts/seed-all.js` condicionalmente (via input `seed`)
+- Substitui comandos inline que estavam duplicados em 3 workflows
+- Inputs: `seed` (boolean, default `false`) — executa seed do banco quando `true`
+
+---
+
+## 24. `.github/actions/setup/action.yml`
+
+**Localização:** `/home/qa/Projeto/Caminhar/.github/actions/setup/action.yml`
+
+**Propósito:** Composite Action do GitHub Actions para setup do Node.js com cache npm e instalação de dependências, utilizado por todos os workflows do projeto.
+
+**Principais características:**
+- Versão do Node.js parametrizada via input (padrão: `24.15.0`)
+- Cache automático de dependências npm
+- Executa `npm ci` para instalação limpa e reproduzível
+- Remove duplicação de configuração entre os 4 workflows do projeto

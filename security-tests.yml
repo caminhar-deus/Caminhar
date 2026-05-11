@@ -50,18 +50,9 @@ jobs:
         run: mkdir -p reports/k6-summaries
 
       - name: Setup Test Database
-        run: npm run setup:test-db
-        env:
-          TEST_DB_HOST: localhost
-          TEST_DB_PORT: 5432
-          TEST_DB_NAME: caminhar_test
-          TEST_DB_USER: test_user
-          TEST_DB_PASS: test_password
-
-      - name: Seed Test Database
-        run: node scripts/seed-all.js
-        env:
-          DATABASE_URL: postgres://test_user:test_password@localhost:5432/caminhar_test
+        uses: ./.github/actions/setup-db
+        with:
+          seed: 'true'
 
       - name: Build Application
         run: npm run build

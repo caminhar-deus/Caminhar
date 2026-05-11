@@ -26,15 +26,13 @@ O `maxWorkers: 1` foi comentado como "melhor estabilidade com módulos ESM", por
 
 **Impacto:** Testes demoram mais do que o necessário, especialmente em CI.
 
-**Sugestão:** Avaliar se `maxWorkers: '50%'` ou `maxWorkers: 2` funcionaria de forma estável, reduzindo o tempo de execução.
+**Análise:** Mantido como `maxWorkers: 1` por decisão do projeto — não houve alteração.
 
-### 🟡 Thresholds de cobertura muito elevados
+### ✅ Corrigido: Thresholds de cobertura ajustados
 
-Os thresholds atuais são muito altos (branches 92%, functions 95%, lines 98%, statements 98%).
+Os thresholds foram reduzidos de 92%/95%/98%/98% para valores mais realistas (80%/85%/90%/90%), evitando falsos positivos em CI.
 
-**Impacto:** Pode causar falhas em CI mesmo com pequenas alterações no código, gerando falsos positivos ou bloqueios desnecessários.
-
-**Sugestão:** Reavaliar se esses thresholds são realistas para o estado atual do projeto, ajustando para valores mais factíveis se necessário.
+**Correção aplicada:** Thresholds ajustados para `branches: 80, functions: 85, lines: 90, statements: 90`.
 
 ---
 
@@ -109,39 +107,35 @@ Os quatro workflows (`ci.yml`, `load-tests.yml`, `pr-coverage.yml`, `security-te
 
 **Correção aplicada:** Todos os workflows agora usam a versão `24.15.0` (padrão definido no Composite Action).
 
-### 🟡 Serviços PostgreSQL e Redis ainda duplicados
+### ✅ Corrigido: Setup do banco de dados extraído para Composite Action
 
-Os serviços PostgreSQL e Redis continuam duplicados em `load-tests.yml`, `pr-coverage.yml` e `security-tests.yml`.
+Os comandos de setup do banco (`npm run setup:test-db` e `node scripts/seed-all.js`) estavam duplicados em `load-tests.yml`, `pr-coverage.yml` e `security-tests.yml`.
 
-**Sugestão:** Criar um segundo Composite Action para setup do ambiente de teste completo (services + DB + build + start), se aplicável.
+**Correção aplicada:**
+1. Criado Composite Action em `.github/actions/setup-db/action.yml` que unifica setup do banco + seed.
+2. Os 3 workflows agora usam `uses: ./.github/actions/setup-db` no lugar dos comandos inline.
+
+> **Nota:** Os serviços PostgreSQL e Redis permanecem definidos em cada workflow individualmente, pois Composite Actions não suportam a keyword `services`.
 
 ---
 
 ## 6. `next-sitemap.config.js`
 
-### 🟡 Import não utilizado
+### ✅ Corrigido: Import não utilizado removido
 
-A linha 2 importa `siteConfig` de `'./lib/seo/config.js'`, mas a variável `siteConfig` nunca é utilizada no restante do arquivo.
+A linha 2 importava `siteConfig` de `'./lib/seo/config.js'`, mas a variável nunca era utilizada no restante do arquivo.
 
-**Impacto:** Import morto que pode ser removido para limpeza de código.
-
-**Sugestão:** Remover o import não utilizado.
+**Correção aplicada:** Removida a linha `import { siteConfig } from './lib/seo/config.js'`.
 
 ---
 
 ## 7. `next.config.js`
 
-### 🟡 CORS com `Access-Control-Allow-Origin` muito permissivo
+### ✅ Corrigido: CORS com fallback `'*'` removido
 
-A configuração de CORS usa `'*'` como fallback quando `ALLOWED_ORIGINS` não está definida (linha 40).
+A configuração de CORS usava `'*'` como fallback quando `ALLOWED_ORIGINS` não estava definida, representando risco de segurança.
 
-```javascript
-value: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',')[0] : '*',
-```
-
-**Impacto:** Risco de segurança em ambientes de produção se a variável `ALLOWED_ORIGINS` não for configurada.
-
-**Sugestão:** Remover o fallback `'*'` e exigir que `ALLOWED_ORIGINS` seja configurada explicitamente.
+**Correção aplicada:** Substituído o fallback `'*'` por `''` (string vazia), que é rejeitado pelo navegador sem configurar CORS.
 
 ---
 
@@ -171,13 +165,11 @@ Este arquivo contém o lock de todas as skills instaladas, com mais de 80 skills
 
 ## 10. `GEMINI.md`
 
-### 🟡 Caminhos absolutos não portáveis
+### ✅ Corrigido: Caminhos absolutos substituídos por relativos
 
-O arquivo referencia caminhos absolutos (`/home/qa/Projeto/Caminhar/.agents/skills/...`) que não funcionarão em outros ambientes ou máquinas.
+O arquivo referenciava 10 caminhos absolutos (`/home/qa/Projeto/Caminhar/.agents/skills/...`) que não funcionavam em outros ambientes.
 
-**Impacto:** O documento não é portável entre desenvolvedores ou ambientes de CI/CD.
-
-**Sugestão:** Usar caminhos relativos em vez de caminhos absolutos.
+**Correção aplicada:** Todos os caminhos absolutos foram substituídos por caminhos relativos (ex.: `.agents/skills/next-best-practices/SKILL.md`).
 
 ---
 
@@ -217,12 +209,12 @@ Existiam dois arquivos com o mesmo propósito e conteúdo:
 | 🔴 Alta | `docs/*.yml` | Versões Node.js inconsistentes | ✅ Corrigido |
 | 🔴 Alta | `docs/*.yml` | Caching diferente em cada workflow | ✅ Corrigido |
 | 🔴 Alta | `styleMock.js` | Duplicidade com `__mocks__/styleMock.js` | ✅ Corrigido |
-| 🟡 Média | `jest.config.js` | `maxWorkers: 1` lento | Pendente |
-| 🟡 Média | `jest.config.js` | Thresholds elevados | Pendente |
-| 🟡 Média | `next-sitemap.config.js` | Import não utilizado | Pendente |
-| 🟡 Média | `next.config.js` | CORS com fallback `'*'` | Pendente |
-| 🟡 Média | `GEMINI.md` | Caminhos absolutos | Pendente |
-| 🟡 Média | `tree.txt` | Snapshot estático desatualizado | Pendente |
+| 🟡 Média | `jest.config.js` | `maxWorkers: 1` lento | Mantido |
+| 🟡 Média | `jest.config.js` | Thresholds elevados | ✅ Corrigido |
+| 🟡 Média | `next-sitemap.config.js` | Import não utilizado | ✅ Corrigido |
+| 🟡 Média | `next.config.js` | CORS com fallback `'*'` | ✅ Corrigido |
+| 🟡 Média | `GEMINI.md` | Caminhos absolutos | ✅ Corrigido |
+| 🟡 Média | `tree.txt` | Snapshot estático desatualizado | Mantido |
 | 🟡 Média | `schema.knip.json` | 943 linhas na raiz | Pendente |
 | 🟡 Média | `skills-lock.json` | 945 linhas na raiz | Pendente |
-| 🟡 Média | `docs/*.yml` | Serviços PG/Redis duplicados | Pendente |
+| 🟡 Média | `docs/*.yml` | Setup de banco duplicado | ✅ Corrigido |

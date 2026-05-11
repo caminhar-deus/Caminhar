@@ -48,9 +48,7 @@ jobs:
       - name: Restore Next.js Build Cache
         uses: actions/cache@v4
         with:
-          # Cache o diretório de build do Next.js para acelerar o passo 'npm run build'
           path: .next/cache
-          # A chave de cache é mais específica para evitar invalidações desnecessárias.
           key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('next.config.js', 'pages/**/*', 'lib/**/*', 'components/**/*') }}
           restore-keys: |
             ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
@@ -59,19 +57,9 @@ jobs:
         run: mkdir -p reports/k6-summaries
 
       - name: Setup Test Database
-        run: npm run setup:test-db
-        env:
-          # Configuração para conectar ao serviço Postgres do GitHub Actions
-          TEST_DB_HOST: localhost
-          TEST_DB_PORT: 5432
-          TEST_DB_NAME: caminhar_test
-          TEST_DB_USER: test_user
-          TEST_DB_PASS: test_password
-
-      - name: Seed Test Database
-        run: node scripts/seed-all.js
-        env:
-          DATABASE_URL: postgres://test_user:test_password@localhost:5432/caminhar_test
+        uses: ./.github/actions/setup-db
+        with:
+          seed: 'true'
 
       - name: Build Application
         run: npm run build

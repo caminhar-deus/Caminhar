@@ -1,5 +1,4 @@
 /** @type {import('next-sitemap').IConfig} */
-import { siteConfig } from './lib/seo/config.js';
 
 export default {
   siteUrl: process.env.SITE_URL || 'http://localhost:3000',

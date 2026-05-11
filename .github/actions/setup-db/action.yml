@@ -1,0 +1,27 @@
+name: 'Setup Test Database'
+description: 'Setup test database with environment variables'
+inputs:
+  seed:
+    description: 'Run database seed after setup'
+    required: false
+    default: 'false'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Test Database
+      shell: bash
+      run: npm run setup:test-db
+      env:
+        TEST_DB_HOST: localhost
+        TEST_DB_PORT: 5432
+        TEST_DB_NAME: caminhar_test
+        TEST_DB_USER: test_user
+        TEST_DB_PASS: test_password
+
+    - name: Seed Test Database
+      if: inputs.seed == 'true'
+      shell: bash
+      run: node scripts/seed-all.js
+      env:
+        DATABASE_URL: postgres://test_user:test_password@localhost:5432/caminhar_test
