@@ -49,6 +49,7 @@
   - `getBreakpoint(key)` — Busca em `tokens.breakpoints.breakpoints`.
   - `isMobile`, `isTablet`, `isDesktop` — Valores booleanos reativos de viewport (atualizados via event listener `resize`).
 - **Responsividade:** Monitora `window.innerWidth` com event listener `resize` para fornecer valores booleanos reativos de viewport (`isMobile`, `isTablet`, `isDesktop`).
+- **setTheme:** Exposto diretamente (sem wrapper `useCallback`), pois `useState` já garante referência estável.
 - **Performance:** Todo o retorno é memoizado com `useMemo` e dependências explícitas.
 - **Warnings em desenvolvimento:** Exibe `console.warn` quando tokens não são encontrados.
 - **Dependências:** `pages/styles/tokens`, `useThrottle`.
@@ -89,12 +90,13 @@
 
 **Funcionamento:**
 - **Configuração:** Recebe `apiEndpoint`, `initialFormData`, `usePagination`, `itemsPerPage`, `autoFetch`, `onSuccess`, `onError`.
-- **Estado:** `items`, `loading`, `error`, `formData`, `isEditing`, `currentPage`, `totalPages`.
-- **Fetch inicial:** Executa na montagem (se `autoFetch: true`) via chamada a `fetchItems(1)`. O cancelamento é gerenciado pelo `AbortController` em `fetchItemsFromAPI`.
+- **Base de fetch:** Usa `useApiFetch` como hook base para o fetch de listagem (GET), eliminando lógica duplicada de loading/error/resposta. A URL é construída dinamicamente com `buildUrl(page)` conforme a página atual.
+- **Estado:** `items`, `loading`, `error` são gerenciados pelo `useApiFetch`. `formData`, `isEditing`, `currentPage`, `totalPages` são estados locais.
+- **Fetch inicial:** Executa na montagem (se `autoFetch: true`) via `useApiFetch`. A navegação entre páginas atualiza `currentPage`, que por sua vez atualiza a URL do `useApiFetch`.
 - **handleSubmit:** Envia POST (criação) ou PUT (edição) conforme `isEditing`. Usa `react-hot-toast` para feedback. Suporta validador customizado `customValidator` com tratamento de erro específico (try/catch isolado com mensagem e interrupção do submit).
 - **handleDelete:** Confirma com `window.confirm`, envia DELETE com ID no corpo da requisição (JSON), atualiza lista.
 - **goToPage:** Navega para página específica, respeitando `totalPages`.
-- **Função pura:** `fetchItemsFromAPI` é separada do hook para ser testável independentemente.
+- **Operações de escrita (POST/PUT/DELETE):** Mantêm lógica própria com `react-hot-toast`, não utilizando `useApiFetch`.
 
 ---
 
@@ -141,10 +143,10 @@
 **Propósito:** Hook avançado para monitoramento de Core Web Vitals (LCP, FID, CLS, INP, FCP, TTFB, TBT) e métricas de performance adicionais.
 
 **Funcionamento:**
-- **Biblioteca externa:** Importa dinamicamente `web-vitals` para registrar callbacks das métricas oficiais.
+- **Biblioteca externa:** Importa dinamicamente `web-vitals` com promessa cacheada em nível de módulo (executa apenas uma vez).
 - **PerformanceObserver:** Monitora `longtask` (para TBT) e `resource` (para recursos lentos > 1s). Os observers são desconectados explicitamente no cleanup para evitar vazamentos.
 - **Cache de métricas:** Evita reportar a mesma métrica em menos de 1 minuto (`METRICS_CACHE_MS`).
-- **Histórico limitado:** Armazena até 50 entradas no histórico (`MAX_HISTORY_SIZE`).
+- **Histórico limitado:** Armazena até 50 entradas no histórico (`MAX_HISTORY_SIZE`). O histórico contém apenas campos essenciais (`name`, `value`, `rating`, `delta`, `timestamp`). Dados contextuais (`url`, `userAgent`, `connection`, `deviceMemory`) são mantidos apenas na entrada mais recente (`metricsStore.current`).
 - **Envio para analytics:** Usa `navigator.sendBeacon` (preferencial) ou `fetch` com `keepalive`.
 - **Funções auxiliares:**
   - `getRating(name, value)` — Classifica como `good`, `needs-improvement`, `poor`.

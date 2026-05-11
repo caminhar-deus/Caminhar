@@ -32,6 +32,9 @@ import { useEffect, useCallback, useRef } from 'react';
  * });
  */
 
+// Cache da promessa do import dinâmico para evitar imports repetidos
+const webVitalsPromise = typeof window !== 'undefined' ? import('web-vitals') : null;
+
 // Métricas suportadas (Core Web Vitals + extras)
 const WEB_VITAL_METRICS = {
   // Core Web Vitals
@@ -111,13 +114,22 @@ export default function usePerformanceMetrics(options = {}) {
       return null;
     }
 
-    const reportData = {
+    // Atualiza cache
+    lastReportedRef.current[name] = { timestamp: Date.now(), value: formattedValue };
+
+    // Histórico leve: apenas campos essenciais para análise temporal
+    const historyEntry = {
       name,
       value: formattedValue,
       rating,
       delta,
-      navigationType,
       timestamp: Date.now(),
+    };
+
+    // Métrica atual: com contexto completo para a entrada mais recente
+    const currentMetric = {
+      ...historyEntry,
+      navigationType,
       url: typeof window !== 'undefined' ? window.location.href : '',
       userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
       // Additional context
@@ -128,12 +140,9 @@ export default function usePerformanceMetrics(options = {}) {
       deviceMemory: typeof navigator !== 'undefined' ? navigator.deviceMemory : null,
     };
 
-    // Atualiza cache
-    lastReportedRef.current[name] = { timestamp: Date.now(), value: formattedValue };
-
     // Store in local store
-    metricsStore.current[name] = reportData;
-    metricsStore.history.push(reportData);
+    metricsStore.current[name] = currentMetric;
+    metricsStore.history.push(historyEntry);
 
     // Limitar histórico para evitar memory leak
     if (metricsStore.history.length > MAX_HISTORY_SIZE) {
@@ -142,22 +151,22 @@ export default function usePerformanceMetrics(options = {}) {
 
     // Debug logging
     if (debug) {
-      console.log(`[Web Vitals] ${name}: ${reportData.value}${THRESHOLDS[name]?.unit || ''} (${rating})`);
+      console.log(`[Web Vitals] ${name}: ${currentMetric.value}${THRESHOLDS[name]?.unit || ''} (${rating})`);
     }
 
     // Call callback
-    onReport?.(reportData);
+    onReport?.(currentMetric);
 
     // Send to analytics
     if (reportToAnalytics && typeof window !== 'undefined') {
       // Use sendBeacon if available (non-blocking)
       if (navigator.sendBeacon) {
-        navigator.sendBeacon(analyticsEndpoint, JSON.stringify(reportData));
+        navigator.sendBeacon(analyticsEndpoint, JSON.stringify(currentMetric));
       } else {
         const analyticsAbort = new AbortController();
         fetch(analyticsEndpoint, {
           method: 'POST',
-          body: JSON.stringify(reportData),
+          body: JSON.stringify(currentMetric),
           keepalive: true,
           signal: analyticsAbort.signal,
         }).catch(() => {
@@ -166,7 +175,7 @@ export default function usePerformanceMetrics(options = {}) {
       }
     }
 
-    return reportData;
+    return currentMetric;
   }, [onReport, reportToAnalytics, analyticsEndpoint, debug]);
 
   // Get all accumulated metrics
@@ -182,9 +191,11 @@ export default function usePerformanceMetrics(options = {}) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Dynamically import web-vitals (lightweight library)
+    // Dynamically import web-vitals (promessa cacheada em nível de módulo)
     const initWebVitals = async () => {
       try {
+        if (!webVitalsPromise) return;
+
         const { 
           onLCP, 
           onFID, 
@@ -192,7 +203,7 @@ export default function usePerformanceMetrics(options = {}) {
           onINP,
           onFCP, 
           onTTFB 
-        } = await import('web-vitals');
+        } = await webVitalsPromise;
 
         // Register all Core Web Vitals
         onLCP((metric) => reportMetric({
