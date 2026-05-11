@@ -68,40 +68,11 @@ export const useAdminCrud = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Fetch inicial com dependências estáveis e suporte a cancelamento
+  // Fetch inicial na montagem
   useEffect(() => {
     if (!autoFetch) return;
-
-    const abortController = new AbortController();
-    let cancelled = false;
-
-    const loadItems = async () => {
-      setLoading(true);
-      try {
-        const result = await fetchItemsFromAPI(apiEndpoint, usePagination, itemsPerPage, 1, abortController.signal);
-        if (cancelled) return;
-        setItems(result.items);
-        if (usePagination && result.pagination) {
-          setCurrentPage(result.pagination.page);
-          setTotalPages(result.pagination.totalPages);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError({ message: err.message });
-          if (onError) onError(err);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    loadItems();
-
-    return () => {
-      cancelled = true;
-      abortController.abort();
-    };
-  }, [apiEndpoint, usePagination, itemsPerPage, autoFetch, onError]);
+    fetchItems(1);
+  }, [apiEndpoint, usePagination, itemsPerPage, autoFetch, onError, fetchItems]);
 
   // Callback para re-fetch (usado em handleSubmit, handleDelete e goToPage)
   const fetchItems = useCallback(async (page = 1) => {

@@ -10,10 +10,3 @@ export { default as usePerformanceMetrics, reportWebVitals, detectPerformanceIss
 export { useApiFetch } from './useApiFetch';
 export { useDebounce } from './useDebounce';
 export { useAdminAuth } from './useAdminAuth';
-
-// Re-exportação padrão
-export { default as useThemeDefault } from './useTheme';
-export { default as useAuthDefault } from './useAuth';
-export { default as useApiFetchDefault } from './useApiFetch';
-export { default as useDebounceDefault } from './useDebounce';
-export { default as useAdminAuthDefault } from './useAdminAuth';

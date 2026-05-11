@@ -44,6 +44,7 @@ export const AuthProvider = ({ children }) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
+        credentials: 'include',
         signal: abortController.signal,
       });
 
@@ -65,7 +66,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = useCallback(async () => {
     const abortController = new AbortController();
-    await fetch('/api/auth/logout', { method: 'POST', signal: abortController.signal });
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include', signal: abortController.signal });
     setUser(null);
   }, []);
 
@@ -74,7 +75,7 @@ export const AuthProvider = ({ children }) => {
 
     const checkAuth = async () => {
       try {
-        const res = await fetch('/api/auth/check', { signal: abortController.signal });
+        const res = await fetch('/api/auth/check', { credentials: 'include', signal: abortController.signal });
         if (res.ok) {
           const data = await res.json();
           setUser(data.user);

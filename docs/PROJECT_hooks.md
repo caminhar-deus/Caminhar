@@ -25,10 +25,8 @@
 **Funcionamento:**
 - Reexporta hooks nomeados: `useTheme`, `useAuth`, `useAdminCrud`, `usePerformanceMetrics`, `useApiFetch`, `useDebounce`, `useAdminAuth`.
 - Também exporta `AuthContext` e `AuthProvider` (definidos em `useAuth.js`).
-- Fornece reexportações padrão (default) com sufixo `Default` para cada hook, criando apelidos de importação alternativos.
 - Possui reexportação descrita como "Design System", indicando que estes hooks são parte integrante de um sistema de design.
-
-**Observação:** A presença de reexportações nomeadas e padrão para os mesmos hooks gera duplicidade desnecessária. Vide análise em `UPGRADE_hooks.md`.
+- **Nota:** As reexportações padrão com sufixo `Default` foram removidas para eliminar duplicidade na API pública.
 
 ---
 
@@ -61,9 +59,9 @@
 **Funcionamento:**
 - **AuthContext:** Contexto com valor padrão (`user: null`, `loading: true`, funções vazias).
 - **AuthProvider:**
-  - Ao montar, faz `GET /api/auth/check` para verificar sessão. Usa `AbortController` para cancelamento.
-  - `login(username, password)`: `POST /api/auth/login`. Retorna `{ success, error }`.
-  - `logout()`: `POST /api/auth/logout`. Limpa estado do usuário.
+  - Ao montar, faz `GET /api/auth/check` para verificar sessão. Usa `AbortController` para cancelamento e `credentials: 'include'`.
+  - `login(username, password)`: `POST /api/auth/login` com `credentials: 'include'`. Retorna `{ success, error }`.
+  - `logout()`: `POST /api/auth/logout` com `credentials: 'include'`. Limpa estado do usuário.
 - **useAuth():** Consome o contexto e expõe `user`, `isAuthenticated`, `loading`, `login`, `logout`.
 - **Tratamento de erros:** Lida com `AbortError` silenciosamente. Converte erros de rede em mensagem amigável.
 
@@ -71,14 +69,14 @@
 
 ## 4. `/hooks/useAdminAuth.js`
 
-**Propósito:** Hook de autenticação específico para a área administrativa. Unifica verificação de sessão, login e logout com redirect via Next.js Router.
+**Propósito:** Hook de autenticação específico para a área administrativa. Consome o `AuthContext` de `useAuth.js` e estende com funcionalidades de redirect e estados isolados de loading/erro.
 
 **Funcionamento:**
-- **Verificação inicial:** `GET /api/auth/check` com `credentials: 'include'`. Define `isAuthenticated` se OK.
-- **handleLogin:** `POST /api/auth/login`. Gerencia estado de loading e erro específicos do login.
-- **handleLogout:** `POST /api/auth/logout`, depois redireciona para `/admin` via `router.push`.
-- **Estado exposto:** `isAuthenticated`, `isChecking`, `handleLogin`, `handleLogout`, `loginLoading`, `loginError`.
-- **Relação com `useAuth.js`:** Possui lógica de autenticação sobreposta ao `useAuth.js`, porém com comportamento de redirect e estado específico para admin.
+- **Base de autenticação:** Consome `AuthContext` de `useAuth.js`, herdando a verificação de sessão, login e logout. Não reimplementa chamadas de API.
+- **handleLogin:** Encapsula a função `login` do `AuthContext` com estados isolados de `loginLoading` e `loginError`.
+- **handleLogout:** Encapsula a função `logout` do `AuthContext` e redireciona para `/admin` via `router.push`.
+- **Estado exposto:** `isAuthenticated` (via contexto), `isChecking` (alias para `loading` do contexto), `handleLogin`, `handleLogout`, `loginLoading`, `loginError`.
+- **Dependências:** `next/router` (para redirect pós-logout).
 
 ---
 
@@ -89,7 +87,7 @@
 **Funcionamento:**
 - **Configuração:** Recebe `apiEndpoint`, `initialFormData`, `usePagination`, `itemsPerPage`, `autoFetch`, `onSuccess`, `onError`.
 - **Estado:** `items`, `loading`, `error`, `formData`, `isEditing`, `currentPage`, `totalPages`.
-- **Fetch inicial:** Executa na montagem (se `autoFetch: true`) com `AbortController` para cancelamento e flag `cancelled` para segurança.
+- **Fetch inicial:** Executa na montagem (se `autoFetch: true`) via chamada a `fetchItems(1)`. O cancelamento é gerenciado pelo `AbortController` em `fetchItemsFromAPI`.
 - **handleSubmit:** Envia POST (criação) ou PUT (edição) conforme `isEditing`. Usa `react-hot-toast` para feedback. Suporta validador customizado `customValidator`.
 - **handleDelete:** Confirma com `window.confirm`, envia DELETE, atualiza lista.
 - **goToPage:** Navega para página específica, respeitando `totalPages`.

@@ -1,5 +1,6 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useContext } from 'react';
 import { useRouter } from 'next/router';
+import { AuthContext } from './useAuth';
 
 /**
  * @typedef {Object} AdminAuthReturn
@@ -13,8 +14,9 @@ import { useRouter } from 'next/router';
 
 /**
  * Hook de autenticação para área administrativa.
- * Unifica verificação de sessão, login e logout com redirect.
- * Substitui a lógica do HOC withAdminAuth, reutilizando o padrão de fetch.
+ * Consome o AuthContext do useAuth e estende com funcionalidades específicas de admin:
+ * - Estados isolados de loading e erro para login
+ * - Redirect pós-logout via Next.js Router
  *
  * @returns {AdminAuthReturn}
  *
@@ -22,78 +24,34 @@ import { useRouter } from 'next/router';
  * const { isAuthenticated, isChecking, handleLogin, handleLogout } = useAdminAuth();
  */
 export function useAdminAuth() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isChecking, setIsChecking] = useState(true);
+  const router = useRouter();
+  const { user, isAuthenticated, loading: isChecking, login, logout } = useContext(AuthContext);
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState(null);
-  const router = typeof window !== 'undefined' ? useRouter() : null;
 
-  // Verifica autenticação na montagem
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await fetch('/api/auth/check', {
-          method: 'GET',
-          credentials: 'include',
-        });
-        if (response.ok) {
-          setIsAuthenticated(true);
-        }
-      } catch (error) {
-        console.error('Auth check failed:', error);
-      } finally {
-        setIsChecking(false);
-      }
-    };
-    checkAuth();
-  }, []);
-
-  // Função de login
+  // Função de login com estados isolados de loading e erro
   const handleLogin = useCallback(async (username, password) => {
     setLoginLoading(true);
     setLoginError(null);
 
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-        credentials: 'include',
-      });
+    const result = await login(username, password);
 
-      if (response.ok) {
-        setIsAuthenticated(true);
-        return { success: true };
-      }
-
-      const data = await response.json();
-      const errorMessage = data.message || data.error || 'Falha no login';
-      setLoginError(errorMessage);
-      return { success: false, error: errorMessage };
-    } catch (err) {
-      const errorMessage = 'Erro de conexão';
-      setLoginError(errorMessage);
-      return { success: false, error: errorMessage };
-    } finally {
-      setLoginLoading(false);
+    if (!result.success) {
+      setLoginError(result.error || 'Falha no login');
     }
-  }, []);
+    setLoginLoading(false);
+    return result;
+  }, [login]);
 
   // Função de logout com redirect
   const handleLogout = useCallback(async () => {
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
+      await logout();
     } catch (err) {
       console.error('Logout error:', err);
     }
-    setIsAuthenticated(false);
-    if (router) {
-      router.push('/admin');
-    }
-  }, [router]);
+    router.push('/admin');
+  }, [logout, router]);
 
   return {
     isAuthenticated,

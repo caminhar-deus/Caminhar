@@ -17,24 +17,24 @@
 
 ## 1. Duplicidade de Código
 
-### 1.1 `/hooks/index.js` — Duplicidade de Exportações
+### 1.1 `/hooks/index.js` — Duplicidade de Exportações ✅ CORRIGIDO
 
 **Arquivo:** `/hooks/index.js`
 
-**Problema:** Cada hook é reexportado duas vezes: uma como exportação nomeada e outra como exportação padrão com sufixo `Default`. Isso polui a API pública e pode confundir consumidores.
+**Problema:** Cada hook era reexportado duas vezes: uma como exportação nomeada e outra como exportação padrão com sufixo `Default`. Isso poluía a API pública e podia confundir consumidores.
 
-**Exemplo:**
+**Exemplo (antes):**
 ```js
 export { useTheme } from './useTheme';
 export { default as useThemeDefault } from './useTheme';
 // Mesmo padrão para useAuth, useApiFetch, useDebounce, useAdminAuth
 ```
 
-**Recomendação:** Remover as reexportações com sufixo `Default`. Manter apenas as exportações nomeadas.
+**Solução aplicada:** Removidas as reexportações com sufixo `Default`. Mantidas apenas as exportações nomeadas.
 
 ---
 
-### 1.2 `/hooks/useAuth.js` vs `/hooks/useAdminAuth.js` — Autenticação Duplicada
+### 1.2 `/hooks/useAuth.js` vs `/hooks/useAdminAuth.js` — Autenticação Duplicada ✅ CORRIGIDO
 
 **Arquivos:** `/hooks/useAuth.js` e `/hooks/useAdminAuth.js`
 
@@ -49,23 +49,23 @@ export { default as useThemeDefault } from './useTheme';
 | Redirect pós-logout | ❌ | ✅ |
 | Estado de loading específico | Apenas `loading` genérico | `loginLoading` separado |
 
-Ambos hooks fazem as mesmas chamadas de API e gerenciam o mesmo estado de autenticação, mas de forma independente.
+Ambos hooks faziam as mesmas chamadas de API e gerenciavam o mesmo estado de autenticação, mas de forma independente.
 
-**Recomendação:** `useAdminAuth` deveria consumir o contexto de `useAuth` (via `AuthContext`) e estender com funcionalidades específicas de admin (redirect, states de loading/error isolados), em vez de reimplementar toda a lógica de autenticação.
+**Solução aplicada:** `useAdminAuth` agora consome o `AuthContext` de `useAuth.js` e estende com funcionalidades específicas de admin (redirect, estados de loading/error isolados). Também foi adicionado `credentials: 'include'` nas requisições de `useAuth.js` para consistência.
 
 ---
 
-### 1.3 `/hooks/useAdminCrud.js` — Lógica de Fetch Duplicada Internamente
+### 1.3 `/hooks/useAdminCrud.js` — Lógica de Fetch Duplicada Internamente ✅ CORRIGIDO
 
 **Arquivo:** `/hooks/useAdminCrud.js`
 
-**Problema:** O hook possui duas implementações de fetch com a mesma lógica:
-- `useEffect` inicial (linhas 72-104) — fetch automático na montagem
-- `fetchItems` (linhas 107-122) — função para re-fetch manual
+**Problema:** O hook possuía duas implementações de fetch com a mesma lógica:
+- `useEffect` inicial — fetch automático na montagem
+- `fetchItems` — função para re-fetch manual
 
-Ambas chamam `fetchItemsFromAPI`, tratam loading, paginação e erros de forma idêntica.
+Ambas chamavam `fetchItemsFromAPI`, tratavam loading, paginação e erros de forma idêntica.
 
-**Recomendação:** O `useEffect` inicial poderia simplesmente chamar `fetchItems(1)` em vez de duplicar a lógica. Ou, alternativamente, usar `useApiFetch` como base e extender com funcionalidades CRUD.
+**Solução aplicada:** O `useEffect` inicial agora simplesmente chama `fetchItems(1)` em vez de duplicar a lógica.
 
 ---
 
@@ -73,7 +73,7 @@ Ambas chamam `fetchItemsFromAPI`, tratam loading, paginação e erros de forma i
 
 ### 2.1 `/hooks/useAdminCrud.js` — `apiEndpoint` como Dependência de `useEffect`
 
-**Arquivo:** `/hooks/useAdminCrud.js` (linha 104)
+**Arquivo:** `/hooks/useAdminCrud.js`
 
 **Problema:** `apiEndpoint` é dependência do `useEffect`. Por ser uma string, não causa re-render desnecessário em si, mas se o componente pai recriar o objeto de configuração, o hook inteiro refaz o fetch inicial.
 
@@ -83,7 +83,7 @@ Ambas chamam `fetchItemsFromAPI`, tratam loading, paginação e erros de forma i
 
 ### 2.2 `/hooks/useApiFetch.js` — `JSON.stringify(options)` como Dependência
 
-**Arquivo:** `/hooks/useApiFetch.js` (linha 82)
+**Arquivo:** `/hooks/useApiFetch.js`
 
 **Problema:** `JSON.stringify(options)` como dependência do `useCallback` força a recriação da função `fetchData` sempre que `options` muda, mesmo que o conteúdo serializado seja idêntico (objetos recriados com mesmas propriedades).
 
@@ -99,7 +99,7 @@ const fetchData = useCallback(async () => {
 
 ### 2.3 `/hooks/usePerformanceMetrics.js` — Falta de Cleanup nos Observers
 
-**Arquivo:** `/hooks/usePerformanceMetrics.js` (linhas 249-290)
+**Arquivo:** `/hooks/usePerformanceMetrics.js`
 
 **Problema:** Os `PerformanceObserver` para `longtask` e `resource` não são desconectados no cleanup do `useEffect`. Embora observers sejam limpos quando o componente desmonta em alguns navegadores, a especificação não garante.
 
@@ -115,7 +115,7 @@ return () => {
 
 ### 2.4 `/hooks/useTheme.js` — `toggleTheme` com Debounce Manual vs Hook `useDebounce`
 
-**Arquivo:** `/hooks/useTheme.js` (linhas 90-95)
+**Arquivo:** `/hooks/useTheme.js`
 
 **Problema:** O debounce do `toggleTheme` é implementado manualmente com `useRef` e timestamp, enquanto o projeto já possui um hook `useDebounce` dedicado. Inconsistência de implementação.
 
@@ -125,31 +125,25 @@ return () => {
 
 ## 3. Correções Necessárias
 
-### 3.1 `/hooks/useAdminAuth.js` — Chamada Condicional de Hook (ANTI-PATTERN)
+### 3.1 `/hooks/useAdminAuth.js` — Chamada Condicional de Hook ✅ CORRIGIDO
 
-**Arquivo:** `/hooks/useAdminAuth.js` (linha 29)
+**Arquivo:** `/hooks/useAdminAuth.js`
 
-**Problema:** `useRouter()` é chamado condicionalmente dentro de um `if ternário`, o que viola as regras do React para hooks:
+**Problema:** `useRouter()` era chamado condicionalmente dentro de um `if ternário`, o que violava as regras do React para hooks:
 
 ```js
 const router = typeof window !== 'undefined' ? useRouter() : null;
 ```
 
-Hooks não podem ser chamados dentro de condições, loops ou funções aninhadas. Isso pode causar comportamento imprevisível e warnings em modo estrito.
+Hooks não podem ser chamados dentro de condições, loops ou funções aninhadas.
 
-**Recomendação:** Chamar `useRouter()` incondicionalmente e tratar o `null` apenas no uso, não na declaração. Ou usar um fallback que não quebre SSR:
-
-```js
-const router = useRouter();
-```
-
-O Next.js lida com SSR internamente.
+**Solução aplicada:** `useRouter()` agora é chamado incondicionalmente. O Next.js lida com SSR internamente.
 
 ---
 
 ### 3.2 `/hooks/useAdminCrud.js` — DELETE com Método GET e Query Parameter
 
-**Arquivo:** `/hooks/useAdminCrud.js` (linha 197)
+**Arquivo:** `/hooks/useAdminCrud.js`
 
 **Problema:** A operação de exclusão usa método `GET` com `?id=` na URL em vez do método `DELETE` convencional:
 
@@ -168,7 +162,7 @@ Isso é incomum e pode causar:
 
 ### 3.3 `/hooks/useAdminCrud.js` — `customValidator` sem Tratamento de Erro
 
-**Arquivo:** `/hooks/useAdminCrud.js` (linha 151)
+**Arquivo:** `/hooks/useAdminCrud.js`
 
 **Problema:** `customValidator()` é chamado dentro do bloco `try`, sem validação de retorno. Se o validador lançar uma exceção, ela é capturada pelo `catch` geral, resultando em mensagem de erro genérica:
 
@@ -182,7 +176,7 @@ if (customValidator) customValidator();
 
 ### 3.4 `/hooks/usePerformanceMetrics.js` — Referência a `window.LongTasks` Inexistente
 
-**Arquivo:** `/hooks/usePerformanceMetrics.js` (linha 349)
+**Arquivo:** `/hooks/usePerformanceMetrics.js`
 
 **Problema:** A função `detectPerformanceIssues` referencia `window.LongTasks`, que **não existe** na API nativa do navegador:
 
@@ -198,7 +192,7 @@ Parece ser uma variável global esperada de alguma biblioteca externa, mas não 
 
 ### 3.5 `/hooks/useAuth.js` — `AbortController` sem Abort em `login` e `logout`
 
-**Arquivo:** `/hooks/useAuth.js` (linhas 40 e 67)
+**Arquivo:** `/hooks/useAuth.js`
 
 **Problema:** `AbortController` é criado dentro de `login` e `logout`, mas nunca é abortado. O controller só é usado para passar o `signal` ao fetch. Se o componente desmontar durante a requisição, não há cancelamento.
 
@@ -217,7 +211,7 @@ const abortController = new AbortController();
 
 ### 4.1 `/hooks/useTheme.js` — Funções de Responsividade Sem Reatividade
 
-**Arquivo:** `/hooks/useTheme.js` (linhas 168-182)
+**Arquivo:** `/hooks/useTheme.js`
 
 **Problema:** `isMobile()`, `isTablet()` e `isDesktop()` são funções síncronas que leem `window.innerWidth` uma única vez no momento da chamada. Elas **não reagem a mudanças de tamanho de tela**:
 
@@ -234,7 +228,7 @@ const isMobile = useCallback(() => {
 
 ### 4.2 `/hooks/useTheme.js` — Fallbacks para Tokens Indicam Inconsistência Estrutural
 
-**Arquivo:** `/hooks/useTheme.js` (linhas 128, 146-147, 155-156)
+**Arquivo:** `/hooks/useTheme.js`
 
 **Problema:** Vários helpers possuem fallbacks com nomes alternativos, indicando que a estrutura dos tokens não é consistente:
 
@@ -250,7 +244,7 @@ const value = tokens.borders.radius[key] || tokens.borders.borderRadius[key];
 
 ### 4.3 `/hooks/useTheme.js` — `setThemeValue` com `useCallback` Desnecessário
 
-**Arquivo:** `/hooks/useTheme.js` (linhas 98-100)
+**Arquivo:** `/hooks/useTheme.js`
 
 **Problema:** `setThemeValue` é apenas um wrapper que chama `setTheme`:
 
@@ -268,7 +262,7 @@ Como `setTheme` do `useState` já é estável (garantia do React), este wrapper 
 
 ### 4.4 `/hooks/usePerformanceMetrics.js` — `reportAllMetrics` Não Reporta
 
-**Arquivo:** `/hooks/usePerformanceMetrics.js` (linhas 183-185)
+**Arquivo:** `/hooks/usePerformanceMetrics.js`
 
 **Problema:** A função `reportAllMetrics` simplesmente retorna `getMetrics()` sem de fato reportar nada para analytics ou callback:
 
@@ -286,7 +280,7 @@ O nome sugere que forçaria o envio de todas as métricas, mas apenas retorna os
 
 ### 4.5 `/hooks/useAuth.js` — `setLoading(true)` em `login` Causa Possível Flicker
 
-**Arquivo:** `/hooks/useAuth.js` (linha 39)
+**Arquivo:** `/hooks/useAuth.js`
 
 **Problema:** `setLoading(true)` é chamado no início de cada `login`, mesmo que o login seja subsequente e rápido. Se o usuário já está autenticado e o login for instantâneo, pode causar flicker visual.
 
@@ -308,7 +302,7 @@ O nome sugere que forçaria o envio de todas as métricas, mas apenas retorna os
 
 ### 5.2 Histórico de Métricas com Potencial de Memory Leak
 
-**Arquivo:** `/hooks/usePerformanceMetrics.js` (linha 140)
+**Arquivo:** `/hooks/usePerformanceMetrics.js`
 
 **Observação:** O histórico é limitado a 50 entradas, o que é bom. Porém, cada entrada armazena `window.location.href`, `userAgent`, e dados de conexão — objetos que podem ser relativamente grandes. Em páginas SPA com muitas navegações, 50 entradas podem acumular dados significativos.
 
@@ -318,7 +312,7 @@ O nome sugere que forçaria o envio de todas as métricas, mas apenas retorna os
 
 ### 5.3 Validação de `customValidator` no `useAdminCrud` — Falta de Tipagem
 
-**Arquivo:** `/hooks/useAdminCrud.js` (linha 145)
+**Arquivo:** `/hooks/useAdminCrud.js`
 
 **Observação:** O parâmetro `customValidator` não tem contrato definido (não fica claro se deve retornar booleano, lançar erro, ou modificar o formData).
 
@@ -328,7 +322,7 @@ O nome sugere que forçaria o envio de todas as métricas, mas apenas retorna os
 
 ### 5.4 Dependência Externa `web-vitals` — Import Dinâmico sem Cache
 
-**Arquivo:** `/hooks/usePerformanceMetrics.js` (linhas 192-201)
+**Arquivo:** `/hooks/usePerformanceMetrics.js`
 
 **Observação:** O `import('web-vitals')` é feito a cada montagem do hook. Embora módulos ES sejam cacheados pelo navegador, a promessa é recriada.
 
@@ -345,3 +339,14 @@ O nome sugere que forçaria o envio de todas as métricas, mas apenas retorna os
 | Correções necessárias | 5 | `useAdminAuth.js`, `useAdminCrud.js` (2), `usePerformanceMetrics.js`, `useAuth.js` |
 | Inconsistências | 5 | `useTheme.js` (3), `usePerformanceMetrics.js`, `useAuth.js` |
 | Melhorias gerais | 4 | Diversos |
+
+---
+
+### Ocorrências Corrigidas
+
+| # | Arquivo(s) | Descrição | Data |
+|---|---|---|---|
+| 1.1 | `hooks/index.js` | Removidas exportações duplicadas com sufixo `Default` | 10/05/2026 |
+| 1.2 | `hooks/useAdminAuth.js` + `hooks/useAuth.js` | `useAdminAuth` refatorado para consumir `AuthContext`; `credentials: 'include'` adicionado em `useAuth` | 10/05/2026 |
+| 1.3 | `hooks/useAdminCrud.js` | `useEffect` inicial simplificado para chamar `fetchItems(1)` | 10/05/2026 |
+| 3.1 | `hooks/useAdminAuth.js` | `useRouter()` movido para fora de condicional | 10/05/2026 |
