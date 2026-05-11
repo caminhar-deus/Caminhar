@@ -40,9 +40,9 @@ function hexToRgba(hex, alpha) {
  * @property {function} getShadow - Obtém sombra
  * @property {function} getRadius - Obtém raio de borda
  * @property {function} getBreakpoint - Obtém valor de breakpoint
- * @property {function} isMobile - Verifica se é mobile
- * @property {function} isTablet - Verifica se é tablet
- * @property {function} isDesktop - Verifica se é desktop
+ * @property {boolean} isMobile - Se a viewport é mobile
+ * @property {boolean} isTablet - Se a viewport é tablet
+ * @property {boolean} isDesktop - Se a viewport é desktop
  */
 
 /**
@@ -53,6 +53,11 @@ export const useTheme = () => {
   // Estado do tema (light/dark)
   const [theme, setTheme] = useState('light');
   const [mounted, setMounted] = useState(false);
+
+  // Estado reativo para largura da viewport
+  const [windowWidth, setWindowWidth] = useState(
+    typeof window !== 'undefined' ? window.innerWidth : 0
+  );
 
   // Detectar preferência do sistema
   useEffect(() => {
@@ -65,6 +70,15 @@ export const useTheme = () => {
     } else if (prefersDark) {
       setTheme('dark');
     }
+  }, []);
+
+  // Monitorar resize da viewport
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Aplicar tema
@@ -89,10 +103,13 @@ export const useTheme = () => {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   }, 300);
 
-  // Set tema específico
-  const setThemeValue = useCallback((newTheme) => {
-    setTheme(newTheme);
-  }, []);
+  // Valores booleanos reativos de viewport
+  const md = tokens.breakpoints.breakpoints.md;
+  const lg = tokens.breakpoints.breakpoints.lg;
+
+  const isMobile = windowWidth > 0 && windowWidth < md;
+  const isTablet = windowWidth >= md && windowWidth < lg;
+  const isDesktop = windowWidth >= lg;
 
   // Helper para obter cor com opacidade
   const getColor = useCallback((path, alpha = 1) => {
@@ -159,23 +176,6 @@ export const useTheme = () => {
     return tokens.breakpoints.breakpoints[key];
   }, []);
 
-  // Verificar media query
-  const isMobile = useCallback(() => {
-    if (typeof window === 'undefined') return false;
-    return window.innerWidth < tokens.breakpoints.breakpoints.md;
-  }, []);
-
-  const isTablet = useCallback(() => {
-    if (typeof window === 'undefined') return false;
-    const width = window.innerWidth;
-    return width >= tokens.breakpoints.breakpoints.md && width < tokens.breakpoints.breakpoints.lg;
-  }, []);
-
-  const isDesktop = useCallback(() => {
-    if (typeof window === 'undefined') return false;
-    return window.innerWidth >= tokens.breakpoints.breakpoints.lg;
-  }, []);
-
   return useMemo(() => ({
     // Estado
     theme,
@@ -185,7 +185,7 @@ export const useTheme = () => {
     
     // Ações
     toggleTheme,
-    setTheme: setThemeValue,
+    setTheme,
     
     // Tokens completos
     tokens,
@@ -211,7 +211,6 @@ export const useTheme = () => {
     theme,
     mounted,
     toggleTheme,
-    setThemeValue,
     tokens,
     getColor,
     getSpacing,

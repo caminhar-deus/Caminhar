@@ -119,7 +119,15 @@ export const useAdminCrud = ({
     const loadingToastId = toast.loading(isEditing ? 'Atualizando item...' : 'Criando item...');
 
     try {
-      if (customValidator) customValidator();
+      if (customValidator) {
+        try {
+          customValidator();
+        } catch (validationError) {
+          setError({ message: validationError.message || 'Erro de validação' });
+          toast.error(validationError.message || 'Erro de validação', { id: loadingToastId });
+          return;
+        }
+      }
 
       const method = isEditing ? 'PUT' : 'POST';
       const body = JSON.stringify(formData);
@@ -165,7 +173,12 @@ export const useAdminCrud = ({
     const loadingToastId = toast.loading('Excluindo item...');
     const abortController = new AbortController();
     try {
-      const response = await fetch(`${apiEndpoint}?id=${id}`, { method: 'DELETE', signal: abortController.signal });
+      const response = await fetch(apiEndpoint, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+        signal: abortController.signal,
+      });
       if (!response.ok) throw new Error('Falha ao excluir');
       
       toast.success('Item excluído com sucesso!', { id: loadingToastId });

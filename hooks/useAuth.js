@@ -2,7 +2,8 @@
  * @typedef {Object} AuthContextValue
  * @property {Object|null} user - Dados do usuário autenticado ou null
  * @property {boolean} isAuthenticated - Se o usuário está autenticado
- * @property {boolean} loading - Estado de carregamento inicial
+ * @property {boolean} loading - Estado de carregamento da verificação inicial de sessão
+ * @property {boolean} loginLoading - Estado de carregamento específico do login (evita flicker)
  * @property {function} login - Função assíncrona para login (username, password) => { success, error }
  * @property {function} logout - Função assíncrona para logout
  */
@@ -12,7 +13,7 @@
  * Contexto de autenticação para componentes React
  */
 
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 
 /**
  * Contexto de Autenticação
@@ -22,6 +23,7 @@ export const AuthContext = createContext({
   user: null,
   isAuthenticated: false,
   loading: true,
+  loginLoading: false,
   login: async () => {},
   logout: async () => {},
 });
@@ -34,10 +36,19 @@ export const AuthContext = createContext({
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loginLoading, setLoginLoading] = useState(false);
+  const loginAbortRef = useRef(null);
 
   const login = useCallback(async (username, password) => {
-    setLoading(true);
+    setLoginLoading(true);
+
+    // Aborta requisição de login anterior se existir
+    if (loginAbortRef.current) {
+      loginAbortRef.current.abort();
+    }
+
     const abortController = new AbortController();
+    loginAbortRef.current = abortController;
 
     try {
       const res = await fetch('/api/auth/login', {
@@ -60,13 +71,13 @@ export const AuthProvider = ({ children }) => {
       if (e.name === 'AbortError') return { success: false };
       return { success: false, error: 'Erro de conexão' };
     } finally {
-      setLoading(false);
+      setLoginLoading(false);
+      loginAbortRef.current = null;
     }
   }, []);
 
   const logout = useCallback(async () => {
-    const abortController = new AbortController();
-    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include', signal: abortController.signal });
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
     setUser(null);
   }, []);
 
@@ -98,6 +109,7 @@ export const AuthProvider = ({ children }) => {
     user,
     isAuthenticated: !!user,
     loading,
+    loginLoading,
     login,
     logout,
   };

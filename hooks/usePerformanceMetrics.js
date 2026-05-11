@@ -12,7 +12,6 @@ import { useEffect, useCallback, useRef } from 'react';
  * @typedef {Object} PerformanceMetricsReturn
  * @property {function} reportMetric - Reporta uma métrica individual
  * @property {function} getMetrics - Retorna métricas acumuladas
- * @property {function} reportAllMetrics - Força report de todas as métricas atuais
  * @property {Object} metrics - Métricas correntes
  * @property {Object} WEB_VITAL_METRICS - Constantes das métricas suportadas
  * @property {Object} THRESHOLDS - Thresholds de avaliação Google
@@ -179,11 +178,6 @@ export default function usePerformanceMetrics(options = {}) {
     }, {}),
   }));
 
-  // Force report all current metrics
-  const reportAllMetrics = useCallback(() => {
-    return getMetrics();
-  }, [getMetrics]);
-
   // Effect para observar métricas
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -303,7 +297,6 @@ export default function usePerformanceMetrics(options = {}) {
   return {
     reportMetric,
     getMetrics,
-    reportAllMetrics,
     metrics: metricsStore.current,
     WEB_VITAL_METRICS,
     THRESHOLDS,
@@ -349,14 +342,9 @@ export function detectPerformanceIssues() {
     }
   }
 
-  // Detecta long tasks
-  if (window.LongTasks?.length > 10) {
-    issues.push({
-      type: 'longtasks',
-      severity: 'medium',
-      message: `${window.LongTasks.length} long tasks detected`,
-    });
-  }
+  // Long tasks são monitoradas via PerformanceObserver dentro do hook (useEffect).
+  // Esta função standalone (detectPerformanceIssues) não tem acesso a esses dados,
+  // portanto a detecção foi removida para evitar referência a window.LongTasks (inexistente).
 
   // Detecta slow connection
   if (navigator.connection) {

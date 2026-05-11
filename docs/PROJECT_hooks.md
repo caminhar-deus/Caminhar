@@ -47,7 +47,8 @@
   - `getShadow(key)` — Busca em `tokens.shadows.shadows` e fallback `tokens.shadows.shadow`.
   - `getRadius(key)` — Busca em `tokens.borders.radius` e fallback `tokens.borders.borderRadius`.
   - `getBreakpoint(key)` — Busca em `tokens.breakpoints.breakpoints`.
-  - `isMobile()`, `isTablet()`, `isDesktop()` — Verificações síncronas de viewport.
+  - `isMobile`, `isTablet`, `isDesktop` — Valores booleanos reativos de viewport (atualizados via event listener `resize`).
+- **Responsividade:** Monitora `window.innerWidth` com event listener `resize` para fornecer valores booleanos reativos de viewport (`isMobile`, `isTablet`, `isDesktop`).
 - **Performance:** Todo o retorno é memoizado com `useMemo` e dependências explícitas.
 - **Warnings em desenvolvimento:** Exibe `console.warn` quando tokens não são encontrados.
 - **Dependências:** `pages/styles/tokens`, `useThrottle`.
@@ -64,8 +65,8 @@
   - Ao montar, faz `GET /api/auth/check` para verificar sessão. Usa `AbortController` para cancelamento e `credentials: 'include'`.
   - `login(username, password)`: `POST /api/auth/login` com `credentials: 'include'`. Retorna `{ success, error }`.
   - `logout()`: `POST /api/auth/logout` com `credentials: 'include'`. Limpa estado do usuário.
-- **useAuth():** Consome o contexto e expõe `user`, `isAuthenticated`, `loading`, `login`, `logout`.
-- **Tratamento de erros:** Lida com `AbortError` silenciosamente. Converte erros de rede em mensagem amigável.
+- **useAuth():** Consome o contexto e expõe `user`, `isAuthenticated`, `loading`, `loginLoading`, `login`, `logout`.
+- **Tratamento de erros:** Lida com `AbortError` silenciosamente. Converte erros de rede em mensagem amigável. Em `login`, usa `loginAbortRef` para abortar requisição anterior se houver. Possui `loginLoading` separado para evitar flicker visual durante operações de login.
 
 ---
 
@@ -90,8 +91,8 @@
 - **Configuração:** Recebe `apiEndpoint`, `initialFormData`, `usePagination`, `itemsPerPage`, `autoFetch`, `onSuccess`, `onError`.
 - **Estado:** `items`, `loading`, `error`, `formData`, `isEditing`, `currentPage`, `totalPages`.
 - **Fetch inicial:** Executa na montagem (se `autoFetch: true`) via chamada a `fetchItems(1)`. O cancelamento é gerenciado pelo `AbortController` em `fetchItemsFromAPI`.
-- **handleSubmit:** Envia POST (criação) ou PUT (edição) conforme `isEditing`. Usa `react-hot-toast` para feedback. Suporta validador customizado `customValidator`.
-- **handleDelete:** Confirma com `window.confirm`, envia DELETE, atualiza lista.
+- **handleSubmit:** Envia POST (criação) ou PUT (edição) conforme `isEditing`. Usa `react-hot-toast` para feedback. Suporta validador customizado `customValidator` com tratamento de erro específico (try/catch isolado com mensagem e interrupção do submit).
+- **handleDelete:** Confirma com `window.confirm`, envia DELETE com ID no corpo da requisição (JSON), atualiza lista.
 - **goToPage:** Navega para página específica, respeitando `totalPages`.
 - **Função pura:** `fetchItemsFromAPI` é separada do hook para ser testável independentemente.
 
@@ -150,7 +151,7 @@
   - `formatMetric(name, value)` — Formata valor (ms arredondado, CLS com 3 casas).
 - **Funções exportadas standalone:**
   - `reportWebVitals(metric)` — Função para uso direto em `_app.js` ou `_document.js`.
-  - `detectPerformanceIssues()` — Detecta pressão de memória, long tasks e conexão lenta.
+  - `detectPerformanceIssues()` — Detecta pressão de memória e conexão lenta. Long tasks são monitoradas via `PerformanceObserver` no hook.
 - **Debug:** Em desenvolvimento, logs detalhados no console.
 
 ---

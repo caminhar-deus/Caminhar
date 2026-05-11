@@ -23,13 +23,6 @@
 
 **Problema:** Cada hook era reexportado duas vezes: uma como exportação nomeada e outra como exportação padrão com sufixo `Default`. Isso poluía a API pública e podia confundir consumidores.
 
-**Exemplo (antes):**
-```js
-export { useTheme } from './useTheme';
-export { default as useThemeDefault } from './useTheme';
-// Mesmo padrão para useAuth, useApiFetch, useDebounce, useAdminAuth
-```
-
 **Solução aplicada:** Removidas as reexportações com sufixo `Default`. Mantidas apenas as exportações nomeadas.
 
 ---
@@ -38,20 +31,9 @@ export { default as useThemeDefault } from './useTheme';
 
 **Arquivos:** `/hooks/useAuth.js` e `/hooks/useAdminAuth.js`
 
-**Problema:** Lógica de autenticação duplicada com sobreposição significativa:
+**Problema:** Lógica de autenticação duplicada com sobreposição significativa.
 
-| Funcionalidade | `useAuth.js` | `useAdminAuth.js` |
-|---|---|---|
-| Verificação de sessão (`GET /api/auth/check`) | ✅ | ✅ |
-| Login (`POST /api/auth/login`) | ✅ | ✅ |
-| Logout (`POST /api/auth/logout`) | ✅ | ✅ |
-| AbortController para cancelamento | ✅ | ❌ |
-| Redirect pós-logout | ❌ | ✅ |
-| Estado de loading específico | Apenas `loading` genérico | `loginLoading` separado |
-
-Ambos hooks faziam as mesmas chamadas de API e gerenciavam o mesmo estado de autenticação, mas de forma independente.
-
-**Solução aplicada:** `useAdminAuth` agora consome o `AuthContext` de `useAuth.js` e estende com funcionalidades específicas de admin (redirect, estados de loading/error isolados). Também foi adicionado `credentials: 'include'` nas requisições de `useAuth.js` para consistência.
+**Solução aplicada:** `useAdminAuth` agora consome o `AuthContext` de `useAuth.js` e estende com funcionalidades específicas de admin. `credentials: 'include'` adicionado em `useAuth.js`.
 
 ---
 
@@ -59,11 +41,7 @@ Ambos hooks faziam as mesmas chamadas de API e gerenciavam o mesmo estado de aut
 
 **Arquivo:** `/hooks/useAdminCrud.js`
 
-**Problema:** O hook possuía duas implementações de fetch com a mesma lógica:
-- `useEffect` inicial — fetch automático na montagem
-- `fetchItems` — função para re-fetch manual
-
-Ambas chamavam `fetchItemsFromAPI`, tratavam loading, paginação e erros de forma idêntica.
+**Problema:** O hook possuía duas implementações de fetch com a mesma lógica.
 
 **Solução aplicada:** O `useEffect` inicial agora simplesmente chama `fetchItems(1)` em vez de duplicar a lógica.
 
@@ -75,9 +53,7 @@ Ambas chamavam `fetchItemsFromAPI`, tratavam loading, paginação e erros de for
 
 **Arquivo:** `/hooks/useAdminCrud.js`
 
-**Problema:** `apiEndpoint` era dependência do `useEffect` com lógica de fetch duplicada. Com a refatoração da seção 1.3 (que substituiu o `useEffect` por uma chamada a `fetchItems(1)`), o impacto dessa dependência foi mitigado.
-
-**Solução aplicada:** Resolvido como parte da correção de duplicidade de código (seção 1.3).
+**Solução aplicada:** Resolvido como parte da correção 1.3.
 
 ---
 
@@ -85,19 +61,7 @@ Ambas chamavam `fetchItemsFromAPI`, tratavam loading, paginação e erros de for
 
 **Arquivo:** `/hooks/useApiFetch.js`
 
-**Problema:** `JSON.stringify(options)` como dependência do `useCallback` forçava a recriação da função `fetchData` sempre que `options` mudava, mesmo que o conteúdo serializado fosse idêntico (objetos recriados com mesmas propriedades a cada render do pai).
-
-```js
-const fetchData = useCallback(async () => {
-  // ...
-}, [url, JSON.stringify(options), ...deps]);
-```
-
-**Solução aplicada:** Substituído por estratégia com `useRef`:
-- `optionsRef` armazena a referência estável de `options`
-- `depsKeyRef` compara serializações via `useEffect`
-- `fetchData` depende de `depsKeyRef.current` em vez de `JSON.stringify(options)`
-- O callback usa `optionsRef.current` no corpo da função
+**Solução aplicada:** Substituído por estratégia com `useRef` (`optionsRef` + `depsKeyRef`).
 
 ---
 
@@ -105,23 +69,7 @@ const fetchData = useCallback(async () => {
 
 **Arquivo:** `/hooks/usePerformanceMetrics.js`
 
-**Problema:** Os `PerformanceObserver` para `longtask` e `resource` não eram desconectados no cleanup do `useEffect`. Embora observers sejam limpos quando o componente desmonta em alguns navegadores, a especificação não garante.
-
-```js
-return () => {
-  // Observers são automaticamente limpos quando o componente desmonta
-};
-```
-
-**Solução aplicada:** Adicionado array `observers` que coleta as referências dos observers criados. No cleanup, todos são desconectados explicitamente:
-
-```js
-const observers = [];
-// ... criação dos observers com observers.push(...)
-return () => {
-  observers.forEach((observer) => observer.disconnect());
-};
-```
+**Solução aplicada:** Adicionado `observer.disconnect()` no cleanup.
 
 ---
 
@@ -129,13 +77,7 @@ return () => {
 
 **Arquivo:** `/hooks/useTheme.js`
 
-**Problema:** O throttle do `toggleTheme` era implementado manualmente com `useRef` e timestamp, enquanto o projeto já possuía um hook `useDebounce` dedicado. A implementação manual era um **throttle** (ignora chamadas rápidas), mas era chamada incorretamente de "debounce" (que atrasa a execução). Isso causava inconsistência e confusão em revisões de código.
-
-**Solução aplicada:** 
-- Criado hook `useThrottle` em `/hooks/useThrottle.js` seguindo o mesmo padrão de `useDebounce`
-- `toggleTheme` agora usa `useThrottle` em vez da implementação manual
-- Comentário corrigido de "debounce" para "throttle"
-- `useThrottle` exportado em `/hooks/index.js`
+**Solução aplicada:** Criado `useThrottle` e substituída implementação manual.
 
 ---
 
@@ -143,164 +85,93 @@ return () => {
 
 ### 3.1 `/hooks/useAdminAuth.js` — Chamada Condicional de Hook ✅ CORRIGIDO
 
-**Arquivo:** `/hooks/useAdminAuth.js`
-
-**Problema:** `useRouter()` era chamado condicionalmente dentro de um `if ternário`, o que violava as regras do React para hooks:
-
-```js
-const router = typeof window !== 'undefined' ? useRouter() : null;
-```
-
-Hooks não podem ser chamados dentro de condições, loops ou funções aninhadas.
-
-**Solução aplicada:** `useRouter()` agora é chamado incondicionalmente. O Next.js lida com SSR internamente.
+**Solução aplicada:** `useRouter()` incondicional.
 
 ---
 
-### 3.2 `/hooks/useAdminCrud.js` — DELETE com Método GET e Query Parameter
+### 3.2 `/hooks/useAdminCrud.js` — DELETE com Query Parameter ✅ CORRIGIDO
 
-**Arquivo:** `/hooks/useAdminCrud.js`
-
-**Problema:** A operação de exclusão usa método `GET` com `?id=` na URL em vez do método `DELETE` convencional:
-
-```js
-const response = await fetch(`${apiEndpoint}?id=${id}`, { method: 'DELETE', signal: abortController.signal });
-```
-
-Isso é incomum e pode causar:
-- **Cache indevido:** Proxies e CDNs podem cachear requisições GET, impedindo a exclusão.
-- **Violação de convenção REST:** O esperado seria `DELETE /api/endpoint/:id`.
-- **Segurança:** Logs e referências podem expor o ID na URL.
-
-**Recomendação:** Alterar para `DELETE /api/endpoint/:id` ou enviar o ID no corpo da requisição.
+**Solução aplicada:** DELETE agora envia ID no corpo (JSON), compatível com todas as API routes.
 
 ---
 
-### 3.3 `/hooks/useAdminCrud.js` — `customValidator` sem Tratamento de Erro
+### 3.3 `/hooks/useAdminCrud.js` — `customValidator` sem Tratamento de Erro ✅ CORRIGIDO
 
-**Arquivo:** `/hooks/useAdminCrud.js`
-
-**Problema:** `customValidator()` é chamado dentro do bloco `try`, sem validação de retorno. Se o validador lançar uma exceção, ela é capturada pelo `catch` geral, resultando em mensagem de erro genérica:
-
-```js
-if (customValidator) customValidator();
-```
-
-**Recomendação:** Envolver a chamada em um bloco `try/catch` específico ou fazer o validador retornar um booleano com mensagens de erro estruturadas.
+**Solução aplicada:** Envolvido em `try/catch` específico com mensagem e interrupção do submit.
 
 ---
 
-### 3.4 `/hooks/usePerformanceMetrics.js` — Referência a `window.LongTasks` Inexistente
+### 3.4 `/hooks/usePerformanceMetrics.js` — Referência a `window.LongTasks` ✅ CORRIGIDO
 
-**Arquivo:** `/hooks/usePerformanceMetrics.js`
-
-**Problema:** A função `detectPerformanceIssues` referencia `window.LongTasks`, que **não existe** na API nativa do navegador:
-
-```js
-if (window.LongTasks?.length > 10) {
-```
-
-Parece ser uma variável global esperada de alguma biblioteca externa, mas não é declarada em lugar nenhum no projeto. Isso sempre resultará em `undefined` e o bloco nunca será executado.
-
-**Recomendação:** Remover a verificação ou implementar corretamente com `PerformanceObserver` (similar ao feito no hook).
+**Solução aplicada:** Bloco removido (código morto). Documentado que long tasks são monitoradas via `PerformanceObserver`.
 
 ---
 
-### 3.5 `/hooks/useAuth.js` — `AbortController` sem Abort em `login` e `logout`
+### 3.5 `/hooks/useAuth.js` — `AbortController` sem Abort em `login` ✅ CORRIGIDO
 
-**Arquivo:** `/hooks/useAuth.js`
-
-**Problema:** `AbortController` é criado dentro de `login` e `logout`, mas nunca é abortado. O controller só é usado para passar o `signal` ao fetch. Se o componente desmontar durante a requisição, não há cancelamento.
-
-```js
-const abortController = new AbortController();
-// ... signal é passado, mas nunca abortado
-```
-
-**Recomendação:**
-- Em `login`: usar `useRef` para armazenar o controller ou confiar que o ciclo de vida do fetch lida com isso.
-- Em `logout` (chamado intencionalmente pelo usuário): o abort pode nem ser necessário.
+**Solução aplicada:** `loginAbortRef` gerenciado via ref; `logout` simplificado.
 
 ---
 
 ## 4. Inconsistências e Anti-patterns
 
-### 4.1 `/hooks/useTheme.js` — Funções de Responsividade Sem Reatividade
+### 4.1 `/hooks/useTheme.js` — Funções de Responsividade Sem Reatividade ✅ CORRIGIDO
 
 **Arquivo:** `/hooks/useTheme.js`
 
-**Problema:** `isMobile()`, `isTablet()` e `isDesktop()` são funções síncronas que leem `window.innerWidth` uma única vez no momento da chamada. Elas **não reagem a mudanças de tamanho de tela**:
+**Problema:** `isMobile()`, `isTablet()` e `isDesktop()` eram funções síncronas que leem `window.innerWidth` uma única vez. Não reagiam a mudanças de tamanho de tela.
 
-```js
-const isMobile = useCallback(() => {
-  if (typeof window === 'undefined') return false;
-  return window.innerWidth < tokens.breakpoints.breakpoints.md;
-}, []);
-```
-
-**Recomendação:** Adicionar um event listener `resize` ou usar hooks como `useMediaQuery` para fornecer valores booleanos reativos, em vez de funções de leitura única.
+**Solução aplicada:** Convertidas de funções para **valores booleanos reativos**:
+- Adicionado estado `windowWidth` com `useState`
+- Adicionado `useEffect` com event listener `resize` que atualiza `windowWidth`
+- `isMobile`, `isTablet`, `isDesktop` agora são valores booleanos calculados a partir de `windowWidth`
+- JSDoc atualizado: `@property {boolean} isMobile` (não mais `function`)
+- Adicionadas as dependências `isMobile`, `isTablet`, `isDesktop` no `useMemo`
 
 ---
 
-### 4.2 `/hooks/useTheme.js` — Fallbacks para Tokens Indicam Inconsistência Estrutural
+### 4.2 `/hooks/useTheme.js` — Fallbacks para Tokens Indicam Inconsistência Estrutural ⏳ PENDENTE
+
+**Arquivo:** `/hooks/useTheme.js` + `/pages/styles/tokens.js`
+
+**Problema:** Vários helpers possuem fallbacks com nomes alternativos (`space`/`spacing`, `shadows`/`shadow`, `radius`/`borderRadius`).
+
+**Solução:** Pendente — será analisado em momento oportuno.
+
+---
+
+### 4.3 `/hooks/useTheme.js` — `setThemeValue` com `useCallback` Desnecessário ✅ CORRIGIDO
 
 **Arquivo:** `/hooks/useTheme.js`
 
-**Problema:** Vários helpers possuem fallbacks com nomes alternativos, indicando que a estrutura dos tokens não é consistente:
+**Problema:** `setThemeValue` era um wrapper que chamava `setTheme`, sem adicionar valor.
 
-```js
-const value = tokens.spacing.space[key] || tokens.spacing.spacing[key];
-const value = tokens.shadows.shadows[key] || tokens.shadows.shadow[key];
-const value = tokens.borders.radius[key] || tokens.borders.borderRadius[key];
-```
-
-**Recomendação:** Unificar a estrutura dos tokens para eliminar a necessidade de fallbacks duplicados. Cada token deve ter um caminho único e previsível.
+**Solução aplicada:** Removido `setThemeValue`. Expondo `setTheme` diretamente no retorno do `useMemo`. Removido `setThemeValue` das dependências.
 
 ---
 
-### 4.3 `/hooks/useTheme.js` — `setThemeValue` com `useCallback` Desnecessário
-
-**Arquivo:** `/hooks/useTheme.js`
-
-**Problema:** `setThemeValue` é apenas um wrapper que chama `setTheme`:
-
-```js
-const setThemeValue = useCallback((newTheme) => {
-  setTheme(newTheme);
-}, []);
-```
-
-Como `setTheme` do `useState` já é estável (garantia do React), este wrapper não adiciona valor.
-
-**Recomendação:** Expor `setTheme` diretamente em vez de criar um wrapper.
-
----
-
-### 4.4 `/hooks/usePerformanceMetrics.js` — `reportAllMetrics` Não Reporta
+### 4.4 `/hooks/usePerformanceMetrics.js` — `reportAllMetrics` Não Reporta ✅ CORRIGIDO
 
 **Arquivo:** `/hooks/usePerformanceMetrics.js`
 
-**Problema:** A função `reportAllMetrics` simplesmente retorna `getMetrics()` sem de fato reportar nada para analytics ou callback:
+**Problema:** `reportAllMetrics` tinha nome sugestivo de envio, mas apenas retornava dados (comportamento idêntico a `getMetrics`).
 
-```js
-const reportAllMetrics = useCallback(() => {
-  return getMetrics();
-}, [getMetrics]);
-```
-
-O nome sugere que forçaria o envio de todas as métricas, mas apenas retorna os dados atuais.
-
-**Recomendação:** Renomear para `getAllMetrics` ou implementar o envio real para analytics.
+**Solução aplicada:** Removida a função `reportAllMetrics` e sua referência do retorno. JSDoc atualizado removendo a propriedade. `getMetrics` é a função canônica para obter métricas acumuladas.
 
 ---
 
-### 4.5 `/hooks/useAuth.js` — `setLoading(true)` em `login` Causa Possível Flicker
+### 4.5 `/hooks/useAuth.js` — `setLoading(true)` em `login` Causa Possível Flicker ✅ CORRIGIDO
 
 **Arquivo:** `/hooks/useAuth.js`
 
-**Problema:** `setLoading(true)` é chamado no início de cada `login`, mesmo que o login seja subsequente e rápido. Se o usuário já está autenticado e o login for instantâneo, pode causar flicker visual.
+**Problema:** `setLoading(true)` usava o mesmo estado `loading` da verificação inicial de sessão, podendo causar flicker visual em logins rápidos.
 
-**Recomendação:** Considerar um estado de loading específico para login (similar ao que `useAdminAuth` faz com `loginLoading`).
+**Solução aplicada:** Adicionado estado `loginLoading` separado:
+- Novo estado `loginLoading` no `AuthProvider`
+- `login` agora usa `setLoginLoading(true/false)` em vez de `setLoading(true/false)`
+- O estado `loading` (da verificação inicial) permanece inalterado
+- `loginLoading` exposto no `AuthContext` para consumidores
+- `AuthContext` padrão atualizado com `loginLoading: false`
 
 ---
 
@@ -308,41 +179,25 @@ O nome sugere que forçaria o envio de todas as métricas, mas apenas retorna os
 
 ### 5.1 Oportunidade de Padronização com `useApiFetch`
 
-**Arquivos envolvidos:** `useAuth.js`, `useAdminAuth.js`, `useAdminCrud.js`, `usePerformanceMetrics.js`
-
-**Observação:** Múltiplos hooks implementam lógica de fetch manual com `AbortController`, estados de loading/error e tratamento de respostas. O hook `useApiFetch` foi criado exatamente para centralizar esse padrão.
-
-**Recomendação:** Avaliar a adoção de `useApiFetch` como base para os demais hooks que fazem fetch, reduzindo duplicidade e unificando o tratamento de erros e cancelamento.
+**Recomendação:** Avaliar adoção de `useApiFetch` como base.
 
 ---
 
 ### 5.2 Histórico de Métricas com Potencial de Memory Leak
 
-**Arquivo:** `/hooks/usePerformanceMetrics.js`
-
-**Observação:** O histórico é limitado a 50 entradas, o que é bom. Porém, cada entrada armazena `window.location.href`, `userAgent`, e dados de conexão — objetos que podem ser relativamente grandes. Em páginas SPA com muitas navegações, 50 entradas podem acumular dados significativos.
-
-**Recomendação:** Considerar armazenar apenas os campos essenciais no histórico (`name`, `value`, `rating`, `timestamp`) e manter dados contextuais apenas na entrada mais recente.
+**Recomendação:** Armazenar apenas campos essenciais no histórico.
 
 ---
 
-### 5.3 Validação de `customValidator` no `useAdminCrud` — Falta de Tipagem
+### 5.3 Validação de `customValidator` — Falta de Tipagem
 
-**Arquivo:** `/hooks/useAdminCrud.js`
-
-**Observação:** O parâmetro `customValidator` não tem contrato definido (não fica claro se deve retornar booleano, lançar erro, ou modificar o formData).
-
-**Recomendação:** Documentar no JSDoc o comportamento esperado da validação (ex: lançar erro com mensagens específicas, ou retornar array de erros).
+**Recomendação:** Documentar no JSDoc o comportamento esperado.
 
 ---
 
 ### 5.4 Dependência Externa `web-vitals` — Import Dinâmico sem Cache
 
-**Arquivo:** `/hooks/usePerformanceMetrics.js`
-
-**Observação:** O `import('web-vitals')` é feito a cada montagem do hook. Embora módulos ES sejam cacheados pelo navegador, a promessa é recriada.
-
-**Recomendação:** Mover o import dinâmico para fora do hook (em nível de módulo) ou usar um singleton, desde que o módulo seja leve e compatível com SSR.
+**Recomendação:** Mover import dinâmico para nível de módulo.
 
 ---
 
@@ -363,10 +218,24 @@ O nome sugere que forçaria o envio de todas as métricas, mas apenas retorna os
 | # | Arquivo(s) | Descrição | Data |
 |---|---|---|---|
 | 1.1 | `hooks/index.js` | Removidas exportações duplicadas com sufixo `Default` | 10/05/2026 |
-| 1.2 | `hooks/useAdminAuth.js` + `hooks/useAuth.js` | `useAdminAuth` refatorado para consumir `AuthContext`; `credentials: 'include'` adicionado em `useAuth` | 10/05/2026 |
-| 1.3 | `hooks/useAdminCrud.js` | `useEffect` inicial simplificado para chamar `fetchItems(1)` | 10/05/2026 |
+| 1.2 | `hooks/useAdminAuth.js` + `hooks/useAuth.js` | `useAdminAuth` refatorado para consumir `AuthContext` | 10/05/2026 |
+| 1.3 | `hooks/useAdminCrud.js` | `useEffect` inicial simplificado | 10/05/2026 |
 | 2.1 | `hooks/useAdminCrud.js` | Resolvido como parte da correção 1.3 | 10/05/2026 |
-| 2.2 | `hooks/useApiFetch.js` | `JSON.stringify(options)` substituído por estratégia com `useRef` | 10/05/2026 |
-| 2.3 | `hooks/usePerformanceMetrics.js` | Adicionado `observer.disconnect()` no cleanup | 10/05/2026 |
+| 2.2 | `hooks/useApiFetch.js` | `JSON.stringify(options)` substituído por estratégia `useRef` | 10/05/2026 |
+| 2.3 | `hooks/usePerformanceMetrics.js` | `observer.disconnect()` no cleanup | 10/05/2026 |
 | 2.4 | `hooks/useTheme.js` | Criado `useThrottle` e substituída implementação manual | 10/05/2026 |
-| 3.1 | `hooks/useAdminAuth.js` | `useRouter()` movido para fora de condicional | 10/05/2026 |
+| 3.1 | `hooks/useAdminAuth.js` | `useRouter()` incondicional | 10/05/2026 |
+| 3.2 | `hooks/useAdminCrud.js` | DELETE com ID no body (JSON) | 10/05/2026 |
+| 3.3 | `hooks/useAdminCrud.js` | `customValidator` com tratamento de erro | 10/05/2026 |
+| 3.4 | `hooks/usePerformanceMetrics.js` | Bloco `window.LongTasks` removido | 10/05/2026 |
+| 3.5 | `hooks/useAuth.js` | `AbortController` gerenciado via ref | 10/05/2026 |
+| 4.1 | `hooks/useTheme.js` | `isMobile`/`isTablet`/`isDesktop` convertidos para valores reativos | 10/05/2026 |
+| 4.3 | `hooks/useTheme.js` | `setThemeValue` removido; `setTheme` exposto diretamente | 10/05/2026 |
+| 4.4 | `hooks/usePerformanceMetrics.js` | `reportAllMetrics` removido | 10/05/2026 |
+| 4.5 | `hooks/useAuth.js` | `loginLoading` separado adicionado | 10/05/2026 |
+
+### Ocorrências Pendentes
+
+| # | Arquivo(s) | Descrição | Situação |
+|---|---|---|---|
+| 4.2 | `hooks/useTheme.js` + `tokens.js` | Fallbacks de tokens — aguardando análise | ⏳ Pendente |
