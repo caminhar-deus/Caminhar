@@ -12,7 +12,13 @@
 | 02 | 🐛 Correção | `__mocks__/cookie.js` | `serialize()` não trata `maxAge === 0` | Médio | ✅ Corrigido |
 | 03 | ♻️ Duplicidade | `__mocks__/cookie.js` | Mock inline sobrescreve manual em `auth.test.js` | Alto | ✅ Corrigido |
 | 04 | ♻️ Duplicidade | `styleMock.js` (raiz) vs `__mocks__/styleMock.js` | Dois arquivos idênticos | Médio | ✅ Resolvido (arquivo já não existia) |
-| 09 | ♻️ Duplicidade | `jest.config.js` + `__mocks__/pg.js` | `resetMocks: true` apaga implementação, exigindo `restorePoolImplementation()` | Baixo | ✅ Corrigido |
+| 05 | 🚀 Melhoria | `__mocks__/cookie.js` | `jest.fn()` com implementação inline | Baixo | ✅ Corrigido |
+| 06 | 🚀 Melhoria | `__mocks__/pg.js` | `client` de `connect()` sem `on()` para eventos | Médio | ✅ Corrigido |
+| 07 | 🚀 Melhoria | `__mocks__/pg.js` | Ausência de helpers para simular erros de conexão | Médio | ✅ Corrigido |
+| 09 | ♻️ Duplicidade | `jest.config.js` + `__mocks__/pg.js` | `resetMocks: true` apaga implementação | Baixo | ✅ Corrigido |
+| 10 | 🚀 Melhoria | `__mocks__/pg.js` | Propriedades do Pool real ausentes (`totalCount`, `idleCount`, `waitingCount`) | Baixo | ✅ Corrigido |
+
+---
 
 ### 🔴 01 — `cookie.js` — `parse()` não lida com valores contendo `=`
 
@@ -75,36 +81,13 @@ if (options.maxAge !== undefined) cookie += `; Max-Age=${options.maxAge}`;
 
 ---
 
-### 🟡 09 — Duplicidade: `resetMocks: true` conflita com implementação do `Pool`
-
-**Arquivo:** `jest.config.js` + `__mocks__/pg.js`
-
-**Problema original:** `resetMocks: true` apagava as implementações de todos os `jest.fn()`, incluindo a implementação do `Pool` em `__mocks__/pg.js`, exigindo `restorePoolImplementation()` manual.
-
-**Solução aplicada:** Removido `resetMocks: true` do `jest.config.js`. Mantido `clearMocks: true` (limpa apenas chamadas, sem apagar implementações) e `restoreMocks: true`.
-
----
-
-## 📋 Itens Pendentes (Não corrigidos)
-
-| # | Tipo | Arquivo | Descrição | Impacto |
-|---|---|---|---|---|
-| 05 | 🚀 Melhoria | `__mocks__/cookie.js` | `parse()` não utiliza `jest.fn()` com implementação pura | Baixo |
-| 06 | 🚀 Melhoria | `__mocks__/pg.js` | `client` de `connect()` sem `on()` para eventos | Médio |
-| 07 | 🚀 Melhoria | `__mocks__/pg.js` | Ausência de helpers para simular erros de conexão | Médio |
-| 08 | 🚀 Melhoria | `__mocks__/pg.js` | `mockQuery` compartilhado pode gerar interferência entre testes | Alto |
-| 10 | 🚀 Melhoria | `__mocks__/pg.js` | Ausência de simulação para `Pool.totalCount`, `Pool.idleCount`, `Pool.waitingCount` | Baixo |
-
----
-
 ### 🟡 05 — `cookie.js` — `jest.fn()` com implementação real vs mock puro
 
 **Arquivo:** `__mocks__/cookie.js`
 
-**Problema:**
-As funções `serialize` e `parse` são `jest.fn()` com implementação real. Isso é um padrão misto: a função registra chamadas (`mock.calls`) mas também executa lógica real.
+**Problema original:** As funções `serialize` e `parse` usavam `jest.fn(...)` com implementação diretamente como argumento, padrão misto que não deixava explícita a intenção.
 
-**Sugestão:** Definir o mock com `jest.fn().mockImplementation(...)` explícito para deixar clara a intenção.
+**Solução aplicada:** Alterado para `jest.fn().mockImplementation(...)` explícito, separando o conceito de função espiã da implementação real.
 
 ---
 
@@ -112,10 +95,9 @@ As funções `serialize` e `parse` são `jest.fn()` com implementação real. Is
 
 **Arquivo:** `__mocks__/pg.js`
 
-**Problema:**
-O objeto retornado por `Pool.connect()` possui `query` e `release`, mas **não possui** um método `on()`.
+**Problema original:** O objeto retornado por `Pool.connect()` possuía `query` e `release`, mas não possuía `on()`. Códigos que fizessem `client.on('error', handler)` quebrariam.
 
-**Sugestão:** Adicionar `on: jest.fn()` ao cliente retornado por `connect()`.
+**Solução aplicada:** Adicionado `on: jest.fn()` ao cliente retornado por `connect()`.
 
 ---
 
@@ -123,21 +105,21 @@ O objeto retornado por `Pool.connect()` possui `query` e `release`, mas **não p
 
 **Arquivo:** `__mocks__/pg.js`
 
-**Problema:**
-O mock atualmente foca apenas em cenários de sucesso. Não há funções auxiliares para simular falhas.
+**Problema original:** O mock focava apenas em cenários de sucesso, sem funções auxiliares para simular falhas.
 
-**Sugestão:** Exportar funções auxiliares como `simulateConnectionError()`, `simulateQueryError(error)` ou expor `Pool.mockRejectedValue()` para cenários de falha.
+**Solução aplicada:** Adicionadas duas funções exportadas:
+- `simulateQueryError(error)` — Configura `mockQuery` para rejeitar com erro personalizado.
+- `simulateConnectionError(error)` — Configura `Pool` para que `connect()` rejeite.
 
 ---
 
-### 🟡 08 — `pg.js` — `mockQuery` compartilhado gera interferência entre testes
+### 🟡 09 — Duplicidade: `resetMocks: true` conflita com implementação do `Pool`
 
-**Arquivo:** `__mocks__/pg.js`
+**Arquivo:** `jest.config.js` + `__mocks__/pg.js`
 
-**Problema:**
-`mockQuery` é um singleton compartilhado entre todas as instâncias de `Pool` e todas as chamadas a `client.query()`, podendo gerar interferência.
+**Problema original:** `resetMocks: true` apagava as implementações de todos os `jest.fn()`, incluindo a implementação do `Pool`, exigindo `restorePoolImplementation()` manual.
 
-**Sugestão:** Considerar criar `mockQuery` como um `jest.fn()` por instância de pool, ou documentar explicitamente que todos os testes precisam chamar `mockQuery.mockClear()` + `restorePoolImplementation()` no `beforeEach`.
+**Solução aplicada:** Removido `resetMocks: true` do `jest.config.js`. Mantido `clearMocks: true` (limpa apenas chamadas, sem apagar implementações) e `restoreMocks: true`.
 
 ---
 
@@ -145,16 +127,33 @@ O mock atualmente foca apenas em cenários de sucesso. Não há funções auxili
 
 **Arquivo:** `__mocks__/pg.js`
 
-**Problema:**
-O `Pool` real do `pg` expõe propriedades como `totalCount`, `idleCount` e `waitingCount` que não estão no mock atual.
+**Problema original:** O `Pool` real do `pg` expõe propriedades como `totalCount`, `idleCount` e `waitingCount`, ausentes no mock.
 
-**Sugestão:** Adicionar essas propriedades como `jest.fn()` ou valores constantes.
+**Solução aplicada:** Adicionadas como valores constantes (`0`) no retorno de `poolImplementation()`.
 
 ---
 
-## Resumo Geral
+## 📋 Itens Analisados sem Correção
+
+| # | Tipo | Arquivo | Descrição | Impacto | Decisão |
+|---|---|---|---|---|---|
+| 08 | 🚀 Melhoria | `__mocks__/pg.js` | `mockQuery` compartilhado pode gerar interferência entre testes | Alto | ⚠️ Mantido singleton por incompatibilidade com arquitetura existente |
+
+### 🟡 08 — `pg.js` — `mockQuery` singleton compartilhado
+
+**Arquivo:** `__mocks__/pg.js`
+
+**Problema:** `mockQuery` é um singleton compartilhado entre todas as instâncias de `Pool` e todas as chamadas a `client.query()`, podendo gerar interferência.
+
+**Análise:** A separação de `mockQuery` por instância (Opção A) foi testada, mas a arquitetura dos 10 arquivos de teste que importam `mockQuery` de `'pg'` depende de uma referência única e estável. A implementação por Proxy ou instância por pool quebra a compatibilidade com padrões como `mockQuery.mockResolvedValue()`, `mockQuery.mockImplementation()` e `mockQuery.mock.calls`.
+
+**Decisão:** Mantido como singleton. Documentação atualizada no topo do arquivo alertando sobre a necessidade de `mockQuery.mockClear()` + `restorePoolImplementation()` no `beforeEach` para evitar interferência entre testes.
+
+---
+
+## Resumo Final
 
 | Status | Qtd | Itens |
 |---|---|---|
-| ✅ Corrigidos | 5 | 01, 02, 03, 04, 09 |
-| 📋 Pendentes | 5 | 05, 06, 07, 08, 10 |
+| ✅ Corrigidos | 9 | 01, 02, 03, 04, 05, 06, 07, 09, 10 |
+| ⚠️ Mantido (inviável) | 1 | 08 |

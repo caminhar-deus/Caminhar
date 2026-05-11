@@ -51,13 +51,12 @@ Mock da biblioteca `pg` (node-postgres), utilizada para conectar e executar cons
   - `query: mockQuery` — função `jest.fn()` que simula consultas SQL
   - `end()` — função `jest.fn()` que retorna `Promise.resolve(undefined)`
   - `on()` — função `jest.fn()` para registro de eventos
-  - `connect()` — função `jest.fn()` que retorna um cliente mockado com `query` e `release()`
-- **`mockQuery`** — Função mockada central que todos os testes usam para simular retornos de queries (`mockResolvedValue`, `mockRejectedValue`, etc.)
+  - `connect()` — função `jest.fn()` que retorna um cliente mockado com `query`, `release()` e `on()`
+  - `totalCount`, `idleCount`, `waitingCount` — propriedades do Pool real (valor `0`)
+- **`mockQuery`** — Função mockada central (singleton) que todos os testes usam para simular retornos de queries (`mockResolvedValue`, `mockRejectedValue`, etc.). Compartilhada entre `Pool.query` e `connect().query`.
 - **`restorePoolImplementation()`** — Função de utilidade que **re-restaura** a implementação do `Pool` após `jest.clearAllMocks()` ou `jest.resetAllMocks()` (que apagam a implementação interna dos mocks).
-
-### ⚠️ Comportamento crítico
-
-O arquivo inclui um mecanismo de **restauração de implementação**, pois os métodos `jest.clearAllMocks()` e `jest.resetAllMocks()` apagam a implementação original do `Pool`, fazendo com que `new Pool()` retorne `undefined`. A função `restorePoolImplementation()` é exposta para ser chamada nos `beforeEach` dos testes.
+- **`simulateQueryError(error)`** — Helper que configura `mockQuery` para rejeitar com um erro personalizado.
+- **`simulateConnectionError(error)`** — Helper que configura `Pool` para que `connect()` rejeite com um erro personalizado.
 
 ### 🧪 Utilização nos testes
 

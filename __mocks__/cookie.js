@@ -3,7 +3,7 @@
  * Para uso em testes Jest
  */
 
-export const serialize = jest.fn((name, value, options = {}) => {
+export const serialize = jest.fn().mockImplementation((name, value, options = {}) => {
   let cookie = `${name}=${value}`;
   if (options.httpOnly) cookie += '; HttpOnly';
   if (options.secure) cookie += '; Secure';
@@ -13,7 +13,7 @@ export const serialize = jest.fn((name, value, options = {}) => {
   return cookie;
 });
 
-export const parse = jest.fn((cookieHeader = '') => {
+export const parse = jest.fn().mockImplementation((cookieHeader = '') => {
   if (!cookieHeader) return {};
   
   const cookies = {};
