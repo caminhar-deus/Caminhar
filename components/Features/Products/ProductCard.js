@@ -1,6 +1,6 @@
 import React, { memo, useState, useEffect, useRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { parseImages } from '../../../lib/seo/helpers';
+import { parseImages } from '../../../lib/api/utils';
 import BaseCard from '../../UI/BaseCard';
 import styles from './styles/ProductCard.module.css';
 

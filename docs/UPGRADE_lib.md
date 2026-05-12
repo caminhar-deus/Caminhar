@@ -270,51 +270,74 @@
 
 ## 4. Inconsistências de Código
 
-### 4.1 validateParams usa req.query em vez de req.params
+### 4.1 validateParams usa req.query em vez de req.params — **RESOLVIDO**
 
-**Arquivo:** `lib/api/validate.js` (linha 132)
+**Arquivo:** `lib/api/validate.js`
 
-**Status:** Não foram feitas alterações.
-
----
-
-### 4.2 parseImages em localização incorreta (seo/helpers)
-
-**Arquivo:** `lib/seo/helpers.js`
-
-**Status:** Não foram feitas alterações.
+**O que foi feito:**
+- `validateParams` agora extrai **apenas as chaves definidas no schema** do `req.query`, evitando que query strings extras contaminem a validação dos parâmetros de rota.
+- A lógica percorre as chaves do schema (`schema.shape`) e filtra apenas os campos esperados antes de passar pelo `schema.parse()`.
+- A mesma correção foi aplicada ao `validateRequest` para a validação combinada de `schemas.params`.
 
 ---
 
-### 4.3 Mistura de idiomas em JSDoc (português/inglês)
+### 4.2 parseImages em localização incorreta (seo/helpers) — **RESOLVIDO**
 
-**Arquivos:** Múltiplos
+**Arquivo:** `lib/seo/helpers.js` → `lib/api/utils.js`
 
-**Status:** Não foram feitas alterações.
-
----
-
-### 4.4 createVideo não aceita options (diferente de outras entidades)
-
-**Arquivos:** `lib/domain/videos.js` (createVideo) vs `lib/domain/musicas.js` (createMusica), `lib/domain/posts.js` (createPost)
-
-**Status:** Não foram feitas alterações.
+**O que foi feito:**
+- A função `parseImages` foi **movida** para `lib/api/utils.js`, onde faz mais sentido semanticamente (utilitário de dados, não de SEO).
+- O import em `components/Features/Products/ProductCard.js` foi atualizado de `../../../lib/seo/helpers` para `../../../lib/api/utils`.
+- O arquivo `lib/seo/helpers.js` mantém a função original para compatibilidade retroativa (via re-export do `utils.js`).
 
 ---
 
-### 4.5 Nomenclatura inconsistente em getPublicPaginatedVideos
+### 4.3 Mistura de idiomas em JSDoc (português/inglês) — **RESOLVIDO**
+
+**Arquivos:** `lib/domain/videos.js`, `lib/domain/musicas.js`, `lib/domain/posts.js`
+
+**O que foi feito:**
+- Todos os JSDocs em inglês foram convertidos para **português** nos 3 arquivos de domínio, seguindo o padrão já estabelecido em `lib/api/validate.js`.
+- O padrão adotado:
+  - Descrições das funções em português (`Retorna vídeos paginados.`, `Cria um novo post.`)
+  - Parâmetros documentados em português com tipos preservados
+  - Comentários internos (não-JSDoc) também padronizados para português
+
+---
+
+### 4.4 createVideo não aceita options (diferente de outras entidades) — **RESOLVIDO**
+
+**Arquivos:** `lib/domain/videos.js` (createVideo)
+
+**O que foi feito:**
+- `createVideo(videoData)` foi alterado para `createVideo(videoData, options = {})`, alinhando-se ao padrão de `createMusica` e `createPost`.
+- O `options` é repassado ao `createRecord` dentro da transação via `{ ...options, client }`, garantindo que opções extras (ex: `{ client }` para transações já existentes) sejam preservadas.
+- A transação interna continua sendo usada para o cálculo de `MAX(position)`, mas agora aceita e propaga o `options` recebido.
+
+---
+
+### 4.5 Nomenclatura inconsistente em getPublicPaginatedVideos — **RESOLVIDO**
 
 **Arquivo:** `lib/domain/videos.js`
 
-**Status:** Não foram feitas alterações.
+**O que foi feito:**
+- Criada função interna `_paginateVideos({ page, limit, search, publishedOnly })` para centralizar a lógica de paginação.
+- `getPaginatedVideos` agora aceita `publishedOnly` como 4º parâmetro (mesmo padrão de `musicas.js:getPaginatedMusicas`), delegando para `_paginateVideos`.
+- `getPublicPaginatedVideos` mantida como alias público que chama `getPaginatedVideos(page, limit, search, true)` para compatibilidade com consumidores existentes.
+- Nomenclatura padronizada entre `videos.js`, `musicas.js` e `posts.js` — todos agora usam um padrão consistente com parâmetro `publishedOnly`.
 
 ---
 
-### 4.6 getRecentPosts em posts.js versus getPaginatedPosts
+### 4.6 getRecentPosts em posts.js versus getPaginatedPosts — **RESOLVIDO**
 
 **Arquivo:** `lib/domain/posts.js`
 
-**Status:** Não foram feitas alterações.
+**O que foi feito:**
+- Criada função interna `_paginatePosts({ page, limit, search, publishedOnly, searchContent })` para centralizar a lógica de paginação.
+- `getRecentPosts` foi refatorado para delegar a `_paginatePosts` com `publishedOnly: true` e `searchContent: true`.
+- `getPaginatedPosts` foi refatorado para delegar a `_paginatePosts` com `publishedOnly: false` e `searchContent: false`.
+- A ordenação agora é consistente: ambas usam `ORDER BY position ASC, created_at DESC`.
+- A assinatura de `getRecentPosts` foi mantida como `(limit, page, search)` para compatibilidade com consumidores existentes.
 
 ---
 

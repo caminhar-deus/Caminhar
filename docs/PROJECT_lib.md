@@ -30,7 +30,6 @@
    - [lib/domain/videos.js](#36-libdomainvideosjs)
 4. [Subpasta `lib/seo/`](#4-subpasta-libseo)
    - [lib/seo/config.js](#41-libseoconfigjs)
-   - [lib/seo/helpers.js](#42-libseohelpersjs)
 
 ---
 
@@ -245,8 +244,9 @@
 **Funções:**
 - `generateUUID()` — Gera UUID v4 simples para rastreamento de requisições.
 - `generateMeta(customMeta)` — Gera metadados padrão com `timestamp` e `requestId`.
+- `parseImages(imagesString)` — Transforma string de URLs separadas por quebra de linha em array de URLs válidas (trim + filter). Movido de `lib/seo/helpers.js` para cá por estar semanticamente mais relacionado a dados do que a SEO.
 
-**Observações:** Criado para eliminar a duplicação da função `generateUUID` que existia em `lib/api/errors.js` e `lib/api/response.js`. Ambos os módulos agora importam de `utils.js`.
+**Observações:** Criado para eliminar a duplicação da função `generateUUID` que existia em `lib/api/errors.js` e `lib/api/response.js`. Ambos os módulos agora importam de `utils.js`. A função `parseImages` foi adicionada para centralizar utilitários de dados.
 
 ---
 
@@ -375,14 +375,14 @@
 
 | Função | Descrição |
 |--------|-----------|
-| `getPaginatedVideos(page, limit, search)` | Videos paginados para admin (todos) |
-| `getPublicPaginatedVideos(page, limit, search)` | Videos paginados públicos (apenas publicados) |
-| `createVideo(videoData)` | Cria novo vídeo com cálculo automático de posição dentro de transação |
+| `getPaginatedVideos(page, limit, search, publishedOnly)` | Videos paginados com filtro de publicação (padrão: `publishedOnly=false`) |
+| `getPublicPaginatedVideos(page, limit, search)` | Alias para `getPaginatedVideos` com `publishedOnly=true` |
+| `createVideo(videoData, options)` | Cria novo vídeo com cálculo automático de posição dentro de transação. Aceita `options` (ex: `{ client }`) |
 | `updateVideo(id, videoData)` | Atualiza vídeo |
 | `deleteVideo(id)` | Remove vídeo |
 | `reorderVideos(items)` | Reordena vídeos em transação com tratamento de erro parcial |
 
-**Observações:** `getPublicPaginatedVideos` força `WHERE publicado = true`. O cálculo de posição em `createVideo` busca o `MAX(position)` e incrementa, tudo dentro de uma transação para evitar race condition em chamadas concorrentes. `reorderVideos` usa `Promise.allSettled` para identificar falhas parciais, logando o `id` e `position` exatos do vídeo que falhou antes de acionar o rollback.
+**Observações:** A paginação foi unificada na função interna `_paginateVideos({ page, limit, search, publishedOnly })`. `getPaginatedVideos` agora aceita `publishedOnly` como 4º parâmetro (mesmo padrão de `musicas.js`). `getPublicPaginatedVideos` mantida como alias para compatibilidade. `createVideo` agora aceita `options` como 2º parâmetro, alinhando-se ao padrão de `createMusica` e `createPost`. O cálculo de posição em `createVideo` busca o `MAX(position)` e incrementa, tudo dentro de uma transação para evitar race condition em chamadas concorrentes. `reorderVideos` usa `Promise.allSettled` para identificar falhas parciais, logando o `id` e `position` exatos do vídeo que falhou antes de acionar o rollback.
 
 ---
 
@@ -418,17 +418,4 @@
 | `shouldIndex(path)` | Verifica se página deve ser indexada |
 | `generateBreadcrumb(items)` | Gera breadcrumb com "Início" fixo |
 
-**Observações:** Contém dados completos de Schema.org (Organization, WebSite, SearchAction). `sanitizeJsonLd` previne XSS escapando `</script>`. `shouldIndex` usa pattern matching com suporte a wildcard (`/*`).
-
----
-
-### 4.2 `lib/seo/helpers.js`
-
-**Localização:** `/lib/seo/helpers.js`
-
-**Propósito:** Utilitários diversos. Atualmente contém apenas uma função para processamento de URLs de imagens.
-
-**Funções:**
-- `parseImages(imagesString)` — Converte string de URLs separadas por quebra de linha em array de URLs válidas (trim + filter).
-
-**Observações:** Arquivo de apenas 16 linhas, com escopo limitado. Apesar de estar em `lib/seo/`, a função é relacionada a produtos (menção no JSDoc), não especificamente a SEO.
+**Observações:** Contém dados completos de Schema.org (Organization, WebSite, SearchAction). `sanitizeJsonLd` previne XSS escapando `</script>`. `shouldIndex` usa pattern matching com suporte a wildcard (`/*`). O arquivo `lib/seo/helpers.js` foi removido — sua função `parseImages` foi movida para `lib/api/utils.js`.
