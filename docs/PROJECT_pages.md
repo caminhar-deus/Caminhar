@@ -51,15 +51,9 @@
   - Exibe header com imagem hero, `ContentTabs` e `Testimonials`
   - SEO com Open Graph via `next/head`
 
-### `/pages/[slug].js`
-- **Localização:** `/pages/[slug].js`
-- **Propósito:** Página dinâmica de posts do blog (rota catch-all).
-- **Funcionalidades:**
-  - Roda `getServerSideProps` buscando post no banco de dados local via `query()` filtrando por `slug` e `published = true`
-  - Renderiza meta tags SEO com URLs absolutas (Open Graph e Twitter Cards)
-  - Exibe título, data de publicação, imagem e conteúdo do post
-  - Botões de compartilhamento WhatsApp e Facebook
-  - Retorna 404 se post não encontrado
+**Arquivo removido (12/05/2026):** `/pages/[slug].js`
+- Rota catch-all removida para eliminar conflito de rotas com `/admin`, `/blog`, `/design-system`, etc.
+- O conteúdo e SEO foram migrados para `/pages/blog/[slug].js`, que é a rota canônica para exibição de posts.
 
 ### `/pages/admin.js`
 - **Localização:** `/pages/admin.js`
@@ -406,14 +400,17 @@
 
 ### `/pages/blog/[slug].js`
 - **Localização:** `/pages/blog/[slug].js`
-- **Propósito:** Página de detalhe de post do blog.
+- **Propósito:** Página de detalhe de post do blog (rota canônica).
 - **Funcionalidades:**
-  - `getServerSideProps` faz fetch para `api/posts?slug=x`
-  - Exibe imagem com zoom via estado `isZoomed`
-  - Botões de compartilhamento: WhatsApp, Facebook, Instagram/Copiar Link
-  - Renderiza conteúdo em parágrafos
-  - Link de volta para `/blog`
-  - SEO via `next/head`
+  - `getServerSideProps` com query direta ao banco (`SELECT ... WHERE slug = $1 AND published = true`) — sem fetch HTTP interno
+  - SEO completo com Open Graph e Twitter Cards (URLs absolutas)
+  - Exibe imagem com zoom via estado `isZoomed` (fecha com tecla Esc)
+  - Botões de compartilhamento: Facebook, WhatsApp, Instagram/Copiar Link + Web Share API
+  - Renderiza conteúdo em `white-space: pre-wrap`
+  - Link de volta para a página inicial
+  - Retorna 404 se post não encontrado
+
+> **Nota:** Convertido para SSR com query direta ao banco em 12/05/2026, substituindo o antigo fetch HTTP para `/api/posts`. O SEO completo foi migrado de `/pages/[slug].js`.
 
 ### `/pages/blog/Blog.module.css`
 - **Localização:** `/pages/blog/Blog.module.css`
@@ -519,18 +516,19 @@
 
 | Categoria                    | Quantidade |
 |------------------------------|:----------:|
-| Páginas (raiz)               |     6      |
+| Páginas (raiz)               |     5*     |
 | APIs (raiz)                  |     9      |
 | APIs Admin                   |     14     |
 | APIs Auth                    |     2      |
-| APIs v1                      |     3*     |
-| APIs v1/auth                 |     1†     |
+| APIs v1                      |     3†     |
+| APIs v1/auth                 |     1‡     |
 | APIs v1/videos               |     1      |
 | Páginas Blog                 |     2      |
 | CSS Modules Blog             |     1      |
 | CSS Globais e Módulos        |     3      |
 | Tokens de Design             |     11     |
-| **Total**                    |  **53**   |
+| **Total**                    |  **52**   |
 
-> *\*Arquivo `/pages/api/v1/posts.js` removido em 12/05/2026 — unificado com `/pages/api/posts.js`.*
-> *†Arquivo `/pages/api/v1/auth/login.js` removido em 12/05/2026 — unificado com `/pages/api/auth/login.js`.*
+> *\*Arquivo `/pages/[slug].js` removido em 12/05/2026 — rota catch-all eliminada, conteúdo e SEO migrados para `/pages/blog/[slug].js`.*
+> *†Arquivo `/pages/api/v1/posts.js` removido em 12/05/2026 — unificado com `/pages/api/posts.js`.*
+> *‡Arquivo `/pages/api/v1/auth/login.js` removido em 12/05/2026 — unificado com `/pages/api/auth/login.js`.*

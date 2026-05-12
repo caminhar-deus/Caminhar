@@ -1,49 +1,22 @@
-import { useRouter } from 'next/router';
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import styles from './Blog.module.css';
+import { query } from '../../lib/db.js';
 
-export default function BlogPost() {
-  const router = useRouter();
-  const { slug } = router.query;
-  const [post, setPost] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [currentUrl, setCurrentUrl] = useState('');
+/**
+ * Página de detalhe de post do blog (rota canônica).
+ * Renderizada via SSR com query direta ao banco (sem fetch HTTP interno).
+ */
+export default function BlogPost({ post }) {
   const [isImageZoomed, setIsImageZoomed] = useState(false);
-
-  useEffect(() => {
-    if (!slug) return;
-
-    async function fetchPost() {
-      try {
-        // Busca todos os posts e filtra pelo slug atual
-        // (Idealmente, sua API teria um endpoint específico como /api/posts?slug=...)
-        const res = await fetch('/api/posts');
-        if (res.ok) {
-          const responseData = await res.json();
-          // CORREÇÃO: Acessar a propriedade 'data' que contém o array de posts
-          let foundPost = null;
-          if (responseData.success && Array.isArray(responseData.data)) {
-            foundPost = responseData.data.find(p => p.slug === slug);
-          }
-          setPost(foundPost || null);
-        }
-      } catch (error) {
-        console.error('Erro ao buscar post:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchPost();
-  }, [slug]);
+  const [currentUrl, setCurrentUrl] = useState('');
 
   useEffect(() => {
     setCurrentUrl(window.location.href);
   }, []);
 
-  // Efeito para fechar a imagem com a tecla 'Esc'
+  // Fecha o zoom da imagem com a tecla 'Esc'
   useEffect(() => {
     const handleEsc = (event) => {
       if (event.key === 'Escape') {
@@ -51,36 +24,41 @@ export default function BlogPost() {
       }
     };
     window.addEventListener('keydown', handleEsc);
-
     return () => {
       window.removeEventListener('keydown', handleEsc);
     };
   }, []);
 
-  if (loading) {
-    return (
-      <div className={styles.container} style={{ padding: '50px 20px', textAlign: 'center' }}>
-        <p>Carregando...</p>
-      </div>
-    );
-  }
+  // Define a URL base do site (fallback para localhost se não estiver definida)
+  const siteUrl = process.env.SITE_URL || 'http://localhost:3000';
+  const postUrl = `${siteUrl}/blog/${post.slug}`;
 
-  if (!post) {
-    return (
-      <div className={styles.container} style={{ padding: '50px 20px', textAlign: 'center' }}>
-        <h2>Post não encontrado</h2>
-        <Link href="/" style={{ color: '#0070f3', textDecoration: 'underline', marginTop: '10px', display: 'inline-block' }}>
-          Voltar para a página inicial
-        </Link>
-      </div>
-    );
-  }
+  // Garante que a imagem tenha URL absoluta (necessário para WhatsApp/Facebook)
+  const imageUrl = post.image_url
+    ? (post.image_url.startsWith('http') ? post.image_url : `${siteUrl}${post.image_url}`)
+    : `${siteUrl}/default-og-image.jpg`;
 
   return (
     <div className={styles.container} style={{ padding: '40px 20px' }}>
       <Head>
-        <title>{post.title}</title>
-        <meta name="description" content={post.excerpt} />
+        <title>{post.title} | O Caminhar com Deus</title>
+        <meta name="description" content={post.excerpt || post.content?.substring(0, 160)} />
+
+        {/* Open Graph / Facebook / WhatsApp */}
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={postUrl} />
+        <meta property="og:title" content={post.title} />
+        <meta property="og:description" content={post.excerpt || post.content?.substring(0, 160)} />
+        <meta property="og:image" content={imageUrl} />
+        <meta property="og:site_name" content="O Caminhar com Deus" />
+        <meta property="og:locale" content="pt_BR" />
+        <meta property="article:published_time" content={post.created_at} />
+
+        {/* Twitter Cards */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={post.title} />
+        <meta name="twitter:description" content={post.excerpt || post.content?.substring(0, 160)} />
+        <meta name="twitter:image" content={imageUrl} />
       </Head>
 
       <div style={{ marginBottom: '30px' }}>
@@ -99,19 +77,19 @@ export default function BlogPost() {
 
         {post.image_url && (
           <>
-            <div 
+            <div
               style={{ marginBottom: '40px', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#f0f2f5', cursor: 'zoom-in' }}
               onClick={() => setIsImageZoomed(true)}
             >
-              <img 
-                src={post.image_url} 
-                alt={post.title} 
-                style={{ width: '100%', height: 'auto', maxHeight: '65vh', objectFit: 'contain', display: 'block' }} 
+              <img
+                src={post.image_url}
+                alt={post.title}
+                style={{ width: '100%', height: 'auto', maxHeight: '65vh', objectFit: 'contain', display: 'block' }}
               />
             </div>
 
             {isImageZoomed && (
-              <div 
+              <div
                 style={{
                   position: 'fixed',
                   top: 0,
@@ -127,8 +105,8 @@ export default function BlogPost() {
                 }}
                 onClick={() => setIsImageZoomed(false)}
               >
-                <img 
-                  src={post.image_url} 
+                <img
+                  src={post.image_url}
                   alt={post.title}
                   style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', boxShadow: '0 0 30px rgba(0,0,0,0.5)' }}
                 />
@@ -144,8 +122,8 @@ export default function BlogPost() {
         <div style={{ marginTop: '50px', borderTop: '1px solid #eee', paddingTop: '30px' }}>
           <h3 style={{ fontSize: '1.2rem', marginBottom: '20px', color: '#555' }}>Compartilhe esta reflexão:</h3>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            <a 
-              href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`}
+            <a
+              href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`}
               target="_blank"
               rel="noopener noreferrer"
               style={{ backgroundColor: '#3b5998', color: 'white', padding: '10px 20px', borderRadius: '6px', textDecoration: 'none', fontSize: '0.9rem', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '8px' }}
@@ -153,8 +131,8 @@ export default function BlogPost() {
               <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
               Facebook
             </a>
-            <a 
-              href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`${post.title} - ${currentUrl}`)}`}
+            <a
+              href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`${post.title} - ${postUrl}`)}`}
               target="_blank"
               rel="noopener noreferrer"
               style={{ backgroundColor: '#25D366', color: 'white', padding: '10px 20px', borderRadius: '6px', textDecoration: 'none', fontSize: '0.9rem', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '8px' }}
@@ -171,7 +149,7 @@ export default function BlogPost() {
                     url: currentUrl
                   }).catch(console.error);
                 } else {
-                  navigator.clipboard.writeText(currentUrl);
+                  navigator.clipboard.writeText(postUrl);
                   alert('Link copiado! Você pode colar no Instagram ou outra rede social.');
                 }
               }}
@@ -185,4 +163,27 @@ export default function BlogPost() {
       </article>
     </div>
   );
+}
+
+/**
+ * SSR: Busca o post diretamente no banco (sem fetch HTTP interno).
+ * Isso elimina a latência de rede e o overhead de HTTP.
+ */
+export async function getServerSideProps({ params }) {
+  try {
+    const result = await query(
+      'SELECT * FROM posts WHERE slug = $1 AND published = true',
+      [params.slug]
+    );
+    const post = result.rows[0];
+
+    if (!post) {
+      return { notFound: true };
+    }
+
+    return { props: { post: JSON.parse(JSON.stringify(post)) } };
+  } catch (error) {
+    console.error('[Posts] ❌ Erro ao buscar post no SSR:', error);
+    return { notFound: true };
+  }
 }

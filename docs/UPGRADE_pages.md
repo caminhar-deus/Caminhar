@@ -71,21 +71,25 @@
 
 ---
 
-### 1.3 Páginas de Post Duplicadas (Conflito de Rotas)
+### 1.3 Páginas de Post Duplicadas (Conflito de Rotas) — **RESOLVIDO**
 
 **Arquivos:**
-- `/pages/[slug].js` (rota catch-all)
-- `/pages/blog/[slug].js` (rota específica do blog)
+- ~~`/pages/[slug].js`~~ **— REMOVIDO**
+- `/pages/blog/[slug].js` (rota canônica)
 
-**Problema:** Ambas as páginas renderizam posts do blog, mas:
-- `[slug].js`: faz query direta ao banco de dados via `query()` da `lib/db.js`
-- `blog/[slug].js`: faz fetch HTTP para `/api/posts?slug=x`
+**O que foi feito:**
+- ~~`/pages/[slug].js`~~ foi **removido** do projeto em 12/05/2026. A rota catch-all não existe mais, eliminando completamente o conflito de rotas com `/admin`, `/blog`, `/design-system`, etc. A página `/pages/blog/[slug].js` é a rota canônica para exibição de posts.
+- Unificou-se o melhor dos dois mundos:
+  - **SEO completo** do antigo `[slug].js` (Open Graph e Twitter Cards)
+  - **Zoom de imagem** + **Botão Instagram/Clipboard** + **Web Share API** do antigo `blog/[slug].js`
 
-**Conflito de rotas no Next.js:** Uma rota catch-all `[slug]` pode interceptar requisições destinadas a outras rotas, causando comportamento imprevisível.
-
-**Impacto:** Manutenção duplicada, risco de conflito de rotas, abordagens diferentes para o mesmo problema.
-
-**Sugestão:** Remover uma das páginas e padronizar o método de obtenção de dados.
+**Benefícios:**
+- ✅ Conflito de rotas eliminado — `[slug]` não interfere mais com outras rotas
+- ✅ SSR com query direta ao banco — elimina latência de rede (localhost) e overhead HTTP
+- ✅ SEO completo — Open Graph e Twitter Cards agora presentes em `blog/[slug].js`
+- ✅ Carregamento instantâneo — sem loading state client-side
+- ✅ Zoom de imagem preservado + botão Instagram/Clipboard + Web Share API
+- ✅ Prepared statements (`$1`) usados — sem risco de SQL injection
 
 ---
 
@@ -466,8 +470,9 @@ if (req.method !== 'GET') {
 | 🔴 Crítico | 4.3 | Múltiplos | Validação Zod ausente em endpoints admin |
 | 🟠 Alto | ~~1.1~~ ✅ | `api/auth/login.js`, `api/v1/auth/login.js` | Login duplicado sem rate limiting no v1 — **RESOLVIDO** |
 | 🟠 Alto | ~~1.2~~ ✅ | `api/posts.js`, `api/v1/posts.js`, `api/admin/posts.js` | Posts duplicados (GET + POST) — **RESOLVIDO** |
-| 🟠 Alto | 1.3 | `[slug].js`, `blog/[slug].js` | Conflito de rotas de página de post |
-| 🟠 Alto | 3.4 | `blog/index.js`, `blog/[slug].js` | Fetch HTTP para API interna em SSR |
+| 🟠 Alto | ~~1.3~~ ✅ | `[slug].js`, `blog/[slug].js` | Conflito de rotas de página de post — **RESOLVIDO** |
+| 🟠 Alto | ~~3.4~~ ✅ | `blog/[slug].js` | Fetch HTTP para API interna em SSR (blog/[slug].js) — **RESOLVIDO** |
+| 🟠 Alto | 3.4 | `blog/index.js` | Fetch HTTP para API interna em SSR (blog/index.js) |
 | 🟠 Alto | 5.4 | `styles/tokens/*.js` | Tokens não utilizados nos CSS |
 | 🟡 Médio | 2.1 | Múltiplos | Modelos de autenticação misturados |
 | 🟡 Médio | 2.2 | Múltiplos | Cache implementado de forma diferente |
