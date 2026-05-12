@@ -119,17 +119,25 @@
 
 **Status:** **DEPRECIADO**. Use `lib/api/middleware.js` no lugar.
 
-**Propósito (original):** Middlewares gerais para as APIs Next.js. Inclui CORS, autenticação, rate limiting (em memória), tratamento de erros e logging.
+**Propósito (original):** Middlewares gerais para as APIs Next.js. Inclui CORS, rate limiting (em memória), tratamento de erros e logging.
+
+**Funções restantes:**
+- `logger` — Objeto com métodos info/error/warn
+- `apiMiddleware(handler)` — Middleware principal que aplica CORS, trata OPTIONS e adiciona headers padrão
+- `rateLimitMiddleware(handler)` — Rate limit simples em memória (100 req/15 min) com Map
+- `errorHandlingMiddleware(handler)` — Tratamento de erros com mapeamento de tipos
+
+**Funções removidas (migradas para `lib/auth.js` e `lib/api/middleware.js`):**
+- ~~`authenticatedApiMiddleware(handler)`~~ — Use `withAuth(handler)` de `lib/auth.js`
+- ~~`externalAuthMiddleware(handler)`~~ — Use `withAuth(handler)` de `lib/auth.js`
 
 **Guia de migração:**
 - `apiMiddleware(handler)` → `composeMiddleware(withCors(), withErrorHandler(), handler)`
-- `authenticatedApiMiddleware` → `composeMiddleware(withCors(), withAuth(), handler)`
-- `externalAuthMiddleware` → `withAuth()`
 - `rateLimitMiddleware` → `withRateLimit()`
 - `errorHandlingMiddleware` → `withErrorHandler()`
 - `logger` → `withLogger()`
 
-**Observações:** Mantido temporariamente para compatibilidade com consumidores existentes. Será removido em versão futura. Consumidores atuais: `pages/api/upload-image.js` e arquivos de teste.
+**Observações:** Mantido temporariamente para compatibilidade com consumidores existentes (testes). As funções de autenticação (`authenticatedApiMiddleware`, `externalAuthMiddleware`) foram removidas — o único consumidor (`pages/api/upload-image.js`) foi migrado para `withAuth` de `lib/auth.js`. Será removido em versão futura.
 
 ---
 

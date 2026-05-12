@@ -10,7 +10,7 @@
 1. [Duplicidades](#1-duplicidades)
    - [1.1 Middlewares duplicados entre lib/middleware.js e lib/api/middleware.js](#11-middlewares-duplicados-entre-libmiddlewarejs-e-libapimiddlewarejs) — **RESOLVIDO**
    - [1.2 Três implementações de Rate Limit](#12-três-implementações-de-rate-limit) — **RESOLVIDO**
-   - [1.3 Autenticação replicada em três locais](#13-autenticação-replicada-em-três-locais) — **PARCIALMENTE RESOLVIDO**
+   - [1.3 Autenticação replicada em três locais](#13-autenticação-replicada-em-três-locais) — **RESOLVIDO**
    - [1.4 Função generateUUID duplicada](#14-função-generateuuid-duplicada) — **RESOLVIDO**
    - [1.5 Re-exports em db.js criam acoplamento](#15-re-exports-em-dbjs-criam-acoplamento) — **RESOLVIDO**
    - [1.6 Tratamento de erros em dois padrões diferentes](#16-tratamento-de-erros-em-dois-padrões-diferentes) — **PENDENTE**
@@ -61,7 +61,8 @@
 - `lib/middleware.js` foi marcado como **depreciado** com comentário `@deprecated` e guia de migração no topo do arquivo.
 - Cada função exportada foi marcada individualmente com `@deprecated` indicando o equivalente em `lib/api/middleware.js`.
 - `lib/api/middleware.js` recebeu melhorias no `withRateLimit` (agora usa `checkRateLimit` de `cache.js`) e exporta `cleanupTimers()`.
-- **Pendente:** Os consumidores existentes (`pages/api/upload-image.js`) ainda não foram migrados. `upload-image.js` ainda importa `externalAuthMiddleware` de `lib/middleware.js`.
+- `pages/api/upload-image.js` foi migrado de `externalAuthMiddleware` para `withAuth` (lib/auth.js).
+- `authenticatedApiMiddleware` e `externalAuthMiddleware` foram removidos de `lib/middleware.js`.
 
 ---
 
@@ -78,15 +79,18 @@
 
 ---
 
-### 1.3 Autenticação replicada em três locais — **PARCIALMENTE RESOLVIDO**
+### 1.3 Autenticação replicada em três locais — **RESOLVIDO**
 
 **Arquivos:** `lib/auth.js` (withAuth), `lib/middleware.js` (externalAuthMiddleware, authenticatedApiMiddleware), `lib/api/middleware.js` (withAuth, withOptionalAuth)
 
 **O que foi feito:**
-- As funções de `lib/middleware.js` foram marcadas como depreciadas.
-- `lib/api/middleware.js` permanece como a versão moderna com suporte a roles.
-- `lib/auth.js` mantém seu `withAuth` para compatibilidade com handlers Next.js (caso de uso diferente).
-- **Pendente:** Ainda existem 3 implementações funcionais (embora 1 esteja depreciada). A migração completa depende da remoção de `lib/middleware.js`.
+- `pages/api/upload-image.js` foi migrado de `externalAuthMiddleware` (lib/middleware.js) para `withAuth` (lib/auth.js).
+- `authenticatedApiMiddleware` e `externalAuthMiddleware` foram **removidos** de `lib/middleware.js`.
+- O import de `auth.js` em `lib/middleware.js` foi removido (não era mais necessário).
+- Agora existem apenas **2 implementações** de `withAuth`:
+  - `lib/auth.js`: `withAuth(handler)` — versão simples, atende 11 consumidores
+  - `lib/api/middleware.js`: `withAuth(options)` — factory com suporte a roles
+- Nenhum consumidor de `lib/middleware.js` para funcionalidades de autenticação.
 
 ---
 

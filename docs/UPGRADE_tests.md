@@ -1,5 +1,6 @@
 # Relatório de Upgrade — Testes (`/tests/`)
 
+> **Data:** 12/05/2026 (atualizado)
 > **Objetivo:** Reportar correções, melhorias, problemas de performance e duplicidade de código identificados na análise dos arquivos de teste. Nenhuma correção ou melhoria foi aplicada — apenas reportada.
 
 ---
@@ -11,6 +12,7 @@
 3. [Correções Necessárias](#3-correções-necessárias)
 4. [Melhorias Recomendadas](#4-melhorias-recomendadas)
 5. [Inconsistências e Padrões](#5-inconsistências-e-padrões)
+6. [Plano de Migração: lib/middleware.js → lib/api/middleware.js](#6-plano-de-migração-libmiddlewarejs--libapimiddlewarejs)
 
 ---
 
@@ -112,7 +114,7 @@ beforeAll(() => { console.error = jest.fn(); });
 afterAll(() => { console.error = originalConsoleError; });
 ```
 
-**Problema:** Cada arquivo substitui `console.error` globalmente, com Suppressão total (sem filtro) durante toda a execução da suite. Isso mascara warnings legítimos que poderiam indicar problemas reais.
+**Problema:** Cada arquivo substitui `console.error` globalmente, com Supressão total (sem filtro) durante toda a execução da suite. Isso mascara warnings legítimos que poderiam indicar problemas reais.
 
 **Impacto na Performance:** `jest.spyOn(console, 'error')` é mais performático que substituir a referência global diretamente, além de permitir restauração automática.
 
@@ -422,6 +424,225 @@ const mockPosts = [
 
 ---
 
+## 6. Plano de Migração: `lib/middleware.js` → `lib/api/middleware.js`
+
+### Contexto
+
+O arquivo `lib/middleware.js` foi **depreciado** e suas funções de autenticação (`authenticatedApiMiddleware`, `externalAuthMiddleware`) já foram removidas. O objetivo é remover completamente `lib/middleware.js` do projeto, mas antes é necessário migrar os **3 arquivos de teste** que ainda dependem dele.
+
+### Arquivos Impactados
+
+| # | Arquivo | O que importa de middleware.js | Linhas |
+|:-:|---------|-------------------------------|:------:|
+| 1 | `tests/unit/lib/middleware.test.js` | `logger`, `apiMiddleware`, `authenticatedApiMiddleware`, `externalAuthMiddleware`, `rateLimitMiddleware`, `errorHandlingMiddleware` | 253 |
+| 2 | `tests/integration/api/upload-image.test.js` | Mock de `externalAuthMiddleware` | 269 |
+| 3 | `tests/unit/pages/api/upload-image.edge.test.js` | Mock de `externalAuthMiddleware` | 65 |
+
+### Mapeamento de Equivalências
+
+| Função Legado (middleware.js) | Equivalente Novo (api/middleware.js) | Status |
+|---|---|---|
+| `logger` | `withLogger()` | ⚠️ Objeto vs factory — assinatura diferente |
+| `apiMiddleware(handler)` | `composeMiddleware(withCors(), withErrorHandler(), handler)` | ⚠️ Equivalente por composição |
+| `authenticatedApiMiddleware(handler)` | ❌ Removido — Use `withAuth(handler)` de `lib/auth.js` | **Removido** |
+| `externalAuthMiddleware(handler)` | ❌ Removido — Use `withAuth(handler)` de `lib/auth.js` | **Removido** |
+| `rateLimitMiddleware(handler)` | `withRateLimit(options)` | ⚠️ Assinatura diferente, agora usa `checkRateLimit` de `cache.js` |
+| `errorHandlingMiddleware(handler)` | `withErrorHandler(options)` | ⚠️ Equivalente, delega para `handleError` de `response.js` |
+
+### Passo a Passo por Arquivo
+
+#### Arquivo 1: `tests/unit/lib/middleware.test.js`
+
+**Alterações necessárias:**
+
+**A. Import (linhas 3-10):**
+Substituir imports de `lib/middleware.js` por imports de `lib/api/middleware.js`:
+```javascript
+import {
+  withLogger,
+  composeMiddleware,
+  withCors,
+  withErrorHandler,
+  withRateLimit,
+  withAuth,
+} from '../../../lib/api/middleware.js';
+```
+
+**B. Mocks de dependências (linhas 17-31):**
+O novo sistema depende de:
+- `../auth.js` (getAuthToken, verifyToken)
+- `../cache.js` (checkRateLimit)
+- `./response.js` (várias funções de resposta)
+
+Mocks necessários:
+```javascript
+jest.mock('../../../lib/api/response.js', () => ({
+  methodNotAllowed: jest.fn(),
+  unauthorized: jest.fn(),
+  tooManyRequests: jest.fn(),
+  serverError: jest.fn(),
+  handleError: jest.fn(),
+}));
+
+jest.mock('../../../lib/cache.js', () => ({
+  checkRateLimit: jest.fn(),
+}));
+
+jest.mock('../../../lib/auth.js', () => ({
+  getAuthToken: jest.fn(),
+  verifyToken: jest.fn(),
+}));
+```
+
+**C. Testes a REMOVER (não têm equivalente):**
+
+| Describe | Linhas | Testes | Motivo |
+|---|---|---|---|
+| `authenticatedApiMiddleware` | 129-136 | 1 | Função removida do código |
+| `externalAuthMiddleware` | 138-167 | 3 | Função removida do código |
+
+**D. Testes a ADAPTAR:**
+
+| Describe | Testes | Adaptação necessária |
+|---|---|---|
+| `logger` (3 testes) | 70-83 | Migrar para `withLogger`. `withLogger()` é factory — retorna middleware que envolve handler. Testes precisam invocar o handler e verificar logs gerados. |
+| `apiMiddleware` (5 testes) | 85-127 | Testar composição equivalente via `composeMiddleware`. |
+| `rateLimitMiddleware` (1 teste) | 169-197 | Migrar para `withRateLimit`. Mockar `checkRateLimit` de `cache.js` em vez de Map local. |
+| `errorHandlingMiddleware` (5 testes) | 199-252 | Migrar para `withErrorHandler`. Mockar `handleError` de `response.js`. |
+
+**E. Sugestão de reorganização (opcional):**
+Dividir o arquivo em múltiplos arquivos especializados:
+```
+tests/unit/lib/api/
+├── middleware.logger.test.js       → Testes do withLogger
+├── middleware.cors.test.js         → Testes do withCors (novo)
+├── middleware.error.test.js        → Testes do withErrorHandler
+├── middleware.rate-limit.test.js   → Testes do withRateLimit
+├── middleware.auth.test.js         → Testes do withAuth (novo)
+└── middleware.compose.test.js      → Testes do composeMiddleware (novo)
+```
+A divisão permite testar individualmente cada middleware do novo sistema e adicionar cobertura para middlewares que não tinham testes (`withCors`, `withAuth`, `withOptionalAuth`, `withTimeout`, `withBodyParser`, `withCache`, `publicApi`, `protectedApi`, `cleanupTimers`).
+
+---
+
+#### Arquivo 2: `tests/integration/api/upload-image.test.js`
+
+**Alterações necessárias:**
+
+**A. Mock de autenticação (linhas 25-28):**
+```javascript
+// ATUAL
+jest.mock('../../../lib/middleware.js', () => ({
+  externalAuthMiddleware: (fn) => (req, res) => fn(req, res),
+}));
+
+// NOVO
+jest.mock('../../../lib/auth.js', () => ({
+  ...jest.requireActual('../../../lib/auth.js'),
+  getAuthToken: jest.fn().mockReturnValue('mock-token'),
+  verifyToken: jest.fn().mockReturnValue({
+    userId: 1, username: 'admin', role: 'admin',
+  }),
+}));
+```
+⚠️ O mock anterior ignorava autenticação. O novo mock precisa fornecer token e usuário válidos para `withAuth` não bloquear.
+
+**B. Mock de `updateSetting` (linhas 30-33):**
+```javascript
+// ATUAL — importa de lib/db.js (handler foi alterado)
+jest.mock('../../../lib/db.js', () => ({
+  updateSetting: jest.fn(),
+}));
+
+// NOVO — o handler agora importa de lib/domain/settings.js
+jest.mock('../../../lib/domain/settings.js', () => ({
+  updateSetting: jest.fn(),
+}));
+```
+
+**C. Import da função mockada (linha 38):**
+```javascript
+// ATUAL
+import { updateSetting } from '../../../lib/db.js';
+
+// NOVO
+import { updateSetting } from '../../../lib/domain/settings.js';
+```
+
+---
+
+#### Arquivo 3: `tests/unit/pages/api/upload-image.edge.test.js`
+
+**Alterações necessárias:**
+
+**A. Mock de autenticação (linhas 35-37):**
+```javascript
+// ATUAL
+jest.mock('../../../../lib/middleware.js', () => ({
+  externalAuthMiddleware: (handler) => handler,
+}));
+
+// NOVO
+jest.mock('../../../../lib/auth.js', () => ({
+  ...jest.requireActual('../../../../lib/auth.js'),
+  getAuthToken: jest.fn().mockReturnValue('mock-token'),
+  verifyToken: jest.fn().mockReturnValue({
+    userId: 1, username: 'admin', role: 'admin',
+  }),
+}));
+```
+
+**B. Mock de `updateSetting` (linhas 31-33):**
+```javascript
+// ATUAL
+jest.mock('../../../../lib/db.js', () => ({
+  updateSetting: jest.fn(),
+}));
+
+// NOVO
+jest.mock('../../../../lib/domain/settings.js', () => ({
+  updateSetting: jest.fn(),
+}));
+```
+
+### Prioridades e Ordem de Implementação
+
+| Prioridade | Grupo | Arquivos | Esforço | Justificativa |
+|:----------:|:-----:|----------|:-------:|---------------|
+| 🔴 Crítica | A | `upload-image.test.js` + `upload-image.edge.test.js` | Médio | São os únicos que validam o endpoint já migrado. Sem mocks corretos, os testes de integração quebram. |
+| 🟡 Média | B | `middleware.test.js` — parte do `errorHandlingMiddleware` | Alto | Usado em produção via `composeMiddleware`. |
+| 🟢 Baixa | C | `middleware.test.js` — parte do `rateLimitMiddleware` | Médio | Lógica crítica de limitação de requisições. |
+| 🟢 Baixa | D | `middleware.test.js` — parte do `logger` e `apiMiddleware` | Alto | Exige reestruturação do arquivo. |
+
+### Impactos e Riscos
+
+1. **Mocks de `lib/db.js` desatualizados:** Tanto `upload-image.test.js` quanto `upload-image.edge.test.js` mockam `lib/db.js`, mas o handler agora importa de `lib/domain/settings.js`. Sem corrigir, os mocks não serão aplicados e os testes tentarão chamadas reais ao banco de dados.
+
+2. **Mudança de comportamento do `withLogger`:** O `logger` de `middleware.js` era um objeto estático. O `withLogger()` de `api/middleware.js` é um factory de middleware. Testes precisam ser reescritos para testar o comportamento do middleware e não apenas a formatação de log.
+
+3. **Cobertura adicional não planejada:** `lib/api/middleware.js` tem funções sem testes equivalentes: `withCors`, `withAuth`, `withOptionalAuth`, `withTimeout`, `withBodyParser`, `withCache`, `composeMiddleware`, `cleanupTimers`, `publicApi`, `protectedApi`. Recomenda-se aproveitar a migração para adicionar testes a estas funções.
+
+4. **Dependência de `lib/cache.js`:** O `withRateLimit` agora usa `checkRateLimit` de `cache.js`. Testes unitários precisarão mockar esta função.
+
+### Checklist Resumido
+
+- [ ] **Arquivo 2 (A):** Atualizar mock de `lib/middleware.js` → `lib/auth.js` em `tests/integration/api/upload-image.test.js`
+- [ ] **Arquivo 2 (A):** Atualizar mock de `lib/db.js` → `lib/domain/settings.js` em `tests/integration/api/upload-image.test.js`
+- [ ] **Arquivo 2 (A):** Atualizar import de `updateSetting` em `tests/integration/api/upload-image.test.js`
+- [ ] **Arquivo 3 (A):** Atualizar mock de `lib/middleware.js` → `lib/auth.js` em `tests/unit/pages/api/upload-image.edge.test.js`
+- [ ] **Arquivo 3 (A):** Atualizar mock de `lib/db.js` → `lib/domain/settings.js` em `tests/unit/pages/api/upload-image.edge.test.js`
+- [ ] **Arquivo 1 (B):** Remover imports de `authenticatedApiMiddleware` e `externalAuthMiddleware` de `middleware.test.js`
+- [ ] **Arquivo 1 (B):** Substituir imports de `logger`, `apiMiddleware`, `rateLimitMiddleware`, `errorHandlingMiddleware` pelos equivalentes de `lib/api/middleware.js`
+- [ ] **Arquivo 1 (B):** Reestruturar mocks para `response.js`, `cache.js`, `auth.js`
+- [ ] **Arquivo 1 (C):** Adaptar teste de rate limit para usar `withRateLimit` e mock de `checkRateLimit`
+- [ ] **Arquivo 1 (D):** Adaptar testes de error handler para usar `withErrorHandler` e mock de `handleError`
+- [ ] **Arquivo 1 (D):** Adaptar/reescrever testes de logger e apiMiddleware
+- [ ] **Opcional:** Dividir `middleware.test.js` em arquivos especializados em `tests/unit/lib/api/`
+- [ ] **Validação:** Executar suite completa de testes após alterações
+- [ ] **Limpeza:** Remover `lib/middleware.js` do projeto
+
+---
+
 ## Resumo das Ações Recomendadas
 
 | Prioridade | Ação | Esforço | Impacto |
@@ -429,10 +650,14 @@ const mockPosts = [
 | Alta | Centralizar `jest.clearAllMocks()` no setup.js | Baixo | Médio |
 | Alta | Criar helper para suppressConsoleError | Baixo | Baixo |
 | Alta | Unificar padrão de mock de fetch (spyOn vs assign) | Médio | Alto |
+| 🔴 Crítica | Migrar testes de upload-image (Grupo A) | Médio | Alto |
+| 🟡 Média | Migrar testes de middleware.error (Grupo B) | Alto | Alto |
 | Média | Abstrair testes CRUD de API | Alto | Alto |
 | Média | Mesclar arquivos edge case com principais | Baixo | Médio |
 | Média | Padronizar nomenclatura de arquivos | Médio | Médio |
 | Média | Refatorar factories com base factory | Médio | Médio |
+| 🟢 Baixa | Migrar testes de rate-limit (Grupo C) | Médio | Médio |
+| 🟢 Baixa | Migrar testes de logger/api (Grupo D) | Alto | Médio |
 | Baixa | Remover testes de barrel export redundantes | Baixo | Baixo |
 | Baixa | Adicionar testes com banco real | Alto | Alto |
 | Baixa | Substituir dados inline por factories | Baixo | Baixo |

@@ -2,7 +2,7 @@ import formidable from 'formidable';
 import fs from 'fs';
 import path from 'path';
 import { updateSetting } from '../../lib/domain/settings.js';
-import { externalAuthMiddleware } from '../../lib/middleware.js';
+import { withAuth } from '../../lib/auth.js';
 
 export const config = {
   api: {
@@ -81,4 +81,4 @@ async function handler(req, res) {
   }
 }
 
-export default externalAuthMiddleware(handler);
+export default withAuth(handler);
