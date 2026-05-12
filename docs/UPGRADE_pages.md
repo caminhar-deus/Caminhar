@@ -128,19 +128,23 @@
 
 ---
 
-### 1.5 Health Check vs Status
+### 1.5 Health Check vs Status — **RESOLVIDO**
 
 **Arquivos:**
-- `/pages/api/v1/health.js`
-- `/pages/api/v1/status.js`
+- ~~`/pages/api/v1/health.js`~~ **— REMOVIDO**
+- `/pages/api/v1/status.js` (endpoint unificado)
 
-**Problema:** Dois endpoints de diagnóstico:
-- `health.js`: retorna apenas `{ status: 'ok' }` (4 linhas)
-- `status.js`: retorna informações detalhadas (Node, uptime, DB, etc.)
+**O que foi feito:**
+- `/pages/api/v1/status.js` foi expandido para suportar **dois modos de operação**:
+  - **Padrão** (sem `?mode`): retorna diagnóstico completo (versão, status do banco, Node.js, uptime, plataforma) — comportamento original.
+  - **Health check** (`?mode=health`): retorna apenas `{ status: 'ok' }` — substitui o antigo `/api/v1/health`.
+- ~~`/pages/api/v1/health.js`~~ foi **removido** do projeto em 12/05/2026. Sistemas de monitoramento que usavam a rota `/api/v1/health` devem migrar para `/api/v1/status?mode=health`, que retorna exatamente o mesmo `{ status: 'ok' }`.
 
-**Impacto:** Endpoint `health.js` é tão minimalista que oferece pouco valor. Poderia ser incorporado ao `status.js` ou eliminado.
-
-**Sugestão:** Unificar em um único endpoint `/api/v1/status` que retorne health check + diagnóstico.
+**Benefícios:**
+- ✅ Código duplicado eliminado — lógica centralizada em `/api/v1/status.js`
+- ✅ Health check simples disponível via `?mode=health`
+- ✅ Diagnóstico completo mantido como padrão
+- ✅ Compatibilidade retroativa via query param
 
 ---
 
@@ -491,6 +495,7 @@ if (req.method !== 'GET') {
 | 🟠 Alto | ~~1.2~~ ✅ | `api/posts.js`, `api/v1/posts.js`, `api/admin/posts.js` | Posts duplicados (GET + POST) — **RESOLVIDO** |
 | 🟠 Alto | ~~1.3~~ ✅ | `[slug].js`, `blog/[slug].js` | Conflito de rotas de página de post — **RESOLVIDO** |
 | 🟠 Alto | ~~1.4~~ ✅ | `api/settings.js`, `api/v1/settings.js` | Configurações duplicadas (GET + POST + PUT) — **RESOLVIDO** |
+| 🟠 Alto | ~~1.5~~ ✅ | `api/v1/health.js`, `api/v1/status.js` | Health Check vs Status duplicados — **RESOLVIDO** |
 | 🟠 Alto | ~~3.4~~ ✅ | `blog/[slug].js` | Fetch HTTP para API interna em SSR (blog/[slug].js) — **RESOLVIDO** |
 | 🟠 Alto | 3.4 | `blog/index.js` | Fetch HTTP para API interna em SSR (blog/index.js) |
 | 🟠 Alto | 5.4 | `styles/tokens/*.js` | Tokens não utilizados nos CSS |

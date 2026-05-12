@@ -326,12 +326,9 @@
 
 ## 5. `/pages/api/v1`
 
-### `/pages/api/v1/health.js`
-- **Localização:** `/pages/api/v1/health.js`
-- **Propósito:** Endpoint de health check.
-- **Funcionalidades:**
-  - Retorna `{ status: 'ok' }`
-  - Extremamente simples (apenas 4 linhas)
+**Arquivo removido (12/05/2026):** `/pages/api/v1/health.js`
+- Unificado com `/api/v1/status?mode=health` — o health check simples { status: 'ok' } agora é servido pelo endpoint `/api/v1/status` através do parâmetro `?mode=health`.
+- Sistemas de monitoramento que usavam a rota `/api/v1/health` devem migrar para `/api/v1/status?mode=health`.
 
 **Arquivo removido (12/05/2026):** `/pages/api/v1/posts.js`
 - Unificado com `/pages/api/posts` — GET e POST foram migrados para o endpoint raiz com suporte a `?response=v1` para compatibilidade.
@@ -349,7 +346,9 @@
 - **Funcionalidades:**
   - Retorna status da API, versão Node.js, plataforma, uptime
   - Testa conexão com banco PostgreSQL
-  - Retorna timestamp atual
+  - Suporta `?mode=health` para health check simples (`{ status: 'ok' }`)
+
+> **Nota:** Endpoint unificado em 12/05/2026. O `/api/v1/health` foi removido — health check disponível via `?mode=health`.
 
 ---
 
@@ -519,15 +518,15 @@
 | APIs (raiz)                  |     9      |
 | APIs Admin                   |     14     |
 | APIs Auth                    |     2      |
-| APIs v1                      |     2†     |
+| APIs v1                      |     1†     |
 | APIs v1/auth                 |     1‡     |
 | APIs v1/videos               |     1      |
 | Páginas Blog                 |     2      |
 | CSS Modules Blog             |     1      |
 | CSS Globais e Módulos        |     3      |
 | Tokens de Design             |     11     |
-| **Total**                    |  **51**   |
+| **Total**                    |  **50**   |
 
 > *\*Arquivo `/pages/[slug].js` removido em 12/05/2026 — rota catch-all eliminada, conteúdo e SEO migrados para `/pages/blog/[slug].js`.*
-> *†Arquivos `/pages/api/v1/posts.js` e `/pages/api/v1/settings.js` removidos em 12/05/2026 — unificados com `/pages/api/posts.js` e `/pages/api/settings.js` respectivamente.*
+> *†Arquivos `/pages/api/v1/health.js`, `/pages/api/v1/posts.js` e `/pages/api/v1/settings.js` removidos em 12/05/2026 — unificados com `/pages/api/v1/status.js`, `/pages/api/posts.js` e `/pages/api/settings.js` respectivamente.*
 > *‡Arquivo `/pages/api/v1/auth/login.js` removido em 12/05/2026 — unificado com `/pages/api/auth/login.js`.*
