@@ -35,7 +35,7 @@
    - [4.6 getRecentPosts em posts.js versus getPaginatedPosts](#46-getrecentposts-em-postssj-versus-getpaginatedposts)
 5. [Manutenibilidade](#5-manutenibilidade)
    - [5.1 Ausência de reorder em musicas.js e posts.js](#51-ausência-de-reorder-em-musicasjs-e-postssj) — **RESOLVIDO**
-   - [5.2 Logging inconsistente entre módulos](#52-logging-inconsistente-entre-módulos)
+   - [5.2 Logging inconsistente entre módulos](#52-logging-inconsistente-entre-módulos) — **RESOLVIDO**
    - [5.3 cleanCache com FLUSHDB agressivo sem confirmação](#53-clearcache-com-flushdb-agressivo-sem-confirmação) — **RESOLVIDO**
    - [5.4 settings.js com getSettings e getAllSettings confusos](#54-settingsjs-com-getsettings-e-getallsettings-confusos) — **RESOLVIDO**
    - [5.5 cacheMetrics nunca é incrementado (redisHits/redisMisses)](#55-cachemetrics-nunca-é-incrementado-redishitsredismisses) — **RESOLVIDO**
@@ -44,7 +44,7 @@
    - [6.1 NotFoundError com formatação condicional incorreta](#61-notfounderror-com-formatação-condicional-incorreta) — **RESOLVIDO**
    - [6.2 rateLimitMiddleware usa Map sem limite de crescimento](#62-ratelimitmiddleware-usa-map-sem-limite-de-crescimento)
    - [6.3 withRateLimit em api cria Map novo a cada chamada](#63-withratelimit-em-api-cria-map-novo-a-cada-chamada) — **RESOLVIDO**
-   - [6.4 cacheMetrics.redisErrors incrementado mas nunca exposto em getCacheMetrics](#64-cachemetricsrediserros-incrementado-mas-nunca-exposto)
+   - [6.4 cacheMetrics.redisErrors incrementado mas nunca exposto em getCacheMetrics](#64-cachemetricsrediserros-incrementado-mas-nunca-exposto) — **RESOLVIDO**
 7. [Testes e Cobertura](#7-testes-e-cobertura)
    - [7.1 Ausência de testes para a camada lib/api](#71-ausência-de-testes-para-a-camada-libapi)
    - [7.2 cache.js sem testes de fallback](#72-cachejs-sem-testes-de-fallback)
@@ -357,11 +357,30 @@
 
 ---
 
-### 5.2 Logging inconsistente entre módulos
+### 5.2 Logging inconsistente entre módulos — **RESOLVIDO**
 
-**Arquivos:** Múltiplos
+**Arquivos:** `lib/auth.js`, `lib/cache.js`, `lib/db.js`, `lib/redis.js`, `lib/domain/videos.js`, `lib/domain/musicas.js`, `lib/domain/posts.js`, `lib/crud.js`
 
-**Status:** Não foram feitas alterações.
+**O que foi feito:**
+- **Padronização de prefixos**: Todos os módulos agora usam prefixo `[NomeDoModulo]` em todas as mensagens de console:
+  - `[Auth]` — lib/auth.js
+  - `[Cache]` — lib/cache.js
+  - `[DB]` — lib/db.js
+  - `[Redis]` — lib/redis.js
+  - `[Videos]` — lib/domain/videos.js
+  - `[Musicas]` — lib/domain/musicas.js
+  - `[Posts]` — lib/domain/posts.js
+  - `[CRUD]` — lib/crud.js
+- **Padronização de emojis**: 
+  - ⚠️ exclusivo para `console.warn` (avisos)
+  - ❌ exclusivo para `console.error` (erros)
+  - ✅ e ℹ️ para `console.log` (informativos)
+- **Idioma único português**: Todas as mensagens em inglês foram convertidas para português:
+  - `'Admin user created successfully'` → `'[Auth] Usuário admin criado com sucesso'`
+  - `'Admin user already exists'` → `'[Auth] Usuário admin já existe'`
+  - `'Admin user role updated to admin'` → `'[Auth] Role do usuário admin atualizada para admin'`
+  - `'Error initializing auth system:'` → `'[Auth] ❌ Erro ao inicializar sistema de autenticação:'`
+- **Mensagens dinâmicas**: Template literals (`` `...${var}` ``) foram convertidos para concatenação com `+` para consistência visual com o prefixo.
 
 ---
 
@@ -443,11 +462,14 @@
 
 ---
 
-### 6.4 cacheMetrics.redisErrors incrementado mas nunca exposto em getCacheMetrics
+### 6.4 cacheMetrics.redisErrors incrementado mas nunca exposto em getCacheMetrics — **RESOLVIDO**
 
 **Arquivo:** `lib/cache.js`
 
-**Status:** **Corrigido indiretamente.** `redisErrors` já era exposto em `getCacheMetrics()` através do spread `...metrics`. O problema real (itens 5.5 e 6.4) era que `redisHits` e `redisMisses` nunca eram incrementados — o que foi corrigido. `redisErrors` continua sendo incrementado e exposto corretamente.
+**O que foi feito:**
+- `redisErrors` sempre foi exposto em `getCacheMetrics()` através do spread `...metrics`, portanto nunca houve o problema de "não exposto".
+- O problema real (itens 5.5 e 6.4) era que `redisHits` e `redisMisses` nunca eram incrementados — o que foi corrigido no item 5.5.
+- Adicionado `metrics.redisErrors++` no bloco `catch` do `redis.set()` (erro de escrita), que era o único local onde o erro não era contabilizado. Agora as 3 operações críticas registram erros: `redis.get()`, `redis.set()` e `redis.flushdb()`.
 
 ---
 
