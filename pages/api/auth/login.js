@@ -1,54 +1,80 @@
-import { authenticate, generateToken, setAuthCookie } from '../../../lib/auth';
-import { checkRateLimit } from '../../../lib/cache';
-import { query } from '../../../lib/db';
+import { authenticateAndGenerateToken, setAuthCookie } from '../../../lib/auth';
 
+/**
+ * Endpoint de autenticação de usuários.
+ * Unificado: suporta retorno de token via cookie (padrão) ou via body (para API externa).
+ * 
+ * POST /api/auth/login
+ * Body: { username, password }
+ * Query: ?response=body (opcional - retorna token no body em vez de cookie)
+ */
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
     return res.status(405).json({ message: `Method ${req.method} Not Allowed` });
   }
 
-  // 1. Pega o IP do usuário
+  // 1. Pega o IP do usuário para rate limiting
   const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
-  
-  // 2. Verifica o rate limit (Chave: 'api:auth:login', Limite: 5 tentativas, Janela: 60s)
-  const isRateLimited = await checkRateLimit(ip, 'api:auth:login', 5, 60000);
-
-  if (isRateLimited) {
-    console.warn(`🚨 [Rate Limit] IP ${ip} bloqueado por excesso de tentativas de login.`);
-    return res.status(429).json({ message: 'Muitas tentativas de login. Aguarde um minuto e tente novamente.' });
-  }
 
   const { username, password } = req.body;
 
-  try {
-    const user = await authenticate(username, password);
+  // 2. Usa a função compartilhada de autenticação (rate limit + validação + token)
+  const result = await authenticateAndGenerateToken(username, password, ip, {
+    rateLimitLimit: 5,
+    rateLimitWindow: 60000,
+  });
 
-    if (!user) {
-      return res.status(401).json({ message: 'Credenciais inválidas' });
-    }
-
-    // Atualiza o timestamp de último login para o usuário
-    // Envolvemos em try/catch para não impedir o login em caso de falha
-    try {
-      // CORREÇÃO: Usando a coluna correta "last_login_at"
-      await query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
-    } catch (updateError) {
-      // É importante logar o erro, mas não impedir o login por causa disso
-      console.error('Falha ao atualizar o timestamp de login:', updateError);
-    }
-
-    // Busca as permissões atreladas ao cargo do usuário
-    const roleQuery = await query('SELECT permissions FROM roles WHERE name = $1', [user.role], { log: false });
-    const permissions = roleQuery.rows[0]?.permissions || [];
-    user.permissions = permissions;
-
-    const token = generateToken(user);
-    setAuthCookie(res, token);
-
-    return res.status(200).json({ user: { id: user.id, username: user.username, role: user.role, permissions: user.permissions } });
-  } catch (error) {
-    console.error('Login error:', error);
-    return res.status(500).json({ message: 'Erro interno do servidor' });
+  // 3. Trata os diferentes tipos de erro
+  if (result.error === 'RATE_LIMITED') {
+    return res.status(429).json({ error: 'Too Many Requests', message: result.message });
   }
+
+  if (result.error === 'INVALID_CREDENTIALS') {
+    return res.status(401).json({ error: 'Unauthorized', message: result.message });
+  }
+
+  if (result.error === 'MISSING_FIELDS') {
+    return res.status(400).json({ error: 'Bad Request', message: result.message });
+  }
+
+  const { user, token } = result;
+
+  // 4. Decide o formato de resposta baseado no parâmetro ?response=
+  const responseMode = req.query.response;
+
+  if (responseMode === 'body') {
+    // Modo API externa: retorna token no body
+    return res.status(200).json({
+      success: true,
+      data: {
+        token,
+        token_type: 'Bearer',
+        expires_in: 3600,
+        user: {
+          userId: user.id,
+          username: user.username,
+          role: user.role,
+          permissions: user.permissions,
+        },
+      },
+      message: 'Autenticação bem-sucedida',
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  // Modo padrão: retorna cookie httpOnly + dados do usuário
+  setAuthCookie(res, token);
+
+  return res.status(200).json({
+    success: true,
+    user: {
+      id: user.id,
+      username: user.username,
+      role: user.role,
+      permissions: user.permissions,
+    },
+    message: 'Autenticação bem-sucedida',
+    timestamp: new Date().toISOString(),
+  });
 }

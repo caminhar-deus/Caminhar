@@ -18,19 +18,27 @@
 
 ## 1. Duplicidade de Código
 
-### 1.1 Endpoints de Login Duplicados
+### 1.1 Endpoints de Login Duplicados — **RESOLVIDO**
 
 **Arquivos:** 
-- `/pages/api/auth/login.js`
-- `/pages/api/v1/auth/login.js`
+- `/pages/api/auth/login.js` (endpoint unificado)
+- ~~`/pages/api/v1/auth/login.js`~~ **— REMOVIDO**
 
-**Problema:** Duas implementações de login que fazem essencialmente a mesma coisa, mas com diferenças:
-- `api/auth/login.js`: usa rate limiting por IP, retorna cookie JWT
-- `api/v1/auth/login.js`: **não** tem rate limiting, retorna token JWT no corpo da resposta
+**O que foi feito:**
+- Criada a função compartilhada `authenticateAndGenerateToken()` em `lib/auth.js` que centraliza: validação de entrada, rate limiting (5 tentativas/min), autenticação, atualização de `last_login_at`, busca de permissões e geração de token JWT.
+- `/pages/api/auth/login.js` foi refatorado para usar a função compartilhada. Suporta dois modos de resposta:
+  - **Padrão** (`?response` não informado): retorna cookie httpOnly + dados do usuário (compatível com fluxo web existente).
+  - **Body** (`?response=body`): retorna token JWT no corpo da resposta no formato `{ success, data: { token, token_type, expires_in, user } }` (compatível com consumo externo de API).
+- ~~`/pages/api/v1/auth/login.js`~~ foi **removido** do projeto em 12/05/2026. Clientes externos que usavam a rota `/api/v1/auth/login` devem migrar para `/api/auth/login?response=body`, que mantém o mesmo formato de resposta.
 
-**Impacto:** Manutenção em dobro, risco de dessincronização de regras de negócio. A versão v1 é menos segura por não ter rate limiting.
-
-**Sugestão:** Unificar em um único endpoint de autenticação, com rate limiting em ambos e comportamento consistente.
+**Benefícios:**
+- ✅ Rate limiting agora ativo em **todos** os cenários
+- ✅ Validação de entrada (username/password obrigatórios)
+- ✅ Busca de permissões do usuário disponível em ambos os modos de resposta
+- ✅ Timestamp padronizado nas respostas de sucesso e erro
+- ✅ Código duplicado eliminado — lógica centralizada em `lib/auth.js`
+- ✅ Arquivo duplicado removido — redução de 81 linhas de código
+- ✅ Formato de resposta de erro padronizado com `{ error, message }`
 
 ---
 
@@ -447,7 +455,7 @@ if (req.method !== 'GET') {
 |:----------:|:----:|:--------:|-----------|
 | 🔴 Crítico | 4.4 | `[slug].js` | SQL injection - usar prepared statements |
 | 🔴 Crítico | 4.3 | Múltiplos | Validação Zod ausente em endpoints admin |
-| 🟠 Alto | 1.1 | `api/auth/login.js`, `api/v1/auth/login.js` | Login duplicado sem rate limiting no v1 |
+| 🟠 Alto | ~~1.1~~ ✅ | `api/auth/login.js`, `api/v1/auth/login.js` | Login duplicado sem rate limiting no v1 — **RESOLVIDO** |
 | 🟠 Alto | 1.3 | `[slug].js`, `blog/[slug].js` | Conflito de rotas de página de post |
 | 🟠 Alto | 3.4 | `blog/index.js`, `blog/[slug].js` | Fetch HTTP para API interna em SSR |
 | 🟠 Alto | 5.4 | `styles/tokens/*.js` | Tokens não utilizados nos CSS |

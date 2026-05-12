@@ -372,17 +372,13 @@
   - Verifica validade do token via `verifyToken()`
   - Retorna dados do usuário decodificados: `{ id, username, role, iat, exp }`
 
-### `/pages/api/v1/auth/login.js`
-- **Localização:** `/pages/api/v1/auth/login.js`
-- **Propósito:** Endpoint v1 para autenticação externa.
-- **Funcionalidades:**
-  - Método POST apenas
-  - Valida username e password
-  - Autentica via `authenticate()`
-  - Atualiza `last_login_at`
-  - Gera e retorna token JWT no corpo da resposta (não via cookie)
-
 ---
+
+**Arquivo removido (12/05/2026):** `/pages/api/v1/auth/login.js`
+- Unificado com `/pages/api/auth/login` — a lógica foi centralizada na função `authenticateAndGenerateToken()` em `lib/auth.js`.
+- O endpoint `/api/auth/login?response=body` substitui o antigo `/api/v1/auth/login` com o mesmo formato de resposta `{ success, data: { token, token_type, expires_in, user } }`, além de incluir rate limiting, validação de entrada e busca de permissões que não existiam no v1.
+- Clientes que usavam a rota v1 devem migrar para `/api/auth/login?response=body`.
+
 
 ## 7. `/pages/api/v1/videos`
 
@@ -530,10 +526,11 @@
 | APIs Admin                   |     14     |
 | APIs Auth                    |     2      |
 | APIs v1                      |     4      |
-| APIs v1/auth                 |     2      |
+| APIs v1/auth                 |     1*     |
 | APIs v1/videos               |     1      |
 | Páginas Blog                 |     2      |
 | CSS Modules Blog             |     1      |
 | CSS Globais e Módulos        |     3      |
 | Tokens de Design             |     11     |
-| **Total**                    |  **55**    |
+| **Total**                    |  **54**   |
+
