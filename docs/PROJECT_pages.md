@@ -141,11 +141,15 @@
 
 ### `/pages/api/settings.js`
 - **Localização:** `/pages/api/settings.js`
-- **Propósito:** Endpoint de configurações do sistema.
+- **Propósito:** Endpoint unificado de configurações do sistema.
 - **Funcionalidades:**
-  - GET: Retorna configurações principais (público)
-  - PUT: Atualiza configurações (protegido por `withAuth`)
-  - Validação Zod para title, subtitle, image
+  - **GET** (sem `?key`): Retorna configurações principais (público), com cache-control header.
+  - **GET** (com `?key`): Retorna configuração específica com cache via `getOrSetCache` (autenticado, permissões admin/editor).
+  - **POST**: Cria nova configuração (autenticado, apenas role admin), invalida cache.
+  - **PUT**: Atualiza configuração (autenticado via `withAuth`), validação Zod, invalida cache.
+  - Suporta `?response=v1` para compatibilidade com formato `{ success, data, timestamp }`.
+
+> **Nota:** Endpoint unificado em 12/05/2026. O `/api/v1/settings` foi removido — GET (com e sem key), POST e PUT foram incorporados à raiz. O PUT não possui restrição de role (qualquer usuário autenticado pode alterar settings), mantendo o comportamento original.
 
 ### `/pages/api/upload-image.js`
 - **Localização:** `/pages/api/upload-image.js`
@@ -334,14 +338,10 @@
 - O endpoint `/api/posts?response=v1` substitui o antigo `/api/v1/posts` com o mesmo formato de resposta `{ success, data, pagination, timestamp }`, além de incluir rate limiting em POST e paginação completa em GET que não existiam no v1.
 - Clientes que usavam a rota v1 devem migrar para `/api/posts?response=v1`.
 
-### `/pages/api/v1/settings.js`
-- **Localização:** `/pages/api/v1/settings.js`
-- **Propósito:** API v1 para configurações com controle de permissões.
-- **Funcionalidades:**
-  - GET: Retorna configurações principais
-  - POST: Cria configuração (autenticado, role admin/editor)
-  - PUT: Atualiza configuração (autenticado, role admin/editor)
-  - Validação com Zod
+**Arquivo removido (12/05/2026):** `/pages/api/v1/settings.js`
+- Unificado com `/pages/api/settings` — GET (com e sem key), POST e PUT foram migrados para o endpoint raiz com suporte a `?response=v1` para compatibilidade.
+- O endpoint `/api/settings?response=v1` substitui o antigo `/api/v1/settings` com o mesmo formato de resposta `{ success, data, timestamp }`, além de incluir validação Zod e invalidação de cache.
+- Clientes que usavam a rota v1 devem migrar para `/api/settings?response=v1`.
 
 ### `/pages/api/v1/status.js`
 - **Localização:** `/pages/api/v1/status.js`
@@ -370,7 +370,6 @@
 - Unificado com `/pages/api/auth/login` — a lógica foi centralizada na função `authenticateAndGenerateToken()` em `lib/auth.js`.
 - O endpoint `/api/auth/login?response=body` substitui o antigo `/api/v1/auth/login` com o mesmo formato de resposta `{ success, data: { token, token_type, expires_in, user } }`, além de incluir rate limiting, validação de entrada e busca de permissões que não existiam no v1.
 - Clientes que usavam a rota v1 devem migrar para `/api/auth/login?response=body`.
-
 
 ## 7. `/pages/api/v1/videos`
 
@@ -520,15 +519,15 @@
 | APIs (raiz)                  |     9      |
 | APIs Admin                   |     14     |
 | APIs Auth                    |     2      |
-| APIs v1                      |     3†     |
+| APIs v1                      |     2†     |
 | APIs v1/auth                 |     1‡     |
 | APIs v1/videos               |     1      |
 | Páginas Blog                 |     2      |
 | CSS Modules Blog             |     1      |
 | CSS Globais e Módulos        |     3      |
 | Tokens de Design             |     11     |
-| **Total**                    |  **52**   |
+| **Total**                    |  **51**   |
 
 > *\*Arquivo `/pages/[slug].js` removido em 12/05/2026 — rota catch-all eliminada, conteúdo e SEO migrados para `/pages/blog/[slug].js`.*
-> *†Arquivo `/pages/api/v1/posts.js` removido em 12/05/2026 — unificado com `/pages/api/posts.js`.*
+> *†Arquivos `/pages/api/v1/posts.js` e `/pages/api/v1/settings.js` removidos em 12/05/2026 — unificados com `/pages/api/posts.js` e `/pages/api/settings.js` respectivamente.*
 > *‡Arquivo `/pages/api/v1/auth/login.js` removido em 12/05/2026 — unificado com `/pages/api/auth/login.js`.*

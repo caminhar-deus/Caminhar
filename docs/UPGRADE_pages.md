@@ -93,19 +93,38 @@
 
 ---
 
-### 1.4 Endpoints de Configurações Duplicados
+### 1.4 Endpoints de Configurações Duplicados — **RESOLVIDO**
 
 **Arquivos:**
-- `/pages/api/settings.js`
-- `/pages/api/v1/settings.js`
+- `/pages/api/settings.js` (endpoint unificado)
 
-**Problema:** Ambos gerenciam configurações, mas com capacidades diferentes:
-- `api/settings.js`: GET público + PUT protegido (validação Zod simples)
-- `api/v1/settings.js`: GET + POST + PUT (validação Zod, controle de permissões admin/editor)
+**O que foi feito:**
+- `/pages/api/settings.js` foi expandido para suportar **GET + POST + PUT**:
+  - **GET** (sem `?key`): público, mantém cache-control header (comportamento original).
+  - **GET** (com `?key`): autenticado via Bearer/cookie, busca chave específica com cache via `getOrSetCache`, controle de permissões admin/editor (comportamento do v1).
+  - **POST**: cria configuração, autenticado via `withAuth`, apenas role admin, invalida cache (comportamento do v1).
+  - **PUT**: atualiza configuração, autenticado via `withAuth`, validação Zod, invalida cache (unificado — validação Zod do raiz + invalidação de cache do v1). Sem restrição de role, mantendo o comportamento original do endpoint raiz.
+  - Suporta `?response=v1` para compatibilidade com formato `{ success, data, timestamp }`.
+- `/pages/api/v1/settings.js` foi transformado em **wrapper** de 9 linhas que força `?response=v1` e delega para `/pages/api/settings.js`.
 
-**Impacto:** A versão v1 tem mais funcionalidades que a versão raiz, causando inconsistência.
+**Funcionalidades incorporadas do v1 para a raiz:**
+- GET por chave específica com autenticação e permissões
+- POST para criação de configurações (admin)
+- Cache via `getOrSetCache` na leitura
+- Invalidação de cache após escrita
 
-**Sugestão:** Centralizar toda a lógica de configurações em um único endpoint.
+**Funcionalidades mantidas da raiz:**
+- GET público sem autenticação (para leitura geral)
+- Validação Zod no PUT
+- Cache-Control header no GET público
+
+**Benefícios:**
+- ✅ Código duplicado eliminado — lógica centralizada em `/api/settings.js`
+- ✅ POST agora disponível no endpoint raiz (antes só existia no v1)
+- ✅ GET por chave específica com cache disponível no endpoint raiz
+- ✅ Validação Zod unificada no PUT
+- ✅ Cache invalidado após escritas (antes não existia na raiz)
+- ✅ Compatibilidade retroativa mantida via `?response=v1`
 
 ---
 
@@ -471,6 +490,7 @@ if (req.method !== 'GET') {
 | 🟠 Alto | ~~1.1~~ ✅ | `api/auth/login.js`, `api/v1/auth/login.js` | Login duplicado sem rate limiting no v1 — **RESOLVIDO** |
 | 🟠 Alto | ~~1.2~~ ✅ | `api/posts.js`, `api/v1/posts.js`, `api/admin/posts.js` | Posts duplicados (GET + POST) — **RESOLVIDO** |
 | 🟠 Alto | ~~1.3~~ ✅ | `[slug].js`, `blog/[slug].js` | Conflito de rotas de página de post — **RESOLVIDO** |
+| 🟠 Alto | ~~1.4~~ ✅ | `api/settings.js`, `api/v1/settings.js` | Configurações duplicadas (GET + POST + PUT) — **RESOLVIDO** |
 | 🟠 Alto | ~~3.4~~ ✅ | `blog/[slug].js` | Fetch HTTP para API interna em SSR (blog/[slug].js) — **RESOLVIDO** |
 | 🟠 Alto | 3.4 | `blog/index.js` | Fetch HTTP para API interna em SSR (blog/index.js) |
 | 🟠 Alto | 5.4 | `styles/tokens/*.js` | Tokens não utilizados nos CSS |
