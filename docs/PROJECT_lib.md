@@ -51,7 +51,7 @@
 - `withAuth(handler)` — Middleware que protege handlers exigindo token válido.
 - `initializeAuth()` — Cria a tabela `users` (se não existir), faz migração da coluna `role`, e cria o admin padrão via variáveis de ambiente.
 
-**Observações:** Utiliza `jsonwebtoken`, `bcryptjs` e `cookie`. Possui fallback para compatibilidade CJS/ESM no módulo `cookie` (linha 7-8). O `JWT_SECRET` é obrigatório em produção — se não definido, lança erro. Em desenvolvimento, usa fallback com aviso explícito.
+**Observações:** Utiliza `jsonwebtoken`, `bcryptjs` e `cookie`. Possui fallback para compatibilidade CJS/ESM no módulo `cookie` (linha 7-8). O `JWT_SECRET` é obrigatório em produção — se não definido, lança erro. Em desenvolvimento, usa fallback com aviso explícito. Durante a inicialização (`initializeAuth`), os logs de criação/existência/atualização do admin usam mensagens genéricas sem expor o nome de usuário admin, prevenindo vazamento de informações.
 
 ---
 
@@ -68,7 +68,7 @@
 - `getCacheMetrics()` — Retorna métricas de monitoramento (hits, misses, erros, tamanho do Map local).
 - `cleanupRateLimitTimer()` — Limpa o timer de limpeza periódica (usado em testes).
 
-**Observações:** Utiliza **lazy eviction** para o Map local de rate limit: entradas expiradas são removidas sob demanda em `checkInMemory()` apenas quando a chave é acessada. O `setInterval` existe apenas como **safety net** para evitar growth infinito, atuando de forma seletiva (remove entradas com mais de 120s ou as mais antigas se exceder 5000). Proteção contra memory leak usa `delete` seletivo (remove a entrada mais antiga) em vez de `clear()` agressivo, preservando dados de IPs legítimos. O rate limit tem fallback completo caso o Redis falhe. As métricas `redisHits` e `redisMisses` são incrementadas corretamente.
+**Observações:** Utiliza **lazy eviction** para o Map local de rate limit: entradas expiradas são removidas sob demanda em `checkInMemory()` apenas quando a chave é acessada. O `setInterval` existe apenas como **safety net** para evitar growth infinito, atuando de forma seletiva (remove entradas com mais de 120s ou as mais antigas se exceder 5000). Proteção contra memory leak usa `delete` seletivo (remove a entrada mais antiga) em vez de `clear()` agressivo, preservando dados de IPs legítimos. O rate limit tem fallback completo caso o Redis falhe. As métricas `redisHits` e `redisMisses` são incrementadas corretamente. A whitelist de IPs isentos de rate limit inclui apenas `127.0.0.1`, `::1` e `localhost` — o valor `'unknown'` foi removido para evitar bypass quando o header `x-forwarded-for` está ausente.
 
 ---
 
@@ -194,7 +194,7 @@
 | `protectedApi(handler, options)` | Combinação pronta para APIs autenticadas |
 | `cleanupTimers()` | Limpa timers ativos (usado em testes) |
 
-**Observações:** O `composeMiddleware` usa `reduceRight` para aplicar middlewares de trás para frente. O `withRateLimit` agora utiliza `checkRateLimit` de `lib/cache.js`, unificando as 3 implementações de rate limit que existiam anteriormente. Suporta `maxRequests` como função para limites dinâmicos. Exporta `cleanupTimers()` para limpeza em testes.
+**Observações:** O `composeMiddleware` usa `reduceRight` para aplicar middlewares de trás para frente. O `withRateLimit` agora utiliza `checkRateLimit` de `lib/cache.js`, unificando as 3 implementações de rate limit que existiam anteriormente. Suporta `maxRequests` como função para limites dinâmicos. Exporta `cleanupTimers()` para limpeza em testes. O `withCors` tem comportamento adaptativo: em desenvolvimento usa `['*']` como padrão, mas em produção lê `process.env.ALLOWED_ORIGINS` — se não configurado, emite aviso e usa array vazio (CORS bloqueado). O `withRateLimit` também emite aviso em produção se o Redis não estiver disponível.
 
 ---
 

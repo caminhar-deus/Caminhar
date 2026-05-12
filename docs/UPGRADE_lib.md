@@ -23,9 +23,9 @@
    - [2.6 Promises.all sem tratamento de erro parcial em reorderVideos](#26-promisesall-sem-tratamento-de-erro-parcial-em-reordervideos)
 3. [Segurança](#3-segurança)
    - [3.1 JWT_SECRET com fallback inseguro em auth.js](#31-jwt_secret-com-fallback-inseguro-em-authjs) — **RESOLVIDO**
-   - [3.2 CORS com origem '*' por padrão](#32-cors-com-origem--por-padrão)
-   - [3.3 AdminUsername/Password podem vazar em logs de inicialização](#33-adminusernamepassword-podem-vazar-em-logs-de-inicialização)
-   - [3.4 Rate limit local não protege contra DDoS real](#34-rate-limit-local-não-protege-contra-ddos-real)
+   - [3.2 CORS com origem '*' por padrão](#32-cors-com-origem--por-padrão) — **RESOLVIDO**
+   - [3.3 AdminUsername/Password podem vazar em logs de inicialização](#33-adminusernamepassword-podem-vazar-em-logs-de-inicialização) — **RESOLVIDO**
+   - [3.4 Rate limit local não protege contra DDoS real](#34-rate-limit-local-não-protege-contra-ddos-real) — **RESOLVIDO**
 4. [Inconsistências de Código](#4-inconsistências-de-código)
    - [4.1 validateParams usa req.query em vez de req.params](#41-validateparams-usa-reqquery-em-vez-de-reqparams)
    - [4.2 parseImages em localização incorreta (seo/helpers)](#42-parseimages-em-localização-incorreta-seohelpers)
@@ -231,27 +231,40 @@
 
 ---
 
-### 3.2 CORS com origem '*' por padrão
+### 3.2 CORS com origem '*' por padrão — **RESOLVIDO**
 
-**Arquivo:** `lib/middleware.js` (linha 7)
+**Arquivo:** `lib/api/middleware.js` (função `withCors`)
 
-**Status:** Não foram feitas alterações. O middleware está depreciado. O `withCors` em `api/middleware.js` também usa `['*']` como padrão, mas é configurável.
-
----
-
-### 3.3 AdminUsername/Password podem vazar em logs de inicialização
-
-**Arquivo:** `lib/auth.js` (linhas 148-157)
-
-**Status:** Não foram feitas alterações.
+**O que foi feito:**
+- Em **produção**, o padrão de `origins` foi alterado de `['*']` para usar `process.env.ALLOWED_ORIGINS` (split por vírgula).
+- Se `ALLOWED_ORIGINS` não estiver definido, retorna um array vazio `[]`, impedindo CORS aberto.
+- Adicionado `console.warn()` em produção alertando sobre a necessidade de configurar `ALLOWED_ORIGINS`.
+- Em **desenvolvimento**, mantém o padrão `['*']` para facilitar testes locais.
+- Quando `origins` é explicitamente passado como parâmetro, o valor passado é respeitado (sem override automático).
 
 ---
 
-### 3.4 Rate limit local não protege contra DDoS real
+### 3.3 AdminUsername/Password podem vazar em logs de inicialização — **RESOLVIDO**
 
-**Arquivos:** `lib/cache.js`, `lib/middleware.js`, `lib/api/middleware.js`
+**Arquivo:** `lib/auth.js` (função `initializeAuth`, linhas 164, 166, 170)
 
-**Status:** Não foram feitas alterações. O rate limit via Redis (`checkRateLimit` em `cache.js`) agora é a implementação padrão via `withRateLimit` em `api/middleware.js`, o que mitiga parcialmente o problema (persistência entre reinicializações).
+**O que foi feito:**
+- Substituídos os `console.log` que expunham o `adminUsername` nas mensagens de criação, existência e atualização de role:
+  - `Admin user '${adminUsername}' created successfully` → `Admin user created successfully`
+  - `Admin user '${adminUsername}' already exists` → `Admin user already exists`
+  - `Admin user '${adminUsername}' role updated to 'admin'` → `Admin user role updated to admin`
+- O nome de usuário admin não é mais exposto nos logs de inicialização, mitigando vazamento de informações via sistemas de log (CloudWatch, ELK, etc.).
+
+---
+
+### 3.4 Rate limit local não protege contra DDoS real — **RESOLVIDO**
+
+**Arquivos:** `lib/cache.js`, `lib/api/middleware.js`
+
+**O que foi feito:**
+- **`lib/cache.js`** (linha 163): Removido `'unknown'` da whitelist permanente de IPs. Antes, qualquer requisição com IP `'unknown'` (ex: quando `x-forwarded-for` não está presente) passava sem rate limit. Agora IPs não identificados são rate-limited normalmente.
+- **`lib/api/middleware.js`** (função `withRateLimit`): Adicionada validação que alerta via `console.warn()` quando o Redis não está disponível em produção, orientando o desenvolvedor a configurar as variáveis de ambiente necessárias.
+- O rate limit via Redis (`checkRateLimit` em `cache.js`) já era a implementação padrão via `withRateLimit`. Agora há visibilidade quando o fallback em memória está sendo usado em produção.
 
 ---
 
