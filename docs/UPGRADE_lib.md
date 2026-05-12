@@ -1,6 +1,6 @@
 # Relatório de Melhorias e Correções — `lib/`
 
-> **Data do relatório:** 11/05/2026 (atualizado)
+> **Data do relatório:** 12/05/2026 (atualizado)
 > **Objetivo:** Identificar duplicidades, problemas de performance, inconsistências e oportunidades de melhoria nos arquivos da pasta `lib/`. Nenhuma correção foi aplicada, apenas reportada.
 
 ---
@@ -45,9 +45,12 @@
    - [6.2 rateLimitMiddleware usa Map sem limite de crescimento](#62-ratelimitmiddleware-usa-map-sem-limite-de-crescimento)
    - [6.3 withRateLimit em api cria Map novo a cada chamada](#63-withratelimit-em-api-cria-map-novo-a-cada-chamada) — **RESOLVIDO**
    - [6.4 cacheMetrics.redisErrors incrementado mas nunca exposto em getCacheMetrics](#64-cachemetricsrediserros-incrementado-mas-nunca-exposto) — **RESOLVIDO**
-7. [Testes e Cobertura](#7-testes-e-cobertura)
-   - [7.1 Ausência de testes para a camada lib/api](#71-ausência-de-testes-para-a-camada-libapi)
-   - [7.2 cache.js sem testes de fallback](#72-cachejs-sem-testes-de-fallback)
+7. [Novas Funcionalidades](#7-novas-funcionalidades)
+   - [7.1 Criação de lib/api/adminCrudHandler.js](#71-criação-de-libapiadmincrudhandlerjs--factory-de-handlers-crud-para-admin)
+   - [7.2 Criação de authenticateAndGenerateToken em lib/auth.js](#72-criação-de-authenticatemdgenerateToken-em-libauthjs)
+8. [Testes e Cobertura](#8-testes-e-cobertura)
+   - [8.1 Ausência de testes para a camada lib/api](#81-ausência-de-testes-para-a-camada-libapi)
+   - [8.2 cache.js sem testes de fallback](#82-cachejs-sem-testes-de-fallback)
 
 ---
 
@@ -288,7 +291,7 @@
 **O que foi feito:**
 - A função `parseImages` foi **movida** para `lib/api/utils.js`, onde faz mais sentido semanticamente (utilitário de dados, não de SEO).
 - O import em `components/Features/Products/ProductCard.js` foi atualizado de `../../../lib/seo/helpers` para `../../../lib/api/utils`.
-- O arquivo `lib/seo/helpers.js` mantém a função original para compatibilidade retroativa (via re-export do `utils.js`).
+- O arquivo `lib/seo/helpers.js` foi **removido** do projeto (não há mais re-export).
 
 ---
 
@@ -473,9 +476,41 @@
 
 ---
 
-## 7. Testes e Cobertura
+## 7. Novas Funcionalidades
 
-### 7.1 Ausência de testes para a camada lib/api
+### 7.1 Criação de `lib/api/adminCrudHandler.js` — Factory de handlers CRUD para admin
+
+**Arquivo:** `lib/api/adminCrudHandler.js` (197 linhas)
+
+**O que foi criado:**
+- Função `createAdminHandler(config)` que centraliza o boilerplate comum a todos os endpoints administrativos.
+- Verificação de método HTTP com resposta 405 padronizada.
+- Autenticação via `withAuth` do `lib/auth.js`.
+- RBAC com suporte a `requireAdmin` (role `admin`) e verificação de permissão específica na tabela `roles`.
+- Rate limiting em mutações (POST/PUT/DELETE) via `checkRateLimit`.
+- Invalidação automática de cache em mutações bem-sucedidas.
+- Injeção de `req.adminUtils` com funções `logActivity()` e `invalidateCache()`.
+- Try/catch unificado com resposta de erro padronizada.
+
+**Observação:** O handler final é envolvido por `withAuth`. Em caso de erro na tabela `roles` (inexistente), permite apenas usuários com role `admin`.
+
+---
+
+### 7.2 Criação de `authenticateAndGenerateToken` em `lib/auth.js`
+
+**Arquivo:** `lib/auth.js`
+
+**O que foi criado:**
+- Função `authenticateAndGenerateToken(username, password, ip, options)` que unifica a lógica de login usada pelos endpoints `/api/auth/login.js` e `/api/v1/auth/login.js`.
+- Inclui validação de entrada, rate limiting via `checkRateLimit` (padrão 5 tentativas/minuto), autenticação, atualização de `last_login_at`, busca de permissões do cargo e geração de token JWT.
+- Retorna `{ user, token }` em sucesso ou `{ error, message }` em falha (RATE_LIMITED, INVALID_CREDENTIALS, MISSING_FIELDS).
+- Elimina duplicação de lógica de login que existia nos endpoints.
+
+---
+
+## 8. Testes e Cobertura
+
+### 8.1 Ausência de testes para a camada lib/api
 
 **Descrição:** Os arquivos `lib/api/errors.js`, `lib/api/response.js`, `lib/api/validate.js` e `lib/api/middleware.js` totalizam ~1170 linhas de código, e não há testes unitários específicos para esses módulos.
 
@@ -483,7 +518,7 @@
 
 ---
 
-### 7.2 cache.js sem testes de fallback
+### 8.2 cache.js sem testes de fallback
 
 **Descrição:** `lib/cache.js` tem lógica complexa de fallback (Redis → memória local) que não possui cobertura de testes específicos para:
 - Falha de Redis com ativação de fallback

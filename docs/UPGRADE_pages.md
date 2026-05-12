@@ -1,6 +1,6 @@
 # Relatório de Melhorias e Correções - `/pages`
 
-> **Data:** 11/05/2026 (atualizado)
+> **Data:** 12/05/2026 (atualizado)
 > **Objetivo:** Reportar problemas de duplicidade, inconsistências, oportunidades de melhoria de performance e correções necessárias nos arquivos da pasta `/pages`. Nenhuma correção deve ser aplicada; apenas reportar.
 
 ---
@@ -148,15 +148,38 @@
 
 ---
 
-### 1.6 Padrão Repetido de CRUD nos Endpoints Admin
+### 1.6 Padrão Repetido de CRUD nos Endpoints Admin — **RESOLVIDO**
 
-**Arquivos:** Todos em `/pages/api/admin/` (14 arquivos)
+**Arquivos:**
+- `/lib/api/adminCrudHandler.js` (handler factory criado)
+- Todos em `/pages/api/admin/` (14 arquivos refatorados)
 
-**Problema:** Cada endpoint admin implementa manualmente o padrão GET/POST/PUT/DELETE com verificações de método HTTP, autenticação e operações de banco de dados. Há muita repetição de código (verificação de método, resposta 405, tratamento de erros try/catch, etc.).
+**O que foi feito:**
+- Criado o handler factory `createAdminHandler()` em `lib/api/adminCrudHandler.js` que centraliza:
+  - Verificação de método HTTP + resposta 405 padronizada em **português**
+  - Autenticação via `withAuth` (único padrão para todos os 14 arquivos)
+  - RBAC com verificação de permissão por cargo (via query na tabela `roles`)
+  - Rate limiting configurável em mutações
+  - Invalidação automática de cache em mutações
+  - Injeção de utilitários (`req.adminUtils.logActivity()`, `req.adminUtils.invalidateCache()`, `req.adminUtils.user`)
+  - Try/catch unificado com resposta de erro padronizada `{ error, message }`
+- Os **14 arquivos** de `/pages/api/admin/` foram refatorados para usar o factory:
+  - `dicas.js`, `musicas.js`, `posts.js`, `videos.js` (CRUD completo com `withAuth`)
+  - `backups.js`, `audit.js`, `cache.js`, `stats.js` (endpoints específicos)
+  - `roles.js`, `users.js` (CRUD com permissões específicas)
+  - `rate-limit.js` (gestão de Redis)
+  - `fetch-ml.js`, `fetch-spotify.js`, `fetch-youtube.js` (integração externa)
 
-**Impacto:** Qualquer mudança no padrão de autenticação ou tratamento de erros exige alteração em 14 arquivos.
-
-**Sugestão:** Criar um handler factory ou middleware genérico para CRUD admin.
+**Benefícios:**
+- ✅ Padrão CRUD unificado — qualquer mudança exige alteração em **1 arquivo** (o factory), não mais em 14
+- ✅ Autenticação padronizada — todos usam `withAuth` (antes 5 usavam `withAuth`, 8 usavam `getAuthToken` manual, 1 era misto)
+- ✅ Formato de resposta 405 padronizado em português (antes havia 4 formatos diferentes misturando PT e EN)
+- ✅ Try/catch unificado (antes havia 3 padrões diferentes)
+- ✅ logActivity adicionado onde não existia: `audit.js`, `cache.js`, `videos.js`, `backups.js`, `fetch-*.js`
+- ✅ Invalidação de cache adicionada onde não existia: `dicas.js`, `roles.js`, `users.js`
+- ✅ Rate limiting adicionado onde não existia: `dicas.js`, `musicas.js`, `videos.js`, `roles.js`, `audit.js`, `backups.js`
+- ✅ Código eliminado: **~250-300 linhas de boilerplate** removidas dos 14 arquivos
+- ✅ `getAuthToken` + `verifyToken` manuais eliminados de 8 arquivos
 
 ---
 
@@ -496,6 +519,7 @@ if (req.method !== 'GET') {
 | 🟠 Alto | ~~1.3~~ ✅ | `[slug].js`, `blog/[slug].js` | Conflito de rotas de página de post — **RESOLVIDO** |
 | 🟠 Alto | ~~1.4~~ ✅ | `api/settings.js`, `api/v1/settings.js` | Configurações duplicadas (GET + POST + PUT) — **RESOLVIDO** |
 | 🟠 Alto | ~~1.5~~ ✅ | `api/v1/health.js`, `api/v1/status.js` | Health Check vs Status duplicados — **RESOLVIDO** |
+| 🟠 Alto | ~~1.6~~ ✅ | `/pages/api/admin/` (14 arquivos) | Padrão CRUD repetido nos endpoints admin — **RESOLVIDO** |
 | 🟠 Alto | ~~3.4~~ ✅ | `blog/[slug].js` | Fetch HTTP para API interna em SSR (blog/[slug].js) — **RESOLVIDO** |
 | 🟠 Alto | 3.4 | `blog/index.js` | Fetch HTTP para API interna em SSR (blog/index.js) |
 | 🟠 Alto | 5.4 | `styles/tokens/*.js` | Tokens não utilizados nos CSS |

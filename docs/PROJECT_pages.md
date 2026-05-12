@@ -175,6 +175,8 @@
 
 ## 3. `/pages/api/admin`
 
+> **Atualização (12/05/2026):** Todos os 14 endpoints admin foram refatorados para usar o handler factory `createAdminHandler()` em `lib/api/adminCrudHandler.js`, que centraliza verificação de método HTTP, autenticação via `withAuth`, RBAC, rate limiting, invalidação de cache e try/catch unificado.
+
 ### `/pages/api/admin/audit.js`
 - **Localização:** `/pages/api/admin/audit.js`
 - **Propósito:** Endpoint de consulta de logs de auditoria.

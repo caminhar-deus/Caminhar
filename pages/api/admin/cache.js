@@ -1,68 +1,27 @@
-import { getAuthToken, verifyToken } from '../../../lib/auth';
 import { clearAllCache, getCacheMetrics } from '../../../lib/cache';
+import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
 
-export default async function handler(req, res) {
-  // GET - Retorna métricas do cache
-  if (req.method === 'GET') {
-    // Autenticação
-    const token = getAuthToken(req);
-    if (!token) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-    
-    const decoded = verifyToken(token);
-    if (!decoded || decoded.role !== 'admin') {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-
-    const metrics = getCacheMetrics();
-    return res.status(200).json(metrics);
-  }
-
-  // Permite POST (ação) ou DELETE (recurso)
-  if (req.method !== 'POST' && req.method !== 'DELETE') {
-    return res.status(405).json({
-      error: 'Method Not Allowed',
-      message: 'Método não permitido. Use GET, POST ou DELETE.',
-      timestamp: new Date().toISOString()
-    });
-  }
-
-  // 1. Autenticação
-  const token = getAuthToken(req);
-  if (!token) {
-    return res.status(401).json({
-      error: 'Unauthorized',
-      message: 'Autenticação necessária',
-      timestamp: new Date().toISOString()
-    });
-  }
-
-  // 2. Verificação de Permissão (Admin)
-  const decoded = verifyToken(token);
-  if (!decoded || decoded.role !== 'admin') {
-    return res.status(403).json({
-      error: 'Forbidden',
-      message: 'Acesso negado. Requer privilégios de administrador.',
-      timestamp: new Date().toISOString()
-    });
-  }
-
-  try {
-    // 3. Limpeza do Cache (confirmação explícita para evitar FLUSHDB acidental)
-    await clearAllCache({ confirm: true });
-    
-    return res.status(200).json({
-      success: true,
-      message: 'Cache do Redis limpo com sucesso (FLUSHDB).',
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('Erro ao limpar cache:', error);
-    return res.status(500).json({
-      error: 'Internal Server Error',
-      message: 'Erro ao tentar limpar o cache.',
-      timestamp: new Date().toISOString()
-    });
-  }
+async function handleGet(req, res) {
+  const metrics = getCacheMetrics();
+  return res.status(200).json(metrics);
 }
+
+async function handleClear(req, res) {
+  // Limpeza do Cache (confirmação explícita para evitar FLUSHDB acidental)
+  await clearAllCache({ confirm: true });
+
+  req.adminUtils.logActivity('LIMPAR CACHE', Date.now(), 'Cache limpo manualmente');
+  return res.status(200).json({
+    success: true,
+    message: 'Cache do Redis limpo com sucesso (FLUSHDB).',
+    timestamp: new Date().toISOString(),
+  });
+}
+
+export default createAdminHandler({
+  name: 'Cache',
+  requireAdmin: true,
+  allowedMethods: ['GET', 'POST', 'DELETE'],
+  handlers: { GET: handleGet, POST: handleClear, DELETE: handleClear },
+  rateLimit: { max: 10, window: 60000 },
+});

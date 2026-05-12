@@ -1,30 +1,19 @@
-import { getAuthToken, verifyToken } from '../../../lib/auth';
+import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', ['POST']);
-    return res.status(405).end(`Method ${req.method} Not Allowed`);
-  }
-
-  // Segurança: Apenas administradores podem usar esta rota
-  const token = getAuthToken(req);
-  if (!token || !verifyToken(token)) {
-    return res.status(401).json({ error: 'Não autenticado' });
-  }
-
+async function handlePost(req, res) {
   const { url } = req.body;
   if (!url) return res.status(400).json({ error: 'URL do Mercado Livre não fornecida.' });
 
   try {
     // Decodifica a URL para tratar caracteres escondidos (como %3A no lugar de :)
     const decodedUrl = decodeURIComponent(url);
-    
+
     // Extrai todos os possíveis códigos MLB da URL
     const matches = decodedUrl.match(/MLB[-_]?\d+/gi);
     if (!matches || matches.length === 0) {
       return res.status(400).json({ error: 'Nenhum código de produto (MLB) encontrado no link.' });
     }
-    
+
     // Limpa os IDs encontrados e remove duplicatas
     let idsToTry = [...new Set(matches.map(id => id.replace(/[-_]/g, '').toUpperCase()))];
 
@@ -44,7 +33,7 @@ export default async function handler(req, res) {
       if (itemRes.ok) {
         const itemData = await itemRes.json();
         const descRes = await fetch(`https://api.mercadolibre.com/items/${id}/description`);
-        
+
         foundData = {
           title: itemData.title,
           price: itemData.price || 0,
@@ -53,13 +42,13 @@ export default async function handler(req, res) {
         };
         break; // Sucesso
       }
-      
+
       // 2. Tenta como um Produto de Catálogo (Product)
       const prodRes = await fetch(`https://api.mercadolibre.com/products/${id}`);
       if (prodRes.ok) {
         const prodData = await prodRes.json();
         const realItemId = prodData.buy_box_winner?.item_id;
-        
+
         let description = '';
         if (realItemId) {
           const descRes = await fetch(`https://api.mercadolibre.com/items/${realItemId}/description`);
@@ -80,15 +69,15 @@ export default async function handler(req, res) {
     if (!foundData) {
       try {
         const htmlRes = await fetch(url, {
-          headers: { 
+          headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept-Language': 'pt-BR,pt;q=0.9'
           }
         });
-        
+
         if (htmlRes.ok) {
           const html = await htmlRes.text();
-          
+
           const getMeta = (prop) => {
             const m = html.match(new RegExp(`<meta[^>]+(?:property|name|itemprop)="${prop}"[^>]+content="([^"]+)"`, 'i')) ||
                       html.match(new RegExp(`<meta[^>]+content="([^"]+)"[^>]+(?:property|name|itemprop)="${prop}"`, 'i'));
@@ -101,9 +90,9 @@ export default async function handler(req, res) {
           const priceMatch = getMeta('product:price:amount') || getMeta('price');
 
           if (title) {
-            title = title.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
+            title = title.replace(/"/g, '"').replace(/&#39;/g, "'").replace(/&/g, '&');
             title = title.replace(/\s*\|\s*MercadoLivre.*/i, '').trim();
-            
+
             let price = 0;
             if (priceMatch) {
               price = parseFloat(priceMatch);
@@ -118,7 +107,7 @@ export default async function handler(req, res) {
               title,
               price: isNaN(price) ? 0 : price,
               images: image || '',
-              description: description ? description.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&') : ''
+              description: description ? description.replace(/"/g, '"').replace(/&#39;/g, "'").replace(/&/g, '&') : ''
             };
           }
         }
@@ -131,8 +120,15 @@ export default async function handler(req, res) {
       throw new Error('Anúncio inativo ou link inválido (Nenhum produto/item encontrado).');
     }
 
+    req.adminUtils.logActivity('FETCH MERCADO LIVRE', Date.now(), `Buscou dados do produto: ${foundData.title}`);
     return res.status(200).json(foundData);
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
 }
+
+export default createAdminHandler({
+  name: 'MercadoLivre',
+  allowedMethods: ['POST'],
+  handlers: { POST: handlePost },
+});

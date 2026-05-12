@@ -1,6 +1,6 @@
 # Análise da Pasta `lib/`
 
-> **Data da análise:** 11/05/2026
+> **Data da análise:** 12/05/2026
 > **Projeto:** O Caminhar com Deus
 > **Objetivo:** Documentar de forma objetiva e clara todos os arquivos da pasta `lib/`, suas responsabilidades e propósitos.
 
@@ -15,12 +15,13 @@
    - [lib/db.js](#14-libdbjs)
    - [lib/redis.js](#15-libredisjs)
 2. [Subpasta `lib/api/`](#2-subpasta-libapi)
-   - [lib/api/errors.js](#21-libapierrorsjs)
-   - [lib/api/index.js](#22-libapiindexjs)
-   - [lib/api/middleware.js](#23-libapimiddlewarejs)
-   - [lib/api/response.js](#24-libapiresponsejs)
-   - [lib/api/utils.js](#25-libapiutilsjs)
-   - [lib/api/validate.js](#26-libapivalidatejs)
+   - [lib/api/adminCrudHandler.js](#21-libapiadmincrudhandlerjs)
+   - [lib/api/errors.js](#22-libapierrorsjs)
+   - [lib/api/index.js](#23-libapiindexjs)
+   - [lib/api/middleware.js](#24-libapimiddlewarejs)
+   - [lib/api/response.js](#25-libapiresponsejs)
+   - [lib/api/utils.js](#26-libapiutilsjs)
+   - [lib/api/validate.js](#27-libapivalidatejs)
 3. [Subpasta `lib/domain/`](#3-subpasta-libdomain)
    - [lib/domain/audit.js](#31-libdomainauditjs)
    - [lib/domain/images.js](#32-libdomainimagesjs)
@@ -47,10 +48,11 @@
 - `setAuthCookie(res, token)` / `getAuthCookie(req)` — Gravação e leitura do token no cookie `httpOnly`.
 - `getAuthToken(req)` — Extrai o token do header `Authorization` (Bearer) ou do cookie (fallback).
 - `authenticate(username, password)` — Autentica usuário contra o banco de dados.
+- `authenticateAndGenerateToken(username, password, ip, options)` — Função compartilhada de login que unifica a lógica usada pelos endpoints `/api/auth/login.js` e `/api/v1/auth/login.js`. Inclui validação de entrada, rate limiting via `checkRateLimit` (5 tentativas/minuto por padrão), autenticação, atualização de `last_login_at`, busca de permissões do cargo e geração de token JWT. Retorna `{ user, token }` em sucesso ou `{ error, message }` em falha.
 - `withAuth(handler)` — Middleware que protege handlers exigindo token válido.
 - `initializeAuth()` — Cria a tabela `users` (se não existir), faz migração da coluna `role`, e cria o admin padrão via variáveis de ambiente.
 
-**Observações:** Utiliza `jsonwebtoken`, `bcryptjs` e `cookie`. Possui fallback para compatibilidade CJS/ESM no módulo `cookie` (linha 7-8). O `JWT_SECRET` é obrigatório em produção — se não definido, lança erro. Em desenvolvimento, usa fallback com aviso explícito. Durante a inicialização (`initializeAuth`), os logs de criação/existência/atualização do admin usam mensagens genéricas sem expor o nome de usuário admin, prevenindo vazamento de informações.
+**Observações:** Utiliza `jsonwebtoken`, `bcryptjs` e `cookie`. Possui fallback para compatibilidade CJS/ESM no módulo `cookie` (linha 7-8). O `JWT_SECRET` é obrigatório em produção — se não definido, lança erro. Em desenvolvimento, usa fallback com aviso explícito. Durante a inicialização (`initializeAuth`), os logs de criação/existência/atualização do admin usam mensagens genéricas sem expor o nome de usuário admin, prevenindo vazamento de informações. A função `authenticateAndGenerateToken` foi adicionada para centralizar a lógica de login que antes estava duplicada nos endpoints, além de aplicar rate limit contra brute force.
 
 ---
 
@@ -134,7 +136,20 @@
 
 ## 2. Subpasta `lib/api/`
 
-### 2.1 `lib/api/errors.js`
+### 2.1 `lib/api/adminCrudHandler.js`
+
+**Localização:** `/lib/api/adminCrudHandler.js`
+
+**Propósito:** Factory de handlers CRUD para endpoints administrativos. Centraliza o boilerplate comum a todos os endpoints admin: verificação de método HTTP, autenticação via `withAuth`, RBAC (verificação de permissão por cargo), rate limiting em mutações, invalidação automática de cache e try/catch unificado.
+
+**Função principal:**
+- `createAdminHandler(config)` — Cria um handler Next.js completo a partir de um objeto de configuração. Aceita `name` (nome da entidade), `permission` (permissão(ões) exigidas), `requireAdmin` (se true, exige role `admin` sem buscar permissões), `handlers` (mapeamento método → handler), `rateLimit` (opções de rate limit), `cacheKeys` (chaves de cache para invalidar em mutações) e `allowedMethods` (métodos permitidos). Injeta `req.adminUtils` com funções `logActivity()` e `invalidateCache()`.
+
+**Observações:** O `createAdminHandler` aplica os middlewares na seguinte ordem: (1) verificação de método HTTP, (2) RBAC via `requireAdmin` ou verificação de permissão na tabela `roles`, (3) rate limiting em mutações (POST/PUT/DELETE), (4) execução do handler específico, (5) invalidação automática de cache em mutações bem-sucedidas. Em caso de erro na verificação de permissões (ex: tabela `roles` inexistente), permite apenas usuários com role `admin`. O handler final é envolvido por `withAuth` do `lib/auth.js`.
+
+---
+
+### 2.2 `lib/api/errors.js`
 
 **Localização:** `/lib/api/errors.js`
 
@@ -159,7 +174,7 @@
 
 ---
 
-### 2.2 `lib/api/index.js`
+### 2.3 `lib/api/index.js`
 
 **Localização:** `/lib/api/index.js`
 
@@ -169,7 +184,7 @@
 
 ---
 
-### 2.3 `lib/api/middleware.js`
+### 2.4 `lib/api/middleware.js`
 
 **Localização:** `/lib/api/middleware.js`
 
@@ -198,7 +213,7 @@
 
 ---
 
-### 2.4 `lib/api/response.js`
+### 2.5 `lib/api/response.js`
 
 **Localização:** `/lib/api/response.js`
 
@@ -236,7 +251,7 @@
 
 ---
 
-### 2.5 `lib/api/utils.js`
+### 2.6 `lib/api/utils.js`
 
 **Localização:** `/lib/api/utils.js`
 
@@ -251,7 +266,7 @@
 
 ---
 
-### 2.6 `lib/api/validate.js`
+### 2.7 `lib/api/validate.js`
 
 **Localização:** `/lib/api/validate.js`
 

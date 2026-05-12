@@ -1,17 +1,6 @@
-import { getAuthToken, verifyToken } from '../../../lib/auth';
+import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', ['POST']);
-    return res.status(405).end(`Method ${req.method} Not Allowed`);
-  }
-
-  // Segurança: Apenas administradores podem usar esta rota
-  const token = getAuthToken(req);
-  if (!token || !verifyToken(token)) {
-    return res.status(401).json({ error: 'Não autenticado' });
-  }
-
+async function handlePost(req, res) {
   const { url } = req.body;
   if (!url) return res.status(400).json({ error: 'URL do Spotify não fornecida.' });
 
@@ -37,17 +26,17 @@ export default async function handler(req, res) {
         const embedRes = await fetch(`https://open.spotify.com/embed/track/${trackMatch[1]}`, {
           headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
         });
-        
+
         if (embedRes.ok) {
           const embedHtml = await embedRes.text();
           // O HTML do Embed possui scripts internos com os dados exatos da música em JSON
-          const artistsMatch = embedHtml.match(/"artists"\s*:\s*\[\s*{\s*"name"\s*:\s*"([^"]+)"/i) || 
-                               embedHtml.match(/&quot;artists&quot;:\[{&quot;name&quot;:&quot;([^&]+)&quot;/i);
-          
+          const artistsMatch = embedHtml.match(/"artists"\s*:\s*\[\s*{\s*"name"\s*:\s*"([^"]+)"/i) ||
+                               embedHtml.match(/"artists":\[\{"name":"([^&]+)"/i);
+
           if (artistsMatch && artistsMatch[1]) {
             artist = artistsMatch[1];
           }
-          
+
           if (!title) {
             const titleMatch = embedHtml.match(/"name"\s*:\s*"([^"]+)"/i);
             if (titleMatch) title = titleMatch[1];
@@ -62,20 +51,20 @@ export default async function handler(req, res) {
     if (!artist) {
       try {
         const htmlRes = await fetch(url, {
-          headers: { 
+          headers: {
             'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
             'Accept-Language': 'en-US,en;q=0.9'
           }
         });
-        
+
         if (htmlRes.ok) {
           const html = await htmlRes.text();
-          
+
           // Tenta pegar o artista pela Meta Description (Ex: "Queen · Song · 1975")
           const descMatch = html.match(/<meta\s+(?:property|name)="(?:og:)?description"\s+content="([^"]+)"/i);
-          
+
           if (descMatch && descMatch[1]) {
-            const descContent = descMatch[1].replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
+            const descContent = descMatch[1].replace(/"/g, '"').replace(/&#39;/g, "'").replace(/&/g, '&');
             const parts = descContent.split('·');
             if (parts.length > 1) {
               artist = parts[0].trim();
@@ -91,9 +80,16 @@ export default async function handler(req, res) {
       throw new Error('Não foi possível identificar a música. Verifique se o link é válido.');
     }
 
+    req.adminUtils.logActivity('FETCH SPOTIFY', Date.now(), `Buscou dados da música: ${title}`);
     // Retorna com Fallback
     return res.status(200).json({ title, artist: artist || 'Artista não identificado' });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
 }
+
+export default createAdminHandler({
+  name: 'Spotify',
+  allowedMethods: ['POST'],
+  handlers: { POST: handlePost },
+});

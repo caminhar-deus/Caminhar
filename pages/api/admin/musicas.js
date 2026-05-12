@@ -1,163 +1,115 @@
 import { getPaginatedMusicas, createMusica, updateMusica, deleteMusica } from '../../../lib/domain/musicas.js';
 import { updateRecords } from '../../../lib/crud.js';
-import { logActivity } from '../../../lib/domain/audit.js';
 import { query } from '../../../lib/db.js';
-import { withAuth } from '../../../lib/auth.js';
-import { invalidateCache } from '../../../lib/cache.js';
+import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
 
 const isValidSpotifyUrl = (url) => {
   return url.includes('spotify.com') || url.includes('spotify:');
 };
 
-async function handler(req, res) {
-  const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
-  const user = req.user; // Extraído automaticamente pelo seu middleware withAuth
+async function handleGet(req, res) {
+  // Desabilita cache para garantir que a lista administrativa esteja sempre atualizada
+  res.setHeader('Cache-Control', 'no-store, max-age=0, must-revalidate');
 
-  switch (req.method) {
-    case 'GET':
-      try {
-        // Desabilita cache para garantir que a lista administrativa esteja sempre atualizada
-        res.setHeader('Cache-Control', 'no-store, max-age=0, must-revalidate');
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const search = req.query.search || '';
 
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        const search = req.query.search || '';
-        
-        const result = await getPaginatedMusicas(page, limit, search);
-        
-        // Log para diagnóstico: Verifique isso no terminal onde o servidor está rodando
-        console.log('🔍 Admin Musicas GET:', { 
-          total: result.pagination.total, 
-          retornados: result.musicas.length,
-          primeiroItem: result.musicas[0] ? result.musicas[0].titulo : 'Nenhum'
-        });
+  const result = await getPaginatedMusicas(page, limit, search);
 
-        res.status(200).json(result);
-      } catch (error) {
-        console.error('Error fetching musicas:', error);
-        res.status(500).json({ message: 'Erro ao buscar músicas' });
-      }
-      break;
+  console.log('🔍 Admin Musicas GET:', {
+    total: result.pagination.total,
+    retornados: result.musicas.length,
+    primeiroItem: result.musicas[0] ? result.musicas[0].titulo : 'Nenhum'
+  });
 
-    case 'POST':
-      try {
-        const { titulo, artista, descricao, url_spotify, publicado } = req.body;
-
-        if (!titulo || !artista || !url_spotify) {
-          return res.status(400).json({ message: 'Título, artista e URL do Spotify são obrigatórios' });
-        }
-
-        // Validação básica de URL do Spotify
-        if (!isValidSpotifyUrl(url_spotify)) {
-          return res.status(400).json({ message: 'URL do Spotify inválida' });
-        }
-
-        const novaMusica = await createMusica({
-          titulo,
-          artista,
-          descricao,
-          url_spotify,
-          publicado: publicado !== undefined ? publicado : false // Default false se não enviado
-        });
-
-        if (user) await logActivity(user.username, 'CRIAR MÚSICA', 'MUSIC', novaMusica.id, `Criou a música: ${titulo}`, ip);
-
-        // Invalida o cache para atualizar a listagem imediatamente
-        await invalidateCache('musicas');
-
-        res.status(201).json(novaMusica);
-      } catch (error) {
-        console.error('Error creating musica:', error);
-        res.status(500).json({ message: 'Erro ao criar música', details: error.message });
-      }
-      break;
-
-    case 'PUT':
-      try {
-        // Intercepta ação customizada de reordenação em massa (Drag & Drop)
-        if (req.body.action === 'reorder') {
-          const { items } = req.body;
-          for (const item of items) {
-            await updateRecords('musicas', { position: item.position }, { id: item.id });
-          }
-          await invalidateCache('musicas');
-          return res.status(200).json({ success: true, message: 'Ordem atualizada' });
-        }
-
-        const { id, titulo, artista, descricao, url_spotify, publicado } = req.body;
-
-        if (!id) {
-          return res.status(400).json({ message: 'ID é obrigatório' });
-        }
-
-        if (!titulo || !artista || !url_spotify) {
-          return res.status(400).json({ message: 'Título, artista e URL do Spotify são obrigatórios' });
-        }
-
-        // Validação básica de URL do Spotify
-        if (!isValidSpotifyUrl(url_spotify)) {
-          return res.status(400).json({ message: 'URL do Spotify inválida' });
-        }
-
-        const musicaAtualizada = await updateMusica(id, {
-          titulo,
-          artista,
-          descricao,
-          url_spotify,
-          publicado
-        });
-
-        if (!musicaAtualizada) {
-          return res.status(404).json({ message: 'Música não encontrada' });
-        }
-
-        if (user) await logActivity(user.username, 'ATUALIZAR MÚSICA', 'MUSIC', id, `Atualizou a música: ${titulo}`, ip);
-
-        // Invalida o cache após atualização
-        await invalidateCache('musicas');
-
-        res.status(200).json(musicaAtualizada);
-      } catch (error) {
-        console.error('Error updating musica:', error);
-        res.status(500).json({ message: 'Erro ao atualizar música', details: error.message });
-      }
-      break;
-
-    case 'DELETE':
-      try {
-        const { id } = req.body;
-
-        if (!id) {
-          return res.status(400).json({ message: 'ID é obrigatório' });
-        }
-
-        // Chama a exclusão primeiro, solicitando o título para o log de auditoria.
-        // Isso remove a dependência direta da função `query` do handler.
-        const deletedMusica = await deleteMusica(id, { returning: ['id', 'titulo'] });
-
-        if (!deletedMusica) {
-          return res.status(404).json({ message: 'Música não encontrada' });
-        }
-
-        if (user) {
-          const tituloMusica = deletedMusica.titulo || id;
-          await logActivity(user.username, 'EXCLUIR MÚSICA', 'MUSIC', id, `Removeu a música: ${tituloMusica}`, ip);
-        }
-
-        // Invalida o cache após exclusão
-        await invalidateCache('musicas');
-
-        res.status(200).json({ message: 'Música excluída com sucesso' });
-      } catch (error) {
-        console.error('Error deleting musica:', error);
-        res.status(500).json({ message: 'Erro ao excluir música', details: error.message });
-      }
-      break;
-
-    default:
-      res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
-      res.status(405).end(`Método ${req.method} não permitido`);
-  }
+  return res.status(200).json(result);
 }
 
-export default withAuth(handler);
+async function handlePost(req, res) {
+  const { titulo, artista, descricao, url_spotify, publicado } = req.body;
+
+  if (!titulo || !artista || !url_spotify) {
+    return res.status(400).json({ message: 'Título, artista e URL do Spotify são obrigatórios' });
+  }
+
+  if (!isValidSpotifyUrl(url_spotify)) {
+    return res.status(400).json({ message: 'URL do Spotify inválida' });
+  }
+
+  const novaMusica = await createMusica({
+    titulo,
+    artista,
+    descricao,
+    url_spotify,
+    publicado: publicado !== undefined ? publicado : false
+  });
+
+  req.adminUtils.logActivity('CRIAR MÚSICA', novaMusica.id, `Criou a música: ${titulo}`);
+  return res.status(201).json(novaMusica);
+}
+
+async function handlePut(req, res) {
+  // Intercepta ação customizada de reordenação em massa (Drag & Drop)
+  if (req.body.action === 'reorder') {
+    const { items } = req.body;
+    for (const item of items) {
+      await updateRecords('musicas', { position: item.position }, { id: item.id });
+    }
+    return res.status(200).json({ success: true, message: 'Ordem atualizada' });
+  }
+
+  const { id, titulo, artista, descricao, url_spotify, publicado } = req.body;
+
+  if (!id) {
+    return res.status(400).json({ message: 'ID é obrigatório' });
+  }
+
+  if (!titulo || !artista || !url_spotify) {
+    return res.status(400).json({ message: 'Título, artista e URL do Spotify são obrigatórios' });
+  }
+
+  if (!isValidSpotifyUrl(url_spotify)) {
+    return res.status(400).json({ message: 'URL do Spotify inválida' });
+  }
+
+  const musicaAtualizada = await updateMusica(id, {
+    titulo,
+    artista,
+    descricao,
+    url_spotify,
+    publicado
+  });
+
+  if (!musicaAtualizada) {
+    return res.status(404).json({ message: 'Música não encontrada' });
+  }
+
+  req.adminUtils.logActivity('ATUALIZAR MÚSICA', id, `Atualizou a música: ${titulo}`);
+  return res.status(200).json(musicaAtualizada);
+}
+
+async function handleDelete(req, res) {
+  const { id } = req.body;
+
+  if (!id) {
+    return res.status(400).json({ message: 'ID é obrigatório' });
+  }
+
+  const deletedMusica = await deleteMusica(id, { returning: ['id', 'titulo'] });
+
+  if (!deletedMusica) {
+    return res.status(404).json({ message: 'Música não encontrada' });
+  }
+
+  const tituloMusica = deletedMusica.titulo || id;
+  req.adminUtils.logActivity('EXCLUIR MÚSICA', id, `Removeu a música: ${tituloMusica}`);
+  return res.status(200).json({ message: 'Música excluída com sucesso' });
+}
+
+export default createAdminHandler({
+  name: 'Musica',
+  handlers: { GET: handleGet, POST: handlePost, PUT: handlePut, DELETE: handleDelete },
+  rateLimit: { max: 30, window: 60000 },
+  cacheKeys: 'musicas',
+});
