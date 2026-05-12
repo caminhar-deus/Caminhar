@@ -13,7 +13,7 @@
    - [1.3 Autenticação replicada em três locais](#13-autenticação-replicada-em-três-locais) — **RESOLVIDO**
    - [1.4 Função generateUUID duplicada](#14-função-generateuuid-duplicada) — **RESOLVIDO**
    - [1.5 Re-exports em db.js criam acoplamento](#15-re-exports-em-dbjs-criam-acoplamento) — **RESOLVIDO**
-   - [1.6 Tratamento de erros em dois padrões diferentes](#16-tratamento-de-erros-em-dois-padrões-diferentes) — **PENDENTE**
+   - [1.6 Tratamento de erros em dois padrões diferentes](#16-tratamento-de-erros-em-dois-padrões-diferentes) — **RESOLVIDO**
 2. [Performance](#2-performance)
    - [2.1 Verificação O(n) em Map.size no cache.js](#21-verificação-on-em-mapsize-no-cachejs)
    - [2.2 Cálculo de posição com race condition em videos.js](#22-cálculo-de-posição-com-race-condition-em-videosjs)
@@ -55,14 +55,14 @@
 
 ### 1.1 Middlewares duplicados entre lib/middleware.js e lib/api/middleware.js — **RESOLVIDO**
 
-**Arquivos:** `lib/middleware.js` (219 linhas) vs `lib/api/middleware.js` (486 linhas)
+**Arquivos:** `lib/middleware.js` (removido) vs `lib/api/middleware.js` (477 linhas)
 
 **O que foi feito:**
-- `lib/middleware.js` foi marcado como **depreciado** com comentário `@deprecated` e guia de migração no topo do arquivo.
-- Cada função exportada foi marcada individualmente com `@deprecated` indicando o equivalente em `lib/api/middleware.js`.
+- `lib/middleware.js` foi **removido** do projeto. O arquivo não existe mais.
+- Todas as funcionalidades foram migradas para `lib/api/middleware.js`.
 - `lib/api/middleware.js` recebeu melhorias no `withRateLimit` (agora usa `checkRateLimit` de `cache.js`) e exporta `cleanupTimers()`.
 - `pages/api/upload-image.js` foi migrado de `externalAuthMiddleware` para `withAuth` (lib/auth.js).
-- `authenticatedApiMiddleware` e `externalAuthMiddleware` foram removidos de `lib/middleware.js`.
+- Dependência `cors` removida do `package.json` (era usada apenas por `lib/middleware.js`).
 
 ---
 
@@ -126,11 +126,14 @@
 
 ---
 
-### 1.6 Tratamento de erros em dois padrões diferentes — **PENDENTE**
+### 1.6 Tratamento de erros em dois padrões diferentes — **RESOLVIDO**
 
-**Arquivos:** `lib/middleware.js` (errorHandlingMiddleware) e `lib/api/response.js` (handleError)
+**Arquivos:** `lib/middleware.js` (errorHandlingMiddleware, removido) e `lib/api/response.js` (handleError)
 
-**Status:** Não foram feitas alterações. O `errorHandlingMiddleware` em `middleware.js` está depreciado. Quando `middleware.js` for removido, o `handleError` em `response.js` prevalecerá como único padrão.
+**O que foi feito:**
+- `lib/middleware.js` foi removido, eliminando o `errorHandlingMiddleware`.
+- O `handleError` de `lib/api/response.js` agora é o único padrão de tratamento de erros.
+- O `withErrorHandler` de `lib/api/middleware.js` delega para `handleError`.
 
 ---
 
@@ -343,9 +346,9 @@
 
 ### 6.2 rateLimitMiddleware usa Map sem limite de crescimento
 
-**Arquivo:** `lib/middleware.js` (linhas 135-166)
+**Arquivo:** `lib/middleware.js` (removido)
 
-**Status:** Não foram feitas alterações. O middleware está depreciado.
+**Status:** **Resolvido indiretamente.** O arquivo `lib/middleware.js` foi removido. O rate limit agora é tratado exclusivamente pelo `withRateLimit` em `lib/api/middleware.js` que usa `checkRateLimit` de `cache.js` (Redis + fallback em memória com limpeza periódica).
 
 ---
 

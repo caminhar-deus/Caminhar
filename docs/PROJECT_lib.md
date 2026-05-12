@@ -13,8 +13,7 @@
    - [lib/cache.js](#12-libcachejs)
    - [lib/crud.js](#13-libcrudjs)
    - [lib/db.js](#14-libdbjs)
-   - [lib/middleware.js](#15-libmiddlewarejs) — **DEPRECIADO**
-   - [lib/redis.js](#16-libredisjs)
+   - [lib/redis.js](#15-libredisjs)
 2. [Subpasta `lib/api/`](#2-subpasta-libapi)
    - [lib/api/errors.js](#21-libapierrorsjs)
    - [lib/api/index.js](#22-libapiindexjs)
@@ -113,35 +112,7 @@
 
 ---
 
-### 1.5 `lib/middleware.js` — **DEPRECIADO**
-
-**Localização:** `/lib/middleware.js`
-
-**Status:** **DEPRECIADO**. Use `lib/api/middleware.js` no lugar.
-
-**Propósito (original):** Middlewares gerais para as APIs Next.js. Inclui CORS, rate limiting (em memória), tratamento de erros e logging.
-
-**Funções restantes:**
-- `logger` — Objeto com métodos info/error/warn
-- `apiMiddleware(handler)` — Middleware principal que aplica CORS, trata OPTIONS e adiciona headers padrão
-- `rateLimitMiddleware(handler)` — Rate limit simples em memória (100 req/15 min) com Map
-- `errorHandlingMiddleware(handler)` — Tratamento de erros com mapeamento de tipos
-
-**Funções removidas (migradas para `lib/auth.js` e `lib/api/middleware.js`):**
-- ~~`authenticatedApiMiddleware(handler)`~~ — Use `withAuth(handler)` de `lib/auth.js`
-- ~~`externalAuthMiddleware(handler)`~~ — Use `withAuth(handler)` de `lib/auth.js`
-
-**Guia de migração:**
-- `apiMiddleware(handler)` → `composeMiddleware(withCors(), withErrorHandler(), handler)`
-- `rateLimitMiddleware` → `withRateLimit()`
-- `errorHandlingMiddleware` → `withErrorHandler()`
-- `logger` → `withLogger()`
-
-**Observações:** Mantido temporariamente para compatibilidade com consumidores existentes (testes). As funções de autenticação (`authenticatedApiMiddleware`, `externalAuthMiddleware`) foram removidas — o único consumidor (`pages/api/upload-image.js`) foi migrado para `withAuth` de `lib/auth.js`. Será removido em versão futura.
-
----
-
-### 1.6 `lib/redis.js`
+### 1.5 `lib/redis.js`
 
 **Localização:** `/lib/redis.js`
 
@@ -202,7 +173,7 @@
 
 **Localização:** `/lib/api/middleware.js`
 
-**Propósito:** Sistema de composição de middlewares para APIs Next.js. Este é o módulo padrão de middlewares do projeto (o `lib/middleware.js` está depreciado).
+**Propósito:** Sistema de composição de middlewares para APIs Next.js. Este é o **único** módulo de middlewares do projeto. O arquivo `lib/middleware.js` foi removido e suas funcionalidades foram migradas para cá.
 
 **Funções/Middlewares:**
 
