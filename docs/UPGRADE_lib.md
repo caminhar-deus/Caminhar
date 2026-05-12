@@ -139,19 +139,35 @@
 
 ## 2. Performance
 
-### 2.1 Verificação O(n) em Map.size no cache.js
+### 2.1 Iteração O(n) no setInterval e clear() agressivo no cache.js — **RESOLVIDO**
 
-**Arquivo:** `lib/cache.js` (linhas 33, 147)
+**Arquivo:** `lib/cache.js`
 
-**Status:** Não foram feitas alterações. `Map.size` é O(1) na maioria dos engines modernos.
+**Problema original documentado:** `Map.size` é O(1) e não havia problema real ali.
+
+**Problema real identificado durante análise:**
+1. **Iteração O(n) no `setInterval`** (antigas linhas 23-28): O timer de limpeza percorria TODAS as entradas do `localRateLimitMap` a cada 60 segundos, mesmo quando o Map estava vazio ou com poucas entradas expiradas. Com 5000 entradas, eram 5000 iterações/minuto desnecessárias.
+2. **`clear()` agressivo** (antigas linhas 36-38 e 168): Quando o Map atingia 5000 entradas, `localRateLimitMap.clear()` descartava TODO o tracking de rate limit acumulado para todos os IPs, perdendo dados legítimos durante picos.
+
+**O que foi feito:**
+- Substituída a iteração completa do `setInterval` por **lazy eviction**: o expurgo de entradas expiradas agora é feito sob demanda dentro de `checkInMemory()`, apenas quando a chave específica é acessada.
+- O `setInterval` foi mantido apenas como **safety net** para evitar growth infinito, mas agora atua de forma seletiva:
+  - Remove apenas entradas com mais de 120s, interrompendo ao atingir margem segura de 4000 entradas.
+  - Se ainda restarem entradas excedentes, ordena por `startTime` e remove apenas as mais antigas (lazy eviction).
+- Substituído `clear()` em `checkInMemory()` por **delete seletivo**: quando o Map excede 5000 entradas, remove apenas a entrada mais antiga via `entries().next()`.
+- Adicionado lazy eviction da chave atual: verifica se a entrada existe e expirou antes de processar, fazendo `delete` da chave específica.
 
 ---
 
-### 2.2 Cálculo de posição com race condition em videos.js
+### 2.2 Cálculo de posição com race condition em videos.js — **RESOLVIDO**
 
-**Arquivo:** `lib/domain/videos.js` (linhas 112-113)
+**Arquivo:** `lib/domain/videos.js` (linhas 112-114)
 
-**Status:** Não foram feitas alterações.
+**O que foi feito:**
+- A lógica de `SELECT MAX(position)` + `INSERT` agora é executada dentro de uma transação (`transaction()`).
+- O `SELECT MAX(position)` utiliza o `client` da transação, garantindo isolamento entre chamadas concorrentes.
+- O `createRecord` também recebe `{ client }`, mantendo toda a operação atômica.
+- Elimina race condition onde duas chamadas simultâneas podiam ler o mesmo `MAX(position)` e atribuir a mesma posição.
 
 ---
 
@@ -165,27 +181,39 @@
 
 ---
 
-### 2.4 Pool PostgreSQL recriado sem validação de saúde
+### 2.4 Pool PostgreSQL recriado sem validação de saúde — **RESOLVIDO**
 
 **Arquivo:** `lib/db.js` (linhas 8-23)
 
-**Status:** Não foram feitas alterações.
+**O que foi feito:**
+- Extraída a criação do pool para a função `createPool()`, que retorna um novo `Pool`.
+- Adicionado handler para o evento `error` do pool que, em caso de erro fatal, tenta fechar o pool defeituoso e reseta a referência (`pool = null`) para que o próximo `getPool()` crie um novo.
+- `resetPool()` foi aprimorado: agora limpa o `healthCheckTimer`, remove listeners de erro e fecha o pool antigo com `.end()`.
+- Variável `healthCheckTimer` adicionada (preparada para health check periódico futuro).
 
 ---
 
-### 2.5 clearAllCache silencia erros do Redis
+### 2.5 clearAllCache silencia erros do Redis — **RESOLVIDO**
 
 **Arquivo:** `lib/cache.js` (linhas 111-123)
 
-**Status:** Não foram feitas alterações.
+**O que foi feito:**
+- `clearAllCache()` agora retorna `{ success: true }` em caso de sucesso.
+- Em caso de falha do Redis, incrementa `metrics.redisErrors` e retorna `{ success: false, error: error.message }`.
+- O chamador agora tem visibilidade do resultado da operação e pode decidir como reagir.
+- O `metrics.redisErrors` continua sendo exposto via `getCacheMetrics()`.
 
 ---
 
-### 2.6 Promises.all sem tratamento de erro parcial em reorderVideos
+### 2.6 Promises.all sem tratamento de erro parcial em reorderVideos — **RESOLVIDO**
 
 **Arquivo:** `lib/domain/videos.js` (linhas 147-152)
 
-**Status:** Não foram feitas alterações.
+**O que foi feito:**
+- Substituído `Promise.all` por `Promise.allSettled` para capturar falhas individuais sem rejeição abrupta.
+- Adicionada lógica que identifica e loga cada `item.id` e `item.position` que falhou, com a mensagem de erro original.
+- Após logar todas as falhas, relança o erro da primeira falha para acionar o ROLLBACK da transação.
+- Garante que o administrador saiba exatamente qual vídeo causou o problema.
 
 ---
 

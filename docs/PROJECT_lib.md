@@ -63,12 +63,12 @@
 
 **Funções principais:**
 - `getOrSetCache(key, fetchFunction, ttlSeconds)` — Padrão "Cache-Aside": tenta Redis, em caso de miss executa a função de fetch, salva no Redis e retorna. TTL padrão de 1 hora. Incrementa `redisHits` e `redisMisses` nas métricas.
-- `invalidateCache(keyPattern)` / `clearAllCache()` — Invalida chave específica ou limpa todo o cache Redis (FLUSHDB).
+- `invalidateCache(keyPattern)` / `clearAllCache()` — Invalida chave específica ou limpa todo o cache Redis (FLUSHDB). `clearAllCache()` retorna `{ success: true }` em sucesso ou `{ success: false, error: message }` em falha, incrementando `metrics.redisErrors`.
 - `checkRateLimit(ip, endpoint, limit, windowMs)` — Rate limit distribuído via Redis (INCR + EXPIRE) com fallback em Map local. Aceita `limit` como função dinâmica. Possui whitelist para IPs locais.
 - `getCacheMetrics()` — Retorna métricas de monitoramento (hits, misses, erros, tamanho do Map local).
 - `cleanupRateLimitTimer()` — Limpa o timer de limpeza periódica (usado em testes).
 
-**Observações:** Inclui limpeza periódica do Map local a cada 1 minuto via `setInterval` com referência armazenada para cleanup. Proteção contra memory leak: limpa o Map se exceder 5000 entradas. O rate limit tem fallback completo caso o Redis falhe. As métricas `redisHits` e `redisMisses` são incrementadas corretamente.
+**Observações:** Utiliza **lazy eviction** para o Map local de rate limit: entradas expiradas são removidas sob demanda em `checkInMemory()` apenas quando a chave é acessada. O `setInterval` existe apenas como **safety net** para evitar growth infinito, atuando de forma seletiva (remove entradas com mais de 120s ou as mais antigas se exceder 5000). Proteção contra memory leak usa `delete` seletivo (remove a entrada mais antiga) em vez de `clear()` agressivo, preservando dados de IPs legítimos. O rate limit tem fallback completo caso o Redis falhe. As métricas `redisHits` e `redisMisses` são incrementadas corretamente.
 
 ---
 
@@ -106,9 +106,9 @@
 - `healthCheck()` — Verifica se o banco está respondendo (`SELECT 1`).
 - `getDatabaseInfo()` — Retorna versão, conexões ativas e tamanho do banco.
 - `closeDatabase()` — Fecha o pool de conexões.
-- `resetPool()` — Reseta o pool (usado em testes para recriar a conexão com mocks).
+- `resetPool()` — Reseta o pool (usado em testes para recriar a conexão com mocks). Agora também limpa timers, remove listeners de erro e fecha o pool antigo.
 
-**Observações:** Pool configurado com lazy initialization (criado apenas no primeiro uso) para compatibilidade com Jest. Pool configurado com max: 20, min: 2, idleTimeout: 30s, connectionTimeout: 2s. SSL habilitado em produção. Re-exports removidos — importe diretamente dos módulos de origem (`./crud.js`, `./domain/settings.js`, `./domain/audit.js`, `./domain/posts.js`).
+**Observações:** Pool configurado com lazy initialization (criado apenas no primeiro uso) para compatibilidade com Jest. Pool configurado com max: 20, min: 2, idleTimeout: 30s, connectionTimeout: 2s. SSL habilitado em produção. Re-exports removidos — importe diretamente dos módulos de origem (`./crud.js`, `./domain/settings.js`, `./domain/audit.js`, `./domain/posts.js`). A criação do pool foi extraída para `createPool()`, que registra handler para evento `error` — em caso de erro fatal, fecha o pool defeituoso e reseta a referência para recriação automática na próxima chamada.
 
 ---
 
@@ -377,12 +377,12 @@
 |--------|-----------|
 | `getPaginatedVideos(page, limit, search)` | Videos paginados para admin (todos) |
 | `getPublicPaginatedVideos(page, limit, search)` | Videos paginados públicos (apenas publicados) |
-| `createVideo(videoData)` | Cria novo vídeo com cálculo automático de posição |
+| `createVideo(videoData)` | Cria novo vídeo com cálculo automático de posição dentro de transação |
 | `updateVideo(id, videoData)` | Atualiza vídeo |
 | `deleteVideo(id)` | Remove vídeo |
-| `reorderVideos(items)` | Reordena vídeos em transação |
+| `reorderVideos(items)` | Reordena vídeos em transação com tratamento de erro parcial |
 
-**Observações:** `getPublicPaginatedVideos` força `WHERE publicado = true`. O cálculo de posição em `createVideo` busca o `MAX(position)` e incrementa. `reorderVideos` usa `Promise.all` dentro de uma transação para atualizar posições em lote.
+**Observações:** `getPublicPaginatedVideos` força `WHERE publicado = true`. O cálculo de posição em `createVideo` busca o `MAX(position)` e incrementa, tudo dentro de uma transação para evitar race condition em chamadas concorrentes. `reorderVideos` usa `Promise.allSettled` para identificar falhas parciais, logando o `id` e `position` exatos do vídeo que falhou antes de acionar o rollback.
 
 ---
 
