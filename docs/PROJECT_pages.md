@@ -125,12 +125,13 @@
 
 ### `/pages/api/posts.js`
 - **Localização:** `/pages/api/posts.js`
-- **Propósito:** Endpoint público para posts com paginação.
+- **Propósito:** Endpoint unificado de posts (público e criação autenticada).
 - **Funcionalidades:**
-  - Método GET com parâmetros `page` e `limit`
-  - Cache distribuído com TTL de 5 minutos
-  - Rate limiting
-  - Paginação com total de registros
+  - **GET** (público): Lista posts publicados com paginação (`page`, `limit`, `search`), cache distribuído e rate limiting.
+  - **POST** (autenticado): Cria novo post com validação Zod, rate limiting em mutações (30 requisições/min), autenticação via Bearer token ou cookie, e invalidação de cache automática.
+  - Suporta `?response=v1` para compatibilidade com formato `{ success, data, pagination, timestamp }`.
+
+> **Nota:** Endpoint unificado em 12/05/2026. O `/api/v1/posts` agora é um wrapper que delega para este endpoint. O `POST` foi migrado do v1 para a raiz, unificando a lógica de criação de posts.
 
 ### `/pages/api/products.js`
 - **Localização:** `/pages/api/products.js`
@@ -334,13 +335,10 @@
   - Retorna `{ status: 'ok' }`
   - Extremamente simples (apenas 4 linhas)
 
-### `/pages/api/v1/posts.js`
-- **Localização:** `/pages/api/v1/posts.js`
-- **Propósito:** API v1 para posts com cache e autenticação.
-- **Funcionalidades:**
-  - GET: Lista posts publicados com cache (TTL 5 min) e paginação
-  - POST: Cria post (autenticado JWT) com validação Zod para título, slug, conteúdo, imagem, tags
-  - Geração automática de slug se não fornecido
+**Arquivo removido (12/05/2026):** `/pages/api/v1/posts.js`
+- Unificado com `/pages/api/posts` — GET e POST foram migrados para o endpoint raiz com suporte a `?response=v1` para compatibilidade.
+- O endpoint `/api/posts?response=v1` substitui o antigo `/api/v1/posts` com o mesmo formato de resposta `{ success, data, pagination, timestamp }`, além de incluir rate limiting em POST e paginação completa em GET que não existiam no v1.
+- Clientes que usavam a rota v1 devem migrar para `/api/posts?response=v1`.
 
 ### `/pages/api/v1/settings.js`
 - **Localização:** `/pages/api/v1/settings.js`
@@ -525,12 +523,14 @@
 | APIs (raiz)                  |     9      |
 | APIs Admin                   |     14     |
 | APIs Auth                    |     2      |
-| APIs v1                      |     4      |
-| APIs v1/auth                 |     1*     |
+| APIs v1                      |     3*     |
+| APIs v1/auth                 |     1†     |
 | APIs v1/videos               |     1      |
 | Páginas Blog                 |     2      |
 | CSS Modules Blog             |     1      |
 | CSS Globais e Módulos        |     3      |
 | Tokens de Design             |     11     |
-| **Total**                    |  **54**   |
+| **Total**                    |  **53**   |
 
+> *\*Arquivo `/pages/api/v1/posts.js` removido em 12/05/2026 — unificado com `/pages/api/posts.js`.*
+> *†Arquivo `/pages/api/v1/auth/login.js` removido em 12/05/2026 — unificado com `/pages/api/auth/login.js`.*

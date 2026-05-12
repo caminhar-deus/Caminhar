@@ -42,23 +42,32 @@
 
 ---
 
-### 1.2 Endpoints de Posts Duplicados
+### 1.2 Endpoints de Posts Duplicados — **RESOLVIDO**
 
 **Arquivos:**
-- `/pages/api/posts.js` (raiz)
-- `/pages/api/admin/posts.js` (admin)
-- `/pages/api/v1/posts.js` (v1)
+- `/pages/api/posts.js` (endpoint unificado)
+- `/pages/api/admin/posts.js` (admin — mantido)
+- ~~`/pages/api/v1/posts.js`~~ **— REMOVIDO**
 
-**Problema:** Três implementações diferentes para gerenciamento de posts:
-- `api/posts.js`: GET público com cache e rate limiting
-- `api/admin/posts.js`: CRUD completo para admin
-- `api/v1/posts.js`: GET público com cache + POST autenticado
+**O que foi feito:**
+- `/pages/api/posts.js` foi expandido para suportar **GET + POST**:
+  - **GET**: mantém a implementação original com cache distribuído e rate limiting (mais robusta que a versão v1).
+  - **POST**: implementa criação de post com autenticação (Bearer token ou cookie via `getAuthToken` + `verifyToken`), rate limiting em mutações (30 requisições/minuto) e validação Zod (mesmo schema do endpoint admin).
+  - Suporta `?response=v1` para retornar dados no formato `{ success, data, pagination, timestamp }`.
+- ~~`/pages/api/v1/posts.js`~~ foi **removido** do projeto em 12/05/2026. Clientes externos que usavam a rota `/api/v1/posts` devem migrar para `/api/posts?response=v1`, que mantém o mesmo formato de resposta.
+- `/pages/api/admin/posts.js` permanece inalterado — mantém seu CRUD completo com `withAuth`, RBAC, logging de auditoria e suporte a reordenação.
 
-**Sobreposição:** `api/posts.js` e `api/v1/posts.js` fazem a mesma coisa (GET público). `api/v1/posts.js` e `api/admin/posts.js` fazem POST de post, mas com implementações diferentes.
+**Sobreposições eliminadas:**
+- **GET público**: v1 e raiz faziam a mesma coisa. Agora a raiz (mais robusta, com rate limiting + cache key com paginação e busca) é a única implementação.
+- **POST**: v1 e raiz criavam posts de forma diferente. Agora a raiz (com validação Zod + rate limiting + suporte a cookie e Bearer) é a única implementação.
 
-**Impacto:** Complexidade desnecessária. Uma única rota de API poderia atender todos os casos com diferentes middlewares.
-
-**Sugestão:** Consolidar em um único endpoint `/api/posts` com middlewares condicionais.
+**Benefícios:**
+- ✅ Código duplicado eliminado — lógica centralizada em `/api/posts.js`
+- ✅ Rate limiting agora ativo também em POST (antes não existia no v1)
+- ✅ Schema de validação Zod unificado entre raiz e admin
+- ✅ Cache invalidado após criação de post (antes existia no v1, agora mantido)
+- ✅ Compatibilidade retroativa mantida via `?response=v1`
+- ✅ GET do v1 agora tem paginação completa (antes só trazia todos os posts sem paginação)
 
 ---
 
@@ -456,6 +465,7 @@ if (req.method !== 'GET') {
 | 🔴 Crítico | 4.4 | `[slug].js` | SQL injection - usar prepared statements |
 | 🔴 Crítico | 4.3 | Múltiplos | Validação Zod ausente em endpoints admin |
 | 🟠 Alto | ~~1.1~~ ✅ | `api/auth/login.js`, `api/v1/auth/login.js` | Login duplicado sem rate limiting no v1 — **RESOLVIDO** |
+| 🟠 Alto | ~~1.2~~ ✅ | `api/posts.js`, `api/v1/posts.js`, `api/admin/posts.js` | Posts duplicados (GET + POST) — **RESOLVIDO** |
 | 🟠 Alto | 1.3 | `[slug].js`, `blog/[slug].js` | Conflito de rotas de página de post |
 | 🟠 Alto | 3.4 | `blog/index.js`, `blog/[slug].js` | Fetch HTTP para API interna em SSR |
 | 🟠 Alto | 5.4 | `styles/tokens/*.js` | Tokens não utilizados nos CSS |

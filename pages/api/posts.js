@@ -1,20 +1,32 @@
-import { getRecentPosts } from '../../lib/domain/posts.js';
-import { getOrSetCache, checkRateLimit } from '../../lib/cache.js';
+import { getRecentPosts, createPost } from '../../lib/domain/posts.js';
+import { getOrSetCache, checkRateLimit, invalidateCache } from '../../lib/cache.js';
+import { getAuthToken, verifyToken } from '../../lib/auth.js';
+import { z } from 'zod';
 
 /**
- * API route handler for fetching posts
- * GET /api/posts?page=1&limit=10
+ * API route handler for posts.
+ * GET /api/posts?page=1&limit=10&search= — Lista posts públicos com paginação e cache
+ * POST /api/posts?response=v1 — Cria post (autenticado via Bearer token ou cookie)
+ *
+ * Query params:
+ *   ?response=v1 — Formata resposta no padrão { success, data, ... } (compatível com v1)
  */
 export default async function handler(req, res) {
-  // Apenas método GET é permitido
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  switch (req.method) {
+    case 'GET':
+      return handleGet(req, res);
+    case 'POST':
+      return handlePost(req, res);
+    default:
+      return res.status(405).json({ error: 'Method not allowed' });
   }
+}
 
+/**
+ * GET: Lista posts públicos com paginação, cache e rate limiting
+ */
+async function handleGet(req, res) {
   try {
-    // Extrai parâmetros de query
-    // Corrigido para tratar '0' como um valor válido para validação, em vez de usar o default.
-    // O `||` resultava em `1` quando o valor era `0`, que é "falsy".
     const parsedPage = parseInt(req.query.page);
     const page = !isNaN(parsedPage) ? parsedPage : 1;
 
@@ -23,40 +35,106 @@ export default async function handler(req, res) {
 
     const search = req.query.search || '';
 
-    // Validação básica
     if (page < 1 || limit < 1 || limit > 100) {
       return res.status(400).json({ error: 'Invalid pagination parameters' });
     }
 
-    // Busca posts com cache
-    // A chave de cache agora inclui o termo de busca de forma condicional para evitar chaves como "posts:1:10:"
     const cacheKey = `posts:${page}:${limit}${search ? `:${search}` : ''}`;
     const result = await getOrSetCache(cacheKey, async () => {
-      // O Rate Limit é verificado apenas em um cache miss, para não penalizar
-      // requisições que seriam servidas rapidamente pelo cache.
       const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
       const isRateLimited = await checkRateLimit(ip, 'api:public:posts');
       if (isRateLimited) {
-        // Lança um erro específico que será capturado pelo catch principal.
-        // Isso evita que o erro seja cacheado e garante a resposta 429 correta.
         const rateLimitError = new Error('RATE_LIMIT_EXCEEDED');
         throw rateLimitError;
       }
       return await getRecentPosts(limit, page, search);
     });
 
-    // Retorna a resposta no formato padronizado esperado pelo frontend,
-    // incluindo um indicador de sucesso.
+    // Formato de resposta compatível com v1 quando ?response=v1
+    if (req.query.response === 'v1') {
+      return res.status(200).json({
+        success: true,
+        data: result.data,
+        pagination: result.pagination,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     return res.status(200).json({
       success: true,
       ...result,
     });
   } catch (error) {
-    // Captura o erro específico de rate limit para retornar 429.
     if (error.message === 'RATE_LIMIT_EXCEEDED') {
       return res.status(429).json({ error: 'Too many requests' });
     }
     console.error('Error fetching posts:', error);
     return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+/**
+ * POST: Cria post com autenticação e validação Zod
+ */
+async function handlePost(req, res) {
+  try {
+    // Autenticação
+    const token = getAuthToken(req);
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'Não autenticado' });
+    }
+
+    const user = verifyToken(token);
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Token inválido' });
+    }
+
+    // Rate limit em mutações
+    const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
+    const isRateLimited = await checkRateLimit(ip, 'api:posts:create', 30, 60000);
+    if (isRateLimited) {
+      return res.status(429).json({ error: 'Too many requests' });
+    }
+
+    // Schema de validação Zod (mesmo schema usado no admin para consistência)
+    const postCreateSchema = z.object({
+      title: z.string().min(1, 'Título é obrigatório'),
+      slug: z.string().min(1, 'Slug é obrigatório'),
+      excerpt: z.string().optional(),
+      content: z.string().optional(),
+      image_url: z.string().refine(val =>
+        !val || val === '' || val.startsWith('http') || val.startsWith('/'), {
+        message: 'A URL da imagem deve ser um link completo (https://...) ou um caminho local válido (/uploads/...).'
+      }).optional(),
+      published: z.boolean().optional(),
+    });
+
+    const validationResult = postCreateSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      return res.status(400).json({
+        success: false,
+        message: 'Dados inválidos para criação de post',
+        errors: validationResult.error.flatten().fieldErrors,
+      });
+    }
+
+    const newPost = await createPost(validationResult.data);
+
+    // Invalida o cache público
+    await invalidateCache('posts:public:all');
+
+    // Formato de resposta compatível com v1 quando ?response=v1
+    if (req.query.response === 'v1') {
+      return res.status(201).json({
+        success: true,
+        data: newPost,
+        message: 'Post criado com sucesso',
+      });
+    }
+
+    return res.status(201).json(newPost);
+  } catch (error) {
+    console.error('Error creating post:', error);
+    return res.status(500).json({ success: false, message: 'Erro ao criar post' });
   }
 }
