@@ -1,4 +1,4 @@
-import { getSetting, setSetting, getAllSettings } from '../../../lib/domain/settings.js';
+import { getSetting, setSetting, getAllSettingsRaw } from '../../../lib/domain/settings.js';
 import { getAuthToken, verifyToken } from '../../../lib/auth.js';
 import { getOrSetCache, invalidateCache } from '../../../lib/cache.js';
 
@@ -98,7 +98,7 @@ async function handleGet(req, res) {
     }
   } else {
     // Get all settings from cache or DB
-    const settings = await getOrSetCache('settings:v1:all', getAllSettings, SETTINGS_CACHE_TTL);
+    const settings = await getOrSetCache('settings:v1:all', getAllSettingsRaw, SETTINGS_CACHE_TTL);
     res.status(200).json({
       success: true,
       data: settings,

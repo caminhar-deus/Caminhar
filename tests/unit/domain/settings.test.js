@@ -17,7 +17,7 @@ import {
   getSettings, 
   updateSetting, 
   setSetting, 
-  getAllSettings 
+  getAllSettingsRaw 
 } from '../../../lib/domain/settings.js';
 
 // Importa os mocks para asserções
@@ -95,7 +95,7 @@ describe('Domain - Configurações (lib/domain/settings.js)', () => {
     });
   });
 
-  describe('getAllSettings()', () => {
+  describe('getAllSettingsRaw()', () => {
     it('deve retornar o array completo com todos os registros', async () => {
       const mockRows = [
         { id: 1, key: 'theme', value: 'light', type: 'string' },
@@ -103,7 +103,7 @@ describe('Domain - Configurações (lib/domain/settings.js)', () => {
       ];
       query.mockResolvedValueOnce({ rows: mockRows });
       
-      const result = await getAllSettings();
+      const result = await getAllSettingsRaw();
       
       expect(result).toEqual(mockRows);
       expect(query).toHaveBeenCalledWith('SELECT * FROM settings ORDER BY key ASC', [], { log: false });

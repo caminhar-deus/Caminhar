@@ -71,16 +71,24 @@ describe('Library - Cache & Rate Limit', () => {
     await invalidateCache('key');
     expect(mockRedis.del).toHaveBeenCalledWith('key');
     
-    await clearAllCache();
+    await clearAllCache({ confirm: true });
     expect(mockRedis.flushdb).toHaveBeenCalled();
   });
 
   it('invalidateCache e clearAllCache: fazem bypass se o Redis não estiver instanciado', async () => {
     mockSimulateNoRedis = true;
     await invalidateCache('key');
-    await expect(clearAllCache()).rejects.toThrow('Redis não está conectado ou configurado');
+    await expect(clearAllCache({ confirm: true })).rejects.toThrow('Redis não está conectado ou configurado');
     expect(mockRedis.del).not.toHaveBeenCalled();
     expect(mockRedis.flushdb).not.toHaveBeenCalled();
+  });
+
+  it('clearAllCache: lança erro se confirmação não for fornecida', async () => {
+    await expect(clearAllCache()).rejects.toThrow('Operação FLUSHDB requer confirmação explícita');
+  });
+
+  it('clearAllCache: aceita confirm false e lança erro', async () => {
+    await expect(clearAllCache({ confirm: false })).rejects.toThrow('Operação FLUSHDB requer confirmação explícita');
   });
 
   it('checkRateLimit: usa Redis e limita acessos quando atinge a cota', async () => {
@@ -107,14 +115,14 @@ describe('Library - Cache & Rate Limit', () => {
     mockRedis.flushdb.mockRejectedValueOnce(new Error('Redis falhou'));
     
     // Não deve lançar exceção
-    await expect(clearAllCache()).resolves.not.toThrow();
+    await expect(clearAllCache({ confirm: true })).resolves.not.toThrow();
     
     expect(mockRedis.flushdb).toHaveBeenCalled();
   });
 
   it('checkRateLimit: whitelist permanente funciona corretamente', async () => {
-    // Testa todos os IPs da whitelist
-    const whitelistIPs = ['127.0.0.1', '::1', 'localhost', 'unknown'];
+    // Testa todos os IPs da whitelist (nota: 'unknown' foi removido propositalmente)
+    const whitelistIPs = ['127.0.0.1', '::1', 'localhost'];
     
     for (const ip of whitelistIPs) {
       // Mesmo com limite 0, nunca deve bloquear

@@ -34,12 +34,12 @@
    - [4.5 Nomenclatura inconsistente em getPublicPaginatedVideos](#45-nomenclatura-inconsistente-em-getpublicpaginatedvideos)
    - [4.6 getRecentPosts em posts.js versus getPaginatedPosts](#46-getrecentposts-em-postssj-versus-getpaginatedposts)
 5. [Manutenibilidade](#5-manutenibilidade)
-   - [5.1 Ausência de reorder em musicas.js e posts.js](#51-ausência-de-reorder-em-musicasjs-e-postssj)
+   - [5.1 Ausência de reorder em musicas.js e posts.js](#51-ausência-de-reorder-em-musicasjs-e-postssj) — **RESOLVIDO**
    - [5.2 Logging inconsistente entre módulos](#52-logging-inconsistente-entre-módulos)
-   - [5.3 cleanCache com FLUSHDB agressivo sem confirmação](#53-clearcache-com-flushdb-agressivo-sem-confirmação)
-   - [5.4 settings.js com getSettings e getAllSettings confusos](#54-settingsjs-com-getsettings-e-getallsettings-confusos)
+   - [5.3 cleanCache com FLUSHDB agressivo sem confirmação](#53-clearcache-com-flushdb-agressivo-sem-confirmação) — **RESOLVIDO**
+   - [5.4 settings.js com getSettings e getAllSettings confusos](#54-settingsjs-com-getsettings-e-getallsettings-confusos) — **RESOLVIDO**
    - [5.5 cacheMetrics nunca é incrementado (redisHits/redisMisses)](#55-cachemetrics-nunca-é-incrementado-redishitsredismisses) — **RESOLVIDO**
-   - [5.6 Falta de validação de schema nos CRUDs genéricos](#56-falta-de-validação-de-schema-nos-cruds-genéricos)
+   - [5.6 Falta de validação de schema nos CRUDs genéricos](#56-falta-de-validação-de-schema-nos-cruds-genéricos) — **RESOLVIDO**
 6. [Possíveis Bugs](#6-possíveis-bugs)
    - [6.1 NotFoundError com formatação condicional incorreta](#61-notfounderror-com-formatação-condicional-incorreta) — **RESOLVIDO**
    - [6.2 rateLimitMiddleware usa Map sem limite de crescimento](#62-ratelimitmiddleware-usa-map-sem-limite-de-crescimento)
@@ -343,11 +343,17 @@
 
 ## 5. Manutenibilidade
 
-### 5.1 Ausência de reorder em musicas.js e posts.js
+### 5.1 Ausência de reorder em musicas.js e posts.js — **RESOLVIDO**
 
 **Arquivos:** `lib/domain/musicas.js`, `lib/domain/posts.js`
 
-**Status:** Não foram feitas alterações.
+**O que foi feito:**
+- Criada função `reorderMusicas(items)` em `lib/domain/musicas.js` seguindo o mesmo padrão de `reorderVideos`.
+- Criada função `reorderPosts(items)` em `lib/domain/posts.js` seguindo o mesmo padrão de `reorderVideos`.
+- Ambas utilizam `transaction()` com `Promise.allSettled` para capturar falhas parciais.
+- Falhas individuais são logadas com `item.id` e `item.position` exatos.
+- O erro da primeira falha é relançado para acionar o ROLLBACK da transação.
+- Importação de `transaction` adicionada em `musicas.js`.
 
 ---
 
@@ -359,19 +365,25 @@
 
 ---
 
-### 5.3 clearAllCache com FLUSHDB agressivo sem confirmação
+### 5.3 clearAllCache com FLUSHDB agressivo sem confirmação — **RESOLVIDO**
 
 **Arquivo:** `lib/cache.js` (linhas 110-123)
 
-**Status:** Não foram feitas alterações.
+**O que foi feito:**
+- `clearAllCache()` agora aceita um parâmetro `options = {}` com a opção `confirm`.
+- Se `{ confirm: true }` não for passado, a função lança erro com mensagem explícita orientando o desenvolvedor.
+- Isso evita que FLUSHDB seja executado acidentalmente, protegendo outras aplicações que compartilham a mesma instância Redis.
 
 ---
 
-### 5.4 settings.js com getSettings e getAllSettings confusos
+### 5.4 settings.js com getSettings e getAllSettings confusos — **RESOLVIDO**
 
 **Arquivo:** `lib/domain/settings.js`
 
-**Status:** Não foram feitas alterações.
+**O que foi feito:**
+- `getAllSettings()` foi renomeado para `getAllSettingsRaw()`, deixando claro que retorna registros completos em array.
+- Todos os JSDocs foram convertidos de inglês para português, seguindo o padrão estabelecido no item 4.3.
+- O consumidor `pages/api/v1/settings.js` foi atualizado para importar e usar `getAllSettingsRaw`.
 
 ---
 
@@ -386,11 +398,16 @@
 
 ---
 
-### 5.6 Falta de validação de schema nos CRUDs genéricos
+### 5.6 Falta de validação de schema nos CRUDs genéricos — **RESOLVIDO**
 
 **Arquivo:** `lib/crud.js`
 
-**Status:** Não foram feitas alterações.
+**O que foi feito:**
+- Criado o mapa `tableSchemas` com os campos permitidos para cada tabela: musicas, posts, videos, settings, audit_log, roles, users, dicas, products.
+- Criada a função interna `_filterAllowedFields(table, data)` que filtra campos do objeto de dados permitindo apenas campos do schema.
+- `createRecord`, `updateRecords` e `upsertRecord` agora filtram os dados recebidos antes de montar a query SQL.
+- Campos não pertencentes ao schema são ignorados com um aviso no console.
+- Tabelas não mapeadas continuam operando sem filtro para compatibilidade retroativa.
 
 ---
 

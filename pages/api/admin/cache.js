@@ -49,8 +49,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 3. Limpeza do Cache
-    await clearAllCache();
+    // 3. Limpeza do Cache (confirmação explícita para evitar FLUSHDB acidental)
+    await clearAllCache({ confirm: true });
     
     return res.status(200).json({
       success: true,

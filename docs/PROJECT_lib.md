@@ -62,7 +62,7 @@
 
 **Funções principais:**
 - `getOrSetCache(key, fetchFunction, ttlSeconds)` — Padrão "Cache-Aside": tenta Redis, em caso de miss executa a função de fetch, salva no Redis e retorna. TTL padrão de 1 hora. Incrementa `redisHits` e `redisMisses` nas métricas.
-- `invalidateCache(keyPattern)` / `clearAllCache()` — Invalida chave específica ou limpa todo o cache Redis (FLUSHDB). `clearAllCache()` retorna `{ success: true }` em sucesso ou `{ success: false, error: message }` em falha, incrementando `metrics.redisErrors`.
+- `invalidateCache(keyPattern)` / `clearAllCache(options)` — Invalida chave específica ou limpa todo o cache Redis (FLUSHDB). `clearAllCache` agora **requer** `{ confirm: true }` como parâmetro obrigatório para evitar FLUSHDB acidental. Retorna `{ success: true }` em sucesso ou `{ success: false, error: message }` em falha, incrementando `metrics.redisErrors`.
 - `checkRateLimit(ip, endpoint, limit, windowMs)` — Rate limit distribuído via Redis (INCR + EXPIRE) com fallback em Map local. Aceita `limit` como função dinâmica. Possui whitelist para IPs locais.
 - `getCacheMetrics()` — Retorna métricas de monitoramento (hits, misses, erros, tamanho do Map local).
 - `cleanupRateLimitTimer()` — Limpa o timer de limpeza periódica (usado em testes).
@@ -88,8 +88,9 @@
 - `_validateIdentifier(identifier)` — Valida nomes de tabela/coluna (regex de alfanuméricos + underscore) para prevenir SQL injection.
 - `_buildSetClause(data, startingIndex)` — Constrói cláusulas SET para UPDATE.
 - `_buildInsertClauseParts(data, startingIndex)` — Constrói campos e placeholders para INSERT.
+- `_filterAllowedFields(table, data)` — Filtra campos do objeto de dados permitindo apenas campos do schema da tabela, prevenindo inserção de campos inexistentes.
 
-**Observações:** Toda construção SQL é parametrizada. Os nomes de tabelas/colunas são validados. Suporta transações via passagem de `client`. O `raw()` permite funções SQL sem parametrização.
+**Observações:** Toda construção SQL é parametrizada. Os nomes de tabelas/colunas são validados. Suporta transações via passagem de `client`. O `raw()` permite funções SQL sem parametrização. Desde a última atualização, o `crud.js` passou a incluir validação de schema: um mapa `tableSchemas` define os campos permitidos para cada tabela (musicas, posts, videos, settings, audit_log, roles, users, dicas, products). As funções `createRecord`, `updateRecords` e `upsertRecord` filtram os dados recebidos, ignorando campos não pertencentes ao schema com um aviso no console. Tabelas não mapeadas continuam operando sem filtro para compatibilidade.
 
 ---
 
@@ -318,8 +319,9 @@
 | `createMusica(musica, options)` | Cria nova música com `raw('CURRENT_TIMESTAMP')` para `created_at` |
 | `updateMusica(id, musica, options)` | Atualiza música com `raw('CURRENT_TIMESTAMP')` para `updated_at` |
 | `deleteMusica(id, options)` | Remove música por ID |
+| `reorderMusicas(items)` | Reordena músicas em transação com tratamento de erro parcial |
 
-**Observações:** A ordenação padrão é por `position ASC, created_at DESC`. Suporta busca em `titulo` e `artista` (lowercase). `publishedOnly` usado para filtrar músicas públicas. Retorna alias `data` para compatibilidade com componentes genéricos (AdminCrudBase).
+**Observações:** A ordenação padrão é por `position ASC, created_at DESC`. Suporta busca em `titulo` e `artista` (lowercase). `publishedOnly` usado para filtrar músicas públicas. Retorna alias `data` para compatibilidade com componentes genéricos (AdminCrudBase). `reorderMusicas` segue o mesmo padrão de `reorderVideos`: usa transação, `Promise.allSettled` para capturar falhas parciais, loga o `id` e `position` exatos de cada item que falhou e relança o erro para acionar rollback.
 
 ---
 
@@ -340,8 +342,9 @@
 | `updatePost(id, post, options)` | Atualiza post com `raw('CURRENT_TIMESTAMP')` |
 | `deletePost(id, options)` | Remove post |
 | `createPostWithAudit(postData, auditData)` | Cria post + registra auditoria em transação |
+| `reorderPosts(items)` | Reordena posts em transação com tratamento de erro parcial |
 
-**Observações:** A função `createPostWithAudit` demonstra o padrão de transação combinando criação de post com log de auditoria. `getRecentPosts` filtra apenas posts publicados. Os dados são preparados com null safety (`?? null`).
+**Observações:** A função `createPostWithAudit` demonstra o padrão de transação combinando criação de post com log de auditoria. `getRecentPosts` filtra apenas posts publicados. Os dados são preparados com null safety (`?? null`). `reorderPosts` segue o mesmo padrão de `reorderVideos` e `reorderMusicas`: transação com `Promise.allSettled` para tratamento de erro parcial.
 
 ---
 
@@ -359,9 +362,9 @@
 | `getSettings()` | Retorna todas as configurações como objeto chave-valor |
 | `updateSetting(key, value, type, description)` | Cria ou atualiza configuração (upsert) |
 | `setSetting(key, value, type, description)` | Alias para `updateSetting` |
-| `getAllSettings()` | Retorna todas as configurações como array de registros |
+| `getAllSettingsRaw()` | Retorna todas as configurações como array de registros |
 
-**Observações:** Usa `upsertRecord` do `crud.js` para INSERT ON CONFLICT. A função `getSettings` retorna um objeto plano, enquanto `getAllSettings` retorna array completo de registros. Ordenação alfabética em `getAllSettings`.
+**Observações:** Usa `upsertRecord` do `crud.js` para INSERT ON CONFLICT. A função `getSettings` retorna um objeto plano, enquanto `getAllSettingsRaw` retorna array completo de registros. A função anteriormente chamada `getAllSettings` foi renomeada para `getAllSettingsRaw` para evitar confusão com `getSettings`.
 
 ---
 
