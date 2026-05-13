@@ -20,17 +20,40 @@ const fallbackData = [
 ];
 
 export default function Testimonials() {
-  const { data: apiDicas, loading } = useApiFetch('/api/dicas', {
-    initialData: [],
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const itemsPerPage = 6;
+
+  const { data: apiDicas, loading } = useApiFetch(`/api/dicas?page=${currentPage}&limit=${itemsPerPage}`, {
+    initialData: { data: [], pagination: { totalPages: 1 } },
     transform: (result) => {
-      if (result && result.length > 0) return result;
-      return [];
+      if (result && result.success && Array.isArray(result.data)) {
+        return result;
+      }
+      return { data: [], pagination: { totalPages: 1 } };
     },
     onError: (err) => console.error('Erro ao buscar as dicas do dia:', err),
+    deps: [currentPage],
   });
 
   // Usa dados da API se disponíveis, senão fallback
-  const dicas = apiDicas.length > 0 ? apiDicas : fallbackData;
+  const hasApiData = apiDicas?.data?.length > 0;
+  const dicas = hasApiData ? apiDicas.data : fallbackData;
+  const pagination = apiDicas?.pagination;
+
+  // Atualiza totalPages quando a paginação chega
+  useEffect(() => {
+    if (pagination?.totalPages) {
+      setTotalPages(pagination.totalPages);
+    }
+  }, [pagination]);
+
+  // Reseta para página 1 quando muda o total de páginas (ex: exclusão)
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
 
   const scrollRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -61,6 +84,12 @@ export default function Testimonials() {
         left: direction === 'left' ? -scrollAmount : scrollAmount,
         behavior: 'smooth'
       });
+    }
+  };
+
+  const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
     }
   };
 
@@ -111,6 +140,60 @@ export default function Testimonials() {
           </button>
         )}
       </div>
+
+      {totalPages > 1 && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: '1rem',
+          marginTop: '2rem'
+        }}>
+          <button
+            onClick={() => goToPage(currentPage - 1)}
+            disabled={currentPage <= 1}
+            style={{
+              padding: '0.6rem 1.2rem',
+              backgroundColor: currentPage <= 1 ? '#e2e8f0' : '#ffffff',
+              color: currentPage <= 1 ? '#94a3b8' : '#1e293b',
+              border: '1px solid #e2e8f0',
+              borderRadius: '8px',
+              cursor: currentPage <= 1 ? 'not-allowed' : 'pointer',
+              fontWeight: '500',
+              fontSize: '0.9rem',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            ← Anterior
+          </button>
+
+          <span style={{
+            color: '#64748b',
+            fontSize: '0.95rem',
+            fontWeight: '500'
+          }}>
+            Página {currentPage} de {totalPages}
+          </span>
+
+          <button
+            onClick={() => goToPage(currentPage + 1)}
+            disabled={currentPage >= totalPages}
+            style={{
+              padding: '0.6rem 1.2rem',
+              backgroundColor: currentPage >= totalPages ? '#e2e8f0' : '#ffffff',
+              color: currentPage >= totalPages ? '#94a3b8' : '#1e293b',
+              border: '1px solid #e2e8f0',
+              borderRadius: '8px',
+              cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
+              fontWeight: '500',
+              fontSize: '0.9rem',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            Próximo →
+          </button>
+        </div>
+      )}
 
       <style jsx>{`
         .dicas-container {

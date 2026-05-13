@@ -478,7 +478,7 @@
 
 ### 4.3 Validação Zod Inconsistente — **RESOLVIDO**
 
-**Problema:** Alguns endpoints usam validação Zod (`api/musicas.js`, `api/settings.js`, `api/v1/posts.js`, `api/v1/settings.js`), mas a maioria dos endpoints admin **não** usa validação nos dados de entrada.
+**Problema:** Alguns endpoints usavam validação Zod (`api/musicas.js`, `api/settings.js`), mas a maioria dos endpoints admin **não** usava validação nos dados de entrada.
 
 **Impacto:** Dados mal formatados podem corromper o banco de dados.
 
@@ -557,7 +557,7 @@
 
 ## 5. Manutenibilidade e Padronização
 
-### 5.1 Tags Padrão Repetidas nos Endpoints Admin
+### 5.1 Tags Padrão Repetidas nos Endpoints Admin — **RESOLVIDO**
 
 **Arquivos:** Todos em `/pages/api/admin/`
 
@@ -577,13 +577,23 @@ if (req.method !== 'GET') {
 
 ---
 
-### 5.2 Endpoints sem Versionamento Consistente
+### 5.2 Endpoints sem Versionamento Consistente — **RESOLVIDO**
 
-**Problema:** O projeto mistura endpoints sem versão (`/api/posts`) e versionados (`/api/v1/posts`), mas a lógica é essencialmente a mesma.
+**Arquivos:**
+- `/pages/api/v1/` (diretório removido)
+- `/pages/api/status.js` (criado)
+- `/pages/api/auth/check.js` (criado)
 
-**Impacto:** Dúvida sobre qual endpoint usar. Manutenção duplicada entre versões.
-
-**Sugestão:** Definir uma estratégia clara de versionamento e migrar gradualmente.
+**O que foi feito (13/05/2026):**
+- Estratégia definida: adotar **apenas endpoints sem versão** (padrão)
+- O diretório `/pages/api/v1/` foi **removido** do projeto
+- Os endpoints versionados foram migrados para rotas sem versão:
+  - `/api/v1/status` → `/api/status`
+  - `/api/v1/auth/check` → `/api/auth/check`
+  - `/api/v1/auth/login` → `/api/auth/login?response=body`
+  - `/api/v1/health` → `/api/status?mode=health`
+  - PUT/DELETE de `/api/v1/videos/[id]` já gerenciados por `/api/admin/videos`
+- Testes, load tests e documentação atualizados para refletir as novas rotas
 
 ---
 
@@ -692,6 +702,7 @@ if (req.method !== 'GET') {
 | 🟠 Alto | ~~3.3~~ ✅ | `_document.js` | Múltiplos preconnects sem verificação de necessidade — **RESOLVIDO** (apenas fontes mantidos) |
 | 🟠 Alto | ~~3.4~~ ✅ | `blog/[slug].js`, `blog/index.js` | Fetch HTTP para API interna em SSR — **RESOLVIDO** (ambos os arquivos) |
 | 🟠 Alto | ~~3.5~~ ✅ | `_document.js` | TagManager Inline — **RESOLVIDO** (permissão CSP removida, sem TagManager no projeto) |
+| 🟠 Alto | ~~5.2~~ ✅ | `/api/v1/` (removido), `/api/status.js`, `/api/auth/check.js` | Endpoints sem versionamento consistente — **RESOLVIDO** (estratégia definida: apenas sem versão; v1 removido; novos endpoints criados) |
 | 🟠 Alto | 5.4 | `styles/tokens/*.js` | Tokens não utilizados nos CSS |
 | 🟡 Médio | ~~4.2~~ ✅ | `blog/index.js` | Fallback silencioso sem dados — **RESOLVIDO** (adicionado estado de erro visual) |
 | 🟡 Médio | ~~2.1~~ ✅ | Múltiplos | Modelos de autenticação misturados — **RESOLVIDO** |
