@@ -1,6 +1,6 @@
 import { getSettings, getSetting, updateSetting, setSetting, getAllSettingsRaw } from '../../lib/domain/settings.js';
 import { withAuth, getAuthToken, verifyToken } from '../../lib/auth.js';
-import { getOrSetCache, invalidateCache } from '../../lib/cache.js';
+import { getOrSetCache, invalidateCache, checkRateLimit } from '../../lib/cache.js';
 import { z } from 'zod';
 
 const SETTINGS_CACHE_TTL = 1800; // 30 minutos
@@ -26,7 +26,7 @@ export default async function handler(req, res) {
       return handlePut(req, res);
     default:
       res.setHeader('Allow', ['GET', 'POST', 'PUT']);
-      return res.status(405).json({ message: `Method ${req.method} Not Allowed` });
+      return res.status(405).json({ error: 'Method Not Allowed', message: `Método ${req.method} não permitido` });
   }
 }
 
@@ -40,12 +40,12 @@ async function handleGet(req, res) {
   if (key) {
     const token = getAuthToken(req);
     if (!token) {
-      return res.status(401).json({ error: 'Unauthorized', message: 'Authentication required' });
+      return res.status(401).json({ error: 'Unauthorized', message: 'Autenticação necessária' });
     }
 
     const decoded = verifyToken(token);
     if (!decoded) {
-      return res.status(401).json({ error: 'Unauthorized', message: 'Invalid or expired token' });
+      return res.status(401).json({ error: 'Unauthorized', message: 'Token inválido ou expirado' });
     }
 
     // Verifica permissões
@@ -62,12 +62,18 @@ async function handleGet(req, res) {
       return res.status(404).json({ error: 'Not Found', message: 'Configuração não encontrada' });
     } catch (error) {
       console.error('Error fetching setting:', error);
-      return res.status(500).json({ error: 'Error fetching setting' });
+      return res.status(500).json({ error: 'Internal Server Error', message: 'Erro ao buscar configuração' });
     }
   }
 
-  // GET público (sem key) — retorna todas as configurações
+  // GET público (sem key) — retorna todas as configurações com rate limiting
   try {
+    const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
+    const isRateLimited = await checkRateLimit(ip, 'api:public:settings', 30, 60000);
+    if (isRateLimited) {
+      return res.status(429).json({ error: 'Too Many Requests', message: 'Muitas requisições. Tente novamente mais tarde.' });
+    }
+
     res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
     const settings = await getSettings();
 
@@ -79,7 +85,7 @@ async function handleGet(req, res) {
     return res.status(200).json(settings);
   } catch (error) {
     console.error('Error fetching settings:', error);
-    return res.status(500).json({ error: 'Error fetching settings' });
+    return res.status(500).json({ error: 'Internal Server Error', message: 'Erro ao buscar configurações' });
   }
 }
 
@@ -107,7 +113,7 @@ const handlePost = withAuth(async (req, res) => {
     return res.status(201).json({ success: true, data: { key, value: result }, message: 'Configuração criada com sucesso' });
   } catch (error) {
     console.error('Error creating setting:', error);
-    return res.status(500).json({ error: 'Error creating setting' });
+    return res.status(500).json({ error: 'Internal Server Error', message: 'Erro ao criar configuração' });
   }
 });
 
@@ -125,7 +131,7 @@ const handlePut = withAuth(async (req, res) => {
   const validation = bodySchema.safeParse(req.body);
   if (!validation.success) {
     return res.status(400).json({
-      success: false,
+      error: 'Bad Request',
       message: 'Parâmetros inválidos.',
       errors: validation.error.flatten().fieldErrors,
     });
@@ -143,6 +149,6 @@ const handlePut = withAuth(async (req, res) => {
     return res.status(200).json({ success: true });
   } catch (error) {
     console.error('Error updating setting:', error);
-    return res.status(500).json({ error: 'Error updating setting' });
+    return res.status(500).json({ error: 'Internal Server Error', message: 'Erro ao atualizar configuração' });
   }
 });

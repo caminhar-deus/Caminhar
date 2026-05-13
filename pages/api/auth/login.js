@@ -11,7 +11,7 @@ import { authenticateAndGenerateToken, setAuthCookie } from '../../../lib/auth';
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
-    return res.status(405).json({ message: `Method ${req.method} Not Allowed` });
+    return res.status(405).json({ error: 'Method Not Allowed', message: `Método ${req.method} não permitido` });
   }
 
   // 1. Pega o IP do usuário para rate limiting
@@ -36,6 +36,10 @@ export default async function handler(req, res) {
 
   if (result.error === 'MISSING_FIELDS') {
     return res.status(400).json({ error: 'Bad Request', message: result.message });
+  }
+
+  if (result.error) {
+    return res.status(500).json({ error: 'Internal Server Error', message: result.message || 'Erro interno do servidor' });
   }
 
   const { user, token } = result;

@@ -1,4 +1,5 @@
 import { getPaginatedMusicas } from '../../lib/domain/musicas.js';
+import { getOrSetCache, checkRateLimit } from '../../lib/cache.js';
 import { z } from 'zod';
 
 /**
@@ -16,7 +17,7 @@ async function handleGet(req, res) {
     const validation = querySchema.safeParse(req.query);
     if (!validation.success) {
       return res.status(400).json({
-        success: false,
+        error: 'Bad Request',
         message: 'Parâmetros inválidos.',
         errors: validation.error.flatten().fieldErrors,
       });
@@ -27,8 +28,19 @@ async function handleGet(req, res) {
     // Define uma política de cache para a resposta.
     res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
 
-    // Busca os dados utilizando a função de domínio, garantindo que apenas músicas publicadas sejam retornadas.
-    const result = await getPaginatedMusicas(page, limit, search, true);
+    // Cache com rate limiting integrado
+    const cacheKey = `musicas:${page}:${limit}${search ? `:${search}` : ''}`;
+    const result = await getOrSetCache(cacheKey, async () => {
+      // Rate limiting em endpoint público
+      const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
+      const isRateLimited = await checkRateLimit(ip, 'api:public:musicas', 60, 60000);
+      if (isRateLimited) {
+        throw new Error('RATE_LIMIT_EXCEEDED');
+      }
+
+      // Busca os dados utilizando a função de domínio, garantindo que apenas músicas publicadas sejam retornadas.
+      return await getPaginatedMusicas(page, limit, search, true);
+    });
 
     // Retorna os dados em um formato padronizado e estruturado.
     return res.status(200).json({
@@ -37,10 +49,13 @@ async function handleGet(req, res) {
       pagination: result.pagination,
     });
   } catch (error) {
+    if (error.message === 'RATE_LIMIT_EXCEEDED') {
+      return res.status(429).json({ error: 'Too Many Requests', message: 'Muitas requisições. Tente novamente mais tarde.' });
+    }
     console.error('API Error fetching musicas:', error);
     // Resposta de erro padronizada.
     return res.status(500).json({
-      success: false,
+      error: 'Internal Server Error',
       message: 'Erro interno do servidor ao buscar músicas.',
     });
   }
@@ -56,6 +71,6 @@ export default async function handler(req, res) {
       return handleGet(req, res);
     default:
       res.setHeader('Allow', ['GET']);
-      return res.status(405).json({ message: `Method ${req.method} Not Allowed` });
+      return res.status(405).json({ error: 'Method Not Allowed', message: `Método ${req.method} não permitido` });
   }
 }

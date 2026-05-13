@@ -501,10 +501,10 @@
 **Arquivo:** `lib/auth.js`
 
 **O que foi criado:**
-- Função `authenticateAndGenerateToken(username, password, ip, options)` que unifica a lógica de login usada pelos endpoints `/api/auth/login.js` e `/api/v1/auth/login.js`.
+- Função `authenticateAndGenerateToken(username, password, ip, options)` que unifica a lógica de login usada pelo endpoint `/api/auth/login.js`.
 - Inclui validação de entrada, rate limiting via `checkRateLimit` (padrão 5 tentativas/minuto), autenticação, atualização de `last_login_at`, busca de permissões do cargo e geração de token JWT.
 - Retorna `{ user, token }` em sucesso ou `{ error, message }` em falha (RATE_LIMITED, INVALID_CREDENTIALS, MISSING_FIELDS).
-- Elimina duplicação de lógica de login que existia nos endpoints.
+- Elimina duplicação de lógica de login que existia anteriormente nos endpoints.
 
 ---
 

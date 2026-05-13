@@ -1,6 +1,6 @@
 # Análise da Pasta `/pages`
 
-> **Data:** 10/05/2026
+> **Data:** 12/05/2026 (atualizado)
 > **Objetivo:** Documentar todos os arquivos da pasta `/pages`, descrevendo sua localização, propósito e funcionalidades.
 
 ---
@@ -90,23 +90,30 @@
   - Método DELETE protegido por `withAuth`
   - Remove posts de teste cujo slug contenha o padrão `post-carga-%`
   - Retorna contagem de registros deletados
+  - Respostas de erro padronizadas no formato `{ error, message }` com `console.error()` (alteração 12/05/2026)
 
 ### `/pages/api/dicas.js`
 - **Localização:** `/pages/api/dicas.js`
 - **Propósito:** Endpoint público para dicas.
 - **Funcionalidades:**
   - Método GET
-  - Retorna dicas publicadas ordenadas por `created_at DESC`
-  - Limite de 100 registros
+  - Cache via `getOrSetCache` com chave `dicas:public:published` (adicionado 12/05/2026)
+  - Rate limiting via `checkRateLimit(ip, 'api:public:dicas', 60, 60000)` (adicionado 12/05/2026)
+  - Cache-Control header (`public, s-maxage=60, stale-while-revalidate=300`)
+  - Retorna dicas publicadas ordenadas por `id ASC` no formato `{ success: true, data, count }`
+  - Respostas de erro padronizadas com `{ error, message }` e `console.error()`
 
 ### `/pages/api/musicas.js`
 - **Localização:** `/pages/api/musicas.js`
 - **Propósito:** Endpoint público para músicas com paginação.
 - **Funcionalidades:**
   - Método GET com parâmetros `page` e `limit`
-  - Validação Zod para `limit` (mínimo 1, máximo 50)
-  - Cache via `getCachedData`/`setCachedData` com TTL de 5 minutos
+  - Validação Zod para parâmetros de consulta
+  - Cache via `getOrSetCache` com chave `musicas:${page}:${limit}:${search}` (alterado 12/05/2026 — antes usava `getCachedData/setCachedData` manual)
+  - Rate limiting via `checkRateLimit(ip, 'api:public:musicas', 60, 60000)` (adicionado 12/05/2026)
+  - Cache-Control header (`public, s-maxage=60, stale-while-revalidate=300`)
   - Paginação com total de registros
+  - Respostas de erro padronizadas no formato `{ error, message }`
 
 ### `/pages/api/placeholder-image.js`
 - **Localização:** `/pages/api/placeholder-image.js`
@@ -122,34 +129,40 @@
 - **Propósito:** Endpoint unificado de posts (público e criação autenticada).
 - **Funcionalidades:**
   - **GET** (público): Lista posts publicados com paginação (`page`, `limit`, `search`), cache distribuído e rate limiting.
-  - **POST** (autenticado): Cria novo post com validação Zod, rate limiting em mutações (30 requisições/min), autenticação via Bearer token ou cookie, e invalidação de cache automática.
+  - **POST** (autenticado): Cria novo post com validação Zod, rate limiting em mutações (30 requisições/min), autenticação via `withAuth` (alterado 12/05/2026 — antes usava `getAuthToken()` + `verifyToken()` manual), e invalidação de cache automática.
   - Suporta `?response=v1` para compatibilidade com formato `{ success, data, pagination, timestamp }`.
+  - Respostas de erro padronizadas no formato `{ error, message }` (alterado 12/05/2026).
 
-> **Nota:** Endpoint unificado em 12/05/2026. O `/api/v1/posts` agora é um wrapper que delega para este endpoint. O `POST` foi migrado do v1 para a raiz, unificando a lógica de criação de posts.
+> **Nota:** Endpoint unificado em 12/05/2026. O `/api/v1/posts` agora é um wrapper que delega para este endpoint. O `POST` foi migrado do v1 para a raiz, unificando a lógica de criação de posts. Em 12/05/2026 o POST foi migrado de autenticação manual para `withAuth`.
 
 ### `/pages/api/products.js`
 - **Localização:** `/pages/api/products.js`
 - **Propósito:** CRUD completo de produtos.
 - **Funcionalidades:**
-  - GET público (`?public=true`): Lista produtos sem autenticação, com paginação e formatação de moeda para Real (R$)
-  - GET admin (sem `public`): Lista produtos com paginação, protegido por JWT
-  - POST: Cria produto (protegido por JWT) com validação de campos obrigatórios e cálculo automático de posição
-  - PUT: Atualiza produto (protegido por JWT)
-  - DELETE: Remove produto (protegido por JWT)
+  - GET público (`?public=true`): Lista produtos sem autenticação, com paginação, formatação de moeda para Real (R$), cache via `getOrSetCache` (adicionado 12/05/2026) e rate limiting (adicionado 12/05/2026)
+  - GET admin (sem `public`): Lista produtos com paginação, protegido por autenticação via `requireAuth()` (alterado 12/05/2026)
+  - POST: Cria produto (protegido por `requireAuth()`) com validação de campos obrigatórios e cálculo automático de posição
+  - PUT: Atualiza produto (protegido por `requireAuth()`)
+  - DELETE: Remove produto (protegido por `requireAuth()`)
   - Cache e rate limiting em operações de criação/atualização/exclusão
   - Log de auditoria em todas as mutações
+  - Respostas de erro padronizadas no formato `{ error, message }` (alterado 12/05/2026)
+  - Tratamento de erro centralizado via try/catch no handler principal (alterado 12/05/2026)
+
+> **Nota:** Em 12/05/2026, o `products.js` foi reestruturado: (1) autenticação manual `getAuthToken()` + `verifyToken()` repetida em cada case foi substituída pelo middleware `requireAuth()`; (2) GET público agora usa `getOrSetCache` para cache; (3) GET público agora tem `checkRateLimit`; (4) erros padronizados com `{ error, message }`.
 
 ### `/pages/api/settings.js`
 - **Localização:** `/pages/api/settings.js`
 - **Propósito:** Endpoint unificado de configurações do sistema.
 - **Funcionalidades:**
-  - **GET** (sem `?key`): Retorna configurações principais (público), com cache-control header.
+  - **GET** (sem `?key`): Retorna configurações principais (público), com cache-control header e rate limiting (adicionado 12/05/2026).
   - **GET** (com `?key`): Retorna configuração específica com cache via `getOrSetCache` (autenticado, permissões admin/editor).
   - **POST**: Cria nova configuração (autenticado, apenas role admin), invalida cache.
   - **PUT**: Atualiza configuração (autenticado via `withAuth`), validação Zod, invalida cache.
   - Suporta `?response=v1` para compatibilidade com formato `{ success, data, timestamp }`.
+  - Respostas de erro padronizadas no formato `{ error, message }` (alterado 12/05/2026).
 
-> **Nota:** Endpoint unificado em 12/05/2026. O `/api/v1/settings` foi removido — GET (com e sem key), POST e PUT foram incorporados à raiz. O PUT não possui restrição de role (qualquer usuário autenticado pode alterar settings), mantendo o comportamento original.
+> **Nota:** Endpoint unificado em 12/05/2026. O `/api/v1/settings` foi removido — GET (com e sem key), POST e PUT foram incorporados à raiz. Em 12/05/2026 foi adicionado rate limiting no GET público.
 
 ### `/pages/api/upload-image.js`
 - **Localização:** `/pages/api/upload-image.js`
@@ -161,15 +174,17 @@
   - Tipos permitidos: JPEG, PNG, GIF, WebP
   - Salva em `/public/uploads/` com nome único (timestamp + original)
   - Retorna caminho da imagem
+  - Respostas de erro padronizadas no formato `{ error, message }` (alterado 12/05/2026)
 
 ### `/pages/api/videos.js`
 - **Localização:** `/pages/api/videos.js`
 - **Propósito:** Endpoint público para vídeos com paginação.
 - **Funcionalidades:**
   - Método GET com parâmetros `page` e `limit`
-  - Cache distribuído com TTL de 5 minutos
-  - Rate limiting
+  - Cache distribuído com TTL de 5 minutos via `getOrSetCache`
+  - Rate limiting via `checkRateLimit`
   - Paginação com total de registros
+  - Respostas de erro padronizadas no formato `{ error, message }` (alterado 12/05/2026)
 
 ---
 
@@ -308,13 +323,14 @@
 - **Localização:** `/pages/api/auth/login.js`
 - **Propósito:** Endpoint de autenticação (login).
 - **Funcionalidades:**
-  - Método POST apenas (retorna 405 para outros)
+  - Método POST apenas (retorna 405 padronizado para outros)
   - Rate limiting por IP: 5 tentativas por 60 segundos
-  - Autentica via `authenticate()` da lib
+  - Autentica via `authenticateAndGenerateToken()` da lib
   - Atualiza `last_login_at` no banco
   - Busca permissões baseadas em role
   - Gera JWT e define cookie de autenticação
   - Retorna dados do usuário: `{ id, username, role, permissions }`
+  - Respostas de erro padronizadas no formato `{ error, message }` (alterado 12/05/2026)
 
 ### `/pages/api/auth/logout.js`
 - **Localização:** `/pages/api/auth/logout.js`
@@ -397,6 +413,8 @@
   - Navegação entre páginas com links
   - Fallback: estado vazio se API falhar
   - SEO via `next/head`
+
+> **Nota:** Pendente de melhoria — atualmente faz fetch HTTP para a API interna em vez de query direta ao banco, similar ao que foi corrigido em `blog/[slug].js`.
 
 ### `/pages/blog/[slug].js`
 - **Localização:** `/pages/blog/[slug].js`

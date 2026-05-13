@@ -12,7 +12,7 @@ export const config = {
 
 async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed', message: 'Método não permitido' });
   }
 
   try {
@@ -39,20 +39,20 @@ async function handler(req, res) {
     const imageFile = files.image?.[0] || files.image;
     
     if (!imageFile) {
-      return res.status(400).json({ message: 'No image uploaded' });
+      return res.status(400).json({ error: 'Bad Request', message: 'Nenhuma imagem enviada' });
     }
 
     // Validação de Mimetype
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     if (!allowedTypes.includes(imageFile.mimetype)) {
       try { await fs.promises.unlink(imageFile.filepath); } catch (e) {}
-      return res.status(400).json({ message: 'Formato de arquivo inválido' });
+      return res.status(400).json({ error: 'Bad Request', message: 'Formato de arquivo inválido' });
     }
 
     // Validação de Tamanho (5MB)
     if (imageFile.size > 5 * 1024 * 1024) {
       try { await fs.promises.unlink(imageFile.filepath); } catch (e) {}
-      return res.status(400).json({ message: 'Arquivo muito grande (tamanho máximo 5MB)' });
+      return res.status(400).json({ error: 'Bad Request', message: 'Arquivo muito grande (tamanho máximo 5MB)' });
     }
 
     // Check upload type to decide filename prefix
@@ -77,7 +77,7 @@ async function handler(req, res) {
 
   } catch (error) {
     console.error('Upload error:', error);
-    return res.status(500).json({ message: 'Error uploading image' });
+    return res.status(500).json({ error: 'Internal Server Error', message: 'Erro ao fazer upload da imagem' });
   }
 }
 

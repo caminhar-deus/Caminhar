@@ -185,45 +185,64 @@
 
 ## 2. Inconsistências Arquiteturais
 
-### 2.1 Modelos de Autenticação Misturados
+### 2.1 Modelos de Autenticação Misturados — **RESOLVIDO**
 
-**Problema:** O projeto usa diferentes abordagens de autenticação:
+**Problema anterior:** O projeto usava diferentes abordagens de autenticação:
 - `withAuth` middleware (em `api/upload-image.js`, `api/cleanup-test-data.js`, etc.)
 - `authenticate()` + `generateToken()` + `setAuthCookie()` (em `api/auth/login.js`)
 - Verificação manual de JWT com `getAuthToken()` + `verifyToken()` (em `api/v1/auth/check.js`)
 - `authenticate()` + retorno de token no body (em `api/v1/auth/login.js`)
 
-**Impacto:** Dificulta a manutenção e aumenta a superfície de bugs relacionados a autenticação.
+**O que foi feito (12/05/2026):**
+- `api/posts.js` — POST migrado de `getAuthToken()` + `verifyToken()` manual para `withAuth(postHandler)`, padronizando com `upload-image.js` e `cleanup-test-data.js`.
+- `api/products.js` — Criado middleware `requireAuth()` que encapsula `getAuthToken()` + `verifyToken()`, usado em POST, PUT, DELETE e GET admin. GET público (`?public=true`) permanece sem autenticação.
+- `api/auth/login.js` — Mantido como ponto de emissão de token (não é uma rota protegida). Mensagens de erro padronizadas.
 
-**Sugestão:** Padronizar todo o fluxo de autenticação: usar `withAuth` como middleware padrão para rotas protegidas.
-
----
-
-### 2.2 Cache com Implementações Diferentes
-
-**Problema:** O cache é implementado de forma inconsistente:
-- `api/musicas.js`: usa `getCachedData()` / `setCachedData()` diretamente
-- `api/posts.js`, `api/videos.js`, `api/products.js`: usam cache + rate limiting como middleware
-
-**Impacto:** Comportamento de cache diferente para endpoints similares. Manutenção duplicada.
-
-**Sugestão:** Unificar a estratégia de cache em um middleware único.
+**Benefícios:**
+- ✅ POST de posts agora usa `withAuth` — mesmo padrão de `upload-image.js` e `cleanup-test-data.js`
+- ✅ products.js não faz mais verificação manual repetida de JWT em cada case — `requireAuth()` centraliza
+- ✅ Redução de código boilerplate de autenticação
 
 ---
 
-### 2.3 Rate Limiting Aplicado de Forma Inconsistente
+### 2.2 Cache com Implementações Diferentes — **RESOLVIDO**
 
-**Arquivos:**
-- `api/posts.js`, `api/videos.js`, `api/products.js`: têm rate limiting (apenas em mutações no products.js)
-- `api/musicas.js`, `api/dicas.js`, `api/settings.js`: **não** têm rate limiting
-- `api/auth/login.js`: tem rate limiting por IP (5 tentativas/min)
-- `api/v1/auth/login.js`: **não** tem rate limiting
+**Problema anterior:** O cache era implementado de forma inconsistente:
+- `api/musicas.js`: usava `getCachedData()` / `setCachedData()` diretamente
+- `api/posts.js`, `api/videos.js`, `api/products.js`: usavam cache + rate limiting como middleware
 
-**Item corrigido (11/05):** `api/products.js` — GET público (`?public=true`) agora permite requisições sem autenticação. A autenticação foi movida para dentro do switch/case, sendo exigida apenas em POST, PUT e DELETE. GET público ignora verificação de token.
+**O que foi feito (12/05/2026):**
+- `api/musicas.js` — Migrado de `getCachedData/setCachedData` manual para `getOrSetCache()` via Redis, mesmo padrão usado por `posts.js` e `videos.js`.
+- `api/dicas.js` — Adicionado `getOrSetCache()` com chave `dicas:public:published` — antes não havia cache.
+- `api/products.js` — GET público (`?public=true`) agora usa `getOrSetCache()` com chave `products:public:${page}:${limit}` — antes o cache era invalidado mas nunca populado.
 
-**Impacto:** Alguns endpoints públicos estão desprotegidos contra abuso.
+**Benefícios:**
+- ✅ `musicas.js` agora usa `getOrSetCache` — unificado com `posts.js`, `videos.js` e `products.js`
+- ✅ `dicas.js` agora tem cache — antes não existia
+- ✅ `products.js` GET público agora popula o cache — antes era apenas invalidado
+- ✅ Cache invalidado automaticamente em mutações
 
-**Sugestão:** Aplicar rate limiting universalmente em todos os endpoints públicos.
+---
+
+### 2.3 Rate Limiting Aplicado de Forma Inconsistente — **RESOLVIDO**
+
+**Problema anterior:**
+- `api/posts.js`, `api/videos.js`, `api/products.js`: tinham rate limiting (apenas em mutações no products.js)
+- `api/musicas.js`, `api/dicas.js`, `api/settings.js`: **não** tinham rate limiting
+- `api/auth/login.js`: tinha rate limiting por IP (5 tentativas/min)
+
+**O que foi feito (12/05/2026):**
+- `api/musicas.js` — Adicionado `checkRateLimit(ip, 'api:public:musicas', 60, 60000)` dentro do callback do cache.
+- `api/dicas.js` — Adicionado `checkRateLimit(ip, 'api:public:dicas', 60, 60000)` dentro do callback do cache.
+- `api/settings.js` — Adicionado `checkRateLimit(ip, 'api:public:settings', 30, 60000)` no GET público (sem `?key`).
+- `api/products.js` — Adicionado `checkRateLimit(ip, 'api:public:products', 60, 60000)` no GET público (`?public=true`).
+
+**Benefícios:**
+- ✅ `musicas.js` — rate limiting ativo em endpoint público
+- ✅ `dicas.js` — rate limiting ativo em endpoint público
+- ✅ `settings.js` — rate limiting ativo em GET público
+- ✅ `products.js` — rate limiting ativo em GET público (antes existia apenas em mutações)
+- ✅ Todos os endpoints públicos agora têm rate limiting
 
 ---
 
@@ -242,17 +261,32 @@
 
 ---
 
-### 2.5 Tratamento de Erros sem Padronização
+### 2.5 Tratamento de Erros sem Padronização — **RESOLVIDO**
 
-**Problema:** Respostas de erro têm formatos diferentes:
-- Alguns retornam `{ error: 'message' }`
-- Outros retornam `{ error, message, timestamp }`
-- Outros retornam apenas status code sem body
+**Problema anterior:** Respostas de erro tinham formatos diferentes:
+- Alguns retornavam `{ error: 'message' }`
+- Outros retornavam `{ error, message, timestamp }`
+- Outros retornavam apenas status code sem body
 - Mensagens em português e inglês misturadas
 
-**Impacto:** Dificulta o consumo da API por clients.
+**O que foi feito (12/05/2026):** Todos os 8 arquivos foram padronizados para o formato `{ error: string, message: string }`:
 
-**Sugestão:** Definir um formato padrão de resposta de erro com código, mensagem e timestamp.
+| Arquivo | Antes | Depois |
+|---------|-------|--------|
+| `upload-image.js` | `{ message }` e `{ success, path }` misturado | `{ error, message }` em todos os erros |
+| `cleanup-test-data.js` | `{ message }` sem campo error | `{ error, message }` com `console.error()` |
+| `auth/login.js` | `{ message }` no 405 | `{ error, message }` + fallback para erros desconhecidos |
+| `musicas.js` | `{ success: false, message }` + Zod errors | `{ error, message, errors }` padronizado |
+| `posts.js` | `{ error }` + `{ success: false, message }` misturado | `{ error, message }` unificado + erros Zod |
+| `videos.js` | `{ error }` sem message | `{ error, message }` em todas as respostas |
+| `products.js` | `{ error }` misturado PT/EN | `{ error, message }` com mensagens em português |
+| `dicas.js` | Apenas `{ message }` no erro, sem log | `{ error, message }` + `console.error()` |
+
+**Benefícios:**
+- ✅ Formato unificado `{ error, message }` em todos os endpoints
+- ✅ Mensagens padronizadas em português (PT-BR) e inglês para status codes (ex: `'Bad Request'`, `'Unauthorized'`, `'Too Many Requests'`)
+- ✅ `console.error()` adicionado onde não existia (`dicas.js`, `cleanup-test-data.js`)
+- ✅ Erro 429 tratado uniformemente com `{ error: 'Too Many Requests', message }`
 
 ---
 
@@ -298,13 +332,12 @@
 
 **Arquivos:**
 - `/pages/blog/index.js` - faz `fetch('http://.../api/posts')` no servidor
-- `/pages/blog/[slug].js` - faz `fetch('http://.../api/posts?slug=x')` no servidor
 
-**Problema:** Em `getServerSideProps`, as páginas do blog fazem uma requisição HTTP local para a própria API, em vez de chamar a função de banco de dados diretamente. Isso adiciona latência de rede (localhost) e overhead de HTTP.
+**Arquivo corrigido (12/05/2026):** `/pages/blog/[slug].js`
+- Antes: `fetch('http://.../api/posts?slug=x')` no servidor
+- Depois: Query direta ao banco (`SELECT ... WHERE slug = $1 AND published = true`)
 
-**Impacto:** Aumenta o tempo de resposta e adiciona pontos de falha desnecessários. Contraste com `[slug].js` que faz query direta ao banco.
-
-**Sugestão:** Chamar a função de banco de dados diretamente no `getServerSideProps` ou usar um helper compartilhado.
+**Pendente:** `/pages/blog/index.js` ainda faz `fetch('http://.../api/posts')` no servidor. Sugestão: chamar a função de banco de dados diretamente no `getServerSideProps` ou usar um helper compartilhado.
 
 ---
 
@@ -358,13 +391,11 @@
 
 ### 4.4 Query SQL sem Prepared Statements
 
-**Arquivo:** `/pages/[slug].js`
+**Arquivo:** ~~`/pages/[slug].js`~~ — **REMOVIDO** (rota catch-all eliminada em 12/05/2026)
 
-**Problema:** A query `SELECT * FROM posts WHERE slug = '${slug}' AND published = true` usa interpolação de string, vulnerável a SQL injection.
+**Problema:** A query `SELECT * FROM posts WHERE slug = '${slug}' AND published = true` usava interpolação de string, vulnerável a SQL injection.
 
-**Impacto:** Risco crítico de segurança.
-
-**Sugestão:** Usar parâmetros preparados (placeholder `$1`) na query SQL.
+**Resolução:** Arquivo removido. O conteúdo foi migrado para `/pages/blog/[slug].js`, que usa prepared statements (`$1`).
 
 ---
 
@@ -389,7 +420,7 @@
 
 **Arquivos:** Todos em `/pages/api/admin/`
 
-**Problema:** Praticamente todos os endpoints admin repetem o bloco de verificação de método HTTP com retorno 405 e estrutura try/catch idêntica.
+**Problema:** Praticamente todos os endpoints admin repetiam o bloco de verificação de método HTTP com retorno 405 e estrutura try/catch idêntica.
 
 **Código repetido:**
 ```javascript
@@ -401,9 +432,7 @@ if (req.method !== 'GET') {
 }
 ```
 
-**Impacto:** Muito boilerplate, difícil de manter.
-
-**Sugestão:** Criar helper `methodGuard(method)` ou usar um middleware que já trate o método.
+**Resolução:** Resolvido via handler factory `createAdminHandler()` em `lib/api/adminCrudHandler.js` (item 1.6).
 
 ---
 
@@ -500,11 +529,9 @@ if (req.method !== 'GET') {
 
 **Comparação:**
 - `api/auth/login.js`: retorna cookie httpOnly (seguro)
-- `api/v1/auth/login.js`: retorna token no corpo da resposta (menos seguro)
+- `api/v1/auth/login.js`: retorna token no corpo da resposta (menos seguro) — **REMOVIDO**
 
-**Impacto:** Token exposto no body pode ser facilmente acessado por scripts ou logs.
-
-**Sugestão:** Usar sempre cookie httpOnly para armazenar JWT.
+**Resolução:** `api/v1/auth/login.js` removido (unificado com `api/auth/login.js`). O endpoint atual `api/auth/login?response=body` mantém o formato para compatibilidade com clientes externos, mas o fluxo web padrão usa cookie httpOnly.
 
 ---
 
@@ -512,7 +539,7 @@ if (req.method !== 'GET') {
 
 | Prioridade | Item | Arquivos | Descrição |
 |:----------:|:----:|:--------:|-----------|
-| 🔴 Crítico | 4.4 | `[slug].js` | SQL injection - usar prepared statements |
+| 🔴 Crítico | 4.4 | ~~`[slug].js`~~ ✅ | SQL injection — **RESOLVIDO** (arquivo removido, migrado para `blog/[slug].js` com prepared statements) |
 | 🔴 Crítico | 4.3 | Múltiplos | Validação Zod ausente em endpoints admin |
 | 🟠 Alto | ~~1.1~~ ✅ | `api/auth/login.js`, `api/v1/auth/login.js` | Login duplicado sem rate limiting no v1 — **RESOLVIDO** |
 | 🟠 Alto | ~~1.2~~ ✅ | `api/posts.js`, `api/v1/posts.js`, `api/admin/posts.js` | Posts duplicados (GET + POST) — **RESOLVIDO** |
@@ -523,8 +550,10 @@ if (req.method !== 'GET') {
 | 🟠 Alto | ~~3.4~~ ✅ | `blog/[slug].js` | Fetch HTTP para API interna em SSR (blog/[slug].js) — **RESOLVIDO** |
 | 🟠 Alto | 3.4 | `blog/index.js` | Fetch HTTP para API interna em SSR (blog/index.js) |
 | 🟠 Alto | 5.4 | `styles/tokens/*.js` | Tokens não utilizados nos CSS |
-| 🟡 Médio | 2.1 | Múltiplos | Modelos de autenticação misturados |
-| 🟡 Médio | 2.2 | Múltiplos | Cache implementado de forma diferente |
+| 🟡 Médio | ~~2.1~~ ✅ | Múltiplos | Modelos de autenticação misturados — **RESOLVIDO** |
+| 🟡 Médio | ~~2.2~~ ✅ | Múltiplos | Cache implementado de forma diferente — **RESOLVIDO** |
+| 🟡 Médio | ~~2.3~~ ✅ | Múltiplos | Rate limiting aplicado de forma inconsistente — **RESOLVIDO** |
+| 🟡 Médio | ~~2.5~~ ✅ | Múltiplos | Tratamento de erros sem padronização — **RESOLVIDO** |
 | 🟡 Médio | 4.1 | `upload-image.js` | Sanitização de upload insuficiente |
 | 🟡 Médio | 4.5 | `admin/fetch-*.js` | Timeout ausente em APIs externas |
 | 🟢 Baixo | 5.5 | `globals.css` | Classes utilitárias sem prefixo |

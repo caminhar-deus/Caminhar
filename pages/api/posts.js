@@ -1,12 +1,12 @@
 import { getRecentPosts, createPost } from '../../lib/domain/posts.js';
 import { getOrSetCache, checkRateLimit, invalidateCache } from '../../lib/cache.js';
-import { getAuthToken, verifyToken } from '../../lib/auth.js';
+import { withAuth } from '../../lib/auth.js';
 import { z } from 'zod';
 
 /**
  * API route handler for posts.
  * GET /api/posts?page=1&limit=10&search= — Lista posts públicos com paginação e cache
- * POST /api/posts?response=v1 — Cria post (autenticado via Bearer token ou cookie)
+ * POST /api/posts?response=v1 — Cria post (autenticado)
  *
  * Query params:
  *   ?response=v1 — Formata resposta no padrão { success, data, ... } (compatível com v1)
@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     case 'POST':
       return handlePost(req, res);
     default:
-      return res.status(405).json({ error: 'Method not allowed' });
+      return res.status(405).json({ error: 'Method Not Allowed', message: 'Método não permitido' });
   }
 }
 
@@ -36,7 +36,7 @@ async function handleGet(req, res) {
     const search = req.query.search || '';
 
     if (page < 1 || limit < 1 || limit > 100) {
-      return res.status(400).json({ error: 'Invalid pagination parameters' });
+      return res.status(400).json({ error: 'Bad Request', message: 'Parâmetros de paginação inválidos' });
     }
 
     const cacheKey = `posts:${page}:${limit}${search ? `:${search}` : ''}`;
@@ -66,34 +66,24 @@ async function handleGet(req, res) {
     });
   } catch (error) {
     if (error.message === 'RATE_LIMIT_EXCEEDED') {
-      return res.status(429).json({ error: 'Too many requests' });
+      return res.status(429).json({ error: 'Too Many Requests', message: 'Muitas requisições. Tente novamente mais tarde.' });
     }
     console.error('Error fetching posts:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal Server Error', message: 'Erro interno do servidor ao buscar posts' });
   }
 }
 
 /**
- * POST: Cria post com autenticação e validação Zod
+ * POST: Cria post com autenticação (via withAuth) e validação Zod
+ * Handler interno — a autenticação é garantida pelo withAuth
  */
-async function handlePost(req, res) {
+async function postHandler(req, res) {
   try {
-    // Autenticação
-    const token = getAuthToken(req);
-    if (!token) {
-      return res.status(401).json({ success: false, message: 'Não autenticado' });
-    }
-
-    const user = verifyToken(token);
-    if (!user) {
-      return res.status(401).json({ success: false, message: 'Token inválido' });
-    }
-
     // Rate limit em mutações
     const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
     const isRateLimited = await checkRateLimit(ip, 'api:posts:create', 30, 60000);
     if (isRateLimited) {
-      return res.status(429).json({ error: 'Too many requests' });
+      return res.status(429).json({ error: 'Too Many Requests', message: 'Muitas requisições. Tente novamente mais tarde.' });
     }
 
     // Schema de validação Zod (mesmo schema usado no admin para consistência)
@@ -112,7 +102,7 @@ async function handlePost(req, res) {
     const validationResult = postCreateSchema.safeParse(req.body);
     if (!validationResult.success) {
       return res.status(400).json({
-        success: false,
+        error: 'Bad Request',
         message: 'Dados inválidos para criação de post',
         errors: validationResult.error.flatten().fieldErrors,
       });
@@ -135,6 +125,9 @@ async function handlePost(req, res) {
     return res.status(201).json(newPost);
   } catch (error) {
     console.error('Error creating post:', error);
-    return res.status(500).json({ success: false, message: 'Erro ao criar post' });
+    return res.status(500).json({ error: 'Internal Server Error', message: 'Erro ao criar post' });
   }
 }
+
+// Protege o POST com autenticação
+const handlePost = withAuth(postHandler);
