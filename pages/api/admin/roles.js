@@ -1,6 +1,18 @@
 import { query } from '../../../lib/db';
 import { createRecord, updateRecords, deleteRecords } from '../../../lib/crud';
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
+import { z } from 'zod';
+
+const roleSchema = z.object({
+  name: z.string().min(1, 'Nome do cargo é obrigatório'),
+  permissions: z.array(z.string()).optional(),
+});
+
+const roleUpdateSchema = z.object({
+  id: z.number().int('ID deve ser um número inteiro').positive('ID deve ser positivo'),
+  name: z.string().min(1, 'Nome do cargo é obrigatório').optional(),
+  permissions: z.array(z.string()).optional(),
+});
 
 async function handleGet(req, res) {
   try {
@@ -28,15 +40,32 @@ async function handleGet(req, res) {
 }
 
 async function handlePost(req, res) {
-  const { name, permissions } = req.body;
+  const validation = roleSchema.safeParse(req.body);
+  if (!validation.success) {
+    return res.status(400).json({
+      message: 'Dados inválidos para criação de cargo',
+      errors: validation.error.flatten().fieldErrors,
+    });
+  }
+
+  const { name, permissions } = validation.data;
   const newRole = await createRecord('roles', { name, permissions: Array.isArray(permissions) ? JSON.stringify(permissions) : permissions });
   req.adminUtils.logActivity('CRIAR CARGO', newRole.id, `Criou o cargo: ${name}`);
   return res.status(201).json(newRole);
 }
 
 async function handlePut(req, res) {
-  const updateId = req.body.id || parseInt(req.query.id);
+  const updateId = typeof req.body.id === 'string' ? parseInt(req.body.id, 10) : req.body.id;
   const { id, ...updateData } = req.body;
+
+  const validation = roleUpdateSchema.partial().safeParse({ id: updateId, ...updateData });
+  if (!validation.success) {
+    return res.status(400).json({
+      message: 'Dados inválidos para atualização de cargo',
+      errors: validation.error.flatten().fieldErrors,
+    });
+  }
+
   if (updateData.permissions && Array.isArray(updateData.permissions)) updateData.permissions = JSON.stringify(updateData.permissions);
   const updatedRoles = await updateRecords('roles', updateData, { id: updateId });
   req.adminUtils.logActivity('ATUALIZAR CARGO', updateId, `Atualizou o cargo: ${updateData.name || updateId}`);

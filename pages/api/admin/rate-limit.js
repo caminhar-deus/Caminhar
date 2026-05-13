@@ -1,5 +1,10 @@
 import { Redis } from '@upstash/redis';
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
+import { z } from 'zod';
+
+const ipSchema = z.object({
+  ip: z.string().min(1, 'IP é obrigatório'),
+});
 
 // Inicializa o Redis (mesma configuração do middleware)
 const redis = (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
@@ -158,8 +163,15 @@ async function handlePost(req, res) {
     });
   }
 
-  const { ip } = req.body;
-  if (!ip) return res.status(400).json({ message: 'IP é obrigatório' });
+  const validation = ipSchema.safeParse(req.body);
+  if (!validation.success) {
+    return res.status(400).json({
+      message: 'IP é obrigatório',
+      errors: validation.error.flatten().fieldErrors,
+    });
+  }
+
+  const { ip } = validation.data;
 
   await redis.sadd('rate_limit:whitelist', ip);
   await redis.del(`rate_limit:${ip}`); // Remove dos bloqueados se existir

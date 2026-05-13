@@ -398,15 +398,25 @@
 
 ## 4. Fragilidade e Falta de Validação
 
-### 4.1 Ausência de Sanitização em Upload de Imagem
+### 4.1 Ausência de Sanitização em Upload de Imagem — **RESOLVIDO**
 
 **Arquivo:** `/pages/api/upload-image.js`
 
-**Problema:** O nome original do arquivo é preservado no nome salvo (com timestamp prefixado). Não há verificação de conteúdo real do arquivo (apenas extensão). Não há limite de resolução.
+**Problema anterior:** O nome original do arquivo era preservado no nome salvo (com timestamp prefixado). Não havia verificação de conteúdo real do arquivo (apenas extensão). Não havia limite de resolução.
 
-**Impacto:** Risco de upload de arquivos maliciosos com extensão falsa. Possível ataque de sobrescrita se nomes coincidirem.
+**Impacto anterior:** Risco de upload de arquivos maliciosos com extensão falsa. Possível ataque de sobrescrita se nomes coincidirem.
 
-**Sugestão:** Validar o tipo MIME real do arquivo, gerar nome aleatório seguro e verificar dimensões.
+**O que foi feito (12/05/2026):**
+- **Nome aleatório seguro**: Substituído o padrão `{prefixo}{timestamp}{extensão}` por `{prefixo}{crypto.randomUUID()}{extensão}` — elimina previsibilidade e risco de sobrescrita.
+- **Validação de conteúdo real (magic bytes)**: Adicionada validação via `sharp.metadata()` que verifica a assinatura real do arquivo, impedindo que arquivos com extensão falsa (ex: `.exe` renomeado para `.jpg`) passem pela validação.
+- **Limite de dimensões**: Adicionada verificação de largura e altura máxima (`MAX_WIDTH: 1920px`, `MAX_HEIGHT: 1920px`) com mensagem de erro detalhada informando as dimensões atuais e máximas permitidas.
+- **Extensão validada**: A extensão do arquivo salvo é validada contra uma lista de extensões permitidas (`ALLOWED_EXTENSIONS`). Se inválida, usa `.jpg` como fallback seguro.
+
+**Benefícios:**
+- ✅ Nome de arquivo imprevisível — UUID aleatório elimina risco de sobrescrita
+- ✅ Conteúdo verificado — `sharp.metadata()` confirma que o arquivo é realmente uma imagem
+- ✅ Dimensões limitadas — 1920×1920px máximo com mensagem de erro informativa
+- ✅ Extensão validada contra lista branca — fallback seguro para `.jpg`
 
 ---
 
@@ -434,13 +444,29 @@
 
 ---
 
-### 4.3 Validação Zod Inconsistente
+### 4.3 Validação Zod Inconsistente — **RESOLVIDO**
 
 **Problema:** Alguns endpoints usam validação Zod (`api/musicas.js`, `api/settings.js`, `api/v1/posts.js`, `api/v1/settings.js`), mas a maioria dos endpoints admin **não** usa validação nos dados de entrada.
 
 **Impacto:** Dados mal formatados podem corromper o banco de dados.
 
-**Sugestão:** Aplicar validação Zod em todos os endpoints que recebem dados do usuário.
+**O que foi feito (12/05/2026):**
+- **`api/settings.js`**: Adicionado schema Zod (`postSchema`) no método POST — antes usava apenas validação manual (`if (!key || !value)`). Agora POST e PUT compartilham o mesmo padrão de validação com mensagens de erro detalhadas via `validation.error.flatten().fieldErrors`.
+- **`admin/dicas.js`**: Adicionados schemas Zod `dicaSchema` e `dicaUpdateSchema` — valida nome, conteúdo e publicado nos métodos POST e PUT.
+- **`admin/musicas.js`**: Adicionado schema Zod `musicaSchema` com validação de título, artista, descrição, URL do Spotify e publicado. Adicionado também `reorderSchema` para validação da ação de reordenação.
+- **`admin/roles.js`**: Adicionados schemas Zod `roleSchema` e `roleUpdateSchema` — valida nome do cargo e permissões (array de strings).
+- **`admin/users.js`**: Adicionados schemas Zod `userCreateSchema` e `userUpdateSchema` — valida username, password e role com tratamento de hash de senha.
+- **`admin/fetch-ml.js`**: Adicionado schema Zod `urlSchema` — valida que a URL enviada é uma URL válida.
+- **`admin/fetch-spotify.js`**: Adicionado schema Zod `urlSchema` — valida que a URL enviada é uma URL válida.
+- **`admin/fetch-youtube.js`**: Adicionado schema Zod `urlSchema` — valida que a URL enviada é uma URL válida.
+- **`admin/rate-limit.js`**: Adicionado schema Zod `ipSchema` — valida que o IP enviado no POST é uma string não vazia.
+
+**Arquivos que já possuíam Zod anteriormente:** `admin/posts.js`, `admin/videos.js`
+
+**Benefícios:**
+- ✅ 9 endpoints admin agora validam dados de entrada com Zod
+- ✅ Mensagens de erro detalhadas via `validation.error.flatten().fieldErrors`
+- ✅ Schemas reutilizáveis entre POST e PUT
 
 ---
 
@@ -454,18 +480,27 @@
 
 ---
 
-### 4.5 Ausência de Tratamento para Timeout de API Externa
+### 4.5 Ausência de Tratamento para Timeout de API Externa — **RESOLVIDO**
 
 **Arquivos:**
 - `/pages/api/admin/fetch-ml.js`
 - `/pages/api/admin/fetch-spotify.js`
 - `/pages/api/admin/fetch-youtube.js`
 
-**Problema:** As chamadas a APIs externas (Letras.mus.br, Spotify, YouTube) não têm configuração explícita de timeout.
+**Problema anterior:** As chamadas a APIs externas (Mercado Livre, Spotify, YouTube) não tinham configuração explícita de timeout.
 
-**Impacto:** Uma API externa lenta pode travar o endpoint Next.js, consumindo recursos do servidor.
+**Impacto anterior:** Uma API externa lenta poderia travar o endpoint Next.js, consumindo recursos do servidor.
 
-**Sugestão:** Adicionar timeout com `AbortController` (ex: 5-10 segundos).
+**O que foi feito (12/05/2026):**
+- Criada a função utilitária `fetchWithTimeout(url, options, timeout)` que encapsula `AbortController` com timeout de 8 segundos.
+- **`fetch-ml.js`**: Substituídos todos os 5 `fetch()` por `fetchWithTimeout()` — 2 chamadas à API de Items, 1 chamada à API de Products, 1 chamada à API de Description e 1 chamada de fallback de scraping HTML.
+- **`fetch-spotify.js`**: Substituídos todos os 3 `fetch()` por `fetchWithTimeout()` — Estratégia 1 (oEmbed), Estratégia 2 (Iframe Embed) e Estratégia 3 (Scraping Googlebot).
+- **`fetch-youtube.js`**: Substituída a única chamada `fetch()` por `fetchWithTimeout()` — API oEmbed do YouTube.
+
+**Benefícios:**
+- ✅ Timeout de 8 segundos em todas as chamadas a APIs externas
+- ✅ `AbortController` interrompe a requisição no servidor, liberando recursos
+- ✅ Função `fetchWithTimeout` reutilizável com timeout configurável
 
 ---
 
@@ -595,7 +630,7 @@ if (req.method !== 'GET') {
 | Prioridade | Item | Arquivos | Descrição |
 |:----------:|:----:|:--------:|-----------|
 | 🔴 Crítico | 4.4 | ~~`[slug].js`~~ ✅ | SQL injection — **RESOLVIDO** (arquivo removido, migrado para `blog/[slug].js` com prepared statements) |
-| 🔴 Crítico | 4.3 | Múltiplos | Validação Zod ausente em endpoints admin |
+| 🔴 Crítico | ~~4.3~~ ✅ | Múltiplos | Validação Zod ausente em endpoints admin — **RESOLVIDO** (Zod adicionado em 9 endpoints admin) |
 | 🟠 Alto | ~~1.1~~ ✅ | `api/auth/login.js`, `api/v1/auth/login.js` | Login duplicado sem rate limiting no v1 — **RESOLVIDO** |
 | 🟠 Alto | ~~1.2~~ ✅ | `api/posts.js`, `api/v1/posts.js`, `api/admin/posts.js` | Posts duplicados (GET + POST) — **RESOLVIDO** |
 | 🟠 Alto | ~~1.3~~ ✅ | `[slug].js`, `blog/[slug].js` | Conflito de rotas de página de post — **RESOLVIDO** |
@@ -612,7 +647,8 @@ if (req.method !== 'GET') {
 | 🟡 Médio | ~~2.2~~ ✅ | Múltiplos | Cache implementado de forma diferente — **RESOLVIDO** |
 | 🟡 Médio | ~~2.3~~ ✅ | Múltiplos | Rate limiting aplicado de forma inconsistente — **RESOLVIDO** |
 | 🟡 Médio | ~~2.5~~ ✅ | Múltiplos | Tratamento de erros sem padronização — **RESOLVIDO** |
-| 🟡 Médio | 4.1 | `upload-image.js` | Sanitização de upload insuficiente |
-| 🟡 Médio | 4.5 | `admin/fetch-*.js` | Timeout ausente em APIs externas |
+| 🟡 Médio | ~~4.1~~ ✅ | `upload-image.js` | Sanitização de upload insuficiente — **RESOLVIDO** (UUID, magic bytes, limite de dimensões) |
+| 🟡 Médio | ~~4.3 (settings)~~ ✅ | `api/settings.js` | Zod POST — **RESOLVIDO** (POST agora tem schema Zod) |
+| 🟡 Médio | ~~4.5~~ ✅ | `admin/fetch-*.js` | Timeout ausente em APIs externas — **RESOLVIDO** (AbortController com 8s) |
 | 🟢 Baixo | 5.5 | `globals.css` | Classes utilitárias sem prefixo |
 | 🟢 Baixo | 5.6 | `globals.css` | `!important` agressivo no overflow |

@@ -1,8 +1,36 @@
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
+import { z } from 'zod';
+
+const FETCH_TIMEOUT = 8000; // 8 segundos
+
+const urlSchema = z.object({
+  url: z.string().url('URL inválida').min(1, 'URL é obrigatória'),
+});
+
+/**
+ * Executa fetch com timeout via AbortController.
+ */
+async function fetchWithTimeout(url, options = {}, timeout = FETCH_TIMEOUT) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 async function handlePost(req, res) {
-  const { url } = req.body;
-  if (!url) return res.status(400).json({ error: 'URL do Spotify não fornecida.' });
+  const validation = urlSchema.safeParse(req.body);
+  if (!validation.success) {
+    return res.status(400).json({
+      error: 'URL inválida',
+      message: 'URL do Spotify é obrigatória e deve ser válida.',
+    });
+  }
+
+  const { url } = validation.data;
 
   try {
     let title = '';
@@ -10,7 +38,7 @@ async function handlePost(req, res) {
 
     // Estratégia 1: API oEmbed Oficial do Spotify (Sempre retorna o título com 100% de precisão)
     try {
-      const oembedRes = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(url)}`);
+      const oembedRes = await fetchWithTimeout(`https://open.spotify.com/oembed?url=${encodeURIComponent(url)}`);
       if (oembedRes.ok) {
         const data = await oembedRes.json();
         title = data.title || '';
@@ -23,7 +51,7 @@ async function handlePost(req, res) {
     const trackMatch = url.match(/(?:track|episode)\/([a-zA-Z0-9]+)/);
     if (trackMatch) {
       try {
-        const embedRes = await fetch(`https://open.spotify.com/embed/track/${trackMatch[1]}`, {
+        const embedRes = await fetchWithTimeout(`https://open.spotify.com/embed/track/${trackMatch[1]}`, {
           headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
         });
 
@@ -50,7 +78,7 @@ async function handlePost(req, res) {
     // Estratégia 3: Scraping das Tags Meta (SEO). O uso do "Googlebot" força o Spotify a entregar os dados
     if (!artist) {
       try {
-        const htmlRes = await fetch(url, {
+        const htmlRes = await fetchWithTimeout(url, {
           headers: {
             'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
             'Accept-Language': 'en-US,en;q=0.9'

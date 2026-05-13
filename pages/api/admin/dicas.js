@@ -1,5 +1,19 @@
 import { query } from '../../../lib/db.js';
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
+import { z } from 'zod';
+
+const dicaSchema = z.object({
+  name: z.string().min(1, 'Nome é obrigatório'),
+  content: z.string().min(1, 'Conteúdo é obrigatório'),
+  published: z.boolean().optional(),
+});
+
+const dicaUpdateSchema = z.object({
+  id: z.number().int('ID deve ser um número inteiro').positive('ID deve ser positivo'),
+  name: z.string().min(1, 'Nome é obrigatório'),
+  content: z.string().min(1, 'Conteúdo é obrigatório'),
+  published: z.boolean().optional(),
+});
 
 async function handleGet(req, res) {
   const result = await query('SELECT * FROM dicas ORDER BY id ASC');
@@ -7,7 +21,15 @@ async function handleGet(req, res) {
 }
 
 async function handlePost(req, res) {
-  const { name, content, published } = req.body;
+  const validation = dicaSchema.safeParse(req.body);
+  if (!validation.success) {
+    return res.status(400).json({
+      message: 'Dados inválidos para criação de dica',
+      errors: validation.error.flatten().fieldErrors,
+    });
+  }
+
+  const { name, content, published } = validation.data;
   const result = await query(
     'INSERT INTO dicas (name, content, published) VALUES ($1, $2, $3) RETURNING *',
     [name, content, published !== undefined ? published : true],
@@ -17,7 +39,15 @@ async function handlePost(req, res) {
 }
 
 async function handlePut(req, res) {
-  const { id, name, content, published } = req.body;
+  const validation = dicaUpdateSchema.safeParse(req.body);
+  if (!validation.success) {
+    return res.status(400).json({
+      message: 'Dados inválidos para atualização de dica',
+      errors: validation.error.flatten().fieldErrors,
+    });
+  }
+
+  const { id, name, content, published } = validation.data;
   const result = await query(
     'UPDATE dicas SET name = $1, content = $2, published = $3 WHERE id = $4 RETURNING *',
     [name, content, published !== undefined ? published : true, id],

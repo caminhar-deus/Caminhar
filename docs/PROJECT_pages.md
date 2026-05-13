@@ -173,8 +173,12 @@
   - Método POST protegido por `withAuth`
   - Usa `formidable` para parsing de formulários
   - Tamanho máximo: 5MB
-  - Tipos permitidos: JPEG, PNG, GIF, WebP
-  - Salva em `/public/uploads/` com nome único (timestamp + original)
+  - Tipos permitidos: JPEG, PNG, GIF, WebP (validação de `mimetype`)
+  - **Validação de conteúdo real (magic bytes)**: Usa `sharp.metadata()` para verificar a assinatura do arquivo, impedindo upload de arquivos com extensão falsa (adicionado 12/05/2026)
+  - **Limite de dimensões**: Verifica largura e altura máxima (1920×1920px) com mensagem de erro informativa (adicionado 12/05/2026)
+  - **Nome aleatório seguro**: Gera nome único com `crypto.randomUUID()` em vez de timestamp, eliminando previsibilidade e risco de sobrescrita (adicionado 12/05/2026)
+  - **Extensão validada**: Extensão do arquivo validada contra lista de extensões permitidas; fallback seguro para `.jpg` (adicionado 12/05/2026)
+  - Salva em `/public/uploads/`
   - Retorna caminho da imagem
   - Respostas de erro padronizadas no formato `{ error, message }` (alterado 12/05/2026)
 
@@ -223,43 +227,50 @@
 - **Propósito:** Endpoint CRUD de dicas para administração.
 - **Funcionalidades:**
   - GET: Lista dicas (incluindo não publicadas)
-  - POST: Cria dica
-  - PUT: Atualiza dica
+  - POST: Cria dica com validação Zod (`dicaSchema`) — nome e conteúdo obrigatórios (adicionado 12/05/2026)
+  - PUT: Atualiza dica com validação Zod (`dicaUpdateSchema`) — id, nome e conteúdo obrigatórios (adicionado 12/05/2026)
   - DELETE: Remove dica
   - Protegido por JWT
 
 ### `/pages/api/admin/fetch-ml.js`
 - **Localização:** `/pages/api/admin/fetch-ml.js`
-- **Propósito:** Endpoint para buscar letras de músicas.
+- **Propósito:** Endpoint para buscar dados de produtos do Mercado Livre.
 - **Funcionalidades:**
   - Método POST protegido
-  - Recebe `artist` e `music` no body
-  - Busca letra via API externa (Letras.mus.br)
-  - Retorna a letra encontrada
+  - Recebe `url` do produto no body
+  - Decodifica URL e extrai códigos MLB
+  - Busca dados via API de Items, Products ou fallback de scraping HTML
+  - **Timeout de 8 segundos**: Todas as 5 chamadas `fetch` usam `fetchWithTimeout()` com `AbortController` (adicionado 12/05/2026)
+  - Retorna título, preço, imagens e descrição do produto
+  - Log de auditoria na operação
 
 ### `/pages/api/admin/fetch-spotify.js`
 - **Localização:** `/pages/api/admin/fetch-spotify.js`
 - **Propósito:** Endpoint para buscar dados do Spotify.
 - **Funcionalidades:**
   - Método POST protegido
-  - Autentica no Spotify API via Client Credentials
-  - Busca informações de música/artista
+  - 3 estratégias de busca em cascata: oEmbed, Iframe Embed e Scraping Googlebot
+  - **Timeout de 8 segundos**: Todas as 3 estratégias usam `fetchWithTimeout()` com `AbortController` (adicionado 12/05/2026)
+  - Retorna título e artista da música
+  - Log de auditoria na operação
 
 ### `/pages/api/admin/fetch-youtube.js`
 - **Localização:** `/pages/api/admin/fetch-youtube.js`
 - **Propósito:** Endpoint para buscar dados do YouTube.
 - **Funcionalidades:**
   - Método POST protegido
-  - Busca informações de vídeo via YouTube Data API
-  - Retorna dados estruturados do vídeo
+  - Busca informações de vídeo via API oEmbed pública
+  - **Timeout de 8 segundos**: Usa `fetchWithTimeout()` com `AbortController` (adicionado 12/05/2026)
+  - Retorna título do vídeo
+  - Log de auditoria na operação
 
 ### `/pages/api/admin/musicas.js`
 - **Localização:** `/pages/api/admin/musicas.js`
 - **Propósito:** Endpoint CRUD de músicas para administração.
 - **Funcionalidades:**
   - GET: Lista músicas (incluindo não publicadas)
-  - POST: Cria música
-  - PUT: Atualiza música
+  - POST: Cria música com validação Zod (`musicaSchema`) — título, artista e URL do Spotify obrigatórios (adicionado 12/05/2026)
+  - PUT: Atualiza música com validação Zod — inclui validação de reordenação via `reorderSchema` (adicionado 12/05/2026)
   - DELETE: Remove música
   - Protegido por JWT
 
@@ -268,8 +279,8 @@
 - **Propósito:** Endpoint CRUD de posts para administração.
 - **Funcionalidades:**
   - GET: Lista posts (incluindo não publicados)
-  - POST: Cria post
-  - PUT: Atualiza post
+  - POST: Cria post com validação Zod (`postCreateSchema`) (já existente)
+  - PUT: Atualiza post com validação Zod (`postUpdateDataSchema`) e reordenação via `reorderSchema` (já existente)
   - DELETE: Remove post
   - Protegido por JWT
 
@@ -278,16 +289,18 @@
 - **Propósito:** Endpoint para gerenciamento de rate limiting.
 - **Funcionalidades:**
   - GET: Obtém status/configurações do rate limit
-  - PUT: Atualiza configurações de rate limit
+  - POST: Adiciona IP à whitelist com validação Zod (`ipSchema`) (adicionado 12/05/2026)
+  - DELETE: Remove IP da whitelist ou desbloqueia IP
   - Protegido por autenticação
 
 ### `/pages/api/admin/roles.js`
 - **Localização:** `/pages/api/admin/roles.js`
 - **Propósito:** Endpoint para gerenciamento de papéis (roles) e permissões.
 - **Funcionalidades:**
-  - GET: Lista roles e permissões
-  - POST: Cria nova role
-  - PUT: Atualiza permissões de uma role
+  - GET: Lista roles e permissões (cria tabela automaticamente se não existir)
+  - POST: Cria nova role com validação Zod (`roleSchema`) — nome obrigatório e permissões como array opcional (adicionado 12/05/2026)
+  - PUT: Atualiza permissões de uma role com validação Zod (`roleUpdateSchema`) (adicionado 12/05/2026)
+  - DELETE: Remove role
   - Protegido por JWT
 
 ### `/pages/api/admin/stats.js`
@@ -301,10 +314,10 @@
 - **Localização:** `/pages/api/admin/users.js`
 - **Propósito:** Endpoint CRUD de usuários para administração.
 - **Funcionalidades:**
-  - GET: Lista usuários
-  - POST: Cria usuário
-  - PUT: Atualiza usuário (incluindo senha)
-  - DELETE: Remove usuário
+  - GET: Lista usuários (nunca retorna senhas)
+  - POST: Cria usuário com validação Zod (`userCreateSchema`) — username e password obrigatórios, role opcional (adicionado 12/05/2026)
+  - PUT: Atualiza usuário com validação Zod (`userUpdateSchema`) — hash automático de senha (adicionado 12/05/2026)
+  - DELETE: Remove usuário (impede auto-exclusão)
   - Protegido por JWT
 
 ### `/pages/api/admin/videos.js`

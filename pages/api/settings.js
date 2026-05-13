@@ -92,16 +92,28 @@ async function handleGet(req, res) {
 /**
  * POST: Cria nova configuração (requer role admin)
  */
+const postSchema = z.object({
+  key: z.string().min(1, { message: 'A chave (key) é obrigatória.' }),
+  value: z.any().refine(v => v !== undefined && v !== null && v !== '', { message: 'O valor (value) é obrigatório.' }),
+  type: z.string().optional().default('string'),
+  description: z.string().optional().default(''),
+});
+
 const handlePost = withAuth(async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ error: 'Forbidden', message: 'Acesso negado - requer permissões de administrador' });
   }
 
-  const { key, value, type = 'string', description = '' } = req.body;
-
-  if (!key || !value) {
-    return res.status(400).json({ error: 'Bad Request', message: 'Chave e valor são obrigatórios' });
+  const validation = postSchema.safeParse(req.body);
+  if (!validation.success) {
+    return res.status(400).json({
+      error: 'Bad Request',
+      message: 'Parâmetros inválidos.',
+      errors: validation.error.flatten().fieldErrors,
+    });
   }
+
+  const { key, value, type = 'string', description = '' } = validation.data;
 
   try {
     const result = await setSetting(key, value, type, description);

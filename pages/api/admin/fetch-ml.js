@@ -1,8 +1,36 @@
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
+import { z } from 'zod';
+
+const FETCH_TIMEOUT = 8000; // 8 segundos
+
+const urlSchema = z.object({
+  url: z.string().url('URL inválida').min(1, 'URL é obrigatória'),
+});
+
+/**
+ * Executa fetch com timeout via AbortController.
+ */
+async function fetchWithTimeout(url, options = {}, timeout = FETCH_TIMEOUT) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 async function handlePost(req, res) {
-  const { url } = req.body;
-  if (!url) return res.status(400).json({ error: 'URL do Mercado Livre não fornecida.' });
+  const validation = urlSchema.safeParse(req.body);
+  if (!validation.success) {
+    return res.status(400).json({
+      error: 'URL inválida',
+      message: 'URL do Mercado Livre é obrigatória e deve ser válida.',
+    });
+  }
+
+  const { url } = validation.data;
 
   try {
     // Decodifica a URL para tratar caracteres escondidos (como %3A no lugar de :)
@@ -29,10 +57,10 @@ async function handlePost(req, res) {
     // Tenta buscar informações na API para cada ID encontrado na URL (Items ou Products)
     for (const id of idsToTry) {
       // 1. Tenta como um Anúncio Padrão (Item)
-      const itemRes = await fetch(`https://api.mercadolibre.com/items/${id}`);
+      const itemRes = await fetchWithTimeout(`https://api.mercadolibre.com/items/${id}`);
       if (itemRes.ok) {
         const itemData = await itemRes.json();
-        const descRes = await fetch(`https://api.mercadolibre.com/items/${id}/description`);
+        const descRes = await fetchWithTimeout(`https://api.mercadolibre.com/items/${id}/description`);
 
         foundData = {
           title: itemData.title,
@@ -44,14 +72,14 @@ async function handlePost(req, res) {
       }
 
       // 2. Tenta como um Produto de Catálogo (Product)
-      const prodRes = await fetch(`https://api.mercadolibre.com/products/${id}`);
+      const prodRes = await fetchWithTimeout(`https://api.mercadolibre.com/products/${id}`);
       if (prodRes.ok) {
         const prodData = await prodRes.json();
         const realItemId = prodData.buy_box_winner?.item_id;
 
         let description = '';
         if (realItemId) {
-          const descRes = await fetch(`https://api.mercadolibre.com/items/${realItemId}/description`);
+          const descRes = await fetchWithTimeout(`https://api.mercadolibre.com/items/${realItemId}/description`);
           if (descRes.ok) description = (await descRes.json()).plain_text;
         }
 
@@ -68,7 +96,7 @@ async function handlePost(req, res) {
     // 3. Fallback de Segurança (Scraping): Se as APIs bloquearem a requisição, lemos o HTML da página!
     if (!foundData) {
       try {
-        const htmlRes = await fetch(url, {
+        const htmlRes = await fetchWithTimeout(url, {
           headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept-Language': 'pt-BR,pt;q=0.9'

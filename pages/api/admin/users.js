@@ -2,6 +2,20 @@ import { query } from '../../../lib/db';
 import { createRecord, updateRecords, deleteRecords } from '../../../lib/crud';
 import { hashPassword } from '../../../lib/auth';
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
+import { z } from 'zod';
+
+const userCreateSchema = z.object({
+  username: z.string().min(1, 'Nome de usuário é obrigatório'),
+  password: z.string().min(1, 'Senha é obrigatória'),
+  role: z.string().optional().default('admin'),
+});
+
+const userUpdateSchema = z.object({
+  id: z.number().int('ID deve ser um número inteiro').positive('ID deve ser positivo'),
+  username: z.string().min(1, 'Nome de usuário não pode ser vazio').optional(),
+  password: z.string().optional(),
+  role: z.string().optional(),
+});
 
 async function handleGet(req, res) {
   const page = parseInt(req.query.page || '1', 10);
@@ -35,35 +49,52 @@ async function handleGet(req, res) {
 }
 
 async function handlePost(req, res) {
-  const { username, password, role } = req.body;
-  if (!username || !password) return res.status(400).json({ error: 'Usuário e senha são obrigatórios' });
+  const validation = userCreateSchema.safeParse(req.body);
+  if (!validation.success) {
+    return res.status(400).json({
+      error: 'Dados inválidos para criação de usuário',
+      errors: validation.error.flatten().fieldErrors,
+    });
+  }
+
+  const { username, password, role } = validation.data;
 
   const existingUser = await query('SELECT id FROM users WHERE username = $1', [username]);
   if (existingUser.rows.length > 0) return res.status(400).json({ error: 'Este nome de usuário já está em uso.' });
 
   const hashedPassword = await hashPassword(password);
-  const newUser = await createRecord('users', { username, password: hashedPassword, role: role || 'admin' }, ['id', 'username', 'role']);
+  const newUser = await createRecord('users', { username, password: hashedPassword, role }, ['id', 'username', 'role']);
 
   req.adminUtils.logActivity('CRIAR USUÁRIO', newUser.id, `Criou o usuário: ${username}`);
   return res.status(201).json(newUser);
 }
 
 async function handlePut(req, res) {
-  const updateId = parseInt(req.body.id || req.query.id, 10);
-  if (isNaN(updateId)) return res.status(400).json({ error: 'ID inválido' });
+  const updateId = typeof req.body.id === 'string' ? parseInt(req.body.id, 10) : req.body.id;
 
   const updateData = { ...req.body };
   delete updateData.id;
   delete updateData.created_at;
 
-  // Se uma nova senha for enviada, criamos o hash. Se não, ignoramos e mantemos a antiga.
-  if (updateData.password && updateData.password.trim() !== '') {
-    updateData.password = await hashPassword(updateData.password);
-  } else {
-    delete updateData.password;
+  const validation = userUpdateSchema.partial().safeParse({ id: updateId, ...updateData });
+  if (!validation.success) {
+    return res.status(400).json({
+      error: 'Dados inválidos para atualização de usuário',
+      errors: validation.error.flatten().fieldErrors,
+    });
   }
 
-  const updatedUsers = await updateRecords('users', updateData, { id: updateId }, ['id', 'username', 'role']);
+  const validatedData = { ...validation.data };
+  delete validatedData.id;
+
+  // Se uma nova senha for enviada, criamos o hash. Se não, ignoramos e mantemos a antiga.
+  if (validatedData.password && validatedData.password.trim() !== '') {
+    validatedData.password = await hashPassword(validatedData.password);
+  } else {
+    delete validatedData.password;
+  }
+
+  const updatedUsers = await updateRecords('users', validatedData, { id: updateId }, ['id', 'username', 'role']);
 
   req.adminUtils.logActivity('ATUALIZAR USUÁRIO', updateId, `Atualizou o usuário: ${updatedUsers[0]?.username}`);
   return res.status(200).json(updatedUsers[0] || {});

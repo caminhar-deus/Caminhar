@@ -2,10 +2,29 @@ import { getPaginatedMusicas, createMusica, updateMusica, deleteMusica } from '.
 import { updateRecords } from '../../../lib/crud.js';
 import { query } from '../../../lib/db.js';
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
+import { z } from 'zod';
 
 const isValidSpotifyUrl = (url) => {
   return url.includes('spotify.com') || url.includes('spotify:');
 };
+
+const musicaSchema = z.object({
+  titulo: z.string().min(1, 'Título é obrigatório'),
+  artista: z.string().min(1, 'Artista é obrigatório'),
+  descricao: z.string().optional(),
+  url_spotify: z.string().min(1, 'URL do Spotify é obrigatória'),
+  publicado: z.boolean().optional(),
+});
+
+const reorderItemSchema = z.object({
+  id: z.number().int('ID deve ser um número inteiro').positive('ID deve ser positivo'),
+  position: z.number().int('Posição deve ser um número inteiro'),
+});
+
+const reorderSchema = z.object({
+  action: z.literal('reorder'),
+  items: z.array(reorderItemSchema).min(1, 'Array de itens para reordenar não pode ser vazio'),
+});
 
 async function handleGet(req, res) {
   // Desabilita cache para garantir que a lista administrativa esteja sempre atualizada
@@ -27,11 +46,15 @@ async function handleGet(req, res) {
 }
 
 async function handlePost(req, res) {
-  const { titulo, artista, descricao, url_spotify, publicado } = req.body;
-
-  if (!titulo || !artista || !url_spotify) {
-    return res.status(400).json({ message: 'Título, artista e URL do Spotify são obrigatórios' });
+  const validation = musicaSchema.safeParse(req.body);
+  if (!validation.success) {
+    return res.status(400).json({
+      message: 'Dados inválidos para criação de música',
+      errors: validation.error.flatten().fieldErrors,
+    });
   }
+
+  const { titulo, artista, descricao, url_spotify, publicado } = validation.data;
 
   if (!isValidSpotifyUrl(url_spotify)) {
     return res.status(400).json({ message: 'URL do Spotify inválida' });
@@ -52,22 +75,36 @@ async function handlePost(req, res) {
 async function handlePut(req, res) {
   // Intercepta ação customizada de reordenação em massa (Drag & Drop)
   if (req.body.action === 'reorder') {
-    const { items } = req.body;
+    const reorderValidation = reorderSchema.safeParse(req.body);
+    if (!reorderValidation.success) {
+      return res.status(400).json({
+        message: 'Dados inválidos para reordenação',
+        errors: reorderValidation.error.flatten().fieldErrors,
+      });
+    }
+    const { items } = reorderValidation.data;
     for (const item of items) {
       await updateRecords('musicas', { position: item.position }, { id: item.id });
     }
     return res.status(200).json({ success: true, message: 'Ordem atualizada' });
   }
 
-  const { id, titulo, artista, descricao, url_spotify, publicado } = req.body;
+  const validation = musicaSchema.extend({
+    id: z.number().int('ID deve ser um número inteiro').positive('ID deve ser positivo'),
+    url_spotify: z.string().min(1, 'URL do Spotify é obrigatória'),
+  }).safeParse({
+    ...req.body,
+    id: typeof req.body.id === 'string' ? parseInt(req.body.id, 10) : req.body.id,
+  });
 
-  if (!id) {
-    return res.status(400).json({ message: 'ID é obrigatório' });
+  if (!validation.success) {
+    return res.status(400).json({
+      message: 'Dados inválidos para atualização de música',
+      errors: validation.error.flatten().fieldErrors,
+    });
   }
 
-  if (!titulo || !artista || !url_spotify) {
-    return res.status(400).json({ message: 'Título, artista e URL do Spotify são obrigatórios' });
-  }
+  const { id, titulo, artista, descricao, url_spotify, publicado } = validation.data;
 
   if (!isValidSpotifyUrl(url_spotify)) {
     return res.status(400).json({ message: 'URL do Spotify inválida' });
