@@ -35,12 +35,14 @@
 - **Localização:** `/pages/_document.js`
 - **Propósito:** Personaliza o HTML document da aplicação Next.js.
 - **Funcionalidades:**
-  - Inclui preconnect para domínios críticos (Google Fonts, YouTube, Spotify, i.scdn.co, img.youtube.com)
+  - Preconnect apenas para domínios essenciais globais (Google Fonts: `fonts.googleapis.com` e `fonts.gstatic.com`)
   - DNS prefetch para Google Fonts
-  - Pré-carregamento de fontes Montserrat e Inter (woff2) com atributo `crossOrigin`
-  - Injeção de CSS crítico inline via `extractCriticalCSS()`
+  - CSS crítico inline cacheado em nível de módulo (`cachedCriticalCSS`) — evita reprocessamento a cada SSR
   - Meta tags de segurança (`X-Content-Type-Options`, `X-Frame-Options`, `referrer`)
   - Meta tag de color-scheme
+  - Script para remover CSS crítico após carregamento completo
+
+> **Nota:** Preconnects para YouTube, Spotify e imagens (i.scdn.co, img.youtube.com) removidos em 12/05/2026 — devem ser adicionados condicionalmente nas páginas que os utilizam.
 
 ### `/pages/index.js`
 - **Localização:** `/pages/index.js`
@@ -407,14 +409,14 @@
 - **Localização:** `/pages/blog/index.js`
 - **Propósito:** Página de listagem de posts do blog.
 - **Funcionalidades:**
-  - `getServerSideProps` faz fetch para `api/posts`
-  - Paginação: 9 posts por página via query string `?page=`
+  - `getServerSideProps` com query direta ao banco (`SELECT ... WHERE published = true ORDER BY created_at DESC LIMIT $1 OFFSET $2`) — sem fetch HTTP interno
+  - Paginação nativa via `LIMIT/OFFSET` no banco de dados + `COUNT(*)` para total de páginas
   - Renderiza `PostCard` para cada post
   - Navegação entre páginas com links
-  - Fallback: estado vazio se API falhar
+  - Estados diferenciados: erro (`fetchError`) vs lista vazia vs posts normais
   - SEO via `next/head`
 
-> **Nota:** Pendente de melhoria — atualmente faz fetch HTTP para a API interna em vez de query direta ao banco, similar ao que foi corrigido em `blog/[slug].js`.
+> **Nota:** Convertido para SSR com query direta ao banco em 12/05/2026, substituindo o antigo fetch HTTP para `/api/posts`. Paginação agora é feita diretamente no banco (não mais via slice manual). Adicionado estado de erro visual com mensagem amigável.
 
 ### `/pages/blog/[slug].js`
 - **Localização:** `/pages/blog/[slug].js`

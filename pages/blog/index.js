@@ -2,35 +2,35 @@ import Head from 'next/head';
 import Link from 'next/link';
 import styles from './Blog.module.css';
 import PostCard from '../../components/Features/Blog/PostCard';
+import { query } from '../../lib/db.js';
 
-export async function getServerSideProps({ query }) {
+export async function getServerSideProps({ query: queryParams }) {
   try {
-    // A URL precisa ser absoluta ao rodar no lado do servidor.
-    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-    const host = process.env.VERCEL_URL || 'localhost:3000';
-    const res = await fetch(`${protocol}://${host}/api/posts`);
-
-    if (!res.ok) {
-      console.error('Falha ao buscar posts, status:', res.status);
-      return { props: { posts: [], currentPage: 1, totalPages: 1 } };
-    }
-
-    const posts = await res.json();
-
-    const page = parseInt(query.page || '1');
+    const page = parseInt(queryParams.page || '1');
     const limit = 9;
-    const totalPosts = posts.length;
-    const totalPages = Math.ceil(totalPosts / limit);
-    const paginatedPosts = posts.slice((page - 1) * limit, page * limit);
+    const offset = (page - 1) * limit;
 
-    return { props: { posts: paginatedPosts, currentPage: page, totalPages } };
+    // Query direta ao banco — elimina latência de rede e overhead HTTP
+    const postsResult = await query(
+      'SELECT * FROM posts WHERE published = true ORDER BY created_at DESC LIMIT $1 OFFSET $2',
+      [limit, offset]
+    );
+    const totalResult = await query(
+      'SELECT COUNT(*) FROM posts WHERE published = true'
+    );
+
+    const posts = postsResult.rows;
+    const totalPosts = parseInt(totalResult.rows[0].count, 10);
+    const totalPages = Math.ceil(totalPosts / limit);
+
+    return { props: { posts: JSON.parse(JSON.stringify(posts)), currentPage: page, totalPages } };
   } catch (error) {
-    console.error('Erro de conexão ao buscar posts:', error);
-    return { props: { posts: [], currentPage: 1, totalPages: 1 } };
+    console.error('Erro ao buscar posts no SSR:', error);
+    return { props: { posts: [], currentPage: 1, totalPages: 1, fetchError: true } };
   }
 }
 
-export default function BlogIndex({ posts, currentPage, totalPages }) {
+export default function BlogIndex({ posts, currentPage, totalPages, fetchError }) {
   return (
     <div className={styles.container} style={{ padding: '40px 20px' }}>
       <Head>
@@ -50,7 +50,11 @@ export default function BlogIndex({ posts, currentPage, totalPages }) {
       </header>
 
       <main>
-        {posts.length === 0 ? (
+        {fetchError ? (
+          <p style={{ textAlign: 'center', color: '#721c24', background: '#f8d7da', padding: '20px', borderRadius: '8px', margin: '20px 0' }}>
+            Desculpe, não foi possível carregar os posts no momento. Tente novamente mais tarde.
+          </p>
+        ) : posts.length === 0 ? (
           <p style={{ textAlign: 'center' }}>Nenhum post publicado ainda.</p>
         ) : (
           <div className={styles.grid}>

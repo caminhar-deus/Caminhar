@@ -292,15 +292,29 @@
 
 ## 3. Problemas de Performance
 
-### 3.1 CSS Crítico Inline Chamado em Toda Requisição
+### 3.1 CSS Crítico Inline Chamado em Toda Requisição — **RESOLVIDO**
 
 **Arquivo:** `/pages/_document.js`
 
-**Problema:** A função `extractCriticalCSS()` é chamada a cada renderização do lado do servidor, potencialmente executando lógica pesada de parsing de CSS.
+**Problema anterior:** A função `extractCriticalCSS()` era chamada a cada renderização do lado do servidor, potencialmente executando lógica pesada de parsing de CSS.
 
-**Impacto:** Aumenta o tempo de resposta de cada requisição.
+**O que foi feito (12/05/2026):**
+- O CSS crítico agora é cacheado em nível de módulo através da variável `cachedCriticalCSS`:
+  ```js
+  let cachedCriticalCSS = null;
+  export default function Document() {
+    if (!cachedCriticalCSS) {
+      cachedCriticalCSS = extractCriticalCSS();
+    }
+    // ...
+  }
+  ```
+- `extractCriticalCSS()` é executado apenas uma vez na primeira requisição SSR e reutilizado nas requisições subsequentes, eliminando o reprocessamento desnecessário.
 
-**Sugestão:** Pré-calcular o CSS crítico em build time e armazenar em cache.
+**Benefícios:**
+- ✅ `extractCriticalCSS()` executado apenas 1x (primeira requisição), não mais a cada SSR
+- ✅ Redução do TTFB (Time to First Byte) em requisições subsequentes
+- ✅ Código mínimo — apenas uma variável `cachedCriticalCSS` adicionada
 
 ---
 
@@ -316,40 +330,69 @@
 
 ---
 
-### 3.3 Múltiplos Preconnects sem Verificação de Necessidade
+### 3.3 Múltiplos Preconnects sem Verificação de Necessidade — **RESOLVIDO**
 
 **Arquivo:** `/pages/_document.js`
 
-**Problema:** São feitos preconnects para 6 domínios diferentes (Google Fonts, YouTube, Spotify, etc.) mesmo que a página atual não utilize todos eles.
+**Problema anterior:** Eram feitos preconnects para 6 domínios diferentes (Google Fonts, YouTube, Spotify, i.scdn.co, img.youtube.com) mesmo que a página atual não utilize todos eles.
 
-**Impacto:** Conexões desnecessárias consumindo recursos do navegador.
+**O que foi feito (12/05/2026):**
+- Preconnects não essenciais removidos — agora apenas os domínios de fontes (Google Fonts) permanecem no `_document.js`:
+  - Mantido: `fonts.googleapis.com` e `fonts.gstatic.com` (essenciais para carregamento de fontes)
+  - Removido: `www.youtube.com`, `open.spotify.com`, `i.scdn.co`, `img.youtube.com`
+- DNS prefetch também reduzido — apenas `fonts.googleapis.com` mantido
+- Preconnects específicos para YouTube/Spotify devem ser adicionados condicionalmente nas páginas que os utilizam (ex: páginas de vídeos e músicas)
 
-**Sugestão:** Aplicar preconnect condicional baseado no conteúdo da página.
+**Benefícios:**
+- ✅ Redução de 4 preconnects e 4 dns-prefetch desnecessários por página
+- ✅ Menos conexões TCP+TLS abertas desnecessariamente
+- ✅ Performance melhorada em dispositivos móveis e redes lentas
+- ✅ Preconnects específicos podem ser adicionados sob demanda nas páginas que realmente precisam
 
 ---
 
-### 3.4 Fetch para API Interna em Server-Side
+### 3.4 Fetch para API Interna em Server-Side — **RESOLVIDO**
 
 **Arquivos:**
-- `/pages/blog/index.js` - faz `fetch('http://.../api/posts')` no servidor
+- `/pages/blog/index.js` - antes: `fetch('http://.../api/posts')` no servidor
+- `/pages/blog/[slug].js` — corrigido em 12/05/2026
 
-**Arquivo corrigido (12/05/2026):** `/pages/blog/[slug].js`
-- Antes: `fetch('http://.../api/posts?slug=x')` no servidor
-- Depois: Query direta ao banco (`SELECT ... WHERE slug = $1 AND published = true`)
+**O que foi feito (12/05/2026):**
+- `/pages/blog/[slug].js` — Antes: `fetch('http://.../api/posts?slug=x')` no servidor. Depois: Query direta ao banco (`SELECT ... WHERE slug = $1 AND published = true`)
+- `/pages/blog/index.js` — Substituído `fetch('http://localhost:3000/api/posts')` por query direta ao banco com paginação nativa via `LIMIT $1 OFFSET $2` e `COUNT(*)`:
+  ```js
+  const postsResult = await query(
+    'SELECT * FROM posts WHERE published = true ORDER BY created_at DESC LIMIT $1 OFFSET $2',
+    [limit, offset]
+  );
+  const totalResult = await query(
+    'SELECT COUNT(*) FROM posts WHERE published = true'
+  );
+  ```
+- A paginação agora é feita diretamente no banco de dados (não mais via slice manual no array completo)
 
-**Pendente:** `/pages/blog/index.js` ainda faz `fetch('http://.../api/posts')` no servidor. Sugestão: chamar a função de banco de dados diretamente no `getServerSideProps` ou usar um helper compartilhado.
+**Benefícios:**
+- ✅ Latência de rede eliminada — query direta ao banco em ambos os arquivos
+- ✅ Paginação eficiente — `LIMIT/OFFSET` no banco em vez de trazer todos os posts e fazer slice manual
+- ✅ Overhead HTTP eliminado (rate limiting, cache, parsing, serialização do endpoint API)
+- ✅ Código unificado com o padrão de `blog/[slug].js`
+- ✅ Menos ponto de falha — sem dependência de fetch HTTP para si mesmo
 
 ---
 
-### 3.5 TagManager Inline (_document.js)
+### 3.5 TagManager Inline (_document.js) — **RESOLVIDO**
 
 **Arquivo:** `/pages/_document.js`
 
-**Problema:** Scripts do Google TagManager são injetados inline no HTML, bloqueando a renderização.
+**Problema anterior:** A CSP continha permissão para `*.googletagmanager.com`, mas não havia scripts TagManager sendo injetados no projeto.
 
-**Impacto:** Impacta negativamente o Core Web Vitals (LCP).
+**O que foi feito (12/05/2026):**
+- Removida a permissão `https://*.googletagmanager.com` da Content Security Policy (`script-src`) no `_document.js`
+- A CSP foi limpa para conter apenas os domínios efetivamente utilizados: YouTube e Spotify
 
-**Sugestão:** Usar `next/script` com estratégia `afterInteractive` ou `lazyOnload`.
+**Benefícios:**
+- ✅ Política de segurança mais restritiva — apenas domínios realmente necessários no `script-src`
+- ✅ Superfície de ataque reduzida ao remover permissão de domínio não utilizado
 
 ---
 
@@ -367,15 +410,27 @@
 
 ---
 
-### 4.2 Fallback Silencioso sem Dados
+### 4.2 Fallback Silencioso sem Dados — **RESOLVIDO**
 
 **Arquivo:** `/pages/blog/index.js`
 
-**Problema:** Se a API de posts falhar, o fallback retorna `posts: []`, `currentPage: 1` sem nenhum aviso ao usuário.
+**Problema anterior:** Se a API de posts falhasse, o fallback retornava `posts: []`, `currentPage: 1` sem nenhum aviso ao usuário.
 
-**Impacto:** Usuário vê uma página de blog vazia sem entender o motivo.
+**O que foi feito (12/05/2026):**
+- Adicionada a prop `fetchError` no fallback de erro do `getServerSideProps`:
+  ```js
+  return { props: { posts: [], currentPage: 1, totalPages: 1, fetchError: true } };
+  ```
+- No componente, o estado de erro é diferenciado do estado de lista vazia:
+  - **Erro (`fetchError === true`):** exibe mensagem amigável em destaque visual (fundo rosa claro, texto vermelho):
+    > _"Desculpe, não foi possível carregar os posts no momento. Tente novamente mais tarde."_
+  - **Lista vazia (sem erro):** exibe _"Nenhum post publicado ainda."_ (comportamento original)
 
-**Sugestão:** Adicionar um estado de erro ou mensagem amigável quando a API falhar.
+**Benefícios:**
+- ✅ Usuário agora vê uma mensagem de erro amigável em vez de página vazia
+- ✅ Estados de erro e lista vazia visualmente diferenciados
+- ✅ Mensagem de erro com destaque visual (cores de alerta)
+- ✅ Sem alteração no comportamento de sucesso — posts normais continuam iguais
 
 ---
 
@@ -547,9 +602,12 @@ if (req.method !== 'GET') {
 | 🟠 Alto | ~~1.4~~ ✅ | `api/settings.js`, `api/v1/settings.js` | Configurações duplicadas (GET + POST + PUT) — **RESOLVIDO** |
 | 🟠 Alto | ~~1.5~~ ✅ | `api/v1/health.js`, `api/v1/status.js` | Health Check vs Status duplicados — **RESOLVIDO** |
 | 🟠 Alto | ~~1.6~~ ✅ | `/pages/api/admin/` (14 arquivos) | Padrão CRUD repetido nos endpoints admin — **RESOLVIDO** |
-| 🟠 Alto | ~~3.4~~ ✅ | `blog/[slug].js` | Fetch HTTP para API interna em SSR (blog/[slug].js) — **RESOLVIDO** |
-| 🟠 Alto | 3.4 | `blog/index.js` | Fetch HTTP para API interna em SSR (blog/index.js) |
+| 🟠 Alto | ~~3.1~~ ✅ | `_document.js` | CSS crítico inline recalculado em toda requisição — **RESOLVIDO** (cacheado em nível de módulo) |
+| 🟠 Alto | ~~3.3~~ ✅ | `_document.js` | Múltiplos preconnects sem verificação de necessidade — **RESOLVIDO** (apenas fontes mantidos) |
+| 🟠 Alto | ~~3.4~~ ✅ | `blog/[slug].js`, `blog/index.js` | Fetch HTTP para API interna em SSR — **RESOLVIDO** (ambos os arquivos) |
+| 🟠 Alto | ~~3.5~~ ✅ | `_document.js` | TagManager Inline — **RESOLVIDO** (permissão CSP removida, sem TagManager no projeto) |
 | 🟠 Alto | 5.4 | `styles/tokens/*.js` | Tokens não utilizados nos CSS |
+| 🟡 Médio | ~~4.2~~ ✅ | `blog/index.js` | Fallback silencioso sem dados — **RESOLVIDO** (adicionado estado de erro visual) |
 | 🟡 Médio | ~~2.1~~ ✅ | Múltiplos | Modelos de autenticação misturados — **RESOLVIDO** |
 | 🟡 Médio | ~~2.2~~ ✅ | Múltiplos | Cache implementado de forma diferente — **RESOLVIDO** |
 | 🟡 Médio | ~~2.3~~ ✅ | Múltiplos | Rate limiting aplicado de forma inconsistente — **RESOLVIDO** |

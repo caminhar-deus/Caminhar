@@ -8,33 +8,31 @@ import { extractCriticalCSS } from '../components/Performance/CriticalCSS';
  * Inclui:
  * - Preconnect para domínios críticos
  * - DNS prefetch
- * - CSS crítico inline
+ * - CSS crítico inline (cacheado em nível de módulo)
  * - Meta tags de segurança e performance
  */
 
+// CSS crítico cacheado em nível de módulo para evitar
+// reprocessamento em cada requisição SSR (performance)
+let cachedCriticalCSS = null;
+
 export default function Document() {
-  const criticalCSS = extractCriticalCSS();
+  if (!cachedCriticalCSS) {
+    cachedCriticalCSS = extractCriticalCSS();
+  }
 
   return (
     <Html lang={siteConfig.language}>
       <Head>
-        {/* Preconnect crítico (deve ser no head) */}
+        {/* Preconnect crítico — apenas domínios essenciais globais (fontes) */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://www.youtube.com" />
-        <link rel="preconnect" href="https://open.spotify.com" />
-        <link rel="preconnect" href="https://i.scdn.co" />
-        <link rel="preconnect" href="https://img.youtube.com" />
 
-        {/* DNS Prefetch */}
+        {/* DNS Prefetch — apenas domínios essenciais globais */}
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
-        <link rel="dns-prefetch" href="https://www.youtube.com" />
-        <link rel="dns-prefetch" href="https://open.spotify.com" />
-        <link rel="dns-prefetch" href="https://i.scdn.co" />
-        <link rel="dns-prefetch" href="https://img.youtube.com" />
 
         {/* CSS Crítico Inline */}
-        <style dangerouslySetInnerHTML={{ __html: criticalCSS }} id="critical-css" />
+        <style dangerouslySetInnerHTML={{ __html: cachedCriticalCSS }} id="critical-css" />
 
         {/* Meta tags de segurança */}
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
@@ -45,7 +43,7 @@ export default function Document() {
           httpEquiv="Content-Security-Policy" 
           content="
             default-src 'self';
-            script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.youtube.com https://open.spotify.com https://*.googletagmanager.com;
+            script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.youtube.com https://open.spotify.com;
             style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
             font-src 'self' https://fonts.gstatic.com;
             img-src 'self' data: https: blob: https://img.youtube.com https://i.scdn.co https://*.googleusercontent.com;
