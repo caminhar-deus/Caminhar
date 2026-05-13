@@ -18,7 +18,7 @@ export default function PostCard({ post, readMoreText = 'Ler mais →' }) {
       }
     >
       {post.categories && post.categories.length > 0 && (
-        <div style={{ marginBottom: '0.8rem' }}>
+        <div style={{ marginBottom: 'var(--spacing-3)' }}>
           {post.categories.map(cat => (
             <span key={cat.slug} className={styles.category}>
               {cat.name}

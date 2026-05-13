@@ -2,60 +2,60 @@
 
 .page {
   min-height: 100vh;
-  background-color: #fafafa;
+  background-color: var(--color-bg-primary);
 }
 
 /* Header */
 .header {
-  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-  color: white;
-  padding: 1.5rem 0;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
+  color: var(--color-text-inverse);
+  padding: var(--spacing-6) 0;
+  box-shadow: var(--shadow-default);
 }
 
 .logo {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
   margin: 0;
 }
 
 /* Main Content */
 .main {
-  padding: 3rem 0;
+  padding: var(--section-md) 0;
 }
 
 /* Section Styles */
 .section {
-  background: white;
-  border-radius: 1rem;
-  padding: 2rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: var(--color-bg-primary);
+  border-radius: var(--border-radius-2xl);
+  padding: var(--spacing-8);
+  box-shadow: var(--shadow-card);
 }
 
 .sectionTitle {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #171717;
-  margin: 0 0 0.5rem 0;
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-2) 0;
 }
 
 .sectionDescription {
-  font-size: 1.125rem;
-  color: #737373;
-  margin: 0 0 2rem 0;
+  font-size: var(--font-size-lg);
+  color: var(--color-text-tertiary);
+  margin: 0 0 var(--spacing-8) 0;
 }
 
 .subsectionTitle {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #171717;
-  margin: 0 0 1.5rem 0;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid #e5e5e5;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-6) 0;
+  padding-bottom: var(--spacing-3);
+  border-bottom: var(--border-width-2) solid var(--color-border-light);
 }
 
 .componentGroup {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--spacing-6);
 }
 
 .componentGroup:last-child {
@@ -63,95 +63,95 @@
 }
 
 .groupLabel {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #737373;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin: 0 0 0.75rem 0;
+  letter-spacing: var(--letter-spacing-wide);
+  margin: 0 0 var(--spacing-3) 0;
 }
 
 /* Color Palette Demo */
 .paletteLabel {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #525252;
-  margin: 0 0 0.5rem 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--spacing-2) 0;
 }
 
 .colorRow {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--gap-xs);
   flex-wrap: wrap;
-  margin-bottom: 1rem;
+  margin-bottom: var(--spacing-4);
 }
 
 .colorBox {
   width: 80px;
   height: 60px;
-  border-radius: 0.5rem;
+  border-radius: var(--border-radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   color: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-button);
 }
 
 /* Primary Colors */
-.primary50 { background-color: #eff6ff; color: #1e40af; }
-.primary100 { background-color: #dbeafe; color: #1e40af; }
-.primary200 { background-color: #bfdbfe; color: #1e40af; }
-.primary500 { background-color: #2563eb; }
-.primary700 { background-color: #1e40af; }
-.primary900 { background-color: #1e3a8a; }
+.primary50 { background-color: var(--color-primary-50); color: var(--color-primary-700); }
+.primary100 { background-color: var(--color-primary-100); color: var(--color-primary-700); }
+.primary200 { background-color: var(--color-primary-200); color: var(--color-primary-700); }
+.primary500 { background-color: var(--color-primary-500); }
+.primary700 { background-color: var(--color-primary-700); }
+.primary900 { background-color: var(--color-primary-900); }
 
 /* Secondary Colors */
-.secondary50 { background-color: #fefdf9; color: #6a4f24; }
-.secondary200 { background-color: #faf0c8; color: #6a4f24; }
-.secondary500 { background-color: #d4af37; }
-.secondary700 { background-color: #967628; }
+.secondary50 { background-color: var(--color-secondary-50); color: var(--color-secondary-900); }
+.secondary200 { background-color: var(--color-secondary-200); color: var(--color-secondary-900); }
+.secondary500 { background-color: var(--color-secondary-500); }
+.secondary700 { background-color: var(--color-secondary-700); }
 
 /* Feedback Colors */
-.success { background-color: #10b981; }
-.error { background-color: #ef4444; }
-.warning { background-color: #f59e0b; }
-.info { background-color: #3b82f6; }
+.success { background-color: var(--color-success-500); }
+.error { background-color: var(--color-error-500); }
+.warning { background-color: var(--color-warning-500); }
+.info { background-color: var(--color-info-500); }
 
 /* Demo Components */
 .demoStack {
-  padding: 1rem;
-  background-color: #f5f5f5;
-  border-radius: 0.5rem;
+  padding: var(--spacing-4);
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--border-radius-lg);
 }
 
 .demoBox {
-  background-color: #2563eb;
-  color: white;
-  padding: 1rem;
-  border-radius: 0.5rem;
+  background-color: var(--color-primary-500);
+  color: var(--color-text-inverse);
+  padding: var(--spacing-4);
+  border-radius: var(--border-radius-lg);
   text-align: center;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }
 
 .docList {
   margin: 0;
-  padding-left: 1.5rem;
+  padding-left: var(--spacing-6);
 }
 
 .docList li {
-  margin-bottom: 0.5rem;
-  color: #525252;
+  margin-bottom: var(--spacing-2);
+  color: var(--color-text-secondary);
 }
 
 /* Footer */
 .footer {
-  background-color: #171717;
-  color: #a3a3a3;
-  padding: 2rem 0;
+  background-color: var(--color-bg-inverse);
+  color: var(--color-text-tertiary);
+  padding: var(--spacing-8) 0;
   text-align: center;
-  margin-top: 3rem;
+  margin-top: var(--spacing-12);
 }
 
 .footer p {
@@ -161,20 +161,20 @@
 /* Responsive */
 @media (max-width: 768px) {
   .main {
-    padding: 2rem 0;
+    padding: var(--spacing-8) 0;
   }
 
   .section {
-    padding: 1.5rem;
+    padding: var(--spacing-6);
   }
 
   .sectionTitle {
-    font-size: 1.5rem;
+    font-size: var(--font-size-2xl);
   }
 
   .colorBox {
     width: 60px;
     height: 50px;
-    font-size: 0.625rem;
+    font-size: var(--font-size-xs);
   }
 }

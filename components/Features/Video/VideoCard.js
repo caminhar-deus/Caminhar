@@ -25,21 +25,21 @@ export default function VideoCard({ video }) {
         />
       }
       style={{
-        borderRadius: '12px',
-        boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
-        transition: 'transform 0.2s ease',
+        borderRadius: 'var(--border-radius-xl)',
+        boxShadow: 'var(--shadow-card)',
+        transition: 'var(--transition-transform)',
         height: '100%',
       }}
     >
-      <h3 style={{ margin: '0 0 8px 0', fontSize: '1.1rem', fontWeight: 600 }}>
+      <h3 style={{ margin: '0 0 var(--spacing-2) 0', fontSize: 'var(--font-size-lg)', fontWeight: 'var(--font-weight-semibold)' }}>
         {video.titulo}
       </h3>
       {video.descricao && (
         <p style={{ 
           margin: 0, 
-          color: '#666', 
-          fontSize: '0.9rem', 
-          lineHeight: '1.5',
+          color: 'var(--color-text-tertiary)', 
+          fontSize: 'var(--font-size-sm)', 
+          lineHeight: 'var(--line-height-normal)',
           display: '-webkit-box',
           WebkitLineClamp: 3,
           WebkitBoxOrient: 'vertical',

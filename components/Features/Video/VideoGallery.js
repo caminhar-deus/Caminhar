@@ -96,21 +96,21 @@ export default function VideoGallery() {
 
       {/* Controles de Paginação */}
       {!loading && !error && totalPages > 1 && (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', marginTop: '40px', paddingBottom: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 'var(--spacing-5)', marginTop: 'var(--spacing-10)', paddingBottom: 'var(--spacing-5)' }}>
           <button 
             onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
             disabled={currentPage === 1}
             style={{ 
-              padding: '10px 20px', borderRadius: '8px', fontWeight: '500',
-              border: '1px solid #d1d5db', backgroundColor: currentPage === 1 ? '#f3f4f6' : '#fff',
-              color: currentPage === 1 ? '#9ca3af' : '#374151', cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s'
+              padding: 'var(--spacing-2_5) var(--spacing-5)', borderRadius: 'var(--border-radius-lg)', fontWeight: 'var(--font-weight-medium)',
+              border: 'var(--border-width-1) solid var(--color-border-light)', backgroundColor: currentPage === 1 ? 'var(--color-bg-secondary)' : 'var(--color-bg-primary)',
+              color: currentPage === 1 ? 'var(--color-text-tertiary)' : 'var(--color-text-primary)', cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+              transition: 'var(--transition-all)'
             }}
           >
             Anterior
           </button>
           
-          <span style={{ fontWeight: '500', color: '#4b5563' }}>
+          <span style={{ fontWeight: 'var(--font-weight-medium)', color: 'var(--color-text-secondary)' }}>
             Página {currentPage} de {totalPages}
           </span>
           
@@ -118,10 +118,10 @@ export default function VideoGallery() {
             onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} 
             disabled={currentPage === totalPages}
             style={{ 
-              padding: '10px 20px', borderRadius: '8px', fontWeight: '500',
-              border: '1px solid #d1d5db', backgroundColor: currentPage === totalPages ? '#f3f4f6' : '#fff',
-              color: currentPage === totalPages ? '#9ca3af' : '#374151', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s'
+              padding: 'var(--spacing-2_5) var(--spacing-5)', borderRadius: 'var(--border-radius-lg)', fontWeight: 'var(--font-weight-medium)',
+              border: 'var(--border-width-1) solid var(--color-border-light)', backgroundColor: currentPage === totalPages ? 'var(--color-bg-secondary)' : 'var(--color-bg-primary)',
+              color: currentPage === totalPages ? 'var(--color-text-tertiary)' : 'var(--color-text-primary)', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+              transition: 'var(--transition-all)'
             }}
           >
             Próxima

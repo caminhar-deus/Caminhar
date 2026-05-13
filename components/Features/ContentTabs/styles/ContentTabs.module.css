@@ -1,14 +1,14 @@
 /* Content Tabs Styles */
 .tabsSection {
   padding: 2rem 0;
-  background-color: #f8f9fa;
+  background-color: var(--color-bg-secondary);
   width: 100%;
 }
 
 .container {
-  max-width: 1200px;
+  max-width: var(--container-xl);
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 var(--spacing-5);
 }
 
 .tabsContainer {
@@ -34,25 +34,25 @@
 .tabButton {
   background: none;
   border: none;
-  padding: 12px 24px;
-  font-size: 1.1rem;
-  font-weight: 500;
-  color: #666;
+  padding: var(--spacing-3) var(--spacing-6);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: var(--transition-all);
   white-space: nowrap;
   position: relative;
   margin: 0 5px;
-  border-radius: 6px;
+  border-radius: var(--border-radius-md);
   touch-action: manipulation;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-2);
 }
 
 .tabButton:hover {
-  color: #333;
-  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--color-text-primary);
+  background-color: var(--alpha-ghost);
 }
 
 .tabButton:active {
@@ -61,21 +61,21 @@
 
 .tabButton:disabled {
   cursor: not-allowed;
-  color: #ccc;
+  color: var(--color-text-tertiary);
   background-color: transparent;
-  opacity: 0.6;
+  opacity: var(--opacity-60);
 }
 
 .tabButton:disabled:hover {
-  color: #ccc;
+  color: var(--color-text-tertiary);
   background-color: transparent;
   transform: none;
 }
 
 .tabButton.active {
-  color: #2c3e50;
-  font-weight: 600;
-  background-color: rgba(0, 0, 0, 0.1);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+  background-color: var(--alpha-ghost);
 }
 
 .tabButton.active::after {
@@ -86,22 +86,22 @@
   transform: translateX(-50%);
   width: 60%;
   height: 3px;
-  background-color: #2c3e50;
-  border-radius: 2px;
+  background-color: var(--color-primary-500);
+  border-radius: var(--border-radius-sm);
 }
 
 .tabIcon {
-  font-size: 18px;
-  width: 20px;
+  font-size: var(--font-size-lg);
+  width: var(--spacing-5);
   text-align: center;
   flex-shrink: 0;
 }
 
 .contentContainer {
   min-height: 400px;
-  opacity: 1;
+  opacity: var(--opacity-100);
   transform: translateY(0);
-  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+  transition: var(--transition-opacity), var(--transition-transform);
 }
 
 .contentContainer.fade-enter {
@@ -133,26 +133,26 @@
 }
 
 .placeholderCard {
-  background: white;
-  border-radius: 12px;
-  padding: 2rem;
+  background: var(--color-bg-primary);
+  border-radius: var(--border-radius-xl);
+  padding: var(--spacing-8);
   text-align: center;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  box-shadow: var(--shadow-card);
   max-width: 600px;
   width: 100%;
 }
 
 .placeholderTitle {
-  font-size: 1.5rem;
-  color: #2c3e50;
-  margin-bottom: 1rem;
+  font-size: var(--font-size-2xl);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-4);
 }
 
 .placeholderText {
-  color: #666;
-  font-size: 1.1rem;
-  margin-bottom: 2rem;
-  line-height: 1.6;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--spacing-8);
+  line-height: var(--line-height-relaxed);
 }
 
 .placeholderImage {
@@ -160,14 +160,14 @@
   justify-content: center;
   align-items: center;
   height: 200px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  border: 2px dashed #dee2e6;
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--border-radius-lg);
+  border: var(--border-width-2) dashed var(--color-border-light);
 }
 
 .imagePlaceholder {
-  color: #999;
-  font-size: 0.9rem;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
   text-align: center;
 }
 

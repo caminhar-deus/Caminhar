@@ -7,7 +7,7 @@ import React from 'react';
 
 const containerStyle = {
   textAlign: 'center',
-  padding: '40px',
+  padding: 'var(--spacing-10)',
 };
 
 /**
@@ -17,7 +17,7 @@ const containerStyle = {
 export function ErrorMessage({ message }) {
   if (!message) return null;
   return (
-    <div style={{ ...containerStyle, color: 'red' }}>
+    <div style={{ ...containerStyle, color: 'var(--color-error-500)' }}>
       ❌ {message}
     </div>
   );
@@ -41,7 +41,7 @@ export function LoadingMessage({ text = 'Carregando...' }) {
  */
 export function EmptyMessage({ message }) {
   return (
-    <div style={{ ...containerStyle, color: '#666' }}>
+    <div style={{ ...containerStyle, color: 'var(--color-text-tertiary)' }}>
       {message}
     </div>
   );

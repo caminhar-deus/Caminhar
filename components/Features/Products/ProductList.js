@@ -44,9 +44,9 @@ export default function ProductList() {
   return (
     <div>
       {/* Filtros de Busca e Preço */}
-      <div style={{ marginBottom: '30px', display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '15px' }}>
+      <div style={{ marginBottom: 'var(--spacing-8)', display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 'var(--spacing-4)' }}>
         <div style={{ position: 'relative', width: '100%', maxWidth: '400px' }}>
-          <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#a0aec0', display: 'flex' }}>
+          <span style={{ position: 'absolute', left: 'var(--spacing-4)', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-tertiary)', display: 'flex' }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
             </svg>
@@ -138,8 +138,8 @@ export default function ProductList() {
 
 // Estilos auxiliares para os botões de paginação
 const paginationButtonStyle = (disabled) => buttonBaseStyle({
-  backgroundColor: disabled ? '#f7fafc' : '#fff',
-  color: disabled ? '#a0aec0' : '#2d3748',
+  backgroundColor: disabled ? 'var(--color-bg-secondary)' : 'var(--color-bg-primary)',
+  color: disabled ? 'var(--color-text-tertiary)' : 'var(--color-text-primary)',
   cursor: disabled ? 'not-allowed' : 'pointer',
-  boxShadow: disabled ? 'none' : '0 1px 3px rgba(0,0,0,0.1)',
+  boxShadow: disabled ? 'none' : 'var(--shadow-sm)',
 });

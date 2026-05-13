@@ -657,20 +657,22 @@
 │   ├── index.js
 │   └── styles
 │       ├── DesignSystem.module.css
+│       ├── generateTokensCSS.js
 │       ├── globals.css
 │       ├── Home.module.css
-│       └── tokens
-│           ├── animations.js
-│           ├── borders.js
-│           ├── breakpoints.js
-│           ├── colors.js
-│           ├── index.js
-│           ├── opacity.js
-│           ├── shadows.js
-│           ├── sizes.js
-│           ├── spacing.js
-│           ├── typography.js
-│           └── zIndex.js
+│       ├── tokens
+│       │   ├── animations.js
+│       │   ├── borders.js
+│       │   ├── breakpoints.js
+│       │   ├── colors.js
+│       │   ├── index.js
+│       │   ├── opacity.js
+│       │   ├── shadows.js
+│       │   ├── sizes.js
+│       │   ├── spacing.js
+│       │   ├── typography.js
+│       │   └── zIndex.js
+│       └── variables.css
 ├── pr-coverage.yml
 ├── public
 │   └── uploads
@@ -1013,4 +1015,4 @@
 ├── tests-output.log
 └── tree.txt
 
-156 directories, 858 files
+156 directories, 860 files

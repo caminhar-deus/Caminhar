@@ -1,3 +1,8 @@
+/* =============================================
+ * Design Tokens - CSS Custom Properties
+ * ============================================= */
+@import './variables.css';
+
 /* Reset and base styles */
 * {
   box-sizing: border-box;
@@ -7,14 +12,14 @@
 
 html, body {
   height: 100%;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  background-color: #f8f9fa;
-  color: #333;
-  overflow-y: scroll !important; /* Força a barra de rolagem a ficar sempre visível evitando o solavanco (Layout Shift) */
+  font-family: var(--font-family-body);
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  overflow-y: auto;
 }
 
 body {
-  line-height: 1.6;
+  line-height: var(--line-height-relaxed);
 }
 
 a {
@@ -24,41 +29,41 @@ a {
 
 /* Utility classes */
 .container {
-  max-width: 1200px;
+  max-width: var(--container-xl);
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 var(--spacing-5);
 }
 
 .btn {
-  background-color: #007bff;
-  color: white;
+  background-color: var(--color-primary-500);
+  color: var(--color-text-inverse);
   border: none;
-  padding: 12px 24px;
-  border-radius: 6px;
+  padding: var(--padding-button-lg);
+  border-radius: var(--border-radius-md);
   cursor: pointer;
-  font-size: 16px;
-  transition: background-color 0.3s ease;
+  font-size: var(--font-size-base);
+  transition: var(--transition-background);
 }
 
 .btn:hover {
-  background-color: #0056b3;
+  background-color: var(--color-hover-primary);
 }
 
 .btn-secondary {
-  background-color: #6c757d;
+  background-color: var(--color-neutral-500);
 }
 
 .btn-secondary:hover {
-  background-color: #545b62;
+  background-color: var(--color-neutral-600);
 }
 
 .input, .textarea {
   width: 100%;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 16px;
-  margin-bottom: 10px;
+  padding: var(--spacing-3);
+  border: var(--border-width-1) solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-base);
+  margin-bottom: var(--spacing-2_5);
 }
 
 .textarea {
@@ -67,12 +72,12 @@ a {
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: var(--spacing-5);
 }
 
 .label {
   display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: #555;
+  margin-bottom: var(--spacing-2);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
 }

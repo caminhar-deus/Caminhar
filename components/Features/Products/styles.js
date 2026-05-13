@@ -7,17 +7,17 @@
  * Estilo padrão de input com paddingLeft ajustável para ícone de busca.
  * @param {string} paddingLeft - Padding esquerdo (padrão '16px')
  */
-export const inputStyle = (paddingLeft = '16px') => ({
+export const inputStyle = (paddingLeft = 'var(--spacing-4)') => ({
   width: '100%',
-  padding: `14px 16px 14px ${paddingLeft}`,
-  borderRadius: '8px',
-  border: '1px solid #e2e8f0',
-  fontSize: '1rem',
+  padding: `var(--spacing-3_5) var(--spacing-4) var(--spacing-3_5) ${paddingLeft}`,
+  borderRadius: 'var(--border-radius-lg)',
+  border: 'var(--border-width-1) solid var(--color-border-light)',
+  fontSize: 'var(--font-size-base)',
   outline: 'none',
-  boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-  transition: 'all 0.2s ease',
-  backgroundColor: '#fff',
-  color: '#2d3748',
+  boxShadow: 'var(--shadow-xs)',
+  transition: 'var(--transition-all)',
+  backgroundColor: 'var(--color-bg-primary)',
+  color: 'var(--color-text-primary)',
 });
 
 /**
@@ -25,12 +25,12 @@ export const inputStyle = (paddingLeft = '16px') => ({
  * @param {Object} custom - Estilos customizados para sobrescrever o base
  */
 export const buttonBaseStyle = (custom = {}) => ({
-  padding: '8px 20px',
-  borderRadius: '6px',
-  border: '1px solid #e2e8f0',
-  fontWeight: '600',
+  padding: 'var(--spacing-2) var(--spacing-5)',
+  borderRadius: 'var(--border-radius-md)',
+  border: 'var(--border-width-1) solid var(--color-border-light)',
+  fontWeight: 'var(--font-weight-semibold)',
   cursor: 'pointer',
-  transition: 'all 0.2s ease',
+  transition: 'var(--transition-all)',
   outline: 'none',
   ...custom,
 });

@@ -42,16 +42,16 @@ export default function BlogSection({ limit }) {
         </div>
 
         {limit && posts.length > limit && (
-          <div style={{ textAlign: 'center', marginTop: '40px' }}>
+          <div style={{ textAlign: 'center', marginTop: 'var(--spacing-10)' }}>
             <Link href="/blog" style={{
               display: 'inline-block',
-              padding: '12px 24px',
-              backgroundColor: '#f5f5f5',
-              color: '#333',
+              padding: 'var(--spacing-3) var(--spacing-6)',
+              backgroundColor: 'var(--color-bg-secondary)',
+              color: 'var(--color-text-primary)',
               textDecoration: 'none',
-              borderRadius: '6px',
-              fontWeight: '500',
-              transition: 'all 0.2s ease'
+              borderRadius: 'var(--border-radius-md)',
+              fontWeight: 'var(--font-weight-medium)',
+              transition: 'var(--transition-all)'
             }}>
               Ver todas as postagens
             </Link>

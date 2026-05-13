@@ -3,13 +3,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: var(--spacing-2);
   font-family: inherit;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   border: none;
-  border-radius: 0.75rem;
+  border-radius: var(--border-radius-xl);
   cursor: pointer;
-  transition: all 150ms ease;
+  transition: var(--transition-all);
   text-decoration: none;
   position: relative;
   overflow: hidden;
@@ -19,39 +19,39 @@
 
 .button:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
+  box-shadow: var(--color-focus-ring);
 }
 
 .button:disabled,
 .button.disabled {
-  opacity: 0.5;
+  opacity: var(--opacity-50);
   cursor: not-allowed;
   pointer-events: none;
 }
 
 /* Sizes */
 .sm {
-  height: 2rem;
-  padding: 0 0.75rem;
-  font-size: 0.875rem;
+  height: var(--spacing-8);
+  padding: 0 var(--spacing-3);
+  font-size: var(--font-size-sm);
 }
 
 .md {
-  height: 2.5rem;
-  padding: 0 1rem;
-  font-size: 0.875rem;
+  height: var(--spacing-10);
+  padding: 0 var(--spacing-4);
+  font-size: var(--font-size-sm);
 }
 
 .lg {
-  height: 3rem;
-  padding: 0 1.5rem;
-  font-size: 1rem;
+  height: var(--spacing-12);
+  padding: 0 var(--spacing-6);
+  font-size: var(--font-size-base);
 }
 
 .xl {
-  height: 3.5rem;
-  padding: 0 2rem;
-  font-size: 1.125rem;
+  height: var(--spacing-14);
+  padding: 0 var(--spacing-8);
+  font-size: var(--font-size-lg);
 }
 
 /* Full Width */
@@ -61,34 +61,34 @@
 
 /* Variants */
 .primary {
-  background-color: #2563eb;
-  color: white;
+  background-color: var(--color-primary-500);
+  color: var(--color-text-inverse);
 }
 
 .primary:hover:not(:disabled) {
-  background-color: #1d4ed8;
-  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+  background-color: var(--color-hover-primary);
+  box-shadow: var(--shadow-buttonHover);
 }
 
 .primary:active:not(:disabled) {
-  background-color: #1e40af;
+  background-color: var(--color-active-primary);
   transform: translateY(1px);
 }
 
 .secondary {
-  background-color: #f5f5f5;
-  color: #171717;
-  border: 1px solid #e5e5e5;
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  border: var(--border-width-1) solid var(--color-border-light);
 }
 
 .secondary:hover:not(:disabled) {
-  background-color: #e5e5e5;
-  border-color: #d4d4d4;
+  background-color: var(--color-hover-neutral);
+  border-color: var(--color-border-default);
 }
 
 .ghost {
   background-color: transparent;
-  color: #2563eb;
+  color: var(--color-primary-500);
 }
 
 .ghost:hover:not(:disabled) {
@@ -96,32 +96,32 @@
 }
 
 .danger {
-  background-color: #ef4444;
-  color: white;
+  background-color: var(--color-error-500);
+  color: var(--color-text-inverse);
 }
 
 .danger:hover:not(:disabled) {
-  background-color: #dc2626;
+  background-color: var(--color-error-600);
   box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);
 }
 
 .success {
-  background-color: #10b981;
-  color: white;
+  background-color: var(--color-success-500);
+  color: var(--color-text-inverse);
 }
 
 .success:hover:not(:disabled) {
-  background-color: #059669;
+  background-color: var(--color-success-600);
   box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);
 }
 
 .warning {
-  background-color: #f59e0b;
-  color: white;
+  background-color: var(--color-warning-500);
+  color: var(--color-text-inverse);
 }
 
 .warning:hover:not(:disabled) {
-  background-color: #d97706;
+  background-color: var(--color-warning-600);
   box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.2);
 }
 
@@ -151,13 +151,13 @@
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 1.25rem;
-  height: 1.25rem;
+  width: var(--spacing-5);
+  height: var(--spacing-5);
   animation: spin 1s linear infinite;
 }
 
 .spinnerTrack {
-  opacity: 0.25;
+  opacity: var(--opacity-25);
 }
 
 .spinnerArc {
@@ -179,7 +179,7 @@
 /* Ripple Effect (opcional - ativado via JS) */
 .ripple {
   position: absolute;
-  border-radius: 50%;
+  border-radius: var(--border-radius-full);
   transform: scale(0);
   animation: ripple 0.6s linear;
   background-color: rgba(255, 255, 255, 0.3);

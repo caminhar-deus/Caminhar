@@ -3,10 +3,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.25rem;
-  font-weight: 500;
+  gap: var(--spacing-1);
+  font-weight: var(--font-weight-medium);
   font-family: inherit;
-  border-radius: 9999px;
+  border-radius: var(--border-radius-full);
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -24,36 +24,36 @@
 
 /* Sizes */
 .sm {
-  height: 1.25rem;
-  padding: 0 0.5rem;
-  font-size: 0.75rem;
+  height: var(--spacing-5);
+  padding: 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
 }
 
 .sm .leftIcon,
 .sm .rightIcon {
-  font-size: 0.625rem;
+  font-size: var(--font-size-xs);
 }
 
 .md {
-  height: 1.5rem;
-  padding: 0 0.625rem;
-  font-size: 0.875rem;
+  height: var(--spacing-6);
+  padding: 0 var(--spacing-2_5);
+  font-size: var(--font-size-sm);
 }
 
 .md .leftIcon,
 .md .rightIcon {
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
 }
 
 .lg {
-  height: 1.75rem;
-  padding: 0 0.75rem;
-  font-size: 0.875rem;
+  height: var(--spacing-7);
+  padding: 0 var(--spacing-3);
+  font-size: var(--font-size-sm);
 }
 
 .lg .leftIcon,
 .lg .rightIcon {
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
 }
 
 /* Dot variant */
@@ -62,113 +62,113 @@
 }
 
 .sm.dot {
-  width: 0.5rem;
-  height: 0.5rem;
+  width: var(--spacing-2);
+  height: var(--spacing-2);
 }
 
 .md.dot {
-  width: 0.625rem;
-  height: 0.625rem;
+  width: var(--spacing-2_5);
+  height: var(--spacing-2_5);
 }
 
 .lg.dot {
-  width: 0.75rem;
-  height: 0.75rem;
+  width: var(--spacing-3);
+  height: var(--spacing-3);
 }
 
 /* Variants */
 .default {
-  background-color: #f5f5f5;
-  color: #171717;
-  border: 1px solid #e5e5e5;
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  border: var(--border-width-1) solid var(--color-border-light);
 }
 
 .primary {
-  background-color: #2563eb;
-  color: white;
+  background-color: var(--color-primary-500);
+  color: var(--color-text-inverse);
 }
 
 .secondary {
-  background-color: #d4af37;
-  color: white;
+  background-color: var(--color-secondary-500);
+  color: var(--color-text-inverse);
 }
 
 .success {
-  background-color: #10b981;
-  color: white;
+  background-color: var(--color-success-500);
+  color: var(--color-text-inverse);
 }
 
 .error {
-  background-color: #ef4444;
-  color: white;
+  background-color: var(--color-error-500);
+  color: var(--color-text-inverse);
 }
 
 .warning {
-  background-color: #f59e0b;
-  color: white;
+  background-color: var(--color-warning-500);
+  color: var(--color-text-inverse);
 }
 
 .info {
-  background-color: #3b82f6;
-  color: white;
+  background-color: var(--color-info-500);
+  color: var(--color-text-inverse);
 }
 
 /* Outline variants */
 .outline {
   background-color: transparent;
-  border-width: 1px;
-  border-style: solid;
+  border-width: var(--border-width-1);
+  border-style: var(--border-style);
 }
 
 .outline.default {
-  border-color: #e5e5e5;
-  color: #171717;
+  border-color: var(--color-border-light);
+  color: var(--color-text-primary);
 }
 
 .outline.primary {
-  border-color: #2563eb;
-  color: #2563eb;
+  border-color: var(--color-primary-500);
+  color: var(--color-primary-500);
 }
 
 .outline.success {
-  border-color: #10b981;
-  color: #10b981;
+  border-color: var(--color-success-500);
+  color: var(--color-success-500);
 }
 
 .outline.error {
-  border-color: #ef4444;
-  color: #ef4444;
+  border-color: var(--color-error-500);
+  color: var(--color-error-500);
 }
 
 .outline.warning {
-  border-color: #f59e0b;
-  color: #f59e0b;
+  border-color: var(--color-warning-500);
+  color: var(--color-warning-500);
 }
 
 /* Soft/Solid variants (lighter background) */
 .soft.default {
-  background-color: #f5f5f5;
-  color: #171717;
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
 }
 
 .soft.primary {
   background-color: rgba(37, 99, 235, 0.1);
-  color: #2563eb;
+  color: var(--color-primary-500);
 }
 
 .soft.success {
   background-color: rgba(16, 185, 129, 0.1);
-  color: #10b981;
+  color: var(--color-success-500);
 }
 
 .soft.error {
   background-color: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+  color: var(--color-error-500);
 }
 
 .soft.warning {
   background-color: rgba(245, 158, 11, 0.1);
-  color: #f59e0b;
+  color: var(--color-warning-500);
 }
 
 /* Pulse Animation */

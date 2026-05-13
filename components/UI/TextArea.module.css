@@ -2,49 +2,49 @@
 .wrapper {
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
+  gap: var(--spacing-1_5);
   width: 100%;
 }
 
 .label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #171717;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
 }
 
 .required {
-  color: #ef4444;
-  margin-left: 0.25rem;
+  color: var(--color-error-500);
+  margin-left: var(--spacing-1);
 }
 
 .textarea {
   width: 100%;
   min-height: 100px;
   font-family: inherit;
-  font-size: 0.875rem;
-  color: #171717;
-  background-color: white;
-  border: 1px solid #e5e5e5;
-  border-radius: 0.75rem;
-  padding: 0.75rem;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-primary);
+  border: var(--border-width-1) solid var(--color-border-light);
+  border-radius: var(--border-radius-xl);
+  padding: var(--spacing-3);
   resize: vertical;
-  transition: all 150ms ease;
+  transition: var(--transition-all);
   outline: none;
-  line-height: 1.5;
+  line-height: var(--line-height-normal);
 }
 
 .textarea::placeholder {
-  color: #a3a3a3;
+  color: var(--color-text-tertiary);
 }
 
 .textarea:focus {
-  border-color: #2563eb;
+  border-color: var(--color-primary-500);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .textarea:disabled {
-  background-color: #f5f5f5;
-  color: #737373;
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-tertiary);
   cursor: not-allowed;
   resize: none;
 }
@@ -52,20 +52,20 @@
 /* Sizes */
 .sm .textarea {
   min-height: 80px;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
+  padding: var(--spacing-2) var(--spacing-3);
+  font-size: var(--font-size-sm);
 }
 
 .md .textarea {
   min-height: 100px;
-  padding: 0.75rem;
-  font-size: 0.875rem;
+  padding: var(--spacing-3);
+  font-size: var(--font-size-sm);
 }
 
 .lg .textarea {
   min-height: 120px;
-  padding: 1rem;
-  font-size: 1rem;
+  padding: var(--spacing-4);
+  font-size: var(--font-size-base);
 }
 
 /* No Resize */
@@ -74,12 +74,12 @@
 }
 
 /* Error State */
-.hasError .textarea {
-  border-color: #ef4444;
+  .hasError .textarea {
+  border-color: var(--color-error-500);
 }
 
 .hasError .textarea:focus {
-  border-color: #ef4444;
+  border-color: var(--color-error-500);
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
 
@@ -88,16 +88,16 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 0.5rem;
-  min-height: 1.25rem;
+  gap: var(--spacing-2);
+  min-height: var(--spacing-5);
 }
 
 .errorMessage {
-  font-size: 0.75rem;
-  color: #ef4444;
+  font-size: var(--font-size-xs);
+  color: var(--color-error-500);
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: var(--spacing-1);
 }
 
 .errorMessage::before {
@@ -105,17 +105,17 @@
 }
 
 .helperText {
-  font-size: 0.75rem;
-  color: #737373;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
 }
 
 .counter {
-  font-size: 0.75rem;
-  color: #737373;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
   font-variant-numeric: tabular-nums;
 }
 
 .overLimit {
-  color: #ef4444;
-  font-weight: 500;
+  color: var(--color-error-500);
+  font-weight: var(--font-weight-medium);
 }

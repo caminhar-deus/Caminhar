@@ -81,7 +81,7 @@ export default function AdminDashboard({ setActiveTab }) {
       label: 'Dicas', 
       count: stats.dicas || 0, 
       icon: '💡', 
-      color: '#f59e0b', 
+      color: '#8b5cf6', 
       tabId: 'dicas',
       details: `✅ ${stats.dicasPublished || 0} Pub | 📝 ${stats.dicasDraft || 0} Rasc`
     },

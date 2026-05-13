@@ -152,19 +152,19 @@
 
 /* Colors */
 .primary {
-  color: #2563eb;
+  color: var(--color-primary-500);
 }
 
 .secondary {
-  color: #d4af37;
+  color: var(--color-secondary-500);
 }
 
 .white {
-  color: white;
+  color: var(--color-text-inverse);
 }
 
 .dark {
-  color: #171717;
+  color: var(--color-text-primary);
 }
 
 /* Centered */
@@ -193,7 +193,7 @@
   justify-content: center;
   background-color: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(4px);
-  z-index: 2100;
+  z-index: var(--z-loading);
 }
 
 /* Animations */
