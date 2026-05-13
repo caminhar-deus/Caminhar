@@ -1,13 +1,13 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
-import handler from '../../../../pages/api/v1/status.js';
-import { query } from '../../../../lib/db.js';
+import handler from '../../../pages/api/status.js';
+import { query } from '../../../lib/db.js';
 
-jest.mock('../../../../lib/db.js', () => ({
+jest.mock('../../../lib/db.js', () => ({
   query: jest.fn()
 }));
 
-describe('API Status (/api/v1/status)', () => {
+describe('API Status (/api/status)', () => {
   beforeEach(() => { jest.clearAllMocks(); });
 
   it('deve retornar 405 para métodos diferentes de GET', async () => {
@@ -20,7 +20,7 @@ describe('API Status (/api/v1/status)', () => {
     query.mockResolvedValueOnce({ rows: [{ '?column?': 1 }] });
     const { req, res } = createMocks({ method: 'GET' });
     await handler(req, res);
-    
+
     expect(res._getStatusCode()).toBe(200);
     const data = res._getJSONData();
     expect(data.data.database.status).toBe('connected');
@@ -30,7 +30,7 @@ describe('API Status (/api/v1/status)', () => {
     query.mockRejectedValueOnce(new Error('DB Offline'));
     const { req, res } = createMocks({ method: 'GET' });
     await handler(req, res);
-    
+
     expect(res._getStatusCode()).toBe(200);
     const data = res._getJSONData();
     expect(data.data.database.status).toBe('error');
@@ -38,13 +38,13 @@ describe('API Status (/api/v1/status)', () => {
 
   it('deve usar development como ambiente fallback caso NODE_ENV não esteja definido', async () => {
     const originalEnv = process.env.NODE_ENV;
-    delete process.env.NODE_ENV; // Apaga temporariamente para forçar o fallback
-    
+    delete process.env.NODE_ENV;
+
     query.mockResolvedValueOnce({ rows: [{ '?column?': 1 }] });
     const { req, res } = createMocks({ method: 'GET' });
     await handler(req, res);
-    
+
     expect(res._getJSONData().data.api.environment).toBe('development');
-    process.env.NODE_ENV = originalEnv; // Restaura
+    process.env.NODE_ENV = originalEnv;
   });
 });

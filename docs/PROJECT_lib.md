@@ -1,6 +1,6 @@
 # Análise da Pasta `lib/`
 
-> **Data da análise:** 12/05/2026
+> **Data da análise:** 13/05/2026 (atualizado)
 > **Projeto:** O Caminhar com Deus
 > **Objetivo:** Documentar de forma objetiva e clara todos os arquivos da pasta `lib/`, suas responsabilidades e propósitos.
 
@@ -28,7 +28,8 @@
    - [lib/domain/musicas.js](#33-libdomainmusicasjs)
    - [lib/domain/posts.js](#34-libdomainpostsjs)
    - [lib/domain/settings.js](#35-libdomainsettingsjs)
-   - [lib/domain/videos.js](#36-libdomainvideosjs)
+   - [lib/domain/products.js](#37-libdomainproductsjs)
+   - [lib/domain/videos.js](#38-libdomainvideosjs)
 4. [Subpasta `lib/seo/`](#4-subpasta-libseo)
    - [lib/seo/config.js](#41-libseoconfigjs)
 
@@ -48,7 +49,7 @@
 - `setAuthCookie(res, token)` / `getAuthCookie(req)` — Gravação e leitura do token no cookie `httpOnly`.
 - `getAuthToken(req)` — Extrai o token do header `Authorization` (Bearer) ou do cookie (fallback).
 - `authenticate(username, password)` — Autentica usuário contra o banco de dados.
-- `authenticateAndGenerateToken(username, password, ip, options)` — Função compartilhada de login que unifica a lógica usada pelos endpoints `/api/auth/login.js` e `/api/v1/auth/login.js`. Inclui validação de entrada, rate limiting via `checkRateLimit` (5 tentativas/minuto por padrão), autenticação, atualização de `last_login_at`, busca de permissões do cargo e geração de token JWT. Retorna `{ user, token }` em sucesso ou `{ error, message }` em falha.
+- `authenticateAndGenerateToken(username, password, ip, options)` — Função compartilhada de login que unifica a lógica usada pelo endpoint `/api/auth/login.js`. Inclui validação de entrada, rate limiting via `checkRateLimit` (5 tentativas/minuto por padrão), autenticação, atualização de `last_login_at`, busca de permissões do cargo e geração de token JWT. Retorna `{ user, token }` em sucesso ou `{ error, message }` em falha.
 - `withAuth(handler)` — Middleware que protege handlers exigindo token válido.
 - `initializeAuth()` — Cria a tabela `users` (se não existir), faz migração da coluna `role`, e cria o admin padrão via variáveis de ambiente.
 
@@ -383,7 +384,27 @@
 
 ---
 
-### 3.6 `lib/domain/videos.js`
+### 3.7 `lib/domain/products.js`
+
+**Localização:** `/lib/domain/products.js`
+
+**Propósito:** Camada de domínio para operações com produtos. CRUD completo com paginação e formatação de moeda.
+
+**Funções:**
+
+| Função | Descrição |
+|--------|-----------|
+| `getPaginatedProducts(page, limit)` | Retorna produtos públicos paginados com formatação de moeda para Real (R$) |
+| `getAllProducts(page, limit)` | Retorna todos os produtos paginados (admin) |
+| `createProduct(data)` | Cria novo produto com cálculo automático de posição |
+| `updateProduct(id, data)` | Atualiza produto existente |
+| `deleteProduct(id)` | Remove produto pelo ID |
+
+**Observações:** Criado em 13/05/2026 para centralizar a lógica de paginação e formatação de moeda que antes estava duplicada em `handlePublicGet` e `handleAdminGet` no endpoint `products.js`. Segue o mesmo padrão dos demais módulos de domínio (musicas, posts, videos).
+
+---
+
+### 3.8 `lib/domain/videos.js`
 
 **Localização:** `/lib/domain/videos.js`
 

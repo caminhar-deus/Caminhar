@@ -33,7 +33,7 @@ export function setup() {
 export default function () {
   // --- 1. Login e obtenção do token ---
   const loginRes = http.post(
-    `${BASE_URL}/api/v1/auth/login`,
+    `${BASE_URL}/api/auth/login?response=body`,
     JSON.stringify({ username: USERNAME, password: PASSWORD }),
     {
       headers: { 'Content-Type': 'application/json' },
@@ -59,7 +59,7 @@ export default function () {
   const authToken = loginRes.json('data.token');
 
   // --- 2. Acessar rota protegida (ex: listar posts) ---
-  const settingsRes = http.get(`${BASE_URL}/api/v1/settings`, {
+  const settingsRes = http.get(`${BASE_URL}/api/settings`, {
     headers: { Authorization: `Bearer ${authToken}` },
     tags: { flow: 'get_settings' },
   });

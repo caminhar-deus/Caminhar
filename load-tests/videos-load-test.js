@@ -22,7 +22,7 @@ const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
 // A função setup roda uma vez antes do teste iniciar para preparar o ambiente (login)
 export function setup() {
   const loginRes = http.post(
-    `${BASE_URL}/api/v1/auth/login`,
+    `${BASE_URL}/api/auth/login?response=body`,
     JSON.stringify({ username: USERNAME, password: PASSWORD }),
     { headers: { 'Content-Type': 'application/json' } }
   );

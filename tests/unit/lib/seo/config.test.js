@@ -93,7 +93,7 @@ describe('SEO Config Utilities (lib/seo/config.js)', () => {
 
     it('deve retornar false para padrões configurados no noindexPaths (ex: /api/*, /admin)', () => {
       expect(shouldIndex('/admin')).toBe(false);
-      expect(shouldIndex('/api/v1/posts')).toBe(false);
+      expect(shouldIndex('/api/posts')).toBe(false);
       expect(shouldIndex('/500')).toBe(false);
     });
   });

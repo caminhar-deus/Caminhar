@@ -508,6 +508,26 @@
 
 ---
 
+### 7.3 Criação de `lib/domain/products.js`
+
+**Arquivo:** `lib/domain/products.js`
+
+**O que foi criado:**
+- Camada de domínio para operações com produtos, seguindo o mesmo padrão de `musicas.js`, `posts.js` e `videos.js`.
+- Funções criadas:
+  - `getPaginatedProducts(page, limit)` — Retorna produtos públicos paginados com formatação de moeda para Real (R$)
+  - `getAllProducts(page, limit)` — Retorna todos os produtos paginados (admin)
+  - `createProduct(data)` — Cria um novo produto com cálculo automático de posição
+  - `updateProduct(id, data)` — Atualiza um produto existente
+  - `deleteProduct(id)` — Remove um produto pelo ID
+
+**Benefícios:**
+- ✅ Lógica de paginação e formatação de moeda centralizada na camada de domínio
+- ✅ Duplicação de código eliminada entre `handlePublicGet` e `handleAdminGet` em `products.js`
+- ✅ Padronização com as demais entidades do sistema (musicas, posts, videos)
+
+---
+
 ## 8. Testes e Cobertura
 
 ### 8.1 Ausência de testes para a camada lib/api

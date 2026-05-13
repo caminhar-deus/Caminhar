@@ -28,7 +28,7 @@ export default function () {
     password: 'senha_incorreta_proposital',
   });
 
-  const resWrongPass = http.post(`${BASE_URL}/api/v1/auth/login`, payloadWrongPass, { 
+  const resWrongPass = http.post(`${BASE_URL}/api/auth/login?response=body`, payloadWrongPass, { 
     headers, 
     tags: { type: 'wrong_password' } 
   });
@@ -46,7 +46,7 @@ export default function () {
     password: 'qualquer_senha',
   });
 
-  const resNoUser = http.post(`${BASE_URL}/api/v1/auth/login`, payloadNoUser, { 
+  const resNoUser = http.post(`${BASE_URL}/api/auth/login?response=body`, payloadNoUser, { 
     headers, 
     tags: { type: 'non_existent_user' } 
   });

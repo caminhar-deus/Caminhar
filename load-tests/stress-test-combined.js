@@ -58,7 +58,7 @@ const PASSWORD = __ENV.ADMIN_PASSWORD || config.ADMIN_PASSWORD || '123456';
 // --- Setup Global ---
 export function setup() {
   const loginRes = http.post(
-    `${BASE_URL}/api/v1/auth/login`,
+    `${BASE_URL}/api/auth/login?response=body`,
     JSON.stringify({ username: USERNAME, password: PASSWORD }),
     { headers: { 'Content-Type': 'application/json' } }
   );
@@ -149,7 +149,7 @@ export function stressTestFlow(data) {
 
 // --- Função do Cenário de Monitoramento ---
 export function memoryMonitorFlow() {
-  const res = http.get(`${BASE_URL}/api/v1/status`);
+  const res = http.get(`${BASE_URL}/api/status`);
 
   if (res.status === 200 && res.json('memory')) {
     const memory = res.json('memory');

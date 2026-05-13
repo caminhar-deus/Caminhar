@@ -1,5 +1,6 @@
 # Análise do Projeto — Testes (`/tests/`)
 
+> **Data:** 13/05/2026 (atualizado)
 > **Objetivo:** Documentar de forma objetiva, clara e focada todos os arquivos de teste do projeto, descrevendo localização, propósito e funcionalidade de cada um.
 
 ---
@@ -186,24 +187,31 @@ tests/
 | `users.test.js` | CRUD admin de usuários | Listar, buscar, atualizar, excluir, paginação |
 | `videos.test.js` | CRUD admin de vídeos | Criar, listar, atualizar, excluir, busca |
 
-### 4.4 Autenticação (`/tests/integration/auth/` e `/tests/integration/api/auth/`)
+### 4.4 Autenticação (`/tests/integration/api/auth/`)
 
 | Arquivo | Propósito | Cenários Principais |
 |---------|-----------|---------------------|
-| `api/auth/login.test.js` | Login via API | Sucesso (200), senha inválida (401), usuário inexistente (401) |
-| `api/auth/logout.test.js` | Logout via API | Sucesso (200), token inválido |
-| `auth/auth.test.js` | Autenticação v1 - middleware | Token válido, inválido, expirado |
-| `auth/auth.v1.check.test.js` | Verificação de token v1 | Token válido, inválido, ausente |
-| `auth/auth.v1.login.test.js` | Login v1 | Credenciais válidas, inválidas |
+| `auth/login.test.js` | Login via API | Sucesso (200), senha inválida (401), usuário inexistente (401) |
+| `auth/logout.test.js` | Logout via API | Sucesso (200), token inválido |
+| `auth/check.test.js` | Verificação de token JWT | Token válido, inválido, ausente, erro interno |
 
-### 4.5 API Versão 1 (`/tests/integration/api/v1/`)
+> **Nota:** Os arquivos `auth/auth.v1.check.test.js`, `auth/auth.v1.login.test.js` e `auth/auth.test.js` foram **removidos** em 13/05/2026. Os testes de auth v1 foram substituídos por `auth/check.test.js` que testa o endpoint `/api/auth/check`.
 
-| Arquivo | Propósito |
-|---------|-----------|
-| `health.test.js` | Health check da API v1 (`/api/v1/health`) |
-| `posts.test.js` | CRUD de posts via API v1 (`/api/v1/posts`) |
-| `settings.test.js` | Configurações via API v1 (`/api/v1/settings`) |
-| `status.test.js` | Status da API v1 (`/api/v1/status`) |
+### 4.5 API Versão 1 — **DIRETÓRIO REMOVIDO (13/05/2026)**
+
+O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/2026 como parte da estratégia de eliminar endpoints versionados.
+
+**Arquivos removidos:**
+- `health.test.js` — Testava `/api/v1/health` (substituído por `/api/status?mode=health`)
+- `posts.test.js` — Testava `/api/v1/posts` (substituído por `/api/posts?response=v1`)
+- `settings.test.js` — Testava `/api/v1/settings` (substituído por `/api/settings?response=v1`)
+- `status.test.js` — Testava `/api/v1/status` (substituído por `/api/status`)
+- `videos/[id].test.js` — Testava `/api/v1/videos/[id]` (PUT/DELETE gerenciados por `/api/admin/videos`)
+- `auth/check.test.js` — Testava `/api/v1/auth/check` (substituído por `/api/auth/check`)
+
+**Novos testes criados:**
+- `tests/integration/api/status.test.js` — testa `/api/status`
+- `tests/integration/api/auth/check.test.js` — testa `/api/auth/check`
 
 ---
 
@@ -408,9 +416,11 @@ tests/
 | **Matchers** | 6 arquivos |
 | **Mocks** | 4 arquivos |
 | **Examples** | 2 arquivos |
-| **Testes de Integração** | 39 arquivos (6 raiz + 27 API + 14 admin + 2 auth + 3 auth v1 + 4 v1) |
+| **Testes de Integração** | 34 arquivos (6 raiz + 27 API + 14 admin + 2 api/auth)* |
 | **Testes Unitários** | ~96 arquivos (5 raiz + ~40 components + ~15 Admin + 2 Managers + 2 Tools + ~12 Features + 5 Layout + 5 Performance + 2 Products + 8 SEO + 12 UI + 3 domain + 6 lib + 5 lib/api + 4 lib/backup + 5 lib/db + 1 scripts + ~10 pages/api) |
-| **Total Aproximado** | **~157 arquivos** |
+| **Total Aproximado** | **~152 arquivos** |
+
+> *\*Removidos em 13/05/2026: `tests/integration/api/v1/` (4 arquivos), `tests/integration/auth/auth.v1.check.test.js`, `tests/integration/auth/auth.v1.login.test.js`, `tests/integration/auth/auth.test.js` e `tests/integration/api/status.api.test.js`. Adicionados: `tests/integration/api/status.test.js` e `tests/integration/api/auth/check.test.js`.*
 
 ---
 

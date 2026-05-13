@@ -1,6 +1,6 @@
 # Análise da Pasta `/pages`
 
-> **Data:** 12/05/2026 (atualizado)
+> **Data:** 13/05/2026 (atualizado)
 > **Objetivo:** Documentar todos os arquivos da pasta `/pages`, descrevendo sua localização, propósito e funcionalidades.
 
 ---
@@ -9,14 +9,12 @@
 
 1. [Raiz `/pages`](#1-raiz-pages)
 2. [`/pages/api`](#2-pagesapi)
-3. [`/pages/api/admin`](#3-pagesapiadmin)
-4. [`/pages/api/auth`](#4-pagesapiauth)
-5. [`/pages/api/v1`](#5-pagesapiv1)
-6. [`/pages/api/v1/auth`](#6-pagesapiv1auth)
-7. [`/pages/api/v1/videos`](#7-pagesapiv1videos)
-8. [`/pages/blog`](#8-pagesblog)
-9. [`/pages/styles`](#9-pagesstyles)
-10. [`/pages/styles/tokens`](#10-pagesstylestokens)
+3. [`/pages/api/helper`](#3-pagesapihelper)
+4. [`/pages/api/admin`](#4-pagesapiadmin)
+5. [`/pages/api/auth`](#5-pagesapiauth)
+6. [`/pages/blog`](#6-pagesblog)
+7. [`/pages/styles`](#7-pagesstyles)
+8. [`/pages/styles/tokens`](#8-pagesstylestokens)
 
 ---
 
@@ -102,8 +100,10 @@
   - Método GET
   - Cache via `getOrSetCache` com chave `dicas:public:published` (adicionado 12/05/2026)
   - Rate limiting via `checkRateLimit(ip, 'api:public:dicas', 60, 60000)` (adicionado 12/05/2026)
+  - Paginação com `OFFSET`/`LIMIT` e `SELECT COUNT(*)` (adicionado 13/05/2026)
+  - Cache key inclui página e limite (`dicas:public:published:${page}:${limit}`) (adicionado 13/05/2026)
   - Cache-Control header (`public, s-maxage=60, stale-while-revalidate=300`)
-  - Retorna dicas publicadas ordenadas por `id ASC` no formato `{ success: true, data, count }`
+  - Resposta padronizada via `paginatedResponse()` (adicionado 13/05/2026)
   - Respostas de erro padronizadas com `{ error, message }` e `console.error()`
 
 ### `/pages/api/musicas.js`
@@ -136,23 +136,24 @@
   - Suporta `?response=v1` para compatibilidade com formato `{ success, data, pagination, timestamp }`.
   - Respostas de erro padronizadas no formato `{ error, message }` (alterado 12/05/2026).
 
-> **Nota:** Endpoint unificado em 12/05/2026. O `/api/v1/posts` agora é um wrapper que delega para este endpoint. O `POST` foi migrado do v1 para a raiz, unificando a lógica de criação de posts. Em 12/05/2026 o POST foi migrado de autenticação manual para `withAuth`.
+> **Nota:** Endpoint unificado em 12/05/2026. O `/api/v1/posts` foi removido — GET e POST foram migrados para a raiz.
 
 ### `/pages/api/products.js`
 - **Localização:** `/pages/api/products.js`
 - **Propósito:** CRUD completo de produtos.
 - **Funcionalidades:**
-  - GET público (`?public=true`): Lista produtos sem autenticação, com paginação, formatação de moeda para Real (R$), cache via `getOrSetCache` (adicionado 12/05/2026) e rate limiting (adicionado 12/05/2026)
-  - GET admin (sem `public`): Lista produtos com paginação, protegido por autenticação via `requireAuth()` (alterado 12/05/2026)
-  - POST: Cria produto (protegido por `requireAuth()`) com validação de campos obrigatórios e cálculo automático de posição
-  - PUT: Atualiza produto (protegido por `requireAuth()`)
-  - DELETE: Remove produto (protegido por `requireAuth()`)
+  - GET público (`?public=true`): Lista produtos sem autenticação, com paginação, formatação de moeda para Real (R$), cache via `getOrSetCache` e rate limiting
+  - GET admin (sem `public`): Lista produtos com paginação, protegido por autenticação via `requireAuth()`
+  - POST: Cria produto (protegido por `requireAuth()`) — delegado para `createProduct()` em `lib/domain/products.js` (adicionado 13/05/2026)
+  - PUT: Atualiza produto (protegido por `requireAuth()`) — delegado para `updateProduct()` em `lib/domain/products.js` (adicionado 13/05/2026)
+  - DELETE: Remove produto (protegido por `requireAuth()`) — delegado para `deleteProduct()` em `lib/domain/products.js` (adicionado 13/05/2026)
+  - Paginação centralizada via helper `paginate()` em `/pages/api/helper/pagination.js` (adicionado 13/05/2026)
   - Cache e rate limiting em operações de criação/atualização/exclusão
   - Log de auditoria em todas as mutações
-  - Respostas de erro padronizadas no formato `{ error, message }` (alterado 12/05/2026)
-  - Tratamento de erro centralizado via try/catch no handler principal (alterado 12/05/2026)
+  - Respostas de erro padronizadas no formato `{ error, message }`
+  - Tratamento de erro centralizado via try/catch no handler principal
 
-> **Nota:** Em 12/05/2026, o `products.js` foi reestruturado: (1) autenticação manual `getAuthToken()` + `verifyToken()` repetida em cada case foi substituída pelo middleware `requireAuth()`; (2) GET público agora usa `getOrSetCache` para cache; (3) GET público agora tem `checkRateLimit`; (4) erros padronizados com `{ error, message }`.
+> **Nota:** Em 13/05/2026, o `products.js` foi refatorado para usar a camada de domínio `lib/domain/products.js` e o helper de paginação. A duplicação de lógica entre `handlePublicGet` e `handleAdminGet` foi eliminada.
 
 ### `/pages/api/settings.js`
 - **Localização:** `/pages/api/settings.js`
@@ -166,6 +167,16 @@
   - Respostas de erro padronizadas no formato `{ error, message }` (alterado 12/05/2026).
 
 > **Nota:** Endpoint unificado em 12/05/2026. O `/api/v1/settings` foi removido — GET (com e sem key), POST e PUT foram incorporados à raiz. Em 12/05/2026 foi adicionado rate limiting no GET público.
+
+### `/pages/api/status.js`
+- **Localização:** `/pages/api/status.js`
+- **Propósito:** Endpoint de diagnóstico e health check do sistema. Substitui o antigo `/api/v1/status`.
+- **Funcionalidades:**
+  - **GET** (padrão): Retorna diagnóstico completo (versão, status do banco, Node.js, uptime, plataforma)
+  - **GET** (`?mode=health`): Retorna apenas `{ status: 'ok' }` (compatível com health check)
+  - Testa conexão com banco PostgreSQL
+
+> **Nota:** Criado em 13/05/2026 para substituir `/api/v1/status`. O diretório `/pages/api/v1/` foi removido.
 
 ### `/pages/api/upload-image.js`
 - **Localização:** `/pages/api/upload-image.js`
@@ -195,7 +206,22 @@
 
 ---
 
-## 3. `/pages/api/admin`
+## 3. `/pages/api/helper`
+
+### `/pages/api/helper/pagination.js`
+- **Localização:** `/pages/api/helper/pagination.js`
+- **Propósito:** Helper reutilizável de paginação para endpoints da API.
+- **Funcionalidades:**
+  - `paginate(rawPage, rawLimit)` — Parseia e valida parâmetros de paginação, retorna `{ page, limit, offset }`
+  - `buildPaginationMeta(page, limit, total)` — Gera metadados de paginação
+  - `paginatedResponse(data, pagination)` — Monta resposta padronizada `{ success, data, pagination }`
+  - Lança erro `INVALID_PAGINATION_PARAMS` para parâmetros inválidos
+
+> **Nota:** Criado em 13/05/2026 para centralizar e padronizar a paginação em todos os endpoints. Utilizado por `dicas.js` e `products.js`.
+
+---
+
+## 4. `/pages/api/admin`
 
 > **Atualização (12/05/2026):** Todos os 14 endpoints admin foram refatorados para usar o handler factory `createAdminHandler()` em `lib/api/adminCrudHandler.js`, que centraliza verificação de método HTTP, autenticação via `withAuth`, RBAC, rate limiting, invalidação de cache e try/catch unificado.
 
@@ -333,7 +359,7 @@
 
 ---
 
-## 4. `/pages/api/auth`
+## 5. `/pages/api/auth`
 
 ### `/pages/api/auth/login.js`
 - **Localização:** `/pages/api/auth/login.js`
@@ -358,66 +384,7 @@
 
 ---
 
-## 5. `/pages/api/v1`
-
-**Arquivo removido (12/05/2026):** `/pages/api/v1/health.js`
-- Unificado com `/api/v1/status?mode=health` — o health check simples { status: 'ok' } agora é servido pelo endpoint `/api/v1/status` através do parâmetro `?mode=health`.
-- Sistemas de monitoramento que usavam a rota `/api/v1/health` devem migrar para `/api/v1/status?mode=health`.
-
-**Arquivo removido (12/05/2026):** `/pages/api/v1/posts.js`
-- Unificado com `/pages/api/posts` — GET e POST foram migrados para o endpoint raiz com suporte a `?response=v1` para compatibilidade.
-- O endpoint `/api/posts?response=v1` substitui o antigo `/api/v1/posts` com o mesmo formato de resposta `{ success, data, pagination, timestamp }`, além de incluir rate limiting em POST e paginação completa em GET que não existiam no v1.
-- Clientes que usavam a rota v1 devem migrar para `/api/posts?response=v1`.
-
-**Arquivo removido (12/05/2026):** `/pages/api/v1/settings.js`
-- Unificado com `/pages/api/settings` — GET (com e sem key), POST e PUT foram migrados para o endpoint raiz com suporte a `?response=v1` para compatibilidade.
-- O endpoint `/api/settings?response=v1` substitui o antigo `/api/v1/settings` com o mesmo formato de resposta `{ success, data, timestamp }`, além de incluir validação Zod e invalidação de cache.
-- Clientes que usavam a rota v1 devem migrar para `/api/settings?response=v1`.
-
-### `/pages/api/v1/status.js`
-- **Localização:** `/pages/api/v1/status.js`
-- **Propósito:** Endpoint de diagnóstico do sistema.
-- **Funcionalidades:**
-  - Retorna status da API, versão Node.js, plataforma, uptime
-  - Testa conexão com banco PostgreSQL
-  - Suporta `?mode=health` para health check simples (`{ status: 'ok' }`)
-
-> **Nota:** Endpoint unificado em 12/05/2026. O `/api/v1/health` foi removido — health check disponível via `?mode=health`.
-
----
-
-## 6. `/pages/api/v1/auth`
-
-### `/pages/api/v1/auth/check.js`
-- **Localização:** `/pages/api/v1/auth/check.js`
-- **Propósito:** Endpoint v1 para verificação de token JWT.
-- **Funcionalidades:**
-  - Método GET apenas
-  - Extrai token do header `Authorization` ou cookie
-  - Verifica validade do token via `verifyToken()`
-  - Retorna dados do usuário decodificados: `{ id, username, role, iat, exp }`
-
----
-
-**Arquivo removido (12/05/2026):** `/pages/api/v1/auth/login.js`
-- Unificado com `/pages/api/auth/login` — a lógica foi centralizada na função `authenticateAndGenerateToken()` em `lib/auth.js`.
-- O endpoint `/api/auth/login?response=body` substitui o antigo `/api/v1/auth/login` com o mesmo formato de resposta `{ success, data: { token, token_type, expires_in, user } }`, além de incluir rate limiting, validação de entrada e busca de permissões que não existiam no v1.
-- Clientes que usavam a rota v1 devem migrar para `/api/auth/login?response=body`.
-
-## 7. `/pages/api/v1/videos`
-
-### `/pages/api/v1/videos/[id].js`
-- **Localização:** `/pages/api/v1/videos/[id].js`
-- **Propósito:** Endpoint v1 para operações em vídeo específico.
-- **Funcionalidades:**
-  - PUT: Atualiza vídeo por ID (autenticado JWT)
-  - DELETE: Remove vídeo por ID (autenticado JWT)
-  - Invalida cache após operações
-  - Valida ID do vídeo
-
----
-
-## 8. `/pages/blog`
+## 6. `/pages/blog`
 
 ### `/pages/blog/index.js`
 - **Localização:** `/pages/blog/index.js`
@@ -460,7 +427,7 @@
 
 ---
 
-## 9. `/pages/styles`
+## 7. `/pages/styles`
 
 ### `/pages/styles/DesignSystem.module.css`
 - **Localização:** `/pages/styles/DesignSystem.module.css`
@@ -496,7 +463,7 @@
 
 ---
 
-## 10. `/pages/styles/tokens`
+## 8. `/pages/styles/tokens`
 
 ### `/pages/styles/tokens/index.js`
 - **Localização:** `/pages/styles/tokens/index.js`
@@ -546,23 +513,40 @@
 
 ---
 
+## Arquivos Removidos
+
+### `/pages/[slug].js` (12/05/2026)
+- Rota catch-all removida para eliminar conflito de rotas.
+- Conteúdo e SEO migrados para `/pages/blog/[slug].js`.
+
+### `/pages/api/v1/` (13/05/2026)
+- Diretório completo removido em 13/05/2026 como parte da estratégia de versionamento.
+- Substituído por:
+  - `/pages/api/status.js` — substitui `/api/v1/status`
+  - `/pages/api/auth/check.js` — substitui `/api/v1/auth/check`
+  - PUT/DELETE de vídeos já gerenciados por `/pages/api/admin/videos.js`
+- Arquivos já removidos em 12/05/2026:
+  - `/pages/api/v1/health.js` — unificado com `/api/status?mode=health`
+  - `/pages/api/v1/posts.js` — unificado com `/api/posts?response=v1`
+  - `/pages/api/v1/settings.js` — unificado com `/api/settings?response=v1`
+  - `/pages/api/v1/auth/login.js` — unificado com `/api/auth/login?response=body`
+
+---
+
 ## Resumo Quantitativo
 
 | Categoria                    | Quantidade |
 |------------------------------|:----------:|
 | Páginas (raiz)               |     5*     |
-| APIs (raiz)                  |     9      |
+| APIs (raiz)                  |     10     |
+| APIs Helper                  |     1      |
 | APIs Admin                   |     14     |
-| APIs Auth                    |     2      |
-| APIs v1                      |     1†     |
-| APIs v1/auth                 |     1‡     |
-| APIs v1/videos               |     1      |
+| APIs Auth                    |     3†     |
 | Páginas Blog                 |     2      |
 | CSS Modules Blog             |     1      |
 | CSS Globais e Módulos        |     3      |
 | Tokens de Design             |     11     |
 | **Total**                    |  **50**   |
 
-> *\*Arquivo `/pages/[slug].js` removido em 12/05/2026 — rota catch-all eliminada, conteúdo e SEO migrados para `/pages/blog/[slug].js`.*
-> *†Arquivos `/pages/api/v1/health.js`, `/pages/api/v1/posts.js` e `/pages/api/v1/settings.js` removidos em 12/05/2026 — unificados com `/pages/api/v1/status.js`, `/pages/api/posts.js` e `/pages/api/settings.js` respectivamente.*
-> *‡Arquivo `/pages/api/v1/auth/login.js` removido em 12/05/2026 — unificado com `/pages/api/auth/login.js`.*
+> *\*Arquivo `/pages/[slug].js` removido em 12/05/2026.*
+> *†Endpoint `/api/auth/check` criado em 13/05/2026 para substituir `/api/v1/auth/check`.*

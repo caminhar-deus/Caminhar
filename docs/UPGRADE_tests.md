@@ -49,15 +49,19 @@
 
 ---
 
-### 1.3 API v1 com Sobreposição de Testes
+### 1.3 API v1 com Sobreposição de Testes — **RESOLVIDO (13/05/2026)**
 
-**Ocorrência:** `tests/integration/api/v1/`
+**Ocorrência anterior:** `tests/integration/api/v1/`
 
-**Descrição:** Os testes da API versão 1 (`v1/posts.test.js`, `v1/settings.test.js`, `v1/status.test.js`) testam endpoints que possuem cobertura equivalente nos testes de API padrão (`api/posts.test.js`, `api/settings.test.js`).
+**Descrição anterior:** Os testes da API versão 1 (`v1/posts.test.js`, `v1/settings.test.js`, `v1/status.test.js`) testavam endpoints com cobertura equivalente nos testes de API padrão.
 
-**Impacto:** Duplicação de manutenção para versões diferentes do mesmo endpoint. Se a lógica de negócio for compartilhada, os testes podem estar testando o mesmo código duas vezes.
-
-**Sugestão:** Avaliar se a API v1 é uma camada fina sobre a mesma lógica. Se sim, concentrar testes na camada de lógica e reduzir testes de integração duplicados para a v1.
+**O que foi feito:**
+- O diretório `tests/integration/api/v1/` foi **removido** do projeto (incluindo `status.test.js`, `videos/[id].test.js`, `auth/check.test.js`)
+- Os arquivos `tests/integration/auth/auth.v1.check.test.js` e `tests/integration/auth/auth.v1.login.test.js` foram **removidos**
+- O arquivo `tests/integration/api/status.api.test.js` foi **removido**
+- Novos testes foram criados para os endpoints não-versionados:
+  - `tests/integration/api/status.test.js` — testa `/api/status`
+  - `tests/integration/api/auth/check.test.js` — testa `/api/auth/check`
 
 ---
 

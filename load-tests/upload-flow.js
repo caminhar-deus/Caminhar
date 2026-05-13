@@ -28,7 +28,7 @@ const GIF_B64 = "R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==";
 
 export function setup() {
   const loginRes = http.post(
-    `${BASE_URL}/api/v1/auth/login`,
+    `${BASE_URL}/api/auth/login?response=body`,
     JSON.stringify({ username: USERNAME, password: PASSWORD }),
     { headers: { 'Content-Type': 'application/json' } }
   );

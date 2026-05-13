@@ -23,7 +23,7 @@ export default function () {
   
   // Realiza a busca
   // Adiciona encodeURIComponent para caracteres especiais e paginação explícita para evitar erros de backend
-  // Alterado de /api/v1/posts para /api/posts, que é a rota pública mais provável para busca.
+  // Alterado de /api/posts para /api/posts, que é a rota pública mais provável para busca.
   const res = http.get(`${BASE_URL}/api/posts?search=${encodeURIComponent(term)}&page=1&limit=10`);
 
   const success = check(res, {

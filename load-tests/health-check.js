@@ -14,7 +14,7 @@ export const options = {
 };
 
 export default function () {
-  const res = http.get('http://localhost:3000/api/v1/health');
+  const res = http.get('http://localhost:3000/api/status?mode=health');
   
   check(res, {
     'status is 200': (r) => r.status === 200,

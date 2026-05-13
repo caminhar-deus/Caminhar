@@ -21,7 +21,7 @@ export default function () {
   const tag = SEARCH_TAGS[Math.floor(Math.random() * SEARCH_TAGS.length)];
   
   // Assume que a API suporta ?tag= para filtrar por tag
-  // Ajustado para a rota pública correta (/api/posts) em vez de /api/v1/posts
+  // Ajustado para a rota pública correta (/api/posts) em vez de /api/posts
   const res = http.get(`${BASE_URL}/api/posts?tag=${encodeURIComponent(tag)}`);
 
   check(res, {

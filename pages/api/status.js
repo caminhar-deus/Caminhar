@@ -1,22 +1,21 @@
-import { query } from '../../../lib/db';
+import { query } from '../../lib/db';
 
 /**
  * Endpoint de diagnóstico e health check do sistema.
- * Unifica os antigos endpoints /api/v1/health e /api/v1/status.
+ * Substitui o antigo /api/v1/status.
  *
- * GET /api/v1/status — Retorna diagnóstico completo (versão, DB, sistema)
- * GET /api/v1/status?mode=health — Retorna apenas { status: 'ok' } (compatível com health check)
+ * GET /api/status — Retorna diagnóstico completo (versão, DB, sistema)
+ * GET /api/status?mode=health — Retorna apenas { status: 'ok' } (compatível com health check)
  */
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({
       error: 'Method Not Allowed',
       message: 'Método não permitido',
-      timestamp: new Date().toISOString()
     });
   }
 
-  // Modo health check simples (compatível com /api/v1/health)
+  // Modo health check simples
   if (req.query.mode === 'health') {
     return res.status(200).json({ status: 'ok' });
   }

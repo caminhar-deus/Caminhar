@@ -22,7 +22,7 @@ const BASE_URL = 'http://localhost:3000';
 // É ideal para obter um token de autenticação que será reutilizado por todos os VUs.
 export function setup() {
   const loginRes = http.post(
-    `${BASE_URL}/api/v1/auth/login`,
+    `${BASE_URL}/api/auth/login?response=body`,
     JSON.stringify({ username: USERNAME, password: PASSWORD }),
     { headers: { 'Content-Type': 'application/json' } }
   );
@@ -53,7 +53,7 @@ export default function (token) {
   };
 
   const createRes = http.post(
-    `${BASE_URL}/api/v1/posts`,
+    `${BASE_URL}/api/posts`,
     JSON.stringify(postPayload),
     {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

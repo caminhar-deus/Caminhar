@@ -30,7 +30,7 @@ const ADMIN_PASSWORD = __ENV.ADMIN_PASSWORD || 'password';
 
 export function setup() {
   // 1. Autenticação para obter o token
-  const loginRes = http.post(`${BASE_URL}/api/v1/auth/login`, JSON.stringify({
+  const loginRes = http.post(`${BASE_URL}/api/auth/login?response=body`, JSON.stringify({
     username: ADMIN_USERNAME,
     password: ADMIN_PASSWORD,
   }), {

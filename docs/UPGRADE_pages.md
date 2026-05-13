@@ -246,18 +246,42 @@
 
 ---
 
-### 2.4 Paginação Implementada de Forma Diferente
+### 2.4 Paginação Implementada de Forma Diferente — **RESOLVIDO**
 
-**Problema:** Cada endpoint implementa paginação manualmente:
-- `api/posts.js`: slice manual com `(page - 1) * limit`
-- `api/musicas.js`: query SQL com `OFFSET` e `LIMIT`
-- `api/videos.js`: slice manual
-- `api/dicas.js`: sem paginação (limite fixo de 100)
-- `api/products.js`: slice manual
+**Arquivos:**
+- `/pages/api/helper/pagination.js` (helper criado)
+- `/pages/api/dicas.js`
+- `/pages/api/products.js`
+- `/lib/domain/products.js` (camada de domínio criada)
 
-**Impacto:** Código duplicado e comportamentos potencialmente diferentes.
+**O que foi feito (13/05/2026):**
 
-**Sugestão:** Criar um helper de paginação reutilizável.
+1. **Helper de paginação reutilizável** criado em `/pages/api/helper/pagination.js`:
+   - `paginate(rawPage, rawLimit)` — Parseia e valida parâmetros, retorna `{ page, limit, offset }`
+   - `buildPaginationMeta(page, limit, total)` — Gera metadados de paginação
+   - `paginatedResponse(data, pagination)` — Monta resposta padronizada `{ success, data, pagination }`
+
+2. **`/pages/api/dicas.js`** — Adicionada paginação com `OFFSET`/`LIMIT` via helper:
+   - Agora aceita `?page` e `?limit`
+   - Cache key inclui página e limite (`dicas:public:published:${page}:${limit}`)
+   - `SELECT COUNT(*)` para total de registros
+   - Resposta padronizada via `paginatedResponse()`
+
+3. **`/lib/domain/products.js`** — Camada de domínio criada com:
+   - `getPaginatedProducts(page, limit)` — GET público com formatação de moeda
+   - `getAllProducts(page, limit)` — GET admin
+   - `createProduct(data)`, `updateProduct(id, data)`, `deleteProduct(id)`
+
+4. **`/pages/api/products.js`** — Refatorado para usar camada de domínio e helper `paginate()`:
+   - `handlePublicGet` e `handleAdminGet` agora usam `getPaginatedProducts()`/`getAllProducts()`
+   - Duplicação de lógica de paginação e formatação de moeda eliminada
+
+**Benefícios:**
+- ✅ Helper reutilizável — qualquer endpoint pode importar `paginate()`/`buildPaginationMeta()`/`paginatedResponse()`
+- ✅ `dicas.js` agora tem paginação com `OFFSET`/`LIMIT` (antes limite fixo de 100)
+- ✅ `products.js` tem lógica de paginação centralizada na camada de domínio
+- ✅ Duplicação de paginação entre `handlePublicGet` e `handleAdminGet` eliminada
+- ✅ Formatação de moeda (Real) centralizada na camada de domínio
 
 ---
 
@@ -673,6 +697,7 @@ if (req.method !== 'GET') {
 | 🟡 Médio | ~~2.1~~ ✅ | Múltiplos | Modelos de autenticação misturados — **RESOLVIDO** |
 | 🟡 Médio | ~~2.2~~ ✅ | Múltiplos | Cache implementado de forma diferente — **RESOLVIDO** |
 | 🟡 Médio | ~~2.3~~ ✅ | Múltiplos | Rate limiting aplicado de forma inconsistente — **RESOLVIDO** |
+| 🟡 Médio | ~~2.4~~ ✅ | `helper/pagination.js`, `dicas.js`, `products.js`, `lib/domain/products.js` | Paginação implementada de forma diferente — **RESOLVIDO** (helper reutilizável + camada de domínio) |
 | 🟡 Médio | ~~2.5~~ ✅ | Múltiplos | Tratamento de erros sem padronização — **RESOLVIDO** |
 | 🟡 Médio | ~~4.1~~ ✅ | `upload-image.js` | Sanitização de upload insuficiente — **RESOLVIDO** (UUID, magic bytes, limite de dimensões) |
 | 🟡 Médio | ~~4.3 (settings)~~ ✅ | `api/settings.js` | Zod POST — **RESOLVIDO** (POST agora tem schema Zod) |

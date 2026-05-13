@@ -757,5 +757,5 @@ Os testes estão organizados em categorias funcionais:
 
 ---
 
-> **Data da análise:** 10/05/2026
+> **Data da análise:** 13/05/2026 (atualizado)
 > **Total de scripts analisados:** 28 scripts k6 + 1 arquivo de configuração + 1 workflow CI

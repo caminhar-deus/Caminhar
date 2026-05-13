@@ -50,13 +50,13 @@ function getRandomIP() {
 
 **Arquivos afetados:** Quase todos os scripts (com exceção de `health-check.js`, `ddos-search-test.js`, `pagination-test.js`, `posts-cursor-pagination-test.js`, `posts-tags-test.js`, `cache-headers-test.js`, `rate-limit-test.js`, `recovery-test.js`, `search-content-test.js`).
 
-**Problema:** A função `setup()` com lógica de autenticação (POST para `/api/v1/auth/login` + extração de token) está duplicada em aproximadamente 18 arquivos.
+**Problema:** A função `setup()` com lógica de autenticação (POST para `/api/auth/login?response=body` + extração de token) está duplicada em aproximadamente 18 arquivos.
 
 **Código duplicado (variações menores):**
 ```javascript
 export function setup() {
   const loginRes = http.post(
-    `${BASE_URL}/api/v1/auth/login`,
+    `${BASE_URL}/api/auth/login?response=body`,
     JSON.stringify({ username: USERNAME, password: PASSWORD }),
     { headers: { 'Content-Type': 'application/json' } }
   );
@@ -222,26 +222,25 @@ const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
 
 ## 4. Inconsistências e Padrões
 
-### 4.1 Rotas sem versionamento (/api vs /api/v1)
+### 4.1 Rotas sem versionamento (/api vs /api/v1) — **RESOLVIDO (13/05/2026)**
 
-**Severidade:** ⚠️ Média
+**Severidade anterior:** ⚠️ Média
 
 **Arquivos afetados:** Múltiplos
 
-**Problema:** Mistura de rotas com e sem prefixo de versão:
+**Problema anterior:** Mistura de rotas com e sem prefixo de versão.
 
-| Rota | Arquivo |
-|------|---------|
-| `GET /` | `authenticated-flow.js`, `musicas-load-test.js` |
-| `GET /api/v1/health` | `health-check.js` |
-| `GET /api/v1/status` | `stress-test-combined.js` |
-| `GET /api/v1/settings` | `authenticated-flow.js` |
-| `POST /api/v1/auth/login` | (padrão) |
-| `GET /api/posts` | `posts-tags-test.js`, `posts-cursor-pagination-test.js` |
-| `GET /api/musicas?search=` | `ddos-search-test.js` |
-| `GET /api/search?q=` | `search-content-test.js` |
-
-**Sugestão:** Padronizar o prefixo de versão da API. Rotas públicas sem autenticação usam `/api/` e rotas administrativas usam `/api/v1/`? Se sim, documentar a convenção. Se não, unificar.
+**O que foi feito (13/05/2026):**
+- Estratégia definida: adotar **apenas endpoints sem versão** (padrão)
+- O diretório `/pages/api/v1/` foi **removido** do projeto
+- Os endpoints foram migrados para rotas sem versão:
+  - `/api/v1/status` → `/api/status`
+  - `/api/v1/auth/check` → `/api/auth/check`
+  - `/api/v1/auth/login` → `/api/auth/login?response=body`
+  - `/api/v1/health` → `/api/status?mode=health`
+- Todos os load tests foram atualizados para usar as novas rotas via comandos sed
+- Testes unitários e de integração também foram atualizados
+- Documentação (`lib/auth.js`) atualizada — referências ao v1 removidas
 
 ---
 

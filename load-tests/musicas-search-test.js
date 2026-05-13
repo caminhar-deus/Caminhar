@@ -21,7 +21,7 @@ export default function () {
   const term = SEARCH_TERMS[Math.floor(Math.random() * SEARCH_TERMS.length)];
   
   // Assume que a API suporta ?search= para filtrar por título/artista
-  // Ajustado para a rota pública correta (/api/musicas) em vez de /api/v1/musicas
+  // Ajustado para a rota pública correta (/api/musicas) em vez de /api/musicas
   const res = http.get(`${BASE_URL}/api/musicas?search=${encodeURIComponent(term)}`);
 
   check(res, {

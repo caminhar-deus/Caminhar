@@ -17,7 +17,7 @@ const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
 
 export default function () {
   // Alvo: API de Posts (Público e Cacheado)
-  // Mudamos de /api/v1/settings para /api/posts pois é uma rota pública
+  // Mudamos de /api/settings para /api/posts pois é uma rota pública
   // que deve obrigatoriamente ter headers de cache para performance.
   const res = http.get(`${BASE_URL}/api/posts`);
 

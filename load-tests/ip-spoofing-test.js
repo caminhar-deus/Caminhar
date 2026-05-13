@@ -32,7 +32,7 @@ export default function () {
     },
   };
 
-  const res = http.post(`${BASE_URL}/api/v1/auth/login`, payload, params);
+  const res = http.post(`${BASE_URL}/api/auth/login?response=body`, payload, params);
 
   // Neste teste, esperamos EVADIR o Rate Limit rotacionando o IP.
   // Se recebermos 429, significa que o Rate Limit é global ou ignorou o cabeçalho.

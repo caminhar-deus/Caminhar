@@ -31,8 +31,8 @@ export function setup() {
     exec.test.abort(`❌ Conexão recusada em ${BASE_URL}. O servidor está rodando?`);
   }
 
-  // Login para obter token (necessário para /api/v1/settings)
-  const loginRes = http.post(`${BASE_URL}/api/v1/auth/login`, JSON.stringify({
+  // Login para obter token (necessário para /api/settings)
+  const loginRes = http.post(`${BASE_URL}/api/auth/login?response=body`, JSON.stringify({
     username: USERNAME,
     password: PASSWORD,
   }), {
@@ -62,7 +62,7 @@ export default function (token) {
 
   // 1. Teste Settings (Autenticado + Cache)
   // Esta rota usa getOrSetCache com chave 'settings:v1:all' ou específica
-  const settingsRes = http.get(`${BASE_URL}/api/v1/settings`, {
+  const settingsRes = http.get(`${BASE_URL}/api/settings`, {
     headers: { Authorization: `Bearer ${token}`, ...spoofedHeaders },
     tags: { type: 'cached_settings' },
   });

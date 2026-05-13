@@ -15,7 +15,7 @@ const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
 
 export default function () {
   // 1. Requisita a Página 1 (limit=5)
-  // Ajustado para a rota pública correta (/api/posts) em vez de /api/v1/posts
+  // Ajustado para a rota pública correta (/api/posts) em vez de /api/posts
   const resPage1 = http.get(`${BASE_URL}/api/posts?page=1&limit=5`);
   
   check(resPage1, {
