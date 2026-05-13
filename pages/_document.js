@@ -31,6 +31,12 @@ export default function Document() {
         {/* DNS Prefetch — apenas domínios essenciais globais */}
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
 
+        {/* Google Fonts com font-display: swap para evitar FOIT */}
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap"
+        />
+
         {/* CSS Crítico Inline */}
         <style dangerouslySetInnerHTML={{ __html: cachedCriticalCSS }} id="critical-css" />
 

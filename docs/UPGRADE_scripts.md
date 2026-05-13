@@ -1,5 +1,6 @@
 # 📁 Scripts do Projeto — Análise de Melhorias, Correções e Duplicidades
 
+> **Data:** 13/05/2026 (atualizado)
 > **Projeto:** Caminhar  
 > **Diretório:** `/scripts`  
 > **Objetivo deste documento:** Reportar problemas identificados, sugestões de melhoria, oportunidades de performance, código duplicado e más práticas encontradas nos scripts. **Nenhuma correção foi aplicada**, apenas documentada.

@@ -13,6 +13,7 @@ scripts/
 ├── backup.js
 ├── check-db-status.js
 ├── check-env.js
+├── check-sql-injection.js
 ├── check-server.js
 ├── clean-k6-reports.js
 ├── clean-load-test-posts.js
@@ -114,6 +115,14 @@ scripts/
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/check-db-status.js`
 - **Propósito:** Verifica o status da conexão com o banco de dados. Executa `SELECT 1` e conta o número de tabelas no schema `public`. Também exibe informações do PostgreSQL (versão, tempo de atividade, conexões ativas). Uso: diagnóstico rápido de conectividade.
 - **Dependências:** `dotenv`, `pg`
+
+### `scripts/check-sql-injection.js`
+- **Localização:** `/home/qa/Projeto/Caminhar/scripts/check-sql-injection.js`
+- **Propósito:** Script de verificação de segurança que escaneia arquivos .js do projeto em busca de interpolação de variáveis em queries SQL sem prepared statements (vulnerável a SQL injection). Foca em padrões como `pool.query(...)` com 1 argumento contendo interpolação e `query(...${...}...)` sem array de parâmetros. Ignora falsos positivos como comentários de código, identificadores protegidos por `_validateIdentifier()` e whitelists fixas de tabelas/colunas.
+- **Dependências:** Nenhuma (usa APIs nativas do Node.js: `fs`, `path`, `url`)
+- **Uso:** `node scripts/check-sql-injection.js` (diretórios principais) ou `node scripts/check-sql-injection.js --all` (projeto completo) ou via npm: `npm run security:check-sql`
+- **Exit codes:** `0` (sem vulnerabilidades), `1` (vulnerabilidades encontradas)
+- **Criado em:** 13/05/2026
 
 ### `scripts/check-env.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/check-env.js`

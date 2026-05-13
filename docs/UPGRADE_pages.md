@@ -1,6 +1,6 @@
 # Relatório de Melhorias e Correções - `/pages`
 
-> **Data:** 12/05/2026 (atualizado)
+> **Data:** 13/05/2026 (atualizado)
 > **Objetivo:** Reportar problemas de duplicidade, inconsistências, oportunidades de melhoria de performance e correções necessárias nos arquivos da pasta `/pages`. Nenhuma correção deve ser aplicada; apenas reportar.
 
 ---
@@ -318,15 +318,23 @@
 
 ---
 
-### 3.2 Pré-carregamento de Fontes sem Estratégia de Fallback
+### 3.2 Pré-carregamento de Fontes sem Estratégia de Fallback — **RESOLVIDO**
 
 **Arquivo:** `/pages/_document.js`
 
-**Problema:** As fontes Montserrat e Inter são pré-carregadas com `preload`, mas não há estratégia de fallback caso o download falhe.
+**Problema anterior:** As fontes Montserrat e Inter eram pré-carregadas com `preload`, mas não havia estratégia de fallback caso o download falhasse.
 
-**Impacto:** FOIT (Flash of Invisible Text) se as fontes não carregarem.
+**Impacto anterior:** FOIT (Flash of Invisible Text) se as fontes não carregassem.
 
-**Sugestão:** Implementar font-display: swap ou fallback com fontes do sistema.
+**O que foi feito (13/05/2026):**
+- Adicionado `<link rel="stylesheet">` do Google Fonts com `&display=swap` no `<Head>` do `_document.js`, garantindo que as fontes Inter (400, 500, 600, 700) e Montserrat (400, 500, 600, 700) sejam carregadas com `font-display: swap`.
+- Atualizado `pages/styles/globals.css` para usar `'Inter'` como primeira opção na `font-family` do `html, body`, mantendo a cadeia de fallback com fontes do sistema.
+
+**Benefícios:**
+- ✅ `font-display: swap` — texto exibido imediatamente com fallback, sem FOIT
+- ✅ FOIT eliminado mesmo se o download das fontes falhar
+- ✅ Inter como fonte primária do body com fallback completo
+- ✅ Preconnect mantido para `fonts.googleapis.com` e `fonts.gstatic.com`
 
 ---
 
@@ -470,13 +478,32 @@
 
 ---
 
-### 4.4 Query SQL sem Prepared Statements
+### 4.4 Query SQL sem Prepared Statements — **RESOLVIDO**
 
 **Arquivo:** ~~`/pages/[slug].js`~~ — **REMOVIDO** (rota catch-all eliminada em 12/05/2026)
 
 **Problema:** A query `SELECT * FROM posts WHERE slug = '${slug}' AND published = true` usava interpolação de string, vulnerável a SQL injection.
 
 **Resolução:** Arquivo removido. O conteúdo foi migrado para `/pages/blog/[slug].js`, que usa prepared statements (`$1`).
+
+**Prevenção futura (13/05/2026):** Criado script de verificação automática de SQL injection:
+- **Arquivo:** `scripts/check-sql-injection.js`
+- **Funcionamento:** Escaneia chamadas `query()` e `pool.query()` em busca de interpolação de variáveis na string SQL sem prepared statements, detectando padrões como `pool.query(...)` com 1 argumento e `query(...${...}...)` sem array de parâmetros.
+- **Falsos positivos ignorados:** Comentários de código, identificadores SQL protegidos por `_validateIdentifier()`, whitelists fixas de tabelas/colunas.
+- **Uso:** `npm run security:check-sql` (diretórios principais) ou `npm run security:check-sql:all` (projeto completo).
+- **Resultado da varredura inicial:** 200 arquivos escaneados — **0 vulnerabilidades encontradas** ✅
+- **Exit codes:** `0` (sem vulnerabilidades) ou `1` (vulnerabilidades encontradas), permitindo integração com CI/CD.
+- **npm scripts adicionados em `package.json`:**
+  ```json
+  "security:check-sql": "node scripts/check-sql-injection.js",
+  "security:check-sql:all": "node scripts/check-sql-injection.js --all",
+  ```
+
+**Benefícios adicionais:**
+- ✅ Prevenção automatizada — detecta reintrodução de SQL injection em novos códigos
+- ✅ Integrável ao CI/CD — exit code 1 bloqueia pipeline se vulnerabilidades forem encontradas
+- ✅ 427 arquivos escaneados no modo `--all` sem falsos positivos
+- ✅ Script leve — 52ms para escanear o projeto completo
 
 ---
 

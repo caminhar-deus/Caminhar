@@ -76,6 +76,8 @@
     "test:load:videos:pagination": "k6 run load-tests/videos-pagination-test.js",
     "test:load:videos:validation": "k6 run load-tests/video-validation-test.js",
     "test:load:posts:pagination": "k6 run load-tests/pagination-test.js",
+    "security:check-sql": "node scripts/check-sql-injection.js",
+    "security:check-sql:all": "node scripts/check-sql-injection.js --all",
     "test:load:safe": "bash scripts/run-load-tests.sh",
     "report:load": "node scripts/generate-load-report.js",
     "test:load:upload": "k6 run -e ADMIN_USERNAME=admin -e ADMIN_PASSWORD=123456 load-tests/upload-flow.js"

@@ -37,6 +37,7 @@
 - **Funcionalidades:**
   - Preconnect apenas para domínios essenciais globais (Google Fonts: `fonts.googleapis.com` e `fonts.gstatic.com`)
   - DNS prefetch para Google Fonts
+  - Carregamento de fontes Google Fonts com `&display=swap` para evitar FOIT: Inter (400, 500, 600, 700) e Montserrat (400, 500, 600, 700) (adicionado 13/05/2026)
   - CSS crítico inline cacheado em nível de módulo (`cachedCriticalCSS`) — evita reprocessamento a cada SSR
   - Meta tags de segurança (`X-Content-Type-Options`, `X-Frame-Options`, `referrer`)
   - Meta tag de color-scheme
@@ -478,7 +479,7 @@
 - **Propósito:** Estilos globais da aplicação.
 - **Características:**
   - Reset CSS (box-sizing, margin, padding)
-  - Fonte padrão `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`
+  - Fonte padrão `'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif` (13/05/2026 — Inter adicionada como primária com fallback)
   - Background `#f8f9fa`, cor de texto `#333`
   - `overflow-y: scroll !important` para evitar layout shift
   - Classes utilitárias: `.container`, `.btn`, `.btn-secondary`, `.input`, `.textarea`, `.form-group`, `.label`
