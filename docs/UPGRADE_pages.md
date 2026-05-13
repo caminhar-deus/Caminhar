@@ -638,17 +638,22 @@
 
 ---
 
-### 5.5 Classes Utilitárias no CSS Global — **EM ABERTO**
+### 5.5 Classes Utilitárias no CSS Global — **RESOLVIDO**
 
 **Arquivo:** `/pages/styles/globals.css`
 
-**Classes definidas:** `.container`, `.btn`, `.btn-secondary`, `.input`, `.textarea`, `.form-group`, `.label`
+**Classes removidas:** `.container`, `.btn`, `.btn-secondary`, `.input`, `.textarea`, `.form-group`, `.label`
 
 **Problema:** Classes utilitárias em CSS global podem conflitar com CSS Modules ou bibliotecas de terceiros, causando estilos inesperados.
 
-**Impacto:** Dificuldade de debug e possível vazamento de estilos.
+**O que foi feito (13/05/2026):**
+- As 7 classes utilitárias foram **removidas** do `globals.css` por se tratarem de código morto — nenhum componente ou página do projeto as utilizava.
+- O arquivo agora contém apenas o essencial: import do `variables.css`, reset CSS e estilos base (html/body/a).
 
-**Sugestão:** Prefixar classes utilitárias (ex: `.g-container`, `.g-btn`) ou mover para um arquivo separado.
+**Benefícios:**
+- ✅ Risco de conflito com CSS Modules ou bibliotecas de terceiros eliminado
+- ✅ Código morto removido — redução de 53 linhas
+- ✅ Arquivo mais enxuto e focado em seu propósito original
 
 ---
 
@@ -730,4 +735,4 @@
 | 🟡 Médio | ~~4.1~~ ✅ | `upload-image.js` | Sanitização de upload insuficiente — **RESOLVIDO** (UUID, magic bytes, limite de dimensões) |
 | 🟡 Médio | ~~4.3 (settings)~~ ✅ | `api/settings.js` | Zod POST — **RESOLVIDO** (POST agora tem schema Zod) |
 | 🟡 Médio | ~~4.5~~ ✅ | `admin/fetch-*.js` | Timeout ausente em APIs externas — **RESOLVIDO** (AbortController com 8s) |
-| 🟢 Baixo | 5.5 | `globals.css` | Classes utilitárias sem prefixo — **EM ABERTO** |
+| 🟢 Baixo | 5.5 | `globals.css` | Classes utilitárias sem prefixo — **RESOLVIDO** (classes removidas por serem código morto) |

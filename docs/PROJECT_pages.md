@@ -452,8 +452,8 @@
   - Fonte padrão via token `var(--font-family-body)`
   - Background `var(--color-bg-secondary)`, texto `var(--color-text-primary)`
   - `overflow-y: auto` (13/05/2026 — substituído de `scroll !important`)
-  - Classes utilitárias: `.container`, `.btn`, `.btn-secondary`, `.input`, `.textarea`, `.form-group`, `.label`
   - Todos os valores hardcoded substituídos por CSS Custom Properties (13/05/2026)
+  - Classes utilitárias removidas em 13/05/2026 (`.container`, `.btn`, `.btn-secondary`, `.input`, `.textarea`, `.form-group`, `.label`) — código morto sem referências no projeto
 
 ### `/pages/styles/variables.css`
 - **Localização:** `/pages/styles/variables.css`
