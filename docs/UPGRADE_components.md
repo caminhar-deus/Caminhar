@@ -1,6 +1,6 @@
 # Análise de Melhorias - `/components`
 
-> **Data:** 10/05/2026  
+> **Data:** 13/05/2026 (atualizado)
 > **Objetivo:** Reportar correções, melhorias, problemas de performance e duplicidade de código identificados na análise dos componentes. **Sem aplicação de correções.**
 
 ---
@@ -164,13 +164,21 @@
 |---|------|-----------|
 | 1 | **Manutenção** | `IntegrityCheck.js` e `RateLimitViewer.js` são placeholders sem funcionalidade real. Podem dar falsa impressão de funcionalidade implementada. |
 
-### 1.16 Admin.module.css
+### 1.16 Admin.module.css — **PARCIALMENTE RESOLVIDO**
 
 | # | Tipo | Descrição |
 |---|------|-----------|
 | 1 | **Manutenção** | O CSS (904 linhas) está extenso e mistura estilos de login, tabela, formulário, dashboard, placeholders, etc. Poderia ser dividido em módulos menores. |
-| 2 | **Performance** | Algumas classes utilizam `!important` (linhas 18, 23) que devem ser evitadas quando possível. |
+| 2 | **Performance** | ~~Algumas classes utilizam `!important` — ver item 1.16 #2.~~ |
 | 3 | **Manutenção** | Classes `.formGroup` e `.input` são definidas duas vezes (linhas 98-110 e 575-600; linhas 30-43 e 587-600), causando sobrescrita. |
+
+**O que foi feito (13/05/2026):**
+- Todos os valores hardcoded (~80) substituídos por CSS Custom Properties (`var()`)
+- Cores padronizadas (`#007bff` → `var(--color-primary-500)`, `#2c3e50` → `var(--color-text-primary)`, etc.)
+- Espaçamentos, border-radius, font-size, font-weight, box-shadow e transitions tokenizados
+- Seções de Form Styles, Messages, Status/Stats tokenizadas
+- Responsivo ajustado para usar tokens de spacing
+
 
 ---
 

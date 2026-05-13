@@ -440,26 +440,54 @@
   - Componentes de demonstração (buttons, inputs, cards, badges, alerts, spinners, modal)
   - Footer escuro
   - Responsivo para 768px
+  - **Todos os valores hardcoded substituídos por CSS Custom Properties** (13/05/2026)
+  - Agora serve como demonstração funcional do Design System usando os tokens
 
 ### `/pages/styles/globals.css`
 - **Localização:** `/pages/styles/globals.css`
 - **Propósito:** Estilos globais da aplicação.
 - **Características:**
+  - Importa `variables.css` via `@import`
   - Reset CSS (box-sizing, margin, padding)
-  - Fonte padrão `'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif` (13/05/2026 — Inter adicionada como primária com fallback)
-  - Background `#f8f9fa`, cor de texto `#333`
-  - `overflow-y: scroll !important` para evitar layout shift
+  - Fonte padrão via token `var(--font-family-body)`
+  - Background `var(--color-bg-secondary)`, texto `var(--color-text-primary)`
+  - `overflow-y: auto` (13/05/2026 — substituído de `scroll !important`)
   - Classes utilitárias: `.container`, `.btn`, `.btn-secondary`, `.input`, `.textarea`, `.form-group`, `.label`
+  - Todos os valores hardcoded substituídos por CSS Custom Properties (13/05/2026)
+
+### `/pages/styles/variables.css`
+- **Localização:** `/pages/styles/variables.css`
+- **Propósito:** CSS Custom Properties geradas a partir dos Design Tokens JS.
+- **Características:**
+  - 386 variáveis CSS no `:root`
+  - Cores: primary, secondary, neutral, feedback, semantic, state, spiritual
+  - Spacing: escala completa (spacing, space, section, gap, padding, margin)
+  - Tipografia: font-family, font-size, font-weight, line-height, letter-spacing
+  - Borders: border-width, border-radius
+  - Shadows: elevation, semantic, colored, drop
+  - Breakpoints e containers
+  - Animações: duration, easing, transition
+  - Opacidade e z-index
+- **Nota:** Gerado automaticamente a partir dos arquivos em `tokens/`. Pode ser regenerado via `generateTokensCSS.js`.
+
+### `/pages/styles/generateTokensCSS.js`
+- **Localização:** `/pages/styles/generateTokensCSS.js`
+- **Propósito:** Gerador programático que transforma os Design Tokens JS em CSS Custom Properties.
+- **Características:**
+  - Importa todos os 11 arquivos de tokens
+  - Exporta `generateTokensCSS()` que retorna string CSS completa
+  - Exporta `tokensCSS` com o CSS pré-gerado
 
 ### `/pages/styles/Home.module.css`
 - **Localização:** `/pages/styles/Home.module.css`
 - **Propósito:** Estilos CSS Module para a página inicial.
 - **Características:**
   - Layout flex column, min-height 100vh
-  - Título grande (3rem) uppercase com subtitle
+  - Título grande uppercase com subtitle
   - Container de imagem com hover scale
   - Responsivo para 768px e 480px
-  - Footer fixo no final da página
+  - **Todos os valores hardcoded substituídos por CSS Custom Properties** (13/05/2026)
+  - Cores não-padronizadas (`#2c3e50`, `#7f8c8d`) substituídas por tokens semânticos
 
 ---
 
@@ -544,9 +572,10 @@
 | APIs Auth                    |     3†     |
 | Páginas Blog                 |     2      |
 | CSS Modules Blog             |     1      |
-| CSS Globais e Módulos        |     3      |
+| CSS Globais, Módulos e Variáveis |     5      |
 | Tokens de Design             |     11     |
-| **Total**                    |  **50**   |
+| **Total**                    |  **52**   |
 
 > *\*Arquivo `/pages/[slug].js` removido em 12/05/2026.*
 > *†Endpoint `/api/auth/check` criado em 13/05/2026 para substituir `/api/v1/auth/check`.*
+> *‡Novos arquivos: `variables.css` e `generateTokensCSS.js` criados em 13/05/2026 como parte da tokenização CSS.*

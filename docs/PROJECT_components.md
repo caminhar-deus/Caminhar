@@ -1,6 +1,6 @@
 # Análise de Componentes - `/components`
 
-> **Data:** 10/05/2026  
+> **Data:** 13/05/2026 (atualizado)
 > **Objetivo:** Documentar todos os arquivos da pasta `components/`, descrevendo localização, propósito e funcionalidades.
 
 ---
@@ -143,6 +143,8 @@ Conjunto de componentes de campo de formulário reutilizáveis:
 
 **Propósito:** Estilos CSS do módulo Admin. Contém classes para: layout de login, painel admin, formulários, tabelas, paginação, status badges, dashboard (stats grid e gráfico), navegação por abas, botões de ação e responsividade.
 
+**Atualização (13/05/2026):** ~80 valores hardcoded substituídos por CSS Custom Properties (`var()`). Cores, espaçamentos, tipografia, bordas e sombras padronizados via tokens do Design System.
+
 ---
 
 ## 2. Features
@@ -179,7 +181,7 @@ Componentes de funcionalidades específicas do site público.
 |---------|-----------|
 | `ProductCard.js` | Card de produto com carrossel de imagens, lightbox, links para lojas (ML, Shopee, Amazon) com ícones SVG. Schema.org Product para SEO |
 | `ProductList.js` | Listagem de produtos com busca textual, filtro por faixa de preço, paginação. Usa debounce (500ms) e ordenação por position |
-| `styles.js` | Objetos de estilo compartilhados (inputStyle, buttonBaseStyle) |
+| `styles.js` | Objetos de estilo compartilhados (inputStyle, buttonBaseStyle). Tokenizados com `var()` em 13/05/2026 |
 | `styles/ProductCard.module.css` | Estilos do card de produto: media, navegação, lightbox, botões de loja com cores específicas |
 
 ### 2.5 Testimonials
@@ -187,13 +189,15 @@ Componentes de funcionalidades específicas do site público.
 
 **Propósito:** Seção "Dicas do Dia". Carrossel/grid de depoimentos com fallback de dados estáticos. Scroll horizontal com detecção de posição para exibir setas de navegação.
 
+**Atualização (13/05/2026):** Estilos inline tokenizados com `var()`. Cores, espaçamentos, bordas e sombras padronizados.
+
 ### 2.6 Video
 
 | Arquivo | Propósito |
 |---------|-----------|
-| `VideoCard.js` | Card de vídeo com lazy loading via `LazyIframe`. Exibe título e descrição com truncamento |
-| `VideoGallery.js` | Galeria de vídeos com busca (debounce 300ms), paginação, estados (loading/error/empty) e botão "Tentar novamente" |
-| `styles/VideoGallery.module.css` | Estilos da galeria de vídeos: grid, busca, estados, responsividade |
+| `VideoCard.js` | Card de vídeo com lazy loading via `LazyIframe`. Exibe título e descrição com truncamento. Tokenizado em 13/05/2026 |
+| `VideoGallery.js` | Galeria de vídeos com busca (debounce 300ms), paginação, estados (loading/error/empty) e botão "Tentar novamente". Estilos inline tokenizados em 13/05/2026 |
+| `styles/VideoGallery.module.css` | Estilos da galeria de vídeos: grid, busca, estados, responsividade. Tokenizado em 13/05/2026 |
 
 ---
 
@@ -339,25 +343,35 @@ Componentes base do Design System do projeto. Seguem padrão consistente de vari
 
 **Propósito:** Botão com variantes (primary, secondary, ghost, danger, success, warning), tamanhos (sm, md, lg, xl), loading spinner, ícones esquerda/direita e efeito ripple.
 
+**Atualização (13/05/2026):** `Button.module.css` tokenizado — cores, espaçamentos, border-radius, transitions e sombras substituídos por `var()`.
+
 ### 6.2 Input.js
 **Localização:** `components/UI/Input.js`
 
 **Propósito:** Input controlado/não-controlado com label, addons (ícones), variantes (default, filled, flushed), estados de erro, helper text, clearable. Suporta `forwardRef`.
+
+**Atualização (13/05/2026):** `Input.module.css` tokenizado — cores, espaçamentos, border-radius e transitions substituídos por `var()`.
 
 ### 6.3 TextArea.js
 **Localização:** `components/UI/TextArea.js`
 
 **Propósito:** Textarea com auto-resize, contador de caracteres, bloqueio opcional em maxLength, estados de erro, helper text. Suporta `forwardRef`.
 
+**Atualização (13/05/2026):** `TextArea.module.css` tokenizado — cores, espaçamentos, border-radius e transitions substituídos por `var()`.
+
 ### 6.4 Select.js
 **Localização:** `components/UI/Select.js`
 
 **Propósito:** Select nativo e custom combobox. Suporta busca (searchable), clearable, dropdown com scroll, opções desabilitadas, estados de erro.
 
+**Atualização (13/05/2026):** `Select.module.css` tokenizado — cores, espaçamentos, border-radius, transitions e box-shadow substituídos por `var()`.
+
 ### 6.5 Modal.js
 **Localização:** `components/UI/Modal.js`
 
 **Propósito:** Modal em portal com focus trap, scroll lock (com contagem de referência para múltiplos modais), fechar por ESC e overlay. Tamanhos (sm, md, lg, xl, full).
+
+**Atualização (13/05/2026):** `Modal.module.css` tokenizado — cores, espaçamentos, border-radius, z-index, box-shadow e transitions substituídos por `var()`.
 
 ### 6.6 Card.js
 **Localização:** `components/UI/Card.js`
@@ -369,30 +383,42 @@ Componentes base do Design System do projeto. Seguem padrão consistente de vari
 
 **Propósito:** Card reutilizável com slots (media, header, content, footer). Variantes (default, outlined, filled, elevated), tamanhos (sm, md, lg), hoverable, clickable (com suporte a teclado), Schema.org.
 
+**Atualização (13/05/2026):** `BaseCard.module.css` tokenizado — cores, espaçamentos, border-radius, transitions e box-shadow substituídos por `var()`.
+
 ### 6.8 Badge.js
 **Localização:** `components/UI/Badge.js`
 
 **Propósito:** Badge/insígnia com variantes, tamanhos, ícones, efeito pulse, dot indicator, posicionamento absoluto. Subcomponentes: `Badge.Counter`, `Badge.Dot`.
+
+**Atualização (13/05/2026):** `Badge.module.css` tokenizado — cores, espaçamentos, border-radius e transitions substituídos por `var()`.
 
 ### 6.9 Alert.js
 **Localização:** `components/UI/Alert.js`
 
 **Propósito:** Alerta com status (info, success, warning, error), variantes de estilo (subtle, solid, left-accent, top-accent), ícones SVG, fechável, controlado/não-controlado. Exporta `defaultIcons`.
 
+**Atualização (13/05/2026):** `Alert.module.css` tokenizado — cores de feedback (`info-50`, `success-50`, `warning-50`, `error-50`), espaçamentos e border-radius substituídos por `var()`.
+
 ### 6.10 Toast.js
 **Localização:** `components/UI/Toast.js`
 
 **Propósito:** Notificação temporária com auto-close, animações de entrada/saída por posição, barra de progresso, ícones via `defaultIcons`. Subcomponentes: `Toast.Container`. Hook `useToast` para gerenciamento.
+
+**Atualização (13/05/2026):** `Toast.module.css` tokenizado — cores de status, espaçamentos, border-radius, z-index, box-shadow e transitions substituídos por `var()`.
 
 ### 6.11 Spinner.js
 **Localização:** `components/UI/Spinner.js`
 
 **Propósito:** Spinner de loading com variantes (border, grow, dots), tamanhos (xs-xl), cores. Subcomponentes: `Spinner.Container`, `Spinner.Overlay`.
 
+**Atualização (13/05/2026):** `Spinner.module.css` tokenizado — cores (primary, secondary, white, dark) e z-index substituídos por `var()`.
+
 ### 6.12 StateMessages.js
 **Localização:** `components/UI/StateMessages.js`
 
 **Propósito:** Componentes padronizados para estados: `ErrorMessage`, `LoadingMessage`, `EmptyMessage`.
+
+**Atualização (13/05/2026):** Estilos inline tokenizados — cores e espaçamentos substituídos por `var()`.
 
 ### 6.13 index.js (UI)
 **Localização:** `components/UI/index.js`

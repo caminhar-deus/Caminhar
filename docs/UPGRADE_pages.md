@@ -563,16 +563,6 @@
 
 **Problema:** Praticamente todos os endpoints admin repetiam o bloco de verificação de método HTTP com retorno 405 e estrutura try/catch idêntica.
 
-**Código repetido:**
-```javascript
-if (req.method !== 'GET') {
-  return res.status(405).json({
-    error: 'Method Not Allowed',
-    message: 'Método não permitido'
-  });
-}
-```
-
 **Resolução:** Resolvido via handler factory `createAdminHandler()` em `lib/api/adminCrudHandler.js` (item 1.6).
 
 ---
@@ -612,19 +602,43 @@ if (req.method !== 'GET') {
 
 ---
 
-### 5.4 Tokens de Design Subutilizados
+### 5.4 Tokens de Design Subutilizados — **RESOLVIDO**
 
-**Arquivos:** `/pages/styles/tokens/*.js` (11 arquivos)
+**Arquivos:**
+- `/pages/styles/tokens/*.js` (11 arquivos) — mantidos como fonte de verdade
+- `/pages/styles/variables.css` (criado)
+- `/pages/styles/generateTokensCSS.js` (criado)
+- 34 arquivos CSS/JS modificados
 
-**Problema:** Os tokens de design são definidos em arquivos JavaScript, mas os CSS Modules (`Home.module.css`, `DesignSystem.module.css`, `globals.css`) usam valores hardcoded em vez de referenciar os tokens.
+**O que foi feito (13/05/2026):**
 
-**Impacto:** Mudanças de design exigem alterações em múltiplos arquivos. Os tokens perdem seu propósito.
+1. **`variables.css` criado** — 386 CSS Custom Properties geradas a partir dos 11 tokens JS (cores, spacing, tipografia, bordas, sombras, breakpoints, animações, opacidade, z-index)
 
-**Sugestão:** Utilizar CSS Custom Properties (variáveis CSS) geradas a partir dos tokens, ou usar os tokens JS nos componentes de página.
+2. **`generateTokensCSS.js` criado** — gerador programático para regenerar `variables.css` automaticamente
+
+3. **Tokenização de ~800 valores hardcoded** em 34 arquivos:
+   - **Páginas (3):** `globals.css`, `Home.module.css`, `DesignSystem.module.css`
+   - **UI Components (10):** `Button`, `BaseCard`, `Input`, `Alert`, `Badge`, `Modal`, `Toast`, `Select`, `TextArea`, `Spinner`
+   - **Admin (1):** `Admin/styles/Admin.module.css`
+   - **Features CSS (5):** `Blog`, `MusicCard`, `MusicGallery`, `ProductCard`, `VideoGallery`
+   - **Layout (4):** `Container`, `Grid`, `Sidebar`, `Stack`
+   - **Features JS (7):** `ContentTabs.module.css`, `Testimonials`, `BlogSection`, `PostCard`, `styles.js`, `ProductList`, `VideoCard`, `VideoGallery`, `StateMessages`
+
+4. **Cores padronizadas:** `#007bff` (Bootstrap), `#1976d2`, `#0070f3` → `var(--color-primary-500)`. Cores não-padronizadas (`#2c3e50`, `#7f8c8d`) substituídas por tokens semânticos.
+
+5. **`overflow-y: scroll !important`** removido (item 5.6), substituído por `overflow-y: auto`
+
+6. **Faixas de cor inconsistentes** corrigidas entre seções da página inicial
+
+**Benefícios:**
+- ✅ Fonte única da verdade — alterar tokens → regenerar `variables.css` → reflete em toda interface
+- ✅ Consistência visual em todo o projeto
+- ✅ Manutenibilidade — mudar cor primária ou tipografia = alterar 1 arquivo
+- ✅ ~800 valores hardcoded substituídos por `var()`
 
 ---
 
-### 5.5 Classes Utilitárias no CSS Global
+### 5.5 Classes Utilitárias no CSS Global — **EM ABERTO**
 
 **Arquivo:** `/pages/styles/globals.css`
 
@@ -638,15 +652,18 @@ if (req.method !== 'GET') {
 
 ---
 
-### 5.6 `overflow-y: scroll !important` Agressivo
+### 5.6 `overflow-y: scroll !important` — **RESOLVIDO**
 
 **Arquivo:** `/pages/styles/globals.css`
 
-**Problema:** `overflow-y: scroll !important` força a barra de rolagem vertical mesmo quando o conteúdo não ultrapassa a viewport, além do uso de `!important` que dificulta sobrescrita.
+**Problema:** `overflow-y: scroll !important` forçava a barra de rolagem vertical mesmo quando o conteúdo não ultrapassava a viewport.
 
-**Impacto:** Aparecimento desnecessário de barra de rolagem em páginas com pouco conteúdo.
+**O que foi feito (13/05/2026):**
+- Substituído `overflow-y: scroll !important` por `overflow-y: auto` em `globals.css`
 
-**Sugestão:** Usar `overflow-y: auto` ou aplicar a regra seletivamente.
+**Benefícios:**
+- ✅ Barra de rolagem removida em páginas com pouco conteúdo
+- ✅ `!important` removido, facilitando sobrescrita quando necessário
 
 ---
 
@@ -703,7 +720,7 @@ if (req.method !== 'GET') {
 | 🟠 Alto | ~~3.4~~ ✅ | `blog/[slug].js`, `blog/index.js` | Fetch HTTP para API interna em SSR — **RESOLVIDO** (ambos os arquivos) |
 | 🟠 Alto | ~~3.5~~ ✅ | `_document.js` | TagManager Inline — **RESOLVIDO** (permissão CSP removida, sem TagManager no projeto) |
 | 🟠 Alto | ~~5.2~~ ✅ | `/api/v1/` (removido), `/api/status.js`, `/api/auth/check.js` | Endpoints sem versionamento consistente — **RESOLVIDO** (estratégia definida: apenas sem versão; v1 removido; novos endpoints criados) |
-| 🟠 Alto | 5.4 | `styles/tokens/*.js` | Tokens não utilizados nos CSS |
+| 🟠 Alto | ~~5.4~~ ✅ | `styles/tokens/*.js` + 34 arquivos | Tokens não utilizados nos CSS — **RESOLVIDO** (CSS Custom Properties geradas e aplicadas) |
 | 🟡 Médio | ~~4.2~~ ✅ | `blog/index.js` | Fallback silencioso sem dados — **RESOLVIDO** (adicionado estado de erro visual) |
 | 🟡 Médio | ~~2.1~~ ✅ | Múltiplos | Modelos de autenticação misturados — **RESOLVIDO** |
 | 🟡 Médio | ~~2.2~~ ✅ | Múltiplos | Cache implementado de forma diferente — **RESOLVIDO** |
@@ -713,5 +730,4 @@ if (req.method !== 'GET') {
 | 🟡 Médio | ~~4.1~~ ✅ | `upload-image.js` | Sanitização de upload insuficiente — **RESOLVIDO** (UUID, magic bytes, limite de dimensões) |
 | 🟡 Médio | ~~4.3 (settings)~~ ✅ | `api/settings.js` | Zod POST — **RESOLVIDO** (POST agora tem schema Zod) |
 | 🟡 Médio | ~~4.5~~ ✅ | `admin/fetch-*.js` | Timeout ausente em APIs externas — **RESOLVIDO** (AbortController com 8s) |
-| 🟢 Baixo | 5.5 | `globals.css` | Classes utilitárias sem prefixo |
-| 🟢 Baixo | 5.6 | `globals.css` | `!important` agressivo no overflow |
+| 🟢 Baixo | 5.5 | `globals.css` | Classes utilitárias sem prefixo — **EM ABERTO** |
