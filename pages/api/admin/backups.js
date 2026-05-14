@@ -30,7 +30,7 @@ async function handleGet(req, res) {
 
 async function handlePost(req, res) {
   const result = await createBackup();
-  req.adminUtils.logActivity('CRIAR BACKUP', Date.now(), 'Backup criado manualmente');
+  req.adminUtils.logActivity('CRIAR BACKUP', null, 'Backup criado manualmente');
   return res.status(200).json({ success: true, message: 'Backup criado com sucesso', result });
 }
 

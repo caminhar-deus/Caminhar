@@ -119,8 +119,10 @@ export default function Admin() {
           const contentType = response.headers.get('content-type');
           if (contentType && contentType.includes('application/json')) {
             const data = await response.json();
-            // Tenta resgatar as propriedades se a API retornar dentro da chave "user" ou se retornar o objeto direto.
-            setCurrentUser(data.user || data);
+            // O endpoint /api/auth/check retorna { success, data: { user: { ... } } }
+            // Tenta extrair de data.data.user, data.user, ou usa o objeto inteiro como fallback
+            const userData = data?.data?.user || data?.user || data;
+            setCurrentUser(userData);
           }
           setIsAuthenticated(true);
           await loadSettings();

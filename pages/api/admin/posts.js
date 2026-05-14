@@ -138,5 +138,5 @@ export default createAdminHandler({
   permission: 'Posts/Artigos',
   handlers: { GET: handleGet, POST: handlePost, PUT: handlePut, DELETE: handleDelete },
   rateLimit: { max: 30, window: 60000 },
-  cacheKeys: 'posts:public:all',
+  cacheKeys: 'posts:*',
 });

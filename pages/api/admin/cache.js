@@ -10,7 +10,7 @@ async function handleClear(req, res) {
   // Limpeza do Cache (confirmação explícita para evitar FLUSHDB acidental)
   await clearAllCache({ confirm: true });
 
-  req.adminUtils.logActivity('LIMPAR CACHE', Date.now(), 'Cache limpo manualmente');
+  req.adminUtils.logActivity('LIMPAR CACHE', null, 'Cache limpo manualmente');
   return res.status(200).json({
     success: true,
     message: 'Cache do Redis limpo com sucesso (FLUSHDB).',

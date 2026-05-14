@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Configure runtime settings to avoid Edge Runtime warnings
-  serverExternalPackages: ['sqlite3', 'bcryptjs', 'jsonwebtoken'],
+  serverExternalPackages: ['bcryptjs', 'jsonwebtoken'],
   
   // Configure webpack to handle Node.js modules properly (fallback for non-Turbopack builds)
   webpack: (config, { isServer }) => {

@@ -105,7 +105,62 @@ O script `scripts/backup.js` agora também chama `createSqliteBackup()` automati
 
 ---
 
-## Resumo das Ações Realizadas
+## 9. Erro ao Criptografar Backup: "Invalid key length"
+
+**Localização:** `scripts/backup.js` (linha 77-98)
+
+**Problema:** A variável de ambiente `BACKUP_ENCRYPTION_KEY` não tinha exatamente 64 caracteres hex (32 bytes), que é o requisito do AES-256-GCM. O Node.js lançava `Invalid key length` ao tentar criar o cipher.
+
+**Correção aplicada:** Adicionada validação do comprimento da chave antes de tentar criptografar. Se a chave não tiver exatamente 64 caracteres hex, o backup é mantido sem criptografia e um aviso é exibido.
+
+**Status:** ✅ Corrigido
+
+---
+
+## 10. Erro "out of range for type integer" no entity_id
+
+**Localização:** `pages/api/admin/backups.js`, `cache.js`, `fetch-spotify.js`, `fetch-ml.js`, `fetch-youtube.js` e `lib/domain/audit.js`
+
+**Problema:** A coluna `entity_id` na tabela `activity_logs` era do tipo `INTEGER`, que tem limite máximo de 2.147.483.647. `Date.now()` retorna timestamps em milissegundos (ex.: 1.778.725.193.707), que excede esse limite.
+
+**Causa raiz:** 5 endpoints passavam `Date.now()` como `entity_id` para `logActivity()` em ações que não têm uma entidade real (backup, cache, fetches).
+
+**Correções aplicadas:**
+1. **Migração `011-fix-entity-id-type.js`** — Altera `entity_id` de `INTEGER` para `BIGINT` na tabela `activity_logs`
+2. **Correção semântica** — Os 5 endpoints que usavam `Date.now()` como `entity_id` agora passam `null`, pois operações como "criar backup", "limpar cache" e "fetch" não estão vinculadas a uma entidade específica
+
+**Arquivos corrigidos:**
+| Arquivo | Linha | Correção |
+|---------|-------|----------|
+| `pages/api/admin/backups.js` | 33 | `Date.now()` → `null` |
+| `pages/api/admin/cache.js` | 13 | `Date.now()` → `null` |
+| `pages/api/admin/fetch-spotify.js` | 111 | `Date.now()` → `null` |
+| `pages/api/admin/fetch-ml.js` | 151 | `Date.now()` → `null` |
+| `pages/api/admin/fetch-youtube.js` | 43 | `Date.now()` → `null` |
+| `scripts/migrations/011-fix-entity-id-type.js` | Criado | Migração INTEGER → BIGINT |
+
+**Status:** ✅ Corrigido
+
+---
+
+## 11. Remoção do SQLite — Unificação em PostgreSQL
+
+**Problema:** O projeto possuía dois bancos de dados: PostgreSQL (banco real usado pela aplicação) e SQLite (`data/caminhar.db`, abandonado com apenas 1 registro em cada tabela). Isso causava confusão e inconsistências.
+
+**Ações realizadas:**
+1. **Migração `012-migrate-sqlite-to-pg.js`** — Importou todos os dados do SQLite para o PostgreSQL (settings, categories, tags, posts, musicas)
+2. **`data/caminhar.db`** — Excluído
+3. **`scripts/backup-sqlite.js`** — Removido
+4. **`scripts/backup.js`** — Limpo (removida importação e execução do backup SQLite)
+5. **`scripts/utils/cleanup-test-data.js`** — Adaptado para usar PostgreSQL via `lib/db.js`
+6. **`next.config.js`** — Removido `sqlite3` de `serverExternalPackages`
+7. **Documentação** — `docs/PROJECT_data.md` e `docs/PROJECT_raiz.md` atualizadas
+
+**Status:** ✅ Corrigido
+
+---
+
+## Resumo Final das Ações Realizadas
 
 | # | Categoria | Item | Prioridade | Status |
 |---|-----------|------|------------|--------|
@@ -117,15 +172,28 @@ O script `scripts/backup.js` agora também chama `createSqliteBackup()` automati
 | 6 | **Correção** | Ausência de backup do SQLite | Alta | ✅ |
 | 7 | **Correção** | Tabela `musicas` ausente no PostgreSQL | Alta | ✅ |
 | 8 | **Segurança** | Arquivo `backup.log` inacessível | Média | ✅ |
+| 9 | **Bug** | "Invalid key length" ao criptografar backup | Alta | ✅ |
+| 10 | **Bug** | "out of range for type integer" no entity_id | Alta | ✅ |
+| 11 | **Arquitetura** | Remoção do SQLite — unificação em PostgreSQL | Alta | ✅ |
 
 ---
 
-## Arquivos Modificados/Criados
+## Arquivos Modificados/Criados/Removidos
 
 | Arquivo | Tipo | Descrição |
 |---------|------|-----------|
 | `scripts/migrations/010-sync-sqlite-pg-schemas.js` | ✅ Criado | Migração para sincronizar schemas SQLite ↔ PostgreSQL |
-| `scripts/backup-sqlite.js` | ✅ Criado | Script de backup/restore do SQLite |
-| `scripts/backup.js` | ✏️ Modificado | Adicionado backup SQLite acoplado, formato ISO 8601, sanitização de logs |
+| `scripts/migrations/011-fix-entity-id-type.js` | ✅ Criado | Migração para alterar entity_id de INTEGER para BIGINT |
+| `scripts/migrations/012-migrate-sqlite-to-pg.js` | ✅ Criado | Migração de dados do SQLite para PostgreSQL |
+| `scripts/backup-sqlite.js` | ❌ Removido | Não mais necessário (apenas PostgreSQL) |
+| `scripts/backup.js` | ✏️ Modificado | Removida referência ao SQLite |
+| `scripts/utils/cleanup-test-data.js` | ✏️ Modificado | Adaptado para PostgreSQL via `lib/db.js` |
+| `next.config.js` | ✏️ Modificado | Removido `sqlite3` de `serverExternalPackages` |
 | `lib/crud.js` | ✏️ Modificado | Adicionados schemas: images, categories, tags, post_categories, post_tags |
+| `pages/api/admin/backups.js` | ✏️ Modificado | `Date.now()` → `null` no logActivity |
+| `pages/api/admin/cache.js` | ✏️ Modificado | `Date.now()` → `null` no logActivity |
+| `pages/api/admin/fetch-spotify.js` | ✏️ Modificado | `Date.now()` → `null` no logActivity |
+| `pages/api/admin/fetch-ml.js` | ✏️ Modificado | `Date.now()` → `null` no logActivity |
+| `pages/api/admin/fetch-youtube.js` | ✏️ Modificado | `Date.now()` → `null` no logActivity |
+| `data/caminhar.db` | ❌ Excluído | Banco SQLite removido |
 | `data/backups/posts-backup-2026-02-16T01-34-56-945Z.json` | ➡️ Movido | Backup JSON movido para `/tmp/` (arquivo morto) |

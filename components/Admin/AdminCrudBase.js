@@ -180,17 +180,33 @@ export default function AdminCrudBase({
     
     const loadingToast = toast.loading('Atualizando status...');
     try {
-      const payload = { ...item, [key]: newValue };
+      // Envia apenas o ID e o campo que está sendo alternado, evitando
+      // validação desnecessária de outros campos obrigatórios no backend
+      const payload = { id: item.id, [key]: newValue };
       const response = await fetch(apiEndpoint, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      if (!response.ok) throw new Error('Falha na API');
+      if (!response.ok) {
+        // Tenta extrair mensagem de erro da resposta do servidor
+        let errorMsg = 'Falha na API';
+        try {
+          const errorData = await response.json();
+          if (errorData.message) errorMsg = errorData.message;
+          if (errorData.error) errorMsg = errorData.error;
+        } catch (_) {
+          // Se não conseguir parsear o JSON, usa mensagem genérica
+        }
+        throw new Error(errorMsg);
+      }
+      // Aguarda a resposta e lê o corpo para garantir que o PUT foi bem-sucedido
+      const result = await response.json();
       toast.success('Status alterado com sucesso!', { id: loadingToast });
     } catch (error) {
       setLocalItems(previousItems); // Reverte visualmente em caso de falha
-      toast.error('Erro ao alterar status.', { id: loadingToast });
+      toast.error(error.message || 'Erro ao alterar status.', { id: loadingToast });
+      console.error('[ToggleStatus] Erro:', error.message);
     }
   };
 

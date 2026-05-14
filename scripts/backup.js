@@ -3,7 +3,6 @@ import path from 'path';
 import { format } from 'date-fns';
 import zlib from 'zlib';
 import { exec } from 'child_process';
-import { createSqliteBackup } from './backup-sqlite.js';
 
 // Database and backup paths
 const BACKUP_DIR = path.join(process.cwd(), 'data', 'backups');
@@ -79,21 +78,28 @@ async function createBackup() {
     // ✅ Criptografia em repouso AES-256-GCM
     if (process.env.BACKUP_ENCRYPTION_KEY) {
       try {
-        const key = Buffer.from(process.env.BACKUP_ENCRYPTION_KEY, 'hex');
-        const iv = crypto.randomBytes(12);
-        const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
-        
-        const encrypted = Buffer.concat([
-          iv, 
-          cipher.update(fileBuffer), 
-          cipher.final(), 
-          cipher.getAuthTag()
-        ]);
-        
-        fs.writeFileSync(`${backupPath}.enc`, encrypted);
-        fs.unlinkSync(backupPath);
-        
-        console.log(`✅ Backup criptografado com sucesso: ${backupPath}.enc`);
+        const keyHex = process.env.BACKUP_ENCRYPTION_KEY;
+        const keyBuffer = Buffer.from(keyHex, 'hex');
+
+        // AES-256-GCM requer chave de exatamente 32 bytes (64 caracteres hex)
+        if (keyBuffer.length !== 32) {
+          console.warn(`⚠️ BACKUP_ENCRYPTION_KEY com comprimento inválido (${keyHex.length} chars hex, esperado 64). Backup NÃO criptografado.`);
+        } else {
+          const iv = crypto.randomBytes(12);
+          const cipher = crypto.createCipheriv('aes-256-gcm', keyBuffer, iv);
+          
+          const encrypted = Buffer.concat([
+            iv, 
+            cipher.update(fileBuffer), 
+            cipher.final(), 
+            cipher.getAuthTag()
+          ]);
+          
+          fs.writeFileSync(`${backupPath}.enc`, encrypted);
+          fs.unlinkSync(backupPath);
+          
+          console.log(`✅ Backup criptografado com sucesso: ${backupPath}.enc`);
+        }
         
       } catch (cryptoError) {
         console.error('⚠️ Erro ao criptografar backup, mantendo arquivo original:', cryptoError.message);
@@ -102,16 +108,6 @@ async function createBackup() {
 
     // Log the backup operation
     await logBackupOperation('SUCCESS', `[PostgreSQL] ${backupFilename} | hash: ${hash.substring(0, 12)}...`);
-
-    // ===== Backup SQLite (nova funcionalidade) =====
-    try {
-      console.log('\n--- Iniciando backup SQLite (acoplado) ---');
-      await createSqliteBackup();
-      console.log('--- Backup SQLite concluído ---\n');
-    } catch (sqliteError) {
-      console.error('⚠️ Backup SQLite falhou (não crítico):', sqliteError.message);
-      await logBackupOperation('ERROR', `[SQLite] Backup failed (non-critical): ${sqliteError.message}`);
-    }
 
     // Clean up old backups
     await cleanupOldBackups();

@@ -1,34 +1,32 @@
-import { withAuth } from '../../../lib/auth';
-import sqlite3 from 'sqlite3';
-import { open } from 'sqlite';
-import path from 'path';
+// Script para limpar dados de teste do banco PostgreSQL.
+// Uso: node scripts/utils/cleanup-test-data.js
+// Ou via API: DELETE /api/admin/cleanup-test-data (autenticado como admin)
 
-async function handler(req, res) {
-  // Apenas permite DELETE
-  if (req.method !== 'DELETE') {
-    return res.status(405).json({ message: 'Método não permitido' });
-  }
+import fs from 'fs';
+import dotenv from 'dotenv';
 
-  // Segurança adicional: Verifica se é admin (já garantido pelo withAuth, mas reforçando)
-  if (req.user.username !== process.env.ADMIN_USERNAME && req.user.username !== 'admin') {
-    return res.status(403).json({ message: 'Apenas administradores podem limpar dados de teste' });
-  }
+if (fs.existsSync('.env.local')) {
+  dotenv.config({ path: '.env.local' });
+}
+dotenv.config();
 
-  const dbPath = path.join(process.cwd(), 'data', 'caminhar.db');
-  
+async function run() {
+  const { query, closeDatabase } = await import('../../lib/db.js');
+
   try {
-    const db = await open({
-      filename: dbPath,
-      driver: sqlite3.Database
-    });
+    console.log('🧹 Limpando dados de teste do PostgreSQL...');
 
-    const result = await db.run("DELETE FROM posts WHERE slug LIKE 'post-carga-%'");
-    await db.close();
+    // Remove posts com slug padrão de teste (ex: post-carga-*)
+    const result = await query("DELETE FROM posts WHERE slug LIKE 'post-carga-%'");
+    console.log(`   ✅ ${result.rowCount} posts de teste removidos.`);
 
-    return res.status(200).json({ message: 'Dados de teste limpos com sucesso', changes: result.changes });
+    await closeDatabase();
+    console.log('✅ Limpeza concluída.');
+    process.exit(0);
   } catch (error) {
-    return res.status(500).json({ message: 'Erro ao limpar dados', error: error.message });
+    console.error('❌ Erro ao limpar dados:', error.message);
+    process.exit(1);
   }
 }
 
-export default withAuth(handler);
+run();

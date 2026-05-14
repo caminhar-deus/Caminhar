@@ -171,7 +171,7 @@ Esta documentação descreve todos os arquivos localizados na raiz do projeto `/
 **Propósito:** Configuração principal do Next.js. Define opções de runtime, webpack e headers de segurança/CORS.
 
 **Principais características:**
-- `serverExternalPackages`: sqlite3, bcryptjs, jsonwebtoken
+- `serverExternalPackages`: bcryptjs, jsonwebtoken
 - Configuração webpack com fallbacks para módulos Node.js em client-side
 - Headers de segurança: `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`, `Strict-Transport-Security`
 - CORS configurado para rotas `/api/*` com suporte a `ALLOWED_ORIGINS`

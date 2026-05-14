@@ -148,7 +148,7 @@ async function handlePost(req, res) {
       throw new Error('Anúncio inativo ou link inválido (Nenhum produto/item encontrado).');
     }
 
-    req.adminUtils.logActivity('FETCH MERCADO LIVRE', Date.now(), `Buscou dados do produto: ${foundData.title}`);
+    req.adminUtils.logActivity('FETCH MERCADO LIVRE', null, `Buscou dados do produto: ${foundData.title}`);
     return res.status(200).json(foundData);
   } catch (error) {
     return res.status(500).json({ error: error.message });

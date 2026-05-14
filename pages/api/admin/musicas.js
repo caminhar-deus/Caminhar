@@ -89,9 +89,15 @@ async function handlePut(req, res) {
     return res.status(200).json({ success: true, message: 'Ordem atualizada' });
   }
 
-  const validation = musicaSchema.extend({
+  // Validação para atualização: campos de texto são opcionais para permitir
+  // toggle rápido de status (publicado) sem precisar reenviar todos os campos.
+  const validation = z.object({
     id: z.number().int('ID deve ser um número inteiro').positive('ID deve ser positivo'),
-    url_spotify: z.string().min(1, 'URL do Spotify é obrigatória'),
+    titulo: z.string().min(1, 'Título é obrigatório').optional(),
+    artista: z.string().min(1, 'Artista é obrigatório').optional(),
+    descricao: z.string().optional(),
+    url_spotify: z.string().min(1, 'URL do Spotify é obrigatória').optional(),
+    publicado: z.boolean().optional(),
   }).safeParse({
     ...req.body,
     id: typeof req.body.id === 'string' ? parseInt(req.body.id, 10) : req.body.id,
@@ -106,7 +112,8 @@ async function handlePut(req, res) {
 
   const { id, titulo, artista, descricao, url_spotify, publicado } = validation.data;
 
-  if (!isValidSpotifyUrl(url_spotify)) {
+  // Se url_spotify foi enviado, valida; se não (ex: toggle de status), pula validação
+  if (url_spotify !== undefined && !isValidSpotifyUrl(url_spotify)) {
     return res.status(400).json({ message: 'URL do Spotify inválida' });
   }
 
@@ -148,5 +155,5 @@ export default createAdminHandler({
   name: 'Musica',
   handlers: { GET: handleGet, POST: handlePost, PUT: handlePut, DELETE: handleDelete },
   rateLimit: { max: 30, window: 60000 },
-  cacheKeys: 'musicas',
+  cacheKeys: 'musicas:*',
 });
