@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import styles from './styles/Admin.module.css';
 
 const PERMISSION_ITEM_MAP = {
@@ -16,12 +16,40 @@ export default function AdminDashboard({ setActiveTab, userPermissions = [], isA
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    const CACHE_KEY = 'admin_dashboard_stats';
+    const CACHE_TTL = 30000; // 30 segundos
+
     const fetchStats = async () => {
       try {
+        // Verifica cache em sessionStorage
+        const cached = sessionStorage.getItem(CACHE_KEY);
+        if (cached) {
+          const { data, timestamp } = JSON.parse(cached);
+          if (Date.now() - timestamp < CACHE_TTL) {
+            setStats(data);
+            setLoading(false);
+            return;
+          }
+        }
+
         const response = await fetch('/api/admin/stats', { credentials: 'include' });
         if (!response.ok) throw new Error('Falha ao carregar estatísticas');
-        
+
+        // Verifica se a resposta é JSON válido
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('O servidor retornou uma resposta inesperada. Tente novamente mais tarde.');
+        }
+
         const data = await response.json();
+
+        // Armazena no cache
+        try {
+          sessionStorage.setItem(CACHE_KEY, JSON.stringify({ data, timestamp: Date.now() }));
+        } catch {
+          // sessionStorage pode estar cheio ou indisponível; ignora erro de cache
+        }
+
         setStats(data);
       } catch (err) {
         setError(err.message);
@@ -32,6 +60,80 @@ export default function AdminDashboard({ setActiveTab, userPermissions = [], isA
 
     fetchStats();
   }, []);
+
+  // Hooks useMemo devem vir antes de qualquer early return
+  const maxVal = useMemo(() => {
+    if (!stats) return 1;
+    return Math.max(stats.posts || 0, stats.musicas || 0, stats.videos || 0, stats.products || 0, stats.users || 0, stats.dicas || 0, 1);
+  }, [stats]);
+
+  const allStatItems = useMemo(() => {
+    if (!stats) return [];
+    return [
+      { 
+        key: 'posts', 
+        label: 'Artigos', 
+        count: stats.posts, 
+        icon: '📝', 
+        color: 'var(--color-primary-500)', 
+        tabId: 'posts',
+        details: `✅ ${stats.postsPublished || 0} Pub | 📝 ${stats.postsDraft || 0} Rasc`
+      },
+      { 
+        key: 'musicas', 
+        label: 'Músicas', 
+        count: stats.musicas, 
+        icon: '🎵', 
+        color: '#1DB954', 
+        tabId: 'musicas',
+        details: `✅ ${stats.musicasPublished || 0} Pub | 📝 ${stats.musicasDraft || 0} Rasc`
+      },
+      { 
+        key: 'videos', 
+        label: 'Vídeos', 
+        count: stats.videos, 
+        icon: '🎬', 
+        color: 'var(--color-error-500)', 
+        tabId: 'videos',
+        details: `✅ ${stats.videosPublished || 0} Pub | 📝 ${stats.videosDraft || 0} Rasc`
+      },
+      { 
+        key: 'products', 
+        label: 'Produtos', 
+        count: stats.products, 
+        icon: '📦', 
+        color: '#ff9900', 
+        tabId: 'projetos02',
+        details: `✅ ${stats.productsPublished || 0} Pub | 📝 ${stats.productsDraft || 0} Rasc`
+      },
+      { 
+        key: 'dicas', 
+        label: 'Dicas', 
+        count: stats.dicas || 0, 
+        icon: '💡', 
+        color: 'var(--color-primary-500)', 
+        tabId: 'dicas',
+        details: `✅ ${stats.dicasPublished || 0} Pub | 📝 ${stats.dicasDraft || 0} Rasc`
+      },
+      { 
+        key: 'users', 
+        label: 'Usuários', 
+        count: stats.users, 
+        icon: '👥', 
+        color: 'var(--color-primary-700)', 
+        tabId: 'users',
+        details: `Ativos: Hoje (${stats.usersToday || 0}) • Mês (${stats.usersMonth || 0}) • Ano (${stats.usersYear || 0})`
+      },
+    ];
+  }, [stats]);
+
+  // Filtra itens conforme as permissões do usuário
+  const statItems = useMemo(() => isAdmin
+    ? allStatItems
+    : allStatItems.filter(item => {
+        const requiredPermission = PERMISSION_ITEM_MAP[item.key];
+        return !requiredPermission || userPermissions.includes(requiredPermission);
+      }), [allStatItems, isAdmin, userPermissions]);
 
   // Renderização unificada de carregamento/erro para evitar "pulos" de tela (Layout Shift)
   if (loading || error || !stats) {
@@ -45,73 +147,6 @@ export default function AdminDashboard({ setActiveTab, userPermissions = [], isA
       </div>
     );
   }
-
-  const maxVal = Math.max(stats.posts || 0, stats.musicas || 0, stats.videos || 0, stats.products || 0, stats.users || 0, stats.dicas || 0, 1); // Garante que nunca seja 0
-
-  const allStatItems = [
-    { 
-      key: 'posts', 
-      label: 'Artigos', 
-      count: stats.posts, 
-      icon: '📝', 
-      color: 'var(--color-primary-500)', 
-      tabId: 'posts',
-      details: `✅ ${stats.postsPublished || 0} Pub | 📝 ${stats.postsDraft || 0} Rasc`
-    },
-    { 
-      key: 'musicas', 
-      label: 'Músicas', 
-      count: stats.musicas, 
-      icon: '🎵', 
-      color: '#1DB954', 
-      tabId: 'musicas',
-      details: `✅ ${stats.musicasPublished || 0} Pub | 📝 ${stats.musicasDraft || 0} Rasc`
-    },
-    { 
-      key: 'videos', 
-      label: 'Vídeos', 
-      count: stats.videos, 
-      icon: '🎬', 
-      color: 'var(--color-error-500)', 
-      tabId: 'videos',
-      details: `✅ ${stats.videosPublished || 0} Pub | 📝 ${stats.videosDraft || 0} Rasc`
-    },
-    { 
-      key: 'products', 
-      label: 'Produtos', 
-      count: stats.products, 
-      icon: '📦', 
-      color: '#ff9900', 
-      tabId: 'projetos02',
-      details: `✅ ${stats.productsPublished || 0} Pub | 📝 ${stats.productsDraft || 0} Rasc`
-    },
-    { 
-      key: 'dicas', 
-      label: 'Dicas', 
-      count: stats.dicas || 0, 
-      icon: '💡', 
-      color: 'var(--color-primary-500)', 
-      tabId: 'dicas',
-      details: `✅ ${stats.dicasPublished || 0} Pub | 📝 ${stats.dicasDraft || 0} Rasc`
-    },
-    { 
-      key: 'users', 
-      label: 'Usuários', 
-      count: stats.users, 
-      icon: '👥', 
-      color: 'var(--color-primary-700)', 
-      tabId: 'users',
-      details: `Ativos: Hoje (${stats.usersToday || 0}) • Mês (${stats.usersMonth || 0}) • Ano (${stats.usersYear || 0})`
-    },
-  ];
-
-  // Filtra itens conforme as permissões do usuário
-  const statItems = isAdmin
-    ? allStatItems
-    : allStatItems.filter(item => {
-        const requiredPermission = PERMISSION_ITEM_MAP[item.key];
-        return !requiredPermission || userPermissions.includes(requiredPermission);
-      });
 
   return (
     <div className={styles.content}>

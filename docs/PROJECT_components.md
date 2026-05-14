@@ -39,6 +39,11 @@ Sistema administrativo completo com CRUD reutilizável, autenticação, dashboar
 
 **Propósito:** Painel de visão geral do sistema. Exibe cards de estatísticas (posts, músicas, vídeos, produtos, dicas, usuários) com contagem de publicados/rascunhos. Inclui gráfico de barras horizontal CSS para distribuição de conteúdo. Cada card é clicável e direciona para a aba correspondente.
 
+**Melhorias aplicadas:**
+- Cache em `sessionStorage` com TTL de 30s para fetch de stats, evitando requisições desnecessárias
+- Tratamento de resposta não-JSON com verificação de `Content-Type` e mensagem amigável
+- Memoização de `allStatItems`, `statItems` e `maxVal` com `useMemo` para evitar recriação desnecessária
+
 ### 1.3 AdminAudit.js
 **Localização:** `components/Admin/AdminAudit.js`
 

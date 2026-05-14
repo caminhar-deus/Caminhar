@@ -36,11 +36,11 @@
 
 **Localização:** `components/Admin/AdminDashboard.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Performance** | O fetch de stats (`/api/admin/stats`) não possui cache ou debounce. Em toda montagem do componente, uma requisição é feita. Se o dashboard for remontado, há chamada desnecessária. |
-| 2 | **Resiliência** | Não há tratamento para resposta não-JSON da API (ex: erro 500 HTML). |
-| 3 | **Manutenção** | O array `statItems` (linha 42) é recriado a cada renderização. Poderia ser memoizado com `useMemo`. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Performance** | O fetch de stats (`/api/admin/stats`) não possui cache ou debounce. Em toda montagem do componente, uma requisição é feita. Se o dashboard for remontado, há chamada desnecessária. Adicionado cache em `sessionStorage` com TTL de 30s. | ✅ **RESOLVIDO** |
+| 2 | **Resiliência** | Não há tratamento para resposta não-JSON da API (ex: erro 500 HTML). Verifica `Content-Type` antes de fazer parsing JSON e exibe mensagem amigável. | ✅ **RESOLVIDO** |
+| 3 | **Manutenção** | O array `statItems` (linha 42) é recriado a cada renderização. Poderia ser memoizado com `useMemo`. Envolvidos `allStatItems`, `statItems` e `maxVal` em `useMemo`. | ✅ **RESOLVIDO** |
 
 ### 1.3 AdminAudit.js
 
