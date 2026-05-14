@@ -139,36 +139,36 @@ export const useTheme = () => {
   const getSpacing = useCallback((key) => {
     const value = tokens.spacing.space[key] || tokens.spacing.spacing[key];
     if (!value && process.env.NODE_ENV === 'development') {
-      console.warn(`[useTheme] Token de espaçamento não encontrado: "${key}"`);
+      console.warn(`[useTheme] getSpacing: Token não encontrado "${key}", retornando null`);
     }
-    return value || key;
+    return value || null;
   }, []);
 
   // Helper para font size
   const getFontSize = useCallback((key) => {
     const value = tokens.typography.fontSize[key];
     if (!value && process.env.NODE_ENV === 'development') {
-      console.warn(`[useTheme] Token de tamanho de fonte não encontrado: "${key}"`);
+      console.warn(`[useTheme] getFontSize: Token não encontrado "${key}", retornando null`);
     }
-    return value || key;
+    return value || null;
   }, []);
 
   // Helper para shadow
   const getShadow = useCallback((key) => {
     const value = tokens.shadows.shadows[key] || tokens.shadows.shadow[key];
     if (!value && process.env.NODE_ENV === 'development') {
-      console.warn(`[useTheme] Token de sombra não encontrado: "${key}"`);
+      console.warn(`[useTheme] getShadow: Token não encontrado "${key}", retornando null`);
     }
-    return value || key;
+    return value || null;
   }, []);
 
   // Helper para border radius
   const getRadius = useCallback((key) => {
     const value = tokens.borders.radius[key] || tokens.borders.borderRadius[key];
     if (!value && process.env.NODE_ENV === 'development') {
-      console.warn(`[useTheme] Token de raio de borda não encontrado: "${key}"`);
+      console.warn(`[useTheme] getRadius: Token não encontrado "${key}", retornando null`);
     }
-    return value || key;
+    return value || null;
   }, []);
 
   // Helper para breakpoint

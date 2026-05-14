@@ -95,7 +95,11 @@
 
 ### 4.1 `/hooks/useTheme.js` — Funções de Responsividade Sem Reatividade ✅ CORRIGIDO
 
-### 4.2 `/hooks/useTheme.js` — Fallbacks para Tokens ⏳ PENDENTE
+### 4.2 `/hooks/useTheme.js` — Fallbacks para Tokens ✅ CORRIGIDO
+
+**Solução aplicada:**
+- `getSpacing`, `getFontSize`, `getShadow` e `getRadius` agora retornam `null` (em vez da própria `key`) quando o token não é encontrado, eliminando bugs silenciosos onde valores não-CSS eram retornados.
+- Mensagens de `console.warn` padronizadas com o nome do helper, a chave ausente e o valor de retorno (`null`).
 
 ### 4.3 `/hooks/useTheme.js` — `setThemeValue` com `useCallback` Desnecessário ✅ CORRIGIDO
 
@@ -181,6 +185,7 @@
 | 3.4 | `hooks/usePerformanceMetrics.js` | `window.LongTasks` removido | 10/05/2026 |
 | 3.5 | `hooks/useAuth.js` | `AbortController` via ref | 10/05/2026 |
 | 4.1 | `hooks/useTheme.js` | Viewport reativa | 10/05/2026 |
+| 4.2 | `hooks/useTheme.js` | Fallbacks de tokens retornam `null` | 13/05/2026 |
 | 4.3 | `hooks/useTheme.js` | `setTheme` direto | 10/05/2026 |
 | 4.4 | `hooks/usePerformanceMetrics.js` | `reportAllMetrics` removido | 10/05/2026 |
 | 4.5 | `hooks/useAuth.js` | `loginLoading` separado | 10/05/2026 |
@@ -189,8 +194,4 @@
 | 5.3 | `hooks/useAdminCrud.js` | Contrato documentado | 10/05/2026 |
 | 5.4 | `hooks/usePerformanceMetrics.js` | Import cacheado | 10/05/2026 |
 
-### Ocorrência Pendente
-
-| # | Arquivo(s) | Descrição | Situação |
-|---|---|---|---|
-| 4.2 | `hooks/useTheme.js` + `tokens.js` | Fallbacks de tokens | ⏳ Pendente |
+Todas as ocorrências foram corrigidas. Não há pendências no momento.

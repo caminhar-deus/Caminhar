@@ -1,6 +1,6 @@
 # Análise dos Hooks — `/hooks/`
 
-> **Data:** 10/05/2026
+> **Data:** 13/05/2026
 > **Objetivo:** Documentar a finalidade, localização e funcionamento de cada hook presente na pasta `/hooks`.
 
 ---
@@ -51,7 +51,8 @@
 - **Responsividade:** Monitora `window.innerWidth` com event listener `resize` para fornecer valores booleanos reativos de viewport (`isMobile`, `isTablet`, `isDesktop`).
 - **setTheme:** Exposto diretamente (sem wrapper `useCallback`), pois `useState` já garante referência estável.
 - **Performance:** Todo o retorno é memoizado com `useMemo` e dependências explícitas.
-- **Warnings em desenvolvimento:** Exibe `console.warn` quando tokens não são encontrados.
+- **Fallback de tokens:** `getSpacing`, `getFontSize`, `getShadow` e `getRadius` retornam `null` quando o token não é encontrado, eliminando bugs onde a própria chave era retornada como valor CSS inválido. Apenas `getBreakpoint` retorna `undefined` (sem fallback adicional).
+- **Warnings em desenvolvimento:** Exibe `console.warn` padronizado com nome do helper, chave ausente e valor de retorno (`null`) quando tokens não são encontrados.
 - **Dependências:** `pages/styles/tokens`, `useThrottle`.
 
 ---
