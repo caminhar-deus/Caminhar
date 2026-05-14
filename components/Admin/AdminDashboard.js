@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import styles from './styles/Admin.module.css';
 
-export default function AdminDashboard({ setActiveTab }) {
+const PERMISSION_ITEM_MAP = {
+  posts: 'Posts/Artigos',
+  musicas: 'Gestão de Músicas',
+  videos: 'Gestão de Vídeos',
+  products: 'Gestão de Produtos',
+  dicas: 'Gestão de Dicas',
+  users: 'Usuários',
+};
+
+export default function AdminDashboard({ setActiveTab, userPermissions = [], isAdmin = false }) {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -39,7 +48,7 @@ export default function AdminDashboard({ setActiveTab }) {
 
   const maxVal = Math.max(stats.posts || 0, stats.musicas || 0, stats.videos || 0, stats.products || 0, stats.users || 0, stats.dicas || 0, 1); // Garante que nunca seja 0
 
-  const statItems = [
+  const allStatItems = [
     { 
       key: 'posts', 
       label: 'Artigos', 
@@ -93,8 +102,16 @@ export default function AdminDashboard({ setActiveTab }) {
       color: 'var(--color-primary-700)', 
       tabId: 'users',
       details: `Ativos: Hoje (${stats.usersToday || 0}) • Mês (${stats.usersMonth || 0}) • Ano (${stats.usersYear || 0})`
-    }
+    },
   ];
+
+  // Filtra itens conforme as permissões do usuário
+  const statItems = isAdmin
+    ? allStatItems
+    : allStatItems.filter(item => {
+        const requiredPermission = PERMISSION_ITEM_MAP[item.key];
+        return !requiredPermission || userPermissions.includes(requiredPermission);
+      });
 
   return (
     <div className={styles.content}>

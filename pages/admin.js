@@ -668,7 +668,7 @@ export default function Admin() {
           )}
           
           {activeTab === 'dashboard' && hasPermission('Visão Geral') && (
-            <AdminDashboard setActiveTab={setActiveTab} />
+            <AdminDashboard setActiveTab={setActiveTab} userPermissions={currentUser?.permissions || []} isAdmin={currentUser?.role === 'admin'} />
           )}
 
           {activeTab === 'posts' && hasPermission('Posts/Artigos') && (

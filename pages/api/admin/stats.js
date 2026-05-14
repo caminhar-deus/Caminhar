@@ -58,7 +58,7 @@ async function handleGet(req, res) {
 
 export default createAdminHandler({
   name: 'Stats',
-  requireAdmin: true,
+  permission: 'Visão Geral',
   allowedMethods: ['GET'],
   handlers: { GET: handleGet },
   rateLimit: { max: 30, window: 60000 },
