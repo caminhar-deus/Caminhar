@@ -329,7 +329,7 @@ export default function AdminCrudBase({
         }
         .skeleton-box {
           height: 20px;
-          background-color: #e2e8f0;
+          background-color: var(--color-border-light);
           border-radius: 4px;
           animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
@@ -339,7 +339,7 @@ export default function AdminCrudBase({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
           <h2 style={{ margin: 0 }}>{title}</h2>
           {showItemCount && (
-            <span style={{ fontSize: '0.9rem', color: '#6b7280', fontWeight: '500' }}>
+            <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', fontWeight: '500' }}>
               Total: {localItems.length} {localItems.length === 1 ? itemNameSingular : itemNamePlural}
             </span>
           )}
@@ -347,7 +347,7 @@ export default function AdminCrudBase({
         <div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
           {searchable && (
             <div style={{ position: 'relative' }}>
-              <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#a0aec0', display: 'flex' }}>
+              <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-tertiary)', display: 'flex' }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
                 </svg>
@@ -360,7 +360,7 @@ export default function AdminCrudBase({
                 style={{ 
                   padding: '8px 12px 8px 34px', 
                   borderRadius: '6px', 
-                  border: '1px solid #e2e8f0', 
+                  border: '1px solid var(--color-border-light)',
                   fontSize: '0.9rem',
                   outline: 'none',
                   minWidth: '220px'
@@ -447,9 +447,9 @@ export default function AdminCrudBase({
       {/* Tabela */}
       <div className={styles.tableContainer} style={{ flex: 1, overflowY: 'auto', maxHeight: '600px' }}>
         <table className={styles.table}>
-          <thead style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: '#f8f9fa', boxShadow: 'inset 0 -2px 0 #e2e8f0' }}>
+          <thead style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'var(--color-bg-secondary)', boxShadow: 'inset 0 -2px 0 var(--color-border-light)' }}>
             <tr>
-              {reorderable && !searchTerm && <th style={{ width: '40px', textAlign: 'center', color: '#6c757d' }}>☰</th>}
+              {reorderable && !searchTerm && <th style={{ width: '40px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>☰</th>}
               {columns.map(col => (
                 <th key={col.key} style={col.width ? { width: col.width } : {}}>
                   {col.header}
@@ -511,13 +511,13 @@ export default function AdminCrudBase({
                   }}
                   style={{ 
                     cursor: reorderable && !searchTerm ? 'move' : 'default',
-                    backgroundColor: dragOverIndex === index ? '#f8f9fa' : '',
-                    borderTop: dragOverIndex === index ? '2px solid #007bff' : '',
+                    backgroundColor: dragOverIndex === index ? 'var(--color-bg-secondary)' : '',
+                    borderTop: dragOverIndex === index ? '2px solid var(--color-primary-500)' : '',
                     transition: 'background-color 0.2s ease'
                   }}
                 >
                   {reorderable && !searchTerm && (
-                    <td style={{ width: '40px', color: '#adb5bd', textAlign: 'center', cursor: 'grab' }}>
+                    <td style={{ width: '40px', color: 'var(--color-text-tertiary)', textAlign: 'center', cursor: 'grab' }}>
                       ⣿
                     </td>
                   )}

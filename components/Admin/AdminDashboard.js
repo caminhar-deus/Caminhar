@@ -31,8 +31,8 @@ export default function AdminDashboard({ setActiveTab }) {
         <div className={styles.sectionHeader}>
           <h2>Visão Geral do Sistema</h2>
         </div>
-        {loading && <div style={{ textAlign: 'center', padding: '50px', color: '#666' }}>⏳ Carregando painel de estatísticas...</div>}
-        {error && <div style={{ textAlign: 'center', padding: '50px', color: 'red' }}>❌ Erro: {error}</div>}
+        {loading && <div style={{ textAlign: 'center', padding: '50px', color: 'var(--color-text-secondary)' }}>⏳ Carregando painel de estatísticas...</div>}
+        {error && <div style={{ textAlign: 'center', padding: '50px', color: 'var(--color-error-500)' }}>❌ Erro: {error}</div>}
       </div>
     );
   }
@@ -45,7 +45,7 @@ export default function AdminDashboard({ setActiveTab }) {
       label: 'Artigos', 
       count: stats.posts, 
       icon: '📝', 
-      color: '#007bff', 
+      color: 'var(--color-primary-500)', 
       tabId: 'posts',
       details: `✅ ${stats.postsPublished || 0} Pub | 📝 ${stats.postsDraft || 0} Rasc`
     },
@@ -63,7 +63,7 @@ export default function AdminDashboard({ setActiveTab }) {
       label: 'Vídeos', 
       count: stats.videos, 
       icon: '🎬', 
-      color: '#ff0000', 
+      color: 'var(--color-error-500)', 
       tabId: 'videos',
       details: `✅ ${stats.videosPublished || 0} Pub | 📝 ${stats.videosDraft || 0} Rasc`
     },
@@ -81,7 +81,7 @@ export default function AdminDashboard({ setActiveTab }) {
       label: 'Dicas', 
       count: stats.dicas || 0, 
       icon: '💡', 
-      color: '#8b5cf6', 
+      color: 'var(--color-primary-500)', 
       tabId: 'dicas',
       details: `✅ ${stats.dicasPublished || 0} Pub | 📝 ${stats.dicasDraft || 0} Rasc`
     },
@@ -90,7 +90,7 @@ export default function AdminDashboard({ setActiveTab }) {
       label: 'Usuários', 
       count: stats.users, 
       icon: '👥', 
-      color: '#6f42c1', 
+      color: 'var(--color-primary-700)', 
       tabId: 'users',
       details: `Ativos: Hoje (${stats.usersToday || 0}) • Mês (${stats.usersMonth || 0}) • Ano (${stats.usersYear || 0})`
     }
@@ -115,7 +115,7 @@ export default function AdminDashboard({ setActiveTab }) {
             <div className={styles.statInfo}>
               <span className={styles.statNumber}>{item.count}</span>
               <span className={styles.statLabel}>{item.label}</span>
-              {item.details && <span style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px', fontWeight: '500' }}>{item.details}</span>}
+              {item.details && <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: '4px', fontWeight: '500' }}>{item.details}</span>}
             </div>
           </div>
         ))}
@@ -123,23 +123,23 @@ export default function AdminDashboard({ setActiveTab }) {
 
       {/* Gráfico de Barras Horizontal Baseado em CSS */}
       <div className={styles.chartSection}>
-        <h3 style={{ margin: '0 0 25px 0', color: '#2c3e50', fontSize: '1.2rem' }}>Distribuição de Conteúdo</h3>
+        <h3 style={{ margin: '0 0 25px 0', color: 'var(--color-text-primary)', fontSize: '1.2rem' }}>Distribuição de Conteúdo</h3>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {statItems.map(item => {
             const widthPercent = (item.count / maxVal) * 100;
             return (
               <div key={`chart-${item.key}`} style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                <div style={{ width: '80px', fontWeight: '600', color: '#495057', fontSize: '0.9rem', textAlign: 'right' }}>
+                <div style={{ width: '80px', fontWeight: '600', color: 'var(--color-text-secondary)', fontSize: '0.9rem', textAlign: 'right' }}>
                   {item.label}
                 </div>
-                <div style={{ flex: 1, backgroundColor: '#e9ecef', height: '24px', borderRadius: '12px', overflow: 'hidden' }}>
+                <div style={{ flex: 1, backgroundColor: 'var(--color-border-light)', height: '24px', borderRadius: '12px', overflow: 'hidden' }}>
                   <div 
                     style={{ 
-                      width: `${Math.max(widthPercent, 2)}%`, // Mínimo de 2% para a barra sempre aparecer
-                      maxWidth: '100%', // Limite máximo de segurança
-                      minWidth: 'fit-content', // Garante que números grandes não fiquem espremidos
-                      boxSizing: 'border-box', // Impede que o padding some na largura
+                      width: `${Math.max(widthPercent, 2)}%`,
+                      maxWidth: '100%',
+                      minWidth: 'fit-content',
+                      boxSizing: 'border-box',
                       backgroundColor: item.color, 
                       height: '100%', 
                       borderRadius: '12px',
@@ -147,7 +147,7 @@ export default function AdminDashboard({ setActiveTab }) {
                       display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '0 10px'
                     }}
                   >
-                    {item.count > 0 && <span style={{ color: '#fff', fontSize: '0.8rem', fontWeight: 'bold' }}>{item.count}</span>}
+                    {item.count > 0 && <span style={{ color: 'var(--color-text-inverse)', fontSize: '0.8rem', fontWeight: 'bold' }}>{item.count}</span>}
                   </div>
                 </div>
               </div>

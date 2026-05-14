@@ -1,7 +1,7 @@
 /* Blog Pages Styles (index.js and [slug].js) */
 .container {
   min-height: 100vh;
-  background-color: #f8f9fa;
+  background-color: var(--color-bg-secondary);
 }
 
 .header {
@@ -11,12 +11,12 @@
 
 .title {
   font-size: 2.5rem;
-  color: #2c3e50;
+  color: var(--color-text-primary);
   margin-bottom: 0.5rem;
 }
 
 .subtitle {
-  color: #666;
+  color: var(--color-text-secondary);
   font-size: 1.1rem;
 }
 

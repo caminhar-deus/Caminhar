@@ -392,13 +392,13 @@ export default function Admin() {
             <h1 style={{ margin: 0 }}>Painel Administrativo</h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
               {currentUser && (
-                <span style={{ fontSize: '0.95rem', color: '#4b5563', fontWeight: '500' }}>
+                <span style={{ fontSize: '0.95rem', color: 'var(--color-text-secondary)', fontWeight: '500' }}>
                   Olá, <strong>{currentUser.username}</strong>
                 </span>
               )}
               <button 
                 onClick={handleLogout}
-                style={{ backgroundColor: '#ef4444', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.2s' }}
+                style={{ backgroundColor: 'var(--color-error-500)', color: 'var(--color-text-inverse)', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.2s' }}
               >
                 Sair / Logout
               </button>

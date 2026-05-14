@@ -7,10 +7,10 @@ function MyApp({ Component, pageProps }) {
   const router = useRouter();
 
   useEffect(() => {
-    // Performance monitoring
+    // Performance monitoring - apenas quando LOG_ROUTE_CHANGES está ativo
     const handleRouteChange = (url) => {
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`Route changed to: ${url}`);
+      if (process.env.NEXT_PUBLIC_LOG_ROUTE_CHANGES === 'true') {
+        console.log(`[Router] Route changed to: ${url}`);
       }
     };
 
@@ -33,22 +33,22 @@ function MyApp({ Component, pageProps }) {
           },
           success: {
             style: {
-              background: '#d4edda',
-              color: '#155724',
+              background: 'var(--color-success-100, #d1fae5)',
+              color: 'var(--color-success-800, #065f46)',
             },
             iconTheme: {
-              primary: '#155724',
-              secondary: '#d4edda',
+              primary: 'var(--color-success-800, #065f46)',
+              secondary: 'var(--color-success-100, #d1fae5)',
             },
           },
           error: {
             style: {
-              background: '#f8d7da',
-              color: '#721c24',
+              background: 'var(--color-error-100, #fee2e2)',
+              color: 'var(--color-error-800, #991b1b)',
             },
             iconTheme: {
-              primary: '#721c24',
-              secondary: '#f8d7da',
+              primary: 'var(--color-error-800, #991b1b)',
+              secondary: 'var(--color-error-100, #fee2e2)',
             },
           },
         }}

@@ -42,7 +42,7 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: var(--color-bg-primary, rgba(255, 255, 255, 0.8));
   border: none;
   border-radius: var(--border-radius-full);
   width: 30px;
@@ -151,7 +151,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.85);
+  background-color: var(--color-sp-overlay, rgba(0, 0, 0, 0.85));
   z-index: 9999;
   display: flex;
   align-items: center;
@@ -171,7 +171,7 @@
   right: 30px;
   background: transparent;
   border: none;
-  color: #fff;
+  color: var(--color-text-inverse);
   font-size: 40px;
   cursor: pointer;
   z-index: 10000;
@@ -194,12 +194,12 @@
 .linkButton:focus-visible,
 .lightboxCloseButton:focus-visible,
 .lightboxNavButton:focus-visible {
-  box-shadow: 0 0 0 3px #2c3e50 !important;
-  outline: 2px solid #2c3e50 !important;
+  box-shadow: 0 0 0 3px var(--color-primary-700) !important;
+  outline: 2px solid var(--color-primary-700) !important;
   outline-offset: 2px !important;
 }
 
 .navButton:hover {
-  background-color: rgba(255, 255, 255, 0.95) !important;
+  background-color: var(--color-bg-primary, rgba(255, 255, 255, 0.95)) !important;
   transform: translateY(-50%) scale(1.1) !important;
 }

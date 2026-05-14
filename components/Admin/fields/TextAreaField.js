@@ -35,7 +35,7 @@ export default function TextAreaField({
     <div className={`${styles.formGroup} ${className}`}>
       <label htmlFor={name}>
         {label}
-        {required && <span style={{ color: '#dc3545', marginLeft: '4px' }}>*</span>}
+        {required && <span style={{ color: 'var(--color-error-500)', marginLeft: '4px' }}>*</span>}
       </label>
       <textarea
         id={name}
@@ -56,7 +56,7 @@ export default function TextAreaField({
         </small>
       )}
       {error && (
-        <small style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+        <small style={{ color: 'var(--color-error-500)', fontSize: '12px', marginTop: '4px', display: 'block' }}>
           {error}
         </small>
       )}

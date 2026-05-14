@@ -674,35 +674,57 @@
 
 ## 6. Segurança
 
-### 6.1 Exposição de Informações em Log de Desenvolvimento
+### 6.1 Exposição de Informações em Log de Desenvolvimento — **RESOLVIDO**
 
 **Arquivo:** `/pages/_app.js`
 
-**Problema:** O log `Route changed to: ${url}` em modo desenvolvimento fica ativo. Embora seja apenas em dev, a condição `process.env.NODE_ENV === 'development'` pode ser contornada.
+**Problema anterior:** O log `Route changed to: ${url}` em modo desenvolvimento ficava ativo. Embora fosse apenas em dev, a condição `process.env.NODE_ENV === 'development'` podia ser contornada.
 
-**Impacto:** Baixo risco, mas boa prática remover logs sensíveis.
+**Impacto anterior:** Baixo risco, mas boa prática remover logs sensíveis.
 
-**Sugestão:** Remover logs de desenvolvimento ou usar um logger configurável.
+**O que foi feito (13/05/2026):**
+- Substituída a condição `process.env.NODE_ENV === 'development'` pela variável de ambiente configurável `NEXT_PUBLIC_LOG_ROUTE_CHANGES`.
+- O log agora é ativado apenas quando `NEXT_PUBLIC_LOG_ROUTE_CHANGES=true` é explicitamente definido no ambiente.
+- Prefixo do log alterado para `[Router]` para melhor identificação nos logs.
+
+**Como ativar:** Definir `NEXT_PUBLIC_LOG_ROUTE_CHANGES=true` no arquivo `.env.local` ou nas variáveis de ambiente do servidor.
+
+**Benefícios:**
+- ✅ Log de rotas desativado por padrão — sem exposição desnecessária de URLs
+- ✅ Ativável sob demanda via variável de ambiente — sem necessidade de alterar código
+- ✅ Padrão configurável — segue boas práticas de Twelve-Factor App
 
 ---
 
-### 6.2 Cookie de Logout sem Configuração Segura
+### 6.2 Cookie de Logout sem Configuração Segura — **RESOLVIDO**
 
 **Arquivo:** `/pages/api/auth/logout.js`
 
-**Problema:** O cookie é limpo com `Expires=Thu, 01 Jan 1970` mas sem as mesmas opções seguras usadas na criação (`httpOnly`, `secure`, `sameSite`, `path`).
+**Problema anterior:** O cookie era limpo com `Expires=Thu, 01 Jan 1970` mas sem as mesmas opções seguras usadas na criação (`httpOnly`, `secure`, `sameSite`, `path`).
 
-**Impacto:** O cookie pode não ser limpo corretamente em todos os cenários.
+**Impacto anterior:** O cookie podia não ser limpo corretamente em todos os cenários.
 
-**Sugestão:** Usar as mesmas opções de cookie da função `setAuthCookie` ao limpar.
+**O que foi feito (13/05/2026):**
+- Substituída a string manual de `Set-Cookie` pela função `serialize()` do pacote `cookie`, mesma utilizada pela função `setAuthCookie()` em `lib/auth.js`.
+- Adicionada flag `secure` condicional (`process.env.NODE_ENV === 'production'`) — igual à criação do cookie.
+- Mantidas as flags `httpOnly: true`, `sameSite: 'strict'` e `path: '/'` — consistentes com a criação.
+- Usado `maxAge: 0` para expirar o cookie imediatamente, em vez da string `Expires` manual.
+
+**Benefícios:**
+- ✅ Cookie de logout agora usa as mesmas opções seguras da criação — `Secure` incluso em produção
+- ✅ `serialize()` do pacote `cookie` — mesma função usada por `setAuthCookie()`, garantindo compatibilidade
+- ✅ Código mais legível e padronizado com a base existente
+- ✅ Risco de cookie não ser limpo corretamente eliminado
 
 ---
 
-### 6.3 Token JWT Retornado no Body vs Cookie
+### 6.3 Token JWT Retornado no Body vs Cookie — **RESOLVIDO**
 
-**Comparação:**
-- `api/auth/login.js`: retorna cookie httpOnly (seguro)
-- `api/v1/auth/login.js`: retorna token no corpo da resposta (menos seguro) — **REMOVIDO**
+**Problema anterior:** Existiam dois endpoints de login com comportamentos de segurança diferentes:
+- `api/auth/login.js`: retornava cookie httpOnly (seguro)
+- `api/v1/auth/login.js`: retornava token no corpo da resposta (menos seguro)
+
+**Impacto anterior:** Risco de exposição do token JWT no corpo da resposta, sem as proteções do cookie httpOnly.
 
 **Resolução:** `api/v1/auth/login.js` removido (unificado com `api/auth/login.js`). O endpoint atual `api/auth/login?response=body` mantém o formato para compatibilidade com clientes externos, mas o fluxo web padrão usa cookie httpOnly.
 
@@ -735,4 +757,7 @@
 | 🟡 Médio | ~~4.1~~ ✅ | `upload-image.js` | Sanitização de upload insuficiente — **RESOLVIDO** (UUID, magic bytes, limite de dimensões) |
 | 🟡 Médio | ~~4.3 (settings)~~ ✅ | `api/settings.js` | Zod POST — **RESOLVIDO** (POST agora tem schema Zod) |
 | 🟡 Médio | ~~4.5~~ ✅ | `admin/fetch-*.js` | Timeout ausente em APIs externas — **RESOLVIDO** (AbortController com 8s) |
+| 🟡 Médio | ~~6.2~~ ✅ | `api/auth/logout.js` | Cookie de logout sem configuração segura — **RESOLVIDO** (Secure condicional via `serialize()`, padronizado com `setAuthCookie`) |
+| 🟡 Médio | ~~6.3~~ ✅ | `api/v1/auth/login.js` (removido), `api/auth/login.js` | Token JWT retornado no body vs cookie — **RESOLVIDO** (v1 removido, unificado com fluxo cookie httpOnly) |
+| 🟢 Baixo | ~~6.1~~ ✅ | `_app.js` | Log de rota em desenvolvimento — **RESOLVIDO** (substituído por variável de ambiente `NEXT_PUBLIC_LOG_ROUTE_CHANGES`) |
 | 🟢 Baixo | 5.5 | `globals.css` | Classes utilitárias sem prefixo — **RESOLVIDO** (classes removidas por serem código morto) |

@@ -25,7 +25,7 @@
 - **Propósito:** Componente raiz da aplicação Next.js. Envolve todas as páginas.
 - **Funcionalidades:**
   - Importa estilos globais (`globals.css`)
-  - Monitora navegação via `router.events` (apenas em desenvolvimento)
+  - Monitora navegação via `router.events` (apenas quando `NEXT_PUBLIC_LOG_ROUTE_CHANGES=true` — variável de ambiente configurável, alterado 13/05/2026)
   - Renderiza o componente `Toaster` (react-hot-toast) no canto superior direito com configurações de estilo para sucesso, erro e loading
   - Configuração de 5 segundos de duração para toasts
 
@@ -379,7 +379,8 @@
 - **Propósito:** Endpoint de logout.
 - **Funcionalidades:**
   - Aceita qualquer método HTTP
-  - Limpa o cookie `token` (Expires no passado)
+  - Limpa o cookie `token` com `serialize()` do pacote `cookie` — mesmas opções seguras da criação (httpOnly, secure condicional, sameSite strict, path '/', maxAge 0)
+  - Flag `secure` aplicada apenas em produção (`process.env.NODE_ENV === 'production'`)
   - Retorna mensagem de sucesso
 
 ---

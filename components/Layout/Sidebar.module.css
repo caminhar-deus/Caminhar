@@ -19,8 +19,8 @@
   bottom: 0;
   display: flex;
   flex-direction: column;
-  background-color: white;
-  border-right: 1px solid #e5e5e5;
+  background-color: var(--color-bg-primary);
+  border-right: 1px solid var(--color-border-light);
   z-index: 1100;
   transition: width 300ms ease, transform 300ms ease;
   overflow: hidden;
@@ -28,12 +28,12 @@
 
 .left .sidebar {
   left: 0;
-  border-right: 1px solid #e5e5e5;
+  border-right: 1px solid var(--color-border-light);
 }
 
 .right .sidebar {
   right: 0;
-  border-left: 1px solid #e5e5e5;
+  border-left: 1px solid var(--color-border-light);
   border-right: none;
 }
 
@@ -87,11 +87,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: white;
-  border: 1px solid #e5e5e5;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-light);
   border-radius: 50%;
   cursor: pointer;
-  color: #737373;
+  color: var(--color-neutral-500);
   transition: all 150ms ease;
   z-index: 10;
 }
@@ -105,9 +105,9 @@
 }
 
 .collapseButton:hover {
-  background-color: #f5f5f5;
-  color: #171717;
-  border-color: #d4d4d4;
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-default);
 }
 
 .sidebarCollapsed .collapseButton {
@@ -182,20 +182,20 @@
   gap: 0.75rem;
   padding: 0.625rem 0.75rem;
   border-radius: 0.5rem;
-  color: #525252;
+  color: var(--color-text-secondary);
   text-decoration: none;
   transition: all 150ms ease;
   cursor: pointer;
 }
 
 .navItem:hover {
-  background-color: #f5f5f5;
-  color: #171717;
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
 }
 
 .navItemActive {
   background-color: rgba(37, 99, 235, 0.1);
-  color: #2563eb;
+  color: var(--color-primary-500);
 }
 
 .navItemActive:hover {
@@ -244,7 +244,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #a3a3a3;
+  color: var(--color-text-tertiary);
   margin: 0 0 0.5rem 0;
   padding: 0 0.75rem;
 }
@@ -256,12 +256,12 @@
 /* Header & Footer */
 .header {
   padding: 1rem;
-  border-bottom: 1px solid #e5e5e5;
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .footer {
   padding: 1rem;
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid var(--color-border-light);
   margin-top: auto;
 }
 
@@ -275,11 +275,11 @@
   height: 40px;
   align-items: center;
   justify-content: center;
-  background: white;
-  border: 1px solid #e5e5e5;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-light);
   border-radius: 0.5rem;
   cursor: pointer;
-  color: #525252;
+  color: var(--color-text-secondary);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 

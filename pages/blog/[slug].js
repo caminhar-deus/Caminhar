@@ -62,15 +62,15 @@ export default function BlogPost({ post }) {
       </Head>
 
       <div style={{ marginBottom: '30px' }}>
-        <Link href="/" style={{ color: '#666', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px' }}>
+        <Link href="/" style={{ color: 'var(--color-text-secondary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px' }}>
           ← Voltar
         </Link>
       </div>
 
       <article style={{ maxWidth: '800px', margin: '0 auto' }}>
         <header style={{ marginBottom: '30px', textAlign: 'center' }}>
-          <h1 style={{ fontSize: '2.5rem', color: '#2c3e50', marginBottom: '15px' }}>{post.title}</h1>
-          <div style={{ color: '#999', fontSize: '0.9rem' }}>
+          <h1 style={{ fontSize: '2.5rem', color: 'var(--color-text-primary)', marginBottom: '15px' }}>{post.title}</h1>
+          <div style={{ color: 'var(--color-text-tertiary)', fontSize: '0.9rem' }}>
             {new Date(post.created_at).toLocaleDateString('pt-BR')}
           </div>
         </header>
@@ -78,7 +78,7 @@ export default function BlogPost({ post }) {
         {post.image_url && (
           <>
             <div
-              style={{ marginBottom: '40px', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#f0f2f5', cursor: 'zoom-in' }}
+              style={{ marginBottom: '40px', borderRadius: '12px', overflow: 'hidden', backgroundColor: 'var(--color-bg-secondary)', cursor: 'zoom-in' }}
               onClick={() => setIsImageZoomed(true)}
             >
               <img
@@ -115,12 +115,12 @@ export default function BlogPost({ post }) {
           </>
         )}
 
-        <div style={{ fontSize: '1.1rem', lineHeight: '1.8', color: '#333', whiteSpace: 'pre-wrap' }}>
+        <div style={{ fontSize: '1.1rem', lineHeight: '1.8', color: 'var(--color-text-primary)', whiteSpace: 'pre-wrap' }}>
           {post.content}
         </div>
 
-        <div style={{ marginTop: '50px', borderTop: '1px solid #eee', paddingTop: '30px' }}>
-          <h3 style={{ fontSize: '1.2rem', marginBottom: '20px', color: '#555' }}>Compartilhe esta reflexão:</h3>
+        <div style={{ marginTop: '50px', borderTop: '1px solid var(--color-border-light)', paddingTop: '30px' }}>
+          <h3 style={{ fontSize: '1.2rem', marginBottom: '20px', color: 'var(--color-text-secondary)' }}>Compartilhe esta reflexão:</h3>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             <a
               href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`}

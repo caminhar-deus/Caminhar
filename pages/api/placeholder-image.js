@@ -55,11 +55,11 @@ export default async function handler(req, res) {
       // For now, we'll create a simple SVG placeholder
       const svg = `
         <svg width="1100" height="320" xmlns="http://www.w3.org/2000/svg">
-          <rect width="1100" height="320" fill="#e9ecef"/>
-          <text x="550" y="160" font-family="Arial, sans-serif" font-size="24" text-anchor="middle" fill="#6c757d">
+          <rect width="1100" height="320" fill="#e5e5e5"/>
+          <text x="550" y="160" font-family="Arial, sans-serif" font-size="24" text-anchor="middle" fill="#525252">
             Imagem Principal (1100x320)
           </text>
-          <text x="550" y="190" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#6c757d">
+          <text x="550" y="190" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#525252">
             Faça upload de uma imagem no painel administrativo
           </text>
         </svg>

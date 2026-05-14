@@ -39,7 +39,7 @@ export default function BlogIndex({ posts, currentPage, totalPages, fetchError }
       </Head>
 
       <div style={{ marginBottom: '30px', maxWidth: '1200px', margin: '0 auto 30px auto' }}>
-        <Link href="/" style={{ color: '#666', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px' }}>
+        <Link href="/" style={{ color: 'var(--color-text-secondary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px' }}>
           ← Voltar para a Home
         </Link>
       </div>
@@ -51,7 +51,7 @@ export default function BlogIndex({ posts, currentPage, totalPages, fetchError }
 
       <main>
         {fetchError ? (
-          <p style={{ textAlign: 'center', color: '#721c24', background: '#f8d7da', padding: '20px', borderRadius: '8px', margin: '20px 0' }}>
+          <p style={{ textAlign: 'center', color: 'var(--color-error-800, #991b1b)', background: 'var(--color-error-100, #fee2e2)', padding: '20px', borderRadius: '8px', margin: '20px 0' }}>
             Desculpe, não foi possível carregar os posts no momento. Tente novamente mais tarde.
           </p>
         ) : posts.length === 0 ? (
@@ -69,25 +69,25 @@ export default function BlogIndex({ posts, currentPage, totalPages, fetchError }
             {currentPage > 1 ? (
               <Link href={`/blog?page=${currentPage - 1}`} style={{
                 padding: '10px 20px',
-                backgroundColor: '#fff',
-                border: '1px solid #ddd',
+                backgroundColor: 'var(--color-bg-primary)',
+                border: '1px solid var(--color-border-light)',
                 borderRadius: '6px',
-                color: '#333',
+                color: 'var(--color-text-primary)',
                 textDecoration: 'none'
               }}>
                 &larr; Anterior
               </Link>
             ) : null}
             
-            <span style={{ color: '#666' }}>Página {currentPage} de {totalPages}</span>
+            <span style={{ color: 'var(--color-text-secondary)' }}>Página {currentPage} de {totalPages}</span>
 
             {currentPage < totalPages ? (
               <Link href={`/blog?page=${currentPage + 1}`} style={{
                 padding: '10px 20px',
-                backgroundColor: '#fff',
-                border: '1px solid #ddd',
+                backgroundColor: 'var(--color-bg-primary)',
+                border: '1px solid var(--color-border-light)',
                 borderRadius: '6px',
-                color: '#333',
+                color: 'var(--color-text-primary)',
                 textDecoration: 'none'
               }}>
                 Próxima &rarr;

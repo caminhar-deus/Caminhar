@@ -37,8 +37,8 @@ export function extractCriticalCSS() {
     body{
       min-height:100vh;
       line-height:1.6;
-      color:#333;
-      background:#fff;
+      color:var(--color-text-primary, #333);
+      background:var(--color-bg-primary, #fff);
     }
     
     /* Container principal */
@@ -61,7 +61,7 @@ export function extractCriticalCSS() {
       top:-40px;
       left:0;
       background:#000;
-      color:#fff;
+      color:var(--color-text-inverse, #fff);
       padding:8px;
       text-decoration:none;
       z-index:100;
@@ -73,7 +73,7 @@ export function extractCriticalCSS() {
     
     /* Loading states */
     .skeleton{
-      background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);
+      background:linear-gradient(90deg,var(--color-bg-secondary, #f0f0f0) 25%,var(--color-bg-tertiary, #e0e0e0) 50%,var(--color-bg-secondary, #f0f0f0) 75%);
       background-size:200% 100%;
       animation:loading 1.5s infinite;
     }
