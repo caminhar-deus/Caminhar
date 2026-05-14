@@ -1,4 +1,5 @@
 import { query } from '../../../lib/db.js';
+import { invalidateCache } from '../../../lib/cache.js';
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
 import { z } from 'zod';
 
@@ -39,7 +40,27 @@ async function handlePost(req, res) {
 }
 
 async function handlePut(req, res) {
-  const validation = dicaUpdateSchema.safeParse(req.body);
+  // Suporta atualização parcial: se faltarem campos obrigatórios,
+  // busca os valores atuais do banco para fazer merge.
+  const id = req.body.id;
+  if (id === undefined) {
+    return res.status(400).json({ message: 'ID é obrigatório' });
+  }
+
+  const existing = await query('SELECT * FROM dicas WHERE id = $1', [id]);
+  if (existing.rows.length === 0) {
+    return res.status(404).json({ message: 'Dica não encontrada' });
+  }
+
+  const current = existing.rows[0];
+  const merged = {
+    id,
+    name: req.body.name ?? current.name,
+    content: req.body.content ?? current.content,
+    published: req.body.published !== undefined ? req.body.published : current.published,
+  };
+
+  const validation = dicaUpdateSchema.safeParse(merged);
   if (!validation.success) {
     return res.status(400).json({
       message: 'Dados inválidos para atualização de dica',
@@ -47,11 +68,13 @@ async function handlePut(req, res) {
     });
   }
 
-  const { id, name, content, published } = validation.data;
+  const { name, content, published } = validation.data;
   const result = await query(
     'UPDATE dicas SET name = $1, content = $2, published = $3 WHERE id = $4 RETURNING *',
-    [name, content, published !== undefined ? published : true, id],
+    [name, content, published, id],
   );
+  // Invalida cache público para refletir mudanças imediatamente
+  await invalidateCache('dicas:public:*');
   req.adminUtils.logActivity('ATUALIZAR DICA', id, `Atualizou a dica: ${name}`);
   return res.status(200).json(result.rows[0]);
 }

@@ -523,10 +523,11 @@ export default function Admin() {
 
               <div className={styles.formGroup}>
                 <label>Subtítulo</label>
-                <textarea
+                <input
+                  type="text"
                   value={subtitle}
                   onChange={(e) => setSubtitle(e.target.value)}
-                  className={styles.textarea}
+                  className={styles.input}
                 />
               </div>
 
