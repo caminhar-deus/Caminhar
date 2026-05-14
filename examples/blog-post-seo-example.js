@@ -3,6 +3,13 @@
  * 
  * Este arquivo demonstra como usar todos os componentes do SEO Toolkit
  * em uma página de post do blog.
+ * 
+ * Nota: Os dados do post normalmente viriam de getStaticProps ou getServerSideProps.
+ * Exemplo:
+ *   export async function getStaticProps({ params }) {
+ *     const post = await getPostBySlug(params.slug);
+ *     return { props: { post }, revalidate: 60 };
+ *   }
  */
 
 import SEOHead from '../components/SEO/Head';
@@ -16,9 +23,9 @@ import { LazyIframe } from '../components/Performance';
 import { siteConfig, getCanonicalUrl, getImageUrl } from '../lib/seo/config';
 import usePerformanceMetrics from '../hooks/usePerformanceMetrics';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
-export default function BlogPostExample() {
+export default function BlogPostExample({ post: initialPost }) {
   const router = useRouter();
   const { slug } = router.query;
   
@@ -38,8 +45,8 @@ export default function BlogPostExample() {
     debug: process.env.NODE_ENV === 'development',
   });
 
-  // Dados do post (normalmente viriam da API)
-  const [post, setPost] = useState({
+  // Fallback para dados mockados em ambiente de desenvolvimento
+  const post = initialPost || {
     title: 'Encontrando Paz nas Tempestades da Vida',
     slug: 'encontrando-paz-nas-tempestades',
     excerpt: 'Como manter a fé e encontrar paz interior mesmo nos momentos mais difíceis da nossa jornada cristã.',
@@ -52,7 +59,11 @@ export default function BlogPostExample() {
     tags: ['fé', 'paz', 'oração', 'adversidade', 'confiança em Deus'],
     category: 'Reflexões',
     wordCount: 1250,
-  });
+  };
+
+  // Estado de erro para componentes
+  const [imageError, setImageError] = useState(false);
+  const [iframeError, setIframeError] = useState(false);
 
   // URLs
   const canonicalUrl = getCanonicalUrl(`/blog/${post.slug}`);
@@ -63,6 +74,19 @@ export default function BlogPostExample() {
     { name: 'Blog', url: '/blog' },
     { name: post.title, url: `/blog/${post.slug}` },
   ];
+
+  // Fallback visual para dados ausentes
+  if (!post || !post.title) {
+    return (
+      <main id="main-content" className="container">
+        <div className="error-state" role="alert">
+          <h1>Conteúdo não disponível</h1>
+          <p>O post solicitado não pôde ser carregado. Tente novamente mais tarde.</p>
+          <a href="/blog" className="btn">Voltar para o Blog</a>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <>
@@ -102,28 +126,6 @@ export default function BlogPostExample() {
 
       {/* Conteúdo da página */}
       <main id="main-content" className="container">
-        {/* Breadcrumb visual */}
-        <nav aria-label="Breadcrumb" className="breadcrumb">
-          <ol itemScope itemType="https://schema.org/BreadcrumbList">
-            <li itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
-              <a itemProp="item" href="/">
-                <span itemProp="name">Início</span>
-              </a>
-              <meta itemProp="position" content="1" />
-            </li>
-            <li itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
-              <a itemProp="item" href="/blog">
-                <span itemProp="name">Blog</span>
-              </a>
-              <meta itemProp="position" content="2" />
-            </li>
-            <li itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
-              <span itemProp="name" aria-current="page">{post.title}</span>
-              <meta itemProp="position" content="3" />
-            </li>
-          </ol>
-        </nav>
-
         <article itemScope itemType="https://schema.org/BlogPosting">
           <header>
             <h1 itemProp="headline">{post.title}</h1>
@@ -142,17 +144,30 @@ export default function BlogPostExample() {
             </div>
           </header>
 
-          {/* Imagem otimizada - Critical (LCP) */}
-          <ImageOptimized
-            src={post.image_url}
-            alt={post.title}
-            width={1200}
-            height={630}
-            critical={true}
-            priority={true}
-            placeholder="blur"
-            blurDataUrl="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ..."
-          />
+          {/* 
+            Imagem otimizada - Critical (LCP)
+            ATENÇÃO: Em produção, gere o blurDataUrl real usando ferramentas como:
+            - plaiceholder (https://github.com/joe-bell/plaiceholder)
+            - next/blur (via sharp ou @img/sharp)
+            Nunca copie o placeholder de exemplo sem gerar o base64 correto para a imagem.
+          */}
+          {imageError ? (
+            <div className="image-fallback" style={{ width: 1200, height: 630, background: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span>Imagem não disponível</span>
+            </div>
+          ) : (
+            <ImageOptimized
+              src={post.image_url}
+              alt={post.title}
+              width={1200}
+              height={630}
+              critical={true}
+              priority={true}
+              placeholder="blur"
+              blurDataUrl="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ..."
+              onError={() => setImageError(true)}
+            />
+          )}
 
           <div itemProp="articleBody" className="content">
             {post.content}
@@ -174,13 +189,23 @@ export default function BlogPostExample() {
         {/* Vídeo relacionado com lazy loading */}
         <section className="related-video">
           <h2>Vídeo Relacionado</h2>
-          <LazyIframe
-            src="https://www.youtube.com/embed/VIDEO_ID"
-            title="Mensagem de encorajamento"
-            thumbnail="/uploads/video-thumb.jpg"
-            provider="youtube"
-            placeholderText="▶ Assistir vídeo"
-          />
+          {iframeError ? (
+            <div className="fallback-content" role="alert">
+              <p>O vídeo não pôde ser carregado. Você pode assisti-lo diretamente no YouTube.</p>
+              <a href="https://www.youtube.com/embed/VIDEO_ID" target="_blank" rel="noopener noreferrer">
+                Abrir no YouTube
+              </a>
+            </div>
+          ) : (
+            <LazyIframe
+              src="https://www.youtube.com/embed/VIDEO_ID"
+              title="Mensagem de encorajamento"
+              thumbnail="/uploads/video-thumb.jpg"
+              provider="youtube"
+              placeholderText="▶ Assistir vídeo"
+              onError={() => setIframeError(true)}
+            />
+          )}
         </section>
 
         {/* Botões de compartilhamento otimizados */}
@@ -191,7 +216,7 @@ export default function BlogPostExample() {
             rel="noopener noreferrer"
             aria-label="Compartilhar no Facebook"
           >
-            Facebook
+            Compartilhar no Facebook
           </a>
           <a
             href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(canonicalUrl)}&text=${encodeURIComponent(post.title)}`}
@@ -199,7 +224,7 @@ export default function BlogPostExample() {
             rel="noopener noreferrer"
             aria-label="Compartilhar no Twitter"
           >
-            Twitter
+            Compartilhar no Twitter
           </a>
           <a
             href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`${post.title} - ${canonicalUrl}`)}`}
@@ -207,36 +232,10 @@ export default function BlogPostExample() {
             rel="noopener noreferrer"
             aria-label="Compartilhar no WhatsApp"
           >
-            WhatsApp
+            Compartilhar no WhatsApp
           </a>
         </div>
       </main>
     </>
   );
-}
-
-// Export para Next.js getStaticProps/getServerSideProps
-export async function getStaticProps({ params }) {
-  // Buscar post no banco de dados
-  // const post = await getPostBySlug(params.slug);
-  
-  return {
-    props: {
-      // post,
-    },
-    // Revalidate para ISR (Incremental Static Regeneration)
-    revalidate: 60, // 60 segundos
-  };
-}
-
-export async function getStaticPaths() {
-  // Buscar todos os posts
-  // const posts = await getAllPosts();
-  
-  return {
-    paths: [
-      // ...posts.map(post => ({ params: { slug: post.slug } })),
-    ],
-    fallback: 'blocking', // ou true para loading state
-  };
 }

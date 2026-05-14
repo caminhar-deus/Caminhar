@@ -3,6 +3,7 @@ import path from 'path';
 import { format } from 'date-fns';
 import zlib from 'zlib';
 import { exec } from 'child_process';
+import { createSqliteBackup } from './backup-sqlite.js';
 
 // Database and backup paths
 const BACKUP_DIR = path.join(process.cwd(), 'data', 'backups');
@@ -31,15 +32,15 @@ async function ensureBackupDirectory() {
 }
 
 /**
- * Generate backup filename with timestamp
+ * Generate backup filename with ISO 8601 timestamp (padronizado)
  */
 function generateBackupFilename() {
-  const timestamp = format(new Date(), 'yyyy-MM-dd_HH-mm-ss');
+  const timestamp = format(new Date(), "yyyy-MM-dd'T'HH-mm-ss'Z'");
   return `${BACKUP_CONFIG.backupPrefix}_${timestamp}.sql.gz`;
 }
 
 /**
- * Create a backup of the database
+ * Create a backup of both PostgreSQL and SQLite databases
  */
 async function createBackup() {
   try {
@@ -48,6 +49,8 @@ async function createBackup() {
     // Ensure backup directory exists
     await ensureBackupDirectory();
 
+    // ===== Backup PostgreSQL (existente) =====
+    console.log('--- Iniciando backup PostgreSQL ---');
     const backupFilename = generateBackupFilename();
     const backupPath = path.join(BACKUP_DIR, backupFilename);
 
@@ -98,7 +101,17 @@ async function createBackup() {
     }
 
     // Log the backup operation
-    await logBackupOperation('SUCCESS', `${backupFilename} | hash: ${hash.substring(0, 12)}...`);
+    await logBackupOperation('SUCCESS', `[PostgreSQL] ${backupFilename} | hash: ${hash.substring(0, 12)}...`);
+
+    // ===== Backup SQLite (nova funcionalidade) =====
+    try {
+      console.log('\n--- Iniciando backup SQLite (acoplado) ---');
+      await createSqliteBackup();
+      console.log('--- Backup SQLite concluído ---\n');
+    } catch (sqliteError) {
+      console.error('⚠️ Backup SQLite falhou (não crítico):', sqliteError.message);
+      await logBackupOperation('ERROR', `[SQLite] Backup failed (non-critical): ${sqliteError.message}`);
+    }
 
     // Clean up old backups
     await cleanupOldBackups();
@@ -113,11 +126,18 @@ async function createBackup() {
 }
 
 /**
- * Log backup operations
+ * Log backup operations (com sanitização)
  */
 async function logBackupOperation(status, message) {
   try {
-    const logEntry = `[${format(new Date(), 'yyyy-MM-dd HH:mm:ss')}] [${status}] ${message}\n`;
+    // Sanitiza a mensagem: remove possíveis dados sensíveis
+    const sanitizedMessage = message
+      .replace(/(password|senha|token|secret|key|chave)\s*[=:]\s*\S+/gi, '$1=***')
+      .replace(/(DATABASE_URL|JWT_SECRET|ADMIN_PASSWORD|BACKUP_ENCRYPTION_KEY)\s*=\s*\S+/g, '$1=***')
+      .replace(/pg_dump\s+"[^"]+"/g, 'pg_dump "***"')
+      .replace(/psql\s+"[^"]+"/g, 'psql "***"');
+
+    const logEntry = `[${format(new Date(), 'yyyy-MM-dd HH:mm:ss')}] [${status}] ${sanitizedMessage}\n`;
 
     // Append to log file
     fs.appendFileSync(LOG_FILE, logEntry);
@@ -141,9 +161,12 @@ async function cleanupOldBackups() {
       .map(file => file.replace('.enc', ''))
       .filter((file, index, self) => self.indexOf(file) === index) // Remove duplicatas
       .sort((a, b) => {
-        // Sort by timestamp in filename (newest first)
-        const timestampA = a.match(/(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})/)?.[0];
-        const timestampB = b.match(/(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})/)?.[0];
+        // Sort by ISO 8601 timestamp (newest first)
+        const timestampA = a.match(/(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z)/)?.[0];
+        const timestampB = b.match(/(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z)/)?.[0];
+        if (!timestampA && !timestampB) return 0;
+        if (!timestampA) return 1;
+        if (!timestampB) return -1;
         return timestampB.localeCompare(timestampA);
       });
 
@@ -190,7 +213,7 @@ async function restoreBackup(backupFilename) {
 
     // 1. Create a safety backup before overwriting
     console.log('🔄 Criando um backup de segurança do banco de dados atual...');
-    const safetyBackupFilename = `pre-restore-backup_${format(new Date(), 'yyyy-MM-dd_HH-mm-ss')}.sql.gz`;
+    const safetyBackupFilename = `pre-restore-backup_${format(new Date(), "yyyy-MM-dd'T'HH-mm-ss'Z'")}.sql.gz`;
     const safetyBackupPath = path.join(BACKUP_DIR, safetyBackupFilename);
     const backupCommand = `pg_dump "${process.env.DATABASE_URL}" | gzip > "${safetyBackupPath}"`;
 
@@ -267,7 +290,7 @@ async function restoreBackup(backupFilename) {
       });
     });
 
-    await logBackupOperation('RESTORE_SUCCESS', `Banco de dados restaurado de ${backupFilename}`);
+    await logBackupOperation('RESTORE_SUCCESS', `[PostgreSQL] Banco de dados restaurado de ${backupFilename}`);
     return true;
 
   } catch (error) {
@@ -289,18 +312,21 @@ async function getAvailableBackups() {
       .map(file => file.replace('.enc', ''))
       .filter((file, index, self) => self.indexOf(file) === index) // Remove duplicatas
       .sort((a, b) => {
-        // Sort by timestamp in filename (newest first)
-        const timestampA = a.match(/(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})/)?.[0];
-        const timestampB = b.match(/(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})/)?.[0];
+        // Sort by ISO 8601 timestamp (newest first)
+        const timestampA = a.match(/(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z)/)?.[0];
+        const timestampB = b.match(/(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z)/)?.[0];
+        if (!timestampA && !timestampB) return 0;
+        if (!timestampA) return 1;
+        if (!timestampB) return -1;
         return timestampB.localeCompare(timestampA);
       })
       .map(file => {
-        const timestampMatch = file.match(/(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})/);
+        const timestampMatch = file.match(/(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z)/);
         const timestamp = timestampMatch ? timestampMatch[0] : 'unknown';
-        const formattedDate = timestamp.replace('_', ' ');
+        const formattedDate = timestamp.replace('T', ' ');
         return {
           filename: file,
-          timestamp: formattedDate,
+          timestamp: formattedDate.replace(/-(\d{2})Z$/, '-$1'),
           size: fs.statSync(path.join(BACKUP_DIR, file)).size,
           compressed: true
         };

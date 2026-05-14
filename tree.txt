@@ -500,8 +500,7 @@
 ├── data
 │   ├── backups
 │   │   ├── backup.log
-│   │   ├── caminhar-pg-backup_2026-03-07_11-20-04.sql.gz
-│   │   └── posts-backup-2026-02-16T01-34-56-945Z.json
+│   │   └── caminhar-pg-backup_2026-03-07_11-20-04.sql.gz
 │   └── caminhar.db
 ├── docs
 │   ├── PROJECT_components.md
@@ -720,6 +719,7 @@
 │   ├── auth
 │   │   └── reset-password.js
 │   ├── backup.js
+│   ├── backup-sqlite.js
 │   ├── check-db-status.js
 │   ├── check-env.js
 │   ├── check-server.js
@@ -767,7 +767,8 @@
 │   │   ├── 006-create-activity-logs.js
 │   │   ├── 007-add-position-to-musicas.js
 │   │   ├── 008-add-position-to-videos.js
-│   │   └── 009-add-position-to-posts.js
+│   │   ├── 009-add-position-to-posts.js
+│   │   └── 010-sync-sqlite-pg-schemas.js
 │   ├── monitor-disk-space.js
 │   ├── reset-admin-password.js
 │   ├── restore-backup.js
@@ -1015,4 +1016,4 @@
 ├── tests-output.log
 └── tree.txt
 
-156 directories, 860 files
+156 directories, 861 files
