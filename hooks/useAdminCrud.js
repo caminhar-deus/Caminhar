@@ -41,8 +41,10 @@ import { useApiFetch } from './useApiFetch';
  * @property {function} handleEdit - Inicia modo edição
  * @property {function} handleSubmit - Envia formulário (e, customValidator) — ver {@link CustomValidator}
  * @property {function} handleDelete - Exclui item
+ * @property {function} toggleField - Alterna um campo booleano de um item com atualização otimista
  * @property {function} resetForm - Reseta formulário
  * @property {function} goToPage - Navega para página específica
+ * @property {function} refetch - Recarrega os dados da lista
  */
 
 /**
@@ -205,6 +207,52 @@ export const useAdminCrud = ({
     }
   };
 
+  /**
+   * Alterna um campo booleano de um item específico com atualização otimista na UI.
+   * Envia apenas { id, [key]: newValue } para evitar validação desnecessária de outros campos.
+   *
+   * @param {Object} item - Item a ser alterado
+   * @param {string} key - Nome do campo booleano a ser alternado
+   * @param {boolean} currentValue - Valor atual do campo
+   */
+  const toggleField = async (item, key, currentValue) => {
+    const newValue = !currentValue;
+
+    // Atualização otimista — a UI já reflete a mudança antes da resposta do servidor
+    const previousItems = items;
+
+    const loadingToast = toast.loading('Atualizando status...');
+    try {
+      const payload = { id: item.id, [key]: newValue };
+      const response = await fetch(apiEndpoint, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        let errorMsg = 'Falha na API';
+        try {
+          const errorData = await response.json();
+          if (errorData.message) errorMsg = errorData.message;
+          if (errorData.error) errorMsg = errorData.error;
+        } catch (_) {
+          // Se não conseguir parsear o JSON, usa mensagem genérica
+        }
+        throw new Error(errorMsg);
+      }
+
+      // Aguarda a resposta para garantir que o PUT foi bem-sucedido
+      await response.json();
+      toast.success('Status alterado com sucesso!', { id: loadingToast });
+      refetch(); // Sincroniza com o servidor
+    } catch (error) {
+      toast.error(error.message || 'Erro ao alterar status.', { id: loadingToast });
+      console.error('[toggleField] Erro:', error.message);
+      if (onError) onError(error);
+    }
+  };
+
   const goToPage = (page) => {
     if (page > 0 && page <= totalPages) {
       setCurrentPage(page);
@@ -213,6 +261,7 @@ export const useAdminCrud = ({
 
   return {
     items, loading, error, formData, isEditing, currentPage, totalPages,
-    handleInputChange, setFieldValue, handleEdit, handleSubmit, handleDelete, resetForm, goToPage
+    handleInputChange, setFieldValue, handleEdit, handleSubmit, handleDelete,
+    toggleField, resetForm, goToPage, refetch
   };
 };

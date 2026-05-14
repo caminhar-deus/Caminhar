@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/router';
+import { exportToCSV } from '../../lib/csvExport';
 
 export default function AdminAudit() {
   const [logs, setLogs] = useState([]);
@@ -25,8 +26,9 @@ export default function AdminAudit() {
       .then(async res => {
         if (res.status === 401) {
           toast.error('Sessão expirada. Faça login novamente.');
-          router.reload(); // Recarrega a página para voltar à tela de login
-          throw new Error('Acesso não autorizado');
+          // Aguarda um breve momento para o toast aparecer antes do reload
+          setTimeout(() => router.reload(), 500);
+          return; // Retorna sem lançar erro para evitar toast duplicado no .catch
         }
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
@@ -51,46 +53,32 @@ export default function AdminAudit() {
     fetchLogs(1);
   }, []);
 
-  const filteredLogs = logs.filter(log =>
-    (log.action || '').toLowerCase().includes(search.toLowerCase()) ||
-    (log.details || '').toLowerCase().includes(search.toLowerCase()) ||
-    (log.user_id || '').toLowerCase().includes(search.toLowerCase())
+  const filteredLogs = useMemo(() =>
+    logs.filter(log =>
+      (log.action || '').toLowerCase().includes(search.toLowerCase()) ||
+      (log.details || '').toLowerCase().includes(search.toLowerCase()) ||
+      (log.user_id || '').toLowerCase().includes(search.toLowerCase())
+    ),
+    [logs, search]
   );
 
   // Função para exportar os logs visíveis para CSV
   const handleExportCSV = () => {
-    if (!filteredLogs || filteredLogs.length === 0) {
-      toast.error('Não há dados para exportar.');
-      return;
-    }
-
-    const headers = ['Data/Hora', 'Usuário', 'Ação', 'Detalhes'];
-
-    const csvRows = filteredLogs.map(log => {
-      const date = new Date(log.created_at || log.timestamp).toLocaleString('pt-BR');
-      const user = log.user_id || '';
-      const action = log.action || '';
-      const details = log.details || '';
-
-      const escapeCSV = (val) => {
-        let str = String(val).replace(/"/g, '""'); // Escapa aspas para o padrão CSV
-        if (str.includes(',') || str.includes('"') || str.includes('\n')) str = `"${str}"`;
-        return str;
-      };
-
-      return [escapeCSV(date), escapeCSV(user), escapeCSV(action), escapeCSV(details)].join(',');
+    exportToCSV({
+      data: filteredLogs,
+      columns: [
+        {
+          key: 'created_at',
+          header: 'Data/Hora',
+          format: (val, item) => new Date(val || item.timestamp).toLocaleString('pt-BR')
+        },
+        { key: 'user_id', header: 'Usuário' },
+        { key: 'action', header: 'Ação Executada' },
+        { key: 'details', header: 'Detalhes' }
+      ],
+      filename: `auditoria_export_${new Date().toISOString().slice(0, 10)}`,
+      onEmpty: () => toast.error('Não há dados para exportar.')
     });
-
-    const csvContent = [headers.join(','), ...csvRows].join('\n');
-    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' }); // BOM para Excel
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `auditoria_export_${new Date().toISOString().slice(0,10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   return (
@@ -132,7 +120,7 @@ export default function AdminAudit() {
           <button onClick={handleExportCSV} type="button" style={{ padding: '10px 16px', backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '500', whiteSpace: 'nowrap' }}>
             Exportar CSV
           </button>
-          <button onClick={() => fetchLogs(1)} style={{ padding: '10px 16px', backgroundColor: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }}>
+          <button onClick={() => fetchLogs(1)} disabled={loading} style={{ padding: '10px 16px', backgroundColor: loading ? '#e5e7eb' : '#f3f4f6', border: '1px solid #d1d5db', borderRadius: '6px', cursor: loading ? 'not-allowed' : 'pointer', fontWeight: '500' }}>
             Atualizar
           </button>
         </div>

@@ -22,15 +22,15 @@
 
 **Localização:** `components/Admin/AdminCrudBase.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Duplicidade** | A lógica de exportação CSV em `AdminCrudBase.js` (linhas 133-171) é **quase idêntica** à encontrada em `AdminAudit.js` (linhas 61-94). Ambos geram CSV com BOM, criam Blob, link temporário e download. Sugere-se extrair para um helper/módulo compartilhado em `lib/` ou `utils/`. |
-| 2 | **Duplicidade** | O CSS de animação skeleton (`@keyframes skeleton-pulse` e classe `.skeleton-box`) está duplicado em `AdminCrudBase.js` (linhas 326-335) e `AdminAudit.js` (linhas 98-108). Deveria estar centralizado no CSS module. |
-| 3 | **Performance** | O toggle de status (`handleToggleBoolean`, linha 174) envia o objeto `item` completo no body da requisição PUT, incluindo campos desnecessários. Poderia enviar apenas `{ id, [key]: newValue }`. |
-| 4 | **Manutenção** | A função `handleToggleBoolean` (linha 174) faz fetch direto para o endpoint, ignorando o hook `useAdminCrud` que já encapsula chamadas à API. Isso quebra a abstração e cria inconsistência. |
-| 5 | **PropTypes** | O campo `apiEndpoint` não está documentado como PropTypes.string.isRequired no JSDoc, embora esteja nas PropTypes. |
-| 6 | **Segurança** | A validação customizada (`validate`, linha 211) é chamada sem try/catch em `validateForm()`. Se lançar um erro não estruturado, o fluxo pode quebrar. |
-| 7 | **Acessibilidade** | O botão de ordenação Drag & Drop não possui `aria-grabbed` ou descrição adequada para leitores de tela. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Duplicidade** | A lógica de exportação CSV em `AdminCrudBase.js` (linhas 133-171) é **quase idêntica** à encontrada em `AdminAudit.js` (linhas 61-94). Ambos geram CSV com BOM, criam Blob, link temporário e download. Extraído para `lib/csvExport.js` | ✅ **RESOLVIDO** |
+| 2 | **Duplicidade** | O CSS de animação skeleton (`@keyframes skeleton-pulse` e classe `.skeleton-box`) está duplicado em `AdminCrudBase.js` (linhas 326-335) e `AdminAudit.js` (linhas 98-108). Centralizado no `Admin.module.css` com classe `.skeletonBox`. | ✅ **RESOLVIDO** |
+| 3 | **Performance** | O toggle de status (`handleToggleBoolean`, linha 174) envia o objeto `item` completo no body da requisição PUT, incluindo campos desnecessários. Poderia enviar apenas `{ id, [key]: newValue }`. — *Já enviava apenas { id, [key] }.* | ✅ **JÁ RESOLVIDO** |
+| 4 | **Manutenção** | A função `handleToggleBoolean` (linha 174) faz fetch direto para o endpoint, ignorando o hook `useAdminCrud` que já encapsula chamadas à API. Agora delega ao `toggleField` do hook `useAdminCrud`. | ✅ **RESOLVIDO** |
+| 5 | **PropTypes** | O campo `apiEndpoint` não está documentado como PropTypes.string.isRequired no JSDoc, embora esteja nas PropTypes. | ⬜️ **MANTIDO** — já estava correto, adicionados parâmetros faltantes (`exportable`, `showItemCount`, `itemNameSingular`, `itemNamePlural`, `readOnly`, `onReorder`) |
+| 6 | **Segurança** | A validação customizada (`validate`, linha 211) é chamada sem try/catch em `validateForm()`. Adicionado try/catch envolvendo `validate(formData)`. | ✅ **RESOLVIDO** |
+| 7 | **Acessibilidade** | O botão de ordenação Drag & Drop não possui `aria-grabbed` ou descrição adequada para leitores de tela. Adicionados `aria-grabbed`, `aria-roledescription`, `role="button"` e `tabIndex`. | ✅ **RESOLVIDO** |
 
 ### 1.2 AdminDashboard.js
 
@@ -46,12 +46,12 @@
 
 **Localização:** `components/Admin/AdminAudit.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Duplicidade** | Lógica de exportação CSV duplicada com `AdminCrudBase` (ver item 1.1 #1). |
-| 2 | **Performance** | O filtro local (`filteredLogs`, linha 54) é executado a cada renderização, mesmo quando `logs` ou `search` não mudam. Poderia usar `useMemo`. |
-| 3 | **UX** | O botão "Atualizar" não desabilita durante o loading, permitindo múltiplos cliques e múltiplas requisições simultâneas. |
-| 4 | **Tratamento de erro** | Se o servidor retornar status 401 com corpo JSON inválido, o `router.reload()` (linha 28) é chamado mesmo após o `throw`, mas a mensagem de toast pode não aparecer. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Duplicidade** | Lógica de exportação CSV duplicada com `AdminCrudBase` (ver item 1.1 #1). Extraído para `lib/csvExport.js` | ✅ **RESOLVIDO** |
+| 2 | **Performance** | O filtro local (`filteredLogs`, linha 54) é executado a cada renderização, mesmo quando `logs` ou `search` não mudam. Envolto em `useMemo`. | ✅ **RESOLVIDO** |
+| 3 | **UX** | O botão "Atualizar" não desabilita durante o loading, permitindo múltiplos cliques e múltiplas requisições simultâneas. Adicionado `disabled={loading}`. | ✅ **RESOLVIDO** |
+| 4 | **Tratamento de erro** | Se o servidor retornar status 401 com corpo JSON inválido, o `router.reload()` era chamado mesmo após o `throw`, mas a mensagem de toast podia não aparecer. Agora usa `setTimeout` + `return` para evitar toast duplicado no `.catch`. | ✅ **RESOLVIDO** |
 
 ### 1.4 AdminDicas.js
 

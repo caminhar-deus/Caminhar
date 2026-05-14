@@ -96,7 +96,9 @@
 - **Fetch inicial:** Executa na montagem (se `autoFetch: true`) via `useApiFetch`. A navegação entre páginas atualiza `currentPage`, que por sua vez atualiza a URL do `useApiFetch`.
 - **handleSubmit:** Envia POST (criação) ou PUT (edição) conforme `isEditing`. Usa `react-hot-toast` para feedback. Suporta validador customizado `customValidator` com tratamento de erro específico (try/catch isolado com mensagem e interrupção do submit).
 - **handleDelete:** Confirma com `window.confirm`, envia DELETE com ID no corpo da requisição (JSON), atualiza lista.
+- **toggleField(item, key, currentValue):** Alterna um campo booleano de um item com atualização otimista. Envia apenas `{ id, [key]: newValue }` via PUT para evitar validação desnecessária de outros campos. Usa `react-hot-toast` para feedback e chama `refetch()` após sucesso para sincronizar com o servidor.
 - **goToPage:** Navega para página específica, respeitando `totalPages`.
+- **refetch:** Método exposto diretamente do `useApiFetch` para recarregar manualmente a lista de itens.
 - **Operações de escrita (POST/PUT/DELETE):** Mantêm lógica própria com `react-hot-toast`, não utilizando `useApiFetch`.
 
 ---

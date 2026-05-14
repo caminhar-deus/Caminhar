@@ -1,6 +1,7 @@
 import React, { useEffect, useCallback, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useAdminCrud } from '../../hooks/useAdminCrud';
+import { exportToCSV } from '../../lib/csvExport';
 import styles from './styles/Admin.module.css';
 import toast from 'react-hot-toast';
 
@@ -89,6 +90,7 @@ export default function AdminCrudBase({
     handleEdit,
     handleSubmit,
     handleDelete,
+    toggleField,
     resetForm,
     goToPage
   } = useAdminCrud({
@@ -131,83 +133,28 @@ export default function AdminCrudBase({
 
   // Função para exportar os dados visíveis para CSV
   const handleExportCSV = () => {
-    if (!displayedItems || displayedItems.length === 0) {
-      toast.error('Não há dados para exportar.');
-      return;
-    }
-
-    // Prepara os cabeçalhos
-    const headers = columns.map(col => col.header);
-
-    // Prepara as linhas com tratamento para caracteres especiais
-    const csvRows = displayedItems.map(item => {
-      return columns.map(col => {
-        let val = item[col.key];
-        
-        // Formata valores booleanos (Status) para ficarem amigáveis no Excel
-        if (typeof val === 'boolean') {
-          val = val ? 'Publicado' : 'Rascunho';
-        }
-        
-        if (val === null || val === undefined) val = '';
-        val = String(val).replace(/"/g, '""'); // Escapa aspas
-        if (val.includes(',') || val.includes('"') || val.includes('\n')) {
-          val = `"${val}"`; // Envolve em aspas se necessário
-        }
-        return val;
-      }).join(',');
+    exportToCSV({
+      data: displayedItems,
+      columns: columns.map(col => ({
+        key: col.key,
+        header: col.header,
+        format: col.format
+      })),
+      filename: title.replace(/\s+/g, '_').toLowerCase() + '_export',
+      onEmpty: () => toast.error('Não há dados para exportar.')
     });
-
-    const csvContent = [headers.join(','), ...csvRows].join('\n');
-    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' }); // \uFEFF garante compatibilidade com Excel (BOM)
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `${title.replace(/\s+/g, '_').toLowerCase()}_export.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   // Função para alternar booleanos (como Rascunho/Publicado) com 1 clique
-  const handleToggleBoolean = async (item, key, currentValue) => {
-    const newValue = !currentValue;
+  // Delega ao toggleField do hook useAdminCrud, que centraliza a lógica de chamada à API
+  const handleToggleBoolean = (item, key, currentValue) => {
     const previousItems = [...localItems];
-    
     // Atualização otimista na interface (muda na hora sem esperar o servidor)
-    setLocalItems(localItems.map(i => i.id === item.id ? { ...i, [key]: newValue } : i));
-    
-    const loadingToast = toast.loading('Atualizando status...');
-    try {
-      // Envia apenas o ID e o campo que está sendo alternado, evitando
-      // validação desnecessária de outros campos obrigatórios no backend
-      const payload = { id: item.id, [key]: newValue };
-      const response = await fetch(apiEndpoint, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+    setLocalItems(localItems.map(i => i.id === item.id ? { ...i, [key]: !currentValue } : i));
+    toggleField(item, key, currentValue)
+      .catch(() => {
+        setLocalItems(previousItems); // Reverte visualmente em caso de falha
       });
-      if (!response.ok) {
-        // Tenta extrair mensagem de erro da resposta do servidor
-        let errorMsg = 'Falha na API';
-        try {
-          const errorData = await response.json();
-          if (errorData.message) errorMsg = errorData.message;
-          if (errorData.error) errorMsg = errorData.error;
-        } catch (_) {
-          // Se não conseguir parsear o JSON, usa mensagem genérica
-        }
-        throw new Error(errorMsg);
-      }
-      // Aguarda a resposta e lê o corpo para garantir que o PUT foi bem-sucedido
-      const result = await response.json();
-      toast.success('Status alterado com sucesso!', { id: loadingToast });
-    } catch (error) {
-      setLocalItems(previousItems); // Reverte visualmente em caso de falha
-      toast.error(error.message || 'Erro ao alterar status.', { id: loadingToast });
-      console.error('[ToggleStatus] Erro:', error.message);
-    }
   };
 
   // Função de validação
@@ -223,9 +170,14 @@ export default function AdminCrudBase({
       }
     }
     
-    // Validação customizada
+    // Validação customizada com try/catch para evitar que erros não estruturados quebrem o fluxo
     if (validate) {
-      validate(formData);
+      try {
+        validate(formData);
+      } catch (validationError) {
+        const error = new Error(validationError.message || 'Erro de validação customizada.');
+        throw error;
+      }
     }
   };
 
@@ -338,18 +290,6 @@ export default function AdminCrudBase({
 
   return (
     <div className={styles.content} style={{ minHeight: '700px', display: 'flex', flexDirection: 'column' }}>
-      <style>{`
-        @keyframes skeleton-pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-        .skeleton-box {
-          height: 20px;
-          background-color: var(--color-border-light);
-          border-radius: 4px;
-          animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-      `}</style>
       {/* Header */}
       <div className={styles.sectionHeader}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
@@ -479,18 +419,18 @@ export default function AdminCrudBase({
               Array.from({ length: 5 }).map((_, index) => (
                 <tr key={`skeleton-${index}`}>
                   {reorderable && !searchTerm && (
-                    <td><div className="skeleton-box" style={{ width: '20px', margin: '0 auto' }}></div></td>
+                    <td><div className={styles.skeletonBox} style={{ width: '20px', margin: '0 auto' }}></div></td>
                   )}
                   {columns.map(col => (
                     <td key={`skeleton-col-${col.key}`}>
-                      <div className="skeleton-box" style={{ width: col.width ? '100%' : '80%' }}></div>
+                      <div className={styles.skeletonBox} style={{ width: col.width ? '100%' : '80%' }}></div>
                     </td>
                   ))}
                   {!readOnly && (
                     <td>
                       <div style={{ display: 'flex', gap: '8px' }}>
-                        <div className="skeleton-box" style={{ height: '32px', width: '60px' }}></div>
-                        <div className="skeleton-box" style={{ height: '32px', width: '60px' }}></div>
+                        <div className={styles.skeletonBox} style={{ height: '32px', width: '60px' }}></div>
+                        <div className={styles.skeletonBox} style={{ height: '32px', width: '60px' }}></div>
                       </div>
                     </td>
                   )}
@@ -533,7 +473,19 @@ export default function AdminCrudBase({
                   }}
                 >
                   {reorderable && !searchTerm && (
-                    <td style={{ width: '40px', color: 'var(--color-text-tertiary)', textAlign: 'center', cursor: 'grab' }}>
+                    <td
+                      style={{ width: '40px', color: 'var(--color-text-tertiary)', textAlign: 'center', cursor: 'grab' }}
+                      aria-grabbed={dragOverIndex !== null}
+                      aria-roledescription="Botão de ordenação por arrastar"
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === ' ' || e.key === 'Enter') {
+                          e.preventDefault();
+                          // Placeholder para ativar o modo de arrasto via teclado
+                        }
+                      }}
+                    >
                       ⣿
                     </td>
                   )}
