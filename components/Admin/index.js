@@ -22,3 +22,4 @@ export { default as TextAreaField } from './fields/TextAreaField';
 export { default as ImageUploadField } from './fields/ImageUploadField';
 export { default as ToggleField } from './fields/ToggleField';
 export { default as UrlField } from './fields/UrlField';
+export { default as ExternalDataButton } from './fields/ExternalDataButton';

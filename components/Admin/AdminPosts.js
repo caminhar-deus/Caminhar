@@ -4,6 +4,7 @@ import TextField from './fields/TextField';
 import TextAreaField from './fields/TextAreaField';
 import ImageUploadField from './fields/ImageUploadField';
 import ToggleField from './fields/ToggleField';
+import { handleReorder } from '@/lib/reorder';
 import { z } from 'zod';
 
 /**
@@ -155,22 +156,6 @@ const initialFormData = {
  * Demonstra uso de upload de imagens e geração automática de slug.
  */
 export default function AdminPostsNew() {
-  // Função responsável por calcular o offset em relação à página e salvar no DB de forma silenciosa
-  const handleReorder = async (reorderedItems, currentPage = 1, itemsPerPage = 10) => {
-    const offset = (currentPage - 1) * itemsPerPage;
-    const payload = reorderedItems.map((item, index) => ({ id: item.id, position: offset + index }));
-    
-    try {
-      const response = await fetch('/api/admin/posts', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'reorder', items: payload })
-      });
-      if (!response.ok) throw new Error('Falha ao reordenar');
-    } catch (error) {
-      console.error('Erro ao salvar reordenação:', error);
-    }
-  };
 
   /**
    * Função de validação customizada
@@ -256,7 +241,7 @@ export default function AdminPostsNew() {
       searchable={true}
       exportable={true}
       reorderable={true}
-      onReorder={handleReorder}
+      onReorder={(items, page, perPage) => handleReorder('/api/admin/posts', items, page, perPage)}
       showItemCount={true}
       itemNameSingular="post cadastrado"
       itemNamePlural="posts cadastrados"

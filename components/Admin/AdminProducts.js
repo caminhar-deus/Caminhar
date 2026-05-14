@@ -3,6 +3,8 @@ import toast from 'react-hot-toast';
 import AdminCrudBase from './AdminCrudBase';
 import TextField from './fields/TextField';
 import TextAreaField from './fields/TextAreaField';
+import ExternalDataButton from './fields/ExternalDataButton';
+import { handleReorder } from '@/lib/reorder';
 import { z } from 'zod';
 
 /** Schema de validação Zod para os produtos */
@@ -126,62 +128,27 @@ const initialFormData = {
   published: true
 };
 
-  // Função responsável por calcular o offset em relação à página e salvar no DB de forma silenciosa
-  const handleReorder = async (reorderedItems, currentPage = 1, itemsPerPage = 10) => {
-    const offset = (currentPage - 1) * itemsPerPage;
-    const payload = reorderedItems.map((item, index) => ({ id: item.id, position: offset + index }));
-    
-    try {
-      const response = await fetch('/api/products', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'reorder', items: payload })
-      });
-      if (!response.ok) throw new Error('Falha ao reordenar');
-    } catch (error) {
-      console.error('Erro ao salvar reordenação:', error);
-    }
-  };
-
 export default function AdminProducts() {
   const [isFetchingML, setIsFetchingML] = useState(false);
 
-  const handleFetchML = async (url, setFieldValue) => {
-    if (!url) {
-      toast.error('Cole o link do Mercado Livre no campo primeiro!');
-      return;
-    }
-    
-    setIsFetchingML(true);
-    const loadingToast = toast.loading('Pescando dados no Mercado Livre...');
+  // Configuração do botão "Puxar Dados" do Mercado Livre
+  const mlButtonConfig = {
+    endpoint: '/api/admin/fetch-ml',
+    buttonColor: '#ffe600',
+    buttonTextColor: '#333',
+    loadingMessage: 'Pescando dados no Mercado Livre...',
+    successMessage: 'Mágica concluída! Revise os dados.',
+    validateUrl: (url) => !!url,
+    invalidUrlMessage: 'Cole o link do Mercado Livre no campo primeiro!'
+  };
 
-    try {
-      const res = await fetch('/api/admin/fetch-ml', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url })
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Falha na busca.');
-      }
-
-      const data = await res.json();
-
-      // Preenche os formulários magicamente!
-      setFieldValue('title', data.title);
-      setFieldValue('price', `R$ ${data.price.toFixed(2).replace('.', ',')}`);
-      setFieldValue('images', data.images);
-      if (data.description) {
-        setFieldValue('description', data.description);
-      }
-
-      toast.success('Mágica concluída! Revise os dados.', { id: loadingToast });
-    } catch (error) {
-      toast.error(error.message, { id: loadingToast });
-    } finally {
-      setIsFetchingML(false);
+  // Função para processar dados do Mercado Livre (com lógica extra de formatação)
+  const handleFetchMLSuccess = (data, setFieldValue) => {
+    setFieldValue('title', data.title);
+    setFieldValue('price', `R$ ${data.price.toFixed(2).replace('.', ',')}`);
+    setFieldValue('images', data.images);
+    if (data.description) {
+      setFieldValue('description', data.description);
     }
   };
 
@@ -190,18 +157,19 @@ export default function AdminProducts() {
     if (fieldConfig.name === 'link_ml') {
       const { name, component: Component, gridColumn, ...props } = fieldConfig;
       return (
-        <div key={name} style={{ gridColumn: gridColumn || 'span 1', position: 'relative' }}>
-          <button
-            type="button"
-            onClick={() => handleFetchML(formData[name], setFieldValue)}
-            disabled={isFetchingML}
-            title="Puxar Título, Preço e Imagens automaticamente"
-            style={{ position: 'absolute', right: '0', top: '0', padding: '4px 10px', backgroundColor: '#ffe600', color: '#333', border: 'none', borderRadius: '4px', fontWeight: 'bold', fontSize: '11px', cursor: isFetchingML ? 'not-allowed' : 'pointer', opacity: isFetchingML ? 0.7 : 1, zIndex: 10 }}
-          >
-            {isFetchingML ? '⏳ Buscando...' : '⚡ Puxar Dados'}
-          </button>
+        <ExternalDataButton
+          key={name}
+          fieldName={name}
+          gridColumn={gridColumn || 'span 1'}
+          url={formData[name]}
+          setFieldValue={setFieldValue}
+          isFetching={isFetchingML}
+          setIsFetching={setIsFetchingML}
+          config={mlButtonConfig}
+          onSuccess={handleFetchMLSuccess}
+        >
           <Component name={name} value={formData[name] ?? ''} onChange={handleInputChange} {...props} />
-        </div>
+        </ExternalDataButton>
       );
     }
     return null;
@@ -222,7 +190,7 @@ export default function AdminProducts() {
       emptyMessage="Nenhum produto cadastrado. Comece adicionando um!"
       searchable={true}
       reorderable={true}
-      onReorder={handleReorder}
+      onReorder={(items, page, perPage) => handleReorder('/api/products', items, page, perPage)}
       exportable={true}
       renderCustomFormField={renderCustomFormField}
       showItemCount={true}

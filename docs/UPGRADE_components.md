@@ -65,11 +65,11 @@
 
 **Localização:** `components/Admin/AdminMusicas.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Duplicidade** | A função `handleReorder` (linha 127) é **quase idêntica** em `AdminMusicas.js`, `AdminPosts.js`, `AdminVideos.js` e `AdminProducts.js`. Todos calculam offset, constroem payload e fazem PUT no endpoint. Deveria ser um helper compartilhado. |
-| 2 | **Duplicidade** | O padrão `renderCustomFormField` com botão "Puxar Dados" (linhas 180-199) se repete em `AdminMusicas.js`, `AdminVideos.js` e `AdminProducts.js`. As únicas diferenças são: endpoint da API, cor do botão e campos preenchidos. Poderia ser abstraído. |
-| 3 | **UX** | O botão "Puxar Dados" do Spotify (linha 185) está posicionado com `position: absolute`, que pode sobrepor o label do campo em telas menores. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Duplicidade** | A função `handleReorder` (linha 127) é **quase idêntica** em `AdminMusicas.js`, `AdminPosts.js`, `AdminVideos.js` e `AdminProducts.js`. Todos calculam offset, constroem payload e fazem PUT no endpoint. Extraído para `lib/reorder.js` como helper compartilhado `handleReorder(endpoint, items, page, perPage)`. | ✅ **RESOLVIDO (14/05/2026)** |
+| 2 | **Duplicidade** | O padrão `renderCustomFormField` com botão "Puxar Dados" (linhas 180-199) se repete em `AdminMusicas.js`, `AdminVideos.js` e `AdminProducts.js`. As únicas diferenças são: endpoint da API, cor do botão e campos preenchidos. Extraído para componente genérico `ExternalDataButton.js` em `Admin/fields/`. | ✅ **RESOLVIDO (14/05/2026)** |
+| 3 | **UX** | O botão "Puxar Dados" do Spotify (linha 185) está posicionado com `position: absolute`, que pode sobrepor o label do campo em telas menores. Substituído pelo componente `ExternalDataButton` que usa layout flexbox responsivo. | ✅ **RESOLVIDO (14/05/2026)** |
 
 ### 1.6 AdminPosts.js
 
@@ -77,9 +77,9 @@
 
 | # | Tipo | Descrição |
 |---|------|-----------|
-| 1 | **Duplicidade** | `handleReorder` duplicado (idem item 1.5 #1). |
-| 2 | **Manutenção** | A função `validatePost` (linha 179) tem lógica acoplada ao componente. A regra de negócio "post publicado precisa de imagem" poderia estar no schema Zod. |
-| 3 | **Acessibilidade** | O campo slug editável com geração automática (linha 226) não sinaliza ao usuário que o slug foi gerado. Poderia haver feedback visual. |
+| 1 | **Duplicidade** | `handleReorder` duplicado (idem item 1.5 #1). Extraído para `lib/reorder.js`. | ✅ **RESOLVIDO (14/05/2026)** |
+| 2 | **Manutenção** | A função `validatePost` (linha 179) tem lógica acoplada ao componente. A regra de negócio "post publicado precisa de imagem" poderia estar no schema Zod. | ⬜️ **PENDENTE** |
+| 3 | **Acessibilidade** | O campo slug editável com geração automática (linha 226) não sinaliza ao usuário que o slug foi gerado. Poderia haver feedback visual. | ⬜️ **PENDENTE** |
 
 ### 1.7 AdminProducts.js
 
@@ -87,12 +87,12 @@
 
 | # | Tipo | Descrição |
 |---|------|-----------|
-| 1 | **Duplicidade** | `handleReorder` duplicado (idem item 1.5 #1). |
-| 2 | **Duplicidade** | `renderCustomFormField` duplicado (idem item 1.5 #2). |
-| 3 | **Manutenção** | O endpoint da API de produtos é `/api/products`, enquanto os demais usam `/api/admin/*`. Inconsistência na URL. |
-| 4 | **Manutenção** | `handleReorder` de Products (linha 130) está **fora** do componente (export default na linha 146), diferentemente dos outros. Isso quebra o padrão. |
-| 5 | **Manutenção** | O componente `CheckboxWrapper` (linha 21) é definido inline, mas é equivalente funcional ao `ToggleField` já existente em `Admin/fields/ToggleField.js`. Duplicidade de componente. |
-| 6 | **Performance** | O preço é armazenado como string formatada (`R$ 89,90`) vinda da API do ML. Isso pode causar problemas de ordenação e cálculos. |
+| 1 | **Duplicidade** | `handleReorder` duplicado (idem item 1.5 #1). Extraído para `lib/reorder.js`. `handleReorder` movido para dentro do componente (padronizado). | ✅ **RESOLVIDO (14/05/2026)** |
+| 2 | **Duplicidade** | `renderCustomFormField` duplicado (idem item 1.5 #2). Extraído para `ExternalDataButton.js`. | ✅ **RESOLVIDO (14/05/2026)** |
+| 3 | **Manutenção** | O endpoint da API de produtos é `/api/products`, enquanto os demais usam `/api/admin/*`. Inconsistência na URL. | ⬜️ **PENDENTE** |
+| 4 | **Manutenção** | `handleReorder` de Products (linha 130) estava **fora** do componente (export default na linha 146), diferentemente dos outros. Agora está dentro do componente, como os demais. | ✅ **RESOLVIDO (14/05/2026)** |
+| 5 | **Manutenção** | O componente `CheckboxWrapper` (linha 21) é definido inline, mas é equivalente funcional ao `ToggleField` já existente em `Admin/fields/ToggleField.js`. Duplicidade de componente. | ⬜️ **PENDENTE** |
+| 6 | **Performance** | O preço é armazenado como string formatada (`R$ 89,90`) vinda da API do ML. Isso pode causar problemas de ordenação e cálculos. | ⬜️ **PENDENTE** |
 
 ### 1.8 AdminRolesTab.js
 
@@ -127,10 +127,10 @@
 
 | # | Tipo | Descrição |
 |---|------|-----------|
-| 1 | **Duplicidade** | A regex de extração de ID do YouTube (linha 28) é duplicada em `LazyIframe.js` (linha 84) e `UrlField.js` (linha 39). Deveria ser um helper centralizado. |
-| 2 | **Duplicidade** | `handleReorder` duplicado (idem item 1.5 #1). |
-| 3 | **Duplicidade** | `renderCustomFormField` duplicado (idem item 1.5 #2). |
-| 4 | **Performance** | O embed de vídeo na tabela (linhas 130-141) carrega o iframe do YouTube já na listagem, o que pode ser pesado. Poderia ser lazy. |
+| 1 | **Duplicidade** | A regex de extração de ID do YouTube (linha 28) é duplicada em `LazyIframe.js` (linha 84) e `UrlField.js` (linha 39). Deveria ser um helper centralizado. | ⬜️ **PENDENTE** |
+| 2 | **Duplicidade** | `handleReorder` duplicado (idem item 1.5 #1). Extraído para `lib/reorder.js`. | ✅ **RESOLVIDO (14/05/2026)** |
+| 3 | **Duplicidade** | `renderCustomFormField` duplicado (idem item 1.5 #2). Extraído para `ExternalDataButton.js`. | ✅ **RESOLVIDO (14/05/2026)** |
+| 4 | **Performance** | O embed de vídeo na tabela (linhas 130-141) carrega o iframe do YouTube já na listagem, o que pode ser pesado. Poderia ser lazy. | ⬜️ **PENDENTE** |
 
 ### 1.12 withAdminAuth.js
 
@@ -158,13 +158,13 @@
 | 2 | **UX** | `CacheManager.js` (linha 26): também usa `window.confirm()`. |
 | 3 | **Manutenção** | `CacheManager.js`: o fetch das métricas (linha 12) não aponta `credentials: 'include'` explicitamente, ao contrário dos demais componentes. |
 
-### 1.15 Tools
+### 1.16 Tools
 
 | # | Tipo | Descrição |
 |---|------|-----------|
 | 1 | **Manutenção** | `IntegrityCheck.js` e `RateLimitViewer.js` são placeholders sem funcionalidade real. Podem dar falsa impressão de funcionalidade implementada. |
 
-### 1.16 Admin.module.css — **PARCIALMENTE RESOLVIDO**
+### 1.17 Admin.module.css — **PARCIALMENTE RESOLVIDO**
 
 | # | Tipo | Descrição |
 |---|------|-----------|
@@ -468,7 +468,7 @@
 
 | Categoria | Quantidade | Principais Ocorrências |
 |-----------|-----------|------------------------|
-| **Duplicidade** | ~15 ocorrências | CSV export, reorder, renderCustomFormField, regex YouTube/Spotify, TextArea vs TextAreaField, CSS skeleton, alert() vs modal |
+| **Duplicidade** | ~12 ocorrências | CSV export, reorder ✅, renderCustomFormField ✅, regex YouTube/Spotify, TextArea vs TextAreaField, CSS skeleton, alert() vs modal |
 | **Performance** | ~12 ocorrências | Fetch sem cache, filtros sem useMemo, debounce excessivo, imports estáticos de conteúdo não-visível, ripple acumulado |
 | **Acessibilidade** | ~10 ocorrências | Abas sem aria, lightbox focus, modal sem labelledby, ripple não oculto, placeholder sem role button |
 | **Manutenção** | ~14 ocorrências | IDs aleatórios quebrando SSR, endpoints inconsistentes, CSS inline vs modules, placeholders não-funcionais, estilos duplicados no CSS module |

@@ -5,6 +5,8 @@ import TextField from './fields/TextField';
 import UrlField from './fields/UrlField';
 import ToggleField from './fields/ToggleField';
 import ImageUploadField from './fields/ImageUploadField';
+import ExternalDataButton from './fields/ExternalDataButton';
+import { handleReorder } from '@/lib/reorder';
 import { z } from 'zod';
 
 /**
@@ -177,55 +179,17 @@ const initialFormData = {
 export default function AdminVideosNew() {
   const [isFetchingYoutube, setIsFetchingYoutube] = useState(false);
 
-  // Função responsável por calcular o offset em relação à página e salvar no DB de forma silenciosa
-  const handleReorder = async (reorderedItems, currentPage = 1, itemsPerPage = 10) => {
-    const offset = (currentPage - 1) * itemsPerPage;
-    const payload = reorderedItems.map((item, index) => ({ id: item.id, position: offset + index }));
-    
-    try {
-      const response = await fetch('/api/admin/videos', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'reorder', items: payload })
-      });
-      if (!response.ok) throw new Error('Falha ao reordenar');
-    } catch (error) {
-      console.error('Erro ao salvar reordenação:', error);
-    }
-  };
-
-  // Função para buscar dados do YouTube
-  const handleFetchYoutube = async (url, setFieldValue) => {
-    if (!url || (!url.includes('youtube.com') && !url.includes('youtu.be'))) {
-      toast.error('Cole um link válido do YouTube primeiro!');
-      return;
-    }
-    
-    setIsFetchingYoutube(true);
-    const loadingToast = toast.loading('Buscando dados no YouTube...');
-
-    try {
-      const res = await fetch('/api/admin/fetch-youtube', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url })
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Falha na busca.');
-      }
-
-      const data = await res.json();
-
-      // Preenche o formulário
-      setFieldValue('titulo', data.title);
-
-      toast.success('Vídeo encontrado!', { id: loadingToast });
-    } catch (error) {
-      toast.error(error.message, { id: loadingToast });
-    } finally {
-      setIsFetchingYoutube(false);
+  // Configuração do botão "Puxar Dados" do YouTube
+  const youtubeButtonConfig = {
+    endpoint: '/api/admin/fetch-youtube',
+    buttonColor: '#ff0000',
+    buttonTextColor: '#fff',
+    loadingMessage: 'Buscando dados no YouTube...',
+    successMessage: 'Vídeo encontrado!',
+    validateUrl: (url) => url && (url.includes('youtube.com') || url.includes('youtu.be')),
+    invalidUrlMessage: 'Cole um link válido do YouTube primeiro!',
+    fieldMappings: {
+      titulo: 'title'
     }
   };
 
@@ -234,18 +198,18 @@ export default function AdminVideosNew() {
     if (fieldConfig.name === 'url_youtube') {
       const { name, component: Component, gridColumn, ...props } = fieldConfig;
       return (
-        <div key={name} style={{ gridColumn: gridColumn || 'span 1', position: 'relative' }}>
-          <button
-            type="button"
-            onClick={() => handleFetchYoutube(formData[name], setFieldValue)}
-            disabled={isFetchingYoutube}
-            title="Puxar Título automaticamente"
-            style={{ position: 'absolute', right: '0', top: '0', padding: '4px 10px', backgroundColor: '#ff0000', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold', fontSize: '11px', cursor: isFetchingYoutube ? 'not-allowed' : 'pointer', opacity: isFetchingYoutube ? 0.7 : 1, zIndex: 10 }}
-          >
-            {isFetchingYoutube ? '⏳ Buscando...' : '⚡ Puxar Dados'}
-          </button>
+        <ExternalDataButton
+          key={name}
+          fieldName={name}
+          gridColumn={gridColumn || 'span 1'}
+          url={formData[name]}
+          setFieldValue={setFieldValue}
+          isFetching={isFetchingYoutube}
+          setIsFetching={setIsFetchingYoutube}
+          config={youtubeButtonConfig}
+        >
           <Component name={name} value={formData[name] ?? ''} onChange={handleInputChange} {...props} />
-        </div>
+        </ExternalDataButton>
       );
     }
     return null;
@@ -268,7 +232,7 @@ export default function AdminVideosNew() {
       searchable={true}
       exportable={true}
       reorderable={true}
-      onReorder={handleReorder}
+      onReorder={(items, page, perPage) => handleReorder('/api/admin/videos', items, page, perPage)}
       renderCustomFormField={renderCustomFormField}
       showItemCount={true}
       itemNameSingular="vídeo cadastrado"

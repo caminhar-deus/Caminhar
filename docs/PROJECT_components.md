@@ -58,10 +58,15 @@ Sistema administrativo completo com CRUD reutilizável, autenticação, dashboar
 **Localização:** `components/Admin/AdminMusicas.js`
 
 **Propósito:** Gestão de músicas com integração Spotify. Usa `AdminCrudBase` com campos: título, artista, URL do Spotify, status. Inclui:
-- Botão "Puxar Dados" que busca título/artista via API do Spotify
+- Botão "Puxar Dados" via componente genérico `ExternalDataButton` que busca título/artista via API do Spotify
 - Preview do embed Spotify na tabela
-- Reordenação Drag & Drop
+- Reordenação Drag & Drop via helper compartilhado `lib/reorder.js`
 - Validação Zod
+
+**Melhorias aplicadas (14/05/2026):**
+- `handleReorder` extraído para helper compartilhado `lib/reorder.js`
+- Botão "Puxar Dados" substituído pelo componente genérico `ExternalDataButton`
+- Layout do botão alterado de `position: absolute` para flexbox responsivo
 
 ### 1.6 AdminPosts.js
 **Localização:** `components/Admin/AdminPosts.js`
@@ -70,14 +75,23 @@ Sistema administrativo completo com CRUD reutilizável, autenticação, dashboar
 - Geração automática de slug a partir do título
 - Validação que impede publicação sem imagem de capa
 - Upload de imagens
-- Reordenação Drag & Drop
+- Reordenação Drag & Drop via helper compartilhado `lib/reorder.js`
+
+**Melhorias aplicadas (14/05/2026):**
+- `handleReorder` extraído para helper compartilhado `lib/reorder.js`
 
 ### 1.7 AdminProducts.js
 **Localização:** `components/Admin/AdminProducts.js`
 
 **Propósito:** Gestão de produtos com integração Mercado Livre. Usa `AdminCrudBase` com campos: nome, valor, URLs de imagens, descrição, links (ML, Shopee, Amazon). Inclui:
-- Botão "Puxar Dados" que busca dados do Mercado Livre
+- Botão "Puxar Dados" via componente genérico `ExternalDataButton` que busca dados do Mercado Livre
 - Validação Zod
+- Reordenação Drag & Drop via helper compartilhado `lib/reorder.js`
+
+**Melhorias aplicadas (14/05/2026):**
+- `handleReorder` extraído para helper compartilhado `lib/reorder.js` e movido para dentro do componente (padronização)
+- Botão "Puxar Dados" substituído pelo componente genérico `ExternalDataButton`
+- Layout do botão alterado de `position: absolute` para flexbox responsivo
 
 ### 1.8 AdminRolesTab.js
 **Localização:** `components/Admin/AdminRolesTab.js`
@@ -102,14 +116,23 @@ Sistema administrativo completo com CRUD reutilizável, autenticação, dashboar
 
 **Propósito:** Gestão de vídeos com integração YouTube. Usa `AdminCrudBase` com campos: título, descrição, URL do YouTube, thumbnail, status. Inclui:
 - Extração de ID do YouTube de múltiplos formatos de URL
-- Botão "Puxar Dados" que busca título via API do YouTube
+- Botão "Puxar Dados" via componente genérico `ExternalDataButton` que busca título via API do YouTube
 - Preview do embed na tabela
 - Paginação habilitada
+- Reordenação Drag & Drop via helper compartilhado `lib/reorder.js`
+
+**Melhorias aplicadas (14/05/2026):**
+- `handleReorder` extraído para helper compartilhado `lib/reorder.js`
+- Botão "Puxar Dados" substituído pelo componente genérico `ExternalDataButton`
+- Layout do botão alterado de `position: absolute` para flexbox responsivo
 
 ### 1.12 index.js (Admin)
 **Localização:** `components/Admin/index.js`
 
-**Propósito:** Ponto de exportação centralizado para componentes Admin. Exporta `AdminCrudBase`, componentes refatorados (`AdminMusicasNew`, `AdminVideosNew`, `AdminPostsNew`) e todos os campos de formulário.
+**Propósito:** Ponto de exportação centralizado para componentes Admin. Exporta `AdminCrudBase`, componentes refatorados (`AdminMusicasNew`, `AdminVideosNew`, `AdminPostsNew`), todos os campos de formulário e utilitários.
+
+**Melhorias aplicadas (14/05/2026):**
+- Adicionada exportação de `ExternalDataButton` para facilitar importação
 
 ### 1.13 withAdminAuth.js
 **Localização:** `components/Admin/withAdminAuth.js`
@@ -128,6 +151,10 @@ Conjunto de componentes de campo de formulário reutilizáveis:
 | `ImageUploadField.js` | Campo de upload de imagem com preview. Upload via input file ou URL manual |
 | `ToggleField.js` | Checkbox estilizado com labels dinâmicos (Publicado/Rascunho) |
 | `UrlField.js` | Campo de URL com validação e preview (YouTube, Spotify). Extrai IDs automaticamente |
+| `ExternalDataButton.js` | Componente genérico para botão "Puxar Dados" de fontes externas. Elimina código duplicado entre AdminMusicas (Spotify), AdminVideos (YouTube) e AdminProducts (Mercado Livre). |
+
+**Novo (14/05/2026):**
+- `ExternalDataButton.js`: Componente que abstrai o padrão de botão "Puxar Dados". Recebe configuração de endpoint, validação de URL, mapeamento de campos e callback de sucesso. Usa layout flexbox responsivo, eliminando problemas de sobreposição do `position: absolute` anterior.
 
 ### 1.15 Managers
 
