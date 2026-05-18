@@ -1,23 +1,14 @@
 import BaseCard from '../../UI/BaseCard';
+import LazyIframe from '../../Performance/LazyIframe';
+import { getSpotifyEmbedUrl } from '@/lib/spotify';
 import styles from './styles/MusicCard.module.css';
 
 export default function MusicCard({ musica }) {
+  const embedUrl = `${getSpotifyEmbedUrl(musica.url_spotify)}?utm_source=generator&theme=0`;
+
   const handleSpotifyClick = (e) => {
     e.preventDefault();
     window.open(musica.url_spotify, '_blank', 'noopener,noreferrer');
-  };
-
-  const getSpotifyEmbedUrl = (spotifyUrl) => {
-    try {
-      const match = spotifyUrl.match(/(?:spotify\.com\/(?:intl-\w+\/)?track\/|spotify:track:)([a-zA-Z0-9]+)/);
-      if (match && match[1]) {
-        return `https://open.spotify.com/embed/track/${match[1]}`;
-      }
-      return spotifyUrl;
-    } catch (error) {
-      console.error('Erro ao converter URL do Spotify:', error);
-      return spotifyUrl;
-    }
   };
 
   return (
@@ -25,19 +16,14 @@ export default function MusicCard({ musica }) {
       hoverable
       media={
         <div className={styles.embedWrapper}>
-          <iframe
-            data-testid="embed-iframe"
-            className={styles.spotifyIframe}
-            src={`${getSpotifyEmbedUrl(musica.url_spotify)}?utm_source=generator&theme=0`}
-            width="100%"
-            height="152"
-            frameBorder="0"
-            allowFullScreen
-            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-            loading="lazy"
-            scrolling="no"
+          <LazyIframe
+            src={embedUrl}
             title={`Player do Spotify para ${musica.titulo}`}
-          ></iframe>
+            provider="spotify"
+            placeholderText="▶ Clique para ouvir"
+            style={{ aspectRatio: 'auto', height: '152px' }}
+            data-testid="embed-iframe"
+          />
         </div>
       }
     >

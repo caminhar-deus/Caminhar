@@ -239,11 +239,11 @@
 
 **Localização:** `components/Features/Music/`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Resiliência** | `MusicGallery.js` (linhas 28-31): a lógica de paginação tem múltiplos fallbacks encadeados que podem resultar em comportamento imprevisível com dados inconsistentes. |
-| 2 | **Duplicate** | `MusicCard.js` (linhas 10-21) e `UrlField.js` (linhas 44-47) têm quase a mesma regex de extração de ID do Spotify. |
-| 3 | **Performance** | O embed Spotify carrega o player mesmo sem interação do usuário. `LazyIframe` não é usado aqui (ao contrário de VideoCard). |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Resiliência** | `MusicGallery.js` (linhas 28-31): a lógica de paginação com múltiplos fallbacks encadeados foi substituída por função `getPaginationData` com validação explícita e formatos de resposta consistentes. | ✅ **RESOLVIDO (18/05/2026)** |
+| 2 | **Duplicidade** | `MusicCard.js` (linhas 10-21) e `UrlField.js` (linhas 44-47) tinham quase a mesma regex de extração de ID do Spotify. Centralizado em `lib/spotify.js` com `extractSpotifyId()` e `getSpotifyEmbedUrl()`, eliminando a duplicidade. | ✅ **RESOLVIDO (18/05/2026)** |
+| 3 | **Performance** | O embed Spotify carregava o player mesmo sem interação do usuário. Substituído por `LazyIframe` com carregamento sob demanda (clique do usuário), similar ao que já foi feito no componente VideoCard. | ✅ **RESOLVIDO (18/05/2026)** |
 
 ### 2.4 Products
 

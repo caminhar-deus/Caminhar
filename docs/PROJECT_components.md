@@ -264,10 +264,15 @@ Componentes de funcionalidades específicas do site público.
 
 | Arquivo | Propósito |
 |---------|-----------|
-| `MusicCard.js` | Card de música com embed Spotify. Converte URL para embed, exibe player, título, artista e botão "Ouvir no Spotify" |
-| `MusicGallery.js` | Galeria de músicas com busca (debounce 300ms), paginação e fallback de dados. Consome `/api/musicas` |
+| `MusicCard.js` | Card de música com embed Spotify via `LazyIframe` (carregamento sob demanda). Extrai ID do Spotify via helper `lib/spotify.js`. Exibe título, artista e botão "Ouvir no Spotify" |
+| `MusicGallery.js` | Galeria de músicas com busca (debounce 300ms), paginação com validação explícita de formatos de resposta. Consome `/api/musicas` |
 | `styles/MusicCard.module.css` | Estilos do card de música: embed wrapper, botão Spotify |
 | `styles/MusicGallery.module.css` | Estilos da galeria: grid 3 colunas, busca, estados (loading/error/empty), paginação. Responsivo completo |
+
+**Melhorias aplicadas (18/05/2026):**
+- `MusicGallery.js`: lógica de paginação com múltiplos fallbacks encadeados substituída por função `getPaginationData` com validação explícita e suporte a formatos de resposta direto e aninhado (`pagination.*`)
+- `MusicCard.js`: regex de extração de ID do Spotify removida do componente e centralizada em `lib/spotify.js` com `extractSpotifyId()` e `getSpotifyEmbedUrl()`, eliminando duplicidade com `UrlField.js`
+- `MusicCard.js`: embed Spotify direto substituído pelo componente `LazyIframe` com carregamento sob demanda (clique do usuário), similar ao que já foi feito no componente VideoCard, evitando carregamento desnecessário do player
 
 ### 2.4 Products
 

@@ -18,6 +18,10 @@ export default function BlogSection({ limit }) {
 
   const posts = responseData || [];
 
+  const displayedPosts = useMemo(() => {
+    return limit ? posts.slice(0, limit) : posts;
+  }, [posts, limit]);
+
   if (loading) {
     return <div className={styles.section}><div className={styles.container} style={{textAlign: 'center'}}>Carregando reflexões...</div></div>;
   }
@@ -25,10 +29,6 @@ export default function BlogSection({ limit }) {
   if (posts.length === 0) {
     return null;
   }
-
-  const displayedPosts = useMemo(() => {
-    return limit ? posts.slice(0, limit) : posts;
-  }, [posts, limit]);
 
   return (
     <section className={styles.section}>

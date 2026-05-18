@@ -596,6 +596,7 @@
 │   ├── reorder.js
 │   ├── seo
 │   │   └── config.js
+│   ├── spotify.js
 │   └── youtube.js
 ├── load-tests
 │   ├── authenticated-flow.js
@@ -1044,4 +1045,4 @@
 ├── tests-output.log
 └── tree.txt
 
-156 directories, 889 files
+156 directories, 890 files

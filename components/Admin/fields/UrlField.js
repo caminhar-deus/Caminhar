@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import styles from '../styles/form.module.css';
 import { extractYoutubeId } from '@/lib/youtube';
+import { extractSpotifyId } from '@/lib/spotify';
 
 /**
  * Campo de URL com validação e preview (YouTube, Spotify, etc)
@@ -40,10 +41,9 @@ export default function UrlField({
     return extractYoutubeId(url);
   }, []);
 
-  // Extrai ID do Spotify
+  // Extrai ID do Spotify usando helper centralizado
   const getSpotifyId = useCallback((url) => {
-    const match = url.match(/(?:spotify\.com\/(?:intl-\w+\/)?track\/|spotify:track:)([^"&?\/\s]+)/);
-    return match ? match[1] : null;
+    return extractSpotifyId(url);
   }, []);
 
   // Valida a URL

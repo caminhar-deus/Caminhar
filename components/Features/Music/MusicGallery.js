@@ -24,15 +24,38 @@ export default function MusicGallery() {
     ? musicasResponse
     : musicasResponse?.data || [];
 
-  // Extrai dados de paginação com fallback
-  const totalPages = musicasResponse?.totalPages
-    || (musicasResponse?.pagination?.totalPages)
-    || Math.ceil((musicasResponse?.total || musicasResponse?.pagination?.total || musicas.length) / 6)
-    || 1;
+  // Extrai dados de paginação de forma consistente
+  const getPaginationData = (response) => {
+    if (!response || typeof response !== 'object') {
+      return { totalPages: 1, totalItems: 0 };
+    }
 
-  const totalItems = musicasResponse?.total
-    || musicasResponse?.pagination?.total
-    || musicas.length;
+    // Formato direto: { totalPages, total, data }
+    if (response.totalPages !== undefined && response.total !== undefined) {
+      return {
+        totalPages: Number(response.totalPages) || 1,
+        totalItems: Number(response.total) || 0,
+      };
+    }
+
+    // Formato aninhado: { pagination: { totalPages, total } }
+    if (response.pagination) {
+      return {
+        totalPages: Number(response.pagination.totalPages) || 1,
+        totalItems: Number(response.pagination.total) || 0,
+      };
+    }
+
+    // Fallback seguro baseado no array de dados
+    const items = Array.isArray(response) ? response : response.data || [];
+    const calculatedPages = Math.ceil(items.length / 6);
+    return {
+      totalPages: calculatedPages > 0 ? calculatedPages : 1,
+      totalItems: items.length,
+    };
+  };
+
+  const { totalPages, totalItems } = getPaginationData(musicasResponse);
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
