@@ -1,4 +1,4 @@
-import { siteConfig, siteUrl, formatSchemaDate, getImageUrl, sanitizeJsonLd } from '../../../lib/seo/config';
+import StructuredDataBase, { siteConfig, siteUrl, formatSchemaDate, getImageUrl } from './StructuredDataBase';
 
 /**
  * ArticleSchema - Schema.org para artigos do blog
@@ -75,10 +75,5 @@ export default function ArticleSchema({
     '@type': ['Article', 'BlogPosting'],
   };
 
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: sanitizeJsonLd(schema) }}
-    />
-  );
+  return <StructuredDataBase schema={schema} />;
 }

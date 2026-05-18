@@ -373,24 +373,39 @@
 
 ## 5. SEO
 
-### 5.1 Head.js
+### 5.1 Head.js — **RESOLVIDO (18/05/2026)**
 
 **Localização:** `components/SEO/Head.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Performance** | Gera tags `preconnect` e `dns-prefetch` para YouTube e Spotify em TODAS as páginas, mesmo quando não há conteúdo dessas plataformas. |
-| 2 | **Manutenção** | Os `preconnect` e `dns-prefetch` (linhas 147-155) duplicam a funcionalidade de `PreloadResources.js`, causando potencial duplicidade de tags no `<head>`. |
-| 3 | **SEO** | A URL canônica (linha 49) não remove trailing slash. Isso pode causar conteúdo duplicado se a página for acessada com/sem barra. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Performance** | Gera tags `preconnect` e `dns-prefetch` para YouTube e Spotify em TODAS as páginas, mesmo quando não há conteúdo dessas plataformas. | ✅ **RESOLVIDO (18/05/2026)** — Blocos removidos, delegado ao `PreloadResources.js` |
+| 2 | **Manutenção** | Os `preconnect` e `dns-prefetch` duplicam a funcionalidade de `PreloadResources.js`, causando potencial duplicidade de tags no `<head>`. | ✅ **RESOLVIDO (18/05/2026)** — Blocos removidos, eliminando duplicidade |
+| 3 | **SEO** | A URL canônica não remove trailing slash. Pode causar conteúdo duplicado. | ✅ **RESOLVIDO (18/05/2026)** — Adicionado `.replace(/\/+$/, '')` no `router.asPath` |
+| 4 | **Manutenção** | Import relativo `../../lib/seo/config` não segue padrão alias `@` do projeto. | ✅ **RESOLVIDO (18/05/2026)** — Substituído por `@/lib/seo/config` |
 
-### 5.2 StructuredData
+**O que foi feito (18/05/2026):**
+- Blocos `preconnect` e `dns-prefetch` (YouTube, Spotify, Google Fonts) removidos do `Head.js` — a responsabilidade foi transferida exclusivamente para o componente `PreloadResources.js`, eliminando duplicidade de tags no `<head>`
+- URL canônica agora remove trailing slash com `router.asPath.replace(/\/+$/, '')`, prevenindo conteúdo duplicado entre URLs com/sem barra final
+- Import relativo `../../lib/seo/config` substituído pelo alias `@/lib/seo/config` para consistência com o padrão do projeto
+
+### 5.2 StructuredData — **RESOLVIDO (18/05/2026)**
 
 **Localização:** `components/SEO/StructuredData/`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Duplicidade** | Todos os componentes de StructuredData repetem `sanitizeJsonLd`, `siteConfig`, `siteUrl`, `formatSchemaDate`, `getImageUrl` importados de `lib/seo/config`. Código boilerplate alto. |
-| 2 | **Manutenção** | Todos esses componentes importam de `../../../lib/seo/config`, que é um caminho relativo longo. Poderia usar alias `@/lib/seo/config`. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Duplicidade** | Todos os componentes de StructuredData repetem `sanitizeJsonLd`, `siteConfig`, `siteUrl`, `formatSchemaDate`, `getImageUrl` importados de `lib/seo/config`. Código boilerplate alto. | ✅ **RESOLVIDO** |
+| 2 | **Manutenção** | Todos esses componentes importam de `../../../lib/seo/config`, que é um caminho relativo longo. Poderia usar alias `@/lib/seo/config`. | ✅ **RESOLVIDO** |
+
+**O que foi feito (18/05/2026):**
+- Criado componente base `StructuredDataBase.js` que centraliza os imports de `@/lib/seo/config` e exporta como re-exportações nomeadas (`siteConfig`, `siteUrl`, `formatSchemaDate`, `getImageUrl`)
+- `StructuredDataBase.js` encapsula o padrão JSX de `<script type="application/ld+json">` com `sanitizeJsonLd()`, eliminando a repetição do JSX em todos os 6 componentes
+- Todos os 6 componentes (`ArticleSchema.js`, `BreadcrumbSchema.js`, `MusicSchema.js`, `OrganizationSchema.js`, `VideoSchema.js`, `WebsiteSchema.js`) foram atualizados para:
+  - Importar do novo helper `StructuredDataBase.js` em vez de `../../../lib/seo/config`
+  - Utilizar as re-exportações nomeadas do helper em vez de imports diretos do config
+  - Delegar a renderização JSX para `<StructuredDataBase schema={schema} />`
+- Caminho relativo longo `../../../lib/seo/config` substituído pelo alias `@/lib/seo/config` (via `StructuredDataBase.js`)
 
 ---
 

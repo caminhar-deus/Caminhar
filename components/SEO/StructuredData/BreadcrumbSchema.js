@@ -1,4 +1,4 @@
-import { siteConfig, siteUrl, sanitizeJsonLd } from '../../../lib/seo/config';
+import StructuredDataBase, { siteConfig, siteUrl } from './StructuredDataBase';
 
 /**
  * BreadcrumbSchema - Schema.org para breadcrumbs/navegação
@@ -43,10 +43,5 @@ export default function BreadcrumbSchema({ items }) {
     }),
   };
 
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: sanitizeJsonLd(schema) }}
-    />
-  );
+  return <StructuredDataBase schema={schema} />;
 }

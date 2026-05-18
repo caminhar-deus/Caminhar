@@ -1,4 +1,4 @@
-import { siteConfig, siteUrl, formatSchemaDate, getImageUrl, sanitizeJsonLd } from '../../../lib/seo/config';
+import StructuredDataBase, { siteConfig, siteUrl, formatSchemaDate, getImageUrl } from './StructuredDataBase';
 
 /**
  * VideoSchema - Schema.org para vídeos (VideoObject)
@@ -88,10 +88,5 @@ export default function VideoSchema({
     },
   };
 
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: sanitizeJsonLd(schema) }}
-    />
-  );
+  return <StructuredDataBase schema={schema} />;
 }

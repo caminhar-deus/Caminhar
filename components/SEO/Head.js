@@ -1,6 +1,6 @@
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { siteConfig } from '../../lib/seo/config';
+import { siteConfig } from '@/lib/seo/config';
 
 /**
  * SEOHead - Componente completo para meta tags SEO
@@ -43,10 +43,11 @@ export default function SEOHead({
 }) {
   const router = useRouter();
   
-  // Gera URL canônica
+  // Gera URL canônica normalizada (remove trailing slash para evitar conteúdo duplicado)
+  const normalizedPath = router.asPath === '/' ? '' : router.asPath.replace(/\/+$/, '');
   const canonicalUrl = canonical 
     ? canonical 
-    : `${siteConfig.url}${router.asPath === '/' ? '' : router.asPath}`;
+    : `${siteConfig.url}${normalizedPath}`;
   
   // Remove query params da URL para OG
   const ogUrl = canonicalUrl.split('?')[0];
@@ -143,16 +144,6 @@ export default function SEOHead({
       <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       <link rel="manifest" href="/manifest.json" />
       
-      {/* Preconnect para domínios externos */}
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      <link rel="preconnect" href="https://www.youtube.com" />
-      <link rel="preconnect" href="https://open.spotify.com" />
-      
-      {/* DNS Prefetch */}
-      <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
-      <link rel="dns-prefetch" href="https://www.youtube.com" />
-      <link rel="dns-prefetch" href="https://open.spotify.com" />
       
       {/* Apple Meta Tags */}
       <meta name="apple-mobile-web-app-capable" content="yes" />

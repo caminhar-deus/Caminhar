@@ -1,4 +1,4 @@
-import { siteConfig, siteUrl, sanitizeJsonLd } from '../../../lib/seo/config';
+import StructuredDataBase, { siteConfig, siteUrl } from './StructuredDataBase';
 
 /**
  * OrganizationSchema - Schema.org para a organização
@@ -46,10 +46,5 @@ export default function OrganizationSchema({
     ],
   };
 
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: sanitizeJsonLd(schema) }}
-    />
-  );
+  return <StructuredDataBase schema={schema} />;
 }

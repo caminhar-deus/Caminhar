@@ -467,14 +467,18 @@ Componentes para otimização de mecanismos de busca.
 **Localização:** `components/SEO/Head.js`
 
 **Propósito:** Componente completo para meta tags SEO. Gera:
-- Title, description, keywords, canonical URL
+- Title, description, keywords, canonical URL (com remoção de trailing slash)
 - Open Graph (og:) tags completas
 - Twitter Cards (summary_large_image)
 - Meta tags de artigo (published_time, author, section, tags)
 - Favicons, manifest, apple-touch-icon
-- Preconnect e DNS Prefetch
 - Geo tags, theme-color, viewport
 - Noindex/nofollow condicional
+
+**Melhorias aplicadas (18/05/2026):**
+- Blocos `preconnect` e `dns-prefetch` removidos — responsabilidade transferida exclusivamente para o componente `PreloadResources.js`, eliminando duplicidade de tags no `<head>`
+- URL canônica agora normaliza trailing slash com `router.asPath.replace(/\/+$/, '')`, prevenindo conteúdo duplicado entre URLs com/sem barra final
+- Import relativo `../../lib/seo/config` substituído pelo alias `@/lib/seo/config` para consistência com o padrão do projeto
 
 ### 5.2 StructuredData
 
@@ -482,6 +486,7 @@ Conjunto de componentes para Schema.org JSON-LD:
 
 | Arquivo | Propósito |
 |---------|-----------|
+| `StructuredDataBase.js` | Componente base que centraliza imports de `@/lib/seo/config` e encapsula o padrão JSX de `<script type="application/ld+json">` com `sanitizeJsonLd()` |
 | `OrganizationSchema.js` | Schema.org Organization. Inclui logo, contato, redes sociais, tipo adicional NGO |
 | `WebsiteSchema.js` | Schema.org WebSite. Inclui SearchAction para busca no site |
 | `ArticleSchema.js` | Schema.org Article + BlogPosting. Inclui headline, imagem, autor, publisher, datas |
@@ -489,6 +494,11 @@ Conjunto de componentes para Schema.org JSON-LD:
 | `MusicSchema.js` | Schema.org MusicRecording + AudioObject. Inclui artista, álbum, duração, letra, links Spotify/YouTube |
 | `VideoSchema.js` | Schema.org VideoObject. Inclui thumbnail, duração, uploadDate, views, transcrição |
 | `index.js` | Ponto de exportação centralizado |
+
+**Melhorias aplicadas (18/05/2026):**
+- Criado `StructuredDataBase.js` como componente base compartilhado, eliminando a duplicação de imports e JSX em todos os 6 componentes de schema
+- Todos os componentes (`ArticleSchema`, `BreadcrumbSchema`, `MusicSchema`, `OrganizationSchema`, `VideoSchema`, `WebsiteSchema`) refatorados para usar o helper `StructuredDataBase`
+- Caminho relativo `../../../lib/seo/config` substituído pelo alias `@/lib/seo/config` (via `StructuredDataBase.js`)
 
 ### 5.3 index.js (SEO)
 **Localização:** `components/SEO/index.js`
