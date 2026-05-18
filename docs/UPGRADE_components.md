@@ -310,15 +310,15 @@
 | 2 | **Manutenção** | Componente não possuía PropTypes para validação de tipos em runtime. Adicionados `Stack.propTypes` com tipagem completa de todas as props, e `Stack.Item.propTypes`, `Stack.Divider.propTypes`, `Stack.Spacer.propTypes`, `Stack.VStack.propTypes`, `Stack.HStack.propTypes`. | ✅ **RESOLVIDO (18/05/2026)** |
 | 3 | **Manutenção** | Subcomponentes `Stack.Item`, `Stack.Divider`, `Stack.Spacer`, `Stack.VStack` e `Stack.HStack` não possuíam `displayName`, dificultando debugging em React DevTools. Adicionados `displayName` em todos os subcomponentes. | ✅ **RESOLVIDO (18/05/2026)** |
 
-### 3.4 Sidebar.js
+### 3.4 Sidebar.js — **RESOLVIDO (18/05/2026)**
 
 **Localização:** `components/Layout/Sidebar.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Performance** | O `useEffect` que persiste collapsed (linha 55-63) executa a cada mudança de `collapsed`. Como `localStorage.setItem` é síncrono, pode causar pequenos delays. Poderia ser debounced. |
-| 2 | **Acessibilidade** | O overlay mobile (linha 121) tem `aria-hidden="true"`, mas o conteúdo principal atrás do overlay ainda pode receber foco via Tab. Deveria usar `inert` ou `aria-hidden` no container pai. |
-| 3 | **Manutenção** | O seletor CSS `+ .main` e `~ .main` (Sidebar.module.css, linhas 124-145) pode causar problemas de especificidade. A margem do main é controlada por seletores de irmãos, o que é frágil. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Performance** | O `useEffect` que persiste collapsed executa a cada mudança de `collapsed`. Como `localStorage.setItem` é síncrono, pode causar pequenos delays. Adicionado `setTimeout` com cleanup no retorno do `useEffect` (debounce de 300ms), evitando gravações excessivas no `localStorage`. | ✅ **RESOLVIDO (18/05/2026)** |
+| 2 | **Acessibilidade** | O overlay mobile tem `aria-hidden="true"`, mas o conteúdo principal atrás do overlay ainda pode receber foco via Tab. Adicionado atributo `inert` no container pai quando `mobileOpen` está ativo, impedindo que elementos focáveis atrás do overlay recebam foco via teclado. | ✅ **RESOLVIDO (18/05/2026)** |
+| 3 | **Manutenção** | O seletor CSS `+ .main` e `~ .main` (Sidebar.module.css) pode causar problemas de especificidade. Substituído por CSS Custom Property `--main-margin` calculada dinamicamente no JavaScript do componente via `sidebarWidthMap` e `collapsedWidthMap`, eliminando ~25 linhas de seletores de irmãos frágeis. | ✅ **RESOLVIDO (18/05/2026)** |
 
 ### 3.5 Stack.module.css ✅ **RESOLVIDO (18/05/2026)**
 

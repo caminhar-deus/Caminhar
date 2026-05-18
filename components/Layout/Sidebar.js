@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styles from './Sidebar.module.css';
 
 /**
@@ -51,16 +51,25 @@ export const Sidebar = ({
   const isMobileControlled = mobileOpenProp !== undefined;
   const mobileOpen = isMobileControlled ? mobileOpenProp : internalMobileOpen;
 
-  // Persiste estado collapsed quando muda
+  // Persiste estado collapsed quando muda (com debounce de 300ms)
   useEffect(() => {
-    if (persistCollapsed) {
+    if (!persistCollapsed) return;
+
+    const timer = setTimeout(() => {
       try {
         localStorage.setItem('sidebar-collapsed', JSON.stringify(collapsed));
       } catch {
         // localStorage indisponível
       }
-    }
+    }, 300);
+
+    return () => clearTimeout(timer);
   }, [collapsed, persistCollapsed]);
+
+  // Calcula margem dinamicamente para evitar seletores CSS de irmãos frágeis
+  const sidebarWidthMap = { sm: 200, md: 260, lg: 320 };
+  const collapsedWidthMap = { sm: 64, md: 72, lg: 80 };
+  const currentWidth = collapsed ? collapsedWidthMap[width] : sidebarWidthMap[width];
 
   const containerClasses = [
     styles.container,
@@ -98,7 +107,11 @@ export const Sidebar = ({
   };
 
   return (
-    <div className={containerClasses} style={{ '--sidebar-breakpoint': `${breakpoint}px` }}>
+    <div
+      className={containerClasses}
+      style={{ '--sidebar-breakpoint': `${breakpoint}px` }}
+      {...(mobileOpen ? { inert: '' } : {})}
+    >
       {/* Mobile Toggle Button */}
       {collapsible && (
         <button
@@ -155,7 +168,10 @@ export const Sidebar = ({
       </aside>
 
       {/* Main Content */}
-      <main className={`${styles.main} ${styles.mainContent}`}>
+      <main
+        className={`${styles.main} ${styles.mainContent}`}
+        style={{ '--main-margin': `${currentWidth}px` }}
+      >
         {children}
       </main>
     </div>

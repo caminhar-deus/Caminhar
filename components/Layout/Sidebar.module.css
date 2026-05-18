@@ -117,56 +117,13 @@
 /* Main Content */
 .main {
   flex: 1;
-  margin-left: 260px;
+  margin-left: var(--main-margin, 260px);
   transition: margin-left 300ms ease, margin-right 300ms ease;
-}
-
-.left.sm + .main,
-.left.sm ~ .main {
-  margin-left: 200px;
-}
-
-.left.lg + .main,
-.left.lg ~ .main {
-  margin-left: 320px;
 }
 
 .right .main {
   margin-left: 0;
-  margin-right: 260px;
-}
-
-.right.sm .main {
-  margin-right: 200px;
-}
-
-.right.lg .main {
-  margin-right: 320px;
-}
-
-/* Collapsed states */
-.left.collapsed.sm .main {
-  margin-left: 64px;
-}
-
-.left.collapsed.md .main {
-  margin-left: 72px;
-}
-
-.left.collapsed.lg .main {
-  margin-left: 80px;
-}
-
-.right.collapsed.sm .main {
-  margin-right: 64px;
-}
-
-.right.collapsed.md .main {
-  margin-right: 72px;
-}
-
-.right.collapsed.lg .main {
-  margin-right: 80px;
+  margin-right: var(--main-margin, 260px);
 }
 
 /* Navigation */

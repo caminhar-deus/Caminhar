@@ -368,10 +368,16 @@ Componentes de layout do Design System para construção de páginas.
 **Propósito:** Layout com sidebar colapsável. Suporta:
 - Posição left/right
 - 3 tamanhos (sm, md, lg)
-- Estado colapsado com persistência em localStorage
-- Modo mobile com overlay
-- Breakpoint configurável
+- Estado colapsado com persistência em localStorage (com debounce de 300ms)
+- Modo mobile com overlay e atributo `inert` para bloqueio de foco do teclado
+- Breakpoint configurável via CSS Custom Property `--sidebar-breakpoint`
+- Margem do conteúdo principal calculada dinamicamente via `--main-margin` (CSS Custom Property)
 - Subcomponentes: `Sidebar.Nav`, `Sidebar.NavItem`, `Sidebar.Section`, `Sidebar.Header`, `Sidebar.Footer`
+
+**Melhorias aplicadas (18/05/2026):**
+- `useEffect` de persistência do `localStorage` agora utiliza `setTimeout` com cleanup (debounce de 300ms) para evitar gravações síncronas excessivas a cada mudança de estado `collapsed`
+- Container pai recebe atributo `inert` quando `mobileOpen` está ativo, impedindo que elementos focáveis atrás do overlay recebam foco via teclado (acessibilidade)
+- Margem do conteúdo principal (`<main>`) agora é calculada dinamicamente no JavaScript via `sidebarWidthMap` e `collapsedWidthMap`, aplicada como CSS Custom Property `--main-margin`, eliminando ~25 linhas de seletores CSS de irmãos frágeis (`+ .main`, `~ .main`) no `Sidebar.module.css`
 
 ### 3.5 index.js (Layout)
 **Localização:** `components/Layout/index.js`
