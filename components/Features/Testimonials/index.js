@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useApiFetch } from '@/hooks';
+import { useApiFetch, useDebounce } from '@/hooks';
+import styles from './Testimonials.module.css';
 
 const fallbackData = [
   {
@@ -34,6 +35,7 @@ export default function Testimonials() {
     },
     onError: (err) => console.error('Erro ao buscar as dicas do dia:', err),
     deps: [currentPage],
+    staleTime: 60000, // 1 minuto de cache para evitar chamadas repetidas
   });
 
   // Usa dados da API se disponíveis, senão fallback
@@ -68,12 +70,14 @@ export default function Testimonials() {
     }
   };
 
+  const debouncedHandleScroll = useDebounce(handleScroll, 100);
+
   // Atualiza as setas caso a janela seja redimensionada ou as dicas mudem
   useEffect(() => {
     handleScroll();
-    window.addEventListener('resize', handleScroll);
-    return () => window.removeEventListener('resize', handleScroll);
-  }, [dicas]);
+    window.addEventListener('resize', debouncedHandleScroll);
+    return () => window.removeEventListener('resize', debouncedHandleScroll);
+  }, [dicas, debouncedHandleScroll]);
 
   const hasCarousel = dicas.length > 3;
 
@@ -94,38 +98,39 @@ export default function Testimonials() {
   };
 
   return (
-    <section className="testimonials-section">
-      <div className="testimonials-header">
-        <h2 className="testimonials-title">Dicas do Dia</h2>
-        <p className="testimonials-subtitle">
+    <section className={styles['testimonials-section']}>
+      <div className={styles['testimonials-header']}>
+        <h2 className={styles['testimonials-title']}>Dicas do Dia</h2>
+        <p className={styles['testimonials-subtitle']}>
           Pequenas porções de sabedoria, fé e oração para inspirar e fortalecer a sua jornada diária.
         </p>
       </div>
 
       <div style={{ position: 'relative', maxWidth: '1200px', margin: '0 auto' }}>
         {hasCarousel && canScrollLeft && (
-          <button onClick={() => scroll('left')} className="nav-button left" aria-label="Anterior">
+          <button onClick={() => scroll('left')} className={`${styles['nav-button']} ${styles['left']}`} aria-label="Anterior" aria-controls="testimonials-carousel">
             ❮
           </button>
         )}
 
         <div 
           ref={scrollRef}
+          id="testimonials-carousel"
           onScroll={handleScroll}
-          className={`dicas-container ${hasCarousel ? 'carousel' : 'grid'}`}
+          className={`${styles['dicas-container']} ${hasCarousel ? styles['carousel'] : styles['grid']}`}
         >
         {dicas.map((dica) => (
           <div 
             key={dica.id} 
-            className="dica-card"
+            className={styles['dica-card']}
           >
-            <p className="dica-content">
+            <p className={styles['dica-content']}>
               "{dica.content}"
             </p>
             
-            <div className="dica-author">
+            <div className={styles['dica-author']}>
               <div>
-                <h4 className="dica-name">
+                <h4 className={styles['dica-name']}>
                   {dica.name}
                 </h4>
               </div>
@@ -135,175 +140,35 @@ export default function Testimonials() {
         </div>
 
         {hasCarousel && canScrollRight && (
-          <button onClick={() => scroll('right')} className="nav-button right" aria-label="Próxima">
+          <button onClick={() => scroll('right')} className={`${styles['nav-button']} ${styles['right']}`} aria-label="Próxima" aria-controls="testimonials-carousel">
             ❯
           </button>
         )}
       </div>
 
       {totalPages > 1 && (
-        <div className="testimonials-pagination">
+        <div className={styles['testimonials-pagination']}>
           <button
             onClick={() => goToPage(currentPage - 1)}
             disabled={currentPage <= 1}
-            className={`pag-btn ${currentPage <= 1 ? 'pag-disabled' : ''}`}
+            className={`${styles['pag-btn']} ${currentPage <= 1 ? styles['pag-disabled'] : ''}`}
           >
             ← Anterior
           </button>
 
-          <span className="pag-info">
+          <span className={styles['pag-info']}>
             Página {currentPage} de {totalPages}
           </span>
 
           <button
             onClick={() => goToPage(currentPage + 1)}
             disabled={currentPage >= totalPages}
-            className={`pag-btn ${currentPage >= totalPages ? 'pag-disabled' : ''}`}
+            className={`${styles['pag-btn']} ${currentPage >= totalPages ? styles['pag-disabled'] : ''}`}
           >
             Próximo →
           </button>
         </div>
       )}
-
-      <style jsx>{`
-        .testimonials-section {
-          padding: var(--section-md) var(--spacing-4);
-          background-color: var(--color-bg-secondary);
-          border-radius: var(--border-radius-xl);
-          margin: var(--spacing-8) 0;
-        }
-        .testimonials-header {
-          text-align: center;
-          margin-bottom: var(--spacing-12);
-        }
-        .testimonials-title {
-          font-size: var(--font-size-4xl);
-          color: var(--color-text-primary);
-          margin-bottom: var(--spacing-2);
-        }
-        .testimonials-subtitle {
-          color: var(--color-text-secondary);
-          font-size: var(--font-size-lg);
-          max-width: 600px;
-          margin: 0 auto;
-        }
-        .dicas-container {
-          gap: var(--spacing-8);
-          padding: var(--spacing-4) 0;
-        }
-        .dicas-container.grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        }
-        .dicas-container.carousel {
-          display: flex;
-          flex-wrap: nowrap;
-          overflow-x: auto;
-          scroll-behavior: smooth;
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        .dicas-container.carousel::-webkit-scrollbar {
-          display: none;
-        }
-        .dica-card {
-          background-color: var(--color-bg-primary);
-          padding: var(--spacing-8);
-          border-radius: var(--border-radius-xl);
-          box-shadow: var(--shadow-card);
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          transition: var(--transition-transform), var(--transition-shadow);
-        }
-        .carousel .dica-card {
-          flex: 0 0 auto;
-          width: 320px;
-        }
-        .dica-card:hover {
-          transform: translateY(-8px);
-          box-shadow: var(--shadow-cardHover);
-        }
-        .dica-content {
-          color: var(--color-text-secondary);
-          font-size: var(--font-size-base);
-          line-height: var(--line-height-relaxed);
-          margin-bottom: var(--spacing-6);
-        }
-        .dica-author {
-          display: flex;
-          align-items: center;
-          gap: var(--spacing-4);
-          margin-top: auto;
-        }
-        .dica-name {
-          margin: 0;
-          color: var(--color-text-primary);
-          font-weight: var(--font-weight-semibold);
-          font-size: var(--font-size-base);
-        }
-        .testimonials-pagination {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          gap: var(--spacing-4);
-          margin-top: var(--spacing-8);
-        }
-        .pag-btn {
-          padding: var(--spacing-2_5) var(--spacing-5);
-          background-color: var(--color-bg-primary);
-          color: var(--color-text-primary);
-          border: var(--border-width-1) solid var(--color-border-light);
-          border-radius: var(--border-radius-lg);
-          cursor: pointer;
-          font-weight: var(--font-weight-medium);
-          font-size: var(--font-size-sm);
-          transition: var(--transition-all);
-        }
-        .pag-btn:hover:not(.pag-disabled) {
-          background-color: var(--color-bg-secondary);
-          border-color: var(--color-border-default);
-        }
-        .pag-disabled {
-          background-color: var(--color-bg-secondary) !important;
-          color: var(--color-text-tertiary) !important;
-          cursor: not-allowed !important;
-        }
-        .pag-info {
-          color: var(--color-text-secondary);
-          font-size: var(--font-size-sm);
-          font-weight: var(--font-weight-medium);
-        }
-        .nav-button {
-          position: absolute;
-          top: 50%;
-          transform: translateY(-50%);
-          z-index: var(--z-docked);
-          background: var(--color-bg-primary);
-          border: var(--border-width-1) solid var(--color-border-light);
-          border-radius: var(--border-radius-full);
-          width: 44px;
-          height: 44px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          box-shadow: var(--shadow-button);
-          color: var(--color-text-primary);
-          font-size: var(--font-size-xl);
-          transition: var(--transition-background), transform 0.2s;
-        }
-        .nav-button:hover {
-          background: var(--color-bg-secondary);
-          transform: translateY(-50%) scale(1.1);
-        }
-        .nav-button.left { left: -20px; }
-        .nav-button.right { right: -20px; }
-        @media (max-width: 1240px) {
-          .nav-button.left { left: 0px; }
-          .nav-button.right { right: 0px; }
-        }
-      `}</style>
     </section>
   );
 }

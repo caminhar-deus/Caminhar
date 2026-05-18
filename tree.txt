@@ -61,7 +61,8 @@
 │   │   │   │   └── ProductCard.module.css
 │   │   │   └── styles.js
 │   │   ├── Testimonials
-│   │   │   └── index.js
+│   │   │   ├── index.js
+│   │   │   └── Testimonials.module.css
 │   │   └── Video
 │   │       ├── styles
 │   │       │   └── VideoGallery.module.css
@@ -1045,4 +1046,4 @@
 ├── tests-output.log
 └── tree.txt
 
-156 directories, 890 files
+156 directories, 891 files

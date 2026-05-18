@@ -260,11 +260,12 @@
 
 **Localização:** `components/Features/Testimonials/`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Manutenção** | O CSS está inline via `<style jsx>` (linhas 115-182) e não como CSS module, diferentemente do restante do projeto. Inconsistência. |
-| 2 | **Performance** | O event listener `resize` (linha 51) não tem debounce, podendo causar chamadas excessivas em redimensionamento. |
-| 3 | **Acessibilidade** | Os botões de navegação do carrossel (linhas 78, 109) não têm `aria-controls` ou referência ao container. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Manutenção** | O CSS está inline via `<style jsx>` (linhas 115-182) e não como CSS module, diferentemente do restante do projeto. Inconsistência. | ✅ **RESOLVIDO (18/05/2026)** |
+| 2 | **Performance** | O event listener `resize` (linha 51) não tem debounce, podendo causar chamadas excessivas em redimensionamento. | ✅ **RESOLVIDO (18/05/2026)** |
+| 3 | **Acessibilidade** | Os botões de navegação do carrossel (linhas 78, 109) não têm `aria-controls` ou referência ao container. | ✅ **RESOLVIDO (18/05/2026)** |
+| 4 | **Performance** | Fetch de `/api/dicas` sem staleTime, executado a cada montagem do componente. | ✅ **RESOLVIDO (18/05/2026)** — Adicionado `staleTime: 60000` no `useApiFetch` |
 
 ### 2.6 Video
 

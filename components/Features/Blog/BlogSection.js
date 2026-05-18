@@ -14,6 +14,7 @@ export default function BlogSection({ limit }) {
       return [];
     },
     onError: (err) => console.error('Erro ao carregar posts:', err),
+    staleTime: 60000, // 1 minuto de cache para evitar chamadas repetidas
   });
 
   const posts = responseData || [];

@@ -243,6 +243,7 @@ Componentes de funcionalidades específicas do site público.
 
 **Melhorias aplicadas (18/05/2026):**
 - `BlogSection.js`: `displayedPosts` envolvido em `useMemo` com dependências `[posts, limit]` para evitar recálculo desnecessário a cada renderização
+- `BlogSection.js`: adicionado `staleTime: 60000` no `useApiFetch` para evitar chamadas repetidas à API `/api/posts` dentro de 1 minuto
 - `PostCard.js`: atributo `alt` da imagem agora possui fallback (`post.title || 'Imagem ilustrativa do artigo'`) para garantir descrição acessível mesmo quando o título estiver vazio
 - `PostCard.js`: link `/blog/${post.slug}` agora possui `aria-label` descritivo (ex: "Ler mais sobre: {título}") e `title` com o título do post para melhor SEO e acessibilidade
 
@@ -290,11 +291,16 @@ Componentes de funcionalidades específicas do site público.
 - `styles.js`: adicionada whitelist `VALID_PADDING_LEFT` com fallback seguro para token padrão, prevenindo injeção de CSS via parâmetro `paddingLeft` não sanitizado
 
 ### 2.5 Testimonials
-**Localização:** `components/Features/Testimonials/index.js`
 
-**Propósito:** Seção "Dicas do Dia". Carrossel/grid de depoimentos com fallback de dados estáticos. Scroll horizontal com detecção de posição para exibir setas de navegação.
+| Arquivo | Propósito |
+|---------|-----------|
+| `index.js` | Seção "Dicas do Dia". Carrossel/grid de depoimentos com fallback de dados estáticos. Scroll horizontal com detecção de posição para exibir setas de navegação. Consome `/api/dicas` com paginação |
+| `Testimonials.module.css` | Estilos CSS Module da seção de depoimentos: layout, cards, navegação, paginação, responsividade |
 
-**Atualização (13/05/2026):** Estilos inline tokenizados com `var()`. Cores, espaçamentos, bordas e sombras padronizados.
+**Melhorias aplicadas (18/05/2026):**
+- CSS migrado de `<style jsx>` inline para CSS Module (`Testimonials.module.css`), alinhando com o padrão do projeto
+- Event listener `resize` agora utiliza `useDebounce` (delay 100ms) para evitar chamadas excessivas durante redimensionamento da janela
+- Botões de navegação do carrossel (❮/❯) agora possuem `aria-controls="testimonials-carousel"` referenciando o container rolável, melhorando a navegação por leitores de tela
 
 ### 2.6 Video
 
