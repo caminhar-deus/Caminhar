@@ -112,7 +112,16 @@ Sistema administrativo completo com CRUD reutilizável, autenticação, dashboar
 ### 1.9 AdminUsers.js
 **Localização:** `components/Admin/AdminUsers.js`
 
-**Propósito:** Container de abas para "Gestão de Usuários" e "Gestão de Cargos". Renderiza condicionalmente `AdminUsersTab` ou `AdminRolesTab`.
+**Propósito:** Container de abas para "Gestão de Usuários e Admins" e "Gestão de Cargos". Utiliza `React.lazy()` + `<Suspense>` para lazy loading das abas inativas, e atributos ARIA completos para acessibilidade do sistema de abas.
+
+**Melhorias aplicadas (18/05/2026):**
+- Adicionados atributos ARIA completos: `role="tablist"`, `role="tab"`, `aria-selected`, `aria-controls`, `role="tabpanel"`, `aria-labelledby` e `tabIndex` para navegação por teclado
+- Adicionada navegação por setas (ArrowLeft/ArrowRight) entre as abas
+- Implementado lazy loading com `React.lazy()` e `<Suspense>` para carregar `AdminUsersTab` e `AdminRolesTab` sob demanda
+- Estilos inline migrados para classes do `Admin.module.css` (`.adminPanel`, `.tabs`, `.tabButton`, `.activeTab`, `.icon`, `.tabPanel`)
+- Adicionados JSDoc, PropTypes e `displayName` ao componente
+- Ícones emoji encapsulados com `aria-hidden="true"` para leitores de tela
+- Adicionada classe `.tabPanel` no CSS module com `min-height` e `focus-visible` outline
 
 ### 1.10 AdminUsersTab.js
 **Localização:** `components/Admin/AdminUsersTab.js`

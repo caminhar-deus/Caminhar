@@ -108,10 +108,13 @@
 
 **Localização:** `components/Admin/AdminUsers.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Acessibilidade** | O sistema de abas (linhas 16-35) não possui `role="tablist"`, `role="tab"` ou `aria-selected` nos botões, prejudicando navegação por leitores de tela. |
-| 2 | **Performance** | `AdminUsersTab` e `AdminRolesTab` são importados e renderizados mesmo quando a aba não está ativa. Poderia usar lazy loading dinâmico. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Acessibilidade** | O sistema de abas não possuía `role="tablist"`, `role="tab"` ou `aria-selected` nos botões, prejudicando navegação por leitores de tela. Adicionados: `role="tablist"` no container, `role="tab"` e `aria-selected` nos botões, `aria-controls` vinculando ao painel, `role="tabpanel"` e `aria-labelledby` no conteúdo, `tabIndex` para foco via teclado, e navegação por setas (ArrowLeft/ArrowRight). | ✅ **RESOLVIDO (18/05/2026)** |
+| 2 | **Performance** | `AdminUsersTab` e `AdminRolesTab` eram importados estaticamente e renderizados mesmo quando a aba não estava ativa. Substituído por `React.lazy()` + `<Suspense>` com fallback placeholder. | ✅ **RESOLVIDO (18/05/2026)** |
+| 3 | **Manutenção** | Estilos inline (display, gap, padding, cores, etc.) substituídos por classes do `Admin.module.css` (`.adminPanel`, `.tabs`, `.tabButton`, `.activeTab`, `.icon`, `.tabPanel`). | ✅ **RESOLVIDO (18/05/2026)** |
+| 4 | **Manutenção** | Componente não possuía JSDoc, PropTypes ou `displayName`. Adicionados documentação JSDoc com descrição do componente, PropTypes vazio (componente container sem props) e `displayName`. | ✅ **RESOLVIDO (18/05/2026)** |
+| 5 | **UX** | Ícones de aba (`👤`, `🛡️`) mantidos como emoji por simplicidade, mas agora utilizando a classe `.icon` do CSS Module para padronização e com `aria-hidden="true"` para leitores de tela. | ✅ **RESOLVIDO (18/05/2026)** |
 
 ### 1.10 AdminUsersTab.js
 

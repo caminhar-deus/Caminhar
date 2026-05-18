@@ -210,6 +210,18 @@
   background-color: transparent;
 }
 
+/* Tab Panel Content */
+.tabPanel {
+  min-height: 500px;
+  position: relative;
+}
+
+.tabPanel:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+  border-radius: var(--border-radius-lg);
+}
+
 /* Sub Navigation */
 .subNavigation {
   margin-bottom: var(--spacing-8);
