@@ -266,12 +266,14 @@ Componentes de funcionalidades específicas do site público.
 | Arquivo | Propósito |
 |---------|-----------|
 | `MusicCard.js` | Card de música com embed Spotify via `LazyIframe` (carregamento sob demanda). Extrai ID do Spotify via helper `lib/spotify.js`. Exibe título, artista e botão "Ouvir no Spotify" |
-| `MusicGallery.js` | Galeria de músicas com busca (debounce 300ms), paginação com validação explícita de formatos de resposta. Consome `/api/musicas` |
+| `MusicGallery.js` | Galeria de músicas com busca (debounce 300ms), paginação com validação explícita de formatos de resposta. Consome `/api/musicas`. Estados loading/error/empty usam componentes padronizados `LoadingMessage`, `ErrorMessage` e `EmptyMessage` de `StateMessages.js` |
 | `styles/MusicCard.module.css` | Estilos do card de música: embed wrapper, botão Spotify |
 | `styles/MusicGallery.module.css` | Estilos da galeria: grid 3 colunas, busca, estados (loading/error/empty), paginação. Responsivo completo |
 
 **Melhorias aplicadas (18/05/2026):**
 - `MusicGallery.js`: lógica de paginação com múltiplos fallbacks encadeados substituída por função `getPaginationData` com validação explícita e suporte a formatos de resposta direto e aninhado (`pagination.*`)
+- `MusicGallery.js`: dependency array `deps` do `useApiFetch` corrigido — adicionado `debouncedSearchTerm` para que a busca reativa às mudanças no termo pesquisado
+- `MusicGallery.js`: blocos de loading/error/empty substituídos pelos componentes padronizados `LoadingMessage`, `ErrorMessage` e `EmptyMessage` de `StateMessages.js`, reduzindo duplicação de código com `VideoGallery.js`
 - `MusicCard.js`: regex de extração de ID do Spotify removida do componente e centralizada em `lib/spotify.js` com `extractSpotifyId()` e `getSpotifyEmbedUrl()`, eliminando duplicidade com `UrlField.js`
 - `MusicCard.js`: embed Spotify direto substituído pelo componente `LazyIframe` com carregamento sob demanda (clique do usuário), similar ao que já foi feito no componente VideoCard, evitando carregamento desnecessário do player
 
@@ -307,8 +309,8 @@ Componentes de funcionalidades específicas do site público.
 | Arquivo | Propósito |
 |---------|-----------|
 | `VideoCard.js` | Card de vídeo com lazy loading via `LazyIframe`. Exibe título e descrição com truncamento. Tokenizado em 13/05/2026 |
-| `VideoGallery.js` | Galeria de vídeos com busca (debounce 300ms), paginação, estados (loading/error/empty) e botão "Tentar novamente". Estilos inline tokenizados em 13/05/2026 |
-| `styles/VideoGallery.module.css` | Estilos da galeria de vídeos: grid, busca, estados, responsividade. Tokenizado em 13/05/2026 |
+| `VideoGallery.js` | Galeria de vídeos com busca (debounce 300ms), paginação com CSS Module, estados (loading/error/empty) e botão "Tentar novamente". Paginação migrada de estilos inline para classes CSS Module em 18/05/2026 |
+| `styles/VideoGallery.module.css` | Estilos da galeria de vídeos: grid, busca, estados, paginação (`.pagination`, `.pageButton`, `.pageInfo`), responsividade. Tokenizado em 13/05/2026 |
 
 ---
 

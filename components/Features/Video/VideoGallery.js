@@ -96,33 +96,25 @@ export default function VideoGallery() {
 
       {/* Controles de Paginação */}
       {!loading && !error && totalPages > 1 && (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 'var(--spacing-5)', marginTop: 'var(--spacing-10)', paddingBottom: 'var(--spacing-5)' }}>
+        <div className={styles.pagination}>
           <button 
             onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
             disabled={currentPage === 1}
-            style={{ 
-              padding: 'var(--spacing-2_5) var(--spacing-5)', borderRadius: 'var(--border-radius-lg)', fontWeight: 'var(--font-weight-medium)',
-              border: 'var(--border-width-1) solid var(--color-border-light)', backgroundColor: currentPage === 1 ? 'var(--color-bg-secondary)' : 'var(--color-bg-primary)',
-              color: currentPage === 1 ? 'var(--color-text-tertiary)' : 'var(--color-text-primary)', cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-              transition: 'var(--transition-all)'
-            }}
+            className={styles.pageButton}
+            aria-label="Página anterior"
           >
             Anterior
           </button>
           
-          <span style={{ fontWeight: 'var(--font-weight-medium)', color: 'var(--color-text-secondary)' }}>
+          <span className={styles.pageInfo}>
             Página {currentPage} de {totalPages}
           </span>
           
           <button 
             onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} 
             disabled={currentPage === totalPages}
-            style={{ 
-              padding: 'var(--spacing-2_5) var(--spacing-5)', borderRadius: 'var(--border-radius-lg)', fontWeight: 'var(--font-weight-medium)',
-              border: 'var(--border-width-1) solid var(--color-border-light)', backgroundColor: currentPage === totalPages ? 'var(--color-bg-secondary)' : 'var(--color-bg-primary)',
-              color: currentPage === totalPages ? 'var(--color-text-tertiary)' : 'var(--color-text-primary)', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-              transition: 'var(--transition-all)'
-            }}
+            className={styles.pageButton}
+            aria-label="Próxima página"
           >
             Próxima
           </button>

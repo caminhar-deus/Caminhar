@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useApiFetch, useDebounce } from '@/hooks';
+import { LoadingMessage, ErrorMessage, EmptyMessage } from '@/components/UI/StateMessages';
 import MusicCard from './MusicCard';
 import styles from './styles/MusicGallery.module.css';
 
@@ -12,7 +13,7 @@ export default function MusicGallery() {
   const { data: musicasResponse, loading, error } = useApiFetch(
     `/api/musicas?public=true&page=${currentPage}&limit=6&search=${debouncedSearchTerm}`,
     {
-      deps: [currentPage],
+      deps: [currentPage, debouncedSearchTerm],
       transform: (result) => {
         return result;
       },
@@ -79,24 +80,12 @@ export default function MusicGallery() {
         />
       </div>
 
-      {loading && (
-        <div className={styles.loading}>
-          <div className={styles.loadingIcon}>🎵</div>
-          <p>Carregando músicas...</p>
-        </div>
-      )}
+      {loading && <LoadingMessage text="Carregando músicas..." />}
 
-      {error && (
-        <div className={styles.error}>
-          <p>Erro ao carregar músicas. Tente novamente.</p>
-        </div>
-      )}
+      {error && <ErrorMessage message="Erro ao carregar músicas. Tente novamente." />}
 
       {!loading && !error && musicas.length === 0 && (
-        <div className={styles.noResults}>
-          <div className={styles.noResultsIcon}>🔍</div>
-          <p>Nenhuma música encontrada.</p>
-        </div>
+        <EmptyMessage message="Nenhuma música encontrada." />
       )}
 
       {!loading && !error && musicas.length > 0 && (

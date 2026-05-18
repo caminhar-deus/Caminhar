@@ -271,10 +271,10 @@
 
 **Localização:** `components/Features/Video/`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Manutenção** | `VideoGallery.js` (linhas 99-129): os estilos dos botões de paginação estão inline, diferentemente do padrão do projeto que usa CSS modules. |
-| 2 | **Duplicidade** | A estrutura de `MusicGallery.js` e `VideoGallery.js` é muito similar (busca, paginação, estados). Ambas poderiam usar um componente base de galeria. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Manutenção** | `VideoGallery.js` (linhas 99-129): os estilos dos botões de paginação estavam inline, diferentemente do padrão do projeto que usa CSS modules. Migrados para classes CSS `.pagination`, `.pageButton`, `.pageInfo` em `VideoGallery.module.css`. | ✅ **RESOLVIDO (18/05/2026)** |
+| 2 | **Duplicidade** | A estrutura de `MusicGallery.js` e `VideoGallery.js` é similar (busca, paginação, estados). Em `MusicGallery.js`, os blocos de loading/error foram substituídos pelos componentes padronizados `LoadingMessage` e `ErrorMessage` de `StateMessages.js`, reduzindo duplicação parcial. | ✅ **RESOLVIDO (18/05/2026)** |
 
 ---
 
