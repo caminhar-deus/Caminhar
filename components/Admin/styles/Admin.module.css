@@ -903,6 +903,70 @@
   box-shadow: var(--shadow-xs);
 }
 
+/* Permissions Checkbox Grid */
+.permissionsField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.permissionsLabel {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.permissionsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  border: var(--border-width-1) solid var(--color-border-light);
+  border-radius: var(--border-radius-lg);
+  background-color: var(--color-bg-secondary);
+  transition: border-color 0.2s ease-in-out;
+}
+
+.permissionsGridError {
+  border-color: var(--color-error-500);
+}
+
+.permissionsCheckbox {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+}
+
+.permissionsCheckboxInput {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--color-primary-500);
+}
+
+.permissionsError {
+  font-size: var(--font-size-xs);
+  color: var(--color-error-500);
+}
+
+/* Permissions Badge Tags */
+.permissionsBadgeContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1);
+}
+
+.permissionsBadge {
+  padding: var(--spacing-0_5) var(--spacing-1_5);
+  border-radius: var(--border-radius-sm);
+  font-size: 0.75rem;
+  background-color: var(--color-info-50);
+  color: var(--color-info-700);
+  border: var(--border-width-1) solid var(--color-info-200);
+}
+
 /* Skeleton loading animation - centralizado aqui (removido de AdminCrudBase.js e AdminAudit.js) */
 @keyframes skeleton-pulse {
   0%, 100% { opacity: 1; }

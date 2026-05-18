@@ -1,6 +1,6 @@
 import { describe, it, expect, jest, beforeEach, beforeAll, afterAll } from '@jest/globals';
 import { query, closeDatabase, transaction, healthCheck, getDatabaseInfo, resetPool } from '../../../lib/db.js';
-import { Pool } from 'pg';
+import { Pool, restorePoolImplementation } from 'pg';
 
 jest.mock('pg');
 
@@ -21,17 +21,20 @@ describe('Library - Database', () => {
   });
 
   beforeEach(() => {
-    resetPool();
     jest.clearAllMocks();
+    restorePoolImplementation();
     
     mockClient = { query: jest.fn(), release: jest.fn() };
     mockPoolInstance = {
       query: jest.fn(),
       connect: jest.fn(() => Promise.resolve(mockClient)),
-      end: jest.fn()
+      end: jest.fn(),
+      on: jest.fn(),
+      removeAllListeners: jest.fn(),
     };
     
     Pool.mockImplementation(() => mockPoolInstance);
+    resetPool();
   });
 
   it('query: executa consulta SQL diretamente com sucesso', async () => {
@@ -42,10 +45,13 @@ describe('Library - Database', () => {
   });
 
   it('query: falha e lança erro ou retorna nulo dependendo das opções', async () => {
-    mockPoolInstance.query.mockRejectedValueOnce(new Error('DB Timeout'));
+    // Usa mockImplementation para rejeitar SEMPRE (incluindo retry), 
+    // pois o retry automático do query() faz duas tentativas
+    mockPoolInstance.query.mockImplementation(() => Promise.reject(new Error('DB Timeout')));
     await expect(query('SELECT 1')).rejects.toThrow('DB Timeout');
 
-    mockPoolInstance.query.mockRejectedValueOnce(new Error('DB Timeout'));
+    jest.clearAllMocks();
+    mockPoolInstance.query.mockImplementation(() => Promise.reject(new Error('DB Timeout')));
     const res = await query('SELECT 1', [], { throwOnError: false });
     expect(res).toBeNull();
   });

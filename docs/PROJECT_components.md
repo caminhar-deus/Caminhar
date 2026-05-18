@@ -106,6 +106,9 @@ Sistema administrativo completo com CRUD reutilizável, autenticação, dashboar
 
 **Propósito:** Gestão de cargos e permissões. Usa `AdminCrudBase` com campo customizado de seleção de permissões via checkboxes. Normaliza permissões antigas automaticamente.
 
+**Melhorias aplicadas (18/05/2026):**
+- Lista de permissões extraída para `lib/domain/permissions.js` com `Object.freeze`, garantindo imutabilidade e permitindo reuso em outros componentes
+
 ### 1.9 AdminUsers.js
 **Localização:** `components/Admin/AdminUsers.js`
 

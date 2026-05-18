@@ -32,7 +32,8 @@ describe('Base Query Wrapper', () => {
             code: undefined,
             duration: expect.any(String),
             message: 'Connection lost',
-            query: 'SELECT 1'
+            query: 'SELECT 1',
+            attempt: 1
         });
         consoleSpy.mockRestore();
     });

@@ -576,6 +576,7 @@
 │   │   ├── audit.js
 │   │   ├── images.js
 │   │   ├── musicas.js
+│   │   ├── permissions.js
 │   │   ├── posts.js
 │   │   ├── products.js
 │   │   ├── settings.js
@@ -693,7 +694,8 @@
 │       ├── post-image-1774660757289.png
 │       ├── post-image-1774752555186.png
 │       ├── post-image-1774752839426.png
-│       └── post-image-1774752904235.webp
+│       ├── post-image-1774752904235.webp
+│       └── post-image-6010b274-c22f-486a-80a9-dbf9c70d4535.png
 ├── rate-limit-proxy.js
 ├── README.md
 ├── reports
@@ -1029,4 +1031,4 @@
 ├── tests-output.log
 └── tree.txt
 
-156 directories, 874 files
+156 directories, 876 files

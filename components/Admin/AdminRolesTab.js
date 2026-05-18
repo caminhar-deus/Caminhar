@@ -2,12 +2,8 @@ import React from 'react';
 import AdminCrudBase from './AdminCrudBase';
 import TextField from './fields/TextField';
 import { z } from 'zod';
-
-// Permissões solicitadas para a configuração
-const permissionsList = [
-  'Visão Geral', 'Posts/Artigos', 'Gestão de Músicas', 'Gestão de Vídeos',
-  'Gestão de Produtos', 'Gestão de Dicas', 'Configuração de Cabeçalho', 'Segurança', 'Usuários', 'Auditoria'
-];
+import permissionsList from '@/lib/domain/permissions';
+import styles from './styles/Admin.module.css';
 
 // Componente customizado para selecionar as permissões do cargo via Checkboxes
 const PermissionsSelectField = ({ name, value, onChange, label, error, gridColumn }) => {
@@ -24,25 +20,22 @@ const PermissionsSelectField = ({ name, value, onChange, label, error, gridColum
   };
 
   return (
-    <div style={{ gridColumn, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      <label style={{ fontWeight: '600', fontSize: '0.9rem', color: '#374151' }}>{label}</label>
-      <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-        gap: '12px', padding: '16px', border: `1px solid ${error ? '#ef4444' : '#d1d5db'}`, borderRadius: '6px', backgroundColor: '#f9fafb', transition: 'border-color 0.2s ease-in-out'
-      }}>
+    <div style={{ gridColumn }} className={styles.permissionsField}>
+      <label className={styles.permissionsLabel}>{label}</label>
+      <div className={`${styles.permissionsGrid}${error ? ` ${styles.permissionsGridError}` : ''}`}>
         {permissionsList.map(perm => (
-          <label key={perm} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem' }}>
+          <label key={perm} className={styles.permissionsCheckbox}>
             <input
               type="checkbox"
+              className={styles.permissionsCheckboxInput}
               checked={selected.includes(perm)}
               onChange={() => togglePerm(perm)}
-              style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#2563eb' }}
             />
             {perm}
           </label>
         ))}
       </div>
-      {error && <span style={{ fontSize: '0.8rem', color: '#ef4444' }}>{error}</span>}
+      {error && <span className={styles.permissionsError}>{error}</span>}
     </div>
   );
 };
@@ -73,12 +66,9 @@ const columns = [
       // Normaliza para exibição e filtra apenas as permissões válidas da lista atual
       const perms = [...new Set(rawPerms.map(p => p === 'Dicas' ? 'Gestão de Dicas' : p))].filter(p => permissionsList.includes(p));
       return (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+        <div className={styles.permissionsBadgeContainer}>
           {perms.map(p => (
-            <span key={p} style={{
-              padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem',
-              backgroundColor: '#e0f2fe', color: '#0369a1', border: '1px solid #bae6fd'
-            }}>{p}</span>
+            <span key={p} className={styles.permissionsBadge}>{p}</span>
           ))}
         </div>
       );

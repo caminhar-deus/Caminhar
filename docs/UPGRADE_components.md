@@ -98,9 +98,11 @@
 
 **Localização:** `components/Admin/AdminRolesTab.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Performance** | O array `permissionsList` (linha 7) é recriado a cada importação. Poderia ser `const` com Object.freeze ou em arquivo separado. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Performance** | O array `permissionsList` (linha 7) era recriado a cada importação. Extraído para `lib/domain/permissions.js` com `Object.freeze`. | ✅ **RESOLVIDO (18/05/2026)** |
+| 2 | **Manutenção** | Estilos inline no `PermissionsSelectField` e na coluna de permissões. Migrados para CSS Modules utilizando classes do `Admin.module.css`. | ✅ **RESOLVIDO (18/05/2026)** |
+| 3 | **Manutenção** | Cores hardcoded (`#374151`, `#ef4444`, `#d1d5db`, `#2563eb`, `#e0f2fe`, `#0369a1`, `#bae6fd`) substituídas por CSS Custom Properties (`var(--color-*)`). | ✅ **RESOLVIDO (18/05/2026)** |
 
 ### 1.9 AdminUsers.js
 
