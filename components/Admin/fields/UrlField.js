@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import styles from '../styles/Admin.module.css';
+import { extractYoutubeId } from '@/lib/youtube';
 
 /**
  * Campo de URL com validação e preview (YouTube, Spotify, etc)
@@ -34,10 +35,9 @@ export default function UrlField({
 }) {
   const [validationError, setValidationError] = useState('');
 
-  // Extrai ID do YouTube
+  // Extrai ID do YouTube usando helper centralizado
   const getYouTubeId = useCallback((url) => {
-    const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-    return match ? match[1] : null;
+    return extractYoutubeId(url);
   }, []);
 
   // Extrai ID do Spotify

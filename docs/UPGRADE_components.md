@@ -132,10 +132,10 @@
 
 | # | Tipo | Descrição |
 |---|------|-----------|
-| 1 | **Duplicidade** | A regex de extração de ID do YouTube (linha 28) é duplicada em `LazyIframe.js` (linha 84) e `UrlField.js` (linha 39). Deveria ser um helper centralizado. | ⬜️ **PENDENTE** |
+| 1 | **Duplicidade** | A regex de extração de ID do YouTube (linha 28) era duplicada em `LazyIframe.js` (linha 84) e `UrlField.js` (linha 39). Criado helper centralizado em `lib/youtube.js` com `extractYoutubeId()` e atualizados os 3 arquivos para usá-lo. | ✅ **RESOLVIDO (18/05/2026)** |
 | 2 | **Duplicidade** | `handleReorder` duplicado (idem item 1.5 #1). Extraído para `lib/reorder.js`. | ✅ **RESOLVIDO (14/05/2026)** |
 | 3 | **Duplicidade** | `renderCustomFormField` duplicado (idem item 1.5 #2). Extraído para `ExternalDataButton.js`. | ✅ **RESOLVIDO (14/05/2026)** |
-| 4 | **Performance** | O embed de vídeo na tabela (linhas 130-141) carrega o iframe do YouTube já na listagem, o que pode ser pesado. Poderia ser lazy. | ⬜️ **PENDENTE** |
+| 4 | **Performance** | O embed de vídeo na tabela carregava iframe do YouTube já na listagem. Substituído pelo componente `LazyIframe` que carrega via clique (thumbnail + carregamento sob demanda). | ✅ **RESOLVIDO (18/05/2026)** |
 
 ### 1.12 withAdminAuth.js
 

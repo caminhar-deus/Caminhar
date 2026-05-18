@@ -141,9 +141,9 @@ Sistema administrativo completo com CRUD reutilizável, autenticação, dashboar
 **Localização:** `components/Admin/AdminVideos.js`
 
 **Propósito:** Gestão de vídeos com integração YouTube. Usa `AdminCrudBase` com campos: título, descrição, URL do YouTube, thumbnail, status. Inclui:
-- Extração de ID do YouTube de múltiplos formatos de URL
+- Extração de ID do YouTube de múltiplos formatos de URL via helper centralizado `lib/youtube.js`
 - Botão "Puxar Dados" via componente genérico `ExternalDataButton` que busca título via API do YouTube
-- Preview do embed na tabela
+- Preview do embed na tabela com carregamento lazy via `LazyIframe` (carrega sob demanda ao clicar)
 - Paginação habilitada
 - Reordenação Drag & Drop via helper compartilhado `lib/reorder.js`
 
@@ -151,6 +151,10 @@ Sistema administrativo completo com CRUD reutilizável, autenticação, dashboar
 - `handleReorder` extraído para helper compartilhado `lib/reorder.js`
 - Botão "Puxar Dados" substituído pelo componente genérico `ExternalDataButton`
 - Layout do botão alterado de `position: absolute` para flexbox responsivo
+
+**Melhorias aplicadas (18/05/2026):**
+- Regex de extração de ID do YouTube extraída para helper centralizado `lib/youtube.js` com função `extractYoutubeId()`, eliminando duplicação em `AdminVideos.js`, `LazyIframe.js` e `UrlField.js`
+- Embed de vídeo na tabela substituído pelo componente `LazyIframe`, que carrega via clique (thumbnail + carregamento sob demanda), evitando carregamento de múltiplos iframes do YouTube na listagem
 
 ### 1.12 index.js (Admin)
 **Localização:** `components/Admin/index.js`

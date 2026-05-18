@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { extractYoutubeId } from '@/lib/youtube';
 
 /**
  * LazyIframe - Componente para lazy loading de iframes (YouTube, Spotify, etc)
@@ -81,7 +82,7 @@ export default function LazyIframe({
     if (thumbnail) return thumbnail;
     
     if (provider === 'youtube') {
-      const videoId = src.match(/(?:youtube\.com\/embed\/|youtu\.be\/|youtube\.com\/watch\?v=)([^&?\s]+)/)?.[1];
+      const videoId = extractYoutubeId(src);
       if (videoId) {
         return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
       }
@@ -93,7 +94,7 @@ export default function LazyIframe({
   // Garante URL de embed correta para YouTube
   const getEmbedSrc = () => {
     if (provider === 'youtube') {
-      const videoId = src.match(/(?:youtube\.com\/embed\/|youtu\.be\/|youtube\.com\/watch\?v=)([^&?\s]+)/)?.[1];
+      const videoId = extractYoutubeId(src);
       if (videoId) {
         return `https://www.youtube.com/embed/${videoId}`;
       }

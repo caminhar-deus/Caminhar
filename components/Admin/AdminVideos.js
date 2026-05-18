@@ -7,6 +7,8 @@ import ToggleField from './fields/ToggleField';
 import ImageUploadField from './fields/ImageUploadField';
 import ExternalDataButton from './fields/ExternalDataButton';
 import { handleReorder } from '@/lib/reorder';
+import { extractYoutubeId } from '@/lib/youtube';
+import LazyIframe from '@/components/Performance/LazyIframe';
 import { z } from 'zod';
 
 /**
@@ -18,20 +20,6 @@ const videoSchema = z.object({
   descricao: z.string().max(500, 'Descrição deve ter no máximo 500 caracteres').optional(),
   thumbnail: z.string().optional()
 });
-
-/**
- * Extrai de forma robusta o ID de um vídeo a partir de diferentes formatos de URL do YouTube.
- * @param {string} url - A URL do YouTube.
- * @returns {string} O ID do vídeo, ou uma string vazia se não for encontrado.
- */
-const getYoutubeVideoId = (url) => {
-  if (!url) return '';
-  // Regex para cobrir os formatos mais comuns de URL do YouTube (padrão, curto, embed, etc.)
-  const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-  const match = url.match(regex);
-  
-  return match ? match[1] : '';
-};
 
 /**
  * Configuração dos campos do formulário
@@ -116,7 +104,7 @@ const columns = [
     header: 'YouTube',
     width: '350px',
     render: (item) => {
-      const videoId = getYoutubeVideoId(item.url_youtube);
+      const videoId = extractYoutubeId(item.url_youtube);
       return (
         <div>
           <a 
@@ -129,17 +117,13 @@ const columns = [
           </a>
           {videoId && (
             <div style={{ marginTop: '10px' }}>
-              <iframe
-                data-testid="embed-iframe"
-                style={{ borderRadius: '8px' }}
+              <LazyIframe
                 src={`https://www.youtube.com/embed/${videoId}?autoplay=0`}
                 title={`Pré-visualização do vídeo ${item.titulo}`}
-                width="100%"
-                height="200"
-                frameBorder="0"
-                allowFullScreen
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                loading="lazy"
+                provider="youtube"
+                aspectRatio="16/9"
+                loadOnVisible={false}
+                placeholderText="▶ Clique para carregar"
               />
             </div>
           )}
