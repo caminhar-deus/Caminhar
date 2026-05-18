@@ -1,9 +1,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import styles from '../styles/Admin.module.css';
+import Input from '@/components/UI/Input';
 
 /**
- * Campo de texto reutilizável
+ * Campo de texto reutilizável (Admin)
+ * Adaptador que delega para o componente Input da UI, mantendo a API específica do Admin.
  * @param {Object} props - Propriedades do componente
  * @param {string} props.name - Nome do campo
  * @param {string} props.label - Label exibida
@@ -30,31 +31,21 @@ export default function TextField({
   ...props
 }) {
   return (
-    <div className={`${styles.formGroup} ${className}`}>
-      <label htmlFor={name}>
-        {label}
-        {required && <span style={{ color: 'var(--color-error-500)', marginLeft: '4px' }}>*</span>}
-      </label>
-      <input
-        id={name}
-        type={type}
-        name={name}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        required={required}
-        className={styles.input}
-        {...props}
-      />
-      {error && (
-        <small style={{ color: 'var(--color-error-500)', fontSize: '12px', marginTop: '4px', display: 'block' }}>
-          {error}
-        </small>
-      )}
-      {hint && !error && (
-        <small className={styles.formHint}>{hint}</small>
-      )}
-    </div>
+    <Input
+      id={name}
+      name={name}
+      type={type}
+      label={label}
+      value={value ?? ''}
+      onChange={onChange}
+      placeholder={placeholder}
+      required={required}
+      error={!!error}
+      errorMessage={error}
+      helperText={hint}
+      className={className}
+      {...props}
+    />
   );
 }
 

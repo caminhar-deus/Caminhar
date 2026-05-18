@@ -40,9 +40,9 @@ import ToggleField from '@/components/Admin/fields/ToggleField';
  * @param {string} [props.fields[].placeholder] - Placeholder do campo
  * @param {number} [props.fields[].rows] - Número de linhas (para TextAreaField)
  *
- * @note Os componentes TextField/TextAreaField de Admin/fields são equivalentes funcionais
- *       a Input/TextArea de UI, mas possuem API adaptada ao AdminCrudBase.
- *       Futuramente podem ser unificados conforme documentação UPGRADE_components.md.
+ * @note Os componentes TextField/TextAreaField de Admin/fields delegam internamente
+ *       para Input/TextArea da UI, mantendo a API específica do AdminCrudBase.
+ *       A unificação foi concluída em 18/05/2026.
  */
 export default function AdminDicas() {
   // Define as colunas que aparecerão na tabela de listagem

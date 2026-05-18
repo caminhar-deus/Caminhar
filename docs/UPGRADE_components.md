@@ -150,12 +150,12 @@
 
 ### 1.13 Fields (Admin)
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Duplicidade** | `TextAreaField.js` (Admin/fields) e `TextArea.js` (UI) são funcionalmente equivalentes: ambos têm label, placeholder, required, error, hint, maxLength. Diferenças mínimas (estilo, rows default). Deveriam ser unificados. |
-| 2 | **Duplicidade** | `TextField.js` (Admin/fields) e `Input.js` (UI) também são muito similares. Ambos fornecem input com label, error, hint, required. A versão Admin tem menos funcionalidades (sem addons, sem clearable). |
-| 3 | **Segurança** | `ImageUploadField.js` (linha 72): usa `alert()` para erros de upload. Em produção, `alert()` bloqueia a UI e não é estilizável. Deveria usar o sistema de toasts. |
-| 4 | **Manutenção** | O `onUpload` customizado (linhas 42-50) recebe o File, mas o callback não recebe o `uploadType`, limitando a flexibilidade. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Duplicidade** | `TextAreaField.js` (Admin/fields) e `TextArea.js` (UI) são funcionalmente equivalentes: ambos têm label, placeholder, required, error, hint, maxLength. Diferenças mínimas (estilo, rows default). Deveriam ser unificados. | ✅ **RESOLVIDO (18/05/2026)** — `TextAreaField.js` agora delega internamente para o componente `TextArea.js` (UI), mantendo a API específica do Admin. |
+| 2 | **Duplicidade** | `TextField.js` (Admin/fields) e `Input.js` (UI) também são muito similares. Ambos fornecem input com label, error, hint, required. A versão Admin tem menos funcionalidades (sem addons, sem clearable). | ✅ **RESOLVIDO (18/05/2026)** — `TextField.js` agora delega internamente para o componente `Input.js` (UI), mantendo a API específica do Admin. |
+| 3 | **Segurança** | `ImageUploadField.js` (linha 72): usa `alert()` para erros de upload. Em produção, `alert()` bloqueia a UI e não é estilizável. Deveria usar o sistema de toasts. | ✅ **RESOLVIDO (18/05/2026)** — Substituído `alert()` por `toast.error()` do `react-hot-toast`, padrão já utilizado no restante do Admin. |
+| 4 | **Manutenção** | O `onUpload` customizado (linhas 42-50) recebe o File, mas o callback não recebe o `uploadType`, limitando a flexibilidade. | ✅ **RESOLVIDO (18/05/2026)** — `onUpload` agora recebe `(file, uploadType)`. |
 
 ### 1.14 Managers
 

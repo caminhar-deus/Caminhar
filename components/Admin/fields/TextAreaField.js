@@ -1,9 +1,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import styles from '../styles/Admin.module.css';
+import TextArea from '@/components/UI/TextArea';
 
 /**
- * Campo de textarea reutilizável
+ * Campo de textarea reutilizável (Admin)
+ * Adaptador que delega para o componente TextArea da UI, mantendo a API específica do Admin.
  * @param {Object} props - Propriedades do componente
  * @param {string} props.name - Nome do campo
  * @param {string} props.label - Label exibida
@@ -32,38 +33,23 @@ export default function TextAreaField({
   ...props
 }) {
   return (
-    <div className={`${styles.formGroup} ${className}`}>
-      <label htmlFor={name}>
-        {label}
-        {required && <span style={{ color: 'var(--color-error-500)', marginLeft: '4px' }}>*</span>}
-      </label>
-      <textarea
-        id={name}
-        name={name}
-        value={value}
-        onChange={onChange}
-        rows={rows}
-        maxLength={maxLength}
-        placeholder={placeholder}
-        required={required}
-        className={styles.input}
-        style={{ resize: 'vertical', minHeight: '80px', fontFamily: 'inherit' }}
-        {...props}
-      />
-      {maxLength && (
-        <small className={styles.formHint} style={{ display: 'block', textAlign: 'right' }}>
-          {value.length}/{maxLength} caracteres
-        </small>
-      )}
-      {error && (
-        <small style={{ color: 'var(--color-error-500)', fontSize: '12px', marginTop: '4px', display: 'block' }}>
-          {error}
-        </small>
-      )}
-      {hint && !error && (
-        <small className={styles.formHint}>{hint}</small>
-      )}
-    </div>
+    <TextArea
+      id={name}
+      name={name}
+      label={label}
+      value={value ?? ''}
+      onChange={onChange}
+      rows={rows}
+      maxLength={maxLength}
+      placeholder={placeholder}
+      required={required}
+      error={!!error}
+      errorMessage={error}
+      helperText={hint}
+      showCount={!!maxLength}
+      className={className}
+      {...props}
+    />
   );
 }
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import styles from '../styles/Admin.module.css';
+import toast from 'react-hot-toast';
 
 /**
  * Campo de upload de imagem com preview
@@ -9,7 +10,7 @@ import styles from '../styles/Admin.module.css';
  * @param {string} props.label - Label exibida
  * @param {string} props.value - URL da imagem atual
  * @param {Function} props.onChange - Handler de mudança (recebe a URL)
- * @param {Function} props.onUpload - Handler de upload (recebe o File)
+ * @param {Function} props.onUpload - Handler de upload (recebe o File e o uploadType)
  * @param {string} [props.uploadEndpoint='/api/upload-image'] - Endpoint de upload
  * @param {string} [props.uploadType='post'] - Tipo de upload
  * @param {boolean} [props.required=false] - Se é obrigatório
@@ -42,7 +43,7 @@ export default function ImageUploadField({
     if (onUpload) {
       setUploading(true);
       try {
-        const url = await onUpload(file);
+        const url = await onUpload(file, uploadType);
         if (url) onChange({ target: { name, value: url } });
       } finally {
         setUploading(false);
@@ -73,7 +74,7 @@ export default function ImageUploadField({
       }
     } catch (err) {
       console.error('Erro no upload:', err);
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setUploading(false);
     }

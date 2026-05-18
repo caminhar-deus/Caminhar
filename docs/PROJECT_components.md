@@ -176,15 +176,19 @@ Conjunto de componentes de campo de formulário reutilizáveis:
 
 | Arquivo | Propósito |
 |---------|-----------|
-| `TextField.js` | Campo de texto padrão (suporta type: text, email, password, number, tel, search) |
-| `TextAreaField.js` | Campo de textarea com contador de caracteres |
-| `ImageUploadField.js` | Campo de upload de imagem com preview. Upload via input file ou URL manual |
+| `TextField.js` | Campo de texto padrão (suporta type: text, email, password, number, tel, search). Delega internamente para `Input.js` (UI), mantendo API específica do Admin |
+| `TextAreaField.js` | Campo de textarea com contador de caracteres. Delega internamente para `TextArea.js` (UI), mantendo API específica do Admin |
+| `ImageUploadField.js` | Campo de upload de imagem com preview. Upload via input file ou URL manual. Usa `toast.error()` para notificações em vez de `alert()` |
 | `ToggleField.js` | Checkbox estilizado com labels dinâmicos (Publicado/Rascunho) |
 | `UrlField.js` | Campo de URL com validação e preview (YouTube, Spotify). Extrai IDs automaticamente |
 | `ExternalDataButton.js` | Componente genérico para botão "Puxar Dados" de fontes externas. Elimina código duplicado entre AdminMusicas (Spotify), AdminVideos (YouTube) e AdminProducts (Mercado Livre). |
 
 **Novo (14/05/2026):**
 - `ExternalDataButton.js`: Componente que abstrai o padrão de botão "Puxar Dados". Recebe configuração de endpoint, validação de URL, mapeamento de campos e callback de sucesso. Usa layout flexbox responsivo, eliminando problemas de sobreposição do `position: absolute` anterior.
+
+**Melhorias aplicadas (18/05/2026):**
+- `TextField.js` e `TextAreaField.js` agora delegam internamente para `Input.js` e `TextArea.js` da UI respectivamente, eliminando a duplicidade funcional. Adaptam a API específica do Admin (erro como string, hint) para a API dos componentes base da UI (erro como boolean + errorMessage, helperText).
+- `ImageUploadField.js`: substituído `alert()` por `toast.error()` do `react-hot-toast` para evitar bloqueio da UI; callback `onUpload` agora recebe `(file, uploadType)` para maior flexibilidade.
 
 ### 1.15 Managers
 
