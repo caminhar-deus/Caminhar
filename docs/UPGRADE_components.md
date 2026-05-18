@@ -1,7 +1,7 @@
 # Análise de Melhorias - `/components`
 
-> **Data:** 13/05/2026 (atualizado)
-> **Objetivo:** Reportar correções, melhorias, problemas de performance e duplicidade de código identificados na análise dos componentes. **Sem aplicação de correções.**
+> **Data:** 18/05/2026 (atualizado)
+> **Objetivo:** Reportar correções, melhorias, problemas de performance e duplicidade de código identificados na análise dos componentes, com o status atual de cada item.
 
 ---
 
@@ -167,9 +167,9 @@
 
 ### 1.16 Tools
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Manutenção** | `IntegrityCheck.js` e `RateLimitViewer.js` são placeholders sem funcionalidade real. Podem dar falsa impressão de funcionalidade implementada. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Manutenção** | `IntegrityCheck.js` e `RateLimitViewer.js` eram placeholders sem funcionalidade real. Podiam dar falsa impressão de funcionalidade implementada. Ambos agora implementados com funcionalidade real, JSDoc, PropTypes, `displayName`, loading/error/empty/success states e auto-refresh periódico. | ✅ **RESOLVIDO (18/05/2026)** |
 
 ### 1.17 Admin.module.css — **PARCIALMENTE RESOLVIDO**
 

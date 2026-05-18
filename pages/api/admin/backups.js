@@ -10,9 +10,9 @@ async function handleGet(req, res) {
     return res.status(200).json({ latest: null });
   }
 
-  // Lê o diretório, filtra arquivos .sql ou .gz e ordena por data
+  // Lê o diretório, filtra arquivos de backup e ordena por data
   const files = fs.readdirSync(backupDir)
-    .filter(file => file.endsWith('.sql.gz') || file.endsWith('.sql'))
+    .filter(file => file.endsWith('.sql') || file.endsWith('.gz') || file.endsWith('.enc'))
     .map(file => {
       const stats = fs.statSync(path.join(backupDir, file));
       return {

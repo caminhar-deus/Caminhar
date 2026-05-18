@@ -92,6 +92,7 @@ export default function Admin() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeSecurityTab, setActiveSecurityTab] = useState('integrity');
   const router = useRouter();
   const fileInputRef = useRef(null);
 
@@ -677,10 +678,41 @@ export default function Admin() {
 
           {activeTab === 'security' && hasPermission('Segurança') && (
             <>
-              <RateLimitViewer />
-              <IntegrityCheck />
-              <BackupManager />
-              <CacheManager />
+              {/* Abas internas da Segurança — mesmo padrão do AdminUsers.js */}
+              <div
+                className={styles.tabs}
+                role="tablist"
+                aria-label="Ferramentas de segurança"
+              >
+                {[
+                  { key: 'integrity', label: '🛡️ Verificação de Integridade' },
+                  { key: 'backup', label: '💾 Backup do Sistema' },
+                  { key: 'ratelimit', label: '🔒 Rate Limiting' },
+                  { key: 'cache', label: '⚡ Cache do Sistema' },
+                ].map(subTab => (
+                  <button
+                    key={subTab.key}
+                    role="tab"
+                    aria-selected={activeSecurityTab === subTab.key}
+                    aria-controls={`security-tabpanel-${subTab.key}`}
+                    className={`${styles.tabButton}${activeSecurityTab === subTab.key ? ` ${styles.activeTab}` : ''}`}
+                    onClick={() => setActiveSecurityTab(subTab.key)}
+                  >
+                    {subTab.label}
+                  </button>
+                ))}
+              </div>
+
+              <div
+                role="tabpanel"
+                id={`security-tabpanel-${activeSecurityTab}`}
+                aria-labelledby={activeSecurityTab}
+              >
+                {activeSecurityTab === 'integrity' && <IntegrityCheck />}
+                {activeSecurityTab === 'backup' && <BackupManager />}
+                {activeSecurityTab === 'ratelimit' && <RateLimitViewer />}
+                {activeSecurityTab === 'cache' && <CacheManager />}
+              </div>
             </>
           )}
           
