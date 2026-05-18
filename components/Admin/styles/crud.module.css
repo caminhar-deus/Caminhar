@@ -1,0 +1,323 @@
+/* ==========================================
+   CRUD module - Admin
+   classes usadas por: AdminCrudBase.js, AdminMusicas.js
+   ========================================== */
+
+.content {
+  flex: 1;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-5);
+  padding-bottom: var(--spacing-4);
+  border-bottom: var(--border-width-2) solid var(--color-bg-tertiary);
+}
+
+.sectionHeader h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+/* Table Styles */
+.tableContainer {
+  overflow-x: auto;
+  margin-bottom: var(--spacing-8);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--color-bg-primary);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-xs);
+}
+
+.table th,
+.table td {
+  padding: var(--spacing-3);
+  text-align: left;
+  border-bottom: var(--border-width-1) solid var(--color-bg-tertiary);
+}
+
+.table th {
+  background-color: var(--color-bg-secondary);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.table tbody tr {
+  transition: var(--transition-background);
+}
+
+.table tbody tr:hover {
+  background-color: var(--color-bg-secondary);
+}
+
+.tableImage {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: var(--border-radius-md);
+  border: var(--border-width-1) solid var(--color-bg-tertiary);
+}
+
+/* Action Buttons */
+.actionButtons {
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+.editButton {
+  background-color: var(--color-success-500);
+  color: var(--color-text-inverse);
+  border: none;
+  padding: var(--spacing-1_5) var(--spacing-3);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: var(--transition-background);
+}
+
+.editButton:hover {
+  background-color: var(--color-success-600);
+}
+
+.deleteButton {
+  background-color: var(--color-error-500);
+  color: var(--color-text-inverse);
+  border: none;
+  padding: var(--spacing-1_5) var(--spacing-3);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: var(--transition-background);
+}
+
+.deleteButton:hover {
+  background-color: var(--color-error-600);
+}
+
+.addButton {
+  background-color: var(--color-success-500);
+  color: var(--color-text-inverse);
+  border: none;
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: var(--transition-background);
+}
+
+.addButton:hover {
+  background-color: var(--color-success-600);
+}
+
+.exportButton {
+  background-color: var(--color-info-500);
+  color: var(--color-text-inverse);
+  border: none;
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: var(--transition-background);
+}
+
+.exportButton:hover {
+  background-color: var(--color-info-600);
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-6);
+}
+
+.paginationButton {
+  background-color: var(--color-neutral-500);
+  color: var(--color-text-inverse);
+  border: none;
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: var(--transition-background), var(--transition-opacity);
+}
+
+.paginationButton:hover:not(:disabled) {
+  background-color: var(--color-neutral-600);
+}
+
+.paginationButton:disabled {
+  opacity: var(--opacity-50);
+  cursor: not-allowed;
+}
+
+.paginationInfo {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+}
+
+/* Status Badge */
+.statusBadge {
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--border-radius-default);
+  font-size: 0.85rem;
+  font-weight: var(--font-weight-semibold);
+  border: var(--border-width-1) solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-1_5);
+  white-space: nowrap;
+}
+
+.statusPublished {
+  background-color: var(--color-success-50);
+  color: var(--color-success-800);
+  border-color: var(--color-success-200);
+}
+
+.statusDraft {
+  background-color: var(--color-warning-50);
+  color: var(--color-warning-800);
+  border-color: var(--color-warning-200);
+}
+
+.statusToggle {
+  cursor: pointer;
+  transition: transform 0.1s ease, filter 0.2s ease;
+  font-family: inherit;
+}
+
+.statusToggle:hover {
+  filter: brightness(0.95);
+  transform: scale(1.03);
+}
+
+.statusToggle:active {
+  transform: scale(0.97);
+}
+
+/* Skeleton loading animation */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.skeletonBox {
+  height: 20px;
+  background-color: var(--color-border-light);
+  border-radius: var(--border-radius-sm);
+  animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Empty states */
+.emptyCell {
+  color: var(--color-text-tertiary);
+  font-style: italic;
+}
+
+.emptyStateRow {
+  text-align: center;
+  color: var(--color-text-tertiary);
+  font-style: italic;
+  padding: var(--spacing-5);
+}
+
+/* Link */
+.link {
+  color: var(--color-primary-500);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+/* Spotify Link (usado por AdminMusicas.js) */
+.spotifyLink {
+  color: #1DB954;
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+  transition: var(--transition-color);
+}
+
+.spotifyLink:hover {
+  color: #1ed760;
+}
+
+/* Form Styles (usados pelo CRUD inline) */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-5);
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-5);
+}
+
+.formSection {
+  margin-bottom: var(--spacing-8);
+  padding: var(--spacing-5);
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--border-radius-xl);
+  border: var(--border-width-1) solid var(--color-bg-tertiary);
+}
+
+.formActions {
+  display: flex;
+  gap: var(--spacing-2_5);
+  justify-content: flex-end;
+}
+
+.cancelButton {
+  background-color: var(--color-neutral-500);
+  color: var(--color-text-inverse);
+  border: none;
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: var(--transition-background);
+}
+
+.cancelButton:hover {
+  background-color: var(--color-neutral-600);
+}
+
+.saveButton {
+  background-color: var(--color-success-500);
+  color: var(--color-text-inverse);
+  border: none;
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: var(--transition-background);
+}
+
+.saveButton:hover {
+  background-color: var(--color-success-600);
+}
+
+.saveButton:disabled {
+  background-color: var(--color-neutral-500);
+  cursor: not-allowed;
+}

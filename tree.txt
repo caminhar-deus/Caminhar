@@ -27,7 +27,13 @@
 │   │   │   ├── BackupManager.js
 │   │   │   └── CacheManager.js
 │   │   ├── styles
-│   │   │   └── Admin.module.css
+│   │   │   ├── crud.module.css
+│   │   │   ├── dashboard.module.css
+│   │   │   ├── form.module.css
+│   │   │   ├── login.module.css
+│   │   │   ├── misc.module.css
+│   │   │   ├── permissions.module.css
+│   │   │   └── tabs.module.css
 │   │   ├── Tools
 │   │   │   ├── IntegrityCheck.js
 │   │   │   └── RateLimitViewer.js
@@ -1038,4 +1044,4 @@
 ├── tests-output.log
 └── tree.txt
 
-156 directories, 883 files
+156 directories, 889 files

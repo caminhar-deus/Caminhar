@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import styles from '../styles/Admin.module.css';
+import styles from '../styles/misc.module.css';
 
 /**
  * Componente de Verificação de Integridade do Sistema.

@@ -3,7 +3,7 @@ import AdminCrudBase from './AdminCrudBase';
 import TextField from './fields/TextField';
 import { z } from 'zod';
 import permissionsList from '@/lib/domain/permissions';
-import styles from './styles/Admin.module.css';
+import styles from './styles/permissions.module.css';
 
 // Componente customizado para selecionar as permissões do cargo via Checkboxes
 const PermissionsSelectField = ({ name, value, onChange, label, error, gridColumn }) => {

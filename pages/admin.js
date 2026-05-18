@@ -2,7 +2,37 @@ import Head from 'next/head';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Cropper from 'react-easy-crop';
-import styles from '../components/Admin/styles/Admin.module.css';
+import loginStyles from '../components/Admin/styles/login.module.css';
+import tabsStyles from '../components/Admin/styles/tabs.module.css';
+import formStyles from '../components/Admin/styles/form.module.css';
+import miscStyles from '../components/Admin/styles/misc.module.css';
+
+// Mapeamento explícito para evitar conflito de classes com mesmo nome entre módulos
+const styles = {
+  // login.module.css
+  container: loginStyles.container,
+  main: loginStyles.main,
+  loginContainer: loginStyles.loginContainer,
+  loginForm: loginStyles.loginForm,
+  loginInput: loginStyles.loginInput,
+  button: loginStyles.button,
+  error: loginStyles.error,
+
+  // tabs.module.css
+  adminPanel: tabsStyles.adminPanel,
+  tabs: tabsStyles.tabs,
+  tabButton: tabsStyles.tabButton,
+  activeTab: tabsStyles.activeTab,
+
+  // form.module.css
+  formGroup: formStyles.formGroup,
+  input: formStyles.input,
+
+  // misc.module.css
+  preview: miscStyles.preview,
+  previewContent: miscStyles.previewContent,
+  previewImage: miscStyles.previewImage,
+};
 import AdminPosts from '../components/Admin/AdminPosts';
 import RateLimitViewer from '../components/Admin/Tools/RateLimitViewer';
 import IntegrityCheck from '../components/Admin/Tools/IntegrityCheck';
@@ -350,7 +380,7 @@ export default function Admin() {
                 placeholder="Usuário"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className={styles.input}
+                className={styles.loginInput}
                 required
               />
               <input
@@ -358,7 +388,7 @@ export default function Admin() {
                 placeholder="Senha"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={styles.input}
+                className={styles.loginInput}
                 required
               />
               <button type="submit" className={styles.button}>

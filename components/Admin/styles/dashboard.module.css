@@ -1,0 +1,85 @@
+/* ==========================================
+   Dashboard module - Admin
+   classes usadas por: AdminDashboard.js
+   ========================================== */
+
+.content {
+  flex: 1;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-5);
+  padding-bottom: var(--spacing-4);
+  border-bottom: var(--border-width-2) solid var(--color-bg-tertiary);
+}
+
+.sectionHeader h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+/* Stats Grid */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--spacing-5);
+  margin-bottom: var(--spacing-10);
+}
+
+.statCard {
+  background: var(--color-bg-primary);
+  padding: var(--spacing-6);
+  border-radius: var(--border-radius-xl);
+  border: var(--border-width-1) solid var(--color-bg-tertiary);
+  box-shadow: var(--shadow-xs);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  transition: var(--transition-transform);
+  cursor: pointer;
+}
+
+.statCard:hover {
+  transform: translateY(-3px);
+}
+
+.statIcon {
+  font-size: var(--font-size-5xl);
+  background: var(--color-bg-secondary);
+  width: 65px;
+  height: 65px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--border-radius-xl);
+}
+
+.statInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.statNumber {
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  line-height: 1.2;
+}
+
+.statLabel {
+  color: var(--color-text-tertiary);
+  font-size: 0.85rem;
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+}
+
+.chartSection {
+  background: var(--color-bg-primary);
+  padding: var(--spacing-8);
+  border-radius: var(--border-radius-xl);
+  border: var(--border-width-1) solid var(--color-bg-tertiary);
+  box-shadow: var(--shadow-xs);
+}

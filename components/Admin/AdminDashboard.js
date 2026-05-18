@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import styles from './styles/Admin.module.css';
+import styles from './styles/dashboard.module.css';
 
 const PERMISSION_ITEM_MAP = {
   posts: 'Posts/Artigos',

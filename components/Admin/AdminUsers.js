@@ -1,6 +1,19 @@
 import React, { useState, Suspense, lazy } from 'react';
 import PropTypes from 'prop-types';
-import styles from './styles/Admin.module.css';
+import tabsStyles from './styles/tabs.module.css';
+import miscStyles from './styles/misc.module.css';
+
+// Mapeamento explícito para evitar conflito entre módulos
+const styles = {
+  adminPanel: tabsStyles.adminPanel,
+  tabs: tabsStyles.tabs,
+  tabButton: tabsStyles.tabButton,
+  activeTab: tabsStyles.activeTab,
+  icon: tabsStyles.icon,
+  placeholderContainer: miscStyles.placeholderContainer,
+  placeholderCard: miscStyles.placeholderCard,
+  placeholderIcon: miscStyles.placeholderIcon,
+};
 
 const AdminUsersTab = lazy(() => import('./AdminUsersTab'));
 const AdminRolesTab = lazy(() => import('./AdminRolesTab'));

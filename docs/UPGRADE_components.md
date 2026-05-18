@@ -171,13 +171,13 @@
 |---|------|-----------|--------|
 | 1 | **Manutenção** | `IntegrityCheck.js` e `RateLimitViewer.js` eram placeholders sem funcionalidade real. Podiam dar falsa impressão de funcionalidade implementada. Ambos agora implementados com funcionalidade real, JSDoc, PropTypes, `displayName`, loading/error/empty/success states e auto-refresh periódico. | ✅ **RESOLVIDO (18/05/2026)** |
 
-### 1.17 Admin.module.css — **PARCIALMENTE RESOLVIDO**
+### 1.17 Admin.module.css — **RESOLVIDO (18/05/2026)**
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Manutenção** | O CSS (904 linhas) está extenso e mistura estilos de login, tabela, formulário, dashboard, placeholders, etc. Poderia ser dividido em módulos menores. |
-| 2 | **Performance** | ~~Algumas classes utilizam `!important` — ver item 1.16 #2.~~ |
-| 3 | **Manutenção** | Classes `.formGroup` e `.input` são definidas duas vezes (linhas 98-110 e 575-600; linhas 30-43 e 587-600), causando sobrescrita. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Manutenção** | O CSS (1001 linhas) foi dividido em **7 módulos menores** organizados por domínio, eliminando o arquivo monolítico e facilitando a manutenção. | ✅ **RESOLVIDO** |
+| 2 | **Performance** | ~~Algumas classes utilizam `!important` — ver item 1.16 #2.~~ | ✅ **RESOLVIDO** |
+| 3 | **Manutenção** | Classes `.formGroup` e `.input` eram definidas duas vezes, causando sobrescrita. Unificadas em módulo específico. | ✅ **RESOLVIDO** |
 
 **O que foi feito (13/05/2026):**
 - Todos os valores hardcoded (~80) substituídos por CSS Custom Properties (`var()`)
@@ -185,6 +185,30 @@
 - Espaçamentos, border-radius, font-size, font-weight, box-shadow e transitions tokenizados
 - Seções de Form Styles, Messages, Status/Stats tokenizadas
 - Responsivo ajustado para usar tokens de spacing
+
+**O que foi feito (18/05/2026):**
+- `styles/Admin.module.css` (1001 linhas) dividido em **7 módulos menores**:
+  - `styles/login.module.css` — Login + Header/Navigation (usado por `withAdminAuth.js`)
+  - `styles/crud.module.css` — CRUD: tabela, formulário, paginação, status badges, skeleton, botões de ação (usado por `AdminCrudBase.js`, `AdminMusicas.js`)
+  - `styles/dashboard.module.css` — Dashboard: stats grid, gráfico (usado por `AdminDashboard.js`)
+  - `styles/tabs.module.css` — Abas: tablist, tabButton, activeTab, tabPanel (usado por `AdminUsers.js`)
+  - `styles/permissions.module.css` — Permissões: checkbox grid, badges (usado por `AdminRolesTab.js`)
+  - `styles/form.module.css` — Campos de formulário: formGroup, input, formHint, saveButton, preview (usado por fields: `ToggleField.js`, `UrlField.js`, `ImageUploadField.js`)
+  - `styles/misc.module.css` — Miscelânea: placeholders, mensagens, preview, infoBox, subNavigation, embed, responsivo (usado por `IntegrityCheck.js`, `RateLimitViewer.js`)
+- `!important` removido de `.activeSubNavLink` (substituído por `.subNavLink.activeSubNavLink` com especificidade maior)
+- Classes `.formGroup` duplicadas unificadas (login usa `login.module.css`, campos de formulário usam `form.module.css`)
+- Classe `.input` renomeada para `.loginInput` no módulo de login para evitar ambiguidade
+- Todos os 11 componentes JS que importavam `Admin.module.css` atualizados para importar apenas o módulo específico:
+  - `withAdminAuth.js` → `login.module.css`
+  - `AdminUsers.js` → `tabs.module.css` + `misc.module.css` (via mapeamento explícito)
+  - `AdminRolesTab.js` → `permissions.module.css`
+  - `AdminCrudBase.js` → `crud.module.css`
+  - `AdminDashboard.js` → `dashboard.module.css`
+  - `AdminMusicas.js` → `crud.module.css`
+  - `ToggleField.js`, `UrlField.js`, `ImageUploadField.js` → `form.module.css`
+  - `IntegrityCheck.js`, `RateLimitViewer.js` → `misc.module.css`
+  - `pages/admin.js` → `login.module.css` + `tabs.module.css` + `form.module.css` + `misc.module.css` (via mapeamento explícito)
+- Arquivo `styles/Admin.module.css` removido (18/05/2026) — sem nenhum import ativo após a migração
 
 
 ---

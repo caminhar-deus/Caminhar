@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import styles from '../styles/Admin.module.css';
+import styles from '../styles/form.module.css';
 import { extractYoutubeId } from '@/lib/youtube';
 
 /**

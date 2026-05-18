@@ -1,0 +1,101 @@
+/* ==========================================
+   Tabs module - Admin
+   classes usadas por: AdminUsers.js
+   ========================================== */
+
+/* Admin panel wrapper */
+.adminPanel {
+  max-width: 1000px;
+  margin: 0 auto;
+  background: var(--color-bg-primary);
+  padding: var(--spacing-10);
+  border-radius: var(--border-radius-xl);
+  box-shadow: var(--shadow-md);
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+.adminPanel h1 {
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-8);
+  font-size: var(--font-size-4xl);
+  text-align: center;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  margin-bottom: var(--spacing-8);
+  border-bottom: var(--border-width-1) solid var(--color-border-light);
+  flex-wrap: wrap;
+  gap: var(--spacing-2_5);
+}
+
+.tabButton {
+  background: none;
+  border: none;
+  padding: var(--spacing-4) var(--spacing-5);
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  transition: var(--transition-color), border-bottom 0.3s;
+  border-bottom: 3px solid transparent;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.tabButton span.icon {
+  font-size: var(--font-size-lg);
+  width: var(--spacing-5);
+  text-align: center;
+}
+
+.tabButton:disabled {
+  color: var(--color-text-tertiary);
+  cursor: not-allowed;
+  opacity: var(--opacity-60);
+}
+
+.tabButton:disabled:hover {
+  color: var(--color-text-tertiary);
+  background-color: transparent;
+}
+
+.tabButton.activeTab {
+  color: var(--color-primary-500);
+  border-bottom: 3px solid var(--color-primary-500);
+}
+
+/* Active tab indicator (left border) */
+.tabButton.activeTab::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: var(--border-width-4);
+  height: 60%;
+  background-color: var(--color-primary-500);
+  border-radius: var(--border-radius-sm);
+}
+
+/* Tab Panel */
+.tabPanel {
+  min-height: 500px;
+  position: relative;
+}
+
+.tabPanel:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+  border-radius: var(--border-radius-lg);
+}
+
+/* Icon class for tab emoji icons */
+.icon {
+  font-size: var(--font-size-lg);
+  width: var(--spacing-5);
+  text-align: center;
+}

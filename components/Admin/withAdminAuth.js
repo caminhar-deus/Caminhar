@@ -1,7 +1,7 @@
 import Head from 'next/head';
 import { useState } from 'react';
 import { useAdminAuth } from '@/hooks';
-import styles from './styles/Admin.module.css';
+import styles from './styles/login.module.css';
 
 /**
  * Higher-Order Component (HOC) para proteger páginas administrativas.
@@ -80,7 +80,7 @@ const LoginForm = ({ title, onLogin, loginLoading, loginError }) => {
           placeholder="Usuário"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className={styles.input}
+          className={styles.loginInput}
           required
         />
         <input
@@ -88,7 +88,7 @@ const LoginForm = ({ title, onLogin, loginLoading, loginError }) => {
           placeholder="Senha"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className={styles.input}
+          className={styles.loginInput}
           required
         />
         <button type="submit" className={styles.button} disabled={loginLoading}>

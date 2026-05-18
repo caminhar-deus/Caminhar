@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
-import styles from './styles/Admin.module.css';
+import styles from './styles/crud.module.css';
 import AdminCrudBase from './AdminCrudBase';
 import TextField from './fields/TextField';
 import UrlField from './fields/UrlField';

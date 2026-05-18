@@ -208,12 +208,24 @@ Conjunto de componentes de campo de formulário reutilizáveis:
 | `IntegrityCheck.js` | Verificação de integridade do sistema. Consome endpoint `/api/admin/integrity` e exibe diagnóstico completo: banco de dados (status, latência, tamanho, conexões), cache/Redis (conectividade, tipo), armazenamento (arquivos, tamanho, disco livre/total), backup (total, último backup com data, tamanho e idade) e sistema (Node.js, uptime, RAM, CPU, plataforma, ambiente). Inclui status geral (Saudável/Degradado/Alertas), auto-refresh a cada 30s, botão "Atualizar" manual, loading state (skeleton), error state (com retry) e timestamp da última verificação. Endpoint protegido por RBAC (permissão "Segurança"). |
 | `RateLimitViewer.js` | Visualização e gerenciamento de rate limiting. Consome endpoint `/api/admin/rate-limit` e exibe 3 abas: **(1)** IPs bloqueados — lista com tentativas e tempo restante para desbloqueio, com botão "Desbloquear"; **(2)** Whitelist — formulário para adicionar IP e lista com botão "Remover"; **(3)** Auditoria — logs de ações com busca textual e paginação. Inclui auto-refresh a cada 15s, botão "Atualizar" manual, loading state (skeleton), error state (com retry) e empty states com mensagens informativas. |
 
-### 1.17 styles/Admin.module.css
-**Localização:** `components/Admin/styles/Admin.module.css`
+### 1.17 Styles (Admin)
+**Localização:** `components/Admin/styles/`
 
-**Propósito:** Estilos CSS do módulo Admin. Contém classes para: layout de login, painel admin, formulários, tabelas, paginação, status badges, dashboard (stats grid e gráfico), navegação por abas, botões de ação e responsividade.
+Conjunto de **7 módulos CSS** organizados por domínio, substituindo o antigo arquivo monolítico `Admin.module.css` (1001 linhas). Cada módulo é importado apenas pelos componentes que o utilizam, melhorando a manutenibilidade e reduzindo o acoplamento.
 
-**Atualização (13/05/2026):** ~80 valores hardcoded substituídos por CSS Custom Properties (`var()`). Cores, espaçamentos, tipografia, bordas e sombras padronizados via tokens do Design System.
+| Módulo | Arquivo | Classes | Usado por |
+|--------|---------|---------|-----------|
+| **Login** | `login.module.css` | `.container`, `.main`, `.loginContainer`, `.loginForm`, `.loginInput`, `.button`, `.error`, `.adminPanel`, `.header`, `.logoutButton`, `.navigation`, `.navLink` | `withAdminAuth.js` |
+| **CRUD** | `crud.module.css` | `.content`, `.sectionHeader`, `.table`, `.tableContainer`, `.tableImage`, `.actionButtons`, `.editButton`, `.deleteButton`, `.addButton`, `.exportButton`, `.pagination`, `.paginationButton`, `.paginationInfo`, `.statusBadge`, `.statusPublished`, `.statusDraft`, `.statusToggle`, `.skeletonBox`, `.emptyCell`, `.emptyStateRow`, `.link`, `.spotifyLink`, `.form`, `.formRow`, `.formSection`, `.formActions`, `.cancelButton`, `.saveButton` | `AdminCrudBase.js`, `AdminMusicas.js` |
+| **Dashboard** | `dashboard.module.css` | `.content`, `.sectionHeader`, `.statsGrid`, `.statCard`, `.statIcon`, `.statInfo`, `.statNumber`, `.statLabel`, `.chartSection` | `AdminDashboard.js` |
+| **Tabs** | `tabs.module.css` | `.adminPanel`, `.tabs`, `.tabButton`, `.activeTab`, `.tabPanel`, `.icon` | `AdminUsers.js` |
+| **Permissions** | `permissions.module.css` | `.permissionsField`, `.permissionsLabel`, `.permissionsGrid`, `.permissionsGridError`, `.permissionsCheckbox`, `.permissionsCheckboxInput`, `.permissionsError`, `.permissionsBadgeContainer`, `.permissionsBadge` | `AdminRolesTab.js` |
+| **Form Fields** | `form.module.css` | `.formGroup`, `.input`, `.formHint`, `.previewSection`, `.videoPreview`, `.saveButton` | `ToggleField.js`, `UrlField.js`, `ImageUploadField.js` |
+| **Miscellaneous** | `misc.module.css` | `.button`, `.skeletonBox`, `.subNavigation`, `.subNavLinks`, `.subNavLink`, `.activeSubNavLink`, `.placeholderContainer`, `.placeholderCard`, `.placeholderIcon`, `.placeholderButton`, `.infoBox`, `.errorMessage`, `.successMessage`, `.emptyState`, `.preview`, `.previewContent`, `.previewImage`, `.previewSection`, `.textarea`, `.videoPreview`, `.noImage`, `.noPreview`, `.embedContainer`, `.spotifyEmbed` | `IntegrityCheck.js`, `RateLimitViewer.js` |
+
+**Atualizações:**
+- **(13/05/2026):** ~80 valores hardcoded substituídos por CSS Custom Properties (`var()`). Cores, espaçamentos, tipografia, bordas e sombras padronizados via tokens do Design System.
+- **(18/05/2026):** `Admin.module.css` (1001 linhas) dividido em 7 módulos menores. `!important` removido de `.activeSubNavLink`. Classes `.formGroup` duplicadas unificadas. Classe `.input` renomeada para `.loginInput` no módulo de login. 12 componentes JS atualizados para importar apenas o módulo específico, com mapeamento explícito (sem spread) para evitar conflitos de nomes entre módulos. Arquivo original `Admin.module.css` removido.
 
 ---
 

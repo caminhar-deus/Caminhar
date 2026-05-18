@@ -1,0 +1,152 @@
+/* ==========================================
+   Login module - Admin
+   classes usadas por: withAdminAuth.js
+   ========================================== */
+
+.container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-bg-secondary);
+}
+
+.main {
+  flex: 1;
+  padding: var(--spacing-10) 0;
+}
+
+/* Login styles */
+.loginContainer {
+  max-width: 400px;
+  margin: 0 auto;
+  text-align: center;
+  background: var(--color-bg-primary);
+  padding: var(--spacing-10);
+  border-radius: var(--border-radius-xl);
+  box-shadow: var(--shadow-md);
+}
+
+.loginForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-5);
+}
+
+.loginInput {
+  width: 100%;
+  padding: var(--spacing-3) var(--spacing-4);
+  border: var(--border-width-1) solid var(--color-border-light);
+  border-radius: var(--border-radius-lg);
+  font-size: var(--font-size-base);
+  transition: var(--transition-border);
+}
+
+.loginInput:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.button {
+  background-color: var(--color-primary-500);
+  color: var(--color-text-inverse);
+  border: none;
+  padding: var(--spacing-3) var(--spacing-6);
+  border-radius: var(--border-radius-lg);
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  transition: var(--transition-background);
+}
+
+.button:hover {
+  background-color: var(--color-hover-primary);
+}
+
+.error {
+  color: var(--color-error-500);
+  font-size: var(--font-size-sm);
+  margin-top: var(--spacing-2_5);
+  text-align: center;
+  font-weight: var(--font-weight-medium);
+  background-color: var(--color-error-50);
+  border: var(--border-width-1) solid var(--color-error-200);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-2_5);
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Admin panel (used in login wrapper) */
+.adminPanel {
+  max-width: 1000px;
+  margin: 0 auto;
+  background: var(--color-bg-primary);
+  padding: var(--spacing-10);
+  border-radius: var(--border-radius-xl);
+  box-shadow: var(--shadow-md);
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+.adminPanel h1 {
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-8);
+  font-size: var(--font-size-4xl);
+  text-align: center;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-8);
+  padding-bottom: var(--spacing-4);
+  border-bottom: var(--border-width-2) solid var(--color-bg-tertiary);
+}
+
+.header h1 {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+.logoutButton {
+  background-color: var(--color-error-500);
+  color: var(--color-text-inverse);
+  border: none;
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: var(--transition-background);
+}
+
+.logoutButton:hover {
+  background-color: var(--color-error-600);
+}
+
+/* Navigation */
+.navigation {
+  margin-bottom: var(--spacing-5);
+  padding-bottom: var(--spacing-4);
+  border-bottom: var(--border-width-1) solid var(--color-bg-tertiary);
+}
+
+.navLink {
+  color: var(--color-primary-500);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.navLink:hover {
+  text-decoration: underline;
+}

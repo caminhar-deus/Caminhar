@@ -1,0 +1,99 @@
+/* ==========================================
+   Form Fields module - Admin fields/
+   classes usadas por: ToggleField.js, UrlField.js, ImageUploadField.js
+   ========================================== */
+
+.formGroup {
+  margin-bottom: var(--spacing-4);
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: var(--spacing-2);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.input {
+  width: 100%;
+  padding: var(--spacing-3) var(--spacing-4);
+  border: var(--border-width-1) solid var(--color-border-light);
+  border-radius: var(--border-radius-lg);
+  font-size: var(--font-size-base);
+  transition: var(--transition-border);
+  box-sizing: border-box;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.formGroup input {
+  width: 100%;
+  padding: var(--spacing-3) var(--spacing-4);
+  border: var(--border-width-1) solid var(--color-border-light);
+  border-radius: var(--border-radius-lg);
+  font-size: var(--font-size-base);
+  transition: var(--transition-border);
+}
+
+.formGroup input:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.formHint {
+  display: block;
+  margin-top: var(--spacing-1);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+/* Preview section (usado por UrlField.js) */
+.previewSection {
+  margin-top: var(--spacing-5);
+  padding-top: var(--spacing-5);
+  border-top: var(--border-width-1) solid var(--color-bg-tertiary);
+}
+
+.previewSection label {
+  display: block;
+  margin-bottom: var(--spacing-2_5);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.videoPreview {
+  background-color: #000;
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  border: var(--border-width-1) solid var(--color-bg-tertiary);
+  max-width: 100%;
+  width: fit-content;
+}
+
+.saveButton {
+  background-color: var(--color-success-500);
+  color: var(--color-text-inverse);
+  border: none;
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: var(--transition-background);
+}
+
+.saveButton:hover {
+  background-color: var(--color-success-600);
+}
+
+.saveButton:disabled {
+  background-color: var(--color-neutral-500);
+  cursor: not-allowed;
+}
