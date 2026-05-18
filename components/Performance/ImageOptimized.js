@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { useState, useCallback } from 'react';
+import styles from './styles/ImageOptimized.module.css';
 
 /**
  * ImageOptimized - Wrapper otimizado para next/image
@@ -84,14 +85,11 @@ export default function ImageOptimized({
       }}
     >
       {/* Skeleton loader */}
-      {!isLoaded && (
+      {!isLoaded && !hasError && (
         <div
+          className={styles.skeletonLoader}
           style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundColor: '#f0f0f0',
             borderRadius: style?.borderRadius || 0,
-            animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
           }}
         />
       )}
@@ -116,18 +114,6 @@ export default function ImageOptimized({
         {...placeholderConfig}
         {...rest}
       />
-      
-      {/* CSS para animação do skeleton */}
-      <style jsx>{`
-        @keyframes pulse {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.5;
-          }
-        }
-      `}</style>
     </div>
   );
 }

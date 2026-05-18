@@ -345,10 +345,10 @@
 
 **Localização:** `components/Performance/ImageOptimized.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Performance** | O skeleton loader (linhas 88-97) renderiza um div `absolute` com `inset: 0`. Se a imagem falhar, o skeleton permanece visível junto com o fallback. |
-| 2 | **Manutenção** | O CSS da animação pulse (linhas 121-130) usa `<style jsx>` do Next.js, que gera hash único. Isso impede cache de CSS compartilhado. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Performance** | O skeleton loader (linhas 88-97) renderiza um div `absolute` com `inset: 0`. Se a imagem falhar, o skeleton permanece visível junto com o fallback. Adicionado `!hasError` na condição do skeleton para ocultá-lo quando a imagem falhar. | ✅ **RESOLVIDO (18/05/2026)** |
+| 2 | **Manutenção** | O CSS da animação pulse (linhas 121-130) usa `<style jsx>` do Next.js, que gera hash único. Isso impede cache de CSS compartilhado. Extraído para `ImageOptimized.module.css` com classe `.skeletonLoader` e `@keyframes pulse`. | ✅ **RESOLVIDO (18/05/2026)** |
 
 ### 4.3 LazyIframe.js
 

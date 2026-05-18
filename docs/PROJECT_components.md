@@ -414,10 +414,15 @@ Componentes para otimização de performance do site.
 
 **Propósito:** Wrapper otimizado para `next/image`. Oferece:
 - Fallback de imagem em caso de erro
-- Skeleton loader durante carregamento
+- Skeleton loader durante carregamento (via CSS Module)
 - Atributo `loading` e `priority` automáticos
 - Placeholder blur via blurDataURL ou empty
 - Controle de qualidade (default 75)
+
+**Melhorias aplicadas (18/05/2026):**
+- Adicionado `!hasError` na condição do skeleton loader para ocultá-lo quando a imagem falhar, evitando sobreposição visual com o fallback
+- Animação `@keyframes pulse` extraída do `<style jsx>` inline para `ImageOptimized.module.css`, permitindo cache de CSS compartilhado entre instâncias do componente
+- Classe `.skeletonLoader` criada no CSS Module com os estilos do skeleton (position absolute, inset 0, animação pulse)
 
 ### 4.3 LazyIframe.js
 **Localização:** `components/Performance/LazyIframe.js`

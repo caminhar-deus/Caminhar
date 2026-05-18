@@ -85,7 +85,8 @@
 │   │   ├── LazyIframe.js
 │   │   ├── PreloadResources.js
 │   │   └── styles
-│   │       └── criticalCSSRaw.js
+│   │       ├── criticalCSSRaw.js
+│   │       └── ImageOptimized.module.css
 │   ├── SEO
 │   │   ├── Head.js
 │   │   ├── index.js
@@ -1048,4 +1049,4 @@
 ├── tests-output.log
 └── tree.txt
 
-157 directories, 892 files
+157 directories, 893 files
