@@ -294,10 +294,11 @@
 
 **Localização:** `components/Layout/Grid.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Manutenção** | A lógica de fallback para CSS custom properties (linhas 36-41) é repetitiva e difícil de manter. Poderia usar uma função auxiliar. |
-| 2 | **Duplicidade** | Os `responsiveStyle` em `Grid.js` (linhas 34-42) e `Grid.Responsive` (linhas 149-155) calculam a mesma lógica de cascata de breakpoints. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Manutenção** | A lógica de fallback para CSS custom properties (linhas 36-41) era repetitiva e difícil de manter. Criada função auxiliar `getColsValue(breakpoint, responsive, fallbackCols)` que centraliza a lógica de cascata de breakpoints, eliminando a repetição de `typeof responsive === 'object'` e encadeamentos manuais. | ✅ **RESOLVIDO (18/05/2026)** |
+| 2 | **Duplicidade** | Os `responsiveStyle` em `Grid.js` (linhas 34-42) e `Grid.Responsive` (linhas 149-155) calculavam a mesma lógica de cascata de breakpoints de formas diferentes. Ambos agora compartilham a função auxiliar `getColsValue`, eliminando a duplicidade. | ✅ **RESOLVIDO (18/05/2026)** |
+| 3 | **Manutenção** | Adicionado JSDoc completo na função auxiliar `getColsValue` com descrição de parâmetros e retorno. | ✅ **RESOLVIDO (18/05/2026)** |
 
 ### 3.3 Stack.js
 

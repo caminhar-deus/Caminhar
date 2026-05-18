@@ -341,6 +341,11 @@ Componentes de layout do Design System para construção de páginas.
 - Grid responsivo via CSS custom properties
 - Subcomponentes: `Grid.Item`, `Grid.Auto`, `Grid.Responsive`
 
+**Melhorias aplicadas (18/05/2026):**
+- Criada função auxiliar `getColsValue(breakpoint, responsive, fallbackCols)` que centraliza a lógica de cascata de breakpoints para CSS custom properties (`--cols-*`), eliminando a repetição de `typeof responsive === 'object'` e encadeamentos manuais
+- `Grid.Responsive` agora compartilha a mesma função auxiliar `getColsValue`, eliminando duplicidade de lógica entre os dois componentes
+- Adicionado JSDoc completo na função auxiliar com documentação de parâmetros e retorno
+
 ### 3.3 Stack.js
 **Localização:** `components/Layout/Stack.js`
 

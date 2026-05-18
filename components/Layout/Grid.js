@@ -1,6 +1,35 @@
 import React from 'react';
 import styles from './Grid.module.css';
 
+/** @type {string[]} */
+const BREAKPOINTS = ['default', 'sm', 'md', 'lg', 'xl'];
+
+/**
+ * Retorna o valor de colunas para um determinado breakpoint, aplicando cascata
+ * (breakpoint maior herda de breakpoints menores).
+ *
+ * @param {string} breakpoint - Nome do breakpoint ('default' | 'sm' | 'md' | 'lg' | 'xl')
+ * @param {boolean|object} responsive - Configuração responsiva (booleano ou objeto com chaves de breakpoint)
+ * @param {number} [fallbackCols=1] - Valor padrão de colunas usado quando responsive é booleano ou quando
+ *                                     não há definição para nenhum breakpoint
+ * @returns {number} Número de colunas para o breakpoint
+ */
+function getColsValue(breakpoint, responsive, fallbackCols = 1) {
+  const index = BREAKPOINTS.indexOf(breakpoint);
+  const isObject = typeof responsive === 'object';
+
+  for (let i = index; i >= 0; i--) {
+    const key = BREAKPOINTS[i];
+    if (isObject && responsive[key] != null) {
+      return Number(responsive[key]);
+    }
+    if (!isObject && i === 0) {
+      return Number(fallbackCols);
+    }
+  }
+  return 1;
+}
+
 /**
  * Grid - Sistema de grid flexível
  * @param {number} columns - Número de colunas (1-12)
@@ -33,11 +62,11 @@ export const Grid = ({
 
   const responsiveStyle = responsive
     ? {
-        '--cols-default': (typeof responsive === 'object' ? responsive.default : columns) || 1,
-        '--cols-sm': (typeof responsive === 'object' ? responsive.sm : columns) || (typeof responsive === 'object' ? responsive.default : columns) || 1,
-        '--cols-md': (typeof responsive === 'object' ? responsive.md : columns) || (typeof responsive === 'object' ? responsive.sm : columns) || (typeof responsive === 'object' ? responsive.default : columns) || 1,
-        '--cols-lg': (typeof responsive === 'object' ? responsive.lg : columns) || (typeof responsive === 'object' ? responsive.md : columns) || (typeof responsive === 'object' ? responsive.sm : columns) || (typeof responsive === 'object' ? responsive.default : columns) || 1,
-        '--cols-xl': (typeof responsive === 'object' ? responsive.xl : columns) || (typeof responsive === 'object' ? responsive.lg : columns) || (typeof responsive === 'object' ? responsive.md : columns) || (typeof responsive === 'object' ? responsive.sm : columns) || (typeof responsive === 'object' ? responsive.default : columns) || 1,
+        '--cols-default': getColsValue('default', responsive, columns),
+        '--cols-sm':     getColsValue('sm', responsive, columns),
+        '--cols-md':     getColsValue('md', responsive, columns),
+        '--cols-lg':     getColsValue('lg', responsive, columns),
+        '--cols-xl':     getColsValue('xl', responsive, columns),
       }
     : undefined;
 
@@ -147,11 +176,11 @@ Grid.Responsive = ({
     <div
       className={responsiveClasses}
       style={{
-        '--cols-default': columns.default || 1,
-        '--cols-sm': columns.sm || columns.default || 1,
-        '--cols-md': columns.md || columns.sm || columns.default || 1,
-        '--cols-lg': columns.lg || columns.md || columns.sm || columns.default || 1,
-        '--cols-xl': columns.xl || columns.lg || columns.md || columns.sm || columns.default || 1,
+        '--cols-default': getColsValue('default', columns, columns.default),
+        '--cols-sm':     getColsValue('sm', columns, columns.default),
+        '--cols-md':     getColsValue('md', columns, columns.default),
+        '--cols-lg':     getColsValue('lg', columns, columns.default),
+        '--cols-xl':     getColsValue('xl', columns, columns.default),
       }}
       {...props}
     >
