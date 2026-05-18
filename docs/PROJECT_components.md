@@ -441,14 +441,16 @@ Componentes para otimização de performance do site.
 - Regex de extração de ID do YouTube substituída pelo helper centralizado `lib/youtube.js` com `extractYoutubeId()`, eliminando duplicidade com `AdminVideos.js` e `UrlField.js`
 
 ### 4.4 PreloadResources.js
-REPLACE
 **Localização:** `components/Performance/PreloadResources.js`
 
 **Propósito:** Preconnect e preload de recursos críticos. Inclui:
-- Preconnect para domínios externos (Google Fonts, YouTube, Spotify)
-- DNS Prefetch
+- Preconnect para domínios externos (Google Fonts, YouTube, Spotify) — `dns-prefetch` removido por ser redundante com `preconnect`
 - Preload de fontes, imagens LCP, scripts e CSS
-- Helper `getCriticalResources()` por tipo de página
+- Helper `getCriticalResources()` que aceita parâmetros dinâmicos `({ pageType, images, domains, fonts, scripts, styles })`, eliminando valores hardcoded e permitindo dados vindos da página/API
+
+**Melhorias aplicadas (18/05/2026):**
+- Bloco `dns-prefetch` removido (redundante com `preconnect` que já inclui resolução de DNS, handshake TLS e negociação TCP)
+- Função `getCriticalResources` refatorada: agora aceita parâmetro de configuração externo em vez de valores estáticos hardcoded, permitindo dados dinâmicos vindos da página/API. Mantém fallback sensível para domínios específicos (`musicas` → Spotify, `videos` → YouTube) quando apenas `pageType` é fornecido
 
 ### 4.5 index.js (Performance)
 **Localização:** `components/Performance/index.js`

@@ -31,22 +31,13 @@ export default function PreloadResources({
 
   return (
     <Head>
-      {/* Preconnect para domínios externos */}
+      {/* Preconnect para domínios externos (já inclui DNS resolution) */}
       {allDomains.map((domain, index) => (
         <link
           key={`preconnect-${index}`}
           rel="preconnect"
           href={domain}
           crossOrigin={domain.includes('gstatic') ? 'anonymous' : undefined}
-        />
-      ))}
-
-      {/* DNS Prefetch */}
-      {allDomains.map((domain, index) => (
-        <link
-          key={`dns-${index}`}
-          rel="dns-prefetch"
-          href={domain}
         />
       ))}
 
@@ -98,33 +89,44 @@ export default function PreloadResources({
 }
 
 /**
- * Helper para definir recursos críticos baseado na página
+ * Helper para definir recursos críticos baseado na página.
+ * 
+ * @param {Object} options - Configuração externa dos recursos
+ * @param {string} options.pageType - Tipo de página (home, blog, musicas, videos)
+ * @param {string[]} [options.images] - URLs de imagens críticas da página
+ * @param {string[]} [options.domains] - Domínios adicionais para preconnect
+ * @param {string[]} [options.fonts] - URLs de fontes críticas
+ * @param {string[]} [options.scripts] - URLs de scripts críticos
+ * @param {string[]} [options.styles] - URLs de CSS críticos
+ * @returns {Object} Recursos organizados para o componente PreloadResources
+ * 
+ * @example
+ * // Uso com dados dinâmicos vindos da página/API
+ * getCriticalResources({
+ *   pageType: 'home',
+ *   images: ['/banner-principal.webp', '/logo.svg'],
+ *   domains: ['https://fonts.googleapis.com']
+ * });
  */
-export function getCriticalResources(pageType) {
+export function getCriticalResources({ pageType, images, domains, fonts, scripts, styles } = {}) {
   const resources = {
-    fonts: [],
-    images: [],
-    scripts: [],
-    styles: [],
+    fonts: fonts || [],
+    images: images || [],
+    scripts: scripts || [],
+    styles: styles || [],
+    domains: domains || [],
   };
 
-  switch (pageType) {
-    case 'home':
-      resources.images = ['/hero-image.jpg', '/logo.png'];
-      break;
-    case 'blog':
-      resources.images = ['/blog-hero.jpg'];
-      break;
-    case 'musicas':
-      resources.images = ['/music-hero.jpg'];
-      resources.domains = ['https://open.spotify.com'];
-      break;
-    case 'videos':
-      resources.images = ['/video-hero.jpg'];
-      resources.domains = ['https://www.youtube.com', 'https://img.youtube.com'];
-      break;
-    default:
-      break;
+  // Se pageType for fornecido sem dados específicos, usa fallbacks sensíveis
+  if (!images && !domains && !fonts && !scripts && !styles) {
+    switch (pageType) {
+      case 'musicas':
+        resources.domains.push('https://open.spotify.com');
+        break;
+      case 'videos':
+        resources.domains.push('https://www.youtube.com', 'https://img.youtube.com');
+        break;
+    }
   }
 
   return resources;
