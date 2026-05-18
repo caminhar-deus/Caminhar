@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import Modal from '@/components/UI/Modal';
 
 export default function AdminCacheManager() {
   const [loading, setLoading] = useState(false);
   const [cacheMetrics, setCacheMetrics] = useState(null);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     // Carrega as métricas quando o componente é montado
@@ -23,9 +25,7 @@ export default function AdminCacheManager() {
   }, []);
 
   const handleClearCache = async () => {
-    if (!window.confirm('Tem certeza que deseja limpar todo o cache do Redis? Isso pode afetar temporariamente a performance do site.')) {
-      return;
-    }
+    setShowConfirm(false);
 
     const toastId = toast.loading('Limpando cache...');
     setLoading(true);
@@ -36,6 +36,7 @@ export default function AdminCacheManager() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
       });
 
       const data = await response.json();
@@ -63,7 +64,7 @@ export default function AdminCacheManager() {
       </p>
       
       <button
-        onClick={handleClearCache}
+        onClick={() => setShowConfirm(true)}
         disabled={loading}
         style={{
           padding: '0.6rem 1.2rem',
@@ -78,6 +79,48 @@ export default function AdminCacheManager() {
       >
         {loading ? 'Limpando...' : 'Limpar Cache Redis'}
       </button>
+
+      <Modal
+        isOpen={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        title="Confirmar Limpeza de Cache"
+        size="sm"
+        footer={
+          <Modal.Footer>
+            <button
+              onClick={() => setShowConfirm(false)}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#6c757d',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: '500'
+              }}
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleClearCache}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#dc3545',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: '500',
+                marginLeft: '8px'
+              }}
+            >
+              Confirmar
+            </button>
+          </Modal.Footer>
+        }
+      >
+        <p>Tem certeza que deseja limpar todo o cache do Redis? Isso pode afetar temporariamente a performance do site.</p>
+      </Modal>
 
       {cacheMetrics && (
         <div style={{ marginTop: '1.5rem' }}>

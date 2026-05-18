@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import Modal from '@/components/UI/Modal';
 
 export default function AdminBackupManager() {
   const [latestBackup, setLatestBackup] = useState(null);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [message, setMessage] = useState('');
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const fetchBackups = async () => {
     setLoading(true);
@@ -26,8 +28,7 @@ export default function AdminBackupManager() {
   }, []);
 
   const handleCreateBackup = async () => {
-    if (!confirm('Deseja iniciar um backup manual do banco de dados agora?')) return;
-    
+    setShowConfirm(false);
     setCreating(true);
     setMessage('');
     try {
@@ -90,7 +91,7 @@ export default function AdminBackupManager() {
       </div>
 
       <button
-        onClick={handleCreateBackup}
+        onClick={() => setShowConfirm(true)}
         disabled={creating}
         style={{
           padding: '10px 20px',
@@ -105,6 +106,48 @@ export default function AdminBackupManager() {
       >
         {creating ? '⏳ Criando Backup...' : '📥 Realizar Backup Agora'}
       </button>
+
+      <Modal
+        isOpen={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        title="Confirmar Backup Manual"
+        size="sm"
+        footer={
+          <Modal.Footer>
+            <button
+              onClick={() => setShowConfirm(false)}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#6c757d',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: '500'
+              }}
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleCreateBackup}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#0070f3',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: '500',
+                marginLeft: '8px'
+              }}
+            >
+              Confirmar
+            </button>
+          </Modal.Footer>
+        }
+      >
+        <p>Deseja iniciar um backup manual do banco de dados agora?</p>
+      </Modal>
     </div>
   );
 }

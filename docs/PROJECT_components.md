@@ -194,8 +194,12 @@ Conjunto de componentes de campo de formulário reutilizáveis:
 
 | Arquivo | Propósito |
 |---------|-----------|
-| `BackupManager.js` | Gerenciamento de backups do banco de dados. Exibe último backup e permite criar backup manual |
-| `CacheManager.js` | Gerenciamento de cache Redis. Exibe métricas e permite limpeza do cache |
+| `BackupManager.js` | Gerenciamento de backups do banco de dados. Exibe último backup e permite criar backup manual com modal de confirmação |
+| `CacheManager.js` | Gerenciamento de cache Redis. Exibe métricas e permite limpeza do cache com modal de confirmação |
+
+**Melhorias aplicadas (18/05/2026):**
+- `BackupManager.js` e `CacheManager.js`: substituído `confirm()` e `window.confirm()` nativos pelo componente `Modal.js` do Design System, com estados `showConfirm` e botões Confirmar/Cancelar estilizados
+- `CacheManager.js`: adicionado `credentials: 'include'` no fetch POST de limpeza do cache para enviar cookies de autenticação, alinhando com o padrão dos demais componentes Admin
 
 ### 1.16 Tools
 

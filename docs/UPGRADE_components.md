@@ -159,11 +159,11 @@
 
 ### 1.14 Managers
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **UX** | `BackupManager.js` (linha 29): usa `confirm()` nativo, que bloqueia a UI. Deveria usar modal confirmação do design system. |
-| 2 | **UX** | `CacheManager.js` (linha 26): também usa `window.confirm()`. |
-| 3 | **Manutenção** | `CacheManager.js`: o fetch das métricas (linha 12) não aponta `credentials: 'include'` explicitamente, ao contrário dos demais componentes. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **UX** | `BackupManager.js` (linha 29): usa `confirm()` nativo, que bloqueia a UI. Deveria usar modal confirmação do design system. | ✅ **RESOLVIDO (18/05/2026)** — Substituído `confirm()` por modal `components/UI/Modal.js` com botões Confirmar/Cancelar e estado `showConfirm`. |
+| 2 | **UX** | `CacheManager.js` (linha 26): também usa `window.confirm()`. | ✅ **RESOLVIDO (18/05/2026)** — Substituído `window.confirm()` por modal `components/UI/Modal.js` com botões Confirmar/Cancelar e estado `showConfirm`. |
+| 3 | **Manutenção** | `CacheManager.js`: o fetch das métricas (linha 12) não aponta `credentials: 'include'` explicitamente, ao contrário dos demais componentes. | ✅ **RESOLVIDO (18/05/2026)** — O fetch GET de métricas já possuía `credentials: 'include'`. Adicionado `credentials: 'include'` no fetch POST de limpeza do cache (era o verdadeiro problema). |
 
 ### 1.16 Tools
 
