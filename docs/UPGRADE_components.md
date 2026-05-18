@@ -120,11 +120,11 @@
 
 **Localização:** `components/Admin/AdminUsersTab.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Performance** | O `RoleSelectField` (linha 52) faz fetch dos cargos a cada montagem. Se houver múltiplos usuários na página, múltiplas requisições são feitas. Poderia usar cache ou estado global. |
-| 2 | **Duplicidade** | A lógica de verificação de 401 e reload (linhas 60-63) é duplicada em `AdminAudit.js` (linhas 27-29). |
-| 3 | **Acessibilidade** | O `select` customizado (linha 83) não possui `aria-describedby` linkado ao hint. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Performance** | O `RoleSelectField` (linha 52) faz fetch dos cargos a cada montagem. Se houver múltiplos usuários na página, múltiplas requisições são feitas. Adicionado cache em `sessionStorage` com TTL de 5 minutos, verificando antes de fazer fetch. | ✅ **RESOLVIDO (18/05/2026)** |
+| 2 | **Duplicidade** | A lógica de verificação de 401 e reload (linhas 60-63) é duplicada em `AdminAudit.js` (linhas 27-29). Extraída para função `handleUnauthorized` em `lib/handleUnauthorized.js` (arquivo separado de módulos cliente, sem dependências de servidor) e utilizada em ambos os componentes. | ✅ **RESOLVIDO (18/05/2026)** |
+| 3 | **Acessibilidade** | O `select` customizado (linha 83) não possui `aria-describedby` linkado ao hint. Adicionados `aria-describedby`, `aria-errormessage`, `aria-invalid`, `htmlFor` no label, `role="alert"` no erro e IDs únicos nos spans de hint e erro. | ✅ **RESOLVIDO (18/05/2026)** |
 
 ### 1.11 AdminVideos.js
 

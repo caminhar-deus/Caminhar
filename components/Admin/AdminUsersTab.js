@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useRouter } from 'next/router';
+import { handleUnauthorized } from '@/lib/handleUnauthorized';
 
 const userSchema = z.object({
   username: z.string().min(3, 'O usuário/email deve ter no mínimo 3 caracteres'),
@@ -49,18 +50,37 @@ const formatLastLogin = (dateString) => {
 };
 
 // Componente customizado para buscar e listar os cargos dinamicamente
+const CACHE_KEY = 'admin-roles-cache';
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+
 const RoleSelectField = ({ name, value, onChange, label, error, hint, gridColumn }) => {
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  const hintId = `${name}-hint`;
+  const errorId = `${name}-error`;
+
   useEffect(() => {
+    // Verifica cache em sessionStorage
+    const cached = sessionStorage.getItem(CACHE_KEY);
+    if (cached) {
+      try {
+        const { data, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < CACHE_TTL) {
+          setRoles(data);
+          setLoading(false);
+          return; // Usa dados do cache sem fazer fetch
+        }
+      } catch (err) {
+        // Cache corrompido ou inválido; ignora e faz o fetch
+      }
+    }
+
     fetch('/api/admin/roles', { credentials: 'include' })
       .then(async res => {
         if (res.status === 401) {
-          toast.error('Sessão expirada. Faça login novamente.');
-          router.reload(); // Recarrega a página para voltar à tela de login
-          throw new Error('Acesso não autorizado');
+          return handleUnauthorized(router);
         }
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
@@ -72,18 +92,33 @@ const RoleSelectField = ({ name, value, onChange, label, error, hint, gridColumn
         }
         return res.json();
       })
-      .then(data => setRoles(Array.isArray(data) ? data : (data.data || [])))
+      .then(data => {
+        const rolesData = Array.isArray(data) ? data : (data.data || []);
+        setRoles(rolesData);
+        // Armazena em cache com timestamp
+        try {
+          sessionStorage.setItem(CACHE_KEY, JSON.stringify({ data: rolesData, timestamp: Date.now() }));
+        } catch (err) {
+          // sessionStorage pode estar cheio ou indisponível; ignora erro de cache
+        }
+      })
       .catch(err => toast.error(err.message))
       .finally(() => setLoading(false));
   }, []);
 
+  const describedBy = [hint ? hintId : null, error ? errorId : null].filter(Boolean).join(' ') || undefined;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', gridColumn }}>
-      <label style={{ fontWeight: '600', fontSize: '0.9rem', color: '#374151' }}>{label}</label>
+      <label htmlFor={name} style={{ fontWeight: '600', fontSize: '0.9rem', color: '#374151' }}>{label}</label>
       <select
+        id={name}
         name={name}
         value={value || ''}
         onChange={onChange}
+        aria-describedby={describedBy}
+        aria-errormessage={error ? errorId : undefined}
+        aria-invalid={error ? 'true' : undefined}
         style={{
           padding: '10px', borderRadius: '6px', backgroundColor: '#f9fafb',
           border: `1px solid ${error ? '#ef4444' : '#d1d5db'}`, width: '100%', fontSize: '0.95rem'
@@ -102,8 +137,8 @@ const RoleSelectField = ({ name, value, onChange, label, error, hint, gridColumn
           <option key={r.id} value={r.name}>{r.name}</option>
         ))}
       </select>
-      {hint && <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>{hint}</span>}
-      {error && <span style={{ fontSize: '0.8rem', color: '#ef4444', marginTop: '2px' }}>{error}</span>}
+      {hint && <span id={hintId} style={{ fontSize: '0.8rem', color: '#6b7280' }}>{hint}</span>}
+      {error && <span id={errorId} role="alert" style={{ fontSize: '0.8rem', color: '#ef4444', marginTop: '2px' }}>{error}</span>}
     </div>
   );
 };

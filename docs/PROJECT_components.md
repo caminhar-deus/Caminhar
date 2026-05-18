@@ -127,9 +127,15 @@ Sistema administrativo completo com CRUD reutilizável, autenticação, dashboar
 **Localização:** `components/Admin/AdminUsersTab.js`
 
 **Propósito:** Gestão de usuários e admins. Usa `AdminCrudBase` com campos: username, senha, cargo. Inclui:
-- Campo customizado `RoleSelectField` que busca cargos da API dinamicamente
+- Campo customizado `RoleSelectField` que busca cargos da API dinamicamente com cache em sessionStorage
 - Validação de senha (mínimo 6 caracteres) para novos usuários
 - Formatação amigável de último login (ex: "há 2 horas")
+
+**Melhorias aplicadas (18/05/2026):**
+- Cache em `sessionStorage` com TTL de 5 minutos no `RoleSelectField`, evitando múltiplas requisições quando há vários usuários na página
+- Lógica de verificação 401 extraída para função `handleUnauthorized` em `lib/auth.js`, eliminando duplicação com `AdminAudit.js`
+- Adicionados atributos ARIA de acessibilidade: `aria-describedby`, `aria-errormessage`, `aria-invalid` no select, `htmlFor` no label, `role="alert"` no erro e IDs únicos nos spans de hint e erro
+- Import do helper `handleUnauthorized` via alias `@/lib/auth`
 
 ### 1.11 AdminVideos.js
 **Localização:** `components/Admin/AdminVideos.js`

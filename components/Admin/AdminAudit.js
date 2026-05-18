@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/router';
 import { exportToCSV } from '../../lib/csvExport';
+import { handleUnauthorized } from '../../lib/handleUnauthorized';
 
 export default function AdminAudit() {
   const [logs, setLogs] = useState([]);
@@ -25,10 +26,8 @@ export default function AdminAudit() {
     fetch(`/api/admin/audit?${params.toString()}`, { credentials: 'include' })
       .then(async res => {
         if (res.status === 401) {
-          toast.error('Sessão expirada. Faça login novamente.');
-          // Aguarda um breve momento para o toast aparecer antes do reload
-          setTimeout(() => router.reload(), 500);
-          return; // Retorna sem lançar erro para evitar toast duplicado no .catch
+          // Aguarda 500ms para o toast aparecer antes do reload
+          return handleUnauthorized(router, 500);
         }
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
