@@ -124,6 +124,16 @@
   transform: translateY(-10px);
 }
 
+/* Loading fallback */
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-lg);
+}
+
 /* Placeholder Styles */
 .placeholderContainer {
   display: flex;

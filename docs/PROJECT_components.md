@@ -250,8 +250,15 @@ Componentes de funcionalidades específicas do site público.
 
 | Arquivo | Propósito |
 |---------|-----------|
-| `index.js` | Sistema de abas para conteúdo (Reflexões, Músicas, Vídeos, Produtos). Renderiza dinamicamente o componente correspondente à aba ativa. Aba "Em Desenvolvimento" desabilitada |
-| `styles/ContentTabs.module.css` | Estilos das abas: navegação horizontal, indicador ativo, placeholder, responsividade |
+| `index.js` | Sistema de abas para conteúdo (Reflexões, Músicas, Vídeos, Produtos). Renderiza dinamicamente o componente correspondente à aba ativa via `React.lazy()`. Aba "Em Desenvolvimento" desabilitada. Segue padrão WAI-ARIA Tabs Pattern com roles e atributos acessíveis |
+| `styles/ContentTabs.module.css` | Estilos das abas: navegação horizontal, indicador ativo, loading fallback, placeholder, responsividade |
+
+**Melhorias aplicadas (18/05/2026):**
+- `index.js`: imports estáticos substituídos por `React.lazy()` + `<Suspense>` para carregamento sob demanda dos componentes de aba, evitando fetch de API desnecessário para abas não visíveis
+- `index.js`: componente `PlaceholderContent` simplificado — removido `contentMap` com entradas mortas (músicas, vídeos) que não eram mais utilizadas
+- `index.js`: adicionados atributos ARIA para acessibilidade — `role="tablist"` no container, `role="tab"` e `aria-controls` nos botões, `role="tabpanel"` e `aria-labelledby` no conteúdo, IDs únicos para vínculo entre abas e painéis
+- `ContentTabs.module.css`: adicionada classe `.loading` para fallback visual do `Suspense`
+- Import não utilizado de `Link` (`next/link`) removido
 
 ### 2.3 Music
 

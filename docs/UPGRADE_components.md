@@ -132,8 +132,8 @@
 
 **Localização:** `components/Admin/AdminVideos.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
 | 1 | **Duplicidade** | A regex de extração de ID do YouTube (linha 28) era duplicada em `LazyIframe.js` (linha 84) e `UrlField.js` (linha 39). Criado helper centralizado em `lib/youtube.js` com `extractYoutubeId()` e atualizados os 3 arquivos para usá-lo. | ✅ **RESOLVIDO (18/05/2026)** |
 | 2 | **Duplicidade** | `handleReorder` duplicado (idem item 1.5 #1). Extraído para `lib/reorder.js`. | ✅ **RESOLVIDO (14/05/2026)** |
 | 3 | **Duplicidade** | `renderCustomFormField` duplicado (idem item 1.5 #2). Extraído para `ExternalDataButton.js`. | ✅ **RESOLVIDO (14/05/2026)** |
@@ -229,11 +229,11 @@
 
 **Localização:** `components/Features/ContentTabs/`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Performance** | `BlogSection`, `MusicGallery`, `VideoGallery` e `ProductList` são importados estaticamente e todos fazem fetch de API ao montar, mesmo que a aba não esteja visível. |
-| 2 | **Duplicidade** | O componente `PlaceholderContent` (linha 69) é inline e tem fallbacks que não são mais usados (já que as abas música/vídeo/produtos estão ativas). Pode ser removido ou simplificado. |
-| 3 | **Acessibilidade** | As abas não possuem `aria-controls` vinculando o botão ao painel de conteúdo correspondente. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Performance** | `BlogSection`, `MusicGallery`, `VideoGallery` e `ProductList` são importados estaticamente e todos fazem fetch de API ao montar, mesmo que a aba não esteja visível. | ✅ **RESOLVIDO (18/05/2026)** |
+| 2 | **Duplicidade** | O componente `PlaceholderContent` (linha 69) é inline e tem fallbacks que não são mais usados (já que as abas música/vídeo/produtos estão ativas). Pode ser removido ou simplificado. | ✅ **RESOLVIDO (18/05/2026)** |
+| 3 | **Acessibilidade** | As abas não possuem `aria-controls` vinculando o botão ao painel de conteúdo correspondente. | ✅ **RESOLVIDO (18/05/2026)** |
 
 ### 2.3 Music
 
