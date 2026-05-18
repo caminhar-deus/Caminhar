@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import AdminCrudBase from './AdminCrudBase';
 import TextField from './fields/TextField';
 import TextAreaField from './fields/TextAreaField';
@@ -6,9 +6,11 @@ import ImageUploadField from './fields/ImageUploadField';
 import ToggleField from './fields/ToggleField';
 import { handleReorder } from '@/lib/reorder';
 import { z } from 'zod';
+import toast from 'react-hot-toast';
 
 /**
  * Schema de validação para posts
+ * Inclui superRefine para validar que post publicado precisa de imagem de capa
  */
 const postSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório').max(200, 'Título deve ter no máximo 200 caracteres'),
@@ -20,6 +22,14 @@ const postSchema = z.object({
     message: 'Por favor, insira uma URL completa (https://...) ou um caminho local válido (/uploads/...).'
   }).optional(),
   published: z.boolean().optional()
+}).superRefine((data, ctx) => {
+  if (data.published && !data.image_url) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'A imagem de capa é obrigatória para posts publicados.',
+      path: ['image_url']
+    });
+  }
 });
 
 /**
@@ -156,25 +166,11 @@ const initialFormData = {
  * Demonstra uso de upload de imagens e geração automática de slug.
  */
 export default function AdminPostsNew() {
-
-  /**
-   * Função de validação customizada
-   * Impede publicação de posts sem imagem
-   */
-  const validatePost = (formData) => {
-    if (formData.published && !formData.image_url) {
-      // Lança um erro estruturado para ser pego pelo hook e exibido no campo correto.
-      const error = new Error('Para publicar um post, é necessário vincular uma imagem de capa.');
-      error.errors = {
-        image_url: ['A imagem de capa é obrigatória para posts publicados.']
-      };
-      throw error;
-    }
-  };
+  const slugGeneratedRef = useRef(false);
 
   /**
    * Renderizador customizado para campos especiais
-   * Implementa geração automática de slug a partir do título
+   * Implementa geração automática de slug a partir do título com feedback visual
    */
   const renderCustomFormField = (fieldConfig, formData, handleInputChange, setFieldValue, error) => {
     // Campo de slug com geração automática
@@ -197,7 +193,7 @@ export default function AdminPostsNew() {
       );
     }
 
-    // Campo de título com onBlur para gerar slug
+    // Campo de título com onBlur para gerar slug automaticamente
     if (fieldConfig.name === 'title') {
       const fieldError = error?.errors?.[fieldConfig.name]?.[0];
 
@@ -211,6 +207,10 @@ export default function AdminPostsNew() {
             onBlur={() => {
               if (!formData.slug && formData.title) {
                 setFieldValue('slug', generateSlug(formData.title));
+                if (!slugGeneratedRef.current) {
+                  slugGeneratedRef.current = true;
+                  toast.success('Slug gerado automaticamente a partir do título', { id: 'slug-generated' });
+                }
               }
             }}
             required={fieldConfig.required}
@@ -232,7 +232,6 @@ export default function AdminPostsNew() {
       columns={columns}
       initialFormData={initialFormData}
       validationSchema={postSchema}
-      validate={validatePost}
       renderCustomFormField={renderCustomFormField}
       newButtonText="+ Novo Post"
       saveButtonText="Salvar"

@@ -72,13 +72,17 @@ Sistema administrativo completo com CRUD reutilizável, autenticação, dashboar
 **Localização:** `components/Admin/AdminPosts.js`
 
 **Propósito:** Gerenciamento de posts/artigos do blog. Usa `AdminCrudBase` com campos: título, slug (geração automática), resumo, conteúdo, imagem de capa, status. Inclui:
-- Geração automática de slug a partir do título
-- Validação que impede publicação sem imagem de capa
+- Geração automática de slug a partir do título com feedback visual via toast
+- Validação Zod que impede publicação sem imagem de capa (via `.superRefine()`)
 - Upload de imagens
 - Reordenação Drag & Drop via helper compartilhado `lib/reorder.js`
 
 **Melhorias aplicadas (14/05/2026):**
 - `handleReorder` extraído para helper compartilhado `lib/reorder.js`
+
+**Melhorias aplicadas (18/05/2026):**
+- Validação customizada `validatePost` migrada para `.superRefine()` no schema Zod, eliminando lógica acoplada ao componente
+- Adicionado feedback visual com `toast.success()` na geração automática de slug, utilizando `useRef` para evitar notificações duplicadas
 
 ### 1.7 AdminProducts.js
 **Localização:** `components/Admin/AdminProducts.js`

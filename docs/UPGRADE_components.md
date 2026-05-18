@@ -75,11 +75,11 @@
 
 **Localização:** `components/Admin/AdminPosts.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
 | 1 | **Duplicidade** | `handleReorder` duplicado (idem item 1.5 #1). Extraído para `lib/reorder.js`. | ✅ **RESOLVIDO (14/05/2026)** |
-| 2 | **Manutenção** | A função `validatePost` (linha 179) tem lógica acoplada ao componente. A regra de negócio "post publicado precisa de imagem" poderia estar no schema Zod. | ⬜️ **PENDENTE** |
-| 3 | **Acessibilidade** | O campo slug editável com geração automática (linha 226) não sinaliza ao usuário que o slug foi gerado. Poderia haver feedback visual. | ⬜️ **PENDENTE** |
+| 2 | **Manutenção** | A função `validatePost` (linha 179) tinha lógica acoplada ao componente. A regra de negócio "post publicado precisa de imagem" foi migrada para `.superRefine()` no schema Zod, e a função `validatePost` removida. | ✅ **RESOLVIDO (18/05/2026)** |
+| 3 | **Acessibilidade** | O campo slug editável com geração automática não sinalizava ao usuário que o slug foi gerado. Adicionado `toast.success()` com feedback visual "Slug gerado automaticamente a partir do título", utilizando `useRef` para evitar toasts duplicados. | ✅ **RESOLVIDO (18/05/2026)** |
 
 ### 1.7 AdminProducts.js
 
