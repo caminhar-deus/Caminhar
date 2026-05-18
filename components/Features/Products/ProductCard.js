@@ -1,4 +1,4 @@
-import React, { memo, useState, useEffect, useRef, useCallback } from 'react';
+import React, { memo, useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { parseImages } from '../../../lib/api/utils';
 import BaseCard from '../../UI/BaseCard';
@@ -25,18 +25,16 @@ const ProductCard = memo(function ProductCard({ product }) {
     }
   }, [isLightboxOpen]);
 
-  const handleKeyDown = useCallback((e) => {
-    if (e.key === 'Escape') {
-      setIsLightboxOpen(false);
-    }
-  }, []);
-
+  // Oculta elementos de fundo do leitor de tela quando lightbox está aberto
   useEffect(() => {
+    const main = document.getElementById('__next');
     if (isLightboxOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-      return () => document.removeEventListener('keydown', handleKeyDown);
+      main?.setAttribute('aria-hidden', 'true');
+    } else {
+      main?.removeAttribute('aria-hidden');
     }
-  }, [isLightboxOpen, handleKeyDown]);
+    return () => main?.removeAttribute('aria-hidden');
+  }, [isLightboxOpen]);
 
   const nextImage = () => {
     setImageLoading(true);
@@ -132,6 +130,8 @@ const ProductCard = memo(function ProductCard({ product }) {
           role="dialog"
           aria-modal="true"
           aria-label="Visualização ampliada da imagem"
+          tabIndex={-1}
+          onKeyDown={(e) => e.key === 'Escape' && setIsLightboxOpen(false)}
           className={styles.lightbox}
           onClick={() => setIsLightboxOpen(false)}
         >

@@ -279,9 +279,15 @@ Componentes de funcionalidades específicas do site público.
 | Arquivo | Propósito |
 |---------|-----------|
 | `ProductCard.js` | Card de produto com carrossel de imagens, lightbox, links para lojas (ML, Shopee, Amazon) com ícones SVG. Schema.org Product para SEO |
-| `ProductList.js` | Listagem de produtos com busca textual, filtro por faixa de preço, paginação. Usa debounce (500ms) e ordenação por position |
-| `styles.js` | Objetos de estilo compartilhados (inputStyle, buttonBaseStyle). Tokenizados com `var()` em 13/05/2026 |
+| `ProductList.js` | Listagem de produtos com busca textual, filtro por faixa de preço, paginação. Usa debounce único sobre objeto de filtros e ordenação por position |
+| `styles.js` | Objetos de estilo compartilhados (inputStyle, buttonBaseStyle). Tokenizados com `var()` em 13/05/2026. InputStyle com validação de segurança via whitelist de tokens |
 | `styles/ProductCard.module.css` | Estilos do card de produto: media, navegação, lightbox, botões de loja com cores específicas |
+
+**Melhorias aplicadas (18/05/2026):**
+- `ProductCard.js`: event listener `keydown` substituído por `onKeyDown` diretamente no JSX do lightbox via `ref`, eliminando ciclo de adicionar/remover listeners a cada abertura/fechamento
+- `ProductCard.js`: adicionado `useEffect` que aplica/remove `aria-hidden="true"` no container `#__next` ao abrir/fechar o lightbox, garantindo que leitores de tela não naveguem para conteúdo oculto atrás do modal
+- `ProductList.js`: 3 `useDebounce` separados (search, minPrice, maxPrice) unificados em um único debounce sobre objeto de filtros com `useMemo`, evitando requisições desnecessárias ao backend (múltiplas chamadas em vez de uma)
+- `styles.js`: adicionada whitelist `VALID_PADDING_LEFT` com fallback seguro para token padrão, prevenindo injeção de CSS via parâmetro `paddingLeft` não sanitizado
 
 ### 2.5 Testimonials
 **Localização:** `components/Features/Testimonials/index.js`

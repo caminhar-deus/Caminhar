@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useApiFetch, useDebounce } from '@/hooks';
 import ProductCard from './ProductCard';
 import { inputStyle, buttonBaseStyle } from './styles';
@@ -11,21 +11,22 @@ export default function ProductList() {
   const [maxPrice, setMaxPrice] = useState('');
   const itemsPerPage = 12;
 
-  const debouncedSearch = useDebounce(searchTerm, 500);
-  const debouncedMin = useDebounce(minPrice, 500);
-  const debouncedMax = useDebounce(maxPrice, 500);
+  // Unifica filtros em um único objeto com um único debounce
+  // para evitar requisições desnecessárias ao backend
+  const filters = useMemo(() => ({ search: searchTerm, minPrice, maxPrice }), [searchTerm, minPrice, maxPrice]);
+  const debouncedFilters = useDebounce(filters, 500);
 
   // Reseta para página 1 quando os filtros debounced mudam
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearch, debouncedMin, debouncedMax]);
+  }, [debouncedFilters]);
 
-  let url = `/api/products?page=${currentPage}&limit=${itemsPerPage}&public=true&search=${encodeURIComponent(debouncedSearch)}`;
-  if (debouncedMin) url += `&minPrice=${debouncedMin}`;
-  if (debouncedMax) url += `&maxPrice=${debouncedMax}`;
+  let url = `/api/products?page=${currentPage}&limit=${itemsPerPage}&public=true&search=${encodeURIComponent(debouncedFilters.search)}`;
+  if (debouncedFilters.minPrice) url += `&minPrice=${debouncedFilters.minPrice}`;
+  if (debouncedFilters.maxPrice) url += `&maxPrice=${debouncedFilters.maxPrice}`;
 
   const { data: responseData, loading, error } = useApiFetch(url, {
-    deps: [currentPage, debouncedSearch, debouncedMin, debouncedMax],
+    deps: [currentPage, debouncedFilters],
     transform: (result) => {
       // Garante a ordenação do mais novo para o mais antigo (maior ID)
       const products = (result.data || []).sort((a, b) => {
@@ -84,7 +85,7 @@ export default function ProductList() {
         {error && <ErrorMessage message={error} />}
         {loading && !error && <LoadingMessage text="Buscando produtos..." />}
         {!loading && !error && products.length === 0 && (
-          <EmptyMessage message={debouncedSearch || debouncedMin || debouncedMax ? 'Nenhum produto encontrado com estes filtros.' : 'Nenhum produto cadastrado no momento.'} />
+          <EmptyMessage message={debouncedFilters.search || debouncedFilters.minPrice || debouncedFilters.maxPrice ? 'Nenhum produto encontrado com estes filtros.' : 'Nenhum produto cadastrado no momento.'} />
         )}
   
         {/* Listagem de Produtos */}

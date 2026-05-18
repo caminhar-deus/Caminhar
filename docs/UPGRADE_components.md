@@ -249,12 +249,12 @@
 
 **Localização:** `components/Features/Products/`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Performance** | `ProductCard.js` (linha 41): o lightbox adiciona/remove event listener de `keydown` a cada abertura/fechamento. Poderia usar abordagem com ref. |
-| 2 | **Performance** | `ProductList.js` (linha 14): usa `useDebounce` triplo (search, minPrice, maxPrice). Três debounces separados podem causar requisições desnecessárias. |
-| 3 | **Acessibilidade** | O lightbox (linhas 129-158) não tem `aria-hidden="true"` nos elementos atrás do modal quando aberto (apenas no overlay). |
-| 4 | **Manutenção** | `styles.js` (linha 10): `inputStyle` usa `paddingLeft` como string template direto, sem validação de segurança. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Performance** | `ProductCard.js` (linha 41): o lightbox adiciona/remove event listener de `keydown` a cada abertura/fechamento. Poderia usar abordagem com ref. — Substituído `useEffect` + `addEventListener` por `onKeyDown` diretamente no JSX do lightbox via `ref`. | ✅ **RESOLVIDO (18/05/2026)** |
+| 2 | **Performance** | `ProductList.js` (linha 14): usa `useDebounce` triplo (search, minPrice, maxPrice). Três debounces separados podem causar requisições desnecessárias. — Unificados em um único `useDebounce` sobre objeto de filtros com `useMemo`. | ✅ **RESOLVIDO (18/05/2026)** |
+| 3 | **Acessibilidade** | O lightbox (linhas 129-158) não tem `aria-hidden="true"` nos elementos atrás do modal quando aberto (apenas no overlay). — Adicionado `useEffect` que seta/remove `aria-hidden` no container `#__next`. | ✅ **RESOLVIDO (18/05/2026)** |
+| 4 | **Manutenção** | `styles.js` (linha 10): `inputStyle` usa `paddingLeft` como string template direto, sem validação de segurança. — Adicionada whitelist `VALID_PADDING_LEFT` com fallback seguro para token padrão. | ✅ **RESOLVIDO (18/05/2026)** |
 
 ### 2.5 Testimonials
 
