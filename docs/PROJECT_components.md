@@ -432,8 +432,16 @@ Componentes para otimização de performance do site.
 - Thumbnail preview (YouTube automático ou customizado)
 - IntersectionObserver para carregamento quando visível
 - Conversão automática de URL para embed
+- Botão de play visível com ícone SVG e efeito hover (scale + cor vermelha)
+- Texto do placeholder exibido na parte inferior do preview
+
+**Melhorias aplicadas (18/05/2026):**
+- Adicionado botão de play circular com ícone SVG e efeito hover (transformação scale + fundo vermelho) sobre o thumbnail preview, eliminando a falta de indicador visual de interatividade
+- Adicionados `role="button"`, `tabIndex={0}`, `aria-label` e handler `onKeyDown` para teclas Enter/Espaço no placeholder, garantindo acessibilidade por teclado e leitores de tela
+- Regex de extração de ID do YouTube substituída pelo helper centralizado `lib/youtube.js` com `extractYoutubeId()`, eliminando duplicidade com `AdminVideos.js` e `UrlField.js`
 
 ### 4.4 PreloadResources.js
+REPLACE
 **Localização:** `components/Performance/PreloadResources.js`
 
 **Propósito:** Preconnect e preload de recursos críticos. Inclui:

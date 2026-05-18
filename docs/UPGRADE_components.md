@@ -354,11 +354,12 @@
 
 **Localização:** `components/Performance/LazyIframe.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Duplicidade** | A regex de extração de ID do YouTube (linha 84) é duplicada em `AdminVideos.js` (linha 28) e `UrlField.js` (linha 39). |
-| 2 | **UX** | O placeholder de thumbnail (linhas 122-147) exibe um fundo escuro com overlay, mas não tem botão de "play" visível para o usuário saber que pode clicar. |
-| 3 | **Acessibilidade** | O placeholder (linha 124) é um `div` com `onClick`, mas não tem `role="button"` ou `tabIndex`. Não é acessível por teclado. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Duplicidade** | A regex de extração de ID do YouTube (linha 84) é duplicada em `AdminVideos.js` (linha 28) e `UrlField.js` (linha 39). | ✅ **RESOLVIDO (18/05/2026)** — Extraído para helper centralizado `lib/youtube.js` com `extractYoutubeId()` |
+| 2 | **UX** | O placeholder de thumbnail (linhas 122-147) exibe um fundo escuro com overlay, mas não tem botão de "play" visível para o usuário saber que pode clicar. | ✅ **RESOLVIDO (18/05/2026)** — Adicionado botão de play circular com ícone SVG e efeito hover (scale + vermelho), mais texto do placeholder exibido na parte inferior |
+| 3 | **Acessibilidade** | O placeholder (linha 124) é um `div` com `onClick`, mas não tem `role="button"` ou `tabIndex`. Não é acessível por teclado. | ✅ **RESOLVIDO (18/05/2026)** — Adicionados `role="button"`, `tabIndex={0}`, `aria-label` e handler `onKeyDown` para Enter/Espaço |
+REPLACE
 
 ### 4.4 PreloadResources.js
 

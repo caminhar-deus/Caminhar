@@ -119,10 +119,19 @@ export default function LazyIframe({
         ...style,
       }}
     >
-      {/* Placeholder / Thumbnail */}
+        {/* Placeholder / Thumbnail */}
       {shouldShowPlaceholder && (
         <div
           onClick={handleClick}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handleClick();
+            }
+          }}
+          role="button"
+          tabIndex={0}
+          aria-label={placeholderText.replace(/[▶●■]/g, '').trim() || `Carregar: ${title}`}
           style={{
             position: 'absolute',
             inset: 0,
@@ -144,8 +153,62 @@ export default function LazyIframe({
               backgroundColor: thumbUrl ? 'rgba(0,0,0,0.4)' : 'transparent',
             }}
           />
+
+          {/* Botão de play */}
+          <div
+            style={{
+              position: 'relative',
+              zIndex: 1,
+              width: '68px',
+              height: '68px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(0,0,0,0.7)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'transform 0.2s ease, background-color 0.2s ease',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.1)';
+              e.currentTarget.style.backgroundColor = 'rgba(255,0,0,0.8)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.7)';
+            }}
+          >
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="white"
+              aria-hidden="true"
+            >
+              <polygon points="8,5 19,12 8,19" />
+            </svg>
+          </div>
+
+          {/* Texto do placeholder */}
+          <span
+            style={{
+              position: 'absolute',
+              bottom: '20px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 1,
+              color: '#fff',
+              fontSize: '14px',
+              fontWeight: 500,
+              textShadow: '0 1px 3px rgba(0,0,0,0.6)',
+              pointerEvents: 'none',
+            }}
+          >
+            {placeholderText}
+          </span>
         </div>
       )}
+REPLACE
 
       {/* Iframe */}
       {(isVisible || isIntersecting) && (
