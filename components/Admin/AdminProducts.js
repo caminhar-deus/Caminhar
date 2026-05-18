@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import AdminCrudBase from './AdminCrudBase';
 import TextField from './fields/TextField';
 import TextAreaField from './fields/TextAreaField';
+import ToggleField from './fields/ToggleField';
 import ExternalDataButton from './fields/ExternalDataButton';
 import { handleReorder } from '@/lib/reorder';
 import { z } from 'zod';
@@ -18,23 +19,6 @@ const productSchema = z.object({
   link_amazon: z.string().url('URL inválida').optional().or(z.literal('')),
   published: z.boolean().optional()
 });
-
-/** Componente customizado simples de Checkbox (para reaproveitamento do base CRUD) */
-const CheckboxWrapper = ({ name, value, onChange, label, hint }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginTop: '10px' }}>
-    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontWeight: 'bold', color: '#2c3e50', fontSize: '14px' }}>
-      <input 
-        type="checkbox" 
-        name={name} 
-        checked={!!value} 
-        onChange={(e) => onChange({ target: { name, value: e.target.checked } })}
-        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-      />
-      {label}
-    </label>
-    {hint && <span style={{ fontSize: '12px', color: '#6c757d' }}>{hint}</span>}
-  </div>
-);
 
 /** Configuração dos campos do Admin */
 const fields = [
@@ -68,8 +52,11 @@ const fields = [
     placeholder: 'https://amazon.com.br/...', gridColumn: 'span 2'
   },
   {
-    name: 'published', component: CheckboxWrapper, label: 'Produto Publicado',
-    hint: 'Desmarque para transformar o produto em um Rascunho (ocultar da vitrine pública).', gridColumn: 'span 2'
+    name: 'published', component: ToggleField, label: 'Produto Publicado',
+    description: 'Desmarque para transformar o produto em um Rascunho (ocultar da vitrine pública).',
+    activeLabel: 'Publicado',
+    inactiveLabel: 'Rascunho',
+    gridColumn: 'span 2'
   }
 ];
 
@@ -104,7 +91,7 @@ const columns = [
     }
   },
   { key: 'title', header: 'Produto', render: (item) => <strong>{item.title}</strong> },
-  { key: 'price', header: 'Valor' },
+  { key: 'price', header: 'Valor', format: (value) => value ? `R$ ${value}` : '-' },
   { 
     key: 'links', header: 'Links Cadastrados',
     render: (item) => (
@@ -145,7 +132,7 @@ export default function AdminProducts() {
   // Função para processar dados do Mercado Livre (com lógica extra de formatação)
   const handleFetchMLSuccess = (data, setFieldValue) => {
     setFieldValue('title', data.title);
-    setFieldValue('price', `R$ ${data.price.toFixed(2).replace('.', ',')}`);
+    setFieldValue('price', data.price.toFixed(2));
     setFieldValue('images', data.images);
     if (data.description) {
       setFieldValue('description', data.description);

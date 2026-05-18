@@ -97,6 +97,10 @@ Sistema administrativo completo com CRUD reutilizável, autenticação, dashboar
 - Botão "Puxar Dados" substituído pelo componente genérico `ExternalDataButton`
 - Layout do botão alterado de `position: absolute` para flexbox responsivo
 
+**Melhorias aplicadas (18/05/2026):**
+- `CheckboxWrapper` inline substituído pelo componente reutilizável `ToggleField` com props `description`, `activeLabel` e `inactiveLabel`
+- Preço agora armazenado como valor numérico decimal (`89.90`) em vez de string formatada (`R$ 89,90`), com formatação aplicada apenas na exibição via coluna `format`
+
 ### 1.8 AdminRolesTab.js
 **Localização:** `components/Admin/AdminRolesTab.js`
 

@@ -85,14 +85,14 @@
 
 **Localização:** `components/Admin/AdminProducts.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
 | 1 | **Duplicidade** | `handleReorder` duplicado (idem item 1.5 #1). Extraído para `lib/reorder.js`. `handleReorder` movido para dentro do componente (padronizado). | ✅ **RESOLVIDO (14/05/2026)** |
 | 2 | **Duplicidade** | `renderCustomFormField` duplicado (idem item 1.5 #2). Extraído para `ExternalDataButton.js`. | ✅ **RESOLVIDO (14/05/2026)** |
-| 3 | **Manutenção** | O endpoint da API de produtos é `/api/products`, enquanto os demais usam `/api/admin/*`. Inconsistência na URL. | ⬜️ **PENDENTE** |
+| 3 | **Manutenção** | O endpoint da API de produtos é `/api/products`, enquanto os demais usam `/api/admin/*`. Inconsistência na URL. | ⬜️ **MANTIDO** — a rota `pages/api/products.js` é o endpoint padrão e funcional do Next.js, sem necessidade de mover para `/api/admin/products`. |
 | 4 | **Manutenção** | `handleReorder` de Products (linha 130) estava **fora** do componente (export default na linha 146), diferentemente dos outros. Agora está dentro do componente, como os demais. | ✅ **RESOLVIDO (14/05/2026)** |
-| 5 | **Manutenção** | O componente `CheckboxWrapper` (linha 21) é definido inline, mas é equivalente funcional ao `ToggleField` já existente em `Admin/fields/ToggleField.js`. Duplicidade de componente. | ⬜️ **PENDENTE** |
-| 6 | **Performance** | O preço é armazenado como string formatada (`R$ 89,90`) vinda da API do ML. Isso pode causar problemas de ordenação e cálculos. | ⬜️ **PENDENTE** |
+| 5 | **Manutenção** | O componente `CheckboxWrapper` (linha 21) é definido inline, mas é equivalente funcional ao `ToggleField` já existente em `Admin/fields/ToggleField.js`. Duplicidade de componente. Substituído por `ToggleField` com props `description`, `activeLabel` e `inactiveLabel`. | ✅ **RESOLVIDO (18/05/2026)** |
+| 6 | **Performance** | O preço era armazenado como string formatada (`R$ 89,90`) vinda da API do ML. Agora armazenado como valor numérico decimal (`89.90`) e formatado apenas na exibição (coluna `format`). | ✅ **RESOLVIDO (18/05/2026)** |
 
 ### 1.8 AdminRolesTab.js
 
