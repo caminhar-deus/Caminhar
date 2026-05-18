@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useApiFetch } from '@/hooks';
 import Link from 'next/link';
 import styles from './styles/Blog.module.css';
@@ -25,7 +26,9 @@ export default function BlogSection({ limit }) {
     return null;
   }
 
-  const displayedPosts = limit ? posts.slice(0, limit) : posts;
+  const displayedPosts = useMemo(() => {
+    return limit ? posts.slice(0, limit) : posts;
+  }, [posts, limit]);
 
   return (
     <section className={styles.section}>

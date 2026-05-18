@@ -241,6 +241,11 @@ Componentes de funcionalidades específicas do site público.
 | `PostCard.js` | Card individual de post. Usa `BaseCard` com imagem, metadados, categorias, título, resumo e link |
 | `styles/Blog.module.css` | Estilos da seção Blog: grid, header, cards, categorias, footer responsivo |
 
+**Melhorias aplicadas (18/05/2026):**
+- `BlogSection.js`: `displayedPosts` envolvido em `useMemo` com dependências `[posts, limit]` para evitar recálculo desnecessário a cada renderização
+- `PostCard.js`: atributo `alt` da imagem agora possui fallback (`post.title || 'Imagem ilustrativa do artigo'`) para garantir descrição acessível mesmo quando o título estiver vazio
+- `PostCard.js`: link `/blog/${post.slug}` agora possui `aria-label` descritivo (ex: "Ler mais sobre: {título}") e `title` com o título do post para melhor SEO e acessibilidade
+
 ### 2.2 ContentTabs
 
 | Arquivo | Propósito |

@@ -219,11 +219,11 @@
 
 **Localização:** `components/Features/Blog/`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Performance** | `BlogSection.js` não tem `useMemo` para `displayedPosts`. O `slice` é recalculado a cada render. |
-| 2 | **Acessibilidade** | `PostCard.js` (linha 11): a imagem não tem `alt` descritivo (usa `post.title` como alt, mas o atributo está vazio). |
-| 3 | **SEO** | `PostCard.js` (linha 41): o link para `/blog/${post.slug}` não possui `aria-label` ou `title` descritivo. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Performance** | `BlogSection.js` não tem `useMemo` para `displayedPosts`. O `slice` é recalculado a cada render. | ✅ **RESOLVIDO (18/05/2026)** |
+| 2 | **Acessibilidade** | `PostCard.js` (linha 11): a imagem não tem `alt` descritivo (usa `post.title` como alt, mas o atributo está vazio). | ✅ **RESOLVIDO (18/05/2026)** |
+| 3 | **SEO** | `PostCard.js` (linha 41): o link para `/blog/${post.slug}` não possui `aria-label` ou `title` descritivo. | ✅ **RESOLVIDO (18/05/2026)** |
 
 ### 2.2 ContentTabs
 

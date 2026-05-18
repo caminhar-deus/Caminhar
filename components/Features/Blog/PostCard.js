@@ -9,7 +9,7 @@ export default function PostCard({ post, readMoreText = 'Ler mais →' }) {
       media={
         <img 
           src={post.image_url || '/api/placeholder-image?text=Reflexão'} 
-          alt={post.title}
+          alt={post.title || 'Imagem ilustrativa do artigo'}
           loading="lazy"
           width={400}
           height={225}
@@ -38,7 +38,12 @@ export default function PostCard({ post, readMoreText = 'Ler mais →' }) {
         <span className={styles.date}>
           {new Date(post.created_at).toLocaleDateString('pt-BR')}
         </span>
-        <Link href={`/blog/${post.slug}`} className={styles.readMore}>
+        <Link 
+          href={`/blog/${post.slug}`} 
+          className={styles.readMore}
+          aria-label={`Ler mais sobre: ${post.title}`}
+          title={post.title}
+        >
           {readMoreText}
         </Link>
       </div>
