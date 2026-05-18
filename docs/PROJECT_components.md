@@ -326,6 +326,12 @@ Componentes de layout do Design System para construção de páginas.
 - Padding personalizado (none, sm, md, lg)
 - Subcomponentes: `Container.Section`, `Container.Article`
 
+**Melhorias aplicadas (18/05/2026):**
+- Adicionados `Container.propTypes` com validação completa de tipos para todas as props (`size`, `centered`, `fluid`, `as`, `padding`, `className`)
+- Adicionados `displayName` nos subcomponentes `Container.Section` e `Container.Article` para facilitar debugging em React DevTools
+- Adicionado `Container.displayName` no componente principal
+- Adicionado `import PropTypes from 'prop-types'`
+
 ### 3.2 Grid.js
 **Localização:** `components/Layout/Grid.js`
 

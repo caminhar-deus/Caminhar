@@ -284,9 +284,11 @@
 
 **Localização:** `components/Layout/Container.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Manutenção** | BEM estruturado, sem problemas significativos. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Manutenção** | BEM estruturado, sem problemas significativos. | ⬜️ **MANTIDO** — já estava correto |
+| 2 | **Manutenção** | Componente não possuía PropTypes para validação de tipos em runtime. Adicionados `Container.propTypes` com tipagem completa de todas as props. | ✅ **RESOLVIDO (18/05/2026)** |
+| 3 | **Manutenção** | Subcomponentes `Container.Section` e `Container.Article` não possuíam `displayName`, dificultando debugging em React DevTools. Adicionados `Container.Section.displayName` e `Container.Article.displayName`. | ✅ **RESOLVIDO (18/05/2026)** |
 
 ### 3.2 Grid.js
 

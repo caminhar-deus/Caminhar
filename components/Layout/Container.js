@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import styles from './Container.module.css';
 
 /**
@@ -41,6 +42,18 @@ export const Container = ({
   );
 };
 
+Container.propTypes = {
+  children: PropTypes.node,
+  size: PropTypes.oneOf(['sm', 'md', 'lg', 'xl', '2xl', 'full']),
+  centered: PropTypes.bool,
+  fluid: PropTypes.bool,
+  as: PropTypes.elementType,
+  padding: PropTypes.oneOf(['none', 'sm', 'md', 'lg']),
+  className: PropTypes.string,
+};
+
+Container.displayName = 'Container';
+
 /**
  * Container.Section - Container específico para seções
  */
@@ -50,6 +63,8 @@ Container.Section = ({ children, className = '', ...props }) => (
   </section>
 );
 
+Container.Section.displayName = 'Container.Section';
+
 /**
  * Container.Article - Container específico para artigos
  */
@@ -58,5 +73,7 @@ Container.Article = ({ children, className = '', ...props }) => (
     {children}
   </article>
 );
+
+Container.Article.displayName = 'Container.Article';
 
 export default Container;
