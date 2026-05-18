@@ -1,6 +1,7 @@
 /* Stack Base */
 .stack {
   display: flex;
+  gap: var(--stack-gap, 1rem);
 }
 
 /* Direction */
@@ -17,65 +18,14 @@
   display: inline-flex;
 }
 
-/* Spacing */
-.spacingNone > * + * {
-  margin-top: 0;
-  margin-left: 0;
-}
-
-.spacingXs > * + * {
-  margin-top: 0.5rem;
-}
-
-.spacingXs.row > * + * {
-  margin-top: 0;
-  margin-left: 0.5rem;
-}
-
-.spacingSm > * + * {
-  margin-top: 0.75rem;
-}
-
-.spacingSm.row > * + * {
-  margin-top: 0;
-  margin-left: 0.75rem;
-}
-
-.spacingMd > * + * {
-  margin-top: 1rem;
-}
-
-.spacingMd.row > * + * {
-  margin-top: 0;
-  margin-left: 1rem;
-}
-
-.spacingLg > * + * {
-  margin-top: 1.5rem;
-}
-
-.spacingLg.row > * + * {
-  margin-top: 0;
-  margin-left: 1.5rem;
-}
-
-.spacingXl > * + * {
-  margin-top: 2rem;
-}
-
-.spacingXl.row > * + * {
-  margin-top: 0;
-  margin-left: 2rem;
-}
-
-.spacing2xl > * + * {
-  margin-top: 3rem;
-}
-
-.spacing2xl.row > * + * {
-  margin-top: 0;
-  margin-left: 3rem;
-}
+/* Spacing - using gap instead of margin > * + * */
+.spacingNone { --stack-gap: 0; }
+.spacingXs { --stack-gap: 0.5rem; }
+.spacingSm { --stack-gap: 0.75rem; }
+.spacingMd { --stack-gap: 1rem; }
+.spacingLg { --stack-gap: 1.5rem; }
+.spacingXl { --stack-gap: 2rem; }
+.spacing2xl { --stack-gap: 3rem; }
 
 /* Align Items */
 .alignStart {
@@ -188,26 +138,5 @@
 @media (max-width: 768px) {
   .row.responsive {
     flex-direction: column;
-  }
-
-  .row.responsive > * + * {
-    margin-left: 0;
-    margin-top: 1rem;
-  }
-
-  .row.responsive.spacingXs > * + * {
-    margin-top: 0.5rem;
-  }
-
-  .row.responsive.spacingSm > * + * {
-    margin-top: 0.75rem;
-  }
-
-  .row.responsive.spacingLg > * + * {
-    margin-top: 1.5rem;
-  }
-
-  .row.responsive.spacingXl > * + * {
-    margin-top: 2rem;
   }
 }

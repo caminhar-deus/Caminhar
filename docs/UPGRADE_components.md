@@ -304,9 +304,11 @@
 
 **Localização:** `components/Layout/Stack.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Manutenção** | Componente bem estruturado. Sem problemas significativos. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Manutenção** | Componente bem estruturado. Sem problemas significativos. | ⬜️ **MANTIDO** — já estava correto |
+| 2 | **Manutenção** | Componente não possuía PropTypes para validação de tipos em runtime. Adicionados `Stack.propTypes` com tipagem completa de todas as props, e `Stack.Item.propTypes`, `Stack.Divider.propTypes`, `Stack.Spacer.propTypes`, `Stack.VStack.propTypes`, `Stack.HStack.propTypes`. | ✅ **RESOLVIDO (18/05/2026)** |
+| 3 | **Manutenção** | Subcomponentes `Stack.Item`, `Stack.Divider`, `Stack.Spacer`, `Stack.VStack` e `Stack.HStack` não possuíam `displayName`, dificultando debugging em React DevTools. Adicionados `displayName` em todos os subcomponentes. | ✅ **RESOLVIDO (18/05/2026)** |
 
 ### 3.4 Sidebar.js
 
@@ -318,13 +320,13 @@
 | 2 | **Acessibilidade** | O overlay mobile (linha 121) tem `aria-hidden="true"`, mas o conteúdo principal atrás do overlay ainda pode receber foco via Tab. Deveria usar `inert` ou `aria-hidden` no container pai. |
 | 3 | **Manutenção** | O seletor CSS `+ .main` e `~ .main` (Sidebar.module.css, linhas 124-145) pode causar problemas de especificidade. A margem do main é controlada por seletores de irmãos, o que é frágil. |
 
-### 3.5 Stack.module.css
+### 3.5 Stack.module.css ✅ **RESOLVIDO (18/05/2026)**
 
 **Localização:** `components/Layout/Stack.module.css`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Performance** | O spacing usa seletor `> * + *` (adjacent sibling), que é funcional mas pode ter impacto em performance com muitos filhos animados. O uso de `gap` seria mais performático. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Performance** | O spacing usava seletor `> * + *` (adjacent sibling), que é funcional mas pode ter impacto em performance com muitos filhos animados. Substituído por `gap` via CSS Custom Property `--stack-gap`, eliminando ~50 linhas de código duplicado e os seletores adjacentes. Bloco responsivo simplificado (apenas `flex-direction: column`). | ✅ **RESOLVIDO (18/05/2026)** |
 
 ---
 

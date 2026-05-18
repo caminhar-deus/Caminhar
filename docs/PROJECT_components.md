@@ -350,10 +350,17 @@ Componentes de layout do Design System para construção de páginas.
 **Localização:** `components/Layout/Stack.js`
 
 **Propósito:** Componente de empilhamento vertical/horizontal (Flexbox). Suporta:
-- Spacing (gap) configurável entre itens
+- Spacing (gap) configurável entre itens via `--stack-gap` (CSS Custom Property)
 - Alinhamento e justificação
 - Responsividade (horizontal vira vertical em mobile)
 - Subcomponentes: `Stack.Item`, `Stack.Divider`, `Stack.Spacer`, `Stack.VStack`, `Stack.HStack`
+
+**Melhorias aplicadas (18/05/2026):**
+- Adicionados `Stack.propTypes` com validação completa de tipos para todas as props (`direction`, `spacing`, `gap`, `align`, `justify`, `wrap`, `inline`, `responsive`, `className`)
+- Adicionados `displayName` nos subcomponentes `Stack.Item`, `Stack.Divider`, `Stack.Spacer`, `Stack.VStack` e `Stack.HStack` para facilitar debugging em React DevTools
+- Adicionado `Stack.displayName` no componente principal
+- Adicionado `import PropTypes from 'prop-types'`
+- `Stack.module.css`: spacing migrado de `margin` com seletor `> * + *` para `gap` via CSS Custom Property `--stack-gap`, eliminando ~50 linhas de código duplicado e melhorando performance de renderização
 
 ### 3.4 Sidebar.js
 **Localização:** `components/Layout/Sidebar.js`

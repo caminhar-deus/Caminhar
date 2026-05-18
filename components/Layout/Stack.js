@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import styles from './Stack.module.css';
 
 /**
@@ -50,6 +51,31 @@ export const Stack = ({
   );
 };
 
+Stack.displayName = 'Stack';
+
+Stack.propTypes = {
+  /** Conteúdo do stack */
+  children: PropTypes.node,
+  /** Direção do empilhamento */
+  direction: PropTypes.oneOf(['vertical', 'horizontal', 'row', 'column']),
+  /** Espaçamento entre itens */
+  spacing: PropTypes.oneOf(['none', 'xs', 'sm', 'md', 'lg', 'xl', '2xl']),
+  /** Alias para spacing (spacing tem prioridade) */
+  gap: PropTypes.oneOf(['none', 'xs', 'sm', 'md', 'lg', 'xl', '2xl']),
+  /** Alinhamento dos itens no eixo transversal */
+  align: PropTypes.oneOf(['start', 'center', 'end', 'stretch', 'baseline']),
+  /** Distribuição dos itens no eixo principal */
+  justify: PropTypes.oneOf(['start', 'center', 'end', 'between', 'around', 'evenly']),
+  /** Permitir quebra de linha (apenas horizontal) */
+  wrap: PropTypes.bool,
+  /** Display inline-flex */
+  inline: PropTypes.bool,
+  /** Habilita responsividade automática */
+  responsive: PropTypes.bool,
+  /** Classes CSS adicionais */
+  className: PropTypes.string,
+};
+
 /**
  * Stack.Item - Item individual do stack
  * @param {boolean} grow - Permitir crescimento
@@ -81,12 +107,34 @@ Stack.Item = ({
   );
 };
 
+Stack.Item.displayName = 'Stack.Item';
+
+Stack.Item.propTypes = {
+  /** Conteúdo do item */
+  children: PropTypes.node,
+  /** Permitir crescimento */
+  grow: PropTypes.bool,
+  /** Permitir encolhimento */
+  shrink: PropTypes.bool,
+  /** Alinhamento individual do item */
+  align: PropTypes.oneOf(['start', 'center', 'end', 'stretch']),
+  /** Classes CSS adicionais */
+  className: PropTypes.string,
+};
+
 /**
  * Stack.Divider - Divisor entre itens
  */
 Stack.Divider = ({ className = '', ...props }) => (
   <div className={`${styles.divider} ${className}`} role="separator" {...props} />
 );
+
+Stack.Divider.displayName = 'Stack.Divider';
+
+Stack.Divider.propTypes = {
+  /** Classes CSS adicionais */
+  className: PropTypes.string,
+};
 
 /**
  * Stack.Spacer - Espaçador flexível para ocupar espaço entre itens
@@ -95,14 +143,57 @@ Stack.Spacer = ({ className = '', ...props }) => (
   <div className={`${styles.spacer} ${className}`} {...props} />
 );
 
+Stack.Spacer.displayName = 'Stack.Spacer';
+
+Stack.Spacer.propTypes = {
+  /** Classes CSS adicionais */
+  className: PropTypes.string,
+};
+
 /**
  * Stack.VStack - Stack vertical (atalho)
  */
 Stack.VStack = (props) => <Stack direction="vertical" {...props} />;
 
+Stack.VStack.displayName = 'Stack.VStack';
+
+Stack.VStack.propTypes = {
+  /** Conteúdo do stack vertical */
+  children: PropTypes.node,
+  /** Espaçamento entre itens */
+  spacing: PropTypes.oneOf(['none', 'xs', 'sm', 'md', 'lg', 'xl', '2xl']),
+  /** Alinhamento dos itens no eixo transversal */
+  align: PropTypes.oneOf(['start', 'center', 'end', 'stretch', 'baseline']),
+  /** Distribuição dos itens no eixo principal */
+  justify: PropTypes.oneOf(['start', 'center', 'end', 'between', 'around', 'evenly']),
+  /** Habilita responsividade automática */
+  responsive: PropTypes.bool,
+  /** Classes CSS adicionais */
+  className: PropTypes.string,
+};
+
 /**
  * Stack.HStack - Stack horizontal (atalho)
  */
 Stack.HStack = (props) => <Stack direction="horizontal" {...props} />;
+
+Stack.HStack.displayName = 'Stack.HStack';
+
+Stack.HStack.propTypes = {
+  /** Conteúdo do stack horizontal */
+  children: PropTypes.node,
+  /** Espaçamento entre itens */
+  spacing: PropTypes.oneOf(['none', 'xs', 'sm', 'md', 'lg', 'xl', '2xl']),
+  /** Alinhamento dos itens no eixo transversal */
+  align: PropTypes.oneOf(['start', 'center', 'end', 'stretch', 'baseline']),
+  /** Distribuição dos itens no eixo principal */
+  justify: PropTypes.oneOf(['start', 'center', 'end', 'between', 'around', 'evenly']),
+  /** Permitir quebra de linha */
+  wrap: PropTypes.bool,
+  /** Habilita responsividade automática */
+  responsive: PropTypes.bool,
+  /** Classes CSS adicionais */
+  className: PropTypes.string,
+};
 
 export default Stack;
