@@ -4,105 +4,67 @@
  * Props:
  * - css: String com CSS crítico (obrigatório)
  * - id: ID único para o style (opcional)
+ * 
+ * O CSS crítico está em './styles/criticalCSSRaw.js' como string JavaScript,
+ * evitando conflitos com o Turbopack do Next.js que exige CSS global
+ * apenas em pages/_app.js.
  */
 
+import criticalStyles from './styles/criticalCSSRaw.js';
+
 export default function CriticalCSS({ css, id = 'critical-css' }) {
-  if (!css) return null;
+  const stylesToUse = css || criticalStyles;
+  if (!stylesToUse) return null;
 
   return (
     <style
       id={id}
-      dangerouslySetInnerHTML={{ __html: css }}
+      dangerouslySetInnerHTML={{ __html: stylesToUse }}
       // Critical CSS é render-blocking por design
-      // Remove após carregamento completo via JavaScript
     />
   );
 }
 
 /**
  * Helper para extrair CSS crítico das variáveis CSS
+ * 
+ * NOTA: O CSS foi movido para 'styles/criticalCSSRaw.js' em 18/05/2026.
+ * Esta função é mantida para compatibilidade com chamadas existentes.
+ * Use o import direto de './styles/criticalCSSRaw.js' para novos usos.
  */
 export function extractCriticalCSS() {
-  return `
-    /* Critical CSS - Above the fold */
-    
-    /* Reset básico */
-    *,*::before,*::after{box-sizing:border-box}
-    html,body{margin:0;padding:0}
-    
-    /* Previne FOIT/FOUT */
-    html{font-family:system-ui,-apple-system,sans-serif}
-    
-    /* Layout crítico */
-    body{
-      min-height:100vh;
-      line-height:1.6;
-      color:var(--color-text-primary, #333);
-      background:var(--color-bg-primary, #fff);
-    }
-    
-    /* Container principal */
-    .container{
-      width:100%;
-      max-width:1200px;
-      margin:0 auto;
-      padding:0 20px;
-    }
-    
-    /* Previne CLS em imagens */
-    img{
-      max-width:100%;
-      height:auto;
-    }
-    
-    /* Skip link para acessibilidade */
-    .skip-link{
-      position:absolute;
-      top:-40px;
-      left:0;
-      background:#000;
-      color:var(--color-text-inverse, #fff);
-      padding:8px;
-      text-decoration:none;
-      z-index:100;
-    }
-    
-    .skip-link:focus{
-      top:0;
-    }
-    
-    /* Loading states */
-    .skeleton{
-      background:linear-gradient(90deg,var(--color-bg-secondary, #f0f0f0) 25%,var(--color-bg-tertiary, #e0e0e0) 50%,var(--color-bg-secondary, #f0f0f0) 75%);
-      background-size:200% 100%;
-      animation:loading 1.5s infinite;
-    }
-    
-    @keyframes loading{
-      0%{background-position:200% 0}
-      100%{background-position:-200% 0}
-    }
-    
-    /* Reduz motion para acessibilidade */
-    @media(prefers-reduced-motion:reduce){
-      *,*::before,*::after{
-        animation-duration:0.01ms!important;
-        animation-iteration-count:1!important;
-        transition-duration:0.01ms!important;
-      }
-    }
-  `;
+  return criticalStyles;
 }
 
 /**
  * Remove CSS crítico após carregamento do CSS principal
  * (chamar em useEffect no _app.js)
+ * 
+ * Implementa fallback: se o CSS principal falhar ao carregar,
+ * o CSS crítico NÃO é removido, garantindo que a página
+ * mantenha ao menos os estilos essenciais visíveis.
  */
 export function removeCriticalCSS(id = 'critical-css') {
   if (typeof document === 'undefined') return;
-  
+
   const style = document.getElementById(id);
-  if (style) {
-    style.remove();
+  if (!style) return;
+
+  // Verifica se o CSS principal foi carregado com sucesso
+  // Checa folhas de estilo <link> (excluindo inline styles e critical-css)
+  const mainStylesheets = Array.from(document.styleSheets).filter(
+    (sheet) =>
+      sheet.href &&
+      !sheet.href.includes(id) &&
+      sheet.cssRules
+  );
+
+  if (mainStylesheets.length === 0) {
+    // CSS principal ainda não carregou ou falhou ao carregar
+    // Mantém o CSS crítico como fallback de emergência
+    return;
   }
+
+  // CSS principal carregou com sucesso, pode remover o crítico
+  style.remove();
 }

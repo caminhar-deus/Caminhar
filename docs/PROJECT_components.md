@@ -394,9 +394,20 @@ Componentes para otimização de performance do site.
 **Localização:** `components/Performance/CriticalCSS.js`
 
 **Propósito:** Inline de CSS crítico para renderização inicial. Inclui:
-- Helper `extractCriticalCSS()` que gera CSS para above-the-fold
-- Helper `removeCriticalCSS()` para remover após carregamento do CSS principal
+- Importa CSS crítico de `styles/criticalCSSRaw.js` como string JavaScript exportada
+- Componente `CriticalCSS` que injeta o CSS como `<style>` inline
+- Helper `extractCriticalCSS()` que retorna o CSS crítico (mantido para compatibilidade)
+- Helper `removeCriticalCSS()` para remover após carregamento do CSS principal, com fallback de emergência se o CSS principal falhar
 - Reset básico, prevenção FOIT/FOUT, skeleton loading, prefers-reduced-motion
+
+**Arquivos:**
+- `components/Performance/CriticalCSS.js` — Componente e helpers
+- `components/Performance/styles/criticalCSSRaw.js` — CSS crítico extraído como string JS (compatível com Turbopack)
+
+**Melhorias aplicadas (18/05/2026):**
+- CSS inline extraído da template string para arquivo separado `styles/criticalCSSRaw.js`, facilitando manutenção e mantendo legibilidade
+- `criticalCSSRaw.js` exporta uma string JavaScript com o CSS, evitando conflitos com o Turbopack do Next.js (que exige CSS global apenas em `pages/_app.js`)
+- `removeCriticalCSS` agora verifica se as folhas de estilo `<link>` foram carregadas com sucesso (`document.styleSheets`) antes de remover o CSS crítico; se o CSS principal falhar, mantém o crítico como fallback de emergência
 
 ### 4.2 ImageOptimized.js
 **Localização:** `components/Performance/ImageOptimized.js`

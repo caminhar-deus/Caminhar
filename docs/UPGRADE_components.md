@@ -336,10 +336,10 @@
 
 **Localização:** `components/Performance/CriticalCSS.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Manutenção** | O CSS inline (linhas 26-94) está em formato de string não minificada dentro do JS. Difícil de manter e debugar. |
-| 2 | **Manutenção** | O helper `removeCriticalCSS` (linha 101) remove o style pelo ID, mas não há fallback se o CSS principal falhar ao carregar. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Manutenção** | O CSS inline (linhas 26-94) está em formato de string não minificada dentro do JS. Difícil de manter e debugar. Extraído para `components/Performance/styles/criticalCSSRaw.js` como string JavaScript exportada, mantendo a legibilidade sem conflitos com o Turbopack do Next.js. | ✅ **RESOLVIDO (18/05/2026)** |
+| 2 | **Manutenção** | O helper `removeCriticalCSS` (linha 101) remove o style pelo ID, mas não há fallback se o CSS principal falhar ao carregar. Agora verifica se as folhas de estilo `<link>` foram carregadas com sucesso (`document.styleSheets`) antes de remover o CSS crítico. Se o CSS principal falhar, mantém o crítico como fallback de emergência. | ✅ **RESOLVIDO (18/05/2026)** |
 
 ### 4.2 ImageOptimized.js
 
