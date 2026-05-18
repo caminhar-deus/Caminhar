@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/router';
-import { exportToCSV } from '../../lib/csvExport';
-import { handleUnauthorized } from '../../lib/handleUnauthorized';
+import { exportToCSV } from '@/lib/csvExport';
+import { handleUnauthorized } from '@/lib/handleUnauthorized';
 
 export default function AdminAudit() {
   const [logs, setLogs] = useState([]);

@@ -31,6 +31,7 @@
 | 5 | **PropTypes** | O campo `apiEndpoint` não está documentado como PropTypes.string.isRequired no JSDoc, embora esteja nas PropTypes. | ⬜️ **MANTIDO** — já estava correto, adicionados parâmetros faltantes (`exportable`, `showItemCount`, `itemNameSingular`, `itemNamePlural`, `readOnly`, `onReorder`) |
 | 6 | **Segurança** | A validação customizada (`validate`, linha 211) é chamada sem try/catch em `validateForm()`. Adicionado try/catch envolvendo `validate(formData)`. | ✅ **RESOLVIDO** |
 | 7 | **Acessibilidade** | O botão de ordenação Drag & Drop não possui `aria-grabbed` ou descrição adequada para leitores de tela. Adicionados `aria-grabbed`, `aria-roledescription`, `role="button"` e `tabIndex`. | ✅ **RESOLVIDO** |
+| 8 | **Manutenção** | Caminhos de import relativos (`../../hooks/useAdminCrud`, `../../lib/csvExport`) substituídos pelo alias `@` (`@/hooks/useAdminCrud`, `@/lib/csvExport`) para consistência com o padrão do projeto. | ✅ **RESOLVIDO (18/05/2026)** |
 
 ### 1.2 AdminDashboard.js
 
@@ -52,6 +53,7 @@
 | 2 | **Performance** | O filtro local (`filteredLogs`, linha 54) é executado a cada renderização, mesmo quando `logs` ou `search` não mudam. Envolto em `useMemo`. | ✅ **RESOLVIDO** |
 | 3 | **UX** | O botão "Atualizar" não desabilita durante o loading, permitindo múltiplos cliques e múltiplas requisições simultâneas. Adicionado `disabled={loading}`. | ✅ **RESOLVIDO** |
 | 4 | **Tratamento de erro** | Se o servidor retornar status 401 com corpo JSON inválido, o `router.reload()` era chamado mesmo após o `throw`, mas a mensagem de toast podia não aparecer. Agora usa `setTimeout` + `return` para evitar toast duplicado no `.catch`. | ✅ **RESOLVIDO** |
+| 5 | **Manutenção** | Caminhos de import relativos (`../../lib/csvExport`, `../../lib/handleUnauthorized`) substituídos pelo alias `@` (`@/lib/csvExport`, `@/lib/handleUnauthorized`) para consistência com o padrão do projeto. | ✅ **RESOLVIDO (18/05/2026)** |
 
 ### 1.4 AdminDicas.js
 
@@ -141,10 +143,10 @@
 
 **Localização:** `components/Admin/withAdminAuth.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Manutenção** | O HOC usa `import { useAdminAuth } from '@/hooks'` com alias `@`, mas alguns componentes usam caminhos relativos. Inconsistência. |
-| 2 | **Performance** | O componente `LoginForm` é redefinido dentro do escopo do HOC a cada renderização. Poderia ser definido fora. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Manutenção** | O HOC usa `import { useAdminAuth } from '@/hooks'` com alias `@`, mas alguns componentes usam caminhos relativos. Inconsistência. | ✅ **RESOLVIDO (18/05/2026)** — `AdminCrudBase.js` e `AdminAudit.js` atualizados para usar `@` |
+| 2 | **Performance** | O componente `LoginForm` é redefinido dentro do escopo do HOC a cada renderização. Poderia ser definido fora. | ✅ **RESOLVIDO** — já estava fora do escopo do HOC |
 
 ### 1.13 Fields (Admin)
 
