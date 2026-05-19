@@ -530,6 +530,9 @@ Componentes base do Design System do projeto. Seguem padrão consistente de vari
 
 **Atualização (13/05/2026):** `Input.module.css` tokenizado — cores, espaçamentos, border-radius e transitions substituídos por `var()`.
 
+**Melhorias aplicadas (18/05/2026):**
+- Substituído `Math.random()` por `useId()` do React 18+ na geração de ID fallback (linha 36), eliminando hydration mismatch no SSR do Next.js
+
 ### 6.3 TextArea.js
 **Localização:** `components/UI/TextArea.js`
 
@@ -537,12 +540,19 @@ Componentes base do Design System do projeto. Seguem padrão consistente de vari
 
 **Atualização (13/05/2026):** `TextArea.module.css` tokenizado — cores, espaçamentos, border-radius e transitions substituídos por `var()`.
 
+**Melhorias aplicadas (18/05/2026):**
+- Substituído `Math.random()` por `useId()` do React 18+ na geração de ID fallback (linha 43), eliminando hydration mismatch no SSR do Next.js
+- Adicionado `if (!autoResize) return;` no início do `useEffect` de recálculo de altura (linha 117), evitando consultas DOM e manipulação de estilo desnecessárias quando `autoResize` está desativado
+
 ### 6.4 Select.js
 **Localização:** `components/UI/Select.js`
 
 **Propósito:** Select nativo e custom combobox. Suporta busca (searchable), clearable, dropdown com scroll, opções desabilitadas, estados de erro.
 
 **Atualização (13/05/2026):** `Select.module.css` tokenizado — cores, espaçamentos, border-radius, transitions e box-shadow substituídos por `var()`.
+
+**Melhorias aplicadas (18/05/2026):**
+- Substituído `Math.random()` por `useId()` do React 18+ na geração de ID fallback (linha 36), eliminando hydration mismatch no SSR do Next.js
 
 ### 6.5 Modal.js
 **Localização:** `components/UI/Modal.js`

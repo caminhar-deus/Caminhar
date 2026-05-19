@@ -1,4 +1,4 @@
-import React, { forwardRef, useState, useRef, useCallback, useEffect } from 'react';
+import React, { forwardRef, useState, useRef, useCallback, useEffect, useId } from 'react';
 import styles from './Select.module.css';
 
 /**
@@ -33,7 +33,8 @@ export const Select = forwardRef(({
   defaultValue,
   ...props
 }, ref) => {
-  const selectId = id || `select-${Math.random().toString(36).substr(2, 9)}`;
+  const generatedId = useId();
+  const selectId = id || `select-${generatedId}`;
   const errorId = `${selectId}-error`;
   const helperId = `${selectId}-helper`;
   const wrapperRef = useRef(null);

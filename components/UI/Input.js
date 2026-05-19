@@ -1,4 +1,4 @@
-import React, { forwardRef, useState } from 'react';
+import React, { forwardRef, useState, useId } from 'react';
 import styles from './Input.module.css';
 
 /**
@@ -33,7 +33,8 @@ export const Input = forwardRef(({
   onChange,
   ...props
 }, ref) => {
-  const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
+  const generatedId = useId();
+  const inputId = id || `input-${generatedId}`;
   const errorId = `${inputId}-error`;
   const helperId = `${inputId}-helper`;
 

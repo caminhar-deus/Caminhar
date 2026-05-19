@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect, useRef } from 'react';
+import React, { forwardRef, useEffect, useRef, useId } from 'react';
 import styles from './TextArea.module.css';
 
 /**
@@ -40,7 +40,8 @@ export const TextArea = forwardRef(({
   id,
   ...props
 }, ref) => {
-  const textareaId = id || `textarea-${Math.random().toString(36).substr(2, 9)}`;
+  const generatedId = useId();
+  const textareaId = id || `textarea-${generatedId}`;
   const errorId = `${textareaId}-error`;
   const helperId = `${textareaId}-helper`;
 
@@ -115,14 +116,10 @@ export const TextArea = forwardRef(({
   };
 
   useEffect(() => {
+    if (!autoResize) return;
+
     const textarea = internalRef.current || ref?.current;
     if (!textarea) return;
-
-    if (!autoResize) {
-      textarea.style.height = '';
-      textarea.style.overflowY = '';
-      return;
-    }
 
     calculateHeight(textarea);
   }, [autoResize, minRows, maxRows, value, defaultValue]);

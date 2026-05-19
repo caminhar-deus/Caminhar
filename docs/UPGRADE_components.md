@@ -425,28 +425,28 @@
 
 **Localização:** `components/UI/Input.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Manutenção** | O campo `Input` gera IDs aleatórios (linha 36) se nenhum ID for fornecido. Isso quebra a hidratação SSR (Next.js), pois o ID gerado no servidor difere do cliente. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Manutenção** | O campo `Input` gera IDs aleatórios (linha 36) se nenhum ID for fornecido. Isso quebra a hidratação SSR (Next.js), pois o ID gerado no servidor difere do cliente. | ✅ **RESOLVIDO (18/05/2026)** — Substituído `Math.random()` por `useId()` do React 18+, garantindo IDs estáveis entre servidor e cliente. |
 
 ### 6.3 TextArea.js
 
 **Localização:** `components/UI/TextArea.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Manutenção** | Mesmo problema de ID aleatório que `Input.js` (linha 43). Quebra hidratação SSR. |
-| 2 | **Performance** | `useEffect` (linha 117) recalcula altura em cada mudança de `value`. Se `autoResize` estiver desativado, ainda executa lógica desnecessária. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Manutenção** | Mesmo problema de ID aleatório que `Input.js` (linha 43). Quebra hidratação SSR. | ✅ **RESOLVIDO (18/05/2026)** — Substituído `Math.random()` por `useId()` do React 18+. |
+| 2 | **Performance** | `useEffect` (linha 117) recalcula altura em cada mudança de `value`. Se `autoResize` estiver desativado, ainda executa lógica desnecessária. | ✅ **RESOLVIDO (18/05/2026)** — Adicionado `if (!autoResize) return;` no início do `useEffect`, evitando consultas DOM e manipulação de estilo desnecessárias quando `autoResize` está desativado. |
 
 ### 6.4 Select.js
 
 **Localização:** `components/UI/Select.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Manutenção** | Mesmo problema de ID aleatório (linha 36). Quebra hidratação SSR. |
-| 2 | **Performance** | O modo custom renderiza um `input` de busca quando `searchable` está ativo, mas não corta a busca assíncrona se o usuário fechar o dropdown rapidamente. |
-| 3 | **Manutenção** | O componente alterna entre render nativo e custom dependendo de `searchable || clearable`, mas o modo nativo não suporta `clearable`. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Manutenção** | Mesmo problema de ID aleatório (linha 36). Quebra hidratação SSR. | ✅ **RESOLVIDO (18/05/2026)** — Substituído `Math.random()` por `useId()` do React 18+. |
+| 2 | **Performance** | O modo custom renderiza um `input` de busca quando `searchable` está ativo, mas não corta a busca assíncrona se o usuário fechar o dropdown rapidamente. | ⬜️ **PENDENTE** — Requer implementação de debounce ou cancelamento de busca ao fechar dropdown. |
+| 3 | **Manutenção** | O componente alterna entre render nativo e custom dependendo de `searchable || clearable`, mas o modo nativo não suporta `clearable`. | ⬜️ **PENDENTE** — Requer refatoração para modo custom sempre que `clearable` estiver ativo. |
 
 ### 6.5 Modal.js
 
