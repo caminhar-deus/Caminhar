@@ -22,6 +22,11 @@ body {
   line-height: var(--line-height-relaxed);
 }
 
+/* Scroll lock para modais - gerenciado pelo Modal.js */
+body.modal-open {
+  overflow: hidden;
+}
+
 a {
   color: inherit;
   text-decoration: none;

@@ -3,6 +3,7 @@ import styles from './Select.module.css';
 
 /**
  * Select - Componente base de seleção
+ *
  * @param {Array} options - Array de opções {value, label, disabled}
  * @param {string} placeholder - Texto placeholder
  * @param {string} size - 'sm' | 'md' | 'lg'
@@ -10,9 +11,16 @@ import styles from './Select.module.css';
  * @param {string} errorMessage - Mensagem de erro
  * @param {string} label - Label do select
  * @param {boolean} required - Campo obrigatório
- * @param {boolean} clearable - Permite limpar seleção
- * @param {boolean} searchable - Permite buscar opções
+ * @param {boolean} clearable - Permite limpar seleção.
+ *  Nota: ativa automaticamente o modo custom (dropdown estilizado)
+ *  e não funciona no modo nativo.
+ * @param {boolean} searchable - Permite buscar opções.
+ *  Nota: ativa automaticamente o modo custom (dropdown estilizado).
  * @param {boolean} disabled - Desabilita o select
+ * @param {function} onChange - Callback chamado ao selecionar opção.
+ *  Recebe objeto { target: { value } }.
+ * @param {function} onClear - Callback chamado ao limpar seleção.
+ *  Recebe o evento de clique.
  */
 export const Select = forwardRef(({
   options = [],
@@ -29,6 +37,7 @@ export const Select = forwardRef(({
   className = '',
   id,
   onChange,
+  onClear,
   value,
   defaultValue,
   ...props
@@ -39,6 +48,11 @@ export const Select = forwardRef(({
   const helperId = `${selectId}-helper`;
   const wrapperRef = useRef(null);
   const inputRef = useRef(null);
+  const searchTimeoutRef = useRef(null);
+
+  // Determina se deve usar modo custom
+  const useCustomMode = searchable || clearable;
+
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLabel, setSelectedLabel] = useState('');
@@ -52,29 +66,51 @@ export const Select = forwardRef(({
     setSelectedLabel(selected ? selected.label : '');
   }, [currentValue, options]);
 
+  // Limpa timeout de busca pendente
+  const clearSearchTimeout = useCallback(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = null;
+    }
+  }, []);
+
   // Fecha o dropdown ao clicar fora
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
         setIsOpen(false);
+        clearSearchTimeout();
         setSearchTerm('');
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      clearSearchTimeout();
+    };
+  }, [clearSearchTimeout]);
 
-  // Filtra opções quando searchable está ativo
+  // Filtra opções quando searchable está ativo (filtragem síncrona com debounce)
   const filteredOptions = searchable && searchTerm
     ? options.filter(opt =>
         opt.label.toLowerCase().includes(searchTerm.toLowerCase())
       )
     : options;
 
+  // Handler para busca com debounce
+  const handleSearchChange = useCallback((e) => {
+    const term = e.target.value;
+    clearSearchTimeout();
+    searchTimeoutRef.current = setTimeout(() => {
+      setSearchTerm(term);
+    }, 300);
+  }, [clearSearchTimeout]);
+
   const handleToggle = () => {
     if (!disabled) {
       setIsOpen(prev => !prev);
       if (!isOpen && searchable) {
+        clearSearchTimeout();
         setSearchTerm('');
         setTimeout(() => inputRef.current?.focus(), 10);
       }
@@ -84,6 +120,7 @@ export const Select = forwardRef(({
   const handleSelect = (option) => {
     if (option.disabled) return;
     setIsOpen(false);
+    clearSearchTimeout();
     setSearchTerm('');
     setSelectedLabel(option.label);
     if (onChange) {
@@ -95,9 +132,13 @@ export const Select = forwardRef(({
     e.stopPropagation();
     setSelectedLabel('');
     setIsOpen(false);
+    clearSearchTimeout();
     setSearchTerm('');
     if (onChange) {
       onChange({ target: { value: '' } });
+    }
+    if (onClear) {
+      onClear(e);
     }
   };
 
@@ -119,7 +160,6 @@ export const Select = forwardRef(({
         id={selectId}
         className={styles.select}
         aria-invalid={error}
-        aria-expanded={isOpen}
         aria-describedby={error ? errorId : helperText ? helperId : undefined}
         onChange={(e) => onChange?.(e)}
         onFocus={() => setIsOpen(true)}
@@ -169,6 +209,7 @@ export const Select = forwardRef(({
           }
           if (e.key === 'Escape') {
             setIsOpen(false);
+            clearSearchTimeout();
             setSearchTerm('');
           }
         }}
@@ -183,7 +224,7 @@ export const Select = forwardRef(({
             className={styles.searchInput}
             type="text"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={handleSearchChange}
             onClick={(e) => e.stopPropagation()}
             placeholder={selectedLabel || placeholder}
             autoFocus
@@ -199,6 +240,7 @@ export const Select = forwardRef(({
             className={styles.clearButton}
             onClick={handleClear}
             aria-label="Limpar seleção"
+            aria-hidden={true}
             tabIndex={-1}
           >
             <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
@@ -242,7 +284,7 @@ export const Select = forwardRef(({
           {required && <span className={styles.required}>*</span>}
         </label>
       )}
-      {searchable || clearable ? renderCustom() : renderNative()}
+      {useCustomMode ? renderCustom() : renderNative()}
       {error && errorMessage && (
         <span id={errorId} className={styles.errorMessage} role="alert">
           {errorMessage}

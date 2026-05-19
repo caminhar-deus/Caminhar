@@ -553,13 +553,26 @@ Componentes base do Design System do projeto. Seguem padrão consistente de vari
 
 **Melhorias aplicadas (18/05/2026):**
 - Substituído `Math.random()` por `useId()` do React 18+ na geração de ID fallback (linha 36), eliminando hydration mismatch no SSR do Next.js
+- Implementado debounce de 300ms na busca via `searchTimeoutRef` + `useCallback`, com cancelamento automático do timeout ao fechar o dropdown (click outside, select, clear, tecla Escape e cleanup do useEffect), evitando processamento desnecessário quando o usuário interage rapidamente
+- Extraída variável `useCustomMode` para validação robusta de quando usar modo custom vs nativo; documentado no JSDoc que `clearable` e `searchable` ativam modo custom automaticamente
+- Adicionado `aria-hidden={true}` no botão de limpar para evitar anúncio duplicado em leitores de tela
+- Adicionado callback `onClear` separado do `onChange`, permitindo que o consumidor trate a ação de limpar de forma distinta
 
 ### 6.5 Modal.js
 **Localização:** `components/UI/Modal.js`
 
-**Propósito:** Modal em portal com focus trap, scroll lock (com contagem de referência para múltiplos modais), fechar por ESC e overlay. Tamanhos (sm, md, lg, xl, full).
+**Propósito:** Modal em portal com focus trap, scroll lock (com contagem de referência para múltiplos modais), fechar por ESC e overlay. Tamanhos (sm, md, lg, xl, full). Suporta props `title`, `description`, `footer`, `closeOnOverlayClick`, `showCloseButton`, `preventScroll`.
 
 **Atualização (13/05/2026):** `Modal.module.css` tokenizado — cores, espaçamentos, border-radius, z-index, box-shadow e transitions substituídos por `var()`.
+
+**Melhorias aplicadas (18/05/2026):**
+- Adicionado `aria-labelledby` no `role="dialog"` vinculado ao `<h2>` do título via `useId()` do React 18+, garantindo IDs estáveis entre servidor e cliente
+- Adicionada nova prop `description` com `aria-describedby` vinculado ao elemento `<p>` de descrição, melhorando a navegação por leitores de tela
+- Adicionado `aria-hidden="true"` no SVG do botão de fechar para ocultá-lo de leitores de tela
+- Focus trap refatorado para usar cache via `focusableElementsRef`, atualizado via `useEffect` apenas quando o conteúdo do modal muda, eliminando consultas `querySelectorAll` desnecessárias a cada pressionamento de Tab
+- Seletor de elementos focáveis extraído para constante `FOCUSABLE_ELEMENTS` fora do componente, eliminando duplicação de código
+- Scroll lock substituído de `document.body.style.overflow` (que sobrescrevia estilos inline preexistentes) para classe CSS `body.modal-open` com regra `overflow: hidden` no CSS global
+- Adicionada classe `.description` no `Modal.module.css` com estilo padronizado para o texto de descrição
 
 ### 6.6 Card.js
 **Localização:** `components/UI/Card.js`

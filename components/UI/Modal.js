@@ -1,10 +1,14 @@
-import React, { useEffect, useCallback, useRef } from 'react';
+import React, { useEffect, useCallback, useRef, useId } from 'react';
 import ReactDOM from 'react-dom';
 import styles from './Modal.module.css';
 
+// Constante para seletor de elementos focáveis (evita duplicação)
+const FOCUSABLE_ELEMENTS =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 // Contador de referência para gerenciar scroll lock com múltiplos modais
 let modalCount = 0;
-let originalBodyOverflow = '';
+const BODY_MODAL_CLASS = 'modal-open';
 
 /**
  * Modal - Componente base de modal
@@ -12,6 +16,7 @@ let originalBodyOverflow = '';
  * @param {function} onClose - Handler para fechar
  * @param {string} size - 'sm' | 'md' | 'lg' | 'xl' | 'full'
  * @param {ReactNode} title - Título do modal
+ * @param {ReactNode} description - Descrição do modal (para aria-describedby)
  * @param {ReactNode} footer - Conteúdo do footer
  * @param {boolean} closeOnOverlayClick - Fechar ao clicar no overlay
  * @param {boolean} showCloseButton - Mostrar botão de fechar
@@ -22,6 +27,7 @@ export const Modal = ({
   onClose,
   size = 'md',
   title,
+  description,
   footer,
   children,
   closeOnOverlayClick = true,
@@ -31,28 +37,32 @@ export const Modal = ({
 }) => {
   const modalRef = useRef(null);
   const previousFocusRef = useRef(null);
+  const focusableElementsRef = useRef([]);
+  const titleId = useId();
+  const descriptionId = useId();
 
-  // Prevenir scroll do body com contador de referência
+  // Atualiza o cache de elementos focáveis quando o conteúdo do modal muda
   useEffect(() => {
-    if (preventScroll) {
-      if (isOpen) {
-        if (modalCount === 0) {
-          originalBodyOverflow = document.body?.style.overflow || '';
-        }
-        modalCount++;
-        if (document.body) {
-          document.body.style.overflow = 'hidden';
-        }
+    if (!isOpen || !modalRef.current) return;
+    focusableElementsRef.current = Array.from(
+      modalRef.current.querySelectorAll(FOCUSABLE_ELEMENTS)
+    );
+  }, [isOpen, children, title, footer]);
+
+  // Prevenir scroll do body com classe CSS (em vez de manipular style inline)
+  useEffect(() => {
+    if (preventScroll && isOpen) {
+      if (modalCount === 0) {
+        document.body?.classList.add(BODY_MODAL_CLASS);
       }
+      modalCount++;
     }
     return () => {
       if (preventScroll && isOpen) {
         modalCount--;
         if (modalCount <= 0) {
           modalCount = 0;
-          if (document.body) {
-            document.body.style.overflow = originalBodyOverflow;
-          }
+          document.body?.classList.remove(BODY_MODAL_CLASS);
         }
       }
     };
@@ -66,11 +76,10 @@ export const Modal = ({
 
     const timer = setTimeout(() => {
       if (modalRef.current) {
-        const focusableSelector = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-        const focusableElements = modalRef.current.querySelectorAll(focusableSelector);
+        const elements = modalRef.current.querySelectorAll(FOCUSABLE_ELEMENTS);
 
-        if (focusableElements.length > 0) {
-          focusableElements[0].focus();
+        if (elements.length > 0) {
+          elements[0].focus();
         } else {
           modalRef.current.focus();
         }
@@ -93,15 +102,12 @@ export const Modal = ({
     }
 
     if (e.key === 'Tab' && modalRef.current) {
-      const focusableSelector = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-      const focusableElements = Array.from(
-        modalRef.current.querySelectorAll(focusableSelector)
-      );
+      const elements = focusableElementsRef.current;
 
-      if (focusableElements.length === 0) return;
+      if (elements.length === 0) return;
 
-      const firstFocusable = focusableElements[0];
-      const lastFocusable = focusableElements[focusableElements.length - 1];
+      const firstFocusable = elements[0];
+      const lastFocusable = elements[elements.length - 1];
       const currentFocused = document.activeElement;
 
       if (e.shiftKey && currentFocused === firstFocusable) {
@@ -140,7 +146,14 @@ export const Modal = ({
     .join(' ');
 
   const modal = (
-    <div className={styles.overlay} onClick={handleOverlayClick} role="dialog" aria-modal="true">
+    <div
+      className={styles.overlay}
+      onClick={handleOverlayClick}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={title ? titleId : undefined}
+      aria-describedby={description ? descriptionId : undefined}
+    >
       <div
         ref={modalRef}
         className={modalClasses}
@@ -150,7 +163,7 @@ export const Modal = ({
         {(title || showCloseButton) && (
           <div className={styles.header}>
             {title && (
-              <h2 className={styles.title}>{title}</h2>
+              <h2 id={titleId} className={styles.title}>{title}</h2>
             )}
             {showCloseButton && (
               <button
@@ -158,7 +171,7 @@ export const Modal = ({
                 onClick={onClose}
                 aria-label="Fechar modal"
               >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </button>
@@ -166,6 +179,11 @@ export const Modal = ({
           </div>
         )}
         <div className={styles.body}>
+          {description && (
+            <p id={descriptionId} className={styles.description}>
+              {description}
+            </p>
+          )}
           {children}
         </div>
         {footer && (

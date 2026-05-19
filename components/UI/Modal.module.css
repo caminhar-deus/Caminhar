@@ -89,6 +89,14 @@
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3);
 }
 
+/* Description */
+.description {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-4);
+  line-height: var(--line-height-relaxed);
+}
+
 /* Body */
 .body {
   flex: 1;

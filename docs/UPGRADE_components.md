@@ -445,19 +445,26 @@
 | # | Tipo | Descrição | Status |
 |---|------|-----------|--------|
 | 1 | **Manutenção** | Mesmo problema de ID aleatório (linha 36). Quebra hidratação SSR. | ✅ **RESOLVIDO (18/05/2026)** — Substituído `Math.random()` por `useId()` do React 18+. |
-| 2 | **Performance** | O modo custom renderiza um `input` de busca quando `searchable` está ativo, mas não corta a busca assíncrona se o usuário fechar o dropdown rapidamente. | ⬜️ **PENDENTE** — Requer implementação de debounce ou cancelamento de busca ao fechar dropdown. |
-| 3 | **Manutenção** | O componente alterna entre render nativo e custom dependendo de `searchable || clearable`, mas o modo nativo não suporta `clearable`. | ⬜️ **PENDENTE** — Requer refatoração para modo custom sempre que `clearable` estiver ativo. |
+| 2 | **Performance** | O modo custom renderiza um `input` de busca quando `searchable` está ativo, mas não corta a busca assíncrona se o usuário fechar o dropdown rapidamente. | ✅ **RESOLVIDO (18/05/2026)** — Implementado debounce de 300ms na busca via `searchTimeoutRef` + `useCallback` e cancelamento do timeout pendente ao fechar o dropdown (click outside, select, clear, tecla Escape e cleanup do useEffect). |
+| 3 | **Manutenção** | O componente alterna entre render nativo e custom dependendo de `searchable || clearable`, mas o modo nativo não suporta `clearable`. | ✅ **RESOLVIDO (18/05/2026)** — Extraída variável `useCustomMode` para validação robusta; documentado no JSDoc que `clearable` e `searchable` ativam modo custom; adicionado `aria-hidden={true}` no botão de limpar; adicionado callback `onClear` separado do `onChange`. |
 
-### 6.5 Modal.js
+### 6.5 Modal.js — **RESOLVIDO (18/05/2026)**
 
 **Localização:** `components/UI/Modal.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Acessibilidade** | O modal não usa `aria-labelledby` ou `aria-describedby` para associar título e descrição. |
-| 2 | **Performance** | O focus trap usa `querySelectorAll` com seletor complexo a cada Tab (linhas 96-113). Poderia ser cacheado. |
-| 3 | **Manutenção** | O seletor de foco (linhas 69, 96) está duplicado. Deveria ser uma constante ou hook. |
-| 4 | **Segurança** | O `document.body.style.overflow` (linha 44) sobrescreve qualquer estilo inline preexistente. `originalBodyOverflow` captura apenas o primeiro valor. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Acessibilidade** | O modal não usa `aria-labelledby` ou `aria-describedby` para associar título e descrição. | ✅ **RESOLVIDO** |
+| 2 | **Performance** | O focus trap usa `querySelectorAll` com seletor complexo a cada Tab (linhas 96-113). Poderia ser cacheado. | ✅ **RESOLVIDO** |
+| 3 | **Manutenção** | O seletor de foco (linhas 69, 96) está duplicado. Deveria ser uma constante ou hook. | ✅ **RESOLVIDO** |
+| 4 | **Segurança** | O `document.body.style.overflow` (linha 44) sobrescreve qualquer estilo inline preexistente. `originalBodyOverflow` captura apenas o primeiro valor. | ✅ **RESOLVIDO** |
+
+**O que foi feito (18/05/2026):**
+- Adicionado `aria-labelledby` no `role="dialog"` vinculado ao `<h2>` do título via `useId()` do React 18+, garantindo IDs estáveis entre servidor e cliente. Adicionada nova prop `description` com `aria-describedby` vinculado ao elemento `<p>` de descrição, melhorando a navegação por leitores de tela. Adicionado `aria-hidden="true"` no SVG do botão de fechar.
+- Focus trap refatorado para usar cache via `focusableElementsRef`, atualizado via `useEffect` apenas quando o conteúdo do modal muda (`children`, `title`, `footer`), eliminando consultas `querySelectorAll` desnecessárias a cada pressionamento de Tab.
+- Seletor de elementos focáveis extraído para constante `FOCUSABLE_ELEMENTS` fora do componente, eliminando a duplicação que existia entre o focus inicial e o `handleKeyDown`.
+- Scroll lock substituído de `document.body.style.overflow` (que sobrescrevia estilos inline preexistentes) para classe CSS `body.modal-open` com regra `overflow: hidden` no CSS global, sem interferir com estilos inline do body. Classe `modal-open` adicionada ao body apenas quando o primeiro modal abre e removida quando o último fecha (contagem de referência preservada).
+- Adicionada classe `.description` no `Modal.module.css` com estilo padronizado para o texto de descrição.
 
 ### 6.6 Card.js / BaseCard.js
 
