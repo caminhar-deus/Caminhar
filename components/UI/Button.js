@@ -1,7 +1,6 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useRef, useCallback, useState } from 'react';
 import styles from './Button.module.css';
-import { Spinner } from './Spinner.js';
-
+import { Spinner } from '@/components/UI';
 /**
  * Button - Componente base de botão
  * @param {string} variant - 'primary' | 'secondary' | 'ghost' | 'danger' | 'success' | 'warning'
@@ -30,26 +29,32 @@ export const Button = ({
   className = '',
   ...props
 }) => {
-  const [ripples, setRipples] = useState([]);
   const buttonRef = useRef(null);
   const rippleIdRef = useRef(0);
+  const ripplesRef = useRef([]);
+  const [renderTick, setRenderTick] = useState(0);
+
+  const addRipple = useCallback((x, y) => {
+    const id = rippleIdRef.current++;
+    ripplesRef.current = [...ripplesRef.current, { x, y, id }];
+    setRenderTick((t) => t + 1);
+
+    setTimeout(() => {
+      ripplesRef.current = ripplesRef.current.filter((r) => r.id !== id);
+      setRenderTick((t) => t + 1);
+    }, 600);
+  }, []);
 
   const handleClick = useCallback((e) => {
     if (ripple && !disabled && !loading && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-      const id = rippleIdRef.current++;
-
-      setRipples((prev) => [...prev, { x, y, id }]);
-
-      setTimeout(() => {
-        setRipples((prev) => prev.filter((r) => r.id !== id));
-      }, 600);
+      addRipple(x, y);
     }
 
     onClick?.(e);
-  }, [ripple, disabled, loading, onClick]);
+  }, [ripple, disabled, loading, onClick, addRipple]);
 
   const buttonClasses = [
     styles.button,
@@ -75,11 +80,12 @@ export const Button = ({
       aria-busy={loading ? "true" : "false"}
       {...props}
     >
-      {ripples.map((r) => (
+      {ripplesRef.current.map((r) => (
         <span
           key={r.id}
           className={styles.ripple}
           style={{ left: r.x, top: r.y }}
+          aria-hidden="true"
         />
       ))}
       {loading && (

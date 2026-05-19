@@ -123,7 +123,7 @@ const columns = [
                 provider="youtube"
                 aspectRatio="16/9"
                 loadOnVisible={false}
-                placeholderText="▶ Clique para carregar"
+                placeholderText=""
               />
             </div>
           )}

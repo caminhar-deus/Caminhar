@@ -20,7 +20,7 @@ export default function MusicCard({ musica }) {
             src={embedUrl}
             title={`Player do Spotify para ${musica.titulo}`}
             provider="spotify"
-            placeholderText="▶ Clique para ouvir"
+            placeholderText=""
             style={{ aspectRatio: 'auto', height: '152px' }}
             data-testid="embed-iframe"
           />

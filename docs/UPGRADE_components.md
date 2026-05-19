@@ -415,11 +415,11 @@
 
 **Localização:** `components/UI/Button.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Acessibilidade** | O efeito ripple (linhas 37-48) adiciona elementos `span` ao DOM que não são ocultos de leitores de tela. Deveriam ter `aria-hidden="true"`. |
-| 2 | **Performance** | O estado `ripples` (useState) armazena objetos de ripple que são removidos após 600ms via `setTimeout`. Se muitos cliques forem feitos rapidamente, pode causar acúmulo. |
-| 3 | **Manutenção** | `Button` importa `Spinner` de `./Spinner.js` diretamente, mas o `index.js` também exporta Spinner. Inconsistência de import. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Acessibilidade** | O efeito ripple adiciona elementos `span` ao DOM que não são ocultos de leitores de tela. Deveriam ter `aria-hidden="true"`. | ✅ **RESOLVIDO (18/05/2026)** — Adicionado `aria-hidden="true"` nos spans de ripple. |
+| 2 | **Performance** | O estado `ripples` (useState) armazena objetos de ripple que são removidos após 600ms via `setTimeout`. Se muitos cliques forem feitos rapidamente, pode causar acúmulo. | ✅ **RESOLVIDO (18/05/2026)** — Substituído `useState` por `useRef` (`ripplesRef`) para armazenar ripples sem re-renderizações desnecessárias. `renderTick` usado apenas para forçar renderização pontual quando necessário. |
+| 3 | **Manutenção** | `Button` importa `Spinner` de `./Spinner.js` diretamente, mas o `index.js` também exporta Spinner. Inconsistência de import. | ✅ **RESOLVIDO (18/05/2026)** — Import do Spinner alterado para `@/components/UI` (barrel export), padronizando com o alias `@`. |
 
 ### 6.2 Input.js
 

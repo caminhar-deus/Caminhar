@@ -518,6 +518,11 @@ Componentes base do Design System do projeto. Seguem padrão consistente de vari
 
 **Atualização (13/05/2026):** `Button.module.css` tokenizado — cores, espaçamentos, border-radius, transitions e sombras substituídos por `var()`.
 
+**Melhorias aplicadas (18/05/2026):**
+- Adicionado `aria-hidden="true"` nos spans de ripple para ocultá-los de leitores de tela
+- Substituído `useState` para gerenciamento de ripples por `useRef` (`ripplesRef`), evitando acúmulo de re-renderizações em cliques rápidos
+- Import do `Spinner` alterado de `'./Spinner.js'` para `'@/components/UI'` (barrel export), padronizando com o alias `@`
+
 ### 6.2 Input.js
 **Localização:** `components/UI/Input.js`
 
