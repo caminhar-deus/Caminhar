@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import BaseCard from '../../UI/BaseCard';
+import { BaseCard } from '@/components/UI';
 import styles from './styles/Blog.module.css';
 
 export default function PostCard({ post, readMoreText = 'Ler mais →' }) {

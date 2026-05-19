@@ -1,7 +1,7 @@
 import React, { memo, useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { parseImages } from '../../../lib/api/utils';
-import BaseCard from '../../UI/BaseCard';
+import { BaseCard } from '@/components/UI';
 import styles from './styles/ProductCard.module.css';
 
 const ProductCard = memo(function ProductCard({ product }) {

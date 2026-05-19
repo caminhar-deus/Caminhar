@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, jest } from '@jest/globals';
-import Card from '../../../../components/UI/Card.js';
+import Card from '../../../../components/UI/BaseCard.js';
 
 describe('Componente UI - Card', () => {
   it('deve renderizar Card simples com children e footer/header nodes', () => {

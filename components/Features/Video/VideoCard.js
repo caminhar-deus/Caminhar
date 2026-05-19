@@ -1,6 +1,6 @@
 import React from 'react';
 import { LazyIframe } from '../../Performance';
-import BaseCard from '../../UI/BaseCard';
+import { BaseCard } from '@/components/UI';
 
 /**
  * Componente VideoCard

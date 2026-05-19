@@ -3,10 +3,11 @@ import PropTypes from 'prop-types';
 import styles from './BaseCard.module.css';
 
 /**
- * BaseCard - Componente de card reutilizável.
- * 
- * Extrai a estrutura base de container compartilhada entre 
+ * BaseCard - Componente de card reutilizável e principal do Design System.
+ *
+ * Extrai a estrutura base de container compartilhada entre
  * ProductCard, MusicCard, VideoCard, PostCard e Design System.
+ * Unificado com Card.js (que era apenas um wrapper) para eliminar duplicidade.
  *
  * Props:
  * - children: Conteúdo principal do card
@@ -22,6 +23,7 @@ import styles from './BaseCard.module.css';
  * - clickable: Se true, cursor pointer
  * - fullWidth: Ocupa 100% da largura disponível
  * - onClick: Handler de click
+ * - ariaLabel: Label acessível para leitores de tela quando interativo
  */
 
 export default function BaseCard({
@@ -39,6 +41,7 @@ export default function BaseCard({
   clickable = false,
   fullWidth = false,
   onClick,
+  ariaLabel,
   ...props
 }) {
   const schemaProps = itemScope ? { itemScope, itemType } : {};
@@ -68,6 +71,7 @@ export default function BaseCard({
       className={classNames}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
+      aria-label={onClick ? (ariaLabel || 'Card clicável') : undefined}
       onClick={onClick}
       onKeyDown={handleKeyDown}
       style={style}
@@ -147,4 +151,5 @@ BaseCard.propTypes = {
   clickable: PropTypes.bool,
   fullWidth: PropTypes.bool,
   onClick: PropTypes.func,
+  ariaLabel: PropTypes.string,
 };

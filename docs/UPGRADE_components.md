@@ -1,6 +1,6 @@
 # Análise de Melhorias - `/components`
 
-> **Data:** 18/05/2026 (atualizado)
+> **Data:** 19/05/2026 (atualizado)
 > **Objetivo:** Reportar correções, melhorias, problemas de performance e duplicidade de código identificados na análise dos componentes, com o status atual de cada item.
 
 ---
@@ -466,15 +466,32 @@
 - Scroll lock substituído de `document.body.style.overflow` (que sobrescrevia estilos inline preexistentes) para classe CSS `body.modal-open` com regra `overflow: hidden` no CSS global, sem interferir com estilos inline do body. Classe `modal-open` adicionada ao body apenas quando o primeiro modal abre e removida quando o último fecha (contagem de referência preservada).
 - Adicionada classe `.description` no `Modal.module.css` com estilo padronizado para o texto de descrição.
 
-### 6.6 Card.js / BaseCard.js
+### 6.6 BaseCard.js (antigo Card.js / BaseCard.js) — ✅ **RESOLVIDO (19/05/2026)**
 
-**Localização:** `components/UI/Card.js` e `components/UI/BaseCard.js`
+**Localização:** `components/UI/BaseCard.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Manutenção** | `Card.js` é apenas um wrapper que passa props para `BaseCard`. A existência de ambos pode causar confusão sobre qual usar. |
-| 2 | **Acessibilidade** | `BaseCard.js` (linha 69): quando `onClick` é fornecido, o card recebe `role="button"` e `tabIndex={0}`, mas não há indicação visual de foco via teclado. |
-| 3 | **Acessibilidade** | O `role="button"` em um `<div>` pode não ser anunciado corretamente por todos os leitores de tela como elemento interativo. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Manutenção** | `Card.js` era apenas um wrapper que passava props para `BaseCard`. A existência de ambos causava confusão sobre qual usar. **Card.js foi removido** — `BaseCard.js` é o componente único. Todos os imports continuam compatíveis via barrel export (`import { Card, BaseCard } from '@/components/UI'`). | ✅ **RESOLVIDO** |
+| 2 | **Acessibilidade** | `BaseCard.js`: quando `onClick` é fornecido, o card recebe `role="button"` e `tabIndex={0}`, mas não havia indicação visual de foco via teclado. Adicionada nova prop `ariaLabel` e classe `.interactive` com `:focus-visible` no CSS, que já existia no `BaseCard.module.css`. | ✅ **RESOLVIDO** |
+| 3 | **Acessibilidade** | O `role="button"` em um `<div>` pode não ser anunciado corretamente por todos os leitores de tela como elemento interativo. Adicionado `aria-label` dinâmico (prop `ariaLabel`) nos cards interativos, garantindo que leitores de tela anunciem o propósito do card clicável. | ✅ **RESOLVIDO** |
+
+**O que foi feito (19/05/2026):**
+- `BaseCard.js` é agora o componente único e principal — recebeu todo o código antes delegado de `Card.js`, incluindo a nova prop `ariaLabel` e `aria-label` dinâmico para cards interativos
+- `Card.js` foi **excluído** — barrel export (`index.js`) foi atualizado para importar `Card` e `BaseCard` diretamente de `./BaseCard`
+- `index.js` (barrel) atualizado:
+  ```js
+  export { default as BaseCard } from './BaseCard';
+  export { default as Card } from './BaseCard';
+  export { default as CardDefault } from './BaseCard';
+  ```
+- 4 componentes consumidores de `BaseCard` atualizados para usar o barrel export `@/components/UI`:
+  - `PostCard.js` (`components/Features/Blog/`)
+  - `MusicCard.js` (`components/Features/Music/`)
+  - `VideoCard.js` (`components/Features/Video/`)
+  - `ProductCard.js` (`components/Features/Products/`)
+- PropTypes atualizadas com o novo campo `ariaLabel`
+- Teste `Card.test.js` atualizado para importar de `BaseCard.js`
 
 ### 6.7 Badge.js
 

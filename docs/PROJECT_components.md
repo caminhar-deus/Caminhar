@@ -1,6 +1,6 @@
 # Análise de Componentes - `/components`
 
-> **Data:** 18/05/2026 (atualizado)
+> **Data:** 19/05/2026 (atualizado)
 > **Objetivo:** Documentar todos os arquivos da pasta `components/`, descrevendo localização, propósito e funcionalidades.
 
 ---
@@ -574,17 +574,29 @@ Componentes base do Design System do projeto. Seguem padrão consistente de vari
 - Scroll lock substituído de `document.body.style.overflow` (que sobrescrevia estilos inline preexistentes) para classe CSS `body.modal-open` com regra `overflow: hidden` no CSS global
 - Adicionada classe `.description` no `Modal.module.css` com estilo padronizado para o texto de descrição
 
-### 6.6 Card.js
-**Localização:** `components/UI/Card.js`
-
-**Propósito:** Wrapper do `BaseCard` para compatibilidade. Preserva sub-componentes.
-
-### 6.7 BaseCard.js
+### 6.6 BaseCard.js (antigo Card.js / BaseCard.js) — ✅ **UNIFICADO (19/05/2026)**
 **Localização:** `components/UI/BaseCard.js`
 
 **Propósito:** Card reutilizável com slots (media, header, content, footer). Variantes (default, outlined, filled, elevated), tamanhos (sm, md, lg), hoverable, clickable (com suporte a teclado), Schema.org.
 
+**Card.js foi removido** — `BaseCard.js` é o componente único. Ambos os nomes continuam disponíveis via barrel export:
+- `import { Card } from '@/components/UI'`
+- `import { BaseCard } from '@/components/UI'`
+
 **Atualização (13/05/2026):** `BaseCard.module.css` tokenizado — cores, espaçamentos, border-radius, transitions e box-shadow substituídos por `var()`.
+
+**Melhorias aplicadas (19/05/2026):**
+- **Unificação:** `Card.js` removido — `BaseCard.js` é o componente único. Barrel export (`index.js`) importa `Card` e `BaseCard` diretamente de `./BaseCard`.
+- **Acessibilidade:** Adicionada nova prop `ariaLabel` para cards interativos (`onClick`). O componente renderiza `aria-label` dinâmico nos cards com `role="button"`, garantindo que leitores de tela anunciem o propósito do card clicável.
+- **Barrel export:** `index.js` atualizado:
+  ```js
+  export { default as BaseCard } from './BaseCard';
+  export { default as Card } from './BaseCard';
+  export { default as CardDefault } from './BaseCard';
+  ```
+- **Consumidores atualizados:** `PostCard.js`, `MusicCard.js`, `VideoCard.js` e `ProductCard.js` migrados de import relativo (`../../UI/BaseCard`) para barrel export (`'@/components/UI'`), padronizando com o alias `@` do projeto.
+- **Teste:** `Card.test.js` atualizado para importar de `BaseCard.js`
+- **PropTypes:** Adicionado campo `ariaLabel` nas PropTypes do componente.
 
 ### 6.8 Badge.js
 **Localização:** `components/UI/Badge.js`

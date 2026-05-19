@@ -1,4 +1,4 @@
-import BaseCard from '../../UI/BaseCard';
+import { BaseCard } from '@/components/UI';
 import LazyIframe from '../../Performance/LazyIframe';
 import { getSpotifyEmbedUrl } from '@/lib/spotify';
 import styles from './styles/MusicCard.module.css';
