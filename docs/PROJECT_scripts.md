@@ -89,7 +89,8 @@ scripts/
 ### `scripts/backup.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/backup.js`
 - **Propósito:** Módulo principal de backup/restore do banco de dados PostgreSQL. Suporta compressão gzip, criptografia AES-256-GCM, verificação de integridade SHA-256, gerenciamento de retenção (mantém os 10 backups mais recentes) e um agendador interno baseado em cron. Oferece funções exportadas para `createBackup()`, `restoreBackup()`, `cleanupOldBackups()`, `getAvailableBackups()`, `getBackupLogs()`, `initializeBackupSystem()` e `startBackupScheduler()`.
-- **Dependências:** `fs`, `path`, `date-fns`, `zlib`, `child_process`, `crypto` (dynamic import)
+- **Segurança:** Utiliza `spawn()` com argumentos em array (sem shell) para executar `pg_dump` e `psql`, eliminando risco de command injection. Compressão/descompressão gzip via streams nativas (`zlib.createGzip`/`zlib.createGunzip`). Hash SHA-256 calculado via stream (`fs.createReadStream`) sem carregar arquivo inteiro na RAM. I/O assíncrono com `fs.promises` em todas as operações de arquivo. Log otimizado com buffer em memória (apenas append ao arquivo, sem re-escrita).
+- **Dependências:** `fs`, `path`, `date-fns`, `zlib`, `child_process` (apenas `spawn`), `crypto`
 
 ### `scripts/create-backup.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/create-backup.js`

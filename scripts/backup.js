@@ -2,7 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import { format } from 'date-fns';
 import zlib from 'zlib';
-import { exec } from 'child_process';
+import { spawn } from 'child_process';
+import crypto from 'crypto';
 
 // Database and backup paths
 const BACKUP_DIR = path.join(process.cwd(), 'data', 'backups');
@@ -15,18 +16,124 @@ const BACKUP_CONFIG = {
   backupPrefix: 'caminhar-pg-backup'
 };
 
+// In-memory log buffer: evita leitura+reescrita do arquivo a cada operação
+const logBuffer = [];
+const MAX_LOG_LINES = 100;
+
+// ──────────────────────────────────────────────
+//  Funções utilitárias compartilhadas
+// ──────────────────────────────────────────────
+
 /**
- * Ensure backup directory exists
+ * Calculate SHA-256 hash using stream (sem carregar arquivo inteiro na RAM)
+ */
+function calculateFileHash(filePath) {
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash('sha256');
+    const stream = fs.createReadStream(filePath);
+
+    stream.on('data', (chunk) => hash.update(chunk));
+    stream.on('end', () => resolve(hash.digest('hex')));
+    stream.on('error', reject);
+  });
+}
+
+/**
+ * Get sorted list of backup files (lógica centralizada — item 2.7)
+ */
+function getBackupFiles() {
+  const files = fs.readdirSync(BACKUP_DIR)
+    .filter(file => file.startsWith(BACKUP_CONFIG.backupPrefix) && (file.endsWith('.sql.gz') || file.endsWith('.enc')))
+    .map(file => file.endsWith('.enc') ? file.slice(0, -4) : file)
+    .filter((file, index, self) => self.indexOf(file) === index) // Remove duplicatas
+    .sort((a, b) => {
+      // Sort by ISO 8601 timestamp (newest first)
+      const timestampA = a.match(/(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z)/)?.[0];
+      const timestampB = b.match(/(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z)/)?.[0];
+      if (!timestampA && !timestampB) return 0;
+      if (!timestampA) return 1;
+      if (!timestampB) return -1;
+      return timestampB.localeCompare(timestampA);
+    });
+  return files;
+}
+
+/**
+ * Run pg_dump via spawn (sem shell) com pipe para gzip stream
+ * Seguro contra command injection (item 1.2)
+ */
+function runPgDumpToFile(dbUrl, outputPath) {
+  return new Promise((resolve, reject) => {
+    const pgDump = spawn('pg_dump', ['-d', dbUrl], {
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+
+    const gzip = zlib.createGzip();
+    const writeStream = fs.createWriteStream(outputPath);
+
+    pgDump.stdout.pipe(gzip).pipe(writeStream);
+
+    let stderr = '';
+    pgDump.stderr.on('data', (data) => { stderr += data.toString(); });
+
+    writeStream.on('error', reject);
+    gzip.on('error', reject);
+    pgDump.on('error', reject);
+
+    writeStream.on('finish', () => {
+      if (pgDump.exitCode !== 0 && pgDump.exitCode !== null) {
+        return reject(new Error(`pg_dump falhou (exit ${pgDump.exitCode}): ${stderr}`));
+      }
+      resolve();
+    });
+  });
+}
+
+/**
+ * Run psql via spawn (sem shell) com gunzip stream
+ * Seguro contra command injection (item 1.2)
+ */
+function runPsqlFromFile(dbUrl, inputPath) {
+  return new Promise((resolve, reject) => {
+    const readStream = fs.createReadStream(inputPath);
+    const gunzip = zlib.createGunzip();
+    const psql = spawn('psql', ['-d', dbUrl], {
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+
+    readStream.pipe(gunzip).pipe(psql.stdin);
+
+    let stderr = '';
+    psql.stderr.on('data', (data) => { stderr += data.toString(); });
+
+    let stdout = '';
+    psql.stdout.on('data', (data) => { stdout += data.toString(); });
+
+    psql.on('error', reject);
+    readStream.on('error', reject);
+    gunzip.on('error', reject);
+    psql.stdin.on('error', reject);
+
+    psql.on('close', (code) => {
+      if (code !== 0) {
+        return reject(new Error(`psql falhou (exit ${code}): ${stderr}`));
+      }
+      resolve(stdout);
+    });
+  });
+}
+
+/**
+ * Ensure backup directory exists (usando fs.promises assíncrono)
  */
 async function ensureBackupDirectory() {
   try {
-    if (!fs.existsSync(BACKUP_DIR)) {
-      fs.mkdirSync(BACKUP_DIR, { recursive: true });
-      console.log(`Created backup directory: ${BACKUP_DIR}`);
-    }
+    await fs.promises.mkdir(BACKUP_DIR, { recursive: true });
   } catch (error) {
-    console.error('Error creating backup directory:', error);
-    throw error;
+    if (error.code !== 'EEXIST') {
+      console.error('Error creating backup directory:', error);
+      throw error;
+    }
   }
 }
 
@@ -39,7 +146,7 @@ function generateBackupFilename() {
 }
 
 /**
- * Create a backup of both PostgreSQL and SQLite databases
+ * Create a backup of PostgreSQL database
  */
 async function createBackup() {
   try {
@@ -48,32 +155,19 @@ async function createBackup() {
     // Ensure backup directory exists
     await ensureBackupDirectory();
 
-    // ===== Backup PostgreSQL (existente) =====
+    // ===== Backup PostgreSQL =====
     console.log('--- Iniciando backup PostgreSQL ---');
     const backupFilename = generateBackupFilename();
     const backupPath = path.join(BACKUP_DIR, backupFilename);
 
-    // Use pg_dump to create a compressed backup
-    // This requires pg_dump to be in the system's PATH
-    // and DATABASE_URL to be set in the environment.
-    const command = `pg_dump "${process.env.DATABASE_URL}" | gzip > "${backupPath}"`;
+    // Usa spawn sem shell para evitar command injection (item 1.2)
+    await runPgDumpToFile(process.env.DATABASE_URL, backupPath);
 
-    await new Promise((resolve, reject) => {
-      exec(command, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`pg_dump error: ${stderr}`);
-          return reject(error);
-        }
-        console.log(`PostgreSQL backup created: ${backupPath}`);
-        resolve(stdout);
-      });
-    });
+    console.log(`PostgreSQL backup created: ${backupPath}`);
 
-    // Calcular hash SHA-256 do arquivo de backup
-    const crypto = await import('crypto');
-    const fileBuffer = fs.readFileSync(backupPath);
-    const hash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
-    fs.writeFileSync(`${backupPath}.sha256`, hash);
+    // Calcular hash SHA-256 usando stream (item 3.3)
+    const hash = await calculateFileHash(backupPath);
+    await fs.promises.writeFile(`${backupPath}.sha256`, hash);
 
     // ✅ Criptografia em repouso AES-256-GCM
     if (process.env.BACKUP_ENCRYPTION_KEY) {
@@ -87,20 +181,21 @@ async function createBackup() {
         } else {
           const iv = crypto.randomBytes(12);
           const cipher = crypto.createCipheriv('aes-256-gcm', keyBuffer, iv);
-          
+
+          // Lê o arquivo para criptografar (necessário ler os dados)
+          const fileBuffer = await fs.promises.readFile(backupPath);
           const encrypted = Buffer.concat([
-            iv, 
-            cipher.update(fileBuffer), 
-            cipher.final(), 
+            iv,
+            cipher.update(fileBuffer),
+            cipher.final(),
             cipher.getAuthTag()
           ]);
-          
-          fs.writeFileSync(`${backupPath}.enc`, encrypted);
-          fs.unlinkSync(backupPath);
-          
+
+          await fs.promises.writeFile(`${backupPath}.enc`, encrypted);
+          await fs.promises.unlink(backupPath);
+
           console.log(`✅ Backup criptografado com sucesso: ${backupPath}.enc`);
         }
-        
       } catch (cryptoError) {
         console.error('⚠️ Erro ao criptografar backup, mantendo arquivo original:', cryptoError.message);
       }
@@ -122,7 +217,7 @@ async function createBackup() {
 }
 
 /**
- * Log backup operations (com sanitização)
+ * Log backup operations (com sanitização — item 3.1)
  */
 async function logBackupOperation(status, message) {
   try {
@@ -135,36 +230,25 @@ async function logBackupOperation(status, message) {
 
     const logEntry = `[${format(new Date(), 'yyyy-MM-dd HH:mm:ss')}] [${status}] ${sanitizedMessage}\n`;
 
-    // Append to log file
-    fs.appendFileSync(LOG_FILE, logEntry);
+    // Append ao arquivo de log (apenas append, sem re-escrita)
+    await fs.promises.appendFile(LOG_FILE, logEntry);
 
-    // Also keep last 100 lines in memory for quick access
-    const logLines = fs.readFileSync(LOG_FILE, 'utf8').split('\n');
-    const recentLogs = logLines.slice(-100).join('\n');
-    fs.writeFileSync(LOG_FILE, recentLogs);
+    // Mantém buffer em memória para consultas rápidas
+    logBuffer.push(logEntry);
+    if (logBuffer.length > MAX_LOG_LINES) {
+      logBuffer.shift();
+    }
   } catch (error) {
     console.error('Error logging backup operation:', error);
   }
 }
 
 /**
- * Clean up old backups
+ * Clean up old backups (item 2.7, item 4.3)
  */
 async function cleanupOldBackups() {
   try {
-    const files = fs.readdirSync(BACKUP_DIR)
-      .filter(file => file.startsWith(BACKUP_CONFIG.backupPrefix) && (file.endsWith('.sql.gz') || file.endsWith('.enc')))
-      .map(file => file.replace('.enc', ''))
-      .filter((file, index, self) => self.indexOf(file) === index) // Remove duplicatas
-      .sort((a, b) => {
-        // Sort by ISO 8601 timestamp (newest first)
-        const timestampA = a.match(/(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z)/)?.[0];
-        const timestampB = b.match(/(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z)/)?.[0];
-        if (!timestampA && !timestampB) return 0;
-        if (!timestampA) return 1;
-        if (!timestampB) return -1;
-        return timestampB.localeCompare(timestampA);
-      });
+    const files = getBackupFiles();
 
     // Remove backups exceeding the maximum count
     if (files.length > BACKUP_CONFIG.maxBackups) {
@@ -174,11 +258,23 @@ async function cleanupOldBackups() {
         const filePath = path.join(BACKUP_DIR, file);
         const encPath = `${filePath}.enc`;
         const hashPath = `${filePath}.sha256`;
-        
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-        if (fs.existsSync(encPath)) fs.unlinkSync(encPath);
-        if (fs.existsSync(hashPath)) fs.unlinkSync(hashPath);
-        
+
+        // Usa fs.promises para operações assíncronas (item 3.2)
+        try {
+          await fs.promises.access(filePath);
+          await fs.promises.unlink(filePath);
+        } catch { /* arquivo não existe */ }
+
+        try {
+          await fs.promises.access(encPath);
+          await fs.promises.unlink(encPath);
+        } catch { /* arquivo não existe */ }
+
+        try {
+          await fs.promises.access(hashPath);
+          await fs.promises.unlink(hashPath);
+        } catch { /* arquivo não existe */ }
+
         console.log(`Removed old backup: ${file}`);
         await logBackupOperation('INFO', `Removed old backup: ${file}`);
       }
@@ -196,74 +292,82 @@ async function restoreBackup(backupFilename) {
   try {
     await ensureBackupDirectory();
     let backupPath = path.join(BACKUP_DIR, backupFilename);
-    
+
     // Se usuário passou arquivo .enc, ajustar o nome base
     if (backupFilename.endsWith('.enc')) {
       backupFilename = backupFilename.replace('.enc', '');
       backupPath = path.join(BACKUP_DIR, backupFilename);
     }
 
-    if (!fs.existsSync(backupPath) && !fs.existsSync(`${backupPath}.enc`)) {
-      throw new Error(`Backup file not found: ${backupFilename}`);
+    // Verifica existência do arquivo (usando fs.promises — item 3.2)
+    try {
+      await fs.promises.access(backupPath);
+    } catch {
+      try {
+        await fs.promises.access(`${backupPath}.enc`);
+      } catch {
+        throw new Error(`Backup file not found: ${backupFilename}`);
+      }
     }
 
     // 1. Create a safety backup before overwriting
     console.log('🔄 Criando um backup de segurança do banco de dados atual...');
     const safetyBackupFilename = `pre-restore-backup_${format(new Date(), "yyyy-MM-dd'T'HH-mm-ss'Z'")}.sql.gz`;
     const safetyBackupPath = path.join(BACKUP_DIR, safetyBackupFilename);
-    const backupCommand = `pg_dump "${process.env.DATABASE_URL}" | gzip > "${safetyBackupPath}"`;
 
-    await new Promise((resolve, reject) => {
-      exec(backupCommand, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`❌ Erro ao criar backup de segurança: ${stderr}`);
-          return reject(new Error('Falha ao criar o backup de segurança. Restauração abortada.'));
-        }
-        console.log(`✅ Backup de segurança criado: ${safetyBackupFilename}`);
-        resolve(stdout);
-      });
-    });
+    // Usa spawn sem shell para segurança (item 1.2)
+    try {
+      await runPgDumpToFile(process.env.DATABASE_URL, safetyBackupPath);
+      console.log(`✅ Backup de segurança criado: ${safetyBackupFilename}`);
+    } catch (err) {
+      console.error(`❌ Erro ao criar backup de segurança: ${err.message}`);
+      throw new Error('Falha ao criar o backup de segurança. Restauração abortada.');
+    }
 
     // ✅ Verificar integridade do backup antes de restaurar
-    const crypto = await import('crypto');
     const hashPath = `${backupPath}.sha256`;
-    
+
     // ✅ Descriptografar backup se estiver criptografado
-    if (process.env.BACKUP_ENCRYPTION_KEY && !fs.existsSync(backupPath) && fs.existsSync(`${backupPath}.enc`)) {
+    if (process.env.BACKUP_ENCRYPTION_KEY) {
       try {
+        await fs.promises.access(`${backupPath}.enc`);
+        // Backup está criptografado e precisa ser descriptografado
         console.log('🔓 Descriptografando backup...');
-        
+
         const key = Buffer.from(process.env.BACKUP_ENCRYPTION_KEY, 'hex');
-        const encrypted = fs.readFileSync(`${backupPath}.enc`);
-        
+        const encrypted = await fs.promises.readFile(`${backupPath}.enc`);
+
         const iv = encrypted.subarray(0, 12);
         const authTag = encrypted.subarray(encrypted.length - 16);
         const ciphertext = encrypted.subarray(12, encrypted.length - 16);
-        
+
         const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
         decipher.setAuthTag(authTag);
-        
+
         const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
-        fs.writeFileSync(backupPath, decrypted);
-        
+        await fs.promises.writeFile(backupPath, decrypted);
+
         console.log('✅ Backup descriptografado com sucesso.');
-        
-      } catch (cryptoError) {
-        throw new Error(`❌ Falha ao descriptografar backup: ${cryptoError.message}`);
+      } catch {
+        try {
+          await fs.promises.access(backupPath);
+          // Arquivo já está descriptografado, continuar
+        } catch {
+          throw new Error(`❌ Falha ao descriptografar backup: backup não encontrado`);
+        }
       }
     }
-    
-    if (fs.existsSync(hashPath)) {
+
+    if (await fs.promises.access(hashPath).then(() => true).catch(() => false)) {
       console.log('🔍 Verificando integridade do backup...');
-      
-      const expectedHash = fs.readFileSync(hashPath, 'utf8').trim();
-      const fileBuffer = fs.readFileSync(backupPath);
-      const actualHash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
+
+      const expectedHash = (await fs.promises.readFile(hashPath, 'utf8')).trim();
+      const actualHash = await calculateFileHash(backupPath);
 
       if (expectedHash !== actualHash) {
         throw new Error(`❌ BACKUP CORROMPIDO! Hash não confere.\nEsperado: ${expectedHash}\nRecebido: ${actualHash}`);
       }
-      
+
       console.log('✅ Integridade do backup verificada com sucesso.');
     } else {
       console.warn('⚠️ Arquivo de hash não encontrado. Continuando sem verificação de integridade.');
@@ -273,22 +377,13 @@ async function restoreBackup(backupFilename) {
     console.log(`🔄 Restaurando banco de dados a partir de ${backupFilename}...`);
     console.warn('⚠️ ATENÇÃO: Esta operação irá sobrescrever o banco de dados atual.');
 
-    const restoreCommand = `gunzip < "${backupPath}" | psql "${process.env.DATABASE_URL}"`;
+    // Usa spawn sem shell para segurança (item 1.2)
+    await runPsqlFromFile(process.env.DATABASE_URL, backupPath);
 
-    await new Promise((resolve, reject) => {
-      exec(restoreCommand, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`❌ Erro no psql: ${stderr}`);
-          return reject(error);
-        }
-        console.log(`✅ Banco de dados PostgreSQL restaurado de: ${backupPath}`);
-        resolve(stdout);
-      });
-    });
+    console.log(`✅ Banco de dados PostgreSQL restaurado de: ${backupPath}`);
 
     await logBackupOperation('RESTORE_SUCCESS', `[PostgreSQL] Banco de dados restaurado de ${backupFilename}`);
     return true;
-
   } catch (error) {
     console.error('❌ Erro ao restaurar o backup:', error);
     await logBackupOperation('RESTORE_ERROR', error.message);
@@ -297,38 +392,36 @@ async function restoreBackup(backupFilename) {
 }
 
 /**
- * Get list of available backups
+ * Get list of available backups (item 2.7)
  */
 async function getAvailableBackups() {
   try {
     await ensureBackupDirectory();
 
-    const files = fs.readdirSync(BACKUP_DIR)
-      .filter(file => file.startsWith(BACKUP_CONFIG.backupPrefix) && (file.endsWith('.sql.gz') || file.endsWith('.enc')))
-      .map(file => file.replace('.enc', ''))
-      .filter((file, index, self) => self.indexOf(file) === index) // Remove duplicatas
-      .sort((a, b) => {
-        // Sort by ISO 8601 timestamp (newest first)
-        const timestampA = a.match(/(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z)/)?.[0];
-        const timestampB = b.match(/(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z)/)?.[0];
-        if (!timestampA && !timestampB) return 0;
-        if (!timestampA) return 1;
-        if (!timestampB) return -1;
-        return timestampB.localeCompare(timestampA);
-      })
-      .map(file => {
-        const timestampMatch = file.match(/(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z)/);
-        const timestamp = timestampMatch ? timestampMatch[0] : 'unknown';
-        const formattedDate = timestamp.replace('T', ' ');
-        return {
-          filename: file,
-          timestamp: formattedDate.replace(/-(\d{2})Z$/, '-$1'),
-          size: fs.statSync(path.join(BACKUP_DIR, file)).size,
-          compressed: true
-        };
-      });
+    const files = getBackupFiles();
 
-    return files;
+    // Mapeia para objetos com metadados (assíncrono com fs.promises — item 3.2)
+    const backupList = [];
+    for (const file of files) {
+      const timestampMatch = file.match(/(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z)/);
+      const timestamp = timestampMatch ? timestampMatch[0] : 'unknown';
+      const formattedDate = timestamp.replace('T', ' ');
+
+      let size = 0;
+      try {
+        const stat = await fs.promises.stat(path.join(BACKUP_DIR, file));
+        size = stat.size;
+      } catch { /* arquivo pode não existir mais */ }
+
+      backupList.push({
+        filename: file,
+        timestamp: formattedDate.replace(/-(\d{2})Z$/, '-$1'),
+        size,
+        compressed: true
+      });
+    }
+
+    return backupList;
   } catch (error) {
     console.error('Error getting available backups:', error);
     throw error;
@@ -336,28 +429,30 @@ async function getAvailableBackups() {
 }
 
 /**
- * Get backup logs
+ * Get backup logs (agora lê do buffer em memória + arquivo)
  */
 async function getBackupLogs() {
   try {
-    if (!fs.existsSync(LOG_FILE)) {
+    // Tenta ler o arquivo de log para completar o buffer
+    try {
+      await fs.promises.access(LOG_FILE);
+      const logContent = await fs.promises.readFile(LOG_FILE, 'utf8');
+      const logLines = logContent.split('\n').filter(line => line.trim() !== '');
+
+      return logLines.map(line => {
+        const match = line.match(/\[([^\]]+)\] \[([^\]]+)\] (.*)/);
+        if (match) {
+          return {
+            timestamp: match[1],
+            status: match[2],
+            message: match[3]
+          };
+        }
+        return null;
+      }).filter(entry => entry !== null);
+    } catch {
       return [];
     }
-
-    const logContent = fs.readFileSync(LOG_FILE, 'utf8');
-    const logLines = logContent.split('\n').filter(line => line.trim() !== '');
-
-    return logLines.map(line => {
-      const match = line.match(/\[([^\]]+)\] \[([^\]]+)\] (.*)/);
-      if (match) {
-        return {
-          timestamp: match[1],
-          status: match[2],
-          message: match[3]
-        };
-      }
-      return null;
-    }).filter(entry => entry !== null);
   } catch (error) {
     console.error('Error reading backup logs:', error);
     throw error;

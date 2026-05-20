@@ -32,10 +32,15 @@
   - Adicionada validação no início da execução que impede o script de rodar sem a variável `ADMIN_PASSWORD` configurada.
   - **Uso correto agora:** `ADMIN_USERNAME=admin ADMIN_PASSWORD=sua_senha node scripts/generate-load-report.js`
 
-### 1.2. Comando shell com concatenação de string em `scripts/backup.js`
-- **Arquivo:** `scripts/backup.js` (linha 57)
-- **Problema:** `pg_dump "${process.env.DATABASE_URL}"` — a variável de ambiente é interpolada diretamente em um comando shell via `exec()`. Embora venha de uma env var, ainda é uma prática arriscada (command injection indireto se a env var for comprometida).
-- **Sugestão:** Usar `exec()` com array de argumentos ou sanitizar/escapar a string, ou usar a biblioteca `pg` para fazer dump programaticamente.
+### 1.2. Comando shell com concatenação de string em `scripts/backup.js` ✅ Corrigido
+- **Arquivo:** `scripts/backup.js`
+- **Problema:** Três ocorrências de `exec()` com concatenação de string em comandos shell (`pg_dump`, `psql`) — linhas 59, 214 e 276 (versão original). A variável `DATABASE_URL` era interpolada diretamente, possibilitando command injection indireto.
+- **Risco:** Se a `DATABASE_URL` fosse comprometida, um atacante poderia injetar comandos arbitrários via shell.
+- **Correção aplicada (20/05/2026):**
+  - Substituído `exec()` por `spawn()` em todas as 3 ocorrências, eliminando a passagem pela shell.
+  - Criada função `runPgDumpToFile()` que usa `spawn('pg_dump', ['-d', dbUrl])` com pipe para `zlib.createGzip()` stream.
+  - Criada função `runPsqlFromFile()` que usa `spawn('psql', ['-d', dbUrl])` com pipe do `zlib.createGunzip()` stream.
+  - A compressão/descompressão gzip agora é feita via streams nativas (`zlib.createGzip`/`zlib.createGunzip`) em vez de pipes shell.
 
 ### 1.3. Ausência de validação de entrada em `scripts/utils/update-setting.js`
 - **Arquivo:** `scripts/utils/update-setting.js`
@@ -87,31 +92,40 @@
 - **Problema:** Praticamente todos os scripts começam com o mesmo bloco de 4 linhas para carregar variáveis de ambiente. Isso é código duplicado que viola DRY.
 - **Sugestão:** Extrair para um módulo compartilhado (`scripts/utils/load-env.js`) e importar esse módulo em todos os scripts.
 
-### 2.7. Lógica de filtro de arquivos duplicada em `backup.js`
+### 2.7. Lógica de filtro de arquivos duplicada em `backup.js` ✅ Corrigido
 - **Arquivo:** `scripts/backup.js`
-- **Problema:** A função `cleanupOldBackups()` (linhas 139-148) e `getAvailableBackups()` (linhas 287-296) possuem a mesma lógica de filtro de arquivos (`filter`, `map`, `sort`) praticamente idêntica.
-- **Sugestão:** Extrair para uma função utilitária `getBackupFiles()` que centraliza essa lógica.
+- **Problema:** As funções `cleanupOldBackups()` e `getAvailableBackups()` possuíam a mesma lógica de filtro de arquivos (`filter`, `map`, `sort`) praticamente idêntica.
+- **Correção aplicada (20/05/2026):**
+  - Extraída a lógica para uma função utilitária `getBackupFiles()` que centraliza filtro, remoção de duplicatas (`.enc`) e ordenação por timestamp.
+  - Ambas as funções (`cleanupOldBackups()` e `getAvailableBackups()`) agora delegam para `getBackupFiles()`.
 
 ---
 
 ## 3. Problemas de Performance
 
-### 3.1. Escrita do log sobrescreve o arquivo inteiro
-- **Arquivo:** `scripts/backup.js` (linhas 118-132)
-- **Problema:** A função `logBackupOperation()` primeiro faz append (`appendFileSync`), depois lê o arquivo inteiro (`readFileSync`), mantém só as últimas 100 linhas, e reescreve o arquivo completo (`writeFileSync`). Para cada operação de log, o arquivo inteiro é lido e escrito.
-- **Impacto:** Ineficiente para muitos backups. Perca de dados se o processo falhar entre o append e o rewrite.
-- **Sugestão:** Manter um buffer em memória das últimas 100 entradas e fazer append puro no arquivo. Ou usar uma biblioteca de rotação de logs.
-
-### 3.2. Uso excessivo de I/O síncrono
+### 3.1. Escrita do log sobrescreve o arquivo inteiro ✅ Corrigido
 - **Arquivo:** `scripts/backup.js`
-- **Problema:** Múltiplas chamadas a `fs.existsSync()`, `fs.readFileSync()`, `fs.writeFileSync()`, `fs.unlinkSync()`, `fs.readdirSync()`, `fs.statSync()`, `fs.mkdirSync()` — praticamente todas as operações de arquivo são síncronas.
-- **Impacto:** Bloqueia o event loop do Node.js durante operações de I/O. Em um script de backup que roda como job, não é crítico, mas ainda assim é uma má prática.
-- **Sugestão:** Usar versões assíncronas (`fs.promises`) para consistência com o resto do código que já usa `async/await`.
+- **Problema:** A função `logBackupOperation()` primeiro fazia append (`appendFileSync`), depois lia o arquivo inteiro (`readFileSync`), mantinha só as últimas 100 linhas, e reescrevia o arquivo completo (`writeFileSync`). Para cada operação de log, o arquivo inteiro era lido e escrito.
+- **Impacto:** Ineficiente para muitos backups. Risco de perda de dados se o processo falhasse entre o append e o rewrite.
+- **Correção aplicada (20/05/2026):**
+  - Removida a leitura+reescrita do arquivo a cada operação de log.
+  - Implementado buffer em memória (`logBuffer`) que mantém as últimas 100 entradas.
+  - O log agora faz apenas `appendFileSync` (agora `fs.promises.appendFile`) puro no arquivo.
+  - Função `getBackupLogs()` lê o arquivo completo para retornar dados históricos.
 
-### 3.3. Leitura completa do arquivo para calcular hash
-- **Arquivo:** `scripts/backup.js` (linhas 71-73)
-- **Problema:** `fs.readFileSync(backupPath)` carrega o arquivo de backup inteiro na memória para calcular o hash SHA-256. Backups de bancos grandes podem consumir muita RAM.
-- **Sugestão:** Usar `crypto.createHash()` com stream (`fs.createReadStream()`) para calcular o hash em chunks.
+### 3.2. Uso excessivo de I/O síncrono ✅ Corrigido
+- **Arquivo:** `scripts/backup.js`
+- **Problema:** Múltiplas chamadas a `fs.existsSync()`, `fs.readFileSync()`, `fs.writeFileSync()`, `fs.unlinkSync()`, `fs.readdirSync()`, `fs.statSync()`, `fs.mkdirSync()` — praticamente todas as operações de arquivo eram síncronas.
+- **Impacto:** Bloqueava o event loop do Node.js durante operações de I/O.
+- **Correção aplicada (20/05/2026):**
+  - Migradas todas as operações de I/O para `fs.promises` (assíncronas com `async/await`).
+  - Exceto `fs.readdirSync()` em `getBackupFiles()` que permanece síncrono por ser uma função utilitária chamada internamente, sem `await` no escopo de chamada.
+
+### 3.3. Leitura completa do arquivo para calcular hash ✅ Corrigido
+- **Arquivo:** `scripts/backup.js`
+- **Problema:** `fs.readFileSync(backupPath)` carregava o arquivo de backup inteiro na memória para calcular o hash SHA-256. Backups de bancos grandes podiam consumir muita RAM.
+- **Correção aplicada (20/05/2026):**
+  - Criada função `calculateFileHash()` que usa `crypto.createHash()` com `fs.createReadStream()` para processar o hash em chunks, sem carregar o arquivo inteiro na RAM.
 
 ### 3.4. Carregamento de todo o diretório de backups para listar
 - **Arquivo:** `scripts/backup.js` (funções `cleanupOldBackups` e `getAvailableBackups`)
@@ -132,10 +146,12 @@
 - **Risco:** Perda acidental de dados.
 - **Sugestão:** Adicionar prompt de confirmação ou flag `--force` para execução silenciosa.
 
-### 4.3. Erro no `cleanupOldBackups` com `.enc` e `.sha256`
-- **Arquivo:** `scripts/backup.js` (linhas 157-159)
-- **Problema:** O código tenta deletar arquivos `.enc` e `.sha256` baseado no nome base, mas a lógica de matching entre backup e seus arquivos auxiliares pode quebrar se o nome base não corresponder exatamente. Por exemplo, se o arquivo original for `backup.sql.gz`, os auxiliares precisam ser `backup.sql.gz.enc` e `backup.sql.gz.sha256`, mas a lógica atual pode estar tratando como `backup.enc` e `backup.sha256`.
-- **Sugestão:** Revisar e testar a lógica de deleção dos arquivos auxiliares.
+### 4.3. Erro no `cleanupOldBackups` com `.enc` e `.sha256` ✅ Corrigido
+- **Arquivo:** `scripts/backup.js`
+- **Problema:** O código tentava deletar arquivos `.enc` e `.sha256` baseado no nome base, mas a lógica de matching entre backup e seus arquivos auxiliares podia quebrar se o nome base não correspondesse exatamente.
+- **Correção aplicada (20/05/2026):**
+  - Revisada a lógica de deleção para usar `try/catch` em cada arquivo individualmente (`access` + `unlink`), garantindo que a falha ao remover um arquivo auxiliar não interrompa a remoção dos demais.
+  - A função `getBackupFiles()` agora centraliza o mapeamento entre nomes base e arquivos `.enc`, garantindo consistência na correspondência.
 
 ---
 
@@ -164,10 +180,12 @@
 - **Problema:** Código mistura comentários em português (ex: `// Carrega variáveis de ambiente`) com comentários em inglês (`// Ensure backup directory exists`). Não há padronização.
 - **Sugestão:** Adotar inglês para todo o código, ou português consistente se for a preferência do time.
 
-### 5.6. Import dinâmico para crypto
-- **Arquivo:** `scripts/backup.js` (linha 71)
-- **Problema:** `const crypto = await import('crypto')` — `crypto` é um módulo nativo do Node.js e poderia ser importado estaticamente no topo do arquivo. O import dinâmico aqui é desnecessário e adiciona complexidade.
-- **Sugestão:** Mover `import crypto from 'crypto'` para o topo, junto com os outros imports.
+### 5.6. Import dinâmico para crypto ✅ Corrigido
+- **Arquivo:** `scripts/backup.js`
+- **Problema:** `const crypto = await import('crypto')` — `crypto` é um módulo nativo do Node.js e poderia ser importado estaticamente no topo do arquivo. O import dinâmico aqui era desnecessário e adicionava complexidade.
+- **Correção aplicada (20/05/2026):**
+  - Movido `import crypto from 'crypto'` para o topo do arquivo, junto com os demais imports estáticos.
+  - Removidas as 2 ocorrências de `await import('crypto')`.
 
 ---
 
@@ -265,19 +283,23 @@ Definir e documentar um padrão:
 
 ## 📊 Matriz de Prioridade
 
-| # | Problema | Gravidade | Esforço Est. | Prioridade |
-|---|----------|:---------:|:------------:|:----------:|
-| 1.1 | Senha hardcoded | 🔴 Alta | Baixo | **Crítico** |
-| 1.2 | Command injection potencial | 🔴 Alta | Médio | **Crítico** |
-| 3.1 | Log sobrescreve arquivo | 🟡 Média | Baixo | Alta |
-| 2.2 | Múltiplos scripts de limpeza | 🟡 Média | Médio | Alta |
-| 8.4 | Migrações sem versionamento | 🟡 Média | Alto | Alta |
-| 2.6 | Carga de ambiente duplicada | 🟢 Baixa | Baixo | Média |
-| 2.4 | Init scripts duplicados | 🟢 Baixa | Médio | Média |
-| 4.2 | clear-musicas sem confirmação | 🟡 Média | Baixo | Média |
-| 3.2 | I/O síncrono | 🟢 Baixa | Baixo | Média |
-| 7.1 | Scheduler caseiro | 🟢 Baixa | Médio | Baixa |
-| 5.1 | Shebang ausente | 🟢 Baixa | Muito Baixo | Baixa |
+| # | Problema | Gravidade | Esforço Est. | Prioridade | Status |
+|---|----------|:---------:|:------------:|:----------:|:------:|
+| 1.1 | Senha hardcoded | 🔴 Alta | Baixo | **Crítico** | ✅ Corrigido |
+| 1.2 | Command injection potencial | 🔴 Alta | Médio | **Crítico** | ✅ Corrigido |
+| 3.1 | Log sobrescreve arquivo | 🟡 Média | Baixo | Alta | ✅ Corrigido |
+| 3.3 | Hash carrega arquivo inteiro na RAM | 🟡 Média | Baixo | Alta | ✅ Corrigido |
+| 5.6 | Import dinâmico crypto | 🟢 Baixa | Muito Baixo | Alta | ✅ Corrigido |
+| 2.7 | Lógica de filtro duplicada | 🟢 Baixa | Baixo | Alta | ✅ Corrigido |
+| 3.2 | I/O síncrono | 🟢 Baixa | Baixo | Média | ✅ Corrigido |
+| 4.3 | Deleção de arquivos auxiliares inconsistente | 🟡 Média | Baixo | Média | ✅ Corrigido |
+| 2.2 | Múltiplos scripts de limpeza | 🟡 Média | Médio | Alta | Pendente |
+| 8.4 | Migrações sem versionamento | 🟡 Média | Alto | Alta | Pendente |
+| 2.6 | Carga de ambiente duplicada | 🟢 Baixa | Baixo | Média | Pendente |
+| 2.4 | Init scripts duplicados | 🟢 Baixa | Médio | Média | Pendente |
+| 4.2 | clear-musicas sem confirmação | 🟡 Média | Baixo | Média | Pendente |
+| 7.1 | Scheduler caseiro | 🟢 Baixa | Médio | Baixa | Pendente |
+| 5.1 | Shebang ausente | 🟢 Baixa | Muito Baixo | Baixa | Pendente |
 
 ---
 
