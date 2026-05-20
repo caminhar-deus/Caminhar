@@ -566,14 +566,20 @@
 - Classe `.visuallyHidden` removida do `Spinner.module.css` (não mais referenciada)
 - Teste `Spinner.test.js` atualizado: valida `getByLabelText` em vez de `getByText` (pelo `span`); dots com 3 spans em vez de 4; overlay com 1 elemento `labelText` em vez de 2
 
-### 6.11 StateMessages.js
+### 6.11 StateMessages.js — ✅ **RESOLVIDO (20/05/2026)**
 
 **Localização:** `components/UI/StateMessages.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Manutenção** | `LoadingMessage` usa emoji ⏳ como indicador visual. Leitores de tela podem anunciar isso, o que pode ser confuso. |
-| 2 | **Duplicidade** | `EmptyMessage` e `ErrorMessage` são similares, diferindo apenas na cor. Poderiam ser um único componente configurável. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Acessibilidade** | `LoadingMessage` usava emoji ⏳ como indicador visual. Leitores de tela podiam anunciar "ampulheta", causando confusão. Substituído pelo componente `Spinner` (variant="dots", size="sm") com `role="status"` e `aria-label` nativos, garantindo anúncio correto em leitores de tela. | ✅ **RESOLVIDO** |
+| 2 | **Duplicidade** | `EmptyMessage` e `ErrorMessage` eram similares, diferindo apenas na cor. Unificados em componente interno `StateMessage` com prop `variant` ('error'|'empty'), mantendo `ErrorMessage` e `EmptyMessage` como re-exportações para compatibilidade retroativa. | ✅ **RESOLVIDO** |
+
+**O que foi feito (20/05/2026):**
+- Emoji `⏳` removido de `LoadingMessage` — substituído pelo componente `Spinner` com `variant="dots"` e `size="sm"`, importado via barrel export `@/components/UI`. O `Spinner` já possui `role="status"` e `aria-label` próprios para acessibilidade, eliminando a necessidade de emoji como indicador visual.
+- Criado componente interno `StateMessage` com objeto de configuração `VARIANT_CONFIG` que mapeia as variantes `'error'` e `'empty'` para suas respectivas cores e emojis. O emoji `❌` agora é renderizado com `aria-hidden="true"` para não ser anunciado por leitores de tela.
+- `ErrorMessage` e `EmptyMessage` mantidos como funções que delegam para `StateMessage`, preservando a API pública e a compatibilidade com os consumidores existentes (`MusicGallery.js`, `ProductList.js`).
+- Exportação padrão (`default`) mantida inalterada para compatibilidade.
 
 ---
 

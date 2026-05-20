@@ -655,12 +655,17 @@ Componentes base do Design System do projeto. Seguem padrão consistente de vari
 - Adicionados `displayName` nos subcomponentes (`Spinner.Container`, `Spinner.Overlay`) para facilitar debugging em React DevTools
 - Adicionados `PropTypes` em todos os 3 componentes (`Spinner`, `Spinner.Container`, `Spinner.Overlay`) com validação de tipos em runtime
 
-### 6.12 StateMessages.js
+### 6.12 StateMessages.js — ✅ **RESOLVIDO (20/05/2026)**
 **Localização:** `components/UI/StateMessages.js`
 
 **Propósito:** Componentes padronizados para estados: `ErrorMessage`, `LoadingMessage`, `EmptyMessage`.
 
 **Atualização (13/05/2026):** Estilos inline tokenizados — cores e espaçamentos substituídos por `var()`.
+
+**Melhorias aplicadas (20/05/2026):**
+- `LoadingMessage`: emoji `⏳` removido e substituído pelo componente `Spinner` (`variant="dots"`, `size="sm"`) do próprio Design System, importado via barrel export `@/components/UI`. O `Spinner` já possui `role="status"` e `aria-label` próprios para acessibilidade, eliminando o anúncio confuso do emoji "ampulheta" em leitores de tela.
+- `ErrorMessage` e `EmptyMessage` unificados em componente interno `StateMessage` com objeto `VARIANT_CONFIG` que mapeia as variantes `'error'` e `'empty'` para suas respectivas cores (`var(--color-error-500)`, `var(--color-text-tertiary)`) e emojis (`❌` com `aria-hidden="true"` ou sem emoji). As funções exportadas `ErrorMessage` e `EmptyMessage` foram mantidas como delegadoras do `StateMessage`, preservando compatibilidade com consumidores existentes.
+- Exportação padrão (`default`) mantida inalterada para compatibilidade.
 
 ### 6.13 index.js (UI)
 **Localização:** `components/UI/index.js`
