@@ -14,6 +14,7 @@ export { Spinner } from './Spinner';
 export { Badge } from './Badge';
 export { Alert, defaultIcons } from './Alert';
 export { Toast, useToast } from './Toast';
+export { defaultIcons as Icons } from './icons';
 
 // Re-exportações padrão
 export { default as ButtonDefault } from './Button';

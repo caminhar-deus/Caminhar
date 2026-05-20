@@ -1,6 +1,6 @@
 # Análise de Componentes - `/components`
 
-> **Data:** 19/05/2026 (atualizado)
+> **Data:** 20/05/2026 (atualizado)
 > **Objetivo:** Documentar todos os arquivos da pasta `components/`, descrevendo localização, propósito e funcionalidades.
 
 ---
@@ -613,9 +613,15 @@ Componentes base do Design System do projeto. Seguem padrão consistente de vari
 ### 6.9 Alert.js
 **Localização:** `components/UI/Alert.js`
 
-**Propósito:** Alerta com status (info, success, warning, error), variantes de estilo (subtle, solid, left-accent, top-accent), ícones SVG, fechável, controlado/não-controlado. Exporta `defaultIcons`.
+**Propósito:** Alerta com status (info, success, warning, error), variantes de estilo (subtle, solid, left-accent, top-accent), ícones SVG, fechável, controlado/não-controlado. Re-exporta `defaultIcons` de `./icons`.
 
 **Atualização (13/05/2026):** `Alert.module.css` tokenizado — cores de feedback (`info-50`, `success-50`, `warning-50`, `error-50`), espaçamentos e border-radius substituídos por `var()`.
+
+**Melhorias aplicadas (20/05/2026):**
+- Variável `icons` redundante removida — `defaultIcons` é usado diretamente no JSX
+- `role` dinâmico: `role="alertdialog"` para alertas críticos (`status="error"` + `closable`), `role="alert"` para os demais
+- Foco automático via `useRef` + `useEffect` em alertas críticos para leitores de tela
+- `defaultIcons` extraído para arquivo compartilhado `icons.js` (ver seção 6.14)
 
 ### 6.10 Toast.js
 **Localização:** `components/UI/Toast.js`
@@ -623,6 +629,16 @@ Componentes base do Design System do projeto. Seguem padrão consistente de vari
 **Propósito:** Notificação temporária com auto-close, animações de entrada/saída por posição, barra de progresso, ícones via `defaultIcons`. Subcomponentes: `Toast.Container`. Hook `useToast` para gerenciamento.
 
 **Atualização (13/05/2026):** `Toast.module.css` tokenizado — cores de status, espaçamentos, border-radius, z-index, box-shadow e transitions substituídos por `var()`.
+
+**Melhorias aplicadas (20/05/2026):**
+- `defaultIcons` agora importado de `./icons` em vez de `./Alert`, eliminando dependência cruzada (duplicidade com Alert resolvida)
+- Função `generateId()` com fallback para ambientes sem `crypto.randomUUID`
+- `handleClose` memoizado com `useCallback` para evitar recriação desnecessária
+- Adicionado `STATUS_LABELS` com texto descritivo por status para leitores de tela
+- Adicionado `<span className={styles.srOnly}>` oculto com o status para acessibilidade
+- Adicionado `aria-atomic="true"` no container do toast
+- Classe `.srOnly` adicionada ao `Toast.module.css`
+- `aria-label` do botão fechar agora inclui o nome do status
 
 ### 6.11 Spinner.js
 **Localização:** `components/UI/Spinner.js`
@@ -642,3 +658,19 @@ Componentes base do Design System do projeto. Seguem padrão consistente de vari
 **Localização:** `components/UI/index.js`
 
 **Propósito:** Ponto de exportação centralizado dos componentes UI.
+
+### 6.14 icons.js — **NOVO (20/05/2026)**
+**Localização:** `components/UI/icons.js`
+
+**Propósito:** Ícones SVG compartilhados entre componentes UI. Extraído de `Alert.js` para eliminar duplicidade com `Toast.js`.
+
+**Exportações:**
+- `defaultIcons` — Objeto com ícones SVG inline para os 4 status: `info`, `success`, `warning`, `error`. Mesma estrutura visual que estava originalmente em `Alert.js`.
+
+**Consumidores:**
+- `Alert.js` — Importa `defaultIcons` de `./icons` para renderizar ícone por status
+- `Toast.js` — Importa `defaultIcons` de `./icons` em vez de importar de `Alert.js`, eliminando dependência cruzada
+
+**Motivação:**
+- `Toast.js` importava `defaultIcons` de `Alert.js`, criando dependência desnecessária entre componentes de propósito diferente
+- Ambos compartilhavam a mesma estrutura de ícones SVG, que agora está centralizada em arquivo independente

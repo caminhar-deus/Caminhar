@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styles from './Alert.module.css';
+import { defaultIcons } from './icons';
 
 /**
  * Alert - Componente de alerta/avisos
@@ -13,32 +14,17 @@ import styles from './Alert.module.css';
  * @param {boolean} isOpen - Se fornecido, controla externamente a visibilidade do alerta (substitui o estado interno)
  * @param {function} onBeforeClose - Handler chamado antes de fechar. Se retornar `false`, o fechamento é cancelado.
  * 
- * @exports defaultIcons - Ícones padrão por status (exportação nomeada)
+ * @exports defaultIcons - Ícones padrão por status (exportação nomeada, re-exportado de ./icons)
+ * 
+ * @description
+ * O `role` do alerta é dinâmico:
+ * - Para alertas críticos (`status="error"` + `closable`): usa `role="alertdialog"` com `aria-modal="true"`,
+ *   sinalizando aos leitores de tela que o usuário precisa interagir antes de prosseguir.
+ * - Para os demais casos: usa `role="alert"` com `aria-live="polite"`.
+ * 
+ * Quando `alertdialog` está ativo, o foco é automaticamente movido para o container do alerta
+ * para garantir que o leitor de tela anuncie o conteúdo imediatamente.
  */
-// Ícones padrão por status (escopo global para exportação)
-export const defaultIcons = {
-  info: (
-    <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
-      <path d="M12 16v-4M12 8h.01M22 12c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2s10 4.477 10 10z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-    </svg>
-  ),
-  success: (
-    <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
-      <path d="M22 12c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2s10 4.477 10 10z" stroke="currentColor" strokeWidth="2"/>
-      <path d="m8 12 3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  ),
-  warning: (
-    <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
-      <path d="M12 9v4m0 4h.01M10.615 3.892 2.39 17.098c-.456.79-.684 1.184-.642 1.509.037.284.236.534.535.642.33.116.768-.015 1.643-.278L12 17.5l8.074.471c.875.263 1.313.394 1.643.278.299-.108.498-.358.535-.642.042-.325-.186-.72-.642-1.509L13.385 3.892c-.444-.77-.666-1.156-.955-1.295a1 1 0 0 0-.86 0c-.289.14-.511.525-.955 1.295z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  ),
-  error: (
-    <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
-      <path d="M12 8v5m0 3h.01M2.347 17.11c-.62-1.078-.93-1.616-.89-2.18.035-.478.256-.914.608-1.21.38-.318.988-.456 2.204-.733l1.653-.367.18-.747c.268-1.114.402-1.672.62-2.183a4 4 0 0 1 1.06-1.43c.413-.353.936-.598 1.983-1.088l1.15-.537c1.03-.48 1.545-.72 2.086-.816a3.99 3.99 0 0 1 1.503 0c.54.096 1.056.336 2.085.816l1.15.537c1.047.49 1.57.735 1.983 1.088.418.357.77.825 1.06 1.43.218.511.352 1.069.62 2.183l.18.747 1.653.367c1.216.277 1.824.415 2.204.733.352.296.573.732.608 1.21.04.564-.27 1.102-.89 2.18l-.653 1.132c-.583 1.01-.875 1.515-1.256 1.92a4 4 0 0 1-1.17.853c-.513.253-1.094.379-2.255.63l-2.696.593c-1.06.233-1.59.35-2.127.402a4 4 0 0 1-1.247 0c-.537-.052-1.067-.169-2.127-.402l-2.696-.593c-1.16-.251-1.742-.377-2.255-.63a4 4 0 0 1-1.17-.853c-.38-.405-.673-.91-1.256-1.92l-.653-1.132z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  ),
-};
 
 export const Alert = ({
   status = 'info',
@@ -53,10 +39,22 @@ export const Alert = ({
   className = '',
 }) => {
   const [internalIsVisible, setInternalIsVisible] = useState(true);
+  const alertRef = useRef(null);
 
   // Se isOpen for passado como prop, usa controle externo; senão, usa interno
   const isControlled = controlledIsOpen !== undefined;
   const isVisible = isControlled ? controlledIsOpen : internalIsVisible;
+
+  // define criticidade para role dinâmico
+  const isCritical = status === 'error' && closable;
+  const role = isCritical ? 'alertdialog' : 'alert';
+
+  useEffect(() => {
+    if (isCritical && isVisible && alertRef.current) {
+      // Move o foco para o alerta crítico para que leitores de tela anunciem imediatamente
+      alertRef.current.focus();
+    }
+  }, [isCritical, isVisible]);
 
   const handleClose = () => {
     if (onBeforeClose) {
@@ -81,16 +79,17 @@ export const Alert = ({
     .filter(Boolean)
     .join(' ');
 
-  const icons = defaultIcons;
-
   return (
     <div
+      ref={alertRef}
       className={alertClasses}
-      role="alert"
-      aria-live="polite"
+      role={role}
+      aria-live={isCritical ? undefined : 'polite'}
+      aria-modal={isCritical ? true : undefined}
+      tabIndex={isCritical ? 0 : undefined}
     >
       <div className={styles.icon}>
-        {icon || icons[status]}
+        {icon || defaultIcons[status]}
       </div>
       <div className={styles.content}>
         {title && <h5 className={styles.title}>{title}</h5>}
@@ -111,4 +110,5 @@ export const Alert = ({
   );
 };
 
+export { defaultIcons };
 export default Alert;

@@ -1,6 +1,6 @@
 # Análise de Melhorias - `/components`
 
-> **Data:** 19/05/2026 (atualizado)
+> **Data:** 20/05/2026 (atualizado)
 > **Objetivo:** Reportar correções, melhorias, problemas de performance e duplicidade de código identificados na análise dos componentes, com o status atual de cada item.
 
 ---
@@ -508,24 +508,40 @@
 - `Badge.Dot`: adicionada prop `ariaLabel` (padrão `'Notificação'` para não quebrar usos existentes), substituindo o `aria-label` fixo
 - Nenhuma alteração no `Badge.module.css` — as classes `.topRight`, `.topLeft`, `.bottomRight`, `.bottomLeft` já estavam corretas
 
-### 6.8 Alert.js
+### 6.8 Alert.js — ✅ **RESOLVIDO (20/05/2026)**
 
 **Localização:** `components/UI/Alert.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Manutenção** | A variável `icons` (linha 84) recebe `defaultIcons` desnecessariamente (já importada). |
-| 2 | **Acessibilidade** | O alerta usa `role="alert"` com `aria-live="polite"`. Para alertas críticos, `role="alertdialog"` seria mais apropriado. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Manutenção** | A variável `icons` (linha 84) recebe `defaultIcons` desnecessariamente (já importada). | ✅ **RESOLVIDO** |
+| 2 | **Acessibilidade** | O alerta usa `role="alert"` com `aria-live="polite"`. Para alertas críticos, `role="alertdialog"` seria mais apropriado. | ✅ **RESOLVIDO** |
 
-### 6.9 Toast.js
+**O que foi feito (20/05/2026):**
+- Variável `icons` removida — `defaultIcons` é usado diretamente na linha de renderização do ícone (`{icon || defaultIcons[status]}`)
+- `role` agora é dinâmico: para alertas críticos (`status="error"` + `closable`) usa `role="alertdialog"` com `aria-modal="true"` e `tabIndex={0}`; para os demais casos mantém `role="alert"` com `aria-live="polite"`
+- Foco automático (`.focus()`) no container do alerta crítico via `useRef` + `useEffect`, garantindo que leitores de tela anunciem o conteúdo imediatamente
+- `aria-live` removido quando `alertdialog` está ativo, conforme especificação de acessibilidade
+
+### 6.9 Toast.js — ✅ **RESOLVIDO (20/05/2026)**
 
 **Localização:** `components/UI/Toast.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Performance** | O hook `useToast` (linha 127) gera IDs com `crypto.randomUUID()`. Esse método não está disponível em ambientes sem crypto (ex: alguns navegadores antigos). |
-| 2 | **Acessibilidade** | O toast usa `role="status"` com `aria-live="polite"`, mas não anuncia o status (ex: "sucesso", "erro") de forma clara para leitores de tela. |
-| 3 | **Duplicidade** | `Toast` e `Alert` compartilham a mesma estrutura (ícone, título, descrição, close). Diferença principal é temporário vs. permanente. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Performance** | O hook `useToast` (linha 127) gera IDs com `crypto.randomUUID()`. Esse método não está disponível em ambientes sem crypto (ex: alguns navegadores antigos). | ✅ **RESOLVIDO** |
+| 2 | **Acessibilidade** | O toast usa `role="status"` com `aria-live="polite"`, mas não anuncia o status (ex: "sucesso", "erro") de forma clara para leitores de tela. | ✅ **RESOLVIDO** |
+| 3 | **Duplicidade** | `Toast` e `Alert` compartilham a mesma estrutura (ícone, título, descrição, close). Diferença principal é temporário vs. permanente. | ✅ **RESOLVIDO** |
+
+**O que foi feito (20/05/2026):**
+- Criada função `generateId()` com fallback: verifica se `crypto.randomUUID` está disponível; se não estiver, gera ID com `Date.now()` + `Math.random()`, eliminando a dependência exclusiva de `crypto`
+- Adicionado objeto `STATUS_LABELS` com rótulos descritivos por status (`status` → `'Sucesso'`, `'Erro'`, `'Atenção'`, `'Informação'`)
+- Adicionado `<span className={styles.srOnly}>{statusLabel}: </span>` oculto para leitores de tela anunciarem o nível de severidade antes do título
+- Adicionado `aria-atomic="true"` no container do toast para que leitores de tela leiam todo o conteúdo como uma unidade
+- `aria-label` do botão fechar agora inclui o status (`"Fechar notificação de erro"` em vez de `"Fechar notificação"` genérico)
+- `handleClose` agora é memoizado com `useCallback` para evitar recriação desnecessária
+- **Duplicidade com Alert resolvida:** Os `defaultIcons` foram extraídos para arquivo compartilhado `icons.js`, eliminando a dependência de `Toast` importar de `Alert.js`
+- Adicionada classe `.srOnly` no `Toast.module.css` para suporte a leitores de tela
 
 ### 6.10 Spinner.js
 

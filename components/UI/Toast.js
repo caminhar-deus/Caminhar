@@ -1,6 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import styles from './Toast.module.css';
-import { defaultIcons } from './Alert.js';
+import { defaultIcons } from './icons';
+
+/**
+ * Gera um ID único com fallback para ambientes sem crypto.randomUUID
+ * @returns {string}
+ */
+const generateId = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  // Fallback para navegadores antigos ou Node.js < 19
+  return `toast-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+};
+
+const STATUS_LABELS = {
+  info: 'Informação',
+  success: 'Sucesso',
+  warning: 'Atenção',
+  error: 'Erro',
+};
 
 /**
  * Toast - Componente de notificação temporária
@@ -31,6 +50,15 @@ export const Toast = ({
     setIsVisible(isOpen);
   }, [isOpen]);
 
+  const handleClose = useCallback(() => {
+    setIsExiting(true);
+    setTimeout(() => {
+      setIsVisible(false);
+      setIsExiting(false);
+      onClose?.();
+    }, 300);
+  }, [onClose]);
+
   useEffect(() => {
     if (isVisible && duration > 0) {
       const timer = setTimeout(() => {
@@ -38,16 +66,7 @@ export const Toast = ({
       }, duration);
       return () => clearTimeout(timer);
     }
-  }, [isVisible, duration]);
-
-  const handleClose = () => {
-    setIsExiting(true);
-    setTimeout(() => {
-      setIsVisible(false);
-      setIsExiting(false);
-      onClose?.();
-    }, 300);
-  };
+  }, [isVisible, duration, handleClose]);
 
   if (!isVisible) return null;
 
@@ -74,18 +93,21 @@ export const Toast = ({
     .filter(Boolean)
     .join(' ');
 
-  const icons = defaultIcons;
+  const statusLabel = STATUS_LABELS[status] || status;
 
   return (
     <div
       className={toastClasses}
       role="status"
       aria-live="polite"
+      aria-atomic="true"
     >
       <div className={styles.icon}>
-        {icons[status]}
+        {defaultIcons[status]}
       </div>
       <div className={styles.content}>
+        {/* Texto oculto para leitores de tela anunciarem o status */}
+        <span className={styles.srOnly}>{statusLabel}: </span>
         {title && <h6 className={styles.title}>{title}</h6>}
         {description && <p className={styles.description}>{description}</p>}
       </div>
@@ -93,7 +115,7 @@ export const Toast = ({
         <button
           className={styles.closeButton}
           onClick={handleClose}
-          aria-label="Fechar notificação"
+          aria-label={`Fechar notificação de ${statusLabel.toLowerCase()}`}
         >
           <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
             <path d="M18 6 6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
@@ -128,7 +150,7 @@ export const useToast = () => {
   const [toasts, setToasts] = useState([]);
 
   const addToast = (toast) => {
-    const id = crypto.randomUUID();
+    const id = generateId();
     setToasts((prev) => [...prev, { id, ...toast }]);
     return id;
   };
