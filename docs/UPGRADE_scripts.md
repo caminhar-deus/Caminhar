@@ -1,9 +1,9 @@
 # 📁 Scripts do Projeto — Análise de Melhorias, Correções e Duplicidades
 
-> **Data:** 13/05/2026 (atualizado)
+> **Data:** 20/05/2026 (atualizado)
 > **Projeto:** Caminhar  
 > **Diretório:** `/scripts`  
-> **Objetivo deste documento:** Reportar problemas identificados, sugestões de melhoria, oportunidades de performance, código duplicado e más práticas encontradas nos scripts. **Nenhuma correção foi aplicada**, apenas documentada.
+> **Objetivo deste documento:** Reportar problemas identificados, sugestões de melhoria, oportunidades de performance, código duplicado e más práticas encontradas nos scripts. Correções aplicadas estão marcadas com ✅.
 
 ---
 
@@ -22,11 +22,15 @@
 
 ## 1. Problemas Críticos de Segurança
 
-### 1.1. Senha admin hardcoded em `scripts/generate-load-report.js`
-- **Arquivo:** `scripts/generate-load-report.js` (linhas 22-48)
-- **Problema:** A senha do administrador (`123456`) está hardcoded em 6 definições de teste dentro do array `TESTS`.
-- **Risco:** Vazamento de credenciais de produção caso o repositório seja público ou acessado por pessoas não autorizadas.
-- **Sugestão:** Utilizar variáveis de ambiente (`process.env.ADMIN_PASSWORD`) para injetar a senha.
+### 1.1. Senha admin hardcoded em `scripts/generate-load-report.js` ✅ Corrigido
+- **Arquivo:** `scripts/generate-load-report.js`
+- **Problema:** A senha do administrador (`123456`) estava hardcoded em 6 definições de teste dentro do array `TESTS`.
+- **Risco:** Vazamento de credenciais de produção caso o repositório fosse público ou acessado por pessoas não autorizadas.
+- **Correção aplicada (20/05/2026):**
+  - Substituídas as 6 ocorrências de `ADMIN_PASSWORD: '123456'` por `ADMIN_PASSWORD: process.env.ADMIN_PASSWORD`.
+  - Substituídas as 6 ocorrências de `ADMIN_USERNAME: 'admin'` por `ADMIN_USERNAME: process.env.ADMIN_USERNAME`.
+  - Adicionada validação no início da execução que impede o script de rodar sem a variável `ADMIN_PASSWORD` configurada.
+  - **Uso correto agora:** `ADMIN_USERNAME=admin ADMIN_PASSWORD=sua_senha node scripts/generate-load-report.js`
 
 ### 1.2. Comando shell com concatenação de string em `scripts/backup.js`
 - **Arquivo:** `scripts/backup.js` (linha 57)
@@ -277,4 +281,4 @@ Definir e documentar um padrão:
 
 ---
 
-> 📝 **Nota:** Este documento é puramente analítico. Nenhuma correção foi aplicada ao código. As sugestões aqui contidas servem como guia para futuras refatorações e melhorias.
+> 📝 **Nota:** Este documento é analítico. Correções aplicadas estão marcadas com ✅. As demais sugestões servem como guia para futuras refatorações e melhorias.

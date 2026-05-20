@@ -14,38 +14,45 @@ const K6_SUMMARY_DIR = path.join(REPORTS_DIR, 'k6-summaries');
 if (!fs.existsSync(REPORTS_DIR)) fs.mkdirSync(REPORTS_DIR);
 if (!fs.existsSync(K6_SUMMARY_DIR)) fs.mkdirSync(K6_SUMMARY_DIR);
 
+// Validação de variáveis de ambiente obrigatórias
+if (!process.env.ADMIN_PASSWORD) {
+  console.error('❌ Erro: Variável ADMIN_PASSWORD não definida.');
+  console.error('   Configure via: export ADMIN_PASSWORD=sua_senha');
+  process.exit(1);
+}
+
 // Definição dos testes a serem executados
 const TESTS = [
   { 
     name: 'Fluxo Autenticado', 
     script: 'load-tests/authenticated-flow.js', 
-    env: { ADMIN_USERNAME: 'admin', ADMIN_PASSWORD: '123456' } 
+    env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME, ADMIN_PASSWORD: process.env.ADMIN_PASSWORD } 
   },
   { 
     name: 'Criação de Posts (Escrita)', 
     script: 'load-tests/create-post-flow.js', 
-    env: { ADMIN_USERNAME: 'admin', ADMIN_PASSWORD: '123456' }, 
+    env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME, ADMIN_PASSWORD: process.env.ADMIN_PASSWORD }, 
     cleanup: 'scripts/clean-load-test-posts.js' 
   },
   { 
     name: 'Carga de Vídeos (Leitura)', 
     script: 'load-tests/videos-load-test.js', 
-    env: { ADMIN_USERNAME: 'admin', ADMIN_PASSWORD: '123456' } 
+    env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME, ADMIN_PASSWORD: process.env.ADMIN_PASSWORD } 
   },
   { 
     name: 'CRUD de Vídeos', 
     script: 'load-tests/videos-crud-test.js', 
-    env: { ADMIN_USERNAME: 'admin', ADMIN_PASSWORD: '123456' } 
+    env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME, ADMIN_PASSWORD: process.env.ADMIN_PASSWORD } 
   },
   { 
     name: 'CRUD de Músicas', 
     script: 'load-tests/musicas-crud-test.js', 
-    env: { ADMIN_USERNAME: 'admin', ADMIN_PASSWORD: '123456' } 
+    env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME, ADMIN_PASSWORD: process.env.ADMIN_PASSWORD } 
   },
   { 
     name: 'Carga de Músicas (Leitura)', 
     script: 'load-tests/musicas-load-test.js', 
-    env: { ADMIN_USERNAME: 'admin', ADMIN_PASSWORD: '123456' } 
+    env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME, ADMIN_PASSWORD: process.env.ADMIN_PASSWORD } 
   },
 ];
 

@@ -183,6 +183,8 @@ scripts/
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/generate-load-report.js`
 - **Propósito:** Orquestrador de testes de carga. Executa uma bateria de 6 testes k6 pré-definidos (fluxo autenticado, criação de posts, carga de vídeos, CRUD de vídeos, CRUD de músicas, carga de músicas) e gera um relatório HTML com métricas de performance (P95, média, requisições, taxa de erro). Suporta cleanup pós-teste.
 - **Dependências:** `child_process`, `fs`, `path`, `url`
+- **Variáveis de ambiente:** Requer `ADMIN_PASSWORD` e opcionalmente `ADMIN_USERNAME` (default: não definido) para autenticação nos testes de carga. O script valida a presença de `ADMIN_PASSWORD` antes de executar.
+- **Uso:** `ADMIN_USERNAME=admin ADMIN_PASSWORD=sua_senha node scripts/generate-load-report.js`
 
 ### `scripts/init-dicas.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/init-dicas.js`
