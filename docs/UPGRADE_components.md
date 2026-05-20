@@ -493,14 +493,20 @@
 - PropTypes atualizadas com o novo campo `ariaLabel`
 - Teste `Card.test.js` atualizado para importar de `BaseCard.js`
 
-### 6.7 Badge.js
+### 6.7 Badge.js — ✅ **RESOLVIDO (20/05/2026)**
 
 **Localização:** `components/UI/Badge.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Manutenção** | A função `kebabToCamel` (linha 10) é simples e poderia ser substituída por CSS diretamente (ex: `top-right` → classe CSS). |
-| 2 | **Acessibilidade** | `Badge.Dot` (linha 97) usa `aria-label="Notificação"` genérico, sem contexto do que a notificação significa. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Manutenção** | A função `kebabToCamel` (linha 10) convertia kebab-case para camelCase para acessar classes CSS. Substituída por objeto de mapeamento direto `positionMap`, eliminando complexidade desnecessária no JS. | ✅ **RESOLVIDO (20/05/2026)** |
+| 2 | **Acessibilidade** | `Badge.Dot` (linha 97) usava `aria-label="Notificação"` genérico. Adicionada prop `ariaLabel` com fallback `'Notificação'`, permitindo que o consumidor personalize o texto do leitor de tela. | ✅ **RESOLVIDO (20/05/2026)** |
+
+**O que foi feito (20/05/2026):**
+- Função `kebabToCamel` removida — substituída pelo objeto `positionMap` que mapeia strings kebab-case (`'top-right'`, `'top-left'`, `'bottom-right'`, `'bottom-left'`) diretamente para as classes CSS do `Badge.module.css`
+- Variável `normalizedPosition` substituída por `positionClass`, que acessa o mapeamento direto em vez de converter o nome da classe
+- `Badge.Dot`: adicionada prop `ariaLabel` (padrão `'Notificação'` para não quebrar usos existentes), substituindo o `aria-label` fixo
+- Nenhuma alteração no `Badge.module.css` — as classes `.topRight`, `.topLeft`, `.bottomRight`, `.bottomLeft` já estavam corretas
 
 ### 6.8 Alert.js
 

@@ -605,6 +605,11 @@ Componentes base do Design System do projeto. Seguem padrão consistente de vari
 
 **Atualização (13/05/2026):** `Badge.module.css` tokenizado — cores, espaçamentos, border-radius e transitions substituídos por `var()`.
 
+**Melhorias aplicadas (20/05/2026):**
+- Função `kebabToCamel` removida e substituída pelo objeto `positionMap` que mapeia strings kebab-case (`'top-right'`, `'top-left'`, `'bottom-right'`, `'bottom-left'`) diretamente para as classes CSS do `Badge.module.css`, eliminando complexidade desnecessária no JS
+- Variável `normalizedPosition` substituída por `positionClass`, que acessa o mapeamento direto em vez de converter o nome da classe via `kebabToCamel`
+- `Badge.Dot`: adicionada prop `ariaLabel` (padrão `'Notificação'` para não quebrar usos existentes), substituindo o `aria-label` fixo e permitindo que o consumidor personalize o texto do leitor de tela
+
 ### 6.9 Alert.js
 **Localização:** `components/UI/Alert.js`
 

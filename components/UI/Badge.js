@@ -2,13 +2,14 @@ import React from 'react';
 import styles from './Badge.module.css';
 
 /**
- * Converte string kebab-case para camelCase
- * Exemplo: 'top-right' → 'topRight'
- * @param {string} str
- * @returns {string}
+ * Mapeamento de posições kebab-case para classes CSS do módulo
  */
-const kebabToCamel = (str) =>
-  str.replace(/-([a-z])/g, (_, char) => char.toUpperCase());
+const positionMap = {
+  'top-right': styles.topRight,
+  'top-left': styles.topLeft,
+  'bottom-right': styles.bottomRight,
+  'bottom-left': styles.bottomLeft,
+};
 
 /**
  * Badge - Componente de insígnia/etiqueta
@@ -33,8 +34,8 @@ export const Badge = ({
   className = '',
   ...props
 }) => {
-  // Normaliza position de kebab-case para camelCase (ex: 'top-right' → 'topRight')
-  const normalizedPosition = position ? kebabToCamel(position) : null;
+  // Obtém a classe CSS correspondente à posição via mapeamento direto
+  const positionClass = position ? positionMap[position] : null;
 
   const badgeClasses = [
     styles.badge,
@@ -42,7 +43,7 @@ export const Badge = ({
     styles[size],
     dot && styles.dot,
     pulse && styles.pulse,
-    normalizedPosition && styles[normalizedPosition],
+    positionClass,
     className,
   ]
     .filter(Boolean)
@@ -91,10 +92,11 @@ Badge.Dot = ({
   size = 'md',
   pulse = true,
   className = '',
+  ariaLabel = 'Notificação',
 }) => (
   <span
     className={`${styles.badge} ${styles.dot} ${styles[variant]} ${styles[size]} ${pulse ? styles.pulse : ''} ${className}`}
-    aria-label="Notificação"
+    aria-label={ariaLabel}
   />
 );
 
