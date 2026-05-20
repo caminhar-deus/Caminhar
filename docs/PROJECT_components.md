@@ -647,6 +647,14 @@ Componentes base do Design System do projeto. Seguem padrão consistente de vari
 
 **Atualização (13/05/2026):** `Spinner.module.css` tokenizado — cores (primary, secondary, white, dark) e z-index substituídos por `var()`.
 
+**Melhorias aplicadas (20/05/2026):**
+- Removida redundância de `aria-label` + `span.visuallyHidden` no container — mantido apenas `aria-label` como fonte única para leitores de tela; classe `.visuallyHidden` removida do `Spinner.module.css`
+- Variável `accessibilityLabel` agora efetivamente utilizada no JSX com fallback `label || 'Carregando...'`
+- `Spinner.Overlay`: removidos `role="status"` e `aria-label` do container — o `<Spinner>` filho já provê a acessibilidade necessária, eliminando elementos ARIA aninhados
+- `Spinner.Container`: adicionado `role="status"` para que leitores de tela identifiquem a região como notificação de carregamento
+- Adicionados `displayName` nos subcomponentes (`Spinner.Container`, `Spinner.Overlay`) para facilitar debugging em React DevTools
+- Adicionados `PropTypes` em todos os 3 componentes (`Spinner`, `Spinner.Container`, `Spinner.Overlay`) com validação de tipos em runtime
+
 ### 6.12 StateMessages.js
 **Localização:** `components/UI/StateMessages.js`
 

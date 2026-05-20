@@ -543,13 +543,28 @@
 - **Duplicidade com Alert resolvida:** Os `defaultIcons` foram extraídos para arquivo compartilhado `icons.js`, eliminando a dependência de `Toast` importar de `Alert.js`
 - Adicionada classe `.srOnly` no `Toast.module.css` para suporte a leitores de tela
 
-### 6.10 Spinner.js
+### 6.10 Spinner.js — ✅ **RESOLVIDO (20/05/2026)**
 
 **Localização:** `components/UI/Spinner.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Acessibilidade** | O `role="status"` e `aria-label` estão no container, mas o texto do label (linha 34) é passado corretamente para `aria-label`. Sem problemas graves. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Acessibilidade** | Redundância de `aria-label` + `span.visuallyHidden` no container — ambos transmitiam o mesmo texto para leitores de tela. Removido `span.visuallyHidden` e mantido apenas `aria-label`. Removida classe `.visuallyHidden` do `Spinner.module.css`. | ✅ **RESOLVIDO (20/05/2026)** |
+| 2 | **Manutenção** | Variável `accessibilityLabel` criada (linha 21) mas nunca utilizada no JSX — `aria-label` usava `{label}` diretamente. Agora `accessibilityLabel` é efetivamente usada no JSX com fallback `label || 'Carregando...'`. | ✅ **RESOLVIDO (20/05/2026)** |
+| 3 | **Acessibilidade** | `Spinner.Overlay` possuía `role="status"` e `aria-label` no container, mas renderizava um `<Spinner>` filho que **também** tinha `role="status"`, resultando em elementos aninhados com o mesmo papel ARIA. Removidos `role="status"` e `aria-label` do overlay, delegando a acessibilidade ao Spinner filho. | ✅ **RESOLVIDO (20/05/2026)** |
+| 4 | **Acessibilidade** | `Spinner.Container` não possuía atributos de acessibilidade. Adicionado `role="status"` para que leitores de tela identifiquem a região como notificação de carregamento. | ✅ **RESOLVIDO (20/05/2026)** |
+| 5 | **Manutenção** | `Spinner.Container` e `Spinner.Overlay` não possuíam `displayName`, dificultando debugging em React DevTools. Adicionados `Spinner.Container.displayName` e `Spinner.Overlay.displayName`. | ✅ **RESOLVIDO (20/05/2026)** |
+| 6 | **Manutenção** | Componente não possuía PropTypes para validação de tipos em runtime. Adicionados `Spinner.propTypes`, `Spinner.Container.propTypes` e `Spinner.Overlay.propTypes`. | ✅ **RESOLVIDO (20/05/2026)** |
+
+**O que foi feito (20/05/2026):**
+- `span` com `className={styles.visuallyHidden}` removido do Spinner principal — `aria-label={accessibilityLabel}` é a única fonte de texto para leitores de tela
+- Variável `accessibilityLabel` (linha 21) agora é efetivamente utilizada no JSX com fallback `label || 'Carregando...'`, substituindo `{label}` direto
+- `Spinner.Overlay` não possui mais `role="status"` e `aria-label` no container — o `<Spinner>` filho já provê a acessibilidade necessária
+- `Spinner.Container` agora possui `role="status"`, permitindo que leitores de tela identifiquem a região de carregamento
+- Adicionados `displayName` nos subcomponentes (`Spinner.Container`, `Spinner.Overlay`)
+- Adicionados `PropTypes` em todos os 3 componentes (`Spinner`, `Spinner.Container`, `Spinner.Overlay`)
+- Classe `.visuallyHidden` removida do `Spinner.module.css` (não mais referenciada)
+- Teste `Spinner.test.js` atualizado: valida `getByLabelText` em vez de `getByText` (pelo `span`); dots com 3 spans em vez de 4; overlay com 1 elemento `labelText` em vez de 2
 
 ### 6.11 StateMessages.js
 

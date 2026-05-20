@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import styles from './Spinner.module.css';
 
 /**
@@ -8,6 +9,7 @@ import styles from './Spinner.module.css';
  * @param {string} variant - 'border' | 'grow' | 'dots'
  * @param {string} label - Texto para acessibilidade
  * @param {boolean} centered - Centralizar na tela
+ * @param {string} className - Classe CSS adicional
  */
 export const Spinner = ({
   size = 'md',
@@ -17,7 +19,6 @@ export const Spinner = ({
   centered = false,
   className = '',
 }) => {
-  // Normaliza label para acessibilidade
   const accessibilityLabel = label || 'Carregando...';
   const spinnerClasses = [
     styles.spinner,
@@ -31,8 +32,7 @@ export const Spinner = ({
     .join(' ');
 
   return (
-    <div className={spinnerClasses} role="status" aria-label={label}>
-      <span className={styles.visuallyHidden}>{label}</span>
+    <div className={spinnerClasses} role="status" aria-label={accessibilityLabel}>
       {variant === 'dots' && (
         <>
           <span className={styles.dot} />
@@ -44,22 +44,45 @@ export const Spinner = ({
   );
 };
 
+Spinner.propTypes = {
+  size: PropTypes.oneOf(['xs', 'sm', 'md', 'lg', 'xl']),
+  color: PropTypes.oneOf(['primary', 'secondary', 'white', 'dark']),
+  variant: PropTypes.oneOf(['border', 'grow', 'dots']),
+  label: PropTypes.string,
+  centered: PropTypes.bool,
+  className: PropTypes.string,
+};
+
 /**
  * Spinner.Container - Container para spinner centralizado
  */
 Spinner.Container = ({ children, className = '' }) => (
-  <div className={`${styles.container} ${className}`}>
+  <div className={`${styles.container} ${className}`} role="status">
     {children}
   </div>
 );
+
+Spinner.Container.displayName = 'Spinner.Container';
+
+Spinner.Container.propTypes = {
+  children: PropTypes.node,
+  className: PropTypes.string,
+};
 
 /**
  * Spinner.Overlay - Overlay com spinner
  */
 Spinner.Overlay = ({ label, className = '' }) => (
-  <div className={`${styles.overlay} ${className}`} role="status" aria-label={label || 'Carregando'}>
+  <div className={`${styles.overlay} ${className}`}>
     <Spinner size="lg" label={label} />
   </div>
 );
+
+Spinner.Overlay.displayName = 'Spinner.Overlay';
+
+Spinner.Overlay.propTypes = {
+  label: PropTypes.string,
+  className: PropTypes.string,
+};
 
 export default Spinner;
