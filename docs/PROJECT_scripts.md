@@ -42,6 +42,7 @@ scripts/
 ├── seed-products.js
 ├── seed-videos.js
 ├── validate-schema.js
+├── view-backup-logs.js *
 ├── auth/
 ├── db/ *
 │   ├── connection.js *
@@ -106,18 +107,21 @@ scripts/
 
 ### `scripts/create-backup.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/create-backup.js`
-- **Propósito:** Script de entrada para criar um backup manual. Carrega variáveis de ambiente (priorizando `.env.local`), faz import dinâmico do módulo `backup.js` e chama `createBackup()`. Função wrapper simples para encapsular a execução.
-- **Dependências:** `fs`, `dotenv`, `backup.js` (local)
+- **Propósito:** Script de entrada para criar um backup manual. Carrega variáveis de ambiente via módulo compartilhado `loadEnv()` e chama `createBackup()` do módulo `backup.js`. Função wrapper simples para encapsular a execução.
+- **Refatorado em:** 21/05/2026 — substituídos `fs.existsSync` + `dotenv.config()` manual por `loadEnv()` de `scripts/utils/load-env.js`; substituído import dinâmico `await import()` por import estático no topo.
+- **Dependências:** `scripts/utils/load-env.js` (local), `backup.js` (local)
 
 ### `scripts/restore-backup.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/restore-backup.js`
-- **Propósito:** Script de restauração de backup. Aceita um nome de arquivo como argumento, faz validações, cria um backup de segurança antes de restaurar, suporta descriptografia se o backup estiver criptografado e verifica integridade via hash SHA-256.
-- **Dependências:** `fs`, `path`, `dotenv`, `backup.js` (local)
+- **Propósito:** Script de restauração de backup. Aceita um nome de arquivo como argumento, lista backups disponíveis se nenhum for informado, cria um backup de segurança antes de restaurar, suporta descriptografia se o backup estiver criptografado e verifica integridade via hash SHA-256.
+- **Refatorado em:** 21/05/2026 — substituídos `fs.existsSync` + `dotenv.config()` manual por `loadEnv()` de `scripts/utils/load-env.js`; substituído `await import('./backup.js')` por import estático no topo; adicionado bloco `try/catch` com `process.exit(1)` em caso de erro; corrigida mensagem de ajuda (agora exibe `node scripts/restore-backup.js` como opção de uso).
+- **Dependências:** `scripts/utils/load-env.js` (local), `backup.js` (local)
 
 ### `scripts/init-backup.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/init-backup.js`
-- **Propósito:** Script de inicialização do sistema de backup. Carrega variáveis de ambiente e delega para `initializeBackupSystem()` do módulo `backup.js`. Garante que o diretório de backups existe e cria um backup inicial.
-- **Dependências:** `dotenv`, `backup.js` (local)
+- **Propósito:** Script de inicialização do sistema de backup. Carrega variáveis de ambiente e delega para `initializeBackupSystem()` do módulo `backup.js`. Garante que o diretório de backups existe, cria um backup inicial e inicia o agendador automático de backups.
+- **Refatorado em:** 21/05/2026 — comentários e mensagens `console.log`/`console.error` traduzidos de inglês para português (ex: `"Starting Caminhar Database Backup System..."` → `"Iniciando sistema de backup do banco de dados..."`).
+- **Dependências:** `backup.js` (local)
 
 ### `scripts/cron-backup.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/cron-backup.js`
@@ -313,6 +317,13 @@ scripts/
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/run-load-tests.sh`
 - **Propósito:** Shell script que verifica se o servidor está online (via `curl`) e então executa `npm run test:load:all` para iniciar a bateria completa de testes de carga. Fornece feedback visual com emojis.
 - **Dependências:** `curl` (requerido externamente), shell script puro
+
+### `scripts/view-backup-logs.js`
+- **Localização:** `/home/qa/Projeto/Caminhar/scripts/view-backup-logs.js`
+- **Propósito:** Script de visualização dos logs do sistema de backup. Carrega variáveis de ambiente via módulo compartilhado `loadEnv()` e chama `getBackupLogs()` do módulo `backup.js`. Exibe todos os registros de log no formato `[timestamp] [status] message`. Criado como entry point para a função `getBackupLogs()` que anteriormente estava órfã.
+- **Uso:** `node scripts/view-backup-logs.js`
+- **Criado em:** 21/05/2026 — refatoração (correção 6.1, criação de entry point para função órfã).
+- **Dependências:** `scripts/utils/load-env.js` (local), `backup.js` (local)
 
 ---
 
@@ -602,7 +613,7 @@ scripts/
 
 | Categoria | Quantidade | Descrição |
 |-----------|:----------:|-----------|
-| **Backup** | 5 | `backup.js`, `create-backup.js`, `restore-backup.js`, `init-backup.js`, `cron-backup.js` |
+| **Backup** | 6 | `backup.js`, `create-backup.js`, `restore-backup.js`, `init-backup.js`, `cron-backup.js`, `view-backup-logs.js` |
 | **Inicialização** | 2 | `init-table.js` (unificado) + `init-server.js` |
 | **Migrações** | 11 | `migrate.js` (executor) + `001` a `009` + `011` em `migrations/` |
 | **Schemas (JSON)** | 4 | `schemas/musicas.json`, `schemas/posts.json`, `schemas/videos.json`, `schemas/dicas.json` |
@@ -620,7 +631,7 @@ scripts/
 | **Autenticação** | — | *(unificado em `scripts/reset-password.js`)* |
 | **Testes Manuais** | 2 | `tests/` |
 | **Banco de Dados** | 3 | `db/connection.js` + `db/verify-db-functions.js` + `db/verify-migration.js` |
-| **Total** | ~68 | Incluindo scripts, schemas, executor de migrações e módulos utilitários |
+| **Total** | ~69 | Incluindo scripts, schemas, executor de migrações e módulos utilitários |
 
 ---
 

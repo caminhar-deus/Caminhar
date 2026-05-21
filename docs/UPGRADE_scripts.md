@@ -372,10 +372,20 @@
 
 ## 6. Scripts Órfãos ou Subutilizados
 
-### 6.1. Função `restoreBackup` em `backup.js` sem script de entrada
-- **Arquivo:** `scripts/backup.js` (função exportada)
-- **Problema:** Existe `create-backup.js` como entry point para `createBackup()`, e `restore-backup.js` para `restoreBackup()`. Porém `restore-backup.js` não foi analisado em detalhe, mas se existirem outras funções exportadas sem entry point, elas podem ser subutilizadas.
-- **Sugestão:** Verificar se todas as funções exportadas têm entry points correspondentes ou são usadas em outros lugares.
+### 6.1. Função `restoreBackup` em `backup.js` sem script de entrada ✅ Corrigido
+- **Arquivos:** `scripts/backup.js`, `scripts/create-backup.js`, `scripts/restore-backup.js`, `scripts/init-backup.js`, `scripts/view-backup-logs.js` (novo)
+- **Problema:** O entry point `restore-backup.js` existia, mas estava desatualizado: usava `fs.existsSync` + `dotenv.config()` manual (em vez do módulo compartilhado `loadEnv()`), importação dinâmica desnecessária com `await import()`, e não possuía tratamento de erro com `process.exit(1)`. O mesmo valia para `create-backup.js`. Além disso, o `init-backup.js` ainda possuía comentários e mensagens em inglês, e as funções `getBackupLogs()` e `cleanupOldBackups()` eram exportadas sem entry points dedicados.
+- **Correção aplicada (21/05/2026):**
+  - **`scripts/restore-backup.js`:** Substituído `fs.existsSync` + `dotenv.config()` por `loadEnv()` de `scripts/utils/load-env.js`. Substituído `await import('./backup.js')` por import estático no topo. Adicionado bloco `try/catch` com `process.exit(1)` em caso de erro. Corrigida mensagem de ajuda (agora exibe também `node scripts/restore-backup.js` como opção de uso).
+  - **`scripts/create-backup.js`:** Substituído `fs.existsSync` + `dotenv.config()` por `loadEnv()` de `scripts/utils/load-env.js`. Substituído `await import('./backup.js')` por import estático no topo.
+  - **`scripts/init-backup.js`:** Traduzidos todos os comentários e mensagens `console.log`/`console.error` de inglês para português (ex: `"Starting Caminhar Database Backup System..."` → `"Iniciando sistema de backup do banco de dados..."`).
+  - **`scripts/view-backup-logs.js` (novo):** Criado entry point para a função `getBackupLogs()` que estava órfã. Exibe todos os registros de log do sistema de backup no formato `[timestamp] [status] message`.
+- **Uso correto agora:**
+  ```bash
+  node scripts/restore-backup.js <arquivo.sql.gz>   # Restaura backup
+  node scripts/view-backup-logs.js                   # Visualiza logs de backup
+  ```
+- **Observação:** A função `cleanupOldBackups()` continua exportada sem entry point dedicado, pois seu uso é exclusivamente interno (chamada automaticamente pelo `createBackup()`). Decidiu-se não criar entry point para ela.
 
 ### 6.2. `scripts/monitor-disk-space.js` sem integração
 - **Problema:** Script de monitoramento de disco que parece não estar integrado a nenhum sistema de alerta ou agendamento. Se não está no cron, não está sendo executado.

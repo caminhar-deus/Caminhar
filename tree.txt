@@ -513,24 +513,10 @@
 ├── data
 │   └── backups
 │       ├── backup.log
-│       ├── caminhar-pg-backup_2026-03-07_11-20-04.sql.gz
-│       ├── caminhar-pg-backup_2026-05-13T23-19-53Z.sql.gz
-│       ├── caminhar-pg-backup_2026-05-13T23-19-53Z.sql.gz.sha256
-│       ├── caminhar-pg-backup_2026-05-13T23-41-33Z.sql.gz.enc
-│       ├── caminhar-pg-backup_2026-05-13T23-41-33Z.sql.gz.sha256
-│       ├── caminhar-pg-backup_2026-05-14T11-20-48Z.sql.gz.enc
-│       ├── caminhar-pg-backup_2026-05-14T11-20-48Z.sql.gz.sha256
-│       ├── caminhar-pg-backup_2026-05-18T11-24-03Z.sql.gz.enc
-│       ├── caminhar-pg-backup_2026-05-18T11-24-03Z.sql.gz.sha256
-│       ├── caminhar-pg-backup_2026-05-18T12-37-25Z.sql.gz.enc
-│       ├── caminhar-pg-backup_2026-05-18T12-37-25Z.sql.gz.sha256
-│       ├── caminhar-pg-backup_2026-05-21T08-41-49Z.sql.gz.enc
-│       ├── caminhar-pg-backup_2026-05-21T08-41-49Z.sql.gz.sha256
-│       ├── caminhar-sqlite-backup_2026-05-13T23-19-53Z.sql.gz
-│       ├── caminhar-sqlite-backup_2026-05-13T23-19-53Z.sql.gz.sha256
-│       ├── caminhar-sqlite-backup_2026-05-13T23-41-33Z.sql.gz
-│       └── caminhar-sqlite-backup_2026-05-13T23-41-33Z.sql.gz.sha256
+│       ├── caminhar-pg-backup_2026-05-21T19-56-57Z.sql.gz.enc
+│       └── caminhar-pg-backup_2026-05-21T19-56-57Z.sql.gz.sha256
 ├── docs
+│   ├── JEST_ESM.md
 │   ├── PROJECT_components.md
 │   ├── PROJECT_cypress.md
 │   ├── PROJECT_data.md
@@ -828,7 +814,8 @@
 │   │   ├── list-table-columns.js
 │   │   ├── load-env.js
 │   │   └── update-setting.js
-│   └── validate-schema.js
+│   ├── validate-schema.js
+│   └── view-backup-logs.js
 ├── security-tests.yml
 ├── skills-lock.json
 ├── tests
@@ -1050,11 +1037,28 @@
 │       │       ├── products.edge.test.js
 │       │       └── upload-image.edge.test.js
 │       ├── scripts
-│       │   └── clean-orphaned-images.test.js
+│       │   ├── backup.test.js
+│       │   ├── clean-orphaned-images.test.js
+│       │   ├── clear-db.test.js
+│       │   ├── clear-musicas.test.js
+│       │   ├── db
+│       │   │   └── connection.test.js
+│       │   ├── diagnostics
+│       │   ├── init-table.test.js
+│       │   ├── maintenance
+│       │   ├── migrate.test.js
+│       │   ├── migrations
+│       │   ├── reset-password.test.js
+│       │   ├── seed-all.test.js
+│       │   ├── utils
+│       │   │   ├── cleanup.test.js
+│       │   │   ├── constants.test.js
+│       │   │   └── load-env.test.js
+│       │   └── validate-schema.test.js
 │       ├── settings-cache.test.js
 │       ├── [slug].test.js
 │       └── videos_validation.test.js
 ├── tests-output.log
 └── tree.txt
 
-158 directories, 900 files
+163 directories, 899 files

@@ -1,17 +1,11 @@
 #!/usr/bin/env node
-import fs from 'fs';
-import dotenv from 'dotenv';
+import { loadEnv } from './utils/load-env.js';
+import { restoreBackup, getAvailableBackups } from './backup.js';
 
-// Carrega variáveis de ambiente (para ter acesso à senha do banco)
-if (fs.existsSync('.env.local')) {
-  dotenv.config({ path: '.env.local' });
-}
-dotenv.config();
+// Carrega variáveis de ambiente (módulo compartilhado)
+loadEnv();
 
 async function runRestore() {
-  // Importação dinâmica para garantir que o env já foi carregado
-  const { restoreBackup, getAvailableBackups } = await import('./backup.js');
-  
   const file = process.argv[2];
 
   if (!file) {
@@ -20,16 +14,22 @@ async function runRestore() {
       const backups = await getAvailableBackups();
       if (backups.length === 0) console.log('   (Nenhum backup encontrado)');
       backups.forEach(b => console.log(`   - ${b.filename} (${b.timestamp})`));
-    } catch (e) {
+    } catch {
       console.log('   (Erro ao listar backups)');
     }
     console.log('\n❌ Erro: Você precisa especificar o arquivo.');
-    console.log('👉 Uso: npm run restore-backup <nome-do-arquivo.sql.gz>');
+    console.log('👉 Uso: node scripts/restore-backup.js <nome-do-arquivo.sql.gz>');
+    console.log('   Ou:  npm run restore-backup <nome-do-arquivo.sql.gz>');
     return;
   }
 
-  // Executa a restauração
-  await restoreBackup(file);
+  try {
+    // Executa a restauração
+    await restoreBackup(file);
+  } catch (error) {
+    console.error('❌ Falha ao restaurar backup:', error);
+    process.exit(1);
+  }
 }
 
 runRestore();

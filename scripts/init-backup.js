@@ -2,28 +2,28 @@
 import { initializeBackupSystem, startBackupScheduler } from './backup.js';
 
 /**
- * Initialize and start the backup system
+ * Inicializa e inicia o sistema de backup automático
  */
 async function main() {
   try {
-    console.log('Starting Caminhar Database Backup System...');
+    console.log('Iniciando sistema de backup do banco de dados...');
 
-    // Initialize backup system (creates first backup)
+    // Inicializa o sistema de backup (cria o primeiro backup)
     await initializeBackupSystem();
 
-    // Start automated backup scheduler
+    // Inicia o agendador automático de backups
     startBackupScheduler();
 
-    console.log('Backup system is now running with automated scheduling.');
-    console.log('You can manually create backups by calling createBackup() from lib/backup.js');
+    console.log('Sistema de backup em execução com agendamento automático.');
+    console.log('É possível criar backups manuais via: node scripts/create-backup.js');
   } catch (error) {
-    console.error('Failed to start backup system:', error);
+    console.error('Falha ao iniciar sistema de backup:', error);
     process.exit(1);
   }
 }
 
-// Run the initialization
+// Executa a inicialização
 main().catch(error => {
-  console.error('Unhandled error in backup initialization:', error);
+  console.error('Erro não tratado na inicialização do backup:', error);
   process.exit(1);
 });
