@@ -1,25 +1,43 @@
-import fs from 'fs';
-import dotenv from 'dotenv';
+#!/usr/bin/env node
 
-// Carrega variáveis de ambiente
-if (fs.existsSync('.env.local')) {
-  dotenv.config({ path: '.env.local' });
+import readline from 'readline';
+import { loadEnv } from './utils/load-env.js';
+import { query, closeDatabase } from '../lib/db.js';
+
+loadEnv();
+
+function askConfirmation() {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise((resolve) => {
+    rl.question('⚠️  Tem certeza que deseja limpar TODAS as músicas? (s/N) ', (answer) => {
+      rl.close();
+      resolve(answer.trim().toLowerCase() === 's' || answer.trim().toLowerCase() === 'sim');
+    });
+  });
 }
-dotenv.config();
 
 async function clearMusicas() {
-  // Importação dinâmica para garantir carregamento das env vars
-  const { query, closeDatabase } = await import('../lib/db.js');
-
   try {
     console.log('🗑️  Limpando todas as músicas do banco de dados...');
-    await query('DELETE FROM musicas');
-    console.log('✅ Tabela de músicas limpa com sucesso!');
+    const result = await query('DELETE FROM musicas');
+    console.log(`✅ Tabela de músicas limpa com sucesso! (${result.rowCount} registro(s) removido(s))`);
   } catch (error) {
-    console.error('❌ Erro ao limpar músicas:', error);
+    console.error('❌ Erro ao limpar músicas:', error.message);
+    process.exit(1);
   } finally {
     await closeDatabase();
   }
 }
 
-clearMusicas();
+// Execução principal
+const confirmed = await askConfirmation();
+if (!confirmed) {
+  console.log('❌ Operação cancelada pelo usuário.');
+  process.exit(0);
+}
+
+await clearMusicas();

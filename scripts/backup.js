@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import fs from 'fs';
 import path from 'path';
 import { format } from 'date-fns';
@@ -39,23 +40,44 @@ function calculateFileHash(filePath) {
 }
 
 /**
- * Get sorted list of backup files (lógica centralizada — item 2.7)
+ * Get sorted list of backup files (lógica centralizada — item 2.7, item 3.4)
+ * Usa fs.promises.opendir() para leitura incremental, interrompendo ao atingir o limite.
+ * @param {number} [maxFiles=Infinity] - Número máximo de arquivos a retornar.
  */
-function getBackupFiles() {
-  const files = fs.readdirSync(BACKUP_DIR)
-    .filter(file => file.startsWith(BACKUP_CONFIG.backupPrefix) && (file.endsWith('.sql.gz') || file.endsWith('.enc')))
-    .map(file => file.endsWith('.enc') ? file.slice(0, -4) : file)
-    .filter((file, index, self) => self.indexOf(file) === index) // Remove duplicatas
-    .sort((a, b) => {
-      // Sort by ISO 8601 timestamp (newest first)
-      const timestampA = a.match(/(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z)/)?.[0];
-      const timestampB = b.match(/(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z)/)?.[0];
-      if (!timestampA && !timestampB) return 0;
-      if (!timestampA) return 1;
-      if (!timestampB) return -1;
-      return timestampB.localeCompare(timestampA);
-    });
-  return files;
+async function getBackupFiles(maxFiles = Infinity) {
+  const backupFiles = [];
+
+  const dir = await fs.promises.opendir(BACKUP_DIR);
+  for await (const dirent of dir) {
+    if (dirent.isFile() && dirent.name.startsWith(BACKUP_CONFIG.backupPrefix) &&
+        (dirent.name.endsWith('.sql.gz') || dirent.name.endsWith('.enc'))) {
+      backupFiles.push(dirent.name);
+    }
+  }
+
+  // Remove duplicatas (.enc -> nome base)
+  const seen = new Set();
+  const uniqueFiles = [];
+  for (const file of backupFiles) {
+    const baseName = file.endsWith('.enc') ? file.slice(0, -4) : file;
+    if (!seen.has(baseName)) {
+      seen.add(baseName);
+      uniqueFiles.push(baseName);
+    }
+  }
+
+  // Ordena por timestamp ISO 8601 (mais recente primeiro)
+  uniqueFiles.sort((a, b) => {
+    const timestampA = a.match(/(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z)/)?.[0];
+    const timestampB = b.match(/(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z)/)?.[0];
+    if (!timestampA && !timestampB) return 0;
+    if (!timestampA) return 1;
+    if (!timestampB) return -1;
+    return timestampB.localeCompare(timestampA);
+  });
+
+  // Aplica limite: retorna apenas os primeiros maxFiles
+  return maxFiles === Infinity ? uniqueFiles : uniqueFiles.slice(0, maxFiles);
 }
 
 /**
@@ -248,7 +270,7 @@ async function logBackupOperation(status, message) {
  */
 async function cleanupOldBackups() {
   try {
-    const files = getBackupFiles();
+    const files = await getBackupFiles(BACKUP_CONFIG.maxBackups + 1);
 
     // Remove backups exceeding the maximum count
     if (files.length > BACKUP_CONFIG.maxBackups) {
@@ -392,13 +414,13 @@ async function restoreBackup(backupFilename) {
 }
 
 /**
- * Get list of available backups (item 2.7)
+ * Get list of available backups (item 2.7, item 3.4)
  */
-async function getAvailableBackups() {
+async function getAvailableBackups(maxFiles = 50) {
   try {
     await ensureBackupDirectory();
 
-    const files = getBackupFiles();
+    const files = await getBackupFiles(maxFiles);
 
     // Mapeia para objetos com metadados (assíncrono com fs.promises — item 3.2)
     const backupList = [];

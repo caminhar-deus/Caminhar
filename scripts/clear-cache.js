@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { Redis } from '@upstash/redis';
 import dotenv from 'dotenv';
 

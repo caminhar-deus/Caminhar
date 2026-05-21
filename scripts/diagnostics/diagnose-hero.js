@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import pg from 'pg';
 import fs from 'fs';
 import path from 'path';

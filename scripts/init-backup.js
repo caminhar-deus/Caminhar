@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { initializeBackupSystem, startBackupScheduler } from './backup.js';
 
 /**

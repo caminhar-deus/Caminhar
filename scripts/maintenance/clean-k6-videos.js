@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { loadEnv, cleanTableByPattern } from '../utils/cleanup.js';
 
 loadEnv();

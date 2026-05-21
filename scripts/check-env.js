@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import nextEnv from '@next/env';
 const { loadEnvConfig } = nextEnv;
 

@@ -98,7 +98,9 @@ scripts/
 ### `scripts/backup.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/backup.js`
 - **Propósito:** Módulo principal de backup/restore do banco de dados PostgreSQL. Suporta compressão gzip, criptografia AES-256-GCM, verificação de integridade SHA-256, gerenciamento de retenção (mantém os 10 backups mais recentes) e um agendador interno baseado em cron. Oferece funções exportadas para `createBackup()`, `restoreBackup()`, `cleanupOldBackups()`, `getAvailableBackups()`, `getBackupLogs()`, `initializeBackupSystem()` e `startBackupScheduler()`.
-- **Segurança:** Utiliza `spawn()` com argumentos em array (sem shell) para executar `pg_dump` e `psql`, eliminando risco de command injection. Compressão/descompressão gzip via streams nativas (`zlib.createGzip`/`zlib.createGunzip`). Hash SHA-256 calculado via stream (`fs.createReadStream`) sem carregar arquivo inteiro na RAM. I/O assíncrono com `fs.promises` em todas as operações de arquivo. Log otimizado com buffer em memória (apenas append ao arquivo, sem re-escrita).
+- **Segurança:** Utiliza `spawn()` com argumentos em array (sem shell) para executar `pg_dump` e `psql`, eliminando risco de command injection. Compressão/descompressão gzip via streams nativas (`zlib.createGzip`/`zlib.createGunzip`). Hash SHA-256 calculado via stream (`fs.createReadStream`) sem carregar arquivo inteiro na RAM. I/O assíncrono com `fs.promises` em todas as operações de arquivo, incluindo `fs.promises.opendir()` para iteração incremental do diretório de backups. Log otimizado com buffer em memória (apenas append ao arquivo, sem re-escrita).
+- **Performance:** Leitura incremental do diretório de backups via `opendir()` em vez de `readdirSync()`, eliminando carregamento completo do diretório na memória. Função `getBackupFiles()` aceita parâmetro `maxFiles` para limitar a consulta — `cleanupOldBackups()` lê no máximo 11 arquivos (em vez de todos) e `getAvailableBackups()` usa default de 50. Remoção de duplicatas com `Set()` (O(n)) em vez de `indexOf()` (O(n²)).
+- **Funções exportadas:** `createBackup()`, `restoreBackup()`, `cleanupOldBackups()`, `getAvailableBackups(maxFiles = 50)`, `getBackupLogs()`, `initializeBackupSystem()`, `startBackupScheduler()`
 - **Dependências:** `fs`, `path`, `date-fns`, `zlib`, `child_process` (apenas `spawn`), `crypto`
 
 ### `scripts/create-backup.js`
@@ -171,13 +173,17 @@ scripts/
 
 ### `scripts/clear-db.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/clear-db.js`
-- **Propósito:** Limpa completamente todas as tabelas do banco de dados usando `TRUNCATE CASCADE` nas tabelas de conteúdo (`posts`, `videos`, `musicas`, `comments`, `images`, `settings`). Mantém a integridade referencial. Requer confirmação do usuário (prompt "Tem certeza?").
-- **Dependências:** `dotenv`, `readline` (nativo), `../lib/db.js` (local)
+- **Propósito:** Limpa completamente todas as tabelas do banco de dados usando `TRUNCATE CASCADE` nas tabelas de conteúdo (`posts`, `videos`, `musicas`, `images`, `settings`, `users`). Mantém a integridade referencial. Também limpa o diretório `public/uploads/`. Requer confirmação do usuário via prompt interativo (`readline`) antes de executar.
+- **Segurança:** Prompt de confirmação impede execução acidental. I/O assíncrono com `fs.promises.*` para operações de arquivo (não bloqueante). Carregamento de ambiente centralizado via `scripts/utils/load-env.js`.
+- **Refatorado em:** 21/05/2026 — adicionado prompt de confirmação, migrado para `load-env.js`, I/O assíncrono, import estático e shebang.
+- **Dependências:** `scripts/utils/load-env.js` (local), `../lib/db.js` (local)
 
 ### `scripts/clear-musicas.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/clear-musicas.js`
-- **Propósito:** Script específico para limpar a tabela de músicas. Executa `DELETE FROM musicas` sem confirmação do usuário. Simples e direto.
-- **Dependências:** `dotenv`, `../lib/db.js` (local)
+- **Propósito:** Script específico para limpar a tabela de músicas. Executa `DELETE FROM musicas` e exibe o total de registros removidos. Requer confirmação do usuário via prompt interativo (`readline`) antes de executar.
+- **Segurança:** Prompt de confirmação impede perda acidental de dados. Carregamento de ambiente centralizado via `scripts/utils/load-env.js`. `process.exit(1)` em caso de erro no `catch`.
+- **Refatorado em:** 21/05/2026 — adicionado prompt de confirmação, migrado para `load-env.js`, import estático, `process.exit(1)` no catch e shebang.
+- **Dependências:** `scripts/utils/load-env.js` (local), `../lib/db.js` (local)
 
 ### `scripts/consolidate-k6-reports.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/consolidate-k6-reports.js`
@@ -289,7 +295,13 @@ scripts/
 ### `scripts/validate-schema.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/validate-schema.js`
 - **Propósito:** Valida se o schema do banco de dados corresponde ao esperado pelo código. Define um schema esperado para as tabelas (`posts`, `videos`, `musicas`, `users`, `settings`, `images`) com suas colunas, e verifica cada uma no PostgreSQL usando `information_schema`. Gera saída clara com `✅` para OK e `❌` para discrepâncias.
-- **Dependências:** `fs`, `dotenv`, `pg`
+- **Tratamento de erros:** A função `validateSchema()` retorna `boolean` (`true` = schema ok, `false` = erro). O `process.exit()` é chamado apenas no entry point, garantindo que o pool de conexão seja fechado corretamente pelo `finally` antes da saída.
+- **Refatorado em:** 21/05/2026 — alinhado com os módulos compartilhados existentes:
+  - Carregamento de ambiente via `scripts/utils/load-env.js` (em vez de `dotenv` manual).
+  - Conexão via `scripts/db/connection.js` (`getPool()`/`closePool()`), pool singleton.
+  - `process.exit(1)` removido de dentro do `try/catch` e movido para o entry point.
+- **Uso:** `node scripts/validate-schema.js` — retorna exit code 0 se OK, 1 se houver inconsistências.
+- **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local), `pg`
 
 ### `scripts/run-all-load-tests.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/run-all-load-tests.js`

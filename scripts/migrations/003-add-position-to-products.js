@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { loadEnv } from '../utils/load-env.js';
 loadEnv();
 

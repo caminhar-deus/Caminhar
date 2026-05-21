@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import pkg from '@next/env';
 const { loadEnvConfig } = pkg;
 loadEnvConfig(process.cwd()); // Carrega as variáveis de ambiente (.env)

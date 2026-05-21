@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { withAuth } from '../../../lib/auth';
 import { query } from '../../../lib/db';
 

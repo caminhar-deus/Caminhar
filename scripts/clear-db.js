@@ -1,19 +1,48 @@
-import fs from 'fs';
-import dotenv from 'dotenv';
-import path from 'path';
+#!/usr/bin/env node
 
-// Carrega variáveis de ambiente
-if (fs.existsSync('.env.local')) {
-  dotenv.config({ path: '.env.local' });
+import fs from 'fs';
+import path from 'path';
+import readline from 'readline';
+import { loadEnv } from './utils/load-env.js';
+import { query, closeDatabase } from '../lib/db.js';
+
+loadEnv();
+
+function askConfirmation() {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise((resolve) => {
+    rl.question('⚠️  Tem certeza que deseja limpar TODAS as tabelas do banco? (s/N) ', (answer) => {
+      rl.close();
+      resolve(answer.trim().toLowerCase() === 's' || answer.trim().toLowerCase() === 'sim');
+    });
+  });
 }
-dotenv.config();
+
+async function clearUploadsDir() {
+  const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+  try {
+    await fs.promises.access(uploadDir);
+    const files = await fs.promises.readdir(uploadDir);
+    for (const file of files) {
+      // Evita apagar o próprio diretório ou arquivos de controle como .gitkeep
+      if (file !== '.gitkeep') {
+        await fs.promises.unlink(path.join(uploadDir, file));
+      }
+    }
+    console.log('✅ Diretório de uploads limpo.');
+  } catch {
+    console.log('ℹ️  Diretório de uploads não encontrado, nada a limpar.');
+  }
+}
 
 async function clearDatabase() {
-  const { query, closeDatabase } = await import('../lib/db.js');
-
   try {
     console.log('🗑️  Esvaziando todas as tabelas do banco de dados...');
-    
+
     // TRUNCATE limpa os dados mais rápido que DELETE
     // RESTART IDENTITY reseta os IDs para 1
     // CASCADE limpa tabelas dependentes (ex: images que dependem de users)
@@ -22,30 +51,22 @@ async function clearDatabase() {
         posts, videos, musicas, images, settings, users 
       RESTART IDENTITY CASCADE;
     `);
-    
+
     console.log('✅ Banco de dados limpo com sucesso! (Estrutura mantida, dados removidos)');
-
-    console.log('🗑️  Limpando diretório de uploads...');
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-    if (fs.existsSync(uploadDir)) {
-      const files = fs.readdirSync(uploadDir);
-      for (const file of files) {
-        // Evita apagar o próprio diretório ou arquivos de controle como .gitkeep
-        if (file !== '.gitkeep') {
-          fs.unlinkSync(path.join(uploadDir, file));
-        }
-      }
-      console.log('✅ Diretório de uploads limpo.');
-    } else {
-      console.log('ℹ️  Diretório de uploads não encontrado, nada a limpar.');
-    }
-
+    await clearUploadsDir();
   } catch (error) {
-    console.error('❌ Erro ao limpar o banco de dados:', error);
+    console.error('❌ Erro ao limpar o banco de dados:', error.message);
     process.exit(1);
   } finally {
     await closeDatabase();
   }
 }
 
-clearDatabase();
+// Execução principal
+const confirmed = await askConfirmation();
+if (!confirmed) {
+  console.log('❌ Operação cancelada pelo usuário.');
+  process.exit(0);
+}
+
+await clearDatabase();

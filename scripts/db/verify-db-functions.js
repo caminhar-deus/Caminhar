@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import * as db from './db.js';
 
 console.log('🔍 Verificando funções exportadas por lib/db.js...');

@@ -217,7 +217,7 @@
 - **Impacto:** Bloqueava o event loop do Node.js durante operações de I/O.
 - **Correção aplicada (20/05/2026):**
   - Migradas todas as operações de I/O para `fs.promises` (assíncronas com `async/await`).
-  - Exceto `fs.readdirSync()` em `getBackupFiles()` que permanece síncrono por ser uma função utilitária chamada internamente, sem `await` no escopo de chamada.
+  - A última operação síncrona remanescente (`fs.readdirSync()` em `getBackupFiles()`) foi substituída por `fs.promises.opendir()` em 21/05/2026 (item 3.4).
 
 ### 3.3. Leitura completa do arquivo para calcular hash ✅ Corrigido
 - **Arquivo:** `scripts/backup.js`
@@ -225,24 +225,53 @@
 - **Correção aplicada (20/05/2026):**
   - Criada função `calculateFileHash()` que usa `crypto.createHash()` com `fs.createReadStream()` para processar o hash em chunks, sem carregar o arquivo inteiro na RAM.
 
-### 3.4. Carregamento de todo o diretório de backups para listar
-- **Arquivo:** `scripts/backup.js` (funções `cleanupOldBackups` e `getAvailableBackups`)
+### 3.4. Carregamento de todo o diretório de backups para listar ✅ Corrigido
+- **Arquivo:** `scripts/backup.js` (funções `getBackupFiles`, `cleanupOldBackups` e `getAvailableBackups`)
 - **Problema:** `fs.readdirSync(BACKUP_DIR)` lê todo o diretório, mesmo quando só precisa dos primeiros N arquivos.
-- **Sugestão:** Para diretórios com muitos arquivos, considerar limitar a leitura.
+- **Correção aplicada (21/05/2026):**
+  - Substituído `fs.readdirSync()` por `fs.promises.opendir()` com iteração incremental na função `getBackupFiles()`, eliminando o carregamento completo do diretório na memória.
+  - Adicionado parâmetro `maxFiles` (default: `Infinity`) à função `getBackupFiles()` para limitar a quantidade de arquivos retornados.
+  - `cleanupOldBackups()` agora chama `getBackupFiles(BACKUP_CONFIG.maxBackups + 1)` — lê no máximo 11 arquivos em vez do diretório inteiro.
+  - `getAvailableBackups()` agora aceita parâmetro `maxFiles` (default: 50) e repassa para `getBackupFiles()`.
+  - Duplicatas (`.enc` → nome base) agora usam `Set()` para performance, em vez de `indexOf()` O(n²).
+  - A função passou de síncrona para assíncrona (`async/await`) junto com os chamadores.
 
 ---
 
 ## 4. Tratamento de Erros Inconsistente
 
-### 4.1. Mistura de `process.exit(1)` com `throw`
-- **Problema:** Alguns scripts usam `process.exit(1)` para indicar falha (ex: `init-musicas.js` linha 35, `validate-schema.js` linha 83), outros lançam exceções com `throw`, outros apenas logam o erro. Não há um padrão consistente.
-- **Sugestão:** Definir um padrão: scripts de linha de comando devem fazer `process.exit(1)` em caso de erro; funções exportadas devem lançar exceções para quem as chamou.
+### 4.1. Mistura de `process.exit(1)` com `throw` ✅ Corrigido
+- **Arquivo:** `scripts/validate-schema.js`
+- **Problema:** O script usava `process.exit(1)` dentro dos blocos `try` (linha 83) e `catch` (linha 90), o que impedia o `finally` de executar `pool.end()` corretamente. Além disso, misturava carregamento manual de `dotenv` com `fs.existsSync` e criação direta de `Pool`, sem usar os módulos compartilhados estabelecidos nas refatorações anteriores (seções 2.5 e 2.6).
+- **Correção aplicada (21/05/2026):**
+  - Substituído `import fs from 'fs'` + `import dotenv from 'dotenv'` + carregamento manual por `loadEnv()` de `scripts/utils/load-env.js`.
+  - Substituída criação manual de `new Pool(...)` por `getPool()` de `scripts/db/connection.js` (pool singleton), e `pool.end()` por `closePool()` do mesmo módulo.
+  - Removidos `process.exit(1)` das linhas 83 e 90 (dentro do `try/catch`).
+  - Função `validateSchema()` agora retorna `boolean` (`true` = schema ok, `false` = erro) em vez de chamar `process.exit` diretamente.
+  - `process.exit()` movido para o entry point (fora da função): `process.exit(success ? 0 : 1)`, garantindo que o `finally` execute `closePool()` completamente antes da saída.
+  - O padrão agora segue a convenção: scripts de linha de comando usam `process.exit(1)` no entry point; funções exportadas (se necessário no futuro) retornam valor ou lançam exceção.
+- **Benefícios:**
+  - Pool de conexão sempre fechado corretamente (não mais interrompido por `process.exit`).
+  - Função `validateSchema()` pode ser exportada e reutilizada sem efeitos colaterais de saída.
+  - Alinhamento com os módulos compartilhados existentes (`load-env.js`, `connection.js`).
+  - Carregamento de ambiente centralizado (DRY).
 
-### 4.2. `clear-musicas.js` não pede confirmação
-- **Arquivo:** `scripts/clear-musicas.js`
-- **Problema:** Ao contrário de `clear-db.js` que pede confirmação do usuário antes de limpar, `clear-musicas.js` executa `DELETE FROM musicas` sem nenhuma confirmação.
-- **Risco:** Perda acidental de dados.
-- **Sugestão:** Adicionar prompt de confirmação ou flag `--force` para execução silenciosa.
+### 4.2. `clear-musicas.js` e `clear-db.js` não pediam confirmação ✅ Corrigido
+- **Arquivos:** `scripts/clear-musicas.js`, `scripts/clear-db.js`
+- **Problema:** Ambos os scripts executavam operações destrutivas (`DELETE FROM musicas` e `TRUNCATE TABLE ... CASCADE`) sem nenhuma confirmação do usuário.
+- **Correção aplicada (21/05/2026):**
+  - Adicionada função `askConfirmation()` com `readline` nativo em ambos os scripts, exibindo prompt `"Tem certeza? (s/N)"`.
+  - Se o usuário responder diferente de `s`/`sim`, a operação é cancelada com `process.exit(0)`.
+  - Carregamento de ambiente substituído pelo módulo compartilhado `scripts/utils/load-env.js`.
+  - Import dinâmico `await import('../lib/db.js')` substituído por import estático no topo.
+  - `process.exit(1)` adicionado no `catch` para sinalizar falha corretamente.
+  - Shebang `#!/usr/bin/env node` adicionado em ambos.
+  - **`clear-db.js`:** I/O síncrono (`fs.existsSync`, `fs.readdirSync`, `fs.unlinkSync`) migrado para `fs.promises.*` assíncrono.
+  - **`clear-musicas.js`:** Exibe `rowCount` dos registros removidos no log de sucesso.
+- **Benefícios:**
+  - Prevenção contra perda acidental de dados em ambos os scripts.
+  - Alinhamento com os módulos compartilhados existentes (`load-env.js`).
+  - I/O não bloqueante e melhor tratamento de erros.
 
 ### 4.3. Erro no `cleanupOldBackups` com `.enc` e `.sha256` ✅ Corrigido
 - **Arquivo:** `scripts/backup.js`
@@ -255,9 +284,18 @@
 
 ## 5. Padrões de Código e Boas Práticas
 
-### 5.1. Ausência de `shebang` nos scripts
-- **Problema:** Nenhum dos scripts `.js` possui shebang (`#!/usr/bin/env node`). Embora sejam executados via `node script.js`, isso impede execução direta como `./script.js`.
-- **Sugestão:** Adicionar shebang nos scripts que podem ser executados diretamente.
+### 5.1. Ausência de `shebang` nos scripts ✅ Corrigido
+- **Arquivos:** 52 scripts `.js` nos diretórios `scripts/`, `scripts/utils/`, `scripts/db/`, `scripts/diagnostics/`, `scripts/maintenance/`, `scripts/migrations/` e `scripts/tests/`.
+- **Problema:** A maioria dos scripts `.js` não possuía shebang (`#!/usr/bin/env node`). Embora fossem executados via `node script.js`, isso impedia execução direta como `./script.js`.
+- **Exceções (já possuíam):** `check-sql-injection.js`, `clear-db.js`, `clear-musicas.js`, `init-table.js`, `migrate.js`, `run-all-load-tests.js`, `migrations/seed-migrations-table.js`, `migrations/verify-applied.js`.
+- **Módulos compartilhados (sem shebang propositalmente):** `scripts/utils/load-env.js`, `scripts/utils/cleanup.js`, `scripts/db/connection.js` — não são executados diretamente, apenas importados.
+- **Shell script (não se aplica):** `scripts/cron-backup.js` — é um script Bash (`#!/bin/bash`).
+- **Correção aplicada (21/05/2026):**
+  - Adicionado `#!/usr/bin/env node` como primeira linha nos 52 scripts listados abaixo.
+  - Aplicado `chmod +x` em todos os scripts para permitir execução direta via `./script.js`.
+  - Scripts da raiz `scripts/` (24): `backup.js`, `check-db-status.js`, `check-env.js`, `check-server.js`, `clean-k6-reports.js`, `clean-load-test-posts.js`, `clean-orphaned-images.js`, `clean-test-db.js`, `clear-cache.js`, `consolidate-k6-reports.js`, `create-backup.js`, `db-shell.js`, `generate-load-report.js`, `init-backup.js`, `init-server.js`, `monitor-disk-space.js`, `reset-password.js`, `restore-backup.js`, `seed-all.js`, `seed-musicas.js`, `seed-posts.js`, `seed-products.js`, `seed-videos.js`, `validate-schema.js`.
+  - Scripts em subdiretórios (28): `utils/cleanup-test-data.js`, `utils/list-settings.js`, `utils/list-table-columns.js`, `utils/update-setting.js`, `db/verify-db-functions.js`, `db/verify-migration.js`, `diagnostics/check-musicas-schema.js`, `diagnostics/check-videos-schema.js`, `diagnostics/count-posts.js`, `diagnostics/diagnose-hero.js`, `diagnostics/list-last-posts.js`, `maintenance/backup-posts.js`, `maintenance/clean-k6-videos.js`, `maintenance/fix-hero-key.js`, `maintenance/restore-posts.js`, `maintenance/video-thumbnails.js`, `tests/manual-api-test.js`, `tests/manual-rate-limit.js`, `migrations/001-add-views-to-posts.js`, `migrations/002-create-products-table.js`, `migrations/003-add-position-to-products.js`, `migrations/004-add-published-to-products.js`, `migrations/005-add-last-login-to-users.js`, `migrations/006-create-activity-logs.js`, `migrations/007-add-position-to-musicas.js`, `migrations/008-add-position-to-videos.js`, `migrations/009-add-position-to-posts.js`, `migrations/011-fix-entity-id-type.js`.
+- **Uso correto agora:** `./scripts/backup.js` ou `node scripts/backup.js` (ambos funcionam).
 
 ### 5.2. Constantes mágicas espalhadas
 - **Problema:** Valores como `10` (limite de backups), `3000` (porta), `100` (limite de linhas do log) aparecem como números literais sem nome explicativo.
@@ -394,6 +432,7 @@ Definir e documentar um padrão:
 | 1.3 | Ausência de validação de entrada em update-setting.js | 🔴 Alta | Médio | **Crítico** | ✅ Corrigido |
 | 3.1 | Log sobrescreve arquivo | 🟡 Média | Baixo | Alta | ✅ Corrigido |
 | 3.3 | Hash carrega arquivo inteiro na RAM | 🟡 Média | Baixo | Alta | ✅ Corrigido |
+| 3.4 | Carregamento de todo o diretório de backups para listar | 🟢 Baixa | Médio | Média | ✅ Corrigido |
 | 5.6 | Import dinâmico crypto | 🟢 Baixa | Muito Baixo | Alta | ✅ Corrigido |
 | 2.7 | Lógica de filtro duplicada | 🟢 Baixa | Baixo | Alta | ✅ Corrigido |
 | 3.2 | I/O síncrono | 🟢 Baixa | Baixo | Média | ✅ Corrigido |
@@ -407,9 +446,9 @@ Definir e documentar um padrão:
 | **8.1** | **Criar módulo load-env.js** | 🟢 Baixa | Baixo | **Média** | **✅ Concluído** |
 | **8.2** | **Criar módulo connection.js** | 🟢 Baixa | Médio | **Média** | **✅ Concluído** |
 | **8.4** | **Implementar gerenciador de migrações** | 🟡 Média | Alto | **Alta** | **✅ Concluído** |
-| 4.2 | clear-musicas sem confirmação | 🟡 Média | Baixo | Média | Pendente |
+| 4.2 | clear-musicas e clear-db sem confirmação | 🟡 Média | Baixo | Média | ✅ Corrigido |
 | 7.1 | Scheduler caseiro | 🟢 Baixa | Médio | Baixa | Pendente |
-| 5.1 | Shebang ausente | 🟢 Baixa | Muito Baixo | Baixa | Pendente |
+| 5.1 | Shebang ausente | 🟢 Baixa | Muito Baixo | Baixa | ✅ Corrigido |
 
 ---
 

@@ -1,19 +1,8 @@
-import fs from 'fs';
-import dotenv from 'dotenv';
-import pg from 'pg';
+#!/usr/bin/env node
+import { loadEnv } from './utils/load-env.js';
+import { getPool, closePool } from './db/connection.js';
 
-const { Pool } = pg;
-
-// Carrega variáveis de ambiente
-if (fs.existsSync('.env.local')) {
-  dotenv.config({ path: '.env.local' });
-}
-dotenv.config();
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined
-});
+loadEnv();
 
 // Definição do Schema Esperado com base no código (lib/db.js, lib/auth.js, migrations)
 const EXPECTED_SCHEMA = {
@@ -41,6 +30,7 @@ const EXPECTED_SCHEMA = {
 async function validateSchema() {
   console.log('🔍 Validando schema do banco de dados...');
   let hasErrors = false;
+  const pool = getPool();
 
   try {
     // Verifica conexão
@@ -80,17 +70,21 @@ async function validateSchema() {
     if (hasErrors) {
       console.error('⚠️  O banco de dados apresenta inconsistências com o código.');
       console.error('   Sugestão: Execute as migrações ou scripts de inicialização (npm run init-db, npm run migrate).');
-      process.exit(1);
     } else {
       console.log('✨ O banco de dados está sincronizado com o schema esperado.');
     }
 
+    return !hasErrors;
+
   } catch (error) {
     console.error('❌ Erro fatal ao validar schema:', error.message);
-    process.exit(1);
+    return false;
+
   } finally {
-    await pool.end();
+    await closePool();
   }
 }
 
-validateSchema();
+// Entry point — decisão de saída separada da função de validação
+const success = await validateSchema();
+process.exit(success ? 0 : 1);
