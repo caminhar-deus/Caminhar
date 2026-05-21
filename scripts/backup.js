@@ -13,18 +13,18 @@ import {
   MAX_LOG_LINES
 } from './utils/constants.js';
 
-// Database and backup paths
+// Caminhos do banco de dados e backups
 const BACKUP_DIR = path.join(process.cwd(), 'data', 'backups');
 const LOG_FILE = path.join(process.cwd(), 'data', 'backups', 'backup.log');
 
-// Backup configuration
+// Configuração do sistema de backup
 const BACKUP_CONFIG = {
-  maxBackups: MAX_BACKUPS, // Maximum number of backups to keep
-  backupInterval: '0 2 * * *', // Daily at 2 AM (cron format)
+  maxBackups: MAX_BACKUPS, // Número máximo de backups a manter
+  backupInterval: '0 2 * * *', // Diário às 2 AM (formato cron)
   backupPrefix: 'caminhar-pg-backup'
 };
 
-// In-memory log buffer: evita leitura+reescrita do arquivo a cada operação
+// Buffer de log em memória: evita leitura+reescrita do arquivo a cada operação
 const logBuffer = [];
 
 // ──────────────────────────────────────────────
@@ -32,7 +32,7 @@ const logBuffer = [];
 // ──────────────────────────────────────────────
 
 /**
- * Calculate SHA-256 hash using stream (sem carregar arquivo inteiro na RAM)
+ * Calcula hash SHA-256 usando stream (sem carregar arquivo inteiro na RAM)
  */
 function calculateFileHash(filePath) {
   return new Promise((resolve, reject) => {
@@ -46,7 +46,7 @@ function calculateFileHash(filePath) {
 }
 
 /**
- * Get sorted list of backup files (lógica centralizada — item 2.7, item 3.4)
+ * Retorna lista ordenada de arquivos de backup (lógica centralizada — item 2.7, item 3.4)
  * Usa fs.promises.opendir() para leitura incremental, interrompendo ao atingir o limite.
  * @param {number} [maxFiles=Infinity] - Número máximo de arquivos a retornar.
  */
@@ -87,7 +87,7 @@ async function getBackupFiles(maxFiles = Infinity) {
 }
 
 /**
- * Run pg_dump via spawn (sem shell) com pipe para gzip stream
+ * Executa pg_dump via spawn (sem shell) com pipe para gzip stream
  * Seguro contra command injection (item 1.2)
  */
 function runPgDumpToFile(dbUrl, outputPath) {
@@ -118,7 +118,7 @@ function runPgDumpToFile(dbUrl, outputPath) {
 }
 
 /**
- * Run psql via spawn (sem shell) com gunzip stream
+ * Executa psql via spawn (sem shell) com gunzip stream
  * Seguro contra command injection (item 1.2)
  */
 function runPsqlFromFile(dbUrl, inputPath) {
@@ -152,21 +152,21 @@ function runPsqlFromFile(dbUrl, inputPath) {
 }
 
 /**
- * Ensure backup directory exists (usando fs.promises assíncrono)
+ * Garante que o diretório de backups existe (usando fs.promises assíncrono)
  */
 async function ensureBackupDirectory() {
   try {
     await fs.promises.mkdir(BACKUP_DIR, { recursive: true });
   } catch (error) {
     if (error.code !== 'EEXIST') {
-      console.error('Error creating backup directory:', error);
+      console.error('Erro ao criar diretório de backup:', error);
       throw error;
     }
   }
 }
 
 /**
- * Generate backup filename with ISO 8601 timestamp (padronizado)
+ * Gera nome de arquivo de backup com timestamp ISO 8601 (padronizado)
  */
 function generateBackupFilename() {
   const timestamp = format(new Date(), "yyyy-MM-dd'T'HH-mm-ss'Z'");
@@ -174,13 +174,13 @@ function generateBackupFilename() {
 }
 
 /**
- * Create a backup of PostgreSQL database
+ * Cria um backup do banco de dados PostgreSQL
  */
 async function createBackup() {
   try {
-    console.log('Starting database backup...');
+    console.log('Iniciando backup do banco de dados...');
 
-    // Ensure backup directory exists
+    // Garante que o diretório de backups existe
     await ensureBackupDirectory();
 
     // ===== Backup PostgreSQL =====
@@ -191,9 +191,9 @@ async function createBackup() {
     // Usa spawn sem shell para evitar command injection (item 1.2)
     await runPgDumpToFile(process.env.DATABASE_URL, backupPath);
 
-    console.log(`PostgreSQL backup created: ${backupPath}`);
+    console.log(`Backup PostgreSQL criado: ${backupPath}`);
 
-    // Calcular hash SHA-256 usando stream (item 3.3)
+    // Calcula hash SHA-256 usando stream (item 3.3)
     const hash = await calculateFileHash(backupPath);
     await fs.promises.writeFile(`${backupPath}.sha256`, hash);
 
@@ -229,23 +229,23 @@ async function createBackup() {
       }
     }
 
-    // Log the backup operation
+    // Registra a operação no log
     await logBackupOperation('SUCCESS', `[PostgreSQL] ${backupFilename} | hash: ${hash.substring(0, 12)}...`);
 
-    // Clean up old backups
+    // Limpa backups antigos
     await cleanupOldBackups();
 
-    console.log('Database backup completed successfully');
+    console.log('Backup do banco de dados concluído com sucesso');
     return backupPath;
   } catch (error) {
-    console.error('Error creating backup:', error);
+    console.error('Erro ao criar backup:', error);
     await logBackupOperation('ERROR', error.message);
     throw error;
   }
 }
 
 /**
- * Log backup operations (com sanitização — item 3.1)
+ * Registra operações de backup no log (com sanitização — item 3.1)
  */
 async function logBackupOperation(status, message) {
   try {
@@ -267,18 +267,18 @@ async function logBackupOperation(status, message) {
       logBuffer.shift();
     }
   } catch (error) {
-    console.error('Error logging backup operation:', error);
+    console.error('Erro ao registrar operação de backup:', error);
   }
 }
 
 /**
- * Clean up old backups (item 2.7, item 4.3)
+ * Limpa backups antigos (item 2.7, item 4.3)
  */
 async function cleanupOldBackups() {
   try {
     const files = await getBackupFiles(BACKUP_CONFIG.maxBackups + 1);
 
-    // Remove backups exceeding the maximum count
+    // Remove backups que excedem o limite máximo configurado
     if (files.length > BACKUP_CONFIG.maxBackups) {
       const filesToRemove = files.slice(BACKUP_CONFIG.maxBackups);
 
@@ -303,18 +303,18 @@ async function cleanupOldBackups() {
           await fs.promises.unlink(hashPath);
         } catch { /* arquivo não existe */ }
 
-        console.log(`Removed old backup: ${file}`);
+        console.log(`Backup antigo removido: ${file}`);
         await logBackupOperation('INFO', `Removed old backup: ${file}`);
       }
     }
   } catch (error) {
-    console.error('Error cleaning up old backups:', error);
+    console.error('Erro ao limpar backups antigos:', error);
     await logBackupOperation('ERROR', `Cleanup failed: ${error.message}`);
   }
 }
 
 /**
- * Restore database from backup
+ * Restaura o banco de dados a partir de um arquivo de backup
  */
 async function restoreBackup(backupFilename) {
   try {
@@ -334,11 +334,11 @@ async function restoreBackup(backupFilename) {
       try {
         await fs.promises.access(`${backupPath}.enc`);
       } catch {
-        throw new Error(`Backup file not found: ${backupFilename}`);
+        throw new Error(`Arquivo de backup não encontrado: ${backupFilename}`);
       }
     }
 
-    // 1. Create a safety backup before overwriting
+    // 1. Cria um backup de segurança antes de sobrescrever
     console.log('🔄 Criando um backup de segurança do banco de dados atual...');
     const safetyBackupFilename = `pre-restore-backup_${format(new Date(), "yyyy-MM-dd'T'HH-mm-ss'Z'")}.sql.gz`;
     const safetyBackupPath = path.join(BACKUP_DIR, safetyBackupFilename);
@@ -401,7 +401,7 @@ async function restoreBackup(backupFilename) {
       console.warn('⚠️ Arquivo de hash não encontrado. Continuando sem verificação de integridade.');
     }
 
-    // 2. Proceed with the restore
+    // 2. Prossegue com a restauração
     console.log(`🔄 Restaurando banco de dados a partir de ${backupFilename}...`);
     console.warn('⚠️ ATENÇÃO: Esta operação irá sobrescrever o banco de dados atual.');
 
@@ -420,7 +420,7 @@ async function restoreBackup(backupFilename) {
 }
 
 /**
- * Get list of available backups (item 2.7, item 3.4)
+ * Retorna lista de backups disponíveis (item 2.7, item 3.4)
  */
 async function getAvailableBackups(maxFiles = DEFAULT_LIST_LIMIT) {
   try {
@@ -451,13 +451,13 @@ async function getAvailableBackups(maxFiles = DEFAULT_LIST_LIMIT) {
 
     return backupList;
   } catch (error) {
-    console.error('Error getting available backups:', error);
+    console.error('Erro ao obter lista de backups disponíveis:', error);
     throw error;
   }
 }
 
 /**
- * Get backup logs (agora lê do buffer em memória + arquivo)
+ * Retorna logs de backup (lê do buffer em memória + arquivo)
  */
 async function getBackupLogs() {
   try {
@@ -482,77 +482,77 @@ async function getBackupLogs() {
       return [];
     }
   } catch (error) {
-    console.error('Error reading backup logs:', error);
+    console.error('Erro ao ler logs de backup:', error);
     throw error;
   }
 }
 
 /**
- * Initialize backup system
+ * Inicializa o sistema de backup
  */
 async function initializeBackupSystem() {
   try {
-    console.log('Initializing backup system...');
+    console.log('Inicializando sistema de backup...');
 
-    // Ensure backup directory exists
+    // Garante que o diretório de backups existe
     await ensureBackupDirectory();
 
-    // Create initial backup
+    // Cria backup inicial
     await createBackup();
 
-    console.log('Backup system initialized');
+    console.log('Sistema de backup inicializado');
   } catch (error) {
-    console.error('Error initializing backup system:', error);
+    console.error('Erro ao inicializar sistema de backup:', error);
     throw error;
   }
 }
 
 /**
- * Start automated backup scheduler
+ * Inicia o agendador automático de backups
  */
 function startBackupScheduler() {
   try {
-    console.log(`Starting backup scheduler with cron pattern: ${BACKUP_CONFIG.backupInterval}`);
+    console.log(`Iniciando agendador de backup com padrão cron: ${BACKUP_CONFIG.backupInterval}`);
 
-    // Parse cron pattern and set up interval
+    // Interpreta o padrão cron e configura o intervalo
     const cronParts = BACKUP_CONFIG.backupInterval.split(' ');
     if (cronParts.length === 5) {
-      // Simple daily backup at specified hour
+      // Backup diário simples no horário especificado
       const [minute, hour] = cronParts.slice(0, 2).map(Number);
 
-      // Calculate milliseconds until next scheduled backup
+      // Calcula milissegundos até o próximo backup agendado
       const now = new Date();
       const nextBackup = new Date(now);
 
-      // Set to next occurrence of the scheduled time
+      // Define para a próxima ocorrência do horário agendado
       nextBackup.setHours(hour, minute, 0, 0);
 
       if (nextBackup <= now) {
-        nextBackup.setDate(nextBackup.getDate() + 1); // Tomorrow
+        nextBackup.setDate(nextBackup.getDate() + 1); // Amanhã
       }
 
       const initialDelay = nextBackup - now;
 
-      // Set up the scheduler
+      // Configura o agendador
       setTimeout(() => {
         createBackup().then(() => {
-          // Set up daily interval (24 hours)
+          // Configura intervalo diário (24 horas)
           setInterval(() => {
             createBackup().catch(console.error);
           }, BACKUP_INTERVAL_MS);
         }).catch(console.error);
       }, initialDelay);
 
-      console.log(`Next backup scheduled for: ${nextBackup}`);
-      console.log(`Backup scheduler started successfully`);
+      console.log(`Próximo backup agendado para: ${nextBackup}`);
+      console.log(`Agendador de backup iniciado com sucesso`);
     }
   } catch (error) {
-    console.error('Error starting backup scheduler:', error);
+    console.error('Erro ao iniciar agendador de backup:', error);
     throw error;
   }
 }
 
-// Export functions for use in other modules
+// Exporta funções para uso em outros módulos
 export {
   createBackup,
   restoreBackup,

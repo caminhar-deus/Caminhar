@@ -12,37 +12,37 @@ dotenv.config();
 let isInitialized = false;
 
 /**
- * Initialize server - set up database and authentication
+ * Inicializa o servidor - configura banco de dados e autenticação
  */
 export async function initializeServer() {
-  if (isInitialized) return; // Prevent double-initialization
+  if (isInitialized) return; // Evita dupla inicialização
 
   try {
-    console.log('Initializing server...');
+    console.log('Inicializando servidor...');
 
-    // Initialize authentication system (which also initializes database)
+    // Inicializa o sistema de autenticação (que também inicializa o banco de dados)
     const { initializeAuth } = await import('../lib/auth.js');
     await initializeAuth();
 
     isInitialized = true;
-    console.log('Server initialization completed successfully');
+    console.log('Inicialização do servidor concluída com sucesso');
   } catch (error) {
-    console.error('Failed to initialize server:', error);
+    console.error('Falha ao inicializar servidor:', error);
     throw error;
   }
 }
 
 /**
- * Cleanup server resources
+ * Libera recursos do servidor
  */
 export async function cleanupServer() {
   try {
-    console.log('Cleaning up server resources...');
+    console.log('Limpando recursos do servidor...');
     const { closeDatabase } = await import('../lib/db.js');
     await closeDatabase();
-    console.log('Server cleanup completed');
+    console.log('Limpeza do servidor concluída');
   } catch (error) {
-    console.error('Error during server cleanup:', error);
+    console.error('Erro durante limpeza do servidor:', error);
   }
 }
 

@@ -16,7 +16,7 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined
 });
 
-async function checkSchema() {
+async function checkMusicSchema() {
   console.log('🔍 Verificando schema da tabela musicas...');
   
   try {
@@ -48,4 +48,4 @@ async function checkSchema() {
   }
 }
 
-checkSchema();
+checkMusicSchema();

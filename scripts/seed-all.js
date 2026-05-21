@@ -33,8 +33,8 @@ async function runSeed(scriptName) {
   try {
     const scriptPath = path.join(__dirname, scriptName);
     
-    // ALTERAÇÃO: Importa dinamicamente e executa, em vez de criar sub-processo shell
-    // Nota: Isso requer que seus arquivos de seed exportem uma função default ou 'run'
+    // Importa dinamicamente e executa, em vez de criar sub-processo shell
+    // Nota: Requer que os arquivos de seed exportem uma função default ou 'run'
     const module = await import(scriptPath);
     if (module.default) await module.default();
     else if (module.run) await module.run();
@@ -54,8 +54,6 @@ async function seedAll() {
     try {
       // Executa o comando de reset que já existe no package.json
       // O stdio: 'inherit' garante que os logs do processo filho sejam exibidos no terminal atual.
-      // AQUI: Mantemos execSync pois db:reset geralmente chama binários do Prisma/ORM
-      // Mas poderíamos importar a lib do banco diretamente se quiséssemos ser puristas.
       const { execSync } = await import('child_process');
       execSync('npm run db:reset', { stdio: 'inherit' });
       console.log('✅ Banco de dados resetado com sucesso.');

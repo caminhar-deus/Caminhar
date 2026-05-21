@@ -8,7 +8,7 @@ if (fs.existsSync('.env.local')) {
 }
 dotenv.config();
 
-async function seedPosts() {
+async function seedPostRecords() {
   const { query, closeDatabase } = await import('../lib/db.js');
 
   try {
@@ -52,4 +52,4 @@ async function seedPosts() {
   }
 }
 
-seedPosts();
+seedPostRecords();

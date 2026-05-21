@@ -20,7 +20,7 @@ function askConfirmation() {
   });
 }
 
-async function clearMusicas() {
+async function clearMusicRecords() {
   try {
     console.log('🗑️  Limpando todas as músicas do banco de dados...');
     const result = await query('DELETE FROM musicas');
@@ -40,4 +40,4 @@ if (!confirmed) {
   process.exit(0);
 }
 
-await clearMusicas();
+await clearMusicRecords();
