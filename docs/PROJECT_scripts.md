@@ -432,8 +432,10 @@ scripts/
 
 ### `scripts/utils/update-setting.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/utils/update-setting.js`
-- **Propósito:** Utilitário de administração. Atualiza ou insere uma configuração na tabela `settings`. Aceita chave e valor como argumentos de linha de comando.
-- **Dependências:** Provável dependência de `lib/db.js`
+- **Propósito:** Utilitário de administração. Atualiza ou insere uma configuração na tabela `settings`. Aceita chave, valor, tipo e descrição como argumentos de linha de comando.
+- **Segurança:** Validação completa de entrada implementada: chave validada com regex `^[a-z][a-z0-9_]*$`, tipo restrito a conjunto fixo (`string`, `number`, `boolean`, `json`), valor convertido e sanitizado conforme o tipo via função `validateAndConvertValue()`. Erros de validação exibem mensagem clara e abortam com `process.exit(1)`. Erros de banco são tratados separadamente no `catch`.
+- **Uso:** `node scripts/utils/update-setting.js <chave> <valor> [tipo] [descricao]`
+- **Dependências:** `pg`, `dotenv`
 
 ---
 

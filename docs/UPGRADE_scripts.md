@@ -42,10 +42,16 @@
   - Criada função `runPsqlFromFile()` que usa `spawn('psql', ['-d', dbUrl])` com pipe do `zlib.createGunzip()` stream.
   - A compressão/descompressão gzip agora é feita via streams nativas (`zlib.createGzip`/`zlib.createGunzip`) em vez de pipes shell.
 
-### 1.3. Ausência de validação de entrada em `scripts/utils/update-setting.js`
+### 1.3. Ausência de validação de entrada em `scripts/utils/update-setting.js` ✅ Corrigido
 - **Arquivo:** `scripts/utils/update-setting.js`
-- **Problema:** Provavelmente aceita chave/valor como argumento de linha de comando sem validação de tipos ou sanitização. Pode corromper a tabela `settings`.
-- **Sugestão:** Validar entrada com schema definido (tipos permitidos, chaves conhecidas).
+- **Problema:** Aceitava chave/valor como argumento de linha de comando sem validação de tipos ou sanitização. Poderia corromper a tabela `settings`.
+- **Correção aplicada (20/05/2026):**
+  - Adicionada validação de chave (`key`) com regex `^[a-z][a-z0-9_]*$` — rejeita chaves vazias, com espaços ou caracteres especiais.
+  - Adicionada função `validateAndConvertValue()` que converte e valida o valor conforme o tipo: `string` (não vazia), `number` (isNaN check), `boolean` (true/false/1/0), `json` (JSON.parse).
+  - Adicionada constante `ALLOWED_TYPES` com conjunto fixo de tipos permitidos (`string`, `number`, `boolean`, `json`), rejeitando tipos desconhecidos.
+  - Corrigido path na mensagem de ajuda: de `lib/update-setting.js` para `scripts/utils/update-setting.js`.
+  - Melhorado tratamento de erro: erros de validação exibem mensagem clara e saem com `process.exit(1)`; erros de sistema (banco) são tratados separadamente no `catch`.
+  - Valor convertido é serializado adequadamente (JSON.stringify para objetos, String para primitivos) antes de ser armazenado no banco.
 
 ---
 
@@ -287,6 +293,7 @@ Definir e documentar um padrão:
 |---|----------|:---------:|:------------:|:----------:|:------:|
 | 1.1 | Senha hardcoded | 🔴 Alta | Baixo | **Crítico** | ✅ Corrigido |
 | 1.2 | Command injection potencial | 🔴 Alta | Médio | **Crítico** | ✅ Corrigido |
+| 1.3 | Ausência de validação de entrada em update-setting.js | 🔴 Alta | Médio | **Crítico** | ✅ Corrigido |
 | 3.1 | Log sobrescreve arquivo | 🟡 Média | Baixo | Alta | ✅ Corrigido |
 | 3.3 | Hash carrega arquivo inteiro na RAM | 🟡 Média | Baixo | Alta | ✅ Corrigido |
 | 5.6 | Import dinâmico crypto | 🟢 Baixa | Muito Baixo | Alta | ✅ Corrigido |
