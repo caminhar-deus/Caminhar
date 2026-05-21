@@ -83,6 +83,7 @@ scripts/
 └── utils/
     ├── cleanup.js
     ├── cleanup-test-data.js
+    ├── constants.js *
     ├── list-settings.js
     ├── list-table-columns.js
     ├── load-env.js *
@@ -550,6 +551,24 @@ scripts/
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/utils/cleanup-test-data.js`
 - **Propósito:** Utilitário de limpeza de dados de teste. Remove registros da tabela `posts` cujo `slug` corresponde ao padrão `post-carga-%`. Delega a execução para o módulo compartilhado `scripts/utils/cleanup.js`. Duplicata funcional do `scripts/clean-load-test-posts.js` — ambos executam a mesma operação com o mesmo filtro.
 - **Dependências:** `scripts/utils/cleanup.js` (local)
+
+### `scripts/utils/constants.js`
+- **Localização:** `/home/qa/Projeto/Caminhar/scripts/utils/constants.js`
+- **Propósito:** Módulo compartilhado que centraliza todas as constantes de configuração do projeto, eliminando números mágicos espalhados pelos scripts (correção 5.2). Constantes definidas:
+  - `MAX_BACKUPS = 10` — limite máximo de backups a manter
+  - `DEFAULT_LIST_LIMIT = 50` — limite padrão de arquivos listados
+  - `BACKUP_INTERVAL_MS = 86400000` — intervalo entre backups (24h)
+  - `ENCRYPTION_KEY_LENGTH = 32` — tamanho da chave AES-256 em bytes
+  - `MAX_LOG_LINES = 100` — tamanho do buffer de log em memória
+  - `DEFAULT_PORT = 3000` — porta padrão do servidor
+  - `SERVER_CHECK_TIMEOUT = 2000` — timeout de verificação do servidor (ms)
+  - `POST_ALERT_THRESHOLD = 10` — limite de posts para alerta de paginação
+  - `DEFAULT_BATCH_SIZE = 50` — tamanho padrão de lote para operações
+  - `MIGRATIONS_TABLE = '_migrations'` — nome da tabela de controle de migrações
+  - `K6_RETENTION_DAYS = 7` — dias de retenção de relatórios k6
+- **Uso:** `import { MAX_BACKUPS, DEFAULT_PORT } from '../utils/constants.js';`
+- **Criado em:** 21/05/2026 — refatoração (correção 5.2, eliminação de constantes mágicas).
+- **Dependências:** Nenhuma (apenas valores primitivos exportados)
 
 ### `scripts/utils/load-env.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/utils/load-env.js`

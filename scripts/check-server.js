@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 import http from 'http';
 import https from 'https';
+import { DEFAULT_PORT, SERVER_CHECK_TIMEOUT } from './utils/constants.js';
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || DEFAULT_PORT;
 const URL = `http://localhost:${PORT}`;
 
 const checkServer = () => {
@@ -16,7 +17,7 @@ const checkServer = () => {
       reject(err);
     });
 
-    req.setTimeout(2000, () => {
+    req.setTimeout(SERVER_CHECK_TIMEOUT, () => {
       req.abort();
       reject(new Error('Timeout'));
     });

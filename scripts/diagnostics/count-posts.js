@@ -2,6 +2,7 @@
 import fs from 'fs';
 import dotenv from 'dotenv';
 import pg from 'pg';
+import { POST_ALERT_THRESHOLD } from '../utils/constants.js';
 
 const { Pool } = pg;
 
@@ -24,8 +25,8 @@ async function countPosts() {
     const count = res.rows[0].count;
     console.log(`✅ Total de posts encontrados: ${count}`);
     
-    if (parseInt(count, 10) > 10) { // Assumindo um tamanho de página padrão de 10
-        console.log('ℹ️  O número de posts é maior que 10. É muito provável que o post que você procura esteja em outra página na área administrativa.');
+    if (parseInt(count, 10) > POST_ALERT_THRESHOLD) {
+        console.log(`ℹ️  O número de posts é maior que ${POST_ALERT_THRESHOLD}. É muito provável que o post que você procure esteja em outra página na área administrativa.`);
     }
 
   } catch (error) {

@@ -5,6 +5,13 @@ import { format } from 'date-fns';
 import zlib from 'zlib';
 import { spawn } from 'child_process';
 import crypto from 'crypto';
+import {
+  MAX_BACKUPS,
+  DEFAULT_LIST_LIMIT,
+  BACKUP_INTERVAL_MS,
+  ENCRYPTION_KEY_LENGTH,
+  MAX_LOG_LINES
+} from './utils/constants.js';
 
 // Database and backup paths
 const BACKUP_DIR = path.join(process.cwd(), 'data', 'backups');
@@ -12,14 +19,13 @@ const LOG_FILE = path.join(process.cwd(), 'data', 'backups', 'backup.log');
 
 // Backup configuration
 const BACKUP_CONFIG = {
-  maxBackups: 10, // Maximum number of backups to keep
+  maxBackups: MAX_BACKUPS, // Maximum number of backups to keep
   backupInterval: '0 2 * * *', // Daily at 2 AM (cron format)
   backupPrefix: 'caminhar-pg-backup'
 };
 
 // In-memory log buffer: evita leitura+reescrita do arquivo a cada operação
 const logBuffer = [];
-const MAX_LOG_LINES = 100;
 
 // ──────────────────────────────────────────────
 //  Funções utilitárias compartilhadas
@@ -198,7 +204,7 @@ async function createBackup() {
         const keyBuffer = Buffer.from(keyHex, 'hex');
 
         // AES-256-GCM requer chave de exatamente 32 bytes (64 caracteres hex)
-        if (keyBuffer.length !== 32) {
+        if (keyBuffer.length !== ENCRYPTION_KEY_LENGTH) {
           console.warn(`⚠️ BACKUP_ENCRYPTION_KEY com comprimento inválido (${keyHex.length} chars hex, esperado 64). Backup NÃO criptografado.`);
         } else {
           const iv = crypto.randomBytes(12);
@@ -416,7 +422,7 @@ async function restoreBackup(backupFilename) {
 /**
  * Get list of available backups (item 2.7, item 3.4)
  */
-async function getAvailableBackups(maxFiles = 50) {
+async function getAvailableBackups(maxFiles = DEFAULT_LIST_LIMIT) {
   try {
     await ensureBackupDirectory();
 
@@ -533,7 +539,7 @@ function startBackupScheduler() {
           // Set up daily interval (24 hours)
           setInterval(() => {
             createBackup().catch(console.error);
-          }, 24 * 60 * 60 * 1000);
+          }, BACKUP_INTERVAL_MS);
         }).catch(console.error);
       }, initialDelay);
 

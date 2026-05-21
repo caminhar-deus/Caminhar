@@ -297,9 +297,26 @@
   - Scripts em subdiretórios (28): `utils/cleanup-test-data.js`, `utils/list-settings.js`, `utils/list-table-columns.js`, `utils/update-setting.js`, `db/verify-db-functions.js`, `db/verify-migration.js`, `diagnostics/check-musicas-schema.js`, `diagnostics/check-videos-schema.js`, `diagnostics/count-posts.js`, `diagnostics/diagnose-hero.js`, `diagnostics/list-last-posts.js`, `maintenance/backup-posts.js`, `maintenance/clean-k6-videos.js`, `maintenance/fix-hero-key.js`, `maintenance/restore-posts.js`, `maintenance/video-thumbnails.js`, `tests/manual-api-test.js`, `tests/manual-rate-limit.js`, `migrations/001-add-views-to-posts.js`, `migrations/002-create-products-table.js`, `migrations/003-add-position-to-products.js`, `migrations/004-add-published-to-products.js`, `migrations/005-add-last-login-to-users.js`, `migrations/006-create-activity-logs.js`, `migrations/007-add-position-to-musicas.js`, `migrations/008-add-position-to-videos.js`, `migrations/009-add-position-to-posts.js`, `migrations/011-fix-entity-id-type.js`.
 - **Uso correto agora:** `./scripts/backup.js` ou `node scripts/backup.js` (ambos funcionam).
 
-### 5.2. Constantes mágicas espalhadas
-- **Problema:** Valores como `10` (limite de backups), `3000` (porta), `100` (limite de linhas do log) aparecem como números literais sem nome explicativo.
-- **Sugestão:** Extrair para constantes nomeadas no topo dos arquivos ou em um arquivo de configuração compartilhado.
+### 5.2. Constantes mágicas espalhadas ✅ Corrigido
+- **Problema:** Valores como `10` (limite de backups), `3000` (porta), `100` (limite de linhas do log) apareciam como números literais sem nome explicativo.
+- **Correção aplicada (21/05/2026):**
+  - Criado módulo compartilhado `scripts/utils/constants.js` que centraliza as constantes do projeto:
+    - `MAX_BACKUPS = 10` — limite máximo de backups a manter
+    - `DEFAULT_LIST_LIMIT = 50` — limite padrão de arquivos listados
+    - `BACKUP_INTERVAL_MS = 86400000` — intervalo entre backups (24h)
+    - `ENCRYPTION_KEY_LENGTH = 32` — tamanho da chave AES-256 em bytes
+    - `MAX_LOG_LINES = 100` — tamanho do buffer de log em memória
+    - `DEFAULT_PORT = 3000` — porta padrão do servidor
+    - `SERVER_CHECK_TIMEOUT = 2000` — timeout de verificação do servidor (ms)
+    - `POST_ALERT_THRESHOLD = 10` — limite de posts para alerta de paginação
+    - `DEFAULT_BATCH_SIZE = 50` — tamanho padrão de lote para operações
+    - `MIGRATIONS_TABLE = '_migrations'` — nome da tabela de controle de migrações
+    - `K6_RETENTION_DAYS = 7` — dias de retenção de relatórios k6
+  - `scripts/backup.js` refatorado para importar `MAX_BACKUPS`, `DEFAULT_LIST_LIMIT`, `BACKUP_INTERVAL_MS`, `ENCRYPTION_KEY_LENGTH` e `MAX_LOG_LINES` do módulo compartilhado, eliminando 4 números mágicos literais.
+  - `scripts/check-server.js` refatorado para importar `DEFAULT_PORT` e `SERVER_CHECK_TIMEOUT`, eliminando 2 números mágicos literais.
+  - `scripts/diagnostics/count-posts.js` refatorado para importar `POST_ALERT_THRESHOLD`, eliminando 1 número mágico literal.
+  - `scripts/clean-k6-reports.js` refatorado para importar `K6_RETENTION_DAYS`, eliminando 1 número mágico literal.
+  - Total: **8 números mágicos substituídos** em **4 arquivos**.
 
 ### 5.3. Nomenclatura inconsistente de funções
 - **Problema:** Mistura de português e inglês nos nomes:
@@ -449,6 +466,7 @@ Definir e documentar um padrão:
 | 4.2 | clear-musicas e clear-db sem confirmação | 🟡 Média | Baixo | Média | ✅ Corrigido |
 | 7.1 | Scheduler caseiro | 🟢 Baixa | Médio | Baixa | Pendente |
 | 5.1 | Shebang ausente | 🟢 Baixa | Muito Baixo | Baixa | ✅ Corrigido |
+| 5.2 | Constantes mágicas espalhadas | 🟢 Baixa | Baixo | Média | ✅ Corrigido |
 
 ---
 

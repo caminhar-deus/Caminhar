@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 import fs from 'fs';
 import path from 'path';
+import { K6_RETENTION_DAYS } from './utils/constants.js';
 
 // Configuração
 const REPORTS_DIR = path.join(process.cwd(), 'reports', 'k6-summaries');
-const RETENTION_DAYS = 7; // Mantém relatórios dos últimos 7 dias
+const RETENTION_DAYS = K6_RETENTION_DAYS; // Mantém relatórios dos últimos 7 dias
 
 async function cleanOldReports() {
   console.log(`🧹 Iniciando limpeza de relatórios k6 antigos (mais de ${RETENTION_DAYS} dias)...`);
