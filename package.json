@@ -30,7 +30,7 @@
     "db:init": "node scripts/init-server.js",
     "db:status": "node scripts/check-db-status.js",
     "db:shell": "node scripts/db-shell.js",
-    "db:reset": "node scripts/init-posts.js && node scripts/init-videos.js && node scripts/init-musicas.js && node scripts/init-dicas.js && npm run db:init",
+    "db:reset": "node scripts/init-table.js posts && node scripts/init-table.js videos && node scripts/init-table.js musicas && node scripts/init-table.js dicas && npm run db:init",
     "db:reset:password": "node scripts/reset-password.js",
     "db:reset:safe": "npm run backup:create && npm run db:reset",
     "db:clean:test": "node scripts/clean-test-db.js",

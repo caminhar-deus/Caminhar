@@ -28,11 +28,8 @@ scripts/
 ├── db-shell.js
 ├── generate-load-report.js
 ├── init-backup.js
-├── init-dicas.js
-├── init-musicas.js
-├── init-posts.js
 ├── init-server.js
-├── init-videos.js
+├── init-table.js *
 ├── monitor-disk-space.js
 ├── reset-password.js
 ├── restore-backup.js
@@ -55,12 +52,11 @@ scripts/
 │   ├── diagnose-hero.js
 │   └── list-last-posts.js
 ├── maintenance/
-│   ├── add-thumbnail-to-videos.js
 │   ├── backup-posts.js
 │   ├── clean-k6-videos.js
 │   ├── fix-hero-key.js
-│   ├── populate-video-thumbnails.js
-│   └── restore-posts.js
+│   ├── restore-posts.js
+│   └── video-thumbnails.js
 ├── migrations/
 │   ├── 001-add-views-to-posts.js
 │   ├── 002-create-products-table.js
@@ -71,6 +67,11 @@ scripts/
 │   ├── 007-add-position-to-musicas.js
 │   ├── 008-add-position-to-videos.js
 │   └── 009-add-position-to-posts.js
+├── schemas/ *
+│   ├── dicas.json
+│   ├── musicas.json
+│   ├── posts.json
+│   └── videos.json
 ├── tests/
 │   ├── manual-api-test.js
 │   └── manual-rate-limit.js
@@ -79,7 +80,10 @@ scripts/
     ├── cleanup-test-data.js
     ├── list-settings.js
     ├── list-table-columns.js
+    ├── load-env.js *
     └── update-setting.js
+
+> **Legenda:** * = Novo
 ```
 
 ---
@@ -189,30 +193,32 @@ scripts/
 - **Uso via npm:** `ADMIN_USERNAME=admin ADMIN_PASSWORD=sua_senha npm run report:load`
 - **Alias npm:** `report:load` (em `package.json`) — já encapsula o prefixo das env vars com fallback para `admin` no username.
 
-### `scripts/init-dicas.js`
-- **Localização:** `/home/qa/Projeto/Caminhar/scripts/init-dicas.js`
-- **Propósito:** Script de inicialização da tabela de dicas. Provavelmente cria a tabela `dicas` no banco de dados com sua estrutura inicial.
-- **Dependências:** Provável dependência de `lib/db.js`
-
-### `scripts/init-musicas.js`
-- **Localização:** `/home/qa/Projeto/Caminhar/scripts/init-musicas.js`
-- **Propósito:** Cria a tabela de músicas com schema completo: `id`, `titulo`, `artista`, `url_spotify`, `descricao`, `publicado`, `created_at`, `updated_at`. Faz `DROP TABLE IF EXISTS CASCADE` antes de criar (schema limpo).
-- **Dependências:** `fs`, `dotenv`, `../lib/db.js` (local)
-
-### `scripts/init-posts.js`
-- **Localização:** `/home/qa/Projeto/Caminhar/scripts/init-posts.js`
-- **Propósito:** Cria a tabela de posts com colunas como `id`, `title`, `slug`, `excerpt`, `content`, `image_url`, `published`, `author`, etc. Também faz `DROP TABLE IF EXISTS CASCADE` antes.
-- **Dependências:** `fs`, `dotenv`, `../lib/db.js` (local)
-
 ### `scripts/init-server.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/init-server.js`
 - **Propósito:** Script abrangente de inicialização do servidor. Executa em sequência: validação de ambiente, verificação de conexão com banco, criação de tabelas, verificação de dados existentes, seed se necessário e inicia uma verificação periódica de saúde.
 - **Dependências:** `dotenv`, `../lib/db.js` (local), `child_process`
 
-### `scripts/init-videos.js`
-- **Localização:** `/home/qa/Projeto/Caminhar/scripts/init-videos.js`
-- **Propósito:** Cria a tabela de vídeos com schema: `id`, `titulo`, `url_youtube`, `descricao`, `publicado`, `created_at`, `updated_at`. Também faz `DROP TABLE IF EXISTS CASCADE` antes.
-- **Dependências:** `fs`, `dotenv`, `../lib/db.js` (local)
+### `scripts/init-table.js`
+- **Localização:** `/home/qa/Projeto/Caminhar/scripts/init-table.js`
+- **Propósito:** Script unificado de criação de tabelas. Substitui os 4 scripts antigos (`init-musicas.js`, `init-posts.js`, `init-videos.js`, `init-dicas.js`). Aceita o nome da tabela como argumento e carrega a definição do schema de um arquivo JSON em `scripts/schemas/`.
+- **Funcionamento:**
+  - Carrega variáveis de ambiente via `scripts/utils/load-env.js`.
+  - Valida presença de `DATABASE_URL` via `requireDatabaseUrl()`.
+  - Carrega schema do arquivo `scripts/schemas/<tabela>.json` (contém nome da tabela, colunas, flag `dropBeforeCreate` e `seedData` opcional).
+  - Se `dropBeforeCreate: true`, executa `DROP TABLE IF EXISTS CASCADE` (como em musicas, posts, videos).
+  - Se `dropBeforeCreate: false`, usa `ALTER TABLE ADD COLUMN IF NOT EXISTS` para colunas que possam faltar de versões anteriores (como em dicas).
+  - Insere `seedData` apenas se a tabela estiver vazia (verificação com `SELECT count(*)`).
+  - `process.exit(1)` padronizado em caso de erro.
+- **Uso:**
+  ```bash
+  node scripts/init-table.js musicas   # Cria tabela musicas com DROP
+  node scripts/init-table.js posts     # Cria tabela posts com DROP
+  node scripts/init-table.js videos    # Cria tabela videos com DROP
+  node scripts/init-table.js dicas     # Cria tabela dicas sem DROP + seedData
+  node scripts/init-table.js --table=<nome>  # Formato alternativo
+  ```
+- **Criado em:** 21/05/2026 — refatoração (unificação dos 4 scripts de init).
+- **Dependências:** `fs`, `url`, `scripts/utils/load-env.js` (local), `../lib/db.js` (local)
 
 ### `scripts/monitor-disk-space.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/monitor-disk-space.js`
@@ -319,11 +325,6 @@ scripts/
 
 ## 🛠️ Subdiretório `scripts/maintenance/`
 
-### `scripts/maintenance/add-thumbnail-to-videos.js`
-- **Localização:** `/home/qa/Projeto/Caminhar/scripts/maintenance/add-thumbnail-to-videos.js`
-- **Propósito:** Adiciona thumbnails aos registros de vídeos que não possuem. Provavelmente extrai thumbnails da URL do YouTube ou gera imagens placeholder.
-- **Dependências:** Provável dependência de `lib/db.js`
-
 ### `scripts/maintenance/backup-posts.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/maintenance/backup-posts.js`
 - **Propósito:** Cria um backup específico dos posts (apenas a tabela de posts) em formato JSON ou SQL. Diferente do backup geral do banco, este é focado em conteúdo editável.
@@ -339,10 +340,18 @@ scripts/
 - **Propósito:** Corrige problemas de chave/identificador na seção Hero. Provavelmente ajusta registros na tabela `settings` ou similar para garantir que o hero funcione corretamente.
 - **Dependências:** Provável dependência de `lib/db.js`
 
-### `scripts/maintenance/populate-video-thumbnails.js`
-- **Localização:** `/home/qa/Projeto/Caminhar/scripts/maintenance/populate-video-thumbnails.js`
-- **Propósito:** Similar ao `add-thumbnail-to-videos.js`, mas em massa. Popula thumbnails para todos os vídeos que estão com esse campo vazio/nulo.
-- **Dependências:** Provável dependência de `lib/db.js`
+### `scripts/maintenance/video-thumbnails.js`
+- **Localização:** `/home/qa/Projeto/Caminhar/scripts/maintenance/video-thumbnails.js`
+- **Propósito:** Script unificado de gerenciamento de thumbnails de vídeos. Combina as funcionalidades dos antigos `add-thumbnail-to-videos.js` e `populate-video-thumbnails.js`. Adiciona/verifica a coluna `thumbnail` na tabela `videos` e popula registros com URLs de thumbnails do YouTube. Suporta as flags:
+  - `--schema-only` — apenas adiciona/verifica a coluna, sem popular dados.
+  - `--force` — sobrescreve thumbnails existentes.
+  - `--batch-size=N` — controla o tamanho do lote (default: 50).
+  - `--dry-run` — simula a execução sem alterar o banco.
+  - `--help` — exibe mensagem de ajuda.
+- **Segurança:** `process.exit(1)` em caso de erro. Path do `.env` corrigido para raiz do projeto com prioridade para `.env.local`. Carregamento de ambiente centralizado com fallback.
+- **Uso:** `node scripts/maintenance/video-thumbnails.js` ou com flags acima.
+- **Criado em:** 20/05/2026 — refatoração (unificação dos scripts duplicados de thumbnail).
+- **Dependências:** `pg`, `dotenv`, `path`, `fs`
 
 ### `scripts/maintenance/restore-posts.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/maintenance/restore-posts.js`
@@ -414,6 +423,30 @@ scripts/
 
 ---
 
+## 📐 Subdiretório `scripts/schemas/`
+
+### `scripts/schemas/musicas.json`
+- **Localização:** `/home/qa/Projeto/Caminhar/scripts/schemas/musicas.json`
+- **Propósito:** Schema da tabela `musicas` para o script `init-table.js`. Contém definição de colunas (`id`, `titulo`, `artista`, `url_spotify`, `descricao`, `publicado`, `created_at`, `updated_at`), flag `dropBeforeCreate: true` e `seedData` vazio.
+- **Criado em:** 21/05/2026 — refatoração (unificação dos 4 scripts de init).
+
+### `scripts/schemas/posts.json`
+- **Localização:** `/home/qa/Projeto/Caminhar/scripts/schemas/posts.json`
+- **Propósito:** Schema da tabela `posts` para o script `init-table.js`. Contém definição de colunas (`id`, `title`, `slug`, `excerpt`, `content`, `image_url`, `published`, `views`, `created_at`, `updated_at`), flag `dropBeforeCreate: true` e `seedData` vazio.
+- **Criado em:** 21/05/2026 — refatoração (unificação dos 4 scripts de init).
+
+### `scripts/schemas/videos.json`
+- **Localização:** `/home/qa/Projeto/Caminhar/scripts/schemas/videos.json`
+- **Propósito:** Schema da tabela `videos` para o script `init-table.js`. Contém definição de colunas (`id`, `titulo`, `url_youtube`, `descricao`, `publicado`, `created_at`, `updated_at`), flag `dropBeforeCreate: true` e `seedData` vazio.
+- **Criado em:** 21/05/2026 — refatoração (unificação dos 4 scripts de init).
+
+### `scripts/schemas/dicas.json`
+- **Localização:** `/home/qa/Projeto/Caminhar/scripts/schemas/dicas.json`
+- **Propósito:** Schema da tabela `dicas` para o script `init-table.js`. Contém definição de colunas (`id`, `name`, `content`, `published`, `created_at`, `updated_at`), flag `dropBeforeCreate: false` (sem DROP pois preserva dados existentes) e `seedData` com 3 registros iniciais (Palavra do dia, Oração do Dia, Anjos do Dia).
+- **Criado em:** 21/05/2026 — refatoração (unificação dos 4 scripts de init).
+
+---
+
 ## 🧰 Subdiretório `scripts/utils/`
 
 ### `scripts/utils/cleanup.js`
@@ -429,6 +462,15 @@ scripts/
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/utils/cleanup-test-data.js`
 - **Propósito:** Utilitário de limpeza de dados de teste. Remove registros da tabela `posts` cujo `slug` corresponde ao padrão `post-carga-%`. Delega a execução para o módulo compartilhado `scripts/utils/cleanup.js`. Duplicata funcional do `scripts/clean-load-test-posts.js` — ambos executam a mesma operação com o mesmo filtro.
 - **Dependências:** `scripts/utils/cleanup.js` (local)
+
+### `scripts/utils/load-env.js`
+- **Localização:** `/home/qa/Projeto/Caminhar/scripts/utils/load-env.js`
+- **Propósito:** Módulo compartilhado de carregamento de variáveis de ambiente. Substitui os blocos repetitivos de `fs.existsSync` + `dotenv.config()` que estavam espalhados por ~20 scripts. Fornece duas funções exportadas:
+  - **`loadEnv()`** — carrega variáveis de ambiente priorizando `.env.local` se existir, com fallback para `.env`. Única fonte de verdade para carregamento de env.
+  - **`requireDatabaseUrl()`** — valida se `DATABASE_URL` está definida e dispara erro com mensagem clara caso não esteja.
+  - **Uso:** `import { loadEnv, requireDatabaseUrl } from './utils/load-env.js';`
+- **Criado em:** 21/05/2026 — refatoração dos scripts `init-musicas.js`, `init-posts.js`, `init-videos.js`, `init-dicas.js` e criação do `init-table.js`.
+- **Dependências:** `fs`, `dotenv`
 
 ### `scripts/utils/list-settings.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/utils/list-settings.js`
@@ -454,7 +496,8 @@ scripts/
 | Categoria | Quantidade | Descrição |
 |-----------|:----------:|-----------|
 | **Backup** | 5 | `backup.js`, `create-backup.js`, `restore-backup.js`, `init-backup.js`, `cron-backup.js` |
-| **Inicialização** | 5 | `init-dicas.js`, `init-musicas.js`, `init-posts.js`, `init-server.js`, `init-videos.js` |
+| **Inicialização** | 2 | `init-table.js` (unificado) + `init-server.js` |
+| **Schemas (JSON)** | 4 | `schemas/musicas.json`, `schemas/posts.json`, `schemas/videos.json`, `schemas/dicas.json` |
 | **Seed (Dados)** | 5 | `seed-all.js`, `seed-musicas.js`, `seed-posts.js`, `seed-products.js`, `seed-videos.js` |
 | **Limpeza (PostgreSQL)** | 3 | `clean-load-test-posts.js`, `clean-k6-videos.js`, `cleanup-test-data.js` + módulo compartilhado `cleanup.js` |
 | **Limpeza (Arquivos)** | 2 | `clean-k6-reports.js`, `clean-orphaned-images.js` |
@@ -464,11 +507,12 @@ scripts/
 | **Migrações** | 9 | `001` a `009` em `migrations/` |
 | **Testes de Carga** | 4 | `run-all-load-tests.js`, `generate-load-report.js`, `run-load-tests.sh`, `consolidate-k6-reports.js` |
 | **Monitoramento** | 1 | `monitor-disk-space.js` |
-| **Utilidades** | 4 | `db-shell.js`, `check-server.js`, `reset-password.js` + 5 em `utils/` |
-| **Manutenção** | 6 | `maintenance/` |
+| **Utilidades** | 6 | `db-shell.js`, `check-server.js`, `reset-password.js` + `load-env.js` + 4 em `utils/` |
+| **Manutenção** | 5 | `maintenance/` |
 | **Autenticação** | — | *(unificado em `scripts/reset-password.js`)* |
 | **Testes Manuais** | 2 | `tests/` |
 | **Banco de Dados** | 2 | `db/` |
+| **Total** | ~65 | Incluindo scripts, schemas e módulos utilitários |
 
 ---
 

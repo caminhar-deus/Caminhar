@@ -1,0 +1,17 @@
+{
+  "table": "posts",
+  "dropBeforeCreate": true,
+  "columns": [
+    { "name": "id", "type": "SERIAL", "constraints": "PRIMARY KEY" },
+    { "name": "title", "type": "VARCHAR(255)", "constraints": "NOT NULL" },
+    { "name": "slug", "type": "VARCHAR(255)", "constraints": "NOT NULL UNIQUE" },
+    { "name": "excerpt", "type": "TEXT" },
+    { "name": "content", "type": "TEXT" },
+    { "name": "image_url", "type": "VARCHAR(255)" },
+    { "name": "published", "type": "BOOLEAN", "constraints": "DEFAULT false" },
+    { "name": "views", "type": "INTEGER", "constraints": "DEFAULT 0 NOT NULL" },
+    { "name": "created_at", "type": "TIMESTAMP WITH TIME ZONE", "constraints": "DEFAULT CURRENT_TIMESTAMP" },
+    { "name": "updated_at", "type": "TIMESTAMP WITH TIME ZONE", "constraints": "DEFAULT CURRENT_TIMESTAMP" }
+  ],
+  "seedData": []
+}

@@ -1,0 +1,29 @@
+{
+  "table": "dicas",
+  "dropBeforeCreate": false,
+  "columns": [
+    { "name": "id", "type": "SERIAL", "constraints": "PRIMARY KEY" },
+    { "name": "name", "type": "VARCHAR(255)", "constraints": "NOT NULL" },
+    { "name": "content", "type": "TEXT", "constraints": "NOT NULL" },
+    { "name": "published", "type": "BOOLEAN", "constraints": "DEFAULT true" },
+    { "name": "created_at", "type": "TIMESTAMP WITHOUT TIME ZONE", "constraints": "DEFAULT CURRENT_TIMESTAMP" },
+    { "name": "updated_at", "type": "TIMESTAMP WITHOUT TIME ZONE", "constraints": "DEFAULT CURRENT_TIMESTAMP" }
+  ],
+  "seedData": [
+    {
+      "name": "Palavra do dia",
+      "content": "Os artigos e reflexões mudaram a minha forma de ver as dificuldades do dia a dia. Encontrei muita paz e direcionamento nas mensagens.",
+      "published": true
+    },
+    {
+      "name": "Oração do Dia",
+      "content": "A curadoria de músicas e os vídeos recomendados têm sido fundamentais nos meus momentos de devocional e oração. Trabalho incrível!",
+      "published": true
+    },
+    {
+      "name": "Anjos do Dia",
+      "content": "Uso frequentemente os materiais do projeto para embasar os estudos com os jovens. É um conteúdo profundo e muito acessível.",
+      "published": true
+    }
+  ]
+}

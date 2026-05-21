@@ -777,18 +777,14 @@
 │   │   └── list-last-posts.js
 │   ├── generate-load-report.js
 │   ├── init-backup.js
-│   ├── init-dicas.js
-│   ├── init-musicas.js
-│   ├── init-posts.js
 │   ├── init-server.js
-│   ├── init-videos.js
+│   ├── init-table.js
 │   ├── maintenance
-│   │   ├── add-thumbnail-to-videos.js
 │   │   ├── backup-posts.js
 │   │   ├── clean-k6-videos.js
 │   │   ├── fix-hero-key.js
-│   │   ├── populate-video-thumbnails.js
-│   │   └── restore-posts.js
+│   │   ├── restore-posts.js
+│   │   └── video-thumbnails.js
 │   ├── migrations
 │   │   ├── 001-add-views-to-posts.js
 │   │   ├── 002-create-products-table.js
@@ -807,6 +803,11 @@
 │   ├── restore-backup.js
 │   ├── run-all-load-tests.js
 │   ├── run-load-tests.sh
+│   ├── schemas
+│   │   ├── dicas.json
+│   │   ├── musicas.json
+│   │   ├── posts.json
+│   │   └── videos.json
 │   ├── seed-all.js
 │   ├── seed-musicas.js
 │   ├── seed-posts.js
@@ -820,6 +821,7 @@
 │   │   ├── cleanup-test-data.js
 │   │   ├── list-settings.js
 │   │   ├── list-table-columns.js
+│   │   ├── load-env.js
 │   │   └── update-setting.js
 │   └── validate-schema.js
 ├── security-tests.yml
@@ -1050,4 +1052,4 @@
 ├── tests-output.log
 └── tree.txt
 
-157 directories, 894 files
+158 directories, 895 files

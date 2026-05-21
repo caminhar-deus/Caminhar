@@ -88,21 +88,58 @@
   - `scripts/clean-test-db.js` permanece inalterado por operar em arquivos SQLite locais (escopo diferente)
   - A lógica de query dinâmica com `patterns.map()` foi reaproveitada do `cleanK6Videos` original
 
-### 2.3. Dois scripts para popular thumbnails de vídeos
-- **Arquivos:**
-  - `scripts/maintenance/add-thumbnail-to-videos.js`
-  - `scripts/maintenance/populate-video-thumbnails.js`
-- **Problema:** Mesmo propósito (adicionar thumbnails a vídeos que não possuem), provavelmente com implementações muito similares. Diferença de nomenclatura não deixa claro qual é a diferença real.
-- **Sugestão:** Unificar em um único script com flags (ex: `--force` para sobrescrever existentes, `--batch-size` para controle de lote).
+### 2.3. Dois scripts para popular thumbnails de vídeos ✅ Corrigido
+- **Arquivos antigos (removidos):**
+  - `scripts/maintenance/add-thumbnail-to-videos.js` — apenas adicionava a coluna `thumbnail` na tabela `videos`
+  - `scripts/maintenance/populate-video-thumbnails.js` — populava registros com thumbnails do YouTube
+- **Problema:** Funcionalidades complementares (estrutura vs dados), mas em scripts separados com setup inicial duplicado (imports, `dotenv.config()`, criação de Pool). Ambos com path do `.env` incorreto (`../.env` em vez de `../../.env`). Ausência de `process.exit(1)` em caso de erro, `--force` para sobrescrita, `--dry-run` para simulação e controle de batch.
+- **Correção aplicada (20/05/2026):**
+  - Unificados em um único script: `scripts/maintenance/video-thumbnails.js`.
+  - `--schema-only` — apenas adiciona/verifica a coluna `thumbnail`, sem popular dados.
+  - `--force` — sobrescreve thumbnails existentes (não apenas vídeos sem thumbnail).
+  - `--batch-size=N` — controla o tamanho do lote (default: 50).
+  - `--dry-run` — simula a execução sem alterar o banco.
+  - `--help` — exibe mensagem de ajuda com exemplos.
+  - Path do `.env` corrigido para `../../.env` (raiz do projeto), com prioridade para `.env.local`.
+  - Adicionado `process.exit(1)` em caso de erro no `catch`.
+  - Removidos: `scripts/maintenance/add-thumbnail-to-videos.js` e `scripts/maintenance/populate-video-thumbnails.js`.
+- **Uso correto agora:**
+  ```bash
+  node scripts/maintenance/video-thumbnails.js
+  node scripts/maintenance/video-thumbnails.js --force
+  node scripts/maintenance/video-thumbnails.js --schema-only
+  node scripts/maintenance/video-thumbnails.js --dry-run
+  node scripts/maintenance/video-thumbnails.js --batch-size=100
+  ```
 
-### 2.4. Quatro scripts de init com estrutura idêntica
-- **Arquivos:**
-  - `scripts/init-musicas.js`
-  - `scripts/init-posts.js`
-  - `scripts/init-videos.js`
-  - `scripts/init-dicas.js`
-- **Problema:** Todos seguem o mesmo padrão: carregar dotenv, importar `lib/db.js`, fazer `DROP TABLE IF EXISTS CASCADE`, criar tabela com CREATE TABLE. Código quase idêntico, mudando apenas o nome da tabela e colunas.
-- **Sugestão:** Criar um único script parametrizável (`scripts/init-table.js`) que aceite o nome da tabela como argumento, e manter arquivos de schema separados (JSON/YAML) para cada tabela.
+### 2.4. Quatro scripts de init com estrutura idêntica ✅ Corrigido
+- **Arquivos removidos:**
+  - `scripts/init-musicas.js` — removido (substituído por `init-table.js`)
+  - `scripts/init-posts.js` — removido (substituído por `init-table.js`)
+  - `scripts/init-videos.js` — removido (substituído por `init-table.js`)
+  - `scripts/init-dicas.js` — removido (substituído por `init-table.js`)
+- **Problema:** Todos seguiam o mesmo padrão: carregar dotenv, importar `lib/db.js`, fazer `DROP TABLE IF EXISTS CASCADE`, criar tabela com CREATE TABLE. Código quase idêntico, mudando apenas o nome da tabela e colunas. Além disso, `init-dicas.js` possuía diferenças significativas: sem DROP, sem validação de DATABASE_URL, sem `process.exit(1)`, com lógica extra de seed de dados e import estático vs dinâmico.
+- **Correção aplicada (21/05/2026):**
+  - Criado script unificado `scripts/init-table.js` que aceita o nome da tabela como argumento (`node scripts/init-table.js musicas`).
+  - Criado diretório `scripts/schemas/` com arquivos JSON de schema para cada tabela: `musicas.json`, `posts.json`, `videos.json`, `dicas.json`.
+  - Cada schema JSON contém: nome da tabela, flag `dropBeforeCreate`, definição de colunas e `seedData` opcional.
+  - O `init-table.js` unifica o comportamento:
+    - Carregamento de ambiente via `scripts/utils/load-env.js` (única fonte de verdade).
+    - Validação de `DATABASE_URL` via `requireDatabaseUrl()`.
+    - `DROP TABLE IF EXISTS CASCADE` controlado pela flag `dropBeforeCreate` no schema.
+    - `ALTER TABLE ADD COLUMN IF NOT EXISTS` para tabelas sem DROP (garantindo colunas de versões anteriores).
+    - População de `seedData` apenas se a tabela estiver vazia (verificação com `SELECT count(*)`).
+    - `process.exit(1)` padronizado em caso de erro.
+  - Os 4 scripts antigos foram removidos.
+  - Criado módulo compartilhado `scripts/utils/load-env.js` com funções `loadEnv()` e `requireDatabaseUrl()` (resolvendo também o item 2.6).
+- **Uso correto agora:**
+  ```bash
+  node scripts/init-table.js musicas   # Cria tabela musicas com DROP
+  node scripts/init-table.js posts     # Cria tabela posts com DROP
+  node scripts/init-table.js videos    # Cria tabela videos com DROP
+  node scripts/init-table.js dicas     # Cria tabela dicas sem DROP + seedData
+  node scripts/init-table.js --help    # Exibe mensagem de ajuda
+  ```
 
 ### 2.5. Nove scripts de migração com estrutura repetitiva
 - **Arquivos:** `scripts/migrations/001-*.js` a `009-*.js`
@@ -316,6 +353,7 @@ Definir e documentar um padrão:
 | 3.2 | I/O síncrono | 🟢 Baixa | Baixo | Média | ✅ Corrigido |
 | 4.3 | Deleção de arquivos auxiliares inconsistente | 🟡 Média | Baixo | Média | ✅ Corrigido |
 | 2.2 | Múltiplos scripts de limpeza | 🟡 Média | Médio | Alta | ✅ Corrigido |
+| 2.3 | Dois scripts de thumbnail de vídeos | 🟡 Média | Médio | Alta | ✅ Corrigido |
 | 8.4 | Migrações sem versionamento | 🟡 Média | Alto | Alta | Pendente |
 | 2.6 | Carga de ambiente duplicada | 🟢 Baixa | Baixo | Média | Pendente |
 | 2.4 | Init scripts duplicados | 🟢 Baixa | Médio | Média | Pendente |
