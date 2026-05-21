@@ -75,6 +75,7 @@ scripts/
 │   ├── manual-api-test.js
 │   └── manual-rate-limit.js
 └── utils/
+    ├── cleanup.js
     ├── cleanup-test-data.js
     ├── list-settings.js
     ├── list-table-columns.js
@@ -141,8 +142,8 @@ scripts/
 
 ### `scripts/clean-load-test-posts.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/clean-load-test-posts.js`
-- **Propósito:** Remove posts de teste criados durante a bateria de testes de carga. Identifica posts com flag de "test" e os exclui do banco junto com o cache Redis correspondente. Utilizado como cleanup nos testes de carga.
-- **Dependências:** `dotenv`, `../lib/db.js` (local), `path`, `fs`
+- **Propósito:** Remove posts de teste criados durante a bateria de testes de carga. Remove registros da tabela `posts` cujo `slug` corresponde ao padrão `post-carga-%`. Delega a execução para o módulo compartilhado `scripts/utils/cleanup.js`.
+- **Dependências:** `scripts/utils/cleanup.js` (local)
 
 ### `scripts/clean-orphaned-images.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/clean-orphaned-images.js`
@@ -151,8 +152,8 @@ scripts/
 
 ### `scripts/clean-test-db.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/clean-test-db.js`
-- **Propósito:** Limpa dados de teste gerados no banco de dados durante os testes de carga. Remove posts criados por scripts de seed de teste, zera a tabela de músicas e limpa cache. Verbo "limpa e recria" o estado inicial.
-- **Dependências:** `dotenv`, `../lib/db.js` (local)
+- **Propósito:** Limpa bancos de dados SQLite locais de teste (`test.db`, `caminhar-test.db`) no diretório `data/`. Opera exclusivamente em arquivos, sem conexão com PostgreSQL. Script independente dos demais scripts de limpeza.
+- **Dependências:** `fs`, `path`
 
 ### `scripts/clear-cache.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/clear-cache.js`
@@ -184,7 +185,9 @@ scripts/
 - **Propósito:** Orquestrador de testes de carga. Executa uma bateria de 6 testes k6 pré-definidos (fluxo autenticado, criação de posts, carga de vídeos, CRUD de vídeos, CRUD de músicas, carga de músicas) e gera um relatório HTML com métricas de performance (P95, média, requisições, taxa de erro). Suporta cleanup pós-teste.
 - **Dependências:** `child_process`, `fs`, `path`, `url`
 - **Variáveis de ambiente:** Requer `ADMIN_PASSWORD` e opcionalmente `ADMIN_USERNAME` (default: não definido) para autenticação nos testes de carga. O script valida a presença de `ADMIN_PASSWORD` antes de executar.
-- **Uso:** `ADMIN_USERNAME=admin ADMIN_PASSWORD=sua_senha node scripts/generate-load-report.js`
+- **Uso direto:** `ADMIN_USERNAME=admin ADMIN_PASSWORD=sua_senha node scripts/generate-load-report.js`
+- **Uso via npm:** `ADMIN_USERNAME=admin ADMIN_PASSWORD=sua_senha npm run report:load`
+- **Alias npm:** `report:load` (em `package.json`) — já encapsula o prefixo das env vars com fallback para `admin` no username.
 
 ### `scripts/init-dicas.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/init-dicas.js`
@@ -328,8 +331,8 @@ scripts/
 
 ### `scripts/maintenance/clean-k6-videos.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/maintenance/clean-k6-videos.js`
-- **Propósito:** Remove vídeos de teste criados durante os testes de carga k6. Similar ao `clean-load-test-posts.js`, mas específico para vídeos.
-- **Dependências:** Provável dependência de `lib/db.js`
+- **Propósito:** Remove vídeos de teste criados durante os testes de carga k6. Remove registros da tabela `videos` cujo `titulo` corresponde a padrões como `K6%`, `Test Video%`, `Load Test%`, etc. Exibe os IDs e títulos dos vídeos removidos via RETURNING. Delega a execução para o módulo compartilhado `scripts/utils/cleanup.js`.
+- **Dependências:** `scripts/utils/cleanup.js` (local)
 
 ### `scripts/maintenance/fix-hero-key.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/maintenance/fix-hero-key.js`
@@ -413,10 +416,19 @@ scripts/
 
 ## 🧰 Subdiretório `scripts/utils/`
 
+### `scripts/utils/cleanup.js`
+- **Localização:** `/home/qa/Projeto/Caminhar/scripts/utils/cleanup.js`
+- **Propósito:** Módulo compartilhado de limpeza de dados de teste no PostgreSQL. Fornece duas funções exportadas:
+  - **`loadEnv()`** — carrega variáveis de ambiente priorizando `.env.local` se existir, com fallback para `.env`. Substitui as diferentes implementações de carregamento de ambiente espalhadas pelos scripts.
+  - **`cleanTableByPattern({ table, column, patterns, showDeleted })`** — função genérica que cria um pool `pg.Pool`, constrói query dinâmica com LIKE patterns (OR), executa DELETE com RETURNING opcional (`showDeleted`), fecha o pool no `finally` e usa `process.exit(1)` em caso de erro.
+  - **Uso:** `import { loadEnv, cleanTableByPattern } from './cleanup.js';`
+- **Criado em:** 20/05/2026 — refatoração dos scripts `clean-load-test-posts.js`, `clean-k6-videos.js` e `cleanup-test-data.js` para eliminar duplicidade de código.
+- **Dependências:** `fs`, `dotenv`, `pg`
+
 ### `scripts/utils/cleanup-test-data.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/utils/cleanup-test-data.js`
-- **Propósito:** Utilitário genérico de limpeza de dados de teste. Remove registros de teste de múltiplas tabelas simultaneamente.
-- **Dependências:** Provável dependência de `lib/db.js`
+- **Propósito:** Utilitário de limpeza de dados de teste. Remove registros da tabela `posts` cujo `slug` corresponde ao padrão `post-carga-%`. Delega a execução para o módulo compartilhado `scripts/utils/cleanup.js`. Duplicata funcional do `scripts/clean-load-test-posts.js` — ambos executam a mesma operação com o mesmo filtro.
+- **Dependências:** `scripts/utils/cleanup.js` (local)
 
 ### `scripts/utils/list-settings.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/utils/list-settings.js`
@@ -444,12 +456,15 @@ scripts/
 | **Backup** | 5 | `backup.js`, `create-backup.js`, `restore-backup.js`, `init-backup.js`, `cron-backup.js` |
 | **Inicialização** | 5 | `init-dicas.js`, `init-musicas.js`, `init-posts.js`, `init-server.js`, `init-videos.js` |
 | **Seed (Dados)** | 5 | `seed-all.js`, `seed-musicas.js`, `seed-posts.js`, `seed-products.js`, `seed-videos.js` |
-| **Limpeza** | 6 | `clean-*`, `clear-*` |
+| **Limpeza (PostgreSQL)** | 3 | `clean-load-test-posts.js`, `clean-k6-videos.js`, `cleanup-test-data.js` + módulo compartilhado `cleanup.js` |
+| **Limpeza (Arquivos)** | 2 | `clean-k6-reports.js`, `clean-orphaned-images.js` |
+| **Limpeza (SQLite)** | 1 | `clean-test-db.js` |
+| **Limpeza (Geral DB)** | 2 | `clear-db.js`, `clear-musicas.js` |
 | **Validação/Diagnóstico** | 3 | `check-db-status.js`, `check-env.js`, `validate-schema.js` + 5 em `diagnostics/` |
 | **Migrações** | 9 | `001` a `009` em `migrations/` |
 | **Testes de Carga** | 4 | `run-all-load-tests.js`, `generate-load-report.js`, `run-load-tests.sh`, `consolidate-k6-reports.js` |
 | **Monitoramento** | 1 | `monitor-disk-space.js` |
-| **Utilidades** | 4 | `db-shell.js`, `check-server.js`, `reset-password.js` + 4 em `utils/` |
+| **Utilidades** | 4 | `db-shell.js`, `check-server.js`, `reset-password.js` + 5 em `utils/` |
 | **Manutenção** | 6 | `maintenance/` |
 | **Autenticação** | — | *(unificado em `scripts/reset-password.js`)* |
 | **Testes Manuais** | 2 | `tests/` |

@@ -22,15 +22,14 @@
 
 ## 1. Problemas Críticos de Segurança
 
-### 1.1. Senha admin hardcoded em `scripts/generate-load-report.js` ✅ Corrigido
-- **Arquivo:** `scripts/generate-load-report.js`
-- **Problema:** A senha do administrador (`123456`) estava hardcoded em 6 definições de teste dentro do array `TESTS`.
+### 1.1. Senha admin hardcoded em `scripts/generate-load-report.js` e `package.json` ✅ Corrigido
+- **Arquivos:** `scripts/generate-load-report.js`, `package.json`
+- **Problema:** A senha do administrador (`123456`) estava hardcoded em 6 definições de teste no `generate-load-report.js` e em **9 scripts npm** no `package.json` (linhas 51, 52, 54, 55, 56, 58, 65, 72, 84).
 - **Risco:** Vazamento de credenciais de produção caso o repositório fosse público ou acessado por pessoas não autorizadas.
 - **Correção aplicada (20/05/2026):**
-  - Substituídas as 6 ocorrências de `ADMIN_PASSWORD: '123456'` por `ADMIN_PASSWORD: process.env.ADMIN_PASSWORD`.
-  - Substituídas as 6 ocorrências de `ADMIN_USERNAME: 'admin'` por `ADMIN_USERNAME: process.env.ADMIN_USERNAME`.
-  - Adicionada validação no início da execução que impede o script de rodar sem a variável `ADMIN_PASSWORD` configurada.
-  - **Uso correto agora:** `ADMIN_USERNAME=admin ADMIN_PASSWORD=sua_senha node scripts/generate-load-report.js`
+  - **`generate-load-report.js`:** Substituídas as 6 ocorrências de `ADMIN_PASSWORD: '123456'` por `ADMIN_PASSWORD: process.env.ADMIN_PASSWORD`. Substituídas as 6 ocorrências de `ADMIN_USERNAME: 'admin'` por `ADMIN_USERNAME: process.env.ADMIN_USERNAME`. Adicionada validação no início da execução que impede o script de rodar sem a variável `ADMIN_PASSWORD` configurada.
+  - **`package.json`:** Substituídas as 9 ocorrências de `-e ADMIN_USERNAME=admin -e ADMIN_PASSWORD=123456` por `-e ADMIN_USERNAME=\${ADMIN_USERNAME:-admin} -e ADMIN_PASSWORD=\${ADMIN_PASSWORD}`, usando shell parameter expansion com fallback para `admin`.
+  - **Uso correto agora:** `ADMIN_USERNAME=admin ADMIN_PASSWORD=sua_senha node scripts/generate-load-report.js` ou `ADMIN_PASSWORD=sua_senha npm run test:load:auth`
 
 ### 1.2. Comando shell com concatenação de string em `scripts/backup.js` ✅ Corrigido
 - **Arquivo:** `scripts/backup.js`
@@ -72,14 +71,22 @@
   - Removidos: `scripts/reset-admin-password.js` e `scripts/auth/reset-password.js`.
 - **Uso correto agora:** `node scripts/reset-password.js <usuario> <nova_senha>` (usuário opcional, default: admin)
 
-### 2.2. Múltiplos scripts de limpeza com lógica similar
-- **Arquivos:**
-  - `scripts/clean-load-test-posts.js`
-  - `scripts/clean-test-db.js`
-  - `scripts/maintenance/clean-k6-videos.js`
-  - `scripts/utils/cleanup-test-data.js`
-- **Problema:** Todos fazem essencialmente a mesma coisa — remover dados de teste do banco — mas cada um tem sua própria implementação de conexão, query e lógica.
-- **Sugestão:** Criar um módulo compartilhado de limpeza (`scripts/utils/cleanup.js`) com funções reutilizáveis, e fazer os scripts específicos delegarem para este módulo.
+### 2.2. Múltiplos scripts de limpeza com lógica similar ✅ Corrigido
+- **Arquivos afetados:**
+  - `scripts/clean-load-test-posts.js` — refatorado
+  - `scripts/maintenance/clean-k6-videos.js` — refatorado
+  - `scripts/utils/cleanup-test-data.js` — refatorado
+  - `scripts/clean-test-db.js` — não faz parte (opera em SQLite local, não PostgreSQL)
+- **Problema:** Três scripts faziam essencialmente a mesma coisa — remover dados de teste do PostgreSQL — mas cada um tinha sua própria implementação de conexão (`pg.Pool` direto vs `lib/db.js`), carregamento de ambiente (`@next/env` vs `dotenv` manual vs `dotenv` com `.env.local`), query (fixa vs dinâmica) e tratamento de erro (com/sem `process.exit`, com/sem fechamento de pool).
+- **Correção aplicada (20/05/2026):**
+  - Criado módulo compartilhado `scripts/utils/cleanup.js` com duas funções:
+    - **`loadEnv()`** — carrega variáveis de ambiente priorizando `.env.local` (substitui as 3 abordagens diferentes)
+    - **`cleanTableByPattern({ table, column, patterns, showDeleted })`** — função genérica que cria pool, constrói query dinâmica com LIKE patterns, executa DELETE com RETURNING opcional, fecha pool no `finally` e usa `process.exit(1)` em caso de erro
+  - `scripts/clean-load-test-posts.js` refatorado para delegar ao módulo compartilhado
+  - `scripts/maintenance/clean-k6-videos.js` refatorado para delegar ao módulo compartilhado (com `showDeleted: true`)
+  - `scripts/utils/cleanup-test-data.js` refatorado para delegar ao módulo compartilhado
+  - `scripts/clean-test-db.js` permanece inalterado por operar em arquivos SQLite locais (escopo diferente)
+  - A lógica de query dinâmica com `patterns.map()` foi reaproveitada do `cleanK6Videos` original
 
 ### 2.3. Dois scripts para popular thumbnails de vídeos
 - **Arquivos:**
@@ -308,7 +315,7 @@ Definir e documentar um padrão:
 | 2.7 | Lógica de filtro duplicada | 🟢 Baixa | Baixo | Alta | ✅ Corrigido |
 | 3.2 | I/O síncrono | 🟢 Baixa | Baixo | Média | ✅ Corrigido |
 | 4.3 | Deleção de arquivos auxiliares inconsistente | 🟡 Média | Baixo | Média | ✅ Corrigido |
-| 2.2 | Múltiplos scripts de limpeza | 🟡 Média | Médio | Alta | Pendente |
+| 2.2 | Múltiplos scripts de limpeza | 🟡 Média | Médio | Alta | ✅ Corrigido |
 | 8.4 | Migrações sem versionamento | 🟡 Média | Alto | Alta | Pendente |
 | 2.6 | Carga de ambiente duplicada | 🟢 Baixa | Baixo | Média | Pendente |
 | 2.4 | Init scripts duplicados | 🟢 Baixa | Médio | Média | Pendente |
