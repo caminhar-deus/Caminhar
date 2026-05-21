@@ -30,6 +30,7 @@ scripts/
 ├── init-backup.js
 ├── init-server.js
 ├── init-table.js *
+├── migrate.js *
 ├── monitor-disk-space.js
 ├── reset-password.js
 ├── restore-backup.js
@@ -42,7 +43,8 @@ scripts/
 ├── seed-videos.js
 ├── validate-schema.js
 ├── auth/
-├── db/
+├── db/ *
+│   ├── connection.js *
 │   ├── verify-db-functions.js
 │   └── verify-migration.js
 ├── diagnostics/
@@ -66,7 +68,10 @@ scripts/
 │   ├── 006-create-activity-logs.js
 │   ├── 007-add-position-to-musicas.js
 │   ├── 008-add-position-to-videos.js
-│   └── 009-add-position-to-posts.js
+│   ├── 009-add-position-to-posts.js
+│   ├── 011-fix-entity-id-type.js
+│   ├── seed-migrations-table.js *
+│   └── verify-applied.js *
 ├── schemas/ *
 │   ├── dicas.json
 │   ├── musicas.json
@@ -83,7 +88,7 @@ scripts/
     ├── load-env.js *
     └── update-setting.js
 
-> **Legenda:** * = Novo
+> **Legenda:** * = Novo ou criado em refatoração recente
 ```
 
 ---
@@ -220,6 +225,30 @@ scripts/
 - **Criado em:** 21/05/2026 — refatoração (unificação dos 4 scripts de init).
 - **Dependências:** `fs`, `url`, `scripts/utils/load-env.js` (local), `../lib/db.js` (local)
 
+### `scripts/migrate.js`
+- **Localização:** `/home/qa/Projeto/Caminhar/scripts/migrate.js`
+- **Propósito:** Executor central de migrações do banco de dados PostgreSQL. Substitui a execução manual de cada script de migração individualmente.
+- **Funcionamento:**
+  - Carrega variáveis de ambiente via `scripts/utils/load-env.js`.
+  - Conecta ao banco via `scripts/db/connection.js`.
+  - Cria automaticamente a tabela `_migrations` no banco (controle de versionamento).
+  - Lê as migrações já aplicadas e compara com os arquivos disponíveis.
+  - Executa cada migração pendente dentro de uma transação (`BEGIN`/`COMMIT`/`ROLLBACK`).
+  - Registra cada migração bem-sucedida na tabela `_migrations`.
+- **Flags:**
+  - `--status` — exibe o status de todas as migrações (aplicadas vs pendentes)
+  - `--revert` — reverte a última migração aplicada (chama `down()`)
+  - `--help` — exibe mensagem de ajuda
+- **Uso:**
+  ```bash
+  node scripts/migrate.js                     # Aplica todas as pendentes
+  node scripts/migrate.js --status            # Mostra status
+  node scripts/migrate.js --revert            # Reverte última migração
+  node scripts/migrate.js --help              # Ajuda
+  ```
+- **Criado em:** 21/05/2026 — refatoração (unificação das 11 migrações com executor central).
+- **Dependências:** `fs`, `path`, `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local)
+
 ### `scripts/monitor-disk-space.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/monitor-disk-space.js`
 - **Propósito:** Monitora o espaço em disco do diretório de backups. Alerta quando o uso ultrapassa thresholds configurados (ex: >80% Warning, >95% Critical). Pode ser usado em conjunto com o cron para alertas proativos.
@@ -281,6 +310,17 @@ scripts/
 ---
 
 ## 🗄️ Subdiretório `scripts/db/`
+
+### `scripts/db/connection.js`
+- **Localização:** `/home/qa/Projeto/Caminhar/scripts/db/connection.js`
+- **Propósito:** Módulo compartilhado de conexão PostgreSQL. Centraliza a criação do `pg.Pool` em um único lugar, evitando que cada script crie seu próprio pool ou importe `lib/db.js` de formas diferentes.
+- **Funções exportadas:**
+  - **`getPool()`** — retorna uma instância única de Pool (singleton). Cria o pool na primeira chamada e o reutiliza nas subsequentes. Valida a existência de `DATABASE_URL`.
+  - **`closePool()`** — fecha o pool de conexão. Deve ser chamado ao final da execução para evitar vazamento de conexões.
+  - **`query(text, params)`** — wrapper simples sobre `pool.query()` com gerenciamento automático do pool.
+- **Uso:** `import { getPool, closePool, query } from '../db/connection.js';`
+- **Criado em:** 21/05/2026 — refatoração das migrações (unificação da conexão com banco).
+- **Dependências:** `pg`
 
 ### `scripts/db/verify-db-functions.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/db/verify-db-functions.js`
@@ -365,47 +405,83 @@ scripts/
 ### `scripts/migrations/001-add-views-to-posts.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/migrations/001-add-views-to-posts.js`
 - **Propósito:** Migração #001 — Adiciona a coluna `views` à tabela `posts` para contar visualizações de cada post.
-- **Dependências:** Provável dependência de `lib/db.js`
+- **Refatorado em:** 21/05/2026 — agora exporta `up(pool)` e `down(pool)`, usa `loadEnv()` e `getPool()` dos módulos compartilhados.
+- **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local)
 
 ### `scripts/migrations/002-create-products-table.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/migrations/002-create-products-table.js`
 - **Propósito:** Migração #002 — Cria a tabela de `products` para suportar a funcionalidade de produtos/e-commerce.
-- **Dependências:** Provável dependência de `lib/db.js`
+- **Refatorado em:** 21/05/2026 — idem.
+- **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local)
 
 ### `scripts/migrations/003-add-position-to-products.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/migrations/003-add-position-to-products.js`
 - **Propósito:** Migração #003 — Adiciona coluna `position` à tabela `products` para controle de ordenação.
-- **Dependências:** Provável dependência de `lib/db.js`
+- **Refatorado em:** 21/05/2026 — idem.
+- **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local)
 
 ### `scripts/migrations/004-add-published-to-products.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/migrations/004-add-published-to-products.js`
 - **Propósito:** Migração #004 — Adiciona coluna `published` (booleano) à tabela `products` para controle de publicação.
-- **Dependências:** Provável dependência de `lib/db.js`
+- **Refatorado em:** 21/05/2026 — idem.
+- **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local)
 
 ### `scripts/migrations/005-add-last-login-to-users.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/migrations/005-add-last-login-to-users.js`
-- **Propósito:** Migração #005 — Adiciona coluna `last_login` (timestamp) à tabela `users` para rastrear último acesso.
-- **Dependências:** Provável dependência de `lib/db.js`
+- **Propósito:** Migração #005 — Adiciona coluna `last_login_at` (timestamp) à tabela `users` para rastrear último acesso.
+- **Refatorado em:** 21/05/2026 — idem.
+- **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local)
 
 ### `scripts/migrations/006-create-activity-logs.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/migrations/006-create-activity-logs.js`
 - **Propósito:** Migração #006 — Cria a tabela `activity_logs` para auditoria de ações administrativas.
-- **Dependências:** Provável dependência de `lib/db.js`
+- **Refatorado em:** 21/05/2026 — idem.
+- **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local)
 
 ### `scripts/migrations/007-add-position-to-musicas.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/migrations/007-add-position-to-musicas.js`
 - **Propósito:** Migração #007 — Adiciona coluna `position` à tabela `musicas` para ordenação manual.
-- **Dependências:** Provável dependência de `lib/db.js`
+- **Refatorado em:** 21/05/2026 — idem.
+- **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local)
 
 ### `scripts/migrations/008-add-position-to-videos.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/migrations/008-add-position-to-videos.js`
 - **Propósito:** Migração #008 — Adiciona coluna `position` à tabela `videos` para ordenação manual.
-- **Dependências:** Provável dependência de `lib/db.js`
+- **Refatorado em:** 21/05/2026 — idem.
+- **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local)
 
 ### `scripts/migrations/009-add-position-to-posts.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/migrations/009-add-position-to-posts.js`
 - **Propósito:** Migração #009 — Adiciona coluna `position` à tabela `posts` para ordenação manual.
-- **Dependências:** Provável dependência de `lib/db.js`
+- **Refatorado em:** 21/05/2026 — idem.
+- **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local)
+
+### `scripts/migrations/011-fix-entity-id-type.js`
+- **Localização:** `/home/qa/Projeto/Caminhar/scripts/migrations/011-fix-entity-id-type.js`
+- **Propósito:** Migração #011 — Altera o tipo da coluna `entity_id` na tabela `activity_logs` de `INTEGER` para `BIGINT`. Motivo: `Date.now()` retorna timestamps > 2.1B (limite de INTEGER), causando erro "out of range". Se a coluna não existir, recria a tabela já como `BIGINT`.
+- **Refatorado em:** 21/05/2026 — agora exporta `up(pool)` e `down(pool)`, usa `loadEnv()` e `getPool()` dos módulos compartilhados.
+- **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local)
+
+### `scripts/migrations/seed-migrations-table.js`
+- **Localização:** `/home/qa/Projeto/Caminhar/scripts/migrations/seed-migrations-table.js`
+- **Propósito:** Popula a tabela `_migrations` retroativamente com migrações que já existiam antes da criação do sistema de gerenciamento. Cria automaticamente a tabela `_migrations` se não existir, verifica quais migrações já estão registradas (evita duplicatas via UNIQUE constraint) e insere apenas as faltantes. Idempotente — pode ser executado múltiplas vezes sem causar erros.
+- **Uso:** `node scripts/migrations/seed-migrations-table.js`
+- **Criado em:** 21/05/2026 — suporte à migração retroativa.
+- **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local)
+
+### `scripts/migrations/verify-applied.js`
+- **Localização:** `/home/qa/Projeto/Caminhar/scripts/migrations/verify-applied.js`
+- **Propósito:** Verifica no banco de dados se cada migração já foi aplicada, consultando `information_schema` do PostgreSQL. Para cada migração, executa uma query específica:
+  - Migrações de `ADD COLUMN`: verifica se a coluna existe na tabela
+  - Migrações de `CREATE TABLE`: verifica se a tabela existe
+  - Migração 011: verifica se o tipo da coluna é `bigint`
+- **Uso:** `node scripts/migrations/verify-applied.js`
+- **Criado em:** 21/05/2026 — suporte à verificação de estado do banco.
+- **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local)
+
+> **Nota:** As migrações `010-sync-sqlite-pg-schemas.js` e `012-migrate-sqlite-to-pg.js` foram removidas em 21/05/2026 por envolverem operações com SQLite, fora do escopo PostgreSQL do projeto.
+
+> **Comandos npm relacionados:** `npm run migrate` (aplica pendentes), `npm run migrate:status` (exibe status), `npm run migrate:revert` (reverte última migração).
 
 ---
 
@@ -453,7 +529,7 @@ scripts/
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/utils/cleanup.js`
 - **Propósito:** Módulo compartilhado de limpeza de dados de teste no PostgreSQL. Fornece duas funções exportadas:
   - **`loadEnv()`** — carrega variáveis de ambiente priorizando `.env.local` se existir, com fallback para `.env`. Substitui as diferentes implementações de carregamento de ambiente espalhadas pelos scripts.
-  - **`cleanTableByPattern({ table, column, patterns, showDeleted })`** — função genérica que cria um pool `pg.Pool`, constrói query dinâmica com LIKE patterns (OR), executa DELETE com RETURNING opcional (`showDeleted`), fecha o pool no `finally` e usa `process.exit(1)` em caso de erro.
+  - **`cleanTableByPattern({ table, column, patterns, showDeleted })`** — função genérica que cria um pool `pg.Pool`, constrói query dinâmica com LIKE patterns (OR), executa DELETE com RETURNING opcional (`showDeleted`), fecha pool no `finally` e usa `process.exit(1)` em caso de erro.
   - **Uso:** `import { loadEnv, cleanTableByPattern } from './cleanup.js';`
 - **Criado em:** 20/05/2026 — refatoração dos scripts `clean-load-test-posts.js`, `clean-k6-videos.js` e `cleanup-test-data.js` para eliminar duplicidade de código.
 - **Dependências:** `fs`, `dotenv`, `pg`
@@ -497,6 +573,7 @@ scripts/
 |-----------|:----------:|-----------|
 | **Backup** | 5 | `backup.js`, `create-backup.js`, `restore-backup.js`, `init-backup.js`, `cron-backup.js` |
 | **Inicialização** | 2 | `init-table.js` (unificado) + `init-server.js` |
+| **Migrações** | 11 | `migrate.js` (executor) + `001` a `009` + `011` em `migrations/` |
 | **Schemas (JSON)** | 4 | `schemas/musicas.json`, `schemas/posts.json`, `schemas/videos.json`, `schemas/dicas.json` |
 | **Seed (Dados)** | 5 | `seed-all.js`, `seed-musicas.js`, `seed-posts.js`, `seed-products.js`, `seed-videos.js` |
 | **Limpeza (PostgreSQL)** | 3 | `clean-load-test-posts.js`, `clean-k6-videos.js`, `cleanup-test-data.js` + módulo compartilhado `cleanup.js` |
@@ -504,15 +581,15 @@ scripts/
 | **Limpeza (SQLite)** | 1 | `clean-test-db.js` |
 | **Limpeza (Geral DB)** | 2 | `clear-db.js`, `clear-musicas.js` |
 | **Validação/Diagnóstico** | 3 | `check-db-status.js`, `check-env.js`, `validate-schema.js` + 5 em `diagnostics/` |
-| **Migrações** | 9 | `001` a `009` em `migrations/` |
 | **Testes de Carga** | 4 | `run-all-load-tests.js`, `generate-load-report.js`, `run-load-tests.sh`, `consolidate-k6-reports.js` |
 | **Monitoramento** | 1 | `monitor-disk-space.js` |
 | **Utilidades** | 6 | `db-shell.js`, `check-server.js`, `reset-password.js` + `load-env.js` + 4 em `utils/` |
+| **Conexão DB** | 1 | `scripts/db/connection.js` (módulo compartilhado) |
 | **Manutenção** | 5 | `maintenance/` |
 | **Autenticação** | — | *(unificado em `scripts/reset-password.js`)* |
 | **Testes Manuais** | 2 | `tests/` |
-| **Banco de Dados** | 2 | `db/` |
-| **Total** | ~65 | Incluindo scripts, schemas e módulos utilitários |
+| **Banco de Dados** | 3 | `db/connection.js` + `db/verify-db-functions.js` + `db/verify-migration.js` |
+| **Total** | ~68 | Incluindo scripts, schemas, executor de migrações e módulos utilitários |
 
 ---
 

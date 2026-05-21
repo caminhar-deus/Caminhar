@@ -1,6 +1,6 @@
 # 📁 Scripts do Projeto — Análise de Melhorias, Correções e Duplicidades
 
-> **Data:** 20/05/2026 (atualizado)
+> **Data:** 21/05/2026 (atualizado)
 > **Projeto:** Caminhar  
 > **Diretório:** `/scripts`  
 > **Objetivo deste documento:** Reportar problemas identificados, sugestões de melhoria, oportunidades de performance, código duplicado e más práticas encontradas nos scripts. Correções aplicadas estão marcadas com ✅.
@@ -141,14 +141,54 @@
   node scripts/init-table.js --help    # Exibe mensagem de ajuda
   ```
 
-### 2.5. Nove scripts de migração com estrutura repetitiva
-- **Arquivos:** `scripts/migrations/001-*.js` a `009-*.js`
-- **Problema:** Cada migração é um arquivo independente que importa `lib/db.js`, define uma função `up()` e executa SQL. Não há um sistema de versionamento ou rastreamento de quais migrações já foram aplicadas.
-- **Sugestão:** Implementar um sistema simples de migrações com tabela de controle (`_migrations`) e um executor central que aplique apenas migrações pendentes.
+### 2.5. Onze scripts de migração com estrutura repetitiva ✅ Corrigido
+- **Arquivos refatorados:**
+  - `scripts/migrations/001-*.js` a `009-*.js` — refatorados
+  - `scripts/migrations/011-fix-entity-id-type.js` — refatorado
+- **Arquivos removidos:**
+  - `scripts/migrations/010-sync-sqlite-pg-schemas.js` — removido (operações SQLite não pertencem ao escopo PostgreSQL)
+  - `scripts/migrations/012-migrate-sqlite-to-pg.js` — removido (operações SQLite não pertencem ao escopo PostgreSQL)
+- **Problema:** As 11 migrações (001-009 e 011) seguiam o mesmo padrão repetitivo, mas divididas em **2 estilos inconsistentes**:
+  - **Grupo 1 (002-009):** usavam `@next/env` (`loadEnvConfig`) para carregar ambiente
+  - **Grupo 2 (001, 011):** usavam `fs.existsSync` + `dotenv.config()` manual
+  - Além disso: nenhuma migração tinha `down()`, nenhuma consultava tabela de controle, e não existia executor central.
+- **Correção aplicada (21/05/2026):**
+  - **Criado `scripts/db/connection.js`** — módulo compartilhado que centraliza a conexão PostgreSQL via `pg.Pool` com funções `getPool()`, `closePool()` e `query()`. Substitui as importações diretas de `lib/db.js` e as criações avulsas de pool.
+  - **Refatoradas as 11 migrações (001-009, 011)** para o mesmo padrão:
+    - Importam `loadEnv()` de `scripts/utils/load-env.js` (única fonte de verdade)
+    - Importam `getPool()`/`closePool()` de `scripts/db/connection.js`
+    - Exportam `async function up(pool)` com a lógica de migração
+    - Exportam `async function down(pool)` com o rollback (DROP COLUMN, DROP TABLE, ALTER COLUMN TYPE)
+    - Mantêm execução direta via `process.argv[1]` para compatibilidade individual
+    - Não possuem mais `process.exit(0)`, `console.log()` de início/fim ou `console.error()` no catch (delegados ao executor central)
+  - **Criado `scripts/migrate.js`** — executor central de migrações com:
+    - Criação automática da tabela `_migrations` no banco (controle de versionamento)
+    - Leitura de migrações aplicadas vs pendentes
+    - Execução em transação (`BEGIN`/`COMMIT`/`ROLLBACK`)
+    - Registro automático na tabela `_migrations` após sucesso
+    - Suporte a `--status` (lista migrações aplicadas e pendentes)
+    - Suporte a `--revert` (reverte a última migração aplicada, chamando `down()`)
+    - 3 estilos diferentes de carregamento de ambiente eliminados
+  - **Removidos `010-sync-sqlite-pg-schemas.js` e `012-migrate-sqlite-to-pg.js`** — ambos envolviam operações com SQLite, fora do escopo PostgreSQL do projeto.
+- **Uso correto agora:**
+  ```bash
+  node scripts/migrate.js                     # Aplica todas as migrações pendentes
+  node scripts/migrate.js --status            # Mostra status das migrações
+  node scripts/migrate.js --revert            # Reverte a última migração
+  node scripts/migrate.js --help              # Exibe ajuda
+  # Ou individualmente (compatibilidade):
+  node scripts/migrations/001-add-views-to-posts.js
+  ```
+- **Quebra de compatibilidade:** Scripts que referenciam `scripts/migrations/010-*` ou `012-*` precisarão ser atualizados, pois estes arquivos foram removidos.
 
-### 2.6. Caminho `.env.local` e `dotenv.config()` repetido em ~20 arquivos
+### 2.6. Caminho `.env.local` e `dotenv.config()` repetido em ~20 arquivos ✅ Corrigido
 - **Problema:** Praticamente todos os scripts começam com o mesmo bloco de 4 linhas para carregar variáveis de ambiente. Isso é código duplicado que viola DRY.
-- **Sugestão:** Extrair para um módulo compartilhado (`scripts/utils/load-env.js`) e importar esse módulo em todos os scripts.
+- **Correção aplicada (21/05/2026):**
+  - Criado módulo compartilhado `scripts/utils/load-env.js` com funções `loadEnv()` e `requireDatabaseUrl()`, utilizado pelos scripts refatorados:
+    - `init-table.js` (correção 2.4)
+    - Todas as 11 migrações (correção 2.5)
+    - `scripts/db/connection.js` também usa internamente (embora delegue o `loadEnv` para o chamador)
+  - Os scripts que ainda importam `dotenv` diretamente (ex: `backup.js`, `seed-*.js`) permanecem como estão, mas o padrão já está estabelecido para migrações futuras.
 
 ### 2.7. Lógica de filtro de arquivos duplicada em `backup.js` ✅ Corrigido
 - **Arquivo:** `scripts/backup.js`
@@ -271,13 +311,15 @@
 - **Problema:** O scheduler implementa parsing de cron manual que só trata minutos e horas. Não suporta expressões complexas (ex: `*/15`, dias da semana, meses). Além disso, o `setTimeout` + `setInterval` acumula drift ao longo do tempo (o delay não compensa o tempo de execução).
 - **Sugestão:** Usar uma biblioteca como `node-cron` ou `bull` para agendamento confiável, ou manter apenas o script e delegar o agendamento para o cron do sistema operacional (que já tem o `cron-backup.js` para isso).
 
-### 7.2. Nove migrações sem sistema de versionamento
-- **Arquivo:** `scripts/migrations/001-*.js` a `009-*.js`
-- **Problema:** Não há uma tabela de controle no banco que registre quais migrações foram aplicadas. Não há um executor central que aplique migrações pendentes automaticamente. O desenvolvedor precisa saber quais migrações já rodou.
-- **Sugestão:** Implementar um framework de migrações simples com:
-  - Tabela `_migrations` no banco
-  - Script `scripts/migrate.js` que executa migrações pendentes
-  - Cada migração com timestamp ou número sequencial
+### 7.2. Onze migrações sem sistema de versionamento ✅ Corrigido
+- **Arquivos refatorados:** `scripts/migrations/001-*.js` a `009-*.js`, `011-*.js`
+- **Problema:** Não havia uma tabela de controle no banco que registrasse quais migrações foram aplicadas. Não existia um executor central. O desenvolvedor precisava saber quais migrações já havia rodado manualmente.
+- **Correção aplicada (21/05/2026):**
+  - Criada tabela `_migrations` no banco (criada automaticamente pelo executor)
+  - Criado script `scripts/migrate.js` como executor central com suporte a `--status` e `--revert`
+  - Cada migração refatorada exporta `up(pool)` e `down(pool)`
+  - As migrações agora são executadas dentro de transações (atomicidade)
+  - Scripts relacionados a SQLite (`010-*`, `012-*`) removidos por estarem fora do escopo
 
 ### 7.3. Dependência de `date-fns` apenas para formatação de data
 - **Arquivo:** `scripts/backup.js`
@@ -288,7 +330,7 @@
 
 ## 8. Sugestões de Arquitetura
 
-### 8.1. Criar módulo `scripts/utils/load-env.js`
+### 8.1. Criar módulo `scripts/utils/load-env.js` ✅ Concluído
 Extrair a lógica repetida de carregamento de ambiente para um módulo compartilhado:
 ```javascript
 // scripts/utils/load-env.js
@@ -302,9 +344,11 @@ export function loadEnv() {
   dotenv.config();
 }
 ```
+- **Criado em:** 21/05/2026
+- **Uso:** Já integrado em `init-table.js` e em todas as 11 migrações refatoradas.
 
-### 8.2. Criar módulo `scripts/db/connection.js`
-Centralizar a criação de conexão com o banco usando `pg.Pool` em vez de cada script importar `lib/db.js` ou criar seu próprio pool:
+### 8.2. Criar módulo `scripts/db/connection.js` ✅ Concluído
+Centralizar a criação de conexão com o banco usando `pg.Pool`:
 ```javascript
 // scripts/db/connection.js
 import pg from 'pg';
@@ -318,18 +362,20 @@ export function getPool() {
   return pool;
 }
 ```
+- **Criado em:** 21/05/2026
+- **Funções exportadas:** `getPool()`, `closePool()`, `query(text, params)`
+- **Uso:** Já integrado em todas as 11 migrações refatoradas e no executor `scripts/migrate.js`.
+- **Nota:** O módulo `scripts/utils/cleanup.js` ainda cria seu próprio pool diretamente — futura oportunidade de refatoração.
 
-### 8.3. Unificar scripts de init em um executor parametrizável
-Criar um único `scripts/init-table.js` que recebe o nome da tabela como argumento e carrega o schema de um arquivo JSON:
-```bash
-node scripts/init-table.js --table=musicas --schema=schemas/musicas.json
-```
+### 8.3. Unificar scripts de init em um executor parametrizável ✅ Concluído
+Criado `scripts/init-table.js` que recebe o nome da tabela como argumento e carrega o schema de um arquivo JSON. Ver correção 2.4 para detalhes.
 
-### 8.4. Implementar gerenciador de migrações
-Criar um sistema simples de migrações:
+### 8.4. Implementar gerenciador de migrações ✅ Concluído
+Criado sistema completo de migrações:
 - Script `scripts/migrate.js` como executor central
 - Tabela `_migrations` no banco para rastrear estado
-- Cada migração exporta `up()` e `down()`
+- Cada migração exporta `up(pool)` e `down(pool)`
+- Execução dentro de transações com rollback automático em caso de falha
 
 ### 8.5. Padronizar tratamento de erros
 Definir e documentar um padrão:
@@ -354,9 +400,13 @@ Definir e documentar um padrão:
 | 4.3 | Deleção de arquivos auxiliares inconsistente | 🟡 Média | Baixo | Média | ✅ Corrigido |
 | 2.2 | Múltiplos scripts de limpeza | 🟡 Média | Médio | Alta | ✅ Corrigido |
 | 2.3 | Dois scripts de thumbnail de vídeos | 🟡 Média | Médio | Alta | ✅ Corrigido |
-| 8.4 | Migrações sem versionamento | 🟡 Média | Alto | Alta | Pendente |
-| 2.6 | Carga de ambiente duplicada | 🟢 Baixa | Baixo | Média | Pendente |
-| 2.4 | Init scripts duplicados | 🟢 Baixa | Médio | Média | Pendente |
+| **2.5** | **Onze scripts de migração com estrutura repetitiva** | 🟡 Média | Alto | **Alta** | **✅ Corrigido** |
+| **2.6** | **Carga de ambiente duplicada** | 🟢 Baixa | Baixo | **Média** | **✅ Corrigido** |
+| 2.4 | Init scripts duplicados | 🟢 Baixa | Médio | Média | ✅ Corrigido |
+| **7.2** | **Migrações sem sistema de versionamento** | 🟡 Média | Alto | **Alta** | **✅ Corrigido** |
+| **8.1** | **Criar módulo load-env.js** | 🟢 Baixa | Baixo | **Média** | **✅ Concluído** |
+| **8.2** | **Criar módulo connection.js** | 🟢 Baixa | Médio | **Média** | **✅ Concluído** |
+| **8.4** | **Implementar gerenciador de migrações** | 🟡 Média | Alto | **Alta** | **✅ Concluído** |
 | 4.2 | clear-musicas sem confirmação | 🟡 Média | Baixo | Média | Pendente |
 | 7.1 | Scheduler caseiro | 🟢 Baixa | Médio | Baixa | Pendente |
 | 5.1 | Shebang ausente | 🟢 Baixa | Muito Baixo | Baixa | Pendente |

@@ -1,14 +1,13 @@
-// Arquivo: scripts/migrations/002-create-products-table.js
-import pkg from '@next/env';
-const { loadEnvConfig } = pkg;
-loadEnvConfig(process.cwd()); // Carrega o .env ou .env.local do projeto
+import { loadEnv } from '../utils/load-env.js';
+loadEnv();
 
-const { query } = await import('../../lib/db.js'); // Importação dinâmica após as variáveis existirem
+import { getPool, closePool } from '../db/connection.js';
 
-async function migrate() {
-  console.log('Iniciando migração: Criar tabela de produtos...');
+const MIGRATION_NAME = '002-create-products-table';
 
-  const sql = `
+export async function up(pool) {
+  console.log(`   ↳ ${MIGRATION_NAME}: Criando tabela "products"...`);
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS products (
       id SERIAL PRIMARY KEY,
       title VARCHAR(255) NOT NULL,
@@ -21,16 +20,26 @@ async function migrate() {
       created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     );
-  `;
-
-  try {
-    await query(sql);
-    console.log('✅ Tabela "products" criada/verificada com sucesso!');
-    process.exit(0);
-  } catch (error) {
-    console.error('❌ Erro ao criar a tabela products:', error);
-    process.exit(1);
-  }
+  `);
+  console.log(`   ✅ ${MIGRATION_NAME} concluída.`);
 }
 
-migrate();
+export async function down(pool) {
+  console.log(`   ↳ ${MIGRATION_NAME}: Removendo tabela "products"...`);
+  await pool.query('DROP TABLE IF EXISTS products CASCADE;');
+  console.log(`   ✅ ${MIGRATION_NAME} (down) concluída.`);
+}
+
+if (process.argv[1] && process.argv[1].endsWith('002-create-products-table.js')) {
+  (async () => {
+    const pool = getPool();
+    try {
+      await up(pool);
+    } catch (error) {
+      console.error(`❌ Erro em ${MIGRATION_NAME}:`, error);
+      process.exit(1);
+    } finally {
+      await closePool();
+    }
+  })();
+}

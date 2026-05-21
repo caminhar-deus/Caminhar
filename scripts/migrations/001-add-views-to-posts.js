@@ -1,36 +1,36 @@
-import fs from 'fs';
-import dotenv from 'dotenv';
+import { loadEnv } from '../utils/load-env.js';
+loadEnv();
 
-// Carrega variáveis de ambiente, priorizando .env.local
-if (fs.existsSync('.env.local')) {
-  dotenv.config({ path: '.env.local' });
-}
-dotenv.config();
+import { getPool, closePool } from '../db/connection.js';
 
-async function runMigration() {
-  console.log('🚀 Executando migração: 001-add-views-to-posts');
-  
-  const { query, closeDatabase } = await import('../../lib/db.js');
+const MIGRATION_NAME = '001-add-views-to-posts';
 
-  try {
-    console.log('   - Adicionando coluna "views" à tabela "posts"...');
-    
-    // O comando ALTER TABLE modifica a tabela sem apagar os dados.
-    // ADD COLUMN adiciona a nova coluna.
-    // DEFAULT 0 define um valor padrão para todas as linhas existentes.
-    // NOT NULL garante que a coluna sempre terá um valor.
-    await query(`
-      ALTER TABLE posts
-      ADD COLUMN IF NOT EXISTS views INTEGER DEFAULT 0 NOT NULL;
-    `);
-    
-    console.log('✅ Migração concluída com sucesso!');
-  } catch (error) {
-    console.error('❌ Erro ao executar a migração:', error);
-    process.exit(1); // Encerra o processo com erro
-  } finally {
-    await closeDatabase();
-  }
+export async function up(pool) {
+  console.log(`   ↳ ${MIGRATION_NAME}: Adicionando coluna "views" à tabela "posts"...`);
+  await pool.query(`
+    ALTER TABLE posts
+    ADD COLUMN IF NOT EXISTS views INTEGER DEFAULT 0 NOT NULL;
+  `);
+  console.log(`   ✅ ${MIGRATION_NAME} concluída.`);
 }
 
-runMigration();
+export async function down(pool) {
+  console.log(`   ↳ ${MIGRATION_NAME}: Removendo coluna "views" da tabela "posts"...`);
+  await pool.query('ALTER TABLE posts DROP COLUMN IF EXISTS views;');
+  console.log(`   ✅ ${MIGRATION_NAME} (down) concluída.`);
+}
+
+// Execução direta quando o script é chamado individualmente
+if (process.argv[1] && process.argv[1].endsWith('001-add-views-to-posts.js')) {
+  (async () => {
+    const pool = getPool();
+    try {
+      await up(pool);
+    } catch (error) {
+      console.error(`❌ Erro em ${MIGRATION_NAME}:`, error);
+      process.exit(1);
+    } finally {
+      await closePool();
+    }
+  })();
+}

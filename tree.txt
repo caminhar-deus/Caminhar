@@ -766,6 +766,7 @@
 │   ├── create-backup.js
 │   ├── cron-backup.js
 │   ├── db
+│   │   ├── connection.js
 │   │   ├── verify-db-functions.js
 │   │   └── verify-migration.js
 │   ├── db-shell.js
@@ -785,6 +786,7 @@
 │   │   ├── fix-hero-key.js
 │   │   ├── restore-posts.js
 │   │   └── video-thumbnails.js
+│   ├── migrate.js
 │   ├── migrations
 │   │   ├── 001-add-views-to-posts.js
 │   │   ├── 002-create-products-table.js
@@ -795,9 +797,9 @@
 │   │   ├── 007-add-position-to-musicas.js
 │   │   ├── 008-add-position-to-videos.js
 │   │   ├── 009-add-position-to-posts.js
-│   │   ├── 010-sync-sqlite-pg-schemas.js
 │   │   ├── 011-fix-entity-id-type.js
-│   │   └── 012-migrate-sqlite-to-pg.js
+│   │   ├── seed-migrations-table.js
+│   │   └── verify-applied.js
 │   ├── monitor-disk-space.js
 │   ├── reset-password.js
 │   ├── restore-backup.js
@@ -1052,4 +1054,4 @@
 ├── tests-output.log
 └── tree.txt
 
-158 directories, 895 files
+158 directories, 897 files
