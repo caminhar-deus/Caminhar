@@ -57,12 +57,20 @@
 
 ## 2. Duplicidade de Código
 
-### 2.1. Dois scripts de reset de senha
-- **Arquivos:**
+### 2.1. Dois scripts de reset de senha ✅ Corrigido
+- **Arquivos antigos (removidos):**
   - `scripts/reset-admin-password.js` — específico para usuário admin
   - `scripts/auth/reset-password.js` — genérico, aceita qualquer username
-- **Problema:** Funcionalidade essencialmente a mesma, com implementações duplicadas. O primeiro é mais restrito, o segundo mais flexível.
-- **Sugestão:** Unificar em um único script que aceite username como parâmetro opcional (default: 'admin').
+- **Problema:** Funcionalidade essencialmente a mesma, com implementações duplicadas. O primeiro era mais restrito, o segundo mais flexível. Além disso, o segundo possuía senha hardcoded (`'123456'`) e exibia a senha no log — risco de segurança.
+- **Correção aplicada (20/05/2026):**
+  - Unificados em um único script: `scripts/reset-password.js`.
+  - Username aceito como parâmetro opcional (default: `'admin'`).
+  - Senha como argumento obrigatório (sem default inseguro).
+  - Senha não é mais exibida nos logs de execução.
+  - Uso do `import 'dotenv/config'` (mais simples) combinado com import dinâmico de `../lib/auth.js` e `../lib/db.js`.
+  - `RETURNING id` no UPDATE para confirmação da operação.
+  - Removidos: `scripts/reset-admin-password.js` e `scripts/auth/reset-password.js`.
+- **Uso correto agora:** `node scripts/reset-password.js <usuario> <nova_senha>` (usuário opcional, default: admin)
 
 ### 2.2. Múltiplos scripts de limpeza com lógica similar
 - **Arquivos:**

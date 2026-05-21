@@ -750,8 +750,6 @@
 │   └── load-report-1771550191786.html
 ├── schema.knip.json
 ├── scripts
-│   ├── auth
-│   │   └── reset-password.js
 │   ├── backup.js
 │   ├── check-db-status.js
 │   ├── check-env.js
@@ -805,7 +803,7 @@
 │   │   ├── 011-fix-entity-id-type.js
 │   │   └── 012-migrate-sqlite-to-pg.js
 │   ├── monitor-disk-space.js
-│   ├── reset-admin-password.js
+│   ├── reset-password.js
 │   ├── restore-backup.js
 │   ├── run-all-load-tests.js
 │   ├── run-load-tests.sh
@@ -1051,4 +1049,4 @@
 ├── tests-output.log
 └── tree.txt
 
-158 directories, 894 files
+157 directories, 893 files

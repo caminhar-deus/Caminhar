@@ -34,7 +34,7 @@ scripts/
 ├── init-server.js
 ├── init-videos.js
 ├── monitor-disk-space.js
-├── reset-admin-password.js
+├── reset-password.js
 ├── restore-backup.js
 ├── run-all-load-tests.js
 ├── run-load-tests.sh
@@ -45,7 +45,6 @@ scripts/
 ├── seed-videos.js
 ├── validate-schema.js
 ├── auth/
-│   └── reset-password.js
 ├── db/
 │   ├── verify-db-functions.js
 │   └── verify-migration.js
@@ -217,10 +216,12 @@ scripts/
 - **Propósito:** Monitora o espaço em disco do diretório de backups. Alerta quando o uso ultrapassa thresholds configurados (ex: >80% Warning, >95% Critical). Pode ser usado em conjunto com o cron para alertas proativos.
 - **Dependências:** `fs`
 
-### `scripts/reset-admin-password.js`
-- **Localização:** `/home/qa/Projeto/Caminhar/scripts/reset-admin-password.js`
-- **Propósito:** Reseta a senha do usuário admin no banco de dados. Gera hash bcrypt da nova senha e atualiza no banco. Utilizado para recuperação de acesso.
-- **Dependências:** `dotenv`, `bcryptjs`, `../lib/db.js` (local)
+### `scripts/reset-password.js`
+- **Localização:** `/home/qa/Projeto/Caminhar/scripts/reset-password.js`
+- **Propósito:** Reseta a senha de qualquer usuário no banco de dados. Aceita username como parâmetro opcional (default: `'admin'`) e nova senha como obrigatório. Gera hash bcrypt e atualiza no banco. Se o usuário não existir, cria um novo com role `'admin'`. Unifica os antigos `scripts/reset-admin-password.js` e `scripts/auth/reset-password.js` em um único script.
+- **Segurança:** Senha é argumento obrigatório (sem default inseguro). Senha não é exibida nos logs de execução.
+- **Uso:** `node scripts/reset-password.js <usuario> <nova_senha>` (usuário opcional, default: admin)
+- **Dependências:** `dotenv`, `../lib/auth.js` (local), `../lib/db.js` (local)
 
 ### `scripts/seed-all.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/seed-all.js`
@@ -266,10 +267,7 @@ scripts/
 
 ## 🔐 Subdiretório `scripts/auth/`
 
-### `scripts/auth/reset-password.js`
-- **Localização:** `/home/qa/Projeto/Caminhar/scripts/auth/reset-password.js`
-- **Propósito:** Versão alternativa do reset de senha, localizada no subdiretório `auth/`. Permite resetar senha de qualquer usuário (não apenas admin) informando username e nova senha via linha de comando.
-- **Dependências:** `dotenv`, `bcryptjs`, `../lib/db.js` (local)
+*(Diretório vazio — os scripts foram unificados em `scripts/reset-password.js`)*
 
 ---
 
@@ -451,9 +449,9 @@ scripts/
 | **Migrações** | 9 | `001` a `009` em `migrations/` |
 | **Testes de Carga** | 4 | `run-all-load-tests.js`, `generate-load-report.js`, `run-load-tests.sh`, `consolidate-k6-reports.js` |
 | **Monitoramento** | 1 | `monitor-disk-space.js` |
-| **Utilidades** | 4 | `db-shell.js`, `check-server.js`, `reset-admin-password.js` + 4 em `utils/` |
+| **Utilidades** | 4 | `db-shell.js`, `check-server.js`, `reset-password.js` + 4 em `utils/` |
 | **Manutenção** | 6 | `maintenance/` |
-| **Autenticação** | 1 | `auth/reset-password.js` |
+| **Autenticação** | — | *(unificado em `scripts/reset-password.js`)* |
 | **Testes Manuais** | 2 | `tests/` |
 | **Banco de Dados** | 2 | `db/` |
 
