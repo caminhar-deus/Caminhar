@@ -2,7 +2,9 @@
 
 ## Visão Geral
 
-A pasta `/cypress` contém os testes end-to-end (E2E) do projeto, utilizando o framework **Cypress**. Atualmente, a estrutura é composta por um único arquivo de teste dentro do subdiretório `e2e/`.
+A pasta `/cypress` contém os testes end-to-end (E2E) do projeto, utilizando o framework **Cypress** (`^15.15.0`). Atualmente, a estrutura conta com **5 arquivos de teste**, **31+ cenários**, e suporte completo com `fixtures/` e `support/`.
+
+> **Documento complementar:** Para uma análise detalhada de correções, melhorias e recomendações aplicadas, consulte [`/docs/UPGRADE_cypress.md`](/docs/UPGRADE_cypress.md).
 
 ---
 
@@ -10,8 +12,17 @@ A pasta `/cypress` contém os testes end-to-end (E2E) do projeto, utilizando o f
 
 ```
 cypress/
-└── e2e/
-    └── image_zoom.cy.js
+├── e2e/
+│   ├── image_zoom.cy.js   (18 cenários) — Zoom de imagem (lightbox)
+│   ├── home.cy.js          (4 cenários)  — Página inicial
+│   ├── blog.cy.js          (3 cenários)  — Listagem do blog
+│   ├── post.cy.js          (3 cenários)  — Post individual
+│   └── navigation.cy.js    (3 cenários)  — Navegação entre páginas
+├── fixtures/
+│   └── posts.json
+└── support/
+    ├── commands.js          (8 comandos customizados)
+    └── e2e.js
 ```
 
 ---
@@ -23,38 +34,134 @@ cypress/
 **Localização:** `cypress/e2e/image_zoom.cy.js`
 
 **Propósito:**  
-Testa a funcionalidade de **zoom de imagem (lightbox)** em páginas de posts do blog. O teste verifica os comportamentos de abrir e fechar o lightbox tanto por clique na imagem quanto pela tecla `Esc`.
+Testa a funcionalidade de **zoom de imagem (lightbox)** em páginas de posts do blog, incluindo fluxo principal, casos de borda, responsividade e acessibilidade.
+
+**Estrutura do arquivo:**
+- `context('Fluxo principal (happy path)')` — 5 testes
+- `context('Testes de borda (edge cases)')` — 3 testes
+- `context('Responsividade')` — 2 testes
+- `context('Acessibilidade')` — 2 testes
 
 **O que o arquivo faz em detalhes:**
 
-1. **Mock da API (`cy.intercept`):**
-   - Intercepta requisições `GET /api/posts` e retorna um post fictício contendo:
-     - `id`, `title`, `slug`, `excerpt`, `image_url`, `created_at`, `content`.
-   - Isso torna o teste independente do estado real do banco de dados.
-
-2. **Navegação (`cy.visit`):**
-   - Visita a URL `/blog/post-de-teste-com-imagem` (slug do post mockado).
-   - Aguarda a requisição interceptada (`@getPosts`) ser concluída.
-
-3. **Cenário de teste: "deve abrir e fechar o lightbox da imagem com clique e com a tecla Esc"**
-   - **Verificação inicial:** Confirma que a imagem do post está visível no container com `cursor: zoom-in`.
-   - **Abertura por clique:** Clica na imagem e verifica se o lightbox (`position: fixed`) e a imagem ampliada aparecem.
-   - **Fechamento por clique no overlay:** Clica no canto superior esquerdo do lightbox para fechar e verifica se o elemento some.
-   - **Reabertura:** Clica novamente na imagem para reabrir o lightbox.
-   - **Fechamento por tecla Esc:** Pressiona `{esc}` no corpo da página e verifica se o lightbox foi fechado.
+1. **Mock da API:** Intercepta requisições específicas por slug (`/api/posts?slug=...`), retornando post fictício. Extraído para constante `postMock` no escopo do `describe`.
+2. **Navegação:** Usa o slug extraído do mock: `cy.visit(\`/blog/${postMock.slug}\`)`.
+3. **Seletores:** Utiliza atributos `data-testid` semânticos (`image-zoom-container`, `image-lightbox`, etc.) em vez de seletores CSS frágeis.
 
 **Métricas do arquivo:**
-- **Total de linhas:** 57
-- **Total de `describe`/`context`:** 1 (`describe`)
-- **Total de `it`:** 1
+- **Total de linhas:** ~115
+- **Total de `describe`/`context`:** 5
+- **Total de `it`:** 12
+- **Total de `beforeEach`:** 3
+- **Nível de aninhamento:** 2 níveis (`describe` → `context` → `it`)
+
+---
+
+### `/cypress/e2e/home.cy.js`
+
+**Localização:** `cypress/e2e/home.cy.js`
+
+**Propósito:**  
+Testa a página inicial do site, verificando carregamento, título, navegação e conteúdo principal.
+
+**Métricas do arquivo:**
+- **Total de linhas:** ~20
+- **Total de `describe`:** 1
+- **Total de `it`:** 4
+
+---
+
+### `/cypress/e2e/blog.cy.js`
+
+**Localização:** `cypress/e2e/blog.cy.js`
+
+**Propósito:**  
+Testa a página de listagem do blog, com mock de 2 posts e verificação de links para posts individuais.
+
+**Métricas do arquivo:**
+- **Total de linhas:** ~50
+- **Total de `describe`:** 1
 - **Total de `beforeEach`:** 1
-- **Nível de aninhamento:** 1 nível (`describe` → `it`)
+- **Total de `it`:** 3
+
+---
+
+### `/cypress/e2e/post.cy.js`
+
+**Localização:** `cypress/e2e/post.cy.js`
+
+**Propósito:**  
+Testa a página de post individual, incluindo cenários com/sem imagem, exibição de conteúdo e botões de compartilhamento.
+
+**Métricas do arquivo:**
+- **Total de linhas:** ~60
+- **Total de `describe`:** 1
+- **Total de `it`:** 3
+
+---
+
+### `/cypress/e2e/navigation.cy.js`
+
+**Localização:** `cypress/e2e/navigation.cy.js`
+
+**Propósito:**  
+Testa a navegação entre páginas (home → blog, home → post, e acesso à página admin sem autenticação).
+
+**Métricas do arquivo:**
+- **Total de linhas:** ~40
+- **Total de `describe`:** 1
+- **Total de `it`:** 3
+
+---
+
+### `/cypress/support/commands.js`
+
+**Localização:** `cypress/support/commands.js`
+
+**Propósito:**  
+Define comandos customizados reutilizáveis nos testes E2E.
+
+**Comandos disponíveis:**
+| Comando | Descrição |
+|---------|-----------|
+| `cy.login()` | Simula login como admin via mock de API |
+| `cy.createPost(post)` | Mocka criação de post |
+| `cy.viewportMobile()` | Altera viewport para 375×667 |
+| `cy.viewportTablet()` | Altera viewport para 768×1024 |
+| `cy.lightboxShouldBeOpen()` | Verifica se o lightbox está visível |
+| `cy.lightboxShouldBeClosed()` | Verifica se o lightbox não existe |
+| `cy.openLightbox()` | Abre o lightbox clicando na imagem |
+| `cy.closeLightboxByOverlay()` | Fecha o lightbox clicando no overlay |
+
+---
+
+### `/cypress/fixtures/posts.json`
+
+**Localização:** `cypress/fixtures/posts.json`
+
+**Propósito:**  
+Arquivo de fixture com dados mockados de posts para reutilização em múltiplos testes.
+
+---
+
+## Métricas Gerais da Pasta `/cypress`
+
+| Métrica | Valor |
+|---------|-------|
+| Total de arquivos de teste | 5 |
+| Total de cenários (`it`) | 31+ |
+| Total de comandos customizados | 8 |
+| Arquivos de suporte | 2 (commands.js, e2e.js) |
+| Arquivos de fixture | 1 (posts.json) |
+| Total de linhas (todos os testes) | ~285 |
 
 ---
 
 ## Observações Gerais
 
-- **Estrutura minimalista:** A pasta contém apenas 1 arquivo de teste, sem subpastas como `support/`, `fixtures/`, ou `plugins/`, que são comuns em projetos Cypress mais completos.
-- **Cobertura limitada:** Apenas uma funcionalidade (zoom de imagem) é testada. Não há testes para outras páginas, fluxos de navegação, formulários, autenticação, etc.
-- **Dependência de seletores frágeis:** O teste utiliza seletores CSS baseados em estilo (`div[style*="cursor: zoom-in"]`, `div[style*="position: fixed"]`), que são frágeis e podem quebrar com pequenas mudanças no CSS. Idealmente, deveriam usar `data-*` attributes ou classes semânticas.
+> Para uma análise detalhada de problemas, correções e melhorias identificados na pasta `/cypress`, consulte [`/docs/UPGRADE_cypress.md`](/docs/UPGRADE_cypress.md).
+
 - **Mock isolado:** O mock de API é feito no `beforeEach`, o que é uma boa prática para garantir que cada execução do teste comece com o mesmo estado.
+- **Padrão `data-testid`:** Todos os seletores no arquivo `image_zoom.cy.js` utilizam atributos `data-testid` semânticos, tornando os testes resistentes a mudanças de estilo.
+- **Comandos reutilizáveis:** Operações comuns do lightbox foram abstraídas em comandos customizados (`cy.openLightbox()`, `cy.lightboxShouldBeOpen()`, etc.).
+- **Instalação adicional:** O plugin `cypress-axe` foi instalado como dependência de desenvolvimento para futuras auditorias automatizadas de acessibilidade.

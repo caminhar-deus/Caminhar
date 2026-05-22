@@ -1,57 +1,168 @@
 describe('Funcionalidade de Zoom de Imagem (Lightbox) no Post', () => {
-  beforeEach(() => {
-    // Mock da API para garantir que temos um post com imagem para testar,
-    // tornando o teste independente do estado do banco de dados.
-    cy.intercept('GET', '/api/posts', {
-      statusCode: 200,
-      body: [
-        {
-          id: 1,
-          title: 'Post de Teste com Imagem',
-          slug: 'post-de-teste-com-imagem',
-          excerpt: 'Este é um post para testar o zoom da imagem.',
-          image_url: '/placeholder.jpg', // Pode ser qualquer imagem válida na pasta /public
-          created_at: new Date().toISOString(),
-          content: 'Conteúdo do post de teste.'
-        }
-      ]
-    }).as('getPosts');
+  const postMock = {
+    id: 1,
+    title: 'Post de Teste com Imagem',
+    slug: 'post-de-teste-com-imagem',
+    excerpt: 'Este é um post para testar o zoom da imagem.',
+    image_url: '/placeholder.svg',
+    created_at: new Date().toISOString(),
+    content: 'Conteúdo do post de teste.'
+  };
 
-    // Visita a página do post que foi mockado
-    cy.visit('/blog/post-de-teste-com-imagem');
-    cy.wait('@getPosts');
+  context('Fluxo principal (happy path)', () => {
+    beforeEach(() => {
+      cy.intercept('GET', `/api/posts?slug=${postMock.slug}`, {
+        statusCode: 200,
+        body: [postMock]
+      }).as('getPost');
+
+      cy.visit(`/blog/${postMock.slug}`);
+      cy.wait('@getPost');
+    });
+
+    it('deve exibir o container e a imagem do post', () => {
+      cy.get('[data-testid="image-zoom-container"]').should('be.visible');
+      cy.get('[data-testid="image-zoom-thumb"]')
+        .should('be.visible')
+        .and('have.attr', 'src')
+        .and('not.be.empty');
+    });
+
+    it('deve abrir o lightbox ao clicar na imagem', () => {
+      cy.get('[data-testid="image-zoom-container"]').click();
+      cy.get('[data-testid="image-lightbox"]').should('be.visible');
+      cy.get('[data-testid="image-lightbox-img"]').should('be.visible');
+    });
+
+    it('deve fechar o lightbox ao clicar no overlay', () => {
+      cy.openLightbox();
+      cy.get('[data-testid="image-lightbox"]').click('topLeft');
+      cy.get('[data-testid="image-lightbox"]').should('not.exist');
+    });
+
+    it('deve fechar o lightbox com a tecla Esc', () => {
+      cy.openLightbox();
+      cy.get('body').type('{esc}');
+      cy.get('[data-testid="image-lightbox"]').should('not.exist');
+    });
+
+    it('deve permitir reabrir o lightbox após fechar', () => {
+      cy.openLightbox();
+      cy.closeLightboxByOverlay();
+      cy.openLightbox();
+      cy.get('[data-testid="image-lightbox"]').should('be.visible');
+    });
   });
 
-  it('deve abrir e fechar o lightbox da imagem com clique e com a tecla Esc', () => {
-    // Seletores para os elementos da funcionalidade de zoom
-    const imageContainer = 'div[style*="cursor: zoom-in"]';
-    const lightbox = 'div[style*="position: fixed"]';
+  context('Testes de borda (edge cases)', () => {
+    it('não deve exibir o container de zoom quando o post não tem image_url', () => {
+      const postSemImagem = { ...postMock, image_url: null };
+      cy.intercept('GET', `/api/posts?slug=${postSemImagem.slug}`, {
+        statusCode: 200,
+        body: [postSemImagem]
+      }).as('getPostSemImagem');
 
-    // 1. Verifica se a imagem do post está visível
-    cy.get(imageContainer).find('img').should('be.visible');
+      cy.visit(`/blog/${postSemImagem.slug}`);
+      cy.wait('@getPostSemImagem');
 
-    // 2. Clica na imagem para abrir o lightbox
-    cy.get(imageContainer).click();
+      cy.get('[data-testid="image-zoom-container"]').should('not.exist');
+      cy.get('[data-testid="image-lightbox"]').should('not.exist');
+    });
 
-    // 3. Verifica se o lightbox e a imagem ampliada estão visíveis
-    cy.get(lightbox).should('be.visible').find('img').should('be.visible');
+    it('não deve fechar o lightbox ao clicar diretamente na imagem ampliada', () => {
+      cy.intercept('GET', `/api/posts?slug=${postMock.slug}`, {
+        statusCode: 200,
+        body: [postMock]
+      }).as('getPost');
 
-    // 4. Clica no fundo (overlay) para fechar o lightbox
-    cy.get(lightbox).click('topLeft'); // Clica no canto para garantir que não é na imagem
+      cy.visit(`/blog/${postMock.slug}`);
+      cy.wait('@getPost');
 
-    // 5. Verifica se o lightbox foi fechado
-    cy.get(lightbox).should('not.exist');
+      cy.openLightbox();
+      // Clica diretamente na imagem ampliada (não no overlay)
+      cy.get('[data-testid="image-lightbox-img"]').click({ force: true });
+      // O lightbox deve permanecer aberto (stopPropagation)
+      cy.get('[data-testid="image-lightbox"]').should('be.visible');
+    });
 
-    // --- Testa o fechamento com a tecla Esc ---
+    it('deve suportar múltiplas aberturas e fechamentos consecutivos', () => {
+      cy.intercept('GET', `/api/posts?slug=${postMock.slug}`, {
+        statusCode: 200,
+        body: [postMock]
+      }).as('getPost');
 
-    // 6. Clica na imagem novamente para reabrir
-    cy.get(imageContainer).click();
-    cy.get(lightbox).should('be.visible');
+      cy.visit(`/blog/${postMock.slug}`);
+      cy.wait('@getPost');
 
-    // 7. Pressiona a tecla 'Esc' no corpo da página
-    cy.get('body').type('{esc}');
+      // Ciclo 1: abre e fecha
+      cy.openLightbox();
+      cy.closeLightboxByOverlay();
 
-    // 8. Verifica se o lightbox foi fechado
-    cy.get(lightbox).should('not.exist');
+      // Ciclo 2: abre e fecha
+      cy.openLightbox();
+      cy.get('body').type('{esc}');
+      cy.lightboxShouldBeClosed();
+
+      // Ciclo 3: abre
+      cy.openLightbox();
+      cy.lightboxShouldBeOpen();
+    });
+  });
+
+  context('Responsividade', () => {
+    beforeEach(() => {
+      cy.intercept('GET', `/api/posts?slug=${postMock.slug}`, {
+        statusCode: 200,
+        body: [postMock]
+      }).as('getPost');
+    });
+
+    it('deve funcionar corretamente em viewport mobile (375×667)', () => {
+      cy.viewportMobile();
+      cy.visit(`/blog/${postMock.slug}`);
+      cy.wait('@getPost');
+      cy.openLightbox();
+      cy.get('[data-testid="image-lightbox"]').should('be.visible');
+      cy.get('body').type('{esc}');
+      cy.lightboxShouldBeClosed();
+    });
+
+    it('deve funcionar corretamente em viewport tablet (768×1024)', () => {
+      cy.viewportTablet();
+      cy.visit(`/blog/${postMock.slug}`);
+      cy.wait('@getPost');
+      cy.openLightbox();
+      cy.get('[data-testid="image-lightbox"]').should('be.visible');
+      cy.get('body').type('{esc}');
+      cy.lightboxShouldBeClosed();
+    });
+  });
+
+  context('Acessibilidade', () => {
+    beforeEach(() => {
+      cy.intercept('GET', `/api/posts?slug=${postMock.slug}`, {
+        statusCode: 200,
+        body: [postMock]
+      }).as('getPost');
+
+      cy.visit(`/blog/${postMock.slug}`);
+      cy.wait('@getPost');
+    });
+
+    it('deve ter atributos ARIA corretos no lightbox', () => {
+      cy.openLightbox();
+      cy.get('[data-testid="image-lightbox"]')
+        .should('have.attr', 'role', 'dialog')
+        .and('have.attr', 'aria-modal', 'true')
+        .and('have.attr', 'aria-label')
+        .and('include', 'Imagem ampliada');
+    });
+
+    it('deve mover o foco para o lightbox ao abrir', () => {
+      cy.openLightbox();
+      cy.get('[data-testid="image-lightbox"]').should('be.visible');
+      // O foco deve estar dentro do lightbox
+      cy.focused().should('exist');
+    });
   });
 });

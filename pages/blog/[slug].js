@@ -78,18 +78,24 @@ export default function BlogPost({ post }) {
         {post.image_url && (
           <>
             <div
+              data-testid="image-zoom-container"
               style={{ marginBottom: '40px', borderRadius: '12px', overflow: 'hidden', backgroundColor: 'var(--color-bg-secondary)', cursor: 'zoom-in' }}
               onClick={() => setIsImageZoomed(true)}
             >
               <img
                 src={post.image_url}
                 alt={post.title}
+                data-testid="image-zoom-thumb"
                 style={{ width: '100%', height: 'auto', maxHeight: '65vh', objectFit: 'contain', display: 'block' }}
               />
             </div>
 
             {isImageZoomed && (
               <div
+                data-testid="image-lightbox"
+                role="dialog"
+                aria-modal="true"
+                aria-label={`Imagem ampliada: ${post.title}`}
                 style={{
                   position: 'fixed',
                   top: 0,
@@ -108,6 +114,7 @@ export default function BlogPost({ post }) {
                 <img
                   src={post.image_url}
                   alt={post.title}
+                  data-testid="image-lightbox-img"
                   style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', boxShadow: '0 0 30px rgba(0,0,0,0.5)' }}
                 />
               </div>
