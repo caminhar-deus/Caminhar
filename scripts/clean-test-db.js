@@ -30,4 +30,10 @@ async function cleanTestDb() {
   }
 }
 
-cleanTestDb();
+try {
+  await cleanTestDb();
+  process.exit(0);
+} catch (error) {
+  console.error('❌ Erro ao limpar bancos de dados de teste:', error.message);
+  process.exit(1);
+}

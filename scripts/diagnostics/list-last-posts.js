@@ -36,6 +36,7 @@ async function listLastPosts() {
 
   } catch (error) {
     console.error('❌ Erro ao listar posts:', error.message);
+    process.exit(1);
   } finally {
     await pool.end();
   }

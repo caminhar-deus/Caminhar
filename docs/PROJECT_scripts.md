@@ -83,6 +83,7 @@ scripts/
     ├── cleanup.js
     ├── cleanup-test-data.js
     ├── constants.js *
+    ├── date-format.js *
     ├── list-settings.js
     ├── list-table-columns.js
     ├── load-env.js *
@@ -102,7 +103,8 @@ scripts/
 - **Performance:** Leitura incremental do diretório de backups via `opendir()` em vez de `readdirSync()`, eliminando carregamento completo do diretório na memória. Função `getBackupFiles()` aceita parâmetro `maxFiles` para limitar a consulta — `cleanupOldBackups()` lê no máximo 11 arquivos (em vez de todos) e `getAvailableBackups()` usa default de 50. Remoção de duplicatas com `Set()` (O(n)) em vez de `indexOf()` (O(n²)).
 - **Integração com monitor de disco:** A função `checkDiskBeforeBackup()` verifica espaço em disco antes de cada `createBackup()`, usando `spawn('df', ['-h', ...])` (seguro) com fallback `fs.promises.statfs()` (nativo). Registra alerta nos logs se o uso estiver acima do threshold (85%). Exportada como função pública para uso externo.
 - **Funções exportadas:** `createBackup()`, `restoreBackup()`, `cleanupOldBackups()`, `getAvailableBackups(maxFiles = 50)`, `getBackupLogs()`, `initializeBackupSystem()`, `checkDiskBeforeBackup()`
-- **Dependências:** `fs`, `path`, `date-fns`, `zlib`, `child_process` (apenas `spawn`), `crypto`
+- **Dependências:** `fs`, `path`, `scripts/utils/date-format.js` (local), `zlib`, `child_process` (apenas `spawn`), `crypto`
+- **Refatorado em:** 21/05/2026 — substituído `import { format } from 'date-fns'` por funções nativas em `scripts/utils/date-format.js`; 3 ocorrências de `format()` substituídas; dependência `date-fns` removida do `backup.js` (ainda usada em `components/Admin/AdminUsersTab.js`).
 
 ### `scripts/create-backup.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/create-backup.js`
@@ -597,6 +599,16 @@ scripts/
 - **Criado em:** 21/05/2026 — refatoração (correção 5.2, eliminação de constantes mágicas).
 - **Atualizado em:** 21/05/2026 — adicionadas constantes `DISK_THRESHOLD_PERCENT` e `DISK_PATH_DEFAULT` para monitor de disco (correção 6.2).
 - **Dependências:** Nenhuma (apenas valores primitivos exportados)
+
+### `scripts/utils/date-format.js`
+- **Localização:** `/home/qa/Projeto/Caminhar/scripts/utils/date-format.js`
+- **Propósito:** Módulo compartilhado de formatação de datas usando APIs nativas do JavaScript. Substitui o uso de `date-fns/format` em `scripts/backup.js`, eliminando a dependência desnecessária da biblioteca externa nesse arquivo. Fornece duas funções exportadas:
+  - **`formatISODate([date])`** — formata data no padrão ISO para nomes de arquivo (`YYYY-MM-DDTHH-mm-ssZ`). Usa `Date.prototype.toISOString()` com substituições, sem dependências externas.
+  - **`formatLogDate([date])`** — formata data no padrão de log (`YYYY-MM-DD HH:mm:ss`). Usa `Date.prototype.toISOString()` com slicing.
+  - **Uso:** `import { formatISODate, formatLogDate } from './utils/date-format.js';`
+- **Criado em:** 21/05/2026 — refatoração (correção 7.3, eliminação de dependência date-fns em backup.js).
+- **Testes:** 10 testes unitários em `tests/unit/scripts/utils/date-format.test.js`.
+- **Dependências:** Nenhuma (apenas APIs nativas do JavaScript)
 
 ### `scripts/utils/load-env.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/utils/load-env.js`

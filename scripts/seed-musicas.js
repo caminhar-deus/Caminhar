@@ -23,7 +23,8 @@ async function seedMusicRecords() {
     
     console.log('✅ Músicas de teste inseridas com sucesso!');
   } catch (error) {
-    console.error('❌ Erro ao inserir músicas:', error);
+    console.error('❌ Erro ao inserir músicas:', error.message);
+    process.exit(1);
   } finally {
     await closeDatabase();
   }

@@ -50,7 +50,8 @@ async function diagnoseHero() {
     }
 
   } catch (err) {
-    console.error('❌ Erro no diagnóstico:', err);
+    console.error('❌ Erro no diagnóstico:', err.message);
+    process.exit(1);
   } finally {
     await pool.end();
   }

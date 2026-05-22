@@ -21,4 +21,10 @@ async function clearCache() {
   console.log('✅ Cache limpo com sucesso!');
 }
 
-clearCache();
+try {
+  await clearCache();
+  process.exit(0);
+} catch (error) {
+  console.error('❌ Erro ao limpar cache:', error.message);
+  process.exit(1);
+}

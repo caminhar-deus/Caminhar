@@ -41,7 +41,7 @@ async function cleanOldReports() {
     }
 
   } catch (error) {
-    console.error('❌ Erro ao limpar relatórios:', error);
+    console.error('❌ Erro ao limpar relatórios:', error.message);
     process.exit(1);
   }
 }

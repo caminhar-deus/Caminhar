@@ -38,7 +38,8 @@ async function listSettings() {
     }
 
   } catch (error) {
-    console.error('❌ Erro ao listar configurações:', error);
+    console.error('❌ Erro ao listar configurações:', error.message);
+    process.exit(1);
   } finally {
     await pool.end();
   }

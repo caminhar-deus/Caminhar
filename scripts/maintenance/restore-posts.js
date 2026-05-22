@@ -84,7 +84,8 @@ async function restorePosts() {
     console.log(`✅ Restauração concluída! ${restoredCount} posts processados.`);
 
   } catch (error) {
-    console.error('❌ Erro ao restaurar backup:', error);
+    console.error('❌ Erro ao restaurar backup:', error.message);
+    process.exit(1);
   } finally {
     await pool.end();
   }

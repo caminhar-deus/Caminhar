@@ -46,7 +46,8 @@ async function seedPostRecords() {
     
     console.log('✅ Posts de teste inseridos com sucesso!');
   } catch (error) {
-    console.error('❌ Erro ao inserir posts:', error);
+    console.error('❌ Erro ao inserir posts:', error.message);
+    process.exit(1);
   } finally {
     await closeDatabase();
   }

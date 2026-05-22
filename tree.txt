@@ -514,7 +514,9 @@
 │   └── backups
 │       ├── backup.log
 │       ├── caminhar-pg-backup_2026-05-21T19-56-57Z.sql.gz.enc
-│       └── caminhar-pg-backup_2026-05-21T19-56-57Z.sql.gz.sha256
+│       ├── caminhar-pg-backup_2026-05-21T19-56-57Z.sql.gz.sha256
+│       ├── caminhar-pg-backup_2026-05-22T10-18-54Z.sql.gz.enc
+│       └── caminhar-pg-backup_2026-05-22T10-18-54Z.sql.gz.sha256
 ├── docs
 │   ├── JEST_ESM.md
 │   ├── PROJECT_components.md
@@ -808,6 +810,7 @@
 │   │   ├── cleanup.js
 │   │   ├── cleanup-test-data.js
 │   │   ├── constants.js
+│   │   ├── date-format.js
 │   │   ├── list-settings.js
 │   │   ├── list-table-columns.js
 │   │   ├── load-env.js
@@ -1051,6 +1054,7 @@
 │       │   ├── utils
 │       │   │   ├── cleanup.test.js
 │       │   │   ├── constants.test.js
+│       │   │   ├── date-format.test.js
 │       │   │   └── load-env.test.js
 │       │   └── validate-schema.test.js
 │       ├── settings-cache.test.js
@@ -1059,4 +1063,4 @@
 ├── tests-output.log
 └── tree.txt
 
-163 directories, 897 files
+163 directories, 901 files

@@ -123,4 +123,9 @@ async function testApi() {
 }
 
 // Run tests
-testApi().catch(console.error);
+try {
+  await testApi();
+} catch (error) {
+  console.error('❌ Erro durante os testes:', error.message);
+  process.exit(1);
+}

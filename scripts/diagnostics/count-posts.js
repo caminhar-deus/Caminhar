@@ -31,6 +31,7 @@ async function countPosts() {
 
   } catch (error) {
     console.error('❌ Erro ao contar posts:', error.message);
+    process.exit(1);
   } finally {
     await pool.end();
   }

@@ -47,7 +47,8 @@ async function fixHeroKey() {
     console.log('👉 Recarregue a página inicial (http://localhost:3000) para testar.');
 
   } catch (error) {
-    console.error('❌ Erro ao corrigir chaves:', error);
+    console.error('❌ Erro ao corrigir chaves:', error.message);
+    process.exit(1);
   } finally {
     await pool.end();
   }

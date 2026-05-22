@@ -28,7 +28,7 @@ function checkEnv() {
     console.error('\x1b[31m%s\x1b[0m', '❌ Erro Crítico: Variáveis de ambiente obrigatórias não definidas:');
     missingRequired.forEach(key => console.error(`   - ${key}`));
     console.error('\x1b[33m%s\x1b[0m', '👉 Por favor, configure-as no arquivo .env ou .env.local');
-    process.exit(1); // Encerra o processo com erro, impedindo o servidor de iniciar
+    throw new Error('Variáveis de ambiente obrigatórias não definidas');
   }
 
   if (missingOptional.length > 0) {
@@ -41,4 +41,10 @@ function checkEnv() {
   console.log('\x1b[32m%s\x1b[0m', '✅ Ambiente validado com sucesso.\n');
 }
 
-checkEnv();
+try {
+  checkEnv();
+  process.exit(0);
+} catch (error) {
+  console.error('❌ Erro:', error.message);
+  process.exit(1);
+}

@@ -89,12 +89,20 @@ export async function cleanOrphanedImages() {
     }
 
   } catch (error) {
-    console.error('❌ Erro fatal ao limpar imagens:', error);
+    console.error('❌ Erro fatal ao limpar imagens:', error.message);
   } finally {
     await pool.end();
   }
 }
 
 if (process.argv[1] && process.argv[1].endsWith('clean-orphaned-images.js')) {
-  cleanOrphanedImages();
+  (async () => {
+    try {
+      await cleanOrphanedImages();
+      process.exit(0);
+    } catch (error) {
+      console.error('❌ Erro fatal ao limpar imagens:', error.message);
+      process.exit(1);
+    }
+  })();
 }

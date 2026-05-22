@@ -46,7 +46,8 @@ async function backupPosts() {
     console.log(`   📊 Total de registros salvos: ${rows.length}`);
 
   } catch (error) {
-    console.error('❌ Erro ao fazer backup:', error);
+    console.error('❌ Erro ao fazer backup:', error.message);
+    process.exit(1);
   } finally {
     await pool.end();
   }

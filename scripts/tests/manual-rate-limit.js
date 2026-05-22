@@ -16,7 +16,7 @@ console.log('ℹ️  Configuração esperada: 5 tentativas permitidas, 6ª bloqu
 
 const runTest = async () => {
   for (let i = 1; i <= 7; i++) {
-    await new Promise((resolve) => {
+    await new Promise((resolve, reject) => {
       const req = http.request(options, (res) => {
         let data = '';
         res.on('data', chunk => data += chunk);
@@ -33,10 +33,16 @@ const runTest = async () => {
         });
       });
       
-      req.on('error', (e) => console.error(`❌ Erro: ${e.message}`));
+      req.on('error', (e) => reject(new Error(e.message)));
       req.end();
     });
   }
 };
 
-runTest();
+try {
+  await runTest();
+  process.exit(0);
+} catch (error) {
+  console.error('❌ Erro ao executar teste de Rate Limit:', error.message);
+  process.exit(1);
+}

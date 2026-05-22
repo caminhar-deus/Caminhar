@@ -477,10 +477,19 @@
   - As migrações agora são executadas dentro de transações (atomicidade)
   - Scripts relacionados a SQLite (`010-*`, `012-*`) removidos por estarem fora do escopo
 
-### 7.3. Dependência de `date-fns` apenas para formatação de data
+### 7.3. Dependência de `date-fns` apenas para formatação de data ✅ Corrigido
 - **Arquivo:** `scripts/backup.js`
-- **Problema:** A única função usada de `date-fns` é `format()`, que poderia ser facilmente substituída por `Intl.DateTimeFormat` nativo ou uma função simples de formatação.
-- **Sugestão:** Avaliar se vale a pena manter a dependência ou substituir por código nativo.
+- **Problema:** A única função usada de `date-fns` era `format()`, utilizada em 3 ocorrências (linhas 173, 321, 405), que poderia ser facilmente substituída por código nativo. A dependência não podia ser completamente removida do projeto pois ainda é usada em `components/Admin/AdminUsersTab.js` com `formatDistanceToNow` e locale `ptBR`.
+- **Correção aplicada (21/05/2026):**
+  - Criado módulo compartilhado `scripts/utils/date-format.js` com duas funções usando APIs nativas do JavaScript:
+    - **`formatISODate()`** — formata data no padrão ISO para nomes de arquivo (`YYYY-MM-DDTHH-mm-ssZ`), usando `Date.prototype.toISOString()` com substituições.
+    - **`formatLogDate()`** — formata data no padrão de log (`YYYY-MM-DD HH:mm:ss`), usando `Date.prototype.toISOString()` com slicing.
+  - Substituído `import { format } from 'date-fns'` por `import { formatISODate, formatLogDate } from './utils/date-format.js'` em `scripts/backup.js`.
+  - Substituídas as 3 ocorrências de `format()`:
+    - `generateBackupFilename()` (linha 173): `format(new Date(), "yyyy-MM-dd'T'HH-mm-ss'Z'")` → `formatISODate()`
+    - `logBackupOperation()` (linha 321): `format(new Date(), 'yyyy-MM-dd HH:mm:ss')` → `formatLogDate()`
+    - `restoreBackup()` (linha 405): `format(new Date(), "yyyy-MM-dd'T'HH-mm-ss'Z'")` → `formatISODate()`
+  - Criados 10 testes unitários em `tests/unit/scripts/utils/date-format.test.js` validando ambas as funções com datas fixas e data atual, todos passando.
 
 ---
 
@@ -533,12 +542,39 @@ Criado sistema completo de migrações:
 - Cada migração exporta `up(pool)` e `down(pool)`
 - Execução dentro de transações com rollback automático em caso de falha
 
-### 8.5. Padronizar tratamento de erros
+### 8.5. Padronizar tratamento de erros ✅ Concluído
 Definir e documentar um padrão:
-- Scripts de CLI: `console.error()` + `process.exit(1)`
-- Funções exportadas: `throw new Error()`
+- Scripts de CLI: `console.error()` + `process.exit(1)` no entry point
+- Funções exportadas: `throw new Error()` sem `process.exit(1)`
 - Sempre incluir mensagens descritivas em português (já que o público é BR)
+- Bloco `try/catch` no entry point com `process.exit(1)` no `catch`
 
+**Correção aplicada (22/05/2026) — Auditoria completa de 27 scripts:**
+
+**🔴 Totalmente fora do padrão (4 corrigidos):**
+- `scripts/clear-cache.js` — adicionado try/catch com `console.error` + `process.exit(1)`
+- `scripts/clean-test-db.js` — adicionado try/catch com `console.error` + `process.exit(1)`
+- `scripts/db-shell.js` — adicionado try/catch com `console.error` + `process.exit(1)`
+- `scripts/tests/manual-rate-limit.js` — adicionado try/catch com `process.exit(1)` e `reject()` no callback
+
+**🟡 `process.exit(1)` dentro de funções movido para entry point (4 corrigidos):**
+- `scripts/seed-products.js` — movido `process.exit(0)` e `process.exit(1)` para entry point
+- `scripts/seed-all.js` — substituídos `process.exit(1)` por `throw new Error()` nas funções
+- `scripts/check-env.js` — substituído `process.exit(1)` por `throw new Error()` na função
+- `scripts/check-sql-injection.js` — `printResults` agora retorna booleano; `process.exit` no entry point
+
+**🟢 `process.exit(1)` adicionado no catch (15 corrigidos):**
+- `scripts/seed-musicas.js`, `scripts/seed-posts.js`, `scripts/seed-videos.js` — `error.message` + `process.exit(1)`
+- `scripts/check-db-status.js` — adicionado `process.exit(1)` no catch
+- `scripts/init-server.js` — `.catch(console.error)` substituído por try/catch com `process.exit(1)`
+- `scripts/clean-orphaned-images.js` — entry point com try/catch + `process.exit(1)`
+- `scripts/clean-k6-reports.js` — `error` → `error.message` no console.error
+- `scripts/tests/manual-api-test.js` — `.catch(console.error)` substituído por try/catch
+- `scripts/diagnostics/check-musicas-schema.js`, `check-videos-schema.js`, `count-posts.js`, `diagnose-hero.js`, `list-last-posts.js`
+- `scripts/maintenance/backup-posts.js`, `restore-posts.js`, `fix-hero-key.js`
+- `scripts/utils/list-settings.js`, `list-table-columns.js`
+
+**Total: 27 scripts auditados e corrigidos para seguir o padrão unificado.**
 ---
 
 ## 📊 Matriz de Prioridade
@@ -565,6 +601,7 @@ Definir e documentar um padrão:
 | **8.1** | **Criar módulo load-env.js** | 🟢 Baixa | Baixo | **Média** | **✅ Concluído** |
 | **8.2** | **Criar módulo connection.js** | 🟢 Baixa | Médio | **Média** | **✅ Concluído** |
 | **8.4** | **Implementar gerenciador de migrações** | 🟡 Média | Alto | **Alta** | **✅ Concluído** |
+| **8.5** | **Padronizar tratamento de erros** | 🟡 Média | Alto | **Alta** | **✅ Concluído** |
 | 4.2 | clear-musicas e clear-db sem confirmação | 🟡 Média | Baixo | Média | ✅ Corrigido |
 | **7.1** | **Scheduler caseiro removido (delegado ao cron do SO)** | 🟢 Baixa | Médio | **Baixa** | **✅ Corrigido** |
 | 5.4 | Ausência de testes automatizados para scripts | 🟡 Média | Médio | **Alta** | **✅ Corrigido** |

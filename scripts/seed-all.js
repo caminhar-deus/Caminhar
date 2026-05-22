@@ -59,14 +59,14 @@ async function seedAll() {
       console.log('✅ Banco de dados resetado com sucesso.');
     } catch (error) {
       console.error('❌ Falha ao resetar o banco de dados. Abortando.');
-      process.exit(1);
+      throw new Error('Falha ao resetar o banco de dados');
     }
   }
 
   const isDbReady = await checkDatabaseReady();
   if (!isDbReady) {
     console.error('❌ Abortando seeds devido a erro de conexão com o banco.');
-    process.exit(1);
+    throw new Error('Abortando seeds devido a erro de conexão com o banco');
   }
 
   try {
@@ -84,8 +84,14 @@ async function seedAll() {
     console.log('\n✨ Todos os seeds foram executados com sucesso!');
   } catch (error) {
     console.error('\n❌ Erro durante a execução dos seeds.');
-    process.exit(1);
+    throw error;
   }
 }
 
-seedAll();
+try {
+  await seedAll();
+  process.exit(0);
+} catch (error) {
+  console.error('❌ Erro durante a execução dos seeds:', error.message);
+  process.exit(1);
+}

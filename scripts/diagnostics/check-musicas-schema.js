@@ -43,6 +43,7 @@ async function checkMusicSchema() {
 
   } catch (error) {
     console.error('❌ Erro ao verificar schema:', error.message);
+    process.exit(1);
   } finally {
     await pool.end();
   }

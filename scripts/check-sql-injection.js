@@ -160,7 +160,7 @@ function printResults(allFindings, totalFiles) {
   if (allFindings.length === 0) {
     console.log('\n✅ Nenhuma vulnerabilidade de SQL injection encontrada!');
     console.log(`   Arquivos escaneados: ${totalFiles}`);
-    return process.exit(0);
+    return true;
   }
 
   console.log(`❌ ${allFindings.length} vulnerabilidade(s) encontrada(s) em ${totalFiles} arquivo(s):\n`);
@@ -172,7 +172,7 @@ function printResults(allFindings, totalFiles) {
     console.log();
   }
 
-  process.exit(1);
+  return false;
 }
 
 function main() {
@@ -228,7 +228,13 @@ function main() {
   const duration = Date.now() - startTime;
   console.log(`  Tempo de execução: ${duration}ms\n`);
 
-  printResults(allFindings, files.length);
+  return printResults(allFindings, files.length);
 }
 
-main();
+try {
+  const success = main();
+  process.exit(success ? 0 : 1);
+} catch (error) {
+  console.error('❌ Erro durante a verificação:', error.message);
+  process.exit(1);
+}

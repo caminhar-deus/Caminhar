@@ -45,11 +45,16 @@ async function seedProducts() {
     }
     
     console.log('🎉 Seed de produtos concluído com sucesso! Verifique a interface.');
-    process.exit(0);
   } catch (error) {
     console.error('❌ Erro durante o seed de produtos:', error);
-    process.exit(1);
+    throw error;
   }
 }
 
-seedProducts();
+try {
+  await seedProducts();
+  process.exit(0);
+} catch (error) {
+  console.error('❌ Erro durante o seed de produtos:', error.message);
+  process.exit(1);
+}

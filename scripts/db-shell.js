@@ -19,10 +19,20 @@ if (!dbUrl) {
 console.log('🔌 Conectando ao PostgreSQL via psql...');
 console.log('   (Digite \\q para sair)');
 
-// Inicia o psql usando a string de conexão
-// stdio: 'inherit' permite interação direta com o terminal (input/output)
-const psql = spawn('psql', [dbUrl], { stdio: 'inherit' });
+try {
+  // Inicia o psql usando a string de conexão
+  // stdio: 'inherit' permite interação direta com o terminal (input/output)
+  const psql = spawn('psql', [dbUrl], { stdio: 'inherit' });
 
-psql.on('close', (code) => {
-  process.exit(code);
-});
+  psql.on('close', (code) => {
+    process.exit(code ?? 0);
+  });
+
+  psql.on('error', (error) => {
+    console.error('❌ Erro ao iniciar psql:', error.message);
+    process.exit(1);
+  });
+} catch (error) {
+  console.error('❌ Erro ao conectar ao banco de dados:', error.message);
+  process.exit(1);
+}

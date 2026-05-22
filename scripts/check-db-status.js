@@ -47,6 +47,7 @@ async function checkDbStatus() {
 
   } catch (error) {
     console.error('\n❌ Falha ao conectar ou consultar o banco de dados:', error.message);
+    process.exit(1);
   } finally {
     if (db) {
       await db.closeDatabase();

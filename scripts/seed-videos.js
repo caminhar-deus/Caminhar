@@ -23,7 +23,8 @@ async function seedVideoRecords() {
     
     console.log('✅ Vídeos de teste inseridos com sucesso!');
   } catch (error) {
-    console.error('❌ Erro ao inserir vídeos:', error);
+    console.error('❌ Erro ao inserir vídeos:', error.message);
+    process.exit(1);
   } finally {
     await closeDatabase();
   }

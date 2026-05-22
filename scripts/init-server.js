@@ -42,11 +42,20 @@ export async function cleanupServer() {
     await closeDatabase();
     console.log('Limpeza do servidor concluída');
   } catch (error) {
-    console.error('Erro durante limpeza do servidor:', error);
+    console.error('Erro durante limpeza do servidor:', error.message);
+    throw error;
   }
 }
 
 // Executa a inicialização se o arquivo for chamado diretamente (ex: npm run init-db)
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  initializeServer().catch(console.error);
+  (async () => {
+    try {
+      await initializeServer();
+      process.exit(0);
+    } catch (error) {
+      console.error('❌ Erro ao inicializar servidor:', error.message);
+      process.exit(1);
+    }
+  })();
 }

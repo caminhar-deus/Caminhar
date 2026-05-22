@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'fs';
 import path from 'path';
-import { format } from 'date-fns';
+import { formatISODate, formatLogDate } from './utils/date-format.js';
 import zlib from 'zlib';
 import { spawn } from 'child_process';
 import crypto from 'crypto';
@@ -170,7 +170,7 @@ async function ensureBackupDirectory() {
  * Gera nome de arquivo de backup com timestamp ISO 8601 (padronizado)
  */
 function generateBackupFilename() {
-  const timestamp = format(new Date(), "yyyy-MM-dd'T'HH-mm-ss'Z'");
+  const timestamp = formatISODate();
   return `${BACKUP_CONFIG.backupPrefix}_${timestamp}.sql.gz`;
 }
 
@@ -318,7 +318,7 @@ async function logBackupOperation(status, message) {
       .replace(/pg_dump\s+"[^"]+"/g, 'pg_dump "***"')
       .replace(/psql\s+"[^"]+"/g, 'psql "***"');
 
-    const logEntry = `[${format(new Date(), 'yyyy-MM-dd HH:mm:ss')}] [${status}] ${sanitizedMessage}\n`;
+    const logEntry = `[${formatLogDate()}] [${status}] ${sanitizedMessage}\n`;
 
     // Append ao arquivo de log (apenas append, sem re-escrita)
     await fs.promises.appendFile(LOG_FILE, logEntry);
@@ -402,7 +402,7 @@ async function restoreBackup(backupFilename) {
 
     // 1. Cria um backup de segurança antes de sobrescrever
     console.log('🔄 Criando um backup de segurança do banco de dados atual...');
-    const safetyBackupFilename = `pre-restore-backup_${format(new Date(), "yyyy-MM-dd'T'HH-mm-ss'Z'")}.sql.gz`;
+    const safetyBackupFilename = `pre-restore-backup_${formatISODate()}.sql.gz`;
     const safetyBackupPath = path.join(BACKUP_DIR, safetyBackupFilename);
 
     // Usa spawn sem shell para segurança (item 1.2)
