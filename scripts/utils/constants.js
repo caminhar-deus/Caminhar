@@ -38,6 +38,16 @@ export const POST_ALERT_THRESHOLD = 10;
 /** Tamanho padrão de lote para operações em lote */
 export const DEFAULT_BATCH_SIZE = 50;
 
+// ─── Diretórios ────────────────────────────────────────
+/** Diretório de relatórios */
+export const REPORTS_DIR = 'reports';
+
+/** Subdiretório de sumários k6 dentro de reports */
+export const K6_SUMMARY_DIR = 'reports/k6-summaries';
+
+/** Diretório dos scripts de teste de carga */
+export const LOAD_TESTS_DIR = 'load-tests';
+
 // ─── Migrações ─────────────────────────────────────────
 /** Nome da tabela de controle de migrações no banco */
 export const MIGRATIONS_TABLE = '_migrations';
@@ -45,3 +55,10 @@ export const MIGRATIONS_TABLE = '_migrations';
 // ─── Limpeza ───────────────────────────────────────────
 /** Dias de retenção de relatórios k6 */
 export const K6_RETENTION_DAYS = 7;
+
+// ─── Monitoramento de Disco ────────────────────────────
+/** Percentual de uso do disco que dispara alerta */
+export const DISK_THRESHOLD_PERCENT = 85;
+
+/** Caminho padrão do mount point a verificar */
+export const DISK_PATH_DEFAULT = '/';

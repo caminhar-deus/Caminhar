@@ -1,19 +1,16 @@
 #!/usr/bin/env node
-import { execSync } from 'child_process';
-import fs from 'fs';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import fs from 'fs/promises';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import {
+  REPORTS_DIR,
+  K6_SUMMARY_DIR,
+  LOAD_TESTS_DIR,
+} from './utils/constants.js';
 
-// Configuração de diretórios
-const REPORTS_DIR = path.join(process.cwd(), 'reports');
-const K6_SUMMARY_DIR = path.join(REPORTS_DIR, 'k6-summaries');
-
-// Garante que os diretórios existem
-if (!fs.existsSync(REPORTS_DIR)) fs.mkdirSync(REPORTS_DIR);
-if (!fs.existsSync(K6_SUMMARY_DIR)) fs.mkdirSync(K6_SUMMARY_DIR);
+const execAsync = promisify(exec);
 
 // Validação de variáveis de ambiente obrigatórias
 if (!process.env.ADMIN_PASSWORD) {
@@ -22,45 +19,54 @@ if (!process.env.ADMIN_PASSWORD) {
   process.exit(1);
 }
 
+// Verifica se k6 está instalado
+async function checkK6Available() {
+  try {
+    await execAsync('k6 version');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Definição dos testes a serem executados
 const TESTS = [
   { 
     name: 'Fluxo Autenticado', 
-    script: 'load-tests/authenticated-flow.js', 
+    script: `${LOAD_TESTS_DIR}/authenticated-flow.js`, 
     env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME, ADMIN_PASSWORD: process.env.ADMIN_PASSWORD } 
   },
   { 
     name: 'Criação de Posts (Escrita)', 
-    script: 'load-tests/create-post-flow.js', 
+    script: `${LOAD_TESTS_DIR}/create-post-flow.js`, 
     env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME, ADMIN_PASSWORD: process.env.ADMIN_PASSWORD }, 
     cleanup: 'scripts/clean-load-test-posts.js' 
   },
   { 
     name: 'Carga de Vídeos (Leitura)', 
-    script: 'load-tests/videos-load-test.js', 
+    script: `${LOAD_TESTS_DIR}/videos-load-test.js`, 
     env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME, ADMIN_PASSWORD: process.env.ADMIN_PASSWORD } 
   },
   { 
     name: 'CRUD de Vídeos', 
-    script: 'load-tests/videos-crud-test.js', 
+    script: `${LOAD_TESTS_DIR}/videos-crud-test.js`, 
     env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME, ADMIN_PASSWORD: process.env.ADMIN_PASSWORD } 
   },
   { 
     name: 'CRUD de Músicas', 
-    script: 'load-tests/musicas-crud-test.js', 
+    script: `${LOAD_TESTS_DIR}/musicas-crud-test.js`, 
     env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME, ADMIN_PASSWORD: process.env.ADMIN_PASSWORD } 
   },
   { 
     name: 'Carga de Músicas (Leitura)', 
-    script: 'load-tests/musicas-load-test.js', 
+    script: `${LOAD_TESTS_DIR}/musicas-load-test.js`, 
     env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME, ADMIN_PASSWORD: process.env.ADMIN_PASSWORD } 
   },
 ];
 
-function runCommand(command, env = {}) {
+async function runCommand(command, env = {}) {
   try {
-    // Executa o comando herdando o stdio para ver o progresso no terminal
-    execSync(command, { stdio: 'inherit', env: { ...process.env, ...env } });
+    await execAsync(command, { env: { ...process.env, ...env } });
     return true;
   } catch (error) {
     console.error(`❌ Falha na execução: ${command}`);
@@ -69,6 +75,18 @@ function runCommand(command, env = {}) {
 }
 
 async function generateReport() {
+  // Verifica se k6 está disponível
+  const k6Available = await checkK6Available();
+  if (!k6Available) {
+    console.error('❌ Erro: k6 não encontrado. Instale o k6 para executar os testes de carga.');
+    console.error('   https://k6.io/docs/get-started/installation/');
+    process.exit(1);
+  }
+
+  // Garante que os diretórios existem
+  await fs.mkdir(REPORTS_DIR, { recursive: true });
+  await fs.mkdir(K6_SUMMARY_DIR, { recursive: true });
+
   console.log('🚀 Iniciando bateria de testes e geração de relatório...');
   const results = [];
 
@@ -78,25 +96,26 @@ async function generateReport() {
     
     // Executa o k6 exportando o sumário para JSON
     const cmd = `k6 run --summary-export="${summaryFile}" "${test.script}"`;
-    const success = runCommand(cmd, test.env);
+    const success = await runCommand(cmd, test.env);
 
-    if (fs.existsSync(summaryFile)) {
-      const summary = JSON.parse(fs.readFileSync(summaryFile, 'utf-8'));
+    try {
+      const summaryContent = await fs.readFile(summaryFile, 'utf-8');
+      const summary = JSON.parse(summaryContent);
       results.push({ name: test.name, success, summary });
-    } else {
+    } catch {
       results.push({ name: test.name, success: false, summary: null });
     }
 
     if (test.cleanup) {
       console.log(`🧹 Executando limpeza para ${test.name}...`);
-      runCommand(`node "${test.cleanup}"`);
+      await runCommand(`node "${test.cleanup}"`);
     }
   }
 
-  generateHTML(results);
+  await generateHTML(results);
 }
 
-function generateHTML(results) {
+async function generateHTML(results) {
   const timestamp = new Date().toLocaleString('pt-BR');
   const htmlPath = path.join(REPORTS_DIR, `load-report-${Date.now()}.html`);
   
@@ -167,7 +186,7 @@ function generateHTML(results) {
     </html>
   `;
 
-  fs.writeFileSync(htmlPath, html);
+  await fs.writeFile(htmlPath, html);
   console.log(`\n✅ Relatório gerado com sucesso: ${htmlPath}`);
 }
 

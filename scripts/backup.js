@@ -10,7 +10,9 @@ import {
   DEFAULT_LIST_LIMIT,
   BACKUP_INTERVAL_MS,
   ENCRYPTION_KEY_LENGTH,
-  MAX_LOG_LINES
+  MAX_LOG_LINES,
+  DISK_THRESHOLD_PERCENT,
+  DISK_PATH_DEFAULT
 } from './utils/constants.js';
 
 // Caminhos do banco de dados e backups
@@ -174,11 +176,72 @@ function generateBackupFilename() {
 }
 
 /**
+ * Verifica espaço em disco antes de criar o backup
+ * Usa spawn para segurança (command injection) e fs.promises.statfs como fallback
+ * Integração com monitor-disk-space.js (item 6.2)
+ */
+async function checkDiskBeforeBackup() {
+  const mountPoint = process.env.DISK_PATH || DISK_PATH_DEFAULT;
+  const threshold = parseInt(process.env.DISK_THRESHOLD || String(DISK_THRESHOLD_PERCENT), 10);
+
+  // Tenta via df com spawn (sem shell)
+  try {
+    const diskInfo = await new Promise((resolve) => {
+      const child = spawn('df', ['-h', mountPoint], {
+        stdio: ['ignore', 'pipe', 'pipe']
+      });
+
+      let stdout = '';
+      child.stdout.on('data', (data) => { stdout += data.toString(); });
+
+      child.on('error', () => resolve(null));
+      child.on('close', (code) => {
+        if (code !== 0) { resolve(null); return; }
+        const lines = stdout.trim().split('\n');
+        const lastLine = lines[lines.length - 1];
+        const match = lastLine.match(/(\d+)%/);
+        if (match) resolve(parseInt(match[1], 10));
+        else resolve(null);
+      });
+    });
+
+    if (diskInfo !== null) {
+      if (diskInfo >= threshold) {
+        console.warn(`⚠️  Disco em '${mountPoint}' com ${diskInfo}% de uso (threshold: ${threshold}%)`);
+        console.warn('   Continuando backup, mas recomenda-se liberar espaço em disco.');
+        await logBackupOperation('WARNING', `Disco em ${mountPoint} com ${diskInfo}% de uso`);
+      }
+      return;
+    }
+  } catch { /* fallback abaixo */ }
+
+  // Fallback: fs.promises.statfs (nativo, sem dependência externa)
+  try {
+    const statfs = await fs.promises.statfs(mountPoint);
+    const totalBytes = statfs.blocks * statfs.bsize;
+    const freeBytes = statfs.bfree * statfs.bsize;
+    const usedBytes = totalBytes - freeBytes;
+    const usagePercent = totalBytes > 0 ? Math.round((usedBytes / totalBytes) * 100) : 0;
+
+    if (usagePercent >= threshold) {
+      console.warn(`⚠️  Disco em '${mountPoint}' com ${usagePercent}% de uso (threshold: ${threshold}%)`);
+      await logBackupOperation('WARNING', `Disco em ${mountPoint} com ${usagePercent}% de uso`);
+    }
+  } catch {
+    // Se ambos os métodos falharem, apenas loga warning e continua
+    console.warn(`⚠️  Não foi possível verificar espaço em disco em '${mountPoint}'. Continuando backup.`);
+  }
+}
+
+/**
  * Cria um backup do banco de dados PostgreSQL
  */
 async function createBackup() {
   try {
     console.log('Iniciando backup do banco de dados...');
+
+    // Verifica espaço em disco antes de prosseguir (item 6.2)
+    await checkDiskBeforeBackup();
 
     // Garante que o diretório de backups existe
     await ensureBackupDirectory();
@@ -560,5 +623,6 @@ export {
   getAvailableBackups,
   getBackupLogs,
   initializeBackupSystem,
-  startBackupScheduler
+  startBackupScheduler,
+  checkDiskBeforeBackup
 };

@@ -312,11 +312,17 @@
     - `DEFAULT_BATCH_SIZE = 50` — tamanho padrão de lote para operações
     - `MIGRATIONS_TABLE = '_migrations'` — nome da tabela de controle de migrações
     - `K6_RETENTION_DAYS = 7` — dias de retenção de relatórios k6
+    - `DISK_THRESHOLD_PERCENT = 85` — percentual de uso do disco que dispara alerta
+    - `DISK_PATH_DEFAULT = '/'` — caminho padrão do mount point a verificar
+    - `REPORTS_DIR = 'reports'` — diretório de relatórios
+    - `K6_SUMMARY_DIR = 'reports/k6-summaries'` — subdiretório de sumários k6
+    - `LOAD_TESTS_DIR = 'load-tests'` — diretório dos scripts de teste de carga
   - `scripts/backup.js` refatorado para importar `MAX_BACKUPS`, `DEFAULT_LIST_LIMIT`, `BACKUP_INTERVAL_MS`, `ENCRYPTION_KEY_LENGTH` e `MAX_LOG_LINES` do módulo compartilhado, eliminando 4 números mágicos literais.
   - `scripts/check-server.js` refatorado para importar `DEFAULT_PORT` e `SERVER_CHECK_TIMEOUT`, eliminando 2 números mágicos literais.
   - `scripts/diagnostics/count-posts.js` refatorado para importar `POST_ALERT_THRESHOLD`, eliminando 1 número mágico literal.
   - `scripts/clean-k6-reports.js` refatorado para importar `K6_RETENTION_DAYS`, eliminando 1 número mágico literal.
-  - Total: **8 números mágicos substituídos** em **4 arquivos**.
+  - `scripts/generate-load-report.js` refatorado para importar `REPORTS_DIR`, `K6_SUMMARY_DIR` e `LOAD_TESTS_DIR`, eliminando 3 números mágicos de caminhos.
+  - Total: **11 números mágicos substituídos** em **5 arquivos**.
 
 ### 5.3. Nomenclatura inconsistente de funções ✅ Corrigido
 - **Problema:** Mistura de português e inglês nos nomes:
@@ -387,13 +393,58 @@
   ```
 - **Observação:** A função `cleanupOldBackups()` continua exportada sem entry point dedicado, pois seu uso é exclusivamente interno (chamada automaticamente pelo `createBackup()`). Decidiu-se não criar entry point para ela.
 
-### 6.2. `scripts/monitor-disk-space.js` sem integração
-- **Problema:** Script de monitoramento de disco que parece não estar integrado a nenhum sistema de alerta ou agendamento. Se não está no cron, não está sendo executado.
-- **Sugestão:** Documentar como configurar no cron, ou integrar com o sistema de backup scheduler.
+### 6.2. `scripts/monitor-disk-space.js` sem integração ✅ Corrigido
+- **Arquivo:** `scripts/monitor-disk-space.js`
+- **Problema:** Script de monitoramento de disco que não estava integrado a nenhum sistema de alerta ou agendamento. Usava `exec()` com concatenação de string (`df -h "${MOUNT_POINT}"`), suscetível a command injection (mesmo padrão do item 1.2). Não possuía suporte a múltiplos mount points, saída JSON para sistemas de monitoramento, flag `--dry-run` para simulação, ou fallback para ambientes sem o comando `df`.
+- **Correção aplicada (21/05/2026):**
+  - **Segurança:** Substituído `exec()` por `spawn('df', ['-h', mountPoint])`, eliminando risco de command injection.
+  - **Fallback sem `df`:** Adicionada função `checkDiskViaStatfs()` usando `fs.promises.statfs()` (nativo do Node.js), eliminando dependência do comando externo `df`. Funciona em containers minimalistas sem `coreutils`.
+  - **Módulos compartilhados:** Agora importa `DISK_THRESHOLD_PERCENT` e `DISK_PATH_DEFAULT` de `scripts/utils/constants.js`, eliminando números mágicos.
+  - **Flags novas:**
+    - `--dry-run` — apenas simula a verificação sem emitir exit code de erro
+    - `--json` — saída em JSON para consumo por Prometheus, Datadog, etc.
+    - `--help` — exibe mensagem de ajuda completa
+  - **Múltiplos mount points:** Aceita um ou mais caminhos como argumento (`node scripts/monitor-disk-space.js / /dados /var`). Se nenhum for passado, usa o padrão (`DISK_PATH` env ou `/`).
+  - **Saída JSON (exemplo):**
+    ```json
+    {
+      "timestamp": "2026-05-21T23:00:00.000Z",
+      "threshold": 85,
+      "healthy": true,
+      "checks": [
+        { "mount_point": "/", "usage_percent": 72, "size": "50G", "used": "36G", "available": "14G", "healthy": true, "error": null }
+      ]
+    }
+    ```
+  - **Integração com backup:** Adicionada função `checkDiskBeforeBackup()` em `scripts/backup.js`, chamada automaticamente no início de `createBackup()`, que verifica o disco e registra alerta nos logs. Exportada como nova função pública do módulo.
+  - **Documentação de cron:** Adicionado comentário no cabeçalho do script com exemplo de crontab para agendamento via sistema operacional.
+  - **Parsing robusto:** Extrai colunas Size/Used/Available da saída do `df` para exibição detalhada.
+- **Uso correto agora:**
+  ```bash
+  node scripts/monitor-disk-space.js                    # Verifica mount point padrão (/)
+  node scripts/monitor-disk-space.js /dados /var        # Verifica múltiplos mount points
+  node scripts/monitor-disk-space.js --json             # Saída em JSON
+  node scripts/monitor-disk-space.js --dry-run          # Simulação sem exit code
+  node scripts/monitor-disk-space.js --help             # Exibe ajuda
+  ```
+- **Cron (se desejar execução independente):**
+  ```bash
+  # Executar a cada hora, das 6h às 22h
+  0 6-22 * * * /caminho/para/scripts/monitor-disk-space.js >> /var/log/disk-monitor.log 2>&1
+  ```
 
-### 6.3. `scripts/consolidate-k6-reports.js` — relatório não utilizado
-- **Problema:** O `generate-load-report.js` gera relatório HTML individual. O `consolidate-k6-reports.js` gera um JSON consolidado de múltiplos reports, mas não está claro se este JSON é consumido por algum processo.
-- **Sugestão:** Verificar se o consolidado é usado; se não, considerar remover ou integrar no pipeline de relatório.
+### 6.3. `scripts/consolidate-k6-reports.js` — relatório não utilizado ✅ Corrigido
+- **Arquivo:** `scripts/consolidate-k6-reports.js` — removido em 21/05/2026.
+- **Problema:** O script gerava um resumo textual no console a partir dos JSONs de `reports/k6-summaries/`, mas não era referenciado por nenhum outro arquivo do projeto (`package.json`, CI/CD, outros scripts). Sua funcionalidade já era coberta pelo `generate-load-report.js`, que gera o relatório HTML final.
+- **Correção aplicada (21/05/2026):**
+  - Removido `scripts/consolidate-k6-reports.js`.
+  - Refatorado `scripts/generate-load-report.js` com as seguintes melhorias:
+    - Removido o import não utilizado `fileURLToPath` / `__filename` / `__dirname`.
+    - Migrado `execSync` para `exec` assíncrono com `util.promisify`.
+    - Migrado todo I/O síncrono (`fs.existsSync`, `fs.mkdirSync`, `fs.readFileSync`, `fs.writeFileSync`) para `fs.promises` assíncrono.
+    - Adicionada validação de disponibilidade do `k6` antes de executar os testes, com mensagem de erro clara e link de instalação.
+    - Constantes de diretórios (`REPORTS_DIR`, `K6_SUMMARY_DIR`, `LOAD_TESTS_DIR`) agora centralizadas em `scripts/utils/constants.js`, eliminando números mágicos de caminhos.
+- **Uso correto agora:** `ADMIN_USERNAME=admin ADMIN_PASSWORD=sua_senha node scripts/generate-load-report.js` (k6 validado previamente)
 
 ---
 
@@ -489,6 +540,7 @@ Definir e documentar um padrão:
 | 3.3 | Hash carrega arquivo inteiro na RAM | 🟡 Média | Baixo | Alta | ✅ Corrigido |
 | 3.4 | Carregamento de todo o diretório de backups para listar | 🟢 Baixa | Médio | Média | ✅ Corrigido |
 | 5.6 | Import dinâmico crypto | 🟢 Baixa | Muito Baixo | Alta | ✅ Corrigido |
+| **6.2** | **monitor-disk-space.js sem integração** | 🟡 Média | Médio | **Média** | **✅ Corrigido** |
 | 2.7 | Lógica de filtro duplicada | 🟢 Baixa | Baixo | Alta | ✅ Corrigido |
 | 3.2 | I/O síncrono | 🟢 Baixa | Baixo | Média | ✅ Corrigido |
 | 4.3 | Deleção de arquivos auxiliares inconsistente | 🟡 Média | Baixo | Média | ✅ Corrigido |

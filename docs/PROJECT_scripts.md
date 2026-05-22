@@ -22,9 +22,7 @@ scripts/
 ├── clear-cache.js
 ├── clear-db.js
 ├── clear-musicas.js
-├── consolidate-k6-reports.js
 ├── create-backup.js
-├── cron-backup.js
 ├── db-shell.js
 ├── generate-load-report.js
 ├── init-backup.js
@@ -99,10 +97,11 @@ scripts/
 
 ### `scripts/backup.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/backup.js`
-- **Propósito:** Módulo principal de backup/restore do banco de dados PostgreSQL. Suporta compressão gzip, criptografia AES-256-GCM, verificação de integridade SHA-256, gerenciamento de retenção (mantém os 10 backups mais recentes) e um agendador interno baseado em cron. Oferece funções exportadas para `createBackup()`, `restoreBackup()`, `cleanupOldBackups()`, `getAvailableBackups()`, `getBackupLogs()`, `initializeBackupSystem()` e `startBackupScheduler()`.
+- **Propósito:** Módulo principal de backup/restore do banco de dados PostgreSQL. Suporta compressão gzip, criptografia AES-256-GCM, verificação de integridade SHA-256, gerenciamento de retenção (mantém os 10 backups mais recentes) e um agendador interno baseado em cron. Oferece funções exportadas para `createBackup()`, `restoreBackup()`, `cleanupOldBackups()`, `getAvailableBackups()`, `getBackupLogs()`, `initializeBackupSystem()`, `startBackupScheduler()` e `checkDiskBeforeBackup()`.
 - **Segurança:** Utiliza `spawn()` com argumentos em array (sem shell) para executar `pg_dump` e `psql`, eliminando risco de command injection. Compressão/descompressão gzip via streams nativas (`zlib.createGzip`/`zlib.createGunzip`). Hash SHA-256 calculado via stream (`fs.createReadStream`) sem carregar arquivo inteiro na RAM. I/O assíncrono com `fs.promises` em todas as operações de arquivo, incluindo `fs.promises.opendir()` para iteração incremental do diretório de backups. Log otimizado com buffer em memória (apenas append ao arquivo, sem re-escrita).
 - **Performance:** Leitura incremental do diretório de backups via `opendir()` em vez de `readdirSync()`, eliminando carregamento completo do diretório na memória. Função `getBackupFiles()` aceita parâmetro `maxFiles` para limitar a consulta — `cleanupOldBackups()` lê no máximo 11 arquivos (em vez de todos) e `getAvailableBackups()` usa default de 50. Remoção de duplicatas com `Set()` (O(n)) em vez de `indexOf()` (O(n²)).
-- **Funções exportadas:** `createBackup()`, `restoreBackup()`, `cleanupOldBackups()`, `getAvailableBackups(maxFiles = 50)`, `getBackupLogs()`, `initializeBackupSystem()`, `startBackupScheduler()`
+- **Integração com monitor de disco:** A função `checkDiskBeforeBackup()` verifica espaço em disco antes de cada `createBackup()`, usando `spawn('df', ['-h', ...])` (seguro) com fallback `fs.promises.statfs()` (nativo). Registra alerta nos logs se o uso estiver acima do threshold (85%). Exportada como função pública para uso externo.
+- **Funções exportadas:** `createBackup()`, `restoreBackup()`, `cleanupOldBackups()`, `getAvailableBackups(maxFiles = 50)`, `getBackupLogs()`, `initializeBackupSystem()`, `startBackupScheduler()`, `checkDiskBeforeBackup()`
 - **Dependências:** `fs`, `path`, `date-fns`, `zlib`, `child_process` (apenas `spawn`), `crypto`
 
 ### `scripts/create-backup.js`
@@ -122,11 +121,6 @@ scripts/
 - **Propósito:** Script de inicialização do sistema de backup. Carrega variáveis de ambiente e delega para `initializeBackupSystem()` do módulo `backup.js`. Garante que o diretório de backups existe, cria um backup inicial e inicia o agendador automático de backups.
 - **Refatorado em:** 21/05/2026 — comentários e mensagens `console.log`/`console.error` traduzidos de inglês para português (ex: `"Starting Caminhar Database Backup System..."` → `"Iniciando sistema de backup do banco de dados..."`).
 - **Dependências:** `backup.js` (local)
-
-### `scripts/cron-backup.js`
-- **Localização:** `/home/qa/Projeto/Caminhar/scripts/cron-backup.js`
-- **Propósito:** Shell script Bash para agendamento via cron no Linux. Executa `npm run create-backup` e redireciona a saída para um arquivo de log. Destinado a ser configurado como tarefa cron direta no sistema operacional.
-- **Dependências:** Nenhuma (shell script puro)
 
 ### `scripts/check-db-status.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/check-db-status.js`
@@ -190,11 +184,6 @@ scripts/
 - **Refatorado em:** 21/05/2026 — adicionado prompt de confirmação, migrado para `load-env.js`, import estático, `process.exit(1)` no catch e shebang.
 - **Dependências:** `scripts/utils/load-env.js` (local), `../lib/db.js` (local)
 
-### `scripts/consolidate-k6-reports.js`
-- **Localização:** `/home/qa/Projeto/Caminhar/scripts/consolidate-k6-reports.js`
-- **Propósito:** Consolida múltiplos relatórios JSON do k6 em um único relatório unificado. Lê todos os arquivos JSON da pasta `reports/k6-summaries/`, extrai métricas comuns (http_req_duration, http_reqs, http_req_failed, http_req_blocked, http_req_connecting, http_req_tls_handshaking, http_req_sending, http_req_waiting, http_req_receiving) e gera um arquivo consolidado.
-- **Dependências:** `fs`, `path`
-
 ### `scripts/db-shell.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/db-shell.js`
 - **Propósito:** Abre um terminal interativo do PostgreSQL utilizando `psql` com as credenciais da `DATABASE_URL`. Útil para acesso rápido ao banco via CLI.
@@ -203,8 +192,9 @@ scripts/
 ### `scripts/generate-load-report.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/generate-load-report.js`
 - **Propósito:** Orquestrador de testes de carga. Executa uma bateria de 6 testes k6 pré-definidos (fluxo autenticado, criação de posts, carga de vídeos, CRUD de vídeos, CRUD de músicas, carga de músicas) e gera um relatório HTML com métricas de performance (P95, média, requisições, taxa de erro). Suporta cleanup pós-teste.
-- **Dependências:** `child_process`, `fs`, `path`, `url`
-- **Variáveis de ambiente:** Requer `ADMIN_PASSWORD` e opcionalmente `ADMIN_USERNAME` (default: não definido) para autenticação nos testes de carga. O script valida a presença de `ADMIN_PASSWORD` antes de executar.
+- **Refatorado em:** 21/05/2026 — removido import não utilizado `fileURLToPath`/`__dirname`; migrado `execSync` para `exec` assíncrono com `util.promisify`; migrado todo I/O síncrono (`fs.existsSync`, `fs.mkdirSync`, `fs.readFileSync`, `fs.writeFileSync`) para `fs.promises` assíncrono; adicionada validação de disponibilidade do `k6` antes de executar; constantes de diretórios (`REPORTS_DIR`, `K6_SUMMARY_DIR`, `LOAD_TESTS_DIR`) centralizadas em `scripts/utils/constants.js`.
+- **Dependências:** `child_process` (apenas `exec`), `util`, `fs/promises`, `path`, `scripts/utils/constants.js` (local)
+- **Variáveis de ambiente:** Requer `ADMIN_PASSWORD` e opcionalmente `ADMIN_USERNAME` para autenticação nos testes de carga. O script valida a presença de `ADMIN_PASSWORD` antes de executar. Também valida se o `k6` está instalado.
 - **Uso direto:** `ADMIN_USERNAME=admin ADMIN_PASSWORD=sua_senha node scripts/generate-load-report.js`
 - **Uso via npm:** `ADMIN_USERNAME=admin ADMIN_PASSWORD=sua_senha npm run report:load`
 - **Alias npm:** `report:load` (em `package.json`) — já encapsula o prefixo das env vars com fallback para `admin` no username.
@@ -262,8 +252,32 @@ scripts/
 
 ### `scripts/monitor-disk-space.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/monitor-disk-space.js`
-- **Propósito:** Monitora o espaço em disco do diretório de backups. Alerta quando o uso ultrapassa thresholds configurados (ex: >80% Warning, >95% Critical). Pode ser usado em conjunto com o cron para alertas proativos.
-- **Dependências:** `fs`
+- **Propósito:** Monitora o espaço em disco em um ou mais mount points. Alerta quando o uso ultrapassa o threshold configurado (default: 85%). Pode ser executado manualmente, integrado ao scheduler de backup (verificado automaticamente antes de cada `createBackup()` em `backup.js`), ou agendado via cron do sistema.
+- **Segurança:** Utiliza `spawn('df', ['-h', mountPoint])` com argumentos em array (sem shell), eliminando risco de command injection que existia na versão anterior com `exec()`.
+- **Fallback:** Se o comando `df` não estiver disponível (ex: container minimalista), usa `fs.promises.statfs()` (nativo do Node.js) como alternativa, sem dependência externa.
+- **Flags:**
+  - `--dry-run` — apenas simula a verificação, sem emitir exit code de erro
+  - `--json` — saída em JSON para consumo por sistemas de monitoramento (Prometheus, Datadog, etc.)
+  - `--help` — exibe mensagem de ajuda completa
+- **Múltiplos mount points:** Aceita um ou mais caminhos como argumento (`node scripts/monitor-disk-space.js / /dados /var`). Se nenhum for passado, usa o padrão (env `DISK_PATH` ou `/`).
+- **Integração com backup:** A função `checkDiskBeforeBackup()` é chamada automaticamente no início de `createBackup()` em `scripts/backup.js`, registrando alerta nos logs caso o disco esteja acima do threshold.
+- **Variáveis de ambiente:**
+  - `DISK_THRESHOLD` — percentual de uso que dispara alerta (default: 85, vindo de `constants.js`)
+  - `DISK_PATH` — caminho do mount point a verificar (default: `/`, vindo de `constants.js`)
+- **Refatorado em:** 21/05/2026 — segurança (`exec()` → `spawn()`), fallback nativo `statfs`, módulo compartilhado `constants.js`, flags `--json`/`--dry-run`, suporte a múltiplos mount points, integração com backup.
+- **Uso:**
+  ```bash
+  node scripts/monitor-disk-space.js                    # Verifica mount point padrão (/)
+  node scripts/monitor-disk-space.js /dados /var        # Verifica múltiplos mount points
+  node scripts/monitor-disk-space.js --json             # Saída em JSON
+  node scripts/monitor-disk-space.js --dry-run          # Simulação sem exit code
+  node scripts/monitor-disk-space.js --help             # Exibe ajuda
+  ```
+- **Cron (opcional, para execução independente):**
+  ```bash
+  0 6-22 * * * /caminho/para/scripts/monitor-disk-space.js >> /var/log/disk-monitor.log 2>&1
+  ```
+- **Dependências:** `fs`, `child_process` (apenas `spawn`), `scripts/utils/constants.js` (local)
 
 ### `scripts/reset-password.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/reset-password.js`
@@ -577,8 +591,11 @@ scripts/
   - `DEFAULT_BATCH_SIZE = 50` — tamanho padrão de lote para operações
   - `MIGRATIONS_TABLE = '_migrations'` — nome da tabela de controle de migrações
   - `K6_RETENTION_DAYS = 7` — dias de retenção de relatórios k6
-- **Uso:** `import { MAX_BACKUPS, DEFAULT_PORT } from '../utils/constants.js';`
+  - `DISK_THRESHOLD_PERCENT = 85` — percentual de uso do disco que dispara alerta
+  - `DISK_PATH_DEFAULT = '/'` — caminho padrão do mount point a verificar
+- **Uso:** `import { MAX_BACKUPS, DEFAULT_PORT, DISK_THRESHOLD_PERCENT } from '../utils/constants.js';`
 - **Criado em:** 21/05/2026 — refatoração (correção 5.2, eliminação de constantes mágicas).
+- **Atualizado em:** 21/05/2026 — adicionadas constantes `DISK_THRESHOLD_PERCENT` e `DISK_PATH_DEFAULT` para monitor de disco (correção 6.2).
 - **Dependências:** Nenhuma (apenas valores primitivos exportados)
 
 ### `scripts/utils/load-env.js`
@@ -613,7 +630,7 @@ scripts/
 
 | Categoria | Quantidade | Descrição |
 |-----------|:----------:|-----------|
-| **Backup** | 6 | `backup.js`, `create-backup.js`, `restore-backup.js`, `init-backup.js`, `cron-backup.js`, `view-backup-logs.js` |
+| **Backup** | 5 | `backup.js`, `create-backup.js`, `restore-backup.js`, `init-backup.js`, `view-backup-logs.js` |
 | **Inicialização** | 2 | `init-table.js` (unificado) + `init-server.js` |
 | **Migrações** | 11 | `migrate.js` (executor) + `001` a `009` + `011` em `migrations/` |
 | **Schemas (JSON)** | 4 | `schemas/musicas.json`, `schemas/posts.json`, `schemas/videos.json`, `schemas/dicas.json` |
@@ -623,7 +640,7 @@ scripts/
 | **Limpeza (SQLite)** | 1 | `clean-test-db.js` |
 | **Limpeza (Geral DB)** | 2 | `clear-db.js`, `clear-musicas.js` |
 | **Validação/Diagnóstico** | 3 | `check-db-status.js`, `check-env.js`, `validate-schema.js` + 5 em `diagnostics/` |
-| **Testes de Carga** | 4 | `run-all-load-tests.js`, `generate-load-report.js`, `run-load-tests.sh`, `consolidate-k6-reports.js` |
+| **Testes de Carga** | 3 | `run-all-load-tests.js`, `generate-load-report.js`, `run-load-tests.sh` |
 | **Monitoramento** | 1 | `monitor-disk-space.js` |
 | **Utilidades** | 6 | `db-shell.js`, `check-server.js`, `reset-password.js` + `load-env.js` + 4 em `utils/` |
 | **Conexão DB** | 1 | `scripts/db/connection.js` (módulo compartilhado) |

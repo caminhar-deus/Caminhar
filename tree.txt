@@ -750,9 +750,7 @@
 │   ├── clear-cache.js
 │   ├── clear-db.js
 │   ├── clear-musicas.js
-│   ├── consolidate-k6-reports.js
 │   ├── create-backup.js
-│   ├── cron-backup.js
 │   ├── db
 │   │   ├── connection.js
 │   │   ├── verify-db-functions.js
@@ -1061,4 +1059,4 @@
 ├── tests-output.log
 └── tree.txt
 
-163 directories, 899 files
+163 directories, 897 files
