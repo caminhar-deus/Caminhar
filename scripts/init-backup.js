@@ -1,21 +1,27 @@
 #!/usr/bin/env node
-import { initializeBackupSystem, startBackupScheduler } from './backup.js';
+import { initializeBackupSystem } from './backup.js';
 
 /**
- * Inicializa e inicia o sistema de backup automático
+ * Inicializa o sistema de backup (cria backup inicial)
+ * O agendamento automático deve ser configurado via cron do sistema operacional:
+ *
+ *   ┌─────────────────────────────────────────────────────
+ *   │ # Backup diário às 2 AM
+ *   │ 0 2 * * * cd /caminho/do/projeto && node scripts/create-backup.js >> data/backups/backup.log 2>&1
+ *   └─────────────────────────────────────────────────────
  */
 async function main() {
   try {
-    console.log('Iniciando sistema de backup do banco de dados...');
+    console.log('Iniciando sistema de backup...');
 
     // Inicializa o sistema de backup (cria o primeiro backup)
     await initializeBackupSystem();
 
-    // Inicia o agendador automático de backups
-    startBackupScheduler();
-
-    console.log('Sistema de backup em execução com agendamento automático.');
-    console.log('É possível criar backups manuais via: node scripts/create-backup.js');
+    console.log('Sistema de backup inicializado.');
+    console.log('Para backups automáticos, configure o cron do sistema:');
+    console.log('  0 2 * * * cd /caminho/do/projeto && node scripts/create-backup.js >> data/backups/backup.log 2>&1');
+    console.log('');
+    console.log('Para backups manuais: node scripts/create-backup.js');
   } catch (error) {
     console.error('Falha ao iniciar sistema de backup:', error);
     process.exit(1);

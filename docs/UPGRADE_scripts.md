@@ -450,10 +450,22 @@
 
 ## 7. Problemas de Manutenibilidade
 
-### 7.1. Agendador de backup com cron implementado manualmente
-- **Arquivo:** `scripts/backup.js` (função `startBackupScheduler`)
-- **Problema:** O scheduler implementa parsing de cron manual que só trata minutos e horas. Não suporta expressões complexas (ex: `*/15`, dias da semana, meses). Além disso, o `setTimeout` + `setInterval` acumula drift ao longo do tempo (o delay não compensa o tempo de execução).
-- **Sugestão:** Usar uma biblioteca como `node-cron` ou `bull` para agendamento confiável, ou manter apenas o script e delegar o agendamento para o cron do sistema operacional (que já tem o `cron-backup.js` para isso).
+### 7.1. Agendador de backup com cron implementado manualmente ✅ Corrigido
+- **Arquivo:** `scripts/backup.js` (função `startBackupScheduler`) — removido em 21/05/2026.
+- **Problema:** O scheduler implementava parsing de cron manual que só tratava minutos e horas. Não suportava expressões complexas (ex: `*/15`, dias da semana, meses). Além disso, o `setTimeout` + `setInterval` acumulava drift ao longo do tempo (o delay não compensava o tempo de execução).
+- **Correção aplicada (21/05/2026):**
+  - Removida a função `startBackupScheduler()` de `scripts/backup.js`.
+  - Removida a exportação de `startBackupScheduler` (deixou de ser exportada).
+  - Removido `BACKUP_INTERVAL_MS` da importação de constantes (não mais utilizado).
+  - **`scripts/init-backup.js`:** Removido import e chamada de `startBackupScheduler()`; adicionada documentação no header com exemplo de crontab para agendamento via sistema operacional, seguindo o mesmo padrão do `scripts/monitor-disk-space.js`.
+  - **Teste:** Removido teste de exportação de `startBackupScheduler` e mock de `BACKUP_INTERVAL_MS`.
+  - O agendamento agora deve ser feito exclusivamente via cron do sistema operacional, usando `scripts/create-backup.js` como entry point — exatamente como o `scripts/monitor-disk-space.js` é usado.
+- **Uso correto agora (crontab):**
+  ```bash
+  # Backup diário às 2 AM
+  0 2 * * * cd /caminho/do/projeto && node scripts/create-backup.js >> data/backups/backup.log 2>&1
+  ```
+- **Alinhamento com o padrão do projeto:** O `monitor-disk-space.js` já estabelecia o padrão correto (script executável sem scheduler interno, com documentação de crontab no header). O `backup.js` foi alinhado a este padrão.
 
 ### 7.2. Onze migrações sem sistema de versionamento ✅ Corrigido
 - **Arquivos refatorados:** `scripts/migrations/001-*.js` a `009-*.js`, `011-*.js`
@@ -554,7 +566,7 @@ Definir e documentar um padrão:
 | **8.2** | **Criar módulo connection.js** | 🟢 Baixa | Médio | **Média** | **✅ Concluído** |
 | **8.4** | **Implementar gerenciador de migrações** | 🟡 Média | Alto | **Alta** | **✅ Concluído** |
 | 4.2 | clear-musicas e clear-db sem confirmação | 🟡 Média | Baixo | Média | ✅ Corrigido |
-| 7.1 | Scheduler caseiro | 🟢 Baixa | Médio | Baixa | Pendente |
+| **7.1** | **Scheduler caseiro removido (delegado ao cron do SO)** | 🟢 Baixa | Médio | **Baixa** | **✅ Corrigido** |
 | 5.4 | Ausência de testes automatizados para scripts | 🟡 Média | Médio | **Alta** | **✅ Corrigido** |
 | 5.1 | Shebang ausente | 🟢 Baixa | Muito Baixo | Baixa | ✅ Corrigido |
 | 5.2 | Constantes mágicas espalhadas | 🟢 Baixa | Baixo | Média | ✅ Corrigido |

@@ -37,7 +37,6 @@ jest.unstable_mockModule('date-fns', () => ({
 jest.mock('../../../scripts/utils/constants.js', () => ({
   MAX_BACKUPS: 10,
   DEFAULT_LIST_LIMIT: 50,
-  BACKUP_INTERVAL_MS: 86400000,
   ENCRYPTION_KEY_LENGTH: 32,
   MAX_LOG_LINES: 100,
 }));
@@ -89,8 +88,5 @@ describe('backup.js — Sistema de backup', () => {
       expect(typeof backup.initializeBackupSystem).toBe('function');
     });
 
-    it('deve exportar startBackupScheduler como função', () => {
-      expect(typeof backup.startBackupScheduler).toBe('function');
-    });
   });
 });

@@ -8,7 +8,6 @@ import crypto from 'crypto';
 import {
   MAX_BACKUPS,
   DEFAULT_LIST_LIMIT,
-  BACKUP_INTERVAL_MS,
   ENCRYPTION_KEY_LENGTH,
   MAX_LOG_LINES,
   DISK_THRESHOLD_PERCENT,
@@ -570,51 +569,6 @@ async function initializeBackupSystem() {
   }
 }
 
-/**
- * Inicia o agendador automático de backups
- */
-function startBackupScheduler() {
-  try {
-    console.log(`Iniciando agendador de backup com padrão cron: ${BACKUP_CONFIG.backupInterval}`);
-
-    // Interpreta o padrão cron e configura o intervalo
-    const cronParts = BACKUP_CONFIG.backupInterval.split(' ');
-    if (cronParts.length === 5) {
-      // Backup diário simples no horário especificado
-      const [minute, hour] = cronParts.slice(0, 2).map(Number);
-
-      // Calcula milissegundos até o próximo backup agendado
-      const now = new Date();
-      const nextBackup = new Date(now);
-
-      // Define para a próxima ocorrência do horário agendado
-      nextBackup.setHours(hour, minute, 0, 0);
-
-      if (nextBackup <= now) {
-        nextBackup.setDate(nextBackup.getDate() + 1); // Amanhã
-      }
-
-      const initialDelay = nextBackup - now;
-
-      // Configura o agendador
-      setTimeout(() => {
-        createBackup().then(() => {
-          // Configura intervalo diário (24 horas)
-          setInterval(() => {
-            createBackup().catch(console.error);
-          }, BACKUP_INTERVAL_MS);
-        }).catch(console.error);
-      }, initialDelay);
-
-      console.log(`Próximo backup agendado para: ${nextBackup}`);
-      console.log(`Agendador de backup iniciado com sucesso`);
-    }
-  } catch (error) {
-    console.error('Erro ao iniciar agendador de backup:', error);
-    throw error;
-  }
-}
-
 // Exporta funções para uso em outros módulos
 export {
   createBackup,
@@ -623,6 +577,5 @@ export {
   getAvailableBackups,
   getBackupLogs,
   initializeBackupSystem,
-  startBackupScheduler,
   checkDiskBeforeBackup
 };

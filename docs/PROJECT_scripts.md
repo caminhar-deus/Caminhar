@@ -97,11 +97,11 @@ scripts/
 
 ### `scripts/backup.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/backup.js`
-- **Propósito:** Módulo principal de backup/restore do banco de dados PostgreSQL. Suporta compressão gzip, criptografia AES-256-GCM, verificação de integridade SHA-256, gerenciamento de retenção (mantém os 10 backups mais recentes) e um agendador interno baseado em cron. Oferece funções exportadas para `createBackup()`, `restoreBackup()`, `cleanupOldBackups()`, `getAvailableBackups()`, `getBackupLogs()`, `initializeBackupSystem()`, `startBackupScheduler()` e `checkDiskBeforeBackup()`.
+- **Propósito:** Módulo principal de backup/restore do banco de dados PostgreSQL. Suporta compressão gzip, criptografia AES-256-GCM, verificação de integridade SHA-256 e gerenciamento de retenção (mantém os 10 backups mais recentes). O agendamento automático deve ser configurado via cron do sistema operacional (ver `init-backup.js`). Oferece funções exportadas para `createBackup()`, `restoreBackup()`, `cleanupOldBackups()`, `getAvailableBackups()`, `getBackupLogs()`, `initializeBackupSystem()` e `checkDiskBeforeBackup()`.
 - **Segurança:** Utiliza `spawn()` com argumentos em array (sem shell) para executar `pg_dump` e `psql`, eliminando risco de command injection. Compressão/descompressão gzip via streams nativas (`zlib.createGzip`/`zlib.createGunzip`). Hash SHA-256 calculado via stream (`fs.createReadStream`) sem carregar arquivo inteiro na RAM. I/O assíncrono com `fs.promises` em todas as operações de arquivo, incluindo `fs.promises.opendir()` para iteração incremental do diretório de backups. Log otimizado com buffer em memória (apenas append ao arquivo, sem re-escrita).
 - **Performance:** Leitura incremental do diretório de backups via `opendir()` em vez de `readdirSync()`, eliminando carregamento completo do diretório na memória. Função `getBackupFiles()` aceita parâmetro `maxFiles` para limitar a consulta — `cleanupOldBackups()` lê no máximo 11 arquivos (em vez de todos) e `getAvailableBackups()` usa default de 50. Remoção de duplicatas com `Set()` (O(n)) em vez de `indexOf()` (O(n²)).
 - **Integração com monitor de disco:** A função `checkDiskBeforeBackup()` verifica espaço em disco antes de cada `createBackup()`, usando `spawn('df', ['-h', ...])` (seguro) com fallback `fs.promises.statfs()` (nativo). Registra alerta nos logs se o uso estiver acima do threshold (85%). Exportada como função pública para uso externo.
-- **Funções exportadas:** `createBackup()`, `restoreBackup()`, `cleanupOldBackups()`, `getAvailableBackups(maxFiles = 50)`, `getBackupLogs()`, `initializeBackupSystem()`, `startBackupScheduler()`, `checkDiskBeforeBackup()`
+- **Funções exportadas:** `createBackup()`, `restoreBackup()`, `cleanupOldBackups()`, `getAvailableBackups(maxFiles = 50)`, `getBackupLogs()`, `initializeBackupSystem()`, `checkDiskBeforeBackup()`
 - **Dependências:** `fs`, `path`, `date-fns`, `zlib`, `child_process` (apenas `spawn`), `crypto`
 
 ### `scripts/create-backup.js`
@@ -118,8 +118,8 @@ scripts/
 
 ### `scripts/init-backup.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/init-backup.js`
-- **Propósito:** Script de inicialização do sistema de backup. Carrega variáveis de ambiente e delega para `initializeBackupSystem()` do módulo `backup.js`. Garante que o diretório de backups existe, cria um backup inicial e inicia o agendador automático de backups.
-- **Refatorado em:** 21/05/2026 — comentários e mensagens `console.log`/`console.error` traduzidos de inglês para português (ex: `"Starting Caminhar Database Backup System..."` → `"Iniciando sistema de backup do banco de dados..."`).
+- **Propósito:** Script de inicialização do sistema de backup. Carrega variáveis de ambiente e delega para `initializeBackupSystem()` do módulo `backup.js`. Garante que o diretório de backups existe e cria um backup inicial. O agendamento automático deve ser configurado via cron do sistema operacional — exibido na saída do script.
+- **Refatorado em:** 21/05/2026 — comentários e mensagens `console.log`/`console.error` traduzidos de inglês para português; removido import e chamada de `startBackupScheduler()` (agendamento delegado ao cron do SO); adicionada documentação no header com exemplo de crontab.
 - **Dependências:** `backup.js` (local)
 
 ### `scripts/check-db-status.js`
