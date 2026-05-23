@@ -189,18 +189,31 @@ const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
 
 ---
 
-### 2.2 Header `X-Forwarded-For` sendo usado para contornar rate limit
+### 2.2 Header `X-Forwarded-For` sendo usado para contornar rate limit — **RESOLVIDO (23/05/2026)**
 
-**Severidade:** ⚠️ Média
+**Severidade anterior:** ⚠️ Média
 
-**Arquivos afetados:** Todos que usam `getRandomIP()` (ver seção 1.1)
+**Arquivos afetados anteriormente:** `ip-spoofing-test.js` e todos que usam `getRandomIP()` (ver seção 1.1)
 
-**Problema:** Os testes de carga deliberadamente falsificam o header `X-Forwarded-For` para evitar rate limit. Isso é contraditório com o propósito do teste `ip-spoofing-test.js`, que supostamente valida que IPs falsificados são rejeitados. Se o rate limit pode ser burlado com IP falso, isso é uma vulnerabilidade real.
+**Problema original:** Os testes de carga deliberadamente falsificavam o header `X-Forwarded-For` para evitar rate limit. Isso era contraditório com o propósito do teste `ip-spoofing-test.js`, que supostamente validava que IPs falsificados são rejeitados.
 
-**Sugestão:**
-- Revisar a estratégia: ou o `X-Forwarded-For` é confiável (e não deve ser falsificado), ou não é (e deve ser tratado como vulnerabilidade)
-- Alternativamente, usar diferentes contas de usuário reais para testes de carga
-- Remover o spoofing de IP nos testes de carga se o sistema depende de rate limit por IP
+**O que foi feito (23/05/2026):**
+1. O `ip-spoofing-test.js` foi reescrito como **teste de vulnerabilidade (Opção A)**: verifica se o rate limit pode ser burlado via rotação do header `X-Forwarded-For`. Status esperado:
+   - `429 (Too Many Requests)` → protegido (rate limit global ignorou IP falso)
+   - `401 (Unauthorized)` → vulnerável (rate limit foi burlado)
+2. Criado novo teste `ip-spoofing-deteccao-test.js` como **teste de proteção (Opção B)**: valida que o sistema detecta e rejeita ativamente requisições com headers falsificados. Status esperado:
+   - `403 (Forbidden)` ou `400 (Bad Request)` → protegido (spoofing detectado e bloqueado)
+   - `429 (Too Many Requests)` → protegido (rate limit global bloqueou)
+   - `401 (Unauthorized)` → vulnerável (spoofing não foi detectado)
+3. Ambos os testes agora usam os módulos compartilhados (`config.js`, `profiles.js`, `report.js`, `network.js`)
+4. O perfil de carga utilizado é `rateLimit` do `helpers/profiles.js`
+5. O `sleep()` foi removido para máxima taxa de requisições, consistente com propósito do teste
+
+**Resultado:** Agora há dois testes com propósitos claros e não contraditórios:
+- `ip-spoofing-test.js` — Testa se o sistema é vulnerável a evasão de rate limit via IP spoofing
+- `ip-spoofing-deteccao-test.js` — Testa se o sistema detecta e bloqueia ativamente IPs falsificados
+
+**Sugestão original:** Revisar a estratégia — ou o `X-Forwarded-For` é confiável (e não deve ser falsificado), ou não é (e deve ser tratado como vulnerabilidade).
 
 ---
 
@@ -524,7 +537,7 @@ import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 | 🔴 **Crítica** | Segurança | Credenciais hardcoded em texto plano | Baixo | Alto | ✅ Resolvido (23/05/2026) |
 | ⚠️ **Alta** | Duplicidade | Função `getRandomIP()` duplicada | Baixo | Médio | ✅ Resolvido (23/05/2026) |
 | ⚠️ **Alta** | Duplicidade | Configuração de ambiente duplicada | Baixo | Médio | ✅ Resolvido (23/05/2026) |
-| ⚠️ **Alta** | Segurança | Header `X-Forwarded-For` usado para burlar rate limit | Médio | Alto | ❌ Pendente |
+| ⚠️ **Alta** | Segurança | Header `X-Forwarded-For` usado para burlar rate limit | Médio | Alto | ✅ Resolvido (23/05/2026) |
 | ⚠️ **Alta** | CI/CD | Workflow executa apenas 1 dos 28 testes | Alto | Muito Alto | ❌ Pendente |
 | ⚠️ **Alta** | Performance | Thresholds inconsistentes entre testes similares | Médio | Médio | ✅ Resolvido (23/05/2026) |
 | ⚠️ **Alta** | Manutenção | Rotas sem versionamento consistente (`/api` vs `/api/v1`) | Baixo | Médio | ✅ Resolvido (13/05/2026) |

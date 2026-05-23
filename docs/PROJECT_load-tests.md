@@ -15,6 +15,7 @@
    - [create-post-flow.js](#create-post-flowjs)
    - [ddos-search-test.js](#ddos-search-testjs)
    - [health-check.js](#health-checkjs)
+   - [ip-spoofing-deteccao-test.js](#ip-spoofing-deteccao-testjs)
    - [ip-spoofing-test.js](#ip-spoofing-testjs)
    - [login-negative-test.js](#login-negative-testjs)
    - [musicas-crud-test.js](#musicas-crud-testjs)
@@ -51,7 +52,7 @@
 
 ## Visão Geral
 
-A pasta `load-tests/` contém **33 arquivos** (28 scripts de teste em k6 + 1 configuração JSON + 1 workflow CI + 5 módulos helpers) que compõem a suíte de testes de carga, stress, performance e segurança do projeto **Caminhar**. Todos os scripts utilizam a ferramenta [k6](https://k6.io/) da Grafana Labs.
+A pasta `load-tests/` contém **36 arquivos** (29 scripts de teste em k6 + 1 configuração JSON + 1 workflow CI + 5 módulos helpers) que compõem a suíte de testes de carga, stress, performance e segurança do projeto **Caminhar**. Todos os scripts utilizam a ferramenta [k6](https://k6.io/) da Grafana Labs.
 
 Os testes estão organizados em categorias funcionais:
 
@@ -60,7 +61,7 @@ Os testes estão organizados em categorias funcionais:
 | **Músicas** | 6 | CRUD, filtro, paginação, busca, ordenação, carga (runner genérico) |
 | **Vídeos** | 6 | CRUD, filtro, paginação, validação, ordenação, carga (runner genérico) |
 | **Posts/Blog** | 4 | Paginação com cursor, tags, busca de conteúdo, criação de post |
-| **Autenticação/Segurança** | 4 | Login negativo, rate limit, IP spoofing, DDoS |
+| **Autenticação/Segurança** | 5 | Login negativo, rate limit, IP spoofing (evasão), IP spoofing (detecção), DDoS |
 | **Saúde/Recuperação** | 3 | Health check, backup, recovery |
 | **Cache** | 2 | Headers de cache, performance de cache |
 | **Fluxos Combinados** | 2 | Stress test combinado, upload flow |
@@ -230,19 +231,56 @@ Os testes estão organizados em categorias funcionais:
 
 **Localização:** `/load-tests/ip-spoofing-test.js`
 
-**O que faz:** Testa se o sistema é vulnerável a ataque de IP spoofing via header `X-Forwarded-For`.
+**O que faz:** Teste de vulnerabilidade (Opção A) que verifica se o rate limit do sistema pode ser burlado via rotação do header `X-Forwarded-For`.
 
-**Propósito:** Validar que o sistema não aceita requisições com IPs falsificados como autênticas para burlar rate limiting.
+**Propósito:** Detectar se o rate limit é global ou baseado em IP confiável, revelando vulnerabilidade de evasão.
 
 **Estrutura:**
-- `setup()` — Login via `helpers/auth.js`
+- Perfil de carga: `rateLimit` do `helpers/profiles.js`
 - Gera IPs aleatórios via `getRandomIP()` do módulo `helpers/network.js`
-- Verifica se o sistema trata corretamente ou é enganado pelo spoofing
+- Envia requisições com `X-Forwarded-For` falsificado e senha inválida
+- **Sem `sleep()`** para máxima taxa de requisições
 - `handleSummary()` — Gera relatório via `helpers/report.js`
 
+**Interpretação dos resultados:**
+- `429` (Too Many Requests) → ✅ Protegido — rate limit global ignorou IP falso
+- `401` (Unauthorized) → ❌ Vulnerável — rate limit foi burlado pelo IP falso
+
 **Endpoints chamados:**
-- `POST /api/auth/login` — Autenticação
-- Endpoints protegidos com headers de IP falsificados
+- `POST /api/auth/login` — Autenticação (com `X-Forwarded-For` falsificado)
+
+**Configuração de carga:** Perfil `rateLimit` (ramp 0→50 VUs, 50s)
+
+**Observação:** Criado em substituição ao teste anterior que era contraditório (validava spoofing mas também o utilizava). Agora tem propósito claro de teste de vulnerabilidade.
+
+---
+
+### `ip-spoofing-deteccao-test.js`
+
+**Localização:** `/load-tests/ip-spoofing-deteccao-test.js`
+
+**O que faz:** Teste de proteção (Opção B) que valida se o sistema detecta e rejeita ativamente requisições com headers `X-Forwarded-For` falsificados.
+
+**Propósito:** Garantir que o sistema tenha detecção ativa de IP spoofing, bloqueando requisições com headers falsificados.
+
+**Estrutura:**
+- Perfil de carga: `rateLimit` do `helpers/profiles.js`
+- Gera IPs aleatórios via `getRandomIP()` do módulo `helpers/network.js`
+- Envia requisições com múltiplos headers falsificados (`X-Forwarded-For`, `X-Real-IP`, `CF-Connecting-IP`)
+- **Sem `sleep()`** para máxima taxa de requisições
+- `handleSummary()` — Gera relatório via `helpers/report.js`
+
+**Interpretação dos resultados:**
+- `403` (Forbidden) ou `400` (Bad Request) → ✅ Protegido — spoofing detectado e bloqueado ativamente
+- `429` (Too Many Requests) → ✅ Protegido — rate limit global bloqueou (mas não houve detecção específica)
+- `401` (Unauthorized) → ❌ Vulnerável — spoofing não foi detectado
+
+**Endpoints chamados:**
+- `POST /api/auth/login` — Autenticação (com headers falsificados)
+
+**Configuração de carga:** Perfil `rateLimit` (ramp 0→50 VUs, 50s)
+
+**Observação:** Criado em 23/05/2026 como parte da resolução da seção 2.2 do UPGRADE_load-tests.md. Complementa o `ip-spoofing-test.js` testando detecção ativa em vez de evasão de rate limit.
 
 ---
 
@@ -1014,4 +1052,4 @@ export function handleSummary(data) {
 
 > **Data da análise:** 13/05/2026
 > **Última atualização:** 23/05/2026
-> **Total de scripts analisados:** 28 scripts k6 + 1 arquivo de configuração + 1 workflow CI + 5 módulos helpers
+> **Total de scripts analisados:** 29 scripts k6 + 1 arquivo de configuração + 1 workflow CI + 5 módulos helpers

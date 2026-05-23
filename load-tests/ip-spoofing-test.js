@@ -1,17 +1,36 @@
 import http from 'k6/http';
-import { check, sleep } from 'k6';
-import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
+import { check } from 'k6';
 import { getRandomIP } from './helpers/network.js';
+import { BASE_URL } from './helpers/config.js';
+import { getProfile } from './helpers/profiles.js';
+import { generateReport } from './helpers/report.js';
 
-export const options = {
-  vus: 10, // 10 usuários simultâneos atacando
-  duration: '20s',
-};
+/**
+ * Teste de Vulnerabilidade — IP Spoofing / Evasão de Rate Limit (Opção A)
+ *
+ * Propósito: Verificar se o rate limit do sistema pode ser burlado
+ * via rotação do header X-Forwarded-For.
+ *
+ * Comportamento esperado (proteção funcionando):
+ *   - 429 (Too Many Requests) → Rate limit é global, ignorou o IP falso
+ *
+ * Comportamento em caso de vulnerabilidade:
+ *   - 401 (Unauthorized) → Rate limit foi burlado, IP falso foi aceito
+ */
 
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
+const PROFILE_NAME = 'rateLimit';
+const REPORT_NAME = 'ip_spoofing_evasao_test';
+
+export const options = getProfile(PROFILE_NAME, {
+  thresholds: {
+    // Se recebermos 429, o rate limit global está protegendo
+    http_req_duration: ['p(95)<5000'],
+    http_req_failed: ['rate<0.50'],
+  },
+});
 
 export default function () {
-  // Gera um IP único para esta iteração
+  // Gera um IP único para esta iteração (tentativa de evadir rate limit)
   const virtualIP = getRandomIP();
 
   const payload = JSON.stringify({
@@ -22,27 +41,22 @@ export default function () {
   const params = {
     headers: {
       'Content-Type': 'application/json',
-      // O segredo está aqui: Injetamos um IP falso no cabeçalho padrão de proxy
-      'X-Forwarded-For': virtualIP, 
+      // Tenta burlar o rate limit injetando IP falso no header padrão de proxy
+      'X-Forwarded-For': virtualIP,
     },
   };
 
   const res = http.post(`${BASE_URL}/api/auth/login?response=body`, payload, params);
 
-  // Neste teste, esperamos EVADIR o Rate Limit rotacionando o IP.
-  // Se recebermos 429, significa que o Rate Limit é global ou ignorou o cabeçalho.
-  // Se recebermos 401, significa que o servidor tratou como um novo usuário (Sucesso do teste de evasão).
+  // Opção A: Teste de Vulnerabilidade
+  // - 429 = protegido (rate limit global ignorou IP falso)
+  // - 401 = vulnerável (rate limit foi burlado)
   check(res, {
-    'Status é 401 (IP aceito, credencial inválida)': (r) => r.status === 401,
-    'Não foi bloqueado (Não é 429)': (r) => r.status !== 429,
+    '✅ Protegido: Rate limit global ignorou IP falso (429)': (r) => r.status === 429,
+    '❌ Vulnerável: IP spoofing burlou rate limit (401)': (r) => r.status === 401,
   });
-
-  sleep(0.5);
 }
 
 export function handleSummary(data) {
-  return {
-    'stdout': textSummary(data, { indent: ' ', enableColors: true }),
-    './reports/k6-summaries/ip_spoofing_test.json': JSON.stringify(data, null, 4),
-  };
+  return generateReport(data, REPORT_NAME);
 }
