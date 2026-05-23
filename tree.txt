@@ -516,59 +516,6 @@
 │   ├── fixtures
 │   │   └── posts.json
 │   ├── screenshots
-│   │   ├── blog.cy.js
-│   │   │   ├── Página de Blog (blog) -- deve carregar a listagem de posts (failed) (attempt 2).png
-│   │   │   ├── Página de Blog (blog) -- deve carregar a listagem de posts (failed) (attempt 3).png
-│   │   │   ├── Página de Blog (blog) -- deve carregar a listagem de posts (failed).png
-│   │   │   ├── Página de Blog (blog) -- deve exibir links para posts individuais (failed) (attempt 2).png
-│   │   │   ├── Página de Blog (blog) -- deve exibir links para posts individuais (failed) (attempt 3).png
-│   │   │   ├── Página de Blog (blog) -- deve exibir links para posts individuais (failed).png
-│   │   │   ├── Página de Blog (blog) -- deve exibir o título da página (failed) (attempt 2).png
-│   │   │   ├── Página de Blog (blog) -- deve exibir o título da página (failed) (attempt 3).png
-│   │   │   └── Página de Blog (blog) -- deve exibir o título da página (failed).png
-│   │   ├── home.cy.js
-│   │   │   ├── Página Inicial () -- deve ter links de navegação no header (failed) (attempt 2).png
-│   │   │   ├── Página Inicial () -- deve ter links de navegação no header (failed) (attempt 3).png
-│   │   │   └── Página Inicial () -- deve ter links de navegação no header (failed).png
-│   │   ├── image_zoom.cy.js
-│   │   │   ├── Funcionalidade de Zoom de Imagem (Lightbox) no Post -- Acessibilidade -- deve ter atributos ARIA corretos no lightbox -- before each hook (.png
-│   │   │   ├── Funcionalidade de Zoom de Imagem (Lightbox) no Post -- Acessibilidade -- deve ter atributos ARIA corretos no lightbox (failed) (attempt 2).png
-│   │   │   ├── Funcionalidade de Zoom de Imagem (Lightbox) no Post -- Acessibilidade -- deve ter atributos ARIA corretos no lightbox (failed).png
-│   │   │   ├── Funcionalidade de Zoom de Imagem (Lightbox) no Post -- Fluxo principal (happy path) -- deve exibir o container e a imagem do post -- before.png
-│   │   │   ├── Funcionalidade de Zoom de Imagem (Lightbox) no Post -- Fluxo principal (happy path) -- deve exibir o container e a imagem do post (failed) .png
-│   │   │   ├── Funcionalidade de Zoom de Imagem (Lightbox) no Post -- Fluxo principal (happy path) -- deve exibir o container e a imagem do post (failed).png
-│   │   │   ├── Funcionalidade de Zoom de Imagem (Lightbox) no Post -- Responsividade -- deve funcionar corretamente em viewport mobile (375×667) (fai (1).png
-│   │   │   ├── Funcionalidade de Zoom de Imagem (Lightbox) no Post -- Responsividade -- deve funcionar corretamente em viewport mobile (375×667) (fai (2).png
-│   │   │   ├── Funcionalidade de Zoom de Imagem (Lightbox) no Post -- Responsividade -- deve funcionar corretamente em viewport mobile (375×667) (failed).png
-│   │   │   ├── Funcionalidade de Zoom de Imagem (Lightbox) no Post -- Responsividade -- deve funcionar corretamente em viewport tablet (768×1024) (fa (1).png
-│   │   │   ├── Funcionalidade de Zoom de Imagem (Lightbox) no Post -- Responsividade -- deve funcionar corretamente em viewport tablet (768×1024) (fa (2).png
-│   │   │   ├── Funcionalidade de Zoom de Imagem (Lightbox) no Post -- Responsividade -- deve funcionar corretamente em viewport tablet (768×1024) (failed.png
-│   │   │   ├── Funcionalidade de Zoom de Imagem (Lightbox) no Post -- Testes de borda (edge cases) -- deve suportar múltiplas aberturas e fechamentos (1).png
-│   │   │   ├── Funcionalidade de Zoom de Imagem (Lightbox) no Post -- Testes de borda (edge cases) -- deve suportar múltiplas aberturas e fechamentos (2).png
-│   │   │   ├── Funcionalidade de Zoom de Imagem (Lightbox) no Post -- Testes de borda (edge cases) -- deve suportar múltiplas aberturas e fechamentos con.png
-│   │   │   ├── Funcionalidade de Zoom de Imagem (Lightbox) no Post -- Testes de borda (edge cases) -- não deve exibir o container de zoom quando o po (1).png
-│   │   │   ├── Funcionalidade de Zoom de Imagem (Lightbox) no Post -- Testes de borda (edge cases) -- não deve exibir o container de zoom quando o po (2).png
-│   │   │   ├── Funcionalidade de Zoom de Imagem (Lightbox) no Post -- Testes de borda (edge cases) -- não deve exibir o container de zoom quando o post n.png
-│   │   │   ├── Funcionalidade de Zoom de Imagem (Lightbox) no Post -- Testes de borda (edge cases) -- não deve fechar o lightbox ao clicar diretament (1).png
-│   │   │   ├── Funcionalidade de Zoom de Imagem (Lightbox) no Post -- Testes de borda (edge cases) -- não deve fechar o lightbox ao clicar diretament (2).png
-│   │   │   └── Funcionalidade de Zoom de Imagem (Lightbox) no Post -- Testes de borda (edge cases) -- não deve fechar o lightbox ao clicar diretamente na.png
-│   │   ├── navigation.cy.js
-│   │   │   ├── Navegação entre páginas -- deve carregar a página admin sem erros de autenticação (failed) (attempt 2).png
-│   │   │   ├── Navegação entre páginas -- deve carregar a página admin sem erros de autenticação (failed) (attempt 3).png
-│   │   │   ├── Navegação entre páginas -- deve carregar a página admin sem erros de autenticação (failed).png
-│   │   │   ├── Navegação entre páginas -- deve navegar da home para blog clicando em link de post (failed) (attempt 2).png
-│   │   │   ├── Navegação entre páginas -- deve navegar da home para blog clicando em link de post (failed) (attempt 3).png
-│   │   │   └── Navegação entre páginas -- deve navegar da home para blog clicando em link de post (failed).png
-│   │   └── post.cy.js
-│   │       ├── Página de Post Individual (blog[slug]) -- deve carregar o post mesmo sem imagem (failed) (attempt 2).png
-│   │       ├── Página de Post Individual (blog[slug]) -- deve carregar o post mesmo sem imagem (failed) (attempt 3).png
-│   │       ├── Página de Post Individual (blog[slug]) -- deve carregar o post mesmo sem imagem (failed).png
-│   │       ├── Página de Post Individual (blog[slug]) -- deve exibir botões de compartilhamento (failed) (attempt 2).png
-│   │       ├── Página de Post Individual (blog[slug]) -- deve exibir botões de compartilhamento (failed) (attempt 3).png
-│   │       ├── Página de Post Individual (blog[slug]) -- deve exibir botões de compartilhamento (failed).png
-│   │       ├── Página de Post Individual (blog[slug]) -- deve exibir o conteúdo do post (failed) (attempt 2).png
-│   │       ├── Página de Post Individual (blog[slug]) -- deve exibir o conteúdo do post (failed) (attempt 3).png
-│   │       └── Página de Post Individual (blog[slug]) -- deve exibir o conteúdo do post (failed).png
 │   ├── support
 │   │   ├── commands.js
 │   │   └── e2e.js
@@ -601,6 +548,8 @@
 │   ├── PROJECT_scripts.md
 │   ├── PROJECT_tests.md
 │   ├── RELATORIO_ERROS_2026-05-22.md
+│   ├── RELATORIO_ERROS_2026-05-22_v2.md
+│   ├── RELATORIO_ERROS_2026-05-22_v3.md
 │   ├── UPGRADE_components.md
 │   ├── UPGRADE_cypress.md
 │   ├── UPGRADE_data.md
@@ -1134,4 +1083,4 @@
 ├── tests-output.log
 └── tree.txt
 
-172 directories, 963 files
+167 directories, 917 files

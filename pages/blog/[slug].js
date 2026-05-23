@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import styles from './Blog.module.css';
@@ -11,6 +11,7 @@ import { query } from '../../lib/db.js';
 export default function BlogPost({ post }) {
   const [isImageZoomed, setIsImageZoomed] = useState(false);
   const [currentUrl, setCurrentUrl] = useState('');
+  const lightboxRef = useRef(null);
 
   useEffect(() => {
     setCurrentUrl(window.location.href);
@@ -28,6 +29,13 @@ export default function BlogPost({ post }) {
       window.removeEventListener('keydown', handleEsc);
     };
   }, []);
+
+  // Move o foco para o lightbox quando aberto
+  useEffect(() => {
+    if (isImageZoomed && lightboxRef.current) {
+      lightboxRef.current.focus();
+    }
+  }, [isImageZoomed]);
 
   // Define a URL base do site (fallback para localhost se não estiver definida)
   const siteUrl = process.env.SITE_URL || 'http://localhost:3000';
@@ -92,6 +100,8 @@ export default function BlogPost({ post }) {
 
             {isImageZoomed && (
               <div
+                ref={lightboxRef}
+                tabIndex={-1}
                 data-testid="image-lightbox"
                 role="dialog"
                 aria-modal="true"
