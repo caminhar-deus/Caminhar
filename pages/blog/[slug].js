@@ -41,7 +41,7 @@ export default function BlogPost({ post }) {
   return (
     <div className={styles.container} style={{ padding: '40px 20px' }}>
       <Head>
-        <title>{post.title} | O Caminhar com Deus</title>
+        <title>{`${post.title} | O Caminhar com Deus`}</title>
         <meta name="description" content={post.excerpt || post.content?.substring(0, 160)} />
 
         {/* Open Graph / Facebook / WhatsApp */}
