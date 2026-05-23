@@ -1,6 +1,6 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
+import { generateReport } from './helpers/report.js';
 
 export const options = {
   // Teste funcional de validação
@@ -104,8 +104,5 @@ export default function (data) {
 }
 
 export function handleSummary(data) {
-  return {
-    'stdout': textSummary(data, { indent: ' ', enableColors: true }),
-    './reports/k6-summaries/video_validation_test.json': JSON.stringify(data, null, 4),
-  };
+  return generateReport(data, 'video_validation_test');
 }

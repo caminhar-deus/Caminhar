@@ -2,7 +2,7 @@ import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { b64decode } from 'k6/encoding';
 import exec from 'k6/execution';
-import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
+import { generateReport } from './helpers/report.js';
 
 // --- Opções do Teste de Upload ---
 export const options = {
@@ -109,11 +109,5 @@ export default function (data) {
 }
 
 export function handleSummary(data) {
-  if (data.setup_data && data.setup_data.token) {
-    data.setup_data.token = "*** TOKEN OCULTO ***";
-  }
-  return {
-    'stdout': textSummary(data, { indent: ' ', enableColors: true }),
-    './reports/k6-summaries/upload-flow-summary.json': JSON.stringify(data, null, 4),
-  };
+  return generateReport(data, 'upload-flow-summary');
 }

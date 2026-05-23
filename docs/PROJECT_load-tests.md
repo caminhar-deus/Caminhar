@@ -108,7 +108,7 @@ Os testes estão organizados em categorias funcionais:
 **Estrutura:**
 - `setup()` — Login via `helpers/auth.js`
 - `default()` — GET `/api/admin/backups` com token, valida resposta
-- `handleSummary()` — Gera relatório via `helpers/report.js`
+- `handleSummary()` — Gera relatório via `helpers/report.js` (com sanitização automática do token JWT)
 - Configuração: perfil `light` do `helpers/profiles.js`
 
 **Endpoints chamados:**
@@ -496,7 +496,7 @@ Os testes estão organizados em categorias funcionais:
 - Tags fixas: `['fé', 'oração', 'bíblia', 'vida', 'espiritualidade']`
 - Valida se posts retornados contêm a tag buscada
 - Soft pass com warning se tag não encontrada visualmente (pode ser normalização diferente)
-- `handleSummary()` — Gera relatório via `helpers/report.js`
+- `handleSummary()` — Gera relatório via `helpers/report.js` (sem token para sanitizar, é rota pública)
 - Configuração: perfil `light` do `helpers/profiles.js`
 
 **Endpoints chamados:**
@@ -933,7 +933,11 @@ export const options = getProfile('light', { iterations: 10 });
 **Propósito:** Centralizar a lógica de `handleSummary()` que estava duplicada em ~18 arquivos, e atualizar a versão do `k6-summary` de `0.0.2` para `latest`.
 
 **Exports:**
-- `generateReport(data, testName)` — Gera objeto de saída com `stdout` (textSummary) e arquivo JSON
+- `generateReport(data, testName)` — Gera objeto de saída com `stdout` (textSummary) e arquivo JSON, com sanitização automática do token JWT em `data.setup_data.token`
+
+**Segurança:**
+- A função interna `sanitizeToken()` é chamada automaticamente dentro de `generateReport()`, substituindo o token JWT por `*** TOKEN OCULTO ***` antes de exportar os dados para o relatório JSON e saída padrão
+- Isso garante que todos os ~22 arquivos que usam `generateReport()` sanitizem automaticamente o token, sem necessidade de chamada manual em cada teste
 
 **Uso:**
 ```javascript

@@ -1,4 +1,4 @@
-import { createLoadTest, sanitizeToken, generateReport } from './helpers/resource-test-runner.js';
+import { createLoadTest, generateReport } from './helpers/resource-test-runner.js';
 
 const resourceConfig = {
   endpoint: '/api/videos',
@@ -45,5 +45,5 @@ export { setup } from './helpers/auth.js';
 export default loadTest.default;
 
 export function handleSummary(data) {
-  return generateReport(sanitizeToken(data), loadTest.reportName);
+  return generateReport(data, loadTest.reportName);
 }

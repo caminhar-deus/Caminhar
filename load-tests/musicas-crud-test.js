@@ -1,4 +1,4 @@
-import { createCrudTest, sanitizeToken, generateReport } from './helpers/resource-test-runner.js';
+import { createCrudTest, generateReport } from './helpers/resource-test-runner.js';
 import { setup } from './helpers/auth.js';
 
 const resourceConfig = {
@@ -30,5 +30,5 @@ export { setup };
 export default crudTest.default;
 
 export function handleSummary(data) {
-  return generateReport(sanitizeToken(data), crudTest.reportName);
+  return generateReport(data, crudTest.reportName);
 }

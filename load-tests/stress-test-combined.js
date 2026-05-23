@@ -1,9 +1,9 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { Trend } from 'k6/metrics';
-import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 import { htmlReport } from 'https://raw.githubusercontent.com/benc-uk/k6-reporter/main/dist/bundle.js';
 import { getRandomIP } from './helpers/network.js';
+import { generateReport } from './helpers/report.js';
 
 // --- Métricas Customizadas (Monitoramento) ---
 const MemoryRss = new Trend('nodejs_memory_rss_bytes');
@@ -177,13 +177,7 @@ export function teardown(data) {
 
 // --- Handle Summary ---
 export function handleSummary(data) {
-  if (data.setup_data && data.setup_data.token) {
-    data.setup_data.token = "*** TOKEN OCULTO ***";
-  }
-
-  return {
-    'stdout': textSummary(data, { indent: ' ', enableColors: true }),
-    './reports/k6-summaries/stress-test-combined.json': JSON.stringify(data, null, 4),
-    './reports/k6-summaries/stress-test-combined.html': htmlReport(data),
-  };
+  const reports = generateReport(data, 'stress-test-combined');
+  reports['./reports/k6-summaries/stress-test-combined.html'] = htmlReport(data);
+  return reports;
 }

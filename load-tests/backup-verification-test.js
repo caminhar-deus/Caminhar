@@ -1,6 +1,6 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
+import { generateReport } from './helpers/report.js';
 
 export const options = {
   // Este é um teste funcional, não de carga. Executa apenas 1 vez com 1 usuário.
@@ -74,11 +74,5 @@ export default function (data) {
 }
 
 export function handleSummary(data) {
-  if (data.setup_data && data.setup_data.token) {
-    data.setup_data.token = "*** TOKEN OCULTO ***";
-  }
-  return {
-    'stdout': textSummary(data, { indent: ' ', enableColors: true }),
-    './reports/k6-summaries/backup_verification_test.json': JSON.stringify(data, null, 4),
-  };
+  return generateReport(data, 'backup_verification_test');
 }

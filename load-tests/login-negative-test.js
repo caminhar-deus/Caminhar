@@ -1,6 +1,6 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
+import { generateReport } from './helpers/report.js';
 
 // --- Opções do Teste Negativo ---
 export const options = {
@@ -61,9 +61,5 @@ export default function () {
 }
 
 export function handleSummary(data) {
-  // Neste teste não há token gerado para ocultar, mas mantemos o padrão de saída
-  return {
-    'stdout': textSummary(data, { indent: ' ', enableColors: true }),
-    './reports/k6-summaries/login_negative_test.json': JSON.stringify(data, null, 4),
-  };
+  return generateReport(data, 'login_negative_test');
 }

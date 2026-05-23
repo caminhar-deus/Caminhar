@@ -217,15 +217,31 @@ const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
 
 ---
 
-### 2.3 Token JWT exposto em relatórios
+### 2.3 Token JWT exposto em relatórios — **RESOLVIDO (23/05/2026)**
 
-**Severidade:** ⚠️ Média
+**Severidade anterior:** ⚠️ Média
 
 **Arquivo:** `/load-tests/stress-test-combined.js` (linha 185-187)
 
-**Problema:** O único arquivo que oculta o token JWT nos relatórios é o `stress-test-combined.js`. Nos demais testes, o token pode ser exposto nos relatórios de saída.
+**Problema original:** O único arquivo que ocultava o token JWT nos relatórios era o `stress-test-combined.js`. Nos demais testes, o token podia ser exposto nos relatórios de saída.
 
-**Sugestão:** Adicionar sanitização de token em todos os `handleSummary()` que geram relatórios.
+**O que foi feito (23/05/2026):**
+1. **Abordagem mais eficiente:** Adicionada sanitização de token diretamente dentro da função `generateReport()` no módulo compartilhado `helpers/report.js` — isso corrige automaticamente todos os ~22 arquivos que usam esta função para gerar relatórios.
+2. **Arquivos com sanitização manual refatorados:** `stress-test-combined.js`, `upload-flow.js` e `backup-verification-test.js` foram atualizados para usar `generateReport()` em vez de sanitização manual inline, eliminando código duplicado.
+3. **Arquivos com `handleSummary()` próprio padronizados:** `video-validation-test.js`, `login-negative-test.js` e `musicas-search-test.js` foram atualizados para usar `generateReport()`, ganhando sanitização automática e padronização de saída.
+4. **`helpers/resource-test-runner.js`:** A função `sanitizeToken(data)` exportada pelo runner continua disponível, mas agora a sanitização ocorre automaticamente via `generateReport()` — não sendo mais necessário chamá-la manualmente nos arquivos de teste.
+5. **Import removido:** O import do `textSummary` manual foi removido dos arquivos que não precisam mais dele, sendo substituído pelo `generateReport()` do helper.
+
+**Arquivos afetados:**
+- `helpers/report.js` — Adicionada função interna `sanitizeToken()` chamada automaticamente dentro de `generateReport()`
+- `stress-test-combined.js` — Refatorado para usar `generateReport()` (removeu `textSummary` manual)
+- `upload-flow.js` — Refatorado para usar `generateReport()` (removeu sanitização inline)
+- `backup-verification-test.js` — Refatorado para usar `generateReport()` (removeu sanitização inline)
+- `video-validation-test.js` — Adicionado `generateReport()` (ganhou sanitização automática)
+- `login-negative-test.js` — Adicionado `generateReport()` (padronização, sem token para ocultar)
+- `musicas-search-test.js` — Adicionado `generateReport()` (padronização, sem token para ocultar)
+
+**Resultado:** Todos os arquivos que geram relatórios agora sanitizam automaticamente o token JWT antes da exportação, sem necessidade de chamada manual em cada teste.
 
 ---
 
@@ -543,7 +559,7 @@ import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 | ⚠️ **Alta** | Manutenção | Rotas sem versionamento consistente (`/api` vs `/api/v1`) | Baixo | Médio | ✅ Resolvido (13/05/2026) |
 | ⚠️ **Alta** | CI/CD | Senhas diferentes entre env-config.json e CI | Baixo | Alto | ✅ Resolvido (23/05/2026) |
 | ⚠️ **Alta** | Manutenção | Ausência de `teardown()` na maioria dos testes | Médio | Médio | ❌ Pendente |
-| ⚠️ **Alta** | Segurança | Token JWT exposto em relatórios | Baixo | Médio | ❌ Pendente |
+| ⚠️ **Alta** | Segurança | Token JWT exposto em relatórios | Baixo | Médio | ✅ Resolvido (23/05/2026) |
 | ⚠️ **Média** | Manutenção | Configuração de carga inconsistente entre testes | Alto | Médio | ✅ Resolvido (23/05/2026) |
 | ⚠️ **Média** | Duplicidade | Estruturas CRUD músicas/vídeos quase idênticas | Alto | Alto | ✅ Resolvido (23/05/2026) |
 | 🟢 **Baixa** | Performance | `sleep()` fixo não simula comportamento real | Baixo | Baixo | ❌ Pendente |

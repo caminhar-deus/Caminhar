@@ -1,4 +1,4 @@
-import { createCrudTest, sanitizeToken, generateReport } from './helpers/resource-test-runner.js';
+import { createCrudTest, generateReport } from './helpers/resource-test-runner.js';
 import { setup } from './helpers/auth.js';
 import { BASE_URL } from './helpers/config.js';
 import http from 'k6/http';
@@ -52,5 +52,5 @@ export function teardown(data) {
 }
 
 export function handleSummary(data) {
-  return generateReport(sanitizeToken(data), crudTest.reportName);
+  return generateReport(data, crudTest.reportName);
 }
