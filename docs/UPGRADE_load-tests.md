@@ -123,11 +123,11 @@ const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
 **Sugestão original:** Criar módulo compartilhado `load-tests/helpers/report.js` com função genérica que aceite o nome do teste como parâmetro.
 
 
-### 1.5 Estruturas de teste CRUD quase idênticas entre músicas e vídeos
+### 1.5 Estruturas de teste CRUD quase idênticas entre músicas e vídeos — **RESOLVIDO (23/05/2026)**
 
-**Severidade:** ⚠️ Média
+**Severidade anterior:** ⚠️ Média
 
-**Arquivos afetados:**
+**Arquivos afetados originalmente:**
 - `/load-tests/musicas-crud-test.js`
 - `/load-tests/videos-crud-test.js`
 - `/load-tests/musicas-filter-test.js`
@@ -139,9 +139,27 @@ const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
 - `/load-tests/musicas-load-test.js`
 - `/load-tests/videos-load-test.js`
 
-**Problema:** Os pares de testes (músicas <-> vídeos) são estruturalmente idênticos, diferenciando-se apenas no endpoint e nos dados de payload. Isso representa aproximadamente 80% de duplicação de código.
+**Problema original:** Os pares de testes (músicas <-> vídeos) eram estruturalmente idênticos, diferenciando-se apenas no endpoint e nos dados de payload. Isso representava aproximadamente 80% de duplicação de código.
 
-**Sugestão:** Criar um test runner genérico que receba configuração do recurso (endpoint, payload template, campos), eliminando a necessidade de arquivos duplicados.
+**O que foi feito (23/05/2026):**
+1. Criado módulo compartilhado `load-tests/helpers/resource-test-runner.js` com funções genéricas:
+   - `createCrudTest(config)` — Gera CRUD (create/update/delete) a partir de configuração
+   - `createFilterTest(config)` — Gera teste de filtro por termo de busca
+   - `createPaginationTest(config)` — Gera teste de paginação com validação cruzada
+   - `createSortTest(config)` — Gera teste de ordenação (explícita ou comportamento padrão)
+   - `createLoadTest(config)` — Gera teste de carga com suporte a health check, IP spoofing e requisições extras
+2. Todos os 10 arquivos foram refatorados para ~20-30 linhas cada, importando do runner genérico
+3. O `videos-filter-test.js` foi corrigido — anteriormente testava paginação (não filtro), agora testa filtro real por termos de busca
+4. Adicionado `teardown()` no `musicas-crud-test.js` (já existia no `videos-crud-test.js`)
+5. Adicionado `handleSummary()` no `musicas-load-test.js` e `videos-load-test.js` (não existiam anteriormente)
+6. Corrigido `videos-load-test.js` para usar `__ENV.BASE_URL` em vez de URL hardcoded `'http://localhost:3000'`
+7. Todos os arquivos agora usam `generateReport()` do `helpers/report.js` e importações padronizadas
+
+> **Nota:** O `videos-filter-test.js` anteriormente testava paginação (não filtro). O conteúdo foi reescrito para testar filtro real, e o nome do arquivo foi mantido para consistência com a estrutura de pares.
+
+**Redução de código:** Os 10 arquivos somavam ~850+ linhas de código altamente duplicado. Agora cada arquivo tem ~20-30 linhas de configuração (~250 linhas no total), e a lógica compartilhada está centralizada no runner (~547 linhas). Redução líquida de ~600 linhas de código duplicado.
+
+**Sugestão original:** Criar um test runner genérico que receba configuração do recurso (endpoint, payload template, campos), eliminando a necessidade de arquivos duplicados.
 
 ---
 
@@ -513,7 +531,7 @@ import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 | ⚠️ **Alta** | Manutenção | Ausência de `teardown()` na maioria dos testes | Médio | Médio | ❌ Pendente |
 | ⚠️ **Alta** | Segurança | Token JWT exposto em relatórios | Baixo | Médio | ❌ Pendente |
 | ⚠️ **Média** | Manutenção | Configuração de carga inconsistente entre testes | Alto | Médio | ✅ Resolvido (23/05/2026) |
-| ⚠️ **Média** | Duplicidade | Estruturas CRUD músicas/vídeos quase idênticas | Alto | Alto | ❌ Pendente |
+| ⚠️ **Média** | Duplicidade | Estruturas CRUD músicas/vídeos quase idênticas | Alto | Alto | ✅ Resolvido (23/05/2026) |
 | 🟢 **Baixa** | Performance | `sleep()` fixo não simula comportamento real | Baixo | Baixo | ❌ Pendente |
 | 🟢 **Baixa** | Performance | Health check duplicado em `setup()` | Baixo | Baixo | ❌ Pendente |
 | 🟢 **Baixa** | Manutenção | Nomenclatura inconsistente de arquivos | Médio | Baixo | ❌ Pendente |

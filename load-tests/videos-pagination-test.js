@@ -1,76 +1,19 @@
-import http from 'k6/http';
-import { check, sleep } from 'k6';
-import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
+import { createPaginationTest, generateReport } from './helpers/resource-test-runner.js';
 
-export const options = {
-  // Teste funcional: 1 usuário fazendo a validação lógica
-  vus: 1,
-  iterations: 1,
-  thresholds: {
-    checks: ['rate==1.0'], // 100% das verificações devem passar
-  },
+const resourceConfig = {
+  publicEndpoint: '/api/videos',
+  itemsPath: 'data.videos',
+  resourceName: 'videos',
+  limit: 5,
+  profileName: 'light',
 };
 
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
+const paginationTest = createPaginationTest(resourceConfig);
 
-export default function () {
-  // 1. Requisita a Página 1 (limit=5)
-  const resPage1 = http.get(`${BASE_URL}/api/videos?page=1&limit=5`);
-  
-  check(resPage1, {
-    'Página 1: status 200': (r) => r.status === 200,
-    'Página 1: estrutura de vídeos é válida': (r) => {
-      // Tolera uma resposta sem o campo 'videos' (ex: DB vazio),
-      // mas se o campo existir, ele DEVE ser um array.
-      return r.json('data.videos') === undefined || Array.isArray(r.json('data.videos'));
-    },
-  });
+export const options = paginationTest.options;
 
-  const videosPage1 = resPage1.json('data.videos') || resPage1.json();
-
-  if (!Array.isArray(videosPage1) || videosPage1.length === 0) {
-    console.warn('⚠️ Página 1 vazia. Adicione vídeos ao banco para testar a lógica de paginação.');
-    return; // Termina a iteração se não houver dados para testar
-  }
-
-  // Extrai os IDs da página 1 para comparação (com verificação de segurança)
-  const idsPage1 = Array.isArray(videosPage1) ? videosPage1.map(v => v.id) : [];
-
-  sleep(1);
-
-  // 2. Requisita a Página 2 (limit=5)
-  const resPage2 = http.get(`${BASE_URL}/api/videos?page=2&limit=5`);
-
-  check(resPage2, {
-    'Página 2: status 200': (r) => r.status === 200,
-    'Página 2: estrutura de vídeos é válida': (r) => {
-      // Tolera uma resposta sem o campo 'videos' (ex: DB vazio),
-      // mas se o campo existir, ele DEVE ser um array.
-      return r.json('data.videos') === undefined || Array.isArray(r.json('data.videos'));
-    },
-  });
-
-  const videosPage2 = resPage2.json('data.videos') || resPage2.json();
-  
-  // Se a página 2 estiver vazia (poucos vídeos no banco), o teste passa com aviso
-  if (videosPage2.length === 0) {
-    console.warn('⚠️ Página 2 vazia. Adicione mais vídeos ao banco para um teste de paginação completo.');
-  } else {
-    // 3. Validação Cruzada: Garante que nenhum ID da página 2 está na página 1
-    const hasDuplicates = videosPage2.some(v => idsPage1.includes(v.id));
-    
-    check(resPage2, {
-      'Paginação funciona (IDs diferentes nas págs 1 e 2)': () => !hasDuplicates,
-      'Página 2 tem conteúdo diferente': () => JSON.stringify(videosPage1) !== JSON.stringify(videosPage2),
-    });
-  }
-
-  sleep(1);
-}
+export default paginationTest.default;
 
 export function handleSummary(data) {
-  return {
-    'stdout': textSummary(data, { indent: ' ', enableColors: true }),
-    './reports/k6-summaries/videos_pagination_test.json': JSON.stringify(data, null, 4),
-  };
+  return generateReport(data, paginationTest.reportName);
 }

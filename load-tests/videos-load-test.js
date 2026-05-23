@@ -1,95 +1,49 @@
-import http from 'k6/http';
-import { check, sleep } from 'k6';
-import { getRandomIP } from './helpers/network.js';
+import { createLoadTest, sanitizeToken, generateReport } from './helpers/resource-test-runner.js';
 
-export const options = {
-  stages: [
-    { duration: '5s', target: 5 },   // Ramp-up: sobe para 5 usuários em 5s
-    { duration: '10s', target: 5 },  // Platô: mantém 5 usuários por 10s
-    { duration: '5s', target: 0 },   // Ramp-down: desce para 0 em 5s
-  ],
-  thresholds: {
-    // Define que 95% das requisições devem ser mais rápidas que 300ms
-    http_req_duration: ['p(95)<300'],
-    // Taxa de erro deve ser inferior a 1%
-    http_req_failed: ['rate<0.01'],
-  },
-};
-
-const BASE_URL = 'http://localhost:3000';
-const USERNAME = __ENV.ADMIN_USERNAME || 'admin';
-const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
-
-// A função setup roda uma vez antes do teste iniciar para preparar o ambiente (login)
-export function setup() {
-  const loginRes = http.post(
-    `${BASE_URL}/api/auth/login?response=body`,
-    JSON.stringify({ username: USERNAME, password: PASSWORD }),
-    { headers: { 'Content-Type': 'application/json' } }
-  );
-
-  if (loginRes.status !== 200) {
-    throw new Error(`Falha no login: ${loginRes.status} ${loginRes.body}`);
-  }
-
-  return loginRes.json('data.token');
-}
-
-export default function (token) {
-  const virtualIP = getRandomIP();
-  const params = {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      // Adiciona IP spoofing para evitar o Rate Limit durante o teste de carga
-      'X-Forwarded-For': virtualIP,
-    },
-  };
-
-  // 1. Requisita a primeira página (padrão)
-  const res = http.get(`${BASE_URL}/api/videos`, {
-    ...params,
-    tags: { name: 'ListVideos_Page1' },
-  });
-
-  if (res.status !== 200) {
-    console.error(`Falha na listagem de vídeos (página 1): Status ${res.status} - Body: ${res.body}`);
-  }
-
-  check(res, {
-    'status é 200': (r) => r.status === 200,
+const resourceConfig = {
+  endpoint: '/api/videos',
+  requireAuth: true,
+  useSpoofIP: true,
+  resourceName: 'videos',
+  profileName: 'medium',
+  tags: { name: 'ListVideos_Page1' },
+  checkResponse: () => ({
     'retornou objeto com videos': (r) => {
       const body = r.json();
-      // Passa se 'data.videos' for undefined (DB vazio) ou um array.
       return typeof body === 'object' && (body?.data?.videos === undefined || Array.isArray(body.data.videos));
     },
     'retornou metadados de paginação': (r) => {
       const body = r.json();
-      // Passa se 'data.pagination' for um objeto (mesmo que vazio, se for o caso da API).
       return body?.data?.pagination !== undefined && typeof body.data.pagination === 'object';
     },
     'página 1 tempo < 300ms': (r) => r.timings.duration < 300,
-  });
-
-  // 2. Requisita a segunda página com limite específico
-  const resPage2 = http.get(`${BASE_URL}/api/videos?page=2&limit=5`, {
-    ...params,
-    tags: { name: 'ListVideos_Page2' }, // Adiciona o cabeçalho para evitar rate limit em rotas públicas
-  });
-
-  check(resPage2, {
-    'página 2 status é 200': (r) => r.status === 200,
-    'está na página 2': (r) => {
-      const body = resPage2.json();
-      // Só verifica a página se os metadados de paginação existirem.
-      return body?.data?.pagination?.page === 2;
+  }),
+  extraRequests: [
+    {
+      endpoint: '/api/videos?page=2&limit=5',
+      tagName: 'ListVideos_Page2',
+      checks: {
+        'página 2 status é 200': (r) => r.status === 200,
+        'está na página 2': (r) => {
+          const body = r.json();
+          return body?.data?.pagination?.page === 2;
+        },
+        'limite é 5': (r) => {
+          const body = r.json();
+          return body?.data?.pagination?.limit === 5;
+        },
+      },
     },
-    'limite é 5': (r) => {
-      const body = resPage2.json();
-      // Só verifica o limite se os metadados de paginação existirem.
-      return body?.data?.pagination?.limit === 5;
-    },
-  });
+  ],
+};
 
-  sleep(Math.random() * 1 + 1);
+const loadTest = createLoadTest(resourceConfig);
+
+export const options = loadTest.options;
+export { setup } from './helpers/auth.js';
+
+export default loadTest.default;
+
+export function handleSummary(data) {
+  return generateReport(sanitizeToken(data), loadTest.reportName);
 }

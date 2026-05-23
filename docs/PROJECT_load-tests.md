@@ -44,27 +44,28 @@
    - [helpers/network.js](#helpersnetworkjs)
    - [helpers/profiles.js](#helpersprofilesjs)
    - [helpers/report.js](#helpersreportjs)
+   - [helpers/resource-test-runner.js](#helpersresource-test-runnerjs)
 4. [Padrões e Convenções Comuns](#padrões-e-convenções-comuns)
 
 ---
 
 ## Visão Geral
 
-A pasta `load-tests/` contém **32 arquivos** (28 scripts de teste em k6 + 1 configuração JSON + 1 workflow CI + 4 módulos helpers) que compõem a suíte de testes de carga, stress, performance e segurança do projeto **Caminhar**. Todos os scripts utilizam a ferramenta [k6](https://k6.io/) da Grafana Labs.
+A pasta `load-tests/` contém **33 arquivos** (28 scripts de teste em k6 + 1 configuração JSON + 1 workflow CI + 5 módulos helpers) que compõem a suíte de testes de carga, stress, performance e segurança do projeto **Caminhar**. Todos os scripts utilizam a ferramenta [k6](https://k6.io/) da Grafana Labs.
 
 Os testes estão organizados em categorias funcionais:
 
 | Categoria | Quantidade | Descrição |
 |-----------|-----------|-----------|
-| **Músicas** | 6 | CRUD, filtro, paginação, busca, ordenação, carga |
-| **Vídeos** | 6 | CRUD, filtro, paginação, validação, ordenação, carga |
+| **Músicas** | 6 | CRUD, filtro, paginação, busca, ordenação, carga (runner genérico) |
+| **Vídeos** | 6 | CRUD, filtro, paginação, validação, ordenação, carga (runner genérico) |
 | **Posts/Blog** | 4 | Paginação com cursor, tags, busca de conteúdo, criação de post |
 | **Autenticação/Segurança** | 4 | Login negativo, rate limit, IP spoofing, DDoS |
 | **Saúde/Recuperação** | 3 | Health check, backup, recovery |
 | **Cache** | 2 | Headers de cache, performance de cache |
 | **Fluxos Combinados** | 2 | Stress test combinado, upload flow |
 | **Configuração** | 1 | env-config.json |
-| **Helpers** | 5 | auth.js, config.js, network.js, profiles.js, report.js |
+| **Helpers** | 6 | auth.js, config.js, network.js, profiles.js, report.js, resource-test-runner.js |
 | **CI/CD** | 1 | load-tests.yml (workflow) |
 
 ---
@@ -269,24 +270,25 @@ Os testes estão organizados em categorias funcionais:
 
 **Localização:** `/load-tests/musicas-crud-test.js`
 
-**O que faz:** Testa as operações CRUD (Create, Read, Update, Delete) para o recurso de músicas.
+**O que faz:** Testa as operações CRUD (Create, Read, Update, Delete) para o recurso de músicas via runner genérico.
 
-**Propósito:** Validar o ciclo de vida completo de uma música na API administrativa: criar, listar, atualizar e deletar.
+**Propósito:** Validar o ciclo de vida completo de uma música na API administrativa: criar, atualizar e deletar.
 
 **Estrutura:**
 - `setup()` — Login via `helpers/auth.js`
-- `default()` — POST (criar) → GET/listar → PUT (atualizar) → DELETE
+- `default()` — Via `createCrudTest()` do `helpers/resource-test-runner.js`: POST (criar) → PUT (atualizar) → DELETE
 - Valida IDs e status codes em cada etapa
 - `handleSummary()` — Gera relatório via `helpers/report.js`
 
 **Endpoints chamados:**
 - `POST /api/auth/login` — Autenticação
 - `POST /api/admin/musicas` — Criar música
-- `GET /api/admin/musicas` — Listar músicas
 - `PUT /api/admin/musicas` — Atualizar música
 - `DELETE /api/admin/musicas` — Deletar música
 
-**Configuração de carga:** Perfil `light` customizado (5 VUs, 8 iterações)
+**Configuração de carga:** Perfil `light` customizado (5 VUs, estágios 10s/20s/10s)
+
+**Observação:** Implementado via `createCrudTest()` do módulo `helpers/resource-test-runner.js`.
 
 ---
 
@@ -294,18 +296,21 @@ Os testes estão organizados em categorias funcionais:
 
 **Localização:** `/load-tests/musicas-filter-test.js`
 
-**O que faz:** Testa o filtro de músicas por campo `publicado` (true/false).
+**O que faz:** Testa o filtro de músicas por termo de busca (artista) via runner genérico.
 
-**Propósito:** Validar que o endpoint de músicas filtra corretamente os resultados com base no parâmetro `publicado`.
+**Propósito:** Validar que o endpoint público de músicas filtra corretamente os resultados com base no parâmetro `search`.
 
 **Estrutura:**
-- `setup()` — Login via `helpers/auth.js`
-- Requisições GET com query parameter `?publicado=true` e `?publicado=false`
-- Valida que todos os itens retornados respeitam o filtro
+- Rota pública (sem autenticação) — GET `/api/musicas?search={artista}`
+- Array de artistas: `['Aline Barros', 'Fernandinho', 'Gabriela Rocha', 'Diante do Trono', 'Preto no Branco']`
+- Valida que todos os itens retornados contêm o termo buscado
+- Soft pass com warning se termo não encontrado visualmente
+- `handleSummary()` — Gera relatório via `helpers/report.js`
 
 **Endpoints chamados:**
-- `POST /api/auth/login` — Autenticação
-- `GET /api/admin/musicas?publicado={true|false}` — Listar com filtro
+- `GET /api/musicas?search={termo}` — Listar com filtro
+
+**Observação:** Implementado via `createFilterTest()` do módulo `helpers/resource-test-runner.js`.
 
 ---
 
@@ -313,19 +318,21 @@ Os testes estão organizados em categorias funcionais:
 
 **Localização:** `/load-tests/musicas-load-test.js`
 
-**O que faz:** Teste de carga (stress/performance) que simula múltiplos usuários acessando a listagem de músicas simultaneamente.
+**O que faz:** Teste de carga que simula múltiplos usuários acessando a listagem admin de músicas simultaneamente, via runner genérico.
 
 **Propósito:** Validar o comportamento da API `/api/admin/musicas` sob carga progressiva, garantindo thresholds de performance (p95 < 300ms) e taxa de erro (< 1%).
 
 **Estrutura:**
 - Configuração: perfil `medium` do `helpers/profiles.js`
-- `setup()` — Login via `helpers/auth.js`
+- `setup()` — Login com health check inicial e validação de Content-Type
 - Usa `getRandomIP()` do módulo `helpers/network.js` para evitar rate limit
 - `handleSummary()` — Gera relatório via `helpers/report.js`
 
 **Endpoints chamados:**
 - `POST /api/auth/login` — Autenticação
-- `GET /api/admin/musicas` — Listar músicas
+- `GET /api/admin/musicas` — Listar músicas (rota admin)
+
+**Observação:** Implementado via `createLoadTest()` do módulo `helpers/resource-test-runner.js`.
 
 ---
 
@@ -333,18 +340,22 @@ Os testes estão organizados em categorias funcionais:
 
 **Localização:** `/load-tests/musicas-pagination-test.js`
 
-**O que faz:** Testa a paginação do endpoint de músicas com diferentes valores de `page` e `limit`.
+**O que faz:** Testa a paginação do endpoint público de músicas via runner genérico.
 
-**Propósito:** Validar que a paginação funciona corretamente, retornando o número esperado de itens por página e os metadados de paginação.
+**Propósito:** Validar que a paginação funciona corretamente, retornando IDs distintos entre páginas.
 
 **Estrutura:**
-- `setup()` — Login via `helpers/auth.js`
-- 1 VU, itera com diferentes combinações de `page` e `limit`
-- Valida `total`, `page`, `limit` e quantidade de itens retornados
+- Rota pública (sem autenticação)
+- 1 VU, 1 iteração: Página 1 → sleep → Página 2
+- Validação cruzada: IDs da página 1 vs página 2 (não devem se repetir)
+- Soft pass se página 2 estiver vazia (poucos dados no banco)
+- `handleSummary()` — Gera relatório via `helpers/report.js`
 
 **Endpoints chamados:**
-- `POST /api/auth/login` — Autenticação
-- `GET /api/admin/musicas?page={n}&limit={n}` — Listar com paginação
+- `GET /api/musicas?page=1&limit=5` — Listar página 1
+- `GET /api/musicas?page=2&limit=5` — Listar página 2
+
+**Observação:** Implementado via `createPaginationTest()` do módulo `helpers/resource-test-runner.js`.
 
 ---
 
@@ -372,18 +383,20 @@ Os testes estão organizados em categorias funcionais:
 
 **Localização:** `/load-tests/musicas-sort-test.js`
 
-**O que faz:** Testa a ordenação dos resultados de músicas por diferentes campos (`titulo`, `created_at`).
+**O que faz:** Testa a ordenação dos resultados de músicas por `created_at DESC` via runner genérico.
 
-**Propósito:** Validar que o endpoint de músicas ordena corretamente os resultados de acordo com o campo e direção especificados.
+**Propósito:** Validar que o endpoint público de músicas ordena corretamente os resultados por data de criação.
 
 **Estrutura:**
-- `setup()` — Login via `helpers/auth.js`
-- Testa ordenação ASC e DESC para cada campo
-- Valida que a ordem dos resultados corresponde ao esperado
+- Rota pública (sem autenticação) — `sort=created_at&order=desc`
+- Valida que as datas estão em ordem decrescente
+- Soft pass se poucos dados no banco (inconclusivo)
+- `handleSummary()` — Gera relatório via `helpers/report.js`
 
 **Endpoints chamados:**
-- `POST /api/auth/login` — Autenticação
-- `GET /api/admin/musicas?sort={campo}&order={asc|desc}` — Listar ordenado
+- `GET /api/musicas?sort=created_at&order=desc` — Listar ordenado
+
+**Observação:** Implementado via `createSortTest()` do módulo `helpers/resource-test-runner.js`.
 
 ---
 
@@ -600,22 +613,25 @@ Os testes estão organizados em categorias funcionais:
 
 **Localização:** `/load-tests/videos-crud-test.js`
 
-**O que faz:** Testa as operações CRUD para o recurso de vídeos, similar ao `musicas-crud-test.js`.
+**O que faz:** Testa as operações CRUD para o recurso de vídeos via runner genérico.
 
-**Propósito:** Validar o ciclo de vida completo de um vídeo: criar, listar, atualizar e deletar.
+**Propósito:** Validar o ciclo de vida completo de um vídeo: criar, atualizar e deletar.
 
 **Estrutura:**
 - `setup()` — Login via `helpers/auth.js`
-- `default()` — POST (criar) → GET (listar) → PUT (atualizar) → DELETE
-- Valida IDs, status codes e conteúdo da resposta
+- `default()` — Via `createCrudTest()` do `helpers/resource-test-runner.js`: POST (criar) → PUT (atualizar) → DELETE
+- Valida IDs e status codes em cada etapa
+- `teardown()` — Limpa vídeos K6 fantasmas deixados por VUs interrompidos
 - `handleSummary()` — Gera relatório via `helpers/report.js`
 
 **Endpoints chamados:**
 - `POST /api/auth/login` — Autenticação
 - `POST /api/admin/videos` — Criar vídeo
-- `GET /api/admin/videos` — Listar vídeos
 - `PUT /api/admin/videos` — Atualizar vídeo
 - `DELETE /api/admin/videos` — Deletar vídeo
+- `GET /api/admin/videos?limit=100` — Listar vídeos (teardown)
+
+**Observação:** Implementado via `createCrudTest()` do módulo `helpers/resource-test-runner.js`.
 
 ---
 
@@ -623,18 +639,21 @@ Os testes estão organizados em categorias funcionais:
 
 **Localização:** `/load-tests/videos-filter-test.js`
 
-**O que faz:** Testa o filtro de vídeos por campo `publicado` (true/false).
+**O que faz:** Testa o filtro de vídeos por termo de busca (título/descrição) via runner genérico.
 
-**Propósito:** Validar que o endpoint de vídeos filtra corretamente com base no parâmetro `publicado`.
+**Propósito:** Validar que o endpoint público de vídeos filtra corretamente os resultados com base no parâmetro `search`.
 
 **Estrutura:**
-- `setup()` — Login via `helpers/auth.js`
-- Requisições GET com `?publicado=true` e `?publicado=false`
-- Valida que todos os itens respeitam o filtro aplicado
+- Rota pública (sem autenticação) — GET `/api/videos?search={termo}`
+- Array de termos: `['louvor', 'adoração', 'testemunho', 'pregação', 'estudo']`
+- Valida que todos os itens retornados contêm o termo buscado
+- Soft pass com warning se termo não encontrado visualmente
+- `handleSummary()` — Gera relatório via `helpers/report.js`
 
 **Endpoints chamados:**
-- `POST /api/auth/login` — Autenticação
-- `GET /api/admin/videos?publicado={true|false}` — Listar com filtro
+- `GET /api/videos?search={termo}` — Listar com filtro
+
+**Observação:** Implementado via `createFilterTest()` do módulo `helpers/resource-test-runner.js`. Corrigido em 23/05/2026: anteriormente testava paginação (não filtro).
 
 ---
 
@@ -642,19 +661,24 @@ Os testes estão organizados em categorias funcionais:
 
 **Localização:** `/load-tests/videos-load-test.js`
 
-**O que faz:** Teste de carga específico para o endpoint de listagem de vídeos.
+**O que faz:** Teste de carga que simula múltiplos usuários acessando a listagem pública de vídeos, com 2 requisições por iteração (páginas 1 e 2), via runner genérico.
 
 **Propósito:** Validar a performance da API de vídeos sob carga progressiva, com thresholds de p(95) < 300ms.
 
 **Estrutura:**
 - Configuração: perfil `medium` do `helpers/profiles.js`
 - `setup()` — Login via `helpers/auth.js`
+- `default()` — GET `/api/videos` (página 1) + GET `/api/videos?page=2&limit=5` (página 2)
 - Usa `getRandomIP()` do módulo `helpers/network.js` para evitar rate limit
+- Valida metadados de paginação (page=2, limit=5)
 - `handleSummary()` — Gera relatório via `helpers/report.js`
 
 **Endpoints chamados:**
 - `POST /api/auth/login` — Autenticação
-- `GET /api/admin/videos` — Listar vídeos
+- `GET /api/videos` — Listar vídeos (página 1)
+- `GET /api/videos?page=2&limit=5` — Listar vídeos (página 2)
+
+**Observação:** Implementado via `createLoadTest()` do módulo `helpers/resource-test-runner.js`. Corrigido em 23/05/2026: `BASE_URL` agora lê de `__ENV` (não mais hardcoded).
 
 ---
 
@@ -662,18 +686,22 @@ Os testes estão organizados em categorias funcionais:
 
 **Localização:** `/load-tests/videos-pagination-test.js`
 
-**O que faz:** Testa a paginação do endpoint de vídeos com diferentes valores de `page` e `limit`.
+**O que faz:** Testa a paginação do endpoint público de vídeos via runner genérico.
 
-**Propósito:** Validar que a paginação retorna a quantidade correta de itens e metadados (total, page, limit).
+**Propósito:** Validar que a paginação funciona corretamente, retornando IDs distintos entre páginas.
 
 **Estrutura:**
-- `setup()` — Login via `helpers/auth.js`
-- Requisições com combinações de `page` e `limit`
-- Valida estrutura de paginação e contagem de itens
+- Rota pública (sem autenticação)
+- 1 VU, 1 iteração: Página 1 → sleep → Página 2
+- Validação cruzada: IDs da página 1 vs página 2 (não devem se repetir)
+- Soft pass se página 2 estiver vazia
+- `handleSummary()` — Gera relatório via `helpers/report.js`
 
 **Endpoints chamados:**
-- `POST /api/auth/login` — Autenticação
-- `GET /api/admin/videos?page={n}&limit={n}` — Listar com paginação
+- `GET /api/videos?page=1&limit=5` — Listar página 1
+- `GET /api/videos?page=2&limit=5` — Listar página 2
+
+**Observação:** Implementado via `createPaginationTest()` do módulo `helpers/resource-test-runner.js`.
 
 ---
 
@@ -681,18 +709,21 @@ Os testes estão organizados em categorias funcionais:
 
 **Localização:** `/load-tests/videos-sort-test.js`
 
-**O que faz:** Testa a ordenação dos resultados de vídeos por diferentes campos.
+**O que faz:** Testa a ordenação padrão dos resultados de vídeos (sempre por `created_at DESC`) via runner genérico.
 
-**Propósito:** Validar que o endpoint ordena corretamente os resultados de acordo com campo e direção especificados.
+**Propósito:** Validar que o endpoint público de vídeos ordena corretamente os resultados por data de criação decrescente (comportamento padrão da API).
 
 **Estrutura:**
-- `setup()` — Login via `helpers/auth.js`
-- Testa ordenação ASC e DESC para campos como `titulo`, `created_at`
-- Valida sequência dos resultados
+- Rota pública (sem autenticação) — GET `/api/videos?page=1&limit=10` (sem parâmetros de ordenação)
+- Check extra: `'API ignora parâmetros de ordenação'` — valida que parâmetros extras (`sort=created_at&order=desc`) não quebram a resposta
+- Valida que as datas estão em ordem decrescente
+- `handleSummary()` — Gera relatório via `helpers/report.js`
 
 **Endpoints chamados:**
-- `POST /api/auth/login` — Autenticação
-- `GET /api/admin/videos?sort={campo}&order={asc|desc}` — Listar ordenado
+- `GET /api/videos?page=1&limit=10` — Listar (sem ordenação explícita)
+- `GET /api/videos?page=1&limit=5&sort=created_at&order=desc` — Check de compatibilidade
+
+**Observação:** Implementado via `createSortTest()` do módulo `helpers/resource-test-runner.js`.
 
 ---
 
@@ -875,6 +906,56 @@ export function handleSummary(data) {
 
 ---
 
+### `helpers/resource-test-runner.js`
+
+**Localização:** `/load-tests/helpers/resource-test-runner.js`
+
+**O que faz:** Módulo genérico que elimina a duplicação de código entre pares de testes de músicas e vídeos (CRUD, filtro, paginação, ordenação, carga). Cada arquivo de teste (~20-30 linhas) passa a ser apenas configuração que invoca as funções do runner.
+
+**Propósito:** Eliminar ~80% de código duplicado entre os 10 arquivos de teste de músicas e vídeos, centralizando a lógica comum e mantendo apenas a configuração específica de cada recurso.
+
+**Exports:**
+- `createCrudTest(config)` — Gera options + default() para teste CRUD (create/update/delete) com métricas de erro e sleep entre operações
+- `createFilterTest(config)` — Gera options + default() para teste de filtro por termo de busca com validação de match
+- `createPaginationTest(config)` — Gera options + default() para teste de paginação com validação cruzada de IDs entre páginas
+- `createSortTest(config)` — Gera options + default() para teste de ordenação (explícita ou comportamento padrão) com verificação de datas
+- `createLoadTest(config)` — Gera options + setup() + default() para teste de carga com suporte a health check, IP spoofing e requisições extras
+- `sanitizeToken(data)` — Oculta token JWT em relatórios
+- `generateReport(data, testName)` — Re-export de `helpers/report.js`
+
+**Configurações aceitas por cada função:**
+
+| Função | Configurações Principais |
+|--------|-------------------------|
+| `createCrudTest` | `adminEndpoint`, `payloadTemplate` (função), `resourceName`, `uniqueIdGenerator`, `profileName` |
+| `createFilterTest` | `publicEndpoint`, `searchField`, `searchValues[]`, `itemsPath`, `responsePath` |
+| `createPaginationTest` | `publicEndpoint`, `itemsPath`, `responsePath`, `resourceName`, `limit` |
+| `createSortTest` | `publicEndpoint`, `sortField`, `sortOrder`, `itemsPath`, `dateField`, `useExplicitSort` |
+| `createLoadTest` | `endpoint`, `requireAuth`, `useSpoofIP`, `healthCheck`, `checkResponse`, `extraRequests[]` |
+
+**Uso:**
+```javascript
+import { createCrudTest, sanitizeToken, generateReport } from './helpers/resource-test-runner.js';
+import { setup } from './helpers/auth.js';
+
+const crudTest = createCrudTest({
+  adminEndpoint: '/api/admin/musicas',
+  payloadTemplate: () => ({ titulo: `Teste ${Date.now()}`, artista: 'K6', ... }),
+  resourceName: 'musicas',
+});
+
+export const options = crudTest.options;
+export { setup };
+export default crudTest.default;
+export function handleSummary(data) {
+  return generateReport(sanitizeToken(data), crudTest.reportName);
+}
+```
+
+**Criado em:** 23/05/2026
+
+---
+
 ## Padrões e Convenções Comuns
 
 ### Padrões Estruturais
@@ -924,6 +1005,7 @@ export function handleSummary(data) {
 | `network.js` | `helpers/network.js` | Utilitários de rede (`getRandomIP()`) |
 | `profiles.js` | `helpers/profiles.js` | Perfis de carga padronizados |
 | `report.js` | `helpers/report.js` | Geração de relatórios padronizados |
+| `resource-test-runner.js` | `helpers/resource-test-runner.js` | Runner genérico para testes CRUD, filtro, paginação, ordenação e carga |
 
 ---
 
