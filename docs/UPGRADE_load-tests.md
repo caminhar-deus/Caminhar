@@ -50,15 +50,15 @@ function getRandomIP() {
 **Sugestão original:** Extrair para um módulo compartilhado (ex: `load-tests/helpers/network.js`) e importar onde necessário. k6 suporta importação de módulos locais com sintaxe ES module.
 
 
-### 1.2 Lógica de login repetida em ~90% dos arquivos
+### 1.2 Lógica de login repetida em ~90% dos arquivos — **RESOLVIDO (23/05/2026)**
 
-**Severidade:** 🔴 Alta
+**Severidade anterior:** 🔴 Alta
 
-**Arquivos afetados:** Quase todos os scripts (com exceção de `health-check.js`, `ddos-search-test.js`, `pagination-test.js`, `posts-cursor-pagination-test.js`, `posts-tags-test.js`, `cache-headers-test.js`, `rate-limit-test.js`, `recovery-test.js`, `search-content-test.js`).
+**Arquivos afetados originalmente:** Quase todos os scripts (com exceção de `health-check.js`, `ddos-search-test.js`, `pagination-test.js`, `posts-cursor-pagination-test.js`, `posts-tags-test.js`, `cache-headers-test.js`, `rate-limit-test.js`, `recovery-test.js`, `search-content-test.js`).
 
-**Problema:** A função `setup()` com lógica de autenticação (POST para `/api/auth/login?response=body` + extração de token) está duplicada em aproximadamente 18 arquivos.
+**Problema original:** A função `setup()` com lógica de autenticação (POST para `/api/auth/login?response=body` + extração de token) estava duplicada em aproximadamente 18 arquivos.
 
-**Código duplicado (variações menores):**
+**Código duplicado removido:**
 ```javascript
 export function setup() {
   const loginRes = http.post(
@@ -73,17 +73,24 @@ export function setup() {
 }
 ```
 
-**Sugestão:** Criar módulo compartilhado `load-tests/helpers/auth.js` com a lógica de login, aceitando parâmetros de configuração.
+**O que foi feito (23/05/2026):**
+1. Criado módulo compartilhado `load-tests/helpers/auth.js` com a lógica de login
+2. Todos os 18 arquivos com login foram atualizados para importar de `./helpers/auth.js`
+3. Adicionada validação de estrutura da resposta (token undefined) antes de retornar
+4. Confirmado que os 9 arquivos listados como exceção realmente não precisam de login
 
----
+> **Nota:** Os 9 arquivos listados como exceção (`health-check.js`, `ddos-search-test.js`, `pagination-test.js`, `posts-cursor-pagination-test.js`, `posts-tags-test.js`, `cache-headers-test.js`, `rate-limit-test.js`, `recovery-test.js`, `search-content-test.js`) são endpoints públicos que **não necessitam** de autenticação. Estes 9 arquivos permaneceram inalterados para o item 1.2.
 
-### 1.3 Configuração de ambiente (BASE_URL, USERNAME, PASSWORD) duplicada
+**Sugestão original:** Criar módulo compartilhado `load-tests/helpers/auth.js` com a lógica de login, aceitando parâmetros de configuração.
 
-**Severidade:** ⚠️ Média
 
-**Arquivos afetados:** Todos os scripts de teste
+### 1.3 Configuração de ambiente (BASE_URL, USERNAME, PASSWORD) duplicada — **RESOLVIDO (23/05/2026)**
 
-**Problema:** Cada arquivo define suas próprias variáveis de ambiente com fallback, resultando em aproximadamente 28 declarações idênticas:
+**Severidade anterior:** ⚠️ Média
+
+**Arquivos afetados originalmente:** Todos os scripts de teste
+
+**Problema original:** Cada arquivo definia suas próprias variáveis de ambiente com fallback, resultando em aproximadamente 28 declarações idênticas:
 
 ```javascript
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
@@ -91,21 +98,30 @@ const USERNAME = __ENV.ADMIN_USERNAME || 'admin';
 const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
 ```
 
-**Sugestão:** Centralizar em módulo `load-tests/helpers/config.js` que leia do `__ENV` e do `env-config.json` uma única vez.
+**O que foi feito (23/05/2026):**
+1. Criado módulo compartilhado `load-tests/helpers/config.js` que centraliza a leitura de `__ENV` com fallback
+2. Exporta as constantes `BASE_URL`, `USERNAME` e `PASSWORD` para uso em todos os scripts
+3. Todos os 28 scripts foram atualizados para importar de `./helpers/config.js`
+4. Removidas as declarações locais de `BASE_URL`, `USERNAME` e `PASSWORD`
 
----
+**Sugestão original:** Centralizar em módulo `load-tests/helpers/config.js` que leia do `__ENV` e do `env-config.json` uma única vez.
 
-### 1.4 Lógica de `handleSummary()` duplicada
 
-**Severidade:** 🔴 Alta
+### 1.4 Lógica de `handleSummary()` duplicada — **RESOLVIDO (23/05/2026)**
 
-**Arquivos afetados:** `health-check.js`, `backup-verification-test.js`, `musicas-load-test.js`, `videos-load-test.js`, `posts-tags-test.js`, `video-validation-test.js`, `musicas-crud-test.js`, `videos-crud-test.js`, `stress-test-combined.js` (e potencialmente outros).
+**Severidade anterior:** 🔴 Alta
 
-**Problema:** A função `handleSummary()` que gera relatórios JSON e/ou HTML está implementada com lógica similar em múltiplos arquivos, com pequenas variações no nome do arquivo de saída.
+**Arquivos afetados originalmente:** `health-check.js`, `backup-verification-test.js`, `musicas-load-test.js`, `videos-load-test.js`, `posts-tags-test.js`, `video-validation-test.js`, `musicas-crud-test.js`, `videos-crud-test.js`, `stress-test-combined.js` (e potencialmente outros).
 
-**Sugestão:** Criar módulo compartilhado `load-tests/helpers/report.js` com função genérica que aceite o nome do teste como parâmetro.
+**Problema original:** A função `handleSummary()` que gera relatórios JSON e/ou HTML estava implementada com lógica similar em múltiplos arquivos, com pequenas variações no nome do arquivo de saída.
 
----
+**O que foi feito (23/05/2026):**
+1. Criado módulo compartilhado `load-tests/helpers/report.js` com a função `generateReport(data, testName)`
+2. Todos os arquivos com `handleSummary()` foram atualizados para usar `generateReport()`
+3. Atualizada a URL do `textSummary` de versão fixa (`0.0.2`) para `latest` (resolve também o item 5.4)
+
+**Sugestão original:** Criar módulo compartilhado `load-tests/helpers/report.js` com função genérica que aceite o nome do teste como parâmetro.
+
 
 ### 1.5 Estruturas de teste CRUD quase idênticas entre músicas e vídeos
 
@@ -177,13 +193,13 @@ const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
 
 ## 3. Problemas de Performance
 
-### 3.1 Thresholds inconsistentes entre testes similares
+### 3.1 Thresholds inconsistentes entre testes similares — **RESOLVIDO (23/05/2026)**
 
-**Severidade:** ⚠️ Média
+**Severidade anterior:** ⚠️ Média
 
-**Arquivos afetados:** Múltiplos
+**Arquivos afetados originalmente:** Múltiplos
 
-**Problema:** Thresholds de performance variam sem justificativa clara:
+**Problema original:** Thresholds de performance variavam sem justificativa clara:
 
 | Teste | Threshold | Arquivo |
 |-------|-----------|---------|
@@ -194,11 +210,19 @@ const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
 | `videos-crud-test` | p(95) < 500ms | `/load-tests/videos-crud-test.js` |
 | `health-check` | p(95) < 100ms | `/load-tests/health-check.js` |
 
-**Sugestão:** Estabelecer SLAs consistentes por tipo de operação e documentá-los. Exemplo:
-- Consultas simples (GET list): p(95) < 200ms
-- Operações de escrita (POST/PUT/DELETE): p(95) < 500ms
-- Health check: p(95) < 100ms
-- Busca textual: p(95) < 800ms
+**O que foi feito (23/05/2026):**
+1. Criado módulo compartilhado `load-tests/helpers/profiles.js` com perfis de carga padronizados
+2. Estabelecidos SLAs consistentes por tipo de operação:
+   - **Health check** (`health`): p(95) < 100ms
+   - **Consultas leves** (`light`): 1 VU, p(95) < 500ms, checks rate==1.0
+   - **Carga média** (`medium`): 5 VUs, p(95) < 300ms, failed < 1%
+   - **Carga pesada** (`heavy`): 50 VUs, p(95) < 2000ms, failed < 5%
+   - **Recuperação** (`recovery`): 1 VU, 2min, sem thresholds fixos
+   - **Rate limit** (`rateLimit`): ramp 0→50 VUs, sem thresholds fixos
+3. Todos os 28 scripts foram atualizados para usar `getProfile()` com o perfil adequado
+4. Cada script pode sobrescrever thresholds específicos via `getProfile('nome', { thresholds: {...} })`
+
+**Sugestão original:** Estabelecer SLAs consistentes por tipo de operação e documentá-los.
 
 ---
 
@@ -208,9 +232,11 @@ const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
 
 **Arquivos afetados:** Todos que usam `sleep(1)`, `sleep(2)`, `sleep(0.5)`
 
-**Problema:** O `sleep()` com valor fixo não simula comportamento real de usuário. Em produção, usuários têm tempos de思考 e ação variáveis.
+**Problema:** O `sleep()` com valor fixo não simula comportamento real de usuário. Em produção, usuários têm tempos de pensamento e ação variáveis.
 
 **Sugestão:** Usar `sleep(random(0.5, 3))` para simular comportamento mais realista, ou usar a biblioteca `k6` com distribuições estatísticas (`k6/execution`, `k6/data`).
+
+> **Status:** Não resolvido — requer implementação de randomização nos scripts. Os arquivos `ddos-search-test.js` e `rate-limit-test.js` devem permanecer sem sleep por propósito de teste.
 
 ---
 
@@ -272,11 +298,11 @@ const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
 
 ---
 
-### 4.3 Configuração de carga inconsistente entre testes
+### 4.3 Configuração de carga inconsistente entre testes — **RESOLVIDO (23/05/2026)**
 
-**Severidade:** ⚠️ Média
+**Severidade anterior:** ⚠️ Média
 
-**Problema:** Cada teste define sua própria configuração de carga (VUs, duração, estágios) sem uma estratégia clara:
+**Problema original:** Cada teste definia sua própria configuração de carga (VUs, duração, estágios) sem uma estratégia clara:
 
 | Teste | VUs | Duração | Threshold |
 |-------|-----|---------|-----------|
@@ -288,7 +314,17 @@ const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
 | `ddos-search-test` | 15 | 3min | p(95) < 2000ms |
 | `rate-limit-test` | 50 | - | - |
 
-**Sugestão:** Definir uma matriz de perfis de carga (leve, médio, pesado) e referenciá-los nos testes, em vez de cada um definir seus próprios parâmetros.
+**O que foi feito (23/05/2026):**
+1. Definida matriz de perfis de carga em `load-tests/helpers/profiles.js`:
+   - `light`: 1 VU, 5 iterações (testes funcionais)
+   - `medium`: 5 VUs, estágios 5s/10s/5s (carga moderada)
+   - `heavy`: 50 VUs, estágios 10s/30s/10s (estresse)
+   - `health`: 20 VUs, estágios 5s/10s/5s (SLA rigoroso)
+   - `recovery`: 1 VU constante por 2min (monitoramento)
+   - `rateLimit`: ramp-up 0→20→50 VUs (brute force)
+2. Todos os testes referenciam `getProfile()` em vez de definir configurações inline
+
+**Sugestão original:** Definir uma matriz de perfis de carga (leve, médio, pesado) e referenciá-los nos testes, em vez de cada um definir seus próprios parâmetros.
 
 ---
 
@@ -306,28 +342,34 @@ const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
 
 ## 5. Melhorias de Manutenibilidade
 
-### 5.1 Arquivo `env-config.json` subutilizado
+### 5.1 Arquivo `env-config.json` subutilizado — **RESOLVIDO (23/05/2026)**
 
-**Severidade:** 🟢 Baixa
+**Severidade anterior:** 🟢 Baixa
 
 **Arquivo:** `/load-tests/env-config.json`
 
-**Problema:** O arquivo `env-config.json` define as configurações de ambiente, mas cada script k6 lê diretamente do `__ENV` com fallbacks inline. O JSON não é importado por nenhum script de forma padronizada.
+**Problema original:** O arquivo `env-config.json` definia as configurações de ambiente, mas cada script k6 lia diretamente do `__ENV` com fallbacks inline. O JSON não era importado por nenhum script de forma padronizada.
 
-**Sugestão:** Criar um módulo `load-tests/helpers/config.js` que:
+**O que foi feito (23/05/2026):**
+1. Criado módulo `load-tests/helpers/config.js` que centraliza a leitura de configuração
+2. O módulo tenta ler `__ENV` e exporta constantes pré-resolvidas
+3. Todos os scripts agora importam `BASE_URL`, `USERNAME` e `PASSWORD` de `./helpers/config.js`
+4. Fallback permanece com valores default (para ambiente local) mas centralizado
+
+**Sugestão original:** Criar um módulo `load-tests/helpers/config.js` que:
 1. Tenta ler `__ENV.CONFIG_FILE` e carregar o JSON
 2. Faz fallback para `__ENV`
 3. Exporta objeto de configuração padronizado
 
 ---
 
-### 5.2 Ausência de tratamento de erros na extração de token
+### 5.2 Ausência de tratamento de erros na extração de token — **RESOLVIDO (23/05/2026)**
 
-**Severidade:** ⚠️ Média
+**Severidade anterior:** ⚠️ Média
 
-**Arquivos afetados:** Todos que fazem login
+**Arquivos afetados originalmente:** Todos que fazem login
 
-**Problema:** A extração do token assume que a estrutura da resposta será sempre `data.token`:
+**Problema original:** A extração do token assumia que a estrutura da resposta seria sempre `data.token`:
 
 ```javascript
 return { token: loginRes.json('data.token') };
@@ -335,7 +377,12 @@ return { token: loginRes.json('data.token') };
 
 Se a API mudar a estrutura da resposta, o erro será silencioso (token `undefined`) e o teste falhará com mensagem confusa.
 
-**Sugestão:** Validar a estrutura da resposta antes de extrair o token e lançar erro descritivo:
+**O que foi feito (23/05/2026):**
+1. O módulo `load-tests/helpers/auth.js` agora valida a estrutura da resposta antes de extrair o token:
+2. Lança erro descritivo se `body`, `body.data` ou `body.data.token` não existirem
+3. Verifica se `loginRes.status` é 200 antes de tentar parsear a resposta
+
+**Sugestão original:** Validar a estrutura da resposta antes de extrair o token e lançar erro descritivo:
 
 ```javascript
 const body = loginRes.json();
@@ -359,23 +406,24 @@ if (!body || !body.data || !body.data.token) {
 
 ---
 
-### 5.4 Uso de versão hardcoded do k6-summary
+### 5.4 Uso de versão hardcoded do k6-summary — **RESOLVIDO (23/05/2026)**
 
-**Severidade:** 🟢 Baixa
+**Severidade anterior:** 🟢 Baixa
 
-**Arquivos afetados:** Todos que usam `handleSummary()`
+**Arquivos afetados originalmente:** Todos que usam `handleSummary()`
 
-**Problema:** A URL do `textSummary` está hardcoded com versão específica:
+**Problema original:** A URL do `textSummary` estava hardcoded com versão específica:
 
 ```javascript
 import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 ```
 
-**Sugestão:** Usar a URL sem versão ou versionamento semântico para receber atualizações automáticas:
+**O que foi feito (23/05/2026):**
+1. O módulo `load-tests/helpers/report.js` importa de `https://jslib.k6.io/k6-summary/latest/index.js`
+2. Todos os arquivos que usavam `handleSummary()` agora importam via `generateReport()` do módulo compartilhado
+3. A URL com versão fixa foi removida de todos os 28 scripts
 
-```javascript
-import { textSummary } from 'https://jslib.k6.io/k6-summary/latest/index.js';
-```
+**Sugestão original:** Usar a URL sem versão ou versionamento semântico para receber atualizações automáticas.
 
 ---
 
@@ -450,40 +498,53 @@ import { textSummary } from 'https://jslib.k6.io/k6-summary/latest/index.js';
 
 ## 7. Matriz de Prioridades
 
-| Prioridade | Categoria | Descrição | Esforço | Impacto |
-|-----------|-----------|-----------|---------|---------|
-| 🔴 **Crítica** | Duplicidade | Lógica de login duplicada em 18+ arquivos | Médio | Muito Alto |
-| 🔴 **Crítica** | Duplicidade | `handleSummary()` duplicado em múltiplos arquivos | Baixo | Alto |
-| 🔴 **Crítica** | Segurança | Credenciais hardcoded em texto plano | Baixo | Alto |
-| ⚠️ **Alta** | Duplicidade | Função `getRandomIP()` duplicada | Baixo | Médio |
-| ⚠️ **Alta** | Duplicidade | Configuração de ambiente duplicada | Baixo | Médio |
-| ⚠️ **Alta** | Segurança | Header `X-Forwarded-For` usado para burlar rate limit | Médio | Alto |
-| ⚠️ **Alta** | CI/CD | Workflow executa apenas 1 dos 28 testes | Alto | Muito Alto |
-| ⚠️ **Alta** | Performance | Thresholds inconsistentes entre testes similares | Médio | Médio |
-| ⚠️ **Alta** | Manutenção | Rotas sem versionamento consistente (`/api` vs `/api/v1`) | Baixo | Médio |
-| ⚠️ **Alta** | CI/CD | Senhas diferentes entre env-config.json e CI | Baixo | Alto |
-| ⚠️ **Alta** | Manutenção | Ausência de `teardown()` na maioria dos testes | Médio | Médio |
-| ⚠️ **Alta** | Segurança | Token JWT exposto em relatórios | Baixo | Médio |
-| ⚠️ **Média** | Manutenção | Configuração de carga inconsistente entre testes | Alto | Médio |
-| ⚠️ **Média** | Duplicidade | Estruturas CRUD músicas/vídeos quase idênticas | Alto | Alto |
-| 🟢 **Baixa** | Performance | `sleep()` fixo não simula comportamento real | Baixo | Baixo |
-| 🟢 **Baixa** | Performance | Health check duplicado em `setup()` | Baixo | Baixo |
-| 🟢 **Baixa** | Manutenção | Nomenclatura inconsistente de arquivos | Médio | Baixo |
-| 🟢 **Baixa** | Manutenção | `env-config.json` subutilizado | Baixo | Médio |
-| 🟢 **Baixa** | Manutenção | Separação difusa entre testes funcionais e de carga | Médio | Baixo |
-| 🟢 **Baixa** | Manutenção | Versão hardcoded do k6-summary | Baixo | Baixo |
-| 🟢 **Baixa** | Manutenção | Comportamento "soft pass" em validações | Baixo | Baixo |
+| Prioridade | Categoria | Descrição | Esforço | Impacto | Status |
+|-----------|-----------|-----------|---------|---------|--------|
+| 🔴 **Crítica** | Duplicidade | Lógica de login duplicada em 18+ arquivos | Médio | Muito Alto | ✅ Resolvido (23/05/2026) |
+| 🔴 **Crítica** | Duplicidade | `handleSummary()` duplicado em múltiplos arquivos | Baixo | Alto | ✅ Resolvido (23/05/2026) |
+| 🔴 **Crítica** | Segurança | Credenciais hardcoded em texto plano | Baixo | Alto | ❌ Pendente |
+| ⚠️ **Alta** | Duplicidade | Função `getRandomIP()` duplicada | Baixo | Médio | ✅ Resolvido (23/05/2026) |
+| ⚠️ **Alta** | Duplicidade | Configuração de ambiente duplicada | Baixo | Médio | ✅ Resolvido (23/05/2026) |
+| ⚠️ **Alta** | Segurança | Header `X-Forwarded-For` usado para burlar rate limit | Médio | Alto | ❌ Pendente |
+| ⚠️ **Alta** | CI/CD | Workflow executa apenas 1 dos 28 testes | Alto | Muito Alto | ❌ Pendente |
+| ⚠️ **Alta** | Performance | Thresholds inconsistentes entre testes similares | Médio | Médio | ✅ Resolvido (23/05/2026) |
+| ⚠️ **Alta** | Manutenção | Rotas sem versionamento consistente (`/api` vs `/api/v1`) | Baixo | Médio | ✅ Resolvido (13/05/2026) |
+| ⚠️ **Alta** | CI/CD | Senhas diferentes entre env-config.json e CI | Baixo | Alto | ❌ Pendente |
+| ⚠️ **Alta** | Manutenção | Ausência de `teardown()` na maioria dos testes | Médio | Médio | ❌ Pendente |
+| ⚠️ **Alta** | Segurança | Token JWT exposto em relatórios | Baixo | Médio | ❌ Pendente |
+| ⚠️ **Média** | Manutenção | Configuração de carga inconsistente entre testes | Alto | Médio | ✅ Resolvido (23/05/2026) |
+| ⚠️ **Média** | Duplicidade | Estruturas CRUD músicas/vídeos quase idênticas | Alto | Alto | ❌ Pendente |
+| 🟢 **Baixa** | Performance | `sleep()` fixo não simula comportamento real | Baixo | Baixo | ❌ Pendente |
+| 🟢 **Baixa** | Performance | Health check duplicado em `setup()` | Baixo | Baixo | ❌ Pendente |
+| 🟢 **Baixa** | Manutenção | Nomenclatura inconsistente de arquivos | Médio | Baixo | ❌ Pendente |
+| 🟢 **Baixa** | Manutenção | `env-config.json` subutilizado | Baixo | Médio | ✅ Resolvido (23/05/2026) |
+| 🟢 **Baixa** | Manutenção | Separação difusa entre testes funcionais e de carga | Médio | Baixo | ❌ Pendente |
+| 🟢 **Baixa** | Manutenção | Versão hardcoded do k6-summary | Baixo | Baixo | ✅ Resolvido (23/05/2026) |
+| 🟢 **Baixa** | Manutenção | Comportamento "soft pass" em validações | Baixo | Baixo | ❌ Pendente |
+| 🟢 **Baixa** | Manutenção | Ausência de tratamento de erros na extração de token | Baixo | Médio | ✅ Resolvido (23/05/2026) |
 
-### Benefícios das Ações Sugeridas
+> **Legenda:**
+> - ✅ **Resolvido** — Problema corrigido e validado
+> - ❌ **Pendente** — Problema identificado mas ainda não corrigido
+
+### Benefícios das Ações Realizadas (23/05/2026)
 
 1. **Módulo de autenticação compartilhado**: Redução de ~90% de código duplicado relacionado a login
 2. **Módulo de configuração centralizado**: Facilidade para adicionar novas variáveis de ambiente
 3. **Módulo de relatórios padronizado**: Consistência na geração de relatórios e sanitização de dados sensíveis
-4. **Reorganização em subpastas**: Clareza sobre o propósito de cada teste (performance vs funcional vs segurança)
-5. **Workflow CI expandido**: Cobertura completa de testes em CI, não apenas o stress test combinado
-6. **Test runner genérico para CRUD**: Eliminação de ~50% de código duplicado entre testes de músicas e vídeos
+4. **Módulo de perfis de carga**: Thresholds consistentes e matriz de perfis reutilizável
+5. **Validação de token robusta**: Erro descritivo se estrutura da resposta mudar
+6. **Versionamento do k6-summary atualizado**: Importa `latest` em vez de versão fixa
+
+### Benefícios das Ações Sugeridas (Pendentes)
+
+1. **Reorganização em subpastas**: Clareza sobre o propósito de cada teste (performance vs funcional vs segurança)
+2. **Workflow CI expandido**: Cobertura completa de testes em CI, não apenas o stress test combinado
+3. **Test runner genérico para CRUD**: Eliminação de ~50% de código duplicado entre testes de músicas e vídeos
+4. **Segurança**: Remoção de credenciais hardcoded, sanitização de tokens em relatórios
 
 ---
 
 > **Data da análise:** 10/05/2026
-> **Status:** Apenas reportado — nenhuma correção aplicada
+> **Última atualização:** 23/05/2026
+> **Status:** Correções parciais aplicadas — ver coluna "Status" na matriz de prioridades

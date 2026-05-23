@@ -1,21 +1,18 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
+import { BASE_URL } from './helpers/config.js';
+import { getProfile } from './helpers/profiles.js';
+import { generateReport } from './helpers/report.js';
 
-export const options = {
-  // Teste funcional: 1 usuário fazendo a validação lógica
-  vus: 1,
+export const options = getProfile('light', {
   iterations: 1,
   thresholds: {
-    checks: ['rate==1.0'], // 100% das verificações devem passar
+    checks: ['rate==1.0'],
   },
-};
-
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
+});
 
 export default function () {
   // 1. Requisita a Página 1 (limit=5)
-  // Ajustado para a rota pública correta (/api/posts) em vez de /api/posts
   const resPage1 = http.get(`${BASE_URL}/api/posts?page=1&limit=5`);
   
   check(resPage1, {
@@ -57,8 +54,5 @@ export default function () {
 }
 
 export function handleSummary(data) {
-  return {
-    'stdout': textSummary(data, { indent: ' ', enableColors: true }),
-    './reports/k6-summaries/pagination_test.json': JSON.stringify(data, null, 4),
-  };
+  return generateReport(data, 'pagination_test');
 }

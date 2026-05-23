@@ -547,9 +547,6 @@
 │   ├── PROJECT_raiz.md
 │   ├── PROJECT_scripts.md
 │   ├── PROJECT_tests.md
-│   ├── RELATORIO_ERROS_2026-05-22.md
-│   ├── RELATORIO_ERROS_2026-05-22_v2.md
-│   ├── RELATORIO_ERROS_2026-05-22_v3.md
 │   ├── UPGRADE_components.md
 │   ├── UPGRADE_cypress.md
 │   ├── UPGRADE_data.md
@@ -622,6 +619,12 @@
 │   ├── ddos-search-test.js
 │   ├── env-config.json
 │   ├── health-check.js
+│   ├── helpers
+│   │   ├── auth.js
+│   │   ├── config.js
+│   │   ├── network.js
+│   │   ├── profiles.js
+│   │   └── report.js
 │   ├── ip-spoofing-test.js
 │   ├── login-negative-test.js
 │   ├── musicas-crud-test.js
@@ -1083,4 +1086,4 @@
 ├── tests-output.log
 └── tree.txt
 
-167 directories, 917 files
+168 directories, 919 files

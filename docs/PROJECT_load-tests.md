@@ -40,13 +40,17 @@
 3. [Arquivos de Configuração e Workflow](#arquivos-de-configuração-e-workflow)
    - [env-config.json](#env-configjson)
    - [load-tests.yml (CI)](#load-testsyml-ci)
+   - [helpers/config.js](#helpersconfigjs)
+   - [helpers/network.js](#helpersnetworkjs)
+   - [helpers/profiles.js](#helpersprofilesjs)
+   - [helpers/report.js](#helpersreportjs)
 4. [Padrões e Convenções Comuns](#padrões-e-convenções-comuns)
 
 ---
 
 ## Visão Geral
 
-A pasta `load-tests/` contém **30 arquivos** (28 scripts de teste em k6 + 1 configuração JSON + 1 módulo helper) que compõem a suíte de testes de carga, stress, performance e segurança do projeto **Caminhar**. Todos os scripts utilizam a ferramenta [k6](https://k6.io/) da Grafana Labs.
+A pasta `load-tests/` contém **32 arquivos** (28 scripts de teste em k6 + 1 configuração JSON + 1 workflow CI + 4 módulos helpers) que compõem a suíte de testes de carga, stress, performance e segurança do projeto **Caminhar**. Todos os scripts utilizam a ferramenta [k6](https://k6.io/) da Grafana Labs.
 
 Os testes estão organizados em categorias funcionais:
 
@@ -60,7 +64,7 @@ Os testes estão organizados em categorias funcionais:
 | **Cache** | 2 | Headers de cache, performance de cache |
 | **Fluxos Combinados** | 2 | Stress test combinado, upload flow |
 | **Configuração** | 1 | env-config.json |
-| **Helpers** | 1 | helpers/network.js |
+| **Helpers** | 5 | auth.js, config.js, network.js, profiles.js, report.js |
 | **CI/CD** | 1 | load-tests.yml (workflow) |
 
 ---
@@ -78,16 +82,16 @@ Os testes estão organizados em categorias funcionais:
 **Propósito:** Validar que o fluxo de autenticação funciona corretamente sob carga, garantindo que o login e o acesso a rotas protegidas não apresentem degradação com 5 usuários simultâneos.
 
 **Estrutura:**
-- `setup()` — Health check em `GET /` para verificar servidor
-- `default()` — Login → extrai token → acessa rota protegida `/api/v1/settings`
-- Thresholds: `p(95) < 1000ms`, taxa de sucesso > 99% para login e settings
+- `setup()` — Login via módulo `helpers/auth.js`
+- `default()` — Login → extrai token → acessa rota protegida `/api/admin/settings`
+- Thresholds: perfil `medium` do `helpers/profiles.js` (p(95) < 300ms, failed < 1%)
+- `handleSummary()` — Gera relatório via `helpers/report.js`
 
 **Endpoints chamados:**
-- `GET /` — Health check do servidor
-- `POST /api/v1/auth/login` — Autenticação
-- `GET /api/v1/settings` — Rota protegida (requer token Bearer)
+- `POST /api/auth/login` — Autenticação
+- `GET /api/admin/settings` — Rota protegida (requer token Bearer)
 
-**Configuração de carga:** 3 estágios — ramp-up para 5 VUs (10s), manter 5 VUs (20s), ramp-down (5s)
+**Configuração de carga:** Perfil `medium` (5 VUs, 20s)
 
 ---
 
@@ -100,15 +104,16 @@ Os testes estão organizados em categorias funcionais:
 **Propósito:** Garantir que o endpoint de backups retorne a estrutura esperada com campos como `id`, `filename`, `size`, `created_at`.
 
 **Estrutura:**
-- `setup()` — Login como admin, retorna token
+- `setup()` — Login via `helpers/auth.js`
 - `default()` — GET `/api/admin/backups` com token, valida resposta
-- `handleSummary()` — Gera relatório JSON
+- `handleSummary()` — Gera relatório via `helpers/report.js`
+- Configuração: perfil `light` do `helpers/profiles.js`
 
 **Endpoints chamados:**
-- `POST /api/v1/auth/login` — Autenticação
+- `POST /api/auth/login` — Autenticação
 - `GET /api/admin/backups` — Listagem de backups
 
-**Configuração de carga:** Apenas 1 VU, 3 iterações (teste funcional, não de carga)
+**Configuração de carga:** Perfil `light` (1 VU, 5 iterações)
 
 ---
 
@@ -116,20 +121,21 @@ Os testes estão organizados em categorias funcionais:
 
 **Localização:** `/load-tests/cache-headers-test.js`
 
-**O que faz:** Verifica a presença e corretude dos headers de cache HTTP (`Cache-Control`, `ETag`, `Last-Modified`).
+**O que faz:** Verifica a presença e corretude dos headers de cache HTTP (`Cache-Control`, `s-maxage`, `stale-while-revalidate`).
 
 **Propósito:** Garantir que as respostas da API incluam headers de cache apropriados para otimização de performance.
 
 **Estrutura:**
-- `setup()` — Login como admin
-- `default()` — GET em rota pública, valida headers de cache
-- Testa `Cache-Control`, `ETag`, `Last-Modified`
+- Rota pública (sem autenticação) — GET `/api/posts`
+- Testa `Cache-Control`, `s-maxage`, `stale-while-revalidate`
+- Soft checks com warnings em vez de falhas
+- `handleSummary()` — Gera relatório via `helpers/report.js`
+- Configuração: perfil `light` do `helpers/profiles.js`
 
 **Endpoints chamados:**
-- `POST /api/v1/auth/login` — Autenticação
-- Rota pública da API (verifica headers de resposta)
+- `GET /api/posts` — Listagem pública de posts (verifica headers de resposta)
 
-**Configuração de carga:** 1 VU, 10 iterações
+**Configuração de carga:** Perfil `light` (1 VU, 5 iterações)
 
 ---
 
@@ -142,14 +148,15 @@ Os testes estão organizados em categorias funcionais:
 **Propósito:** Medir a eficácia do cache, comparando tempos de resposta com e sem headers de cache, validando que respostas cacheadas são significativamente mais rápidas.
 
 **Estrutura:**
-- Configuração com 2 estágios (ramp-up para 10 VUs, manter 30s)
+- Configuração: perfil `medium` do `helpers/profiles.js`
 - Requisição inicial (sem cache) → armazena headers → requisição com `If-None-Match` (cache)
 - Compara `http_req_duration` entre os dois cenários
+- Usa `getRandomIP()` do módulo `helpers/network.js` para evitar rate limit
 
 **Endpoints chamados:**
-- Endpoint público da API (2 requisições: sem cache e com ETag)
+- `GET /api/posts` — Endpoint público (2 requisições: sem cache e com ETag)
 
-**Configuração de carga:** 10 VUs, 30s de duração
+**Configuração de carga:** Perfil `medium` (5 VUs, 20s)
 
 ---
 
@@ -162,15 +169,15 @@ Os testes estão organizados em categorias funcionais:
 **Propósito:** Validar o processo de criação de posts no blog, garantindo que o endpoint `POST /api/admin/posts` funcione corretamente sob carga.
 
 **Estrutura:**
-- `setup()` — Login como admin
+- `setup()` — Login via `helpers/auth.js`
 - `default()` — Cria post com título único, valida status 201 e ID retornado
 - Gera conteúdo aleatório para simular dados reais
 
 **Endpoints chamados:**
-- `POST /api/v1/auth/login` — Autenticação
+- `POST /api/auth/login` — Autenticação
 - `POST /api/admin/posts` — Criação de post
 
-**Configuração de carga:** 3 VUs, 10 iterações
+**Configuração de carga:** Perfil `light` customizado (3 VUs, 10 iterações)
 
 ---
 
@@ -178,19 +185,22 @@ Os testes estão organizados em categorias funcionais:
 
 **Localização:** `/load-tests/ddos-search-test.js`
 
-**O que faz:** Simula um cenário de busca massiva (tipo DDoS) no endpoint de busca de músicas.
+**O que faz:** Simula um cenário de busca massiva (tipo DDoS) no endpoint de busca de posts.
 
 **Propósito:** Verificar a resiliência do sistema sob alta frequência de requisições de busca, validando thresholds de performance e taxa de erro.
 
 **Estrutura:**
 - Gera busca aleatória com termos fixos
-- Headers com IP aleatório para evitar rate limit
-- Thresholds agressivos: `p(95) < 2000ms`, taxa de falha < 5%
+- Cache busting via timestamp (`_t=${Date.now()}`)
+- Métrica `ErrorRate500` para abortar se erros 5xx > 10%
+- Intencionalmente **sem `sleep()`** para máxima taxa de requisições
+- `handleSummary()` — Gera relatório via `helpers/report.js`
+- Configuração: perfil `heavy` customizado com estágios 10s/30s/10s e 100→500 VUs
 
 **Endpoints chamados:**
-- `GET /api/musicas?search={termo}` — Busca de músicas
+- `GET /api/posts?search={termo}` — Busca de posts
 
-**Configuração de carga:** 15 VUs, 3 minutos de duração
+**Configuração de carga:** 100→500 VUs, 50s de duração, threshold `errors_500 rate<0.10`
 
 ---
 
@@ -200,18 +210,18 @@ Os testes estão organizados em categorias funcionais:
 
 **O que faz:** Teste de carga específico para o endpoint de health check da API.
 
-**Propósito:** Verificar se o endpoint `GET /api/v1/health` responde corretamente sob carga crescente (até 20 usuários) e respeita SLAs rigorosos de tempo de resposta (p95 < 100ms).
+**Propósito:** Verificar se o endpoint `GET /api/status?mode=health` responde corretamente sob carga crescente (até 20 usuários) e respeita SLAs rigorosos de tempo de resposta (p95 < 100ms).
 
 **Estrutura:**
-- 3 estágios de carga: ramp-up (10s, 20 VUs), manter (30s), ramp-down (10s)
-- `setup()` — Verifica conectividade básica
-- `default()` — GET `/api/v1/health`, valida status 200
-- `handleSummary()` — Gera relatório JSON e HTML
+- Configuração: perfil `health` do `helpers/profiles.js`
+- Rota pública (sem autenticação) — GET `/api/status?mode=health`
+- Valida status 200 e body com `status === 'ok'`
+- **Não possui `handleSummary()`** (teste leve sem geração de relatório)
 
 **Endpoints chamados:**
-- `GET /api/v1/health` — Health check
+- `GET /api/status?mode=health` — Health check
 
-**Configuração de carga:** 20 VUs no pico
+**Configuração de carga:** Perfil `health` (20 VUs, 20s, p(95) < 100ms)
 
 ---
 
@@ -224,12 +234,13 @@ Os testes estão organizados em categorias funcionais:
 **Propósito:** Validar que o sistema não aceita requisições com IPs falsificados como autênticas para burlar rate limiting.
 
 **Estrutura:**
-- `setup()` — Login como admin
-- Gera IPs aleatórios no header `X-Forwarded-For`
+- `setup()` — Login via `helpers/auth.js`
+- Gera IPs aleatórios via `getRandomIP()` do módulo `helpers/network.js`
 - Verifica se o sistema trata corretamente ou é enganado pelo spoofing
+- `handleSummary()` — Gera relatório via `helpers/report.js`
 
 **Endpoints chamados:**
-- `POST /api/v1/auth/login` — Autenticação
+- `POST /api/auth/login` — Autenticação
 - Endpoints protegidos com headers de IP falsificados
 
 ---
@@ -248,9 +259,9 @@ Os testes estão organizados em categorias funcionais:
 - Verifica que não há vazamento de informações
 
 **Endpoints chamados:**
-- `POST /api/v1/auth/login` — Autenticação (com credenciais inválidas)
+- `POST /api/auth/login` — Autenticação (com credenciais inválidas)
 
-**Configuração de carga:** 3 VUs, 20 iterações
+**Configuração de carga:** Perfil `light` customizado (3 VUs, 20 iterações)
 
 ---
 
@@ -263,18 +274,19 @@ Os testes estão organizados em categorias funcionais:
 **Propósito:** Validar o ciclo de vida completo de uma música na API administrativa: criar, listar, atualizar e deletar.
 
 **Estrutura:**
-- `setup()` — Login como admin
+- `setup()` — Login via `helpers/auth.js`
 - `default()` — POST (criar) → GET/listar → PUT (atualizar) → DELETE
 - Valida IDs e status codes em cada etapa
+- `handleSummary()` — Gera relatório via `helpers/report.js`
 
 **Endpoints chamados:**
-- `POST /api/v1/auth/login` — Autenticação
+- `POST /api/auth/login` — Autenticação
 - `POST /api/admin/musicas` — Criar música
 - `GET /api/admin/musicas` — Listar músicas
 - `PUT /api/admin/musicas` — Atualizar música
 - `DELETE /api/admin/musicas` — Deletar música
 
-**Configuração de carga:** 5 VUs, 8 iterações
+**Configuração de carga:** Perfil `light` customizado (5 VUs, 8 iterações)
 
 ---
 
@@ -287,12 +299,12 @@ Os testes estão organizados em categorias funcionais:
 **Propósito:** Validar que o endpoint de músicas filtra corretamente os resultados com base no parâmetro `publicado`.
 
 **Estrutura:**
-- Login como admin
+- `setup()` — Login via `helpers/auth.js`
 - Requisições GET com query parameter `?publicado=true` e `?publicado=false`
 - Valida que todos os itens retornados respeitam o filtro
 
 **Endpoints chamados:**
-- `POST /api/v1/auth/login` — Autenticação
+- `POST /api/auth/login` — Autenticação
 - `GET /api/admin/musicas?publicado={true|false}` — Listar com filtro
 
 ---
@@ -306,14 +318,13 @@ Os testes estão organizados em categorias funcionais:
 **Propósito:** Validar o comportamento da API `/api/admin/musicas` sob carga progressiva, garantindo thresholds de performance (p95 < 300ms) e taxa de erro (< 1%).
 
 **Estrutura:**
-- 3 estágios: ramp-up (5s, 5 VUs), manter (10s), ramp-down (5s)
-- `setup()` — Login, retorna token
-- Usa `getRandomIP()` do módulo compartilhado `helpers/network.js` para evitar rate limit
-- `handleSummary()` — Gera relatório JSON
+- Configuração: perfil `medium` do `helpers/profiles.js`
+- `setup()` — Login via `helpers/auth.js`
+- Usa `getRandomIP()` do módulo `helpers/network.js` para evitar rate limit
+- `handleSummary()` — Gera relatório via `helpers/report.js`
 
 **Endpoints chamados:**
-- `GET /` — Health check
-- `POST /api/v1/auth/login` — Autenticação
+- `POST /api/auth/login` — Autenticação
 - `GET /api/admin/musicas` — Listar músicas
 
 ---
@@ -327,11 +338,12 @@ Os testes estão organizados em categorias funcionais:
 **Propósito:** Validar que a paginação funciona corretamente, retornando o número esperado de itens por página e os metadados de paginação.
 
 **Estrutura:**
+- `setup()` — Login via `helpers/auth.js`
 - 1 VU, itera com diferentes combinações de `page` e `limit`
 - Valida `total`, `page`, `limit` e quantidade de itens retornados
 
 **Endpoints chamados:**
-- `POST /api/v1/auth/login` — Autenticação
+- `POST /api/auth/login` — Autenticação
 - `GET /api/admin/musicas?page={n}&limit={n}` — Listar com paginação
 
 ---
@@ -345,12 +357,13 @@ Os testes estão organizados em categorias funcionais:
 **Propósito:** Garantir que a busca por título retorne resultados relevantes e respeite os limites de paginação.
 
 **Estrutura:**
+- `setup()` — Login via `helpers/auth.js`
 - Array de termos de busca pré-definidos
 - Requisições GET com `?search={termo}`
 - Valida status, estrutura de resposta e resultados
 
 **Endpoints chamados:**
-- `POST /api/v1/auth/login` — Autenticação
+- `POST /api/auth/login` — Autenticação
 - `GET /api/admin/musicas?search={termo}` — Buscar músicas
 
 ---
@@ -364,11 +377,12 @@ Os testes estão organizados em categorias funcionais:
 **Propósito:** Validar que o endpoint de músicas ordena corretamente os resultados de acordo com o campo e direção especificados.
 
 **Estrutura:**
+- `setup()` — Login via `helpers/auth.js`
 - Testa ordenação ASC e DESC para cada campo
 - Valida que a ordem dos resultados corresponde ao esperado
 
 **Endpoints chamados:**
-- `POST /api/v1/auth/login` — Autenticação
+- `POST /api/auth/login` — Autenticação
 - `GET /api/admin/musicas?sort={campo}&order={asc|desc}` — Listar ordenado
 
 ---
@@ -377,16 +391,21 @@ Os testes estão organizados em categorias funcionais:
 
 **Localização:** `/load-tests/pagination-test.js`
 
-**O que faz:** Teste genérico de paginação (não específico de um recurso).
+**O que faz:** Teste funcional de paginação baseada em page/offset para posts públicos.
 
-**Propósito:** Validar o comportamento geral do sistema de paginação da API, testando diferentes tamanhos de página e navegação.
+**Propósito:** Validar o funcionamento do sistema de paginação offset-based (page + limit), verificando que páginas diferentes retornam IDs distintos.
 
 **Estrutura:**
-- Requisições com diferentes valores de `limit` (5, 10, 20, 50)
-- Verifica limites máximos e comportamento em páginas vazias
+- Rota pública (sem autenticação) — GET `/api/posts?page=1&limit=5` e `page=2&limit=5`
+- Validação cruzada: IDs da página 1 vs página 2 (não devem se repetir)
+- Soft pass se página 2 estiver vazia (poucos dados no banco)
+- `handleSummary()` — Gera relatório via `helpers/report.js`
+- Configuração: perfil `light` do `helpers/profiles.js`
 
 **Endpoints chamados:**
-- `GET /api/{recurso}?page={n}&limit={n}` — Paginação genérica
+- `GET /api/posts?page={n}&limit={n}` — Paginação offset-based
+
+**Observação:** Usa rota `/api/posts` (sem `/v1`), rota pública sem autenticação.
 
 ---
 
@@ -399,12 +418,17 @@ Os testes estão organizados em categorias funcionais:
 **Propósito:** Validar o funcionamento da paginação por cursor (diferente de page/offset), que é mais eficiente para grandes conjuntos de dados.
 
 **Estrutura:**
-- Requisição inicial para obter primeiro cursor
-- Navegação pelas páginas seguintes usando o cursor retornado
-- Valida estrutura de resposta com `cursor` e `hasMore`
+- Rota pública (sem autenticação) — GET `/api/posts?limit=5`
+- Pega o ID do último post como cursor → requisição com `?cursor={id}`
+- Valida que resultados são distintos entre páginas
+- Soft pass se dados insuficientes
+- `handleSummary()` — Gera relatório via `helpers/report.js`
+- Configuração: perfil `light` do `helpers/profiles.js`
 
 **Endpoints chamados:**
 - `GET /api/posts?cursor={id}&limit={n}` — Posts com paginação por cursor
+
+**Observação:** Usa rota `/api/posts` (sem `/v1`), rota pública sem autenticação.
 
 ---
 
@@ -417,15 +441,17 @@ Os testes estão organizados em categorias funcionais:
 **Propósito:** Verificar se a rota `/api/posts?tag=...` retorna corretamente posts filtrados por uma tag específica.
 
 **Estrutura:**
-- 1 VU, 5 iterações
+- Rota pública (sem autenticação) — GET `/api/posts?tag={tag}`
 - Tags fixas: `['fé', 'oração', 'bíblia', 'vida', 'espiritualidade']`
 - Valida se posts retornados contêm a tag buscada
-- `handleSummary()` — Gera relatório JSON
+- Soft pass com warning se tag não encontrada visualmente (pode ser normalização diferente)
+- `handleSummary()` — Gera relatório via `helpers/report.js`
+- Configuração: perfil `light` do `helpers/profiles.js`
 
 **Endpoints chamados:**
 - `GET /api/posts?tag={tag}` — Posts filtrados por tag
 
-**Observação:** Usa rota `/api/posts` (sem `/v1`), indicando ser rota pública sem autenticação.
+**Observação:** Usa rota `/api/posts` (sem `/v1`), rota pública sem autenticação.
 
 ---
 
@@ -438,14 +464,16 @@ Os testes estão organizados em categorias funcionais:
 **Propósito:** Garantir que o sistema limite corretamente requisições excessivas, retornando status 429 (Too Many Requests) quando o limite é excedido.
 
 **Estrutura:**
-- 5 estágios: ramp-up para 20 VUs, manter, aumentar para 50 VUs, manter, ramp-down
-- Verifica presença de headers `X-RateLimit-Remaining` e `Retry-After`
-- Valida status 429 em requisições que excedem o limite
+- Configuração: perfil `rateLimit` do `helpers/profiles.js`
+- Payload com username/password aleatórios (evita whitelist)
+- Headers `X-Forwarded-For`, `X-Real-IP`, `CF-Connecting-IP`, `True-Client-IP` para simular IP externo
+- Métrica `RateLimitHits` para contar bloqueios por rate limit
+- Intencionalmente **sem `sleep()`** para máxima taxa de requisições
+- Warning se nenhum rate limit foi acionado
+- `handleSummary()` — Gera relatório via `helpers/report.js`
 
 **Endpoints chamados:**
-- Endpoint público (provavelmente `/api/v1/health` ou similar)
-
-**Configuração de carga:** Até 50 VUs
+- `POST /api/auth/login` — Login (rota mais protegida por rate limit)
 
 ---
 
@@ -453,18 +481,20 @@ Os testes estão organizados em categorias funcionais:
 
 **Localização:** `/load-tests/recovery-test.js`
 
-**O que faz:** Testa a capacidade de recuperação do sistema após um período de alta carga.
+**O que faz:** Testa a capacidade de recuperação do sistema após uma falha (banco de dados offline).
 
-**Propósito:** Validar que o sistema se recupera adequadamente (sem vazamento de recursos, sem degradação permanente) após um pico de estresse.
+**Propósito:** Validar que o sistema detecta falhas e se recupera automaticamente, medindo o tempo de recuperação (TTR).
 
 **Estrutura:**
-- Fase 1: Carga intensa (muitas requisições concorrentes)
-- Fase 2: Período de descanso (sem requisições)
-- Fase 3: Verificação se o sistema voltou ao estado normal
+- Configuração: perfil `recovery` do `helpers/profiles.js` (1 VU constante por 2 minutos)
+- Monitora rota `/api/posts` que depende estritamente do banco de dados
+- Estado `isSystemDown` para rastrear início/fim de quedas
+- Métricas: `recovery_time_ms` (Trend) e `recovery_count` (Counter)
+- Mensagem de estabilidade se nenhuma falha detectada
+- `handleSummary()` — Gera relatório via `helpers/report.js`
 
 **Endpoints chamados:**
-- Múltiplos endpoints durante a fase de estresse
-- `GET /api/v1/health` — Verificação de recuperação
+- `GET /api/posts` — Listagem pública de posts (dependente do banco)
 
 ---
 
@@ -472,17 +502,22 @@ Os testes estão organizados em categorias funcionais:
 
 **Localização:** `/load-tests/search-content-test.js`
 
-**O que faz:** Testa a busca de conteúdo textual em toda a aplicação.
+**O que faz:** Testa a busca de conteúdo textual nos posts públicos.
 
 **Propósito:** Validar que o mecanismo de busca retorna resultados consistentes e performáticos para diferentes termos de busca.
 
 **Estrutura:**
-- Requisições com termos de busca variados
-- Valida estrutura de resposta e relevância dos resultados
-- Mede tempo de resposta da busca
+- Rota pública (sem autenticação) — GET `/api/posts?search={termo}&page=1&limit=10`
+- Termos de busca: `['Deus', 'Jesus', 'amor', 'fé', 'vida', 'caminho', 'luz']`
+- Valida estrutura de resposta, status 200 e match do termo no título/conteúdo/tags
+- Soft pass com warning se termo não encontrado visualmente
+- `handleSummary()` — Gera relatório via `helpers/report.js`
+- Configuração: perfil `light` do `helpers/profiles.js`
 
 **Endpoints chamados:**
-- `GET /api/search?q={termo}` — Busca geral de conteúdo
+- `GET /api/posts?search={termo}` — Busca textual em posts
+
+**Observação:** Usa rota `/api/posts` (sem `/v1`), rota pública sem autenticação.
 
 ---
 
@@ -500,11 +535,10 @@ Os testes estão organizados em categorias funcionais:
 - **2 cenários paralelos** via `scenarios` do k6:
   1. `stress_test` — Ramp-up progressivo (20, 50, 100 VUs), executa CRUD completo de vídeos
   2. `memory_monitor` — 1 VU constante por 5 min monitorando memória do Node.js
-- `setup()` — Login global (token compartilhado entre cenários)
-- `stressTestFlow()` — Cria, atualiza e deleta vídeo por iteração
-- `memoryMonitorFlow()` — Coleta métricas de memória (RSS, heapTotal, heapUsed)
-- `teardown()` — Limpa dados de teste criados (deleta vídeos com "K6" ou "Estresse")
-- `handleSummary()` — Gera relatório em texto, JSON e HTML
+- `setup()` — Login via `helpers/auth.js`
+- `teardown()` — Limpa dados de teste criados
+- `handleSummary()` — Gera relatório via `helpers/report.js`
+- Usa `getRandomIP()` do módulo `helpers/network.js`
 
 **Métricas customizadas:**
 - `nodejs_memory_rss_bytes` — Memória RSS
@@ -512,11 +546,11 @@ Os testes estão organizados em categorias funcionais:
 - `nodejs_memory_heap_used_bytes` — Heap usado (threshold: max < 1GB)
 
 **Endpoints chamados:**
-- `POST /api/v1/auth/login` — Autenticação
+- `POST /api/auth/login` — Autenticação
 - `POST /api/admin/videos` — Criar vídeo
 - `PUT /api/admin/videos` — Atualizar vídeo
 - `DELETE /api/admin/videos` — Deletar vídeo
-- `GET /api/v1/status` — Status do servidor (monitoramento de memória)
+- `GET /api/status?mode=health` — Status do servidor (monitoramento de memória)
 - `GET /api/admin/videos?limit=100` — Listar vídeos (teardown)
 
 ---
@@ -530,12 +564,12 @@ Os testes estão organizados em categorias funcionais:
 **Propósito:** Validar que o endpoint de upload de arquivos funciona sob carga e respeita limites de tamanho e tipo de arquivo.
 
 **Estrutura:**
-- `setup()` — Login como admin
+- `setup()` — Login via `helpers/auth.js`
 - Simula upload de arquivo (provavelmente imagem) usando multipart/form-data
 - Valida status code e resposta
 
 **Endpoints chamados:**
-- `POST /api/v1/auth/login` — Autenticação
+- `POST /api/auth/login` — Autenticação
 - `POST /api/admin/upload` — Upload de arquivo
 
 ---
@@ -549,15 +583,15 @@ Os testes estão organizados em categorias funcionais:
 **Propósito:** Garantir que o endpoint de criação `/api/admin/videos` tenha validações corretas para URLs do YouTube, rejeitando domínios inválidos e URLs malformadas.
 
 **Estrutura:**
-- `setup()` — Login como admin
+- `setup()` — Login via `helpers/auth.js`
 - `default()` — 3 cenários de validação:
   1. URL válida do YouTube (deve passar)
   2. URL de domínio inválido — Vimeo (deve rejeitar)
   3. URL malformada (deve rejeitar)
-- `handleSummary()` — Gera relatório JSON
+- `handleSummary()` — Gera relatório via `helpers/report.js`
 
 **Endpoints chamados:**
-- `POST /api/v1/auth/login` — Autenticação
+- `POST /api/auth/login` — Autenticação
 - `POST /api/admin/videos` — Criação de vídeo (3x)
 
 ---
@@ -571,12 +605,13 @@ Os testes estão organizados em categorias funcionais:
 **Propósito:** Validar o ciclo de vida completo de um vídeo: criar, listar, atualizar e deletar.
 
 **Estrutura:**
-- `setup()` — Login como admin
+- `setup()` — Login via `helpers/auth.js`
 - `default()` — POST (criar) → GET (listar) → PUT (atualizar) → DELETE
 - Valida IDs, status codes e conteúdo da resposta
+- `handleSummary()` — Gera relatório via `helpers/report.js`
 
 **Endpoints chamados:**
-- `POST /api/v1/auth/login` — Autenticação
+- `POST /api/auth/login` — Autenticação
 - `POST /api/admin/videos` — Criar vídeo
 - `GET /api/admin/videos` — Listar vídeos
 - `PUT /api/admin/videos` — Atualizar vídeo
@@ -593,12 +628,12 @@ Os testes estão organizados em categorias funcionais:
 **Propósito:** Validar que o endpoint de vídeos filtra corretamente com base no parâmetro `publicado`.
 
 **Estrutura:**
-- Login como admin
+- `setup()` — Login via `helpers/auth.js`
 - Requisições GET com `?publicado=true` e `?publicado=false`
 - Valida que todos os itens respeitam o filtro aplicado
 
 **Endpoints chamados:**
-- `POST /api/v1/auth/login` — Autenticação
+- `POST /api/auth/login` — Autenticação
 - `GET /api/admin/videos?publicado={true|false}` — Listar com filtro
 
 ---
@@ -612,13 +647,13 @@ Os testes estão organizados em categorias funcionais:
 **Propósito:** Validar a performance da API de vídeos sob carga progressiva, com thresholds de p(95) < 300ms.
 
 **Estrutura:**
-- 3 estágios: ramp-up (5s, 5 VUs), manter (10s), ramp-down (5s)
-- `setup()` — Login como admin
-- Usa `getRandomIP()` do módulo compartilhado `helpers/network.js` para evitar rate limit
-- `handleSummary()` — Gera relatório JSON
+- Configuração: perfil `medium` do `helpers/profiles.js`
+- `setup()` — Login via `helpers/auth.js`
+- Usa `getRandomIP()` do módulo `helpers/network.js` para evitar rate limit
+- `handleSummary()` — Gera relatório via `helpers/report.js`
 
 **Endpoints chamados:**
-- `POST /api/v1/auth/login` — Autenticação
+- `POST /api/auth/login` — Autenticação
 - `GET /api/admin/videos` — Listar vídeos
 
 ---
@@ -632,11 +667,12 @@ Os testes estão organizados em categorias funcionais:
 **Propósito:** Validar que a paginação retorna a quantidade correta de itens e metadados (total, page, limit).
 
 **Estrutura:**
+- `setup()` — Login via `helpers/auth.js`
 - Requisições com combinações de `page` e `limit`
 - Valida estrutura de paginação e contagem de itens
 
 **Endpoints chamados:**
-- `POST /api/v1/auth/login` — Autenticação
+- `POST /api/auth/login` — Autenticação
 - `GET /api/admin/videos?page={n}&limit={n}` — Listar com paginação
 
 ---
@@ -650,11 +686,12 @@ Os testes estão organizados em categorias funcionais:
 **Propósito:** Validar que o endpoint ordena corretamente os resultados de acordo com campo e direção especificados.
 
 **Estrutura:**
+- `setup()` — Login via `helpers/auth.js`
 - Testa ordenação ASC e DESC para campos como `titulo`, `created_at`
 - Valida sequência dos resultados
 
 **Endpoints chamados:**
-- `POST /api/v1/auth/login` — Autenticação
+- `POST /api/auth/login` — Autenticação
 - `GET /api/admin/videos?sort={campo}&order={asc|desc}` — Listar ordenado
 
 ---
@@ -683,7 +720,7 @@ Os testes estão organizados em categorias funcionais:
 **Observações:**
 - Define URL base como `http://localhost:3000`
 - Credenciais de admin em texto plano (aceitável apenas para ambiente local/teste)
-- Cada script tem fallback próprio no código para estes valores
+- O valor é referenciado via módulo `helpers/config.js`, que também tenta ler de `__ENV`
 
 ---
 
@@ -717,46 +754,179 @@ Os testes estão organizados em categorias funcionais:
 
 ---
 
+### `helpers/auth.js`
+
+**Localização:** `/load-tests/helpers/auth.js`
+
+**O que faz:** Módulo compartilhado que centraliza a lógica de autenticação para todos os scripts de teste administrativos.
+
+**Propósito:** Eliminar a duplicação da função `setup()` com POST `/api/auth/login` que existia em ~18 arquivos.
+
+**Exports:**
+- `setup(options)` — Realiza login com credenciais e retorna `{ token }`. Valida estrutura da resposta e lança erro descritivo se o formato for inesperado.
+
+**Uso:**
+```javascript
+import { setup } from './helpers/auth.js';
+export function setup() {
+  return setup(); // Re-exporta para o k6
+}
+```
+
+**Validações:**
+- Verifica se `loginRes.status === 200` antes de processar
+- Verifica se `body`, `body.data` e `body.data.token` existem
+- Lança `Error` com mensagem descritiva em caso de falha
+
+---
+
+### `helpers/config.js`
+
+**Localização:** `/load-tests/helpers/config.js`
+
+**O que faz:** Módulo compartilhado que centraliza a configuração de ambiente para todos os scripts de teste.
+
+**Propósito:** Eliminar a duplicação de declarações `BASE_URL`, `USERNAME` e `PASSWORD` que existiam em cada script individualmente.
+
+**Exports:**
+- `BASE_URL` — Lê de `__ENV.BASE_URL` com fallback para `'http://localhost:3000'`
+- `USERNAME` — Lê de `__ENV.ADMIN_USERNAME` com fallback para `'admin'`
+- `PASSWORD` — Lê de `__ENV.ADMIN_PASSWORD` com fallback para `'123456'`
+- `getConfig()` — Função que retorna objeto com todas as configurações
+
+**Uso:**
+```javascript
+import { BASE_URL } from './helpers/config.js';
+```
+
+---
+
+### `helpers/network.js`
+
+**Localização:** `/load-tests/helpers/network.js`
+
+**O que faz:** Módulo compartilhado com funções utilitárias de rede para os testes.
+
+**Propósito:** Centralizar a função `getRandomIP()` que estava duplicada em 5 arquivos.
+
+**Exports:**
+- `getRandomIP()` — Gera um endereço IPv4 aleatório no formato `x.x.x.x`
+
+**Uso:**
+```javascript
+import { getRandomIP } from './helpers/network.js';
+```
+
+**Observação:** IP spoofing é usado nos testes para evitar rate limit. Consulte a seção 2.2 do UPGRADE_load-tests.md para discussão sobre segurança disso.
+
+---
+
+### `helpers/profiles.js`
+
+**Localização:** `/load-tests/helpers/profiles.js`
+
+**O que faz:** Módulo compartilhado que define perfis de carga padronizados para os testes.
+
+**Propósito:** Garantir thresholds consistentes e configurações de carga reutilizáveis, eliminando declarações inline espalhadas.
+
+**Perfis disponíveis:**
+
+| Perfil | VUs | Duração | Thresholds | Uso Típico |
+|--------|-----|---------|-----------|------------|
+| `light` | 1 | 5 iterações | checks=100%, p(95)<500ms | Testes funcionais |
+| `medium` | 5 | 20s (5+10+5) | p(95)<300ms, failed<1% | Carga moderada |
+| `heavy` | 50 | 50s (10+30+10) | p(95)<2000ms, failed<5% | Estresse |
+| `health` | 20 | 20s (5+10+5) | p(95)<100ms, failed<1% | Health check |
+| `recovery` | 1 | 2min constante | Nenhum (thresholds vazios) | Monitoramento |
+| `rateLimit` | 0→50 | 50s (10+30+10) | Nenhum (thresholds vazios) | Brute force |
+
+**Exports:**
+- `PROFILES` — Objeto com todos os perfis
+- `getProfile(profileName, overrides)` — Retorna perfil mesclado com sobrescritas
+
+**Uso:**
+```javascript
+import { getProfile } from './helpers/profiles.js';
+export const options = getProfile('light', { iterations: 10 });
+```
+
+---
+
+### `helpers/report.js`
+
+**Localização:** `/load-tests/helpers/report.js`
+
+**O que faz:** Módulo compartilhado para geração padronizada de relatórios de teste k6.
+
+**Propósito:** Centralizar a lógica de `handleSummary()` que estava duplicada em ~18 arquivos, e atualizar a versão do `k6-summary` de `0.0.2` para `latest`.
+
+**Exports:**
+- `generateReport(data, testName)` — Gera objeto de saída com `stdout` (textSummary) e arquivo JSON
+
+**Uso:**
+```javascript
+import { generateReport } from './helpers/report.js';
+export function handleSummary(data) {
+  return generateReport(data, 'meu_teste');
+}
+```
+
+**Observação:** Utiliza `https://jslib.k6.io/k6-summary/latest/index.js` em vez da versão fixa `0.0.2`.
+
+---
+
 ## Padrões e Convenções Comuns
 
 ### Padrões Estruturais
 
-1. **`setup()` + `default()`** — A maioria dos scripts segue o padrão de função `setup()` para autenticação e `default()` para execução dos testes.
+1. **`setup()` + `default()`** — A maioria dos scripts segue o padrão de função `setup()` para autenticação e `default()` para execução dos testes. A autenticação é centralizada via `helpers/auth.js`.
 
-2. **Autenticação via JWT** — Praticamente todos os testes administrativos fazem login via `POST /api/v1/auth/login` e extraem o token JWT de `data.token` no corpo da resposta.
+2. **Autenticação via JWT** — Praticamente todos os testes administrativos fazem login via `POST /api/auth/login` e extraem o token JWT de `data.token` no corpo da resposta, usando `helpers/auth.js`.
 
-3. **IP Spoofing** — Vários testes de carga usam `getRandomIP()` para gerar IPs aleatórios e evitar rate limit baseado em IP, enviando header `X-Forwarded-For`.
+3. **Configuração centralizada** — Todos os scripts importam `BASE_URL` de `helpers/config.js` em vez de declarar localmente.
 
-4. **Relatórios** — Múltiplos scripts implementam `handleSummary()` gerando relatórios em `./reports/k6-summaries/`.
+4. **Perfis de carga padronizados** — Os scripts usam `getProfile()` de `helpers/profiles.js` para definir VUs, duração e thresholds, garantindo consistência.
 
-5. **Tags de métricas** — Uso de `tags` para categorizar requisições e filtrar thresholds por fluxo específico.
+5. **Relatórios padronizados** — Os scripts usam `generateReport()` de `helpers/report.js` para gerar relatórios JSON em `./reports/k6-summaries/`.
+
+6. **IP Spoofing** — Os testes de carga que precisam evitar rate limit usam `getRandomIP()` de `helpers/network.js`.
+
+7. **Tags de métricas** — Uso de `tags` para categorizar requisições e filtrar thresholds por fluxo específico.
 
 ### Endpoints Utilizados
 
 | Categoria | Endpoints |
 |-----------|-----------|
-| **Autenticação** | `POST /api/v1/auth/login` |
-| **Saúde/Monitoramento** | `GET /`, `GET /api/v1/health`, `GET /api/v1/status` |
+| **Autenticação** | `POST /api/auth/login` |
+| **Saúde/Monitoramento** | `GET /api/status?mode=health` |
 | **Músicas (Admin)** | `GET/POST/PUT/DELETE /api/admin/musicas` |
 | **Vídeos (Admin)** | `GET/POST/PUT/DELETE /api/admin/videos` |
 | **Posts (Admin)** | `POST /api/admin/posts` |
 | **Posts (Público)** | `GET /api/posts` |
 | **Backup** | `GET /api/admin/backups` |
-| **Configurações** | `GET /api/v1/settings` |
-| **Busca** | `GET /api/musicas?search=`, `GET /api/search?q=` |
 | **Upload** | `POST /api/admin/upload` |
 
-### Thresholds Comuns
+### Thresholds por Perfil
 
-| Threshold | Valor | Onde é usado |
-|-----------|-------|-------------|
-| `p(95) < 300ms` | Performance | Testes de carga de músicas e vídeos |
-| `p(95) < 500ms` | Performance | Testes combinados e CRUD |
-| `p(95) < 100ms` | Performance crítica | Health check |
-| `rate < 0.01` | Taxa de erro < 1% | Testes de carga |
-| `rate > 0.99` | Taxa de sucesso > 99% | Testes de autenticação |
+| Perfil | Threshold | Onde é usado |
+|--------|-----------|-------------|
+| `health` | `p(95) < 100ms` | Health check |
+| `medium` | `p(95) < 300ms`, `failed < 1%` | Testes de carga de músicas e vídeos |
+| `light` | `p(95) < 500ms`, `checks == 100%` | Testes funcionais e CRUD |
+| `heavy` | `p(95) < 2000ms`, `failed < 5%` | Testes de estresse e DDoS |
+
+### Módulos Compartilhados
+
+| Módulo | Localização | Função |
+|--------|-------------|--------|
+| `auth.js` | `helpers/auth.js` | Autenticação centralizada (login + extração de token) |
+| `config.js` | `helpers/config.js` | Configuração de ambiente centralizada |
+| `network.js` | `helpers/network.js` | Utilitários de rede (`getRandomIP()`) |
+| `profiles.js` | `helpers/profiles.js` | Perfis de carga padronizados |
+| `report.js` | `helpers/report.js` | Geração de relatórios padronizados |
 
 ---
 
-> **Data da análise:** 13/05/2026 (atualizado)
-> **Total de scripts analisados:** 28 scripts k6 + 1 arquivo de configuração + 1 workflow CI
+> **Data da análise:** 13/05/2026
+> **Última atualização:** 23/05/2026
+> **Total de scripts analisados:** 28 scripts k6 + 1 arquivo de configuração + 1 workflow CI + 5 módulos helpers

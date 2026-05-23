@@ -1,18 +1,16 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
+import { BASE_URL } from './helpers/config.js';
+import { getProfile } from './helpers/profiles.js';
+import { generateReport } from './helpers/report.js';
 
-export const options = {
-  // Teste funcional: poucas iterações para validar a lógica da busca
-  vus: 1,
+export const options = getProfile('light', {
   iterations: 10,
   thresholds: {
-    checks: ['rate==1.0'], // 100% das verificações devem passar
-    http_req_duration: ['p(95)<500'], // Busca deve ser rápida
+    checks: ['rate==1.0'],
+    http_req_duration: ['p(95)<500'],
   },
-};
-
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
+});
 
 // Termos comuns que provavelmente existem no banco de dados
 const SEARCH_TERMS = ['Deus', 'Jesus', 'amor', 'fé', 'vida', 'caminho', 'luz'];
@@ -22,8 +20,6 @@ export default function () {
   const term = SEARCH_TERMS[Math.floor(Math.random() * SEARCH_TERMS.length)];
   
   // Realiza a busca
-  // Adiciona encodeURIComponent para caracteres especiais e paginação explícita para evitar erros de backend
-  // Alterado de /api/posts para /api/posts, que é a rota pública mais provável para busca.
   const res = http.get(`${BASE_URL}/api/posts?search=${encodeURIComponent(term)}&page=1&limit=10`);
 
   const success = check(res, {
@@ -45,13 +41,12 @@ export default function () {
       const posts = body.data || body;
       
       if (!Array.isArray(posts)) return false;
-      if (posts.length === 0) return true; // Se não achou nada, não é erro de lógica
+      if (posts.length === 0) return true;
 
       // Verifica se pelo menos um dos posts retornados contém o termo (case insensitive)
       const matchFound = posts.some(post => {
         const title = (post.title || '').toLowerCase();
         const content = (post.content || post.excerpt || post.description || '').toLowerCase();
-        // Verifica também nas tags, se existirem
         const tags = Array.isArray(post.tags) ? post.tags.join(' ') : (typeof post.tags === 'string' ? post.tags : '');
         
         const searchTerm = term.toLowerCase();
@@ -60,9 +55,7 @@ export default function () {
 
       if (!matchFound) {
         const titles = posts.map(p => p.title).slice(0, 3).join(', ');
-        console.log(`⚠️ Busca retornou resultados (${titles}...), mas termo "${term}" não foi encontrado visualmente. (Pode estar no conteúdo completo)`);
-        // Soft pass: Assumimos que o backend está correto para evitar falsos negativos no teste de carga
-        return true;
+        console.warn(`⚠️ Busca retornou resultados (${titles}...), mas termo "${term}" não foi encontrado visualmente. (Pode estar no conteúdo completo)`);
       }
       
       return true;
@@ -77,8 +70,5 @@ export default function () {
 }
 
 export function handleSummary(data) {
-  return {
-    'stdout': textSummary(data, { indent: ' ', enableColors: true }),
-    './reports/k6-summaries/search_content_test.json': JSON.stringify(data, null, 4),
-  };
+  return generateReport(data, 'search_content_test');
 }

@@ -1,28 +1,23 @@
 import http from 'k6/http';
 import { check } from 'k6';
 import { Rate } from 'k6/metrics';
-import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
+import { BASE_URL } from './helpers/config.js';
+import { getProfile } from './helpers/profiles.js';
+import { generateReport } from './helpers/report.js';
 
 // Métrica personalizada para rastrear especificamente erros do servidor (5xx)
 const ErrorRate500 = new Rate('errors_500');
 
-export const options = {
-  // Configuração para simular um pico repentino de tráfego (Flash Crowd / DDoS)
+export const options = getProfile('heavy', {
   stages: [
-    { duration: '10s', target: 100 }, // Ramp-up agressivo para 100 usuários simultâneos
-    { duration: '30s', target: 500 }, // Aumenta para 500 usuários (carga muito alta para dev/local)
-    { duration: '10s', target: 0 },   // Encerra
+    { duration: '10s', target: 100 },
+    { duration: '30s', target: 500 },
+    { duration: '10s', target: 0 },
   ],
   thresholds: {
-    // O threshold 'http_req_failed' foi removido. Em um teste de DDoS, é esperado
-    // que a maioria das requisições falhe com status 429 (Too Many Requests),
-    // o que é um comportamento desejado e não um erro do servidor.
-    // Configuração para ABORTAR o teste se erros 500 passarem de 10%
     'errors_500': [{ threshold: 'rate<0.10', abortOnFail: true, delayAbortEval: '5s' }],
   },
-};
-
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
+});
 
 // Lista de termos para variar a busca e evitar cache de query exata
 const SEARCH_TERMS = ['amor', 'paz', 'fé', 'luz', 'vida', 'caminho', 'verdade', 'esperança', 'coração', 'espírito'];
@@ -32,14 +27,11 @@ export default function () {
   const term = SEARCH_TERMS[Math.floor(Math.random() * SEARCH_TERMS.length)];
   
   // Adiciona um timestamp para "cache busting" (forçar o servidor a processar a requisição)
-  // Isso simula atacantes tentando evitar respostas cacheadas por CDNs ou proxies
-  const uniqueParam = Date.now(); 
+  const uniqueParam = Date.now();
 
   // Dispara a requisição GET contra a rota de posts (busca)
   const res = http.get(`${BASE_URL}/api/posts?search=${encodeURIComponent(term)}&_t=${uniqueParam}`, {
     tags: { type: 'ddos_search', name: 'DDoS_Search' },
-    // Informa ao k6 que 200 (sucesso) e 429 (rate limit) são respostas esperadas.
-    // Isso fará com que a métrica 'http_req_failed' fique próxima de 0%.
     expectedStatuses: [200, 429],
   });
 
@@ -57,9 +49,5 @@ export default function () {
 }
 
 export function handleSummary(data) {
-  // Salva o relatório sem expor dados sensíveis (neste teste não há token, mas mantemos o padrão)
-  return {
-    'stdout': textSummary(data, { indent: ' ', enableColors: true }),
-    './reports/k6-summaries/ddos_search_test.json': JSON.stringify(data, null, 4),
-  };
+  return generateReport(data, 'ddos_search_test');
 }

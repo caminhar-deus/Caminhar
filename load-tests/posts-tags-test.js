@@ -1,18 +1,16 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
+import { BASE_URL } from './helpers/config.js';
+import { getProfile } from './helpers/profiles.js';
+import { generateReport } from './helpers/report.js';
 
-export const options = {
-  // Teste funcional de filtro por tag
-  vus: 1,
+export const options = getProfile('light', {
   iterations: 5,
   thresholds: {
-    checks: ['rate==1.0'], // 100% de sucesso esperado
-    http_req_duration: ['p(95)<500'], // Resposta rápida
+    checks: ['rate==1.0'],
+    http_req_duration: ['p(95)<500'],
   },
-};
-
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
+});
 
 // Tags comuns que provavelmente existem no banco de dados
 const SEARCH_TAGS = ['fé', 'oração', 'bíblia', 'vida', 'espiritualidade'];
@@ -20,8 +18,6 @@ const SEARCH_TAGS = ['fé', 'oração', 'bíblia', 'vida', 'espiritualidade'];
 export default function () {
   const tag = SEARCH_TAGS[Math.floor(Math.random() * SEARCH_TAGS.length)];
   
-  // Assume que a API suporta ?tag= para filtrar por tag
-  // Ajustado para a rota pública correta (/api/posts) em vez de /api/posts
   const res = http.get(`${BASE_URL}/api/posts?tag=${encodeURIComponent(tag)}`);
 
   check(res, {
@@ -38,19 +34,15 @@ export default function () {
       let body; try { body = r.json(); } catch (e) { return false; }
       const posts = body.data || body;
       
-      if (posts.length === 0) return true; // Lista vazia é válida se não houver match
+      if (posts.length === 0) return true;
 
-      // Verifica se pelo menos um post retornado contém a tag (case insensitive)
-      // Assume que o post tem um array de tags ou uma string de tags
       const matchFound = posts.some(p => {
         const tags = Array.isArray(p.tags) ? p.tags : (p.tags || '').split(',');
         return tags.some(t => t.trim().toLowerCase() === tag.toLowerCase());
       });
 
       if (!matchFound) {
-        console.log(`⚠️ API retornou ${posts.length} posts para tag "${tag}", mas a tag não foi encontrada visualmente na resposta.`);
-        // Soft pass: Assumimos que o backend filtrou corretamente (pode ser tag oculta ou normalização diferente)
-        return true;
+        console.warn(`⚠️ API retornou ${posts.length} posts para tag "${tag}", mas a tag não foi encontrada visualmente na resposta. Pode ser tag oculta ou normalização diferente.`);
       }
       return true;
     }
@@ -60,8 +52,5 @@ export default function () {
 }
 
 export function handleSummary(data) {
-  return {
-    'stdout': textSummary(data, { indent: ' ', enableColors: true }),
-    './reports/k6-summaries/posts_tags_test.json': JSON.stringify(data, null, 4),
-  };
+  return generateReport(data, 'posts_tags_test');
 }
