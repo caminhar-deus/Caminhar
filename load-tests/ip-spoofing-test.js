@@ -1,6 +1,7 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
+import { getRandomIP } from './helpers/network.js';
 
 export const options = {
   vus: 10, // 10 usuários simultâneos atacando
@@ -8,12 +9,6 @@ export const options = {
 };
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
-
-// Função auxiliar para gerar um endereço IPv4 aleatório
-function getRandomIP() {
-  const octet = () => Math.floor(Math.random() * 255);
-  return `${octet()}.${octet()}.${octet()}.${octet()}`;
-}
 
 export default function () {
   // Gera um IP único para esta iteração

@@ -46,7 +46,7 @@
 
 ## Visão Geral
 
-A pasta `load-tests/` contém **29 arquivos** (28 scripts de teste em k6 + 1 configuração JSON) que compõem a suíte de testes de carga, stress, performance e segurança do projeto **Caminhar**. Todos os scripts utilizam a ferramenta [k6](https://k6.io/) da Grafana Labs.
+A pasta `load-tests/` contém **30 arquivos** (28 scripts de teste em k6 + 1 configuração JSON + 1 módulo helper) que compõem a suíte de testes de carga, stress, performance e segurança do projeto **Caminhar**. Todos os scripts utilizam a ferramenta [k6](https://k6.io/) da Grafana Labs.
 
 Os testes estão organizados em categorias funcionais:
 
@@ -60,6 +60,7 @@ Os testes estão organizados em categorias funcionais:
 | **Cache** | 2 | Headers de cache, performance de cache |
 | **Fluxos Combinados** | 2 | Stress test combinado, upload flow |
 | **Configuração** | 1 | env-config.json |
+| **Helpers** | 1 | helpers/network.js |
 | **CI/CD** | 1 | load-tests.yml (workflow) |
 
 ---
@@ -307,7 +308,7 @@ Os testes estão organizados em categorias funcionais:
 **Estrutura:**
 - 3 estágios: ramp-up (5s, 5 VUs), manter (10s), ramp-down (5s)
 - `setup()` — Login, retorna token
-- Função `getRandomIP()` — Gera IP aleatório para evitar rate limit
+- Usa `getRandomIP()` do módulo compartilhado `helpers/network.js` para evitar rate limit
 - `handleSummary()` — Gera relatório JSON
 
 **Endpoints chamados:**
@@ -613,7 +614,7 @@ Os testes estão organizados em categorias funcionais:
 **Estrutura:**
 - 3 estágios: ramp-up (5s, 5 VUs), manter (10s), ramp-down (5s)
 - `setup()` — Login como admin
-- `getRandomIP()` — Evita rate limit por IP
+- Usa `getRandomIP()` do módulo compartilhado `helpers/network.js` para evitar rate limit
 - `handleSummary()` — Gera relatório JSON
 
 **Endpoints chamados:**

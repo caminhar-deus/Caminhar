@@ -3,6 +3,7 @@ import { check, sleep } from 'k6';
 import { Trend } from 'k6/metrics';
 import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 import { htmlReport } from 'https://raw.githubusercontent.com/benc-uk/k6-reporter/main/dist/bundle.js';
+import { getRandomIP } from './helpers/network.js';
 
 // --- Métricas Customizadas (Monitoramento) ---
 const MemoryRss = new Trend('nodejs_memory_rss_bytes');
@@ -68,12 +69,6 @@ export function setup() {
   }
 
   return { token: loginRes.json('data.token') };
-}
-
-// Função auxiliar para gerar um endereço IPv4 aleatório
-function getRandomIP() {
-  const octet = () => Math.floor(Math.random() * 255);
-  return `${octet()}.${octet()}.${octet()}.${octet()}`;
 }
 
 // --- Função do Cenário de Estresse ---

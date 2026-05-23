@@ -1,5 +1,6 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
+import { getRandomIP } from './helpers/network.js';
 
 export const options = {
   stages: [
@@ -32,12 +33,6 @@ export function setup() {
   }
 
   return loginRes.json('data.token');
-}
-
-// Função auxiliar para gerar um endereço IPv4 aleatório
-function getRandomIP() {
-  const octet = () => Math.floor(Math.random() * 255);
-  return `${octet()}.${octet()}.${octet()}.${octet()}`;
 }
 
 export default function (token) {

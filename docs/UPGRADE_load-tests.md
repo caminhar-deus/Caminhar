@@ -18,21 +18,22 @@
 
 ## 1. Duplicidade de Código
 
-### 1.1 Função `getRandomIP()` duplicada em múltiplos arquivos
+### 1.1 Função `getRandomIP()` duplicada em múltiplos arquivos — **RESOLVIDO (23/05/2026)**
 
-**Severidade:** ⚠️ Média
+**Severidade anterior:** ⚠️ Média
 
-**Arquivos afetados:**
+**Arquivos afetados originalmente:**
 - `/load-tests/musicas-load-test.js`
-- `/load-tests/musicas-crud-test.js`
 - `/load-tests/stress-test-combined.js`
 - `/load-tests/videos-load-test.js`
-- `/load-tests/videos-crud-test.js`
-- (potencialmente outros)
+- `/load-tests/cache-performance-test.js`
+- `/load-tests/ip-spoofing-test.js`
 
-**Problema:** A função `getRandomIP()` que gera endereços IPv4 aleatórios está implementada identicamente em pelo menos 5 arquivos diferentes.
+> **Nota:** A documentação original listava `musicas-crud-test.js` e `videos-crud-test.js`, mas estes arquivos **não possuíam** a função `getRandomIP()`. Os arquivos corretos (`cache-performance-test.js` e `ip-spoofing-test.js`) foram identificados e corrigidos.
 
-**Código duplicado:**
+**Problema original:** A função `getRandomIP()` que gera endereços IPv4 aleatórios estava implementada identicamente em 5 arquivos diferentes.
+
+**Código duplicado removido:**
 ```javascript
 function getRandomIP() {
   const octet = () => Math.floor(Math.random() * 255);
@@ -40,9 +41,14 @@ function getRandomIP() {
 }
 ```
 
-**Sugestão:** Extrair para um módulo compartilhado (ex: `load-tests/helpers/network.js`) e importar onde necessário. k6 suporta importação de módulos locais com sintaxe ES module.
+**O que foi feito (23/05/2026):**
+1. Criado módulo compartilhado `load-tests/helpers/network.js` com a função `getRandomIP()`
+2. Adicionado `import { getRandomIP } from './helpers/network.js'` nos 5 arquivos afetados
+3. Removida a declaração local da função `getRandomIP()` de cada arquivo
+4. Atualizada a documentação com a lista correta de arquivos
 
----
+**Sugestão original:** Extrair para um módulo compartilhado (ex: `load-tests/helpers/network.js`) e importar onde necessário. k6 suporta importação de módulos locais com sintaxe ES module.
+
 
 ### 1.2 Lógica de login repetida em ~90% dos arquivos
 
