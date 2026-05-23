@@ -743,15 +743,16 @@ Os testes estão organizados em categorias funcionais:
 ```json
 {
   "BASE_URL": "http://localhost:3000",
-  "ADMIN_USERNAME": "admin",
-  "ADMIN_PASSWORD": "123456"
+  "ADMIN_USERNAME": "CHANGE_ME",
+  "ADMIN_PASSWORD": "CHANGE_ME"
 }
 ```
 
 **Observações:**
 - Define URL base como `http://localhost:3000`
-- Credenciais de admin em texto plano (aceitável apenas para ambiente local/teste)
+- Credenciais de admin definidas como `CHANGE_ME` para forçar configuração explícita via variáveis de ambiente
 - O valor é referenciado via módulo `helpers/config.js`, que também tenta ler de `__ENV`
+- **Nota de segurança:** As credenciais reais não devem ser armazenadas neste arquivo. Devem ser configuradas via variáveis de ambiente (`__ENV.ADMIN_USERNAME` e `__ENV.ADMIN_PASSWORD`) ou GitHub Secrets no CI
 
 ---
 
@@ -821,14 +822,16 @@ export function setup() {
 
 **Exports:**
 - `BASE_URL` — Lê de `__ENV.BASE_URL` com fallback para `'http://localhost:3000'`
-- `USERNAME` — Lê de `__ENV.ADMIN_USERNAME` com fallback para `'admin'`
-- `PASSWORD` — Lê de `__ENV.ADMIN_PASSWORD` com fallback para `'123456'`
+- `USERNAME` — Lê de `__ENV.ADMIN_USERNAME` com fallback para `'CHANGE_ME'` (força falha se não configurado)
+- `PASSWORD` — Lê de `__ENV.ADMIN_PASSWORD` com fallback para `'CHANGE_ME'` (força falha se não configurado)
 - `getConfig()` — Função que retorna objeto com todas as configurações
 
 **Uso:**
 ```javascript
 import { BASE_URL } from './helpers/config.js';
 ```
+
+**Nota de segurança (23/05/2026):** Os fallbacks de `USERNAME` e `PASSWORD` foram alterados de valores reais (`'admin'` / `'123456'`) para `'CHANGE_ME'` para evitar que credenciais reais sejam expostas no código-fonte. Agora é obrigatório configurar `__ENV.ADMIN_USERNAME` e `__ENV.ADMIN_PASSWORD` para executar os testes que requerem autenticação.
 
 ---
 

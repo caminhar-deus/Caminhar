@@ -77,8 +77,8 @@ jobs:
           DATABASE_URL: postgres://test_user:test_password@localhost:5432/caminhar_test
           REDIS_URL: redis://localhost:6379
           JWT_SECRET: test-jwt-secret-for-load-tests
-          ADMIN_USERNAME: admin
-          ADMIN_PASSWORD: password123
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME || 'admin' }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           LOG_LEVEL: error # Reduz ruído nos logs durante carga alta
 
       - name: Setup k6
@@ -88,8 +88,8 @@ jobs:
         run: k6 run load-tests/stress-test-combined.js
         env:
           BASE_URL: http://localhost:3000
-          ADMIN_USERNAME: admin
-          ADMIN_PASSWORD: password123
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME || 'admin' }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
 
       - name: Upload Test Reports
         if: always() # Executa mesmo se os testes falharem para podermos analisar o motivo

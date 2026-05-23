@@ -165,20 +165,27 @@ const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
 
 ## 2. Problemas de Segurança
 
-### 2.1 Credenciais de admin em texto plano
+### 2.1 Credenciais de admin em texto plano — **RESOLVIDO (23/05/2026)**
 
-**Severidade:** 🔴 Alta
+**Severidade anterior:** 🔴 Alta
 
-**Arquivos afetados:**
+**Arquivos afetados originalmente:**
 - `/load-tests/env-config.json` (credenciais: `admin` / `123456`)
-- Todos os 28 scripts com fallback `ADMIN_PASSWORD || '123456'`
+- `/load-tests/helpers/config.js` (fallbacks: `ADMIN_PASSWORD || '123456'`)
+- `/load-tests.yml` (CI) (credenciais: `admin` / `password123`)
 
-**Problema:** Credenciais de administrador hardcoded no código-fonte e no arquivo de configuração. Embora o repositório seja provavelmente privado, estas senhas podem ser descobertas por qualquer pessoa com acesso ao repositório.
+**Problema original:** Credenciais de administrador hardcoded no código-fonte, no arquivo de configuração e no workflow CI. Havia **3 valores diferentes** de senha dependendo do local:
+| Local | Username | Password |
+|-------|----------|----------|
+| `env-config.json` | `admin` | `123456` |
+| `load-tests.yml` (CI) | `admin` | `password123` |
+| Fallback em `config.js` | `admin` | `123456` |
 
-**Sugestão:**
-- Usar apenas variáveis de ambiente (`__ENV`) sem fallback para valores reais
-- O fallback deve ser um valor dummy que claramente falhará (ex: `'CHANGE_ME'`)
-- Documentar que as credenciais devem ser configuradas via CI/CD secrets ou arquivo `.env.local`
+**O que foi feito (23/05/2026):**
+1. **`load-tests/env-config.json`**: Substituídos valores reais por `CHANGE_ME` para forçar falha se não configurado
+2. **`load-tests/helpers/config.js`**: Fallback de `USERNAME` e `PASSWORD` alterado de `'admin'` / `'123456'` para `'CHANGE_ME'` / `'CHANGE_ME'`
+3. **`load-tests.yml`**: Removidas senhas hardcoded; agora usa `${{ secrets.ADMIN_PASSWORD }}` e `${{ secrets.ADMIN_USERNAME || 'admin' }}`
+4. **Documentação**: Este relatório atualizado com a resolução
 
 ---
 
@@ -498,19 +505,13 @@ import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 
 ---
 
-### 6.4 Senha diferente entre configurações
+### 6.4 Senha diferente entre configurações — **RESOLVIDO (23/05/2026)**
 
-**Severidade:** ⚠️ Média
+**Severidade anterior:** ⚠️ Média
 
-**Problema:** A senha de admin no `env-config.json` é `123456`, mas no workflow CI (`load-tests.yml` linha 105) é `password123`. Isso pode causar falhas se o desenvolvedor tentar rodar os testes localmente com valores diferentes.
+**Problema original:** Havia **3 valores diferentes** de senha dependendo do local, que podiam causar falhas se o desenvolvedor tentasse rodar os testes localmente com valores diferentes.
 
-| Local | Username | Password |
-|-------|----------|----------|
-| `env-config.json` | `admin` | `123456` |
-| `load-tests.yml` (CI) | `admin` | `password123` |
-| Fallback nos scripts | `admin` | `123456` |
-
-**Sugestão:** Sincronizar as credenciais entre ambiente local e CI, ou documentar claramente que as credenciais de CI são configuradas via secrets do GitHub Actions.
+**Status:** Resolvido juntamente com a seção [2.1 Credenciais de admin em texto plano](#21-credenciais-de-admin-em-texto-plano---resolvido-23052026). Consulte aquela seção para detalhes completos.
 
 ---
 
@@ -520,14 +521,14 @@ import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 |-----------|-----------|-----------|---------|---------|--------|
 | 🔴 **Crítica** | Duplicidade | Lógica de login duplicada em 18+ arquivos | Médio | Muito Alto | ✅ Resolvido (23/05/2026) |
 | 🔴 **Crítica** | Duplicidade | `handleSummary()` duplicado em múltiplos arquivos | Baixo | Alto | ✅ Resolvido (23/05/2026) |
-| 🔴 **Crítica** | Segurança | Credenciais hardcoded em texto plano | Baixo | Alto | ❌ Pendente |
+| 🔴 **Crítica** | Segurança | Credenciais hardcoded em texto plano | Baixo | Alto | ✅ Resolvido (23/05/2026) |
 | ⚠️ **Alta** | Duplicidade | Função `getRandomIP()` duplicada | Baixo | Médio | ✅ Resolvido (23/05/2026) |
 | ⚠️ **Alta** | Duplicidade | Configuração de ambiente duplicada | Baixo | Médio | ✅ Resolvido (23/05/2026) |
 | ⚠️ **Alta** | Segurança | Header `X-Forwarded-For` usado para burlar rate limit | Médio | Alto | ❌ Pendente |
 | ⚠️ **Alta** | CI/CD | Workflow executa apenas 1 dos 28 testes | Alto | Muito Alto | ❌ Pendente |
 | ⚠️ **Alta** | Performance | Thresholds inconsistentes entre testes similares | Médio | Médio | ✅ Resolvido (23/05/2026) |
 | ⚠️ **Alta** | Manutenção | Rotas sem versionamento consistente (`/api` vs `/api/v1`) | Baixo | Médio | ✅ Resolvido (13/05/2026) |
-| ⚠️ **Alta** | CI/CD | Senhas diferentes entre env-config.json e CI | Baixo | Alto | ❌ Pendente |
+| ⚠️ **Alta** | CI/CD | Senhas diferentes entre env-config.json e CI | Baixo | Alto | ✅ Resolvido (23/05/2026) |
 | ⚠️ **Alta** | Manutenção | Ausência de `teardown()` na maioria dos testes | Médio | Médio | ❌ Pendente |
 | ⚠️ **Alta** | Segurança | Token JWT exposto em relatórios | Baixo | Médio | ❌ Pendente |
 | ⚠️ **Média** | Manutenção | Configuração de carga inconsistente entre testes | Alto | Médio | ✅ Resolvido (23/05/2026) |
