@@ -70,7 +70,7 @@ Este documento reporta problemas, oportunidades de melhoria e recomendações id
 
 **Problema:**
 - O `cy.intercept` capturava **qualquer** requisição `GET /api/posts`, independentemente de parâmetros de query, paginação ou filtros.
-- Caso a página `/blog/post-de-teste-com-imagem` fizesse mais de uma requisição para `/api/posts` ou endpoints relacionados (ex: `/api/posts?slug=...`), o mock poderia gerar comportamento inesperado.
+- Caso a página `/blog/mulher-virtuosa` fizesse mais de uma requisição para `/api/posts` ou endpoints relacionados (ex: `/api/posts?slug=...`), o mock poderia gerar comportamento inesperado.
 
 **O que foi feito:**
 - O mock agora é específico para o slug do post:
@@ -136,7 +136,7 @@ Este documento reporta problemas, oportunidades de melhoria e recomendações id
 ### ✅ RESOLVIDO
 
 **Problema:**
-- O slug `'post-de-teste-com-imagem'` estava hardcoded e dependia do mock estar sincronizado.
+- O slug `'mulher-virtuosa'` estava hardcoded e dependia do mock estar sincronizado.
 - Se o slug mudasse no mock, o `cy.visit` quebrava.
 - Criava duplicidade de informação (slug no mock e slug na URL).
 
@@ -144,7 +144,7 @@ Este documento reporta problemas, oportunidades de melhoria e recomendações id
 - O mock foi extraído para uma constante `postMock` no escopo do `describe`.
 - A navegação agora usa o slug extraído do próprio mock:
   ```js
-  const postMock = { slug: 'post-de-teste-com-imagem', /* ... */ };
+  const postMock = { slug: 'mulher-virtuosa', /* ... */ };
   cy.visit(`/blog/${postMock.slug}`);
   ```
 

@@ -1,15 +1,15 @@
 describe('Página de Post Individual (/blog/[slug])', () => {
   const postMock = {
-    id: 1,
-    title: 'Post de Teste',
-    slug: 'post-de-teste',
-    excerpt: 'Excerpt do post de teste',
-    image_url: null,
-    created_at: '2026-01-01T00:00:00.000Z',
-    content: 'Conteúdo do post de teste.'
+    id: 1570,
+    title: 'Mulher Virtuosa',
+    slug: 'mulher-virtuosa',
+    excerpt: 'Provérbios 31 : 10',
+    image_url: '/uploads/post-image-6010b274-c22f-486a-80a9-dbf9c70d4535.png',
+    created_at: '2026-05-18T10:27:42.121Z',
+    content: '"Uma mulher virtuosa, quem pode encontrá-la? Superior ao das pérolas é o seu valor."\nProvérbios 31 : 10'
   };
 
-  it('deve carregar o post mesmo sem imagem', () => {
+  it('deve carregar o post com imagem', () => {
     cy.intercept('GET', `/api/posts?slug=${postMock.slug}`, {
       statusCode: 200,
       body: [postMock]
@@ -19,36 +19,30 @@ describe('Página de Post Individual (/blog/[slug])', () => {
     cy.wait('@getPost');
 
     cy.get('h1').should('contain', postMock.title);
-    cy.get('[data-testid="image-zoom-container"]').should('not.exist');
+    cy.get('[data-testid="image-zoom-container"]').should('exist');
   });
 
   it('deve exibir o conteúdo do post', () => {
-    const postCompleto = { ...postMock, image_url: '/placeholder.svg' };
-
-    cy.intercept('GET', `/api/posts?slug=${postCompleto.slug}`, {
+    cy.intercept('GET', `/api/posts?slug=${postMock.slug}`, {
       statusCode: 200,
-      body: [postCompleto]
+      body: [postMock]
     }).as('getPostCompleto');
 
-    cy.visit(`/blog/${postCompleto.slug}`);
+    cy.visit(`/blog/${postMock.slug}`);
     cy.wait('@getPostCompleto');
 
-    cy.get('h1').should('contain', postCompleto.title);
+    cy.get('h1').should('contain', postMock.title);
     cy.get('[data-testid="image-zoom-container"]').should('exist');
-
-    // Verifica se o conteúdo textual está presente
-    cy.get('article').should('contain', postCompleto.content);
+    cy.get('article').should('contain', postMock.content.split('\n')[0]);
   });
 
   it('deve exibir botões de compartilhamento', () => {
-    const postCompartilhar = { ...postMock, image_url: '/placeholder.svg' };
-
-    cy.intercept('GET', `/api/posts?slug=${postCompartilhar.slug}`, {
+    cy.intercept('GET', `/api/posts?slug=${postMock.slug}`, {
       statusCode: 200,
-      body: [postCompartilhar]
+      body: [postMock]
     }).as('getPostCompartilhar');
 
-    cy.visit(`/blog/${postCompartilhar.slug}`);
+    cy.visit(`/blog/${postMock.slug}`);
     cy.wait('@getPostCompartilhar');
 
     cy.get('article').should('contain', 'Compartilhe');

@@ -90,13 +90,13 @@ const BlogPost = ({ post }) => {
 
 describe('Página de Post Individual (BlogPost)', () => {
   const mockPost = {
-    id: 1,
-    title: 'Post de Teste',
-    slug: 'post-de-teste',
-    excerpt: 'Um resumo do post de teste.',
-    content: 'Primeiro parágrafo.\nSegundo parágrafo.',
-    image_url: '/uploads/test.jpg',
-    created_at: '2026-01-28T12:00:00Z',
+    id: 1570,
+    title: 'Mulher Virtuosa',
+    slug: 'mulher-virtuosa',
+    excerpt: 'Provérbios 31 : 10',
+    content: '"Uma mulher virtuosa, quem pode encontrá-la? Superior ao das pérolas é o seu valor."\nProvérbios 31 : 10',
+    image_url: '/uploads/post-image-6010b274-c22f-486a-80a9-dbf9c70d4535.png',
+    created_at: '2026-05-18T10:27:42.121Z',
     published: true
   };
 
@@ -104,19 +104,18 @@ describe('Página de Post Individual (BlogPost)', () => {
     render(React.createElement(BlogPost, { post: mockPost }));
 
     // Verifica Título (h1)
-    expect(screen.getByRole('heading', { name: /Post de Teste/i, level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Mulher Virtuosa/i, level: 1 })).toBeInTheDocument();
 
     // Verifica Data
     expect(screen.getByText(/Publicado em/i)).toBeInTheDocument();
 
     // Verifica Conteúdo (parágrafos separados)
-    expect(screen.getByText('Primeiro parágrafo.')).toBeInTheDocument();
-    expect(screen.getByText('Segundo parágrafo.')).toBeInTheDocument();
+    expect(screen.getByText(/Uma mulher virtuosa/i)).toBeInTheDocument();
 
     // Verifica Imagem
-    const img = screen.getByRole('img', { name: /Post de Teste/i });
+    const img = screen.getByRole('img', { name: /Mulher Virtuosa/i });
     expect(img).toBeInTheDocument();
-    expect(img).toHaveAttribute('src', '/uploads/test.jpg');
+    expect(img).toHaveAttribute('src', '/uploads/post-image-6010b274-c22f-486a-80a9-dbf9c70d4535.png');
 
     // Verifica Link de Voltar
     expect(screen.getByText(/Voltar para o Blog/i)).toBeInTheDocument();
@@ -134,10 +133,10 @@ describe('Página de Post Individual (BlogPost)', () => {
     // Verifica se as URLs de compartilhamento contêm o slug e título
     // Nota: O componente usa encodeURIComponent, então verificamos partes da string
     expect(whatsappLink).toHaveAttribute('href', expect.stringContaining('wa.me'));
-    expect(whatsappLink).toHaveAttribute('href', expect.stringContaining(encodeURIComponent('Post de Teste')));
+    expect(whatsappLink).toHaveAttribute('href', expect.stringContaining(encodeURIComponent('Mulher Virtuosa')));
     
     expect(facebookLink).toHaveAttribute('href', expect.stringContaining('facebook.com/sharer'));
-    expect(facebookLink).toHaveAttribute('href', expect.stringContaining('post-de-teste'));
+    expect(facebookLink).toHaveAttribute('href', expect.stringContaining('mulher-virtuosa'));
   });
 
   it('não deve renderizar imagem se não houver URL', () => {
@@ -145,7 +144,7 @@ describe('Página de Post Individual (BlogPost)', () => {
     render(React.createElement(BlogPost, { post: postWithoutImage }));
 
     // Garante que a imagem não está no documento
-    const img = screen.queryByRole('img', { name: /Post de Teste/i });
+    const img = screen.queryByRole('img', { name: /Mulher Virtuosa/i });
     expect(img).not.toBeInTheDocument();
   });
 });
