@@ -1,6 +1,8 @@
 import http from 'k6/http';
 import { check } from 'k6';
 import { randomSleep } from './helpers/sleep.js';
+import { setup } from './helpers/auth.js';
+import { BASE_URL } from './helpers/config.js';
 
 export const options = {
   stages: [
@@ -14,35 +16,18 @@ export const options = {
   },
 };
 
-// --- Configuração do Teste ---
-const USERNAME = __ENV.ADMIN_USERNAME || 'admin';
-const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
-const BASE_URL = 'http://localhost:3000';
+// Exporta setup do módulo compartilhado de autenticação
+export { setup };
 
-// A função setup é executada uma vez antes do teste começar.
-// É ideal para obter um token de autenticação que será reutilizado por todos os VUs.
-export function setup() {
-  const loginRes = http.post(
-    `${BASE_URL}/api/auth/login?response=body`,
-    JSON.stringify({ username: USERNAME, password: PASSWORD }),
-    { headers: { 'Content-Type': 'application/json' } }
-  );
-  
-  if (loginRes.status !== 200) {
-      throw new Error('Não foi possível fazer login para a configuração do teste. Verifique as credenciais.');
-  }
+export default function (data) {
+  const token = data && data.token;
+  if (!token) return;
 
-  return loginRes.json('data.token');
-}
-
-export default function (token) {
-  // --- Cria um novo post ---
-  
   // Gera dados únicos para cada iteração para evitar erros de constraint 'UNIQUE' no banco
   const timestamp = Date.now();
-  const uniqueId = `${__VU}-${__ITER}-${timestamp}`; // Adiciona timestamp para garantir unicidade entre execuções
-  const postTitle = `Post de Carga ${__VU}-${__ITER}`;
-  const postSlug = `post-carga-${uniqueId}`;
+  const uniqueId = `${__VU}-${__ITER}-${timestamp}`;
+  const postTitle = `Post de Carga K6 ${__VU}-${__ITER}`;
+  const postSlug = `post-carga-k6-${uniqueId}`;
 
   const postPayload = {
     title: postTitle,
@@ -50,7 +35,7 @@ export default function (token) {
     excerpt: `Resumo do post de teste de carga ${uniqueId}.`,
     content: `Conteúdo completo do post de teste de carga gerado pelo k6.`,
     image_url: 'https://via.placeholder.com/800x400',
-    published: false, // Cria como rascunho para não poluir o blog público
+    published: false,
   };
 
   const createRes = http.post(
@@ -68,5 +53,26 @@ export default function (token) {
     console.error(`Falha ao criar post: Status ${createRes.status} - Body: ${createRes.body}`);
   }
 
-  randomSleep(1, 3); // Simula um tempo maior de "pensamento" do usuário após uma ação de escrita
+  randomSleep(1, 3);
+}
+
+export function teardown(data) {
+  if (!data || !data.token) return;
+
+  const authHeaders = {
+    'Authorization': `Bearer ${data.token}`,
+    'Content-Type': 'application/json',
+  };
+
+  // Limpeza: apaga posts K6 fantasmas deixados por VUs interrompidos
+  const res = http.get(`${BASE_URL}/api/posts?limit=100`, { headers: authHeaders });
+  if (res.status === 200) {
+    const body = res.json();
+    const posts = body.posts || body.data || [];
+    for (const post of posts) {
+      if (post.title && post.title.includes('K6')) {
+        http.del(`${BASE_URL}/api/posts`, JSON.stringify({ id: post.id }), { headers: authHeaders });
+      }
+    }
+  }
 }

@@ -5,11 +5,16 @@ import { Trend } from 'k6/metrics';
 import { htmlReport } from 'https://raw.githubusercontent.com/benc-uk/k6-reporter/main/dist/bundle.js';
 import { getRandomIP } from './helpers/network.js';
 import { generateReport } from './helpers/report.js';
+import { BASE_URL } from './helpers/config.js';
+import { setup } from './helpers/auth.js';
 
 // --- Métricas Customizadas (Monitoramento) ---
 const MemoryRss = new Trend('nodejs_memory_rss_bytes');
 const MemoryHeapTotal = new Trend('nodejs_memory_heap_total_bytes');
 const MemoryHeapUsed = new Trend('nodejs_memory_heap_used_bytes');
+
+// Prefixo fixo para identificar dados de teste no teardown
+const TEST_PREFIX = '[TEST-K6]';
 
 // --- Configuração dos Cenários ---
 export const options = {
@@ -49,32 +54,13 @@ export const options = {
   },
 };
 
-// --- Configuração de Ambiente (JSON ou Flags) ---
-// Se a flag CONFIG_FILE for passada, carrega o JSON. Caso contrário, usa objeto vazio.
-const config = __ENV.CONFIG_FILE ? JSON.parse(open(__ENV.CONFIG_FILE)) : {};
-
-const BASE_URL = __ENV.BASE_URL || config.BASE_URL || 'http://localhost:3000';
-const USERNAME = __ENV.ADMIN_USERNAME || config.ADMIN_USERNAME || 'admin';
-const PASSWORD = __ENV.ADMIN_PASSWORD || config.ADMIN_PASSWORD || '123456';
-
-// --- Setup Global ---
-export function setup() {
-  const loginRes = http.post(
-    `${BASE_URL}/api/auth/login?response=body`,
-    JSON.stringify({ username: USERNAME, password: PASSWORD }),
-    { headers: { 'Content-Type': 'application/json' } }
-  );
-
-  if (loginRes.status !== 200) {
-    throw new Error(`Login falhou: ${loginRes.status} ${loginRes.body}`);
-  }
-
-  return { token: loginRes.json('data.token') };
-}
+export { setup };
 
 // --- Função do Cenário de Estresse ---
 export function stressTestFlow(data) {
-  const token = data.token;
+  const token = data && data.token;
+  if (!token) return;
+
   const authHeaders = {
     'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json',
@@ -86,13 +72,13 @@ export function stressTestFlow(data) {
   // O YouTube exige que o ID do vídeo tenha exatamente 11 caracteres para passar na validação Regex da API
   const paddedVideoId = `st${__VU}x${__ITER}`.padStart(11, '0').slice(-11);
   const videoUrl = `https://www.youtube.com/watch?v=${paddedVideoId}`;
-  const videoTitle = `Video de Estresse K6 ${uniqueId}`;
+  const videoTitle = `${TEST_PREFIX} Video de Estresse ${uniqueId}`;
 
   // 1. CRIAR (POST)
   const createPayload = JSON.stringify({
     url_youtube: videoUrl,
     titulo: videoTitle,
-    descricao: `Descrição do vídeo de estresse ${uniqueId}.`,
+    descricao: `${TEST_PREFIX} Descrição do vídeo de estresse ${uniqueId}.`,
     publicado: false,
   });
 
@@ -123,7 +109,7 @@ export function stressTestFlow(data) {
   // 2. UPDATE (PUT)
   const updatePayload = JSON.stringify({ 
     id: videoId,
-    titulo: `Video Atualizado ${uniqueId}`, 
+    titulo: `${TEST_PREFIX} Video Atualizado ${uniqueId}`, 
     url_youtube: videoUrl, 
     publicado: false 
   });
@@ -137,9 +123,13 @@ export function stressTestFlow(data) {
 
   // 3. DELETAR (DELETE)
   const deletePayload = JSON.stringify({ id: videoId });
-  http.del(`${BASE_URL}/api/admin/videos`, deletePayload, { 
+  const deleteRes = http.del(`${BASE_URL}/api/admin/videos`, deletePayload, { 
     headers: authHeaders, 
     tags: { flow: 'stress_delete', name: 'DeleteVideo' } 
+  });
+
+  check(deleteRes, {
+    'DELETE: status é 200': (r) => r.status === 200,
   });
 }
 
@@ -164,15 +154,38 @@ export function teardown(data) {
     'Content-Type': 'application/json',
   };
   
-  const res = http.get(`${BASE_URL}/api/admin/videos?limit=100`, { headers: authHeaders });
-  if (res.status === 200) {
+  // Usa paginação para garantir que todos os registros sejam limpos
+  let page = 1;
+  let totalDeleted = 0;
+  const limit = 100;
+  let hasMore = true;
+
+  while (hasMore) {
+    const res = http.get(`${BASE_URL}/api/admin/videos?limit=${limit}&page=${page}`, { headers: authHeaders });
+    if (res.status !== 200) break;
+
     const body = res.json();
     const videos = body.videos || body.data || [];
+    
+    if (videos.length === 0) {
+      hasMore = false;
+      break;
+    }
+
     for (const video of videos) {
-      if (video.titulo && (video.titulo.includes('K6') || video.titulo.includes('Estresse'))) {
-        http.del(`${BASE_URL}/api/admin/videos`, JSON.stringify({ id: video.id }), { headers: authHeaders });
+      if (video.titulo && (video.titulo.includes(TEST_PREFIX) || video.titulo.includes('K6') || video.titulo.includes('Estresse'))) {
+        const delRes = http.del(`${BASE_URL}/api/admin/videos`, JSON.stringify({ id: video.id }), { headers: authHeaders });
+        if (delRes.status === 200) {
+          totalDeleted++;
+        }
       }
     }
+
+    page++;
+  }
+
+  if (totalDeleted > 0) {
+    console.log(`🧹 Teardown: ${totalDeleted} vídeos de teste removidos.`);
   }
 }
 

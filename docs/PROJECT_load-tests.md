@@ -165,20 +165,26 @@ Os testes estão organizados em categorias funcionais:
 
 **Localização:** `/load-tests/create-post-flow.js`
 
-**O que faz:** Testa o fluxo completo de criação de posts no blog: login → criação → verificação.
+**O que faz:** Testa o fluxo completo de criação de posts no blog: login → criação → limpeza.
 
-**Propósito:** Validar o processo de criação de posts no blog, garantindo que o endpoint `POST /api/admin/posts` funcione corretamente sob carga.
+**Propósito:** Validar o processo de criação de posts no blog, garantindo que o endpoint `POST /api/posts` funcione corretamente sob carga e que dados de teste sejam limpos após a execução.
 
 **Estrutura:**
-- `setup()` — Login via `helpers/auth.js`
-- `default()` — Cria post com título único, valida status 201 e ID retornado
-- Gera conteúdo aleatório para simular dados reais
+- `setup()` — Login via `helpers/auth.js` (centralizado)
+- `default()` — Cria post com título único contendo prefixo `K6`, valida status 201
+- `teardown()` — Lista posts com `K6` no título e os remove via DELETE, evitando poluição do banco
+- Configuração: estágios customizados (10s/15s/5s, 3 VUs)
+- Usa `BASE_URL` de `helpers/config.js`
 
 **Endpoints chamados:**
 - `POST /api/auth/login` — Autenticação
-- `POST /api/admin/posts` — Criação de post
+- `POST /api/posts` — Criação de post
+- `GET /api/posts?limit=100` — Listar posts (teardown)
+- `DELETE /api/posts` — Deletar post (teardown)
 
-**Configuração de carga:** Perfil `light` customizado (3 VUs, 10 iterações)
+**Configuração de carga:** 3 VUs, estágios 10s/15s/5s, threshold `p(95)<800` para operações de escrita
+
+**Observação:** Refatorado em 24/05/2026 — `setup()` e `BASE_URL` agora usam módulos compartilhados. Adicionado `teardown()` com identificador `K6`. A rota de criação é `/api/posts` (pública autenticada), não `/api/admin/posts`.
 
 ---
 
@@ -314,14 +320,17 @@ Os testes estão organizados em categorias funcionais:
 **Estrutura:**
 - `setup()` — Login via `helpers/auth.js`
 - `default()` — Via `createCrudTest()` do `helpers/resource-test-runner.js`: POST (criar) → PUT (atualizar) → DELETE
+- `teardown()` — Limpa músicas K6 fantasmas deixadas por VUs interrompidos (adicionado em 24/05/2026)
 - Valida IDs e status codes em cada etapa
 - `handleSummary()` — Gera relatório via `helpers/report.js`
+- Usa `BASE_URL` de `helpers/config.js`
 
 **Endpoints chamados:**
 - `POST /api/auth/login` — Autenticação
 - `POST /api/admin/musicas` — Criar música
 - `PUT /api/admin/musicas` — Atualizar música
 - `DELETE /api/admin/musicas` — Deletar música
+- `GET /api/admin/musicas?limit=100` — Listar músicas (teardown)
 
 **Configuração de carga:** Perfil `light` customizado (5 VUs, estágios 10s/20s/10s)
 
@@ -585,10 +594,12 @@ Os testes estão organizados em categorias funcionais:
 - **2 cenários paralelos** via `scenarios` do k6:
   1. `stress_test` — Ramp-up progressivo (20, 50, 100 VUs), executa CRUD completo de vídeos
   2. `memory_monitor` — 1 VU constante por 5 min monitorando memória do Node.js
-- `setup()` — Login via `helpers/auth.js`
-- `teardown()` — Limpa dados de teste criados
+- `setup()` — Login via `helpers/auth.js` (centralizado)
+- `teardown()` — Limpa dados de teste com paginação completa e identificador robusto `[TEST-K6]`
 - `handleSummary()` — Gera relatório via `helpers/report.js`
 - Usa `getRandomIP()` do módulo `helpers/network.js`
+- Usa `BASE_URL` de `helpers/config.js`
+- Identificador único: `TEST_PREFIX = '[TEST-K6]'` para facilitar limpeza no teardown
 
 **Métricas customizadas:**
 - `nodejs_memory_rss_bytes` — Memória RSS
@@ -601,7 +612,15 @@ Os testes estão organizados em categorias funcionais:
 - `PUT /api/admin/videos` — Atualizar vídeo
 - `DELETE /api/admin/videos` — Deletar vídeo
 - `GET /api/status?mode=health` — Status do servidor (monitoramento de memória)
-- `GET /api/admin/videos?limit=100` — Listar vídeos (teardown)
+- `GET /api/admin/videos?limit=100&page={n}` — Listar vídeos com paginação (teardown)
+
+**Melhorias em 24/05/2026:**
+- Substituídas declarações manuais de `BASE_URL`, `USERNAME`, `PASSWORD` por import de `helpers/config.js`
+- Substituído `setup()` manual por import de `helpers/auth.js`
+- Adicionado `TEST_PREFIX = '[TEST-K6]'` como identificador robusto para dados de teste
+- Teardown agora usa paginação via loop `while` com `page`, garantindo captura de todos os registros
+- Adicionado `check()` na operação DELETE dentro do `stressTestFlow` para verificar exclusão
+- Adicionado log com contagem de vídeos removidos no teardown
 
 ---
 
@@ -614,13 +633,17 @@ Os testes estão organizados em categorias funcionais:
 **Propósito:** Validar que o endpoint de upload de arquivos funciona sob carga e respeita limites de tamanho e tipo de arquivo.
 
 **Estrutura:**
-- `setup()` — Login via `helpers/auth.js`
-- Simula upload de arquivo (provavelmente imagem) usando multipart/form-data
-- Valida status code e resposta
+- `setup()` — Login via `helpers/auth.js` (centralizado, refatorado em 24/05/2026)
+- Simula upload de GIF 1x1 transparente via multipart/form-data usando `http.file()`
+- Valida status 200 e presença de URL na resposta
+- Verificação adicional: tenta baixar a imagem recém-criada para garantir persistência no disco
+- Usa `BASE_URL` de `helpers/config.js` (removido hardcoded em 24/05/2026)
+- Nome do arquivo contém prefixo `k6` para identificação
 
 **Endpoints chamados:**
 - `POST /api/auth/login` — Autenticação
-- `POST /api/admin/upload` — Upload de arquivo
+- `POST /api/upload-image` — Upload de arquivo
+- `GET {imageUrl}` — Verificação de persistência no disco
 
 ---
 

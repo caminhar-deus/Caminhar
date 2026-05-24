@@ -4,6 +4,8 @@ import { randomSleep } from './helpers/sleep.js';
 import { b64decode } from 'k6/encoding';
 import exec from 'k6/execution';
 import { generateReport } from './helpers/report.js';
+import { BASE_URL } from './helpers/config.js';
+import { setup } from './helpers/auth.js';
 
 // --- Opções do Teste de Upload ---
 export const options = {
@@ -14,53 +16,28 @@ export const options = {
   ],
   thresholds: {
     // Uploads envolvem I/O de disco/rede, então o limite é maior (2s)
-    'http_req_duration': ['p(95)<2000'], 
+    'http_req_duration': ['p(95)<2000'],
     'http_req_failed': ['rate<0.01'],    // Taxa de erro abaixo de 1%
   },
 };
 
-// --- Configuração ---
-const BASE_URL = 'http://localhost:3000';
-const USERNAME = __ENV.ADMIN_USERNAME || 'admin';
-const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
-
 // GIF 1x1 Transparente (Base64) para simular um arquivo de imagem válido sem dependências externas
 const GIF_B64 = "R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==";
 
-export function setup() {
-  const loginRes = http.post(
-    `${BASE_URL}/api/auth/login?response=body`,
-    JSON.stringify({ username: USERNAME, password: PASSWORD }),
-    { headers: { 'Content-Type': 'application/json' } }
-  );
-
-  if (loginRes.status !== 200) {
-    throw new Error(`Login falhou: ${loginRes.status} ${loginRes.body}`);
-  }
-
-  const body = loginRes.json();
-  // Tenta extrair o token de diferentes estruturas comuns (data.token ou token direto)
-  const token = (body.data && body.data.token) || body.token;
-
-  if (!token) {
-    console.error('⚠️ Login bem-sucedido, mas token não encontrado na resposta:', JSON.stringify(body));
-  }
-
-  return { token };
-}
+export { setup };
 
 export default function (data) {
-  const token = data.token;
+  const token = data && data.token;
   if (!token) {
     exec.test.abort('❌ Abortando: Token de autenticação não disponível.');
   }
-  
+
   // Decodifica o base64 para binário (ArrayBuffer)
   const fileData = b64decode(GIF_B64);
-  
+
   // Usa prefixo 'post-image-' para ser compatível com scripts de limpeza existentes
-  const fileName = `post-image-load-${__VU}-${__ITER}.gif`;
-  
+  const fileName = `post-image-load-k6-${__VU}-${__ITER}.gif`;
+
   // O k6 lida automaticamente com o boundary do multipart se passarmos um objeto com http.file
   const payload = {
     image: http.file(fileData, fileName, 'image/gif'),
@@ -98,7 +75,7 @@ export default function (data) {
     if (imageUrl) {
       const fullUrl = imageUrl.startsWith('http') ? imageUrl : `${BASE_URL}${imageUrl}`;
       const getRes = http.get(fullUrl);
-      
+
       const saved = check(getRes, { 'arquivo salvo no disco (GET 200)': (r) => r.status === 200 });
       if (!saved) {
         exec.test.abort(`❌ Falha crítica: Upload reportou sucesso, mas arquivo não acessível em ${fullUrl}`);

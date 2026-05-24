@@ -1,5 +1,7 @@
+import http from 'k6/http';
 import { createCrudTest, generateReport } from './helpers/resource-test-runner.js';
 import { setup } from './helpers/auth.js';
+import { BASE_URL } from './helpers/config.js';
 
 const resourceConfig = {
   adminEndpoint: '/api/admin/musicas',
@@ -28,6 +30,27 @@ export const options = crudTest.options;
 export { setup };
 
 export default crudTest.default;
+
+export function teardown(data) {
+  if (!data || !data.token) return;
+
+  const authHeaders = {
+    'Authorization': `Bearer ${data.token}`,
+    'Content-Type': 'application/json',
+  };
+
+  // Limpeza: apaga músicas K6 fantasmas deixadas por VUs interrompidos
+  const res = http.get(`${BASE_URL}/api/admin/musicas?limit=100`, { headers: authHeaders });
+  if (res.status === 200) {
+    const body = res.json();
+    const musicas = body.musicas || body.data || [];
+    for (const musica of musicas) {
+      if (musica.titulo && musica.titulo.includes('K6')) {
+        http.del(`${BASE_URL}/api/admin/musicas`, JSON.stringify({ id: musica.id }), { headers: authHeaders });
+      }
+    }
+  }
+}
 
 export function handleSummary(data) {
   return generateReport(data, crudTest.reportName);

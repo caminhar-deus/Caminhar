@@ -420,15 +420,31 @@ const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
 
 ---
 
-### 4.4 Ausência de testes de `teardown` na maioria dos arquivos
+### 4.4 Ausência de testes de `teardown` na maioria dos arquivos — **RESOLVIDO (24/05/2026)**
 
-**Severidade:** ⚠️ Média
+**Severidade anterior:** ⚠️ Média
 
-**Arquivos afetados:** Quase todos, exceto `stress-test-combined.js`
+**Arquivos afetados originalmente:** Quase todos, exceto `stress-test-combined.js`
 
-**Problema:** O `stress-test-combined.js` é o único que implementa `teardown()` para limpar dados de teste criados. Os demais testes CRUD criam dados que podem poluir o banco de dados.
+**Problema original:** O `stress-test-combined.js` era o único que implementava `teardown()` para limpar dados de teste criados. Os demais testes CRUD criavam dados que podiam poluir o banco de dados.
 
-**Sugestão:** Adicionar função `teardown()` em testes que criam dados (CRUD, criação de posts, upload, etc.) para remover os registros de teste após a execução.
+**O que foi feito (24/05/2026):**
+
+1. **`musicas-crud-test.js`** — Adicionado `teardown()` que lista músicas com prefixo `K6` e as remove. Adicionado import do `BASE_URL` de `helpers/config.js` e `http` do k6.
+2. **`create-post-flow.js`** — Adicionado `teardown()` que lista posts com `K6` no título e os remove. Refatorado `setup()` e `BASE_URL` para usar os módulos compartilhados (`helpers/auth.js`, `helpers/config.js`). Adicionado prefixo `K6` nos títulos dos posts criados para facilitar a limpeza.
+3. **`upload-flow-test.js`** — Refatorado para usar `setup()` de `helpers/auth.js` e `BASE_URL` de `helpers/config.js` (removendo declarações manuais de credenciais e URL). Adicionado prefixo `k6` no nome dos arquivos de upload.
+4. **`stress-test-combined.js`** — Melhorias no `teardown()` existente:
+   - Adicionado `TEST_PREFIX = '[TEST-K6]'` como identificador único e robusto para dados de teste
+   - Implementada paginação no `teardown()` (loop `while` com `page`) para capturar todos os registros, não apenas os 100 primeiros
+   - Adicionado `check()` na operação de DELETE dentro do `stressTestFlow` para verificar exclusão
+   - Substituídas declarações manuais de `BASE_URL`, `USERNAME`, `PASSWORD` por import de `helpers/config.js`
+   - Substituído `setup()` manual por import de `helpers/auth.js`
+5. **`musicas-load-test.js`** e **`videos-load-test.js`** — Mantidos intactos (realizam apenas GET, sem criação de dados).
+6. **`authenticated-flow-test.js`** — Mantido intacto (apenas login + GET, sem criação de dados persistentes).
+
+**Identificador padronizado:** Todos os `teardown()` agora usam o prefixo `K6` (ou `[TEST-K6]` para o stress test) como marcador de dados de teste, garantindo consistência na limpeza.
+
+**Redução de risco:** Agora 4 arquivos com criação de dados possuem `teardown()` automático. O risco de poluição do banco de dados por VUs interrompidos foi significativamente reduzido.
 
 ---
 
@@ -596,7 +612,7 @@ import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 | ⚠️ **Alta** | Performance | Thresholds inconsistentes entre testes similares | Médio | Médio | ✅ Resolvido (23/05/2026) |
 | ⚠️ **Alta** | Manutenção | Rotas sem versionamento consistente (`/api` vs `/api/v1`) | Baixo | Médio | ✅ Resolvido (13/05/2026) |
 | ⚠️ **Alta** | CI/CD | Senhas diferentes entre env-config.json e CI | Baixo | Alto | ✅ Resolvido (23/05/2026) |
-| ⚠️ **Alta** | Manutenção | Ausência de `teardown()` na maioria dos testes | Médio | Médio | ❌ Pendente |
+| ⚠️ **Alta** | Manutenção | Ausência de `teardown()` na maioria dos testes | Médio | Médio | ✅ Resolvido (24/05/2026) |
 | ⚠️ **Alta** | Segurança | Token JWT exposto em relatórios | Baixo | Médio | ✅ Resolvido (23/05/2026) |
 | ⚠️ **Média** | Manutenção | Configuração de carga inconsistente entre testes | Alto | Médio | ✅ Resolvido (23/05/2026) |
 | ⚠️ **Média** | Duplicidade | Estruturas CRUD músicas/vídeos quase idênticas | Alto | Alto | ✅ Resolvido (23/05/2026) |
