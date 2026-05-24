@@ -1,5 +1,6 @@
 import http from 'k6/http';
-import { check, sleep } from 'k6';
+import { check } from 'k6';
+import { randomSleep } from './helpers/sleep.js';
 import { Trend } from 'k6/metrics';
 import { htmlReport } from 'https://raw.githubusercontent.com/benc-uk/k6-reporter/main/dist/bundle.js';
 import { getRandomIP } from './helpers/network.js';
@@ -117,7 +118,7 @@ export function stressTestFlow(data) {
 
   if (!createCheck) return;
 
-  sleep(0.5);
+  randomSleep(0.3, 1.5);
 
   // 2. UPDATE (PUT)
   const updatePayload = JSON.stringify({ 
@@ -132,7 +133,7 @@ export function stressTestFlow(data) {
     tags: { flow: 'stress_update', name: 'UpdateVideo' } 
   });
 
-  sleep(0.5);
+  randomSleep(0.3, 1.5);
 
   // 3. DELETAR (DELETE)
   const deletePayload = JSON.stringify({ id: videoId });
@@ -152,7 +153,7 @@ export function memoryMonitorFlow() {
     MemoryHeapTotal.add(memory.heapTotal);
     MemoryHeapUsed.add(memory.heapUsed);
   }
-  sleep(1);
+  randomSleep(0.5, 2);
 }
 
 // --- Função de Limpeza (Teardown) ---

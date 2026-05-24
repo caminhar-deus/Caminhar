@@ -1,5 +1,6 @@
 import http from 'k6/http';
-import { check, sleep } from 'k6';
+import { check } from 'k6';
+import { randomSleep } from './helpers/sleep.js';
 import { generateReport } from './helpers/report.js';
 
 // --- Opções do Teste Negativo ---
@@ -38,7 +39,7 @@ export default function () {
     'Wrong Pass: mensagem de erro correta': (r) => r.json('message') === 'Credenciais inválidas',
   });
 
-  sleep(1);
+  randomSleep(0.5, 3);
 
   // --- Cenário 2: Usuário inexistente ---
   const payloadNoUser = JSON.stringify({
@@ -57,7 +58,7 @@ export default function () {
     'No User: mensagem genérica de segurança': (r) => r.json('message') === 'Credenciais inválidas',
   });
 
-  sleep(1);
+  randomSleep(0.5, 3);
 }
 
 export function handleSummary(data) {

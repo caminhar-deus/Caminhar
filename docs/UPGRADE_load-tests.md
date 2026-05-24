@@ -280,17 +280,48 @@ const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
 
 ---
 
-### 3.2 Uso de `sleep()` fixo entre requisições
+### 3.2 Uso de `sleep()` fixo entre requisições — **RESOLVIDO (24/05/2026)**
 
-**Severidade:** 🟢 Baixa
+**Severidade anterior:** 🟢 Baixa
 
-**Arquivos afetados:** Todos que usam `sleep(1)`, `sleep(2)`, `sleep(0.5)`
+**Problema original:** O `sleep()` com valor fixo não simulava comportamento real de usuário. Em produção, usuários têm tempos de pensamento e ação variáveis.
 
-**Problema:** O `sleep()` com valor fixo não simula comportamento real de usuário. Em produção, usuários têm tempos de pensamento e ação variáveis.
+**O que foi feito (24/05/2026):**
+1. **Criado módulo compartilhado** `load-tests/helpers/sleep.js` com a função `randomSleep(min, max)` que executa `sleep()` com valor aleatório entre `min` e `max`
+2. **Atualizado `resource-test-runner.js`** para usar `randomSleep(0.5, 2)` como comportamento padrão em todos os testes de CRUD, filtro, paginação, ordenação e carga — afeta 10 arquivos de configuração indiretamente
+3. **Refatorados 13 arquivos standalone** para substituir `sleep()` fixo por `randomSleep()` com faixas adequadas a cada tipo de teste:
 
-**Sugestão:** Usar `sleep(random(0.5, 3))` para simular comportamento mais realista, ou usar a biblioteca `k6` com distribuições estatísticas (`k6/execution`, `k6/data`).
+| Arquivo | Antes | Depois |
+|---------|-------|--------|
+| `authenticated-flow.js` | `sleep(2)` | `randomSleep(0.5, 3)` |
+| `cache-headers-test.js` | `sleep(1)` | `randomSleep(0.5, 3)` |
+| `cache-performance-test.js` | `sleep(1)` | `randomSleep(0.5, 3)` |
+| `create-post-flow.js` | `sleep(3)` | `randomSleep(1, 3)` |
+| `login-negative-test.js` | `sleep(1)` (×2) | `randomSleep(0.5, 3)` (×2) |
+| `musicas-search-test.js` | `sleep(1)` | `randomSleep(0.5, 3)` |
+| `pagination-test.js` | `sleep(1)` (×2) | `randomSleep(0.5, 3)` (×2) |
+| `posts-cursor-pagination-test.js` | `sleep(1)` | `randomSleep(0.5, 3)` |
+| `posts-tags-test.js` | `sleep(1)` | `randomSleep(0.5, 3)` |
+| `search-content-test.js` | `sleep(1)` | `randomSleep(0.5, 3)` |
+| `stress-test-combined.js` | `sleep(0.5)` (×2), `sleep(1)` | `randomSleep(0.3, 1.5)` (×2), `randomSleep(0.5, 2)` |
+| `upload-flow.js` | `sleep(1)` | `randomSleep(1, 3)` |
+| `video-validation-test.js` | `sleep(0.5)` (×2) | `randomSleep(0.3, 1.3)` (×2) |
 
-> **Status:** Não resolvido — requer implementação de randomização nos scripts. Os arquivos `ddos-search-test.js` e `rate-limit-test.js` devem permanecer sem sleep por propósito de teste.
+4. **Arquivos mantidos intocados** por propósito de teste:
+   - `ddos-search-test.js` — sem sleep (máxima taxa de requisições)
+   - `rate-limit-test.js` — sem sleep (brute force)
+   - `recovery-test.js` — `sleep(0.5)` fixo mantido (propósito de monitoramento com polling em intervalo previsível)
+
+**Faixas utilizadas por tipo de operação:**
+| Tipo de operação | Faixa | Arquivos |
+|-----------------|-------|----------|
+| Consulta leve (GET pública) | 0.5s – 3s | cache-headers, musicas-search, pagination, posts-cursor, posts-tags, search-content, authenticated-flow, login-negative, cache-performance |
+| Escrita (POST/PUT/DELETE) | 0.5s – 2s | resource-test-runner (CRUD, filtro, paginação, ordenação, carga) |
+| Upload | 1s – 3s | upload-flow, create-post-flow |
+| Estresse (operações rápidas) | 0.3s – 1.5s | stress-test-combined (CRUD) |
+| Validação funcional | 0.3s – 1.3s | video-validation-test |
+| Monitoramento | 0.5s – 2s | stress-test-combined (memoryMonitorFlow) |
+| Recuperação (mantido fixo) | 0.5s | recovery-test |
 
 ---
 
@@ -562,7 +593,7 @@ import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 | ⚠️ **Alta** | Segurança | Token JWT exposto em relatórios | Baixo | Médio | ✅ Resolvido (23/05/2026) |
 | ⚠️ **Média** | Manutenção | Configuração de carga inconsistente entre testes | Alto | Médio | ✅ Resolvido (23/05/2026) |
 | ⚠️ **Média** | Duplicidade | Estruturas CRUD músicas/vídeos quase idênticas | Alto | Alto | ✅ Resolvido (23/05/2026) |
-| 🟢 **Baixa** | Performance | `sleep()` fixo não simula comportamento real | Baixo | Baixo | ❌ Pendente |
+| 🟢 **Baixa** | Performance | `sleep()` fixo não simula comportamento real | Baixo | Baixo | ✅ Resolvido (24/05/2026) |
 | 🟢 **Baixa** | Performance | Health check duplicado em `setup()` | Baixo | Baixo | ❌ Pendente |
 | 🟢 **Baixa** | Manutenção | Nomenclatura inconsistente de arquivos | Médio | Baixo | ❌ Pendente |
 | 🟢 **Baixa** | Manutenção | `env-config.json` subutilizado | Baixo | Médio | ✅ Resolvido (23/05/2026) |
@@ -575,7 +606,7 @@ import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 > - ✅ **Resolvido** — Problema corrigido e validado
 > - ❌ **Pendente** — Problema identificado mas ainda não corrigido
 
-### Benefícios das Ações Realizadas (23/05/2026)
+### Benefícios das Ações Realizadas (23/05/2026 e 24/05/2026)
 
 1. **Módulo de autenticação compartilhado**: Redução de ~90% de código duplicado relacionado a login
 2. **Módulo de configuração centralizado**: Facilidade para adicionar novas variáveis de ambiente
@@ -583,6 +614,8 @@ import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 4. **Módulo de perfis de carga**: Thresholds consistentes e matriz de perfis reutilizável
 5. **Validação de token robusta**: Erro descritivo se estrutura da resposta mudar
 6. **Versionamento do k6-summary atualizado**: Importa `latest` em vez de versão fixa
+7. **Módulo de sleep randomizado** (`helpers/sleep.js`): `randomSleep(min, max)` substitui `sleep()` fixo em 14 arquivos, melhorando realismo dos testes
+8. **Sleep randomizado por tipo de operação**: Faixas distintas para consulta (0.5s–3s), escrita (0.5s–2s), upload (1s–3s), estresse (0.3s–1.5s) e validação funcional (0.3s–1.3s)
 
 ### Benefícios das Ações Sugeridas (Pendentes)
 
@@ -594,5 +627,5 @@ import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 ---
 
 > **Data da análise:** 10/05/2026
-> **Última atualização:** 23/05/2026
+> **Última atualização:** 24/05/2026
 > **Status:** Correções parciais aplicadas — ver coluna "Status" na matriz de prioridades

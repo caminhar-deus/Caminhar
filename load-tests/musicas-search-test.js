@@ -1,5 +1,6 @@
 import http from 'k6/http';
-import { check, sleep } from 'k6';
+import { check } from 'k6';
+import { randomSleep } from './helpers/sleep.js';
 import { generateReport } from './helpers/report.js';
 
 export const options = {
@@ -55,7 +56,7 @@ export default function () {
     }
   });
 
-  sleep(1);
+  randomSleep(0.5, 3);
 }
 
 export function handleSummary(data) {

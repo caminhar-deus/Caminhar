@@ -1,5 +1,6 @@
 import http from 'k6/http';
-import { check, sleep } from 'k6';
+import { check } from 'k6';
+import { randomSleep } from './helpers/sleep.js';
 import { BASE_URL } from './helpers/config.js';
 import { getProfile } from './helpers/profiles.js';
 import { generateReport } from './helpers/report.js';
@@ -25,7 +26,7 @@ export default function () {
   // Extrai os IDs da página 1 para comparação (com verificação de segurança)
   const idsPage1 = Array.isArray(postsPage1) ? postsPage1.map(p => p.id) : [];
 
-  sleep(1);
+  randomSleep(0.5, 3);
 
   // 2. Requisita a Página 2 (limit=5)
   const resPage2 = http.get(`${BASE_URL}/api/posts?page=2&limit=5`);
@@ -50,7 +51,7 @@ export default function () {
     });
   }
 
-  sleep(1);
+  randomSleep(0.5, 3);
 }
 
 export function handleSummary(data) {

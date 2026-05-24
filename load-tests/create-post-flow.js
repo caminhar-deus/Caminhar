@@ -1,5 +1,6 @@
 import http from 'k6/http';
-import { check, sleep } from 'k6';
+import { check } from 'k6';
+import { randomSleep } from './helpers/sleep.js';
 
 export const options = {
   stages: [
@@ -67,5 +68,5 @@ export default function (token) {
     console.error(`Falha ao criar post: Status ${createRes.status} - Body: ${createRes.body}`);
   }
 
-  sleep(3); // Simula um tempo maior de "pensamento" do usuário após uma ação de escrita
+  randomSleep(1, 3); // Simula um tempo maior de "pensamento" do usuário após uma ação de escrita
 }

@@ -10,7 +10,8 @@
 //   export function handleSummary(data) { ... }
 
 import http from 'k6/http';
-import { check, sleep } from 'k6';
+import { check } from 'k6';
+import { randomSleep } from './sleep.js';
 import { Counter } from 'k6/metrics';
 import exec from 'k6/execution';
 import { getRandomIP } from './network.js';
@@ -64,7 +65,7 @@ function createCrudDefault(resourceConfig) {
     resourceName = 'resource',
     metricsPrefix,
     requireAuth = true,
-    sleepTimings = [1, 1, 1],
+    sleepTimings = null,
     uniqueIdGenerator = () => `${Date.now()}`,
   } = resourceConfig;
 
@@ -104,7 +105,7 @@ function createCrudDefault(resourceConfig) {
     }
 
     const resourceId = createRes.json(idField);
-    sleep(sleepTimings[0]);
+    randomSleep(0.5, 2);
 
     // --- UPDATE ---
     const updatePayloadStr = typeof payloadTemplate === 'function'
@@ -118,7 +119,7 @@ function createCrudDefault(resourceConfig) {
       console.error(`Falha ao atualizar ${resourceName}. Status: ${updateRes.status}, Body: ${updateRes.body}`);
     }
 
-    sleep(sleepTimings[1]);
+    randomSleep(0.5, 2);
 
     // --- DELETE ---
     const deletePayloadStr = JSON.stringify({ [idField]: resourceId });
@@ -129,7 +130,7 @@ function createCrudDefault(resourceConfig) {
       console.error(`Falha ao deletar ${resourceName}. Status: ${deleteRes.status}, Body: ${deleteRes.body}`);
     }
 
-    sleep(sleepTimings[2]);
+    randomSleep(0.5, 2);
   };
 }
 
@@ -150,7 +151,7 @@ function createFilterDefault(resourceConfig) {
     searchValues = [],
     responsePath = 'data',
     resourceName = 'resource',
-    sleepDuration = 1,
+    sleepDuration = null,
   } = resourceConfig;
 
   return function () {
@@ -190,7 +191,11 @@ function createFilterDefault(resourceConfig) {
       },
     });
 
-    sleep(sleepDuration);
+    if (sleepDuration !== null) {
+      randomSleep(sleepDuration - 0.5, sleepDuration + 0.5);
+    } else {
+      randomSleep(0.5, 2);
+    }
   };
 }
 
@@ -219,7 +224,7 @@ function createPaginationDefault(resourceConfig) {
     idField = 'id',
     resourceName = 'resource',
     limit = 5,
-    sleepDuration = 1,
+    sleepDuration = null,
   } = resourceConfig;
 
   const getItems = (body) => {
@@ -263,7 +268,11 @@ function createPaginationDefault(resourceConfig) {
 
     const idsPage1 = itemsPage1.map(item => item[idField]);
 
-    sleep(sleepDuration);
+    if (sleepDuration !== null) {
+      randomSleep(sleepDuration - 0.5, sleepDuration + 0.5);
+    } else {
+      randomSleep(0.5, 2);
+    }
 
     // Página 2
     const resPage2 = http.get(`${BASE_URL}${publicEndpoint}?page=2&limit=${limit}`);
@@ -292,7 +301,11 @@ function createPaginationDefault(resourceConfig) {
       });
     }
 
-    sleep(sleepDuration);
+    if (sleepDuration !== null) {
+      randomSleep(sleepDuration - 0.5, sleepDuration + 0.5);
+    } else {
+      randomSleep(0.5, 2);
+    }
   };
 }
 
@@ -322,7 +335,7 @@ function createSortDefault(resourceConfig) {
     itemsPath,
     responsePath = 'data',
     resourceName = 'resource',
-    sleepDuration = 1,
+    sleepDuration = null,
     useExplicitSort = true,
   } = resourceConfig;
 
@@ -399,7 +412,11 @@ function createSortDefault(resourceConfig) {
       });
     }
 
-    sleep(sleepDuration);
+    if (sleepDuration !== null) {
+      randomSleep(sleepDuration - 0.5, sleepDuration + 0.5);
+    } else {
+      randomSleep(0.5, 2);
+    }
   };
 }
 
@@ -492,11 +509,7 @@ function createLoadDefault(resourceConfig) {
       check(extraRes, extra.checks || {});
     }
 
-    if (sleepDuration !== null) {
-      sleep(sleepDuration);
-    } else {
-      sleep(Math.random() * 1 + 1);
-    }
+    randomSleep(0.5, 2);
   };
 }
 

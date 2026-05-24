@@ -1,5 +1,6 @@
 import http from 'k6/http';
-import { check, sleep } from 'k6';
+import { check } from 'k6';
+import { randomSleep } from './helpers/sleep.js';
 import { BASE_URL } from './helpers/config.js';
 import { getProfile } from './helpers/profiles.js';
 import { generateReport } from './helpers/report.js';
@@ -43,7 +44,7 @@ export default function () {
   // Log para debug visual no terminal
   console.log(`Iteração ${__ITER} - Cache-Control: ${res.headers['Cache-Control']}`);
 
-  sleep(1);
+  randomSleep(0.5, 3);
 }
 
 export function handleSummary(data) {

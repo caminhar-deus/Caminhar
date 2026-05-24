@@ -1,6 +1,7 @@
 import http from 'k6/http';
-import { check, sleep } from 'k6';
+import { check } from 'k6';
 import exec from 'k6/execution';
+import { randomSleep } from './helpers/sleep.js';
 
 export const options = {
   stages: [
@@ -70,5 +71,5 @@ export default function () {
     console.error(`Falha ao acessar settings: Status ${settingsRes.status} - Body: ${settingsRes.body}`);
   }
 
-  sleep(2); // Simula o tempo de "pensamento" do usuário
+  randomSleep(0.5, 3); // Simula o tempo de "pensamento" do usuário
 }

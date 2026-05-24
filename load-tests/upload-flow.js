@@ -1,5 +1,6 @@
 import http from 'k6/http';
-import { check, sleep } from 'k6';
+import { check } from 'k6';
+import { randomSleep } from './helpers/sleep.js';
 import { b64decode } from 'k6/encoding';
 import exec from 'k6/execution';
 import { generateReport } from './helpers/report.js';
@@ -105,7 +106,7 @@ export default function (data) {
     }
   }
 
-  sleep(1); // Pausa entre uploads
+  randomSleep(1, 3); // Pausa entre uploads (uploads são mais pesados, requerem mais tempo)
 }
 
 export function handleSummary(data) {

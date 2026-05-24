@@ -1,5 +1,6 @@
 import http from 'k6/http';
-import { check, sleep } from 'k6';
+import { check } from 'k6';
+import { randomSleep } from './helpers/sleep.js';
 import exec from 'k6/execution';
 import { getRandomIP } from './helpers/network.js';
 
@@ -85,5 +86,5 @@ export default function (token) {
       r.status === 200 && Array.isArray(r.json('data') || r.json()),
   });
 
-  sleep(1);
+  randomSleep(0.5, 3);
 }

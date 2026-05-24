@@ -1,5 +1,6 @@
 import http from 'k6/http';
-import { check, sleep } from 'k6';
+import { check } from 'k6';
+import { randomSleep } from './helpers/sleep.js';
 import { generateReport } from './helpers/report.js';
 
 export const options = {
@@ -52,7 +53,7 @@ export default function (data) {
     },
   });
 
-  sleep(0.5);
+  randomSleep(0.3, 1.3);
 
   // --- Cenário 2: URL Inválida (Outro domínio) ---
   const invalidDomainPayload = JSON.stringify({
@@ -78,7 +79,7 @@ export default function (data) {
       r.status === 201 ? true : JSON.stringify(r.body).includes('YouTube'),
   });
 
-  sleep(0.5);
+  randomSleep(0.3, 1.3);
 
   // --- Cenário 3: URL Malformada ---
   const malformedPayload = JSON.stringify({
