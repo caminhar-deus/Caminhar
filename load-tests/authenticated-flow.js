@@ -24,13 +24,6 @@ const USERNAME = __ENV.ADMIN_USERNAME || 'admin';
 const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
 const BASE_URL = 'http://localhost:3000';
 
-export function setup() {
-  const res = http.get(BASE_URL);
-  if (res.status === 0) {
-    exec.test.abort(`❌ Conexão recusada em ${BASE_URL}. O servidor está rodando? (npm run dev)`);
-  }
-}
-
 export default function () {
   // --- 1. Login e obtenção do token ---
   const loginRes = http.post(

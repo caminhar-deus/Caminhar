@@ -84,8 +84,7 @@ Os testes estão organizados em categorias funcionais:
 **Propósito:** Validar que o fluxo de autenticação funciona corretamente sob carga, garantindo que o login e o acesso a rotas protegidas não apresentem degradação com 5 usuários simultâneos.
 
 **Estrutura:**
-- `setup()` — Login via módulo `helpers/auth.js`
-- `default()` — Login → extrai token → acessa rota protegida `/api/admin/settings`
+- `default()` — Login → extrai token → acessa rota protegida `/api/admin/settings` (sem `setup()` — health check removido em 24/05/2026)
 - Thresholds: perfil `medium` do `helpers/profiles.js` (p(95) < 300ms, failed < 1%)
 - `handleSummary()` — Gera relatório via `helpers/report.js`
 
@@ -362,7 +361,7 @@ Os testes estão organizados em categorias funcionais:
 
 **Estrutura:**
 - Configuração: perfil `medium` do `helpers/profiles.js`
-- `setup()` — Login com health check inicial e validação de Content-Type
+- `setup()` — Login com validação de Content-Type (health check desativado em 24/05/2026)
 - Usa `getRandomIP()` do módulo `helpers/network.js` para evitar rate limit
 - `handleSummary()` — Gera relatório via `helpers/report.js`
 
@@ -1055,5 +1054,5 @@ export function handleSummary(data) {
 ---
 
 > **Data da análise:** 13/05/2026
-> **Última atualização:** 23/05/2026
+> **Última atualização:** 24/05/2026
 > **Total de scripts analisados:** 29 scripts k6 + 1 arquivo de configuração + 1 workflow CI + 5 módulos helpers

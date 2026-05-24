@@ -325,15 +325,18 @@ const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
 
 ---
 
-### 3.3 Verificação de health check duplicada em `setup()`
+### 3.3 Verificação de health check duplicada em `setup()` — **RESOLVIDO (24/05/2026)**
 
-**Severidade:** 🟢 Baixa
+**Severidade anterior:** 🟢 Baixa
 
-**Arquivos afetados:** `/load-tests/authenticated-flow.js` (linha ~14), `/load-tests/musicas-load-test.js`
+**Arquivos afetados:** `/load-tests/authenticated-flow.js`, `/load-tests/musicas-load-test.js`
 
-**Problema:** Alguns scripts fazem health check desnecessário no `setup()` antes do login, adicionando latência ao teste e consumindo recursos do servidor.
+**Problema original:** Alguns scripts faziam health check desnecessário no `setup()` antes do login, adicionando latência ao teste e consumindo recursos do servidor.
 
-**Sugestão:** Remover health checks de `setup()` em testes que não testam especificamente health check. O k6 já reporta falhas se o servidor estiver indisponível.
+**O que foi feito (24/05/2026):**
+1. **`load-tests/authenticated-flow.js`**: Removida a função `setup()` que executava `http.get(BASE_URL)` como health check antes do login. O k6 já reporta falhas se o servidor estiver indisponível, e o login dentro da função `default()` já falharia caso o servidor estivesse offline.
+2. **`load-tests/musicas-load-test.js`**: Alterada a propriedade `healthCheck: true` para `healthCheck: false` na configuração do recurso. Isso desativa o health check condicional dentro do `createLoadSetup()` no `helpers/resource-test-runner.js`, que executava `http.get(BASE_URL)` antes do login.
+3. Nenhuma alteração necessária no `helpers/resource-test-runner.js` — a lógica condicional já existia e continua funcionando para quem precisar de health check.
 
 ---
 
@@ -594,7 +597,7 @@ import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 | ⚠️ **Média** | Manutenção | Configuração de carga inconsistente entre testes | Alto | Médio | ✅ Resolvido (23/05/2026) |
 | ⚠️ **Média** | Duplicidade | Estruturas CRUD músicas/vídeos quase idênticas | Alto | Alto | ✅ Resolvido (23/05/2026) |
 | 🟢 **Baixa** | Performance | `sleep()` fixo não simula comportamento real | Baixo | Baixo | ✅ Resolvido (24/05/2026) |
-| 🟢 **Baixa** | Performance | Health check duplicado em `setup()` | Baixo | Baixo | ❌ Pendente |
+| 🟢 **Baixa** | Performance | Health check duplicado em `setup()` | Baixo | Baixo | ✅ Resolvido (24/05/2026) |
 | 🟢 **Baixa** | Manutenção | Nomenclatura inconsistente de arquivos | Médio | Baixo | ❌ Pendente |
 | 🟢 **Baixa** | Manutenção | `env-config.json` subutilizado | Baixo | Médio | ✅ Resolvido (23/05/2026) |
 | 🟢 **Baixa** | Manutenção | Separação difusa entre testes funcionais e de carga | Médio | Baixo | ❌ Pendente |

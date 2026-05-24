@@ -4,7 +4,7 @@ const resourceConfig = {
   endpoint: '/api/admin/musicas',
   requireAuth: true,
   useSpoofIP: true,
-  healthCheck: true,
+  healthCheck: false,
   resourceName: 'musicas',
   profileName: 'medium',
   checkResponse: () => ({
