@@ -1,7 +1,7 @@
 import http from 'k6/http';
 import { check } from 'k6';
-import { randomSleep } from './helpers/sleep.js';
-import { generateReport } from './helpers/report.js';
+import { randomSleep } from '../helpers/sleep.js';
+import { generateReport } from '../helpers/report.js';
 
 export const options = {
   // Teste funcional de busca por título

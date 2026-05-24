@@ -1,4 +1,4 @@
-import { createLoadTest, generateReport } from './helpers/resource-test-runner.js';
+import { createLoadTest, generateReport } from '../helpers/resource-test-runner.js';
 
 const resourceConfig = {
   endpoint: '/api/admin/musicas',

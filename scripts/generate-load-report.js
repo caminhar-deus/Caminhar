@@ -33,33 +33,33 @@ async function checkK6Available() {
 const TESTS = [
   { 
     name: 'Fluxo Autenticado', 
-    script: `${LOAD_TESTS_DIR}/authenticated-flow-test.js`, 
+    script: `${LOAD_TESTS_DIR}/performance/authenticated-flow-test.js`, 
     env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME, ADMIN_PASSWORD: process.env.ADMIN_PASSWORD } 
   },
   { 
     name: 'Criação de Posts (Escrita)', 
-    script: `${LOAD_TESTS_DIR}/create-post-flow.js`, 
+    script: `${LOAD_TESTS_DIR}/performance/create-post-flow.js`, 
     env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME, ADMIN_PASSWORD: process.env.ADMIN_PASSWORD }, 
     cleanup: 'scripts/clean-load-test-posts.js' 
   },
   { 
     name: 'Carga de Vídeos (Leitura)', 
-    script: `${LOAD_TESTS_DIR}/videos-load-test.js`, 
+    script: `${LOAD_TESTS_DIR}/performance/videos-load-test.js`, 
     env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME, ADMIN_PASSWORD: process.env.ADMIN_PASSWORD } 
   },
   { 
     name: 'CRUD de Vídeos', 
-    script: `${LOAD_TESTS_DIR}/videos-crud-test.js`, 
+    script: `${LOAD_TESTS_DIR}/performance/videos-crud-test.js`, 
     env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME, ADMIN_PASSWORD: process.env.ADMIN_PASSWORD } 
   },
   { 
     name: 'CRUD de Músicas', 
-    script: `${LOAD_TESTS_DIR}/musicas-crud-test.js`, 
+    script: `${LOAD_TESTS_DIR}/performance/musicas-crud-test.js`, 
     env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME, ADMIN_PASSWORD: process.env.ADMIN_PASSWORD } 
   },
   { 
     name: 'Carga de Músicas (Leitura)', 
-    script: `${LOAD_TESTS_DIR}/musicas-load-test.js`, 
+    script: `${LOAD_TESTS_DIR}/performance/musicas-load-test.js`, 
     env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME, ADMIN_PASSWORD: process.env.ADMIN_PASSWORD } 
   },
 ];

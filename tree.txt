@@ -611,14 +611,17 @@
 │   ├── spotify.js
 │   └── youtube.js
 ├── load-tests
-│   ├── authenticated-flow-test.js
-│   ├── backup-verification-test.js
-│   ├── cache-headers-test.js
-│   ├── cache-performance-test.js
-│   ├── create-post-flow.js
-│   ├── ddos-search-test.js
 │   ├── env-config.json
-│   ├── health-check.js
+│   ├── functional
+│   │   ├── backup-verification-test.js
+│   │   ├── cache-headers-test.js
+│   │   ├── health-check.js
+│   │   ├── posts-cursor-pagination-test.js
+│   │   ├── posts-tags-test.js
+│   │   ├── recovery-test.js
+│   │   ├── search-content-test.js
+│   │   ├── upload-flow-test.js
+│   │   └── video-validation-test.js
 │   ├── helpers
 │   │   ├── auth.js
 │   │   ├── config.js
@@ -627,29 +630,29 @@
 │   │   ├── report.js
 │   │   ├── resource-test-runner.js
 │   │   └── sleep.js
-│   ├── ip-spoofing-deteccao-test.js
-│   ├── ip-spoofing-test.js
-│   ├── login-negative-test.js
-│   ├── musicas-crud-test.js
-│   ├── musicas-filter-test.js
-│   ├── musicas-load-test.js
-│   ├── musicas-pagination-test.js
-│   ├── musicas-search-test.js
-│   ├── musicas-sort-test.js
-│   ├── pagination-test.js
-│   ├── posts-cursor-pagination-test.js
-│   ├── posts-tags-test.js
-│   ├── rate-limit-test.js
-│   ├── recovery-test.js
-│   ├── search-content-test.js
-│   ├── stress-test-combined.js
-│   ├── upload-flow-test.js
-│   ├── videos-crud-test.js
-│   ├── videos-filter-test.js
-│   ├── videos-load-test.js
-│   ├── videos-pagination-test.js
-│   ├── videos-sort-test.js
-│   └── video-validation-test.js
+│   ├── performance
+│   │   ├── authenticated-flow-test.js
+│   │   ├── cache-performance-test.js
+│   │   ├── create-post-flow.js
+│   │   ├── musicas-crud-test.js
+│   │   ├── musicas-filter-test.js
+│   │   ├── musicas-load-test.js
+│   │   ├── musicas-pagination-test.js
+│   │   ├── musicas-search-test.js
+│   │   ├── musicas-sort-test.js
+│   │   ├── pagination-test.js
+│   │   ├── stress-test-combined.js
+│   │   ├── videos-crud-test.js
+│   │   ├── videos-filter-test.js
+│   │   ├── videos-load-test.js
+│   │   ├── videos-pagination-test.js
+│   │   └── videos-sort-test.js
+│   └── security
+│       ├── ddos-search-test.js
+│       ├── ip-spoofing-deteccao-test.js
+│       ├── ip-spoofing-test.js
+│       ├── login-negative-test.js
+│       └── rate-limit-test.js
 ├── load-tests.yml
 ├── __mocks__
 │   ├── cookie.js
@@ -1089,4 +1092,4 @@
 ├── tests-output.log
 └── tree.txt
 
-168 directories, 922 files
+171 directories, 922 files

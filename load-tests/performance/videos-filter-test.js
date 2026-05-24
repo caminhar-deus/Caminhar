@@ -1,11 +1,12 @@
-import { createFilterTest, generateReport } from './helpers/resource-test-runner.js';
+import { createFilterTest, generateReport } from '../helpers/resource-test-runner.js';
 
 const resourceConfig = {
-  publicEndpoint: '/api/musicas',
+  publicEndpoint: '/api/videos',
   searchField: 'search',
-  searchValues: ['Aline Barros', 'Fernandinho', 'Gabriela Rocha', 'Diante do Trono', 'Preto no Branco'],
+  searchValues: ['louvor', 'adoração', 'testemunho', 'pregação', 'estudo'],
+  itemsPath: 'data.videos',
   responsePath: 'data',
-  resourceName: 'musicas',
+  resourceName: 'videos',
   profileName: 'light',
 };
 

@@ -1,6 +1,6 @@
-import { createCrudTest, generateReport } from './helpers/resource-test-runner.js';
-import { setup } from './helpers/auth.js';
-import { BASE_URL } from './helpers/config.js';
+import { createCrudTest, generateReport } from '../helpers/resource-test-runner.js';
+import { setup } from '../helpers/auth.js';
+import { BASE_URL } from '../helpers/config.js';
 import http from 'k6/http';
 
 const resourceConfig = {

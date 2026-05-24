@@ -1,12 +1,12 @@
-import { createSortTest, generateReport } from './helpers/resource-test-runner.js';
+import { createSortTest, generateReport } from '../helpers/resource-test-runner.js';
 
 const resourceConfig = {
-  publicEndpoint: '/api/videos',
+  publicEndpoint: '/api/musicas',
   sortField: 'created_at',
   sortOrder: 'desc',
-  itemsPath: 'data.videos',
-  resourceName: 'videos',
-  useExplicitSort: false,
+  responsePath: 'data',
+  resourceName: 'musicas',
+  useExplicitSort: true,
   profileName: 'light',
 };
 

@@ -1,9 +1,9 @@
 import http from 'k6/http';
 import { check } from 'k6';
 import { Rate } from 'k6/metrics';
-import { BASE_URL } from './helpers/config.js';
-import { getProfile } from './helpers/profiles.js';
-import { generateReport } from './helpers/report.js';
+import { BASE_URL } from '../helpers/config.js';
+import { getProfile } from '../helpers/profiles.js';
+import { generateReport } from '../helpers/report.js';
 
 // Métrica personalizada para rastrear especificamente erros do servidor (5xx)
 const ErrorRate500 = new Rate('errors_500');

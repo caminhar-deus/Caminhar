@@ -1,11 +1,11 @@
 import http from 'k6/http';
 import { check } from 'k6';
-import { randomSleep } from './helpers/sleep.js';
+import { randomSleep } from '../helpers/sleep.js';
 import { b64decode } from 'k6/encoding';
 import exec from 'k6/execution';
-import { generateReport } from './helpers/report.js';
-import { BASE_URL } from './helpers/config.js';
-import { setup } from './helpers/auth.js';
+import { generateReport } from '../helpers/report.js';
+import { BASE_URL } from '../helpers/config.js';
+import { setup } from '../helpers/auth.js';
 
 // --- Opções do Teste de Upload ---
 export const options = {

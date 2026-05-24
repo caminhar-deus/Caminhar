@@ -1,23 +1,16 @@
 # 📊 Análise dos Arquivos de Teste de Carga — `/load-tests`
 
-> **Propósito:** Documentação detalhada de todos os arquivos da pasta `load-tests/`, descrevendo o que cada um faz, seu propósito, estrutura e endpoints utilizados.
+> **Propósito:** Documentação detalhada de todos os arquivos da pasta `load-tests/`, descrevendo o que cada um faz, seu propósito, estrutura e endpoints utilizados. Os scripts estão organizados em 3 subpastas: `performance/`, `functional/` e `security/`.
 
 ---
 
 ## Sumário
 
 1. [Visão Geral](#visão-geral)
-2. [Arquivos de Teste](#arquivos-de-teste)
+2. [Subpasta performance/](#subpasta-performance)
    - [authenticated-flow-test.js](#authenticated-flow-testjs)
-   - [backup-verification-test.js](#backup-verification-testjs)
-   - [cache-headers-test.js](#cache-headers-testjs)
    - [cache-performance-test.js](#cache-performance-testjs)
    - [create-post-flow.js](#create-post-flowjs)
-   - [ddos-search-test.js](#ddos-search-testjs)
-   - [health-check.js](#health-checkjs)
-   - [ip-spoofing-deteccao-test.js](#ip-spoofing-deteccao-testjs)
-   - [ip-spoofing-test.js](#ip-spoofing-testjs)
-   - [login-negative-test.js](#login-negative-testjs)
    - [musicas-crud-test.js](#musicas-crud-testjs)
    - [musicas-filter-test.js](#musicas-filter-testjs)
    - [musicas-load-test.js](#musicas-load-testjs)
@@ -25,20 +18,29 @@
    - [musicas-search-test.js](#musicas-search-testjs)
    - [musicas-sort-test.js](#musicas-sort-testjs)
    - [pagination-test.js](#pagination-testjs)
-   - [posts-cursor-pagination-test.js](#posts-cursor-pagination-testjs)
-   - [posts-tags-test.js](#posts-tags-testjs)
-   - [rate-limit-test.js](#rate-limit-testjs)
-   - [recovery-test.js](#recovery-testjs)
-   - [search-content-test.js](#search-content-testjs)
    - [stress-test-combined.js](#stress-test-combinedjs)
-   - [upload-flow-test.js](#upload-flow-testjs)
-   - [video-validation-test.js](#video-validation-testjs)
    - [videos-crud-test.js](#videos-crud-testjs)
    - [videos-filter-test.js](#videos-filter-testjs)
    - [videos-load-test.js](#videos-load-testjs)
    - [videos-pagination-test.js](#videos-pagination-testjs)
    - [videos-sort-test.js](#videos-sort-testjs)
-3. [Arquivos de Configuração e Workflow](#arquivos-de-configuração-e-workflow)
+3. [Subpasta functional/](#subpasta-functional)
+   - [backup-verification-test.js](#backup-verification-testjs)
+   - [cache-headers-test.js](#cache-headers-testjs)
+   - [health-check.js](#health-checkjs)
+   - [posts-cursor-pagination-test.js](#posts-cursor-pagination-testjs)
+   - [posts-tags-test.js](#posts-tags-testjs)
+   - [recovery-test.js](#recovery-testjs)
+   - [search-content-test.js](#search-content-testjs)
+   - [upload-flow-test.js](#upload-flow-testjs)
+   - [video-validation-test.js](#video-validation-testjs)
+4. [Subpasta security/](#subpasta-security)
+   - [ddos-search-test.js](#ddos-search-testjs)
+   - [ip-spoofing-deteccao-test.js](#ip-spoofing-deteccao-testjs)
+   - [ip-spoofing-test.js](#ip-spoofing-testjs)
+   - [login-negative-test.js](#login-negative-testjs)
+   - [rate-limit-test.js](#rate-limit-testjs)
+5. [Arquivos de Configuração e Workflow](#arquivos-de-configuração-e-workflow)
    - [env-config.json](#env-configjson)
    - [load-tests.yml (CI)](#load-testsyml-ci)
    - [helpers/config.js](#helpersconfigjs)
@@ -46,38 +48,35 @@
    - [helpers/profiles.js](#helpersprofilesjs)
    - [helpers/report.js](#helpersreportjs)
    - [helpers/resource-test-runner.js](#helpersresource-test-runnerjs)
-4. [Padrões e Convenções Comuns](#padrões-e-convenções-comuns)
+6. [Padrões e Convenções Comuns](#padrões-e-convenções-comuns)
 
 ---
 
 ## Visão Geral
 
-A pasta `load-tests/` contém **36 arquivos** (29 scripts de teste em k6 + 1 configuração JSON + 1 workflow CI + 5 módulos helpers) que compõem a suíte de testes de carga, stress, performance e segurança do projeto **Caminhar**. Todos os scripts utilizam a ferramenta [k6](https://k6.io/) da Grafana Labs.
+A pasta `load-tests/` contém **36 arquivos** (29 scripts de teste em k6 + 1 configuração JSON + 1 workflow CI + 5 módulos helpers) que compõem a suíte de testes de carga, stress, performance e segurança do projeto **Caminhar**. Os scripts estão organizados em 3 subpastas: `performance/`, `functional/` e `security/`. Todos os scripts utilizam a ferramenta [k6](https://k6.io/) da Grafana Labs.
 
-Os testes estão organizados em categorias funcionais:
+Os testes estão organizados por subpasta:
 
-| Categoria | Quantidade | Descrição |
-|-----------|-----------|-----------|
-| **Músicas** | 6 | CRUD, filtro, paginação, busca, ordenação, carga (runner genérico) |
-| **Vídeos** | 6 | CRUD, filtro, paginação, validação, ordenação, carga (runner genérico) |
-| **Posts/Blog** | 4 | Paginação com cursor, tags, busca de conteúdo, criação de post |
-| **Autenticação/Segurança** | 5 | Login negativo, rate limit, IP spoofing (evasão), IP spoofing (detecção), DDoS |
-| **Saúde/Recuperação** | 3 | Health check, backup, recovery |
-| **Cache** | 2 | Headers de cache, performance de cache |
-| **Fluxos Combinados** | 2 | Stress test combinado, upload flow |
-| **Configuração** | 1 | env-config.json |
-| **Helpers** | 6 | auth.js, config.js, network.js, profiles.js, report.js, resource-test-runner.js |
-| **CI/CD** | 1 | load-tests.yml (workflow) |
+| Subpasta | Qtd | Descrição |
+|----------|-----|-----------|
+| **performance/** | 16 | Testes de carga, stress, performance e fluxos combinados |
+| **functional/** | 9 | Testes funcionais e de validação |
+| **security/** | 5 | Testes de segurança (rate limit, spoofing, DDoS) |
+| **helpers/** | 6 | Módulos compartilhados (auth, config, network, profiles, report, resource-test-runner) |
+| **raiz** | 2 | env-config.json + load-tests.yml (CI/CD na raiz do projeto) |
 
 ---
 
-## Arquivos de Teste
+## Subpasta performance/
+
+Contém 16 scripts de teste de carga, stress e performance.
 
 ---
 
 ### `authenticated-flow-test.js`
 
-**Localização:** `/load-tests/authenticated-flow-test.js`
+**Localização:** `/load-tests/performance/authenticated-flow-test.js`
 
 **O que faz:** Testa o fluxo completo de autenticação: login com credenciais de admin, obtenção de token JWT e acesso a uma rota protegida.
 
@@ -96,53 +95,9 @@ Os testes estão organizados em categorias funcionais:
 
 ---
 
-### `backup-verification-test.js`
-
-**Localização:** `/load-tests/backup-verification-test.js`
-
-**O que faz:** Teste funcional para verificar a listagem de backups, validando a estrutura JSON de resposta.
-
-**Propósito:** Garantir que o endpoint de backups retorne a estrutura esperada com campos como `id`, `filename`, `size`, `created_at`.
-
-**Estrutura:**
-- `setup()` — Login via `helpers/auth.js`
-- `default()` — GET `/api/admin/backups` com token, valida resposta
-- `handleSummary()` — Gera relatório via `helpers/report.js` (com sanitização automática do token JWT)
-- Configuração: perfil `light` do `helpers/profiles.js`
-
-**Endpoints chamados:**
-- `POST /api/auth/login` — Autenticação
-- `GET /api/admin/backups` — Listagem de backups
-
-**Configuração de carga:** Perfil `light` (1 VU, 5 iterações)
-
----
-
-### `cache-headers-test.js`
-
-**Localização:** `/load-tests/cache-headers-test.js`
-
-**O que faz:** Verifica a presença e corretude dos headers de cache HTTP (`Cache-Control`, `s-maxage`, `stale-while-revalidate`).
-
-**Propósito:** Garantir que as respostas da API incluam headers de cache apropriados para otimização de performance.
-
-**Estrutura:**
-- Rota pública (sem autenticação) — GET `/api/posts`
-- Testa `Cache-Control`, `s-maxage`, `stale-while-revalidate`
-- Soft checks com warnings em vez de falhas
-- `handleSummary()` — Gera relatório via `helpers/report.js`
-- Configuração: perfil `light` do `helpers/profiles.js`
-
-**Endpoints chamados:**
-- `GET /api/posts` — Listagem pública de posts (verifica headers de resposta)
-
-**Configuração de carga:** Perfil `light` (1 VU, 5 iterações)
-
----
-
 ### `cache-performance-test.js`
 
-**Localização:** `/load-tests/cache-performance-test.js`
+**Localização:** `/load-tests/performance/cache-performance-test.js`
 
 **O que faz:** Teste comparativo de performance entre requisições cacheadas e não cacheadas.
 
@@ -163,7 +118,7 @@ Os testes estão organizados em categorias funcionais:
 
 ### `create-post-flow.js`
 
-**Localização:** `/load-tests/create-post-flow.js`
+**Localização:** `/load-tests/performance/create-post-flow.js`
 
 **O que faz:** Testa o fluxo completo de criação de posts no blog: login → criação → limpeza.
 
@@ -188,130 +143,9 @@ Os testes estão organizados em categorias funcionais:
 
 ---
 
-### `ddos-search-test.js`
-
-**Localização:** `/load-tests/ddos-search-test.js`
-
-**O que faz:** Simula um cenário de busca massiva (tipo DDoS) no endpoint de busca de posts.
-
-**Propósito:** Verificar a resiliência do sistema sob alta frequência de requisições de busca, validando thresholds de performance e taxa de erro.
-
-**Estrutura:**
-- Gera busca aleatória com termos fixos
-- Cache busting via timestamp (`_t=${Date.now()}`)
-- Métrica `ErrorRate500` para abortar se erros 5xx > 10%
-- Intencionalmente **sem `sleep()`** para máxima taxa de requisições
-- `handleSummary()` — Gera relatório via `helpers/report.js`
-- Configuração: perfil `heavy` customizado com estágios 10s/30s/10s e 100→500 VUs
-
-**Endpoints chamados:**
-- `GET /api/posts?search={termo}` — Busca de posts
-
-**Configuração de carga:** 100→500 VUs, 50s de duração, threshold `errors_500 rate<0.10`
-
----
-
-### `health-check.js`
-
-**Localização:** `/load-tests/health-check.js`
-
-**O que faz:** Teste de carga específico para o endpoint de health check da API.
-
-**Propósito:** Verificar se o endpoint `GET /api/status?mode=health` responde corretamente sob carga crescente (até 20 usuários) e respeita SLAs rigorosos de tempo de resposta (p95 < 100ms).
-
-**Estrutura:**
-- Configuração: perfil `health` do `helpers/profiles.js`
-- Rota pública (sem autenticação) — GET `/api/status?mode=health`
-- Valida status 200 e body com `status === 'ok'`
-- **Não possui `handleSummary()`** (teste leve sem geração de relatório)
-
-**Endpoints chamados:**
-- `GET /api/status?mode=health` — Health check
-
-**Configuração de carga:** Perfil `health` (20 VUs, 20s, p(95) < 100ms)
-
----
-
-### `ip-spoofing-test.js`
-
-**Localização:** `/load-tests/ip-spoofing-test.js`
-
-**O que faz:** Teste de vulnerabilidade (Opção A) que verifica se o rate limit do sistema pode ser burlado via rotação do header `X-Forwarded-For`.
-
-**Propósito:** Detectar se o rate limit é global ou baseado em IP confiável, revelando vulnerabilidade de evasão.
-
-**Estrutura:**
-- Perfil de carga: `rateLimit` do `helpers/profiles.js`
-- Gera IPs aleatórios via `getRandomIP()` do módulo `helpers/network.js`
-- Envia requisições com `X-Forwarded-For` falsificado e senha inválida
-- **Sem `sleep()`** para máxima taxa de requisições
-- `handleSummary()` — Gera relatório via `helpers/report.js`
-
-**Interpretação dos resultados:**
-- `429` (Too Many Requests) → ✅ Protegido — rate limit global ignorou IP falso
-- `401` (Unauthorized) → ❌ Vulnerável — rate limit foi burlado pelo IP falso
-
-**Endpoints chamados:**
-- `POST /api/auth/login` — Autenticação (com `X-Forwarded-For` falsificado)
-
-**Configuração de carga:** Perfil `rateLimit` (ramp 0→50 VUs, 50s)
-
-**Observação:** Criado em substituição ao teste anterior que era contraditório (validava spoofing mas também o utilizava). Agora tem propósito claro de teste de vulnerabilidade.
-
----
-
-### `ip-spoofing-deteccao-test.js`
-
-**Localização:** `/load-tests/ip-spoofing-deteccao-test.js`
-
-**O que faz:** Teste de proteção (Opção B) que valida se o sistema detecta e rejeita ativamente requisições com headers `X-Forwarded-For` falsificados.
-
-**Propósito:** Garantir que o sistema tenha detecção ativa de IP spoofing, bloqueando requisições com headers falsificados.
-
-**Estrutura:**
-- Perfil de carga: `rateLimit` do `helpers/profiles.js`
-- Gera IPs aleatórios via `getRandomIP()` do módulo `helpers/network.js`
-- Envia requisições com múltiplos headers falsificados (`X-Forwarded-For`, `X-Real-IP`, `CF-Connecting-IP`)
-- **Sem `sleep()`** para máxima taxa de requisições
-- `handleSummary()` — Gera relatório via `helpers/report.js`
-
-**Interpretação dos resultados:**
-- `403` (Forbidden) ou `400` (Bad Request) → ✅ Protegido — spoofing detectado e bloqueado ativamente
-- `429` (Too Many Requests) → ✅ Protegido — rate limit global bloqueou (mas não houve detecção específica)
-- `401` (Unauthorized) → ❌ Vulnerável — spoofing não foi detectado
-
-**Endpoints chamados:**
-- `POST /api/auth/login` — Autenticação (com headers falsificados)
-
-**Configuração de carga:** Perfil `rateLimit` (ramp 0→50 VUs, 50s)
-
-**Observação:** Criado em 23/05/2026 como parte da resolução da seção 2.2 do UPGRADE_load-tests.md. Complementa o `ip-spoofing-test.js` testando detecção ativa em vez de evasão de rate limit.
-
----
-
-### `login-negative-test.js`
-
-**Localização:** `/load-tests/login-negative-test.js`
-
-**O que faz:** Teste negativo de autenticação que envia credenciais inválidas.
-
-**Propósito:** Garantir que o endpoint de login rejeite corretamente credenciais inválidas com status 401 e não vaze informações sobre usuários existentes.
-
-**Estrutura:**
-- Envia requisições POST com credenciais aleatórias
-- Valida status 401 e mensagem de erro genérica
-- Verifica que não há vazamento de informações
-
-**Endpoints chamados:**
-- `POST /api/auth/login` — Autenticação (com credenciais inválidas)
-
-**Configuração de carga:** Perfil `light` customizado (3 VUs, 20 iterações)
-
----
-
 ### `musicas-crud-test.js`
 
-**Localização:** `/load-tests/musicas-crud-test.js`
+**Localização:** `/load-tests/performance/musicas-crud-test.js`
 
 **O que faz:** Testa as operações CRUD (Create, Read, Update, Delete) para o recurso de músicas via runner genérico.
 
@@ -340,7 +174,7 @@ Os testes estão organizados em categorias funcionais:
 
 ### `musicas-filter-test.js`
 
-**Localização:** `/load-tests/musicas-filter-test.js`
+**Localização:** `/load-tests/performance/musicas-filter-test.js`
 
 **O que faz:** Testa o filtro de músicas por termo de busca (artista) via runner genérico.
 
@@ -362,7 +196,7 @@ Os testes estão organizados em categorias funcionais:
 
 ### `musicas-load-test.js`
 
-**Localização:** `/load-tests/musicas-load-test.js`
+**Localização:** `/load-tests/performance/musicas-load-test.js`
 
 **O que faz:** Teste de carga que simula múltiplos usuários acessando a listagem admin de músicas simultaneamente, via runner genérico.
 
@@ -384,7 +218,7 @@ Os testes estão organizados em categorias funcionais:
 
 ### `musicas-pagination-test.js`
 
-**Localização:** `/load-tests/musicas-pagination-test.js`
+**Localização:** `/load-tests/performance/musicas-pagination-test.js`
 
 **O que faz:** Testa a paginação do endpoint público de músicas via runner genérico.
 
@@ -407,7 +241,7 @@ Os testes estão organizados em categorias funcionais:
 
 ### `musicas-search-test.js`
 
-**Localização:** `/load-tests/musicas-search-test.js`
+**Localização:** `/load-tests/performance/musicas-search-test.js`
 
 **O que faz:** Testa a busca textual no endpoint de músicas com diferentes termos.
 
@@ -427,7 +261,7 @@ Os testes estão organizados em categorias funcionais:
 
 ### `musicas-sort-test.js`
 
-**Localização:** `/load-tests/musicas-sort-test.js`
+**Localização:** `/load-tests/performance/musicas-sort-test.js`
 
 **O que faz:** Testa a ordenação dos resultados de músicas por `created_at DESC` via runner genérico.
 
@@ -448,7 +282,7 @@ Os testes estão organizados em categorias funcionais:
 
 ### `pagination-test.js`
 
-**Localização:** `/load-tests/pagination-test.js`
+**Localização:** `/load-tests/performance/pagination-test.js`
 
 **O que faz:** Teste funcional de paginação baseada em page/offset para posts públicos.
 
@@ -468,121 +302,9 @@ Os testes estão organizados em categorias funcionais:
 
 ---
 
-### `posts-cursor-pagination-test.js`
-
-**Localização:** `/load-tests/posts-cursor-pagination-test.js`
-
-**O que faz:** Testa a paginação baseada em cursor para o recurso de posts.
-
-**Propósito:** Validar o funcionamento da paginação por cursor (diferente de page/offset), que é mais eficiente para grandes conjuntos de dados.
-
-**Estrutura:**
-- Rota pública (sem autenticação) — GET `/api/posts?limit=5`
-- Pega o ID do último post como cursor → requisição com `?cursor={id}`
-- Valida que resultados são distintos entre páginas
-- Soft pass se dados insuficientes
-- `handleSummary()` — Gera relatório via `helpers/report.js`
-- Configuração: perfil `light` do `helpers/profiles.js`
-
-**Endpoints chamados:**
-- `GET /api/posts?cursor={id}&limit={n}` — Posts com paginação por cursor
-
-**Observação:** Usa rota `/api/posts` (sem `/v1`), rota pública sem autenticação.
-
----
-
-### `posts-tags-test.js`
-
-**Localização:** `/load-tests/posts-tags-test.js`
-
-**O que faz:** Testa o filtro de posts por tag na API pública.
-
-**Propósito:** Verificar se a rota `/api/posts?tag=...` retorna corretamente posts filtrados por uma tag específica.
-
-**Estrutura:**
-- Rota pública (sem autenticação) — GET `/api/posts?tag={tag}`
-- Tags fixas: `['fé', 'oração', 'bíblia', 'vida', 'espiritualidade']`
-- Valida se posts retornados contêm a tag buscada
-- Soft pass com warning se tag não encontrada visualmente (pode ser normalização diferente)
-- `handleSummary()` — Gera relatório via `helpers/report.js` (sem token para sanitizar, é rota pública)
-- Configuração: perfil `light` do `helpers/profiles.js`
-
-**Endpoints chamados:**
-- `GET /api/posts?tag={tag}` — Posts filtrados por tag
-
-**Observação:** Usa rota `/api/posts` (sem `/v1`), rota pública sem autenticação.
-
----
-
-### `rate-limit-test.js`
-
-**Localização:** `/load-tests/rate-limit-test.js`
-
-**O que faz:** Testa o mecanismo de rate limiting da API, enviando requisições em alta frequência.
-
-**Propósito:** Garantir que o sistema limite corretamente requisições excessivas, retornando status 429 (Too Many Requests) quando o limite é excedido.
-
-**Estrutura:**
-- Configuração: perfil `rateLimit` do `helpers/profiles.js`
-- Payload com username/password aleatórios (evita whitelist)
-- Headers `X-Forwarded-For`, `X-Real-IP`, `CF-Connecting-IP`, `True-Client-IP` para simular IP externo
-- Métrica `RateLimitHits` para contar bloqueios por rate limit
-- Intencionalmente **sem `sleep()`** para máxima taxa de requisições
-- Warning se nenhum rate limit foi acionado
-- `handleSummary()` — Gera relatório via `helpers/report.js`
-
-**Endpoints chamados:**
-- `POST /api/auth/login` — Login (rota mais protegida por rate limit)
-
----
-
-### `recovery-test.js`
-
-**Localização:** `/load-tests/recovery-test.js`
-
-**O que faz:** Testa a capacidade de recuperação do sistema após uma falha (banco de dados offline).
-
-**Propósito:** Validar que o sistema detecta falhas e se recupera automaticamente, medindo o tempo de recuperação (TTR).
-
-**Estrutura:**
-- Configuração: perfil `recovery` do `helpers/profiles.js` (1 VU constante por 2 minutos)
-- Monitora rota `/api/posts` que depende estritamente do banco de dados
-- Estado `isSystemDown` para rastrear início/fim de quedas
-- Métricas: `recovery_time_ms` (Trend) e `recovery_count` (Counter)
-- Mensagem de estabilidade se nenhuma falha detectada
-- `handleSummary()` — Gera relatório via `helpers/report.js`
-
-**Endpoints chamados:**
-- `GET /api/posts` — Listagem pública de posts (dependente do banco)
-
----
-
-### `search-content-test.js`
-
-**Localização:** `/load-tests/search-content-test.js`
-
-**O que faz:** Testa a busca de conteúdo textual nos posts públicos.
-
-**Propósito:** Validar que o mecanismo de busca retorna resultados consistentes e performáticos para diferentes termos de busca.
-
-**Estrutura:**
-- Rota pública (sem autenticação) — GET `/api/posts?search={termo}&page=1&limit=10`
-- Termos de busca: `['Deus', 'Jesus', 'amor', 'fé', 'vida', 'caminho', 'luz']`
-- Valida estrutura de resposta, status 200 e match do termo no título/conteúdo/tags
-- Soft pass com warning se termo não encontrado visualmente
-- `handleSummary()` — Gera relatório via `helpers/report.js`
-- Configuração: perfil `light` do `helpers/profiles.js`
-
-**Endpoints chamados:**
-- `GET /api/posts?search={termo}` — Busca textual em posts
-
-**Observação:** Usa rota `/api/posts` (sem `/v1`), rota pública sem autenticação.
-
----
-
 ### `stress-test-combined.js`
 
-**Localização:** `/load-tests/stress-test-combined.js`
+**Localização:** `/load-tests/performance/stress-test-combined.js`
 
 **O que faz:** Teste de estresse combinado com múltiplos cenários executados simultaneamente. É o teste mais robusto e completo da suíte.
 
@@ -624,54 +346,9 @@ Os testes estão organizados em categorias funcionais:
 
 ---
 
-### `upload-flow-test.js`
-
-**Localização:** `/load-tests/upload-flow-test.js`
-
-**O que faz:** Testa o fluxo de upload de arquivos para a aplicação.
-
-**Propósito:** Validar que o endpoint de upload de arquivos funciona sob carga e respeita limites de tamanho e tipo de arquivo.
-
-**Estrutura:**
-- `setup()` — Login via `helpers/auth.js` (centralizado, refatorado em 24/05/2026)
-- Simula upload de GIF 1x1 transparente via multipart/form-data usando `http.file()`
-- Valida status 200 e presença de URL na resposta
-- Verificação adicional: tenta baixar a imagem recém-criada para garantir persistência no disco
-- Usa `BASE_URL` de `helpers/config.js` (removido hardcoded em 24/05/2026)
-- Nome do arquivo contém prefixo `k6` para identificação
-
-**Endpoints chamados:**
-- `POST /api/auth/login` — Autenticação
-- `POST /api/upload-image` — Upload de arquivo
-- `GET {imageUrl}` — Verificação de persistência no disco
-
----
-
-### `video-validation-test.js`
-
-**Localização:** `/load-tests/video-validation-test.js`
-
-**O que faz:** Teste funcional que valida as regras de validação de URL do YouTube na criação de vídeos.
-
-**Propósito:** Garantir que o endpoint de criação `/api/admin/videos` tenha validações corretas para URLs do YouTube, rejeitando domínios inválidos e URLs malformadas.
-
-**Estrutura:**
-- `setup()` — Login via `helpers/auth.js`
-- `default()` — 3 cenários de validação:
-  1. URL válida do YouTube (deve passar)
-  2. URL de domínio inválido — Vimeo (deve rejeitar)
-  3. URL malformada (deve rejeitar)
-- `handleSummary()` — Gera relatório via `helpers/report.js`
-
-**Endpoints chamados:**
-- `POST /api/auth/login` — Autenticação
-- `POST /api/admin/videos` — Criação de vídeo (3x)
-
----
-
 ### `videos-crud-test.js`
 
-**Localização:** `/load-tests/videos-crud-test.js`
+**Localização:** `/load-tests/performance/videos-crud-test.js`
 
 **O que faz:** Testa as operações CRUD para o recurso de vídeos via runner genérico.
 
@@ -697,7 +374,7 @@ Os testes estão organizados em categorias funcionais:
 
 ### `videos-filter-test.js`
 
-**Localização:** `/load-tests/videos-filter-test.js`
+**Localização:** `/load-tests/performance/videos-filter-test.js`
 
 **O que faz:** Testa o filtro de vídeos por termo de busca (título/descrição) via runner genérico.
 
@@ -719,7 +396,7 @@ Os testes estão organizados em categorias funcionais:
 
 ### `videos-load-test.js`
 
-**Localização:** `/load-tests/videos-load-test.js`
+**Localização:** `/load-tests/performance/videos-load-test.js`
 
 **O que faz:** Teste de carga que simula múltiplos usuários acessando a listagem pública de vídeos, com 2 requisições por iteração (páginas 1 e 2), via runner genérico.
 
@@ -744,7 +421,7 @@ Os testes estão organizados em categorias funcionais:
 
 ### `videos-pagination-test.js`
 
-**Localização:** `/load-tests/videos-pagination-test.js`
+**Localização:** `/load-tests/performance/videos-pagination-test.js`
 
 **O que faz:** Testa a paginação do endpoint público de vídeos via runner genérico.
 
@@ -767,7 +444,7 @@ Os testes estão organizados em categorias funcionais:
 
 ### `videos-sort-test.js`
 
-**Localização:** `/load-tests/videos-sort-test.js`
+**Localização:** `/load-tests/performance/videos-sort-test.js`
 
 **O que faz:** Testa a ordenação padrão dos resultados de vídeos (sempre por `created_at DESC`) via runner genérico.
 
@@ -784,6 +461,340 @@ Os testes estão organizados em categorias funcionais:
 - `GET /api/videos?page=1&limit=5&sort=created_at&order=desc` — Check de compatibilidade
 
 **Observação:** Implementado via `createSortTest()` do módulo `helpers/resource-test-runner.js`.
+
+---
+
+## Subpasta functional/
+
+Contém 9 scripts de teste funcional e validação.
+
+---
+
+### `backup-verification-test.js`
+
+**Localização:** `/load-tests/functional/backup-verification-test.js`
+
+**O que faz:** Teste funcional para verificar a listagem de backups, validando a estrutura JSON de resposta.
+
+**Propósito:** Garantir que o endpoint de backups retorne a estrutura esperada com campos como `id`, `filename`, `size`, `created_at`.
+
+**Estrutura:**
+- `setup()` — Login via `helpers/auth.js`
+- `default()` — GET `/api/admin/backups` com token, valida resposta
+- `handleSummary()` — Gera relatório via `helpers/report.js` (com sanitização automática do token JWT)
+- Configuração: perfil `light` do `helpers/profiles.js`
+
+**Endpoints chamados:**
+- `POST /api/auth/login` — Autenticação
+- `GET /api/admin/backups` — Listagem de backups
+
+**Configuração de carga:** Perfil `light` (1 VU, 5 iterações)
+
+---
+
+### `cache-headers-test.js`
+
+**Localização:** `/load-tests/functional/cache-headers-test.js`
+
+**O que faz:** Verifica a presença e corretude dos headers de cache HTTP (`Cache-Control`, `s-maxage`, `stale-while-revalidate`).
+
+**Propósito:** Garantir que as respostas da API incluam headers de cache apropriados para otimização de performance.
+
+**Estrutura:**
+- Rota pública (sem autenticação) — GET `/api/posts`
+- Testa `Cache-Control`, `s-maxage`, `stale-while-revalidate`
+- Soft checks com warnings em vez de falhas
+- `handleSummary()` — Gera relatório via `helpers/report.js`
+- Configuração: perfil `light` do `helpers/profiles.js`
+
+**Endpoints chamados:**
+- `GET /api/posts` — Listagem pública de posts (verifica headers de resposta)
+
+**Configuração de carga:** Perfil `light` (1 VU, 5 iterações)
+
+---
+
+### `health-check.js`
+
+**Localização:** `/load-tests/functional/health-check.js`
+
+**O que faz:** Teste de carga específico para o endpoint de health check da API.
+
+**Propósito:** Verificar se o endpoint `GET /api/status?mode=health` responde corretamente sob carga crescente (até 20 usuários) e respeita SLAs rigorosos de tempo de resposta (p95 < 100ms).
+
+**Estrutura:**
+- Configuração: perfil `health` do `helpers/profiles.js`
+- Rota pública (sem autenticação) — GET `/api/status?mode=health`
+- Valida status 200 e body com `status === 'ok'`
+- **Não possui `handleSummary()`** (teste leve sem geração de relatório)
+
+**Endpoints chamados:**
+- `GET /api/status?mode=health` — Health check
+
+**Configuração de carga:** Perfil `health` (20 VUs, 20s, p(95) < 100ms)
+
+---
+
+### `posts-cursor-pagination-test.js`
+
+**Localização:** `/load-tests/functional/posts-cursor-pagination-test.js`
+
+**O que faz:** Testa a paginação baseada em cursor para o recurso de posts.
+
+**Propósito:** Validar o funcionamento da paginação por cursor (diferente de page/offset), que é mais eficiente para grandes conjuntos de dados.
+
+**Estrutura:**
+- Rota pública (sem autenticação) — GET `/api/posts?limit=5`
+- Pega o ID do último post como cursor → requisição com `?cursor={id}`
+- Valida que resultados são distintos entre páginas
+- Soft pass se dados insuficientes
+- `handleSummary()` — Gera relatório via `helpers/report.js`
+- Configuração: perfil `light` do `helpers/profiles.js`
+
+**Endpoints chamados:**
+- `GET /api/posts?cursor={id}&limit={n}` — Posts com paginação por cursor
+
+**Observação:** Usa rota `/api/posts` (sem `/v1`), rota pública sem autenticação.
+
+---
+
+### `posts-tags-test.js`
+
+**Localização:** `/load-tests/functional/posts-tags-test.js`
+
+**O que faz:** Testa o filtro de posts por tag na API pública.
+
+**Propósito:** Verificar se a rota `/api/posts?tag=...` retorna corretamente posts filtrados por uma tag específica.
+
+**Estrutura:**
+- Rota pública (sem autenticação) — GET `/api/posts?tag={tag}`
+- Tags fixas: `['fé', 'oração', 'bíblia', 'vida', 'espiritualidade']`
+- Valida se posts retornados contêm a tag buscada
+- Soft pass com warning se tag não encontrada visualmente (pode ser normalização diferente)
+- `handleSummary()` — Gera relatório via `helpers/report.js` (sem token para sanitizar, é rota pública)
+- Configuração: perfil `light` do `helpers/profiles.js`
+
+**Endpoints chamados:**
+- `GET /api/posts?tag={tag}` — Posts filtrados por tag
+
+**Observação:** Usa rota `/api/posts` (sem `/v1`), rota pública sem autenticação.
+
+---
+
+### `recovery-test.js`
+
+**Localização:** `/load-tests/functional/recovery-test.js`
+
+**O que faz:** Testa a capacidade de recuperação do sistema após uma falha (banco de dados offline).
+
+**Propósito:** Validar que o sistema detecta falhas e se recupera automaticamente, medindo o tempo de recuperação (TTR).
+
+**Estrutura:**
+- Configuração: perfil `recovery` do `helpers/profiles.js` (1 VU constante por 2 minutos)
+- Monitora rota `/api/posts` que depende estritamente do banco de dados
+- Estado `isSystemDown` para rastrear início/fim de quedas
+- Métricas: `recovery_time_ms` (Trend) e `recovery_count` (Counter)
+- Mensagem de estabilidade se nenhuma falha detectada
+- `handleSummary()` — Gera relatório via `helpers/report.js`
+
+**Endpoints chamados:**
+- `GET /api/posts` — Listagem pública de posts (dependente do banco)
+
+---
+
+### `search-content-test.js`
+
+**Localização:** `/load-tests/functional/search-content-test.js`
+
+**O que faz:** Testa a busca de conteúdo textual nos posts públicos.
+
+**Propósito:** Validar que o mecanismo de busca retorna resultados consistentes e performáticos para diferentes termos de busca.
+
+**Estrutura:**
+- Rota pública (sem autenticação) — GET `/api/posts?search={termo}&page=1&limit=10`
+- Termos de busca: `['Deus', 'Jesus', 'amor', 'fé', 'vida', 'caminho', 'luz']`
+- Valida estrutura de resposta, status 200 e match do termo no título/conteúdo/tags
+- Soft pass com warning se termo não encontrado visualmente
+- `handleSummary()` — Gera relatório via `helpers/report.js`
+- Configuração: perfil `light` do `helpers/profiles.js`
+
+**Endpoints chamados:**
+- `GET /api/posts?search={termo}` — Busca textual em posts
+
+**Observação:** Usa rota `/api/posts` (sem `/v1`), rota pública sem autenticação.
+
+---
+
+### `upload-flow-test.js`
+
+**Localização:** `/load-tests/functional/upload-flow-test.js`
+
+**O que faz:** Testa o fluxo de upload de arquivos para a aplicação.
+
+**Propósito:** Validar que o endpoint de upload de arquivos funciona sob carga e respeita limites de tamanho e tipo de arquivo.
+
+**Estrutura:**
+- `setup()` — Login via `helpers/auth.js` (centralizado, refatorado em 24/05/2026)
+- Simula upload de GIF 1x1 transparente via multipart/form-data usando `http.file()`
+- Valida status 200 e presença de URL na resposta
+- Verificação adicional: tenta baixar a imagem recém-criada para garantir persistência no disco
+- Usa `BASE_URL` de `helpers/config.js` (removido hardcoded em 24/05/2026)
+- Nome do arquivo contém prefixo `k6` para identificação
+
+**Endpoints chamados:**
+- `POST /api/auth/login` — Autenticação
+- `POST /api/upload-image` — Upload de arquivo
+- `GET {imageUrl}` — Verificação de persistência no disco
+
+---
+
+### `video-validation-test.js`
+
+**Localização:** `/load-tests/functional/video-validation-test.js`
+
+**O que faz:** Teste funcional que valida as regras de validação de URL do YouTube na criação de vídeos.
+
+**Propósito:** Garantir que o endpoint de criação `/api/admin/videos` tenha validações corretas para URLs do YouTube, rejeitando domínios inválidos e URLs malformadas.
+
+**Estrutura:**
+- `setup()` — Login via `helpers/auth.js`
+- `default()` — 3 cenários de validação:
+  1. URL válida do YouTube (deve passar)
+  2. URL de domínio inválido — Vimeo (deve rejeitar)
+  3. URL malformada (deve rejeitar)
+- `handleSummary()` — Gera relatório via `helpers/report.js`
+
+**Endpoints chamados:**
+- `POST /api/auth/login` — Autenticação
+- `POST /api/admin/videos` — Criação de vídeo (3x)
+
+---
+
+## Subpasta security/
+
+Contém 5 scripts de teste de segurança.
+
+---
+
+### `ddos-search-test.js`
+
+**Localização:** `/load-tests/security/ddos-search-test.js`
+
+**O que faz:** Simula um cenário de busca massiva (tipo DDoS) no endpoint de busca de posts.
+
+**Propósito:** Verificar a resiliência do sistema sob alta frequência de requisições de busca, validando thresholds de performance e taxa de erro.
+
+**Estrutura:**
+- Gera busca aleatória com termos fixos
+- Cache busting via timestamp (`_t=${Date.now()}`)
+- Métrica `ErrorRate500` para abortar se erros 5xx > 10%
+- Intencionalmente **sem `sleep()`** para máxima taxa de requisições
+- `handleSummary()` — Gera relatório via `helpers/report.js`
+- Configuração: perfil `heavy` customizado com estágios 10s/30s/10s e 100→500 VUs
+
+**Endpoints chamados:**
+- `GET /api/posts?search={termo}` — Busca de posts
+
+**Configuração de carga:** 100→500 VUs, 50s de duração, threshold `errors_500 rate<0.10`
+
+---
+
+### `ip-spoofing-deteccao-test.js`
+
+**Localização:** `/load-tests/security/ip-spoofing-deteccao-test.js`
+
+**O que faz:** Teste de proteção (Opção B) que valida se o sistema detecta e rejeita ativamente requisições com headers `X-Forwarded-For` falsificados.
+
+**Propósito:** Garantir que o sistema tenha detecção ativa de IP spoofing, bloqueando requisições com headers falsificados.
+
+**Estrutura:**
+- Perfil de carga: `rateLimit` do `helpers/profiles.js`
+- Gera IPs aleatórios via `getRandomIP()` do módulo `helpers/network.js`
+- Envia requisições com múltiplos headers falsificados (`X-Forwarded-For`, `X-Real-IP`, `CF-Connecting-IP`)
+- **Sem `sleep()`** para máxima taxa de requisições
+- `handleSummary()` — Gera relatório via `helpers/report.js`
+
+**Interpretação dos resultados:**
+- `403` (Forbidden) ou `400` (Bad Request) → ✅ Protegido — spoofing detectado e bloqueado ativamente
+- `429` (Too Many Requests) → ✅ Protegido — rate limit global bloqueou (mas não houve detecção específica)
+- `401` (Unauthorized) → ❌ Vulnerável — spoofing não foi detectado
+
+**Endpoints chamados:**
+- `POST /api/auth/login` — Autenticação (com headers falsificados)
+
+**Configuração de carga:** Perfil `rateLimit` (ramp 0→50 VUs, 50s)
+
+**Observação:** Criado em 23/05/2026 como parte da resolução da seção 2.2 do UPGRADE_load-tests.md. Complementa o `ip-spoofing-test.js` testando detecção ativa em vez de evasão de rate limit.
+
+---
+
+### `ip-spoofing-test.js`
+
+**Localização:** `/load-tests/security/ip-spoofing-test.js`
+
+**O que faz:** Teste de vulnerabilidade (Opção A) que verifica se o rate limit do sistema pode ser burlado via rotação do header `X-Forwarded-For`.
+
+**Propósito:** Detectar se o rate limit é global ou baseado em IP confiável, revelando vulnerabilidade de evasão.
+
+**Estrutura:**
+- Perfil de carga: `rateLimit` do `helpers/profiles.js`
+- Gera IPs aleatórios via `getRandomIP()` do módulo `helpers/network.js`
+- Envia requisições com `X-Forwarded-For` falsificado e senha inválida
+- **Sem `sleep()`** para máxima taxa de requisições
+- `handleSummary()` — Gera relatório via `helpers/report.js`
+
+**Interpretação dos resultados:**
+- `429` (Too Many Requests) → ✅ Protegido — rate limit global ignorou IP falso
+- `401` (Unauthorized) → ❌ Vulnerável — rate limit foi burlado pelo IP falso
+
+**Endpoints chamados:**
+- `POST /api/auth/login` — Autenticação (com `X-Forwarded-For` falsificado)
+
+**Configuração de carga:** Perfil `rateLimit` (ramp 0→50 VUs, 50s)
+
+**Observação:** Criado em substituição ao teste anterior que era contraditório (validava spoofing mas também o utilizava). Agora tem propósito claro de teste de vulnerabilidade.
+
+---
+
+### `login-negative-test.js`
+
+**Localização:** `/load-tests/security/login-negative-test.js`
+
+**O que faz:** Teste negativo de autenticação que envia credenciais inválidas.
+
+**Propósito:** Garantir que o endpoint de login rejeite corretamente credenciais inválidas com status 401 e não vaze informações sobre usuários existentes.
+
+**Estrutura:**
+- Envia requisições POST com credenciais aleatórias
+- Valida status 401 e mensagem de erro genérica
+- Verifica que não há vazamento de informações
+
+**Endpoints chamados:**
+- `POST /api/auth/login` — Autenticação (com credenciais inválidas)
+
+**Configuração de carga:** Perfil `light` customizado (3 VUs, 20 iterações)
+
+---
+
+### `rate-limit-test.js`
+
+**Localização:** `/load-tests/security/rate-limit-test.js`
+
+**O que faz:** Testa o mecanismo de rate limiting da API, enviando requisições em alta frequência.
+
+**Propósito:** Garantir que o sistema limite corretamente requisições excessivas, retornando status 429 (Too Many Requests) quando o limite é excedido.
+
+**Estrutura:**
+- Configuração: perfil `rateLimit` do `helpers/profiles.js`
+- Payload com username/password aleatórios (evita whitelist)
+- Headers `X-Forwarded-For`, `X-Real-IP`, `CF-Connecting-IP`, `True-Client-IP` para simular IP externo
+- Métrica `RateLimitHits` para contar bloqueios por rate limit
+- Intencionalmente **sem `sleep()`** para máxima taxa de requisições
+- Warning se nenhum rate limit foi acionado
+- `handleSummary()` — Gera relatório via `helpers/report.js`
+
+**Endpoints chamados:**
+- `POST /api/auth/login` — Login (rota mais protegida por rate limit)
 
 ---
 
@@ -818,11 +829,11 @@ Os testes estão organizados em categorias funcionais:
 
 ### `load-tests.yml` (CI/CD)
 
-**Localização:** `/load-tests.yml`
+**Localização:** `/load-tests.yml` (raiz do projeto)
 
 **O que faz:** Workflow do GitHub Actions que executa a suíte de testes de carga em CI.
 
-**Propósito:** Automatizar a execução dos testes de carga em ambiente isolado com PostgreSQL e Redis, executando o teste de estresse combinado.
+**Propósito:** Automatizar a execução dos testes de carga em ambiente isolado com PostgreSQL e Redis, executando testes das 3 subpastas em etapas separadas.
 
 **Estrutura do workflow:**
 1. **Schedule:** Execução automática diária às 03:00 UTC
@@ -832,17 +843,20 @@ Os testes estão organizados em categorias funcionais:
    - Redis 7 (rate limiting/cache)
 4. **Passos:**
    - Checkout do repositório
-   - Setup Node.js 24.14.1 com cache
+   - Setup Node.js com cache
    - Instalação de dependências (`npm ci`)
    - Restauração do cache de build do Next.js
    - Criação de diretórios de relatório
-   - Setup do banco de dados de teste
-   - Seed do banco com dados de teste
+   - Setup do banco de dados de teste + seed
    - Build da aplicação
    - Inicialização da aplicação em background
    - Setup do k6
-   - Execução do `stress-test-combined.js`
+   - **Etapa 1:** Performance tests (`load-tests/performance/`)
+   - **Etapa 2:** Functional tests (`load-tests/functional/`)
+   - **Etapa 3:** Security tests (`load-tests/security/`)
    - Upload dos relatórios como artefato (retidos por 30 dias)
+
+**Melhoria (24/05/2026):** O workflow foi expandido de 1 teste (`stress-test-combined.js`) para 7+ testes distribuídos em 3 etapas, conforme reorganização da seção 5.3.
 
 ---
 
@@ -859,7 +873,7 @@ Os testes estão organizados em categorias funcionais:
 
 **Uso:**
 ```javascript
-import { setup } from './helpers/auth.js';
+import { setup } from '../helpers/auth.js';
 export function setup() {
   return setup(); // Re-exporta para o k6
 }
@@ -888,7 +902,7 @@ export function setup() {
 
 **Uso:**
 ```javascript
-import { BASE_URL } from './helpers/config.js';
+import { BASE_URL } from '../helpers/config.js';
 ```
 
 **Nota de segurança (23/05/2026):** Os fallbacks de `USERNAME` e `PASSWORD` foram alterados de valores reais (`'admin'` / `'123456'`) para `'CHANGE_ME'` para evitar que credenciais reais sejam expostas no código-fonte. Agora é obrigatório configurar `__ENV.ADMIN_USERNAME` e `__ENV.ADMIN_PASSWORD` para executar os testes que requerem autenticação.
@@ -908,7 +922,7 @@ import { BASE_URL } from './helpers/config.js';
 
 **Uso:**
 ```javascript
-import { getRandomIP } from './helpers/network.js';
+import { getRandomIP } from '../helpers/network.js';
 ```
 
 **Observação:** IP spoofing é usado nos testes para evitar rate limit. Consulte a seção 2.2 do UPGRADE_load-tests.md para discussão sobre segurança disso.
@@ -940,7 +954,7 @@ import { getRandomIP } from './helpers/network.js';
 
 **Uso:**
 ```javascript
-import { getProfile } from './helpers/profiles.js';
+import { getProfile } from '../helpers/profiles.js';
 export const options = getProfile('light', { iterations: 10 });
 ```
 
@@ -963,7 +977,7 @@ export const options = getProfile('light', { iterations: 10 });
 
 **Uso:**
 ```javascript
-import { generateReport } from './helpers/report.js';
+import { generateReport } from '../helpers/report.js';
 export function handleSummary(data) {
   return generateReport(data, 'meu_teste');
 }
@@ -1002,8 +1016,8 @@ export function handleSummary(data) {
 
 **Uso:**
 ```javascript
-import { createCrudTest, sanitizeToken, generateReport } from './helpers/resource-test-runner.js';
-import { setup } from './helpers/auth.js';
+import { createCrudTest, sanitizeToken, generateReport } from '../helpers/resource-test-runner.js';
+import { setup } from '../helpers/auth.js';
 
 const crudTest = createCrudTest({
   adminEndpoint: '/api/admin/musicas',
@@ -1040,6 +1054,8 @@ export function handleSummary(data) {
 6. **IP Spoofing** — Os testes de carga que precisam evitar rate limit usam `getRandomIP()` de `helpers/network.js`.
 
 7. **Tags de métricas** — Uso de `tags` para categorizar requisições e filtrar thresholds por fluxo específico.
+
+8. **Organização em subpastas** — Os scripts estão organizados em 3 subpastas (`performance/`, `functional/`, `security/`), e os helpers em `helpers/`.
 
 ### Endpoints Utilizados
 
@@ -1078,4 +1094,4 @@ export function handleSummary(data) {
 
 > **Data da análise:** 13/05/2026
 > **Última atualização:** 24/05/2026
-> **Total de scripts analisados:** 29 scripts k6 + 1 arquivo de configuração + 1 workflow CI + 5 módulos helpers
+> **Total de scripts analisados:** 30 scripts k6 (16 performance + 9 functional + 5 security) + 1 env-config.json + 1 load-tests.yml + 6 módulos helpers + 1 sleep.js

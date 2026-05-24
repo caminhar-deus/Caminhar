@@ -1,8 +1,8 @@
 import http from 'k6/http';
 import { check } from 'k6';
-import { randomSleep } from './helpers/sleep.js';
+import { randomSleep } from '../helpers/sleep.js';
 import exec from 'k6/execution';
-import { getRandomIP } from './helpers/network.js';
+import { getRandomIP } from '../helpers/network.js';
 
 export const options = {
   // Cenário de teste de cache:

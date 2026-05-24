@@ -1,9 +1,9 @@
-import { createPaginationTest, generateReport } from './helpers/resource-test-runner.js';
+import { createPaginationTest, generateReport } from '../helpers/resource-test-runner.js';
 
 const resourceConfig = {
-  publicEndpoint: '/api/musicas',
-  responsePath: 'data',
-  resourceName: 'musicas',
+  publicEndpoint: '/api/videos',
+  itemsPath: 'data.videos',
+  resourceName: 'videos',
   limit: 5,
   profileName: 'light',
 };

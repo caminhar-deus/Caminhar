@@ -1,9 +1,9 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { Trend, Counter } from 'k6/metrics';
-import { BASE_URL } from './helpers/config.js';
-import { getProfile } from './helpers/profiles.js';
-import { generateReport } from './helpers/report.js';
+import { BASE_URL } from '../helpers/config.js';
+import { getProfile } from '../helpers/profiles.js';
+import { generateReport } from '../helpers/report.js';
 
 // Métrica para medir o tempo de recuperação (Time To Recovery - TTR)
 const RecoveryTime = new Trend('recovery_time_ms');

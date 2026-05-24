@@ -84,8 +84,28 @@ jobs:
       - name: Setup k6
         uses: grafana/setup-k6-action@v1
 
-      - name: Run Stress Test (Combined)
-        run: k6 run load-tests/stress-test-combined.js
+      - name: Run Performance Tests
+        run: |
+          k6 run load-tests/performance/stress-test-combined.js
+          k6 run load-tests/performance/musicas-load-test.js
+          k6 run load-tests/performance/videos-load-test.js
+        env:
+          BASE_URL: http://localhost:3000
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME || 'admin' }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+
+      - name: Run Functional Tests
+        run: |
+          k6 run load-tests/functional/health-check.js
+          k6 run load-tests/functional/cache-headers-test.js
+        env:
+          BASE_URL: http://localhost:3000
+
+      - name: Run Security Tests
+        run: |
+          k6 run load-tests/security/rate-limit-test.js
+          k6 run load-tests/security/ip-spoofing-test.js
+          k6 run load-tests/security/ddos-search-test.js
         env:
           BASE_URL: http://localhost:3000
           ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME || 'admin' }}

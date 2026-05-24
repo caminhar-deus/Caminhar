@@ -1,9 +1,9 @@
 import http from 'k6/http';
 import { check } from 'k6';
 import { Counter } from 'k6/metrics';
-import { BASE_URL } from './helpers/config.js';
-import { getProfile } from './helpers/profiles.js';
-import { generateReport } from './helpers/report.js';
+import { BASE_URL } from '../helpers/config.js';
+import { getProfile } from '../helpers/profiles.js';
+import { generateReport } from '../helpers/report.js';
 
 // Métrica personalizada para contar quantas vezes o Rate Limit foi acionado
 const RateLimitHits = new Counter('rate_limit_hits');

@@ -501,16 +501,46 @@ if (!body || !body.data || !body.data.token) {
 
 ---
 
-### 5.3 Ausência de separação entre testes funcionais e de carga
+### 5.3 Ausência de separação entre testes funcionais e de carga — **RESOLVIDO (24/05/2026)**
 
-**Severidade:** 🟢 Baixa
+**Severidade anterior:** 🟢 Baixa
 
-**Problema:** Alguns scripts são testes funcionais (ex: `backup-verification-test.js`, `video-validation-test.js`, `posts-tags-test.js`) mas estão na pasta `load-tests/` misturados com testes de carga reais.
+**Arquivos afetados originalmente:** Todos os 30 scripts de teste na raiz de `load-tests/`
 
-**Sugestão:** Separar em subpastas:
+**Problema original:** Scripts de diferentes categorias (performance, funcional, segurança) estavam misturados na raiz de `load-tests/`, sem separação por propósito.
+
+**O que foi feito (24/05/2026):**
+1. Criadas 3 subpastas organizacionais:
+   - `load-tests/performance/` — Testes de carga, stress e performance (16 scripts)
+   - `load-tests/functional/` — Testes funcionais e de validação (9 scripts)
+   - `load-tests/security/` — Testes de segurança (5 scripts)
+2. Todos os 30 scripts movidos para suas respectivas subpastas conforme classificação
+3. Ajustados imports relativos de `./helpers/` para `../helpers/` em todos os scripts
+4. Atualizados caminhos no `package.json` (31 npm scripts alterados)
+5. Atualizado caminho no `load-tests.yml` (CI workflow expandido com 3 etapas — resolve também o item 6.1)
+6. Atualizado caminho em `scripts/generate-load-report.js`
+7. A pasta `helpers/` e o arquivo `env-config.json` permaneceram na raiz de `load-tests/`
+
+**Classificação detalhada:**
+
+| Subpasta | Scripts | Descrição |
+|----------|---------|-----------|
+| **performance/** | `musicas-load-test.js`, `videos-load-test.js`, `stress-test-combined.js`, `musicas-crud-test.js`, `videos-crud-test.js`, `musicas-pagination-test.js`, `videos-pagination-test.js`, `musicas-filter-test.js`, `videos-filter-test.js`, `musicas-sort-test.js`, `videos-sort-test.js`, `musicas-search-test.js`, `cache-performance-test.js`, `pagination-test.js`, `authenticated-flow-test.js`, `create-post-flow.js` | Carga, stress e performance |
+| **functional/** | `backup-verification-test.js`, `video-validation-test.js`, `posts-tags-test.js`, `posts-cursor-pagination-test.js`, `search-content-test.js`, `cache-headers-test.js`, `health-check.js`, `upload-flow-test.js`, `recovery-test.js` | Validação funcional |
+| **security/** | `rate-limit-test.js`, `ip-spoofing-test.js`, `ip-spoofing-deteccao-test.js`, `ddos-search-test.js`, `login-negative-test.js` | Segurança |
+
+**Arquivos mantidos na raiz** (não movidos):
+- `load-tests/helpers/` — Módulos compartilhados (auth, config, network, profiles, report, resource-test-runner, sleep)
+- `load-tests/env-config.json` — Configuração de ambiente
+
+**Referências externas atualizadas:**
+- `package.json` — Todos os 31 scripts `test:load:*` com novos caminhos
+- `load-tests.yml` — CI agora executa testes das 3 subpastas em etapas separadas
+- `scripts/generate-load-report.js` — Caminhos dos 6 testes atualizados
+
+**Sugestão original:** Separar em subpastas:
 - `load-tests/performance/` — Testes de carga, stress e performance
 - `load-tests/functional/` — Testes funcionais e de validação
-- `load-tests/security/` — Testes de segurança (rate limit, spoofing, DDoS)
 
 ---
 
@@ -608,7 +638,7 @@ import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 | ⚠️ **Alta** | Duplicidade | Função `getRandomIP()` duplicada | Baixo | Médio | ✅ Resolvido (23/05/2026) |
 | ⚠️ **Alta** | Duplicidade | Configuração de ambiente duplicada | Baixo | Médio | ✅ Resolvido (23/05/2026) |
 | ⚠️ **Alta** | Segurança | Header `X-Forwarded-For` usado para burlar rate limit | Médio | Alto | ✅ Resolvido (23/05/2026) |
-| ⚠️ **Alta** | CI/CD | Workflow executa apenas 1 dos 28 testes | Alto | Muito Alto | ❌ Pendente |
+| ⚠️ **Alta** | CI/CD | Workflow executa apenas 1 dos 28 testes | Alto | Muito Alto | ✅ Resolvido (24/05/2026) |
 | ⚠️ **Alta** | Performance | Thresholds inconsistentes entre testes similares | Médio | Médio | ✅ Resolvido (23/05/2026) |
 | ⚠️ **Alta** | Manutenção | Rotas sem versionamento consistente (`/api` vs `/api/v1`) | Baixo | Médio | ✅ Resolvido (13/05/2026) |
 | ⚠️ **Alta** | CI/CD | Senhas diferentes entre env-config.json e CI | Baixo | Alto | ✅ Resolvido (23/05/2026) |
@@ -620,7 +650,7 @@ import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 | 🟢 **Baixa** | Performance | Health check duplicado em `setup()` | Baixo | Baixo | ✅ Resolvido (24/05/2026) |
 | 🟢 **Baixa** | Manutenção | Nomenclatura inconsistente de arquivos | Médio | Baixo | ✅ Resolvido (24/05/2026) |
 | 🟢 **Baixa** | Manutenção | `env-config.json` subutilizado | Baixo | Médio | ✅ Resolvido (23/05/2026) |
-| 🟢 **Baixa** | Manutenção | Separação difusa entre testes funcionais e de carga | Médio | Baixo | ❌ Pendente |
+| 🟢 **Baixa** | Manutenção | Separação difusa entre testes funcionais e de carga | Médio | Baixo | ✅ Resolvido (24/05/2026) |
 | 🟢 **Baixa** | Manutenção | Versão hardcoded do k6-summary | Baixo | Baixo | ✅ Resolvido (23/05/2026) |
 | 🟢 **Baixa** | Manutenção | Comportamento "soft pass" em validações | Baixo | Baixo | ❌ Pendente |
 | 🟢 **Baixa** | Manutenção | Ausência de tratamento de erros na extração de token | Baixo | Médio | ✅ Resolvido (23/05/2026) |
@@ -640,15 +670,24 @@ import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 7. **Módulo de sleep randomizado** (`helpers/sleep.js`): `randomSleep(min, max)` substitui `sleep()` fixo em 14 arquivos, melhorando realismo dos testes
 8. **Sleep randomizado por tipo de operação**: Faixas distintas para consulta (0.5s–3s), escrita (0.5s–2s), upload (1s–3s), estresse (0.3s–1.5s) e validação funcional (0.3s–1.3s)
 
+### Benefícios das Ações Realizadas (24/05/2026)
+
+9. **Reorganização em subpastas**: 30 scripts classificados e movidos para `performance/`, `functional/` e `security/`, com imports ajustados automaticamente
+10. **Workflow CI expandido**: Agora executa 7+ testes distribuídos em 3 etapas (performance, funcional, segurança) em vez de apenas 1
+
 ### Benefícios das Ações Sugeridas (Pendentes)
 
-1. **Reorganização em subpastas**: Clareza sobre o propósito de cada teste (performance vs funcional vs segurança)
-2. **Workflow CI expandido**: Cobertura completa de testes em CI, não apenas o stress test combinado
-3. **Test runner genérico para CRUD**: Eliminação de ~50% de código duplicado entre testes de músicas e vídeos
-4. **Segurança**: Remoção de credenciais hardcoded, sanitização de tokens em relatórios
+1. **Test runner genérico para CRUD**: Eliminação de ~50% de código duplicado entre testes de músicas e vídeos
+2. **Segurança**: Remoção de credenciais hardcoded, sanitização de tokens em relatórios
 
 ---
 
 > **Data da análise:** 10/05/2026
 > **Última atualização:** 24/05/2026
 > **Status:** Correções parciais aplicadas — ver coluna "Status" na matriz de prioridades
+>
+> ### Itens Pendentes
+>
+> - [ ] **5.5** — Comportamento "soft pass" em validações (🟢 Baixa)
+> - [ ] **6.2** — Sem validação de thresholds no workflow (⚠️ Média)
+> - [ ] **6.3** — Ausência de cache para dependências do k6 (🟢 Baixa)

@@ -1,7 +1,7 @@
 import http from 'k6/http';
 import { check } from 'k6';
-import { BASE_URL } from './helpers/config.js';
-import { getProfile } from './helpers/profiles.js';
+import { BASE_URL } from '../helpers/config.js';
+import { getProfile } from '../helpers/profiles.js';
 
 export const options = getProfile('health');
 

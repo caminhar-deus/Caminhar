@@ -1,9 +1,9 @@
 import http from 'k6/http';
 import { check } from 'k6';
-import { getRandomIP } from './helpers/network.js';
-import { BASE_URL } from './helpers/config.js';
-import { getProfile } from './helpers/profiles.js';
-import { generateReport } from './helpers/report.js';
+import { getRandomIP } from '../helpers/network.js';
+import { BASE_URL } from '../helpers/config.js';
+import { getProfile } from '../helpers/profiles.js';
+import { generateReport } from '../helpers/report.js';
 
 /**
  * Teste de Proteção — Detecção de IP Spoofing (Opção B)

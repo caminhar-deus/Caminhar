@@ -1,6 +1,6 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { generateReport } from './helpers/report.js';
+import { generateReport } from '../helpers/report.js';
 
 export const options = {
   // Este é um teste funcional, não de carga. Executa apenas 1 vez com 1 usuário.

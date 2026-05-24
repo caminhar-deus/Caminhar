@@ -1,4 +1,4 @@
-import { createLoadTest, generateReport } from './helpers/resource-test-runner.js';
+import { createLoadTest, generateReport } from '../helpers/resource-test-runner.js';
 
 const resourceConfig = {
   endpoint: '/api/videos',
@@ -40,7 +40,7 @@ const resourceConfig = {
 const loadTest = createLoadTest(resourceConfig);
 
 export const options = loadTest.options;
-export { setup } from './helpers/auth.js';
+export { setup } from '../helpers/auth.js';
 
 export default loadTest.default;
 

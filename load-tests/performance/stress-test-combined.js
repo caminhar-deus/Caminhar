@@ -1,12 +1,12 @@
 import http from 'k6/http';
 import { check } from 'k6';
-import { randomSleep } from './helpers/sleep.js';
+import { randomSleep } from '../helpers/sleep.js';
 import { Trend } from 'k6/metrics';
 import { htmlReport } from 'https://raw.githubusercontent.com/benc-uk/k6-reporter/main/dist/bundle.js';
-import { getRandomIP } from './helpers/network.js';
-import { generateReport } from './helpers/report.js';
-import { BASE_URL } from './helpers/config.js';
-import { setup } from './helpers/auth.js';
+import { getRandomIP } from '../helpers/network.js';
+import { generateReport } from '../helpers/report.js';
+import { BASE_URL } from '../helpers/config.js';
+import { setup } from '../helpers/auth.js';
 
 // --- Métricas Customizadas (Monitoramento) ---
 const MemoryRss = new Trend('nodejs_memory_rss_bytes');

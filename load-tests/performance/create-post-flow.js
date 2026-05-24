@@ -1,8 +1,8 @@
 import http from 'k6/http';
 import { check } from 'k6';
-import { randomSleep } from './helpers/sleep.js';
-import { setup } from './helpers/auth.js';
-import { BASE_URL } from './helpers/config.js';
+import { randomSleep } from '../helpers/sleep.js';
+import { setup } from '../helpers/auth.js';
+import { BASE_URL } from '../helpers/config.js';
 
 export const options = {
   stages: [

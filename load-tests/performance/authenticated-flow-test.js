@@ -1,7 +1,7 @@
 import http from 'k6/http';
 import { check } from 'k6';
 import exec from 'k6/execution';
-import { randomSleep } from './helpers/sleep.js';
+import { randomSleep } from '../helpers/sleep.js';
 
 export const options = {
   stages: [
