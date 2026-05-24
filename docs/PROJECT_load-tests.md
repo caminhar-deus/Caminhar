@@ -479,10 +479,11 @@ Contém 9 scripts de teste funcional e validação.
 **Propósito:** Garantir que o endpoint de backups retorne a estrutura esperada com campos como `id`, `filename`, `size`, `created_at`.
 
 **Estrutura:**
-- `setup()` — Login via `helpers/auth.js`
+- `setup()` — Login via `helpers/auth.js` (refatorado em 24/05/2026, substituindo declaração manual)
 - `default()` — GET `/api/admin/backups` com token, valida resposta
 - `handleSummary()` — Gera relatório via `helpers/report.js` (com sanitização automática do token JWT)
 - Configuração: perfil `light` do `helpers/profiles.js`
+- Usa `BASE_URL` de `helpers/config.js` (refatorado em 24/05/2026, removendo declarações manuais)
 
 **Endpoints chamados:**
 - `POST /api/auth/login` — Autenticação
@@ -547,7 +548,7 @@ Contém 9 scripts de teste funcional e validação.
 - Rota pública (sem autenticação) — GET `/api/posts?limit=5`
 - Pega o ID do último post como cursor → requisição com `?cursor={id}`
 - Valida que resultados são distintos entre páginas
-- Soft pass se dados insuficientes
+- **Corrigido (24/05/2026):** Check de resultados distintos agora retorna `isDistinct` em vez de `true` com warning. Se o cursor retornar o mesmo post, o check falha.
 - `handleSummary()` — Gera relatório via `helpers/report.js`
 - Configuração: perfil `light` do `helpers/profiles.js`
 
@@ -570,7 +571,7 @@ Contém 9 scripts de teste funcional e validação.
 - Rota pública (sem autenticação) — GET `/api/posts?tag={tag}`
 - Tags fixas: `['fé', 'oração', 'bíblia', 'vida', 'espiritualidade']`
 - Valida se posts retornados contêm a tag buscada
-- Soft pass com warning se tag não encontrada visualmente (pode ser normalização diferente)
+- **Corrigido (24/05/2026):** Check de filtro agora retorna `matchFound` em vez de `true` com warning. Se nenhum post contiver a tag buscada, o check falha.
 - `handleSummary()` — Gera relatório via `helpers/report.js` (sem token para sanitizar, é rota pública)
 - Configuração: perfil `light` do `helpers/profiles.js`
 
@@ -596,6 +597,7 @@ Contém 9 scripts de teste funcional e validação.
 - Métricas: `recovery_time_ms` (Trend) e `recovery_count` (Counter)
 - Mensagem de estabilidade se nenhuma falha detectada
 - `handleSummary()` — Gera relatório via `helpers/report.js`
+- Substituído `sleep(0.5)` fixo por `randomSleep(0.3, 1.3)` (24/05/2026) — usa módulo `helpers/sleep.js`
 
 **Endpoints chamados:**
 - `GET /api/posts` — Listagem pública de posts (dependente do banco)
@@ -614,7 +616,7 @@ Contém 9 scripts de teste funcional e validação.
 - Rota pública (sem autenticação) — GET `/api/posts?search={termo}&page=1&limit=10`
 - Termos de busca: `['Deus', 'Jesus', 'amor', 'fé', 'vida', 'caminho', 'luz']`
 - Valida estrutura de resposta, status 200 e match do termo no título/conteúdo/tags
-- Soft pass com warning se termo não encontrado visualmente
+- **Corrigido (24/05/2026):** Check de busca agora retorna `matchFound` em vez de `true` com warning. Se nenhum resultado contiver o termo buscado, o check falha.
 - `handleSummary()` — Gera relatório via `helpers/report.js`
 - Configuração: perfil `light` do `helpers/profiles.js`
 
@@ -657,12 +659,13 @@ Contém 9 scripts de teste funcional e validação.
 **Propósito:** Garantir que o endpoint de criação `/api/admin/videos` tenha validações corretas para URLs do YouTube, rejeitando domínios inválidos e URLs malformadas.
 
 **Estrutura:**
-- `setup()` — Login via `helpers/auth.js`
+- `setup()` — Login via `helpers/auth.js` (refatorado em 24/05/2026, substituindo declaração manual)
 - `default()` — 3 cenários de validação:
   1. URL válida do YouTube (deve passar)
-  2. URL de domínio inválido — Vimeo (deve rejeitar)
-  3. URL malformada (deve rejeitar)
+  2. URL de domínio inválido — Vimeo (deve rejeitar) — **Corrigido (24/05/2026):** usa `fail()` em vez de soft pass. Se a API aceitar, o teste aborta.
+  3. URL malformada (deve rejeitar) — **Corrigido (24/05/2026):** usa `fail()` em vez de soft pass. Se a API aceitar, o teste aborta.
 - `handleSummary()` — Gera relatório via `helpers/report.js`
+- Usa `BASE_URL` de `helpers/config.js` (refatorado em 24/05/2026, removendo declarações manuais)
 
 **Endpoints chamados:**
 - `POST /api/auth/login` — Autenticação

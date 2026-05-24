@@ -1,6 +1,8 @@
 import http from 'k6/http';
-import { check, sleep } from 'k6';
+import { check } from 'k6';
 import { generateReport } from '../helpers/report.js';
+import { BASE_URL } from '../helpers/config.js';
+import { setup } from '../helpers/auth.js';
 
 export const options = {
   // Este é um teste funcional, não de carga. Executa apenas 1 vez com 1 usuário.
@@ -11,23 +13,7 @@ export const options = {
   },
 };
 
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
-const USERNAME = __ENV.ADMIN_USERNAME || 'admin';
-const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
-
-export function setup() {
-  const loginRes = http.post(
-    `${BASE_URL}/api/auth/login?response=body`,
-    JSON.stringify({ username: USERNAME, password: PASSWORD }),
-    { headers: { 'Content-Type': 'application/json' } }
-  );
-
-  if (loginRes.status !== 200) {
-    throw new Error(`Login falhou: ${loginRes.status} ${loginRes.body}`);
-  }
-
-  return { token: loginRes.json('data.token') };
-}
+export { setup };
 
 export default function (data) {
   const headers = {

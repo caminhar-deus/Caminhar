@@ -58,8 +58,7 @@ export default function () {
       const isDistinct = firstPostP2.id !== cursor;
 
       if (!isDistinct) {
-        console.log(`⚠️ Aviso de paginação: O primeiro post da página 2 (ID: ${firstPostP2.id}) é igual ao cursor. Isso pode ocorrer se houver poucos dados ou se a API incluir o cursor no retorno.`);
-        return true;
+        console.error(`❌ Paginação por cursor: O primeiro post da página 2 (ID: ${firstPostP2.id}) é igual ao cursor. A API pode estar incluindo o cursor no retorno.`);
       }
 
       return isDistinct;

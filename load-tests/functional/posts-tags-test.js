@@ -43,9 +43,9 @@ export default function () {
       });
 
       if (!matchFound) {
-        console.warn(`⚠️ API retornou ${posts.length} posts para tag "${tag}", mas a tag não foi encontrada visualmente na resposta. Pode ser tag oculta ou normalização diferente.`);
+        console.error(`❌ API retornou ${posts.length} posts para tag "${tag}", mas nenhum contém a tag esperada. Verifique a normalização do filtro.`);
       }
-      return true;
+      return matchFound;
     }
   });
 

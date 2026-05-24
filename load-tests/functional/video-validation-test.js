@@ -1,7 +1,9 @@
 import http from 'k6/http';
-import { check } from 'k6';
+import { check, fail } from 'k6';
 import { randomSleep } from '../helpers/sleep.js';
 import { generateReport } from '../helpers/report.js';
+import { BASE_URL } from '../helpers/config.js';
+import { setup } from '../helpers/auth.js';
 
 export const options = {
   // Teste funcional de validação
@@ -12,23 +14,7 @@ export const options = {
   },
 };
 
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
-const USERNAME = __ENV.ADMIN_USERNAME || 'admin';
-const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
-
-export function setup() {
-  const loginRes = http.post(
-    `${BASE_URL}/api/auth/login?response=body`,
-    JSON.stringify({ username: USERNAME, password: PASSWORD }),
-    { headers: { 'Content-Type': 'application/json' } }
-  );
-
-  if (loginRes.status !== 200) {
-    throw new Error(`Login falhou: ${loginRes.status} ${loginRes.body}`);
-  }
-
-  return { token: loginRes.json('data.token') };
-}
+export { setup };
 
 export default function (data) {
   const headers = {
@@ -64,19 +50,18 @@ export default function (data) {
 
   const resInvalidDomain = http.post(`${BASE_URL}/api/admin/videos`, invalidDomainPayload, {
     headers,
-    expectedStatuses: [400, 201], // Informa ao k6 que 400 é esperado (e 201 para o warning)
   });
 
   check(resInvalidDomain, {
     'Domínio Inválido: status é 400': (r) => {
-      if (r.status === 201) {
-        console.warn('⚠️ API aceitou domínio inválido (esperado 400). Validação pode estar desativada.');
-        return true; // Soft pass
+      if (r.status !== 400) {
+        console.error(`❌ API aceitou domínio inválido (esperado 400, recebido ${r.status}). Validação pode estar desativada.`);
+        fail(`Domínio inválido não foi rejeitado pela API. Status: ${r.status}`);
       }
-      return r.status === 400;
+      return true;
     },
     'Domínio Inválido: mensagem de erro': (r) => 
-      r.status === 201 ? true : JSON.stringify(r.body).includes('YouTube'),
+      JSON.stringify(r.body).includes('YouTube'),
   });
 
   randomSleep(0.3, 1.3);
@@ -90,16 +75,15 @@ export default function (data) {
 
   const resMalformed = http.post(`${BASE_URL}/api/admin/videos`, malformedPayload, {
     headers,
-    expectedStatuses: [400, 201], // Informa ao k6 que 400 é esperado (e 201 para o warning)
   });
 
   check(resMalformed, {
     'URL Malformada: status é 400': (r) => {
-      if (r.status === 201) {
-        console.warn('⚠️ API aceitou URL malformada (esperado 400). Validação pode estar desativada.');
-        return true; // Soft pass
+      if (r.status !== 400) {
+        console.error(`❌ API aceitou URL malformada (esperado 400, recebido ${r.status}). Validação pode estar desativada.`);
+        fail(`URL malformada não foi rejeitada pela API. Status: ${r.status}`);
       }
-      return r.status === 400;
+      return true;
     },
   });
 }

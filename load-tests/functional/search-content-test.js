@@ -56,10 +56,10 @@ export default function () {
 
       if (!matchFound) {
         const titles = posts.map(p => p.title).slice(0, 3).join(', ');
-        console.warn(`⚠️ Busca retornou resultados (${titles}...), mas termo "${term}" não foi encontrado visualmente. (Pode estar no conteúdo completo)`);
+        console.error(`❌ Busca retornou resultados (${titles}...), mas termo "${term}" não foi encontrado nos campos title, content ou tags. Verifique o mecanismo de busca.`);
       }
       
-      return true;
+      return matchFound;
     }
   });
 

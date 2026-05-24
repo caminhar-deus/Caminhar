@@ -310,7 +310,6 @@ const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
 4. **Arquivos mantidos intocados** por propósito de teste:
    - `ddos-search-test.js` — sem sleep (máxima taxa de requisições)
    - `rate-limit-test.js` — sem sleep (brute force)
-   - `recovery-test.js` — `sleep(0.5)` fixo mantido (propósito de monitoramento com polling em intervalo previsível)
 
 **Faixas utilizadas por tipo de operação:**
 | Tipo de operação | Faixa | Arquivos |
@@ -321,7 +320,7 @@ const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
 | Estresse (operações rápidas) | 0.3s – 1.5s | stress-test-combined (CRUD) |
 | Validação funcional | 0.3s – 1.3s | video-validation-test |
 | Monitoramento | 0.5s – 2s | stress-test-combined (memoryMonitorFlow) |
-| Recuperação (mantido fixo) | 0.5s | recovery-test |
+| Recuperação | 0.3s – 1.3s | recovery-test |
 
 ---
 
@@ -565,15 +564,45 @@ import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 
 ---
 
-### 5.5 Comportamento "soft pass" em validações
+### 5.5 Comportamento "soft pass" em validações — **RESOLVIDO (24/05/2026)**
 
-**Severidade:** 🟢 Baixa
+**Severidade anterior:** 🟢 Baixa
 
-**Arquivos afetados:** Vários (ex: `video-validation-test.js`, `backup-verification-test.js`)
+**Arquivos afetados originalmente:** `video-validation-test.js`, `posts-tags-test.js`, `search-content-test.js`, `posts-cursor-pagination-test.js`
 
-**Problema:** Alguns checks usam "soft pass" onde a validação é registrada mas não interrompe o fluxo. Por exemplo, se a API retorna um código diferente do esperado para URL inválida, o teste apenas registra o check como falho mas continua.
+**Problema original:** Alguns checks usavam "soft pass" onde a validação era registrada como warning mas não interrompia o fluxo. Se a API retornava um código diferente do esperado, o teste apenas logava um aviso e continuava — mascarando potenciais falhas de validação.
 
-**Sugestão:** Para testes funcionais, usar `abortOnFail: true` em checks críticos para garantir que o teste não continue com dados inválidos.
+**O que foi feito (24/05/2026):**
+
+1. **`video-validation-test.js`** — 3 ocorrências de soft pass eliminadas:
+   - **Cenário 2 (Domínio Inválido):** Substituído `return true` condicional com `console.warn` por `fail()` que aborta o teste imediatamente se a API aceitar um domínio inválido. Removido `expectedStatuses: [400, 201]` para que qualquer status fora do esperado seja tratado como falha.
+   - **Cenário 2 (Mensagem de erro):** Removido condicional `r.status === 201 ? true : ...` — agora valida a mensagem de erro sempre.
+   - **Cenário 3 (URL Malformada):** Mesmo padrão do cenário 2: substituído soft pass por `fail()` com mensagem descritiva.
+   - **Refatoração adicional:** Substituídas declarações manuais de `BASE_URL`, `USERNAME`, `PASSWORD` e `setup()` por imports de `helpers/config.js` e `helpers/auth.js`. Adicionado `fail` ao import do k6.
+
+2. **`posts-tags-test.js`** — 1 ocorrência de soft pass eliminada:
+   - Check `'Filtro funcionou (post contém a tag)'`: alterado de `return true` (com `console.warn`) para `return matchFound` (com `console.error`). Agora o check falha se nenhum post contiver a tag buscada.
+
+3. **`search-content-test.js`** — 1 ocorrência de soft pass eliminada:
+   - Check `'Resultados contêm o termo (se houver)'`: alterado de `return true` (com `console.warn`) para `return matchFound` (com `console.error`). Agora o check falha se nenhum resultado contiver o termo buscado.
+
+4. **`posts-cursor-pagination-test.js`** — 1 ocorrência de soft pass eliminada:
+   - Check `'Página 2 (Cursor): resultados distintos'`: alterado de `return true` (com `console.log`) para `return isDistinct` (com `console.error`). Agora o check falha se o cursor retornar o mesmo post.
+
+5. **`backup-verification-test.js`** — Refatorado para usar `helpers/config.js` e `helpers/auth.js`. Removido `sleep` não utilizado do import do k6.
+
+6. **`recovery-test.js`** — Substituído `sleep(0.5)` fixo por `randomSleep(0.3, 1.3)`.
+
+**Arquivos verificados sem soft pass** (mantidos intactos):
+- `cache-headers-test.js` — Apenas warnings informativos para headers ausentes, checks retornam `false` se header não existe.
+- `health-check.js` — Checks diretos sem condicionais.
+- `upload-flow-test.js` — Já usa `exec.test.abort()` para falhas críticas.
+
+**Arquivos mantidos como exceção:**
+- `musicas-pagination-test.js` (performance/) — Soft pass mantido: se página 2 estiver vazia (dados insuficientes), retorna `true`. Isto está em conformidade com o propósito do teste, que valida paginação apenas quando há dados suficientes.
+- `videos-pagination-test.js` (performance/) — Mesmo padrão do `musicas-pagination-test.js`.
+
+**Resultado:** Agora todos os checks em testes funcionais quebram (fail/abort) em vez de passar silenciosamente com warning, garantindo que validações críticas sejam respeitadas.
 
 ---
 
@@ -652,7 +681,7 @@ import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 | 🟢 **Baixa** | Manutenção | `env-config.json` subutilizado | Baixo | Médio | ✅ Resolvido (23/05/2026) |
 | 🟢 **Baixa** | Manutenção | Separação difusa entre testes funcionais e de carga | Médio | Baixo | ✅ Resolvido (24/05/2026) |
 | 🟢 **Baixa** | Manutenção | Versão hardcoded do k6-summary | Baixo | Baixo | ✅ Resolvido (23/05/2026) |
-| 🟢 **Baixa** | Manutenção | Comportamento "soft pass" em validações | Baixo | Baixo | ❌ Pendente |
+| 🟢 **Baixa** | Manutenção | Comportamento "soft pass" em validações | Baixo | Baixo | ✅ Resolvido (24/05/2026) |
 | 🟢 **Baixa** | Manutenção | Ausência de tratamento de erros na extração de token | Baixo | Médio | ✅ Resolvido (23/05/2026) |
 
 > **Legenda:**
@@ -688,6 +717,5 @@ import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 >
 > ### Itens Pendentes
 >
-> - [ ] **5.5** — Comportamento "soft pass" em validações (🟢 Baixa)
 > - [ ] **6.2** — Sem validação de thresholds no workflow (⚠️ Média)
 > - [ ] **6.3** — Ausência de cache para dependências do k6 (🟢 Baixa)

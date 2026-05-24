@@ -1,6 +1,7 @@
 import http from 'k6/http';
-import { check, sleep } from 'k6';
+import { check } from 'k6';
 import { Trend, Counter } from 'k6/metrics';
+import { randomSleep } from '../helpers/sleep.js';
 import { BASE_URL } from '../helpers/config.js';
 import { getProfile } from '../helpers/profiles.js';
 import { generateReport } from '../helpers/report.js';
@@ -56,7 +57,7 @@ export default function () {
     }
   }
 
-  sleep(0.5); // Verifica a cada 500ms
+  randomSleep(0.3, 1.3); // Verifica em intervalos variáveis
 }
 
 export function handleSummary(data) {
