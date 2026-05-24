@@ -262,7 +262,7 @@ Documentação de **~50 scripts** organizados em 13 categorias:
 4. **Manutenção** — clean-orphaned-images (dry-run + exclusão segura), clean-k6-reports, monitor-disk-space
 5. **Diagnóstico** — check-env, check-db-status, check-server, reset-admin-password
 6. **Cache** — clear-cache (Redis + memória local)
-7. **Testes de Carga** — run-load-tests.sh (automação bash para execução de testes k6)
+7. **Testes de Carga** — run-all-load-tests-sequentially.js (orquestrador Node.js que executa todos os 29 scripts k6)
 8. **Relatórios** — generate-load-report, consolidate-k6-reports
 9. **Migrações** — Scripts versionados com rastreamento de schema, rollback e validação
 10. **Autenticação** — Scripts de gerenciamento de tokens e senhas

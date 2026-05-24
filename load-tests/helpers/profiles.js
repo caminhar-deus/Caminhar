@@ -63,6 +63,37 @@ export const PROFILES = {
     thresholds: {},
   },
 
+  // Perfil para stress test combinado (cenários paralelos)
+  stress: {
+    scenarios: {
+      stress_test: {
+        executor: 'ramping-vus',
+        startVUs: 0,
+        stages: [
+          { duration: '30s', target: 20 },
+          { duration: '1m', target: 20 },
+          { duration: '30s', target: 50 },
+          { duration: '1m', target: 50 },
+          { duration: '30s', target: 100 },
+          { duration: '1m', target: 100 },
+          { duration: '20s', target: 0 },
+        ],
+        gracefulRampDown: '30s',
+      },
+      memory_monitor: {
+        executor: 'constant-vus',
+        vus: 1,
+        duration: '5m',
+      },
+    },
+    thresholds: {
+      'http_req_duration{scenario:stress_test}': ['p(95)<500'],
+      'http_req_failed{scenario:stress_test}': ['rate<0.01'],
+      'checks{scenario:stress_test}': ['rate>0.98'],
+      nodejs_memory_heap_used_bytes: ['max<1073741824'],
+    },
+  },
+
   // Perfil para rate limit (carga pesada, thresholds flexíveis)
   rateLimit: {
     scenarios: {

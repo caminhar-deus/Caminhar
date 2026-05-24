@@ -287,7 +287,6 @@
 ### 5.1. Ausência de `shebang` nos scripts ✅ Corrigido
 - **Arquivos:** 52 scripts `.js` nos diretórios `scripts/`, `scripts/utils/`, `scripts/db/`, `scripts/diagnostics/`, `scripts/maintenance/`, `scripts/migrations/` e `scripts/tests/`.
 - **Problema:** A maioria dos scripts `.js` não possuía shebang (`#!/usr/bin/env node`). Embora fossem executados via `node script.js`, isso impedia execução direta como `./script.js`.
-- **Exceções (já possuíam):** `check-sql-injection.js`, `clear-db.js`, `clear-musicas.js`, `init-table.js`, `migrate.js`, `run-all-load-tests.js`, `migrations/seed-migrations-table.js`, `migrations/verify-applied.js`.
 - **Módulos compartilhados (sem shebang propositalmente):** `scripts/utils/load-env.js`, `scripts/utils/cleanup.js`, `scripts/db/connection.js` — não são executados diretamente, apenas importados.
 - **Shell script (não se aplica):** `scripts/cron-backup.js` — é um script Bash (`#!/bin/bash`).
 - **Correção aplicada (21/05/2026):**

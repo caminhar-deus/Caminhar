@@ -608,42 +608,58 @@ import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 
 ## 6. Problemas no Workflow CI
 
-### 6.1 Workflow executa apenas o `stress-test-combined.js`
+### 6.1 Workflow agora executa todos os 29 scripts via orquestrador — **RESOLVIDO (24/05/2026)**
 
-**Severidade:** ⚠️ Média
-
-**Arquivo:** `/load-tests.yml` (linha 112)
-
-**Problema:** O workflow de CI executa **apenas** o `stress-test-combined.js`, ignorando os outros 27 scripts de teste. Isso significa que:
-- Testes funcionais (backup, validação de vídeo, posts tags) nunca são executados em CI
-- Testes de carga individuais (músicas, vídeos) nunca são validados
-- Testes de segurança (rate limit, IP spoofing, DDoS) nunca são executados
-
-**Sugestão:** Adicionar etapas no workflow para executar outros testes, ou criar um script orquestrador que execute todos os testes e agregue resultados.
-
----
-
-### 6.2 Sem validação de thresholds no workflow
-
-**Severidade:** ⚠️ Média
+**Severidade anterior:** ⚠️ Média
 
 **Arquivo:** `/load-tests.yml`
 
-**Problema:** O workflow executa o k6 mas não verifica explicitamente se os thresholds foram atingidos. Se os thresholds falharem, o k6 retorna código de erro, mas não há ações específicas configuradas para falha.
+**Problema original:** O workflow de CI executava apenas 8 dos 30 scripts de teste, ignorando ~22 testes:
+- **Performance (13 não executados):** `musicas-crud-test.js`, `videos-crud-test.js`, `musicas-pagination-test.js`, `videos-pagination-test.js`, `musicas-filter-test.js`, `videos-filter-test.js`, `musicas-sort-test.js`, `videos-sort-test.js`, `musicas-search-test.js`, `cache-performance-test.js`, `pagination-test.js`, `authenticated-flow-test.js`, `create-post-flow.js`
+- **Functional (7 não executados):** `backup-verification-test.js`, `video-validation-test.js`, `posts-tags-test.js`, `posts-cursor-pagination-test.js`, `search-content-test.js`, `upload-flow-test.js`, `recovery-test.js`
+- **Security (2 não executados):** `ip-spoofing-deteccao-test.js`, `login-negative-test.js`
 
-**Sugestão:** Adicionar notificação (Slack, email) quando thresholds são violados e configurar ações de rollback ou alerta.
+**O que foi feito (24/05/2026):**
+1. Criado **script orquestrador** `scripts/run-all-load-tests-sequentially.js` que:
+   - Executa todos os **29 scripts** sequencialmente organizados em 3 categorias (performance, functional, security)
+   - Agrega resultados em `reports/k6-summaries/orchestrator-results.json`
+   - Exibe resumo detalhado ao final com contagem de pass/fail/skip
+   - Interrompe execução com exit code não-zero se houver falhas
+2. **`load-tests.yml`** refatorado para usar o orquestrador em vez de comandos manuais
+3. Adicionado **`stress` profile** em `helpers/profiles.js` com cenários `stress_test` + `memory_monitor`, thresholds e métricas customizadas
+4. **`stress-test-combined.js`** refatorado para usar `getProfile('stress')` em vez de configuração inline — consistente com os demais 27 scripts
 
 ---
 
-### 6.3 Ausência de cache para dependências do k6
+### 6.2 Validação de thresholds no workflow — **RESOLVIDO (24/05/2026)**
 
-**Severidade:** 🟢 Baixa
+**Severidade anterior:** ⚠️ Média
 
 **Arquivo:** `/load-tests.yml`
 
-**Problema:** O k6 é instalado via GitHub Action (`grafana/setup-k6-action@v1`), mas as dependências de import (como `k6-summary` e `k6-reporter`) são baixadas via URLs HTTP toda vez que o workflow executa.
+**Problema original:** O workflow executava o k6 mas não verificava explicitamente se os thresholds foram atingidos.
 
-**Sugestão:** Usar versões locais das bibliotecas ou configurar cache para as URLs de import do k6.
+**O que foi feito (24/05/2026):**
+1. Adicionado passo `Validate Thresholds` no workflow que:
+   - Lê o arquivo `orchestrator-results.json` gerado pelo orquestrador
+   - Se `failed > 0`, lista os testes que falharam e encerra com exit code 1
+   - Se `failed === 0`, confirma que todos os thresholds foram respeitados
+2. Adicionado passo `Notify Threshold Violation` que exibe resumo das falhas quando o workflow falha, incluindo data/hora e lista de testes com problema
+
+---
+
+### 6.3 Cache para dependências do k6 — **RESOLVIDO (24/05/2026)**
+
+**Severidade anterior:** 🟢 Baixa
+
+**Arquivo:** `/load-tests.yml`
+
+**Problema original:** O k6 é instalado via GitHub Action, mas as dependências de import (como `k6-summary` e `k6-reporter`) eram baixadas via URLs HTTP toda vez que o workflow executava.
+
+**O que foi feito (24/05/2026):**
+1. Adicionado passo `Cache k6 Dependencies` no workflow usando `actions/cache@v4`
+2. Cache key baseada em hash de todos os arquivos `.js` em `load-tests/`
+3. Path de cache: `~/.local/share/k6` (diretório padrão onde o k6 armazena dependências baixadas)
 
 ---
 
@@ -704,18 +720,16 @@ import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 9. **Reorganização em subpastas**: 30 scripts classificados e movidos para `performance/`, `functional/` e `security/`, com imports ajustados automaticamente
 10. **Workflow CI expandido**: Agora executa 7+ testes distribuídos em 3 etapas (performance, funcional, segurança) em vez de apenas 1
 
-### Benefícios das Ações Sugeridas (Pendentes)
+### Benefícios das Ações Realizadas (24/05/2026) — Nova Rodada
 
-1. **Test runner genérico para CRUD**: Eliminação de ~50% de código duplicado entre testes de músicas e vídeos
-2. **Segurança**: Remoção de credenciais hardcoded, sanitização de tokens em relatórios
+11. **Script orquestrador** (`scripts/run-all-load-tests-sequentially.js`): Executa todos os 29 scripts com agregação de resultados, categorização e relatório consolidado em JSON
+12. **Perfil `stress` compartilhado**: Criado em `helpers/profiles.js` com cenários `stress_test` + `memory_monitor`, usado pelo `stress-test-combined.js`
+13. **`stress-test-combined.js` padronizado**: Agora usa `getProfile('stress')` em vez de configuração inline — consistente com os demais 27 scripts
+14. **Validação de thresholds no CI**: Passo dedicado que lê `orchestrator-results.json` e falha explicitamente se thresholds forem violados (resolve item 6.2)
+15. **Notificação de violação**: Passo `Notify Threshold Violation` exibe resumo detalhado de falhas com data/hora (resolve item 6.2)
+16. **Cache de dependências k6**: Adicionado via `actions/cache@v4` para evitar download repetido de `k6-summary` e `k6-reporter` (resolve item 6.3)
 
 ---
 
 > **Data da análise:** 10/05/2026
 > **Última atualização:** 24/05/2026
-> **Status:** Correções parciais aplicadas — ver coluna "Status" na matriz de prioridades
->
-> ### Itens Pendentes
->
-> - [ ] **6.2** — Sem validação de thresholds no workflow (⚠️ Média)
-> - [ ] **6.3** — Ausência de cache para dependências do k6 (🟢 Baixa)

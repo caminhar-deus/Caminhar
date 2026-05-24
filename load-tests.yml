@@ -84,37 +84,75 @@ jobs:
       - name: Setup k6
         uses: grafana/setup-k6-action@v1
 
-      - name: Run Performance Tests
+      - name: Cache k6 Dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/k6
+          key: ${{ runner.os }}-k6-deps-${{ hashFiles('load-tests/**/*.js') }}
+          restore-keys: |
+            ${{ runner.os }}-k6-deps-
+
+      - name: Run All Load Tests (Orchestrator)
         run: |
-          k6 run load-tests/performance/stress-test-combined.js
-          k6 run load-tests/performance/musicas-load-test.js
-          k6 run load-tests/performance/videos-load-test.js
+          node scripts/run-all-load-tests-sequentially.js
         env:
           BASE_URL: http://localhost:3000
           ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME || 'admin' }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
 
-      - name: Run Functional Tests
+      - name: Validate Thresholds
+        if: always()
         run: |
-          k6 run load-tests/functional/health-check.js
-          k6 run load-tests/functional/cache-headers-test.js
-        env:
-          BASE_URL: http://localhost:3000
-
-      - name: Run Security Tests
-        run: |
-          k6 run load-tests/security/rate-limit-test.js
-          k6 run load-tests/security/ip-spoofing-test.js
-          k6 run load-tests/security/ddos-search-test.js
-        env:
-          BASE_URL: http://localhost:3000
-          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME || 'admin' }}
-          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          echo "🔍 Validando thresholds dos testes de carga..."
+          RESULTS_FILE="reports/k6-summaries/orchestrator-results.json"
+          
+          if [ -f "$RESULTS_FILE" ]; then
+            FAILED=$(cat "$RESULTS_FILE" | jq -r '.failed')
+            TOTAL=$(cat "$RESULTS_FILE" | jq -r '.totalScripts')
+            
+            echo "📊 Resultados: $TOTAL scripts executados, $FAILED falhas"
+            
+            if [ "$FAILED" -gt 0 ]; then
+              echo "❌ $FAILED teste(s) falharam. Verifique os logs."
+              
+              # Lista os testes que falharam
+              echo ""
+              echo "📋 Testes com falha:"
+              cat "$RESULTS_FILE" | jq -r '.categories[] | .name as $cat | .scripts[] | select(.status == "fail") | "  - \($cat): \(.name) (exit code: \(.exitCode))"'
+              
+              exit 1
+            else
+              echo "✅ Todos os thresholds foram respeitados!"
+            fi
+          else
+            echo "⚠️  Arquivo de resultados não encontrado: $RESULTS_FILE"
+            echo "   A validação de thresholds será ignorada."
+          fi
 
       - name: Upload Test Reports
         if: always() # Executa mesmo se os testes falharem para podermos analisar o motivo
         uses: actions/upload-artifact@v4
         with:
           name: k6-load-test-reports
-          path: reports/k6-summaries/
+          path: |
+            reports/k6-summaries/
+            reports/
           retention-days: 30
+
+      - name: Notify Threshold Violation
+        if: failure()
+        run: |
+          echo "⚠️ Thresholds violados nos testes de carga!"
+          echo "Data: $(date -u)"
+          echo ""
+          echo "📋 Resumo das falhas:"
+          
+          RESULTS_FILE="reports/k6-summaries/orchestrator-results.json"
+          if [ -f "$RESULTS_FILE" ]; then
+            echo "Total de scripts: $(cat "$RESULTS_FILE" | jq -r '.totalScripts')"
+            echo "Passaram: $(cat "$RESULTS_FILE" | jq -r '.passed')"
+            echo "Falharam: $(cat "$RESULTS_FILE" | jq -r '.failed')"
+            echo ""
+            echo "Testes com falha:"
+            cat "$RESULTS_FILE" | jq -r '.categories[] | .name as $cat | .scripts[] | select(.status == "fail") | "  - \($cat): \(.name)"'
+          fi

@@ -32,7 +32,7 @@ scripts/
 ├── monitor-disk-space.js
 ├── reset-password.js
 ├── restore-backup.js
-├── run-all-load-tests.js
+├── run-all-load-tests-sequentially.js
 ├── run-load-tests.sh
 ├── seed-all.js
 ├── seed-musicas.js
@@ -324,15 +324,18 @@ scripts/
 - **Uso:** `node scripts/validate-schema.js` — retorna exit code 0 se OK, 1 se houver inconsistências.
 - **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local), `pg`
 
-### `scripts/run-all-load-tests.js`
-- **Localização:** `/home/qa/Projeto/Caminhar/scripts/run-all-load-tests.js`
-- **Propósito:** Orquestrador que executa todos os testes de carga (k6) sequencialmente. Substitui o script inline `test:load:all` do `package.json` que continha mais de 30 comandos encadeados. Executa cada teste npm via `execSync`, com parada em caso de falha e relatório consolidado ao final.
-- **Dependências:** `child_process`
+### `scripts/run-all-load-tests-sequentially.js`
+- **Localização:** `/home/qa/Projeto/Caminhar/scripts/run-all-load-tests-sequentially.js`
+- **Propósito:** Orquestrador completo que executa **todos os 29 scripts de teste de carga (k6)** sequencialmente, organizados em 3 categorias: performance, functional e security. Substitui o script antigo `run-all-load-tests.js`. Agrega resultados em `reports/k6-summaries/orchestrator-results.json`, exibe resumo detalhado com contagem de passed/failed/skipped e interrompe com exit code não-zero se houver falhas. Continua execução mesmo após falhas individuais (diferente do script anterior que parava no primeiro erro).
+- **Categorias:** `🧪 Performance Tests` (16 scripts), `🔍 Functional Tests` (9 scripts), `🔒 Security Tests` (5 scripts)
+- **Timeout:** 10 minutos por script
+- **Criado em:** 24/05/2026 — substituiu o script legado `run-all-load-tests.js`
+- **Dependências:** `child_process`, `fs`, `path`
 
 ### `scripts/run-load-tests.sh`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/run-load-tests.sh`
-- **Propósito:** Shell script que verifica se o servidor está online (via `curl`) e então executa `npm run test:load:all` para iniciar a bateria completa de testes de carga. Fornece feedback visual com emojis.
-- **Dependências:** `curl` (requerido externamente), shell script puro
+- **Propósito:** Shell script que verifica se o servidor está online (via `curl`) e então executa o orquestrador `node scripts/run-all-load-tests-sequentially.js` para iniciar a bateria completa de testes de carga. Fornece feedback visual com emojis.
+- **Atualizado em:** 24/05/2026 — agora usa o novo orquestrador em vez de `npm run test:load:all`
 
 ### `scripts/view-backup-logs.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/view-backup-logs.js`
@@ -652,7 +655,7 @@ scripts/
 | **Limpeza (SQLite)** | 1 | `clean-test-db.js` |
 | **Limpeza (Geral DB)** | 2 | `clear-db.js`, `clear-musicas.js` |
 | **Validação/Diagnóstico** | 3 | `check-db-status.js`, `check-env.js`, `validate-schema.js` + 5 em `diagnostics/` |
-| **Testes de Carga** | 3 | `run-all-load-tests.js`, `generate-load-report.js`, `run-load-tests.sh` |
+| **Testes de Carga** | 3 | `run-all-load-tests-sequentially.js`, `generate-load-report.js`, `run-load-tests.sh` |
 | **Monitoramento** | 1 | `monitor-disk-space.js` |
 | **Utilidades** | 6 | `db-shell.js`, `check-server.js`, `reset-password.js` + `load-env.js` + 4 em `utils/` |
 | **Conexão DB** | 1 | `scripts/db/connection.js` (módulo compartilhado) |

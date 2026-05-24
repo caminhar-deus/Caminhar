@@ -17,4 +17,6 @@ fi
 
 echo "✅ Servidor online. Iniciando bateria de testes de carga..."
 echo "---------------------------------------------------------"
-npm run test:load:all
+echo "🚀 Usando orquestrador node scripts/run-all-load-tests-sequentially.js"
+echo ""
+node scripts/run-all-load-tests-sequentially.js

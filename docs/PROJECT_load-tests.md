@@ -834,9 +834,9 @@ Contém 5 scripts de teste de segurança.
 
 **Localização:** `/load-tests.yml` (raiz do projeto)
 
-**O que faz:** Workflow do GitHub Actions que executa a suíte de testes de carga em CI.
+**O que faz:** Workflow do GitHub Actions que executa a suíte completa de testes de carga em CI via script orquestrador.
 
-**Propósito:** Automatizar a execução dos testes de carga em ambiente isolado com PostgreSQL e Redis, executando testes das 3 subpastas em etapas separadas.
+**Propósito:** Automatizar a execução de todos os 29 scripts de teste de carga em ambiente isolado com PostgreSQL e Redis, com validação de thresholds e cache de dependências.
 
 **Estrutura do workflow:**
 1. **Schedule:** Execução automática diária às 03:00 UTC
@@ -847,19 +847,29 @@ Contém 5 scripts de teste de segurança.
 4. **Passos:**
    - Checkout do repositório
    - Setup Node.js com cache
-   - Instalação de dependências (`npm ci`)
    - Restauração do cache de build do Next.js
    - Criação de diretórios de relatório
    - Setup do banco de dados de teste + seed
    - Build da aplicação
    - Inicialização da aplicação em background
    - Setup do k6
-   - **Etapa 1:** Performance tests (`load-tests/performance/`)
-   - **Etapa 2:** Functional tests (`load-tests/functional/`)
-   - **Etapa 3:** Security tests (`load-tests/security/`)
+   - **Cache de dependências do k6** (`~/.local/share/k6`) — evita download repetido de `k6-summary` e `k6-reporter`
+   - **Execução do orquestrador** via `node scripts/run-all-load-tests-sequentially.js` — executa todos os 29 scripts sequencialmente em 3 categorias
+   - **Validação de thresholds** — lê `orchestrator-results.json` e lista testes que falharam
+   - **Notificação de violação** — exibe resumo detalhado se thresholds foram violados
    - Upload dos relatórios como artefato (retidos por 30 dias)
 
-**Melhoria (24/05/2026):** O workflow foi expandido de 1 teste (`stress-test-combined.js`) para 7+ testes distribuídos em 3 etapas, conforme reorganização da seção 5.3.
+**Melhoria (24/05/2026):** O workflow foi completamente refatorado:
+- Antes: executava 8 scripts em 3 etapas manuais com comandos inline
+- Agora: executa todos os 29 scripts via orquestrador com agregação de resultados, validação de thresholds e cache de dependências
+
+**Scripts executados pelo orquestrador:**
+
+| Categoria | Scripts |
+|-----------|---------|
+| **Performance (16)** | `musicas-load-test`, `videos-load-test`, `musicas-crud-test`, `videos-crud-test`, `musicas-filter-test`, `videos-filter-test`, `musicas-pagination-test`, `videos-pagination-test`, `musicas-sort-test`, `videos-sort-test`, `musicas-search-test`, `cache-performance-test`, `pagination-test`, `authenticated-flow-test`, `create-post-flow`, `stress-test-combined` |
+| **Functional (9)** | `health-check`, `cache-headers-test`, `backup-verification-test`, `video-validation-test`, `posts-tags-test`, `posts-cursor-pagination-test`, `search-content-test`, `upload-flow-test`, `recovery-test` |
+| **Security (5)** | `rate-limit-test`, `ip-spoofing-test`, `ip-spoofing-deteccao-test`, `ddos-search-test`, `login-negative-test` |
 
 ---
 
@@ -949,6 +959,7 @@ import { getRandomIP } from '../helpers/network.js';
 | `heavy` | 50 | 50s (10+30+10) | p(95)<2000ms, failed<5% | Estresse |
 | `health` | 20 | 20s (5+10+5) | p(95)<100ms, failed<1% | Health check |
 | `recovery` | 1 | 2min constante | Nenhum (thresholds vazios) | Monitoramento |
+| `stress` | 0→20→50→100 | 4m50s (ramp-up/estabilização) | p(95)<500ms, failed<1%, heap<1GB | Stress test combinado com 2 cenários paralelos |
 | `rateLimit` | 0→50 | 50s (10+30+10) | Nenhum (thresholds vazios) | Brute force |
 
 **Exports:**

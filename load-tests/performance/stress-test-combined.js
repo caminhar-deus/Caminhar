@@ -7,6 +7,7 @@ import { getRandomIP } from '../helpers/network.js';
 import { generateReport } from '../helpers/report.js';
 import { BASE_URL } from '../helpers/config.js';
 import { setup } from '../helpers/auth.js';
+import { getProfile } from '../helpers/profiles.js';
 
 // --- Métricas Customizadas (Monitoramento) ---
 const MemoryRss = new Trend('nodejs_memory_rss_bytes');
@@ -16,43 +17,8 @@ const MemoryHeapUsed = new Trend('nodejs_memory_heap_used_bytes');
 // Prefixo fixo para identificar dados de teste no teardown
 const TEST_PREFIX = '[TEST-K6]';
 
-// --- Configuração dos Cenários ---
-export const options = {
-  scenarios: {
-    // Cenário 1: Teste de Estresse (CRUD de Vídeos)
-    stress_test: {
-      executor: 'ramping-vus',
-      startVUs: 0,
-      stages: [
-        { duration: '30s', target: 20 },   // Ramp-up
-        { duration: '1m', target: 20 },    // Estabilização
-        { duration: '30s', target: 50 },   // Aumento de carga
-        { duration: '1m', target: 50 },    // Estabilização
-        { duration: '30s', target: 100 },  // Carga alta
-        { duration: '1m', target: 100 },   // Estabilização
-        { duration: '20s', target: 0 },    // Ramp-down
-      ],
-      gracefulRampDown: '30s',
-      exec: 'stressTestFlow', // Função específica para este cenário
-    },
-    // Cenário 2: Monitoramento de Memória
-    memory_monitor: {
-      executor: 'constant-vus',
-      vus: 1,
-      duration: '5m', // Cobre toda a duração do teste de estresse (~4m50s)
-      exec: 'memoryMonitorFlow', // Função específica para este cenário
-    },
-  },
-  thresholds: {
-    // Thresholds do Estresse
-    'http_req_duration{scenario:stress_test}': ['p(95)<500'],
-    'http_req_failed{scenario:stress_test}': ['rate<0.01'],
-    'checks{scenario:stress_test}': ['rate>0.98'],
-    
-    // Thresholds do Monitoramento
-    'nodejs_memory_heap_used_bytes': ['max<1073741824'], // Alerta se passar de 1GB
-  },
-};
+// --- Configuração via Perfil Compartilhado ---
+export const options = getProfile('stress');
 
 export { setup };
 

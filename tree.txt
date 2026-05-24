@@ -820,7 +820,7 @@
 │   ├── monitor-disk-space.js
 │   ├── reset-password.js
 │   ├── restore-backup.js
-│   ├── run-all-load-tests.js
+│   ├── run-all-load-tests-sequentially.js
 │   ├── run-load-tests.sh
 │   ├── schemas
 │   │   ├── dicas.json
