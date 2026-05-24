@@ -8,7 +8,7 @@
 
 1. [Visão Geral](#visão-geral)
 2. [Arquivos de Teste](#arquivos-de-teste)
-   - [authenticated-flow.js](#authenticated-flowjs)
+   - [authenticated-flow-test.js](#authenticated-flow-testjs)
    - [backup-verification-test.js](#backup-verification-testjs)
    - [cache-headers-test.js](#cache-headers-testjs)
    - [cache-performance-test.js](#cache-performance-testjs)
@@ -31,7 +31,7 @@
    - [recovery-test.js](#recovery-testjs)
    - [search-content-test.js](#search-content-testjs)
    - [stress-test-combined.js](#stress-test-combinedjs)
-   - [upload-flow.js](#upload-flowjs)
+   - [upload-flow-test.js](#upload-flow-testjs)
    - [video-validation-test.js](#video-validation-testjs)
    - [videos-crud-test.js](#videos-crud-testjs)
    - [videos-filter-test.js](#videos-filter-testjs)
@@ -75,9 +75,9 @@ Os testes estão organizados em categorias funcionais:
 
 ---
 
-### `authenticated-flow.js`
+### `authenticated-flow-test.js`
 
-**Localização:** `/load-tests/authenticated-flow.js`
+**Localização:** `/load-tests/authenticated-flow-test.js`
 
 **O que faz:** Testa o fluxo completo de autenticação: login com credenciais de admin, obtenção de token JWT e acesso a uma rota protegida.
 
@@ -605,9 +605,9 @@ Os testes estão organizados em categorias funcionais:
 
 ---
 
-### `upload-flow.js`
+### `upload-flow-test.js`
 
-**Localização:** `/load-tests/upload-flow.js`
+**Localização:** `/load-tests/upload-flow-test.js`
 
 **O que faz:** Testa o fluxo de upload de arquivos para a aplicação.
 

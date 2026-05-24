@@ -611,7 +611,7 @@
 │   ├── spotify.js
 │   └── youtube.js
 ├── load-tests
-│   ├── authenticated-flow.js
+│   ├── authenticated-flow-test.js
 │   ├── backup-verification-test.js
 │   ├── cache-headers-test.js
 │   ├── cache-performance-test.js
@@ -643,7 +643,7 @@
 │   ├── recovery-test.js
 │   ├── search-content-test.js
 │   ├── stress-test-combined.js
-│   ├── upload-flow.js
+│   ├── upload-flow-test.js
 │   ├── videos-crud-test.js
 │   ├── videos-filter-test.js
 │   ├── videos-load-test.js

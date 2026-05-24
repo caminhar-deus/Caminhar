@@ -364,25 +364,29 @@ const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
 
 ---
 
-### 4.2 Nomeclatura inconsistente de arquivos
+### 4.2 Nomeclatura inconsistente de arquivos — **RESOLVIDO (24/05/2026)**
 
-**Severidade:** 🟢 Baixa
+**Severidade anterior:** 🟢 Baixa
 
-**Arquivos:** Todos
+**Arquivos afetados originalmente:**
+- `load-tests/authenticated-flow.js`
+- `load-tests/upload-flow.js`
 
-**Problema:** Mistura de padrões de nomenclatura:
-- `musicas-crud-test.js` (recurso-test)
-- `musicas-load-test.js` (recurso-test)
-- `cache-headers-test.js` (funcionalidade-test)
-- `cache-performance-test.js` (funcionalidade-test)
-- `backup-verification-test.js` (funcionalidade-test)
-- `authenticated-flow.js` (funcionalidade-flow - sem sufixo `-test`)
-- `upload-flow.js` (funcionalidade-flow - sem sufixo `-test`)
+**Problema original:** Mistura de padrões de nomenclatura — dois arquivos (`authenticated-flow.js` e `upload-flow.js`) não possuíam o sufixo `-test`, ao contrário dos demais 28 scripts que seguiam o padrão `{funcionalidade}-test.js`.
 
-**Sugestão:** Padronizar a nomenclatura. Sugestão: `{categoria}-{funcionalidade}-test.js`. Exemplos:
-- `auth-authenticated-flow-test.js`
-- `musicas-crud-test.js` (mantido)
-- `cache-headers-test.js` (mantido)
+**O que foi feito (24/05/2026):**
+1. `authenticated-flow.js` → renomeado para `authenticated-flow-test.js`
+2. `upload-flow.js` → renomeado para `upload-flow-test.js`
+3. Atualizada referência em `scripts/generate-load-report.js` (linha 36)
+4. Atualizado comentário de exemplo em `load-tests/authenticated-flow-test.js`
+5. Verificados demais scripts orquestradores (`load-tests.yml`, `scripts/run-all-load-tests.js`, `scripts/run-load-tests.sh`) — nenhuma referência adicional encontrada
+
+**Arquivos mantidos intocados** (já seguiam o padrão):
+- `musicas-crud-test.js` — padrão `{recurso}-{operacao}-test.js`
+- `musicas-load-test.js` — padrão `{recurso}-{operacao}-test.js`
+- `cache-headers-test.js` — padrão `{funcionalidade}-test.js`
+- `cache-performance-test.js` — padrão `{funcionalidade}-test.js`
+- `backup-verification-test.js` — padrão `{funcionalidade}-test.js`
 
 ---
 
@@ -598,7 +602,7 @@ import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 | ⚠️ **Média** | Duplicidade | Estruturas CRUD músicas/vídeos quase idênticas | Alto | Alto | ✅ Resolvido (23/05/2026) |
 | 🟢 **Baixa** | Performance | `sleep()` fixo não simula comportamento real | Baixo | Baixo | ✅ Resolvido (24/05/2026) |
 | 🟢 **Baixa** | Performance | Health check duplicado em `setup()` | Baixo | Baixo | ✅ Resolvido (24/05/2026) |
-| 🟢 **Baixa** | Manutenção | Nomenclatura inconsistente de arquivos | Médio | Baixo | ❌ Pendente |
+| 🟢 **Baixa** | Manutenção | Nomenclatura inconsistente de arquivos | Médio | Baixo | ✅ Resolvido (24/05/2026) |
 | 🟢 **Baixa** | Manutenção | `env-config.json` subutilizado | Baixo | Médio | ✅ Resolvido (23/05/2026) |
 | 🟢 **Baixa** | Manutenção | Separação difusa entre testes funcionais e de carga | Médio | Baixo | ❌ Pendente |
 | 🟢 **Baixa** | Manutenção | Versão hardcoded do k6-summary | Baixo | Baixo | ✅ Resolvido (23/05/2026) |

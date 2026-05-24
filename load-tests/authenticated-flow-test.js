@@ -19,7 +19,7 @@ export const options = {
 // --- Configuração do Teste ---
 // Obtenha as credenciais das variáveis de ambiente para segurança.
 // Exemplo de execução:
-// k6 run -e ADMIN_USERNAME=admin -e ADMIN_PASSWORD=password load-tests/authenticated-flow.js
+// k6 run -e ADMIN_USERNAME=admin -e ADMIN_PASSWORD=password load-tests/authenticated-flow-test.js
 const USERNAME = __ENV.ADMIN_USERNAME || 'admin';
 const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
 const BASE_URL = 'http://localhost:3000';

@@ -33,7 +33,7 @@ async function checkK6Available() {
 const TESTS = [
   { 
     name: 'Fluxo Autenticado', 
-    script: `${LOAD_TESTS_DIR}/authenticated-flow.js`, 
+    script: `${LOAD_TESTS_DIR}/authenticated-flow-test.js`, 
     env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME, ADMIN_PASSWORD: process.env.ADMIN_PASSWORD } 
   },
   { 
