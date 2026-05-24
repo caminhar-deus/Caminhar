@@ -16,9 +16,46 @@
 import { execSync } from 'child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { resolve, join } from 'path';
+import http from 'http';
 
 const REPORTS_DIR = resolve('./reports/k6-summaries');
 const RESULTS_FILE = join(REPORTS_DIR, 'orchestrator-results.json');
+
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+const SERVER_CHECK_TIMEOUT = 5000; // 5s para verificar o servidor
+
+/**
+ * Verifica se o servidor está rodando antes de executar os testes.
+ * Faz uma requisição HTTP para a URL base e aguarda resposta.
+ * Se o servidor não estiver acessível, exibe mensagem e encerra o processo.
+ */
+function checkServer() {
+  return new Promise((resolve, reject) => {
+    console.log(`🔍 Verificando status do servidor em ${BASE_URL}...`);
+
+    const req = http.get(BASE_URL, (res) => {
+      console.log(`✅ Servidor online (status: ${res.statusCode}). Iniciando testes...\n`);
+      res.resume();
+      resolve();
+    });
+
+    req.on('error', (err) => {
+      console.error(`\n❌ Erro: O servidor não está acessível em ${BASE_URL}`);
+      console.error(`   Motivo: ${err.code === 'ECONNREFUSED' ? 'Conexão recusada' : err.message}`);
+      console.error(`👉 Solução: Abra um novo terminal e execute 'npm run dev'`);
+      console.error(`   Aguarde o servidor iniciar completamente e então execute este script novamente.\n`);
+      reject(new Error(`Servidor não acessível em ${BASE_URL}`));
+    });
+
+    req.setTimeout(SERVER_CHECK_TIMEOUT, () => {
+      req.destroy();
+      console.error(`\n❌ Erro: O servidor não respondeu em ${BASE_URL} após ${SERVER_CHECK_TIMEOUT / 1000}s`);
+      console.error(`👉 Solução: Abra um novo terminal e execute 'npm run dev'`);
+      console.error(`   Aguarde o servidor iniciar completamente e então execute este script novamente.\n`);
+      reject(new Error(`Servidor não respondeu em ${BASE_URL}`));
+    });
+  });
+}
 
 // Garante que o diretório de relatórios existe
 if (!existsSync(REPORTS_DIR)) {
@@ -87,11 +124,18 @@ let results = {
 };
 
 console.log('╔══════════════════════════════════════════════════════════╗');
-console.log('║   🚀 ORQUESTRADOR DE TESTES DE CARGA (k6)              ║');
-console.log('║   Executando todos os 29 scripts sequencialmente       ║');
+console.log('║   🚀 ORQUESTRADOR DE TESTES DE CARGA (k6)                ║');
+console.log('║   Executando todos os 29 scripts sequencialmente         ║');
 console.log('╚══════════════════════════════════════════════════════════╝\n');
 
+// Verifica se o servidor está rodando antes de iniciar os testes
 let overallExitCode = 0;
+
+try {
+  await checkServer();
+} catch {
+  process.exit(1);
+}
 
 for (const category of CATEGORIES) {
   console.log(`\n═══════════════════════════════════════════════════`);
