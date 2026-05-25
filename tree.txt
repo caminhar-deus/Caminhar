@@ -611,7 +611,6 @@
 │   ├── spotify.js
 │   └── youtube.js
 ├── load-tests
-│   ├── env-config.json
 │   ├── functional
 │   │   ├── backup-verification-test.js
 │   │   ├── cache-headers-test.js
@@ -739,6 +738,7 @@
 ├── README.md
 ├── reports
 │   ├── k6-summaries
+│   │   ├── authenticated_flow_test.json
 │   │   ├── backup_verification_test.json
 │   │   ├── cache_headers_test.html
 │   │   ├── cache_headers_test.json
@@ -746,9 +746,12 @@
 │   │   ├── CRUD_de_Músicas.json
 │   │   ├── CRUD_de_Vídeos.json
 │   │   ├── ddos_search_test.json
+│   │   ├── ip_spoofing_deteccao_test.json
+│   │   ├── ip_spoofing_evasao_test.json
 │   │   ├── ip_spoofing_test.json
 │   │   ├── login_negative_test.json
 │   │   ├── musicas_filter_test.json
+│   │   ├── musicas_load_test.json
 │   │   ├── musicas_pagination_test.json
 │   │   ├── musicas_search_test.json
 │   │   ├── musicas_sort_test.json
@@ -763,6 +766,7 @@
 │   │   ├── stress-test-combined.json
 │   │   ├── upload-flow-summary.json
 │   │   ├── videos_filter_test.json
+│   │   ├── videos_load_test.json
 │   │   ├── videos_pagination_test.json
 │   │   ├── videos_sort_test.html
 │   │   ├── videos_sort_test.json
@@ -1093,4 +1097,4 @@
 ├── tests-output.log
 └── tree.txt
 
-171 directories, 923 files
+171 directories, 927 files

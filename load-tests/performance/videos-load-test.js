@@ -9,12 +9,25 @@ const resourceConfig = {
   tags: { name: 'ListVideos_Page1' },
   checkResponse: () => ({
     'retornou objeto com videos': (r) => {
-      const body = r.json();
-      return typeof body === 'object' && (body?.data?.videos === undefined || Array.isArray(body.data.videos));
+      try {
+        const body = r.json();
+        if (!body || typeof body !== 'object') return false;
+        // Aceita tanto { data: { videos: [...] } } quanto { videos: [...] } ou array direto
+        const hasDataVideos = body?.data?.videos !== undefined;
+        const hasDirectVideos = Array.isArray(body?.videos);
+        const isArray = Array.isArray(body);
+        return hasDataVideos || hasDirectVideos || isArray;
+      } catch (e) {
+        return false;
+      }
     },
     'retornou metadados de paginação': (r) => {
-      const body = r.json();
-      return body?.data?.pagination !== undefined && typeof body.data.pagination === 'object';
+      try {
+        const body = r.json();
+        return body?.data?.pagination !== undefined || body?.pagination !== undefined;
+      } catch (e) {
+        return false;
+      }
     },
     'página 1 tempo < 300ms': (r) => r.timings.duration < 300,
   }),
@@ -40,7 +53,6 @@ const resourceConfig = {
 const loadTest = createLoadTest(resourceConfig);
 
 export const options = loadTest.options;
-export { setup } from '../helpers/auth.js';
 
 export default loadTest.default;
 

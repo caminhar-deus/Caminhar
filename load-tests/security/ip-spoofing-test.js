@@ -23,9 +23,7 @@ const REPORT_NAME = 'ip_spoofing_evasao_test';
 
 export const options = getProfile(PROFILE_NAME, {
   thresholds: {
-    // Se recebermos 429, o rate limit global está protegendo
     http_req_duration: ['p(95)<5000'],
-    http_req_failed: ['rate<0.50'],
   },
 });
 

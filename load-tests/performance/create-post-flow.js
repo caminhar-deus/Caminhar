@@ -25,22 +25,19 @@ export default function (data) {
   if (!token) return;
 
   // Gera dados únicos para cada iteração para evitar erros de constraint 'UNIQUE' no banco
-  const timestamp = Date.now();
-  const uniqueId = `${__VU}-${__ITER}-${timestamp}`;
-  const postTitle = `Post de Carga K6 ${__VU}-${__ITER}`;
+  const uniqueId = `${__VU}-${__ITER}-${Date.now()}`;
+  const postTitle = `Post de Carga K6 ${uniqueId}`;
   const postSlug = `post-carga-k6-${uniqueId}`;
 
   const postPayload = {
     title: postTitle,
     slug: postSlug,
-    excerpt: `Resumo do post de teste de carga ${uniqueId}.`,
     content: `Conteúdo completo do post de teste de carga gerado pelo k6.`,
-    image_url: 'https://via.placeholder.com/800x400',
     published: false,
   };
 
   const createRes = http.post(
-    `${BASE_URL}/api/posts`,
+    `${BASE_URL}/api/admin/posts`,
     JSON.stringify(postPayload),
     {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -66,13 +63,13 @@ export function teardown(data) {
   };
 
   // Limpeza: apaga posts K6 fantasmas deixados por VUs interrompidos
-  const res = http.get(`${BASE_URL}/api/posts?limit=100`, { headers: authHeaders });
+  const res = http.get(`${BASE_URL}/api/admin/posts?limit=100`, { headers: authHeaders });
   if (res.status === 200) {
     const body = res.json();
-    const posts = body.posts || body.data || [];
+    const posts = body.data && body.data.posts ? body.data.posts : (body.posts || body.data || []);
     for (const post of posts) {
       if (post.title && post.title.includes('K6')) {
-        http.del(`${BASE_URL}/api/posts`, JSON.stringify({ id: post.id }), { headers: authHeaders });
+        http.del(`${BASE_URL}/api/admin/posts?id=${post.id}`, null, { headers: authHeaders });
       }
     }
   }

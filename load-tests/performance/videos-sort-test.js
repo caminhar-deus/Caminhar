@@ -6,7 +6,7 @@ const resourceConfig = {
   sortOrder: 'desc',
   itemsPath: 'data.videos',
   resourceName: 'videos',
-  useExplicitSort: false,
+  useExplicitSort: true,
   profileName: 'light',
 };
 

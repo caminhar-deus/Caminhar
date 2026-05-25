@@ -7,7 +7,9 @@ import { generateReport } from '../helpers/report.js';
 
 export const options = getProfile('light', {
   iterations: 5,
-  thresholds: {},
+  thresholds: {
+    http_req_duration: ['p(95)<2000'],
+  },
 });
 
 export default function () {

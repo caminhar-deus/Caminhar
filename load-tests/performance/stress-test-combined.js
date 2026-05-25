@@ -22,20 +22,18 @@ export const options = getProfile('stress');
 
 export { setup };
 
-// --- Função do Cenário de Estresse ---
-export function stressTestFlow(data) {
+// --- Cenário de Estresse (nome deve corresponder ao perfil: stress_test) ---
+export function stress_test(data) {
   const token = data && data.token;
   if (!token) return;
 
   const authHeaders = {
     'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json',
-    'X-Forwarded-For': getRandomIP(), // Evita Rate Limit baseado em IP
+    'X-Forwarded-For': getRandomIP(),
   };
 
   const uniqueId = `${__VU}-${__ITER}`;
-  
-  // O YouTube exige que o ID do vídeo tenha exatamente 11 caracteres para passar na validação Regex da API
   const paddedVideoId = `st${__VU}x${__ITER}`.padStart(11, '0').slice(-11);
   const videoUrl = `https://www.youtube.com/watch?v=${paddedVideoId}`;
   const videoTitle = `${TEST_PREFIX} Video de Estresse ${uniqueId}`;
@@ -53,22 +51,30 @@ export function stressTestFlow(data) {
     tags: { flow: 'stress_create' },
   });
 
-  let videoId;
-  const createCheck = check(createRes, {
+  let createCheckPassed = false;
+  let videoId = null;
+
+  check(createRes, {
     'CREATE: status é 201': (r) => r.status === 201,
     'CREATE: retorna o ID': (r) => {
       if (r.status === 201 && r.body) {
-        const body = r.json();
-        if (body && body.id) {
-          videoId = body.id;
-          return true;
+        try {
+          const body = r.json();
+          const id = body?.data?.video?.id || body?.data?.id || body?.id;
+          if (id) {
+            videoId = id;
+            createCheckPassed = true;
+            return true;
+          }
+        } catch (e) {
+          return false;
         }
       }
       return false;
     },
   });
 
-  if (!createCheck) return;
+  if (!createCheckPassed || !videoId) return;
 
   randomSleep(0.3, 1.5);
 
@@ -99,15 +105,18 @@ export function stressTestFlow(data) {
   });
 }
 
-// --- Função do Cenário de Monitoramento ---
-export function memoryMonitorFlow() {
+// --- Cenário de Monitoramento (nome deve corresponder ao perfil: memory_monitor) ---
+export function memory_monitor() {
   const res = http.get(`${BASE_URL}/api/status`);
 
-  if (res.status === 200 && res.json('memory')) {
-    const memory = res.json('memory');
-    MemoryRss.add(memory.rss);
-    MemoryHeapTotal.add(memory.heapTotal);
-    MemoryHeapUsed.add(memory.heapUsed);
+  if (res.status === 200) {
+    const body = res.json();
+    const memory = body?.data?.memory;
+    if (memory) {
+      MemoryRss.add(memory.rss);
+      MemoryHeapTotal.add(memory.heapTotal);
+      MemoryHeapUsed.add(memory.heapUsed);
+    }
   }
   randomSleep(0.5, 2);
 }
@@ -120,7 +129,6 @@ export function teardown(data) {
     'Content-Type': 'application/json',
   };
   
-  // Usa paginação para garantir que todos os registros sejam limpos
   let page = 1;
   let totalDeleted = 0;
   const limit = 100;
@@ -131,7 +139,7 @@ export function teardown(data) {
     if (res.status !== 200) break;
 
     const body = res.json();
-    const videos = body.videos || body.data || [];
+    const videos = body?.data?.videos || body.videos || body.data || [];
     
     if (videos.length === 0) {
       hasMore = false;
@@ -141,9 +149,7 @@ export function teardown(data) {
     for (const video of videos) {
       if (video.titulo && (video.titulo.includes(TEST_PREFIX) || video.titulo.includes('K6') || video.titulo.includes('Estresse'))) {
         const delRes = http.del(`${BASE_URL}/api/admin/videos`, JSON.stringify({ id: video.id }), { headers: authHeaders });
-        if (delRes.status === 200) {
-          totalDeleted++;
-        }
+        if (delRes.status === 200) totalDeleted++;
       }
     }
 

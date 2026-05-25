@@ -5,14 +5,14 @@ import http from 'k6/http';
 
 const resourceConfig = {
   adminEndpoint: '/api/admin/videos',
-  payloadTemplate: () => ({
+  payloadTemplate: (uniqueId) => ({
     url_youtube: `https://www.youtube.com/watch?v=${String(Math.random()).padStart(11, '0').slice(-11)}`,
-    titulo: `Video de Teste K6 ${__VU}-${__ITER}`,
+    titulo: `Video de Teste K6 ${uniqueId}`,
     descricao: 'Descrição do vídeo de teste automatizado.',
     publicado: false,
   }),
   resourceName: 'videos',
-  uniqueIdGenerator: () => `${__VU}-${__ITER}`,
+  uniqueIdGenerator: () => `${__VU}-${__ITER}-${Date.now()}`,
   profileName: 'light',
   optionsOverrides: {
     stages: [

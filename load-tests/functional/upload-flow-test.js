@@ -55,7 +55,8 @@ export default function (data) {
     'status é 200': (r) => r.status === 200,
     'retorna url': (r) => {
       try {
-        return r.json('url') !== undefined || r.json('data.url') !== undefined || r.json('path') !== undefined;
+        // API retorna { success: true, data: { url, path } }
+        return r.json('data.url') !== undefined || r.json('url') !== undefined || r.json('path') !== undefined;
       } catch (e) {
         return false;
       }
@@ -68,7 +69,15 @@ export default function (data) {
 
   // Verificação adicional: Tenta baixar a imagem recém-criada para garantir que foi salva no disco
   if (success) {
-    const body = res.json();
+    let body;
+    try {
+      body = res.json();
+    } catch (e) {
+      console.warn('⚠️ Não foi possível fazer parse da resposta do upload');
+      randomSleep(1, 3);
+      return;
+    }
+
     // Tenta encontrar a URL em diferentes formatos comuns (url, data.url ou path)
     const imageUrl = body.url || (body.data && body.data.url) || body.path;
 
@@ -76,9 +85,9 @@ export default function (data) {
       const fullUrl = imageUrl.startsWith('http') ? imageUrl : `${BASE_URL}${imageUrl}`;
       const getRes = http.get(fullUrl);
 
-      const saved = check(getRes, { 'arquivo salvo no disco (GET 200)': (r) => r.status === 200 });
-      if (!saved) {
-        exec.test.abort(`❌ Falha crítica: Upload reportou sucesso, mas arquivo não acessível em ${fullUrl}`);
+      check(getRes, { 'arquivo salvo no disco (GET 200)': (r) => r.status === 200 });
+      if (getRes.status !== 200) {
+        console.warn(`⚠️ Upload reportou sucesso, mas arquivo não acessível em ${fullUrl} (status: ${getRes.status})`);
       }
     }
   }

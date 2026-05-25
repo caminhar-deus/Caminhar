@@ -15,10 +15,11 @@ import { BASE_URL, USERNAME, PASSWORD } from './config.js';
  * @returns {{ token: string }} Objeto com o token JWT
  * @throws {Error} Se o login falhar ou a estrutura da resposta for inesperada
  */
-export function setup(options = {}) {
-  const url = options.baseUrl || BASE_URL;
-  const username = options.username || USERNAME;
-  const password = options.password || PASSWORD;
+export function setup(options) {
+  const opts = options || {};
+  const url = opts.baseUrl || BASE_URL;
+  const username = opts.username || USERNAME;
+  const password = opts.password || PASSWORD;
 
   const loginRes = http.post(
     `${url}/api/auth/login?response=body`,

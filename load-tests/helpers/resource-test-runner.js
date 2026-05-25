@@ -74,6 +74,18 @@ function createCrudDefault(resourceConfig) {
   const UpdateErrors = new Counter(`${prefix}_update_errors`);
   const DeleteErrors = new Counter(`${prefix}_delete_errors`);
 
+  // Helper para extrair o ID da resposta da API, suportando múltiplos formatos:
+  // { id: ... } (direto), { data: { id: ... } }, { data: { [resourceName]: { id: ... } } }
+  function extractResourceId(body, idField, resourceName) {
+    if (body[idField] !== undefined) return body[idField];
+    if (body.data) {
+      if (body.data[idField] !== undefined) return body.data[idField];
+      const resourceData = body.data[resourceName] || body.data[`${resourceName.slice(0, -1)}`];
+      if (resourceData && resourceData[idField] !== undefined) return resourceData[idField];
+    }
+    return undefined;
+  }
+
   return function (data) {
     const token = data && data.token;
     const headers = {
@@ -86,16 +98,20 @@ function createCrudDefault(resourceConfig) {
     const uniqueId = uniqueIdGenerator();
 
     // Gera payload substituindo placeholders
-    const payloadStr = typeof payloadTemplate === 'function'
-      ? JSON.stringify(payloadTemplate(uniqueId))
-      : JSON.stringify(payloadTemplate);
+    const payloadObj = typeof payloadTemplate === 'function'
+      ? payloadTemplate(uniqueId)
+      : { ...payloadTemplate };
+    const payloadStr = JSON.stringify(payloadObj);
 
     // --- CREATE ---
     const createRes = http.post(`${BASE_URL}${adminEndpoint}`, payloadStr, { headers });
 
     const createSuccess = check(createRes, {
       [`CREATE (${resourceName}): status é 201`]: (r) => r.status === 201,
-      [`CREATE (${resourceName}): retorna o ${idField}`]: (r) => r.json(idField) !== undefined,
+      [`CREATE (${resourceName}): retorna o ${idField}`]: (r) => {
+        const body = r.json();
+        return body && extractResourceId(body, idField, resourceName) !== undefined;
+      },
     });
 
     if (!createSuccess) {
@@ -104,13 +120,13 @@ function createCrudDefault(resourceConfig) {
       return;
     }
 
-    const resourceId = createRes.json(idField);
+    const body = createRes.json();
+    const resourceId = extractResourceId(body, idField, resourceName);
     randomSleep(0.5, 2);
 
     // --- UPDATE ---
-    const updatePayloadStr = typeof payloadTemplate === 'function'
-      ? JSON.stringify({ [idField]: resourceId, ...payloadTemplate(uniqueId), titulo: `${payloadTemplate(uniqueId).titulo || 'Atualizado'} - Updated` })
-      : JSON.stringify({ [idField]: resourceId, ...payloadTemplate });
+    const updatePayloadObj = { [idField]: resourceId, ...payloadObj, titulo: `${payloadObj.titulo || 'Atualizado'} - Updated` };
+    const updatePayloadStr = JSON.stringify(updatePayloadObj);
 
     const updateRes = http.put(`${BASE_URL}${adminEndpoint}`, updatePayloadStr, { headers });
 
@@ -154,6 +170,24 @@ function createFilterDefault(resourceConfig) {
     sleepDuration = null,
   } = resourceConfig;
 
+  // Extrai itens com suporte a caminhos aninhados (ex: 'data.musicas')
+  function getItems(body) {
+    if (responsePath && responsePath.includes('.')) {
+      let current = body;
+      const parts = responsePath.split('.');
+      for (const part of parts) {
+        if (current && current[part] !== undefined) {
+          current = current[part];
+        } else {
+          return undefined;
+        }
+      }
+      return Array.isArray(current) ? current : undefined;
+    }
+    const direct = body[responsePath];
+    return Array.isArray(direct) ? direct : (Array.isArray(body) ? body : undefined);
+  }
+
   return function () {
     const searchTerm = searchValues[Math.floor(Math.random() * searchValues.length)];
 
@@ -164,8 +198,7 @@ function createFilterDefault(resourceConfig) {
       [`Retornou lista de ${resourceName}`]: (r) => {
         try {
           const body = r.json();
-          const items = body[responsePath] || body;
-          return Array.isArray(items);
+          return getItems(body) !== undefined;
         } catch (e) {
           return false;
         }
@@ -173,7 +206,7 @@ function createFilterDefault(resourceConfig) {
       [`Filtro funcionou (termo encontrado)`]: (r) => {
         let body;
         try { body = r.json(); } catch (e) { return false; }
-        const items = body[responsePath] || body;
+        const items = getItems(body);
 
         if (!Array.isArray(items)) return false;
         if (items.length === 0) return true;

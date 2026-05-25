@@ -88,22 +88,22 @@ const CATEGORIES = [
   },
   {
     name: '🔍 Functional Tests',
-    env: {}, // testes públicos, sem necessidade de credenciais
+    env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME || 'admin', ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || '123456' },
     scripts: [
-      { name: 'health-check',           cmd: 'k6 run -e ADMIN_USERNAME= -e ADMIN_PASSWORD= load-tests/functional/health-check.js' },
-      { name: 'cache-headers-test',     cmd: 'k6 run -e ADMIN_USERNAME= -e ADMIN_PASSWORD= load-tests/functional/cache-headers-test.js' },
+      { name: 'health-check',           cmd: 'k6 run load-tests/functional/health-check.js' },
+      { name: 'cache-headers-test',     cmd: 'k6 run load-tests/functional/cache-headers-test.js' },
       { name: 'backup-verification-test', cmd: 'k6 run load-tests/functional/backup-verification-test.js' },
       { name: 'video-validation-test',  cmd: 'k6 run load-tests/functional/video-validation-test.js' },
-      { name: 'posts-tags-test',        cmd: 'k6 run -e ADMIN_USERNAME= -e ADMIN_PASSWORD= load-tests/functional/posts-tags-test.js' },
-      { name: 'posts-cursor-pagination-test', cmd: 'k6 run -e ADMIN_USERNAME= -e ADMIN_PASSWORD= load-tests/functional/posts-cursor-pagination-test.js' },
-      { name: 'search-content-test',    cmd: 'k6 run -e ADMIN_USERNAME= -e ADMIN_PASSWORD= load-tests/functional/search-content-test.js' },
+      { name: 'posts-tags-test',        cmd: 'k6 run load-tests/functional/posts-tags-test.js' },
+      { name: 'posts-cursor-pagination-test', cmd: 'k6 run load-tests/functional/posts-cursor-pagination-test.js' },
+      { name: 'search-content-test',    cmd: 'k6 run load-tests/functional/search-content-test.js' },
       { name: 'upload-flow-test',       cmd: 'k6 run load-tests/functional/upload-flow-test.js' },
-      { name: 'recovery-test',          cmd: 'k6 run -e ADMIN_USERNAME= -e ADMIN_PASSWORD= load-tests/functional/recovery-test.js' },
+      { name: 'recovery-test',          cmd: 'k6 run load-tests/functional/recovery-test.js' },
     ],
   },
   {
     name: '🔒 Security Tests',
-    env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME || 'admin', ADMIN_PASSWORD: process.env.ADMIN_PASSWORD },
+    env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME || 'admin', ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || '123456' },
     scripts: [
       { name: 'rate-limit-test',         cmd: 'k6 run load-tests/security/rate-limit-test.js' },
       { name: 'ip-spoofing-test',        cmd: 'k6 run load-tests/security/ip-spoofing-test.js' },

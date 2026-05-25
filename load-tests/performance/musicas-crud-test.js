@@ -5,15 +5,15 @@ import { BASE_URL } from '../helpers/config.js';
 
 const resourceConfig = {
   adminEndpoint: '/api/admin/musicas',
-  payloadTemplate: () => ({
-    titulo: `Música Load Test ${Date.now()}`,
+  payloadTemplate: (uniqueId) => ({
+    titulo: `Música Load Test K6 ${uniqueId}`,
     artista: 'Artista K6',
     descricao: 'Teste de carga automatizado',
     url_spotify: 'https://open.spotify.com/track/testk6',
     publicado: true,
   }),
   resourceName: 'musicas',
-  uniqueIdGenerator: () => `${Date.now()}`,
+  uniqueIdGenerator: () => `${__VU}-${__ITER}-${Date.now()}`,
   profileName: 'light',
   optionsOverrides: {
     stages: [

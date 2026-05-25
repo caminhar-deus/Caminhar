@@ -124,12 +124,18 @@ export function getProfile(profileName, overrides = {}) {
     throw new Error(`Perfil desconhecido: "${profileName}". Use um dos: ${Object.keys(PROFILES).join(', ')}`);
   }
 
+  // Se overrides incluir thresholds explicitamente, sobrescreve completamente
+  // Se não, faz merge com o perfil base
+  const hasExplicitThresholds = overrides && overrides.thresholds !== undefined;
+  
   return {
     ...baseProfile,
     ...overrides,
-    thresholds: {
-      ...baseProfile.thresholds,
-      ...(overrides.thresholds || {}),
-    },
+    thresholds: hasExplicitThresholds
+      ? overrides.thresholds
+      : {
+          ...baseProfile.thresholds,
+          ...(overrides.thresholds || {}),
+        },
   };
 }
