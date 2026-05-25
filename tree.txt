@@ -505,7 +505,6 @@
 │   ├── prettify.js
 │   ├── sort-arrow-sprite.png
 │   └── sorter.js
-├── coverage-output.log
 ├── cypress
 │   ├── e2e
 │   │   ├── blog.cy.js
@@ -654,6 +653,10 @@
 │       ├── login-negative-test.js
 │       └── rate-limit-test.js
 ├── load-tests.yml
+├── logs
+│   ├── coverage-output.log
+│   ├── load-tests.log
+│   └── tests-output.log
 ├── __mocks__
 │   ├── cookie.js
 │   ├── pg.js
@@ -837,6 +840,7 @@
 │   ├── seed-musicas.js
 │   ├── seed-posts.js
 │   ├── seed-products.js
+│   ├── seed-settings.js
 │   ├── seed-videos.js
 │   ├── tests
 │   │   ├── manual-api-test.js
@@ -1096,7 +1100,6 @@
 │       ├── settings-cache.test.js
 │       ├── [slug].test.js
 │       └── videos_validation.test.js
-├── tests-output.log
 └── tree.txt
 
-171 directories, 929 files
+172 directories, 931 files

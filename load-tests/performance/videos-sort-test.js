@@ -4,7 +4,7 @@ const resourceConfig = {
   publicEndpoint: '/api/videos',
   sortField: 'created_at',
   sortOrder: 'desc',
-  itemsPath: 'data.videos',
+  itemsPath: 'data',
   resourceName: 'videos',
   useExplicitSort: true,
   profileName: 'light',

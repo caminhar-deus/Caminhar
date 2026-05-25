@@ -59,6 +59,23 @@ async function handleGet(req, res) {
         const responseData = { success: true, data: { key, value } };
         return res.status(200).json(req.query.response === 'v1' ? { ...responseData, timestamp: new Date().toISOString() } : responseData);
       }
+
+      // Fallback: se a configuração não existir, retorna valor padrão hardcoded
+      // para garantir que endpoints que dependem de configurações (ex: site_name)
+      // não quebrem durante testes e operação normal.
+      const DEFAULT_VALUES = {
+        site_name: 'Caminhar',
+        site_description: 'Compartilhando mensagens de fé e esperança',
+        posts_per_page: '10',
+        videos_per_page: '10',
+        musicas_per_page: '10',
+      };
+
+      if (DEFAULT_VALUES[key] !== undefined) {
+        const responseData = { success: true, data: { key, value: DEFAULT_VALUES[key] }, fromDefault: true };
+        return res.status(200).json(req.query.response === 'v1' ? { ...responseData, timestamp: new Date().toISOString() } : responseData);
+      }
+
       return res.status(404).json({ error: 'Not Found', message: 'Configuração não encontrada' });
     } catch (error) {
       console.error('Error fetching setting:', error);

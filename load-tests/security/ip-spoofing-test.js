@@ -24,6 +24,9 @@ const REPORT_NAME = 'ip_spoofing_evasao_test';
 export const options = getProfile(PROFILE_NAME, {
   thresholds: {
     http_req_duration: ['p(95)<5000'],
+    // Threshold condicional: se proteção estiver ativa, a maioria deve ser 429
+    // Se proteção não estiver ativa, o teste ainda passa documentando a vulnerabilidade
+    // 'checks{expectedResponse:protegido}': ['rate>0.50'], // Descomentar quando proteção estiver ativa
   },
 });
 
@@ -48,8 +51,10 @@ export default function () {
 
   // Opção A: Teste de Vulnerabilidade
   // - 429 = protegido (rate limit global ignorou IP falso)
+  // - 403 = protegido (detecção de spoofing bloqueou)
   // - 401 = vulnerável (rate limit foi burlado)
   check(res, {
+    '✅ Protegido: Detecção de spoofing bloqueou (403)': (r) => r.status === 403,
     '✅ Protegido: Rate limit global ignorou IP falso (429)': (r) => r.status === 429,
     '❌ Vulnerável: IP spoofing burlou rate limit (401)': (r) => r.status === 401,
   });

@@ -4,7 +4,7 @@ const resourceConfig = {
   publicEndpoint: '/api/videos',
   searchField: 'search',
   searchValues: ['louvor', 'adoração', 'testemunho', 'pregação', 'estudo'],
-  responsePath: 'data.videos',
+  responsePath: 'data',
   resourceName: 'videos',
   profileName: 'light',
   optionsOverrides: {

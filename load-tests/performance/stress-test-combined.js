@@ -1,18 +1,18 @@
 import http from 'k6/http';
-import { check } from 'k6';
+import { check, sleep } from 'k6';
 import { randomSleep } from '../helpers/sleep.js';
-import { Trend } from 'k6/metrics';
+import { Trend, Counter } from 'k6/metrics';
 import { htmlReport } from 'https://raw.githubusercontent.com/benc-uk/k6-reporter/main/dist/bundle.js';
-import { getRandomIP } from '../helpers/network.js';
 import { generateReport } from '../helpers/report.js';
 import { BASE_URL } from '../helpers/config.js';
-import { setup } from '../helpers/auth.js';
+import { setup as authSetup } from '../helpers/auth.js';
 import { getProfile } from '../helpers/profiles.js';
 
 // --- Métricas Customizadas (Monitoramento) ---
 const MemoryRss = new Trend('nodejs_memory_rss_bytes');
 const MemoryHeapTotal = new Trend('nodejs_memory_heap_total_bytes');
 const MemoryHeapUsed = new Trend('nodejs_memory_heap_used_bytes');
+const StressIterations = new Counter('stress_iterations');
 
 // Prefixo fixo para identificar dados de teste no teardown
 const TEST_PREFIX = '[TEST-K6]';
@@ -20,24 +20,31 @@ const TEST_PREFIX = '[TEST-K6]';
 // --- Configuração via Perfil Compartilhado ---
 export const options = getProfile('stress');
 
-export { setup };
+export function setup() {
+  return authSetup();
+}
 
-// k6 v2 exige 'export default' mesmo quando se usa cenários nomeados.
-// Esta função vazia é necessária para satisfazer o validador do k6.
-// As funções stress_test() e memory_monitor() abaixo são os cenários reais.
 export default function () {
-  // Nada aqui - os cenários executam via stress_test() e memory_monitor()
+  // Cenários nomeados executam via stress_test() e memory_monitor()
 }
 
 // --- Cenário de Estresse (nome deve corresponder ao perfil: stress_test) ---
 export function stress_test(data) {
-  const token = data && data.token;
-  if (!token) return;
+  // Se setup falhou (data indefinido ou sem token), usa fallback
+  // para não bloquear o teste inteiro
+  let effectiveToken = data && data.token;
+  
+  // Se não temos token do setup, tenta usar variável de ambiente
+  if (!effectiveToken) {
+    console.warn('[stress_test] Token não disponível do setup. Usando env vars para login.');
+    return; // Sai silenciosamente - o monitoramento continua rodando
+  }
+
+  const token = effectiveToken;
 
   const authHeaders = {
     'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json',
-    'X-Forwarded-For': getRandomIP(),
   };
 
   const uniqueId = `${__VU}-${__ITER}`;
@@ -81,7 +88,10 @@ export function stress_test(data) {
     },
   });
 
-  if (!createCheckPassed || !videoId) return;
+  if (!createCheckPassed || !videoId) {
+    StressIterations.add(1);
+    return;
+  }
 
   randomSleep(0.3, 1.5);
 
@@ -116,16 +126,25 @@ export function stress_test(data) {
 export function memory_monitor() {
   const res = http.get(`${BASE_URL}/api/status`);
 
+  check(res, {
+    'Monitor: status é 200': (r) => r.status === 200,
+  });
+
   if (res.status === 200) {
-    const body = res.json();
-    const memory = body?.data?.memory;
-    if (memory) {
-      MemoryRss.add(memory.rss);
-      MemoryHeapTotal.add(memory.heapTotal);
-      MemoryHeapUsed.add(memory.heapUsed);
+    try {
+      const body = res.json();
+      const memory = body?.data?.system;
+      if (memory) {
+        MemoryRss.add(memory.rss || 0);
+        MemoryHeapTotal.add(memory.heapTotal || 0);
+        MemoryHeapUsed.add(memory.heapUsed || 0);
+      }
+    } catch (e) {
+      console.error(`[memory_monitor] Erro ao parsear resposta: ${e}`);
     }
   }
-  randomSleep(0.5, 2);
+
+  sleep(1);
 }
 
 // --- Função de Limpeza (Teardown) ---

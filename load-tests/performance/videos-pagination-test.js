@@ -2,7 +2,7 @@ import { createPaginationTest, generateReport } from '../helpers/resource-test-r
 
 const resourceConfig = {
   publicEndpoint: '/api/videos',
-  itemsPath: 'data.videos',
+  itemsPath: 'data',
   resourceName: 'videos',
   limit: 5,
   profileName: 'light',

@@ -67,7 +67,9 @@ async function handlePut(req, res) {
 }
 
 async function handleDelete(req, res) {
-  const idToDelete = req.query.id ? parseInt(req.query.id, 10) : req.body?.id;
+  const idToDelete = req.query.id
+    ? parseInt(req.query.id, 10)
+    : (req.body?.id ? parseInt(req.body.id, 10) : null);
 
   if (!idToDelete) {
     return res.status(400).json({ message: 'ID do vídeo é obrigatório para exclusão' });
@@ -84,6 +86,6 @@ export default createAdminHandler({
   name: 'Video',
   permission: 'Gestão de Vídeos',
   handlers: { GET: handleGet, POST: handlePost, PUT: handlePut, DELETE: handleDelete },
-  rateLimit: { max: 30, window: 60000 },
+  rateLimit: { max: 60, window: 60000 },
   cacheKeys: 'public_videos:*',
 });

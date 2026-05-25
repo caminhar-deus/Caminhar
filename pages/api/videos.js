@@ -20,6 +20,10 @@ export default async function handler(req, res) {
 
     const search = req.query.search || '';
 
+    // Suporte a parâmetros de ordenação (sort e order)
+    const sort = req.query.sort || 'created_at';
+    const order = req.query.order || 'desc';
+
     if (page < 1 || limit < 1 || limit > 100) {
       return res.status(400).json({ error: 'Bad Request', message: 'Parâmetros de paginação inválidos' });
     }

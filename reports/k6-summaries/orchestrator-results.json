@@ -1,15 +1,15 @@
 {
-  "startTime": "2026-05-25T04:18:54.505Z",
+  "startTime": "2026-05-25T11:41:12.443Z",
   "totalScripts": 30,
-  "passed": 22,
-  "failed": 8,
+  "passed": 28,
+  "failed": 2,
   "skipped": 0,
   "categories": [
     {
       "name": "🧪 Performance Tests",
       "total": 16,
-      "passed": 8,
-      "failed": 8,
+      "passed": 14,
+      "failed": 2,
       "skipped": 0,
       "scripts": [
         {
@@ -32,13 +32,11 @@
         },
         {
           "name": "musicas-filter-test",
-          "status": "fail",
-          "exitCode": 99
+          "status": "pass"
         },
         {
           "name": "videos-filter-test",
-          "status": "fail",
-          "exitCode": 99
+          "status": "pass"
         },
         {
           "name": "musicas-pagination-test",
@@ -46,8 +44,7 @@
         },
         {
           "name": "videos-pagination-test",
-          "status": "fail",
-          "exitCode": 99
+          "status": "pass"
         },
         {
           "name": "musicas-sort-test",
@@ -55,8 +52,7 @@
         },
         {
           "name": "videos-sort-test",
-          "status": "fail",
-          "exitCode": 99
+          "status": "pass"
         },
         {
           "name": "musicas-search-test",
@@ -72,13 +68,11 @@
         },
         {
           "name": "authenticated-flow-test",
-          "status": "fail",
-          "exitCode": 99
+          "status": "pass"
         },
         {
           "name": "create-post-flow",
-          "status": "fail",
-          "exitCode": 99
+          "status": "pass"
         },
         {
           "name": "stress-test-combined",
@@ -161,5 +155,5 @@
       ]
     }
   ],
-  "endTime": "2026-05-25T04:35:24.240Z"
+  "endTime": "2026-05-25T11:57:44.750Z"
 }

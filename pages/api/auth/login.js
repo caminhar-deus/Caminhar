@@ -1,4 +1,5 @@
 import { authenticateAndGenerateToken, setAuthCookie } from '../../../lib/auth';
+import { detectSpoofedIP } from '../../../lib/api/helpers.js';
 
 /**
  * Endpoint de autenticação de usuários.
@@ -14,8 +15,21 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method Not Allowed', message: `Método ${req.method} não permitido` });
   }
 
-  // 1. Pega o IP do usuário para rate limiting
-  const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
+  // 1. Detecção de IP spoofing
+  const { isSpoofed, socketIP: detectedSocketIP } = detectSpoofedIP(req);
+  if (isSpoofed) {
+    return res.status(403).json({
+      error: 'Forbidden',
+      message: 'IP spoofing detectado. Requisição bloqueada.',
+    });
+  }
+
+  // Pega o IP real do usuário (socket) para rate limiting, prevenindo spoofing
+  const socketIP = req.socket?.remoteAddress;
+  const forwarded = req.headers['x-forwarded-for'];
+  const ip = forwarded && socketIP && socketIP !== '::1' && socketIP !== forwarded.split(',')[0].trim()
+    ? socketIP // Socket IP é a fonte confiável quando há discrepância (spoofing)
+    : forwarded?.split(',')[0] || socketIP || 'unknown';
 
   const { username, password } = req.body;
 

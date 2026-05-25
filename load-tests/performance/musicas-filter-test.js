@@ -4,7 +4,7 @@ const resourceConfig = {
   publicEndpoint: '/api/musicas',
   searchField: 'search',
   searchValues: ['Aline Barros', 'Fernandinho', 'Gabriela Rocha', 'Diante do Trono', 'Preto no Branco'],
-  responsePath: 'data.musicas',
+  responsePath: 'data',
   resourceName: 'musicas',
   profileName: 'light',
   optionsOverrides: {

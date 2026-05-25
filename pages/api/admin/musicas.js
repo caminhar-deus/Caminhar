@@ -134,7 +134,9 @@ async function handlePut(req, res) {
 }
 
 async function handleDelete(req, res) {
-  const { id } = req.body;
+  const id = req.query.id
+    ? parseInt(req.query.id, 10)
+    : (req.body?.id ? (typeof req.body.id === 'string' ? parseInt(req.body.id, 10) : req.body.id) : null);
 
   if (!id) {
     return res.status(400).json({ message: 'ID é obrigatório' });
@@ -154,6 +156,6 @@ async function handleDelete(req, res) {
 export default createAdminHandler({
   name: 'Musica',
   handlers: { GET: handleGet, POST: handlePost, PUT: handlePut, DELETE: handleDelete },
-  rateLimit: { max: 30, window: 60000 },
+  rateLimit: { max: 60, window: 60000 },
   cacheKeys: 'musicas:*',
 });
