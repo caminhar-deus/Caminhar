@@ -1,15 +1,15 @@
 {
-  "startTime": "2026-05-25T11:41:12.443Z",
+  "startTime": "2026-05-25T20:36:25.089Z",
   "totalScripts": 30,
-  "passed": 28,
-  "failed": 2,
+  "passed": 25,
+  "failed": 5,
   "skipped": 0,
   "categories": [
     {
       "name": "🧪 Performance Tests",
       "total": 16,
-      "passed": 14,
-      "failed": 2,
+      "passed": 11,
+      "failed": 5,
       "skipped": 0,
       "scripts": [
         {
@@ -18,17 +18,18 @@
         },
         {
           "name": "videos-load-test",
-          "status": "pass"
+          "status": "fail",
+          "exitCode": 99
         },
         {
           "name": "musicas-crud-test",
           "status": "fail",
-          "exitCode": 104
+          "exitCode": 99
         },
         {
           "name": "videos-crud-test",
           "status": "fail",
-          "exitCode": 104
+          "exitCode": 99
         },
         {
           "name": "musicas-filter-test",
@@ -60,11 +61,13 @@
         },
         {
           "name": "cache-performance-test",
-          "status": "pass"
+          "status": "fail",
+          "exitCode": 99
         },
         {
           "name": "pagination-test",
-          "status": "pass"
+          "status": "fail",
+          "exitCode": 99
         },
         {
           "name": "authenticated-flow-test",
@@ -155,5 +158,5 @@
       ]
     }
   ],
-  "endTime": "2026-05-25T11:57:44.750Z"
+  "endTime": "2026-05-25T20:54:11.652Z"
 }

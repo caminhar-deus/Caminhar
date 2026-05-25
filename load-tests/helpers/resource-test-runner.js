@@ -42,16 +42,30 @@ function reportName(testType, resourceName) {
 function createCrudOptions(resourceConfig) {
   const profile = resourceConfig.profileName || 'light';
   const overrides = resourceConfig.optionsOverrides || {};
-  return getProfile(profile, {
+
+  // Obtém o perfil base para mesclar thresholds
+  const baseProfile = getProfile(profile);
+
+  // Se os overrides definirem stages, remove iterations e vus do perfil base
+  // pois o k6 não permite usar iterations e stages simultaneamente
+  const hasStages = overrides.stages !== undefined;
+  const profileWithoutConflicts = { ...baseProfile };
+  if (hasStages) {
+    delete profileWithoutConflicts.iterations;
+    delete profileWithoutConflicts.vus;
+  }
+
+  return {
+    ...profileWithoutConflicts,
     ...overrides,
     thresholds: {
-      ...getProfile(profile).thresholds,
+      ...baseProfile.thresholds,
       [`${resourceConfig.metricsPrefix || resourceConfig.resourceName}_create_errors`]: ['count==0'],
       [`${resourceConfig.metricsPrefix || resourceConfig.resourceName}_update_errors`]: ['count==0'],
       [`${resourceConfig.metricsPrefix || resourceConfig.resourceName}_delete_errors`]: ['count==0'],
       ...(overrides.thresholds || {}),
     },
-  });
+  };
 }
 
 /**
