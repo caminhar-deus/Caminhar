@@ -1,0 +1,174 @@
+{
+  "startTime": "2026-05-25T01:29:11.927Z",
+  "totalScripts": 30,
+  "passed": 13,
+  "failed": 17,
+  "skipped": 0,
+  "categories": [
+    {
+      "name": "🧪 Performance Tests",
+      "total": 16,
+      "passed": 8,
+      "failed": 8,
+      "skipped": 0,
+      "scripts": [
+        {
+          "name": "musicas-load-test",
+          "status": "pass"
+        },
+        {
+          "name": "videos-load-test",
+          "status": "fail",
+          "exitCode": 107
+        },
+        {
+          "name": "musicas-crud-test",
+          "status": "fail",
+          "exitCode": 104
+        },
+        {
+          "name": "videos-crud-test",
+          "status": "fail",
+          "exitCode": 104
+        },
+        {
+          "name": "musicas-filter-test",
+          "status": "pass"
+        },
+        {
+          "name": "videos-filter-test",
+          "status": "pass"
+        },
+        {
+          "name": "musicas-pagination-test",
+          "status": "pass"
+        },
+        {
+          "name": "videos-pagination-test",
+          "status": "fail",
+          "exitCode": 99
+        },
+        {
+          "name": "musicas-sort-test",
+          "status": "pass"
+        },
+        {
+          "name": "videos-sort-test",
+          "status": "fail",
+          "exitCode": 99
+        },
+        {
+          "name": "musicas-search-test",
+          "status": "pass"
+        },
+        {
+          "name": "cache-performance-test",
+          "status": "pass"
+        },
+        {
+          "name": "pagination-test",
+          "status": "pass"
+        },
+        {
+          "name": "authenticated-flow-test",
+          "status": "fail",
+          "exitCode": 99
+        },
+        {
+          "name": "create-post-flow",
+          "status": "fail",
+          "exitCode": 107
+        },
+        {
+          "name": "stress-test-combined",
+          "status": "fail",
+          "exitCode": 104
+        }
+      ]
+    },
+    {
+      "name": "🔍 Functional Tests",
+      "total": 9,
+      "passed": 4,
+      "failed": 5,
+      "skipped": 0,
+      "scripts": [
+        {
+          "name": "health-check",
+          "status": "pass"
+        },
+        {
+          "name": "cache-headers-test",
+          "status": "fail",
+          "exitCode": 99
+        },
+        {
+          "name": "backup-verification-test",
+          "status": "fail",
+          "exitCode": 107
+        },
+        {
+          "name": "video-validation-test",
+          "status": "fail",
+          "exitCode": 107
+        },
+        {
+          "name": "posts-tags-test",
+          "status": "fail",
+          "exitCode": 99
+        },
+        {
+          "name": "posts-cursor-pagination-test",
+          "status": "pass"
+        },
+        {
+          "name": "search-content-test",
+          "status": "pass"
+        },
+        {
+          "name": "upload-flow-test",
+          "status": "fail",
+          "exitCode": 107
+        },
+        {
+          "name": "recovery-test",
+          "status": "pass"
+        }
+      ]
+    },
+    {
+      "name": "🔒 Security Tests",
+      "total": 5,
+      "passed": 1,
+      "failed": 4,
+      "skipped": 0,
+      "scripts": [
+        {
+          "name": "rate-limit-test",
+          "status": "fail",
+          "exitCode": 99
+        },
+        {
+          "name": "ip-spoofing-test",
+          "status": "fail",
+          "exitCode": 99
+        },
+        {
+          "name": "ip-spoofing-deteccao-test",
+          "status": "fail",
+          "exitCode": 99
+        },
+        {
+          "name": "ddos-search-test",
+          "status": "pass"
+        },
+        {
+          "name": "login-negative-test",
+          "status": "fail",
+          "exitCode": 99
+        }
+      ]
+    }
+  ],
+  "endTime": "2026-05-25T01:38:41.247Z"
+}

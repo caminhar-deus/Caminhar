@@ -3,7 +3,7 @@
 // Nota: handleSummary() deve ser exportado pelo próprio arquivo de teste
 // Este módulo fornece a função generateReport() para montar o objeto de saída
 
-import { textSummary } from 'https://jslib.k6.io/k6-summary/latest/index.js';
+import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.4/index.js';
 
 /**
  * Sanitiza token JWT nos dados do relatório, substituindo por "*** TOKEN OCULTO ***"

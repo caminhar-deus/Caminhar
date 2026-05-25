@@ -1,11 +1,23 @@
 {
-    "state": {
-        "isStdOutTTY": true,
-        "isStdErrTTY": true,
-        "testRunDurationMs": 0.462314
-    },
     "metrics": {
-        "checks": {
+        "http_req_duration": {
+            "type": "trend",
+            "contains": "time",
+            "values": {
+                "avg": 0,
+                "min": 0,
+                "med": 0,
+                "max": 0,
+                "p(90)": 0,
+                "p(95)": 0
+            },
+            "thresholds": {
+                "p(95)<2000": {
+                    "ok": true
+                }
+            }
+        },
+        "http_req_failed": {
             "type": "rate",
             "contains": "default",
             "values": {
@@ -14,7 +26,7 @@
                 "fails": 0
             },
             "thresholds": {
-                "rate==1.0": {
+                "rate<0.10": {
                     "ok": true
                 }
             }
@@ -23,8 +35,8 @@
             "type": "counter",
             "contains": "data",
             "values": {
-                "rate": 0,
-                "count": 0
+                "count": 0,
+                "rate": 0
             }
         },
         "data_received": {
@@ -37,11 +49,11 @@
         }
     },
     "root_group": {
-        "groups": [],
-        "checks": [],
         "name": "",
         "path": "",
-        "id": "d41d8cd98f00b204e9800998ecf8427e"
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": [],
+        "checks": []
     },
     "options": {
         "summaryTrendStats": [
@@ -54,5 +66,10 @@
         ],
         "summaryTimeUnit": "",
         "noColor": false
+    },
+    "state": {
+        "isStdOutTTY": true,
+        "isStdErrTTY": true,
+        "testRunDurationMs": 1.483399
     }
 }
