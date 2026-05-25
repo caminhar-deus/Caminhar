@@ -22,6 +22,13 @@ export const options = getProfile('stress');
 
 export { setup };
 
+// k6 v2 exige 'export default' mesmo quando se usa cenários nomeados.
+// Esta função vazia é necessária para satisfazer o validador do k6.
+// As funções stress_test() e memory_monitor() abaixo são os cenários reais.
+export default function () {
+  // Nada aqui - os cenários executam via stress_test() e memory_monitor()
+}
+
 // --- Cenário de Estresse (nome deve corresponder ao perfil: stress_test) ---
 export function stress_test(data) {
   const token = data && data.token;

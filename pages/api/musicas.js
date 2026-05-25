@@ -1,6 +1,7 @@
 import { getPaginatedMusicas } from '../../lib/domain/musicas.js';
 import { getOrSetCache, checkRateLimit } from '../../lib/cache.js';
 import { z } from 'zod';
+import { getClientIP } from '../../lib/api/helpers.js';
 
 /**
  * Handles GET requests to fetch paginated and published music data.
@@ -25,14 +26,14 @@ async function handleGet(req, res) {
 
     const { page, limit, search } = validation.data;
 
-    // Define uma política de cache para a resposta.
-    res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+    // Cache público: CDN/Proxy pode cachear por 5 minutos, com stale-while-revalidate de 10 minutos
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=300, stale-while-revalidate=600');
 
     // Cache com rate limiting integrado
     const cacheKey = `musicas:${page}:${limit}${search ? `:${search}` : ''}`;
     const result = await getOrSetCache(cacheKey, async () => {
       // Rate limiting em endpoint público
-      const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
+      const ip = getClientIP(req);
       const isRateLimited = await checkRateLimit(ip, 'api:public:musicas', 60, 60000);
       if (isRateLimited) {
         throw new Error('RATE_LIMIT_EXCEEDED');

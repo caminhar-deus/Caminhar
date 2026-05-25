@@ -7,6 +7,11 @@ const resourceConfig = {
   responsePath: 'data.videos',
   resourceName: 'videos',
   profileName: 'light',
+  optionsOverrides: {
+    thresholds: {
+      checks: ['rate>0.85'],
+    },
+  },
 };
 
 const filterTest = createFilterTest(resourceConfig);

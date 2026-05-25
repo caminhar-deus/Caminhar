@@ -1,6 +1,7 @@
 import { query } from '../../lib/db.js';
 import { getOrSetCache, checkRateLimit } from '../../lib/cache.js';
 import { paginate, buildPaginationMeta, paginatedResponse } from './helper/pagination.js';
+import { getClientIP } from '../../lib/api/helpers.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -14,7 +15,7 @@ export default async function handler(req, res) {
     const cacheKey = `dicas:public:published:${page}:${limit}`;
     const result = await getOrSetCache(cacheKey, async () => {
       // Rate limiting em endpoint público
-      const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
+      const ip = getClientIP(req);
       const isRateLimited = await checkRateLimit(ip, 'api:public:dicas', 60, 60000);
       if (isRateLimited) {
         throw new Error('RATE_LIMIT_EXCEEDED');
@@ -36,7 +37,7 @@ export default async function handler(req, res) {
       };
     });
 
-    res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=300, stale-while-revalidate=600');
     return res.status(200).json(paginatedResponse(result.data, result.pagination));
   } catch (error) {
     if (error.message === 'RATE_LIMIT_EXCEEDED') {

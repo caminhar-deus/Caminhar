@@ -1,5 +1,6 @@
 import { getPublicPaginatedVideos } from '../../lib/domain/videos.js';
 import { getOrSetCache, checkRateLimit } from '../../lib/cache.js';
+import { getClientIP } from '../../lib/api/helpers.js';
 
 /**
  * API route handler for fetching public videos.
@@ -25,7 +26,7 @@ export default async function handler(req, res) {
 
     const cacheKey = `public_videos:${page}:${limit}${search ? `:${search}` : ''}`;
     const result = await getOrSetCache(cacheKey, async () => {
-      const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
+      const ip = getClientIP(req);
       const isRateLimited = await checkRateLimit(ip, 'api:public:videos');
       if (isRateLimited) {
         throw new Error('RATE_LIMIT_EXCEEDED');
@@ -33,6 +34,9 @@ export default async function handler(req, res) {
       // Use the new, secure function for public data.
       return await getPublicPaginatedVideos(page, limit, search);
     });
+
+    // Cache público: CDN/Proxy pode cachear por 5 minutos, com stale-while-revalidate de 10 minutos
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=300, stale-while-revalidate=600');
 
     return res.status(200).json({
       success: true,

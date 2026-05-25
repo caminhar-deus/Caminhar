@@ -9,6 +9,7 @@ export const options = getProfile('light', {
   iterations: 5,
   thresholds: {
     http_req_duration: ['p(95)<2000'],
+    checks: ['rate==1.0'],
   },
 });
 

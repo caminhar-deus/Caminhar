@@ -584,6 +584,7 @@
 │   ├── api
 │   │   ├── adminCrudHandler.js
 │   │   ├── errors.js
+│   │   ├── helpers.js
 │   │   ├── index.js
 │   │   ├── middleware.js
 │   │   ├── response.js
@@ -853,6 +854,7 @@
 │   └── view-backup-logs.js
 ├── security-tests.yml
 ├── skills-lock.json
+├── task_progress.md
 ├── tests
 │   ├── examples
 │   │   ├── component-example.test.js
@@ -1097,4 +1099,4 @@
 ├── tests-output.log
 └── tree.txt
 
-171 directories, 927 files
+171 directories, 929 files

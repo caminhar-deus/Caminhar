@@ -33,12 +33,16 @@ export default function (data) {
   
   try {
     const body = res.json();
-    if (body && typeof body === 'object' && body.data) {
-      hasBackups = Array.isArray(body.data.backups);
-      hasLatest = body.data.latest === null || (typeof body.data.latest === 'object' && body.data.latest.name);
+    if (body && typeof body === 'object') {
+      // Suporta formato direto (body.backups) e aninhado (body.data.backups)
+      const backupsArray = body.data?.backups || body.backups;
+      const latestObj = body.data?.latest || body.latest;
       
-      if (hasBackups && body.data.backups.length > 0) {
-        console.log(`✅ Encontrados ${body.data.backups.length} backups. Último: ${body.data.latest ? body.data.latest.name : 'Nenhum'}`);
+      hasBackups = Array.isArray(backupsArray);
+      hasLatest = latestObj === null || (typeof latestObj === 'object' && latestObj.name);
+      
+      if (hasBackups && backupsArray.length > 0) {
+        console.log(`✅ Encontrados ${backupsArray.length} backups. Último: ${latestObj ? latestObj.name : 'Nenhum'}`);
       }
     }
   } catch (e) {

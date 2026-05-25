@@ -1,15 +1,15 @@
 {
-  "startTime": "2026-05-25T03:38:29.202Z",
+  "startTime": "2026-05-25T04:18:54.505Z",
   "totalScripts": 30,
-  "passed": 20,
-  "failed": 10,
+  "passed": 22,
+  "failed": 8,
   "skipped": 0,
   "categories": [
     {
       "name": "🧪 Performance Tests",
       "total": 16,
-      "passed": 7,
-      "failed": 9,
+      "passed": 8,
+      "failed": 8,
       "skipped": 0,
       "scripts": [
         {
@@ -82,16 +82,15 @@
         },
         {
           "name": "stress-test-combined",
-          "status": "fail",
-          "exitCode": 104
+          "status": "pass"
         }
       ]
     },
     {
       "name": "🔍 Functional Tests",
       "total": 9,
-      "passed": 8,
-      "failed": 1,
+      "passed": 9,
+      "failed": 0,
       "skipped": 0,
       "scripts": [
         {
@@ -104,8 +103,7 @@
         },
         {
           "name": "backup-verification-test",
-          "status": "fail",
-          "exitCode": 99
+          "status": "pass"
         },
         {
           "name": "video-validation-test",
@@ -163,5 +161,5 @@
       ]
     }
   ],
-  "endTime": "2026-05-25T03:49:38.092Z"
+  "endTime": "2026-05-25T04:35:24.240Z"
 }

@@ -8,6 +8,11 @@ const resourceConfig = {
   resourceName: 'videos',
   useExplicitSort: true,
   profileName: 'light',
+  optionsOverrides: {
+    thresholds: {
+      checks: ['rate>0.85'],
+    },
+  },
 };
 
 const sortTest = createSortTest(resourceConfig);

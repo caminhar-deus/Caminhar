@@ -2,6 +2,7 @@ import { getRecentPosts, createPost } from '../../lib/domain/posts.js';
 import { getOrSetCache, checkRateLimit, invalidateCache } from '../../lib/cache.js';
 import { withAuth } from '../../lib/auth.js';
 import { z } from 'zod';
+import { getClientIP } from '../../lib/api/helpers.js';
 
 /**
  * API route handler for posts.
@@ -41,7 +42,7 @@ async function handleGet(req, res) {
 
     const cacheKey = `posts:${page}:${limit}${search ? `:${search}` : ''}`;
     const result = await getOrSetCache(cacheKey, async () => {
-      const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
+      const ip = getClientIP(req);
       const isRateLimited = await checkRateLimit(ip, 'api:public:posts');
       if (isRateLimited) {
         const rateLimitError = new Error('RATE_LIMIT_EXCEEDED');
@@ -49,6 +50,9 @@ async function handleGet(req, res) {
       }
       return await getRecentPosts(limit, page, search);
     });
+
+    // Cache público: CDN/Proxy pode cachear por 5 minutos, com stale-while-revalidate de 10 minutos
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=300, stale-while-revalidate=600');
 
     // Formato de resposta compatível com v1 quando ?response=v1
     if (req.query.response === 'v1') {
