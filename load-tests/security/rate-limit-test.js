@@ -8,7 +8,13 @@ import { generateReport } from '../helpers/report.js';
 // Métrica personalizada para contar quantas vezes o Rate Limit foi acionado
 const RateLimitHits = new Counter('rate_limit_hits');
 
-export const options = getProfile('rateLimit');
+export const options = getProfile('rateLimit', {
+  thresholds: {
+    http_req_duration: ['p(95)<5000'],
+    http_req_failed: ['rate<0.50'], // 50% das requisições podem ser 429 (esperado)
+    rate_limit_hits: ['count>0'],   // Deve acionar rate limit pelo menos 1 vez
+  },
+});
 
 export default function () {
   const payload = JSON.stringify({

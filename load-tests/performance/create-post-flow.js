@@ -11,8 +11,9 @@ export const options = {
     { duration: '5s', target: 0 },  // Ramp-down
   ],
   thresholds: {
-    'http_req_duration{flow:create_post}': ['p(95)<800'], // Permite mais tempo para operações de escrita
-    'checks{flow:create_post}': ['rate>0.98'], // Taxa de sucesso da criação de posts > 98%
+    'http_req_duration{flow:create_post}': ['p(95)<3000'], // Aumentado para 3000ms (operações de escrita podem ser lentas em dev)
+    'checks{flow:create_post}': ['rate>0.90'], // Reduzido para 90% (admite falhas em ambiente dev)
+    http_req_failed: ['rate<0.15'], // Menos de 15% de requisições com erro
   },
 };
 

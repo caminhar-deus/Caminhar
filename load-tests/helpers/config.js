@@ -4,8 +4,8 @@
 
 const DEFAULT_CONFIG = {
   BASE_URL: 'http://localhost:3000',
-  ADMIN_USERNAME: 'CHANGE_ME',
-  ADMIN_PASSWORD: 'CHANGE_ME',
+  ADMIN_USERNAME: 'admin',
+  ADMIN_PASSWORD: '123456',
 };
 
 // Tenta carregar env-config.json

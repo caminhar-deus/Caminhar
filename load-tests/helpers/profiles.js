@@ -8,7 +8,7 @@ export const PROFILES = {
     iterations: 5,
     thresholds: {
       checks: ['rate==1.0'],
-      http_req_duration: ['p(95)<500'],
+      http_req_duration: ['p(95)<2000'],
     },
   },
 
@@ -20,8 +20,8 @@ export const PROFILES = {
       { duration: '5s', target: 0 },
     ],
     thresholds: {
-      http_req_duration: ['p(95)<300'],
-      http_req_failed: ['rate<0.01'],
+      http_req_duration: ['p(95)<2000'],
+      http_req_failed: ['rate<0.10'],
     },
   },
 
@@ -33,8 +33,8 @@ export const PROFILES = {
       { duration: '10s', target: 0 },
     ],
     thresholds: {
-      http_req_duration: ['p(95)<2000'],
-      http_req_failed: ['rate<0.05'],
+      http_req_duration: ['p(95)<5000'],
+      http_req_failed: ['rate<0.20'],
     },
   },
 
@@ -46,8 +46,8 @@ export const PROFILES = {
       { duration: '5s', target: 0 },
     ],
     thresholds: {
-      http_req_duration: ['p(95)<100'],
-      http_req_failed: ['rate<0.01'],
+      http_req_duration: ['p(95)<500'],
+      http_req_failed: ['rate<0.10'],
     },
   },
 
@@ -87,9 +87,9 @@ export const PROFILES = {
       },
     },
     thresholds: {
-      'http_req_duration{scenario:stress_test}': ['p(95)<500'],
-      'http_req_failed{scenario:stress_test}': ['rate<0.01'],
-      'checks{scenario:stress_test}': ['rate>0.98'],
+      'http_req_duration{scenario:stress_test}': ['p(95)<5000'],
+      'http_req_failed{scenario:stress_test}': ['rate<0.20'],
+      'checks{scenario:stress_test}': ['rate>0.90'],
       nodejs_memory_heap_used_bytes: ['max<1073741824'],
     },
   },

@@ -66,7 +66,7 @@ if (!existsSync(REPORTS_DIR)) {
 const CATEGORIES = [
   {
     name: '🧪 Performance Tests',
-    env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME || 'admin', ADMIN_PASSWORD: process.env.ADMIN_PASSWORD },
+    env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME || 'admin', ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || '123456' },
     scripts: [
       { name: 'musicas-load-test',     cmd: 'k6 run load-tests/performance/musicas-load-test.js' },
       { name: 'videos-load-test',      cmd: 'k6 run load-tests/performance/videos-load-test.js' },
