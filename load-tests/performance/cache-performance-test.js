@@ -2,7 +2,6 @@ import http from 'k6/http';
 import { check } from 'k6';
 import { randomSleep } from '../helpers/sleep.js';
 import exec from 'k6/execution';
-import { getRandomIP } from '../helpers/network.js';
 
 export const options = {
   // Cenário de teste de cache:
@@ -50,16 +49,15 @@ export function setup() {
 }
 
 export default function (token) {
-  const virtualIP = getRandomIP();
-  const spoofedHeaders = {
-    // Simula IP diferente para evitar rate limit
-    'X-Forwarded-For': virtualIP,
-  };
+  // NOTA: Não usamos spoofing de IP aqui pois:
+  // 1. O IP local (127.0.0.1, ::1) está na whitelist de rate limit
+  // 2. A detecção de spoofing bloquearia requisições com X-Forwarded-For diferente do socket
+  // 3. Testes de cache devem testar cache, não evasão de rate limit
 
   // 1. Teste Settings (Autenticado + Cache)
   // Esta rota usa getOrSetCache com chave 'settings:v1:all' ou específica
   const settingsRes = http.get(`${BASE_URL}/api/settings`, {
-    headers: { Authorization: `Bearer ${token}`, ...spoofedHeaders },
+    headers: { Authorization: `Bearer ${token}` },
     tags: { type: 'cached_settings' },
   });
 
@@ -75,7 +73,6 @@ export default function (token) {
   // 2. Teste Posts (Público + Cache)
   // Esta rota usa getOrSetCache com chave 'posts:public:all'
   const postsRes = http.get(`${BASE_URL}/api/posts`, {
-    headers: { ...spoofedHeaders }, // Adiciona o cabeçalho para evitar rate limit em rotas públicas
     tags: { type: 'cached_posts' },
   });
 

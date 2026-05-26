@@ -3,7 +3,7 @@ import { createLoadTest, generateReport } from '../helpers/resource-test-runner.
 const resourceConfig = {
   endpoint: '/api/admin/musicas',
   requireAuth: true,
-  useSpoofIP: true,
+  useSpoofIP: false,
   healthCheck: false,
   resourceName: 'musicas',
   profileName: 'medium',

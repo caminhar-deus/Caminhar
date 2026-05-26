@@ -18,7 +18,8 @@ export async function proxy(request) {
   
   // --- 0. WHITELIST CHECK ---
   // IPs sempre permitidos (testes locais, desenvolvimento)
-  const permanentWhitelist = ['127.0.0.1', '::1', 'localhost', 'unknown'];
+  // NOTA: 'unknown' foi removido pois pode ser manipulado via header ausente
+  const permanentWhitelist = ['127.0.0.1', '::1', 'localhost'];
   if (permanentWhitelist.includes(ip)) {
     return NextResponse.next();
   }

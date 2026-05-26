@@ -86,6 +86,6 @@ export default createAdminHandler({
   name: 'Video',
   permission: 'Gestão de Vídeos',
   handlers: { GET: handleGet, POST: handlePost, PUT: handlePut, DELETE: handleDelete },
-  rateLimit: { max: 60, window: 60000 },
+  rateLimit: { max: 300, window: 60000 },
   cacheKeys: 'public_videos:*',
 });

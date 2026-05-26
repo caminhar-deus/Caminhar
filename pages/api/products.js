@@ -3,6 +3,7 @@ import { getAuthToken, verifyToken } from '../../lib/auth';
 import { checkRateLimit, invalidateCache, getOrSetCache } from '../../lib/cache';
 import { getPaginatedProducts, getAllProducts, createProduct, updateProduct, deleteProduct } from '../../lib/domain/products.js';
 import { paginate } from './helper/pagination.js';
+import { getClientIP } from '../../lib/api/helpers.js';
 
 /**
  * Handler para GET público (sem autenticação)
@@ -13,22 +14,19 @@ async function handlePublicGet(req, res) {
 
     const cacheKey = `products:public:${page}:${limit}`;
 
-    const result = await getOrSetCache(cacheKey, async () => {
-      // Rate limiting em endpoint público
-      const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
-      const isRateLimited = await checkRateLimit(ip, 'api:public:products', 60, 60000);
-      if (isRateLimited) {
-        throw new Error('RATE_LIMIT_EXCEEDED');
-      }
+    // Rate limit ANTES do cache — garante proteção mesmo em cache hits
+    const ip = getClientIP(req);
+    const isRateLimited = await checkRateLimit(ip, 'api:public:products', 60, 60000);
+    if (isRateLimited) {
+      return res.status(429).json({ error: 'Too Many Requests', message: 'Muitas requisições. Tente novamente mais tarde.' });
+    }
 
+    const result = await getOrSetCache(cacheKey, async () => {
       return await getPaginatedProducts(page, limit);
     });
 
     return res.status(200).json(result);
   } catch (error) {
-    if (error.message === 'RATE_LIMIT_EXCEEDED') {
-      return res.status(429).json({ error: 'Too Many Requests', message: 'Muitas requisições. Tente novamente mais tarde.' });
-    }
     if (error.message === 'INVALID_PAGINATION_PARAMS') {
       return res.status(400).json({ error: 'Bad Request', message: 'Parâmetros de paginação inválidos' });
     }
@@ -76,7 +74,7 @@ function requireAuth(req, res) {
  * Handler para POST (criação) — autenticado
  */
 async function handlePost(req, res) {
-  const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
+  const ip = getClientIP(req);
 
   const isRateLimited = await checkRateLimit(ip, 'api:admin:products', 30, 60000);
   if (isRateLimited) {
@@ -106,7 +104,7 @@ async function handlePost(req, res) {
  * Handler para PUT (atualização) — autenticado
  */
 async function handlePut(req, res) {
-  const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
+  const ip = getClientIP(req);
 
   const isRateLimited = await checkRateLimit(ip, 'api:admin:products', 30, 60000);
   if (isRateLimited) {
@@ -142,7 +140,7 @@ async function handlePut(req, res) {
  * Handler para DELETE — autenticado
  */
 async function handleDelete(req, res) {
-  const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
+  const ip = getClientIP(req);
 
   const isRateLimited = await checkRateLimit(ip, 'api:admin:products', 30, 60000);
   if (isRateLimited) {
@@ -208,9 +206,6 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method Not Allowed', message: 'Método não permitido' });
     }
   } catch (error) {
-    if (error.message === 'RATE_LIMIT_EXCEEDED') {
-      return res.status(429).json({ error: 'Too Many Requests', message: 'Muitas requisições. Tente novamente mais tarde.' });
-    }
     console.error('❌ [API Products] Error:', error);
     return res.status(500).json({ error: 'Internal Server Error', message: 'Erro interno no servidor' });
   }

@@ -28,13 +28,15 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Bad Request', message: 'Parâmetros de paginação inválidos' });
     }
 
+    // Rate limit ANTES do cache — garante proteção mesmo em cache hits
+    const ip = getClientIP(req);
+    const isRateLimited = await checkRateLimit(ip, 'api:public:videos');
+    if (isRateLimited) {
+      return res.status(429).json({ error: 'Too Many Requests', message: 'Muitas requisições. Tente novamente mais tarde.' });
+    }
+
     const cacheKey = `public_videos:${page}:${limit}${search ? `:${search}` : ''}`;
     const result = await getOrSetCache(cacheKey, async () => {
-      const ip = getClientIP(req);
-      const isRateLimited = await checkRateLimit(ip, 'api:public:videos');
-      if (isRateLimited) {
-        throw new Error('RATE_LIMIT_EXCEEDED');
-      }
       // Use the new, secure function for public data.
       return await getPublicPaginatedVideos(page, limit, search);
     });
@@ -47,9 +49,6 @@ export default async function handler(req, res) {
       ...result,
     });
   } catch (error) {
-    if (error.message === 'RATE_LIMIT_EXCEEDED') {
-      return res.status(429).json({ error: 'Too Many Requests', message: 'Muitas requisições. Tente novamente mais tarde.' });
-    }
     console.error('Error fetching public videos:', error);
     return res.status(500).json({ error: 'Internal Server Error', message: 'Erro interno do servidor ao buscar vídeos' });
   }

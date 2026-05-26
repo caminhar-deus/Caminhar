@@ -3,7 +3,7 @@ import { createLoadTest, generateReport } from '../helpers/resource-test-runner.
 const resourceConfig = {
   endpoint: '/api/videos',
   requireAuth: true,
-  useSpoofIP: true,
+  useSpoofIP: false,
   resourceName: 'videos',
   profileName: 'medium',
   tags: { name: 'ListVideos_Page1' },

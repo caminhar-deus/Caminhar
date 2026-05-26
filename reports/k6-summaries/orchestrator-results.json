@@ -1,15 +1,15 @@
 {
-  "startTime": "2026-05-25T20:36:25.089Z",
+  "startTime": "2026-05-26T11:45:36.335Z",
   "totalScripts": 30,
-  "passed": 25,
-  "failed": 5,
+  "passed": 27,
+  "failed": 3,
   "skipped": 0,
   "categories": [
     {
       "name": "🧪 Performance Tests",
       "total": 16,
-      "passed": 11,
-      "failed": 5,
+      "passed": 13,
+      "failed": 3,
       "skipped": 0,
       "scripts": [
         {
@@ -23,13 +23,11 @@
         },
         {
           "name": "musicas-crud-test",
-          "status": "fail",
-          "exitCode": 99
+          "status": "pass"
         },
         {
           "name": "videos-crud-test",
-          "status": "fail",
-          "exitCode": 99
+          "status": "pass"
         },
         {
           "name": "musicas-filter-test",
@@ -158,5 +156,5 @@
       ]
     }
   ],
-  "endTime": "2026-05-25T20:54:11.652Z"
+  "endTime": "2026-05-26T12:03:17.271Z"
 }

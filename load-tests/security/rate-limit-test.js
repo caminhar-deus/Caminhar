@@ -40,6 +40,11 @@ export default function () {
       '🛡️ Rate Limit Ativo (Status 429)': (r) => r.status === 429,
       'Mensagem de erro adequada': (r) => r.body.includes('Muitas tentativas') || r.json('message').includes('Muitas tentativas'),
     });
+  } else if (res.status === 403) {
+    // Spoofing detectado — também é uma proteção válida do sistema
+    check(res, {
+      '🛡️ Proteção contra spoofing bloqueou (403)': (r) => r.status === 403,
+    });
   } else {
     check(res, {
       'Requisição permitida (Status 401)': (r) => r.status === 401,

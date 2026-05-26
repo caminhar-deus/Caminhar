@@ -16,7 +16,6 @@ import { Counter } from 'k6/metrics';
 import exec from 'k6/execution';
 import { getRandomIP } from './network.js';
 import { BASE_URL, USERNAME, PASSWORD } from './config.js';
-import { setup as authSetup } from './auth.js';
 import { getProfile } from './profiles.js';
 import { generateReport } from './report.js';
 
@@ -88,6 +87,43 @@ function createCrudDefault(resourceConfig) {
   const UpdateErrors = new Counter(`${prefix}_update_errors`);
   const DeleteErrors = new Counter(`${prefix}_delete_errors`);
 
+  // Estado compartilhado entre execuções para lazy login
+  let cachedToken = null;
+  let loginAttempted = false;
+
+  /**
+   * Tenta fazer login e retorna o token.
+   * Usa cache para evitar múltiplos logins desnecessários.
+   */
+  function getAuthToken() {
+    if (cachedToken) return cachedToken;
+
+    if (loginAttempted) return null; // Já tentou e falhou
+    loginAttempted = true;
+
+    const loginRes = http.post(
+      `${BASE_URL}/api/auth/login?response=body`,
+      JSON.stringify({ username: USERNAME, password: PASSWORD }),
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+
+    if (loginRes.status === 200) {
+      try {
+        const body = loginRes.json();
+        cachedToken = body?.data?.token;
+        if (cachedToken) {
+          console.log(`[Auth] Login automático bem-sucedido para testes CRUD de ${resourceName}`);
+          return cachedToken;
+        }
+      } catch (e) {
+        console.error(`[Auth] Erro ao parsear resposta do login: ${e}`);
+      }
+    } else {
+      console.error(`[Auth] Login automático falhou: ${loginRes.status} — testes CRUD sem autenticação`);
+    }
+    return null;
+  }
+
   // Helper para extrair o ID da resposta da API, suportando múltiplos formatos:
   // { id: ... } (direto), { data: { id: ... } }, { data: { [resourceName]: { id: ... } } }
   function extractResourceId(body, idField, resourceName) {
@@ -101,7 +137,8 @@ function createCrudDefault(resourceConfig) {
   }
 
   return function (data) {
-    const token = data && data.token;
+    // Tenta obter token: primeiro do setup(), depois lazy login automático
+    const token = (data && data.token) || (requireAuth ? getAuthToken() : null);
     const headers = {
       'Content-Type': 'application/json',
     };

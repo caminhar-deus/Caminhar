@@ -40,14 +40,15 @@ async function handleGet(req, res) {
       return res.status(400).json({ error: 'Bad Request', message: 'Parâmetros de paginação inválidos' });
     }
 
+    // Rate limit ANTES do cache — garante proteção mesmo em cache hits
+    const ip = getClientIP(req);
+    const isRateLimited = await checkRateLimit(ip, 'api:public:posts');
+    if (isRateLimited) {
+      return res.status(429).json({ error: 'Too Many Requests', message: 'Muitas requisições. Tente novamente mais tarde.' });
+    }
+
     const cacheKey = `posts:${page}:${limit}${search ? `:${search}` : ''}`;
     const result = await getOrSetCache(cacheKey, async () => {
-      const ip = getClientIP(req);
-      const isRateLimited = await checkRateLimit(ip, 'api:public:posts');
-      if (isRateLimited) {
-        const rateLimitError = new Error('RATE_LIMIT_EXCEEDED');
-        throw rateLimitError;
-      }
       return await getRecentPosts(limit, page, search);
     });
 
@@ -69,9 +70,6 @@ async function handleGet(req, res) {
       ...result,
     });
   } catch (error) {
-    if (error.message === 'RATE_LIMIT_EXCEEDED') {
-      return res.status(429).json({ error: 'Too Many Requests', message: 'Muitas requisições. Tente novamente mais tarde.' });
-    }
     console.error('Error fetching posts:', error);
     return res.status(500).json({ error: 'Internal Server Error', message: 'Erro interno do servidor ao buscar posts' });
   }
@@ -83,8 +81,8 @@ async function handleGet(req, res) {
  */
 async function postHandler(req, res) {
   try {
-    // Rate limit em mutações
-    const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
+    // Rate limit em mutações — usando getClientIP (seguro contra spoofing)
+    const ip = getClientIP(req);
     const isRateLimited = await checkRateLimit(ip, 'api:posts:create', 30, 60000);
     if (isRateLimited) {
       return res.status(429).json({ error: 'Too Many Requests', message: 'Muitas requisições. Tente novamente mais tarde.' });

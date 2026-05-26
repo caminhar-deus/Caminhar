@@ -2,6 +2,7 @@ import { getSettings, getSetting, updateSetting, setSetting, getAllSettingsRaw }
 import { withAuth, getAuthToken, verifyToken } from '../../lib/auth.js';
 import { getOrSetCache, invalidateCache, checkRateLimit } from '../../lib/cache.js';
 import { z } from 'zod';
+import { getClientIP } from '../../lib/api/helpers.js';
 
 const SETTINGS_CACHE_TTL = 1800; // 30 minutos
 
@@ -85,7 +86,7 @@ async function handleGet(req, res) {
 
   // GET público (sem key) — retorna todas as configurações com rate limiting
   try {
-    const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
+    const ip = getClientIP(req);
     const isRateLimited = await checkRateLimit(ip, 'api:public:settings', 30, 60000);
     if (isRateLimited) {
       return res.status(429).json({ error: 'Too Many Requests', message: 'Muitas requisições. Tente novamente mais tarde.' });
