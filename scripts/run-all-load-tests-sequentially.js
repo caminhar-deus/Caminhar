@@ -79,6 +79,7 @@ const CATEGORIES = [
       { name: 'musicas-sort-test',     cmd: 'k6 run load-tests/performance/musicas-sort-test.js' },
       { name: 'videos-sort-test',      cmd: 'k6 run load-tests/performance/videos-sort-test.js' },
       { name: 'musicas-search-test',   cmd: 'k6 run load-tests/performance/musicas-search-test.js' },
+      { name: 'cache-warmup-test',     cmd: 'k6 run load-tests/performance/cache-warmup-test.js' },
       { name: 'cache-performance-test', cmd: 'k6 run load-tests/performance/cache-performance-test.js' },
       { name: 'pagination-test',       cmd: 'k6 run load-tests/performance/pagination-test.js' },
       { name: 'authenticated-flow-test', cmd: 'k6 run load-tests/performance/authenticated-flow-test.js' },

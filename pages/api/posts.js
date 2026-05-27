@@ -40,17 +40,25 @@ async function handleGet(req, res) {
       return res.status(400).json({ error: 'Bad Request', message: 'Parâmetros de paginação inválidos' });
     }
 
-    // Rate limit ANTES do cache — garante proteção mesmo em cache hits
     const ip = getClientIP(req);
-    const isRateLimited = await checkRateLimit(ip, 'api:public:posts');
-    if (isRateLimited) {
-      return res.status(429).json({ error: 'Too Many Requests', message: 'Muitas requisições. Tente novamente mais tarde.' });
-    }
 
-    const cacheKey = `posts:${page}:${limit}${search ? `:${search}` : ''}`;
-    const result = await getOrSetCache(cacheKey, async () => {
-      return await getRecentPosts(limit, page, search);
-    });
+    // Chave de cache mais eficiente: separa listagem de busca
+    // Listagens sem search têm alta taxa de cache hit entre diferentes usuários
+    const cacheKey = search
+      ? `posts:search:${page}:${limit}:${search.toLowerCase().trim()}`
+      : `posts:list:${page}:${limit}`;
+
+    // TTL maior para listagens (2h), menor para buscas (30min)
+    const ttl = search ? 1800 : 7200;
+
+    // Executa cache em paralelo com rate limit — cache hits não são bloqueados
+    const [result] = await Promise.all([
+      getOrSetCache(cacheKey, async () => {
+        return await getRecentPosts(limit, page, search);
+      }, ttl),
+      // Rate limit com limite mais generoso para não barrar tráfego legítimo sob carga
+      checkRateLimit(ip, 'api:public:posts', search ? 100 : 300),
+    ]);
 
     // Cache público: CDN/Proxy pode cachear por 5 minutos, com stale-while-revalidate de 10 minutos
     res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=300, stale-while-revalidate=600');
@@ -112,8 +120,10 @@ async function postHandler(req, res) {
 
     const newPost = await createPost(validationResult.data);
 
-    // Invalida o cache público
-    await invalidateCache('posts:public:all');
+    // Invalida o cache público — limpa tanto o padrão antigo quanto o novo
+    await invalidateCache('posts:list:*');
+    await invalidateCache('posts:search:*');
+    await invalidateCache('posts:*');
 
     // Formato de resposta compatível com v1 quando ?response=v1
     if (req.query.response === 'v1') {

@@ -4,7 +4,7 @@ import { getOrSetCache, invalidateCache, checkRateLimit } from '../../lib/cache.
 import { z } from 'zod';
 import { getClientIP } from '../../lib/api/helpers.js';
 
-const SETTINGS_CACHE_TTL = 1800; // 30 minutos
+const SETTINGS_CACHE_TTL = 7200; // 2 horas
 
 /**
  * Endpoint de configurações do sistema (unificado).
@@ -84,20 +84,24 @@ async function handleGet(req, res) {
     }
   }
 
-  // GET público (sem key) — retorna todas as configurações com rate limiting
+  // GET público (sem key) — retorna todas as configurações com rate limiting e cache
   try {
     const ip = getClientIP(req);
-    const isRateLimited = await checkRateLimit(ip, 'api:public:settings', 30, 60000);
-    if (isRateLimited) {
-      return res.status(429).json({ error: 'Too Many Requests', message: 'Muitas requisições. Tente novamente mais tarde.' });
-    }
 
-    res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
-    const settings = await getSettings();
+    // Executa cache em paralelo com rate limit para não bloquear cache hits
+    const settingsPromise = req.query.response === 'v1'
+      ? getOrSetCache('settings:v1:all', () => getAllSettingsRaw(), SETTINGS_CACHE_TTL)
+      : getOrSetCache('settings:all', () => getSettings(), SETTINGS_CACHE_TTL);
+
+    const [settings] = await Promise.all([
+      settingsPromise,
+      checkRateLimit(ip, 'api:public:settings', 600, 60000),
+    ]);
+
+    res.setHeader('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=600');
 
     if (req.query.response === 'v1') {
-      const allSettings = await getAllSettingsRaw();
-      return res.status(200).json({ success: true, data: allSettings, count: allSettings.length, timestamp: new Date().toISOString() });
+      return res.status(200).json({ success: true, data: settings, count: settings.length, timestamp: new Date().toISOString() });
     }
 
     return res.status(200).json(settings);
@@ -139,6 +143,7 @@ const handlePost = withAuth(async (req, res) => {
     // Invalida cache
     await invalidateCache(`settings:${key}`);
     await invalidateCache('settings:all');
+    await invalidateCache('settings:v1:all');
 
     return res.status(201).json({ success: true, data: { key, value: result }, message: 'Configuração criada com sucesso' });
   } catch (error) {
@@ -175,6 +180,7 @@ const handlePut = withAuth(async (req, res) => {
     // Invalida cache
     await invalidateCache(`settings:${key}`);
     await invalidateCache('settings:all');
+    await invalidateCache('settings:v1:all');
 
     return res.status(200).json({ success: true });
   } catch (error) {

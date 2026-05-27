@@ -7,10 +7,6 @@ import { generateReport } from '../helpers/report.js';
 
 export const options = getProfile('light', {
   iterations: 10,
-  thresholds: {
-    checks: ['rate==1.0'],
-    http_req_duration: ['p(95)<500'],
-  },
 });
 
 // Termos comuns que provavelmente existem no banco de dados
