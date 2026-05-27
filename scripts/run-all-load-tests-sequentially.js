@@ -108,7 +108,6 @@ const CATEGORIES = [
     scripts: [
       { name: 'rate-limit-test',         cmd: 'k6 run load-tests/security/rate-limit-test.js' },
       { name: 'ip-spoofing-test',        cmd: 'k6 run load-tests/security/ip-spoofing-test.js' },
-      { name: 'ip-spoofing-deteccao-test', cmd: 'k6 run load-tests/security/ip-spoofing-deteccao-test.js' },
       { name: 'ddos-search-test',        cmd: 'k6 run load-tests/security/ddos-search-test.js' },
       { name: 'login-negative-test',     cmd: 'k6 run -e ADMIN_USERNAME= -e ADMIN_PASSWORD= load-tests/security/login-negative-test.js' },
     ],
@@ -180,6 +179,23 @@ for (const category of CATEGORIES) {
       catResults.failed++;
       catResults.scripts.push({ name: script.name, status: 'fail', exitCode: error.status });
       overallExitCode = 1;
+    }
+  }
+
+  // Após a categoria de segurança, executa cleanup de bloqueios de autenticação
+  if (category.name === '🔒 Security Tests') {
+    console.log(`\n═══════════════════════════════════════════════════`);
+    console.log(`  🔓 Limpando bloqueios de autenticação dos testes`);
+    console.log(`═══════════════════════════════════════════════════\n`);
+    try {
+      execSync('node scripts/clear-test-auth-locks.js', {
+        stdio: 'inherit',
+        shell: true,
+        timeout: 30000, // 30s timeout
+      });
+      console.log(`     ✅ Cleanup de bloqueios realizado com sucesso\n`);
+    } catch (error) {
+      console.error(`     ⚠️  Cleanup de bloqueios falhou (não crítico): ${error.message}\n`);
     }
   }
 

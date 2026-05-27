@@ -650,7 +650,6 @@
 │   │   └── videos-sort-test.js
 │   └── security
 │       ├── ddos-search-test.js
-│       ├── ip-spoofing-deteccao-test.js
 │       ├── ip-spoofing-test.js
 │       ├── login-negative-test.js
 │       └── rate-limit-test.js
@@ -794,6 +793,7 @@
 │   ├── clear-cache.js
 │   ├── clear-db.js
 │   ├── clear-musicas.js
+│   ├── clear-test-auth-locks.js
 │   ├── create-backup.js
 │   ├── db
 │   │   ├── connection.js

@@ -16,7 +16,29 @@ const redis = (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_R
 
 const MAX_ATTEMPTS = 5;
 
-// Helper para registrar logs de auditoria
+/**
+ * Executa uma operação Redis com tratamento de erro.
+ * Se o Redis exceder o limite de requisições ou falhar,
+ * retorna o valor fallback fornecido.
+ */
+async function redisSafe(operation, fallback = null) {
+  if (!redis) return fallback;
+  try {
+    return await operation();
+  } catch (error) {
+    const message = error.message || '';
+    if (message.includes('max requests limit exceeded')) {
+      console.warn(`[RateLimit] ⚠️ Limite de requisições Redis excedido. Operação ignorada: ${message}`);
+    } else if (message.includes('max commands') || message.includes('rate limit')) {
+      console.warn(`[RateLimit] ⚠️ Rate limit do Redis atingido. Operação ignorada.`);
+    } else {
+      console.error('[RateLimit] ❌ Erro Redis:', message);
+    }
+    return fallback;
+  }
+}
+
+// Helper para registrar logs de auditoria (com try/catch interno)
 async function logAudit(action, ip, user) {
   if (!redis) return;
   const entry = {
@@ -26,8 +48,8 @@ async function logAudit(action, ip, user) {
     timestamp: new Date().toISOString()
   };
   // Adiciona ao início da lista e mantém apenas os últimos 100 registros
-  await redis.lpush('rate_limit:audit_logs', JSON.stringify(entry));
-  await redis.ltrim('rate_limit:audit_logs', 0, 99);
+  await redisSafe(() => redis.lpush('rate_limit:audit_logs', JSON.stringify(entry)));
+  await redisSafe(() => redis.ltrim('rate_limit:audit_logs', 0, 99));
 }
 
 async function handleGet(req, res) {
@@ -47,19 +69,24 @@ async function handleGet(req, res) {
 
   // Listar Whitelist
   if (type === 'whitelist') {
-    const whitelist = await redis.smembers('rate_limit:whitelist');
-    return res.status(200).json(whitelist);
+    const whitelist = await redisSafe(() => redis.smembers('rate_limit:whitelist'), []);
+    return res.status(200).json(Array.isArray(whitelist) ? whitelist : []);
   }
 
   // Listar Logs de Auditoria
   if (type === 'audit') {
+    const rawLogs = await redisSafe(() => redis.lrange('rate_limit:audit_logs', 0, -1), []);
+    
+    let logs = [];
+    try {
+      logs = rawLogs.map(JSON.parse);
+    } catch {
+      logs = [];
+    }
+
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const { startDate, endDate, search } = req.query;
-
-    // Busca todos os logs para filtrar em memória (limitado a 100 pelo ltrim)
-    const rawLogs = await redis.lrange('rate_limit:audit_logs', 0, -1);
-    let logs = rawLogs.map(JSON.parse);
 
     // Filtra por data se solicitado
     if (startDate || endDate || search) {
@@ -70,7 +97,9 @@ async function handleGet(req, res) {
       logs = logs.filter(log => {
         const logTime = new Date(log.timestamp).getTime();
         const matchesDate = logTime >= start && logTime <= end;
-        const matchesSearch = !search || (log.ip && log.ip.toLowerCase().includes(searchLower)) || (log.user && log.user.toLowerCase().includes(searchLower));
+        const matchesSearch = !search || 
+          (log.ip && log.ip.toLowerCase().includes(searchLower)) || 
+          (log.user && log.user.toLowerCase().includes(searchLower));
         return matchesDate && matchesSearch;
       });
     }
@@ -91,10 +120,16 @@ async function handleGet(req, res) {
 
   // Exportar Logs como CSV
   if (type === 'export_csv') {
-    const { startDate, endDate, search } = req.query;
-    const rawLogs = await redis.lrange('rate_limit:audit_logs', 0, -1);
-    let logs = rawLogs.map(JSON.parse);
+    const rawLogs = await redisSafe(() => redis.lrange('rate_limit:audit_logs', 0, -1), []);
+    
+    let logs = [];
+    try {
+      logs = rawLogs.map(JSON.parse);
+    } catch {
+      logs = [];
+    }
 
+    const { startDate, endDate, search } = req.query;
     if (startDate || endDate || search) {
       const start = startDate ? new Date(startDate).getTime() : 0;
       const end = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : Infinity;
@@ -103,7 +138,9 @@ async function handleGet(req, res) {
       logs = logs.filter(log => {
         const logTime = new Date(log.timestamp).getTime();
         const matchesDate = logTime >= start && logTime <= end;
-        const matchesSearch = !search || (log.ip && log.ip.toLowerCase().includes(searchLower)) || (log.user && log.user.toLowerCase().includes(searchLower));
+        const matchesSearch = !search || 
+          (log.ip && log.ip.toLowerCase().includes(searchLower)) || 
+          (log.user && log.user.toLowerCase().includes(searchLower));
         return matchesDate && matchesSearch;
       });
     }
@@ -120,9 +157,9 @@ async function handleGet(req, res) {
   }
 
   // Busca todas as chaves de rate limit
-  const keys = await redis.keys('rate_limit:*');
-  
-  if (keys.length === 0) {
+  const keys = await redisSafe(() => redis.keys('rate_limit:*'), []);
+
+  if (!Array.isArray(keys) || keys.length === 0) {
     return res.status(200).json([]);
   }
 
@@ -133,7 +170,7 @@ async function handleGet(req, res) {
     pipeline.ttl(key);
   });
   
-  const results = await pipeline.exec();
+  const results = await redisSafe(() => pipeline.exec(), []);
   
   const blockedIps = [];
   
@@ -173,12 +210,18 @@ async function handlePost(req, res) {
 
   const { ip } = validation.data;
 
-  await redis.sadd('rate_limit:whitelist', ip);
-  await redis.del(`rate_limit:${ip}`); // Remove dos bloqueados se existir
-  
-  await logAudit('Adicionado à Whitelist', ip, req.user?.username);
-  
-  return res.status(200).json({ message: `IP ${ip} adicionado à whitelist com sucesso` });
+  try {
+    const saddResult = await redisSafe(() => redis.sadd('rate_limit:whitelist', ip));
+    if (saddResult === null) {
+      return res.status(503).json({ message: 'Redis temporariamente indisponível (limite de requisições excedido). Tente novamente mais tarde.' });
+    }
+    await redisSafe(() => redis.del(`rate_limit:${ip}`)); // Remove dos bloqueados se existir
+    await logAudit('Adicionado à Whitelist', ip, req.user?.username);
+    return res.status(200).json({ message: `IP ${ip} adicionado à whitelist com sucesso` });
+  } catch (error) {
+    console.error('[RateLimit] ❌ Erro ao adicionar à whitelist:', error.message);
+    return res.status(503).json({ message: 'Erro ao processar operação. Redis temporariamente indisponível.' });
+  }
 }
 
 async function handleDelete(req, res) {
@@ -191,15 +234,26 @@ async function handleDelete(req, res) {
   const { ip, type } = req.query;
   if (!ip) return res.status(400).json({ message: 'IP é obrigatório' });
 
-  if (type === 'whitelist') {
-    await redis.srem('rate_limit:whitelist', ip);
-    await logAudit('Removido da Whitelist', ip, req.user?.username);
-    return res.status(200).json({ message: `IP ${ip} removido da whitelist` });
-  }
+  try {
+    if (type === 'whitelist') {
+      const sremResult = await redisSafe(() => redis.srem('rate_limit:whitelist', ip));
+      if (sremResult === null) {
+        return res.status(503).json({ message: 'Redis temporariamente indisponível (limite de requisições excedido). Tente novamente mais tarde.' });
+      }
+      await logAudit('Removido da Whitelist', ip, req.user?.username);
+      return res.status(200).json({ message: `IP ${ip} removido da whitelist` });
+    }
 
-  await redis.del(`rate_limit:${ip}`);
-  await logAudit('Desbloqueio Manual', ip, req.user?.username);
-  return res.status(200).json({ message: `IP ${ip} desbloqueado com sucesso` });
+    const delResult = await redisSafe(() => redis.del(`rate_limit:${ip}`));
+    if (delResult === null) {
+      return res.status(503).json({ message: 'Redis temporariamente indisponível (limite de requisições excedido). Tente novamente mais tarde.' });
+    }
+    await logAudit('Desbloqueio Manual', ip, req.user?.username);
+    return res.status(200).json({ message: `IP ${ip} desbloqueado com sucesso` });
+  } catch (error) {
+    console.error('[RateLimit] ❌ Erro ao processar deleção:', error.message);
+    return res.status(503).json({ message: 'Erro ao processar operação. Redis temporariamente indisponível.' });
+  }
 }
 
 export default createAdminHandler({

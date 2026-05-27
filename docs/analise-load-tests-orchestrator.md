@@ -115,7 +115,7 @@ O JSON é bem estruturado, com três categorias listando cada script individualm
 | ID | Problema | Severidade | Detalhamento |
 |----|----------|------------|--------------|
 | P9 | **Contagem errada no banner** | 🟢 Baixa | Cabeçalho diz "29 scripts" mas executa 31. |
-| P10 | **Nomenclatura confusa de checks de segurança** | 🟢 Baixa | Checks nomeados como "Vulnerável" (passa quando servidor permite spoofing — isso é o esperado?) e "Protegido" (falha porque servidor não bloqueou). A lógica parece invertida ou mal documentada. |
+| P10 | **Nomenclatura confusa de checks de segurança** | 🟢 Baixa | **✅ RESOLVIDO.** Checks renomeados com semântica clara (`🛡️ BLOQUEADO:` para proteção, `⚠️ VULNERÁVEL:` para documentação de falha). Scripts duplicados mesclados em `ip-spoofing-test.js`. Adicionada documentação de interpretação dos resultados. |
 
 ---
 
@@ -182,7 +182,12 @@ Endpoint de vídeos parece retornar em formato diferente do esperado pelos teste
   - Inserção da variável `totalScriptsInCategories` antes do banner para contagem automática
   - Uso de template string com `.padStart(2)` para manter alinhamento visual do banner
   - **Resultado:** Banner agora exibe "31 scripts" corretamente, e se ajusta automaticamente conforme scripts forem adicionados/removidos
-- [ ] P10 — Melhorar nomenclatura e documentação dos checks de segurança
+- [x] P10 — Melhorar nomenclatura e documentação dos checks de segurança
+  - Checks renomeados com semântica clara nos 3 scripts de segurança (`rate-limit-test.js`, `ip-spoofing-test.js`, `ddos-search-test.js`)
+  - Adicionada documentação de interpretação dos resultados com tabelas explicativas
+  - Scripts `ip-spoofing-test.js` e `ip-spoofing-deteccao-test.js` mesclados em um único consolidado
+  - Convenção de emojis padronizada: `🛡️ BLOQUEADO`, `⚠️ VULNERÁVEL`, `✅ RESISTIU`, `ℹ️ PERMITIDO`, `📝`
+  - **Resultado:** Nomenclatura agora é auto-explicativa, checks de vulnerabilidade usam prefixo `⚠️` em vez de `❌`, e a interpretação dos resultados está documentada no JSDoc de cada script
 - [ ] Revisar thresholds dos testes para serem menos permissivos
 - [ ] Adicionar testes de latência mínima para endpoints críticos
 

@@ -16,8 +16,10 @@ export default async function handler(req, res) {
   }
 
   // 1. Detecção de IP spoofing
-  const { isSpoofed } = detectSpoofedIP(req);
-  if (isSpoofed) {
+  const spoofResult = detectSpoofedIP(req);
+  console.log(`[Auth] detectSpoofedIP: socket=${req.socket?.remoteAddress}, normalized=${spoofResult.socketIP}, forwarded=${spoofResult.forwardedIP}, isSpoofed=${spoofResult.isSpoofed}`);
+
+  if (spoofResult.isSpoofed) {
     return res.status(403).json({
       error: 'Forbidden',
       message: 'IP spoofing detectado. Requisição bloqueada.',

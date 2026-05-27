@@ -201,17 +201,18 @@ const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
 1. O `ip-spoofing-test.js` foi reescrito como **teste de vulnerabilidade (Opção A)**: verifica se o rate limit pode ser burlado via rotação do header `X-Forwarded-For`. Status esperado:
    - `429 (Too Many Requests)` → protegido (rate limit global ignorou IP falso)
    - `401 (Unauthorized)` → vulnerável (rate limit foi burlado)
-2. Criado novo teste `ip-spoofing-deteccao-test.js` como **teste de proteção (Opção B)**: valida que o sistema detecta e rejeita ativamente requisições com headers falsificados. Status esperado:
+2. O `ip-spoofing-deteccao-test.js` foi criado como **teste de proteção (Opção B)**: valida que o sistema detecta e rejeita ativamente requisições com headers falsificados. Status esperado:
    - `403 (Forbidden)` ou `400 (Bad Request)` → protegido (spoofing detectado e bloqueado)
    - `429 (Too Many Requests)` → protegido (rate limit global bloqueou)
    - `401 (Unauthorized)` → vulnerável (spoofing não foi detectado)
-3. Ambos os testes agora usam os módulos compartilhados (`config.js`, `profiles.js`, `report.js`, `network.js`)
+3. Ambos os testes passaram a usar os módulos compartilhados (`config.js`, `profiles.js`, `report.js`, `network.js`)
 4. O perfil de carga utilizado é `rateLimit` do `helpers/profiles.js`
 5. O `sleep()` foi removido para máxima taxa de requisições, consistente com propósito do teste
 
-**Resultado:** Agora há dois testes com propósitos claros e não contraditórios:
-- `ip-spoofing-test.js` — Testa se o sistema é vulnerável a evasão de rate limit via IP spoofing
-- `ip-spoofing-deteccao-test.js` — Testa se o sistema detecta e bloqueia ativamente IPs falsificados
+**Resultado:** Os dois testes foram mesclados em um único script consolidado (`ip-spoofing-test.js`) em 27/05/2026, com dois grupos de checks separados por semântica:
+- `🛡️ BLOQUEADO:*` — Checks que passam quando o sistema está protegido (403 ou 429)
+- `⚠️ VULNERÁVEL:*` — Checks que passam quando o sistema NÃO protegeu (401)
+O script `ip-spoofing-deteccao-test.js` foi removido por duplicidade de lógica.
 
 **Sugestão original:** Revisar a estratégia — ou o `X-Forwarded-For` é confiável (e não deve ser falsificado), ou não é (e deve ser tratado como vulnerabilidade).
 

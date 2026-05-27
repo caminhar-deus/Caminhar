@@ -36,7 +36,6 @@
    - [video-validation-test.js](#video-validation-testjs)
 4. [Subpasta security/](#subpasta-security)
    - [ddos-search-test.js](#ddos-search-testjs)
-   - [ip-spoofing-deteccao-test.js](#ip-spoofing-deteccao-testjs)
    - [ip-spoofing-test.js](#ip-spoofing-testjs)
    - [login-negative-test.js](#login-negative-testjs)
    - [rate-limit-test.js](#rate-limit-testjs)
@@ -62,7 +61,7 @@ Os testes estão organizados por subpasta:
 |----------|-----|-----------|
 | **performance/** | 16 | Testes de carga, stress, performance e fluxos combinados |
 | **functional/** | 9 | Testes funcionais e de validação |
-| **security/** | 5 | Testes de segurança (rate limit, spoofing, DDoS) |
+| **security/** | 4 | Testes de segurança (rate limit, spoofing, DDoS) |
 | **helpers/** | 6 | Módulos compartilhados (auth, config, network, profiles, report, resource-test-runner) |
 | **raiz** | 2 | env-config.json + load-tests.yml (CI/CD na raiz do projeto) |
 
@@ -675,7 +674,7 @@ Contém 9 scripts de teste funcional e validação.
 
 ## Subpasta security/
 
-Contém 5 scripts de teste de segurança.
+Contém 4 scripts de teste de segurança.
 
 ---
 
@@ -702,42 +701,13 @@ Contém 5 scripts de teste de segurança.
 
 ---
 
-### `ip-spoofing-deteccao-test.js`
-
-**Localização:** `/load-tests/security/ip-spoofing-deteccao-test.js`
-
-**O que faz:** Teste de proteção (Opção B) que valida se o sistema detecta e rejeita ativamente requisições com headers `X-Forwarded-For` falsificados.
-
-**Propósito:** Garantir que o sistema tenha detecção ativa de IP spoofing, bloqueando requisições com headers falsificados.
-
-**Estrutura:**
-- Perfil de carga: `rateLimit` do `helpers/profiles.js`
-- Gera IPs aleatórios via `getRandomIP()` do módulo `helpers/network.js`
-- Envia requisições com múltiplos headers falsificados (`X-Forwarded-For`, `X-Real-IP`, `CF-Connecting-IP`)
-- **Sem `sleep()`** para máxima taxa de requisições
-- `handleSummary()` — Gera relatório via `helpers/report.js`
-
-**Interpretação dos resultados:**
-- `403` (Forbidden) ou `400` (Bad Request) → ✅ Protegido — spoofing detectado e bloqueado ativamente
-- `429` (Too Many Requests) → ✅ Protegido — rate limit global bloqueou (mas não houve detecção específica)
-- `401` (Unauthorized) → ❌ Vulnerável — spoofing não foi detectado
-
-**Endpoints chamados:**
-- `POST /api/auth/login` — Autenticação (com headers falsificados)
-
-**Configuração de carga:** Perfil `rateLimit` (ramp 0→50 VUs, 50s)
-
-**Observação:** Criado em 23/05/2026 como parte da resolução da seção 2.2 do UPGRADE_load-tests.md. Complementa o `ip-spoofing-test.js` testando detecção ativa em vez de evasão de rate limit.
-
----
-
 ### `ip-spoofing-test.js`
 
 **Localização:** `/load-tests/security/ip-spoofing-test.js`
 
-**O que faz:** Teste de vulnerabilidade (Opção A) que verifica se o rate limit do sistema pode ser burlado via rotação do header `X-Forwarded-For`.
+**O que faz:** Teste consolidado de IP spoofing que mescla os propósitos dos antigos testes separados (evasão de rate limit + detecção de spoofing) em um único script.
 
-**Propósito:** Detectar se o rate limit é global ou baseado em IP confiável, revelando vulnerabilidade de evasão.
+**Propósito:** Validar se o sistema está protegido contra evasão de rate limit via rotação do header `X-Forwarded-For` e se detecta/bloqueia ativamente IPs falsificados.
 
 **Estrutura:**
 - Perfil de carga: `rateLimit` do `helpers/profiles.js`
@@ -747,15 +717,23 @@ Contém 5 scripts de teste de segurança.
 - `handleSummary()` — Gera relatório via `helpers/report.js`
 
 **Interpretação dos resultados:**
-- `429` (Too Many Requests) → ✅ Protegido — rate limit global ignorou IP falso
-- `401` (Unauthorized) → ❌ Vulnerável — rate limit foi burlado pelo IP falso
+- `🛡️ BLOQUEADO:*` (403 ou 429) → Sistema protegido — spoofing foi rejeitado ou rate limit global atuou
+- `⚠️ VULNERÁVEL:*` (401) → Sistema vulnerável — spoofing não foi detectado / rate limit foi burlado
+
+**Checks disponíveis:**
+| Check | Status HTTP | Significado |
+|-------|------------|-------------|
+| `🛡️ BLOQUEADO: Spoofing detectado e rejeitado` | 403 | Proteção ativa contra spoofing |
+| `🛡️ BLOQUEADO: Rate limit global ignorou IP falso` | 429 | Rate limit global (não há detecção específica) |
+| `⚠️ VULNERÁVEL: Rate limit foi burlado por IP falso` | 401 | Evasão de rate limit por spoofing |
+| `⚠️ VULNERÁVEL: Spoofing não foi detectado` | 401 | Spoofing não foi bloqueado ativamente |
 
 **Endpoints chamados:**
 - `POST /api/auth/login` — Autenticação (com `X-Forwarded-For` falsificado)
 
 **Configuração de carga:** Perfil `rateLimit` (ramp 0→50 VUs, 50s)
 
-**Observação:** Criado em substituição ao teste anterior que era contraditório (validava spoofing mas também o utilizava). Agora tem propósito claro de teste de vulnerabilidade.
+**Observação:** Consolidado em 27/05/2026 a partir dos antigos `ip-spoofing-test.js` (evasão) e `ip-spoofing-deteccao-test.js` (detecção), que possuíam lógica idêntica de requisição. O script duplicado foi removido.
 
 ---
 
@@ -869,7 +847,7 @@ Contém 5 scripts de teste de segurança.
 |-----------|---------|
 | **Performance (16)** | `musicas-load-test`, `videos-load-test`, `musicas-crud-test`, `videos-crud-test`, `musicas-filter-test`, `videos-filter-test`, `musicas-pagination-test`, `videos-pagination-test`, `musicas-sort-test`, `videos-sort-test`, `musicas-search-test`, `cache-performance-test`, `pagination-test`, `authenticated-flow-test`, `create-post-flow`, `stress-test-combined` |
 | **Functional (9)** | `health-check`, `cache-headers-test`, `backup-verification-test`, `video-validation-test`, `posts-tags-test`, `posts-cursor-pagination-test`, `search-content-test`, `upload-flow-test`, `recovery-test` |
-| **Security (5)** | `rate-limit-test`, `ip-spoofing-test`, `ip-spoofing-deteccao-test`, `ddos-search-test`, `login-negative-test` |
+| **Security (4)** | `rate-limit-test`, `ip-spoofing-test`, `ddos-search-test`, `login-negative-test` |
 
 ---
 
