@@ -124,10 +124,12 @@ let results = {
   categories: [],
 };
 
-console.log('╔══════════════════════════════════════════════════════════╗');
-console.log('║   🚀 ORQUESTRADOR DE TESTES DE CARGA (k6)                ║');
-console.log('║   Executando todos os 29 scripts sequencialmente         ║');
-console.log('╚══════════════════════════════════════════════════════════╝\n');
+const totalScriptsInCategories = CATEGORIES.reduce((acc, cat) => acc + cat.scripts.length, 0);
+
+console.log('╔═══════════════════════════════════════════════════════════════════════════════════════════════════════╗');
+console.log('║   🚀 ORQUESTRADOR DE TESTES DE CARGA (k6)                                                             ║');
+console.log('║   Executando todos os ${String(totalScriptsInCategories).padStart(2)} scripts sequencialmente         ║');
+console.log('╚═══════════════════════════════════════════════════════════════════════════════════════════════════════╝\n');
 
 // Verifica se o servidor está rodando antes de iniciar os testes
 let overallExitCode = 0;
@@ -199,14 +201,14 @@ writeFileSync(RESULTS_FILE, JSON.stringify(results, null, 2));
 console.log(`📄 Resultados salvos em: ${RESULTS_FILE}\n`);
 
 // Resumo final
-console.log('╔══════════════════════════════════════════════════════════╗');
-console.log('║   📊 RESUMO FINAL                                      ║');
-console.log('╠══════════════════════════════════════════════════════════╣');
-console.log(`║   Total: ${results.totalScripts.toString().padStart(3)} scripts                           ║`);
-console.log(`║   ✅ Passed: ${results.passed.toString().padStart(3)}                                    ║`);
-console.log(`║   ❌ Failed: ${results.failed.toString().padStart(3)}                                    ║`);
-console.log(`║   ⏭️  Skipped: ${results.skipped.toString().padStart(3)}                                 ║`);
-console.log('╚══════════════════════════════════════════════════════════╝\n');
+console.log('╔═══════════════════════════════════════════════════════════════════╗');
+console.log('║   📊 RESUMO FINAL                                                 ║');
+console.log('╠═══════════════════════════════════════════════════════════════════╣');
+console.log('║   Total: ${results.totalScripts.toString().padStart(3)} scripts   ║');
+console.log('║   ✅ Passed: ${results.passed.toString().padStart(3)}             ║');
+console.log('║   ❌ Failed: ${results.failed.toString().padStart(3)}             ║');
+console.log('║   ⏭️  Skipped: ${results.skipped.toString().padStart(3)}          ║');
+console.log('╚═══════════════════════════════════════════════════════════════════╝\n');
 
 if (results.failed > 0) {
   console.log('❌ Alguns testes falharam. Verifique os logs acima para detalhes.\n');

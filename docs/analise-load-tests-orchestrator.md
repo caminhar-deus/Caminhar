@@ -177,7 +177,11 @@ Endpoint de vídeos parece retornar em formato diferente do esperado pelos teste
   - Aumento de 3 para 5 rounds de warm-up + verificação de cache quente
   - Thresholds específicos: `posts cache hit (<100ms) >99.9%`, `settings cache hit (<100ms) >99%`
   - **Resultado:** 100% checks em 3 execuções consecutivas, latência de ~45ms para ~6ms (7x mais rápido)
-- [ ] P9 — Corrigir contagem de scripts no banner do orquestrador
+- [x] P9 — Corrigir contagem de scripts no banner do orquestrador
+  - Substituição do valor hardcoded `29` por cálculo dinâmico via `CATEGORIES.reduce()`
+  - Inserção da variável `totalScriptsInCategories` antes do banner para contagem automática
+  - Uso de template string com `.padStart(2)` para manter alinhamento visual do banner
+  - **Resultado:** Banner agora exibe "31 scripts" corretamente, e se ajusta automaticamente conforme scripts forem adicionados/removidos
 - [ ] P10 — Melhorar nomenclatura e documentação dos checks de segurança
 - [ ] Revisar thresholds dos testes para serem menos permissivos
 - [ ] Adicionar testes de latência mínima para endpoints críticos
