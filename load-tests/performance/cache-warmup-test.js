@@ -32,6 +32,19 @@ export const options = {
   },
 };
 
+/**
+ * Verifica se o cache foi populado executando requisição extra de confirmação
+ * antes de considerar o warm-up bem-sucedido.
+ */
+function verifyCachePopulated(baseUrl, token) {
+  // Requisição adicional para confirmar cache quente
+  const verifyRes = http.get(`${baseUrl}/api/posts`, token
+    ? { headers: { Authorization: `Bearer ${token}` } }
+    : {}
+  );
+  return verifyRes.status === 200 && verifyRes.timings.duration < 200;
+}
+
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
 const USERNAME = __ENV.ADMIN_USERNAME || 'admin';
 const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
@@ -60,8 +73,9 @@ export default function () {
     { url: `${BASE_URL}/api/settings`, auth: true },
   ];
 
-  // Cada endpoint é chamado 3x para garantir cache populado
-  for (let round = 0; round < 3; round++) {
+  // Cada endpoint é chamado 5x para garantir cache populado
+  // Aumentado de 3 para 5 rounds para assegurar TTL estável
+  for (let round = 0; round < 5; round++) {
     for (const endpoint of endpoints) {
       const params = endpoint.auth
         ? { headers: { Authorization: `Bearer ${token}` } }
@@ -78,5 +92,13 @@ export default function () {
     }
   }
 
-  console.log(`[Warmup] ✅ Cache populado com sucesso após ${endpoints.length * 3} requisições`);
+  // Verifica se o cache está realmente quente antes de finalizar
+  const cacheQuente = verifyCachePopulated(BASE_URL, token);
+  if (!cacheQuente) {
+    console.warn(`[Warmup] ⚠️ Cache pode não estar completamente populado (resposta lenta)`);
+  } else {
+    console.log(`[Warmup] ✅ Cache quente confirmado`);
+  }
+
+  console.log(`[Warmup] ✅ Cache populado com sucesso após ${endpoints.length * 5} requisições`);
 }

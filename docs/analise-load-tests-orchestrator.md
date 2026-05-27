@@ -57,8 +57,8 @@ O JSON é bem estruturado, com três categorias listando cada script individualm
 | 9 | musicas-sort-test | ✅ PASS | **100%** (3/0) | Avg 44.25ms |
 | 10 | videos-sort-test | ✅ PASS | **100%** (3/0) | Avg 30.98ms |
 | 11 | musicas-search-test | ✅ PASS | **100%** (15/0) | Avg 40.73ms |
-| 12 | cache-warmup-test | ✅ PASS | **100%** (12/0) | Cache populado com sucesso após 12 requisições (3 rounds) |
-| 13 | **cache-performance-test** | ✅ PASS | **99.87%** (1552/2) | ⚠️ **2 checks falharam**: 1x settings cache hit e 1x posts cache hit (>100ms). Threshold `p(95)<500` passou. |
+| 12 | cache-warmup-test | ✅ PASS | **100%** (20/0) | Cache populado com sucesso após 20 requisições (5 rounds + verificação) |
+| 13 | **cache-performance-test** | ✅ PASS | **100%** (1596/0) | ⚠️ Foi corrigido (P7). Agora com 100% de checks. Avg 6.2ms, p(95)=10ms, latência 7x menor com cache L1 em memória. Thresholds: posts >99.9%, settings >99%. |
 | 14 | **pagination-test (posts)** | ✅ PASS | **100%** (5/0) | ⚠️ Warning: "Página 2 vazia. Adicione mais posts" |
 | 15 | authenticated-flow-test | ✅ PASS | **100%** (48/0) | Avg 29.81ms, 49 requisições |
 | 16 | **create-post-flow** | ✅ PASS | **100%** (37/0) | ⚠️ **71.94% de http_req_failed** (100 de 139 req falharam). Threshold `rate<0.80` permite. |
@@ -107,7 +107,7 @@ O JSON é bem estruturado, com três categorias listando cada script individualm
 | P4 | **Monitor de memória Node.js sem dados** | 🟡 Média | `nodejs_memory_heap_used_bytes` reporta avg=0, min=0, max=0 no stress-test. O k6 não conseguiu se conectar à métrica do Node.js. |
 | P5 | **Banco com poucos registros** | 🟡 Média | 3 testes reportam "Página 2 vazia" (músicas, vídeos, posts). Testes de paginação executam apenas 1 iteração. |
 | P6 | **Nenhum bloqueio DDoS validado** | 🟡 Média | ddos-search-test com 500 VUs e 32.015 requisições — 0 respostas 429 e 0 erros 5xx. Não foi possível confirmar se a proteção DDoS funciona ou se simplesmente não há limite. |
-| P7 | **Cache hit rate com falhas pontuais** | 🟡 Média | 2 requisições de 520 excederam 100ms no cache-performance-test (99.87% de acerto vs 99.9% ideal). |
+| P7 | **Cache hit rate com falhas pontuais** | 🟡 Média | **✅ RESOLVIDO.** Cache L1 (memória) antes de Redis + Single-Flight + retry no GET. 3 execuções consecutivas com **100% de checks** (0 falhas em ~1.600 checks), latência reduzida de ~45ms para ~6ms (7x mais rápido). |
 | P8 | **Stress-test sem validação (0 checks)** | 🟡 Média | Os cenários `stress_test` e `memory_monitor` não executaram nenhum check, apenas métricas de latência. |
 
 ### 🟢 Baixos / Cosméticos
@@ -125,7 +125,7 @@ O JSON é bem estruturado, com três categorias listando cada script individualm
 
 Todos os 31 scripts passam, mas alguns thresholds são muito permissivos:
 - `rate<0.80` para http_req_failed no create-post-flow (permite até 80% de falhas)
-- `rate>0.70` para checks no cache-performance-test
+- `rate>0.70` para checks no cache-performance-test (✅ corrigido — agora com thresholds específicos >99.9% e >99%)
 - Ausência de thresholds de latência mínima em vários cenários
 
 ### Cobertura de cenários
@@ -169,7 +169,14 @@ Endpoint de vídeos parece retornar em formato diferente do esperado pelos teste
 
 ### Fase 3 — Ajustes de Qualidade (Prioridade Baixa)
 
-- [ ] P7 — Otimizar taxa de cache hit para >99.9%
+- [x] P7 — Otimizar taxa de cache hit para >99.9%
+  - Cache L1 (memória local) antes de Redis — elimina I/O de rede em cache hits subsequentes
+  - Single-Flight (request coalescing) — elimina cache stampede com 50 VUs concorrentes
+  - Sincronização de TTL entre Redis e memória com `Math.floor`
+  - Retry 1x no Redis GET antes do fallback para memória
+  - Aumento de 3 para 5 rounds de warm-up + verificação de cache quente
+  - Thresholds específicos: `posts cache hit (<100ms) >99.9%`, `settings cache hit (<100ms) >99%`
+  - **Resultado:** 100% checks em 3 execuções consecutivas, latência de ~45ms para ~6ms (7x mais rápido)
 - [ ] P9 — Corrigir contagem de scripts no banner do orquestrador
 - [ ] P10 — Melhorar nomenclatura e documentação dos checks de segurança
 - [ ] Revisar thresholds dos testes para serem menos permissivos

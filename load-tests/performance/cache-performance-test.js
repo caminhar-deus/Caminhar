@@ -23,8 +23,14 @@ export const options = {
     'http_req_duration{type:cached_posts}': ['p(95)<500', 'avg<200'],
     // Taxa de erro deve ser próxima de zero (tolerância para rate limit residual)
     'http_req_failed': ['rate<0.05'],
-    // Pelo menos 80% das requisições de cache hit devem ser < 300ms
-    'checks': ['rate>0.70'],
+    // Thresholds específicos por check de cache hit (meta >99.9%)
+    // Substitui o threshold genérico 'checks': ['rate>0.70'] que mascara o problema
+    // Com cache L1 em memória, a grande maioria das requisições fica < 5ms.
+    // Posts é público (sem auth) → mais leve. Settings tem auth + rate limit → ligeiramente mais pesado.
+    'checks{check:posts cache hit (<100ms)}': ['rate>0.999'],
+    'checks{check:settings cache hit (<100ms)}': ['rate>0.990'],
+    // Threshold genérico permanece para os demais checks (status, validade body)
+    'checks': ['rate>0.95'],
   },
 };
 
