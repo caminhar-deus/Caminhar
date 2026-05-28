@@ -68,38 +68,38 @@ const CATEGORIES = [
     name: '🧪 Performance Tests',
     env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME || 'admin', ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || '123456' },
     scripts: [
-      { name: 'musicas-load-test',     cmd: 'k6 run load-tests/performance/musicas-load-test.js' },
-      { name: 'videos-load-test',      cmd: 'k6 run load-tests/performance/videos-load-test.js' },
-      { name: 'musicas-crud-test',     cmd: 'k6 run load-tests/performance/musicas-crud-test.js' },
-      { name: 'videos-crud-test',      cmd: 'k6 run load-tests/performance/videos-crud-test.js' },
-      { name: 'musicas-filter-test',   cmd: 'k6 run load-tests/performance/musicas-filter-test.js' },
-      { name: 'videos-filter-test',    cmd: 'k6 run load-tests/performance/videos-filter-test.js' },
+      { name: 'musicas-load-test',       cmd: 'k6 run load-tests/performance/musicas-load-test.js' },
+      { name: 'videos-load-test',        cmd: 'k6 run load-tests/performance/videos-load-test.js' },
+      { name: 'musicas-crud-test',       cmd: 'k6 run load-tests/performance/musicas-crud-test.js' },
+      { name: 'videos-crud-test',        cmd: 'k6 run load-tests/performance/videos-crud-test.js' },
+      { name: 'musicas-filter-test',     cmd: 'k6 run load-tests/performance/musicas-filter-test.js' },
+      { name: 'videos-filter-test',      cmd: 'k6 run load-tests/performance/videos-filter-test.js' },
       { name: 'musicas-pagination-test', cmd: 'k6 run load-tests/performance/musicas-pagination-test.js' },
       { name: 'videos-pagination-test',  cmd: 'k6 run load-tests/performance/videos-pagination-test.js' },
-      { name: 'musicas-sort-test',     cmd: 'k6 run load-tests/performance/musicas-sort-test.js' },
-      { name: 'videos-sort-test',      cmd: 'k6 run load-tests/performance/videos-sort-test.js' },
-      { name: 'musicas-search-test',   cmd: 'k6 run load-tests/performance/musicas-search-test.js' },
-      { name: 'cache-warmup-test',     cmd: 'k6 run load-tests/performance/cache-warmup-test.js' },
-      { name: 'cache-performance-test', cmd: 'k6 run load-tests/performance/cache-performance-test.js' },
-      { name: 'pagination-test',       cmd: 'k6 run load-tests/performance/pagination-test.js' },
+      { name: 'musicas-sort-test',       cmd: 'k6 run load-tests/performance/musicas-sort-test.js' },
+      { name: 'videos-sort-test',        cmd: 'k6 run load-tests/performance/videos-sort-test.js' },
+      { name: 'musicas-search-test',     cmd: 'k6 run load-tests/performance/musicas-search-test.js' },
+      { name: 'cache-warmup-test',       cmd: 'k6 run load-tests/performance/cache-warmup-test.js' },
+      { name: 'cache-performance-test',  cmd: 'k6 run load-tests/performance/cache-performance-test.js' },
+      { name: 'pagination-test',         cmd: 'k6 run load-tests/performance/pagination-test.js' },
       { name: 'authenticated-flow-test', cmd: 'k6 run load-tests/performance/authenticated-flow-test.js' },
-      { name: 'create-post-flow',      cmd: 'k6 run load-tests/performance/create-post-flow.js' },
-      { name: 'stress-test-combined',  cmd: 'k6 run load-tests/performance/stress-test-combined.js' },
+      { name: 'create-post-flow',        cmd: 'k6 run load-tests/performance/create-post-flow.js' },
+      { name: 'stress-test-combined',    cmd: 'k6 run load-tests/performance/stress-test-combined.js' },
     ],
   },
   {
     name: '🔍 Functional Tests',
     env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME || 'admin', ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || '123456' },
     scripts: [
-      { name: 'health-check',           cmd: 'k6 run load-tests/functional/health-check.js' },
-      { name: 'cache-headers-test',     cmd: 'k6 run load-tests/functional/cache-headers-test.js' },
-      { name: 'backup-verification-test', cmd: 'k6 run load-tests/functional/backup-verification-test.js' },
-      { name: 'video-validation-test',  cmd: 'k6 run load-tests/functional/video-validation-test.js' },
-      { name: 'posts-tags-test',        cmd: 'k6 run load-tests/functional/posts-tags-test.js' },
+      { name: 'health-check',                 cmd: 'k6 run load-tests/functional/health-check.js' },
+      { name: 'cache-headers-test',           cmd: 'k6 run load-tests/functional/cache-headers-test.js' },
+      { name: 'backup-verification-test',     cmd: 'k6 run load-tests/functional/backup-verification-test.js' },
+      { name: 'video-validation-test',        cmd: 'k6 run load-tests/functional/video-validation-test.js' },
+      { name: 'posts-tags-test',              cmd: 'k6 run load-tests/functional/posts-tags-test.js' },
       { name: 'posts-cursor-pagination-test', cmd: 'k6 run load-tests/functional/posts-cursor-pagination-test.js' },
-      { name: 'search-content-test',    cmd: 'k6 run load-tests/functional/search-content-test.js' },
-      { name: 'upload-flow-test',       cmd: 'k6 run load-tests/functional/upload-flow-test.js' },
-      { name: 'recovery-test',          cmd: 'k6 run load-tests/functional/recovery-test.js' },
+      { name: 'search-content-test',          cmd: 'k6 run load-tests/functional/search-content-test.js' },
+      { name: 'upload-flow-test',             cmd: 'k6 run load-tests/functional/upload-flow-test.js' },
+      { name: 'recovery-test',                cmd: 'k6 run load-tests/functional/recovery-test.js' },
     ],
   },
   {
@@ -127,7 +127,7 @@ const totalScriptsInCategories = CATEGORIES.reduce((acc, cat) => acc + cat.scrip
 
 console.log('╔═══════════════════════════════════════════════════════════════════════════════════════════════════════╗');
 console.log('║   🚀 ORQUESTRADOR DE TESTES DE CARGA (k6)                                                             ║');
-console.log('║   Executando todos os ${String(totalScriptsInCategories).padStart(2)} scripts sequencialmente         ║');
+console.log(`║   Executando todos os ${String(totalScriptsInCategories).padStart(2)} scripts sequencialmente         ║`);
 console.log('╚═══════════════════════════════════════════════════════════════════════════════════════════════════════╝\n');
 
 // Verifica se o servidor está rodando antes de iniciar os testes
@@ -140,9 +140,9 @@ try {
 }
 
 for (const category of CATEGORIES) {
-  console.log(`\n═══════════════════════════════════════════════════`);
+  console.log(`\n═════════════════════════════════════════════════════`);
   console.log(`  ${category.name} (${category.scripts.length} scripts)`);
-  console.log(`═══════════════════════════════════════════════════\n`);
+  console.log(`═════════════════════════════════════════════════════\n`);
 
   const catResults = {
     name: category.name,
@@ -182,10 +182,27 @@ for (const category of CATEGORIES) {
     }
   }
 
+  // Após a categoria de performance, executa cleanup dos posts de teste (k6 create-post-flow)
+  if (category.name === '🧪 Performance Tests') {
+    console.log(`\n════════════════════════════════════════════════════`);
+    console.log(`  🧹 Limpando posts de teste criados durante os testes`);
+    console.log(`════════════════════════════════════════════════════\n`);
+    try {
+      execSync('node scripts/clean-load-test-posts.js', {
+        stdio: 'inherit',
+        shell: true,
+        timeout: 30000, // 30s timeout
+      });
+      console.log(`     ✅ Cleanup de posts de teste realizado com sucesso\n`);
+    } catch (error) {
+      console.error(`     ⚠️  Cleanup de posts de teste falhou (não crítico): ${error.message}\n`);
+    }
+  }
+
   // Após a categoria de segurança, executa cleanup de bloqueios de autenticação
   if (category.name === '🔒 Security Tests') {
     console.log(`\n═══════════════════════════════════════════════════`);
-    console.log(`  🔓 Limpando bloqueios de autenticação dos testes`);
+    console.log(`  🔓 Limpando bloqueios de autenticação dos testes   `);
     console.log(`═══════════════════════════════════════════════════\n`);
     try {
       execSync('node scripts/clear-test-auth-locks.js', {
@@ -220,10 +237,10 @@ console.log(`📄 Resultados salvos em: ${RESULTS_FILE}\n`);
 console.log('╔═══════════════════════════════════════════════════════════════════╗');
 console.log('║   📊 RESUMO FINAL                                                 ║');
 console.log('╠═══════════════════════════════════════════════════════════════════╣');
-console.log('║   Total: ${results.totalScripts.toString().padStart(3)} scripts   ║');
-console.log('║   ✅ Passed: ${results.passed.toString().padStart(3)}             ║');
-console.log('║   ❌ Failed: ${results.failed.toString().padStart(3)}             ║');
-console.log('║   ⏭️  Skipped: ${results.skipped.toString().padStart(3)}          ║');
+console.log(`║   Total: ${results.totalScripts.toString().padStart(3)} scripts   ║`);
+console.log(`║   ✅ Passed: ${results.passed.toString().padStart(3)}             ║`);
+console.log(`║   ❌ Failed: ${results.failed.toString().padStart(3)}             ║`);
+console.log(`║   ⏭️  Skipped: ${results.skipped.toString().padStart(3)}          ║`);
 console.log('╚═══════════════════════════════════════════════════════════════════╝\n');
 
 if (results.failed > 0) {

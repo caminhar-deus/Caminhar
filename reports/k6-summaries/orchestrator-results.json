@@ -1,7 +1,7 @@
 {
-  "startTime": "2026-05-27T20:57:27.369Z",
-  "totalScripts": 31,
-  "passed": 31,
+  "startTime": "2026-05-27T22:11:16.338Z",
+  "totalScripts": 30,
+  "passed": 30,
   "failed": 0,
   "skipped": 0,
   "categories": [
@@ -129,8 +129,8 @@
     },
     {
       "name": "🔒 Security Tests",
-      "total": 5,
-      "passed": 5,
+      "total": 4,
+      "passed": 4,
       "failed": 0,
       "skipped": 0,
       "scripts": [
@@ -140,10 +140,6 @@
         },
         {
           "name": "ip-spoofing-test",
-          "status": "pass"
-        },
-        {
-          "name": "ip-spoofing-deteccao-test",
           "status": "pass"
         },
         {
@@ -157,5 +153,5 @@
       ]
     }
   ],
-  "endTime": "2026-05-27T21:15:19.427Z"
+  "endTime": "2026-05-27T22:28:09.005Z"
 }
