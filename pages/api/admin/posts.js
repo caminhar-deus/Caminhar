@@ -116,7 +116,7 @@ async function handlePut(req, res) {
 }
 
 async function handleDelete(req, res) {
-  const { id } = req.body;
+  const id = req.body?.id || req.query?.id;
   if (!id) {
     return res.status(400).json({ message: 'ID do post é obrigatório' });
   }
