@@ -1,15 +1,15 @@
 {
-  "startTime": "2026-05-27T22:11:16.338Z",
+  "startTime": "2026-05-28T02:47:09.238Z",
   "totalScripts": 30,
-  "passed": 30,
-  "failed": 0,
+  "passed": 29,
+  "failed": 1,
   "skipped": 0,
   "categories": [
     {
       "name": "🧪 Performance Tests",
       "total": 17,
-      "passed": 17,
-      "failed": 0,
+      "passed": 16,
+      "failed": 1,
       "skipped": 0,
       "scripts": [
         {
@@ -74,7 +74,8 @@
         },
         {
           "name": "create-post-flow",
-          "status": "pass"
+          "status": "fail",
+          "exitCode": 99
         },
         {
           "name": "stress-test-combined",
@@ -153,5 +154,5 @@
       ]
     }
   ],
-  "endTime": "2026-05-27T22:28:09.005Z"
+  "endTime": "2026-05-28T03:03:55.924Z"
 }

@@ -7,6 +7,11 @@ const resourceConfig = {
   healthCheck: false,
   resourceName: 'musicas',
   profileName: 'medium',
+  optionsOverrides: {
+    thresholds: {
+      'http_req_duration{name:ListMusicas}': ['p(95)<500'],
+    },
+  },
   checkResponse: () => ({
     'retornou lista (array)': (r) => {
       const isJson = r.headers['Content-Type'] && r.headers['Content-Type'].includes('application/json');

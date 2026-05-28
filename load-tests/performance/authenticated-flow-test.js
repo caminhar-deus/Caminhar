@@ -13,8 +13,8 @@ export const options = {
   ],
   thresholds: {
     'http_req_duration': ['p(95)<2000'],
-    'checks{flow:get_settings}': ['rate>0.85'],
-    'http_req_failed': ['rate<0.55'],
+    'checks{flow:get_settings}': ['rate>0.95'],
+    'http_req_failed': ['rate<0.10'],
   },
 };
 

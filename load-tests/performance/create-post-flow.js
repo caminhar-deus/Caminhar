@@ -11,9 +11,9 @@ export const options = {
     { duration: '5s', target: 0 },  // Ramp-down
   ],
     thresholds: {
-    'http_req_duration{flow:create_post}': ['p(95)<3000'], // 3000ms (operações de escrita podem ser lentas em dev)
-    'checks{flow:create_post}': ['rate>0.85'],
-    http_req_failed: ['rate<0.80'], // Aumentado para 80% (rate limit de /api/admin/posts: 60/min)
+    'http_req_duration{flow:create_post}': ['p(95)<2000'], // 2000ms para operações de escrita
+    'checks{flow:create_post}': ['rate>0.95'],
+    http_req_failed: ['rate<0.10'], // Reduzido de 80% para 10% — o threshold anterior mascarava 71,94% de falhas reais
   },
 };
 

@@ -188,7 +188,13 @@ Endpoint de vídeos parece retornar em formato diferente do esperado pelos teste
   - Scripts `ip-spoofing-test.js` e `ip-spoofing-deteccao-test.js` mesclados em um único consolidado
   - Convenção de emojis padronizada: `🛡️ BLOQUEADO`, `⚠️ VULNERÁVEL`, `✅ RESISTIU`, `ℹ️ PERMITIDO`, `📝`
   - **Resultado:** Nomenclatura agora é auto-explicativa, checks de vulnerabilidade usam prefixo `⚠️` em vez de `❌`, e a interpretação dos resultados está documentada no JSDoc de cada script
-- [ ] Revisar thresholds dos testes para serem menos permissivos
+- [x] Revisar thresholds dos testes para serem menos permissivos
+  - `profiles.js`: 9 thresholds ajustados (light→500ms, medium→1000ms/5%, heavy→3000ms/10%, stress→3000ms/10%/95%, health→2%)
+  - `create-post-flow.js`: http_req_failed 80%→10%, checks 85%→95%, duration 3000ms→2000ms
+  - `musicas-load-test.js`: novo threshold `ListMusicas p(95)<500`
+  - `videos-load-test.js`: novo threshold `ListVideos_Page1/Page2 p(95)<500`
+  - `authenticated-flow-test.js`: http_req_failed 55%→10%, checks 85%→95%
+  - **Detalhes em:** `docs/plano-ajuste-thresholds-load-tests.md`
 - [ ] Adicionar testes de latência mínima para endpoints críticos
 
 ---

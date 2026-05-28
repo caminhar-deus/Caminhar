@@ -48,6 +48,12 @@ const resourceConfig = {
       },
     },
   ],
+  optionsOverrides: {
+    thresholds: {
+      'http_req_duration{name:ListVideos_Page1}': ['p(95)<500'],
+      'http_req_duration{name:ListVideos_Page2}': ['p(95)<500'],
+    },
+  },
 };
 
 const loadTest = createLoadTest(resourceConfig);
