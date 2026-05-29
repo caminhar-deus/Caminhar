@@ -26,8 +26,9 @@ export default function (data) {
 
   // Gera dados únicos para cada iteração para evitar erros de constraint 'UNIQUE' no banco
   const uniqueId = `${__VU}-${__ITER}-${Date.now()}`;
+  const randomSuffix = Math.random().toString(36).substr(2, 9);
   const postTitle = `Post de Carga K6 ${uniqueId}`;
-  const postSlug = `post-carga-k6-${uniqueId}`;
+  const postSlug = `post-carga-k6-${uniqueId}-${randomSuffix}`;
 
   const postPayload = {
     title: postTitle,

@@ -151,9 +151,11 @@ Endpoint de vídeos parece retornar em formato diferente do esperado pelos teste
 - [ ] P2 — Correção do endpoint de listagem de vídeos
   - Investigar schema de resposta: `retornou objeto com videos`, `limite é 5`, `está na página 2`
   - Alinhar contrato entre API e teste k6
-- [ ] P3 — Redução da taxa de falha em criação de posts
-  - Identificar causa das 100 falhas em 139 tentativas (concorrência? validação? duplicidade?)
-  - Ajustar lógica de criação para cenários de carga concorrente
+- [x] P3 — Redução da taxa de falha em criação de posts
+  - Causa raiz identificada: provável colisão de slugs (constraint UNIQUE `posts_slug_key`) em execução concorrente
+  - **✅ Resolvido:** Execução de 28/05 confirmou 0% de falhas e 100% de checks com thresholds rigorosos
+  - Slug reforçado com `Math.random()` para garantir unicidade absoluta
+  - **Detalhes em:** `docs/plano-correcao-p3-create-post-flow.md`
 
 ### Fase 2 — Melhorias na Cobertura (Prioridade Média)
 
