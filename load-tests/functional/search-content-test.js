@@ -7,17 +7,36 @@ import { generateReport } from '../helpers/report.js';
 
 export const options = getProfile('light', {
   iterations: 10,
+  thresholds: {
+    checks: ['rate==1.0'],
+    // Threshold geral: tolera cold start do Next.js (primeira requisição)
+    // Não substitui o threshold do perfil base — é apenas complementar
+    'http_req_duration{name:SearchPosts}': ['p(95)<500', 'avg<200'],
+  },
 });
 
 // Termos comuns que provavelmente existem no banco de dados
 const SEARCH_TERMS = ['Deus', 'Jesus', 'amor', 'fé', 'vida', 'caminho', 'luz'];
 
+let warmupDone = false;
+
 export default function () {
+  // Warm-up: na primeira iteração, aquece o cache do servidor Next.js
+  // para evitar que cold start distorça as métricas de latência
+  if (!warmupDone) {
+    warmupDone = true;
+    console.log('🔥 Warm-up: aquecendo cache do servidor...');
+    http.get(`${BASE_URL}/api/posts?search=Deus&page=1&limit=10`, { tags: { name: 'WarmUp' } });
+    http.get(`${BASE_URL}/api/posts?search=Jesus&page=1&limit=10`, { tags: { name: 'WarmUp' } });
+    http.get(`${BASE_URL}/api/posts?search=amor&page=1&limit=10`, { tags: { name: 'WarmUp' } });
+  }
   // Seleciona um termo aleatório
   const term = SEARCH_TERMS[Math.floor(Math.random() * SEARCH_TERMS.length)];
   
-  // Realiza a busca
-  const res = http.get(`${BASE_URL}/api/posts?search=${encodeURIComponent(term)}&page=1&limit=10`);
+  // Realiza a busca com tag nomeada para permitir thresholds específicos
+  const res = http.get(`${BASE_URL}/api/posts?search=${encodeURIComponent(term)}&page=1&limit=10`, {
+    tags: { name: 'SearchPosts' },
+  });
 
   const success = check(res, {
     'Status é 200': (r) => r.status === 200,
