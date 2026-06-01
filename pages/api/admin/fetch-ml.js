@@ -1,5 +1,6 @@
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
 import { z } from 'zod';
+import { logger } from '../../../lib/logger.js';
 
 const FETCH_TIMEOUT = 8000; // 8 segundos
 
@@ -140,7 +141,7 @@ async function handlePost(req, res) {
           }
         }
       } catch (scrapeErr) {
-        console.error('Falha no fallback de scraping HTML:', scrapeErr);
+        logger.error('FetchML', 'Falha no fallback de scraping HTML:', scrapeErr);
       }
     }
 

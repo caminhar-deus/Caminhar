@@ -3,6 +3,7 @@ import { withAuth, getAuthToken, verifyToken } from '../../lib/auth.js';
 import { getOrSetCache, invalidateCache, checkRateLimit } from '../../lib/cache.js';
 import { z } from 'zod';
 import { getClientIP } from '../../lib/api/helpers.js';
+import { logger } from '../../lib/logger.js';
 
 const SETTINGS_CACHE_TTL = 7200; // 2 horas
 
@@ -79,7 +80,7 @@ async function handleGet(req, res) {
 
       return res.status(404).json({ error: 'Not Found', message: 'Configuração não encontrada' });
     } catch (error) {
-      console.error('Error fetching setting:', error);
+      logger.error('Settings', 'Erro ao buscar configuração:', error);
       return res.status(500).json({ error: 'Internal Server Error', message: 'Erro ao buscar configuração' });
     }
   }
@@ -106,7 +107,7 @@ async function handleGet(req, res) {
 
     return res.status(200).json(settings);
   } catch (error) {
-    console.error('Error fetching settings:', error);
+    logger.error('Settings', 'Erro ao buscar configurações:', error);
     return res.status(500).json({ error: 'Internal Server Error', message: 'Erro ao buscar configurações' });
   }
 }
@@ -147,7 +148,7 @@ const handlePost = withAuth(async (req, res) => {
 
     return res.status(201).json({ success: true, data: { key, value: result }, message: 'Configuração criada com sucesso' });
   } catch (error) {
-    console.error('Error creating setting:', error);
+    logger.error('Settings', 'Erro ao criar configuração:', error);
     return res.status(500).json({ error: 'Internal Server Error', message: 'Erro ao criar configuração' });
   }
 });
@@ -184,7 +185,7 @@ const handlePut = withAuth(async (req, res) => {
 
     return res.status(200).json({ success: true });
   } catch (error) {
-    console.error('Error updating setting:', error);
+    logger.error('Settings', 'Erro ao atualizar configuração:', error);
     return res.status(500).json({ error: 'Internal Server Error', message: 'Erro ao atualizar configuração' });
   }
 });

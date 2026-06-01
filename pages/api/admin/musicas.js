@@ -36,12 +36,8 @@ async function handleGet(req, res) {
 
   const result = await getPaginatedMusicas(page, limit, search);
 
-  console.log('🔍 Admin Musicas GET:', {
-    total: result.pagination.total,
-    retornados: result.musicas.length,
-    primeiroItem: result.musicas[0] ? result.musicas[0].titulo : 'Nenhum'
-  });
-
+  // 🔇 Log removido conforme plano de melhoria de logs (consulta vazava dados)
+  
   return res.status(200).json(result);
 }
 

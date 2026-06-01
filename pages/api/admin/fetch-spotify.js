@@ -1,5 +1,6 @@
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
 import { z } from 'zod';
+import { logger } from '../../../lib/logger.js';
 
 const FETCH_TIMEOUT = 8000; // 8 segundos
 
@@ -44,7 +45,7 @@ async function handlePost(req, res) {
         title = data.title || '';
       }
     } catch (e) {
-      console.error('Falha na API oEmbed:', e);
+      logger.error('FetchSpotify', 'Falha na API oEmbed:', e);
     }
 
     // Estratégia 2: Extrair do código-fonte do Iframe de Embed (Forma mais estável para obter o Artista)
@@ -71,7 +72,7 @@ async function handlePost(req, res) {
           }
         }
       } catch (e) {
-        console.error('Falha na leitura do Iframe:', e);
+        logger.error('FetchSpotify', 'Falha na leitura do Iframe:', e);
       }
     }
 
@@ -100,7 +101,7 @@ async function handlePost(req, res) {
           }
         }
       } catch (e) {
-        console.error('Falha no HTML principal:', e);
+        logger.error('FetchSpotify', 'Falha no HTML principal:', e);
       }
     }
 

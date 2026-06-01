@@ -4,6 +4,7 @@ import { checkRateLimit, invalidateCache, getOrSetCache } from '../../lib/cache'
 import { getPaginatedProducts, getAllProducts, createProduct, updateProduct, deleteProduct } from '../../lib/domain/products.js';
 import { paginate } from './helper/pagination.js';
 import { getClientIP } from '../../lib/api/helpers.js';
+import { logger } from '../../lib/logger.js';
 
 /**
  * Handler para GET público (sem autenticação)
@@ -95,7 +96,7 @@ async function handlePost(req, res) {
 
     return res.status(201).json(newProduct);
   } catch (error) {
-    console.error('❌ [API Products] Error creating product:', error);
+    logger.error('Products', 'Erro ao criar produto:', error);
     return res.status(500).json({ error: 'Internal Server Error', message: 'Erro ao criar produto' });
   }
 }
@@ -131,7 +132,7 @@ async function handlePut(req, res) {
     if (error.message === 'NO_DATA_TO_UPDATE') {
       return res.status(400).json({ error: 'Bad Request', message: 'Nenhum dado enviado para atualização' });
     }
-    console.error('❌ [API Products] Error updating product:', error);
+    logger.error('Products', 'Erro ao atualizar produto:', error);
     return res.status(500).json({ error: 'Internal Server Error', message: 'Erro ao atualizar produto' });
   }
 }
@@ -164,7 +165,7 @@ async function handleDelete(req, res) {
 
     return res.status(200).json({ success: true, message: 'Produto removido com sucesso' });
   } catch (error) {
-    console.error('❌ [API Products] Error deleting product:', error);
+    logger.error('Products', 'Erro ao remover produto:', error);
     return res.status(500).json({ error: 'Internal Server Error', message: 'Erro ao remover produto' });
   }
 }
@@ -206,7 +207,7 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method Not Allowed', message: 'Método não permitido' });
     }
   } catch (error) {
-    console.error('❌ [API Products] Error:', error);
+    logger.error('Products', 'Erro:', error);
     return res.status(500).json({ error: 'Internal Server Error', message: 'Erro interno no servidor' });
   }
 }

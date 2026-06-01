@@ -1,6 +1,7 @@
 import { Redis } from '@upstash/redis';
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
 import { z } from 'zod';
+import { logger } from '../../../lib/logger.js';
 
 const ipSchema = z.object({
   ip: z.string().min(1, 'IP é obrigatório'),
@@ -28,11 +29,11 @@ async function redisSafe(operation, fallback = null) {
   } catch (error) {
     const message = error.message || '';
     if (message.includes('max requests limit exceeded')) {
-      console.warn(`[RateLimit] ⚠️ Limite de requisições Redis excedido. Operação ignorada: ${message}`);
+      logger.warn('RateLimit', `Limite de requisições Redis excedido. Operação ignorada: ${message}`);
     } else if (message.includes('max commands') || message.includes('rate limit')) {
-      console.warn(`[RateLimit] ⚠️ Rate limit do Redis atingido. Operação ignorada.`);
+      logger.warn('RateLimit', 'Rate limit do Redis atingido. Operação ignorada.');
     } else {
-      console.error('[RateLimit] ❌ Erro Redis:', message);
+      logger.error('RateLimit', 'Erro Redis:', message);
     }
     return fallback;
   }
@@ -219,7 +220,7 @@ async function handlePost(req, res) {
     await logAudit('Adicionado à Whitelist', ip, req.user?.username);
     return res.status(200).json({ message: `IP ${ip} adicionado à whitelist com sucesso` });
   } catch (error) {
-    console.error('[RateLimit] ❌ Erro ao adicionar à whitelist:', error.message);
+    logger.error('RateLimit', 'Erro ao adicionar à whitelist:', error.message);
     return res.status(503).json({ message: 'Erro ao processar operação. Redis temporariamente indisponível.' });
   }
 }
@@ -251,7 +252,7 @@ async function handleDelete(req, res) {
     await logAudit('Desbloqueio Manual', ip, req.user?.username);
     return res.status(200).json({ message: `IP ${ip} desbloqueado com sucesso` });
   } catch (error) {
-    console.error('[RateLimit] ❌ Erro ao processar deleção:', error.message);
+    logger.error('RateLimit', 'Erro ao processar deleção:', error.message);
     return res.status(503).json({ message: 'Erro ao processar operação. Redis temporariamente indisponível.' });
   }
 }
