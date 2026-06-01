@@ -1,5 +1,6 @@
 import { withAuth } from '../../lib/auth';
 import { query } from '../../lib/db';
+import { logger } from '../../lib/logger';
 
 async function handler(req, res) {
   // Apenas permite DELETE
@@ -17,7 +18,7 @@ async function handler(req, res) {
     // PostgreSQL retorna rowCount em vez de changes
     return res.status(200).json({ message: 'Dados de teste limpos com sucesso', changes: result.rowCount });
   } catch (error) {
-    console.error('Error cleaning test data:', error);
+    logger.error('Cleanup', 'Erro ao limpar dados de teste:', error);
     return res.status(500).json({ error: 'Internal Server Error', message: 'Erro ao limpar dados' });
   }
 }

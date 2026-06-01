@@ -1,5 +1,6 @@
 import { authenticateAndGenerateToken, setAuthCookie } from '../../../lib/auth';
 import { detectSpoofedIP, getClientIP } from '../../../lib/api/helpers.js';
+import { logger } from '../../../lib/logger.js';
 
 /**
  * Endpoint de autenticação de usuários.
@@ -17,7 +18,10 @@ export default async function handler(req, res) {
 
   // 1. Detecção de IP spoofing
   const spoofResult = detectSpoofedIP(req);
-  console.log(`[Auth] detectSpoofedIP: socket=${req.socket?.remoteAddress}, normalized=${spoofResult.socketIP}, forwarded=${spoofResult.forwardedIP}, isSpoofed=${spoofResult.isSpoofed}`);
+  // Suprime log para IPs locais (reduz poluição do terminal em desenvolvimento)
+  if (spoofResult.socketIP !== '127.0.0.1') {
+    logger.debug('Auth', `detectSpoofedIP: socket=${req.socket?.remoteAddress}, normalized=${spoofResult.socketIP}, forwarded=${spoofResult.forwardedIP}, isSpoofed=${spoofResult.isSpoofed}`);
+  }
 
   if (spoofResult.isSpoofed) {
     return res.status(403).json({

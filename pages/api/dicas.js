@@ -2,6 +2,7 @@ import { query } from '../../lib/db.js';
 import { getOrSetCache, checkRateLimit } from '../../lib/cache.js';
 import { paginate, buildPaginationMeta, paginatedResponse } from './helper/pagination.js';
 import { getClientIP } from '../../lib/api/helpers.js';
+import { logger } from '../../lib/logger.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -46,7 +47,7 @@ export default async function handler(req, res) {
     if (error.message === 'INVALID_PAGINATION_PARAMS') {
       return res.status(400).json({ error: 'Bad Request', message: 'Parâmetros de paginação inválidos' });
     }
-    console.error('API Error fetching dicas:', error);
+    logger.error('Dicas', 'Erro na API ao buscar dicas:', error);
     return res.status(500).json({ error: 'Internal Server Error', message: 'Erro ao buscar as dicas do dia' });
   }
 }

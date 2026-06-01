@@ -2,6 +2,7 @@ import { getPaginatedMusicas } from '../../lib/domain/musicas.js';
 import { getOrSetCache, checkRateLimit } from '../../lib/cache.js';
 import { z } from 'zod';
 import { getClientIP } from '../../lib/api/helpers.js';
+import { logger } from '../../lib/logger.js';
 
 /**
  * Handles GET requests to fetch paginated and published music data.
@@ -53,7 +54,7 @@ async function handleGet(req, res) {
     if (error.message === 'RATE_LIMIT_EXCEEDED') {
       return res.status(429).json({ error: 'Too Many Requests', message: 'Muitas requisições. Tente novamente mais tarde.' });
     }
-    console.error('API Error fetching musicas:', error);
+    logger.error('Musicas', 'Erro na API ao buscar músicas:', error);
     // Resposta de erro padronizada.
     return res.status(500).json({
       error: 'Internal Server Error',

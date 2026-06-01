@@ -26,6 +26,7 @@ Os logs da aplicação durante `npm run dev` misturavam:
    - `lib/api/middleware.js` (4 logs)
    - `lib/api/validate.js` (4 logs)
    - `lib/domain/videos.js`, `musicas.js`, `posts.js` (3 logs)
+   - `pages/api/` (vários scripts com logs)
    - `pages/api/admin/` (vários scripts com logs)
 
 ### 1.2 Problemas Identificados e Resolvidos
@@ -76,22 +77,34 @@ export const logger = {
 - Nível DEBUG controlado por variável de ambiente (`LOG_LEVEL=debug`)
 - Emojis padronizados por severidade
 
-### 2.2 Supressão de Logs SQL (Fase 1.3)
+### 2.2 Migração Completa do `lib/db.js`
 
 **Arquivo:** `lib/db.js`
 
-Logs de consulta SQL agora só aparecem quando:
-- `options.log === true` (parâmetro explícito)
-- `process.env.NODE_ENV !== 'production'`
-- `process.env.LOG_LEVEL === 'debug'`
+Logs de consulta SQL movidos para DEBUG-only (`LOG_LEVEL=debug`) **e** todos os demais `console.*` do arquivo migrados para o logger centralizado:
 
-### 2.3 Supressão de `detectSpoofedIP` para IPs locais (Fase 1.2)
+| Localização | Antes | Depois |
+|-------------|-------|--------|
+| Health check falhou | `console.warn` | `logger.warn('DB', ...)` |
+| Pool resetado | `console.log` | `logger.info('DB', ...)` |
+| Erro fatal no pool | `console.error` | `logger.error('DB', ...)` |
+| Pool recriado | `console.log` | `logger.info('DB', ...)` |
+| Consulta SQL (DEBUG) | `console.log` | `logger.debug('DB', ...)` |
+| Timeout retry | `console.warn` | `logger.warn('DB', ...)` |
+| Erro na consulta | `console.error` | `logger.error('DB', ...)` |
+| Pool fechado | `console.log` | `logger.info('DB', ...)` |
+| Erro ao fechar pool | `console.error` | `logger.error('DB', ...)` |
+| Transação falhou | `console.error` | `logger.error('DB', ...)` |
+| Health check falhou | `console.error` | `logger.error('DB', ...)` |
+| Erro info banco | `console.error` | `logger.error('DB', ...)` |
 
-**Arquivo:** `lib/api/middleware.js`
+### 2.3 Supressão de `detectSpoofedIP` para IPs locais
 
-O log de spoofing é suprimido quando o socket é `127.0.0.1` ou `::1` (normalizado com `::ffff:`).
+**Arquivos:** `lib/api/middleware.js` e `pages/api/auth/login.js`
 
-### 2.4 Remoção de Log de Debug (Fase 1.4)
+O log de spoofing é suprimido quando o socket é `127.0.0.1` ou `::1` (normalizado com `::ffff:`). Em `pages/api/auth/login.js`, o log foi rebaixado para DEBUG e também suprimido para localhost.
+
+### 2.4 Remoção de Log de Debug
 
 **Arquivo:** `pages/api/admin/musicas.js`
 
@@ -106,7 +119,7 @@ Removido `console.log('🔍 Admin Musicas GET:', ...)` que vazava dados da consu
 | `lib/cache.js` | Import do logger, todos os `console.*` → `logger.*` com módulo `Cache` |
 | `lib/crud.js` | Import do logger, `console.warn` → `logger.warn` com módulo `CRUD` |
 
-### 2.6 Tradução de Logs em Inglês (Fase 3.1)
+### 2.6 Tradução de Logs em Inglês
 
 **Arquivo:** `pages/api/settings.js`
 
@@ -115,7 +128,7 @@ Removido `console.log('🔍 Admin Musicas GET:', ...)` que vazava dados da consu
 - `'Error creating setting:'` → `'Erro ao criar configuração:'`
 - `'Error updating setting:'` → `'Erro ao atualizar configuração:'`
 
-### 2.7 Migração de Domínios para o Logger (Fase 3.3)
+### 2.7 Migração de Domínios para o Logger
 
 | Arquivo | Alterações |
 |---------|------------|
@@ -123,7 +136,7 @@ Removido `console.log('🔍 Admin Musicas GET:', ...)` que vazava dados da consu
 | `lib/domain/musicas.js` | Import do logger, `console.error` → `logger.error` com módulo `Musicas` |
 | `lib/domain/posts.js` | Import do logger, `console.error` → `logger.error` com módulo `Posts` |
 
-### 2.8 Migração de Endpoints Admin para o Logger (Fase 3.4)
+### 2.8 Migração de Endpoints Admin para o Logger
 
 | Arquivo | Alterações |
 |---------|------------|
@@ -134,7 +147,21 @@ Removido `console.log('🔍 Admin Musicas GET:', ...)` que vazava dados da consu
 | `pages/api/admin/fetch-spotify.js` | Import do logger, `console.error` → `logger.error` com módulo `FetchSpotify` |
 | `pages/api/admin/fetch-ml.js` | Import do logger, `console.error` → `logger.error` com módulo `FetchML` |
 
-### 2.9 Não Implementado
+### 2.9 Migração de Endpoints Públicos para o Logger
+
+| Arquivo | Alterações |
+|---------|------------|
+| `pages/api/auth/login.js` | Import do logger, `console.log` → `logger.debug` com supressão para localhost, módulo `Auth` |
+| `pages/api/auth/check.js` | Import do logger, `console.error` → `logger.error` com módulo `Auth` |
+| `pages/api/dicas.js` | Import do logger, `console.error` → `logger.error` com módulo `Dicas` |
+| `pages/api/videos.js` | Import do logger, `console.error` → `logger.error` com módulo `Videos` |
+| `pages/api/musicas.js` | Import do logger, `console.error` → `logger.error` com módulo `Musicas` |
+| `pages/api/posts.js` | Import do logger, `console.error` → `logger.error` (2 ocorrências) com módulo `Posts` |
+| `pages/api/upload-image.js` | Import do logger, `console.error` → `logger.error` com módulo `Upload` |
+| `pages/api/cleanup-test-data.js` | Import do logger, `console.error` → `logger.error` com módulo `Cleanup` |
+| `pages/api/placeholder-image.js` | Import do logger, `console.warn` e `console.error` → `logger.warn`/`logger.error` com módulo `Placeholder` |
+
+### 2.10 Não Implementado
 
 O item **3.2 (Adicionar requestId para agrupamento)** do plano original não foi implementado por ser de baixa prioridade e requerer alterações estruturais mais profundas nos middlewares de API.
 
@@ -145,7 +172,7 @@ O item **3.2 (Adicionar requestId para agrupamento)** do plano original não foi
 | Arquivo | O quê | Status |
 |---------|-------|:------:|
 | **Novo:** `lib/logger.js` | Helper centralizado de logging | ✅ |
-| `lib/db.js` | Consultas SQL movidas para DEBUG-only | ✅ |
+| `lib/db.js` | Todos os `console.*` migrados para logger (13 ocorrências) + SQL DEBUG-only | ✅ |
 | `lib/auth.js` | Migrado para logger + níveis corretos (log → warn) | ✅ |
 | `lib/api/middleware.js` | Spoofing log suprimido para localhost | ✅ |
 | `lib/redis.js` | Migrado para logger | ✅ |
@@ -162,6 +189,15 @@ O item **3.2 (Adicionar requestId para agrupamento)** do plano original não foi
 | `pages/api/admin/rate-limit.js` | Migrado para logger | ✅ |
 | `pages/api/admin/fetch-spotify.js` | Migrado para logger | ✅ |
 | `pages/api/admin/fetch-ml.js` | Migrado para logger | ✅ |
+| `pages/api/auth/login.js` | Spoofing log suprimido para localhost + logger | ✅ |
+| `pages/api/auth/check.js` | Migrado para logger | ✅ |
+| `pages/api/dicas.js` | Migrado para logger | ✅ |
+| `pages/api/videos.js` | Migrado para logger | ✅ |
+| `pages/api/musicas.js` | Migrado para logger | ✅ |
+| `pages/api/posts.js` | Migrado para logger | ✅ |
+| `pages/api/upload-image.js` | Migrado para logger | ✅ |
+| `pages/api/cleanup-test-data.js` | Migrado para logger | ✅ |
+| `pages/api/placeholder-image.js` | Migrado para logger | ✅ |
 
 ---
 
@@ -193,3 +229,4 @@ Executando consulta SQL { text: 'SELECT * FROM users...', values: [...] }
 | Poluição do terminal dos testes de carga | Alta (spoofing + SQL) | Baixa | **Significativa** |
 | Facilidade de identificar problemas | Média | Alta | — |
 | Consistência visual entre módulos | Baixa | Alta | — |
+| Total de arquivos migrados para logger | 0 | **28 arquivos** | — |

@@ -1,4 +1,5 @@
 import { getAuthToken, verifyToken } from '../../../lib/auth.js';
+import { logger } from '../../../lib/logger.js';
 
 /**
  * Endpoint de verificação de autenticação.
@@ -48,7 +49,7 @@ export default async function handler(req, res) {
       message: 'Autenticação válida',
     });
   } catch (error) {
-    console.error('Error in auth check:', error);
+    logger.error('Auth', 'Erro na verificação de autenticação:', error);
     res.status(500).json({
       error: 'Internal Server Error',
       message: 'Erro no servidor durante verificação de autenticação',

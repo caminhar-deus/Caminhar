@@ -1,6 +1,7 @@
 import { getPublicPaginatedVideos } from '../../lib/domain/videos.js';
 import { getOrSetCache, checkRateLimit } from '../../lib/cache.js';
 import { getClientIP } from '../../lib/api/helpers.js';
+import { logger } from '../../lib/logger.js';
 
 /**
  * API route handler for fetching public videos.
@@ -49,7 +50,7 @@ export default async function handler(req, res) {
       ...result,
     });
   } catch (error) {
-    console.error('Error fetching public videos:', error);
+    logger.error('Videos', 'Erro ao buscar vídeos públicos:', error);
     return res.status(500).json({ error: 'Internal Server Error', message: 'Erro interno do servidor ao buscar vídeos' });
   }
 }

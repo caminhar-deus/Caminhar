@@ -3,6 +3,7 @@ import { getOrSetCache, checkRateLimit, invalidateCache } from '../../lib/cache.
 import { withAuth } from '../../lib/auth.js';
 import { z } from 'zod';
 import { getClientIP } from '../../lib/api/helpers.js';
+import { logger } from '../../lib/logger.js';
 
 /**
  * API route handler for posts.
@@ -78,7 +79,7 @@ async function handleGet(req, res) {
       ...result,
     });
   } catch (error) {
-    console.error('Error fetching posts:', error);
+    logger.error('Posts', 'Erro ao buscar posts:', error);
     return res.status(500).json({ error: 'Internal Server Error', message: 'Erro interno do servidor ao buscar posts' });
   }
 }
@@ -136,7 +137,7 @@ async function postHandler(req, res) {
 
     return res.status(201).json(newPost);
   } catch (error) {
-    console.error('Error creating post:', error);
+    logger.error('Posts', 'Erro ao criar post:', error);
     return res.status(500).json({ error: 'Internal Server Error', message: 'Erro ao criar post' });
   }
 }

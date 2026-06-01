@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { getSetting } from '../../lib/domain/settings.js';
+import { logger } from '../../lib/logger.js';
 
 export default async function handler(req, res) {
   try {
@@ -17,7 +18,7 @@ export default async function handler(req, res) {
         filename = path.basename(dbImage);
       }
     } catch (dbError) {
-      console.warn('Aviso: Não foi possível ler a configuração do banco:', dbError.message);
+      logger.warn('Placeholder', 'Não foi possível ler a configuração do banco:', dbError.message);
     }
 
     // 2. Fallback: Se não achou no banco, procura o arquivo mais recente na pasta
@@ -70,7 +71,7 @@ export default async function handler(req, res) {
       res.send(svg);
     }
   } catch (error) {
-    console.error('Error serving image:', error);
+    logger.error('Placeholder', 'Erro ao servir imagem:', error);
     res.status(500).json({ message: 'Erro ao carregar imagem' });
   }
 }

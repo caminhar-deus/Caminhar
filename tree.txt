@@ -537,7 +537,6 @@
 │   ├── analise-load-tests-orchestrator.md
 │   ├── JEST_ESM.md
 │   ├── plano-ajuste-thresholds-load-tests.md
-│   ├── plano-melhoria-logs-servidor.md
 │   ├── PROJECT_components.md
 │   ├── PROJECT_cypress.md
 │   ├── PROJECT_data.md
@@ -551,7 +550,8 @@
 │   ├── PROJECT_scripts.md
 │   ├── PROJECT_tests.md
 │   ├── resolvidos
-│   │   └── plano-correcao-p3-create-post-flow.md
+│   │   ├── plano-correcao-p3-create-post-flow.md
+│   │   └── plano-melhoria-logs-servidor.md
 │   ├── UPGRADE_components.md
 │   ├── UPGRADE_cypress.md
 │   ├── UPGRADE_data.md

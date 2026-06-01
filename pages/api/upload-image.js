@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import sharp from 'sharp';
 import { updateSetting } from '../../lib/domain/settings.js';
 import { withAuth } from '../../lib/auth.js';
+import { logger } from '../../lib/logger.js';
 
 export const config = {
   api: {
@@ -101,7 +102,7 @@ async function handler(req, res) {
     return res.status(200).json({ success: true, path: publicPath, imageUrl: publicPath });
 
   } catch (error) {
-    console.error('Upload error:', error);
+    logger.error('Upload', 'Erro ao fazer upload da imagem:', error);
     return res.status(500).json({ error: 'Internal Server Error', message: 'Erro ao fazer upload da imagem' });
   }
 }
