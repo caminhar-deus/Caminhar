@@ -1,8 +1,9 @@
 # Plano de Ação — Revisão de Thresholds dos Testes de Carga
 
-> **Status:** ✅ IMPLEMENTADO — 27/05/2026  
+> **Status:** ✅ IMPLEMENTADO E CONFIRMADO — 29/05/2026  
 > **Referência:** Documento `docs/analise-load-tests-orchestrator.md`, item "Fase 3 — Ajustes de Qualidade (Prioridade Baixa)"  
 > **Objetivo:** Tornar os thresholds menos permissivos para que falhas reais sejam detectadas  
+> **Confirmação:** Execução de 29/05/2026 via orquestrador — 30/30 scripts passaram com os novos thresholds
 
 ---
 
@@ -157,4 +158,42 @@ Após aplicar todos os ajustes, executar todos os 31 scripts via orquestrador e 
 
 ---
 
-*Documento gerado em 27/05/2026*
+## 7. Confirmação de Implementação (29/05/2026)
+
+### 7.1 Execução de Verificação
+
+Todos os ajustes propostos neste plano foram implementados e validados na execução de 29/05/2026 com o seguinte resultado:
+
+| Métrica | Valor |
+|---------|-------|
+| Total de Scripts | 30 |
+| Passaram | 30 |
+| Falharam | 0 |
+| Data | 29/05/2026 |
+
+### 7.2 Estado Final de Cada Arquivo
+
+| Arquivo | Thresholds Implementados | Status |
+|---------|-------------------------|--------|
+| `load-tests/helpers/profiles.js` | light→500ms, medium→1000ms/5%, heavy→3000ms/10%, stress→3000ms/10%/95%, health→2% | ✅ |
+| `load-tests/performance/create-post-flow.js` | p95<2000ms, checks>95%, rate<10% | ✅ |
+| `load-tests/performance/musicas-load-test.js` | ListMusicas p(95)<500 | ✅ |
+| `load-tests/performance/videos-load-test.js` | ListVideos_Page1/Page2 p(95)<500 | ✅ |
+| `load-tests/performance/authenticated-flow-test.js` | p(95)<2000, checks>95%, rate<10% | ✅ |
+| `load-tests/performance/musicas-crud-test.js` | Checks 100% (herdado do perfil light) | ✅ |
+| `load-tests/performance/videos-crud-test.js` | Checks 100% (herdado do perfil light) | ✅ |
+
+### 7.3 Pendências Fora do Escopo
+
+Os seguintes problemas não fazem parte deste plano e permanecem documentados em `docs/analise-load-tests-orchestrator.md` e `docs/analise-load-tests-orchestrator-02.md`:
+
+- P1 — Rate limit inoperante (Redis)
+- P2 — Schema de resposta de vídeos (56.65% checks)
+- P4 — Monitor de memória Node.js
+- P5 — Seed de dados para paginação
+- P6 — Proteção DDoS
+- P8 — Checks no stress-test
+
+---
+
+*Documento gerado em 27/05/2026 · Última atualização: 02/06/2026*

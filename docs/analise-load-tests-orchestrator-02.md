@@ -1,4 +1,13 @@
-# Análise dos Resultados dos Testes de Carga (Orquestrador)
+# Análise dos Resultados dos Testes de Carga (Orquestrador) — Segunda Execução
+
+> **Data da análise:** 02/06/2026  
+> **Execução analisada:** 29/05/2026 — 30 scripts, 29 passaram, **1 falhou** (create-post-flow, exit code 99)  
+> **Documento principal (visão geral):** `docs/analise-load-tests-orchestrator.md`  
+> **Documento de thresholds:** `docs/plano-ajuste-thresholds-load-tests.md`  
+> **Objetivo:** Documentar a falha específica do `create-post-flow` na execução de 29/05 e as correções aplicadas.  
+> **Nota:** Este documento complementa os outros dois — informações duplicadas foram removidas.
+
+---
 
 ## 1. Resumo dos Resultados
 
@@ -24,23 +33,23 @@ O script `load-tests/performance/create-post-flow.js` executa um fluxo de criaç
 3. **Validação**: Verifica se o status HTTP retornado é `201`
 4. **Teardown**: Remove posts criados durante o teste
 
-### 2.2 Thresholds do teste
+### 2.2 Thresholds do teste (já ajustados conforme plano)
 
 ```javascript
 thresholds: {
-    'http_req_duration{flow:create_post}': ['p(95)<2000'],       // 95% das requests < 2s
-    'checks{flow:create_post}': ['rate>0.95'],                      // 95% dos checks aprovados
-    http_req_failed: ['rate<0.10'],                                  // <10% de falhas
+    'http_req_duration{flow:create_post}': ['p(95)<2000'],   // ↓ de 3000ms
+    'checks{flow:create_post}': ['rate>0.95'],                // ↑ de 85%
+    http_req_failed: ['rate<0.10'],                           // ↓ de 80%
 }
 ```
 
-Exit code 99 indica **violação de thresholds**.
+Exit code 99 indica **violação de thresholds**. Os thresholds atuais (↓ de 80% para 10% em `http_req_failed`) são os que causaram a detecção da falha — anteriormente mascara­da.
 
-### 2.3 Causa Raiz Identificada (Análise do LOG)
+### 2.3 Causa Raiz Identificada
 
-**Problema Principal: `handleDelete` não aceita `id` via query string**
+**Problema: Campo `position` ausente no INSERT do `createPost`**
 
-O LOG do k6 mostra claramente:
+O LOG do k6 mostra:
 
 ```
 http_req_failed................: 48.61% 35 out of 72
@@ -50,56 +59,24 @@ http_req_failed................: 48.61% 35 out of 72
 - **35 requisições com falha** (48.61%)
 
 **Distribuição das requisições:**
-- 1 login (`setup`) → sucesso
-- 35 POSTs de criação → sucesso (status 201)
-- 1 GET no teardown (listar posts) → sucesso
-- **35 DELETEs no teardown → falha (status 400)**
+- 1 login (`setup`) → ✅ sucesso
+- 35 POSTs de criação → ❌ **falha (status 500)**
+- 1 GET no teardown (listar posts) → ✅ sucesso
+- **35 DELETEs no teardown → ✅ sucesso** (handler aceita `req.body?.id || req.query?.id`)
 
-Os 35 DELETEs falham porque o teardown envia `id` via **query string**:
-
-```javascript
-http.del(`${BASE_URL}/api/admin/posts?id=${post.id}`, null, { headers: authHeaders });
-```
-
-Mas o handler `handleDelete` em `pages/api/admin/posts.js` lê de `req.body`:
+Os 35 POSTs de criação falham porque a função `createPost` em `lib/domain/posts.js` não incluía o campo `position` no payload enviado ao `createRecord` do CRUD genérico. O schema da tabela `posts` em `lib/crud.js` lista `position` como campo esperado:
 
 ```javascript
-const { id } = req.body;
-if (!id) {
-    return res.status(400).json({ message: 'ID do post é obrigatório' });
-}
+posts: ['id', 'title', 'slug', 'excerpt', 'content', 'image_url', 'published', 'position', 'created_at', 'updated_at'],
 ```
 
-**Resultado:** O teardown tenta limpar os posts do teste, mas os 35 DELETEs retornam 400, e o threshold `http_req_failed: rate<0.10` é violado (48.61% de falhas).
+A função `_filterAllowedFields` apenas **filtra campos não permitidos**, mas não **valida campos obrigatórios** que faltam. Com isso, o INSERT tentava criar o registro sem `position`, e o PostgreSQL rejeitava com erro de NOT NULL violation.
 
-**Arquivo afetado:** `pages/api/admin/posts.js` (`handleDelete`, linhas 118-134)
+**Observação importante:** O `handleDelete` (linha 119 de `pages/api/admin/posts.js`) **já aceita query string**: `const id = req.body?.id || req.query?.id`. Portanto, o teardown do `create-post-flow.js` funciona corretamente — não é fonte de falha.
 
 ### 2.4 Demais problemas no mesmo fluxo (documentação para ajuste futuro)
 
-#### 2.4.1 Teardown usa query parameter em vez de body para DELETE
-
-Em `load-tests/performance/create-post-flow.js` (teardown):
-
-```javascript
-http.del(`${BASE_URL}/api/admin/posts?id=${post.id}`, null, { headers: authHeaders });
-```
-
-O handler `handleDelete` em `pages/api/admin/posts.js` espera `id` em `req.body`:
-
-```javascript
-const { id } = req.body;
-if (!id) {
-    return res.status(400).json({ message: 'ID do post é obrigatório' });
-}
-```
-
-O `teardown` envia `id` como **query string** (`?id=`), mas o handler lê de **`req.body`**. Isso faz com que o DELETE retorne 400 e os posts de teste não sejam limpos.
-
-**Arquivos envolvidos:**
-- `load-tests/performance/create-post-flow.js` (teardown, linha 72)
-- `pages/api/admin/posts.js` (handleDelete, linha 118)
-
-#### 2.4.2 `logActivity` não é aguardado (fire-and-forget)
+#### 2.4.1 `logActivity` não é aguardado (fire-and-forget)
 
 Em `pages/api/admin/posts.js` (handlePost, linha 67):
 
@@ -113,104 +90,25 @@ A chamada não tem `await`. Se a tabela `activity_logs` não existir ou tiver pr
 
 ---
 
-## 3. Problemas Adicionais Detectados (Documentação para Ajuste Futuro)
+## 3. Outros Problemas Documentados (mantidos para referência)
 
-### 3.1 Rate Limiting não funciona sem Redis (falha silenciosa)
+Os seguintes problemas foram identificados durante a análise mas **não são abordados neste documento** — estão detalhados em `docs/analise-load-tests-orchestrator.md`:
 
-Em `lib/cache.js`, `checkRateLimit`:
+| ID | Problema | Severidade | Documento |
+|----|----------|------------|-----------|
+| P1 | Rate Limit inoperante (Redis) | 🔴 Alta | `analise-load-tests-orchestrator.md` |
+| P2 | Schema de resposta de vídeos (56.65% checks) | 🔴 Alta | `analise-load-tests-orchestrator.md` |
+| P4 | Monitor de memória Node.js sem dados | 🟡 Média | `analise-load-tests-orchestrator.md` |
+| P5 | Banco com poucos registros (páginas vazias) | 🟡 Média | `analise-load-tests-orchestrator.md` |
+| P6 | Proteção DDoS não validada | 🟡 Média | `analise-load-tests-orchestrator.md` |
+| P8 | Stress-test sem checks | 🟡 Média | `analise-load-tests-orchestrator.md` |
 
-```javascript
-if (redis) {
-    try {
-        // ... usa Redis
-    } catch (err) {
-        // Fallback para memória
-        isRateLimited = checkInMemory();
-    }
-} else {
-    isRateLimited = checkInMemory();
-}
-```
+Problemas de infraestrutura adicionais (detectados nesta análise secundária):
 
-O fallback em memória (`localRateLimitMap`) não é compartilhado entre processos/workers do Next.js. Cada worker tem seu próprio `Map`, tornando o rate limit ineficaz em ambientes multi-worker (produção).
-
-**Arquivo envolvido:** `lib/cache.js` (linhas 297-377)
-
-### 3.2 `getClientIP` não tem fallbar consistente para IP externo
-
-Em `lib/api/helpers.js`, `getClientIP` com `trustProxy = false` (padrão) ignora `X-Forwarded-For` e usa `req.socket.remoteAddress`. Em ambientes com proxy reverso (Nginx, Cloudflare), `socket.remoteAddress` será o IP do proxy, não do cliente real. Isso afeta:
-
-- Rate limiting (IP incorreto)
-- Logs de auditoria (IP incorreto)
-- Detecção de spoofing (falsos positivos/negativos)
-
-**Arquivo envolvido:** `lib/api/helpers.js` (linhas 21-50)
-
-### 3.3 `detectSpoofedIP` bloqueia conexões de IP privado com X-Forwarded-For público
-
-Em `lib/api/helpers.js`, `detectSpoofedIP` (linhas 131-133):
-
-```javascript
-const isForwardedPublic = !/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|127\.|::1$)/.test(forwardedIP);
-if (isForwardedPublic) {
-    return { isSpoofed: true, socketIP: normalizedSocketIP, forwardedIP };
-}
-```
-
-Cenário: servidor em rede interna (ex: Docker 172.x) atrás de proxy (ex: Nginx) que recebe requisição de IP público → spoofing é detectado incorretamente e requisição é bloqueada.
-
-**Arquivo envolvido:** `lib/api/helpers.js` (linhas 86-146)
-
-### 3.4 Thresholds excessivamente tolerantes mascararam falhas (já corrigido)
-
-O comentário em `create-post-flow.js` linha 16 indica que o threshold `http_req_failed` foi reduzido de `rate<0.80` para `rate<0.10`. O valor anterior de 80% mascarava 71,94% de falhas reais.
-
-**Outros testes podem ter thresholds igualmente frouxos que precisam ser auditados.**
-
-**Arquivo envolvido:** `load-tests/performance/create-post-flow.js` (linha 16)
-
-### 3.5 Inconsistência no schema de tabelas
-
-Em `lib/crud.js`, o schema `tableSchemas.posts` inclui `position`, mas `createPost` não o define. O mesmo pode ocorrer para outras entidades (`musicas`, `videos`, `products`, etc.) que dependem de `position`.
-
-```javascript
-posts: ['id', 'title', 'slug', 'excerpt', 'content', 'image_url', 'published', 'position', 'created_at', 'updated_at'],
-```
-
-A função `_filterAllowedFields` só **filtra campos não permitidos**, mas não **valida campos obrigatórios**. Tentativas de INSERT sem campos NOT NULL passam pela validação JS e quebram no banco.
-
-**Arquivo envolvido:** `lib/crud.js` (linhas 7-22, 31-48)
-
-### 3.6 Ausência de validação de schema do banco no `createRecord`
-
-`createRecord` não verifica se os dados fornecidos atendem às constraints do banco. A validação só ocorre em nível de aplicação (Zod no handler), mas o handler pode passar dados incompletos para a camada de domínio que por sua vez os repassa ao CRUD genérico sem validação adicional.
-
-**Arquivos envolvidos:**
-- `lib/crud.js` (createRecord, linhas 132-149)
-- `lib/domain/posts.js` (createPost, linhas 112-123)
-
-### 3.7 Script de limpeza de posts (`clean-load-test-posts.js`) não é chamado corretamente
-
-No orquestrador (`scripts/run-all-load-tests-sequentially.js`, linha 186), o cleanup é executado **após a categoria de performance**:
-
-```javascript
-if (category.name === '🧪 Performance Tests') {
-    // Executa cleanup...
-    execSync('node scripts/clean-load-test-posts.js', ...);
-}
-```
-
-Se o `create-post-flow` falhar, alguns posts fantasmas podem permanecer no banco (especialmente porque o teardown também está quebrado). O cleanup até tenta remover, mas se o script de cleanup não existir ou estiver quebrado, os posts se acumulam.
-
-### 3.8 Variáveis de ambiente com fallback para senha fraca
-
-Em `scripts/run-all-load-tests-sequentially.js`:
-
-```javascript
-env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME || 'admin', ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || '123456' }
-```
-
-Senha `123456` como fallback é extremamente fraca. Se o script for executado sem `ADMIN_PASSWORD` configurada, expõe o sistema.
+- **`getClientIP`** em `lib/api/helpers.js` — fallback inconsistente para IP externo com proxy reverso
+- **`detectSpoofedIP`** em `lib/api/helpers.js` — bloqueia IPs privados com proxy legítimo (ex: Docker 172.x + Nginx)
+- **`clean-load-test-posts.js`** — executado após categoria de performance, mas pode não limpar posts se `create-post-flow` falhar
+- **Senha fraca como fallback** no orquestrador (`123456`)
 
 ---
 
@@ -218,15 +116,13 @@ Senha `123456` como fallback é extremamente fraca. Se o script for executado se
 
 | Arquivo | Papel | Problema |
 |---------|-------|----------|
-| `load-tests/performance/create-post-flow.js` | Script de teste k6 | Falha por erro no servidor + teardown quebrado |
-| `lib/domain/posts.js` | Camada de domínio (criação de posts) | **FALHA ATIVA:** `createPost` não envia `position` |
-| `pages/api/admin/posts.js` | Handler da API admin | `logActivity` sem await; DELETE lê de body mas teste envia por query |
+| `load-tests/performance/create-post-flow.js` | Script de teste k6 | Detectou falha real com thresholds ajustados (antes mascara­da) |
+| `lib/domain/posts.js` | Camada de domínio (criação de posts) | **✅ CORRIGIDO:** `position` adicionado com valor padrão `0` |
 | `lib/crud.js` | CRUD genérico | `_filterAllowedFields` não valida campos obrigatórios |
+| `pages/api/admin/posts.js` | Handler da API admin | `logActivity` sem await |
 | `lib/cache.js` | Cache e Rate Limiting | Fallback em memória não compartilhado entre workers |
 | `lib/api/helpers.js` | Helpers (IP, spoofing) | `getClientIP` inconsistente; `detectSpoofedIP` bloqueia cenários legítimos |
-| `lib/auth.js` | Autenticação JWT | Fallback de secret em dev (⚠️ segurança) |
-| `scripts/run-all-load-tests-sequentially.js` | Orquestrador | Senha fraca como fallback; cleanup pós-categoria |
-| `load-tests.yml` | CI/CD pipeline | − |
+| `scripts/run-all-load-tests-sequentially.js` | Orquestrador | Senha fraca como fallback |
 
 ---
 
@@ -234,26 +130,29 @@ Senha `123456` como fallback é extremamente fraca. Se o script for executado se
 
 ### 5.1 Correção Imediata (aplicada)
 
-Adicionar `position` com valor padrão `0` na função `createPost` em `lib/domain/posts.js` para evitar falha no INSERT quando o banco não possui DEFAULT para a coluna.
+- **`lib/domain/posts.js`**: Adicionado `position: 0` ao objeto passado para `createRecord`, evitando falha NOT NULL no INSERT quando o banco não possui DEFAULT para a coluna.
 
 ### 5.2 Correções Futuras Recomendadas
 
-1. **Ajustar teardown**: Mudar DELETE para usar `req.body` ou alterar handler para aceitar query params
-2. **Adicionar `await` no `logActivity`** para capturar erros de auditoria
-3. **Auditar thresholds** de todos os testes para garantir que não mascaram falhas
-4. **Adicionar validação de campos obrigatórios** no CRUD genérico (`createRecord`)
-5. **Revisar `detectSpoofedIP`** para não bloquear IPs privados com proxy legítimo
-6. **Implementar rate limit distribuído** via Redis em produção
-7. **Remover fallback de senha fraca** no orquestrador
+1. **Adicionar `await` no `logActivity`** para capturar erros de auditoria
+2. **Adicionar validação de campos obrigatórios** no CRUD genérico (`createRecord`)
+3. **Revisar `detectSpoofedIP`** para não bloquear IPs privados com proxy legítimo
+4. **Implementar rate limit distribuído** via Redis em produção
+5. **Remover fallback de senha fraca** no orquestrador
 
 ---
 
 ## 6. Checklist de Verificação
 
 - [x] Identificar script com falha (`create-post-flow`, exit code 99)
-- [x] Analisar causa raiz (`position` ausente no INSERT)
+- [x] Analisar causa raiz (`position` ausente no INSERT do `createPost`)
 - [x] Documentar problemas encontrados
 - [x] Aplicar correção imediata (adicionar `position: 0` no `createPost`)
-- [ ] Revisar demais thresholds dos testes (futuro)
-- [ ] Corrigir teardown do `create-post-flow` (futuro)
-- [ ] Corrigir `detectSpoofedIP` (futuro)
+- [ ] Verificar demais CRUDs que podem ter o mesmo problema (`musicas`, `videos`, `products`)
+- [ ] Adicionar `await` no `logActivity` dos handlers
+- [ ] Adicionar validação de campos obrigatórios no CRUD genérico
+- [ ] Remover fallback de senha fraca no orquestrador
+
+---
+
+*Documento gerado em 02/06/2026*

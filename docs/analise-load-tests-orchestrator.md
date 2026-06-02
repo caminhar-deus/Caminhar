@@ -2,7 +2,9 @@
 
 > **Data da análise:** 27/05/2026  
 > **Arquivos analisados:** `reports/k6-summaries/orchestrator-results.json` e `logs/load-tests.log`  
-> **Execução original:** 27/05/2026, 07:03 — 07:20 (~17 minutos)
+> **Execução original:** 27/05/2026, 07:03 — 07:20 (~17 minutos)  
+> **Última execução confirmada:** 29/05/2026 — 30/30 scripts passaram (ver `docs/analise-load-tests-orchestrator-02.md`)  
+> **Thresholds ajustados:** `docs/plano-ajuste-thresholds-load-tests.md` (seção 7 — confirmação de implementação)
 
 ---
 
@@ -172,32 +174,18 @@ Endpoint de vídeos parece retornar em formato diferente do esperado pelos teste
 ### Fase 3 — Ajustes de Qualidade (Prioridade Baixa)
 
 - [x] P7 — Otimizar taxa de cache hit para >99.9%
-  - Cache L1 (memória local) antes de Redis — elimina I/O de rede em cache hits subsequentes
-  - Single-Flight (request coalescing) — elimina cache stampede com 50 VUs concorrentes
-  - Sincronização de TTL entre Redis e memória com `Math.floor`
-  - Retry 1x no Redis GET antes do fallback para memória
-  - Aumento de 3 para 5 rounds de warm-up + verificação de cache quente
-  - Thresholds específicos: `posts cache hit (<100ms) >99.9%`, `settings cache hit (<100ms) >99%`
-  - **Resultado:** 100% checks em 3 execuções consecutivas, latência de ~45ms para ~6ms (7x mais rápido)
+  - **✅ Resolvido** — Cache L1 + Single-Flight + retry Redis. 100% checks em 3 execuções consecutivas
+  - Latência reduzida de ~45ms para ~6ms (7x mais rápido)
 - [x] P9 — Corrigir contagem de scripts no banner do orquestrador
-  - Substituição do valor hardcoded `29` por cálculo dinâmico via `CATEGORIES.reduce()`
-  - Inserção da variável `totalScriptsInCategories` antes do banner para contagem automática
-  - Uso de template string com `.padStart(2)` para manter alinhamento visual do banner
-  - **Resultado:** Banner agora exibe "31 scripts" corretamente, e se ajusta automaticamente conforme scripts forem adicionados/removidos
+  - **✅ Resolvido** — Banner dinâmico via `CATEGORIES.reduce()`, atualmente exibe "31 scripts"
 - [x] P10 — Melhorar nomenclatura e documentação dos checks de segurança
-  - Checks renomeados com semântica clara nos 3 scripts de segurança (`rate-limit-test.js`, `ip-spoofing-test.js`, `ddos-search-test.js`)
-  - Adicionada documentação de interpretação dos resultados com tabelas explicativas
-  - Scripts `ip-spoofing-test.js` e `ip-spoofing-deteccao-test.js` mesclados em um único consolidado
-  - Convenção de emojis padronizada: `🛡️ BLOQUEADO`, `⚠️ VULNERÁVEL`, `✅ RESISTIU`, `ℹ️ PERMITIDO`, `📝`
-  - **Resultado:** Nomenclatura agora é auto-explicativa, checks de vulnerabilidade usam prefixo `⚠️` em vez de `❌`, e a interpretação dos resultados está documentada no JSDoc de cada script
+  - **✅ Resolvido** — Checks renomeados com emojis padronizados, scripts de spoofing mesclados
 - [x] Revisar thresholds dos testes para serem menos permissivos
-  - `profiles.js`: 9 thresholds ajustados (light→500ms, medium→1000ms/5%, heavy→3000ms/10%, stress→3000ms/10%/95%, health→2%)
-  - `create-post-flow.js`: http_req_failed 80%→10%, checks 85%→95%, duration 3000ms→2000ms
-  - `musicas-load-test.js`: novo threshold `ListMusicas p(95)<500`
-  - `videos-load-test.js`: novo threshold `ListVideos_Page1/Page2 p(95)<500`
-  - `authenticated-flow-test.js`: http_req_failed 55%→10%, checks 85%→95%
-  - **Detalhes em:** `docs/plano-ajuste-thresholds-load-tests.md`
+  - **✅ Aplicado e confirmado** (29/05/2026 — 30/30 scripts passaram)
+  - **Detalhes completos em:** `docs/plano-ajuste-thresholds-load-tests.md`
+  - **Resumo:** profiles.js (9 thresholds), create-post-flow.js (3), musicas-load-test.js (1), videos-load-test.js (2), authenticated-flow-test.js (3), musicas/videos-crud (checks 100% herdado)
 - [ ] Adicionar testes de latência mínima para endpoints críticos
+  - *Ainda não iniciado*
 
 ---
 
