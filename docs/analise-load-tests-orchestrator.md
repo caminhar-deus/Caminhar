@@ -3,8 +3,12 @@
 > **Data da análise:** 27/05/2026  
 > **Arquivos analisados:** `reports/k6-summaries/orchestrator-results.json` e `logs/load-tests.log`  
 > **Execução original:** 27/05/2026, 07:03 — 07:20 (~17 minutos)  
-> **Última execução confirmada:** 29/05/2026 — 30/30 scripts passaram (ver `docs/analise-load-tests-orchestrator-02.md`)  
-> **Thresholds ajustados:** `docs/plano-ajuste-thresholds-load-tests.md` (seção 7 — confirmação de implementação)
+> **Última execução confirmada:** 02/06/2026 — 30/30 scripts passaram  
+>   - 29/05/2026: 29/30 passed, 1 falhou (create-post-flow — exit code 99)  
+>   - 02/06/2026: 30/30 passed (P3 corrigido, todos os thresholds rigorosos validados)  
+> **Thresholds ajustados:** `docs/plano-ajuste-thresholds-load-tests.md` (seção 7 — confirmação de implementação e revalidação)
+> **Log analisado:** `logs/load-tests.tmp` (4.769 linhas, execução de 02/06/2026)
+> **Resumo JSON:** `reports/k6-summaries/orchestrator-results.json` (30/30 passed, startTime: 2026-06-03T00:20:32.566Z)
 
 ---
 
@@ -24,6 +28,8 @@
 
 ## 1. Resumo Geral
 
+### 1.1 Execução Original (27/05/2026)
+
 | Item | orchestrator-results.json | load-tests.log |
 |------|---------------------------|----------------|
 | Data da Execução | 27/05/2026 10:02:56 → 10:20:25 | 27/05/2026 07:03 → 07:20 |
@@ -32,13 +38,44 @@
 | Falhados | 0 | 0 |
 | Categorias | 3 (Performance, Functional, Security) | 3 |
 
+### 1.2 Revalidação (02/06/2026) — Após Correções P1, P2, P3, P4, P6, P8
+
+| Métrica | Valor |
+|---------|-------|
+| Data | 02/06/2026, 21:20 — 21:37 (~17 min) |
+| Total Scripts | 30 |
+| Passados | **30 (100%)** |
+| Falhados | 0 |
+| Categorias | 3 (Performance 17/17, Functional 9/9, Security 4/4) |
+| Log de referência | `logs/load-tests.tmp` (4.769 linhas) |
+
+### 1.3 Evolução das Execuções
+
+| Execução | Data | Total | Passed | Failed | Observação |
+|----------|------|-------|--------|--------|------------|
+| Original | 27/05 | 31 | 31 | 0 | Thresholds permissivos mascaram problemas |
+| Pós-thresholds | 29/05 | 30 | 29 | **1** | create-post-flow detectou P3 (exit code 99) |
+| Pós-correções | **02/06** | **30** | **30** | **0** | **Todas as correções aplicadas** |
+
 ---
 
 ## 2. Análise do orchestrator-results.json
 
-O JSON é bem estruturado, com três categorias listando cada script individualmente. Todos os 31 scripts reportam **"status": "pass"**.
+### 2.1 Execução Original (27/05)
 
-**Inconsistência menor:** O log menciona "29 scripts" no banner do cabeçalho (linha 3), mas executou 31 de fato. Isso é um bug cosmético no script orquestrador.
+O JSON original é bem estruturado, com três categorias listando cada script individualmente. Todos os 31 scripts reportam **"status": "pass"**.
+
+**Inconsistência menor:** O log original menciona "29 scripts" no banner do cabeçalho, mas executou 31 de fato.
+
+### 2.2 Revalidação (02/06 — `reports/k6-summaries/orchestrator-results.json`)
+
+O JSON de 02/06 confirma **30/30 scripts passaram**, com startTime `2026-06-03T00:20:32.566Z` e endTime `2026-06-03T00:37:28.735Z` (~17 min). Distribuição:
+
+- **Performance Tests:** 17/17 passed (incluindo create-post-flow e stress-test-combined com validação real)
+- **Functional Tests:** 9/9 passed
+- **Security Tests:** 4/4 passed
+
+**Nota:** A redução de 31 para 30 scripts deve-se à mesclagem do `ip-spoofing-deteccao-test.js` (P10 — script duplicado removido).
 
 ---
 
