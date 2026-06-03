@@ -40,7 +40,11 @@ export default async function handler(req, res) {
       system: {
         nodeVersion: process.version,
         platform: process.platform,
-        uptime: process.uptime()
+        uptime: process.uptime(),
+        // Métricas de memória para monitoramento via k6 (P4)
+        rss: process.memoryUsage().rss,
+        heapTotal: process.memoryUsage().heapTotal,
+        heapUsed: process.memoryUsage().heapUsed
       }
     },
     message: 'API está operacional',

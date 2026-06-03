@@ -86,7 +86,7 @@ export function stress_test(data) {
       }
       return false;
     },
-  });
+  }, { scenario: 'stress_test' });
 
   if (!createCheckPassed || !videoId) {
     StressIterations.add(1);
@@ -103,10 +103,14 @@ export function stress_test(data) {
     publicado: false 
   });
   
-  http.put(`${BASE_URL}/api/admin/videos`, updatePayload, { 
+  const updateRes = http.put(`${BASE_URL}/api/admin/videos`, updatePayload, { 
     headers: authHeaders, 
     tags: { flow: 'stress_update', name: 'UpdateVideo' } 
   });
+
+  check(updateRes, {
+    'UPDATE: status é 200': (r) => r.status === 200,
+  }, { scenario: 'stress_test' });
 
   randomSleep(0.3, 1.5);
 
@@ -119,7 +123,7 @@ export function stress_test(data) {
 
   check(deleteRes, {
     'DELETE: status é 200': (r) => r.status === 200,
-  });
+  }, { scenario: 'stress_test' });
 }
 
 // --- Cenário de Monitoramento (nome deve corresponder ao perfil: memory_monitor) ---

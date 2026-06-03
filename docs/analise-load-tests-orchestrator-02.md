@@ -96,12 +96,12 @@ Os seguintes problemas foram identificados durante a análise mas **não são ab
 
 | ID | Problema | Severidade | Documento |
 |----|----------|------------|-----------|
-| P1 | Rate Limit inoperante (Redis) | 🔴 Alta | `analise-load-tests-orchestrator.md` |
-| P2 | Schema de resposta de vídeos (56.65% checks) | 🔴 Alta | `analise-load-tests-orchestrator.md` |
-| P4 | Monitor de memória Node.js sem dados | 🟡 Média | `analise-load-tests-orchestrator.md` |
+| P1 | Rate Limit inoperante (Redis) | 🔴 → ✅ Corrigido | **✅ Resolvido em 02/06/2026.** `rate-limit-proxy.js` substituído por `proxy.js`. Detalhes no documento principal. |
+| P2 | Schema de resposta de vídeos (56.65% checks) | 🔴 → ✅ Corrigido | **✅ Resolvido em 02/06/2026.** Checks do `videos-load-test.js` corrigidos para alinhar com schema real da API (`data: [...]` e `pagination` no nível raiz). |
+| P4 | Monitor de memória Node.js sem dados | 🟡 → ✅ Corrigido | **✅ Resolvido em 02/06/2026.** Endpoint `/api/status` agora expõe `rss`, `heapTotal` e `heapUsed`. |
 | P5 | Banco com poucos registros (páginas vazias) | 🟡 Média | `analise-load-tests-orchestrator.md` |
-| P6 | Proteção DDoS não validada | 🟡 Média | `analise-load-tests-orchestrator.md` |
-| P8 | Stress-test sem checks | 🟡 Média | `analise-load-tests-orchestrator.md` |
+| P6 | Proteção DDoS não validada | 🟡 → ✅ Corrigido | **✅ Resolvido em 02/06/2026.** Middleware expandido com rate limit de 30 req/min para rotas públicas. |
+| P8 | Stress-test sem checks | 🟡 → ✅ Corrigido | **✅ Resolvido em 02/06/2026.** Checks adicionados com tag `{ scenario: 'stress_test' }` em CREATE, UPDATE e DELETE. |
 
 Problemas de infraestrutura adicionais (detectados nesta análise secundária):
 
@@ -137,7 +137,7 @@ Problemas de infraestrutura adicionais (detectados nesta análise secundária):
 1. **Adicionar `await` no `logActivity`** para capturar erros de auditoria
 2. **Adicionar validação de campos obrigatórios** no CRUD genérico (`createRecord`)
 3. **Revisar `detectSpoofedIP`** para não bloquear IPs privados com proxy legítimo
-4. **Implementar rate limit distribuído** via Redis em produção
+4. **✅ Rate limit implementado** via proxy.js (02/06/2026) — usa `checkRateLimit` de `lib/cache.js` com suporte a Redis e fallback em memória
 5. **Remover fallback de senha fraca** no orquestrador
 
 ---

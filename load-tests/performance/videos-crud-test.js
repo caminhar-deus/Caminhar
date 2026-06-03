@@ -42,7 +42,8 @@ export function teardown(data) {
   const res = http.get(`${BASE_URL}/api/admin/videos?limit=100`, { headers: authHeaders });
   if (res.status === 200) {
     const body = res.json();
-    const videos = body.videos || body.data || [];
+    // Schema real da API admin: { data: [...], pagination: {...} }
+    const videos = body.data || body.videos || [];
     for (const video of videos) {
       if (video.titulo && video.titulo.includes('K6')) {
         http.del(`${BASE_URL}/api/admin/videos`, JSON.stringify({ id: video.id }), { headers: authHeaders });

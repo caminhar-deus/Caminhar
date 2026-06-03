@@ -8,15 +8,16 @@ const resourceConfig = {
   profileName: 'medium',
   tags: { name: 'ListVideos_Page1' },
   checkResponse: () => ({
+    // Schema real da API: { success: true, data: [...], pagination: { page, limit, total, totalPages } }
     'retornou objeto com videos': (r) => {
       try {
         const body = r.json();
         if (!body || typeof body !== 'object') return false;
-        // Aceita tanto { data: { videos: [...] } } quanto { videos: [...] } ou array direto
-        const hasDataVideos = body?.data?.videos !== undefined;
+        // Aceita tanto { data: [...] } quanto { success: true, data: [...] } ou body.videos diretamente
+        const hasDataArray = Array.isArray(body?.data);
         const hasDirectVideos = Array.isArray(body?.videos);
         const isArray = Array.isArray(body);
-        return hasDataVideos || hasDirectVideos || isArray;
+        return hasDataArray || hasDirectVideos || isArray;
       } catch (e) {
         return false;
       }
@@ -24,7 +25,7 @@ const resourceConfig = {
     'retornou metadados de paginação': (r) => {
       try {
         const body = r.json();
-        return body?.data?.pagination !== undefined || body?.pagination !== undefined;
+        return body?.pagination !== undefined;
       } catch (e) {
         return false;
       }
@@ -39,11 +40,11 @@ const resourceConfig = {
         'página 2 status é 200': (r) => r.status === 200,
         'está na página 2': (r) => {
           const body = r.json();
-          return body?.data?.pagination?.page === 2;
+          return body?.pagination?.page === 2;
         },
         'limite é 5': (r) => {
           const body = r.json();
-          return body?.data?.pagination?.limit === 5;
+          return body?.pagination?.limit === 5;
         },
       },
     },

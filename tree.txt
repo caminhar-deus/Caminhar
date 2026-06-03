@@ -608,6 +608,7 @@
 │   │   ├── posts.js
 │   │   ├── products.js
 │   │   ├── settings.js
+│   │   ├── shared-pagination.js
 │   │   └── videos.js
 │   ├── handleUnauthorized.js
 │   ├── logger.js
@@ -663,6 +664,7 @@
 ├── logs
 │   ├── coverage-output.log
 │   ├── load-tests.log
+│   ├── load-tests.tmp
 │   └── tests-output.log
 ├── __mocks__
 │   ├── cookie.js
@@ -734,6 +736,7 @@
 │       │   └── zIndex.js
 │       └── variables.css
 ├── pr-coverage.yml
+├── proxy.js
 ├── public
 │   ├── placeholder.svg
 │   └── uploads
@@ -745,7 +748,6 @@
 │       ├── post-image-1774752839426.png
 │       ├── post-image-1774752904235.webp
 │       └── post-image-6010b274-c22f-486a-80a9-dbf9c70d4535.png
-├── rate-limit-proxy.js
 ├── README.md
 ├── reports
 │   ├── k6-summaries
@@ -836,6 +838,7 @@
 │   │   ├── 009-add-position-to-posts.js
 │   │   ├── 011-fix-entity-id-type.js
 │   │   ├── 012-add-performance-indexes.sql
+│   │   ├── 013-add-trgm-indexes.js
 │   │   ├── seed-migrations-table.js
 │   │   └── verify-applied.js
 │   ├── monitor-disk-space.js
@@ -1113,4 +1116,4 @@
 │       └── videos_validation.test.js
 └── tree.txt
 
-173 directories, 941 files
+173 directories, 944 files
