@@ -50,7 +50,7 @@ async function handlePost(req, res) {
 
   const { name, permissions } = validation.data;
   const newRole = await createRecord('roles', { name, permissions: Array.isArray(permissions) ? JSON.stringify(permissions) : permissions });
-  req.adminUtils.logActivity('CRIAR CARGO', newRole.id, `Criou o cargo: ${name}`);
+  await req.adminUtils.logActivity('CRIAR CARGO', newRole.id, `Criou o cargo: ${name}`);
   return res.status(201).json(newRole);
 }
 
@@ -68,7 +68,7 @@ async function handlePut(req, res) {
 
   if (updateData.permissions && Array.isArray(updateData.permissions)) updateData.permissions = JSON.stringify(updateData.permissions);
   const updatedRoles = await updateRecords('roles', updateData, { id: updateId });
-  req.adminUtils.logActivity('ATUALIZAR CARGO', updateId, `Atualizou o cargo: ${updateData.name || updateId}`);
+  await req.adminUtils.logActivity('ATUALIZAR CARGO', updateId, `Atualizou o cargo: ${updateData.name || updateId}`);
   return res.status(200).json(updatedRoles[0] || {});
 }
 
@@ -77,7 +77,7 @@ async function handleDelete(req, res) {
   const roleQueryToDel = await query('SELECT name FROM roles WHERE id = $1', [deleteId]);
   const roleName = roleQueryToDel.rows[0]?.name || deleteId;
   await deleteRecords('roles', { id: deleteId });
-  req.adminUtils.logActivity('EXCLUIR CARGO', deleteId, `Removeu o cargo: ${roleName}`);
+  await req.adminUtils.logActivity('EXCLUIR CARGO', deleteId, `Removeu o cargo: ${roleName}`);
   return res.status(200).json({ success: true, message: 'Cargo removido com sucesso' });
 }
 

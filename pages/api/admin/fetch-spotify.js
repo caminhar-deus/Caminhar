@@ -109,7 +109,7 @@ async function handlePost(req, res) {
       throw new Error('Não foi possível identificar a música. Verifique se o link é válido.');
     }
 
-    req.adminUtils.logActivity('FETCH SPOTIFY', null, `Buscou dados da música: ${title}`);
+    await req.adminUtils.logActivity('FETCH SPOTIFY', null, `Buscou dados da música: ${title}`);
     // Retorna com Fallback
     return res.status(200).json({ title, artist: artist || 'Artista não identificado' });
   } catch (error) {

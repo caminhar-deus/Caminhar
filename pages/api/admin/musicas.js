@@ -64,7 +64,7 @@ async function handlePost(req, res) {
     publicado: publicado !== undefined ? publicado : false
   });
 
-  req.adminUtils.logActivity('CRIAR MÚSICA', novaMusica.id, `Criou a música: ${titulo}`);
+  await req.adminUtils.logActivity('CRIAR MÚSICA', novaMusica.id, `Criou a música: ${titulo}`);
   return res.status(201).json(novaMusica);
 }
 
@@ -125,7 +125,7 @@ async function handlePut(req, res) {
     return res.status(404).json({ message: 'Música não encontrada' });
   }
 
-  req.adminUtils.logActivity('ATUALIZAR MÚSICA', id, `Atualizou a música: ${titulo}`);
+  await req.adminUtils.logActivity('ATUALIZAR MÚSICA', id, `Atualizou a música: ${titulo}`);
   return res.status(200).json(musicaAtualizada);
 }
 
@@ -145,7 +145,7 @@ async function handleDelete(req, res) {
   }
 
   const tituloMusica = deletedMusica.titulo || id;
-  req.adminUtils.logActivity('EXCLUIR MÚSICA', id, `Removeu a música: ${tituloMusica}`);
+  await req.adminUtils.logActivity('EXCLUIR MÚSICA', id, `Removeu a música: ${tituloMusica}`);
   return res.status(200).json({ message: 'Música excluída com sucesso' });
 }
 

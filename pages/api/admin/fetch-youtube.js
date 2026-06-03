@@ -40,7 +40,7 @@ async function handlePost(req, res) {
 
   const data = await response.json();
 
-  req.adminUtils.logActivity('FETCH YOUTUBE', null, `Buscou dados do vídeo: ${data.title}`);
+  await req.adminUtils.logActivity('FETCH YOUTUBE', null, `Buscou dados do vídeo: ${data.title}`);
   return res.status(200).json({ title: data.title || '' });
 }
 

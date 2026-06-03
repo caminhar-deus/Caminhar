@@ -64,7 +64,7 @@ async function handlePost(req, res) {
 
   const newPost = await createPost({ title, slug, excerpt, content, image_url, published });
 
-  req.adminUtils.logActivity('CRIAR POST', newPost.id, `Criou o artigo: ${title}`);
+  await req.adminUtils.logActivity('CRIAR POST', newPost.id, `Criou o artigo: ${title}`);
   return res.status(201).json(newPost);
 }
 
@@ -111,7 +111,7 @@ async function handlePut(req, res) {
     return res.status(404).json({ message: 'Post não encontrado' });
   }
 
-  req.adminUtils.logActivity('ATUALIZAR POST', postId, `Atualizou o artigo: ${updatedPost.title}`);
+  await req.adminUtils.logActivity('ATUALIZAR POST', postId, `Atualizou o artigo: ${updatedPost.title}`);
   return res.status(200).json(updatedPost);
 }
 
@@ -129,7 +129,7 @@ async function handleDelete(req, res) {
     return res.status(404).json({ message: 'Post não encontrado' });
   }
 
-  req.adminUtils.logActivity('EXCLUIR POST', id, `Removeu o artigo: ${titlePost}`);
+  await req.adminUtils.logActivity('EXCLUIR POST', id, `Removeu o artigo: ${titlePost}`);
   return res.status(200).json({ success: true });
 }
 

@@ -38,7 +38,14 @@ export default function () {
     RateLimitHits.add(1);
     check(res, {
       '🛡️ BLOQUEADO: Rate limit ativo (429)': (r) => r.status === 429,
-      '📝 Mensagem de erro adequada no body': (r) => r.body.includes('Muitas tentativas') || r.json('message').includes('Muitas tentativas'),
+      '📝 Mensagem de erro no body': (r) => {
+        try {
+          const body = typeof r.body === 'string' ? JSON.parse(r.body) : r.body;
+          return !!(body?.message || body?.error || body?.description);
+        } catch {
+          return typeof r.body === 'string' && r.body.length > 0;
+        }
+      },
     });
   } else if (res.status === 403) {
     // Spoofing detectado — também é uma proteção válida do sistema

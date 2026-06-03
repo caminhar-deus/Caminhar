@@ -9,7 +9,7 @@
  * Uso: node scripts/run-all-load-tests-sequentially.js
  * 
  * Variáveis de ambiente necessárias:
- *   ADMIN_USERNAME - Nome do usuário admin (fallback: 'admin')
+ *   ADMIN_USERNAME - Nome do usuário admin (obrigatório)
  *   ADMIN_PASSWORD - Senha do admin (obrigatório para testes autenticados)
  */
 
@@ -66,7 +66,7 @@ if (!existsSync(REPORTS_DIR)) {
 const CATEGORIES = [
   {
     name: '🧪 Performance Tests',
-    env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME || 'admin', ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || '123456' },
+    env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME, ADMIN_PASSWORD: process.env.ADMIN_PASSWORD },
     scripts: [
       { name: 'musicas-load-test',       cmd: 'k6 run load-tests/performance/musicas-load-test.js' },
       { name: 'videos-load-test',        cmd: 'k6 run load-tests/performance/videos-load-test.js' },
@@ -89,7 +89,7 @@ const CATEGORIES = [
   },
   {
     name: '🔍 Functional Tests',
-    env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME || 'admin', ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || '123456' },
+    env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME, ADMIN_PASSWORD: process.env.ADMIN_PASSWORD },
     scripts: [
       { name: 'health-check',                 cmd: 'k6 run load-tests/functional/health-check.js' },
       { name: 'cache-headers-test',           cmd: 'k6 run load-tests/functional/cache-headers-test.js' },
@@ -104,7 +104,7 @@ const CATEGORIES = [
   },
   {
     name: '🔒 Security Tests',
-    env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME || 'admin', ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || '123456' },
+    env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME, ADMIN_PASSWORD: process.env.ADMIN_PASSWORD },
     scripts: [
       { name: 'rate-limit-test',         cmd: 'k6 run load-tests/security/rate-limit-test.js' },
       { name: 'ip-spoofing-test',        cmd: 'k6 run load-tests/security/ip-spoofing-test.js' },

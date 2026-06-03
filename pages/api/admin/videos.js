@@ -33,7 +33,7 @@ async function handlePost(req, res) {
     return res.status(400).json({ message: 'URL do YouTube inválida' });
   }
   const newVideo = await createVideo(req.body);
-  req.adminUtils.logActivity('CRIAR VÍDEO', newVideo.id, `Criou o vídeo: ${newVideo.titulo}`);
+  await req.adminUtils.logActivity('CRIAR VÍDEO', newVideo.id, `Criou o vídeo: ${newVideo.titulo}`);
   return res.status(201).json(newVideo);
 }
 
@@ -62,7 +62,7 @@ async function handlePut(req, res) {
   if (!updatedVideo) {
     return res.status(404).json({ message: 'Vídeo não encontrado' });
   }
-  req.adminUtils.logActivity('ATUALIZAR VÍDEO', id, `Atualizou o vídeo: ${updatedVideo.titulo}`);
+  await req.adminUtils.logActivity('ATUALIZAR VÍDEO', id, `Atualizou o vídeo: ${updatedVideo.titulo}`);
   return res.status(200).json(updatedVideo);
 }
 
@@ -78,7 +78,7 @@ async function handleDelete(req, res) {
   if (!deletedVideo) {
     return res.status(404).json({ message: 'Vídeo não encontrado' });
   }
-  req.adminUtils.logActivity('EXCLUIR VÍDEO', idToDelete, `Removeu o vídeo: ${deletedVideo.titulo}`);
+  await req.adminUtils.logActivity('EXCLUIR VÍDEO', idToDelete, `Removeu o vídeo: ${deletedVideo.titulo}`);
   return res.status(200).json({ message: 'Vídeo excluído com sucesso' });
 }
 
