@@ -78,11 +78,12 @@ tests/
 
 | Arquivo | Propósito |
 |---------|-----------|
-| `index.js` | Ponto de exportação que re-exporta todas as factories |
-| `post.js` | Geração de dados de posts (título, slug, conteúdo, published, created_at). Exporta `postFactory`, `draftPostFactory`, `publishedPostFactory`, `createPostInput`, `updatePostInput`, `postFactory.list(n)` |
-| `music.js` | Geração de dados de músicas gospel (titulo, artista, url_spotify, categoria, letra, cifra). Exporta `musicFactory`, `unpublishedMusicFactory`, `publishedMusicFactory`, `invalidSpotifyMusicFactory`, `createMusicInput`, `updateMusicInput`, `detailedMusicFactory` |
-| `video.js` | Geração de dados de vídeos (titulo, url_youtube, descricao, publicado). Exporta `videoFactory`, `publishedVideoFactory`, `unpublishedVideoFactory`, `createVideoInput`, `updateVideoInput`, `videoFactory.list(n)` |
-| `user.js` | Geração de dados de usuários (username, email, role, password_hash). Exporta `userFactory`, `adminFactory`, `createUserInput` |
+| `base.js` | Factory base compartilhada. Exporta `createBaseFactory(defaultsGenerator)` que abstrai contador incremental, `.list(n, overrides, mapFn)`, `.resetId()` e `generateTimestamp(daysAgo)`. Criada em 05/06/2026 para eliminar código sobreposto entre as demais factories |
+| `index.js` | Ponto de exportação que re-exporta todas as factories + `createBaseFactory` |
+| `post.js` | Geração de dados de posts. Usa `createBaseFactory`. Exporta `postFactory`, `draftPostFactory`, `publishedPostFactory`, `createPostInput`, `updatePostInput` |
+| `music.js` | Geração de dados de músicas gospel. Usa `createBaseFactory`. Exporta `musicFactory`, `unpublishedMusicFactory`, `publishedMusicFactory`, `invalidSpotifyMusicFactory`, `createMusicInput`, `updateMusicInput`, `detailedMusicFactory` |
+| `video.js` | Geração de dados de vídeos. Usa `createBaseFactory`. Exporta `videoFactory`, `publishedVideoFactory`, `unpublishedVideoFactory`, `invalidYoutubeVideoFactory`, `createVideoInput`, `updateVideoInput`, `embeddableVideoFactory` |
+| `user.js` | Geração de dados de usuários. Usa `createBaseFactory`. Exporta `userFactory`, `adminFactory`, `regularUserFactory`, `createUserInput`, `loginInput`, `jwtPayloadFactory`, `invalidUserInput` |
 
 ### 3.2 Helpers (`/tests/helpers/`)
 
@@ -425,4 +426,4 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 
 ---
 
-> **Nota atualizada (05/06/2026):** Este documento reflete a estrutura completa de testes do projeto Caminhar. Foram feitas 3 mesclagens de arquivos edge case nos respectivos testes principais (04/06) e centralizado `jest.clearAllMocks()` no setup.js (05/06), reduzindo ~41 chamadas redundantes e eliminando o padrão de substituição global de `console.error` em 10 arquivos. Para detalhes de implementação específicos, consulte cada arquivo individualmente.
+> **Nota atualizada (05/06/2026):** Este documento reflete a estrutura completa de testes do projeto Caminhar. Foram feitas 3 mesclagens de arquivos edge case nos respectivos testes principais (04/06), centralizado `jest.clearAllMocks()` no setup.js (05/06) — reduzindo ~41 chamadas redundantes e eliminando o padrão de substituição global de `console.error` em 10 arquivos — e refatoradas as 4 factories (`post.js`, `music.js`, `video.js`, `user.js`) para usar `createBaseFactory` do novo `base.js`, eliminando ~70 linhas de código sobreposto (05/06). Para detalhes de implementação específicos, consulte cada arquivo individualmente.

@@ -11,11 +11,7 @@
  */
 
 import bcrypt from 'bcryptjs';
-
-let idCounter = 1;
-const generateId = () => idCounter++;
-
-export const resetUserIdCounter = () => { idCounter = 1; };
+import { createBaseFactory } from './base.js';
 
 // Templates de dados
 const firstNames = ['João', 'Maria', 'Pedro', 'Ana', 'Lucas', 'Julia', 'Gabriel', 'Sofia', 'Mateus', 'Laura'];
@@ -33,29 +29,36 @@ const generateUsername = (firstName, lastName) => {
 };
 
 /**
+ * Gera os defaults de um usuário baseado no ID
+ * @param {number} id - ID sequencial
+ * @returns {Object} Defaults do usuário
+ */
+const generateUserDefaults = (id) => {
+  const firstName = pickRandom(firstNames);
+  const lastName = pickRandom(lastNames);
+  const username = generateUsername(firstName, lastName);
+  const date = new Date();
+  date.setDate(date.getDate() - id);
+
+  return {
+    id,
+    username,
+    email: `${username}@${pickRandom(domains)}`,
+    password: `Senha${Math.floor(Math.random() * 1000)}!`,
+    role: 'user',
+    name: `${firstName} ${lastName}`,
+    avatar: `https://i.pravatar.cc/150?u=${id}`,
+    created_at: date.toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+};
+
+/**
  * Cria um objeto de usuário para testes
  * @param {Object} overrides - Propriedades para sobrescrever
  * @returns {Object} Usuário completo
  */
-export const userFactory = (overrides = {}) => {
-  const id = overrides.id ?? generateId();
-  const firstName = overrides.firstName ?? pickRandom(firstNames);
-  const lastName = overrides.lastName ?? pickRandom(lastNames);
-  const username = overrides.username ?? generateUsername(firstName, lastName);
-  
-  return {
-    id,
-    username,
-    email: overrides.email ?? `${username}@${pickRandom(domains)}`,
-    password: overrides.password ?? `Senha${Math.floor(Math.random() * 1000)}!`,
-    role: overrides.role ?? 'user',
-    name: overrides.name ?? `${firstName} ${lastName}`,
-    avatar: overrides.avatar ?? `https://i.pravatar.cc/150?u=${id}`,
-    created_at: overrides.created_at ?? new Date(Date.now() - id * 86400000).toISOString(),
-    updated_at: overrides.updated_at ?? new Date().toISOString(),
-    ...overrides,
-  };
-};
+export const userFactory = createBaseFactory(generateUserDefaults);
 
 /**
  * Cria um usuário admin
@@ -72,18 +75,6 @@ export const adminFactory = (overrides = {}) =>
  */
 export const regularUserFactory = (overrides = {}) =>
   userFactory({ role: 'user', ...overrides });
-
-/**
- * Cria múltiplos usuários
- * @param {number} count - Quantidade de usuários
- * @param {Object} overrides - Propriedades para sobrescrever em todos
- * @param {Function} mapFn - Função para mapear cada usuário
- * @returns {Array} Lista de usuários
- */
-userFactory.list = (count, overrides = {}, mapFn) => {
-  const users = Array.from({ length: count }, () => userFactory(overrides));
-  return mapFn ? users.map(mapFn) : users;
-};
 
 /**
  * Cria usuário com senha hasheada (async)

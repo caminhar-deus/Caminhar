@@ -12,12 +12,7 @@
  *   const posts = postFactory.list(3);
  */
 
-// Sequencial ID generator
-let idCounter = 1;
-const generateId = () => idCounter++;
-
-// Reset counter (útil em beforeEach)
-export const resetPostIdCounter = () => { idCounter = 1; };
+import { createBaseFactory } from './base.js';
 
 // Helper para gerar slugs
 const generateSlug = (title) => {
@@ -25,13 +20,6 @@ const generateSlug = (title) => {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
-};
-
-// Helper para gerar timestamps
-const generateTimestamp = (daysAgo = 0) => {
-  const date = new Date();
-  date.setDate(date.getDate() - daysAgo);
-  return date.toISOString();
 };
 
 // Templates de dados
@@ -57,28 +45,35 @@ const postContents = [
 ];
 
 /**
+ * Gera os defaults de um post baseado no ID
+ * @param {number} id - ID sequencial
+ * @returns {Object} Defaults do post
+ */
+const generatePostDefaults = (id) => {
+  const titleIndex = (id - 1) % postTitles.length;
+  const title = `${postTitles[titleIndex]} ${id}`;
+  const date = new Date();
+  date.setDate(date.getDate() - id);
+
+  return {
+    id,
+    title,
+    slug: generateSlug(title),
+    excerpt: postContents[titleIndex % postContents.length].substring(0, 100),
+    content: postContents[titleIndex % postContents.length] + '\n\nMais conteúdo sobre este tema inspirador...',
+    image_url: `https://picsum.photos/800/400?random=${id}`,
+    published: true,
+    created_at: date.toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+};
+
+/**
  * Cria um objeto de post para testes
  * @param {Object} overrides - Propriedades para sobrescrever
  * @returns {Object} Post completo
  */
-export const postFactory = (overrides = {}) => {
-  const id = overrides.id ?? generateId();
-  const titleIndex = (id - 1) % postTitles.length;
-  const title = overrides.title ?? `${postTitles[titleIndex]} ${id}`;
-  
-  return {
-    id,
-    title,
-    slug: overrides.slug ?? generateSlug(title),
-    excerpt: overrides.excerpt ?? postContents[titleIndex % postContents.length].substring(0, 100),
-    content: overrides.content ?? postContents[titleIndex % postContents.length] + '\n\nMais conteúdo sobre este tema inspirador...',
-    image_url: overrides.image_url ?? `https://picsum.photos/800/400?random=${id}`,
-    published: overrides.published ?? true,
-    created_at: overrides.created_at ?? generateTimestamp(id),
-    updated_at: overrides.updated_at ?? generateTimestamp(0),
-    ...overrides,
-  };
-};
+export const postFactory = createBaseFactory(generatePostDefaults);
 
 /**
  * Cria um post não publicado (rascunho)
@@ -95,18 +90,6 @@ export const draftPostFactory = (overrides = {}) =>
  */
 export const publishedPostFactory = (overrides = {}) =>
   postFactory({ published: true, ...overrides });
-
-/**
- * Cria múltiplos posts
- * @param {number} count - Quantidade de posts
- * @param {Object} overrides - Propriedades para sobrescrever em todos
- * @param {Function} mapFn - Função para mapear cada post
- * @returns {Array} Lista de posts
- */
-postFactory.list = (count, overrides = {}, mapFn) => {
-  const posts = Array.from({ length: count }, () => postFactory(overrides));
-  return mapFn ? posts.map(mapFn) : posts;
-};
 
 /**
  * Cria dados para criação de post (sem id, timestamps)

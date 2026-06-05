@@ -6,10 +6,10 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 
 // Factories
-import { postFactory, createPostInput, resetPostIdCounter } from '../factories/post.js';
-import { musicFactory, resetMusicIdCounter } from '../factories/music.js';
-import { videoFactory, resetVideoIdCounter } from '../factories/video.js';
-import { userFactory, adminFactory, resetUserIdCounter } from '../factories/user.js';
+import { postFactory, createPostInput } from '../factories/post.js';
+import { musicFactory } from '../factories/music.js';
+import { videoFactory } from '../factories/video.js';
+import { userFactory, adminFactory } from '../factories/user.js';
 
 // Helpers
 import {
@@ -30,10 +30,10 @@ import { mockQuery, mockFetchSuccess } from '../mocks/index.js';
 
 describe('Test Suite Architecture - Demonstração', () => {
   beforeEach(() => {
-    resetPostIdCounter();
-    resetMusicIdCounter();
-    resetVideoIdCounter();
-    resetUserIdCounter();
+    postFactory.resetId();
+    musicFactory.resetId();
+    videoFactory.resetId();
+    userFactory.resetId();
     jest.clearAllMocks();
   });
 

@@ -14,8 +14,7 @@ import userEvent from '@testing-library/user-event';
 
 // Factories
 import { 
-  postFactory,
-  resetPostIdCounter 
+  postFactory
 } from '../factories/post.js';
 
 // Helpers de renderização
@@ -151,7 +150,7 @@ const MockPostForm = ({ onSubmit, initialData = {} }) => {
 
 describe('PostList Component - Exemplo Completo', () => {
   beforeEach(() => {
-    resetPostIdCounter();
+    postFactory.resetId();
   });
 
   describe('Renderização Básica', () => {
@@ -260,7 +259,7 @@ describe('PostList Component - Exemplo Completo', () => {
 
 describe('PostForm Component - Formulários', () => {
   beforeEach(() => {
-    resetPostIdCounter();
+    postFactory.resetId();
   });
 
   it('deve renderizar formulário vazio', () => {
@@ -365,7 +364,7 @@ describe('PostForm Component - Formulários', () => {
 
 describe('PostList - Responsividade', () => {
   beforeEach(() => {
-    resetPostIdCounter();
+    postFactory.resetId();
   });
 
   afterEach(() => {
@@ -458,7 +457,7 @@ describe('Componente com Autenticação', () => {
 
 describe('Componente com Fetch', () => {
   beforeEach(() => {
-    resetPostIdCounter();
+    postFactory.resetId();
     global.fetch = jest.fn();
   });
 

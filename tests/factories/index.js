@@ -5,8 +5,13 @@
  * Uso:
  *   import { postFactory, musicFactory, videoFactory, userFactory } from '../factories';
  *   const post = postFactory({ title: 'Custom Title' });
+ * 
+ * Base Factory:
+ *   import { createBaseFactory } from '../factories';
+ *   const myFactory = createBaseFactory((id) => ({ id, name: `Item ${id}` }));
  */
 
+export { createBaseFactory } from './base.js';
 export { postFactory } from './post.js';
 export { musicFactory } from './music.js';
 export { videoFactory } from './video.js';

@@ -99,20 +99,34 @@
 
 ---
 
-### 1.5 Factories com Código Sobreposto
+### 1.5 Factories com Código Sobreposto — **AJUSTADO (05/06/2026)**
 
-**Ocorrência:** `tests/factories/post.js`, `tests/factories/music.js`, `tests/factories/video.js`
+**Ocorrência:** `tests/factories/post.js`, `tests/factories/music.js`, `tests/factories/video.js`, `tests/factories/user.js`
 
-**Descrição:** Todas as factories compartilham a mesma estrutura:
+**Descrição original:** Todas as factories compartilhavam a mesma estrutura:
 - Contador incremental (`let id = 1`)
 - Função `reset*IdCounter()`
 - Método `.list(n)` que cria múltiplos registros
 - Geração de timestamps ISO
 - Templates de dados com overrides via spread operator
 
-**Impacto:** Cada factory reimplementa o mesmo padrão. Mudanças no formato de geração de IDs ou timestamps requerem alteração em 4 arquivos.
+**Impacto original:** Cada factory reimplementava o mesmo padrão. Mudanças no formato de geração de IDs ou timestamps requeriam alteração em 4 arquivos.
 
-**Sugestão:** Criar uma `baseFactory` ou `createFactory(defaults)` que abstraia o padrão de contador, list() e reset.
+**O que foi feito (05/06/2026):**
+- **Criado** `tests/factories/base.js` — Função `createBaseFactory(defaultsGenerator)` que abstrai:
+  - Contador incremental com `idCounter`
+  - Geração de timestamps via `generateTimestamp(daysAgo)`
+  - Método `.list(n, overrides, mapFn)` para criar múltiplos registros
+  - Método `.resetId()` para resetar o contador (substitui `resetPostIdCounter`, `resetMusicIdCounter`, `resetVideoIdCounter`, `resetUserIdCounter`)
+- **`post.js`** — Refatorado para usar `createBaseFactory(generatePostDefaults)`. Removido `idCounter`, `generateId`, `resetPostIdCounter`, `generateTimestamp`, `.list()`
+- **`music.js`** — Refatorado para usar `createBaseFactory(generateMusicDefaults)`. Removido `idCounter`, `generateId`, `resetMusicIdCounter`, `.list()`
+- **`video.js`** — Refatorado para usar `createBaseFactory(generateVideoDefaults)`. Removido `idCounter`, `generateId`, `resetVideoIdCounter`, `.list()`
+- **`user.js`** — Refatorado para usar `createBaseFactory(generateUserDefaults)`. Removido `idCounter`, `generateId`, `resetUserIdCounter`, `.list()`
+- **`index.js`** — Adicionado export de `createBaseFactory`
+- **`tests/examples/simple-test.test.js`** — Substituídos imports de `resetPostIdCounter`, `resetMusicIdCounter`, `resetVideoIdCounter`, `resetUserIdCounter` por chamadas a `postFactory.resetId()`, `musicFactory.resetId()`, `videoFactory.resetId()`, `userFactory.resetId()`
+- **`tests/examples/component-example.test.js`** — Substituídos 5 usos de `resetPostIdCounter` por `postFactory.resetId()`
+
+**Resultado:** 39/39 testes passando. Redução de ~70 linhas de código. Contador, `.list()` e timestamps centralizados em um único arquivo (`base.js`). Funções `reset*IdCounter` substituídas por `.resetId()`. Mudanças no formato de IDs ou timestamps agora requerem alteração em apenas 1 arquivo.
 
 ---
 
@@ -664,7 +678,7 @@ jest.mock('../../../../lib/domain/settings.js', () => ({
 | Média | Abstrair testes CRUD de API | Alto | Alto | Pendente |
 | Média | ~~Mesclar arquivos edge case com principais~~ | ~~Baixo~~ | ~~Médio~~ | ✅ **Concluído (04/06)** |
 | Média | Padronizar nomenclatura de arquivos | Médio | Médio | Pendente |
-| Média | Refatorar factories com base factory | Médio | Médio | Pendente |
+| Média | ~~Refatorar factories com base factory~~ | ~~Médio~~ | ~~Médio~~ | ✅ **Concluído (05/06)** |
 | 🟢 Baixa | Migrar testes de rate-limit (Grupo C) | Médio | Médio | Pendente |
 | 🟢 Baixa | Migrar testes de logger/api (Grupo D) | Alto | Médio | Pendente |
 | Baixa | Remover testes de barrel export redundantes | Baixo | Baixo | Pendente |

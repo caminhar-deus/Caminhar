@@ -14,10 +14,7 @@
  *   const videos = videoFactory.list(3);
  */
 
-let idCounter = 1;
-const generateId = () => idCounter++;
-
-export const resetVideoIdCounter = () => { idCounter = 1; };
+import { createBaseFactory } from './base.js';
 
 // Templates de dados
 const videoTitles = [
@@ -43,7 +40,7 @@ const videoDescriptions = [
 
 // Gerar ID do YouTube (11 caracteres)
 const generateYoutubeId = () => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
   let result = '';
   for (let i = 0; i < 11; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -62,28 +59,35 @@ export const generateYoutubeUrl = (videoId) => {
 };
 
 /**
+ * Gera os defaults de um vídeo baseado no ID
+ * @param {number} id - ID sequencial
+ * @returns {Object} Defaults do vídeo
+ */
+const generateVideoDefaults = (id) => {
+  const youtubeId = generateYoutubeId();
+  const index = (id - 1) % videoTitles.length;
+  const date = new Date();
+  date.setDate(date.getDate() - id);
+
+  return {
+    id,
+    titulo: `${videoTitles[index]} ${id}`,
+    url_youtube: generateYoutubeUrl(youtubeId),
+    youtube_id: youtubeId,
+    descricao: videoDescriptions[index % videoDescriptions.length],
+    publicado: true,
+    thumbnail_url: `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`,
+    created_at: date.toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+};
+
+/**
  * Cria um objeto de vídeo para testes
  * @param {Object} overrides - Propriedades para sobrescrever
  * @returns {Object} Vídeo completo
  */
-export const videoFactory = (overrides = {}) => {
-  const id = overrides.id ?? generateId();
-  const youtubeId = overrides.youtube_id ?? generateYoutubeId();
-  const index = (id - 1) % videoTitles.length;
-  
-  return {
-    id,
-    titulo: overrides.titulo ?? `${videoTitles[index]} ${id}`,
-    url_youtube: overrides.url_youtube ?? generateYoutubeUrl(youtubeId),
-    youtube_id: overrides.youtube_id ?? youtubeId,
-    descricao: overrides.descricao ?? videoDescriptions[index % videoDescriptions.length],
-    publicado: overrides.publicado ?? true,
-    thumbnail_url: overrides.thumbnail_url ?? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`,
-    created_at: overrides.created_at ?? new Date(Date.now() - id * 86400000).toISOString(),
-    updated_at: overrides.updated_at ?? new Date().toISOString(),
-    ...overrides,
-  };
-};
+export const videoFactory = createBaseFactory(generateVideoDefaults);
 
 /**
  * Cria um vídeo não publicado
@@ -111,18 +115,6 @@ export const invalidYoutubeVideoFactory = (overrides = {}) =>
     url_youtube: 'https://vimeo.com/123456',
     ...overrides 
   });
-
-/**
- * Cria múltiplos vídeos
- * @param {number} count - Quantidade de vídeos
- * @param {Object} overrides - Propriedades para sobrescrever em todos
- * @param {Function} mapFn - Função para mapear cada vídeo
- * @returns {Array} Lista de vídeos
- */
-videoFactory.list = (count, overrides = {}, mapFn) => {
-  const videos = Array.from({ length: count }, () => videoFactory(overrides));
-  return mapFn ? videos.map(mapFn) : videos;
-};
 
 /**
  * Cria dados para criação de vídeo (sem id, timestamps)

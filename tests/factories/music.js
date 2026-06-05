@@ -14,10 +14,7 @@
  *   const musicas = musicFactory.list(5);
  */
 
-let idCounter = 1;
-const generateId = () => idCounter++;
-
-export const resetMusicIdCounter = () => { idCounter = 1; };
+import { createBaseFactory } from './base.js';
 
 // Templates de dados
 const musicTitles = [
@@ -65,26 +62,33 @@ export const generateSpotifyUrl = () => {
 };
 
 /**
+ * Gera os defaults de uma música baseado no ID
+ * @param {number} id - ID sequencial
+ * @returns {Object} Defaults da música
+ */
+const generateMusicDefaults = (id) => {
+  const index = (id - 1) % musicTitles.length;
+  const date = new Date();
+  date.setDate(date.getDate() - id);
+
+  return {
+    id,
+    titulo: musicTitles[index],
+    artista: artists[index % artists.length],
+    url_imagem: `https://picsum.photos/300/300?random=${id}`,
+    url_spotify: generateSpotifyUrl(),
+    publicado: true,
+    created_at: date.toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+};
+
+/**
  * Cria um objeto de música para testes
  * @param {Object} overrides - Propriedades para sobrescrever
  * @returns {Object} Música completa
  */
-export const musicFactory = (overrides = {}) => {
-  const id = overrides.id ?? generateId();
-  const index = (id - 1) % musicTitles.length;
-  
-  return {
-    id,
-    titulo: overrides.titulo ?? musicTitles[index],
-    artista: overrides.artista ?? artists[index % artists.length],
-    url_imagem: overrides.url_imagem ?? `https://picsum.photos/300/300?random=${id}`,
-    url_spotify: overrides.url_spotify ?? generateSpotifyUrl(),
-    publicado: overrides.publicado ?? true,
-    created_at: overrides.created_at ?? new Date(Date.now() - id * 86400000).toISOString(),
-    updated_at: overrides.updated_at ?? new Date().toISOString(),
-    ...overrides,
-  };
-};
+export const musicFactory = createBaseFactory(generateMusicDefaults);
 
 /**
  * Cria uma música não publicada
@@ -112,18 +116,6 @@ export const invalidSpotifyMusicFactory = (overrides = {}) =>
     url_spotify: 'https://youtube.com/watch?v=invalid',
     ...overrides 
   });
-
-/**
- * Cria múltiplas músicas
- * @param {number} count - Quantidade de músicas
- * @param {Object} overrides - Propriedades para sobrescrever em todas
- * @param {Function} mapFn - Função para mapear cada música
- * @returns {Array} Lista de músicas
- */
-musicFactory.list = (count, overrides = {}, mapFn) => {
-  const musicas = Array.from({ length: count }, () => musicFactory(overrides));
-  return mapFn ? musicas.map(mapFn) : musicas;
-};
 
 /**
  * Cria dados para criação de música (sem id, timestamps)
