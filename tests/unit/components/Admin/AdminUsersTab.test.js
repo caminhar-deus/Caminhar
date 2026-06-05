@@ -19,12 +19,17 @@ jest.mock('../../../../components/Admin/AdminCrudBase', () => {
   };
 });
 
+beforeAll(() => {
+  window.HTMLElement.prototype.scrollIntoView = jest.fn();
+});
+
 describe('Componente Front-End - AdminUsersTab', () => {
   const originalFetch = global.fetch;
 
   beforeEach(() => {
     jest.clearAllMocks();
     global.fetch = jest.fn();
+    sessionStorage.clear();
   });
 
   afterEach(() => {
@@ -56,7 +61,7 @@ describe('Componente Front-End - AdminUsersTab', () => {
   it('formatLastLogin: deve formatar a data ou exibir fallback', () => {
     render(<AdminUsersTab />);
     const loginCol = passedProps.columns.find(c => c.key === 'last_login_at');
-    
+
     // Data Nula
     const { getByText, unmount } = render(loginCol.render({ last_login_at: null }));
     expect(getByText('Nunca')).toBeInTheDocument();
@@ -67,66 +72,135 @@ describe('Componente Front-End - AdminUsersTab', () => {
     expect(getByTextInvalid('Data inválida')).toBeInTheDocument();
   });
 
-  it('RoleSelectField: deve carregar os cargos da API e exibir as opções', async () => {
-    global.fetch.mockResolvedValueOnce({ 
-      ok: true, 
-      headers: { get: () => 'application/json' },
-      json: async () => [{ id: 1, name: 'Editor' }] 
+  describe('RoleSelectField', () => {
+    function setupRoleSelectMock(response) {
+      global.fetch.mockImplementation((url) => {
+        if (url.includes('/api/admin/users')) {
+          return Promise.resolve({
+            ok: true,
+            headers: { get: () => 'application/json' },
+            json: async () => ({ data: [], pagination: { totalPages: 1 } })
+          });
+        }
+        if (url.includes('/api/admin/roles')) {
+          return Promise.resolve(response);
+        }
+        return Promise.resolve({ ok: true });
+      });
+    }
+
+    it('deve carregar os cargos da API e exibir as opções', async () => {
+      setupRoleSelectMock({
+        ok: true,
+        headers: { get: () => 'application/json' },
+        json: async () => [{ id: 1, name: 'Editor' }]
+      });
+      render(<AdminUsersTab />);
+
+      const roleField = passedProps.fields.find(f => f.name === 'role');
+      const RoleSelect = roleField.component;
+
+      render(<RoleSelect name="role" value="" onChange={jest.fn()} label="Cargo" error="Erro" hint="Dica" />);
+
+      expect(screen.getByText('Carregando cargos...')).toBeInTheDocument();
+
+      await waitFor(() => {
+        expect(screen.getByText('Editor')).toBeInTheDocument();
+        expect(screen.getByText('Erro')).toBeInTheDocument();
+        expect(screen.getByText('Dica')).toBeInTheDocument();
+      });
     });
-    render(<AdminUsersTab />);
-    
-    const roleField = passedProps.fields.find(f => f.name === 'role');
-    const RoleSelect = roleField.component;
-    
-    render(<RoleSelect name="role" value="" onChange={jest.fn()} label="Cargo" error="Erro" hint="Dica" />);
-    
-    expect(screen.getByText('Carregando cargos...')).toBeInTheDocument();
-    
-    await waitFor(() => {
-      expect(screen.getByText('Editor')).toBeInTheDocument();
-      expect(screen.getByText('Erro')).toBeInTheDocument();
-      expect(screen.getByText('Dica')).toBeInTheDocument();
+
+    it('deve usar fallbacks padrão se a API retornar lista vazia', async () => {
+      setupRoleSelectMock({
+        ok: true,
+        headers: { get: () => 'application/json' },
+        json: async () => []
+      });
+      render(<AdminUsersTab />);
+
+      const RoleSelect = passedProps.fields.find(f => f.name === 'role').component;
+      render(<RoleSelect name="role" value="" onChange={jest.fn()} label="Cargo" />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Administrador (Padrão)')).toBeInTheDocument();
+        expect(screen.getByText('Usuário Restrito (Padrão)')).toBeInTheDocument();
+      });
+    });
+
+    it('deve tratar sessão expirada (401)', async () => {
+      setupRoleSelectMock({ status: 401 });
+      render(<AdminUsersTab />);
+      const RoleSelect = passedProps.fields.find(f => f.name === 'role').component;
+      render(<RoleSelect name="role" value="" onChange={jest.fn()} label="Cargo" />);
+      await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Sessão expirada. Faça login novamente.'));
+    });
+
+    it('deve tratar erros da API graciosamente', async () => {
+      setupRoleSelectMock({ ok: false, json: async () => ({ error: 'Erro de permissão' }) });
+      render(<AdminUsersTab />);
+      const RoleSelect = passedProps.fields.find(f => f.name === 'role').component;
+      render(<RoleSelect name="role" value="" onChange={jest.fn()} label="Cargo" />);
+      await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Erro de permissão'));
+    });
+
+    it('deve tratar erro da API sem corpo JSON (fallback)', async () => {
+      setupRoleSelectMock({ ok: false, status: 500, json: () => Promise.reject() });
+      render(<AdminUsersTab />);
+      const RoleSelect = passedProps.fields.find(f => f.name === 'role').component;
+      render(<RoleSelect name="role" value="" onChange={jest.fn()} label="Cargo" />);
+      await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Erro na API (500)'));
+    });
+
+    it('deve tratar erro de JSON inválido ao buscar roles', async () => {
+      setupRoleSelectMock({
+        ok: true,
+        headers: { get: () => 'text/html' }
+      });
+      render(<AdminUsersTab />);
+      const RoleSelect = passedProps.fields.find(f => f.name === 'role').component;
+      render(<RoleSelect name="role" value="" onChange={jest.fn()} label="Cargo" />);
+      await waitFor(() => expect(toast.error).toHaveBeenCalledWith('A resposta do servidor não é um JSON válido'));
+    });
+
+    it('deve renderizar opções quando a API retornar dados envelopados no objeto', async () => {
+      setupRoleSelectMock({
+        ok: true,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ data: [{ id: 1, name: 'Editor' }] })
+      });
+      render(<AdminUsersTab />);
+      const RoleSelect = passedProps.fields.find(f => f.name === 'role').component;
+      render(<RoleSelect name="role" value="" onChange={jest.fn()} label="Cargo" />);
+      await waitFor(() => expect(screen.getByText('Editor')).toBeInTheDocument());
     });
   });
 
-  it('RoleSelectField: deve usar fallbacks padrão se a API retornar lista vazia', async () => {
-    global.fetch.mockResolvedValueOnce({ 
-      ok: true, 
-      headers: { get: () => 'application/json' },
-      json: async () => [] 
+  describe('Casos de Borda — Funções de Formatação e Validação', () => {
+    it('formatLastLogin: deve renderizar "Nunca" e "Data inválida" via callback da coluna', () => {
+      render(<AdminUsersTab />);
+      const loginCol = passedProps.columns.find(c => c.key === 'last_login_at');
+      const { getByText, unmount } = render(loginCol.render({ last_login_at: new Date().toISOString() }));
+      expect(getByText(/há/)).toBeInTheDocument();
+      unmount();
+      const { getByText: getByTextNull } = render(loginCol.render({ last_login_at: null }));
+      expect(getByTextNull('Nunca')).toBeInTheDocument();
     });
-    render(<AdminUsersTab />);
-    
-    const RoleSelect = passedProps.fields.find(f => f.name === 'role').component;
-    render(<RoleSelect name="role" value="" onChange={jest.fn()} label="Cargo" />);
-    
-    await waitFor(() => {
-      expect(screen.getByText('Administrador (Padrão)')).toBeInTheDocument();
-      expect(screen.getByText('Usuário Restrito (Padrão)')).toBeInTheDocument();
+
+    it('validateUser: fluxo completo — senha inválida para novo usuário', () => {
+      render(<AdminUsersTab />);
+      const { validate } = passedProps;
+      expect(() => validate({ id: null, password: '' })).toThrow(/senha é obrigatória/);
+      expect(() => validate({ id: null, password: '12345' })).toThrow(/mínimo 6 caracteres/);
+      expect(() => validate({ id: null, password: '123456' })).not.toThrow();
     });
-  });
 
-  it('RoleSelectField: deve tratar sessão expirada (401)', async () => {
-    global.fetch.mockResolvedValueOnce({ status: 401 });
-    render(<AdminUsersTab />);
-    const RoleSelect = passedProps.fields.find(f => f.name === 'role').component;
-    render(<RoleSelect name="role" value="" onChange={jest.fn()} label="Cargo" />);
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Sessão expirada. Faça login novamente.'));
-  });
-
-  it('RoleSelectField: deve tratar erros da API graciosamente', async () => {
-    global.fetch.mockResolvedValueOnce({ ok: false, json: async () => ({ error: 'Erro de permissão' }) });
-    render(<AdminUsersTab />);
-    const RoleSelect = passedProps.fields.find(f => f.name === 'role').component;
-    render(<RoleSelect name="role" value="" onChange={jest.fn()} label="Cargo" />);
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Erro de permissão'));
-  });
-
-  it('RoleSelectField: deve tratar erro da API sem corpo JSON (fallback)', async () => {
-    global.fetch.mockResolvedValueOnce({ ok: false, status: 500, json: () => Promise.reject() });
-    render(<AdminUsersTab />);
-    const RoleSelect = passedProps.fields.find(f => f.name === 'role').component;
-    render(<RoleSelect name="role" value="" onChange={jest.fn()} label="Cargo" />);
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Erro na API (500)'));
+    it('validateUser: fluxo completo — senha inválida na edição', () => {
+      render(<AdminUsersTab />);
+      const { validate } = passedProps;
+      expect(() => validate({ id: 1, password: '' })).not.toThrow();
+      expect(() => validate({ id: 1, password: '12345' })).toThrow(/nova senha deve ter/);
+      expect(() => validate({ id: 1, password: '123456' })).not.toThrow();
+    });
   });
 });

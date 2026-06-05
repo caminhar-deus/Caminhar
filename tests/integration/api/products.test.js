@@ -25,6 +25,10 @@ jest.mock('../../../lib/domain/audit.js', () => ({
   logActivity: jest.fn(),
 }));
 
+jest.mock('../../../lib/logger.js', () => ({
+  logger: { error: jest.fn() },
+}));
+
 import handler from '../../../pages/api/products.js';
 import { getPaginatedProducts, getAllProducts, createProduct, updateProduct, deleteProduct } from '../../../lib/domain/products.js';
 import { getAuthToken, verifyToken } from '../../../lib/auth.js';
@@ -172,6 +176,46 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(404);
+    });
+  });
+
+  describe('Casos de Borda', () => {
+    it('deve bloquear métodos HTTP não permitidos (405)', async () => {
+      const { req, res } = createMocks({ method: 'PATCH' });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(405);
+    });
+
+    it('deve lidar com fallbacks no GET quando o banco retorna vazio', async () => {
+      getPaginatedProducts.mockResolvedValueOnce({
+        data: [],
+        pagination: { total: 0 }
+      });
+
+      const { req, res } = createMocks({
+        method: 'GET',
+        query: { public: 'true', search: 'teste', minPrice: '10', maxPrice: '100' }
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+    });
+
+    it('deve tratar a falta de token (isAdmin = false) de forma silenciosa no GET', async () => {
+      getAuthToken.mockReturnValueOnce(null);
+      getPaginatedProducts.mockResolvedValueOnce({
+        data: [],
+        pagination: { total: 0 }
+      });
+
+      const { req, res } = createMocks({
+        method: 'GET',
+        query: { public: 'true', search: 'teste' }
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
     });
   });
 });

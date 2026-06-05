@@ -962,7 +962,6 @@
 │       ├── clean-test-db.test.js
 │       ├── components
 │       │   ├── Admin
-│       │   │   ├── AdminAudit.edge.test.js
 │       │   │   ├── AdminAudit.test.js
 │       │   │   ├── AdminCrudBase.test.js
 │       │   │   ├── AdminDashboard.test.js
@@ -971,7 +970,6 @@
 │       │   │   ├── AdminPosts.test.js
 │       │   │   ├── AdminProducts.test.js
 │       │   │   ├── AdminRolesTab.test.js
-│       │   │   ├── AdminUsersTab.edge.test.js
 │       │   │   ├── AdminUsersTab.test.js
 │       │   │   ├── AdminUsers.test.js
 │       │   │   ├── AdminVideos.test.js
@@ -1090,7 +1088,6 @@
 │       │       │   └── stats.edge.test.js
 │       │       ├── auth
 │       │       │   └── login.edge.test.js
-│       │       ├── products.edge.test.js
 │       │       └── upload-image.edge.test.js
 │       ├── scripts
 │       │   ├── backup.test.js
@@ -1117,4 +1114,4 @@
 │       └── videos_validation.test.js
 └── tree.txt
 
-173 directories, 945 files
+173 directories, 942 files

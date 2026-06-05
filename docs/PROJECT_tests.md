@@ -1,6 +1,6 @@
 # Análise do Projeto — Testes (`/tests/`)
 
-> **Data:** 13/05/2026 (atualizado)
+> **Data:** 13/05/2026 (atualizado em 04/06/2026)
 > **Objetivo:** Documentar de forma objetiva, clara e focada todos os arquivos de teste do projeto, descrevendo localização, propósito e funcionalidade de cada um.
 
 ---
@@ -31,8 +31,7 @@ tests/
 │   ├── api/                          #   Testes de API endpoints
 │   │   ├── *.test.js
 │   │   ├── admin/                    #     Endpoints administrativos
-│   │   ├── auth/                     #     Endpoints de autenticação
-│   │   └── v1/                       #     API versão 1
+│   │   └── auth/                     #     Endpoints de autenticação
 │   └── auth/                         #   Testes de autenticação v1
 └── unit/                             # Testes unitários
     ├── *.test.js                     #   Testes de páginas e utilitários
@@ -157,7 +156,7 @@ tests/
 | `posts.general.test.js` | Validações gerais de posts | Slug duplicado, slug inválido |
 | `posts.test.js` | CRUD completo /api/posts | GET público com paginação, POST admin, PUT admin, DELETE admin, métodos não permitidos |
 | `posts.update.api.test.js` | Atualização de post (admin) | Atualizar campos, post inexistente |
-| `products.test.js` | CRUD de produtos | GET público, POST/PUT/DELETE admin, validação de campos |
+| `products.test.js` | CRUD de produtos + casos de borda | GET público/POST/PUT/DELETE admin, validação, 405, fallbacks GET, token silencioso |
 | `settings.api.test.js` | Configurações via API | CRUD admin, validações |
 | `settings.general.test.js` | Validações de configurações | Atualizar com dados inválidos |
 | `settings.test.js` | CRUD /api/settings | GET público, POST/PUT/DELETE admin |
@@ -232,8 +231,7 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 
 | Arquivo | Propósito | Cenários Principais |
 |---------|-----------|---------------------|
-| `AdminAudit.test.js` | Tabela de auditoria | Renderização, paginação, filtro local, exportação CSV, sessão expirada (401) |
-| `AdminAudit.edge.test.js` | Casos de borda da auditoria | Content-type inválido, JSON malformado, dados nulos, fallbacks CSV, navegação bidirecional |
+| `AdminAudit.test.js` | Tabela de auditoria + casos de borda | Renderização, paginação, filtro local, exportação CSV, sessão expirada (401), content-type inválido, JSON malformado, dados nulos, fallbacks CSV, navegação bidirecional |
 | `AdminCrudBase.test.js` | CRUD genérico base | Skeleton loading, formulário novo/editar/excluir, filtro searchable, paginação, toggle com reversão, validação Zod, drag-and-drop, readOnly, onSuccess, scroll, resetForm |
 | `AdminDashboard.test.js` | Painel administrativo | Stats, navegação por abas, valores nulos, erro de API |
 | `AdminDicas.test.js` | CRUD de dicas | Configurações repassadas, truncamento de conteúdo (80 chars) |
@@ -242,8 +240,7 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 | `AdminProducts.test.js` | CRUD de produtos | Configuração de campos, busca, formatação |
 | `AdminRolesTab.test.js` | Gerenciamento de papéis | Listar, criar, editar, excluir papéis |
 | `AdminUsers.test.js` | Listagem de usuários | Renderização, busca, paginação, criação |
-| `AdminUsersTab.test.js` | Aba de usuários | CRUD completo, busca, paginação |
-| `AdminUsersTab.edge.test.js` | Casos de borda de usuários | Erro de API, dados vazios, role inválido |
+| `AdminUsersTab.test.js` | Aba de usuários + casos de borda | CRUD completo, RoleSelectField (carregar, fallbacks, 401, erros, JSON inválido), validações de senha (novo/edição) |
 | `AdminVideos.test.js` | CRUD de vídeos | Configuração de campos, busca, formatação |
 | `index.test.js` | Barrel export Admin | Verifica exportações do diretório Admin |
 | `withAdminAuth.test.js` | HOC de autenticação admin | Redirecionamento sem auth, renderização com auth, role verification |
@@ -394,7 +391,6 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 
 | Arquivo | Propósito |
 |---------|-----------|
-| `products.edge.test.js` | Edge cases da API de produtos (405, 500, fallbacks, rate limit 429) |
 | `upload-image.edge.test.js` | Edge cases de upload (arquivo muito grande, tipo inválido, sem arquivo) |
 | `api/admin/dicas.edge.test.js` | Edge cases admin dicas |
 | `api/admin/fetch-ml.edge.test.js` | Edge cases fetch ML |
@@ -404,6 +400,8 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 | `api/admin/roles.edge.test.js` | Edge cases admin roles |
 | `api/admin/stats.edge.test.js` | Edge cases admin stats |
 | `api/auth/login.edge.test.js` | Edge cases login auth |
+
+> **Nota (04/06/2026):** O arquivo `products.edge.test.js` foi **removido** — seu conteúdo foi mesclado em `tests/integration/api/products.test.js` com organização sob `describe('Casos de Borda')` e mocks migrados de `db.js` para `lib/domain/products.js`.
 
 ---
 
@@ -417,12 +415,14 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 | **Matchers** | 6 arquivos |
 | **Mocks** | 4 arquivos |
 | **Examples** | 2 arquivos |
-| **Testes de Integração** | 34 arquivos (6 raiz + 27 API + 14 admin + 2 api/auth)* |
-| **Testes Unitários** | ~96 arquivos (5 raiz + ~40 components + ~15 Admin + 2 Managers + 2 Tools + ~12 Features + 5 Layout + 5 Performance + 2 Products + 8 SEO + 12 UI + 3 domain + 6 lib + 5 lib/api + 4 lib/backup + 5 lib/db + 1 scripts + ~10 pages/api) |
-| **Total Aproximado** | **~152 arquivos** |
+| **Testes de Integração** | 33 arquivos (6 raiz + 27 API + 14 admin + 2 api/auth)* |
+| **Testes Unitários** | ~95 arquivos (5 raiz + ~40 components + ~15 Admin + 2 Managers + 2 Tools + ~12 Features + 5 Layout + 5 Performance + 2 Products + 8 SEO + 12 UI + 3 domain + 6 lib + 5 lib/api + 4 lib/backup + 5 lib/db + 1 scripts + ~9 pages/api) |
+| **Total Aproximado** | **~150 arquivos** |
 
 > *\*Removidos em 13/05/2026: `tests/integration/api/v1/` (4 arquivos), `tests/integration/auth/auth.v1.check.test.js`, `tests/integration/auth/auth.v1.login.test.js`, `tests/integration/auth/auth.test.js` e `tests/integration/api/status.api.test.js`. Adicionados: `tests/integration/api/status.test.js` e `tests/integration/api/auth/check.test.js`.*
+>
+> *\*Removido em 04/06/2026: `tests/unit/pages/api/products.edge.test.js` (mesclado em `tests/integration/api/products.test.js`), `tests/unit/components/Admin/AdminAudit.edge.test.js` (mesclado em `AdminAudit.test.js`), `tests/unit/components/Admin/AdminUsersTab.edge.test.js` (mesclado em `AdminUsersTab.test.js`).*
 
 ---
 
-> **Nota:** Este documento reflete a estrutura completa de testes do projeto Caminhar. Para detalhes de implementação específicos, consulte cada arquivo individualmente.
+> **Nota atualizada (04/06/2026):** Este documento reflete a estrutura completa de testes do projeto Caminhar. Foram feitas 3 mesclagens de arquivos edge case nos respectivos testes principais, resultando em -3 arquivos. Todos os cenários de borda foram preservados sob `describe('Casos de Borda')`. Para detalhes de implementação específicos, consulte cada arquivo individualmente.

@@ -1,7 +1,7 @@
 # Relatório de Upgrade — Testes (`/tests/`)
 
-> **Data:** 12/05/2026 (atualizado)
-> **Objetivo:** Reportar correções, melhorias, problemas de performance e duplicidade de código identificados na análise dos arquivos de teste. Nenhuma correção ou melhoria foi aplicada — apenas reportada.
+> **Data:** 12/05/2026 (atualizado em 04/06/2026)
+> **Objetivo:** Reportar correções, melhorias, problemas de performance e duplicidade de código identificados na análise dos arquivos de teste.
 
 ---
 
@@ -36,18 +36,31 @@
 
 ---
 
-### 1.2 Separação Edge Case vs. Teste Principal
+### 1.2 Separação Edge Case vs. Teste Principal — **AJUSTADO (04/06/2026)**
 
 **Ocorrência:**
 - `AdminAudit.test.js` + `AdminAudit.edge.test.js`
 - `AdminUsersTab.test.js` + `AdminUsersTab.edge.test.js`
 - `products.edge.test.js` (em `tests/unit/pages/api/`) + `products.test.js` (em `tests/integration/api/`)
 
-**Descrição:** Casos de borda foram separados em arquivos distintos dos testes principais. Isso fragmenta a compreensão do que um componente/teste cobre.
+**Descrição original:** Casos de borda foram separados em arquivos distintos dos testes principais. Isso fragmenta a compreensão do que um componente/teste cobre.
 
-**Impacto:** Dificuldade em saber se um componente está completamente testado — é necessário verificar dois arquivos. Risco de duplicação de setup.
+**Impacto original:** Dificuldade em saber se um componente está completamente testado — é necessário verificar dois arquivos. Risco de duplicação de setup.
 
-**Sugestão:** Mesclar arquivos de edge case com os respectivos testes principais, organizando em `describe('Casos de Borda', () => { ... })` dentro do mesmo arquivo.
+**O que foi feito (04/06/2026):**
+
+| Par | Ação | Detalhes |
+|-----|------|----------|
+| `AdminAudit.edge.test.js` → `AdminAudit.test.js` | Mesclado | 8 testes de borda incorporados sob `describe('Casos de Borda')`. Removido teste duplicado de 401. Unificados mocks de `react-hot-toast` e `next/router`. Substituída supressão global de `console.error` por `jest.spyOn` |
+| `AdminUsersTab.edge.test.js` → `AdminUsersTab.test.js` | Mesclado | 7 testes de borda incorporados. RoleSelectField migrado para `setupRoleSelectMock` com roteamento por URL. Adicionado `sessionStorage.clear()` no `beforeEach`. Testes de UI completa convertidos para funções puras |
+| `products.edge.test.js` → `products.test.js` | Mesclado com migração | Mocks convertidos de `db.js` (desatualizado) para `lib/domain/products.js`. Construção manual de req/res migrada para `createMocks`. Adicionado mock de `logger`. 3 testes de borda mantidos (405, fallbacks GET, token silencioso) |
+
+**Arquivos excluídos após mesclagem:**
+- `tests/unit/components/Admin/AdminAudit.edge.test.js`
+- `tests/unit/components/Admin/AdminUsersTab.edge.test.js`
+- `tests/unit/pages/api/products.edge.test.js`
+
+**Resultado:** 41 testes passando nos 3 arquivos mesclados (12 + 15 + 14). Redução de 3 arquivos. Cobertura de borda organizada sob `describe('Casos de Borda', () => {...})`.
 
 ---
 
@@ -111,7 +124,7 @@ afterAll(() => { console.error = originalConsoleError; });
 
 ### 2.1 Supressão Global de console.error
 
-**Ocorrência:** Múltiplos arquivos — `AdminAudit.edge.test.js`, `AdminUsersTab.edge.test.js`, `products.edge.test.js`, `BackupManager.test.js`, `BlogSection.test.js`, etc.
+**Ocorrência:** Múltiplos arquivos — `BackupManager.test.js`, `BlogSection.test.js`, etc.
 
 **Código exemplar:**
 ```javascript
@@ -125,6 +138,8 @@ afterAll(() => { console.error = originalConsoleError; });
 **Impacto na Performance:** `jest.spyOn(console, 'error')` é mais performático que substituir a referência global diretamente, além de permitir restauração automática.
 
 **Sugestão:** Substituir por `jest.spyOn(console, 'error').mockImplementation(() => {})` e usar `mockRestore()` no `afterAll`. Ou melhor: filtrar apenas warnings esperados (como feito no `setup.js`) em vez de silenciar tudo.
+
+**Aplicado parcialmente (04/06/2026):** Os arquivos mesclados (`AdminAudit.test.js`, `AdminUsersTab.test.js`, `products.test.js`) foram corrigidos para usar `jest.spyOn` com `mockRestore()` no `afterEach`, eliminando 3 ocorrências do padrão problemático.
 
 ---
 
@@ -148,17 +163,6 @@ global.fetch = jest.fn();
 ### 2.3 Overhead de Módulos com jest.mock() no Topo
 
 **Ocorrência:** Todos os arquivos de teste de integração e unitários que mockam dependências.
-
-**Exemplo (produtos.edge.test.js):**
-```javascript
-jest.mock('../../../../lib/db.js', () => ({
-  query: jest.fn(),
-  createRecord: jest.fn(),
-  updateRecords: jest.fn(),
-  deleteRecords: jest.fn(),
-  logActivity: jest.fn()
-}));
-```
 
 **Problema:** `jest.mock()` é hoisted e executado antes de qualquer import. Cada arquivo registra um novo mock module. Em ~157 arquivos de teste, isso gera recriação constante de módulos mockados no início de cada suite.
 
@@ -228,9 +232,9 @@ const { ReadableStream } = require('node:stream/web');
 
 ### 3.4 Testes sem Verificação de Limpeza
 
-**Ocorrência:** `tests/unit/pages/api/products.edge.test.js` e outros
+**Ocorrência:** Vários arquivos — `BackupManager.test.js`, `BlogSection.test.js`, etc.
 
-**Problema:** Vários testes mockam `console.error` substituindo a implementação global, mas alguns podem não restaurar corretamente em caso de falha no teste.
+**Problema:** Testes mockam `console.error` substituindo a implementação global, mas alguns podem não restaurar corretamente em caso de falha no teste.
 
 **Código exemplar:**
 ```javascript
@@ -241,6 +245,8 @@ consoleSpy.mockRestore();
 Se o teste lançar uma exceção antes de `mockRestore()`, o console.error permanece mockado.
 
 **Sugestão:** Envolver em `try/finally` ou usar `afterEach(() => consoleSpy?.mockRestore())`.
+
+**Aplicado parcialmente (04/06/2026):** Os arquivos mesclados (`AdminAudit.test.js`, `AdminUsersTab.test.js`, `products.test.js`) foram corrigidos para usar `afterEach` com `mockRestore()`, garantindo restauração mesmo em caso de falha.
 
 ---
 
@@ -282,11 +288,16 @@ Isso essencialmente testa a declaração de importação do próprio teste, não
 
 ---
 
-### 4.2 Unificação de Arquivos Edge Case
+### 4.2 Unificação de Arquivos Edge Case — **AJUSTADO (04/06/2026)**
 
-**Descrição:** Mesclar `AdminAudit.edge.test.js` em `AdminAudit.test.js` e `AdminUsersTab.edge.test.js` em `AdminUsersTab.test.js`, organizando em `describe('Casos de Borda', ...)`.
+**Descrição original:** Mesclar `AdminAudit.edge.test.js` em `AdminAudit.test.js` e `AdminUsersTab.edge.test.js` em `AdminUsersTab.test.js`, organizando em `describe('Casos de Borda', ...)`.
 
-**Benefício:** Melhor legibilidade e navegação. Redução de 2 arquivos.
+**O que foi feito:**
+- `AdminAudit.edge.test.js` → mesclado em `AdminAudit.test.js` (8 testes de borda)
+- `AdminUsersTab.edge.test.js` → mesclado em `AdminUsersTab.test.js` (7 testes de borda)
+- `products.edge.test.js` → mesclado em `tests/integration/api/products.test.js` (3 testes de borda mantidos)
+- Redução de 3 arquivos
+- 41/41 testes passando
 
 ---
 
@@ -403,15 +414,11 @@ export function createBaseFactory(defaults) {
 
 ### 5.4 Uso de node-mocks-http vs. Mocks Personalizados
 
-**Descrição:** Alguns testes usam `createMocks` de `node-mocks-http` (via helpers/api.js) enquanto outros constroem objetos `req`/`res` manualmente (ex: `products.edge.test.js`).
-
-**Ocorrência em products.edge.test.js:**
-```javascript
-req = { method: 'GET', query: {}, body: {}, headers: {}, socket: {} };
-res = { setHeader: jest.fn(), status: jest.fn().mockReturnThis(), json: jest.fn(), end: jest.fn() };
-```
+**Descrição:** Alguns testes usam `createMocks` de `node-mocks-http` (via helpers/api.js) enquanto outros constroem objetos `req`/`res` manualmente.
 
 **Sugestão:** Unificar o uso de `node-mocks-http` em todos os testes de handler para consistência.
+
+**Aplicado parcialmente (04/06/2026):** O arquivo `products.test.js` (integration) foi padronizado para usar `createMocks` em toda a suite, incluindo os testes de borda mesclados.
 
 ---
 
@@ -651,23 +658,23 @@ jest.mock('../../../../lib/domain/settings.js', () => ({
 
 ## Resumo das Ações Recomendadas
 
-| Prioridade | Ação | Esforço | Impacto |
-|:----------:|------|:-------:|:-------:|
-| Alta | Centralizar `jest.clearAllMocks()` no setup.js | Baixo | Médio |
-| Alta | Criar helper para suppressConsoleError | Baixo | Baixo |
-| Alta | Unificar padrão de mock de fetch (spyOn vs assign) | Médio | Alto |
-| 🔴 Crítica | Migrar testes de upload-image (Grupo A) | Médio | Alto |
-| 🟡 Média | Migrar testes de middleware.error (Grupo B) | Alto | Alto |
-| Média | Abstrair testes CRUD de API | Alto | Alto |
-| Média | Mesclar arquivos edge case com principais | Baixo | Médio |
-| Média | Padronizar nomenclatura de arquivos | Médio | Médio |
-| Média | Refatorar factories com base factory | Médio | Médio |
-| 🟢 Baixa | Migrar testes de rate-limit (Grupo C) | Médio | Médio |
-| 🟢 Baixa | Migrar testes de logger/api (Grupo D) | Alto | Médio |
-| Baixa | Remover testes de barrel export redundantes | Baixo | Baixo |
-| Baixa | Adicionar testes com banco real | Alto | Alto |
-| Baixa | Substituir dados inline por factories | Baixo | Baixo |
+| Prioridade | Ação | Esforço | Impacto | Status |
+|:----------:|------|:-------:|:-------:|:------:|
+| Alta | Centralizar `jest.clearAllMocks()` no setup.js | Baixo | Médio | Pendente |
+| Alta | Criar helper para suppressConsoleError | Baixo | Baixo | Pendente |
+| Alta | Unificar padrão de mock de fetch (spyOn vs assign) | Médio | Alto | Pendente |
+| 🔴 Crítica | Migrar testes de upload-image (Grupo A) | Médio | Alto | Pendente |
+| 🟡 Média | Migrar testes de middleware.error (Grupo B) | Alto | Alto | Pendente |
+| Média | Abstrair testes CRUD de API | Alto | Alto | Pendente |
+| Média | ~~Mesclar arquivos edge case com principais~~ | ~~Baixo~~ | ~~Médio~~ | ✅ **Concluído (04/06)** |
+| Média | Padronizar nomenclatura de arquivos | Médio | Médio | Pendente |
+| Média | Refatorar factories com base factory | Médio | Médio | Pendente |
+| 🟢 Baixa | Migrar testes de rate-limit (Grupo C) | Médio | Médio | Pendente |
+| 🟢 Baixa | Migrar testes de logger/api (Grupo D) | Alto | Médio | Pendente |
+| Baixa | Remover testes de barrel export redundantes | Baixo | Baixo | Pendente |
+| Baixa | Adicionar testes com banco real | Alto | Alto | Pendente |
+| Baixa | Substituir dados inline por factories | Baixo | Baixo | Pendente |
 
 ---
 
-> **Nota:** Este documento é um relatório de análise. Nenhuma das alterações mencionadas foi implementada. Recomenda-se revisão e priorização antes de aplicar qualquer modificação.
+> **Nota:** Este documento é um relatório de análise. As ações marcadas como "AJUSTADO" ou "CONCLUÍDO" foram implementadas. As demais permanecem como recomendações pendentes de revisão e priorização.
