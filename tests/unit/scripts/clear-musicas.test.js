@@ -17,7 +17,6 @@ describe('clear-musicas.js — Limpeza da tabela de músicas', () => {
   let libDb;
 
   beforeEach(async () => {
-    jest.clearAllMocks();
     process.env.DATABASE_URL = 'postgres://user:pass@localhost:5432/testdb';
     libDb = await import('../../../lib/db.js');
   });

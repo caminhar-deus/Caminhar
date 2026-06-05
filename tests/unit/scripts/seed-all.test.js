@@ -13,7 +13,6 @@ describe('seed-all.js — Orquestrador de seeds', () => {
   let libDb;
 
   beforeEach(async () => {
-    jest.clearAllMocks();
     process.env.DATABASE_URL = 'postgres://user:pass@localhost:5432/testdb';
     libDb = await import('../../../lib/db.js');
   });

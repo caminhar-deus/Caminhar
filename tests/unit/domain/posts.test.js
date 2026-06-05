@@ -35,7 +35,6 @@ import { logActivity } from '../../../lib/domain/audit.js';
 
 describe('Domain - Posts (lib/domain/posts.js)', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
     
     // Reestabelece a implementação do raw SQL
     raw.mockImplementation((val) => `RAW(${val})`);

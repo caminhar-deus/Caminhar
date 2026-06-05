@@ -22,20 +22,20 @@ jest.mock('fs', () => ({
   mkdirSync: jest.fn(),
 }));
 
-// Mock do middleware de autenticação externo
-jest.mock('../../../lib/middleware.js', () => ({
-  externalAuthMiddleware: (fn) => (req, res) => fn(req, res),
+// Mock do middleware de autenticação
+jest.mock('../../../lib/auth.js', () => ({
+  withAuth: (handler) => handler,
 }));
 
-// Mock do Banco de Dados
-jest.mock('../../../lib/db.js', () => ({
+// Mock do domínio de settings
+jest.mock('../../../lib/domain/settings.js', () => ({
   updateSetting: jest.fn(),
 }));
 
 import handler from '../../../pages/api/upload-image.js';
 import formidable from 'formidable';
 import fs from 'fs';
-import { updateSetting } from '../../../lib/db.js';
+import { updateSetting } from '../../../lib/domain/settings.js';
 
 describe('API de Upload de Imagem (/api/upload-image)', () => {
   beforeEach(() => {

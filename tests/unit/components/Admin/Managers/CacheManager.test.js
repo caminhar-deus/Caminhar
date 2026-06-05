@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import CacheManager from '../../../../../components/Admin/Managers/CacheManager.js';
 import toast from 'react-hot-toast';
+import { suppressConsoleError, createConfirmSpy } from '../../../../helpers/index.js';
 
 // Mockando o Toast para interceptarmos as mensagens
 jest.mock('react-hot-toast', () => ({
@@ -14,19 +15,17 @@ jest.mock('react-hot-toast', () => ({
   }
 }));
 
-const mockFetch = jest.fn();
-global.fetch = mockFetch;
-window.confirm = jest.fn();
-
 describe('Componentes Admin - CacheManager', () => {
   let consoleErrorSpy;
+  let confirmSpy;
 
   beforeEach(() => {
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    consoleErrorSpy = suppressConsoleError();
+    confirmSpy = createConfirmSpy(false);
+    global.fetch = jest.fn();
     toast.loading.mockReturnValue('id_toast_123');
 
-    // Mock para a requisição GET automática no mount do componente (métricas)
-    mockFetch.mockResolvedValueOnce({
+    global.fetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         redisConnected: true,
@@ -40,6 +39,7 @@ describe('Componentes Admin - CacheManager', () => {
 
   afterEach(() => {
     consoleErrorSpy?.mockRestore();
+    confirmSpy?.mockRestore();
   });
 
   it('deve renderizar o painel e o botão corretamente', () => {
@@ -49,19 +49,19 @@ describe('Componentes Admin - CacheManager', () => {
   });
 
   it('deve abortar e não disparar API se o usuário cancelar o confirm', async () => {
-    window.confirm.mockReturnValueOnce(false);
+    confirmSpy.mockReturnValueOnce(false);
     render(<CacheManager />);
-    
+
     fireEvent.click(screen.getByRole('button', { name: /Limpar Cache/i }));
-    
+
     expect(window.confirm).toHaveBeenCalled();
     expect(toast.loading).not.toHaveBeenCalled();
-    expect(mockFetch).toHaveBeenCalledTimes(1); // Apenas a requisição GET automática no mount
+    expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
   it('deve chamar a API e exibir um Toast de sucesso', async () => {
-    window.confirm.mockReturnValueOnce(true);
-    mockFetch.mockResolvedValueOnce({
+    confirmSpy.mockReturnValueOnce(true);
+    global.fetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ message: 'Cache limpo com sucesso no Redis' })
     });
@@ -70,37 +70,33 @@ describe('Componentes Admin - CacheManager', () => {
     const button = screen.getByRole('button', { name: /Limpar Cache/i });
     fireEvent.click(button);
 
-    // O componente deve entrar em loading
     expect(toast.loading).toHaveBeenCalledWith('Limpando cache...');
     expect(button).toHaveTextContent('Limpando...');
     expect(button).toBeDisabled();
 
-    // Após a promessa resolver
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledTimes(2); // GET mount + POST clique
-      expect(mockFetch).toHaveBeenNthCalledWith(2, '/api/admin/cache', expect.objectContaining({ method: 'POST' }));
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect(global.fetch).toHaveBeenNthCalledWith(2, '/api/admin/cache', expect.objectContaining({ method: 'POST' }));
       expect(toast.success).toHaveBeenCalledWith('Cache limpo com sucesso no Redis', { id: 'id_toast_123' });
     });
   });
 
   it('deve exibir um Toast de erro vindo da API com fallback se não houver message', async () => {
-    window.confirm.mockReturnValue(true);
+    confirmSpy.mockReturnValue(true);
     const { rerender } = render(<CacheManager />);
-    
-    // 1º Cenário: API retorna erro estruturado
-    mockFetch.mockResolvedValueOnce({ ok: false, json: async () => ({ message: 'Não autorizado' }) });
+
+    global.fetch.mockResolvedValueOnce({ ok: false, json: async () => ({ message: 'Não autorizado' }) });
     fireEvent.click(screen.getByRole('button', { name: /Limpar Cache/i }));
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Não autorizado', { id: 'id_toast_123' }));
 
-    // 2º Cenário: API retorna erro vazio (fallback padrão)
-    mockFetch.mockResolvedValueOnce({ ok: false, json: async () => ({}) });
+    global.fetch.mockResolvedValueOnce({ ok: false, json: async () => ({}) });
     fireEvent.click(screen.getByRole('button', { name: /Limpar Cache/i }));
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Erro ao limpar cache', { id: 'id_toast_123' }));
   });
 
   it('deve capturar falhas de rede catastróficas (catch block)', async () => {
-    window.confirm.mockReturnValueOnce(true);
-    mockFetch.mockRejectedValueOnce(new Error('Servidor Offline'));
+    confirmSpy.mockReturnValueOnce(true);
+    global.fetch.mockRejectedValueOnce(new Error('Servidor Offline'));
 
     render(<CacheManager />);
     fireEvent.click(screen.getByRole('button', { name: /Limpar Cache/i }));

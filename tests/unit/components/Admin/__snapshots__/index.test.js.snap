@@ -1,0 +1,16 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Admin Components Index deve exportar a estrutura esperada do barrel Admin 1`] = `
+[
+  "AdminCrudBase",
+  "AdminMusicasNew",
+  "AdminPostsNew",
+  "AdminVideosNew",
+  "ExternalDataButton",
+  "ImageUploadField",
+  "TextAreaField",
+  "TextField",
+  "ToggleField",
+  "UrlField",
+]
+`;

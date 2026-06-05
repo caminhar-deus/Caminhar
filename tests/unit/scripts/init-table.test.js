@@ -35,7 +35,6 @@ describe('init-table.js — Inicialização de tabelas', () => {
   let getTableName;
 
   beforeEach(async () => {
-    jest.clearAllMocks();
     process.env.DATABASE_URL = 'postgres://user:pass@localhost:5432/testdb';
 
     // As funções internas do init-table.js podem ser testadas

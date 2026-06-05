@@ -26,7 +26,6 @@ import { upsertRecord, raw } from '../../../lib/crud.js';
 
 describe('Domain - Configurações (lib/domain/settings.js)', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
     
     // Reestabelece a implementação do mock caso o Jest o resete automaticamente
     raw.mockImplementation((val) => `RAW(${val})`);

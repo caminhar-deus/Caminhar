@@ -1,6 +1,6 @@
 # Análise do Projeto — Testes (`/tests/`)
 
-> **Data:** 13/05/2026 (atualizado em 05/06/2026)
+> **Data:** 13/05/2026 (atualizado em 05/06/2026 — 2ª revisão)
 > **Objetivo:** Documentar de forma objetiva, clara e focada todos os arquivos de teste do projeto, descrevendo localização, propósito e funcionalidade de cada um.
 
 ---
@@ -92,6 +92,7 @@ tests/
 | `index.js` | Ponto de exportação que re-exporta todos os helpers |
 | `api.js` | Criação de mocks HTTP. Exporta `createApiMocks(method, body)`, `createGetRequest()`, `createPostRequest(body, headers)`, `expectArray()`. Usa `node-mocks-http` |
 | `auth.js` | Utilitários de autenticação para testes. Exporta `createAuthToken(payload)` (gera JWT), `mockAuthenticatedUser(overrides)`, `mockAuthenticatedAdmin()` (cria token, user, headers completos) |
+| `console.js` | Utilitários de console e mocks para testes. **Criado em 05/06/2026.** Exporta `suppressConsoleError()` (spy silencioso para console.error), `filterConsoleError(suppressList)` (spy que suprime apenas padrões específicos), `mockGlobalFetch()` (mock de global.fetch compatível com JSDOM), `createConfirmSpy(defaultValue)` (spy para window.confirm). **Nota:** `jest.spyOn(global, 'fetch')` não funciona em JSDOM — `mockGlobalFetch()` usa atribuição direta |
 | `render.js` | Helpers de renderização com React Testing Library. Exporta `renderWithProviders(ui, options)` que wrappa o componente com `AuthProvider`, `ThemeProvider` e `ToastProvider` |
 
 ### 3.3 Matchers Customizados (`/tests/matchers/`)
@@ -243,7 +244,7 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 | `AdminUsers.test.js` | Listagem de usuários | Renderização, busca, paginação, criação |
 | `AdminUsersTab.test.js` | Aba de usuários + casos de borda | CRUD completo, RoleSelectField (carregar, fallbacks, 401, erros, JSON inválido), validações de senha (novo/edição) |
 | `AdminVideos.test.js` | CRUD de vídeos | Configuração de campos, busca, formatação |
-| `index.test.js` | Barrel export Admin | Verifica exportações do diretório Admin |
+| `index.test.js` | Barrel export Admin | Snapshot da estrutura de exportações (convertido em 05/06/2026) |
 | `withAdminAuth.test.js` | HOC de autenticação admin | Redirecionamento sem auth, renderização com auth, role verification |
 | `ImageUploadField.test.js` | Campo de upload de imagem | Upload, preview, remoção, validação de tipo/tamanho |
 | `TextAreaField.test.js` | Campo textarea | Renderização, label, erro, onChange |
@@ -284,7 +285,7 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 |---------|-----------|
 | `Container.test.js` | Container (div, section, article) com props fluid, as, className, centered |
 | `Grid.test.js` | Grid system (columns, gap, align, justify, Grid.Item, Grid.Auto, Grid.Responsive) |
-| `index.test.js` | Barrel export do diretório Layout |
+| `index.test.js` | Barrel export Layout | Snapshot da estrutura de exportações (convertido em 05/06/2026) |
 | `Sidebar.test.js` | Sidebar com navegação, colapso, links ativos |
 | `Stack.test.js` | Stack layout (direction, spacing, align, justify, dividers) |
 
@@ -294,7 +295,7 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 |---------|-----------|
 | `CriticalCSS.test.js` | Inline de CSS crítico (renderização, atributos, múltiplas folhas) |
 | `ImageOptimized.test.js` | Imagem otimizada (lazy loading, srcset, placeholder blur, fallback) |
-| `index.test.js` | Barrel export do diretório Performance |
+| `index.test.js` | Barrel export Performance | Snapshot da estrutura de exportações (convertido em 05/06/2026) |
 | `LazyIframe.test.js` | Iframe lazy (lazy loading, placeholder, props width/height, intersecção) |
 | `PreloadResources.test.js` | Pré-carregamento de recursos (links preload, prefetch, preconnect, dns-prefetch) |
 
@@ -312,7 +313,7 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 | `ArticleSchema.test.js` | Schema.org Article (JSON-LD) |
 | `BreadcrumbSchema.test.js` | Schema.org BreadcrumbList (JSON-LD) |
 | `Head.test.js` | Gerenciamento de `<head>` (title, meta tags, Open Graph, Twitter Cards) |
-| `index.test.js` | Barrel export do diretório SEO |
+| `index.test.js` | Barrel export SEO | Snapshot da estrutura de exportações + verificação de default export (convertido em 05/06/2026) |
 | `MusicSchema.test.js` | Schema.org Music (JSON-LD) |
 | `OrganizationSchema.test.js` | Schema.org Organization (JSON-LD) |
 | `VideoSchema.test.js` | Schema.org Video (JSON-LD) |
@@ -326,7 +327,7 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 | `Badge.test.js` | Badge | leftIcon, rightIcon, pulse, position; `Badge.Counter` com max/99+/showZero; `Badge.Dot` |
 | `Button.test.js` | Botão | leftIcon/rightIcon, loading (aria-busy, disabled), disabled com ARIA |
 | `Card.test.js` | Card | Header/Footer, mídia (string img ou componente), hoverable, onClick, teclado (Enter/Espaço), fullWidth |
-| `index.test.js` | Barrel export UI | Verifica exportações de todos os 11 componentes + useToast + defaultIcons |
+| `index.test.js` | Barrel export UI | Snapshot da estrutura de exportações (convertido em 05/06/2026) |
 | `Input.test.js` | Input | Label, required, leftAddon, rightAddon, ref forwarding, helperText vs errorMessage com aria-invalid |
 | `Modal.test.js` | Modal | Abertura, fechamento (botão X, overlay, Escape), título, conteúdo, footer, props `size`, `closeOnOverlay`, `blocked` |
 | `Select.test.js` | Select | Label, opções, placeholder, onChange, erro, múltiplo |
@@ -350,7 +351,7 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 | `cache.test.js` | Cache em memória/Redis | Get, set, invalidação, TTL, fallback |
 | `crud.test.js` | Operações CRUD genéricas | Criar, ler, atualizar, excluir, paginação, busca |
 | `db.test.js` | Conexão com banco de dados | Query, pool, transaction, erro de conexão |
-| `middleware.test.js` | Middleware HTTP | Autenticação, rate limit, CORS, logging |
+| `middleware.test.js` | Middleware HTTP → **MIGRADO (05/06/2026)** | Agora testa `lib/api/middleware.js`. Testa `withLogger`, `composeMiddleware`, `withCors`, `withAuth`, `withRateLimit`, `withErrorHandler`. Removidos testes de `authenticatedApiMiddleware` e `externalAuthMiddleware` (funções removidas do código). **9/9 testes passando** |
 | `redis.test.js` | Cliente Redis | Conexão, get/set, expiração, erro de conexão |
 
 #### Lib/API (`/tests/unit/lib/api/`)
@@ -392,7 +393,7 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 
 | Arquivo | Propósito |
 |---------|-----------|
-| `upload-image.edge.test.js` | Edge cases de upload (arquivo muito grande, tipo inválido, sem arquivo) |
+| `upload-image.edge.test.js` | Edge cases de upload (criação de diretório). Mocks migrados em 05/06/2026: `lib/middleware.js` → `lib/auth.js` + `lib/db.js` → `lib/domain/settings.js` |
 | `api/admin/dicas.edge.test.js` | Edge cases admin dicas |
 | `api/admin/fetch-ml.edge.test.js` | Edge cases fetch ML |
 | `api/admin/fetch-spotify.edge.test.js` | Edge cases fetch Spotify |
@@ -418,7 +419,7 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 | **Examples** | 2 arquivos |
 | **Testes de Integração** | 33 arquivos (6 raiz + 27 API + 14 admin + 2 api/auth)* |
 | **Testes Unitários** | ~95 arquivos (5 raiz + ~40 components + ~15 Admin + 2 Managers + 2 Tools + ~12 Features + 5 Layout + 5 Performance + 2 Products + 8 SEO + 12 UI + 3 domain + 6 lib + 5 lib/api + 4 lib/backup + 5 lib/db + 1 scripts + ~9 pages/api) |
-| **Total Aproximado** | **~150 arquivos** |
+| **Total Aproximado** | **~151 arquivos** |
 
 > *\*Removidos em 13/05/2026: `tests/integration/api/v1/` (4 arquivos), `tests/integration/auth/auth.v1.check.test.js`, `tests/integration/auth/auth.v1.login.test.js`, `tests/integration/auth/auth.test.js` e `tests/integration/api/status.api.test.js`. Adicionados: `tests/integration/api/status.test.js` e `tests/integration/api/auth/check.test.js`.*
 >
@@ -426,4 +427,17 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 
 ---
 
-> **Nota atualizada (05/06/2026):** Este documento reflete a estrutura completa de testes do projeto Caminhar. Foram feitas 3 mesclagens de arquivos edge case nos respectivos testes principais (04/06), centralizado `jest.clearAllMocks()` no setup.js (05/06) — reduzindo ~41 chamadas redundantes e eliminando o padrão de substituição global de `console.error` em 10 arquivos — e refatoradas as 4 factories (`post.js`, `music.js`, `video.js`, `user.js`) para usar `createBaseFactory` do novo `base.js`, eliminando ~70 linhas de código sobreposto (05/06). Para detalhes de implementação específicos, consulte cada arquivo individualmente.
+> **Nota atualizada (05/06/2026 — 2ª revisão):** Este documento reflete a estrutura completa de testes do projeto Caminhar.
+> 
+> **Ajustes realizados na 1ª revisão (05/06):** 3 mesclagens de arquivos edge case (04/06), centralizado `jest.clearAllMocks()` no setup.js, removido ~41 chamadas redundantes, eliminado supressão global de `console.error` em 10 arquivos, refatoradas 4 factories para usar `createBaseFactory` (~70 linhas eliminadas).
+> 
+> **Ajustes realizados na 2ª revisão (05/06):**
+> - Criado `tests/helpers/console.js` com 4 funções: `suppressConsoleError()`, `filterConsoleError()`, `mockGlobalFetch()`, `createConfirmSpy()`
+> - Removido `jest.clearAllMocks()` de mais 20 arquivos (total: 61 eliminações)
+> - 6 arquivos de componente migrados para usar helpers centralizados (`BackupManager`, `CacheManager`, `BlogSection`, `MusicCard`, `MusicGallery.edge`, `ImageOptimized`)
+> - 5 testes de barrel export convertidos de `expect(X).toBeDefined()` para snapshot
+> - Migração completa da Seção 6: `lib/middleware.js` → `lib/api/middleware.js` (3 arquivos de teste atualizados)
+> - `middleware.test.js` reescrito com 9/9 testes passando para o novo sistema de middleware
+> - **Total:** ~30 arquivos modificados/criados. Nenhuma regressão.
+> 
+> Para detalhes de implementação específicos, consulte `docs/UPGRADE_tests.md`.

@@ -1,34 +1,14 @@
 import { describe, it, expect } from '@jest/globals';
-import DefaultExport, {
-  SEOHead,
-  OrganizationSchema,
-  WebsiteSchema,
-  ArticleSchema,
-  BreadcrumbSchema,
-  MusicSchema,
-  VideoSchema,
-  siteConfig,
-  getCanonicalUrl,
-  getImageUrl
-} from '../../../../components/SEO/index.js';
+import DefaultExport, * as SEOComponents from '../../../../components/SEO/index.js';
 
 describe('Componentes SEO - Index Exports', () => {
-  it('deve re-exportar todos os componentes e configurações de SEO corretamente', () => {
-    // Valida se o export default é o mesmo que o SEOHead
+  it('deve exportar a estrutura esperada do barrel SEO', () => {
+    expect(Object.keys(SEOComponents).sort()).toMatchSnapshot();
+  });
+
+  it('deve ter o default export igual ao SEOHead', () => {
     expect(DefaultExport).toBeDefined();
-    expect(SEOHead).toBeDefined();
-    expect(DefaultExport).toBe(SEOHead);
-    
-    // Valida se re-exportou os schemas e as configs
-    expect(OrganizationSchema).toBeDefined();
-    expect(WebsiteSchema).toBeDefined();
-    expect(ArticleSchema).toBeDefined();
-    expect(BreadcrumbSchema).toBeDefined();
-    expect(MusicSchema).toBeDefined();
-    expect(VideoSchema).toBeDefined();
-    
-    expect(siteConfig).toBeDefined();
-    expect(getCanonicalUrl).toBeDefined();
-    expect(getImageUrl).toBeDefined();
+    expect(SEOComponents.SEOHead).toBeDefined();
+    expect(DefaultExport).toBe(SEOComponents.SEOHead);
   });
 });

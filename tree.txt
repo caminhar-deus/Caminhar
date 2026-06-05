@@ -887,6 +887,7 @@
 │   ├── helpers
 │   │   ├── api.js
 │   │   ├── auth.js
+│   │   ├── console.js
 │   │   ├── index.js
 │   │   └── render.js
 │   ├── integration
@@ -979,6 +980,8 @@
 │       │   │   ├── Managers
 │       │   │   │   ├── BackupManager.test.js
 │       │   │   │   └── CacheManager.test.js
+│       │   │   ├── __snapshots__
+│       │   │   │   └── index.test.js.snap
 │       │   │   ├── TextAreaField.test.js
 │       │   │   ├── TextField.test.js
 │       │   │   ├── ToggleField.test.js
@@ -1008,13 +1011,17 @@
 │       │   │   ├── Grid.test.js
 │       │   │   ├── index.test.js
 │       │   │   ├── Sidebar.test.js
+│       │   │   ├── __snapshots__
+│       │   │   │   └── index.test.js.snap
 │       │   │   └── Stack.test.js
 │       │   ├── Performance
 │       │   │   ├── CriticalCSS.test.js
 │       │   │   ├── ImageOptimized.test.js
 │       │   │   ├── index.test.js
 │       │   │   ├── LazyIframe.test.js
-│       │   │   └── PreloadResources.test.js
+│       │   │   ├── PreloadResources.test.js
+│       │   │   └── __snapshots__
+│       │   │       └── index.test.js.snap
 │       │   ├── Products
 │       │   │   ├── ProductCard.test.js
 │       │   │   └── ProductList.test.js
@@ -1025,6 +1032,8 @@
 │       │   │   ├── index.test.js
 │       │   │   ├── MusicSchema.test.js
 │       │   │   ├── OrganizationSchema.test.js
+│       │   │   ├── __snapshots__
+│       │   │   │   └── index.test.js.snap
 │       │   │   ├── VideoSchema.test.js
 │       │   │   └── WebsiteSchema.test.js
 │       │   ├── SeoPerformance.test.js
@@ -1039,6 +1048,8 @@
 │       │       ├── Input.test.js
 │       │       ├── Modal.test.js
 │       │       ├── Select.test.js
+│       │       ├── __snapshots__
+│       │       │   └── index.test.js.snap
 │       │       ├── Spinner.test.js
 │       │       ├── TextArea.test.js
 │       │       └── Toast.test.js
@@ -1115,4 +1126,4 @@
 │       └── videos_validation.test.js
 └── tree.txt
 
-173 directories, 943 files
+178 directories, 949 files

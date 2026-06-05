@@ -47,7 +47,6 @@ describe('backup.js — Sistema de backup', () => {
   let mockSpawn;
 
   beforeEach(async () => {
-    jest.clearAllMocks();
     process.env.DATABASE_URL = 'postgres://user:pass@localhost:5432/testdb';
 
     // Usa isolateModules para forçar o recarregamento limpo do módulo

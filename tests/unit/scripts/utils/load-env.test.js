@@ -18,7 +18,6 @@ describe('load-env.js — Carregamento de ambiente', () => {
   });
 
   beforeEach(() => {
-    jest.clearAllMocks();
     delete process.env.DATABASE_URL;
   });
 

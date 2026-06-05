@@ -8,7 +8,6 @@ const originalFetch = global.fetch;
 
 describe('Componente Front-End - ProductList', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
     jest.useFakeTimers(); // Essencial para testarmos o 'debounce' do campo de busca
     global.fetch = jest.fn();
   });

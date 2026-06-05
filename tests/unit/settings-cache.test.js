@@ -93,7 +93,6 @@ const handler = async (req, res) => {
 
 describe('Integração de Cache da API de Configurações (v1)', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
     redis._reset();
     
     // Restaurar implementações do Redis pois resetMocks: true no jest.config.js as remove

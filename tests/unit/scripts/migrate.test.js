@@ -60,7 +60,6 @@ describe('migrate.js — Gerenciador de migrações', () => {
   let migrate;
 
   beforeEach(async () => {
-    jest.clearAllMocks();
     process.env.DATABASE_URL = 'postgres://user:pass@localhost:5432/testdb';
     fsMock = await import('fs');
 

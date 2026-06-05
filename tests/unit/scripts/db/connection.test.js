@@ -41,7 +41,6 @@ describe('connection.js — Módulo de conexão PostgreSQL', () => {
   });
 
   beforeEach(() => {
-    jest.clearAllMocks();
     originalDatabaseUrl = process.env.DATABASE_URL;
     process.env.DATABASE_URL = 'postgres://user:pass@localhost:5432/testdb';
     // Reseta o pool singleton entre testes

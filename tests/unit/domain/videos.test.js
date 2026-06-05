@@ -27,7 +27,6 @@ import { createRecord, updateRecords, deleteRecords } from '../../../lib/crud.js
 
 describe('Domain - Vídeos (lib/domain/videos.js)', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
     
     // Simula a transação executando o callback imediatamente, injetando um 'client' falso
     transaction.mockImplementation(async (callback) => {

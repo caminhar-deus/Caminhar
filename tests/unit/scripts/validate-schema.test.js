@@ -34,7 +34,6 @@ describe('validate-schema.js — Validação do schema do banco', () => {
   let validateSchemaModule;
 
   beforeEach(async () => {
-    jest.clearAllMocks();
     process.env.DATABASE_URL = 'postgres://user:pass@localhost:5432/testdb';
   });
 

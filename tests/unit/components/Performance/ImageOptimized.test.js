@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, jest, beforeAll, afterAll } from '@jest/globals';
 import ImageOptimized from '../../../../components/Performance/ImageOptimized';
+import { filterConsoleError } from '../../../helpers/index.js';
 
 // Mockamos o componente next/image nativo para interceptarmos suas propriedades e eventos
 jest.mock('next/image', () => {
@@ -23,18 +24,14 @@ jest.mock('next/image', () => {
 });
 
 describe('Componente de Performance - ImageOptimized', () => {
-  const originalConsoleError = console.error;
+  let consoleErrorSpy;
 
   beforeAll(() => {
-    console.error = (...args) => {
-      const msg = args.join(' ');
-      if (msg.includes('non-boolean attribute') && msg.includes('jsx')) return;
-      originalConsoleError.apply(console, args);
-    };
+    consoleErrorSpy = filterConsoleError(['non-boolean attribute', 'jsx']);
   });
 
   afterAll(() => {
-    console.error = originalConsoleError;
+    consoleErrorSpy?.mockRestore();
   });
 
   it('deve renderizar o esqueleto de carregamento inicialmente e removê-lo no onLoad', () => {

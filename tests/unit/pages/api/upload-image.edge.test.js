@@ -1,4 +1,4 @@
-import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, jest, afterEach } from '@jest/globals';
 import handler from '../../../../pages/api/upload-image.js';
 import fs from 'fs';
 
@@ -28,18 +28,15 @@ jest.mock('formidable', () => {
   };
 });
 
-jest.mock('../../../../lib/db.js', () => ({
+jest.mock('../../../../lib/domain/settings.js', () => ({
   updateSetting: jest.fn()
 }));
 
-jest.mock('../../../../lib/middleware.js', () => ({
-  externalAuthMiddleware: (handler) => handler
+jest.mock('../../../../lib/auth.js', () => ({
+  withAuth: (handler) => handler
 }));
 
 describe('API - Upload Image (Edge Cases)', () => {
-  beforeEach(() => {
-  });
-
   afterEach(() => {
     jest.restoreAllMocks();
   });
@@ -48,7 +45,6 @@ describe('API - Upload Image (Edge Cases)', () => {
     const req = { method: 'POST' };
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
-    // Garante que qualquer erro interno fará o teste falhar exibindo a mensagem e stack trace reais
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation((msg, err) => {
       if (err) throw err;
       throw new Error(msg);

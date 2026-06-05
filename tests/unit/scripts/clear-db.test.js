@@ -20,7 +20,6 @@ describe('clear-db.js — Limpeza completa do banco', () => {
   let fsMock;
 
   beforeEach(async () => {
-    jest.clearAllMocks();
     process.env.DATABASE_URL = 'postgres://user:pass@localhost:5432/testdb';
     libDb = await import('../../../lib/db.js');
     fsMock = await import('fs');

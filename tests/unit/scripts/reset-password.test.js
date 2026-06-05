@@ -18,7 +18,6 @@ describe('reset-password.js — Redefinição de senha', () => {
   let libAuth;
 
   beforeEach(async () => {
-    jest.clearAllMocks();
     process.env.DATABASE_URL = 'postgres://user:pass@localhost:5432/testdb';
     libDb = await import('../../../lib/db.js');
     libAuth = await import('../../../lib/auth.js');

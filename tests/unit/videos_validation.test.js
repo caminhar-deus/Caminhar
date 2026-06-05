@@ -28,7 +28,6 @@ jest.mock('../../lib/cache.js', () => ({
 
 describe('Validação de API de Vídeos - Limite de Caracteres', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
   });
 
   it('deve retornar erro 400 quando a descrição excede 500 caracteres (POST)', async () => {

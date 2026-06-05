@@ -25,7 +25,6 @@ async function cleanTestDb() {
 
 describe('Script de Limpeza de Banco de Dados de Teste', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
   });
 
   it('deve remover os arquivos de banco de dados de teste que existem', async () => {

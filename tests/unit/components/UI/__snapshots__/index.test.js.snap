@@ -1,0 +1,30 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`UI Components Index deve exportar a estrutura esperada do barrel UI 1`] = `
+[
+  "Alert",
+  "AlertDefault",
+  "Badge",
+  "BadgeDefault",
+  "BaseCard",
+  "Button",
+  "ButtonDefault",
+  "Card",
+  "CardDefault",
+  "Icons",
+  "Input",
+  "InputDefault",
+  "Modal",
+  "ModalDefault",
+  "Select",
+  "SelectDefault",
+  "Spinner",
+  "SpinnerDefault",
+  "TextArea",
+  "TextAreaDefault",
+  "Toast",
+  "ToastDefault",
+  "defaultIcons",
+  "useToast",
+]
+`;

@@ -14,7 +14,6 @@ jest.mock('../../../../../components/Features/Music/MusicCard.js', () => {
 
 describe('Componente Front-End - MusicGallery', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
     global.fetch = jest.fn();
   });
 

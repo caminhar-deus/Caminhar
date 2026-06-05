@@ -1,0 +1,13 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Performance Components Index deve exportar a estrutura esperada do barrel Performance 1`] = `
+[
+  "CriticalCSS",
+  "ImageOptimized",
+  "LazyIframe",
+  "PreloadResources",
+  "extractCriticalCSS",
+  "getCriticalResources",
+  "removeCriticalCSS",
+]
+`;

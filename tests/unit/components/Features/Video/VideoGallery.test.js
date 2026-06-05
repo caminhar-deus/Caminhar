@@ -14,7 +14,6 @@ jest.mock('../../../../../components/Features/Video/VideoCard.js', () => {
 
 describe('Componente Front-End - VideoGallery', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
     jest.useFakeTimers(); // Intercepta os setTimeout para testarmos o 'debounce'
     global.fetch = jest.fn();
   });

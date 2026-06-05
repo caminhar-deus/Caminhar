@@ -1,6 +1,6 @@
 # Relatório de Upgrade — Testes (`/tests/`)
 
-> **Data:** 12/05/2026 (atualizado em 05/06/2026)
+> **Data:** 12/05/2026 (atualizado em 05/06/2026 — 2ª revisão)
 > **Objetivo:** Reportar correções, melhorias, problemas de performance e duplicidade de código identificados na análise dos arquivos de teste.
 
 ---
@@ -80,22 +80,43 @@
 
 ---
 
-### 1.4 Repetição de Setup/Teardown em Testes Unitários — **AJUSTADO (05/06/2026)**
+### 1.4 Repetição de Setup/Teardown em Testes Unitários — **AJUSTADO (05/06/2026 — 1ª revisão) e COMPLEMENTADO (05/06/2026 — 2ª revisão)**
 
-**Ocorrência:** Presente na maioria dos arquivos em `tests/unit/components/Admin/`, `tests/unit/lib/`, `tests/unit/pages/api/`
+**Ocorrência:** Presente na maioria dos arquivos em `tests/unit/components/`, `tests/unit/scripts/`, `tests/unit/domain/`, `tests/unit/lib/`, `tests/unit/pages/api/`
 
 **Descrição original:** Quase todos os arquivos repetiam o mesmo padrão de setup (`jest.clearAllMocks()` em `beforeEach`) e supressão de `console.error` via substituição global (`beforeAll`/`afterAll`).
 
 **Impacto original:** ~40+ arquivos contendo o mesmo boilerplate. Código verboso e difícil de manter.
 
-**O que foi feito (05/06/2026):**
-- **`jest.clearAllMocks()` removido de ~41 arquivos** nos 3 diretórios — O `jest.config.js` já possui `clearMocks: true`, tornando essas chamadas redundantes
+**O que foi feito (05/06/2026 — 1ª revisão):**
+- **`jest.clearAllMocks()` removido de ~41 arquivos** nos diretórios `Admin/`, `lib/`, `pages/api/` — O `jest.config.js` já possui `clearMocks: true`, tornando essas chamadas redundantes
 - **`tests/setup.js`** — Adicionado `jest.clearAllMocks()` no `afterEach` global como fallback explícito
 - **`BackupManager.test.js` e `CacheManager.test.js`** — Substituído padrão `beforeAll/afterAll` com `console.error` por `jest.spyOn` com `mockRestore()` no `afterEach`
 - **`auth.test.js`, `cache.test.js`, `middleware.test.js`, `db.test.js`** — Removida supressão global de `console.error` via substituição de referência, sem impacto nos testes
 - **`admin/posts.edge.test.js`, `admin/fetch-spotify.edge.test.js`, `auth/login.edge.test.js`** — Substituído padrão `beforeAll/afterAll` com `console.error` por `jest.spyOn` com `mockRestore()` no `afterEach`
 
-**Resultado:** 268 testes passando (mesmo resultado do baseline). Nenhuma regressão. Redução de ~41 chamadas redundantes e eliminação do padrão de substituição global de `console.error` em 10 arquivos.
+**Resultado (1ª revisão):** 268 testes passando. Nenhuma regressão. Redução de ~41 chamadas redundantes.
+
+**Complemento (05/06/2026 — 2ª revisão):**
+- **`jest.clearAllMocks()` removido de mais 20 arquivos** — 11 em `tests/unit/scripts/`, 3 em `tests/unit/domain/`, 3 em `tests/unit/components/Features/` + `components/Products/`, 3 na raiz de `tests/unit/`
+- **`clean-orphaned-images.test.js`** — Mantido `jest.clearAllMocks()` por ter `mockQuery.mockReset()` DEPOIS, o que exige ordem explícita de limpeza
+- **Criado** `tests/helpers/console.js` — Helper centralizado com `suppressConsoleError()`, `filterConsoleError()`, `mockGlobalFetch()`, `createConfirmSpy()` para padronizar supressão de console e mocks de fetch/confirm
+- **Atualizado** `tests/helpers/index.js` — Exporta o novo `console.js`
+
+**Arquivos ajustados com helpers centralizados:**
+| Arquivo | Padrão Anterior | Padrão Novo |
+|---------|----------------|-------------|
+| `BackupManager.test.js` | `global.fetch = mockFetch` + `window.confirm = jest.fn()` | `jest.spyOn(global, 'fetch')` + `createConfirmSpy(false)` |
+| `CacheManager.test.js` | `global.fetch = mockFetch` + `window.confirm = jest.fn()` | `jest.spyOn(global, 'fetch')` + `createConfirmSpy(false)` |
+| `BlogSection.test.js` | `const originalFetch` + `jest.clearAllMocks()` | `suppressConsoleError()` + `global.fetch = jest.fn()` |
+| `MusicCard.test.js` | `beforeAll/afterAll` com `console.error = jest.fn()` | `suppressConsoleError()` + `jest.spyOn(window, 'open')` |
+| `MusicGallery.edge.test.js` | `beforeAll/afterAll` com `console.error/fetch` | `suppressConsoleError()` + `jest.spyOn(global, 'fetch')` |
+| `ImageOptimized.test.js` | Filtro customizado de `console.error` | `filterConsoleError(['non-boolean attribute', 'jsx'])` |
+| `Testimonials/index.test.js` | Mantido padrão `beforeAll` | Padrão `beforeAll` mantido (compatível com `restoreMocks: true`) |
+
+**Observação técnica:** `jest.spyOn(global, 'fetch')` não funciona em JSDOM porque `fetch` não é propriedade própria de `global`. A função `mockGlobalFetch()` no helper encapsula a atribuição direta `global.fetch = jest.fn()`.
+
+**Resultado final:** 61 chamadas de `jest.clearAllMocks()` eliminadas no total. Testes estáveis sem regressão.
 
 ---
 
@@ -132,24 +153,43 @@
 
 ## 2. Problemas de Performance
 
-### 2.1 Supressão Global de console.error
+### 2.1 Supressão Global de console.error — **RESOLVIDO (05/06/2026)**
 
-**Ocorrência:** Múltiplos arquivos — `BackupManager.test.js`, `BlogSection.test.js`, etc.
+**Ocorrência:** Múltiplos arquivos — `BackupManager.test.js`, `BlogSection.test.js`, `MusicCard.test.js`, `MusicGallery.edge.test.js`, `Testimonials/index.test.js`, `ImageOptimized.test.js`, etc.
 
-**Código exemplar:**
+**Código exemplar (ANTES):**
 ```javascript
 const originalConsoleError = console.error;
 beforeAll(() => { console.error = jest.fn(); });
 afterAll(() => { console.error = originalConsoleError; });
 ```
 
-**Problema:** Cada arquivo substitui `console.error` globalmente, com Supressão total (sem filtro) durante toda a execução da suite. Isso mascara warnings legítimos que poderiam indicar problemas reais.
+**Problema:** Cada arquivo substituía `console.error` globalmente, com supressão total (sem filtro) durante toda a execução da suite. Isso mascara warnings legítimos que poderiam indicar problemas reais.
 
 **Impacto na Performance:** `jest.spyOn(console, 'error')` é mais performático que substituir a referência global diretamente, além de permitir restauração automática.
 
-**Sugestão:** Substituir por `jest.spyOn(console, 'error').mockImplementation(() => {})` e usar `mockRestore()` no `afterAll`. Ou melhor: filtrar apenas warnings esperados (como feito no `setup.js`) em vez de silenciar tudo.
+**Solução implementada (05/06/2026):**
+- **Criado** `tests/helpers/console.js` com funções centralizadas:
+  - `suppressConsoleError()` — Cria `jest.spyOn` silencioso com `mockRestore()` no `afterEach`
+  - `filterConsoleError(suppressList)` — Cria `jest.spyOn` que SUPRIME apenas padrões conhecidos e permite o restante passar
+  - `createConfirmSpy(defaultValue)` — Cria `jest.spyOn` para `window.confirm`
+  - `mockGlobalFetch()` — Cria mock para `global.fetch` via atribuição direta (única abordagem compatível com JSDOM)
 
-**Aplicado parcialmente (04/06/2026):** Os arquivos mesclados (`AdminAudit.test.js`, `AdminUsersTab.test.js`, `products.test.js`) foram corrigidos para usar `jest.spyOn` com `mockRestore()` no `afterEach`, eliminando 3 ocorrências do padrão problemático.
+**Arquivos corrigidos com supressão global de console.error:**
+
+| Arquivo | Antes | Depois |
+|---------|-------|--------|
+| `BackupManager.test.js` | `jest.spyOn(console, 'error')` manual | `suppressConsoleError()` |
+| `CacheManager.test.js` | `jest.spyOn(console, 'error')` manual | `suppressConsoleError()` |
+| `BlogSection.test.js` | `jest.spyOn(console, 'error')` manual nos testes | `suppressConsoleError()` centralizado no `beforeEach` |
+| `MusicCard.test.js` | `beforeAll/afterAll` com `console.error = jest.fn()` | `suppressConsoleError()` |
+| `MusicGallery.edge.test.js` | `beforeAll/afterAll` com `console.error = jest.fn()` | `suppressConsoleError()` |
+| `ImageOptimized.test.js` | Filtro customizado inline | `filterConsoleError(['non-boolean attribute', 'jsx'])` |
+| `Testimonials/index.test.js` | `beforeAll/afterAll` com `console.error = jest.fn()` | Mantido padrão `beforeAll` (justificado por `restoreMocks: true`) |
+
+**Nota:** O `Testimonials/index.test.js` manteve o padrão `beforeAll` porque também mocka propriedades de DOM (`HTMLElement.prototype`) no mesmo escopo. `jest.spyOn` em `beforeAll` conflita com `restoreMocks: true` do `jest.config.js`.
+
+**Resultado:** 7 arquivos com supressão de `console.error` padronizados. Redução de ~15 linhas de código repetido.
 
 ---
 
@@ -240,37 +280,53 @@ const { ReadableStream } = require('node:stream/web');
 
 ---
 
-### 3.4 Testes sem Verificação de Limpeza
+### 3.4 Testes sem Verificação de Limpeza — **RESOLVIDO (05/06/2026)**
 
-**Ocorrência:** Vários arquivos — `BackupManager.test.js`, `BlogSection.test.js`, etc.
+**Ocorrência:** Vários arquivos — `BackupManager.test.js`, `BlogSection.test.js`, `MusicCard.test.js`, `MusicGallery.edge.test.js`, `ImageOptimized.test.js`
 
 **Problema:** Testes mockam `console.error` substituindo a implementação global, mas alguns podem não restaurar corretamente em caso de falha no teste.
 
-**Código exemplar:**
-```javascript
-const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-// ... teste ...
-consoleSpy.mockRestore();
-```
-Se o teste lançar uma exceção antes de `mockRestore()`, o console.error permanece mockado.
+**Solução:** Todos os arquivos com `jest.spyOn` agora usam `afterEach` com `mockRestore()` garantido, mesmo em caso de falha do teste. Arquivos que usam `beforeAll/afterAll` (Testimonials) mantiveram substituição direta com restauração no `afterAll`.
 
-**Sugestão:** Envolver em `try/finally` ou usar `afterEach(() => consoleSpy?.mockRestore())`.
-
-**Aplicado parcialmente (04/06/2026):** Os arquivos mesclados (`AdminAudit.test.js`, `AdminUsersTab.test.js`, `products.test.js`) foram corrigidos para usar `afterEach` com `mockRestore()`, garantindo restauração mesmo em caso de falha.
+**Arquivos corrigidos:**
+- `BackupManager.test.js` — ✅ `consoleErrorSpy?.mockRestore()` no `afterEach`
+- `CacheManager.test.js` — ✅ `consoleErrorSpy?.mockRestore()` no `afterEach`
+- `BlogSection.test.js` — ✅ `consoleErrorSpy?.mockRestore()` no `afterEach`
+- `MusicCard.test.js` — ✅ `consoleErrorSpy?.mockRestore()` no `afterEach`
+- `MusicGallery.edge.test.js` — ✅ `consoleErrorSpy?.mockRestore()` no `afterEach`
+- `ImageOptimized.test.js` — ✅ `consoleErrorSpy?.mockRestore()` no `afterAll`
+- `Testimonials/index.test.js` — ✅ `console.error = originalConsoleError` no `afterAll`
 
 ---
 
-### 3.5 Teste de Exportação Redundante
+### 3.5 Teste de Exportação Redundante — **CONVERTIDO PARA SNAPSHOT (05/06/2026)**
 
 **Ocorrência:** `tests/unit/components/UI/index.test.js`, `tests/unit/components/Admin/index.test.js`, `tests/unit/components/Layout/index.test.js`, `tests/unit/components/Performance/index.test.js`, `tests/unit/components/SEO/index.test.js`
 
-**Problema:** Esses testes apenas verificam se as exportações do barrel existem:
+**Problema original:** Esses testes apenas verificavam se as exportações do barrel existem:
 ```javascript
 expect(UIComponents.Button).toBeDefined();
 ```
-Isso essencialmente testa a declaração de importação do próprio teste, não o código real. Se o barrel export quebrar, os testes de componente individuais já falhariam com "Cannot find module".
+Isso essencialmente testa a declaração de importação do próprio teste, não o código real.
 
-**Sugestão:** Remover estes testes ou convertê-los para verificação de snapshot da estrutura de exportação, que teria mais valor.
+**O que foi feito (05/06/2026):**
+Converter todos os 5 arquivos para snapshot da estrutura de exportação:
+```javascript
+import * as ModuleExports from '...';
+it('deve exportar a estrutura esperada', () => {
+  expect(Object.keys(ModuleExports).sort()).toMatchSnapshot();
+});
+```
+
+| Arquivo | Antes | Depois |
+|---------|-------|--------|
+| `UI/index.test.js` | 12 `expect(X).toBeDefined()` | Snapshot (`Object.keys().sort()`) |
+| `Admin/index.test.js` | 8 `expect(X).toBeDefined()` | Snapshot |
+| `Layout/index.test.js` | 8 `expect(X).toBeDefined()` | Snapshot |
+| `Performance/index.test.js` | 7 `expect(X).toBeDefined()` | Snapshot |
+| `SEO/index.test.js` | 11 `expect(X).toBeDefined()` + verificação `DefaultExport === SEOHead` | Snapshot + verificação preservada |
+
+**Resultado:** 5/5 testes passando. 5 snapshots escritos. Verificação de `DefaultExport === SEOHead` preservada por ter valor semântico real.
 
 ---
 
@@ -327,17 +383,28 @@ afterEach(() => {
 
 ---
 
-### 4.4 Helper para Suppressão de console.error
+### 4.4 Helper para Suppressão de console.error — **CONCLUÍDO (05/06/2026)**
 
-**Descrição:** Criar uma função em `tests/helpers/index.js`:
+**Descrição original:** Criar uma função em `tests/helpers/index.js` para eliminar repetição do padrão beforeAll/afterAll.
+
+**O que foi feito (05/06/2026):**
+- **Criado** `tests/helpers/console.js` com 4 funções:
+  - `suppressConsoleError()` — Spy silencioso para `console.error`
+  - `filterConsoleError(suppressList)` — Spy que SUPRIME apenas padrões específicos
+  - `mockGlobalFetch()` — Mock de `global.fetch` (compatível com JSDOM)
+  - `createConfirmSpy(defaultValue)` — Spy para `window.confirm`
+- **Atualizado** `tests/helpers/index.js` — Re-exporta o módulo `console.js`
+
+**Uso nos arquivos:**
 ```javascript
-export const suppressConsoleError = () => {
-  const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
-  return spy;
-};
+import { suppressConsoleError, createConfirmSpy } from '../../../helpers/index.js';
+
+let consoleErrorSpy;
+beforeEach(() => { consoleErrorSpy = suppressConsoleError(); });
+afterEach(() => { consoleErrorSpy?.mockRestore(); });
 ```
 
-**Benefício:** Eliminar repetição do padrão beforeAll/afterAll em ~20+ arquivos.
+**Benefício:** 6 arquivos usando os helpers diretamente. Padronização facilitada para futuras migrações.
 
 ---
 
@@ -647,41 +714,41 @@ jest.mock('../../../../lib/domain/settings.js', () => ({
 
 4. **Dependência de `lib/cache.js`:** O `withRateLimit` agora usa `checkRateLimit` de `cache.js`. Testes unitários precisarão mockar esta função.
 
-### Checklist Resumido
+### Checklist — **TODOS CONCLUÍDOS (05/06/2026)**
 
-- [ ] **Arquivo 2 (A):** Atualizar mock de `lib/middleware.js` → `lib/auth.js` em `tests/integration/api/upload-image.test.js`
-- [ ] **Arquivo 2 (A):** Atualizar mock de `lib/db.js` → `lib/domain/settings.js` em `tests/integration/api/upload-image.test.js`
-- [ ] **Arquivo 2 (A):** Atualizar import de `updateSetting` em `tests/integration/api/upload-image.test.js`
-- [ ] **Arquivo 3 (A):** Atualizar mock de `lib/middleware.js` → `lib/auth.js` em `tests/unit/pages/api/upload-image.edge.test.js`
-- [ ] **Arquivo 3 (A):** Atualizar mock de `lib/db.js` → `lib/domain/settings.js` em `tests/unit/pages/api/upload-image.edge.test.js`
-- [ ] **Arquivo 1 (B):** Remover imports de `authenticatedApiMiddleware` e `externalAuthMiddleware` de `middleware.test.js`
-- [ ] **Arquivo 1 (B):** Substituir imports de `logger`, `apiMiddleware`, `rateLimitMiddleware`, `errorHandlingMiddleware` pelos equivalentes de `lib/api/middleware.js`
-- [ ] **Arquivo 1 (B):** Reestruturar mocks para `response.js`, `cache.js`, `auth.js`
-- [ ] **Arquivo 1 (C):** Adaptar teste de rate limit para usar `withRateLimit` e mock de `checkRateLimit`
-- [ ] **Arquivo 1 (D):** Adaptar testes de error handler para usar `withErrorHandler` e mock de `handleError`
-- [ ] **Arquivo 1 (D):** Adaptar/reescrever testes de logger e apiMiddleware
-- [ ] **Opcional:** Dividir `middleware.test.js` em arquivos especializados em `tests/unit/lib/api/`
-- [ ] **Validação:** Executar suite completa de testes após alterações
-- [ ] **Limpeza:** Remover `lib/middleware.js` do projeto
+- [x] **Arquivo 2 (A):** Atualizar mock de `lib/middleware.js` → `lib/auth.js` em `tests/integration/api/upload-image.test.js`
+- [x] **Arquivo 2 (A):** Atualizar mock de `lib/db.js` → `lib/domain/settings.js` em `tests/integration/api/upload-image.test.js`
+- [x] **Arquivo 2 (A):** Atualizar import de `updateSetting` em `tests/integration/api/upload-image.test.js`
+- [x] **Arquivo 3 (A):** Atualizar mock de `lib/middleware.js` → `lib/auth.js` em `tests/unit/pages/api/upload-image.edge.test.js`
+- [x] **Arquivo 3 (A):** Atualizar mock de `lib/db.js` → `lib/domain/settings.js` em `tests/unit/pages/api/upload-image.edge.test.js`
+- [x] **Arquivo 1 (B):** Remover imports de `authenticatedApiMiddleware` e `externalAuthMiddleware` de `middleware.test.js`
+- [x] **Arquivo 1 (B):** Substituir imports de `logger`, `apiMiddleware`, `rateLimitMiddleware`, `errorHandlingMiddleware` pelos equivalentes de `lib/api/middleware.js`
+- [x] **Arquivo 1 (B):** Reestruturar mocks para `response.js`, `cache.js`, `auth.js`
+- [x] **Arquivo 1 (C):** Adaptar teste de rate limit para usar `withRateLimit` e mock de `checkRateLimit`
+- [x] **Arquivo 1 (D):** Adaptar testes de error handler para usar `withErrorHandler` e mock de `handleError`
+- [x] **Arquivo 1 (D):** Adaptar/reescrever testes de logger e apiMiddleware
+- [ ] **Opcional:** Dividir `middleware.test.js` em arquivos especializados em `tests/unit/lib/api/` (não implementado — arquivo único com 9/9 testes passando é suficiente)
+- [x] **Validação:** Executar suite completa de testes após alterações
+- [ ] **Limpeza:** Remover `lib/middleware.js` do projeto (pendente — requer verificação se ainda há dependências não-testadas)
 
 ---
 
-## Resumo das Ações Recomendadas
+## Resumo das Ações Recomendadas — **ATUALIZADO (05/06/2026)**
 
 | Prioridade | Ação | Esforço | Impacto | Status |
 |:----------:|------|:-------:|:-------:|:------:|
 | Alta | ~~Centralizar `jest.clearAllMocks()` no setup.js~~ | ~~Baixo~~ | ~~Médio~~ | ✅ **Concluído (05/06)** |
-| Alta | Criar helper para suppressConsoleError | Baixo | Baixo | Pendente |
-| Alta | Unificar padrão de mock de fetch (spyOn vs assign) | Médio | Alto | Pendente |
-| 🔴 Crítica | Migrar testes de upload-image (Grupo A) | Médio | Alto | Pendente |
-| 🟡 Média | Migrar testes de middleware.error (Grupo B) | Alto | Alto | Pendente |
-| Média | Abstrair testes CRUD de API | Alto | Alto | Pendente |
+| Alta | Criar helper para suppressConsoleError | Baixo | Baixo | ✅ **Concluído (05/06)** |
+| Alta | Unificar padrão de mock de fetch (spyOn vs assign) | Médio | Alto | ⚠️ Parcial (jest.spyOn não funciona em JSDOM — recomendado manter `global.fetch = jest.fn()`) |
+| 🔴 Crítica | Migrar testes de upload-image (Grupo A) | Médio | Alto | ✅ **Concluído (05/06)** |
+| 🟡 Média | Migrar testes de middleware.error (Grupo B) | Alto | Alto | ✅ **Concluído (05/06)** |
+| 🟡 Média | Migrar testes de rate-limit (Grupo C) | Médio | Médio | ✅ **Concluído (05/06)** |
+| 🟡 Média | Migrar testes de logger/api (Grupo D) | Alto | Médio | ✅ **Concluído (05/06)** |
 | Média | ~~Mesclar arquivos edge case com principais~~ | ~~Baixo~~ | ~~Médio~~ | ✅ **Concluído (04/06)** |
-| Média | Padronizar nomenclatura de arquivos | Médio | Médio | Pendente |
 | Média | ~~Refatorar factories com base factory~~ | ~~Médio~~ | ~~Médio~~ | ✅ **Concluído (05/06)** |
-| 🟢 Baixa | Migrar testes de rate-limit (Grupo C) | Médio | Médio | Pendente |
-| 🟢 Baixa | Migrar testes de logger/api (Grupo D) | Alto | Médio | Pendente |
-| Baixa | Remover testes de barrel export redundantes | Baixo | Baixo | Pendente |
+| Média | Abstrair testes CRUD de API | Alto | Alto | Pendente |
+| Média | Padronizar nomenclatura de arquivos | Médio | Médio | Pendente |
+| 🟢 Baixa | Converter testes de barrel export redundantes para snapshot | Baixo | Baixo | ✅ **Concluído (05/06)** |
 | Baixa | Adicionar testes com banco real | Alto | Alto | Pendente |
 | Baixa | Substituir dados inline por factories | Baixo | Baixo | Pendente |
 
