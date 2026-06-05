@@ -1,6 +1,6 @@
 # Análise do Projeto — Testes (`/tests/`)
 
-> **Data:** 13/05/2026 (atualizado em 04/06/2026)
+> **Data:** 13/05/2026 (atualizado em 05/06/2026)
 > **Objetivo:** Documentar de forma objetiva, clara e focada todos os arquivos de teste do projeto, descrevendo localização, propósito e funcionalidade de cada um.
 
 ---
@@ -68,7 +68,7 @@ tests/
 
 ### `tests/setup.js`
 **Localização:** `/tests/setup.js`
-**Propósito:** Bootstrap central executado antes de todos os testes. Configura polyfills (TextEncoder, ReadableStream, Request/Response, localStorage, matchMedia, IntersectionObserver, ResizeObserver, crypto.randomUUID), React Testing Library (timeout 5s), filtro de warnings conhecidos do console.error, cleanup automático pós-teste (`afterEach`), e utilitários globais (`global.wait()`, `global.suppressWarnings()`). Importa os matchers customizados.
+**Propósito:** Bootstrap central executado antes de todos os testes. Configura polyfills (TextEncoder, ReadableStream, Request/Response, localStorage, matchMedia, IntersectionObserver, ResizeObserver, crypto.randomUUID), React Testing Library (timeout 5s), filtro de warnings conhecidos do console.error, cleanup automático pós-teste (`afterEach` com `cleanup()` e `jest.clearAllMocks()`), e utilitários globais (`global.wait()`, `global.suppressWarnings()`). Importa os matchers customizados.
 
 ---
 
@@ -425,4 +425,4 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 
 ---
 
-> **Nota atualizada (04/06/2026):** Este documento reflete a estrutura completa de testes do projeto Caminhar. Foram feitas 3 mesclagens de arquivos edge case nos respectivos testes principais, resultando em -3 arquivos. Todos os cenários de borda foram preservados sob `describe('Casos de Borda')`. Para detalhes de implementação específicos, consulte cada arquivo individualmente.
+> **Nota atualizada (05/06/2026):** Este documento reflete a estrutura completa de testes do projeto Caminhar. Foram feitas 3 mesclagens de arquivos edge case nos respectivos testes principais (04/06) e centralizado `jest.clearAllMocks()` no setup.js (05/06), reduzindo ~41 chamadas redundantes e eliminando o padrão de substituição global de `console.error` em 10 arquivos. Para detalhes de implementação específicos, consulte cada arquivo individualmente.

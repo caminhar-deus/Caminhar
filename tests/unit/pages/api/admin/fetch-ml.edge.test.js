@@ -14,7 +14,6 @@ describe('API Admin - Fetch ML (Edge Cases)', () => {
 
   beforeEach(() => {
     global.fetch = mockFetch;
-    jest.clearAllMocks();
     auth.getAuthToken.mockReturnValue('fake-token');
     auth.verifyToken.mockReturnValue({ role: 'admin' });
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});

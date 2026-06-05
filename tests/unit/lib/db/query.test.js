@@ -7,7 +7,6 @@ jest.mock('pg');
 
 describe('Base Query Wrapper', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
         restorePoolImplementation();
         resetPool();
         mockQuery.mockResolvedValue({ rows: [], rowCount: 0 });

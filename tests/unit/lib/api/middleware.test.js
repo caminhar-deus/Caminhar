@@ -37,7 +37,6 @@ describe('Library - API - Middleware', () => {
   let res;
 
   beforeEach(() => {
-    jest.clearAllMocks();
     req = {
       method: 'GET',
       headers: {},

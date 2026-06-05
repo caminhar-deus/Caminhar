@@ -8,7 +8,6 @@ jest.mock('pg');
 
 describe('Settings Operations', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
     restorePoolImplementation();
     resetPool();
     mockQuery.mockResolvedValue({ rows: [], rowCount: 0 });

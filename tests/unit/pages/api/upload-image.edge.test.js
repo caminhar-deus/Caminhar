@@ -38,7 +38,6 @@ jest.mock('../../../../lib/middleware.js', () => ({
 
 describe('API - Upload Image (Edge Cases)', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
   });
 
   afterEach(() => {

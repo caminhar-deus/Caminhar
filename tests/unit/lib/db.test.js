@@ -1,4 +1,4 @@
-import { describe, it, expect, jest, beforeEach, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { query, closeDatabase, transaction, healthCheck, getDatabaseInfo, resetPool } from '../../../lib/db.js';
 import { Pool, restorePoolImplementation } from 'pg';
 
@@ -7,21 +7,8 @@ jest.mock('pg');
 describe('Library - Database', () => {
   let mockClient;
   let mockPoolInstance;
-  const originalConsoleLog = console.log;
-  const originalConsoleError = console.error;
-
-  beforeAll(() => {
-    console.log = () => {};
-    console.error = () => {};
-  });
-
-  afterAll(() => {
-    console.log = originalConsoleLog;
-    console.error = originalConsoleError;
-  });
 
   beforeEach(() => {
-    jest.clearAllMocks();
     restorePoolImplementation();
     
     mockClient = { query: jest.fn(), release: jest.fn() };
@@ -50,7 +37,6 @@ describe('Library - Database', () => {
     mockPoolInstance.query.mockImplementation(() => Promise.reject(new Error('DB Timeout')));
     await expect(query('SELECT 1')).rejects.toThrow('DB Timeout');
 
-    jest.clearAllMocks();
     mockPoolInstance.query.mockImplementation(() => Promise.reject(new Error('DB Timeout')));
     const res = await query('SELECT 1', [], { throwOnError: false });
     expect(res).toBeNull();

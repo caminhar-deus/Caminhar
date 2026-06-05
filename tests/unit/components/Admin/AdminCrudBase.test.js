@@ -60,7 +60,6 @@ describe('Componente Front-End - AdminCrudBase', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
     useAdminCrud.mockReturnValue(mockUseAdminCrud);
     global.fetch = jest.fn();
     global.URL.createObjectURL = jest.fn(() => 'blob:test');

@@ -1,4 +1,4 @@
-import { describe, it, expect, jest, beforeEach, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import handler from '../../../../../pages/api/admin/roles.js';
 import * as auth from '../../../../../lib/auth.js';
 import * as db from '../../../../../lib/db.js';
@@ -19,18 +19,8 @@ jest.mock('../../../../../lib/db.js', () => ({
 describe('API - Admin - Roles (Edge Cases)', () => {
   let req;
   let res;
-  const originalConsoleError = console.error;
-
-  beforeAll(() => {
-    console.error = jest.fn();
-  });
-
-  afterAll(() => {
-    console.error = originalConsoleError;
-  });
 
   beforeEach(() => {
-    jest.clearAllMocks();
     req = {
       method: 'GET',
       headers: {},

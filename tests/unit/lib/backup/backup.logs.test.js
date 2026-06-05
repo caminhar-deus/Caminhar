@@ -23,7 +23,6 @@ import fs from 'fs';
 
 describe('getBackupLogs', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
   });
 
   it('deve retornar um array vazio se o arquivo de log não existir', async () => {

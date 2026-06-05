@@ -23,7 +23,6 @@ describe('Operações de Backup (lib/backup.js)', () => {
   const DATABASE_URL = 'postgresql://user:pass@host:5432/testdb';
   
   beforeEach(() => {
-    jest.clearAllMocks();
     process.env.DATABASE_URL = DATABASE_URL;
     
     // Configuração padrão dos mocks

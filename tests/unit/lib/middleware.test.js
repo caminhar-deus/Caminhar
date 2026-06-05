@@ -1,4 +1,4 @@
-import { describe, it, expect, jest, beforeEach, beforeAll, afterAll, afterEach } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import Cors from 'cors';
 import { 
   logger, 
@@ -34,24 +34,10 @@ describe('Library - Middleware', () => {
   let req;
   let res;
   
-  const originalConsoleLog = console.log;
-  const originalConsoleError = console.error;
-  const originalConsoleWarn = console.warn;
-
-  beforeAll(() => {
-    console.log = jest.fn();
-    console.error = jest.fn();
-    console.warn = jest.fn();
-  });
-
-  afterAll(() => {
-    console.log = originalConsoleLog;
-    console.error = originalConsoleError;
-    console.warn = originalConsoleWarn;
-  });
-
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.spyOn(console, 'log').mockImplementation(() => {});
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
     mockCorsConfig.error = false;
     req = {
       method: 'GET',

@@ -1,4 +1,4 @@
-import { describe, it, expect, jest, beforeEach, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { getOrSetCache, invalidateCache, clearAllCache, checkRateLimit } from '../../../lib/cache.js';
 
 const mockRedis = { get: jest.fn(), set: jest.fn(), del: jest.fn(), flushdb: jest.fn(), incr: jest.fn(), expire: jest.fn() };
@@ -13,21 +13,7 @@ jest.mock('../../../lib/redis.js', () => {
 import { redis } from '../../../lib/redis.js';
 
 describe('Library - Cache & Rate Limit', () => {
-  const originalConsoleError = console.error;
-  const originalConsoleWarn = console.warn;
-
-  beforeAll(() => {
-    console.error = () => {};
-    console.warn = () => {};
-  });
-
-  afterAll(() => {
-    console.error = originalConsoleError;
-    console.warn = originalConsoleWarn;
-  });
-
   beforeEach(() => { 
-    jest.clearAllMocks(); 
     mockSimulateNoRedis = false;
   });
 

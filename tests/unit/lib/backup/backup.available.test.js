@@ -24,7 +24,6 @@ describe('getAvailableBackups', () => {
   const BACKUP_PREFIX = 'caminhar-pg-backup';
 
   beforeEach(() => {
-    jest.clearAllMocks();
     // Comportamento padrão: o diretório de backup existe
     fs.existsSync.mockReturnValue(true);
   });

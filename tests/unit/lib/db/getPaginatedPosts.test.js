@@ -8,7 +8,6 @@ jest.mock('pg');
 
 describe('getPaginatedPosts', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
     restorePoolImplementation(); // Restaura Pool após clearAllMocks apagar sua implementação
     resetPool();                 // Descarta o pool cacheado para forçar new Pool() no próximo uso
     // Define um retorno padrão para evitar erros de 'undefined' em chamadas não mockadas

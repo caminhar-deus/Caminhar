@@ -22,7 +22,6 @@ describe('Componente Front-End - AdminMusicas', () => {
   const originalFetch = global.fetch;
 
   beforeEach(() => {
-    jest.clearAllMocks();
     global.fetch = jest.fn();
   });
 

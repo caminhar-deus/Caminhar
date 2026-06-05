@@ -1,4 +1,4 @@
-import { describe, it, expect, jest, beforeEach, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import handler from '../../../../../pages/api/admin/fetch-spotify.js';
 import * as auth from '../../../../../lib/auth.js';
 
@@ -10,22 +10,12 @@ jest.mock('../../../../../lib/auth.js', () => ({
 describe('API - Admin - Fetch Spotify (Edge Cases)', () => {
   let req;
   let res;
-  const originalConsoleError = console.error;
+  let consoleErrorSpy;
   const originalFetch = global.fetch;
 
-  beforeAll(() => {
-    // Silenciamos os erros e mockamos o fetch global
-    console.error = jest.fn();
-    global.fetch = jest.fn();
-  });
-
-  afterAll(() => {
-    console.error = originalConsoleError;
-    global.fetch = originalFetch;
-  });
-
   beforeEach(() => {
-    jest.clearAllMocks();
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    global.fetch = jest.fn();
     req = { 
       method: 'POST',
       body: { url: 'https://open.spotify.com/track/123456789' }
@@ -36,6 +26,11 @@ describe('API - Admin - Fetch Spotify (Edge Cases)', () => {
       json: jest.fn(),
       end: jest.fn()
     };
+  });
+
+  afterEach(() => {
+    consoleErrorSpy?.mockRestore();
+    global.fetch = originalFetch;
   });
 
   it('deve registrar erro no console quando as 3 estratégias de fetch falharem e retornar 500', async () => {

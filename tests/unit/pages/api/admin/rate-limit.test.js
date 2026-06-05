@@ -33,7 +33,6 @@ describe('API - Admin - Rate Limit', () => {
     process.env = { ...originalEnv };
     process.env.UPSTASH_REDIS_REST_URL = 'http://fake-redis';
     process.env.UPSTASH_REDIS_REST_TOKEN = 'fake-token';
-    jest.clearAllMocks();
   });
 
   afterEach(() => {

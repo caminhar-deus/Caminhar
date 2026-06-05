@@ -1,6 +1,6 @@
 # Relatório de Upgrade — Testes (`/tests/`)
 
-> **Data:** 12/05/2026 (atualizado em 04/06/2026)
+> **Data:** 12/05/2026 (atualizado em 05/06/2026)
 > **Objetivo:** Reportar correções, melhorias, problemas de performance e duplicidade de código identificados na análise dos arquivos de teste.
 
 ---
@@ -80,26 +80,22 @@
 
 ---
 
-### 1.4 Repetição de Setup/Teardown em Testes Unitários
+### 1.4 Repetição de Setup/Teardown em Testes Unitários — **AJUSTADO (05/06/2026)**
 
 **Ocorrência:** Presente na maioria dos arquivos em `tests/unit/components/Admin/`, `tests/unit/lib/`, `tests/unit/pages/api/`
 
-**Descrição:** Quase todos os arquivos repetem o mesmo padrão de setup:
-```javascript
-beforeEach(() => {
-  jest.clearAllMocks();
-});
-```
-E vários repetem:
-```javascript
-const originalConsoleError = console.error;
-beforeAll(() => { console.error = jest.fn(); });
-afterAll(() => { console.error = originalConsoleError; });
-```
+**Descrição original:** Quase todos os arquivos repetiam o mesmo padrão de setup (`jest.clearAllMocks()` em `beforeEach`) e supressão de `console.error` via substituição global (`beforeAll`/`afterAll`).
 
-**Impacto:** ~40+ arquivos contendo o mesmo boilerplate. Código verboso e difícil de manter.
+**Impacto original:** ~40+ arquivos contendo o mesmo boilerplate. Código verboso e difícil de manter.
 
-**Sugestão:** Mover `jest.clearAllMocks()` para `setup.js` global. Criar um helper `suppressConsoleError()` importável para evitar repetição do padrão beforeAll/afterAll.
+**O que foi feito (05/06/2026):**
+- **`jest.clearAllMocks()` removido de ~41 arquivos** nos 3 diretórios — O `jest.config.js` já possui `clearMocks: true`, tornando essas chamadas redundantes
+- **`tests/setup.js`** — Adicionado `jest.clearAllMocks()` no `afterEach` global como fallback explícito
+- **`BackupManager.test.js` e `CacheManager.test.js`** — Substituído padrão `beforeAll/afterAll` com `console.error` por `jest.spyOn` com `mockRestore()` no `afterEach`
+- **`auth.test.js`, `cache.test.js`, `middleware.test.js`, `db.test.js`** — Removida supressão global de `console.error` via substituição de referência, sem impacto nos testes
+- **`admin/posts.edge.test.js`, `admin/fetch-spotify.edge.test.js`, `auth/login.edge.test.js`** — Substituído padrão `beforeAll/afterAll` com `console.error` por `jest.spyOn` com `mockRestore()` no `afterEach`
+
+**Resultado:** 268 testes passando (mesmo resultado do baseline). Nenhuma regressão. Redução de ~41 chamadas redundantes e eliminação do padrão de substituição global de `console.error` em 10 arquivos.
 
 ---
 
@@ -301,11 +297,11 @@ Isso essencialmente testa a declaração de importação do próprio teste, não
 
 ---
 
-### 4.3 Centralização de Mocks no `setup.js`
+### 4.3 Centralização de Mocks no `setup.js` — **AJUSTADO (05/06/2026)**
 
 **Descrição:** Mover padrões comuns como `jest.clearAllMocks()` e restauração de mocks para o `setup.js` global. Atualmente, o setup.js faz cleanup DOM via `afterEach(cleanup)` mas não limpa mocks.
 
-**Código sugerido para setup.js:**
+**Código implementado no setup.js:**
 ```javascript
 afterEach(() => {
   cleanup();
@@ -660,7 +656,7 @@ jest.mock('../../../../lib/domain/settings.js', () => ({
 
 | Prioridade | Ação | Esforço | Impacto | Status |
 |:----------:|------|:-------:|:-------:|:------:|
-| Alta | Centralizar `jest.clearAllMocks()` no setup.js | Baixo | Médio | Pendente |
+| Alta | ~~Centralizar `jest.clearAllMocks()` no setup.js~~ | ~~Baixo~~ | ~~Médio~~ | ✅ **Concluído (05/06)** |
 | Alta | Criar helper para suppressConsoleError | Baixo | Baixo | Pendente |
 | Alta | Unificar padrão de mock de fetch (spyOn vs assign) | Médio | Alto | Pendente |
 | 🔴 Crítica | Migrar testes de upload-image (Grupo A) | Médio | Alto | Pendente |

@@ -27,7 +27,6 @@ describe('Componente Front-End - AdminUsersTab', () => {
   const originalFetch = global.fetch;
 
   beforeEach(() => {
-    jest.clearAllMocks();
     global.fetch = jest.fn();
     sessionStorage.clear();
   });

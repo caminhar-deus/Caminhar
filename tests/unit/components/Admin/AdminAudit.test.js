@@ -17,7 +17,6 @@ describe('Componente Front-End - AdminAudit', () => {
   const originalCreateObjectURL = global.URL.createObjectURL;
 
   beforeEach(() => {
-    jest.clearAllMocks();
     global.fetch = jest.fn();
     global.URL.createObjectURL = jest.fn(() => 'blob:test');
   });

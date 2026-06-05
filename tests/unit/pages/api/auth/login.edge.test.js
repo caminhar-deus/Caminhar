@@ -1,4 +1,4 @@
-import { describe, it, expect, jest, beforeEach, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import handler from '../../../../../pages/api/auth/login.js';
 import * as auth from '../../../../../lib/auth.js';
 import * as cache from '../../../../../lib/cache.js';
@@ -16,19 +16,10 @@ jest.mock('../../../../../lib/cache.js', () => ({
 describe('API - Auth - Login (Edge Cases)', () => {
   let req;
   let res;
-  const originalConsoleError = console.error;
-
-  beforeAll(() => {
-    // Silencia o console.error para manter a saída do Jest limpa
-    console.error = jest.fn();
-  });
-
-  afterAll(() => {
-    console.error = originalConsoleError;
-  });
+  let consoleErrorSpy;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     req = {
       method: 'POST',
       headers: {},
@@ -40,6 +31,10 @@ describe('API - Auth - Login (Edge Cases)', () => {
       status: jest.fn().mockReturnThis(),
       json: jest.fn()
     };
+  });
+
+  afterEach(() => {
+    consoleErrorSpy?.mockRestore();
   });
 
   it('deve retornar 500 se ocorrer um erro interno durante a autenticação', async () => {

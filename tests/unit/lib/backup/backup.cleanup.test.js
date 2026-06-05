@@ -24,7 +24,6 @@ describe('cleanupOldBackups (Rotação de Backups)', () => {
   const BACKUP_PREFIX = 'caminhar-pg-backup';
 
   beforeEach(() => {
-    jest.clearAllMocks();
     // Configuração padrão dos mocks para evitar erros de log
     fs.readFileSync.mockReturnValue('');
     fs.existsSync.mockReturnValue(true);

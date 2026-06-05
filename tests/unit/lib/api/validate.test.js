@@ -22,7 +22,6 @@ describe('API Validation Middleware (lib/api/validate.js)', () => {
   let req, res, handler;
 
   beforeEach(() => {
-    jest.clearAllMocks();
     // Mock básico do handler que seria chamado após a validação
     handler = jest.fn();
     // Cria mocks de request e response http

@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, jest, beforeEach, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import BackupManager from '../../../../../components/Admin/Managers/BackupManager.js';
 
 // Mocks globais para Fetch e Window.Confirm
@@ -9,18 +9,14 @@ global.fetch = mockFetch;
 window.confirm = jest.fn();
 
 describe('Componentes Admin - BackupManager', () => {
-  const originalConsoleError = console.error;
-
-  beforeAll(() => {
-    console.error = jest.fn(); // Suprime logs de erro intencionais do terminal
-  });
-
-  afterAll(() => {
-    console.error = originalConsoleError;
-  });
+  let consoleErrorSpy;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    consoleErrorSpy?.mockRestore();
   });
 
   it('deve carregar e exibir as informações do último backup no mount', async () => {

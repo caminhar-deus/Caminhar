@@ -17,7 +17,6 @@ describe('API - Admin - Dicas (Edge Cases)', () => {
   let res;
 
   beforeEach(() => {
-    jest.clearAllMocks();
     req = {
       method: 'GET',
       headers: {},

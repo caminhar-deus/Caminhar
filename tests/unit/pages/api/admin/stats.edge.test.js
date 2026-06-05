@@ -17,7 +17,6 @@ describe('API - Admin - Stats (Edge Cases)', () => {
   let res;
 
   beforeEach(() => {
-    jest.clearAllMocks();
     req = { method: 'GET' };
     res = {
       setHeader: jest.fn(),

@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, jest, beforeEach, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import CacheManager from '../../../../../components/Admin/Managers/CacheManager.js';
 import toast from 'react-hot-toast';
 
@@ -19,18 +19,10 @@ global.fetch = mockFetch;
 window.confirm = jest.fn();
 
 describe('Componentes Admin - CacheManager', () => {
-  const originalConsoleError = console.error;
-
-  beforeAll(() => {
-    console.error = jest.fn();
-  });
-
-  afterAll(() => {
-    console.error = originalConsoleError;
-  });
+  let consoleErrorSpy;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     toast.loading.mockReturnValue('id_toast_123');
 
     // Mock para a requisição GET automática no mount do componente (métricas)
@@ -44,6 +36,10 @@ describe('Componentes Admin - CacheManager', () => {
         localMapSize: 0
       })
     });
+  });
+
+  afterEach(() => {
+    consoleErrorSpy?.mockRestore();
   });
 
   it('deve renderizar o painel e o botão corretamente', () => {

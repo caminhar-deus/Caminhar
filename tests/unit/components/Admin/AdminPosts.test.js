@@ -15,7 +15,6 @@ describe('Componente Front-End - AdminPosts', () => {
   const originalFetch = global.fetch;
 
   beforeEach(() => {
-    jest.clearAllMocks();
     global.fetch = jest.fn();
   });
 

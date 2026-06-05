@@ -10,7 +10,6 @@ import { query } from '../../../lib/db.js';
 
 describe('Utilitários CRUD genéricos (lib/crud.js)', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
   });
 
   describe('Função raw() e Inserção com SQL Bruto', () => {

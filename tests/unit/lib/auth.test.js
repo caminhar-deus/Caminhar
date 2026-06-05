@@ -1,4 +1,4 @@
-import { describe, it, expect, jest, beforeEach, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { hashPassword, verifyPassword, generateToken, verifyToken, setAuthCookie, getAuthCookie, getAuthToken, authenticate, withAuth, initializeAuth } from '../../../lib/auth.js';
 import { query } from '../../../lib/db.js';
 
@@ -6,20 +6,6 @@ jest.mock('../../../lib/db.js', () => ({ query: jest.fn() }));
 jest.mock('cookie');
 
 describe('Library - Auth', () => {
-  const originalConsoleLog = console.log;
-  const originalConsoleError = console.error;
-
-  beforeAll(() => {
-    console.log = () => {};
-    console.error = () => {};
-  });
-
-  afterAll(() => {
-    console.log = originalConsoleLog;
-    console.error = originalConsoleError;
-  });
-
-  beforeEach(() => { jest.clearAllMocks(); });
 
   it('hashPassword e verifyPassword: deve encriptar e validar corretamente', async () => {
     const hash = await hashPassword('123456');
