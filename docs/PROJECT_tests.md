@@ -110,6 +110,7 @@ tests/
 | Arquivo | Propósito |
 |---------|-----------|
 | `index.js` | Ponto de exportação que re-exporta todos os mocks |
+| `cache.js` | Mock de cache compartilhado. Exporta `mockCacheModule(overrides)` (cria módulo completo com `getOrSetCache`, `checkRateLimit`, `invalidateCache`) e `resetCacheMocks(cacheMock)` para resetar comportamentos padrão. Uso: `jest.mock('../../../lib/cache.js', () => require('../../mocks/cache').mockCacheModule())` |
 | `db.js` | Mock de banco de dados. Exporta `mockQuery(rows, error)` para simular `db.query()`, e `createDbMock()` que retorna um objeto completo com `query`, `createRecord`, `updateRecords`, `deleteRecords`, `logActivity` |
 | `fetch.js` | Mock de fetch API. Exporta `mockFetchSuccess(data)`, `mockFetchError(status, message)`, `mockFetchNetworkError()` |
 | `next.js` | Mock de objetos Next.js. Exporta `mockReq(overrides)`, `mockRes()` com métodos `status`, `json`, `redirect`, `setHeader`, `getHeader` |

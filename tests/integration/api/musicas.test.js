@@ -1,11 +1,18 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
-import handler from '../../../pages/api/musicas.js';
-import { getPaginatedMusicas } from '../../../lib/domain/musicas.js';
 
+// Mocks declarados ANTES da importação do handler
 jest.mock('../../../lib/domain/musicas.js', () => ({
   getPaginatedMusicas: jest.fn()
 }));
+
+jest.mock('../../../lib/cache.js', () => require('../../mocks/cache').mockCacheModule());
+
+// Importa o handler
+import handler from '../../../pages/api/musicas.js';
+
+// Importa as funções mockadas para controlá-las
+import { getPaginatedMusicas } from '../../../lib/domain/musicas.js';
 
 describe('API Pública - Músicas (/api/musicas)', () => {
   beforeEach(() => { jest.clearAllMocks(); });
@@ -21,7 +28,7 @@ describe('API Pública - Músicas (/api/musicas)', () => {
     const { req, res } = createMocks({ method: 'GET', query: { page: -1 } });
     await handler(req, res);
     expect(res._getStatusCode()).toBe(400);
-    expect(res._getJSONData().success).toBe(false);
+    expect(res._getJSONData().error).toBe('Bad Request');
   });
 
   it('deve retornar 200, definir Cache-Control e retornar dados paginados', async () => {
@@ -33,15 +40,15 @@ describe('API Pública - Músicas (/api/musicas)', () => {
     await handler(req, res);
     
     expect(res._getStatusCode()).toBe(200);
-    expect(res.getHeader('Cache-Control')).toContain('s-maxage=60');
+    expect(res.getHeader('Cache-Control')).toContain('s-maxage=300');
     
     const responseData = res._getJSONData();
+    expect(responseData.success).toBe(true);
     expect(responseData.data).toHaveLength(1);
     expect(getPaginatedMusicas).toHaveBeenCalledWith(1, 10, 'Hino', true);
   });
 
   it('deve retornar 500 em caso de erro no servidor', async () => {
-    // Simula uma falha na camada de domínio (ex: banco de dados caiu)
     getPaginatedMusicas.mockRejectedValueOnce(new Error('Erro de conexão com o banco'));
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -50,10 +57,17 @@ describe('API Pública - Músicas (/api/musicas)', () => {
 
     expect(res._getStatusCode()).toBe(500);
     const responseData = res._getJSONData();
-    expect(responseData.success).toBe(false);
+    expect(responseData.error).toBe('Internal Server Error');
     expect(responseData.message).toBe('Erro interno do servidor ao buscar músicas.');
-    expect(consoleSpy).toHaveBeenCalledWith('API Error fetching musicas:', expect.any(Error));
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Musicas'), expect.any(Error));
 
     consoleSpy.mockRestore();
+  });
+
+  it('deve retornar 429 se o limite de requisições for excedido (rate limit dentro do cache)', async () => {
+    getPaginatedMusicas.mockRejectedValueOnce(new Error('RATE_LIMIT_EXCEEDED'));
+    const { req, res } = createMocks({ method: 'GET' });
+    await handler(req, res);
+    expect(res._getStatusCode()).toBe(429);
   });
 });

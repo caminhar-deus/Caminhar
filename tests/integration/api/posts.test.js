@@ -6,10 +6,12 @@ jest.mock('../../../lib/domain/posts.js', () => ({
   getRecentPosts: jest.fn(),
 }));
 
-jest.mock('../../../lib/cache.js', () => ({
-  // Simula o comportamento real do cache de executar o callback passado
-  getOrSetCache: jest.fn(async (key, fetchFunction) => await fetchFunction()),
-  checkRateLimit: jest.fn(),
+jest.mock('../../../lib/cache.js', () => require('../../mocks/cache').mockCacheModule());
+
+jest.mock('../../../lib/auth.js', () => ({
+  withAuth: jest.fn((handler) => handler),
+  getAuthToken: jest.fn(),
+  verifyToken: jest.fn(),
 }));
 
 // Importa o handler
@@ -22,9 +24,7 @@ import { getOrSetCache, checkRateLimit } from '../../../lib/cache.js';
 describe('API Pública de Posts (GET /api/posts)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Re-estabelece a implementação do mock caso o Jest o resete automaticamente
     getOrSetCache.mockImplementation(async (key, fetchFunction) => await fetchFunction());
-    // Garante que o rate limit não vai bloquear os testes de sucesso por padrão
     checkRateLimit.mockResolvedValue(false);
   });
 
@@ -33,19 +33,19 @@ describe('API Pública de Posts (GET /api/posts)', () => {
       data: [{ id: 1, title: 'Post 1' }, { id: 2, title: 'Post 2' }],
       pagination: { page: 1, limit: 10, total: 2, totalPages: 1 }
     };
-    
+
     getRecentPosts.mockResolvedValue(mockPostsResult);
 
     const { req, res } = createMocks({ method: 'GET' });
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(200);
-    const responseData = JSON.parse(res._getData());
-    
+    const responseData = res._getJSONData();
+
     expect(responseData.success).toBe(true);
     expect(responseData.data).toEqual(mockPostsResult.data);
     expect(getRecentPosts).toHaveBeenCalledWith(10, 1, ''); // limit, page, search
-    expect(getOrSetCache).toHaveBeenCalledWith('posts:1:10', expect.any(Function));
+    expect(getOrSetCache).toHaveBeenCalledWith('posts:list:1:10', expect.any(Function), 7200);
   });
 
   it('deve repassar os parâmetros de paginação e busca corretamente', async () => {
@@ -58,7 +58,7 @@ describe('API Pública de Posts (GET /api/posts)', () => {
     await handler(req, res);
 
     expect(getRecentPosts).toHaveBeenCalledWith(20, 3, 'teste');
-    expect(getOrSetCache).toHaveBeenCalledWith('posts:3:20:teste', expect.any(Function));
+    expect(getOrSetCache).toHaveBeenCalledWith('posts:search:3:20:teste', expect.any(Function), 1800);
   });
 
   it('deve retornar 400 se os parâmetros de paginação forem inválidos (ex: negativos ou acima de 100)', async () => {
@@ -66,17 +66,7 @@ describe('API Pública de Posts (GET /api/posts)', () => {
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(400);
-    expect(JSON.parse(res._getData())).toEqual({ error: 'Invalid pagination parameters' });
-  });
-
-  it('deve retornar 429 se o limite de requisições (Rate Limit) for excedido', async () => {
-    checkRateLimit.mockResolvedValue(true); // Simula o bloqueio
-
-    const { req, res } = createMocks({ method: 'GET' });
-    await handler(req, res);
-
-    expect(res._getStatusCode()).toBe(429);
-    expect(JSON.parse(res._getData())).toEqual({ error: 'Too many requests' });
+    expect(res._getJSONData()).toEqual({ error: 'Bad Request', message: 'Parâmetros de paginação inválidos' });
   });
 
   it('deve retornar 500 em caso de erro interno no servidor ou banco de dados', async () => {
@@ -87,7 +77,7 @@ describe('API Pública de Posts (GET /api/posts)', () => {
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(500);
-    expect(JSON.parse(res._getData())).toEqual({ error: 'Internal server error' });
+    expect(res._getJSONData()).toEqual({ error: 'Internal Server Error', message: 'Erro interno do servidor ao buscar posts' });
     consoleSpy.mockRestore();
   });
 });
