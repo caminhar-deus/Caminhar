@@ -685,25 +685,58 @@ Serão necessários os seguintes componentes:
 
 #### 4.6.2 Configuração no Jest
 
-**A. `jest.config.db.js` — novo arquivo de configuração dedicado:**
+**A. `jest.config.db.js` — configuração dedicada (já existe no projeto):**
 
 ```javascript
+/**
+ * Jest Configuration — Testes com PostgreSQL Real via Testcontainers.
+ * 
+ * Configuração dedicada para testes de integração com banco real.
+ * Executa apenas arquivos *.db.test.js com ambiente node.
+ * Inclui transform Babel para compatibilidade ESM.
+ * 
+ * Para executar: npm run test:db:container
+ */
 export default {
-  ...require('./jest.config.js').default,
-  testEnvironment: 'node', // ← DIFERENTE: jsdom não é necessário para testes de domínio
+  testEnvironment: 'node',                           // ← DIFERENTE de jsdom
   globalSetup: '<rootDir>/tests/global-setup.db.js',
-  testMatch: ['**/*.db.test.js'], // ← Prefixo exclusivo para testes com banco real
-  testTimeout: 30000, // ↑ Aumentado: container pode levar ~15s para iniciar
-  maxWorkers: 1, // Mantido: evita concorrência entre containers
+  testMatch: ['**/*.db.test.js'],                    // ← Prefixo exclusivo
+  testTimeout: 30000,                                 // ↑ Container ~15s startup
+  maxWorkers: 1,                                      // Evita concorrência
+  collectCoverage: false,
+  clearMocks: true,
+  restoreMocks: true,
+  verbose: true,
+  transform: {
+    '^.+\\.(js|jsx|mjs|cjs)$': ['babel-jest', { configFile: './babel.jest.config.js' }]
+  },
+  transformIgnorePatterns: [
+    '/node_modules/(?!/testcontainers|@testcontainers)/'
+  ],
+  setupFilesAfterEnv: ['<rootDir>/tests/setup.db.js'], // ← Setup específico node
+  globalTeardown: '<rootDir>/jest.teardown.js',
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/$1',
+    '^@tests/(.*)$': '<rootDir>/tests/$1',
+    '^@factories/(.*)$': '<rootDir>/tests/factories/$1',
+    '^@helpers/(.*)$': '<rootDir>/tests/helpers/$1',
+    '^@mocks/(.*)$': '<rootDir>/tests/mocks/$1',
+    '^@matchers/(.*)$': '<rootDir>/tests/matchers/$1',
+  },
+  moduleFileExtensions: ['js', 'jsx', 'json', 'node'],
 };
 ```
 
-**B. Script no `package.json`:**
+> ⚠️ **Nota:** O código usa `export default` (ES Module) — não use `require()` pois o projeto está configurado com `"type": "module"`. O setup enxuto (`tests/setup.db.js`) substitui o `tests/setup.js` padrão, evitando polyfills DOM desnecessários (localStorage, matchMedia, IntersectionObserver, ResizeObserver) que não fazem sentido em ambiente `node`.
+
+**B. Scripts no `package.json` (já existentes no projeto — seção `scripts`):**
 
 ```json
-"test:db": "jest --config jest.config.db.js",
-"test:db:coverage": "jest --config jest.config.db.js --coverage"
+"test:db:container": "jest --config jest.config.db.js",
+"test:db:container:coverage": "jest --config jest.config.db.js --coverage"
 ```
+
+> ⚠️ **Nota:** Os nomes `test:db:container` e `test:db:container:coverage` são os já existentes. Os nomes `test:db` e `test:db:coverage` sugeridos originalmente conflitariam com o script `test:db: "jest tests/unit/lib/db.test.js"` já existente.
 
 ---
 

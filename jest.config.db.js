@@ -23,7 +23,7 @@ export default {
   transformIgnorePatterns: [
     '/node_modules/(?!/testcontainers|@testcontainers)/'
   ],
-  setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/tests/setup.db.js'],
   globalTeardown: '<rootDir>/jest.teardown.js',
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',

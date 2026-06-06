@@ -1,6 +1,6 @@
 # Análise do Projeto — Testes (`/tests/`)
 
-> **Data:** 13/05/2026 (atualizado em 06/06/2026 — 7ª revisão)
+> **Data:** 13/05/2026 (atualizado em 06/06/2026 — 8ª revisão)
 > **Objetivo:** Documentar de forma objetiva, clara e focada todos os arquivos de teste do projeto, descrevendo localização, propósito e funcionalidade de cada um.
 
 ---
@@ -20,7 +20,8 @@
 
 ```
 tests/
-├── setup.js                          # Bootstrap global de testes
+├── setup.js                          # Bootstrap global de testes (jsdom)
+├── setup.db.js                       # Bootstrap específico para testes com banco real (node)
 ├── global-setup.db.js                # GlobalSetup: container PostgreSQL (Testcontainers)
 ├── examples/                         # Exemplos/demonstração da arquitetura
 ├── factories/                        # Fábricas de dados de teste
@@ -70,7 +71,11 @@ tests/
 
 ### `tests/setup.js`
 **Localização:** `/tests/setup.js`
-**Propósito:** Bootstrap central executado antes de todos os testes. Configura polyfills (TextEncoder, ReadableStream, Request/Response, localStorage, matchMedia, IntersectionObserver, ResizeObserver, crypto.randomUUID), React Testing Library (timeout 5s), filtro de warnings conhecidos do console.error, cleanup automático pós-teste (`afterEach` com `cleanup()` e `jest.clearAllMocks()`), e utilitários globais (`global.wait()`, `global.suppressWarnings()`). Importa os matchers customizados.
+**Propósito:** Bootstrap central executado antes de todos os testes (ambiente jsdom). Configura polyfills (TextEncoder, ReadableStream, Request/Response, localStorage, matchMedia, IntersectionObserver, ResizeObserver, crypto.randomUUID), React Testing Library (timeout 5s), filtro de warnings conhecidos do console.error, cleanup automático pós-teste (`afterEach` com `cleanup()` e `jest.clearAllMocks()`), e utilitários globais (`global.wait()`, `global.suppressWarnings()`). Importa os matchers customizados.
+
+### `tests/setup.db.js`
+**Localização:** `/tests/setup.db.js`
+**Propósito:** Bootstrap específico para testes de integração com banco real (ambiente node). Versão enxuta sem polyfills DOM (localStorage, matchMedia, IntersectionObserver, ResizeObserver — desnecessários em node). Inclui apenas polyfills de ReadableStream e MessageChannel (necessários para testcontainers), filtro de console.error para warnings conhecidos da API, matchers customizados e `afterEach` com `jest.clearAllMocks()`. **Criado em 06/06/2026.**
 
 ### `jest.config.db.js`
 **Localização:** `/jest.config.db.js`
@@ -434,7 +439,7 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 
 | Categoria | Quantidade |
 |-----------|:----------:|
-| **Configuração Global** | 1 arquivo |
+| **Configuração Global** | 5 arquivos |
 | **Factories** | 5 arquivos |
 | **Helpers** | 5 arquivos |
 | **Matchers** | 6 arquivos |
@@ -499,5 +504,11 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 > - Atualizada Seção 3.6 do `UPGRADE_tests.md` de "Sugestão" para **"AJUSTADO (06/06/2026)"**
 > - Atualizada Seção 4.7 do `UPGRADE_tests.md` como **"CONCLUÍDO (06/06/2026)"**
 > - **Total:** 3 arquivos criados + 2 documentos atualizados. 25 novos testes. Nenhuma regressão.
+> 
+> > **Ajustes realizados na 8ª revisão (06/06):**
+> - Criado `tests/setup.db.js` — Bootstrap específico para testes com banco real (ambiente node), versão enxuta sem polyfills DOM
+> - Ajustado `jest.config.db.js` — `setupFilesAfterEnv` alterado de `setup.js` para `setup.db.js`
+> - Atualizada Seção 4.6.2 do `UPGRADE_tests.md` — Código corrigido para usar `export default` (sem `require()`), nomes de scripts corrigidos para `test:db:container`, adicionadas notas sobre setup enxuto
+> - **Total:** 1 arquivo criado + 2 documentos atualizados. Nenhuma regressão.
 > 
 > Para detalhes de implementação específicos, consulte `docs/UPGRADE_tests.md`.
