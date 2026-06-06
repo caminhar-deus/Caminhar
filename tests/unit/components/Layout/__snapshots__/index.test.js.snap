@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`Layout Components Index deve exportar a estrutura esperada do barrel Layout 1`] = `
+exports[`[Barrel] Layout Components Index deve exportar a estrutura esperada do barrel Layout 1`] = `
 [
   "Container",
   "ContainerDefault",

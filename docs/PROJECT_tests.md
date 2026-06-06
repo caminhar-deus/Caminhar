@@ -248,7 +248,7 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 | `AdminUsers.test.js` | Listagem de usuários | Renderização, busca, paginação, criação |
 | `AdminUsersTab.test.js` | Aba de usuários + casos de borda | CRUD completo, RoleSelectField (carregar, fallbacks, 401, erros, JSON inválido), validações de senha (novo/edição) |
 | `AdminVideos.test.js` | CRUD de vídeos | Configuração de campos, busca, formatação |
-| `index.test.js` | Barrel export Admin | Snapshot da estrutura de exportações (convertido em 05/06/2026) |
+| `index.test.js` | Barrel export Admin | Snapshot da estrutura de exportações + validação crítica `AdminCrudBase` (convertido em 05/06/2026) |
 | `withAdminAuth.test.js` | HOC de autenticação admin | Redirecionamento sem auth, renderização com auth, role verification |
 | `ImageUploadField.test.js` | Campo de upload de imagem | Upload, preview, remoção, validação de tipo/tamanho |
 | `TextAreaField.test.js` | Campo textarea | Renderização, label, erro, onChange |
@@ -289,7 +289,7 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 |---------|-----------|
 | `Container.test.js` | Container (div, section, article) com props fluid, as, className, centered |
 | `Grid.test.js` | Grid system (columns, gap, align, justify, Grid.Item, Grid.Auto, Grid.Responsive) |
-| `index.test.js` | Barrel export Layout | Snapshot da estrutura de exportações (convertido em 05/06/2026) |
+| `index.test.js` | Barrel export Layout | Snapshot da estrutura de exportações + validação crítica `Container` (convertido em 05/06/2026) |
 | `Sidebar.test.js` | Sidebar com navegação, colapso, links ativos |
 | `Stack.test.js` | Stack layout (direction, spacing, align, justify, dividers) |
 
@@ -299,7 +299,7 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 |---------|-----------|
 | `CriticalCSS.test.js` | Inline de CSS crítico (renderização, atributos, múltiplas folhas) |
 | `ImageOptimized.test.js` | Imagem otimizada (lazy loading, srcset, placeholder blur, fallback) |
-| `index.test.js` | Barrel export Performance | Snapshot da estrutura de exportações (convertido em 05/06/2026) |
+| `index.test.js` | Barrel export Performance | Snapshot da estrutura de exportações + validação crítica `ImageOptimized` (convertido em 05/06/2026) |
 | `LazyIframe.test.js` | Iframe lazy (lazy loading, placeholder, props width/height, intersecção) |
 | `PreloadResources.test.js` | Pré-carregamento de recursos (links preload, prefetch, preconnect, dns-prefetch) |
 
@@ -317,7 +317,7 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 | `ArticleSchema.test.js` | Schema.org Article (JSON-LD) |
 | `BreadcrumbSchema.test.js` | Schema.org BreadcrumbList (JSON-LD) |
 | `Head.test.js` | Gerenciamento de `<head>` (title, meta tags, Open Graph, Twitter Cards) |
-| `index.test.js` | Barrel export SEO | Snapshot da estrutura de exportações + verificação de default export (convertido em 05/06/2026) |
+| `index.test.js` | Barrel export SEO | Snapshot da estrutura de exportações + verificação `DefaultExport === SEOHead` (convertido em 05/06/2026) |
 | `MusicSchema.test.js` | Schema.org Music (JSON-LD) |
 | `OrganizationSchema.test.js` | Schema.org Organization (JSON-LD) |
 | `VideoSchema.test.js` | Schema.org Video (JSON-LD) |
@@ -331,7 +331,7 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 | `Badge.test.js` | Badge | leftIcon, rightIcon, pulse, position; `Badge.Counter` com max/99+/showZero; `Badge.Dot` |
 | `Button.test.js` | Botão | leftIcon/rightIcon, loading (aria-busy, disabled), disabled com ARIA |
 | `Card.test.js` | Card | Header/Footer, mídia (string img ou componente), hoverable, onClick, teclado (Enter/Espaço), fullWidth |
-| `index.test.js` | Barrel export UI | Snapshot da estrutura de exportações (convertido em 05/06/2026) |
+| `index.test.js` | Barrel export UI | Snapshot da estrutura de exportações + validação crítica `Button` (convertido em 05/06/2026) |
 | `Input.test.js` | Input | Label, required, leftAddon, rightAddon, ref forwarding, helperText vs errorMessage com aria-invalid |
 | `Modal.test.js` | Modal | Abertura, fechamento (botão X, overlay, Escape), título, conteúdo, footer, props `size`, `closeOnOverlay`, `blocked` |
 | `Select.test.js` | Select | Label, opções, placeholder, onChange, erro, múltiplo |

@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`Componentes SEO - Index Exports deve exportar a estrutura esperada do barrel SEO 1`] = `
+exports[`[Barrel] Componentes SEO - Index Exports deve exportar a estrutura esperada do barrel SEO 1`] = `
 [
   "ArticleSchema",
   "BreadcrumbSchema",

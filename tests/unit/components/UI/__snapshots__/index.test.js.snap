@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`UI Components Index deve exportar a estrutura esperada do barrel UI 1`] = `
+exports[`[Barrel] UI Components Index deve exportar a estrutura esperada do barrel UI 1`] = `
 [
   "Alert",
   "AlertDefault",

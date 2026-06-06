@@ -470,13 +470,22 @@ it('deve exportar a estrutura esperada', () => {
 
 | Arquivo | Antes | Depois |
 |---------|-------|--------|
-| `UI/index.test.js` | 12 `expect(X).toBeDefined()` | Snapshot (`Object.keys().sort()`) |
-| `Admin/index.test.js` | 8 `expect(X).toBeDefined()` | Snapshot |
-| `Layout/index.test.js` | 8 `expect(X).toBeDefined()` | Snapshot |
-| `Performance/index.test.js` | 7 `expect(X).toBeDefined()` | Snapshot |
-| `SEO/index.test.js` | 11 `expect(X).toBeDefined()` + verificação `DefaultExport === SEOHead` | Snapshot + verificação preservada |
+| `UI/index.test.js` | 12 `expect(X).toBeDefined()` | Snapshot (`Object.keys().sort()`) + validação crítica `Button` |
+| `Admin/index.test.js` | 8 `expect(X).toBeDefined()` | Snapshot + validação crítica `AdminCrudBase` |
+| `Layout/index.test.js` | 8 `expect(X).toBeDefined()` | Snapshot + validação crítica `Container` |
+| `Performance/index.test.js` | 7 `expect(X).toBeDefined()` | Snapshot + validação crítica `ImageOptimized` |
+| `SEO/index.test.js` | 11 `expect(X).toBeDefined()` + verificação `DefaultExport === SEOHead` | Snapshot + verificação `DefaultExport === SEOHead` preservada |
 
-**Resultado:** 5/5 testes passando. 5 snapshots escritos. Verificação de `DefaultExport === SEOHead` preservada por ter valor semântico real.
+**Melhorias adicionais aplicadas (06/06/2026):**
+- **Prefix `[Barrel]` adicionado** ao `describe` nos 5 arquivos para facilitar identificação em relatórios de teste
+- **Comentário de workflow de snapshot** adicionado no topo dos 5 arquivos orientando como atualizar o snapshot ao modificar o barrel:
+  ```javascript
+  // Ao alterar as exportações do barrel, atualize este snapshot com:
+  // npx jest tests/unit/components/UI/index.test.js --updateSnapshot
+  ```
+- **Teste de validação semântica** adicionado nos 4 arquivos que estavam sem (`UI`, `Admin`, `Layout`, `Performance`) — verifica se a exportação mais crítica de cada barrel está definida, servindo como rede de segurança caso o snapshot seja atualizado sem revisão cuidadosa
+
+**Resultado:** 10/10 testes passando (5 de snapshot + 5 de validação semântica). 5 snapshots escritos. Verificação de `DefaultExport === SEOHead` preservada por ter valor semântico real.
 
 ---
 
