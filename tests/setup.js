@@ -61,20 +61,6 @@ global.TextDecoder = TextDecoder;
   }
 })();
 
-// Polyfill Request/Response/Headers para JSDOM (necessário para Next.js Middleware & API tests)
-(async () => {
-  if (!globalThis.Request) {
-    try {
-      const { Request, Response, Headers } = await import('undici');
-      globalThis.Request = Request;
-      globalThis.Response = Response;
-      globalThis.Headers = Headers;
-    } catch (error) {
-      console.warn('⚠️ undici not found, Request/Response/Headers polyfills skipped. Error:', error.message);
-    }
-  }
-})();
-
 // Polyfill localStorage para ambiente Node.js
 if (typeof global.localStorage === 'undefined') {
   const localStorageMock = {

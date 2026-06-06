@@ -361,16 +361,11 @@ await waitFor(() => expect(screen.getByText('❌ Erro de conexão ao criar backu
 
 ### 3.2 Uso de Require() em Ambiente ES Module — **RESOLVIDO (06/06/2026)**
 
-**Ocorrência:** `tests/setup.js` — linhas 38, 48, 59 (conversão para linhas 37, 46, 56 pós-correção)
+**Ocorrência original:** `tests/setup.js` — `require()` usado para polyfills condicionais em ambiente ES Module.
 
-**Código exemplar (ANTES):**
-```javascript
-const { ReadableStream } = require('node:stream/web');
-```
+**Problema original:** O projeto usa `import/export` (ES Modules), mas `require()` era usado para polyfills condicionais. Embora funcionasse com Jest (que usa CommonJS), era inconsistente com o padrão ES Module definido.
 
-**Problema:** O projeto usa `import/export` (ES Modules), mas `require()` era usado para polyfills condicionais. Embora funcionasse com Jest (que usa CommonJS), era inconsistente com o padrão ES Module definido.
-
-**O que foi feito (06/06/2026):**
+**O que foi feito (06/06/2026 — conversão para `import()` dinâmico):**
 - **3 ocorrências de `require()` substituídas por `await import()` dinâmico dentro de IIFE async**:
   1. `require('node:stream/web')` → `await import('node:stream/web')` — Polyfill ReadableStream
   2. `require('node:worker_threads')` → `await import('node:worker_threads')` — Polyfill MessageChannel/MessagePort
@@ -378,9 +373,15 @@ const { ReadableStream } = require('node:stream/web');
 
 - **Estratégia utilizada:** Cada `require()` foi envolvido em uma IIFE (Immediately Invoked Function Expression) assíncrona, mantendo o bloco `try/catch` e a verção condicional (`if (typeof ... === 'undefined')`) originais.
 
-- **Justificativa:** O `setup.js` é transformado pelo Babel para CommonJS durante a execução dos testes. O `require()` funcionaria, mas o `import()` dinâmico é semanticamente mais consistente com o padrão ES Module adotado pelo projeto (configurado no `package.json` como `"type": "module"` e com `babel-jest` transformando ESM para CJS).
+- **Justificativa:** O `setup.js` é transformado pelo Babel para CommonJS durante a execução dos testes. O `require()` funcionaria, mas o `import()` dinâmico é semanticamente mais consistente com o padrão ES Module adotado pelo projeto (configurado no `package.json` como `"type": "module"` e com `babel-jest` transforming ESM para CJS).
 
-**Resultado:** 3 `require()` eliminados. Nenhuma regressão — `middleware.test.js` (9/9), `redis.test.js` (2/2) e demais testes com setup intacto. As IIFE assíncronas garantem que os polyfills sejam aplicados antes da execução dos testes (o event loop processa as microtasks antes de `afterEach`/`beforeEach`/testes).
+**Resultado (06/06/2026):** 3 `require()` eliminados. Nenhuma regressão.
+
+**Complemento (06/06/2026 — remoção do polyfill do `undici`):**
+- O polyfill `Request`/`Response`/`Headers` via `undici` foi **removido** do `tests/setup.js` por ser desnecessário no ambiente atual (Node.js v24 + JSDOM já fornecem essas APIs nativamente)
+- A remoção eliminou o `console.warn` exibido: `⚠️ undici not found, Request/Response/Headers polyfills skipped`
+- Restaram apenas os polyfills de `ReadableStream` e `MessageChannel/MessagePort` que ainda são necessários
+- **Nenhuma regressão — 50/50 testes passando**
 
 ---
 
@@ -540,16 +541,45 @@ it('deve exportar a estrutura esperada', () => {
 
 ## 4. Melhorias Recomendadas
 
-### 4.1 Abstração de Testes CRUD
+### 4.1 Abstração de Testes CRUD — **CONCLUÍDO (06/06/2026)**
 
-**Descrição:** Criar uma função utilitária `testCrudEndpoint(handler, resourceConfig)` que encapsule o padrão repetitivo de:
-1. Mock de dependências (db, auth, cache)
-2. Testes de GET público
-3. Testes de POST/PUT/DELETE admin
-4. Teste de método não permitido (405)
+**Descrição original:** Criar uma função utilitária que encapsule o padrão repetitivo de mocks e testes CRUD.
 
-**Benefício:** Reduzir ~30 arquivos de teste de API para ~5-8 arquivos de configuração.
+**O que foi feito (06/06/2026):**
 
+**A. Criado `tests/helpers/crud-test.js`** com 3 funções:
+
+| Função | Finalidade | Testes padrão |
+|--------|-----------|:-------------:|
+| `testPublicGetEndpoint(handler, config, customTests?)` | Endpoints GET-only públicos (ex: `/api/musicas`, `/api/videos`) | 405 método não permitido + 400 paginação inválida |
+| `testAdminCrudEndpoint(handler, config, customTests?)` | Endpoints CRUD admin (ex: `/api/admin/musicas`, `/api/admin/posts`) | 401 sem autenticação |
+| `testAdminGetEndpoint(handler, config, customTests?)` | Endpoints GET-only admin | 401 sem auth + 405 método não permitido |
+
+**Design adotado (flexibilidade):** Cada função testa **apenas o que não requer mocks específicos**:
+- 405 para método não permitido (público)
+- 401 sem autenticação (admin)
+- 400 para parâmetros inválidos (público)
+
+Os testes específicos de cada recurso (GET, POST, PUT, DELETE com dados mockados) são fornecidos via `customTests`, garantindo que cada recurso mantenha controle total sobre seus mocks e assertions.
+
+**B. Arquivos refatorados para usar a abstração:**
+
+| Arquivo | Função | Redução |
+|---------|--------|:-------:|
+| `tests/integration/api/musicas.test.js` | `testPublicGetEndpoint` | ~20 linhas (405/400 eliminados do código manual) |
+| `tests/integration/api/videos.test.js` | `testPublicGetEndpoint` | ~20 linhas |
+| `tests/integration/api/admin/musicas.test.js` | `testAdminCrudEndpoint` | ~10 linhas (401 eliminado) |
+| `tests/integration/api/admin/posts.test.js` | `testAdminCrudEndpoint` | ~10 linhas |
+
+**Arquivo criado:** `tests/helpers/crud-test.js` (exportado via `tests/helpers/index.js`)
+
+**Benefícios:**
+- Centralização de boilerplate: testes comuns (401, 405, 400) não precisam ser reescritos por recurso
+- Flexibilidade mantida: cada recurso continua com seus testes específicos via `customTests` ou `describe` separado
+- **50/50 testes passando** nos 4 arquivos refatorados — nenhuma regressão
+- Redução total estimada: ~60 linhas de código repetido eliminadas nos arquivos convertidos
+
+**Próximos passos recomendados:** Estender a abstração para outros endpoints de integração (admin/dicas, admin/roles, admin/users, etc.) seguindo o mesmo padrão.
 ---
 
 ### 4.2 Unificação de Arquivos Edge Case — **AJUSTADO (04/06/2026)**
@@ -953,7 +983,7 @@ jest.mock('../../../../lib/domain/settings.js', () => ({
 | Média | ~~Mesclar arquivos edge case com principais~~ | ~~Baixo~~ | ~~Médio~~ | ✅ **Concluído (04/06)** |
 | Média | ~~Refatorar factories com base factory~~ | ~~Médio~~ | ~~Médio~~ | ✅ **Concluído (05/06)** |
 | 🟡 Média | Corrigir vazamento de mocks em BackupManager (seção 3.1) | Baixo | Médio | ✅ **Concluído (06/06)** |
-| Média | Abstrair testes CRUD de API | Alto | Alto | Pendente |
+| Média | Abstrair testes CRUD de API | Alto | Alto | ✅ **Concluído (06/06)** — `tests/helpers/crud-test.js` com 3 funções + 4 arquivos refatorados |
 | Média | Padronizar nomenclatura de arquivos | Médio | Médio | Pendente |
 | 🟢 Baixa | Converter testes de barrel export redundantes para snapshot | Baixo | Baixo | ✅ **Concluído (05/06)** |
 | Baixa | Adicionar testes com banco real | Alto | Alto | Pendente |

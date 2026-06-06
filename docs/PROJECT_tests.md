@@ -93,6 +93,7 @@ tests/
 | `api.js` | Criação de mocks HTTP. Exporta `createApiMocks(method, body)`, `createGetRequest()`, `createPostRequest(body, headers)`, `expectArray()`. Usa `node-mocks-http` |
 | `auth.js` | Utilitários de autenticação para testes. Exporta `createAuthToken(payload)` (gera JWT), `mockAuthenticatedUser(overrides)`, `mockAuthenticatedAdmin()` (cria token, user, headers completos) |
 | `console.js` | Utilitários de console e mocks para testes. **Criado em 05/06/2026.** Exporta `suppressConsoleError()` (spy silencioso para console.error), `filterConsoleError(suppressList)` (spy que suprime apenas padrões específicos), `mockGlobalFetch()` (mock de global.fetch compatível com JSDOM), `createConfirmSpy(defaultValue)` (spy para window.confirm). **Nota:** `jest.spyOn(global, 'fetch')` não funciona em JSDOM — `mockGlobalFetch()` usa atribuição direta |
+| `crud-test.js` | Abstração de testes CRUD de API. **Criado em 06/06/2026.** Exporta `testPublicGetEndpoint(handler, config, customTests?)` (para endpoints GET públicos — testa 405 e 400 automaticamente), `testAdminCrudEndpoint(handler, config, customTests?)` (para endpoints CRUD admin — testa 401 automaticamente), `testAdminGetEndpoint(handler, config, customTests?)` (para endpoints GET admin — testa 401 e 405). Testes específicos de cada recurso são fornecidos via `customTests`, mantendo flexibilidade total sobre mocks e assertions |
 | `render.js` | Helpers de renderização com React Testing Library. Exporta `renderWithProviders(ui, options)` que wrappa o componente com `AuthProvider`, `ThemeProvider` e `ToastProvider` |
 
 ### 3.3 Matchers Customizados (`/tests/matchers/`)
@@ -420,7 +421,7 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 |-----------|:----------:|
 | **Configuração Global** | 1 arquivo |
 | **Factories** | 5 arquivos |
-| **Helpers** | 4 arquivos |
+| **Helpers** | 5 arquivos |
 | **Matchers** | 6 arquivos |
 | **Mocks** | 8 arquivos |
 | **Examples** | 2 arquivos |

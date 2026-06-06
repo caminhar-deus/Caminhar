@@ -1,7 +1,33 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
+import { testAdminCrudEndpoint } from '../../../helpers/crud-test';
 
-jest.mock('../../../../lib/db.js', () => require('../../../../mocks/db-module').mockDb());
+jest.mock('../../../../lib/db.js', () => require('../../../mocks/db-module').mockDb());
+
+jest.mock('../../../../lib/domain/audit.js', () => ({
+  logActivity: jest.fn(),
+}));
+
+jest.mock('../../../../lib/domain/posts.js', () => ({
+  getPaginatedPosts: jest.fn(),
+  createPost: jest.fn(),
+  updatePost: jest.fn(),
+  deletePost: jest.fn(),
+}));
+
+jest.mock('../../../../lib/crud.js', () => ({
+  updateRecords: jest.fn(),
+}));
+
+jest.mock('../../../../lib/cache.js', () => ({
+  invalidateCache: jest.fn(),
+  checkRateLimit: jest.fn(),
+}));
+
+jest.mock('../../../../lib/auth.js', () => ({
+  withAuth: jest.fn((handler) => async (req, res) => {
+    if (req.headers.authorization !== 'Bearer valid-token') {
+      return res.status(401).json({ message: 'Não autenticado' });
     }
     req.user = req._userOverride || { userId: 1, username: 'admin', role: 'admin' };
     return handler(req, res);
@@ -15,13 +41,29 @@ import { logActivity } from '../../../../lib/domain/audit.js';
 import { updateRecords } from '../../../../lib/crud.js';
 import { invalidateCache, checkRateLimit } from '../../../../lib/cache.js';
 
-describe('API Admin - Gestão de Posts (/api/admin/posts)', () => {
+const validCreatePayload = { title: 'Título', slug: 'titulo', content: 'Conteúdo' };
+
+const getAuthenticatedMocks = (options = {}, userOverride = null) => {
+  const { req, res } = createMocks({
+    ...options,
+    headers: { ...options.headers, authorization: 'Bearer valid-token' },
+  });
+  if (userOverride) req._userOverride = userOverride;
+  req.socket = { remoteAddress: '127.0.0.1' };
+  return { req, res };
+};
+
+// Testes padrão: 401 sem auth, 405 método não permitido
+testAdminCrudEndpoint(handler, {
+  resourceName: 'posts',
+  path: '/api/admin/posts',
+});
+
+// Testes específicos do recurso
+describe('API Admin - Gestão de Posts (/api/admin/posts) - Específicos', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    
-    checkRateLimit.mockResolvedValue(false); // Sem rate limit por padrão
-    
-    // Mock padrão para a validação de permissões de RBAC
+    checkRateLimit.mockResolvedValue(false);
     query.mockImplementation(async (sql) => {
       if (sql.includes('SELECT permissions FROM roles')) {
         return { rows: [{ permissions: ['Posts/Artigos'] }] };
@@ -30,17 +72,7 @@ describe('API Admin - Gestão de Posts (/api/admin/posts)', () => {
     });
   });
 
-  const getAuthenticatedMocks = (options = {}, userOverride = null) => {
-    const { req, res } = createMocks({
-      ...options,
-      headers: { ...options.headers, authorization: 'Bearer valid-token' },
-    });
-    if (userOverride) req._userOverride = userOverride;
-    req.socket = { remoteAddress: '127.0.0.1' };
-    return { req, res };
-  };
-
-  describe('Segurança, Autorização e Rate Limit', () => {
+  describe('Segurança e Autorização', () => {
     it('deve retornar 401 se não estiver autenticado', async () => {
       const { req, res } = createMocks({ method: 'GET' });
       await handler(req, res);
@@ -48,16 +80,16 @@ describe('API Admin - Gestão de Posts (/api/admin/posts)', () => {
     });
 
     it('deve retornar 403 se o usuário não for admin e não tiver permissão', async () => {
-      query.mockResolvedValueOnce({ rows: [{ permissions: ['Dashboard'] }] }); // Sem permissão de posts
+      query.mockResolvedValueOnce({ rows: [{ permissions: ['Dashboard'] }] });
       const { req, res } = getAuthenticatedMocks({ method: 'GET' }, { userId: 2, username: 'editor', role: 'comum' });
-      
+
       await handler(req, res);
       expect(res._getStatusCode()).toBe(403);
       expect(JSON.parse(res._getData()).error).toContain('Acesso negado');
     });
 
     it('deve retornar 429 se o Rate Limit for excedido ao realizar mutações', async () => {
-      checkRateLimit.mockResolvedValueOnce(true); // Excedeu o limite
+      checkRateLimit.mockResolvedValueOnce(true);
       const { req, res } = getAuthenticatedMocks({ method: 'POST' });
       await handler(req, res);
       expect(res._getStatusCode()).toBe(429);
@@ -65,7 +97,7 @@ describe('API Admin - Gestão de Posts (/api/admin/posts)', () => {
   });
 
   describe('GET - Listar Posts', () => {
-    it('deve retornar 200, cabeçalhos de controle de cache e os posts paginados', async () => {
+    it('deve retornar 200, cabeçalhos de cache e os posts paginados', async () => {
       const mockResult = { data: [{ id: 1, title: 'Post 1' }], pagination: { page: 1, total: 1, totalPages: 1 } };
       getPaginatedPosts.mockResolvedValueOnce(mockResult);
 
@@ -90,33 +122,31 @@ describe('API Admin - Gestão de Posts (/api/admin/posts)', () => {
   });
 
   describe('POST - Criar Post', () => {
-    const validPost = { title: 'Título', slug: 'titulo', content: 'Conteúdo' };
-
     it('deve retornar 400 se a validação do Zod falhar (ex: sem título)', async () => {
       const { req, res } = getAuthenticatedMocks({ method: 'POST', body: { slug: 'titulo' } });
       await handler(req, res);
-      
+
       expect(res._getStatusCode()).toBe(400);
       expect(JSON.parse(res._getData()).errors).toHaveProperty('title');
     });
 
     it('deve criar o post, registrar auditoria, invalidar cache e retornar 201', async () => {
-      const mockPost = { id: 10, ...validPost };
+      const mockPost = { id: 10, ...validCreatePayload };
       createPost.mockResolvedValueOnce(mockPost);
 
-      const { req, res } = getAuthenticatedMocks({ method: 'POST', body: validPost });
+      const { req, res } = getAuthenticatedMocks({ method: 'POST', body: validCreatePayload });
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(201);
       expect(JSON.parse(res._getData())).toEqual(mockPost);
       expect(logActivity).toHaveBeenCalledWith('admin', 'CRIAR POST', 'POST', 10, expect.any(String), '127.0.0.1');
-      expect(invalidateCache).toHaveBeenCalledWith('posts:public:all');
+      expect(invalidateCache).toHaveBeenCalledWith('posts:*');
     });
 
     it('deve retornar 500 se ocorrer um erro ao criar', async () => {
       createPost.mockRejectedValueOnce(new Error('Erro DB'));
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-      const { req, res } = getAuthenticatedMocks({ method: 'POST', body: validPost });
+      const { req, res } = getAuthenticatedMocks({ method: 'POST', body: validCreatePayload });
       await handler(req, res);
       expect(res._getStatusCode()).toBe(500);
       consoleSpy.mockRestore();
@@ -131,10 +161,10 @@ describe('API Admin - Gestão de Posts (/api/admin/posts)', () => {
 
       expect(res._getStatusCode()).toBe(200);
       expect(updateRecords).toHaveBeenCalledTimes(2);
-      expect(invalidateCache).toHaveBeenCalledWith('posts:public:all');
+      expect(invalidateCache).toHaveBeenCalledWith('posts:*');
     });
 
-    it('deve retornar 400 se a reordenação for inválida (items vazios ou estrutura incorreta)', async () => {
+    it('deve retornar 400 se a reordenação for inválida', async () => {
       const { req, res } = getAuthenticatedMocks({ method: 'PUT', body: { action: 'reorder', items: [] } });
       await handler(req, res);
       expect(res._getStatusCode()).toBe(400);
@@ -167,7 +197,7 @@ describe('API Admin - Gestão de Posts (/api/admin/posts)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(200);
-      expect(invalidateCache).toHaveBeenCalledWith('posts:public:all');
+      expect(invalidateCache).toHaveBeenCalledWith('posts:*');
     });
 
     it('deve retornar 500 se ocorrer um erro ao atualizar', async () => {
@@ -187,7 +217,7 @@ describe('API Admin - Gestão de Posts (/api/admin/posts)', () => {
       expect(res._getStatusCode()).toBe(400);
     });
 
-    it('deve excluir o post, buscar o nome correto para a auditoria e retornar 200', async () => {
+    it('deve excluir o post, buscar o nome para auditoria e retornar 200', async () => {
       query.mockImplementation(async (sql) => {
         if (sql.includes('SELECT permissions FROM roles')) return { rows: [{ permissions: ['Posts/Artigos'] }] };
         if (sql.includes('SELECT title FROM posts')) return { rows: [{ title: 'Post Para Excluir' }] };
@@ -200,7 +230,7 @@ describe('API Admin - Gestão de Posts (/api/admin/posts)', () => {
 
       expect(res._getStatusCode()).toBe(200);
       expect(logActivity).toHaveBeenCalledWith(expect.any(String), 'EXCLUIR POST', 'POST', 1, 'Removeu o artigo: Post Para Excluir', '127.0.0.1');
-      expect(invalidateCache).toHaveBeenCalledWith('posts:public:all');
+      expect(invalidateCache).toHaveBeenCalledWith('posts:*');
     });
 
     it('deve retornar 404 se o post não for encontrado para exclusão', async () => {

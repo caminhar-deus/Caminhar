@@ -84,8 +84,12 @@ Esta documentação descreve todos os arquivos localizados na raiz do projeto `/
 **Principais características:**
 - Importa `@testing-library/jest-dom` para matchers customizados
 - Polyfill de `TextEncoder` e `TextDecoder`
-- Polyfill condicional de `Request`, `Response`, `Headers` via `undici`
+- Polyfill de `ReadableStream` e `MessageChannel/MessagePort` do Node.js
+- Polyfill de `localStorage`, `matchMedia`, `IntersectionObserver`, `ResizeObserver`, `scrollTo`, `crypto.randomUUID`
+- Filtro de warnings conhecidos do `console.error` (React deprecations + API warnings)
+- Cleanup automático pós-teste (`afterEach` com `cleanup()` e `jest.clearAllMocks()`)
 - Log informativo sobre módulos ES e versão do Node.js
+- Nota: Polyfill de `Request`/`Response`/`Headers` via `undici` foi **removido em 06/06/2026** — Node.js v24 + JSDOM já fornecem essas APIs nativamente
 
 ---
 
