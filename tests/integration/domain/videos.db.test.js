@@ -21,6 +21,9 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  if (tx && typeof tx.rollback === 'function') {
+    try { await tx.rollback(); } catch (_) { /* rollback de segurança */ }
+  }
   if (pool) {
     await pool.end();
   }

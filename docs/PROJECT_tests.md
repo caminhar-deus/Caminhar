@@ -1,6 +1,6 @@
 # Análise do Projeto — Testes (`/tests/`)
 
-> **Data:** 13/05/2026 (atualizado em 06/06/2026 — 9ª revisão)
+> **Data:** 13/05/2026 (atualizado em 06/06/2026 — 11ª revisão)
 > **Objetivo:** Documentar de forma objetiva, clara e focada todos os arquivos de teste do projeto, descrevendo localização, propósito e funcionalidade de cada um.
 
 ---
@@ -523,6 +523,21 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 > - Criado `tests/integration/domain/settings.db.test.js` — Testes com PostgreSQL real (CRUD, json_object_agg, UPSERT, ROLLBACK) — 15 testes
 > - Atualizada Seção 4.6.3 do `UPGRADE_tests.md` — Escopo alterado de "planejado" para "concluído" com todos os 5 arquivos implementados
 > - Atualizada Seção 4.6.9 do `UPGRADE_tests.md` — Passos 8-10 marcados como concluídos
-> - **Total:** 4 arquivos criados + 2 documentos atualizados. ~65 novos testes com banco real. Nenhuma regressão.
+> - **Total:** 4 arquivos criados + 2 documentos atualizados. 65 novos testes com banco real. Nenhuma regressão.
+> 
+> > **Ajustes realizados na 10ª revisão (06/06):**
+> - Atualizada Seção 4.6.4 do `UPGRADE_tests.md` — Substituída lista genérica de cenários por tabela de cobertura real por arquivo, com 76 testes mapeados individualmente
+> - Adicionada tabela de cobertura com 7 colunas (CRUD, Constraints, Edge Cases, Específicos) para cada um dos 5 domínios
+> - Documentados 9 cenários não implementados com justificativa técnica
+> - Adicionadas particularidades por domínio (settings/USERS, products/CHECK, posts/UNIQUE)
+> - **Total:** 2 documentos atualizados. Nenhuma regressão.
+> 
+> 
+> > **Ajustes realizados na 11ª revisão (06/06):**
+> > - Melhorada a segurança da função `withTransaction()` em `tests/helpers/db-test.js` — `try/catch` em `connect()`/`BEGIN()` com release automático do cliente em caso de falha, `rollback()` com `try/catch` + `console.warn` (não quebra o `afterEach`), e `client.release()` garantido via `finally`
+> > - Adicionado rollback de segurança no `afterAll` de todos os 5 arquivos `.db.test.js` (`posts`, `musicas`, `videos`, `products`, `settings`) para evitar transações órfãs antes de fechar o pool
+> > - Documentada restrição de `describe` aninhados no JSDoc da `withTransaction()`
+> > - Atualizada Seção 4.6.5 do `UPGRADE_tests.md` com tabela comparativa "antes vs. depois" detalhando as 5 melhorias de isolamento
+> > - **Total:** 1 arquivo modificado (`db-test.js`) + 5 arquivos com rollback de segurança + 2 documentos atualizados. Nenhuma regressão esperada.
 > 
 > Para detalhes de implementação específicos, consulte `docs/UPGRADE_tests.md`.

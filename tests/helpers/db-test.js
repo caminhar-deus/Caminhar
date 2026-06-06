@@ -63,16 +63,39 @@ export async function applyMigrations() {
 /**
  * Inicia uma transação que será revertida ao final do teste.
  * Retorna { query, rollback } onde query é a função de query dentro da transação.
+ * 
+ * Segurança:
+ * - Se pool.connect() ou BEGIN falharem, o cliente é liberado automaticamente
+ * - rollback() possui try/catch para evitar que exceção quebre o afterEach
+ * - rollback() sempre libera o cliente, mesmo se ROLLBACK falhar
+ * 
+ * ⚠️ Atenção: Não utilize describe aninhados com tx própria dentro deste describe,
+ *    pois a variável tx do escopo superior pode ser sobrescrita.
  */
 export async function withTransaction(pool) {
-  const client = await pool.connect();
-  await client.query('BEGIN');
+  let client;
+
+  try {
+    client = await pool.connect();
+    await client.query('BEGIN');
+  } catch (error) {
+    if (client) {
+      try { client.release(); } catch (_) { /* ignorar erro no release após falha */ }
+    }
+    throw error;
+  }
 
   return {
     query: (text, params) => client.query(text, params),
     rollback: async () => {
-      await client.query('ROLLBACK');
-      client.release();
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        // Loga o erro mas não propaga — o afterEach não deve quebrar por falha de rollback
+        console.warn('⚠️ ROLLBACK falhou (ignorado):', rollbackError.message);
+      } finally {
+        client.release();
+      }
     },
   };
 }

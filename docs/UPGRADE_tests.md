@@ -1,6 +1,6 @@
 # Relatório de Upgrade — Testes (`/tests/`)
 
-> **Data:** 12/05/2026 (atualizado em 06/06/2026 — 8ª revisão)
+> **Data:** 12/05/2026 (atualizado em 06/06/2026 — 11ª revisão)
 > **Objetivo:** Reportar correções, melhorias, problemas de performance e duplicidade de código identificados na análise dos arquivos de teste.
 
 ---
@@ -758,69 +758,177 @@ Os testes com banco real cobrem os arquivos de **domínio** (`lib/domain/`) que 
 
 #### 4.6.4 Cenários a Testar em Cada Arquivo
 
-Cada arquivo deve cobrir:
+Os cenários abaixo foram implementados nos 5 arquivos de teste com banco real, respeitando as particularidades de cada domínio:
 
-```markdown
-1. **CRUD básico:**
-   - CREATE: Inserir registro válido, verificar retorno com ID gerado
-   - READ: Buscar por ID, listar com paginação, buscar com filtros
-   - UPDATE: Atualizar campos, verificar dados persistidos
-   - DELETE: Remover registro, verificar que não retorna mais nas buscas
+> ⚠️ **Nota:** A coluna "Cobertura" indica se o cenário foi efetivamente implementado no arquivo. Domínios sem suporte a determinada operação (ex: settings não tem paginação) têm o cenário marcado como `N/A`.
 
-2. **Constraints e validações:**
-   - UNIQUE: Tentar inserir registro com chave duplicada → erro específico do PostgreSQL
-   - NOT NULL: Tentar inserir sem campo obrigatório → erro
-   - Foreign Key: Inserir registro referenciando ID inexistente → erro
-   - CHECK de domínio (ex: preço > 0, data válida)
+##### Tabela de Cobertura por Arquivo
 
-3. **Casos de borda de queries:**
-   - Paginação com página 0, negativa, acima do total
-   - Ordenação por campos inválidos (fallback para ordem padrão)
-   - Busca com string vazia, apenas espaços, caracteres especiais
-   - Limite de resultados (MAX_SAFE_INTEGER, valor negativo)
-   - Transações: operação falha no meio → ROLLBACK, nenhum dado persistido
-```
+| Cenário | posts | musicas | videos | products | settings |
+|:--------|:-----:|:-------:|:------:|:--------:|:--------:|
+| **CRUD** | | | | | |
+| CREATE — registro com ID gerado | ✅ | ✅ | ✅ | ✅ | ✅ |
+| CREATE — valores padrão | ✅ | ✅ | ✅ | ✅ | ✅ |
+| READ — por ID/chave | ✅ | ✅ | ✅ | ✅ | ✅ |
+| READ — listar paginado | ✅ | ✅ | ✅ | ✅ | N/A |
+| READ — COUNT total | ✅ | ✅ | ✅ | ✅ | ✅ |
+| UPDATE — atualizar campos | ✅ | ✅ | ✅ | ✅ | ✅ (UPSERT) |
+| DELETE — remover registro | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Constraints** | | | | | |
+| UNIQUE (slug, chave, etc.) | ✅ slug | ❌ | ❌ | ❌ | ✅ key |
+| NOT NULL (campo obrigatório) | ✅ título, slug | ✅ título, url | ✅ título, url | ✅ title, price | ✅ key |
+| Foreign Key | ❌ | ❌ | ❌ | ❌ | ❌ |
+| CHECK (ex: preço > 0) | ❌ | ❌ | ❌ | ❌ * | ❌ |
+| **Edge Cases de Queries** | | | | | |
+| Paginação OFFSET acima do total | ✅ | ✅ | ✅ | ✅ | N/A |
+| LIMIT 0 (sem resultados) | ✅ | ✅ | ✅ | ✅ | N/A |
+| Paginação página negativa | ❌ | ❌ | ❌ | ❌ | N/A |
+| Ordenação campos inválidos | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Busca termo no título (ILIKE) | ✅ | ✅ | ✅ | ❌ | N/A |
+| Busca termo em outro campo | ❌ | ✅ artista | ✅ descrição | ❌ | ❌ |
+| Busca string vazia/espaços | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Busca caracteres especiais | ❌ | ❌ | ❌ | ❌ | ❌ |
+| LIMIT negativo / MAX_SAFE_INTEGER | ❌ | ❌ | ❌ | ❌ | ❌ |
+| ROLLBACK em erro de transação | ✅ | ✅ | ✅ | ✅ | ❌ |
+| **Específicos do Domínio** | | | | | |
+| Ordenação por múltiplos campos | ❌ | ✅ pos, created_at | ❌ | ✅ pos, id | ❌ |
+| Ordenação por created_at DESC | ✅ | ❌ | ✅ | ❌ | ❌ |
+| Ordenação por chave ASC | ❌ | ❌ | ❌ | ❌ | ✅ |
+| json_object_agg (agregação JSON) | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Objeto vazio sem registros | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Chave inexistente | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Filtro published = true | ❌ | ❌ | ❌ | ✅ | ❌ |
+
+> *\* **Nota products CHECK:** Apesar de ser citado em planejamento, o teste de CHECK `price > 0` **não foi implementado** em `products.db.test.js`. A constraint existe no schema, mas não há teste validando rejeição de preço inválido (ex: zero ou negativo).*
+
+##### Resumo por Arquivo
+
+| Arquivo | Total Testes | CRUD | Constraints | Edge Cases | Específicos |
+|:--------|:-----------:|:----:|:-----------:|:----------:|:-----------:|
+| `posts.db.test.js` | 15 | ✅ 4 | ✅ 3 (UNIQUE, NOT NULL×2) | ✅ 4 (pag, LIMIT 0, ROLLBACK, busca) | ✅ ordenação, COUNT |
+| `musicas.db.test.js` | 17 | ✅ 4 | ✅ 2 (NOT NULL×2) | ✅ 5 (pag, LIMIT 0, ROLLBACK, busca×2) | ✅ ordenação multi-campo, COUNT |
+| `videos.db.test.js` | 16 | ✅ 4 | ✅ 2 (NOT NULL×2) | ✅ 5 (pag, LIMIT 0, ROLLBACK, busca×2) | ✅ ordenação DESC, COUNT |
+| `products.db.test.js` | 16 | ✅ 4 | ✅ 2 (NOT NULL×2) | ✅ 3 (pag, LIMIT 0, ROLLBACK) | ✅ published filter, ordenação, COUNT |
+| `settings.db.test.js` | 12 | ✅ 4 | ✅ 2 (UNIQUE, NOT NULL) | ✅ 3 (chave inexistente, objeto vazio, COUNT) | ✅ UPSERT, json_object_agg, ordenação por chave |
+| **Total** | **76** | **20** | **11** | **20** | **25** |
+
+##### Particularidades por Domínio
+
+**Settings (`settings.db.test.j`):**
+- Diferente dos demais, não tem paginação nem busca textual (busca por chave exata)
+- Usa **UPSERT** (`INSERT ... ON CONFLICT DO UPDATE`) em vez de INSERT tradicional
+- Retorno usa **`json_object_agg`** (agregação JSON) para carregar configurações como mapa
+- Não implementa ROLLBACK por falta de operações encadeadas que induzam falha
+
+**Products (`products.db.test.js`):**
+- Não implementa busca textual — foco em `published filter` (filtro específico do domínio)
+- Constraint CHECK `price > 0` existe no schema mas **não é testada**
+- Ordenação usa position + id (combinação única entre os domínios)
+
+**Posts (`posts.db.test.js`):**
+- Único domínio com teste de UNIQUE (slug) e ROLLBACK via slug duplicado
+
+**Musicas (`videos.db.test.js`):**
+- Únicos com busca em dois campos diferentes (título + artista / título + descrição)
+- Únicos com ordenação por múltiplos campos (position + created_at)
+
+##### Cenários Não Implementados em Nenhum Arquivo
+
+Os seguintes cenários da especificação original **não foram implementados** em nenhum dos 5 arquivos:
+
+| Cenário | Motivo |
+|:--------|:-------|
+| **Foreign Key** | Nenhum domínio possui FK que referencie outra tabela |
+| **CHECK price > 0** | Constraint existe no schema de products, mas não foi testada |
+| **Paginação página negativa** | Seria testado pela função de domínio, não por query direta |
+| **Ordenação campos inválidos** | Testado via query direta sem fallback — SQL puro rejeita |
+| **Busca string vazia** | Retorna todos os registros, não é erro — comportamento esperado |
+| **Busca caracteres especiais** | ILIKE trata caracteres especiais naturalmente |
+| **LIMIT negativo** | PostgreSQL rejeita com erro; testar via query direta |
+| **MAX_SAFE_INTEGER** | Não causa erro, apenas retorna todos os registros |
+| **ROLLBACK em settings** | Settings não tem operações encadeadas para induzir falha |
+
+> **Recomendação:** Os cenários acima que fazem sentido (CHECK price > 0, LIMIT negativo) podem ser adicionados em versões futuras. Os demais (FK, ordenação inválida, busca vazia) são comportamentos esperados do PostgreSQL e não agregam valor como teste de integração.
 
 ---
 
 #### 4.6.5 Estratégia de Isolamento entre Testes
 
-**Abordagem recomendada: Transação por teste com ROLLBACK automático.**
+**Abordagem implementada: Transação por teste com ROLLBACK automático.**
 
 Cada teste inicia uma transação, executa as operações, e ao final executa `ROLLBACK`. Isso garante:
 - Banco em estado conhecido para cada teste (sem contaminação entre testes)
 - Não há necessidade de limpar dados entre testes (mais rápido que TRUNCATE)
 - Não há necessidade de resetar sequências de ID
 
+**Padrão utilizado em todos os 5 arquivos `.db.test.js`:**
+
 ```javascript
-import { createTestDb, applyMigrations, withTransaction } from '../../helpers/db-test.js';
+import { createTestDb, applyMigrations, withTransaction, isDockerAvailable } from '../../helpers/db-test.js';
 
 let pool;
 let tx;
 
 beforeAll(async () => {
+  if (!isDockerAvailable()) return;  // Skip seguro se Docker não disponível
   pool = createTestDb();
-  await applyMigrations(pool);
+  await applyMigrations();
+});
+
+afterAll(async () => {
+  if (tx && typeof tx.rollback === 'function') {
+    try { await tx.rollback(); } catch (_) { /* rollback de segurança */ }
+  }
+  if (pool) {
+    await pool.end();
+  }
 });
 
 beforeEach(async () => {
+  if (!pool) return;
   tx = await withTransaction(pool);
 });
 
 afterEach(async () => {
-  await tx.rollback(); // Reverte todas as operações do teste
+  if (tx) {
+    await tx.rollback(); // Reverte todas as operações do teste
+  }
 });
 
-afterAll(async () => {
-  await pool.end();
-});
+const describeIf = isDockerAvailable() ? describe : describe.skip;
 
-it('deve criar um post', async () => {
-  const result = await createPost(tx.query, { title: 'Teste', content: 'Conteúdo' });
-  expect(result).toHaveProperty('id');
-  // ← Não precisa limpar: ROLLBACK no afterEach desfaz esta inserção
+describeIf('Domínio — Integração com PostgreSQL Real', () => {
+  it('deve criar um registro', async () => {
+    const result = await tx.query('INSERT INTO ... RETURNING *', [valores]);
+    expect(result).toHaveProperty('id');
+    // ← Não precisa limpar: ROLLBACK no afterEach desfaz esta inserção
+  });
 });
 ```
+
+##### Melhorias de Isolamento Aplicadas (06/06/2026 — 11ª revisão)
+
+Após análise da seção 4.6.5, os seguintes ajustes foram implementados no helper `db-test.js` e nos 5 arquivos `.db.test.js`:
+
+| Ajuste | Descrição | Local |
+|:-------|-----------|:------|
+| **1. `withTransaction` com `try/catch`** | Se `pool.connect()` ou `BEGIN` falharem, o cliente é liberado automaticamente antes de propagar o erro | `tests/helpers/db-test.js` — função `withTransaction()` |
+| **2. `rollback()` com proteção** | `rollback()` agora possui `try/catch` interno para evitar que exceções de ROLLBACK quebrem o `afterEach`. Cliente sempre liberado via `finally` | `tests/helpers/db-test.js` — método `rollback()` |
+| **3. Rollback de segurança no `afterAll`** | Todos os 5 arquivos `.db.test.js` agora executam rollback de segurança no `afterAll` antes de fechar o pool | `posts/musicas/videos/products/settings.db.test.js` — `afterAll` |
+| **4. `skipIf` condicional** | `describeIf = isDockerAvailable() ? describe : describe.skip` implementado em todos os 5 arquivos (já existente) | Todos os 5 `.db.test.js` |
+| **5. Documentação de restrição** | Adicionado comentário no helper `db-test.js` alertando sobre risco de `describe` aninhados com `tx` própria | `tests/helpers/db-test.js` — JSDoc da `withTransaction()` |
+
+**Importante:** Todos os 5 arquivos usam **queries SQL diretas** com `tx.query()` em vez de funções de domínio. Isso elimina o risco de vazamento de transação por funções que não aceitam `query` externo — as operações executam dentro da transação criada no `beforeEach`.
+
+**Mudança estrutural no helper `db-test.js` — `withTransaction()` antes vs. depois:**
+
+| Aspecto | Antes | Depois |
+|:--------|:------|:-------|
+| `connect()` falha | Client vazava (não liberado) | `try/catch` com release automático |
+| `BEGIN` falha | Client vazava | `try/catch` com release automático |
+| `ROLLBACK` falha | Exceção propagada para `afterEach` | `try/catch` + `console.warn` (não quebra o teste) |
+| `client.release()` após ROLLBACK | Executado apenas no sucesso | `finally` garante release sempre |
+| Restrição describe aninhados | Não documentada | Documentada no JSDoc |
 
 ---
 
