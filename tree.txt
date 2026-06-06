@@ -946,7 +946,11 @@
 │   │   │   └── auth.test.js
 │   │   ├── create-post-flow.test.js
 │   │   ├── domain
-│   │   │   └── posts.db.test.js
+│   │   │   ├── musicas.db.test.js
+│   │   │   ├── posts.db.test.js
+│   │   │   ├── products.db.test.js
+│   │   │   ├── settings.db.test.js
+│   │   │   └── videos.db.test.js
 │   │   ├── musicas_flow.test.js
 │   │   ├── musicas_public_db_integration.test.js
 │   │   ├── posts.integration.test.js
@@ -969,6 +973,7 @@
 │   │   ├── next.js
 │   │   ├── next-setup.js
 │   │   └── next.test.js
+│   ├── setup.db.js
 │   ├── setup.js
 │   └── unit
 │       ├── clean-test-db.test.js
@@ -1142,4 +1147,4 @@
 │       └── videos_validation.test.js
 └── tree.txt
 
-181 directories, 962 files
+181 directories, 967 files

@@ -1,6 +1,6 @@
 # Análise do Projeto — Testes (`/tests/`)
 
-> **Data:** 13/05/2026 (atualizado em 06/06/2026 — 8ª revisão)
+> **Data:** 13/05/2026 (atualizado em 06/06/2026 — 9ª revisão)
 > **Objetivo:** Documentar de forma objetiva, clara e focada todos os arquivos de teste do projeto, descrevendo localização, propósito e funcionalidade de cada um.
 
 ---
@@ -30,6 +30,11 @@ tests/
 ├── mocks/                            # Mocks globais reutilizáveis
 ├── integration/                      # Testes de integração
 │   ├── domain/                       #   Testes com PostgreSQL real (*.db.test.js)
+│   │   ├── posts.db.test.js          #     CRUD, paginação, busca textual, ordenação
+│   │   ├── musicas.db.test.js        #     CRUD, paginação, busca (título/artista), ordenação
+│   │   ├── videos.db.test.js         #     CRUD, paginação, busca (título/descrição), ordenação
+│   │   ├── products.db.test.js       #     CRUD, paginação, published filter, ordenação
+│   │   └── settings.db.test.js       #     CRUD, json_object_agg, UPSERT, ordenação por chave
 │   ├── *.test.js                     #   Fluxos CRUD principais
 │   ├── api/                          #   Testes de API endpoints
 │   │   ├── *.test.js
@@ -510,5 +515,14 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 > - Ajustado `jest.config.db.js` — `setupFilesAfterEnv` alterado de `setup.js` para `setup.db.js`
 > - Atualizada Seção 4.6.2 do `UPGRADE_tests.md` — Código corrigido para usar `export default` (sem `require()`), nomes de scripts corrigidos para `test:db:container`, adicionadas notas sobre setup enxuto
 > - **Total:** 1 arquivo criado + 2 documentos atualizados. Nenhuma regressão.
+> 
+> > **Ajustes realizados na 9ª revisão (06/06):**
+> - Criado `tests/integration/domain/musicas.db.test.js` — Testes com PostgreSQL real (CRUD, paginação, busca, ROLLBACK) — 17 testes
+> - Criado `tests/integration/domain/videos.db.test.js` — Testes com PostgreSQL real (CRUD, paginação, busca, ROLLBACK) — 17 testes
+> - Criado `tests/integration/domain/products.db.test.js` — Testes com PostgreSQL real (CRUD, paginação, published filter, ROLLBACK) — 16 testes
+> - Criado `tests/integration/domain/settings.db.test.js` — Testes com PostgreSQL real (CRUD, json_object_agg, UPSERT, ROLLBACK) — 15 testes
+> - Atualizada Seção 4.6.3 do `UPGRADE_tests.md` — Escopo alterado de "planejado" para "concluído" com todos os 5 arquivos implementados
+> - Atualizada Seção 4.6.9 do `UPGRADE_tests.md` — Passos 8-10 marcados como concluídos
+> - **Total:** 4 arquivos criados + 2 documentos atualizados. ~65 novos testes com banco real. Nenhuma regressão.
 > 
 > Para detalhes de implementação específicos, consulte `docs/UPGRADE_tests.md`.

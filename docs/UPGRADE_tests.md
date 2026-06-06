@@ -1,6 +1,6 @@
 # Relatório de Upgrade — Testes (`/tests/`)
 
-> **Data:** 12/05/2026 (atualizado em 06/06/2026 — 3ª revisão)
+> **Data:** 12/05/2026 (atualizado em 06/06/2026 — 8ª revisão)
 > **Objetivo:** Reportar correções, melhorias, problemas de performance e duplicidade de código identificados na análise dos arquivos de teste.
 
 ---
@@ -644,7 +644,7 @@ afterEach(() => { consoleErrorSpy?.mockRestore(); });
 
 ---
 
-### 4.6 Adicionar Testes de Integração com Banco Real (PostgreSQL)
+### 4.6 Adicionar Testes de Integração com Banco Real (PostgreSQL) — **IMPLEMENTADO (06/06/2026)**
 
 **Descrição:** Atualmente todos os testes de integração mockam o banco de dados via `jest.mock('../../../lib/db.js')`. Isso não valida:
 - Queries SQL reais (sintaxe, funções PostgreSQL, tipos JSONB, cláusulas `RETURNING`)
@@ -742,15 +742,17 @@ export default {
 
 #### 4.6.3 Escopo dos Testes
 
-Os testes com banco real devem cobrir os arquivos de **domínio** (`lib/domain/`) que fazem queries SQL diretamente:
+Os testes com banco real cobrem os arquivos de **domínio** (`lib/domain/`) que fazem queries SQL diretamente:
 
-| Arquivo de Teste | Domínio | Operações a Validar |
-|-----------------|---------|-------------------|
-| `tests/integration/domain/posts.db.test.js` | `lib/domain/posts.js` | CRUD, paginação, busca textual, filtro por tags, ordenação por posição |
-| `tests/integration/domain/musicas.db.test.js` | `lib/domain/musicas.js` | CRUD, paginação, busca, ordenação, active/inactive |
-| `tests/integration/domain/videos.db.test.js` | `lib/domain/videos.js` | CRUD, paginação, busca, ordenação, active/inactive |
-| `tests/integration/domain/products.db.test.js` | `lib/domain/products.js` | CRUD, paginação, busca, filtro por faixa de preço |
-| `tests/integration/domain/settings.db.test.js` | `lib/domain/settings.js` | CRUD de configs, busca por chave, listagem |
+| Arquivo de Teste | Domínio | Operações a Validar | Status |
+|-----------------|---------|-------------------|:------:|
+| `tests/integration/domain/posts.db.test.js` | `lib/domain/posts.js` | CRUD, paginação, busca textual, ordenação, contagem, ROLLBACK | ✅ **Concluído** |
+| `tests/integration/domain/musicas.db.test.js` | `lib/domain/musicas.js` | CRUD, paginação, busca (título/artista), ordenação, contagem, ROLLBACK | ✅ **Concluído** |
+| `tests/integration/domain/videos.db.test.js` | `lib/domain/videos.js` | CRUD, paginação, busca (título/descrição), ordenação, contagem, ROLLBACK | ✅ **Concluído** |
+| `tests/integration/domain/products.db.test.js` | `lib/domain/products.js` | CRUD, paginação, published filter, ordenação, contagem, ROLLBACK | ✅ **Concluído** |
+| `tests/integration/domain/settings.db.test.js` | `lib/domain/settings.js` | CRUD, json_object_agg, UPSERT, ordenação por chave, ROLLBACK | ✅ **Concluído** |
+
+**Todos os 5 arquivos foram implementados em 06/06/2026.** Cada arquivo contém entre 15 e 20 testes seguindo o padrão de template do `posts.db.test.js` (piloto), com as particularidades de cada domínio.
 
 ---
 
@@ -869,23 +871,23 @@ O arquivo `ci.yml` precisa ser ajustado para:
 
 ---
 
-#### 4.6.9 Plano de Implementação
+#### 4.6.9 Plano de Implementação — **CONCLUÍDO (06/06/2026)**
 
-| Passo | Descrição | Esforço | Dependência |
-|:-----:|-----------|:-------:|:-----------:|
-| 1 | Instalar `testcontainers` e `@testcontainers/postgresql` | 5 min | Nenhuma |
-| 2 | Criar `tests/global-setup.db.js` (iniciar container + setar env) | 30 min | Passo 1 |
-| 3 | Estender `jest.teardown.js` (parar container) | 10 min | Passo 2 |
-| 4 | Criar `tests/helpers/db-test.js` (conexão, transação, migrations, truncate) | 1h | Passo 1 |
-| 5 | Criar `jest.config.db.js` (configuração dedicada) | 10 min | Passo 2 |
-| 6 | Adicionar script `npm run test:db` no `package.json` | 5 min | Passo 5 |
-| 7 | Validar que migrations rodam no banco de teste (via globalSetup) | 30 min | Passos 2-4 |
-| 8 | Criar `tests/integration/domain/posts.db.test.js` (primeiro arquivo piloto) | 2h | Passos 1-7 |
-| 9 | Executar suite completa e ajustar timeouts/assertions | 30 min | Passo 8 |
-| 10 | Criar demais arquivos (musicas, videos, products, settings) | 4h | Passo 8 |
-| 11 | Configurar CI (`ci.yml`) para executar `npm run test:db` | 30 min | Passos 1-10 |
+| Passo | Descrição | Esforço | Status |
+|:-----:|-----------|:-------:|:------:|
+| 1 | Instalar `testcontainers` e `@testcontainers/postgresql` | 5 min | ✅ **Concluído** |
+| 2 | Criar `tests/global-setup.db.js` (iniciar container + setar env) | 30 min | ✅ **Concluído** |
+| 3 | Estender `jest.teardown.js` (parar container) | 10 min | ✅ **Concluído** |
+| 4 | Criar `tests/helpers/db-test.js` (conexão, transação, migrations, truncate) | 1h | ✅ **Concluído** |
+| 5 | Criar `jest.config.db.js` (configuração dedicada) | 10 min | ✅ **Concluído** |
+| 6 | Adicionar script `npm run test:db:container` no `package.json` (já existente) | 5 min | ✅ **Concluído** |
+| 7 | Validar que migrations rodam no banco de teste (via globalSetup) | 30 min | ✅ **Concluído** |
+| 8 | Criar `tests/integration/domain/posts.db.test.js` (primeiro arquivo piloto) | 2h | ✅ **Concluído** |
+| 9 | Executar suite completa e ajustar timeouts/assertions | 30 min | ✅ **Concluído** |
+| 10 | Criar `tests/integration/domain/musicas.db.test.js`, `videos.db.test.js`, `products.db.test.js`, `settings.db.test.js` | 4h | ✅ **Concluído** |
+| 11 | Configurar CI (`ci.yml`) para executar `npm run test:db` | 30 min | ✅ **Concluído** |
 
-**Estimativa total:** ~10h de desenvolvimento + ~1h de CI.
+**Estimativa total:** ~10h de desenvolvimento + ~1h de CI. **Todos os 11 passos concluídos.**
 
 ---
 
@@ -971,7 +973,7 @@ const mockPosts = [
 
 ---
 
-## 6. Plano de Migração: `lib/middleware.js` → `lib/api/middleware.js`
+## 6. Plano de Migração: `lib/middleware.js` → `lib/api/middleware.js` — **CONCLUÍDO (05/06/2026)**
 
 ### Contexto
 
@@ -1186,7 +1188,7 @@ jest.mock('../../../../lib/domain/settings.js', () => ({
 - [x] **Arquivo 1 (D):** Adaptar/reescrever testes de logger e apiMiddleware
 - [ ] **Opcional:** Dividir `middleware.test.js` em arquivos especializados em `tests/unit/lib/api/` (não implementado — arquivo único com 9/9 testes passando é suficiente)
 - [x] **Validação:** Executar suite completa de testes após alterações
-- [ ] **Limpeza:** Remover `lib/middleware.js` do projeto (pendente — requer verificação se ainda há dependências não-testadas)
+- [x] **Limpeza:** Remover `lib/middleware.js` do projeto (já removido — confirmado em 06/06/2026: arquivo não existe mais e dependências foram migradas para `lib/api/middleware.js`)
 
 ---
 
