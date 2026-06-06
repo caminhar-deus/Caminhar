@@ -11,9 +11,7 @@ jest.mock('../../../../../lib/auth.js', () => ({
   withAuth: jest.fn((handler) => handler)
 }));
 
-jest.mock('../../../../../lib/db.js', () => ({
-  query: jest.fn()
-}));
+jest.mock('../../../../../lib/db.js', () => require('../../../../../mocks/db-module').mockDb());
 
 jest.mock('../../../../../lib/cache.js', () => ({
   checkRateLimit: jest.fn(),

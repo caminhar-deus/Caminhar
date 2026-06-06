@@ -1,6 +1,6 @@
 # Análise do Projeto — Testes (`/tests/`)
 
-> **Data:** 13/05/2026 (atualizado em 05/06/2026 — 2ª revisão)
+> **Data:** 13/05/2026 (atualizado em 05/06/2026 — 3ª revisão)
 > **Objetivo:** Documentar de forma objetiva, clara e focada todos os arquivos de teste do projeto, descrevendo localização, propósito e funcionalidade de cada um.
 
 ---
@@ -111,8 +111,10 @@ tests/
 | Arquivo | Propósito |
 |---------|-----------|
 | `index.js` | Ponto de exportação que re-exporta todos os mocks |
-| `cache.js` | Mock de cache compartilhado. Exporta `mockCacheModule(overrides)` (cria módulo completo com `getOrSetCache`, `checkRateLimit`, `invalidateCache`) e `resetCacheMocks(cacheMock)` para resetar comportamentos padrão. Uso: `jest.mock('../../../lib/cache.js', () => require('../../mocks/cache').mockCacheModule())` |
-| `db.js` | Mock de banco de dados. Exporta `mockQuery(rows, error)` para simular `db.query()`, e `createDbMock()` que retorna um objeto completo com `query`, `createRecord`, `updateRecords`, `deleteRecords`, `logActivity` |
+| `auth.js` | Mock centralizado de autenticação. Exporta `mockAuthModule(overrides)` (cria módulo completo com todas as funções de `lib/auth.js`: `hashPassword`, `verifyPassword`, `generateToken`, `verifyToken`, `withAuth`, etc.), `mockAuthFailure()` (simula falha de autenticação) e `resetAuthMocks(authMock)`. **Criado em 05/06/2026.** Uso: `jest.mock('...lib/auth.js', () => require('...mocks/auth').mockAuthModule())` |
+| `cache.js` | Mock de cache compartilhado. Exporta `mockCacheModule(overrides)` (cria módulo completo com `getOrSetCache`, `checkRateLimit`, `invalidateCache`) e `resetCacheMocks(cacheMock)`. Uso: `jest.mock('...lib/cache.js', () => require('...mocks/cache').mockCacheModule())` |
+| `db.js` | Mock de operações de banco de dados (query helpers). Exporta `mockQuery(returnValue)`, `mockQueryOne(row)`, `mockQueryMany(rows)`, `mockQueryError(error)`, `mockInsert(insertedRow)`, `mockUpdate(updatedRow)`, `mockDelete(deletedId)`, `mockTransaction(callback)`, `mockPool(options)`, `mockDbModule(options)`, `mockPaginatedResult(data, page, limit)`, `queryWasCalledWith(queryMock, pattern)`, `getQueryParams(queryMock, callIndex)`, `mockQuerySequence(responses)` |
+| `db-module.js` | Mock centralizado do módulo `lib/db.js`. Exporta `mockDb(overrides)` (cria módulo completo com todas as funções exportadas por `lib/db.js`: `query`, `resetPool`, `closeDatabase`, `transaction`, `healthCheck`, `getDatabaseInfo`), `mockDbError(error)` (simula erro de conexão) e `resetDbMocks(dbMock)`. **Criado em 05/06/2026.** Uso: `jest.mock('...lib/db.js', () => require('...mocks/db-module').mockDb())` |
 | `fetch.js` | Mock de fetch API. Exporta `mockFetchSuccess(data)`, `mockFetchError(status, message)`, `mockFetchNetworkError()` |
 | `next.js` | Mock de objetos Next.js. Exporta `mockReq(overrides)`, `mockRes()` com métodos `status`, `json`, `redirect`, `setHeader`, `getHeader` |
 
@@ -415,7 +417,7 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 | **Factories** | 5 arquivos |
 | **Helpers** | 4 arquivos |
 | **Matchers** | 6 arquivos |
-| **Mocks** | 4 arquivos |
+| **Mocks** | 6 arquivos |
 | **Examples** | 2 arquivos |
 | **Testes de Integração** | 33 arquivos (6 raiz + 27 API + 14 admin + 2 api/auth)* |
 | **Testes Unitários** | ~95 arquivos (5 raiz + ~40 components + ~15 Admin + 2 Managers + 2 Tools + ~12 Features + 5 Layout + 5 Performance + 2 Products + 8 SEO + 12 UI + 3 domain + 6 lib + 5 lib/api + 4 lib/backup + 5 lib/db + 1 scripts + ~9 pages/api) |
@@ -445,5 +447,13 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 > - 23 arquivos padronizados com `mockGlobalFetch()` + `fetchMock?.mockRestore()` no `afterEach`
 > - Helper documenta que `jest.spyOn(global, 'fetch')` não funciona em JSDOM
 > - **Total:** 25 arquivos modificados. Nenhuma regressão (7 falhas pré-existentes inalteradas).
+> 
+> **Ajustes realizados na 4ª revisão (05/06):**
+> - Criado `tests/mocks/auth.js` com `mockAuthModule()` e `mockAuthFailure()` para centralizar mocks de `lib/auth.js`
+> - Criado `tests/mocks/db-module.js` com `mockDb()` e `mockDbError()` para centralizar mocks de `lib/db.js`
+> - 27 arquivos padronizados para usar `require('...mocks/db-module').mockDb()` em vez de factory functions inline
+> - Redução de ~120 linhas de código repetido nos mocks de `lib/db.js`
+> - Seção 2.3 do `UPGRADE_tests.md` atualizada de "Sugestão" para **"RESOLVIDO"**
+> - **Total:** 29 arquivos modificados/criados (2 novos mocks + 27 arquivos convertidos).
 > 
 > Para detalhes de implementação específicos, consulte `docs/UPGRADE_tests.md`.

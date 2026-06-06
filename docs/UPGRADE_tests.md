@@ -240,15 +240,56 @@ global.fetch = jest.fn();
 
 ---
 
-### 2.3 Overhead de Módulos com jest.mock() no Topo
+### 2.3 Overhead de Módulos com jest.mock() no Topo — **RESOLVIDO (05/06/2026)**
 
 **Ocorrência:** Todos os arquivos de teste de integração e unitários que mockam dependências.
 
-**Problema:** `jest.mock()` é hoisted e executado antes de qualquer import. Cada arquivo registra um novo mock module. Em ~157 arquivos de teste, isso gera recriação constante de módulos mockados no início de cada suite.
+**Problema:** `jest.mock()` é hoisted e executado antes de qualquer import. Cada arquivo registrava um novo mock module com factory function inline. Em 27 arquivos, isso gerava recriação constante de módulos mockados.
 
-**Impacto:** Aumento no tempo total de execução dos testes devido à inicialização repetida de módulos.
+**Impacto:** Aumento no tempo total de execução dos testes devido à inicialização repetida de módulos com factories redundantes.
 
-**Sugestão:** Centralizar mocks mais comuns (db, auth, cache) em `__mocks__/` e usar `jest.mock('lib/db')` sem factory function, permitindo que o Jest use o mock automático. Ou criar módulos compartilhados de mock em `tests/mocks/` e importá-los.
+**O que foi feito (05/06/2026):**
+
+- **Criado** `tests/mocks/auth.js` — Mock centralizado com `mockAuthModule()` e `mockAuthFailure()` para o módulo `lib/auth.js`
+- **Criado** `tests/mocks/db-module.js` — Mock centralizado com `mockDb()` e `mockDbError()` para o módulo `lib/db.js`, exportando todas as funções reais (`query`, `resetPool`, `closeDatabase`, `transaction`, `healthCheck`, `getDatabaseInfo`)
+- **Atualizado** `tests/mocks/index.js` — Exporta os novos mocks `auth.js` e `db-module.js`
+- **Padronizados 27 arquivos** que mockavam `lib/db.js` para usar `require('...mocks/db-module').mockDb()` em vez de factory functions inline
+
+**Arquivos convertidos:**
+
+| # | Arquivo | Padrão Anterior | Padrão Novo |
+|:-:|---------|----------------|-------------|
+| 1 | `tests/integration/api/status.test.js` | `{ query: jest.fn() }` | `mockDb()` |
+| 2 | `tests/integration/api/dicas.test.js` | `{ query: jest.fn() }` | `mockDb()` |
+| 3 | `tests/integration/api/cleanup-test-data.test.js` | `{ query: jest.fn() }` | `mockDb()` |
+| 4 | `tests/integration/api/settings.general.test.js` | `{ query: jest.fn() }` | `mockDb()` |
+| 5 | `tests/integration/api/admin/audit.test.js` | `{ query: jest.fn() }` | `mockDb()` |
+| 6 | `tests/integration/api/admin/musicas.test.js` | `{ query: jest.fn() }` | `mockDb()` |
+| 7 | `tests/integration/api/admin/posts.test.js` | `{ query: jest.fn() }` | `mockDb()` |
+| 8 | `tests/integration/create-post-flow.test.js` | `{ query: jest.fn() }` | `mockDb()` |
+| 9 | `tests/integration/api/admin/dicas.test.js` | `{ query, logActivity }` | `mockDb({ logActivity })` |
+| 10 | `tests/integration/api/admin/roles.test.js` | `{ query, createRecord, updateRecords, deleteRecords, logActivity }` | `mockDb({ createRecord, updateRecords, deleteRecords, logActivity })` |
+| 11 | `tests/integration/api/admin/users.test.js` | `{ query, createRecord, updateRecords, deleteRecords, logActivity }` | `mockDb({ createRecord, updateRecords, deleteRecords, logActivity })` |
+| 12 | `tests/unit/domain/posts.test.js` | `{ query, transaction }` | `mockDb()` |
+| 13 | `tests/unit/domain/videos.test.js` | `{ query, transaction }` | `mockDb()` |
+| 14 | `tests/unit/domain/settings.test.js` | `{ query: jest.fn() }` | `mockDb()` |
+| 15 | `tests/unit/lib/auth.test.js` | `{ query: jest.fn() }` | `mockDb()` |
+| 16 | `tests/unit/lib/crud.test.js` | `{ query: jest.fn() }` | `mockDb()` |
+| 17 | `tests/unit/scripts/clear-db.test.js` | `{ query, closeDatabase }` | `mockDb()` |
+| 18 | `tests/unit/scripts/clear-musicas.test.js` | `{ query, closeDatabase }` | `mockDb()` |
+| 19 | `tests/unit/scripts/reset-password.test.js` | `{ query, closeDatabase }` | `mockDb()` |
+| 20 | `tests/unit/scripts/seed-all.test.js` | `{ query, closeDatabase }` | `mockDb()` |
+| 21 | `tests/unit/pages/api/admin/dicas.edge.test.js` | `{ query, logActivity }` | `mockDb({ logActivity })` |
+| 22 | `tests/unit/pages/api/admin/posts.edge.test.js` | `{ query: jest.fn() }` | `mockDb()` |
+| 23 | `tests/unit/pages/api/admin/roles.edge.test.js` | `{ query, createRecord, updateRecords, deleteRecords, logActivity }` | `mockDb({ createRecord, updateRecords, deleteRecords, logActivity })` |
+| 24 | `tests/unit/pages/api/admin/stats.edge.test.js` | `{ query: jest.fn() }` | `mockDb()` |
+| 25 | `tests/integration/api/posts.general.test.js` | `{ getAllPosts, createPost, updatePost, deletePost }` | `mockDb({ getAllPosts, createPost, updatePost, deletePost })` |
+| 26 | `tests/integration/api/placeholder-image.test.js` | `{ getSetting: jest.fn() }` | `mockDb({ getSetting })` |
+| 27 | `tests/unit/settings-cache.test.js` | `{ getSetting, setSetting, getAllSettings }` | `mockDb({ getSetting, setSetting, getAllSettings })` |
+
+**Resultado:** 27 arquivos padronizados. Redução de ~120 linhas de código repetido. Módulos mockados agora são instâncias do mock centralizado, reduzindo o overhead de inicialização.
+
+**Nota:** Alguns arquivos usam `overrides` para adicionar funções que não existem mais em `lib/db.js` (como `getAllPosts`, `createPost`, `getSetting`). Isso é esperado para testes que ainda não foram migrados para o novo sistema de domínios (`lib/domain/`).
 
 ---
 

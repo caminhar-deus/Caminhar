@@ -1,35 +1,7 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 
-jest.mock('../../../../lib/db.js', () => ({
-  query: jest.fn(),
-}));
-
-jest.mock('../../../../lib/domain/posts.js', () => ({
-  getPaginatedPosts: jest.fn(),
-  createPost: jest.fn(),
-  updatePost: jest.fn(),
-  deletePost: jest.fn(),
-}));
-
-jest.mock('../../../../lib/domain/audit.js', () => ({
-  logActivity: jest.fn(),
-}));
-
-jest.mock('../../../../lib/crud.js', () => ({
-  updateRecords: jest.fn(),
-}));
-
-jest.mock('../../../../lib/cache.js', () => ({
-  invalidateCache: jest.fn(),
-  checkRateLimit: jest.fn(),
-}));
-
-// Mock do middleware com suporte para injetar usuário customizado
-jest.mock('../../../../lib/auth.js', () => ({
-  withAuth: jest.fn((handler) => async (req, res) => {
-    if (req.headers.authorization !== 'Bearer valid-token') {
-      return res.status(401).json({ error: 'Não autenticado' });
+jest.mock('../../../../lib/db.js', () => require('../../../../mocks/db-module').mockDb());
     }
     req.user = req._userOverride || { userId: 1, username: 'admin', role: 'admin' };
     return handler(req, res);

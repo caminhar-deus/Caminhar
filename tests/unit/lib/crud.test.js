@@ -1,9 +1,7 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
 // Moca o módulo de banco de dados para interceptarmos as queries
-jest.mock('../../../lib/db.js', () => ({
-  query: jest.fn(),
-}));
+jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb());
 
 import { raw, createRecord, updateRecords, deleteRecords, upsertRecord } from '../../../lib/crud.js';
 import { query } from '../../../lib/db.js';

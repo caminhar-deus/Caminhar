@@ -3,9 +3,7 @@ import { createMocks } from 'node-mocks-http';
 import handler from '../../../pages/api/status.js';
 import { query } from '../../../lib/db.js';
 
-jest.mock('../../../lib/db.js', () => ({
-  query: jest.fn()
-}));
+jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb());
 
 describe('API Status (/api/status)', () => {
   beforeEach(() => { jest.clearAllMocks(); });

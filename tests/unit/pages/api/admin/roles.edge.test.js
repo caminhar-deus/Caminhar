@@ -8,12 +8,11 @@ jest.mock('../../../../../lib/auth.js', () => ({
   verifyToken: jest.fn()
 }));
 
-jest.mock('../../../../../lib/db.js', () => ({
-  query: jest.fn(),
+jest.mock('../../../../../lib/db.js', () => require('../../../../../mocks/db-module').mockDb({
   createRecord: jest.fn(),
   updateRecords: jest.fn(),
   deleteRecords: jest.fn(),
-  logActivity: jest.fn()
+  logActivity: jest.fn(),
 }));
 
 describe('API - Admin - Roles (Edge Cases)', () => {

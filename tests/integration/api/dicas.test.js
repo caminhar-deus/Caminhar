@@ -1,9 +1,7 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 
-jest.mock('../../../lib/db.js', () => ({
-  query: jest.fn(),
-}));
+jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb());
 
 import handler from '../../../pages/api/dicas.js';
 import { query } from '../../../lib/db.js';

@@ -1,10 +1,7 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
 // Mocks para isolar o banco de dados e outras dependências
-jest.mock('../../../lib/db.js', () => ({
-  query: jest.fn(),
-  transaction: jest.fn(),
-}));
+jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb());
 
 jest.mock('../../../lib/crud.js', () => ({
   createRecord: jest.fn(),

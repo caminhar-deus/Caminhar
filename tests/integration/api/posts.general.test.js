@@ -2,7 +2,7 @@ import { jest, describe, beforeEach, test, expect } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 
 // Mock do lib/db
-jest.mock('../../../lib/db.js', () => ({
+jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb({
   getAllPosts: jest.fn(),
   createPost: jest.fn(),
   updatePost: jest.fn(),

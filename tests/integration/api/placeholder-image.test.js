@@ -8,7 +8,7 @@ jest.mock('fs', () => ({
   }
 }));
 
-jest.mock('../../../lib/db.js', () => ({
+jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb({
   getSetting: jest.fn(),
 }));
 

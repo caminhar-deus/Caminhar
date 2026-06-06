@@ -10,9 +10,7 @@ jest.mock('../../../lib/auth.js', () => ({
   }),
 }));
 
-jest.mock('../../../lib/db.js', () => ({
-  query: jest.fn(),
-}));
+jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb());
 
 import handler from '../../../pages/api/cleanup-test-data.js';
 import { query } from '../../../lib/db.js';

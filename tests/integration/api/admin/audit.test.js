@@ -2,9 +2,7 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 
 // Mocks do banco
-jest.mock('../../../../lib/db.js', () => ({
-  query: jest.fn(),
-}));
+jest.mock('../../../../lib/db.js', () => require('../../../../mocks/db-module').mockDb());
 
 // Mocks de autenticação
 jest.mock('../../../../lib/auth.js', () => ({

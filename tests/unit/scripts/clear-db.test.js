@@ -5,10 +5,7 @@ jest.mock('fs');
 jest.mock('dotenv');
 
 // Mock do lib/db.js
-jest.mock('../../../lib/db.js', () => ({
-  query: jest.fn(),
-  closeDatabase: jest.fn().mockResolvedValue(undefined),
-}));
+jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb());
 
 // Mock do load-env
 jest.mock('../../../scripts/utils/load-env.js', () => ({

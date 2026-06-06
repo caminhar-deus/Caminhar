@@ -2,7 +2,7 @@ import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { hashPassword, verifyPassword, generateToken, verifyToken, setAuthCookie, getAuthCookie, getAuthToken, authenticate, withAuth, initializeAuth } from '../../../lib/auth.js';
 import { query } from '../../../lib/db.js';
 
-jest.mock('../../../lib/db.js', () => ({ query: jest.fn() }));
+jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb());
 jest.mock('cookie');
 
 describe('Library - Auth', () => {

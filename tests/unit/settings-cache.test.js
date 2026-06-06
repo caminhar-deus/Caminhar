@@ -2,8 +2,7 @@ import { jest, describe, beforeEach, it, expect } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 
 // Mock das dependências
-jest.mock('../../lib/db.js', () => ({
-  __esModule: true,
+jest.mock('../../lib/db.js', () => require('../mocks/db-module').mockDb({
   getSetting: jest.fn(),
   setSetting: jest.fn(),
   getAllSettings: jest.fn(),

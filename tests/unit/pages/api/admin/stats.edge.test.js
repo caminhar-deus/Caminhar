@@ -8,9 +8,7 @@ jest.mock('../../../../../lib/auth.js', () => ({
   verifyToken: jest.fn()
 }));
 
-jest.mock('../../../../../lib/db.js', () => ({
-  query: jest.fn()
-}));
+jest.mock('../../../../../lib/db.js', () => require('../../../../../mocks/db-module').mockDb());
 
 describe('API - Admin - Stats (Edge Cases)', () => {
   let req;

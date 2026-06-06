@@ -2,9 +2,7 @@ import { jest, describe, beforeEach, test, expect } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 
 // Mock do lib/db
-jest.mock('../../../lib/db.js', () => ({
-  query: jest.fn(),
-}));
+jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb());
 
 // Mock da Autenticação para simular proteção de rota
 // Diferente do teste de posts, aqui implementamos uma lógica simples

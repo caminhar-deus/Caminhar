@@ -8,10 +8,7 @@ jest.mock('../../../lib/auth.js', () => ({
   hashPassword: jest.fn().mockResolvedValue('$2b$10$hashed_password_string'),
 }));
 
-jest.mock('../../../lib/db.js', () => ({
-  query: jest.fn(),
-  closeDatabase: jest.fn().mockResolvedValue(undefined),
-}));
+jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb());
 
 describe('reset-password.js — Redefinição de senha', () => {
   let libDb;

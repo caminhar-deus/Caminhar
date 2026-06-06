@@ -1,33 +1,7 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 
-jest.mock('../../../../lib/db.js', () => ({
-  query: jest.fn(),
-}));
-
-jest.mock('../../../../lib/domain/musicas.js', () => ({
-  getPaginatedMusicas: jest.fn(),
-  createMusica: jest.fn(),
-  updateMusica: jest.fn(),
-  deleteMusica: jest.fn(),
-}));
-
-jest.mock('../../../../lib/crud.js', () => ({
-  updateRecords: jest.fn(),
-}));
-
-jest.mock('../../../../lib/domain/audit.js', () => ({
-  logActivity: jest.fn(),
-}));
-
-jest.mock('../../../../lib/cache.js', () => ({
-  invalidateCache: jest.fn(),
-}));
-
-jest.mock('../../../../lib/auth.js', () => ({
-  withAuth: jest.fn((handler) => async (req, res) => {
-    if (req.headers.authorization !== 'Bearer valid-token') {
-      return res.status(401).json({ message: 'Não autenticado' });
+jest.mock('../../../../lib/db.js', () => require('../../../../mocks/db-module').mockDb());
     }
     req.user = req._userOverride !== undefined ? req._userOverride : { userId: 1, username: 'admin', role: 'admin' };
     return handler(req, res);
