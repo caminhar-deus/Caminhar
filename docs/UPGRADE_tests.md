@@ -1,6 +1,6 @@
 # Relatório de Upgrade — Testes (`/tests/`)
 
-> **Data:** 12/05/2026 (atualizado em 05/06/2026 — 2ª revisão)
+> **Data:** 12/05/2026 (atualizado em 06/06/2026 — 3ª revisão)
 > **Objetivo:** Reportar correções, melhorias, problemas de performance e duplicidade de código identificados na análise dos arquivos de teste.
 
 ---
@@ -293,20 +293,27 @@ global.fetch = jest.fn();
 
 ---
 
-### 2.4 Uso Excessivo de waitFor com Timeouts Curtos
+### 2.4 Uso Excessivo de waitFor com Timeouts Curtos — **AJUSTADO (06/06/2026)**
 
-**Ocorrência:** Vários testes em `tests/unit/components/Features/Blog/BlogSection.test.js`, `tests/unit/components/Admin/Managers/BackupManager.test.js`
+**Ocorrência:** `tests/unit/components/Features/Blog/BlogSection.test.js`, `tests/unit/components/Admin/Managers/BackupManager.test.js`
 
-**Código exemplar:**
+**Código exemplar (ANTES):**
 ```javascript
-await waitFor(() => { ... });
+await waitFor(() => expect(screen.queryByText('Carregando...')).not.toBeInTheDocument());
 ```
 
-**Problema:** O timeout padrão configurado no setup.js é 5000ms. Múltiplos `waitFor` em sequência, especialmente os que verificam ausência de elemento (`queryByText`), podem aumentar o tempo de teste desnecessariamente.
+**Problema:** O timeout padrão do `waitFor` é 5000ms. Múltiplos `waitFor` em sequência, especialmente os que verificam ausência de elemento (`queryByText` + `not.toBeInTheDocument`), aumentam o tempo de teste desnecessariamente pois o `waitFor` fica polling até o timeout expirar.
 
-**Impacto:** Suite de testes lenta. Em testes que verificam "algo NÃO está presente", o `waitFor` espera o timeout inteiro ou a condição ser satisfeita.
+**Impacto:** Suite de testes lenta. Verificações de ausência de elemento podiam levar até 5s cada.
 
-**Sugestão:** Usar `findByText` (que é `waitFor` + `getByText`) para elementos que devem aparecer. Para elementos que devem sumir, considerar `waitForElementToBeRemoved` que é mais eficiente.
+**O que foi feito (06/06/2026):**
+
+| Arquivo | Ocorrências | Padrão Anterior | Padrão Novo |
+|---------|:-----------:|-----------------|-------------|
+| `BlogSection.test.js` | 2 | `await waitFor(() => expect(screen.queryByText('Carregando reflexões...')).not.toBeInTheDocument())` | `await waitForElementToBeRemoved(() => screen.queryByText('Carregando reflexões...'))` |
+| `BackupManager.test.js` | 3 | `await waitFor(() => expect(screen.queryByText(/Carregando/i)).not.toBeInTheDocument())` | `await waitForElementToBeRemoved(() => screen.queryByText(/Carregando/i))` |
+
+**Resultado:** 5 ocorrências de `waitFor` com verificação de ausência substituídas por `waitForElementToBeRemoved`. `BlogSection.test.js` com 9/9 testes passando. `BackupManager.test.js` com 3/7 testes passando (4 falhas pré-existentes não relacionadas). Redução potencial no tempo de execução ao eliminar polling desnecessário.
 
 ---
 

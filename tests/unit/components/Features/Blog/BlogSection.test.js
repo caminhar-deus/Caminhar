@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, waitForElementToBeRemoved } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import BlogSection from '../../../../../components/Features/Blog/BlogSection';
 import { suppressConsoleError, mockGlobalFetch } from '../../../../helpers/index.js';
@@ -39,7 +39,7 @@ describe('Componente Front-End - BlogSection', () => {
     expect(screen.getByText('Carregando reflexões...')).toBeInTheDocument();
 
     resolveApi({ ok: true, json: async () => ({ success: true, data: [] }) });
-    await waitFor(() => expect(screen.queryByText('Carregando reflexões...')).not.toBeInTheDocument());
+    await waitForElementToBeRemoved(() => screen.queryByText('Carregando reflexões...'));
   });
 
   it('deve retornar null (não renderizar nada) se não houver posts', async () => {
@@ -49,7 +49,7 @@ describe('Componente Front-End - BlogSection', () => {
     });
     const { container } = render(<BlogSection />);
 
-    await waitFor(() => expect(screen.queryByText('Carregando reflexões...')).not.toBeInTheDocument());
+    await waitForElementToBeRemoved(() => screen.queryByText('Carregando reflexões...'));
     expect(container).toBeEmptyDOMElement();
   });
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, waitForElementToBeRemoved } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import BackupManager from '../../../../../components/Admin/Managers/BackupManager.js';
 import { suppressConsoleError, createConfirmSpy, mockGlobalFetch } from '../../../../helpers/index.js';
@@ -63,7 +63,7 @@ describe('Componentes Admin - BackupManager', () => {
     confirmSpy.mockReturnValueOnce(false);
 
     render(<BackupManager />);
-    await waitFor(() => expect(screen.queryByText(/Carregando/i)).not.toBeInTheDocument());
+    await waitForElementToBeRemoved(() => screen.queryByText(/Carregando/i));
 
     fireEvent.click(screen.getByRole('button', { name: /Realizar Backup Agora/i }));
 
@@ -78,7 +78,7 @@ describe('Componentes Admin - BackupManager', () => {
     global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ latest: { name: 'novo.sql', date: new Date(), size: 1024 } }) });
 
     render(<BackupManager />);
-    await waitFor(() => expect(screen.queryByText(/Carregando/i)).not.toBeInTheDocument());
+    await waitForElementToBeRemoved(() => screen.queryByText(/Carregando/i));
 
     fireEvent.click(screen.getByRole('button', { name: /Realizar Backup Agora/i }));
     expect(screen.getByRole('button', { name: /Criando Backup/i })).toBeDisabled();
@@ -103,7 +103,7 @@ describe('Componentes Admin - BackupManager', () => {
     global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ latest: null }) });
 
     render(<BackupManager />);
-    await waitFor(() => expect(screen.queryByText(/Carregando/i)).not.toBeInTheDocument());
+    await waitForElementToBeRemoved(() => screen.queryByText(/Carregando/i));
 
     global.fetch.mockResolvedValueOnce({ ok: false, json: async () => ({ message: 'Espaço insuficiente no disco' }) });
     fireEvent.click(screen.getByRole('button', { name: /Realizar Backup Agora/i }));
