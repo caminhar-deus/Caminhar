@@ -33,37 +33,47 @@ global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
 
 // Polyfill ReadableStream (necessário para undici funcionar corretamente)
-if (typeof globalThis.ReadableStream === 'undefined') {
-  try {
-    const { ReadableStream } = require('node:stream/web');
-    globalThis.ReadableStream = ReadableStream;
-  } catch (e) {
-    console.warn(`⚠️ Polyfill ReadableStream failed: ${e.message}`);
+// Nota: Usamos IIFE async + await import() em vez de require() para manter
+// consistência com o padrão ES Module do projeto. O setup.js é transformado
+// pelo Babel para CommonJS, então o require() funcionaria, mas o import()
+// dinâmico é semanticamente mais consistente com o restante do código-fonte.
+(async () => {
+  if (typeof globalThis.ReadableStream === 'undefined') {
+    try {
+      const { ReadableStream } = await import('node:stream/web');
+      globalThis.ReadableStream = ReadableStream;
+    } catch (e) {
+      console.warn(`⚠️ Polyfill ReadableStream failed: ${e.message}`);
+    }
   }
-}
+})();
 
 // Polyfill MessageChannel/MessagePort (necessário para undici em alguns ambientes)
-if (typeof globalThis.MessageChannel === 'undefined') {
-  try {
-    const { MessageChannel, MessagePort } = require('node:worker_threads');
-    globalThis.MessageChannel = MessageChannel;
-    globalThis.MessagePort = MessagePort;
-  } catch (e) {
-    console.warn(`⚠️ Polyfill MessageChannel failed: ${e.message}`);
+(async () => {
+  if (typeof globalThis.MessageChannel === 'undefined') {
+    try {
+      const { MessageChannel, MessagePort } = await import('node:worker_threads');
+      globalThis.MessageChannel = MessageChannel;
+      globalThis.MessagePort = MessagePort;
+    } catch (e) {
+      console.warn(`⚠️ Polyfill MessageChannel failed: ${e.message}`);
+    }
   }
-}
+})();
 
 // Polyfill Request/Response/Headers para JSDOM (necessário para Next.js Middleware & API tests)
-if (!globalThis.Request) {
-  try {
-    const { Request, Response, Headers } = require('undici');
-    globalThis.Request = Request;
-    globalThis.Response = Response;
-    globalThis.Headers = Headers;
-  } catch (error) {
-    console.warn('⚠️ undici not found, Request/Response/Headers polyfills skipped. Error:', error.message);
+(async () => {
+  if (!globalThis.Request) {
+    try {
+      const { Request, Response, Headers } = await import('undici');
+      globalThis.Request = Request;
+      globalThis.Response = Response;
+      globalThis.Headers = Headers;
+    } catch (error) {
+      console.warn('⚠️ undici not found, Request/Response/Headers polyfills skipped. Error:', error.message);
+    }
   }
-}
+})();
 
 // Polyfill localStorage para ambiente Node.js
 if (typeof global.localStorage === 'undefined') {

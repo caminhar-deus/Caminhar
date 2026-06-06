@@ -1,6 +1,6 @@
 # Análise do Projeto — Testes (`/tests/`)
 
-> **Data:** 13/05/2026 (atualizado em 05/06/2026 — 3ª revisão)
+> **Data:** 13/05/2026 (atualizado em 06/06/2026 — 5ª revisão)
 > **Objetivo:** Documentar de forma objetiva, clara e focada todos os arquivos de teste do projeto, descrevendo localização, propósito e funcionalidade de cada um.
 
 ---
@@ -455,5 +455,11 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 > - Redução de ~120 linhas de código repetido nos mocks de `lib/db.js`
 > - Seção 2.3 do `UPGRADE_tests.md` atualizada de "Sugestão" para **"RESOLVIDO"**
 > - **Total:** 29 arquivos modificados/criados (2 novos mocks + 27 arquivos convertidos).
+> 
+> **Ajustes realizados na 5ª revisão (06/06):**
+> - Substituídos 3 `require()` por `await import()` dinâmico em `tests/setup.js` (polyfills ReadableStream, MessageChannel, Request/Response/Headers)
+> - Cada `require()` envolvido em IIFE async para manter compatibilidade com o fluxo de carregamento do setup
+> - Correção documentada na Seção 3.2 do `UPGRADE_tests.md` como **"RESOLVIDO (06/06/2026)"**
+> - **Total:** 1 arquivo modificado. Nenhuma regressão.
 > 
 > Para detalhes de implementação específicos, consulte `docs/UPGRADE_tests.md`.

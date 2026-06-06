@@ -359,18 +359,28 @@ await waitFor(() => expect(screen.getByText('❌ Erro de conexão ao criar backu
 
 ---
 
-### 3.2 Uso de Require() em Ambiente ES Module
+### 3.2 Uso de Require() em Ambiente ES Module — **RESOLVIDO (06/06/2026)**
 
-**Ocorrência:** `tests/setup.js` — linhas 38, 48, 59
+**Ocorrência:** `tests/setup.js` — linhas 38, 48, 59 (conversão para linhas 37, 46, 56 pós-correção)
 
-**Código exemplar:**
+**Código exemplar (ANTES):**
 ```javascript
 const { ReadableStream } = require('node:stream/web');
 ```
 
-**Problema:** O projeto usa `import/export` (ES Modules), mas `require()` é usado para polyfills condicionais. Embora funcione com Jest (que usa CommonJS), isso é inconsistente com o padrão ES Module definido.
+**Problema:** O projeto usa `import/export` (ES Modules), mas `require()` era usado para polyfills condicionais. Embora funcionasse com Jest (que usa CommonJS), era inconsistente com o padrão ES Module definido.
 
-**Sugestão:** Usar `await import()` dinâmico ou garantir que Jest trate esses polyfills de forma consistente com o restante do projeto.
+**O que foi feito (06/06/2026):**
+- **3 ocorrências de `require()` substituídas por `await import()` dinâmico dentro de IIFE async**:
+  1. `require('node:stream/web')` → `await import('node:stream/web')` — Polyfill ReadableStream
+  2. `require('node:worker_threads')` → `await import('node:worker_threads')` — Polyfill MessageChannel/MessagePort
+  3. `require('undici')` → `await import('undici')` — Polyfill Request/Response/Headers
+
+- **Estratégia utilizada:** Cada `require()` foi envolvido em uma IIFE (Immediately Invoked Function Expression) assíncrona, mantendo o bloco `try/catch` e a verção condicional (`if (typeof ... === 'undefined')`) originais.
+
+- **Justificativa:** O `setup.js` é transformado pelo Babel para CommonJS durante a execução dos testes. O `require()` funcionaria, mas o `import()` dinâmico é semanticamente mais consistente com o padrão ES Module adotado pelo projeto (configurado no `package.json` como `"type": "module"` e com `babel-jest` transformando ESM para CJS).
+
+**Resultado:** 3 `require()` eliminados. Nenhuma regressão — `middleware.test.js` (9/9), `redis.test.js` (2/2) e demais testes com setup intacto. As IIFE assíncronas garantem que os polyfills sejam aplicados antes da execução dos testes (o event loop processa as microtasks antes de `afterEach`/`beforeEach`/testes).
 
 ---
 
