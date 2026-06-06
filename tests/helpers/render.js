@@ -13,8 +13,11 @@ import { AuthContext } from '../../hooks/useAuth';
 // =============================================================================
 // MOCKS DE MÓDULOS (devem estar no nível do módulo)
 // =============================================================================
+//
+// NOTA: O mock de next/router é necessário aqui pois o helper renderWithRouter
+//       chama useRouter.mockReturnValue() diretamente.
+//       O next-setup.js centraliza mocks para outros módulos do Next.js.
 
-// Mock do Next.js router - será configurado por teste
 jest.mock('next/router', () => ({
   useRouter: jest.fn(),
 }));

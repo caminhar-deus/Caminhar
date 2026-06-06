@@ -4,7 +4,7 @@ import { describe, it, expect, jest, beforeAll, afterAll } from '@jest/globals';
 import ImageOptimized from '../../../../components/Performance/ImageOptimized';
 import { filterConsoleError } from '../../../helpers/index.js';
 
-// Mockamos o componente next/image nativo para interceptarmos suas propriedades e eventos
+// Sobrescreve o mock centralizado de next/image
 jest.mock('next/image', () => {
   return function MockNextImage({ src, alt, onLoad, onError, priority, loading, placeholder, blurDataURL }) {
     return (

@@ -2,13 +2,7 @@ import React from 'react';
 import { render } from '@testing-library/react';
 import { describe, it, expect, jest, beforeAll, afterAll } from '@jest/globals';
 import PreloadResources, { getCriticalResources } from '../../../../components/Performance/PreloadResources.js';
-
-// Mockamos o Head do Next.js para injetar os elementos direto no container do teste
-jest.mock('next/head', () => {
-  return function MockHead({ children }) {
-    return <div data-testid="next-head">{children}</div>;
-  };
-});
+import '../../../mocks/next-setup.js';
 
 describe('Componente de Performance - PreloadResources', () => {
   it('deve renderizar links de preconnect e dns-prefetch (padrões e extras)', () => {

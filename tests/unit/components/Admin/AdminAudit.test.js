@@ -3,14 +3,15 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import AdminAudit from '../../../../components/Admin/AdminAudit.js';
 import toast from 'react-hot-toast';
-import { useRouter } from 'next/router';
 import { mockGlobalFetch } from '../../../helpers/index.js';
+import '../../../mocks/next-setup.js';
 
 jest.mock('react-hot-toast', () => ({ error: jest.fn(), success: jest.fn() }));
 
+// Sobrescreve o mock centralizado de next/router para expor mockReload
 const mockReload = jest.fn();
 jest.mock('next/router', () => ({
-  useRouter: jest.fn(() => ({ reload: mockReload }))
+  useRouter: jest.fn(() => ({ reload: mockReload })),
 }));
 
 describe('Componente Front-End - AdminAudit', () => {

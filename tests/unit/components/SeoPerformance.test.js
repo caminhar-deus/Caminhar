@@ -1,19 +1,8 @@
 import React from 'react';
 import { jest, describe, it, expect } from '@jest/globals';
 import { render, screen } from '@testing-library/react';
+import '../../mocks/next-setup.js';
 import Head from 'next/head';
-
-// Mock do next/head para permitir a inspeção das tags durante o teste.
-jest.mock('next/head', () => {
-  return {
-    __esModule: true,
-    default: ({ children }) => {
-      // No ambiente de teste, o Head simplesmente renderiza seus filhos,
-      // que o testing-library insere no document.head do JSDOM.
-      return <>{children}</>;
-    },
-  };
-});
 
 // Componente hipotético que aplica otimizações de SEO e Performance.
 const SeoPerformanceWrapper = ({

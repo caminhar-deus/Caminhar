@@ -3,8 +3,9 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import withAdminAuth from '../../../../components/Admin/withAdminAuth.js';
 import { mockGlobalFetch } from '../../../helpers/index.js';
+import '../../../mocks/next-setup.js';
 
-// Mock do next/head para evitar erros do DOM de cabeçalho
+// Mock do next/head especifico para este HOC
 jest.mock('next/head', () => {
   return function MockHead({ children }) {
     return <div data-testid="next-head">{children}</div>;

@@ -2,15 +2,17 @@ import React from 'react';
 import { render } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import SEOHead from '../../../../components/SEO/Head.js';
+import '../../../mocks/next-setup.js';
 
 // Mock do next/head para expor as meta tags no DOM do teste
+// Sobrescreve o mock generico de next-setup.js
 jest.mock('next/head', () => {
   return function MockHead({ children }) {
     return <div data-testid="next-head">{children}</div>;
   };
 });
 
-// Mock do useRouter
+// Mock do useRouter (necessita de mock personalizado para cada teste)
 const mockUseRouter = jest.fn();
 jest.mock('next/router', () => ({
   useRouter: () => mockUseRouter()

@@ -384,15 +384,51 @@ const { ReadableStream } = require('node:stream/web');
 
 ---
 
-### 3.3 Mock de Next.js Dinâmico Pode Quebrar
+### 3.3 Mock de Next.js Dinâmico Pode Quebrar — **AJUSTADO (06/06/2026)**
 
 **Ocorrência:** `tests/mocks/next.js`
 
-**Problema:** O mock do Next.js pode não acompanhar atualizações da versão do Next.js. Métodos como `useRouter`, `useSearchParams`, `headers` e `cookies` mudam entre versões do Next.js.
+**Problema original:** O mock do Next.js podia não acompanhar atualizações da versão do Next.js. Métodos como `useRouter`, `useSearchParams`, `headers` e `cookies` mudam entre versões do Next.js. Além disso, cada arquivo de teste repetia `jest.mock('next/...')` manualmente, gerando duplicação em 10+ arquivos.
 
-**Sugestão:** Usar pacotes oficiais como `next-router-mock` em vez de mock manual, ou manter o mock sincronizado com a versão do Next.js no `package.json`.
+**O que foi feito (06/06/2026):**
 
----
+**A. Criado `tests/mocks/next-setup.js` — Setup centralizado de mocks do Next.js:**
+- Centraliza todos os `jest.mock()` para módulos do Next.js em um único arquivo
+- Basta importar `../../mocks/next-setup.js` no início do arquivo de teste
+- Importa implementações de `tests/mocks/next.js` para `next/image`, `next/link`, `next/head`, `next/script`, `next/dynamic`
+
+**B. Adicionados mocks faltantes:**
+- **`next/navigation` (App Router):** `useRouter`, `usePathname`, `useSearchParams`, `useParams`, `redirect`, `notFound`, `permanentRedirect`
+- **`next/headers`:** Corrigido para API assíncrona — `headers()` e `cookies()` agora retornam `Promise.resolve()` com objetos de header/cookie
+- **`next/server`:** Adicionado mock parcial preservando `NextResponse` original mas espionando `.json()`, `.redirect()`, `.next()`
+
+**C. Removidos mocks duplicados de 10 arquivos de teste:**
+Os seguintes arquivos tiveram seus `jest.mock('next/...')` removidos (substituídos pelo import de `next-setup.js`):
+
+| # | Arquivo | Mocks removidos |
+|:-:|---------|-----------------|
+| 1 | `tests/unit/[slug].test.js` | `next/link`, `next/head` |
+| 2 | `tests/unit/index.test.js` | `next/link`, `next/head` |
+| 3 | `tests/unit/components/SeoPerformance.test.js` | `next/head` |
+| 4 | `tests/unit/components/SEO/Head.test.js` | `next/head` (mantido mock específico sobrescrito) |
+| 5 | `tests/unit/components/Admin/AdminAudit.test.js` | `next/router` (mantido mock específico sobrescrito) |
+| 6 | `tests/unit/components/Admin/AdminUsersTab.test.js` | (import do setup adicionado) |
+| 7 | `tests/unit/components/Admin/withAdminAuth.test.js` | `next/head` (mantido mock específico sobrescrito) |
+| 8 | `tests/unit/components/Performance/PreloadResources.test.js` | `next/head` |
+| 9 | `tests/unit/components/Performance/ImageOptimized.test.js` | (import desnecessário — mantido mock específico sobrescrito) |
+| 10 | `tests/helpers/render.js` | Comentário adicionado documentando `next-setup.js` |
+
+**D. Criado `tests/mocks/next.test.js` — Teste de sanidade dos mocks:**
+- 9 testes validando a estrutura de cada módulo mockado
+- Verifica tipos, funções exportadas e comportamento básico
+- Deve ser executado ao atualizar a versão do Next.js para detectar quebras silenciosas
+
+**E. `setupNextMocks` depreciado:**
+- Função em `tests/mocks/next.js` marcada como `@deprecated`
+- Nenhum arquivo no projeto a utiliza mais
+
+**Resultado:** 9/9 testes de sanidade passando. Redução de ~40 linhas de mocks duplicados. Mocks de `next/navigation` e `next/headers` agora disponíveis para todos os testes. Testes existentes continuam estáveis (arquivos que precisam de comportamento específico sobrescrevem o mock via `jest.mock()` após o import).
+
 
 ### 3.4 Testes sem Verificação de Limpeza — **RESOLVIDO (05/06/2026)**
 
@@ -854,6 +890,7 @@ jest.mock('../../../../lib/domain/settings.js', () => ({
 | Alta | ~~Centralizar `jest.clearAllMocks()` no setup.js~~ | ~~Baixo~~ | ~~Médio~~ | ✅ **Concluído (05/06)** |
 | Alta | Criar helper para suppressConsoleError | Baixo | Baixo | ✅ **Concluído (05/06)** |
 | Alta | Unificar padrão de mock de fetch (spyOn vs assign) | Médio | Alto | ✅ **Concluído (05/06)** — `mockGlobalFetch()` com restauração em 23 arquivos |
+| 🔴 Crítica | Corrigir mock de Next.js (section 3.3) | Baixo | Médio | ✅ **Concluído (06/06)** — Centralizado em `next-setup.js` + teste de sanidade |
 | 🔴 Crítica | Migrar testes de upload-image (Grupo A) | Médio | Alto | ✅ **Concluído (05/06)** |
 | 🟡 Média | Migrar testes de middleware.error (Grupo B) | Alto | Alto | ✅ **Concluído (05/06)** |
 | 🟡 Média | Migrar testes de rate-limit (Grupo C) | Médio | Médio | ✅ **Concluído (05/06)** |

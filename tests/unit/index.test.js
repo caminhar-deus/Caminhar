@@ -1,20 +1,7 @@
 import { jest, describe, it, expect } from '@jest/globals';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-
-// Mock do next/link para evitar erros de contexto do roteador
-jest.mock('next/link', () => {
-  return ({ children }) => {
-    return children;
-  };
-});
-
-// Mock do next/head para evitar erros de renderização fora do _document
-jest.mock('next/head', () => {
-  return ({ children }) => {
-    return children;
-  };
-});
+import '../../mocks/next-setup.js';
 
 // Mock do CSS module
 jest.mock('../styles/Blog.module.css', () => ({

@@ -4,6 +4,7 @@ import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals
 import AdminUsersTab from '../../../../components/Admin/AdminUsersTab.js';
 import toast from 'react-hot-toast';
 import { mockGlobalFetch } from '../../../helpers/index.js';
+import '../../../mocks/next-setup.js';
 
 jest.mock('react-hot-toast', () => ({ error: jest.fn() }));
 
