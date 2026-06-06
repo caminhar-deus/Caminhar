@@ -12,6 +12,12 @@ export default async function globalTeardown() {
     // Fechar todas as conexões do pool PostgreSQL
     await closeDatabase();
 
+    // Parar container do banco de testes, se existir
+    if (global.__TEST_DB_CONTAINER__) {
+      await global.__TEST_DB_CONTAINER__.stop();
+      console.log('✅ Container PostgreSQL de teste finalizado.');
+    }
+
     // Aguardar finalização completa das conexões
     await new Promise(resolve => setTimeout(resolve, 1000));
 

@@ -580,6 +580,7 @@
 │   ├── usePerformanceMetrics.js
 │   ├── useTheme.js
 │   └── useThrottle.js
+├── jest.config.db.js
 ├── jest.config.js
 ├── jest.setup.js
 ├── jest.teardown.js
@@ -884,11 +885,13 @@
 │   │   ├── post.js
 │   │   ├── user.js
 │   │   └── video.js
+│   ├── global-setup.db.js
 │   ├── helpers
 │   │   ├── api.js
 │   │   ├── auth.js
 │   │   ├── console.js
 │   │   ├── crud-test.js
+│   │   ├── db-test.js
 │   │   ├── index.js
 │   │   └── render.js
 │   ├── integration
@@ -942,6 +945,8 @@
 │   │   ├── auth
 │   │   │   └── auth.test.js
 │   │   ├── create-post-flow.test.js
+│   │   ├── domain
+│   │   │   └── posts.db.test.js
 │   │   ├── musicas_flow.test.js
 │   │   ├── musicas_public_db_integration.test.js
 │   │   ├── posts.integration.test.js
@@ -1137,4 +1142,4 @@
 │       └── videos_validation.test.js
 └── tree.txt
 
-180 directories, 958 files
+181 directories, 962 files

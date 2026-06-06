@@ -21,12 +21,14 @@
 ```
 tests/
 ├── setup.js                          # Bootstrap global de testes
+├── global-setup.db.js                # GlobalSetup: container PostgreSQL (Testcontainers)
 ├── examples/                         # Exemplos/demonstração da arquitetura
 ├── factories/                        # Fábricas de dados de teste
 ├── helpers/                          # Utilitários auxiliares
 ├── matchers/                         # Matchers customizados Jest
 ├── mocks/                            # Mocks globais reutilizáveis
 ├── integration/                      # Testes de integração
+│   ├── domain/                       #   Testes com PostgreSQL real (*.db.test.js)
 │   ├── *.test.js                     #   Fluxos CRUD principais
 │   ├── api/                          #   Testes de API endpoints
 │   │   ├── *.test.js
@@ -70,6 +72,18 @@ tests/
 **Localização:** `/tests/setup.js`
 **Propósito:** Bootstrap central executado antes de todos os testes. Configura polyfills (TextEncoder, ReadableStream, Request/Response, localStorage, matchMedia, IntersectionObserver, ResizeObserver, crypto.randomUUID), React Testing Library (timeout 5s), filtro de warnings conhecidos do console.error, cleanup automático pós-teste (`afterEach` com `cleanup()` e `jest.clearAllMocks()`), e utilitários globais (`global.wait()`, `global.suppressWarnings()`). Importa os matchers customizados.
 
+### `jest.config.db.js`
+**Localização:** `/jest.config.db.js`
+**Propósito:** Configuração Jest dedicada para testes de integração com banco PostgreSQL real via Testcontainers. Usa ambiente `node` (não jsdom), `testMatch: **/*.db.test.js`, timeout 30s, `maxWorkers: 1`. Possui transform Babel para compatibilidade ESM e `transformIgnorePatterns` para processar `testcontainers`/`@testcontainers`. Executa `tests/global-setup.db.js` para iniciar o container. **Criado em 06/06/2026.**
+
+### `tests/global-setup.db.js`
+**Localização:** `/tests/global-setup.db.js`
+**Propósito:** GlobalSetup para testes com banco real. Inicializa container PostgreSQL via Testcontainers com `.withReuse(true)` (reutilização entre execuções). Define `process.env.TEST_DATABASE_URL` com a string de conexão. Fallback seguro: se Docker não estiver disponível, define `TEST_DATABASE_URL = '__docker_unavailable__'` para que os testes sejam ignorados via `describe.skip`. **Criado em 06/06/2026.**
+
+### `jest.teardown.js`
+**Localização:** `/jest.teardown.js`
+**Propósito:** GlobalTeardown executado após todos os testes. Fecha conexões Redis e PostgreSQL. **Estendido em 06/06/2026** para também parar o container PostgreSQL (`global.__TEST_DB_CONTAINER__`) quando existir.
+
 ---
 
 ## 3. Infraestrutura de Testes
@@ -94,6 +108,7 @@ tests/
 | `auth.js` | Utilitários de autenticação para testes. Exporta `createAuthToken(payload)` (gera JWT), `mockAuthenticatedUser(overrides)`, `mockAuthenticatedAdmin()` (cria token, user, headers completos) |
 | `console.js` | Utilitários de console e mocks para testes. **Criado em 05/06/2026.** Exporta `suppressConsoleError()` (spy silencioso para console.error), `filterConsoleError(suppressList)` (spy que suprime apenas padrões específicos), `mockGlobalFetch()` (mock de global.fetch compatível com JSDOM), `createConfirmSpy(defaultValue)` (spy para window.confirm). **Nota:** `jest.spyOn(global, 'fetch')` não funciona em JSDOM — `mockGlobalFetch()` usa atribuição direta |
 | `crud-test.js` | Abstração de testes CRUD de API. **Criado em 06/06/2026.** Exporta `testPublicGetEndpoint(handler, config, customTests?)` (para endpoints GET públicos — testa 405 e 400 automaticamente), `testAdminCrudEndpoint(handler, config, customTests?)` (para endpoints CRUD admin — testa 401 automaticamente), `testAdminGetEndpoint(handler, config, customTests?)` (para endpoints GET admin — testa 401 e 405). Testes específicos de cada recurso são fornecidos via `customTests`, mantendo flexibilidade total sobre mocks e assertions |
+| `db-test.js` | Utilitários para testes com PostgreSQL real via Testcontainers. **Criado em 06/06/2026.** Exporta `isDockerAvailable()`, `createTestDb()` (cria pool de conexão), `applyMigrations()` (executa `scripts/migrate.js` como subprocesso), `withTransaction(pool)` (inicia transação com ROLLBACK automático), `truncateAll(pool)` (limpa tabelas via TRUNCATE CASCADE) |
 | `render.js` | Helpers de renderização com React Testing Library. Exporta `renderWithProviders(ui, options)` que wrappa o componente com `AuthProvider`, `ThemeProvider` e `ToastProvider` |
 
 ### 3.3 Matchers Customizados (`/tests/matchers/`)

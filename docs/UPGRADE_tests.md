@@ -666,109 +666,20 @@ Serão necessários os seguintes componentes:
 | `globalTeardown` | `jest.teardown.js` (estender) | Parar container PostgreSQL após todos os testes |
 | Helper de testes | `tests/helpers/db-test.js` | Criar conexão isolada, gerenciar transações por teste, aplicar schema |
 
-**A. globalSetup (`tests/global-setup.db.js`) — novo arquivo:**
+**A. `tests/global-setup.db.js` — ✅ Criado:**
+- Inicializa container PostgreSQL via Testcontainers com `.withReuse(true)` (reutilização entre execuções)
+- Define `process.env.TEST_DATABASE_URL` com a string de conexão
+- Fallback: define `TEST_DATABASE_URL = '__docker_unavailable__'` se Docker não estiver disponível
 
-```javascript
-import { PostgreSqlContainer } from '@testcontainers/postgresql';
+**B. `jest.teardown.js` — ✅ Estendido:**
+- Adicionada parada do container PostgreSQL via `global.__TEST_DB_CONTAINER__.stop()`
 
-export default async function globalSetup() {
-  const container = await new PostgreSqlContainer()
-    .withDatabase('caminhar_test')
-    .withUsername('test')
-    .withPassword('test')
-    .start();
-
-  const connectionString = container.getConnectionUri();
-
-  // Disponibilizar a string para os testes via variável de ambiente
-  process.env.TEST_DATABASE_URL = connectionString;
-
-  // Salvar referência do container para teardown
-  (global).__TEST_DB_CONTAINER__ = container;
-
-  console.log(`✅ Container PostgreSQL iniciado em: ${connectionString}`);
-}
-```
-
-**B. Extensão do `globalTeardown` (`jest.teardown.js`):**
-
-Adicionar ao arquivo existente:
-```javascript
-// Parar container do banco de testes, se existir
-if (global.__TEST_DB_CONTAINER__) {
-  await global.__TEST_DB_CONTAINER__.stop();
-  console.log('✅ Container PostgreSQL de teste finalizado.');
-}
-```
-
-**C. Helper de testes (`tests/helpers/db-test.js`) — novo arquivo:**
-
-```javascript
-import pg from 'pg';
-import { execSync } from 'child_process';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-/**
- * Cria uma conexão com o banco de teste.
- * A string de conexão vem de process.env.TEST_DATABASE_URL,
- * definida pelo globalSetup.
- */
-export function createTestDb() {
-  const pool = new pg.Pool({
-    connectionString: process.env.TEST_DATABASE_URL,
-    max: 5,
-  });
-
-  return pool;
-}
-
-/**
- * Aplica as migrações no banco de teste.
- * Executa scripts/migrate.js programaticamente ou via CLI.
- */
-export async function applyMigrations(pool) {
-  const { migrate } = await import(path.resolve(__dirname, '../../scripts/migrate.js'));
-  // Alternativa: execSync(`node scripts/migrate.js`, { env: { DATABASE_URL: process.env.TEST_DATABASE_URL } });
-  // Nota: O migrate.js atual usa getPool() interno. Será necessário refatorar
-  // para aceitar uma pool externa ou DATABASE_URL via env (já funciona por env).
-  await migrate(pool);
-}
-
-/**
- * Inicia uma transação que será revertida ao final do teste.
- * Retorna { query, rollback } onde query é a função de query dentro da transação.
- */
-export async function withTransaction(pool) {
-  const client = await pool.connect();
-  await client.query('BEGIN');
-
-  return {
-    query: (text, params) => client.query(text, params),
-    rollback: async () => {
-      await client.query('ROLLBACK');
-      client.release();
-    },
-  };
-}
-
-/**
- * Limpa todas as tabelas do banco de teste (TRUNCATE).
- * Útil entre suites que não usam transação.
- */
-export async function truncateAll(pool) {
-  const result = await pool.query(`
-    SELECT tablename FROM pg_catalog.pg_tables
-    WHERE schemaname = 'public'
-  `);
-
-  for (const row of result.rows) {
-    await pool.query(`TRUNCATE TABLE "${row.tablename}" CASCADE`);
-  }
-}
-```
+**C. `tests/helpers/db-test.js` — ✅ Criado:**
+- `isDockerAvailable()` — Verifica se Docker está disponível
+- `createTestDb()` — Cria pool de conexão com `process.env.TEST_DATABASE_URL`
+- `applyMigrations()` — Executa `node scripts/migrate.js` como subprocesso com `DATABASE_URL` do container
+- `withTransaction(pool)` — Inicia transação, retorna `{ query, rollback }` para ROLLBACK automático
+- `truncateAll(pool)` — Limpa todas as tabelas via `TRUNCATE ... CASCADE`
 
 ---
 
@@ -1264,7 +1175,7 @@ jest.mock('../../../../lib/domain/settings.js', () => ({
 | Média | Abstrair testes CRUD de API | Alto | Alto | ✅ **Concluído (06/06)** — `tests/helpers/crud-test.js` com 3 funções + 4 arquivos refatorados |
 | Média | Padronizar nomenclatura de arquivos | Médio | Médio | Pendente |
 | 🟢 Baixa | Converter testes de barrel export redundantes para snapshot | Baixo | Baixo | ✅ **Concluído (05/06)** |
-| 🟡 Média | Adicionar testes de integração com banco real (PostgreSQL) | Alto | Alto | 🔄 **Plano detalhado (06/06)** — Ver seção 4.6: 9 subseções, 11 passos de implementação, ~10h de desenvolvimento |
+| 🟡 Média | Adicionar testes de integração com banco real (PostgreSQL) | Alto | Alto | ✅ **Implementado (06/06)** — Ver seção 4.6 |
 | Baixa | Substituir dados inline por factories | Baixo | Baixo | Pendente |
 
 ---
