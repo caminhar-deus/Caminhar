@@ -636,34 +636,312 @@ afterEach(() => { consoleErrorSpy?.mockRestore(); });
 
 ---
 
-### 4.5 Refatoração de Factories com Base Factory
+### 4.5 Refatoração de Factories com Base Factory — **CONCLUÍDO (05/06/2026)**
 
-**Descrição:** Extrair a lógica comum de factories para um `createBaseFactory(defaultsGenerator)`:
-```javascript
-// tests/factories/base.js
-export function createBaseFactory(defaults) {
-  let id = 1;
-  const factory = (overrides = {}) => ({
-    id: id++,
-    created_at: new Date().toISOString(),
-    ...defaults,
-    ...overrides,
-  });
-  factory.list = (n = 1) => Array.from({ length: n }, () => factory());
-  factory.resetId = () => { id = 1; };
-  return factory;
-}
-```
+**Descrição original:** Extrair a lógica comum de factories (`idCounter`, `.list()`, `.resetId()`, timestamps) para um `createBaseFactory(defaultsGenerator)` centralizado.
 
-**Benefício:** Reduzir ~60 linhas por factory. Código mais limpo e consistente.
+**Implementação:** Detalhada na [seção 1.5](#15-factories-com-código-sobreposto--ajustado-05062026). Resumo: criado `tests/factories/base.js`, refatoradas 4 factories de domínio (`post`, `music`, `video`, `user`), removidas funções `reset*IdCounter` individuais, redução de ~70 linhas de código. Código e arquivos alterados disponíveis na seção 1.5.
 
 ---
 
-### 4.6 Adicionar Testes de Integração com Banco Real
+### 4.6 Adicionar Testes de Integração com Banco Real (PostgreSQL)
 
-**Descrição:** Atualmente todos os testes de integração mockam o banco de dados. Adicionar uma suite de testes que rode contra um banco SQLite em memória (ou PostgreSQL de teste) validaria as queries reais.
+**Descrição:** Atualmente todos os testes de integração mockam o banco de dados via `jest.mock('../../../lib/db.js')`. Isso não valida:
+- Queries SQL reais (sintaxe, funções PostgreSQL, tipos JSONB, cláusulas `RETURNING`)
+- Comportamento de constraints (UNIQUE, NOT NULL, CHECK, Foreign Key)
+- Transações e rollback
+- Performance de queries (planos de execução, índices)
 
-**Benefício:** Detecção de erros em queries SQL que mocks não capturam.
+**Decisão técnica:** PostgreSQL real via **Testcontainers**. SQLite em memória **não é compatível** porque o projeto usa funcionalidades exclusivas do PostgreSQL (cláusula `RETURNING`, funções `pg_catalog`, consultas com cast de tipos, etc.). SQLite geraria falsos positivos — testes passariam localmente mas quebrariam em produção.
+
+---
+
+#### 4.6.1 Infraestrutura de Setup
+
+Serão necessários os seguintes componentes:
+
+| Componente | Arquivo | Finalidade |
+|-----------|---------|------------|
+| `globalSetup` | `tests/global-setup.db.js` | Inicializar container PostgreSQL via Testcontainers antes de qualquer teste |
+| `globalTeardown` | `jest.teardown.js` (estender) | Parar container PostgreSQL após todos os testes |
+| Helper de testes | `tests/helpers/db-test.js` | Criar conexão isolada, gerenciar transações por teste, aplicar schema |
+
+**A. globalSetup (`tests/global-setup.db.js`) — novo arquivo:**
+
+```javascript
+import { PostgreSqlContainer } from '@testcontainers/postgresql';
+
+export default async function globalSetup() {
+  const container = await new PostgreSqlContainer()
+    .withDatabase('caminhar_test')
+    .withUsername('test')
+    .withPassword('test')
+    .start();
+
+  const connectionString = container.getConnectionUri();
+
+  // Disponibilizar a string para os testes via variável de ambiente
+  process.env.TEST_DATABASE_URL = connectionString;
+
+  // Salvar referência do container para teardown
+  (global).__TEST_DB_CONTAINER__ = container;
+
+  console.log(`✅ Container PostgreSQL iniciado em: ${connectionString}`);
+}
+```
+
+**B. Extensão do `globalTeardown` (`jest.teardown.js`):**
+
+Adicionar ao arquivo existente:
+```javascript
+// Parar container do banco de testes, se existir
+if (global.__TEST_DB_CONTAINER__) {
+  await global.__TEST_DB_CONTAINER__.stop();
+  console.log('✅ Container PostgreSQL de teste finalizado.');
+}
+```
+
+**C. Helper de testes (`tests/helpers/db-test.js`) — novo arquivo:**
+
+```javascript
+import pg from 'pg';
+import { execSync } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+/**
+ * Cria uma conexão com o banco de teste.
+ * A string de conexão vem de process.env.TEST_DATABASE_URL,
+ * definida pelo globalSetup.
+ */
+export function createTestDb() {
+  const pool = new pg.Pool({
+    connectionString: process.env.TEST_DATABASE_URL,
+    max: 5,
+  });
+
+  return pool;
+}
+
+/**
+ * Aplica as migrações no banco de teste.
+ * Executa scripts/migrate.js programaticamente ou via CLI.
+ */
+export async function applyMigrations(pool) {
+  const { migrate } = await import(path.resolve(__dirname, '../../scripts/migrate.js'));
+  // Alternativa: execSync(`node scripts/migrate.js`, { env: { DATABASE_URL: process.env.TEST_DATABASE_URL } });
+  // Nota: O migrate.js atual usa getPool() interno. Será necessário refatorar
+  // para aceitar uma pool externa ou DATABASE_URL via env (já funciona por env).
+  await migrate(pool);
+}
+
+/**
+ * Inicia uma transação que será revertida ao final do teste.
+ * Retorna { query, rollback } onde query é a função de query dentro da transação.
+ */
+export async function withTransaction(pool) {
+  const client = await pool.connect();
+  await client.query('BEGIN');
+
+  return {
+    query: (text, params) => client.query(text, params),
+    rollback: async () => {
+      await client.query('ROLLBACK');
+      client.release();
+    },
+  };
+}
+
+/**
+ * Limpa todas as tabelas do banco de teste (TRUNCATE).
+ * Útil entre suites que não usam transação.
+ */
+export async function truncateAll(pool) {
+  const result = await pool.query(`
+    SELECT tablename FROM pg_catalog.pg_tables
+    WHERE schemaname = 'public'
+  `);
+
+  for (const row of result.rows) {
+    await pool.query(`TRUNCATE TABLE "${row.tablename}" CASCADE`);
+  }
+}
+```
+
+---
+
+#### 4.6.2 Configuração no Jest
+
+**A. `jest.config.db.js` — novo arquivo de configuração dedicado:**
+
+```javascript
+export default {
+  ...require('./jest.config.js').default,
+  testEnvironment: 'node', // ← DIFERENTE: jsdom não é necessário para testes de domínio
+  globalSetup: '<rootDir>/tests/global-setup.db.js',
+  testMatch: ['**/*.db.test.js'], // ← Prefixo exclusivo para testes com banco real
+  testTimeout: 30000, // ↑ Aumentado: container pode levar ~15s para iniciar
+  maxWorkers: 1, // Mantido: evita concorrência entre containers
+};
+```
+
+**B. Script no `package.json`:**
+
+```json
+"test:db": "jest --config jest.config.db.js",
+"test:db:coverage": "jest --config jest.config.db.js --coverage"
+```
+
+---
+
+#### 4.6.3 Escopo dos Testes
+
+Os testes com banco real devem cobrir os arquivos de **domínio** (`lib/domain/`) que fazem queries SQL diretamente:
+
+| Arquivo de Teste | Domínio | Operações a Validar |
+|-----------------|---------|-------------------|
+| `tests/integration/domain/posts.db.test.js` | `lib/domain/posts.js` | CRUD, paginação, busca textual, filtro por tags, ordenação por posição |
+| `tests/integration/domain/musicas.db.test.js` | `lib/domain/musicas.js` | CRUD, paginação, busca, ordenação, active/inactive |
+| `tests/integration/domain/videos.db.test.js` | `lib/domain/videos.js` | CRUD, paginação, busca, ordenação, active/inactive |
+| `tests/integration/domain/products.db.test.js` | `lib/domain/products.js` | CRUD, paginação, busca, filtro por faixa de preço |
+| `tests/integration/domain/settings.db.test.js` | `lib/domain/settings.js` | CRUD de configs, busca por chave, listagem |
+
+---
+
+#### 4.6.4 Cenários a Testar em Cada Arquivo
+
+Cada arquivo deve cobrir:
+
+```markdown
+1. **CRUD básico:**
+   - CREATE: Inserir registro válido, verificar retorno com ID gerado
+   - READ: Buscar por ID, listar com paginação, buscar com filtros
+   - UPDATE: Atualizar campos, verificar dados persistidos
+   - DELETE: Remover registro, verificar que não retorna mais nas buscas
+
+2. **Constraints e validações:**
+   - UNIQUE: Tentar inserir registro com chave duplicada → erro específico do PostgreSQL
+   - NOT NULL: Tentar inserir sem campo obrigatório → erro
+   - Foreign Key: Inserir registro referenciando ID inexistente → erro
+   - CHECK de domínio (ex: preço > 0, data válida)
+
+3. **Casos de borda de queries:**
+   - Paginação com página 0, negativa, acima do total
+   - Ordenação por campos inválidos (fallback para ordem padrão)
+   - Busca com string vazia, apenas espaços, caracteres especiais
+   - Limite de resultados (MAX_SAFE_INTEGER, valor negativo)
+   - Transações: operação falha no meio → ROLLBACK, nenhum dado persistido
+```
+
+---
+
+#### 4.6.5 Estratégia de Isolamento entre Testes
+
+**Abordagem recomendada: Transação por teste com ROLLBACK automático.**
+
+Cada teste inicia uma transação, executa as operações, e ao final executa `ROLLBACK`. Isso garante:
+- Banco em estado conhecido para cada teste (sem contaminação entre testes)
+- Não há necessidade de limpar dados entre testes (mais rápido que TRUNCATE)
+- Não há necessidade de resetar sequências de ID
+
+```javascript
+import { createTestDb, applyMigrations, withTransaction } from '../../helpers/db-test.js';
+
+let pool;
+let tx;
+
+beforeAll(async () => {
+  pool = createTestDb();
+  await applyMigrations(pool);
+});
+
+beforeEach(async () => {
+  tx = await withTransaction(pool);
+});
+
+afterEach(async () => {
+  await tx.rollback(); // Reverte todas as operações do teste
+});
+
+afterAll(async () => {
+  await pool.end();
+});
+
+it('deve criar um post', async () => {
+  const result = await createPost(tx.query, { title: 'Teste', content: 'Conteúdo' });
+  expect(result).toHaveProperty('id');
+  // ← Não precisa limpar: ROLLBACK no afterEach desfaz esta inserção
+});
+```
+
+---
+
+#### 4.6.6 Dependências Necessárias
+
+```json
+{
+  "devDependencies": {
+    "@testcontainers/postgresql": "^10.x",  // Gerenciar container PostgreSQL
+    "testcontainers": "^10.x"                // Runtime de containers para testes
+  }
+}
+```
+
+**Pré-requisitos de ambiente:**
+- Docker instalado na máquina local e no CI
+- Docker Compose não é necessário (Testcontainers gerencia o container programaticamente)
+
+---
+
+#### 4.6.7 Integração com CI/CD (GitHub Actions)
+
+O arquivo `ci.yml` precisa ser ajustado para:
+
+```yaml
+- name: Testes com Banco Real
+  run: npm run test:db
+  env:
+    DOCKER_HOST: unix:///var/run/docker.sock  # Testcontainers precisa do socket Docker
+```
+
+**Requisitos do runner CI:**
+- Docker disponível (GitHub Actions runners têm Docker por padrão)
+- Aumentar timeout da etapa para ~60s (startup do container + execução dos testes)
+- Cache da imagem `postgres:16-alpine` para acelerar execuções
+
+---
+
+#### 4.6.8 Riscos e Limitações
+
+| Risco | Impacto | Mitigação |
+|-------|---------|-----------|
+| **Performance:** Testes 5-10x mais lentos que mocks | Suite de ~20 testes pode levar 30-60s | Manter separado do `npm test` padrão. Executar apenas sob demanda ou em PRs específicos |
+| **Dependência de Docker:** Testcontainers exige Docker | Testes falham se Docker não estiver disponível | Adicionar verificação condicional no globalSetup: `describe.skipIf(!dockerAvailable)` |
+| **Portabilidade:** Ambientes sem Docker (ex: CI runner sem Docker) | Suite não executável | Separar totalmente do `jest.config.js` principal, usando `jest.config.db.js` dedicado |
+| **Manutenção do schema:** Migrações precisam estar sincronizadas | Testes quebram se schema estiver desatualizado | Rodar `npm run migrate` como parte do `globalSetup` |
+| **Concorrência de portas:** Múltiplos containers podem conflitar | Testes paralelos falham | Testcontainers usa portas aleatórias por padrão. `maxWorkers: 1` evita conflitos. |
+
+---
+
+#### 4.6.9 Plano de Implementação
+
+| Passo | Descrição | Esforço | Dependência |
+|:-----:|-----------|:-------:|:-----------:|
+| 1 | Instalar `testcontainers` e `@testcontainers/postgresql` | 5 min | Nenhuma |
+| 2 | Criar `tests/global-setup.db.js` (iniciar container + setar env) | 30 min | Passo 1 |
+| 3 | Estender `jest.teardown.js` (parar container) | 10 min | Passo 2 |
+| 4 | Criar `tests/helpers/db-test.js` (conexão, transação, migrations, truncate) | 1h | Passo 1 |
+| 5 | Criar `jest.config.db.js` (configuração dedicada) | 10 min | Passo 2 |
+| 6 | Adicionar script `npm run test:db` no `package.json` | 5 min | Passo 5 |
+| 7 | Validar que migrations rodam no banco de teste (via globalSetup) | 30 min | Passos 2-4 |
+| 8 | Criar `tests/integration/domain/posts.db.test.js` (primeiro arquivo piloto) | 2h | Passos 1-7 |
+| 9 | Executar suite completa e ajustar timeouts/assertions | 30 min | Passo 8 |
+| 10 | Criar demais arquivos (musicas, videos, products, settings) | 4h | Passo 8 |
+| 11 | Configurar CI (`ci.yml`) para executar `npm run test:db` | 30 min | Passos 1-10 |
+
+**Estimativa total:** ~10h de desenvolvimento + ~1h de CI.
 
 ---
 
@@ -986,7 +1264,7 @@ jest.mock('../../../../lib/domain/settings.js', () => ({
 | Média | Abstrair testes CRUD de API | Alto | Alto | ✅ **Concluído (06/06)** — `tests/helpers/crud-test.js` com 3 funções + 4 arquivos refatorados |
 | Média | Padronizar nomenclatura de arquivos | Médio | Médio | Pendente |
 | 🟢 Baixa | Converter testes de barrel export redundantes para snapshot | Baixo | Baixo | ✅ **Concluído (05/06)** |
-| Baixa | Adicionar testes com banco real | Alto | Alto | Pendente |
+| 🟡 Média | Adicionar testes de integração com banco real (PostgreSQL) | Alto | Alto | 🔄 **Plano detalhado (06/06)** — Ver seção 4.6: 9 subseções, 11 passos de implementação, ~10h de desenvolvimento |
 | Baixa | Substituir dados inline por factories | Baixo | Baixo | Pendente |
 
 ---
