@@ -88,10 +88,11 @@ describe('Componentes Admin - BackupManager', () => {
   });
 
   it('deve exibir erros retornados pela API (ex: falha de script de dump) e do Try/Catch', async () => {
-    confirmSpy.mockReturnValue(true);
-    global.fetch.mockResolvedValue({ ok: true, json: async () => ({ latest: null }) });
+    confirmSpy.mockReturnValueOnce(true);
+    global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ latest: null }) });
 
     render(<BackupManager />);
+    await waitForElementToBeRemoved(() => screen.queryByText(/Carregando/i));
 
     global.fetch.mockRejectedValueOnce(new Error('Conexão perdida'));
     fireEvent.click(screen.getByRole('button', { name: /Realizar Backup Agora/i }));
@@ -99,7 +100,7 @@ describe('Componentes Admin - BackupManager', () => {
   });
 
   it('deve exibir mensagem de erro quando a API falha ao criar o backup (ok: false)', async () => {
-    confirmSpy.mockReturnValue(true);
+    confirmSpy.mockReturnValueOnce(true);
     global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ latest: null }) });
 
     render(<BackupManager />);

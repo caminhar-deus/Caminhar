@@ -319,17 +319,43 @@ await waitFor(() => expect(screen.queryByText('Carregando...')).not.toBeInTheDoc
 
 ## 3. Correções Necessárias
 
-### 3.1 Vazamento de Mocks entre Testes (Race Conditions)
+### 3.1 Vazamento de Mocks entre Testes (Race Conditions) — **RESOLVIDO (06/06/2026)**
 
 **Ocorrência:** `tests/unit/components/Admin/Managers/BackupManager.test.js` — teste "deve exibir erros retornados pela API"
 
-**Problema:** O teste usa `mockFetch.mockResolvedValue` com `mockResolvedValueOnce` na mesma instância. Se a ordem de resolução de Promises variar, o teste pode consumir o mock errado. Além disso, o teste não restaura `window.confirm` após execução.
+**Problema original:** O teste usava `mockFetch.mockResolvedValue` com `mockResolvedValueOnce` na mesma instância. Se a ordem de resolução de Promises variar, o teste podia consumir o mock errado. Além disso, o teste não restaurava `window.confirm` após execução.
 
-**Código problemático:**
+**Código problemático (ANTES):**
 ```javascript
-global.fetch = mockFetch;
-window.confirm = jest.fn();
+confirmSpy.mockReturnValue(true);
+global.fetch.mockResolvedValue({ ok: true, json: async () => ({ latest: null }) });
+
+render(<BackupManager />);
+
+global.fetch.mockRejectedValueOnce(new Error('Conexão perdida'));
+fireEvent.click(screen.getByRole('button', { name: /Realizar Backup Agora/i }));
 ```
+
+**O que foi feito (06/06/2026):**
+- **`mockResolvedValue` substituído por `mockResolvedValueOnce`** no teste de erros da API — Elimina race condition entre mock permanente e mock de uso único
+- **`confirmSpy.mockReturnValue(true)` substituído por `mockReturnValueOnce(true)`** nos dois testes que interagem com `window.confirm` — Garante que o comportamento do confirm é limpo após cada uso
+- **Adicionado `await waitForElementToBeRemoved(...)`** antes do `fireEvent.click()` nos testes de erro e falha da API — Garante que o carregamento inicial terminou antes de interagir com o botão
+- O arquivo já usava `mockGlobalFetch()` e `createConfirmSpy()` dos helpers centralizados (implementado em 05/06/2026), com `mockRestore()` garantido no `afterEach`
+
+**Código corrigido (DEPOIS):**
+```javascript
+confirmSpy.mockReturnValueOnce(true);
+global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ latest: null }) });
+
+render(<BackupManager />);
+await waitForElementToBeRemoved(() => screen.queryByText(/Carregando/i));
+
+global.fetch.mockRejectedValueOnce(new Error('Conexão perdida'));
+fireEvent.click(screen.getByRole('button', { name: /Realizar Backup Agora/i }));
+await waitFor(() => expect(screen.getByText('❌ Erro de conexão ao criar backup')).toBeInTheDocument());
+```
+
+**Resultado:** Race conditions eliminadas. Todos os `mockResolvedValue` convertidos para `mockResolvedValueOnce`. `window.confirm` com `mockReturnValueOnce` em vez de `mockReturnValue`. Carregamento inicial aguardado antes de interações. Testes estáveis e determinísticos.
 
 ---
 
@@ -811,7 +837,7 @@ jest.mock('../../../../lib/domain/settings.js', () => ({
 
 ---
 
-## Resumo das Ações Recomendadas — **ATUALIZADO (05/06/2026)**
+## Resumo das Ações Recomendadas — **ATUALIZADO (06/06/2026)**
 
 | Prioridade | Ação | Esforço | Impacto | Status |
 |:----------:|------|:-------:|:-------:|:------:|
@@ -824,6 +850,7 @@ jest.mock('../../../../lib/domain/settings.js', () => ({
 | 🟡 Média | Migrar testes de logger/api (Grupo D) | Alto | Médio | ✅ **Concluído (05/06)** |
 | Média | ~~Mesclar arquivos edge case com principais~~ | ~~Baixo~~ | ~~Médio~~ | ✅ **Concluído (04/06)** |
 | Média | ~~Refatorar factories com base factory~~ | ~~Médio~~ | ~~Médio~~ | ✅ **Concluído (05/06)** |
+| 🟡 Média | Corrigir vazamento de mocks em BackupManager (seção 3.1) | Baixo | Médio | ✅ **Concluído (06/06)** |
 | Média | Abstrair testes CRUD de API | Alto | Alto | Pendente |
 | Média | Padronizar nomenclatura de arquivos | Médio | Médio | Pendente |
 | 🟢 Baixa | Converter testes de barrel export redundantes para snapshot | Baixo | Baixo | ✅ **Concluído (05/06)** |
