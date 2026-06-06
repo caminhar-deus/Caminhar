@@ -6,16 +6,17 @@ jest.mock('../../../../../lib/auth.js', () => ({
   getAuthToken: jest.fn(),
   verifyToken: jest.fn()
 }));
+import { mockGlobalFetch } from '../../../../helpers/index.js';
 
 describe('API - Admin - Fetch Spotify (Edge Cases)', () => {
   let req;
   let res;
   let consoleErrorSpy;
-  const originalFetch = global.fetch;
+  let fetchMock;
 
   beforeEach(() => {
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    global.fetch = jest.fn();
+    fetchMock = mockGlobalFetch();
     req = { 
       method: 'POST',
       body: { url: 'https://open.spotify.com/track/123456789' }
@@ -29,8 +30,8 @@ describe('API - Admin - Fetch Spotify (Edge Cases)', () => {
   });
 
   afterEach(() => {
+    fetchMock?.mockRestore();
     consoleErrorSpy?.mockRestore();
-    global.fetch = originalFetch;
   });
 
   it('deve registrar erro no console quando as 3 estratégias de fetch falharem e retornar 500', async () => {

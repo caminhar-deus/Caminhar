@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import AdminVideos from '../../../../components/Admin/AdminVideos.js';
 import toast from 'react-hot-toast';
+import { mockGlobalFetch } from '../../../helpers/index.js';
 
 jest.mock('react-hot-toast', () => ({
   error: jest.fn(),
@@ -19,14 +20,14 @@ jest.mock('../../../../components/Admin/AdminCrudBase', () => {
 });
 
 describe('Componente Front-End - AdminVideos', () => {
-  const originalFetch = global.fetch;
+  let fetchMock;
 
   beforeEach(() => {
-    global.fetch = jest.fn();
+    fetchMock = mockGlobalFetch();
   });
 
   afterEach(() => {
-    global.fetch = originalFetch;
+    fetchMock?.mockRestore();
   });
 
   it('deve renderizar e repassar as configurações para o AdminCrudBase', () => {

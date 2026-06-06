@@ -8,20 +8,22 @@ jest.mock('../../../../lib/auth.js', () => ({
 
 import handler from '../../../../pages/api/admin/fetch-spotify.js';
 import { getAuthToken, verifyToken } from '../../../../lib/auth.js';
+import { mockGlobalFetch } from '../../../../helpers/index.js';
 
 describe('API Admin - Fetch Spotify (/api/admin/fetch-spotify)', () => {
-  const originalFetch = global.fetch;
+  let fetchMock;
 
   beforeEach(() => {
     jest.clearAllMocks();
     getAuthToken.mockReturnValue('fake-token');
     verifyToken.mockReturnValue({ userId: 1, role: 'admin' });
     // Define um fallback padrão para evitar que chamadas subsequentes (Estratégias 2 e 3) retornem undefined
-    global.fetch = jest.fn().mockResolvedValue({ ok: false });
+    fetchMock = mockGlobalFetch();
+    fetchMock.mockResolvedValue({ ok: false });
   });
 
   afterEach(() => {
-    global.fetch = originalFetch;
+    fetchMock?.mockRestore();
   });
 
   describe('Segurança e Validações', () => {

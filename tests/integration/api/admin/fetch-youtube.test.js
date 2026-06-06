@@ -9,9 +9,10 @@ jest.mock('../../../../lib/auth.js', () => ({
 
 import handler from '../../../../pages/api/admin/fetch-youtube.js';
 import { getAuthToken, verifyToken } from '../../../../lib/auth.js';
+import { mockGlobalFetch } from '../../../../helpers/index.js';
 
 describe('API Admin - Fetch YouTube (/api/admin/fetch-youtube)', () => {
-  const originalFetch = global.fetch;
+  let fetchMock;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -21,12 +22,12 @@ describe('API Admin - Fetch YouTube (/api/admin/fetch-youtube)', () => {
     verifyToken.mockReturnValue({ userId: 1, role: 'admin' });
     
     // Moca a função fetch global do Node.js
-    global.fetch = jest.fn();
+    fetchMock = mockGlobalFetch();
   });
 
   afterEach(() => {
     // Restaura o fetch original para não quebrar outros testes
-    global.fetch = originalFetch;
+    fetchMock?.mockRestore();
   });
 
   describe('Segurança e Validações', () => {

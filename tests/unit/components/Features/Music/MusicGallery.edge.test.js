@@ -2,22 +2,24 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import MusicGallery from '../../../../../components/Features/Music/MusicGallery.js';
-import { suppressConsoleError } from '../../../../helpers/index.js';
+import { suppressConsoleError, mockGlobalFetch } from '../../../../helpers/index.js';
 
 describe('Componentes Features - Music - MusicGallery (Edge Cases)', () => {
   let consoleErrorSpy;
+  let fetchMock;
 
   beforeEach(() => {
     consoleErrorSpy = suppressConsoleError();
-    global.fetch = jest.fn();
+    fetchMock = mockGlobalFetch();
   });
 
   afterEach(() => {
+    fetchMock?.mockRestore();
     consoleErrorSpy?.mockRestore();
   });
 
   it('deve usar fallback vazio se a API retornar um objeto sem a chave data', async () => {
-    global.fetch.mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ meta: 'only' })
     });
@@ -30,7 +32,7 @@ describe('Componentes Features - Music - MusicGallery (Edge Cases)', () => {
   });
 
   it('deve exibir a mensagem de erro se a requisição falhar', async () => {
-    global.fetch.mockRejectedValueOnce(new Error('Network error'));
+    fetchMock.mockRejectedValueOnce(new Error('Network error'));
 
     render(<MusicGallery />);
 

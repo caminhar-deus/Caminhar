@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import CacheManager from '../../../../../components/Admin/Managers/CacheManager.js';
 import toast from 'react-hot-toast';
-import { suppressConsoleError, createConfirmSpy } from '../../../../helpers/index.js';
+import { suppressConsoleError, createConfirmSpy, mockGlobalFetch } from '../../../../helpers/index.js';
 
 // Mockando o Toast para interceptarmos as mensagens
 jest.mock('react-hot-toast', () => ({
@@ -18,11 +18,12 @@ jest.mock('react-hot-toast', () => ({
 describe('Componentes Admin - CacheManager', () => {
   let consoleErrorSpy;
   let confirmSpy;
+  let fetchMock;
 
   beforeEach(() => {
     consoleErrorSpy = suppressConsoleError();
     confirmSpy = createConfirmSpy(false);
-    global.fetch = jest.fn();
+    fetchMock = mockGlobalFetch();
     toast.loading.mockReturnValue('id_toast_123');
 
     global.fetch.mockResolvedValueOnce({
@@ -40,6 +41,7 @@ describe('Componentes Admin - CacheManager', () => {
   afterEach(() => {
     consoleErrorSpy?.mockRestore();
     confirmSpy?.mockRestore();
+    fetchMock?.mockRestore();
   });
 
   it('deve renderizar o painel e o botão corretamente', () => {

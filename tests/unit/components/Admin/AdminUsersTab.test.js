@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import AdminUsersTab from '../../../../components/Admin/AdminUsersTab.js';
 import toast from 'react-hot-toast';
+import { mockGlobalFetch } from '../../../helpers/index.js';
 
 jest.mock('react-hot-toast', () => ({ error: jest.fn() }));
 
@@ -24,15 +25,15 @@ beforeAll(() => {
 });
 
 describe('Componente Front-End - AdminUsersTab', () => {
-  const originalFetch = global.fetch;
+  let fetchMock;
 
   beforeEach(() => {
-    global.fetch = jest.fn();
+    fetchMock = mockGlobalFetch();
     sessionStorage.clear();
   });
 
   afterEach(() => {
-    global.fetch = originalFetch;
+    fetchMock?.mockRestore();
   });
 
   it('deve repassar as props corretamente para o CrudBase', () => {

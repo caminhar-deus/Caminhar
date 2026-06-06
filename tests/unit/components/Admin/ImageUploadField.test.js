@@ -2,18 +2,19 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import ImageUploadField from '../../../../components/Admin/fields/ImageUploadField.js';
+import { mockGlobalFetch } from '../../../helpers/index.js';
 
 describe('ImageUploadField Component', () => {
-  const originalFetch = global.fetch;
   const originalAlert = global.alert;
+  let fetchMock;
 
   beforeEach(() => {
-    global.fetch = jest.fn();
+    fetchMock = mockGlobalFetch();
     global.alert = jest.fn();
   });
 
   afterEach(() => {
-    global.fetch = originalFetch;
+    fetchMock?.mockRestore();
     global.alert = originalAlert;
   });
 

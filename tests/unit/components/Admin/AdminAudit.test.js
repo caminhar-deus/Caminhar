@@ -4,6 +4,7 @@ import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals
 import AdminAudit from '../../../../components/Admin/AdminAudit.js';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/router';
+import { mockGlobalFetch } from '../../../helpers/index.js';
 
 jest.mock('react-hot-toast', () => ({ error: jest.fn(), success: jest.fn() }));
 
@@ -13,16 +14,16 @@ jest.mock('next/router', () => ({
 }));
 
 describe('Componente Front-End - AdminAudit', () => {
-  const originalFetch = global.fetch;
   const originalCreateObjectURL = global.URL.createObjectURL;
+  let fetchMock;
 
   beforeEach(() => {
-    global.fetch = jest.fn();
+    fetchMock = mockGlobalFetch();
     global.URL.createObjectURL = jest.fn(() => 'blob:test');
   });
 
   afterEach(() => {
-    global.fetch = originalFetch;
+    fetchMock?.mockRestore();
     global.URL.createObjectURL = originalCreateObjectURL;
   });
 

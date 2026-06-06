@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import withAdminAuth from '../../../../components/Admin/withAdminAuth.js';
+import { mockGlobalFetch } from '../../../helpers/index.js';
 
 // Mock do next/head para evitar erros do DOM de cabeçalho
 jest.mock('next/head', () => {
@@ -16,14 +17,14 @@ jest.mock('next/router', () => ({
 }));
 
 describe('Higher-Order Component - withAdminAuth', () => {
-  const originalFetch = global.fetch;
+  let fetchMock;
 
   beforeEach(() => {
-    global.fetch = jest.fn();
+    fetchMock = mockGlobalFetch();
   });
 
   afterEach(() => {
-    global.fetch = originalFetch;
+    fetchMock?.mockRestore();
   });
 
   const DummyComponent = () => <div data-testid="dummy-content">Conteúdo Protegido</div>;

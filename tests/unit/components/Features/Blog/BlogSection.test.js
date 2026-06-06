@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import BlogSection from '../../../../../components/Features/Blog/BlogSection';
-import { suppressConsoleError } from '../../../../helpers/index.js';
+import { suppressConsoleError, mockGlobalFetch } from '../../../../helpers/index.js';
 
 // Mock do componente filho PostCard para não precisarmos testar seus internos aqui
 jest.mock('../../../../../components/Features/Blog/PostCard', () => {
@@ -19,14 +19,16 @@ describe('Componente Front-End - BlogSection', () => {
   ];
 
   let consoleErrorSpy;
+  let fetchMock;
 
   beforeEach(() => {
     consoleErrorSpy = suppressConsoleError();
-    global.fetch = jest.fn();
+    fetchMock = mockGlobalFetch();
   });
 
   afterEach(() => {
     consoleErrorSpy?.mockRestore();
+    fetchMock?.mockRestore();
   });
 
   it('deve renderizar o estado de loading inicialmente', async () => {

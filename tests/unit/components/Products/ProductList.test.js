@@ -1,20 +1,21 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { mockGlobalFetch } from '../../../../helpers/index.js';
 import ProductList from '../../../../components/Products/ProductList.js';
 
 // Salvamos o fetch nativo e o mockamos globalmente
-const originalFetch = global.fetch;
+let fetchMock;
 
 describe('Componente Front-End - ProductList', () => {
   beforeEach(() => {
     jest.useFakeTimers(); // Essencial para testarmos o 'debounce' do campo de busca
-    global.fetch = jest.fn();
+    fetchMock = mockGlobalFetch();
   });
 
   afterEach(() => {
     jest.useRealTimers();
-    global.fetch = originalFetch;
+    fetchMock?.mockRestore();
   });
 
   const mockProducts = {
@@ -26,7 +27,7 @@ describe('Componente Front-End - ProductList', () => {
   };
 
   it('deve renderizar o estado de loading e logo em seguida exibir os produtos', async () => {
-    global.fetch.mockResolvedValueOnce({ ok: true, json: async () => mockProducts });
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => mockProducts });
 
     render(<ProductList />);
 
@@ -40,14 +41,14 @@ describe('Componente Front-End - ProductList', () => {
     });
 
     // Valida se a chamada inicial para a API estava com os parâmetros corretos
-    expect(global.fetch).toHaveBeenCalledWith(
+    expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('/api/products?page=1&limit=12&public=true'),
       expect.any(Object)
     );
   });
 
   it('deve exibir mensagem de erro caso a API falhe', async () => {
-    global.fetch.mockResolvedValueOnce({ ok: false, json: async () => ({}) });
+    fetchMock.mockResolvedValueOnce({ ok: false, json: async () => ({}) });
 
     render(<ProductList />);
 
@@ -57,7 +58,7 @@ describe('Componente Front-End - ProductList', () => {
   });
 
   it('deve exibir mensagem de lista vazia caso não haja produtos', async () => {
-    global.fetch.mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ data: [], pagination: { totalPages: 1 } })
     });
@@ -70,7 +71,7 @@ describe('Componente Front-End - ProductList', () => {
   });
 
   it('deve chamar a API novamente após o usuário digitar na busca (efeito Debounce de 500ms)', async () => {
-    global.fetch.mockResolvedValue({ ok: true, json: async () => mockProducts });
+    fetchMock.mockResolvedValue({ ok: true, json: async () => mockProducts });
 
     render(<ProductList />);
     await waitFor(() => expect(screen.getByText('Bíblia de Estudo')).toBeInTheDocument());
@@ -85,11 +86,11 @@ describe('Componente Front-End - ProductList', () => {
     });
 
     // A API deve ter sido chamada uma segunda vez contendo "search=Bíblia"
-    expect(global.fetch).toHaveBeenNthCalledWith(2, expect.stringContaining('search=B%C3%ADblia'), expect.any(Object));
+    expect(fetchMock).toHaveBeenNthCalledWith(2, expect.stringContaining('search=B%C3%ADblia'), expect.any(Object));
   });
 
   it('deve avançar a página ao clicar no botão "Próxima"', async () => {
-    global.fetch.mockResolvedValue({ ok: true, json: async () => mockProducts });
+    fetchMock.mockResolvedValue({ ok: true, json: async () => mockProducts });
 
     render(<ProductList />);
     await waitFor(() => expect(screen.getByText('Bíblia de Estudo')).toBeInTheDocument());
@@ -103,12 +104,12 @@ describe('Componente Front-End - ProductList', () => {
 
     // Garante que a API foi chamada com page=2 na segunda chamada
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenNthCalledWith(2, expect.stringContaining('page=2'), expect.any(Object));
+      expect(fetchMock).toHaveBeenNthCalledWith(2, expect.stringContaining('page=2'), expect.any(Object));
     });
   });
 
   it('deve aplicar filtros de preço mínimo e máximo na busca da API e exibir mensagem de filtros vazios', async () => {
-    global.fetch.mockResolvedValue({
+    fetchMock.mockResolvedValue({
       ok: true,
       json: async () => ({ data: [], pagination: { totalPages: 1 } })
     });
@@ -116,7 +117,7 @@ describe('Componente Front-End - ProductList', () => {
     render(<ProductList />);
     
     // Aguarda o primeiro fetch (sem filtros)
-    await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
 
     const minInput = screen.getByPlaceholderText('Mín (R$)');
     const maxInput = screen.getByPlaceholderText('Máx (R$)');
@@ -127,8 +128,8 @@ describe('Componente Front-End - ProductList', () => {
       jest.advanceTimersByTime(500); // Aciona o Debounce
     });
 
-    expect(global.fetch).toHaveBeenNthCalledWith(2, expect.stringContaining('minPrice=50'), expect.any(Object));
-    expect(global.fetch).toHaveBeenNthCalledWith(2, expect.stringContaining('maxPrice=150'), expect.any(Object));
+    expect(fetchMock).toHaveBeenNthCalledWith(2, expect.stringContaining('minPrice=50'), expect.any(Object));
+    expect(fetchMock).toHaveBeenNthCalledWith(2, expect.stringContaining('maxPrice=150'), expect.any(Object));
 
     await waitFor(() => {
       expect(screen.getByText('Nenhum produto encontrado com estes filtros.')).toBeInTheDocument();
@@ -146,7 +147,7 @@ describe('Componente Front-End - ProductList', () => {
       pagination: { totalPages: 1 }
     };
     
-    global.fetch.mockResolvedValue({ ok: true, json: async () => unorderedProducts });
+    fetchMock.mockResolvedValue({ ok: true, json: async () => unorderedProducts });
     render(<ProductList />);
 
     await waitFor(() => {

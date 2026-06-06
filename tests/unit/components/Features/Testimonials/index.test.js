@@ -2,14 +2,16 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, jest, beforeAll, afterAll } from '@jest/globals';
 import Testimonials from '../../../../../components/Features/Testimonials/index.js';
+import { mockGlobalFetch } from '../../../../helpers/index.js';
 
 describe('Componentes Features - Testimonials', () => {
   const originalConsoleError = console.error;
+  let fetchMock;
   let originalClientWidth, originalScrollWidth, originalScrollLeft;
 
   beforeAll(() => {
     console.error = jest.fn();
-    global.fetch = jest.fn(() => Promise.resolve());
+    fetchMock = mockGlobalFetch();
 
     originalClientWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth');
     originalScrollWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollWidth');
@@ -23,6 +25,7 @@ describe('Componentes Features - Testimonials', () => {
 
   afterAll(() => {
     console.error = originalConsoleError;
+    fetchMock?.mockRestore();
     delete HTMLElement.prototype.scrollBy;
 
     if (originalClientWidth) Object.defineProperty(HTMLElement.prototype, 'clientWidth', originalClientWidth);

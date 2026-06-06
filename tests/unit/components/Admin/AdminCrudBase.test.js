@@ -5,6 +5,7 @@ import AdminCrudBase from '../../../../components/Admin/AdminCrudBase.js';
 import { useAdminCrud } from '../../../../hooks/useAdminCrud.js';
 import toast from 'react-hot-toast';
 import { z } from 'zod';
+import { mockGlobalFetch } from '../../../helpers/index.js';
 
 jest.mock('react-hot-toast', () => ({
   success: jest.fn(),
@@ -25,8 +26,9 @@ const DummyInput = ({ name, value, onChange, error }) => (
 );
 
 describe('Componente Front-End - AdminCrudBase', () => {
-  const originalFetch = global.fetch;
   const originalCreateObjectURL = global.URL.createObjectURL;
+
+  let fetchMock;
 
   const mockUseAdminCrud = {
     items: [],
@@ -61,12 +63,12 @@ describe('Componente Front-End - AdminCrudBase', () => {
 
   beforeEach(() => {
     useAdminCrud.mockReturnValue(mockUseAdminCrud);
-    global.fetch = jest.fn();
+    fetchMock = mockGlobalFetch();
     global.URL.createObjectURL = jest.fn(() => 'blob:test');
   });
 
   afterEach(() => {
-    global.fetch = originalFetch;
+    fetchMock?.mockRestore();
     global.URL.createObjectURL = originalCreateObjectURL;
   });
 

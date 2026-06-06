@@ -193,20 +193,50 @@ afterAll(() => { console.error = originalConsoleError; });
 
 ---
 
-### 2.2 Mock de fetch Global sem Isolamento
+### 2.2 Mock de fetch Global sem Isolamento — **RESOLVIDO (05/06/2026)**
 
-**Ocorrência:** `tests/unit/components/Features/Blog/BlogSection.test.js`, `tests/unit/components/Admin/Managers/BackupManager.test.js`, etc.
+**Ocorrência:** 23 arquivos de teste — `BlogSection.test.js`, `BackupManager.test.js`, `CacheManager.test.js`, `AdminDashboard.test.js`, `AdminMusicas.test.js`, `AdminProducts.test.js`, `AdminCrudBase.test.js`, `ImageUploadField.test.js`, `AdminPosts.test.js`, `AdminAudit.test.js`, `AdminUsersTab.test.js`, `AdminVideos.test.js`, `withAdminAuth.test.js`, `ProductList.test.js`, `VideoGallery.test.js`, `MusicGallery.test.js`, `MusicGallery.edge.test.js`, `Testimonials/index.test.js`, `component-example.test.js`, `fetch-youtube.test.js`, `fetch-ml.test.js`, `fetch-spotify.test.js`, `fetch-spotify.edge.test.js`
 
-**Código exemplar:**
+**Código exemplar (ANTES):**
 ```javascript
 global.fetch = jest.fn();
 ```
 
-**Problema:** Atribuir `global.fetch` diretamente sobrescreve a implementação original. Se um teste falha antes de restaurar, o mock vaza para outros testes.
+**Problema:** Atribuir `global.fetch` diretamente sobrescreve a implementação original. Com `restoreMocks: true` e `clearMocks: true` configurados no `jest.config.js`, esses mocks NÃO são afetados pois `jest.spyOn()` não funciona em JSDOM (fetch não é propriedade própria de `global`). Se um teste falha antes de restaurar manualmente, o mock vaza para outros testes.
 
 **Impacto:** Testes não determinísticos — ordem de execução pode afetar resultados.
 
-**Sugestão:** Usar `jest.spyOn(global, 'fetch')` para permitir restauração automática via `jest.restoreAllMocks()`. Configurar `restoreMocks: true` no Jest config para limpeza automática.
+**O que foi feito (05/06/2026):**
+- **Evoluído** `mockGlobalFetch()` em `tests/helpers/console.js` — Agora salva `originalFetch` antes de atribuir, e retorna um objeto com método `.mockRestore()` que restaura `global.fetch` ao valor original
+- **Padronizados 23 arquivos** para usar `mockGlobalFetch()` com restauração no `afterEach`
+- **Helper centralizado** com documentação de que `jest.spyOn(global, 'fetch')` não funciona em JSDOM
+
+**Arquivos corrigidos:**
+| # | Arquivo | Padrão Anterior | Padrão Novo |
+|:-:|---------|----------------|-------------|
+| 1 | `BlogSection.test.js` | `global.fetch = jest.fn()` | `fetchMock = mockGlobalFetch()` + `mockRestore` |
+| 2 | `BackupManager.test.js` | `global.fetch = jest.fn()` | `fetchMock = mockGlobalFetch()` + `mockRestore` |
+| 3 | `CacheManager.test.js` | `global.fetch = jest.fn()` | `fetchMock = mockGlobalFetch()` + `mockRestore` |
+| 4 | `AdminDashboard.test.js` | `global.fetch = jest.fn()` + `originalFetch` | `fetchMock = mockGlobalFetch()` + `mockRestore` |
+| 5 | `AdminMusicas.test.js` | `global.fetch = jest.fn()` + `originalFetch` | `fetchMock = mockGlobalFetch()` + `mockRestore` |
+| 6 | `AdminProducts.test.js` | `global.fetch = jest.fn()` + `originalFetch` | `fetchMock = mockGlobalFetch()` + `mockRestore` |
+| 7 | `AdminCrudBase.test.js` | `global.fetch = jest.fn()` + `originalFetch` | `fetchMock = mockGlobalFetch()` + `mockRestore` |
+| 8 | `ImageUploadField.test.js` | `global.fetch = jest.fn()` + `originalFetch` | `fetchMock = mockGlobalFetch()` + `mockRestore` |
+| 9 | `AdminPosts.test.js` | `global.fetch = jest.fn()` + `originalFetch` | `fetchMock = mockGlobalFetch()` + `mockRestore` |
+| 10 | `AdminAudit.test.js` | `global.fetch = jest.fn()` + `originalFetch` | `fetchMock = mockGlobalFetch()` + `mockRestore` |
+| 11 | `AdminUsersTab.test.js` | `global.fetch = jest.fn()` + `originalFetch` | `fetchMock = mockGlobalFetch()` + `mockRestore` |
+| 12 | `AdminVideos.test.js` | `global.fetch = jest.fn()` + `originalFetch` | `fetchMock = mockGlobalFetch()` + `mockRestore` |
+| 13 | `withAdminAuth.test.js` | `global.fetch = jest.fn()` + `originalFetch` | `fetchMock = mockGlobalFetch()` + `mockRestore` |
+| 14 | `ProductList.test.js` | `global.fetch = jest.fn()` + `originalFetch` | `fetchMock = mockGlobalFetch()` + `mockRestore` |
+| 15 | `VideoGallery.test.js` | `global.fetch = jest.fn()` + `originalFetch` | `fetchMock = mockGlobalFetch()` + `mockRestore` |
+| 16 | `MusicGallery.test.js` | `global.fetch = jest.fn()` + `originalFetch` | `fetchMock = mockGlobalFetch()` + `mockRestore` |
+| 17 | `MusicGallery.edge.test.js` | `global.fetch = jest.fn()` | `fetchMock = mockGlobalFetch()` + `mockRestore` |
+| 18 | `Testimonials/index.test.js` | `global.fetch = jest.fn()` | `fetchMock = mockGlobalFetch()` + `mockRestore` |
+| 19 | `component-example.test.js` | `global.fetch = jest.fn()` | `fetchMock = mockGlobalFetch()` + `mockRestore` |
+| 20 | `fetch-youtube.test.js` | `global.fetch = jest.fn()` + `originalFetch` | `fetchMock = mockGlobalFetch()` + `mockRestore` |
+| 21 | `fetch-ml.test.js` | `global.fetch = jest.fn()` + `originalFetch` | `fetchMock = mockGlobalFetch()` + `mockRestore` |
+| 22 | `fetch-spotify.test.js` | `global.fetch = jest.fn()` + `originalFetch` | `fetchMock = mockGlobalFetch()` + `mockRestore` |
+| 23 | `fetch-spotify.edge.test.js` | `global.fetch = jest.fn()` + `originalFetch` | `fetchMock = mockGlobalFetch()` + `mockRestore` |
 
 ---
 
@@ -739,7 +769,7 @@ jest.mock('../../../../lib/domain/settings.js', () => ({
 |:----------:|------|:-------:|:-------:|:------:|
 | Alta | ~~Centralizar `jest.clearAllMocks()` no setup.js~~ | ~~Baixo~~ | ~~Médio~~ | ✅ **Concluído (05/06)** |
 | Alta | Criar helper para suppressConsoleError | Baixo | Baixo | ✅ **Concluído (05/06)** |
-| Alta | Unificar padrão de mock de fetch (spyOn vs assign) | Médio | Alto | ⚠️ Parcial (jest.spyOn não funciona em JSDOM — recomendado manter `global.fetch = jest.fn()`) |
+| Alta | Unificar padrão de mock de fetch (spyOn vs assign) | Médio | Alto | ✅ **Concluído (05/06)** — `mockGlobalFetch()` com restauração em 23 arquivos |
 | 🔴 Crítica | Migrar testes de upload-image (Grupo A) | Médio | Alto | ✅ **Concluído (05/06)** |
 | 🟡 Média | Migrar testes de middleware.error (Grupo B) | Alto | Alto | ✅ **Concluído (05/06)** |
 | 🟡 Média | Migrar testes de rate-limit (Grupo C) | Médio | Médio | ✅ **Concluído (05/06)** |

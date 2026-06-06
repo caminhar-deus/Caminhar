@@ -2,8 +2,9 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import VideoGallery from '../../../../../components/Features/Video/VideoGallery.js';
+import { mockGlobalFetch } from '../../../../helpers/index.js';
 
-const originalFetch = global.fetch;
+let fetchMock;
 
 // Mock do componente filho (VideoCard) para focar apenas na lógica da Galeria
 jest.mock('../../../../../components/Features/Video/VideoCard.js', () => {
@@ -15,12 +16,12 @@ jest.mock('../../../../../components/Features/Video/VideoCard.js', () => {
 describe('Componente Front-End - VideoGallery', () => {
   beforeEach(() => {
     jest.useFakeTimers(); // Intercepta os setTimeout para testarmos o 'debounce'
-    global.fetch = jest.fn();
+    fetchMock = mockGlobalFetch();
   });
 
   afterEach(() => {
     jest.useRealTimers();
-    global.fetch = originalFetch;
+    fetchMock?.mockRestore();
   });
 
   const mockVideos = {

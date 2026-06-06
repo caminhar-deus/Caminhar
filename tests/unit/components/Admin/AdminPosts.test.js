@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import AdminPosts from '../../../../components/Admin/AdminPosts.js';
+import { mockGlobalFetch } from '../../../helpers/index.js';
 
 let passedProps;
 jest.mock('../../../../components/Admin/AdminCrudBase', () => {
@@ -12,14 +13,14 @@ jest.mock('../../../../components/Admin/AdminCrudBase', () => {
 });
 
 describe('Componente Front-End - AdminPosts', () => {
-  const originalFetch = global.fetch;
+  let fetchMock;
 
   beforeEach(() => {
-    global.fetch = jest.fn();
+    fetchMock = mockGlobalFetch();
   });
 
   afterEach(() => {
-    global.fetch = originalFetch;
+    fetchMock?.mockRestore();
   });
 
   it('deve renderizar e repassar as configurações para o AdminCrudBase', () => {

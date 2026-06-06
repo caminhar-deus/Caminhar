@@ -2,16 +2,17 @@ import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import AdminDashboard from '../../../../components/Admin/AdminDashboard.js';
+import { mockGlobalFetch } from '../../../helpers/index.js';
 
 describe('Componente Front-End - AdminDashboard', () => {
-  const originalFetch = global.fetch;
+  let fetchMock;
   
   beforeEach(() => { 
-    global.fetch = jest.fn(); 
+    fetchMock = mockGlobalFetch();
   });
   
   afterEach(() => { 
-    global.fetch = originalFetch; 
+    fetchMock?.mockRestore();
   });
 
   it('deve renderizar o loading e depois exibir os dados com sucesso, acionando o redirecionamento de abas', async () => {

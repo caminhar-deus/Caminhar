@@ -440,4 +440,10 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 > - `middleware.test.js` reescrito com 9/9 testes passando para o novo sistema de middleware
 > - **Total:** ~30 arquivos modificados/criados. Nenhuma regressão.
 > 
+> **Ajustes realizados na 3ª revisão (05/06):**
+> - `mockGlobalFetch()` evoluído com método `.mockRestore()` para restaurar o fetch original
+> - 23 arquivos padronizados com `mockGlobalFetch()` + `fetchMock?.mockRestore()` no `afterEach`
+> - Helper documenta que `jest.spyOn(global, 'fetch')` não funciona em JSDOM
+> - **Total:** 25 arquivos modificados. Nenhuma regressão (7 falhas pré-existentes inalteradas).
+> 
 > Para detalhes de implementação específicos, consulte `docs/UPGRADE_tests.md`.

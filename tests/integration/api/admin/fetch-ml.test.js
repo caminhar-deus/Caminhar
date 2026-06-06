@@ -8,20 +8,21 @@ jest.mock('../../../../lib/auth.js', () => ({
 
 import handler from '../../../../pages/api/admin/fetch-ml.js';
 import { getAuthToken, verifyToken } from '../../../../lib/auth.js';
+import { mockGlobalFetch } from '../../../../helpers/index.js';
 
 describe('API Admin - Fetch Mercado Livre (/api/admin/fetch-ml)', () => {
-  const originalFetch = global.fetch;
+  let fetchMock;
 
   beforeEach(() => {
     jest.clearAllMocks();
     getAuthToken.mockReturnValue('fake-token');
     verifyToken.mockReturnValue({ userId: 1, role: 'admin' });
     
-    global.fetch = jest.fn();
+    fetchMock = mockGlobalFetch();
   });
 
   afterEach(() => {
-    global.fetch = originalFetch;
+    fetchMock?.mockRestore();
   });
 
   it('deve retornar 405 se não for POST, 401 sem auth e 400 sem URL ou sem código MLB', async () => {

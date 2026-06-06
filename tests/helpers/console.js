@@ -45,15 +45,22 @@ export const filterConsoleError = (suppressList = []) => {
  * Cria um mock para global.fetch via atribuição direta
  * NOTA: jest.spyOn(global, 'fetch') NÃO funciona em JSDOM porque
  * fetch não é uma propriedade própria de global.
- * Esta função encapsula a atribuição direta para padronização.
+ * Esta função encapsula a atribuição direta para padronização,
+ * E retorna um método .mockRestore() para restaurar o fetch original.
  *
- * @returns {jest.Mock}
+ * @returns {jest.Mock & { mockRestore: () => void }}
  *
  * @example
- *   beforeEach(() => { global.fetch = mockGlobalFetch(); });
+ *   let fetchMock;
+ *   beforeEach(() => { fetchMock = mockGlobalFetch(); });
+ *   afterEach(() => { fetchMock.mockRestore(); });
  */
 export const mockGlobalFetch = () => {
+  const originalFetch = global.fetch;
   const mock = jest.fn();
+  mock.mockRestore = () => {
+    global.fetch = originalFetch;
+  };
   global.fetch = mock;
   return mock;
 };

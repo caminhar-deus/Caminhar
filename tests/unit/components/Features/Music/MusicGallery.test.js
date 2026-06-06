@@ -2,8 +2,9 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import MusicGallery from '../../../../../components/Features/Music/MusicGallery.js';
+import { mockGlobalFetch } from '../../../../helpers/index.js';
 
-const originalFetch = global.fetch;
+let fetchMock;
 
 // Mock do componente filho (MusicCard) para focar apenas na lógica da Galeria
 jest.mock('../../../../../components/Features/Music/MusicCard.js', () => {
@@ -14,11 +15,11 @@ jest.mock('../../../../../components/Features/Music/MusicCard.js', () => {
 
 describe('Componente Front-End - MusicGallery', () => {
   beforeEach(() => {
-    global.fetch = jest.fn();
+    fetchMock = mockGlobalFetch();
   });
 
   afterEach(() => {
-    global.fetch = originalFetch;
+    fetchMock?.mockRestore();
   });
 
   const mockMusicas = [

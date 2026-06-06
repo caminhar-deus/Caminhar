@@ -30,6 +30,7 @@ import {
 
 // Mocks
 import { mockFetchSuccess, mockFetchError } from '../mocks/fetch.js';
+import { mockGlobalFetch } from '../helpers/index.js';
 
 // =============================================================================
 // COMPONENTE SIMULADO (para demonstração)
@@ -456,13 +457,15 @@ describe('Componente com Autenticação', () => {
 // =============================================================================
 
 describe('Componente com Fetch', () => {
+  let fetchMock;
+
   beforeEach(() => {
     postFactory.resetId();
-    global.fetch = jest.fn();
+    fetchMock = mockGlobalFetch();
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    fetchMock?.mockRestore();
   });
 
   it('deve carregar posts da API', async () => {
