@@ -489,13 +489,52 @@ it('deve exportar a estrutura esperada', () => {
 
 ---
 
-### 3.6 Testes com Cobertura Faltante
+### 3.6 Testes com Cobertura Faltante — **AJUSTADO (06/06/2026)**
 
-**Ocorrência:** `tests/unit/components/Features/Video/` e `tests/unit/components/Features/Testimonials/`
+**Ocorrência original:** `tests/unit/components/Features/Video/` e `tests/unit/components/Features/Testimonials/`
 
-**Problema:** Os subdiretórios existem, mas podem não ter testes ou ter cobertura insuficiente (confirmar se arquivos .test.js estão presentes).
+**Problema original:** Os subdiretórios existem, mas podem não ter testes ou ter cobertura insuficiente.
 
-**Sugestão:** Verificar se todos os componentes do diretório `components/Features/` possuem testes correspondentes. Adicionar testes faltantes se necessário.
+**Investigação realizada (06/06/2026):** Mapeamento completo de `components/Features/` vs. cobertura de testes:
+
+| Componente | Caminho | Teste Existia? | Status |
+|:---|:---|---|:---:|
+| **BlogSection.js** | `components/Features/Blog/` | `BlogSection.test.js` | ✅ Existente |
+| **PostCard.js** | `components/Features/Blog/` | `PostCard.test.js` | ✅ Existente |
+| **ContentTabs/index.js** | `components/Features/ContentTabs/` | ❌ Nenhum | 🔴 **Criado** |
+| **MusicCard.js** | `components/Features/Music/` | `MusicCard.test.js` | ✅ Existente |
+| **MusicGallery.js** | `components/Features/Music/` | `MusicGallery.test.js` + `.edge.test.js` | ✅ Existente |
+| **ProductCard.js** | `components/Features/Products/` | ❌ Nenhum | 🔴 **Criado** |
+| **ProductList.js** | `components/Features/Products/` | ❌ Nenhum | 🔴 **Criado** |
+| **Testimonials/index.js** | `components/Features/Testimonials/` | `index.test.js` | ⚠️ Existente (4 testes, cobre comportamento real + fallbacks) |
+| **VideoCard.js** | `components/Features/Video/` | `VideoCard.test.js` | ✅ Existente |
+| **VideoGallery.js** | `components/Features/Video/` | `VideoGallery.test.js` | ✅ Existente |
+
+**Conclusão da investigação:**
+- **Video/** estava **completo** (ambos os componentes já possuíam testes) — suspeita inicial não confirmada
+- **Testimonials/** tinha teste com 4 testes cobrindo carregamento, fallback, erro HTTP e carrossel — cobertura adequada, suspeita inicial não confirmada
+- O **verdadeiro gap** estava em:
+  - **ContentTabs/** — Nenhum teste para o barrel de abas de conteúdo
+  - **Products/** — Pasta de testes vazia, 2 componentes sem cobertura (`ProductCard.js` e `ProductList.js`)
+
+**O que foi feito (06/06/2026):**
+
+**A. Criado `tests/unit/components/Features/ContentTabs/index.test.js`:**
+- Teste de barrel seguindo o padrão de snapshot (seção 3.5)
+- Verifica estrutura de exportações + componente default
+- **2/2 testes passando**
+
+**B. Criado `tests/unit/components/Features/Products/ProductCard.test.js`:**
+- Mock centralizado de `parseImages` de `lib/api/utils`
+- 12 testes cobrindo: renderização (título, descrição, preço), sem imagem (null e string vazia), navegação entre imagens (botões anterior/próxima), links de marketplace (ML, Shopee, Amazon), lightbox (abrir, fechar por Escape, fechar por overlay), botões de navegação no lightbox, opacidade da imagem durante carregamento
+- **12/12 testes passando**
+
+**C. Criado `tests/unit/components/Features/Products/ProductList.test.js`:**
+- Mocks centralizados de `useApiFetch`, `useDebounce`, `ProductCard`, `StateMessages`, `styles`
+- 11 testes cobrindo: renderização da lista, estado de carregamento, estado de erro, lista vazia, filtro sem resultados, paginação (visível/escondida, botões desabilitados), campos de busca/filtro de preço, ordenação por position + ID
+- **11/11 testes passando**
+
+**Resultado:** 25 novos testes criados em 3 arquivos. Cobertura completa de todos os componentes de `Features/`. Nenhuma regressão.
 
 ---
 
@@ -598,14 +637,21 @@ export function createBaseFactory(defaults) {
 
 ---
 
-### 4.7 Adicionar Testes de Componentes Faltantes
+### 4.7 Adicionar Testes de Componentes Faltantes — **CONCLUÍDO (06/06/2026)**
 
-**Descrição:** Verificar a cobertura de testes para:
+**Descrição original:** Verificar a cobertura de testes para:
 - `components/Features/Video/*`
 - `components/Features/Testimonials/*`
 - Possíveis outros componentes sem testes
 
-**Benefício:** Garantir cobertura mínima para todos os componentes.
+**Investigação realizada (06/06/2026):** Mapeamento completo de `components/Features/` revelou que Video/ e Testimonials/ já possuíam testes adequados. O verdadeiro gap estava em ContentTabs/ (sem teste) e Products/ (pasta vazia).
+
+**O que foi feito (06/06/2026):**
+- **ContentTabs/index.test.js** — Criado teste de barrel com snapshot (2 testes)
+- **ProductCard.test.js** — Criado com 12 testes (renderização, imagens, lightbox, links marketplace)
+- **ProductList.test.js** — Criado com 11 testes (loading, erro, vazio, paginação, ordenação, filtros)
+
+**Resultado:** 25 novos testes. Cobertura completa de `components/Features/`. Todos os componentes agora possuem testes correspondentes.
 
 ---
 

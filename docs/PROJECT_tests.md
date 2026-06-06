@@ -1,6 +1,6 @@
 # Análise do Projeto — Testes (`/tests/`)
 
-> **Data:** 13/05/2026 (atualizado em 06/06/2026 — 6ª revisão)
+> **Data:** 13/05/2026 (atualizado em 06/06/2026 — 7ª revisão)
 > **Objetivo:** Documentar de forma objetiva, clara e focada todos os arquivos de teste do projeto, descrevendo localização, propósito e funcionalidade de cada um.
 
 ---
@@ -276,12 +276,15 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 |---------|-----------|---------------------|
 | **Blog/** `BlogSection.test.js` | Seção de blog front-end | Loading, posts vazios (null), renderização de posts, prop `limit`, botão "Ver todas", erro de API (success false), erro HTTP (500, 404), falha de rede/JSON inválido |
 | **Blog/** `PostCard.test.js` | Card de post individual | Título, excerpt, categorias, imagem, link, placeholder sem imagem, texto customizado |
-| **ContentTabs/** `ContentTabs.test.js` | Abas de conteúdo | Troca de abas, aba bloqueada, aba desconhecida (fallback) |
+| **ContentTabs/** `index.test.js` | Barrel do componente ContentTabs | Snapshot da estrutura de exportações + validação do componente default. **Criado em 06/06/2026** |
 | **Music/** `MusicGallery.test.js` | Galeria de músicas | Loading, erro, dados vazios, renderização de cards, busca/filtro |
 | **Music/** `MusicCard.test.js` | Card de música individual | Título, artista, URL Spotify, thumbnail |
 | **Music/** `MusicPlayer.test.js` | Player de música | Play, pause, next, previous, progresso |
-| **Video/** (pendente leitura detalhada) | Componente de vídeo | - |
-| **Testimonials/** (pendente leitura detalhada) | Depoimentos | - |
+| **Products/** `ProductCard.test.js` | Card de produto com imagem, lightbox e links de marketplace | Título/descrição/preço, sem imagem (null e string vazia), navegação entre múltiplas imagens, links ML/Shopee/Amazon, lightbox (abrir, fechar Escape/overlay), opacidade da imagem no carregamento. **Criado em 06/06/2026 — 12 testes** |
+| **Products/** `ProductList.test.js` | Lista de produtos com busca, filtro de preço e paginação | Renderização da lista, loading, erro, lista vazia, filtro sem resultados, paginação (visível/escondida, botões desabilitados), campos de busca/filtro, ordenação por position + ID. **Criado em 06/06/2026 — 11 testes** |
+| **Testimonials/** `index.test.js` | Componente de depoimentos com carrossel | Carregamento de dados da API, fallback em erro de rede, fallback em erro HTTP/array vazio, botões de carrossel com scroll e resize |
+| **Video/** `VideoCard.test.js` | Card de vídeo individual | Título, descrição, LazyIframe com props (src, title, thumbnail) |
+| **Video/** `VideoGallery.test.js` | Galeria de vídeos | Loading, erro, dados vazios, renderização de cards |
 
 ### 5.4 Componentes de Layout (`/tests/unit/components/Layout/`)
 
@@ -471,5 +474,14 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 > - Removidos mocks duplicados de 10 arquivos de teste (substituídos por import de `next-setup.js`)
 > - `setupNextMocks()` depreciado em `tests/mocks/next.js`
 > - **Total:** 4 arquivos criados + 10 modificados. Nenhuma regressão.
+> 
+> > **Ajustes realizados na 7ª revisão (06/06):**
+> - Investigação completa da Seção 3.6: mapeamento `components/Features/` vs. cobertura de testes, revelando que Video/ e Testimonials/ já estavam cobertos e o verdadeiro gap era ContentTabs/ e Products/
+> - Criado `tests/unit/components/Features/ContentTabs/index.test.js` — Teste de barrel com snapshot (2 testes)
+> - Criado `tests/unit/components/Features/Products/ProductCard.test.js` — 12 testes (renderização, imagens, lightbox, links marketplace)
+> - Criado `tests/unit/components/Features/Products/ProductList.test.js` — 11 testes (loading, erro, vazio, paginação, ordenação, filtros)
+> - Atualizada Seção 3.6 do `UPGRADE_tests.md` de "Sugestão" para **"AJUSTADO (06/06/2026)"**
+> - Atualizada Seção 4.7 do `UPGRADE_tests.md` como **"CONCLUÍDO (06/06/2026)"**
+> - **Total:** 3 arquivos criados + 2 documentos atualizados. 25 novos testes. Nenhuma regressão.
 > 
 > Para detalhes de implementação específicos, consulte `docs/UPGRADE_tests.md`.

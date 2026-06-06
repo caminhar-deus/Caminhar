@@ -1,0 +1,7 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`[Barrel] Features - ContentTabs deve exportar a estrutura esperada do barrel ContentTabs 1`] = `
+[
+  "default",
+]
+`;

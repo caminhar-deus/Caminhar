@@ -999,11 +999,17 @@
 │       │   │   │   ├── BlogSection.test.js
 │       │   │   │   └── PostCard.test.js
 │       │   │   ├── ContentTabs
-│       │   │   │   └── ContentTabs.test.js
+│       │   │   │   ├── ContentTabs.test.js
+│       │   │   │   ├── index.test.js
+│       │   │   │   └── __snapshots__
+│       │   │   │       └── index.test.js.snap
 │       │   │   ├── Music
 │       │   │   │   ├── MusicCard.test.js
 │       │   │   │   ├── MusicGallery.edge.test.js
 │       │   │   │   └── MusicGallery.test.js
+│       │   │   ├── Products
+│       │   │   │   ├── ProductCard.test.js
+│       │   │   │   └── ProductList.test.js
 │       │   │   ├── Testimonials
 │       │   │   │   └── index.test.js
 │       │   │   └── Video
@@ -1130,4 +1136,4 @@
 │       └── videos_validation.test.js
 └── tree.txt
 
-178 directories, 953 files
+180 directories, 957 files
