@@ -1,4 +1,5 @@
-import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { createMocks } from 'node-mocks-http';
 import handler from '../../../../../pages/api/admin/roles.js';
 import * as auth from '../../../../../lib/auth.js';
 import * as db from '../../../../../lib/db.js';
@@ -20,19 +21,15 @@ describe('API - Admin - Roles (Edge Cases)', () => {
   let res;
 
   beforeEach(() => {
-    req = {
+    const mocks = createMocks({
       method: 'GET',
       headers: {},
       socket: {}, // Força o fallback de IP para 'unknown'
       body: {},
       query: {}
-    };
-    res = {
-      setHeader: jest.fn(),
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-      end: jest.fn()
-    };
+    });
+    req = mocks.req;
+    res = mocks.res;
   });
 
   it('deve usar IP unknown e fallback para permissões vazias se o cargo não existir (linhas 6 e 21)', async () => {
@@ -42,7 +39,7 @@ describe('API - Admin - Roles (Edge Cases)', () => {
 
     await handler(req, res);
     
-    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res._getStatusCode()).toBe(403);
   });
 
   it('deve processar POST com permissões enviadas nativamente como string (linha 56)', async () => {
@@ -57,7 +54,7 @@ describe('API - Admin - Roles (Edge Cases)', () => {
     await handler(req, res);
     
     expect(db.createRecord).toHaveBeenCalledWith('roles', expect.objectContaining({ permissions: '["Leitura"]' }));
-    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res._getStatusCode()).toBe(201);
   });
 
   it('deve processar PUT extraindo ID da query, sem permissões e com fallback no retorno (linhas 61 a 66)', async () => {
@@ -74,7 +71,7 @@ describe('API - Admin - Roles (Edge Cases)', () => {
     await handler(req, res);
     
     expect(db.updateRecords).toHaveBeenCalledWith('roles', expect.objectContaining({ name: 'Novo Nome' }), { id: 99 });
-    expect(res.json).toHaveBeenCalledWith({});
+    expect(res._getJSONData()).toEqual({});
   });
 
   it('deve processar DELETE extraindo ID da query e lidando com fallback do nome no log (linhas 68-72)', async () => {

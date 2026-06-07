@@ -1,4 +1,5 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { createMocks } from 'node-mocks-http';
 import handler from '../../../../../pages/api/admin/dicas.js';
 import * as db from '../../../../../lib/db.js';
 import * as auth from '../../../../../lib/auth.js';
@@ -16,19 +17,15 @@ describe('API - Admin - Dicas (Edge Cases)', () => {
   let res;
 
   beforeEach(() => {
-    req = {
+    const mocks = createMocks({
       method: 'GET',
       headers: {},
       socket: {}, // Força o fallback de IP para 'unknown' (linha 6)
-      body: {},
-      user: { username: 'admin' } // Garante que logActivity seja acionado
-    };
-    res = {
-      setHeader: jest.fn(),
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-      end: jest.fn()
-    };
+      body: {}
+    });
+    req = mocks.req;
+    res = mocks.res;
+    req.user = { username: 'admin' }; // Garante que logActivity seja acionado
   });
 
   it('deve usar o IP unknown e valor padrão de published (true) no POST (linhas 6 e 24)', async () => {

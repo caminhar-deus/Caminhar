@@ -1,4 +1,5 @@
 import { describe, it, expect, jest, afterEach } from '@jest/globals';
+import { createMocks } from 'node-mocks-http';
 import handler from '../../../../pages/api/upload-image.js';
 import fs from 'fs';
 
@@ -42,8 +43,7 @@ describe('API - Upload Image (Edge Cases)', () => {
   });
 
   it('deve criar o diretório de upload se ele não existir (linhas 22-23)', async () => {
-    const req = { method: 'POST' };
-    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const { req, res } = createMocks({ method: 'POST' });
 
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation((msg, err) => {
       if (err) throw err;
@@ -53,7 +53,7 @@ describe('API - Upload Image (Edge Cases)', () => {
     await handler(req, res);
 
     expect(fs.mkdirSync).toHaveBeenCalledWith(expect.stringContaining('uploads'), { recursive: true });
-    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res._getStatusCode()).toBe(200);
 
     consoleSpy.mockRestore();
   });

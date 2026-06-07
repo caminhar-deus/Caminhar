@@ -1,4 +1,5 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import { createMocks } from 'node-mocks-http';
 import handler from '../../../../../pages/api/admin/fetch-spotify.js';
 import * as auth from '../../../../../lib/auth.js';
 
@@ -9,24 +10,12 @@ jest.mock('../../../../../lib/auth.js', () => ({
 import { mockGlobalFetch } from '../../../../helpers/index.js';
 
 describe('API - Admin - Fetch Spotify (Edge Cases)', () => {
-  let req;
-  let res;
   let consoleErrorSpy;
   let fetchMock;
 
   beforeEach(() => {
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     fetchMock = mockGlobalFetch();
-    req = { 
-      method: 'POST',
-      body: { url: 'https://open.spotify.com/track/123456789' }
-    };
-    res = {
-      setHeader: jest.fn(),
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-      end: jest.fn()
-    };
   });
 
   afterEach(() => {
@@ -38,6 +27,11 @@ describe('API - Admin - Fetch Spotify (Edge Cases)', () => {
     auth.getAuthToken.mockReturnValue('valid_token');
     auth.verifyToken.mockReturnValue({ role: 'admin' });
     
+    const { req, res } = createMocks({
+      method: 'POST',
+      body: { url: 'https://open.spotify.com/track/123456789' }
+    });
+
     // Força todas as chamadas de rede a rejeitarem simultaneamente
     global.fetch.mockRejectedValue(new Error('Erro Forçado de Rede'));
 
@@ -49,7 +43,7 @@ describe('API - Admin - Fetch Spotify (Edge Cases)', () => {
     expect(console.error).toHaveBeenCalledWith('Falha no HTML principal:', expect.any(Error));
     
     // Verifica se a API lidou corretamente retornando o erro de fallback final (status 500)
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Não foi possível identificar a música. Verifique se o link é válido.' });
+    expect(res._getStatusCode()).toBe(500);
+    expect(res._getJSONData()).toEqual({ error: 'Não foi possível identificar a música. Verifique se o link é válido.' });
   });
 });

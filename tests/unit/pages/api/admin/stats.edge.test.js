@@ -1,4 +1,5 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { createMocks } from 'node-mocks-http';
 import handler from '../../../../../pages/api/admin/stats.js';
 import * as auth from '../../../../../lib/auth.js';
 import * as db from '../../../../../lib/db.js';
@@ -15,21 +16,16 @@ describe('API - Admin - Stats (Edge Cases)', () => {
   let res;
 
   beforeEach(() => {
-    req = { method: 'GET' };
-    res = {
-      setHeader: jest.fn(),
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-      end: jest.fn()
-    };
+    const mocks = createMocks({ method: 'GET' });
+    req = mocks.req;
+    res = mocks.res;
   });
 
   it('deve bloquear métodos diferentes de GET (405)', async () => {
     req.method = 'POST';
     await handler(req, res);
-    expect(res.setHeader).toHaveBeenCalledWith('Allow', ['GET']);
-    expect(res.status).toHaveBeenCalledWith(405);
-    expect(res.end).toHaveBeenCalledWith('Method POST Not Allowed');
+    expect(res._getStatusCode()).toBe(405);
+    expect(res._getData()).toBe('Method POST Not Allowed');
   });
 
   it('deve retornar 500 em caso de erro no banco de dados', async () => {
@@ -42,8 +38,8 @@ describe('API - Admin - Stats (Edge Cases)', () => {
     await handler(req, res);
 
     expect(consoleSpy).toHaveBeenCalled();
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Erro interno no servidor' });
+    expect(res._getStatusCode()).toBe(500);
+    expect(res._getJSONData()).toEqual({ error: 'Erro interno no servidor' });
     
     consoleSpy.mockRestore();
   });

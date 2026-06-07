@@ -1,4 +1,5 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import { createMocks } from 'node-mocks-http';
 import handler from '../../../../../pages/api/admin/posts.js';
 import * as auth from '../../../../../lib/auth.js';
 import * as db from '../../../../../lib/db.js';
@@ -40,19 +41,15 @@ describe('API - Admin - Posts (Edge Cases)', () => {
 
   beforeEach(() => {
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    req = {
+    const mocks = createMocks({
       method: 'POST',
       headers: {},
       socket: { remoteAddress: '127.0.0.1' },
       body: {},
       query: {}
-    };
-    res = {
-      setHeader: jest.fn(),
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-      end: jest.fn()
-    };
+    });
+    req = mocks.req;
+    res = mocks.res;
     cache.checkRateLimit.mockResolvedValue(false);
   });
 
@@ -63,7 +60,7 @@ describe('API - Admin - Posts (Edge Cases)', () => {
   it('deve retornar 401 se req.user não estiver presente', async () => {
     req.user = null;
     await handler(req, res);
-    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res._getStatusCode()).toBe(401);
   });
 
   it('deve retornar 403 se o usuário não for admin e não tiver permissão', async () => {
@@ -71,7 +68,7 @@ describe('API - Admin - Posts (Edge Cases)', () => {
     db.query.mockResolvedValueOnce({ rows: [{ permissions: ['Outra_Permissao'] }] });
 
     await handler(req, res);
-    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res._getStatusCode()).toBe(403);
   });
 
   it('deve assumir array vazio se usuário não tiver permissões cadastradas', async () => {
@@ -79,7 +76,7 @@ describe('API - Admin - Posts (Edge Cases)', () => {
     db.query.mockResolvedValueOnce({ rows: [] }); // Sem permissões no banco
 
     await handler(req, res);
-    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res._getStatusCode()).toBe(403);
   });
 
   it('deve retornar erro de validação (Zod) se a image_url for inválida no POST', async () => {
@@ -88,7 +85,7 @@ describe('API - Admin - Posts (Edge Cases)', () => {
     req.body = { title: 'Post', slug: 'post', image_url: 'invalid_url' };
 
     await handler(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res._getStatusCode()).toBe(400);
   });
 
   it('deve retornar erro se o ID for inválido no PUT', async () => {
@@ -98,7 +95,7 @@ describe('API - Admin - Posts (Edge Cases)', () => {
     req.body = { id: -1, title: 'Atualizado' }; // -1 engatilha a validação .positive()
 
     await handler(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res._getStatusCode()).toBe(400);
   });
 
   it('deve retornar erro se nenhum dado for fornecido para atualização no PUT', async () => {
@@ -108,8 +105,8 @@ describe('API - Admin - Posts (Edge Cases)', () => {
     req.body = { id: 1 }; // Somente ID
 
     await handler(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: 'Nenhum dado fornecido para atualização' }));
+    expect(res._getStatusCode()).toBe(400);
+    expect(res._getJSONData()).toEqual(expect.objectContaining({ message: 'Nenhum dado fornecido para atualização' }));
   });
 
   it('deve retornar erro de validação se a image_url for inválida no PUT', async () => {
@@ -119,7 +116,7 @@ describe('API - Admin - Posts (Edge Cases)', () => {
     req.body = { id: 1, image_url: 'invalid_url' };
 
     await handler(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res._getStatusCode()).toBe(400);
   });
 
   it('deve retornar 500 se o DELETE falhar no catch', async () => {
@@ -132,7 +129,7 @@ describe('API - Admin - Posts (Edge Cases)', () => {
     posts.deletePost.mockRejectedValueOnce(new Error('DB falhou'));
 
     await handler(req, res);
-    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res._getStatusCode()).toBe(500);
   });
 
   it('deve retornar 500 se ocorrer um erro interno durante a atualização (PUT)', async () => {
@@ -144,7 +141,7 @@ describe('API - Admin - Posts (Edge Cases)', () => {
     posts.updatePost.mockRejectedValueOnce(new Error('Erro forçado ao atualizar'));
 
     await handler(req, res);
-    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res._getStatusCode()).toBe(500);
   });
 
   it('deve bloquear métodos HTTP não permitidos (405)', async () => {
@@ -153,7 +150,7 @@ describe('API - Admin - Posts (Edge Cases)', () => {
     req.method = 'PATCH';
 
     await handler(req, res);
-    expect(res.status).toHaveBeenCalledWith(405);
+    expect(res._getStatusCode()).toBe(405);
   });
 
   it('deve atualizar a ordem dos posts com sucesso (reorder)', async () => {
@@ -163,7 +160,7 @@ describe('API - Admin - Posts (Edge Cases)', () => {
     req.body = { action: 'reorder', items: [{ id: 1, position: 2 }, { id: 2, position: 1 }] };
 
     await handler(req, res);
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, message: 'Ordem atualizada' }));
+    expect(res._getStatusCode()).toBe(200);
+    expect(res._getJSONData()).toEqual(expect.objectContaining({ success: true, message: 'Ordem atualizada' }));
   });
 });

@@ -1,6 +1,6 @@
 # Relatório de Upgrade — Testes (`/tests/`)
 
-> **Data:** 12/05/2026 (atualizado em 07/06/2026 — 12ª revisão)
+> **Data:** 12/05/2026 (atualizado em 07/06/2026 — 13ª revisão)
 > **Objetivo:** Reportar correções, melhorias, problemas de performance e duplicidade de código identificados na análise dos arquivos de teste.
 
 ---
@@ -435,13 +435,42 @@ Após análise dos handlers reais e seus imports, constatou-se:
 
 ---
 
-### 5.4 Uso de node-mocks-http vs. Mocks Personalizados
+### 5.4 Uso de node-mocks-http vs. Mocks Personalizados — **CONCLUÍDO (07/06/2026)**
 
-**Descrição:** Alguns testes usam `createMocks` de `node-mocks-http` (via helpers/api.js) enquanto outros constroem objetos `req`/`res` manualmente.
+**Descrição:** Alguns testes usavam `createMocks` de `node-mocks-http` (via helpers/api.js) enquanto outros construíam objetos `req`/`res` manualmente.
 
-**Sugestão:** Unificar o uso de `node-mocks-http` em todos os testes de handler para consistência.
+**Sugestão original:** Unificar o uso de `node-mocks-http` em todos os testes de handler para consistência.
 
-**Aplicado parcialmente (04/06/2026):** O arquivo `products.test.js` (integration) foi padronizado para usar `createMocks` em toda a suite, incluindo os testes de borda mesclados.
+**O que foi feito (07/06/2026):**
+
+**Arquivos convertidos de req/res manual para `createMocks`:**
+
+| # | Arquivo | Método Anterior | Método Novo |
+|:-:|---------|----------------|-------------|
+| 1 | `unit/pages/api/auth/login.edge.test.js` | `req = { method, headers, body, socket }` + `res = { setHeader, status, json }` | `createMocks({ method: 'POST', body })` |
+| 2 | `unit/pages/api/admin/roles.edge.test.js` | `req = { method, headers, socket, body, query }` + `res = { setHeader, status, json, end }` | `createMocks({ method, query, body })` |
+| 3 | `unit/pages/api/admin/rate-limit.test.js` | 18 ocorrências de `req = { method, query }` + `res = { status, json, ... }` | `createMocks({ method, query, body })` |
+| 4 | `unit/pages/api/admin/fetch-spotify.edge.test.js` | `req = { method, body }` + `res = { setHeader, status, json, end }` | `createMocks({ method: 'POST', body })` |
+| 5 | `unit/pages/api/admin/dicas.edge.test.js` | `req = { method, headers, socket, body, user }` + `res = { setHeader, status, json, end }` | `createMocks({ method, headers, socket, body })` |
+| 6 | `unit/pages/api/admin/posts.edge.test.js` | `req = { method, headers, socket, body, query }` + `res = { setHeader, status, json, end }` | `createMocks({ method, headers, socket, body, query })` |
+| 7 | `unit/pages/api/admin/stats.edge.test.js` | `req = { method }` + `res = { setHeader, status, json, end }` | `createMocks({ method })` |
+| 8 | `unit/pages/api/admin/fetch-ml.edge.test.js` | `req = { method, body }` + função `mockRes()` manual | `createMocks({ method, body })` |
+| 9 | `unit/pages/api/upload-image.edge.test.js` | `const req = { method: 'POST' }` + `res = { status, json }` | `createMocks({ method: 'POST' })` |
+
+**Assertions migradas:**
+- `expect(res.status).toHaveBeenCalledWith(N)` → `expect(res._getStatusCode()).toBe(N)`
+- `expect(res.json).toHaveBeenCalledWith(data)` → `expect(res._getJSONData()).toEqual(data)`
+
+**Arquivo mantido com req/res manual (justificado):**
+| Arquivo | Justificativa |
+|---------|---------------|
+| `unit/lib/auth.test.js` | Testa as funções da biblioteca `auth.js` diretamente (`setAuthCookie`, `withAuth`, `getAuthToken`), não um handler de API. Objetos req/res manuais são necessários para testar casos específicos como extração de token de headers/cookies |
+| `unit/lib/middleware.test.js` | Testa o middleware em si — req/res manual permite testar cenários específicos de tratamento |
+| `unit/lib/api/middleware.test.js` | Idem |
+
+**Helper `tests/helpers/api.js`:** Mantido no projeto pois é importado e utilizado por `tests/examples/simple-test.test.js`. Contém `createApiMocks`, `createGetRequest`, `createPostRequest`, etc. que wrappers úteis, embora nenhum teste de produção os utilize diretamente.
+
+**Resultado:** 9 arquivos convertidos para `createMocks`. Consistência total no ecossistema de testes de handler. Todos os ~300+ usos de `createMocks` agora seguem o mesmo padrão.
 
 ---
 
@@ -496,6 +525,7 @@ A migração foi concluída. `lib/middleware.js` removido do projeto. Todos os 3
 | 🟢 Baixa | Substituir dados inline por factories (parcial) | Baixo | Baixo | ✅ **Parcial (07/06)** — 4 arquivos de integração convertidos |
 | 🟢 Baixa | Remover `jest.clearAllMocks()` redundante do crud-test.js | Muito Baixo | Nulo | ✅ **Concluído (07/06)** |
 | 🟢 Baixa | Remover mock de auth desnecessário do posts.test.js | Muito Baixo | Nulo | ✅ **Concluído (07/06)** |
+| 🟢 Baixa | Unificar req/res manual para createMocks em testes de handler | Baixo | Médio | ✅ **Concluído (07/06)** — 9 arquivos convertidos |
 
 ---
 
