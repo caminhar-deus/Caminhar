@@ -1,26 +1,26 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
-import handler from '../../pages/api/admin/musicas';
-import { createMusica, getPaginatedMusicas, deleteMusica } from '../../lib/domain/musicas.js';
-import { logActivity } from '../../lib/domain/audit.js';
+import handler from '../../../pages/api/admin/musicas';
+import { createMusica, getPaginatedMusicas, deleteMusica } from '../../../lib/domain/musicas.js';
+import { logActivity } from '../../../lib/domain/audit.js';
 
 // Mock das dependências de domínio, que são as dependências diretas do handler.
-jest.mock('../../lib/domain/musicas.js', () => ({
+jest.mock('../../../lib/domain/musicas.js', () => ({
   createMusica: jest.fn(),
   getPaginatedMusicas: jest.fn(),
   deleteMusica: jest.fn(),
 }));
-jest.mock('../../lib/domain/audit.js', () => ({
+jest.mock('../../../lib/domain/audit.js', () => ({
   logActivity: jest.fn(),
 }));
 
 // Mock do cache para evitar erro de importação do Redis/uncrypto
-jest.mock('../../lib/cache', () => ({
+jest.mock('../../../lib/cache', () => ({
   invalidateCache: jest.fn(),
 }));
 
 // Mock do módulo de autenticação para ignorar a verificação de token neste teste
-jest.mock('../../lib/auth', () => ({
+jest.mock('../../../lib/auth', () => ({
   withAuth: (handler) => (req, res) => {
     // Simula um usuário autenticado para os testes, que é o que o middleware real faz.
     req.user = { username: 'test-admin', role: 'admin' };

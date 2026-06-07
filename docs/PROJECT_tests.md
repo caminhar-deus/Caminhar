@@ -1,6 +1,6 @@
 # Análise do Projeto — Testes (`/tests/`)
 
-> **Data:** 13/05/2026 (atualizado em 06/06/2026 — 11ª revisão)
+> **Data:** 13/05/2026 (atualizado em 06/06/2026 — 12ª revisão)
 > **Objetivo:** Documentar de forma objetiva, clara e focada todos os arquivos de teste do projeto, descrevendo localização, propósito e funcionalidade de cada um.
 
 ---
@@ -157,46 +157,43 @@ tests/
 
 ## 4. Testes de Integração
 
-### 4.1 Fluxos CRUD Principais (`/tests/integration/` — raiz)
+### 4.1 Fluxos CRUD Principais (consolidados em `/tests/integration/api/`)
 
-| Arquivo | Propósito | Cenários Principais |
-|---------|-----------|---------------------|
-| `create-post-flow.test.js` | Fluxo completo de criação de post + upload de imagem | Upload imagem → criar post com URL da imagem; verifica persistência da URL |
-| `musicas_flow.test.js` | Fluxo CRUD completo de músicas | Criar (201), listar (200), excluir (200), URL Spotify inválida (400), busca textual |
-| `musicas_public_db_integration.test.js` | Segurança SQL na API pública de músicas | Query contém `WHERE publicado = true`; filtro mantido com busca |
-| `posts.integration.test.js` | Endpoint público `/api/posts` | GET com paginação; parâmetros inválidos (400); rate limit (429); busca textual; cache; erro interno (500); método não permitido (405) |
-| `videos_flow.test.js` | Fluxo CRUD completo de vídeos | Criar (201), listar (200), excluir (200), busca textual |
-| `videos_public_db_integration.test.js` | Segurança SQL na API pública de vídeos | Query contém `WHERE publicado = true`; filtro mantido com busca |
+**Nota (06/06/2026):** Os arquivos de fluxo foram movidos da raiz `tests/integration/` para `tests/integration/api/` e renomeados para dot notation. Ver seção 4.2 para a listagem atualizada.
 
 ### 4.2 API Endpoints (`/tests/integration/api/`)
 
 | Arquivo | Propósito | Cenários Principais |
 |---------|-----------|---------------------|
 | `audit.test.js` | CRUD + consulta de logs de auditoria | Inserir log, listar com paginação/filtros, rate limit |
-| `backups.api.test.js` | CRUD de backups via API | Listar, criar, restaurar, excluir backups, erros |
 | `cleanup-test-data.test.js` | Limpeza de dados de teste | Remover registros de teste do banco |
 | `dicas.test.js` | CRUD de dicas/quick tips | Listar (público), admin CRUD |
 | `login.test.js` | Login via API | Sucesso, credenciais inválidas, usuário inexistente |
 | `musicas.create.test.js` | Criação de música (admin) | Dados válidos, campos obrigatórios faltando, URL inválida |
 | `musicas.delete.test.js` | Exclusão de música (admin) | ID existente, ID inexistente |
+| `musicas.flow.test.js` | Fluxo CRUD completo de músicas (movido da raiz em 06/06/2026) | Criar (201), listar (200), excluir (200), URL Spotify inválida (400), busca textual |
+| `musicas.integration.test.js` | Segurança SQL na API pública de músicas (movido da raiz em 06/06/2026) | Query contém `WHERE publicado = true`; filtro mantido com busca |
 | `musicas.pagination.test.js` | Paginação de músicas | Página 1, página 2, página 3 (vazia), different limits |
 | `musicas.test.js` | CRUD completo /api/musicas | Listar (GET), criar (POST), atualizar (PUT), excluir (DELETE), método não permitido |
 | `musicas.update.test.js` | Atualização de música (admin) | Atualizar com campos, música inexistente |
 | `placeholder-image.test.js` | Geração de placeholder | PNG 1x1 válido, Content-Type image/png |
 | `posts.create.api.test.js` | Criação de post (admin) | Dados válidos (201), post sem título (400), post sem conteúdo (400) |
 | `posts.delete.test.js` | Exclusão de post (admin) | ID existente, ID inexistente, erro no banco |
+| `posts.flow.test.js` | Fluxo de criação de post com imagem (movido da raiz em 06/06/2026) | Upload imagem → criar post com URL da imagem; verifica persistência da URL |
 | `posts.general.test.js` | Validações gerais de posts | Slug duplicado, slug inválido |
+| `posts.integration.test.js` | Endpoint público `/api/posts` (movido da raiz em 06/06/2026) | GET com paginação; parâmetros inválidos (400); rate limit (429); busca textual; cache; erro interno (500); método não permitido (405) |
 | `posts.test.js` | CRUD completo /api/posts | GET público com paginação, POST admin, PUT admin, DELETE admin, métodos não permitidos |
 | `posts.update.api.test.js` | Atualização de post (admin) | Atualizar campos, post inexistente |
 | `products.test.js` | CRUD de produtos + casos de borda | GET público/POST/PUT/DELETE admin, validação, 405, fallbacks GET, token silencioso |
-| `settings.api.test.js` | Configurações via API | CRUD admin, validações |
 | `settings.general.test.js` | Validações de configurações | Atualizar com dados inválidos |
 | `settings.test.js` | CRUD /api/settings | GET público, POST/PUT/DELETE admin |
 | `stats.test.js` | Estatísticas | GET /api/stats, contagem de recursos |
-| `status.api.test.js` | Status da API | GET /api/status, health check |
+| `status.test.js` | Status da API | GET /api/status, health check |
 | `upload-image.test.js` | Upload de imagem | Upload válido, tipo inválido, tamanho excessivo |
 | `videos.create.api.test.js` | Criação de vídeo (admin) | Dados válidos, URL inválida, campos obrigatórios |
 | `videos.delete.test.js` | Exclusão de vídeo (admin) | ID existente, ID inexistente |
+| `videos.flow.test.js` | Fluxo CRUD completo de vídeos (movido da raiz em 06/06/2026) | Criar (201), listar (200), excluir (200), busca textual |
+| `videos.integration.test.js` | Segurança SQL na API pública de vídeos (movido da raiz em 06/06/2026) | Query contém `WHERE publicado = true`; filtro mantido com busca |
 | `videos.pagination.api.test.js` | Paginação de vídeos | Página 1, página 2, página 3 (vazia), different limits |
 | `videos.test.js` | CRUD completo /api/videos | GET público, POST admin, PUT admin, DELETE admin |
 
@@ -256,8 +253,8 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 | `[slug].test.js` | Página dinâmica `[slug]` | Renderização com slug válido, slug inválido (404), loading, erro |
 | `clean-test-db.test.js` | Script de limpeza do banco de teste | Remover registros de teste, manter dados reais |
 | `index.test.js` | Página inicial (`/`) | Renderização, seções presentes (Hero, Blog, Music, Video, Products) |
-| `settings-cache.test.js` | Cache de configurações | Get/set cache, invalidação, TTL |
-| `videos_validation.test.js` | Validação de vídeos | URL YouTube válida/inválida, campos obrigatórios |
+| `settings.cache.test.js` | Cache de configurações (renomeado em 06/06/2026) | Get/set cache, invalidação, TTL |
+| `videos.validation.test.js` | Validação de vídeos (renomeado em 06/06/2026) | URL YouTube válida/inválida, campos obrigatórios |
 
 ### 5.2 Componentes de Admin (`/tests/unit/components/Admin/`)
 

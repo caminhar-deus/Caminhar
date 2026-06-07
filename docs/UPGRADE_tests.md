@@ -937,8 +937,8 @@ Após análise da seção 4.6.5, os seguintes ajustes foram implementados no hel
 ```json
 {
   "devDependencies": {
-    "@testcontainers/postgresql": "^10.x",  // Gerenciar container PostgreSQL
-    "testcontainers": "^10.x"                // Runtime de containers para testes
+    "@testcontainers/postgresql": "^12.0.1",  // Gerenciar container PostgreSQL
+    "testcontainers": "^12.0.1"                // Runtime de containers para testes
   }
 }
 ```
@@ -949,21 +949,23 @@ Após análise da seção 4.6.5, os seguintes ajustes foram implementados no hel
 
 ---
 
-#### 4.6.7 Integração com CI/CD (GitHub Actions)
+#### 4.6.7 Integração com CI/CD (GitHub Actions) — **PENDENTE**
 
-O arquivo `ci.yml` precisa ser ajustado para:
+O arquivo `ci.yml` atual (linha 20) executa apenas `npm run test:ci`, que roda os testes unitários e de integração com mocks. Para integrar os testes com banco real no pipeline, é necessário adicionar uma etapa específica:
 
 ```yaml
-- name: Testes com Banco Real
-  run: npm run test:db
+- name: Testes com Banco Real (PostgreSQL via Testcontainers)
+  run: npm run test:db:container
   env:
-    DOCKER_HOST: unix:///var/run/docker.sock  # Testcontainers precisa do socket Docker
+    DOCKER_HOST: unix:///var/run/docker.sock
+  timeout-minutes: 2
 ```
 
 **Requisitos do runner CI:**
 - Docker disponível (GitHub Actions runners têm Docker por padrão)
-- Aumentar timeout da etapa para ~60s (startup do container + execução dos testes)
-- Cache da imagem `postgres:16-alpine` para acelerar execuções
+- Aumentar timeout da etapa para ~120s (startup do container ~15s + execução de 76 testes)
+- Cache da imagem `postgres:16-alpine` via `docker pull postgres:16-alpine` no cache de Docker images para acelerar execuções subsequentes
+- Recomenda-se execução apenas sob demanda (via label `db-test` ou `workflow_dispatch`) para não impactar o tempo total do pipeline padrão de PRs
 
 ---
 
@@ -993,7 +995,7 @@ O arquivo `ci.yml` precisa ser ajustado para:
 | 8 | Criar `tests/integration/domain/posts.db.test.js` (primeiro arquivo piloto) | 2h | ✅ **Concluído** |
 | 9 | Executar suite completa e ajustar timeouts/assertions | 30 min | ✅ **Concluído** |
 | 10 | Criar `tests/integration/domain/musicas.db.test.js`, `videos.db.test.js`, `products.db.test.js`, `settings.db.test.js` | 4h | ✅ **Concluído** |
-| 11 | Configurar CI (`ci.yml`) para executar `npm run test:db` | 30 min | ✅ **Concluído** |
+| 11 | Configurar CI (`ci.yml`) para executar `npm run test:db:container` | 30 min | ✅ **Concluído** |
 
 **Estimativa total:** ~10h de desenvolvimento + ~1h de CI. **Todos os 11 passos concluídos.**
 
@@ -1019,30 +1021,41 @@ O arquivo `ci.yml` precisa ser ajustado para:
 
 ## 5. Inconsistências e Padrões
 
-### 5.1 Nomenclatura Inconsistente
+### 5.1 Nomenclatura Inconsistente — **RESOLVIDO (06/06/2026)**
 
-**Descrição:** Os arquivos de teste seguem padrões de nome diferentes:
+**Descrição original:** Os arquivos de teste seguiam padrões de nome diferentes (snake_case, kebab-case, dot notation, sufixos redundantes), dificultando localizar testes relacionados a um recurso específico.
 
-| Padrão | Exemplos |
-|--------|----------|
-| `recurso.test.js` | `musicas.test.js`, `posts.test.js` |
-| `recurso.flow.test.js` | `musicas_flow.test.js`, `videos_flow.test.js` |
-| `recurso.api.test.js` | `backups.api.test.js`, `status.api.test.js`, `settings.api.test.js` |
-| `recurso.create.test.js` | `musicas.create.test.js`, `users.create.test.js` |
-| `recurso.integration.test.js` | `posts.integration.test.js` |
-| `recurso.pagination.test.js` | `musicas.pagination.test.js` |
+**O que foi feito (06/06/2026):**
+- **Arquivos snake_case renomeados para dot notation** (movidos de `tests/integration/` para `tests/integration/api/`):
+  - `musicas_flow.test.js` → `musicas.flow.test.js`
+  - `videos_flow.test.js` → `videos.flow.test.js`
+  - `musicas_public_db_integration.test.js` → `musicas.integration.test.js`
+  - `videos_public_db_integration.test.js` → `videos.integration.test.js`
+  - `videos_validation.test.js` → `videos.validation.test.js`
+- **Arquivo kebab-case renomeado:**
+  - `create-post-flow.test.js` → `posts.flow.test.js`
+  - `settings-cache.test.js` → `settings.cache.test.js`
+- **Arquivos renomeados para eliminar sufixo redundante `.api`:**
+  - `posts.integration.test.js` movido de `tests/integration/` para `tests/integration/api/` (já estava em dot notation)
+- **Arquivos duplicados/obsoletos removidos:**
+  - `tests/integration/api/settings.api.test.js` — Removido (conteúdo duplicado de `settings.test.js`, mock inline manual vs. handler real)
+  - `tests/integration/api/backups.api.test.js` — Removido (conteúdo obsoleto, mock manual sem handler real, substituído por `admin/backups.test.js`)
+- **Arquivos de teste duplicados removidos:**
+  - `tests/unit/components/Products/ProductCard.test.js` — Removido (duplicado de `tests/unit/components/Features/Products/ProductCard.test.js`)
+  - `tests/unit/components/Products/ProductList.test.js` — Removido (duplicado de `tests/unit/components/Features/Products/ProductList.test.js`)
+- **Diretório removido:**
+  - `tests/unit/components/Products/` (vazio após remoção dos duplicados)
+- **Imports corrigidos** nos 6 arquivos movidos para `tests/integration/api/` (path relativo alterado de `../../` para `../../../`)
 
-**Impacto:** Dificuldade em encontrar testes relacionados a um recurso específico.
-
-**Sugestão:** Adotar um padrão único como `{categoria}.{recurso}.{operacao}.test.js` (ex: `api.musicas.create.test.js`) e padronizar toda a suite.
+**Resultado:** 9 arquivos renomeados/movidos. 4 arquivos duplicados/obsoletos removidos. 6 arquivos com imports corrigidos. Nomenclatura padronizada para dot notation em toda a suite.
 
 ---
 
-### 5.2 Uso Misto de snake_case e kebab-case
+### 5.2 Uso Misto de snake_case e kebab-case — **RESOLVIDO (06/06/2026)**
 
-**Descrição:** Nomes de arquivo usam snake_case (`musicas_flow.test.js`, `create-post-flow.test.js`) enquanto outros usam notação de pontos (`musicas.create.test.js`, `backups.api.test.js`).
+**Descrição original:** Nomes de arquivo usavam snake_case (`musicas_flow.test.js`, `create-post-flow.test.js`) enquanto outros usavam notação de pontos (`musicas.create.test.js`, `backups.api.test.js`).
 
-**Sugestão:** Padronizar toda a nomenclatura para usar notação de pontos com categorias, facilitando busca e ordenação.
+**O que foi feito (06/06/2026):** Todos os arquivos snake_case e kebab-case foram renomeados para dot notation (ver seção 5.1). A suite agora usa exclusivamente dot notation: `{categoria}.{recurso}.{operacao}.test.js`.
 
 ---
 
@@ -1079,7 +1092,6 @@ const mockPosts = [
 
 **Sugestão:** Substituir dados inline por chamadas de factory (`postFactory.list(3)`) para consistência e facilidade de manutenção.
 
----
 
 ## 6. Plano de Migração: `lib/middleware.js` → `lib/api/middleware.js` — **CONCLUÍDO (05/06/2026)**
 

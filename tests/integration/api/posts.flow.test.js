@@ -17,11 +17,15 @@ jest.mock('fs', () => ({
 }));
 
 // Mock do PostgreSQL (Banco de Dados)
-jest.mock('../../lib/db.js', () => require('../../mocks/db-module').mockDb());
-      return;
-    }
+jest.mock('../../../lib/db.js', () => require('../../../mocks/db-module').mockDb());
 
-    // Simulate formidable parsing
+// Importa o módulo mockado do banco
+import dbModule from '../../../lib/db.js';
+import formidable from 'formidable';
+
+// Simulação de handler de upload (não existe endpoint real, apenas para teste de fluxo)
+const uploadHandler = async (req, res) => {
+  try {
     const form = new formidable.IncomingForm();
     form.uploadDir = '/tmp';
     form.keepExtensions = true;
@@ -42,26 +46,23 @@ jest.mock('../../lib/db.js', () => require('../../mocks/db-module').mockDb());
 
     const file = files.image[0];
 
-    // Validate file type
     if (!file.mimetype.startsWith('image/')) {
       res.status(400).json({ message: 'Apenas arquivos de imagem são permitidos' });
       return;
     }
 
-    // Validate file size (5MB limit)
     if (file.size > 5 * 1024 * 1024) {
       res.status(400).json({ message: 'Tamanho máximo de arquivo é 5MB' });
       return;
     }
 
-    // Generate filename
     const timestamp = Date.now();
     const type = fields.type === 'post' ? 'post-image' : 'hero-image';
     const extension = file.originalFilename.split('.').pop();
     const filename = `${type}-${timestamp}.${extension}`;
     const destination = `public/uploads/${filename}`;
 
-    // Move file
+    const fs = require('fs');
     await fs.promises.rename(file.filepath, destination);
 
     res.status(200).json({
@@ -81,15 +82,8 @@ const postsHandler = async (req, res) => {
       return;
     }
 
-    // Simulate authentication check
-    if (!auth.withAuth) {
-      res.status(401).json({ message: 'Unauthorized' });
-      return;
-    }
-
     const postData = req.body;
 
-    // Simulate database insertion
     const result = await dbModule.query(
       'INSERT INTO posts (title, slug, excerpt, content, image_url, published) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
       [postData.title, postData.slug, postData.excerpt, postData.content, postData.image_url, postData.published]
@@ -105,6 +99,14 @@ const postsHandler = async (req, res) => {
 };
 
 describe('Integração: Fluxo de Criação de Post com Imagem', () => {
+  beforeAll(() => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterAll(() => {
+    jest.restoreAllMocks();
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     

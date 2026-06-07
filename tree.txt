@@ -916,23 +916,25 @@
 │   │   │   │   ├── check.test.js
 │   │   │   │   ├── login.test.js
 │   │   │   │   └── logout.test.js
-│   │   │   ├── backups.api.test.js
 │   │   │   ├── cleanup-test-data.test.js
 │   │   │   ├── dicas.test.js
 │   │   │   ├── login.test.js
 │   │   │   ├── musicas.create.test.js
 │   │   │   ├── musicas.delete.test.js
+│   │   │   ├── musicas.flow.test.js
+│   │   │   ├── musicas.integration.test.js
 │   │   │   ├── musicas.pagination.test.js
 │   │   │   ├── musicas.test.js
 │   │   │   ├── musicas.update.test.js
 │   │   │   ├── placeholder-image.test.js
 │   │   │   ├── posts.create.api.test.js
 │   │   │   ├── posts.delete.test.js
+│   │   │   ├── posts.flow.test.js
 │   │   │   ├── posts.general.test.js
+│   │   │   ├── posts.integration.test.js
 │   │   │   ├── posts.test.js
 │   │   │   ├── posts.update.api.test.js
 │   │   │   ├── products.test.js
-│   │   │   ├── settings.api.test.js
 │   │   │   ├── settings.general.test.js
 │   │   │   ├── settings.test.js
 │   │   │   ├── stats.test.js
@@ -940,22 +942,18 @@
 │   │   │   ├── upload-image.test.js
 │   │   │   ├── videos.create.api.test.js
 │   │   │   ├── videos.delete.test.js
+│   │   │   ├── videos.flow.test.js
+│   │   │   ├── videos.integration.test.js
 │   │   │   ├── videos.pagination.api.test.js
 │   │   │   └── videos.test.js
 │   │   ├── auth
 │   │   │   └── auth.test.js
-│   │   ├── create-post-flow.test.js
-│   │   ├── domain
-│   │   │   ├── musicas.db.test.js
-│   │   │   ├── posts.db.test.js
-│   │   │   ├── products.db.test.js
-│   │   │   ├── settings.db.test.js
-│   │   │   └── videos.db.test.js
-│   │   ├── musicas_flow.test.js
-│   │   ├── musicas_public_db_integration.test.js
-│   │   ├── posts.integration.test.js
-│   │   ├── videos_flow.test.js
-│   │   └── videos_public_db_integration.test.js
+│   │   └── domain
+│   │       ├── musicas.db.test.js
+│   │       ├── posts.db.test.js
+│   │       ├── products.db.test.js
+│   │       ├── settings.db.test.js
+│   │       └── videos.db.test.js
 │   ├── matchers
 │   │   ├── index.js
 │   │   ├── toBeISODate.js
@@ -1043,9 +1041,6 @@
 │       │   │   ├── PreloadResources.test.js
 │       │   │   └── __snapshots__
 │       │   │       └── index.test.js.snap
-│       │   ├── Products
-│       │   │   ├── ProductCard.test.js
-│       │   │   └── ProductList.test.js
 │       │   ├── SEO
 │       │   │   ├── ArticleSchema.test.js
 │       │   │   ├── BreadcrumbSchema.test.js
@@ -1142,9 +1137,9 @@
 │       │   │   ├── date-format.test.js
 │       │   │   └── load-env.test.js
 │       │   └── validate-schema.test.js
-│       ├── settings-cache.test.js
+│       ├── settings.cache.test.js
 │       ├── [slug].test.js
-│       └── videos_validation.test.js
+│       └── videos.validation.test.js
 └── tree.txt
 
-181 directories, 967 files
+180 directories, 963 files
