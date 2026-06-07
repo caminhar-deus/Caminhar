@@ -1,6 +1,7 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import { testPublicGetEndpoint } from '../../helpers/crud-test';
+import { videoFactory } from '../../factories';
 
 // Mocks declarados ANTES da importação do handler
 jest.mock('../../../lib/domain/videos.js', () => ({
@@ -27,7 +28,7 @@ testPublicGetEndpoint(handler, {
 }, ({ handler: h, createMocks: cm }) => {
   describe('Casos específicos', () => {
     beforeEach(() => {
-      jest.clearAllMocks();
+      videoFactory.resetId();
       getOrSetCache.mockImplementation(async (key, cb) => await cb());
       checkRateLimit.mockResolvedValue(false);
     });
@@ -41,7 +42,8 @@ testPublicGetEndpoint(handler, {
 
     it('deve retornar 200 com os dados corretos obtidos via domínio e cache', async () => {
       checkRateLimit.mockResolvedValueOnce(false);
-      getPublicPaginatedVideos.mockResolvedValueOnce({ data: [{ id: 1 }] });
+      const mockData = videoFactory.list(1);
+      getPublicPaginatedVideos.mockResolvedValueOnce({ data: mockData });
 
       const { req, res } = cm({ method: 'GET', query: { search: 'aula' } });
       await h(req, res);

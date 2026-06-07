@@ -1,5 +1,6 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
+import { userFactory } from '../../factories';
 
 // Mocks declarados ANTES da importação do handler
 jest.mock('../../../lib/domain/products.js', () => ({
@@ -37,7 +38,7 @@ import { logActivity } from '../../../lib/domain/audit.js';
 
 describe('API Pública/Admin - Produtos (/api/products)', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    userFactory.resetId();
     checkRateLimit.mockResolvedValue(false);
   });
 
@@ -58,8 +59,9 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
 
   describe('GET - Admin (autenticado)', () => {
     it('deve listar todos os produtos (incluindo rascunhos) se for um administrador logado', async () => {
+      const adminUser = userFactory({ role: 'admin' });
       getAuthToken.mockReturnValue('admin-token');
-      verifyToken.mockReturnValue({ userId: 1, role: 'admin' });
+      verifyToken.mockReturnValue({ userId: adminUser.id, role: adminUser.role });
       getAllProducts.mockResolvedValueOnce({
         data: [{ id: 1, name: 'Tênis', published: false }],
         pagination: { page: 1, limit: 10, total: 1 }

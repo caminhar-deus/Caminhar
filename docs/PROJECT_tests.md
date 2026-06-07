@@ -1,6 +1,6 @@
 # Análise do Projeto — Testes (`/tests/`)
 
-> **Data:** 13/05/2026 (atualizado em 06/06/2026 — 12ª revisão)
+> **Data:** 13/05/2026 (atualizado em 07/06/2026 — 13ª revisão)
 > **Objetivo:** Documentar de forma objetiva, clara e focada todos os arquivos de teste do projeto, descrevendo localização, propósito e funcionalidade de cada um.
 
 ---
@@ -537,4 +537,9 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 > > - Atualizada Seção 4.6.5 do `UPGRADE_tests.md` com tabela comparativa "antes vs. depois" detalhando as 5 melhorias de isolamento
 > > - **Total:** 1 arquivo modificado (`db-test.js`) + 5 arquivos com rollback de segurança + 2 documentos atualizados. Nenhuma regressão esperada.
 > 
+> > **Ajustes realizados na 13ª revisão (07/06):**
+> > - **Seção 5.3 — Testes com Diferentes Níveis de Isolamento (AJUSTADO):** Investigação técnica da sugestão original constatou que a afirmação estava incorreta — handlers de musicas/videos não importam auth. Removido mock de `lib/auth.js` desnecessário do `posts.test.js` (handler importa auth apenas para POST, mas testes só cobrem GET). Removido `jest.clearAllMocks()` redundante do `crud-test.js` (já garantido pelo setup global).
+> > - **Seção 5.5 — Duplicação de Dados de Teste (AJUSTADO):** Substituídos dados inline por factories centralizadas em 4 arquivos de integração: `musicas.test.js` (musicFactory.list), `videos.test.js` (videoFactory.list), `posts.test.js` (postFactory.list), `products.test.js` (userFactory).
+> > - **Total:** 5 arquivos modificados (4 de teste + 1 helper) + 2 documentos atualizados. 30/30 testes passando nas suites modificadas.
+
 > Para detalhes de implementação específicos, consulte `docs/UPGRADE_tests.md`.

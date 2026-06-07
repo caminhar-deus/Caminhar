@@ -1,6 +1,7 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import { testPublicGetEndpoint } from '../../helpers/crud-test';
+import { musicFactory } from '../../factories';
 
 // Mocks declarados ANTES da importação do handler
 jest.mock('../../../lib/domain/musicas.js', () => ({
@@ -21,11 +22,14 @@ testPublicGetEndpoint(handler, {
   path: '/api/musicas',
 }, ({ handler: h, createMocks: cm }) => {
   describe('Casos específicos', () => {
-    beforeEach(() => { jest.clearAllMocks(); });
+    beforeEach(() => {
+      musicFactory.resetId();
+    });
 
     it('deve retornar 200, definir Cache-Control e retornar dados paginados', async () => {
+      const mockData = musicFactory.list(1);
       getPaginatedMusicas.mockResolvedValueOnce({
-        data: [{ id: 1, titulo: 'Hino' }],
+        data: mockData,
         pagination: { page: 1, limit: 10, total: 1 }
       });
       const { req, res } = cm({ method: 'GET', query: { page: '1', search: 'Hino' } });

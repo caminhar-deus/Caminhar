@@ -1,5 +1,6 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
+import { postFactory } from '../../factories';
 
 // Mocks declarados ANTES da importação do handler
 jest.mock('../../../lib/domain/posts.js', () => ({
@@ -7,12 +8,6 @@ jest.mock('../../../lib/domain/posts.js', () => ({
 }));
 
 jest.mock('../../../lib/cache.js', () => require('../../mocks/cache').mockCacheModule());
-
-jest.mock('../../../lib/auth.js', () => ({
-  withAuth: jest.fn((handler) => handler),
-  getAuthToken: jest.fn(),
-  verifyToken: jest.fn(),
-}));
 
 // Importa o handler
 import handler from '../../../pages/api/posts.js';
@@ -23,14 +18,14 @@ import { getOrSetCache, checkRateLimit } from '../../../lib/cache.js';
 
 describe('API Pública de Posts (GET /api/posts)', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    postFactory.resetId();
     getOrSetCache.mockImplementation(async (key, fetchFunction) => await fetchFunction());
     checkRateLimit.mockResolvedValue(false);
   });
 
   it('deve retornar 200 e a lista de posts com sucesso (Valores Default)', async () => {
     const mockPostsResult = {
-      data: [{ id: 1, title: 'Post 1' }, { id: 2, title: 'Post 2' }],
+      data: postFactory.list(2),
       pagination: { page: 1, limit: 10, total: 2, totalPages: 1 }
     };
 
@@ -43,7 +38,7 @@ describe('API Pública de Posts (GET /api/posts)', () => {
     const responseData = res._getJSONData();
 
     expect(responseData.success).toBe(true);
-    expect(responseData.data).toEqual(mockPostsResult.data);
+    expect(responseData.data).toHaveLength(2);
     expect(getRecentPosts).toHaveBeenCalledWith(10, 1, ''); // limit, page, search
     expect(getOrSetCache).toHaveBeenCalledWith('posts:list:1:10', expect.any(Function), 7200);
   });

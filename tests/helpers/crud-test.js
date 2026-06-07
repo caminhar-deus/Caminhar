@@ -44,9 +44,6 @@ export const testPublicGetEndpoint = (handler, resourceConfig = {}, customTests 
   } = resourceConfig;
 
   describe(`API Pública - ${capitalize(resourceName)} (${path})`, () => {
-    beforeEach(() => {
-      jest.clearAllMocks();
-    });
 
     it(`deve retornar 405 para métodos não permitidos`, async () => {
       const { req, res } = createMocks({ method: 'POST' });
@@ -88,9 +85,6 @@ export const testAdminCrudEndpoint = (handler, resourceConfig = {}, customTests 
   } = resourceConfig;
 
   describe(`API Admin - Gestão de ${capitalize(resourceName)} (${path})`, () => {
-    beforeEach(() => {
-      jest.clearAllMocks();
-    });
 
     describe('Autenticação', () => {
       it('deve retornar 401 se o usuário não estiver autenticado', async () => {
@@ -123,9 +117,6 @@ export const testAdminGetEndpoint = (handler, resourceConfig = {}, customTests =
   } = resourceConfig;
 
   describe(`API Admin - ${capitalize(resourceName)} (${path})`, () => {
-    beforeEach(() => {
-      jest.clearAllMocks();
-    });
 
     it('deve retornar 401 se o usuário não estiver autenticado', async () => {
       const { req, res } = createMocks({ method: 'GET' });
