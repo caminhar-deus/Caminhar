@@ -2,7 +2,7 @@
 
 import { readFileSync, existsSync } from 'fs';
 import { loadEnv, requireDatabaseUrl } from './utils/load-env.js';
-import { query, closeDatabase } from '../lib/db.js';
+import { query, closePool } from './db/connection.js';
 
 loadEnv();
 requireDatabaseUrl();
@@ -176,7 +176,7 @@ async function main() {
     console.error(`❌ Erro ao inicializar tabela "${schema.table}":`, error.message);
     process.exit(1);
   } finally {
-    await closeDatabase();
+    await closePool();
   }
 }
 

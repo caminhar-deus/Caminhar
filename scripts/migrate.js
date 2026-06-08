@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 import { loadEnv } from './utils/load-env.js';
 import { getPool, closePool } from './db/connection.js';
@@ -34,17 +34,18 @@ async function getAppliedMigrations(pool) {
  * Lista arquivos de migração no diretório, ordenados por prefixo numérico.
  * Retorna apenas arquivos .js com padrão NNN-*.js
  */
-function listMigrationFiles() {
-  if (!fs.existsSync(MIGRATIONS_DIR)) {
+async function listMigrationFiles() {
+  let files;
+  try {
+    files = await fs.readdir(MIGRATIONS_DIR);
+  } catch {
     console.error(`❌ Diretório de migrações não encontrado: ${MIGRATIONS_DIR}`);
     process.exit(1);
   }
 
-  const files = fs.readdirSync(MIGRATIONS_DIR)
+  return files
     .filter(f => /^\d{3}-.+\.js$/.test(f))
     .sort();
-
-  return files;
 }
 
 /**
@@ -110,7 +111,9 @@ async function revertLastMigration(pool) {
   const filename = `${name}.js`;
   const filePath = path.join(MIGRATIONS_DIR, filename);
 
-  if (!fs.existsSync(filePath)) {
+  try {
+    await fs.access(filePath);
+  } catch {
     console.error(`❌ Arquivo de migração não encontrado: ${filename}`);
     process.exit(1);
   }
@@ -151,7 +154,7 @@ async function revertLastMigration(pool) {
  */
 async function listStatus(pool) {
   const applied = await getAppliedMigrations(pool);
-  const files = listMigrationFiles();
+  const files = await listMigrationFiles();
 
   console.log('\n📋 Status das Migrações:');
   console.log('─'.repeat(60));
@@ -210,7 +213,7 @@ Variáveis de ambiente:
 
     // Modo padrão: aplicar pendentes
     const applied = await getAppliedMigrations(pool);
-    const files = listMigrationFiles();
+    const files = await listMigrationFiles();
 
     const pending = files.filter(f => !applied.has(migrationNameFromFile(f)));
 

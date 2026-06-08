@@ -7,7 +7,10 @@
  * Uso: node scripts/seed-settings.js
  */
 
-import { query } from '../lib/db.js';
+import { loadEnv } from './utils/load-env.js';
+import { query } from './db/connection.js';
+
+loadEnv();
 
 const DEFAULT_SETTINGS = [
   { key: 'site_name', value: 'Caminhar', type: 'string', description: 'Nome do site' },

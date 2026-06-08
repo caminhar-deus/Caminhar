@@ -2,7 +2,7 @@
 
 import readline from 'readline';
 import { loadEnv } from './utils/load-env.js';
-import { query, closeDatabase } from '../lib/db.js';
+import { query, closePool } from './db/connection.js';
 
 loadEnv();
 
@@ -29,7 +29,7 @@ async function clearMusicRecords() {
     console.error('❌ Erro ao limpar músicas:', error.message);
     process.exit(1);
   } finally {
-    await closeDatabase();
+    await closePool();
   }
 }
 

@@ -1,21 +1,8 @@
 // Módulo compartilhado de limpeza de dados de teste no PostgreSQL
 // Uso: import { loadEnv, cleanTableByPattern } from './utils/cleanup.js';
 
-import fs from 'fs';
-import dotenv from 'dotenv';
-import pg from 'pg';
-
-const { Pool } = pg;
-
-/**
- * Carrega variáveis de ambiente priorizando .env.local se existir.
- */
-export function loadEnv() {
-  if (fs.existsSync('.env.local')) {
-    dotenv.config({ path: '.env.local' });
-  }
-  dotenv.config();
-}
+import { loadEnv } from './load-env.js';
+import { getPool, closePool } from '../db/connection.js';
 
 /**
  * Remove registros de uma tabela com base em padrões LIKE em uma coluna.
@@ -27,10 +14,7 @@ export function loadEnv() {
  * @param {boolean} [options.showDeleted=false] - Se true, exibe os registros removidos via RETURNING
  */
 export async function cleanTableByPattern({ table, column, patterns, showDeleted = false }) {
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
-  });
+  const pool = getPool();
 
   try {
     console.log(`🧹 Iniciando limpeza da tabela "${table}"...`);
@@ -54,6 +38,6 @@ export async function cleanTableByPattern({ table, column, patterns, showDeleted
     console.error(`❌ Erro ao limpar dados da tabela "${table}":`, error.message);
     process.exit(1);
   } finally {
-    await pool.end();
+    await closePool();
   }
 }

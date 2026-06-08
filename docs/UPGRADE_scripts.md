@@ -1,6 +1,6 @@
 # 📁 Scripts do Projeto — Análise de Melhorias, Correções e Duplicidades
 
-> **Data:** 21/05/2026 (atualizado)
+> **Data:** 07/06/2026 (atualizado)
 > **Projeto:** Caminhar  
 > **Diretório:** `/scripts`  
 > **Objetivo deste documento:** Reportar problemas identificados, sugestões de melhoria, oportunidades de performance, código duplicado e más práticas encontradas nos scripts. Correções aplicadas estão marcadas com ✅.
@@ -188,7 +188,14 @@
     - `init-table.js` (correção 2.4)
     - Todas as 11 migrações (correção 2.5)
     - `scripts/db/connection.js` também usa internamente (embora delegue o `loadEnv` para o chamador)
-  - Os scripts que ainda importam `dotenv` diretamente (ex: `backup.js`, `seed-*.js`) permanecem como estão, mas o padrão já está estabelecido para migrações futuras.
+  - **Correção adicional (07/06/2026):** Os scripts que ainda importavam `dotenv` diretamente foram migrados para usar `loadEnv()`:
+    - `seed-musicas.js`, `seed-posts.js`, `seed-videos.js` — substituído `import dotenv` + bloco manual por `import { loadEnv }` + `loadEnv()`
+    - `seed-all.js` — substituído `import dotenv` + bloco manual por `import { loadEnv }` + `loadEnv()`
+    - `seed-products.js` — substituído `@next/env` (`loadEnvConfig`) por `loadEnv()` do módulo compartilhado
+    - `seed-settings.js` — adicionado `loadEnv()` do módulo compartilhado
+    - `reset-password.js` — substituído `import 'dotenv/config'` por `import { loadEnv }` + `loadEnv()`
+  - Total de scripts migrados: **6 novos**, completando a padronização de todos os scripts para usar `loadEnv()`.
+  - Único script que ainda importa `dotenv` diretamente mas de forma justificada: `scripts/backup.js` (pois é um módulo importado por outros scripts, não chamador direto).
 
 ### 2.7. Lógica de filtro de arquivos duplicada em `backup.js` ✅ Corrigido
 - **Arquivo:** `scripts/backup.js`
@@ -528,8 +535,8 @@ export function getPool() {
 ```
 - **Criado em:** 21/05/2026
 - **Funções exportadas:** `getPool()`, `closePool()`, `query(text, params)`
-- **Uso:** Já integrado em todas as 11 migrações refatoradas e no executor `scripts/migrate.js`.
-- **Nota:** O módulo `scripts/utils/cleanup.js` ainda cria seu próprio pool diretamente — futura oportunidade de refatoração.
+- **Uso:** Já integrado em todas as 11 migrações refatoradas, executor `scripts/migrate.js`, e agora em todos os scripts de seed, limpeza, init e reset-password.
+- **Scripts que usam `connection.js`:** `init-table.js`, `clear-db.js`, `clear-musicas.js`, `validate-schema.js`, `seed-musicas.js`, `seed-posts.js`, `seed-videos.js`, `seed-all.js`, `seed-products.js`, `seed-settings.js`, `reset-password.js`, `migrate.js`, `cleanup.js` — total de **13 scripts** + as **11 migrações individuais**.
 
 ### 8.3. Unificar scripts de init em um executor parametrizável ✅ Concluído
 Criado `scripts/init-table.js` que recebe o nome da tabela como argumento e carrega o schema de um arquivo JSON. Ver correção 2.4 para detalhes.

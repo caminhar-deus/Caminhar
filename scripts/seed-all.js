@@ -1,14 +1,10 @@
 #!/usr/bin/env node
-import fs from 'fs';
-import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { loadEnv } from './utils/load-env.js';
+import { query, closePool } from './db/connection.js';
 
-// Carrega variáveis de ambiente
-if (fs.existsSync('.env.local')) {
-  dotenv.config({ path: '.env.local' });
-}
-dotenv.config();
+loadEnv();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,10 +12,8 @@ const __dirname = path.dirname(__filename);
 async function checkDatabaseReady() {
   console.log('🔍 Verificando conexão com o banco de dados...');
   try {
-    // Importação dinâmica para garantir que as variáveis de ambiente estejam carregadas
-    const { query, closeDatabase } = await import('../lib/db.js');
     await query('SELECT 1');
-    await closeDatabase();
+    await closePool();
     console.log('✅ Banco de dados está pronto.');
     return true;
   } catch (error) {

@@ -1,16 +1,10 @@
 #!/usr/bin/env node
-import fs from 'fs';
-import dotenv from 'dotenv';
+import { loadEnv } from './utils/load-env.js';
+import { query, closePool } from './db/connection.js';
 
-// Carrega variáveis de ambiente, priorizando .env.local
-if (fs.existsSync('.env.local')) {
-  dotenv.config({ path: '.env.local' });
-}
-dotenv.config();
+loadEnv();
 
 async function seedMusicRecords() {
-  const { query, closeDatabase } = await import('../lib/db.js');
-
   try {
     console.log('🌱 Inserindo músicas de teste...');
     
@@ -30,7 +24,7 @@ async function seedMusicRecords() {
     console.error('❌ Erro ao inserir músicas:', error.message);
     process.exit(1);
   } finally {
-    await closeDatabase();
+    await closePool();
   }
 }
 

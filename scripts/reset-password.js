@@ -1,9 +1,11 @@
 #!/usr/bin/env node
-import 'dotenv/config';
+import { loadEnv } from './utils/load-env.js';
+import { query, closePool } from './db/connection.js';
+
+loadEnv();
 
 async function resetPassword() {
   const { hashPassword } = await import('../lib/auth.js');
-  const { query, closeDatabase } = await import('../lib/db.js');
 
   const targetUser = process.argv[2] || 'admin';
   const newPassword = process.argv[3];
@@ -38,7 +40,7 @@ async function resetPassword() {
   } catch (error) {
     console.error('❌ Erro ao atualizar senha:', error);
   } finally {
-    await closeDatabase();
+    await closePool();
   }
 }
 

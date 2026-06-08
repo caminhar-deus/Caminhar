@@ -177,14 +177,16 @@ scripts/
 - **Propósito:** Limpa completamente todas as tabelas do banco de dados usando `TRUNCATE CASCADE` nas tabelas de conteúdo (`posts`, `videos`, `musicas`, `images`, `settings`, `users`). Mantém a integridade referencial. Também limpa o diretório `public/uploads/`. Requer confirmação do usuário via prompt interativo (`readline`) antes de executar.
 - **Segurança:** Prompt de confirmação impede execução acidental. I/O assíncrono com `fs.promises.*` para operações de arquivo (não bloqueante). Carregamento de ambiente centralizado via `scripts/utils/load-env.js`.
 - **Refatorado em:** 21/05/2026 — adicionado prompt de confirmação, migrado para `load-env.js`, I/O assíncrono, import estático e shebang.
-- **Dependências:** `scripts/utils/load-env.js` (local), `../lib/db.js` (local)
+- **Atualizado em:** 07/06/2026 — migrado de `import { query, closeDatabase } from '../lib/db.js'` para `import { query, closePool } from './db/connection.js'`, usando o módulo compartilhado de conexão.
+- **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local)
 
 ### `scripts/clear-musicas.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/clear-musicas.js`
 - **Propósito:** Script específico para limpar a tabela de músicas. Executa `DELETE FROM musicas` e exibe o total de registros removidos. Requer confirmação do usuário via prompt interativo (`readline`) antes de executar.
 - **Segurança:** Prompt de confirmação impede perda acidental de dados. Carregamento de ambiente centralizado via `scripts/utils/load-env.js`. `process.exit(1)` em caso de erro no `catch`.
 - **Refatorado em:** 21/05/2026 — adicionado prompt de confirmação, migrado para `load-env.js`, import estático, `process.exit(1)` no catch e shebang.
-- **Dependências:** `scripts/utils/load-env.js` (local), `../lib/db.js` (local)
+- **Atualizado em:** 07/06/2026 — migrado de `import { query, closeDatabase } from '../lib/db.js'` para `import { query, closePool } from './db/connection.js'`, usando o módulo compartilhado de conexão.
+- **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local)
 
 ### `scripts/db-shell.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/db-shell.js`
@@ -226,7 +228,8 @@ scripts/
   node scripts/init-table.js --table=<nome>  # Formato alternativo
   ```
 - **Criado em:** 21/05/2026 — refatoração (unificação dos 4 scripts de init).
-- **Dependências:** `fs`, `url`, `scripts/utils/load-env.js` (local), `../lib/db.js` (local)
+- **Atualizado em:** 07/06/2026 — migrado de `import { query, closeDatabase } from '../lib/db.js'` para `import { query, closePool } from './db/connection.js'`, usando o módulo compartilhado de conexão.
+- **Dependências:** `fs`, `url`, `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local)
 
 ### `scripts/migrate.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/migrate.js`
@@ -284,34 +287,47 @@ scripts/
 ### `scripts/reset-password.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/reset-password.js`
 - **Propósito:** Reseta a senha de qualquer usuário no banco de dados. Aceita username como parâmetro opcional (default: `'admin'`) e nova senha como obrigatório. Gera hash bcrypt e atualiza no banco. Se o usuário não existir, cria um novo com role `'admin'`. Unifica os antigos `scripts/reset-admin-password.js` e `scripts/auth/reset-password.js` em um único script.
-- **Segurança:** Senha é argumento obrigatório (sem default inseguro). Senha não é exibida nos logs de execução.
+- **Segurança:** Senha é argumento obrigatório (sem default inseguro). Senha não é exibida nos logs de execução. Carregamento de ambiente centralizado via `scripts/utils/load-env.js`.
 - **Uso:** `node scripts/reset-password.js <usuario> <nova_senha>` (usuário opcional, default: admin)
-- **Dependências:** `dotenv`, `../lib/auth.js` (local), `../lib/db.js` (local)
+- **Atualizado em:** 07/06/2026 — substituído `import 'dotenv/config'` por `loadEnv()` de `scripts/utils/load-env.js`; migrado de `lib/db.js` para `scripts/db/connection.js`.
+- **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local), `../lib/auth.js` (local)
 
 ### `scripts/seed-all.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/seed-all.js`
 - **Propósito:** Orquestrador de seeds. Verifica conectividade com o banco, e executa em ordem os scripts `seed-posts.js`, `seed-musicas.js` e `seed-videos.js`. Suporta flag `--clean` que reseta o banco antes de semear. Faz import dinâmico dos módulos ao invés de subprocesso shell.
-- **Dependências:** `fs`, `dotenv`, `path`, `url`, `child_process` (condicional)
+- **Atualizado em:** 07/06/2026 — substituído `import dotenv` + bloco manual por `loadEnv()` de `scripts/utils/load-env.js`; migrado de `lib/db.js` para `scripts/db/connection.js`.
+- **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local), `path`, `url`, `child_process` (condicional)
 
 ### `scripts/seed-musicas.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/seed-musicas.js`
 - **Propósito:** Popula a tabela de músicas com dados fictícios de exemplo. Insere registros com títulos, artistas e URLs do Spotify para desenvolvimento/testes.
-- **Dependências:** `dotenv`, `../lib/db.js` (local)
+- **Atualizado em:** 07/06/2026 — substituído `import dotenv` + bloco manual por `loadEnv()` de `scripts/utils/load-env.js`; migrado de `lib/db.js` para `scripts/db/connection.js`.
+- **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local)
 
 ### `scripts/seed-posts.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/seed-posts.js`
 - **Propósito:** Popula a tabela de posts com dados de exemplo. Cria artigos com slugs, conteúdos, imagens e metadados diversos para ambiente de desenvolvimento.
-- **Dependências:** `dotenv`, `../lib/db.js` (local)
+- **Atualizado em:** 07/06/2026 — substituído `import dotenv` + bloco manual por `loadEnv()` de `scripts/utils/load-env.js`; migrado de `lib/db.js` para `scripts/db/connection.js`.
+- **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local)
 
 ### `scripts/seed-products.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/seed-products.js`
 - **Propósito:** Popula a tabela de produtos com dados de exemplo. Insere registros de produtos para desenvolvimento e testes da seção de e-commerce/produtos.
-- **Dependências:** `dotenv`, `../lib/db.js` (local)
+- **Atualizado em:** 07/06/2026 — substituído `@next/env` (`loadEnvConfig`) por `loadEnv()` de `scripts/utils/load-env.js`; migrado de `lib/db.js` para `scripts/db/connection.js`.
+- **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local), `@faker-js/faker`
 
 ### `scripts/seed-videos.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/seed-videos.js`
 - **Propósito:** Popula a tabela de vídeos com dados de exemplo. Insere registros com URLs do YouTube e metadados para ambiente de desenvolvimento.
-- **Dependências:** `dotenv`, `../lib/db.js` (local)
+- **Atualizado em:** 07/06/2026 — substituído `import dotenv` + bloco manual por `loadEnv()` de `scripts/utils/load-env.js`; migrado de `lib/db.js` para `scripts/db/connection.js`.
+- **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local)
+
+### `scripts/seed-settings.js`
+- **Localização:** `/home/qa/Projeto/Caminhar/scripts/seed-settings.js`
+- **Propósito:** Inicializa configurações padrão do sistema na tabela `settings`. Cria 5 configurações iniciais (`site_name`, `site_description`, `posts_per_page`, `videos_per_page`, `musicas_per_page`) se não existirem. Idempotente — não sobrescreve configurações existentes.
+- **Uso:** `node scripts/seed-settings.js`
+- **Atualizado em:** 07/06/2026 — migrado de `../lib/db.js` para `scripts/db/connection.js`; adicionado `loadEnv()` do módulo compartilhado.
+- **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local)
 
 ### `scripts/validate-schema.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/validate-schema.js`
@@ -571,11 +587,12 @@ scripts/
 ### `scripts/utils/cleanup.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/utils/cleanup.js`
 - **Propósito:** Módulo compartilhado de limpeza de dados de teste no PostgreSQL. Fornece duas funções exportadas:
-  - **`loadEnv()`** — carrega variáveis de ambiente priorizando `.env.local` se existir, com fallback para `.env`. Substitui as diferentes implementações de carregamento de ambiente espalhadas pelos scripts.
-  - **`cleanTableByPattern({ table, column, patterns, showDeleted })`** — função genérica que cria um pool `pg.Pool`, constrói query dinâmica com LIKE patterns (OR), executa DELETE com RETURNING opcional (`showDeleted`), fecha pool no `finally` e usa `process.exit(1)` em caso de erro.
+  - **`loadEnv()`** — reexportada de `scripts/utils/load-env.js`. Carrega variáveis de ambiente priorizando `.env.local` se existir, com fallback para `.env`. Substitui as diferentes implementações de carregamento de ambiente espalhadas pelos scripts.
+  - **`cleanTableByPattern({ table, column, patterns, showDeleted })`** — função genérica que usa `getPool()` do módulo `scripts/db/connection.js`, constrói query dinâmica com LIKE patterns (OR), executa DELETE com RETURNING opcional (`showDeleted`), fecha pool no `finally` e usa `process.exit(1)` em caso de erro.
   - **Uso:** `import { loadEnv, cleanTableByPattern } from './cleanup.js';`
 - **Criado em:** 20/05/2026 — refatoração dos scripts `clean-load-test-posts.js`, `clean-k6-videos.js` e `cleanup-test-data.js` para eliminar duplicidade de código.
-- **Dependências:** `fs`, `dotenv`, `pg`
+- **Atualizado em:** 07/06/2026 — removida criação direta de `pg.Pool`; agora usa `getPool()`/`closePool()` de `scripts/db/connection.js`. Removido também o carregamento manual de ambiente — delega para `loadEnv()` de `scripts/utils/load-env.js`.
+- **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local)
 
 ### `scripts/utils/cleanup-test-data.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/utils/cleanup-test-data.js`

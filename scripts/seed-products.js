@@ -1,12 +1,9 @@
 #!/usr/bin/env node
-import pkg from '@next/env';
-const { loadEnvConfig } = pkg;
-loadEnvConfig(process.cwd()); // Carrega as variáveis de ambiente (.env)
-
+import { loadEnv } from './utils/load-env.js';
+import { query } from './db/connection.js';
 import { fakerPT_BR as faker } from '@faker-js/faker';
 
-// Importa o banco dinamicamente após as variáveis de ambiente estarem prontas
-const { query } = await import('../lib/db.js');
+loadEnv();
 
 async function seedProducts() {
   console.log('🌱 Iniciando o seed de Produtos Religiosos...');

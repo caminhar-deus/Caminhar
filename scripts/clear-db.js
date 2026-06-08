@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
 import { loadEnv } from './utils/load-env.js';
-import { query, closeDatabase } from '../lib/db.js';
+import { query, closePool } from './db/connection.js';
 
 loadEnv();
 
@@ -58,7 +58,7 @@ async function clearDatabase() {
     console.error('❌ Erro ao limpar o banco de dados:', error.message);
     process.exit(1);
   } finally {
-    await closeDatabase();
+    await closePool();
   }
 }
 
