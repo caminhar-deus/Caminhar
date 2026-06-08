@@ -143,7 +143,7 @@
     "next-sitemap": "^4.2.3",
     "node-mocks-http": "^1.17.2",
     "testcontainers": "^12.0.1",
-    "undici": "^8.4.0"
+    "undici": "^8.4.1"
   },
   "overrides": {
     "tar": "^7.4.3",

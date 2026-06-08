@@ -122,13 +122,13 @@ describe('API Error Classes', () => {
     test('deve formatar mensagem com identificador numérico', () => {
       const error = new NotFoundError('Música', 123);
       
-      expect(error.message).toBe('Música não encontrado');
+      expect(error.message).toBe('Música não encontrado (id: 123)');
     });
 
     test('deve formatar mensagem com identificador string', () => {
       const error = new NotFoundError('Usuário', 'abc');
       
-      expect(error.message).toBe('Usuário não encontrado(id: abc)');
+      expect(error.message).toBe("Usuário não encontrado 'abc'");
     });
 
     test('deve formatar mensagem sem identificador', () => {

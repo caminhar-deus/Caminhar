@@ -1,6 +1,6 @@
 # Análise do Projeto — Testes (`/tests/`)
 
-> **Data:** 13/05/2026 (atualizado em 07/06/2026 — 13ª revisão)
+> **Data:** 13/05/2026 (atualizado em 08/06/2026 — 14ª revisão)
 > **Objetivo:** Documentar de forma objetiva, clara e focada todos os arquivos de teste do projeto, descrevendo localização, propósito e funcionalidade de cada um.
 
 ---
@@ -378,7 +378,7 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 | Arquivo | Propósito | Cenários Principais |
 |---------|-----------|---------------------|
 | `auth.test.js` | Autenticação (JWT, bcrypt) | Geração/verificação de token, hash de senha, validação |
-| `cache.test.js` | Cache em memória/Redis | Get, set, invalidação, TTL, fallback |
+| `cache.test.js` | Cache em memória/Redis (30 testes) | Cache Hit L1/L2, Cache Miss, fallback Redis+memória, Single-Flight, invalidação exata/wildcard, clearAllCache com/sem confirmação, rate limit Redis/memória, whitelist permanente/dinâmica, limite dinâmico, bypass DISABLE_RATE_LIMIT, lazy eviction, getCacheMetrics, redisHits/Misses |
 | `crud.test.js` | Operações CRUD genéricas | Criar, ler, atualizar, excluir, paginação, busca |
 | `db.test.js` | Conexão com banco de dados | Query, pool, transaction, erro de conexão |
 | `middleware.test.js` | Middleware HTTP → **MIGRADO (05/06/2026)** | Agora testa `lib/api/middleware.js`. Testa `withLogger`, `composeMiddleware`, `withCors`, `withAuth`, `withRateLimit`, `withErrorHandler`. Removidos testes de `authenticatedApiMiddleware` e `externalAuthMiddleware` (funções removidas do código). **9/9 testes passando** |
