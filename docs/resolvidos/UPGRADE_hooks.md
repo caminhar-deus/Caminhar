@@ -45,7 +45,7 @@
 
 ### 2.2 `/hooks/useApiFetch.js` — `JSON.stringify(options)` como Dependência ✅ CORRIGIDO
 
-**Solução aplicada:** Substituído por estratégia com `useRef` (`optionsRef` + `depsKeyRef`).
+**Solução aplicada (09/06/2026):** Substituído por estratégia com `useRef` para referência estável (`optionsRef`) + estado `optionsKey` (contador) recriado via `useEffect` quando as opções serializadas mudam, garantindo que o React detecte a mudança e recrie o `fetchData`. A implementação anterior com `depsKeyRef.current` não funcionava como dependência de `useCallback` pois o React não monitora mutações em `ref.current`, o que impedia a reexecução do fetch quando `options` mudava.
 
 ---
 
@@ -176,7 +176,7 @@
 | 1.2 | `hooks/useAdminAuth.js` + `useAuth.js` | `useAdminAuth` refatorado | 10/05/2026 |
 | 1.3 | `hooks/useAdminCrud.js` | `useEffect` simplificado | 10/05/2026 |
 | 2.1 | `hooks/useAdminCrud.js` | Resolvido nas correções 1.3 e 5.1 | 10/05/2026 |
-| 2.2 | `hooks/useApiFetch.js` | `JSON.stringify(options)` substituído | 10/05/2026 |
+| 2.2 | `hooks/useApiFetch.js` | `JSON.stringify(options)` substituído por `optionsRef` + `optionsKey` (correção de bug: `depsKeyRef.current` não funcionava como dependência) | 09/06/2026 |
 | 2.3 | `hooks/usePerformanceMetrics.js` | `observer.disconnect()` | 10/05/2026 |
 | 2.4 | `hooks/useTheme.js` | `useThrottle` criado | 10/05/2026 |
 | 3.1 | `hooks/useAdminAuth.js` | `useRouter()` incondicional | 10/05/2026 |
@@ -194,4 +194,4 @@
 | 5.3 | `hooks/useAdminCrud.js` | Contrato documentado | 10/05/2026 |
 | 5.4 | `hooks/usePerformanceMetrics.js` | Import cacheado | 10/05/2026 |
 
-Todas as ocorrências foram corrigidas. Não há pendências no momento.
+Todas as ocorrências foram corrigidas e revisadas. Não há pendências no momento.

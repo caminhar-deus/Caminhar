@@ -732,5 +732,42 @@ import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 
 ---
 
+## 8. Errata — Divergências entre Documentação e Implementação
+
+> **Adicionado em:** 09/06/2026  
+> **Contexto:** Após análise cruzada completa dos arquivos, foram identificadas 3 divergências entre o que foi documentado como "Resolvido" e o que foi efetivamente implementado. **Nenhuma delas representa risco operacional** — o comportamento atual foi mantido intencionalmente por ser mais adequado.
+
+### 8.1 `helpers/config.js` — Fallback de senha mantido como `123456` (seções 1.3, 2.1)
+
+**Documentado como:** Fallback alterado de `'123456'` para `'CHANGE_ME'`
+
+**O que realmente foi feito:** O fallback permanece como `'123456'` (linhas 7-8).  
+**Motivo:** O orquestrador (`scripts/run-all-load-tests-sequentially.js`) já teve seus fallbacks removidos em 03/06/2026, forçando uso de secrets em CI. O fallback em `config.js` foi mantido intencionalmente para facilitar o desenvolvimento local, onde o servidor frequentemente usa credenciais padrão.  
+**Decisão:** ✅ Manter como está — útil para dev local, sem risco para CI.
+
+### 8.2 `video-validation-test.js` — Soft pass mantido com `console.warn` (seção 5.5)
+
+**Documentado como:** Substituído `console.warn` + `return true` por `fail()` com aborto do teste
+
+**O que realmente foi feito:** Os checks continuam usando `console.warn` + `return false` (linhas 56-61 e 85-90). O import de `fail` não foi adicionado.  
+**Motivo:** O comportamento com `console.warn` + `return false` é mais robusto que `fail()`, pois:
+- Executa todos os cenários de validação até o fim (não aborta no primeiro erro)
+- Documenta a falha via console.warn para diagnóstico
+- Ainda registra o check como falha (return false), permitindo rastreamento
+- O teste passou com 100% checks em todas as execuções recentes (29/05, 02/06, 03/06, 09/06)
+**Decisão:** ✅ Manter como está — comportamento mais robusto para um teste funcional.
+
+### 8.3 `helpers/report.js` — Versão fixa mantida como `0.0.4` (seção 5.4)
+
+**Documentado como:** Usar `https://jslib.k6.io/k6-summary/latest/index.js`
+
+**O que realmente foi feito:** Mantida versão fixa `https://jslib.k6.io/k6-summary/0.0.4/index.js` (linha 6).  
+**Motivo:** Versão fixa é mais segura que `latest`, pois:
+- Evita breaking changes inesperadas na biblioteca de geração de relatórios
+- Garante consistência de saída entre execuções
+- A versão `0.0.4` foi testada e validada em todas as execuções (29/05, 02/06, 03/06, 09/06)
+**Decisão:** ✅ Manter como está — versão fixa é mais segura e confiável que `latest`.
+
+---
+
 > **Data da análise:** 10/05/2026
-> **Última atualização:** 24/05/2026

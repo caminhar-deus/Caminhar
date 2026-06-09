@@ -1,6 +1,8 @@
 import http from 'k6/http';
-import { check, sleep } from 'k6';
-import exec from 'k6/execution';
+import { check } from 'k6';
+import { randomSleep } from '../helpers/sleep.js';
+import { BASE_URL } from '../helpers/config.js';
+import { setup } from '../helpers/auth.js';
 
 /**
  * Teste de warm-up do cache.
@@ -45,27 +47,12 @@ function verifyCachePopulated(baseUrl, token) {
   return verifyRes.status === 200 && verifyRes.timings.duration < 200;
 }
 
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
-const USERNAME = __ENV.ADMIN_USERNAME || 'admin';
-const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
+export { setup };
 
-export default function () {
-  // 1. Login (para token de settings)
-  const loginRes = http.post(`${BASE_URL}/api/auth/login?response=body`, JSON.stringify({
-    username: USERNAME,
-    password: PASSWORD,
-  }), {
-    headers: { 'Content-Type': 'application/json' },
-  });
+export default function (data) {
+  const token = data && data.token;
 
-  if (loginRes.status !== 200) {
-    console.warn(`[Warmup] Login falhou: ${loginRes.status}`);
-    exec.test.abort(`Falha no login durante warm-up: ${loginRes.status}`);
-  }
-
-  const token = loginRes.json('data.token');
-
-  // 2. Requisições de warm-up (repetidas para garantir cache populado)
+  // 1. Requisições de warm-up (repetidas para garantir cache populado)
   const endpoints = [
     { url: `${BASE_URL}/api/posts`, auth: false },
     { url: `${BASE_URL}/api/posts?page=1&limit=10`, auth: false },
@@ -87,8 +74,8 @@ export default function () {
         [`warmup ${endpoint.url} (round ${round + 1})`]: (r) => r.status >= 200 && r.status < 500,
       });
 
-      // Pequeno delay para não sobrecarregar
-      sleep(0.1);
+      // Pequeno delay aleatório para não sobrecarregar
+      randomSleep(0.05, 0.2);
     }
   }
 

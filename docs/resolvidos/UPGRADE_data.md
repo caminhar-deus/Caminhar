@@ -4,11 +4,11 @@
 
 **Localização:** `/data/caminhar.db` vs `/data/backups/caminhar-pg-backup_2026-03-07_11-20-04.sql.gz`
 
-**Problema:** Os schemas do SQLite e do PostgreSQL eram diferentes. O SQLite possui 9 tabelas, enquanto o backup PostgreSQL continha apenas 6 `CREATE TABLE`. Tabelas como `settings`, `categories`, `tags`, `post_categories`, `post_tags` e `musicas` estavam ausentes no backup PostgreSQL.
+**Problema:** Os schemas do SQLite e do PostgreSQL eram diferentes. O SQLite possuía 9 tabelas, enquanto o backup PostgreSQL continha apenas 6 `CREATE TABLE`. Tabelas como `settings`, `categories`, `tags`, `post_categories`, `post_tags` e `musicas` estavam ausentes no backup PostgreSQL.
 
-**Correção aplicada:** Criada a migração `scripts/migrations/010-sync-sqlite-pg-schemas.js` que adiciona as 6 tabelas faltantes ao PostgreSQL (`settings`, `categories`, `tags`, `post_categories`, `post_tags`, `musicas`). Também atualizado `lib/crud.js` com os schemas destas tabelas.
+**Correção aplicada:** Foi criada a migração `scripts/migrations/010-sync-sqlite-pg-schemas.js` para adicionar as 6 tabelas faltantes ao PostgreSQL. Embora o arquivo da migração tenha sido removido posteriormente, as tabelas já existiam no banco PostgreSQL e permanecem presentes. O schema em `lib/crud.js` foi atualizado com os campos destas tabelas.
 
-**Status:** ✅ Corrigido
+**Status:** ✅ Corrigido (tabelas existem no banco)
 
 ---
 
@@ -20,9 +20,9 @@
 - **SQLite:** campo `uploaded_by` (FOREIGN KEY para users)
 - **PostgreSQL:** campo `user_id` (sem FK explícita)
 
-**Correção aplicada:** A migração `010-sync-sqlite-pg-schemas.js` padroniza o nome do campo para `user_id` em ambos os bancos, migrando dados de `uploaded_by` para `user_id` se necessário.
+**Correção aplicada:** O campo foi padronizado para `user_id` na tabela `images` do PostgreSQL.
 
-**Status:** ✅ Corrigido
+**Status:** ✅ Corrigido (banco atual possui `user_id`)
 
 ---
 
@@ -44,7 +44,7 @@
 
 **Problema:** O backup PostgreSQL já cobria todos os dados, incluindo a tabela `posts`. Ter um backup JSON específico de posts criava redundância e duplicidade na estratégia de backup.
 
-**Correção aplicada:** Backup JSON removido. A estratégia de backup agora é unificada em formato SQL (`.sql.gz`) para ambos PostgreSQL e SQLite.
+**Correção aplicada:** Backup JSON removido. A estratégia de backup agora é unificada em formato SQL (`.sql.gz`) para PostgreSQL.
 
 **Status:** ✅ Corrigido
 
@@ -58,26 +58,21 @@
 - Backup PostgreSQL: `2026-03-07_11-20-04` (underscore entre data e hora)
 - Backup JSON: `2026-02-16T01-34-56-945Z` (formato ISO 8601 com timezone)
 
-**Correção aplicada:** Padronizado o formato de data para ISO 8601 (`yyyy-MM-dd'T'HH-mm-ss'Z'`) nos scripts `scripts/backup.js` e `scripts/backup-sqlite.js`. Todos os novos backups utilizarão o mesmo formato.
+**Correção aplicada:** Padronizado o formato de data para ISO 8601 (`yyyy-MM-dd'T'HH-mm-ss'Z'`) nos scripts `scripts/backup.js` e no utilitário `scripts/utils/date-format.js`. Todos os novos backups utilizarão o mesmo formato.
 
 **Status:** ✅ Corrigido
 
 ---
 
-## 6. Sem Backup do Banco SQLite
+## 6. Ausência de Backup do Banco SQLite
 
 **Localização:** `/data/` (ausente)
 
-**Problema:** Não existia backup do banco SQLite (`caminhar.db`), que é o banco principal utilizado.
+**Problema:** Não existia backup do banco SQLite (`caminhar.db`), que era utilizado como banco secundário.
 
-**Correção aplicada:** Criado o script `scripts/backup-sqlite.js` com funções para:
-- `createSqliteBackup()` — Gera dump SQL comprimido com hash SHA-256
-- `restoreSqliteBackup()` — Restaura com backup de segurança prévio
-- `getSqliteBackups()` — Lista backups disponíveis
+**Correção aplicada:** Criado o script `scripts/backup-sqlite.js` com funções para backup, restauração e listagem. O script `scripts/backup.js` passou a chamá-lo automaticamente. Posteriormente, com a remoção do SQLite, o `backup-sqlite.js` foi removido e o `backup.js` limpo da referência.
 
-O script `scripts/backup.js` agora também chama `createSqliteBackup()` automaticamente após o backup PostgreSQL, garantindo backup de ambos os bancos em uma única execução.
-
-**Status:** ✅ Corrigido
+**Status:** ✅ Corrigido (SQLite removido, apenas PostgreSQL)
 
 ---
 
@@ -87,9 +82,9 @@ O script `scripts/backup.js` agora também chama `createSqliteBackup()` automati
 
 **Problema:** A tabela `musicas` existia no SQLite mas não constava no backup PostgreSQL.
 
-**Correção aplicada:** A migração `010-sync-sqlite-pg-schemas.js` adiciona a tabela `musicas` ao schema PostgreSQL, garantindo que futuros backups a incluam.
+**Correção aplicada:** A tabela `musicas` foi criada no schema PostgreSQL, e atualmente consta no banco com os devidos campos.
 
-**Status:** ✅ Corrigido
+**Status:** ✅ Corrigido (tabela `musicas` existe no PostgreSQL)
 
 ---
 
@@ -99,7 +94,7 @@ O script `scripts/backup.js` agora também chama `createSqliteBackup()` automati
 
 **Problema:** O arquivo estava bloqueado pelo `.clineignore`.
 
-**Correção aplicada:** As funções `logBackupOperation()` em ambos os scripts (`backup.js` e `backup-sqlite.js`) foram sanitizadas para não expor dados sensíveis (senhas, tokens, chaves, DATABASE_URL, JWT_SECRET, etc.) nos logs. O log mantém apenas 100 linhas recentes para controle de tamanho.
+**Correção aplicada:** As funções `logBackupOperation()` em `scripts/backup.js` foram sanitizadas para não expor dados sensíveis (senhas, tokens, chaves, DATABASE_URL, JWT_SECRET, etc.) nos logs. O log mantém apenas 100 linhas recentes para controle de tamanho.
 
 **Status:** ✅ Corrigido (sanitização implementada)
 
@@ -107,7 +102,7 @@ O script `scripts/backup.js` agora também chama `createSqliteBackup()` automati
 
 ## 9. Erro ao Criptografar Backup: "Invalid key length"
 
-**Localização:** `scripts/backup.js` (linha 77-98)
+**Localização:** `scripts/backup.js`
 
 **Problema:** A variável de ambiente `BACKUP_ENCRYPTION_KEY` não tinha exatamente 64 caracteres hex (32 bytes), que é o requisito do AES-256-GCM. O Node.js lançava `Invalid key length` ao tentar criar o cipher.
 
@@ -126,7 +121,7 @@ O script `scripts/backup.js` agora também chama `createSqliteBackup()` automati
 **Causa raiz:** 5 endpoints passavam `Date.now()` como `entity_id` para `logActivity()` em ações que não têm uma entidade real (backup, cache, fetches).
 
 **Correções aplicadas:**
-1. **Migração `011-fix-entity-id-type.js`** — Altera `entity_id` de `INTEGER` para `BIGINT` na tabela `activity_logs`
+1. **Migração `011-fix-entity-id-type.js`** — Altera `entity_id` de `INTEGER` para `BIGINT` na tabela `activity_logs` (aplicada e registrada no banco)
 2. **Correção semântica** — Os 5 endpoints que usavam `Date.now()` como `entity_id` agora passam `null`, pois operações como "criar backup", "limpar cache" e "fetch" não estão vinculadas a uma entidade específica
 
 **Arquivos corrigidos:**
@@ -134,27 +129,27 @@ O script `scripts/backup.js` agora também chama `createSqliteBackup()` automati
 |---------|-------|----------|
 | `pages/api/admin/backups.js` | 33 | `Date.now()` → `null` |
 | `pages/api/admin/cache.js` | 13 | `Date.now()` → `null` |
-| `pages/api/admin/fetch-spotify.js` | 111 | `Date.now()` → `null` |
-| `pages/api/admin/fetch-ml.js` | 151 | `Date.now()` → `null` |
+| `pages/api/admin/fetch-spotify.js` | 112 | `Date.now()` → `null` |
+| `pages/api/admin/fetch-ml.js` | 152 | `Date.now()` → `null` |
 | `pages/api/admin/fetch-youtube.js` | 43 | `Date.now()` → `null` |
-| `scripts/migrations/011-fix-entity-id-type.js` | Criado | Migração INTEGER → BIGINT |
+| `scripts/migrations/011-fix-entity-id-type.js` | Criado | Migration INTEGER → BIGINT |
 
-**Status:** ✅ Corrigido
+**Status:** ✅ Corrigido (migration `011` registrada no banco, coluna `entity_id` é `BIGINT`)
 
 ---
 
 ## 11. Remoção do SQLite — Unificação em PostgreSQL
 
-**Problema:** O projeto possuía dois bancos de dados: PostgreSQL (banco real usado pela aplicação) e SQLite (`data/caminhar.db`, abandonado com apenas 1 registro em cada tabela). Isso causava confusão e inconsistências.
+**Problema:** O projeto possuía dois bancos de dados: PostgreSQL (banco real usado pela aplicação) e SQLite (`data/caminhar.db`, abandonado). Isso causava confusão e inconsistências.
 
 **Ações realizadas:**
-1. **Migração `012-migrate-sqlite-to-pg.js`** — Importou todos os dados do SQLite para o PostgreSQL (settings, categories, tags, posts, musicas)
+1. Criada a migração `012-migrate-sqlite-to-pg.js` para importar dados do SQLite para o PostgreSQL (arquivo removido posteriormente, mas o banco PostgreSQL já continha todos os dados necessários)
 2. **`data/caminhar.db`** — Excluído
 3. **`scripts/backup-sqlite.js`** — Removido
 4. **`scripts/backup.js`** — Limpo (removida importação e execução do backup SQLite)
 5. **`scripts/utils/cleanup-test-data.js`** — Adaptado para usar PostgreSQL via `lib/db.js`
 6. **`next.config.js`** — Removido `sqlite3` de `serverExternalPackages`
-7. **Documentação** — `docs/PROJECT_data.md` e `docs/PROJECT_raiz.md` atualizadas
+7. **Documentação** — Atualizada
 
 **Status:** ✅ Corrigido
 
@@ -182,12 +177,13 @@ O script `scripts/backup.js` agora também chama `createSqliteBackup()` automati
 
 | Arquivo | Tipo | Descrição |
 |---------|------|-----------|
-| `scripts/migrations/010-sync-sqlite-pg-schemas.js` | ✅ Criado | Migração para sincronizar schemas SQLite ↔ PostgreSQL |
 | `scripts/migrations/011-fix-entity-id-type.js` | ✅ Criado | Migração para alterar entity_id de INTEGER para BIGINT |
-| `scripts/migrations/012-migrate-sqlite-to-pg.js` | ✅ Criado | Migração de dados do SQLite para PostgreSQL |
+| `scripts/migrations/010-sync-sqlite-pg-schemas.js` | ❌ Removido | Migração de sincronização de schemas (banco já reflete as alterações) |
+| `scripts/migrations/012-migrate-sqlite-to-pg.js` | ❌ Removido | Migração de dados do SQLite (banco já continha os dados) |
 | `scripts/backup-sqlite.js` | ❌ Removido | Não mais necessário (apenas PostgreSQL) |
 | `scripts/backup.js` | ✏️ Modificado | Removida referência ao SQLite |
 | `scripts/utils/cleanup-test-data.js` | ✏️ Modificado | Adaptado para PostgreSQL via `lib/db.js` |
+| `scripts/utils/date-format.js` | ✅ Criado | Utilitário de formatação ISO 8601 para backups |
 | `next.config.js` | ✏️ Modificado | Removido `sqlite3` de `serverExternalPackages` |
 | `lib/crud.js` | ✏️ Modificado | Adicionados schemas: images, categories, tags, post_categories, post_tags |
 | `pages/api/admin/backups.js` | ✏️ Modificado | `Date.now()` → `null` no logActivity |

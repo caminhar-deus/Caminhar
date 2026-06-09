@@ -109,11 +109,10 @@
 
 **Funcionamento:**
 - **Configuração:** Aceita `url`, `options`, `deps`, `transform`, `initialData`, `staleTime`, `onError`.
-- **Estabilização de options:** Usa `optionsRef` + `depsKeyRef` para comparar serializações e evitar recriação desnecessária da função `fetchData` (substitui `JSON.stringify(options)` direto na dependência).
+- **Estabilização de options:** Usa `optionsRef` (referência estável) + estado `optionsKey` (contador) recriado via `useEffect` quando as opções serializadas mudam. O `JSON.stringify(options)` é usado apenas como dependência do `useEffect` (não do `useCallback`), o que evita que o React detecte mudanças em `ref.current`.
 - **fetchData:** Função memoizada via `useCallback`. Lida com códigos HTTP (inclusive 304), extrai mensagens de erro do corpo da resposta, aplica função `transform` se fornecida.
 - **Cache simples (staleTime):** Se `staleTime` é definido e passou menos tempo que o configurado desde o último fetch, pula a requisição.
-- **Dependências:** Inclui `url`, `depsKeyRef.current` e `deps` fornecidas pelo usuário.
-- **Retorno:** `{ data, loading, error, refetch, setData }`.
+- **Dependências:** Inclui `url`, `optionsKey` (estado, não ref) e `deps` fornecidas pelo usuário.
 
 ---
 

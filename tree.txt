@@ -533,10 +533,7 @@
 │       ├── caminhar-pg-backup_2026-05-22T10-18-54Z.sql.gz.enc
 │       └── caminhar-pg-backup_2026-05-22T10-18-54Z.sql.gz.sha256
 ├── docs
-│   ├── analise-load-tests-orchestrator-02.md
-│   ├── analise-load-tests-orchestrator.md
 │   ├── JEST_ESM.md
-│   ├── plano-ajuste-thresholds-load-tests.md
 │   ├── PROJECT_components.md
 │   ├── PROJECT_cypress.md
 │   ├── PROJECT_data.md
@@ -549,21 +546,24 @@
 │   ├── PROJECT_raiz.md
 │   ├── PROJECT_scripts.md
 │   ├── PROJECT_tests.md
-│   ├── resolvidos
-│   │   ├── plano-correcao-p3-create-post-flow.md
-│   │   ├── plano-melhoria-logs-servidor.md
-│   │   ├── UPGRADE_lib.md
-│   │   ├── UPGRADE_mocks.md
-│   │   ├── UPGRADE_pages.md
-│   │   ├── UPGRADE_raiz.md
-│   │   ├── UPGRADE_scripts.md
-│   │   └── UPGRADE_tests.md
-│   ├── UPGRADE_components.md
-│   ├── UPGRADE_cypress.md
-│   ├── UPGRADE_data.md
-│   ├── UPGRADE_examples.md
-│   ├── UPGRADE_hooks.md
-│   └── UPGRADE_load-tests.md
+│   └── resolvidos
+│       ├── analise-load-tests-orchestrator-02.md
+│       ├── analise-load-tests-orchestrator.md
+│       ├── plano-ajuste-thresholds-load-tests.md
+│       ├── plano-correcao-p3-create-post-flow.md
+│       ├── plano-melhoria-logs-servidor.md
+│       ├── UPGRADE_components.md
+│       ├── UPGRADE_cypress.md
+│       ├── UPGRADE_data.md
+│       ├── UPGRADE_examples.md
+│       ├── UPGRADE_hooks.md
+│       ├── UPGRADE_lib.md
+│       ├── UPGRADE_load-tests.md
+│       ├── UPGRADE_mocks.md
+│       ├── UPGRADE_pages.md
+│       ├── UPGRADE_raiz.md
+│       ├── UPGRADE_scripts.md
+│       └── UPGRADE_tests.md
 ├── examples
 │   ├── blog-post-seo-example.js
 │   ├── homepage-seo-example.js

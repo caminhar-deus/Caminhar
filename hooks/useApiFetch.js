@@ -41,18 +41,18 @@ export const useApiFetch = (url, config = {}) => {
   const [data, setData] = useState(initialData);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [optionsKey, setOptionsKey] = useState(0);
   const lastFetchRef = useRef(0);
   const optionsRef = useRef(options);
-  const depsKeyRef = useRef(JSON.stringify(options));
 
   // Estabiliza a referência de options: só atualiza quando o conteúdo serializado mudar
+  const serializedOptions = JSON.stringify(options);
   useEffect(() => {
-    const serialized = JSON.stringify(options);
-    if (depsKeyRef.current !== serialized) {
-      depsKeyRef.current = serialized;
+    if (optionsRef.current !== options) {
       optionsRef.current = options;
+      setOptionsKey((prev) => prev + 1);
     }
-  }, [JSON.stringify(options)]);
+  }, [serializedOptions]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -90,7 +90,7 @@ export const useApiFetch = (url, config = {}) => {
     } finally {
       setLoading(false);
     }
-  }, [url, depsKeyRef.current, ...deps]);
+  }, [url, optionsKey, ...deps]);
 
   useEffect(() => {
     if (staleTime && lastFetchRef.current > 0) {

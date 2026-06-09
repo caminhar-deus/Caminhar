@@ -8,11 +8,11 @@ A pasta `/data` contém os backups do banco de dados da aplicação. O banco de 
 
 ## 1. Banco de Dados
 
-**Tipo:** PostgreSQL
+**Tipo:** PostgreSQL (único banco — SQLite foi removido)
 
 **Acesso:** Via `lib/db.js` utilizando `pg.Pool` com `DATABASE_URL`
 
-**Schema (9+ tabelas):**
+**Schema (15 tabelas):**
 
 | Tabela | Descrição |
 |--------|-----------|
@@ -30,6 +30,7 @@ A pasta `/data` contém os backups do banco de dados da aplicação. O banco de 
 | `dicas` | Dicas cadastradas |
 | `activity_logs` | Log de auditoria |
 | `roles` | Cargos e permissões |
+| `_migrations` | Controle de versão das migrações aplicadas |
 
 ---
 
@@ -44,6 +45,8 @@ A pasta `/data` contém os backups do banco de dados da aplicação. O banco de 
 **Arquivos atuais:**
 - `backup.log` — Log das operações de backup realizadas (sanitizado, sem dados sensíveis)
 - `caminhar-pg-backup_*.sql.gz` — Backup PostgreSQL (gerado via `scripts/backup.js`)
+- `caminhar-pg-backup_*.sql.gz.sha256` — Hash SHA-256 para verificação de integridade
+- `caminhar-pg-backup_*.sql.gz.enc` — Backup criptografado (AES-256-GCM, opcional)
 
 ---
 
@@ -73,10 +76,12 @@ caminhar-pg-backup_2026-03-10T02-00-00Z.sql.gz
 | Restore | `gunzip` + `psql` |
 | Hash SHA-256 | ✅ |
 | Criptografia AES-256-GCM | ✅ (via env `BACKUP_ENCRYPTION_KEY`) |
+| Validação de chave de criptografia | ✅ (64 chars hex exigidos) |
 | Cleanup automático | ✅ (máx. 10 backups) |
 | Backup de segurança pré-restore | ✅ |
 | Log sanitizado | ✅ |
 | Listagem de backups | ✅ |
+| Verificação de espaço em disco | ✅ |
 
 ---
 
@@ -95,11 +100,25 @@ O arquivo `lib/crud.js` contém a definição dos campos permitidos para cada ta
 
 ---
 
-## Histórico de Migrações
+## 5. Histórico de Migrações
 
-- `010-sync-sqlite-pg-schemas.js` — Sincronizou schemas entre SQLite (descontinuado) e PostgreSQL
-- `011-fix-entity-id-type.js` — Alterou `entity_id` de `INTEGER` para `BIGINT` em `activity_logs`
-- `012-migrate-sqlite-to-pg.js` — Migrou dados remanescentes do SQLite para PostgreSQL e removeu o SQLite
+Migrations registradas na tabela `_migrations` do banco PostgreSQL:
+
+| ID | Nome | Descrição |
+|----|------|-----------|
+| 1 | `001-add-views-to-posts` | Adiciona coluna de visualizações aos posts |
+| 2 | `002-create-products-table` | Cria tabela de produtos |
+| 3 | `003-add-position-to-products` | Adiciona campo de ordenação aos produtos |
+| 4 | `004-add-published-to-products` | Adiciona campo de publicação aos produtos |
+| 5 | `005-add-last-login-to-users` | Adiciona campo de último login aos usuários |
+| 6 | `006-create-activity-logs` | Cria tabela de log de auditoria |
+| 7 | `007-add-position-to-musicas` | Adiciona campo de ordenação às músicas |
+| 8 | `008-add-position-to-videos` | Adiciona campo de ordenação aos vídeos |
+| 9 | `009-add-position-to-posts` | Adiciona campo de ordenação aos posts |
+| 10 | `011-fix-entity-id-type` | Altera `entity_id` de INTEGER para BIGINT em `activity_logs` |
+| 11 | `013-add-trgm-indexes` | Adiciona índices de busca textual (pg_trgm) |
+
+**Observação:** As migrations `010-sync-sqlite-pg-schemas` e `012-migrate-sqlite-to-pg` foram criadas durante o processo de unificação SQLite → PostgreSQL, mas seus arquivos foram posteriormente removidos. As alterações de schema que elas contemplavam já estavam presentes no banco PostgreSQL.
 
 ---
 
@@ -107,10 +126,12 @@ O arquivo `lib/crud.js` contém a definição dos campos permitidos para cada ta
 
 | Aspecto | Descrição |
 |---------|-----------|
-| **Banco** | PostgreSQL (único) |
+| **Banco** | PostgreSQL (único, 15 tabelas) |
 | **Estratégia de backup** | Dump SQL comprimido via `pg_dump` |
 | **Formato de data** | ISO 8601 (padronizado) |
 | **Integridade** | Hash SHA-256 para todos os backups |
 | **Segurança** | Logs sanitizados (sem senhas, tokens ou chaves) |
-| **Tipo de dados** | Posts, usuários, músicas, vídeos, produtos, imagens, configurações, categorias, tags |
+| **Criptografia** | AES-256-GCM opcional via `BACKUP_ENCRYPTION_KEY` |
+| **Tipos de dados** | Posts, usuários, músicas, vídeos, produtos, imagens, configurações, categorias, tags, dicas |
 | **Relacionamentos** | Posts ↔ Categorias (N:N), Posts ↔ Tags (N:N), Imagens ↔ Usuários (N:1) |
+| **Migrações** | 11 migrações registradas via `scripts/migrations/` + `scripts/migrate.js` |
