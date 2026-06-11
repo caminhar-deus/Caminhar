@@ -2,7 +2,8 @@
 
 > **Projeto:** Caminhar  
 > **Diretório:** `/scripts`  
-> **Objetivo deste documento:** Descrever a finalidade, localização e funcionamento de cada script disponível no diretório `scripts/` e seus subdiretórios.
+> **Objetivo deste documento:** Descrever a finalidade, localização e funcionamento de cada script disponível no diretório `scripts/` e seus subdiretórios.  
+> **Última atualização:** 11/06/2026
 
 ---
 
@@ -22,6 +23,7 @@ scripts/
 ├── clear-cache.js
 ├── clear-db.js
 ├── clear-musicas.js
+├── clear-test-auth-locks.js
 ├── create-backup.js
 ├── db-shell.js
 ├── generate-load-report.js
@@ -39,9 +41,11 @@ scripts/
 ├── seed-posts.js
 ├── seed-products.js
 ├── seed-videos.js
-├── validate-schema.js
+├── validate-schema.js *
 ├── view-backup-logs.js *
 ├── auth/
+├── cli/ *                        # Entry points CLI (bootstrap puro)
+│   └── validate-schema.js *      #   CLI separator
 ├── db/ *
 │   ├── connection.js *
 │   ├── verify-db-functions.js
@@ -69,6 +73,8 @@ scripts/
 │   ├── 008-add-position-to-videos.js
 │   ├── 009-add-position-to-posts.js
 │   ├── 011-fix-entity-id-type.js
+│   ├── 012-add-performance-indexes.sql *
+│   ├── 013-add-trgm-indexes.js *
 │   ├── seed-migrations-table.js *
 │   └── verify-applied.js *
 ├── schemas/ *
@@ -84,12 +90,12 @@ scripts/
     ├── cleanup-test-data.js
     ├── constants.js *
     ├── date-format.js *
+    ├── init-table-utils.js *
     ├── list-settings.js
     ├── list-table-columns.js
     ├── load-env.js *
     └── update-setting.js
 
-> **Legenda:** * = Novo ou criado em refatoração recente
 ```
 
 ---
@@ -188,6 +194,13 @@ scripts/
 - **Atualizado em:** 07/06/2026 — migrado de `import { query, closeDatabase } from '../lib/db.js'` para `import { query, closePool } from './db/connection.js'`, usando o módulo compartilhado de conexão.
 - **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local)
 
+### `scripts/clear-test-auth-locks.js`
+- **Localização:** `/home/qa/Projeto/Caminhar/scripts/clear-test-auth-locks.js`
+- **Propósito:** Script de cleanup para desbloquear IPs que foram bloqueados pelos testes de segurança (rate limit, IP spoofing). Remove chaves do Redis usadas durante os testes (`rate_limit:<ip>`, `rate_limit:block_count:<ip>`, `api:auth:login:*`). Opera em IPs fixos de teste (`203.0.113.1`, `127.0.0.1`, `::1`). Mensagem de dica para reiniciar o servidor se o Map em memória ainda estiver bloqueando.
+- **Uso:** `node scripts/clear-test-auth-locks.js`
+- **Criado em:** Data desconhecida
+- **Dependências:** `../lib/redis.js` (local)
+
 ### `scripts/db-shell.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/db-shell.js`
 - **Propósito:** Abre um terminal interativo do PostgreSQL utilizando `psql` com as credenciais da `DATABASE_URL`. Útil para acesso rápido ao banco via CLI.
@@ -229,7 +242,7 @@ scripts/
   ```
 - **Criado em:** 21/05/2026 — refatoração (unificação dos 4 scripts de init).
 - **Atualizado em:** 07/06/2026 — migrado de `import { query, closeDatabase } from '../lib/db.js'` para `import { query, closePool } from './db/connection.js'`, usando o módulo compartilhado de conexão.
-- **Dependências:** `fs`, `url`, `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local)
+- **Atualizado em:** 11/06/2026 — extraídas funções puras (`buildCreateTableSQL`, `getSeedValues`, `buildSeedSQL`, `getTableName`, `loadSchemaFromDir`) para `scripts/utils/init-table-utils.js`. O script principal agora importa essas funções do módulo utils e mantém apenas o wrapper `loadSchema` que usa `import.meta.url` para resolução de caminho.
 
 ### `scripts/migrate.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/migrate.js`
@@ -331,14 +344,24 @@ scripts/
 
 ### `scripts/validate-schema.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/validate-schema.js`
-- **Propósito:** Valida se o schema do banco de dados corresponde ao esperado pelo código. Define um schema esperado para as tabelas (`posts`, `videos`, `musicas`, `users`, `settings`, `images`) com suas colunas, e verifica cada uma no PostgreSQL usando `information_schema`. Gera saída clara com `✅` para OK e `❌` para discrepâncias.
-- **Tratamento de erros:** A função `validateSchema()` retorna `boolean` (`true` = schema ok, `false` = erro). O `process.exit()` é chamado apenas no entry point, garantindo que o pool de conexão seja fechado corretamente pelo `finally` antes da saída.
+- **Propósito:** Módulo funcional que valida se o schema do banco de dados corresponde ao esperado pelo código. Define um schema esperado para as tabelas (`posts`, `videos`, `musicas`, `users`, `settings`, `images`) com suas colunas, e verifica cada uma no PostgreSQL usando `information_schema`. Gera saída clara com `✅` para OK e `❌` para discrepâncias. Exporta a função `validateSchema()` sem side effects de top-level.
+- **Tratamento de erros:** A função `validateSchema()` retorna `boolean` (`true` = schema ok, `false` = erro). O `process.exit()` é chamado apenas no entry point CLI (`scripts/cli/validate-schema.js`), garantindo que o pool de conexão seja fechado corretamente pelo `finally` antes da saída.
 - **Refatorado em:** 21/05/2026 — alinhado com os módulos compartilhados existentes:
   - Carregamento de ambiente via `scripts/utils/load-env.js` (em vez de `dotenv` manual).
   - Conexão via `scripts/db/connection.js` (`getPool()`/`closePool()`), pool singleton.
   - `process.exit(1)` removido de dentro do `try/catch` e movido para o entry point.
-- **Uso:** `node scripts/validate-schema.js` — retorna exit code 0 se OK, 1 se houver inconsistências.
+- **Ajustado em:** 11/06/2026 — removido o top-level await (`const success = await validateSchema(); process.exit(...)`) que causava `SyntaxError` quando o Babel transformava o módulo de ESM para CommonJS durante a execução de testes com Jest. Adicionado `export { validateSchema }` como exportação nomeada. O top-level await foi movido para o entry point CLI separado `scripts/cli/validate-schema.js`.
+- **Função exportada:** `validateSchema()`
+- **Uso direto (CLI):** `npm run validate-schema` (executa `node scripts/cli/validate-schema.js`) — retorna exit code 0 se OK, 1 se houver inconsistências.
+- **Uso programático:** `import { validateSchema } from './scripts/validate-schema.js'`
 - **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local), `pg`
+
+### `scripts/cli/validate-schema.js`
+- **Localização:** `/home/qa/Projeto/Caminhar/scripts/cli/validate-schema.js`
+- **Propósito:** Entry point CLI puro para validação de schema. Importa `validateSchema` de `scripts/validate-schema.js` e executa com top-level await. Mantém o `process.exit()` baseado no resultado booleano.
+- **Uso:** `node scripts/cli/validate-schema.js` (ou via npm: `npm run validate-schema`)
+- **Criado em:** 11/06/2026 — separação do entry point para permitir testes unitários sem `SyntaxError` de top-level await.
+- **Dependências:** `scripts/validate-schema.js` (local)
 
 ### `scripts/run-all-load-tests-sequentially.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/run-all-load-tests-sequentially.js`
@@ -538,6 +561,17 @@ scripts/
 - **Criado em:** 21/05/2026 — suporte à verificação de estado do banco.
 - **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local)
 
+### `scripts/migrations/012-add-performance-indexes.sql`
+- **Localização:** `/home/qa/Projeto/Caminhar/scripts/migrations/012-add-performance-indexes.sql`
+- **Propósito:** Migração #012 — Adiciona índices de performance no banco de dados. Arquivo SQL puro (não JS) para criação de índices em colunas frequentemente consultadas. Executado pelo executor central `migrate.js`.
+- **Criado em:** Data desconhecida (posterior à migração #011)
+
+### `scripts/migrations/013-add-trgm-indexes.js`
+- **Localização:** `/home/qa/Projeto/Caminhar/scripts/migrations/013-add-trgm-indexes.js`
+- **Propósito:** Migração #013 — Adiciona índices TRGM (trigram) para busca textual nas tabelas de conteúdo. Melhora performance de queries com `LIKE` e busca textual em `posts`, `musicas` e `videos`.
+- **Criado em:** Data desconhecida (posterior à migração #012)
+- **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local)
+
 > **Nota:** As migrações `010-sync-sqlite-pg-schemas.js` e `012-migrate-sqlite-to-pg.js` foram removidas em 21/05/2026 por envolverem operações com SQLite, fora do escopo PostgreSQL do projeto.
 
 > **Comandos npm relacionados:** `npm run migrate` (aplica pendentes), `npm run migrate:status` (exibe status), `npm run migrate:revert` (reverte última migração).
@@ -630,6 +664,17 @@ scripts/
 - **Testes:** 10 testes unitários em `tests/unit/scripts/utils/date-format.test.js`.
 - **Dependências:** Nenhuma (apenas APIs nativas do JavaScript)
 
+### `scripts/utils/init-table-utils.js`
+- **Localização:** `/home/qa/Projeto/Caminhar/scripts/utils/init-table-utils.js`
+- **Propósito:** Módulo compartilhado com funções puras de schema de tabelas, extraídas de `scripts/init-table.js` para permitir testes unitários sem dependência de `import.meta.url`. Exporta 5 funções:
+  - **`getTableName()`** — extrai o nome da tabela dos argumentos da linha de comando (posicional, `--table=valor`, `--table valor`). Lança erro com instruções de uso se nenhum argumento for fornecido.
+  - **`loadSchemaFromDir(tableName, schemasDir)`** — carrega schema de um arquivo JSON em um diretório absoluto. Sem dependência de `import.meta.url` — recebe o caminho como parâmetro.
+  - **`buildCreateTableSQL(schema)`** — constrói query `CREATE TABLE IF NOT EXISTS` a partir da definição do schema.
+  - **`getSeedValues(schema)`** — converte `seedData` do schema em array de arrays com valores SQL escapados. Retorna array vazio se não houver seedData.
+  - **`buildSeedSQL(schema)`** — constrói query `INSERT` a partir dos seedValues. Retorna `null` se não houver seedData.
+- **Criado em:** 11/06/2026 — refatoração do `init-table.js` para permitir testes unitários (9 testes em `tests/unit/scripts/init-table.test.js`).
+- **Dependências:** `fs`
+
 ### `scripts/utils/load-env.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/utils/load-env.js`
 - **Propósito:** Módulo compartilhado de carregamento de variáveis de ambiente. Substitui os blocos repetitivos de `fs.existsSync` + `dotenv.config()` que estavam espalhados por ~20 scripts. Fornece duas funções exportadas:
@@ -664,7 +709,7 @@ scripts/
 |-----------|:----------:|-----------|
 | **Backup** | 5 | `backup.js`, `create-backup.js`, `restore-backup.js`, `init-backup.js`, `view-backup-logs.js` |
 | **Inicialização** | 2 | `init-table.js` (unificado) + `init-server.js` |
-| **Migrações** | 11 | `migrate.js` (executor) + `001` a `009` + `011` em `migrations/` |
+| **Migrações** | 13 | `migrate.js` (executor) + `001` a `009` + `011` + `012` + `013` em `migrations/` |
 | **Schemas (JSON)** | 4 | `schemas/musicas.json`, `schemas/posts.json`, `schemas/videos.json`, `schemas/dicas.json` |
 | **Seed (Dados)** | 5 | `seed-all.js`, `seed-musicas.js`, `seed-posts.js`, `seed-products.js`, `seed-videos.js` |
 | **Limpeza (PostgreSQL)** | 3 | `clean-load-test-posts.js`, `clean-k6-videos.js`, `cleanup-test-data.js` + módulo compartilhado `cleanup.js` |
@@ -675,12 +720,13 @@ scripts/
 | **Testes de Carga** | 3 | `run-all-load-tests-sequentially.js`, `generate-load-report.js`, `run-load-tests.sh` |
 | **Monitoramento** | 1 | `monitor-disk-space.js` |
 | **Utilidades** | 6 | `db-shell.js`, `check-server.js`, `reset-password.js` + `load-env.js` + 4 em `utils/` |
+| **CLI** | 1 | `cli/validate-schema.js` (entry point separado) |
 | **Conexão DB** | 1 | `scripts/db/connection.js` (módulo compartilhado) |
 | **Manutenção** | 5 | `maintenance/` |
 | **Autenticação** | — | *(unificado em `scripts/reset-password.js`)* |
 | **Testes Manuais** | 2 | `tests/` |
 | **Banco de Dados** | 3 | `db/connection.js` + `db/verify-db-functions.js` + `db/verify-migration.js` |
-| **Total** | ~69 | Incluindo scripts, schemas, executor de migrações e módulos utilitários |
+| **Total** | ~70 | Incluindo scripts, schemas, executor de migrações, módulos utilitários e entry points CLI |
 
 ---
 

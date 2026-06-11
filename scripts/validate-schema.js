@@ -85,6 +85,4 @@ async function validateSchema() {
   }
 }
 
-// Entry point — decisão de saída separada da função de validação
-const success = await validateSchema();
-process.exit(success ? 0 : 1);
+export { validateSchema };

@@ -1,6 +1,6 @@
 # Análise do Projeto — Testes (`/tests/`)
 
-> **Data:** 13/05/2026 (atualizado em 08/06/2026 — 14ª revisão)
+> **Data:** 13/05/2026 (atualizado em 11/06/2026 — 15ª revisão)
 > **Objetivo:** Documentar de forma objetiva, clara e focada todos os arquivos de teste do projeto, descrevendo localização, propósito e funcionalidade de cada um.
 
 ---
@@ -291,7 +291,7 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 | Arquivo | Propósito |
 |---------|-----------|
 | `IntegrityCheck.test.js` | Verificação de integridade (renderização estática) |
-| `RateLimitViewer.test.js` | Visualizador de rate limit (renderização estática) |
+| `RateLimitViewer.test.js` | Visualizador de rate limit (renderização com mock de fetch, abas e botão de atualizar) |
 
 ### 5.3 Componentes de Funcionalidades (`/tests/unit/components/Features/`)
 
@@ -418,6 +418,8 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 | Arquivo | Propósito | Cenários Principais |
 |---------|-----------|---------------------|
 | `clean-orphaned-images.test.js` | Limpeza de imagens órfãs | Identificar imagens não referenciadas, exclusão segura, dry-run |
+| `init-table.test.js` | Utilitários de schema de tabelas (`init-table-utils.js`) | `buildCreateTableSQL` (gera SQL CREATE TABLE), `getSeedValues` (converte seedData em array de arrays, vazio se sem dados), `buildSeedSQL` (gera INSERT, null se sem seed), `getTableName` (argumento posicional, `--table=valor`, `--table valor`, erro sem argumento). **Reescrito em 11/06/2026 — 9 testes** |
+| `validate-schema.test.js` | Validação de schema do banco PostgreSQL | Exportação da função `validateSchema`, validação com tabelas existentes (SELECT 1 + information_schema), erro de conexão retornando `false`. **Ajustado em 11/06/2026 — 3 testes** |
 
 ### 5.12 Pages/API Edge Cases (`/tests/unit/pages/api/`)
 
@@ -457,7 +459,7 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 
 ---
 
-> **Nota atualizada (05/06/2026 — 2ª revisão):** Este documento reflete a estrutura completa de testes do projeto Caminhar.
+> **Nota atualizada (11/06/2026 — 16ª revisão):** Este documento reflete a estrutura completa de testes do projeto Caminhar.
 > 
 > **Ajustes realizados na 1ª revisão (05/06):** 3 mesclagens de arquivos edge case (04/06), centralizado `jest.clearAllMocks()` no setup.js, removido ~41 chamadas redundantes, eliminado supressão global de `console.error` em 10 arquivos, refatoradas 4 factories para usar `createBaseFactory` (~70 linhas eliminadas).
 > 
@@ -542,4 +544,15 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 > > - **Seção 5.5 — Duplicação de Dados de Teste (AJUSTADO):** Substituídos dados inline por factories centralizadas em 4 arquivos de integração: `musicas.test.js` (musicFactory.list), `videos.test.js` (videoFactory.list), `posts.test.js` (postFactory.list), `products.test.js` (userFactory).
 > > - **Total:** 5 arquivos modificados (4 de teste + 1 helper) + 2 documentos atualizados. 30/30 testes passando nas suites modificadas.
 
+> 
+> > **Ajustes realizados na 12ª revisão (11/06/2026):**
+> > - Corrigido `scripts/validate-schema.js`: top-level await removido, função `validateSchema` agora é exportada. Entry point CLI movido para `scripts/cli/validate-schema.js`.
+> > - Adicionado `validate-schema.test.js` na tabela da Seção 5.11 (3 testes).
+> > - Testes de `validate-schema.test.js` passando com 3/3 sem erro de sintaxe.
+> > - **Total:** 1 arquivo de script modificado + 1 entry point criado + 1 documento atualizado. Nenhuma regressão.
+> 
+> > **Ajustes realizados na 14ª revisão (11/06/2026):**
+> > - Corrigido `tests/unit/components/Admin/Tools/RateLimitViewer.test.js`: teste esperava texto inexistente `"Status: Ativo (Middleware)"` que foi removido do componente. Substituído por validação de elementos reais (título `<h3>Rate Limiting</h3>`, botão `🔄 Atualizar`, abas `🔒 Bloqueados (0)`, `✅ Whitelist (0)`, `📋 Auditoria`). Adicionado `mockGlobalFetch` para mockar chamadas de API internas do componente.
+> > - **Total:** 1 arquivo de teste modificado + 1 documento atualizado. Teste passando (162ms).
+> 
 > Para detalhes de implementação específicos, consulte `docs/UPGRADE_tests.md`.

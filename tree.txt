@@ -804,6 +804,8 @@
 │   ├── clear-db.js
 │   ├── clear-musicas.js
 │   ├── clear-test-auth-locks.js
+│   ├── cli
+│   │   └── validate-schema.js
 │   ├── create-backup.js
 │   ├── db
 │   │   ├── connection.js
@@ -866,6 +868,7 @@
 │   │   ├── cleanup-test-data.js
 │   │   ├── constants.js
 │   │   ├── date-format.js
+│   │   ├── init-table-utils.js
 │   │   ├── list-settings.js
 │   │   ├── list-table-columns.js
 │   │   ├── load-env.js
@@ -1142,4 +1145,4 @@
 │       └── videos.validation.test.js
 └── tree.txt
 
-180 directories, 963 files
+181 directories, 965 files
