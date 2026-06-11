@@ -1,7 +1,7 @@
 import { jest, describe, it, expect } from '@jest/globals';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import '../../mocks/next-setup.js';
+import '../mocks/next-setup.js';
 
 // Mock do CSS module
 jest.mock('../styles/Blog.module.css', () => ({

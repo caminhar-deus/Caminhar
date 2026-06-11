@@ -1,6 +1,6 @@
 # Análise do Projeto — Testes (`/tests/`)
 
-> **Data:** 13/05/2026 (atualizado em 11/06/2026 — 15ª revisão)
+> **Data:** 13/05/2026 (atualizado em 11/06/2026 — 17ª revisão)
 > **Objetivo:** Documentar de forma objetiva, clara e focada todos os arquivos de teste do projeto, descrevendo localização, propósito e funcionalidade de cada um.
 
 ---
@@ -143,7 +143,7 @@ tests/
 | `db-module.js` | Mock centralizado do módulo `lib/db.js`. Exporta `mockDb(overrides)` (cria módulo completo com todas as funções exportadas por `lib/db.js`: `query`, `resetPool`, `closeDatabase`, `transaction`, `healthCheck`, `getDatabaseInfo`), `mockDbError(error)` (simula erro de conexão) e `resetDbMocks(dbMock)`. **Criado em 05/06/2026.** Uso: `jest.mock('...lib/db.js', () => require('...mocks/db-module').mockDb())` |
 | `fetch.js` | Mock de fetch API. Exporta `mockFetchSuccess(data)`, `mockFetchError(status, message)`, `mockFetchNetworkError()` |
 | `next.js` | Implementações individuais de mocks do Next.js. Exporta `mockUseRouter(options)`, `mockNextImage`, `mockNextLink`, `mockNextHead`, `mockNextScript`, `mockNextDynamic`, `mockGetServerSideProps`, `mockGetStaticProps`, `mockGetStaticPaths`, `mockNextHeaders(headers)`, `mockNextCookies(cookies)`, `setupNextMocks()` (depreciado) |
-| `next-setup.js` | Setup centralizado de mocks do Next.js. **Criado em 06/06/2026.** Centraliza todos os `jest.mock()` para `next/router`, `next/navigation`, `next/image`, `next/link`, `next/head`, `next/script`, `next/dynamic`, `next/headers`, `next/cookies` e `next/server`. Basta importar `../../mocks/next-setup.js` no início do arquivo de teste. Importa implementações de `next.js` |
+| `next-setup.js` | Setup centralizado de mocks do Next.js. **Criado em 06/06/2026.** Centraliza todos os `jest.mock()` para `next/router`, `next/navigation`, `next/image`, `next/link`, `next/head`, `next/script`, `next/dynamic`, `next/headers`, `next/cookies` e `next/server`. Basta importar no início do arquivo de teste. O caminho relativo varia conforme a profundidade: `../mocks/next-setup.js` (para arquivos em `tests/unit/`) ou `../../mocks/next-setup.js` (para subpastas como `tests/unit/components/`). Importa implementações de `next.js` |
 | `next.test.js` | Teste de sanidade dos mocks do Next.js. **Criado em 06/06/2026.** 9 testes validando a estrutura e comportamento básico de cada módulo mockado. Deve ser executado ao atualizar a versão do Next.js |
 
 ### 3.5 Examples (`/tests/examples/`)
@@ -167,7 +167,7 @@ tests/
 |---------|-----------|---------------------|
 | `audit.test.js` | CRUD + consulta de logs de auditoria | Inserir log, listar com paginação/filtros, rate limit |
 | `cleanup-test-data.test.js` | Limpeza de dados de teste | Remover registros de teste do banco |
-| `dicas.test.js` | CRUD de dicas/quick tips | Listar (público), admin CRUD |
+| `dicas.test.js` | Dicas do dia — endpoint público GET | Listar paginado (200), erro no banco (500), método não permitido (405) |
 | `login.test.js` | Login via API | Sucesso, credenciais inválidas, usuário inexistente |
 | `musicas.create.test.js` | Criação de música (admin) | Dados válidos, campos obrigatórios faltando, URL inválida |
 | `musicas.delete.test.js` | Exclusão de música (admin) | ID existente, ID inexistente |
@@ -290,7 +290,7 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 
 | Arquivo | Propósito |
 |---------|-----------|
-| `IntegrityCheck.test.js` | Verificação de integridade (renderização estática) |
+| `IntegrityCheck.test.js` | Verificação de integridade com mock de fetch (`mockFetchSuccess`). Testa renderização do título, texto "Sistema operacional", status geral saudável, listagem de 5 checks e detalhes do sistema (Node.js, plataforma) |
 | `RateLimitViewer.test.js` | Visualizador de rate limit (renderização com mock de fetch, abas e botão de atualizar) |
 
 ### 5.3 Componentes de Funcionalidades (`/tests/unit/components/Features/`)
@@ -459,7 +459,7 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 
 ---
 
-> **Nota atualizada (11/06/2026 — 16ª revisão):** Este documento reflete a estrutura completa de testes do projeto Caminhar.
+> **Nota atualizada (11/06/2026 — 17ª revisão):** Este documento reflete a estrutura completa de testes do projeto Caminhar.
 > 
 > **Ajustes realizados na 1ª revisão (05/06):** 3 mesclagens de arquivos edge case (04/06), centralizado `jest.clearAllMocks()` no setup.js, removido ~41 chamadas redundantes, eliminado supressão global de `console.error` em 10 arquivos, refatoradas 4 factories para usar `createBaseFactory` (~70 linhas eliminadas).
 > 
@@ -554,5 +554,9 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 > > **Ajustes realizados na 14ª revisão (11/06/2026):**
 > > - Corrigido `tests/unit/components/Admin/Tools/RateLimitViewer.test.js`: teste esperava texto inexistente `"Status: Ativo (Middleware)"` que foi removido do componente. Substituído por validação de elementos reais (título `<h3>Rate Limiting</h3>`, botão `🔄 Atualizar`, abas `🔒 Bloqueados (0)`, `✅ Whitelist (0)`, `📋 Auditoria`). Adicionado `mockGlobalFetch` para mockar chamadas de API internas do componente.
 > > - **Total:** 1 arquivo de teste modificado + 1 documento atualizado. Teste passando (162ms).
+> 
+> > **Ajustes realizados na 15ª revisão (11/06/2026):**
+> > - Corrigido `tests/unit/components/Admin/Tools/IntegrityCheck.test.js`: teste esperava texto inexistente `"Sistema operacional."`. Adicionado mock de fetch (`mockFetchSuccess`) com dados simulados da API `/api/admin/integrity`. Adicionado texto "Sistema operacional" no componente `IntegrityCheck.js` como subtítulo da seção `case 'system'`. Teste expandido de 1 para 4 testes (título/texto descritivo, status geral saudável, listagem de 5 checks, detalhes do sistema). Usa `await screen.findByText()` assíncrono em vez de `screen.getByText()` síncrono.
+> > - **Total:** 2 arquivos modificados (1 componente + 1 teste). 4/4 testes passando. Nenhuma regressão.
 > 
 > Para detalhes de implementação específicos, consulte `docs/UPGRADE_tests.md`.

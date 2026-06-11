@@ -155,13 +155,16 @@ function IntegrityCheck() {
 
       case 'system':
         return (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px' }}>
-            <span>Node.js:</span><span style={{ fontWeight: 600 }}>{details.nodeVersion || '—'}</span>
-            <span>Uptime:</span><span style={{ fontWeight: 600 }}>{details.uptime || '—'}</span>
-            <span>RAM:</span><span style={{ fontWeight: 600 }}>{details.memoryUsage || '—'}</span>
-            <span>CPU:</span><span style={{ fontWeight: 600 }}>{details.cpuCores ? `${details.cpuCores} cores` : '—'}</span>
-            <span>Plataforma:</span><span style={{ fontWeight: 600 }}>{details.platform || '—'} ({details.arch || '—'})</span>
-            <span>Ambiente:</span><span style={{ fontWeight: 600 }}>{details.env || '—'}</span>
+          <div>
+            <p style={{ margin: '0 0 8px 0', fontWeight: 600, fontSize: '0.95rem' }}>Sistema operacional</p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px' }}>
+              <span>Node.js:</span><span style={{ fontWeight: 600 }}>{details.nodeVersion || '—'}</span>
+              <span>Uptime:</span><span style={{ fontWeight: 600 }}>{details.uptime || '—'}</span>
+              <span>RAM:</span><span style={{ fontWeight: 600 }}>{details.memoryUsage || '—'}</span>
+              <span>CPU:</span><span style={{ fontWeight: 600 }}>{details.cpuCores ? `${details.cpuCores} cores` : '—'}</span>
+              <span>Plataforma:</span><span style={{ fontWeight: 600 }}>{details.platform || '—'} ({details.arch || '—'})</span>
+              <span>Ambiente:</span><span style={{ fontWeight: 600 }}>{details.env || '—'}</span>
+            </div>
           </div>
         );
 

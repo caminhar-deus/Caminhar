@@ -44,7 +44,7 @@ export default {
   },
 
   transformIgnorePatterns: [
-    '/node_modules/(?!node-mocks-http|@faker-js|url|pg)'
+    '/node_modules/(?!node-mocks-http|@faker-js|url|pg|@upstash/redis|uncrypto)'
   ],
   
   setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],

@@ -71,6 +71,7 @@ Esta documentação descreve todos os arquivos localizados na raiz do projeto `/
 - Cobertura com provider V8 (evitando conflitos com Istanbul)
 - Thresholds mínimos: branches 80%, functions 85%, lines 90%, statements 90%
 - Mapeamento de aliases: `@/` → raiz, `@tests/`, `@factories/`, `@helpers/`, `@mocks/`, `@matchers/`
+- `transformIgnorePatterns` com exceções para `node-mocks-http`, `@faker-js`, `url`, `pg`, `@upstash/redis` e `uncrypto` (garante transformação Babel de módulos ESM)
 - Timeout de 10s, verbose mode, maxWorkers: 1
 
 ---
