@@ -4,7 +4,9 @@ import { createMocks } from 'node-mocks-http';
 // --- Mocks das Dependências ---
 
 // Mock do Formidable (Upload)
-jest.mock('formidable');
+jest.mock('formidable', () => ({
+  IncomingForm: jest.fn(),
+}));
 
 // Mock do File System (Upload)
 jest.mock('fs', () => ({
@@ -17,7 +19,7 @@ jest.mock('fs', () => ({
 }));
 
 // Mock do PostgreSQL (Banco de Dados)
-jest.mock('../../../lib/db.js', () => require('../../../mocks/db-module').mockDb());
+jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb());
 
 // Importa o módulo mockado do banco
 import dbModule from '../../../lib/db.js';

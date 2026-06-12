@@ -6,7 +6,8 @@ import { mockGlobalFetch } from '../../../../helpers/index.js';
 
 jest.mock('../../../../../lib/auth.js', () => ({
   getAuthToken: jest.fn(),
-  verifyToken: jest.fn()
+  verifyToken: jest.fn(),
+  withAuth: jest.fn((handler) => (req, res) => handler(req, res)),
 }));
 
 describe('API Admin - Fetch ML (Edge Cases)', () => {
@@ -38,7 +39,8 @@ describe('API Admin - Fetch ML (Edge Cases)', () => {
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(500);
-    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('MLB2222'));
+    // O fetch deve ter chamado MLB2222 (item_id explícito) primeiro, depois MLB1111
+    expect(global.fetch.mock.calls[0][0]).toContain('MLB2222');
   });
 
   it('deve testar retorno de produto de catálogo com descRes.ok = false (linhas 50-52)', async () => {
@@ -179,6 +181,6 @@ describe('API Admin - Fetch ML (Edge Cases)', () => {
     expect(res._getJSONData()).toEqual(expect.objectContaining({
       error: 'Anúncio inativo ou link inválido (Nenhum produto/item encontrado).'
     }));
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Falha no fallback de scraping HTML:', expect.any(Error));
+    expect(consoleErrorSpy).toHaveBeenCalledWith('[FetchML] ❌ Falha no fallback de scraping HTML:', expect.any(Error));
   });
 });

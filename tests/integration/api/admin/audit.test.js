@@ -2,13 +2,29 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 
 // Mocks do banco
-jest.mock('../../../../lib/db.js', () => require('../../../../mocks/db-module').mockDb());
+jest.mock('../../../../lib/db.js', () => require('../../../mocks/db-module').mockDb());
 
 // Mocks de autenticação
-jest.mock('../../../../lib/auth.js', () => ({
-  getAuthToken: jest.fn(),
-  verifyToken: jest.fn(),
-}));
+jest.mock('../../../../lib/auth.js', () => {
+  const mockModule = {
+    getAuthToken: jest.fn(),
+    verifyToken: jest.fn(),
+    hashPassword: jest.fn(),
+    withAuth: jest.fn((handler) => async (req, res) => {
+      const token = mockModule.getAuthToken();
+      if (!token) {
+        return res.status(401).json({ error: 'Não autenticado', message: 'Token ausente' });
+      }
+      const user = mockModule.verifyToken(token);
+      if (!user) {
+        return res.status(401).json({ error: 'Token inválido', message: 'Token ausente ou inválido' });
+      }
+      req.user = user;
+      return handler(req, res);
+    }),
+  };
+  return mockModule;
+});
 
 import handler from '../../../../pages/api/admin/audit.js';
 import { query } from '../../../../lib/db.js';

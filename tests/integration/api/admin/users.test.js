@@ -2,19 +2,41 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 
 // Mocks do banco de dados
-jest.mock('../../../../lib/db.js', () => require('../../../../mocks/db-module').mockDb({
+jest.mock('../../../../lib/db.js', () => require('../../../mocks/db-module').mockDb());
+
+// Mocks para CRUD (createRecord, updateRecords, deleteRecords)
+jest.mock('../../../../lib/crud.js', () => ({
   createRecord: jest.fn(),
   updateRecords: jest.fn(),
   deleteRecords: jest.fn(),
+}));
+
+// Mocks para auditoria (logActivity)
+jest.mock('../../../../lib/domain/audit.js', () => ({
   logActivity: jest.fn(),
 }));
 
 // Mocks de autenticação
-jest.mock('../../../../lib/auth.js', () => ({
-  getAuthToken: jest.fn(),
-  verifyToken: jest.fn(),
-  hashPassword: jest.fn(),
-}));
+jest.mock('../../../../lib/auth.js', () => {
+  const mockModule = {
+    getAuthToken: jest.fn(),
+    verifyToken: jest.fn(),
+    hashPassword: jest.fn(),
+    withAuth: jest.fn((handler) => async (req, res) => {
+      const token = mockModule.getAuthToken();
+      if (!token) {
+        return res.status(401).json({ error: 'Não autenticado', message: 'Token ausente' });
+      }
+      const user = mockModule.verifyToken(token);
+      if (!user) {
+        return res.status(401).json({ error: 'Token ausente ou inválido', message: 'Token inválido ou expirado' });
+      }
+      req.user = user;
+      return handler(req, res);
+    }),
+  };
+  return mockModule;
+});
 
 // Mocks do cache (Rate Limit)
 jest.mock('../../../../lib/cache.js', () => ({
@@ -22,7 +44,9 @@ jest.mock('../../../../lib/cache.js', () => ({
 }));
 
 import handler from '../../../../pages/api/admin/users.js';
-import { query, createRecord, updateRecords, deleteRecords, logActivity } from '../../../../lib/db.js';
+import { query } from '../../../../lib/db.js';
+import { createRecord, updateRecords, deleteRecords } from '../../../../lib/crud.js';
+import { logActivity } from '../../../../lib/domain/audit.js';
 import { getAuthToken, verifyToken, hashPassword } from '../../../../lib/auth.js';
 import { checkRateLimit } from '../../../../lib/cache.js';
 
@@ -189,8 +213,10 @@ describe('API Admin - Gestão de Usuários (/api/admin/users)', () => {
   });
 
   it('deve retornar 500 se o banco de dados cair abruptamente', async () => {
-    query.mockRejectedValueOnce(new Error('Erro catastrófico do DB'));
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    // Remove o mockImplementation padrão e força rejeição em todas as chamadas de query
+    query.mockReset();
+    query.mockRejectedValue(new Error('Erro catastrófico do DB'));
     
     const { req, res } = createMocks({ method: 'GET' });
     await handler(req, res);

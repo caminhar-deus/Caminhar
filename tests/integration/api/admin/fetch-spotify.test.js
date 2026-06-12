@@ -1,14 +1,30 @@
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 
-jest.mock('../../../../lib/auth.js', () => ({
-  getAuthToken: jest.fn(),
-  verifyToken: jest.fn(),
-}));
+jest.mock('../../../../lib/auth.js', () => {
+  const mockGetAuthToken = jest.fn();
+  const mockVerifyToken = jest.fn();
+  return {
+    getAuthToken: mockGetAuthToken,
+    verifyToken: mockVerifyToken,
+    withAuth: jest.fn((handler) => (req, res) => {
+      const token = mockGetAuthToken(req);
+      if (!token) {
+        return res.status(401).json({ message: 'Não autenticado' });
+      }
+      const decoded = mockVerifyToken(token);
+      if (!decoded) {
+        return res.status(401).json({ message: 'Token inválido' });
+      }
+      req.user = decoded;
+      return handler(req, res);
+    }),
+  };
+});
 
 import handler from '../../../../pages/api/admin/fetch-spotify.js';
 import { getAuthToken, verifyToken } from '../../../../lib/auth.js';
-import { mockGlobalFetch } from '../../../../helpers/index.js';
+import { mockGlobalFetch } from '../../../helpers/index.js';
 
 describe('API Admin - Fetch Spotify (/api/admin/fetch-spotify)', () => {
   let fetchMock;

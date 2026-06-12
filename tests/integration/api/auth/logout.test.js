@@ -8,9 +8,8 @@ describe('API Auth - Logout (/api/auth/logout)', () => {
     await handler(req, res);
     
     expect(res._getStatusCode()).toBe(200);
-    expect(res._getHeaders()['set-cookie']).toEqual(
-      expect.arrayContaining([expect.stringContaining('token=;')])
-    );
+    expect(res._getHeaders()['set-cookie'])
+      .toEqual(expect.stringContaining('token=;'));
     expect(res._getJSONData()).toEqual({ success: true, message: 'Deslogado com sucesso' });
   });
 });

@@ -4,7 +4,7 @@ import handler from '../../../../../pages/api/admin/dicas.js';
 import * as db from '../../../../../lib/db.js';
 import * as auth from '../../../../../lib/auth.js';
 
-jest.mock('../../../../../lib/db.js', () => require('../../../../../mocks/db-module').mockDb({
+jest.mock('../../../../../lib/db.js', () => require('../../../../mocks/db-module').mockDb({
   logActivity: jest.fn(),
 }));
 

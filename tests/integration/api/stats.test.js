@@ -6,10 +6,26 @@ import handler from '../../../pages/api/admin/stats';
 jest.mock('../../../lib/db', () => ({
   query: jest.fn(),
 }));
-jest.mock('../../../lib/auth', () => ({
-  getAuthToken: jest.fn(),
-  verifyToken: jest.fn(),
-}));
+jest.mock('../../../lib/auth', () => {
+  const getAuthToken = jest.fn();
+  const verifyToken = jest.fn();
+  return {
+    getAuthToken,
+    verifyToken,
+    withAuth: jest.fn((handler) => async (req, res) => {
+      const token = getAuthToken(req);
+      if (!token) {
+        return res.status(401).json({ error: 'Não autenticado' });
+      }
+      const decoded = verifyToken(token);
+      if (!decoded) {
+        return res.status(401).json({ error: 'Token inválido' });
+      }
+      req.user = decoded;
+      return handler(req, res);
+    }),
+  };
+});
 
 import { query } from '../../../lib/db';
 import { getAuthToken, verifyToken } from '../../../lib/auth';

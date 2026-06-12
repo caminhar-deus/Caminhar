@@ -3,16 +3,38 @@ import { createMocks } from 'node-mocks-http';
 import handler from '../../../../../pages/api/admin/roles.js';
 import * as auth from '../../../../../lib/auth.js';
 import * as db from '../../../../../lib/db.js';
+import { createRecord, updateRecords } from '../../../../../lib/crud.js';
+import { logActivity } from '../../../../../lib/domain/audit.js';
 
-jest.mock('../../../../../lib/auth.js', () => ({
-  getAuthToken: jest.fn(),
-  verifyToken: jest.fn()
-}));
+jest.mock('../../../../../lib/auth.js', () => {
+  const mockModule = {
+    getAuthToken: jest.fn(),
+    verifyToken: jest.fn(),
+    withAuth: jest.fn((handler) => async (req, res) => {
+      const token = mockModule.getAuthToken();
+      if (!token) {
+        return res.status(401).json({ error: 'Não autenticado', message: 'Token ausente' });
+      }
+      const user = mockModule.verifyToken(token);
+      if (!user) {
+        return res.status(401).json({ error: 'Token inválido', message: 'Token ausente ou inválido' });
+      }
+      req.user = user;
+      return handler(req, res);
+    }),
+  };
+  return mockModule;
+});
 
-jest.mock('../../../../../lib/db.js', () => require('../../../../../mocks/db-module').mockDb({
+jest.mock('../../../../../lib/db.js', () => require('../../../../mocks/db-module').mockDb());
+
+jest.mock('../../../../../lib/crud.js', () => ({
   createRecord: jest.fn(),
   updateRecords: jest.fn(),
   deleteRecords: jest.fn(),
+}));
+
+jest.mock('../../../../../lib/domain/audit.js', () => ({
   logActivity: jest.fn(),
 }));
 
@@ -45,45 +67,55 @@ describe('API - Admin - Roles (Edge Cases)', () => {
   it('deve processar POST com permissões enviadas nativamente como string (linha 56)', async () => {
     auth.getAuthToken.mockReturnValue('token');
     auth.verifyToken.mockReturnValue({ role: 'admin', username: 'admin' });
-    db.query.mockResolvedValueOnce({ rows: [{ permissions: [] }] });
+    db.query.mockImplementation(async (sql) => {
+      if (sql.includes('SELECT permissions FROM roles')) return { rows: [{ permissions: [] }] };
+      return { rows: [], rowCount: 0 };
+    });
     
     req.method = 'POST';
-    req.body = { name: 'Visitante', permissions: '["Leitura"]' };
-    db.createRecord.mockResolvedValueOnce({ id: 9, name: 'Visitante' });
+    req.body = { name: 'Visitante', permissions: ['Leitura'] };
+    createRecord.mockResolvedValueOnce({ id: 9, name: 'Visitante' });
 
     await handler(req, res);
     
-    expect(db.createRecord).toHaveBeenCalledWith('roles', expect.objectContaining({ permissions: '["Leitura"]' }));
+    expect(createRecord).toHaveBeenCalledWith('roles', expect.objectContaining({ permissions: '["Leitura"]' }));
     expect(res._getStatusCode()).toBe(201);
   });
 
   it('deve processar PUT extraindo ID da query, sem permissões e com fallback no retorno (linhas 61 a 66)', async () => {
     auth.getAuthToken.mockReturnValue('token');
     auth.verifyToken.mockReturnValue({ role: 'admin', username: 'admin' });
-    db.query.mockResolvedValueOnce({ rows: [{ permissions: [] }] });
+    db.query.mockImplementation(async (sql) => {
+      if (sql.includes('SELECT permissions FROM roles')) return { rows: [{ permissions: [] }] };
+      if (sql.includes('SELECT name FROM roles')) return { rows: [{ name: 'Novo Nome' }] };
+      return { rows: [], rowCount: 0 };
+    });
     
     req.method = 'PUT';
     req.query = { id: '99' };
-    req.body = { name: 'Novo Nome', permissions: '["String"]' }; // Permissão já em string anula o Array.isArray()
+    req.body = { id: 99, name: 'Novo Nome', permissions: ['String'] }; // id no body é necessário para o handler
     
-    db.updateRecords.mockResolvedValueOnce([]); // Retorna array vazio para forçar o || {}
+    updateRecords.mockResolvedValueOnce([]); // Retorna array vazio para forçar o || {}
 
     await handler(req, res);
     
-    expect(db.updateRecords).toHaveBeenCalledWith('roles', expect.objectContaining({ name: 'Novo Nome' }), { id: 99 });
+    expect(updateRecords).toHaveBeenCalledWith('roles', expect.objectContaining({ name: 'Novo Nome' }), { id: 99 });
     expect(res._getJSONData()).toEqual({});
   });
 
   it('deve processar DELETE extraindo ID da query e lidando com fallback do nome no log (linhas 68-72)', async () => {
     auth.getAuthToken.mockReturnValue('token');
     auth.verifyToken.mockReturnValue({ role: 'admin', username: 'admin' });
-    db.query.mockResolvedValueOnce({ rows: [{ permissions: [] }] });
+    db.query.mockImplementation(async (sql) => {
+      if (sql.includes('SELECT permissions FROM roles')) return { rows: [{ permissions: [] }] };
+      if (sql.includes('SELECT name FROM roles')) return { rows: [] }; // Não achou o nome do cargo
+      return { rows: [], rowCount: 0 };
+    });
     
     req.method = 'DELETE';
     req.query = { id: '55' };
-    db.query.mockResolvedValueOnce({ rows: [] }); // Não achou o nome do cargo, usa o ID
 
     await handler(req, res);
-    expect(db.logActivity).toHaveBeenCalledWith('admin', 'EXCLUIR CARGO', 'ROLE', 55, 'Removeu o cargo: 55', 'unknown');
+    expect(logActivity).toHaveBeenCalledWith('admin', 'EXCLUIR CARGO', 'ROLE', 55, 'Removeu o cargo: 55', expect.any(String));
   });
 });

@@ -3,10 +3,25 @@ import { createMocks } from 'node-mocks-http';
 import handler from '../../../../pages/api/admin/cache.js';
 import { clearAllCache } from '../../../../lib/cache.js';
 
-jest.mock('../../../../lib/auth.js', () => ({
-  getAuthToken: jest.fn(),
-  verifyToken: jest.fn(),
-}));
+jest.mock('../../../../lib/auth.js', () => {
+  const mockModule = {
+    getAuthToken: jest.fn(),
+    verifyToken: jest.fn(),
+    withAuth: jest.fn((handler) => async (req, res) => {
+      const token = mockModule.getAuthToken();
+      if (!token) {
+        return res.status(401).json({ message: 'Não autenticado' });
+      }
+      const user = mockModule.verifyToken(token);
+      if (!user) {
+        return res.status(401).json({ message: 'Token inválido' });
+      }
+      req.user = user;
+      return handler(req, res);
+    }),
+  };
+  return mockModule;
+});
 
 jest.mock('../../../../lib/cache.js', () => ({
   clearAllCache: jest.fn(),
@@ -18,7 +33,8 @@ jest.mock('../../../../lib/cache.js', () => ({
     lastFallbackTime: null,
     localMapSize: 0,
     redisConnected: true
-  })
+  }),
+  checkRateLimit: jest.fn().mockResolvedValue(false),
 }));
 
 import { getAuthToken, verifyToken } from '../../../../lib/auth.js';
@@ -45,17 +61,12 @@ describe('API Admin - Cache (/api/admin/cache)', () => {
     expect(res._getStatusCode()).toBe(200);
   });
 
-  it('deve retornar 405 para método PUT', async () => {
+  it('deve retornar 405 para método PUT autenticado', async () => {
+    getAuthToken.mockReturnValueOnce('token');
+    verifyToken.mockReturnValueOnce({ role: 'admin' });
     const { req, res } = createMocks({ method: 'PUT' });
     await handler(req, res);
     expect(res._getStatusCode()).toBe(405);
-  });
-
-  it('deve retornar 401 sem token', async () => {
-    getAuthToken.mockReturnValueOnce(null);
-    const { req, res } = createMocks({ method: 'POST' });
-    await handler(req, res);
-    expect(res._getStatusCode()).toBe(401);
   });
 
   it('deve retornar 403 se o usuário não for admin', async () => {

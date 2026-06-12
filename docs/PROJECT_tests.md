@@ -1,6 +1,6 @@
 # Análise do Projeto — Testes (`/tests/`)
 
-> **Data:** 13/05/2026 (atualizado em 11/06/2026 — 17ª revisão)
+> **Data:** 13/05/2026 (atualizado em 12/06/2026 — 18ª revisão)
 > **Objetivo:** Documentar de forma objetiva, clara e focada todos os arquivos de teste do projeto, descrevendo localização, propósito e funcionalidade de cada um.
 
 ---
@@ -187,7 +187,7 @@ tests/
 | `products.test.js` | CRUD de produtos + casos de borda | GET público/POST/PUT/DELETE admin, validação, 405, fallbacks GET, token silencioso |
 | `settings.general.test.js` | Validações de configurações | Atualizar com dados inválidos |
 | `settings.test.js` | CRUD /api/settings | GET público, POST/PUT/DELETE admin |
-| `stats.test.js` | Estatísticas | GET /api/stats, contagem de recursos |
+| `stats.test.js` | Estatísticas admin | GET /api/admin/stats, autenticação (401), contagem de recursos |
 | `status.test.js` | Status da API | GET /api/status, health check |
 | `upload-image.test.js` | Upload de imagem | Upload válido, tipo inválido, tamanho excessivo |
 | `videos.create.api.test.js` | Criação de vídeo (admin) | Dados válidos, URL inválida, campos obrigatórios |
@@ -459,7 +459,7 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 
 ---
 
-> **Nota atualizada (11/06/2026 — 17ª revisão):** Este documento reflete a estrutura completa de testes do projeto Caminhar.
+> **Nota atualizada (12/06/2026 — 18ª revisão):** Este documento reflete a estrutura completa de testes do projeto Caminhar.
 > 
 > **Ajustes realizados na 1ª revisão (05/06):** 3 mesclagens de arquivos edge case (04/06), centralizado `jest.clearAllMocks()` no setup.js, removido ~41 chamadas redundantes, eliminado supressão global de `console.error` em 10 arquivos, refatoradas 4 factories para usar `createBaseFactory` (~70 linhas eliminadas).
 > 
@@ -559,4 +559,22 @@ O diretório `tests/integration/api/v1/` foi **removido** do projeto em 13/05/20
 > > - Corrigido `tests/unit/components/Admin/Tools/IntegrityCheck.test.js`: teste esperava texto inexistente `"Sistema operacional."`. Adicionado mock de fetch (`mockFetchSuccess`) com dados simulados da API `/api/admin/integrity`. Adicionado texto "Sistema operacional" no componente `IntegrityCheck.js` como subtítulo da seção `case 'system'`. Teste expandido de 1 para 4 testes (título/texto descritivo, status geral saudável, listagem de 5 checks, detalhes do sistema). Usa `await screen.findByText()` assíncrono em vez de `screen.getByText()` síncrono.
 > > - **Total:** 2 arquivos modificados (1 componente + 1 teste). 4/4 testes passando. Nenhuma regressão.
 > 
+> > **Ajustes realizados na 16ª revisão (11/06/2026):**
+> > - Corrigido `tests/integration/api/auth/logout.test.js`: o teste esperava que `set-cookie` fosse um array (`expect.arrayContaining([expect.stringContaining('token=;')])`), mas o `node-mocks-http` retorna o valor como string (definido via `res.setHeader('Set-Cookie', string)`). Ajustado para `expect.stringContaining('token=;')`, alinhando com o padrão já usado em `tests/unit/lib/auth.test.js`. O código de produção (`pages/api/auth/logout.js`) não foi alterado.
+> > - **Total:** 1 arquivo de teste modificado. 1/1 teste passando. Nenhuma regressão.
+> 
+> > **Ajustes realizados na 17ª revisão (12/06/2026):**
+> > - Corrigido `TypeError: (0 , _auth.withAuth) is not a function` em 6 arquivos de teste que mockavam `lib/auth.js` sem incluir `withAuth`: `cache.test.js`, `fetch-spotify.edge.test.js`, `fetch-spotify.test.js`, `fetch-youtube.test.js`, `fetch-ml.test.js`, `fetch-ml.edge.test.js`. Adicionado `withAuth: jest.fn((handler) => (req, res) => handler(req, res))` aos mocks.
+> > - Em `cache.test.js`: mock convertido para factory pattern com `withAuth` validando token/usuário (mesmo padrão de `roles.edge.test.js`); adicionado `checkRateLimit` ao mock de `lib/cache.js`; ajustado teste PUT para autenticar antes (antes retornava 401 do `withAuth` ao invés de 405 do método).
+> > - Em `fetch-spotify.edge.test.js` e `fetch-ml.edge.test.js`: corrigidas asserções de `console.error` para incluir prefixos `[FetchSpotify]` e `[FetchML]`.
+> > - Em `fetch-ml.edge.test.js`: corrigida asserção de `global.fetch` para usar `mock.calls[0][0]` em vez de `toHaveBeenCalledWith(stringContaining)` (o handler faz múltiplas chamadas com diferentes URLs).
+> > - **Total:** 6 arquivos de teste modificados. 13/13 testes passando. Nenhum arquivo de produção alterado.
+> > 
+> > **Ajustes realizados na 18ª revisão (12/06/2026):**
+> > - **Path de importação corrigido** em 3 arquivos em `tests/integration/api/admin/`: `../../../../helpers/index.js` → `../../../helpers/index.js` (1 nível extra nos `../`). A função `mockGlobalFetch` existe em `tests/helpers/console.js` e é re-exportada por `tests/helpers/index.js` — o path antigo resolvia para a raiz do projeto (`/helpers/`) em vez de `tests/helpers/`.
+> > - **Mock do `withAuth` melhorado** nos 3 arquivos `fetch-ml.test.js`, `fetch-spotify.test.js`, `fetch-youtube.test.js`: o mock pass-through simples (`(handler) => (req, res) => handler(req, res)`) foi substituído por um mock funcional que replica a lógica real de verificação de autenticação do `withAuth` original (verifica `getAuthToken` → 401 se null, `verifyToken` → 401 se inválido, `req.user = decoded`). As variáveis mock são declaradas dentro da factory do `jest.mock()` para respeitar as regras de escopo do Jest.
+> > - **Asserções corrigidas no `fetch-youtube.test.js`**: `expect(global.fetch).toHaveBeenCalledWith(stringContaining)` ajustado para incluir o 2º argumento (`signal`) do `fetchWithTimeout`; erro 500 verifica `message` em vez de `error` no JSON (alinhado ao `createAdminHandler` que retorna `{ error, message }`).
+> > - **Total:** 3 arquivos de teste modificados. **17/17 testes passando** nos 3 arquivos (5 ML + 7 Spotify + 5 YouTube). Nenhum arquivo de produção alterado.
+> > - **Verificação de consistência:** 13 outros arquivos em `tests/unit/` com `../../../../helpers/index.js` foram verificados e estão corretos (profundidade de 4 níveis dentro de `tests/unit/` vs. 3 níveis em `tests/integration/api/admin/`). Nenhuma alteração necessária.
+
 > Para detalhes de implementação específicos, consulte `docs/UPGRADE_tests.md`.

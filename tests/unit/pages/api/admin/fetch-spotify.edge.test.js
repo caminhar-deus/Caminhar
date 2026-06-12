@@ -5,7 +5,8 @@ import * as auth from '../../../../../lib/auth.js';
 
 jest.mock('../../../../../lib/auth.js', () => ({
   getAuthToken: jest.fn(),
-  verifyToken: jest.fn()
+  verifyToken: jest.fn(),
+  withAuth: jest.fn((handler) => (req, res) => handler(req, res)),
 }));
 import { mockGlobalFetch } from '../../../../helpers/index.js';
 
@@ -38,9 +39,9 @@ describe('API - Admin - Fetch Spotify (Edge Cases)', () => {
     await handler(req, res);
 
     // Verifica se todos os tratamentos de erro internos (catch blocks) foram acionados
-    expect(console.error).toHaveBeenCalledWith('Falha na API oEmbed:', expect.any(Error));
-    expect(console.error).toHaveBeenCalledWith('Falha na leitura do Iframe:', expect.any(Error));
-    expect(console.error).toHaveBeenCalledWith('Falha no HTML principal:', expect.any(Error));
+    expect(console.error).toHaveBeenCalledWith('[FetchSpotify] ❌ Falha na API oEmbed:', expect.any(Error));
+    expect(console.error).toHaveBeenCalledWith('[FetchSpotify] ❌ Falha na leitura do Iframe:', expect.any(Error));
+    expect(console.error).toHaveBeenCalledWith('[FetchSpotify] ❌ Falha no HTML principal:', expect.any(Error));
     
     // Verifica se a API lidou corretamente retornando o erro de fallback final (status 500)
     expect(res._getStatusCode()).toBe(500);

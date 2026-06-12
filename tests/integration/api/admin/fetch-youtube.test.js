@@ -2,14 +2,30 @@ import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals
 import { createMocks } from 'node-mocks-http';
 
 // Mocks de autenticação
-jest.mock('../../../../lib/auth.js', () => ({
-  getAuthToken: jest.fn(),
-  verifyToken: jest.fn(),
-}));
+jest.mock('../../../../lib/auth.js', () => {
+  const mockGetAuthToken = jest.fn();
+  const mockVerifyToken = jest.fn();
+  return {
+    getAuthToken: mockGetAuthToken,
+    verifyToken: mockVerifyToken,
+    withAuth: jest.fn((handler) => (req, res) => {
+      const token = mockGetAuthToken(req);
+      if (!token) {
+        return res.status(401).json({ message: 'Não autenticado' });
+      }
+      const decoded = mockVerifyToken(token);
+      if (!decoded) {
+        return res.status(401).json({ message: 'Token inválido' });
+      }
+      req.user = decoded;
+      return handler(req, res);
+    }),
+  };
+});
 
 import handler from '../../../../pages/api/admin/fetch-youtube.js';
 import { getAuthToken, verifyToken } from '../../../../lib/auth.js';
-import { mockGlobalFetch } from '../../../../helpers/index.js';
+import { mockGlobalFetch } from '../../../helpers/index.js';
 
 describe('API Admin - Fetch YouTube (/api/admin/fetch-youtube)', () => {
   let fetchMock;
@@ -64,7 +80,10 @@ describe('API Admin - Fetch YouTube (/api/admin/fetch-youtube)', () => {
 
       expect(res._getStatusCode()).toBe(200);
       expect(JSON.parse(res._getData())).toEqual({ title: 'Vídeo Muito Legal' });
-      expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('https://www.youtube.com/oembed'));
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('https://www.youtube.com/oembed'),
+        expect.objectContaining({})
+      );
     });
 
     it('deve retornar 500 se o fetch falhar (ex: vídeo privado, apagado ou erro de rede)', async () => {
@@ -74,7 +93,7 @@ describe('API Admin - Fetch YouTube (/api/admin/fetch-youtube)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(500);
-      expect(JSON.parse(res._getData()).error).toContain('Não foi possível encontrar o vídeo');
+      expect(JSON.parse(res._getData()).message).toContain('Não foi possível encontrar o vídeo');
     });
   });
 });
