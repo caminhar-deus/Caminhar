@@ -1,7 +1,7 @@
 // Módulo compartilhado de limpeza de dados de teste no PostgreSQL
 // Uso: import { loadEnv, cleanTableByPattern } from './utils/cleanup.js';
 
-import { loadEnv } from './load-env.js';
+export { loadEnv } from './load-env.js';
 import { getPool, closePool } from '../db/connection.js';
 
 /**

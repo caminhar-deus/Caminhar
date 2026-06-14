@@ -2,7 +2,7 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
 // Mock do módulo 'fs' para evitar operações reais no disco
 jest.mock('fs', () => ({
-  // Manter as outras funções do mock para que o import de 'backup.js' não falhe
+  // Mantém funções síncronas necessárias para outros módulos não falharem
   readdirSync: jest.fn(),
   unlinkSync: jest.fn(),
   appendFileSync: jest.fn(),
@@ -11,6 +11,18 @@ jest.mock('fs', () => ({
   existsSync: jest.fn(),
   statSync: jest.fn(),
   mkdirSync: jest.fn(),
+  createReadStream: jest.fn(),
+  createWriteStream: jest.fn(),
+  promises: {
+    access: jest.fn(),
+    readFile: jest.fn(),
+    mkdir: jest.fn(),
+    unlink: jest.fn(),
+    writeFile: jest.fn(),
+    stat: jest.fn(),
+    opendir: jest.fn(),
+    appendFile: jest.fn(),
+  },
 }));
 
 // Mock do child_process
@@ -26,17 +38,17 @@ describe('getBackupLogs', () => {
   });
 
   it('deve retornar um array vazio se o arquivo de log não existir', async () => {
-    fs.existsSync.mockReturnValue(false);
+    fs.promises.access.mockRejectedValue(new Error('ENOENT'));
 
     const logs = await getBackupLogs();
 
     expect(logs).toEqual([]);
-    expect(fs.readFileSync).not.toHaveBeenCalled();
+    expect(fs.promises.readFile).not.toHaveBeenCalled();
   });
 
   it('deve retornar um array vazio se o arquivo de log estiver vazio', async () => {
-    fs.existsSync.mockReturnValue(true);
-    fs.readFileSync.mockReturnValue('');
+    fs.promises.access.mockResolvedValue();
+    fs.promises.readFile.mockResolvedValue('');
 
     const logs = await getBackupLogs();
 
@@ -48,8 +60,8 @@ describe('getBackupLogs', () => {
 [2026-02-10 11:00:00] [RESTORE_SUCCESS] Banco de dados restaurado de backup-1.sql.gz
 [2026-02-10 12:00:00] [ERROR] Falha ao criar backup`;
 
-    fs.existsSync.mockReturnValue(true);
-    fs.readFileSync.mockReturnValue(logContent);
+    fs.promises.access.mockResolvedValue();
+    fs.promises.readFile.mockResolvedValue(logContent);
 
     const logs = await getBackupLogs();
 
@@ -68,8 +80,8 @@ describe('getBackupLogs', () => {
 linha mal formatada
 [2026-02-10 12:00:00] [ERROR] Falha ao criar backup`;
 
-    fs.existsSync.mockReturnValue(true);
-    fs.readFileSync.mockReturnValue(logContent);
+    fs.promises.access.mockResolvedValue();
+    fs.promises.readFile.mockResolvedValue(logContent);
 
     const logs = await getBackupLogs();
 

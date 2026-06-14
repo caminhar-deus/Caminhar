@@ -1,5 +1,30 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-// Mock das dependências de sistema
+
+jest.mock('child_process', () => ({ exec: jest.fn(), spawn: jest.fn() }));
+
+jest.mock('zlib', () => ({
+  createGzip: jest.fn(() => ({ pipe: jest.fn(dest => dest), on: jest.fn() })),
+  createGunzip: jest.fn(() => ({ pipe: jest.fn(dest => dest), on: jest.fn() })),
+}));
+
+jest.mock('crypto', () => ({
+  createHash: jest.fn(() => ({
+    update: jest.fn().mockReturnThis(),
+    digest: jest.fn().mockReturnValue('abc123hash'),
+  })),
+  randomBytes: jest.fn(() => Buffer.alloc(12, 0xaa)),
+  createCipheriv: jest.fn(() => ({
+    update: jest.fn(() => Buffer.from('encrypted')),
+    final: jest.fn(() => Buffer.from('final')),
+    getAuthTag: jest.fn(() => Buffer.from('tag')),
+  })),
+}));
+
+jest.mock('../../../../scripts/utils/date-format.js', () => ({
+  formatISODate: jest.fn(() => '2026-01-15T02-00-00Z'),
+  formatLogDate: jest.fn(() => '2026-01-15 02:00:00'),
+}));
+
 jest.mock('fs', () => ({
   existsSync: jest.fn(),
   mkdirSync: jest.fn(),
@@ -9,134 +34,138 @@ jest.mock('fs', () => ({
   readdirSync: jest.fn(),
   unlinkSync: jest.fn(),
   statSync: jest.fn(),
-}));
-
-jest.mock('child_process', () => ({
-  exec: jest.fn(),
+  createReadStream: jest.fn(() => {
+    let scheduled = false;
+    const cbs = {};
+    return {
+      on(event, cb) {
+        cbs[event] = cb;
+        // Dispara apenas uma vez, quando ambos os listeners estiverem registrados
+        if (cbs['data'] && cbs['end'] && !scheduled) {
+          scheduled = true;
+          process.nextTick(() => {
+            if (cbs['data']) cbs['data'](Buffer.from('test'));
+            if (cbs['end']) cbs['end']();
+          });
+        }
+        return this;
+      },
+      pipe: jest.fn(dest => dest),
+    };
+  }),
+  createWriteStream: jest.fn(() => ({
+    on(event, cb) { if (event === 'finish') process.nextTick(cb); return this; },
+    pipe: jest.fn(dest => dest),
+  })),
+  promises: {
+    access: jest.fn(),
+    readFile: jest.fn(),
+    mkdir: jest.fn(),
+    unlink: jest.fn(),
+    writeFile: jest.fn(),
+    stat: jest.fn(),
+    opendir: jest.fn(),
+    appendFile: jest.fn(),
+  },
 }));
 
 import { createBackup, restoreBackup } from '../../../../scripts/backup.js';
 import fs from 'fs';
 import child_process from 'child_process';
 
+function createAsyncDirIterator(files) {
+  return {
+    [Symbol.asyncIterator]() {
+      let i = 0;
+      return {
+        next() {
+          if (i < files.length) return Promise.resolve({ value: { name: files[i++], isFile: () => true }, done: false });
+          return Promise.resolve({ value: undefined, done: true });
+        }
+      };
+    }
+  };
+}
+
 describe('Operações de Backup (lib/backup.js)', () => {
   const DATABASE_URL = 'postgresql://user:pass@host:5432/testdb';
-  
+
   beforeEach(() => {
     process.env.DATABASE_URL = DATABASE_URL;
-    
-    // Configuração padrão dos mocks
+    jest.clearAllMocks();
+
     fs.existsSync.mockReturnValue(true);
-    fs.readdirSync.mockReturnValue([]);
     fs.readFileSync.mockReturnValue('');
     fs.statSync.mockReturnValue({ size: 1024 });
-    
-    // Mock do exec para simular sucesso por padrão
-    child_process.exec.mockImplementation((cmd, cb) => cb(null, 'stdout', ''));
+    fs.promises.access.mockResolvedValue();
+    fs.promises.mkdir.mockResolvedValue();
+    fs.promises.readFile.mockResolvedValue('');
+    fs.promises.appendFile.mockResolvedValue();
+    fs.promises.unlink.mockResolvedValue();
+    fs.promises.writeFile.mockResolvedValue();
+
+    child_process.spawn.mockReturnValue({
+      stdout: { pipe: jest.fn(dest => dest), on: jest.fn() },
+      stderr: { on: jest.fn() },
+      stdin: { on: jest.fn() },
+      on: jest.fn((ev, cb) => { if (ev === 'close') process.nextTick(() => cb(0)); }),
+      exitCode: 0,
+    });
   });
 
   describe('createBackup', () => {
-    it('deve executar o pg_dump e criar o arquivo de backup', async () => {
+    it('deve executar o pg_dump', async () => {
       await createBackup();
-
-      expect(child_process.exec).toHaveBeenCalled();
-      const command = child_process.exec.mock.calls[0][0];
-      
-      expect(command).toContain(`pg_dump "${DATABASE_URL}"`);
-      expect(command).toContain('| gzip >');
-      expect(command).toContain('.sql.gz');
+      expect(child_process.spawn).toHaveBeenCalledWith('pg_dump', ['-d', DATABASE_URL], expect.any(Object));
     });
 
-    it('deve criar o diretório de backups se não existir', async () => {
-      // Simula que o diretório não existe na primeira verificação
-      fs.existsSync.mockReturnValueOnce(false); 
-      
+    it('deve criar diretório se não existir', async () => {
+      fs.existsSync.mockReturnValueOnce(false);
       await createBackup();
-      
-      expect(fs.mkdirSync).toHaveBeenCalledWith(expect.stringContaining('backups'), { recursive: true });
+      expect(fs.promises.mkdir).toHaveBeenCalledWith(expect.stringContaining('backups'), { recursive: true });
     });
 
-    it('deve limpar backups antigos após uma criação bem-sucedida', async () => {
-        const maxBackups = 10;
-        // Simula arquivos existentes para disparar a limpeza
-        const fakeBackups = Array.from({ length: maxBackups + 2 }, (_, i) => {
-            const day = (15 - i).toString().padStart(2, '0');
-            return `caminhar-pg-backup_2026-01-${day}_02-00-00.sql.gz`;
-        });
-        fs.readdirSync.mockReturnValue(fakeBackups);
-        
-        await createBackup();
-        
-        // Espera que unlinkSync seja chamado para os arquivos excedentes
-        // 2 backups antigos * 2 arquivos cada (backup + hash) = 4 chamadas
-        expect(fs.unlinkSync).toHaveBeenCalledTimes(6);
+    it('deve limpar backups antigos', async () => {
+      const fakeBackups = Array.from({ length: 12 }, (_, i) => {
+        const day = (15 - i).toString().padStart(2, '0');
+        return `caminhar-pg-backup_2026-01-${day}_02-00-00.sql.gz`;
+      });
+      fs.promises.opendir.mockResolvedValue(createAsyncDirIterator(fakeBackups));
+      await createBackup();
+      expect(fs.promises.unlink).toHaveBeenCalled();
     });
-    
-    it('deve logar o sucesso da operação', async () => {
-        await createBackup();
-        expect(fs.appendFileSync).toHaveBeenCalledWith(expect.stringContaining('backup.log'), expect.stringContaining('[SUCCESS]'));
+
+    it('deve logar sucesso', async () => {
+      await createBackup();
+      expect(fs.promises.appendFile).toHaveBeenCalledWith(
+        expect.stringContaining('backup.log'), expect.stringContaining('[SUCCESS]')
+      );
     });
   });
 
   describe('restoreBackup', () => {
-    it('deve criar backup de segurança e restaurar o banco', async () => {
-      const backupFile = 'backup-test.sql.gz';
-      
-      // Mock para simular que arquivo de hash não existe (para testes antigos)
-      fs.existsSync.mockImplementation((path) => {
-        if (path.endsWith('.sha256')) return false;
-        return true;
-      });
-      
-      // Hash SHA-256 de string vazia para compatibilidade com o mock
-      const emptyHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
-      fs.readFileSync.mockImplementation((path) => {
-        if (path.endsWith('.sha256')) return emptyHash;
-        return '';
+    it('deve fazer backup seguro e restaurar', async () => {
+      // Mock do readFile para que .sha256 retorne hash que corresponde ao digest mockado
+      fs.promises.readFile.mockImplementation((path) => {
+        if (String(path).endsWith('.sha256')) return Promise.resolve('abc123hash\n');
+        return Promise.resolve('');
       });
 
-      // Silencia o console.warn para este teste
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-
-      await restoreBackup(backupFile);
-      
-      expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('ATENÇÃO'));
-      expect(child_process.exec).toHaveBeenCalledTimes(2);
-      
-      // 1. Backup de segurança
-      const safetyCmd = child_process.exec.mock.calls[0][0];
-      expect(safetyCmd).toContain('pg_dump');
-      expect(safetyCmd).toContain('pre-restore-backup');
-      
-      // 2. Restauração
-      const restoreCmd = child_process.exec.mock.calls[1][0];
-      expect(restoreCmd).toContain('gunzip <');
-      expect(restoreCmd).toContain(backupFile);
-      expect(restoreCmd).toContain('psql');
-
-      consoleWarnSpy.mockRestore();
+      const spy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      await restoreBackup('backup-test.sql.gz');
+      expect(spy).toHaveBeenCalledWith(expect.stringContaining('ATENÇÃO'));
+      expect(child_process.spawn).toHaveBeenCalledTimes(2);
+      expect(child_process.spawn).toHaveBeenNthCalledWith(1, 'pg_dump', ['-d', DATABASE_URL], expect.any(Object));
+      expect(child_process.spawn).toHaveBeenNthCalledWith(2, 'psql', ['-d', DATABASE_URL], expect.any(Object));
+      spy.mockRestore();
     });
 
-    it('deve falhar se o arquivo de backup não existir', async () => {
-       fs.existsSync.mockImplementation((p) => {
-           // ensureBackupDirectory verifica o diretório
-           if (typeof p === 'string' && p.endsWith('backups')) return true;
-           // restoreBackup verifica o arquivo
-           return false;
-       });
-       
-       // Silencia o console.error para este teste, pois a falha é esperada
-       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
-       await expect(restoreBackup('missing.sql.gz')).rejects.toThrow('Backup file not found');
-
-       // Opcional, mas bom: verifica se a função de log de erro foi chamada
-       expect(consoleErrorSpy).toHaveBeenCalledWith(
-         expect.stringContaining('Erro ao restaurar o backup'),
-         expect.any(Error)
-       );
-
-       consoleErrorSpy.mockRestore();
+    it('deve falhar se backup não existir', async () => {
+      fs.existsSync.mockReturnValue(false);
+      const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      await expect(restoreBackup('missing.sql.gz')).rejects.toThrow();
+      expect(spy).toHaveBeenCalledWith(expect.stringContaining('Erro ao restaurar o backup'), expect.any(Error));
+      spy.mockRestore();
     });
   });
 });

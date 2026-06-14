@@ -3,17 +3,39 @@ import { createMocks } from 'node-mocks-http';
 
 // Mock das dependências para isolar o teste na lógica do handler da API
 // IMPORTANTE: Os mocks devem ser declarados ANTES da importação do handler
+
 jest.mock('../../../../lib/db', () => ({
   query: jest.fn(),
+}));
+
+jest.mock('../../../../lib/crud', () => ({
   createRecord: jest.fn(),
+}));
+
+jest.mock('../../../../lib/domain/audit', () => ({
   logActivity: jest.fn(),
 }));
 
-jest.mock('../../../../lib/auth', () => ({
-  getAuthToken: jest.fn().mockReturnValue('fake-token'),
-  verifyToken: jest.fn(),
-  hashPassword: jest.fn().mockResolvedValue('hashed_password_string'),
-}));
+jest.mock('../../../../lib/auth', () => {
+  const mockModule = {
+    getAuthToken: jest.fn().mockReturnValue('fake-token'),
+    verifyToken: jest.fn(),
+    hashPassword: jest.fn().mockResolvedValue('hashed_password_string'),
+    withAuth: jest.fn((handler) => async (req, res) => {
+      const token = mockModule.getAuthToken();
+      if (!token) {
+        return res.status(401).json({ error: 'Não autenticado', message: 'Token ausente' });
+      }
+      const user = mockModule.verifyToken(token);
+      if (!user) {
+        return res.status(401).json({ error: 'Token ausente ou inválido', message: 'Token inválido ou expirado' });
+      }
+      req.user = user;
+      return handler(req, res);
+    }),
+  };
+  return mockModule;
+});
 
 jest.mock('../../../../lib/cache', () => ({
   checkRateLimit: jest.fn().mockResolvedValue(false),
@@ -23,7 +45,9 @@ jest.mock('../../../../lib/cache', () => ({
 import handler from '../../../../pages/api/admin/users.js';
 
 // Importa os mocks para poder usá-los nos testes
-import { query, createRecord, logActivity } from '../../../../lib/db';
+import { query } from '../../../../lib/db';
+import { createRecord } from '../../../../lib/crud';
+import { logActivity } from '../../../../lib/domain/audit';
 import { verifyToken, getAuthToken, hashPassword } from '../../../../lib/auth';
 
 describe('API de Usuários - Criação (POST /api/admin/users)', () => {
@@ -127,6 +151,8 @@ describe('API de Usuários - Criação (POST /api/admin/users)', () => {
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(403);
-    expect(JSON.parse(res._getData())).toEqual({ error: 'Acesso negado. Requer permissão de Usuários ou Segurança.' });
+    const responseBody = JSON.parse(res._getData());
+    expect(responseBody.error).toBe('Acesso negado');
+    expect(responseBody.message).toBe('Acesso negado. Requer permissão: Segurança ou Usuários.');
   });
 });

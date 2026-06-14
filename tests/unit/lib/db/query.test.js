@@ -27,13 +27,15 @@ describe('Base Query Wrapper', () => {
         await expect(query('SELECT 1')).rejects.toThrow('Connection lost');
         
         // Verifica se o log específico da função query foi chamado
-        expect(consoleSpy).toHaveBeenCalledWith('Erro ao executar consulta SQL', {
-            code: undefined,
-            duration: expect.any(String),
-            message: 'Connection lost',
-            query: 'SELECT 1',
-            attempt: 1
-        });
+        expect(consoleSpy).toHaveBeenCalledWith(
+            '[DB] ❌ Erro ao executar consulta SQL',
+            expect.objectContaining({
+                code: undefined,
+                duration: expect.any(String),
+                message: 'Connection lost',
+                query: 'SELECT 1'
+            })
+        );
         consoleSpy.mockRestore();
     });
 });

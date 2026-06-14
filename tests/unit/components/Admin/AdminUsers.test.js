@@ -12,17 +12,20 @@ jest.mock('../../../../components/Admin/AdminRolesTab', () => {
 });
 
 describe('Componente Front-End - AdminUsers', () => {
-  it('deve renderizar a aba de usuários por padrão', () => {
+  it('deve renderizar a aba de usuários por padrão', async () => {
     render(<AdminUsers />);
+
+    await screen.findByTestId('users-tab');
     expect(screen.getByTestId('users-tab')).toBeInTheDocument();
     expect(screen.queryByTestId('roles-tab')).not.toBeInTheDocument();
   });
 
-  it('deve alternar para a aba de cargos ao clicar no botão', () => {
+  it('deve alternar para a aba de cargos ao clicar no botão', async () => {
     render(<AdminUsers />);
-    
+
     fireEvent.click(screen.getByText(/Gestão de Cargos/i));
-    
+
+    await screen.findByTestId('roles-tab');
     expect(screen.getByTestId('roles-tab')).toBeInTheDocument();
     expect(screen.queryByTestId('users-tab')).not.toBeInTheDocument();
   });

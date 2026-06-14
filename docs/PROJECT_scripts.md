@@ -3,7 +3,7 @@
 > **Projeto:** Caminhar  
 > **Diretório:** `/scripts`  
 > **Objetivo deste documento:** Descrever a finalidade, localização e funcionamento de cada script disponível no diretório `scripts/` e seus subdiretórios.  
-> **Última atualização:** 11/06/2026
+> **Última atualização:** 13/06/2026
 
 ---
 
@@ -265,6 +265,18 @@ scripts/
   node scripts/migrate.js --revert            # Reverte última migração
   node scripts/migrate.js --help              # Ajuda
   ```
+- **Funções exportadas:**
+  - **`ensureMigrationTable(pool)`** — cria a tabela `_migrations` se não existir
+  - **`getAppliedMigrations(pool)`** — retorna `Set` com nomes das migrações já aplicadas
+  - **`listMigrationFiles()`** — lista arquivos `.js` no diretório `scripts/migrations/` seguindo o padrão `NNN-*.js`, ordenados por prefixo numérico
+  - **`migrationNameFromFile(filename)`** — extrai o nome da migração removendo a extensão `.js`
+  - **`applyMigration(pool, filename)`** — executa uma migração individual dentro de transação
+  - **`revertLastMigration(pool)`** — reverte a última migração aplicada via função `down()`
+  - **`listStatus(pool)`** — exibe status (aplicada/pendente) de todas as migrações
+  - **`showHelp()`** — exibe mensagem de ajuda
+  - **`run()`** — função principal que orquestra a CLI (lê `process.argv`, decide ação)
+- **CLI guard:** A IIFE que executa `run()` só é acionada quando o script é chamado diretamente via terminal (`node scripts/migrate.js`), verificando `process.argv[1]`. Quando importado como módulo (ex: testes), o CLI guard impede a execução automática.
+- **Refatorado em:** 13/06/2026 — todas as funções internas foram exportadas com `export`, a IIFE foi movida para `run()` com CLI guard, o import foi alterado de `import fs from 'fs/promises'` para `import fs from 'fs'` com `fs.promises.*`, alinhando com o padrão dos demais scripts do projeto e permitindo testes unitários com mocks.
 - **Criado em:** 21/05/2026 — refatoração (unificação das 11 migrações com executor central).
 - **Dependências:** `fs`, `path`, `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local)
 
@@ -621,12 +633,14 @@ scripts/
 ### `scripts/utils/cleanup.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/utils/cleanup.js`
 - **Propósito:** Módulo compartilhado de limpeza de dados de teste no PostgreSQL. Fornece duas funções exportadas:
-  - **`loadEnv()`** — reexportada de `scripts/utils/load-env.js`. Carrega variáveis de ambiente priorizando `.env.local` se existir, com fallback para `.env`. Substitui as diferentes implementações de carregamento de ambiente espalhadas pelos scripts.
+  - **`loadEnv()`** — reexportada de `scripts/utils/load-env.js` via `export { loadEnv } from './load-env.js'` (sem duplicação de código). Carrega variáveis de ambiente priorizando `.env.local` se existir, com fallback para `.env`. Substitui as diferentes implementações de carregamento de ambiente espalhadas pelos scripts.
   - **`cleanTableByPattern({ table, column, patterns, showDeleted })`** — função genérica que usa `getPool()` do módulo `scripts/db/connection.js`, constrói query dinâmica com LIKE patterns (OR), executa DELETE com RETURNING opcional (`showDeleted`), fecha pool no `finally` e usa `process.exit(1)` em caso de erro.
   - **Uso:** `import { loadEnv, cleanTableByPattern } from './cleanup.js';`
 - **Criado em:** 20/05/2026 — refatoração dos scripts `clean-load-test-posts.js`, `clean-k6-videos.js` e `cleanup-test-data.js` para eliminar duplicidade de código.
 - **Atualizado em:** 07/06/2026 — removida criação direta de `pg.Pool`; agora usa `getPool()`/`closePool()` de `scripts/db/connection.js`. Removido também o carregamento manual de ambiente — delega para `loadEnv()` de `scripts/utils/load-env.js`.
+- **Atualizado em:** 13/06/2026 — `import { loadEnv } from './load-env.js'` alterado para `export { loadEnv } from './load-env.js'`, tornando o módulo um barrel que reexporta a função sem duplicar a referência.
 - **Dependências:** `scripts/utils/load-env.js` (local), `scripts/db/connection.js` (local)
+- **Testes:** 2 testes unitários em `tests/unit/scripts/utils/cleanup.test.js` validando `loadEnv()`.
 
 ### `scripts/utils/cleanup-test-data.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/utils/cleanup-test-data.js`

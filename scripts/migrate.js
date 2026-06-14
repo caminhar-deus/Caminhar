@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import fs from 'fs/promises';
+import fs from 'fs';
 import path from 'path';
 import { loadEnv } from './utils/load-env.js';
 import { getPool, closePool } from './db/connection.js';
@@ -12,7 +12,7 @@ const MIGRATION_TABLE = '_migrations';
 /**
  * Cria a tabela de controle de migrações, se não existir.
  */
-async function ensureMigrationTable(pool) {
+export async function ensureMigrationTable(pool) {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS ${MIGRATION_TABLE} (
       id SERIAL PRIMARY KEY,
@@ -25,7 +25,7 @@ async function ensureMigrationTable(pool) {
 /**
  * Retorna as migrações já aplicadas (nomes).
  */
-async function getAppliedMigrations(pool) {
+export async function getAppliedMigrations(pool) {
   const result = await pool.query(`SELECT name FROM ${MIGRATION_TABLE} ORDER BY id`);
   return new Set(result.rows.map(r => r.name));
 }
@@ -34,10 +34,10 @@ async function getAppliedMigrations(pool) {
  * Lista arquivos de migração no diretório, ordenados por prefixo numérico.
  * Retorna apenas arquivos .js com padrão NNN-*.js
  */
-async function listMigrationFiles() {
+export async function listMigrationFiles() {
   let files;
   try {
-    files = await fs.readdir(MIGRATIONS_DIR);
+    files = await fs.promises.readdir(MIGRATIONS_DIR);
   } catch {
     console.error(`❌ Diretório de migrações não encontrado: ${MIGRATIONS_DIR}`);
     process.exit(1);
@@ -51,14 +51,14 @@ async function listMigrationFiles() {
 /**
  * Extrai o nome da migração a partir do nome do arquivo (ex: "001-add-views-to-posts").
  */
-function migrationNameFromFile(filename) {
+export function migrationNameFromFile(filename) {
   return filename.replace(/\.js$/, '');
 }
 
 /**
  * Aplica uma migração dentro de uma transação.
  */
-async function applyMigration(pool, filename) {
+export async function applyMigration(pool, filename) {
   const name = migrationNameFromFile(filename);
   const filePath = path.join(MIGRATIONS_DIR, filename);
 
@@ -97,7 +97,7 @@ async function applyMigration(pool, filename) {
 /**
  * Reverte a última migração aplicada.
  */
-async function revertLastMigration(pool) {
+export async function revertLastMigration(pool) {
   const result = await pool.query(
     `SELECT name FROM ${MIGRATION_TABLE} ORDER BY id DESC LIMIT 1`
   );
@@ -112,7 +112,7 @@ async function revertLastMigration(pool) {
   const filePath = path.join(MIGRATIONS_DIR, filename);
 
   try {
-    await fs.access(filePath);
+    await fs.promises.access(filePath);
   } catch {
     console.error(`❌ Arquivo de migração não encontrado: ${filename}`);
     process.exit(1);
@@ -152,7 +152,7 @@ async function revertLastMigration(pool) {
 /**
  * Lista o status de todas as migrações (aplicadas vs pendentes).
  */
-async function listStatus(pool) {
+export async function listStatus(pool) {
   const applied = await getAppliedMigrations(pool);
   const files = await listMigrationFiles();
 
@@ -172,7 +172,7 @@ async function listStatus(pool) {
 /**
  * Exibe mensagem de ajuda.
  */
-function showHelp() {
+export function showHelp() {
   console.log(`
 📦 Gerenciador de Migrações
 
@@ -187,8 +187,11 @@ Variáveis de ambiente:
 `);
 }
 
-// ─── Main ──────────────────────────────────────────────────────────────
-(async () => {
+/**
+ * Função principal que orquestra a execução da CLI.
+ * Só é chamada quando o script é executado diretamente via terminal.
+ */
+export async function run() {
   const args = process.argv.slice(2);
 
   if (args.includes('--help')) {
@@ -237,4 +240,18 @@ Variáveis de ambiente:
   } finally {
     await closePool();
   }
-})();
+}
+
+// ─── CLI Guard ──────────────────────────────────────────────────────────
+// Executa a função main apenas quando chamado diretamente via terminal
+const isMainModule = process.argv[1] && (
+  process.argv[1].endsWith('/scripts/migrate.js') ||
+  process.argv[1].endsWith('\\scripts\\migrate.js')
+);
+
+if (isMainModule) {
+  run().catch(error => {
+    console.error(error.message);
+    process.exit(1);
+  });
+}

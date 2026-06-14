@@ -366,13 +366,16 @@
 - **Propósito:** Endpoint de autenticação (login).
 - **Funcionalidades:**
   - Método POST apenas (retorna 405 padronizado para outros)
+  - Detecção de IP spoofing via `detectSpoofedIP()` antes da autenticação
   - Rate limiting por IP: 5 tentativas por 60 segundos
   - Autentica via `authenticateAndGenerateToken()` da lib
   - Atualiza `last_login_at` no banco
   - Busca permissões baseadas em role
   - Gera JWT e define cookie de autenticação
   - Retorna dados do usuário: `{ id, username, role, permissions }`
+  - Suporte a `?response=body` para retornar token no body (modo API externa)
   - Respostas de erro padronizadas no formato `{ error, message }` (alterado 12/05/2026)
+  - Try/catch em torno da chamada de `authenticateAndGenerateToken` para capturar exceções não tratadas e retornar 500 (adicionado 13/06/2026)
 
 ### `/pages/api/auth/logout.js`
 - **Localização:** `/pages/api/auth/logout.js`

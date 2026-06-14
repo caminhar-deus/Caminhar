@@ -104,14 +104,14 @@
 **Propósito:** Gerenciamento da conexão com o banco de dados PostgreSQL via `pg.Pool`. Fornece a função `query` principal e utilitários de transação, health check e informações do banco.
 
 **Funções principais:**
-- `query(text, params, options)` — Executa SQL parametrizado com logging opcional, suporte a transações (`client`) e controle de exceções (`throwOnError`).
+- `query(text, params, options)` — Executa SQL parametrizado com logging opcional, suporte a transações (`client`) e controle de exceções (`throwOnError`). Em caso de erro, loga o objeto completo `errorDetails` (`code`, `message`, `query`, `duration`, `attempt`) independentemente do `LOG_LEVEL`. Possui retry automático (máx. 2 tentativas) para erros de timeout/rede, com reset do pool entre tentativas.
 - `transaction(callback)` — Executa uma transação com BEGIN/COMMIT/ROLLBACK automático.
 - `healthCheck()` — Verifica se o banco está respondendo (`SELECT 1`).
 - `getDatabaseInfo()` — Retorna versão, conexões ativas e tamanho do banco.
 - `closeDatabase()` — Fecha o pool de conexões.
-- `resetPool()` — Reseta o pool (usado em testes para recriar a conexão com mocks). Agora também limpa timers, remove listeners de erro e fecha o pool antigo.
+- `resetPool()` — Reseta o pool (usado em testes para recriar a conexão com mocks). Limpa timers, remove listeners de erro e fecha o pool antigo.
 
-**Observações:** Pool configurado com lazy initialization (criado apenas no primeiro uso) para compatibilidade com Jest. Pool configurado com max: 20, min: 2, idleTimeout: 30s, connectionTimeout: 2s. SSL habilitado em produção. Re-exports removidos — importe diretamente dos módulos de origem (`./crud.js`, `./domain/settings.js`, `./domain/audit.js`, `./domain/posts.js`). A criação do pool foi extraída para `createPool()`, que registra handler para evento `error` — em caso de erro fatal, fecha o pool defeituoso e reseta a referência para recriação automática na próxima chamada.
+**Observações:** Pool configurado com lazy initialization (criado apenas no primeiro uso) para compatibilidade com Jest. Pool configurado com max: 50, min: 5, idleTimeoutMillis: 30000 (30s), connectionTimeoutMillis: 5000 (5s). SSL habilitado em produção. Re-exports removidos — importe diretamente dos módulos de origem (`./crud.js`, `./domain/settings.js`, `./domain/audit.js`, `./domain/posts.js`). A criação do pool foi extraída para `createPool()`, que registra handler para evento `error` — em caso de erro fatal, fecha o pool defeituoso e reseta a referência para recriação automática na próxima chamada. Health check periódico a cada 15s detecta falhas precoces e reseta o pool automaticamente. O log de erro da função `query` foi unificado em 13/06/2026: antes dependia de `LOG_LEVEL=debug` para exibir o objeto completo; agora sempre exibe `errorDetails` com `code`, `message`, `query`, `duration` e `attempt`.
 
 ---
 
@@ -119,10 +119,23 @@
 
 **Localização:** `/lib/redis.js`
 
-**Propósito:** Inicialização segura do cliente Redis Upstash com validação das variáveis de ambiente e proteção contra configurações incorretas.
+**Propósito:** Inicialização segura do cliente Redis Upstash com validação das variáveis de ambiente, proteção contra configurações incorretas e fallback em memória quando Redis está indisponível.
 
 **Exportações:**
-- `redis` — Instância do cliente Redis ou `null` se não configurado.
+
+| Exportação | Tipo | Descrição |
+|------------|------|-----------|
+| `redis` | `Object\|null` | Instância do cliente Redis ou `null` se não configurado |
+| `getRedisInstance()` | `Function` | Retorna a instância Redis atual, inicializando se necessário |
+| `checkRedisHealth()` | `Function` | Health check — retorna `Promise<boolean>` |
+| `cleanupMemoryCache()` | `Function` | Remove entradas expiradas do cache em memória |
+| `redisGet(key)` | `Function` | Obtém valor do Redis com fallback em memória e retry |
+| `redisSet(key, value, ttlSeconds)` | `Function` | Salva valor no Redis com fallback em memória |
+| `redisDel(...keys)` | `Function` | Deleta chave(s) do Redis e da memória |
+| `redisScan(cursor, options)` | `Function` | Escaneia chaves no Redis |
+| `redisIncr(key)` | `Function` | Incrementa chave (rate limit) com fallback em memória |
+| `redisExpire(key, seconds, nx?)` | `Function` | Define expiração em chave |
+| `redisFlushdb()` | `Function` | Executa FLUSHDB e limpa cache em memória |
 
 **Fluxo de inicialização:**
 1. Verifica se `UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN` existem.
@@ -360,7 +373,7 @@
 | `createPostWithAudit(postData, auditData)` | Cria post + registra auditoria em transação |
 | `reorderPosts(items)` | Reordena posts em transação com tratamento de erro parcial |
 
-**Observações:** A função `createPostWithAudit` demonstra o padrão de transação combinando criação de post com log de auditoria. `getRecentPosts` filtra apenas posts publicados. Os dados são preparados com null safety (`?? null`). `reorderPosts` segue o mesmo padrão de `reorderVideos` e `reorderMusicas`: transação com `Promise.allSettled` para tratamento de erro parcial.
+**Observações:** A função `createPostWithAudit` demonstra o padrão de transação combinando criação de post com log de auditoria. `getRecentPosts` filtra apenas posts publicados. Os dados são preparados com null safety (`?? null` para campos opcionais e `?? 0` para `position`). A inclusão do campo `position` expandiu o INSERT de 6 para 7 colunas, exigindo que os testes unitários fossem ajustados para refletir essa mudança. `reorderPosts` segue o mesmo padrão de `reorderVideos` e `reorderMusicas`: transação com `Promise.allSettled` para tratamento de erro parcial.
 
 ---
 

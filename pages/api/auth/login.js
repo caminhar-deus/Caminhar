@@ -36,10 +36,16 @@ export default async function handler(req, res) {
   const { username, password } = req.body;
 
   // 2. Usa a função compartilhada de autenticação (rate limit + validação + token)
-  const result = await authenticateAndGenerateToken(username, password, ip, {
-    rateLimitLimit: 5,
-    rateLimitWindow: 60000,
-  });
+  let result;
+  try {
+    result = await authenticateAndGenerateToken(username, password, ip, {
+      rateLimitLimit: 5,
+      rateLimitWindow: 60000,
+    });
+  } catch (error) {
+    logger.error('Auth', 'Erro interno durante a autenticação:', error);
+    return res.status(500).json({ error: 'Internal Server Error', message: 'Erro interno do servidor' });
+  }
 
   // 3. Trata os diferentes tipos de erro
   if (result.error === 'RATE_LIMITED') {

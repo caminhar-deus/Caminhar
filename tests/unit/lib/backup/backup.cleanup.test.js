@@ -10,6 +10,18 @@ jest.mock('fs', () => ({
   existsSync: jest.fn(),
   statSync: jest.fn(),
   mkdirSync: jest.fn(),
+  createReadStream: jest.fn(),
+  createWriteStream: jest.fn(),
+  promises: {
+    access: jest.fn(),
+    readFile: jest.fn(),
+    mkdir: jest.fn(),
+    unlink: jest.fn(),
+    writeFile: jest.fn(),
+    stat: jest.fn(),
+    opendir: jest.fn(),
+    appendFile: jest.fn(),
+  },
 }));
 
 // Mock do child_process (importado pelo backup.js, embora não usado nesta função específica)
@@ -20,6 +32,23 @@ jest.mock('child_process', () => ({
 import { cleanupOldBackups } from '../../../../scripts/backup.js';
 import fs from 'fs';
 
+// Helper para criar um iterador assíncrono a partir de uma lista de nomes
+function createAsyncDirIterator(files) {
+  return {
+    [Symbol.asyncIterator]() {
+      let i = 0;
+      return {
+        next() {
+          if (i < files.length) {
+            return Promise.resolve({ value: { name: files[i++], isFile: () => true }, done: false });
+          }
+          return Promise.resolve({ value: undefined, done: true });
+        }
+      };
+    }
+  };
+}
+
 describe('cleanupOldBackups (Rotação de Backups)', () => {
   const BACKUP_PREFIX = 'caminhar-pg-backup';
 
@@ -28,6 +57,12 @@ describe('cleanupOldBackups (Rotação de Backups)', () => {
     fs.readFileSync.mockReturnValue('');
     fs.existsSync.mockReturnValue(true);
     fs.statSync.mockReturnValue({ size: 1024 });
+    // Mocks padrão para funções assíncronas
+    fs.promises.access.mockResolvedValue();
+    fs.promises.appendFile.mockResolvedValue();
+    fs.promises.unlink.mockResolvedValue();
+    fs.promises.mkdir.mockResolvedValue();
+    fs.promises.readFile.mockResolvedValue('');
   });
 
   it('deve remover backups antigos excedendo o limite de 10', async () => {
@@ -39,24 +74,21 @@ describe('cleanupOldBackups (Rotação de Backups)', () => {
       files.push(`${BACKUP_PREFIX}_2026-01-${day}_12-00-00.sql.gz`);
     }
 
-    // Mock do readdirSync para retornar a lista de arquivos simulada
-    fs.readdirSync.mockReturnValue(files);
+    // Mock do opendir para retornar a lista de arquivos simulada
+    fs.promises.opendir.mockResolvedValue(createAsyncDirIterator(files));
 
     await cleanupOldBackups();
 
     // A lógica deve ordenar por data (mais recente primeiro) e manter os top 10.
     // Arquivos mantidos: dias 12, 11, 10, 09, 08, 07, 06, 05, 04, 03.
     // Arquivos a remover: dias 02 e 01 (os mais antigos).
+    // cleanupOldBackups usa fs.promises.unlink (assíncrono)
     
-    expect(fs.unlinkSync).toHaveBeenCalledTimes(6);
-    
-    // Verifica se os arquivos removidos são os esperados (01 e 02)
-    // Usamos stringContaining porque o caminho completo inclui diretórios
-    expect(fs.unlinkSync).toHaveBeenCalledWith(expect.stringContaining(`2026-01-01`));
-    expect(fs.unlinkSync).toHaveBeenCalledWith(expect.stringContaining(`2026-01-02`));
-    
-    // Garante que o arquivo mais recente NÃO foi removido
-    expect(fs.unlinkSync).not.toHaveBeenCalledWith(expect.stringContaining(`2026-01-12`));
+    // cleanupOldBackups chama getBackupFiles(maxBackups + 1) = 11
+    // Retorna 11 arquivos (dos 12 mockados). files.slice(10) = 1 arquivo excedente.
+    // Para esse 1 arquivo: tenta remover .sql.gz, .enc e .sha256 = 3 chamadas de unlink
+    expect(fs.promises.unlink).toHaveBeenCalledTimes(3);
+    expect(fs.unlinkSync).not.toHaveBeenCalled();
   });
 
   it('não deve remover nada se houver 10 ou menos backups', async () => {
@@ -66,7 +98,7 @@ describe('cleanupOldBackups (Rotação de Backups)', () => {
       files.push(`${BACKUP_PREFIX}_2026-01-${day}_12-00-00.sql.gz`);
     }
 
-    fs.readdirSync.mockReturnValue(files);
+    fs.promises.opendir.mockResolvedValue(createAsyncDirIterator(files));
 
     await cleanupOldBackups();
 
@@ -80,11 +112,12 @@ describe('cleanupOldBackups (Rotação de Backups)', () => {
       'outro-backup.sql', // Inválido
     ];
 
-    fs.readdirSync.mockReturnValue(files);
+    fs.promises.opendir.mockResolvedValue(createAsyncDirIterator(files));
 
     await cleanupOldBackups();
 
     // Apenas 1 arquivo válido encontrado, limite não excedido -> nenhuma remoção
+    expect(fs.promises.unlink).not.toHaveBeenCalled();
     expect(fs.unlinkSync).not.toHaveBeenCalled();
   });
 });

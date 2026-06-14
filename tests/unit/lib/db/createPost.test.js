@@ -40,7 +40,7 @@ describe('createPost', () => {
 
     // Valida a query SQL
     expect(text).toContain('INSERT INTO posts');
-    expect(text).toContain('VALUES ($1, $2, $3, $4, $5, $6)');
+    expect(text).toContain('VALUES ($1, $2, $3, $4, $5, $6, $7)');
 
     // Valida os valores passados para a query
     expect(values).toEqual([
@@ -49,7 +49,8 @@ describe('createPost', () => {
       postData.excerpt,
       postData.content,
       postData.image_url,
-      postData.published
+      postData.published,
+      postData.position ?? 0,
     ]);
 
     // Valida o retorno da função
@@ -71,7 +72,7 @@ describe('createPost', () => {
     const [, values] = mockQuery.mock.calls[0];
 
     // Verifica se os valores ausentes são tratados como null ou false
-    expect(values).toEqual(['Post com campos nulos', 'post-com-campos-nulos', null, 'Conteúdo.', null, false]);
+    expect(values).toEqual(['Post com campos nulos', 'post-com-campos-nulos', null, 'Conteúdo.', null, false, 0]);
   });
 
   it('deve propagar erros do banco de dados', async () => {

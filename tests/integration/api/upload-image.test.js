@@ -1,9 +1,16 @@
-import { jest, describe, beforeAll, beforeEach, test, expect } from '@jest/globals';
+import { jest, describe, beforeEach, test, expect } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import { TextEncoder, TextDecoder } from 'util';
 
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
+
+// Mock do sharp para validação de metadados
+jest.mock('sharp', () => {
+  return jest.fn().mockReturnValue({
+    metadata: jest.fn().mockResolvedValue({ width: 800, height: 600, format: 'jpeg' })
+  });
+});
 
 // Mock do Formidable para simular o processamento do upload
 jest.mock('formidable', () => ({
@@ -98,7 +105,7 @@ describe('API de Upload de Imagem (/api/upload-image)', () => {
     const { req, res } = createMocks({ method: 'POST' });
     await handler(req, res);
     expect(res._getStatusCode()).toBe(400);
-    expect(JSON.parse(res._getData()).message).toBe('No image uploaded');
+    expect(JSON.parse(res._getData()).message).toBe('Nenhuma imagem enviada');
   });
 
   test('Deve retornar 400 se o arquivo não for uma imagem (validação de mimetype)', async () => {
@@ -162,10 +169,6 @@ describe('API de Upload de Imagem (/api/upload-image)', () => {
   });
 
   test('Deve salvar o arquivo no diretório correto com o nome gerado corretamente', async () => {
-    // Mock do Date.now para garantir um timestamp previsível no nome do arquivo
-    const mockDate = 1672531200000;
-    const dateSpy = jest.spyOn(Date, 'now').mockReturnValue(mockDate);
-
     const mockFile = {
       originalFilename: 'teste-nome.png',
       filepath: '/tmp/teste-nome.png',
@@ -193,11 +196,8 @@ describe('API de Upload de Imagem (/api/upload-image)', () => {
 
     expect(res._getStatusCode()).toBe(200);
 
-    // O nome esperado deve ser post-image-{timestamp}.png
-    const expectedFilename = `post-image-${mockDate}.png`;
-
     // Verifica se o rename foi chamado movendo do temp para o destino final correto
-    // Verifica se contém o diretório correto (public/uploads) e o nome do arquivo esperado
+    // O nome do arquivo usa crypto.randomUUID(), então verificamos apenas o padrão
     expect(fs.promises.rename).toHaveBeenCalledWith(
       mockFile.filepath,
       expect.stringContaining('public/uploads')
@@ -205,10 +205,8 @@ describe('API de Upload de Imagem (/api/upload-image)', () => {
     
     expect(fs.promises.rename).toHaveBeenCalledWith(
       mockFile.filepath,
-      expect.stringContaining(expectedFilename)
+      expect.stringMatching(/post-image-[a-f0-9-]+\.png$/)
     );
-
-    dateSpy.mockRestore();
   });
 
   test('Deve chamar updateSetting no banco de dados se for upload do hero-image', async () => {

@@ -6,37 +6,37 @@ import ContentTabs from '../../../../../components/Features/ContentTabs/index.js
 jest.mock('../../../../../components/Features/Blog/BlogSection', () => () => <div data-testid="blog">Blog</div>);
 jest.mock('../../../../../components/Features/Music/MusicGallery', () => () => <div data-testid="music">Music</div>);
 jest.mock('../../../../../components/Features/Video/VideoGallery', () => () => <div data-testid="video">Video</div>);
-jest.mock('../../../../../components/Products/ProductList', () => () => <div data-testid="products">Products</div>);
+jest.mock('../../../../../components/Features/Products/ProductList', () => () => <div data-testid="products">Products</div>);
 
 describe('Componente Front-End - ContentTabs', () => {
   afterEach(() => {
     jest.restoreAllMocks();
   });
 
-  it('deve renderizar a aba de Reflexões por padrão', () => {
+  it('deve renderizar a aba de Reflexões por padrão', async () => {
     render(<ContentTabs />);
-    expect(screen.getByTestId('blog')).toBeInTheDocument();
+    await expect(screen.findByTestId('blog')).resolves.toBeInTheDocument();
   });
 
-  it('deve alternar para as abas Músicas, Vídeos e Produtos ao clicar', () => {
+  it('deve alternar para as abas Músicas, Vídeos e Produtos ao clicar', async () => {
     render(<ContentTabs />);
     
     fireEvent.click(screen.getByText(/Músicas/i));
-    expect(screen.getByTestId('music')).toBeInTheDocument();
+    await expect(screen.findByTestId('music')).resolves.toBeInTheDocument();
 
     fireEvent.click(screen.getByText(/Vídeos/i));
-    expect(screen.getByTestId('video')).toBeInTheDocument();
+    await expect(screen.findByTestId('video')).resolves.toBeInTheDocument();
 
     fireEvent.click(screen.getByText(/Produtos Religiosos/i));
-    expect(screen.getByTestId('products')).toBeInTheDocument();
+    await expect(screen.findByTestId('products')).resolves.toBeInTheDocument();
   });
 
-  it('não deve mudar de aba ao clicar no projeto bloqueado', () => {
+  it('não deve mudar de aba ao clicar no projeto bloqueado', async () => {
     render(<ContentTabs />);
     const projBtn = screen.getByText('Em Desenvolvimento').closest('button');
     
     fireEvent.click(projBtn);
-    expect(screen.getByTestId('blog')).toBeInTheDocument();
+    await expect(screen.findByTestId('blog')).resolves.toBeInTheDocument();
   });
 
   it('deve usar o default do switch para abas desconhecidas (fallback) e para projetos futuros', () => {

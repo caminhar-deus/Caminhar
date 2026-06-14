@@ -20,6 +20,12 @@ jest.mock('fs', () => {
   };
 });
 
+jest.mock('sharp', () => {
+  return jest.fn().mockReturnValue({
+    metadata: jest.fn().mockResolvedValue({ width: 800, height: 600, format: 'jpeg' })
+  });
+});
+
 jest.mock('formidable', () => {
   return {
     __esModule: true,

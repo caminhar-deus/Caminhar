@@ -167,7 +167,7 @@ export const TextArea = forwardRef(({
         )}
         {(showCount || maxLength) && (
           <span className={`${styles.counter} ${isOverLimit ? styles.overLimit : ''}`}>
-            {currentLength}{maxLength ? ` / ${maxLength}` : ''}
+            {currentLength}{maxLength ? `/${maxLength} caracteres` : ''}
           </span>
         )}
       </div>
