@@ -55,12 +55,12 @@ describe('Funções de Músicas (DB)', () => {
 
       const dataCall = mockQuery.mock.calls.find(call => call[0].includes('SELECT * FROM musicas'));
       const normalizedSqlData = dataCall[0].replace(/\s+/g, ' ').trim();
-      expect(normalizedSqlData).toContain('WHERE (LOWER(titulo) LIKE $1 OR LOWER(artista) LIKE $1)');
+      expect(normalizedSqlData).toContain('WHERE (titulo ILIKE $1 OR artista ILIKE $1)');
       expect(normalizedSqlData).toContain('LIMIT $2 OFFSET $3');
       expect(dataCall[1]).toEqual(['%teste%', 10, 0]);
 
       const countCall = mockQuery.mock.calls.find(call => call[0].includes('COUNT(*)'));
-      expect(countCall[0].replace(/\s+/g, ' ').trim()).toContain('WHERE (LOWER(titulo) LIKE $1 OR LOWER(artista) LIKE $1)');
+      expect(countCall[0].replace(/\s+/g, ' ').trim()).toContain('WHERE (titulo ILIKE $1 OR artista ILIKE $1)');
       expect(countCall[1]).toEqual(['%teste%']);
     });
 
@@ -85,29 +85,37 @@ describe('Funções de Músicas (DB)', () => {
       };
 
       const mockDbResponse = { id: 1, ...novaMusica, created_at: new Date().toISOString() };
-      mockQuery.mockResolvedValue({ rows: [mockDbResponse] });
+      mockQuery
+        .mockResolvedValueOnce({ rows: [{ max_pos: 5 }] }) // SELECT MAX(position)
+        .mockResolvedValueOnce({ rows: [mockDbResponse] }); // INSERT
 
       const result = await createMusica(novaMusica);
 
-      expect(mockQuery).toHaveBeenCalledTimes(1);
-      const [text, values] = mockQuery.mock.calls[0];
+      // Primeira chamada: SELECT MAX(position), segunda chamada: INSERT
+      expect(mockQuery).toHaveBeenCalledTimes(2);
+      const insertCall = mockQuery.mock.calls[1];
+      const [insertText, insertValues] = insertCall;
 
-      const normalizedText = text.replace(/\s+/g, ' ').trim();
-      expect(normalizedText).toContain('INSERT INTO musicas (titulo, artista, descricao, url_spotify, publicado, created_at) VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP) RETURNING *');
-      expect(values).toEqual([novaMusica.titulo, novaMusica.artista, novaMusica.descricao, novaMusica.url_spotify, novaMusica.publicado]);
+      const normalizedText = insertText.replace(/\s+/g, ' ').trim();
+      expect(normalizedText).toContain('INSERT INTO musicas (titulo, artista, descricao, url_spotify, publicado, position, created_at) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP) RETURNING *');
+      expect(insertValues).toEqual([novaMusica.titulo, novaMusica.artista, novaMusica.descricao, novaMusica.url_spotify, novaMusica.publicado, 6]);
 
       expect(result).toEqual(mockDbResponse);
     });
 
     it('deve lidar com campos opcionais nulos na criação', async () => {
       const novaMusica = { titulo: 'Música Básica' }; // Outros campos undefined
-      mockQuery.mockResolvedValue({ rows: [{ id: 1 }] });
+      mockQuery
+        .mockResolvedValueOnce({ rows: [] }) // SELECT MAX(position) - tabela vazia
+        .mockResolvedValueOnce({ rows: [{ id: 1 }] }); // INSERT
 
       await createMusica(novaMusica);
 
-      const params = mockQuery.mock.calls[0][1];
-      // Espera null para campos opcionais e false para publicado
-      expect(params).toEqual(['Música Básica', null, null, null, false]);
+      // Primeira chamada é SELECT MAX(position), segunda é INSERT
+      const insertCall = mockQuery.mock.calls[1];
+      const insertParams = insertCall[1];
+      // Espera null para campos opcionais, false para publicado e 1 para position
+      expect(insertParams).toEqual(['Música Básica', null, null, null, false, 1]);
     });
   });
 
@@ -127,9 +135,9 @@ describe('Funções de Músicas (DB)', () => {
       const [text, values] = mockQuery.mock.calls[0];
 
       const normalizedText = text.replace(/\s+/g, ' ').trim();
-      expect(normalizedText).toContain('UPDATE musicas SET titulo = $1, artista = $2, descricao = $3, url_spotify = $4, publicado = $5, updated_at = CURRENT_TIMESTAMP WHERE id = $6 RETURNING *');
+      expect(normalizedText).toContain('UPDATE musicas SET titulo = $1, artista = $2, publicado = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING *');
 
-      expect(values).toEqual([atualizacao.titulo, atualizacao.artista, null, null, false, id]);
+      expect(values).toEqual([atualizacao.titulo, atualizacao.artista, false, id]);
       
       expect(result).toEqual({ id, ...atualizacao });
     });
@@ -168,8 +176,8 @@ describe('Funções de Músicas (DB)', () => {
       await getAllMusicas('Rock');
       const [text, values] = mockQuery.mock.calls[0];
       const normalizedText = text.replace(/\s+/g, ' ').trim();
-      expect(normalizedText).toBe('SELECT * FROM musicas WHERE LOWER(titulo) LIKE $1 OR LOWER(artista) LIKE $1 ORDER BY position ASC, created_at DESC');
-      expect(values).toEqual(['%rock%']);
+      expect(normalizedText).toBe('SELECT * FROM musicas WHERE titulo ILIKE $1 OR artista ILIKE $1 ORDER BY position ASC, created_at DESC');
+      expect(values).toEqual(['%Rock%']);
     });
   });
 });

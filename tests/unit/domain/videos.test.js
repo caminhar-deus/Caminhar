@@ -53,8 +53,8 @@ describe('Domain - Vídeos (lib/domain/videos.js)', () => {
       
       await getPaginatedVideos(1, 10, 'React');
       
-      // Verifica se o searchTerm '%react%' é injetado como $1 e o limit/offset viram $2 e $3
-      expect(query).toHaveBeenNthCalledWith(1, expect.stringContaining('LIKE $1'), ['%react%', 10, 0]);
+      // Verifica se o searchTerm '%react%' (lowercase via shared-pagination) é injetado como $1 e o limit/offset viram $2 e $3
+      expect(query).toHaveBeenNthCalledWith(1, expect.stringContaining('ILIKE $1'), ['%react%', 10, 0]);
     });
   });
 
@@ -65,7 +65,7 @@ describe('Domain - Vídeos (lib/domain/videos.js)', () => {
       await getPublicPaginatedVideos(1, 10, 'Next.js');
 
       // A API pública possui a cláusula fixa "publicado = true" além da busca
-      expect(query).toHaveBeenNthCalledWith(1, expect.stringContaining('WHERE publicado = true AND (LOWER(titulo)'), ['%next.js%', 10, 0]);
+      expect(query).toHaveBeenNthCalledWith(1, expect.stringContaining('WHERE publicado = true AND (titulo ILIKE $1'), ['%next.js%', 10, 0]);
     });
   });
 
@@ -85,7 +85,7 @@ describe('Domain - Vídeos (lib/domain/videos.js)', () => {
         thumbnail: null,  // fallback validado
         publicado: false, // fallback validado
         position: 6       // 5 + 1
-      });
+      }, { client: { isFakeClient: true } });
     });
     
     it('deve atribuir posição 1 se não houver vídeos anteriores na tabela', async () => {
@@ -94,7 +94,7 @@ describe('Domain - Vídeos (lib/domain/videos.js)', () => {
 
       await createVideo({ titulo: 'Primeiro', url_youtube: 'abc' });
 
-      expect(createRecord).toHaveBeenCalledWith('videos', expect.objectContaining({ position: 1 }));
+      expect(createRecord).toHaveBeenCalledWith('videos', expect.objectContaining({ position: 1 }), { client: { isFakeClient: true } });
     });
   });
 

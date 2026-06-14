@@ -56,7 +56,7 @@ describe('updatePost', () => {
     expect(result).toEqual(mockDbResponse);
   });
 
-  it('deve lidar com campos opcionais nulos (ex: excerpt, image_url)', async () => {
+  it('deve fazer atualização parcial com apenas os campos fornecidos', async () => {
     const postId = 2;
     const postData = {
       title: 'Post Mínimo',
@@ -70,15 +70,30 @@ describe('updatePost', () => {
     await updatePost(postId, postData);
 
     const [, values] = mockQuery.mock.calls[0];
-    // Verifica se undefined vira null ou false (padrão do db.js)
-    // $3 (excerpt) -> null, $5 (image_url) -> null, $6 (published) -> false
+    // updatePost só inclui campos explicitamente fornecidos (atualização parcial)
     expect(values).toEqual([
       postData.title,
       postData.slug,
-      null, 
       postData.content,
-      null, 
-      false, 
+      postId
+    ]);
+  });
+
+  it('deve atualizar apenas o campo published sem alterar os demais', async () => {
+    const postId = 3;
+    const postData = {
+      published: false,
+      // title, slug, excerpt, content, image_url omitidos
+    };
+
+    mockQuery.mockResolvedValue({ rows: [{ id: postId, published: false }] });
+
+    await updatePost(postId, postData);
+
+    const [, values] = mockQuery.mock.calls[0];
+    // Apenas o campo published e o id devem ser passados na query
+    expect(values).toEqual([
+      false,
       postId
     ]);
   });

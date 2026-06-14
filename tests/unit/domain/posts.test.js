@@ -60,7 +60,7 @@ describe('Domain - Posts (lib/domain/posts.js)', () => {
       expect(query).toHaveBeenNthCalledWith(2, expect.stringContaining('SELECT COUNT(*)'), []);
     });
 
-    it('deve adicionar filtros de busca (title/content) na query', async () => {
+    it('deve adicionar filtros de busca full-text (title/content) na query', async () => {
       query
         .mockResolvedValueOnce({ rows: [] })
         .mockResolvedValueOnce({ rows: [{ count: '0' }] });
@@ -68,9 +68,9 @@ describe('Domain - Posts (lib/domain/posts.js)', () => {
       await getRecentPosts(5, 1, 'Jesus'); // limit 5, page 1, search 'Jesus'
 
       // A query de dados recebe [searchTerm, limit, offset]
-      expect(query).toHaveBeenNthCalledWith(1, expect.stringContaining('LIKE $1'), ['%jesus%', 5, 0]);
+      expect(query).toHaveBeenNthCalledWith(1, expect.stringContaining('plainto_tsquery'), ['jesus', 5, 0]);
       // A query de count recebe apenas [searchTerm]
-      expect(query).toHaveBeenNthCalledWith(2, expect.stringContaining('LIKE $1'), ['%jesus%']);
+      expect(query).toHaveBeenNthCalledWith(2, expect.stringContaining('plainto_tsquery'), ['jesus']);
     });
   });
 
@@ -109,7 +109,8 @@ describe('Domain - Posts (lib/domain/posts.js)', () => {
         excerpt: null,        // Assumiu o fallback nulo
         content: 'Conteudo',
         image_url: null,      // Assumiu o fallback nulo
-        published: false      // Assumiu o fallback false
+        published: false,     // Assumiu o fallback false
+        position: 0,          // Assumiu o fallback 0
       }, {});
     });
   });

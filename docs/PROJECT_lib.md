@@ -28,8 +28,10 @@
    - [lib/domain/musicas.js](#33-libdomainmusicasjs)
    - [lib/domain/posts.js](#34-libdomainpostsjs)
    - [lib/domain/settings.js](#35-libdomainsettingsjs)
+   - [lib/domain/permissions.js](#36-libdomainpermissionsjs)
    - [lib/domain/products.js](#37-libdomainproductsjs)
-   - [lib/domain/videos.js](#38-libdomainvideosjs)
+   - [lib/domain/shared-pagination.js](#38-libdomainshared-paginationjs)
+   - [lib/domain/videos.js](#39-libdomainvideosjs)
 4. [Subpasta `lib/seo/`](#4-subpasta-libseo)
    - [lib/seo/config.js](#41-libseoconfigjs)
 
@@ -159,7 +161,7 @@
 **Função principal:**
 - `createAdminHandler(config)` — Cria um handler Next.js completo a partir de um objeto de configuração. Aceita `name` (nome da entidade), `permission` (permissão(ões) exigidas), `requireAdmin` (se true, exige role `admin` sem buscar permissões), `handlers` (mapeamento método → handler), `rateLimit` (opções de rate limit), `cacheKeys` (chaves de cache para invalidar em mutações) e `allowedMethods` (métodos permitidos). Injeta `req.adminUtils` com funções `logActivity()` e `invalidateCache()`.
 
-**Observações:** O `createAdminHandler` aplica os middlewares na seguinte ordem: (1) verificação de método HTTP, (2) RBAC via `requireAdmin` ou verificação de permissão na tabela `roles`, (3) rate limiting em mutações (POST/PUT/DELETE), (4) execução do handler específico, (5) invalidação automática de cache em mutações bem-sucedidas. Em caso de erro na verificação de permissões (ex: tabela `roles` inexistente), permite apenas usuários com role `admin`. O handler final é envolvido por `withAuth` do `lib/auth.js`.
+**Observações:** O `createAdminHandler` aplica os middlewares na seguinte ordem: (1) verificação de método HTTP, (2) verificação de autenticação — retorna 401 se `user` for `null` (proteção contra acesso a `user.role` com usuário nulo), (3) RBAC via `requireAdmin` ou verificação de permissão na tabela `roles`, (4) detecção de IP spoofing, (5) rate limiting em mutações (POST/PUT/DELETE), (6) execução do handler específico, (7) invalidação automática de cache em mutações bem-sucedidas. Em caso de erro na verificação de permissões (ex: tabela `roles` inexistente), permite apenas usuários com role `admin`. O handler final é envolvido por `withAuth` do `lib/auth.js`.
 
 ---
 
@@ -391,9 +393,23 @@
 | `getSettings()` | Retorna todas as configurações como objeto chave-valor |
 | `updateSetting(key, value, type, description)` | Cria ou atualiza configuração (upsert) |
 | `setSetting(key, value, type, description)` | Alias para `updateSetting` |
-| `getAllSettingsRaw()` | Retorna todas as configurações como array de registros |
+| `getAllSettingsRaw()` | Retorna todas as configurações como array bruto de registros |
+| `getAllSettings()` | Alias para `getAllSettingsRaw` |
 
-**Observações:** Usa `upsertRecord` do `crud.js` para INSERT ON CONFLICT. A função `getSettings` retorna um objeto plano, enquanto `getAllSettingsRaw` retorna array completo de registros. A função anteriormente chamada `getAllSettings` foi renomeada para `getAllSettingsRaw` para evitar confusão com `getSettings`.
+**Observações:** Usa `upsertRecord` do `crud.js` para INSERT ON CONFLICT. A função `getSettings` retorna um objeto plano (agregado via `json_object_agg` do PostgreSQL), enquanto `getAllSettingsRaw` retorna array completo de registros. O alias `getAllSettings` é mantido para compatibilidade com consumidores existentes.
+
+---
+
+### 3.6 `lib/domain/permissions.js`
+
+**Localização:** `/lib/domain/permissions.js`
+
+**Propósito:** Lista imutável de permissões disponíveis para atribuição a cargos de administrador. Utiliza `Object.freeze` para garantir imutabilidade em tempo de execução, prevenindo modificações acidentais.
+
+**Exportações:**
+- `permissionsList` — Array congelado (`ReadonlyArray<string>`) com as permissões: 'Visão Geral', 'Posts/Artigos', 'Gestão de Músicas', 'Gestão de Vídeos', 'Gestão de Produtos', 'Gestão de Dicas', 'Configuração de Cabeçalho', 'Segurança', 'Usuários', 'Auditoria'.
+
+**Uso:** Importado por componentes administrativos que exibem checkboxes de permissões e pelo middleware de RBAC em `adminCrudHandler.js` para validar permissões de acesso.
 
 ---
 
@@ -417,7 +433,28 @@
 
 ---
 
-### 3.8 `lib/domain/videos.js`
+### 3.8 `lib/domain/shared-pagination.js`
+
+**Localização:** `/lib/domain/shared-pagination.js`
+
+**Propósito:** Helper compartilhado de paginação com busca textual que centraliza a lógica que antes estava duplicada em `musicas.js`, `videos.js` e `posts.js`. Suporta dois modos de busca: ILIKE (com índice trigram) e full-text search (tsvector).
+
+**Funções:**
+
+| Função | Descrição |
+|--------|-----------|
+| `paginate(tableName, params)` | Executa paginação com busca em uma tabela. Aceita `page`, `limit`, `search`, `publishedOnly`, `publishedField`, `orderBy` e `searchOptions` |
+| `buildSearchClause(search, paramIndex, options)` | (interna) Constrói cláusula WHERE de busca conforme estratégia escolhida |
+
+**Estratégias de busca:**
+- **ILIKE** (`searchOptions.fields`): Para tabelas como `musicas` (campos: `titulo`, `artista`) e `videos` (campos: `titulo`, `descricao`). O termo de busca é normalizado com `.toLowerCase().trim()` e envolvido em `%` para wildcard duplo.
+- **tsvector** (`searchOptions.tsvector`): Para `posts` com full-text search em português. Usa `plainto_tsquery` para busca semântica normalizada.
+
+**Observações:** A função `paginate` executa duas queries em paralelo via `Promise.all`: a query de dados (com `LIMIT` e `OFFSET`) e a query de contagem (COUNT). Os parâmetros de busca são compartilhados entre ambas, enquanto `limit` e `offset` são adicionados apenas na query de dados. O termo de busca em ambos os modos é normalizado com `.toLowerCase().trim()` para garantir consistência nos parâmetros. O nome da tabela é interpolado diretamente no SQL, porém o helper é interno ao projeto e os nomes são controlados (não recebidos do usuário).
+
+---
+
+### 3.9 `lib/domain/videos.js`
 
 **Localização:** `/lib/domain/videos.js`
 
@@ -434,7 +471,7 @@
 | `deleteVideo(id)` | Remove vídeo |
 | `reorderVideos(items)` | Reordena vídeos em transação com tratamento de erro parcial |
 
-**Observações:** A paginação foi unificada na função interna `_paginateVideos({ page, limit, search, publishedOnly })`. `getPaginatedVideos` agora aceita `publishedOnly` como 4º parâmetro (mesmo padrão de `musicas.js`). `getPublicPaginatedVideos` mantida como alias para compatibilidade. `createVideo` agora aceita `options` como 2º parâmetro, alinhando-se ao padrão de `createMusica` e `createPost`. O cálculo de posição em `createVideo` busca o `MAX(position)` e incrementa, tudo dentro de uma transação para evitar race condition em chamadas concorrentes. `reorderVideos` usa `Promise.allSettled` para identificar falhas parciais, logando o `id` e `position` exatos do vídeo que falhou antes de acionar o rollback.
+**Observações:** A paginação foi unificada no helper `paginate()` do `shared-pagination.js`. `getPaginatedVideos` aceita `publishedOnly` como 4º parâmetro (mesmo padrão de `musicas.js`). `getPublicPaginatedVideos` é mantida como alias que repassa `publishedOnly=true`. `createVideo` aceita `options` como 2º parâmetro, alinhando-se ao padrão de `createMusica` e `createPost`. O cálculo de posição em `createVideo` busca o `MAX(position)` e incrementa, tudo dentro de uma transação para evitar race condition em chamadas concorrentes. `reorderVideos` usa `Promise.allSettled` para identificar falhas parciais, logando o `id` e `position` exatos do vídeo que falhou antes de acionar o rollback.
 
 ---
 

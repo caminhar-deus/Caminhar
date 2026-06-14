@@ -9,6 +9,7 @@ describe('Componente Front-End - AdminDashboard', () => {
   
   beforeEach(() => { 
     fetchMock = mockGlobalFetch();
+    sessionStorage.clear();
   });
   
   afterEach(() => { 
@@ -17,10 +18,10 @@ describe('Componente Front-End - AdminDashboard', () => {
 
   it('deve renderizar o loading e depois exibir os dados com sucesso, acionando o redirecionamento de abas', async () => {
     const mockStats = { posts: 10, musicas: 5, videos: 2, products: 8, dicas: 3, users: 20 };
-    global.fetch.mockResolvedValueOnce({ ok: true, json: async () => mockStats });
+    global.fetch.mockResolvedValueOnce({ ok: true, headers: { get: () => 'application/json' }, json: async () => mockStats });
     
     const setActiveTab = jest.fn();
-    render(<AdminDashboard setActiveTab={setActiveTab} />);
+    render(<AdminDashboard setActiveTab={setActiveTab} isAdmin={true} />);
     
     expect(screen.getByText('⏳ Carregando painel de estatísticas...')).toBeInTheDocument();
     
@@ -36,9 +37,9 @@ describe('Componente Front-End - AdminDashboard', () => {
 
   it('deve renderizar barras e contadores mesmo com valores vazios/nulos', async () => {
     const mockStatsZero = { posts: 0, musicas: null, videos: 0, products: 0, dicas: undefined, users: 0 };
-    global.fetch.mockResolvedValueOnce({ ok: true, json: async () => mockStatsZero });
+    global.fetch.mockResolvedValueOnce({ ok: true, headers: { get: () => 'application/json' }, json: async () => mockStatsZero });
     
-    render(<AdminDashboard />);
+    render(<AdminDashboard isAdmin={true} />);
     
     await waitFor(() => {
       expect(screen.getAllByText('Artigos')[0]).toBeInTheDocument();

@@ -30,7 +30,8 @@ describe('API - Admin - Fetch Spotify (Edge Cases)', () => {
     
     const { req, res } = createMocks({
       method: 'POST',
-      body: { url: 'https://open.spotify.com/track/123456789' }
+      body: { url: 'https://open.spotify.com/track/123456789' },
+      user: { role: 'admin' },
     });
 
     // Força todas as chamadas de rede a rejeitarem simultaneamente

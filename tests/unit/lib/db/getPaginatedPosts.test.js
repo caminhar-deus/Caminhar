@@ -66,7 +66,7 @@ describe('getPaginatedPosts', () => {
     // Params esperados: ['%teste%', limit, offset]
     // Offset pagina 3: (3-1)*10 = 20
     const postsCallArgs = mockQuery.mock.calls[0];
-    expect(postsCallArgs[0]).toContain('WHERE LOWER(title) LIKE $1');
+    expect(postsCallArgs[0]).toContain('WHERE (title ILIKE $1)');
     expect(postsCallArgs[1]).toEqual(['%teste%', 10, 20]);
   });
 });

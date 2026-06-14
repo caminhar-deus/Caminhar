@@ -90,8 +90,7 @@ describe('Settings Operations', () => {
       it('deve retornar todas as configurações formatadas como objeto chave-valor', async () => {
           mockQuery.mockResolvedValue({ 
               rows: [
-                  { key: 'site_title', value: 'Title' },
-                  { key: 'admin_email', value: 'admin@test.com' }
+                  { settings: { site_title: 'Title', admin_email: 'admin@test.com' } }
               ] 
           });
 

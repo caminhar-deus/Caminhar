@@ -55,10 +55,7 @@ describe('Domain - Configurações (lib/domain/settings.js)', () => {
   describe('getSettings()', () => {
     it('deve retornar um objeto mapeando chave-valor com todas as configurações', async () => {
       query.mockResolvedValueOnce({ 
-        rows: [
-          { key: 'theme', value: 'light' },
-          { key: 'site_name', value: 'Projeto Caminhar' }
-        ] 
+        rows: [{ settings: { theme: 'light', site_name: 'Projeto Caminhar' } }]
       });
       
       const result = await getSettings();
@@ -67,7 +64,13 @@ describe('Domain - Configurações (lib/domain/settings.js)', () => {
         theme: 'light',
         site_name: 'Projeto Caminhar'
       });
-      expect(query).toHaveBeenCalledWith('SELECT key, value FROM settings', [], { log: false });
+      expect(query).toHaveBeenCalledWith(`
+    SELECT COALESCE(
+      json_object_agg(key, value ORDER BY key),
+      '{}'::json
+    ) as settings
+    FROM settings
+  `, [], { log: false });
     });
   });
 
