@@ -30,10 +30,12 @@ import handler from '../../../pages/api/settings.js';
 // Importa os mocks para controle das asserções e retornos simulados
 import { getAuthToken, verifyToken } from '../../../lib/auth';
 import { getSettings, updateSetting } from '../../../lib/domain/settings.js';
+import { clearAppMemoryCache } from '../../../lib/cache.js';
 
 describe('API Administrativa de Configurações (/api/settings)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    clearAppMemoryCache();
     
     // Configuração padrão de sucesso: Simula usuário 'admin' logado
     getAuthToken.mockReturnValue('fake-jwt-token');

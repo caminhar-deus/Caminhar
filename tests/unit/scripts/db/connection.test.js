@@ -43,8 +43,7 @@ describe('connection.js — Módulo de conexão PostgreSQL', () => {
   beforeEach(() => {
     originalDatabaseUrl = process.env.DATABASE_URL;
     process.env.DATABASE_URL = 'postgres://user:pass@localhost:5432/testdb';
-    // Reseta o pool singleton entre testes
-    // O módulo connection.js tem um pool local, recarregamos o módulo
+    connection.resetPool();
   });
 
   afterEach(() => {
@@ -62,7 +61,6 @@ describe('connection.js — Módulo de conexão PostgreSQL', () => {
 
     it('deve lançar erro se DATABASE_URL não estiver definida', () => {
       delete process.env.DATABASE_URL;
-      // Para este teste, recarregamos o módulo para resetar o singleton
       expect(() => connection.getPool()).toThrow('DATABASE_URL não definida');
     });
 

@@ -3,7 +3,7 @@
 > **Projeto:** Caminhar  
 > **Diretório:** `/scripts`  
 > **Objetivo deste documento:** Descrever a finalidade, localização e funcionamento de cada script disponível no diretório `scripts/` e seus subdiretórios.  
-> **Última atualização:** 13/06/2026
+> **Última atualização:** 14/06/2026
 
 ---
 
@@ -199,7 +199,7 @@ scripts/
 - **Propósito:** Script de cleanup para desbloquear IPs que foram bloqueados pelos testes de segurança (rate limit, IP spoofing). Remove chaves do Redis usadas durante os testes (`rate_limit:<ip>`, `rate_limit:block_count:<ip>`, `api:auth:login:*`). Opera em IPs fixos de teste (`203.0.113.1`, `127.0.0.1`, `::1`). Mensagem de dica para reiniciar o servidor se o Map em memória ainda estiver bloqueando.
 - **Uso:** `node scripts/clear-test-auth-locks.js`
 - **Criado em:** Data desconhecida
-- **Dependências:** `../lib/redis.js` (local)
+- **Ajustado em 14/06/2026:** alterado de `import { redis }` para `import { getRedisInstance }` e chamando `const redis = getRedisInstance()` dentro da função — a exportação `redis` agora é `null` (inicialização lazy), sendo necessário obter a instância via `getRedisInstance()`.
 
 ### `scripts/db-shell.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/db-shell.js`
@@ -411,9 +411,11 @@ scripts/
 - **Funções exportadas:**
   - **`getPool()`** — retorna uma instância única de Pool (singleton). Cria o pool na primeira chamada e o reutiliza nas subsequentes. Valida a existência de `DATABASE_URL`.
   - **`closePool()`** — fecha o pool de conexão. Deve ser chamado ao final da execução para evitar vazamento de conexões.
-  - **`query(text, params)`** — wrapper simples sobre `pool.query()` com gerenciamento automático do pool.
-- **Uso:** `import { getPool, closePool, query } from '../db/connection.js';`
+  - **`resetPool()`** — reseta o pool para `null`. Útil para testes que precisam recriar o pool do zero sem recarregar o módulo. **Adicionado em 14/06/2026.**
+  - **`query(text, [params])`** — wrapper sobre `pool.query()`. Só passa o segundo argumento `params` se ele for diferente de `undefined`, evitando chamadas como `pool.query(text, undefined)`. **Ajustado em 14/06/2026.**
+- **Uso:** `import { getPool, closePool, resetPool, query } from '../db/connection.js';`
 - **Criado em:** 21/05/2026 — refatoração das migrações (unificação da conexão com banco).
+- **Atualizado em:** 14/06/2026 — adicionada função `resetPool()` e ajustada `query()` para omitir `params` quando `undefined`.
 - **Dependências:** `pg`
 
 ### `scripts/db/verify-db-functions.js`

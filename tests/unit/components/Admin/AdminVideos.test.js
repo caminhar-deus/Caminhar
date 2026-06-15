@@ -37,14 +37,15 @@ describe('Componente Front-End - AdminVideos', () => {
     expect(passedProps.apiEndpoint).toBe('/api/admin/videos');
   });
 
-  it('deve renderizar a coluna de YouTube customizada com link e iframe', () => {
+  it('deve renderizar a coluna de YouTube customizada com link e iframe', async () => {
     render(<AdminVideos />);
     const youtubeCol = passedProps.columns.find(c => c.key === 'url_youtube');
     
     render(youtubeCol.render({ url_youtube: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', titulo: 'Video Teste' }));
     
     expect(screen.getByText('📺 Abrir no YouTube')).toHaveAttribute('href', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
-    expect(screen.getByTestId('embed-iframe')).toHaveAttribute('src', expect.stringContaining('embed/dQw4w9WgXcQ'));
+    const iframe = await screen.findByTestId('embed-iframe');
+    expect(iframe).toHaveAttribute('src', expect.stringContaining('embed/dQw4w9WgXcQ'));
   });
 
   it('não deve renderizar o iframe se a URL do YouTube for inválida', () => {

@@ -96,6 +96,9 @@ if (typeof global.IntersectionObserver === 'undefined') {
   global.IntersectionObserver = class IntersectionObserver {
     constructor(callback) {
       this.callback = callback;
+      // Simula interseção imediata para que iframes com lazy loading
+      // sejam renderizados nos testes sem necessidade de interação
+      setTimeout(() => callback([{ isIntersecting: true }]), 0);
     }
     observe() { return null; }
     unobserve() { return null; }

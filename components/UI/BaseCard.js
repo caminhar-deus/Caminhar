@@ -29,6 +29,7 @@ import styles from './BaseCard.module.css';
 export default function BaseCard({
   children,
   media,
+  mediaAlt,
   header,
   footer,
   variant = 'default',
@@ -80,7 +81,7 @@ export default function BaseCard({
       {media && (
         <div className={styles.media}>
           {typeof media === 'string' ? (
-            <img src={media} alt="" className={styles.mediaImage} />
+            <img src={media} alt={mediaAlt || ''} className={styles.mediaImage} />
           ) : (
             media
           )}
@@ -139,6 +140,7 @@ BaseCard.Footer = ({ children, align = 'start', className = '' }) => (
 BaseCard.propTypes = {
   children: PropTypes.node,
   media: PropTypes.node,
+  mediaAlt: PropTypes.string,
   header: PropTypes.node,
   footer: PropTypes.node,
   variant: PropTypes.oneOf(['default', 'outlined', 'filled', 'elevated']),

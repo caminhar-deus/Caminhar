@@ -23,7 +23,10 @@ jest.mock('@upstash/redis', () => ({
 
 jest.mock('../../../../../lib/auth.js', () => ({
   __esModule: true,
-  withAuth: (handler) => handler
+  withAuth: (handler) => (req, res) => {
+    req.user = req.user || { role: 'admin' };
+    return handler(req, res);
+  }
 }));
 
 describe('API - Admin - Rate Limit', () => {

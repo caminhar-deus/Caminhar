@@ -16,6 +16,7 @@ jest.mock('../../../lib/domain/audit.js', () => ({
 }));
 jest.mock('../../../lib/cache.js', () => ({
   invalidateCache: jest.fn(),
+  checkRateLimit: jest.fn().mockResolvedValue(false),
 }));
 
 // Mock do módulo de autenticação para ignorar a verificação de token neste teste

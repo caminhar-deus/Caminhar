@@ -20,7 +20,8 @@ jest.mock('../../../../lib/domain/videos.js', () => ({
 }));
 
 jest.mock('../../../../lib/cache.js', () => ({
-  invalidateCache: jest.fn()
+  invalidateCache: jest.fn(),
+  checkRateLimit: jest.fn().mockResolvedValue(false),
 }));
 
 describe('API Admin - Vídeos (/api/admin/videos)', () => {

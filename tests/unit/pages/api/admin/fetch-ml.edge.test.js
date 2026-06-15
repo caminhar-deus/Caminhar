@@ -7,7 +7,10 @@ import { mockGlobalFetch } from '../../../../helpers/index.js';
 jest.mock('../../../../../lib/auth.js', () => ({
   getAuthToken: jest.fn(),
   verifyToken: jest.fn(),
-  withAuth: jest.fn((handler) => (req, res) => handler(req, res)),
+  withAuth: jest.fn((handler) => (req, res) => {
+    req.user = req.user || { role: 'admin' };
+    return handler(req, res);
+  }),
 }));
 
 describe('API Admin - Fetch ML (Edge Cases)', () => {

@@ -108,7 +108,11 @@ export default function PreloadResources({
  *   domains: ['https://fonts.googleapis.com']
  * });
  */
-export function getCriticalResources({ pageType, images, domains, fonts, scripts, styles } = {}) {
+export function getCriticalResources(options = {}) {
+  // Aceita tanto objeto { pageType } quanto string (backward compatibility)
+  const config = typeof options === 'string' ? { pageType: options } : options;
+  const { pageType, images, domains, fonts, scripts, styles } = config;
+
   const resources = {
     fonts: fonts || [],
     images: images || [],
@@ -120,10 +124,18 @@ export function getCriticalResources({ pageType, images, domains, fonts, scripts
   // Se pageType for fornecido sem dados específicos, usa fallbacks sensíveis
   if (!images && !domains && !fonts && !scripts && !styles) {
     switch (pageType) {
+      case 'home':
+        resources.images.push('/hero-image.jpg');
+        break;
+      case 'blog':
+        resources.images.push('/blog-hero.jpg');
+        break;
       case 'musicas':
+        resources.images.push('/music-hero.jpg');
         resources.domains.push('https://open.spotify.com');
         break;
       case 'videos':
+        resources.images.push('/video-hero.jpg');
         resources.domains.push('https://www.youtube.com', 'https://img.youtube.com');
         break;
     }

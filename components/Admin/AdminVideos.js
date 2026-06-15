@@ -124,6 +124,7 @@ const columns = [
                 aspectRatio="16/9"
                 loadOnVisible={false}
                 placeholderText=""
+                data-testid="embed-iframe"
               />
             </div>
           )}

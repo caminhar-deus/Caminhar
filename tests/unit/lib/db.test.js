@@ -1,5 +1,5 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-import { query, closeDatabase, transaction, healthCheck, getDatabaseInfo, resetPool } from '../../../lib/db.js';
+import { query, closeDatabase, transaction, healthCheck, getDatabaseInfo, resetPool, getPool } from '../../../lib/db.js';
 import { Pool, restorePoolImplementation } from 'pg';
 
 jest.mock('pg');
@@ -15,13 +15,14 @@ describe('Library - Database', () => {
     mockPoolInstance = {
       query: jest.fn(),
       connect: jest.fn(() => Promise.resolve(mockClient)),
-      end: jest.fn(),
+      end: jest.fn(() => Promise.resolve()),
       on: jest.fn(),
       removeAllListeners: jest.fn(),
     };
     
     Pool.mockImplementation(() => mockPoolInstance);
     resetPool();
+    getPool(); // Inicializa o pool com a instância mockada para testes de closeDatabase
   });
 
   it('query: executa consulta SQL diretamente com sucesso', async () => {

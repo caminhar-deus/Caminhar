@@ -313,12 +313,22 @@
 
 ### `/pages/api/admin/rate-limit.js`
 - **Localização:** `/pages/api/admin/rate-limit.js`
-- **Propósito:** Endpoint para gerenciamento de rate limiting.
+- **Propósito:** Endpoint para gerenciamento de rate limiting com Redis (Upstash), incluindo whitelist, consulta de IPs bloqueados, logs de auditoria e exportação CSV.
 - **Funcionalidades:**
-  - GET: Obtém status/configurações do rate limit
-  - POST: Adiciona IP à whitelist com validação Zod (`ipSchema`) (adicionado 12/05/2026)
-  - DELETE: Remove IP da whitelist ou desbloqueia IP
-  - Protegido por autenticação
+  - **GET** (sem `type`): Lista IPs bloqueados combinando `keys()` e `pipeline` para buscar contagem e TTL — filtra apenas IPs que excederam `MAX_ATTEMPTS` (5 tentativas)
+  - **GET** (`type=current_ip`): Retorna o IP atual do requisitante (`req.socket.remoteAddress` ou `x-forwarded-for`)
+  - **GET** (`type=whitelist`): Lista IPs na whitelist via `smembers('rate_limit:whitelist')`
+  - **GET** (`type=audit`): Lista logs de auditoria com paginação (`page`, `limit`), filtros por data (`startDate`, `endDate`) e busca textual (`search`)
+  - **GET** (`type=export_csv`): Exporta logs de auditoria em formato CSV (Content-Type `text/csv; charset=utf-8`) com os mesmos filtros de data e busca
+  - **POST**: Adiciona IP à whitelist com validação Zod (`ipSchema`) — remove IP dos bloqueados se existir e registra log de auditoria. Retorna `503` se Redis estiver temporariamente indisponível
+  - **DELETE** (`type=whitelist`): Remove IP da whitelist via `srem` e registra log de auditoria
+  - **DELETE** (sem `type`): Remove bloqueio manual de IP via `del` e registra log de auditoria
+  - Retorna `400` se IP não for informado no POST ou DELETE, `501` se Redis não estiver configurado (`UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN`), `503` em falhas de Redis por rate limit
+  - **Tratamento de erros Redis:** Usa função interna `redisSafe` que trata erros de rate limit do Upstash com fallback silencioso e propaga erros graves (timeout, conexão, crash) para o handler superior, que retorna `500` via `createAdminHandler`
+  - Usa `createAdminHandler` com métodos permitidos `['GET', 'POST', 'DELETE']`
+  - Protegido por autenticação via `withAuth`
+  - Logs de auditoria mantidos em lista Redis (`rate_limit:audit_logs`) com limite de 100 registros
+  - Respostas de erro padronizadas no formato `{ error, message }` via `createAdminHandler`
 
 ### `/pages/api/admin/roles.js`
 - **Localização:** `/pages/api/admin/roles.js`

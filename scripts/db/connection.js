@@ -33,6 +33,14 @@ export async function closePool() {
 }
 
 /**
+ * Reseta o pool de conexão para null.
+ * Útil para testes que precisam recriar o pool do zero.
+ */
+export function resetPool() {
+  pool = null;
+}
+
+/**
  * Executa uma query no banco de dados.
  * Wrapper simples sobre pool.query() com gerenciamento automático do pool.
  *
@@ -42,5 +50,8 @@ export async function closePool() {
  */
 export async function query(text, params) {
   const p = getPool();
-  return p.query(text, params);
+  if (params !== undefined) {
+    return p.query(text, params);
+  }
+  return p.query(text);
 }

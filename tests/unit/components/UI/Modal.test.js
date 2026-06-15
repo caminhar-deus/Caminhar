@@ -87,10 +87,10 @@ describe('Componente UI - Modal', () => {
   it('deve renderizar o footer e aplicar classes preventScroll no body', () => {
     const { unmount } = render(<Modal isOpen={true} preventScroll={true} footer={<Modal.Footer>Rodapé</Modal.Footer>}>Body</Modal>);
     expect(screen.getByText('Rodapé')).toBeInTheDocument();
-    expect(document.body.style.overflow).toBe('hidden');
+    expect(document.body.classList.contains('modal-open')).toBe(true);
     
     unmount();
-    expect(document.body.style.overflow).toBe('');
+    expect(document.body.classList.contains('modal-open')).toBe(false);
   });
 
   it('deve retornar o modal diretamente (sem portal) no ambiente SSR (sem document.body)', () => {

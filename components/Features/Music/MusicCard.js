@@ -4,7 +4,14 @@ import { getSpotifyEmbedUrl } from '@/lib/spotify';
 import styles from './styles/MusicCard.module.css';
 
 export default function MusicCard({ musica }) {
-  const embedUrl = `${getSpotifyEmbedUrl(musica.url_spotify)}?utm_source=generator&theme=0`;
+  let embedUrl;
+  try {
+    const converted = getSpotifyEmbedUrl(musica.url_spotify);
+    embedUrl = `${converted}?utm_source=generator&theme=0`;
+  } catch (error) {
+    console.error('Erro ao converter URL do Spotify:', error);
+    embedUrl = `${musica.url_spotify}?utm_source=generator&theme=0`;
+  }
 
   const handleSpotifyClick = (e) => {
     e.preventDefault();

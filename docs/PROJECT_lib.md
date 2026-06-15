@@ -1,6 +1,6 @@
 # Análise da Pasta `lib/`
 
-> **Data da análise:** 08/06/2026 (atualizado)
+> **Data da análise:** 08/06/2026 (atualizado em 14/06/2026)
 > **Projeto:** O Caminhar com Deus
 > **Objetivo:** Documentar de forma objetiva e clara todos os arquivos da pasta `lib/`, suas responsabilidades e propósitos.
 
@@ -65,12 +65,13 @@
 
 **Propósito:** Camada de cache com Redis (Upstash) e fallback local. Centraliza operações de cache (get/set/invalidate) e inclui sistema de rate limit distribuído com fallback para memória local.
 
-**Funções principais:**
+**Funções exportadas:**
 - `getOrSetCache(key, fetchFunction, ttlSeconds)` — Padrão "Cache-Aside": tenta Redis, em caso de miss executa a função de fetch, salva no Redis e retorna. TTL padrão de 1 hora. Incrementa `redisHits` e `redisMisses` nas métricas.
 - `invalidateCache(keyPattern)` / `clearAllCache(options)` — Invalida chave específica ou limpa todo o cache Redis (FLUSHDB). `clearAllCache` agora **requer** `{ confirm: true }` como parâmetro obrigatório para evitar FLUSHDB acidental. Retorna `{ success: true }` em sucesso ou `{ success: false, error: message }` em falha, incrementando `metrics.redisErrors`.
 - `checkRateLimit(ip, endpoint, limit, windowMs)` — Rate limit distribuído via Redis (INCR + EXPIRE) com fallback em Map local. Aceita `limit` como função dinâmica. Possui whitelist para IPs locais.
 - `getCacheMetrics()` — Retorna métricas de monitoramento (hits, misses, erros, tamanho do Map local).
 - `cleanupRateLimitTimer()` — Limpa o timer de limpeza periódica (usado em testes).
+- `clearAppMemoryCache()` — Limpa todo o cache de aplicação em memória (`appMemoryCache`). Criada para uso em testes, evitando contaminação de estado entre cenários que compartilham o mesmo Map estático.
 
 **Observações:** Utiliza **lazy eviction** para o Map local de rate limit: entradas expiradas são removidas sob demanda em `checkInMemory()` apenas quando a chave é acessada. O `setInterval` existe apenas como **safety net** para evitar growth infinito, atuando de forma seletiva (remove entradas com mais de 120s ou as mais antigas se exceder 5000). Proteção contra memory leak usa `delete` seletivo (remove a entrada mais antiga) em vez de `clear()` agressivo, preservando dados de IPs legítimos. O rate limit tem fallback completo caso o Redis falhe. As métricas `redisHits` e `redisMisses` são incrementadas corretamente. A whitelist de IPs isentos de rate limit inclui apenas `127.0.0.1`, `::1` e `localhost` — o valor `'unknown'` foi removido para evitar bypass quando o header `x-forwarded-for` está ausente.
 
@@ -105,12 +106,13 @@
 
 **Propósito:** Gerenciamento da conexão com o banco de dados PostgreSQL via `pg.Pool`. Fornece a função `query` principal e utilitários de transação, health check e informações do banco.
 
-**Funções principais:**
+**Funções exportadas:**
+- `getPool()` — Obtém o pool de conexões, criando-o sob demanda (lazy initialization). Usada internamente por `query()` e `transaction()`, e externamente em testes para garantir que o pool esteja inicializado com a instância mockada antes de chamar `closeDatabase()`.
 - `query(text, params, options)` — Executa SQL parametrizado com logging opcional, suporte a transações (`client`) e controle de exceções (`throwOnError`). Em caso de erro, loga o objeto completo `errorDetails` (`code`, `message`, `query`, `duration`, `attempt`) independentemente do `LOG_LEVEL`. Possui retry automático (máx. 2 tentativas) para erros de timeout/rede, com reset do pool entre tentativas.
 - `transaction(callback)` — Executa uma transação com BEGIN/COMMIT/ROLLBACK automático.
 - `healthCheck()` — Verifica se o banco está respondendo (`SELECT 1`).
 - `getDatabaseInfo()` — Retorna versão, conexões ativas e tamanho do banco.
-- `closeDatabase()` — Fecha o pool de conexões.
+- `closeDatabase()` — Fecha o pool de conexões. Propaga erros de `pool.end()` para o chamador (removido `.catch(() => {})` anterior).
 - `resetPool()` — Reseta o pool (usado em testes para recriar a conexão com mocks). Limpa timers, remove listeners de erro e fecha o pool antigo.
 
 **Observações:** Pool configurado com lazy initialization (criado apenas no primeiro uso) para compatibilidade com Jest. Pool configurado com max: 50, min: 5, idleTimeoutMillis: 30000 (30s), connectionTimeoutMillis: 5000 (5s). SSL habilitado em produção. Re-exports removidos — importe diretamente dos módulos de origem (`./crud.js`, `./domain/settings.js`, `./domain/audit.js`, `./domain/posts.js`). A criação do pool foi extraída para `createPool()`, que registra handler para evento `error` — em caso de erro fatal, fecha o pool defeituoso e reseta a referência para recriação automática na próxima chamada. Health check periódico a cada 15s detecta falhas precoces e reseta o pool automaticamente. O log de erro da função `query` foi unificado em 13/06/2026: antes dependia de `LOG_LEVEL=debug` para exibir o objeto completo; agora sempre exibe `errorDetails` com `code`, `message`, `query`, `duration` e `attempt`.
@@ -121,14 +123,14 @@
 
 **Localização:** `/lib/redis.js`
 
-**Propósito:** Inicialização segura do cliente Redis Upstash com validação das variáveis de ambiente, proteção contra configurações incorretas e fallback em memória quando Redis está indisponível.
+**Propósito:** Inicialização segura do cliente Redis Upstash com validação das variáveis de ambiente, proteção contra configurações incorretas e fallback em memória quando Redis está indisponível. A inicialização é **lazy** (sob demanda) para evitar duplicidade quando o Next.js avalia o módulo em contextos separados (SSR e API Routes).
 
 **Exportações:**
 
 | Exportação | Tipo | Descrição |
 |------------|------|-----------|
-| `redis` | `Object\|null` | Instância do cliente Redis ou `null` se não configurado |
-| `getRedisInstance()` | `Function` | Retorna a instância Redis atual, inicializando se necessário |
+| `redis` | `null` | Sempre `null` — use `getRedisInstance()` para obter a instância real |
+| `getRedisInstance()` | `Function` | Retorna a instância Redis atual, inicializando sob demanda (lazy) |
 | `checkRedisHealth()` | `Function` | Health check — retorna `Promise<boolean>` |
 | `cleanupMemoryCache()` | `Function` | Remove entradas expiradas do cache em memória |
 | `redisGet(key)` | `Function` | Obtém valor do Redis com fallback em memória e retry |
@@ -140,13 +142,17 @@
 | `redisFlushdb()` | `Function` | Executa FLUSHDB e limpa cache em memória |
 
 **Fluxo de inicialização:**
-1. Verifica se `UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN` existem.
-2. Valida se a URL começa com `https://`.
-3. Valida se o token **não** começa com `https://` (proteção contra variáveis trocadas).
-4. Se tudo ok, cria instância `Redis` do `@upstash/redis`.
-5. Em qualquer falha, define `redis = null` e o sistema opera sem cache.
+1. `export const redis = null` — a exportação top-level não executa `initializeRedis()`, evitando efeito colateral na importação.
+2. `getRedisInstance()` é chamada sob demanda por `lib/cache.js` e funções do próprio módulo.
+3. Dentro de `initializeRedis()`: verifica se `UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN` existem.
+4. Valida se a URL começa com `https://`.
+5. Valida se o token **não** começa com `https://` (proteção contra variáveis trocadas).
+6. Se tudo ok, cria instância `Redis` do `@upstash/redis` e loga `"Redis Upstash REST inicializado com sucesso"` **uma única vez**.
+7. Em qualquer falha, define `redisInstance = null` e o sistema opera sem cache.
 
-**Observações:** As validações das variáveis prevenem erros comuns de configuração onde URL e token são trocados acidentalmente. Design tolerante a falhas: o app não quebra se Redis não estiver disponível.
+**Tratamento de erros:** As validações das variáveis prevenem erros comuns de configuração onde URL e token são trocados acidentalmente. Design tolerante a falhas: o app não quebra se Redis não estiver disponível. O guard `if (initializationAttempted) return redisInstance` garante que a inicialização aconteça apenas uma vez por módulo.
+
+**Correção de bug (14/06/2026):** Anteriormente, `export const redis = initializeRedis()` executava `initializeRedis()` como efeito colateral no momento da importação. No Next.js com Turbopack, o módulo era avaliado em contextos separados (SSR de páginas e API Routes), cada um com seu próprio escopo de módulo, fazendo com que o guard `initializationAttempted` não funcionasse entre contextos — resultando em duas mensagens `"[Redis] ✅ Redis Upstash REST inicializado com sucesso"`. A correção removeu o efeito colateral da importação, deixando a inicialização acontecer apenas sob demanda via `getRedisInstance()`.
 
 ---
 
@@ -161,7 +167,7 @@
 **Função principal:**
 - `createAdminHandler(config)` — Cria um handler Next.js completo a partir de um objeto de configuração. Aceita `name` (nome da entidade), `permission` (permissão(ões) exigidas), `requireAdmin` (se true, exige role `admin` sem buscar permissões), `handlers` (mapeamento método → handler), `rateLimit` (opções de rate limit), `cacheKeys` (chaves de cache para invalidar em mutações) e `allowedMethods` (métodos permitidos). Injeta `req.adminUtils` com funções `logActivity()` e `invalidateCache()`.
 
-**Observações:** O `createAdminHandler` aplica os middlewares na seguinte ordem: (1) verificação de método HTTP, (2) verificação de autenticação — retorna 401 se `user` for `null` (proteção contra acesso a `user.role` com usuário nulo), (3) RBAC via `requireAdmin` ou verificação de permissão na tabela `roles`, (4) detecção de IP spoofing, (5) rate limiting em mutações (POST/PUT/DELETE), (6) execução do handler específico, (7) invalidação automática de cache em mutações bem-sucedidas. Em caso de erro na verificação de permissões (ex: tabela `roles` inexistente), permite apenas usuários com role `admin`. O handler final é envolvido por `withAuth` do `lib/auth.js`.
+**Observações:** O `createAdminHandler` aplica os middlewares na seguinte ordem: (1) verificação de método HTTP, (2) verificação de autenticação — retorna 401 se `user` for `null` (proteção contra acesso a `user.role` com usuário nulo), (3) RBAC via `requireAdmin` ou verificação de permissão na tabela `roles`, (4) detecção de IP spoofing, (5) rate limiting em mutações (POST/PUT/DELETE), (6) execução do handler específico, (7) invalidação automática de cache em mutações bem-sucedidas. Em caso de erro na verificação de permissões (ex: tabela `roles` inexistente), permite apenas usuários com role `admin`. O catch centralizado agora traduz mensagens de erro comuns do banco para português: `unique constraint`/`duplicate key` → "Já existe um registro com esses dados", `foreign key` → "Registro possui referências em outros dados", `not null` → "Um campo obrigatório não foi informado". O handler final é envolvido por `withAuth` do `lib/auth.js`.
 
 ---
 

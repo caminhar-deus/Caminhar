@@ -5,7 +5,10 @@ import { createBackup } from '../../../../scripts/backup.js';
 import fs from 'fs';
 
 jest.mock('../../../../lib/auth.js', () => ({
-  withAuth: (handler) => async (req, res) => handler(req, res)
+  withAuth: (handler) => async (req, res) => {
+    req.user = { username: 'test-admin', role: 'admin' };
+    return handler(req, res);
+  }
 }));
 jest.mock('../../../../scripts/backup.js', () => ({
   createBackup: jest.fn()

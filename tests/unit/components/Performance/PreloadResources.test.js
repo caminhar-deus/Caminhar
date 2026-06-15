@@ -1,8 +1,8 @@
 import React from 'react';
 import { render } from '@testing-library/react';
 import { describe, it, expect, jest, beforeAll, afterAll } from '@jest/globals';
-import PreloadResources, { getCriticalResources } from '../../../../components/Performance/PreloadResources.js';
 import '../../../mocks/next-setup.js';
+import PreloadResources, { getCriticalResources } from '../../../../components/Performance/PreloadResources.js';
 
 describe('Componente de Performance - PreloadResources', () => {
   it('deve renderizar links de preconnect e dns-prefetch (padrões e extras)', () => {
@@ -39,19 +39,19 @@ describe('Componente de Performance - PreloadResources', () => {
   });
 
   it('getCriticalResources: deve retornar mapeamentos de recursos corretos baseados na rota', () => {
-    expect(getCriticalResources('home').images).toContain('/hero-image.jpg');
-    expect(getCriticalResources('blog').images).toContain('/blog-hero.jpg');
+    expect(getCriticalResources({ pageType: 'home' }).images).toContain('/hero-image.jpg');
+    expect(getCriticalResources({ pageType: 'blog' }).images).toContain('/blog-hero.jpg');
     
-    const musicas = getCriticalResources('musicas');
+    const musicas = getCriticalResources({ pageType: 'musicas' });
     expect(musicas.images).toContain('/music-hero.jpg');
     expect(musicas.domains).toContain('https://open.spotify.com');
 
-    const videos = getCriticalResources('videos');
+    const videos = getCriticalResources({ pageType: 'videos' });
     expect(videos.images).toContain('/video-hero.jpg');
     expect(videos.domains).toContain('https://www.youtube.com');
 
     // Rota desconhecida retorna vazio
-    const unknown = getCriticalResources('unknown');
+    const unknown = getCriticalResources({ pageType: 'unknown' });
     expect(unknown.images).toHaveLength(0);
   });
 });

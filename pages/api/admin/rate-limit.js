@@ -19,8 +19,8 @@ const MAX_ATTEMPTS = 5;
 
 /**
  * Executa uma operação Redis com tratamento de erro.
- * Se o Redis exceder o limite de requisições ou falhar,
- * retorna o valor fallback fornecido.
+ * Apenas erros de rate limit do Upstash são tratados com fallback silencioso.
+ * Erros graves (timeout, conexão, crash) são propagados para o handler superior.
  */
 async function redisSafe(operation, fallback = null) {
   if (!redis) return fallback;
@@ -30,12 +30,14 @@ async function redisSafe(operation, fallback = null) {
     const message = error.message || '';
     if (message.includes('max requests limit exceeded')) {
       logger.warn('RateLimit', `Limite de requisições Redis excedido. Operação ignorada: ${message}`);
-    } else if (message.includes('max commands') || message.includes('rate limit')) {
-      logger.warn('RateLimit', 'Rate limit do Redis atingido. Operação ignorada.');
-    } else {
-      logger.error('RateLimit', 'Erro Redis:', message);
+      return fallback;
     }
-    return fallback;
+    if (message.includes('max commands') || message.includes('rate limit')) {
+      logger.warn('RateLimit', 'Rate limit do Redis atingido. Operação ignorada.');
+      return fallback;
+    }
+    // Erros graves são propagados para o catch do createAdminHandler ou dos handlers
+    throw error;
   }
 }
 

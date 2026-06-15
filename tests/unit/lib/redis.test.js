@@ -18,7 +18,7 @@ describe('Library - Redis', () => {
     process.env = originalEnv;
   });
 
-  it('deve exportar null se as variáveis de ambiente não estiverem definidas', () => {
+  it('deve exportar null como valor padrão de redis (inicialização lazy)', () => {
     delete process.env.UPSTASH_REDIS_REST_URL;
     delete process.env.UPSTASH_REDIS_REST_TOKEN;
     
@@ -26,12 +26,22 @@ describe('Library - Redis', () => {
     expect(redis).toBeNull();
   });
 
-  it('deve instanciar e exportar o Redis se as variáveis estiverem definidas', () => {
+  it('getRedisInstance() deve retornar null se as variáveis não estiverem definidas', () => {
+    delete process.env.UPSTASH_REDIS_REST_URL;
+    delete process.env.UPSTASH_REDIS_REST_TOKEN;
+    
+    const { getRedisInstance } = require('../../../lib/redis.js');
+    const instance = getRedisInstance();
+    expect(instance).toBeNull();
+  });
+
+  it('getRedisInstance() deve retornar instância do Redis se as variáveis estiverem definidas', () => {
     process.env.UPSTASH_REDIS_REST_URL = 'https://fake-redis.com';
     process.env.UPSTASH_REDIS_REST_TOKEN = 'fake-token';
 
-    const { redis } = require('../../../lib/redis.js');
-    expect(redis).toBeDefined();
-    expect(redis.url).toBe('https://fake-redis.com');
+    const { getRedisInstance } = require('../../../lib/redis.js');
+    const instance = getRedisInstance();
+    expect(instance).toBeDefined();
+    expect(instance.url).toBe('https://fake-redis.com');
   });
 });

@@ -1,6 +1,6 @@
 # Análise de Componentes - `/components`
 
-> **Data:** 20/05/2026 (atualizado)
+> **Data:** 14/06/2026 (atualizado em 42ª revisão)
 > **Objetivo:** Documentar todos os arquivos da pasta `components/`, descrevendo localização, propósito e funcionalidades.
 
 ---
@@ -265,7 +265,7 @@ Componentes de funcionalidades específicas do site público.
 
 | Arquivo | Propósito |
 |---------|-----------|
-| `MusicCard.js` | Card de música com embed Spotify via `LazyIframe` (carregamento sob demanda). Extrai ID do Spotify via helper `lib/spotify.js`. Exibe título, artista e botão "Ouvir no Spotify" |
+| `MusicCard.js` | Card de música com embed Spotify via `LazyIframe` (carregamento sob demanda). Extrai ID do Spotify via helper `lib/spotify.js`. Exibe título, artista e botão "Ouvir no Spotify". Trata URL nula/inválida com `try/catch` e `console.error` |
 | `MusicGallery.js` | Galeria de músicas com busca (debounce 300ms), paginação com validação explícita de formatos de resposta. Consome `/api/musicas`. Estados loading/error/empty usam componentes padronizados `LoadingMessage`, `ErrorMessage` e `EmptyMessage` de `StateMessages.js` |
 | `styles/MusicCard.module.css` | Estilos do card de música: embed wrapper, botão Spotify |
 | `styles/MusicGallery.module.css` | Estilos da galeria: grid 3 colunas, busca, estados (loading/error/empty), paginação. Responsivo completo |
@@ -422,7 +422,12 @@ Componentes para otimização de performance do site.
 **Melhorias aplicadas (18/05/2026):**
 - Adicionado `!hasError` na condição do skeleton loader para ocultá-lo quando a imagem falhar, evitando sobreposição visual com o fallback
 - Animação `@keyframes pulse` extraída do `<style jsx>` inline para `ImageOptimized.module.css`, permitindo cache de CSS compartilhado entre instâncias do componente
-- Classe `.skeletonLoader` criada no CSS Module com os estilos do skeleton (position absolute, inset 0, animação pulse)
+- Classe `.skeletonLoader` criada no CSS Module com animação pulse e background-color
+
+**Melhorias aplicadas (14/06/2026):**
+- `position: absolute` e `inset: 0` movidos do CSS Module para o estilo inline do skeleton, garantindo que o teste com `toHaveStyle('position: absolute')` funcione no JSDOM (que não processa CSS modules)
+- Propriedades duplicadas removidas do `.skeletonLoader` no `ImageOptimized.module.css`
+- `borderRadius` no skeleton agora utiliza `style?.borderRadius || 0` em vez de depender exclusivamente do CSS Module
 
 ### 4.3 LazyIframe.js
 **Localização:** `components/Performance/LazyIframe.js`
@@ -451,6 +456,10 @@ Componentes para otimização de performance do site.
 **Melhorias aplicadas (18/05/2026):**
 - Bloco `dns-prefetch` removido (redundante com `preconnect` que já inclui resolução de DNS, handshake TLS e negociação TCP)
 - Função `getCriticalResources` refatorada: agora aceita parâmetro de configuração externo em vez de valores estáticos hardcoded, permitindo dados dinâmicos vindos da página/API. Mantém fallback sensível para domínios específicos (`musicas` → Spotify, `videos` → YouTube) quando apenas `pageType` é fornecido
+
+**Melhorias aplicadas (14/06/2026):**
+- Adicionados mapeamentos de fallback de imagens por rota: `home` → `/hero-image.jpg`, `blog` → `/blog-hero.jpg`, `musicas` → `/music-hero.jpg`, `videos` → `/video-hero.jpg`
+- Adicionada backward compatibility: `getCriticalResources` aceita tanto string (`'home'`) quanto objeto (`{ pageType: 'home' }`), não quebrando usos existentes como no `homepage-seo-example.js`
 
 ### 4.5 index.js (Performance)
 **Localização:** `components/Performance/index.js`
@@ -597,6 +606,9 @@ Componentes base do Design System do projeto. Seguem padrão consistente de vari
 - **Consumidores atualizados:** `PostCard.js`, `MusicCard.js`, `VideoCard.js` e `ProductCard.js` migrados de import relativo (`../../UI/BaseCard`) para barrel export (`'@/components/UI'`), padronizando com o alias `@` do projeto.
 - **Teste:** `Card.test.js` atualizado para importar de `BaseCard.js`
 - **PropTypes:** Adicionado campo `ariaLabel` nas PropTypes do componente.
+
+**Melhorias aplicadas (14/06/2026):**
+- **Prop `mediaAlt`:** Adicionada nova prop `mediaAlt` para definir o atributo `alt` da tag `<img>` quando `media` é uma string URL. O componente utiliza `mediaAlt || ''` como fallback para string vazia, mantendo compatibilidade com usos existentes que não informavam `alt`. Adicionado também o campo `mediaAlt` nas PropTypes.
 
 ### 6.8 Badge.js
 **Localização:** `components/UI/Badge.js`

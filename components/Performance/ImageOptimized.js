@@ -89,6 +89,8 @@ export default function ImageOptimized({
         <div
           className={styles.skeletonLoader}
           style={{
+            position: 'absolute',
+            inset: 0,
             borderRadius: style?.borderRadius || 0,
           }}
         />
