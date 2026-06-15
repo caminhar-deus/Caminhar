@@ -115,7 +115,7 @@ export const Toast = ({
         <button
           className={styles.closeButton}
           onClick={handleClose}
-          aria-label={`Fechar notificação de ${statusLabel.toLowerCase()}`}
+          aria-label="Fechar notificação"
         >
           <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
             <path d="M18 6 6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>

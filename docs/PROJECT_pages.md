@@ -131,7 +131,7 @@
 - **Localização:** `/pages/api/posts.js`
 - **Propósito:** Endpoint unificado de posts (público e criação autenticada).
 - **Funcionalidades:**
-  - **GET** (público): Lista posts publicados com paginação (`page`, `limit`, `search`), cache distribuído e rate limiting.
+  - **GET** (público): Lista posts publicados com paginação (`page`, `limit`, `search`), cache distribuído com chaves prefixadas (`posts:list:` para listagens, `posts:search:` para buscas), rate limiting verificado antes do cache.
   - **POST** (autenticado): Cria novo post com validação Zod, rate limiting em mutações (30 requisições/min), autenticação via `withAuth` (alterado 12/05/2026 — antes usava `getAuthToken()` + `verifyToken()` manual), e invalidação de cache automática.
   - Suporta `?response=v1` para compatibilidade com formato `{ success, data, pagination, timestamp }`.
   - Respostas de erro padronizadas no formato `{ error, message }` (alterado 12/05/2026).

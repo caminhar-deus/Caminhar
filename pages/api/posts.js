@@ -43,6 +43,12 @@ async function handleGet(req, res) {
 
     const ip = getClientIP(req);
 
+    // Verifica rate limit ANTES de processar o cache para evitar trabalho desnecessário
+    const isLimited = await checkRateLimit(ip, 'api:public:posts', search ? 100 : 300);
+    if (isLimited) {
+      return res.status(429).json({ error: 'Too Many Requests', message: 'Muitas requisições. Tente novamente mais tarde.' });
+    }
+
     // Chave de cache mais eficiente: separa listagem de busca
     // Listagens sem search têm alta taxa de cache hit entre diferentes usuários
     const cacheKey = search
@@ -52,14 +58,9 @@ async function handleGet(req, res) {
     // TTL maior para listagens (2h), menor para buscas (30min)
     const ttl = search ? 1800 : 7200;
 
-    // Executa cache em paralelo com rate limit — cache hits não são bloqueados
-    const [result] = await Promise.all([
-      getOrSetCache(cacheKey, async () => {
-        return await getRecentPosts(limit, page, search);
-      }, ttl),
-      // Rate limit com limite mais generoso para não barrar tráfego legítimo sob carga
-      checkRateLimit(ip, 'api:public:posts', search ? 100 : 300),
-    ]);
+    const result = await getOrSetCache(cacheKey, async () => {
+      return await getRecentPosts(limit, page, search);
+    }, ttl);
 
     // Cache público: CDN/Proxy pode cachear por 5 minutos, com stale-while-revalidate de 10 minutos
     res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=300, stale-while-revalidate=600');

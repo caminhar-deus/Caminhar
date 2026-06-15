@@ -141,12 +141,16 @@ describe('Library - API - Middleware', () => {
   });
 
   describe('withRateLimit', () => {
-    beforeEach(() => jest.useFakeTimers());
+    beforeEach(() => jest.useFakeTimers({ now: Date.now() }));
     afterEach(() => jest.useRealTimers());
 
     it('blocks request when limit exceeded', async () => {
       const handler = jest.fn();
       const middleware = withRateLimit({ maxRequests: 2, windowMs: 1000 })(handler);
+      
+      // IP público de teste para não ser bypassado pela whitelist do checkRateLimit.
+      // IP diferente por teste para evitar contaminação entre cenários no localRateLimitMap.
+      req.socket.remoteAddress = '203.0.113.10';
       
       await middleware(req, res); // 1
       await middleware(req, res); // 2
@@ -157,13 +161,14 @@ describe('Library - API - Middleware', () => {
     });
 
     it('cleans up old entries based on interval', async () => {
+      req.socket.remoteAddress = '203.0.113.20';
       const middleware = withRateLimit({ maxRequests: 2, windowMs: 1000 })(jest.fn());
       await middleware(req, res); // Cria entrada
       
-      // Avança o tempo além do intervalo de 5 minutos do cleanup
-      jest.advanceTimersByTime(6 * 60 * 1000);
+      // Avança o tempo além da janela de rate limit para expirar a entrada
+      jest.advanceTimersByTime(2000); // 2x windowMs
       
-      await middleware(req, res); // Nova requisição permitida
+      await middleware(req, res); // Nova requisição permitida (entrada expirada)
       expect(response.tooManyRequests).not.toHaveBeenCalled();
     });
 

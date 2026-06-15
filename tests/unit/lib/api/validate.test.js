@@ -155,7 +155,7 @@ describe('API Validation Middleware (lib/api/validate.js)', () => {
       await middleware(req, res);
       
       expect(validationError).toHaveBeenCalledWith(res, 'Erro ao validar parâmetros da URL');
-      expect(consoleSpy).toHaveBeenCalledWith('Erro inesperado na validação dos query params:', expect.any(Error));
+      expect(consoleSpy).toHaveBeenCalledWith('[Validate] ❌ Erro inesperado na validação dos query params:', expect.any(Error));
       
       consoleSpy.mockRestore();
     });
@@ -199,7 +199,7 @@ describe('API Validation Middleware (lib/api/validate.js)', () => {
           await middleware(req, res);
           
           expect(validationError).toHaveBeenCalledWith(res, 'Erro ao validar parâmetros da rota');
-          expect(consoleSpy).toHaveBeenCalledWith('Erro inesperado na validação dos params:', expect.any(Error));
+          expect(consoleSpy).toHaveBeenCalledWith('[Validate] ❌ Erro inesperado na validação dos params:', expect.any(Error));
           consoleSpy.mockRestore();
       });
 
@@ -236,7 +236,7 @@ describe('API Validation Middleware (lib/api/validate.js)', () => {
       await middleware(req, res);
       
       expect(validationError).toHaveBeenCalledWith(res, 'Erro ao validar headers');
-      expect(consoleSpy).toHaveBeenCalledWith('Erro inesperado na validação dos headers:', expect.any(Error));
+      expect(consoleSpy).toHaveBeenCalledWith('[Validate] ❌ Erro inesperado na validação dos headers:', expect.any(Error));
       consoleSpy.mockRestore();
   });
 

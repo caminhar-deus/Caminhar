@@ -92,14 +92,14 @@ describe('Integração de Posts (API/DB)', () => {
 
   it('Endpoint API /api/posts deve rejeitar métodos não GET', async () => {
     const { req, res } = createMocks({
-      method: 'POST',
+      method: 'PUT',
     });
 
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(405);
     const jsonData = JSON.parse(res._getData());
-    expect(jsonData.error).toBe('Method not allowed');
+    expect(jsonData.error).toBe('Method Not Allowed');
     
     // A função NÃO deve ser chamada quando o método é inválido
     expect(getRecentPosts).not.toHaveBeenCalled();
@@ -115,7 +115,7 @@ describe('Integração de Posts (API/DB)', () => {
 
     expect(res._getStatusCode()).toBe(400);
     const jsonData = JSON.parse(res._getData());
-    expect(jsonData.error).toBe('Invalid pagination parameters');
+    expect(jsonData.error).toBe('Bad Request');
     expect(getRecentPosts).not.toHaveBeenCalled();
   });
 
@@ -155,7 +155,7 @@ describe('Integração de Posts (API/DB)', () => {
 
     expect(res._getStatusCode()).toBe(429);
     const jsonData = JSON.parse(res._getData());
-    expect(jsonData.error).toBe('Too many requests');
+    expect(jsonData.error).toBe('Too Many Requests');
     expect(getRecentPosts).not.toHaveBeenCalled();
   });
 
@@ -174,7 +174,7 @@ describe('Integração de Posts (API/DB)', () => {
 
     expect(res._getStatusCode()).toBe(500);
     const jsonData = JSON.parse(res._getData());
-    expect(jsonData.error).toBe('Internal server error');
+    expect(jsonData.error).toBe('Internal Server Error');
     expect(getRecentPosts).toHaveBeenCalledTimes(1);
 
     // Restaura a implementação original do console.error para não afetar outros testes.
@@ -217,7 +217,7 @@ describe('Integração de Posts (API/DB)', () => {
     
     // Verifica a chave do cache
     const cacheKey = getOrSetCache.mock.calls[0][0];
-    expect(cacheKey).toBe('posts:2:5');
+    expect(cacheKey).toBe('posts:list:2:5');
   });
 
   it('Endpoint API /api/posts deve lidar com o parâmetro de busca', async () => {
@@ -240,6 +240,6 @@ describe('Integração de Posts (API/DB)', () => {
     
     // Verifica se a chave de cache inclui o termo de busca
     const cacheKey = getOrSetCache.mock.calls[0][0];
-    expect(cacheKey).toBe('posts:1:10:test-term');
+    expect(cacheKey).toBe('posts:search:1:10:test-term');
   });
 });

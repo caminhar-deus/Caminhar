@@ -650,7 +650,6 @@ Componentes base do Design System do projeto. Seguem padrão consistente de vari
 - Adicionado `<span className={styles.srOnly}>` oculto com o status para acessibilidade
 - Adicionado `aria-atomic="true"` no container do toast
 - Classe `.srOnly` adicionada ao `Toast.module.css`
-- `aria-label` do botão fechar agora inclui o nome do status
 
 ### 6.11 Spinner.js
 **Localização:** `components/UI/Spinner.js`
