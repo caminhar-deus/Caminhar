@@ -63,6 +63,7 @@ export const TextArea = forwardRef(({
   const calculateHeight = (textarea) => {
     if (!autoResize) {
       textarea.style.height = '';
+      textarea.style.overflowY = '';
       return;
     }
 
@@ -116,8 +117,6 @@ export const TextArea = forwardRef(({
   };
 
   useEffect(() => {
-    if (!autoResize) return;
-
     const textarea = internalRef.current || ref?.current;
     if (!textarea) return;
 
@@ -165,9 +164,9 @@ export const TextArea = forwardRef(({
         ) : (
           <span />
         )}
-        {(showCount || maxLength) && (
+          {(showCount || maxLength) && (
           <span className={`${styles.counter} ${isOverLimit ? styles.overLimit : ''}`}>
-            {currentLength}{maxLength ? `/${maxLength} caracteres` : ''}
+            {currentLength}{maxLength ? ` / ${maxLength} caracteres` : ''}
           </span>
         )}
       </div>

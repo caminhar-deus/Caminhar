@@ -21,7 +21,7 @@ describe('Componente UI - TextArea', () => {
     const onChange = jest.fn();
     render(<TextArea value="123" maxLength={10} showCount autoResize onChange={onChange} />);
     
-    expect(screen.getByText('3 / 10')).toBeInTheDocument();
+    expect(screen.getByText('3 / 10 caracteres')).toBeInTheDocument();
     
     const textarea = screen.getByRole('textbox');
     // Mock scrollHeight para testar altura ajustada
@@ -41,7 +41,7 @@ describe('Componente UI - TextArea', () => {
 
   it('deve usar defaultValue para o contador e renderizar espaço reservado se não houver texto auxiliar', () => {
     const { container } = render(<TextArea defaultValue="teste" maxLength={10} showCount />);
-    expect(screen.getByText('5 / 10')).toBeInTheDocument();
+    expect(screen.getByText('5 / 10 caracteres')).toBeInTheDocument();
     
     // Como o CSS Modules é mockado, navegamos pela estrutura para pegar a última div (footer)
     const footer = container.firstChild.lastChild;

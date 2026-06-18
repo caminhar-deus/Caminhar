@@ -2,8 +2,7 @@ export default {
   presets: [
     ['@babel/preset-env', { 
       targets: { node: 'current' }, 
-      modules: 'auto', // Allow Jest to handle module transformation
-      loose: true 
+      modules: 'auto' // Allow Jest to handle module transformation
     }],
     ['@babel/preset-react', { runtime: 'automatic' }]
   ],

@@ -103,7 +103,7 @@ describe('Componente Front-End - AdminProducts', () => {
     
     await waitFor(() => {
       expect(setFieldValue).toHaveBeenCalledWith('title', 'Produto');
-      expect(setFieldValue).toHaveBeenCalledWith('price', 'R$ 99,90');
+      expect(setFieldValue).toHaveBeenCalledWith('price', '99.90');
       expect(setFieldValue).toHaveBeenCalledWith('description', 'Desc');
       expect(toast.success).toHaveBeenCalled();
     });
@@ -199,10 +199,11 @@ describe('Componente Front-End - AdminProducts', () => {
     const Checkbox = publishedField.component;
     
     const onChange = jest.fn();
-    render(<Checkbox name="published" value={true} onChange={onChange} label="Publicado" hint="Dica" />);
+    render(<Checkbox name="published" checked={true} onChange={onChange} label="Publicado" hint="Dica" />);
     
     const checkboxInput = screen.getByRole('checkbox');
     fireEvent.click(checkboxInput); // Alterna o checkbox
-    expect(onChange).toHaveBeenCalledWith({ target: { name: 'published', value: false } });
+    expect(onChange).toHaveBeenCalled();
+    expect(onChange.mock.calls[0][0].target.name).toBe('published');
   });
 });

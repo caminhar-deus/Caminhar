@@ -4,7 +4,8 @@
   "description": "",
   "type": "module",
   "engines": {
-    "node": "24.15.0"
+    "node": "24.16.0",
+    "npm": "11.17.0"
   },
   "scripts": {
     "check-env": "node scripts/check-env.js",
@@ -102,7 +103,6 @@
   },
   "homepage": "https://github.com/caminhar-deus/Caminhar#readme",
   "dependencies": {
-    "@jest/globals": "^30.4.1",
     "@next/env": "^16.2.9",
     "@upstash/redis": "^1.38.0",
     "bcryptjs": "^3.0.3",
@@ -123,27 +123,27 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@babel/core": "^7.29.7",
-    "@babel/preset-env": "^7.29.7",
-    "@babel/preset-react": "^7.29.7",
-    "@faker-js/faker": "^10.4.0",
+    "@babel/core": "^8.0.1",
+    "@babel/preset-env": "^8.0.1",
+    "@babel/preset-react": "^8.0.1",
+    "@faker-js/faker": "^10.5.0",
+    "@jest/globals": "^30.4.1",
     "@jest/reporters": "^30.4.1",
-    "@testcontainers/postgresql": "^12.0.2",
+    "@testcontainers/postgresql": "^12.0.3",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
-    "babel-jest": "^30.4.1",
     "cypress": "^15.17.0",
     "cypress-axe": "^1.7.0",
     "jest": "^30.4.2",
     "jest-environment-jsdom": "^30.4.1",
     "jest-watch-typeahead": "^3.0.1",
-    "knip": "^6.16.1",
+    "knip": "^6.17.1",
     "next-sitemap": "^4.2.3",
     "node-mocks-http": "^1.17.2",
-    "testcontainers": "^12.0.2",
-    "undici": "^8.4.1"
+    "testcontainers": "^12.0.3",
+    "undici": "^8.5.0"
   },
   "overrides": {
     "tar": "^7.4.3",
@@ -152,5 +152,13 @@
     "postcss": "^8.5.10",
     "uuid": "^14.0.0",
     "whatwg-encoding": "^3.1.1"
+  },
+  "allowScripts": {
+    "cpu-features@0.0.10": true,
+    "cypress@15.17.0": true,
+    "protobufjs@7.6.4": true,
+    "sharp@0.34.5": true,
+    "ssh2@1.17.0": true,
+    "unrs-resolver@1.12.2": true
   }
 }

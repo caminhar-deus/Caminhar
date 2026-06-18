@@ -3,19 +3,21 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import ImageUploadField from '../../../../components/Admin/fields/ImageUploadField.js';
 import { mockGlobalFetch } from '../../../helpers/index.js';
+import toast from 'react-hot-toast';
+
+jest.mock('react-hot-toast', () => ({
+  error: jest.fn(),
+}));
 
 describe('ImageUploadField Component', () => {
-  const originalAlert = global.alert;
   let fetchMock;
 
   beforeEach(() => {
     fetchMock = mockGlobalFetch();
-    global.alert = jest.fn();
   });
 
   afterEach(() => {
     fetchMock?.mockRestore();
-    global.alert = originalAlert;
   });
 
   it('deve renderizar corretamente e exibir preview quando tem valor', () => {
@@ -71,7 +73,7 @@ describe('ImageUploadField Component', () => {
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(global.alert).toHaveBeenCalledWith('Formato inválido');
+      expect(toast.error).toHaveBeenCalledWith('Formato inválido');
     });
 
     consoleSpy.mockRestore();
@@ -88,7 +90,7 @@ describe('ImageUploadField Component', () => {
     fireEvent.change(fileInput, { target: { files: [file] } });
     
     await waitFor(() => {
-      expect(onUpload).toHaveBeenCalledWith(file);
+      expect(onUpload).toHaveBeenCalledWith(file, 'post');
       expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ target: { name: 'image', value: 'https://custom.com/upload.jpg' } }));
     });
   });
@@ -112,7 +114,7 @@ describe('ImageUploadField Component', () => {
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     render(<ImageUploadField name="image" label="Imagem" value="" onChange={jest.fn()} />);
     fireEvent.change(document.querySelector('input[type="file"]'), { target: { files: [new File([''], 'a.png')] } });
-    await waitFor(() => expect(global.alert).toHaveBeenCalledWith('Erro 500: Falha no upload'));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Erro 500: Falha no upload'));
     consoleSpy.mockRestore();
   });
 });

@@ -10,7 +10,6 @@ import toast from 'react-hot-toast';
 
 /**
  * Schema de validação para posts
- * Inclui superRefine para validar que post publicado precisa de imagem de capa
  */
 const postSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório').max(200, 'Título deve ter no máximo 200 caracteres'),
@@ -22,14 +21,6 @@ const postSchema = z.object({
     message: 'Por favor, insira uma URL completa (https://...) ou um caminho local válido (/uploads/...).'
   }).optional(),
   published: z.boolean().optional()
-}).superRefine((data, ctx) => {
-  if (data.published && !data.image_url) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'A imagem de capa é obrigatória para posts publicados.',
-      path: ['image_url']
-    });
-  }
 });
 
 /**
@@ -161,6 +152,16 @@ const initialFormData = {
 };
 
 /**
+ * Validação customizada para posts
+ * Garante que post publicado possua imagem de capa
+ */
+const validate = (data) => {
+  if (data.published && !data.image_url) {
+    throw new Error('Para publicar um post, é necessário vincular uma imagem de capa.');
+  }
+};
+
+/**
  * AdminPostsNew - Componente refatorado usando AdminCrudBase
  * 
  * Demonstra uso de upload de imagens e geração automática de slug.
@@ -232,6 +233,7 @@ export default function AdminPostsNew() {
       columns={columns}
       initialFormData={initialFormData}
       validationSchema={postSchema}
+      validate={validate}
       renderCustomFormField={renderCustomFormField}
       newButtonText="+ Novo Post"
       saveButtonText="Salvar"

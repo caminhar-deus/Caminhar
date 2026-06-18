@@ -2,22 +2,19 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, waitForElementToBeRemoved } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import BackupManager from '../../../../../components/Admin/Managers/BackupManager.js';
-import { suppressConsoleError, createConfirmSpy, mockGlobalFetch } from '../../../../helpers/index.js';
+import { suppressConsoleError, mockGlobalFetch } from '../../../../helpers/index.js';
 
 describe('Componentes Admin - BackupManager', () => {
   let consoleErrorSpy;
-  let confirmSpy;
   let fetchMock;
 
   beforeEach(() => {
     consoleErrorSpy = suppressConsoleError();
-    confirmSpy = createConfirmSpy(false);
     fetchMock = mockGlobalFetch();
   });
 
   afterEach(() => {
     consoleErrorSpy?.mockRestore();
-    confirmSpy?.mockRestore();
     fetchMock?.mockRestore();
   });
 
@@ -58,21 +55,22 @@ describe('Componentes Admin - BackupManager', () => {
     });
   });
 
-  it('deve abortar a criação do backup se o usuário cancelar o confirm', async () => {
+  it('deve abortar a criação do backup se o usuário cancelar a confirmação no modal', async () => {
     global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ latest: null }) });
-    confirmSpy.mockReturnValueOnce(false);
 
     render(<BackupManager />);
     await waitForElementToBeRemoved(() => screen.queryByText(/Carregando/i));
 
     fireEvent.click(screen.getByRole('button', { name: /Realizar Backup Agora/i }));
 
-    expect(window.confirm).toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /Cancelar/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Cancelar/i }));
+
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
   it('deve criar um novo backup com sucesso e recarregar a lista', async () => {
-    confirmSpy.mockReturnValueOnce(true);
     global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ latest: null }) });
     global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ message: 'ok' }) });
     global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ latest: { name: 'novo.sql', date: new Date(), size: 1024 } }) });
@@ -81,6 +79,8 @@ describe('Componentes Admin - BackupManager', () => {
     await waitForElementToBeRemoved(() => screen.queryByText(/Carregando/i));
 
     fireEvent.click(screen.getByRole('button', { name: /Realizar Backup Agora/i }));
+
+    fireEvent.click(screen.getByRole('button', { name: /Confirmar/i }));
     expect(screen.getByRole('button', { name: /Criando Backup/i })).toBeDisabled();
 
     await waitFor(() => expect(screen.getByText('✅ Backup realizado com sucesso!')).toBeInTheDocument());
@@ -88,7 +88,6 @@ describe('Componentes Admin - BackupManager', () => {
   });
 
   it('deve exibir erros retornados pela API (ex: falha de script de dump) e do Try/Catch', async () => {
-    confirmSpy.mockReturnValueOnce(true);
     global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ latest: null }) });
 
     render(<BackupManager />);
@@ -96,11 +95,11 @@ describe('Componentes Admin - BackupManager', () => {
 
     global.fetch.mockRejectedValueOnce(new Error('Conexão perdida'));
     fireEvent.click(screen.getByRole('button', { name: /Realizar Backup Agora/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Confirmar/i }));
     await waitFor(() => expect(screen.getByText('❌ Erro de conexão ao criar backup')).toBeInTheDocument());
   });
 
   it('deve exibir mensagem de erro quando a API falha ao criar o backup (ok: false)', async () => {
-    confirmSpy.mockReturnValueOnce(true);
     global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ latest: null }) });
 
     render(<BackupManager />);
@@ -108,6 +107,7 @@ describe('Componentes Admin - BackupManager', () => {
 
     global.fetch.mockResolvedValueOnce({ ok: false, json: async () => ({ message: 'Espaço insuficiente no disco' }) });
     fireEvent.click(screen.getByRole('button', { name: /Realizar Backup Agora/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Confirmar/i }));
 
     await waitFor(() => expect(screen.getByText('❌ Erro: Espaço insuficiente no disco')).toBeInTheDocument());
   });

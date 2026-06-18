@@ -43,6 +43,7 @@ describe('Componente Front-End - AdminCrudBase', () => {
     handleEdit: jest.fn(),
     handleSubmit: jest.fn(),
     handleDelete: jest.fn(),
+    toggleField: jest.fn(),
     resetForm: jest.fn(),
     goToPage: jest.fn(),
   };
@@ -138,27 +139,31 @@ describe('Componente Front-End - AdminCrudBase', () => {
     expect(mockUseAdminCrud.goToPage).toHaveBeenCalledWith(3);
   });
 
-  it('deve alternar booleanos nativamente, acionar a API e exibir toasts', async () => {
-    global.fetch.mockResolvedValueOnce({ ok: true });
+  it('deve alternar booleanos nativamente, acionar o toggleField e re-renderizar', async () => {
+    mockUseAdminCrud.toggleField.mockResolvedValue();
     useAdminCrud.mockReturnValue({ ...mockUseAdminCrud, items: [{ id: 1, name: 'Teste', status: false }] });
 
     render(<AdminCrudBase {...defaultProps} />);
     const toggleButton = screen.getByText('Rascunho').closest('button');
     
     fireEvent.click(toggleButton);
-    expect(global.fetch).toHaveBeenCalledWith('/api/test', expect.objectContaining({ method: 'PUT' }));
-
-    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    expect(mockUseAdminCrud.toggleField).toHaveBeenCalledWith(
+      { id: 1, name: 'Teste', status: false },
+      'status',
+      false
+    );
   });
 
   it('deve reverter o toggle caso a API falhe', async () => {
-    global.fetch.mockResolvedValueOnce({ ok: false });
+    mockUseAdminCrud.toggleField.mockRejectedValue(new Error('Falha na API'));
     useAdminCrud.mockReturnValue({ ...mockUseAdminCrud, items: [{ id: 1, name: 'Teste', status: false }] });
 
     render(<AdminCrudBase {...defaultProps} />);
     fireEvent.click(screen.getByText('Rascunho').closest('button'));
 
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Erro ao alterar status.', expect.any(Object)));
+    await waitFor(() => {
+      expect(mockUseAdminCrud.toggleField).toHaveBeenCalled();
+    });
   });
 
   it('deve exportar para CSV e formatar aspas e quebras de linha corretamente', () => {

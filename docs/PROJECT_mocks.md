@@ -90,11 +90,12 @@ Todos usam o padrão: `jest.mock('pg');` que ativa automaticamente o mock manual
 
 ### 📌 Propósito
 
-Mock minimalista para arquivos de estilo CSS. Utilizado pelo Jest para substituir importações de arquivos `.css` durante a execução dos testes, evitando que o Jest tente processar CSS (o que geraria erros de parse).
+Mock para arquivos de estilo CSS Module. Utilizado pelo Jest para substituir importações de arquivos `.css` durante a execução dos testes, evitando que o Jest tente processar CSS (o que geraria erros de parse), ao mesmo tempo que mantém a compatibilidade com seletores CSS usados nos testes.
 
 ### 🔍 O que faz
 
-- Exporta um objeto vazio `{}`.
+- Mapeia classes CSS Modules para nomes de classe previsíveis, permitindo que os testes encontrem elementos via seletores como `.skeleton-box` no DOM.
+- Exporta o mapeamento `{ skeletonBox: 'skeleton-box' }` para que o componente `AdminCrudBase` renderize a classe CSS correta durante os testes.
 
 ### 🧪 Utilização
 
@@ -104,11 +105,11 @@ Configurado no `jest.config.js` através do `moduleNameMapper`:
 '\\.css$': '<rootDir>/__mocks__/styleMock.js'
 ```
 
-Isso faz com que qualquer importação de arquivo `.css` nos componentes seja substituída por este objeto vazio durante os testes.
+Isso faz com que qualquer importação de arquivo `.css` nos componentes seja substituída por este objeto durante os testes. Quando um componente usa `styles.skeletonBox`, o valor retornado é a string `'skeleton-box'`, permitindo que testes como `document.querySelectorAll('.skeleton-box')` encontrem os elementos.
 
 ### 🧩 Interface exportada
 
-- `export default {}` — objeto vazio
+- `export default { skeletonBox: 'skeleton-box' }` — mapeamento de classes CSS Module
 
 ---
 
@@ -118,7 +119,7 @@ Isso faz com que qualquer importação de arquivo `.css` nos componentes seja su
 |---|---|---|
 | `__mocks__/cookie.js` | Mock da lib `cookie` (parse/serialize) | ✅ Ativo — via `jest.mock('cookie')` em `auth.test.js` |
 | `__mocks__/pg.js` | Mock do `pg.Pool` para consultas SQL | ✅ Ativo — referenciado por 10 testes |
-| `__mocks__/styleMock.js` | Mock de arquivos `.css` | ✅ Ativo — via `moduleNameMapper` no Jest |
+| `__mocks__/styleMock.js` | Mock de arquivos `.css` com mapeamento de classes (`skeletonBox`) | ✅ Ativo — via `moduleNameMapper` no Jest |
 
 ---
 

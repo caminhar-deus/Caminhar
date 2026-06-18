@@ -8,7 +8,7 @@ describe('TextAreaField Component', () => {
     render(<TextAreaField name="desc" label="Descrição" value="Texto" onChange={jest.fn()} maxLength={100} required />);
     expect(screen.getByLabelText(/Descrição/)).toBeInTheDocument();
     expect(screen.getByText('*')).toBeInTheDocument();
-    expect(screen.getByText('5/100 caracteres')).toBeInTheDocument();
+    expect(screen.getByText('5 / 100 caracteres')).toBeInTheDocument();
   });
 
   it('deve renderizar erro e hint', () => {

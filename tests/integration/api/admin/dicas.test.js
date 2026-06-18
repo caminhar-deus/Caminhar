@@ -2,7 +2,10 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 
 // Mocks para DB
-jest.mock('../../../../lib/db.js', () => require('../../../mocks/db-module').mockDb({
+jest.mock('../../../../lib/db.js', () => require('../../../mocks/db-module').mockDb());
+
+// Mock para log de auditoria
+jest.mock('../../../../lib/domain/audit.js', () => ({
   logActivity: jest.fn(),
 }));
 
@@ -19,7 +22,8 @@ jest.mock('../../../../lib/auth.js', () => ({
 }));
 
 import handler from '../../../../pages/api/admin/dicas.js';
-import { query, logActivity } from '../../../../lib/db.js';
+import { query } from '../../../../lib/db.js';
+import { logActivity } from '../../../../lib/domain/audit.js';
 
 describe('API Admin - Dicas (/api/admin/dicas)', () => {
   beforeEach(() => {
@@ -86,7 +90,7 @@ describe('API Admin - Dicas (/api/admin/dicas)', () => {
       
       // Garante que o array de parametros sanou o 'published' recebendo TRUE no terceiro lugar
       expect(query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO dicas'), ['Nova Dica', 'Texto da dica', true]);
-      expect(logActivity).toHaveBeenCalledWith('admin_user', 'CRIAR DICA', 'POST', 10, 'Criou a dica: Nova Dica', '127.0.0.1');
+      expect(logActivity).toHaveBeenCalledWith('admin_user', 'CRIAR DICA', 'DICA', 10, 'Criou a dica: Nova Dica', '127.0.0.1');
     });
 
     it('deve retornar 500 se ocorrer um erro ao criar', async () => {
@@ -108,7 +112,7 @@ describe('API Admin - Dicas (/api/admin/dicas)', () => {
 
       expect(res._getStatusCode()).toBe(200);
       expect(query).toHaveBeenCalledWith(expect.stringContaining('UPDATE dicas'), ['Dica Editada', 'Texto', false, 10]);
-      expect(logActivity).toHaveBeenCalledWith('admin_user', 'ATUALIZAR DICA', 'PUT', 10, 'Atualizou a dica: Dica Editada', '127.0.0.1');
+      expect(logActivity).toHaveBeenCalledWith('admin_user', 'ATUALIZAR DICA', 'DICA', 10, 'Atualizou a dica: Dica Editada', '127.0.0.1');
     });
 
     it('deve retornar 500 se ocorrer um erro no banco de dados ao atualizar', async () => {
@@ -131,7 +135,7 @@ describe('API Admin - Dicas (/api/admin/dicas)', () => {
 
       expect(res._getStatusCode()).toBe(200);
       expect(query).toHaveBeenCalledWith(expect.stringContaining('DELETE'), [10]);
-      expect(logActivity).toHaveBeenCalledWith('admin_user', 'EXCLUIR DICA', 'DELETE', 10, 'Removeu a dica: Dica Para Excluir', '127.0.0.1');
+      expect(logActivity).toHaveBeenCalledWith('admin_user', 'EXCLUIR DICA', 'DICA', 10, 'Removeu a dica: Dica Para Excluir', '127.0.0.1');
     });
 
     it('deve excluir e registrar log mesmo se a dica não for encontrada no SELECT prévio (fallback pro ID no Log)', async () => {
@@ -142,7 +146,7 @@ describe('API Admin - Dicas (/api/admin/dicas)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(200);
-      expect(logActivity).toHaveBeenCalledWith('admin_user', 'EXCLUIR DICA', 'DELETE', 10, 'Removeu a dica: 10', '127.0.0.1');
+      expect(logActivity).toHaveBeenCalledWith('admin_user', 'EXCLUIR DICA', 'DICA', 10, 'Removeu a dica: 10', '127.0.0.1');
     });
 
     it('deve retornar 500 se ocorrer um erro no banco de dados ao excluir', async () => {

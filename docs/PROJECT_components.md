@@ -73,7 +73,8 @@ Sistema administrativo completo com CRUD reutilizável, autenticação, dashboar
 
 **Propósito:** Gerenciamento de posts/artigos do blog. Usa `AdminCrudBase` com campos: título, slug (geração automática), resumo, conteúdo, imagem de capa, status. Inclui:
 - Geração automática de slug a partir do título com feedback visual via toast
-- Validação Zod que impede publicação sem imagem de capa (via `.superRefine()`)
+- Validação Zod de tipos e formatos dos campos
+- Validação customizada via prop `validate` que impede publicação sem imagem de capa
 - Upload de imagens
 - Reordenação Drag & Drop via helper compartilhado `lib/reorder.js`
 
@@ -83,6 +84,10 @@ Sistema administrativo completo com CRUD reutilizável, autenticação, dashboar
 **Melhorias aplicadas (18/05/2026):**
 - Validação customizada `validatePost` migrada para `.superRefine()` no schema Zod, eliminando lógica acoplada ao componente
 - Adicionado feedback visual com `toast.success()` na geração automática de slug, utilizando `useRef` para evitar notificações duplicadas
+
+**Melhorias aplicadas (16/06/2026):**
+- `superRefine` removido do schema Zod para separar responsabilidades: schema passa a validar apenas tipos e formatos
+- Regra de negócio "post publicado exige imagem de capa" movida para função `validate` independente, passada como prop ao `AdminCrudBase`, eliminando duplicidade de validação e centralizando a mensagem de erro em um único local
 
 ### 1.7 AdminProducts.js
 **Localização:** `components/Admin/AdminProducts.js`
@@ -545,13 +550,16 @@ Componentes base do Design System do projeto. Seguem padrão consistente de vari
 ### 6.3 TextArea.js
 **Localização:** `components/UI/TextArea.js`
 
-**Propósito:** Textarea com auto-resize, contador de caracteres, bloqueio opcional em maxLength, estados de erro, helper text. Suporta `forwardRef`.
+**Propósito:** Textarea com auto-resize, contador de caracteres com sufixo descritivo, bloqueio opcional em maxLength, estados de erro, helper text. Suporta `forwardRef`.
 
 **Atualização (13/05/2026):** `TextArea.module.css` tokenizado — cores, espaçamentos, border-radius e transitions substituídos por `var()`.
 
 **Melhorias aplicadas (18/05/2026):**
 - Substituído `Math.random()` por `useId()` do React 18+ na geração de ID fallback (linha 43), eliminando hydration mismatch no SSR do Next.js
 - Adicionado `if (!autoResize) return;` no início do `useEffect` de recálculo de altura (linha 117), evitando consultas DOM e manipulação de estilo desnecessárias quando `autoResize` está desativado
+
+**Melhorias aplicadas (16/06/2026):**
+- Contador de caracteres aprimorado com sufixo descritivo "caracteres" (ex: `"5 / 100 caracteres"`), melhorando a acessibilidade e experiência do usuário. O `TextAreaField` (Admin) se beneficia automaticamente por delegar ao componente base
 
 ### 6.4 Select.js
 **Localização:** `components/UI/Select.js`
