@@ -4,16 +4,23 @@ import { LoadingMessage, ErrorMessage } from '@/components/UI/StateMessages';
 import MusicCard from './MusicCard';
 import styles from './styles/MusicGallery.module.css';
 
+const SORT_OPTIONS = [
+  { value: 'default', label: 'Ordem padrão' },
+  { value: 'recent', label: 'Mais recentes' },
+  { value: 'alpha', label: 'A-Z' },
+];
+
 export default function MusicGallery() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState('default');
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   const { data: musicasResponse, loading, error } = useApiFetch(
-    `/api/musicas?public=true&page=${currentPage}&limit=6&search=${debouncedSearchTerm}`,
+    `/api/musicas?public=true&page=${currentPage}&limit=6&search=${debouncedSearchTerm}&sort=${sortBy}`,
     {
-      deps: [currentPage, debouncedSearchTerm],
+      deps: [currentPage, debouncedSearchTerm, sortBy],
     }
   );
 
@@ -65,6 +72,11 @@ export default function MusicGallery() {
     setCurrentPage(1);
   };
 
+  const handleSortChange = (e) => {
+    setSortBy(e.target.value);
+    setCurrentPage(1);
+  };
+
   const goToPage = (page) => {
     setCurrentPage(page);
   };
@@ -72,25 +84,43 @@ export default function MusicGallery() {
   return (
     <div className={styles.galleryContainer}>
       <div className={styles.searchContainer}>
-        <div className={styles.searchWrapper}>
-          <input
-            type="text"
-            placeholder="Pesquisar por música ou artista..."
-            value={searchTerm}
-            onChange={handleSearch}
-            className={styles.searchInput}
-            aria-label="Buscar música ou artista"
-          />
-          {searchTerm && (
-            <button
-              onClick={clearSearch}
-              className={styles.clearButton}
-              aria-label="Limpar pesquisa"
-              type="button"
+        <div className={styles.searchRow}>
+          <div className={styles.searchWrapper}>
+            <input
+              type="text"
+              placeholder="Pesquisar por música ou artista..."
+              value={searchTerm}
+              onChange={handleSearch}
+              className={styles.searchInput}
+              aria-label="Buscar música ou artista"
+            />
+            {searchTerm && (
+              <button
+                onClick={clearSearch}
+                className={styles.clearButton}
+                aria-label="Limpar pesquisa"
+                type="button"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+          <div className={styles.sortWrapper}>
+            <label htmlFor="sort-select" className={styles.sortLabel}>Ordenar:</label>
+            <select
+              id="sort-select"
+              value={sortBy}
+              onChange={handleSortChange}
+              className={styles.sortSelect}
+              aria-label="Ordenar músicas"
             >
-              ✕
-            </button>
-          )}
+              {SORT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
         {!loading && (searchTerm || musicas.length > 0) && (
           <div className={styles.searchInfo}>

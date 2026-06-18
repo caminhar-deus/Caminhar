@@ -2,11 +2,10 @@ import { createSortTest, generateReport } from '../helpers/resource-test-runner.
 
 const resourceConfig = {
   publicEndpoint: '/api/musicas',
-  sortField: 'created_at',
-  sortOrder: 'desc',
+  sortMode: 'recent',
+  dateField: 'created_at',
   responsePath: 'data',
   resourceName: 'musicas',
-  useExplicitSort: true,
   profileName: 'light',
 };
 

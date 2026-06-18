@@ -56,12 +56,19 @@ describe('Componentes Features - Music - MusicCard', () => {
     expect(iframe).toHaveAttribute('src', expect.stringContaining('https://soundcloud.com/track/123'));
   });
 
-  it('deve tratar URL nula de forma segura sem lançar exceção', async () => {
+  it('deve tratar URL nula de forma segura sem lançar exceção e mostrar Prévia indisponível', async () => {
     const musica = { titulo: 'A', artista: 'B', url_spotify: null };
     render(<MusicCard musica={musica} />);
 
-    const iframe = await screen.findByTestId('embed-iframe');
-    expect(iframe).toHaveAttribute('src', expect.stringContaining('null'));
+    expect(screen.getByText('Prévia indisponível')).toBeInTheDocument();
+    expect(screen.queryByTestId('embed-iframe')).not.toBeInTheDocument();
+  });
+
+  it('não deve exibir botão Ouvir no Spotify se a URL for nula', async () => {
+    const musica = { titulo: 'A', artista: 'B', url_spotify: null };
+    render(<MusicCard musica={musica} />);
+
+    expect(screen.queryByRole('button', { name: /Ouvir/i })).not.toBeInTheDocument();
   });
 
   it('deve abrir a url do Spotify em uma nova aba ao clicar no botão "Ouvir"', async () => {

@@ -41,7 +41,7 @@ testPublicGetEndpoint(handler, {
       const responseData = res._getJSONData();
       expect(responseData.success).toBe(true);
       expect(responseData.data).toHaveLength(1);
-      expect(getPaginatedMusicas).toHaveBeenCalledWith(1, 10, 'Hino', true);
+      expect(getPaginatedMusicas).toHaveBeenCalledWith(1, 10, 'Hino', true, 'default');
     });
 
     it('deve retornar 500 em caso de erro no servidor', async () => {

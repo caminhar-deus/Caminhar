@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import MusicGallery from '../../../../../components/Features/Music/MusicGallery.js';
 import { mockGlobalFetch } from '../../../../helpers/index.js';
@@ -72,7 +72,7 @@ describe('Componente Front-End - MusicGallery', () => {
     render(<MusicGallery />);
 
     await waitFor(() => {
-      expect(screen.getByText('Nenhuma música encontrada.')).toBeInTheDocument();
+      expect(screen.getByText('Nenhuma música encontrada')).toBeInTheDocument();
     });
   });
 

@@ -413,6 +413,7 @@ function createSortOptions(resourceConfig) {
 function createSortDefault(resourceConfig) {
   const {
     publicEndpoint,
+    sortMode,
     sortField = 'created_at',
     sortOrder = 'desc',
     dateField = 'created_at',
@@ -420,8 +421,13 @@ function createSortDefault(resourceConfig) {
     responsePath = 'data',
     resourceName = 'resource',
     sleepDuration = null,
-    useExplicitSort = true,
   } = resourceConfig;
+
+  // Define a URL: se sortMode foi fornecido, usa o novo formato (API músicas).
+  // Caso contrário, usa o formato antigo sort + order (API vídeos).
+  const urlSuffix = sortMode
+    ? `sort=${sortMode}`
+    : `sort=${sortField}&order=${sortOrder}`;
 
   const getItems = (body) => {
     if (itemsPath) {
@@ -441,9 +447,7 @@ function createSortDefault(resourceConfig) {
   };
 
   return function () {
-    const url = useExplicitSort
-      ? `${BASE_URL}${publicEndpoint}?sort=${sortField}&order=${sortOrder}`
-      : `${BASE_URL}${publicEndpoint}?page=1&limit=10`;
+    const url = `${BASE_URL}${publicEndpoint}?${urlSuffix}`;
 
     const res = http.get(url);
 
@@ -485,16 +489,6 @@ function createSortDefault(resourceConfig) {
         return true;
       },
     });
-
-    // Check extra: API ignora parâmetros extras sem erro (apenas quando não usa sort explícito)
-    if (!useExplicitSort) {
-      check(res, {
-        [`API ignora parâmetros de ordenação`]: () => {
-          const resWithSort = http.get(`${BASE_URL}${publicEndpoint}?page=1&limit=5&sort=created_at&order=desc`);
-          return resWithSort.status === 200;
-        },
-      });
-    }
 
     if (sleepDuration !== null) {
       randomSleep(sleepDuration - 0.5, sleepDuration + 0.5);

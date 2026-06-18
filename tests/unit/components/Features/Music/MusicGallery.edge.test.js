@@ -27,7 +27,7 @@ describe('Componentes Features - Music - MusicGallery (Edge Cases)', () => {
     render(<MusicGallery />);
 
     await waitFor(() => {
-      expect(screen.getByText('Nenhuma música encontrada.')).toBeInTheDocument();
+      expect(screen.getByText('Nenhuma música encontrada')).toBeInTheDocument();
     });
   });
 

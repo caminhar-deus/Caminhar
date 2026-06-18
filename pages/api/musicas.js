@@ -14,6 +14,7 @@ async function handleGet(req, res) {
       page: z.coerce.number().int().positive().default(1),
       limit: z.coerce.number().int().positive().default(10),
       search: z.string().max(200).optional(),
+      sort: z.enum(['default', 'recent', 'alpha']).optional().default('default'),
     });
 
     const validation = querySchema.safeParse(req.query);
@@ -25,13 +26,13 @@ async function handleGet(req, res) {
       });
     }
 
-    const { page, limit, search } = validation.data;
+    const { page, limit, search, sort } = validation.data;
 
     // Cache público: CDN/Proxy pode cachear por 5 minutos, com stale-while-revalidate de 10 minutos
     res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=300, stale-while-revalidate=600');
 
     // Cache com rate limiting integrado
-    const cacheKey = `musicas:${page}:${limit}${search ? `:${search}` : ''}`;
+    const cacheKey = `musicas:${page}:${limit}:${sort}${search ? `:${search}` : ''}`;
     const result = await getOrSetCache(cacheKey, async () => {
       // Rate limiting em endpoint público
       const ip = getClientIP(req);
@@ -41,7 +42,7 @@ async function handleGet(req, res) {
       }
 
       // Busca os dados utilizando a função de domínio, garantindo que apenas músicas publicadas sejam retornadas.
-      return await getPaginatedMusicas(page, limit, search, true);
+      return await getPaginatedMusicas(page, limit, search, true, sort);
     });
 
     // Retorna os dados em um formato padronizado e estruturado.

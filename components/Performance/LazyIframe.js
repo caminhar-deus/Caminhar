@@ -34,11 +34,12 @@ export default function LazyIframe({
 }) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isVisible, setIsVisible] = useState(!loadOnVisible);
-  const [isIntersecting, setIsIntersecting] = useState(false);
   const containerRef = useRef(null);
   const iframeRef = useRef(null);
 
   // Intersection Observer para lazy loading
+  // Quando loadOnVisible=true: carrega automaticamente ao entrar no viewport
+  // Quando loadOnVisible=false: carrega apenas com clique do usuário
   useEffect(() => {
     if (!loadOnVisible || typeof IntersectionObserver === 'undefined') {
       return;
@@ -47,7 +48,7 @@ export default function LazyIframe({
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          setIsIntersecting(true);
+          setIsVisible(true);
           observer.disconnect();
         }
       },
@@ -60,13 +61,6 @@ export default function LazyIframe({
 
     return () => observer.disconnect();
   }, [loadOnVisible, threshold]);
-
-  // Carrega iframe quando visível + usuário clica (privacidade)
-  useEffect(() => {
-    if (isIntersecting && !loadOnVisible) {
-      setIsVisible(true);
-    }
-  }, [isIntersecting, loadOnVisible]);
 
   const handleLoad = useCallback(() => {
     setIsLoaded(true);
@@ -103,7 +97,7 @@ export default function LazyIframe({
   };
 
   const thumbUrl = getThumbnail();
-  const shouldShowPlaceholder = !isVisible || !isIntersecting;
+  const shouldShowPlaceholder = !isVisible;
 
   return (
     <div
@@ -173,10 +167,9 @@ export default function LazyIframe({
           </span>
         </div>
       )}
-REPLACE
 
       {/* Iframe */}
-      {(isVisible || isIntersecting) && (
+      {isVisible && (
         <iframe
           ref={iframeRef}
           src={getEmbedSrc()}
