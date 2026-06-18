@@ -13,7 +13,7 @@ async function handleGet(req, res) {
     const querySchema = z.object({
       page: z.coerce.number().int().positive().default(1),
       limit: z.coerce.number().int().positive().default(10),
-      search: z.string().optional(),
+      search: z.string().max(200).optional(),
     });
 
     const validation = querySchema.safeParse(req.query);

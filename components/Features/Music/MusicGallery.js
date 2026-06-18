@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useApiFetch, useDebounce } from '@/hooks';
-import { LoadingMessage, ErrorMessage, EmptyMessage } from '@/components/UI/StateMessages';
+import { LoadingMessage, ErrorMessage } from '@/components/UI/StateMessages';
 import MusicCard from './MusicCard';
 import styles from './styles/MusicGallery.module.css';
 
@@ -14,9 +14,6 @@ export default function MusicGallery() {
     `/api/musicas?public=true&page=${currentPage}&limit=6&search=${debouncedSearchTerm}`,
     {
       deps: [currentPage, debouncedSearchTerm],
-      transform: (result) => {
-        return result;
-      },
     }
   );
 
@@ -63,6 +60,11 @@ export default function MusicGallery() {
     setCurrentPage(1);
   };
 
+  const clearSearch = () => {
+    setSearchTerm('');
+    setCurrentPage(1);
+  };
+
   const goToPage = (page) => {
     setCurrentPage(page);
   };
@@ -70,14 +72,35 @@ export default function MusicGallery() {
   return (
     <div className={styles.galleryContainer}>
       <div className={styles.searchContainer}>
-        <input
-          type="text"
-          placeholder="Pesquisar por música ou artista..."
-          value={searchTerm}
-          onChange={handleSearch}
-          className={styles.searchInput}
-          aria-label="Buscar música ou artista"
-        />
+        <div className={styles.searchWrapper}>
+          <input
+            type="text"
+            placeholder="Pesquisar por música ou artista..."
+            value={searchTerm}
+            onChange={handleSearch}
+            className={styles.searchInput}
+            aria-label="Buscar música ou artista"
+          />
+          {searchTerm && (
+            <button
+              onClick={clearSearch}
+              className={styles.clearButton}
+              aria-label="Limpar pesquisa"
+              type="button"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+        {!loading && (searchTerm || musicas.length > 0) && (
+          <div className={styles.searchInfo}>
+            <span className={styles.resultCount}>
+              {searchTerm
+                ? `${totalItems} resultado${totalItems !== 1 ? 's' : ''} para "${searchTerm}"`
+                : `Mostrando ${musicas.length} de ${totalItems} música${totalItems !== 1 ? 's' : ''}`}
+            </span>
+          </div>
+        )}
       </div>
 
       {loading && <LoadingMessage text="Carregando músicas..." />}
@@ -85,7 +108,20 @@ export default function MusicGallery() {
       {error && <ErrorMessage message="Erro ao carregar músicas. Tente novamente." />}
 
       {!loading && !error && musicas.length === 0 && (
-        <EmptyMessage message="Nenhuma música encontrada." />
+        <div className={styles.noResults}>
+          <div className={styles.noResultsIcon}>🎵</div>
+          <h3>Nenhuma música encontrada</h3>
+          <p>
+            {searchTerm
+              ? `Nenhum resultado para "${searchTerm}". Tente buscar por outro título ou artista.`
+              : 'Nenhuma música disponível no momento.'}
+          </p>
+          {searchTerm && (
+            <button onClick={clearSearch} className={styles.clearSearchButton} type="button">
+              Limpar busca
+            </button>
+          )}
+        </div>
       )}
 
       {!loading && !error && musicas.length > 0 && (
@@ -108,7 +144,7 @@ export default function MusicGallery() {
               </button>
               <span className={styles.pageInfo}>
                 Página {currentPage} de {totalPages}
-                {totalItems && <span className={styles.totalInfo}> ({totalItems} músicas)</span>}
+                {totalItems > 0 && <span className={styles.totalInfo}> ({totalItems} música{totalItems !== 1 ? 's' : ''})</span>}
               </span>
               <button
                 onClick={() => goToPage(currentPage + 1)}

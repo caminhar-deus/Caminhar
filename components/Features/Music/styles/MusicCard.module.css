@@ -36,3 +36,14 @@
 .spotifyButton:hover {
   opacity: 0.85;
 }
+
+.noEmbed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 152px;
+  background-color: var(--color-bg-secondary, #282828);
+  border-radius: var(--border-radius-xl, 12px);
+  color: var(--color-text-tertiary, #888);
+  font-size: var(--font-size-sm, 0.875rem);
+}
