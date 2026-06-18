@@ -533,22 +533,23 @@
 │       ├── caminhar-pg-backup_2026-05-22T10-18-54Z.sql.gz.enc
 │       └── caminhar-pg-backup_2026-05-22T10-18-54Z.sql.gz.sha256
 ├── docs
-│   ├── JEST_ESM.md
-│   ├── PROJECT_components.md
-│   ├── PROJECT_cypress.md
-│   ├── PROJECT_data.md
-│   ├── PROJECT_examples.md
-│   ├── PROJECT_hooks.md
-│   ├── PROJECT_lib.md
-│   ├── PROJECT_load-tests.md
-│   ├── PROJECT_mocks.md
-│   ├── PROJECT_pages.md
-│   ├── PROJECT_raiz.md
-│   ├── PROJECT_scripts.md
-│   ├── PROJECT_tests.md
+│   ├── antigos
+│   │   ├── PROJECT_components.md
+│   │   ├── PROJECT_cypress.md
+│   │   ├── PROJECT_data.md
+│   │   ├── PROJECT_examples.md
+│   │   ├── PROJECT_hooks.md
+│   │   ├── PROJECT_lib.md
+│   │   ├── PROJECT_load-tests.md
+│   │   ├── PROJECT_mocks.md
+│   │   ├── PROJECT_pages.md
+│   │   ├── PROJECT_raiz.md
+│   │   ├── PROJECT_scripts.md
+│   │   └── PROJECT_tests.md
 │   └── resolvidos
 │       ├── analise-load-tests-orchestrator-02.md
 │       ├── analise-load-tests-orchestrator.md
+│       ├── JEST_ESM.md
 │       ├── plano-ajuste-thresholds-load-tests.md
 │       ├── plano-correcao-p3-create-post-flow.md
 │       ├── plano-melhoria-logs-servidor.md
@@ -1144,4 +1145,4 @@
 │       └── videos.validation.test.js
 └── tree.txt
 
-181 directories, 964 files
+182 directories, 964 files
