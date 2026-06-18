@@ -8,6 +8,7 @@ export { Input } from './Input';
 export { TextArea } from './TextArea';
 export { Select } from './Select';
 export { default as BaseCard } from './BaseCard';
+// Alias "Card" mantido para compatibilidade com pages/design-system.js
 export { default as Card } from './BaseCard';
 export { Modal } from './Modal';
 export { Spinner } from './Spinner';

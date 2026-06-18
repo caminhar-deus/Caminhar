@@ -72,8 +72,16 @@ const ProductCard = memo(function ProductCard({ product }) {
       
       {images.length > 1 && (
         <>
-          <button onClick={prevImage} className={styles.navButtonLeft} aria-label="Imagem anterior">◀</button>
-          <button onClick={nextImage} className={styles.navButtonRight} aria-label="Próxima imagem">▶</button>
+          <button onClick={prevImage} className={styles.navButtonLeft} aria-label="Imagem anterior">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+          </button>
+          <button onClick={nextImage} className={styles.navButtonRight} aria-label="Próxima imagem">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </button>
           <div className={styles.imageCounter}>
             {currentImageIndex + 1} / {images.length}
           </div>
@@ -151,8 +159,16 @@ const ProductCard = memo(function ProductCard({ product }) {
           />
           {images.length > 1 && (
             <>
-              <button onClick={(e) => { e.stopPropagation(); prevImage(); }} className={`${styles.navButtonLeft} ${styles.lightboxNavButton}`} aria-label="Imagem anterior">◀</button>
-              <button onClick={(e) => { e.stopPropagation(); nextImage(); }} className={`${styles.navButtonRight} ${styles.lightboxNavButton}`} aria-label="Próxima imagem">▶</button>
+              <button onClick={(e) => { e.stopPropagation(); prevImage(); }} className={`${styles.navButtonLeft} ${styles.lightboxNavButton}`} aria-label="Imagem anterior">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 18 9 12 15 6"/>
+                </svg>
+              </button>
+              <button onClick={(e) => { e.stopPropagation(); nextImage(); }} className={`${styles.navButtonRight} ${styles.lightboxNavButton}`} aria-label="Próxima imagem">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </button>
             </>
           )}
         </div>

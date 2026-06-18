@@ -1,15 +1,15 @@
 {
-  "startTime": "2026-06-18T10:50:31.790Z",
+  "startTime": "2026-06-18T21:54:04.443Z",
   "totalScripts": 30,
-  "passed": 29,
-  "failed": 1,
+  "passed": 30,
+  "failed": 0,
   "skipped": 0,
   "categories": [
     {
       "name": "🧪 Performance Tests",
       "total": 17,
-      "passed": 16,
-      "failed": 1,
+      "passed": 17,
+      "failed": 0,
       "skipped": 0,
       "scripts": [
         {
@@ -46,8 +46,7 @@
         },
         {
           "name": "musicas-sort-test",
-          "status": "fail",
-          "exitCode": 99
+          "status": "pass"
         },
         {
           "name": "videos-sort-test",
@@ -154,5 +153,5 @@
       ]
     }
   ],
-  "endTime": "2026-06-18T11:07:19.859Z"
+  "endTime": "2026-06-18T22:11:04.175Z"
 }

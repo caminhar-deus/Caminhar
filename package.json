@@ -124,7 +124,7 @@
   },
   "devDependencies": {
     "@babel/core": "^8.0.1",
-    "@babel/preset-env": "^8.0.1",
+    "@babel/preset-env": "^8.0.2",
     "@babel/preset-react": "^8.0.1",
     "@faker-js/faker": "^10.5.0",
     "@jest/globals": "^30.4.1",

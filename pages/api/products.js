@@ -13,7 +13,15 @@ async function handlePublicGet(req, res) {
   try {
     const { page, limit } = paginate(req.query.page, req.query.limit);
 
-    const cacheKey = `products:public:${page}:${limit}`;
+    // Extrai filtros opcionais da query string
+    const filters = {
+      search: req.query.search || '',
+      minPrice: req.query.minPrice || '',
+      maxPrice: req.query.maxPrice || '',
+    };
+
+    // Inclui filtros na cache key para evitar resultados incorretos em cache hits
+    const cacheKey = `products:public:${page}:${limit}:${filters.search}:${filters.minPrice}:${filters.maxPrice}`;
 
     // Rate limit ANTES do cache — garante proteção mesmo em cache hits
     const ip = getClientIP(req);
@@ -23,7 +31,7 @@ async function handlePublicGet(req, res) {
     }
 
     const result = await getOrSetCache(cacheKey, async () => {
-      return await getPaginatedProducts(page, limit);
+      return await getPaginatedProducts(page, limit, filters);
     });
 
     return res.status(200).json(result);

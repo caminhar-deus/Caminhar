@@ -53,7 +53,7 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(200);
-      expect(getPaginatedProducts).toHaveBeenCalledWith(1, 10);
+      expect(getPaginatedProducts).toHaveBeenCalledWith(1, 10, { search: '', minPrice: '', maxPrice: '' });
     });
   });
 
@@ -189,7 +189,7 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       expect(res._getStatusCode()).toBe(405);
     });
 
-    it('deve lidar com fallbacks no GET quando o banco retorna vazio', async () => {
+    it('deve lidar com fallbacks no GET quando o banco retorna vazio e passar filtros corretamente', async () => {
       getPaginatedProducts.mockResolvedValueOnce({
         data: [],
         pagination: { total: 0 }
@@ -202,6 +202,7 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(200);
+      expect(getPaginatedProducts).toHaveBeenCalledWith(1, 10, { search: 'teste', minPrice: '10', maxPrice: '100' });
     });
 
     it('deve tratar a falta de token (isAdmin = false) de forma silenciosa no GET', async () => {
@@ -218,6 +219,7 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(200);
+      expect(getPaginatedProducts).toHaveBeenCalledWith(1, 10, { search: 'teste', minPrice: '', maxPrice: '' });
     });
   });
 });

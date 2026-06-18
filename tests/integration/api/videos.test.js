@@ -51,10 +51,10 @@ testPublicGetEndpoint(handler, {
       expect(res._getStatusCode()).toBe(200);
       expect(res._getJSONData().success).toBe(true);
       expect(res._getJSONData().data).toHaveLength(1);
-      expect(getPublicPaginatedVideos).toHaveBeenCalledWith(1, 10, 'aula');
+      expect(getPublicPaginatedVideos).toHaveBeenCalledWith(1, 10, 'aula', 'created_at DESC');
     });
 
-    it('deve usar page e limit default se receber strings não numéricas e omitir search na cacheKey', async () => {
+    it('deve usar page e limit default se receber strings não numéricas e sort default', async () => {
       checkRateLimit.mockResolvedValueOnce(false);
       getPublicPaginatedVideos.mockResolvedValueOnce({ data: [] });
 
@@ -62,7 +62,18 @@ testPublicGetEndpoint(handler, {
       await h(req, res);
 
       expect(res._getStatusCode()).toBe(200);
-      expect(getPublicPaginatedVideos).toHaveBeenCalledWith(1, 10, '');
+      expect(getPublicPaginatedVideos).toHaveBeenCalledWith(1, 10, '', 'created_at DESC');
+    });
+
+    it('deve aceitar parâmetro sort customizado e repassar o orderBy mapeado', async () => {
+      checkRateLimit.mockResolvedValueOnce(false);
+      getPublicPaginatedVideos.mockResolvedValueOnce({ data: [] });
+
+      const { req, res } = cm({ method: 'GET', query: { sort: 'alpha' } });
+      await h(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      expect(getPublicPaginatedVideos).toHaveBeenCalledWith(1, 10, '', 'titulo ASC');
     });
 
     it('deve extrair IP de cabeçalhos alternativos (x-forwarded-for) e propagar erro 500', async () => {
