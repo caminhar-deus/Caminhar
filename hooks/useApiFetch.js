@@ -106,4 +106,3 @@ export const useApiFetch = (url, config = {}) => {
   return { data, loading, error, refetch: fetchData, setData };
 };
 
-export default useApiFetch;

@@ -62,5 +62,3 @@ export function useAdminAuth() {
     loginError,
   };
 }
-
-export default useAdminAuth;

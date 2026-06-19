@@ -28,5 +28,3 @@ export function useThrottle(fn, delay = 300) {
     }
   }, [fn, delay]);
 }
-
-export default useThrottle;

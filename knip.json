@@ -8,12 +8,9 @@
     "load-tests/**",
     "scripts/**",
     "examples/**",
-    "styles/tokens/**",
     ".agents/**",
     "*.config.js",
-    "jest.setup.js",
-    "styleMock.js",
-    "rate-limit-proxy.js"
+    "jest.setup.js"
   ],
   "ignoreBinaries": [
     "kill-port",
@@ -24,6 +21,7 @@
     "@babel/preset-react",
     "@faker-js/faker",
     "@jest/reporters",
+    "babel-jest",
     "jest-watch-typeahead",
     "jsdom"
   ],

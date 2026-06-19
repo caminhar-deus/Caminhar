@@ -257,8 +257,8 @@
   z-index: 1099;
 }
 
-/* Mobile Styles - usa variável CSS com fallback 1024px */
-@media (max-width: calc(var(--sidebar-breakpoint, 1024px))) {
+/* Mobile Styles - fallback 1024px */
+@media (max-width: 1024px) {
   .mobileToggle {
     display: flex;
   }
