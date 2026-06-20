@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import Modal from '@/components/UI/Modal';
+import { Modal } from '@/components/UI';
 
 export default function AdminBackupManager() {
   const [latestBackup, setLatestBackup] = useState(null);
@@ -44,7 +44,7 @@ export default function AdminBackupManager() {
       } else {
         setMessage(`❌ Erro: ${data.message}`);
       }
-    } catch (error) {
+    } catch {
       setMessage('❌ Erro de conexão ao criar backup');
     } finally {
       setCreating(false);

@@ -1,4 +1,4 @@
-import Head from 'next/head';
+import { useRouter } from 'next/router';
 import { useState } from 'react';
 import { useAdminAuth } from '@/hooks';
 import styles from './styles/login.module.css';
@@ -14,6 +14,8 @@ import styles from './styles/login.module.css';
 const withAdminAuth = (WrappedComponent, { title }) => {
   const AuthenticatedComponent = (props) => {
     const { isAuthenticated, isChecking, handleLogin, handleLogout, loginLoading, loginError } = useAdminAuth();
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
 
     if (isChecking) {
       return (
@@ -26,14 +28,30 @@ const withAdminAuth = (WrappedComponent, { title }) => {
     if (!isAuthenticated) {
       return (
         <div className={styles.container}>
-          <Head><title>Admin Login - {title}</title></Head>
           <main className={styles.main}>
-            <LoginForm
-              title={title}
-              onLogin={handleLogin}
-              loginLoading={loginLoading}
-              loginError={loginError}
-            />
+            <h1>{title}</h1>
+            <form onSubmit={async (e) => { e.preventDefault(); await handleLogin(username, password); }} className={styles.loginForm}>
+              <input
+                type="text"
+                placeholder="Usuário"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className={styles.loginInput}
+                required
+              />
+              <input
+                type="password"
+                placeholder="Senha"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={styles.loginInput}
+                required
+              />
+              <button type="submit" className={styles.button} disabled={loginLoading}>
+                {loginLoading ? 'Entrando...' : 'Entrar'}
+              </button>
+              {loginError && <div className={styles.error}>{loginError}</div>}
+            </form>
           </main>
         </div>
       );
@@ -41,7 +59,6 @@ const withAdminAuth = (WrappedComponent, { title }) => {
 
     return (
       <div className={styles.container}>
-        <Head><title>Admin - {title}</title></Head>
         <main className={styles.main}>
           <div className={styles.adminPanel}>
             <div className={styles.header}>
@@ -59,45 +76,6 @@ const withAdminAuth = (WrappedComponent, { title }) => {
   };
 
   return AuthenticatedComponent;
-};
-
-// Componente de formulário de login (presentacional, recebe props)
-const LoginForm = ({ title, onLogin, loginLoading, loginError }) => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    await onLogin(username, password);
-  };
-
-  return (
-    <div className={styles.loginContainer}>
-      <h1>{title}</h1>
-      <form onSubmit={handleSubmit} className={styles.loginForm}>
-        <input
-          type="text"
-          placeholder="Usuário"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          className={styles.loginInput}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Senha"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className={styles.loginInput}
-          required
-        />
-        <button type="submit" className={styles.button} disabled={loginLoading}>
-          {loginLoading ? 'Entrando...' : 'Entrar'}
-        </button>
-        {loginError && <div className={styles.error}>{loginError}</div>}
-      </form>
-    </div>
-  );
 };
 
 export default withAdminAuth;

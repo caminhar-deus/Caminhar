@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import Modal from '@/components/UI/Modal';
+import { Modal } from '@/components/UI';
 
 export default function AdminCacheManager() {
   const [loading, setLoading] = useState(false);

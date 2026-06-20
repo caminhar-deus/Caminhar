@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import PropTypes from 'prop-types';
 import styles from '../styles/form.module.css';
 import toast from 'react-hot-toast';

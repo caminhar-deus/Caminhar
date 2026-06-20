@@ -1,5 +1,4 @@
-import React, { useState, Suspense, lazy } from 'react';
-import PropTypes from 'prop-types';
+import { useState, Suspense, lazy } from 'react';
 import tabsStyles from './styles/tabs.module.css';
 import miscStyles from './styles/misc.module.css';
 

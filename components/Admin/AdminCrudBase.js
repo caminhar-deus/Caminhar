@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useAdminCrud } from '@/hooks/useAdminCrud';
 import { exportToCSV } from '@/lib/csvExport';
@@ -189,7 +189,7 @@ export default function AdminCrudBase({
       if (customField) return customField;
     }
 
-    const { name, type, component: Component, gridColumn, ...props } = fieldConfig;
+    const { name, component: Component, gridColumn, ...props } = fieldConfig;
     
     if (!Component) {
       console.warn(`Componente não definido para o campo: ${name}`);
@@ -219,7 +219,7 @@ export default function AdminCrudBase({
 
   // Renderiza uma célula da tabela
   const renderCell = (item, column) => {
-    const { key, render, format, width } = column;
+    const { key, render, format } = column;
     const value = item[key];
 
     // Renderização customizada

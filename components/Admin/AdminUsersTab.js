@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import AdminCrudBase from './AdminCrudBase';
 import TextField from './fields/TextField';
 import { z } from 'zod';
@@ -44,7 +44,7 @@ const formatLastLogin = (dateString) => {
       addSuffix: true, // Adiciona o "há" na frente
       locale: ptBR,    // Usa o formato em português
     });
-  } catch (error) {
+  } catch {
     return <span style={{ color: 'red' }}>Data inválida</span>;
   }
 };
@@ -72,7 +72,7 @@ const RoleSelectField = ({ name, value, onChange, label, error, hint, gridColumn
           setLoading(false);
           return; // Usa dados do cache sem fazer fetch
         }
-      } catch (err) {
+      } catch {
         // Cache corrompido ou inválido; ignora e faz o fetch
       }
     }
@@ -98,7 +98,7 @@ const RoleSelectField = ({ name, value, onChange, label, error, hint, gridColumn
         // Armazena em cache com timestamp
         try {
           sessionStorage.setItem(CACHE_KEY, JSON.stringify({ data: rolesData, timestamp: Date.now() }));
-        } catch (err) {
+        } catch {
           // sessionStorage pode estar cheio ou indisponível; ignora erro de cache
         }
       })

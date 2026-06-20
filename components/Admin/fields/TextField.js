@@ -1,6 +1,4 @@
-import React from 'react';
 import PropTypes from 'prop-types';
-import Input from '@/components/UI/Input';
 
 /**
  * Campo de texto reutilizável (Admin)

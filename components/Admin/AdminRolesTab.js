@@ -1,4 +1,3 @@
-import React from 'react';
 import AdminCrudBase from './AdminCrudBase';
 import TextField from './fields/TextField';
 import { z } from 'zod';

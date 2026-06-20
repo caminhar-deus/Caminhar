@@ -16,6 +16,7 @@
     "dev:clean": "npx kill-port 3000 && rm -rf .next && rm -f babel.config.js babel.config.cjs && npm run dev",
     "analyze": "next build --analyze",
     "lint": "eslint .",
+    "lint:log": "eslint . 2>&1 | tee logs/eslint.log",
     "lint:fix": "eslint . --fix",
     "knip": "knip",
     "knip:watch": "knip --watch",
@@ -120,7 +121,7 @@
     "react-dom": "^19.2.7",
     "react-easy-crop": "^6.0.2",
     "react-hot-toast": "^2.6.0",
-    "sharp": "^0.35.1",
+    "sharp": "^0.35.2",
     "web-vitals": "^5.3.0",
     "zod": "^4.4.3"
   },

@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import PropTypes from 'prop-types';
+import { useState, useCallback, useEffect } from 'react';
 import styles from '../styles/misc.module.css';
 
 /**

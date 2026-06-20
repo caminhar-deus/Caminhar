@@ -1,3 +1,5 @@
+import { jest } from '@jest/globals';
+
 /**
  * Mock da biblioteca cookie
  * Para uso em testes Jest
