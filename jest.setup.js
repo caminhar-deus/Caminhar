@@ -16,7 +16,7 @@ if (typeof global.Request === 'undefined') {
       global.Response = undici.Response;
       global.Headers = undici.Headers;
     }
-  } catch (error) {
+  } catch {
     console.warn('⚠️ undici not found, Request/Response/Headers polyfills skipped.');
   }
 }

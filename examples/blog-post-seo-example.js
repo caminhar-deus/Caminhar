@@ -22,13 +22,9 @@ import { ImageOptimized } from '../components/Performance';
 import { LazyIframe } from '../components/Performance';
 import { siteConfig, getCanonicalUrl, getImageUrl } from '../lib/seo/config';
 import usePerformanceMetrics from '../hooks/usePerformanceMetrics';
-import { useRouter } from 'next/router';
 import { useState } from 'react';
 
 export default function BlogPostExample({ post: initialPost }) {
-  const router = useRouter();
-  const { slug } = router.query;
-  
   // Inicializa monitoramento de performance
   usePerformanceMetrics({
     onReport: (metric) => {
@@ -94,7 +90,7 @@ export default function BlogPostExample({ post: initialPost }) {
       <SEOHead
         title={post.title}
         description={post.excerpt}
-        image={post.image_url}
+        image={imageUrl}
         type="article"
         publishedAt={post.created_at}
         modifiedAt={post.updated_at}
@@ -111,7 +107,7 @@ export default function BlogPostExample({ post: initialPost }) {
       <ArticleSchema
         title={post.title}
         description={post.excerpt}
-        image={post.image_url}
+        image={imageUrl}
         author={post.author}
         authorUrl={`${siteConfig.url}${post.authorUrl}`}
         publishedAt={post.created_at}

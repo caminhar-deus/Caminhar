@@ -25,7 +25,7 @@ import { AuthContext } from './useAuth';
  */
 export function useAdminAuth() {
   const router = useRouter();
-  const { user, isAuthenticated, loading: isChecking, login, logout } = useContext(AuthContext);
+  const { isAuthenticated, loading: isChecking, login, logout } = useContext(AuthContext);
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState(null);
 

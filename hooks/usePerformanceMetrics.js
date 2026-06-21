@@ -102,7 +102,7 @@ export default function usePerformanceMetrics(options = {}) {
 
   // Report individual metric
   const reportMetric = useCallback((metric) => {
-    const { name, value, rating, delta, entries, navigationType } = metric;
+    const { name, value, rating, delta, navigationType } = metric;
 
     // Cache check: ignora se mesma métrica foi reportada há menos de 1 minuto
     const formattedValue = formatMetric(name, value);
@@ -274,7 +274,7 @@ export default function usePerformanceMetrics(options = {}) {
 
         longTaskObserver.observe({ entryTypes: ['longtask'] });
         observers.push(longTaskObserver);
-      } catch (e) {
+      } catch {
         // Long tasks não suportado
       }
 
@@ -294,7 +294,7 @@ export default function usePerformanceMetrics(options = {}) {
 
         resourceObserver.observe({ entryTypes: ['resource'] });
         observers.push(resourceObserver);
-      } catch (e) {
+      } catch {
         // Resource timing não suportado
       }
     }

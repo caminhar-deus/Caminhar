@@ -13,7 +13,7 @@
 import SEOHead from '../components/SEO/Head';
 import { MusicSchema, BreadcrumbSchema } from '../components/SEO/StructuredData';
 import { LazyIframe } from '../components/Performance';
-import { siteConfig, getCanonicalUrl } from '../lib/seo/config';
+import { getCanonicalUrl } from '../lib/seo/config';
 import { useState } from 'react';
 
 export default function MusicaPage({ musica }) {
