@@ -1,4 +1,4 @@
-import StructuredDataBase, { siteConfig, siteUrl, formatSchemaDate, getImageUrl } from './StructuredDataBase';
+import StructuredDataBase, { siteConfig, formatSchemaDate, getImageUrl } from './StructuredDataBase';
 
 /**
  * ArticleSchema - Schema.org para artigos do blog
@@ -34,7 +34,7 @@ export default function ArticleSchema({
 }) {
   const schema = {
     '@context': 'https://schema.org',
-    '@type': 'Article',
+    '@type': ['Article', 'BlogPosting'],
     headline: title,
     description,
     image: {
@@ -71,8 +71,7 @@ export default function ArticleSchema({
     isAccessibleForFree: true,
     ...(wordCount && { wordCount }),
     ...(articleBody && { articleBody }),
-    // BlogPosting is more specific than Article
-    '@type': ['Article', 'BlogPosting'],
+    
   };
 
   return <StructuredDataBase schema={schema} />;

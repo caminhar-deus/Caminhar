@@ -1,4 +1,5 @@
 import PropTypes from 'prop-types';
+import { Input } from '../../UI';
 
 /**
  * Campo de texto reutilizável (Admin)

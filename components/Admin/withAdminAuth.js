@@ -1,4 +1,3 @@
-import { useRouter } from 'next/router';
 import { useState } from 'react';
 import { useAdminAuth } from '@/hooks';
 import styles from './styles/login.module.css';

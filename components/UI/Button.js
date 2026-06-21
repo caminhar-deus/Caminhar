@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useState } from 'react';
+import React, { useRef, useCallback, useReducer } from 'react';
 import styles from './Button.module.css';
 import { Spinner } from '@/components/UI';
 /**
@@ -32,16 +32,16 @@ export const Button = ({
   const buttonRef = useRef(null);
   const rippleIdRef = useRef(0);
   const ripplesRef = useRef([]);
-  const [renderTick, setRenderTick] = useState(0);
+  const [, forceRender] = useReducer(x => x + 1, 0);
 
   const addRipple = useCallback((x, y) => {
     const id = rippleIdRef.current++;
     ripplesRef.current = [...ripplesRef.current, { x, y, id }];
-    setRenderTick((t) => t + 1);
+    forceRender();
 
     setTimeout(() => {
       ripplesRef.current = ripplesRef.current.filter((r) => r.id !== id);
-      setRenderTick((t) => t + 1);
+      forceRender();
     }, 600);
   }, []);
 

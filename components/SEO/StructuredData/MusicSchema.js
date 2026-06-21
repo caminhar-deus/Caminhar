@@ -1,4 +1,4 @@
-import StructuredDataBase, { siteConfig, siteUrl, formatSchemaDate, getImageUrl } from './StructuredDataBase';
+import StructuredDataBase, { siteConfig, formatSchemaDate, getImageUrl } from './StructuredDataBase';
 
 /**
  * MusicSchema - Schema.org para músicas (MusicRecording + AudioObject)

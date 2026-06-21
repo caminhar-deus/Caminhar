@@ -1,4 +1,5 @@
 import PropTypes from 'prop-types';
+import { TextArea } from '../../UI';
 
 /**
  * Campo de textarea reutilizável (Admin)

@@ -25,7 +25,7 @@ export default function Testimonials() {
   const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 6;
 
-  const { data: apiDicas, loading } = useApiFetch(`/api/dicas?page=${currentPage}&limit=${itemsPerPage}`, {
+  const { data: apiDicas } = useApiFetch(`/api/dicas?page=${currentPage}&limit=${itemsPerPage}`, {
     initialData: { data: [], pagination: { totalPages: 1 } },
     transform: (result) => {
       if (result && result.success && Array.isArray(result.data)) {

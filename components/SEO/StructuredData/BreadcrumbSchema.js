@@ -1,4 +1,4 @@
-import StructuredDataBase, { siteConfig, siteUrl } from './StructuredDataBase';
+import StructuredDataBase, { siteUrl } from './StructuredDataBase';
 
 /**
  * BreadcrumbSchema - Schema.org para breadcrumbs/navegação
