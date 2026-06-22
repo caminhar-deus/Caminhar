@@ -52,8 +52,8 @@ async function seedAll() {
       execSync('npm run db:reset', { stdio: 'inherit' });
       console.log('✅ Banco de dados resetado com sucesso.');
     } catch (error) {
-      console.error('❌ Falha ao resetar o banco de dados. Abortando.');
-      throw new Error('Falha ao resetar o banco de dados');
+      console.error(`❌ Falha ao resetar o banco de dados: ${error.message}`);
+      throw new Error('Falha ao resetar o banco de dados', { cause: error });
     }
   }
 

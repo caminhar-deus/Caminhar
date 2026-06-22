@@ -9,7 +9,7 @@ const URL = `http://localhost:${PORT}`;
 const checkServer = () => {
   return new Promise((resolve, reject) => {
     const client = URL.startsWith('https') ? https : http;
-    const req = client.get(URL, (res) => {
+    const req = client.get(URL, () => {
       resolve();
     });
 

@@ -411,7 +411,7 @@ async function restoreBackup(backupFilename) {
       console.log(`✅ Backup de segurança criado: ${safetyBackupFilename}`);
     } catch (err) {
       console.error(`❌ Erro ao criar backup de segurança: ${err.message}`);
-      throw new Error('Falha ao criar o backup de segurança. Restauração abortada.');
+      throw new Error('Falha ao criar o backup de segurança. Restauração abortada.', { cause: err });
     }
 
     // ✅ Verificar integridade do backup antes de restaurar
@@ -523,29 +523,23 @@ async function getAvailableBackups(maxFiles = DEFAULT_LIST_LIMIT) {
  */
 async function getBackupLogs() {
   try {
-    // Tenta ler o arquivo de log para completar o buffer
-    try {
-      await fs.promises.access(LOG_FILE);
-      const logContent = await fs.promises.readFile(LOG_FILE, 'utf8');
-      const logLines = logContent.split('\n').filter(line => line.trim() !== '');
+    await fs.promises.access(LOG_FILE);
+    const logContent = await fs.promises.readFile(LOG_FILE, 'utf8');
+    const logLines = logContent.split('\n').filter(line => line.trim() !== '');
 
-      return logLines.map(line => {
-        const match = line.match(/\[([^\]]+)\] \[([^\]]+)\] (.*)/);
-        if (match) {
-          return {
-            timestamp: match[1],
-            status: match[2],
-            message: match[3]
-          };
-        }
-        return null;
-      }).filter(entry => entry !== null);
-    } catch {
-      return [];
-    }
-  } catch (error) {
-    console.error('Erro ao ler logs de backup:', error);
-    throw error;
+    return logLines.map(line => {
+      const match = line.match(/\[([^\]]+)\] \[([^\]]+)\] (.*)/);
+      if (match) {
+        return {
+          timestamp: match[1],
+          status: match[2],
+          message: match[3]
+        };
+      }
+      return null;
+    }).filter(entry => entry !== null);
+  } catch {
+    return [];
   }
 }
 

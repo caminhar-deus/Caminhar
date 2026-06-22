@@ -119,7 +119,7 @@ export default function Admin() {
   const [originalSize, setOriginalSize] = useState(0);
   const [currentImageUrl, setCurrentImageUrl] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const setLoading = useState(false)[1];
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [activeSecurityTab, setActiveSecurityTab] = useState('integrity');

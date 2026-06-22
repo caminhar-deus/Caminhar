@@ -8,7 +8,7 @@ import { defineConfig } from "eslint/config";
 
 export default defineConfig([
   // Ignorar diretórios gerados e artefatos de build
-  { ignores: [".next/**", "out/**", "build/**", "reports/**", "coverage/**", "cypress/videos/**", "cypress/screenshots/**", "data/**", "public/uploads/**", ".agents/**", "docs/**"] },
+  { ignores: [".next/**", "out/**", "build/**", "reports/**", "coverage/**", "cypress/videos/**", "cypress/screenshots/**", "data/**", "public/uploads/**", ".agents/**", "docs/**", "package-lock.json"] },
 
   // JavaScript padrão (browser + node) - parser padrão
   { files: ["**/*.{js,mjs,cjs}"], plugins: { js }, extends: ["js/recommended"], languageOptions: { globals: {...globals.browser, ...globals.node} }, rules: { "no-unused-vars": "warn" } },

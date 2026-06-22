@@ -6,7 +6,6 @@ import {
   getTableName,
   loadSchemaFromDir,
   buildCreateTableSQL,
-  getSeedValues,
   buildSeedSQL
 } from './utils/init-table-utils.js';
 

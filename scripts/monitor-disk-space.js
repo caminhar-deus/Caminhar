@@ -85,7 +85,7 @@ Variáveis de ambiente:
  * @returns {Promise<{mount: string, usagePercent: number, size: string, used: string, available: string} | null>}
  */
 function checkDiskViaDf(mountPoint) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const child = spawn('df', ['-h', mountPoint], {
       stdio: ['ignore', 'pipe', 'pipe']
     });
@@ -96,7 +96,7 @@ function checkDiskViaDf(mountPoint) {
     child.stdout.on('data', (data) => { stdout += data.toString(); });
     child.stderr.on('data', (data) => { stderr += data.toString(); });
 
-    child.on('error', (error) => {
+    child.on('error', () => {
       // df não encontrado ou erro de execução
       resolve(null);
     });

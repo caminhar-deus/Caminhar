@@ -68,7 +68,7 @@ async function runCommand(command, env = {}) {
   try {
     await execAsync(command, { env: { ...process.env, ...env } });
     return true;
-  } catch (error) {
+  } catch {
     console.error(`❌ Falha na execução: ${command}`);
     return false;
   }

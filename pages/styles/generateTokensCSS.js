@@ -6,7 +6,6 @@
  */
 
 import {
-  colors,
   primary, secondary, neutral, feedback, semantic, state, spiritual
 } from './tokens/colors';
 
@@ -23,7 +22,7 @@ import {
 } from './tokens/borders';
 
 import {
-  shadow, elevation, shadows, coloredShadows, dropShadow
+  shadow, shadows
 } from './tokens/shadows';
 
 import {

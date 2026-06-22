@@ -7,6 +7,19 @@ import { updateSetting } from '../../lib/domain/settings.js';
 import { withAuth } from '../../lib/auth.js';
 import { logger } from '../../lib/logger.js';
 
+/**
+ * Remove um arquivo do disco de forma segura, ignorando erros silenciosamente.
+ * Utilizado para limpeza de arquivos temporários em cenários de validação.
+ * @param {string} filepath - Caminho completo do arquivo a ser removido.
+ */
+async function safeUnlink(filepath) {
+  try {
+    await fs.promises.unlink(filepath);
+  } catch {
+    // Falha ao limpar arquivo temporário é aceitável (arquivo pode já ter sido movido)
+  }
+}
+
 export const config = {
   api: {
     bodyParser: false,
@@ -52,13 +65,13 @@ async function handler(req, res) {
 
     // Validação de Mimetype
     if (!ALLOWED_MIMETYPES.includes(imageFile.mimetype)) {
-      try { await fs.promises.unlink(imageFile.filepath); } catch (e) {}
+      await safeUnlink(imageFile.filepath);
       return res.status(400).json({ error: 'Bad Request', message: 'Formato de arquivo inválido' });
     }
 
     // Validação de Tamanho (5MB)
     if (imageFile.size > 5 * 1024 * 1024) {
-      try { await fs.promises.unlink(imageFile.filepath); } catch (e) {}
+      await safeUnlink(imageFile.filepath);
       return res.status(400).json({ error: 'Bad Request', message: 'Arquivo muito grande (tamanho máximo 5MB)' });
     }
 
@@ -66,14 +79,14 @@ async function handler(req, res) {
     let metadata;
     try {
       metadata = await sharp(imageFile.filepath).metadata();
-    } catch (e) {
-      try { await fs.promises.unlink(imageFile.filepath); } catch (e2) {}
+    } catch {
+      await safeUnlink(imageFile.filepath);
       return res.status(400).json({ error: 'Bad Request', message: 'Arquivo corrompido ou formato não suportado' });
     }
 
     // Validação de dimensões máximas
     if (metadata.width > MAX_WIDTH || metadata.height > MAX_HEIGHT) {
-      try { await fs.promises.unlink(imageFile.filepath); } catch (e) {}
+      await safeUnlink(imageFile.filepath);
       return res.status(400).json({
         error: 'Bad Request',
         message: `Imagem muito grande. Dimensões máximas: ${MAX_WIDTH}x${MAX_HEIGHT}px (atual: ${metadata.width}x${metadata.height}px)`

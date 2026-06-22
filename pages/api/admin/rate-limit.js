@@ -41,6 +41,36 @@ async function redisSafe(operation, fallback = null) {
   }
 }
 
+/**
+ * Parseia logs brutos do Redis e aplica filtros opcionais (data e busca).
+ * Função auxiliar compartilhada entre auditoria e exportação CSV.
+ */
+function parseAndFilterLogs(rawLogs, { startDate, endDate, search } = {}) {
+  let logs;
+  try {
+    logs = rawLogs.map(JSON.parse);
+  } catch {
+    logs = [];
+  }
+
+  if (startDate || endDate || search) {
+    const start = startDate ? new Date(startDate).getTime() : 0;
+    const end = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : Infinity;
+    const searchLower = search ? search.toLowerCase() : '';
+
+    logs = logs.filter(log => {
+      const logTime = new Date(log.timestamp).getTime();
+      const matchesDate = logTime >= start && logTime <= end;
+      const matchesSearch = !search ||
+        (log.ip && log.ip.toLowerCase().includes(searchLower)) ||
+        (log.user && log.user.toLowerCase().includes(searchLower));
+      return matchesDate && matchesSearch;
+    });
+  }
+
+  return logs;
+}
+
 // Helper para registrar logs de auditoria (com try/catch interno)
 async function logAudit(action, ip, user) {
   if (!redis) return;
@@ -79,34 +109,10 @@ async function handleGet(req, res) {
   // Listar Logs de Auditoria
   if (type === 'audit') {
     const rawLogs = await redisSafe(() => redis.lrange('rate_limit:audit_logs', 0, -1), []);
-    
-    let logs = [];
-    try {
-      logs = rawLogs.map(JSON.parse);
-    } catch {
-      logs = [];
-    }
+    const logs = parseAndFilterLogs(rawLogs, req.query);
 
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
-    const { startDate, endDate, search } = req.query;
-
-    // Filtra por data se solicitado
-    if (startDate || endDate || search) {
-      const start = startDate ? new Date(startDate).getTime() : 0;
-      const end = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : Infinity;
-      const searchLower = search ? search.toLowerCase() : '';
-
-      logs = logs.filter(log => {
-        const logTime = new Date(log.timestamp).getTime();
-        const matchesDate = logTime >= start && logTime <= end;
-        const matchesSearch = !search || 
-          (log.ip && log.ip.toLowerCase().includes(searchLower)) || 
-          (log.user && log.user.toLowerCase().includes(searchLower));
-        return matchesDate && matchesSearch;
-      });
-    }
-
     const total = logs.length;
     const startIndex = (page - 1) * limit;
     const paginatedLogs = logs.slice(startIndex, startIndex + limit);
@@ -124,30 +130,8 @@ async function handleGet(req, res) {
   // Exportar Logs como CSV
   if (type === 'export_csv') {
     const rawLogs = await redisSafe(() => redis.lrange('rate_limit:audit_logs', 0, -1), []);
-    
-    let logs = [];
-    try {
-      logs = rawLogs.map(JSON.parse);
-    } catch {
-      logs = [];
-    }
+    const logs = parseAndFilterLogs(rawLogs, req.query);
 
-    const { startDate, endDate, search } = req.query;
-    if (startDate || endDate || search) {
-      const start = startDate ? new Date(startDate).getTime() : 0;
-      const end = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : Infinity;
-      const searchLower = search ? search.toLowerCase() : '';
-
-      logs = logs.filter(log => {
-        const logTime = new Date(log.timestamp).getTime();
-        const matchesDate = logTime >= start && logTime <= end;
-        const matchesSearch = !search || 
-          (log.ip && log.ip.toLowerCase().includes(searchLower)) || 
-          (log.user && log.user.toLowerCase().includes(searchLower));
-        return matchesDate && matchesSearch;
-      });
-    }
-    
     const header = 'Data/Hora,Ação,IP,Usuário\n';
     const rows = logs.map(log => {
       const date = new Date(log.timestamp).toLocaleString('pt-BR');

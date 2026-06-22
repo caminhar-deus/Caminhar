@@ -55,8 +55,8 @@ async function handlePost(req, res) {
 }
 
 async function handlePut(req, res) {
-  const updateId = typeof req.body.id === 'string' ? parseInt(req.body.id, 10) : req.body.id;
-  const { id, ...updateData } = req.body;
+  const { id: Id, ...updateData } = req.body;
+  const updateId = typeof Id === 'string' ? parseInt(Id, 10) : Id;
 
   const validation = roleUpdateSchema.partial().safeParse({ id: updateId, ...updateData });
   if (!validation.success) {

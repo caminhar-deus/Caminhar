@@ -11,7 +11,7 @@ const videoSchema = z.object({
   publicado: z.boolean().optional()
 });
 
-const youtubeUrlRegex = /^https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=[\w-]{11}|youtu\.be\/[\w-]{11})(?:[&\?].*)?$/;
+const youtubeUrlRegex = /^https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=[\w-]{11}|youtu\.be\/[\w-]{11})(?:[&?].*)?$/;
 
 async function handleGet(req, res) {
   res.setHeader('Cache-Control', 'no-store, max-age=0, must-revalidate');

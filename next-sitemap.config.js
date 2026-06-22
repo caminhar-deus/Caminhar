@@ -101,7 +101,7 @@ export default {
   autoLastmod: true,
   
   // Geração de sitemap adicional para conteúdo dinâmico
-  additionalPaths: async (config) => {
+  additionalPaths: async () => {
     const result = [];
     
     // Importar conexão com o banco
@@ -149,8 +149,8 @@ export default {
   },
   
   // Callback após gerar sitemap
-  onComplete: (config) => {
-    console.log(`✅ Sitemap gerado: ${config.siteUrl}/sitemap.xml`);
-    console.log(`✅ Robots.txt gerado: ${config.siteUrl}/robots.txt`);
+  onComplete: (sitemapConfig) => {
+    console.log(`✅ Sitemap gerado: ${sitemapConfig.siteUrl}/sitemap.xml`);
+    console.log(`✅ Robots.txt gerado: ${sitemapConfig.siteUrl}/robots.txt`);
   },
 };
