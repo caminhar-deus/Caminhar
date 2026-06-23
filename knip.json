@@ -13,7 +13,6 @@
     "jest.setup.js"
   ],
   "ignoreBinaries": [
-    "kill-port",
     "k6"
   ],
   "ignoreDependencies": [

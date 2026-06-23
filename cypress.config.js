@@ -37,7 +37,7 @@ export default defineConfig({
     // Informa ao Cypress que não há um arquivo de suporte global.
     supportFile: 'cypress/support/e2e.js',
 
-    setupNodeEvents(on, config) {
+    setupNodeEvents(_on, _config) {
       // Este é o lugar para registrar plugins do Cypress
       // ou tarefas customizadas que rodam no ambiente Node.
     },

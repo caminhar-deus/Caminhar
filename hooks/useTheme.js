@@ -46,7 +46,9 @@ function hexToRgba(hex, alpha) {
  */
 
 /**
- * useTheme - Hook para acessar tokens e gerenciar tema
+ * useTheme - Hook para acessar tokens e gerenciar tema (light/dark).
+ * @todo Integrar este hook nos componentes da aplicação. Atualmente exportado
+ *       via hooks/index.js mas sem consumidores diretos.
  * @returns {ThemeReturn} - Tokens e funções de tema
  */
 export const useTheme = () => {

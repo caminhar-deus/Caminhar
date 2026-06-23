@@ -85,6 +85,11 @@ function formatMetric(name, value) {
 const MAX_HISTORY_SIZE = 50;
 const METRICS_CACHE_MS = 60_000; // 1 minuto de cache para evitar reports duplicados
 
+/**
+ * Hook para monitoramento de Core Web Vitals e métricas de performance.
+ * @todo Integrar este hook nos componentes da aplicação. Atualmente exportado
+ *       via hooks/index.js mas sem consumidores diretos.
+ */
 export default function usePerformanceMetrics(options = {}) {
   const {
     onReport,

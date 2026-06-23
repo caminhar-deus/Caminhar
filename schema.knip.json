@@ -52,49 +52,7 @@
       "$ref": "#/definitions/issueTypes"
     },
     "ignoreExportsUsedInFile": {
-      "title": "Ignore exports used in file",
-      "examples": [
-        {
-          "ignoreExportsUsedInFile": true
-        },
-        {
-          "ignoreExportsUsedInFile": {
-            "interface": true,
-            "type": true
-          }
-        }
-      ],
-      "anyOf": [
-        {
-          "type": "boolean"
-        },
-        {
-          "type": "object",
-          "properties": {
-            "class": {
-              "type": "boolean"
-            },
-            "enum": {
-              "type": "boolean"
-            },
-            "function": {
-              "type": "boolean"
-            },
-            "interface": {
-              "type": "boolean"
-            },
-            "member": {
-              "type": "boolean"
-            },
-            "type": {
-              "type": "boolean"
-            },
-            "variable": {
-              "type": "boolean"
-            }
-          }
-        }
-      ]
+      "$ref": "#/definitions/ignoreExportsUsedInFile"
     },
     "ignoreIssues": {
       "title": " Ignore specific issue types for specific file patterns",
@@ -185,6 +143,10 @@
     "treatConfigHintsAsErrors": {
       "title": "Exit with non-zero code (1) if there are any configuration hints",
       "type": "boolean"
+    },
+    "treatTagHintsAsErrors": {
+      "title": "Exit with non-zero code (1) if there are any tag hints",
+      "type": "boolean"
     }
   },
   "unevaluatedProperties": false,
@@ -219,6 +181,51 @@
     "includeEntryExports": {
       "title": "Include entry files when reporting unused exports",
       "type": "boolean"
+    },
+    "ignoreExportsUsedInFile": {
+      "title": "Ignore exports used in file",
+      "examples": [
+        {
+          "ignoreExportsUsedInFile": true
+        },
+        {
+          "ignoreExportsUsedInFile": {
+            "interface": true,
+            "type": true
+          }
+        }
+      ],
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "class": {
+              "type": "boolean"
+            },
+            "enum": {
+              "type": "boolean"
+            },
+            "function": {
+              "type": "boolean"
+            },
+            "interface": {
+              "type": "boolean"
+            },
+            "member": {
+              "type": "boolean"
+            },
+            "type": {
+              "type": "boolean"
+            },
+            "variable": {
+              "type": "boolean"
+            }
+          }
+        }
+      ]
     },
     "ignoreMembers": {
       "title": "Enum and namespace members to exclude from the report (regex allowed)",
@@ -306,6 +313,22 @@
         "ignoreUnresolved": {
           "$ref": "#/definitions/ignoreUnresolved"
         },
+        "ignoreExportsUsedInFile": {
+          "$ref": "#/definitions/ignoreExportsUsedInFile"
+        },
+        "ignoreIssues": {
+          "title": " Ignore specific issue types for specific file patterns (relative to the workspace root)",
+          "examples": [
+            {
+              "src/generated/**": ["exports", "types"],
+              "**/*.generated.ts": ["exports"]
+            }
+          ],
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/issueTypes"
+          }
+        },
         "includeEntryExports": {
           "$ref": "#/definitions/includeEntryExports"
         }
@@ -382,6 +405,10 @@
         },
         "capacitor": {
           "title": "Capacitor plugin configuration (https://knip.dev/reference/plugins/capacitor)",
+          "$ref": "#/definitions/plugin"
+        },
+        "catalyst": {
+          "title": "catalyst plugin configuration (https://knip.dev/reference/plugins/catalyst)",
           "$ref": "#/definitions/plugin"
         },
         "changelogen": {
@@ -464,6 +491,10 @@
           "title": "expressive-code plugin configuration (https://knip.dev/reference/plugins/expressive-code)",
           "$ref": "#/definitions/plugin"
         },
+        "fast": {
+          "title": "fast plugin configuration (https://knip.dev/reference/plugins/fast)",
+          "$ref": "#/definitions/plugin"
+        },
         "gatsby": {
           "title": "Gatsby plugin configuration (https://knip.dev/reference/plugins/gatsby)",
           "$ref": "#/definitions/plugin"
@@ -520,6 +551,10 @@
           "title": "linthtml plugin configuration (https://knip.dev/reference/plugins/linthtml)",
           "$ref": "#/definitions/plugin"
         },
+        "lit": {
+          "title": "lit plugin configuration (https://knip.dev/reference/plugins/lit)",
+          "$ref": "#/definitions/plugin"
+        },
         "lockfile-lint": {
           "title": "lockfile-lint plugin configuration (https://knip.dev/reference/plugins/lockfile-lint)",
           "$ref": "#/definitions/plugin"
@@ -554,6 +589,10 @@
         },
         "msw": {
           "title": "Mocha plugin configuration (https://knip.dev/reference/plugins/msw)",
+          "$ref": "#/definitions/plugin"
+        },
+        "nano-spawn": {
+          "title": "nano-spawn plugin configuration (https://knip.dev/reference/plugins/nano-spawn)",
           "$ref": "#/definitions/plugin"
         },
         "nano-staged": {
@@ -622,6 +661,10 @@
         },
         "openapi-ts": {
           "title": "openapi-ts plugin configuration (https://knip.dev/reference/plugins/openapi-ts)",
+          "$ref": "#/definitions/plugin"
+        },
+        "orval": {
+          "title": "orval plugin configuration (https://knip.dev/reference/plugins/orval)",
           "$ref": "#/definitions/plugin"
         },
         "oxfmt": {

@@ -517,7 +517,8 @@
 │   ├── screenshots
 │   ├── support
 │   │   ├── commands.js
-│   │   └── e2e.js
+│   │   ├── e2e.js
+│   │   └── index.d.ts
 │   └── videos
 │       ├── blog.cy.js.mp4
 │       ├── home.cy.js.mp4
@@ -1148,4 +1149,4 @@
 │       └── videos.validation.test.js
 └── tree.txt
 
-182 directories, 967 files
+182 directories, 968 files
