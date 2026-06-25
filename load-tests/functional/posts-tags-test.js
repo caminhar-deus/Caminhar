@@ -28,7 +28,7 @@ export default function () {
         const body = r.json();
         const posts = body?.data?.posts || body?.posts || body?.data || [];
         return Array.isArray(posts);
-      } catch (e) {
+      } catch {
         return false;
       }
     },
@@ -37,7 +37,7 @@ export default function () {
         const body = r.json();
         const posts = body?.data?.posts || body?.posts || body?.data || [];
         return Array.isArray(posts);
-      } catch (e) {
+      } catch {
         return false;
       }
     },

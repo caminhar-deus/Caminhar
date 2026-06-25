@@ -45,6 +45,9 @@ export default defineConfig([
   // Arquivos de teste (Jest globals + JSX via Babel)
   { files: ["**/*.test.{js,jsx,mjs}", "**/__tests__/**/*.{js,jsx,mjs}", "tests/**/*.test.{js,jsx,mjs}"], plugins: { js }, extends: ["js/recommended"], languageOptions: { globals: { ...globals.jest, ...globals.browser }, parser: babelParser, parserOptions: { requireConfigFile: false, babelOptions: { presets: [["@babel/preset-react", { runtime: "automatic" }]] } } }, rules: { "no-unused-vars": ["warn", { "varsIgnorePattern": "^[A-Z]", "args": "none" }], "react/prop-types": "off" } },
 
+  // k6 Load Tests (globais nativas do k6: __ITER, __VU)
+  { files: ["load-tests/**/*.js"], plugins: { js }, extends: ["js/recommended"], languageOptions: { globals: { __ITER: "readonly", __VU: "readonly" } }, rules: { "no-unused-vars": ["warn", { caughtErrors: "none" }] } },
+
   // JSON
   { files: ["**/*.json"], plugins: { json }, language: "json/json", extends: ["json/recommended"] },
   { files: ["**/*.jsonc"], plugins: { json }, language: "json/jsonc", extends: ["json/recommended"] },

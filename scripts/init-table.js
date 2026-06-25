@@ -6,7 +6,8 @@ import {
   getTableName,
   loadSchemaFromDir,
   buildCreateTableSQL,
-  buildSeedSQL
+  buildSeedSQL,
+  validateIdentifier
 } from './utils/init-table-utils.js';
 
 loadEnv();
@@ -30,15 +31,18 @@ function loadSchema(tableName) {
  * @param {Object} schema - Schema da tabela
  */
 async function initTable(schema) {
+  // Valida o identificador da tabela antes de qualquer interpolação SQL
+  const safeTableName = validateIdentifier(schema.table, 'nome da tabela');
+
   if (schema.dropBeforeCreate) {
-    console.log(`⚠️  Removendo tabela "${schema.table}" se existir...`);
-    await query(`DROP TABLE IF EXISTS ${schema.table} CASCADE;`);
+    console.log(`⚠️  Removendo tabela "${safeTableName}" se existir...`);
+    await query(`DROP TABLE IF EXISTS ${safeTableName} CASCADE;`);
   }
 
-  const createSQL = buildCreateTableSQL(schema);
-  console.log(`🚀 Criando tabela "${schema.table}"...`);
+  const createSQL = buildCreateTableSQL(schema, safeTableName);
+  console.log(`🚀 Criando tabela "${safeTableName}"...`);
   await query(createSQL);
-  console.log(`✅ Tabela "${schema.table}" criada com sucesso!`);
+  console.log(`✅ Tabela "${safeTableName}" criada com sucesso!`);
 
   // Adiciona colunas extras que podem não existir de versões anteriores
   if (!schema.dropBeforeCreate) {
@@ -49,23 +53,23 @@ async function initTable(schema) {
       if (constraints.includes('DEFAULT') || !constraints.includes('NOT NULL')) {
         const defaultPart = constraints.includes('DEFAULT') ? ` ${constraints}` : '';
         await query(
-          `ALTER TABLE ${schema.table} ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}${defaultPart};`
+          `ALTER TABLE ${safeTableName} ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}${defaultPart};`
         );
       }
     }
   }
 
   // Popula seedData se houver
-  const seedSQL = buildSeedSQL(schema);
+  const seedSQL = buildSeedSQL(schema, safeTableName);
   if (seedSQL) {
-    const check = await query(`SELECT count(*) as count FROM ${schema.table}`);
+    const check = await query(`SELECT count(*) as count FROM ${safeTableName}`);
     const rowCount = parseInt(check.rows[0].count, 10);
     if (rowCount === 0) {
-      console.log(`📝 Populando tabela "${schema.table}" com dados iniciais...`);
+      console.log(`📝 Populando tabela "${safeTableName}" com dados iniciais...`);
       await query(seedSQL);
-      console.log(`✅ Dados iniciais inseridos em "${schema.table}".`);
+      console.log(`✅ Dados iniciais inseridos em "${safeTableName}".`);
     } else {
-      console.log(`⏭️  Tabela "${schema.table}" já contém dados. Seed ignorado.`);
+      console.log(`⏭️  Tabela "${safeTableName}" já contém dados. Seed ignorado.`);
     }
   }
 }

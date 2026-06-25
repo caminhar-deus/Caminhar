@@ -57,7 +57,7 @@ export default function (data) {
       try {
         // API retorna { success: true, data: { url, path } }
         return r.json('data.url') !== undefined || r.json('url') !== undefined || r.json('path') !== undefined;
-      } catch (e) {
+      } catch {
         return false;
       }
     },
@@ -72,7 +72,7 @@ export default function (data) {
     let body;
     try {
       body = res.json();
-    } catch (e) {
+    } catch {
       console.warn('⚠️ Não foi possível fazer parse da resposta do upload');
       randomSleep(1, 3);
       return;

@@ -62,7 +62,7 @@ export default function (data) {
     'Domínio Inválido: mensagem de erro': (r) => {
       try {
         return JSON.stringify(r.body).includes('YouTube');
-      } catch (e) {
+      } catch {
         return false;
       }
     },

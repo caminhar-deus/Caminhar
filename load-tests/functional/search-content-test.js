@@ -44,7 +44,7 @@ export default function () {
       try {
         const body = r.json();
         return Array.isArray(body.data) || Array.isArray(body);
-      } catch (e) {
+      } catch {
         return false;
       }
     },
@@ -52,7 +52,7 @@ export default function () {
       if (r.status !== 200) return false;
 
       let body;
-      try { body = r.json(); } catch (e) { return false; }
+      try { body = r.json(); } catch { return false; }
 
       const posts = body.data || body;
       

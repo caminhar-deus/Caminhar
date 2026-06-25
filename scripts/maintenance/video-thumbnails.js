@@ -52,8 +52,11 @@ async function ensureThumbnailColumn(pool) {
 }
 
 async function populateThumbnails(pool) {
-  const filter = FLAGS.force ? '1=1' : 'thumbnail IS NULL';
-  const query = `SELECT id, titulo, url_youtube FROM videos WHERE ${filter}`;
+  // Usa query fixa sem interpolação: o filtro é determinado por uma condicional,
+  // mas cada branch produz uma string SQL completa e estática.
+  const query = FLAGS.force
+    ? 'SELECT id, titulo, url_youtube FROM videos'
+    : 'SELECT id, titulo, url_youtube FROM videos WHERE thumbnail IS NULL';
 
   console.log(`🖼️  Buscando vídeos${FLAGS.force ? ' (todos, incluindo já populados)' : ' (apenas sem thumbnail)'}...`);
 

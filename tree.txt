@@ -517,8 +517,7 @@
 │   ├── screenshots
 │   ├── support
 │   │   ├── commands.js
-│   │   ├── e2e.js
-│   │   └── index.d.ts
+│   │   └── e2e.js
 │   └── videos
 │       ├── blog.cy.js.mp4
 │       ├── home.cy.js.mp4
@@ -878,7 +877,8 @@
 │   │   ├── load-env.js
 │   │   └── update-setting.js
 │   ├── validate-schema.js
-│   └── view-backup-logs.js
+│   ├── view-backup-logs.js
+│   └── warm-routes.js
 ├── security-tests.yml
 ├── skills-lock.json
 ├── tests

@@ -6,6 +6,7 @@
  */
 import pg from 'pg';
 import { execSync } from 'child_process';
+import { validateIdentifier } from '../../scripts/utils/init-table-utils.js';
 
 const PROJECT_ROOT = process.cwd();
 
@@ -103,6 +104,8 @@ export async function withTransaction(pool) {
 /**
  * Limpa todas as tabelas do banco de teste (TRUNCATE).
  * Útil entre suites que não usam transação.
+ * Os nomes das tabelas vêm do catálogo do PostgreSQL, e são validados
+ * como identificadores seguros antes de interpolar na query.
  */
 export async function truncateAll(pool) {
   const result = await pool.query(`
@@ -111,6 +114,8 @@ export async function truncateAll(pool) {
   `);
 
   for (const row of result.rows) {
-    await pool.query(`TRUNCATE TABLE "${row.tablename}" CASCADE`);
+    // Valida o nome da tabela como identificador seguro antes de usar
+    const safeTableName = validateIdentifier(row.tablename, 'nome da tabela');
+    await pool.query(`TRUNCATE TABLE "${safeTableName}" CASCADE`);
   }
 }

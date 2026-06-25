@@ -1,6 +1,33 @@
 import { readFileSync, existsSync } from 'fs';
 
 /**
+ * Padrão de identificador SQL seguro: letras, números e underscore.
+ * @type {RegExp}
+ */
+const SAFE_IDENTIFIER = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+
+/**
+ * Valida se um nome é um identificador SQL seguro (evita SQL injection via nomes de tabelas/colunas).
+ * Apenas letras, números e underscore são permitidos.
+ *
+ * @param {string} name - Nome do identificador a ser validado
+ * @param {string} [context='identificador'] - Contexto para mensagem de erro
+ * @returns {string} O próprio nome validado (para encadeamento)
+ * @throws {Error} Se o nome contiver caracteres não permitidos
+ */
+export function validateIdentifier(name, context = 'identificador') {
+  if (!name || typeof name !== 'string') {
+    throw new Error(`❌ ${context} inválido: não pode estar vazio.`);
+  }
+  if (!SAFE_IDENTIFIER.test(name)) {
+    throw new Error(
+      `❌ ${context} inválido: "${name}". Use apenas letras, números e underscore.`
+    );
+  }
+  return name;
+}
+
+/**
  * Obtém o nome da tabela a partir dos argumentos da linha de comando.
  * Suporta: node init-table.js musicas | node init-table.js --table=musicas
  *
@@ -57,11 +84,13 @@ export function loadSchemaFromDir(tableName, schemasDir) {
 
 /**
  * Constrói a query CREATE TABLE a partir do schema.
+ * O identificador da tabela já deve ter sido validado externamente.
  *
  * @param {Object} schema - Schema da tabela
+ * @param {string} safeTableName - Nome da tabela já validado
  * @returns {string} SQL CREATE TABLE
  */
-export function buildCreateTableSQL(schema) {
+export function buildCreateTableSQL(schema, safeTableName) {
   const columnDefs = schema.columns.map(col => {
     const parts = [col.name, col.type];
     if (col.constraints) {
@@ -70,7 +99,7 @@ export function buildCreateTableSQL(schema) {
     return parts.join(' ');
   });
 
-  return `CREATE TABLE IF NOT EXISTS ${schema.table} (\n  ${columnDefs.join(',\n  ')}\n);`;
+  return `CREATE TABLE IF NOT EXISTS ${safeTableName} (\n  ${columnDefs.join(',\n  ')}\n);`;
 }
 
 /**
@@ -99,16 +128,18 @@ export function getSeedValues(schema) {
 
 /**
  * Constrói a query INSERT com seedData.
+ * O identificador da tabela já deve ter sido validado externamente.
  *
  * @param {Object} schema - Schema da tabela
+ * @param {string} safeTableName - Nome da tabela já validado
  * @returns {string|null} SQL INSERT ou null se não houver seedData
  */
-export function buildSeedSQL(schema) {
+export function buildSeedSQL(schema, safeTableName) {
   const values = getSeedValues(schema);
   if (values.length === 0) return null;
 
   const columns = Object.keys(schema.seedData[0]);
   const valueStrings = values.map(row => `(${row.join(', ')})`);
 
-  return `INSERT INTO ${schema.table} (${columns.join(', ')}) VALUES\n  ${valueStrings.join(',\n  ')};`;
+  return `INSERT INTO ${safeTableName} (${columns.join(', ')}) VALUES\n  ${valueStrings.join(',\n  ')};`;
 }

@@ -3,7 +3,8 @@ import {
   buildCreateTableSQL,
   getSeedValues,
   buildSeedSQL,
-  getTableName
+  getTableName,
+  validateIdentifier
 } from '../../../scripts/utils/init-table-utils.js';
 
 describe('init-table-utils — buildCreateTableSQL', () => {
@@ -20,7 +21,8 @@ describe('init-table-utils — buildCreateTableSQL', () => {
   };
 
   it('deve gerar SQL CREATE TABLE a partir do schema', () => {
-    const sql = buildCreateTableSQL(musicasSchema);
+    const safeName = validateIdentifier('musicas', 'nome da tabela');
+    const sql = buildCreateTableSQL(musicasSchema, safeName);
 
     expect(sql).toContain('CREATE TABLE IF NOT EXISTS musicas');
     expect(sql).toContain('id SERIAL PRIMARY KEY');
@@ -90,14 +92,16 @@ describe('init-table-utils — buildSeedSQL', () => {
   };
 
   it('deve gerar SQL INSERT a partir de seedData', () => {
-    const sql = buildSeedSQL(dicasSchema);
+    const safeName = validateIdentifier('dicas', 'nome da tabela');
+    const sql = buildSeedSQL(dicasSchema, safeName);
     expect(sql).toContain('INSERT INTO dicas');
     expect(sql).toContain("'Palavra do dia'");
     expect(sql).toContain("'Conteúdo da palavra'");
   });
 
   it('deve retornar null se não houver seedData', () => {
-    expect(buildSeedSQL(musicasSchema)).toBeNull();
+    const safeName = validateIdentifier('musicas', 'nome da tabela');
+    expect(buildSeedSQL(musicasSchema, safeName)).toBeNull();
   });
 });
 
