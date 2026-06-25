@@ -668,7 +668,6 @@
 │   ├── coverage-output.log
 │   ├── eslint.log
 │   ├── load-tests.log
-│   ├── load-tests.tmp
 │   └── tests-output.log
 ├── __mocks__
 │   ├── cookie.js
@@ -1149,4 +1148,4 @@
 │       └── videos.validation.test.js
 └── tree.txt
 
-182 directories, 968 files
+182 directories, 967 files

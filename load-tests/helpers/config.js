@@ -8,16 +8,6 @@ const DEFAULT_CONFIG = {
   ADMIN_PASSWORD: '123456',
 };
 
-// Tenta carregar env-config.json
-let fileConfig = {};
-try {
-  // Em k6, não é possível fazer require de JSON diretamente,
-  // então usamos __ENV.CONFIG_FILE ou valores inline
-  fileConfig = {};
-} catch (e) {
-  // Silently ignore - usaremos os defaults
-}
-
 export function getConfig() {
   return {
     BASE_URL: __ENV.BASE_URL || DEFAULT_CONFIG.BASE_URL,

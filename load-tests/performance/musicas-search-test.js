@@ -2,6 +2,7 @@ import http from 'k6/http';
 import { check } from 'k6';
 import { randomSleep } from '../helpers/sleep.js';
 import { generateReport } from '../helpers/report.js';
+import { BASE_URL } from '../helpers/config.js';
 
 export const options = {
   // Teste funcional de busca por título
@@ -13,7 +14,6 @@ export const options = {
   },
 };
 
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
 
 // Termos comuns para busca em títulos de músicas cristãs
 const SEARCH_TERMS = ['Graça', 'Santo', 'Amor', 'Vida', 'Caminho', 'Luz'];

@@ -78,7 +78,6 @@ function createCrudDefault(resourceConfig) {
     resourceName = 'resource',
     metricsPrefix,
     requireAuth = true,
-    sleepTimings = null,
     uniqueIdGenerator = () => `${Date.now()}`,
   } = resourceConfig;
 
@@ -548,7 +547,6 @@ function createLoadDefault(resourceConfig) {
     useSpoofIP = false,
     checkResponse = null,
     tags = {},
-    sleepDuration = null,
     resourceName = 'resource',
     extraRequests = [],
   } = resourceConfig;

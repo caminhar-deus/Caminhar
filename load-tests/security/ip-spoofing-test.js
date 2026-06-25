@@ -1,5 +1,5 @@
 import http from 'k6/http';
-import { check, group } from 'k6';
+import { check } from 'k6';
 import { getRandomIP } from '../helpers/network.js';
 import { BASE_URL } from '../helpers/config.js';
 import { getProfile } from '../helpers/profiles.js';

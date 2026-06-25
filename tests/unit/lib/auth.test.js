@@ -3,7 +3,6 @@ import { hashPassword, verifyPassword, generateToken, verifyToken, setAuthCookie
 import { query } from '../../../lib/db.js';
 
 jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb());
-jest.mock('cookie');
 
 describe('Library - Auth', () => {
 

@@ -72,10 +72,6 @@ const SEED_SLUGS = [
 
 const PAGES_ROUTES = ['/', '/blog', '/admin'];
 
-function statusIcon(success) {
-  return success ? 'present' : 'absent';
-}
-
 function log(type, message) {
   const icons = { info: 'ℹ️', success: '✅', warn: '⚠️', error: '❌', skip: '⏭️', retry: '🔄' };
   const icon = icons[type] || '•';

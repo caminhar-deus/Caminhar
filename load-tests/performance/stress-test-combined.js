@@ -172,7 +172,6 @@ export function teardown(data) {
     const videos = body?.data?.videos || body.videos || body.data || [];
     
     if (videos.length === 0) {
-      hasMore = false;
       break;
     }
 

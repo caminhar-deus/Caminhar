@@ -2,6 +2,7 @@ import http from 'k6/http';
 import { check } from 'k6';
 import { randomSleep } from '../helpers/sleep.js';
 import exec from 'k6/execution';
+import { BASE_URL, USERNAME, PASSWORD } from '../helpers/config.js';
 
 export const options = {
   // Cenário de teste de cache:
@@ -34,9 +35,6 @@ export const options = {
   },
 };
 
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
-const USERNAME = __ENV.ADMIN_USERNAME || 'admin';
-const PASSWORD = __ENV.ADMIN_PASSWORD || '123456';
 
 export function setup() {
   const res = http.get(BASE_URL);
