@@ -79,7 +79,7 @@ export const mockNextHead = ({ children }) => {
  * @param {Object} props - Props do componente
  * @returns {React.ReactElement}
  */
-export const mockNextScript = ({ src, strategy, ...props }) => {
+export const mockNextScript = ({ src, _strategy, ...props }) => {
   return React.createElement('script', { src, ...props });
 };
 
@@ -115,7 +115,7 @@ export const mockNextDynamic = (importFunc, options = {}) => {
  * @param {number} status - Status HTTP
  * @returns {Object} Resultado mockado
  */
-export const mockGetServerSideProps = (data = {}, status = 200) => {
+export const mockGetServerSideProps = (data = {}, _status = 200) => {
   return {
     props: {
       ...data,

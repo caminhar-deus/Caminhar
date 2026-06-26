@@ -1,4 +1,4 @@
-import { jest, describe, it, expect } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 
 describe('constants.js — Módulo de constantes compartilhadas', () => {
   let constants;

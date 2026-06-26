@@ -19,7 +19,6 @@ jest.mock('../../../lib/auth.js', () => ({
 
 // Import the mocked modules
 const db = jest.requireMock('../../../lib/db.js');
-const auth = jest.requireMock('../../../lib/auth.js');
 
 // Mock handler function since the file doesn't exist
 const handler = async (req, res) => {
@@ -56,7 +55,7 @@ const handler = async (req, res) => {
     } else {
       res.status(405).json({ message: 'Método não permitido' });
     }
-  } catch (error) {
+  } catch {
     res.status(500).json({ message: 'Erro interno do servidor' });
   }
 };

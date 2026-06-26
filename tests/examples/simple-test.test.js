@@ -3,7 +3,6 @@
  */
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { createMocks } from 'node-mocks-http';
 
 // Factories
 import { postFactory, createPostInput } from '../factories/post.js';
@@ -16,7 +15,6 @@ import {
   createApiMocks,
   createGetRequest,
   createPostRequest,
-  expectArray,
 } from '../helpers/api.js';
 
 import {
@@ -116,7 +114,7 @@ describe('Test Suite Architecture - Demonstração', () => {
 
     it('createPostRequest deve criar POST', () => {
       const body = { title: 'Test' };
-      const { req, res } = createPostRequest(body);
+      const { req } = createPostRequest(body);
       
       expect(req.method).toBe('POST');
       expect(req.body).toEqual(body);
@@ -213,7 +211,7 @@ describe('Teste Integrado - Fluxo Completo', () => {
     });
     
     // 3. Criar request
-    const { req, res } = createPostRequest(postData, headers);
+    const { res } = createPostRequest(postData, headers);
     
     // 4. Simular handler
     res.statusCode = 201;

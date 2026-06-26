@@ -31,8 +31,6 @@ jest.unstable_mockModule('../../../scripts/utils/load-env.js', () => ({
 }));
 
 describe('validate-schema.js — Validação do schema do banco', () => {
-  let validateSchemaModule;
-
   beforeEach(async () => {
     process.env.DATABASE_URL = 'postgres://user:pass@localhost:5432/testdb';
   });

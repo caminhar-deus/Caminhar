@@ -1,6 +1,6 @@
 import React from 'react';
 import { render } from '@testing-library/react';
-import { describe, it, expect, jest, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 import '../../../mocks/next-setup.js';
 import PreloadResources, { getCriticalResources } from '../../../../components/Performance/PreloadResources.js';
 

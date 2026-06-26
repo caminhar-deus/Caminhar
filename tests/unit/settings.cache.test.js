@@ -85,7 +85,7 @@ const handler = async (req, res) => {
     } else {
       res.status(405).json({ message: 'Método não permitido' });
     }
-  } catch (error) {
+  } catch {
     res.status(500).json({ message: 'Erro interno do servidor' });
   }
 };

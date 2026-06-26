@@ -1,5 +1,5 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-import { createMocks } from 'node-mocks-http';
+
 import { testPublicGetEndpoint } from '../../helpers/crud-test';
 import { musicFactory } from '../../factories';
 

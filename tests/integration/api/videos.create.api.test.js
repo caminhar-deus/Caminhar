@@ -33,7 +33,7 @@ const videosHandler = async (req, res) => {
   try {
     const result = await videosLib.createVideo(body);
     return res.status(201).json(result);
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: 'Erro interno ao criar vídeo' });
   }
 };

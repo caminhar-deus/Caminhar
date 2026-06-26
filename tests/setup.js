@@ -142,7 +142,7 @@ configure({
   // Tempo máximo de espera para findBy queries
   asyncUtilTimeout: 5000,
   // Container padrão para queries
-  getElementError: (message, container) => {
+  getElementError: (message, _container) => {
     const error = new Error(message);
     error.name = 'TestingLibraryElementError';
     return error;

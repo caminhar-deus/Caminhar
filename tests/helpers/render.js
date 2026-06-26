@@ -36,7 +36,7 @@ import { useRouter } from 'next/router';
  * @returns {Object} Objeto de retorno do RTL + userEvent
  */
 export const renderWithProviders = (ui, options = {}) => {
-  const { providerProps = {}, ...renderOptions } = options;
+  const { ...renderOptions } = options;
   
   const Wrapper = ({ children }) => {
     return <>{children}</>;

@@ -57,7 +57,7 @@ export async function applyMigrations() {
     if (stderr.includes('already been applied')) {
       return;
     }
-    throw new Error(`Falha ao aplicar migrações: ${stderr}`);
+    throw new Error(`Falha ao aplicar migrações: ${stderr}`, { cause: error });
   }
 }
 
@@ -81,7 +81,7 @@ export async function withTransaction(pool) {
     await client.query('BEGIN');
   } catch (error) {
     if (client) {
-      try { client.release(); } catch (_) { /* ignorar erro no release após falha */ }
+      try { client.release(); } catch { /* ignorar erro no release após falha */ }
     }
     throw error;
   }

@@ -25,7 +25,7 @@
  */
 
 import { createMocks } from 'node-mocks-http';
-import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 
 /**
  * Testa um endpoint GET público

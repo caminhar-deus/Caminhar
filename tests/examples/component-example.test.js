@@ -10,7 +10,6 @@
 import React, { useState, useEffect } from 'react';
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 
 // Factories
 import { 
@@ -25,7 +24,6 @@ import {
   setMobileViewport,
   setDesktopViewport,
   fillForm,
-  waitForAnimation,
 } from '../helpers/render.js';
 
 // Mocks
@@ -43,8 +41,8 @@ import { mockGlobalFetch } from '../helpers/index.js';
  */
 const MockPostList = ({ posts: initialPosts = [], onDelete }) => {
   const [posts, setPosts] = useState(initialPosts);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [loading] = useState(false);
+  const [error] = useState(null);
 
   const handleDelete = async (id) => {
     if (onDelete) {
@@ -156,7 +154,7 @@ describe('PostList Component - Exemplo Completo', () => {
 
   describe('Renderização Básica', () => {
     it('deve renderizar lista vazia', () => {
-      const { container } = renderWithProviders(<MockPostList posts={[]} />);
+      renderWithProviders(<MockPostList posts={[]} />);
       
       expect(screen.getByTestId('empty')).toBeInTheDocument();
       expect(screen.getByText('Nenhum post encontrado')).toBeInTheDocument();
@@ -345,7 +343,7 @@ describe('PostForm Component - Formulários', () => {
     const onSubmit = jest.fn();
     const postData = postFactory();
     
-    const { user } = renderWithProviders(
+    renderWithProviders(
       <MockPostForm 
         onSubmit={onSubmit} 
         initialData={{

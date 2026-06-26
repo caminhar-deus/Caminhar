@@ -1,5 +1,5 @@
 import React from 'react';
-import { jest, describe, it, expect } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 import { renderWithProviders } from '@helpers/render.js';
 
 // Componente hipotético para demonstração.

@@ -14,12 +14,10 @@ jest.mock('../../../scripts/utils/load-env.js', () => ({
 
 describe('clear-db.js — Limpeza completa do banco', () => {
   let libDb;
-  let fsMock;
 
   beforeEach(async () => {
     process.env.DATABASE_URL = 'postgres://user:pass@localhost:5432/testdb';
     libDb = await import('../../../lib/db.js');
-    fsMock = await import('fs');
   });
 
   afterEach(() => {

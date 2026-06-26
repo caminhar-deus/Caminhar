@@ -27,7 +27,7 @@ const musicasHandler = async (req, res) => {
   try {
     const result = await musicasLib.createMusica(body);
     return res.status(201).json(result);
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: 'Erro interno ao criar música' });
   }
 };

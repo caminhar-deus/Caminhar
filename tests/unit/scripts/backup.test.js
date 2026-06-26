@@ -43,8 +43,6 @@ jest.mock('../../../scripts/utils/constants.js', () => ({
 
 describe('backup.js — Sistema de backup', () => {
   let backup;
-  let mockFs;
-  let mockSpawn;
 
   beforeEach(async () => {
     process.env.DATABASE_URL = 'postgres://user:pass@localhost:5432/testdb';
@@ -53,9 +51,6 @@ describe('backup.js — Sistema de backup', () => {
     jest.isolateModules(async () => {
       backup = await import('../../../scripts/backup.js');
     });
-
-    mockFs = await import('fs');
-    mockSpawn = (await import('child_process')).spawn;
   });
 
   afterEach(() => {

@@ -9,15 +9,15 @@
  * @returns {Function} Mock de query
  */
 export const mockQuery = (returnValue) => {
-  return jest.fn().mockImplementation((query, params) => {
+  return jest.fn().mockImplementation((_query, _params) => {
     const result = typeof returnValue === 'function' 
-      ? returnValue(query, params) 
+      ? returnValue(_query, _params) 
       : returnValue;
     
     return Promise.resolve({
       rows: Array.isArray(result) ? result : [result].filter(Boolean),
       rowCount: Array.isArray(result) ? result.length : (result ? 1 : 0),
-      command: query.trim().split(' ')[0].toUpperCase(),
+      command: _query.trim().split(' ')[0].toUpperCase(),
     });
   });
 };
@@ -56,7 +56,7 @@ export const mockQueryError = (error) => {
  * @returns {Function} Mock de query
  */
 export const mockInsert = (insertedRow = {}) => {
-  return jest.fn().mockImplementation((query, params) => {
+  return jest.fn().mockImplementation((_query, _params) => {
     return Promise.resolve({
       rows: [{ id: insertedRow.id || 1, ...insertedRow }],
       rowCount: 1,
@@ -71,7 +71,7 @@ export const mockInsert = (insertedRow = {}) => {
  * @returns {Function} Mock de query
  */
 export const mockUpdate = (updatedRow = {}) => {
-  return jest.fn().mockImplementation((query, params) => {
+  return jest.fn().mockImplementation((_query, _params) => {
     return Promise.resolve({
       rows: [{ ...updatedRow }],
       rowCount: 1,
@@ -86,7 +86,7 @@ export const mockUpdate = (updatedRow = {}) => {
  * @returns {Function} Mock de query
  */
 export const mockDelete = (deletedId) => {
-  return jest.fn().mockImplementation((query, params) => {
+  return jest.fn().mockImplementation((_query, _params) => {
     return Promise.resolve({
       rows: [{ id: deletedId }],
       rowCount: 1,

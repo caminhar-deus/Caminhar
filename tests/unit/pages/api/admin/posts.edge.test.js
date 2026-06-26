@@ -1,7 +1,6 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../../../../../pages/api/admin/posts.js';
-import * as auth from '../../../../../lib/auth.js';
 import * as db from '../../../../../lib/db.js';
 import * as cache from '../../../../../lib/cache.js';
 import * as posts from '../../../../../lib/domain/posts.js';

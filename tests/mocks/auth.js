@@ -12,22 +12,22 @@
  * @returns {Object} Módulo auth mockado
  */
 export const mockAuthModule = (overrides = {}) => ({
-  hashPassword: jest.fn(async (password) => `hashed_${password}`),
-  verifyPassword: jest.fn(async (password, hashedPassword) => true),
+  hashPassword: jest.fn(async (_password) => `hashed_${_password}`),
+  verifyPassword: jest.fn(async (_password, _hashedPassword) => true),
   generateToken: jest.fn(() => 'mock-jwt-token'),
   verifyToken: jest.fn(() => ({ userId: 1, username: 'admin', role: 'admin' })),
   setAuthCookie: jest.fn(),
   getAuthCookie: jest.fn(() => 'mock-token'),
   getAuthToken: jest.fn(() => 'mock-token'),
-  authenticate: jest.fn(async (username, password) => ({ id: 1, username, role: 'admin' })),
+  authenticate: jest.fn(async (username, _password) => ({ id: 1, username, role: 'admin' })),
   authenticateAndGenerateToken: jest.fn(async () => ({
     user: { id: 1, username: 'admin', role: 'admin', permissions: [] },
     token: 'mock-jwt-token',
     error: null,
   })),
-  withAuth: jest.fn((handler) => (req, res) => {
+  withAuth: jest.fn((_handler) => (req, res) => {
     req.user = { userId: 1, username: 'admin', role: 'admin' };
-    return handler(req, res);
+    return _handler(req, res);
   }),
   initializeAuth: jest.fn(),
   ...overrides,
@@ -45,7 +45,7 @@ export const mockAuthFailure = () => mockAuthModule({
     error: 'INVALID_CREDENTIALS',
     message: 'Credenciais inválidas',
   })),
-  withAuth: jest.fn((handler) => (req, res) => res.status(401).json({ message: 'Não autenticado' })),
+  withAuth: jest.fn((_handler) => (req, res) => res.status(401).json({ message: 'Não autenticado' })),
 });
 
 /**

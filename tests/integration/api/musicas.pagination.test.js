@@ -36,7 +36,7 @@ const musicasHandler = async (req, res) => {
         totalPages: Math.ceil(result.total / limit),
       },
     });
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: 'Erro interno ao buscar músicas' });
   }
 };

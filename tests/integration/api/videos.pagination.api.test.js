@@ -27,7 +27,7 @@ const videosHandler = async (req, res) => {
     const result = await videosLib.getPaginatedVideos(page, limit);
     
     return res.status(200).json(result);
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: 'Erro interno ao buscar vídeos' });
   }
 };

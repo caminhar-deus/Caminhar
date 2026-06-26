@@ -1,5 +1,5 @@
-import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-import { hashPassword, verifyPassword, generateToken, verifyToken, setAuthCookie, getAuthCookie, getAuthToken, authenticate, withAuth, initializeAuth } from '../../../lib/auth.js';
+import { describe, it, expect, jest } from '@jest/globals';
+import { hashPassword, verifyPassword, generateToken, verifyToken, setAuthCookie, getAuthToken, authenticate, withAuth, initializeAuth } from '../../../lib/auth.js';
 import { query } from '../../../lib/db.js';
 
 jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb());

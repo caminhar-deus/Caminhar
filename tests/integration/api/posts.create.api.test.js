@@ -27,7 +27,7 @@ const postsHandler = async (req, res) => {
   try {
     const result = await postsLib.createPost(body);
     return res.status(201).json(result);
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: 'Erro interno ao criar post' });
   }
 };

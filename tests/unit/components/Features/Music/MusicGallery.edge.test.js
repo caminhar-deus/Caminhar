@@ -1,6 +1,6 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import { render, screen, waitFor } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import MusicGallery from '../../../../../components/Features/Music/MusicGallery.js';
 import { suppressConsoleError, mockGlobalFetch } from '../../../../helpers/index.js';
 

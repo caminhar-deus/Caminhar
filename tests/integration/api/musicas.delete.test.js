@@ -32,7 +32,7 @@ const musicasHandler = async (req, res) => {
     }
 
     return res.status(200).json({ message: 'Música excluída com sucesso' });
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: 'Erro interno ao excluir música' });
   }
 };

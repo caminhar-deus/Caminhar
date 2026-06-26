@@ -1,5 +1,5 @@
 import React from 'react';
-import { jest, describe, it, expect } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 import { render, screen } from '@testing-library/react';
 import '../../mocks/next-setup.js';
 import Head from 'next/head';

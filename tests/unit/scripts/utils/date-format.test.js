@@ -1,4 +1,4 @@
-import { jest, describe, it, expect, beforeAll } from '@jest/globals';
+import { describe, it, expect, beforeAll } from '@jest/globals';
 
 describe('date-format.js — Utilitário de formatação de datas', () => {
   let dateFormat;

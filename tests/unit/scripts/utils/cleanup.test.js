@@ -7,12 +7,10 @@ jest.mock('dotenv');
 describe('cleanup.js — Módulo compartilhado de limpeza', () => {
   let cleanup;
   let fsMock;
-  let pgMock;
 
   beforeEach(async () => {
     process.env.DATABASE_URL = 'postgres://user:pass@localhost:5432/testdb';
     fsMock = await import('fs');
-    pgMock = await import('pg');
   });
 
   afterEach(() => {

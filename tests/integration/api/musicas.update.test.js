@@ -38,7 +38,7 @@ const musicasHandler = async (req, res) => {
     }
 
     return res.status(200).json(result);
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: 'Erro interno ao atualizar música' });
   }
 };

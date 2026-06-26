@@ -55,7 +55,7 @@ describe('Componente UI - Modal', () => {
     );
 
     const closeBtn = screen.getByLabelText('Fechar modal');
-    const firstInput = screen.getByTestId('first-input');
+    screen.getByTestId('first-input');
     const lastBtn = screen.getByTestId('last-button');
 
     // Aguarda o foco inicial ser aplicado (devido ao setTimeout no useEffect)

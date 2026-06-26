@@ -1,4 +1,4 @@
-import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../../../../pages/api/auth/login';
 import * as auth from '../../../../lib/auth';

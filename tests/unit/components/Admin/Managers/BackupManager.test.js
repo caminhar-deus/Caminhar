@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, waitForElementToBeRemoved } from '@testing-library/react';
-import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import BackupManager from '../../../../../components/Admin/Managers/BackupManager.js';
 import { suppressConsoleError, mockGlobalFetch } from '../../../../helpers/index.js';
 

@@ -71,7 +71,7 @@ const uploadHandler = async (req, res) => {
       path: `/uploads/${filename}`,
       message: 'Upload realizado com sucesso'
     });
-  } catch (error) {
+  } catch {
     res.status(500).json({ message: 'Erro ao processar upload' });
   }
 };
@@ -86,7 +86,7 @@ const postsHandler = async (req, res) => {
 
     const postData = req.body;
 
-    const result = await dbModule.query(
+    await dbModule.query(
       'INSERT INTO posts (title, slug, excerpt, content, image_url, published) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
       [postData.title, postData.slug, postData.excerpt, postData.content, postData.image_url, postData.published]
     );
@@ -95,7 +95,7 @@ const postsHandler = async (req, res) => {
       success: true,
       post: { id: 123, ...postData }
     });
-  } catch (error) {
+  } catch {
     res.status(500).json({ message: 'Erro ao criar post' });
   }
 };

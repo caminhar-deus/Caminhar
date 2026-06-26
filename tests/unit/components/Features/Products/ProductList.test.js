@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import ProductList from '../../../../../components/Features/Products/ProductList.js';
 import { suppressConsoleError, mockGlobalFetch } from '../../../../helpers/index.js';
@@ -206,7 +206,7 @@ describe('Componentes Features - Products - ProductList', () => {
     render(<ProductList />);
 
     // O container de paginação deve estar com visibility: hidden
-    const anteriorBtn = screen.getByText('Anterior').closest('div[style*="visibility"]');
+    screen.getByText('Anterior').closest('div[style*="visibility"]');
     // Como o container não tem um data-testid, verificamos que o botão Próxima está desabilitado
     expect(screen.getByText('Próxima')).toBeDisabled();
     expect(screen.getByText('1')).toBeDisabled();

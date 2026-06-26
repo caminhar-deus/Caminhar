@@ -31,7 +31,7 @@ const videosHandler = async (req, res) => {
     }
 
     return res.status(200).json({ message: 'Vídeo excluído com sucesso' });
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: 'Erro interno ao excluir vídeo' });
   }
 };
