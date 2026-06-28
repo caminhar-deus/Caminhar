@@ -151,7 +151,7 @@
     "jest": "^30.4.2",
     "jest-environment-jsdom": "^30.4.1",
     "jest-watch-typeahead": "^3.0.1",
-    "knip": "^6.21.0",
+    "knip": "^6.23.0",
     "next-sitemap": "^4.2.3",
     "node-mocks-http": "^1.17.2"
   },
