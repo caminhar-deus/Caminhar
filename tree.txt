@@ -147,6 +147,7 @@
 │   │   │   ├── AdminVideos.js.html
 │   │   │   ├── AdminVideosNew.js.html
 │   │   │   ├── fields
+│   │   │   │   ├── ExternalDataButton.js.html
 │   │   │   │   ├── ImageUploadField.js.html
 │   │   │   │   ├── index.html
 │   │   │   │   ├── TextAreaField.js.html
@@ -176,6 +177,11 @@
 │   │   │   │   ├── index.html
 │   │   │   │   ├── MusicCard.js.html
 │   │   │   │   └── MusicGallery.js.html
+│   │   │   ├── Products
+│   │   │   │   ├── index.html
+│   │   │   │   ├── ProductCard.js.html
+│   │   │   │   ├── ProductList.js.html
+│   │   │   │   └── styles.js.html
 │   │   │   ├── Testimonials
 │   │   │   │   ├── index.html
 │   │   │   │   └── index.js.html
@@ -196,7 +202,10 @@
 │   │   │   ├── index.html
 │   │   │   ├── index.js.html
 │   │   │   ├── LazyIframe.js.html
-│   │   │   └── PreloadResources.js.html
+│   │   │   ├── PreloadResources.js.html
+│   │   │   └── styles
+│   │   │       ├── criticalCSSRaw.js.html
+│   │   │       └── index.html
 │   │   ├── Products
 │   │   │   ├── index.html
 │   │   │   ├── ProductCard.js.html
@@ -212,13 +221,16 @@
 │   │   │       ├── index.js.html
 │   │   │       ├── MusicSchema.js.html
 │   │   │       ├── OrganizationSchema.js.html
+│   │   │       ├── StructuredDataBase.js.html
 │   │   │       ├── VideoSchema.js.html
 │   │   │       └── WebsiteSchema.js.html
 │   │   └── UI
 │   │       ├── Alert.js.html
 │   │       ├── Badge.js.html
+│   │       ├── BaseCard.js.html
 │   │       ├── Button.js.html
 │   │       ├── Card.js.html
+│   │       ├── icons.js.html
 │   │       ├── index.html
 │   │       ├── index.js.html
 │   │       ├── Input.js.html
@@ -226,6 +238,7 @@
 │   │       ├── Select.js.html
 │   │       ├── Spinner.js.html
 │   │       ├── StateHandler.js.html
+│   │       ├── StateMessages.js.html
 │   │       ├── TextArea.js.html
 │   │       └── Toast.js.html
 │   ├── coverage-final.json
@@ -254,6 +267,7 @@
 │   │   │   │   ├── AdminVideos.js.html
 │   │   │   │   ├── AdminVideosNew.js.html
 │   │   │   │   ├── fields
+│   │   │   │   │   ├── ExternalDataButton.js.html
 │   │   │   │   │   ├── ImageUploadField.js.html
 │   │   │   │   │   ├── index.html
 │   │   │   │   │   ├── TextAreaField.js.html
@@ -283,6 +297,11 @@
 │   │   │   │   │   ├── index.html
 │   │   │   │   │   ├── MusicCard.js.html
 │   │   │   │   │   └── MusicGallery.js.html
+│   │   │   │   ├── Products
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   ├── ProductCard.js.html
+│   │   │   │   │   ├── ProductList.js.html
+│   │   │   │   │   └── styles.js.html
 │   │   │   │   ├── Testimonials
 │   │   │   │   │   ├── index.html
 │   │   │   │   │   └── index.js.html
@@ -303,7 +322,10 @@
 │   │   │   │   ├── index.html
 │   │   │   │   ├── index.js.html
 │   │   │   │   ├── LazyIframe.js.html
-│   │   │   │   └── PreloadResources.js.html
+│   │   │   │   ├── PreloadResources.js.html
+│   │   │   │   └── styles
+│   │   │   │       ├── criticalCSSRaw.js.html
+│   │   │   │       └── index.html
 │   │   │   ├── Products
 │   │   │   │   ├── index.html
 │   │   │   │   ├── ProductCard.js.html
@@ -319,13 +341,16 @@
 │   │   │   │       ├── index.js.html
 │   │   │   │       ├── MusicSchema.js.html
 │   │   │   │       ├── OrganizationSchema.js.html
+│   │   │   │       ├── StructuredDataBase.js.html
 │   │   │   │       ├── VideoSchema.js.html
 │   │   │   │       └── WebsiteSchema.js.html
 │   │   │   └── UI
 │   │   │       ├── Alert.js.html
 │   │   │       ├── Badge.js.html
+│   │   │       ├── BaseCard.js.html
 │   │   │       ├── Button.js.html
 │   │   │       ├── Card.js.html
+│   │   │       ├── icons.js.html
 │   │   │       ├── index.html
 │   │   │       ├── index.js.html
 │   │   │       ├── Input.js.html
@@ -333,21 +358,26 @@
 │   │   │       ├── Select.js.html
 │   │   │       ├── Spinner.js.html
 │   │   │       ├── StateHandler.js.html
+│   │   │       ├── StateMessages.js.html
 │   │   │       ├── TextArea.js.html
 │   │   │       └── Toast.js.html
 │   │   ├── favicon.png
 │   │   ├── index.html
 │   │   ├── lib
 │   │   │   ├── api
+│   │   │   │   ├── adminCrudHandler.js.html
 │   │   │   │   ├── errors.js.html
+│   │   │   │   ├── helpers.js.html
 │   │   │   │   ├── index.html
 │   │   │   │   ├── index.js.html
 │   │   │   │   ├── middleware.js.html
 │   │   │   │   ├── response.js.html
+│   │   │   │   ├── utils.js.html
 │   │   │   │   └── validate.js.html
 │   │   │   ├── auth.js.html
 │   │   │   ├── cache.js.html
 │   │   │   ├── crud.js.html
+│   │   │   ├── csvExport.js.html
 │   │   │   ├── db-example.js.html
 │   │   │   ├── db.js.html
 │   │   │   ├── domain
@@ -355,19 +385,27 @@
 │   │   │   │   ├── images.js.html
 │   │   │   │   ├── index.html
 │   │   │   │   ├── musicas.js.html
+│   │   │   │   ├── permissions.js.html
 │   │   │   │   ├── posts.js.html
+│   │   │   │   ├── products.js.html
 │   │   │   │   ├── settings.js.html
+│   │   │   │   ├── shared-pagination.js.html
 │   │   │   │   └── videos.js.html
+│   │   │   ├── handleUnauthorized.js.html
 │   │   │   ├── index.html
+│   │   │   ├── logger.js.html
 │   │   │   ├── middleware
 │   │   │   │   ├── index.html
 │   │   │   │   └── rate-limit-proxy.js.html
 │   │   │   ├── middleware.js.html
 │   │   │   ├── posts.js.html
 │   │   │   ├── redis.js.html
-│   │   │   └── seo
-│   │   │       ├── config.js.html
-│   │   │       └── index.html
+│   │   │   ├── reorder.js.html
+│   │   │   ├── seo
+│   │   │   │   ├── config.js.html
+│   │   │   │   └── index.html
+│   │   │   ├── spotify.js.html
+│   │   │   └── youtube.js.html
 │   │   ├── pages
 │   │   │   └── api
 │   │   │       ├── admin
@@ -379,6 +417,7 @@
 │   │   │       │   ├── fetch-spotify.js.html
 │   │   │       │   ├── fetch-youtube.js.html
 │   │   │       │   ├── index.html
+│   │   │       │   ├── integrity.js.html
 │   │   │       │   ├── logs.js.html
 │   │   │       │   ├── musicas.js.html
 │   │   │       │   ├── posts.js.html
@@ -395,12 +434,16 @@
 │   │   │       │   └── logout.js.html
 │   │   │       ├── cleanup-test-data.js.html
 │   │   │       ├── dicas.js.html
+│   │   │       ├── helper
+│   │   │       │   ├── index.html
+│   │   │       │   └── pagination.js.html
 │   │   │       ├── index.html
 │   │   │       ├── musicas.js.html
 │   │   │       ├── placeholder-image.js.html
 │   │   │       ├── posts.js.html
 │   │   │       ├── products.js.html
 │   │   │       ├── settings.js.html
+│   │   │       ├── status.js.html
 │   │   │       ├── upload-image.js.html
 │   │   │       ├── v1
 │   │   │       │   ├── auth
@@ -423,15 +466,19 @@
 │   │   └── sorter.js
 │   ├── lib
 │   │   ├── api
+│   │   │   ├── adminCrudHandler.js.html
 │   │   │   ├── errors.js.html
+│   │   │   ├── helpers.js.html
 │   │   │   ├── index.html
 │   │   │   ├── index.js.html
 │   │   │   ├── middleware.js.html
 │   │   │   ├── response.js.html
+│   │   │   ├── utils.js.html
 │   │   │   └── validate.js.html
 │   │   ├── auth.js.html
 │   │   ├── cache.js.html
 │   │   ├── crud.js.html
+│   │   ├── csvExport.js.html
 │   │   ├── db-example.js.html
 │   │   ├── db.js.html
 │   │   ├── domain
@@ -439,19 +486,27 @@
 │   │   │   ├── images.js.html
 │   │   │   ├── index.html
 │   │   │   ├── musicas.js.html
+│   │   │   ├── permissions.js.html
 │   │   │   ├── posts.js.html
+│   │   │   ├── products.js.html
 │   │   │   ├── settings.js.html
+│   │   │   ├── shared-pagination.js.html
 │   │   │   └── videos.js.html
+│   │   ├── handleUnauthorized.js.html
 │   │   ├── index.html
+│   │   ├── logger.js.html
 │   │   ├── middleware
 │   │   │   ├── index.html
 │   │   │   └── rate-limit-proxy.js.html
 │   │   ├── middleware.js.html
 │   │   ├── posts.js.html
 │   │   ├── redis.js.html
-│   │   └── seo
-│   │       ├── config.js.html
-│   │       └── index.html
+│   │   ├── reorder.js.html
+│   │   ├── seo
+│   │   │   ├── config.js.html
+│   │   │   └── index.html
+│   │   ├── spotify.js.html
+│   │   └── youtube.js.html
 │   ├── pages
 │   │   └── api
 │   │       ├── admin
@@ -463,6 +518,7 @@
 │   │       │   ├── fetch-spotify.js.html
 │   │       │   ├── fetch-youtube.js.html
 │   │       │   ├── index.html
+│   │       │   ├── integrity.js.html
 │   │       │   ├── logs.js.html
 │   │       │   ├── musicas.js.html
 │   │       │   ├── posts.js.html
@@ -479,12 +535,16 @@
 │   │       │   └── logout.js.html
 │   │       ├── cleanup-test-data.js.html
 │   │       ├── dicas.js.html
+│   │       ├── helper
+│   │       │   ├── index.html
+│   │       │   └── pagination.js.html
 │   │       ├── index.html
 │   │       ├── musicas.js.html
 │   │       ├── placeholder-image.js.html
 │   │       ├── posts.js.html
 │   │       ├── products.js.html
 │   │       ├── settings.js.html
+│   │       ├── status.js.html
 │   │       ├── upload-image.js.html
 │   │       ├── v1
 │   │       │   ├── auth
@@ -546,25 +606,49 @@
 │   │   ├── PROJECT_raiz.md
 │   │   ├── PROJECT_scripts.md
 │   │   └── PROJECT_tests.md
-│   └── resolvidos
-│       ├── analise-load-tests-orchestrator-02.md
-│       ├── analise-load-tests-orchestrator.md
-│       ├── JEST_ESM.md
-│       ├── plano-ajuste-thresholds-load-tests.md
-│       ├── plano-correcao-p3-create-post-flow.md
-│       ├── plano-melhoria-logs-servidor.md
-│       ├── UPGRADE_components.md
-│       ├── UPGRADE_cypress.md
-│       ├── UPGRADE_data.md
-│       ├── UPGRADE_examples.md
-│       ├── UPGRADE_hooks.md
-│       ├── UPGRADE_lib.md
-│       ├── UPGRADE_load-tests.md
-│       ├── UPGRADE_mocks.md
-│       ├── UPGRADE_pages.md
-│       ├── UPGRADE_raiz.md
-│       ├── UPGRADE_scripts.md
-│       └── UPGRADE_tests.md
+│   ├── PROJECT_components.md
+│   ├── PROJECT_cypress.md
+│   ├── PROJECT_data.md
+│   ├── PROJECT_examples.md
+│   ├── PROJECT_hooks.md
+│   ├── PROJECT_lib.md
+│   ├── PROJECT_load-tests.md
+│   ├── PROJECT_mocks.md
+│   ├── PROJECT_pages.md
+│   ├── PROJECT_raiz.md
+│   ├── PROJECT_scripts.md
+│   ├── PROJECT_tests.md
+│   ├── resolvidos
+│   │   ├── analise-load-tests-orchestrator-02.md
+│   │   ├── analise-load-tests-orchestrator.md
+│   │   ├── JEST_ESM.md
+│   │   ├── plano-ajuste-thresholds-load-tests.md
+│   │   ├── plano-correcao-p3-create-post-flow.md
+│   │   ├── plano-melhoria-logs-servidor.md
+│   │   ├── UPGRADE_components.md
+│   │   ├── UPGRADE_cypress.md
+│   │   ├── UPGRADE_data.md
+│   │   ├── UPGRADE_examples.md
+│   │   ├── UPGRADE_hooks.md
+│   │   ├── UPGRADE_lib.md
+│   │   ├── UPGRADE_load-tests.md
+│   │   ├── UPGRADE_mocks.md
+│   │   ├── UPGRADE_pages.md
+│   │   ├── UPGRADE_raiz.md
+│   │   ├── UPGRADE_scripts.md
+│   │   └── UPGRADE_tests.md
+│   ├── UPGRADE_components.md
+│   ├── UPGRADE_cypress.md
+│   ├── UPGRADE_data.md
+│   ├── UPGRADE_examples.md
+│   ├── UPGRADE_hooks.md
+│   ├── UPGRADE_lib.md
+│   ├── UPGRADE_load-tests.md
+│   ├── UPGRADE_mocks.md
+│   ├── UPGRADE_pages.md
+│   ├── UPGRADE_raiz.md
+│   ├── UPGRADE_scripts.md
+│   └── UPGRADE_tests.md
 ├── eslint.config.js
 ├── examples
 │   ├── blog-post-seo-example.js
@@ -1148,4 +1232,4 @@
 │       └── videos.validation.test.js
 └── tree.txt
 
-182 directories, 967 files
+188 directories, 1045 files

@@ -1,21 +1,21 @@
 # 🏞️ Caminhar com Deus
 
-**Versão:** 1.4.0 | **Engine:** Node.js 24.15.0 | **Stack:** Next.js 16 + React 19
+**Versão:** 1.4.0 | **Engine:** Node.js 24.16.0, npm 11.17.0 | **Stack:** Next.js 16 + React 19
 
-Plataforma web completa para compartilhamento de conteúdo gospel, incluindo blog com artigos, músicas com integração Spotify, vídeos com integração YouTube, produtos com integração Mercado Livre e sistema administrativo completo.
+Plataforma web para compartilhamento de conteúdo gospel. Inclui blog com artigos, músicas com integração Spotify, vídeos com integração YouTube, produtos com integração Mercado Livre, sistema administrativo completo, testes automatizados e CI/CD.
 
 ---
 
 ## Índice
 
 - [Visão Geral do Projeto](#visão-geral-do-projeto)
-- [Documentação do Projeto](#documentação-do-projeto)
+- [Estrutura do Projeto](#estrutura-do-projeto)
   - [📁 Raiz do Projeto](#-raiz-do-projeto)
   - [🧩 Componentes](#-componentes)
   - [📄 Páginas](#-páginas)
   - [🪝 Hooks](#-hooks)
   - [📚 Biblioteca (lib)](#-biblioteca-lib)
-  - [🗄️ Dados](#️-dados)
+  - [🗄️ Dados](#-dados)
   - [📋 Exemplos](#-exemplos)
   - [🧪 Testes](#-testes)
   - [🎭 Mocks](#-mocks)
@@ -30,23 +30,24 @@ Plataforma web completa para compartilhamento de conteúdo gospel, incluindo blo
 
 O **Caminhar com Deus** é uma aplicação web desenvolvida com Next.js (Pages Router) que serve como plataforma de conteúdo cristão. O projeto conta com:
 
-- **Blog** com artigos, categorias e tags
+- **Blog** com artigos e paginação SSR
 - **Seção de Músicas** integrada ao Spotify
 - **Seção de Vídeos** integrada ao YouTube
-- **Seção de Produtos** integrada ao Mercado Livre
-- **Painel Administrativo** completo com CRUD para todos os recursos
+- **Seção de Produtos** com links para Mercado Livre, Shopee e Amazon
+- **Painel Administrativo** completo com CRUD reutilizável para todos os recursos
 - **Sistema de Autenticação** com JWT e controle de acesso baseado em papéis (RBAC)
 - **SEO completo** com Open Graph, Twitter Cards e Schema.org JSON-LD
-- **Testes automatizados** com ~157 arquivos de teste (unitários, integração, E2E e carga)
-- **CI/CD** com GitHub Actions (3 workflows: CI, cobertura em PRs, testes de carga)
 - **Cache** com Redis (Upstash) + fallback em memória local
-- **Backup automatizado** com criptografia AES-256-GCM e compressão gzip
+- **Backup automatizado** do PostgreSQL com criptografia AES-256-GCM e compressão gzip
+- **Testes automatizados** com ~157 arquivos (unitários, integração, E2E e carga)
+- **CI/CD** com GitHub Actions (4 workflows: CI, cobertura em PRs, testes de carga, testes de segurança)
+- **Middlewares de proteção:** Rate limiting, DDoS, Content Security Policy, CORS
 
 ---
 
-## Documentação do Projeto
+## Estrutura do Projeto
 
-A pasta [`/docs`](/docs) contém documentos detalhados de análise para cada área do projeto. Abaixo, um resumo de cada um.
+A pasta [`/docs`](/docs) contém documentos detalhados de análise para cada área do projeto. Abaixo, um resumo de cada tema.
 
 ---
 
@@ -54,22 +55,12 @@ A pasta [`/docs`](/docs) contém documentos detalhados de análise para cada ár
 
 **Arquivo:** [`docs/PROJECT_raiz.md`](/docs/PROJECT_raiz.md)
 
-Documentação completa de todos os **22 arquivos** localizados na raiz do projeto. Inclui:
+Documentação dos **28 arquivos** na raiz do projeto, agrupados por contexto:
 
-- **`next.config.js`** — Configuração principal do Next.js com headers de segurança e CORS
-- **`package.json`** — Manifesto do projeto (scripts, dependências, engine Node.js 24.15.0)
-- **`jest.config.js`** — Configuração do Jest com thresholds de cobertura (branches 92%, functions 95%, lines 98%)
-- **`cypress.config.js`** — Configuração do Cypress para testes E2E
-- **`ci.yml`** / **`pr-coverage.yml`** / **`load-tests.yml`** / **`security-tests.yml`** — Workflows do GitHub Actions
-- **`rate-limit-proxy.js`** — Middleware de rate limiting para proteção contra força bruta
-- **`next-sitemap.config.js`** — Geração automática de sitemaps XML para SEO
-- **`knip.json`** — Análise de código morto e dependências não utilizadas
-- **`babel.jest.config.js`** — Configuração Babel exclusiva para testes com Jest
-- **`jsconfig.json`** — Configuração de aliases de importação para o VS Code
-- **`styleMock.js`** — Mock para arquivos CSS nos testes Jest
-- **`GEMINI.md`** — Documento de contexto para assistentes de IA
-- **`skills-lock.json`** — Lockfile de skills do agente (80+ skills registradas)
-- **`tree.txt`** — Snapshot da estrutura de diretórios do projeto
+- **Configuração Principal:** `package.json` (88 scripts, ES Modules), `next.config.js` (headers de segurança e CORS), `next-sitemap.config.js` (sitemap XML + rotas dinâmicas do banco), `proxy.js` (Rate limiting e proteção DDoS com Redis)
+- **Testes:** `jest.config.js` (thresholds: branches 80%, functions 85%, lines 90%), `jest.config.db.js` (testes com PostgreSQL via Testcontainers), `jest.setup.js`, `jest.teardown.js`, `babel.jest.config.js`, `cypress.config.js`
+- **Qualidade:** `eslint.config.js` (Flat Config), `jsconfig.json` (aliases de importação), `knip.json` (análise de código morto)
+- **CI/CD:** `ci.yml`, `pr-coverage.yml`, `load-tests.yml`, `security-tests.yml`
 
 ---
 
@@ -77,14 +68,14 @@ Documentação completa de todos os **22 arquivos** localizados na raiz do proje
 
 **Arquivo:** [`docs/PROJECT_components.md`](/docs/PROJECT_components.md)
 
-Análise detalhada de todos os componentes React organizados em 6 categorias:
+Componentes React organizados em 6 categorias:
 
-1. **Admin** — `AdminCrudBase` (CRUD genérico reutilizável), `AdminMusicas` (integração Spotify), `AdminVideos` (integração YouTube), `AdminPosts` (slug automático, upload), `AdminProducts` (integração Mercado Livre), `AdminUsers`, `AdminRolesTab`, `AdminDashboard`, `AdminAudit`, `AdminDicas`, `withAdminAuth`
-2. **Features** — `BlogSection`, `PostCard`, `MusicGallery`, `MusicCard`, `MusicPlayer`, `VideoSection`, `VideoCard`, `VideoPlayer`, `ContentTabs`, `Testimonials`, `ProductCard`, `ProductList`
-3. **Layout** — `Container`, `Grid`, `Sidebar`, `Stack`, `Footer`, `Header`, `Layout`
-4. **Performance** — `ImageOptimized` (lazy loading, srcset, placeholder blur), `LazyIframe`, `PreloadResources`, `CriticalCSS`
-5. **SEO** — `SEOHead`, `ArticleSchema`, `BreadcrumbSchema`, `MusicSchema`, `VideoSchema`, `OrganizationSchema`, `WebsiteSchema`
-6. **UI** — `Alert`, `Badge`, `Button`, `Card`, `Input`, `Modal`, `Select`, `Spinner`, `TextArea`, `Toast`
+1. **Admin** — `AdminCrudBase` (CRUD genérico reutilizável com tabela, formulário dinâmico, Drag & Drop, exportação CSV, validação Zod), `AdminDashboard` (cards de estatísticas com cache), `AdminMusicas` (integração Spotify), `AdminVideos` (integração YouTube com preview lazy), `AdminPosts` (slug automático, imagem de capa obrigatória), `AdminProducts` (integração Mercado Livre), `AdminUsers`/`AdminUsersTab`/`AdminRolesTab`, `AdminAudit` (filtro por data, exportação CSV), `AdminDicas`, `withAdminAuth` (HOC de autenticação), `CacheManager`, `BackupManager`, `IntegrityCheck`, `RateLimitViewer`
+2. **Features** — `BlogSection`/`PostCard`, `MusicGallery`/`MusicCard` (player Spotify via LazyIframe), `VideoGallery`/`VideoCard` (player YouTube), `ProductList`/`ProductCard` (carrossel de imagens, lightbox, links ML/Shopee/Amazon), `ContentTabs` (lazy loading com React.lazy), `Testimonials` (carrossel de Dicas do Dia)
+3. **Layout** — `Container` (max-width configurável), `Grid` (1-12 colunas responsivo), `Stack` (vertical/horizontal), `Sidebar` (colapsável com localStorage)
+4. **Performance** — `ImageOptimized` (wrapper next/image com fallback), `LazyIframe` (IntersectionObserver), `PreloadResources`, `CriticalCSS`
+5. **SEO** — `SEOHead` (meta tags, Open Graph, Twitter Cards), `StructuredData` (`ArticleSchema`, `BreadcrumbSchema`, `MusicSchema`, `VideoSchema`, `OrganizationSchema`, `WebsiteSchema`)
+6. **UI** — `Button` (6 variantes, ripple), `Input` (addons, clearable), `TextArea` (auto-resize), `Select` (nativo + custom searchable), `Modal` (focus trap, portal), `Toast` (hook useToast), `Alert`, `Badge`, `BaseCard` (slots media/header/content/footer), `Spinner`, `StateMessages`
 
 ---
 
@@ -92,15 +83,15 @@ Análise detalhada de todos os componentes React organizados em 6 categorias:
 
 **Arquivo:** [`docs/PROJECT_pages.md`](/docs/PROJECT_pages.md)
 
-Análise das **55 páginas** da aplicação Next.js (Pages Router):
+**53 arquivos** no total:
 
-- **`_app.js`** — Componente raiz com estilos globais e Toaster (react-hot-toast)
-- **`_document.js`** — HTML customizado com preconnect para Google Fonts, YouTube, Spotify; pré-carregamento de fontes (Montserrat, Inter); CSS crítico inline
-- **`index.js`** — Página inicial com hero image, ContentTabs e Testimonials
-- **`[slug].js`** — Página dinâmica de posts com SEO completo (Open Graph, Twitter Cards)
-- **`admin.js`** — Painel administrativo com proteção de autenticação
-- **`design-system.js`** — Página de documentação visual dos componentes
-- **Rotas de API** — ~49 endpoints organizados em: api/ (públicos), api/admin/ (administrativos), api/auth/ (autenticação), api/v1/ (API versão 1)
+- **Páginas raiz (5):** `_app.js` (Toaster react-hot-toast), `_document.js` (CSS crítico, preconnect, CSP, Google Fonts), `index.js` (hero + ContentTabs + Testimonials), `admin.js` (painel completo com upload e crop de imagens), `design-system.js` (documentação visual dos componentes)
+- **API pública (10):** `/api/posts`, `/api/musicas`, `/api/videos`, `/api/products`, `/api/dicas`, `/api/settings`, `/api/status` (health check), `/api/upload-image` (validação com sharp), `/api/placeholder-image`, `/api/cleanup-test-data`
+- **API admin (15):** CRUD de posts, músicas, vídeos, produtos, dicas, usuários, cargos; gerenciamento de backups, cache, rate limit; auditoria; integridade; fetch de dados externos (Mercado Livre, Spotify, YouTube)
+- **API autenticação (3):** login, logout, check
+- **Blog (2):** `index.js` (listagem SSR com paginação), `[slug].js` (detalhe com SEO, lightbox, compartilhamento)
+- **Estilos globais (5):** `globals.css`, `variables.css` (386 CSS Custom Properties dos design tokens), `generateTokensCSS.js`, CSS Modules
+- **Design Tokens (11):** cores, tipografia, espaçamentos, bordas, sombras, breakpoints, animações, opacidade, z-index
 
 ---
 
@@ -108,18 +99,19 @@ Análise das **55 páginas** da aplicação Next.js (Pages Router):
 
 **Arquivo:** [`docs/PROJECT_hooks.md`](/docs/PROJECT_hooks.md)
 
-Documentação dos **8 hooks customizados** do projeto:
+**9 hooks customizados:**
 
 | Hook | Função |
 |------|--------|
-| `useTheme` | Gerenciamento de tema light/dark com tokens de design |
 | `useAuth` | Contexto global de autenticação (user, login, logout) |
 | `useAdminAuth` | Autenticação específica do admin com redirect via `next/router` |
-| `useAdminCrud` | CRUD reutilizável para painéis admin com `react-hot-toast` |
-| `useApiFetch` | Hook genérico de fetch com loading, error e cache |
+| `useAdminCrud` | CRUD reutilizável para painéis admin com paginação e validação |
+| `useApiFetch` | Fetch genérico com loading, error, cache e transformação |
+| `useTheme` | Tema light/dark com acesso centralizado a design tokens |
+| `usePerformanceMetrics` | Monitoramento de Core Web Vitals (LCP, FID, CLS, INP, FCP, TTFB, TBT) |
 | `useDebounce` | Hook utilitário de debounce (default 300ms) |
-| `usePerformanceMetrics` | Monitoramento de Core Web Vitals com `web-vitals` |
-| `index.js` | Barrel file que centraliza e reexporta todos os hooks |
+| `useThrottle` | Hook utilitário de throttle (default 300ms) |
+| `index.js` | Barrel file que centraliza todas as exportações |
 
 ---
 
@@ -127,21 +119,12 @@ Documentação dos **8 hooks customizados** do projeto:
 
 **Arquivo:** [`docs/PROJECT_lib.md`](/docs/PROJECT_lib.md)
 
-Análise completa da pasta `lib/`, dividida em 4 grupos:
+**~28 arquivos** divididos em 4 grupos:
 
-1. **Infraestrutura (raiz):**
-   - `auth.js` — Autenticação: bcryptjs para hash de senhas, JWT (1h expiração), cookies httpOnly, middleware `withAuth()`
-   - `cache.js` — Cache com Redis (Upstash) + fallback local (Cache-Aside, rate limit distribuído, métricas)
-   - `crud.js` — Operações CRUD genéricas com SQL parametrizado e proteção contra SQL injection
-   - `db.js` — Pool PostgreSQL (pg.Pool) com lazy initialization, suporte a transações, health check
-   - `middleware.js` — Middlewares: CORS, logging, validação de token, rate limit
-   - `redis.js` — Cliente Redis com reconexão automática e fallback
-
-2. **API** — Classes de erro personalizadas, helpers de resposta, middlewares de validação, schemas Zod
-
-3. **Domínio** — Lógica de negócio para posts (slug, sanitização), músicas (validação Spotify), vídeos (validação YouTube), produtos, imagens
-
-4. **SEO** — Schemas JSON-LD (Article, Breadcrumb, Organization, Video, Music, Website), geração de meta tags Open Graph e Twitter Cards, estratégias de crawling
+- **Infraestrutura:** `auth.js` (bcryptjs, JWT, cookies httpOnly, rate limit no login), `cache.js` (Cache-Aside com Redis + memória, Single-Flight, rate limit distribuído), `crud.js` (SQL parametrizado com proteção contra injeção), `db.js` (pool PostgreSQL com lazy init, transações, retry automático), `redis.js` (Upstash Redis com fallback em memória), `logger.js` (logger leve com emojis)
+- **API (8 arquivos):** Classes de erro customizadas (10 tipos), middlewares (`composeMiddleware`, `withMethod`, `withAuth`, `withRateLimit`, `withCors`, `withCache`), respostas padronizadas, validação Zod, factory de handlers admin (`createAdminHandler`)
+- **Domínio (9 arquivos):** CRUD de posts (full-text search tsvector em português), músicas, vídeos, produtos, dicas, settings, imagens, auditoria, permissões, paginação compartilhada
+- **SEO:** `config.js` com siteConfig, schemas JSON-LD, funções utilitárias (canonical, image, breadcrumb, sanitização)
 
 ---
 
@@ -149,19 +132,9 @@ Análise completa da pasta `lib/`, dividida em 4 grupos:
 
 **Arquivo:** [`docs/PROJECT_data.md`](/docs/PROJECT_data.md)
 
-Análise da estrutura de dados do projeto:
-
-- **Bancos de Dados:**
-  - **SQLite** (`/data/caminhar.db`) — Banco principal para desenvolvimento local
-  - **PostgreSQL 16.13** — Banco de produção (evidenciado por backups `.sql.gz`)
-
-- **9 tabelas SQLite:** `users`, `settings`, `images`, `categories`, `tags`, `posts`, `post_categories`, `post_tags`, `site_settings`
-
-- **Backups:**
-  - Diretório `/data/backups/` com dumps PostgreSQL (gzip) + exportações JSON + logs
-  - Sistema de criptografia AES-256-GCM, compressão gzip, verificação SHA-256
-  - Retenção configurável de 10 backups, agendamento cron
-  - Migrações versionadas com rastreamento de schema e rollback
+- **Banco de Dados:** PostgreSQL com 15 tabelas: `users`, `settings`, `images`, `categories`, `tags`, `posts`, `post_categories`, `post_tags`, `musicas`, `videos`, `products`, `dicas`, `activity_logs`, `roles`, `_migrations`
+- **11 migrações** aplicadas (criação de tabelas, índices TRGM para busca textual, campos de ordenação)
+- **Backups:** Dumps PostgreSQL em `data/backups/` com criptografia AES-256-GCM, compressão gzip, hash SHA-256, rotação automática (máx. 10 backups)
 
 ---
 
@@ -169,15 +142,12 @@ Análise da estrutura de dados do projeto:
 
 **Arquivo:** [`docs/PROJECT_examples.md`](/docs/PROJECT_examples.md)
 
-Análise dos **4 arquivos de exemplo** na pasta `/examples/`, que servem como documentação viva e referência de boas práticas:
+**4 arquivos** de exemplo que servem como documentação viva de implementação SEO:
 
-1. **`blog-post-seo-example.js`** (242 linhas) — Exemplo completo de SEO para página de post: SEOHead, 3 schemas JSON-LD (Article, Organization, Breadcrumb), breadcrumb visual com microdados, ImageOptimized, LazyIframe, usePerformanceMetrics, botões de compartilhamento social, SSG/ISR com getStaticProps/getStaticPaths
-
-2. **`homepage-seo-example.js`** (61 linhas) — SEO para página inicial: meta tags básicas, OrganizationSchema e WebsiteSchema, ImageOptimized com flag critical/priority, PreloadResources
-
-3. **`musicas-seo-example.js`** (59 linhas) — SEO para seção de músicas: MusicSchema com track list e integração Spotify
-
-4. **`videos-seo-example.js`** (57 linhas) — SEO para seção de vídeos: VideoSchema com thumbnail, duração e data de publicação
+1. **`blog-post-seo-example.js`** — Exemplo completo: SEOHead, ArticleSchema + OrganizationSchema + BreadcrumbSchema, ImageOptimized (LCP), LazyIframe (YouTube), usePerformanceMetrics, microdados Schema.org inline, botões de compartilhamento, fallback de dados
+2. **`homepage-seo-example.js`** — SEO para página inicial: OrganizationSchema, WebsiteSchema, PreloadResources, ImageOptimized critical
+3. **`musicas-seo-example.js`** — SEO para músicas: MusicSchema, BreadcrumbSchema, LazyIframe (Spotify)
+4. **`videos-seo-example.js`** — SEO para vídeos: VideoSchema, BreadcrumbSchema, LazyIframe (YouTube)
 
 ---
 
@@ -185,17 +155,18 @@ Análise dos **4 arquivos de exemplo** na pasta `/examples/`, que servem como do
 
 **Arquivo:** [`docs/PROJECT_tests.md`](/docs/PROJECT_tests.md)
 
-Documentação completa da suíte de testes do projeto, com **~157 arquivos de teste**:
+**~157 arquivos de teste** organizados em duas categorias:
 
-- **Configuração Global:** `setup.js` com polyfills (TextEncoder, ReadableStream, Request/Response, IntersectionObserver, ResizeObserver, crypto.randomUUID), React Testing Library com timeout 5s
-- **Infraestrutura:**
-  - Factories: post, music, video, user (geração de dados de teste)
-  - Helpers: api.js (mocks HTTP), auth.js (tokens JWT), render.js (providers)
-  - Matchers customizados: toBeISODate, toBeValidJSON, toHaveHeader, toHaveProperties, toHaveStatus
-  - Mocks globais: db.js (banco de dados), fetch.js (API), next.js (requisições/respostas)
-- **Testes de Integração (39 arquivos):** CRUD de posts, músicas, vídeos, produtos, dicas, auditoria, backups, configurações, login/logout, rate limit, upload de imagens, API v1
-- **Testes Unitários (~96 arquivos):** Todos os componentes (Admin, Features, Layout, Performance, SEO, UI, Products), lógica de domínio (posts, settings, videos), bibliotecas (auth, cache, crud, db, middleware, redis, api, backup), scripts, edge cases de API
-- **Thresholds de cobertura:** branches 92%, functions 95%, lines 98%, statements 98%
+- **Jest (jsdom):** Testes unitários e de integração com Jest 30 + React Testing Library + node-mocks-http
+- **Jest (node):** Testes de integração com PostgreSQL real via Testcontainers
+
+**Infraestrutura de teste:**
+- Factories: post, music, video, user (geração de dados)
+- Helpers: api (mocks HTTP), auth (tokens JWT), console, crud-test, db-test, render (providers)
+- Matchers customizados: toBeISODate, toBeValidJSON, toHaveHeader, toHaveProperties, toHaveStatus
+- Mocks: db, auth, cache, fetch, next
+
+**Distribuição:** 39 testes de integração (API pública, admin, autenticação, domínio/BD real) + ~96 testes unitários (componentes, lib, domínio, páginas, scripts) + exemplos
 
 ---
 
@@ -203,12 +174,11 @@ Documentação completa da suíte de testes do projeto, com **~157 arquivos de t
 
 **Arquivo:** [`docs/PROJECT_mocks.md`](/docs/PROJECT_mocks.md)
 
-Análise dos **3 mocks manuais do Jest** na pasta `__mocks__/`:
+**3 mocks manuais** do Jest em `__mocks__/`:
 
-1. **`cookie.js`** — Mock da biblioteca `cookie` (npm): simula funções `serialize` (concatena atributos HttpOnly, Secure, SameSite, Max-Age, Path) e `parse` (decodifica cabeçalhos Cookie)
-2. **`pg.js`** — Mock completo do módulo `pg`: simula `Pool` com `query()`, `connect()`, `release()`; suporta transações com `BEGIN`, `COMMIT`; simula erros de conexão; configuração de latência e fail rate
-3. **`styleMock.js`** — Mock para arquivos `.css` que retorna objeto vazio para testes Jest
-4. **Mocks globais em `/tests/mocks/`**: db.js, fetch.js, next.js
+1. **`pg.js`** — Mock completo do `pg.Pool` com `mockQuery` singleton, simulação de erros de query/conexão, restauração de implementação — ativo em 16 arquivos de teste
+2. **`cookie.js`** — Mock da biblioteca `cookie` (parse/serialize) — **não utilizado atualmente** (mock órfão)
+3. **`styleMock.js`** — Mock de arquivos `.css` para CSS Modules, ativado via `moduleNameMapper` no `jest.config.js`
 
 ---
 
@@ -216,14 +186,17 @@ Análise dos **3 mocks manuais do Jest** na pasta `__mocks__/`:
 
 **Arquivo:** [`docs/PROJECT_cypress.md`](/docs/PROJECT_cypress.md)
 
-Análise da estrutura de testes end-to-end com Cypress:
+**5 arquivos de teste**, **25 cenários**, distribuídos em 4 páginas/sistemas:
 
-- **Configuração:** Base URL `http://localhost:3000`, gravação de vídeo e screenshots em falhas ativados
-- **Estado atual:** Escopo reduzido — único arquivo de teste (`cypress/e2e/image_zoom.cy.js`, 57 linhas)
-- **Cobertura do teste:** Funcionalidade de zoom de imagem (lightbox) em posts do blog
-- **Padrões utilizados:** Mock de API via `cy.intercept()`, `cy.visit()` com query params, `cy.get()` com seletores de dados, asserções de visibilidade e atributos
-- **Ausências notáveis:** Sem pastas `support/`, `fixtures/` ou `plugins/` — estrutura mínima
-- **Áreas não testadas:** CRUD admin, autenticação, formulários, navegação, busca, responsividade, SEO
+| Arquivo | Cenários | Funcionalidade |
+|---------|:--------:|----------------|
+| `home.cy.js` | 4 | Página inicial (título, navegação, conteúdo) |
+| `blog.cy.js` | 3 | Listagem do blog (título, links para posts) |
+| `post.cy.js` | 3 | Post individual (imagem, conteúdo, botões de compartilhamento) |
+| `navigation.cy.js` | 3 | Navegação entre páginas e acesso admin não autenticado |
+| `image_zoom.cy.js` | 12 | Zoom de imagem (lightbox): fluxo principal, casos de borda, responsividade, acessibilidade |
+
+**Suporte:** 8 comandos customizados (`cy.login`, `cy.createPost`, `cy.viewportMobile/Tablet`, lightbox helpers), 1 fixture (`posts.json`)
 
 ---
 
@@ -231,22 +204,17 @@ Análise da estrutura de testes end-to-end com Cypress:
 
 **Arquivo:** [`docs/PROJECT_load-tests.md`](/docs/PROJECT_load-tests.md)
 
-Documentação completa da suíte de **28 scripts de teste de carga** utilizando **k6** (Grafana Labs):
+**30 scripts k6** organizados em 3 categorias + 7 módulos helpers:
 
 | Categoria | Qtd | Descrição |
 |-----------|:---:|-----------|
-| Músicas | 6 | CRUD, filtro, paginação, busca, ordenação, carga |
-| Vídeos | 6 | CRUD, filtro, paginação, validação, ordenação, carga |
-| Posts/Blog | 4 | Paginação com cursor, tags, busca de conteúdo, criação de post |
-| Autenticação/Segurança | 4 | Login negativo, rate limit, IP spoofing, DDoS |
-| Saúde/Recuperação | 3 | Health check, backup, recovery |
-| Cache | 2 | Headers de cache, performance de cache |
-| Fluxos Combinados | 2 | Stress test combinado, upload flow |
+| **Funcionais** | 9 | Health check, cache headers, search content, posts tags, cursor pagination, backup verification, video validation, upload flow, recovery test |
+| **Performance** | 17 | Cache warmup/performance, auth flow, create post, pagination, stress test combinado, CRUD/carga/filtro/paginação/ordenação de músicas e vídeos |
+| **Segurança** | 4 | Login negativo, rate limit, IP spoofing, DDoS search |
 
-- **Automação CI/CD:** Workflow `load-tests.yml` com execução diária (03:00 UTC) via GitHub Actions
-- **Serviços:** PostgreSQL 15 e Redis 7 Alpine
-- **Relatórios:** Upload como artefatos com retenção de 30 dias
-- **Métricas monitoradas:** Taxa de requisições, tempo de resposta, erros, vUs simultâneos, thresholds
+**Helpers:** config, auth (login JWT), network (IP aleatório), profiles (7 perfis de carga), report (relatórios JSON sanitizados), sleep (pausa aleatória), resource-test-runner (factory pattern para reduzir duplicação CRUD)
+
+**Automação:** Workflow `load-tests.yml` com execução diária (03:00 UTC), relatórios retidos por 30 dias
 
 ---
 
@@ -254,19 +222,20 @@ Documentação completa da suíte de **28 scripts de teste de carga** utilizando
 
 **Arquivo:** [`docs/PROJECT_scripts.md`](/docs/PROJECT_scripts.md)
 
-Documentação de **~50 scripts** organizados em 13 categorias:
+**~72 arquivos** em `scripts/` e subpastas, organizados por categoria:
 
-1. **Backup** (5) — Criação, restauração, limpeza, inicialização, agendamento cron com criptografia AES-256-GCM
-2. **Inicialização** (5) — init-server, seed-all, seed-musicas, seed-posts, seed-videos, seed-products, init-dicas
-3. **Banco de Dados** — db-shell (psql interativo), clear-db, clear-musicas, validate-schema, migrações versionadas
-4. **Manutenção** — clean-orphaned-images (dry-run + exclusão segura), clean-k6-reports, monitor-disk-space
-5. **Diagnóstico** — check-env, check-db-status, check-server, reset-admin-password
-6. **Cache** — clear-cache (Redis + memória local)
-7. **Testes de Carga** — run-all-load-tests-sequentially.js (orquestrador Node.js que executa todos os 29 scripts k6)
-8. **Relatórios** — generate-load-report, consolidate-k6-reports
-9. **Migrações** — Scripts versionados com rastreamento de schema, rollback e validação
-10. **Autenticação** — Scripts de gerenciamento de tokens e senhas
-11. **Utilitários** — clean-test-db, vários utilitários de apoio
+| Categoria | Qtd | Descrição |
+|-----------|:---:|-----------|
+| Backup | 5 | `backup.js` (módulo central) + entry points (criar, restaurar, inicializar, ver logs) |
+| Seed | 5 | `seed-all.js` (orquestrador) + seeds de posts, músicas, vídeos, produtos |
+| Migrações | 16 | `migrate.js` (executor) + 14 migrações versionadas (001 a 013 + utilidades) |
+| Schemas JSON | 4 | Definições de tabelas (dicas, musicas, posts, videos) para `init-table.js` |
+| Inicialização | 4 | `init-table.js`, `init-server.js`, `init-backup.js`, `seed-settings.js` |
+| Limpeza | 10 | Banco (clear-db, clear-musicas, clean-load-test-posts), arquivos (clean-orphaned-images, clean-k6-reports), cache, auth locks |
+| Diagnóstico | 8 | `check-db-status`, `check-env`, `check-server`, `check-sql-injection`, `validate-schema` + 5 em `diagnostics/` |
+| Testes de Carga | 4 | Orquestrador Node.js, shell script, warm-routes |
+| Manutenção | 4 | Backup/restore de posts, fix hero key, video thumbnails |
+| Utilitários | 9 | Conexão DB, constants, date-format, load-env, cleanup, init-table-utils |
 
 ---
 
@@ -276,8 +245,8 @@ Documentação de **~50 scripts** organizados em 13 categorias:
 |-----------|-----------|
 | **Framework** | Next.js 16 (Pages Router) |
 | **Frontend** | React 19 |
-| **Backend** | Node.js 24.15.0 (ES Modules) |
-| **Banco de Dados** | PostgreSQL 16 + SQLite (dev) |
+| **Backend** | Node.js 24.16.0 (ES Modules) |
+| **Banco de Dados** | PostgreSQL |
 | **Cache** | Redis (Upstash) + fallback em memória |
 | **Autenticação** | JWT + bcryptjs + cookies httpOnly |
 | **Validação** | Zod |
@@ -285,10 +254,9 @@ Documentação de **~50 scripts** organizados em 13 categorias:
 | **Testes Unitários/Integração** | Jest 30 + React Testing Library |
 | **Testes E2E** | Cypress 15 |
 | **Testes de Carga** | k6 (Grafana Labs) |
-| **CI/CD** | GitHub Actions (3 workflows) |
-| **Análise Estática** | Knip (código morto) |
+| **CI/CD** | GitHub Actions (4 workflows) |
+| **Análise Estática** | Knip (código morto), ESLint 10 |
 | **SEO** | next-sitemap, Schema.org JSON-LD |
-| **Monitoramento** | Core Web Vitals, Rate Limiting |
 
 ---
 
