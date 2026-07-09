@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import styles from '../styles/misc.module.css';
+import crudStyles from '../styles/crud.module.css';
 
 /**
  * Componente de Verificação de Integridade do Sistema.
@@ -180,13 +181,12 @@ function IntegrityCheck() {
         {[1, 2, 3, 4, 5].map(i => (
           <div
             key={i}
-            className={styles.skeletonBox}
+            className={crudStyles.skeletonBox}
             style={{
               height: '80px',
               marginBottom: '12px',
               borderRadius: '8px',
               backgroundColor: 'var(--color-bg-tertiary)',
-              animation: 'skeleton-pulse 1.5s ease-in-out infinite',
             }}
           />
         ))}

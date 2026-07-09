@@ -4,6 +4,8 @@ import { useAdminCrud } from '@/hooks/useAdminCrud';
 import { exportToCSV } from '@/lib/csvExport';
 import styles from './styles/crud.module.css';
 import toast from 'react-hot-toast';
+import CrudForm from './CrudForm';
+import CrudTable from './CrudTable';
 
 /**
  * Componente base genérico para CRUD administrativo
@@ -98,6 +100,7 @@ export default function AdminCrudBase({
     initialFormData,
     usePagination,
     itemsPerPage,
+    searchTerm,
     onSuccess: handleSuccessWrapper
   });
 
@@ -120,16 +123,8 @@ export default function AdminCrudBase({
     setLocalItems(items);
   }, [items]);
 
-  // Filtro local dinâmico e ultra-rápido para a tabela
-  const displayedItems = searchable && searchTerm
-    ? localItems.filter(item => {
-        const searchableText = Object.values(item)
-          .filter(val => typeof val === 'string' || typeof val === 'number')
-          .join(' ')
-          .toLowerCase();
-        return searchableText.includes(searchTerm.toLowerCase());
-      })
-    : localItems;
+  // Os itens exibidos vêm da API (já filtrados server-side quando searchTerm está presente)
+  const displayedItems = localItems;
 
   // Função para exportar os dados visíveis para CSV
   const handleExportCSV = () => {
@@ -179,113 +174,6 @@ export default function AdminCrudBase({
         throw error;
       }
     }
-  };
-
-  // Renderiza um campo do formulário
-  const renderField = (fieldConfig) => {
-    // Se tem renderizador customizado para este campo
-    if (renderCustomFormField) {
-      const customField = renderCustomFormField(fieldConfig, formData, handleInputChange, setFieldValue, error);
-      if (customField) return customField;
-    }
-
-    const { name, component: Component, gridColumn, ...props } = fieldConfig;
-    
-    if (!Component) {
-      console.warn(`Componente não definido para o campo: ${name}`);
-      return null;
-    }
-
-    // Passa o valor do formulário diretamente para o componente de campo.
-    // A coerção para string vazia (`?? ''`) foi removida para permitir que
-    // componentes como ImageUploadField recebam `null` e evitem renderizar <img src="">.
-    const fieldValue = formData[name];
-    // Extrai a mensagem de erro específica para este campo, se existir.
-    const fieldError = error?.errors?.[name]?.[0];
-
-    return (
-      <div key={name} style={{ gridColumn: gridColumn || 'span 1' }}>
-        <Component
-          name={name}
-          value={fieldValue}
-          checked={!!fieldValue}
-          onChange={handleInputChange}
-          error={fieldError}
-          {...props}
-        />
-      </div>
-    );
-  };
-
-  // Renderiza uma célula da tabela
-  const renderCell = (item, column) => {
-    const { key, render, format } = column;
-    const value = item[key];
-
-    // Renderização customizada
-    if (render) {
-      const customCell = render(item, value);
-      if (customCell !== undefined) return customCell;
-    }
-
-    // Renderização via função externa
-    if (renderCustomCell) {
-      const customCell = renderCustomCell(column, item, value);
-      if (customCell !== undefined) return customCell;
-    }
-
-    // Formatação padrão
-    if (format) {
-      return format(value, item);
-    }
-
-    // Valores booleanos (status)
-    if (typeof value === 'boolean') {
-      const activeBgColor = column.activeBgColor || '';
-      const activeColor = column.activeColor || '';
-      const inactiveBgColor = column.inactiveBgColor || '';
-      const inactiveColor = column.inactiveColor || '';
-      const activeText = column.activeText || 'Publicado';
-      const inactiveText = column.inactiveText || 'Rascunho';
-      const activeIcon = column.activeIcon || '✅';
-      const inactiveIcon = column.inactiveIcon || '📝';
-
-      const customStyle = {};
-      if (value && activeBgColor) customStyle.backgroundColor = activeBgColor;
-      if (value && activeColor) customStyle.color = activeColor;
-      if (!value && inactiveBgColor) customStyle.backgroundColor = inactiveBgColor;
-      if (!value && inactiveColor) customStyle.color = inactiveColor;
-
-      return (
-        <button 
-          type="button"
-          onClick={() => handleToggleBoolean(item, key, value)}
-          className={`${styles.statusBadge} ${value ? styles.statusPublished : styles.statusDraft} ${styles.statusToggle}`}
-          style={Object.keys(customStyle).length > 0 ? customStyle : undefined}
-          title="Clique para alterar o status rapidamente"
-        >
-          <span style={{ display: 'flex', alignItems: 'center' }}>{value ? activeIcon : inactiveIcon}</span>
-          <span>{value ? activeText : inactiveText}</span>
-        </button>
-      );
-    }
-
-    // URLs
-    if (typeof value === 'string' && (value.startsWith('http://') || value.startsWith('https://'))) {
-      return (
-        <a 
-          href={value} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className={styles.link}
-        >
-          Abrir link
-        </a>
-      );
-    }
-
-    // Valor padrão
-    return value || <span className={styles.emptyCell}>-</span>;
   };
 
   return (
@@ -378,188 +266,49 @@ export default function AdminCrudBase({
 
       {/* Formulário */}
       {!readOnly && isFormVisible && (
-      <div id="crud-form" className={styles.formSection}>
-        <form 
-          onSubmit={(e) => handleSubmit(e, validateForm)} 
-          className={styles.form}
-        >
-          <div className={styles.formRow}>
-            {fields.map(renderField)}
-          </div>
-
-          <div className={styles.formActions}>
-            <button 
-              type="submit" 
-              className={styles.saveButton}
-              disabled={loading}
-            >
-              {loading ? 'Salvando...' : isEditing ? updateButtonText : saveButtonText}
-            </button>
-          </div>
-        </form>
-      </div>
+        <CrudForm
+          fields={fields}
+          formData={formData}
+          handleInputChange={handleInputChange}
+          setFieldValue={setFieldValue}
+          error={error}
+          renderCustomFormField={renderCustomFormField}
+          loading={loading}
+          isEditing={isEditing}
+          updateButtonText={updateButtonText}
+          saveButtonText={saveButtonText}
+          handleSubmit={handleSubmit}
+          validateForm={validateForm}
+        />
       )}
 
       {/* Tabela */}
-      <div className={styles.tableContainer} style={{ flex: 1, overflowY: 'auto', maxHeight: '600px' }}>
-        <table className={styles.table}>
-          <thead style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'var(--color-bg-secondary)', boxShadow: 'inset 0 -2px 0 var(--color-border-light)' }}>
-            <tr>
-              {reorderable && !searchTerm && <th style={{ width: '40px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>☰</th>}
-              {columns.map(col => (
-                <th key={col.key} style={col.width ? { width: col.width } : {}}>
-                  {col.header}
-                </th>
-              ))}
-              {!readOnly && <th style={{ width: '120px' }}>Ações</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {loading && localItems.length === 0 ? (
-              Array.from({ length: 5 }).map((_, index) => (
-                <tr key={`skeleton-${index}`}>
-                  {reorderable && !searchTerm && (
-                    <td><div className={styles.skeletonBox} style={{ width: '20px', margin: '0 auto' }}></div></td>
-                  )}
-                  {columns.map(col => (
-                    <td key={`skeleton-col-${col.key}`}>
-                      <div className={styles.skeletonBox} style={{ width: col.width ? '100%' : '80%' }}></div>
-                    </td>
-                  ))}
-                  {!readOnly && (
-                    <td>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <div className={styles.skeletonBox} style={{ height: '32px', width: '60px' }}></div>
-                        <div className={styles.skeletonBox} style={{ height: '32px', width: '60px' }}></div>
-                      </div>
-                    </td>
-                  )}
-                </tr>
-              ))
-            ) : displayedItems.length > 0 ? (
-              displayedItems.map((item, index) => (
-                <tr 
-                  key={item.id}
-                  draggable={reorderable && !searchTerm}
-                  onDragStart={(e) => {
-                    e.dataTransfer.effectAllowed = 'move';
-                    e.dataTransfer.setData('text/plain', index.toString());
-                  }}
-                  onDragOver={(e) => {
-                    if (reorderable && !searchTerm) {
-                      e.preventDefault();
-                      setDragOverIndex(index);
-                    }
-                  }}
-                  onDragLeave={() => setDragOverIndex(null)}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    setDragOverIndex(null);
-                    if (!reorderable || searchTerm) return;
-                    const fromIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
-                    if (fromIndex !== index) {
-                      const newItems = [...localItems];
-                      const [movedItem] = newItems.splice(fromIndex, 1);
-                      newItems.splice(index, 0, movedItem);
-                      setLocalItems(newItems);
-                      if (onReorder) onReorder(newItems, currentPage, itemsPerPage);
-                    }
-                  }}
-                  style={{ 
-                    cursor: reorderable && !searchTerm ? 'move' : 'default',
-                    backgroundColor: dragOverIndex === index ? 'var(--color-bg-secondary)' : '',
-                    borderTop: dragOverIndex === index ? '2px solid var(--color-primary-500)' : '',
-                    transition: 'background-color 0.2s ease'
-                  }}
-                >
-                  {reorderable && !searchTerm && (
-                    <td
-                      style={{ width: '40px', color: 'var(--color-text-tertiary)', textAlign: 'center', cursor: 'grab' }}
-                      aria-grabbed={dragOverIndex !== null}
-                      aria-roledescription="Botão de ordenação por arrastar"
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === ' ' || e.key === 'Enter') {
-                          e.preventDefault();
-                          // Placeholder para ativar o modo de arrasto via teclado
-                        }
-                      }}
-                    >
-                      ⣿
-                    </td>
-                  )}
-                  {columns.map(col => (
-                    <td key={`${item.id}-${col.key}`}>
-                      {renderCell(item, col)}
-                    </td>
-                  ))}
-                  {!readOnly && (
-                  <td>
-                    <div className={styles.actionButtons}>
-                      <button 
-                        className={styles.editButton}
-                        onClick={() => {
-                          handleEdit(item);
-                          setIsFormVisible(true);
-                          setTimeout(() => document.getElementById('crud-form')?.scrollIntoView({ behavior: 'smooth' }), 50);
-                        }}
-                        disabled={loading}
-                        type="button"
-                      >
-                        Editar
-                      </button>
-                      <button 
-                        className={styles.deleteButton}
-                        onClick={() => handleDelete(item.id)}
-                        disabled={loading}
-                        type="button"
-                      >
-                        Excluir
-                      </button>
-                    </div>
-                  </td>
-                  )}
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td 
-                  colSpan={columns.length + (reorderable && !searchTerm ? 1 : 0) + (readOnly ? 0 : 1)} 
-                  className={styles.emptyStateRow}
-                >
-                  {emptyMessage}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Paginação */}
-      {usePagination && totalPages > 1 && (
-        <div className={styles.pagination}>
-          <button
-            onClick={() => goToPage(currentPage - 1)}
-            disabled={currentPage === 1 || loading}
-            className={styles.paginationButton}
-            type="button"
-          >
-            Anterior
-          </button>
-          <span className={styles.paginationInfo}>
-            Página {currentPage} de {totalPages}
-          </span>
-          <button
-            onClick={() => goToPage(currentPage + 1)}
-            disabled={currentPage === totalPages || loading}
-            className={styles.paginationButton}
-            type="button"
-          >
-            Próxima
-          </button>
-        </div>
-      )}
+      <CrudTable
+        columns={columns}
+        items={displayedItems}
+        loading={loading}
+        readOnly={readOnly}
+        reorderable={reorderable}
+        searchTerm={searchTerm}
+        renderCustomCell={renderCustomCell}
+        handleEdit={handleEdit}
+        handleDelete={handleDelete}
+        handleToggleBoolean={handleToggleBoolean}
+        localItems={localItems}
+        setLocalItems={setLocalItems}
+        dragOverIndex={dragOverIndex}
+        setDragOverIndex={setDragOverIndex}
+        onReorder={onReorder}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        goToPage={goToPage}
+        emptyMessage={emptyMessage}
+        usePagination={usePagination}
+        itemsPerPage={itemsPerPage}
+        title={title}
+        isFormVisible={isFormVisible}
+        setIsFormVisible={setIsFormVisible}
+      />
     </div>
   );
 }

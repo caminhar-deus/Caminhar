@@ -15,6 +15,8 @@
 │   │   ├── AdminUsers.js
 │   │   ├── AdminUsersTab.js
 │   │   ├── AdminVideos.js
+│   │   ├── CrudForm.js
+│   │   ├── CrudTable.js
 │   │   ├── fields
 │   │   │   ├── ExternalDataButton.js
 │   │   │   ├── ImageUploadField.js
@@ -1232,4 +1234,4 @@
 │       └── videos.validation.test.js
 └── tree.txt
 
-188 directories, 1045 files
+188 directories, 1047 files

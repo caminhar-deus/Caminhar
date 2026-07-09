@@ -112,7 +112,7 @@ describe('Componente Front-End - AdminCrudBase', () => {
     expect(mockUseAdminCrud.handleDelete).toHaveBeenCalledWith(1);
   });
 
-  it('deve filtrar os itens localmente quando searchable=true', () => {
+  it('deve passar searchTerm para o hook quando searchable=true e o input muda', () => {
     useAdminCrud.mockReturnValue({
       ...mockUseAdminCrud,
       items: [{ id: 1, name: 'Maçã' }, { id: 2, name: 'Banana' }]
@@ -122,8 +122,14 @@ describe('Componente Front-End - AdminCrudBase', () => {
     const searchInput = screen.getByPlaceholderText('Buscar item...');
     
     fireEvent.change(searchInput, { target: { value: 'Maç' } });
+
+    const passedOptions = useAdminCrud.mock.calls[useAdminCrud.mock.calls.length - 1][0];
+    expect(passedOptions.searchTerm).toBe('Maç');
+
+    // A busca agora é server-side: o hook é re-chamado com searchTerm,
+    // e os itens exibidos vêm diretamente do mock (sem filtro local)
     expect(screen.getByText('Maçã')).toBeInTheDocument();
-    expect(screen.queryByText('Banana')).not.toBeInTheDocument();
+    expect(screen.getByText('Banana')).toBeInTheDocument();
   });
 
   it('deve navegar entre as páginas corretamente', () => {

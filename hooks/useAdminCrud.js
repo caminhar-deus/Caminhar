@@ -64,19 +64,26 @@ export const useAdminCrud = ({
   autoFetch = true,
   onSuccess,
   onError,
+  searchTerm = '',
 }) => {
   const [formData, setFormData] = useState(initialFormData);
   const [isEditing, setIsEditing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Monta a URL com paginação para o useApiFetch
+  // Monta a URL com paginação e busca para o useApiFetch
   const buildUrl = useCallback((page) => {
+    const params = new URLSearchParams();
     if (usePagination) {
-      return `${apiEndpoint}?page=${page}&limit=${itemsPerPage}`;
+      params.set('page', page);
+      params.set('limit', itemsPerPage);
     }
-    return apiEndpoint;
-  }, [apiEndpoint, usePagination, itemsPerPage]);
+    if (searchTerm) {
+      params.set('search', searchTerm);
+    }
+    const queryString = params.toString();
+    return queryString ? `${apiEndpoint}?${queryString}` : apiEndpoint;
+  }, [apiEndpoint, usePagination, itemsPerPage, searchTerm]);
 
   // useApiFetch gerencia o fetch e os estados loading/error de forma centralizada
   const {

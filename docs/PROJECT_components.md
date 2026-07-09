@@ -17,7 +17,9 @@ Sistema administrativo completo com CRUD reutilizável via `AdminCrudBase`, aute
 
 **Propósito:** Componente base genérico e reutilizável para todas as operações CRUD do admin. Elimina duplicação de código entre gerenciadores de conteúdo.
 
-**Funcionalidades:** Tabela configurável, formulário dinâmico, Drag & Drop, busca local, exportação CSV, toggle de status, paginação, modo somente leitura, skeletons, validação Zod, rollback automático.
+**Funcionalidades:** Tabela configurável, formulário dinâmico, Drag & Drop, busca server-side, exportação CSV, toggle de status, paginação, modo somente leitura, skeletons, validação Zod, rollback automático.
+
+**Subcomponentes:** Delega formulário dinâmico para `CrudForm` e tabela com paginação para `CrudTable`.
 
 ### 1.2 AdminDashboard.js
 
@@ -102,7 +104,13 @@ Sistema administrativo completo com CRUD reutilizável via `AdminCrudBase`, aute
 | ImageUploadField | `fields/ImageUploadField.js` | Upload de imagem com preview |
 | ExternalDataButton | `fields/ExternalDataButton.js` | Botão "Puxar Dados" genérico |
 
-### 1.15 Styles (Admin)
+### 1.15 Subcomponentes do CRUD
+
+**CrudForm.js** (`CrudForm.js`): Subcomponente de formulário dinâmico extraído do AdminCrudBase. Renderiza campos configuráveis com suporte a `renderCustomFormField`, validação Zod e callback de submit. 102 linhas.
+
+**CrudTable.js** (`CrudTable.js`): Subcomponente de tabela com paginação, skeleton loading, drag & drop, toggle de status, células customizáveis e estado vazio. 309 linhas.
+
+### 1.16 Styles (Admin)
 
 7 arquivos CSS Module: `login.module.css`, `dashboard.module.css`, `crud.module.css`, `tabs.module.css`, `permissions.module.css`, `form.module.css`, `misc.module.css`.
 

@@ -25,19 +25,6 @@
   cursor: not-allowed;
 }
 
-/* Skeleton (compartilhado - usado por Tools) */
-@keyframes skeleton-pulse-tools {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-.skeletonBox {
-  height: 20px;
-  background-color: var(--color-border-light);
-  border-radius: var(--border-radius-sm);
-  animation: skeleton-pulse-tools 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
 /* Sub Navigation */
 .subNavigation {
   margin-bottom: var(--spacing-8);

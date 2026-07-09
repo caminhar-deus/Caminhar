@@ -11,12 +11,12 @@
 
 **Localização:** `components/Admin/AdminCrudBase.js`
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Manutenção** | Componente com ~565 linhas. Avaliar extração do formulário dinâmico e tabela em subcomponentes. |
-| 2 | **Performance** | Paginação calcula totalPages e faz slice local. Para grandes volumes, server-side é mais adequado. |
-| 3 | **Acessibilidade** | Tabela sem `<caption>` ou `aria-label` descritivo. |
-| 4 | **Duplicidade** | Animações skeleton duplicadas em crud.module.css, misc.module.css e AdminAudit.js. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Manutenção** | Componente com ~565 linhas. Avaliar extração do formulário dinâmico e tabela em subcomponentes. | **Resolvido** — Extraído CrudForm.js (102 linhas) e CrudTable.js (309 linhas). AdminCrudBase reduzido de 606 → 356 linhas (-41,3%). |
+| 2 | **Performance** | Paginação calcula totalPages e faz slice local. Para grandes volumes, server-side é mais adequado. | **Resolvido** — Busca migrada para server-side via parâmetro `searchTerm` no hook `useAdminCrud`. Filtro local `displayedItems` substituído. |
+| 3 | **Acessibilidade** | Tabela sem `<caption>` ou `aria-label` descritivo. | **Resolvido** — Adicionado `aria-label={title}` e `scope="col"` em todos os `<th>`. |
+| 4 | **Duplicidade** | Animações skeleton duplicadas em crud.module.css, misc.module.css e AdminAudit.js. | **Resolvido** — Skeleton removido de misc.module.css; AdminAudit.js e IntegrityCheck.js redirecionados para crud.module.css. |
 
 ### 1.2 AdminDashboard.js
 
@@ -184,6 +184,6 @@
 | 2 | **Duplicidade** | Fetch com verificação de Content-Type repetido em 6+ arquivos | Admin |
 | 3 | **Duplicidade** | Estrutura Gallery (busca + ordenação + paginação) entre Music e Video | Features |
 | 4 | **Manutenção** | Estilos inline misturados com CSS Module em vários Admin | Admin Tools/Managers |
-| 5 | **Acessibilidade** | Tabelas sem `<caption>` ou `aria-label` (AdminCrudBase, AdminAudit) | Admin |
+| 5 | **Acessibilidade** | Tabelas sem `<caption>` ou `aria-label` (AdminAudit) | Admin |
 | 6 | **Duplicidade** | Modal de confirmação idêntico em CacheManager e BackupManager | Admin/Managers |
 | 7 | **Manutenção** | StructuredData: reimportação redundante de siteConfig/siteUrl | SEO/StructuredData |
