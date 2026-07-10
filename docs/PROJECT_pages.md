@@ -56,6 +56,8 @@
   - Exibe header com título, subtítulo e imagem hero (placeholder)
   - Renderiza os componentes `ContentTabs` (abas de conteúdo) e `Testimonials` (depoimentos)
   - SEO via `next/head` com title e description dinâmicos
+  - **Feedback visual de erro:** estado `settingsError` é ativado quando a API de settings retorna HTTP não-OK ou lança exceção, exibindo mensagem "Configurações temporariamente indisponíveis" abaixo do subtítulo
+  - **Fallback resiliente:** em caso de falha da API, mantém os valores padrão definidos no `useState` sem impacto visual negativo
 
 ### `/pages/admin.js`
 
@@ -168,6 +170,9 @@
   - **POST** (autenticado, apenas admin): Cria nova configuração com validação Zod e invalidação de cache
   - **PUT** (autenticado via `withAuth`): Atualiza configuração com validação Zod e invalidação de cache
   - Suporta `?response=v1` para compatibilidade
+  - **Rate limit isolado:** `checkRateLimit` é executado em fire-and-forget com `.catch()` silencioso, sem usar `Promise.all` — falhas no rate limit nunca abortam a resposta dos settings
+  - **Log estruturado:** o catch do GET público registra `error.message`, `error.stack` e `ip` para facilitar debug de falhas
+  - **Variável `ip` com escopo correto:** declarada como `let` fora do `try` para ser acessível também no `catch`, evitando `ReferenceError`
 
 ### `/pages/api/status.js`
 
@@ -511,6 +516,7 @@
   - Título uppercase com gradiente e subtitle
   - Container de imagem com hover scale
   - Responsivo para 768px e 480px
+  - Classe `.settingsError` para feedback visual de falha na carga de configurações (fonte itálica, cor terciária, espaçamento superior)
   - **Todos os valores convertidos para CSS Custom Properties**
 
 ### `/pages/styles/DesignSystem.module.css`

@@ -11,6 +11,7 @@ export default function Home() {
   const [title, setTitle] = useState('O Caminhar com Deus');
   const [subtitle, setSubtitle] = useState('Reflexões e ensinamentos sobre a fé, espiritualidade e a jornada cristã');
   const [imageSrc, setImageSrc] = useState('/api/placeholder-image');
+  const [settingsError, setSettingsError] = useState(false);
 
   useEffect(() => {
     // Atualiza a URL da imagem no lado do cliente para evitar Hydration Mismatch
@@ -39,6 +40,7 @@ export default function Home() {
           const settings = await response.json();
           setTitle(settings.site_title || 'O Caminhar com Deus');
           setSubtitle(settings.site_subtitle || 'Reflexões e ensinamentos sobre a fé, espiritualidade e a jornada cristã');
+          setSettingsError(false);
           
           // Atualiza cache
           try {
@@ -49,9 +51,14 @@ export default function Home() {
           } catch {
             // sessionStorage cheio, ignora
           }
+        } else {
+          console.warn('Settings API retornou status', response.status, '- usando valores padrão');
+          setSettingsError(true);
         }
       } catch (error) {
         console.error('Failed to load settings:', error);
+        setSettingsError(true);
+        // Valores padrão já estão definidos no useState, mantém os defaults
       }
     };
 
@@ -72,6 +79,11 @@ export default function Home() {
           <p className={styles.subtitle}>
             {subtitle}
           </p>
+          {settingsError && (
+            <p className={styles.settingsError}>
+              Configurações temporariamente indisponíveis
+            </p>
+          )}
         </div>
 
         <div className={styles.imageContainer}>

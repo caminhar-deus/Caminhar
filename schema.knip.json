@@ -506,8 +506,16 @@
           "title": "Drizzle plugin configuration (https://knip.dev/reference/plugins/drizzle)",
           "$ref": "#/definitions/plugin"
         },
+        "electron-vite": {
+          "title": "electron-vite plugin configuration (https://knip.dev/reference/plugins/electron-vite)",
+          "$ref": "#/definitions/plugin"
+        },
         "eleventy": {
           "title": "eleventy plugin configuration (https://knip.dev/reference/plugins/eleventy)",
+          "$ref": "#/definitions/plugin"
+        },
+        "esbuild": {
+          "title": "esbuild plugin configuration (https://knip.dev/reference/plugins/esbuild)",
           "$ref": "#/definitions/plugin"
         },
         "eslint": {
@@ -580,6 +588,10 @@
         },
         "ladle": {
           "title": "ladle plugin configuration (https://knip.dev/reference/plugins/ladle)",
+          "$ref": "#/definitions/plugin"
+        },
+        "laravel-vite-plugin": {
+          "title": "laravel-vite-plugin plugin configuration (https://knip.dev/reference/plugins/laravel-vite-plugin)",
           "$ref": "#/definitions/plugin"
         },
         "lefthook": {
@@ -694,6 +706,10 @@
           "title": "Nuxt plugin configuration (https://knip.dev/reference/plugins/nuxt)",
           "$ref": "#/definitions/plugin"
         },
+        "nuxtjs-i18n": {
+          "title": "nuxtjs-i18n plugin configuration (https://knip.dev/reference/plugins/nuxtjs-i18n)",
+          "$ref": "#/definitions/plugin"
+        },
         "nx": {
           "title": "Nx plugin configuration (https://knip.dev/reference/plugins/nx)",
           "$ref": "#/definitions/plugin"
@@ -768,6 +784,10 @@
         },
         "prisma": {
           "title": "Prisma plugin configuration (https://knip.dev/reference/plugins/prisma)",
+          "$ref": "#/definitions/plugin"
+        },
+        "quasar": {
+          "title": "quasar plugin configuration (https://knip.dev/reference/plugins/quasar)",
           "$ref": "#/definitions/plugin"
         },
         "qwik": {
@@ -918,6 +938,10 @@
           "title": "taskfile plugin configuration (https://knip.dev/reference/plugins/taskfile)",
           "$ref": "#/definitions/plugin"
         },
+        "tauri": {
+          "title": "tauri plugin configuration (https://knip.dev/reference/plugins/tauri)",
+          "$ref": "#/definitions/plugin"
+        },
         "travis": {
           "title": "travis plugin configuration (https://knip.dev/reference/plugins/travis)",
           "$ref": "#/definitions/plugin"
@@ -954,6 +978,30 @@
           "title": "unocss plugin configuration (https://knip.dev/reference/plugins/unocss)",
           "$ref": "#/definitions/plugin"
         },
+        "unplugin-auto-import": {
+          "title": "unplugin-auto-import plugin configuration (https://knip.dev/reference/plugins/unplugin-auto-import)",
+          "$ref": "#/definitions/plugin"
+        },
+        "unplugin-icons": {
+          "title": "unplugin-icons plugin configuration (https://knip.dev/reference/plugins/unplugin-icons)",
+          "$ref": "#/definitions/plugin"
+        },
+        "unplugin-vue-components": {
+          "title": "unplugin-vue-components plugin configuration (https://knip.dev/reference/plugins/unplugin-vue-components)",
+          "$ref": "#/definitions/plugin"
+        },
+        "unplugin-vue-i18n": {
+          "title": "unplugin-vue-i18n plugin configuration (https://knip.dev/reference/plugins/unplugin-vue-i18n)",
+          "$ref": "#/definitions/plugin"
+        },
+        "unplugin-vue-markdown": {
+          "title": "unplugin-vue-markdown plugin configuration (https://knip.dev/reference/plugins/unplugin-vue-markdown)",
+          "$ref": "#/definitions/plugin"
+        },
+        "unplugin-vue-router": {
+          "title": "unplugin-vue-router plugin configuration (https://knip.dev/reference/plugins/unplugin-vue-router)",
+          "$ref": "#/definitions/plugin"
+        },
         "vercel": {
           "title": "vercel plugin configuration (https://knip.dev/reference/plugins/vercel)",
           "$ref": "#/definitions/plugin"
@@ -968,6 +1016,26 @@
         },
         "vite": {
           "title": "vite plugin configuration (https://knip.dev/reference/plugins/vite)",
+          "$ref": "#/definitions/plugin"
+        },
+        "vite-plugin-pages": {
+          "title": "vite-plugin-pages plugin configuration (https://knip.dev/reference/plugins/vite-plugin-pages)",
+          "$ref": "#/definitions/plugin"
+        },
+        "vite-plugin-pwa": {
+          "title": "vite-plugin-pwa plugin configuration (https://knip.dev/reference/plugins/vite-plugin-pwa)",
+          "$ref": "#/definitions/plugin"
+        },
+        "vite-plugin-vue-layouts-next": {
+          "title": "vite-plugin-vue-layouts-next plugin configuration (https://knip.dev/reference/plugins/vite-plugin-vue-layouts-next)",
+          "$ref": "#/definitions/plugin"
+        },
+        "vite-plus": {
+          "title": "vite-plus plugin configuration (https://knip.dev/reference/plugins/vite-plus)",
+          "$ref": "#/definitions/plugin"
+        },
+        "vite-pwa-assets-generator": {
+          "title": "vite-pwa-assets-generator plugin configuration (https://knip.dev/reference/plugins/vite-pwa-assets-generator)",
           "$ref": "#/definitions/plugin"
         },
         "vitepress": {

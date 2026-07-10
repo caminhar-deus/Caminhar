@@ -32,6 +32,13 @@
   line-height: var(--line-height-relaxed);
 }
 
+.settingsError {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  margin-top: var(--spacing-2);
+  font-style: italic;
+}
+
 .imageContainer {
   display: flex;
   justify-content: center;

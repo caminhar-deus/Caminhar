@@ -86,18 +86,18 @@ async function handleGet(req, res) {
   }
 
   // GET público (sem key) — retorna todas as configurações com rate limiting e cache
+  let ip = '127.0.0.1';
   try {
-    const ip = getClientIP(req);
+    ip = getClientIP(req);
 
-    // Executa cache em paralelo com rate limit para não bloquear cache hits
-    const settingsPromise = req.query.response === 'v1'
-      ? getOrSetCache('settings:v1:all', () => getAllSettingsRaw(), SETTINGS_CACHE_TTL)
-      : getOrSetCache('settings:all', () => getSettings(), SETTINGS_CACHE_TTL);
+    // Rate limit em paralelo mas isolado: se falhar, não derruba a resposta dos settings
+    checkRateLimit(ip, 'api:public:settings', 600, 60000).catch(() => {
+      // Falha no rate limit não deve abortar a resposta
+    });
 
-    const [settings] = await Promise.all([
-      settingsPromise,
-      checkRateLimit(ip, 'api:public:settings', 600, 60000),
-    ]);
+    const settings = req.query.response === 'v1'
+      ? await getOrSetCache('settings:v1:all', () => getAllSettingsRaw(), SETTINGS_CACHE_TTL)
+      : await getOrSetCache('settings:all', () => getSettings(), SETTINGS_CACHE_TTL);
 
     res.setHeader('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=600');
 
@@ -107,7 +107,11 @@ async function handleGet(req, res) {
 
     return res.status(200).json(settings);
   } catch (error) {
-    logger.error('Settings', 'Erro ao buscar configurações:', error);
+    logger.error('Settings', 'Erro ao buscar configurações', {
+      error: error.message,
+      stack: error.stack,
+      ip,
+    });
     return res.status(500).json({ error: 'Internal Server Error', message: 'Erro ao buscar configurações' });
   }
 }

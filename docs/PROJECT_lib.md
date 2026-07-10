@@ -84,7 +84,7 @@
 | `getOrSetCache(key, fetchFunction, ttlSeconds)` | Cache-Aside: tenta memória local → Redis → executa fetch e popula ambos. TTL padrão: 1h |
 | `invalidateCache(keyPattern)` | Invalida cache por chave exata ou padrão com `*` (usa SCAN no Redis) |
 | `clearAllCache(options)` | Limpa todo o cache (FLUSHDB). Requer `{ confirm: true }` para segurança |
-| `checkRateLimit(ip, endpoint, limit, windowMs)` | Rate limit via Redis INCR+EXPIRE com fallback em Map local. Aceita `limit` como função dinâmica. Whitelist para IPs locais e redes privadas |
+| `checkRateLimit(ip, endpoint, limit, windowMs)` | Rate limit via Redis INCR+EXPIRE com fallback em Map local. Aceita `limit` como função dinâmica. Whitelist para IPs locais e redes privadas. Possui try/catch externo que retorna `false` em caso de erro inesperado, nunca bloqueando requisições por engano |
 | `getCacheMetrics()` | Retorna métricas: hits, misses, erros, tamanhos dos maps, status da conexão Redis |
 | `cleanupRateLimitTimer()` | Limpa o timer interno de safety net (uso em testes) |
 | `clearAppMemoryCache()` | Limpa cache de aplicação em memória (uso em testes) |
@@ -160,9 +160,9 @@
 | `closeDatabase()` | Fecha o pool de conexões |
 | `resetPool()` | Reseta o pool (uso em testes) |
 
-**Configurações do pool:** `max: 50`, `min: 5`, `idleTimeoutMillis: 30000`, `connectionTimeoutMillis: 5000`. SSL habilitado em produção. Health check periódico a cada 15s detecta falhas precoces e reseta o pool automaticamente.
+**Configurações do pool:** `max: 50`, `min: 5`, `idleTimeoutMillis: 60000`, `connectionTimeoutMillis: 15000`. SSL habilitado em produção. Health check periódico a cada 15s detecta falhas precoces e reseta o pool automaticamente.
 
-**Observações:** O pool é criado sob demanda (lazy initialization) para compatibilidade com Jest mocks. Em caso de erro fatal no pool, tenta recriar automaticamente. Erros de timeout/rede disparam retry com reset do pool. Re-exports removidos — importe diretamente de `./crud.js`, `./domain/settings.js`, `./domain/audit.js` e `./domain/posts.js`.
+**Observações:** O pool é criado sob demanda (lazy initialization) para compatibilidade com Jest mocks. Em caso de erro fatal no pool, tenta recriar automaticamente. Erros de timeout/rede disparam retry sem resetar o pool (a conexão apenas demorou, o pool original continua válido). O pool é pré-aquecido no startup com uma conexão inicial (`SELECT 1`) para evitar timeout na primeira query. Re-exports removidos — importe diretamente de `./crud.js`, `./domain/settings.js`, `./domain/audit.js` e `./domain/posts.js`.
 
 ---
 
