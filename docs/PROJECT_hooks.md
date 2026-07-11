@@ -18,21 +18,24 @@
 8. [`/hooks/useApiFetch.js`](#7-hooksuseapifetchjs) — Fetch genérico com estados loading/error
 9. [`/hooks/useTheme.js`](#8-hooksusethemejs) — Gerenciamento de tema e tokens de design
 10. [`/hooks/usePerformanceMetrics.js`](#9-hooksuseperformancemetricsjs) — Core Web Vitals e performance
-11. [`/hooks/useDebounce.js`](#10-hooksusedebouncejs) — Debounce utilitário
-12. [`/hooks/useThrottle.js`](#11-hooksusethrottlejs) — Throttle utilitário
-13. [Resumo Consolidado](#resumo-consolidado)
+11. [`/hooks/PerformanceContext.js`](#10-hooksperformancecontextjs) — Contexto de performance
+12. [`/hooks/PerformanceProvider.js`](#11-hooksperformanceproviderjs) — Provider de performance
+13. [`/hooks/usePerformance.js`](#12-hooksuseperformancejs) — Hook de consumo de performance
+14. [`/hooks/useDebounce.js`](#13-hooksusedebouncejs) — Debounce utilitário
+15. [`/hooks/useThrottle.js`](#14-hooksusethrottlejs) — Throttle utilitário
+16. [Resumo Consolidado](#resumo-consolidado)
 
 ---
 
 ## Visão Geral
 
-A pasta `/hooks` contém **11 arquivos** que implementam custom hooks React e seus componentes de contexto. Não há subpastas. Os hooks dividem-se em três categorias:
+A pasta `/hooks` contém **14 arquivos** que implementam custom hooks React e seus componentes de contexto. Não há subpastas. Os hooks dividem-se em três categorias:
 
 | Categoria | Hooks | Descrição |
 |---|---|---|
 | **Autenticação** | `useAuth`, `useAdminAuth` | Gerenciamento de sessão, login/logout e controle de acesso administrativo |
 | **Infraestrutura / Utilitários** | `useApiFetch`, `useDebounce`, `useThrottle`, `useAdminCrud` | Abstrações reutilizáveis para fetch, debounce, throttle e operações CRUD completas |
-| **Design & Performance** | `useTheme`, `usePerformanceMetrics` | Gerenciamento de tema (light/dark) com tokens de design e monitoramento de Core Web Vitals |
+| **Design & Performance** | `useTheme`, `usePerformanceMetrics`, `PerformanceContext`, `PerformanceProvider`, `usePerformance` | Gerenciamento de tema (light/dark) com tokens de design e monitoramento de Core Web Vitals com wrapper de contexto |
 
 ---
 
@@ -44,6 +47,7 @@ A pasta `/hooks` contém **11 arquivos** que implementam custom hooks React e se
 **Funcionalidades:**
 - Reexporta hooks nomeados: `useTheme`, `useAuth`, `useAdminCrud`, `usePerformanceMetrics`, `useApiFetch`, `useDebounce`, `useThrottle`, `useAdminAuth`.
 - Exporta também `AuthContext` e `AuthProvider` (definidos em `AuthContext.js` e `AuthProvider.js` respectivamente), permitindo que consumidores importem tudo de um único local.
+- Exporta também os artefatos de performance: `PerformanceContext`, `PerformanceProvider` e `usePerformance`.
 - Todos os hooks são reexportados diretamente como named exports com a sintaxe `export { Nome } from './arquivo'`, incluindo `usePerformanceMetrics` que anteriormente usava `export { default as usePerformanceMetrics }`.
 
 ---
@@ -162,11 +166,11 @@ A pasta `/hooks` contém **11 arquivos** que implementam custom hooks React e se
 ## 9. `/hooks/usePerformanceMetrics.js`
 
 **Localização:** `/hooks/usePerformanceMetrics.js`
-**Propósito:** Hook avançado para monitoramento de Core Web Vitals (LCP, FID, CLS, INP, FCP, TTFB) e métricas adicionais de performance (TBT, recursos lentos).
+**Propósito:** Hook avançado para monitoramento de Core Web Vitals (LCP, CLS, INP, FCP, TTFB) e métricas adicionais de performance (TBT, recursos lentos).
 
 **Funcionalidades:**
 - **Biblioteca externa:** Importa dinamicamente `web-vitals` com promessa cacheada em nível de módulo (`const webVitalsPromise = import('web-vitals')`), executada apenas uma vez.
-- **Métricas suportadas (`WEB_VITAL_METRICS`):** LCP, FID, CLS, INP, FCP, TTFB, TBT.
+- **Métricas suportadas (`WEB_VITAL_METRICS`):** LCP, CLS, INP, FCP, TTFB, TBT.
 - **Thresholds (`THRESHOLDS`):** Valores de classificação Google (`good` / `poor`) para cada métrica, com unidades (`ms` ou vazio para CLS).
 - **`reportMetric(metric)`:** Função callback que:
   - Aplica cache de 1 minuto (`METRICS_CACHE_MS`) para evitar reports duplicados da mesma métrica com o mesmo valor.
@@ -182,7 +186,44 @@ A pasta `/hooks` contém **11 arquivos** que implementam custom hooks React e se
 
 ---
 
-## 10. `/hooks/useDebounce.js`
+## 10. `/hooks/PerformanceContext.js`
+
+**Localização:** `/hooks/PerformanceContext.js`
+**Propósito:** Definição do contexto de performance React, seguindo o mesmo padrão de `AuthContext.js`. Armazena as métricas de Web Vitals e funções auxiliares para consumo por componentes da aplicação.
+
+**Funcionalidades:**
+- **`PerformanceContext`** — Contexto React criado via `createContext(null)`.
+- **`@typedef PerformanceContextValue`** — Documentação JSDoc do tipo do valor do contexto, definindo a interface: `reportMetric`, `getMetrics`, `metrics`, `WEB_VITAL_METRICS`, `THRESHOLDS`, `getRating`, `formatMetric`.
+- O valor padrão é `null` para forçar o uso dentro de um `PerformanceProvider` — o hook de consumo (`usePerformance`) lança erro se usado fora do provider.
+
+---
+
+## 11. `/hooks/PerformanceProvider.js`
+
+**Localização:** `/hooks/PerformanceProvider.js`
+**Propósito:** Componente provider de performance que instancia o `usePerformanceMetrics` uma única vez e compartilha as métricas via contexto, evitando múltiplas instâncias do `PerformanceObserver` em diferentes componentes.
+
+**Funcionalidades:**
+- **Instância única:** Chama `usePerformanceMetrics()` sem argumentos no corpo do provider, garantindo um único `PerformanceObserver` para toda a aplicação.
+- **Estabilização com `useMemo`:** O valor do contexto é memoizado com dependências explícitas de todos os 7 campos retornados (`reportMetric`, `getMetrics`, `metrics`, `WEB_VITAL_METRICS`, `THRESHOLDS`, `getRating`, `formatMetric`).
+- Envolve `children` com `<PerformanceContext.Provider>`.
+- Segue o mesmo padrão arquitetural de `AuthProvider.js`.
+
+---
+
+## 12. `/hooks/usePerformance.js`
+
+**Localização:** `/hooks/usePerformance.js`
+**Propósito:** Hook que consome o `PerformanceContext` e expõe as métricas de performance para componentes React.
+
+**Funcionalidades:**
+- **`usePerformance()`** — Hook que acessa o `PerformanceContext` via `useContext`.
+- **Proteção de uso:** Se o contexto for `null` (hook chamado fora de um `PerformanceProvider`), lança erro: `"usePerformance must be used within a PerformanceProvider"`.
+- **Exportação:** Apenas named export (`export const usePerformance`), sem `export default`.
+
+---
+
+## 13. `/hooks/useDebounce.js`
 
 **Localização:** `/hooks/useDebounce.js`
 **Propósito:** Hook de debounce simples e reutilizável. Retorna o valor atualizado somente após um período de inatividade.
@@ -195,7 +236,7 @@ A pasta `/hooks` contém **11 arquivos** que implementam custom hooks React e se
 
 ---
 
-## 11. `/hooks/useThrottle.js`
+## 14. `/hooks/useThrottle.js`
 
 **Localização:** `/hooks/useThrottle.js`
 **Propósito:** Hook de throttle reutilizável. Limita a frequência de chamada de uma função, ignorando chamadas dentro do intervalo especificado.
@@ -221,11 +262,14 @@ A pasta `/hooks` contém **11 arquivos** que implementam custom hooks React e se
 | `useApiFetch.js` | `/hooks/useApiFetch.js` | Hook de fetch genérico | Média | Nenhuma |
 | `useTheme.js` | `/hooks/useTheme.js` | Hook de tema + tokens | Alta | `pages/styles/tokens`, `useThrottle` |
 | `usePerformanceMetrics.js` | `/hooks/usePerformanceMetrics.js` | Hook de performance | Alta | `web-vitals` (dynamic import) |
+| `PerformanceContext.js` | `/hooks/PerformanceContext.js` | Contexto React | Baixa | Nenhuma |
+| `PerformanceProvider.js` | `/hooks/PerformanceProvider.js` | Provider React | Baixa | `usePerformanceMetrics` |
+| `usePerformance.js` | `/hooks/usePerformance.js` | Hook de consumo de contexto | Baixa | Nenhuma |
 | `useDebounce.js` | `/hooks/useDebounce.js` | Hook utilitário | Baixa | Nenhuma |
 | `useThrottle.js` | `/hooks/useThrottle.js` | Hook utilitário | Baixa | Nenhuma |
 
 ### Observações importantes
 
-- **Relação entre hooks:** `useAdminAuth` depende do `AuthContext` (importado de `AuthContext.js`). `useAdminCrud` depende de `useApiFetch`. `useTheme` depende de `useThrottle` e dos tokens de design importados de `pages/styles/tokens`.
-- **Exportações:** O barrel `index.js` exporta `AuthContext` (de `AuthContext.js`), `AuthProvider` (de `AuthProvider.js`) e `useAuth` (de `useAuth.js`) como exports individuais. Todos os hooks são reexportados diretamente como named exports com a sintaxe `export { Nome } from './arquivo'`, incluindo `usePerformanceMetrics`.
-- **Cobertura de uso:** Todos os hooks são exportados via `index.js` e estão disponíveis para consumo, porém `useTheme` e `usePerformanceMetrics` possuem anotações `@todo` indicando que atualmente não possuem consumidores diretos confirmados na aplicação.
+- **Relação entre hooks:** `useAdminAuth` depende do `AuthContext` (importado de `AuthContext.js`). `useAdminCrud` depende de `useApiFetch`. `useTheme` depende de `useThrottle` e dos tokens de design importados de `pages/styles/tokens`. `PerformanceProvider` depende de `usePerformanceMetrics` para instanciar o monitoramento.
+- **Exportações:** O barrel `index.js` exporta `AuthContext` (de `AuthContext.js`), `AuthProvider` (de `AuthProvider.js`) e `useAuth` (de `useAuth.js`) como exports individuais. Também exporta `PerformanceContext`, `PerformanceProvider` e `usePerformance`. Todos os hooks são reexportados diretamente como named exports com a sintaxe `export { Nome } from './arquivo'`, incluindo `usePerformanceMetrics`.
+- **Cobertura de uso:** Todos os hooks são exportados via `index.js` e estão disponíveis para consumo. `usePerformance` possui consumidor direto em `pages/_app.js` via `PerformanceMonitor`. `useTheme` e `usePerformanceMetrics` possuem anotações `@todo` indicando que atualmente não possuem consumidores diretos confirmados na aplicação.

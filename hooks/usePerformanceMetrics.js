@@ -39,7 +39,6 @@ const webVitalsPromise = typeof window !== 'undefined' ? import('web-vitals') : 
 const WEB_VITAL_METRICS = {
   // Core Web Vitals
   LCP: 'LCP',        // Largest Contentful Paint
-  FID: 'FID',        // First Input Delay  
   CLS: 'CLS',        // Cumulative Layout Shift
   INP: 'INP',        // Interaction to Next Paint (novo, substitui FID)
   
@@ -52,7 +51,6 @@ const WEB_VITAL_METRICS = {
 // Thresholds de avaliação (Google Web Vitals)
 const THRESHOLDS = {
   LCP: { good: 2500, poor: 4000, unit: 'ms' },
-  FID: { good: 100, poor: 300, unit: 'ms' },
   INP: { good: 200, poor: 500, unit: 'ms' },
   CLS: { good: 0.1, poor: 0.25, unit: '' },
   FCP: { good: 1800, poor: 3000, unit: 'ms' },
@@ -201,7 +199,6 @@ export function usePerformanceMetrics(options = {}) {
 
         const { 
           onLCP, 
-          onFID, 
           onCLS, 
           onINP,
           onFCP, 
@@ -213,11 +210,6 @@ export function usePerformanceMetrics(options = {}) {
           ...metric,
           rating: getRating('LCP', metric.value),
         }), { reportAllChanges: true });
-
-        onFID((metric) => reportMetric({
-          ...metric,
-          rating: getRating('FID', metric.value),
-        }));
 
         onCLS((metric) => reportMetric({
           ...metric,

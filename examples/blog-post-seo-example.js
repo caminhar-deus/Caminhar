@@ -21,25 +21,12 @@ import {
 import { ImageOptimized } from '../components/Performance';
 import { LazyIframe } from '../components/Performance';
 import { siteConfig, getCanonicalUrl, getImageUrl } from '../lib/seo/config';
-import { usePerformanceMetrics } from '../hooks/usePerformanceMetrics';
+import { usePerformance } from '../hooks';
 import { useState } from 'react';
 
 export default function BlogPostExample({ post: initialPost }) {
-  // Inicializa monitoramento de performance
-  usePerformanceMetrics({
-    onReport: (metric) => {
-      // Enviar para analytics (Google Analytics, Mixpanel, etc)
-      if (typeof gtag !== 'undefined') {
-        gtag('event', metric.name, {
-          event_category: 'Web Vitals',
-          value: Math.round(metric.value),
-          metric_rating: metric.rating,
-        });
-      }
-    },
-    reportToAnalytics: true,
-    debug: process.env.NODE_ENV === 'development',
-  });
+  // Monitoramento de performance via contexto
+  usePerformance();
 
   // Fallback para dados mockados em ambiente de desenvolvimento
   const post = initialPost || {

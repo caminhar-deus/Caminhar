@@ -22,7 +22,7 @@ Os exemplos não são páginas executáveis diretamente — são componentes Rea
 - **Dados estruturados (JSON-LD):** `ArticleSchema` (com título, descrição, imagem, autor, datas de publicação/atualização, tags, categoria, contagem de palavras e corpo do artigo), `OrganizationSchema` e `BreadcrumbSchema`.
 - **Imagem otimizada (LCP):** `ImageOptimized` com `critical={true}`, `priority={true}`, `placeholder="blur"` e `blurDataUrl` (com alerta sobre geração em produção).
 - **Carregamento lazy de vídeo:** `LazyIframe` para YouTube com fallback para link direto caso o embed falhe.
-- **Monitoramento de performance:** `usePerformanceMetrics` com envio para Google Analytics (via `gtag`).
+- **Monitoramento de performance:** `usePerformance` via contexto (consome o `PerformanceProvider` de `_app.js`).
 - **Fallback de dados:** Dados mockados para ambiente de desenvolvimento quando a prop `post` não é fornecida.
 - **Tratamento de erros:** Fallback visual para imagem quebrada (`onError` + estado `imageError`), embed de vídeo com falha (`onError` + estado `iframeError`) e dados ausentes (`post` nulo/indefinido).
 - **Microdados Schema.org inline:** `itemProp`, `itemScope` e `itemType` no HTML para complementar o JSON-LD.
@@ -46,7 +46,7 @@ Os exemplos não são páginas executáveis diretamente — são componentes Rea
 - **Dados estruturados:** `OrganizationSchema` e `WebsiteSchema` para dados organizacionais e do site.
 - **Pré-carregamento de recursos críticos:** `PreloadResources` com imagens e domínios obtidos via `getCriticalResources('home')`.
 - **Imagem hero otimizada (LCP):** `ImageOptimized` com `fill`, `critical={true}`, `priority={true}` e `sizes="100vw"`.
-- **Monitoramento de performance:** `usePerformanceMetrics` com `reportToAnalytics: true`.
+- **Monitoramento de performance:** `usePerformance` via contexto (consome o `PerformanceProvider` de `_app.js`).
 - **Tratamento de erro:** Fallback visual para hero image não carregada (`onError` + estado `heroError`).
 
 **Observações técnicas:**

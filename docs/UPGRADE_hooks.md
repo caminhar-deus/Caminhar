@@ -48,7 +48,12 @@
 **Problema:** O `useEffect` que dispara o fetch tinha `error` como dependência. Quando o fetch falhava (ex: status 500), `setError()` era chamado, o que alterava `error`, re-executava o `useEffect`, que chamava `fetchData` novamente, que falhava e chamava `setError` novamente — criando um loop infinito de renderizações. Isso impedia que componentes como `VideoGallery` exibissem a mensagem de erro, resultando em timeout nos testes.
 **Situação:** Implementado. A dependência `error` foi removida do array de dependências do `useEffect` (linha 129). O `useEffect` agora depende apenas de `fetchData` e `staleTime`. O event listener `online` continua funcional, pois a verificação `if (error && error.includes('Sem conexão'))` dentro do `handleOnline` ainda protege contra re-fetches indevidos. Nenhum consumidor ou fluxo foi impactado.
 
----
+### 1.6 — `usePerformanceMetrics.js`: métrica FID não é mais exportada pelo web-vitals v5.x ✅
+
+**Arquivo:** `/hooks/usePerformanceMetrics.js` (linha 204)
+**Problema:** O pacote `web-vitals@5.3.0` removeu a exportação de `onFID`, pois a métrica First Input Delay (FID) foi oficialmente depreciada e substituída pelo INP (Interaction to Next Paint). O código tentava desestruturar `onFID` do módulo importado, resultando em `TypeError: onFID is not a function` em tempo de execução no navegador.
+**Situação:** Implementado. `onFID` foi removido da desestruturação do `await webVitalsPromise`, o bloco de chamada `onFID(...)` foi removido, e as entradas `FID: 'FID'` em `WEB_VITAL_METRICS` e `FID: { good: 100, poor: 300, unit: 'ms' }` em `THRESHOLDS` foram removidas. A métrica INP, que já estava implementada com verificação `if (onINP)`, permanece como substituta oficial. Nenhum consumidor ou fluxo foi impactado.
+
 
 ## 2. Ajustes Estruturais e Organizacionais
 
@@ -64,12 +69,12 @@
 **Problema:** O arquivo `useAuth.js` define três elementos no mesmo módulo: `AuthContext`, `AuthProvider` e `useAuth`. Embora funcione, isso mistura responsabilidades. Uma separação em `AuthContext.js` + `AuthProvider.js` + `useAuth.js` (ou um único arquivo `AuthContext.js` com tudo) traria mais clareza estrutural, sem prejuízo às exportações do barrel.
 **Situação:** Implementado. O `AuthContext` foi movido para `hooks/AuthContext.js`, o `AuthProvider` para `hooks/AuthProvider.js`, e `useAuth.js` foi reescrito contendo apenas o hook `useAuth` (sem `export default`). O barrel `index.js` foi atualizado com exports individuais de cada arquivo. Os imports em `useAdminAuth.js`, `tests/helpers/render.js` e `tests/unit/components/Admin/withAdminAuth.test.js` foram atualizados para os novos paths. Nenhum consumidor ou fluxo foi impactado.
 
-### 2.3 — `usePerformanceMetrics` sem um wrapper de contexto
+### 2.3 — `usePerformanceMetrics` sem um wrapper de contexto ✅
 
 **Arquivo:** `/hooks/usePerformanceMetrics.js`
 **Problema:** O hook é funcional, mas para ser integrado na aplicação de forma padronizada, seria necessário um `PerformanceProvider` que instancie o hook uma vez e compartilhe as métricas via contexto, evitando múltiplas instâncias do `PerformanceObserver` em diferentes componentes.
+**Situação:** Implementado. Criados `PerformanceContext.js`, `PerformanceProvider.js` e `usePerformance.js`. O barrel `index.js` foi atualizado com as exportações dos novos artefatos. O `PerformanceProvider` foi integrado em `_app.js` como wrapper da aplicação, e um componente `PerformanceMonitor` (que chama `usePerformance()`) foi adicionado como consumidor dentro do provider. Os exemplos `homepage-seo-example.js` e `blog-post-seo-example.js` foram migrados de `usePerformanceMetrics` direto para `usePerformance` via contexto. O hook bruto `usePerformanceMetrics` permanece exportado para uso isolado. Nenhum consumidor ou fluxo foi impactado.
 
----
 
 ## 3. Melhorias de Performance e Manutenção
 

@@ -148,6 +148,8 @@
 │   │   │   ├── AdminUsersTab.js.html
 │   │   │   ├── AdminVideos.js.html
 │   │   │   ├── AdminVideosNew.js.html
+│   │   │   ├── CrudForm.js.html
+│   │   │   ├── CrudTable.js.html
 │   │   │   ├── fields
 │   │   │   │   ├── ExternalDataButton.js.html
 │   │   │   │   ├── ImageUploadField.js.html
@@ -268,6 +270,8 @@
 │   │   │   │   ├── AdminUsersTab.js.html
 │   │   │   │   ├── AdminVideos.js.html
 │   │   │   │   ├── AdminVideosNew.js.html
+│   │   │   │   ├── CrudForm.js.html
+│   │   │   │   ├── CrudTable.js.html
 │   │   │   │   ├── fields
 │   │   │   │   │   ├── ExternalDataButton.js.html
 │   │   │   │   │   ├── ImageUploadField.js.html
@@ -659,12 +663,17 @@
 │   └── videos-seo-example.js
 ├── GEMINI.md
 ├── hooks
+│   ├── AuthContext.js
+│   ├── AuthProvider.js
 │   ├── index.js
+│   ├── PerformanceContext.js
+│   ├── PerformanceProvider.js
 │   ├── useAdminAuth.js
 │   ├── useAdminCrud.js
 │   ├── useApiFetch.js
 │   ├── useAuth.js
 │   ├── useDebounce.js
+│   ├── usePerformance.js
 │   ├── usePerformanceMetrics.js
 │   ├── useTheme.js
 │   └── useThrottle.js
@@ -1234,4 +1243,4 @@
 │       └── videos.validation.test.js
 └── tree.txt
 
-188 directories, 1047 files
+188 directories, 1056 files

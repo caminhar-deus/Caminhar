@@ -2,6 +2,12 @@ import './styles/globals.css';
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Toaster } from 'react-hot-toast';
+import { PerformanceProvider, usePerformance } from '../hooks';
+
+function PerformanceMonitor() {
+  usePerformance();
+  return null;
+}
 
 function MyApp({ Component, pageProps }) {
   const router = useRouter();
@@ -22,7 +28,8 @@ function MyApp({ Component, pageProps }) {
   }, [router.events]);
 
   return (
-    <>
+    <PerformanceProvider>
+      <PerformanceMonitor />
       <Toaster
         position="top-right"
         toastOptions={{
@@ -54,7 +61,7 @@ function MyApp({ Component, pageProps }) {
         }}
       />
       <Component {...pageProps} />
-    </>
+    </PerformanceProvider>
   );
 }
 

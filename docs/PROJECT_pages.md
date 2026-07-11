@@ -30,6 +30,8 @@
   - Configura o sistema de notificações `react-hot-toast` (Toaster) com estilos customizados para sucesso e erro, posicionado no canto superior direito com duração de 5 segundos
   - Monitora mudanças de rota via `router.events` — o log `[Router] Route changed to:` é ativado apenas quando a variável de ambiente `NEXT_PUBLIC_LOG_ROUTE_CHANGES=true` está definida
   - Realiza cleanup do event listener para evitar memory leaks
+  - **Monitoramento de performance:** Envolve toda a aplicação com `<PerformanceProvider>` (de `hooks/PerformanceProvider.js`), que instancia o `usePerformanceMetrics` uma única vez e compartilha as métricas via contexto
+  - **Consumidor de performance:** Inclui o componente `<PerformanceMonitor />` dentro do provider, que chama `usePerformance()` para ativar a coleta de Web Vitals em todas as páginas sem renderizar nada no DOM
 
 ### `/pages/_document.js`
 
