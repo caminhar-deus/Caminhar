@@ -56,7 +56,7 @@
 }
 
 .tabButton:active {
-  transform: scale(0.98);
+  background-color: var(--alpha-ghost);
 }
 
 .tabButton:disabled {
@@ -98,30 +98,7 @@
 }
 
 .contentContainer {
-  min-height: 400px;
-  opacity: var(--opacity-100);
-  transform: translateY(0);
-  transition: var(--transition-opacity), var(--transition-transform);
-}
-
-.contentContainer.fade-enter {
-  opacity: 0;
-  transform: translateY(10px);
-}
-
-.contentContainer.fade-enter-active {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.contentContainer.fade-exit {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.contentContainer.fade-exit-active {
-  opacity: 0;
-  transform: translateY(-10px);
+  min-height: 600px;
 }
 
 /* Loading fallback */
@@ -129,7 +106,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 300px;
+  min-height: 600px;
   color: var(--color-text-tertiary);
   font-size: var(--font-size-lg);
 }

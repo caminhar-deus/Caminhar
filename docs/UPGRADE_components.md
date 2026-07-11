@@ -97,9 +97,12 @@
 
 ### 2.2 ContentTabs
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Duplicidade** | Estilos placeholderContainer/placeholderCard similares aos de misc.module.css (Admin). |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Duplicidade** | Estilos placeholderContainer/placeholderCard similares aos de misc.module.css (Admin). | |
+| 2 | **Performance** | Transição CSS órfã (`transition: var(--transition-opacity), var(--transition-transform)`) no `.contentContainer` sem lógica JS correspondente. Classes `.fade-*` não utilizadas. | **Resolvido** — Transição e classes `.fade-*` removidas. |
+| 3 | **Layout** | Tremor (layout shift) ao trocar abas causado por `min-height` insuficiente (400px) no `.contentContainer` e fallback do Suspense com altura diferente (300px). | **Resolvido** — `min-height` do `.contentContainer` e do `.loading` ajustados para 600px. |
+| 4 | **Layout** | Micro-movimento nos botões de aba ao clicar devido a `transform: scale(0.98)` no estado `:active`. | **Resolvido** — `scale(0.98)` substituído por `background-color` no `:active`. |
 
 ### 2.3 Music / Video
 

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Head from 'next/head';
 import { Button, Input, TextArea, Select, Card, Modal, Spinner, Badge, Alert, Toast } from '../components/UI';
 import { Container, Grid, Stack, Sidebar } from '../components/Layout';
-import styles from '../styles/DesignSystem.module.css';
+import styles from './styles/DesignSystem.module.css';
 
 /**
  * Design System Demo Page

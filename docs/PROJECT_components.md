@@ -135,7 +135,7 @@ Componentes de funcionalidades públicas do site, agrupados por domínio: Blog, 
 
 **index.js** (`Features/ContentTabs/index.js`): Sistema de abas organizando Blog, Músicas, Vídeos, Produtos. Lazy loading via `React.lazy`, ARIA, aba placeholder "Em Desenvolvimento".
 
-**ContentTabs.module.css** (`Features/ContentTabs/styles/`): Estilos de abas, animações, responsivo.
+**ContentTabs.module.css** (`Features/ContentTabs/styles/`): Estilos de abas, container com `min-height: 600px` para evitar layout shift, responsivo.
 
 ### 2.3 Music
 

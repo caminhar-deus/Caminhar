@@ -308,6 +308,18 @@ await invalidateCache('posts:*');
 
 **Sugestão:** Usar o endpoint interno `/api/placeholder-image` ou um SVG placeholder inline, eliminando a dependência externa e garantindo que a página de design system funcione offline.
 
+### 5.6 `design-system.js` com Caminho Incorreto de CSS Module
+
+**Arquivo:** `/pages/design-system.js`
+
+**Problema:** O import do CSS Module na linha 5 usava `'../styles/DesignSystem.module.css'`, que tenta resolver a partir de `pages/` subindo um nível (`../`) para a raiz do projeto (`/styles/`), porém o arquivo está em `pages/styles/`.
+
+**Impacto:** Erro de build `Module not found: Can't resolve '../styles/DesignSystem.module.css'` impedia a geração do bundle de produção do Next.js.
+
+**Sugestão:** Corrigir para `'./styles/DesignSystem.module.css'`, mantendo consistência com o padrão usado por `pages/index.js` que importa `./styles/Home.module.css`.
+
+**Status:** **Resolvido** — Caminho corrigido na linha 5 de `'../styles/DesignSystem.module.css'` para `'./styles/DesignSystem.module.css'`. Build compilou com sucesso (`✓ Compiled successfully in 3.2s`).
+
 ---
 
 ## 6. Segurança
