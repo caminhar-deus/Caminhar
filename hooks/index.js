@@ -4,9 +4,11 @@
  */
 
 export { useTheme } from './useTheme';
-export { useAuth, AuthContext, AuthProvider } from './useAuth';
+export { AuthContext } from './AuthContext';
+export { AuthProvider } from './AuthProvider';
+export { useAuth } from './useAuth';
 export { useAdminCrud } from './useAdminCrud';
-export { default as usePerformanceMetrics } from './usePerformanceMetrics';
+export { usePerformanceMetrics } from './usePerformanceMetrics';
 export { useApiFetch } from './useApiFetch';
 export { useDebounce } from './useDebounce';
 export { useThrottle } from './useThrottle';

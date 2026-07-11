@@ -10,7 +10,7 @@
 import SEOHead from '../components/SEO/Head';
 import { OrganizationSchema, WebsiteSchema } from '../components/SEO/StructuredData';
 import { ImageOptimized, PreloadResources, getCriticalResources } from '../components/Performance';
-import usePerformanceMetrics from '../hooks/usePerformanceMetrics';
+import { usePerformanceMetrics } from '../hooks/usePerformanceMetrics';
 import { siteConfig } from '../lib/seo/config';
 import { useState } from 'react';
 

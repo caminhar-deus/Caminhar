@@ -18,39 +18,51 @@
 
 ## 1. Correções de Código
 
-### 1.1 — `useAdminCrud.js`: corpo da requisição DELETE sem Content-Type desnecessário
+### 1.1 — `useAdminCrud.js`: corpo da requisição DELETE sem Content-Type desnecessário ✅
 
 **Arquivo:** `/hooks/useAdminCrud.js` (linha 196)
 **Problema:** O método `handleDelete` envia `headers: { 'Content-Type': 'application/json' }` mesmo quando o corpo da requisição DELETE contém apenas um `{ id }`. Embora não seja um erro funcional, o `Content-Type` é desnecessário para requisições DELETE sem corpo ou com corpo simples. Não há prejuízo real, mas é uma imprecisão técnica.
+**Situação:** Implementado. O `Content-Type` foi removido do `handleDelete` (linha 203). A requisição DELETE agora envia apenas `{ id }` sem header desnecessário. Nenhum consumidor ou fluxo foi impactado.
 
-### 1.2 — `useApiFetch.js`: falta de tratamento para rede off-line
+### 1.2 — `useApiFetch.js`: falta de tratamento para rede off-line ✅
 
 **Arquivo:** `/hooks/useApiFetch.js` (linhas 57–93)
 **Problema:** O hook não verifica `navigator.onLine` antes de executar o fetch. Em cenários de rede indisponível, o fetch lançará um `TypeError` genérico (`Failed to fetch`), que é capturado como mensagem "Erro desconhecido ao buscar dados". Uma verificação prévia permitiria uma mensagem mais clara ("Sem conexão com a internet").
+**Situação:** Implementado. Adicionada verificação `navigator.onLine` no início do `fetchData` com early return, mensagem "Sem conexão com a internet" e chamada do `onError`. Adicionado também listener para evento `'online'` que dispara refetch automático ao reconectar, com cleanup adequado e proteção SSR (`typeof navigator`/`typeof window`). Nenhum consumidor ou fluxo foi impactado.
 
-### 1.3 — `usePerformanceMetrics.js`: métrica MPFID definida mas não implementada
+### 1.3 — `usePerformanceMetrics.js`: métrica MPFID definida mas não implementada ✅
 
 **Arquivo:** `/hooks/usePerformanceMetrics.js` (linha 49)
 **Problema:** A constante `WEB_VITAL_METRICS` inclui `MPFID` (Max Potential First Input Delay), com threshold definido, mas não há implementação para coletá-la via `PerformanceObserver` ou `web-vitals`. Também não é registrada como métrica no `useEffect`. MPFID é uma métrica obsoleta desde 2023 e pode ser removida sem impacto.
+**Situação:** Implementado. As entradas `MPFID: 'MPFID'` em `WEB_VITAL_METRICS` e `MPFID: { good: 130, poor: 250, unit: 'ms' }` em `THRESHOLDS` foram removidas. O objeto `WEB_VITAL_METRICS` passou a conter 7 métricas (LCP, FID, CLS, INP, FCP, TTFB, TBT) e `THRESHOLDS` contém 7 thresholds correspondentes. Nenhum consumidor ou fluxo foi impactado, conforme confirmado por busca global que não encontrou referências a MPFID no projeto.
 
-### 1.4 — `useAdminCrud.js`: `toggleField` não faz atualização otimista de fato
+### 1.4 — `useAdminCrud.js`: `toggleField` não faz atualização otimista de fato ✅
 
 **Arquivo:** `/hooks/useAdminCrud.js` (linhas 218–251)
 **Problema:** A descrição do JSDoc menciona "atualização otimista na UI", porém a implementação não altera o estado local antes da resposta do servidor. Ela atualiza apenas após o retorno bem-sucedido do `PUT` e então chama `refetch()` para sincronizar. Isso não é uma atualização otimista — é uma atualização síncrona com revalidação. O comportamento é correto, mas a documentação (`@description`) está imprecisa.
+**Situação:** Implementado. O JSDoc do método `toggleField` (linha 217) e a descrição no `@typedef AdminCrudReturn` (linha 44) foram corrigidos para remover a menção a "atualização otimista". As novas descrições refletem com precisão o comportamento real: requisição PUT com revalidação via `refetch()`. Nenhum consumidor ou fluxo foi impactado.
+
+### 1.5 — `useApiFetch.js`: dependência `error` no `useEffect` causa loop infinito em cenários de erro HTTP ✅
+
+**Arquivo:** `/hooks/useApiFetch.js` (linha 129)
+**Problema:** O `useEffect` que dispara o fetch tinha `error` como dependência. Quando o fetch falhava (ex: status 500), `setError()` era chamado, o que alterava `error`, re-executava o `useEffect`, que chamava `fetchData` novamente, que falhava e chamava `setError` novamente — criando um loop infinito de renderizações. Isso impedia que componentes como `VideoGallery` exibissem a mensagem de erro, resultando em timeout nos testes.
+**Situação:** Implementado. A dependência `error` foi removida do array de dependências do `useEffect` (linha 129). O `useEffect` agora depende apenas de `fetchData` e `staleTime`. O event listener `online` continua funcional, pois a verificação `if (error && error.includes('Sem conexão'))` dentro do `handleOnline` ainda protege contra re-fetches indevidos. Nenhum consumidor ou fluxo foi impactado.
 
 ---
 
 ## 2. Ajustes Estruturais e Organizacionais
 
-### 2.1 — Inconsistência no padrão de exportação
+### 2.1 — Inconsistência no padrão de exportação ✅
 
 **Arquivo:** `/hooks/index.js`
 **Problema:** A maioria dos hooks é exportada como named export no barrel (`export { ... }`), mas `usePerformanceMetrics` é reexportado como `export { default as usePerformanceMetrics }`. Enquanto em `usePerformanceMetrics.js` o export é `export default function`, os demais hooks usam `export const ...` ou `export function ...`. Essa inconsistência não quebra funcionalidade, mas dificulta a padronização de imports no projeto.
+**Situação:** Implementado. O export em `usePerformanceMetrics.js` foi alterado de `export default function` para `export function` (linha 91). O barrel `index.js` foi ajustado de `export { default as usePerformanceMetrics }` para `export { usePerformanceMetrics }` (linha 9). Os imports default nos arquivos `examples/blog-post-seo-example.js` e `examples/homepage-seo-example.js` foram convertidos para named import para manter compatibilidade. Nenhum consumidor ou fluxo foi impactado.
 
-### 2.2 — Ausência de separação entre Context e Hook em `useAuth.js`
+### 2.2 — Ausência de separação entre Context e Hook em `useAuth.js` ✅
 
 **Arquivo:** `/hooks/useAuth.js`
 **Problema:** O arquivo `useAuth.js` define três elementos no mesmo módulo: `AuthContext`, `AuthProvider` e `useAuth`. Embora funcione, isso mistura responsabilidades. Uma separação em `AuthContext.js` + `AuthProvider.js` + `useAuth.js` (ou um único arquivo `AuthContext.js` com tudo) traria mais clareza estrutural, sem prejuízo às exportações do barrel.
+**Situação:** Implementado. O `AuthContext` foi movido para `hooks/AuthContext.js`, o `AuthProvider` para `hooks/AuthProvider.js`, e `useAuth.js` foi reescrito contendo apenas o hook `useAuth` (sem `export default`). O barrel `index.js` foi atualizado com exports individuais de cada arquivo. Os imports em `useAdminAuth.js`, `tests/helpers/render.js` e `tests/unit/components/Admin/withAdminAuth.test.js` foram atualizados para os novos paths. Nenhum consumidor ou fluxo foi impactado.
 
 ### 2.3 — `usePerformanceMetrics` sem um wrapper de contexto
 

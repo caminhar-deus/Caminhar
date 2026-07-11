@@ -8,7 +8,7 @@
 import React from 'react';
 import { render as rtlRender, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { AuthContext } from '../../hooks/useAuth';
+import { AuthContext } from '../../hooks/AuthContext';
 
 // =============================================================================
 // MOCKS DE MÓDULOS (devem estar no nível do módulo)

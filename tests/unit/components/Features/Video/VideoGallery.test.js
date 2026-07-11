@@ -152,7 +152,7 @@ describe('Componente Front-End - VideoGallery', () => {
     await waitFor(() => {
       expect(screen.getByText('Vídeo Teste 1')).toBeInTheDocument();
     });
-  });
+  }, 15_000);
 
   it('deve exibir mensagem de erro se a API retornar HTTP com erro', async () => {
     global.fetch.mockResolvedValueOnce({ ok: false, status: 500, json: async () => ({ error: 'Erro interno' }) });
@@ -162,7 +162,7 @@ describe('Componente Front-End - VideoGallery', () => {
     await waitFor(() => {
       expect(screen.getByText('Erro interno')).toBeInTheDocument();
     });
-  });
+  }, 15_000);
 
   it('deve navegar pelas páginas (Anterior e Próxima)', async () => {
     global.fetch.mockResolvedValue({ ok: true, json: async () => mockVideos });

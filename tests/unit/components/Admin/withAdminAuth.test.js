@@ -4,7 +4,7 @@ import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals
 import withAdminAuth from '../../../../components/Admin/withAdminAuth.js';
 import { mockGlobalFetch } from '../../../helpers/index.js';
 import '../../../mocks/next-setup.js';
-import { AuthProvider } from '../../../../hooks/useAuth.js';
+import { AuthProvider } from '../../../../hooks/AuthProvider';
 
 // Mock do next/head especifico para este HOC
 jest.mock('next/head', () => {

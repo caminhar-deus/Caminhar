@@ -10,21 +10,23 @@
 
 1. [Visão Geral](#visão-geral)
 2. [`/hooks/index.js`](#1-hooksindexjs) — Barrel de exportações
-3. [`/hooks/useAuth.js`](#2-hooksuseauthjs) — Autenticação global (Context + Provider)
-4. [`/hooks/useAdminAuth.js`](#3-hooksuseadminauthjs) — Autenticação para área administrativa
-5. [`/hooks/useAdminCrud.js`](#4-hooksuseadmincrudjs) — Operações CRUD em painéis admin
-6. [`/hooks/useApiFetch.js`](#5-hooksuseapifetchjs) — Fetch genérico com estados loading/error
-7. [`/hooks/useTheme.js`](#6-hooksusethemejs) — Gerenciamento de tema e tokens de design
-8. [`/hooks/usePerformanceMetrics.js`](#7-hooksuseperformancemetricsjs) — Core Web Vitals e performance
-9. [`/hooks/useDebounce.js`](#8-hooksusedebouncejs) — Debounce utilitário
-10. [`/hooks/useThrottle.js`](#9-hooksusethrottlejs) — Throttle utilitário
-11. [Resumo Consolidado](#resumo-consolidado)
+3. [`/hooks/AuthContext.js`](#2-hooksauthcontextjs) — Contexto de autenticação
+4. [`/hooks/AuthProvider.js`](#3-hooksauthproviderjs) — Provider de autenticação
+5. [`/hooks/useAuth.js`](#4-hooksuseauthjs) — Hook de autenticação
+6. [`/hooks/useAdminAuth.js`](#5-hooksuseadminauthjs) — Autenticação para área administrativa
+7. [`/hooks/useAdminCrud.js`](#6-hooksuseadmincrudjs) — Operações CRUD em painéis admin
+8. [`/hooks/useApiFetch.js`](#7-hooksuseapifetchjs) — Fetch genérico com estados loading/error
+9. [`/hooks/useTheme.js`](#8-hooksusethemejs) — Gerenciamento de tema e tokens de design
+10. [`/hooks/usePerformanceMetrics.js`](#9-hooksuseperformancemetricsjs) — Core Web Vitals e performance
+11. [`/hooks/useDebounce.js`](#10-hooksusedebouncejs) — Debounce utilitário
+12. [`/hooks/useThrottle.js`](#11-hooksusethrottlejs) — Throttle utilitário
+13. [Resumo Consolidado](#resumo-consolidado)
 
 ---
 
 ## Visão Geral
 
-A pasta `/hooks` contém **9 arquivos** que implementam custom hooks React. Não há subpastas. Os hooks dividem-se em três categorias:
+A pasta `/hooks` contém **11 arquivos** que implementam custom hooks React e seus componentes de contexto. Não há subpastas. Os hooks dividem-se em três categorias:
 
 | Categoria | Hooks | Descrição |
 |---|---|---|
@@ -41,31 +43,50 @@ A pasta `/hooks` contém **9 arquivos** que implementam custom hooks React. Não
 
 **Funcionalidades:**
 - Reexporta hooks nomeados: `useTheme`, `useAuth`, `useAdminCrud`, `usePerformanceMetrics`, `useApiFetch`, `useDebounce`, `useThrottle`, `useAdminAuth`.
-- Exporta também `AuthContext` e `AuthProvider` (definidos em `useAuth.js`), permitindo que consumidores importem tudo de um único local.
-- A reexportação de `usePerformanceMetrics` é feita com `export { default as usePerformanceMetrics }`, ou seja, o arquivo fonte (`usePerformanceMetrics.js`) usa `export default function` e o barrel reexporta esse default como um **named export**. Os demais hooks são reexportados diretamente como named exports.
+- Exporta também `AuthContext` e `AuthProvider` (definidos em `AuthContext.js` e `AuthProvider.js` respectivamente), permitindo que consumidores importem tudo de um único local.
+- Todos os hooks são reexportados diretamente como named exports com a sintaxe `export { Nome } from './arquivo'`, incluindo `usePerformanceMetrics` que anteriormente usava `export { default as usePerformanceMetrics }`.
 
 ---
 
-## 2. `/hooks/useAuth.js`
+## 2. `/hooks/AuthContext.js`
 
-**Localização:** `/hooks/useAuth.js`
-**Propósito:** Contexto e hook de autenticação global para a aplicação. Gerencia estado do usuário, verificação de sessão e operações de login/logout.
+**Localização:** `/hooks/AuthContext.js`
+**Propósito:** Definição do contexto de autenticação React, separado do provider e do hook para respeitar o princípio de responsabilidade única.
 
 **Funcionalidades:**
-- **`AuthContext`** — Contexto React com valor padrão (`user: null`, `loading: true`, funções vazias) para evitar erros de consumo fora do Provider.
-- **`AuthProvider`** — Componente provider que:
-  - Na montagem, realiza `GET /api/auth/check` com `credentials: 'include'` para verificar sessão existente.
-  - Usa `AbortController` para cancelar a verificação de sessão no desmonte do componente.
-  - `login(username, password)`: Envia `POST /api/auth/login` com JSON e `credentials: 'include'`. Retorna `{ success, error }`.
-  - `logout()`: Envia `POST /api/auth/logout` com `credentials: 'include'` e limpa o estado do usuário.
-  - Possui `loginLoading` separado de `loading` para evitar flicker visual durante operações de login.
-  - Usa `loginAbortRef` (`useRef`) com `AbortController` para abortar requisições de login anteriores se uma nova for disparada.
-- **`useAuth()`** — Hook que consome o `AuthContext` e expõe `user`, `isAuthenticated`, `loading`, `loginLoading`, `login`, `logout`.
+- **`AuthContext`** — Contexto React criado via `createContext` com valor padrão (`user: null`, `isAuthenticated: false`, `loading: true`, `loginLoading: false`, funções `login`/`logout` vazias) para evitar erros de consumo fora do Provider.
+- **`@typedef AuthContextValue`** — Documentação JSDoc do tipo do valor do contexto, definindo a interface esperada para consumidores.
+
+---
+
+## 3. `/hooks/AuthProvider.js`
+
+**Localização:** `/hooks/AuthProvider.js`
+**Propósito:** Componente provider de autenticação que gerencia o estado do usuário, verificação de sessão e operações de login/logout. Consome `AuthContext` de `AuthContext.js`.
+
+**Funcionalidades:**
+- Na montagem, realiza `GET /api/auth/check` com `credentials: 'include'` para verificar sessão existente.
+- Usa `AbortController` para cancelar a verificação de sessão no desmonte do componente.
+- `login(username, password)`: Envia `POST /api/auth/login` com JSON e `credentials: 'include'`. Retorna `{ success, error }`.
+- `logout()`: Envia `POST /api/auth/logout` com `credentials: 'include'` e limpa o estado do usuário.
+- Possui `loginLoading` separado de `loading` para evitar flicker visual durante operações de login.
+- Usa `loginAbortRef` (`useRef`) com `AbortController` para abortar requisições de login anteriores se uma nova for disparada.
 - **Tratamento de erros:** `AbortError` é tratado silenciosamente. Erros de rede são convertidos em mensagem amigável. Erros da API são extraídos do corpo JSON da resposta.
 
 ---
 
-## 3. `/hooks/useAdminAuth.js`
+## 4. `/hooks/useAuth.js`
+
+**Localização:** `/hooks/useAuth.js`
+**Propósito:** Hook que consome o `AuthContext` e expõe os dados de autenticação para componentes React. Contém apenas o hook, sem a definição do contexto ou do provider.
+
+**Funcionalidades:**
+- **`useAuth()`** — Hook que consome o `AuthContext` via `useContext` e retorna `user`, `isAuthenticated`, `loading`, `loginLoading`, `login`, `logout`.
+- **Exportação:** Apenas named export (`export const useAuth`), sem `export default`.
+
+---
+
+## 5. `/hooks/useAdminAuth.js`
 
 **Localização:** `/hooks/useAdminAuth.js`
 **Propósito:** Hook de autenticação específico para a área administrativa. Consome o `AuthContext` de `useAuth.js` e estende com funcionalidades de redirect e estados isolados de loading/erro para o login.
@@ -78,7 +99,7 @@ A pasta `/hooks` contém **9 arquivos** que implementam custom hooks React. Não
 
 ---
 
-## 4. `/hooks/useAdminCrud.js`
+## 6. `/hooks/useAdminCrud.js`
 
 **Localização:** `/hooks/useAdminCrud.js`
 **Propósito:** Hook reutilizável que centraliza operações CRUD completas para painéis administrativos: listagem, criação, edição, exclusão, paginação e toggle de campos booleanos.
@@ -95,7 +116,7 @@ A pasta `/hooks` contém **9 arquivos** que implementam custom hooks React. Não
 
 ---
 
-## 5. `/hooks/useApiFetch.js`
+## 7. `/hooks/useApiFetch.js`
 
 **Localização:** `/hooks/useApiFetch.js`
 **Propósito:** Hook genérico para requisições HTTP com gerenciamento centralizado de estados `loading`/`error`, cache simples e suporte a transformação de dados.
@@ -104,17 +125,19 @@ A pasta `/hooks` contém **9 arquivos** que implementam custom hooks React. Não
 - **Configuração (`ApiFetchOptions`):** Aceita `url`, `options` (opções do fetch nativo), `deps` (dependências extras), `transform` (função de transformação), `initialData` (valor inicial), `staleTime` (cache em ms), `onError` (callback).
 - **Estabilização de options:** Usa `optionsRef` (`useRef`) e um estado `optionsKey` (contador) que é incrementado via `useEffect` quando o conteúdo serializado de `options` muda. Isso evita que o `fetchData` seja recriado a cada render por mudanças de referência em `options`.
 - **`fetchData()`:** Função memoizada via `useCallback` que:
+  - Verifica `navigator.onLine` antes de executar o fetch. Se off-line, define erro "Sem conexão com a internet", chama `onError` e interrompe (early return).
   - Executa `fetch(url, options)`.
   - Trata HTTP 304 como resposta sem corpo (não lança erro).
   - Extrai mensagem de erro do corpo JSON da resposta quando o status não é ok.
   - Aplica `transform` se fornecida.
   - Retorna `{ data, loading, error, refetch, setData }`.
+- **Reconexão automática:** Registra listener para evento `'online'` no `window`. Se o erro atual for de conectividade (mensagem contém "Sem conexão"), dispara `fetchData()` automaticamente ao restabelecer a conexão. O listener é removido no cleanup do `useEffect` e possui proteção SSR (`typeof window`).
 - **Cache simples (`staleTime`):** Se configurado, compara o timestamp do último fetch com o tempo decorrido. Se estiver dentro do período fresco, pula a requisição e mantém os dados em cache.
 - **`setData`:** Função exposta para definir dados manualmente (útil para atualizações otimistas fora do hook).
 
 ---
 
-## 6. `/hooks/useTheme.js`
+## 8. `/hooks/useTheme.js`
 
 **Localização:** `/hooks/useTheme.js`
 **Propósito:** Hook principal para gerenciamento de tema (light/dark) e acesso centralizado a todos os tokens de design do sistema (cores, espaçamentos, tipografia, bordas, sombras, breakpoints, animações).
@@ -136,14 +159,14 @@ A pasta `/hooks` contém **9 arquivos** que implementam custom hooks React. Não
 
 ---
 
-## 7. `/hooks/usePerformanceMetrics.js`
+## 9. `/hooks/usePerformanceMetrics.js`
 
 **Localização:** `/hooks/usePerformanceMetrics.js`
 **Propósito:** Hook avançado para monitoramento de Core Web Vitals (LCP, FID, CLS, INP, FCP, TTFB) e métricas adicionais de performance (TBT, recursos lentos).
 
 **Funcionalidades:**
 - **Biblioteca externa:** Importa dinamicamente `web-vitals` com promessa cacheada em nível de módulo (`const webVitalsPromise = import('web-vitals')`), executada apenas uma vez.
-- **Métricas suportadas (`WEB_VITAL_METRICS`):** LCP, FID, CLS, INP, FCP, TTFB, TBT, MPFID.
+- **Métricas suportadas (`WEB_VITAL_METRICS`):** LCP, FID, CLS, INP, FCP, TTFB, TBT.
 - **Thresholds (`THRESHOLDS`):** Valores de classificação Google (`good` / `poor`) para cada métrica, com unidades (`ms` ou vazio para CLS).
 - **`reportMetric(metric)`:** Função callback que:
   - Aplica cache de 1 minuto (`METRICS_CACHE_MS`) para evitar reports duplicados da mesma métrica com o mesmo valor.
@@ -159,7 +182,7 @@ A pasta `/hooks` contém **9 arquivos** que implementam custom hooks React. Não
 
 ---
 
-## 8. `/hooks/useDebounce.js`
+## 10. `/hooks/useDebounce.js`
 
 **Localização:** `/hooks/useDebounce.js`
 **Propósito:** Hook de debounce simples e reutilizável. Retorna o valor atualizado somente após um período de inatividade.
@@ -172,7 +195,7 @@ A pasta `/hooks` contém **9 arquivos** que implementam custom hooks React. Não
 
 ---
 
-## 9. `/hooks/useThrottle.js`
+## 11. `/hooks/useThrottle.js`
 
 **Localização:** `/hooks/useThrottle.js`
 **Propósito:** Hook de throttle reutilizável. Limita a frequência de chamada de uma função, ignorando chamadas dentro do intervalo especificado.
@@ -190,7 +213,9 @@ A pasta `/hooks` contém **9 arquivos** que implementam custom hooks React. Não
 | Arquivo | Localização | Tipo | Complexidade | Dependências Externas |
 |---|---|---|---|---|
 | `index.js` | `/hooks/index.js` | Barrel file | Baixa | Nenhuma |
-| `useAuth.js` | `/hooks/useAuth.js` | Context + Provider + Hook | Média | Nenhuma |
+| `AuthContext.js` | `/hooks/AuthContext.js` | Contexto React | Baixa | Nenhuma |
+| `AuthProvider.js` | `/hooks/AuthProvider.js` | Provider React | Média | Nenhuma |
+| `useAuth.js` | `/hooks/useAuth.js` | Hook de consumo de contexto | Baixa | Nenhuma |
 | `useAdminAuth.js` | `/hooks/useAdminAuth.js` | Hook de autenticação admin | Baixa | `next/router` |
 | `useAdminCrud.js` | `/hooks/useAdminCrud.js` | Hook de CRUD completo | Alta | `react-hot-toast` |
 | `useApiFetch.js` | `/hooks/useApiFetch.js` | Hook de fetch genérico | Média | Nenhuma |
@@ -201,6 +226,6 @@ A pasta `/hooks` contém **9 arquivos** que implementam custom hooks React. Não
 
 ### Observações importantes
 
-- **Relação entre hooks:** `useAdminAuth` depende do `AuthContext` provido por `useAuth`. `useAdminCrud` depende de `useApiFetch`. `useTheme` depende de `useThrottle` e dos tokens de design importados de `pages/styles/tokens`.
-- **Exportações:** O barrel `index.js` exporta `AuthContext` e `AuthProvider` além dos hooks. `usePerformanceMetrics` é reexportado do default do fonte como named export (`export { default as usePerformanceMetrics }`), enquanto os demais hooks são reexportados diretamente como named exports.
+- **Relação entre hooks:** `useAdminAuth` depende do `AuthContext` (importado de `AuthContext.js`). `useAdminCrud` depende de `useApiFetch`. `useTheme` depende de `useThrottle` e dos tokens de design importados de `pages/styles/tokens`.
+- **Exportações:** O barrel `index.js` exporta `AuthContext` (de `AuthContext.js`), `AuthProvider` (de `AuthProvider.js`) e `useAuth` (de `useAuth.js`) como exports individuais. Todos os hooks são reexportados diretamente como named exports com a sintaxe `export { Nome } from './arquivo'`, incluindo `usePerformanceMetrics`.
 - **Cobertura de uso:** Todos os hooks são exportados via `index.js` e estão disponíveis para consumo, porém `useTheme` e `usePerformanceMetrics` possuem anotações `@todo` indicando que atualmente não possuem consumidores diretos confirmados na aplicação.

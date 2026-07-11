@@ -47,7 +47,6 @@ const WEB_VITAL_METRICS = {
   FCP: 'FCP',        // First Contentful Paint
   TTFB: 'TTFB',      // Time to First Byte
   TBT: 'TBT',        // Total Blocking Time
-  MPFID: 'MPFID',    // Max Potential First Input Delay
 };
 
 // Thresholds de avaliação (Google Web Vitals)
@@ -59,7 +58,6 @@ const THRESHOLDS = {
   FCP: { good: 1800, poor: 3000, unit: 'ms' },
   TTFB: { good: 800, poor: 1800, unit: 'ms' },
   TBT: { good: 200, poor: 600, unit: 'ms' },
-  MPFID: { good: 130, poor: 250, unit: 'ms' },
 };
 
 // Utils
@@ -90,7 +88,7 @@ const METRICS_CACHE_MS = 60_000; // 1 minuto de cache para evitar reports duplic
  * @todo Integrar este hook nos componentes da aplicação. Atualmente exportado
  *       via hooks/index.js mas sem consumidores diretos.
  */
-export default function usePerformanceMetrics(options = {}) {
+export function usePerformanceMetrics(options = {}) {
   const {
     onReport,
     reportToAnalytics = false,

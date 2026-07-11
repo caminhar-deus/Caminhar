@@ -21,7 +21,7 @@ import {
 import { ImageOptimized } from '../components/Performance';
 import { LazyIframe } from '../components/Performance';
 import { siteConfig, getCanonicalUrl, getImageUrl } from '../lib/seo/config';
-import usePerformanceMetrics from '../hooks/usePerformanceMetrics';
+import { usePerformanceMetrics } from '../hooks/usePerformanceMetrics';
 import { useState } from 'react';
 
 export default function BlogPostExample({ post: initialPost }) {

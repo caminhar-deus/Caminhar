@@ -102,6 +102,11 @@
 - **Problema:** Usuário e senha `test/test` estão hardcoded.
 - **Sugestão:** Extrair para variáveis de ambiente com fallback seguro.
 
+### 3.7 Timeout em testes de erro do VideoGallery causado por loop infinito no `useApiFetch` ✅
+- **Arquivos:** `tests/unit/components/Features/Video/VideoGallery.test.js` (linhas 136, 157), `hooks/useApiFetch.js` (linha 129)
+- **Problema:** Dois testes de erro HTTP no VideoGallery estouravam o timeout de 10s do Jest. A causa raiz era o `useEffect` do `useApiFetch.js` que listava `error` como dependência. Quando o fetch falhava, `setError()` alterava `error`, re-executava o `useEffect`, que chamava `fetchData` novamente, que falhava e chamava `setError` novamente — loop infinito de renderizações.
+- **Correção:** Removida a dependência `error` do `useEffect` em `useApiFetch.js` (linha 129). Adicionado timeout explícito de 15s nos 2 testes como rede de segurança. Testes passam em ~14ms e ~5ms respectivamente. Nenhuma regressão na suite completa (352 testes).
+
 ---
 
 ## 4. Problemas de Performance

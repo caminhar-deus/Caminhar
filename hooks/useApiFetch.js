@@ -55,6 +55,15 @@ export const useApiFetch = (url, config = {}) => {
   }, [serializedOptions]);
 
   const fetchData = useCallback(async () => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setError('Sem conexão com a internet');
+      setLoading(false);
+      if (typeof onError === 'function') {
+        onError(new Error('Sem conexão com a internet'));
+      }
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -93,6 +102,16 @@ export const useApiFetch = (url, config = {}) => {
   }, [url, optionsKey, ...deps]);
 
   useEffect(() => {
+    const handleOnline = () => {
+      if (error && error.includes('Sem conexão')) {
+        fetchData();
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', handleOnline);
+    }
+
     if (staleTime && lastFetchRef.current > 0) {
       const elapsed = Date.now() - lastFetchRef.current;
       if (elapsed < staleTime) {
@@ -101,7 +120,13 @@ export const useApiFetch = (url, config = {}) => {
       }
     }
     fetchData();
-  }, [fetchData, staleTime]);
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('online', handleOnline);
+      }
+    };
+    }, [fetchData, staleTime]);
 
   return { data, loading, error, refetch: fetchData, setData };
 };

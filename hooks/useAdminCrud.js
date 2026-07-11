@@ -41,7 +41,7 @@ import { useApiFetch } from './useApiFetch';
  * @property {function} handleEdit - Inicia modo edição
  * @property {function} handleSubmit - Envia formulário (e, customValidator) — ver {@link CustomValidator}
  * @property {function} handleDelete - Exclui item
- * @property {function} toggleField - Alterna um campo booleano de um item com atualização otimista
+ * @property {function} toggleField - Alterna um campo booleano de um item via requisição PUT com revalidação
  * @property {function} resetForm - Reseta formulário
  * @property {function} goToPage - Navega para página específica
  * @property {function} refetch - Recarrega os dados da lista
@@ -200,7 +200,6 @@ export const useAdminCrud = ({
     try {
       const response = await fetch(apiEndpoint, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
         signal: abortController.signal,
       });
@@ -215,7 +214,8 @@ export const useAdminCrud = ({
   };
 
   /**
-   * Alterna um campo booleano de um item específico com atualização otimista na UI.
+   * Alterna um campo booleano de um item específico via requisição PUT.
+   * Após a resposta bem-sucedida do servidor, os dados são revalidados com refetch().
    * Envia apenas { id, [key]: newValue } para evitar validação desnecessária de outros campos.
    *
    * @param {Object} item - Item a ser alterado
