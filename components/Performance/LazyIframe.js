@@ -1,6 +1,42 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { extractYoutubeId } from '@/lib/youtube';
 
+// Gerenciador global de fila de carregamento de iframes
+// Limita a 2 carregamentos simultâneos para evitar contenção de banda
+const iframeLoadingQueue = {
+  concurrent: 0,
+  maxConcurrent: 2,
+  queue: [],
+  processQueue() {
+    while (this.queue.length > 0 && this.concurrent < this.maxConcurrent) {
+      const next = this.queue.shift();
+      if (next) {
+        this.concurrent++;
+        next();
+      }
+    }
+  },
+  add(loadFn) {
+    return new Promise((resolve, reject) => {
+      const wrapped = () => {
+        loadFn()
+          .then((result) => {
+            this.concurrent = Math.max(0, this.concurrent - 1);
+            this.processQueue();
+            resolve(result);
+          })
+          .catch((err) => {
+            this.concurrent = Math.max(0, this.concurrent - 1);
+            this.processQueue();
+            reject(err);
+          });
+      };
+      this.queue.push(wrapped);
+      this.processQueue();
+    });
+  },
+};
+
 /**
  * LazyIframe - Componente para lazy loading de iframes (YouTube, Spotify, etc)
  * 
@@ -34,12 +70,11 @@ export default function LazyIframe({
 }) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isVisible, setIsVisible] = useState(!loadOnVisible);
+  const [canRender, setCanRender] = useState(false);
   const containerRef = useRef(null);
   const iframeRef = useRef(null);
 
   // Intersection Observer para lazy loading
-  // Quando loadOnVisible=true: carrega automaticamente ao entrar no viewport
-  // Quando loadOnVisible=false: carrega apenas com clique do usuário
   useEffect(() => {
     if (!loadOnVisible || typeof IntersectionObserver === 'undefined') {
       return;
@@ -48,6 +83,7 @@ export default function LazyIframe({
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
+          // Torna o componente visível e agenda na fila de carregamento
           setIsVisible(true);
           observer.disconnect();
         }
@@ -62,12 +98,29 @@ export default function LazyIframe({
     return () => observer.disconnect();
   }, [loadOnVisible, threshold]);
 
+  // Quando o componente se torna visível, agenda na fila global de carregamento
+  // para limitar a 2 iframes carregando simultaneamente
+  useEffect(() => {
+    if (!isVisible || canRender) return;
+
+    iframeLoadingQueue.add(() => {
+      return new Promise((resolve) => {
+        requestAnimationFrame(() => {
+          setCanRender(true);
+          resolve();
+        });
+      });
+    });
+  }, [isVisible, canRender]);
+
   const handleLoad = useCallback(() => {
     setIsLoaded(true);
     onLoad?.();
   }, [onLoad]);
 
   const handleClick = useCallback(() => {
+    // Clique do usuário sempre carrega imediatamente, sem fila
+    setCanRender(true);
     setIsVisible(true);
   }, []);
 
@@ -78,7 +131,10 @@ export default function LazyIframe({
     if (provider === 'youtube') {
       const videoId = extractYoutubeId(src);
       if (videoId) {
-        return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+        // Usa hqdefault.jpg (480x360, ~20-50KB) em vez de maxresdefault.jpg (1080p, ~200-400KB)
+        // A thumbnail pré-play não precisa da resolução máxima, e a redução de tamanho
+        // acelera significativamente o carregamento inicial da página
+        return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
       }
     }
     
@@ -97,7 +153,7 @@ export default function LazyIframe({
   };
 
   const thumbUrl = getThumbnail();
-  const shouldShowPlaceholder = !isVisible;
+  const shouldShowPlaceholder = !canRender;
 
   return (
     <div
@@ -168,8 +224,8 @@ export default function LazyIframe({
         </div>
       )}
 
-      {/* Iframe */}
-      {isVisible && (
+      {/* Iframe — só monta quando canRender for true (liberado pela fila ou clique do usuário) */}
+      {canRender && (
         <iframe
           ref={iframeRef}
           src={getEmbedSrc()}

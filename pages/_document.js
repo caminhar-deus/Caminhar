@@ -24,12 +24,20 @@ export default function Document() {
   return (
     <Html lang={siteConfig.language}>
       <Head>
-        {/* Preconnect crítico — apenas domínios essenciais globais (fontes) */}
+        {/* Preconnect crítico — domínios globais usados em toda a aplicação */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://www.youtube.com" />
+        <link rel="preconnect" href="https://img.youtube.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://open.spotify.com" />
+        <link rel="preconnect" href="https://i.scdn.co" crossOrigin="anonymous" />
 
-        {/* DNS Prefetch — apenas domínios essenciais globais */}
+        {/* DNS Prefetch com fallback para navegadores que não suportam preconnect */}
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+        <link rel="dns-prefetch" href="https://www.youtube.com" />
+        <link rel="dns-prefetch" href="https://img.youtube.com" />
+        <link rel="dns-prefetch" href="https://open.spotify.com" />
+        <link rel="dns-prefetch" href="https://i.scdn.co" />
 
         {/* Google Fonts com font-display: swap para evitar FOIT */}
         <link

@@ -133,7 +133,7 @@ Componentes de funcionalidades públicas do site, agrupados por domínio: Blog, 
 
 ### 2.2 ContentTabs
 
-**index.js** (`Features/ContentTabs/index.js`): Sistema de abas organizando Blog, Músicas, Vídeos, Produtos. Lazy loading via `React.lazy`, ARIA, aba placeholder "Em Desenvolvimento".
+**index.js** (`Features/ContentTabs/index.js`): Sistema de abas organizando Blog, Músicas, Vídeos, Produtos. Imports estáticos (substituiu `React.lazy` para evitar erro de chunk CSS no Turbopack), ARIA, aba placeholder "Em Desenvolvimento".
 
 **ContentTabs.module.css** (`Features/ContentTabs/styles/`): Estilos de abas, container com `min-height: 600px` para evitar layout shift, responsivo.
 
@@ -194,7 +194,14 @@ Componentes de funcionalidades públicas do site, agrupados por domínio: Blog, 
 
 **Localização:** `components/Performance/LazyIframe.js`
 
-**Propósito:** Lazy loading de iframes (YouTube, Spotify). IntersectionObserver, thumbnail preview, clique para carregar, conversão automática de URL YouTube.
+**Propósito:** Lazy loading de iframes (YouTube, Spotify). IntersectionObserver, thumbnail preview, clique para carregar, conversão automática de URL YouTube, sequenciamento de carregamento.
+
+**Funcionalidades:**
+- **IntersectionObserver:** Detecta quando o iframe entra no viewport e ativa o carregamento automático.
+- **Thumbnail preview:** Usa `hqdefault.jpg` (480×360, ~20-50KB) para YouTube em vez de `maxresdefault.jpg` (1080p, ~200-400KB), reduzindo o tamanho de thumbnail pré-play em 5-10x. Se `thumbnail` for fornecida como prop, esta tem prioridade sobre a padrão do YouTube.
+- **Clique para carregar:** O usuário pode clicar no placeholder para carregar o iframe imediatamente (sem passar pela fila de carregamento).
+- **Conversão automática de URL YouTube:** Normaliza URLs no formato `youtube.com/watch?v=ID`, `youtu.be/ID` para `youtube.com/embed/ID`.
+- **Sequenciamento de carregamento via fila global:** Um gerenciador singleton (`iframeLoadingQueue`) limita a 2 iframes carregando simultaneamente. Quando múltiplos vídeos entram no viewport ao mesmo tempo, eles são enfileirados e liberados um a um, evitando contenção de banda. O clique do usuário no placeholder ignora a fila e carrega imediatamente.
 
 ### 4.3 PreloadResources.js
 

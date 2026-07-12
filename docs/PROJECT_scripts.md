@@ -3,7 +3,7 @@
 > **Projeto:** Caminhar  
 > **Diretório:** `/scripts`  
 > **Objetivo deste documento:** Descrever a finalidade, localização e funcionamento de cada script disponível no diretório `scripts/` e seus subdiretórios.  
-> **Última atualização:** 28/06/2026
+> **Última atualização:** 11/07/2026
 
 ---
 
@@ -81,6 +81,7 @@ scripts/
 │   ├── 011-fix-entity-id-type.js     # Altera entity_id de INTEGER para BIGINT
 │   ├── 012-add-performance-indexes.sql # Adiciona índices de performance (SQL puro)
 │   ├── 013-add-trgm-indexes.js       # Adiciona índices TRGM para busca textual
+│   ├── 014-add-dicas-index.js        # Adiciona índice composto (published, id ASC) para paginação eficiente em dicas
 │   ├── seed-migrations-table.js      # Popula tabela _migrations retroativamente
 │   └── verify-applied.js             # Verifica se cada migração foi aplicada no banco
 │
@@ -202,7 +203,7 @@ Este grupo forma o subsistema completo de backup e restauração do banco de dad
 
 ---
 
-### 🗄️ Migrações (2 scripts + 14 arquivos de migração)
+### 🗄️ Migrações (2 scripts + 15 arquivos de migração)
 
 #### `scripts/migrate.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/migrate.js`
@@ -211,9 +212,9 @@ Este grupo forma o subsistema completo de backup e restauração do banco de dad
 - **Funções exportadas:** `ensureMigrationTable()`, `getAppliedMigrations()`, `listMigrationFiles()`, `applyMigration()`, `revertLastMigration()`, `listStatus()`, `run()`
 - **Dependências:** `fs`, `path`, `./utils/load-env.js`, `./db/connection.js`
 
-#### `scripts/migrations/` (14 arquivos)
+#### `scripts/migrations/` (15 arquivos)
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/migrations/`
-- **Propósito:** Conjunto de migrações numeradas (001 a 013 + utilitários) que evoluem o schema do banco PostgreSQL de forma controlada. Cada migração exporta `up(pool)` e `down(pool)`. São executadas pelo `migrate.js`.
+- **Propósito:** Conjunto de migrações numeradas (001 a 014 + utilitários) que evoluem o schema do banco PostgreSQL de forma controlada. Cada migração exporta `up(pool)` e `down(pool)`. São executadas pelo `migrate.js`.
 
 | Arquivo | Descrição |
 |---------|-----------|
@@ -229,6 +230,7 @@ Este grupo forma o subsistema completo de backup e restauração do banco de dad
 | `011-fix-entity-id-type.js` | Altera `entity_id` de INTEGER para BIGINT |
 | `012-add-performance-indexes.sql` | Adiciona índices de performance (SQL puro) |
 | `013-add-trgm-indexes.js` | Adiciona índices TRGM para busca textual |
+| `014-add-dicas-index.js` | Adiciona índice composto (published, id ASC) para paginação eficiente em dicas |
 | `seed-migrations-table.js` | Popula `_migrations` retroativamente |
 | `verify-applied.js` | Verifica se cada migração foi aplicada via `information_schema` |
 
@@ -408,7 +410,7 @@ Agrupados por escopo de atuação:
 |-----------|:----------:|-----------|
 | **Backup** | 5 | `backup.js` + entry points: `create-backup.js`, `restore-backup.js`, `init-backup.js`, `view-backup-logs.js` |
 | **Seed** | 5 | `seed-all.js` (orquestrador) + `seed-musicas.js`, `seed-posts.js`, `seed-products.js`, `seed-videos.js` |
-| **Migrações** | 16 | `migrate.js` (executor) + 14 migrações em `migrations/` |
+| **Migrações** | 17 | `migrate.js` (executor) + 15 migrações em `migrations/` |
 | **Schemas JSON** | 4 | `schemas/` (dicas, musicas, posts, videos) |
 | **Inicialização** | 4 | `init-table.js`, `init-server.js`, `init-backup.js`, `seed-settings.js` |
 | **Limpeza (PostgreSQL)** | 5 | `clean-load-test-posts.js`, `clear-db.js`, `clear-musicas.js`, `utils/cleanup-test-data.js`, `maintenance/clean-k6-videos.js` + módulo compartilhado `cleanup.js` |
@@ -423,7 +425,7 @@ Agrupados por escopo de atuação:
 | **Utilitários** | 9 | `utils/cleanup.js`, `cleanup-test-data.js`, `constants.js`, `date-format.js`, `init-table-utils.js`, `list-settings.js`, `list-table-columns.js`, `load-env.js`, `update-setting.js` |
 | **Outros** | 3 | `db-shell.js`, `reset-password.js`, `cli/validate-schema.js` |
 | **Irrelevantes/Fora de Lugar** | 2 | `db/verify-db-functions.js` (desatualizado), `db/verify-migration.js` (handler API fora de lugar) |
-| **Total** | ~72 | Contando todos os scripts, schemas e módulos utilitários |
+| **Total** | ~73 | Contando todos os scripts, schemas e módulos utilitários |
 
 ---
 
@@ -443,12 +445,3 @@ Agrupados por escopo de atuação:
 ---
 
 > 📝 **Nota:** Este documento é puramente descritivo. Para sugestões de melhorias, correções e análise de duplicidades, consulte o documento complementar [`UPGRADE_scripts.md`](UPGRADE_scripts.md).
-</content>
-<task_progress>
-- [x] Explorar estrutura completa da pasta /scripts
-- [x] Analisar todos os arquivos das subpastas (cli, db, diagnostics, maintenance, migrations, schemas, tests, utils)
-- [x] Consultar documentos anteriores (docs/antigos/PROJECT_scripts.md, docs/resolvidos/UPGRADE_scripts.md)
-- [x] Ler arquivos adicionais para confirmar informações (seed-settings, verify-db-functions, verify-migration, check-server, connection, warm-routes)
-- [ ] Criar /docs/PROJECT_scripts.md com análise consolidada
-- [ ] Criar /docs/UPGRADE_scripts.md com levantamento de melhorias
-</task_progress>

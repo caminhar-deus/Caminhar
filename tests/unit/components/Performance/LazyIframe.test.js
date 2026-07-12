@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, fireEvent, act } from '@testing-library/react';
+import { render, fireEvent, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import LazyIframe from '../../../../components/Performance/LazyIframe';
 
@@ -30,25 +30,30 @@ describe('Componente de Performance - LazyIframe', () => {
     expect(container.querySelector('iframe')).not.toBeInTheDocument();
   });
 
-  it('deve renderizar o iframe quando o elemento entrar na tela (IntersectionObserver)', () => {
+  it('deve renderizar o iframe quando o elemento entrar na tela (IntersectionObserver)', async () => {
     const { container } = render(<LazyIframe src="https://exemplo.com" title="Teste" />);
     
     act(() => observerInstance.trigger(true));
 
-    const iframe = container.querySelector('iframe');
-    expect(iframe).toBeInTheDocument();
-    expect(iframe).toHaveAttribute('src', 'https://exemplo.com');
+    await waitFor(() => {
+      expect(container.querySelector('iframe')).toBeInTheDocument();
+    });
+    expect(container.querySelector('iframe')).toHaveAttribute('src', 'https://exemplo.com');
   });
 
-  it('deve formatar corretamente URL e thumbnail dinâmica para o provider youtube', () => {
+  it('deve formatar corretamente URL e thumbnail dinâmica para o provider youtube', async () => {
     const { container } = render(
       <LazyIframe src="https://www.youtube.com/watch?v=dQw4w9WgXcQ" title="YT" provider="youtube" />
     );
     
     const placeholder = container.firstChild.firstChild;
-    expect(placeholder).toHaveStyle('background-image: url(https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg)');
+    expect(placeholder).toHaveStyle('background-image: url(https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg)');
 
     act(() => observerInstance.trigger(true));
+
+    await waitFor(() => {
+      expect(container.querySelector('iframe')).toBeInTheDocument();
+    });
     expect(container.querySelector('iframe')).toHaveAttribute('src', 'https://www.youtube.com/embed/dQw4w9WgXcQ');
   });
 
@@ -59,11 +64,15 @@ describe('Componente de Performance - LazyIframe', () => {
     expect(container.firstChild.firstChild).toHaveStyle('background-image: url(custom.jpg)');
   });
 
-  it('deve chamar onLoad quando o iframe carregar e esconder a opacidade 0', () => {
+  it('deve chamar onLoad quando o iframe carregar e esconder a opacidade 0', async () => {
     const onLoadMock = jest.fn();
     const { container } = render(<LazyIframe src="https://exemplo.com" title="Teste" onLoad={onLoadMock} />);
     
     act(() => observerInstance.trigger(true));
+
+    await waitFor(() => {
+      expect(container.querySelector('iframe')).toBeInTheDocument();
+    });
     const iframe = container.querySelector('iframe');
     act(() => fireEvent.load(iframe));
 

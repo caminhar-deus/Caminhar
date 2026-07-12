@@ -1,6 +1,7 @@
 # Análise da Pasta `/pages`
 
 > **Data:** 28/06/2026
+> **Última atualização:** 11/07/2026
 > **Objetivo:** Documentar todos os arquivos da pasta `/pages`, descrevendo localização exata, propósito e funcionalidades de cada um.
 > **Total de arquivos:** 53
 
@@ -39,8 +40,8 @@
 - **Propósito:** Personaliza o HTML document raiz com otimizações de performance, segurança e SEO.
 - **Funcionalidades:**
   - **CSS crítico inline** cacheado em nível de módulo (`cachedCriticalCSS`) — executado apenas 1x na primeira requisição SSR, evitando reprocessamento desnecessário
-  - **Preconnect** para domínios essenciais: `fonts.googleapis.com` e `fonts.gstatic.com`
-  - **DNS prefetch** para `fonts.googleapis.com`
+- **Preconnect** para domínios essenciais: `fonts.googleapis.com`, `fonts.gstatic.com`, `www.youtube.com`, `img.youtube.com`, `open.spotify.com`, `i.scdn.co`
+- **DNS prefetch** para `fonts.googleapis.com`, `www.youtube.com`, `img.youtube.com`, `open.spotify.com`, `i.scdn.co`
   - **Google Fonts** com `font-display: swap`: Inter (400, 500, 600, 700) e Montserrat (400, 500, 600, 700) — elimina FOIT
   - **Content Security Policy (CSP)** restritiva: `default-src 'self'`, script de YouTube/Spotify, style de Google Fonts, img de data/blob/HTTPS, frame de YouTube/Spotify
   - **Permissions Policy** restritiva (geolocation, camera, microphone, payment, usb bloqueados)
@@ -112,7 +113,7 @@
 - **Funcionalidades:**
   - Método GET com parâmetros `page` e `limit`
   - Cache via `getOrSetCache` com chave `dicas:public:published:${page}:${limit}`
-  - Rate limiting via `checkRateLimit(ip, 'api:public:dicas', 60, 60000)`
+  - Rate limiting via `checkRateLimit(ip, 'api:public:dicas', 60, 60000)` dentro do callback de cache
   - Paginação com `OFFSET`/`LIMIT` e `SELECT COUNT(*)`
   - Cache-Control: `public, s-maxage=60, stale-while-revalidate=300`
   - Resposta padronizada via helper `paginatedResponse()`
@@ -144,10 +145,11 @@
 - **Localização:** `/pages/api/posts.js`
 - **Propósito:** Endpoint unificado de posts — listagem pública e criação autenticada.
 - **Funcionalidades:**
-  - **GET** (público): Lista posts publicados com paginação (`page`, `limit`, `search`), cache distribuído com chaves prefixadas (`posts:list:` e `posts:search:`), rate limiting verificado antes do cache (100 req para busca, 300 para listagem)
+  - **GET** (público): Lista posts publicados com paginação (`page`, `limit`, `search`), cache distribuído com chaves prefixadas (`posts:list:` e `posts:search:`), rate limiting executado dentro do callback de cache (evita latência do Redis em cache hits), TTL diferenciado (2h para listagens, 30min para buscas)
   - **POST** (autenticado via `withAuth`): Cria novo post com validação Zod (schema `postCreateSchema`), rate limiting em mutações (30 req/min), invalidação automática de cache após criação
   - Suporta `?response=v1` para compatibilidade com formato `{ success, data, pagination, timestamp }`
   - Cache-Control: `public, max-age=0, s-maxage=300, stale-while-revalidate=600`
+  - Tratamento de erro `RATE_LIMIT_EXCEEDED` retorna 429 com mensagem apropriada
 
 ### `/pages/api/products.js`
 

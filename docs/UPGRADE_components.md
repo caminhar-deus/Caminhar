@@ -103,6 +103,7 @@
 | 2 | **Performance** | Transição CSS órfã (`transition: var(--transition-opacity), var(--transition-transform)`) no `.contentContainer` sem lógica JS correspondente. Classes `.fade-*` não utilizadas. | **Resolvido** — Transição e classes `.fade-*` removidas. |
 | 3 | **Layout** | Tremor (layout shift) ao trocar abas causado por `min-height` insuficiente (400px) no `.contentContainer` e fallback do Suspense com altura diferente (300px). | **Resolvido** — `min-height` do `.contentContainer` e do `.loading` ajustados para 600px. |
 | 4 | **Layout** | Micro-movimento nos botões de aba ao clicar devido a `transform: scale(0.98)` no estado `:active`. | **Resolvido** — `scale(0.98)` substituído por `background-color` no `:active`. |
+| 5 | **Compatibilidade** | `React.lazy` nos 4 componentes (BlogSection, MusicGallery, VideoGallery, ProductList) causava `ChunkLoadError` no Turbopack (Next.js 16.2.10) pois o bundler gerava chunks CSS separados para CSS Modules em imports dinâmicos, e o hash tornava-se inválido. | **Resolvido** — Substituído `React.lazy` + `lazy(() => import(...))` por imports estáticos convencionais. `<Suspense>` mantido para fallback visual. |
 
 ### 2.3 Music / Video
 
@@ -146,12 +147,14 @@
 
 ## 4. Performance
 
-| # | Tipo | Descrição | Componente |
-|---|------|-----------|------------|
-| 1 | **Performance** | Skeleton como div separada — usar `::before` CSS. | ImageOptimized |
-| 2 | **Acessibilidade** | Placeholder iframe com `aria-label` confuso. | LazyIframe |
-| 3 | **Performance** | Iframe com `loading="lazy"` redundante com IO. | LazyIframe |
-| 4 | **Manutenção** | Domínios padrão hardcoded. Mover para config. | PreloadResources |
+| # | Tipo | Descrição | Componente | Status |
+|---|------|-----------|------------|--------|
+| 1 | **Performance** | Skeleton como div separada — usar `::before` CSS. | ImageOptimized | |
+| 2 | **Acessibilidade** | Placeholder iframe com `aria-label` confuso. | LazyIframe | |
+| 3 | **Performance** | Iframe com `loading="lazy"` redundante com IO. | LazyIframe | |
+| 4 | **Manutenção** | Domínios padrão hardcoded. Mover para config. | PreloadResources | |
+| 5 | **Performance** | Thumbnail YouTube usava `maxresdefault.jpg` (1080p, ~200-400KB) para preview pré-play, resolução desnecessária para thumbnail não-interativa. | LazyIframe | **Resolvido** — Substituído para `hqdefault.jpg` (480×360, ~20-50KB), reduzindo tamanho em 5-10x. |
+| 6 | **Performance** | Múltiplos iframes visíveis simultaneamente no viewport disparavam carregamento paralelo, causando contenção de banda (~1.100ms cada). | LazyIframe | **Resolvido** — Adicionado `iframeLoadingQueue`, gerenciador singleton que limita a 2 iframes carregando simultaneamente. Clique do usuário ignora a fila. |
 
 ---
 

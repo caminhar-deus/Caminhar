@@ -1,6 +1,7 @@
 # Análise da Suite de Testes — `/tests/`
 
-> **Data:** 28/06/2026
+> **Data:** 28/06/2026  
+> **Última atualização:** 12/07/2026
 > **Propósito:** Documentação completa e consolidada de todos os arquivos de teste do projeto Caminhar.
 
 ---
@@ -742,7 +743,7 @@ Testes que usam PostgreSQL real via Testcontainers (`jest.config.db.js`). Valida
 - **Arquivos:** `Container.test.js` (semantic tags: section, div, article, main, aside), `Grid.test.js` (responsivo, CSS custom properties), `Sidebar.test.js` (collapse/expand, overlay mobile, subcomponentes), `Stack.test.js` (HStack e VStack), `index.test.js` (barrel exports)
 
 ### `/tests/unit/components/Performance/` (5 arquivos + snapshots)
-- **Arquivos:** `CriticalCSS.test.js` (injeção e remoção de CSS crítico), `ImageOptimized.test.js` (skeleton, fallback em erro de src), `LazyIframe.test.js` (lazy loading com IntersectionObserver), `PreloadResources.test.js` (pré-carregamento de recursos), `index.test.js` (barrel exports)
+- **Arquivos:** `CriticalCSS.test.js` (injeção e remoção de CSS crítico), `ImageOptimized.test.js` (skeleton, fallback em erro de src), `LazyIframe.test.js` (lazy loading com IntersectionObserver, corrigido para usar `waitFor` para aguardar fila assíncrona de carregamento e thumbnail `hqdefault.jpg`), `PreloadResources.test.js` (pré-carregamento de recursos), `index.test.js` (barrel exports)
 
 ### `/tests/unit/components/SEO/` (9 arquivos + snapshots)
 - **Arquivos:** `ArticleSchema.test.js`, `BreadcrumbSchema.test.js`, `Head.test.js` (meta tags, título, Open Graph), `index.test.js`, `MusicSchema.test.js`, `OrganizationSchema.test.js`, `VideoSchema.test.js`, `WebsiteSchema.test.js`

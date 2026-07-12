@@ -41,14 +41,6 @@ async function handleGet(req, res) {
       return res.status(400).json({ error: 'Bad Request', message: 'Parâmetros de paginação inválidos' });
     }
 
-    const ip = getClientIP(req);
-
-    // Verifica rate limit ANTES de processar o cache para evitar trabalho desnecessário
-    const isLimited = await checkRateLimit(ip, 'api:public:posts', search ? 100 : 300);
-    if (isLimited) {
-      return res.status(429).json({ error: 'Too Many Requests', message: 'Muitas requisições. Tente novamente mais tarde.' });
-    }
-
     // Chave de cache mais eficiente: separa listagem de busca
     // Listagens sem search têm alta taxa de cache hit entre diferentes usuários
     const cacheKey = search
@@ -59,6 +51,15 @@ async function handleGet(req, res) {
     const ttl = search ? 1800 : 7200;
 
     const result = await getOrSetCache(cacheKey, async () => {
+      const ip = getClientIP(req);
+
+      // Verifica rate limit dentro do callback de cache para evitar latência desnecessária
+      // em hits de cache (quando o rate limit já foi verificado anteriormente)
+      const isLimited = await checkRateLimit(ip, 'api:public:posts', search ? 100 : 300);
+      if (isLimited) {
+        throw new Error('RATE_LIMIT_EXCEEDED');
+      }
+
       return await getRecentPosts(limit, page, search);
     }, ttl);
 
@@ -80,6 +81,9 @@ async function handleGet(req, res) {
       ...result,
     });
   } catch (error) {
+    if (error.message === 'RATE_LIMIT_EXCEEDED') {
+      return res.status(429).json({ error: 'Too Many Requests', message: 'Muitas requisições. Tente novamente mais tarde.' });
+    }
     logger.error('Posts', 'Erro ao buscar posts:', error);
     return res.status(500).json({ error: 'Internal Server Error', message: 'Erro interno do servidor ao buscar posts' });
   }

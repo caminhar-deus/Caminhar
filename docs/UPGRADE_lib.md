@@ -214,6 +214,8 @@ Isso adiciona complexidade desnecessária e confunde sobre qual função usar.
 
 **Sugestão:** Implementar backoff simples (ex: 100ms entre tentativas) ou reduzir para uma única tentativa com fallback direto para memória, já que o `cache.js` já tem Single-Flight e cache L1.
 
+**Status:** **Resolvido** — O segundo bloco de retry foi removido de `redisGet()`. Agora a função tenta o Redis uma única vez e, em caso de falha, cai diretamente no fallback de memória. A redução foi de 2 chamadas de rede para 1 por requisição cacheada, eliminando ~50-150ms de latência desnecessária.
+
 ---
 
 ### 3.6 `cache.js` — Métricas mutáveis em módulo global
@@ -384,6 +386,8 @@ if (campo !== undefined) data.campo = campo;
 **Problema:** O health check executa a cada 15 segundos ininterruptamente. Em ambientes com baixo tráfego ou durante a noite, isso gera consultas desnecessárias ao banco.
 
 **Sugestão:** Tornar o intervalo configurável ou implementar health check sob demanda (apenas quando uma query falha), em vez de polling contínuo.
+
+**Status:** **Parcialmente resolvido** — O intervalo foi ajustado de 15s para 60s, reduzindo a frequência de consultas de health check em 75%. A implementação de health check sob demanda (apenas quando uma query falha) permanece como melhoria futura.
 
 ---
 

@@ -178,7 +178,7 @@ A pasta `/hooks` contém **14 arquivos** que implementam custom hooks React e se
   - Mantém métrica atual com contexto completo (`url`, `userAgent`, `connection`, `deviceMemory`).
   - Envia para analytics via `navigator.sendBeacon` (preferencial) ou `fetch` com `keepalive`.
   - Exibe logs de debug em desenvolvimento.
-- **PerformanceObserver:** Monitora `longtask` (para TBT) e `resource` (para recursos com duração > 1s). Os observers são desconectados no cleanup para evitar vazamentos.
+- **PerformanceObserver:** Monitora `longtask` (para TBT) e `resource` (para recursos com duração > 1s). No resource observer, recursos de domínios de terceiros (youtube.com, ytimg.com, spotify.com, scdn.co, googleusercontent.com, googleapis.com, gstatic.com, facebook.com, instagram.com) são ignorados no `console.warn` para evitar falsos positivos, pois recursos cross-origin são naturalmente mais lentos. Os observers são desconectados no cleanup para evitar vazamentos.
 - **Funções auxiliares exportadas:**
   - `getRating(name, value)` — Classifica como `good`, `needs-improvement` ou `poor`.
   - `formatMetric(name, value)` — Formata valor (ms arredondado, CLS com 3 casas decimais).

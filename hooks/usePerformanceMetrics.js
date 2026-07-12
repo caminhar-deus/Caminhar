@@ -275,11 +275,34 @@ export function usePerformanceMetrics(options = {}) {
 
       // Resource loading times
       try {
+        // Domínios de terceiros que são naturalmente lentos (cross-origin iframes, CDNs externas)
+        // e não indicam problema real de performance na aplicação
+        const THIRD_PARTY_DOMAINS = [
+          'youtube.com',
+          'ytimg.com',
+          'spotify.com',
+          'scdn.co',
+          'googleusercontent.com',
+          'googleapis.com',
+          'gstatic.com',
+          'facebook.com',
+          'instagram.com',
+        ];
+
+        const isThirdPartyResource = (url) => {
+          try {
+            const parsed = new URL(url);
+            return THIRD_PARTY_DOMAINS.some((domain) => parsed.hostname.includes(domain));
+          } catch {
+            return false;
+          }
+        };
+
         const resourceObserver = new PerformanceObserver((list) => {
           const entries = list.getEntries();
           entries.forEach((entry) => {
-            // Report slow resources
-            if (entry.duration > 1000) {
+            // Report slow resources — ignora recursos de terceiros
+            if (entry.duration > 1000 && !isThirdPartyResource(entry.name)) {
               if (debug) {
                 console.warn(`[Performance] Slow resource: ${entry.name} (${Math.round(entry.duration)}ms)`);
               }

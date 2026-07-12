@@ -54,6 +54,12 @@
 **Problema:** O pacote `web-vitals@5.3.0` removeu a exportação de `onFID`, pois a métrica First Input Delay (FID) foi oficialmente depreciada e substituída pelo INP (Interaction to Next Paint). O código tentava desestruturar `onFID` do módulo importado, resultando em `TypeError: onFID is not a function` em tempo de execução no navegador.
 **Situação:** Implementado. `onFID` foi removido da desestruturação do `await webVitalsPromise`, o bloco de chamada `onFID(...)` foi removido, e as entradas `FID: 'FID'` em `WEB_VITAL_METRICS` e `FID: { good: 100, poor: 300, unit: 'ms' }` em `THRESHOLDS` foram removidas. A métrica INP, que já estava implementada com verificação `if (onINP)`, permanece como substituta oficial. Nenhum consumidor ou fluxo foi impactado.
 
+### 1.7 — `usePerformanceMetrics.js`: falso positivo de "Slow resource" para iframes de terceiros ✅
+
+**Arquivo:** `/hooks/usePerformanceMetrics.js` (linhas 278–299)
+**Problema:** O `PerformanceObserver` com `entryTypes: ['resource']` reportava `console.warn` para todos os recursos com duração > 1s, incluindo iframes embarcados do YouTube (~1.100ms cada) e outros domínios de terceiros. Como recursos cross-origin são naturalmente mais lentos (DNS + TCP + TLS completos), esses warnings eram falsos positivos que poluíam o console sem indicar problema real na aplicação.
+**Situação:** Implementado. Adicionada constante `THIRD_PARTY_DOMAINS` com 9 domínios (youtube.com, ytimg.com, spotify.com, scdn.co, googleusercontent.com, googleapis.com, gstatic.com, facebook.com, instagram.com) e função `isThirdPartyResource(url)` que extrai o hostname via `new URL()` e verifica correspondência. O filtro foi aplicado na condição do resource observer: `if (entry.duration > 1000 && !isThirdPartyResource(entry.name))`. Recursos de terceiros continuam sendo observados mas não geram `console.warn`. Nenhum consumidor ou fluxo foi impactado.
+
 
 ## 2. Ajustes Estruturais e Organizacionais
 

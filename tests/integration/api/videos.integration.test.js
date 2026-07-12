@@ -44,7 +44,7 @@ describe('Integração API Pública: Validação de Segurança (Banco de Dados) 
     expect(res._getStatusCode()).toBe(200);
     
     // Verifica se a query enviada ao banco realmente contém o filtro de segurança
-    const dataCall = query.mock.calls.find(call => call[0].includes('SELECT *'));
+    const dataCall = query.mock.calls.find(call => call[0].includes('FROM videos') && call[0].includes('LIMIT'));
     const countCall = query.mock.calls.find(call => call[0].includes('COUNT(*)'));
     expect(dataCall[0]).toContain('WHERE publicado = true');
     expect(countCall[0]).toContain('WHERE publicado = true');
@@ -61,7 +61,7 @@ describe('Integração API Pública: Validação de Segurança (Banco de Dados) 
     expect(res._getStatusCode()).toBe(200);
 
     // Verifica se ambos os filtros estão presentes na query (segurança + busca)
-    const dataCall = query.mock.calls.find(call => call[0].includes('SELECT *'));
+    const dataCall = query.mock.calls.find(call => call[0].includes('FROM videos') && call[0].includes('LIMIT'));
     expect(dataCall[0]).toContain('WHERE publicado = true AND');
     expect(dataCall[1]).toEqual(expect.arrayContaining(['%culto%']));
   });

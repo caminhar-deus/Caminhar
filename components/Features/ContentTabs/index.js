@@ -1,9 +1,9 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, Suspense } from 'react';
 import styles from './styles/ContentTabs.module.css';
-const BlogSection = lazy(() => import('../Blog/BlogSection'));
-const MusicGallery = lazy(() => import('../Music/MusicGallery'));
-const VideoGallery = lazy(() => import('../Video/VideoGallery'));
-const ProductList = lazy(() => import('../Products/ProductList'));
+import BlogSection from '../Blog/BlogSection';
+import MusicGallery from '../Music/MusicGallery';
+import VideoGallery from '../Video/VideoGallery';
+import ProductList from '../Products/ProductList';
 
 export default function ContentTabs() {
   const [activeTab, setActiveTab] = useState('reflexoes');
