@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useRouter } from 'next/router';
 import { useAdminAuth } from '@/hooks';
 import styles from './styles/login.module.css';
 
@@ -12,7 +13,8 @@ import styles from './styles/login.module.css';
  */
 const withAdminAuth = (WrappedComponent, { title }) => {
   const AuthenticatedComponent = (props) => {
-    const { isAuthenticated, isChecking, handleLogin, handleLogout, loginLoading, loginError } = useAdminAuth();
+    const router = useRouter();
+    const { isAuthenticated, isChecking, handleLogin, handleLogout, loginLoading, loginError } = useAdminAuth({ onLogoutRedirect: () => router.push('/admin') });
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
 

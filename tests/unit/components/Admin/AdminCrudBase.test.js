@@ -18,6 +18,33 @@ jest.mock('../../../../hooks/useAdminCrud.js', () => ({
   useAdminCrud: jest.fn(),
 }));
 
+// Mock do Modal para evitar dependência de CSS modules e portal
+jest.mock('@/components/UI/Modal', () => {
+  const Footer = ({ children }) => <div data-testid="modal-footer">{children}</div>;
+  const Modal = ({ isOpen, children, onClose }) =>
+    isOpen ? (
+      <div data-testid="confirm-modal">
+        <div>{children}</div>
+        <button data-testid="modal-close" onClick={onClose}>Fechar</button>
+      </div>
+    ) : null;
+  Modal.Footer = Footer;
+  return { Modal, ModalDefault: null };
+});
+
+jest.mock('@/components/UI/Button', () => ({
+  Button: ({ children, disabled, onClick, variant }) => (
+    <button
+      data-testid={`btn-${variant}`}
+      disabled={disabled}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  ),
+  ButtonDefault: null,
+}));
+
 const DummyInput = ({ name, value, onChange, error }) => (
   <div>
     <input data-testid={`input-${name}`} name={name} value={value || ''} onChange={onChange} />
@@ -97,7 +124,7 @@ describe('Componente Front-End - AdminCrudBase', () => {
     expect(mockUseAdminCrud.handleSubmit).toHaveBeenCalled();
   });
 
-  it('deve chamar handleEdit ao clicar em Editar e handleDelete ao Excluir', () => {
+  it('deve chamar handleEdit ao clicar em Editar', () => {
     useAdminCrud.mockReturnValue({
       ...mockUseAdminCrud,
       items: [{ id: 1, name: 'Editável', status: false }]
@@ -107,9 +134,108 @@ describe('Componente Front-End - AdminCrudBase', () => {
     
     fireEvent.click(screen.getByText('Editar'));
     expect(mockUseAdminCrud.handleEdit).toHaveBeenCalledWith({ id: 1, name: 'Editável', status: false });
-    
+  });
+
+  it('deve abrir modal de confirmação ao clicar em Excluir e confirmar a exclusão', async () => {
+    useAdminCrud.mockReturnValue({
+      ...mockUseAdminCrud,
+      items: [{ id: 1, name: 'Editável', status: false }]
+    });
+
+    render(<AdminCrudBase {...defaultProps} />);
+
+    // Clica em Excluir
     fireEvent.click(screen.getByText('Excluir'));
-    expect(mockUseAdminCrud.handleDelete).toHaveBeenCalledWith(1);
+
+    // Verifica que o modal de confirmação abriu
+    expect(screen.getByTestId('confirm-modal')).toBeInTheDocument();
+
+    // O handleDelete do mock é uma função que espera receber resolução via onConfirmDelete
+    // Verificamos que onConfirmDelete foi passado ao hook
+    const passedOptions = useAdminCrud.mock.calls[useAdminCrud.mock.calls.length - 1][0];
+    expect(passedOptions.onConfirmDelete).toBeDefined();
+  });
+
+  it('deve confirmar exclusão ao clicar em "Sim, excluir" no modal', async () => {
+    const mockHandleDelete = jest.fn().mockResolvedValue();
+    useAdminCrud.mockReturnValue({
+      ...mockUseAdminCrud,
+      items: [{ id: 1, name: 'Editável', status: false }],
+      handleDelete: mockHandleDelete,
+    });
+
+    const { rerender } = render(<AdminCrudBase {...defaultProps} />);
+
+    // Clica em Excluir para abrir o modal
+    fireEvent.click(screen.getByText('Excluir'));
+    expect(screen.getByTestId('confirm-modal')).toBeInTheDocument();
+
+    // Obtém a Promise de onConfirmDelete
+    const passedOptions = useAdminCrud.mock.calls[useAdminCrud.mock.calls.length - 1][0];
+    const confirmPromise = passedOptions.onConfirmDelete();
+
+    // Simula clique no botão "Sim, excluir" - que chama handleConfirmDelete
+    const btnSimExcluir = screen.getByText('Sim, excluir');
+    fireEvent.click(btnSimExcluir);
+
+    // Aguarda a Promise ser resolvida com true
+    const result = await act(async () => {
+      return await confirmPromise;
+    });
+
+    expect(result).toBe(true);
+
+    // Verifica que handleDelete foi chamado com o id do item (1)
+    expect(mockHandleDelete).toHaveBeenCalledWith(1);
+
+    // Simula ciclo de loading (true) e depois volta a false para disparar o useEffect que fecha o modal
+    useAdminCrud.mockReturnValue({
+      ...mockUseAdminCrud,
+      items: [{ id: 1, name: 'Editável', status: false }],
+      loading: true,
+      handleDelete: mockHandleDelete,
+    });
+    rerender(<AdminCrudBase {...defaultProps} />);
+
+    useAdminCrud.mockReturnValue({
+      ...mockUseAdminCrud,
+      items: [{ id: 1, name: 'Editável', status: false }],
+      loading: false,
+      handleDelete: mockHandleDelete,
+    });
+    rerender(<AdminCrudBase {...defaultProps} />);
+
+    expect(screen.queryByTestId('confirm-modal')).not.toBeInTheDocument();
+  });
+
+  it('deve cancelar exclusão ao fechar o modal sem confirmar', async () => {
+    const mockHandleDelete = jest.fn();
+    useAdminCrud.mockReturnValue({
+      ...mockUseAdminCrud,
+      items: [{ id: 1, name: 'Editável', status: false }],
+      handleDelete: mockHandleDelete,
+    });
+
+    render(<AdminCrudBase {...defaultProps} />);
+
+    // Clica em Excluir para abrir o modal
+    fireEvent.click(screen.getByText('Excluir'));
+    expect(screen.getByTestId('confirm-modal')).toBeInTheDocument();
+
+    // Obtém a Promise de onConfirmDelete
+    const passedOptions = useAdminCrud.mock.calls[useAdminCrud.mock.calls.length - 1][0];
+    const confirmPromise = passedOptions.onConfirmDelete();
+
+    // Fecha o modal clicando no botão de fechar (mock do Modal)
+    fireEvent.click(screen.getByTestId('modal-close'));
+
+    // Aguarda a Promise ser resolvida com false
+    const result = await act(async () => {
+      return await confirmPromise;
+    });
+
+    expect(result).toBe(false);
+    expect(screen.queryByTestId('confirm-modal')).not.toBeInTheDocument();
   });
 
   it('deve passar searchTerm para o hook quando searchable=true e o input muda', () => {
@@ -153,15 +279,22 @@ describe('Componente Front-End - AdminCrudBase', () => {
     const toggleButton = screen.getByText('Rascunho').closest('button');
     
     fireEvent.click(toggleButton);
-    expect(mockUseAdminCrud.toggleField).toHaveBeenCalledWith(
-      { id: 1, name: 'Teste', status: false },
-      'status',
-      false
-    );
+    expect(mockUseAdminCrud.toggleField).toHaveBeenCalled();
+    expect(mockUseAdminCrud.toggleField.mock.calls[0][0]).toEqual({ id: 1, name: 'Teste', status: false });
+    expect(mockUseAdminCrud.toggleField.mock.calls[0][1]).toBe('status');
+    expect(mockUseAdminCrud.toggleField.mock.calls[0][2]).toBe(false);
+    // 4º argumento é o objeto { onOptimisticUpdate, onRevert }
+    expect(typeof mockUseAdminCrud.toggleField.mock.calls[0][3]).toBe('object');
   });
 
   it('deve reverter o toggle caso a API falhe', async () => {
-    mockUseAdminCrud.toggleField.mockRejectedValue(new Error('Falha na API'));
+    // Simula o comportamento real do toggleField: trata erro internamente e nunca rejeita a Promise.
+    // O mock recebe os callbacks e invoca onRevert em caso de falha.
+    mockUseAdminCrud.toggleField.mockImplementation(async (item, key, currentValue, { onOptimisticUpdate, onRevert } = {}) => {
+      if (onRevert) {
+        onRevert(item, key, currentValue);
+      }
+    });
     useAdminCrud.mockReturnValue({ ...mockUseAdminCrud, items: [{ id: 1, name: 'Teste', status: false }] });
 
     render(<AdminCrudBase {...defaultProps} />);

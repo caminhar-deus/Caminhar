@@ -93,12 +93,12 @@ A pasta `/hooks` contém **14 arquivos** que implementam custom hooks React e se
 ## 5. `/hooks/useAdminAuth.js`
 
 **Localização:** `/hooks/useAdminAuth.js`
-**Propósito:** Hook de autenticação específico para a área administrativa. Consome o `AuthContext` de `useAuth.js` e estende com funcionalidades de redirect e estados isolados de loading/erro para o login.
+**Propósito:** Hook de autenticação específico para a área administrativa. Consome o `AuthContext` de `AuthContext.js` e estende com funcionalidades de redirect opcional e estado isolado de erro para o login. Não possui dependência de framework.
 
 **Funcionalidades:**
-- **Base:** Consome `AuthContext` importando `isAuthenticated`, `loading` (renomeado para `isChecking`), `login` e `logout`.
-- **`handleLogin(username, password)`:** Encapsula a função `login` do contexto com estados próprios de `loginLoading` e `loginError`, isolando o componente de erros externos.
-- **`handleLogout()`:** Executa `logout` do contexto com `try/catch` e redireciona para `/admin` via `router.push` do Next.js.
+- **Base:** Consome `AuthContext` importando `isAuthenticated`, `loading` (renomeado para `isChecking`), `login`, `logout` e `loginLoading`.
+- **`handleLogin(username, password)`:** Encapsula a função `login` do contexto com estado próprio de `loginError`, isolando o componente de erros externos. O `loginLoading` é consumido diretamente do `AuthContext`, eliminando estado local duplicado.
+- **`handleLogout()`:** Executa `logout` do contexto com `try/catch`. Aceita parâmetro opcional `{ onLogoutRedirect }` na chamada do hook. Se fornecido, o callback é executado após o logout bem-sucedido, permitindo que o consumidor defina o redirect sem acoplar o hook ao Next.js.
 - **Retorno:** Expõe `isAuthenticated`, `isChecking`, `handleLogin`, `handleLogout`, `loginLoading`, `loginError`.
 
 ---
@@ -109,21 +109,21 @@ A pasta `/hooks` contém **14 arquivos** que implementam custom hooks React e se
 **Propósito:** Hook reutilizável que centraliza operações CRUD completas para painéis administrativos: listagem, criação, edição, exclusão, paginação e toggle de campos booleanos.
 
 **Funcionalidades:**
-- **Configuração (`AdminCrudConfig`):** Recebe `apiEndpoint`, `initialFormData`, `usePagination` (padrão `false`), `itemsPerPage` (padrão 10), `autoFetch` (padrão `true`), `onSuccess`, `onError`.
+- **Configuração (`AdminCrudConfig`):** Recebe `apiEndpoint`, `initialFormData`, `usePagination` (padrão `false`), `itemsPerPage` (padrão 10), `autoFetch` (padrão `true`), `onSuccess`, `onError`, `onConfirmDelete`.
 - **Listagem:** Usa `useApiFetch` internamente, construindo a URL dinamicamente com parâmetros de paginação via `buildUrl(page)`. A paginação é reativa: quando `currentPage` muda, o `useApiFetch` refaz o fetch automaticamente.
 - **Formulário:** Gerencia estado `formData` com `handleInputChange` (para inputs nativos com `name`, `type`, `checked`) e `setFieldValue` (para definição programática).
 - **`handleSubmit(e, customValidator?)`:** Envia `POST` (criação) ou `PUT` (edição) conforme `isEditing`. Suporta validação customizada via função opcional `customValidator` que lança `Error` se a validação falhar. Usa `react-hot-toast` para feedback visual (toast de loading, sucesso e erro).
-- **`handleDelete(id)`:** Exibe `window.confirm`, envia `DELETE` com `{ id }` no corpo JSON, atualiza a lista via `refetch`.
-- **`toggleField(item, key, currentValue)`:** Alterna campo booleano enviando apenas `{ id, [key]: newValue }` via `PUT`. Usa `react-hot-toast` e chama `refetch()` após sucesso para sincronizar com o servidor.
+- **`handleDelete(id)`:** Se `onConfirmDelete` for fornecido, aguarda a Promise resolver (`await onConfirmDelete()`). Se resolver com `true`, prossegue com o `DELETE`. Caso contrário, usa `window.confirm` como fallback. Envia `DELETE` com `{ id }` no corpo JSON, atualiza a lista via `refetch`.
+- **`toggleField(item, key, currentValue, options?)`:** Alterna campo booleano enviando apenas `{ id, [key]: newValue }` via `PUT`. Aceita objeto opcional `{ onOptimisticUpdate, onRevert }` para atualização otimista na UI antes da resposta do servidor e reversão automática em caso de falha. Usa `react-hot-toast` e chama `refetch()` após sucesso para sincronizar com o servidor. Retorna a Promise resolvida com o resultado da API.
 - **Paginação:** `goToPage(page)` navega respeitando limites (`totalPages`). `currentPage` e `totalPages` são extraídos automaticamente dos dados paginados da API.
-- **`refetch()`:** Exposto diretamente do `useApiFetch` para recarga manual da listagem.
+- **`refetch()`:** Exposto diretamente do `useApiFetch` (hook genérico compartilhado com Features públicas) para recarga manual da listagem.
 
 ---
 
 ## 7. `/hooks/useApiFetch.js`
 
 **Localização:** `/hooks/useApiFetch.js`
-**Propósito:** Hook genérico para requisições HTTP com gerenciamento centralizado de estados `loading`/`error`, cache simples e suporte a transformação de dados.
+**Propósito:** Hook genérico para requisições HTTP com gerenciamento centralizado de estados `loading`/`error`, cache simples e suporte a transformação de dados. Compartilhado entre componentes públicos (Features) e administrativos.
 
 **Funcionalidades:**
 - **Configuração (`ApiFetchOptions`):** Aceita `url`, `options` (opções do fetch nativo), `deps` (dependências extras), `transform` (função de transformação), `initialData` (valor inicial), `staleTime` (cache em ms), `onError` (callback).
@@ -138,6 +138,7 @@ A pasta `/hooks` contém **14 arquivos** que implementam custom hooks React e se
 - **Reconexão automática:** Registra listener para evento `'online'` no `window`. Se o erro atual for de conectividade (mensagem contém "Sem conexão"), dispara `fetchData()` automaticamente ao restabelecer a conexão. O listener é removido no cleanup do `useEffect` e possui proteção SSR (`typeof window`).
 - **Cache simples (`staleTime`):** Se configurado, compara o timestamp do último fetch com o tempo decorrido. Se estiver dentro do período fresco, pula a requisição e mantém os dados em cache.
 - **`setData`:** Função exposta para definir dados manualmente (útil para atualizações otimistas fora do hook).
+- **Documentação:** O JSDoc do hook inclui a tag `@note Hook compartilhado entre componentes públicos e administrativos — uso não se limita ao admin.`, explicitando que o hook não é exclusivo da área administrativa.
 
 ---
 
@@ -150,14 +151,14 @@ A pasta `/hooks` contém **14 arquivos** que implementam custom hooks React e se
 - **Estado inicial e hidratação SSR:** Mantém `theme` ("light" | "dark") e `mounted` (flag de hidratação). Na montagem, lê `localStorage('theme')` e, se não existir, respeita `prefers-color-scheme: dark` do sistema.
 - **Aplicação do tema:** Sincroniza `data-theme` no `<html>`, classe `.dark`, `localStorage` e dispara evento customizado `themeChange` no `window` para código fora do React.
 - **`toggleTheme`:** Alterna entre light/dark com throttle de 300ms via hook `useThrottle`, prevenindo múltiplas trocas rápidas.
-- **`setTheme`:** Exposto diretamente para definir tema específico.
-- **Responsividade:** Monitora `window.innerWidth` via event listener `resize`. Fornece booleanos reativos `isMobile`, `isTablet` e `isDesktop` baseados nos breakpoints `md` e `lg` dos tokens.
+- **`setTheme`:** Define tema específico ("light" | "dark"). Valores inválidos são ignorados com `console.warn` em desenvolvimento. Internamente, o valor é validado contra o conjunto `['light', 'dark']` antes de atualizar o estado; se inválido, o estado não é alterado. O `toggleTheme` usa o setter raw diretamente para evitar a validação, já que sempre produz valores válidos.
+- **Responsividade:** Monitora `window.innerWidth` via event listener `resize` com throttle de 100ms (via `useThrottle`), evitando re-renderizações excessivas durante redimensionamento rápido. Fornece booleanos reativos `isMobile`, `isTablet` e `isDesktop` baseados nos breakpoints `md` e `lg` dos tokens.
 - **Helpers de acesso a tokens (todos memoizados com `useCallback`):**
   - `getColor(path, alpha)` — Navega por `tokens.colors` com notação dot-path. Suporta opacidade via função `hexToRgba` (função utilitária pura definida **fora do hook**, testável e reutilizável independentemente). Exibe `console.warn` em desenvolvimento se o token não existir.
-  - `getSpacing(key)` — Busca em `tokens.spacing.space` com fallback `tokens.spacing.spacing`. Retorna `null` se não encontrado.
+  - `getSpacing(key)` — Busca no objeto mesclado `allSpacing` que unifica `tokens.spacing.spacing` (numérico) e `tokens.spacing.space` (semântico). Retorna `null` se não encontrado.
   - `getFontSize(key)` — Busca em `tokens.typography.fontSize`. Retorna `null` se não encontrado.
-  - `getShadow(key)` — Busca em `tokens.shadows.shadows` com fallback `tokens.shadows.shadow`. Retorna `null` se não encontrado.
-  - `getRadius(key)` — Busca em `tokens.borders.radius` com fallback `tokens.borders.borderRadius`. Retorna `null` se não encontrado.
+  - `getShadow(key)` — Busca no objeto mesclado `allShadows` que unifica `tokens.shadows.shadow` (base) e `tokens.shadows.shadows` (semântico). Retorna `null` se não encontrado.
+  - `getRadius(key)` — Busca no objeto mesclado `allRadius` que unifica `tokens.borders.borderRadius` (base) e `tokens.borders.radius` (semântico). Retorna `null` se não encontrado.
   - `getBreakpoint(key)` — Busca em `tokens.breakpoints.breakpoints`. Retorna `undefined` se não encontrado (sem fallback).
 - **Performance:** O valor de retorno completo é memoizado com `useMemo` e dependências explícitas.
 
@@ -173,12 +174,12 @@ A pasta `/hooks` contém **14 arquivos** que implementam custom hooks React e se
 - **Métricas suportadas (`WEB_VITAL_METRICS`):** LCP, CLS, INP, FCP, TTFB, TBT.
 - **Thresholds (`THRESHOLDS`):** Valores de classificação Google (`good` / `poor`) para cada métrica, com unidades (`ms` ou vazio para CLS).
 - **`reportMetric(metric)`:** Função callback que:
-  - Aplica cache de 1 minuto (`METRICS_CACHE_MS`) para evitar reports duplicados da mesma métrica com o mesmo valor.
+  - Aplica cache de 1 minuto (`METRICS_CACHE_MS`) com threshold de variação de 5% (`METRICS_VARIANCE_THRESHOLD`): reports com variação percentual inferior a 5% em relação ao último valor reportado são suprimidos. Se o valor anterior for zero, usa diferença absoluta em vez de relativa para evitar divisão por zero.
   - Armazena no histórico local (máx. 50 entradas, com campos essenciais).
   - Mantém métrica atual com contexto completo (`url`, `userAgent`, `connection`, `deviceMemory`).
   - Envia para analytics via `navigator.sendBeacon` (preferencial) ou `fetch` com `keepalive`.
   - Exibe logs de debug em desenvolvimento.
-- **PerformanceObserver:** Monitora `longtask` (para TBT) e `resource` (para recursos com duração > 1s). No resource observer, recursos de domínios de terceiros (youtube.com, ytimg.com, spotify.com, scdn.co, googleusercontent.com, googleapis.com, gstatic.com, facebook.com, instagram.com) são ignorados no `console.warn` para evitar falsos positivos, pois recursos cross-origin são naturalmente mais lentos. Os observers são desconectados no cleanup para evitar vazamentos.
+- **PerformanceObserver:** Monitora `longtask` (para TBT) e `resource` (para recursos com duração > 1s). No resource observer, recursos de domínios de terceiros (youtube.com, ytimg.com, spotify.com, scdn.co, googleusercontent.com, googleapis.com, gstatic.com, facebook.com, instagram.com) são ignorados no `console.warn` para evitar falsos positivos, pois recursos cross-origin são naturalmente mais lentos. No longtask observer, se o navegador não suportar `PerformanceObserver` com `entryTypes: ['longtask']`, a exceção é capturada e, em modo `debug`, um `console.warn` é emitido com a mensagem `'[Performance] PerformanceObserver for longtask not supported in this browser — TBT metric unavailable'` e o erro original, permitindo diagnóstico rápido da indisponibilidade da métrica TBT. Os observers são desconectados no cleanup para evitar vazamentos.
 - **Funções auxiliares exportadas:**
   - `getRating(name, value)` — Classifica como `good`, `needs-improvement` ou `poor`.
   - `formatMetric(name, value)` — Formata valor (ms arredondado, CLS com 3 casas decimais).
@@ -245,7 +246,7 @@ A pasta `/hooks` contém **14 arquivos** que implementam custom hooks React e se
 - Recebe `fn` (função) e `delay` (padrão 300ms).
 - Usa `useRef` para armazenar o timestamp da última execução e `useCallback` para memoizar a função com throttle.
 - Diferença de debounce: debounce atrasa a execução; throttle ignora chamadas rápidas consecutivas.
-- Utilizado internamente por `useTheme` no `toggleTheme`.
+- Utilizado internamente por `useTheme` no `toggleTheme` (300ms) e no handler de `resize` (100ms).
 
 ---
 
@@ -257,7 +258,7 @@ A pasta `/hooks` contém **14 arquivos** que implementam custom hooks React e se
 | `AuthContext.js` | `/hooks/AuthContext.js` | Contexto React | Baixa | Nenhuma |
 | `AuthProvider.js` | `/hooks/AuthProvider.js` | Provider React | Média | Nenhuma |
 | `useAuth.js` | `/hooks/useAuth.js` | Hook de consumo de contexto | Baixa | Nenhuma |
-| `useAdminAuth.js` | `/hooks/useAdminAuth.js` | Hook de autenticação admin | Baixa | `next/router` |
+| `useAdminAuth.js` | `/hooks/useAdminAuth.js` | Hook de autenticação admin | Baixa | Nenhuma |
 | `useAdminCrud.js` | `/hooks/useAdminCrud.js` | Hook de CRUD completo | Alta | `react-hot-toast` |
 | `useApiFetch.js` | `/hooks/useApiFetch.js` | Hook de fetch genérico | Média | Nenhuma |
 | `useTheme.js` | `/hooks/useTheme.js` | Hook de tema + tokens | Alta | `pages/styles/tokens`, `useThrottle` |
@@ -272,4 +273,4 @@ A pasta `/hooks` contém **14 arquivos** que implementam custom hooks React e se
 
 - **Relação entre hooks:** `useAdminAuth` depende do `AuthContext` (importado de `AuthContext.js`). `useAdminCrud` depende de `useApiFetch`. `useTheme` depende de `useThrottle` e dos tokens de design importados de `pages/styles/tokens`. `PerformanceProvider` depende de `usePerformanceMetrics` para instanciar o monitoramento.
 - **Exportações:** O barrel `index.js` exporta `AuthContext` (de `AuthContext.js`), `AuthProvider` (de `AuthProvider.js`) e `useAuth` (de `useAuth.js`) como exports individuais. Também exporta `PerformanceContext`, `PerformanceProvider` e `usePerformance`. Todos os hooks são reexportados diretamente como named exports com a sintaxe `export { Nome } from './arquivo'`, incluindo `usePerformanceMetrics`.
-- **Cobertura de uso:** Todos os hooks são exportados via `index.js` e estão disponíveis para consumo. `usePerformance` possui consumidor direto em `pages/_app.js` via `PerformanceMonitor`. `useTheme` e `usePerformanceMetrics` possuem anotações `@todo` indicando que atualmente não possuem consumidores diretos confirmados na aplicação.
+- **Cobertura de uso:** Todos os hooks são exportados via `index.js` e estão disponíveis para consumo. `usePerformance` possui consumidor direto em `pages/_app.js` via `PerformanceMonitor`. `usePerformanceMetrics` é consumido indiretamente via `PerformanceProvider`, que o instancia uma única vez e compartilha as métricas através do `PerformanceContext`. `useTheme` possui anotação `@todo` indicando que atualmente não possui consumidores diretos confirmados na aplicação.

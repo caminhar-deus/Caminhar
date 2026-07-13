@@ -11,6 +11,9 @@ import { useApiFetch } from './useApiFetch';
  * @property {boolean} [autoFetch=true] - Habilita fetch automático na montagem
  * @property {function} [onSuccess] - Callback após operação bem sucedida
  * @property {function} [onError] - Callback executado em caso de erro
+ * @property {function} [onConfirmDelete] - Função assíncrona opcional para confirmação de exclusão.
+ *   Se fornecida, o hook aguarda a Promise resolver. Se resolver com `true`, a exclusão prossegue.
+ *   Se não fornecida, usa `window.confirm` como fallback.
  */
 
 /**
@@ -50,7 +53,7 @@ import { useApiFetch } from './useApiFetch';
 /**
  * Hook reutilizável para operações CRUD em painéis administrativos.
  * Centraliza a lógica de fetch, create, update, delete, paginação e estado de formulário.
- * Usa useApiFetch como base para o fetch de listagem, eliminando lógica duplicada
+ * Usa useApiFetch (hook genérico compartilhado com Features públicas) como base para o fetch de listagem, eliminando lógica duplicada
  * de loading/error/resposta.
  * 
  * @param {AdminCrudConfig} config - Configuração do hook
@@ -64,6 +67,7 @@ export const useAdminCrud = ({
   autoFetch = true,
   onSuccess,
   onError,
+  onConfirmDelete,
   searchTerm = '',
 }) => {
   const [formData, setFormData] = useState(initialFormData);
@@ -115,12 +119,18 @@ export const useAdminCrud = ({
   // A página é gerenciada via estado, então o useApiFetch reage automaticamente
   // quando currentPage muda (via buildUrl na URL)
   const fetchItems = useCallback((page) => {
-    if (page && page !== currentPage) {
-      setCurrentPage(page);
+    if (page !== undefined && page !== null) {
+      if (page !== currentPage) {
+        // Muda a página: o fetch automático via useApiFetch (reativo à URL) já será disparado
+        setCurrentPage(page);
+      } else {
+        // Mesma página: precisa forçar refresh manualmente
+        refetch();
+      }
     } else {
       refetch();
     }
-  }, [currentPage, refetch]);
+  }, [refetch, currentPage]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -193,7 +203,12 @@ export const useAdminCrud = ({
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.')) return;
+    if (onConfirmDelete) {
+      const confirmed = await onConfirmDelete();
+      if (!confirmed) return;
+    } else {
+      if (!window.confirm('Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.')) return;
+    }
 
     const loadingToastId = toast.loading('Excluindo item...');
     const abortController = new AbortController();
@@ -217,13 +232,21 @@ export const useAdminCrud = ({
    * Alterna um campo booleano de um item específico via requisição PUT.
    * Após a resposta bem-sucedida do servidor, os dados são revalidados com refetch().
    * Envia apenas { id, [key]: newValue } para evitar validação desnecessária de outros campos.
+   * Aceita callbacks opcionais para atualização otimista na UI e reversão em caso de falha.
    *
    * @param {Object} item - Item a ser alterado
    * @param {string} key - Nome do campo booleano a ser alternado
    * @param {boolean} currentValue - Valor atual do campo
+   * @param {Object} [options={}] - Opções opcionais
+   * @param {Function} [options.onOptimisticUpdate] - Callback chamado antes do PUT com (item, key, newValue)
+   * @param {Function} [options.onRevert] - Callback chamado em caso de falha com (item, key, oldValue)
    */
-  const toggleField = async (item, key, currentValue) => {
+  const toggleField = async (item, key, currentValue, { onOptimisticUpdate, onRevert } = {}) => {
     const newValue = !currentValue;
+
+    if (onOptimisticUpdate) {
+      onOptimisticUpdate(item, key, newValue);
+    }
 
     const loadingToast = toast.loading('Atualizando status...');
     try {
@@ -247,10 +270,14 @@ export const useAdminCrud = ({
       }
 
       // Aguarda a resposta para garantir que o PUT foi bem-sucedido
-      await response.json();
+      const result = await response.json();
       toast.success('Status alterado com sucesso!', { id: loadingToast });
       refetch(); // Sincroniza com o servidor
+      return result;
     } catch (error) {
+      if (onRevert) {
+        onRevert(item, key, currentValue);
+      }
       toast.error(error.message || 'Erro ao alterar status.', { id: loadingToast });
       console.error('[toggleField] Erro:', error.message);
       if (onError) onError(error);

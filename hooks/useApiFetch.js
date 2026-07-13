@@ -23,6 +23,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
  * Hook genérico para fetch de API com estados de loading/error.
  * Centraliza o padrão useState + useEffect + fetch + loading/error,
  * eliminando repetição em múltiplos componentes.
+ * @note Hook compartilhado entre componentes públicos e administrativos — uso não se limita ao admin.
  *
  * @param {string} url - URL da API
  * @param {ApiFetchOptions} [config={}] - Configurações

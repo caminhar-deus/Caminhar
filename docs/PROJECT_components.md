@@ -17,7 +17,7 @@ Sistema administrativo completo com CRUD reutilizável via `AdminCrudBase`, aute
 
 **Propósito:** Componente base genérico e reutilizável para todas as operações CRUD do admin. Elimina duplicação de código entre gerenciadores de conteúdo.
 
-**Funcionalidades:** Tabela configurável, formulário dinâmico, Drag & Drop, busca server-side, exportação CSV, toggle de status, paginação, modo somente leitura, skeletons, validação Zod, rollback automático.
+**Funcionalidades:** Tabela configurável, formulário dinâmico, Drag & Drop, busca server-side, exportação CSV, toggle de status, paginação, modo somente leitura, skeletons, validação Zod, rollback automático, modal de confirmação assíncrono para exclusão via componente `Modal` da UI.
 
 **Subcomponentes:** Delega formulário dinâmico para `CrudForm` e tabela com paginação para `CrudTable`.
 

@@ -1,7 +1,9 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { useAdminCrud } from '@/hooks/useAdminCrud';
 import { exportToCSV } from '@/lib/csvExport';
+import { Modal } from '@/components/UI/Modal';
+import { Button } from '@/components/UI/Button';
 import styles from './styles/crud.module.css';
 import toast from 'react-hot-toast';
 import CrudForm from './CrudForm';
@@ -68,6 +70,8 @@ export default function AdminCrudBase({
   const [localItems, setLocalItems] = useState([]);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [isFormVisible, setIsFormVisible] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, itemId: null });
+  const resolveRef = useRef(null);
 
   // Wrapper para exibir notificações de sucesso automaticamente
   const handleSuccessWrapper = useCallback(() => {
@@ -101,8 +105,35 @@ export default function AdminCrudBase({
     usePagination,
     itemsPerPage,
     searchTerm,
-    onSuccess: handleSuccessWrapper
+    onSuccess: handleSuccessWrapper,
+    onConfirmDelete: () => new Promise((resolve) => {
+      resolveRef.current = resolve;
+    }),
   });
+
+  // Intercepta a exclusão para abrir o modal de confirmação.
+  // Se o usuário confirmar, chama handleDelete do hook para efetivar a exclusão.
+  const handleDeleteWithConfirm = (id) => {
+    setConfirmDelete({ isOpen: true, itemId: id });
+  };
+
+  // Fecha o modal de confirmação quando a operação termina (loading muda de true para false)
+  useEffect(() => {
+    if (!loading && confirmDelete.isOpen) {
+      setConfirmDelete({ isOpen: false, itemId: null });
+      resolveRef.current = null;
+    }
+  }, [loading]);
+
+  // Handler chamado quando o usuário confirma a exclusão no modal
+  const handleConfirmDelete = () => {
+    const id = confirmDelete.itemId;
+    resolveRef.current?.(true);
+    resolveRef.current = null;
+    if (id !== null) {
+      handleDelete(id);
+    }
+  };
 
   // Efeito para exibir notificações de erro automaticamente
   useEffect(() => {
@@ -142,14 +173,16 @@ export default function AdminCrudBase({
 
   // Função para alternar booleanos (como Rascunho/Publicado) com 1 clique
   // Delega ao toggleField do hook useAdminCrud, que centraliza a lógica de chamada à API
+  // e suporta atualização otimista com reversão automática em caso de falha
   const handleToggleBoolean = (item, key, currentValue) => {
-    const previousItems = [...localItems];
-    // Atualização otimista na interface (muda na hora sem esperar o servidor)
-    setLocalItems(localItems.map(i => i.id === item.id ? { ...i, [key]: !currentValue } : i));
-    toggleField(item, key, currentValue)
-      .catch(() => {
-        setLocalItems(previousItems); // Reverte visualmente em caso de falha
-      });
+    toggleField(item, key, currentValue, {
+      onOptimisticUpdate: (item, key, newValue) => {
+        setLocalItems(prev => prev.map(i => i.id === item.id ? { ...i, [key]: newValue } : i));
+      },
+      onRevert: (item, key, oldValue) => {
+        setLocalItems(prev => prev.map(i => i.id === item.id ? { ...i, [key]: oldValue } : i));
+      }
+    });
   };
 
   // Função de validação
@@ -292,7 +325,7 @@ export default function AdminCrudBase({
         searchTerm={searchTerm}
         renderCustomCell={renderCustomCell}
         handleEdit={handleEdit}
-        handleDelete={handleDelete}
+        handleDelete={handleDeleteWithConfirm}
         handleToggleBoolean={handleToggleBoolean}
         localItems={localItems}
         setLocalItems={setLocalItems}
@@ -309,6 +342,37 @@ export default function AdminCrudBase({
         isFormVisible={isFormVisible}
         setIsFormVisible={setIsFormVisible}
       />
+
+      {/* Modal de confirmação de exclusão */}
+      <Modal
+        isOpen={confirmDelete.isOpen}
+        onClose={() => {
+          resolveRef.current?.(false);
+          setConfirmDelete({ isOpen: false, itemId: null });
+        }}
+        title="Confirmar exclusão"
+        size="sm"
+      >
+        <p>Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.</p>
+        <Modal.Footer>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              resolveRef.current?.(false);
+              setConfirmDelete({ isOpen: false, itemId: null });
+            }}
+          >
+            Cancelar
+          </Button>
+          <Button
+            variant="danger"
+            disabled={loading}
+            onClick={handleConfirmDelete}
+          >
+            Sim, excluir
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }

@@ -80,11 +80,10 @@ function formatMetric(name, value) {
 
 const MAX_HISTORY_SIZE = 50;
 const METRICS_CACHE_MS = 60_000; // 1 minuto de cache para evitar reports duplicados
+const METRICS_VARIANCE_THRESHOLD = 0.05; // 5% de variação mínima para considerar mudança significativa
 
 /**
  * Hook para monitoramento de Core Web Vitals e métricas de performance.
- * @todo Integrar este hook nos componentes da aplicação. Atualmente exportado
- *       via hooks/index.js mas sem consumidores diretos.
  */
 export function usePerformanceMetrics(options = {}) {
   const {
@@ -108,11 +107,22 @@ export function usePerformanceMetrics(options = {}) {
     // Cache check: ignora se mesma métrica foi reportada há menos de 1 minuto
     const formattedValue = formatMetric(name, value);
     const lastReported = lastReportedRef.current[name];
-    if (lastReported && (Date.now() - lastReported.timestamp < METRICS_CACHE_MS) && lastReported.value === formattedValue) {
-      if (debug) {
-        console.log(`[Web Vitals] Cache hit for ${name}: ${formattedValue}${THRESHOLDS[name]?.unit || ''} — skipped`);
+    if (lastReported && (Date.now() - lastReported.timestamp < METRICS_CACHE_MS)) {
+      const variance = lastReported.value !== 0
+        ? Math.abs((formattedValue - lastReported.value) / lastReported.value)
+        : Math.abs(formattedValue - lastReported.value);
+      if (variance < METRICS_VARIANCE_THRESHOLD) {
+        if (debug) {
+          const variancePct = lastReported.value !== 0
+            ? Math.abs((formattedValue - lastReported.value) / lastReported.value) * 100
+            : Math.abs(formattedValue - lastReported.value) * 100;
+          console.log(
+            `[Web Vitals] Cache hit for ${name}: ${formattedValue}${THRESHOLDS[name]?.unit || ''} ` +
+            `(variance: ${variancePct.toFixed(1)}% < ${METRICS_VARIANCE_THRESHOLD * 100}%) — skipped`
+          );
+        }
+        return null;
       }
-      return null;
     }
 
     // Atualiza cache
@@ -269,8 +279,10 @@ export function usePerformanceMetrics(options = {}) {
 
         longTaskObserver.observe({ entryTypes: ['longtask'] });
         observers.push(longTaskObserver);
-      } catch {
-        // Long tasks não suportado
+      } catch (err) {
+        if (debug) {
+          console.warn('[Performance] PerformanceObserver for longtask not supported in this browser — TBT metric unavailable', err);
+        }
       }
 
       // Resource loading times

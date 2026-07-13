@@ -25,7 +25,7 @@ function hexToRgba(hex, alpha) {
  * @property {boolean} isLight - Se o tema claro está ativo
  * @property {boolean} mounted - Se o hook já foi montado (SSR guard)
  * @property {function} toggleTheme - Alterna entre light/dark com throttle de 300ms
- * @property {function} setTheme - Define tema específico
+ * @property {function} setTheme - Define tema específico ("light" | "dark"). Valores inválidos são ignorados com warning em desenvolvimento.
  * @property {Object} tokens - Tokens completos de design
  * @property {Object} colors - Tokens de cor
  * @property {Object} spacing - Tokens de espaçamento
@@ -47,19 +47,40 @@ function hexToRgba(hex, alpha) {
 
 /**
  * useTheme - Hook para acessar tokens e gerenciar tema (light/dark).
+ * O tema aceito é "light" ou "dark". Valores inválidos são ignorados.
  * @todo Integrar este hook nos componentes da aplicação. Atualmente exportado
  *       via hooks/index.js mas sem consumidores diretos.
  * @returns {ThemeReturn} - Tokens e funções de tema
  */
 export const useTheme = () => {
   // Estado do tema (light/dark)
-  const [theme, setTheme] = useState('light');
+  const [theme, setRawTheme] = useState('light');
   const [mounted, setMounted] = useState(false);
 
   // Estado reativo para largura da viewport
   const [windowWidth, setWindowWidth] = useState(
     typeof window !== 'undefined' ? window.innerWidth : 0
   );
+
+  // Conjunto de temas válidos
+  const VALID_THEMES = useMemo(() => ['light', 'dark'], []);
+
+  /**
+   * setTheme - Define tema específico ("light" | "dark").
+   * Valores inválidos são ignorados com warning em desenvolvimento.
+   * @param {string} value - "light" ou "dark"
+   */
+  const setTheme = useCallback((value) => {
+    if (!VALID_THEMES.includes(value)) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(
+          `[useTheme] setTheme: valor inválido "${value}". Use apenas "light" ou "dark".`
+        );
+      }
+      return;
+    }
+    setRawTheme(value);
+  }, []);
 
   // Detectar preferência do sistema
   useEffect(() => {
@@ -72,16 +93,23 @@ export const useTheme = () => {
     } else if (prefersDark) {
       setTheme('dark');
     }
+  }, [setTheme]);
+
+  // Atualização estável de largura
+  const updateWidth = useCallback(() => {
+    setWindowWidth(window.innerWidth);
   }, []);
 
-  // Monitorar resize da viewport
+  // Handler de resize com throttle para evitar re-renderizações excessivas
+  const handleResize = useThrottle(updateWidth, 100);
+
+  // Monitorar resize da viewport com throttle
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [handleResize]);
 
   // Aplicar tema
   useEffect(() => {
@@ -102,8 +130,24 @@ export const useTheme = () => {
 
   // Toggle tema com throttle para prevenir múltiplas trocas rápidas
   const toggleTheme = useThrottle(() => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+    setRawTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   }, 300);
+
+  // Objetos mesclados para acesso unificado a tokens
+  const allSpacing = useMemo(() => ({
+    ...tokens.spacing.spacing,
+    ...tokens.spacing.space,
+  }), []);
+
+  const allShadows = useMemo(() => ({
+    ...tokens.shadows.shadow,
+    ...tokens.shadows.shadows,
+  }), []);
+
+  const allRadius = useMemo(() => ({
+    ...tokens.borders.borderRadius,
+    ...tokens.borders.radius,
+  }), []);
 
   // Valores booleanos reativos de viewport
   const md = tokens.breakpoints.breakpoints.md;
@@ -139,11 +183,11 @@ export const useTheme = () => {
 
   // Helper para spacing
   const getSpacing = useCallback((key) => {
-    const value = tokens.spacing.space[key] || tokens.spacing.spacing[key];
-    if (!value && process.env.NODE_ENV === 'development') {
+    const value = allSpacing[key];
+    if (value === undefined && process.env.NODE_ENV === 'development') {
       console.warn(`[useTheme] getSpacing: Token não encontrado "${key}", retornando null`);
     }
-    return value || null;
+    return value ?? null;
   }, []);
 
   // Helper para font size
@@ -157,20 +201,20 @@ export const useTheme = () => {
 
   // Helper para shadow
   const getShadow = useCallback((key) => {
-    const value = tokens.shadows.shadows[key] || tokens.shadows.shadow[key];
-    if (!value && process.env.NODE_ENV === 'development') {
+    const value = allShadows[key];
+    if (value === undefined && process.env.NODE_ENV === 'development') {
       console.warn(`[useTheme] getShadow: Token não encontrado "${key}", retornando null`);
     }
-    return value || null;
+    return value ?? null;
   }, []);
 
   // Helper para border radius
   const getRadius = useCallback((key) => {
-    const value = tokens.borders.radius[key] || tokens.borders.borderRadius[key];
-    if (!value && process.env.NODE_ENV === 'development') {
+    const value = allRadius[key];
+    if (value === undefined && process.env.NODE_ENV === 'development') {
       console.warn(`[useTheme] getRadius: Token não encontrado "${key}", retornando null`);
     }
-    return value || null;
+    return value ?? null;
   }, []);
 
   // Helper para breakpoint
@@ -213,6 +257,7 @@ export const useTheme = () => {
     theme,
     mounted,
     toggleTheme,
+    setTheme,
     tokens,
     getColor,
     getSpacing,

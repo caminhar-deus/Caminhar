@@ -1,6 +1,6 @@
 /**
  * Hooks - Índice de Exportações
- * Custom hooks do Design System
+ * Custom hooks da aplicação
  */
 
 export { useTheme } from './useTheme';
