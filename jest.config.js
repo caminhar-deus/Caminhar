@@ -43,6 +43,8 @@ export default {
     }
   },
 
+  // Lista de pacotes ESM que precisam ser transformados pelo Babel.
+  // Manter atualizada sempre que uma nova dependência ESM pura for adicionada.
   transformIgnorePatterns: [
     '/node_modules/(?!node-mocks-http|@faker-js|url|pg|@upstash/redis|uncrypto)'
   ],
@@ -65,7 +67,7 @@ export default {
   clearMocks: true,
   restoreMocks: true,
   cache: true,
-  maxWorkers: 1, // Mantido 1 para melhor estabilidade com módulos ESM
+  maxWorkers: '50%', // 50% dos CPUs disponíveis para paralelismo seguro com ESM
   verbose: true,
   testTimeout: 10000
 };

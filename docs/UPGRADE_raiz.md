@@ -58,24 +58,24 @@ O rate limit não cobre conexões WebSocket. Se o projeto vier a usar WebSockets
 
 ## 5. `.env` e `.env.example`
 
-### 🔴 Senhas e tokens hardcoded no `.env`
-O `.env` contém senhas reais (`123456`), chave JWT fixa, chave de criptografia fixa e token Upstash real. Risco de exposição acidental. Recomenda-se usar placeholders e gerenciar valores reais via secrets.
+### ✅ Senhas e tokens substituídos por placeholders no `.env`
+O `.env` agora contém apenas placeholders (ex.: `SUA_SENHA_AQUI`, `sua-chave-jwt-aqui`). Os valores reais foram removidos e devem ser gerenciados via secrets.
 
-### 🟡 `.env` com permissão de execução
-O `.env` tem permissão `-rwxrwxr-x` (executável). Deveria ser `chmod 600 .env` por segurança.
+### ✅ Permissão do `.env` ajustada para 600
+O `.env` teve a permissão alterada de `-rwxr-xr-x` (755) para `-rw-------` (600) via `chmod 600 .env`.
 
-### 🔴 `.env.example` idêntico ao `.env`
-O `.env.example` é uma cópia exata do `.env` com valores reais. Deveria conter apenas placeholders (ex.: `JWT_SECRET="sua-chave-aqui"`).
+### ✅ `.env.example` convertido para template com placeholders
+O `.env.example` agora contém apenas placeholders (ex.: `JWT_SECRET="sua-chave-jwt-aqui"`), servindo como template seguro para novos desenvolvedores.
 
 ---
 
 ## 6. `jest.config.js`
 
-### 🟡 `maxWorkers: 1` como gargalo
-Torna a execução estritamente sequencial. Em CI com mais núcleos, aumentar para `maxWorkers: 2` ou `'50%'` reduziria o tempo de execução.
+### ✅ `maxWorkers` alterado de `1` para `'50%'`
+O valor foi alterado de `maxWorkers: 1` para `maxWorkers: '50%'`, permitindo paralelismo proporcional aos CPUs disponíveis. O comentário foi atualizado para refletir a nova estratégia. O script `test:ci` no `package.json` teve o `--maxWorkers=1` removido para centralizar o controle no config. O mesmo ajuste foi aplicado ao `jest.config.db.js`.
 
-### 🟡 `transformIgnorePatterns` com muitos pacotes
-A lista de exclusão pode crescer conforme novas dependências ESM são adicionadas, tornando a manutenção custosa.
+### ✅ `transformIgnorePatterns` documentado com comentário
+Foi adicionado comentário explicativo indicando que a lista de pacotes ESM deve ser mantida atualizada sempre que uma nova dependência ESM pura for adicionada.
 
 ---
 
@@ -175,9 +175,9 @@ Qualquer commit acidental do `.env` expõe toda a infraestrutura. Configurar um 
 |------------|---------|----------|----------|
 | ✅ 🟡 Média | `proxy.js` | Logging sem nível de severidade | Substituído por `logger.warn` |
 | 🔴 Alta | ~~`proxy.js`~~ | ~~Nome inconsistente com Next.js~~ | ~~Item invalidado — `proxy.js` é a convenção atual do Next.js 16~~ |
-| 🔴 Alta | `.env.example` | Contém valores reais | Substituir por placeholders |
-| 🔴 Alta | `.env` | Credenciais em texto claro | Usar placeholders + secrets |
-| 🟡 Média | `jest.config.js` | `maxWorkers: 1` lento | Avaliar `maxWorkers: '50%'` |
+| ✅ 🔴 Alta | `.env.example` | Contém valores reais | Substituído por placeholders |
+| ✅ 🔴 Alta | `.env` | Credenciais em texto claro | Substituído por placeholders + permissão 600 |
+| ✅ 🟡 Média | `jest.config.js` | `maxWorkers: 1` lento | Alterado para `'50%'` + documentado `transformIgnorePatterns` |
 | 🟡 Média | `jest.config.db.js` | Duplicação com `jest.config.js` | Usar composição de configs |
 | 🟡 Média | `jest.teardown.js` | Timeout fixo de 1s | Aguardar eventos de close |
 | 🟡 Média | `schema.knip.json` | 986 linhas na raiz | Referenciar schema oficial |

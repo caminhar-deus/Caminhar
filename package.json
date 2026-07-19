@@ -30,7 +30,7 @@
     "test:coverage": "jest --coverage",
     "test:coverage:log": "mkdir -p logs && jest --coverage 2>&1 | tee logs/coverage-output.log",
     "test:coverage:watch": "jest --coverage --watch",
-    "test:ci": "jest --ci --coverage --maxWorkers=1",
+    "test:ci": "jest --ci --coverage",
     "test:db:container": "jest --config jest.config.db.js",
     "test:db:container:coverage": "jest --config jest.config.db.js --coverage",
     "test:db": "jest tests/unit/lib/db.test.js",

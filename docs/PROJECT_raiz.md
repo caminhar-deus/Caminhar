@@ -85,11 +85,11 @@ Os arquivos foram agrupados por contexto para facilitar a leitura:
 
 **Localização:** `/home/qa/Projeto/Caminhar/.env`
 
-**Propósito:** Variáveis de ambiente para desenvolvimento local. Contém credenciais e configurações sensíveis.
+**Propósito:** Variáveis de ambiente para desenvolvimento local. Contém placeholders no lugar de credenciais reais. Os valores reais devem ser gerenciados via secrets.
 
 **Variáveis:** `DATABASE_URL`, `JWT_SECRET`, `BACKUP_ENCRYPTION_KEY`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `ADMIN_IP_WHITELIST`, `SITE_URL`, `ALLOWED_ORIGINS`, `NODE_ENV`.
 
-> ⚠️ Excluído do Git via `.gitignore`. Contém credenciais reais de desenvolvimento.
+> ⚠️ Excluído do Git via `.gitignore`. Permissão `600` (`-rw-------`). Contém apenas placeholders — valores reais devem ser preenchidos localmente.
 
 ---
 
@@ -114,7 +114,7 @@ Os arquivos foram agrupados por contexto para facilitar a leitura:
 - Ambiente `jsdom`. Transformação via Babel (`babel.jest.config.js`).
 - Cobertura com provider V8. Thresholds: branches 80%, functions 85%, lines 90%, statements 90%.
 - Aliases: `@/`, `@tests/`, `@factories/`, `@helpers/`, `@mocks/`, `@matchers/`.
-- `maxWorkers: 1`, `clearMocks: true`, `restoreMocks: true`. Timeout: 10s.
+- `maxWorkers: '50%'`, `clearMocks: true`, `restoreMocks: true`. Timeout: 10s.
 
 ---
 
@@ -127,6 +127,7 @@ Os arquivos foram agrupados por contexto para facilitar a leitura:
 **Principais funcionalidades:**
 - Ambiente `node`. TestMatch: `*.db.test.js`. Timeout: 30s.
 - GlobalSetup: `tests/global-setup.db.js`. Mesmos aliases do `jest.config.js`.
+- `maxWorkers: '50%'`, `clearMocks: true`, `restoreMocks: true`.
 
 ---
 

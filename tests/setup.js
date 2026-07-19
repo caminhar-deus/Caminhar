@@ -134,6 +134,11 @@ if (typeof global.crypto === 'undefined' || !global.crypto.randomUUID) {
   });
 }
 
+// Polyfill URL.revokeObjectURL para ambiente JSDOM (não implementado nativamente)
+if (typeof URL.revokeObjectURL === 'undefined') {
+  URL.revokeObjectURL = jest.fn();
+}
+
 // ============================================================================
 // CONFIGURAÇÃO DO REACT TESTING LIBRARY
 // ============================================================================

@@ -92,17 +92,22 @@
 - **Problema:** Se o Docker falhar, a string `'__docker_unavailable__'` é definida, e os testes de banco são ignorados silenciosamente. Pode passar despercebido em CI.
 - **Sugestão:** Adicionar um aviso mais claro no relatório de testes, ou marcar os testes como "skipped" explicitamente.
 
-### 3.5 `afterEach` em `tests/setup.js` executa `cleanup()` e `jest.clearAllMocks()`
+### 3.5 Polyfill de `URL.revokeObjectURL` adicionado ao `tests/setup.js` ✅
+- **Arquivo:** `tests/setup.js` (linhas 137-139)
+- **Problema:** O teste `AdminAudit.test.js` — "deve testar os botões de paginação" falhava com `TypeError: URL.revokeObjectURL is not a function`. O JSDOM não implementa essa API de browser. O `csvExport.js` agenda um `setTimeout` com `URL.revokeObjectURL` que disparava durante a execução de outros testes.
+- **Correção:** Adicionado polyfill `URL.revokeObjectURL = jest.fn()` no `tests/setup.js`. Também adicionada proteção em `lib/csvExport.js` com `typeof URL.revokeObjectURL === 'function'` para ambientes que não implementam a API.
+
+### 3.6 `afterEach` em `tests/setup.js` executa `cleanup()` e `jest.clearAllMocks()`
 - **Local:** `tests/setup.js` (linhas 186-189)
 - **Problema:** `jest.clearAllMocks()` pode resetar mocks que foram configurados no `beforeEach` de um `describe`, forçando reconfiguração.
 - **Sugestão:** Avaliar se `jest.resetAllMocks()` seria mais apropriado em alguns casos, ou documentar a necessidade de reconfigurar mocks.
 
-### 3.6 Strings de conexão hardcoded no `global-setup.db.js`
+### 3.7 Strings de conexão hardcoded no `global-setup.db.js`
 - **Local:** `tests/global-setup.db.js`
 - **Problema:** Usuário e senha `test/test` estão hardcoded.
 - **Sugestão:** Extrair para variáveis de ambiente com fallback seguro.
 
-### 3.7 Timeout em testes de erro do VideoGallery causado por loop infinito no `useApiFetch` ✅
+### 3.8 Timeout em testes de erro do VideoGallery causado por loop infinito no `useApiFetch` ✅
 - **Arquivos:** `tests/unit/components/Features/Video/VideoGallery.test.js` (linhas 136, 157), `hooks/useApiFetch.js` (linha 129)
 - **Problema:** Dois testes de erro HTTP no VideoGallery estouravam o timeout de 10s do Jest. A causa raiz era o `useEffect` do `useApiFetch.js` que listava `error` como dependência. Quando o fetch falhava, `setError()` alterava `error`, re-executava o `useEffect`, que chamava `fetchData` novamente, que falhava e chamava `setError` novamente — loop infinito de renderizações.
 - **Correção:** Removida a dependência `error` do `useEffect` em `useApiFetch.js` (linha 129). Adicionado timeout explícito de 15s nos 2 testes como rede de segurança. Testes passam em ~14ms e ~5ms respectivamente. Nenhuma regressão na suite completa (352 testes).
@@ -202,6 +207,7 @@
 | 🔴 Alta | Ferramentas | Timeout para testes de banco | Falhas em CI |
 | 🟡 Média | Estrutura | Mover `tests/integration/api/audit.test.js` | Organização |
 | 🟡 Média | Cobertura | Testes para hooks customizados | Lacuna de cobertura |
+| ✅ 🟡 Média | Código | Polyfill `URL.revokeObjectURL` em `tests/setup.js` | Corrige falha intermitente em `AdminAudit.test.js` |
 | 🟡 Média | Código | Remover `setupNextMocks()` deprecated | Limpeza de código |
 | 🟡 Média | Documentação | Padronizar descrições de teste (pt-BR) | Consistência |
 | 🟢 Baixa | Performance | `console.log` nos setups | Ruído em CI |

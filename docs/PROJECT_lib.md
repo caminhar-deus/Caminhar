@@ -1,7 +1,7 @@
 # Análise da Pasta `lib/`
 
 > **Data da análise:** 28/06/2026  
-> **Última atualização:** 11/07/2026
+> **Última atualização:** 18/07/2026
 > **Objetivo:** Documentar de forma objetiva, técnica e organizada todos os arquivos da pasta `lib/` e suas subpastas, descrevendo localização, propósito, funcionalidades e responsabilidades de cada módulo.
 
 ---
@@ -113,7 +113,7 @@
 |--------|-----------|
 | `exportToCSV({ data, columns, filename, onEmpty })` | Exporta array de objetos para CSV e inicia download. Aceita `columns` com `key`, `header` e `format` (função opcional de formatação). Converte booleanos para "Publicado"/"Rascunho". Callback `onEmpty` se não houver dados |
 
-**Observações:** Função exclusiva de frontend (navegador). Cria Blob com BOM `\uFEFF` para compatibilidade com Excel.
+**Observações:** Função exclusiva de frontend (navegador). Cria Blob com BOM `\uFEFF` para compatibilidade com Excel. Inclui proteção `typeof URL.revokeObjectURL === 'function'` para ambientes sem suporte à API (ex.: JSDOM em testes).
 
 ---
 

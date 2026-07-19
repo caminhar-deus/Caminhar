@@ -1,7 +1,7 @@
 # Análise da Suite de Testes — `/tests/`
 
 > **Data:** 28/06/2026  
-> **Última atualização:** 12/07/2026
+> **Última atualização:** 18/07/2026
 > **Propósito:** Documentação completa e consolidada de todos os arquivos de teste do projeto Caminhar.
 
 ---
@@ -207,6 +207,7 @@ tests/
   - Polyfill de `MessageChannel`/`MessagePort` via `node:worker_threads`
   - Polyfill de `localStorage`, `matchMedia`, `IntersectionObserver`, `ResizeObserver`, `scrollTo`
   - Mock de `crypto.randomUUID`
+  - Polyfill de `URL.revokeObjectURL` (não implementado nativamente no JSDOM)
   - Configuração do React Testing Library (`asyncUtilTimeout: 5000ms`)
   - Filtro de `console.error` para warnings conhecidos do React e de API
   - Cleanup automático via `afterEach`: `cleanup()` e `jest.clearAllMocks()`

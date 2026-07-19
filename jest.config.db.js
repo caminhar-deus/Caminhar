@@ -12,7 +12,7 @@ export default {
   globalSetup: '<rootDir>/tests/global-setup.db.js',
   testMatch: ['**/*.db.test.js'],
   testTimeout: 30000,
-  maxWorkers: 1,
+  maxWorkers: '50%',
   collectCoverage: false,
   clearMocks: true,
   restoreMocks: true,

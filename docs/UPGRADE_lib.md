@@ -78,7 +78,17 @@
 
 ---
 
-### 1.7 `domain/products.js` — `updateProduct` não atualiza `updated_at`
+### 1.7 `csvExport.js` — `URL.revokeObjectURL` sem proteção para ambientes sem a API ✅
+
+**Localização:** `lib/csvExport.js`, linha 77
+
+**Problema:** A chamada `URL.revokeObjectURL(url)` lançava `TypeError: URL.revokeObjectURL is not a function` em ambientes JSDOM, que não implementam essa API de browser. Isso causava falha intermitente no teste `AdminAudit.test.js`.
+
+**Correção:** Adicionada verificação `typeof URL.revokeObjectURL === 'function'` antes de chamar a função, tornando o código resiliente em ambientes sem suporte à API. Também foi adicionado polyfill correspondente no `tests/setup.js`.
+
+---
+
+### 1.8 `domain/products.js` — `updateProduct` não atualiza `updated_at`
 
 **Localização:** `lib/domain/products.js`, linhas 131-151
 
@@ -88,7 +98,7 @@
 
 ---
 
-### 1.8 `domain/settings.js` — Aliases duplicados
+### 1.9 `domain/settings.js` — Aliases duplicados
 
 **Localização:** `lib/domain/settings.js`, linhas 60 e 76
 
