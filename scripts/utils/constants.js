@@ -14,6 +14,9 @@ export const MAX_BACKUPS = 10;
 /** Limite padrão de arquivos listados em getAvailableBackups */
 export const DEFAULT_LIST_LIMIT = 50;
 
+/** Prefixo para backups de segurança pré-restore */
+export const PRE_RESTORE_PREFIX = 'pre-restore_';
+
 /** Intervalo entre backups agendados (24 horas em ms) */
 export const BACKUP_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
@@ -55,6 +58,13 @@ export const MIGRATIONS_TABLE = '_migrations';
 // ─── Limpeza ───────────────────────────────────────────
 /** Dias de retenção de relatórios k6 */
 export const K6_RETENTION_DAYS = 7;
+
+// ─── Log de Backup ──────────────────────────────────────
+/** Período de retenção de logs em dias (logs mais antigos são removidos) */
+export const LOG_RETENTION_DAYS = 30;
+
+/** Tamanho máximo do arquivo de log em bytes antes de forçar rotação (10 MB) */
+export const LOG_MAX_SIZE_BYTES = 10 * 1024 * 1024;
 
 // ─── Monitoramento de Disco ────────────────────────────
 /** Percentual de uso do disco que dispara alerta */

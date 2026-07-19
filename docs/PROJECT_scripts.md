@@ -3,7 +3,7 @@
 > **Projeto:** Caminhar  
 > **Diretório:** `/scripts`  
 > **Objetivo deste documento:** Descrever a finalidade, localização e funcionamento de cada script disponível no diretório `scripts/` e seus subdiretórios.  
-> **Última atualização:** 11/07/2026
+> **Última atualização:** 16/07/2026
 
 ---
 
@@ -129,7 +129,8 @@ Este grupo forma o subsistema completo de backup e restauração do banco de dad
   - Listagem de backups disponíveis com metadados
   - Log otimizado com buffer em memória (append-only, sem re-escrita)
   - Logging sanitizado (remove credenciais das mensagens)
-- **Funções exportadas:** `createBackup()`, `restoreBackup()`, `cleanupOldBackups()`, `getAvailableBackups(maxFiles)`, `getBackupLogs()`, `initializeBackupSystem()`, `checkDiskBeforeBackup()`
+  - Rotação automática de logs por tamanho (10 MB) ou mudança de mês, com retenção configurável de 30 dias
+- **Funções exportadas:** `createBackup()`, `restoreBackup()`, `cleanupOldBackups()`, `getAvailableBackups(maxFiles)`, `getBackupLogs(options)`, `initializeBackupSystem()`, `checkDiskBeforeBackup()`, `rotateLogIfNeeded()`, `cleanupOldLogs()`
 - **Dependências:** `fs`, `path`, `zlib`, `crypto`, `child_process` (spawn), `./utils/date-format.js`, `./utils/constants.js`
 
 #### `scripts/create-backup.js`
@@ -149,7 +150,8 @@ Este grupo forma o subsistema completo de backup e restauração do banco de dad
 
 #### `scripts/view-backup-logs.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/view-backup-logs.js`
-- **Propósito:** Entry point para visualizar logs do sistema de backup. Chama `getBackupLogs()` e exibe registros formatados com timestamp e status.
+- **Propósito:** Entry point para visualizar logs do sistema de backup. Chama `getBackupLogs()` e exibe registros formatados com timestamp e status. Suporta flag `--all` para incluir logs de arquivos rotacionados.
+- **Uso:** `node scripts/view-backup-logs.js` (apenas log atual) ou `node scripts/view-backup-logs.js --all` (inclui histórico rotacionado)
 - **Dependências:** `./utils/load-env.js`, `./backup.js`
 
 ---
@@ -370,7 +372,7 @@ Agrupados por escopo de atuação:
 |---------|-------------|-----------|
 | `cleanup.js` | `scripts/utils/cleanup.js` | Módulo compartilhado de limpeza de dados de teste. Exporta `cleanTableByPattern()` (função genérica que deleta registros por padrões LIKE) e reexporta `loadEnv()` de `load-env.js`. |
 | `cleanup-test-data.js` | `scripts/utils/cleanup-test-data.js` | Remove posts de teste com slug `post-carga-%`. Delega execução a `cleanup.js`. **Duplicata funcional de `clean-load-test-posts.js`.** |
-| `constants.js` | `scripts/utils/constants.js` | Centraliza todas as constantes de configuração do projeto: `MAX_BACKUPS`, `DEFAULT_PORT`, `DISK_THRESHOLD_PERCENT`, `POST_ALERT_THRESHOLD`, `K6_RETENTION_DAYS`, `DEFAULT_BATCH_SIZE` (13 constantes no total). Elimina números mágicos. |
+| `constants.js` | `scripts/utils/constants.js` | Centraliza todas as constantes de configuração do projeto: `MAX_BACKUPS`, `DEFAULT_PORT`, `DISK_THRESHOLD_PERCENT`, `POST_ALERT_THRESHOLD`, `K6_RETENTION_DAYS`, `DEFAULT_BATCH_SIZE`, `PRE_RESTORE_PREFIX` (14 constantes no total). Elimina números mágicos. |
 | `date-format.js` | `scripts/utils/date-format.js` | Formatação de datas com APIs nativas JS. Exporta `formatISODate()` e `formatLogDate()`. Substitui uso de `date-fns/format` em `backup.js`. |
 | `init-table-utils.js` | `scripts/utils/init-table-utils.js` | Funções puras de schema extraídas de `init-table.js`: `getTableName()`, `loadSchemaFromDir()`, `buildCreateTableSQL()`, `getSeedValues()`, `buildSeedSQL()`. Permite testes unitários sem dependência de `import.meta.url`. |
 | `list-settings.js` | `scripts/utils/list-settings.js` | Lista todas as configurações da tabela `settings`. |

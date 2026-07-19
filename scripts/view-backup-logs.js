@@ -7,18 +7,20 @@ loadEnv();
 
 /**
  * Exibe os logs do sistema de backup.
- * Uso: node scripts/view-backup-logs.js
+ * Uso: node scripts/view-backup-logs.js [--all]
+ *   --all: Inclui logs de arquivos rotacionados
  */
 async function main() {
   try {
-    const logs = await getBackupLogs();
+    const includeRotated = process.argv.includes('--all');
+    const logs = await getBackupLogs({ includeRotated });
 
     if (logs.length === 0) {
       console.log('📋 Nenhum registro de log de backup encontrado.');
       return;
     }
 
-    console.log(`📋 Últimos ${logs.length} registros de backup:\n`);
+    console.log(`📋 ${logs.length} registros de backup${includeRotated ? ' (incluindo histórico rotacionado)' : ''}:\n`);
     logs.forEach(entry => {
       console.log(`  [${entry.timestamp}] [${entry.status}] ${entry.message}`);
     });

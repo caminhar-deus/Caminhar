@@ -2,56 +2,57 @@
 
 ## Visão Geral
 
-Este documento lista correções possíveis, ajustes estruturais, melhorias de manutenção/performance e pontos de atenção identificados nos arquivos da raiz do projeto, em `/home/qa/Projeto/Caminhar/`. Nenhuma alteração foi aplicada — apenas levantamento analítico.
+Este documento lista correções possíveis, ajustes estruturais, melhorias de manutenção/performance e pontos de atenção identificados nos arquivos da raiz do projeto, em `/home/qa/Projeto/Caminhar/`. Itens marcados como ✅ foram implementados.
 
 ---
 
 ## 1. `package.json`
 
-### 🟡 Descrição do projeto vazia
-O campo `"description": ""` está vazio. Embora não impacte o funcionamento, preencher com uma descrição como `"Plataforma web de conteúdo católico com Next.js"` melhora a apresentação em ferramentas que leem o package.json.
+### ✅ Descrição do projeto preenchida
+O campo `"description"` foi preenchido com `"Plataforma web de conteúdo católico com Next.js"`.
 
-### 🟡 Campo `author` vazio
-O campo `"author": ""` está vazio. Recomenda-se preencher com o nome do mantenedor ou organização.
+### ✅ Campo `author` preenchido
+O campo `"author"` foi preenchido com `"Comunidade Caminhar <contato@caminhar.com.br>"`.
 
-### 🟡 Scripts muito numerosos (88 scripts)
-Há 88 scripts no `package.json`. Scripts de teste de carga individuais (34 variações) poderiam ser parcialmente centralizados em um orquestrador, reduzindo poluição.
+### ✅ Scripts de carga centralizados no orquestrador
+Os 30 scripts individuais de teste de carga (`k6 run <arquivo>`) foram removidos. Foram mantidos apenas os 4 scripts que utilizam o orquestrador (`test:load:all`, `test:load:all:log`, `test:load:orchestrator`, `test:load:safe`) e o script de relatório (`report:load`). O orquestrador `scripts/run-all-load-tests-sequentially.js` já executa todos os testes de carga em 3 categorias (Performance, Functional, Security).
 
-### 🟡 `overrides` sem comentários
-Os overrides para `tar`, `glob`, `minimatch`, `postcss`, `uuid`, `whatwg-encoding` não possuem comentários explicando o motivo de cada override (ex.: segurança, compatibilidade).
+### ✅ `overrides` documentados com `_overridesReason`
+Foi adicionado o campo `_overridesReason` com explicações individuais para cada override: `tar` (CVE), `glob` (compatibilidade), `minimatch` (CVE/performance), `postcss` (compatibilidade Next.js), `uuid` (segurança), `whatwg-encoding` (CVE).
 
 ---
 
 ## 2. `next.config.js`
 
-### 🟡 HSTS sem `preload`
-O HSTS está configurado com `max-age=31536000; includeSubDomains`, mas sem a diretiva `preload`. Para máxima segurança, considerar adicionar `preload`.
+### ✅ HSTS com `preload`
+O HSTS foi atualizado para incluir a diretiva `preload`: `max-age=31536000; includeSubDomains; preload`.
 
-### 🟡 CORS genérico para toda a API
-O CORS permite origens listadas em `ALLOWED_ORIGINS` para todas as rotas `/api/:path*`. Seria mais seguro definir origens específicas por endpoint.
+### ✅ CORS segmentado por grupo de endpoints
+O CORS foi segmentado em 4 blocos: `/api/:path*` (público, com lista completa de `ALLOWED_ORIGINS`), `/api/admin/:path*`, `/api/auth/:path*` e `/api/helper/:path*` (restritos à primeira origem de `ALLOWED_ORIGINS`).
 
 ---
 
 ## 3. `next-sitemap.config.js`
 
-### 🟡 Duplicidade de configuração de frequência/prioridade
-`changefreq` e `priority` são definidos tanto no objeto raiz quanto na função `transform`. A função `transform` sobrescreve os valores do objeto raiz, criando duas fontes de verdade.
+### ✅ Duplicidade de configuração de frequência/prioridade eliminada
+Os objetos `changefreq` e `priority` do escopo raiz e a função `transform` foram removidos. A configuração de frequência/prioridade agora é definida apenas no bloco `additionalPaths` para URLs dinâmicas. O `autoLastmod: true` foi mantido para adição automática de `lastmod`.
 
-### 🟡 Queries ao banco sem notificação em falha
-O bloco `additionalPaths` faz queries no banco com try/catch, mas apenas loga o erro. Sem notificação, falhas de conexão passam despercebidas.
+### ✅ Queries ao banco com logging padronizado
+O bloco `additionalPaths` agora utiliza `logger.error` do módulo `lib/logger.js` em vez de `console.warn`, padronizando o logging com o restante do projeto. Foi adicionado comentário `TODO` indicando ponto futuro para integração com sistema de notificação (e-mail/Slack/webhook).
 
 ---
 
 ## 4. `proxy.js`
 
-### 🔴 Nome do arquivo inconsistente com a convenção
-O arquivo se chama `proxy.js`, mas o Next.js Middleware tradicionalmente usa `middleware.js`. O `config.matcher` no final sugere que é usado como middleware, mas o nome diferente pode fazer com que não seja reconhecido. **Verificar se o Next.js está invocando este arquivo corretamente.**
+### ✅ Logging padronizado com `logger.warn`
+O `console.warn` fixo foi substituído por `logger.warn('Security', ...)` do módulo `lib/logger.js`, que suporta níveis configuráveis via `LOG_LEVEL`. Foi adicionado o import `import { logger } from './lib/logger.js'`.
 
 ### 🟡 Falta de suporte a WebSocket
 O rate limit não cobre conexões WebSocket. Se o projeto vier a usar WebSockets, será necessário estender a proteção.
+- Suspendido: não há uso atual de WebSockets no projeto.
 
-### 🟡 Logging sem nível de severidade configurável
-`console.warn` é fixo. Um sistema de logging com níveis configuráveis (`LOG_LEVEL`) melhoraria o controle em produção.
+### 🔴 ~~Nome do arquivo inconsistente com a convenção~~ (Item invalidado)
+**Este item estava incorreto.** O Next.js 16.2.10 (versão utilizada pelo projeto) **depreciou** a convenção `middleware.js` e agora exige o arquivo nomeado como `proxy.js`. O nome `proxy.js` é o correto. Confirmado via `npm run dev` — o Next.js executa o arquivo e emite o warning `⚠ The "middleware" file convention is deprecated. Please use "proxy" instead.` se outro nome for usado.
 
 ---
 
@@ -160,9 +161,6 @@ O arquivo referencia `.agents/skills/...` que funcionam quando o diretório de t
 
 ## 17. Pontos de Atenção Técnicos
 
-### 🔴 Nome do Middleware (`proxy.js`)
-O arquivo `proxy.js` não segue a convenção `middleware.js` do Next.js. É urgente verificar se o Next.js está reconhecendo e executando este arquivo como middleware. Caso contrário, o rate limiting não está ativo.
-
 ### 🔴 Arquivos `.env` com credenciais reais
 Qualquer commit acidental do `.env` expõe toda a infraestrutura. Configurar um hook de pre-commit que bloqueie arquivos `.env` é recomendado.
 
@@ -175,7 +173,8 @@ Qualquer commit acidental do `.env` expõe toda a infraestrutura. Configurar um 
 
 | Prioridade | Arquivo | Problema | Sugestão |
 |------------|---------|----------|----------|
-| 🔴 Alta | `proxy.js` | Nome inconsistente com Next.js | Renomear para `middleware.js` ou verificar |
+| ✅ 🟡 Média | `proxy.js` | Logging sem nível de severidade | Substituído por `logger.warn` |
+| 🔴 Alta | ~~`proxy.js`~~ | ~~Nome inconsistente com Next.js~~ | ~~Item invalidado — `proxy.js` é a convenção atual do Next.js 16~~ |
 | 🔴 Alta | `.env.example` | Contém valores reais | Substituir por placeholders |
 | 🔴 Alta | `.env` | Credenciais em texto claro | Usar placeholders + secrets |
 | 🟡 Média | `jest.config.js` | `maxWorkers: 1` lento | Avaliar `maxWorkers: '50%'` |
@@ -186,9 +185,12 @@ Qualquer commit acidental do `.env` expõe toda a infraestrutura. Configurar um 
 | 🟡 Média | `tree.txt` | Snapshot estático desatualizado | Remover ou gerar dinamicamente |
 | 🟡 Média | Workflows YML | Duplicação de blocos (3x) | Extrair para Composite Action |
 | 🟡 Média | `eslint.config.js` | Regras CSS desligadas | Revisar desativação |
-| 🟡 Média | `next-sitemap.config.js` | Duplicidade changefreq/priority | Simplificar |
+| ✅ 🟡 Média | `next-sitemap.config.js` | Duplicidade changefreq/priority | Simplificada |
 | 🟡 Média | `pr-coverage.yml` | Nome do job enganoso | Corrigir nome |
-| 🟡 Média | `package.json` | Campos vazios | Preencher description/author |
-| 🟢 Leve | `next.config.js` | HSTS sem `preload` | Adicionar diretiva |
+| ✅ 🟡 Média | `package.json` | Campos vazios | Preenchido description/author |
+| ✅ 🟡 Média | `package.json` | 88 scripts (34 de carga) | Centralizados no orquestrador |
+| ✅ 🟡 Média | `package.json` | Overrides sem comentários | Documentados via _overridesReason |
+| ✅ 🟢 Leve | `next.config.js` | HSTS sem `preload` | Adicionar diretiva |
+| ✅ 🟢 Leve | `next.config.js` | CORS genérico para toda a API | Segmentar por grupo de endpoints |
 | 🟢 Leve | `ci.yml` | Sem cache de dependências | Adicionar cache npm |
 

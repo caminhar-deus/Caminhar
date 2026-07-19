@@ -4,7 +4,7 @@
 
 Este documento apresenta o levantamento analítico de possíveis melhorias para a estrutura e organização da pasta `/data`, com base na análise atual dos arquivos existentes.
 
-**Estado atual da pasta:** contém apenas o subdiretório `backups/` com 2 backups criptografados (.enc), seus respectivos hashes SHA-256 e um arquivo de log (.log). Todos os problemas identificados anteriormente (inconsistência SQLite vs PostgreSQL, backup JSON redundante, formato de datas, erro de criptografia, entity_id, etc.) já foram resolvidos e documentados em `/docs/resolvidos/UPGRADE_data.md`.
+**Estado atual da pasta:** contém apenas o subdiretório `backups/` com 2 backups criptografados (.enc), seus respectivos hashes SHA-256 e um arquivo de log (.log). Todos os problemas identificados anteriormente (inconsistência SQLite vs PostgreSQL, backup JSON redundante, formato de datas, erro de criptografia, entity_id, etc.) já foram resolvidos e documentados em `/docs/resolvidos/UPGRADE_data.md`. O item 2 (backup de segurança pré-restore visível) também já foi implementado — ver detalhes na seção correspondente.
 
 ---
 
@@ -164,3 +164,25 @@ O documento `/docs/resolvidos/UPGRADE_data.md` contém **11 itens** de melhorias
 - Sanitização de logs
 
 Nenhum dos problemas anteriores persiste no estado atual da pasta `/data`.
+
+---
+
+## Item 2 — Implementado
+
+O backup de segurança pré-restore agora segue o mesmo padrão de nomenclatura dos backups regulares (`caminhar-pg-backup_pre-restore_<timestamp>.sql.gz`), possui hash SHA-256 gerado automaticamente, é registrado no `backup.log` com tag `[Segurança]` e participa da rotação automática (cleanup) junto com os demais backups. O nome do safety backup também é exibido na saída do comando `npm run backup:restore`.
+
+---
+
+## Item 3 — Implementado
+
+O `backup.log` agora possui um sistema completo de rotação e retenção configurável:
+
+- **Rotação por tamanho:** Quando o arquivo `backup.log` excede 10 MB (`LOG_MAX_SIZE_BYTES`), é renomeado para `backup-<timestamp>.log` e um novo arquivo vazio é criado.
+- **Rotação por data:** Se a última modificação do `backup.log` for de mês anterior ao corrente, a rotação é disparada automaticamente.
+- **Retenção configurável:** Logs rotacionados com mais de 30 dias (`LOG_RETENTION_DAYS`) são removidos automaticamente durante a limpeza de backups.
+- **Integração automática:** A verificação de rotação ocorre antes de cada escrita no log (`logBackupOperation()` → `rotateLogIfNeeded()`). A limpeza de logs antigos ocorre junto com `cleanupOldBackups()`.
+- **Consulta de histórico:** `npm run backup:logs:all` (ou `node scripts/view-backup-logs.js --all`) exibe logs atuais + rotacionados, ordenados do mais recente para o mais antigo.
+- **Exportação pública:** As funções `rotateLogIfNeeded()` e `cleanupOldLogs()` estão disponíveis para importação por outros módulos.
+- **Constantes adicionadas em `scripts/utils/constants.js`:** `LOG_RETENTION_DAYS` (30) e `LOG_MAX_SIZE_BYTES` (10 MB).
+- **Testes atualizados:** `tests/unit/lib/backup/backup.logs.test.js` adaptado para a nova ordenação descendente dos logs.
+- **22/22 testes passando** nos módulos de backup.

@@ -67,11 +67,11 @@ describe('getBackupLogs', () => {
 
     expect(logs).toHaveLength(3);
     expect(logs[0]).toEqual({
-      timestamp: '2026-02-10 10:00:00',
-      status: 'SUCCESS',
-      message: 'backup-1.sql.gz',
+      timestamp: '2026-02-10 12:00:00',
+      status: 'ERROR',
+      message: 'Falha ao criar backup',
     });
-    expect(logs[2].status).toBe('ERROR');
+    expect(logs[2].status).toBe('SUCCESS');
   });
 
   it('deve ignorar linhas mal formatadas ou vazias', async () => {
@@ -86,7 +86,7 @@ linha mal formatada
     const logs = await getBackupLogs();
 
     expect(logs).toHaveLength(2);
-    expect(logs[0].status).toBe('SUCCESS');
-    expect(logs[1].status).toBe('ERROR');
+    expect(logs[0].status).toBe('ERROR');
+    expect(logs[1].status).toBe('SUCCESS');
   });
 });

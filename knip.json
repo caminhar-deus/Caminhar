@@ -12,9 +12,7 @@
     "*.config.js",
     "jest.setup.js"
   ],
-  "ignoreBinaries": [
-    "k6"
-  ],
+  "ignoreBinaries": [],
   "ignoreDependencies": [
     "@babel/preset-env",
     "@babel/preset-react",

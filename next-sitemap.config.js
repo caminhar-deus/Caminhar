@@ -1,5 +1,7 @@
 /** @type {import('next-sitemap').IConfig} */
 
+import { logger } from './lib/logger.js';
+
 export default {
   siteUrl: process.env.SITE_URL || 'http://localhost:3000',
   
@@ -51,52 +53,6 @@ export default {
     '/server-sitemap.xml',
   ],
   
-  // Frequência de mudança por path
-  changefreq: {
-    '/': 'daily',
-    '/blog': 'daily',
-    '/blog/*': 'weekly',
-    '/musicas': 'weekly',
-    '/videos': 'weekly',
-  },
-  
-  // Prioridade por path
-  priority: {
-    '/': 1.0,
-    '/blog': 0.9,
-    '/blog/*': 0.8,
-    '/musicas': 0.7,
-    '/videos': 0.7,
-  },
-  
-  // Transformar config de cada URL
-  transform: async (config, path) => {
-    // Configurações específicas por tipo de página
-    const customConfigs = {
-      '/': {
-        changefreq: 'daily',
-        priority: 1.0,
-        lastmod: new Date().toISOString(),
-      },
-      '/blog': {
-        changefreq: 'daily',
-        priority: 0.9,
-        lastmod: new Date().toISOString(),
-      },
-    };
-
-    // Default config
-    const defaultConfig = {
-      loc: path,
-      changefreq: config.changefreq[path] || 'weekly',
-      priority: config.priority[path] || 0.5,
-      lastmod: new Date().toISOString(),
-    };
-
-    // Retorna config customizada ou default
-    return customConfigs[path] || defaultConfig;
-  },
-  
   // Auto-detectar páginas dinâmicas (ISR/SSG)
   autoLastmod: true,
   
@@ -142,7 +98,8 @@ export default {
       });
 
     } catch (error) {
-      console.warn('⚠️ Aviso ao gerar sitemap dinâmico:', error.message);
+      // TODO: Integrar com sistema de notificação (e-mail/Slack/webhook) em produção
+      logger.error('Sitemap', 'Falha ao gerar sitemap dinâmico:', error.message);
     }
     
     return result;

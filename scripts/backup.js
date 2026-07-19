@@ -11,7 +11,10 @@ import {
   ENCRYPTION_KEY_LENGTH,
   MAX_LOG_LINES,
   DISK_THRESHOLD_PERCENT,
-  DISK_PATH_DEFAULT
+  DISK_PATH_DEFAULT,
+  PRE_RESTORE_PREFIX,
+  LOG_RETENTION_DAYS,
+  LOG_MAX_SIZE_BYTES
 } from './utils/constants.js';
 
 // Caminhos do banco de dados e backups
@@ -311,6 +314,9 @@ async function createBackup() {
  */
 async function logBackupOperation(status, message) {
   try {
+    // Verifica se precisa rotacionar o log antes de escrever
+    await rotateLogIfNeeded();
+
     // Sanitiza a mensagem: remove possíveis dados sensíveis
     const sanitizedMessage = message
       .replace(/(password|senha|token|secret|key|chave)\s*[=:]\s*\S+/gi, '$1=***')
@@ -369,9 +375,102 @@ async function cleanupOldBackups() {
         await logBackupOperation('INFO', `Removed old backup: ${file}`);
       }
     }
+
+    // Também limpa logs antigos rotacionados
+    await cleanupOldLogs();
   } catch (error) {
     console.error('Erro ao limpar backups antigos:', error);
     await logBackupOperation('ERROR', `Cleanup failed: ${error.message}`);
+  }
+}
+
+/**
+ * Verifica se o arquivo de log atual precisa ser rotacionado.
+ * A rotação ocorre se o arquivo exceder LOG_MAX_SIZE_BYTES ou se for de mês anterior ao corrente.
+ * Renomeia o log atual para backup-<timestamp>.log e cria um novo arquivo vazio.
+ */
+async function rotateLogIfNeeded() {
+  try {
+    let needsRotation = false;
+
+    try {
+      const stat = await fs.promises.stat(LOG_FILE);
+
+      // Rotaciona se o tamanho exceder o limite configurado
+      if (stat.size > LOG_MAX_SIZE_BYTES) {
+        needsRotation = true;
+      }
+
+      // Rotaciona se a última modificação for de mês anterior ao corrente
+      if (!needsRotation) {
+        const lastModified = new Date(stat.mtime);
+        const now = new Date();
+        if (lastModified.getFullYear() < now.getFullYear() ||
+            (lastModified.getFullYear() === now.getFullYear() && lastModified.getMonth() < now.getMonth())) {
+          needsRotation = true;
+        }
+      }
+    } catch {
+      // Arquivo não existe, não precisa rotacionar
+      return;
+    }
+
+    if (!needsRotation) return;
+
+    const rotatedName = `backup-${formatISODate()}.log`;
+    const rotatedPath = path.join(BACKUP_DIR, rotatedName);
+
+    // Renomeia o arquivo atual para o nome rotacionado
+    await fs.promises.rename(LOG_FILE, rotatedPath);
+
+    // Cria um novo arquivo de log vazio
+    await fs.promises.writeFile(LOG_FILE, '');
+
+    // Não registra a rotação no novo log para evitar loop infinito
+    console.log(`🔄 Log rotacionado: ${rotatedName}`);
+  } catch (error) {
+    console.error('Erro ao rotacionar log:', error);
+  }
+}
+
+/**
+ * Remove arquivos de log rotacionados mais antigos que LOG_RETENTION_DAYS dias.
+ * Mantém apenas os arquivos com padrão backup-<timestamp>.log dentro do período de retenção.
+ */
+async function cleanupOldLogs() {
+  try {
+    const dir = await fs.promises.opendir(BACKUP_DIR);
+    const logFiles = [];
+
+    for await (const dirent of dir) {
+      if (dirent.isFile() && /^backup-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z\.log$/.test(dirent.name)) {
+        logFiles.push(dirent.name);
+      }
+    }
+
+    const now = Date.now();
+    const retentionMs = LOG_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+    let removedCount = 0;
+
+    for (const logFile of logFiles) {
+      const timestampMatch = logFile.match(/(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z)/);
+      if (!timestampMatch) continue;
+
+      const logTimestamp = new Date(timestampMatch[1]).getTime();
+      if (now - logTimestamp > retentionMs) {
+        const logPath = path.join(BACKUP_DIR, logFile);
+        try {
+          await fs.promises.unlink(logPath);
+          removedCount++;
+        } catch { /* arquivo pode já ter sido removido */ }
+      }
+    }
+
+    if (removedCount > 0) {
+      console.log(`🧹 Logs antigos removidos: ${removedCount}`);
+    }
+  } catch (error) {
+    console.error('Erro ao limpar logs antigos:', error);
   }
 }
 
@@ -402,13 +501,19 @@ async function restoreBackup(backupFilename) {
 
     // 1. Cria um backup de segurança antes de sobrescrever
     console.log('🔄 Criando um backup de segurança do banco de dados atual...');
-    const safetyBackupFilename = `pre-restore-backup_${formatISODate()}.sql.gz`;
+    const safetyBackupFilename = `${BACKUP_CONFIG.backupPrefix}_${PRE_RESTORE_PREFIX}${formatISODate()}.sql.gz`;
     const safetyBackupPath = path.join(BACKUP_DIR, safetyBackupFilename);
 
     // Usa spawn sem shell para segurança (item 1.2)
     try {
       await runPgDumpToFile(process.env.DATABASE_URL, safetyBackupPath);
+
+      // Gera hash SHA-256 para o backup de segurança
+      const safetyHash = await calculateFileHash(safetyBackupPath);
+      await fs.promises.writeFile(`${safetyBackupPath}.sha256`, safetyHash);
+
       console.log(`✅ Backup de segurança criado: ${safetyBackupFilename}`);
+      await logBackupOperation('INFO', `[Segurança] Backup pré-restore criado: ${safetyBackupFilename} | hash: ${safetyHash.substring(0, 12)}...`);
     } catch (err) {
       console.error(`❌ Erro ao criar backup de segurança: ${err.message}`);
       throw new Error('Falha ao criar o backup de segurança. Restauração abortada.', { cause: err });
@@ -520,24 +625,73 @@ async function getAvailableBackups(maxFiles = DEFAULT_LIST_LIMIT) {
 
 /**
  * Retorna logs de backup (lê do buffer em memória + arquivo)
+ * @param {Object} [options] - Opções de consulta
+ * @param {boolean} [options.includeRotated=false] - Se true, inclui logs de arquivos rotacionados
  */
-async function getBackupLogs() {
-  try {
-    await fs.promises.access(LOG_FILE);
-    const logContent = await fs.promises.readFile(LOG_FILE, 'utf8');
-    const logLines = logContent.split('\n').filter(line => line.trim() !== '');
+async function getBackupLogs(options = {}) {
+  const { includeRotated = false } = options;
+  const allLogs = [];
 
-    return logLines.map(line => {
-      const match = line.match(/\[([^\]]+)\] \[([^\]]+)\] (.*)/);
-      if (match) {
-        return {
-          timestamp: match[1],
-          status: match[2],
-          message: match[3]
-        };
+  try {
+    // Lê o log atual
+    try {
+      await fs.promises.access(LOG_FILE);
+      const logContent = await fs.promises.readFile(LOG_FILE, 'utf8');
+      const logLines = logContent.split('\n').filter(line => line.trim() !== '');
+
+      const currentLogs = logLines.map(line => {
+        const match = line.match(/\[([^\]]+)\] \[([^\]]+)\] (.*)/);
+        if (match) {
+          return {
+            timestamp: match[1],
+            status: match[2],
+            message: match[3]
+          };
+        }
+        return null;
+      }).filter(entry => entry !== null);
+
+      allLogs.push(...currentLogs);
+    } catch { /* log atual não existe */ }
+
+    // Se solicitado, inclui logs de arquivos rotacionados
+    if (includeRotated) {
+      const dir = await fs.promises.opendir(BACKUP_DIR);
+      const rotatedLogFiles = [];
+
+      for await (const dirent of dir) {
+        if (dirent.isFile() && /^backup-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z\.log$/.test(dirent.name)) {
+          rotatedLogFiles.push(dirent.name);
+        }
       }
-      return null;
-    }).filter(entry => entry !== null);
+
+      // Ordena do mais recente para o mais antigo
+      rotatedLogFiles.sort().reverse();
+
+      for (const logFile of rotatedLogFiles) {
+        try {
+          const content = await fs.promises.readFile(path.join(BACKUP_DIR, logFile), 'utf8');
+          const lines = content.split('\n').filter(line => line.trim() !== '');
+          const entries = lines.map(line => {
+            const match = line.match(/\[([^\]]+)\] \[([^\]]+)\] (.*)/);
+            if (match) {
+              return {
+                timestamp: match[1],
+                status: match[2],
+                message: match[3]
+              };
+            }
+            return null;
+          }).filter(entry => entry !== null);
+          allLogs.push(...entries);
+        } catch { /* ignora arquivos que não puderem ser lidos */ }
+      }
+    }
+
+    // Ordena por timestamp (mais recente primeiro)
+    allLogs.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+
+    return allLogs;
   } catch {
     return [];
   }
@@ -571,5 +725,7 @@ export {
   getAvailableBackups,
   getBackupLogs,
   initializeBackupSystem,
-  checkDiskBeforeBackup
+  checkDiskBeforeBackup,
+  rotateLogIfNeeded,
+  cleanupOldLogs
 };

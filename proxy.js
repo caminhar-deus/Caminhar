@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { checkRateLimit } from './lib/cache.js';
+import { logger } from './lib/logger.js';
 
 /**
  * Middleware global do Next.js para Rate Limiting e Proteção DDoS.
@@ -67,10 +68,9 @@ export async function proxy(request) {
 
   if (isRateLimited) {
     const routeName = matchedRoute.replace('/api/', '');
-    console.warn(
-      `[SECURITY] ⛔ Bloqueio DDoS (Rate Limit) | Rota: ${routeName} | IP: ${ip} | ` +
-      `UA: ${request.headers.get('user-agent') || 'Unknown'} | ` +
-      `Data: ${new Date().toISOString()}`
+    logger.warn('Security',
+      `⛔ Bloqueio DDoS (Rate Limit) | Rota: ${routeName} | IP: ${ip} | ` +
+      `UA: ${request.headers.get('user-agent') || 'Unknown'}`
     );
 
     return NextResponse.json(

@@ -111,7 +111,7 @@ export default function AdminDashboard({ setActiveTab, userPermissions = [], isA
         label: 'Dicas', 
         count: stats.dicas || 0, 
         icon: '💡', 
-        color: 'var(--color-primary-500)', 
+        color: '#8B5CF6', 
         tabId: 'dicas',
         details: `✅ ${stats.dicasPublished || 0} Pub | 📝 ${stats.dicasDraft || 0} Rasc`
       },
@@ -120,7 +120,7 @@ export default function AdminDashboard({ setActiveTab, userPermissions = [], isA
         label: 'Usuários', 
         count: stats.users, 
         icon: '👥', 
-        color: 'var(--color-primary-700)', 
+        color: '#06B6D4', 
         tabId: 'users',
         details: `Ativos: Hoje (${stats.usersToday || 0}) • Mês (${stats.usersMonth || 0}) • Ano (${stats.usersYear || 0})`
       },

@@ -38,7 +38,7 @@ data/
 
 **Propósito:** Registro sanitizado das operações de backup realizadas. Contém metadados das execuções sem dados sensíveis (senhas, tokens ou chaves).
 
-**Observação:** Arquivo não acessível diretamente pela análise. Sua existência está confirmada pela estrutura do diretório e referenciada nos documentos de backup do projeto.
+**Observação:** Arquivo não acessível diretamente pela análise. Sua existência está confirmada pela estrutura do diretório e referenciada nos documentos de backup do projeto. O sistema realiza rotação automática do log por tamanho (10 MB) ou mudança de mês, renomeando-o para `backup-<timestamp>.log`. Logs rotacionados com mais de 30 dias são removidos automaticamente durante a limpeza de backups.
 
 ---
 
@@ -95,13 +95,15 @@ O sistema de backup é gerenciado pelo script `scripts/backup.js` e oferece as s
 |---------------|-----------|
 | **Backup** | `pg_dump` com compressão gzip |
 | **Restore** | `gunzip` + `psql` |
-| **Hash SHA-256** | Geração automática para cada backup |
+| **Hash SHA-256** | Geração automática para cada backup (inclusive safety backups) |
 | **Criptografia AES-256-GCM** | Opcional, ativada via `BACKUP_ENCRYPTION_KEY` |
 | **Validação de chave** | Exige 64 caracteres hexadecimais |
-| **Cleanup automático** | Mantém no máximo 10 backups recentes |
-| **Backup pré-restore** | Cria backup de segurança antes de restaurar |
+| **Cleanup automático** | Mantém no máximo 10 backups recentes (inclui safety backups) |
+| **Backup pré-restore** | Cria backup de segurança antes de restaurar, com nomenclatura padronizada, hash e registro em log |
 | **Log sanitizado** | Registra operações sem dados sensíveis |
-| **Listagem de backups** | Comando para listar backups disponíveis |
+| **Rotação de logs** | Rotação automática por tamanho (10 MB) ou por mudança de mês, com retenção configurável de 30 dias |
+| **Consulta de histórico de logs** | `npm run backup:logs` (apenas log atual) ou `npm run backup:logs:all` (inclui logs rotacionados) |
+| **Listagem de backups** | Comando para listar backups disponíveis (inclui safety backups) |
 | **Verificação de disco** | Checa espaço disponível antes do backup |
 
 ---

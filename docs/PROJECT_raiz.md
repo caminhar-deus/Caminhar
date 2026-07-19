@@ -22,14 +22,16 @@ Os arquivos foram agrupados por contexto para facilitar a leitura:
 
 **Localização:** `/home/qa/Projeto/Caminhar/package.json`
 
-**Propósito:** Manifesto do projeto. Define nome (`caminhar`), versão (`1.4.0`), engine (`Node.js 24.16.0`, `npm 11.17.0`), tipo de módulo (`ES Modules`), scripts, dependências e overrides.
+**Propósito:** Manifesto do projeto. Define nome (`caminhar`), versão (`1.4.0`), engine (`Node.js 24.16.0`, `npm 12.0.0`), tipo de módulo (`ES Modules`), scripts, dependências e overrides.
 
 **Principais funcionalidades:**
-- **88 scripts** organizados em categorias: dev, build, lint, testes unitários, testes de banco, testes E2E (Cypress), testes de carga (k6, 34 variações), gerenciamento de banco, backup, utilitários, segurança.
+- **~58 scripts** organizados em categorias: dev, build, lint, testes unitários, testes de banco, testes E2E (Cypress), testes de carga (k6, centralizados no orquestrador), gerenciamento de banco, backup, utilitários, segurança.
 - **Dependências principais:** Next.js 16, React 19, bcryptjs, jsonwebtoken, pg, @upstash/redis, zod, sharp, formidable, react-hot-toast.
 - **DevDependencies:** Jest 30, Cypress 15, ESLint 10, Knip 6, Testing Library, Faker, Testcontainers, next-sitemap.
-- **Overrides:** `tar`, `glob`, `minimatch`, `postcss`, `uuid`, `whatwg-encoding`.
+- **Overrides:** `tar`, `glob`, `minimatch`, `postcss`, `uuid`, `whatwg-encoding` — documentados via campo `_overridesReason`.
 - **allowScripts:** Permissão para scripts nativos de `sharp`, `cypress`, `ssh2`, `protobufjs`, `cpu-features`, `unrs-resolver`.
+- **Scripts de carga centralizados:** Os 30 scripts individuais de `k6 run` foram removidos. A execução é feita exclusivamente pelo orquestrador `scripts/run-all-load-tests-sequentially.js`, acessível via `npm run test:load:all`.
+- **Campos preenchidos:** `description` e `author` foram preenchidos (estavam vazios).
 
 ---
 
@@ -42,8 +44,8 @@ Os arquivos foram agrupados por contexto para facilitar a leitura:
 **Principais funcionalidades:**
 - `serverExternalPackages`: `bcryptjs` e `jsonwebtoken`.
 - Webpack fallback: desabilita módulos Node.js (`fs`, `path`, `url`, `crypto`) no cliente.
-- **Headers de segurança:** `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy` restritivo, `Strict-Transport-Security` (31536000s).
-- **CORS para `/api/:path*`:** Origem dinâmica via `ALLOWED_ORIGINS`, métodos `GET, POST, PUT, DELETE, OPTIONS`.
+- **Headers de segurança:** `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy` restritivo, `Strict-Transport-Security` (31536000s com `preload`).
+- **CORS segmentado por grupo de endpoints:** `/api/:path*` (público, com lista completa de `ALLOWED_ORIGINS`), `/api/admin/:path*`, `/api/auth/:path*` e `/api/helper/:path*` (restritos à primeira origem de `ALLOWED_ORIGINS`). Métodos: `GET, POST, PUT, DELETE, OPTIONS`.
 
 ---
 
@@ -57,9 +59,10 @@ Os arquivos foram agrupados por contexto para facilitar a leitura:
 - `robots.txt` com políticas para Googlebot, Bingbot e User-Agent genérico.
 - Sitemaps adicionais: `sitemap-musicas.xml`, `sitemap-videos.xml`.
 - Páginas excluídas: `/admin`, `/api/*`, `/404`, `/500`.
-- Frequência e prioridade configuradas por path.
+- Frequência e prioridade definidas apenas no bloco `additionalPaths` para URLs dinâmicas.
 - Geração dinâmica de paths: busca no banco (`posts`, `musicas`, `videos` publicados).
-- Função `transform` customizada e `autoLastmod: true`.
+- `autoLastmod: true` para adição automática de `lastmod`.
+- Logging padronizado via `logger` (`lib/logger.js`) para falhas nas queries do banco.
 
 ---
 
@@ -74,7 +77,7 @@ Os arquivos foram agrupados por contexto para facilitar a leitura:
 - Identificação de IP via `X-Forwarded-For` ou `request.ip`.
 - Integração com Redis (`checkRateLimit`) com fallback em memória.
 - Bloqueio com status 429 e mensagem em português.
-- Logging de segurança com rota, IP, User-Agent e timestamp.
+- Logging padronizado via `logger.warn('Security', ...)` do módulo `lib/logger.js`, com suporte a níveis configuráveis via `LOG_LEVEL`.
 
 ---
 

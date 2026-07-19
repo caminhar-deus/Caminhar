@@ -884,7 +884,7 @@ Testes que focam em cenários de borda (edge cases) para handlers de API. Usam `
 
 ### `/tests/unit/scripts/backup.test.js` (86 linhas)
 - **Propósito:** Testa o sistema de backup (`scripts/backup.js`).
-- **Testes:** Exportação de 6 funções (createBackup, restoreBackup, cleanupOldBackups, getAvailableBackups, getBackupLogs, initializeBackupSystem) via ESM. Uso de `jest.unstable_mockModule` e `jest.isolateModules`.
+- **Testes:** Exportação de 9 funções (createBackup, restoreBackup, cleanupOldBackups, getAvailableBackups, getBackupLogs, initializeBackupSystem, checkDiskBeforeBackup, rotateLogIfNeeded, cleanupOldLogs) via ESM. Uso de `jest.unstable_mockModule` e `jest.isolateModules`.
 - **Mocks:** `child_process` (spawn), `fs`, `date-fns`, `scripts/utils/constants.js`
 
 ### `/tests/unit/scripts/clean-orphaned-images.test.js` (92 linhas)

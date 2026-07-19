@@ -26,6 +26,7 @@ async function runRestore() {
   try {
     // Executa a restauração
     await restoreBackup(file);
+    console.log('✅ Backup de segurança pré-restore criado com sucesso.');
   } catch (error) {
     console.error('❌ Falha ao restaurar backup:', error);
     process.exit(1);
