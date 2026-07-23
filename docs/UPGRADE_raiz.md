@@ -81,8 +81,8 @@ Foi adicionado comentário explicativo indicando que a lista de pacotes ESM deve
 
 ## 7. `jest.config.db.js`
 
-### 🟡 Duplicação com `jest.config.js`
-Repete o mesmo `moduleNameMapper`, `transform` e `transformIgnorePatterns`. Uma abordagem com composição/herança de configuração reduziria duplicidade.
+### ✅ Duplicação com `jest.config.js` eliminada via composição
+Foi criado o arquivo `jest.config.base.js` com as propriedades comuns (`transform`, `moduleNameMapper`, `moduleFileExtensions`, `clearMocks`, `restoreMocks`, `verbose`, `maxWorkers`). Ambos `jest.config.js` e `jest.config.db.js` agora importam a base e estendem com propriedades específicas, eliminando a duplicação de configuração.
 
 ---
 
@@ -178,7 +178,7 @@ Qualquer commit acidental do `.env` expõe toda a infraestrutura. Configurar um 
 | ✅ 🔴 Alta | `.env.example` | Contém valores reais | Substituído por placeholders |
 | ✅ 🔴 Alta | `.env` | Credenciais em texto claro | Substituído por placeholders + permissão 600 |
 | ✅ 🟡 Média | `jest.config.js` | `maxWorkers: 1` lento | Alterado para `'50%'` + documentado `transformIgnorePatterns` |
-| 🟡 Média | `jest.config.db.js` | Duplicação com `jest.config.js` | Usar composição de configs |
+| ✅ 🟡 Média | `jest.config.db.js` | Duplicação com `jest.config.js` | Composição via `jest.config.base.js` |
 | 🟡 Média | `jest.teardown.js` | Timeout fixo de 1s | Aguardar eventos de close |
 | 🟡 Média | `schema.knip.json` | 986 linhas na raiz | Referenciar schema oficial |
 | 🟡 Média | `skills-lock.json` | ~945 linhas na raiz | Mover para `.agents/` |

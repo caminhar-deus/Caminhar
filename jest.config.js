@@ -4,9 +4,15 @@
  * - Babel lida com ES Modules e JSX.
  * - V8 lida com a cobertura (evita erros de TypeError).
  * - Cobertura desativada por padrão para acelerar o 'npm test'.
+ * 
+ * Estende jest.config.base.js com propriedades específicas
+ * para testes com ambiente jsdom e cobertura.
  */
+import baseConfig from './jest.config.base.js';
 
 export default {
+  ...baseConfig,
+
   testEnvironment: 'jsdom',
   testMatch: ['**/*.test.js'],
   
@@ -14,10 +20,8 @@ export default {
   coverageProvider: 'v8',
 
   // Mantém o processamento de ES Modules e JSX via Babel
-  transform: {
-    '^.+\\.(js|jsx|mjs|cjs)$': ['babel-jest', { configFile: './babel.jest.config.js' }]
-  },
-  
+  // (transform herdado de baseConfig)
+
   // CONFIGURAÇÃO DE COBERTURA (Ativada apenas via CLI --coverage)
   collectCoverage: false, 
   collectCoverageFrom: [
@@ -53,21 +57,10 @@ export default {
   globalTeardown: '<rootDir>/jest.teardown.js',
   
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/$1',
+    ...baseConfig.moduleNameMapper,
     '\\.css$': '<rootDir>/__mocks__/styleMock.js',
-    '^@tests/(.*)$': '<rootDir>/tests/$1',
-    '^@factories/(.*)$': '<rootDir>/tests/factories/$1',
-    '^@helpers/(.*)$': '<rootDir>/tests/helpers/$1',
-    '^@mocks/(.*)$': '<rootDir>/tests/mocks/$1',
-    '^@matchers/(.*)$': '<rootDir>/tests/matchers/$1',
   },
   
-  moduleFileExtensions: ['js', 'jsx', 'json', 'node'],
-  
-  clearMocks: true,
-  restoreMocks: true,
   cache: true,
-  maxWorkers: '50%', // 50% dos CPUs disponíveis para paralelismo seguro com ESM
-  verbose: true,
   testTimeout: 10000
 };

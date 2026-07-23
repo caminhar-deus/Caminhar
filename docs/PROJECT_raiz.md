@@ -2,12 +2,12 @@
 
 ## Visão Geral
 
-Este documento descreve **todos os 28 arquivos** localizados na raiz do projeto em `/home/qa/Projeto/Caminhar/`. Cada entrada detalha a finalidade, as principais funcionalidades e a localização exata do arquivo.
+Este documento descreve **todos os 29 arquivos** localizados na raiz do projeto em `/home/qa/Projeto/Caminhar/`. Cada entrada detalha a finalidade, as principais funcionalidades e a localização exata do arquivo.
 
 Os arquivos foram agrupados por contexto para facilitar a leitura:
 
 1. **Configuração Principal da Aplicação** — `package.json`, `next.config.js`, `next-sitemap.config.js`, `proxy.js`, `.env`, `.env.example`
-2. **Configuração de Testes** — `jest.config.js`, `jest.config.db.js`, `jest.setup.js`, `jest.teardown.js`, `babel.jest.config.js`, `cypress.config.js`
+2. **Configuração de Testes** — `jest.config.base.js`, `jest.config.js`, `jest.config.db.js`, `jest.setup.js`, `jest.teardown.js`, `babel.jest.config.js`, `cypress.config.js`
 3. **Ferramentas de Qualidade** — `eslint.config.js`, `jsconfig.json`, `knip.json`, `schema.knip.json`
 4. **CI/CD e Automação (GitHub Actions)** — `ci.yml`, `pr-coverage.yml`, `load-tests.yml`, `security-tests.yml`
 5. **Documentação e Contexto** — `README.md`, `CHANGELOG.md`, `GEMINI.md`, `tree.txt`
@@ -171,6 +171,16 @@ Os arquivos foram agrupados por contexto para facilitar a leitura:
 
 ---
 
+### 2.7 `jest.config.base.js`
+
+**Localização:** `/home/qa/Projeto/Caminhar/jest.config.base.js`
+
+**Propósito:** Configuração base compartilhada entre `jest.config.js` e `jest.config.db.js`. Contém as propriedades comuns para evitar duplicação.
+
+**Funcionalidades:** `transform` (Babel), `moduleNameMapper` (6 aliases: `@/`, `@tests/`, `@factories/`, `@helpers/`, `@mocks/`, `@matchers/`), `moduleFileExtensions`, `clearMocks`, `restoreMocks`, `verbose`, `maxWorkers: '50%'`.
+
+---
+
 ## 3. Ferramentas de Qualidade e Análise Estática
 
 ### 3.1 `eslint.config.js`
@@ -310,22 +320,23 @@ Os arquivos foram agrupados por contexto para facilitar a leitura:
 | 10 | `jest.teardown.js` | Testes | 🔴 Essencial |
 | 11 | `babel.jest.config.js` | Testes | 🟡 Importante |
 | 12 | `cypress.config.js` | Testes | 🟡 Importante |
-| 13 | `eslint.config.js` | Qualidade | 🔴 Essencial |
-| 14 | `jsconfig.json` | Qualidade | 🟡 Importante |
-| 15 | `knip.json` | Qualidade | 🟡 Importante |
-| 16 | `schema.knip.json` | Qualidade | ⚪ Acessório |
-| 17 | `ci.yml` | CI/CD | 🔴 Essencial |
-| 18 | `pr-coverage.yml` | CI/CD | 🟡 Importante |
-| 19 | `load-tests.yml` | CI/CD | 🟡 Importante |
-| 20 | `security-tests.yml` | CI/CD | 🟡 Importante |
-| 21 | `README.md` | Documentação | 🔴 Essencial |
-| 22 | `CHANGELOG.md` | Documentação | 🟡 Importante |
-| 23 | `GEMINI.md` | Documentação | ⚪ Acessório |
-| 24 | `tree.txt` | Documentação | ⚪ Acessório |
-| 25 | `.gitignore` | Ambiente | 🔴 Essencial |
-| 26 | `.clineignore` | Ambiente | ⚪ Acessório |
-| 27 | `skills-lock.json` | Ambiente | ⚪ Acessório |
-| 28 | `package-lock.json` | Lockfile | 🔴 Essencial |
+| 13 | `jest.config.base.js` | Testes | 🟡 Importante |
+| 14 | `eslint.config.js` | Qualidade | 🔴 Essencial |
+| 15 | `jsconfig.json` | Qualidade | 🟡 Importante |
+| 16 | `knip.json` | Qualidade | 🟡 Importante |
+| 17 | `schema.knip.json` | Qualidade | ⚪ Acessório |
+| 18 | `ci.yml` | CI/CD | 🔴 Essencial |
+| 19 | `pr-coverage.yml` | CI/CD | 🟡 Importante |
+| 20 | `load-tests.yml` | CI/CD | 🟡 Importante |
+| 21 | `security-tests.yml` | CI/CD | 🟡 Importante |
+| 22 | `README.md` | Documentação | 🔴 Essencial |
+| 23 | `CHANGELOG.md` | Documentação | 🟡 Importante |
+| 24 | `GEMINI.md` | Documentação | ⚪ Acessório |
+| 25 | `tree.txt` | Documentação | ⚪ Acessório |
+| 26 | `.gitignore` | Ambiente | 🔴 Essencial |
+| 27 | `.clineignore` | Ambiente | ⚪ Acessório |
+| 28 | `skills-lock.json` | Ambiente | ⚪ Acessório |
+| 29 | `package-lock.json` | Lockfile | 🔴 Essencial |
 
 ---
 
@@ -490,20 +501,21 @@ Os arquivos foram agrupados por contexto para facilitar a leitura:
 | 10 | `jest.teardown.js` | Testes | 🔴 Essencial |
 | 11 | `babel.jest.config.js` | Testes | 🟡 Importante |
 | 12 | `cypress.config.js` | Testes | 🟡 Importante |
-| 13 | `eslint.config.js` | Qualidade | 🔴 Essencial |
-| 14 | `jsconfig.json` | Qualidade | 🟡 Importante |
-| 15 | `knip.json` | Qualidade | 🟡 Importante |
-| 16 | `schema.knip.json` | Qualidade | ⚪ Acessório |
-| 17 | `ci.yml` | CI/CD | 🔴 Essencial |
-| 18 | `pr-coverage.yml` | CI/CD | 🟡 Importante |
-| 19 | `load-tests.yml` | CI/CD | 🟡 Importante |
-| 20 | `security-tests.yml` | CI/CD | 🟡 Importante |
-| 21 | `README.md` | Documentação | 🔴 Essencial |
-| 22 | `CHANGELOG.md` | Documentação | 🟡 Importante |
-| 23 | `GEMINI.md` | Documentação | ⚪ Acessório |
-| 24 | `tree.txt` | Documentação | ⚪ Acessório |
-| 25 | `.gitignore` | Ambiente | 🔴 Essencial |
-| 26 | `.clineignore` | Ambiente | ⚪ Acessório |
-| 27 | `skills-lock.json` | Ambiente | ⚪ Acessório |
-| 28 | `package-lock.json` | Lockfile | 🔴 Essencial |
+| 13 | `jest.config.base.js` | Testes | 🟡 Importante |
+| 14 | `eslint.config.js` | Qualidade | 🔴 Essencial |
+| 15 | `jsconfig.json` | Qualidade | 🟡 Importante |
+| 16 | `knip.json` | Qualidade | 🟡 Importante |
+| 17 | `schema.knip.json` | Qualidade | ⚪ Acessório |
+| 18 | `ci.yml` | CI/CD | 🔴 Essencial |
+| 19 | `pr-coverage.yml` | CI/CD | 🟡 Importante |
+| 20 | `load-tests.yml` | CI/CD | 🟡 Importante |
+| 21 | `security-tests.yml` | CI/CD | 🟡 Importante |
+| 22 | `README.md` | Documentação | 🔴 Essencial |
+| 23 | `CHANGELOG.md` | Documentação | 🟡 Importante |
+| 24 | `GEMINI.md` | Documentação | ⚪ Acessório |
+| 25 | `tree.txt` | Documentação | ⚪ Acessório |
+| 26 | `.gitignore` | Ambiente | 🔴 Essencial |
+| 27 | `.clineignore` | Ambiente | ⚪ Acessório |
+| 28 | `skills-lock.json` | Ambiente | ⚪ Acessório |
+| 29 | `package-lock.json` | Lockfile | 🔴 Essencial |
 
