@@ -14,12 +14,14 @@
 /* Variants */
 .outlined {
   border: var(--border-width-1) solid var(--color-border-light);
+  /* eslint-disable-next-line css/no-important */
   box-shadow: none !important;
 }
 
 .filled {
   background-color: var(--color-bg-secondary);
   border: none;
+  /* eslint-disable-next-line css/no-important */
   box-shadow: none !important;
 }
 

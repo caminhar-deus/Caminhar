@@ -165,6 +165,9 @@
 | 1 | **Duplicidade** | Cada schema reimporta siteConfig/siteUrl — StructuredDataBase já reexporta. | StructuredData |
 | 2 | **Manutenção** | `@context: 'https://schema.org'` repetido em todos os schemas. Poderia ser herdado. | StructuredData |
 | 3 | **Performance** | `router.asPath` em SEOHead pode causar hidratação incorreta SSR. | SEOHead |
+| 4 | **Manutenção** | `export default` em StructuredData/index.js nunca era importado por nenhum consumidor. | StructuredData |
+
+**Resolvido** — Removido `export { default } from './OrganizationSchema'` da linha 11. Os named exports (OrganizationSchema, WebsiteSchema, etc.) são importados por components/SEO/index.js e permanecem intactos. |
 
 ---
 

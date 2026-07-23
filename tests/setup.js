@@ -17,6 +17,10 @@
 // Polyfills
 import { TextEncoder, TextDecoder } from 'util';
 
+// Polyfills assíncronos (ReadableStream, MessageChannel) — compartilhado com jest.teardown.js
+import { setupAsyncPolyfills } from './helpers/async-polyfills.js';
+setupAsyncPolyfills();
+
 // Testing Library
 import '@testing-library/jest-dom';
 import { configure, cleanup } from '@testing-library/react';
@@ -31,35 +35,6 @@ import './matchers/index.js';
 // Polyfills para APIs do Node.js não disponíveis no JSDOM
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
-
-// Polyfill ReadableStream (necessário para undici funcionar corretamente)
-// Nota: Usamos IIFE async + await import() em vez de require() para manter
-// consistência com o padrão ES Module do projeto. O setup.js é transformado
-// pelo Babel para CommonJS, então o require() funcionaria, mas o import()
-// dinâmico é semanticamente mais consistente com o restante do código-fonte.
-(async () => {
-  if (typeof globalThis.ReadableStream === 'undefined') {
-    try {
-      const { ReadableStream } = await import('node:stream/web');
-      globalThis.ReadableStream = ReadableStream;
-    } catch (e) {
-      console.warn(`⚠️ Polyfill ReadableStream failed: ${e.message}`);
-    }
-  }
-})();
-
-// Polyfill MessageChannel/MessagePort (necessário para undici em alguns ambientes)
-(async () => {
-  if (typeof globalThis.MessageChannel === 'undefined') {
-    try {
-      const { MessageChannel, MessagePort } = await import('node:worker_threads');
-      globalThis.MessageChannel = MessageChannel;
-      globalThis.MessagePort = MessagePort;
-    } catch (e) {
-      console.warn(`⚠️ Polyfill MessageChannel failed: ${e.message}`);
-    }
-  }
-})();
 
 // Polyfill localStorage para ambiente Node.js
 if (typeof global.localStorage === 'undefined') {

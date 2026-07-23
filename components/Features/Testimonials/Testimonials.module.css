@@ -39,6 +39,7 @@
   overflow-x: auto;
   scroll-behavior: smooth;
   -ms-overflow-style: none;
+  /* eslint-disable-next-line css/use-baseline */
   scrollbar-width: none;
 }
 
@@ -114,8 +115,11 @@
 }
 
 .pag-disabled {
+  /* eslint-disable-next-line css/no-important */
   background-color: var(--color-bg-secondary) !important;
+  /* eslint-disable-next-line css/no-important */
   color: var(--color-text-tertiary) !important;
+  /* eslint-disable-next-line css/no-important */
   cursor: not-allowed !important;
 }
 

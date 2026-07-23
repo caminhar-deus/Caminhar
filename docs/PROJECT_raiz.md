@@ -145,9 +145,9 @@ Os arquivos foram agrupados por contexto para facilitar a leitura:
 
 **Localização:** `/home/qa/Projeto/Caminhar/jest.teardown.js`
 
-**Propósito:** Teardown global do Jest. Limpeza de conexões.
+**Propósito:** Teardown global do Jest. Limpeza de conexões e recursos.
 
-**Funcionalidades:** Fecha Redis (`redis.quit()`), PostgreSQL (`closeDatabase()`), container de testes (`global.__TEST_DB_CONTAINER__`).
+**Funcionalidades:** Fecha Redis via `getRedisInstance().quit()`, PostgreSQL via `closeDatabase()`, container de testes (`global.__TEST_DB_CONTAINER__`), limpa timer de safety net do cache via `cleanupRateLimitTimer()`, aguarda resolução de polyfills assíncronos via `setupAsyncPolyfills()`. Substitui timeout fixo de 1s por `Promise.race` com `setImmediate` + timeout de segurança de 5s.
 
 ---
 

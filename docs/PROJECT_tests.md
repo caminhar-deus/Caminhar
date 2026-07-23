@@ -197,14 +197,14 @@ tests/
 
 ## 3. Configuração e Setup
 
-### `/tests/setup.js` (230 linhas)
+### `/tests/setup.js` (209 linhas)
 - **Localização:** `tests/setup.js`
 - **Ambiente:** jsdom (testes de componentes React)
 - **Propósito:** Configuração centralizada carregada automaticamente pelo Jest antes de todos os testes.
 - **Funcionalidades:**
   - Polyfills de APIs do Node.js: `TextEncoder`, `TextDecoder`
-  - Polyfill de `ReadableStream` via `node:stream/web`
-  - Polyfill de `MessageChannel`/`MessagePort` via `node:worker_threads`
+  - Polyfill de `ReadableStream` e `MessageChannel`/`MessagePort` importados de `tests/helpers/async-polyfills.js`
+  - Importa e executa `setupAsyncPolyfills()` (compartilhado com `jest.teardown.js`)
   - Polyfill de `localStorage`, `matchMedia`, `IntersectionObserver`, `ResizeObserver`, `scrollTo`
   - Mock de `crypto.randomUUID`
   - Polyfill de `URL.revokeObjectURL` (não implementado nativamente no JSDOM)
@@ -772,8 +772,10 @@ Testes que usam PostgreSQL real via Testcontainers (`jest.config.db.js`). Valida
 - **Propósito:** Testa middlewares de validação Zod: `formatZodErrors`, `validateBody`, `validateQuery`, `validateParams`, `validateHeaders`, `validateRequest`, e schemas helpers `createPaginationSchema`, `createSearchSchema`.
 - **Testes:** Validação de body, query, params, headers, formatação de erros, schemas combinados.
 
-### `/tests/unit/lib/api/index.test.js` (19 linhas)
-- **Propósito:** Barrel export verification. Verifica que todos os submodules e named exports são reexportados.
+### `/tests/unit/lib/api/index.test.js`
+- **Propósito:** Barrel export verification. Verifica que o objeto default com os 4 submódulos da API é exportado corretamente.
+- **Testes:** Acessa os submódulos via objeto default (`apiIndex.errors`, `apiIndex.response`, `apiIndex.validate`, `apiIndex.middleware`) e verifica que expõem as funções esperadas (`apiIndex.errors.ApiError`, `apiIndex.response.success`, `apiIndex.validate.validateBody`, `apiIndex.middleware.composeMiddleware`).
+- **Nota:** Os named exports foram removidos do barrel file (`lib/api/index.js`) por não terem consumidores externos. O teste foi ajustado para importar apenas o `default`.
 
 ### `/tests/unit/lib/backup/` (múltiplos arquivos)
 - **Propósito:** Testes do sistema de backup (criação, restauração, listagem, limpeza).

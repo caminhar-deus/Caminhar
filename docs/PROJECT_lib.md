@@ -77,7 +77,7 @@
 - **Lazy eviction:** Entradas expiradas do Map de rate limit são removidas sob demanda no acesso, não em intervalo fixo.
 - **Safety net:** `setInterval` a cada 60s que só atua se o Map ultrapassar 5000 entradas, removendo as mais antigas seletivamente.
 
-**Observações:** Possui fallback completo caso o Redis falhe — o sistema nunca quebra por indisponibilidade do Redis. A whitelist de rate limit inclui `127.0.0.1`, `::1`, `localhost`, IPs IPv4-mapped e redes privadas (10.x, 172.16-31.x, 192.168.x). O valor `'unknown'` foi removido da whitelist para evitar bypass malicioso quando o header `x-forwarded-for` está ausente. A função `fetchAndCache` serializa os dados uma única vez com `JSON.stringify`, reutilizando a string serializada tanto para o Redis quanto para o cache em memória — eliminando a dupla serialização anterior.
+**Observações:** Possui fallback completo caso o Redis falhe — o sistema nunca quebra por indisponibilidade do Redis. A whitelist de rate limit inclui `127.0.0.1`, `::1`, `localhost`, IPs IPv4-mapped e redes privadas (10.x, 172.16-31.x, 192.168.x). O valor `'unknown'` foi removido da whitelist para evitar bypass malicioso quando o header `x-forwarded-for` está ausente. A função `fetchAndCache` serializa os dados uma única vez com `JSON.stringify`, reutilizando a string serializada tanto para o Redis quanto para o cache em memória — eliminando a dupla serialização anterior. O `setInterval` de safety net só é criado em ambientes com `NODE_ENV` definido e diferente de `'test'`, evitando handles abertos durante execução de testes.
 
 ---
 
@@ -137,7 +137,7 @@
 
 **Configurações do pool:** `max: 50`, `min: 5`, `idleTimeoutMillis: 60000`, `connectionTimeoutMillis: 15000`. SSL habilitado em produção. Health check periódico a cada 60s detecta falhas precoces e reseta o pool automaticamente.
 
-**Observações:** O pool é criado sob demanda (lazy initialization) para compatibilidade com Jest mocks. Em caso de erro fatal no pool, tenta recriar automaticamente. Erros de timeout/rede disparam retry sem resetar o pool. O pool é pré-aquecido no startup com uma conexão inicial (`SELECT 1`). Re-exports removidos — importe diretamente de `./crud.js`, `./domain/settings.js`, `./domain/audit.js` e `./domain/posts.js`.
+**Observações:** O pool é criado sob demanda (lazy initialization) para compatibilidade com Jest mocks. Em caso de erro fatal no pool, tenta recriar automaticamente. Erros de timeout/rede disparam retry sem resetar o pool. O pool é pré-aquecido no startup com uma conexão inicial (`SELECT 1`) — exceto em ambiente de teste, onde o pré-aquecimento é desabilitado para evitar handles abertos. Re-exports removidos — importe diretamente de `./crud.js`, `./domain/settings.js`, `./domain/audit.js` e `./domain/posts.js`.
 
 ---
 
@@ -258,7 +258,7 @@
 
 **Localização:** `/lib/api/index.js`
 
-**Propósito:** Ponto de exportação centralizada de todos os submódulos de `lib/api/`.
+**Propósito:** Ponto de exportação centralizada de todos os submódulos de `lib/api/`. Exporta apenas um objeto default com os 4 namespaces (`errors`, `response`, `validate`, `middleware`). Os 47 exports nomeados anteriormente foram removidos por não serem consumidos externamente — as páginas em `pages/api/` importam diretamente de `adminCrudHandler.js` e `helpers.js`, e os submódulos internos se importam entre si.
 
 ---
 

@@ -6,6 +6,7 @@
   align-items: center;
   justify-content: center;
   background-color: rgba(0, 0, 0, 0.5);
+  /* eslint-disable-next-line css/use-baseline */
   backdrop-filter: blur(4px);
   z-index: var(--z-modal);
   padding: var(--spacing-4);

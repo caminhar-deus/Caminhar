@@ -88,19 +88,27 @@ Foi criado o arquivo `jest.config.base.js` com as propriedades comuns (`transfor
 
 ## 8. `jest.teardown.js`
 
-### 🟡 Aguardo fixo de 1 segundo
-`await new Promise(resolve => setTimeout(resolve, 1000))` é um timeout fixo. Idealmente, deveria aguardar ativamente eventos de `close` ou `end` das conexões.
+### ✅ Aguardo fixo de 1 segundo substituído por espera ativa com timeout de segurança
+O `await new Promise(resolve => setTimeout(resolve, 1000))` foi substituído por `Promise.race` entre `setImmediate` e um timeout de 5s, eliminando a espera fixa desnecessária.
 
+### ✅ Import do Redis corrigido
+O import `import { redis }` (sempre `null`) foi substituído por `import { getRedisInstance }`, permitindo fechar a conexão Redis quando houver instância ativa.
+
+### ✅ Limpeza do timer de cache adicionada
+Adicionado `import { cleanupRateLimitTimer }` e chamada no início do teardown para limpar o `setInterval` de safety net do cache.
+
+### ✅ Aguardo de polyfills assíncronos adicionado
+Adicionado `import { setupAsyncPolyfills }` e `await setupAsyncPolyfills()` no início do teardown para garantir que promises de polyfills assíncronos resolvam antes do processo finalizar.
 
 ---
 
 ## 9. `eslint.config.js`
 
-### 🟡 Regra `react/prop-types` desligada globalmente para JSX
-`"react/prop-types": "off"` está aplicado para todos os arquivos JSX. Se o projeto evoluir para usar PropTypes, essa regra precisará ser reativada.
+### ✅ Regra `react/prop-types` removida
+`"react/prop-types": "off"` foi removido do `eslint.config.js`. A regra era inócua pois o `eslint-plugin-react` não está configurado no projeto. O projeto **utiliza PropTypes** em 14 componentes (ex.: `BaseCard`, `Spinner`, `Container`, `Stack`, `AdminCrudBase`, campos de formulário, etc.), e o pacote `prop-types` permanece como dependência em `package.json`.
 
-### 🟡 Regras CSS desativadas globalmente
-`css/no-invalid-properties`, `css/use-baseline` e `css/no-important` estão desligados. Pode permitir CSS de baixa qualidade sem alertas.
+### ✅ Regras CSS reativadas parcialmente
+`css/use-baseline` e `css/no-important` foram reativadas (herdadas de `css/recommended`). `css/no-invalid-properties` permanece desligado (`"off"`) devido a limitação do `@eslint/css` que não reconhece variáveis CSS customizadas (`--spacing-*`, `--color-*`, `--font-*`) como valores válidos, gerando ~1243 falsos positivos.
 
 ---
 
@@ -179,12 +187,12 @@ Qualquer commit acidental do `.env` expõe toda a infraestrutura. Configurar um 
 | ✅ 🔴 Alta | `.env` | Credenciais em texto claro | Substituído por placeholders + permissão 600 |
 | ✅ 🟡 Média | `jest.config.js` | `maxWorkers: 1` lento | Alterado para `'50%'` + documentado `transformIgnorePatterns` |
 | ✅ 🟡 Média | `jest.config.db.js` | Duplicação com `jest.config.js` | Composição via `jest.config.base.js` |
-| 🟡 Média | `jest.teardown.js` | Timeout fixo de 1s | Aguardar eventos de close |
+| ✅ 🟡 Média | `jest.teardown.js` | Timeout fixo de 1s + import Redis incorreto | Substituído por Promise.race com setImmediate + timeout 5s |
 | 🟡 Média | `schema.knip.json` | 986 linhas na raiz | Referenciar schema oficial |
 | 🟡 Média | `skills-lock.json` | ~945 linhas na raiz | Mover para `.agents/` |
 | 🟡 Média | `tree.txt` | Snapshot estático desatualizado | Remover ou gerar dinamicamente |
 | 🟡 Média | Workflows YML | Duplicação de blocos (3x) | Extrair para Composite Action |
-| 🟡 Média | `eslint.config.js` | Regras CSS desligadas | Revisar desativação |
+| ✅ 🟡 Média | `eslint.config.js` | Regras `react/prop-types` e CSS | Removido `react/prop-types` (inócuo) + Reativadas `css/use-baseline` e `css/no-important` |
 | ✅ 🟡 Média | `next-sitemap.config.js` | Duplicidade changefreq/priority | Simplificada |
 | 🟡 Média | `pr-coverage.yml` | Nome do job enganoso | Corrigir nome |
 | ✅ 🟡 Média | `package.json` | Campos vazios | Preenchido description/author |

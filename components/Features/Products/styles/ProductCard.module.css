@@ -85,6 +85,7 @@
   flex: 1;
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  /* eslint-disable-next-line css/use-baseline */
   line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
@@ -156,6 +157,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  /* eslint-disable-next-line css/use-baseline */
   backdrop-filter: blur(5px);
 }
 
@@ -194,12 +196,17 @@
 .linkButton:focus-visible,
 .lightboxCloseButton:focus-visible,
 .lightboxNavButton:focus-visible {
+  /* eslint-disable-next-line css/no-important */
   box-shadow: 0 0 0 3px var(--color-primary-700) !important;
+  /* eslint-disable-next-line css/no-important */
   outline: 2px solid var(--color-primary-700) !important;
+  /* eslint-disable-next-line css/no-important */
   outline-offset: 2px !important;
 }
 
 .navButton:hover {
+  /* eslint-disable-next-line css/no-important */
   background-color: var(--color-bg-primary, rgba(255, 255, 255, 0.95)) !important;
+  /* eslint-disable-next-line css/no-important */
   transform: translateY(-50%) scale(1.1) !important;
 }

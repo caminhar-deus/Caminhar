@@ -1,10 +1,14 @@
 import { getRedisInstance } from './lib/redis.js';
 import { closeDatabase } from './lib/db.js';
 import { cleanupRateLimitTimer } from './lib/cache.js';
+import { setupAsyncPolyfills } from './tests/helpers/async-polyfills.js';
 
 export default async function globalTeardown() {
   // ✅ Limpeza global após execução de todos os testes
   try {
+    // Aguardar resolução dos polyfills assíncronos do setup
+    await setupAsyncPolyfills();
+
     // Limpar timer de cleanup periódico do cache em memória
     cleanupRateLimitTimer();
 

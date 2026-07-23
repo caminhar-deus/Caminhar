@@ -81,6 +81,11 @@
 **Problema:** O hook é funcional, mas para ser integrado na aplicação de forma padronizada, seria necessário um `PerformanceProvider` que instancie o hook uma vez e compartilhe as métricas via contexto, evitando múltiplas instâncias do `PerformanceObserver` em diferentes componentes.
 **Situação:** Implementado. Criados `PerformanceContext.js`, `PerformanceProvider.js` e `usePerformance.js`. O barrel `index.js` foi atualizado com as exportações dos novos artefatos. O `PerformanceProvider` foi integrado em `_app.js` como wrapper da aplicação, e um componente `PerformanceMonitor` (que chama `usePerformance()`) foi adicionado como consumidor dentro do provider. Os exemplos `homepage-seo-example.js` e `blog-post-seo-example.js` foram migrados de `usePerformanceMetrics` direto para `usePerformance` via contexto. O hook bruto `usePerformanceMetrics` permanece exportado para uso isolado. Nenhum consumidor ou fluxo foi impactado.
 
+### 2.4 — Re-exports não utilizados removidos do barrel ✅
+
+**Arquivo:** `/hooks/index.js`
+**Problema:** O barrel `hooks/index.js` re-exportava 8 símbolos que nenhum arquivo fora de `hooks/` importava: `useTheme`, `AuthContext`, `AuthProvider`, `useAuth`, `useAdminCrud`, `PerformanceContext`, `usePerformanceMetrics`, `useThrottle`. Esses re-exports poluíam o barrel e geravam falsos positivos no knip.
+**Situação:** Implementado. Removidas as 8 linhas de re-exportação. O barrel passou a exportar apenas os 5 símbolos efetivamente consumidos externamente: `PerformanceProvider`, `usePerformance`, `useApiFetch`, `useDebounce`, `useAdminAuth`. Os arquivos fonte (`useTheme.js`, `AuthContext.js`, etc.) foram preservados pois são usados internamente por outros hooks. Nenhum consumidor ou fluxo foi impactado.
 
 ## 3. Melhorias de Performance e Manutenção
 

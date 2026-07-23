@@ -238,6 +238,7 @@ Componentes de funcionalidades públicas do site, agrupados por domínio: Blog, 
 - **BreadcrumbSchema.js:** Schema.org BreadcrumbList. Gera "Início" automaticamente.
 - **MusicSchema.js:** Schema.org MusicRecording. Artista, álbum, duração, letra, Spotify/YouTube.
 - **VideoSchema.js:** Schema.org VideoObject. Thumbnail, duração, views, transcrição.
+- **index.js:** Barrel file. Exporta apenas named exports (`OrganizationSchema`, `WebsiteSchema`, `ArticleSchema`, `BreadcrumbSchema`, `MusicSchema`, `VideoSchema`). O `export default` foi removido por não ser utilizado por nenhum consumidor.
 
 
 **VideoGallery.js** (`Features/Video/VideoGallery.js`): Galeria de vídeos. Busca com debounce, ordenação (4 opções), paginação, botão "Tentar novamente".

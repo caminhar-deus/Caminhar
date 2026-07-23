@@ -93,33 +93,57 @@
 - **Sugestão:** Adicionar um aviso mais claro no relatório de testes, ou marcar os testes como "skipped" explicitamente.
 
 ### 3.5 Polyfill de `URL.revokeObjectURL` adicionado ao `tests/setup.js` ✅
-- **Arquivo:** `tests/setup.js` (linhas 137-139)
-- **Problema:** O teste `AdminAudit.test.js` — "deve testar os botões de paginação" falhava com `TypeError: URL.revokeObjectURL is not a function`. O JSDOM não implementa essa API de browser. O `csvExport.js` agenda um `setTimeout` com `URL.revokeObjectURL` que disparava durante a execução de outros testes.
-- **Correção:** Adicionado polyfill `URL.revokeObjectURL = jest.fn()` no `tests/setup.js`. Também adicionada proteção em `lib/csvExport.js` com `typeof URL.revokeObjectURL === 'function'` para ambientes que não implementam a API.
 
-### 3.6 `afterEach` em `tests/setup.js` executa `cleanup()` e `jest.clearAllMocks()`
+**Arquivo:** `tests/setup.js` (linhas 137-139)
+
+**Problema:** O teste `AdminAudit.test.js` — "deve testar os botões de paginação" falhava com `TypeError: URL.revokeObjectURL is not a function`. O JSDOM não implementa essa API de browser. O `csvExport.js` agenda um `setTimeout` com `URL.revokeObjectURL` que disparava durante a execução de outros testes.
+
+**Correção:** Adicionado polyfill `URL.revokeObjectURL = jest.fn()` no `tests/setup.js`. Também adicionada proteção em `lib/csvExport.js` com `typeof URL.revokeObjectURL === 'function'` para ambientes que não implementam a API.
+
+### 3.6 Polyfills assíncronos extraídos para arquivo compartilhado ✅
+
+**Arquivo:** `tests/setup.js`, `tests/helpers/async-polyfills.js`
+
+**Problema:** As IIFEs assíncronas com `await import()` para `ReadableStream` e `MessageChannel` estavam no top-level de `tests/setup.js`, criando promises que ninguém aguardava. Isso poderia manter o event loop do Jest aberto.
+
+**Correção:** Extraídas para função `setupAsyncPolyfills()` em novo arquivo `tests/helpers/async-polyfills.js` (sem dependência de `jest`). A função é idempotente (cache de promise). Chamada pelo `jest.teardown.js` com `await` para garantir resolução antes do processo finalizar. Importada também por `tests/setup.js` para manter a execução imediata durante o setup.
+
+### 3.7 `disconnect()` do IntersectionObserver corrigido ✅
+
+**Arquivo:** `tests/setup.js` (linhas 94-110)
+
+**Problema:** O polyfill de `IntersectionObserver` criava um `setTimeout(() => callback(...), 0)` no construtor, mas o método `disconnect()` não limpava o timer. Se o componente fosse desmontado rapidamente, o timer ficava pendente.
+
+**Correção:** Adicionado `clearTimeout(this._timer)` no método `disconnect()`.
+
+### 3.8 `afterEach` em `tests/setup.js` executa `cleanup()` e `jest.clearAllMocks()`
 - **Local:** `tests/setup.js` (linhas 186-189)
 - **Problema:** `jest.clearAllMocks()` pode resetar mocks que foram configurados no `beforeEach` de um `describe`, forçando reconfiguração.
 - **Sugestão:** Avaliar se `jest.resetAllMocks()` seria mais apropriado em alguns casos, ou documentar a necessidade de reconfigurar mocks.
 
-### 3.7 Strings de conexão hardcoded no `global-setup.db.js`
+### 3.9 Strings de conexão hardcoded no `global-setup.db.js`
 - **Local:** `tests/global-setup.db.js`
 - **Problema:** Usuário e senha `test/test` estão hardcoded.
 - **Sugestão:** Extrair para variáveis de ambiente com fallback seguro.
 
-### 3.8 Timeout em testes de erro do VideoGallery causado por loop infinito no `useApiFetch` ✅
+### 3.10 Timeout em testes de erro do VideoGallery causado por loop infinito no `useApiFetch` ✅
 - **Arquivos:** `tests/unit/components/Features/Video/VideoGallery.test.js` (linhas 136, 157), `hooks/useApiFetch.js` (linha 129)
 - **Problema:** Dois testes de erro HTTP no VideoGallery estouravam o timeout de 10s do Jest. A causa raiz era o `useEffect` do `useApiFetch.js` que listava `error` como dependência. Quando o fetch falhava, `setError()` alterava `error`, re-executava o `useEffect`, que chamava `fetchData` novamente, que falhava e chamava `setError` novamente — loop infinito de renderizações.
 - **Correção:** Removida a dependência `error` do `useEffect` em `useApiFetch.js` (linha 129). Adicionado timeout explícito de 15s nos 2 testes como rede de segurança. Testes passam em ~14ms e ~5ms respectivamente. Nenhuma regressão na suite completa (352 testes).
+
+### 3.11 Teste `Library - API - Index` falhando após simplificação do barrel file ✅
+- **Arquivo:** `tests/unit/lib/api/index.test.js`
+- **Problema:** Após a simplificação de `lib/api/index.js` (remoção de 47 exports nomeados), o teste importava `{ ApiError, success, validateBody, composeMiddleware }` como named exports, que não existiam mais. As 4 variáveis resultavam em `undefined`, causando falha em `expect(ApiError).toBeDefined()`.
+- **Correção:** Substituída a importação dos 4 named exports por importação apenas do `default` (`import apiIndex from ...`). As asserções foram alteradas para acessar os símbolos via objeto default: `apiIndex.errors.ApiError`, `apiIndex.response.success`, `apiIndex.validate.validateBody`, `apiIndex.middleware.composeMiddleware`. Teste passa em ~3ms.
 
 ---
 
 ## 4. Problemas de Performance
 
-### 4.1 Polyfills assíncronos podem causar race conditions
-- **Local:** `tests/setup.js` (linhas 40-62), `tests/setup.db.js` (linhas 27-49)
-- **Problema:** Os polyfills de `ReadableStream` e `MessageChannel` usam IIFE `async` com `await import()`, mas o setup do Jest não aguarda essas promises. Se um teste depender desses polyfills e executar antes da promise resolver, pode falhar de forma intermitente.
-- **Sugestão:** Usar `globalSetup` do Jest (como já é feito para o container PostgreSQL) ou garantir que os polyfills sejam síncronos.
+### 4.1 Polyfills assíncronos podem causar race conditions ✅
+- **Local:** `tests/setup.js` (anteriormente linhas 40-62), `tests/setup.db.js` (anteriormente linhas 27-49)
+- **Problema:** Os polyfills de `ReadableStream` e `MessageChannel` usavam IIFE `async` com `await import()`, e o setup do Jest não aguardava essas promises. Se um teste dependesse desses polyfills e executasse antes da promise resolver, podia falhar de forma intermitente.
+- **Correção:** Extraídos para `setupAsyncPolyfills()` em `tests/helpers/async-polyfills.js`. A função é aguardada pelo `jest.teardown.js` via `await setupAsyncPolyfills()`, garantindo resolução antes do processo finalizar.
 
 ### 4.2 `setTimeout` no polyfill de IntersectionObserver
 - **Local:** `tests/setup.js` (linha 101)

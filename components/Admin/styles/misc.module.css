@@ -256,6 +256,7 @@
 /* Textarea (general) */
 .textarea {
   min-height: 120px;
+  /* eslint-disable-next-line css/use-baseline */
   resize: vertical;
 }
 

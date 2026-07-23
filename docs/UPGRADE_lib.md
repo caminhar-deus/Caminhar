@@ -88,7 +88,17 @@
 
 ---
 
-### 1.8 `domain/products.js` — `updateProduct` não atualiza `updated_at`
+### 1.8 `csvExport.js` — setTimeout pode manter event loop aberto em testes ✅
+
+**Localização:** `lib/csvExport.js`, linha 78
+
+**Problema:** O `setTimeout(() => URL.revokeObjectURL(url), 1000)` criava um timer de 1s que poderia manter o event loop do Jest aberto após o término dos testes.
+
+**Correção:** Adicionada guarda `if (process.env.NODE_ENV && process.env.NODE_ENV !== 'test')`. Em ambiente de teste, executa `URL.revokeObjectURL(url)` imediatamente sem `setTimeout`.
+
+---
+
+### 1.9 `domain/products.js` — `updateProduct` não atualiza `updated_at`
 
 **Localização:** `lib/domain/products.js`, linhas 131-151
 
@@ -98,7 +108,7 @@
 
 ---
 
-### 1.9 `domain/settings.js` — Aliases duplicados
+### 1.10 `domain/settings.js` — Aliases duplicados
 
 **Localização:** `lib/domain/settings.js`, linhas 60 e 76
 
@@ -154,7 +164,15 @@ Isso adiciona complexidade desnecessária e confunde sobre qual função usar.
 
 ---
 
-### 2.5 Separação difusa entre `lib/` raiz e `lib/api/`
+### 2.5 — `lib/api/index.js`: exports nomeados não utilizados removidos ✅
+
+**Localização:** `lib/api/index.js`
+
+**Problema:** O barrel file `lib/api/index.js` exportava 47 símbolos nomeados (classes de erro, funções de resposta, funções de validação e middlewares) que nenhum consumidor externo importava. As páginas em `pages/api/` importam apenas de `lib/api/adminCrudHandler.js` e `lib/api/helpers.js`, e os submódulos internos se importam entre si diretamente.
+
+**Correção:** O arquivo foi simplificado: todos os 47 exports nomeados foram removidos, mantendo apenas o `export default` com os 4 namespaces (`{ errors, response, validate, middleware }`). O teste `tests/unit/lib/api/index.test.js` foi ajustado para acessar os símbolos via objeto default (`apiIndex.errors.ApiError`, `apiIndex.response.success`, etc.) em vez de named imports.
+
+### 2.6 Separação difusa entre `lib/` raiz e `lib/api/`
 
 **Localização:** `lib/` (raiz)
 
@@ -186,13 +204,13 @@ Isso adiciona complexidade desnecessária e confunde sobre qual função usar.
 
 ---
 
-### 3.2 `cache.js` — setInterval de safety net não gerenciado
+### 3.2 `cache.js` — setInterval de safety net não gerenciado ✅
 
 **Localização:** `lib/cache.js`, linhas 39-82
 
 **Problema:** O `setInterval` de 60s é criado no module scope e nunca é limpo em cenários de hot-reload (Next.js development) ou entre suítes de teste. Embora exista `cleanupRateLimitTimer()`, ele precisa ser chamado explicitamente.
 
-**Sugestão:** Integrar a limpeza do timer ao ciclo de vida do Next.js ou usar um mecanismo de cleanup automático (ex: `beforeExit` ou `process.on('SIGTERM')`).
+**Correção:** O `setInterval` agora só é criado quando `process.env.NODE_ENV` está definido e não é `'test'`. Além disso, `cleanupRateLimitTimer()` é chamado no `jest.teardown.js` para garantir a limpeza do timer entre execuções de teste.
 
 ---
 

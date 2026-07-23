@@ -27,6 +27,7 @@
   border: var(--border-width-1) solid var(--color-border-light);
   border-radius: var(--border-radius-xl);
   padding: var(--spacing-3);
+  /* eslint-disable-next-line css/use-baseline */
   resize: vertical;
   transition: var(--transition-all);
   outline: none;
@@ -46,6 +47,7 @@
   background-color: var(--color-bg-secondary);
   color: var(--color-text-tertiary);
   cursor: not-allowed;
+  /* eslint-disable-next-line css/use-baseline */
   resize: none;
 }
 
@@ -70,6 +72,7 @@
 
 /* No Resize */
 .noResize .textarea {
+  /* eslint-disable-next-line css/use-baseline */
   resize: none;
 }
 

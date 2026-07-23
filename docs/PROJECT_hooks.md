@@ -42,13 +42,13 @@ A pasta `/hooks` contém **14 arquivos** que implementam custom hooks React e se
 ## 1. `/hooks/index.js`
 
 **Localização:** `/hooks/index.js`
-**Propósito:** Arquivo de barreira (barrel file) que centraliza e reexporta todos os hooks do diretório, servindo como ponto único de importação.
+**Propósito:** Arquivo de barreira (barrel file) que centraliza e reexporta os hooks do diretório que são efetivamente consumidos externamente, servindo como ponto único de importação.
 
 **Funcionalidades:**
-- Reexporta hooks nomeados: `useTheme`, `useAuth`, `useAdminCrud`, `usePerformanceMetrics`, `useApiFetch`, `useDebounce`, `useThrottle`, `useAdminAuth`.
-- Exporta também `AuthContext` e `AuthProvider` (definidos em `AuthContext.js` e `AuthProvider.js` respectivamente), permitindo que consumidores importem tudo de um único local.
-- Exporta também os artefatos de performance: `PerformanceContext`, `PerformanceProvider` e `usePerformance`.
-- Todos os hooks são reexportados diretamente como named exports com a sintaxe `export { Nome } from './arquivo'`, incluindo `usePerformanceMetrics` que anteriormente usava `export { default as usePerformanceMetrics }`.
+- Reexporta hooks nomeados: `PerformanceProvider`, `usePerformance`, `useApiFetch`, `useDebounce`, `useAdminAuth`.
+- Re-exports removidos (por não terem consumidores externos): `useTheme`, `AuthContext`, `AuthProvider`, `useAuth`, `useAdminCrud`, `PerformanceContext`, `usePerformanceMetrics`, `useThrottle`.
+- Os arquivos fonte removidos do barrel foram preservados pois são usados internamente por outros hooks.
+- Todos os hooks são reexportados diretamente como named exports com a sintaxe `export { Nome } from './arquivo'`.
 
 ---
 
@@ -272,5 +272,5 @@ A pasta `/hooks` contém **14 arquivos** que implementam custom hooks React e se
 ### Observações importantes
 
 - **Relação entre hooks:** `useAdminAuth` depende do `AuthContext` (importado de `AuthContext.js`). `useAdminCrud` depende de `useApiFetch`. `useTheme` depende de `useThrottle` e dos tokens de design importados de `pages/styles/tokens`. `PerformanceProvider` depende de `usePerformanceMetrics` para instanciar o monitoramento.
-- **Exportações:** O barrel `index.js` exporta `AuthContext` (de `AuthContext.js`), `AuthProvider` (de `AuthProvider.js`) e `useAuth` (de `useAuth.js`) como exports individuais. Também exporta `PerformanceContext`, `PerformanceProvider` e `usePerformance`. Todos os hooks são reexportados diretamente como named exports com a sintaxe `export { Nome } from './arquivo'`, incluindo `usePerformanceMetrics`.
-- **Cobertura de uso:** Todos os hooks são exportados via `index.js` e estão disponíveis para consumo. `usePerformance` possui consumidor direto em `pages/_app.js` via `PerformanceMonitor`. `usePerformanceMetrics` é consumido indiretamente via `PerformanceProvider`, que o instancia uma única vez e compartilha as métricas através do `PerformanceContext`. `useTheme` possui anotação `@todo` indicando que atualmente não possui consumidores diretos confirmados na aplicação.
+- **Exportações:** O barrel `index.js` exporta atualmente 5 hooks: `PerformanceProvider`, `usePerformance`, `useApiFetch`, `useDebounce` e `useAdminAuth`. Os re-exports de `useTheme`, `AuthContext`, `AuthProvider`, `useAuth`, `useAdminCrud`, `PerformanceContext`, `usePerformanceMetrics` e `useThrottle` foram removidos por não terem consumidores externos. Os arquivos fonte foram preservados por serem usados internamente por outros hooks.
+- **Cobertura de uso:** `usePerformance` possui consumidor direto em `pages/_app.js` via `PerformanceMonitor`. `usePerformanceMetrics` é consumido indiretamente via `PerformanceProvider`, que o instancia uma única vez e compartilha as métricas através do `PerformanceContext`. `useApiFetch` e `useDebounce` são usados por 5 componentes públicos (Features). `useAdminAuth` é usado por `components/Admin/withAdminAuth.js`.
