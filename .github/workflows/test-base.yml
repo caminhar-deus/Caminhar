@@ -1,0 +1,81 @@
+name: Test Base Workflow
+
+on:
+  workflow_call:
+    inputs:
+      test-type:
+        required: true
+        type: string
+        description: 'Tipo de teste (load ou security)'
+      run-command:
+        required: true
+        type: string
+        description: 'Comando para executar os testes'
+      skip-k6:
+        required: false
+        type: boolean
+        default: false
+        description: 'Pular instalação do k6 (usado para workflows que não precisam de k6)'
+      seed-db:
+        required: false
+        type: boolean
+        default: true
+        description: 'Semear dados no banco de teste'
+      extra-steps:
+        required: false
+        type: string
+        default: ''
+        description: 'Steps extras para executar ao final do job (ex.: upload de artifacts)'
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+
+    services:
+      # Serviço PostgreSQL para o teste (isolado)
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: caminhar_test
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      # Serviço Redis para Rate Limiting/Cache
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - uses: ./.github/actions/setup-db
+        with:
+          seed: ${{ inputs.seed-db && 'true' || 'false' }}
+      - uses: ./.github/actions/build-app
+      - if: ${{ !inputs.skip-k6 }}
+        uses: grafana/setup-k6-action@v1
+      - name: Run Tests
+        run: ${{ inputs.run-command }}
+      - if: ${{ inputs.extra-steps != '' }}
+        name: Extra Steps
+        run: ${{ inputs.extra-steps }}
+      - name: Upload Coverage Output
+        if: ${{ inputs.test-type == 'coverage' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-output
+          path: coverage-output.txt
+          retention-days: 7

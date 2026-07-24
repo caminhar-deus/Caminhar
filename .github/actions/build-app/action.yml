@@ -1,0 +1,45 @@
+name: 'Build and Start Application'
+description: 'Build the Next.js app and start it in background for testing'
+
+inputs:
+  admin-username:
+    description: 'Admin username for the application'
+    required: false
+    default: 'admin'
+  admin-password:
+    description: 'Admin password for the application'
+    required: false
+    default: 'password123'
+  log-level:
+    description: 'Log level for the application'
+    required: false
+    default: 'error'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Create Reports Directory
+      shell: bash
+      run: mkdir -p reports/k6-summaries
+
+    - name: Build Application
+      shell: bash
+      run: npm run build
+      env:
+        DATABASE_URL: postgres://test_user:test_password@localhost:5432/caminhar_test
+        JWT_SECRET: test-secret-for-build
+
+    - name: Start Application (Background)
+      shell: bash
+      run: |
+        npm start &
+        npx wait-on http://localhost:3000 --timeout 60000
+      env:
+        PORT: 3000
+        NODE_ENV: production
+        DATABASE_URL: postgres://test_user:test_password@localhost:5432/caminhar_test
+        REDIS_URL: redis://localhost:6379
+        JWT_SECRET: test-jwt-secret-for-load-tests
+        ADMIN_USERNAME: ${{ inputs.admin-username }}
+        ADMIN_PASSWORD: ${{ inputs.admin-password }}
+        LOG_LEVEL: ${{ inputs.log-level }}

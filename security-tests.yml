@@ -8,99 +8,24 @@ on:
   workflow_dispatch: # Permite execução manual via interface do GitHub
 
 jobs:
-  security-test:
-    name: Run k6 Security Tests
+  run-tests:
+    uses: ./.github/workflows/test-base.yml
+    with:
+      test-type: security
+      run-command: |
+        k6 run load-tests/ddos-search-test.js
+        k6 run load-tests/rate-limit-test.js
+        k6 run load-tests/login-negative-test.js
+        k6 run load-tests/ip-spoofing-test.js
+    secrets: inherit
+
+  upload-reports:
+    needs: run-tests
+    if: always()
     runs-on: ubuntu-latest
-    
-    services:
-      # Serviço PostgreSQL para o teste (isolado)
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_DB: caminhar_test
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_password
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-      # Serviço Redis para Rate Limiting/Cache
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js Environment
-        uses: ./.github/actions/setup
-
-      - name: Create Reports Directory
-        run: mkdir -p reports/k6-summaries
-
-      - name: Setup Test Database
-        uses: ./.github/actions/setup-db
-        with:
-          seed: 'true'
-
-      - name: Build Application
-        run: npm run build
-        env:
-          DATABASE_URL: postgres://test_user:test_password@localhost:5432/caminhar_test
-          JWT_SECRET: test-secret-for-build
-
-      - name: Start Application (Background)
-        run: |
-          npm start &
-          npx wait-on http://localhost:3000 --timeout 60000
-        env:
-          PORT: 3000
-          NODE_ENV: production
-          DATABASE_URL: postgres://test_user:test_password@localhost:5432/caminhar_test
-          REDIS_URL: redis://localhost:6379
-          JWT_SECRET: test-jwt-secret-for-load-tests
-          ADMIN_USERNAME: admin
-          ADMIN_PASSWORD: password123
-          LOG_LEVEL: error # Reduz ruído nos logs durante carga alta
-
-      - name: Setup k6
-        uses: grafana/setup-k6-action@v1
-
-      - name: Run DDOS Search Test
-        run: k6 run load-tests/ddos-search-test.js
-        env:
-          BASE_URL: http://localhost:3000
-
-      - name: Run Rate Limit Test
-        run: k6 run load-tests/rate-limit-test.js
-        env:
-          BASE_URL: http://localhost:3000
-
-      - name: Run Login Negative Test
-        run: k6 run load-tests/login-negative-test.js
-        env:
-          BASE_URL: http://localhost:3000
-          ADMIN_USERNAME: admin
-          ADMIN_PASSWORD: password123
-
-      - name: Run IP Spoofing Test
-        run: k6 run load-tests/ip-spoofing-test.js
-        env:
-          BASE_URL: http://localhost:3000
-
+      - uses: actions/checkout@v4
       - name: Upload Security Test Reports
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: k6-security-test-reports

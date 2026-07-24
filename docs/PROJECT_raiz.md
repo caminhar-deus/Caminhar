@@ -2,14 +2,14 @@
 
 ## Visão Geral
 
-Este documento descreve **todos os 29 arquivos** localizados na raiz do projeto em `/home/qa/Projeto/Caminhar/`. Cada entrada detalha a finalidade, as principais funcionalidades e a localização exata do arquivo.
+Este documento descreve **todos os 30 arquivos** localizados na raiz do projeto em `/home/qa/Projeto/Caminhar/`. Cada entrada detalha a finalidade, as principais funcionalidades e a localização exata do arquivo.
 
 Os arquivos foram agrupados por contexto para facilitar a leitura:
 
 1. **Configuração Principal da Aplicação** — `package.json`, `next.config.js`, `next-sitemap.config.js`, `proxy.js`, `.env`, `.env.example`
 2. **Configuração de Testes** — `jest.config.base.js`, `jest.config.js`, `jest.config.db.js`, `jest.setup.js`, `jest.teardown.js`, `babel.jest.config.js`, `cypress.config.js`
 3. **Ferramentas de Qualidade** — `eslint.config.js`, `jsconfig.json`, `knip.json`, `schema.knip.json`
-4. **CI/CD e Automação (GitHub Actions)** — `ci.yml`, `pr-coverage.yml`, `load-tests.yml`, `security-tests.yml`
+4. **CI/CD e Automação (GitHub Actions)** — `ci.yml`, `pr-coverage.yml`, `load-tests.yml`, `security-tests.yml`, `test-base.yml`
 5. **Documentação e Contexto** — `README.md`, `CHANGELOG.md`, `GEMINI.md`, `tree.txt`
 6. **Configuração de Ambiente** — `.gitignore`, `.clineignore`, `skills-lock.json`
 7. **Lockfiles** — `package-lock.json`
@@ -191,6 +191,7 @@ Os arquivos foram agrupados por contexto para facilitar a leitura:
 
 **Funcionalidades:** Regras por tipo de arquivo (JS geral, Cypress, React/JSX, Jest, k6, JSON, Markdown, CSS). Parser Babel para JSX. Globais específicos para cada contexto.
 
+---
 
 ## 4. CI/CD e Automação (GitHub Actions)
 
@@ -200,13 +201,17 @@ Os arquivos foram agrupados por contexto para facilitar a leitura:
 
 **Propósito:** CI básica: executa `npm run test:ci` em pushes e PRs para `main`/`master`.
 
+**Funcionalidades:** Utiliza a composite action `.github/actions/setup` que inclui `actions/setup-node@v4` com `cache: 'npm'`, garantindo cache automático de dependências npm via `package-lock.json`.
+
 ---
 
 ### 4.2 `pr-coverage.yml`
 
 **Localização:** `/home/qa/Projeto/Caminhar/pr-coverage.yml`
 
-**Propósito:** Verificação de cobertura mínima de 20% em PRs. Inclui Knip, setup de PostgreSQL e Redis, Jest com cobertura, comentário automático no PR em falha.
+**Propósito:** Verificação de cobertura mínima em PRs com thresholds de 80% (branches), 85% (functions) e 90% (lines/statements).
+
+**Funcionalidades:** Estrutura em 2 jobs: `call-test-base` (que chama o workflow reutilizável `test-base.yml` com `skip-k6: true` e `seed-db: false`) e `coverage-report` (que executa Knip, gerencia comentários no PR e faz upload do relatório de cobertura). Os serviços PostgreSQL e Redis são providos pelo `test-base.yml`.
 
 ---
 
@@ -214,7 +219,7 @@ Os arquivos foram agrupados por contexto para facilitar a leitura:
 
 **Localização:** `/home/qa/Projeto/Caminhar/load-tests.yml`
 
-**Propósito:** Execução diária (03:00 UTC) de testes de carga com k6. Inclui build, start da aplicação, orquestrador Node.js, validação de thresholds e upload de relatórios (retenção 30 dias).
+**Propósito:** Execução diária (03:00 UTC) de testes de carga com k6. Utiliza o workflow reutilizável `test-base.yml` para serviços (PostgreSQL/Redis) e steps comuns. Inclui orquestrador Node.js, validação de thresholds e upload de relatórios (retenção 30 dias).
 
 ---
 
@@ -222,7 +227,17 @@ Os arquivos foram agrupados por contexto para facilitar a leitura:
 
 **Localização:** `/home/qa/Projeto/Caminhar/security-tests.yml`
 
-**Propósito:** Testes de segurança com k6 (DDOS, Rate Limit, Login Negativo, IP Spoofing) em pushes e PRs para `main`.
+**Propósito:** Testes de segurança com k6 (DDOS, Rate Limit, Login Negativo, IP Spoofing) em pushes e PRs para `main`. Utiliza o workflow reutilizável `test-base.yml` para serviços (PostgreSQL/Redis) e steps comuns.
+
+---
+
+### 4.5 `test-base.yml`
+
+**Localização:** `/home/qa/Projeto/Caminhar/.github/workflows/test-base.yml`
+
+**Propósito:** Workflow reutilizável que centraliza os serviços PostgreSQL e Redis (com health checks) e os steps comuns de build, setup e execução de testes. Utilizado por `load-tests.yml`, `security-tests.yml` e `pr-coverage.yml` via `workflow_call`, eliminando a duplicação de configuração de serviços entre workflows.
+
+**Funcionalidades:** Serviço PostgreSQL com health check (`pg_isready`, intervalo 10s, timeout 5s, 5 retries), serviço Redis com health check (`redis-cli ping`), steps de checkout, setup Node.js, restore de cache do Next.js, setup de banco de testes, build e start da aplicação, setup do k6 (condicional via input `skip-k6`) e execução dos testes. Aceita como inputs: `test-type` (obrigatório), `run-command` (obrigatório), `skip-k6` (opcional, default `false`), `seed-db` (opcional, default `true`), `extra-steps` (opcional, default `''`). Inclui step de upload de artifact do output de cobertura quando `test-type` é `coverage`.
 
 ---
 
@@ -337,185 +352,6 @@ Os arquivos foram agrupados por contexto para facilitar a leitura:
 | 27 | `.clineignore` | Ambiente | ⚪ Acessório |
 | 28 | `skills-lock.json` | Ambiente | ⚪ Acessório |
 | 29 | `package-lock.json` | Lockfile | 🔴 Essencial |
+| 30 | `test-base.yml` | CI/CD | 🟡 Importante |
 
----
-
-### 3.2 `jsconfig.json`
-
-**Localização:** `/home/qa/Projeto/Caminhar/jsconfig.json`
-
-**Propósito:** Configuração de aliases de importação para o VS Code.
-
-**Funcionalidades:** `baseUrl: "."`, `paths: { "@/*": ["./*"] }`, exclude `node_modules` e `.next`.
-
----
-
-### 3.3 `knip.json`
-
-**Localização:** `/home/qa/Projeto/Caminhar/knip.json`
-
-**Propósito:** Configuração do Knip para análise de código morto.
-
-**Funcionalidades:** Ignora `tests`, `load-tests`, `scripts`, `examples`, `.agents`, `*.config.js`. Ignora binário `k6` e dependências específicas.
-
----
-
-### 3.4 `schema.knip.json`
-
-**Localização:** `/home/qa/Projeto/Caminhar/schema.knip.json`
-
-**Propósito:** JSON Schema de 986 linhas para validação do `knip.json`. Contém todas as definições de tipos, regras e plugins do Knip.
-
-> ℹ️ Pode ser substituído pela referência ao schema oficial online.
-
----
-
-
-## 4. CI/CD e Automação (GitHub Actions)
-
-### 4.1 `ci.yml`
-
-**Localização:** `/home/qa/Projeto/Caminhar/ci.yml`
-
-**Propósito:** CI básica: executa `npm run test:ci` em pushes e PRs para `main`/`master`.
-
----
-
-### 4.2 `pr-coverage.yml`
-
-**Localização:** `/home/qa/Projeto/Caminhar/pr-coverage.yml`
-
-**Propósito:** Verificação de cobertura mínima de 20% em PRs. Inclui Knip, setup de PostgreSQL e Redis, Jest com cobertura, comentário automático no PR em falha.
-
----
-
-### 4.3 `load-tests.yml`
-
-**Localização:** `/home/qa/Projeto/Caminhar/load-tests.yml`
-
-**Propósito:** Execução diária (03:00 UTC) de testes de carga com k6. Inclui build, start, orquestrador Node.js, validação de thresholds e upload de relatórios (30 dias).
-
----
-
-### 4.4 `security-tests.yml`
-
-**Localização:** `/home/qa/Projeto/Caminhar/security-tests.yml`
-
-**Propósito:** Testes de segurança com k6 (DDOS, Rate Limit, Login Negativo, IP Spoofing) em pushes e PRs para `main`.
-
----
-
-## 5. Documentação e Contexto
-
-### 5.1 `README.md`
-
-**Localização:** `/home/qa/Projeto/Caminhar/README.md`
-
-**Propósito:** Documento principal do repositório. Visão geral do projeto "Caminhar com Deus".
-
-**Funcionalidades:** Descrição da plataforma, documentação de todas as áreas (raiz, componentes, páginas, hooks, lib, dados, exemplos, testes, mocks, E2E, carga, scripts), tabela de principais tecnologias.
-
----
-
-### 5.2 `CHANGELOG.md`
-
-**Localização:** `/home/qa/Projeto/Caminhar/CHANGELOG.md`
-
-**Propósito:** Registro de alterações no formato Keep a Changelog, seguindo Semantic Versioning (versões 1.0.0 a 1.4.0).
-
----
-
-### 5.3 `GEMINI.md`
-
-**Localização:** `/home/qa/Projeto/Caminhar/GEMINI.md`
-
-**Propósito:** Contexto para assistentes de IA. Referencia 10 skills de desenvolvimento Vercel em `.agents/skills/`.
-
-> ⚪ Arquivo acessório, sem impacto direto no funcionamento do projeto.
-
----
-
-### 5.4 `tree.txt`
-
-**Localização:** `/home/qa/Projeto/Caminhar/tree.txt`
-
-**Propósito:** Snapshot estático da estrutura de diretórios (1151 linhas, 182 diretórios, 967 arquivos).
-
-> ⚪ Snapshot estático propenso a desatualização conforme o projeto evolui.
-
----
-
-## 6. Configuração de Ambiente
-
-### 6.1 `.gitignore`
-
-**Localização:** `/home/qa/Projeto/Caminhar/.gitignore`
-
-**Propósito:** Define padrões de arquivos/diretórios ignorados pelo Git: logs, cache, `.env`, `node_modules/`, `.next`, `coverage`, artefatos de build, etc.
-
----
-
-### 6.2 `.clineignore`
-
-**Localização:** `/home/qa/Projeto/Caminhar/.clineignore`
-
-**Propósito:** Diretivas de ignore para o agente Cline no VS Code. Ignora `node_modules`, `.next`, `.env`, logs, `coverage`, `.git`, entre outros.
-
----
-
-### 6.3 `skills-lock.json`
-
-**Localização:** `/home/qa/Projeto/Caminhar/skills-lock.json`
-
-**Propósito:** Lockfile de skills do agente de IA (~945 linhas). Registra mais de 80 skills com hashes criptográficos de verificação e suas fontes de origem.
-
-> ⚪ Arquivo de ferramenta de IA, sem impacto no código da aplicação.
-
----
-
-## 7. Lockfiles
-
-### 7.1 `package-lock.json`
-
-**Localização:** `/home/qa/Projeto/Caminhar/package-lock.json`
-
-**Propósito:** Lockfile automático do npm (~606 KB). Fixa versões exatas de todas as dependências e sub-dependências (~16,7k linhas), garantindo reproducibilidade do ambiente.
-
-> ℹ️ Gerado automaticamente pelo npm. Não deve ser editado manualmente.
-
----
-
-## Resumo dos Arquivos Analisados
-
-| # | Arquivo | Grupo | Relevância |
-|---|---------|-------|------------|
-| 1 | `package.json` | Config. Principal | 🔴 Essencial |
-| 2 | `next.config.js` | Config. Principal | 🔴 Essencial |
-| 3 | `next-sitemap.config.js` | Config. Principal | 🟡 Importante |
-| 4 | `proxy.js` | Config. Principal | 🔴 Essencial |
-| 5 | `.env` | Config. Principal | 🔴 Essencial |
-| 6 | `.env.example` | Config. Principal | 🟡 Importante |
-| 7 | `jest.config.js` | Testes | 🔴 Essencial |
-| 8 | `jest.config.db.js` | Testes | 🟡 Importante |
-| 9 | `jest.setup.js` | Testes | 🔴 Essencial |
-| 10 | `jest.teardown.js` | Testes | 🔴 Essencial |
-| 11 | `babel.jest.config.js` | Testes | 🟡 Importante |
-| 12 | `cypress.config.js` | Testes | 🟡 Importante |
-| 13 | `jest.config.base.js` | Testes | 🟡 Importante |
-| 14 | `eslint.config.js` | Qualidade | 🔴 Essencial |
-| 15 | `jsconfig.json` | Qualidade | 🟡 Importante |
-| 16 | `knip.json` | Qualidade | 🟡 Importante |
-| 17 | `schema.knip.json` | Qualidade | ⚪ Acessório |
-| 18 | `ci.yml` | CI/CD | 🔴 Essencial |
-| 19 | `pr-coverage.yml` | CI/CD | 🟡 Importante |
-| 20 | `load-tests.yml` | CI/CD | 🟡 Importante |
-| 21 | `security-tests.yml` | CI/CD | 🟡 Importante |
-| 22 | `README.md` | Documentação | 🔴 Essencial |
-| 23 | `CHANGELOG.md` | Documentação | 🟡 Importante |
-| 24 | `GEMINI.md` | Documentação | ⚪ Acessório |
-| 25 | `tree.txt` | Documentação | ⚪ Acessório |
-| 26 | `.gitignore` | Ambiente | 🔴 Essencial |
-| 27 | `.clineignore` | Ambiente | ⚪ Acessório |
-| 28 | `skills-lock.json` | Ambiente | ⚪ Acessório |
-| 29 | `package-lock.json` | Lockfile | 🔴 Essencial |
 

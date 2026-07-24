@@ -5,38 +5,24 @@ on:
     branches: [ main ]
 
 jobs:
-  coverage:
-    name: Enforce >20% Test Coverage (Baseline)
+  call-test-base:
+    uses: ./.github/workflows/test-base.yml
+    with:
+      test-type: coverage
+      run-command: |
+        npx jest --coverage | tee coverage-output.txt
+      skip-k6: true
+      seed-db: false
+    secrets: inherit
+
+  coverage-report:
+    needs: call-test-base
+    if: always()
     runs-on: ubuntu-latest
-    
+
     # Necessário para permitir que a Action crie comentários no PR
     permissions:
       pull-requests: write
-    
-    # Serviços necessários para rodar os testes de integração do seu projeto
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_DB: caminhar_test
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_password
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
       - name: Checkout Repository
@@ -44,6 +30,11 @@ jobs:
 
       - name: Setup Node.js Environment
         uses: ./.github/actions/setup
+
+      - name: Download Coverage Output
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-output
 
       - name: Run Knip (Dead Code Analysis)
         run: npm run knip
@@ -60,7 +51,7 @@ jobs:
             });
             const botComments = comments.filter(c => 
               c.user.type === 'Bot' && 
-              c.body.includes('### ❌ Cobertura de Testes Rejeitada')
+              c.body.includes('### ❌ Cobertura de Testes Abaixo do Mínimo Exigido')
             );
             for (const comment of botComments) {
               await github.rest.issues.deleteComment({
@@ -70,37 +61,17 @@ jobs:
               });
             }
 
-      - name: Setup Test Database
-        uses: ./.github/actions/setup-db
-        with:
-          seed: 'false'
-
-      - name: Run Tests, Check Coverage & Capture Output
-        id: run_tests
-        # O uso do "tee" salva a saída em um arquivo texto sem esconder a execução do console
-        run: npx jest --coverage | tee coverage-output.txt
-        env:
-          # Variáveis necessárias conforme docs/TESTING.md
-          TEST_DB_HOST: localhost
-          TEST_DB_PORT: 5432
-          TEST_DB_NAME: caminhar_test
-          TEST_DB_USER: test_user
-          TEST_DB_PASS: test_password
-          TEST_REDIS_URL: redis://localhost:6379
-          TEST_JWT_SECRET: test-secret-pr
-
       - name: Post PR Comment on Failure
-        # Executa APENAS se o passo anterior ("run_tests") falhar
-        if: failure() && steps.run_tests.outcome == 'failure'
+        if: ${{ needs.call-test-base.result == 'failure' }}
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
             const output = fs.readFileSync('coverage-output.txt', 'utf8');
-            
-            const comment = `### ❌ Cobertura de Testes Abaixo de 20%\nSua alteração resultou em uma cobertura de testes global abaixo do mínimo de 20%.\n\n<details>\n<summary>📊 Ver Detalhes da Cobertura</summary>\n\n\`\`\`text\n${output}\n\`\`\`\n</details>`;
-            
+
+            const comment = `### ❌ Cobertura de Testes Abaixo do Mínimo Exigido\nSua alteração resultou em uma cobertura de testes abaixo dos thresholds definidos (Branches: 80% | Functions: 85% | Lines: 90% | Statements: 90%).\n\n<details>\n<summary>📊 Ver Detalhes da Cobertura</summary>\n\n\`\`\`text\n${output}\n\`\`\`\n</details>`;
+
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,

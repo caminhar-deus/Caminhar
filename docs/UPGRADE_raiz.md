@@ -135,28 +135,31 @@ Lockfile de skills de IA. Recomenda-se mover para um diretório como `.agents/` 
 
 ## 13. `ci.yml`
 
-### 🟡 Workflow muito simples, sem cache
-Executa apenas checkout, setup e testes, sem cache de dependências. Os outros workflows têm estruturas mais completas com cache.
+### ✅ Cache de dependências já implementado via composite action
+O cache de dependências npm já é gerenciado automaticamente pela composite action `.github/actions/setup`, utilizada no step "Setup Node.js Environment". A action inclui `actions/setup-node@v4` com `cache: 'npm'`, que faz cache e restore automáticos do diretório `~/.npm` usando `package-lock.json` como chave. O workflow `ci.yml` não requer alterações adicionais para cache de dependências.
 
 ---
 
 ## 14. `pr-coverage.yml`
 
-### 🟡 Nome do job enganoso
-O nome é `"Enforce >20% Test Coverage (Baseline)"`, mas o threshold real no `jest.config.js` é de 80%/85%/90%/90%. O nome pode induzir a erro.
+### ✅ Nome do job corrigido
+O nome foi alterado de `"Enforce >20% Test Coverage (Baseline)"` para `"Enforce Minimum Test Coverage (80% Branches / 85% Functions / 90% Lines)"`, refletindo com precisão os thresholds reais definidos no `jest.config.js` (branches 80%, functions 85%, lines 90%, statements 90%). O template do comentário de falha e o filtro de remoção de comentários também foram atualizados para utilizar os novos textos e thresholds corretos.
+
+### ✅ Reestruturado para usar `test-base.yml` como base
+O `pr-coverage.yml` foi reestruturado de 1 job para 2 jobs: `call-test-base` (que chama o workflow reutilizável `test-base.yml`) e `coverage-report` (que executa Knip, gerencia comentários no PR e faz upload do relatório de cobertura). O bloco `services.redis` com health checks foi removido, passando a ser provido pelo `test-base.yml`. Foram adicionados os inputs `skip-k6: true` e `seed-db: false` na chamada ao workflow base.
 
 ---
 
 ## 15. `load-tests.yml` e `security-tests.yml`
 
-### 🟡 Duplicação de configuração entre workflows
-Blocos quase idênticos de serviços PostgreSQL/Redis, steps de setup, build e start da aplicação aparecem em 3 workflows. Poderiam ser extraídos para uma Composite Action reutilizável.
+### ✅ Build e start extraídos para Composite Action
+Os steps de build e start da aplicação (Create Reports Directory, Build Application, Start Application) foram extraídos para a Composite Action `.github/actions/build-app`, eliminando ~34 linhas duplicadas entre `load-tests.yml` e `security-tests.yml`. O bloco `services:` (PostgreSQL/Redis) não pôde ser extraído por limitação técnica do GitHub Actions, que não permite definir serviços em Composite Actions.
 
-### 🟡 Duplicidade de health checks do PostgreSQL
-`--health-cmd pg_isready`, `--health-interval 10s`, `--health-timeout 5s`, `--health-retries 5` aparecem identicamente em 3 workflows.
+### ✅ Duplicidade de health checks do PostgreSQL eliminada via workflow reutilizável
+Os parâmetros `--health-cmd pg_isready`, `--health-interval 10s`, `--health-timeout 5s`, `--health-retries 5` foram removidos de `load-tests.yml` e `security-tests.yml` e centralizados no novo workflow reutilizável `.github/workflows/test-base.yml`. O `ci.yml` não possuía bloco `services:` com PostgreSQL, portanto não foi alterado.
 
-### 🟡 Duplicidade de health checks do Redis
-`--health-cmd "redis-cli ping"`, `--health-interval 10s`, `--health-timeout 5s`, `--health-retries 5` aparecem identicamente em 3 workflows.
+### ✅ Duplicidade de health checks do Redis eliminada via workflow reutilizável
+Os parâmetros `--health-cmd "redis-cli ping"`, `--health-interval 10s`, `--health-timeout 5s`, `--health-retries 5` foram removidos de `pr-coverage.yml` e centralizados no workflow reutilizável `.github/workflows/test-base.yml`. O `test-base.yml` recebeu 3 novos inputs opcionais (`skip-k6`, `seed-db`, `extra-steps`) para suportar o `pr-coverage.yml` como consumidor. O bloco `services.redis` com health checks agora existe em apenas 1 arquivo.
 
 ---
 
@@ -191,14 +194,16 @@ Qualquer commit acidental do `.env` expõe toda a infraestrutura. Configurar um 
 | 🟡 Média | `schema.knip.json` | 986 linhas na raiz | Referenciar schema oficial |
 | 🟡 Média | `skills-lock.json` | ~945 linhas na raiz | Mover para `.agents/` |
 | 🟡 Média | `tree.txt` | Snapshot estático desatualizado | Remover ou gerar dinamicamente |
-| 🟡 Média | Workflows YML | Duplicação de blocos (3x) | Extrair para Composite Action |
+| ✅ 🟡 Média | `load-tests.yml` / `security-tests.yml` | Duplicação de blocos build/start entre workflows | Extraídos para Composite Action `.github/actions/build-app` |
+| ✅ 🟡 Média | `load-tests.yml` / `security-tests.yml` | Duplicidade de health checks do PostgreSQL | Centralizados no workflow reutilizável `.github/workflows/test-base.yml` |
+| ✅ 🟡 Média | `pr-coverage.yml` / `test-base.yml` | Duplicidade de health checks do Redis | Centralizados no workflow reutilizável `.github/workflows/test-base.yml` |
 | ✅ 🟡 Média | `eslint.config.js` | Regras `react/prop-types` e CSS | Removido `react/prop-types` (inócuo) + Reativadas `css/use-baseline` e `css/no-important` |
 | ✅ 🟡 Média | `next-sitemap.config.js` | Duplicidade changefreq/priority | Simplificada |
-| 🟡 Média | `pr-coverage.yml` | Nome do job enganoso | Corrigir nome |
+| ✅ 🟡 Média | `pr-coverage.yml` | Nome do job enganoso + estrutura não reutilizável | Corrigido nome + reestruturado para usar `test-base.yml` como base |
 | ✅ 🟡 Média | `package.json` | Campos vazios | Preenchido description/author |
 | ✅ 🟡 Média | `package.json` | 88 scripts (34 de carga) | Centralizados no orquestrador |
 | ✅ 🟡 Média | `package.json` | Overrides sem comentários | Documentados via _overridesReason |
 | ✅ 🟢 Leve | `next.config.js` | HSTS sem `preload` | Adicionar diretiva |
 | ✅ 🟢 Leve | `next.config.js` | CORS genérico para toda a API | Segmentar por grupo de endpoints |
-| 🟢 Leve | `ci.yml` | Sem cache de dependências | Adicionar cache npm |
+| ✅ 🟢 Leve | `ci.yml` | Sem cache de dependências | Cache já implementado via composite action `.github/actions/setup` com `cache: 'npm'` |
 
