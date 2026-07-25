@@ -656,6 +656,10 @@
 │   ├── UPGRADE_scripts.md
 │   └── UPGRADE_tests.md
 ├── eslint.config.js
+├── estrutura_extras.html
+├── estrutura_extras.txt
+├── estrutura.html
+├── estrutura.txt
 ├── examples
 │   ├── blog-post-seo-example.js
 │   ├── homepage-seo-example.js
@@ -854,10 +858,14 @@
 │   │   ├── backup_verification_test.json
 │   │   ├── cache_headers_test.html
 │   │   ├── cache_headers_test.json
+│   │   ├── Carga_de_Músicas_(Leitura).json
+│   │   ├── Carga_de_Vídeos_(Leitura).json
+│   │   ├── Criação_de_Posts_(Escrita).json
 │   │   ├── CRUD_de_Músicas.html
 │   │   ├── CRUD_de_Músicas.json
 │   │   ├── CRUD_de_Vídeos.json
 │   │   ├── ddos_search_test.json
+│   │   ├── Fluxo_Autenticado.json
 │   │   ├── ip_spoofing_consolidado_test.json
 │   │   ├── ip_spoofing_deteccao_test.json
 │   │   ├── ip_spoofing_evasao_test.json
@@ -886,7 +894,8 @@
 │   │   ├── videos_sort_test.html
 │   │   ├── videos_sort_test.json
 │   │   └── video_validation_test.json
-│   └── load-report-1771550191786.html
+│   ├── load-report-1771550191786.html
+│   └── load-report-1784947430460.html
 ├── schema.knip.json
 ├── scripts
 │   ├── backup.js
@@ -1246,4 +1255,4 @@
 │       └── videos.validation.test.js
 └── tree.txt
 
-188 directories, 1059 files
+188 directories, 1068 files

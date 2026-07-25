@@ -116,6 +116,7 @@
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "cypress": "^15.19.0",
+    "dependency-cruiser": "^18.1.0",
     "eslint": "^10.8.0",
     "eslint-plugin-cypress": "^6.4.3",
     "globals": "^17.7.0",

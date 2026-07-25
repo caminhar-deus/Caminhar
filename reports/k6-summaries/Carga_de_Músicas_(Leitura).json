@@ -1,0 +1,153 @@
+{
+    "metrics": {
+        "http_req_tls_handshaking": {
+            "avg": 0,
+            "min": 0,
+            "med": 0,
+            "max": 0,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "http_req_duration{name:ListMusicas}": {
+            "min": 5.297424,
+            "med": 12.623157,
+            "max": 23.122586,
+            "p(90)": 15.728950000000003,
+            "p(95)": 16.516296099999998,
+            "avg": 12.409643428571423,
+            "thresholds": {
+                "p(95)<500": false
+            }
+        },
+        "vus": {
+            "value": 1,
+            "min": 1,
+            "max": 5
+        },
+        "http_reqs": {
+            "count": 64,
+            "rate": 2.9930945880759783
+        },
+        "http_req_sending": {
+            "avg": 0.065013796875,
+            "min": 0.015501,
+            "med": 0.0569915,
+            "max": 0.255042,
+            "p(90)": 0.08162670000000001,
+            "p(95)": 0.14732704999999963
+        },
+        "http_req_duration": {
+            "avg": 13.767893468749996,
+            "min": 5.297424,
+            "med": 12.629901,
+            "max": 99.337646,
+            "p(90)": 16.1065182,
+            "p(95)": 17.999152649999992
+        },
+        "data_received": {
+            "count": 127034,
+            "rate": 5941.012154713185
+        },
+        "http_req_duration{expected_response:true}": {
+            "avg": 13.767893468749996,
+            "min": 5.297424,
+            "med": 12.629901,
+            "max": 99.337646,
+            "p(90)": 16.1065182,
+            "p(95)": 17.999152649999992
+        },
+        "checks": {
+            "passes": 189,
+            "fails": 0,
+            "value": 1
+        },
+        "iteration_duration": {
+            "avg": 1286.9928245396823,
+            "min": 541.710074,
+            "med": 1315.328666,
+            "max": 1983.814848,
+            "p(90)": 1813.2863134000002,
+            "p(95)": 1946.3845731
+        },
+        "iterations": {
+            "count": 63,
+            "rate": 2.9463274851372914
+        },
+        "http_req_blocked": {
+            "min": 0.004769,
+            "med": 0.017297,
+            "max": 0.766093,
+            "p(90)": 0.05328110000000008,
+            "p(95)": 0.5407775999999982,
+            "avg": 0.06742101562499998
+        },
+        "http_req_connecting": {
+            "avg": 0.0367575,
+            "min": 0,
+            "med": 0,
+            "max": 0.565846,
+            "p(90)": 0,
+            "p(95)": 0.38763329999999885
+        },
+        "http_req_receiving": {
+            "avg": 0.12538921875,
+            "min": 0.053276,
+            "med": 0.11605850000000001,
+            "max": 0.412036,
+            "p(90)": 0.17059700000000003,
+            "p(95)": 0.20933344999999995
+        },
+        "http_req_failed": {
+            "passes": 0,
+            "fails": 64,
+            "value": 0
+        },
+        "data_sent": {
+            "rate": 984.1669142417327,
+            "count": 21044
+        },
+        "vus_max": {
+            "value": 5,
+            "min": 5,
+            "max": 5
+        },
+        "http_req_waiting": {
+            "p(90)": 15.790421700000001,
+            "p(95)": 17.81791604999999,
+            "avg": 13.577490453125003,
+            "min": 5.21007,
+            "med": 12.445033500000001,
+            "max": 99.141029
+        }
+    },
+    "setup_data": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInVzZXJuYW1lIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3ODQ5NDc0MDcsImV4cCI6MTc4NDk1MTAwN30.eft_Q_u3ubs3LD7txmiQR6vSBjIMZakI5-fMRFtLWkc",
+    "root_group": {
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {},
+        "checks": {
+                "status é 200": {
+                    "name": "status é 200",
+                    "path": "::status é 200",
+                    "id": "b16e99ca05db78d0783cae331c9a2805",
+                    "passes": 63,
+                    "fails": 0
+                },
+                "retornou lista (array)": {
+                    "name": "retornou lista (array)",
+                    "path": "::retornou lista (array)",
+                    "id": "c9a3a5c935e147d722f6f3a8638fe865",
+                    "passes": 63,
+                    "fails": 0
+                },
+                "tempo de resposta < 300ms": {
+                    "id": "d955d0e5bf13bddb86875cf8e1afdb5a",
+                    "passes": 63,
+                    "fails": 0,
+                    "name": "tempo de resposta < 300ms",
+                    "path": "::tempo de resposta < 300ms"
+                }
+            },
+        "name": "",
+        "path": ""
+    }
+}
