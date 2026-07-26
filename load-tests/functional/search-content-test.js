@@ -59,25 +59,24 @@ export default function () {
       if (!Array.isArray(posts)) return false;
       if (posts.length === 0) return true;
 
-      // Verifica se pelo menos um dos posts retornados contém o termo nos campos
-      // retornados pela API pública (title e excerpt). O campo content não é
-      // retornado em listagens públicas por otimização de performance.
+      // Verifica se pelo menos um dos posts retornados contém o termo (case insensitive)
+      // A API pública retorna content truncado (LEFT 2000) para permitir esta validação
+      // sem trafegar o conteúdo completo.
       const matchFound = posts.some(post => {
         const title = (post.title || '').toLowerCase();
         const excerpt = (post.excerpt || '').toLowerCase();
-        
+        const content = (post.content || '').toLowerCase();
+
         const searchTerm = term.toLowerCase();
-        return title.includes(searchTerm) || excerpt.includes(searchTerm);
+        return title.includes(searchTerm) || excerpt.includes(searchTerm) || content.includes(searchTerm);
       });
 
       if (!matchFound) {
         const titles = posts.map(p => p.title).slice(0, 3).join(', ');
-        console.warn(`⚠️ Busca retornou resultados (${titles}...), mas termo "${term}" não foi encontrado nos campos title ou excerpt. Pode estar apenas no content (não retornado em listagens públicas).`);
+        console.error(`❌ Busca retornou resultados (${titles}...), mas termo "${term}" não foi encontrado nos campos title, excerpt ou content. Verifique o mecanismo de busca.`);
       }
-      
-      // Não falha o check: a busca full-text pode ter encontrado o termo no content
-      // (campo não retornado na listagem pública), o que é um comportamento válido.
-      return true;
+
+      return matchFound;
     }
   });
 

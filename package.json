@@ -80,7 +80,7 @@
   },
   "homepage": "https://github.com/caminhar-deus/Caminhar#readme",
   "dependencies": {
-    "@next/env": "^16.2.11",
+    "@next/env": "^16.2.12",
     "@upstash/redis": "^1.38.0",
     "bcryptjs": "^3.0.3",
     "date-fns": "^4.4.0",
@@ -88,7 +88,7 @@
     "formidable": "^3.5.4",
     "jsdom": "^29.1.1",
     "jsonwebtoken": "^9.0.3",
-    "next": "^16.2.11",
+    "next": "^16.2.12",
     "pg": "^8.22.0",
     "prop-types": "^15.8.1",
     "react": "^19.2.8",
