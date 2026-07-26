@@ -12,30 +12,27 @@
 2. [`/hooks/index.js`](#1-hooksindexjs) — Barrel de exportações
 3. [`/hooks/AuthContext.js`](#2-hooksauthcontextjs) — Contexto de autenticação
 4. [`/hooks/AuthProvider.js`](#3-hooksauthproviderjs) — Provider de autenticação
-5. [`/hooks/useAuth.js`](#4-hooksuseauthjs) — Hook de autenticação
-6. [`/hooks/useAdminAuth.js`](#5-hooksuseadminauthjs) — Autenticação para área administrativa
-7. [`/hooks/useAdminCrud.js`](#6-hooksuseadmincrudjs) — Operações CRUD em painéis admin
-8. [`/hooks/useApiFetch.js`](#7-hooksuseapifetchjs) — Fetch genérico com estados loading/error
-9. [`/hooks/useTheme.js`](#8-hooksusethemejs) — Gerenciamento de tema e tokens de design
-10. [`/hooks/usePerformanceMetrics.js`](#9-hooksuseperformancemetricsjs) — Core Web Vitals e performance
-11. [`/hooks/PerformanceContext.js`](#10-hooksperformancecontextjs) — Contexto de performance
-12. [`/hooks/PerformanceProvider.js`](#11-hooksperformanceproviderjs) — Provider de performance
-13. [`/hooks/usePerformance.js`](#12-hooksuseperformancejs) — Hook de consumo de performance
-14. [`/hooks/useDebounce.js`](#13-hooksusedebouncejs) — Debounce utilitário
-15. [`/hooks/useThrottle.js`](#14-hooksusethrottlejs) — Throttle utilitário
-16. [Resumo Consolidado](#resumo-consolidado)
+5. [`/hooks/useAdminAuth.js`](#4-hooksuseadminauthjs) — Autenticação para área administrativa
+6. [`/hooks/useAdminCrud.js`](#5-hooksuseadmincrudjs) — Operações CRUD em painéis admin
+7. [`/hooks/useApiFetch.js`](#6-hooksuseapifetchjs) — Fetch genérico com estados loading/error
+8. [`/hooks/usePerformanceMetrics.js`](#7-hooksuseperformancemetricsjs) — Core Web Vitals e performance
+9. [`/hooks/PerformanceContext.js`](#8-hooksperformancecontextjs) — Contexto de performance
+10. [`/hooks/PerformanceProvider.js`](#9-hooksperformanceproviderjs) — Provider de performance
+11. [`/hooks/usePerformance.js`](#10-hooksuseperformancejs) — Hook de consumo de performance
+12. [`/hooks/useDebounce.js`](#11-hooksusedebouncejs) — Debounce utilitário
+13. [Resumo Consolidado](#resumo-consolidado)
 
 ---
 
 ## Visão Geral
 
-A pasta `/hooks` contém **14 arquivos** que implementam custom hooks React e seus componentes de contexto. Não há subpastas. Os hooks dividem-se em três categorias:
+A pasta `/hooks` contém **11 arquivos** que implementam custom hooks React e seus componentes de contexto. Não há subpastas. Os hooks dividem-se em três categorias:
 
 | Categoria | Hooks | Descrição |
 |---|---|---|
-| **Autenticação** | `useAuth`, `useAdminAuth` | Gerenciamento de sessão, login/logout e controle de acesso administrativo |
-| **Infraestrutura / Utilitários** | `useApiFetch`, `useDebounce`, `useThrottle`, `useAdminCrud` | Abstrações reutilizáveis para fetch, debounce, throttle e operações CRUD completas |
-| **Design & Performance** | `useTheme`, `usePerformanceMetrics`, `PerformanceContext`, `PerformanceProvider`, `usePerformance` | Gerenciamento de tema (light/dark) com tokens de design e monitoramento de Core Web Vitals com wrapper de contexto |
+| **Autenticação** | `useAdminAuth` | Gerenciamento de sessão, login/logout e controle de acesso administrativo |
+| **Infraestrutura / Utilitários** | `useApiFetch`, `useDebounce`, `useAdminCrud` | Abstrações reutilizáveis para fetch, debounce e operações CRUD completas |
+| **Design & Performance** | `usePerformanceMetrics`, `PerformanceContext`, `PerformanceProvider`, `usePerformance` | Monitoramento de Core Web Vitals com wrapper de contexto |
 
 ---
 
@@ -47,7 +44,7 @@ A pasta `/hooks` contém **14 arquivos** que implementam custom hooks React e se
 **Funcionalidades:**
 - Reexporta hooks nomeados: `PerformanceProvider`, `usePerformance`, `useApiFetch`, `useDebounce`, `useAdminAuth`.
 - Re-exports removidos (por não terem consumidores externos): `useTheme`, `AuthContext`, `AuthProvider`, `useAuth`, `useAdminCrud`, `PerformanceContext`, `usePerformanceMetrics`, `useThrottle`.
-- Os arquivos fonte removidos do barrel foram preservados pois são usados internamente por outros hooks.
+- Os arquivos fonte que não estão no barrel foram preservados pois são usados internamente por outros hooks.
 - Todos os hooks são reexportados diretamente como named exports com a sintaxe `export { Nome } from './arquivo'`.
 
 ---
@@ -79,18 +76,7 @@ A pasta `/hooks` contém **14 arquivos** que implementam custom hooks React e se
 
 ---
 
-## 4. `/hooks/useAuth.js`
-
-**Localização:** `/hooks/useAuth.js`
-**Propósito:** Hook que consome o `AuthContext` e expõe os dados de autenticação para componentes React. Contém apenas o hook, sem a definição do contexto ou do provider.
-
-**Funcionalidades:**
-- **`useAuth()`** — Hook que consome o `AuthContext` via `useContext` e retorna `user`, `isAuthenticated`, `loading`, `loginLoading`, `login`, `logout`.
-- **Exportação:** Apenas named export (`export const useAuth`), sem `export default`.
-
----
-
-## 5. `/hooks/useAdminAuth.js`
+## 4. `/hooks/useAdminAuth.js`
 
 **Localização:** `/hooks/useAdminAuth.js`
 **Propósito:** Hook de autenticação específico para a área administrativa. Consome o `AuthContext` de `AuthContext.js` e estende com funcionalidades de redirect opcional e estado isolado de erro para o login. Não possui dependência de framework.
@@ -103,7 +89,7 @@ A pasta `/hooks` contém **14 arquivos** que implementam custom hooks React e se
 
 ---
 
-## 6. `/hooks/useAdminCrud.js`
+## 5. `/hooks/useAdminCrud.js`
 
 **Localização:** `/hooks/useAdminCrud.js`
 **Propósito:** Hook reutilizável que centraliza operações CRUD completas para painéis administrativos: listagem, criação, edição, exclusão, paginação e toggle de campos booleanos.
@@ -120,7 +106,7 @@ A pasta `/hooks` contém **14 arquivos** que implementam custom hooks React e se
 
 ---
 
-## 7. `/hooks/useApiFetch.js`
+## 6. `/hooks/useApiFetch.js`
 
 **Localização:** `/hooks/useApiFetch.js`
 **Propósito:** Hook genérico para requisições HTTP com gerenciamento centralizado de estados `loading`/`error`, cache simples e suporte a transformação de dados. Compartilhado entre componentes públicos (Features) e administrativos.
@@ -142,29 +128,7 @@ A pasta `/hooks` contém **14 arquivos** que implementam custom hooks React e se
 
 ---
 
-## 8. `/hooks/useTheme.js`
-
-**Localização:** `/hooks/useTheme.js`
-**Propósito:** Hook principal para gerenciamento de tema (light/dark) e acesso centralizado a todos os tokens de design do sistema (cores, espaçamentos, tipografia, bordas, sombras, breakpoints, animações).
-
-**Funcionalidades:**
-- **Estado inicial e hidratação SSR:** Mantém `theme` ("light" | "dark") e `mounted` (flag de hidratação). Na montagem, lê `localStorage('theme')` e, se não existir, respeita `prefers-color-scheme: dark` do sistema.
-- **Aplicação do tema:** Sincroniza `data-theme` no `<html>`, classe `.dark`, `localStorage` e dispara evento customizado `themeChange` no `window` para código fora do React.
-- **`toggleTheme`:** Alterna entre light/dark com throttle de 300ms via hook `useThrottle`, prevenindo múltiplas trocas rápidas.
-- **`setTheme`:** Define tema específico ("light" | "dark"). Valores inválidos são ignorados com `console.warn` em desenvolvimento. Internamente, o valor é validado contra o conjunto `['light', 'dark']` antes de atualizar o estado; se inválido, o estado não é alterado. O `toggleTheme` usa o setter raw diretamente para evitar a validação, já que sempre produz valores válidos.
-- **Responsividade:** Monitora `window.innerWidth` via event listener `resize` com throttle de 100ms (via `useThrottle`), evitando re-renderizações excessivas durante redimensionamento rápido. Fornece booleanos reativos `isMobile`, `isTablet` e `isDesktop` baseados nos breakpoints `md` e `lg` dos tokens.
-- **Helpers de acesso a tokens (todos memoizados com `useCallback`):**
-  - `getColor(path, alpha)` — Navega por `tokens.colors` com notação dot-path. Suporta opacidade via função `hexToRgba` (função utilitária pura definida **fora do hook**, testável e reutilizável independentemente). Exibe `console.warn` em desenvolvimento se o token não existir.
-  - `getSpacing(key)` — Busca no objeto mesclado `allSpacing` que unifica `tokens.spacing.spacing` (numérico) e `tokens.spacing.space` (semântico). Retorna `null` se não encontrado.
-  - `getFontSize(key)` — Busca em `tokens.typography.fontSize`. Retorna `null` se não encontrado.
-  - `getShadow(key)` — Busca no objeto mesclado `allShadows` que unifica `tokens.shadows.shadow` (base) e `tokens.shadows.shadows` (semântico). Retorna `null` se não encontrado.
-  - `getRadius(key)` — Busca no objeto mesclado `allRadius` que unifica `tokens.borders.borderRadius` (base) e `tokens.borders.radius` (semântico). Retorna `null` se não encontrado.
-  - `getBreakpoint(key)` — Busca em `tokens.breakpoints.breakpoints`. Retorna `undefined` se não encontrado (sem fallback).
-- **Performance:** O valor de retorno completo é memoizado com `useMemo` e dependências explícitas.
-
----
-
-## 9. `/hooks/usePerformanceMetrics.js`
+## 7. `/hooks/usePerformanceMetrics.js`
 
 **Localização:** `/hooks/usePerformanceMetrics.js`
 **Propósito:** Hook avançado para monitoramento de Core Web Vitals (LCP, CLS, INP, FCP, TTFB) e métricas adicionais de performance (TBT, recursos lentos).
@@ -187,7 +151,7 @@ A pasta `/hooks` contém **14 arquivos** que implementam custom hooks React e se
 
 ---
 
-## 10. `/hooks/PerformanceContext.js`
+## 8. `/hooks/PerformanceContext.js`
 
 **Localização:** `/hooks/PerformanceContext.js`
 **Propósito:** Definição do contexto de performance React, seguindo o mesmo padrão de `AuthContext.js`. Armazena as métricas de Web Vitals e funções auxiliares para consumo por componentes da aplicação.
@@ -199,7 +163,7 @@ A pasta `/hooks` contém **14 arquivos** que implementam custom hooks React e se
 
 ---
 
-## 11. `/hooks/PerformanceProvider.js`
+## 9. `/hooks/PerformanceProvider.js`
 
 **Localização:** `/hooks/PerformanceProvider.js`
 **Propósito:** Componente provider de performance que instancia o `usePerformanceMetrics` uma única vez e compartilha as métricas via contexto, evitando múltiplas instâncias do `PerformanceObserver` em diferentes componentes.
@@ -212,7 +176,7 @@ A pasta `/hooks` contém **14 arquivos** que implementam custom hooks React e se
 
 ---
 
-## 12. `/hooks/usePerformance.js`
+## 10. `/hooks/usePerformance.js`
 
 **Localização:** `/hooks/usePerformance.js`
 **Propósito:** Hook que consome o `PerformanceContext` e expõe as métricas de performance para componentes React.
@@ -224,7 +188,7 @@ A pasta `/hooks` contém **14 arquivos** que implementam custom hooks React e se
 
 ---
 
-## 13. `/hooks/useDebounce.js`
+## 11. `/hooks/useDebounce.js`
 
 **Localização:** `/hooks/useDebounce.js`
 **Propósito:** Hook de debounce simples e reutilizável. Retorna o valor atualizado somente após um período de inatividade.
@@ -237,19 +201,6 @@ A pasta `/hooks` contém **14 arquivos** que implementam custom hooks React e se
 
 ---
 
-## 14. `/hooks/useThrottle.js`
-
-**Localização:** `/hooks/useThrottle.js`
-**Propósito:** Hook de throttle reutilizável. Limita a frequência de chamada de uma função, ignorando chamadas dentro do intervalo especificado.
-
-**Funcionalidades:**
-- Recebe `fn` (função) e `delay` (padrão 300ms).
-- Usa `useRef` para armazenar o timestamp da última execução e `useCallback` para memoizar a função com throttle.
-- Diferença de debounce: debounce atrasa a execução; throttle ignora chamadas rápidas consecutivas.
-- Utilizado internamente por `useTheme` no `toggleTheme` (300ms) e no handler de `resize` (100ms).
-
----
-
 ## Resumo Consolidado
 
 | Arquivo | Localização | Tipo | Complexidade | Dependências Externas |
@@ -257,20 +208,18 @@ A pasta `/hooks` contém **14 arquivos** que implementam custom hooks React e se
 | `index.js` | `/hooks/index.js` | Barrel file | Baixa | Nenhuma |
 | `AuthContext.js` | `/hooks/AuthContext.js` | Contexto React | Baixa | Nenhuma |
 | `AuthProvider.js` | `/hooks/AuthProvider.js` | Provider React | Média | Nenhuma |
-| `useAuth.js` | `/hooks/useAuth.js` | Hook de consumo de contexto | Baixa | Nenhuma |
 | `useAdminAuth.js` | `/hooks/useAdminAuth.js` | Hook de autenticação admin | Baixa | Nenhuma |
 | `useAdminCrud.js` | `/hooks/useAdminCrud.js` | Hook de CRUD completo | Alta | `react-hot-toast` |
 | `useApiFetch.js` | `/hooks/useApiFetch.js` | Hook de fetch genérico | Média | Nenhuma |
-| `useTheme.js` | `/hooks/useTheme.js` | Hook de tema + tokens | Alta | `pages/styles/tokens`, `useThrottle` |
 | `usePerformanceMetrics.js` | `/hooks/usePerformanceMetrics.js` | Hook de performance | Alta | `web-vitals` (dynamic import) |
 | `PerformanceContext.js` | `/hooks/PerformanceContext.js` | Contexto React | Baixa | Nenhuma |
 | `PerformanceProvider.js` | `/hooks/PerformanceProvider.js` | Provider React | Baixa | `usePerformanceMetrics` |
 | `usePerformance.js` | `/hooks/usePerformance.js` | Hook de consumo de contexto | Baixa | Nenhuma |
 | `useDebounce.js` | `/hooks/useDebounce.js` | Hook utilitário | Baixa | Nenhuma |
-| `useThrottle.js` | `/hooks/useThrottle.js` | Hook utilitário | Baixa | Nenhuma |
 
 ### Observações importantes
 
-- **Relação entre hooks:** `useAdminAuth` depende do `AuthContext` (importado de `AuthContext.js`). `useAdminCrud` depende de `useApiFetch`. `useTheme` depende de `useThrottle` e dos tokens de design importados de `pages/styles/tokens`. `PerformanceProvider` depende de `usePerformanceMetrics` para instanciar o monitoramento.
-- **Exportações:** O barrel `index.js` exporta atualmente 5 hooks: `PerformanceProvider`, `usePerformance`, `useApiFetch`, `useDebounce` e `useAdminAuth`. Os re-exports de `useTheme`, `AuthContext`, `AuthProvider`, `useAuth`, `useAdminCrud`, `PerformanceContext`, `usePerformanceMetrics` e `useThrottle` foram removidos por não terem consumidores externos. Os arquivos fonte foram preservados por serem usados internamente por outros hooks.
+- **Relação entre hooks:** `useAdminAuth` depende do `AuthContext` (importado de `AuthContext.js`). `useAdminCrud` depende de `useApiFetch`. `PerformanceProvider` depende de `usePerformanceMetrics` para instanciar o monitoramento.
+- **Exportações:** O barrel `index.js` exporta atualmente 5 hooks: `PerformanceProvider`, `usePerformance`, `useApiFetch`, `useDebounce` e `useAdminAuth`. Os re-exports removidos do barrel são: `useTheme`, `AuthContext`, `AuthProvider`, `useAuth`, `useAdminCrud`, `PerformanceContext`, `usePerformanceMetrics` e `useThrottle`.
 - **Cobertura de uso:** `usePerformance` possui consumidor direto em `pages/_app.js` via `PerformanceMonitor`. `usePerformanceMetrics` é consumido indiretamente via `PerformanceProvider`, que o instancia uma única vez e compartilha as métricas através do `PerformanceContext`. `useApiFetch` e `useDebounce` são usados por 5 componentes públicos (Features). `useAdminAuth` é usado por `components/Admin/withAdminAuth.js`.
+- **Arquivos removidos:** Os hooks `useAuth.js`, `useTheme.js` e `useThrottle.js` foram removidos por não possuírem consumidores no projeto, conforme identificado pelo Knip.

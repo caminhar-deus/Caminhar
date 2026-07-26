@@ -75,6 +75,12 @@
 **Problema:** O arquivo `useAuth.js` define três elementos no mesmo módulo: `AuthContext`, `AuthProvider` e `useAuth`. Embora funcione, isso mistura responsabilidades. Uma separação em `AuthContext.js` + `AuthProvider.js` + `useAuth.js` (ou um único arquivo `AuthContext.js` com tudo) traria mais clareza estrutural, sem prejuízo às exportações do barrel.
 **Situação:** Implementado. O `AuthContext` foi movido para `hooks/AuthContext.js`, o `AuthProvider` para `hooks/AuthProvider.js`, e `useAuth.js` foi reescrito contendo apenas o hook `useAuth` (sem `export default`). O barrel `index.js` foi atualizado com exports individuais de cada arquivo. Os imports em `useAdminAuth.js`, `tests/helpers/render.js` e `tests/unit/components/Admin/withAdminAuth.test.js` foram atualizados para os novos paths. Nenhum consumidor ou fluxo foi impactado.
 
+### 2.5 — Remoção de hooks não utilizados ✅
+
+**Arquivos:** `/hooks/useAuth.js`, `/hooks/useTheme.js`, `/hooks/useThrottle.js`
+**Problema:** O Knip reportou 3 arquivos como "Unused files": `useAuth.js`, `useTheme.js` e `useThrottle.js`. Após rastrear todas as importações no projeto, confirmou-se que nenhum arquivo importa estes hooks. `useThrottle.js` era importado apenas por `useTheme.js` (também sem consumidores), formando uma cadeia de dependência morta.
+**Situação:** Implementado. Os 3 arquivos foram removidos. Nenhuma alteração em `hooks/index.js` foi necessária, pois nenhum deles estava no barrel. O Knip passou a reportar "Excellent, Knip found no issues." Nenhum consumidor ou fluxo foi impactado.
+
 ### 2.3 — `usePerformanceMetrics` sem um wrapper de contexto ✅
 
 **Arquivo:** `/hooks/usePerformanceMetrics.js`
