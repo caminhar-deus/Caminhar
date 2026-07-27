@@ -1,7 +1,7 @@
 # Análise da Suite de Testes — `/tests/`
 
 > **Data:** 28/06/2026  
-> **Última atualização:** 18/07/2026
+> **Última atualização:** 26/07/2026
 > **Propósito:** Documentação completa e consolidada de todos os arquivos de teste do projeto Caminhar.
 
 ---
@@ -685,11 +685,18 @@ Endpoints administrativos testados com mocks de banco e autenticação. **Total:
 
 ### `/tests/integration/api/auth/login.test.js`
 - **Propósito:** Testa o endpoint de login.
-- **Testes:** Login bem-sucedido, falha de autenticação, rate limiting, bloqueio por muitos tentativas.
+- **Testes:** Login bem-sucedido (200 + cookies + user), falha de autenticação (401), rate limiting (429), método não permitido (405).
+- **Mocks:** `lib/auth.js` (inclui `setRefreshTokenCookie`), `lib/cache.js` (`checkRateLimit`).
 
 ### `/tests/integration/api/auth/logout.test.js`
 - **Propósito:** Testa o endpoint de logout.
-- **Testes:** Logout limpa cookie e token, logout sem token ainda funciona.
+- **Testes:** Logout limpa cookie de refresh token e retorna sucesso (200).
+- **Observação:** O `res.setHeader` sobrescreve o header anterior, portanto apenas o último cookie (`refreshToken`) está presente no `set-cookie`.
+
+### `/tests/integration/api/login.test.js`
+- **Propósito:** Testa o endpoint de login com foco em `last_login_at`.
+- **Testes:** Login bem-sucedido atualiza `last_login_at`, falha de autenticação não atualiza, erro na atualização não bloqueia login.
+- **Mocks:** `lib/auth.js` (inclui `setRefreshTokenCookie`), `lib/cache.js` (`checkRateLimit`).
 
 ### `/tests/integration/auth/auth.test.js`
 - **Propósito:** Testes de fluxo de autenticação completos (integração com banco real via Testcontainers).
@@ -782,6 +789,7 @@ Testes que usam PostgreSQL real via Testcontainers (`jest.config.db.js`). Valida
 
 ### `/tests/unit/lib/db/` (múltiplos arquivos)
 - **Propósito:** Testes de operações de banco de dados (queries, transações, migrações).
+- **Destaque:** `musicas.test.js` testa `createMusica` com transação — os mocks de `mockQuery` incluem BEGIN e COMMIT, e as asserções verificam 4 chamadas (BEGIN, SELECT MAX, INSERT, COMMIT) em vez de 2.
 
 ### `/tests/unit/lib/seo/` (múltiplos arquivos)
 - **Propósito:** Testes de funções SEO (meta tags, schemas, Open Graph, etc).

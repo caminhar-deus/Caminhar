@@ -69,9 +69,11 @@ A pasta `/hooks` contém **11 arquivos** que implementam custom hooks React e se
 - Na montagem, realiza `GET /api/auth/check` com `credentials: 'include'` para verificar sessão existente.
 - Usa `AbortController` para cancelar a verificação de sessão no desmonte do componente.
 - `login(username, password)`: Envia `POST /api/auth/login` com JSON e `credentials: 'include'`. Retorna `{ success, error }`.
+- `refreshSession()`: Envia `POST /api/auth/refresh` com `credentials: 'include'` para renovar o access token automaticamente. Retorna `true` se bem-sucedido, `false` caso contrário.
 - `logout()`: Envia `POST /api/auth/logout` com `credentials: 'include'` e limpa o estado do usuário.
 - Possui `loginLoading` separado de `loading` para evitar flicker visual durante operações de login.
 - Usa `loginAbortRef` (`useRef`) com `AbortController` para abortar requisições de login anteriores se uma nova for disparada.
+- **Renovação automática de sessão:** No `useEffect` de `checkAuth`, ao receber status 401, tenta renovar o token via `refreshSession()` antes de considerar o usuário não autenticado. Se a renovação for bem-sucedida, refaz a verificação (`GET /api/auth/check`).
 - **Tratamento de erros:** `AbortError` é tratado silenciosamente. Erros de rede são convertidos em mensagem amigável. Erros da API são extraídos do corpo JSON da resposta.
 
 ---

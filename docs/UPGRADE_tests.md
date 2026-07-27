@@ -132,11 +132,33 @@
 - **Correção:** Removida a dependência `error` do `useEffect` em `useApiFetch.js` (linha 129). Adicionado timeout explícito de 15s nos 2 testes como rede de segurança. Testes passam em ~14ms e ~5ms respectivamente. Nenhuma regressão na suite completa (352 testes).
 
 ### 3.11 Teste `Library - API - Index` falhando após simplificação do barrel file ✅
-- **Arquivo:** `tests/unit/lib/api/index.test.js`
-- **Problema:** Após a simplificação de `lib/api/index.js` (remoção de 47 exports nomeados), o teste importava `{ ApiError, success, validateBody, composeMiddleware }` como named exports, que não existiam mais. As 4 variáveis resultavam em `undefined`, causando falha em `expect(ApiError).toBeDefined()`.
-- **Correção:** Substituída a importação dos 4 named exports por importação apenas do `default` (`import apiIndex from ...`). As asserções foram alteradas para acessar os símbolos via objeto default: `apiIndex.errors.ApiError`, `apiIndex.response.success`, `apiIndex.validate.validateBody`, `apiIndex.middleware.composeMiddleware`. Teste passa em ~3ms.
 
----
+**Arquivo:** `tests/unit/lib/api/index.test.js`
+
+**Problema:** Após a simplificação de `lib/api/index.js` (remoção de 47 exports nomeados), o teste importava `{ ApiError, success, validateBody, composeMiddleware }` como named exports, que não existiam mais. As 4 variáveis resultavam em `undefined`, causando falha em `expect(ApiError).toBeDefined()`.
+
+**Correção:** Substituída a importação dos 4 named exports por importação apenas do `default` (`import apiIndex from ...`). As asserções foram alteradas para acessar os símbolos via objeto default: `apiIndex.errors.ApiError`, `apiIndex.response.success`, `apiIndex.validate.validateBody`, `apiIndex.middleware.composeMiddleware`. Teste passa em ~3ms.
+
+### 3.12 Testes de login/logout falhando após implementação de refresh token ✅
+
+**Arquivos:** `tests/integration/api/auth/login.test.js`, `tests/integration/api/login.test.js`, `tests/integration/api/auth/logout.test.js`
+
+**Problema:** Após a implementação do fluxo de refresh token em `lib/auth.js` e `pages/api/auth/`, três testes de integração passaram a falhar:
+- `login.test.js` (auth): mock manual de `lib/auth` não incluía `setRefreshTokenCookie`, causando `TypeError: (0 , _auth.setRefreshTokenCookie) is not a function`.
+- `login.test.js` (integration/api): mesmo problema — mock incompleto.
+- `logout.test.js`: asserção esperava `token=;` no `set-cookie`, mas o logout agora define dois cookies e `res.setHeader` sobrescreve o anterior, deixando apenas `refreshToken=;`.
+
+**Correção:** 
+- `tests/integration/api/auth/login.test.js`: Adicionado `setRefreshTokenCookie: jest.fn()` ao mock de `lib/auth`, `refreshToken: 'fake-refresh-token'` ao retorno de `authenticateAndGenerateToken`, e asserção `expect(auth.setRefreshTokenCookie).toHaveBeenCalledWith(res, 'fake-refresh-token')`.
+- `tests/integration/api/login.test.js`: Adicionado `setRefreshTokenCookie: jest.fn()` ao mock de `lib/auth`, `refreshToken: 'mock-refresh-token'` aos 2 retornos de `authenticateAndGenerateToken`, e asserções `expect(auth.setRefreshTokenCookie).toHaveBeenCalledWith(...)`.
+
+### 3.13 Testes de `createMusica` atualizados para refletir uso de transação ✅
+
+**Arquivo:** `tests/unit/lib/db/musicas.test.js`
+
+**Problema:** Após a alteração de `createMusica` em `lib/domain/musicas.js` para usar `transaction()`, os testes unitários precisavam refletir as novas chamadas de BEGIN/COMMIT. O mock de `mockQuery` esperava apenas 2 chamadas (SELECT MAX + INSERT), mas agora a transação adiciona BEGIN e COMMIT.
+
+**Correção:** Os mocks de `mockQuery` nos 2 testes de `createMusica` foram expandidos para incluir `mockResolvedValueOnce(undefined)` para BEGIN (índice 0) e COMMIT (índice 3). As asserções de `toHaveBeenCalledTimes` foram atualizadas de 2 para 4 chamadas. Os índices de acesso à chamada de INSERT foram ajustados de `calls[1]` para `calls[2]`. Nenhum teste de integração foi afetado, pois mockam `createMusica` diretamente.
 
 ## 4. Problemas de Performance
 

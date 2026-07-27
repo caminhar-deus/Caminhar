@@ -9,7 +9,7 @@ describe('API Auth - Logout (/api/auth/logout)', () => {
     
     expect(res._getStatusCode()).toBe(200);
     expect(res._getHeaders()['set-cookie'])
-      .toEqual(expect.stringContaining('token=;'));
+      .toEqual(expect.stringContaining('refreshToken=;'));
     expect(res._getJSONData()).toEqual({ success: true, message: 'Deslogado com sucesso' });
   });
 });

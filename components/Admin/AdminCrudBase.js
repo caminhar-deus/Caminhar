@@ -171,6 +171,21 @@ export default function AdminCrudBase({
     });
   };
 
+  // Wrapper para reordenação com feedback visual e reversão em caso de falha
+  // Salva o estado anterior antes de chamar onReorder e, em caso de erro,
+  // restaura a ordem original e exibe toast de erro.
+  const handleReorderWithFeedback = useCallback(async (items, page, perPage) => {
+    const previousItems = [...localItems];
+    try {
+      if (onReorder) {
+        await onReorder(items, page, perPage);
+      }
+    } catch {
+      toast.error('Erro ao salvar reordenação. A ordem foi revertida.');
+      setLocalItems(previousItems);
+    }
+  }, [onReorder, localItems]);
+
   // Função para alternar booleanos (como Rascunho/Publicado) com 1 clique
   // Delega ao toggleField do hook useAdminCrud, que centraliza a lógica de chamada à API
   // e suporta atualização otimista com reversão automática em caso de falha
@@ -331,7 +346,7 @@ export default function AdminCrudBase({
         setLocalItems={setLocalItems}
         dragOverIndex={dragOverIndex}
         setDragOverIndex={setDragOverIndex}
-        onReorder={onReorder}
+        onReorder={onReorder ? handleReorderWithFeedback : undefined}
         currentPage={currentPage}
         totalPages={totalPages}
         goToPage={goToPage}

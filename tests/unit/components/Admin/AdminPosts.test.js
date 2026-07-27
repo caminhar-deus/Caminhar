@@ -31,8 +31,6 @@ describe('Componente Front-End - AdminPosts', () => {
   });
 
   it('deve fazer requisição PUT para reordenar posts e lidar com sucesso e falha', async () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
     global.fetch.mockResolvedValueOnce({ ok: true });
     render(<AdminPosts />);
     await passedProps.onReorder([{ id: 1 }, { id: 2 }], 1, 10);
@@ -42,9 +40,8 @@ describe('Componente Front-End - AdminPosts', () => {
     }));
     
     global.fetch.mockResolvedValueOnce({ ok: false });
-    await passedProps.onReorder([{ id: 1 }, { id: 2 }], 2, 10);
-    expect(consoleSpy).toHaveBeenCalledWith('Erro ao salvar reordenação:', expect.any(Error));
-    consoleSpy.mockRestore();
+    await expect(passedProps.onReorder([{ id: 1 }, { id: 2 }], 2, 10))
+      .rejects.toThrow('Falha ao reordenar');
   });
 
   it('validatePost: deve lançar erro se publicado for true mas não houver imagem', () => {

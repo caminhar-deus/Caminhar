@@ -60,6 +60,11 @@
 **Problema:** O `PerformanceObserver` com `entryTypes: ['resource']` reportava `console.warn` para todos os recursos com duração > 1s, incluindo iframes embarcados do YouTube (~1.100ms cada) e outros domínios de terceiros. Como recursos cross-origin são naturalmente mais lentos (DNS + TCP + TLS completos), esses warnings eram falsos positivos que poluíam o console sem indicar problema real na aplicação.
 **Situação:** Implementado. Adicionada constante `THIRD_PARTY_DOMAINS` com 9 domínios (youtube.com, ytimg.com, spotify.com, scdn.co, googleusercontent.com, googleapis.com, gstatic.com, facebook.com, instagram.com) e função `isThirdPartyResource(url)` que extrai o hostname via `new URL()` e verifica correspondência. O filtro foi aplicado na condição do resource observer: `if (entry.duration > 1000 && !isThirdPartyResource(entry.name))`. Recursos de terceiros continuam sendo observados mas não geram `console.warn`. Nenhum consumidor ou fluxo foi impactado.
 
+### 1.8 — `AuthProvider.js`: ausência de renovação automática de sessão ✅
+
+**Arquivo:** `/hooks/AuthProvider.js`
+**Problema:** Quando o token JWT expirava (após 1h), o `checkAuth` recebia 401 e simplesmente definia `user = null`, forçando o usuário a fazer login novamente. Não havia tentativa de renovação silenciosa via refresh token.
+**Situação:** Implementado. Adicionada função `refreshSession` que chama `POST /api/auth/refresh` com `credentials: 'include'`. No `useEffect` de `checkAuth`, ao receber status 401, o provider tenta renovar o token automaticamente antes de considerar o usuário não autenticado. Se a renovação for bem-sucedida, refaz a verificação (`GET /api/auth/check`). Se falhar, o usuário permanece deslogado. Nenhum consumidor ou fluxo foi impactado.
 
 ## 2. Ajustes Estruturais e Organizacionais
 

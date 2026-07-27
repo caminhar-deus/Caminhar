@@ -1,7 +1,7 @@
 # Análise da Pasta `lib/`
 
 > **Data da análise:** 28/06/2026  
-> **Última atualização:** 18/07/2026
+> **Última atualização:** 26/07/2026
 > **Objetivo:** Documentar de forma objetiva, técnica e organizada todos os arquivos da pasta `lib/` e suas subpastas, descrevendo localização, propósito, funcionalidades e responsabilidades de cada módulo.
 
 ---
@@ -46,11 +46,18 @@
 | `getAuthCookie(req)` | Extrai token do cookie da requisição |
 | `getAuthToken(req)` | Extrai token do header `Authorization: Bearer` ou do cookie (fallback) |
 | `authenticate(username, password)` | Autentica usuário contra o banco de dados |
-| `authenticateAndGenerateToken(username, password, ip, options)` | Função completa de login: valida campos, aplica rate limit (5 tentativas/min), autentica, atualiza `last_login_at`, busca permissões do cargo e gera token |
+| `authenticateAndGenerateToken(username, password, ip, options)` | Função completa de login: valida campos, aplica rate limit (5 tentativas/min), autentica, atualiza `last_login_at`, busca permissões do cargo, gera access token e refresh token |
+| `storeRefreshToken(userId, refreshToken)` | Armazena refresh token no banco com expiração de 30 dias |
+| `validateRefreshToken(refreshToken)` | Valida refresh token no banco (não revogado e não expirado) |
+| `revokeRefreshToken(refreshToken)` | Revoga um refresh token específico (marca `revoked = true`) |
+| `revokeAllUserRefreshTokens(userId)` | Revoga todos os refresh tokens de um usuário |
+| `refreshAccessToken(refreshToken)` | Função completa de renovação: valida, revoga token atual (rotação), gera novo par e retorna |
+| `setRefreshTokenCookie(res, token, options)` | Define cookie httpOnly com refresh token, path restrito a `/api/auth/refresh`, sameSite Strict |
+| `getRefreshTokenCookie(req)` | Extrai refresh token do cookie da requisição |
 | `withAuth(handler)` | Middleware que protege handlers exigindo token JWT válido |
-| `initializeAuth()` | Cria tabela `users`, migra coluna `role`, cria admin via variáveis de ambiente |
+| `initializeAuth()` | Cria tabela `users`, migra coluna `role`, cria admin via variáveis de ambiente. Cria tabela `refresh_tokens` com índices |
 
-**Observações:** Utiliza `jsonwebtoken` e `bcryptjs`. O `JWT_SECRET` é obrigatório em produção — se ausente, lança erro. Em desenvolvimento, usa fallback com aviso explícito. O rate limit no login usa `checkRateLimit` do `cache.js` com padrão de 5 tentativas por minuto por IP.
+**Observações:** Utiliza `jsonwebtoken`, `bcryptjs` e `crypto` (nativo). O `JWT_SECRET` é obrigatório em produção — se ausente, lança erro. Em desenvolvimento sem `JWT_SECRET`, gera chave determinística via `createHash('sha256')` a partir do ambiente local (`cwd` + `NODE_ENV` + salt), eliminando o fallback hardcoded anterior. O rate limit no login usa `checkRateLimit` do `cache.js` com padrão de 5 tentativas por minuto por IP. O refresh token é armazenado no banco com expiração de 30 dias e utiliza rotação (cada uso gera um novo token e revoga o anterior). O cookie de refresh tem `path: '/api/auth/refresh'` restrito para minimizar exposição.
 
 ---
 
@@ -217,9 +224,9 @@
 
 | Função | Descrição |
 |--------|-----------|
-| `handleReorder(endpoint, reorderedItems, currentPage, itemsPerPage)` | Envia requisição PUT para o endpoint com os itens na nova ordem, calculando `position` como `offset + index`. |
+| `handleReorder(endpoint, reorderedItems, currentPage, itemsPerPage)` | Envia requisição PUT para o endpoint com os itens na nova ordem, calculando `position` como `offset + index`. Lança `Error('Falha ao reordenar')` se a requisição não for bem-sucedida. |
 
-**Observações:** Função exclusiva de frontend.
+**Observações:** Função exclusiva de frontend. O erro é propagado para o componente chamador (`AdminCrudBase`), que exibe toast de erro e reverte a ordem visual dos itens.
 
 ---
 
@@ -341,6 +348,8 @@ Gerenciamento de metadados de imagens — `saveImage(filename, relativePath, typ
 ### 3.3 `lib/domain/musicas.js`
 
 CRUD de músicas com paginação e busca. Funções: `getAllMusicas()`, `getPaginatedMusicas()`, `createMusica()`, `updateMusica()`, `deleteMusica()`.
+
+**Destaques:** `createMusica` usa `transaction()` para envolver o cálculo de `MAX(position)` e o `INSERT` em uma transação atômica, evitando race conditions em chamadas concorrentes — mesmo padrão de `createVideo`.
 
 ### 3.4 `lib/domain/permissions.js`
 

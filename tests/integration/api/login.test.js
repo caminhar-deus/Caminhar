@@ -7,6 +7,7 @@ jest.mock('../../../lib/auth', () => ({
   authenticate: jest.fn(),
   generateToken: jest.fn(),
   setAuthCookie: jest.fn(),
+  setRefreshTokenCookie: jest.fn(),
   authenticateAndGenerateToken: jest.fn()
 }));
 jest.mock('../../../lib/cache', () => ({
@@ -47,6 +48,7 @@ describe('API de Login (/api/auth/login) - atualização de last_login_at', () =
     auth.authenticateAndGenerateToken.mockResolvedValueOnce({
       user: { ...mockUser, permissions: ['some_permission'] },
       token: 'mock-jwt-token',
+      refreshToken: 'mock-refresh-token',
       error: null
     });
 
@@ -65,6 +67,7 @@ describe('API de Login (/api/auth/login) - atualização de last_login_at', () =
       'testuser', 'password123', expect.any(String), expect.any(Object)
     );
     expect(auth.setAuthCookie).toHaveBeenCalledWith(expect.any(Object), 'mock-jwt-token');
+    expect(auth.setRefreshTokenCookie).toHaveBeenCalledWith(expect.any(Object), 'mock-refresh-token');
 
     const responseBody = res._getJSONData();
     expect(responseBody.user).toEqual(expect.objectContaining({
@@ -102,6 +105,7 @@ describe('API de Login (/api/auth/login) - atualização de last_login_at', () =
     auth.authenticateAndGenerateToken.mockResolvedValueOnce({
       user: { ...mockUser, permissions: ['some_permission'] },
       token: 'mock-jwt-token',
+      refreshToken: 'mock-refresh-token',
       error: null
     });
 
@@ -117,5 +121,6 @@ describe('API de Login (/api/auth/login) - atualização de last_login_at', () =
 
     expect(res._getStatusCode()).toBe(200);
     expect(auth.setAuthCookie).toHaveBeenCalledWith(expect.any(Object), 'mock-jwt-token');
+    expect(auth.setRefreshTokenCookie).toHaveBeenCalledWith(expect.any(Object), 'mock-refresh-token');
   });
 });

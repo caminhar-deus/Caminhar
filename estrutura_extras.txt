@@ -180,16 +180,6 @@ components/SEO/index.js → lib/seo/config.js
 components/SEO/index.js → components/SEO/Head.js
 components/SEO/index.js → components/SEO/StructuredData/index.js
 hooks/AuthProvider.js → hooks/AuthContext.js
-hooks/useAuth.js → hooks/AuthContext.js
-hooks/useTheme.js → pages/styles/tokens/index.js
-hooks/useTheme.js → hooks/useThrottle.js
-pages/styles/tokens/index.js → pages/styles/tokens/animations.js
-pages/styles/tokens/index.js → pages/styles/tokens/borders.js
-pages/styles/tokens/index.js → pages/styles/tokens/breakpoints.js
-pages/styles/tokens/index.js → pages/styles/tokens/colors.js
-pages/styles/tokens/index.js → pages/styles/tokens/shadows.js
-pages/styles/tokens/index.js → pages/styles/tokens/spacing.js
-pages/styles/tokens/index.js → pages/styles/tokens/typography.js
 lib/api/adminCrudHandler.js → lib/auth.js
 lib/api/adminCrudHandler.js → lib/cache.js
 lib/api/adminCrudHandler.js → lib/db.js
@@ -298,6 +288,8 @@ pages/api/auth/login.js → lib/api/helpers.js
 pages/api/auth/login.js → lib/auth.js
 pages/api/auth/login.js → lib/logger.js
 pages/api/auth/logout.js → lib/auth.js
+pages/api/auth/refresh.js → lib/auth.js
+pages/api/auth/refresh.js → lib/logger.js
 pages/api/cleanup-test-data.js → lib/auth.js
 pages/api/cleanup-test-data.js → lib/db.js
 pages/api/cleanup-test-data.js → lib/logger.js
@@ -357,3 +349,10 @@ pages/styles/generateTokensCSS.js → pages/styles/tokens/shadows.js
 pages/styles/generateTokensCSS.js → pages/styles/tokens/spacing.js
 pages/styles/generateTokensCSS.js → pages/styles/tokens/typography.js
 pages/styles/generateTokensCSS.js → pages/styles/tokens/zIndex.js
+pages/styles/tokens/index.js → pages/styles/tokens/animations.js
+pages/styles/tokens/index.js → pages/styles/tokens/borders.js
+pages/styles/tokens/index.js → pages/styles/tokens/breakpoints.js
+pages/styles/tokens/index.js → pages/styles/tokens/colors.js
+pages/styles/tokens/index.js → pages/styles/tokens/shadows.js
+pages/styles/tokens/index.js → pages/styles/tokens/spacing.js
+pages/styles/tokens/index.js → pages/styles/tokens/typography.js

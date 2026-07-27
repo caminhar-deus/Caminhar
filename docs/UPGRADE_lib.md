@@ -18,7 +18,7 @@
 
 ## 1. Melhorias de Código e Correções
 
-### 1.1 `auth.js` — Fallback inseguro do JWT_SECRET
+### 1.1 `auth.js` — Fallback inseguro do JWT_SECRET ✅
 
 **Localização:** `lib/auth.js`, linha 40
 
@@ -26,9 +26,10 @@
 
 **Sugestão:** Adicionar validação em tempo de build que impeça o deploy se `JWT_SECRET` não estiver definido. Ou usar um segredo gerado dinamicamente a partir de um hash do ambiente.
 
----
+**Correção:** O fallback hardcoded foi substituído por uma chave gerada deterministicamente via `createHash('sha256')` a partir de `process.cwd() + process.env.NODE_ENV + 'caminhar-dev-salt'`. Em produção sem `JWT_SECRET`, o erro permanece. Em desenvolvimento, a chave derivada do ambiente local é usada com aviso via `logger.warn`. Adicionado `import { createHash } from 'crypto'` no topo do arquivo.
 
-### 1.2 `auth.js` — Ausência de refresh token
+
+### 1.2 `auth.js` — Ausência de refresh token ✅
 
 **Localização:** `lib/auth.js`
 
@@ -36,9 +37,10 @@
 
 **Sugestão:** Implementar fluxo de refresh token com token de longa duração armazenado no banco, permitindo renovação silenciosa do access token.
 
----
+**Correção:** Implementado fluxo completo de refresh token com rotação. Adicionadas funções `generateRefreshToken`, `storeRefreshToken`, `validateRefreshToken`, `revokeRefreshToken`, `revokeAllUserRefreshTokens`, `refreshAccessToken`, `setRefreshTokenCookie` e `getRefreshTokenCookie` em `lib/auth.js`. O `authenticateAndGenerateToken` agora gera e retorna refresh token armazenado no banco com expiração de 30 dias. Criado endpoint `POST /api/auth/refresh` que valida, rotaciona e retorna novo par de tokens. O `logout.js` invalida o refresh token no banco. O `AuthProvider.js` tenta renovação automática via `refreshSession` ao receber 401 no `checkAuth`. Tabela `refresh_tokens` criada automaticamente em `initializeAuth()` com índices para busca rápida.
 
-### 1.3 `reorder.js` — Erro silencioso em falha de reordenação
+
+### 1.3 `reorder.js` — Erro silencioso em falha de reordenação ✅
 
 **Localização:** `lib/reorder.js`, linhas 26-29
 
@@ -46,9 +48,11 @@
 
 **Sugestão:** Relançar o erro ou retornar um valor booleano para que o componente chamador possa exibir um toast/notificação de falha.
 
+**Correção:** O `try/catch` foi removido de `handleReorder`. A função agora lança `Error('Falha ao reordenar')` quando `!response.ok`, propagando o erro para o componente chamador. Em `AdminCrudBase.js`, foi adicionado o wrapper `handleReorderWithFeedback` que captura o erro, exibe `toast.error('Erro ao salvar reordenação. A ordem foi revertida.')` e reverte o estado visual (`localItems`) para a ordem anterior.
+
 ---
 
-### 1.4 `domain/products.js` — Dualidade `published` / `publicado`
+### 1.4 `domain/products.js` — Dualidade `published` / `publicado` ✅
 
 **Localização:** `lib/domain/products.js`, linhas 142-143
 
@@ -56,15 +60,19 @@
 
 **Sugestão:** Unificar para um único campo (`published` ou `publicado`) e remover o outro. Isso requer migração de banco e ajuste nos componentes que utilizam o campo.
 
+**Correção:** Removido o campo `'publicado'` do schema da tabela `products` em `lib/crud.js`, e removida a linha que aceitava `data.publicado` na função `updateProduct` em `lib/domain/products.js`. O campo `published` é agora o único campo de status de publicação aceito. Qualquer tentativa de enviar `publicado` é rejeitada pelo `_filterAllowedFields` com log de warning, sem causar erro SQL.
+
 ---
 
-### 1.5 `domain/musicas.js` — Race condition no cálculo de posição
+### 1.5 `domain/musicas.js` — Race condition no cálculo de posição ✅
 
 **Localização:** `lib/domain/musicas.js`, linhas 32-33
 
 **Problema:** `createMusica` calcula `MAX(position)` fora de uma transação. Em chamadas concorrentes, duas músicas podem receber a mesma posição.
 
 **Sugestão:** Envolver o cálculo de posição + INSERT em uma transação, como já é feito em `createVideo` (`lib/domain/videos.js`, linhas 55-62).
+
+**Correção:** Adicionado `transaction` ao import de `../db.js`. A função `createMusica` agora envolve o cálculo de `MAX(position)` e o `INSERT` em uma transação atômica via `return transaction(async (client) => { ... })`, seguindo o mesmo padrão de `createVideo`. A query `SELECT MAX(position)` recebe `{ client }` e `createRecord` recebe `{ ...options, client }`. Testes unitários em `tests/unit/lib/db/musicas.test.js` foram atualizados para refletir as chamadas de BEGIN/COMMIT.
 
 ---
 

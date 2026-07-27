@@ -86,14 +86,16 @@ describe('Funções de Músicas (DB)', () => {
 
       const mockDbResponse = { id: 1, ...novaMusica, created_at: new Date().toISOString() };
       mockQuery
+        .mockResolvedValueOnce(undefined) // BEGIN
         .mockResolvedValueOnce({ rows: [{ max_pos: 5 }] }) // SELECT MAX(position)
-        .mockResolvedValueOnce({ rows: [mockDbResponse] }); // INSERT
+        .mockResolvedValueOnce({ rows: [mockDbResponse] }) // INSERT
+        .mockResolvedValueOnce(undefined); // COMMIT
 
       const result = await createMusica(novaMusica);
 
-      // Primeira chamada: SELECT MAX(position), segunda chamada: INSERT
-      expect(mockQuery).toHaveBeenCalledTimes(2);
-      const insertCall = mockQuery.mock.calls[1];
+      // Chamadas: BEGIN, SELECT MAX(position), INSERT, COMMIT
+      expect(mockQuery).toHaveBeenCalledTimes(4);
+      const insertCall = mockQuery.mock.calls[2];
       const [insertText, insertValues] = insertCall;
 
       const normalizedText = insertText.replace(/\s+/g, ' ').trim();
@@ -106,13 +108,15 @@ describe('Funções de Músicas (DB)', () => {
     it('deve lidar com campos opcionais nulos na criação', async () => {
       const novaMusica = { titulo: 'Música Básica' }; // Outros campos undefined
       mockQuery
+        .mockResolvedValueOnce(undefined) // BEGIN
         .mockResolvedValueOnce({ rows: [] }) // SELECT MAX(position) - tabela vazia
-        .mockResolvedValueOnce({ rows: [{ id: 1 }] }); // INSERT
+        .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // INSERT
+        .mockResolvedValueOnce(undefined); // COMMIT
 
       await createMusica(novaMusica);
 
-      // Primeira chamada é SELECT MAX(position), segunda é INSERT
-      const insertCall = mockQuery.mock.calls[1];
+      // Chamadas: BEGIN, SELECT MAX(position), INSERT, COMMIT
+      const insertCall = mockQuery.mock.calls[2];
       const insertParams = insertCall[1];
       // Espera null para campos opcionais, false para publicado e 1 para position
       expect(insertParams).toEqual(['Música Básica', null, null, null, false, 1]);

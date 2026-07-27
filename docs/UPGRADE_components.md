@@ -17,6 +17,7 @@
 | 2 | **Performance** | Paginação calcula totalPages e faz slice local. Para grandes volumes, server-side é mais adequado. | **Resolvido** — Busca migrada para server-side via parâmetro `searchTerm` no hook `useAdminCrud`. Filtro local `displayedItems` substituído. |
 | 3 | **Acessibilidade** | Tabela sem `<caption>` ou `aria-label` descritivo. | **Resolvido** — Adicionado `aria-label={title}` e `scope="col"` em todos os `<th>`. |
 | 4 | **Duplicidade** | Animações skeleton duplicadas em crud.module.css, misc.module.css e AdminAudit.js. | **Resolvido** — Skeleton removido de misc.module.css; AdminAudit.js e IntegrityCheck.js redirecionados para crud.module.css. |
+| 5 | **Manutenção** | Variável `error` no `catch` do `handleReorderWithFeedback` declarada mas nunca utilizada, gerando warning `no-unused-vars` no ESLint. | **Resolvido** — Substituído `catch (error)` por `catch` sem parâmetro (ES2019). |
 
 ### 1.2 AdminDashboard.js
 

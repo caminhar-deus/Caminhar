@@ -1,9 +1,9 @@
 # Análise da Pasta `/pages`
 
 > **Data:** 28/06/2026
-> **Última atualização:** 11/07/2026
+> **Última atualização:** 26/07/2026
 > **Objetivo:** Documentar todos os arquivos da pasta `/pages`, descrevendo localização exata, propósito e funcionalidades de cada um.
-> **Total de arquivos:** 53
+> **Total de arquivos:** 54
 
 ---
 
@@ -402,8 +402,21 @@
   - Atualiza `last_login_at` no banco
   - Busca permissões baseadas em role
   - Gera JWT e define cookie de autenticação (httpOnly, secure condicional, sameSite strict)
+  - Gera refresh token e define cookie próprio (`refreshToken`, httpOnly, path `/api/auth/refresh`, sameSite Strict)
   - Retorna dados do usuário: `{ id, username, role, permissions }`
-  - Suporta `?response=body` para retornar token no body (modo API externa)
+  - Suporta `?response=body` para retornar token + refresh_token no body (modo API externa)
+
+### `/pages/api/auth/refresh.js`
+
+- **Localização:** `/pages/api/auth/refresh.js`
+- **Propósito:** Endpoint de renovação de access token via refresh token.
+- **Funcionalidades:**
+  - POST apenas (retorna 405 para outros métodos)
+  - Obtém refresh token do cookie httpOnly (`refreshToken`, path restrito) ou do body da requisição
+  - Valida refresh token no banco (não revogado, não expirado)
+  - Aplica rotação: revoga o token atual e gera um novo par (access + refresh)
+  - Em caso de sucesso, atualiza ambos os cookies e retorna novos tokens no body
+  - Em caso de falha (token inválido/expirado), remove cookies antigos e retorna 401
 
 ### `/pages/api/auth/logout.js`
 
@@ -411,7 +424,9 @@
 - **Propósito:** Endpoint de logout.
 - **Funcionalidades:**
   - Aceita qualquer método HTTP
+  - Extrai refresh token do cookie e invalida no banco via `revokeRefreshToken()` (falha não bloqueia o logout)
   - Limpa o cookie `token` com `serialize()` do pacote `cookie`, mesmas opções seguras da criação
+  - Limpa o cookie `refreshToken` com `setRefreshTokenCookie(res, '', { maxAge: 0 })`
   - Flag `secure` aplicada apenas em produção
   - Retorna mensagem de sucesso
 
@@ -564,10 +579,10 @@ Todos os tokens estão em `/pages/styles/tokens/` e seguem o padrão JS de objet
 | Páginas raiz | 5 |
 | APIs públicas | 10 |
 | APIs admin | 15 |
-| APIs autenticação | 3 |
+| APIs autenticação | 4 |
 | Helper de API | 1 |
 | Páginas blog | 2 |
 | CSS Module blog | 1 |
 | Estilos globais e módulos | 5 |
 | Design Tokens | 11 |
-| **Total** | **53** |
+| **Total** | **54** |

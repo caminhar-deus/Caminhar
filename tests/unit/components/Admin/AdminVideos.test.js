@@ -80,8 +80,6 @@ describe('Componente Front-End - AdminVideos', () => {
   });
 
   it('deve fazer requisição PUT para reordenar vídeos e lidar com sucesso e falha', async () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
     // Teste de SUCESSO
     global.fetch.mockResolvedValueOnce({ ok: true });
     render(<AdminVideos />);
@@ -93,9 +91,8 @@ describe('Componente Front-End - AdminVideos', () => {
     
     // Teste de FALHA
     global.fetch.mockResolvedValueOnce({ ok: false });
-    await passedProps.onReorder([{ id: 1 }, { id: 2 }], 2, 10); // página 2, limite 10 = offset 10
-    expect(consoleSpy).toHaveBeenCalledWith('Erro ao salvar reordenação:', expect.any(Error));
-    consoleSpy.mockRestore();
+    await expect(passedProps.onReorder([{ id: 1 }, { id: 2 }], 2, 10)) // página 2, limite 10 = offset 10
+      .rejects.toThrow('Falha ao reordenar');
   });
 
   it('renderCustomFormField: deve ignorar campos padrão e retornar null', () => {

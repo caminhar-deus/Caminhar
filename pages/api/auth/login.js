@@ -1,4 +1,4 @@
-import { authenticateAndGenerateToken, setAuthCookie } from '../../../lib/auth';
+import { authenticateAndGenerateToken, setAuthCookie, setRefreshTokenCookie } from '../../../lib/auth';
 import { detectSpoofedIP, getClientIP } from '../../../lib/api/helpers.js';
 import { logger } from '../../../lib/logger.js';
 
@@ -64,7 +64,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Internal Server Error', message: result.message || 'Erro interno do servidor' });
   }
 
-  const { user, token } = result;
+  const { user, token, refreshToken } = result;
 
   // 4. Decide o formato de resposta baseado no parâmetro ?response=
   const responseMode = req.query.response;
@@ -77,6 +77,8 @@ export default async function handler(req, res) {
         token,
         token_type: 'Bearer',
         expires_in: 3600,
+        refresh_token: refreshToken,
+        refresh_token_expires_in: 2592000,
         user: {
           userId: user.id,
           username: user.username,
@@ -91,6 +93,7 @@ export default async function handler(req, res) {
 
   // Modo padrão: retorna cookie httpOnly + dados do usuário
   setAuthCookie(res, token);
+  setRefreshTokenCookie(res, refreshToken);
 
   return res.status(200).json({
     success: true,

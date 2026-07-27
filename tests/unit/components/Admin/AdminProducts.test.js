@@ -37,17 +37,14 @@ describe('Componente Front-End - AdminProducts', () => {
   });
 
   it('deve fazer requisição PUT para reordenar produtos', async () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
     global.fetch.mockResolvedValueOnce({ ok: true });
     render(<AdminProducts />);
     await passedProps.onReorder([{ id: 1 }, { id: 2 }], 1, 10);
     expect(global.fetch).toHaveBeenCalledWith('/api/products', expect.objectContaining({ method: 'PUT' }));
     
     global.fetch.mockResolvedValueOnce({ ok: false });
-    await passedProps.onReorder([{ id: 1 }, { id: 2 }], 2, 10);
-    expect(consoleSpy).toHaveBeenCalled();
-    consoleSpy.mockRestore();
+    await expect(passedProps.onReorder([{ id: 1 }, { id: 2 }], 2, 10))
+      .rejects.toThrow('Falha ao reordenar');
   });
 
   it('renderCustomFormField: deve renderizar campo link_ml com botão Puxar Dados', () => {

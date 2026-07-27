@@ -8,6 +8,7 @@ jest.mock('../../../../lib/auth', () => ({
   authenticate: jest.fn(),
   generateToken: jest.fn(),
   setAuthCookie: jest.fn(),
+  setRefreshTokenCookie: jest.fn(),
   authenticateAndGenerateToken: jest.fn()
 }));
 
@@ -68,6 +69,7 @@ describe('Integração: API de Login (/api/auth/login)', () => {
     auth.authenticateAndGenerateToken.mockResolvedValueOnce({
       user: { id: 1, username: 'admin', role: 'admin', permissions: ['Visão Geral'] },
       token: 'fake-jwt-token',
+      refreshToken: 'fake-refresh-token',
       error: null
     });
 
@@ -75,6 +77,7 @@ describe('Integração: API de Login (/api/auth/login)', () => {
     
     expect(res._getStatusCode()).toBe(200);
     expect(auth.setAuthCookie).toHaveBeenCalledWith(res, 'fake-jwt-token');
+    expect(auth.setRefreshTokenCookie).toHaveBeenCalledWith(res, 'fake-refresh-token');
     const data = JSON.parse(res._getData());
     expect(data.user.username).toBe('admin');
   });

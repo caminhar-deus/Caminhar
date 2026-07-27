@@ -49,6 +49,18 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  const refreshSession = useCallback(async () => {
+    try {
+      const res = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
     setUser(null);
@@ -63,6 +75,17 @@ export const AuthProvider = ({ children }) => {
         if (res.ok) {
           const data = await res.json();
           setUser(data.user);
+        } else if (res.status === 401) {
+          // Tenta renovar o token automaticamente antes de considerar não autenticado
+          const refreshed = await refreshSession();
+          if (refreshed) {
+            // Se renovou, tenta verificar novamente
+            const retryRes = await fetch('/api/auth/check', { credentials: 'include', signal: abortController.signal });
+            if (retryRes.ok) {
+              const data = await retryRes.json();
+              setUser(data.user);
+            }
+          }
         }
       } catch (e) {
         if (e.name === 'AbortError') return;
@@ -76,7 +99,7 @@ export const AuthProvider = ({ children }) => {
     return () => {
       abortController.abort();
     };
-  }, []);
+  }, [refreshSession]);
 
   const value = {
     user,

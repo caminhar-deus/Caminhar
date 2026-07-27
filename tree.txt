@@ -675,12 +675,9 @@
 │   ├── useAdminAuth.js
 │   ├── useAdminCrud.js
 │   ├── useApiFetch.js
-│   ├── useAuth.js
 │   ├── useDebounce.js
 │   ├── usePerformance.js
-│   ├── usePerformanceMetrics.js
-│   ├── useTheme.js
-│   └── useThrottle.js
+│   └── usePerformanceMetrics.js
 ├── jest.config.base.js
 ├── jest.config.db.js
 ├── jest.config.js
@@ -799,7 +796,8 @@
 │   │   ├── auth
 │   │   │   ├── check.js
 │   │   │   ├── login.js
-│   │   │   └── logout.js
+│   │   │   ├── logout.js
+│   │   │   └── refresh.js
 │   │   ├── cleanup-test-data.js
 │   │   ├── dicas.js
 │   │   ├── helper
@@ -1255,4 +1253,4 @@
 │       └── videos.validation.test.js
 └── tree.txt
 
-188 directories, 1068 files
+188 directories, 1066 files

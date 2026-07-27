@@ -106,6 +106,16 @@
 
 ---
 
+### 2.4 `login.js` e `logout.js` — Ausência de suporte a refresh token ✅
+
+**Arquivos:** `/pages/api/auth/login.js`, `/pages/api/auth/logout.js`, `/pages/api/auth/refresh.js`
+
+**Problema:** O login.js não retornava refresh token, o logout.js não invalidava refresh tokens no banco, e não existia endpoint de renovação de token. O usuário era forçado a fazer login novamente após expiração do JWT (1h).
+
+**Correção:** O `login.js` agora importa `setRefreshTokenCookie` e retorna `refresh_token` no body (modo API) e cookie httpOnly (modo padrão). O `logout.js` passou a invalidar o refresh token no banco via `revokeRefreshToken` antes de limpar os cookies. Criado o endpoint `POST /api/auth/refresh.js` que valida o refresh token, aplica rotação (revoga o atual e gera um novo par) e retorna novos tokens.
+
+---
+
 ### 2.3 Endpoints com Cache-Control Inconsistentes
 
 **Arquivos:**
