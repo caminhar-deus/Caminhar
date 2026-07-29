@@ -47,35 +47,35 @@ describe('Componente Front-End - AdminProducts', () => {
       .rejects.toThrow('Falha ao reordenar');
   });
 
-  it('renderCustomFormField: deve renderizar campo link_ml com botão Puxar Dados', () => {
+  it('renderCustomFormField: deve renderizar campo link com botão Puxar Dados', () => {
     render(<AdminProducts />);
     const CustomField = passedProps.renderCustomFormField(
-      { name: 'link_ml', component: (props) => <input data-testid="ml-input" {...props} /> }, 
-      { link_ml: 'https://ml.com' }, 
+      { name: 'link', component: (props) => <input data-testid="link-input" {...props} /> }, 
+      { link: 'https://ml.com' }, 
       jest.fn(), 
       jest.fn()
     );
     render(CustomField);
     expect(screen.getByText('⚡ Puxar Dados')).toBeInTheDocument();
-    expect(screen.getByTestId('ml-input')).toHaveValue('https://ml.com');
+    expect(screen.getByTestId('link-input')).toHaveValue('https://ml.com');
   });
 
   it('renderCustomFormField: deve ignorar outros campos e tratar fallbacks nulos', () => {
     render(<AdminProducts />);
-    expect(passedProps.renderCustomFormField({ name: 'title' }, {}, jest.fn(), jest.fn())).toBeNull();
+    expect(passedProps.renderCustomFormField({ name: 'name' }, {}, jest.fn(), jest.fn())).toBeNull();
 
     const CustomField = passedProps.renderCustomFormField(
-      { name: 'link_ml', component: (props) => <input data-testid="ml-input" {...props} /> }, {}, jest.fn(), jest.fn()
+      { name: 'link', component: (props) => <input data-testid="link-input" {...props} /> }, {}, jest.fn(), jest.fn()
     );
     const { container } = render(CustomField);
     expect(container.firstChild).toHaveStyle('grid-column: span 1');
-    expect(screen.getByTestId('ml-input')).toHaveValue('');
+    expect(screen.getByTestId('link-input')).toHaveValue('');
   });
 
   it('handleFetchML: não deve buscar se a URL estiver vazia', () => {
     render(<AdminProducts />);
     const CustomField = passedProps.renderCustomFormField(
-      { name: 'link_ml', component: (props) => <input {...props} /> }, { link_ml: '' }, jest.fn(), jest.fn()
+      { name: 'link', component: (props) => <input {...props} /> }, { link: '' }, jest.fn(), jest.fn()
     );
     render(CustomField);
     fireEvent.click(screen.getByText('⚡ Puxar Dados'));
@@ -91,7 +91,7 @@ describe('Componente Front-End - AdminProducts', () => {
     render(<AdminProducts />);
     const setFieldValue = jest.fn();
     const CustomField = passedProps.renderCustomFormField(
-      { name: 'link_ml', component: (props) => <input {...props} /> }, { link_ml: 'https://ml.com' }, jest.fn(), setFieldValue
+      { name: 'link', component: (props) => <input {...props} /> }, { link: 'https://ml.com' }, jest.fn(), setFieldValue
     );
     render(CustomField);
     
@@ -99,7 +99,7 @@ describe('Componente Front-End - AdminProducts', () => {
     expect(toast.loading).toHaveBeenCalledWith('Pescando dados no Mercado Livre...');
     
     await waitFor(() => {
-      expect(setFieldValue).toHaveBeenCalledWith('title', 'Produto');
+      expect(setFieldValue).toHaveBeenCalledWith('name', 'Produto');
       expect(setFieldValue).toHaveBeenCalledWith('price', '99.90');
       expect(setFieldValue).toHaveBeenCalledWith('description', 'Desc');
       expect(toast.success).toHaveBeenCalled();
@@ -114,7 +114,7 @@ describe('Componente Front-End - AdminProducts', () => {
     render(<AdminProducts />);
     const setFieldValue = jest.fn();
     const CustomField = passedProps.renderCustomFormField(
-      { name: 'link_ml', component: (props) => <input {...props} /> }, { link_ml: 'https://ml.com' }, jest.fn(), setFieldValue
+      { name: 'link', component: (props) => <input {...props} /> }, { link: 'https://ml.com' }, jest.fn(), setFieldValue
     );
     render(CustomField);
     fireEvent.click(screen.getByText('⚡ Puxar Dados'));
@@ -130,7 +130,7 @@ describe('Componente Front-End - AdminProducts', () => {
     
     render(<AdminProducts />);
     const CustomField = passedProps.renderCustomFormField(
-      { name: 'link_ml', component: (props) => <input {...props} /> }, { link_ml: 'https://ml.com' }, jest.fn(), jest.fn()
+      { name: 'link', component: (props) => <input {...props} /> }, { link: 'https://ml.com' }, jest.fn(), jest.fn()
     );
     render(CustomField);
     
@@ -142,7 +142,7 @@ describe('Componente Front-End - AdminProducts', () => {
     global.fetch.mockResolvedValueOnce({ ok: false, json: async () => ({}) });
     render(<AdminProducts />);
     const CustomField = passedProps.renderCustomFormField(
-      { name: 'link_ml', component: (props) => <input {...props} /> }, { link_ml: 'https://ml.com' }, jest.fn(), jest.fn()
+      { name: 'link', component: (props) => <input {...props} /> }, { link: 'https://ml.com' }, jest.fn(), jest.fn()
     );
     render(CustomField);
     fireEvent.click(screen.getByText('⚡ Puxar Dados'));
@@ -154,10 +154,10 @@ describe('Componente Front-End - AdminProducts', () => {
     global.fetch.mockReturnValueOnce(new Promise(resolve => { resolveApi = resolve; }));
     
     render(<AdminProducts />);
-    render(passedProps.renderCustomFormField({ name: 'link_ml', component: 'input' }, { link_ml: 'https://ml.com' }, jest.fn(), jest.fn()));
+    render(passedProps.renderCustomFormField({ name: 'link', component: 'input' }, { link: 'https://ml.com' }, jest.fn(), jest.fn()));
     fireEvent.click(screen.getByText('⚡ Puxar Dados'));
     
-    const LoadingField = passedProps.renderCustomFormField({ name: 'link_ml', component: 'input' }, { link_ml: 'https://ml.com' }, jest.fn(), jest.fn());
+    const LoadingField = passedProps.renderCustomFormField({ name: 'link', component: 'input' }, { link: 'https://ml.com' }, jest.fn(), jest.fn());
     render(LoadingField);
     
     expect(screen.getByText('⏳ Buscando...')).toBeInTheDocument();
@@ -170,24 +170,22 @@ describe('Componente Front-End - AdminProducts', () => {
     render(<AdminProducts />);
     const imgCol = passedProps.columns.find(c => c.key === 'image_preview');
     
-    const { getByAltText } = render(imgCol.render({ title: 'Prod', images: 'img1.jpg\nimg2.jpg' }));
-    expect(getByAltText('Prod')).toHaveAttribute('src', 'img1.jpg'); // Renderizou a primeira imagem do arranjo multilinhas
+    const { getByAltText } = render(imgCol.render({ name: 'Prod', image_url: 'img1.jpg\nimg2.jpg' }));
+    expect(getByAltText('Prod')).toHaveAttribute('src', 'img1.jpg');
 
-    render(imgCol.render({ title: 'Prod', images: '' }));
+    render(imgCol.render({ name: 'Prod', image_url: '' }));
     expect(screen.getByText('Sem foto')).toBeInTheDocument();
   });
 
-  it('coluna links: deve exibir icones de plataformas de venda se houverem', () => {
+  it('coluna link: deve exibir icone de link se houver', () => {
     render(<AdminProducts />);
-    const linksCol = passedProps.columns.find(c => c.key === 'links');
+    const linkCol = passedProps.columns.find(c => c.key === 'link');
     
-    render(linksCol.render({ link_ml: 'a', link_shopee: 'b', link_amazon: 'c' }));
-    expect(screen.getByTitle('Mercado Livre')).toBeInTheDocument();
-    expect(screen.getByTitle('Shopee')).toBeInTheDocument();
-    expect(screen.getByTitle('Amazon')).toBeInTheDocument();
+    render(linkCol.render({ link: 'a' }));
+    expect(screen.getByTitle('Link')).toBeInTheDocument();
 
-    render(linksCol.render({ link_ml: '', link_shopee: '', link_amazon: '' }));
-    expect(screen.queryAllByTitle('Mercado Livre').length).toBe(1); // Manteve apenas o do primeiro teste
+    render(linkCol.render({ link: '' }));
+    expect(screen.getByText('-')).toBeInTheDocument();
   });
 
   it('CheckboxWrapper interno: deve simular ativação e desativação do Status do produto', () => {

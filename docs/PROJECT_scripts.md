@@ -175,7 +175,7 @@ Este grupo forma o subsistema completo de backup e restauração do banco de dad
 
 #### `scripts/seed-products.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/seed-products.js`
-- **Propósito:** Popula a tabela `products` com 30 produtos religiosos fictícios via `@faker-js/faker`. Gera preços entre R$20-R$350, múltiplas URLs de imagem por produto e simula links de venda externa (Mercado Livre, Shopee, Amazon).
+- **Propósito:** Popula a tabela `products` com 30 produtos religiosos fictícios via `@faker-js/faker`. Gera preços entre R$20-R$350, múltiplas URLs de imagem por produto, link único de venda e categoria aleatória.
 - **Dependências:** `./utils/load-env.js`, `./db/connection.js`, `@faker-js/faker`
 
 #### `scripts/seed-videos.js`

@@ -42,7 +42,7 @@
 | `verifyPassword(password, hashedPassword)` | Compara senha com hash armazenado |
 | `generateToken(user)` | Gera JWT com `userId`, `username`, `role` e expiração de 1h |
 | `verifyToken(token)` | Verifica e decodifica JWT; retorna `null` se inválido |
-| `setAuthCookie(res, token, options)` | Define cookie `httpOnly` com o token |
+| `setAuthCookie(res, token, options)` | Define cookie `httpOnly` com o token. Usa `res.appendHeader` para não sobrescrever outros cookies |
 | `getAuthCookie(req)` | Extrai token do cookie da requisição |
 | `getAuthToken(req)` | Extrai token do header `Authorization: Bearer` ou do cookie (fallback) |
 | `authenticate(username, password)` | Autentica usuário contra o banco de dados |
@@ -52,7 +52,7 @@
 | `revokeRefreshToken(refreshToken)` | Revoga um refresh token específico (marca `revoked = true`) |
 | `revokeAllUserRefreshTokens(userId)` | Revoga todos os refresh tokens de um usuário |
 | `refreshAccessToken(refreshToken)` | Função completa de renovação: valida, revoga token atual (rotação), gera novo par e retorna |
-| `setRefreshTokenCookie(res, token, options)` | Define cookie httpOnly com refresh token, path restrito a `/api/auth/refresh`, sameSite Strict |
+| `setRefreshTokenCookie(res, token, options)` | Define cookie httpOnly com refresh token, path restrito a `/api/auth/refresh`, sameSite Strict. Usa `res.appendHeader` para não sobrescrever outros cookies |
 | `getRefreshTokenCookie(req)` | Extrai refresh token do cookie da requisição |
 | `withAuth(handler)` | Middleware que protege handlers exigindo token JWT válido |
 | `initializeAuth()` | Cria tabela `users`, migra coluna `role`, cria admin via variáveis de ambiente. Cria tabela `refresh_tokens` com índices |

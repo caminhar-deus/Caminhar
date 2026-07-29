@@ -29,9 +29,9 @@ describe('Library - Auth', () => {
   });
 
   it('setAuthCookie: configura o cookie de autenticação no response', () => {
-    const res = { setHeader: jest.fn() };
+    const res = { appendHeader: jest.fn() };
     setAuthCookie(res, 'mytoken');
-    expect(res.setHeader).toHaveBeenCalledWith('Set-Cookie', expect.stringContaining('token=mytoken'));
+    expect(res.appendHeader).toHaveBeenCalledWith('Set-Cookie', expect.stringContaining('token=mytoken'));
   });
 
   it('authenticate: valida credenciais no banco de dados', async () => {

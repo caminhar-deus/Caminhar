@@ -26,10 +26,10 @@ describe('Componentes Features - Products - ProductCard', () => {
 
   const baseProduct = {
     id: 1,
-    title: 'Produto Teste',
+    name: 'Produto Teste',
     description: 'Descrição do produto teste',
     price: 'R$ 50,00',
-    images: '["/img1.jpg"]',
+    image_url: '["/img1.jpg"]',
   };
 
   it('deve renderizar título, descrição e preço do produto', () => {
@@ -41,14 +41,14 @@ describe('Componentes Features - Products - ProductCard', () => {
   });
 
   it('deve exibir "Sem imagem" quando o produto não possui imagens', () => {
-    const product = { ...baseProduct, images: null };
+    const product = { ...baseProduct, image_url: null };
     render(<ProductCard product={product} />);
 
     expect(screen.getByText('Sem imagem')).toBeInTheDocument();
   });
 
-  it('deve exibir "Sem imagem" quando images é string vazia', () => {
-    const product = { ...baseProduct, images: '' };
+  it('deve exibir "Sem imagem" quando image_url é string vazia', () => {
+    const product = { ...baseProduct, image_url: '' };
     render(<ProductCard product={product} />);
 
     expect(screen.getByText('Sem imagem')).toBeInTheDocument();
@@ -57,7 +57,7 @@ describe('Componentes Features - Products - ProductCard', () => {
   it('deve exibir botões de navegação quando há múltiplas imagens', () => {
     const product = {
       ...baseProduct,
-      images: '["/img1.jpg", "/img2.jpg", "/img3.jpg"]',
+      image_url: '["/img1.jpg", "/img2.jpg", "/img3.jpg"]',
     };
     render(<ProductCard product={product} />);
 
@@ -69,7 +69,7 @@ describe('Componentes Features - Products - ProductCard', () => {
   it('deve navegar entre as imagens ao clicar nos botões', () => {
     const product = {
       ...baseProduct,
-      images: '["/img1.jpg", "/img2.jpg"]',
+      image_url: '["/img1.jpg", "/img2.jpg"]',
     };
     render(<ProductCard product={product} />);
 
@@ -82,23 +82,19 @@ describe('Componentes Features - Products - ProductCard', () => {
     expect(screen.getByText('1 / 2')).toBeInTheDocument();
   });
 
-  it('deve exibir links do Mercado Livre, Shopee e Amazon quando fornecidos', () => {
+  it('deve exibir link do produto quando fornecido', () => {
     const product = {
       ...baseProduct,
-      link_ml: 'https://mercadolivre.com.br/produto',
-      link_shopee: 'https://shopee.com.br/produto',
-      link_amazon: 'https://amazon.com.br/produto',
+      link: 'https://mercadolivre.com.br/produto',
     };
     render(<ProductCard product={product} />);
 
     const links = screen.getAllByRole('link');
-    expect(links).toHaveLength(3);
+    expect(links).toHaveLength(1);
     expect(links[0]).toHaveAttribute('href', 'https://mercadolivre.com.br/produto');
-    expect(links[1]).toHaveAttribute('href', 'https://shopee.com.br/produto');
-    expect(links[2]).toHaveAttribute('href', 'https://amazon.com.br/produto');
   });
 
-  it('não deve exibir links de marketplace quando não fornecidos', () => {
+  it('não deve exibir link quando não fornecido', () => {
     render(<ProductCard product={baseProduct} />);
 
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
@@ -139,7 +135,7 @@ describe('Componentes Features - Products - ProductCard', () => {
   it('deve exibir botões de navegação no lightbox quando há múltiplas imagens', () => {
     const product = {
       ...baseProduct,
-      images: '["/img1.jpg", "/img2.jpg"]',
+      image_url: '["/img1.jpg", "/img2.jpg"]',
     };
     render(<ProductCard product={product} />);
 

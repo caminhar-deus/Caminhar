@@ -37,7 +37,7 @@ Sistema administrativo completo com CRUD reutilizável via `AdminCrudBase`, aute
 
 **Localização:** `components/Admin/AdminProducts.js`
 
-**Propósito:** Gestão de produtos com integração Mercado Livre via `ExternalDataButton`. Links para ML, Shopee, Amazon.
+**Propósito:** Gestão de produtos com integração Mercado Livre via `ExternalDataButton`. Campos: `name`, `image_url`, `link` (link único de venda).
 
 ### 1.5 AdminVideos.js
 

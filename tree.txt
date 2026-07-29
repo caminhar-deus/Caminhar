@@ -948,6 +948,8 @@
 │   │   ├── 012-add-performance-indexes.sql
 │   │   ├── 013-add-trgm-indexes.js
 │   │   ├── 014-add-dicas-index.js
+│   │   ├── 015-align-products-schema.js
+│   │   ├── 016-create-refresh-tokens-table.js
 │   │   ├── seed-migrations-table.js
 │   │   └── verify-applied.js
 │   ├── monitor-disk-space.js
@@ -1253,4 +1255,4 @@
 │       └── videos.validation.test.js
 └── tree.txt
 
-188 directories, 1066 files
+188 directories, 1068 files

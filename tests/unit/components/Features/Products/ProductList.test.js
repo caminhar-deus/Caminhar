@@ -16,7 +16,7 @@ jest.mock('../../../../../components/Features/Products/ProductCard', () => ({
   __esModule: true,
   default: ({ product }) => (
     <div data-testid="mock-product-card" data-product-id={product.id}>
-      {product.title}
+      {product.name}
     </div>
   ),
 }));
@@ -76,9 +76,9 @@ describe('Componentes Features - Products - ProductList', () => {
 
   const defaultApiResponse = {
     data: [
-      { id: 1, title: 'Produto 1', description: 'Desc 1', price: 'R$ 10,00', position: 1 },
-      { id: 2, title: 'Produto 2', description: 'Desc 2', price: 'R$ 20,00', position: 2 },
-      { id: 3, title: 'Produto 3', description: 'Desc 3', price: 'R$ 30,00', position: 3 },
+      { id: 1, name: 'Produto 1', description: 'Desc 1', price: 'R$ 10,00', position: 1 },
+      { id: 2, name: 'Produto 2', description: 'Desc 2', price: 'R$ 20,00', position: 2 },
+      { id: 3, name: 'Produto 3', description: 'Desc 3', price: 'R$ 30,00', position: 3 },
     ],
     pagination: { totalPages: 2 },
   };
@@ -224,10 +224,10 @@ describe('Componentes Features - Products - ProductList', () => {
 
   it('deve ordenar produtos por position e ID (decrescente)', () => {
     const produtosDesordenados = [
-      { id: 5, title: 'Produto 5', description: 'Desc 5', price: 'R$ 50,00', position: 3 },
-      { id: 3, title: 'Produto 3', description: 'Desc 3', price: 'R$ 30,00', position: 1 },
-      { id: 4, title: 'Produto 4', description: 'Desc 4', price: 'R$ 40,00', position: 9999 },
-      { id: 1, title: 'Produto 1', description: 'Desc 1', price: 'R$ 10,00', position: 1 },
+      { id: 5, name: 'Produto 5', description: 'Desc 5', price: 'R$ 50,00', position: 3 },
+      { id: 3, name: 'Produto 3', description: 'Desc 3', price: 'R$ 30,00', position: 1 },
+      { id: 4, name: 'Produto 4', description: 'Desc 4', price: 'R$ 40,00', position: 9999 },
+      { id: 1, name: 'Produto 1', description: 'Desc 1', price: 'R$ 10,00', position: 1 },
     ];
 
     mockUseApiFetch.mockReturnValue({

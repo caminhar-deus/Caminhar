@@ -45,23 +45,22 @@ afterEach(async () => {
  */
 async function insertTestProduct(overrides = {}) {
   const defaults = {
-    title: 'Produto de Teste',
+    name: 'Produto de Teste',
     price: '99.90',
-    images: JSON.stringify([`https://example.com/img/prod-${Date.now()}.jpg`]),
+    image_url: JSON.stringify([`https://example.com/img/prod-${Date.now()}.jpg`]),
     description: 'Descrição do produto de teste.',
-    link_ml: `https://mercadolivre.com.br/prod-${Date.now()}`,
-    link_shopee: `https://shopee.com.br/prod-${Date.now()}`,
-    link_amazon: `https://amazon.com.br/prod-${Date.now()}`,
+    link: `https://mercadolivre.com.br/prod-${Date.now()}`,
+    category: 'geral',
     published: true,
     position: 0,
   };
   const data = { ...defaults, ...overrides };
 
   const result = await tx.query(
-    `INSERT INTO products (title, price, images, description, link_ml, link_shopee, link_amazon, published, position)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    `INSERT INTO products (name, price, image_url, description, link, category, published, position)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING *`,
-    [data.title, data.price, data.images, data.description, data.link_ml, data.link_shopee, data.link_amazon, data.published, data.position]
+    [data.name, data.price, data.image_url, data.description, data.link, data.category, data.published, data.position]
   );
   return result.rows[0];
 }
@@ -74,13 +73,13 @@ const describeIf = isDockerAvailable() ? describe : describe.skip;
 describeIf('Produtos — Integração com PostgreSQL Real', () => {
   it('deve criar um produto e retornar o registro com ID gerado', async () => {
     const product = await insertTestProduct({
-      title: 'Novo Produto',
+      name: 'Novo Produto',
       price: '199.90',
     });
 
     expect(product).toHaveProperty('id');
     expect(product.id).toEqual(expect.any(Number));
-    expect(product.title).toBe('Novo Produto');
+    expect(product.name).toBe('Novo Produto');
     expect(product.price).toBe('199.90');
     expect(product.published).toBe(true);
     expect(product.created_at).toBeTruthy();
@@ -89,21 +88,20 @@ describeIf('Produtos — Integração com PostgreSQL Real', () => {
 
   it('deve criar produto com valores padrão para campos opcionais', async () => {
     const product = await insertTestProduct({
-      title: 'Produto Mínimo',
+      name: 'Produto Mínimo',
       price: '49.90',
-      link_shopee: null,
-      link_amazon: null,
+      link: null,
     });
 
     expect(product.description).toBe('Descrição do produto de teste.');
-    expect(product.link_shopee).toBeNull();
-    expect(product.link_amazon).toBeNull();
+    expect(product.link).toBeNull();
+    expect(product.category).toBe('geral');
     expect(product.position).toBe(0);
   });
 
   it('deve ler um produto por ID após criar', async () => {
     const created = await insertTestProduct({
-      title: 'Produto para Leitura',
+      name: 'Produto para Leitura',
       price: '59.90',
     });
 
@@ -111,14 +109,14 @@ describeIf('Produtos — Integração com PostgreSQL Real', () => {
     const found = result.rows[0];
 
     expect(found).toBeTruthy();
-    expect(found.title).toBe('Produto para Leitura');
+    expect(found.name).toBe('Produto para Leitura');
     expect(found.id).toBe(created.id);
   });
 
   it('deve listar produtos com paginação', async () => {
     for (let i = 1; i <= 5; i++) {
       await insertTestProduct({
-        title: `Produto Paginado ${i}`,
+        name: `Produto Paginado ${i}`,
         price: `${i * 10}.00`,
       });
     }
@@ -133,25 +131,25 @@ describeIf('Produtos — Integração com PostgreSQL Real', () => {
 
   it('deve atualizar campos de um produto', async () => {
     const created = await insertTestProduct({
-      title: 'Produto Original',
+      name: 'Produto Original',
       price: '29.90',
     });
 
     await tx.query(
-      'UPDATE products SET title = $1, price = $2 WHERE id = $3',
+      'UPDATE products SET name = $1, price = $2 WHERE id = $3',
       ['Produto Atualizado', '39.90', created.id]
     );
 
     const result = await tx.query('SELECT * FROM products WHERE id = $1', [created.id]);
     const updated = result.rows[0];
 
-    expect(updated.title).toBe('Produto Atualizado');
+    expect(updated.name).toBe('Produto Atualizado');
     expect(updated.price).toBe('39.90');
   });
 
   it('deve deletar um produto', async () => {
     const created = await insertTestProduct({
-      title: 'Produto para Deletar',
+      name: 'Produto para Deletar',
       price: '10.00',
     });
 
@@ -161,10 +159,10 @@ describeIf('Produtos — Integração com PostgreSQL Real', () => {
     expect(result.rows).toHaveLength(0);
   });
 
-  it('deve rejeitar inserção sem título (NOT NULL)', async () => {
+  it('deve rejeitar inserção sem nome (NOT NULL)', async () => {
     await expect(
       tx.query(
-        'INSERT INTO products (price, images) VALUES ($1, $2) RETURNING *',
+        'INSERT INTO products (price, image_url) VALUES ($1, $2) RETURNING *',
         ['99.90', JSON.stringify(['https://example.com/img.jpg'])]
       )
     ).rejects.toThrow();
@@ -173,7 +171,7 @@ describeIf('Produtos — Integração com PostgreSQL Real', () => {
   it('deve rejeitar inserção sem price (NOT NULL)', async () => {
     await expect(
       tx.query(
-        'INSERT INTO products (title, images) VALUES ($1, $2) RETURNING *',
+        'INSERT INTO products (name, image_url) VALUES ($1, $2) RETURNING *',
         ['Sem Preço', JSON.stringify(['https://example.com/img.jpg'])]
       )
     ).rejects.toThrow();
@@ -190,8 +188,8 @@ describeIf('Produtos — Integração com PostgreSQL Real', () => {
   });
 
   it('deve filtrar produtos publicados (published = true)', async () => {
-    await insertTestProduct({ title: 'Publicado 1', price: '10.00', published: true });
-    await insertTestProduct({ title: 'Não Publicado', price: '20.00', published: false });
+    await insertTestProduct({ name: 'Publicado 1', price: '10.00', published: true });
+    await insertTestProduct({ name: 'Não Publicado', price: '20.00', published: false });
 
     const result = await tx.query(
       'SELECT * FROM products WHERE published = true ORDER BY id'
@@ -200,33 +198,33 @@ describeIf('Produtos — Integração com PostgreSQL Real', () => {
   });
 
   it('deve ordenar produtos por position ASC, id ASC', async () => {
-    await insertTestProduct({ title: 'Segundo', price: '10.00', position: 2 });
-    await insertTestProduct({ title: 'Primeiro', price: '20.00', position: 1 });
+    await insertTestProduct({ name: 'Segundo', price: '10.00', position: 2 });
+    await insertTestProduct({ name: 'Primeiro', price: '20.00', position: 1 });
 
     const result = await tx.query('SELECT * FROM products ORDER BY position ASC, id ASC');
     expect(result.rows[0].position).toBeLessThanOrEqual(result.rows[1].position);
   });
 
   it('deve contar o total de registros corretamente', async () => {
-    await insertTestProduct({ title: 'Contagem 1', price: '10.00' });
-    await insertTestProduct({ title: 'Contagem 2', price: '20.00' });
+    await insertTestProduct({ name: 'Contagem 1', price: '10.00' });
+    await insertTestProduct({ name: 'Contagem 2', price: '20.00' });
 
     const result = await tx.query('SELECT COUNT(*) FROM products');
     expect(parseInt(result.rows[0].count, 10)).toBe(2);
   });
 
   it('deve executar ROLLBACK em caso de erro no meio da transação', async () => {
-    await insertTestProduct({ title: 'Produto Válido', price: '30.00' });
+    await insertTestProduct({ name: 'Produto Válido', price: '30.00' });
 
     // Tenta inserir com NOT NULL violado
     await expect(
       tx.query(
-        'INSERT INTO products (title, price, images) VALUES ($1, $2, $3) RETURNING *',
+        'INSERT INTO products (name, price, image_url) VALUES ($1, $2, $3) RETURNING *',
         ['Sem Imagens', '50.00', null]
       )
     ).rejects.toThrow();
 
-    const countResult = await tx.query("SELECT COUNT(*) FROM products WHERE title LIKE 'Produto%'");
+    const countResult = await tx.query("SELECT COUNT(*) FROM products WHERE name LIKE 'Produto%'");
     expect(parseInt(countResult.rows[0].count, 10)).toBe(1);
   });
 });

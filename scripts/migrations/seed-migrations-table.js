@@ -16,6 +16,8 @@ const MIGRATIONS = [
   '008-add-position-to-videos',
   '009-add-position-to-posts',
   '011-fix-entity-id-type',
+  '015-align-products-schema',
+  '016-create-refresh-tokens-table',
 ];
 
 async function seed() {

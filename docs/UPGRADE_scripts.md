@@ -118,19 +118,27 @@
 - **Problema:** O script executa as queries, imprime "Seed concluído" e chama `process.exit(0)` sem fechar o pool de conexão. Embora o `process.exit()` force o encerramento, em cenários de execução controlada (ex: testes), isso pode deixar conexões pendentes.
 - **Sugestão:** Adicionar `closePool()` antes do `process.exit(0)`.
 
-### 4.2. `scripts/seed-settings.js` — configurações hardcoded
+### 4.2. `scripts/seed-products.js` — colunas desatualizadas ✅
+
+**Arquivo:** `scripts/seed-products.js`
+
+**Problema:** O script de seed inseria dados nas colunas antigas da tabela `products` (`title`, `images`, `link_ml`, `link_shopee`, `link_amazon`), que foram renomeadas/unificadas pela migration 015 para `name`, `image_url`, `link`. Executar o seed sem a migration resultava em erro de coluna inexistente.
+
+**Correção:** O script foi atualizado para usar as novas colunas: `name` (em vez de `title`), `image_url` (em vez de `images`), `link` (em vez de `link_ml`/`link_shopee`/`link_amazon`), e adicionada a coluna `category` com valor aleatório entre categorias predefinidas.
+
+### 4.3. `scripts/seed-settings.js` — configurações hardcoded
 - **Arquivo:** `scripts/seed-settings.js`
 - **Problema:** As 5 configurações padrão estão hardcoded no array `DEFAULT_SETTINGS` dentro do script. Se novas configurações forem adicionadas no futuro, o script precisa ser modificado.
 - **Sugestão:** Considerar carregar configurações de um arquivo JSON externo (similar ao que `init-table.js` faz com os schemas), permitindo adicionar novas configurações sem modificar o código.
 
-### 4.3. `scripts/warm-routes.js` — slugs hardcoded
+### 4.4. `scripts/warm-routes.js` — slugs hardcoded
 - **Arquivo:** `scripts/warm-routes.js`
 - **Problema:** Os slugs de seed (`SEED_SLUGS`) estão hardcoded no script. Se os seeds forem alterados, o warm-routes pode ficar desatualizado e tentar aquecer slugs que não existem mais, ou deixar de aquecer slugs novos.
 - **Sugestão:**
   - Carregar slugs do banco de dados consultando a tabela `posts` diretamente
   - Ou ler de um arquivo de configuração compartilhado com os seeds
 
-### 4.4. `scripts/warm-routes.js` — valor `development` hardcoded para rota SSR
+### 4.5. `scripts/warm-routes.js` — valor `development` hardcoded para rota SSR
 - **Arquivo:** `scripts/warm-routes.js` (linha 181)
 - **Problema:** O caminho `/_next/data/development/blog/${slug}.json` contém `development` hardcoded. Em ambientes de produção ou preview, o valor do buildId é diferente.
 - **Sugestão:** Detectar dinamicamente o buildId fazendo uma requisição a `/_next/buildId` ou extrair de uma página HTML da aplicação.

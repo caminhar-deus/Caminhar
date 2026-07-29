@@ -9,20 +9,18 @@ import { z } from 'zod';
 
 /** Schema de validação Zod para os produtos */
 const productSchema = z.object({
-  title: z.string().min(1, 'Nome do produto é obrigatório'),
-  images: z.string().min(1, 'Ao menos uma imagem é obrigatória'),
+  name: z.string().min(1, 'Nome do produto é obrigatório'),
+  image_url: z.string().min(1, 'Ao menos uma imagem é obrigatória'),
   description: z.string().optional(),
   price: z.string().min(1, 'Valor é obrigatório'),
-  link_ml: z.string().url('URL inválida').optional().or(z.literal('')),
-  link_shopee: z.string().url('URL inválida').optional().or(z.literal('')),
-  link_amazon: z.string().url('URL inválida').optional().or(z.literal('')),
+  link: z.string().url('URL inválida').optional().or(z.literal('')),
   published: z.boolean().optional()
 });
 
 /** Configuração dos campos do Admin */
 const fields = [
   {
-    name: 'title', component: TextField, label: 'Nome do Produto',
+    name: 'name', component: TextField, label: 'Nome do Produto',
     required: true, placeholder: 'Ex: Bíblia de Estudo', gridColumn: 'span 2'
   },
   {
@@ -30,7 +28,7 @@ const fields = [
     required: true, placeholder: 'Ex: R$ 89,90', gridColumn: 'span 2'
   },
   {
-    name: 'images', component: TextAreaField, label: 'URLs das Imagens',
+    name: 'image_url', component: TextAreaField, label: 'URLs das Imagens',
     required: true, rows: 4, placeholder: 'Insira as URLs das imagens (uma por linha)',
     hint: 'A primeira imagem será a capa. Suporta carrossel.', gridColumn: 'span 2'
   },
@@ -39,16 +37,8 @@ const fields = [
     rows: 4, placeholder: 'Detalhes sobre o produto...', gridColumn: 'span 2'
   },
   {
-    name: 'link_ml', component: TextField, label: 'Link Mercado Livre',
-    placeholder: 'https://produto.mercadolivre.com.br/...', gridColumn: 'span 2'
-  },
-  {
-    name: 'link_shopee', component: TextField, label: 'Link Shopee',
-    placeholder: 'https://shopee.com.br/...', gridColumn: 'span 2'
-  },
-  {
-    name: 'link_amazon', component: TextField, label: 'Link Amazon',
-    placeholder: 'https://amazon.com.br/...', gridColumn: 'span 2'
+    name: 'link', component: TextField, label: 'Link do Produto',
+    placeholder: 'https://...', gridColumn: 'span 2'
   },
   {
     name: 'published', component: ToggleField, label: 'Produto Publicado',
@@ -77,11 +67,11 @@ const columns = [
     header: 'Imagem', 
     width: '80px',
     render: (item) => {
-      const firstImage = item.images ? item.images.split('\n')[0].trim() : null;
+      const firstImage = item.image_url ? item.image_url.split('\n')[0].trim() : null;
       return firstImage ? (
         <img 
           src={firstImage} 
-          alt={item.title} 
+          alt={item.name} 
           style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #e2e8f0' }} 
         />
       ) : (
@@ -89,28 +79,20 @@ const columns = [
       );
     }
   },
-  { key: 'title', header: 'Produto', render: (item) => <strong>{item.title}</strong> },
+  { key: 'name', header: 'Produto', render: (item) => <strong>{item.name}</strong> },
   { key: 'price', header: 'Valor', format: (value) => value ? `R$ ${value}` : '-' },
   { 
-    key: 'links', header: 'Links Cadastrados',
-    render: (item) => (
-      <div style={{ display: 'flex', gap: '5px' }}>
-        {item.link_ml && <span title="Mercado Livre">🟨</span>}
-        {item.link_shopee && <span title="Shopee">🟧</span>}
-        {item.link_amazon && <span title="Amazon">⬛</span>}
-      </div>
-    )
+    key: 'link', header: 'Link',
+    render: (item) => item.link ? <span title="Link">🔗</span> : <span style={{ color: '#9ca3af' }}>-</span>
   }
 ];
 
 const initialFormData = {
-  title: '',
-  images: '',
+  name: '',
+  image_url: '',
   description: '',
   price: '',
-  link_ml: '',
-  link_shopee: '',
-  link_amazon: '',
+  link: '',
   published: true
 };
 
@@ -130,9 +112,9 @@ export default function AdminProducts() {
 
   // Função para processar dados do Mercado Livre (com lógica extra de formatação)
   const handleFetchMLSuccess = (data, setFieldValue) => {
-    setFieldValue('title', data.title);
+    setFieldValue('name', data.title);
     setFieldValue('price', data.price.toFixed(2));
-    setFieldValue('images', data.images);
+    setFieldValue('image_url', data.images);
     if (data.description) {
       setFieldValue('description', data.description);
     }
@@ -140,7 +122,7 @@ export default function AdminProducts() {
 
   // Intercepta a renderização do campo para adicionar o botão
   const renderCustomFormField = (fieldConfig, formData, handleInputChange, setFieldValue) => {
-    if (fieldConfig.name === 'link_ml') {
+    if (fieldConfig.name === 'link') {
       const { name, component: Component, gridColumn, ...props } = fieldConfig;
       return (
         <ExternalDataButton

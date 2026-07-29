@@ -67,7 +67,7 @@
 - **Localização:** `/pages/admin.js`
 - **Propósito:** Painel administrativo completo para gestão de todo o conteúdo do site.
 - **Funcionalidades:**
-  - **Autenticação**: login com username/senha, verificação de sessão via `/api/auth/check`, logout com limpeza de sessão
+  - **Autenticação**: login com username/senha via `POST /api/auth/login` (com `credentials: 'include'` para armazenar cookie), verificação de sessão via `/api/auth/check`, redirect pós-login para `/admin` para reconhecimento do cookie, logout com limpeza de sessão
   - **Controle de permissões**: cada aba do admin é condicionada à permissão do usuário via `hasPermission()`
   - **Upload e crop de imagens**: utilizando `react-easy-crop` com proporção 1100:320, zoom ajustável, redimensionamento via canvas (máx. 1100px largura), preview com estatísticas de compressão
   - **Abas de gestão**: Visão Geral (dashboard), Posts/Artigos, Gestão de Músicas, Gestão de Vídeos, Gestão de Produtos, Dicas do Dia

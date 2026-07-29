@@ -205,6 +205,7 @@ export default function Admin() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ username, password }),
+        credentials: 'include',
       });
 
       let data;
@@ -223,6 +224,9 @@ export default function Admin() {
       setCurrentUser(data.user);
       setIsAuthenticated(true);
       console.log('Login successful:', data.user);
+      // Recarrega a página para que o cookie de autenticação seja reconhecido
+      // nas requisições subsequentes às rotas admin
+      window.location.href = '/admin';
 
     } catch (error) {
       setError(error.message);

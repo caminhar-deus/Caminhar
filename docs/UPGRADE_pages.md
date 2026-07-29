@@ -94,7 +94,16 @@
 
 ---
 
-### 2.2 `login.js` Trata `withAuth` de Forma Diferente
+### 2.2 `admin.js` — Login sem `credentials: 'include'` ✅
+
+**Arquivo:** `/pages/admin.js`
+
+**Problema:** A requisição de login em `handleLogin` (linhas 202-208) não incluía a opção `credentials: 'include'`. Sem ela, o navegador ignorava o header `Set-Cookie` retornado pelo servidor, e o cookie `token` (JWT) nunca era armazenado. As requisições subsequentes às rotas admin não enviavam o cookie de autenticação, resultando em 401.
+
+**Correção:** Adicionado `credentials: 'include'` na requisição `fetch('/api/auth/login', ...)`, seguindo o mesmo padrão já utilizado em `hooks/AuthProvider.js`. Adicionado também `window.location.href = '/admin'` após o login bem-sucedido para forçar o recarregamento da página com o cookie já armazenado.
+
+
+### 2.3 `login.js` Trata `withAuth` de Forma Diferente
 
 **Arquivo:** `/pages/api/auth/login.js`
 
@@ -116,7 +125,7 @@
 
 ---
 
-### 2.3 Endpoints com Cache-Control Inconsistentes
+### 2.5 Endpoints com Cache-Control Inconsistentes
 
 **Arquivos:**
 - `/pages/api/dicas.js`: `public, s-maxage=60, stale-while-revalidate=300`

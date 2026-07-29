@@ -10,7 +10,7 @@ const ProductCard = memo(function ProductCard({ product }) {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const lightboxRef = useRef(null);
   
-  const images = parseImages(product.images);
+  const images = parseImages(product.image_url);
 
   // Foco no lightbox ao abrir
   useEffect(() => {
@@ -57,7 +57,7 @@ const ProductCard = memo(function ProductCard({ product }) {
           )}
           <img 
             src={images[currentImageIndex]} 
-            alt={product.title}
+            alt={product.name}
             itemProp="image"
             loading={currentImageIndex === 0 ? 'eager' : 'lazy'}
             onLoad={() => setImageLoading(false)}
@@ -93,40 +93,19 @@ const ProductCard = memo(function ProductCard({ product }) {
   return (
     <>
       <BaseCard hoverable itemScope itemType="https://schema.org/Product" media={cardMedia}>
-        <h3 itemProp="name" className={styles.productName}>{product.title}</h3>
+        <h3 itemProp="name" className={styles.productName}>{product.name}</h3>
         <p itemProp="description" className={styles.productDescription} title={product.description}>{product.description}</p>
         <strong itemProp="offers" itemScope itemType="https://schema.org/Offer" className={styles.productPrice}>
           <span itemProp="price">{product.price}</span>
         </strong>
         
         <div className={styles.linksContainer}>
-          {product.link_ml && (
-            <a href={product.link_ml} target="_blank" rel="noreferrer" className={styles.linkMercadoLivre}>
+          {product.link && (
+            <a href={product.link} target="_blank" rel="noreferrer" className={styles.linkMercadoLivre}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="m11 17 2 2a1 1 0 1 0 3-3"/><path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06 7.06l-1.27 1.27"/><path d="m3 3 2 2-2 2 1.5 1.5L3 8l2.5 2.5a1 1 0 0 0 3-3l-2.5-2.5L8 3l-2 2Z"/>
               </svg>
-              Mercado Livre
-            </a>
-          )}
-          {product.link_shopee && (
-            <a href={product.link_shopee} target="_blank" rel="noreferrer" className={styles.linkShopee}>
-              <svg width="16" height="16" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 8L8 14v24a4 4 0 0 0 4 4h24a4 4 0 0 0 4-4V14l-4-6H12Z" fill="#fff" stroke="#fff" strokeWidth="1.5" />
-                <path d="M16 8V4a2 2 0 0 1 2-2h4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" />
-                <path d="M26 2h4a2 2 0 0 1 2 2v4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" />
-                <path d="M18 20c0-2 1.5-3 3-3s3 1 3 2.5-1.5 3.5-3 4.5-3 2-3 4 1.5 3 3 3 3-1 3-3" stroke="#ee4d2d" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-              </svg>
-              Shopee
-            </a>
-          )}
-          {product.link_amazon && (
-            <a href={product.link_amazon} target="_blank" rel="noreferrer" className={styles.linkAmazon}>
-              <svg width="16" height="16" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M24 4C12.954 4 4 12.954 4 24s8.954 20 20 20 20-8.954 20-20S35.046 4 24 4Z" fill="#fff" />
-                <path d="M10 28c3 4 8 7 14 7s11-3 14-7" stroke="#ff9900" strokeWidth="2.5" strokeLinecap="round" fill="none" />
-                <text x="24" y="22" textAnchor="middle" fontSize="11" fontWeight="bold" fontFamily="Arial, sans-serif" fill="#ff9900" letterSpacing="0.5">amazon</text>
-              </svg>
-              Amazon
+              Comprar
             </a>
           )}
         </div>
@@ -153,7 +132,7 @@ const ProductCard = memo(function ProductCard({ product }) {
           </button>
           <img 
             key={currentImageIndex}
-            src={images[currentImageIndex]} alt={`${product.title} - Imagem ${currentImageIndex + 1}`}
+            src={images[currentImageIndex]} alt={`${product.name} - Imagem ${currentImageIndex + 1}`}
             className={styles.lightboxImage}
             onClick={(e) => e.stopPropagation()} 
           />
@@ -180,13 +159,11 @@ const ProductCard = memo(function ProductCard({ product }) {
 ProductCard.propTypes = {
   product: PropTypes.shape({
     id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
-    title: PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired,
     description: PropTypes.string,
     price: PropTypes.string,
-    images: PropTypes.string,
-    link_ml: PropTypes.string,
-    link_shopee: PropTypes.string,
-    link_amazon: PropTypes.string,
+    image_url: PropTypes.string,
+    link: PropTypes.string,
     position: PropTypes.number,
   }).isRequired,
 };

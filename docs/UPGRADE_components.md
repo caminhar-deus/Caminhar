@@ -36,10 +36,11 @@
 
 ### 1.4 AdminProducts.js
 
-| # | Tipo | Descrição |
-|---|------|-----------|
-| 1 | **Manutenção** | Campo `images` armazena URLs separadas por `\n` em string única. Considere array ou upload múltiplo. |
-| 2 | **Segurança** | Campo `images` aceita qualquer URL sem validação adicional. |
+| # | Tipo | Descrição | Status |
+|---|------|-----------|--------|
+| 1 | **Manutenção** | Campo `images` armazena URLs separadas por `\n` em string única. Considere array ou upload múltiplo. | |
+| 2 | **Segurança** | Campo `images` aceita qualquer URL sem validação adicional. | |
+| 3 | **Manutenção** | Campos renomeados para alinhar com o schema do banco: `title` → `name`, `images` → `image_url`, `link_ml`/`link_shopee`/`link_amazon` → `link`. Schema Zod, colunas da tabela e `initialFormData` atualizados. | ✅ **Resolvido** — Migration 015 renomeou as colunas no banco. Componente atualizado para usar os novos nomes. |
 
 ### 1.5 AdminVideos.js
 

@@ -160,6 +160,30 @@
 
 **Correção:** Os mocks de `mockQuery` nos 2 testes de `createMusica` foram expandidos para incluir `mockResolvedValueOnce(undefined)` para BEGIN (índice 0) e COMMIT (índice 3). As asserções de `toHaveBeenCalledTimes` foram atualizadas de 2 para 4 chamadas. Os índices de acesso à chamada de INSERT foram ajustados de `calls[1]` para `calls[2]`. Nenhum teste de integração foi afetado, pois mockam `createMusica` diretamente.
 
+### 3.14 Testes de autenticação e produtos atualizados após mudanças no schema e cookies ✅
+
+**Arquivos:** `tests/unit/lib/auth.test.js`, `tests/integration/api/auth/logout.test.js`, `tests/unit/components/Admin/AdminProducts.test.js`, `tests/integration/domain/products.db.test.js`, `tests/unit/components/Features/Products/ProductCard.test.js`, `tests/unit/components/Features/Products/ProductList.test.js`
+
+**Problema:** Três grupos de testes quebraram após as implementações:
+
+1. **`tests/unit/lib/auth.test.js`** — O mock de `res` usava `setHeader` mas a função `setAuthCookie` foi alterada para usar `res.appendHeader`. O teste esperava `expect(res.setHeader).toHaveBeenCalledWith(...)`.
+
+2. **`tests/integration/api/auth/logout.test.js`** — Com a mudança de `res.setHeader` para `res.appendHeader`, o `node-mocks-http` passou a retornar um **array** com dois cookies (`token` e `refreshToken`) em vez de uma string. O teste esperava `expect.stringContaining('refreshToken=;')`.
+
+3. **`tests/unit/components/Admin/AdminProducts.test.js`** — Os campos do componente foram renomeados (`link_ml` → `link`, `title` → `name`, `images` → `image_url`, coluna `links` → `link`), mas os testes ainda usavam os nomes antigos.
+
+4. **`tests/integration/domain/products.db.test.js`** — As queries SQL usavam as colunas antigas (`title`, `images`, `link_ml`, `link_shopee`, `link_amazon`).
+
+5. **`tests/unit/components/Features/Products/ProductCard.test.js`** e **`ProductList.test.js`** — Dados de teste usavam `title`, `images`, `link_ml/shopee/amazon`.
+
+**Correção:**
+- `tests/unit/lib/auth.test.js`: Mock alterado de `{ setHeader: jest.fn() }` para `{ appendHeader: jest.fn() }`, e asserção alterada para `expect(res.appendHeader).toHaveBeenCalledWith(...)`.
+- `tests/integration/api/auth/logout.test.js`: Asserção alterada de `expect.stringContaining('refreshToken=;')` para `expect.arrayContaining([expect.stringContaining('refreshToken=;')])`.
+- `tests/unit/components/Admin/AdminProducts.test.js`: Todos os 12 testes atualizados: `link_ml` → `link`, `title` → `name`, `images` → `image_url`, coluna `links` → `link`, `getByTestId('ml-input')` → `getByTestId('link-input')`, `setFieldValue('title', ...)` → `setFieldValue('name', ...)`.
+- `tests/integration/domain/products.db.test.js`: Queries SQL e asserts atualizados para `name`, `image_url`, `link`, `category`.
+- `tests/unit/components/Features/Products/ProductCard.test.js`: `baseProduct` e asserts atualizados para `name`, `image_url`, `link`.
+- `tests/unit/components/Features/Products/ProductList.test.js`: Mock do ProductCard e dados de teste atualizados para `name`.
+
 ## 4. Problemas de Performance
 
 ### 4.1 Polyfills assíncronos podem causar race conditions ✅

@@ -116,7 +116,16 @@
 
 ---
 
-### 1.10 `domain/settings.js` — Aliases duplicados
+### 1.10 `auth.js` — Cookies sobrescritos por `res.setHeader` ✅
+
+**Localização:** `lib/auth.js`, linhas 173-181 e 146-155
+
+**Problema:** As funções `setAuthCookie` e `setRefreshTokenCookie` usavam `res.setHeader('Set-Cookie', ...)`. No Node.js, `res.setHeader` substitui qualquer header anterior com o mesmo nome. Como ambas definem o header `Set-Cookie`, a segunda chamada sobrescrevia a primeira. Resultado: apenas o cookie `refreshToken` era enviado ao navegador, e o cookie `token` (JWT) era perdido, causando erros 401 em todas as rotas admin após o login.
+
+**Correção:** Ambas as funções foram alteradas para usar `res.appendHeader('Set-Cookie', cookieString)` em vez de `res.setHeader`. O `res.appendHeader` (disponível desde Node.js 14.17+) adiciona múltiplos headers com o mesmo nome, em vez de substituir. Agora ambos os cookies (`token` e `refreshToken`) são enviados ao navegador.
+
+
+### 1.11 `domain/settings.js` — Aliases duplicados
 
 **Localização:** `lib/domain/settings.js`, linhas 60 e 76
 

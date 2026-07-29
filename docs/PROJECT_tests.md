@@ -690,8 +690,8 @@ Endpoints administrativos testados com mocks de banco e autenticação. **Total:
 
 ### `/tests/integration/api/auth/logout.test.js`
 - **Propósito:** Testa o endpoint de logout.
-- **Testes:** Logout limpa cookie de refresh token e retorna sucesso (200).
-- **Observação:** O `res.setHeader` sobrescreve o header anterior, portanto apenas o último cookie (`refreshToken`) está presente no `set-cookie`.
+- **Testes:** Logout limpa ambos os cookies (token e refreshToken) e retorna sucesso (200).
+- **Observação:** O `res.appendHeader` adiciona múltiplos headers `Set-Cookie`, portanto ambos os cookies (`token` e `refreshToken`) estão presentes no array `set-cookie`.
 
 ### `/tests/integration/api/login.test.js`
 - **Propósito:** Testa o endpoint de login com foco em `last_login_at`.
