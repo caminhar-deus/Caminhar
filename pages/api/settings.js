@@ -1,4 +1,4 @@
-import { getSettings, getSetting, updateSetting, setSetting, getAllSettingsRaw } from '../../lib/domain/settings.js';
+import { getSettings, getSetting, updateSetting, getAllSettingsRaw } from '../../lib/domain/settings.js';
 import { withAuth, getAuthToken, verifyToken } from '../../lib/auth.js';
 import { getOrSetCache, invalidateCache, checkRateLimit } from '../../lib/cache.js';
 import { z } from 'zod';
@@ -143,7 +143,7 @@ const handlePost = withAuth(async (req, res) => {
   const { key, value, type = 'string', description = '' } = validation.data;
 
   try {
-    const result = await setSetting(key, value, type, description);
+    const result = await updateSetting(key, value, type, description);
 
     // Invalida cache
     await invalidateCache(`settings:${key}`);

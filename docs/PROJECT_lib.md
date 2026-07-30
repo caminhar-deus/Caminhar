@@ -1,7 +1,7 @@
 # Análise da Pasta `lib/`
 
 > **Data da análise:** 28/06/2026  
-> **Última atualização:** 26/07/2026
+> **Última atualização:** 29/07/2026
 > **Objetivo:** Documentar de forma objetiva, técnica e organizada todos os arquivos da pasta `lib/` e suas subpastas, descrevendo localização, propósito, funcionalidades e responsabilidades de cada módulo.
 
 ---
@@ -108,9 +108,10 @@
 
 ---
 
-### 1.4 `lib/csvExport.js`
+### 1.4 ~~`lib/csvExport.js`~~ `utils/csvExport.js`
 
-**Localização:** `/lib/csvExport.js`
+**Localização original:** `/lib/csvExport.js` (removido)  
+**Nova localização:** `/utils/csvExport.js`
 
 **Propósito:** Utilitário para exportação de dados no formato CSV diretamente no navegador.
 
@@ -120,7 +121,7 @@
 |--------|-----------|
 | `exportToCSV({ data, columns, filename, onEmpty })` | Exporta array de objetos para CSV e inicia download. Aceita `columns` com `key`, `header` e `format` (função opcional de formatação). Converte booleanos para "Publicado"/"Rascunho". Callback `onEmpty` se não houver dados |
 
-**Observações:** Função exclusiva de frontend (navegador). Cria Blob com BOM `\uFEFF` para compatibilidade com Excel. Inclui proteção `typeof URL.revokeObjectURL === 'function'` para ambientes sem suporte à API (ex.: JSDOM em testes).
+**Observações:** Função exclusiva de frontend (navegador). Foi movida de `lib/` para `utils/` por ser código puramente frontend, mantendo o diretório `lib/` focado em módulos de servidor/infraestrutura. Cria Blob com BOM `\uFEFF` para compatibilidade com Excel. Inclui proteção `typeof URL.revokeObjectURL === 'function'` para ambientes sem suporte à API (ex.: JSDOM em testes). Importada por `components/Admin/AdminAudit.js` e `components/Admin/AdminCrudBase.js` via `@/utils/csvExport`.
 
 ---
 
@@ -148,21 +149,21 @@
 
 ---
 
-### 1.6 `lib/handleUnauthorized.js`
+### 1.6 ~~`lib/handleUnauthorized.js`~~ `hooks/useUnauthorized.js`
 
-**Localização:** `/lib/handleUnauthorized.js`
+**Localização original:** `/lib/handleUnauthorized.js` (removido)  
+**Nova localização:** `/hooks/useUnauthorized.js`
 
-**Propósito:** Função utilitária para tratamento padronizado de resposta 401 no frontend.
+**Propósito:** Hook para tratamento padronizado de resposta 401 no frontend. Exibe toast de sessão expirada e recarrega a página para redirecionar ao login.
 
 **Função exportada:**
 
 | Função | Descrição |
 |--------|-----------|
-| `handleUnauthorized(router, delay, message)` | Exibe toast de erro via `react-hot-toast`, aguarda delay opcional (ms), chama `router.reload()` e interrompe o fluxo com `await new Promise(() => {})` |
+| `useUnauthorized(router, delay, message)` | Exibe toast de erro via `react-hot-toast`, aguarda delay opcional (ms), chama `router.reload()` e interrompe o fluxo com `await new Promise(() => {})` |
 
-**Observações:** Exclusiva para uso no frontend.
+**Observações:** Exclusiva para uso no frontend. Foi movida de `lib/` para `hooks/` por ser código puramente frontend, mantendo o diretório `lib/` focado em módulos de servidor/infraestrutura. A função foi renomeada de `handleUnauthorized` para `useUnauthorized`. Importada por `components/Admin/AdminAudit.js` e `components/Admin/AdminUsersTab.js` via `@/hooks/useUnauthorized`.
 
----
 
 ### 1.7 `lib/logger.js`
 
@@ -363,9 +364,11 @@ CRUD de posts com paginação e full-text search (tsvector em português). Funç
 
 CRUD de produtos com paginação e formatação de moeda (R$). Funções: `getPaginatedProducts()`, `getAllProducts()`, `createProduct()`, `updateProduct()`, `deleteProduct()`.
 
+**Destaques:** `updateProduct` filtra campos explicitamente fornecidos (`name`, `description`, `price`, `image_url`, `category`, `link`, `published`) e adiciona `updated_at: raw('CURRENT_TIMESTAMP')` condicionalmente — mesmo padrão de `updateMusica`, `updatePost` e `updateVideo`.
+
 ### 3.7 `lib/domain/settings.js`
 
-Gerenciamento de configurações dinâmicas — `getSetting()`, `getSettings()`, `updateSetting()`, `setSetting()`, `getAllSettingsRaw()`, `getAllSettings()`.
+Gerenciamento de configurações dinâmicas — `getSetting()`, `getSettings()`, `updateSetting()`, `getAllSettingsRaw()`.
 
 ### 3.8 `lib/domain/shared-pagination.js`
 
@@ -391,7 +394,8 @@ Gerenciamento de configurações dinâmicas — `getSetting()`, `getSettings()`,
 
 CRUD de vídeos com paginação, busca e reordenação. Funções: `getPaginatedVideos()`, `getPublicPaginatedVideos()`, `createVideo()`, `updateVideo()`, `deleteVideo()`, `reorderVideos()`.
 
----
+**Destaques:** `updateVideo` filta campos explicitamente fornecidos (`titulo`, `url_youtube`, `descricao`, `thumbnail`, `publicado`) e adiciona `updated_at: raw('CURRENT_TIMESTAMP')` condicionalmente — mesmo padrão de `updateMusica` e `updatePost`. Aceita parâmetro `options` para compatibilidade com transações.
+
 
 ## 4. Subpasta `lib/seo/`
 
@@ -408,9 +412,9 @@ Centralização de todas as configurações de SEO: `siteConfig` (nome, URL, des
 | `auth.js` | Autenticação (JWT + bcrypt + cookies + login com rate limit) |
 | `cache.js` | Cache multi-nível (memória + Redis) + rate limit distribuído |
 | `crud.js` | Operações SQL genéricas parametrizadas |
-| `csvExport.js` | Exportação de dados para CSV no navegador |
+| ~~`csvExport.js`~~ *(movido para `utils/csvExport.js`)* | Exportação de dados para CSV no navegador |
 | `db.js` | Pool PostgreSQL + query + transações + health check (60s) |
-| `handleUnauthorized.js` | Tratamento de 401 no frontend |
+| ~~`handleUnauthorized.js`~~ *(movido para `hooks/useUnauthorized.js`)* | Tratamento de 401 no frontend |
 | `logger.js` | Logger leve e padronizado com emojis |
 | `redis.js` | Cliente Redis Upstash com fallback em memória (retry único) |
 | `reorder.js` | Reordenação Drag & Drop via API (frontend) |

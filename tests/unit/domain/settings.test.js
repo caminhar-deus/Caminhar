@@ -14,7 +14,6 @@ import {
   getSetting, 
   getSettings, 
   updateSetting, 
-  setSetting, 
   getAllSettingsRaw 
 } from '../../../lib/domain/settings.js';
 
@@ -74,7 +73,7 @@ describe('Domain - Configurações (lib/domain/settings.js)', () => {
     });
   });
 
-  describe('updateSetting() / setSetting()', () => {
+  describe('updateSetting()', () => {
     it('deve preparar os dados e chamar upsertRecord corretamente', async () => {
       upsertRecord.mockResolvedValueOnce({ key: 'theme', value: 'dark' });
       
@@ -90,9 +89,6 @@ describe('Domain - Configurações (lib/domain/settings.js)', () => {
       expect(upsertRecord).toHaveBeenCalledWith('settings', expectedInsertData, 'key', expectedUpdateData);
     });
 
-    it('setSetting deve ser um alias exato para updateSetting', () => {
-      expect(setSetting).toBe(updateSetting);
-    });
   });
 
   describe('getAllSettingsRaw()', () => {

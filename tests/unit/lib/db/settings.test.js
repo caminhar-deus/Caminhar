@@ -1,7 +1,7 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { mockQuery, restorePoolImplementation } from 'pg';
 import { resetPool } from '../../../../lib/db.js';
-import { updateSetting, setSetting, getSetting, getSettings, getAllSettings } from '../../../../lib/domain/settings.js';
+import { updateSetting, getSetting, getSettings, getAllSettingsRaw } from '../../../../lib/domain/settings.js';
 
 // Mock do 'pg' (automático via __mocks__/pg.js)
 jest.mock('pg');
@@ -49,18 +49,6 @@ describe('Settings Operations', () => {
     });
   });
 
-  describe('setSetting', () => {
-      it('deve ser um alias para updateSetting e funcionar igual', async () => {
-          const mockResult = { rows: [{ key: 'test', value: '123' }] };
-          mockQuery.mockResolvedValue(mockResult);
-          
-          const result = await setSetting('test', '123', 'string', 'desc');
-          
-          expect(mockQuery).toHaveBeenCalled();
-          expect(result).toEqual(mockResult.rows[0]);
-      });
-  });
-
   describe('getSetting', () => {
       it('deve retornar apenas o valor da configuração se ela existir', async () => {
           mockQuery.mockResolvedValue({ rows: [{ value: 'my_value' }] });
@@ -103,12 +91,12 @@ describe('Settings Operations', () => {
       });
   });
 
-  describe('getAllSettings (Array)', () => {
+  describe('getAllSettingsRaw (Array)', () => {
        it('deve retornar a lista bruta de configurações', async () => {
            const rows = [{ key: 'a', value: '1', description: 'desc' }];
            mockQuery.mockResolvedValue({ rows });
            
-           const result = await getAllSettings();
+           const result = await getAllSettingsRaw();
            
            expect(result).toEqual(rows);
        });
@@ -117,7 +105,7 @@ describe('Settings Operations', () => {
           mockQuery.mockRejectedValue(new Error('Fail'));
           const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
           
-          await expect(getAllSettings()).rejects.toThrow('Fail');
+          await expect(getAllSettingsRaw()).rejects.toThrow('Fail');
           
           consoleSpy.mockRestore();
       });

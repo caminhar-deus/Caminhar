@@ -1,7 +1,7 @@
 # Análise da Pasta `/pages`
 
 > **Data:** 28/06/2026
-> **Última atualização:** 26/07/2026
+> **Última atualização:** 30/07/2026
 > **Objetivo:** Documentar todos os arquivos da pasta `/pages`, descrevendo localização exata, propósito e funcionalidades de cada um.
 > **Total de arquivos:** 54
 
@@ -517,14 +517,15 @@
   - Opacidade e z-index
 - **Nota:** Arquivo gerado — pode ser regenerado via `generateTokensCSS.js`
 
-### `/pages/styles/generateTokensCSS.js`
+### ~~`/pages/styles/generateTokensCSS.js`~~ *(removido)*
 
-- **Localização:** `/pages/styles/generateTokensCSS.js`
-- **Propósito:** Gerador programático que transforma os Design Tokens JS em CSS Custom Properties.
-- **Funcionalidades:**
-  - Importa 9 categorias de tokens (colors, spacing, typography, borders, shadows, breakpoints, animations, opacity, zIndex) — **nota:** `sizes.js` não é importado pelo gerador
-  - Exporta `generateTokensCSS()` que retorna string CSS completa
-  - Exporta `tokensCSS` com o CSS pré-gerado (para uso direto)
+- **Localização original:** `/pages/styles/generateTokensCSS.js` (removido)
+- **Propósito original:** Gerador programático que transformava os Design Tokens JS em CSS Custom Properties.
+- **Funcionalidades originais:**
+  - Importava 9 categorias de tokens (colors, spacing, typography, borders, shadows, breakpoints, animations, opacity, zIndex)
+  - Exportava `generateTokensCSS()` que retornava string CSS completa
+  - Exportava `tokensCSS` com o CSS pré-gerado (para uso direto)
+- **Status:** Removido por ser código morto (unused file). Nenhum arquivo do projeto importava este módulo. O `variables.css` (CSS estático pré-gerado) permanece como única fonte das CSS Custom Properties.
 
 ### `/pages/styles/Home.module.css`
 
@@ -552,23 +553,25 @@
 
 ---
 
-## 8. Design Tokens
+## 8. Design Tokens *(removidos)*
 
-Todos os tokens estão em `/pages/styles/tokens/` e seguem o padrão JS de objetos nomeados exportados como `default`.
+Os arquivos de Design Tokens JS que estavam em `/pages/styles/tokens/` foram removidos do projeto por serem código morto (unused files). Nenhum arquivo do projeto os importava.
 
-| Arquivo | Localização | Propósito |
-|---------|-------------|-----------|
-| `index.js` | `/pages/styles/tokens/index.js` | Barrel que reexporta todos os tokens |
-| `colors.js` | `/pages/styles/tokens/colors.js` | Paleta de cores (primárias, secundárias, feedback, neutras, semânticas, espirituais) |
-| `typography.js` | `/pages/styles/tokens/typography.js` | Fontes, tamanhos, pesos, line-height, letter-spacing |
-| `spacing.js` | `/pages/styles/tokens/spacing.js` | Escala de espaçamentos |
-| `sizes.js` | `/pages/styles/tokens/sizes.js` | Tamanhos diversos |
-| `breakpoints.js` | `/pages/styles/tokens/breakpoints.js` | Breakpoints de responsividade |
-| `borders.js` | `/pages/styles/tokens/borders.js` | Larguras e raios de borda |
-| `shadows.js` | `/pages/styles/tokens/shadows.js` | Sombras (elevation, colored, glow) |
-| `opacity.js` | `/pages/styles/tokens/opacity.js` | Valores de opacidade |
-| `zIndex.js` | `/pages/styles/tokens/zIndex.js` | Hierarquia de z-index |
-| `animations.js` | `/pages/styles/tokens/animations.js` | Durações, easings e transições |
+O arquivo `variables.css` (CSS estático pré-gerado) permanece como única fonte das CSS Custom Properties, contendo todos os valores dos tokens já compilados.
+
+**Arquivos removidos:**
+- `/pages/styles/tokens/index.js` — Barrel que reexportava todos os tokens
+- `/pages/styles/tokens/colors.js` — Paleta de cores
+- `/pages/styles/tokens/typography.js` — Fontes, tamanhos, pesos
+- `/pages/styles/tokens/spacing.js` — Escala de espaçamentos
+- `/pages/styles/tokens/sizes.js` — Tamanhos diversos
+- `/pages/styles/tokens/breakpoints.js` — Breakpoints de responsividade
+- `/pages/styles/tokens/borders.js` — Larguras e raios de borda
+- `/pages/styles/tokens/shadows.js` — Sombras
+- `/pages/styles/tokens/opacity.js` — Valores de opacidade
+- `/pages/styles/tokens/zIndex.js` — Hierarquia de z-index
+- `/pages/styles/tokens/animations.js` — Durações, easings e transições
+- `/pages/styles/generateTokensCSS.js` — Gerador de CSS a partir dos tokens
 
 ---
 
@@ -584,5 +587,4 @@ Todos os tokens estão em `/pages/styles/tokens/` e seguem o padrão JS de objet
 | Páginas blog | 2 |
 | CSS Module blog | 1 |
 | Estilos globais e módulos | 5 |
-| Design Tokens | 11 |
-| **Total** | **54** |
+| **Total** | **43** |

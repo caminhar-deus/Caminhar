@@ -2,7 +2,7 @@
  * Helper compartilhado para exportação de dados para CSV.
  * Centraliza a lógica de geração de Blob com BOM, link temporário e download.
  *
- * @module lib/csvExport
+ * @module utils/csvExport
  */
 
 /**

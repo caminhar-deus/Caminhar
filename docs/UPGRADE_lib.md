@@ -76,7 +76,7 @@
 
 ---
 
-### 1.6 `domain/videos.js` — Inconsistência: `updateVideo` não atualiza `updated_at`
+### 1.6 `domain/videos.js` — Inconsistência: `updateVideo` não atualiza `updated_at` ✅
 
 **Localização:** `lib/domain/videos.js`, linhas 71-73
 
@@ -84,7 +84,8 @@
 
 **Sugestão:** Adicionar `raw('CURRENT_TIMESTAMP')` ao `updated_at` no `updateVideo`, similar ao padrão usado em `musicas.js` e `posts.js`.
 
----
+**Correção:** Adicionado `raw` ao import de `../crud.js`. A função `updateVideo` foi reescrita para filtrar campos explicitamente fornecidos (`titulo`, `url_youtube`, `descricao`, `thumbnail`, `publicado`), adicionar `updated_at: raw('CURRENT_TIMESTAMP')` condicionalmente (apenas se houver campos a atualizar), e aceitar parâmetro `options` para compatibilidade com transações — seguindo o mesmo padrão de `updateMusica` e `updatePost`. Teste unitário em `tests/unit/domain/videos.test.js` foi atualizado para refletir a nova assinatura e o uso de `raw`.
+
 
 ### 1.7 `csvExport.js` — `URL.revokeObjectURL` sem proteção para ambientes sem a API ✅
 
@@ -106,13 +107,15 @@
 
 ---
 
-### 1.9 `domain/products.js` — `updateProduct` não atualiza `updated_at`
+### 1.9 `domain/products.js` — `updateProduct` não atualiza `updated_at` ✅
 
 **Localização:** `lib/domain/products.js`, linhas 131-151
 
 **Problema:** Mesmo problema do item 1.6: `updateProduct` não inclui `raw('CURRENT_TIMESTAMP')` para `updated_at`.
 
 **Sugestão:** Adicionar atualização automática de `updated_at` via `raw('CURRENT_TIMESTAMP')`.
+
+**Correção:** Adicionado `raw` ao import de `../crud.js`. A função `updateProduct` agora adiciona `updateData.updated_at = raw('CURRENT_TIMESTAMP')` condicionalmente (apenas se houver campos a atualizar), seguindo o mesmo padrão de `updateMusica`, `updatePost` e `updateVideo`.
 
 ---
 
@@ -125,7 +128,7 @@
 **Correção:** Ambas as funções foram alteradas para usar `res.appendHeader('Set-Cookie', cookieString)` em vez de `res.setHeader`. O `res.appendHeader` (disponível desde Node.js 14.17+) adiciona múltiplos headers com o mesmo nome, em vez de substituir. Agora ambos os cookies (`token` e `refreshToken`) são enviados ao navegador.
 
 
-### 1.11 `domain/settings.js` — Aliases duplicados
+### 1.11 `domain/settings.js` — Aliases duplicados ✅
 
 **Localização:** `lib/domain/settings.js`, linhas 60 e 76
 
@@ -137,11 +140,13 @@ Isso adiciona complexidade desnecessária e confunde sobre qual função usar.
 
 **Sugestão:** Remover os aliases e manter apenas as funções originais com nomes descritivos (`updateSetting`, `getAllSettingsRaw`). Ou, alternativamente, remover as funções originais e manter os aliases como as funções principais.
 
+**Correção:** Removidos os aliases `setSetting` e `getAllSettings` de `lib/domain/settings.js`. Ajustados imports e chamadas em `pages/api/settings.js` (substituído `setSetting` por `updateSetting`). Atualizados 3 arquivos de teste: `tests/unit/domain/settings.test.js` (removido import e teste de alias), `tests/unit/lib/db/settings.test.js` (substituídos imports e chamadas de `setSetting`/`getAllSettings` por `updateSetting`/`getAllSettingsRaw`), `tests/unit/settings.cache.test.js` (substituídos mocks e chamadas). 16 testes passam.
+
 ---
 
 ## 2. Ajustes Estruturais e Organizacionais
 
-### 2.1 `csvExport.js` — Função de frontend em diretório de lib server-side
+### 2.1 `csvExport.js` — Função de frontend em diretório de lib server-side ✅
 
 **Localização:** `lib/csvExport.js`
 
@@ -149,15 +154,19 @@ Isso adiciona complexidade desnecessária e confunde sobre qual função usar.
 
 **Sugestão:** Mover para `utils/csvExport.js` ou `components/Utils/csvExport.js`, mantendo o diretório lib focado em módulos de servidor/infraestrutura.
 
+**Correção:** O arquivo foi movido de `lib/csvExport.js` para `utils/csvExport.js`. Os imports em `components/Admin/AdminAudit.js` e `components/Admin/AdminCrudBase.js` foram atualizados de `@/lib/csvExport` para `@/utils/csvExport`. O arquivo `lib/csvExport.js` foi removido. Nenhuma alteração na lógica interna do módulo.
+
 ---
 
-### 2.2 `handleUnauthorized.js` — Função de frontend em lib
+### 2.2 `handleUnauthorized.js` — Função de frontend em lib ✅
 
 **Localização:** `lib/handleUnauthorized.js`
 
 **Problema:** Mesmo caso do `csvExport.js`. É uma função exclusiva de frontend (importa `react-hot-toast`, usa `router.reload()`).
 
 **Sugestão:** Mover para `hooks/useUnauthorized.js` ou `utils/handleUnauthorized.js`.
+
+**Correção:** O arquivo foi movido de `lib/handleUnauthorized.js` para `hooks/useUnauthorized.js`, com a função renomeada de `handleUnauthorized` para `useUnauthorized`. Os imports em `components/Admin/AdminAudit.js` e `components/Admin/AdminUsersTab.js` foram atualizados de `@/lib/handleUnauthorized` para `@/hooks/useUnauthorized`, e as chamadas correspondentes renomeadas. O arquivo `lib/handleUnauthorized.js` foi removido. O export de `useUnauthorized` no barrel `hooks/index.js` foi removido por não ter consumidores via barrel (ambos os componentes importam diretamente do arquivo específico). Nenhuma alteração na lógica interna do módulo.
 
 ---
 

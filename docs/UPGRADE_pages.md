@@ -295,7 +295,7 @@ await invalidateCache('posts:*');
 
 ### 5.3 `generateTokensCSS.js` Não Importa `sizes.js`
 
-**Arquivo:** `/pages/styles/generateTokensCSS.js`
+**Localização:** `/pages/styles/generateTokensCSS.js`
 
 **Problema:** O gerador de CSS tokens importa `shadows`, `colors`, `typography`, `spacing`, `breakpoints`, `borders`, `opacity`, `zIndex` e `animations`, mas **não importa `sizes`**.
 
@@ -303,11 +303,13 @@ await invalidateCache('posts:*');
 
 **Sugestão:** Adicionar a importação de `sizes` no `generateTokensCSS.js` para garantir que todos os tokens sejam refletidos como CSS Custom Properties.
 
+**Status:** **Obsoleto** — O arquivo `generateTokensCSS.js` e todos os tokens JS foram removidos do projeto por serem código morto (unused files). O `variables.css` (CSS estático pré-gerado) permanece como única fonte das CSS Custom Properties.
+
 ---
 
 ### 5.4 Possível Duplicação de Token `shadow`/`shadows`
 
-**Arquivo:** `/pages/styles/generateTokensCSS.js`
+**Localização:** `/pages/styles/generateTokensCSS.js`
 
 **Problema:** O gerador itera `shadow` e `shadows` separadamente. Em `variables.css`, isso pode gerar duplicação de entradas como `--shadow-glow` se ambos os objetos exportarem a mesma chave com nomes similares.
 
@@ -315,7 +317,8 @@ await invalidateCache('posts:*');
 
 **Sugestão:** Verificar se `shadow` e `shadows` são objetos diferentes ou se um é subconjunto do outro. Unificar em uma única iteração se possível.
 
----
+**Status:** **Obsoleto** — O arquivo `generateTokensCSS.js` e todos os tokens JS foram removidos do projeto por serem código morto (unused files). O `variables.css` (CSS estático pré-gerado) permanece como única fonte das CSS Custom Properties.
+
 
 ### 5.5 `design-system.js` Usa Placeholder Externo
 

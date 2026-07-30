@@ -20,18 +20,19 @@
 10. [`/hooks/PerformanceProvider.js`](#9-hooksperformanceproviderjs) — Provider de performance
 11. [`/hooks/usePerformance.js`](#10-hooksuseperformancejs) — Hook de consumo de performance
 12. [`/hooks/useDebounce.js`](#11-hooksusedebouncejs) — Debounce utilitário
-13. [Resumo Consolidado](#resumo-consolidado)
+13. [`/hooks/useUnauthorized.js`](#12-hooksuseunauthorizedjs) — Tratamento de 401 no frontend
+14. [Resumo Consolidado](#resumo-consolidado)
 
 ---
 
 ## Visão Geral
 
-A pasta `/hooks` contém **11 arquivos** que implementam custom hooks React e seus componentes de contexto. Não há subpastas. Os hooks dividem-se em três categorias:
+A pasta `/hooks` contém **12 arquivos** que implementam custom hooks React e seus componentes de contexto. Não há subpastas. Os hooks dividem-se em três categorias:
 
 | Categoria | Hooks | Descrição |
 |---|---|---|
 | **Autenticação** | `useAdminAuth` | Gerenciamento de sessão, login/logout e controle de acesso administrativo |
-| **Infraestrutura / Utilitários** | `useApiFetch`, `useDebounce`, `useAdminCrud` | Abstrações reutilizáveis para fetch, debounce e operações CRUD completas |
+| **Infraestrutura / Utilitários** | `useApiFetch`, `useDebounce`, `useAdminCrud`, `useUnauthorized` | Abstrações reutilizáveis para fetch, debounce, operações CRUD completas e tratamento de 401 |
 | **Design & Performance** | `usePerformanceMetrics`, `PerformanceContext`, `PerformanceProvider`, `usePerformance` | Monitoramento de Core Web Vitals com wrapper de contexto |
 
 ---
@@ -43,7 +44,7 @@ A pasta `/hooks` contém **11 arquivos** que implementam custom hooks React e se
 
 **Funcionalidades:**
 - Reexporta hooks nomeados: `PerformanceProvider`, `usePerformance`, `useApiFetch`, `useDebounce`, `useAdminAuth`.
-- Re-exports removidos (por não terem consumidores externos): `useTheme`, `AuthContext`, `AuthProvider`, `useAuth`, `useAdminCrud`, `PerformanceContext`, `usePerformanceMetrics`, `useThrottle`.
+- Re-exports removidos (por não terem consumidores externos): `useTheme`, `AuthContext`, `AuthProvider`, `useAuth`, `useAdminCrud`, `PerformanceContext`, `usePerformanceMetrics`, `useThrottle`, `useUnauthorized`.
 - Os arquivos fonte que não estão no barrel foram preservados pois são usados internamente por outros hooks.
 - Todos os hooks são reexportados diretamente como named exports com a sintaxe `export { Nome } from './arquivo'`.
 
@@ -203,6 +204,23 @@ A pasta `/hooks` contém **11 arquivos** que implementam custom hooks React e se
 
 ---
 
+## 12. `/hooks/useUnauthorized.js`
+
+**Localização:** `/hooks/useUnauthorized.js`
+**Propósito:** Hook para tratamento padronizado de resposta 401 (não autorizado) no frontend. Exibe toast de sessão expirada e recarrega a página para redirecionar ao login.
+
+**Funcionalidades:**
+- **`useUnauthorized(router, delay, message)`:** Função assíncrona que:
+  - Importa dinamicamente `react-hot-toast` e exibe toast de erro com a mensagem fornecida (padrão: "Sessão expirada. Faça login novamente.").
+  - Aguarda delay opcional em ms (útil para o toast aparecer antes do reload).
+  - Chama `router.reload()` para recarregar a página e redirecionar ao login.
+  - Interrompe o fluxo com `await new Promise(() => {})` e lança `Error('Acesso não autorizado')`.
+- **Origem:** Foi movida de `lib/handleUnauthorized.js` (removido) para `hooks/useUnauthorized.js`, com a função renomeada de `handleUnauthorized` para `useUnauthorized`, por ser código exclusivamente de frontend.
+- **Consumidores:** Importada diretamente por `components/Admin/AdminAudit.js` e `components/Admin/AdminUsersTab.js` via `@/hooks/useUnauthorized`.
+- **Exportação:** Não está no barrel `hooks/index.js` (o export foi removido por não ter consumidores via barrel — ambos os componentes importam diretamente do arquivo específico).
+
+---
+
 ## Resumo Consolidado
 
 | Arquivo | Localização | Tipo | Complexidade | Dependências Externas |
@@ -218,10 +236,12 @@ A pasta `/hooks` contém **11 arquivos** que implementam custom hooks React e se
 | `PerformanceProvider.js` | `/hooks/PerformanceProvider.js` | Provider React | Baixa | `usePerformanceMetrics` |
 | `usePerformance.js` | `/hooks/usePerformance.js` | Hook de consumo de contexto | Baixa | Nenhuma |
 | `useDebounce.js` | `/hooks/useDebounce.js` | Hook utilitário | Baixa | Nenhuma |
+| `useUnauthorized.js` | `/hooks/useUnauthorized.js` | Hook de tratamento de 401 | Baixa | `react-hot-toast` (dynamic import) |
 
 ### Observações importantes
 
 - **Relação entre hooks:** `useAdminAuth` depende do `AuthContext` (importado de `AuthContext.js`). `useAdminCrud` depende de `useApiFetch`. `PerformanceProvider` depende de `usePerformanceMetrics` para instanciar o monitoramento.
-- **Exportações:** O barrel `index.js` exporta atualmente 5 hooks: `PerformanceProvider`, `usePerformance`, `useApiFetch`, `useDebounce` e `useAdminAuth`. Os re-exports removidos do barrel são: `useTheme`, `AuthContext`, `AuthProvider`, `useAuth`, `useAdminCrud`, `PerformanceContext`, `usePerformanceMetrics` e `useThrottle`.
-- **Cobertura de uso:** `usePerformance` possui consumidor direto em `pages/_app.js` via `PerformanceMonitor`. `usePerformanceMetrics` é consumido indiretamente via `PerformanceProvider`, que o instancia uma única vez e compartilha as métricas através do `PerformanceContext`. `useApiFetch` e `useDebounce` são usados por 5 componentes públicos (Features). `useAdminAuth` é usado por `components/Admin/withAdminAuth.js`.
+- **Exportações:** O barrel `index.js` exporta atualmente 5 hooks: `PerformanceProvider`, `usePerformance`, `useApiFetch`, `useDebounce` e `useAdminAuth`. Os re-exports removidos do barrel são: `useTheme`, `AuthContext`, `AuthProvider`, `useAuth`, `useAdminCrud`, `PerformanceContext`, `usePerformanceMetrics`, `useThrottle` e `useUnauthorized`.
+- **Cobertura de uso:** `usePerformance` possui consumidor direto em `pages/_app.js` via `PerformanceMonitor`. `usePerformanceMetrics` é consumido indiretamente via `PerformanceProvider`, que o instancia uma única vez e compartilha as métricas através do `PerformanceContext`. `useApiFetch` e `useDebounce` são usados por 5 componentes públicos (Features). `useAdminAuth` é usado por `components/Admin/withAdminAuth.js`. `useUnauthorized` é usado por `components/Admin/AdminAudit.js` e `components/Admin/AdminUsersTab.js`.
 - **Arquivos removidos:** Os hooks `useAuth.js`, `useTheme.js` e `useThrottle.js` foram removidos por não possuírem consumidores no projeto, conforme identificado pelo Knip.
+- **Arquivos movidos para hooks:** O arquivo `lib/handleUnauthorized.js` foi movido para `hooks/useUnauthorized.js` (função renomeada para `useUnauthorized`), seguindo o mesmo padrão do `csvExport.js` que foi movido de `lib/` para `utils/`.

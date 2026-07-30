@@ -1,7 +1,7 @@
 import { useEffect, useCallback, useState, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { useAdminCrud } from '@/hooks/useAdminCrud';
-import { exportToCSV } from '@/lib/csvExport';
+import { exportToCSV } from '@/utils/csvExport';
 import { Modal } from '@/components/UI/Modal';
 import { Button } from '@/components/UI/Button';
 import styles from './styles/crud.module.css';

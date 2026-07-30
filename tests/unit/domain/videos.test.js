@@ -7,6 +7,7 @@ jest.mock('../../../lib/crud.js', () => ({
   createRecord: jest.fn(),
   updateRecords: jest.fn(),
   deleteRecords: jest.fn(),
+  raw: jest.fn((val) => ({ raw: true, value: val })),
 }));
 
 // Importações do módulo sendo testado
@@ -20,7 +21,7 @@ import {
 } from '../../../lib/domain/videos.js';
 
 import { query, transaction } from '../../../lib/db.js';
-import { createRecord, updateRecords, deleteRecords } from '../../../lib/crud.js';
+import { createRecord, updateRecords, deleteRecords, raw } from '../../../lib/crud.js';
 
 describe('Domain - Vídeos (lib/domain/videos.js)', () => {
   beforeEach(() => {
@@ -104,7 +105,7 @@ describe('Domain - Vídeos (lib/domain/videos.js)', () => {
       deleteRecords.mockResolvedValueOnce([{ id: 1 }]);
 
       expect(await updateVideo(1, { titulo: 'Editado' })).toEqual({ id: 1, titulo: 'Editado' });
-      expect(updateRecords).toHaveBeenCalledWith('videos', { titulo: 'Editado' }, { id: 1 });
+      expect(updateRecords).toHaveBeenCalledWith('videos', { titulo: 'Editado', updated_at: raw('CURRENT_TIMESTAMP') }, { id: 1 }, {});
 
       expect(await deleteVideo(1)).toEqual({ id: 1 });
       expect(deleteRecords).toHaveBeenCalledWith('videos', { id: 1 });

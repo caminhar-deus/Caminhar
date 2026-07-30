@@ -1,5 +1,5 @@
 /**
- * Lida com resposta 401 (não autorizado) de forma padronizada no cliente.
+ * Hook que lida com resposta 401 (não autorizado) de forma padronizada no cliente.
  * Exibe toast de sessão expirada e recarrega a página para redirecionar ao login.
  *
  * Este arquivo NÃO deve importar módulos de servidor (ex: pg, jwt, bcryptjs)
@@ -13,10 +13,10 @@
  *
  * @example
  * if (res.status === 401) {
- *   return handleUnauthorized(router);
+ *   return useUnauthorized(router);
  * }
  */
-export async function handleUnauthorized(router, delay = 0, message = 'Sessão expirada. Faça login novamente.') {
+export async function useUnauthorized(router, delay = 0, message = 'Sessão expirada. Faça login novamente.') {
   const { default: toast } = await import('react-hot-toast');
   toast.error(message);
   if (delay > 0) {

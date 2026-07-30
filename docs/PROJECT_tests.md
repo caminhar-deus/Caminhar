@@ -1,7 +1,7 @@
 # Análise da Suite de Testes — `/tests/`
 
 > **Data:** 28/06/2026  
-> **Última atualização:** 26/07/2026
+> **Última atualização:** 29/07/2026
 > **Propósito:** Documentação completa e consolidada de todos os arquivos de teste do projeto Caminhar.
 
 ---
@@ -836,9 +836,10 @@ Testes que usam PostgreSQL real via Testcontainers (`jest.config.db.js`). Valida
 
 ### `/tests/unit/domain/videos.test.js`
 - **Propósito:** Testes da lógica de domínio de vídeos.
-- **Testes:** Queries de listagem, paginação, filtros por título/descrição, validação de URL.
+- **Testes:** Queries de listagem, paginação, filtros por título/descrição, validação de URL, `updateVideo` com `updated_at` e `options`.
+- **Mocks:** `raw` mockado em `crud.js` para suportar `raw('CURRENT_TIMESTAMP')`.
+- **Destaques:** O teste de `updateVideo` verifica que `updateRecords` é chamado com `updated_at: raw('CURRENT_TIMESTAMP')` e `options: {}`.
 
----
 
 ## 17. Testes Unitários — Páginas e Handlers de API
 

@@ -4,8 +4,8 @@ import { createMocks } from 'node-mocks-http';
 // Mock das dependências
 jest.mock('../../lib/db.js', () => require('../mocks/db-module').mockDb({
   getSetting: jest.fn(),
-  setSetting: jest.fn(),
-  getAllSettings: jest.fn(),
+  updateSetting: jest.fn(),
+  getAllSettingsRaw: jest.fn(),
 }));
 jest.mock('../../lib/auth.js', () => ({
   getAuthToken: jest.fn(),
@@ -56,7 +56,7 @@ const handler = async (req, res) => {
       }
 
       // Simulate database query
-      const settings = await db.getAllSettings();
+      const settings = await db.getAllSettingsRaw();
       await redis.set('settings:v1:all', JSON.stringify(settings), { ex: 1800 });
       
       res.status(200).json({
@@ -72,7 +72,7 @@ const handler = async (req, res) => {
 
       // Simulate database update
       const { key, value, type } = req.body;
-      await db.setSetting(key, value, type);
+      await db.updateSetting(key, value, type);
       
       // Invalidate cache
       await redis.del('settings:v1:all');
@@ -107,7 +107,7 @@ describe('Integração de Cache da API de Configurações (v1)', () => {
     auth.verifyToken.mockReturnValue({ role: 'admin', username: 'admin' });
 
     // Setup DB Mock
-    db.getAllSettings.mockResolvedValue([
+    db.getAllSettingsRaw.mockResolvedValue([
       { key: 'site_title', value: 'Test Site', type: 'string' },
       { key: 'site_description', value: 'Test Description', type: 'string' }
     ]);
@@ -115,7 +115,7 @@ describe('Integração de Cache da API de Configurações (v1)', () => {
       if (key === 'site_title') return 'Test Site';
       return null;
     });
-    db.setSetting.mockResolvedValue('New Value');
+    db.updateSetting.mockResolvedValue('New Value');
   });
 
   it('deve buscar do banco e salvar no cache na primeira requisição (Cache Miss)', async () => {
@@ -127,7 +127,7 @@ describe('Integração de Cache da API de Configurações (v1)', () => {
 
     expect(res._getStatusCode()).toBe(200);
     // Verifica se foi ao banco de dados
-    expect(db.getAllSettings).toHaveBeenCalledTimes(1);
+    expect(db.getAllSettingsRaw).toHaveBeenCalledTimes(1);
     // Verifica se salvou no Redis
     expect(redis.set).toHaveBeenCalledWith(
       'settings:v1:all',
@@ -142,7 +142,7 @@ describe('Integração de Cache da API de Configurações (v1)', () => {
     await handler(req1, res1);
     
     // Limpa contadores do mock do DB para isolar a próxima verificação
-    db.getAllSettings.mockClear();
+    db.getAllSettingsRaw.mockClear();
 
     // 2. Segunda requisição
     const { req: req2, res: res2 } = createMocks({ method: 'GET' });
@@ -153,7 +153,7 @@ describe('Integração de Cache da API de Configurações (v1)', () => {
     expect(data).toHaveLength(2);
     
     // O ponto crucial: NÃO deve ter chamado o banco novamente
-    expect(db.getAllSettings).not.toHaveBeenCalled();
+    expect(db.getAllSettingsRaw).not.toHaveBeenCalled();
     // Deve ter buscado do Redis
     expect(redis.get).toHaveBeenCalledWith('settings:v1:all');
   });

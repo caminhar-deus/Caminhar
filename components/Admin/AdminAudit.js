@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/router';
-import { exportToCSV } from '@/lib/csvExport';
-import { handleUnauthorized } from '@/lib/handleUnauthorized';
+import { exportToCSV } from '@/utils/csvExport';
+import { useUnauthorized } from '@/hooks/useUnauthorized';
 import crudStyles from './styles/crud.module.css';
 
 export default function AdminAudit() {
@@ -28,7 +28,7 @@ export default function AdminAudit() {
       .then(async res => {
         if (res.status === 401) {
           // Aguarda 500ms para o toast aparecer antes do reload
-          return handleUnauthorized(router, 500);
+          return useUnauthorized(router, 500);
         }
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));

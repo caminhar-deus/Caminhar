@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useRouter } from 'next/router';
-import { handleUnauthorized } from '@/lib/handleUnauthorized';
+import { useUnauthorized } from '@/hooks/useUnauthorized';
 
 const userSchema = z.object({
   username: z.string().min(3, 'O usuário/email deve ter no mínimo 3 caracteres'),
@@ -80,7 +80,7 @@ const RoleSelectField = ({ name, value, onChange, label, error, hint, gridColumn
     fetch('/api/admin/roles', { credentials: 'include' })
       .then(async res => {
         if (res.status === 401) {
-          return handleUnauthorized(router);
+          return useUnauthorized(router);
         }
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
