@@ -1,7 +1,7 @@
 # Análise da Pasta `lib/`
 
 > **Data da análise:** 28/06/2026  
-> **Última atualização:** 29/07/2026
+> **Última atualização:** 30/07/2026
 > **Objetivo:** Documentar de forma objetiva, técnica e organizada todos os arquivos da pasta `lib/` e suas subpastas, descrevendo localização, propósito, funcionalidades e responsabilidades de cada módulo.
 
 ---
@@ -18,11 +18,12 @@
    - [1.7 `lib/logger.js`](#17-libloggerjs)
    - [1.8 `lib/redis.js`](#18-libredisjs)
    - [1.9 ~~`lib/reorder.js`~~ `utils/reorder.js`](#19-libreorderjs)
-   - [1.10 `lib/spotify.js`](#110-libspotifyjs)
-   - [1.11 `lib/youtube.js`](#111-libyoutubejs)
+   - [1.10 ~~`lib/spotify.js`~~ `lib/media/spotify.js`](#110-libspotifyjs)
+   - [1.11 ~~`lib/youtube.js`~~ `lib/media/youtube.js`](#111-libyoutubejs)
 2. [Subpasta `lib/api/`](#2-subpasta-libapi)
 3. [Subpasta `lib/domain/`](#3-subpasta-libdomain)
 4. [Subpasta `lib/seo/`](#4-subpasta-libseo)
+5. [Subpasta `lib/media/`](#5-subpasta-libmedia)
 
 ---
 
@@ -232,9 +233,10 @@
 
 ---
 
-### 1.10 `lib/spotify.js`
+### 1.10 ~~`lib/spotify.js`~~ `lib/media/spotify.js`
 
-**Localização:** `/lib/spotify.js`
+**Localização original:** `/lib/spotify.js` (removido)  
+**Nova localização:** `/lib/media/spotify.js`
 
 **Propósito:** Utilitário para extração de IDs do Spotify a partir de URLs.
 
@@ -245,11 +247,14 @@
 | `extractSpotifyId(url)` | Extrai o ID da track de diferentes formatos |
 | `getSpotifyEmbedUrl(url)` | Converte URL para embed |
 
+**Observações:** Utilitário de manipulação de strings (extração de ID de URLs), usado tanto no frontend quanto potencialmente no servidor. Foi movido da raiz de `lib/` para `lib/media/` por organização temática, agrupando os utilitários de mídia em um subdiretório próprio. Nenhuma alteração na lógica interna. Importada por `components/Admin/fields/UrlField.js` e `components/Features/Music/MusicCard.js` via `@/lib/media/spotify`.
+
 ---
 
-### 1.11 `lib/youtube.js`
+### 1.11 ~~`lib/youtube.js`~~ `lib/media/youtube.js`
 
-**Localização:** `/lib/youtube.js`
+**Localização original:** `/lib/youtube.js` (removido)  
+**Nova localização:** `/lib/media/youtube.js`
 
 **Propósito:** Utilitário para extração de IDs do YouTube a partir de URLs.
 
@@ -258,6 +263,8 @@
 | Função | Descrição |
 |--------|-----------|
 | `extractYoutubeId(url)` | Extrai o ID de 11 caracteres de vários formatos de URL |
+
+**Observações:** Utilitário de manipulação de strings (extração de ID de URLs), usado tanto no frontend quanto potencialmente no servidor. Foi movido da raiz de `lib/` para `lib/media/` por organização temática, agrupando os utilitários de mídia em um subdiretório próprio. Nenhuma alteração na lógica interna. Importada por `components/Admin/fields/UrlField.js`, `components/Admin/AdminVideos.js` e `components/Performance/LazyIframe.js` via `@/lib/media/youtube`.
 
 ---
 
@@ -406,6 +413,41 @@ Centralização de todas as configurações de SEO: `siteConfig` (nome, URL, des
 
 ---
 
+## 5. Subpasta `lib/media/`
+
+### 5.1 `lib/media/spotify.js`
+
+**Localização:** `/lib/media/spotify.js`
+
+**Propósito:** Utilitário para extração de IDs do Spotify a partir de URLs.
+
+**Funções exportadas:**
+
+| Função | Descrição |
+|--------|-----------|
+| `extractSpotifyId(url)` | Extrai o ID da track de diferentes formatos |
+| `getSpotifyEmbedUrl(url)` | Converte URL para embed |
+
+**Observações:** Utilitário de manipulação de strings (extração de ID de URLs), usado tanto no frontend quanto potencialmente no servidor. Foi movido da raiz de `lib/` para `lib/media/` por organização temática, agrupando os utilitários de mídia em um subdiretório próprio. Nenhuma alteração na lógica interna. Importada por `components/Admin/fields/UrlField.js` e `components/Features/Music/MusicCard.js` via `@/lib/media/spotify`.
+
+---
+
+### 5.2 `lib/media/youtube.js`
+
+**Localização:** `/lib/media/youtube.js`
+
+**Propósito:** Utilitário para extração de IDs do YouTube a partir de URLs.
+
+**Função exportada:**
+
+| Função | Descrição |
+|--------|-----------|
+| `extractYoutubeId(url)` | Extrai o ID de 11 caracteres de vários formatos de URL |
+
+**Observações:** Utilitário de manipulação de strings (extração de ID de URLs), usado tanto no frontend quanto potencialmente no servidor. Foi movido da raiz de `lib/` para `lib/media/` por organização temática, agrupando os utilitários de mídia em um subdiretório próprio. Nenhuma alteração na lógica interna. Importada por `components/Admin/fields/UrlField.js`, `components/Admin/AdminVideos.js` e `components/Performance/LazyIframe.js` via `@/lib/media/youtube`.
+
+---
+
 ## Resumo dos arquivos
 
 | Arquivo | Responsabilidade Principal |
@@ -419,8 +461,8 @@ Centralização de todas as configurações de SEO: `siteConfig` (nome, URL, des
 | `logger.js` | Logger leve e padronizado com emojis |
 | `redis.js` | Cliente Redis Upstash com fallback em memória (retry único) |
 | ~~`reorder.js`~~ *(movido para `utils/reorder.js`)* | Reordenação Drag & Drop via API (frontend) |
-| `spotify.js` | Extração de IDs do Spotify |
-| `youtube.js` | Extração de IDs do YouTube |
+| ~~`spotify.js`~~ *(movido para `lib/media/spotify.js`)* | Extração de IDs do Spotify |
+| ~~`youtube.js`~~ *(movido para `lib/media/youtube.js`)* | Extração de IDs do YouTube |
 | `api/adminCrudHandler.js` | Factory de handlers CRUD para admin |
 | `api/errors.js` | Classes de erro customizadas da API |
 | `api/helpers.js` | Extração de IP e detecção de spoofing |
@@ -439,3 +481,5 @@ Centralização de todas as configurações de SEO: `siteConfig` (nome, URL, des
 | `domain/shared-pagination.js` | Paginação genérica com busca e SELECT otimizado |
 | `domain/videos.js` | CRUD de vídeos |
 | `seo/config.js` | Configurações de SEO e Schema.org |
+| `media/spotify.js` | Extração de IDs do Spotify |
+| `media/youtube.js` | Extração de IDs do YouTube |

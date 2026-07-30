@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import styles from '../styles/form.module.css';
-import { extractYoutubeId } from '@/lib/youtube';
-import { extractSpotifyId } from '@/lib/spotify';
+import { extractYoutubeId } from '@/lib/media/youtube';
+import { extractSpotifyId } from '@/lib/media/spotify';
 
 /**
  * Campo de URL com validação e preview (YouTube, Spotify, etc)

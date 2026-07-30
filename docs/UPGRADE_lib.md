@@ -182,13 +182,15 @@ Isso adiciona complexidade desnecessária e confunde sobre qual função usar.
 
 ---
 
-### 2.4 `spotify.js` e `youtube.js` — Utilitários de extração em lib
+### 2.4 `spotify.js` e `youtube.js` — Utilitários de extração em lib ✅
 
 **Localização:** `lib/spotify.js`, `lib/youtube.js`
 
 **Problema:** São utilitários de manipulação de strings (extração de ID de URLs), usados tanto no frontend quanto potencialmente no servidor. A localização em lib está correta, mas poderiam estar agrupados em um diretório `lib/utils/` ou `lib/media/`.
 
 **Sugestão:** Agrupar em `lib/media/spotify.js` e `lib/media/youtube.js` para organização temática.
+
+**Correção:** Os arquivos foram movidos de `lib/spotify.js` e `lib/youtube.js` para `lib/media/spotify.js` e `lib/media/youtube.js`, agrupando-os em um subdiretório temático `lib/media/`. Os imports em `components/Admin/fields/UrlField.js`, `components/Admin/AdminVideos.js`, `components/Performance/LazyIframe.js` e `components/Features/Music/MusicCard.js` foram atualizados de `@/lib/spotify` e `@/lib/youtube` para `@/lib/media/spotify` e `@/lib/media/youtube`. A movimentação foi feita via `git mv` para preservar o histórico. Nenhuma alteração na lógica interna dos módulos.
 
 ---
 

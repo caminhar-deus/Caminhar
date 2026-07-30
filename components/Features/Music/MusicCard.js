@@ -1,6 +1,6 @@
 import { BaseCard } from '@/components/UI';
 import LazyIframe from '../../Performance/LazyIframe';
-import { getSpotifyEmbedUrl } from '@/lib/spotify';
+import { getSpotifyEmbedUrl } from '@/lib/media/spotify';
 import styles from './styles/MusicCard.module.css';
 
 export default function MusicCard({ musica }) {

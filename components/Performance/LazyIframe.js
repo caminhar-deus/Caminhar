@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { extractYoutubeId } from '@/lib/youtube';
+import { extractYoutubeId } from '@/lib/media/youtube';
 
 // Gerenciador global de fila de carregamento de iframes
 // Limita a 2 carregamentos simultâneos para evitar contenção de banda
