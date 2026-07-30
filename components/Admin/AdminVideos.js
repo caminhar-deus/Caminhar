@@ -5,7 +5,7 @@ import UrlField from './fields/UrlField';
 import ToggleField from './fields/ToggleField';
 import ImageUploadField from './fields/ImageUploadField';
 import ExternalDataButton from './fields/ExternalDataButton';
-import { handleReorder } from '@/lib/reorder';
+import { handleReorder } from '@/utils/reorder';
 import { extractYoutubeId } from '@/lib/youtube';
 import LazyIframe from '@/components/Performance/LazyIframe';
 import { z } from 'zod';

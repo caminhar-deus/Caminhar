@@ -4,7 +4,7 @@ import TextField from './fields/TextField';
 import TextAreaField from './fields/TextAreaField';
 import ImageUploadField from './fields/ImageUploadField';
 import ToggleField from './fields/ToggleField';
-import { handleReorder } from '@/lib/reorder';
+import { handleReorder } from '@/utils/reorder';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 

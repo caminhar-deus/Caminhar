@@ -49,7 +49,7 @@ components/Admin/AdminMusicas.js → components/Admin/fields/TextField.js
 components/Admin/AdminMusicas.js → components/Admin/fields/ToggleField.js
 components/Admin/AdminMusicas.js → components/Admin/fields/UrlField.js
 components/Admin/AdminMusicas.js → components/Admin/styles/crud.module.css
-components/Admin/AdminMusicas.js → lib/reorder.js
+components/Admin/AdminMusicas.js → utils/reorder.js
 components/Admin/fields/UrlField.js → components/Admin/styles/form.module.css
 components/Admin/fields/UrlField.js → lib/spotify.js
 components/Admin/fields/UrlField.js → lib/youtube.js
@@ -58,14 +58,14 @@ components/Admin/AdminPosts.js → components/Admin/fields/ImageUploadField.js
 components/Admin/AdminPosts.js → components/Admin/fields/TextAreaField.js
 components/Admin/AdminPosts.js → components/Admin/fields/TextField.js
 components/Admin/AdminPosts.js → components/Admin/fields/ToggleField.js
-components/Admin/AdminPosts.js → lib/reorder.js
+components/Admin/AdminPosts.js → utils/reorder.js
 components/Admin/fields/ImageUploadField.js → components/Admin/styles/form.module.css
 components/Admin/AdminProducts.js → components/Admin/AdminCrudBase.js
 components/Admin/AdminProducts.js → components/Admin/fields/ExternalDataButton.js
 components/Admin/AdminProducts.js → components/Admin/fields/TextAreaField.js
 components/Admin/AdminProducts.js → components/Admin/fields/TextField.js
 components/Admin/AdminProducts.js → components/Admin/fields/ToggleField.js
-components/Admin/AdminProducts.js → lib/reorder.js
+components/Admin/AdminProducts.js → utils/reorder.js
 components/Admin/AdminRolesTab.js → components/Admin/AdminCrudBase.js
 components/Admin/AdminRolesTab.js → components/Admin/fields/TextField.js
 components/Admin/AdminRolesTab.js → components/Admin/styles/permissions.module.css
@@ -84,8 +84,8 @@ components/Admin/AdminVideos.js → components/Admin/fields/TextField.js
 components/Admin/AdminVideos.js → components/Admin/fields/ToggleField.js
 components/Admin/AdminVideos.js → components/Admin/fields/UrlField.js
 components/Admin/AdminVideos.js → components/Performance/LazyIframe.js
-components/Admin/AdminVideos.js → lib/reorder.js
 components/Admin/AdminVideos.js → lib/youtube.js
+components/Admin/AdminVideos.js → utils/reorder.js
 components/Performance/LazyIframe.js → lib/youtube.js
 components/Admin/Managers/BackupManager.js → components/UI/index.js
 components/Admin/Managers/CacheManager.js → components/UI/index.js

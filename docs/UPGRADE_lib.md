@@ -170,13 +170,15 @@ Isso adiciona complexidade desnecessária e confunde sobre qual função usar.
 
 ---
 
-### 2.3 `reorder.js` — Função de frontend em lib
+### 2.3 `reorder.js` — Função de frontend em lib ✅
 
 **Localização:** `lib/reorder.js`
 
 **Problema:** Mesmo caso: função exclusiva de frontend que faz fetch para API e manipula DOM.
 
 **Sugestão:** Mover para `utils/reorder.js` ou integrar ao próprio `AdminCrudBase`.
+
+**Correção:** O arquivo foi movido de `lib/reorder.js` para `utils/reorder.js`. Os imports em `components/Admin/AdminPosts.js`, `components/Admin/AdminProducts.js`, `components/Admin/AdminVideos.js` e `components/Admin/AdminMusicas.js` foram atualizados de `@/lib/reorder` para `@/utils/reorder`. O arquivo `lib/reorder.js` foi removido. Nenhuma alteração na lógica interna do módulo.
 
 ---
 
@@ -469,13 +471,15 @@ Se o handler chamar `invalidateCache()` explicitamente, o cache será invalidado
 
 ---
 
-### 6.10 `domain/videos.js` — `reorderVideos` não reutiliza `reorder.js`
+### 6.10 `domain/videos.js` — `reorderVideos` não reutiliza `reorder.js` ✅
 
-**Localização:** `lib/domain/videos.js` (linhas 90-112), `lib/reorder.js`
+**Localização:** `lib/domain/videos.js` (linhas 90-112), `utils/reorder.js`
 
 **Problema:** O arquivo `reorder.js` na raiz de `lib/` é um helper de frontend que faz fetch para a API. Já `reorderVideos` em `domain/videos.js` é uma função de servidor que executa SQL. Apesar do nome similar, têm propósitos completamente diferentes e não estão relacionados. Isso pode causar confusão.
 
 **Sugestão:** Renomear `lib/reorder.js` para algo como `lib/frontendReorder.js` ou movê-lo para junto dos componentes que o utilizam, deixando claro que é um utilitário de frontend.
+
+**Correção:** O arquivo foi movido de `lib/reorder.js` para `utils/reorder.js` (vide item 2.3), tirando-o da raiz de `lib/` e aproximando-o dos componentes de frontend que o utilizam. A separação física entre o helper de frontend (`utils/reorder.js`) e a função de servidor (`lib/domain/videos.js` `reorderVideos`) torna explícito que têm propósitos diferentes. A função `reorderVideos` permanece inalterada em `lib/domain/videos.js`.
 
 ---
 

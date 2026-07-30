@@ -5,7 +5,7 @@ import TextField from './fields/TextField';
 import UrlField from './fields/UrlField';
 import ToggleField from './fields/ToggleField';
 import ExternalDataButton from './fields/ExternalDataButton';
-import { handleReorder } from '@/lib/reorder';
+import { handleReorder } from '@/utils/reorder';
 import { z } from 'zod';
 
 /**

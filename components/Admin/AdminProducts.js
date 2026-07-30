@@ -4,7 +4,7 @@ import TextField from './fields/TextField';
 import TextAreaField from './fields/TextAreaField';
 import ToggleField from './fields/ToggleField';
 import ExternalDataButton from './fields/ExternalDataButton';
-import { handleReorder } from '@/lib/reorder';
+import { handleReorder } from '@/utils/reorder';
 import { z } from 'zod';
 
 /** Schema de validação Zod para os produtos */

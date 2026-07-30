@@ -17,7 +17,7 @@
    - [1.6 `lib/handleUnauthorized.js`](#16-libhandleunauthorizedjs)
    - [1.7 `lib/logger.js`](#17-libloggerjs)
    - [1.8 `lib/redis.js`](#18-libredisjs)
-   - [1.9 `lib/reorder.js`](#19-libreorderjs)
+   - [1.9 ~~`lib/reorder.js`~~ `utils/reorder.js`](#19-libreorderjs)
    - [1.10 `lib/spotify.js`](#110-libspotifyjs)
    - [1.11 `lib/youtube.js`](#111-libyoutubejs)
 2. [Subpasta `lib/api/`](#2-subpasta-libapi)
@@ -215,9 +215,10 @@
 
 ---
 
-### 1.9 `lib/reorder.js`
+### 1.9 ~~`lib/reorder.js`~~ `utils/reorder.js`
 
-**Localização:** `/lib/reorder.js`
+**Localização original:** `/lib/reorder.js` (removido)  
+**Nova localização:** `/utils/reorder.js`
 
 **Propósito:** Helper compartilhado para reordenação via Drag & Drop no Admin.
 
@@ -227,7 +228,7 @@
 |--------|-----------|
 | `handleReorder(endpoint, reorderedItems, currentPage, itemsPerPage)` | Envia requisição PUT para o endpoint com os itens na nova ordem, calculando `position` como `offset + index`. Lança `Error('Falha ao reordenar')` se a requisição não for bem-sucedida. |
 
-**Observações:** Função exclusiva de frontend. O erro é propagado para o componente chamador (`AdminCrudBase`), que exibe toast de erro e reverte a ordem visual dos itens.
+**Observações:** Função exclusiva de frontend. Foi movida de `lib/` para `utils/` por ser código puramente frontend, mantendo o diretório `lib/` focado em módulos de servidor/infraestrutura. O erro é propagado para o componente chamador (`AdminCrudBase`), que exibe toast de erro e reverte a ordem visual dos itens. Importada por `components/Admin/AdminPosts.js`, `components/Admin/AdminProducts.js`, `components/Admin/AdminVideos.js` e `components/Admin/AdminMusicas.js` via `@/utils/reorder`.
 
 ---
 
@@ -417,7 +418,7 @@ Centralização de todas as configurações de SEO: `siteConfig` (nome, URL, des
 | ~~`handleUnauthorized.js`~~ *(movido para `hooks/useUnauthorized.js`)* | Tratamento de 401 no frontend |
 | `logger.js` | Logger leve e padronizado com emojis |
 | `redis.js` | Cliente Redis Upstash com fallback em memória (retry único) |
-| `reorder.js` | Reordenação Drag & Drop via API (frontend) |
+| ~~`reorder.js`~~ *(movido para `utils/reorder.js`)* | Reordenação Drag & Drop via API (frontend) |
 | `spotify.js` | Extração de IDs do Spotify |
 | `youtube.js` | Extração de IDs do YouTube |
 | `api/adminCrudHandler.js` | Factory de handlers CRUD para admin |

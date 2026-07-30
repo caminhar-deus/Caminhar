@@ -7,6 +7,7 @@
  * - AdminVideos.js
  * - AdminProducts.js
  *
+ * @module utils/reorder
  * @param {string} endpoint - URL da API (ex: '/api/admin/musicas')
  * @param {Array} reorderedItems - Itens na nova ordem
  * @param {number} [currentPage=1] - Página atual (para calcular offset)
