@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { checkRateLimit } from './lib/cache.js';
-import { logger } from './lib/logger.js';
+import { checkRateLimit } from './lib/cache/cache.js';
+import { logger } from './lib/infra/logger.js';
 
 /**
  * Middleware global do Next.js para Rate Limiting e Proteção DDoS.
@@ -8,7 +8,7 @@ import { logger } from './lib/logger.js';
  * Funciona como primeira camada de defesa (antes de chegar ao handler da rota),
  * bloqueando requisições excessivas antes mesmo de processar o corpo da requisição.
  *
- * Integra com o sistema de rate limit existente em lib/cache.js (checkRateLimit),
+ * Integra com o sistema de rate limit existente em lib/cache/cache.js (checkRateLimit),
  * que suporta Redis distribuído com fallback em memória.
  *
  * ## Rotas Protegidas

@@ -22,7 +22,7 @@ describe('Library - Redis', () => {
     delete process.env.UPSTASH_REDIS_REST_URL;
     delete process.env.UPSTASH_REDIS_REST_TOKEN;
     
-    const { redis } = require('../../../lib/redis.js');
+    const { redis } = require('../../../lib/infra/redis.js');
     expect(redis).toBeNull();
   });
 
@@ -30,7 +30,7 @@ describe('Library - Redis', () => {
     delete process.env.UPSTASH_REDIS_REST_URL;
     delete process.env.UPSTASH_REDIS_REST_TOKEN;
     
-    const { getRedisInstance } = require('../../../lib/redis.js');
+    const { getRedisInstance } = require('../../../lib/infra/redis.js');
     const instance = getRedisInstance();
     expect(instance).toBeNull();
   });
@@ -39,7 +39,7 @@ describe('Library - Redis', () => {
     process.env.UPSTASH_REDIS_REST_URL = 'https://fake-redis.com';
     process.env.UPSTASH_REDIS_REST_TOKEN = 'fake-token';
 
-    const { getRedisInstance } = require('../../../lib/redis.js');
+    const { getRedisInstance } = require('../../../lib/infra/redis.js');
     const instance = getRedisInstance();
     expect(instance).toBeDefined();
     expect(instance.url).toBe('https://fake-redis.com');

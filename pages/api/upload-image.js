@@ -4,8 +4,8 @@ import path from 'path';
 import crypto from 'crypto';
 import sharp from 'sharp';
 import { updateSetting } from '../../lib/domain/settings.js';
-import { withAuth } from '../../lib/auth.js';
-import { logger } from '../../lib/logger.js';
+import { withAuth } from '../../lib/auth/auth.js';
+import { logger } from '../../lib/infra/logger.js';
 
 /**
  * Remove um arquivo do disco de forma segura, ignorando erros silenciosamente.

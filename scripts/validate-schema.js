@@ -4,7 +4,7 @@ import { getPool, closePool } from './db/connection.js';
 
 loadEnv();
 
-// Definição do Schema Esperado com base no código (lib/db.js, lib/auth.js, migrations)
+// Definição do Schema Esperado com base no código (lib/infra/db.js, lib/auth/auth.js, migrations)
 const EXPECTED_SCHEMA = {
   posts: [
     'id', 'title', 'slug', 'excerpt', 'content', 'image_url', 'published', 'created_at', 'updated_at', 'views'
@@ -18,7 +18,7 @@ const EXPECTED_SCHEMA = {
   users: [
     'id', 'username', 'password', 'role', 'created_at'
   ],
-  // Tabelas inferidas pelo uso em lib/db.js
+  // Tabelas inferidas pelo uso em lib/infra/db.js
   settings: [
     'key', 'value', 'type', 'description', 'updated_at'
   ],

@@ -94,7 +94,7 @@ describe('API de Autenticação (/api/auth/login)', () => {
 
 // --- Simulação do Middleware de Autenticação ---
 
-// Simula o HOC `withAuth` de `lib/auth.js` para testar a lógica de verificação de token
+// Simula o HOC `withAuth` de `lib/auth/auth.js` para testar a lógica de verificação de token
 const withAuth = (handler) => async (req, res) => {
   const authHeader = req.headers.authorization;
 

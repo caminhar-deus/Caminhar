@@ -1,9 +1,9 @@
 import { getSettings, getSetting, updateSetting, getAllSettingsRaw } from '../../lib/domain/settings.js';
-import { withAuth, getAuthToken, verifyToken } from '../../lib/auth.js';
-import { getOrSetCache, invalidateCache, checkRateLimit } from '../../lib/cache.js';
+import { withAuth, getAuthToken, verifyToken } from '../../lib/auth/auth.js';
+import { getOrSetCache, invalidateCache, checkRateLimit } from '../../lib/cache/cache.js';
 import { z } from 'zod';
 import { getClientIP } from '../../lib/api/helpers.js';
-import { logger } from '../../lib/logger.js';
+import { logger } from '../../lib/infra/logger.js';
 
 const SETTINGS_CACHE_TTL = 7200; // 2 horas
 

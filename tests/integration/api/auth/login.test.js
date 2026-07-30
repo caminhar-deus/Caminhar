@@ -1,10 +1,10 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../../../../pages/api/auth/login';
-import * as auth from '../../../../lib/auth';
-import { checkRateLimit } from '../../../../lib/cache';
+import * as auth from '../../../../lib/auth/auth';
+import { checkRateLimit } from '../../../../lib/cache/cache';
 
-jest.mock('../../../../lib/auth', () => ({
+jest.mock('../../../../lib/auth/auth', () => ({
   authenticate: jest.fn(),
   generateToken: jest.fn(),
   setAuthCookie: jest.fn(),
@@ -12,11 +12,11 @@ jest.mock('../../../../lib/auth', () => ({
   authenticateAndGenerateToken: jest.fn()
 }));
 
-jest.mock('../../../../lib/cache', () => ({
+jest.mock('../../../../lib/cache/cache', () => ({
   checkRateLimit: jest.fn()
 }));
 
-jest.mock('../../../../lib/logger', () => {
+jest.mock('../../../../lib/infra/logger', () => {
   const mockMethods = {
     debug: jest.fn(),
     error: jest.fn(),

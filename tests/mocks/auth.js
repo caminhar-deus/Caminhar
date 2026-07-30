@@ -1,9 +1,9 @@
 /**
  * Auth Mocks
- * Mocks centralizados para o módulo lib/auth.js
+ * Mocks centralizados para o módulo lib/auth/auth.js
  *
  * Uso em testes:
- *   jest.mock('../../../lib/auth.js', () => require('../../mocks/auth').mockAuthModule());
+ *   jest.mock('../../../lib/auth/auth.js', () => require('../../mocks/auth').mockAuthModule());
  */
 
 /**

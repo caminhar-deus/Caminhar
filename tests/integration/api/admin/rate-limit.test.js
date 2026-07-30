@@ -32,7 +32,7 @@ jest.mock('@upstash/redis', () => ({
   })),
 }));
 
-jest.mock('../../../../lib/auth.js', () => ({
+jest.mock('../../../../lib/auth/auth.js', () => ({
   withAuth: jest.fn((h) => async (req, res) => {
     if (req.headers.authorization !== 'Bearer valid-token') {
       return res.status(401).json({ message: 'Não autenticado' });

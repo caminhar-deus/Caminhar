@@ -2,9 +2,9 @@ import { describe, it, expect, jest, beforeEach, beforeAll, afterAll } from '@je
 import { createMocks } from 'node-mocks-http';
 import handler from '../../../../pages/api/admin/videos.js';
 import { getPaginatedVideos, createVideo, updateVideo, deleteVideo, reorderVideos } from '../../../../lib/domain/videos.js';
-import { invalidateCache } from '../../../../lib/cache.js';
+import { invalidateCache } from '../../../../lib/cache/cache.js';
 
-jest.mock('../../../../lib/auth.js', () => ({
+jest.mock('../../../../lib/auth/auth.js', () => ({
   withAuth: (handler) => async (req, res) => {
     if (!req.user) req.user = { role: 'admin' };
     return handler(req, res);
@@ -19,7 +19,7 @@ jest.mock('../../../../lib/domain/videos.js', () => ({
   reorderVideos: jest.fn()
 }));
 
-jest.mock('../../../../lib/cache.js', () => ({
+jest.mock('../../../../lib/cache/cache.js', () => ({
   invalidateCache: jest.fn(),
   checkRateLimit: jest.fn().mockResolvedValue(false),
 }));

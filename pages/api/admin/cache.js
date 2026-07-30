@@ -1,4 +1,4 @@
-import { clearAllCache, getCacheMetrics } from '../../../lib/cache';
+import { clearAllCache, getCacheMetrics } from '../../../lib/cache/cache';
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
 
 async function handleGet(req, res) {

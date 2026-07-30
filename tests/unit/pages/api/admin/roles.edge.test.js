@@ -1,12 +1,12 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../../../../../pages/api/admin/roles.js';
-import * as auth from '../../../../../lib/auth.js';
-import * as db from '../../../../../lib/db.js';
-import { createRecord, updateRecords } from '../../../../../lib/crud.js';
+import * as auth from '../../../../../lib/auth/auth.js';
+import * as db from '../../../../../lib/infra/db.js';
+import { createRecord, updateRecords } from '../../../../../lib/crud/crud.js';
 import { logActivity } from '../../../../../lib/domain/audit.js';
 
-jest.mock('../../../../../lib/auth.js', () => {
+jest.mock('../../../../../lib/auth/auth.js', () => {
   const mockModule = {
     getAuthToken: jest.fn(),
     verifyToken: jest.fn(),
@@ -26,9 +26,9 @@ jest.mock('../../../../../lib/auth.js', () => {
   return mockModule;
 });
 
-jest.mock('../../../../../lib/db.js', () => require('../../../../mocks/db-module').mockDb());
+jest.mock('../../../../../lib/infra/db.js', () => require('../../../../mocks/db-module').mockDb());
 
-jest.mock('../../../../../lib/crud.js', () => ({
+jest.mock('../../../../../lib/crud/crud.js', () => ({
   createRecord: jest.fn(),
   updateRecords: jest.fn(),
   deleteRecords: jest.fn(),

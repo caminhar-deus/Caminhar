@@ -7,14 +7,14 @@ jest.mock('../../../lib/domain/posts.js', () => ({
   getRecentPosts: jest.fn(),
 }));
 
-jest.mock('../../../lib/cache.js', () => require('../../mocks/cache').mockCacheModule());
+jest.mock('../../../lib/cache/cache.js', () => require('../../mocks/cache').mockCacheModule());
 
 // Importa o handler
 import handler from '../../../pages/api/posts.js';
 
 // Importa as funções mockadas para controlá-las
 import { getRecentPosts } from '../../../lib/domain/posts.js';
-import { getOrSetCache, checkRateLimit } from '../../../lib/cache.js';
+import { getOrSetCache, checkRateLimit } from '../../../lib/cache/cache.js';
 
 describe('API Pública de Posts (GET /api/posts)', () => {
   beforeEach(() => {

@@ -14,13 +14,13 @@ jest.mock('../../../lib/domain/videos.js', () => ({
 jest.mock('../../../lib/domain/audit.js', () => ({
   logActivity: jest.fn(),
 }));
-jest.mock('../../../lib/cache.js', () => ({
+jest.mock('../../../lib/cache/cache.js', () => ({
   invalidateCache: jest.fn(),
   checkRateLimit: jest.fn().mockResolvedValue(false),
 }));
 
 // Mock do módulo de autenticação para ignorar a verificação de token neste teste
-jest.mock('../../../lib/auth', () => ({
+jest.mock('../../../lib/auth/auth', () => ({
   withAuth: (handler) => (req, res) => {
     // Simula um usuário autenticado para os testes, que é o que o middleware real faz.
     req.user = { username: 'test-admin', role: 'admin' };

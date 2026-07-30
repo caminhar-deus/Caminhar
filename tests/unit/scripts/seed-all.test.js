@@ -4,14 +4,14 @@ jest.mock('pg');
 jest.mock('fs');
 jest.mock('dotenv');
 
-jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb());
+jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb());
 
 describe('seed-all.js — Orquestrador de seeds', () => {
   let libDb;
 
   beforeEach(async () => {
     process.env.DATABASE_URL = 'postgres://user:pass@localhost:5432/testdb';
-    libDb = await import('../../../lib/db.js');
+    libDb = await import('../../../lib/infra/db.js');
   });
 
   afterEach(() => {

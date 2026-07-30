@@ -15,10 +15,10 @@ import {
   withCache
 } from '../../../../lib/api/middleware.js';
 
-import * as auth from '../../../../lib/auth.js';
+import * as auth from '../../../../lib/auth/auth.js';
 import * as response from '../../../../lib/api/response.js';
 
-jest.mock('../../../../lib/auth.js', () => ({
+jest.mock('../../../../lib/auth/auth.js', () => ({
   getAuthToken: jest.fn(),
   verifyToken: jest.fn()
 }));

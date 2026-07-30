@@ -1,5 +1,5 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-import { query, closeDatabase, transaction, healthCheck, getDatabaseInfo, resetPool, getPool } from '../../../lib/db.js';
+import { query, closeDatabase, transaction, healthCheck, getDatabaseInfo, resetPool, getPool } from '../../../lib/infra/db.js';
 import { Pool, restorePoolImplementation } from 'pg';
 
 jest.mock('pg');

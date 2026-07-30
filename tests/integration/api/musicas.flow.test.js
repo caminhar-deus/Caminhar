@@ -15,13 +15,13 @@ jest.mock('../../../lib/domain/audit.js', () => ({
 }));
 
 // Mock do cache para evitar erro de importação do Redis/uncrypto
-jest.mock('../../../lib/cache', () => ({
+jest.mock('../../../lib/cache/cache', () => ({
   invalidateCache: jest.fn(),
   checkRateLimit: jest.fn().mockResolvedValue(false),
 }));
 
 // Mock do módulo de autenticação para ignorar a verificação de token neste teste
-jest.mock('../../../lib/auth', () => ({
+jest.mock('../../../lib/auth/auth', () => ({
   withAuth: (handler) => (req, res) => {
     // Simula um usuário autenticado para os testes, que é o que o middleware real faz.
     req.user = { username: 'test-admin', role: 'admin' };

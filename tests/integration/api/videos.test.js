@@ -8,14 +8,14 @@ jest.mock('../../../lib/domain/videos.js', () => ({
   getPublicPaginatedVideos: jest.fn()
 }));
 
-jest.mock('../../../lib/cache.js', () => require('../../mocks/cache').mockCacheModule());
+jest.mock('../../../lib/cache/cache.js', () => require('../../mocks/cache').mockCacheModule());
 
 // Importa o handler
 import handler from '../../../pages/api/videos.js';
 
 // Importa as funções mockadas para controlá-las
 import { getPublicPaginatedVideos } from '../../../lib/domain/videos.js';
-import { getOrSetCache, checkRateLimit } from '../../../lib/cache.js';
+import { getOrSetCache, checkRateLimit } from '../../../lib/cache/cache.js';
 
 // Testes padrão via abstração
 testPublicGetEndpoint(handler, {

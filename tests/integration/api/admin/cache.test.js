@@ -1,9 +1,9 @@
 import { describe, it, expect, jest, beforeEach, beforeAll, afterAll } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../../../../pages/api/admin/cache.js';
-import { clearAllCache } from '../../../../lib/cache.js';
+import { clearAllCache } from '../../../../lib/cache/cache.js';
 
-jest.mock('../../../../lib/auth.js', () => {
+jest.mock('../../../../lib/auth/auth.js', () => {
   const mockModule = {
     getAuthToken: jest.fn(),
     verifyToken: jest.fn(),
@@ -23,7 +23,7 @@ jest.mock('../../../../lib/auth.js', () => {
   return mockModule;
 });
 
-jest.mock('../../../../lib/cache.js', () => ({
+jest.mock('../../../../lib/cache/cache.js', () => ({
   clearAllCache: jest.fn(),
   getCacheMetrics: jest.fn().mockReturnValue({
     redisHits: 0,
@@ -37,7 +37,7 @@ jest.mock('../../../../lib/cache.js', () => ({
   checkRateLimit: jest.fn().mockResolvedValue(false),
 }));
 
-import { getAuthToken, verifyToken } from '../../../../lib/auth.js';
+import { getAuthToken, verifyToken } from '../../../../lib/auth/auth.js';
 
 describe('API Admin - Cache (/api/admin/cache)', () => {
   const originalConsoleError = console.error;

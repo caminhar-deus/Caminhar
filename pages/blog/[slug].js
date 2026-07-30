@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import styles from './Blog.module.css';
-import { query } from '../../lib/db.js';
+import { query } from '../../lib/infra/db.js';
 
 /**
  * Página de detalhe de post do blog (rota canônica).

@@ -51,7 +51,7 @@ scripts/
 │
 ├── db/
 │   ├── connection.js                 # Módulo compartilhado de conexão PostgreSQL (Pool singleton)
-│   ├── verify-db-functions.js        # [!] IRRELEVANTE — verifica exportações de lib/db.js (desatualizado)
+│   ├── verify-db-functions.js        # [!] IRRELEVANTE — verifica exportações de lib/infra/db.js (desatualizado)
 │   └── verify-migration.js           # [!] FORA DE LUGAR — handler de API Next.js, não é script de migração
 │
 ├── diagnostics/
@@ -196,7 +196,7 @@ Este grupo forma o subsistema completo de backup e restauração do banco de dad
 #### `scripts/init-server.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/init-server.js`
 - **Propósito:** Script abrangente de inicialização do servidor. Executa em sequência: validação de ambiente, verificação de conexão com banco, criação de tabelas, verificação de dados existentes, seed se necessário e inicia verificação periódica de saúde.
-- **Dependências:** `dotenv`, `../lib/db.js`, `child_process`
+- **Dependências:** `dotenv`, `../lib/infra/db.js`, `child_process`
 
 #### `scripts/seed-settings.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/seed-settings.js`
@@ -358,7 +358,7 @@ Agrupados por escopo de atuação:
 
 #### `scripts/db/verify-db-functions.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/db/verify-db-functions.js`
-- **Propósito:** [!] **IRRELEVANTE / DESATUALIZADO.** Verifica exportações de `lib/db.js` (importa de `./db.js`, que não é mais usado como fonte de conexão para scripts — todos foram migrados para `connection.js`). Script de verificação transitória, sem utilidade atual no fluxo de trabalho.
+- **Propósito:** [!] **IRRELEVANTE / DESATUALIZADO.** Verifica exportações de `lib/infra/db.js` (importa de `./db.js`, que não é mais usado como fonte de conexão para scripts — todos foram migrados para `connection.js`). Script de verificação transitória, sem utilidade atual no fluxo de trabalho.
 
 #### `scripts/db/verify-migration.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/db/verify-migration.js`
@@ -396,7 +396,7 @@ Agrupados por escopo de atuação:
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/reset-password.js`
 - **Propósito:** Reseta ou cria senha de usuário. Aceita username (opcional, default: `admin`) e nova senha (obrigatório). Gera hash bcrypt e atualiza no banco. Se usuário não existir, cria com role `admin`.
 - **Uso:** `node scripts/reset-password.js [usuario] <nova_senha>`
-- **Dependências:** `./utils/load-env.js`, `./db/connection.js`, `../lib/auth.js`
+- **Dependências:** `./utils/load-env.js`, `./db/connection.js`, `../lib/auth/auth.js`
 
 ### 🔬 `scripts/check-sql-injection.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/check-sql-injection.js`
@@ -438,7 +438,7 @@ Agrupados por escopo de atuação:
 - **Recomendação:** Pode ser removido ou atualizado para usar `./connection.js`.
 
 ### `scripts/db/verify-migration.js`
-- **Problema:** Este arquivo é um handler de API Next.js (exporta `withAuth(handler)` e retorna JSON com contagens do banco). Foi colocado em `scripts/db/` por engano. Sua localização correta seria `pages/api/`. Além disso, importa de `../../../lib/auth` e `../../../lib/db`, o que sugere que deveria estar em uma subpasta de `pages/`, não em `scripts/`.
+- **Problema:** Este arquivo é um handler de API Next.js (exporta `withAuth(handler)` e retorna JSON com contagens do banco). Foi colocado em `scripts/db/` por engano. Sua localização correta seria `pages/api/`. Além disso, importa de `../../../lib/auth/auth` e `../../../lib/infra/db`, o que sugere que deveria estar em uma subpasta de `pages/`, não em `scripts/`.
 - **Recomendação:** Mover para `pages/api/verify-migration.js` ou remover se não estiver em uso.
 
 ### `scripts/utils/cleanup-test-data.js`

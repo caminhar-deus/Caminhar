@@ -1,8 +1,8 @@
-import { query } from '../../lib/db.js';
-import { getOrSetCache, checkRateLimit } from '../../lib/cache.js';
+import { query } from '../../lib/infra/db.js';
+import { getOrSetCache, checkRateLimit } from '../../lib/cache/cache.js';
 import { paginate, buildPaginationMeta, paginatedResponse } from './helper/pagination.js';
 import { getClientIP } from '../../lib/api/helpers.js';
-import { logger } from '../../lib/logger.js';
+import { logger } from '../../lib/infra/logger.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {

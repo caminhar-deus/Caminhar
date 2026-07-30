@@ -1,9 +1,9 @@
 import { getRecentPosts, createPost } from '../../lib/domain/posts.js';
-import { getOrSetCache, checkRateLimit, invalidateCache } from '../../lib/cache.js';
-import { withAuth } from '../../lib/auth.js';
+import { getOrSetCache, checkRateLimit, invalidateCache } from '../../lib/cache/cache.js';
+import { withAuth } from '../../lib/auth/auth.js';
 import { z } from 'zod';
 import { getClientIP } from '../../lib/api/helpers.js';
-import { logger } from '../../lib/logger.js';
+import { logger } from '../../lib/infra/logger.js';
 
 /**
  * API route handler for posts.

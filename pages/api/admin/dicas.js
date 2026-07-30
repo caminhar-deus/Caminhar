@@ -1,5 +1,5 @@
-import { query } from '../../../lib/db.js';
-import { invalidateCache } from '../../../lib/cache.js';
+import { query } from '../../../lib/infra/db.js';
+import { invalidateCache } from '../../../lib/cache/cache.js';
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
 import { z } from 'zod';
 

@@ -3,7 +3,7 @@
  * Mocks para operações de cache (Redis/memória)
  *
  * Uso em testes de integração:
- *   jest.mock('../../../lib/cache.js', () => require('../../mocks/cache').mockCacheModule());
+ *   jest.mock('../../../lib/cache/cache.js', () => require('../../mocks/cache').mockCacheModule());
  */
 
 /**

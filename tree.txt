@@ -696,10 +696,12 @@
 │   │   ├── response.js
 │   │   ├── utils.js
 │   │   └── validate.js
-│   ├── auth.js
-│   ├── cache.js
-│   ├── crud.js
-│   ├── db.js
+│   ├── auth
+│   │   └── auth.js
+│   ├── cache
+│   │   └── cache.js
+│   ├── crud
+│   │   └── crud.js
 │   ├── domain
 │   │   ├── audit.js
 │   │   ├── images.js
@@ -710,12 +712,15 @@
 │   │   ├── settings.js
 │   │   ├── shared-pagination.js
 │   │   └── videos.js
-│   ├── logger.js
-│   ├── redis.js
-│   ├── seo
-│   │   └── config.js
-│   ├── spotify.js
-│   └── youtube.js
+│   ├── infra
+│   │   ├── db.js
+│   │   ├── logger.js
+│   │   └── redis.js
+│   ├── media
+│   │   ├── spotify.js
+│   │   └── youtube.js
+│   └── seo
+│       └── config.js
 ├── load-tests
 │   ├── functional
 │   │   ├── backup-verification-test.js
@@ -1243,4 +1248,4 @@
     ├── csvExport.js
     └── reorder.js
 
-188 directories, 1056 files
+193 directories, 1056 files

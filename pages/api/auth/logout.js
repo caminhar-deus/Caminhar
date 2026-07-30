@@ -1,4 +1,4 @@
-import { setAuthCookie, setRefreshTokenCookie, getRefreshTokenCookie, revokeRefreshToken } from '../../../lib/auth.js';
+import { setAuthCookie, setRefreshTokenCookie, getRefreshTokenCookie, revokeRefreshToken } from '../../../lib/auth/auth.js';
 
 export default async function handler(req, res) {
   // Invalida o refresh token no banco, se existir

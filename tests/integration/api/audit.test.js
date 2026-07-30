@@ -1,8 +1,8 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { logActivity } from '../../../lib/domain/audit.js';
-import { query } from '../../../lib/db.js';
+import { query } from '../../../lib/infra/db.js';
 
-jest.mock('../../../lib/db.js', () => ({ query: jest.fn() }));
+jest.mock('../../../lib/infra/db.js', () => ({ query: jest.fn() }));
 
 describe('Domain - Audit', () => {
   beforeEach(() => { jest.clearAllMocks(); });

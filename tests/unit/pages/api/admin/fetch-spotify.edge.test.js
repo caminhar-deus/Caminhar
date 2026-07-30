@@ -1,9 +1,9 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../../../../../pages/api/admin/fetch-spotify.js';
-import * as auth from '../../../../../lib/auth.js';
+import * as auth from '../../../../../lib/auth/auth.js';
 
-jest.mock('../../../../../lib/auth.js', () => ({
+jest.mock('../../../../../lib/auth/auth.js', () => ({
   getAuthToken: jest.fn(),
   verifyToken: jest.fn(),
   withAuth: jest.fn((handler) => (req, res) => handler(req, res)),

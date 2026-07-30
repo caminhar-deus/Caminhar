@@ -143,14 +143,14 @@
 
 **Arquivos:** `tests/integration/api/auth/login.test.js`, `tests/integration/api/login.test.js`, `tests/integration/api/auth/logout.test.js`
 
-**Problema:** Após a implementação do fluxo de refresh token em `lib/auth.js` e `pages/api/auth/`, três testes de integração passaram a falhar:
-- `login.test.js` (auth): mock manual de `lib/auth` não incluía `setRefreshTokenCookie`, causando `TypeError: (0 , _auth.setRefreshTokenCookie) is not a function`.
+**Problema:** Após a implementação do fluxo de refresh token em `lib/auth/auth.js` e `pages/api/auth/`, três testes de integração passaram a falhar:
+- `login.test.js` (auth): mock manual de `lib/auth/auth` não incluía `setRefreshTokenCookie`, causando `TypeError: (0 , _auth.setRefreshTokenCookie) is not a function`.
 - `login.test.js` (integration/api): mesmo problema — mock incompleto.
 - `logout.test.js`: asserção esperava `token=;` no `set-cookie`, mas o logout agora define dois cookies e `res.setHeader` sobrescreve o anterior, deixando apenas `refreshToken=;`.
 
 **Correção:** 
-- `tests/integration/api/auth/login.test.js`: Adicionado `setRefreshTokenCookie: jest.fn()` ao mock de `lib/auth`, `refreshToken: 'fake-refresh-token'` ao retorno de `authenticateAndGenerateToken`, e asserção `expect(auth.setRefreshTokenCookie).toHaveBeenCalledWith(res, 'fake-refresh-token')`.
-- `tests/integration/api/login.test.js`: Adicionado `setRefreshTokenCookie: jest.fn()` ao mock de `lib/auth`, `refreshToken: 'mock-refresh-token'` aos 2 retornos de `authenticateAndGenerateToken`, e asserções `expect(auth.setRefreshTokenCookie).toHaveBeenCalledWith(...)`.
+- `tests/integration/api/auth/login.test.js`: Adicionado `setRefreshTokenCookie: jest.fn()` ao mock de `lib/auth/auth`, `refreshToken: 'fake-refresh-token'` ao retorno de `authenticateAndGenerateToken`, e asserção `expect(auth.setRefreshTokenCookie).toHaveBeenCalledWith(res, 'fake-refresh-token')`.
+- `tests/integration/api/login.test.js`: Adicionado `setRefreshTokenCookie: jest.fn()` ao mock de `lib/auth/auth`, `refreshToken: 'mock-refresh-token'` aos 2 retornos de `authenticateAndGenerateToken`, e asserções `expect(auth.setRefreshTokenCookie).toHaveBeenCalledWith(...)`.
 
 ### 3.13 Testes de `createMusica` atualizados para refletir uso de transação ✅
 

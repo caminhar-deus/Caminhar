@@ -1,9 +1,9 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../../../pages/api/status.js';
-import { query } from '../../../lib/db.js';
+import { query } from '../../../lib/infra/db.js';
 
-jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb());
+jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb());
 
 describe('API Status (/api/status)', () => {
   beforeEach(() => { jest.clearAllMocks(); });

@@ -1,6 +1,6 @@
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
 import { z } from 'zod';
-import { logger } from '../../../lib/logger.js';
+import { logger } from '../../../lib/infra/logger.js';
 
 const FETCH_TIMEOUT = 8000; // 8 segundos
 

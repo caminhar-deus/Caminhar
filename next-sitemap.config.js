@@ -1,6 +1,6 @@
 /** @type {import('next-sitemap').IConfig} */
 
-import { logger } from './lib/logger.js';
+import { logger } from './lib/infra/logger.js';
 
 export default {
   siteUrl: process.env.SITE_URL || 'http://localhost:3000',
@@ -61,7 +61,7 @@ export default {
     const result = [];
     
     // Importar conexão com o banco
-    const { query } = await import('./lib/db.js');
+    const { query } = await import('./lib/infra/db.js');
 
     try {
       // ✅ Buscar todos os posts publicados

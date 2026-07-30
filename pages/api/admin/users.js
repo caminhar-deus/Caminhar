@@ -1,6 +1,6 @@
-import { query } from '../../../lib/db';
-import { createRecord, updateRecords, deleteRecords } from '../../../lib/crud';
-import { hashPassword } from '../../../lib/auth';
+import { query } from '../../../lib/infra/db';
+import { createRecord, updateRecords, deleteRecords } from '../../../lib/crud/crud';
+import { hashPassword } from '../../../lib/auth/auth';
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
 import { z } from 'zod';
 

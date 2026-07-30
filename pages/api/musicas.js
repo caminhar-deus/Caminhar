@@ -1,8 +1,8 @@
 import { getPaginatedMusicas } from '../../lib/domain/musicas.js';
-import { getOrSetCache, checkRateLimit } from '../../lib/cache.js';
+import { getOrSetCache, checkRateLimit } from '../../lib/cache/cache.js';
 import { z } from 'zod';
 import { getClientIP } from '../../lib/api/helpers.js';
-import { logger } from '../../lib/logger.js';
+import { logger } from '../../lib/infra/logger.js';
 
 /**
  * Handles GET requests to fetch paginated and published music data.

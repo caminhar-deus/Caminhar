@@ -1,9 +1,9 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
 // Mocks para as dependências de banco e CRUD
-jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb());
+jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb());
 
-jest.mock('../../../lib/crud.js', () => ({
+jest.mock('../../../lib/crud/crud.js', () => ({
   createRecord: jest.fn(),
   updateRecords: jest.fn(),
   deleteRecords: jest.fn(),
@@ -20,8 +20,8 @@ import {
   reorderVideos
 } from '../../../lib/domain/videos.js';
 
-import { query, transaction } from '../../../lib/db.js';
-import { createRecord, updateRecords, deleteRecords, raw } from '../../../lib/crud.js';
+import { query, transaction } from '../../../lib/infra/db.js';
+import { createRecord, updateRecords, deleteRecords, raw } from '../../../lib/crud/crud.js';
 
 describe('Domain - Vídeos (lib/domain/videos.js)', () => {
   beforeEach(() => {

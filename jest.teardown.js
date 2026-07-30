@@ -1,6 +1,6 @@
-import { getRedisInstance } from './lib/redis.js';
-import { closeDatabase } from './lib/db.js';
-import { cleanupRateLimitTimer } from './lib/cache.js';
+import { getRedisInstance } from './lib/infra/redis.js';
+import { closeDatabase } from './lib/infra/db.js';
+import { cleanupRateLimitTimer } from './lib/cache/cache.js';
 import { setupAsyncPolyfills } from './tests/helpers/async-polyfills.js';
 
 export default async function globalTeardown() {

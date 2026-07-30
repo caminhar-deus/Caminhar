@@ -1,5 +1,5 @@
-import { refreshAccessToken, setAuthCookie, setRefreshTokenCookie, getRefreshTokenCookie } from '../../../lib/auth';
-import { logger } from '../../../lib/logger';
+import { refreshAccessToken, setAuthCookie, setRefreshTokenCookie, getRefreshTokenCookie } from '../../../lib/auth/auth';
+import { logger } from '../../../lib/infra/logger';
 
 /**
  * Endpoint de renovação de access token via refresh token.

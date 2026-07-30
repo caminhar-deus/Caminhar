@@ -1,9 +1,9 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../../../../pages/api/auth/check.js';
-import * as auth from '../../../../lib/auth.js';
+import * as auth from '../../../../lib/auth/auth.js';
 
-jest.mock('../../../../lib/auth.js', () => ({
+jest.mock('../../../../lib/auth/auth.js', () => ({
   getAuthToken: jest.fn(),
   verifyToken: jest.fn()
 }));

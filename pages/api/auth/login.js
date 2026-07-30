@@ -1,6 +1,6 @@
-import { authenticateAndGenerateToken, setAuthCookie, setRefreshTokenCookie } from '../../../lib/auth';
+import { authenticateAndGenerateToken, setAuthCookie, setRefreshTokenCookie } from '../../../lib/auth/auth';
 import { detectSpoofedIP, getClientIP } from '../../../lib/api/helpers.js';
-import { logger } from '../../../lib/logger.js';
+import { logger } from '../../../lib/infra/logger.js';
 
 /**
  * Endpoint de autenticação de usuários.

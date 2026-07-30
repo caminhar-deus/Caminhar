@@ -1,4 +1,4 @@
-import { query } from '../../../lib/db';
+import { query } from '../../../lib/infra/db';
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
 
 async function handleGet(req, res) {

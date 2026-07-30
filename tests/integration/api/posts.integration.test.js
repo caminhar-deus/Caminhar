@@ -11,7 +11,7 @@ jest.mock('../../../lib/domain/posts.js', () => ({
 }));
 
 // Mock cache - retorna a função fetchFunction executada (sem cache real)
-jest.mock('../../../lib/cache.js', () => ({
+jest.mock('../../../lib/cache/cache.js', () => ({
   getOrSetCache: jest.fn(async (key, fetchFunction) => {
     // Executa a função diretamente, sem cache real nos testes
     return await fetchFunction();
@@ -22,7 +22,7 @@ jest.mock('../../../lib/cache.js', () => ({
 
 // Importa os módulos APÓS os mocks estarem configurados
 import { getRecentPosts } from '../../../lib/domain/posts.js';
-import { getOrSetCache, checkRateLimit } from '../../../lib/cache.js';
+import { getOrSetCache, checkRateLimit } from '../../../lib/cache/cache.js';
 import handler from '../../../pages/api/posts.js';
 
 describe('Integração de Posts (API/DB)', () => {

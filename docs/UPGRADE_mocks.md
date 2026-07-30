@@ -16,7 +16,7 @@ O arquivo `__mocks__/cookie.js` é um **mock órfão** — não é consumido por
 
 ### Evidências
 
-1. **`lib/auth.js` não importa a biblioteca `cookie`** — O código atual implementa funções próprias `parseCookie()` (linha 8) e `serializeCookie()` (linha 20), sem dependência externa.
+1. **`lib/auth/auth.js` não importa a biblioteca `cookie`** — O código atual implementa funções próprias `parseCookie()` (linha 8) e `serializeCookie()` (linha 20), sem dependência externa.
 2. **Nenhum arquivo de teste chama `jest.mock('cookie')`** — A pesquisa em toda a pasta `tests/` não encontrou ocorrências.
 3. **O pacote `cookie` não está no `package.json`** — Ausente tanto em `dependencies` quanto em `devDependencies`.
 

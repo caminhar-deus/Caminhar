@@ -1,14 +1,14 @@
 /**
  * DB Module Mocks
- * Mock centralizado para o módulo lib/db.js
+ * Mock centralizado para o módulo lib/infra/db.js
  *
  * Uso em testes:
- *   jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb());
+ *   jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb());
  */
 
 /**
  * Cria um módulo db.js mockado completo
- * Exporta exatamente as mesmas funções que lib/db.js
+ * Exporta exatamente as mesmas funções que lib/infra/db.js
  * @param {Object} overrides - Sobrescreve funções específicas
  * @returns {Object} Módulo db mockado
  */

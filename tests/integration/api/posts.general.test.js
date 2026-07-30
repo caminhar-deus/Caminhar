@@ -1,21 +1,21 @@
 import { jest, describe, beforeEach, test, expect } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 
-// Mock do lib/db
-jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb({
+// Mock do lib/infra/db
+jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb({
   getAllPosts: jest.fn(),
   createPost: jest.fn(),
   updatePost: jest.fn(),
   deletePost: jest.fn(),
 }));
 
-// Mock do lib/auth
-jest.mock('../../../lib/auth.js', () => ({
+// Mock do lib/auth/auth
+jest.mock('../../../lib/auth/auth.js', () => ({
   withAuth: (fn) => (req, res) => fn(req, res),
 }));
 
 // Import the mocked modules
-const db = jest.requireMock('../../../lib/db.js');
+const db = jest.requireMock('../../../lib/infra/db.js');
 
 // Mock handler function since the file doesn't exist
 const handler = async (req, res) => {

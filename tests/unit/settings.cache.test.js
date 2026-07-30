@@ -2,18 +2,18 @@ import { jest, describe, beforeEach, it, expect } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 
 // Mock das dependências
-jest.mock('../../lib/db.js', () => require('../mocks/db-module').mockDb({
+jest.mock('../../lib/infra/db.js', () => require('../mocks/db-module').mockDb({
   getSetting: jest.fn(),
   updateSetting: jest.fn(),
   getAllSettingsRaw: jest.fn(),
 }));
-jest.mock('../../lib/auth.js', () => ({
+jest.mock('../../lib/auth/auth.js', () => ({
   getAuthToken: jest.fn(),
   verifyToken: jest.fn(),
 }));
 
 // Mock do Redis (simulando comportamento em memória para testes)
-jest.mock('../../lib/redis.js', () => {
+jest.mock('../../lib/infra/redis.js', () => {
   const store = new Map();
   return {
     redis: {
@@ -31,9 +31,9 @@ jest.mock('../../lib/redis.js', () => {
 });
 
 // Import the mocked modules
-const db = jest.requireMock('../../lib/db.js');
-const auth = jest.requireMock('../../lib/auth.js');
-const redis = jest.requireMock('../../lib/redis.js').redis;
+const db = jest.requireMock('../../lib/infra/db.js');
+const auth = jest.requireMock('../../lib/auth/auth.js');
+const redis = jest.requireMock('../../lib/infra/redis.js').redis;
 
 // Mock handler function since the file doesn't exist
 const handler = async (req, res) => {

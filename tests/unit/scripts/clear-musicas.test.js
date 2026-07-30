@@ -4,7 +4,7 @@ jest.mock('pg');
 jest.mock('fs');
 jest.mock('dotenv');
 
-jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb());
+jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb());
 
 jest.mock('../../../scripts/utils/load-env.js', () => ({
   loadEnv: jest.fn(),
@@ -15,7 +15,7 @@ describe('clear-musicas.js — Limpeza da tabela de músicas', () => {
 
   beforeEach(async () => {
     process.env.DATABASE_URL = 'postgres://user:pass@localhost:5432/testdb';
-    libDb = await import('../../../lib/db.js');
+    libDb = await import('../../../lib/infra/db.js');
   });
 
   afterEach(() => {

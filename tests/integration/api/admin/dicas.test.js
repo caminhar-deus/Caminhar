@@ -2,7 +2,7 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 
 // Mocks para DB
-jest.mock('../../../../lib/db.js', () => require('../../../mocks/db-module').mockDb());
+jest.mock('../../../../lib/infra/db.js', () => require('../../../mocks/db-module').mockDb());
 
 // Mock para log de auditoria
 jest.mock('../../../../lib/domain/audit.js', () => ({
@@ -10,7 +10,7 @@ jest.mock('../../../../lib/domain/audit.js', () => ({
 }));
 
 // Mocks para Auth (interceptando o middleware withAuth)
-jest.mock('../../../../lib/auth.js', () => ({
+jest.mock('../../../../lib/auth/auth.js', () => ({
   withAuth: jest.fn((handler) => async (req, res) => {
     // Simula a injeção do usuário logado na requisição, validando via Header para testarmos os fluxos 401 e de Sucesso
     if (req.headers.authorization !== 'Bearer valid-token') {
@@ -22,7 +22,7 @@ jest.mock('../../../../lib/auth.js', () => ({
 }));
 
 import handler from '../../../../pages/api/admin/dicas.js';
-import { query } from '../../../../lib/db.js';
+import { query } from '../../../../lib/infra/db.js';
 import { logActivity } from '../../../../lib/domain/audit.js';
 
 describe('API Admin - Dicas (/api/admin/dicas)', () => {

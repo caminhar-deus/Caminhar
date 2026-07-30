@@ -11,12 +11,12 @@ jest.mock('../../../lib/domain/products.js', () => ({
   deleteProduct: jest.fn(),
 }));
 
-jest.mock('../../../lib/auth.js', () => ({
+jest.mock('../../../lib/auth/auth.js', () => ({
   getAuthToken: jest.fn(),
   verifyToken: jest.fn(),
 }));
 
-jest.mock('../../../lib/cache.js', () => ({
+jest.mock('../../../lib/cache/cache.js', () => ({
   checkRateLimit: jest.fn(),
   invalidateCache: jest.fn(),
   getOrSetCache: jest.fn(async (key, fetchFunction) => await fetchFunction()),
@@ -26,14 +26,14 @@ jest.mock('../../../lib/domain/audit.js', () => ({
   logActivity: jest.fn(),
 }));
 
-jest.mock('../../../lib/logger.js', () => ({
+jest.mock('../../../lib/infra/logger.js', () => ({
   logger: { error: jest.fn() },
 }));
 
 import handler from '../../../pages/api/products.js';
 import { getPaginatedProducts, getAllProducts, createProduct, updateProduct, deleteProduct } from '../../../lib/domain/products.js';
-import { getAuthToken, verifyToken } from '../../../lib/auth.js';
-import { checkRateLimit, invalidateCache } from '../../../lib/cache.js';
+import { getAuthToken, verifyToken } from '../../../lib/auth/auth.js';
+import { checkRateLimit, invalidateCache } from '../../../lib/cache/cache.js';
 import { logActivity } from '../../../lib/domain/audit.js';
 
 describe('API Pública/Admin - Produtos (/api/products)', () => {

@@ -1,9 +1,9 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
 // Mocks para isolar o banco de dados e outras dependências
-jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb());
+jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb());
 
-jest.mock('../../../lib/crud.js', () => ({
+jest.mock('../../../lib/crud/crud.js', () => ({
   createRecord: jest.fn(),
   updateRecords: jest.fn(),
   deleteRecords: jest.fn(),
@@ -26,8 +26,8 @@ import {
 } from '../../../lib/domain/posts.js';
 
 // Importa os mocks para controle de asserções
-import { query, transaction } from '../../../lib/db.js';
-import { createRecord, updateRecords, deleteRecords, raw } from '../../../lib/crud.js';
+import { query, transaction } from '../../../lib/infra/db.js';
+import { createRecord, updateRecords, deleteRecords, raw } from '../../../lib/crud/crud.js';
 import { logActivity } from '../../../lib/domain/audit.js';
 
 describe('Domain - Posts (lib/domain/posts.js)', () => {

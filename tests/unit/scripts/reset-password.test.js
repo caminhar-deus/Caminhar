@@ -4,11 +4,11 @@ jest.mock('pg');
 jest.mock('fs');
 jest.mock('dotenv/config');
 
-jest.mock('../../../lib/auth.js', () => ({
+jest.mock('../../../lib/auth/auth.js', () => ({
   hashPassword: jest.fn().mockResolvedValue('$2b$10$hashed_password_string'),
 }));
 
-jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb());
+jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb());
 
 describe('reset-password.js — Redefinição de senha', () => {
   let libDb;
@@ -16,8 +16,8 @@ describe('reset-password.js — Redefinição de senha', () => {
 
   beforeEach(async () => {
     process.env.DATABASE_URL = 'postgres://user:pass@localhost:5432/testdb';
-    libDb = await import('../../../lib/db.js');
-    libAuth = await import('../../../lib/auth.js');
+    libDb = await import('../../../lib/infra/db.js');
+    libAuth = await import('../../../lib/auth/auth.js');
   });
 
   it('deve chamar hashPassword com a nova senha', async () => {

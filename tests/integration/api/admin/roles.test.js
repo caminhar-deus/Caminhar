@@ -2,10 +2,10 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 
 // Mocks para as operações de banco
-jest.mock('../../../../lib/db.js', () => require('../../../mocks/db-module').mockDb());
+jest.mock('../../../../lib/infra/db.js', () => require('../../../mocks/db-module').mockDb());
 
 // Mocks para CRUD (createRecord, updateRecords, deleteRecords)
-jest.mock('../../../../lib/crud.js', () => ({
+jest.mock('../../../../lib/crud/crud.js', () => ({
   createRecord: jest.fn(),
   updateRecords: jest.fn(),
   deleteRecords: jest.fn(),
@@ -17,7 +17,7 @@ jest.mock('../../../../lib/domain/audit.js', () => ({
 }));
 
 // Mocks de autenticação
-jest.mock('../../../../lib/auth.js', () => {
+jest.mock('../../../../lib/auth/auth.js', () => {
   const mockModule = {
     getAuthToken: jest.fn(),
     verifyToken: jest.fn(),
@@ -38,10 +38,10 @@ jest.mock('../../../../lib/auth.js', () => {
 });
 
 import handler from '../../../../pages/api/admin/roles.js';
-import { query } from '../../../../lib/db.js';
-import { createRecord, updateRecords, deleteRecords } from '../../../../lib/crud.js';
+import { query } from '../../../../lib/infra/db.js';
+import { createRecord, updateRecords, deleteRecords } from '../../../../lib/crud/crud.js';
 import { logActivity } from '../../../../lib/domain/audit.js';
-import { getAuthToken, verifyToken } from '../../../../lib/auth.js';
+import { getAuthToken, verifyToken } from '../../../../lib/auth/auth.js';
 
 describe('API Admin - Gestão de Cargos (/api/admin/roles)', () => {
   beforeEach(() => {

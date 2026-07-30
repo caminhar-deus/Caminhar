@@ -1,11 +1,11 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 
-jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb());
+jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb());
 
 import handler from '../../../pages/api/dicas.js';
-import { query } from '../../../lib/db.js';
-import { invalidateCache } from '../../../lib/cache.js';
+import { query } from '../../../lib/infra/db.js';
+import { invalidateCache } from '../../../lib/cache/cache.js';
 
 describe('API Pública - Dicas do Dia (/api/dicas)', () => {
   beforeEach(async () => {

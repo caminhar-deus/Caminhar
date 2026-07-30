@@ -7,7 +7,7 @@ import {
   withRateLimit,
   withAuth,
 } from '../../../lib/api/middleware.js';
-import * as auth from '../../../lib/auth.js';
+import * as auth from '../../../lib/auth/auth.js';
 
 // Mocks de dependências
 jest.mock('../../../lib/api/response.js', () => ({
@@ -18,18 +18,18 @@ jest.mock('../../../lib/api/response.js', () => ({
   handleError: jest.fn(),
 }));
 
-jest.mock('../../../lib/cache.js', () => ({
+jest.mock('../../../lib/cache/cache.js', () => ({
   checkRateLimit: jest.fn(),
   getCacheMetrics: jest.fn().mockReturnValue({ redisConnected: false }),
 }));
 
-jest.mock('../../../lib/auth.js', () => ({
+jest.mock('../../../lib/auth/auth.js', () => ({
   getAuthToken: jest.fn(),
   verifyToken: jest.fn(),
 }));
 
 import { handleError, tooManyRequests } from '../../../lib/api/response.js';
-import { checkRateLimit } from '../../../lib/cache.js';
+import { checkRateLimit } from '../../../lib/cache/cache.js';
 
 describe('Library - Middleware (api/middleware.js)', () => {
   let req;

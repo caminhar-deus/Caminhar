@@ -9,14 +9,14 @@
 ## Índice
 
 1. [Raiz de `lib/`](#1-raiz-de-lib)
-   - [1.1 `lib/auth.js`](#11-libauthjs)
-   - [1.2 `lib/cache.js`](#12-libcachejs)
-   - [1.3 `lib/crud.js`](#13-libcrudjs)
-   - [1.4 `lib/csvExport.js`](#14-libcsvexportjs)
-   - [1.5 `lib/db.js`](#15-libdbjs)
-   - [1.6 `lib/handleUnauthorized.js`](#16-libhandleunauthorizedjs)
-   - [1.7 `lib/logger.js`](#17-libloggerjs)
-   - [1.8 `lib/redis.js`](#18-libredisjs)
+   - [1.1 ~~`lib/auth.js`~~ `lib/auth/auth.js`](#11-libauthjs)
+   - [1.2 ~~`lib/cache.js`~~ `lib/cache/cache.js`](#12-libcachejs)
+   - [1.3 ~~`lib/crud.js`~~ `lib/crud/crud.js`](#13-libcrudjs)
+   - [1.4 ~~`lib/csvExport.js`~~ `utils/csvExport.js`](#14-libcsvexportjs)
+   - [1.5 ~~`lib/db.js`~~ `lib/infra/db.js`](#15-libdbjs)
+   - [1.6 ~~`lib/handleUnauthorized.js`~~ `hooks/useUnauthorized.js`](#16-libhandleunauthorizedjs)
+   - [1.7 ~~`lib/logger.js`~~ `lib/infra/logger.js`](#17-libloggerjs)
+   - [1.8 ~~`lib/redis.js`~~ `lib/infra/redis.js`](#18-libredisjs)
    - [1.9 ~~`lib/reorder.js`~~ `utils/reorder.js`](#19-libreorderjs)
    - [1.10 ~~`lib/spotify.js`~~ `lib/media/spotify.js`](#110-libspotifyjs)
    - [1.11 ~~`lib/youtube.js`~~ `lib/media/youtube.js`](#111-libyoutubejs)
@@ -24,14 +24,19 @@
 3. [Subpasta `lib/domain/`](#3-subpasta-libdomain)
 4. [Subpasta `lib/seo/`](#4-subpasta-libseo)
 5. [Subpasta `lib/media/`](#5-subpasta-libmedia)
+6. [Subpasta `lib/infra/`](#6-subpasta-libinfra)
+7. [Subpasta `lib/auth/`](#7-subpasta-libauth)
+8. [Subpasta `lib/cache/`](#8-subpasta-libcache)
+9. [Subpasta `lib/crud/`](#9-subpasta-libcrud)
 
 ---
 
 ## 1. Raiz de `lib/`
 
-### 1.1 `lib/auth.js`
+### 1.1 ~~`lib/auth.js`~~ `lib/auth/auth.js`
 
-**Localização:** `/lib/auth.js`
+**Localização original:** `/lib/auth.js` (removido)  
+**Nova localização:** `/lib/auth/auth.js`
 
 **Propósito:** Sistema completo de autenticação do projeto. Gerencia hash de senhas (bcryptjs), tokens JWT, cookies de autenticação, login com rate limiting e inicialização do admin padrão.
 
@@ -62,9 +67,10 @@
 
 ---
 
-### 1.2 `lib/cache.js`
+### 1.2 ~~`lib/cache.js`~~ `lib/cache/cache.js`
 
-**Localização:** `/lib/cache.js`
+**Localização original:** `/lib/cache.js` (removido)  
+**Nova localização:** `/lib/cache/cache.js`
 
 **Propósito:** Camada de cache com dois níveis (L1: memória local, L2: Redis) e sistema de rate limit distribuído com fallback completo. Implementa padrão Cache-Aside com Single-Flight (request coalescing) para evitar múltiplas buscas concorrentes pela mesma chave.
 
@@ -89,9 +95,10 @@
 
 ---
 
-### 1.3 `lib/crud.js`
+### 1.3 ~~`lib/crud.js`~~ `lib/crud/crud.js`
 
-**Localização:** `/lib/crud.js`
+**Localização original:** `/lib/crud.js` (removido)  
+**Nova localização:** `/lib/crud/crud.js`
 
 **Propósito:** Operações CRUD genéricas parametrizadas para qualquer tabela do banco. Centraliza toda a construção SQL, evitando repetição nas camadas de domínio.
 
@@ -126,9 +133,10 @@
 
 ---
 
-### 1.5 `lib/db.js`
+### 1.5 ~~`lib/db.js`~~ `lib/infra/db.js`
 
-**Localização:** `/lib/db.js`
+**Localização original:** `/lib/db.js` (removido)  
+**Nova localização:** `/lib/infra/db.js`
 
 **Propósito:** Gerenciamento da conexão com PostgreSQL via `pg.Pool`. Fornece a função `query` principal e utilitários de transação, health check e informações do banco.
 
@@ -166,9 +174,10 @@
 **Observações:** Exclusiva para uso no frontend. Foi movida de `lib/` para `hooks/` por ser código puramente frontend, mantendo o diretório `lib/` focado em módulos de servidor/infraestrutura. A função foi renomeada de `handleUnauthorized` para `useUnauthorized`. Importada por `components/Admin/AdminAudit.js` e `components/Admin/AdminUsersTab.js` via `@/hooks/useUnauthorized`.
 
 
-### 1.7 `lib/logger.js`
+### 1.7 ~~`lib/logger.js`~~ `lib/infra/logger.js`
 
-**Localização:** `/lib/logger.js`
+**Localização original:** `/lib/logger.js` (removido)  
+**Nova localização:** `/lib/infra/logger.js`
 
 **Propósito:** Logger leve e padronizado para todo o projeto. Utiliza console nativo com emojis para categorização visual.
 
@@ -186,9 +195,10 @@
 
 ---
 
-### 1.8 `lib/redis.js`
+### 1.8 ~~`lib/redis.js`~~ `lib/infra/redis.js`
 
-**Localização:** `/lib/redis.js`
+**Localização original:** `/lib/redis.js` (removido)  
+**Nova localização:** `/lib/infra/redis.js`
 
 **Propósito:** Inicialização segura do cliente Redis Upstash com validação de configuração e fallback em memória. A inicialização é lazy (sob demanda) para evitar duplicidade em contextos separados do Next.js (SSR + API Routes).
 
@@ -448,18 +458,74 @@ Centralização de todas as configurações de SEO: `siteConfig` (nome, URL, des
 
 ---
 
+## 6. Subpasta `lib/infra/`
+
+### 6.1 `lib/infra/db.js`
+
+**Localização:** `/lib/infra/db.js`
+
+**Propósito:** Gerenciamento da conexão com PostgreSQL via `pg.Pool`. Fornece a função `query` principal e utilitários de transação, health check e informações do banco. Movido da raiz de `lib/` para `lib/infra/` por organização temática, agrupando os módulos de infraestrutura em um subdiretório próprio. Nenhuma alteração na lógica interna.
+
+---
+
+### 6.2 `lib/infra/logger.js`
+
+**Localização:** `/lib/infra/logger.js`
+
+**Propósito:** Logger leve e padronizado para todo o projeto. Utiliza console nativo com emojis para categorização visual. Movido da raiz de `lib/` para `lib/infra/` por organização temática. Nenhuma alteração na lógica interna.
+
+---
+
+### 6.3 `lib/infra/redis.js`
+
+**Localização:** `/lib/infra/redis.js`
+
+**Propósito:** Inicialização segura do cliente Redis Upstash com validação de configuração e fallback em memória. Movido da raiz de `lib/` para `lib/infra/` por organização temática. Nenhuma alteração na lógica interna.
+
+---
+
+## 7. Subpasta `lib/auth/`
+
+### 7.1 `lib/auth/auth.js`
+
+**Localização:** `/lib/auth/auth.js`
+
+**Propósito:** Sistema completo de autenticação do projeto. Movido da raiz de `lib/` para `lib/auth/` por organização temática, agrupando o módulo de autenticação em um subdiretório próprio. Nenhuma alteração na lógica interna.
+
+---
+
+## 8. Subpasta `lib/cache/`
+
+### 8.1 `lib/cache/cache.js`
+
+**Localização:** `/lib/cache/cache.js`
+
+**Propósito:** Camada de cache com dois níveis (L1: memória local, L2: Redis) e sistema de rate limit distribuído. Movido da raiz de `lib/` para `lib/cache/` por organização temática. Nenhuma alteração na lógica interna.
+
+---
+
+## 9. Subpasta `lib/crud/`
+
+### 9.1 `lib/crud/crud.js`
+
+**Localização:** `/lib/crud/crud.js`
+
+**Propósito:** Operações CRUD genéricas parametrizadas para qualquer tabela do banco. Movido da raiz de `lib/` para `lib/crud/` por organização temática. Nenhuma alteração na lógica interna.
+
+---
+
 ## Resumo dos arquivos
 
 | Arquivo | Responsabilidade Principal |
 |---------|---------------------------|
-| `auth.js` | Autenticação (JWT + bcrypt + cookies + login com rate limit) |
-| `cache.js` | Cache multi-nível (memória + Redis) + rate limit distribuído |
-| `crud.js` | Operações SQL genéricas parametrizadas |
+| ~~`auth.js`~~ *(movido para `lib/auth/auth.js`)* | Autenticação (JWT + bcrypt + cookies + login com rate limit) |
+| ~~`cache.js`~~ *(movido para `lib/cache/cache.js`)* | Cache multi-nível (memória + Redis) + rate limit distribuído |
+| ~~`crud.js`~~ *(movido para `lib/crud/crud.js`)* | Operações SQL genéricas parametrizadas |
 | ~~`csvExport.js`~~ *(movido para `utils/csvExport.js`)* | Exportação de dados para CSV no navegador |
-| `db.js` | Pool PostgreSQL + query + transações + health check (60s) |
+| ~~`db.js`~~ *(movido para `lib/infra/db.js`)* | Pool PostgreSQL + query + transações + health check (60s) |
 | ~~`handleUnauthorized.js`~~ *(movido para `hooks/useUnauthorized.js`)* | Tratamento de 401 no frontend |
-| `logger.js` | Logger leve e padronizado com emojis |
-| `redis.js` | Cliente Redis Upstash com fallback em memória (retry único) |
+| ~~`logger.js`~~ *(movido para `lib/infra/logger.js`)* | Logger leve e padronizado com emojis |
+| ~~`redis.js`~~ *(movido para `lib/infra/redis.js`)* | Cliente Redis Upstash com fallback em memória (retry único) |
 | ~~`reorder.js`~~ *(movido para `utils/reorder.js`)* | Reordenação Drag & Drop via API (frontend) |
 | ~~`spotify.js`~~ *(movido para `lib/media/spotify.js`)* | Extração de IDs do Spotify |
 | ~~`youtube.js`~~ *(movido para `lib/media/youtube.js`)* | Extração de IDs do YouTube |

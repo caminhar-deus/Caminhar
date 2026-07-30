@@ -19,10 +19,10 @@ jest.mock('fs', () => ({
 }));
 
 // Mock do PostgreSQL (Banco de Dados)
-jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb());
+jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb());
 
 // Importa o módulo mockado do banco
-import dbModule from '../../../lib/db.js';
+import dbModule from '../../../lib/infra/db.js';
 import formidable from 'formidable';
 
 // Simulação de handler de upload (não existe endpoint real, apenas para teste de fluxo)

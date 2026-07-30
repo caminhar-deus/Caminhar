@@ -21,7 +21,7 @@ export async function initializeServer() {
     console.log('Inicializando servidor...');
 
     // Inicializa o sistema de autenticação (que também inicializa o banco de dados)
-    const { initializeAuth } = await import('../lib/auth.js');
+    const { initializeAuth } = await import('../lib/auth/auth.js');
     await initializeAuth();
 
     isInitialized = true;
@@ -38,7 +38,7 @@ export async function initializeServer() {
 export async function cleanupServer() {
   try {
     console.log('Limpando recursos do servidor...');
-    const { closeDatabase } = await import('../lib/db.js');
+    const { closeDatabase } = await import('../lib/infra/db.js');
     await closeDatabase();
     console.log('Limpeza do servidor concluída');
   } catch (error) {

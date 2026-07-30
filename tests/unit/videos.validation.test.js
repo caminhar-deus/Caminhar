@@ -4,7 +4,7 @@ import handler from '../../pages/api/admin/videos';
 import { createVideo, updateVideo } from '../../lib/domain/videos.js';
 
 // Mock do módulo de autenticação para ignorar a verificação de token neste teste
-jest.mock('../../lib/auth', () => ({
+jest.mock('../../lib/auth/auth', () => ({
   withAuth: (handler) => (req, res) => {
     // Simula um usuário autenticado para os testes, que é o que o middleware real faz.
     req.user = { username: 'test-admin', role: 'admin' };
@@ -22,7 +22,7 @@ jest.mock('../../lib/domain/videos.js', () => ({
 }));
 
 // Mock da camada de cache para evitar o carregamento do 'redis' e o erro de ESM.
-jest.mock('../../lib/cache.js', () => ({
+jest.mock('../../lib/cache/cache.js', () => ({
   invalidateCache: jest.fn(),
   checkRateLimit: jest.fn().mockResolvedValue(false),
 }));

@@ -8,7 +8,7 @@ jest.mock('../../../lib/domain/musicas.js', () => ({
   getPaginatedMusicas: jest.fn()
 }));
 
-jest.mock('../../../lib/cache.js', () => require('../../mocks/cache').mockCacheModule());
+jest.mock('../../../lib/cache/cache.js', () => require('../../mocks/cache').mockCacheModule());
 
 // Importa o handler
 import handler from '../../../pages/api/musicas.js';

@@ -21,7 +21,7 @@ jest.mock('@upstash/redis', () => ({
   Redis: function() { return mockRedisInstance; }
 }));
 
-jest.mock('../../../../../lib/auth.js', () => ({
+jest.mock('../../../../../lib/auth/auth.js', () => ({
   __esModule: true,
   withAuth: (handler) => (req, res) => {
     req.user = req.user || { role: 'admin' };

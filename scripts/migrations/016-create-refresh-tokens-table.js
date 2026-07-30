@@ -4,7 +4,7 @@
  * Migration 016: Cria tabela de refresh_tokens para suporte a refresh token
  * 
  * Problema:
- * - A função storeRefreshToken em lib/auth.js tenta inserir em refresh_tokens
+ * - A função storeRefreshToken em lib/auth/auth.js tenta inserir em refresh_tokens
  * - A tabela nunca foi criada no banco (initializeAuth() não é chamada no startup)
  * - Isso causa erro "relation 'refresh_tokens' does not exist" no login
  * 

@@ -202,7 +202,7 @@ Isso adiciona complexidade desnecessária e confunde sobre qual função usar.
 
 **Correção:** O arquivo foi simplificado: todos os 47 exports nomeados foram removidos, mantendo apenas o `export default` com os 4 namespaces (`{ errors, response, validate, middleware }`). O teste `tests/unit/lib/api/index.test.js` foi ajustado para acessar os símbolos via objeto default (`apiIndex.errors.ApiError`, `apiIndex.response.success`, etc.) em vez de named imports.
 
-### 2.6 Separação difusa entre `lib/` raiz e `lib/api/`
+### 2.6 Separação difusa entre `lib/` raiz e `lib/api/` ✅
 
 **Localização:** `lib/` (raiz)
 
@@ -215,6 +215,8 @@ Isso adiciona complexidade desnecessária e confunde sobre qual função usar.
 - Utilitários de mídia: `spotify.js`, `youtube.js`
 
 **Sugestão:** Criar subdiretórios temáticos como `lib/infra/`, `lib/auth/`, `lib/media/`, `lib/utils/` para melhor organização.
+
+**Correção:** Os 6 arquivos restantes na raiz de `lib/` foram movidos para subdiretórios temáticos via `git mv` (preservando histórico): `db.js`, `redis.js` e `logger.js` → `lib/infra/`; `auth.js` → `lib/auth/auth.js`; `cache.js` → `lib/cache/cache.js`; `crud.js` → `lib/crud/crud.js`. A raiz de `lib/` agora contém apenas subdiretórios (`api/`, `auth/`, `cache/`, `crud/`, `domain/`, `infra/`, `media/`, `seo/`). Os imports internos dos próprios arquivos movidos foram ajustados (ex: `./db.js` → `../infra/db.js` em `auth.js`, `cache.js` e `crud.js`; `./redis.js` e `./logger.js` → `../infra/...` em `cache.js`). Todos os importadores em `lib/api/` (3 arquivos), `lib/domain/` (8 arquivos), `pages/api/` e `pages/blog/` (~21 arquivos), `scripts/` e raiz do projeto (`jest.teardown.js`, `next-sitemap.config.js`, `proxy.js`, ~9 arquivos) foram atualizados para os novos paths. Os testes unitários diretos em `tests/unit/lib/` (5 arquivos + 9 em `tests/unit/lib/db/`), os testes de integração e unitários de pages (~80 arquivos, incluindo `jest.mock`/`jest.requireMock`/imports em profundidades de 2 a 5 níveis) e os comentários de uso em `tests/mocks/` (3 arquivos: `auth.js`, `cache.js`, `db-module.js`) foram atualizados. Nenhuma alteração na lógica interna dos módulos; nenhuma alteração em `jsconfig.json`, `jest.config.js` ou `knip.json` (alias `@/*` e glob `lib/**/*.js` já cobrem subdiretórios).
 
 ---
 

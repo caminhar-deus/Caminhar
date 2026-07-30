@@ -39,7 +39,7 @@ jest.mock('../../../../lib/domain/settings.js', () => ({
   updateSetting: jest.fn()
 }));
 
-jest.mock('../../../../lib/auth.js', () => ({
+jest.mock('../../../../lib/auth/auth.js', () => ({
   withAuth: (handler) => handler
 }));
 

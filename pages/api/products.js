@@ -1,10 +1,10 @@
 import { logActivity } from '../../lib/domain/audit';
-import { getAuthToken, verifyToken } from '../../lib/auth';
-import { checkRateLimit, invalidateCache, getOrSetCache } from '../../lib/cache';
+import { getAuthToken, verifyToken } from '../../lib/auth/auth';
+import { checkRateLimit, invalidateCache, getOrSetCache } from '../../lib/cache/cache';
 import { getPaginatedProducts, getAllProducts, createProduct, updateProduct, deleteProduct } from '../../lib/domain/products.js';
 import { paginate } from './helper/pagination.js';
 import { getClientIP } from '../../lib/api/helpers.js';
-import { logger } from '../../lib/logger.js';
+import { logger } from '../../lib/infra/logger.js';
 
 /**
  * Handler para GET público (sem autenticação)

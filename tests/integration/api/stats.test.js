@@ -3,10 +3,10 @@ import { createMocks } from 'node-mocks-http';
 import handler from '../../../pages/api/admin/stats';
 
 // Mock das dependências
-jest.mock('../../../lib/db', () => ({
+jest.mock('../../../lib/infra/db', () => ({
   query: jest.fn(),
 }));
-jest.mock('../../../lib/auth', () => {
+jest.mock('../../../lib/auth/auth', () => {
   const getAuthToken = jest.fn();
   const verifyToken = jest.fn();
   return {
@@ -27,8 +27,8 @@ jest.mock('../../../lib/auth', () => {
   };
 });
 
-import { query } from '../../../lib/db';
-import { getAuthToken, verifyToken } from '../../../lib/auth';
+import { query } from '../../../lib/infra/db';
+import { getAuthToken, verifyToken } from '../../../lib/auth/auth';
 
 describe('API de Estatísticas (/api/admin/stats)', () => {
   beforeEach(() => {

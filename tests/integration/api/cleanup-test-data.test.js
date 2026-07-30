@@ -1,7 +1,7 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 
-jest.mock('../../../lib/auth.js', () => ({
+jest.mock('../../../lib/auth/auth.js', () => ({
   withAuth: jest.fn((handler) => async (req, res) => {
     if (!req.user) {
       return res.status(401).json({ message: 'Não autenticado' });
@@ -10,10 +10,10 @@ jest.mock('../../../lib/auth.js', () => ({
   }),
 }));
 
-jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb());
+jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb());
 
 import handler from '../../../pages/api/cleanup-test-data.js';
-import { query } from '../../../lib/db.js';
+import { query } from '../../../lib/infra/db.js';
 
 describe('API - Cleanup Test Data (/api/cleanup-test-data)', () => {
   beforeEach(() => {

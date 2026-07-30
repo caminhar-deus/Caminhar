@@ -2,7 +2,7 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 
 // Mocks declarados ANTES da importação do handler para garantir interceptação
-jest.mock('../../../lib/auth', () => {
+jest.mock('../../../lib/auth/auth', () => {
   const mockGetAuthToken = jest.fn();
   const mockVerifyToken = jest.fn();
   return {
@@ -28,9 +28,9 @@ jest.mock('../../../lib/domain/settings.js', () => ({
 import handler from '../../../pages/api/settings.js';
 
 // Importa os mocks para controle das asserções e retornos simulados
-import { getAuthToken, verifyToken } from '../../../lib/auth';
+import { getAuthToken, verifyToken } from '../../../lib/auth/auth';
 import { getSettings, updateSetting } from '../../../lib/domain/settings.js';
-import { clearAppMemoryCache } from '../../../lib/cache.js';
+import { clearAppMemoryCache } from '../../../lib/cache/cache.js';
 
 describe('API Administrativa de Configurações (/api/settings)', () => {
   beforeEach(() => {

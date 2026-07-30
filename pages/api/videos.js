@@ -1,7 +1,7 @@
 import { getPublicPaginatedVideos } from '../../lib/domain/videos.js';
-import { getOrSetCache, checkRateLimit } from '../../lib/cache.js';
+import { getOrSetCache, checkRateLimit } from '../../lib/cache/cache.js';
 import { getClientIP } from '../../lib/api/helpers.js';
-import { logger } from '../../lib/logger.js';
+import { logger } from '../../lib/infra/logger.js';
 
 /**
  * Mapeamento dos valores de sort para cláusulas ORDER BY.

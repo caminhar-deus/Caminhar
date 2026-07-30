@@ -12,7 +12,7 @@ jest.mock('../../../lib/domain/settings.js', () => ({
   getSetting: jest.fn(),
 }));
 
-jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb());
+jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb());
 
 import handler from '../../../pages/api/placeholder-image.js';
 import fs from 'fs';

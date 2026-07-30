@@ -1,5 +1,5 @@
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
-import { query } from '../../../lib/db.js';
+import { query } from '../../../lib/infra/db.js';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';

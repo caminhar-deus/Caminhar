@@ -38,14 +38,14 @@ O CORS foi segmentado em 4 blocos: `/api/:path*` (público, com lista completa d
 Os objetos `changefreq` e `priority` do escopo raiz e a função `transform` foram removidos. A configuração de frequência/prioridade agora é definida apenas no bloco `additionalPaths` para URLs dinâmicas. O `autoLastmod: true` foi mantido para adição automática de `lastmod`.
 
 ### ✅ Queries ao banco com logging padronizado
-O bloco `additionalPaths` agora utiliza `logger.error` do módulo `lib/logger.js` em vez de `console.warn`, padronizando o logging com o restante do projeto. Foi adicionado comentário `TODO` indicando ponto futuro para integração com sistema de notificação (e-mail/Slack/webhook).
+O bloco `additionalPaths` agora utiliza `logger.error` do módulo `lib/infra/logger.js` em vez de `console.warn`, padronizando o logging com o restante do projeto. Foi adicionado comentário `TODO` indicando ponto futuro para integração com sistema de notificação (e-mail/Slack/webhook).
 
 ---
 
 ## 4. `proxy.js`
 
 ### ✅ Logging padronizado com `logger.warn`
-O `console.warn` fixo foi substituído por `logger.warn('Security', ...)` do módulo `lib/logger.js`, que suporta níveis configuráveis via `LOG_LEVEL`. Foi adicionado o import `import { logger } from './lib/logger.js'`.
+O `console.warn` fixo foi substituído por `logger.warn('Security', ...)` do módulo `lib/infra/logger.js`, que suporta níveis configuráveis via `LOG_LEVEL`. Foi adicionado o import `import { logger } from './lib/infra/logger.js'`.
 
 ### 🟡 Falta de suporte a WebSocket
 O rate limit não cobre conexões WebSocket. Se o projeto vier a usar WebSockets, será necessário estender a proteção.

@@ -62,7 +62,7 @@ Os arquivos foram agrupados por contexto para facilitar a leitura:
 - Frequência e prioridade definidas apenas no bloco `additionalPaths` para URLs dinâmicas.
 - Geração dinâmica de paths: busca no banco (`posts`, `musicas`, `videos` publicados).
 - `autoLastmod: true` para adição automática de `lastmod`.
-- Logging padronizado via `logger` (`lib/logger.js`) para falhas nas queries do banco.
+- Logging padronizado via `logger` (`lib/infra/logger.js`) para falhas nas queries do banco.
 
 ---
 
@@ -77,7 +77,7 @@ Os arquivos foram agrupados por contexto para facilitar a leitura:
 - Identificação de IP via `X-Forwarded-For` ou `request.ip`.
 - Integração com Redis (`checkRateLimit`) com fallback em memória.
 - Bloqueio com status 429 e mensagem em português.
-- Logging padronizado via `logger.warn('Security', ...)` do módulo `lib/logger.js`, com suporte a níveis configuráveis via `LOG_LEVEL`.
+- Logging padronizado via `logger.warn('Security', ...)` do módulo `lib/infra/logger.js`, com suporte a níveis configuráveis via `LOG_LEVEL`.
 
 ---
 

@@ -30,7 +30,7 @@ jest.mock('fs', () => ({
 }));
 
 // Mock do middleware de autenticação
-jest.mock('../../../lib/auth.js', () => ({
+jest.mock('../../../lib/auth/auth.js', () => ({
   withAuth: (handler) => handler,
 }));
 

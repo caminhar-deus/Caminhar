@@ -1,5 +1,5 @@
-import { getAuthToken, verifyToken } from '../../../lib/auth.js';
-import { logger } from '../../../lib/logger.js';
+import { getAuthToken, verifyToken } from '../../../lib/auth/auth.js';
+import { logger } from '../../../lib/infra/logger.js';
 
 /**
  * Endpoint de verificação de autenticação.

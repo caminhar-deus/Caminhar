@@ -1,9 +1,9 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
 // Mocks para isolar o banco de dados
-jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb());
+jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb());
 
-jest.mock('../../../lib/crud.js', () => ({
+jest.mock('../../../lib/crud/crud.js', () => ({
   upsertRecord: jest.fn(),
   // Simulamos a função 'raw' para podermos rastrear exatamente onde ela foi usada
   raw: jest.fn((val) => `RAW(${val})`), 
@@ -18,8 +18,8 @@ import {
 } from '../../../lib/domain/settings.js';
 
 // Importa os mocks para asserções
-import { query } from '../../../lib/db.js';
-import { upsertRecord, raw } from '../../../lib/crud.js';
+import { query } from '../../../lib/infra/db.js';
+import { upsertRecord, raw } from '../../../lib/crud/crud.js';
 
 describe('Domain - Configurações (lib/domain/settings.js)', () => {
   beforeEach(() => {

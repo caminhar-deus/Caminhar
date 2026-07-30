@@ -5,7 +5,7 @@ import { query, closePool } from './db/connection.js';
 loadEnv();
 
 async function resetPassword() {
-  const { hashPassword } = await import('../lib/auth.js');
+  const { hashPassword } = await import('../lib/auth/auth.js');
 
   const targetUser = process.argv[2] || 'admin';
   const newPassword = process.argv[3];

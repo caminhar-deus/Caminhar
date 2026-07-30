@@ -4,7 +4,7 @@ import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals
 // NOTA: jest.mock é hoisted (elevado) ao topo, por isso usamos
 // funções inline em vez de variáveis declaradas depois.
 
-jest.mock('../../../lib/redis.js', () => {
+jest.mock('../../../lib/infra/redis.js', () => {
   const mockRedisGet = jest.fn();
   const mockRedisSet = jest.fn();
   const mockRedisDel = jest.fn();
@@ -39,7 +39,7 @@ jest.mock('../../../lib/redis.js', () => {
   };
 });
 
-jest.mock('../../../lib/logger.js', () => ({
+jest.mock('../../../lib/infra/logger.js', () => ({
   logger: {
     info: jest.fn(),
     warn: jest.fn(),
@@ -61,11 +61,11 @@ import {
   checkRateLimit,
   getCacheMetrics,
   cleanupRateLimitTimer,
-} from '../../../lib/cache.js';
+} from '../../../lib/cache/cache.js';
 
 describe('Library - Cache & Rate Limit', () => {
   beforeAll(() => {
-    const redisMock = jest.requireMock('../../../lib/redis.js');
+    const redisMock = jest.requireMock('../../../lib/infra/redis.js');
     mockRedisGet = redisMock._mockRedisGet;
     mockRedisSet = redisMock._mockRedisSet;
     mockRedisDel = redisMock._mockRedisDel;

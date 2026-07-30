@@ -30,7 +30,7 @@ async function checkDbStatus() {
   let db;
   try {
     // Importação dinâmica para garantir que o .env foi carregado
-    db = await import('../lib/db.js');
+    db = await import('../lib/infra/db.js');
     
     console.log('\n🔌 Tentando conectar ao banco de dados...');
     const versionResult = await db.query('SELECT version()');

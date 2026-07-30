@@ -1,16 +1,16 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../../../pages/api/videos.js';
-import { query } from '../../../lib/db.js';
-import { getOrSetCache, checkRateLimit } from '../../../lib/cache.js';
+import { query } from '../../../lib/infra/db.js';
+import { getOrSetCache, checkRateLimit } from '../../../lib/cache/cache.js';
 
 // Mock do banco de dados (simulando a camada mais baixa)
-jest.mock('../../../lib/db', () => ({
+jest.mock('../../../lib/infra/db', () => ({
   query: jest.fn(),
 }));
 
 // Mock da camada de cache para evitar o carregamento do 'redis' e o erro de ESM.
-jest.mock('../../../lib/cache.js', () => ({
+jest.mock('../../../lib/cache/cache.js', () => ({
   getOrSetCache: jest.fn(async (key, fetchFunction) => {
     return await fetchFunction();
   }),

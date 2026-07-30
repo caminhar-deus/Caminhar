@@ -1,4 +1,4 @@
-import { query } from '../../lib/db';
+import { query } from '../../lib/infra/db';
 
 /**
  * Endpoint de diagnóstico e health check do sistema.

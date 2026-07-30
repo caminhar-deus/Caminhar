@@ -1,19 +1,19 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../../../../../pages/api/admin/posts.js';
-import * as db from '../../../../../lib/db.js';
-import * as cache from '../../../../../lib/cache.js';
+import * as db from '../../../../../lib/infra/db.js';
+import * as cache from '../../../../../lib/cache/cache.js';
 import * as posts from '../../../../../lib/domain/posts.js';
 
-jest.mock('../../../../../lib/auth.js', () => ({
+jest.mock('../../../../../lib/auth/auth.js', () => ({
   getAuthToken: jest.fn(),
   verifyToken: jest.fn(),
   withAuth: jest.fn((handler) => handler)
 }));
 
-jest.mock('../../../../../lib/db.js', () => require('../../../../mocks/db-module').mockDb());
+jest.mock('../../../../../lib/infra/db.js', () => require('../../../../mocks/db-module').mockDb());
 
-jest.mock('../../../../../lib/cache.js', () => ({
+jest.mock('../../../../../lib/cache/cache.js', () => ({
   checkRateLimit: jest.fn(),
   invalidateCache: jest.fn()
 }));
@@ -25,7 +25,7 @@ jest.mock('../../../../../lib/domain/posts.js', () => ({
   deletePost: jest.fn()
 }));
 
-jest.mock('../../../../../lib/crud.js', () => ({
+jest.mock('../../../../../lib/crud/crud.js', () => ({
   updateRecords: jest.fn()
 }));
 

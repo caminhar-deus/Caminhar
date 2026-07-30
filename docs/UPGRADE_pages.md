@@ -109,7 +109,7 @@
 
 **Problema:** O login.js implementa sua própria lógica de rate limiting (linhas manuais de Redis) em vez de usar o `checkRateLimit()` padronizado que outros endpoints usam. Também usa `detectSpoofedIP()` manualmente, enquanto outros endpoints usam `getClientIP()`.
 
-**Impacto:** Lógica de rate limiting duplicada em relação ao que `lib/cache.js` já oferece via `checkRateLimit()`.
+**Impacto:** Lógica de rate limiting duplicada em relação ao que `lib/cache/cache.js` já oferece via `checkRateLimit()`.
 
 **Sugestão:** Substituir a lógica manual de rate limiting do login por `checkRateLimit()` padronizado. Manter `detectSpoofedIP()` apenas se houver motivo específico de segurança para o login ter detecção diferente.
 

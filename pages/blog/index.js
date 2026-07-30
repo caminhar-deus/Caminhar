@@ -2,7 +2,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import styles from './Blog.module.css';
 import PostCard from '../../components/Features/Blog/PostCard';
-import { query } from '../../lib/db.js';
+import { query } from '../../lib/infra/db.js';
 
 export async function getServerSideProps({ query: queryParams }) {
   try {

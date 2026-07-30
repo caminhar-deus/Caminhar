@@ -1,5 +1,5 @@
 import { getPaginatedMusicas, createMusica, updateMusica, deleteMusica } from '../../../lib/domain/musicas.js';
-import { updateRecords } from '../../../lib/crud.js';
+import { updateRecords } from '../../../lib/crud/crud.js';
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
 import { z } from 'zod';
 

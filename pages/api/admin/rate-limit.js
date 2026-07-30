@@ -1,7 +1,7 @@
 import { Redis } from '@upstash/redis';
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
 import { z } from 'zod';
-import { logger } from '../../../lib/logger.js';
+import { logger } from '../../../lib/infra/logger.js';
 
 const ipSchema = z.object({
   ip: z.string().min(1, 'IP é obrigatório'),

@@ -1,8 +1,8 @@
 import { describe, it, expect, jest } from '@jest/globals';
-import { hashPassword, verifyPassword, generateToken, verifyToken, setAuthCookie, getAuthToken, authenticate, withAuth, initializeAuth } from '../../../lib/auth.js';
-import { query } from '../../../lib/db.js';
+import { hashPassword, verifyPassword, generateToken, verifyToken, setAuthCookie, getAuthToken, authenticate, withAuth, initializeAuth } from '../../../lib/auth/auth.js';
+import { query } from '../../../lib/infra/db.js';
 
-jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb());
+jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb());
 
 describe('Library - Auth', () => {
 

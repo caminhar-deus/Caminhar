@@ -10,7 +10,7 @@
  * Uso: node scripts/clear-test-auth-locks.js
  */
 
-import { getRedisInstance } from '../lib/redis.js';
+import { getRedisInstance } from '../lib/infra/redis.js';
 
 // IPs utilizados pelos testes de segurança (rate-limit-test.js, ip-spoofing-test.js)
 const TEST_IPS = [
@@ -47,7 +47,7 @@ async function clearTestAuthLocks() {
         }
       }
 
-      // Também limpa qualquer chave de rate limit do Redis usada pelo lib/cache.js
+      // Também limpa qualquer chave de rate limit do Redis usada pelo lib/cache/cache.js
       const cacheKeys = await redis.keys('api:auth:login:*');
       if (cacheKeys.length > 0) {
         for (const key of cacheKeys) {

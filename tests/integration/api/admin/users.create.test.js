@@ -4,11 +4,11 @@ import { createMocks } from 'node-mocks-http';
 // Mock das dependências para isolar o teste na lógica do handler da API
 // IMPORTANTE: Os mocks devem ser declarados ANTES da importação do handler
 
-jest.mock('../../../../lib/db', () => ({
+jest.mock('../../../../lib/infra/db', () => ({
   query: jest.fn(),
 }));
 
-jest.mock('../../../../lib/crud', () => ({
+jest.mock('../../../../lib/crud/crud', () => ({
   createRecord: jest.fn(),
 }));
 
@@ -16,7 +16,7 @@ jest.mock('../../../../lib/domain/audit', () => ({
   logActivity: jest.fn(),
 }));
 
-jest.mock('../../../../lib/auth', () => {
+jest.mock('../../../../lib/auth/auth', () => {
   const mockModule = {
     getAuthToken: jest.fn().mockReturnValue('fake-token'),
     verifyToken: jest.fn(),
@@ -37,7 +37,7 @@ jest.mock('../../../../lib/auth', () => {
   return mockModule;
 });
 
-jest.mock('../../../../lib/cache', () => ({
+jest.mock('../../../../lib/cache/cache', () => ({
   checkRateLimit: jest.fn().mockResolvedValue(false),
 }));
 
@@ -45,10 +45,10 @@ jest.mock('../../../../lib/cache', () => ({
 import handler from '../../../../pages/api/admin/users.js';
 
 // Importa os mocks para poder usá-los nos testes
-import { query } from '../../../../lib/db';
-import { createRecord } from '../../../../lib/crud';
+import { query } from '../../../../lib/infra/db';
+import { createRecord } from '../../../../lib/crud/crud';
 import { logActivity } from '../../../../lib/domain/audit';
-import { verifyToken, getAuthToken, hashPassword } from '../../../../lib/auth';
+import { verifyToken, getAuthToken, hashPassword } from '../../../../lib/auth/auth';
 
 describe('API de Usuários - Criação (POST /api/admin/users)', () => {
   beforeEach(() => {

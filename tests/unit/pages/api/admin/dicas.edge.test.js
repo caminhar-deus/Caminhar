@@ -1,12 +1,12 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../../../../../pages/api/admin/dicas.js';
-import * as db from '../../../../../lib/db.js';
+import * as db from '../../../../../lib/infra/db.js';
 import { logActivity } from '../../../../../lib/domain/audit.js';
 
-jest.mock('../../../../../lib/db.js', () => require('../../../../mocks/db-module').mockDb());
+jest.mock('../../../../../lib/infra/db.js', () => require('../../../../mocks/db-module').mockDb());
 
-jest.mock('../../../../../lib/auth.js', () => ({
+jest.mock('../../../../../lib/auth/auth.js', () => ({
   withAuth: jest.fn((h) => h) // Ignora o middleware de auth para focar na lógica interna
 }));
 

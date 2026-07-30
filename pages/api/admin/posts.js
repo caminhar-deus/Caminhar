@@ -1,6 +1,6 @@
 import { getPaginatedPosts, createPost, updatePost, deletePost } from '../../../lib/domain/posts.js';
-import { updateRecords } from '../../../lib/crud.js';
-import { query } from '../../../lib/db.js';
+import { updateRecords } from '../../../lib/crud/crud.js';
+import { query } from '../../../lib/infra/db.js';
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
 import { z } from 'zod';
 

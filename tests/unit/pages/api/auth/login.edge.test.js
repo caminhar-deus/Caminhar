@@ -1,22 +1,22 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../../../../../pages/api/auth/login.js';
-import * as auth from '../../../../../lib/auth.js';
-import * as cache from '../../../../../lib/cache.js';
-import * as loggerModule from '../../../../../lib/logger.js';
+import * as auth from '../../../../../lib/auth/auth.js';
+import * as cache from '../../../../../lib/cache/cache.js';
+import * as loggerModule from '../../../../../lib/infra/logger.js';
 
-jest.mock('../../../../../lib/auth.js', () => ({
+jest.mock('../../../../../lib/auth/auth.js', () => ({
   authenticate: jest.fn(),
   generateToken: jest.fn(),
   setAuthCookie: jest.fn(),
   authenticateAndGenerateToken: jest.fn()
 }));
 
-jest.mock('../../../../../lib/cache.js', () => ({
+jest.mock('../../../../../lib/cache/cache.js', () => ({
   checkRateLimit: jest.fn()
 }));
 
-jest.mock('../../../../../lib/logger.js', () => {
+jest.mock('../../../../../lib/infra/logger.js', () => {
   const mockMethods = {
     debug: jest.fn(),
     error: jest.fn(),

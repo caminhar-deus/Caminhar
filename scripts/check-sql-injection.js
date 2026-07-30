@@ -15,7 +15,7 @@
  * Falsos positivos conhecidos e ignorados:
  * - Comentários de código
  * - Identificadores SQL (nomes de tabelas/colunas) vindos de whitelists fixas
- * - Identificadores protegidos por _validateIdentifier() (padrão do lib/crud.js)
+ * - Identificadores protegidos por _validateIdentifier() (padrão do lib/crud/crud.js)
  * - Constantes string hardcoded definidas localmente (ex: MIGRATION_TABLE = '_migrations')
  * - Variáveis que utilizam validateIdentifier() antes da interpolação
  *

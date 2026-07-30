@@ -4,7 +4,7 @@ import handler from '../../../../pages/api/admin/backups.js';
 import { createBackup } from '../../../../scripts/backup.js';
 import fs from 'fs';
 
-jest.mock('../../../../lib/auth.js', () => ({
+jest.mock('../../../../lib/auth/auth.js', () => ({
   withAuth: (handler) => async (req, res) => {
     req.user = { username: 'test-admin', role: 'admin' };
     return handler(req, res);

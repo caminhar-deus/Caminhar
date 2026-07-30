@@ -4,8 +4,8 @@ jest.mock('pg');
 jest.mock('fs');
 jest.mock('dotenv');
 
-// Mock do lib/db.js
-jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb());
+// Mock do lib/infra/db.js
+jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb());
 
 // Mock do load-env
 jest.mock('../../../scripts/utils/load-env.js', () => ({
@@ -17,7 +17,7 @@ describe('clear-db.js — Limpeza completa do banco', () => {
 
   beforeEach(async () => {
     process.env.DATABASE_URL = 'postgres://user:pass@localhost:5432/testdb';
-    libDb = await import('../../../lib/db.js');
+    libDb = await import('../../../lib/infra/db.js');
   });
 
   afterEach(() => {

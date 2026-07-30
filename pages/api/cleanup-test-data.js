@@ -1,6 +1,6 @@
-import { withAuth } from '../../lib/auth';
-import { query } from '../../lib/db';
-import { logger } from '../../lib/logger';
+import { withAuth } from '../../lib/auth/auth';
+import { query } from '../../lib/infra/db';
+import { logger } from '../../lib/infra/logger';
 
 async function handler(req, res) {
   // Apenas permite DELETE

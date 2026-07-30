@@ -2,10 +2,10 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 
 // Mocks do banco
-jest.mock('../../../../lib/db.js', () => require('../../../mocks/db-module').mockDb());
+jest.mock('../../../../lib/infra/db.js', () => require('../../../mocks/db-module').mockDb());
 
 // Mocks de autenticação
-jest.mock('../../../../lib/auth.js', () => {
+jest.mock('../../../../lib/auth/auth.js', () => {
   const mockModule = {
     getAuthToken: jest.fn(),
     verifyToken: jest.fn(),
@@ -27,8 +27,8 @@ jest.mock('../../../../lib/auth.js', () => {
 });
 
 import handler from '../../../../pages/api/admin/audit.js';
-import { query } from '../../../../lib/db.js';
-import { getAuthToken, verifyToken } from '../../../../lib/auth.js';
+import { query } from '../../../../lib/infra/db.js';
+import { getAuthToken, verifyToken } from '../../../../lib/auth/auth.js';
 
 describe('API Admin - Auditoria (/api/admin/audit)', () => {
   beforeEach(() => {

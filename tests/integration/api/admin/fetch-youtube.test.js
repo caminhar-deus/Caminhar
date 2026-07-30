@@ -2,7 +2,7 @@ import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals
 import { createMocks } from 'node-mocks-http';
 
 // Mocks de autenticação
-jest.mock('../../../../lib/auth.js', () => {
+jest.mock('../../../../lib/auth/auth.js', () => {
   const mockGetAuthToken = jest.fn();
   const mockVerifyToken = jest.fn();
   return {
@@ -24,7 +24,7 @@ jest.mock('../../../../lib/auth.js', () => {
 });
 
 import handler from '../../../../pages/api/admin/fetch-youtube.js';
-import { getAuthToken, verifyToken } from '../../../../lib/auth.js';
+import { getAuthToken, verifyToken } from '../../../../lib/auth/auth.js';
 import { mockGlobalFetch } from '../../../helpers/index.js';
 
 describe('API Admin - Fetch YouTube (/api/admin/fetch-youtube)', () => {
