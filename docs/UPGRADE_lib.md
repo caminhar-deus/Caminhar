@@ -222,9 +222,9 @@ Isso adiciona complexidade desnecessária e confunde sobre qual função usar.
 
 ## 3. Melhorias de Performance e Manutenção
 
-### 3.1 `logger.js` — Logger extremamente simples, sem níveis adequados
+### 3.1 `logger.js` — Logger extremamente simples, sem níveis adequados ✅
 
-**Localização:** `lib/logger.js`
+**Localização:** `lib/infra/logger.js`
 
 **Problema:** O logger atual usa apenas emojis e `console.log/warn/error`. Não suporta:
 - Transporte para arquivo ou serviço externo
@@ -233,6 +233,8 @@ Isso adiciona complexidade desnecessária e confunde sobre qual função usar.
 - Correlação com requestId
 
 **Sugestão:** Evoluir para usar uma biblioteca como `pino` ou `winston`, ou implementar um logger estruturado que produza JSON para melhor integração com ferramentas de observabilidade.
+
+**Correção:** Implementado logger estruturado nativo (sem dependências externas) em `lib/infra/logger.js`. Adicionados níveis hierárquicos configuráveis via `LOG_LEVEL` (`error` > `warn` > `info` > `debug`) com default inteligente por `NODE_ENV` (`error` em teste, `info` em produção, `debug` em desenvolvimento); `success` tratado como alias de `info`. Saída JSON estruturada em produção (linha única parseável com `{ timestamp, level, module, message, requestId?, args? }`), preservando formato legível com emojis em desenvolvimento/teste. Adicionada correlação via `requestId` usando `AsyncLocalStorage` do Node.js, com funções `setRequestId(id)` e `runWithRequestId(id, fn)`. Arquitetura de transports plugável: console (sempre ativo) + arquivo opcional via `LOG_FILE_PATH` (com rotação simples a 10 MB). Sanitização segura de `Error` (→ `{ name, message, stack }`) e objetos circulares (replacer com `WeakSet`). O contrato público `logger.<method>(module, message, ...args)` foi preservado, mantendo compatibilidade com os 33 consumidores existentes e os 5 mocks de teste. Criado teste unitário `tests/unit/lib/infra/logger.test.js` com 13 testes cobrindo filtro por nível, JSON em produção, `requestId`, sanitização e file transport. Documentação atualizada em `docs/PROJECT_lib.md` (seções 1.7, 6.2 e resumo).
 
 ---
 

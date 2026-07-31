@@ -192,6 +192,14 @@
 - `tests/unit/components/Features/Products/ProductCard.test.js`: `baseProduct` e asserts atualizados para `name`, `image_url`, `link`.
 - `tests/unit/components/Features/Products/ProductList.test.js`: Mock do ProductCard e dados de teste atualizados para `name`.
 
+### 3.16 Teste unitário do logger criado após evolução para logger estruturado ✅
+
+**Arquivo:** `tests/unit/lib/infra/logger.test.js`
+
+**Problema:** Após a evolução de `lib/infra/logger.js` de um logger simples baseado em emojis para um logger estruturado com níveis hierárquicos, saída JSON em produção, correlação via `requestId` e transports plugáveis (item 3.1 de `docs/UPGRADE_lib.md`), não existia teste unitário específico para o módulo.
+
+**Correção:** Criado `tests/unit/lib/infra/logger.test.js` com 13 testes em 5 describe blocks: filtro por nível (`LOG_LEVEL=error/warn/info/debug` + default por `NODE_ENV`), saída JSON em produção (linha parseável + normalização de `success`→`info`), `requestId` via `AsyncLocalStorage` (`setRequestId` e `runWithRequestId` com propagação e descarte), sanitização de `Error` e objetos circulares, e file transport (escrita via `LOG_FILE_PATH` + rotação a 10 MB). Os 5 mocks de teste existentes que referenciam o logger (`cache.test.js`, `login.test.js` ×2, `login.edge.test.js`, `products.test.js`) não precisaram de alteração — o contrato público `logger.<method>(module, message, ...args)` foi preservado.
+
 ## 4. Problemas de Performance
 
 ### 4.1 Polyfills assíncronos podem causar race conditions ✅

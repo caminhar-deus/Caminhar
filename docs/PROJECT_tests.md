@@ -175,6 +175,7 @@ tests/
 │   │   ├── api/                  (5 arquivos: errors, index, middleware, response, validate)
 │   │   ├── backup/               (múltiplos arquivos)
 │   │   ├── db/                   (múltiplos arquivos)
+│   │   ├── infra/                (1 arquivo: logger)
 │   │   └── seo/                  (múltiplos arquivos)
 │   ├── pages/api/                (9 arquivos)
 │   │   ├── upload-image.edge.test.js (66 linhas)
@@ -821,6 +822,11 @@ Testes que usam PostgreSQL real via Testcontainers (`jest.config.db.js`). Valida
 ### `/tests/unit/lib/redis.test.js`
 - **Propósito:** Testes do módulo Redis.
 - **Testes:** Conexão, operações básicas (get/set), pipeline, rate limiting.
+
+### `/tests/unit/lib/infra/logger.test.js`
+- **Propósito:** Testes do módulo de logger estruturado (`lib/infra/logger.js`).
+- **Testes:** Filtro por nível (`LOG_LEVEL=error/warn/info/debug` + default por `NODE_ENV`), saída JSON em produção (linha parseável + normalização de `success`→`info`), `requestId` via `AsyncLocalStorage` (`setRequestId` e `runWithRequestId` com propagação e descarte), sanitização de `Error` (→ `{ name, message, stack }`) e objetos circulares (`[Circular]`), file transport (escrita via `LOG_FILE_PATH` + rotação a 10 MB).
+- **Mocks:** Spies de `console.error`/`console.warn`/`console.log`; diretório temporário isolado por teste via `mkdtempSync` para o file transport.
 
 ---
 

@@ -179,19 +179,29 @@
 **Localização original:** `/lib/logger.js` (removido)  
 **Nova localização:** `/lib/infra/logger.js`
 
-**Propósito:** Logger leve e padronizado para todo o projeto. Utiliza console nativo com emojis para categorização visual.
+**Propósito:** Logger estruturado e padronizado para todo o projeto. Suporta níveis hierárquicos configuráveis por ambiente, saída JSON estruturada em produção, correlação via `requestId` e arquitetura de transports plugável (console + arquivo).
 
 **Exportações:**
 
-| Método | Descrição |
+| Método/Função | Descrição |
 |--------|-----------|
-| `logger.info(module, message, ...args)` | Log informativo com `console.log` e emoji ℹ️ |
-| `logger.success(module, message, ...args)` | Log de sucesso com emoji ✅ |
-| `logger.warn(module, message, ...args)` | Log de aviso com `console.warn` e emoji ⚠️ |
-| `logger.error(module, message, ...args)` | Log de erro com `console.error` e emoji ❌ |
-| `logger.debug(module, message, ...args)` | Log de debug com emoji 🔍 — só exibe se `LOG_LEVEL === 'debug'` |
+| `logger.info(module, message, ...args)` | Log informativo (nível `info`) |
+| `logger.success(module, message, ...args)` | Log de sucesso (alias de `info` para fins de nível) |
+| `logger.warn(module, message, ...args)` | Log de aviso (nível `warn`) |
+| `logger.error(module, message, ...args)` | Log de erro (nível `error`) |
+| `logger.debug(module, message, ...args)` | Log de debug (nível `debug`) |
+| `setRequestId(id)` | Define o `requestId` no contexto assíncrono atual (via `AsyncLocalStorage`) para correlação automática em logs subsequentes |
+| `runWithRequestId(id, fn)` | Executa `fn` com `requestId` definido no contexto assíncrono; o ID é descartado ao finalizar |
 
-**Observações:** Implementação simples e sem dependências externas.
+**Níveis configuráveis:** A variável `LOG_LEVEL` aceita `error`, `warn`, `info` ou `debug`. Default inteligente por `NODE_ENV`: `error` em teste, `info` em produção, `debug` em desenvolvimento. Logs abaixo do nível configurado são suprimidos.
+
+**Saída JSON em produção:** Em `NODE_ENV=production`, cada log é uma linha JSON parseável com campos `{ timestamp, level, module, message, requestId?, args? }`. Em desenvolvimento/teste, o formato legível com emojis (ℹ️, ✅, ⚠️, ❌, 🔍) é preservado para não degradar a DX.
+
+**Transports:** Console (sempre ativo) + arquivo opcional ativado via `LOG_FILE_PATH` (escreve linhas JSON com rotação simples por tamanho a 10 MB). Service externo HTTP fica como ponto de extensão futuro.
+
+**Sanitização:** `Error` é serializado para `{ name, message, stack }` e objetos circulares são tratados via replacer seguro, evitando exceções no `JSON.stringify`.
+
+**Observações:** Implementação nativa sem dependências externas (usa `node:async_hooks` e APIs padrão do Node.js 24). O contrato público `logger.<method>(module, message, ...args)` é preservado, mantendo compatibilidade com os 33 consumidores existentes.
 
 ---
 
@@ -472,7 +482,7 @@ Centralização de todas as configurações de SEO: `siteConfig` (nome, URL, des
 
 **Localização:** `/lib/infra/logger.js`
 
-**Propósito:** Logger leve e padronizado para todo o projeto. Utiliza console nativo com emojis para categorização visual. Movido da raiz de `lib/` para `lib/infra/` por organização temática. Nenhuma alteração na lógica interna.
+**Propósito:** Logger estruturado e padronizado para todo o projeto, com níveis hierárquicos configuráveis via `LOG_LEVEL`, saída JSON em produção, correlação via `requestId` (`AsyncLocalStorage`) e transports plugáveis (console + arquivo via `LOG_FILE_PATH`). Movido da raiz de `lib/` para `lib/infra/` por organização temática. Implementação nativa sem dependências externas. Vide seção 1.7 para detalhes completos do contrato.
 
 ---
 
@@ -524,7 +534,7 @@ Centralização de todas as configurações de SEO: `siteConfig` (nome, URL, des
 | ~~`csvExport.js`~~ *(movido para `utils/csvExport.js`)* | Exportação de dados para CSV no navegador |
 | ~~`db.js`~~ *(movido para `lib/infra/db.js`)* | Pool PostgreSQL + query + transações + health check (60s) |
 | ~~`handleUnauthorized.js`~~ *(movido para `hooks/useUnauthorized.js`)* | Tratamento de 401 no frontend |
-| ~~`logger.js`~~ *(movido para `lib/infra/logger.js`)* | Logger leve e padronizado com emojis |
+| ~~`logger.js`~~ *(movido para `lib/infra/logger.js`)* | Logger estruturado (níveis, JSON em produção, requestId, transports) |
 | ~~`redis.js`~~ *(movido para `lib/infra/redis.js`)* | Cliente Redis Upstash com fallback em memória (retry único) |
 | ~~`reorder.js`~~ *(movido para `utils/reorder.js`)* | Reordenação Drag & Drop via API (frontend) |
 | ~~`spotify.js`~~ *(movido para `lib/media/spotify.js`)* | Extração de IDs do Spotify |
