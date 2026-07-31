@@ -1,7 +1,7 @@
 # Análise da Suite de Testes — `/tests/`
 
 > **Data:** 28/06/2026  
-> **Última atualização:** 29/07/2026
+> **Última atualização:** 30/07/2026
 > **Propósito:** Documentação completa e consolidada de todos os arquivos de teste do projeto Caminhar.
 
 ---
@@ -577,7 +577,7 @@ Endpoints públicos testados com mocks de banco de dados via `db-module.js` (sem
   - `musicas.flow.test.js` — Testa fluxo completo (CRUD integrado).
   - `musicas.integration.test.js` — Testa integração com banco mockado.
   - `musicas.pagination.test.js` — Testa paginação do endpoint.
-  - `musicas.test.js` — Testes gerais do endpoint de músicas.
+  - `musicas.test.js` — Testes gerais do endpoint de músicas. Mocka `lib/infra/logger.js` e valida asserções de erro via `logger.error('Musicas', '...', expect.any(Error))` em vez de `console.error`.
 - **Propósito geral:** Cobrem GET (listagem, paginação, busca por título/artista), POST (criação com validação), DELETE, fluxos completos.
 - **Padrão:** Uso de `createMocks`, handlers mockados inline, validação de campos.
 
@@ -613,6 +613,7 @@ Endpoints públicos testados com mocks de banco de dados via `db-module.js` (sem
 ### `/tests/integration/api/placeholder-image.test.js`
 - **Propósito:** Testa a geração de placeholder para imagens.
 - **Testes:** Geração de imagem placeholder.
+- **Mocks:** `fs`, `lib/domain/settings.js`, `lib/infra/db.js` (db-module), `lib/infra/logger.js`. A asserção de fallback do banco valida `logger.warn('Placeholder', '...', expect.any(String))` em vez de `console.warn` (o `LOG_LEVEL=error` default de teste filtrava `warn` antes do mock do logger).
 
 ### `/tests/integration/api/cleanup-test-data.test.js`
 - **Propósito:** Utilitário para limpar dados gerados durante testes de integração.
@@ -779,6 +780,7 @@ Testes que usam PostgreSQL real via Testcontainers (`jest.config.db.js`). Valida
 ### `/tests/unit/lib/api/validate.test.js` (325 linhas)
 - **Propósito:** Testa middlewares de validação Zod: `formatZodErrors`, `validateBody`, `validateQuery`, `validateParams`, `validateHeaders`, `validateRequest`, e schemas helpers `createPaginationSchema`, `createSearchSchema`.
 - **Testes:** Validação de body, query, params, headers, formatação de erros, schemas combinados.
+- **Mocks:** `lib/api/response.js` (`validationError`), `lib/infra/logger.js`. Os 4 blocos catch de erro inesperado (validateBody, validateQuery, validateParams, validateHeaders) validam `logger.error('Validate', '...', expect.any(Error))` em vez de `console.error`.
 
 ### `/tests/unit/lib/api/index.test.js`
 - **Propósito:** Barrel export verification. Verifica que o objeto default com os 4 submódulos da API é exportado corretamente.
@@ -791,6 +793,7 @@ Testes que usam PostgreSQL real via Testcontainers (`jest.config.db.js`). Valida
 ### `/tests/unit/lib/db/` (múltiplos arquivos)
 - **Propósito:** Testes de operações de banco de dados (queries, transações, migrações).
 - **Destaque:** `musicas.test.js` testa `createMusica` com transação — os mocks de `mockQuery` incluem BEGIN e COMMIT, e as asserções verificam 4 chamadas (BEGIN, SELECT MAX, INSERT, COMMIT) em vez de 2.
+- **Mocks:** `query.test.js`, `getAllPosts.test.js` e `deletePost.test.js` mockam `lib/infra/logger.js` e validam asserções de erro via `logger.error('DB', 'Erro ao executar consulta SQL', expect.objectContaining({...}))` em vez de `console.error`.
 
 ### `/tests/unit/lib/seo/` (múltiplos arquivos)
 - **Propósito:** Testes de funções SEO (meta tags, schemas, Open Graph, etc).
@@ -863,12 +866,12 @@ Testes que focam em cenários de borda (edge cases) para handlers de API. Usam `
 
 ### `/tests/unit/pages/api/admin/fetch-ml.edge.test.js` (189 linhas)
 - **Handler:** `pages/api/admin/fetch-ml.js`
-- **Mocks:** `lib/auth.js`, `global.fetch` via `mockGlobalFetch`
+- **Mocks:** `lib/auth.js`, `global.fetch` via `mockGlobalFetch`, `lib/infra/logger.js`. A asserção de erro de scraping valida `logger.error('FetchML', 'Falha no fallback de scraping HTML:', expect.any(Error))` em vez de `console.error`.
 - **Testes:** Ordenação de IDs (explicitId primeiro), fallback de catálogo com descrição vazia, fallback HTML com preço inválido (isNaN), fallback HTML com priceMatch, fallback de imagens (url vs secure_url), erro de texto HTML no scraping.
 
 ### `/tests/unit/pages/api/admin/fetch-spotify.edge.test.js` (51 linhas)
 - **Handler:** `pages/api/admin/fetch-spotify.js`
-- **Mocks:** `lib/auth.js`, `global.fetch` via `mockGlobalFetch`
+- **Mocks:** `lib/auth.js`, `global.fetch` via `mockGlobalFetch`, `lib/infra/logger.js`. As asserções de erro validam `logger.error('FetchSpotify', '...', expect.any(Error))` para as 3 estratégias (oEmbed, Iframe, HTML) em vez de `console.error`.
 - **Testes:** Falha em todas as 3 estratégias (oEmbed, Iframe, HTML) → 500 com mensagem de erro.
 
 ### `/tests/unit/pages/api/admin/posts.edge.test.js` (165 linhas)

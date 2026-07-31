@@ -200,6 +200,14 @@
 
 **Correção:** Criado `tests/unit/lib/infra/logger.test.js` com 13 testes em 5 describe blocks: filtro por nível (`LOG_LEVEL=error/warn/info/debug` + default por `NODE_ENV`), saída JSON em produção (linha parseável + normalização de `success`→`info`), `requestId` via `AsyncLocalStorage` (`setRequestId` e `runWithRequestId` com propagação e descarte), sanitização de `Error` e objetos circulares, e file transport (escrita via `LOG_FILE_PATH` + rotação a 10 MB). Os 5 mocks de teste existentes que referenciam o logger (`cache.test.js`, `login.test.js` ×2, `login.edge.test.js`, `products.test.js`) não precisaram de alteração — o contrato público `logger.<method>(module, message, ...args)` foi preservado.
 
+### 3.17 Testes ajustados para mockar logger estruturado após refatoração de `console.error`/`console.warn` ✅
+
+**Arquivos:** `tests/unit/lib/db/query.test.js`, `tests/unit/lib/db/getAllPosts.test.js`, `tests/unit/lib/db/deletePost.test.js`, `tests/unit/lib/api/validate.test.js`, `tests/integration/api/musicas.test.js`, `tests/integration/api/placeholder-image.test.js`, `tests/unit/pages/api/admin/fetch-ml.edge.test.js`, `tests/unit/pages/api/admin/fetch-spotify.edge.test.js`
+
+**Problema:** Após a refatoração do código de produção para usar o `logger` estruturado (`lib/infra/logger.js`) com o contrato `logger.<method>(module, message, ...args)`, 8 arquivos de teste continuavam espionando `console.error`/`console.warn` e validando 2 argumentos (string + objeto/Error). Em ambiente de teste, o logger formata tudo em uma string única via `formatReadable` e chama `console.error(string)` com 1 argumento, fazendo as asserções falharem. Adicionalmente, no `placeholder-image.test.js`, o `logger.warn` era filtrado pelo `LOG_LEVEL=error` (default de teste), fazendo `console.warn` nunca ser chamado.
+
+**Correção:** Adicionado `jest.mock` de `lib/infra/logger.js` com factory (`error`, `warn`, `info`, `debug`, `success` como `jest.fn()`) em todos os 8 arquivos. As asserções foram ajustadas para validar o contrato do logger `(module, message, ...args)` em vez do formato de string do console. Removidos os `jest.spyOn(console, ...)` e `mockRestore()` correspondentes. No `validate.test.js`, os 4 blocos catch (validateBody, validateQuery, validateParams, validateHeaders) foram ajustados para `logger.error('Validate', '...', expect.any(Error))`. No `placeholder-image.test.js`, a asserção foi alterada para `logger.warn('Placeholder', '...', expect.any(String))`, eliminando a necessidade de workaround de `LOG_LEVEL`. Nenhum arquivo de produção foi alterado.
+
 ## 4. Problemas de Performance
 
 ### 4.1 Polyfills assíncronos podem causar race conditions ✅

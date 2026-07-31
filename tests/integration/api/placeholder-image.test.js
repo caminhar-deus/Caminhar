@@ -1,5 +1,6 @@
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
+import { logger } from '../../../lib/infra/logger.js';
 
 jest.mock('fs', () => ({
   promises: {
@@ -14,6 +15,16 @@ jest.mock('../../../lib/domain/settings.js', () => ({
 
 jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb());
 
+jest.mock('../../../lib/infra/logger.js', () => ({
+  logger: {
+    error: jest.fn(),
+    warn: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn(),
+    success: jest.fn(),
+  },
+}));
+
 import handler from '../../../pages/api/placeholder-image.js';
 import fs from 'fs';
 import { getSetting } from '../../../lib/domain/settings.js';
@@ -21,8 +32,6 @@ import { getSetting } from '../../../lib/domain/settings.js';
 describe('API - Placeholder Image (/api/placeholder-image)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
-    jest.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -51,7 +60,7 @@ describe('API - Placeholder Image (/api/placeholder-image)', () => {
     await handler(req, res);
     
     expect(res._getStatusCode()).toBe(200);
-    expect(console.warn).toHaveBeenCalled(); // logou o erro do banco
+    expect(logger.warn).toHaveBeenCalledWith('Placeholder', 'Não foi possível ler a configuração do banco:', expect.any(String));
     expect(res.getHeader('Content-Type')).toBe('image/webp');
   });
 

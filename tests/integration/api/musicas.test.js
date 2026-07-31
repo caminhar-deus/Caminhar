@@ -2,6 +2,7 @@ import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 
 import { testPublicGetEndpoint } from '../../helpers/crud-test';
 import { musicFactory } from '../../factories';
+import { logger } from '../../../lib/infra/logger.js';
 
 // Mocks declarados ANTES da importação do handler
 jest.mock('../../../lib/domain/musicas.js', () => ({
@@ -9,6 +10,16 @@ jest.mock('../../../lib/domain/musicas.js', () => ({
 }));
 
 jest.mock('../../../lib/cache/cache.js', () => require('../../mocks/cache').mockCacheModule());
+
+jest.mock('../../../lib/infra/logger.js', () => ({
+  logger: {
+    error: jest.fn(),
+    warn: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn(),
+    success: jest.fn(),
+  },
+}));
 
 // Importa o handler
 import handler from '../../../pages/api/musicas.js';
@@ -46,7 +57,6 @@ testPublicGetEndpoint(handler, {
 
     it('deve retornar 500 em caso de erro no servidor', async () => {
       getPaginatedMusicas.mockRejectedValueOnce(new Error('Erro de conexão com o banco'));
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
       const { req, res } = cm({ method: 'GET' });
       await h(req, res);
@@ -55,9 +65,7 @@ testPublicGetEndpoint(handler, {
       const responseData = res._getJSONData();
       expect(responseData.error).toBe('Internal Server Error');
       expect(responseData.message).toBe('Erro interno do servidor ao buscar músicas.');
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Musicas'), expect.any(Error));
-
-      consoleSpy.mockRestore();
+      expect(logger.error).toHaveBeenCalledWith('Musicas', 'Erro na API ao buscar músicas:', expect.any(Error));
     });
 
     it('deve retornar 429 se o limite de requisições for excedido (rate limit dentro do cache)', async () => {

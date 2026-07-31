@@ -3,6 +3,7 @@ import { createMocks } from 'node-mocks-http';
 import handler from '../../../../../pages/api/admin/fetch-ml.js';
 import * as auth from '../../../../../lib/auth/auth.js';
 import { mockGlobalFetch } from '../../../../helpers/index.js';
+import { logger } from '../../../../../lib/infra/logger.js';
 
 jest.mock('../../../../../lib/auth/auth.js', () => ({
   getAuthToken: jest.fn(),
@@ -13,20 +14,27 @@ jest.mock('../../../../../lib/auth/auth.js', () => ({
   }),
 }));
 
+jest.mock('../../../../../lib/infra/logger.js', () => ({
+  logger: {
+    error: jest.fn(),
+    warn: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn(),
+    success: jest.fn(),
+  },
+}));
+
 describe('API Admin - Fetch ML (Edge Cases)', () => {
   let fetchMock;
-  let consoleErrorSpy;
 
   beforeEach(() => {
     fetchMock = mockGlobalFetch();
     auth.getAuthToken.mockReturnValue('fake-token');
     auth.verifyToken.mockReturnValue({ role: 'admin' });
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
     fetchMock?.mockRestore();
-    consoleErrorSpy.mockRestore();
   });
 
   it('deve testar a ordenação do array com b === explicitId (linha 35)', async () => {
@@ -184,6 +192,6 @@ describe('API Admin - Fetch ML (Edge Cases)', () => {
     expect(res._getJSONData()).toEqual(expect.objectContaining({
       error: 'Anúncio inativo ou link inválido (Nenhum produto/item encontrado).'
     }));
-    expect(consoleErrorSpy).toHaveBeenCalledWith('[FetchML] ❌ Falha no fallback de scraping HTML:', expect.any(Error));
+    expect(logger.error).toHaveBeenCalledWith('FetchML', 'Falha no fallback de scraping HTML:', expect.any(Error));
   });
 });

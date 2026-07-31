@@ -2,9 +2,20 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { mockQuery, restorePoolImplementation } from 'pg';
 import { resetPool } from '../../../../lib/infra/db.js';
 import { getAllPosts } from '../../../../lib/domain/posts.js';
+import { logger } from '../../../../lib/infra/logger.js';
 
 // Mock do 'pg' (automático via __mocks__/pg.js)
 jest.mock('pg');
+
+jest.mock('../../../../lib/infra/logger.js', () => ({
+  logger: {
+    error: jest.fn(),
+    warn: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn(),
+    success: jest.fn(),
+  },
+}));
 
 describe('getAllPosts', () => {
   beforeEach(() => {
@@ -42,15 +53,13 @@ describe('getAllPosts', () => {
     const dbError = new Error('DB Error');
     mockQuery.mockRejectedValue(dbError);
 
-    // Silencia o console.error para este teste específico para evitar poluir o log
-    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
     // Garante que a função propaga o erro para quem a chamou
     await expect(getAllPosts()).rejects.toThrow('DB Error');
 
     // Opcional, mas recomendado: Verifica se o erro foi de fato logado pela função 'query'
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      '[DB] ❌ Erro ao executar consulta SQL',
+    expect(logger.error).toHaveBeenCalledWith(
+      'DB',
+      'Erro ao executar consulta SQL',
       expect.objectContaining({
         code: undefined,
         duration: expect.any(String),
@@ -58,8 +67,5 @@ describe('getAllPosts', () => {
         query: 'SELECT * FROM posts ORDER BY created_at DESC'
       })
     );
-
-    // Restaura a implementação original do console.error
-    consoleErrorSpy.mockRestore();
   });
 });

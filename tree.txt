@@ -1203,6 +1203,8 @@
 │       │   │   ├── settings.test.js
 │       │   │   └── updatePost.test.js
 │       │   ├── db.test.js
+│       │   ├── infra
+│       │   │   └── logger.test.js
 │       │   ├── middleware.test.js
 │       │   ├── redis.test.js
 │       │   └── seo
@@ -1248,4 +1250,4 @@
     ├── csvExport.js
     └── reorder.js
 
-193 directories, 1056 files
+194 directories, 1057 files

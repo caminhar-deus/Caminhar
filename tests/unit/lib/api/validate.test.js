@@ -12,10 +12,21 @@ import {
   formatZodErrors
 } from '../../../../lib/api/validate.js';
 import { validationError } from '../../../../lib/api/response.js';
+import { logger } from '../../../../lib/infra/logger.js';
 
 // Mock do módulo response.js para isolar a validação
 jest.mock('../../../../lib/api/response.js', () => ({
   validationError: jest.fn(),
+}));
+
+jest.mock('../../../../lib/infra/logger.js', () => ({
+  logger: {
+    error: jest.fn(),
+    warn: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn(),
+    success: jest.fn(),
+  },
 }));
 
 describe('API Validation Middleware (lib/api/validate.js)', () => {
@@ -98,16 +109,11 @@ describe('API Validation Middleware (lib/api/validate.js)', () => {
         // Simula um erro crítico no schema ou parsing
         const errorSchema = { parse: () => { throw new Error('Erro Inesperado'); } };
         const middleware = validateBody(errorSchema)(handler);
-        
-        // Silencia console.error para este teste
-        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-        
+
         await middleware(req, res);
-        
+
         expect(validationError).toHaveBeenCalledWith(res, 'Erro ao validar dados da requisição');
-        expect(consoleSpy).toHaveBeenCalled();
-        
-        consoleSpy.mockRestore();
+        expect(logger.error).toHaveBeenCalledWith('Validate', 'Erro inesperado na validação do body:', expect.any(Error));
     });
   });
 
@@ -149,15 +155,11 @@ describe('API Validation Middleware (lib/api/validate.js)', () => {
     it('deve tratar erros inesperados (não-Zod) na validação da query', async () => {
       const errorSchema = { parse: () => { throw new Error('Erro Inesperado na Query'); } };
       const middleware = validateQuery(errorSchema)(handler);
-      
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-      
+
       await middleware(req, res);
-      
+
       expect(validationError).toHaveBeenCalledWith(res, 'Erro ao validar parâmetros da URL');
-      expect(consoleSpy).toHaveBeenCalledWith('[Validate] ❌ Erro inesperado na validação dos query params:', expect.any(Error));
-      
-      consoleSpy.mockRestore();
+      expect(logger.error).toHaveBeenCalledWith('Validate', 'Erro inesperado na validação dos query params:', expect.any(Error));
     });
   });
 
@@ -193,14 +195,11 @@ describe('API Validation Middleware (lib/api/validate.js)', () => {
           req.query = { id: '123e4567-e89b-12d3-a456-426614174000' };
           const errorSchema = { parse: () => { throw new Error('Erro Inesperado nos Params'); } };
           const middleware = validateParams(errorSchema)(handler);
-          
-          const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-          
+
           await middleware(req, res);
-          
+
           expect(validationError).toHaveBeenCalledWith(res, 'Erro ao validar parâmetros da rota');
-          expect(consoleSpy).toHaveBeenCalledWith('[Validate] ❌ Erro inesperado na validação dos params:', expect.any(Error));
-          consoleSpy.mockRestore();
+          expect(logger.error).toHaveBeenCalledWith('Validate', 'Erro inesperado na validação dos params:', expect.any(Error));
       });
 
   });
@@ -230,14 +229,11 @@ describe('API Validation Middleware (lib/api/validate.js)', () => {
       req.headers = { 'X-API-KEY': 'minha-senha-secreta' };
       const errorSchema = { parse: () => { throw new Error('Erro Inesperado nos Headers'); } };
       const middleware = validateHeaders(errorSchema)(handler);
-      
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-      
+
       await middleware(req, res);
-      
+
       expect(validationError).toHaveBeenCalledWith(res, 'Erro ao validar headers');
-      expect(consoleSpy).toHaveBeenCalledWith('[Validate] ❌ Erro inesperado na validação dos headers:', expect.any(Error));
-      consoleSpy.mockRestore();
+      expect(logger.error).toHaveBeenCalledWith('Validate', 'Erro inesperado na validação dos headers:', expect.any(Error));
   });
 
   describe('validateRequest (Composto)', () => {
