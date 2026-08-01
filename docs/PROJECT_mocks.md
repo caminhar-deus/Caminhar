@@ -104,7 +104,7 @@ export default { serialize, parse };
 
 Este mock foi analisado e **não está sendo consumido por nenhum arquivo de teste no projeto atual**. As evidências:
 
-1. **`lib/auth.js` não utiliza a biblioteca `cookie`** — O arquivo implementa funções próprias `parseCookie()` e `serializeCookie()` nas linhas 8–30, sem dependência externa.
+1. **`lib/auth/auth.js` não utiliza a biblioteca `cookie`** — O arquivo implementa funções próprias `parseCookie()` e `serializeCookie()` nas linhas 8–30, sem dependência externa.
 2. **Nenhum arquivo de teste chama `jest.mock('cookie')`** — A pesquisa não encontrou ocorrências em nenhum arquivo da pasta `tests/`.
 3. **O pacote `cookie` não está nas dependências do projeto** — Não consta em `dependencies` nem em `devDependencies` no `package.json`.
 

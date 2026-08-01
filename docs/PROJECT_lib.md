@@ -63,7 +63,7 @@
 | `withAuth(handler)` | Middleware que protege handlers exigindo token JWT válido |
 | `initializeAuth()` | Cria tabela `users`, migra coluna `role`, cria admin via variáveis de ambiente. Cria tabela `refresh_tokens` com índices |
 
-**Observações:** Utiliza `jsonwebtoken`, `bcryptjs` e `crypto` (nativo). O `JWT_SECRET` é obrigatório em produção — se ausente, lança erro. Em desenvolvimento sem `JWT_SECRET`, gera chave determinística via `createHash('sha256')` a partir do ambiente local (`cwd` + `NODE_ENV` + salt), eliminando o fallback hardcoded anterior. O rate limit no login usa `checkRateLimit` do `cache.js` com padrão de 5 tentativas por minuto por IP. O refresh token é armazenado no banco com expiração de 30 dias e utiliza rotação (cada uso gera um novo token e revoga o anterior). O cookie de refresh tem `path: '/api/auth/refresh'` restrito para minimizar exposição.
+**Observações:** Utiliza `jsonwebtoken`, `bcryptjs` e `crypto` (nativo). O `JWT_SECRET` é obrigatório em produção — se ausente, lança erro. Em desenvolvimento sem `JWT_SECRET`, gera chave determinística via `createHash('sha256')` a partir do ambiente local (`cwd` + `NODE_ENV` + salt), eliminando o fallback hardcoded anterior. O rate limit no login usa `checkRateLimit` do `lib/cache/cache.js` com padrão de 5 tentativas por minuto por IP. O refresh token é armazenado no banco com expiração de 30 dias e utiliza rotação (cada uso gera um novo token e revoga o anterior). O cookie de refresh tem `path: '/api/auth/refresh'` restrito para minimizar exposição.
 
 ---
 
@@ -154,7 +154,7 @@
 
 **Configurações do pool:** `max: 50`, `min: 5`, `idleTimeoutMillis: 60000`, `connectionTimeoutMillis: 15000`. SSL habilitado em produção. Health check periódico a cada 60s detecta falhas precoces e reseta o pool automaticamente.
 
-**Observações:** O pool é criado sob demanda (lazy initialization) para compatibilidade com Jest mocks. Em caso de erro fatal no pool, tenta recriar automaticamente. Erros de timeout/rede disparam retry sem resetar o pool. O pool é pré-aquecido no startup com uma conexão inicial (`SELECT 1`) — exceto em ambiente de teste, onde o pré-aquecimento é desabilitado para evitar handles abertos. Re-exports removidos — importe diretamente de `./crud.js`, `./domain/settings.js`, `./domain/audit.js` e `./domain/posts.js`.
+**Observações:** O pool é criado sob demanda (lazy initialization) para compatibilidade com Jest mocks. Em caso de erro fatal no pool, tenta recriar automaticamente. Erros de timeout/rede disparam retry sem resetar o pool. O pool é pré-aquecido no startup com uma conexão inicial (`SELECT 1`) — exceto em ambiente de teste, onde o pré-aquecimento é desabilitado para evitar handles abertos. Re-exports removidos — importe diretamente de `../crud/crud.js`, `./domain/settings.js`, `./domain/audit.js` e `./domain/posts.js`.
 
 ---
 
@@ -227,12 +227,12 @@
 | `redisFlushdb()` | Executa FLUSHDB e limpa cache em memória |
 
 **Fluxo de inicialização:**
-1. `getRedisInstance()` é chamada sob demanda por `cache.js`.
+1. `getRedisInstance()` é chamada sob demanda por `lib/cache/cache.js`.
 2. Verifica `UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN`.
 3. Valida se URL começa com `https://` e se o token **não** começa com `https://` (proteção contra variáveis trocadas).
 4. Se tudo ok, cria instância `Redis` do `@upstash/redis`. Caso contrário, opera com fallback em memória.
 
-**Observações:** Design tolerante a falhas: o app não quebra se Redis estiver indisponível. O cache em memória (fallback) tem lazy cleanup quando ultrapassa 1000 entradas. A função `redisGet` tenta o Redis uma única vez — o retry duplo anterior foi removido para eliminar latência extra de ~50-150ms por requisição, já que o `cache.js` possui cache L1 (memória) e Single-Flight como camadas de resiliência.
+**Observações:** Design tolerante a falhas: o app não quebra se Redis estiver indisponível. O cache em memória (fallback) tem lazy cleanup quando ultrapassa 1000 entradas. A função `redisGet` tenta o Redis uma única vez — o retry duplo anterior foi removido para eliminar latência extra de ~50-150ms por requisição, já que o `lib/cache/cache.js` possui cache L1 (memória) e Single-Flight como camadas de resiliência.
 
 ---
 

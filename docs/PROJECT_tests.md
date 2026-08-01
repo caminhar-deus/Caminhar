@@ -440,7 +440,7 @@ tests/
 
 ### `/tests/mocks/auth.js` (67 linhas)
 - **Localização:** `tests/mocks/auth.js`
-- **Propósito:** Mock reutilizável do módulo `lib/auth.js`.
+- **Propósito:** Mock reutilizável do módulo `lib/auth/auth.js`.
 - **Exportações:**
   - `mockAuthModule(overrides)` — módulo auth completo (11 funções mockadas: hashPassword, verifyPassword, generateToken, verifyToken, setAuthCookie, getAuthCookie, getAuthToken, authenticate, authenticateAndGenerateToken, withAuth, initializeAuth)
   - `mockAuthFailure()` — módulo auth simulando falha (getAuthToken → null, verifyToken → null, withAuth → 401)
@@ -448,19 +448,19 @@ tests/
 
 ### `/tests/mocks/cache.js` (29 linhas)
 - **Localização:** `tests/mocks/cache.js`
-- **Propósito:** Mock reutilizável do módulo `lib/cache.js`.
+- **Propósito:** Mock reutilizável do módulo `lib/cache/cache.js`.
 - **Exportações:**
   - `mockCacheModule(overrides)` — módulo cache mockado: `getOrSetCache` (executa fetchFunction), `checkRateLimit` (false), `invalidateCache` (noop)
   - `resetCacheMocks(cacheMock)` — reseta mocks para comportamento padrão
 
 ### `/tests/mocks/db-module.js` (63 linhas)
 - **Localização:** `tests/mocks/db-module.js`
-- **Propósito:** Mock centralizado do módulo `lib/db.js` para testes de integração de API admin.
+- **Propósito:** Mock centralizado do módulo `lib/infra/db.js` para testes de integração de API admin.
 - **Exportações:**
   - `mockDb(overrides)` — módulo db completo: query, resetPool, closeDatabase, transaction (com BEGIN/COMMIT/ROLLBACK), healthCheck, getDatabaseInfo
   - `mockDbError(error)` — módulo db simulando erro de conexão
   - `resetDbMocks(dbMock)` — reseta mocks
-- **Uso típico:** `jest.mock('../../../lib/db.js', () => require('../../mocks/db-module').mockDb())`
+- **Uso típico:** `jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb())`
 
 ### `/tests/mocks/db.js` (235 linhas)
 - **Localização:** `tests/mocks/db.js`
@@ -557,18 +557,18 @@ Endpoints públicos testados com mocks de banco de dados via `db-module.js` (sem
 ### `/tests/integration/api/audit.test.js` (31 linhas)
 - **Propósito:** Testa a função `logActivity` do domínio de auditoria.
 - **Testes:** Inserção de log com parâmetros completos (admin, CREATE, POST, id, detalhes, IP, client); uso de valores padrão para IP vazio e opções omitidas.
-- **jest.mock:** `lib/db.js` → `{ query: jest.fn() }`
+- **jest.mock:** `lib/infra/db.js` → `{ query: jest.fn() }`
 - **Padrão:** Teste de função de domínio isolada (NÃO é teste de endpoint HTTP), localizado inadequadamente em `integration/api/`.
 
 ### `/tests/integration/api/dicas.test.js`
 - **Propósito:** Testa o endpoint público `/api/dicas` (GET-only, paginado).
 - **Testes:** Listagem paginada de dicas publicadas (page, limit, total, totalPages), erro 500 no banco, 405 para métodos não permitidos, invalidação de cache entre testes.
-- **jest.mock:** `lib/db.js`, `lib/cache.js`
+- **jest.mock:** `lib/infra/db.js`, `lib/cache/cache.js`
 
 ### `/tests/integration/api/login.test.js`
 - **Propósito:** Testa o endpoint de login `/api/auth/login`.
 - **Testes:** Login bem-sucedido (retorna user + token), senha incorreta (401), usuário inexistente (401), campos vazios (400), 405 para GET.
-- **jest.mock:** `lib/auth.js`, `lib/cache.js`
+- **jest.mock:** `lib/auth/auth.js`, `lib/cache/cache.js`
 
 ### `/tests/integration/api/musicas.*.test.js` (6 arquivos)
 - **Arquivos e linhas:**
@@ -627,7 +627,7 @@ Endpoints administrativos testados com mocks de banco e autenticação. **Total:
 ### `/tests/integration/api/admin/audit.test.js` (150 linhas)
 - **Propósito:** Testa o endpoint `/api/admin/audit` para logs de auditoria.
 - **Testes:** 401 sem token, 403 sem permissão, 200 com logs paginados e filtros de data, tratamento de tabela ausente (erro 42P01 → auto-criação), 500 em erro de banco.
-- **jest.mock:** `lib/db.js`, `lib/auth.js`
+- **jest.mock:** `lib/infra/db.js`, `lib/auth/auth.js`
 
 ### `/tests/integration/api/admin/backups.test.js`
 - **Propósito:** Testa o endpoint de gerenciamento de backups.
@@ -688,7 +688,7 @@ Endpoints administrativos testados com mocks de banco e autenticação. **Total:
 ### `/tests/integration/api/auth/login.test.js`
 - **Propósito:** Testa o endpoint de login.
 - **Testes:** Login bem-sucedido (200 + cookies + user), falha de autenticação (401), rate limiting (429), método não permitido (405).
-- **Mocks:** `lib/auth.js` (inclui `setRefreshTokenCookie`), `lib/cache.js` (`checkRateLimit`).
+- **Mocks:** `lib/auth/auth.js` (inclui `setRefreshTokenCookie`), `lib/cache/cache.js` (`checkRateLimit`).
 
 ### `/tests/integration/api/auth/logout.test.js`
 - **Propósito:** Testa o endpoint de logout.
@@ -698,7 +698,7 @@ Endpoints administrativos testados com mocks de banco e autenticação. **Total:
 ### `/tests/integration/api/login.test.js`
 - **Propósito:** Testa o endpoint de login com foco em `last_login_at`.
 - **Testes:** Login bem-sucedido atualiza `last_login_at`, falha de autenticação não atualiza, erro na atualização não bloqueia login.
-- **Mocks:** `lib/auth.js` (inclui `setRefreshTokenCookie`), `lib/cache.js` (`checkRateLimit`).
+- **Mocks:** `lib/auth/auth.js` (inclui `setRefreshTokenCookie`), `lib/cache/cache.js` (`checkRateLimit`).
 
 ### `/tests/integration/auth/auth.test.js`
 - **Propósito:** Testes de fluxo de autenticação completos (integração com banco real via Testcontainers).
@@ -846,7 +846,7 @@ Testes que usam PostgreSQL real via Testcontainers (`jest.config.db.js`). Valida
 ### `/tests/unit/domain/videos.test.js`
 - **Propósito:** Testes da lógica de domínio de vídeos.
 - **Testes:** Queries de listagem, paginação, filtros por título/descrição, validação de URL, `updateVideo` com `updated_at` e `options`.
-- **Mocks:** `raw` mockado em `crud.js` para suportar `raw('CURRENT_TIMESTAMP')`.
+- **Mocks:** `raw` mockado em `lib/crud/crud.js` para suportar `raw('CURRENT_TIMESTAMP')`.
 - **Destaques:** O teste de `updateVideo` verifica que `updateRecords` é chamado com `updated_at: raw('CURRENT_TIMESTAMP')` e `options: {}`.
 
 
@@ -856,47 +856,47 @@ Testes que focam em cenários de borda (edge cases) para handlers de API. Usam `
 
 ### `/tests/unit/pages/api/upload-image.edge.test.js` (66 linhas)
 - **Handler:** `pages/api/upload-image.js`
-- **Mocks:** `fs` (existsSync, mkdirSync, rename, unlink), `sharp`, `formidable`, `lib/domain/settings`, `lib/auth`
+- **Mocks:** `fs` (existsSync, mkdirSync, rename, unlink), `sharp`, `formidable`, `lib/domain/settings`, `lib/auth/auth`
 - **Testes:** Criação de diretório de upload se não existir.
 
 ### `/tests/unit/pages/api/admin/dicas.edge.test.js` (54 linhas)
 - **Handler:** `pages/api/admin/dicas.js`
-- **Mocks:** `lib/db.js` (db-module), `lib/auth.js`, `lib/domain/audit.js`
+- **Mocks:** `lib/infra/db.js` (db-module), `lib/auth/auth.js`, `lib/domain/audit.js`
 - **Testes:** IP padrão (127.0.0.1) e valor padrão de `published` (true) em POST e PUT.
 
 ### `/tests/unit/pages/api/admin/fetch-ml.edge.test.js` (189 linhas)
 - **Handler:** `pages/api/admin/fetch-ml.js`
-- **Mocks:** `lib/auth.js`, `global.fetch` via `mockGlobalFetch`, `lib/infra/logger.js`. A asserção de erro de scraping valida `logger.error('FetchML', 'Falha no fallback de scraping HTML:', expect.any(Error))` em vez de `console.error`.
+- **Mocks:** `lib/auth/auth.js`, `global.fetch` via `mockGlobalFetch`, `lib/infra/logger.js`. A asserção de erro de scraping valida `logger.error('FetchML', 'Falha no fallback de scraping HTML:', expect.any(Error))` em vez de `console.error`.
 - **Testes:** Ordenação de IDs (explicitId primeiro), fallback de catálogo com descrição vazia, fallback HTML com preço inválido (isNaN), fallback HTML com priceMatch, fallback de imagens (url vs secure_url), erro de texto HTML no scraping.
 
 ### `/tests/unit/pages/api/admin/fetch-spotify.edge.test.js` (51 linhas)
 - **Handler:** `pages/api/admin/fetch-spotify.js`
-- **Mocks:** `lib/auth.js`, `global.fetch` via `mockGlobalFetch`, `lib/infra/logger.js`. As asserções de erro validam `logger.error('FetchSpotify', '...', expect.any(Error))` para as 3 estratégias (oEmbed, Iframe, HTML) em vez de `console.error`.
+- **Mocks:** `lib/auth/auth.js`, `global.fetch` via `mockGlobalFetch`, `lib/infra/logger.js`. As asserções de erro validam `logger.error('FetchSpotify', '...', expect.any(Error))` para as 3 estratégias (oEmbed, Iframe, HTML) em vez de `console.error`.
 - **Testes:** Falha em todas as 3 estratégias (oEmbed, Iframe, HTML) → 500 com mensagem de erro.
 
 ### `/tests/unit/pages/api/admin/posts.edge.test.js` (165 linhas)
 - **Handler:** `pages/api/admin/posts.js`
-- **Mocks:** `lib/db.js` (db-module), `lib/auth.js`, `lib/cache.js`, `lib/domain/posts.js`, `lib/crud.js`, `lib/domain/audit.js`
+- **Mocks:** `lib/db.js` (db-module), `lib/auth/auth.js`, `lib/cache/cache.js`, `lib/domain/posts.js`, `lib/crud.js`, `lib/domain/audit.js`
 - **Testes:** 401 sem user, 403 sem permissão, permissões vazias, validação Zod (image_url inválida), ID inválido no PUT, sem dados no PUT, erro no DELETE (500), erro no PUT (500), 405 para PATCH, reorder de posts.
 
 ### `/tests/unit/pages/api/admin/rate-limit.test.js` (194 linhas)
 - **Handler:** `pages/api/admin/rate-limit.js`
-- **Mocks:** `@upstash/redis` (Redis mock completo), `lib/auth.js`. Usa `jest.resetModules()` para recarregar handler.
+- **Mocks:** `@upstash/redis` (Redis mock completo), `lib/auth/auth.js`. Usa `jest.resetModules()` para recarregar handler.
 - **Testes:** Redis não configurado (501), exportação CSV com filtros de data e busca, IP atual (::1 → 127.0.0.1), whitelist, logs de auditoria com paginação, IPs bloqueados (com threshold), sem chaves Redis, adicionar IP à whitelist (+ auditoria), 400 sem IP, remover IP da whitelist, desbloquear IP com fallback de usuário, 400 sem IP no DELETE, 405 para PUT, erro interno (500).
 
 ### `/tests/unit/pages/api/admin/roles.edge.test.js` (121 linhas)
 - **Handler:** `pages/api/admin/roles.js`
-- **Mocks:** `lib/auth.js` (custom com getAuthToken/verifyToken/withAuth), `lib/db.js` (db-module), `lib/crud.js`, `lib/domain/audit.js`
+- **Mocks:** `lib/auth/auth.js` (custom com getAuthToken/verifyToken/withAuth), `lib/infra/db.js` (db-module), `lib/crud/crud.js`, `lib/domain/audit.js`
 - **Testes:** Role misteriosa sem permissões (403), POST com permissões como string (JSON.stringify), PUT extraindo ID da query, DELETE com fallback de nome (cargo não encontrado).
 
 ### `/tests/unit/pages/api/admin/stats.edge.test.js` (64 linhas)
 - **Handler:** `pages/api/admin/stats.js`
-- **Mocks:** `lib/auth.js`, `lib/db.js` (db-module)
+- **Mocks:** `lib/auth/auth.js`, `lib/infra/db.js` (db-module)
 - **Testes:** 405 para POST, 500 em erro de banco.
 
 ### `/tests/unit/pages/api/auth/login.edge.test.js` (62 linhas)
 - **Handler:** `pages/api/auth/login.js`
-- **Mocks:** `lib/auth.js`, `lib/cache.js`, `lib/logger.js`
+- **Mocks:** `lib/auth/auth.js`, `lib/cache/cache.js`, `lib/logger.js`
 - **Testes:** 500 em erro interno durante autenticação, verificação de log via `logger.error`.
 
 ---

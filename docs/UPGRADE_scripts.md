@@ -34,13 +34,13 @@
 
 ### 1.2. `scripts/db/verify-migration.js` é um handler de API, não um script de migração
 - **Arquivo:** `scripts/db/verify-migration.js`
-- **Problema:** O nome e a localização sugerem que é um script de verificação de migrações, mas o conteúdo é um handler Next.js (`export default withAuth(handler)`). Ele importa de `../../../lib/auth` e `../../../lib/db`, caminhos que só fazem sentido se o arquivo estivesse em uma subpasta de `pages/api/`.
+- **Problema:** O nome e a localização sugerem que é um script de verificação de migrações, mas o conteúdo é um handler Next.js (`export default withAuth(handler)`). Ele importa de `../../../lib/auth/auth` e `../../../lib/infra/db`, caminhos que só fazem sentido se o arquivo estivesse em uma subpasta de `pages/api/`.
 - **Impacto:** Localização enganosa. Alguém procurando por scripts de migração encontrará este arquivo e será confundido.
 - **Sugestão:** Mover para `pages/api/verify-migration.js` ou remover se não estiver em uso.
 
 ### 1.3. `scripts/db/verify-db-functions.js` — script obsoleto
 - **Arquivo:** `scripts/db/verify-db-functions.js`
-- **Problema:** Importa de `./db.js`, módulo que não existe mais em `scripts/db/`. Verifica se a função `getSetting` existe em `lib/db.js`, mas todos os scripts foram migrados para usar `scripts/db/connection.js`. Script evidentemente residual de uma refatoração anterior.
+- **Problema:** Importa de `./db.js`, módulo que não existe mais em `scripts/db/`. Verifica se a função `getSetting` existe em `lib/infra/db.js`, mas todos os scripts foram migrados para usar `scripts/db/connection.js`. Script evidentemente residual de uma refatoração anterior.
 - **Impacto:** Não executável no estado atual (quebra com erro de módulo não encontrado). Apenas ocupa espaço.
 - **Sugestão:** Remover ou atualizar para importar de `./connection.js` se ainda houver motivo para existir.
 
@@ -56,7 +56,7 @@
 
 ### 2.3. `scripts/init-server.js` — dependência desatualizada
 - **Arquivo:** `scripts/init-server.js`
-- **Problema:** Ainda importa de `../lib/db.js` em vez de usar o módulo compartilhado `scripts/db/connection.js` que foi adotado como padrão pelos demais scripts do projeto.
+- **Problema:** Ainda importa de `../lib/infra/db.js` em vez de usar o módulo compartilhado `scripts/db/connection.js` que foi adotado como padrão pelos demais scripts do projeto.
 - **Sugestão:** Migrar para `import { query, closePool } from './db/connection.js'` para alinhar com o padrão atual do projeto. Verificar também se ainda usa `dotenv` diretamente ou se poderia usar `loadEnv()`.
 
 ---
@@ -175,7 +175,7 @@
 - **Arquivo:** `scripts/init-server.js`
 - **Problema:** Este script parece não ter passado pelas refatorações de 21/05/2026 e 07/06/2026. Ainda:
   - Importa `dotenv` diretamente (não usa `loadEnv()`)
-  - Importa de `../lib/db.js` (não usa `scripts/db/connection.js`)
+  - Importa de `../lib/infra/db.js` (não usa `scripts/db/connection.js`)
   - Pode ter I/O síncrono (necessário verificar)
 - **Sugestão:** Refatorar para usar os módulos compartilhados, alinhando com o restante dos scripts.
 

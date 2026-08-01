@@ -387,7 +387,7 @@ if (campo !== undefined) data.campo = campo;
 
 **Problema:** O nome da tabela (`tableName`) é interpolado diretamente na string SQL. Embora o helper seja interno ao projeto e os nomes sejam controlados via código (não recebidos do usuário), isso ainda é um vetor potencial se no futuro houver uma função que aceite `tableName` como parâmetro externo.
 
-**Sugestão:** Adicionar validação de `tableName` com `_validateIdentifier` do `crud.js` ou manter whitelist de tabelas permitidas.
+**Sugestão:** Adicionar validação de `tableName` com `_validateIdentifier` do `lib/crud/crud.js` ou manter whitelist de tabelas permitidas.
 
 ---
 

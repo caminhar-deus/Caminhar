@@ -164,9 +164,9 @@
 
 **Arquivo:** `tests/unit/domain/videos.test.js`
 
-**Problema:** Após a correção em `lib/domain/videos.js` — `updateVideo` passou a filtrar campos explicitamente, adicionar `updated_at: raw('CURRENT_TIMESTAMP')` e aceitar `options` — o teste unitário precisava ser atualizado para refletir a nova assinatura. O mock de `crud.js` não exportava `raw`, e a asserção de `updateRecords` esperava apenas `{ titulo: 'Editado' }` sem `updated_at` e sem `options`.
+**Problema:** Após a correção em `lib/domain/videos.js` — `updateVideo` passou a filtrar campos explicitamente, adicionar `updated_at: raw('CURRENT_TIMESTAMP')` e aceitar `options` — o teste unitário precisava ser atualizado para refletir a nova assinatura. O mock de `lib/crud/crud.js` não exportava `raw`, e a asserção de `updateRecords` esperava apenas `{ titulo: 'Editado' }` sem `updated_at` e sem `options`.
 
-**Correção:** Adicionado `raw: jest.fn((val) => ({ raw: true, value: val }))` ao mock de `crud.js`. Adicionado `raw` ao import no teste. A asserção de `updateRecords` foi atualizada para `toHaveBeenCalledWith('videos', { titulo: 'Editado', updated_at: raw('CURRENT_TIMESTAMP') }, { id: 1 }, {})`.
+**Correção:** Adicionado `raw: jest.fn((val) => ({ raw: true, value: val }))` ao mock de `lib/crud/crud.js`. Adicionado `raw` ao import no teste. A asserção de `updateRecords` foi atualizada para `toHaveBeenCalledWith('videos', { titulo: 'Editado', updated_at: raw('CURRENT_TIMESTAMP') }, { id: 1 }, {})`.
 
 ### 3.15 Testes de autenticação e produtos atualizados após mudanças no schema e cookies ✅
 

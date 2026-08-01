@@ -4,7 +4,7 @@
 
 A pasta `/data` contém exclusivamente os **backups do banco de dados PostgreSQL** da aplicação. Sua estrutura é simples: um único subdiretório `backups/` que armazena os dumps criptografados e seus hashes de verificação.
 
-O banco de dados principal do projeto **Caminhar** é acessado via `lib/db.js` utilizando `pg.Pool` com a variável de ambiente `DATABASE_URL`.
+O banco de dados principal do projeto **Caminhar** é acessado via `lib/infra/db.js` utilizando `pg.Pool` com a variável de ambiente `DATABASE_URL`.
 
 ---
 
