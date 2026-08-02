@@ -1,309 +1,218 @@
-# Melhorias Possíveis — Suite de Testes (`/tests/`)
+# Relatório de Upgrade — Testes (`/tests/`)
 
-> **Data:** 28/06/2026
-> **Propósito:** Levantamento analítico de melhorias potenciais, sem aplicação de alterações.
+> **Data:** 02/08/2026
+> **Objetivo:** Levantamento analítico de melhorias possíveis na infraestrutura de testes, sem aplicar nenhuma alteração no projeto.
 
 ---
 
 ## Sumário
 
-1. [Duplicidades e Redundâncias](#1-duplicidades-e-redundâncias)
-2. [Problemas Estruturais e Organizacionais](#2-problemas-estruturais-e-organizacionais)
-3. [Problemas de Código e Manutenção](#3-problemas-de-código-e-manutenção)
-4. [Problemas de Performance](#4-problemas-de-performance)
-5. [Ferramentas e Configuração](#5-ferramentas-e-configuração)
-6. [Cobertura e Lacunas](#6-cobertura-e-lacunas)
-7. [Documentação e Legibilidade](#7-documentação-e-legibilidade)
+1. [Duplicidade de Código](#1-duplicidade-de-código)
+2. [Duplicidade de Textos/Conteúdos](#2-duplicidade-de-textosconteúdos)
+3. [Correções de Código](#3-correções-de-código)
+4. [Ajustes Estruturais e Organizacionais](#4-ajustes-estruturais-e-organizacionais)
+5. [Melhorias de Ferramenta, Manutenção e Performance](#5-melhorias-de-ferramenta-manutenção-e-performance)
+6. [Pontos de Atenção Técnica](#6-pontos-de-atenção-técnica)
+7. [Resumo das Ações Recomendadas](#7-resumo-das-ações-recomendadas)
 
 ---
 
-## 1. Duplicidades e Redundâncias
+## 1. Duplicidade de Código
 
-### 1.1 Duplicidade entre `tests/mocks/db-module.js` e `tests/mocks/db.js`
-- **Arquivos:** `tests/mocks/db-module.js` e `tests/mocks/db.js`
-- **Problema:** Ambos os arquivos exportam `mockDb()` e `mockDbModule()`, com implementações diferentes. `db-module.js` tem 63 linhas e é usado pelos testes de integração da API admin. `db.js` tem 235 linhas e é mais completo com `mockQuery()`, `mockQuerySequence()`, etc. A existência de ambos gera confusão sobre qual usar.
-- **Sugestão:** Unificar em um único módulo, consolidando as funções mais usadas e eliminando a duplicação de `mockDb()`/`mockDbModule()`.
+### 1.1 Padrão CRUD Repetido em Testes de Integração
 
-### 1.2 Duplicidade entre `tests/mocks/auth.js` e `tests/helpers/auth.js`
-- **Arquivos:** `tests/mocks/auth.js` e `tests/helpers/auth.js`
-- **Problema:** Ambos fornecem funcionalidades para mockar autenticação. `mocks/auth.js` exporta `mockAuthModule()` (para uso com `jest.mock()`), enquanto `helpers/auth.js` exporta `mockAuthLib()` e `mockAuthenticatedUser()`. As funções têm propósitos sobrepostos.
-- **Sugestão:** Consolidar em um único padrão: helpers para funções utilitárias puras e mocks para módulos que exigem `jest.mock()`.
+**Ocorrência:** `tests/integration/api/` — `musicas.test.js`, `videos.test.js`, `posts.test.js`, `products.test.js`
 
-### 1.3 Duplicidade entre `tests/mocks/next.js` e `tests/mocks/next-setup.js`
-- **Arquivos:** `tests/mocks/next.js` e `tests/mocks/next-setup.js`
-- **Problema:** `next-setup.js` importa funções de `next.js` e já registra os `jest.mock()` automaticamente. `next.js` contém implementações individuais que também podem ser chamadas diretamente. A função `setupNextMocks()` em `next.js` está deprecated mas ainda presente.
-- **Sugestão:** Remover a função `setupNextMocks()` de `next.js` (deprecada) e garantir que `next-setup.js` seja o único ponto de entrada.
+**Descrição:** Os testes de API seguem o mesmo padrão estrutural (criação de mocks, verificação de status, extração de dados). Embora já exista o helper `tests/helpers/crud-test.js` com `testPublicGetEndpoint`, `testAdminCrudEndpoint` e `testAdminGetEndpoint`, nem todos os arquivos de integração o utilizam.
 
-### 1.4 Redundância de polyfills entre `tests/setup.js` e `tests/setup.db.js`
-- **Arquivos:** `tests/setup.js` e `tests/setup.db.js`
-- **Problema:** Ambos os arquivos implementam polyfill de `ReadableStream` e `MessageChannel` com o mesmo código. Também filtram `console.error` com lógica idêntica.
-- **Sugestão:** Extrair polyfills e filtros para um módulo compartilhado (ex: `tests/setup-common.js`) e importá-lo em ambos os setups.
+**Sugestão:** Expandir o uso do `crud-test.js` para os demais arquivos de integração que ainda repetem o boilerplate de 405/401/400 manualmente.
 
-### 1.5 Duplicidade de descrições de teste nos arquivos `crud-test.js`
-- **Arquivo:** `tests/helpers/crud-test.js`
-- **Problema:** Os helpers `testPublicGetEndpoint` e `testAdminGetEndpoint` testam cenários muito similares (405 para método não permitido), mas com abordagens diferentes. `testAdminCrudEndpoint` explicitamente não testa 405 porque a autenticação ocorre antes, mas essa decisão de design não é documentada nos testes que o usam.
-- **Sugestão:** Documentar claramente a diferença entre os três helpers e adicionar testes de 405 nos `customTests` dos endpoints CRUD admin quando aplicável.
+### 1.2 Repetição de Setup/Teardown em Testes Unitários
 
----
+**Ocorrência:** Presente em vários arquivos em `tests/unit/components/`, `tests/unit/scripts/`, `tests/unit/domain/`, `tests/unit/lib/`, `tests/unit/pages/api/`
 
-## 2. Problemas Estruturais e Organizacionais
+**Descrição:** Muitos arquivos ainda repetem o padrão de `beforeEach` com `jest.clearAllMocks()` e supressão de `console.error` via substituição global, apesar de o `jest.config.js` já possuir `clearMocks: true` e o `tests/setup.js` já executar `jest.clearAllMocks()` no `afterEach` global.
 
-### 2.1 Mistura de testes de integração e unitários na pasta `integration/`
-- **Local:** `tests/integration/api/audit.test.js`
-- **Problema:** O teste de `audit.test.js` na pasta `integration/api/` não testa um endpoint HTTP, mas sim uma função de domínio (`logActivity`). Seria mais adequado em `tests/unit/domain/` ou `tests/integration/domain/`.
-- **Sugestão:** Mover para `tests/unit/domain/` com os demais testes de domínio.
+**Sugestão:** Remover chamadas redundantes de `jest.clearAllMocks()` e padronizar a supressão de `console.error` usando os helpers centralizados de `tests/helpers/console.js` (`suppressConsoleError()`, `filterConsoleError()`).
 
-### 2.2 Nomenclatura inconsistente nos arquivos de teste de API
-- **Local:** `tests/integration/api/`
-- **Problema:** Alguns arquivos usam nomeação consistente (ex: `musicas.create.test.js`, `musicas.delete.test.js`), enquanto outros têm nomes genéricos (ex: `musicas.test.js`, `posts.test.js`). Isso dificulta entender rapidamente o escopo de cada arquivo.
-- **Sugestão:** Padronizar a nomenclatura: `{recurso}.{operacao}.test.js` para todos os arquivos.
+### 1.3 Dados de Teste Inline vs. Factories
 
-### 2.3 Pasta `tests/examples/` contém código duplicado e não executável como aprendizado
-- **Local:** `tests/examples/`
-- **Problema:** Os exemplos definem componentes mockados inline (como `MockPostList`) que não existem no projeto real. Isso torna os exemplos potencialmente confusos para novos desenvolvedores, que podem pensar que esses componentes existem de verdade.
-- **Sugestão:** Transformar em documentação executável (testes que realmente passam) ou converter em documentação markdown referenciando componentes reais.
+**Ocorrência:** Vários arquivos de teste criam dados manualmente em vez de usar as factories de `tests/factories/`.
 
-### 2.4 Pasta `tests/mocks/next.test.js` é um teste dentro de mocks
-- **Local:** `tests/mocks/next.test.js`
-- **Problema:** Este é o único arquivo de teste dentro da pasta `mocks/`. Quebra o padrão onde todos os testes estão em `tests/unit/` ou `tests/integration/`.
-- **Sugestão:** Mover para `tests/unit/mocks/next.test.js` ou manter apenas se houver justificativa clara.
+**Descrição:** Muitos testes inline criam objetos de post, música, vídeo ou usuário manualmente, duplicando a estrutura de dados.
+
+**Sugestão:** Substituir gradualmente os dados inline por factories centralizadas (`postFactory`, `musicFactory`, `videoFactory`, `userFactory`), como já feito em 4 arquivos de integração.
+
+### 1.4 Mocks de Módulos Repetidos
+
+**Ocorrência:** `tests/integration/api/` e `tests/unit/pages/api/`
+
+**Descrição:** Alguns arquivos ainda mockam `lib/db.js`, `lib/auth.js` e `lib/cache.js` com factory functions inline, em vez de usar os mocks centralizados de `tests/mocks/` (`mockDb`, `mockAuthModule`, `mockCacheModule`).
+
+**Sugestão:** Padronizar todos os arquivos para usar os mocks centralizados, reduzindo duplicação e garantindo consistência.
 
 ---
 
-## 3. Problemas de Código e Manutenção
+## 2. Duplicidade de Textos/Conteúdos
 
-### 3.1 Uso de `require()` em vez de `import` em alguns arquivos
-- **Local:** `tests/helpers/render.js` (linha 149)
-- **Problema:** `const { Toaster } = require('react-hot-toast');` usa `require()` enquanto o projeto usa ES Modules com `import`.
-- **Sugestão:** Convertar para `import { Toaster } from 'react-hot-toast';`.
+### 2.1 Filtro de Warnings Duplicado
 
-### 3.2 `setupNextMocks()` deprecated mas ainda exportado
-- **Local:** `tests/mocks/next.js` (linhas 194-213)
-- **Problema:** Função marcada como `@deprecated` mas ainda exportada. Pode causar confusão.
-- **Sugestão:** Remover a função e manter apenas o `next-setup.js` como ponto de entrada.
+**Ocorrência:** `tests/setup.js` e `tests/setup.db.js`
 
-### 3.3 Commentários de depuração em `console.log` nos setups
-- **Local:** `tests/setup.js` (linhas 228-230), `tests/setup.db.js` (linhas 84-85)
-- **Problema:** `console.log('🧪 Test Suite Architecture loaded')` e `console.log('📦 Node.js version:', process.version)` poluem a saída dos testes. Em CI, isso adiciona ruído desnecessário.
-- **Sugestão:** Mover para um nível de log mais baixo (ex: `console.debug`) ou condicionar à variável de ambiente `DEBUG=true`.
+**Descrição:** Ambos os arquivos definem o mesmo filtro de `console.error` para os warnings conhecidos da API (`'API /api/posts retornou conteúdo inválido'` e `'Isso geralmente significa que a rota API quebrou'`).
 
-### 3.4 Tratamento de erro em `globalSetup.db.js` mascara falhas
-- **Local:** `tests/global-setup.db.js`
-- **Problema:** Se o Docker falhar, a string `'__docker_unavailable__'` é definida, e os testes de banco são ignorados silenciosamente. Pode passar despercebido em CI.
-- **Sugestão:** Adicionar um aviso mais claro no relatório de testes, ou marcar os testes como "skipped" explicitamente.
+**Sugestão:** Extrair a lista de warnings conhecidos para um módulo compartilhado (ex: `tests/helpers/console.js`) e importar em ambos os setups.
 
-### 3.5 Polyfill de `URL.revokeObjectURL` adicionado ao `tests/setup.js` ✅
+### 2.2 Documentação de Boas Práticas Duplicada
 
-**Arquivo:** `tests/setup.js` (linhas 137-139)
+**Ocorrência:** `tests/examples/component-example.test.js` (comentários de boas práticas no final)
 
-**Problema:** O teste `AdminAudit.test.js` — "deve testar os botões de paginação" falhava com `TypeError: URL.revokeObjectURL is not a function`. O JSDOM não implementa essa API de browser. O `csvExport.js` agenda um `setTimeout` com `URL.revokeObjectURL` que disparava durante a execução de outros testes.
+**Descrição:** O arquivo de exemplo contém um bloco extenso de boas práticas de teste que poderia ser centralizado em um documento ou README dedicado.
 
-**Correção:** Adicionado polyfill `URL.revokeObjectURL = jest.fn()` no `tests/setup.js`. Também adicionada proteção em `lib/csvExport.js` com `typeof URL.revokeObjectURL === 'function'` para ambientes que não implementam a API.
-
-### 3.6 Polyfills assíncronos extraídos para arquivo compartilhado ✅
-
-**Arquivo:** `tests/setup.js`, `tests/helpers/async-polyfills.js`
-
-**Problema:** As IIFEs assíncronas com `await import()` para `ReadableStream` e `MessageChannel` estavam no top-level de `tests/setup.js`, criando promises que ninguém aguardava. Isso poderia manter o event loop do Jest aberto.
-
-**Correção:** Extraídas para função `setupAsyncPolyfills()` em novo arquivo `tests/helpers/async-polyfills.js` (sem dependência de `jest`). A função é idempotente (cache de promise). Chamada pelo `jest.teardown.js` com `await` para garantir resolução antes do processo finalizar. Importada também por `tests/setup.js` para manter a execução imediata durante o setup.
-
-### 3.7 `disconnect()` do IntersectionObserver corrigido ✅
-
-**Arquivo:** `tests/setup.js` (linhas 94-110)
-
-**Problema:** O polyfill de `IntersectionObserver` criava um `setTimeout(() => callback(...), 0)` no construtor, mas o método `disconnect()` não limpava o timer. Se o componente fosse desmontado rapidamente, o timer ficava pendente.
-
-**Correção:** Adicionado `clearTimeout(this._timer)` no método `disconnect()`.
-
-### 3.8 `afterEach` em `tests/setup.js` executa `cleanup()` e `jest.clearAllMocks()`
-- **Local:** `tests/setup.js` (linhas 186-189)
-- **Problema:** `jest.clearAllMocks()` pode resetar mocks que foram configurados no `beforeEach` de um `describe`, forçando reconfiguração.
-- **Sugestão:** Avaliar se `jest.resetAllMocks()` seria mais apropriado em alguns casos, ou documentar a necessidade de reconfigurar mocks.
-
-### 3.9 Strings de conexão hardcoded no `global-setup.db.js`
-- **Local:** `tests/global-setup.db.js`
-- **Problema:** Usuário e senha `test/test` estão hardcoded.
-- **Sugestão:** Extrair para variáveis de ambiente com fallback seguro.
-
-### 3.10 Timeout em testes de erro do VideoGallery causado por loop infinito no `useApiFetch` ✅
-- **Arquivos:** `tests/unit/components/Features/Video/VideoGallery.test.js` (linhas 136, 157), `hooks/useApiFetch.js` (linha 129)
-- **Problema:** Dois testes de erro HTTP no VideoGallery estouravam o timeout de 10s do Jest. A causa raiz era o `useEffect` do `useApiFetch.js` que listava `error` como dependência. Quando o fetch falhava, `setError()` alterava `error`, re-executava o `useEffect`, que chamava `fetchData` novamente, que falhava e chamava `setError` novamente — loop infinito de renderizações.
-- **Correção:** Removida a dependência `error` do `useEffect` em `useApiFetch.js` (linha 129). Adicionado timeout explícito de 15s nos 2 testes como rede de segurança. Testes passam em ~14ms e ~5ms respectivamente. Nenhuma regressão na suite completa (352 testes).
-
-### 3.11 Teste `Library - API - Index` falhando após simplificação do barrel file ✅
-
-**Arquivo:** `tests/unit/lib/api/index.test.js`
-
-**Problema:** Após a simplificação de `lib/api/index.js` (remoção de 47 exports nomeados), o teste importava `{ ApiError, success, validateBody, composeMiddleware }` como named exports, que não existiam mais. As 4 variáveis resultavam em `undefined`, causando falha em `expect(ApiError).toBeDefined()`.
-
-**Correção:** Substituída a importação dos 4 named exports por importação apenas do `default` (`import apiIndex from ...`). As asserções foram alteradas para acessar os símbolos via objeto default: `apiIndex.errors.ApiError`, `apiIndex.response.success`, `apiIndex.validate.validateBody`, `apiIndex.middleware.composeMiddleware`. Teste passa em ~3ms.
-
-### 3.12 Testes de login/logout falhando após implementação de refresh token ✅
-
-**Arquivos:** `tests/integration/api/auth/login.test.js`, `tests/integration/api/login.test.js`, `tests/integration/api/auth/logout.test.js`
-
-**Problema:** Após a implementação do fluxo de refresh token em `lib/auth/auth.js` e `pages/api/auth/`, três testes de integração passaram a falhar:
-- `login.test.js` (auth): mock manual de `lib/auth/auth` não incluía `setRefreshTokenCookie`, causando `TypeError: (0 , _auth.setRefreshTokenCookie) is not a function`.
-- `login.test.js` (integration/api): mesmo problema — mock incompleto.
-- `logout.test.js`: asserção esperava `token=;` no `set-cookie`, mas o logout agora define dois cookies e `res.setHeader` sobrescreve o anterior, deixando apenas `refreshToken=;`.
-
-**Correção:** 
-- `tests/integration/api/auth/login.test.js`: Adicionado `setRefreshTokenCookie: jest.fn()` ao mock de `lib/auth/auth`, `refreshToken: 'fake-refresh-token'` ao retorno de `authenticateAndGenerateToken`, e asserção `expect(auth.setRefreshTokenCookie).toHaveBeenCalledWith(res, 'fake-refresh-token')`.
-- `tests/integration/api/login.test.js`: Adicionado `setRefreshTokenCookie: jest.fn()` ao mock de `lib/auth/auth`, `refreshToken: 'mock-refresh-token'` aos 2 retornos de `authenticateAndGenerateToken`, e asserções `expect(auth.setRefreshTokenCookie).toHaveBeenCalledWith(...)`.
-
-### 3.13 Testes de `createMusica` atualizados para refletir uso de transação ✅
-
-**Arquivo:** `tests/unit/lib/db/musicas.test.js`
-
-**Problema:** Após a alteração de `createMusica` em `lib/domain/musicas.js` para usar `transaction()`, os testes unitários precisavam refletir as novas chamadas de BEGIN/COMMIT. O mock de `mockQuery` esperava apenas 2 chamadas (SELECT MAX + INSERT), mas agora a transação adiciona BEGIN e COMMIT.
-
-**Correção:** Os mocks de `mockQuery` nos 2 testes de `createMusica` foram expandidos para incluir `mockResolvedValueOnce(undefined)` para BEGIN (índice 0) e COMMIT (índice 3). As asserções de `toHaveBeenCalledTimes` foram atualizadas de 2 para 4 chamadas. Os índices de acesso à chamada de INSERT foram ajustados de `calls[1]` para `calls[2]`. Nenhum teste de integração foi afetado, pois mockam `createMusica` diretamente.
-
-### 3.14 Teste de `updateVideo` atualizado para refletir nova assinatura com `updated_at` e `options` ✅
-
-**Arquivo:** `tests/unit/domain/videos.test.js`
-
-**Problema:** Após a correção em `lib/domain/videos.js` — `updateVideo` passou a filtrar campos explicitamente, adicionar `updated_at: raw('CURRENT_TIMESTAMP')` e aceitar `options` — o teste unitário precisava ser atualizado para refletir a nova assinatura. O mock de `lib/crud/crud.js` não exportava `raw`, e a asserção de `updateRecords` esperava apenas `{ titulo: 'Editado' }` sem `updated_at` e sem `options`.
-
-**Correção:** Adicionado `raw: jest.fn((val) => ({ raw: true, value: val }))` ao mock de `lib/crud/crud.js`. Adicionado `raw` ao import no teste. A asserção de `updateRecords` foi atualizada para `toHaveBeenCalledWith('videos', { titulo: 'Editado', updated_at: raw('CURRENT_TIMESTAMP') }, { id: 1 }, {})`.
-
-### 3.15 Testes de autenticação e produtos atualizados após mudanças no schema e cookies ✅
-
-**Arquivos:** `tests/unit/lib/auth.test.js`, `tests/integration/api/auth/logout.test.js`, `tests/unit/components/Admin/AdminProducts.test.js`, `tests/integration/domain/products.db.test.js`, `tests/unit/components/Features/Products/ProductCard.test.js`, `tests/unit/components/Features/Products/ProductList.test.js`
-
-**Problema:** Três grupos de testes quebraram após as implementações:
-
-1. **`tests/unit/lib/auth.test.js`** — O mock de `res` usava `setHeader` mas a função `setAuthCookie` foi alterada para usar `res.appendHeader`. O teste esperava `expect(res.setHeader).toHaveBeenCalledWith(...)`.
-
-2. **`tests/integration/api/auth/logout.test.js`** — Com a mudança de `res.setHeader` para `res.appendHeader`, o `node-mocks-http` passou a retornar um **array** com dois cookies (`token` e `refreshToken`) em vez de uma string. O teste esperava `expect.stringContaining('refreshToken=;')`.
-
-3. **`tests/unit/components/Admin/AdminProducts.test.js`** — Os campos do componente foram renomeados (`link_ml` → `link`, `title` → `name`, `images` → `image_url`, coluna `links` → `link`), mas os testes ainda usavam os nomes antigos.
-
-4. **`tests/integration/domain/products.db.test.js`** — As queries SQL usavam as colunas antigas (`title`, `images`, `link_ml`, `link_shopee`, `link_amazon`).
-
-5. **`tests/unit/components/Features/Products/ProductCard.test.js`** e **`ProductList.test.js`** — Dados de teste usavam `title`, `images`, `link_ml/shopee/amazon`.
-
-**Correção:**
-- `tests/unit/lib/auth.test.js`: Mock alterado de `{ setHeader: jest.fn() }` para `{ appendHeader: jest.fn() }`, e asserção alterada para `expect(res.appendHeader).toHaveBeenCalledWith(...)`.
-- `tests/integration/api/auth/logout.test.js`: Asserção alterada de `expect.stringContaining('refreshToken=;')` para `expect.arrayContaining([expect.stringContaining('refreshToken=;')])`.
-- `tests/unit/components/Admin/AdminProducts.test.js`: Todos os 12 testes atualizados: `link_ml` → `link`, `title` → `name`, `images` → `image_url`, coluna `links` → `link`, `getByTestId('ml-input')` → `getByTestId('link-input')`, `setFieldValue('title', ...)` → `setFieldValue('name', ...)`.
-- `tests/integration/domain/products.db.test.js`: Queries SQL e asserts atualizados para `name`, `image_url`, `link`, `category`.
-- `tests/unit/components/Features/Products/ProductCard.test.js`: `baseProduct` e asserts atualizados para `name`, `image_url`, `link`.
-- `tests/unit/components/Features/Products/ProductList.test.js`: Mock do ProductCard e dados de teste atualizados para `name`.
-
-### 3.16 Teste unitário do logger criado após evolução para logger estruturado ✅
-
-**Arquivo:** `tests/unit/lib/infra/logger.test.js`
-
-**Problema:** Após a evolução de `lib/infra/logger.js` de um logger simples baseado em emojis para um logger estruturado com níveis hierárquicos, saída JSON em produção, correlação via `requestId` e transports plugáveis (item 3.1 de `docs/UPGRADE_lib.md`), não existia teste unitário específico para o módulo.
-
-**Correção:** Criado `tests/unit/lib/infra/logger.test.js` com 13 testes em 5 describe blocks: filtro por nível (`LOG_LEVEL=error/warn/info/debug` + default por `NODE_ENV`), saída JSON em produção (linha parseável + normalização de `success`→`info`), `requestId` via `AsyncLocalStorage` (`setRequestId` e `runWithRequestId` com propagação e descarte), sanitização de `Error` e objetos circulares, e file transport (escrita via `LOG_FILE_PATH` + rotação a 10 MB). Os 5 mocks de teste existentes que referenciam o logger (`cache.test.js`, `login.test.js` ×2, `login.edge.test.js`, `products.test.js`) não precisaram de alteração — o contrato público `logger.<method>(module, message, ...args)` foi preservado.
-
-### 3.17 Testes ajustados para mockar logger estruturado após refatoração de `console.error`/`console.warn` ✅
-
-**Arquivos:** `tests/unit/lib/db/query.test.js`, `tests/unit/lib/db/getAllPosts.test.js`, `tests/unit/lib/db/deletePost.test.js`, `tests/unit/lib/api/validate.test.js`, `tests/integration/api/musicas.test.js`, `tests/integration/api/placeholder-image.test.js`, `tests/unit/pages/api/admin/fetch-ml.edge.test.js`, `tests/unit/pages/api/admin/fetch-spotify.edge.test.js`
-
-**Problema:** Após a refatoração do código de produção para usar o `logger` estruturado (`lib/infra/logger.js`) com o contrato `logger.<method>(module, message, ...args)`, 8 arquivos de teste continuavam espionando `console.error`/`console.warn` e validando 2 argumentos (string + objeto/Error). Em ambiente de teste, o logger formata tudo em uma string única via `formatReadable` e chama `console.error(string)` com 1 argumento, fazendo as asserções falharem. Adicionalmente, no `placeholder-image.test.js`, o `logger.warn` era filtrado pelo `LOG_LEVEL=error` (default de teste), fazendo `console.warn` nunca ser chamado.
-
-**Correção:** Adicionado `jest.mock` de `lib/infra/logger.js` com factory (`error`, `warn`, `info`, `debug`, `success` como `jest.fn()`) em todos os 8 arquivos. As asserções foram ajustadas para validar o contrato do logger `(module, message, ...args)` em vez do formato de string do console. Removidos os `jest.spyOn(console, ...)` e `mockRestore()` correspondentes. No `validate.test.js`, os 4 blocos catch (validateBody, validateQuery, validateParams, validateHeaders) foram ajustados para `logger.error('Validate', '...', expect.any(Error))`. No `placeholder-image.test.js`, a asserção foi alterada para `logger.warn('Placeholder', '...', expect.any(String))`, eliminando a necessidade de workaround de `LOG_LEVEL`. Nenhum arquivo de produção foi alterado.
-
-## 4. Problemas de Performance
-
-### 4.1 Polyfills assíncronos podem causar race conditions ✅
-- **Local:** `tests/setup.js` (anteriormente linhas 40-62), `tests/setup.db.js` (anteriormente linhas 27-49)
-- **Problema:** Os polyfills de `ReadableStream` e `MessageChannel` usavam IIFE `async` com `await import()`, e o setup do Jest não aguardava essas promises. Se um teste dependesse desses polyfills e executasse antes da promise resolver, podia falhar de forma intermitente.
-- **Correção:** Extraídos para `setupAsyncPolyfills()` em `tests/helpers/async-polyfills.js`. A função é aguardada pelo `jest.teardown.js` via `await setupAsyncPolyfills()`, garantindo resolução antes do processo finalizar.
-
-### 4.2 `setTimeout` no polyfill de IntersectionObserver
-- **Local:** `tests/setup.js` (linha 101)
-- **Problema:** O mock de `IntersectionObserver` dispara `setTimeout(() => callback([{ isIntersecting: true }]), 0)` no construtor. Isso adiciona um microtask extra em cada instância do observer, potencialmente causando lentidão em componentes que usam lazy loading.
-- **Sugestão:** Tornar o disparo opcional ou configurável.
-
-### 4.3 Testcontainers com `withReuse(true)` pode causar conflitos
-- **Local:** `tests/global-setup.db.js` (linha 16)
-- **Problema:** `withReuse(true)` permite reutilizar o container entre execuções para performance, mas se restos de dados de execuções anteriores existirem, os testes podem falhar de forma imprevisível.
-- **Sugestão:** Garantir que os testes de banco sempre limpem os dados (ex: `truncateAll` no setup de cada suite).
+**Sugestão:** Mover as boas práticas para um `tests/README.md` ou manter apenas referências no exemplo.
 
 ---
 
-## 5. Ferramentas e Configuração
+## 3. Correções de Código
 
-### 5.1 Ausência de ESLint específico para testes
-- **Problema:** O arquivo `eslint.config.js` na raiz pode não ter regras específicas para a pasta `tests/`, como permissão para `jest` globals, `expect`, `describe`, `it`, etc.
-- **Sugestão:** Adicionar configuração ESLint específica para `tests/` com as regras apropriadas.
+### 3.1 Testes com Componentes Simulados em vez de Reais
 
-### 5.2 Ausência de scripts npm para execução seletiva de testes
-- **Problema:** Não há scripts no `package.json` para executar apenas testes de componentes, apenas testes de integração, apenas testes de banco, etc.
-- **Sugestão:** Adicionar scripts como:
-  ```json
-  "test:unit": "jest --testPathPattern='tests/unit/'",
-  "test:integration": "jest --testPathPattern='tests/integration/'",
-  "test:db": "jest --config jest.config.db.js --testPathPattern='tests/integration/domain/'"
-  ```
+**Ocorrência:** `tests/unit/[slug].test.js`, `tests/unit/index.test.js`, `tests/unit/clean-test-db.test.js`, `tests/unit/settings.cache.test.js`
 
-### 5.3 Ausência de configuração de timeout para testes de banco
-- **Problema:** Testes com Testcontainers podem levar mais de 30s para iniciar o container na primeira execução. Sem timeout adequado, o Jest pode abortar prematuramente.
-- **Sugestão:** Configurar `testTimeout: 60000` no `jest.config.db.js`.
+**Descrição:** Estes arquivos definem componentes ou funções simuladas localmente (ex: `BlogPost`, `BlogIndex`, `cleanTestDb`, `handler`) em vez de importar os componentes/funções reais do projeto. Isso significa que os testes não validam o código de produção real.
 
-### 5.4 Ausência de `jest.teardown.js` implementado
-- **Problema:** O arquivo `jest.teardown.js` existe na raiz, mas não foi analisado. Se estiver vazio ou subutilizado, poderia ser usado para parar o container PostgreSQL após os testes.
-- **Sugestão:** Verificar e implementar teardown para o container PostgreSQL.
+**Sugestão:** Importar os componentes reais de `components/` e `pages/` e as funções reais de `scripts/` e `lib/`, mockando apenas as dependências. Isso garante que os testes reflitam o comportamento real do código.
 
----
+### 3.2 Uso de `require()` em Ambiente ES Module
 
-## 6. Cobertura e Lacunas
+**Ocorrência:** `tests/helpers/render.js` (linha 149: `const { Toaster } = require('react-hot-toast');`)
 
-### 6.1 Ausência de testes para hooks customizados
-- **Problema:** Os hooks em `hooks/` (useAdminAuth, useAdminCrud, useApiFetch, useAuth, useDebounce, usePerformanceMetrics, useTheme, useThrottle) não têm testes unitários dedicados. Existem apenas `tests/unit/lib/` para funções de lib e `tests/unit/components/` para componentes.
-- **Sugestão:** Criar `tests/unit/hooks/` com testes para cada hook customizado.
+**Descrição:** O projeto segue o padrão ES Modules (import/export), mas este arquivo usa `require()`.
 
-### 6.2 Ausência de testes para páginas completas
-- **Problema:** As páginas em `pages/` (index.js, admin.js, design-system.js, etc.) não têm testes de renderização completos. Apenas `[slug].test.js` e `index.test.js` existem.
-- **Sugestão:** Adicionar testes de renderização para as páginas principais.
+**Sugestão:** Substituir por `import { Toaster } from 'react-hot-toast';` no topo do arquivo.
 
-### 6.3 Ausência de testes de acessibilidade (a11y)
-- **Problema:** Não há testes de acessibilidade (ex: `jest-axe`) em nenhum componente.
-- **Sugestão:** Adicionar testes de acessibilidade aos componentes de UI e páginas principais.
+### 3.3 Função `setupNextMocks` Deprecated
 
-### 6.4 Cobertura insuficiente de testes de scripts
-- **Problema:** A pasta `tests/unit/scripts/` tem 9 arquivos, mas a pasta `scripts/` tem mais de 30 arquivos. Scripts como `check-server.js`, `check-db-status.js`, `check-env.js`, `generate-load-report.js`, etc., não têm testes.
-- **Sugestão:** Priorizar testes para scripts críticos de manutenção e diagnóstico.
+**Ocorrência:** `tests/mocks/next.js` (linha 205)
 
-### 6.5 Ausência de testes de integração para Webhooks/APIs externas
-- **Problema:** Os endpoints `fetch-ml`, `fetch-spotify`, `fetch-youtube` são testados apenas com mocks. Não há testes de integração reais ou contrato com essas APIs externas.
-- **Sugestão:** Considerar testes de contrato (ex: Pact) ou testes de integração com sandboxes oficiais das plataformas.
+**Descrição:** A função `setupNextMocks` está marcada como `@deprecated`, mas ainda existe no código.
+
+**Sugestão:** Considerar a remoção da função deprecated para evitar uso acidental, ou manter apenas com documentação clara.
+
+### 3.4 Teste de Sanidade dos Mocks do Next.js
+
+**Ocorrência:** `tests/mocks/next.test.js`
+
+**Descrição:** O teste de sanidade verifica os mocks do Next.js, mas pode quebrar silenciosamente se a API do Next.js mudar.
+
+**Sugestão:** Manter este teste atualizado sempre que a versão do Next.js for atualizada, conforme já documentado no próprio arquivo.
 
 ---
 
-## 7. Documentação e Legibilidade
+## 4. Ajustes Estruturais e Organizacionais
 
-### 7.1 JSDoc inconsistente nos testes
-- **Problema:** Alguns arquivos têm JSDoc completo (`factories/post.js`, `helpers/api.js`), outros têm JSDoc parcial ou ausente (`tests/mocks/db.js` tem 235 linhas sem documentação de funções).
-- **Sugestão:** Padronizar a documentação JSDoc para todas as funções exportadas em `tests/helpers/`, `tests/mocks/` e `tests/factories/`.
+### 4.1 Nomenclatura de Arquivos de Teste
 
-### 7.2 Descrições de teste em português e inglês misturadas
-- **Problema:** A maioria dos testes usa descrições em português, mas algumas usam inglês (ex: `next.test.js` usa "should export useRouter as function"). Isso é inconsistente.
-- **Sugestão:** Padronizar para português (idioma do projeto) ou inglês (idioma padrão de testes).
+**Ocorrência:** `tests/integration/api/` e `tests/unit/pages/api/`
 
-### 7.3 Testes com nomes genéricos
-- **Problema:** Arquivos como `posts.flow.test.js`, `musicas.integration.test.js` e `videos.integration.test.js` têm nomes genéricos que não revelam o escopo específico do teste.
-- **Sugestão:** Renomear para nomes mais descritivos como `posts.full-crud-flow.test.js`, `musicas.with-db-mocks.test.js`.
+**Descrição:** Existe uma mistura de nomenclatura: alguns arquivos usam dot notation (`musicas.create.test.js`, `posts.create.api.test.js`) e outros usam nomes simples (`musicas.test.js`, `posts.test.js`). Também há arquivos com sufixos variados (`*.api.test.js`, `*.flow.test.js`, `*.general.test.js`, `*.integration.test.js`).
+
+**Sugestão:** Padronizar a nomenclatura para dot notation consistente, definindo convenções claras para sufixos (ex: `.create.test.js`, `.update.test.js`, `.delete.test.js`, `.flow.test.js`).
+
+### 4.2 Separação de Testes de Integração e Unitários
+
+**Ocorrência:** `tests/unit/pages/api/` contém testes de edge cases de API routes
+
+**Descrição:** Testes de API routes estão em `tests/unit/pages/api/`, mas poderiam ser considerados testes de integração, já que testam handlers completos.
+
+**Sugestão:** Avaliar se os testes de `tests/unit/pages/api/` deveriam ser movidos para `tests/integration/api/` ou se a separação atual é intencional (unit = edge cases, integration = fluxos completos).
+
+### 4.3 Subpastas Vazias
+
+**Ocorrência:** `tests/unit/scripts/diagnostics/`, `tests/unit/scripts/maintenance/`, `tests/unit/scripts/migrations/`
+
+**Descrição:** Estas subpastas existem mas não contêm arquivos de teste.
+
+**Sugestão:** Remover as subpastas vazias ou adicionar testes para os scripts correspondentes em `scripts/diagnostics/`, `scripts/maintenance/` e `scripts/migrations/`.
 
 ---
 
-## Resumo das Ações Prioritárias
+## 5. Melhorias de Ferramenta, Manutenção e Performance
 
-| Prioridade | Categoria | Item | Impacto |
-|------------|-----------|------|---------|
-| 🔴 Alta | Duplicidade | Unificar `db-module.js` e `db.js` | Reduz confusão e manutenção duplicada |
-| 🔴 Alta | Performance | Race conditions em polyfills assíncronos | Testes intermitentes |
-| 🔴 Alta | Ferramentas | Timeout para testes de banco | Falhas em CI |
-| 🟡 Média | Estrutura | Mover `tests/integration/api/audit.test.js` | Organização |
-| 🟡 Média | Cobertura | Testes para hooks customizados | Lacuna de cobertura |
-| ✅ 🟡 Média | Código | Polyfill `URL.revokeObjectURL` em `tests/setup.js` | Corrige falha intermitente em `AdminAudit.test.js` |
-| 🟡 Média | Código | Remover `setupNextMocks()` deprecated | Limpeza de código |
-| 🟡 Média | Documentação | Padronizar descrições de teste (pt-BR) | Consistência |
-| 🟢 Baixa | Performance | `console.log` nos setups | Ruído em CI |
-| 🟢 Baixa | Estrutura | Scripts npm para testes seletivos | Produtividade |
-| 🟢 Baixa | Documentação | JSDoc inconsistente em mocks | Legibilidade |
+### 5.1 Cobertura de Testes para Scripts
+
+**Ocorrência:** `scripts/` contém muitos scripts utilitários, mas apenas alguns têm testes em `tests/unit/scripts/`.
+
+**Descrição:** Scripts como `check-db-status.js`, `check-env.js`, `check-server.js`, `check-sql-injection.js`, `clean-k6-reports.js`, `clean-load-test-posts.js`, `clear-cache.js`, `clear-test-auth-locks.js`, `create-backup.js`, `db-shell.js`, `generate-load-report.js`, `init-backup.js`, `init-server.js`, `monitor-disk-space.js`, `restore-backup.js`, `run-all-load-tests-sequentially.js`, `seed-musicas.js`, `seed-posts.js`, `seed-products.js`, `seed-settings.js`, `seed-videos.js`, `view-backup-logs.js`, `warm-routes.js` não possuem testes unitários.
+
+**Sugestão:** Adicionar testes para os scripts mais críticos (backup, restore, seed, clear-db).
+
+### 5.2 Cobertura de Testes para Componentes de UI
+
+**Ocorrência:** `tests/unit/components/UI/` contém 12 arquivos de teste (Alert, Badge, Button, Card, index, Input, Modal, Select, Spinner, TextArea, Toast + snapshot)
+
+**Descrição:** A pasta de UI possui cobertura abrangente dos componentes. No entanto, é importante verificar se todos os componentes existentes em `components/UI/` possuem testes correspondentes, pois a lista de componentes pode evoluir.
+
+**Sugestão:** Verificar periodicamente se novos componentes de UI adicionados em `components/UI/` possuem testes correspondentes em `tests/unit/components/UI/`.
+
+### 5.3 Testes de Integração com Banco Real
+
+**Ocorrência:** `tests/integration/domain/` contém 5 arquivos `*.db.test.js`
+
+**Descrição:** Os testes com banco real dependem do Docker e do Testcontainers. Se o Docker não estiver disponível, os testes são ignorados.
+
+**Sugestão:** Considerar adicionar um script de CI que execute os testes com banco real, e documentar os requisitos de ambiente.
+
+### 5.4 Performance dos Testes
+
+**Ocorrência:** `tests/setup.js` e `tests/setup.db.js`
+
+**Descrição:** O `tests/setup.js` carrega muitos polyfills e configurações, o que pode impactar o tempo de inicialização de cada suite de teste.
+
+**Sugestão:** Avaliar se todos os polyfills são realmente necessários, e considerar a criação de setups mais enxutos para suites específicas (como já feito com `setup.db.js`).
+
+---
+
+## 6. Pontos de Atenção Técnica
+
+### 6.1 Dependência de `node-mocks-http`
+
+**Descrição:** A maioria dos testes de API usa `node-mocks-http` via `createMocks`. É importante manter a versão atualizada e verificar compatibilidade com novas versões do Node.js.
+
+### 6.2 Dependência de Testcontainers
+
+**Descrição:** Os testes com banco real dependem do `@testcontainers/postgresql`. É importante verificar se a versão é compatível com o Docker instalado no ambiente de CI.
+
+### 6.3 Mocks do Next.js
+
+**Descrição:** Os mocks do Next.js em `tests/mocks/next-setup.js` são críticos para os testes de componentes. Qualquer mudança na API do Next.js pode quebrar silenciosamente os testes. O teste de sanidade `next.test.js` ajuda a detectar isso, mas deve ser executado regularmente.
+
+### 6.4 Filtro de Warnings do `console.error`
+
+**Descrição:** O filtro de warnings em `tests/setup.js` e `tests/setup.db.js` pode mascarar warnings legítimos que indicam problemas reais. É importante revisar periodicamente a lista de warnings filtrados.
+
+### 6.5 Testes com Componentes Simulados
+
+**Descrição:** Os testes em `tests/unit/[slug].test.js`, `tests/unit/index.test.js`, `tests/unit/clean-test-db.test.js` e `tests/unit/settings.cache.test.js` usam componentes/funções simuladas localmente, o que significa que não validam o código de produção real. Isso é um risco de manutenção, pois o código real pode divergir do simulado.
+
+---
+
+## 7. Resumo das Ações Recomendadas
+
+| Prioridade | Ação | Esforço | Impacto |
+|:----------:|------|:-------:|:-------:|
+| 🔴 Alta | Corrigir testes com componentes simulados para usar componentes reais | Alto | Alto |
+| 🔴 Alta | Padronizar mocks de módulos usando `tests/mocks/` centralizados | Médio | Médio |
+| 🟡 Média | Remover `jest.clearAllMocks()` redundante e padronizar supressão de console | Baixo | Médio |
+| 🟡 Média | Substituir dados inline por factories | Baixo | Baixo |
+| 🟡 Média | Padronizar nomenclatura de arquivos de teste | Médio | Médio |
+| 🟡 Média | Adicionar testes para scripts críticos | Alto | Alto |
+| 🟡 Média | Verificar cobertura de componentes de UI | Médio | Médio |
+| 🟢 Baixa | Extrair filtro de warnings duplicado para módulo compartilhado | Baixo | Baixo |
+| 🟢 Baixa | Substituir `require()` por `import` em `render.js` | Muito Baixo | Nulo |
+| 🟢 Baixa | Remover subpastas vazias ou adicionar testes | Baixo | Baixo |
+| 🟢 Baixa | Remover função deprecated `setupNextMocks` | Muito Baixo | Nulo |
+
+---
+
+> **Nota:** Este documento é um relatório de análise. Nenhuma alteração foi aplicada ao projeto. As ações listadas são recomendações para revisão e priorização futura.

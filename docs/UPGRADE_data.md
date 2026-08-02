@@ -2,9 +2,16 @@
 
 ## Contexto
 
-Este documento apresenta o levantamento analítico de possíveis melhorias para a estrutura e organização da pasta `/data`, com base na análise atual dos arquivos existentes.
+Este documento apresenta o levantamento analítico de possíveis melhorias para a estrutura e organização da pasta `/data`, com base na análise atual dos arquivos existentes e de todos os scripts, testes e APIs que interagem com ela.
 
-**Estado atual da pasta:** contém apenas o subdiretório `backups/` com 2 backups criptografados (.enc), seus respectivos hashes SHA-256 e um arquivo de log (.log). Todos os problemas identificados anteriormente (inconsistência SQLite vs PostgreSQL, backup JSON redundante, formato de datas, erro de criptografia, entity_id, etc.) já foram resolvidos e documentados em `/docs/resolvidos/UPGRADE_data.md`. O item 2 (backup de segurança pré-restore visível) também já foi implementado — ver detalhes na seção correspondente.
+**Estado atual da pasta:** contém apenas o subdiretório `backups/` com 2 backups criptografados (.enc), seus respectivos hashes SHA-256 e um arquivo de log (.log). Todos os problemas identificados anteriormente (inconsistência SQLite vs PostgreSQL, backup JSON redundante, formato de datas, erro de criptografia, entity_id, etc.) já foram resolvidos e documentados em `/docs/resolvidos/UPGRADE_data.md`.
+
+**Itens já implementados (não são mais pendências):**
+- ✅ Backup de segurança pré-restore com nomenclatura padronizada, hash e registro em log
+- ✅ Rotação de logs por tamanho (10 MB) e por data, com retenção configurável de 30 dias
+- ✅ Sanitização de logs (sem dados sensíveis)
+- ✅ Validação de chave de criptografia AES-256-GCM
+- ✅ Padronização de formato de datas ISO 8601
 
 ---
 
@@ -21,46 +28,20 @@ Este documento apresenta o levantamento analítico de possíveis melhorias para 
 
 ---
 
-## 2. Ausência de Backup de Segurança Pré-Restore Visível
+## 2. Ausência de Backup Automático em Intervalo Regular
 
 **Localização:** `/data/backups/`
 
-**Problema:** Embora o script `scripts/backup.js` realize um backup de segurança antes de operações de restore, não há um backup explícito no diretório que represente o "estado atual" do banco antes de qualquer alteração manual.
+**Problema:** Atualmente existem apenas 2 backups manuais (datados de 21 e 22 de maio de 2026). Não há evidência de um cron job ou agendamento automático que garanta backups periódicos sem intervenção manual. O script `scripts/init-backup.js` apenas exibe instruções para configuração manual de cron, mas não configura o agendamento.
 
-**Sugestão:** Criar um snapshot nomeado como `caminhar-pg-backup_current_state.sql.gz` (atualizado a cada execução de alteração significativa) ou manter um backup rotativo com a data da última alteração de schema.
-
-**Prioridade:** Baixa
-**Impacto:** Rastreabilidade operacional
-
----
-
-## 3. Log de Backup sem Rotações ou Retenção Configurável
-
-**Localização:** `/data/backups/backup.log`
-
-**Problema:** O log de backup é mantido com no máximo 100 linhas recentes, mas não há um mecanismo explícito de rotação de logs (log rotation) ou definição clara de retenção. Em operações frequentes, informações históricas úteis podem ser perdidas.
-
-**Sugestão:** Implementar rotação de logs baseada em data (ex.: manter logs dos últimos 30 dias em arquivos separados por mês) ou exportar logs para um sistema externo (ex.: arquivo JSON com timestamp no nome, enviado para armazenamento de logs).
-
-**Prioridade:** Baixa
-**Impacto:** Rastreabilidade e auditoria
-
----
-
-## 4. Ausência de Backup Automático em Intervalo Regular
-
-**Localização:** `/data/backups/`
-
-**Problema:** Atualmente existem apenas 2 backups manuais (datados de 21 e 22 de maio de 2026). Não há evidência de um cron job ou agendamento automático que garanta backups periódicos sem intervenção manual.
-
-**Sugestão:** Configurar um cron job ou GitHub Action agendado para executar `npm run backup` diariamente, garantindo que o diretório sempre contenha backups recentes e reduzindo o risco de perda de dados.
+**Sugestão:** Configurar um cron job ou GitHub Action agendado para executar `npm run backup:create` diariamente, garantindo que o diretório sempre contenha backups recentes e reduzindo o risco de perda de dados.
 
 **Prioridade:** Alta
 **Impacto:** Continuidade e segurança dos dados
 
 ---
 
-## 5. Número Reduzido de Backups no Diretório
+## 3. Número Reduzido de Backups no Diretório
 
 **Localização:** `/data/backups/`
 
@@ -76,17 +57,18 @@ Este documento apresenta o levantamento analítico de possíveis melhorias para 
 
 ---
 
-## 6. Sem Teste Automatizado de Restore
+## 4. Sem Teste Automatizado de Restore
 
 **Localização:** `/data/backups/`
 
-**Problema:** Os hashes SHA-256 permitem verificar a integridade dos arquivos de backup, mas não há um teste automatizado que execute um restore em um ambiente isolado (ex.: container temporário) para validar que o backup pode ser restaurado com sucesso.
+**Problema:** Os hashes SHA-256 permitem verificar a integridade dos arquivos de backup, mas não há um teste automatizado que execute um restore em um ambiente isolado (ex.: container temporário) para validar que o backup pode ser restaurado com sucesso. Os testes unitários existentes (`tests/unit/lib/backup/`) usam mocks e não validam o fluxo real de restore.
 
 **Sugestão:** Implementar um script ou etapa em CI que:
 1. Copie o backup mais recente para um container PostgreSQL temporário
 2. Execute o restore
 3. Verifique a integridade das tabelas (contagem de registros, existência de schemas)
 4. Destrua o container
+
 Isso garantiria que os backups são válidos e restauráveis.
 
 **Prioridade:** Média
@@ -94,7 +76,7 @@ Isso garantiria que os backups são válidos e restauráveis.
 
 ---
 
-## 7. Sem Métricas de Tamanho e Crescimento do Banco
+## 5. Sem Métricas de Tamanho e Crescimento do Banco
 
 **Localização:** `/data/backups/`
 
@@ -111,7 +93,7 @@ Isso garantiria que os backups são válidos e restauráveis.
 
 ---
 
-## 8. Backup.log Inacessível por .clineignore
+## 6. Backup.log Inacessível por .clineignore
 
 **Localização:** `/data/backups/backup.log`
 
@@ -124,7 +106,7 @@ Isso garantiria que os backups são válidos e restauráveis.
 
 ---
 
-## 9. Ausência de Backup em Nuvem ou Off-site
+## 7. Ausência de Backup em Nuvem ou Off-site
 
 **Localização:** `/data/backups/`
 
@@ -137,19 +119,154 @@ Isso garantiria que os backups são válidos e restauráveis.
 
 ---
 
+## 8. Duplicidade de Estratégia: Backup JSON de Posts vs Backup PostgreSQL
+
+**Localização:** `/scripts/maintenance/backup-posts.js` e `/scripts/maintenance/restore-posts.js`
+
+**Problema:** Os scripts `backup-posts.js` e `restore-posts.js` geram backups JSON específicos da tabela `posts`, mas o backup PostgreSQL (`pg_dump` via `scripts/backup.js`) já cobre integralmente essa tabela. Isso cria:
+- **Duplicidade de código:** Dois sistemas de backup paralelos com lógicas diferentes
+- **Duplicidade de conteúdo:** O mesmo dado (tabela `posts`) é armazenado em dois formatos
+- **Risco de inconsistência:** O backup JSON não participa da rotação automática (limite de 10) nem da criptografia AES-256-GCM
+- **I/O síncrono:** Usam `fs.writeFileSync`/`fs.readFileSync`, bloqueando o event loop
+
+O backup JSON anterior foi removido do diretório por duplicidade (ver `docs/resolvidos/UPGRADE_data.md`), mas os scripts permanecem no projeto.
+
+**Sugestão:** Avaliar a remoção ou descontinuação desses scripts, consolidando a estratégia de backup exclusivamente no PostgreSQL (`scripts/backup.js`). Se houver necessidade real de backup JSON, integrar ao sistema central (participar da rotação, criptografia e log).
+
+**Prioridade:** Média
+**Impacto:** Manutenibilidade e consistência
+
+---
+
+## 9. Caminho de Carregamento do .env Inconsistente
+
+**Localização:** `/scripts/maintenance/backup-posts.js` e `/scripts/maintenance/restore-posts.js`
+
+**Problema:** Os scripts de manutenção usam `dotenv.config({ path: path.resolve(__dirname, '../.env') })`, que resolve para `scripts/.env` (não a raiz do projeto). Isso difere do padrão usado pelos demais scripts (`loadEnv()` de `scripts/utils/load-env.js`), que prioriza `.env.local` e depois `.env` na raiz. Se a variável `DATABASE_URL` estiver apenas na raiz, esses scripts falharão silenciosamente.
+
+**Sugestão:** Padronizar o carregamento de variáveis de ambiente usando o módulo compartilhado `loadEnv()` em todos os scripts.
+
+**Prioridade:** Média
+**Impacto:** Confiabilidade
+
+---
+
+## 10. Caminho de Diretório de Backup Incorreto nos Scripts de Manutenção de Posts
+
+**Localização:** `/scripts/maintenance/backup-posts.js` e `/scripts/maintenance/restore-posts.js`
+
+**Problema:** Os scripts usam `path.resolve(__dirname, '../data/backups')` para localizar o diretório de backups. Como `__dirname` aponta para `scripts/maintenance/`, o caminho resolve para `scripts/data/backups` — **não** para `data/backups` na raiz do projeto. O diretório `scripts/data/` não existe atualmente. Consequências:
+- `backup-posts.js` criaria um diretório `scripts/data/backups` separado (via `mkdirSync` recursivo), fora do diretório de backups oficial
+- `restore-posts.js` retornaria "Diretório de backups não encontrado" e encerraria sem restaurar nada, pois procura no caminho errado
+
+**Sugestão:** Corrigir o caminho para `path.resolve(process.cwd(), 'data', 'backups')` (padrão usado pelo módulo central `scripts/backup.js`) ou usar `path.resolve(__dirname, '../../data/backups')` para subir até a raiz do projeto.
+
+**Prioridade:** Alta
+**Impacto:** Funcionalidade quebrada (scripts não operam no diretório correto)
+
+---
+
+## 11. Restauração de Posts Processa Registros Um a Um
+
+**Localização:** `/scripts/maintenance/restore-posts.js`
+
+**Problema:** O script `restore-posts.js` executa um `INSERT ... ON CONFLICT` para cada post individualmente, em um loop. Para volumes grandes de posts, isso gera N consultas ao banco, com performance subótima.
+
+**Sugestão:** Utilizar inserção em lote (batch) ou `INSERT ... ON CONFLICT` com múltiplos valores em uma única query, reduzindo o número de round-trips ao banco.
+
+**Prioridade:** Baixa
+**Impacto:** Performance
+
+---
+
+## 12. API Admin de Backups Não Utiliza o Módulo Central para Listagem
+
+**Localização:** `/pages/api/admin/backups.js`
+
+**Problema:** O endpoint GET da API admin (`pages/api/admin/backups.js`) implementa sua própria lógica de listagem de backups (lendo o diretório com `fs.readdirSync` e filtrando por extensão), em vez de reutilizar a função `getAvailableBackups()` do módulo central `scripts/backup.js`. Isso cria:
+- **Duplicidade de código:** Duas implementações de listagem com lógicas diferentes
+- **Inconsistência potencial:** O filtro da API (`file.endsWith('.sql') || file.endsWith('.gz') || file.endsWith('.enc')`) difere do filtro do módulo central (prefixo `caminhar-pg-backup` + extensões `.sql.gz`/`.enc`), podendo incluir arquivos irrelevantes
+- **Falta de metadados:** A API não retorna o timestamp formatado nem a flag `compressed` que o módulo central fornece
+
+**Sugestão:** Refatorar o endpoint GET para reutilizar `getAvailableBackups()` do módulo central, garantindo consistência na listagem e nos metadados retornados.
+
+**Prioridade:** Média
+**Impacto:** Consistência e manutenibilidade
+
+---
+
+## 13. Ausência de Verificação de Integridade na API Admin
+
+**Localização:** `/pages/api/admin/backups.js`
+
+**Problema:** O endpoint GET da API admin lista os backups mas não verifica se os hashes SHA-256 correspondem aos arquivos. Isso impede que o administrador identifique backups corrompidos pela interface web.
+
+**Sugestão:** Adicionar verificação de integridade (comparação de hash) na listagem da API, retornando um indicador de integridade para cada backup.
+
+**Prioridade:** Baixa
+**Impacto:** Confiabilidade operacional
+
+---
+
+## 14. Constante `BACKUP_INTERVAL_MS` Não Utilizada
+
+**Localização:** `/scripts/utils/constants.js`
+
+**Problema:** A constante `BACKUP_INTERVAL_MS` (24 horas em ms) está definida em `scripts/utils/constants.js` mas não é utilizada em nenhum script. O agendamento de backups é feito via cron do sistema operacional, não via código.
+
+**Sugestão:** Remover a constante não utilizada ou documentar seu propósito se houver intenção de uso futuro.
+
+**Prioridade:** Baixa
+**Impacto:** Limpeza de código
+
+---
+
+## 15. Ausência de Testes para Scripts de Manutenção de Posts
+
+**Localização:** `/scripts/maintenance/backup-posts.js` e `/scripts/maintenance/restore-posts.js`
+
+**Problema:** Não há testes unitários para os scripts `backup-posts.js` e `restore-posts.js`, diferentemente do módulo central `scripts/backup.js` que possui 4 arquivos de teste (`tests/unit/lib/backup/`).
+
+**Sugestão:** Adicionar testes unitários para esses scripts, ou removê-los se a duplicidade (item 8) for resolvida.
+
+**Prioridade:** Baixa
+**Impacto:** Cobertura de testes
+
+---
+
+## 16. Testes da API Admin de Backups Não Cobrem o Rate Limit
+
+**Localização:** `/pages/api/admin/backups.js` e `/tests/integration/api/admin/backups.test.js`
+
+**Problema:** Existe um teste de integração (`tests/integration/api/admin/backups.test.js`) que cobre GET (listagem, diretório inexistente, erros de FS), POST (sucesso e falha) e métodos não permitidos (405). Porém, o teste **não cobre o rate limit** configurado no endpoint (máximo 10 requisições por minuto), nem a autenticação admin (o mock de `withAuth` sempre injeta um usuário admin).
+
+**Sugestão:** Adicionar casos de teste para o rate limit (exceder o limite de 10 requisições e verificar resposta de erro) e para cenários de autenticação (usuário não autenticado ou sem role admin).
+
+**Prioridade:** Baixa
+**Impacto:** Cobertura de testes
+
+---
+
 ## Resumo das Sugestões
 
 | # | Sugestão | Categoria | Prioridade | Esforço Estimado |
 |---|----------|-----------|------------|------------------|
 | 1 | Backup não criptografado para troubleshooting | Resiliência | Média | Baixo |
-| 2 | Backup de estado atual pré-restore | Operacional | Baixa | Baixo |
-| 3 | Rotação de logs com retenção configurável | Manutenção | Baixa | Baixo |
-| 4 | Backup automático em intervalo regular | Continuidade | **Alta** | Médio |
-| 5 | Aumentar retenção de backups | Capacidade | Média | Baixo |
-| 6 | Teste automatizado de restore | Confiabilidade | Média | Alto |
-| 7 | Métricas de tamanho e crescimento | Monitoramento | Baixa | Médio |
-| 8 | Liberar backup.log do .clineignore | Acessibilidade | Baixa | Baixo |
-| 9 | Backup em nuvem ou off-site | Disaster Recovery | **Alta** | Alto |
+| 2 | Backup automático em intervalo regular | Continuidade | **Alta** | Médio |
+| 3 | Aumentar retenção de backups | Capacidade | Média | Baixo |
+| 4 | Teste automatizado de restore | Confiabilidade | Média | Alto |
+| 5 | Métricas de tamanho e crescimento | Monitoramento | Baixa | Médio |
+| 6 | Liberar backup.log do .clineignore | Acessibilidade | Baixa | Baixo |
+| 7 | Backup em nuvem ou off-site | Disaster Recovery | **Alta** | Alto |
+| 8 | Remover duplicidade de backup JSON de posts | Duplicidade | Média | Baixo |
+| 9 | Padronizar carregamento de .env | Confiabilidade | Média | Baixo |
+| 10 | Corrigir caminho de diretório de backup nos scripts de posts | Correção | **Alta** | Baixo |
+| 11 | Restauração de posts em lote | Performance | Baixa | Baixo |
+| 12 | API admin reutilizar módulo central | Duplicidade | Média | Baixo |
+| 13 | Verificação de integridade na API admin | Confiabilidade | Baixa | Médio |
+| 14 | Remover constante não utilizada | Limpeza | Baixa | Baixo |
+| 15 | Testes para scripts de manutenção de posts | Testes | Baixa | Médio |
+| 16 | Testes da API admin não cobrem rate limit | Testes | Baixa | Baixo |
 
 ---
 
@@ -167,22 +284,12 @@ Nenhum dos problemas anteriores persiste no estado atual da pasta `/data`.
 
 ---
 
-## Item 2 — Implementado
+## Pontos de Atenção Técnicos para Revisão Futura
 
-O backup de segurança pré-restore agora segue o mesmo padrão de nomenclatura dos backups regulares (`caminhar-pg-backup_pre-restore_<timestamp>.sql.gz`), possui hash SHA-256 gerado automaticamente, é registrado no `backup.log` com tag `[Segurança]` e participa da rotação automática (cleanup) junto com os demais backups. O nome do safety backup também é exibido na saída do comando `npm run backup:restore`.
+1. **Segurança da chave de criptografia:** A chave `BACKUP_ENCRYPTION_KEY` é essencial para descriptografar os backups. Sua perda torna os backups inutilizáveis. Recomenda-se documentar a localização segura da chave e considerar um cofre de segredos.
 
----
+2. **Espaço em disco:** O monitoramento de disco (`scripts/monitor-disk-space.js`) alerta quando o uso ultrapassa 85%, mas a recomendação de limpeza de backups é apenas informativa. Considerar automação de limpeza mais agressiva em cenários de disco crítico.
 
-## Item 3 — Implementado
+3. **Consistência entre API e módulo central:** A API admin de backups e o módulo central `scripts/backup.js` têm implementações paralelas de listagem. A unificação evitaria divergências futuras.
 
-O `backup.log` agora possui um sistema completo de rotação e retenção configurável:
-
-- **Rotação por tamanho:** Quando o arquivo `backup.log` excede 10 MB (`LOG_MAX_SIZE_BYTES`), é renomeado para `backup-<timestamp>.log` e um novo arquivo vazio é criado.
-- **Rotação por data:** Se a última modificação do `backup.log` for de mês anterior ao corrente, a rotação é disparada automaticamente.
-- **Retenção configurável:** Logs rotacionados com mais de 30 dias (`LOG_RETENTION_DAYS`) são removidos automaticamente durante a limpeza de backups.
-- **Integração automática:** A verificação de rotação ocorre antes de cada escrita no log (`logBackupOperation()` → `rotateLogIfNeeded()`). A limpeza de logs antigos ocorre junto com `cleanupOldBackups()`.
-- **Consulta de histórico:** `npm run backup:logs:all` (ou `node scripts/view-backup-logs.js --all`) exibe logs atuais + rotacionados, ordenados do mais recente para o mais antigo.
-- **Exportação pública:** As funções `rotateLogIfNeeded()` e `cleanupOldLogs()` estão disponíveis para importação por outros módulos.
-- **Constantes adicionadas em `scripts/utils/constants.js`:** `LOG_RETENTION_DAYS` (30) e `LOG_MAX_SIZE_BYTES` (10 MB).
-- **Testes atualizados:** `tests/unit/lib/backup/backup.logs.test.js` adaptado para a nova ordenação descendente dos logs.
-- **22/22 testes passando** nos módulos de backup.
+4. **Backups JSON de posts:** Os scripts `backup-posts.js` e `restore-posts.js` representam uma estratégia paralela que não participa da rotação, criptografia e log do sistema central. Sua manutenção contínua pode gerar confusão operacional.

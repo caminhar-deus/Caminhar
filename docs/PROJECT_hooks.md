@@ -1,6 +1,6 @@
 # Análise dos Hooks — `/hooks/`
 
-> **Data:** 28/06/2026
+> **Data:** 01/08/2026
 > **Objetivo:** Documentar a finalidade, localização e funcionamento de cada hook presente na pasta `/hooks`.
 > **Base:** Análise direta dos arquivos fonte atuais do projeto.
 
@@ -31,7 +31,7 @@ A pasta `/hooks` contém **12 arquivos** que implementam custom hooks React e se
 
 | Categoria | Hooks | Descrição |
 |---|---|---|
-| **Autenticação** | `useAdminAuth` | Gerenciamento de sessão, login/logout e controle de acesso administrativo |
+| **Autenticação** | `AuthContext`, `AuthProvider`, `useAdminAuth` | Gerenciamento de sessão, login/logout e controle de acesso administrativo |
 | **Infraestrutura / Utilitários** | `useApiFetch`, `useDebounce`, `useAdminCrud`, `useUnauthorized` | Abstrações reutilizáveis para fetch, debounce, operações CRUD completas e tratamento de 401 |
 | **Design & Performance** | `usePerformanceMetrics`, `PerformanceContext`, `PerformanceProvider`, `usePerformance` | Monitoramento de Core Web Vitals com wrapper de contexto |
 
@@ -44,9 +44,8 @@ A pasta `/hooks` contém **12 arquivos** que implementam custom hooks React e se
 
 **Funcionalidades:**
 - Reexporta hooks nomeados: `PerformanceProvider`, `usePerformance`, `useApiFetch`, `useDebounce`, `useAdminAuth`.
-- Re-exports removidos (por não terem consumidores externos): `useTheme`, `AuthContext`, `AuthProvider`, `useAuth`, `useAdminCrud`, `PerformanceContext`, `usePerformanceMetrics`, `useThrottle`, `useUnauthorized`.
-- Os arquivos fonte que não estão no barrel foram preservados pois são usados internamente por outros hooks.
-- Todos os hooks são reexportados diretamente como named exports com a sintaxe `export { Nome } from './arquivo'`.
+- Os demais arquivos (`AuthContext`, `AuthProvider`, `useAdminCrud`, `PerformanceContext`, `usePerformanceMetrics`, `useUnauthorized`) **não** estão no barrel por não possuírem consumidores via importação centralizada — são importados diretamente pelos seus respectivos consumidores.
+- Todos os hooks são reexportados como named exports com a sintaxe `export { Nome } from './arquivo'`.
 
 ---
 
@@ -98,8 +97,8 @@ A pasta `/hooks` contém **12 arquivos** que implementam custom hooks React e se
 **Propósito:** Hook reutilizável que centraliza operações CRUD completas para painéis administrativos: listagem, criação, edição, exclusão, paginação e toggle de campos booleanos.
 
 **Funcionalidades:**
-- **Configuração (`AdminCrudConfig`):** Recebe `apiEndpoint`, `initialFormData`, `usePagination` (padrão `false`), `itemsPerPage` (padrão 10), `autoFetch` (padrão `true`), `onSuccess`, `onError`, `onConfirmDelete`.
-- **Listagem:** Usa `useApiFetch` internamente, construindo a URL dinamicamente com parâmetros de paginação via `buildUrl(page)`. A paginação é reativa: quando `currentPage` muda, o `useApiFetch` refaz o fetch automaticamente.
+- **Configuração (`AdminCrudConfig`):** Recebe `apiEndpoint`, `initialFormData`, `usePagination` (padrão `false`), `itemsPerPage` (padrão 10), `autoFetch` (padrão `true`), `onSuccess`, `onError`, `onConfirmDelete`, `searchTerm`.
+- **Listagem:** Usa `useApiFetch` internamente, construindo a URL dinamicamente com parâmetros de paginação e busca via `buildUrl(page)`. A paginação é reativa: quando `currentPage` muda, o `useApiFetch` refaz o fetch automaticamente.
 - **Formulário:** Gerencia estado `formData` com `handleInputChange` (para inputs nativos com `name`, `type`, `checked`) e `setFieldValue` (para definição programática).
 - **`handleSubmit(e, customValidator?)`:** Envia `POST` (criação) ou `PUT` (edição) conforme `isEditing`. Suporta validação customizada via função opcional `customValidator` que lança `Error` se a validação falhar. Usa `react-hot-toast` para feedback visual (toast de loading, sucesso e erro).
 - **`handleDelete(id)`:** Se `onConfirmDelete` for fornecido, aguarda a Promise resolver (`await onConfirmDelete()`). Se resolver com `true`, prossegue com o `DELETE`. Caso contrário, usa `window.confirm` como fallback. Envia `DELETE` com `{ id }` no corpo JSON, atualiza a lista via `refetch`.
@@ -241,7 +240,7 @@ A pasta `/hooks` contém **12 arquivos** que implementam custom hooks React e se
 ### Observações importantes
 
 - **Relação entre hooks:** `useAdminAuth` depende do `AuthContext` (importado de `AuthContext.js`). `useAdminCrud` depende de `useApiFetch`. `PerformanceProvider` depende de `usePerformanceMetrics` para instanciar o monitoramento.
-- **Exportações:** O barrel `index.js` exporta atualmente 5 hooks: `PerformanceProvider`, `usePerformance`, `useApiFetch`, `useDebounce` e `useAdminAuth`. Os re-exports removidos do barrel são: `useTheme`, `AuthContext`, `AuthProvider`, `useAuth`, `useAdminCrud`, `PerformanceContext`, `usePerformanceMetrics`, `useThrottle` e `useUnauthorized`.
+- **Exportações:** O barrel `index.js` exporta atualmente 5 hooks: `PerformanceProvider`, `usePerformance`, `useApiFetch`, `useDebounce` e `useAdminAuth`. Os demais arquivos são importados diretamente pelos seus consumidores.
 - **Cobertura de uso:** `usePerformance` possui consumidor direto em `pages/_app.js` via `PerformanceMonitor`. `usePerformanceMetrics` é consumido indiretamente via `PerformanceProvider`, que o instancia uma única vez e compartilha as métricas através do `PerformanceContext`. `useApiFetch` e `useDebounce` são usados por 5 componentes públicos (Features). `useAdminAuth` é usado por `components/Admin/withAdminAuth.js`. `useUnauthorized` é usado por `components/Admin/AdminAudit.js` e `components/Admin/AdminUsersTab.js`.
 - **Arquivos removidos:** Os hooks `useAuth.js`, `useTheme.js` e `useThrottle.js` foram removidos por não possuírem consumidores no projeto, conforme identificado pelo Knip.
 - **Arquivos movidos para hooks:** O arquivo `lib/handleUnauthorized.js` foi movido para `hooks/useUnauthorized.js` (função renomeada para `useUnauthorized`), seguindo o mesmo padrão do `csvExport.js` que foi movido de `lib/` para `utils/`.

@@ -2,9 +2,9 @@
 
 ## Visão Geral
 
-A pasta `/cypress` contém os testes end-to-end (E2E) do projeto, utilizando o framework **Cypress** (`^15.18.0`). Atualmente, a estrutura conta com **5 arquivos de teste**, **25 cenários** distribuídos em 4 páginas/sistemas, e suporte com `fixtures/` e `support/`.
+A pasta `/cypress` contém os testes end-to-end (E2E) do projeto, utilizando o framework **Cypress** (`^15.19.0`). A estrutura conta com **5 arquivos de teste**, **25 cenários** distribuídos em 4 páginas/sistemas, e suporte com `fixtures/` e `support/`.
 
-> **Nota:** Este documento substitui a versão anterior em `/docs/antigos/PROJECT_cypress.md`, que estava desatualizada em relação ao estado atual dos arquivos.
+A configuração global do Cypress está em `cypress.config.js` (na raiz do projeto), e os scripts de execução estão definidos no `package.json`.
 
 ---
 
@@ -24,7 +24,7 @@ cypress/
 ├── support/
 │   ├── commands.js          (8 comandos customizados)
 │   └── e2e.js
-└── videos/                 (gravado durante execução dos testes)
+└── videos/                 (5 vídeos .mp4 de execuções anteriores)
 ```
 
 ---
@@ -35,10 +35,11 @@ cypress/
 
 **Localização:** `/cypress.config.js`
 
-**Propósito:**  
+**Propósito:**
 Arquivo de configuração global do Cypress. Define timeouts, resolução de viewport, política de retentativas, gravação de vídeo e screenshots em falhas, além da URL base da aplicação e caminho do suporte.
 
 **Principais configurações:**
+
 | Parâmetro | Valor | Descrição |
 |-----------|-------|-----------|
 | `projectId` | `kddcrf` | Identificador do projeto no Cypress Cloud |
@@ -53,8 +54,24 @@ Arquivo de configuração global do Cypress. Define timeouts, resolução de vie
 | `video` | `true` | Grava vídeo da execução |
 | `screenshotOnRunFailure` | `true` | Captura screenshot em falha |
 | `supportFile` | `cypress/support/e2e.js` | Caminho do arquivo de suporte |
+| `allowCypressEnv` | `false` | Bloqueia acesso inseguro a `Cypress.env()` no navegador |
 
-**Observação:** O método `setupNodeEvents` está vazio, sem plugins ou tarefas Node registradas.
+**Observação:** O método `setupNodeEvents` está implementado porém vazio, sem plugins ou tarefas Node registradas.
+
+---
+
+### Scripts no `package.json`
+
+**Localização:** `/package.json`
+
+Os seguintes scripts gerenciam a execução dos testes E2E:
+
+| Script | Comando | Descrição |
+|--------|---------|-----------|
+| `test:e2e` | `npx cypress run` | Executa os testes em modo headless |
+| `test:e2e:record` | `npx cypress run --record --key ...` | Executa com gravação no Cypress Cloud |
+| `cypress:open` | `cypress open` | Abre o Cypress no modo interativo |
+| `cypress:run` | `cypress run` | Executa os testes em modo headless |
 
 ---
 
@@ -64,7 +81,7 @@ Arquivo de configuração global do Cypress. Define timeouts, resolução de vie
 
 **Localização:** `cypress/support/e2e.js`
 
-**Propósito:**  
+**Propósito:**
 Ponto de entrada global de suporte. É processado automaticamente antes de cada arquivo de teste. Atualmente, apenas importa o arquivo de comandos customizados.
 
 **Funcionalidades:**
@@ -76,7 +93,7 @@ Ponto de entrada global de suporte. É processado automaticamente antes de cada 
 
 **Localização:** `cypress/support/commands.js`
 
-**Propósito:**  
+**Propósito:**
 Define comandos customizados reutilizáveis em todos os testes E2E, encapsulando operações repetitivas como login, manipulação de viewport e interações com o lightbox de imagens.
 
 **Comandos disponíveis:**
@@ -92,6 +109,8 @@ Define comandos customizados reutilizáveis em todos os testes E2E, encapsulando
 | `cy.openLightbox()` | — | Clica no container de zoom e verifica abertura do lightbox |
 | `cy.closeLightboxByOverlay()` | — | Fecha o lightbox clicando no overlay e verifica remoção |
 
+**Observação:** Os comandos `cy.login()` e `cy.createPost()` **não são utilizados** por nenhum teste atual.
+
 ---
 
 ## Dados Mockados (Fixtures)
@@ -100,7 +119,7 @@ Define comandos customizados reutilizáveis em todos os testes E2E, encapsulando
 
 **Localização:** `cypress/fixtures/posts.json`
 
-**Propósito:**  
+**Propósito:**
 Arquivo JSON com dados mockados de posts para reutilização em testes.
 
 **Conteúdo:** 1 post mockado:
@@ -112,6 +131,8 @@ Arquivo JSON com dados mockados de posts para reutilização em testes.
 - `created_at`: "2026-05-18T10:27:42.121Z"
 - `content`: Versículo bíblico de Provérbios 31:10
 
+**Observação:** Nenhum teste atual importa esta fixture via `cy.fixture()`.
+
 ---
 
 ## Arquivos de Teste (E2E)
@@ -120,7 +141,7 @@ Arquivo JSON com dados mockados de posts para reutilização em testes.
 
 **Localização:** `cypress/e2e/home.cy.js` — 4 cenários
 
-**Propósito:**  
+**Propósito:**
 Testa a página inicial do site (`/`), verificando carregamento básico, presença de título, elementos de navegação e seção de conteúdo principal.
 
 **Cenários:**
@@ -129,7 +150,7 @@ Testa a página inicial do site (`/`), verificando carregamento básico, presen�
 3. Existência de `<main>` e `<h1>`, e links de navegação
 4. Seção de conteúdo principal (`<main>`)
 
-**Observação:** O teste reconhece que a página atual não possui `<nav>` ou `<header>` HTML, validando navegação via links com `href`.
+**Observação:** O teste reconhece que a página atual não possui `<nav>` ou `<header>` HTML, validando navegação via links com `href` (`a[href*="/"]`).
 
 ---
 
@@ -137,7 +158,7 @@ Testa a página inicial do site (`/`), verificando carregamento básico, presen�
 
 **Localização:** `cypress/e2e/blog.cy.js` — 3 cenários
 
-**Propósito:**  
+**Propósito:**
 Testa a página de listagem do blog (`/blog`), verificando carregamento da página, título e presença de links para posts individuais.
 
 **Cenários:**
@@ -151,15 +172,17 @@ Testa a página de listagem do blog (`/blog`), verificando carregamento da pági
 
 **Localização:** `cypress/e2e/post.cy.js` — 3 cenários
 
-**Propósito:**  
+**Propósito:**
 Testa a página de post individual (`/blog/[slug]`), utilizando um slug real do banco de dados (`mulher-virtuosa`). Verifica exibição de imagem, conteúdo do post e botões de compartilhamento.
 
 **Cenários:**
-1. Carregamento do post com imagem (container de zoom e título)
+1. Carregamento do post com imagem (título e container de zoom)
 2. Exibição do conteúdo textual do post (contém "Provérbios")
 3. Exibição dos botões de compartilhamento (Facebook e WhatsApp)
 
 **Slug utilizado:** `mulher-virtuosa` (existente no banco PostgreSQL)
+
+**Observação:** Não possui mock de API — depende de dados reais do banco.
 
 ---
 
@@ -167,7 +190,7 @@ Testa a página de post individual (`/blog/[slug]`), utilizando um slug real do 
 
 **Localização:** `cypress/e2e/navigation.cy.js` — 3 cenários
 
-**Propósito:**  
+**Propósito:**
 Testa a navegação entre páginas do site, incluindo transições da home para o blog e para posts individuais, além do acesso à página admin sem autenticação.
 
 **Cenários:**
@@ -175,13 +198,15 @@ Testa a navegação entre páginas do site, incluindo transições da home para 
 2. Navegação da home para `/blog/[slug]`
 3. Acesso à página `/admin` interceptando resposta de autenticação como 401 (não autenticado)
 
+**Observação:** O cenário do admin usa `cy.intercept('GET', '/api/auth/check', ...)` para simular usuário não autenticado, mas apenas verifica que o `body` existe — não valida o comportamento de redirecionamento ou mensagem de erro.
+
 ---
 
 ### `/cypress/e2e/image_zoom.cy.js`
 
 **Localização:** `cypress/e2e/image_zoom.cy.js` — 12 cenários
 
-**Propósito:**  
+**Propósito:**
 Testa a funcionalidade de zoom de imagem (lightbox) em páginas de post do blog, organizado em 4 grupos: fluxo principal, casos de borda, responsividade e acessibilidade.
 
 **Slugs utilizados:**
@@ -199,6 +224,8 @@ Testa a funcionalidade de zoom de imagem (lightbox) em páginas de post do blog,
 
 **Seletores:** Utiliza exclusivamente atributos `data-testid` semânticos (`image-zoom-container`, `image-lightbox`, `image-lightbox-img`, etc.), tornando os testes resistentes a mudanças de estilo/CSS.
 
+**Observação:** O teste de acessibilidade valida que o foco é movido para o lightbox ao abri-lo (gerenciado via `useRef` + `useEffect` + `tabIndex` no componente), e um dos testes de borda valida o comportamento atual da aplicação onde o clique na imagem ampliada fecha o lightbox (sem `stopPropagation`).
+
 ---
 
 ## Diretórios de Artefatos
@@ -207,7 +234,9 @@ Testa a funcionalidade de zoom de imagem (lightbox) em páginas de post do blog,
 
 **Estado atual:** Vazio.
 
-**Propósito:** Diretório onde o Cypress salva screenshots automaticamente quando um teste falha em modo headless. O fato de estar vazio indica que todos os testes foram executados sem falhas recentemente (ou nunca foram executados em modo headless com falhas).
+**Propósito:** Diretório onde o Cypress salva screenshots automaticamente quando um teste falha em modo headless. O fato de estar vazio indica que não houve falhas em execuções recentes, ou que o diretório foi limpo.
+
+**Nota:** Já incluído no `eslint.config.js` na lista de diretórios ignorados (`cypress/screenshots/**`).
 
 ---
 
@@ -223,6 +252,8 @@ Testa a funcionalidade de zoom de imagem (lightbox) em páginas de post do blog,
 - `post.cy.js.mp4`
 
 **Propósito:** Diretório onde o Cypress salva as gravações em vídeo de cada execução de arquivo de teste (gerado quando `video: true` na configuração). Útil para debug visual de falhas em CI.
+
+**Nota:** Já incluído no `eslint.config.js` na lista de diretórios ignorados (`cypress/videos/**`).
 
 ---
 
@@ -245,7 +276,8 @@ Testa a funcionalidade de zoom de imagem (lightbox) em páginas de post do blog,
 
 - **Slugs reais do banco:** Os testes de `post.cy.js` e `image_zoom.cy.js` utilizam slugs que existem no banco PostgreSQL, validando o comportamento real da aplicação (sem mocks).
 - **Padrão `data-testid`:** Todos os seletores em `image_zoom.cy.js` utilizam atributos `data-testid` semânticos, prática recomendada para resiliência dos testes.
-- **Comandos reutilizáveis:** Operações comuns do lightbox foram abstraídas em comandos customizados, promovendo reuso e legibilidade.
-- **Mocks por interceptação:** Os comandos `cy.login()` e `cy.createPost()` utilizam `cy.intercept()` para simular respostas de API sem necessidade de backend real.
+- **Comandos reutilizáveis:** Operações comuns do lightbox foram abstraídas em comandos customizados (`cy.openLightbox()`, `cy.lightboxShouldBeOpen()`, `cy.lightboxShouldBeClosed()`, `cy.closeLightboxByOverlay()`), promovendo reuso e legibilidade.
+- **Lint configurado:** O `eslint.config.js` já inclui o `eslint-plugin-cypress` com as regras recomendadas para arquivos `cypress/**/*.js`, e ignora `cypress/videos/**` e `cypress/screenshots/**`.
+- **Mocks por interceptação:** O comando `cy.login()` e `cy.createPost()` utilizam `cy.intercept()` para simular respostas de API sem necessidade de backend real (embora não sejam usados pelos testes atuais).
 - **Sem dependências de plugins:** O arquivo de configuração não registra plugins ou tarefas customizadas no `setupNodeEvents`.
-- **Screenshots vazio:** A ausência de arquivos em `screenshots/` sugere que as execuções dos testes não encontraram falhas, ou que o diretório foi limpo após execuções bem-sucedidas.
+- **Execução manual:** Os testes E2E são executados manualmente via `npm run test:e2e` ou `npm run cypress:open`. O pipeline de CI (`ci.yml`) roda apenas a suíte Jest (`npm run test:ci`), não incluindo os testes E2E.

@@ -1,959 +1,471 @@
-# Análise da Suite de Testes — `/tests/`
+# Análise do Projeto — Testes (`/tests/`)
 
-> **Data:** 28/06/2026  
-> **Última atualização:** 30/07/2026
-> **Propósito:** Documentação completa e consolidada de todos os arquivos de teste do projeto Caminhar.
+> **Data:** 02/08/2026
+> **Objetivo:** Documentar de forma objetiva, clara e focada todos os arquivos de teste do projeto, descrevendo localização, propósito e funcionalidade de cada um, com base na análise atual dos arquivos.
 
 ---
 
 ## Sumário
 
 1. [Visão Geral](#1-visão-geral)
-2. [Estrutura de Diretórios](#2-estrutura-de-diretórios)
-3. [Configuração e Setup](#3-configuração-e-setup)
-4. [Factories (Fábricas de Dados)](#4-factories)
-5. [Helpers (Utilitários)](#5-helpers)
-6. [Matchers Customizados](#6-matchers-customizados)
-7. [Mocks (Simulações)](#7-mocks)
-8. [Exemplos](#8-exemplos)
-9. [Testes de Integração — API Pública](#9-testes-de-integração--api-pública)
-10. [Testes de Integração — API Admin](#10-testes-de-integração--api-admin)
-11. [Testes de Integração — Autenticação](#11-testes-de-integração--autenticação)
-12. [Testes de Integração — Domínio/BD Real](#12-testes-de-integração--domíniobd-real)
-13. [Testes Unitários — Componentes React](#13-testes-unitários--componentes-react)
-14. [Testes Unitários — API Lib (Submódulos)](#14-testes-unitários--api-lib-submódulos)
-15. [Testes Unitários — Lib (Core)](#15-testes-unitários--lib-core)
-16. [Testes Unitários — Domínio](#16-testes-unitários--domínio)
-17. [Testes Unitários — Páginas e Handlers de API](#17-testes-unitários--páginas-e-handlers-de-api)
-18. [Testes Unitários — Scripts](#18-testes-unitários--scripts)
-19. [Testes Unitários — Top Level](#19-testes-unitários--top-level)
+2. [Configuração Global](#2-configuração-global)
+3. [Infraestrutura de Testes](#3-infraestrutura-de-testes)
+4. [Testes de Integração](#4-testes-de-integração)
+5. [Testes Unitários](#5-testes-unitários)
+6. [Resumo Quantitativo](#6-resumo-quantitativo)
 
 ---
 
 ## 1. Visão Geral
 
-A suite de testes está dividida em **duas grandes categorias**:
+A pasta `/tests` concentra toda a infraestrutura de testes do projeto **Caminhar** (site/blog cristão com posts, músicas, vídeos, produtos, usuários e configurações). A arquitetura é baseada em **Jest** com `@testing-library/react`, `node-mocks-http` e suporte a testes de integração com **PostgreSQL real via Testcontainers**.
 
-| Categoria | Ambiente | Tecnologias | Finalidade |
-|-----------|----------|-------------|------------|
-| **Testes com Jest (jsdom)** | `jest.config.js` | Jest + RTL + jsdom | Testes de componentes, páginas, hooks, mocks |
-| **Testes com Jest (node)** | `jest.config.db.js` | Jest + node + Testcontainers | Testes de integração com PostgreSQL real |
-
-**Stack principal:**
-- **Jest** (`@jest/globals`) — executor de testes
-- **React Testing Library** (`@testing-library/react`) — renderização de componentes
-- **node-mocks-http** (`createMocks`) — simulação de requisições HTTP
-- **Testcontainers** (`@testcontainers/postgresql`) — banco PostgreSQL efêmero
-- **jsonwebtoken** — geração de tokens JWT para testes
-- **bcryptjs** — hash de senhas em testes
-- **sharp** — processamento de imagens (mockado)
-- **formidable** — parsing de formulários (mockados)
-- **Zod** — validação de schemas
-
-**Arquivos de configuração:**
-| Arquivo | Finalidade |
-|---------|-----------|
-| `jest.config.js` | Configuração principal (jsdom, setup.js) |
-| `jest.config.db.js` | Configuração para testes com banco real (node, setup.db.js, globalSetup) |
-| `jest.setup.js` | Setup adicional carregado pelo Jest |
-| `jest.teardown.js` | Teardown global |
-| `babel.jest.config.js` | Transpilação Babel para os testes |
-
----
-
-## 2. Estrutura de Diretórios
+A estrutura é organizada em camadas:
 
 ```
 tests/
-├── global-setup.db.js           # Setup global: container PostgreSQL
-├── setup.db.js                   # Setup para testes de banco (node)
-├── setup.js                      # Setup principal (jsdom)
-├── examples/                     # Exemplos de uso da arquitetura
-│   ├── component-example.test.js (565 linhas)
-│   └── simple-test.test.js (234 linhas)
-├── factories/                    # Fábricas de dados para testes (5 arquivos, 524 linhas)
-│   ├── index.js
-│   ├── base.js                   # createBaseFactory (contador, list, resetId)
-│   ├── post.js                   # postFactory, draftPostFactory, etc.
-│   ├── music.js                  # musicFactory, detailedMusicFactory, etc.
-│   ├── video.js                  # videoFactory, embeddableVideoFactory, etc.
-│   └── user.js                   # userFactory, adminFactory, withHash, etc.
-├── helpers/                      # Utilitários reutilizáveis (7 arquivos, ~1030 linhas)
-│   ├── index.js
-│   ├── api.js                    # createMocks, createGetRequest, etc.
-│   ├── auth.js                   # JWT tokens, mockAuthenticatedUser, etc.
-│   ├── console.js                # suppressConsoleError, mockGlobalFetch, etc.
-│   ├── crud-test.js              # testPublicGetEndpoint, testAdminCrudEndpoint, etc.
-│   ├── db-test.js                # isDockerAvailable, withTransaction, etc.
-│   └── render.js                 # renderWithProviders, renderWithRouter, etc.
-├── matchers/                     # Matchers Jest customizados (6 arquivos, 276 linhas)
-│   ├── index.js
-│   ├── toHaveStatus.js
-│   ├── toBeValidJSON.js
-│   ├── toHaveHeader.js
-│   ├── toBeISODate.js            # Inclui toBeValidDate
-│   └── toHaveProperties.js
-├── mocks/                        # Mocks reutilizáveis (9 arquivos, ~1100 linhas)
-│   ├── index.js
-│   ├── auth.js                   # mockAuthModule, mockAuthFailure
-│   ├── cache.js                  # mockCacheModule
-│   ├── db.js                     # mockQuery, mockInsert, mockUpdate, mockDelete, etc.
-│   ├── db-module.js              # mockDb (módulo completo)
-│   ├── fetch.js                  # mockFetchSuccess, mockFetchError, etc.
-│   ├── next.js                   # mockUseRouter, mockNextImage, etc.
-│   ├── next-setup.js             # Setup automático de mocks Next.js
-│   └── next.test.js              # Teste de sanidade dos mocks Next.js
-├── integration/                  # Testes de integração
-│   ├── api/                      # Endpoints públicos (28+ arquivos)
-│   │   ├── musicas.*.test.js     # 6 arquivos: create, delete, flow, integration, pagination, general
-│   │   ├── posts.*.test.js       # 6 arquivos: create, delete, flow, general, integration, general
-│   │   ├── videos.*.test.js      # 6 arquivos: create, delete, flow, integration, pagination, general
-│   │   ├── audit.test.js         # (31 linhas) — função de domínio logActivity
-│   │   ├── dicas.test.js
-│   │   ├── login.test.js
-│   │   ├── products.test.js
-│   │   ├── settings.test.js
-│   │   ├── settings.general.test.js
-│   │   ├── stats.test.js
-│   │   ├── status.test.js
-│   │   ├── upload-image.test.js
-│   │   ├── placeholder-image.test.js
-│   │   └── cleanup-test-data.test.js
-│   ├── api/admin/                # Endpoints administrativos (14 arquivos)
-│   │   ├── audit.test.js (150 linhas)
-│   │   ├── backups.test.js
-│   │   ├── cache.test.js
-│   │   ├── dicas.test.js
-│   │   ├── fetch-ml.test.js
-│   │   ├── fetch-spotify.test.js
-│   │   ├── fetch-youtube.test.js
-│   │   ├── musicas.test.js
-│   │   ├── posts.test.js
-│   │   ├── rate-limit.test.js
-│   │   ├── roles.test.js
-│   │   ├── users.test.js
-│   │   ├── users.create.test.js
-│   │   └── videos.test.js
-│   ├── api/auth/                 # Endpoints de autenticação
-│   │   ├── check.test.js
-│   │   ├── login.test.js
-│   │   └── logout.test.js
-│   ├── auth/                     # Fluxo de autenticação (banco real)
-│   │   └── auth.test.js
-│   └── domain/                   # CRUD com banco real
-│       ├── musicas.db.test.js
-│       ├── posts.db.test.js
-│       ├── products.db.test.js
-│       ├── settings.db.test.js
-│       └── videos.db.test.js
-├── unit/                         # Testes unitários
-│   ├── [slug].test.js
-│   ├── clean-test-db.test.js
-│   ├── index.test.js
-│   ├── settings.cache.test.js
-│   ├── videos.validation.test.js
-│   ├── components/               # Componentes React (55+ arquivos)
-│   │   ├── Header.test.js
-│   │   ├── SeoPerformance.test.js
-│   │   ├── Admin/                (18 testes: CRUD, campos, auth)
-│   │   ├── Features/             (12 testes: Blog, ContentTabs, Music, Products, etc.)
-│   │   ├── Layout/               (5 testes: Container, Grid, Sidebar, Stack)
-│   │   ├── Performance/          (5 testes: CriticalCSS, ImageOptimized, LazyIframe, etc.)
-│   │   ├── SEO/                  (9 testes: ArticleSchema, Breadcrumb, Head, etc.)
-│   │   └── UI/                   (6 testes: Alert, Badge, Button, Card, Input, Modal)
-│   ├── domain/                   (3 arquivos)
-│   │   ├── posts.test.js
-│   │   ├── settings.test.js
-│   │   └── videos.test.js
-│   ├── lib/                      (6+19 arquivos)
-│   │   ├── auth.test.js
-│   │   ├── cache.test.js
-│   │   ├── crud.test.js
-│   │   ├── db.test.js
-│   │   ├── middleware.test.js
-│   │   ├── redis.test.js
-│   │   ├── api/                  (5 arquivos: errors, index, middleware, response, validate)
-│   │   ├── backup/               (múltiplos arquivos)
-│   │   ├── db/                   (múltiplos arquivos)
-│   │   ├── infra/                (1 arquivo: logger)
-│   │   └── seo/                  (múltiplos arquivos)
-│   ├── pages/api/                (9 arquivos)
-│   │   ├── upload-image.edge.test.js (66 linhas)
-│   │   ├── admin/                (6 testes: dicas, fetch-ml, fetch-spotify, posts, rate-limit, roles, stats)
-│   │   └── auth/                 (1 teste: login.edge.test.js)
-│   └── scripts/                  (9+ arquivos)
-│       ├── backup.test.js (86 l)
-│       ├── clean-orphaned-images.test.js (92 l)
-│       ├── clear-db.test.js (68 l)
-│       ├── clear-musicas.test.js
-│       ├── init-table.test.js
-│       ├── migrate.test.js
-│       ├── reset-password.test.js
-│       ├── seed-all.test.js
-│       ├── validate-schema.test.js
-│       └── db/ + diagnostics/ + maintenance/ + migrations/ + utils/
+├── setup.js                          # Bootstrap global (jsdom)
+├── setup.db.js                       # Bootstrap para banco real (node)
+├── global-setup.db.js                # GlobalSetup: container PostgreSQL (Testcontainers)
+├── examples/                         # Exemplos/demonstração da arquitetura
+├── factories/                        # Fábricas de dados de teste
+├── helpers/                          # Utilitários auxiliares
+├── matchers/                         # Matchers customizados Jest
+├── mocks/                            # Mocks globais reutilizáveis
+├── integration/                      # Testes de integração
+│   ├── api/                          #   Endpoints de API
+│   │   ├── *.test.js
+│   │   ├── admin/                    #     Endpoints administrativos
+│   │   └── auth/                     #     Endpoints de autenticação
+│   ├── auth/                         #   Autenticação v1
+│   └── domain/                       #   Testes com PostgreSQL real (*.db.test.js)
+└── unit/                             # Testes unitários
+    ├── *.test.js                     #   Páginas e utilitários
+    ├── components/                   #   Componentes React
+    │   ├── Admin/                    #     Componentes administrativos
+    │   ├── Features/                 #     Componentes de funcionalidades
+    │   ├── Layout/                   #     Componentes de layout
+    │   ├── Performance/              #     Componentes de performance
+    │   ├── SEO/                      #     Componentes de SEO
+    │   └── UI/                       #     Componentes de UI
+    ├── domain/                       #   Lógica de domínio
+    ├── lib/                          #   Bibliotecas
+    ├── pages/                        #   Páginas (API routes)
+    └── scripts/                      #   Scripts utilitários
 ```
 
 ---
 
-## 3. Configuração e Setup
+## 2. Configuração Global
 
-### `/tests/setup.js` (209 linhas)
-- **Localização:** `tests/setup.js`
-- **Ambiente:** jsdom (testes de componentes React)
-- **Propósito:** Configuração centralizada carregada automaticamente pelo Jest antes de todos os testes.
-- **Funcionalidades:**
-  - Polyfills de APIs do Node.js: `TextEncoder`, `TextDecoder`
-  - Polyfill de `ReadableStream` e `MessageChannel`/`MessagePort` importados de `tests/helpers/async-polyfills.js`
-  - Importa e executa `setupAsyncPolyfills()` (compartilhado com `jest.teardown.js`)
-  - Polyfill de `localStorage`, `matchMedia`, `IntersectionObserver`, `ResizeObserver`, `scrollTo`
-  - Mock de `crypto.randomUUID`
-  - Polyfill de `URL.revokeObjectURL` (não implementado nativamente no JSDOM)
-  - Configuração do React Testing Library (`asyncUtilTimeout: 5000ms`)
-  - Filtro de `console.error` para warnings conhecidos do React e de API
-  - Cleanup automático via `afterEach`: `cleanup()` e `jest.clearAllMocks()`
-  - Utilitários globais: `global.wait()`, `global.suppressWarnings()`
-  - Import dos custom matchers (`./matchers/index.js`)
+### `tests/setup.js`
+**Localização:** `/tests/setup.js`
+**Propósito:** Bootstrap central executado antes de todos os testes (ambiente jsdom). Configura polyfills (TextEncoder, TextDecoder, localStorage, matchMedia, IntersectionObserver, ResizeObserver, scrollTo, crypto.randomUUID, URL.revokeObjectURL), React Testing Library (timeout 5s), filtro de warnings conhecidos do `console.error`, cleanup automático pós-teste (`afterEach` com `cleanup()` e `jest.clearAllMocks()`), e utilitários globais (`global.wait()`, `global.suppressWarnings()`). Importa os matchers customizados. O polyfill do `IntersectionObserver` simula interseção imediata via `setTimeout` para que iframes com lazy loading sejam renderizados sem interação manual.
 
-### `/tests/setup.db.js` (85 linhas)
-- **Localização:** `tests/setup.db.js`
-- **Ambiente:** node (testes com banco de dados real)
-- **Propósito:** Versão enxuta do setup.js para ambiente node, sem polyfills DOM.
-- **Funcionalidades:**
-  - Polyfills de `ReadableStream` e `MessageChannel` (necessários para testcontainers)
-  - Import dos custom matchers
-  - Filtro de `console.error` para warnings conhecidos
-  - Cleanup via `afterEach`: `jest.clearAllMocks()`
+### `tests/setup.db.js`
+**Localização:** `/tests/setup.db.js`
+**Propósito:** Bootstrap específico para testes de integração com banco real (ambiente node). Versão enxuta sem polyfills DOM. Inclui apenas polyfills de ReadableStream e MessageChannel (necessários para testcontainers), filtro de `console.error` para warnings conhecidos da API, matchers customizados e `afterEach` com `jest.clearAllMocks()`.
 
-### `/tests/global-setup.db.js` (33 linhas)
-- **Localização:** `tests/global-setup.db.js`
-- **Propósito:** Inicializa um container PostgreSQL via Testcontainers antes de todas as suites de teste de banco.
-- **Funcionalidades:**
-  - Cria container PostgreSQL com database `caminhar_test`
-  - Define `process.env.TEST_DATABASE_URL` com a string de conexão
-  - Armazena referência do container em `global.__TEST_DB_CONTAINER__`
-  - Usa `.withReuse(true)` para reutilizar o container entre execuções
-  - Graceful handling: se Docker não estiver disponível, define `TEST_DATABASE_URL = '__docker_unavailable__'`
+### `tests/global-setup.db.js`
+**Localização:** `/tests/global-setup.db.js`
+**Propósito:** GlobalSetup para testes com banco real. Inicializa container PostgreSQL via Testcontainers com `.withReuse(true)` e disponibiliza a string de conexão via `process.env.TEST_DATABASE_URL`. Se o Docker não estiver disponível, define `TEST_DATABASE_URL = '__docker_unavailable__'` para que os testes sejam ignorados.
 
 ---
 
-## 4. Factories
+## 3. Infraestrutura de Testes
 
-### `/tests/factories/base.js` (67 linhas)
-- **Localização:** `tests/factories/base.js`
-- **Propósito:** Abstração base para todas as factories. Implementa o padrão de contador incremental, método `.list(n)` e `.resetId()`.
-- **Exportações:**
-  - `createBaseFactory(defaultsGenerator)` → factory function
-  - `generateTimestamp(daysAgo)` → string ISO
-- **Funcionamento:** A factory gerada recebe `(overrides = {})`, incrementa `idCounter` automaticamente, e combina defaults com overrides. Se `id` for passado no override, o contador não é incrementado.
+### 3.1 Factories (`/tests/factories/`)
 
-### `/tests/factories/index.js` (18 linhas)
-- **Localização:** `tests/factories/index.js`
-- **Propósito:** Ponto de entrada que reexporta todas as factories.
-- **Exportações:** `createBaseFactory`, `postFactory`, `musicFactory`, `videoFactory`, `userFactory`
+| Arquivo | Propósito | Funcionalidades |
+|---------|-----------|-----------------|
+| `base.js` | Núcleo do sistema de factories | `createBaseFactory(defaultsGenerator)` abstrai contador incremental, `.list(n, overrides, mapFn)`, `.resetId()` e `generateTimestamp(daysAgo)` |
+| `index.js` | Barrel file | Reexporta `createBaseFactory`, `postFactory`, `musicFactory`, `videoFactory`, `userFactory` |
+| `post.js` | Dados de posts do blog | `postFactory`, `draftPostFactory`, `publishedPostFactory`, `createPostInput`, `updatePostInput` |
+| `music.js` | Dados de músicas | `musicFactory`, `unpublishedMusicFactory`, `publishedMusicFactory`, `invalidSpotifyMusicFactory`, `createMusicInput`, `updateMusicInput`, `detailedMusicFactory`, `generateSpotifyUrl` |
+| `video.js` | Dados de vídeos do YouTube | `videoFactory`, `unpublishedVideoFactory`, `publishedVideoFactory`, `invalidYoutubeVideoFactory`, `createVideoInput`, `updateVideoInput`, `embeddableVideoFactory`, `generateYoutubeUrl`, `extractYoutubeId` |
+| `user.js` | Dados de usuários | `userFactory`, `adminFactory`, `regularUserFactory`, `userFactory.withHash` (async), `createUserInput`, `loginInput`, `jwtPayloadFactory`, `invalidUserInput` |
 
-### `/tests/factories/post.js` (126 linhas)
-- **Localização:** `tests/factories/post.js`
-- **Propósito:** Gera dados de teste para posts do blog.
-- **Funcionalidades:**
-  - `postFactory(overrides)` — post completo com id, title, slug, excerpt, content, image_url, published
-  - `postFactory.list(n)` — lista de n posts
-  - `draftPostFactory(overrides)` — post não publicado
-  - `publishedPostFactory(overrides)` — post publicado
-  - `createPostInput(overrides)` — dados para criação (sem id/timestamps)
-  - `updatePostInput(overrides)` — dados para atualização (campos opcionais)
-- **Templates:** 10 títulos de posts religiosos ("A Jornada da Fé", "Caminhando com Propósito"), 5 conteúdos variados
+### 3.2 Helpers (`/tests/helpers/`)
 
-### `/tests/factories/music.js` (160 linhas)
-- **Localização:** `tests/factories/music.js`
-- **Propósito:** Gera dados de teste para músicas com URLs do Spotify.
-- **Funcionalidades:**
-  - `musicFactory(overrides)` — música completa com titulo, artista, url_imagem, url_spotify
-  - `musicFactory.list(n)` — lista de n músicas
-  - `unpublishedMusicFactory(overrides)` — música não publicada
-  - `publishedMusicFactory(overrides)` — música publicada
-  - `invalidSpotifyMusicFactory(overrides)` — música com URL inválida (YouTube em vez de Spotify)
-  - `createMusicInput(overrides)` — dados para criação
-  - `updateMusicInput(overrides)` — dados para atualização
-  - `detailedMusicFactory(overrides)` — música com álbum, gênero, ano, duração
-  - `generateSpotifyUrl()` — gera URL spotify aleatória (track ID de 22 caracteres)
-- **Templates:** 10 títulos de hinos gospel ("Amazing Grace", "How Great Thou Art"), 10 artistas cristãos
+| Arquivo | Propósito | Funcionalidades |
+|---------|-----------|-----------------|
+| `index.js` | Barrel file | Reexporta `api.js`, `render.js`, `auth.js`, `console.js`, `crud-test.js` |
+| `api.js` | Utilitários de API HTTP | `createApiMocks`, `createGetRequest`, `createPostRequest`, `createPutRequest`, `createDeleteRequest`, `createPatchRequest`, `executeHandler`, `createWebhookPayload`, `createAuthRequest`, `createCookieAuthRequest`, `getResponseBody` |
+| `auth.js` | Utilitários de autenticação | `createAuthToken`, `createExpiredToken`, `createInvalidToken`, `decodeToken`, `isValidToken`, `mockAuthenticatedUser`, `mockAuthenticatedAdmin`, `hashPassword`, `verifyPassword`, `createMockAuthMiddleware`, `mockAuthLib`, `clearAuthCookies`, `createBearerHeader`, `createAuthCookie`, `defaultTokenPayload`, `adminTokenPayload` |
+| `console.js` | Supressão controlada de console | `suppressConsoleError()`, `filterConsoleError(suppressList)`, `mockGlobalFetch()`, `createConfirmSpy(defaultValue)` |
+| `crud-test.js` | Abstração de testes CRUD de API | `testPublicGetEndpoint`, `testAdminCrudEndpoint`, `testAdminGetEndpoint` |
+| `db-test.js` | Testes com PostgreSQL real | `isDockerAvailable()`, `createTestDb()`, `applyMigrations()`, `withTransaction(pool)`, `truncateAll(pool)` |
+| `render.js` | Renderização de componentes React | `renderWithProviders`, `renderWithRouter`, `renderWithAuth`, `renderWithToast`, `testLoadingState`, `testErrorState`, `resizeWindow`, `setMobileViewport`, `setTabletViewport`, `setDesktopViewport`, `waitForAnimation`, `clickAndWait`, `fillForm`, `clearForm` |
+| `async-polyfills.js` | Polyfills assíncronos | `setupAsyncPolyfills()` — ReadableStream e MessageChannel, idempotente |
 
-### `/tests/factories/video.js` (179 linhas)
-- **Localização:** `tests/factories/video.js`
-- **Propósito:** Gera dados de teste para vídeos do YouTube.
-- **Funcionalidades:**
-  - `videoFactory(overrides)` — vídeo completo com titulo, url_youtube, youtube_id, descricao
-  - `videoFactory.list(n)` — lista de n vídeos
-  - `unpublishedVideoFactory(overrides)` — vídeo não publicado
-  - `publishedVideoFactory(overrides)` — vídeo publicado
-  - `invalidYoutubeVideoFactory(overrides)` — vídeo com URL inválida (Vimeo em vez de YouTube)
-  - `createVideoInput(overrides)` — dados para criação
-  - `updateVideoInput(overrides)` — dados para atualização
-  - `embeddableVideoFactory(overrides)` — vídeo com URLs embed e thumbnail
-  - `extractYoutubeId(url)` — extrai ID do YouTube de URLs em 4 formatos diferentes
-  - `generateYoutubeUrl(id)` — gera URL youtube aleatória (ID de 11 caracteres)
-- **Templates:** 10 títulos de vídeos religiosos, 5 descrições variadas
+### 3.3 Matchers Customizados (`/tests/matchers/`)
 
-### `/tests/factories/user.js` (153 linhas)
-- **Localização:** `tests/factories/user.js`
-- **Propósito:** Gera dados de teste para usuários com senhas hasheadas.
-- **Funcionalidades:**
-  - `userFactory(overrides)` — usuário completo com username, email, password, role, name, avatar
-  - `userFactory.list(n)` — lista de n usuários
-  - `adminFactory(overrides)` — usuário com role 'admin'
-  - `regularUserFactory(overrides)` — usuário com role 'user'
-  - `userFactory.withHash(overrides)` — usuário com senha hasheada via bcrypt (async), preserva senha original em `plainPassword`
-  - `createUserInput(overrides)` — dados para criação
-  - `loginInput(overrides)` — credenciais de login
-  - `jwtPayloadFactory(overrides)` — payload JWT para testes (com iat/exp)
-  - `invalidUserInput(type)` — 6 tipos de dados inválidos: empty, short, invalid_email, no_username, no_password, weak_password
-- **Templates:** 10 nomes próprios, 10 sobrenomes, 5 domínios de email, geração de username automática com remoção de acentos
+| Arquivo | Matcher | Propósito |
+|---------|---------|-----------|
+| `index.js` | — | Barrel file que importa todos os matchers |
+| `toHaveStatus.js` | `toHaveStatus(status)` | Verifica status HTTP de respostas (node-mocks-http, fetch Response, http.ServerResponse) |
+| `toBeValidJSON.js` | `toBeValidJSON(expected?)` | Verifica se a resposta contém JSON válido, opcionalmente com dados específicos |
+| `toHaveHeader.js` | `toHaveHeader(name, value?)` | Verifica existência/valor de headers HTTP |
+| `toBeISODate.js` | `toBeISODate()` / `toBeValidDate()` | Verifica formato ISO 8601 e validade de datas |
+| `toHaveProperties.js` | `toHaveProperties(properties)` | Verifica se um objeto possui todas as propriedades listadas |
+
+### 3.4 Mocks (`/tests/mocks/`)
+
+| Arquivo | Propósito | Funcionalidades |
+|---------|-----------|-----------------|
+| `index.js` | Barrel file | Reexporta `next.js`, `fetch.js`, `db.js`, `cache.js`, `auth.js`, `db-module.js` |
+| `next.js` | Mocks do Next.js | `mockUseRouter`, `mockNextImage`, `mockNextLink`, `mockNextHead`, `mockNextScript`, `mockNextDynamic`, `mockGetServerSideProps`, `mockGetStaticProps`, `mockGetStaticPaths`, `mockNextHeaders`, `mockNextCookies`, `setupNextMocks` (deprecated) |
+| `next-setup.js` | Setup automático de mocks do Next.js | Centraliza `jest.mock()` para `next/router`, `next/navigation`, `next/image`, `next/link`, `next/head`, `next/script`, `next/dynamic`, `next/headers`, `next/server` |
+| `next.test.js` | Teste de sanidade dos mocks do Next.js | Verifica que os mocks de `next/router`, `next/navigation`, `next/image`, `next/link`, `next/head`, `next/script`, `next/headers` funcionam corretamente |
+| `fetch.js` | Mocks de requisições fetch | `mockFetch`, `mockFetchSuccess`, `mockFetchError`, `mockFetchNotFound`, `mockFetchUnauthorized`, `mockFetchServerError`, `mockFetchNetworkError`, `mockFetchWithRoutes`, `mockFetchSequence`, `fetchDelay`, `setupFetchMock`, `clearFetchMock`, `fetchWasCalledWith`, `getLastFetchCall` |
+| `db.js` | Mocks de operações de banco | `mockQuery`, `mockQueryOne`, `mockQueryMany`, `mockQueryError`, `mockInsert`, `mockUpdate`, `mockDelete`, `mockTransaction`, `mockPool`, `queryWasCalledWith`, `getQueryParams`, `mockDbModule`, `mockPaginatedResult`, `clearQueryMocks`, `mockQuerySequence` |
+| `cache.js` | Mocks de cache (Redis/memória) | `mockCacheModule(overrides)`, `resetCacheMocks(cacheMock)` |
+| `auth.js` | Mocks de autenticação | `mockAuthModule(overrides)`, `mockAuthFailure()`, `resetAuthMocks(authMock)` |
+| `db-module.js` | Mock centralizado de `lib/infra/db.js` | `mockDb(overrides)`, `mockDbError(error)`, `resetDbMocks(dbMock)` |
+
+### 3.5 Examples (`/tests/examples/`)
+
+| Arquivo | Propósito |
+|---------|-----------|
+| `simple-test.test.js` | Demonstração da arquitetura: uso de factories, helpers de API/auth, matchers customizados e mocks |
+| `component-example.test.js` | Exemplo completo de teste de componente React: renderização, interações, estados de loading/erro, responsividade, router, autenticação e fetch mockado |
 
 ---
 
-## 5. Helpers
+## 4. Testes de Integração
 
-### `/tests/helpers/index.js` (13 linhas)
-- **Localização:** `tests/helpers/index.js`
-- **Propósito:** Ponto de entrada que reexporta todos os helpers via `export *`.
+### 4.1 API Endpoints (`/tests/integration/api/`)
 
-### `/tests/helpers/api.js` (160 linhas)
-- **Localização:** `tests/helpers/api.js`
-- **Propósito:** Utilitários para criação de mocks HTTP usando `node-mocks-http` e verificação de respostas.
-- **Exportações:**
-  - `createApiMocks(options)` — wrapper sobre `createMocks` com defaults (host, content-type)
-  - `createGetRequest(query, headers)` — requisição GET
-  - `createPostRequest(body, headers)` — requisição POST
-  - `createPutRequest(body, query, headers)` — requisição PUT
-  - `createDeleteRequest(body, query, headers)` — requisição DELETE
-  - `createPatchRequest(body, headers)` — requisição PATCH
-  - `executeHandler(handler, req, res)` — executa handler e retorna { status, data, headers }
-  - `createWebhookPayload(event, data)` — payload de webhook simulado
-  - `createAuthRequest(token, options)` — requisição com Bearer token
-  - `createCookieAuthRequest(token, options)` — requisição com cookie de autenticação
-  - `getResponseBody(res)` — extrai corpo da resposta como objeto
+Testes de endpoints públicos e CRUD de recursos. Usam `node-mocks-http` + mocks de domínio/cache/auth.
 
-### `/tests/helpers/auth.js` (243 linhas)
-- **Localização:** `tests/helpers/auth.js`
-- **Propósito:** Utilitários para criação de tokens JWT e mocks de autenticação. Usa `jsonwebtoken` e `bcryptjs`.
-- **Exportações:**
-  - `createAuthToken(payload, options)` — token JWT válido (secret do ambiente ou fallback hardcoded)
-  - `createExpiredToken(payload)` — token JWT expirado (-1h)
-  - `createInvalidToken()` — token inválido ("invalid.token.here")
-  - `decodeToken(token)` — decodifica sem verificar
-  - `isValidToken(token)` — verifica validade
-  - `mockAuthenticatedUser(user)` — { user, token, headers, cookies }
-  - `mockAuthenticatedAdmin(admin)` — igual ao acima com role 'admin'
-  - `hashPassword(password)` — bcrypt hash
-  - `verifyPassword(password, hash)` — bcrypt compare
-  - `createMockAuthMiddleware(user)` — middleware de autenticação mockado
-  - `mockAuthLib(options)` — módulo auth completo mockado (12 funções)
-  - `clearAuthCookies()` — limpa cookies simulados (manipula `document.cookie`)
-  - `createBearerHeader(token)` — header de autorização
-  - `createAuthCookie(token)` — cookie de autenticação
-  - `defaultTokenPayload` / `adminTokenPayload` — payloads padrão para testes
+| Arquivo | Propósito |
+|---------|-----------|
+| `audit.test.js` | Testa `logActivity` do domínio de auditoria (INSERT em activity_logs) |
+| `cleanup-test-data.test.js` | Testa limpeza de dados de teste |
+| `dicas.test.js` | CRUD de dicas |
+| `login.test.js` | Fluxo de login |
+| `musicas.create.test.js` | Criação de músicas |
+| `musicas.delete.test.js` | Exclusão de músicas |
+| `musicas.flow.test.js` | Fluxo completo de músicas |
+| `musicas.integration.test.js` | Integração de músicas |
+| `musicas.pagination.test.js` | Paginação de músicas |
+| `musicas.test.js` | CRUD principal de músicas |
+| `musicas.update.test.js` | Atualização de músicas |
+| `placeholder-image.test.js` | Imagem de placeholder (hero/banner) com fallbacks |
+| `posts.create.api.test.js` | Criação de posts |
+| `posts.delete.test.js` | Exclusão de posts |
+| `posts.flow.test.js` | Fluxo completo de posts |
+| `posts.general.test.js` | Testes gerais de posts |
+| `posts.integration.test.js` | Integração de posts |
+| `posts.test.js` | CRUD principal de posts |
+| `posts.update.api.test.js` | Atualização de posts |
+| `products.test.js` | CRUD de produtos |
+| `settings.general.test.js` | Testes gerais de configurações |
+| `settings.test.js` | CRUD de configurações |
+| `stats.test.js` | Estatísticas |
+| `status.test.js` | Endpoint `/api/status` (health check do banco) |
+| `upload-image.test.js` | Upload de imagem |
+| `videos.create.api.test.js` | Criação de vídeos |
+| `videos.delete.test.js` | Exclusão de vídeos |
+| `videos.flow.test.js` | Fluxo completo de vídeos |
+| `videos.integration.test.js` | Integração de vídeos |
+| `videos.pagination.api.test.js` | Paginação de vídeos |
+| `videos.test.js` | CRUD principal de vídeos |
 
-### `/tests/helpers/console.js` (80 linhas)
-- **Localização:** `tests/helpers/console.js`
-- **Propósito:** Utilitários para supressão controlada de console durante testes.
-- **Exportações:**
-  - `suppressConsoleError()` — spy silencioso para `console.error`. Uso: beforeEach/afterEach.
-  - `filterConsoleError(suppressList)` — spy que suprime apenas warnings específicos
-  - `mockGlobalFetch()` — mock de `global.fetch` com método `.mockRestore()` (contorna limitação do JSDOM onde `jest.spyOn(global, 'fetch')` não funciona)
-  - `createConfirmSpy(defaultValue)` — spy para `window.confirm`
+### 4.2 API Administrativa (`/tests/integration/api/admin/`)
 
-### `/tests/helpers/crud-test.js` (142 linhas)
-- **Localização:** `tests/helpers/crud-test.js`
-- **Propósito:** Utilitários para abstrair padrões repetitivos de testes CRUD de API. Usa `node-mocks-http`.
-- **Exportações:**
-  - `testPublicGetEndpoint(handler, config, customTests)` — testa endpoint GET público: 405 para método não permitido, 400 para paginação inválida, 500 para erro servidor + customTests
-  - `testAdminCrudEndpoint(handler, config, customTests)` — testa endpoint CRUD admin: 401 sem autenticação + customTests (não testa 405 porque autenticação ocorre antes da verificação de método)
-  - `testAdminGetEndpoint(handler, config, customTests)` — testa endpoint GET-only admin: 401, 405 + customTests
-- **Design:** Cada função testa apenas o que não requer mocks específicos, delegando testes específicos via `customTests`.
+Testes de endpoints administrativos com autenticação.
 
-### `/tests/helpers/db-test.js` (121 linhas)
-- **Localização:** `tests/helpers/db-test.js`
-- **Propósito:** Utilitários para testes com PostgreSQL real via Testcontainers.
-- **Exportações:**
-  - `isDockerAvailable()` — verifica se `process.env.TEST_DATABASE_URL` está definida e não é `'__docker_unavailable__'`
-  - `createTestDb()` — cria pool de conexão PostgreSQL (max 5 conexões)
-  - `applyMigrations()` — executa migrações via subprocesso `node scripts/migrate.js` com timeout de 30s
-  - `withTransaction(pool)` — inicia transação com rollback automático, segurança contra falha de conexão
-  - `truncateAll(pool)` — limpa todas as tabelas (TRUNCATE CASCADE), valida nomes com `validateIdentifier`
+| Arquivo | Propósito |
+|---------|-----------|
+| `audit.test.js` | Auditoria administrativa |
+| `backups.test.js` | Gerenciamento de backups |
+| `cache.test.js` | Gerenciamento de cache |
+| `dicas.test.js` | CRUD admin de dicas |
+| `fetch-ml.test.js` | Fetch de dados de ML |
+| `fetch-spotify.test.js` | Fetch de dados do Spotify |
+| `fetch-youtube.test.js` | Fetch de dados do YouTube |
+| `musicas.test.js` | CRUD admin de músicas |
+| `posts.test.js` | CRUD admin de posts |
+| `rate-limit.test.js` | Rate limiting |
+| `roles.test.js` | Gerenciamento de roles |
+| `users.create.test.js` | Criação de usuários |
+| `users.test.js` | CRUD de usuários |
+| `videos.test.js` | CRUD admin de vídeos |
 
-### `/tests/helpers/render.js` (272 linhas)
-- **Localização:** `tests/helpers/render.js`
-- **Propósito:** Utilitários para renderização de componentes React com providers. Usa `@testing-library/react` e `userEvent`.
-- **Exportações:**
-  - `renderWithProviders(ui, options)` — renderização básica com `userEvent.setup()`
-  - `renderWithRouter(ui, options)` — renderização com Next.js Router mockado via `useRouter().mockReturnValue()`
-  - `renderWithAuth(ui, options)` — renderização com contexto de autenticação (`AuthContext.Provider`)
-  - `renderWithToast(ui, options)` — renderização com Toast provider (`react-hot-toast`)
-  - `testLoadingState(ui, loadingTestId)` — helper para testar estado de loading
-  - `testErrorState(ui, errorMessage)` — helper para testar estado de erro
-  - `resizeWindow(width, height)` — simula redimensionamento
-  - `setMobileViewport()`, `setTabletViewport()`, `setDesktopViewport()` — breakpoints predefinidos
-  - `waitForAnimation(duration)` — aguarda animação via setTimeout
-  - `clickAndWait(user, element)` — clica e aguarda animação
-  - `fillForm(user, fields)` — preenche formulário (label ou testId)
-  - `clearForm(user, fieldLabels)` — limpa formulário
+### 4.3 Autenticação (`/tests/integration/api/auth/`)
 
----
+| Arquivo | Propósito |
+|---------|-----------|
+| `check.test.js` | Verificação de autenticação |
+| `login.test.js` | Login |
+| `logout.test.js` | Logout |
 
-## 6. Matchers Customizados
+### 4.4 Autenticação v1 (`/tests/integration/auth/`)
 
-### `/tests/matchers/index.js` (12 linhas)
-- **Localização:** `tests/matchers/index.js`
-- **Propósito:** Ponto de entrada que importa todos os matchers customizados via efeito colateral (`import './...'`).
+| Arquivo | Propósito |
+|---------|-----------|
+| `auth.test.js` | Testes de autenticação v1 |
 
-### `/tests/matchers/toHaveStatus.js` (45 linhas)
-- **Propósito:** Verifica se uma resposta HTTP tem o status esperado.
-- **Uso:** `expect(res).toHaveStatus(200)`
-- **Suporta:** `node-mocks-http` (`_getStatusCode()`), `fetch` (`status`), `http.ServerResponse` (`statusCode`)
+### 4.5 Domínio com Banco Real (`/tests/integration/domain/`)
 
-### `/tests/matchers/toBeValidJSON.js` (52 linhas)
-- **Propósito:** Verifica se uma resposta contém JSON válido, opcionalmente com `expect.objectContaining`.
-- **Uso:** `expect(res).toBeValidJSON()` ou `expect(res).toBeValidJSON({ id: 1 })`
-- **Suporta:** Objetos com `.data`, `._getData()`, `.body`, ou string direta.
+Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.test.js`).
 
-### `/tests/matchers/toHaveHeader.js` (55 linhas)
-- **Propósito:** Verifica se uma resposta HTTP tem um header específico, opcionalmente com valor. Normaliza case.
-- **Uso:** `expect(res).toHaveHeader('content-type')` ou `expect(res).toHaveHeader('content-type', 'application/json')`
-
-### `/tests/matchers/toBeISODate.js` (82 linhas)
-- **Propósito:** Verifica se uma string está em formato ISO 8601 e é uma data válida. Inclui também matcher `toBeValidDate`.
-- **Uso:** `expect(dateString).toBeISODate()` ou `expect(date).toBeValidDate()`
-- **Suporta:** Date objects, strings, números (timestamps).
-
-### `/tests/matchers/toHaveProperties.js` (30 linhas)
-- **Propósito:** Verifica se um objeto possui todas as propriedades listadas.
-- **Uso:** `expect(obj).toHaveProperties(['id', 'name'])` ou `expect(obj).toHaveProperties('email')`
+| Arquivo | Propósito |
+|---------|-----------|
+| `musicas.db.test.js` | Operações de músicas com banco real |
+| `posts.db.test.js` | Operações de posts com banco real |
+| `products.db.test.js` | Operações de produtos com banco real |
+| `settings.db.test.js` | Operações de configurações com banco real |
+| `videos.db.test.js` | Operações de vídeos com banco real |
 
 ---
 
-## 7. Mocks
+## 5. Testes Unitários
 
-### `/tests/mocks/index.js` (14 linhas)
-- **Localização:** `tests/mocks/index.js`
-- **Propósito:** Ponto de entrada que reexporta todos os mocks via `export *`.
+### 5.1 Páginas e Utilitários (`/tests/unit/` — raiz)
 
-### `/tests/mocks/auth.js` (67 linhas)
-- **Localização:** `tests/mocks/auth.js`
-- **Propósito:** Mock reutilizável do módulo `lib/auth/auth.js`.
-- **Exportações:**
-  - `mockAuthModule(overrides)` — módulo auth completo (11 funções mockadas: hashPassword, verifyPassword, generateToken, verifyToken, setAuthCookie, getAuthCookie, getAuthToken, authenticate, authenticateAndGenerateToken, withAuth, initializeAuth)
-  - `mockAuthFailure()` — módulo auth simulando falha (getAuthToken → null, verifyToken → null, withAuth → 401)
-  - `resetAuthMocks(authMock)` — reseta todos os mocks para estado padrão
+| Arquivo | Propósito |
+|---------|-----------|
+| `[slug].test.js` | Testa a página de post individual (BlogPost) — renderização, compartilhamento, imagem |
+| `clean-test-db.test.js` | Testa o script de limpeza de banco de dados de teste |
+| `index.test.js` | Testa a página do Blog (BlogIndex) — lista de posts e estado vazio |
+| `settings.cache.test.js` | Testa integração de cache da API de configurações (cache miss/hit/invalidação) |
+| `videos.validation.test.js` | Testa validação de vídeos (limite de caracteres, vídeo inexistente) |
 
-### `/tests/mocks/cache.js` (29 linhas)
-- **Localização:** `tests/mocks/cache.js`
-- **Propósito:** Mock reutilizável do módulo `lib/cache/cache.js`.
-- **Exportações:**
-  - `mockCacheModule(overrides)` — módulo cache mockado: `getOrSetCache` (executa fetchFunction), `checkRateLimit` (false), `invalidateCache` (noop)
-  - `resetCacheMocks(cacheMock)` — reseta mocks para comportamento padrão
+### 5.2 Componentes de Admin (`/tests/unit/components/Admin/`)
 
-### `/tests/mocks/db-module.js` (63 linhas)
-- **Localização:** `tests/mocks/db-module.js`
-- **Propósito:** Mock centralizado do módulo `lib/infra/db.js` para testes de integração de API admin.
-- **Exportações:**
-  - `mockDb(overrides)` — módulo db completo: query, resetPool, closeDatabase, transaction (com BEGIN/COMMIT/ROLLBACK), healthCheck, getDatabaseInfo
-  - `mockDbError(error)` — módulo db simulando erro de conexão
-  - `resetDbMocks(dbMock)` — reseta mocks
-- **Uso típico:** `jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb())`
+| Arquivo | Propósito |
+|---------|-----------|
+| `AdminAudit.test.js` | Painel de auditoria: logs, paginação, filtro, exportação CSV, tratamento de 401 |
+| `AdminCrudBase.test.js` | Base CRUD: renderização, toggle booleano, estados de loading/erro |
+| `AdminDashboard.test.js` | Dashboard: estatísticas, permissões, cache em sessionStorage |
+| `AdminDicas.test.js` | CRUD de dicas |
+| `AdminMusicas.test.js` | CRUD de músicas |
+| `AdminPosts.test.js` | CRUD de posts |
+| `AdminProducts.test.js` | CRUD de produtos (formatação de preço, checkbox) |
+| `AdminRolesTab.test.js` | Gerenciamento de roles |
+| `AdminUsers.test.js` | CRUD de usuários |
+| `AdminUsersTab.test.js` | Aba de usuários |
+| `AdminVideos.test.js` | CRUD de vídeos (iframe embed) |
+| `ImageUploadField.test.js` | Campo de upload de imagem (toast.error, onUpload) |
+| `index.test.js` | Barrel de Admin |
+| `TextAreaField.test.js` | Campo de textarea |
+| `TextField.test.js` | Campo de texto |
+| `ToggleField.test.js` | Campo toggle |
+| `UrlField.test.js` | Campo de URL |
+| `withAdminAuth.test.js` | HOC de autenticação admin (com AuthProvider real) |
 
-### `/tests/mocks/db.js` (235 linhas)
-- **Localização:** `tests/mocks/db.js`
-- **Propósito:** Mocks granulares para operações de banco de dados. Mais completo que db-module.js.
-- **Exportações:**
-  - `mockQuery(returnValue)` — mock de query com retorno configurável
-  - `mockQueryOne(row)` — mock que retorna uma linha
-  - `mockQueryMany(rows)` — mock que retorna múltiplas linhas
-  - `mockQueryError(error)` — mock que lança erro
-  - `mockInsert(insertedRow)` — simula INSERT
-  - `mockUpdate(updatedRow)` — simula UPDATE
-  - `mockDelete(deletedId)` — simula DELETE
-  - `mockTransaction(callback)` — simula transação
-  - `mockPool(options)` — pool de conexões mockado
-  - `queryWasCalledWith(queryMock, pattern)` — verifica chamada por padrão
-  - `getQueryParams(queryMock, callIndex)` — obtém parâmetros
-  - `mockDbModule(options)` — módulo db completo
-  - `mockPaginatedResult(data, page, limit)` — simula paginação
-  - `clearQueryMocks(...mocks)` — limpa múltiplos mocks
-  - `mockQuerySequence(responses)` — respostas sequenciais
+#### Managers (`/tests/unit/components/Admin/Managers/`)
 
-### `/tests/mocks/fetch.js` (181 linhas)
-- **Localização:** `tests/mocks/fetch.js`
-- **Propósito:** Mocks para requisições `fetch`.
-- **Exportações:**
-  - `mockFetch(response, options)` — mock base com suporte a Headers, Blob, FormData, ArrayBuffer
-  - `mockFetchSuccess(data)` — fetch 200 OK
-  - `mockFetchError(status, error)` — fetch com erro HTTP
-  - `mockFetchNotFound()` — 404
-  - `mockFetchUnauthorized()` — 401
-  - `mockFetchServerError()` — 500
-  - `mockFetchNetworkError(message)` — erro de rede (rejected promise)
-  - `mockFetchWithRoutes(urlMap)` — rotas baseadas em URL (suporta RegExp)
-  - `mockFetchSequence(responses)` — respostas em sequência
-  - `fetchDelay(ms)` — delay simulado
-  - `setupFetchMock(mockImpl)` — configura `global.fetch`
-  - `clearFetchMock()` — limpa mock
-  - `fetchWasCalledWith(fetchMock, url)` — verifica chamada por URL
-  - `getLastFetchCall(fetchMock)` — último call
+| Arquivo | Propósito |
+|---------|-----------|
+| `BackupManager.test.js` | Gerenciador de backups (Modal de confirmação) |
+| `CacheManager.test.js` | Gerenciador de cache (Modal de confirmação) |
 
-### `/tests/mocks/next.js` (213 linhas)
-- **Localização:** `tests/mocks/next.js`
-- **Propósito:** Implementações individuais de mocks de componentes e hooks do Next.js. Usa `React.createElement`.
-- **Exportações:**
-  - `mockUseRouter(options)` — router mockado completo (Pages Router): push, replace, reload, back, prefetch, events, locale...
-  - `mockNextImage(props)` — componente Image → tag `<img>`
-  - `mockNextLink(props)` — componente Link → tag `<a>`
-  - `mockNextHead(props)` — componente Head → Fragment
-  - `mockNextScript(props)` — componente Script → tag `<script>`
-  - `mockNextDynamic(importFunc, options)` — dynamic import mockado
-  - `mockGetServerSideProps(data)` — resultado de getServerSideProps
-  - `mockGetStaticProps(data)` — resultado de getStaticProps (com revalidate: 60)
-  - `mockGetStaticPaths(paths)` — resultado de getStaticPaths (fallback: false)
-  - `mockNextHeaders(headers)` — headers mockados (App Router com iterador)
-  - `mockNextCookies(cookies)` — cookies mockados (App Router com iterador)
-  - `setupNextMocks()` — (deprecated) configura todos os mocks
+#### Tools (`/tests/unit/components/Admin/Tools/`)
 
-### `/tests/mocks/next-setup.js` (147 linhas)
-- **Localização:** `tests/mocks/next-setup.js`
-- **Propósito:** Setup automático que registra todos os `jest.mock()` para módulos do Next.js, eliminando duplicação.
-- **Módulos mockados:** `next/router` (Pages Router), `next/navigation` (App Router), `next/image`, `next/link`, `next/head`, `next/script`, `next/dynamic`, `next/headers`, `next/server`
-- **Uso:** `import '../../mocks/next-setup.js';` no início do arquivo de teste.
-- **Destaque:** Mock de `next/server` usa `jest.requireActual` combinado com spies.
+| Arquivo | Propósito |
+|---------|-----------|
+| `IntegrityCheck.test.js` | Verificação de integridade |
+| `RateLimitViewer.test.js` | Visualizador de rate limit |
 
-### `/tests/mocks/next.test.js` (146 linhas)
-- **Localização:** `tests/mocks/next.test.js`
-- **Propósito:** Teste de sanidade para verificar se os mocks do Next.js funcionam corretamente. Deve ser executado sempre que a versão do Next.js for atualizada.
-- **Testes:** 7 describes testando exportações de `next/router`, `next/navigation`, `next/image`, `next/link`, `next/head`, `next/script`, `next/headers`
-- **Padrão:** `jest.requireMock` + render de componentes mockados + assertions de DOM
+### 5.3 Componentes de Funcionalidades (`/tests/unit/components/Features/`)
 
----
+| Arquivo | Propósito |
+|---------|-----------|
+| `Blog/BlogSection.test.js` | Seção de blog |
+| `Blog/PostCard.test.js` | Card de post |
+| `ContentTabs/ContentTabs.test.js` | Abas de conteúdo |
+| `ContentTabs/index.test.js` | Barrel de ContentTabs |
+| `Music/MusicCard.test.js` | Card de música (iframe Spotify) |
+| `Music/MusicGallery.edge.test.js` | Galeria de músicas (edge cases) |
+| `Music/MusicGallery.test.js` | Galeria de músicas |
+| `Products/ProductCard.test.js` | Card de produto |
+| `Products/ProductList.test.js` | Lista de produtos |
+| `Testimonials/index.test.js` | Depoimentos (carrossel) |
+| `Video/VideoCard.test.js` | Card de vídeo |
+| `Video/VideoGallery.test.js` | Galeria de vídeos |
 
-## 8. Exemplos
+### 5.4 Componentes de Layout (`/tests/unit/components/Layout/`)
 
-### `/tests/examples/component-example.test.js` (565 linhas)
-- **Localização:** `tests/examples/component-example.test.js`
-- **Propósito:** Demonstração completa de como usar todos os helpers para criar testes de componentes React.
-- **Cenários:** PostList (renderização vazia/com dados, interações de exclusão, loading/erro), PostForm (formulário vazio, dados iniciais, digitação, submissão, factory), responsividade (mobile/desktop), Router mockado, autenticação, fetch mockado (sucesso/erro)
-- **Componentes mockados inline:** `MockPostList`, `MockPostForm`, `MockLoadingComponent`, `MockErrorComponent`, `MockFetchComponent` — não existem no código real do projeto.
-- **Ferramentas demonstradas:** `postFactory`, `renderWithProviders`, `renderWithRouter`, `renderWithAuth`, `setMobileViewport`, `setDesktopViewport`, `fillForm`, `mockFetchSuccess`, `mockFetchError`, `mockGlobalFetch`, `userEvent`, `waitFor`, `screen`
+| Arquivo | Propósito |
+|---------|-----------|
+| `Container.test.js` | Container com subcomponentes Section/Article |
+| `Grid.test.js` | Grid com Item, Auto e Responsive |
+| `index.test.js` | Barrel de Layout |
+| `Sidebar.test.js` | Sidebar |
+| `Stack.test.js` | Stack |
 
-### `/tests/examples/simple-test.test.js` (234 linhas)
-- **Localização:** `tests/examples/simple-test.test.js`
-- **Propósito:** Demonstração básica da arquitetura de teste. Validates all factories and helpers.
-- **Cenários:** Factories (post, music, video, user, admin, criação/atualização), API helpers (createApiMocks, createPostRequest, toHaveStatus, toBeValidJSON), Auth helpers (JWT tokens, mockAuthenticatedUser, mockAuthenticatedAdmin), matchers customizados (toBeISODate, toHaveHeader), mocks (mockQuery, mockFetchSuccess), fluxo completo integrado (admin autenticado cria post e verifica resposta)
-- **Ferramentas demonstradas:** Todas as factories, `createApiMocks`, `createPostRequest`, `createGetRequest`, `createAuthToken`, `mockAuthenticatedUser`, `mockAuthenticatedAdmin`, `mockQuery`, `mockFetchSuccess`, `createPostInput`
+### 5.5 Componentes de Performance (`/tests/unit/components/Performance/`)
 
----
+| Arquivo | Propósito |
+|---------|-----------|
+| `CriticalCSS.test.js` | CSS crítico (fallback padrão, remoção) |
+| `ImageOptimized.test.js` | Imagem otimizada |
+| `index.test.js` | Barrel de Performance |
+| `LazyIframe.test.js` | Iframe com lazy loading |
+| `PreloadResources.test.js` | Pré-carregamento de recursos |
 
-## 9. Testes de Integração — API Pública
+### 5.6 Componentes de SEO (`/tests/unit/components/SEO/`)
 
-Endpoints públicos testados com mocks de banco de dados via `db-module.js` (sem container real). Usam `node-mocks-http` para simular requisições.
+| Arquivo | Propósito |
+|---------|-----------|
+| `ArticleSchema.test.js` | Schema.org Article |
+| `BreadcrumbSchema.test.js` | Schema.org Breadcrumb |
+| `Head.test.js` | Head do Next.js |
+| `index.test.js` | Barrel de SEO |
+| `MusicSchema.test.js` | Schema.org Music |
+| `OrganizationSchema.test.js` | Schema.org Organization |
+| `VideoSchema.test.js` | Schema.org Video |
+| `WebsiteSchema.test.js` | Schema.org Website |
 
-### `/tests/integration/api/audit.test.js` (31 linhas)
-- **Propósito:** Testa a função `logActivity` do domínio de auditoria.
-- **Testes:** Inserção de log com parâmetros completos (admin, CREATE, POST, id, detalhes, IP, client); uso de valores padrão para IP vazio e opções omitidas.
-- **jest.mock:** `lib/infra/db.js` → `{ query: jest.fn() }`
-- **Padrão:** Teste de função de domínio isolada (NÃO é teste de endpoint HTTP), localizado inadequadamente em `integration/api/`.
+### 5.7 Componentes de UI (`/tests/unit/components/UI/`)
 
-### `/tests/integration/api/dicas.test.js`
-- **Propósito:** Testa o endpoint público `/api/dicas` (GET-only, paginado).
-- **Testes:** Listagem paginada de dicas publicadas (page, limit, total, totalPages), erro 500 no banco, 405 para métodos não permitidos, invalidação de cache entre testes.
-- **jest.mock:** `lib/infra/db.js`, `lib/cache/cache.js`
+| Arquivo | Propósito |
+|---------|-----------|
+| `Alert.test.js` | Alerta |
+| `Badge.test.js` | Badge |
+| `Button.test.js` | Botão |
+| `Card.test.js` | Card |
+| `index.test.js` | Barrel de UI |
+| `Input.test.js` | Campo de entrada |
+| `Modal.test.js` | Modal (preventScroll com classe CSS) |
+| `Select.test.js` | Campo de seleção |
+| `Spinner.test.js` | Spinner de carregamento |
+| `TextArea.test.js` | Campo de textarea (autoResize, contador de caracteres) |
+| `Toast.test.js` | Notificações toast |
 
-### `/tests/integration/api/login.test.js`
-- **Propósito:** Testa o endpoint de login `/api/auth/login`.
-- **Testes:** Login bem-sucedido (retorna user + token), senha incorreta (401), usuário inexistente (401), campos vazios (400), 405 para GET.
-- **jest.mock:** `lib/auth/auth.js`, `lib/cache/cache.js`
+### 5.8 Componentes Gerais (`/tests/unit/components/`)
 
-### `/tests/integration/api/musicas.*.test.js` (6 arquivos)
-- **Arquivos e linhas:**
-  - `musicas.create.test.js` (91 linhas) — Testa handler inline de criação. Valida campos obrigatórios (titulo, artista, url_spotify). 3 testes: criação com sucesso (201), 400 para campos faltando, 405 para método não permitido.
-  - `musicas.delete.test.js` — Testa deleção de música.
-  - `musicas.flow.test.js` — Testa fluxo completo (CRUD integrado).
-  - `musicas.integration.test.js` — Testa integração com banco mockado.
-  - `musicas.pagination.test.js` — Testa paginação do endpoint.
-  - `musicas.test.js` — Testes gerais do endpoint de músicas. Mocka `lib/infra/logger.js` e valida asserções de erro via `logger.error('Musicas', '...', expect.any(Error))` em vez de `console.error`.
-- **Propósito geral:** Cobrem GET (listagem, paginação, busca por título/artista), POST (criação com validação), DELETE, fluxos completos.
-- **Padrão:** Uso de `createMocks`, handlers mockados inline, validação de campos.
+| Arquivo | Propósito |
+|---------|-----------|
+| `Header.test.js` | Cabeçalho do site |
+| `SeoPerformance.test.js` | Integração SEO + Performance |
 
-### `/tests/integration/api/posts.*.test.js` (6 arquivos)
-- **Arquivos:** `posts.create.api.test.js`, `posts.delete.test.js`, `posts.flow.test.js`, `posts.general.test.js`, `posts.integration.test.js`, `posts.test.js`
-- **Propósito:** Testes de GET (listagem, paginação, busca), criação (POST), deleção (DELETE) e fluxos completos de posts.
-- **Padrão:** Similar a musicas, com `createMocks` e handlers inline.
+### 5.9 Domínio (`/tests/unit/domain/`)
 
-### `/tests/integration/api/videos.*.test.js` (6 arquivos)
-- **Arquivos:** `videos.create.api.test.js`, `videos.delete.test.js`, `videos.flow.test.js`, `videos.integration.test.js`, `videos.pagination.api.test.js`, `videos.test.js`
-- **Propósito:** Testes de GET (listagem, paginação, busca), criação (POST), deleção (DELETE) e fluxos completos de vídeos.
+| Arquivo | Propósito |
+|---------|-----------|
+| `posts.test.js` | Lógica de domínio de posts (full-text search, createPost) |
+| `settings.test.js` | Lógica de domínio de configurações (json_object_agg) |
+| `videos.test.js` | Lógica de domínio de vídeos (ILIKE, createRecord) |
 
-### `/tests/integration/api/products.test.js`
-- **Propósito:** Testa o endpoint público `/api/products`.
-- **Testes:** Listagem de produtos, 405 para métodos não permitidos.
+### 5.10 Lib (`/tests/unit/lib/`)
 
-### `/tests/integration/api/settings.*.test.js` (2 arquivos)
-- **Arquivos:** `settings.test.js`, `settings.general.test.js`
-- **Propósito:** Leitura e atualização de configurações.
+| Arquivo | Propósito |
+|---------|-----------|
+| `auth.test.js` | Módulo de autenticação (hash, JWT, cookies, middleware) |
+| `cache.test.js` | Módulo de cache (L1 memória, L2 Redis, rate limit) |
+| `crud.test.js` | Módulo CRUD |
+| `db.test.js` | Módulo de banco (pool, closeDatabase) |
+| `middleware.test.js` | Middleware |
+| `redis.test.js` | Módulo Redis (getRedisInstance) |
 
-### `/tests/integration/api/stats.test.js`
-- **Propósito:** Testa o endpoint de estatísticas públicas.
-- **Testes:** Retorno de estatísticas, 405 para não-GET.
+#### Lib/API (`/tests/unit/lib/api/`)
 
-### `/tests/integration/api/status.test.js`
-- **Propósito:** Testa o endpoint de health check `/api/status`.
-- **Testes:** Retorno de status do servidor (uptime, versão, etc).
+| Arquivo | Propósito |
+|---------|-----------|
+| `errors.test.js` | Tratamento de erros |
+| `index.test.js` | Barrel de API |
+| `middleware.test.js` | Middleware de API (rate limit) |
+| `response.test.js` | Formatação de respostas |
+| `validate.test.js` | Validação (Zod, erros inesperados) |
 
-### `/tests/integration/api/upload-image.test.js`
-- **Propósito:** Testa o upload de imagens via `formidable` e `sharp`.
-- **Testes:** Upload bem-sucedido, validação de tipo MIME, validação de tamanho.
+#### Lib/Backup (`/tests/unit/lib/backup/`)
 
-### `/tests/integration/api/placeholder-image.test.js`
-- **Propósito:** Testa a geração de placeholder para imagens.
-- **Testes:** Geração de imagem placeholder.
-- **Mocks:** `fs`, `lib/domain/settings.js`, `lib/infra/db.js` (db-module), `lib/infra/logger.js`. A asserção de fallback do banco valida `logger.warn('Placeholder', '...', expect.any(String))` em vez de `console.warn` (o `LOG_LEVEL=error` default de teste filtrava `warn` antes do mock do logger).
+| Arquivo | Propósito |
+|---------|-----------|
+| `backup.available.test.js` | Disponibilidade de backup |
+| `backup.cleanup.test.js` | Limpeza de backups |
+| `backup.logs.test.js` | Logs de backup |
+| `backup.operations.test.js` | Operações de backup |
 
-### `/tests/integration/api/cleanup-test-data.test.js`
-- **Propósito:** Utilitário para limpar dados gerados durante testes de integração.
+#### Lib/DB (`/tests/unit/lib/db/`)
 
----
+| Arquivo | Propósito |
+|---------|-----------|
+| `createPost.test.js` | Criação de post |
+| `deletePost.test.js` | Exclusão de post |
+| `getAllPosts.test.js` | Listagem de posts |
+| `getPaginatedPosts.test.js` | Paginação de posts (ILIKE) |
+| `musicas.test.js` | Operações de músicas (ILIKE) |
+| `query.test.js` | Base Query Wrapper (execução de SQL, log de erros) |
+| `saveImage.test.js` | Salvamento de imagem |
+| `settings.test.js` | Operações de configurações |
+| `updatePost.test.js` | Atualização de post (parcial) |
 
-## 10. Testes de Integração — API Admin
+#### Lib/Infra (`/tests/unit/lib/infra/`)
 
-Endpoints administrativos testados com mocks de banco e autenticação. **Total: 14 arquivos, ~2.250 linhas.**
+| Arquivo | Propósito |
+|---------|-----------|
+| `logger.test.js` | Logger |
 
-### `/tests/integration/api/admin/audit.test.js` (150 linhas)
-- **Propósito:** Testa o endpoint `/api/admin/audit` para logs de auditoria.
-- **Testes:** 401 sem token, 403 sem permissão, 200 com logs paginados e filtros de data, tratamento de tabela ausente (erro 42P01 → auto-criação), 500 em erro de banco.
-- **jest.mock:** `lib/infra/db.js`, `lib/auth/auth.js`
+#### Lib/SEO (`/tests/unit/lib/seo/`)
 
-### `/tests/integration/api/admin/backups.test.js`
-- **Propósito:** Testa o endpoint de gerenciamento de backups.
-- **Testes:** Criação, listagem e restauração de backups.
+| Arquivo | Propósito |
+|---------|-----------|
+| `config.test.js` | Configuração de SEO |
 
-### `/tests/integration/api/admin/cache.test.js`
-- **Propósito:** Testa o endpoint de gerenciamento de cache.
-- **Testes:** Invalidação de cache.
+### 5.11 Pages/API Edge Cases (`/tests/unit/pages/api/`)
 
-### `/tests/integration/api/admin/dicas.test.js`
-- **Propósito:** Testa o endpoint CRUD de dicas (admin).
-- **Testes:** Autenticação (401/403), CRUD completo (GET, POST, PUT, DELETE), autorização por role/permissão.
+| Arquivo | Propósito |
+|---------|-----------|
+| `upload-image.edge.test.js` | Edge case: criação de diretório de upload |
+| `admin/dicas.edge.test.js` | Edge case: dicas (logActivity, IP) |
+| `admin/fetch-ml.edge.test.js` | Edge case: fetch ML |
+| `admin/fetch-spotify.edge.test.js` | Edge case: fetch Spotify |
+| `admin/posts.edge.test.js` | Edge case: posts (req.user null) |
+| `admin/rate-limit.test.js` | Edge case: rate limit |
+| `admin/roles.edge.test.js` | Edge case: roles |
+| `admin/stats.edge.test.js` | Edge case: stats |
+| `auth/login.edge.test.js` | Edge case: login (erro interno) |
 
-### `/tests/integration/api/admin/fetch-ml.test.js`
-- **Propósito:** Testa o endpoint de busca de produtos do Mercado Livre.
-- **Testes:** Fetch via API, fallback para scraping HTML, tratamento de erro.
+### 5.12 Scripts (`/tests/unit/scripts/`)
 
-### `/tests/integration/api/admin/fetch-spotify.test.js`
-- **Propósito:** Testa o endpoint de busca de músicas do Spotify.
-- **Testes:** Fetch via API, tratamento de erro.
+| Arquivo | Propósito |
+|---------|-----------|
+| `backup.test.js` | Script de backup |
+| `clean-orphaned-images.test.js` | Limpeza de imagens órfãs |
+| `clear-db.test.js` | Limpeza de banco |
+| `clear-musicas.test.js` | Limpeza de músicas |
+| `init-table.test.js` | Utilitários de schema de tabelas |
+| `migrate.test.js` | Gerenciador de migrações |
+| `reset-password.test.js` | Reset de senha |
+| `seed-all.test.js` | Seed de todos os dados |
+| `validate-schema.test.js` | Validação de schema do banco |
 
-### `/tests/integration/api/admin/fetch-youtube.test.js`
-- **Propósito:** Testa o endpoint de busca de vídeos do YouTube.
-- **Testes:** Fetch via API, tratamento de erro.
+#### Scripts/DB (`/tests/unit/scripts/db/`)
 
-### `/tests/integration/api/admin/musicas.test.js`
-- **Propósito:** Testa o endpoint CRUD de músicas (admin).
-- **Testes:** Autenticação, CRUD completo (GET, POST, PUT, DELETE), autorização.
+| Arquivo | Propósito |
+|---------|-----------|
+| `connection.test.js` | Módulo de conexão PostgreSQL (getPool, closePool, query) |
 
-### `/tests/integration/api/admin/posts.test.js`
-- **Propósito:** Testa o endpoint CRUD de posts (admin).
-- **Testes:** Autenticação, CRUD completo, autorização.
+#### Scripts/Utils (`/tests/unit/scripts/utils/`)
 
-### `/tests/integration/api/admin/rate-limit.test.js`
-- **Propósito:** Testa o endpoint de rate limiting.
-- **Testes:** Listagem de IPs bloqueados, whitelist, exportação CSV, logs de auditoria, adicionar/remover IP, desbloqueio.
-
-### `/tests/integration/api/admin/roles.test.js`
-- **Propósito:** Testa o endpoint CRUD de cargos/permissões.
-- **Testes:** CRUD de cargos, atribuição de permissões.
-
-### `/tests/integration/api/admin/users.test.js` e `users.create.test.js` (2 arquivos)
-- **Propósito:** Testam o endpoint admin de usuários.
-- **Testes:** Listagem, criação, atualização, deleção, criação com validação.
-
-### `/tests/integration/api/admin/videos.test.js`
-- **Propósito:** Testa o endpoint CRUD de vídeos (admin).
-- **Testes:** Autenticação, CRUD completo, autorização.
+| Arquivo | Propósito |
+|---------|-----------|
+| `cleanup.test.js` | Módulo compartilhado de cleanup (loadEnv) |
+| `constants.test.js` | Constantes |
+| `date-format.test.js` | Formatação de datas |
+| `load-env.test.js` | Carregamento de variáveis de ambiente |
 
 ---
 
-## 11. Testes de Integração — Autenticação
+## 6. Resumo Quantitativo
 
-### `/tests/integration/api/auth/check.test.js`
-- **Propósito:** Testa o endpoint de verificação de autenticação.
-- **Testes:** Token válido (200 + user), token inválido (401), token expirado (401).
-
-### `/tests/integration/api/auth/login.test.js`
-- **Propósito:** Testa o endpoint de login.
-- **Testes:** Login bem-sucedido (200 + cookies + user), falha de autenticação (401), rate limiting (429), método não permitido (405).
-- **Mocks:** `lib/auth/auth.js` (inclui `setRefreshTokenCookie`), `lib/cache/cache.js` (`checkRateLimit`).
-
-### `/tests/integration/api/auth/logout.test.js`
-- **Propósito:** Testa o endpoint de logout.
-- **Testes:** Logout limpa ambos os cookies (token e refreshToken) e retorna sucesso (200).
-- **Observação:** O `res.appendHeader` adiciona múltiplos headers `Set-Cookie`, portanto ambos os cookies (`token` e `refreshToken`) estão presentes no array `set-cookie`.
-
-### `/tests/integration/api/login.test.js`
-- **Propósito:** Testa o endpoint de login com foco em `last_login_at`.
-- **Testes:** Login bem-sucedido atualiza `last_login_at`, falha de autenticação não atualiza, erro na atualização não bloqueia login.
-- **Mocks:** `lib/auth/auth.js` (inclui `setRefreshTokenCookie`), `lib/cache/cache.js` (`checkRateLimit`).
-
-### `/tests/integration/auth/auth.test.js`
-- **Propósito:** Testes de fluxo de autenticação completos (integração com banco real via Testcontainers).
-- **Testes:** Registro, login, refresh de token, logout.
-- **jest.mock:** Não usa mocks — usa banco PostgreSQL real.
+| Categoria | Quantidade |
+|-----------|:----------:|
+| **Configuração Global** | 3 arquivos |
+| **Factories** | 6 arquivos |
+| **Helpers** | 8 arquivos |
+| **Matchers** | 6 arquivos |
+| **Mocks** | 9 arquivos |
+| **Examples** | 2 arquivos |
+| **Testes de Integração** | 54 arquivos |
+| **Testes Unitários** | ~122 arquivos |
+| **Total Aproximado** | **~210 arquivos** |
 
 ---
 
-## 12. Testes de Integração — Domínio/BD Real
-
-Testes que usam PostgreSQL real via Testcontainers (`jest.config.db.js`). Validam operações CRUD reais no banco.
-
-### `/tests/integration/domain/musicas.db.test.js`
-- **Propósito:** CRUD de músicas com PostgreSQL real.
-- **Conexão:** `tests/helpers/db-test.js` (createTestDb, withTransaction), `tests/global-setup.db.js`
-
-### `/tests/integration/domain/posts.db.test.js`
-- **Propósito:** CRUD de posts com PostgreSQL real.
-
-### `/tests/integration/domain/products.db.test.js`
-- **Propósito:** CRUD de produtos com PostgreSQL real.
-
-### `/tests/integration/domain/settings.db.test.js`
-- **Propósito:** CRUD de configurações com PostgreSQL real.
-
-### `/tests/integration/domain/videos.db.test.js`
-- **Propósito:** CRUD de vídeos com PostgreSQL real.
-
-**Padrão comum:** Todos usam `describe` com `beforeAll` para criar pool e aplicar migrações, `afterAll` para fechar pool, `withTransaction` para isolar cada teste com rollback automático.
-
----
-
-## 13. Testes Unitários — Componentes React
-
-### `/tests/unit/components/Header.test.js`
-- **Propósito:** Testes do componente de cabeçalho/Header.
-- **Testes:** Renderização, navegação, responsividade.
-
-### `/tests/unit/components/SeoPerformance.test.js`
-- **Propósito:** Testes do componente de métricas de performance SEO.
-- **Testes:** Renderização com métricas.
-
-### `/tests/unit/components/Admin/` (18 arquivos)
-- **Propósito:** Testes de componentes administrativos.
-- **Arquivos:** `AdminAudit.test.js`, `AdminCrudBase.test.js`, `AdminDashboard.test.js`, `AdminDicas.test.js`, `AdminMusicas.test.js`, `AdminPosts.test.js`, `AdminProducts.test.js`, `AdminRolesTab.test.js`, `AdminUsers.test.js`, `AdminUsersTab.test.js`, `AdminVideos.test.js`, `ImageUploadField.test.js`, `TextAreaField.test.js`, `TextField.test.js`, `ToggleField.test.js`, `UrlField.test.js`, `withAdminAuth.test.js`, `index.test.js`
-- **Padrões:** Mock de fetch global, interceptação de toast (`react-hot-toast`), confirmação de modais (`window.confirm`), renderização com providers (`renderWithProviders`, `renderWithRouter`, `renderWithAuth`).
-
-### `/tests/unit/components/Features/` (12 arquivos)
-- **Propósito:** Testes de componentes de funcionalidades: Blog (seção e cards), ContentTabs (componente com abas), Music (galeria e cards com parsing de URL Spotify), Products (cards com lightbox, carrossel, links de marketplace), Products Listing (busca, filtro, paginação), Testimonials (carrossel de depoimentos), Video (galeria com busca com debounce).
-
-### `/tests/unit/components/Layout/` (5 arquivos + snapshots)
-- **Arquivos:** `Container.test.js` (semantic tags: section, div, article, main, aside), `Grid.test.js` (responsivo, CSS custom properties), `Sidebar.test.js` (collapse/expand, overlay mobile, subcomponentes), `Stack.test.js` (HStack e VStack), `index.test.js` (barrel exports)
-
-### `/tests/unit/components/Performance/` (5 arquivos + snapshots)
-- **Arquivos:** `CriticalCSS.test.js` (injeção e remoção de CSS crítico), `ImageOptimized.test.js` (skeleton, fallback em erro de src), `LazyIframe.test.js` (lazy loading com IntersectionObserver, corrigido para usar `waitFor` para aguardar fila assíncrona de carregamento e thumbnail `hqdefault.jpg`), `PreloadResources.test.js` (pré-carregamento de recursos), `index.test.js` (barrel exports)
-
-### `/tests/unit/components/SEO/` (9 arquivos + snapshots)
-- **Arquivos:** `ArticleSchema.test.js`, `BreadcrumbSchema.test.js`, `Head.test.js` (meta tags, título, Open Graph), `index.test.js`, `MusicSchema.test.js`, `OrganizationSchema.test.js`, `VideoSchema.test.js`, `WebsiteSchema.test.js`
-
-### `/tests/unit/components/UI/` (6 arquivos)
-- **Arquivos:** `Alert.test.js` (tipos: success, error, warning, info, com botão de fechar), `Badge.test.js` (cores, variantes), `Button.test.js` (variantes, loading, disabled, onClick), `Card.test.js` (título, conteúdo, footer), `Input.test.js` (label, erro, placeholder, onChange), `Modal.test.js` (abrir/fechar, overlay, conteúdo, onClose)
-
----
-
-## 14. Testes Unitários — API Lib (Submódulos)
-
-### `/tests/unit/lib/api/errors.test.js` (248 linhas)
-- **Propósito:** Testa 10 classes de erro customizadas: `ApiError` (base), `ValidationError`, `AuthError`, `ForbiddenError`, `NotFoundError`, `ConflictError`, `RateLimitError`, `InternalError`, `ServiceUnavailableError`, `ExternalServiceError`.
-- **Testes:** Status code, mensagem padrão, serialização `toJSON()`, herança correta.
-
-### `/tests/unit/lib/api/middleware.test.js` (319 linhas)
-- **Propósito:** Testa 12 middlewares: `compose`, `withMethod`, `withAuth`, `withOptionalAuth`, `withRateLimit`, `withCORS`, `withErrorHandler`, `withLogger`, `withTimeout`, `withBodyParser`, `withCache`, e builders `publicApi`, `protectedApi`.
-- **Testes:** Composição, métodos HTTP, autenticação, rate limit, CORS, tratamento de erro, logging, timeout, body parser, cache.
-
-### `/tests/unit/lib/api/response.test.js` (342 linhas)
-- **Propósito:** Testa 16 funções de resposta: `success`, `paginated`, `created`, `noContent`, `updated`, `deleted`, `badRequest`, `validationError`, `unauthorized`, `forbidden`, `notFound`, `methodNotAllowed`, `conflict`, `tooManyRequests`, `serverError`, `serviceUnavailable`, e `handleError`.
-- **Testes:** Status code, corpo da resposta, tratamento de erro.
-
-### `/tests/unit/lib/api/validate.test.js` (325 linhas)
-- **Propósito:** Testa middlewares de validação Zod: `formatZodErrors`, `validateBody`, `validateQuery`, `validateParams`, `validateHeaders`, `validateRequest`, e schemas helpers `createPaginationSchema`, `createSearchSchema`.
-- **Testes:** Validação de body, query, params, headers, formatação de erros, schemas combinados.
-- **Mocks:** `lib/api/response.js` (`validationError`), `lib/infra/logger.js`. Os 4 blocos catch de erro inesperado (validateBody, validateQuery, validateParams, validateHeaders) validam `logger.error('Validate', '...', expect.any(Error))` em vez de `console.error`.
-
-### `/tests/unit/lib/api/index.test.js`
-- **Propósito:** Barrel export verification. Verifica que o objeto default com os 4 submódulos da API é exportado corretamente.
-- **Testes:** Acessa os submódulos via objeto default (`apiIndex.errors`, `apiIndex.response`, `apiIndex.validate`, `apiIndex.middleware`) e verifica que expõem as funções esperadas (`apiIndex.errors.ApiError`, `apiIndex.response.success`, `apiIndex.validate.validateBody`, `apiIndex.middleware.composeMiddleware`).
-- **Nota:** Os named exports foram removidos do barrel file (`lib/api/index.js`) por não terem consumidores externos. O teste foi ajustado para importar apenas o `default`.
-
-### `/tests/unit/lib/backup/` (múltiplos arquivos)
-- **Propósito:** Testes do sistema de backup (criação, restauração, listagem, limpeza).
-
-### `/tests/unit/lib/db/` (múltiplos arquivos)
-- **Propósito:** Testes de operações de banco de dados (queries, transações, migrações).
-- **Destaque:** `musicas.test.js` testa `createMusica` com transação — os mocks de `mockQuery` incluem BEGIN e COMMIT, e as asserções verificam 4 chamadas (BEGIN, SELECT MAX, INSERT, COMMIT) em vez de 2.
-- **Mocks:** `query.test.js`, `getAllPosts.test.js` e `deletePost.test.js` mockam `lib/infra/logger.js` e validam asserções de erro via `logger.error('DB', 'Erro ao executar consulta SQL', expect.objectContaining({...}))` em vez de `console.error`.
-
-### `/tests/unit/lib/seo/` (múltiplos arquivos)
-- **Propósito:** Testes de funções SEO (meta tags, schemas, Open Graph, etc).
-
----
-
-## 15. Testes Unitários — Lib (Core)
-
-### `/tests/unit/lib/auth.test.js`
-- **Propósito:** Testes do módulo de autenticação.
-- **Testes:** Hash de senha (bcrypt), geração de token JWT, verificação de token, cookie de autenticação, middleware `withAuth`.
-
-### `/tests/unit/lib/cache.test.js`
-- **Propósito:** Testes do módulo de cache.
-- **Testes:** `getOrSetCache` (cache hit/miss), `checkRateLimit`, `invalidateCache`.
-
-### `/tests/unit/lib/crud.test.js`
-- **Propósito:** Testes do módulo genérico de CRUD.
-- **Testes:** Criação (`createRecord`), leitura (`getRecords`, `getRecordById`), atualização (`updateRecords`), deleção (`deleteRecords`), paginação, filtros.
-
-### `/tests/unit/lib/db.test.js`
-- **Propósito:** Testes do módulo de conexão com banco de dados.
-- **Testes:** Pool de conexões, queries, transações, health check.
-
-### `/tests/unit/lib/middleware.test.js`
-- **Propósito:** Testes de middlewares HTTP.
-- **Testes:** Middleware de método, autenticação, CORS, logging, erro.
-
-### `/tests/unit/lib/redis.test.js`
-- **Propósito:** Testes do módulo Redis.
-- **Testes:** Conexão, operações básicas (get/set), pipeline, rate limiting.
-
-### `/tests/unit/lib/infra/logger.test.js`
-- **Propósito:** Testes do módulo de logger estruturado (`lib/infra/logger.js`).
-- **Testes:** Filtro por nível (`LOG_LEVEL=error/warn/info/debug` + default por `NODE_ENV`), saída JSON em produção (linha parseável + normalização de `success`→`info`), `requestId` via `AsyncLocalStorage` (`setRequestId` e `runWithRequestId` com propagação e descarte), sanitização de `Error` (→ `{ name, message, stack }`) e objetos circulares (`[Circular]`), file transport (escrita via `LOG_FILE_PATH` + rotação a 10 MB).
-- **Mocks:** Spies de `console.error`/`console.warn`/`console.log`; diretório temporário isolado por teste via `mkdtempSync` para o file transport.
-
----
-
-## 16. Testes Unitários — Domínio
-
-### `/tests/unit/domain/posts.test.js`
-- **Propósito:** Testes da lógica de domínio de posts.
-- **Testes:** Queries de listagem com filtros, paginação, criação, atualização, deleção.
-
-### `/tests/unit/domain/settings.test.js`
-- **Propósito:** Testes da lógica de domínio de configurações.
-- **Testes:** Leitura, atualização, cache de configurações.
-
-### `/tests/unit/domain/videos.test.js`
-- **Propósito:** Testes da lógica de domínio de vídeos.
-- **Testes:** Queries de listagem, paginação, filtros por título/descrição, validação de URL, `updateVideo` com `updated_at` e `options`.
-- **Mocks:** `raw` mockado em `lib/crud/crud.js` para suportar `raw('CURRENT_TIMESTAMP')`.
-- **Destaques:** O teste de `updateVideo` verifica que `updateRecords` é chamado com `updated_at: raw('CURRENT_TIMESTAMP')` e `options: {}`.
-
-
-## 17. Testes Unitários — Páginas e Handlers de API
-
-Testes que focam em cenários de borda (edge cases) para handlers de API. Usam `node-mocks-http`.
-
-### `/tests/unit/pages/api/upload-image.edge.test.js` (66 linhas)
-- **Handler:** `pages/api/upload-image.js`
-- **Mocks:** `fs` (existsSync, mkdirSync, rename, unlink), `sharp`, `formidable`, `lib/domain/settings`, `lib/auth/auth`
-- **Testes:** Criação de diretório de upload se não existir.
-
-### `/tests/unit/pages/api/admin/dicas.edge.test.js` (54 linhas)
-- **Handler:** `pages/api/admin/dicas.js`
-- **Mocks:** `lib/infra/db.js` (db-module), `lib/auth/auth.js`, `lib/domain/audit.js`
-- **Testes:** IP padrão (127.0.0.1) e valor padrão de `published` (true) em POST e PUT.
-
-### `/tests/unit/pages/api/admin/fetch-ml.edge.test.js` (189 linhas)
-- **Handler:** `pages/api/admin/fetch-ml.js`
-- **Mocks:** `lib/auth/auth.js`, `global.fetch` via `mockGlobalFetch`, `lib/infra/logger.js`. A asserção de erro de scraping valida `logger.error('FetchML', 'Falha no fallback de scraping HTML:', expect.any(Error))` em vez de `console.error`.
-- **Testes:** Ordenação de IDs (explicitId primeiro), fallback de catálogo com descrição vazia, fallback HTML com preço inválido (isNaN), fallback HTML com priceMatch, fallback de imagens (url vs secure_url), erro de texto HTML no scraping.
-
-### `/tests/unit/pages/api/admin/fetch-spotify.edge.test.js` (51 linhas)
-- **Handler:** `pages/api/admin/fetch-spotify.js`
-- **Mocks:** `lib/auth/auth.js`, `global.fetch` via `mockGlobalFetch`, `lib/infra/logger.js`. As asserções de erro validam `logger.error('FetchSpotify', '...', expect.any(Error))` para as 3 estratégias (oEmbed, Iframe, HTML) em vez de `console.error`.
-- **Testes:** Falha em todas as 3 estratégias (oEmbed, Iframe, HTML) → 500 com mensagem de erro.
-
-### `/tests/unit/pages/api/admin/posts.edge.test.js` (165 linhas)
-- **Handler:** `pages/api/admin/posts.js`
-- **Mocks:** `lib/db.js` (db-module), `lib/auth/auth.js`, `lib/cache/cache.js`, `lib/domain/posts.js`, `lib/crud.js`, `lib/domain/audit.js`
-- **Testes:** 401 sem user, 403 sem permissão, permissões vazias, validação Zod (image_url inválida), ID inválido no PUT, sem dados no PUT, erro no DELETE (500), erro no PUT (500), 405 para PATCH, reorder de posts.
-
-### `/tests/unit/pages/api/admin/rate-limit.test.js` (194 linhas)
-- **Handler:** `pages/api/admin/rate-limit.js`
-- **Mocks:** `@upstash/redis` (Redis mock completo), `lib/auth/auth.js`. Usa `jest.resetModules()` para recarregar handler.
-- **Testes:** Redis não configurado (501), exportação CSV com filtros de data e busca, IP atual (::1 → 127.0.0.1), whitelist, logs de auditoria com paginação, IPs bloqueados (com threshold), sem chaves Redis, adicionar IP à whitelist (+ auditoria), 400 sem IP, remover IP da whitelist, desbloquear IP com fallback de usuário, 400 sem IP no DELETE, 405 para PUT, erro interno (500).
-
-### `/tests/unit/pages/api/admin/roles.edge.test.js` (121 linhas)
-- **Handler:** `pages/api/admin/roles.js`
-- **Mocks:** `lib/auth/auth.js` (custom com getAuthToken/verifyToken/withAuth), `lib/infra/db.js` (db-module), `lib/crud/crud.js`, `lib/domain/audit.js`
-- **Testes:** Role misteriosa sem permissões (403), POST com permissões como string (JSON.stringify), PUT extraindo ID da query, DELETE com fallback de nome (cargo não encontrado).
-
-### `/tests/unit/pages/api/admin/stats.edge.test.js` (64 linhas)
-- **Handler:** `pages/api/admin/stats.js`
-- **Mocks:** `lib/auth/auth.js`, `lib/infra/db.js` (db-module)
-- **Testes:** 405 para POST, 500 em erro de banco.
-
-### `/tests/unit/pages/api/auth/login.edge.test.js` (62 linhas)
-- **Handler:** `pages/api/auth/login.js`
-- **Mocks:** `lib/auth/auth.js`, `lib/cache/cache.js`, `lib/logger.js`
-- **Testes:** 500 em erro interno durante autenticação, verificação de log via `logger.error`.
-
----
-
-## 18. Testes Unitários — Scripts
-
-### `/tests/unit/scripts/backup.test.js` (86 linhas)
-- **Propósito:** Testa o sistema de backup (`scripts/backup.js`).
-- **Testes:** Exportação de 9 funções (createBackup, restoreBackup, cleanupOldBackups, getAvailableBackups, getBackupLogs, initializeBackupSystem, checkDiskBeforeBackup, rotateLogIfNeeded, cleanupOldLogs) via ESM. Uso de `jest.unstable_mockModule` e `jest.isolateModules`.
-- **Mocks:** `child_process` (spawn), `fs`, `date-fns`, `scripts/utils/constants.js`
-
-### `/tests/unit/scripts/clean-orphaned-images.test.js` (92 linhas)
-- **Propósito:** Testa a limpeza de imagens órfãs (`scripts/clean-orphaned-images.js`).
-- **Testes:** Remove arquivos órfãos, protege imagens em uso (verifica prefixo no BD), tratamento de diretório uploads ausente, resiliência a erros de BD, tolerância a colunas ausentes.
-- **Mocks:** `fs`, `pg` (global __mocks__/pg.js), `dotenv`
-
-### `/tests/unit/scripts/clear-db.test.js` (68 linhas)
-- **Propósito:** Testa a limpeza completa do banco (`scripts/clear-db.js`).
-- **Testes:** TRUNCATE em posts, videos, musicas, images, settings, users com CASCADE. Verifica ordenação das tabelas.
-
-### `/tests/unit/scripts/clear-musicas.test.js`
-- **Propósito:** Testa a limpeza específica de músicas.
-
-### `/tests/unit/scripts/init-table.test.js`
-- **Propósito:** Testa a inicialização de tabelas no banco.
-
-### `/tests/unit/scripts/migrate.test.js`
-- **Propósito:** Testa o sistema de migrações.
-
-### `/tests/unit/scripts/reset-password.test.js`
-- **Propósito:** Testa o script de reset de senha.
-
-### `/tests/unit/scripts/seed-all.test.js`
-- **Propósito:** Testa o script de seed de dados.
-
-### `/tests/unit/scripts/validate-schema.test.js`
-- **Propósito:** Testa a validação de schema do banco.
-
----
-
-## 19. Testes Unitários — Top Level
-
-### `/tests/unit/[slug].test.js`
-- **Propósito:** Testa a página de post individual do blog (`pages/[slug].js`).
-- **Testes:** Renderização de conteúdo (título, data, imagem), botões de compartilhamento WhatsApp e Facebook com URLs codificadas, ocultação de imagem quando `image_url` é null.
-- **Padrão:** `@testing-library/react` com `React.createElement`, CSS module mock, `encodeURIComponent`.
-
-### `/tests/unit/clean-test-db.test.js`
-- **Propósito:** Testa o script de limpeza do banco de teste (`scripts/clean-test-db.js`).
-- **Testes:** Remove arquivos `test.db` e `caminhar-test.db` quando existem, não faz nada quando não existem. Mock de `fs`.
-- **Padrão:** Função reimplementada inline (não importa o módulo real).
-
-### `/tests/unit/index.test.js`
-- **Propósito:** Testa a página inicial (`pages/index.js`).
-
-### `/tests/unit/settings.cache.test.js`
-- **Propósito:** Testa o cache de configurações.
-
-### `/tests/unit/videos.validation.test.js`
-- **Propósito:** Testa a validação de URLs de vídeo (YouTube, Vimeo, etc).
+> **Nota:** Este documento reflete a análise atual dos arquivos em `/tests`. Em caso de divergência com documentos anteriores, prevalece esta análise.

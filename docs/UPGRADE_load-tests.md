@@ -1,7 +1,7 @@
 # 🔧 Plano de Melhorias — `/load-tests`
 
 > **Propósito:** Levantamento analítico de possíveis melhorias, correções e ajustes para a suíte de testes de carga, sem alterar nenhum arquivo do projeto.
-> **Data da análise:** 28/06/2026
+> **Data da análise:** 01/08/2026
 
 ---
 
@@ -13,7 +13,7 @@
 4. [Thresholds Inconsistentes](#4-thresholds-inconsistentes)
 5. [Problemas de Segurança](#5-problemas-de-segurança)
 6. [Documentação Desatualizada](#6-documentação-desatualizada)
-7. [Melhorias Estruturais e Organizacionais](#7-melhores-estruturais-e-organizacionais)
+7. [Melhorias Estruturais e Organizacionais](#7-melhorias-estruturais-e-organizacionais)
 8. [Melhorias de Ferramentas e Manutenção](#8-melhorias-de-ferramentas-e-manutenção)
 9. [Observações Técnicas Relevantes](#9-observações-técnicas-relevantes)
 
@@ -73,6 +73,18 @@ Além disso, `musicas-search-test.js` foi implementado manualmente (não usa o f
 
 **Sugestão:** (Baixa prioridade) Considerar se o CRUD de vídeos no stress test poderia ser substituído por um cenário diferente para aumentar a cobertura.
 
+### 1.7 `musicas-sort-test.js` vs `videos-sort-test.js` — Formatos de Ordenação Divergentes
+
+**Arquivos:** `load-tests/performance/musicas-sort-test.js` e `load-tests/performance/videos-sort-test.js`
+
+**Problema:** Os dois testes usam formatos de ordenação diferentes:
+- `musicas-sort-test.js`: usa `sortMode: 'recent'` (novo formato da API músicas)
+- `videos-sort-test.js`: usa `sortField: 'created_at'` + `sortOrder: 'desc'` (formato antigo da API vídeos)
+
+O runner `createSortTest()` suporta ambos os formatos, mas a divergência entre as APIs pode indicar inconsistência no backend.
+
+**Sugestão:** Verificar se a API de vídeos deveria suportar o mesmo formato de ordenação da API de músicas, ou se a divergência é intencional.
+
 ---
 
 ## 2. Código Morto e Inutilizado
@@ -85,11 +97,19 @@ Além disso, `musicas-search-test.js` foi implementado manualmente (não usa o f
 
 **Sugestão:** Remover a função `getConfig()` para eliminar código morto.
 
-### 2.2 Documentação referenciada com conteúdo divergente
+### 2.2 `videos-sort-test.js` — Campo `useExplicitSort` não utilizado
+
+**Arquivo:** `load-tests/performance/videos-sort-test.js`
+
+**Problema:** O teste declara `useExplicitSort: true` no config, mas o factory `createSortTest()` em `resource-test-runner.js` não faz referência a esse campo. O parâmetro não tem efeito no comportamento do teste.
+
+**Sugestão:** Remover o campo ou implementar a funcionalidade correspondente no runner.
+
+### 2.3 Comentário quebrado em `network.js`
 
 **Arquivo:** `load-tests/helpers/network.js`
 
-**Problema:** O comentário na linha 3 diz "Consulte a seção 2.2 do UPGRADE_load-tests.md para discussão sobre isso", esperando que a seção 2.2 aborde o tópico de IP spoofing. No entanto, a seção 2.2 atual deste documento trata de "Documentação referenciada com conteúdo divergente" — não sobre spoofing. O conteúdo esperado pelo comentário não corresponde ao que a seção entrega.
+**Problema:** O comentário na linha 3 diz "Consulte a seção 2.2 do UPGRADE_load-tests.md para discussão sobre isso", esperando que a seção 2.2 aborde o tópico de IP spoofing. No entanto, a seção 2.2 atual deste documento trata de "Código Morto e Inutilizado" — não sobre spoofing. O conteúdo esperado pelo comentário não corresponde ao que a seção entrega.
 
 **Sugestão:** Atualizar o comentário em `network.js` para referenciar corretamente a seção que aborda IP spoofing (seção 5.2) ou remover a referência cruzada.
 
@@ -118,6 +138,23 @@ Além disso, `musicas-search-test.js` foi implementado manualmente (não usa o f
 **Problema:** O documento antigo menciona um arquivo `env-config.json` na raiz de `/load-tests/`, que serviria como configuração de ambiente centralizada. Este arquivo não existe mais na estrutura atual. Não está claro se foi removido intencionalmente ou se deveria ser recriado.
 
 **Sugestão:** Verificar se a remoção foi intencional. Se positivo, remover referências no código e documentação. Se negativo, recriar o arquivo ou documentar a decisão.
+
+### 3.4 Configuração de carga inline em 8 testes
+
+**Problema:** Vários testes não usam `getProfile()` do `helpers/profiles.js` e definem configuração de carga inline:
+
+| Teste | Arquivo | Configuração |
+|-------|---------|-------------|
+| `authenticated-flow-test.js` | performance/ | Estágios inline (3 VUs, 10s/20s/5s) |
+| `create-post-flow.js` | performance/ | Estágios inline (3 VUs, 10s/15s/5s) |
+| `cache-performance-test.js` | performance/ | Estágios inline (1→5→50 VUs) |
+| `cache-warmup-test.js` | performance/ | Cenário `per-vu-iterations` inline |
+| `backup-verification-test.js` | functional/ | 1 VU, 1 iteração inline |
+| `upload-flow-test.js` | functional/ | Estágios inline (5 VUs, 10s/30s/10s) |
+| `video-validation-test.js` | functional/ | 1 VU, 1 iteração inline |
+| `login-negative-test.js` | security/ | Estágios inline (10 VUs, 10s/30s/10s) |
+
+**Sugestão:** Avaliar se esses testes poderiam usar `getProfile()` com overrides, mantendo consistência com os demais 22 testes que já usam o padrão.
 
 ---
 
@@ -158,6 +195,14 @@ Não há justificativa técnica clara para essa diferença, já que ambos são e
 
 **Sugestão:** Reduzir o threshold de latência do perfil `light` para `p(95)<100ms` e aumentar o número de iterações mínimas para 10.
 
+### 4.5 `videos-load-test.js` — `requireAuth: true` sem `setup()` e em endpoint público
+
+**Arquivo:** `load-tests/performance/videos-load-test.js`
+
+**Problema:** O teste configura `requireAuth: true` mas o endpoint testado é `/api/videos` (público). Além disso, o arquivo **não exporta função `setup()`** — ao contrário do `musicas-load-test.js`, que faz `export function setup() { return loadTest.setup(); }`. Sem `setup()` exportado, o k6 não executa login e o `default()` recebe `token = undefined`, portanto o header `Authorization` nunca é adicionado e o login documentado nunca ocorre. Isso adiciona configuração ineficaz e pode mascarar problemas de autenticação.
+
+**Sugestão:** Verificar se `requireAuth` deveria ser `false` para este teste, já que o endpoint é público, e decidir se a ausência de `setup()` é intencional ou uma omissão a corrigir.
+
 ---
 
 ## 5. Problemas de Segurança
@@ -194,19 +239,19 @@ Não há justificativa técnica clara para essa diferença, já que ambos são e
 
 **Sugestão:** Implementar sanitização nos logs de erro, similar à já existente em `helpers/report.js` para os relatórios JSON.
 
+### 5.5 `login-negative-test.js` — Sem `getProfile()` e sem validação de vazamento de informação
+
+**Arquivo:** `load-tests/security/login-negative-test.js`
+
+**Problema:** O teste valida que credenciais inválidas são rejeitadas (401/400/429), mas não verifica se a mensagem de erro vaza informações sobre a existência do usuário (ex: "Usuário não encontrado" vs "Senha incorreta"). Isso é um vetor de enumeração de usuários.
+
+**Sugestão:** Adicionar check que valida se a mensagem de erro é genérica para ambos os cenários (usuário existente com senha errada vs usuário inexistente).
+
 ---
 
 ## 6. Documentação Desatualizada
 
-### 6.1 Comentário quebrado em `network.js`
-
-**Arquivo:** `load-tests/helpers/network.js`
-
-**Problema:** Referencia seção 2.2 do `UPGRADE_load-tests.md` que não existe mais.
-
-**Sugestão:** Remover a referência ou atualizar para apontar para a seção correta.
-
-### 6.2 Documentação antiga (`docs/antigos/PROJECT_load-tests.md`) desatualizada
+### 6.1 Documentação antiga (`docs/antigos/PROJECT_load-tests.md`) desatualizada
 
 **Arquivo:** `docs/antigos/PROJECT_load-tests.md`
 
@@ -217,6 +262,14 @@ Não há justificativa técnica clara para essa diferença, já que ambos são e
 - Menciona versão `0.0.4` do `k6-summary` (correto), mas o documento antigo ainda referenciava `0.0.2`
 
 **Sugestão:** Manter o documento atualizado na pasta `docs/` principal e arquivar a versão antiga. Isso já foi feito com a criação do `PROJECT_load-tests.md` atual.
+
+### 6.2 `docs/resolvidos/analise-load-tests-orchestrator.md` — Contagem de scripts divergente
+
+**Arquivo:** `docs/resolvidos/analise-load-tests-orchestrator.md`
+
+**Problema:** O documento menciona "31 scripts" na execução original (27/05) e "30 scripts" nas execuções posteriores. A contagem atual é de 30 scripts k6 + 7 helpers = 37 arquivos na pasta. A divergência entre 30 e 31 scripts pode confundir.
+
+**Sugestão:** Atualizar a contagem para refletir o estado atual (30 scripts k6).
 
 ---
 
@@ -242,9 +295,9 @@ Alguns desses (como `musicas-search-test.js`) poderiam ser facilmente convertido
 
 ### 7.2 Nomenclatura inconsistente de relatórios
 
-**Problema:** Os nomes de relatórios seguem dois padrões diferentes:
-- Padrão snake_case: `backup_verification_test`, `cache_headers_test`, `search_content_test`
-- Padrão kebab-case (via factory): `musicas_crud_test`, `videos_crud_test`
+**Problema:** Os nomes de relatórios seguem padrões inconsistentes:
+- Nomes de arquivo no padrão kebab-case (hífen): `backup-verification-test.js`, `cache-headers-test.js`
+- Nomes de relatório no padrão snake_case (underscore): `backup_verification_test`, `cache_headers_test`, `musicas_crud_test`, `videos_crud_test`
 
 Além disso, `upload-flow-test.js` gera relatório com nome `upload-flow-summary`, que difere do padrão `{nome}_test`.
 
@@ -258,13 +311,27 @@ Além disso, `upload-flow-test.js` gera relatório com nome `upload-flow-summary
 
 **Sugestão:** Substituir a implementação manual por uma chamada a `createFilterTest()`, unificando com ou substituindo `musicas-filter-test.js`.
 
-### 7.4 `videos-sort-test.js` — campo `useExplicitSort` não utilizado
+### 7.4 Ausência de `handleSummary()` em 3 testes
 
-**Arquivo:** `load-tests/performance/videos-sort-test.js`
+**Problema:** Três testes não geram relatórios via `handleSummary()`:
 
-**Problema:** O teste declara `useExplicitSort: true` no config, mas o factory `createSortTest()` em `resource-test-runner.js` não faz referência a esse campo. O parâmetro não tem efeito no comportamento do teste.
+| Teste | Arquivo | Impacto |
+|-------|---------|---------|
+| `health-check.js` | functional/ | Sem relatório JSON |
+| `cache-warmup-test.js` | performance/ | Sem relatório JSON |
+| `cache-performance-test.js` | performance/ | Sem relatório JSON |
 
-**Sugestão:** Remover o campo ou implementar a funcionalidade correspondente no runner.
+**Sugestão:** Adicionar `handleSummary()` com `generateReport()` para consistência com os demais 26 testes.
+
+> **Nota:** O teste `cache-warmup-test.js` também é abordado na seção 9.5 (Observações Técnicas Relevantes).
+
+### 7.5 `stress-test-combined.js` — Função `default()` vazia
+
+**Arquivo:** `load-tests/performance/stress-test-combined.js`
+
+**Problema:** A função `default()` é vazia (apenas comentário). Os cenários são executados via funções nomeadas `stress_test()` e `memory_monitor()`. Isso é funcional no k6, mas pode confundir leitores que esperam lógica na função `default()`.
+
+**Sugestão:** Documentar melhor o padrão de cenários nomeados ou remover a função `default()` se não for necessária.
 
 ---
 
@@ -311,6 +378,22 @@ Além disso, a remoção via teardown usa lógicas diferentes em cada teste. Em 
 2. Implementar um script de limpeza global que varra todo o banco removendo dados com esse prefixo
 3. Considerar usar um banco de dados de teste dedicado (não o de produção)
 
+### 8.5 `scripts/generate-load-report.js` — Bateria limitada a 6 testes
+
+**Arquivo:** `scripts/generate-load-report.js`
+
+**Problema:** O script executa apenas 6 dos 30 testes de carga para gerar o relatório HTML. Os demais 24 testes não são cobertos pelo relatório visual.
+
+**Sugestão:** Expandir a bateria para incluir mais testes, ou gerar o relatório a partir dos resultados do orquestrador (`orchestrator-results.json`).
+
+### 8.6 `scripts/clean-test-db.js` — Escopo limitado
+
+**Arquivo:** `scripts/clean-test-db.js`
+
+**Problema:** O script remove apenas `test.db` e `caminhar-test.db` do diretório `data/`. Não cobre outros bancos de teste que possam existir.
+
+**Sugestão:** Verificar se há outros bancos de teste no projeto e incluir no escopo do script.
+
 ---
 
 ## 9. Observações Técnicas Relevantes
@@ -341,9 +424,27 @@ Não há garantia de que o `cache-warmup-test.js` seja sempre executado antes do
 
 **Sugestão:** Garantir que o seed de dados de teste insira pelo menos 20 registros de cada tipo (posts, músicas, vídeos) para permitir testes de paginação significativos.
 
+### 9.4 `stress-test-combined.js` — Cenário `stress_test` com 0 checks executados
+
+**Arquivo:** `load-tests/performance/stress-test-combined.js`
+
+**Problema:** Conforme documentado em `docs/resolvidos/analise-load-tests-orchestrator.md`, o cenário `stress_test` executou 0 checks na execução de 03/06/2026. Isso significa que o threshold `checks{scenario:stress_test}: ['rate>0.95']` passa vacuamente (sem dados). O problema P8 foi marcado como "Corrigido" mas os checks ainda não estão sendo executados.
+
+**Sugestão:** Investigar por que o cenário `stress_test` não está executando checks e corrigir a lógica de execução.
+
+### 9.5 `cache-warmup-test.js` — Sem `handleSummary()`
+
+**Arquivo:** `load-tests/performance/cache-warmup-test.js`
+
+**Problema:** Este teste não possui `handleSummary()`, portanto não gera relatório JSON em `reports/k6-summaries/`. Isso é inconsistente com os demais testes que geram relatórios e dificulta a análise histórica de performance.
+
+**Sugestão:** Adicionar `handleSummary()` com `generateReport()` para consistência.
+
+> **Nota:** Os testes `cache-performance-test.js` e `health-check.js` também não possuem `handleSummary()` — ver seção 7.4 (Melhorias Estruturais e Organizacionais).
+
 ---
 
-> **Total de itens identificados:** 32
+> **Total de itens identificados:** 36
 > ⚠️ **Críticos:** 4 (duplicidade música-search/filter, spoofing não detectado, ausência de rate limit em busca, exposição de JWT em logs)
-> 🟡 **Médios:** 24 (thresholds inconsistentes, código morto, configuração, documentação desatualizada, nomenclatura, warm-up duplicado, compatibilidade ES5)
-> 🔵 **Leves:** 4 (testes de filtro quase idênticos, perfil light com latência irrealista, validação de schemas, cache de dependências CI)
+> 🟡 **Médios:** 27 (thresholds inconsistentes, código morto, configuração, documentação desatualizada, nomenclatura, warm-up duplicado, compatibilidade ES5, factory pattern incompleto)
+> 🔵 **Leves:** 5 (testes de filtro quase idênticos, perfil light com latência irrealista, validação de schemas, cache de dependências CI, relatório limitado, escopo de limpeza)

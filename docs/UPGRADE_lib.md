@@ -1,508 +1,521 @@
 # Levantamento Analítico de Melhorias — `/lib`
 
-> **Data:** 28/06/2026  
-> **Objetivo:** Documentar possíveis melhorias, correções e pontos de atenção identificados na análise da pasta `lib/`, sem aplicar nenhuma alteração no código.
+> **Data da análise:** 01/08/2026
+> **Objetivo:** Documentar o levantamento analítico das melhorias, correções possíveis e pontos de atenção identificados na análise atual dos arquivos da pasta `lib/`. Nenhuma alteração foi aplicada — apenas análise.
+> **Escopo:** Consolida apenas itens **pendentes** identificados na análise atual. Itens já resolvidos em análises anteriores (documentados em `docs/antigos/UPGRADE_lib.md` e `docs/resolvidos/UPGRADE_lib.md`) não são repetidos.
 
 ---
 
 ## Índice
 
-1. [Melhorias de Código e Correções](#1-melhorias-de-código-e-correções)
+1. [Possíveis Correções de Código](#1-possíveis-correções-de-código)
 2. [Ajustes Estruturais e Organizacionais](#2-ajustes-estruturais-e-organizacionais)
-3. [Melhorias de Performance e Manutenção](#3-melhorias-de-performance-e-manutenção)
+3. [Melhorias de Ferramenta, Manutenção e Performance](#3-melhorias-de-ferramenta-manutenção-e-performance)
 4. [Duplicidade de Código](#4-duplicidade-de-código)
-5. [Duplicidade de Textos e Conteúdos](#5-duplicidade-de-textos-e-conteúdos)
+5. [Duplicidade de Textos, Descrições e Conteúdos](#5-duplicidade-de-textos-descrições-e-conteúdos)
 6. [Pontos de Atenção Técnicos](#6-pontos-de-atenção-técnicos)
 
 ---
 
-## 1. Melhorias de Código e Correções
+## 1. Possíveis Correções de Código
 
-### 1.1 `auth.js` — Fallback inseguro do JWT_SECRET ✅
+### 1.1 `api/adminCrudHandler.js` — Erros de banco não mapeados expostos ao cliente
 
-**Localização:** `lib/auth.js`, linha 40
+**Localização:** `lib/api/adminCrudHandler.js`, linhas 210-224
 
-**Problema:** Em desenvolvimento, o `JWT_SECRET` usa um fallback hardcoded (`'caminhar-com-deus-secret-key-2026'`). Embora seja intencional e documentado com aviso, isso ainda representa risco se um desenvolvedor subir esse fallback para produção acidentalmente.
+**Problema:** No catch centralizado, apenas 3 tipos de erro do banco são traduzidos para mensagens amigáveis (unique constraint, foreign key, not null). Para qualquer outro erro, a mensagem original (`error.message`) é retornada ao cliente no campo `message` da resposta 500. Isso pode vazar informações internas do banco (nome de tabelas, colunas, detalhes de constraint, stack traces).
 
-**Sugestão:** Adicionar validação em tempo de build que impeça o deploy se `JWT_SECRET` não estiver definido. Ou usar um segredo gerado dinamicamente a partir de um hash do ambiente.
-
-**Correção:** O fallback hardcoded foi substituído por uma chave gerada deterministicamente via `createHash('sha256')` a partir de `process.cwd() + process.env.NODE_ENV + 'caminhar-dev-salt'`. Em produção sem `JWT_SECRET`, o erro permanece. Em desenvolvimento, a chave derivada do ambiente local é usada com aviso via `logger.warn`. Adicionado `import { createHash } from 'crypto'` no topo do arquivo.
-
-
-### 1.2 `auth.js` — Ausência de refresh token ✅
-
-**Localização:** `lib/auth.js`
-
-**Problema:** O token JWT expira em 1 hora e não há mecanismo de refresh token. O usuário é forçado a fazer login novamente após expiração.
-
-**Sugestão:** Implementar fluxo de refresh token com token de longa duração armazenado no banco, permitindo renovação silenciosa do access token.
-
-**Correção:** Implementado fluxo completo de refresh token com rotação. Adicionadas funções `generateRefreshToken`, `storeRefreshToken`, `validateRefreshToken`, `revokeRefreshToken`, `revokeAllUserRefreshTokens`, `refreshAccessToken`, `setRefreshTokenCookie` e `getRefreshTokenCookie` em `lib/auth.js`. O `authenticateAndGenerateToken` agora gera e retorna refresh token armazenado no banco com expiração de 30 dias. Criado endpoint `POST /api/auth/refresh` que valida, rotaciona e retorna novo par de tokens. O `logout.js` invalida o refresh token no banco. O `AuthProvider.js` tenta renovação automática via `refreshSession` ao receber 401 no `checkAuth`. Tabela `refresh_tokens` criada automaticamente em `initializeAuth()` com índices para busca rápida.
-
-
-### 1.3 `reorder.js` — Erro silencioso em falha de reordenação ✅
-
-**Localização:** `lib/reorder.js`, linhas 26-29
-
-**Problema:** Quando a requisição PUT falha, o erro é apenas logado no console (`console.error`). O usuário não recebe feedback visual de que a reordenação não foi salva.
-
-**Sugestão:** Relançar o erro ou retornar um valor booleano para que o componente chamador possa exibir um toast/notificação de falha.
-
-**Correção:** O `try/catch` foi removido de `handleReorder`. A função agora lança `Error('Falha ao reordenar')` quando `!response.ok`, propagando o erro para o componente chamador. Em `AdminCrudBase.js`, foi adicionado o wrapper `handleReorderWithFeedback` que captura o erro, exibe `toast.error('Erro ao salvar reordenação. A ordem foi revertida.')` e reverte o estado visual (`localItems`) para a ordem anterior.
+**Sugestão:** Em produção, retornar sempre mensagem genérica ("Erro interno no servidor") e logar o erro original apenas no servidor via `logger`. Em desenvolvimento, manter a mensagem original para facilitar debugging.
 
 ---
 
-### 1.4 `domain/products.js` — Dualidade `published` / `publicado` ✅
+### 1.2 `api/adminCrudHandler.js` — Dupla invalidação de cache em mutações
 
-**Localização:** `lib/domain/products.js`, linhas 142-143
+**Localização:** `lib/api/adminCrudHandler.js`, linhas 161-195 e 201-204
 
-**Problema:** O schema da tabela `products` define dois campos: `published` e `publicado`. Ambos são aceitos na atualização, o que gera inconsistência semântica e pode levar a estados contraditórios (um true e outro false).
+**Problema:** A invalidação de cache ocorre em dois pontos:
+1. Dentro de `req.adminUtils.invalidateCache()`, quando o handler específico chama explicitamente (linhas 161-195)
+2. Automaticamente após a execução do handler, se `cacheKeys` estiver configurado e `res.statusCode < 400` (linhas 201-204)
 
-**Sugestão:** Unificar para um único campo (`published` ou `publicado`) e remover o outro. Isso requer migração de banco e ajuste nos componentes que utilizam o campo.
+Se o handler chamar `invalidateCache()` explicitamente **e** a config tiver `cacheKeys`, a invalidação ocorre duas vezes. Não causa erro funcional, mas gera operações de SCAN/DEL no Redis desnecessárias.
 
-**Correção:** Removido o campo `'publicado'` do schema da tabela `products` em `lib/crud.js`, e removida a linha que aceitava `data.publicado` na função `updateProduct` em `lib/domain/products.js`. O campo `published` é agora o único campo de status de publicação aceito. Qualquer tentativa de enviar `publicado` é rejeitada pelo `_filterAllowedFields` com log de warning, sem causar erro SQL.
-
----
-
-### 1.5 `domain/musicas.js` — Race condition no cálculo de posição ✅
-
-**Localização:** `lib/domain/musicas.js`, linhas 32-33
-
-**Problema:** `createMusica` calcula `MAX(position)` fora de uma transação. Em chamadas concorrentes, duas músicas podem receber a mesma posição.
-
-**Sugestão:** Envolver o cálculo de posição + INSERT em uma transação, como já é feito em `createVideo` (`lib/domain/videos.js`, linhas 55-62).
-
-**Correção:** Adicionado `transaction` ao import de `../db.js`. A função `createMusica` agora envolve o cálculo de `MAX(position)` e o `INSERT` em uma transação atômica via `return transaction(async (client) => { ... })`, seguindo o mesmo padrão de `createVideo`. A query `SELECT MAX(position)` recebe `{ client }` e `createRecord` recebe `{ ...options, client }`. Testes unitários em `tests/unit/lib/db/musicas.test.js` foram atualizados para refletir as chamadas de BEGIN/COMMIT.
+**Sugestão:** Unificar: ou remover a invalidação automática pós-handler (deixando apenas a chamada explícita via `req.adminUtils`), ou documentar que handlers não devem chamar `invalidateCache` quando `cacheKeys` está configurado. A invalidação automática é a mais segura (garante comportamento consistente mesmo se o handler esquecer de invalidar).
 
 ---
 
-### 1.6 `domain/videos.js` — Inconsistência: `updateVideo` não atualiza `updated_at` ✅
+### 1.3 `api/middleware.js` — `withBodyParser` retorna 500 em vez de 413
 
-**Localização:** `lib/domain/videos.js`, linhas 71-73
+**Localização:** `lib/api/middleware.js`, linhas 377-390
 
-**Problema:** `updateVideo` chama `updateRecords` diretamente sem adicionar `raw('CURRENT_TIMESTAMP')` ao campo `updated_at`. Diferente de `updateMusica` e `updatePost` que fazem isso explicitamente.
+**Problema:** Quando o body excede o limite de tamanho, a função retorna `serverError(res, ...)` que gera HTTP 500. Semanticamente, o código correto para "payload muito grande" é **413 Payload Too Large**.
 
-**Sugestão:** Adicionar `raw('CURRENT_TIMESTAMP')` ao `updated_at` no `updateVideo`, similar ao padrão usado em `musicas.js` e `posts.js`.
-
-**Correção:** Adicionado `raw` ao import de `../crud.js`. A função `updateVideo` foi reescrita para filtrar campos explicitamente fornecidos (`titulo`, `url_youtube`, `descricao`, `thumbnail`, `publicado`), adicionar `updated_at: raw('CURRENT_TIMESTAMP')` condicionalmente (apenas se houver campos a atualizar), e aceitar parâmetro `options` para compatibilidade com transações — seguindo o mesmo padrão de `updateMusica` e `updatePost`. Teste unitário em `tests/unit/domain/videos.test.js` foi atualizado para refletir a nova assinatura e o uso de `raw`.
-
-
-### 1.7 `csvExport.js` — `URL.revokeObjectURL` sem proteção para ambientes sem a API ✅
-
-**Localização:** `lib/csvExport.js`, linha 77
-
-**Problema:** A chamada `URL.revokeObjectURL(url)` lançava `TypeError: URL.revokeObjectURL is not a function` em ambientes JSDOM, que não implementam essa API de browser. Isso causava falha intermitente no teste `AdminAudit.test.js`.
-
-**Correção:** Adicionada verificação `typeof URL.revokeObjectURL === 'function'` antes de chamar a função, tornando o código resiliente em ambientes sem suporte à API. Também foi adicionado polyfill correspondente no `tests/setup.js`.
+**Sugestão:** Criar função de resposta `payloadTooLarge` em `lib/api/response.js` (413) ou retornar `badRequest` com código específico, e usá-la no `withBodyParser`.
 
 ---
 
-### 1.8 `csvExport.js` — setTimeout pode manter event loop aberto em testes ✅
+### 1.4 `api/middleware.js` — `withErrorHandler` usa `console.error` em vez do logger estruturado
 
-**Localização:** `lib/csvExport.js`, linha 78
+**Localização:** `lib/api/middleware.js`, linha 299
 
-**Problema:** O `setTimeout(() => URL.revokeObjectURL(url), 1000)` criava um timer de 1s que poderia manter o event loop do Jest aberto após o término dos testes.
+**Problema:** O catch do `withErrorHandler` usa `console.error('API Error:', error)` diretamente, ignorando o `logger` estruturado de `lib/infra/logger.js` (que tem níveis, JSON em produção, requestId e file transport). Perde-se correlação de logs e formatação padronizada.
 
-**Correção:** Adicionada guarda `if (process.env.NODE_ENV && process.env.NODE_ENV !== 'test')`. Em ambiente de teste, executa `URL.revokeObjectURL(url)` imediatamente sem `setTimeout`.
-
----
-
-### 1.9 `domain/products.js` — `updateProduct` não atualiza `updated_at` ✅
-
-**Localização:** `lib/domain/products.js`, linhas 131-151
-
-**Problema:** Mesmo problema do item 1.6: `updateProduct` não inclui `raw('CURRENT_TIMESTAMP')` para `updated_at`.
-
-**Sugestão:** Adicionar atualização automática de `updated_at` via `raw('CURRENT_TIMESTAMP')`.
-
-**Correção:** Adicionado `raw` ao import de `../crud.js`. A função `updateProduct` agora adiciona `updateData.updated_at = raw('CURRENT_TIMESTAMP')` condicionalmente (apenas se houver campos a atualizar), seguindo o mesmo padrão de `updateMusica`, `updatePost` e `updateVideo`.
+**Sugestão:** Substituir por `logger.error('API', 'Erro na requisição:', error)` ou similar, seguindo o contrato `logger.<method>(module, message, ...args)`.
 
 ---
 
-### 1.10 `auth.js` — Cookies sobrescritos por `res.setHeader` ✅
+### 1.5 `api/middleware.js` — Header `X-RateLimit-Remaining` não reflete valor real
 
-**Localização:** `lib/auth.js`, linhas 173-181 e 146-155
+**Localização:** `lib/api/middleware.js`, linhas 212-213
 
-**Problema:** As funções `setAuthCookie` e `setRefreshTokenCookie` usavam `res.setHeader('Set-Cookie', ...)`. No Node.js, `res.setHeader` substitui qualquer header anterior com o mesmo nome. Como ambas definem o header `Set-Cookie`, a segunda chamada sobrescrevia a primeira. Resultado: apenas o cookie `refreshToken` era enviado ao navegador, e o cookie `token` (JWT) era perdido, causando erros 401 em todas as rotas admin após o login.
+**Problema:** O header `X-RateLimit-Remaining` retorna a string textual `'calculado via ${ip}:${endpoint}'` em vez do número real de requisições restantes. Clientes que consomem esse header programaticamente (padrão dos rate limiters HTTP) recebem dados inúteis.
 
-**Correção:** Ambas as funções foram alteradas para usar `res.appendHeader('Set-Cookie', cookieString)` em vez de `res.setHeader`. O `res.appendHeader` (disponível desde Node.js 14.17+) adiciona múltiplos headers com o mesmo nome, em vez de substituir. Agora ambos os cookies (`token` e `refreshToken`) são enviados ao navegador.
+**Sugestão:** Calcular o valor real ou remover o header. Para calcular: o `checkRateLimit` de `lib/cache/cache.js` poderia retornar também o contador atual (ex: `{ isLimited, count, limit }`), permitindo que o middleware calcule `limit - count`. Alternativamente, remover o header para não enganar consumidores.
 
+---
 
-### 1.11 `domain/settings.js` — Aliases duplicados ✅
+### 1.6 `api/middleware.js` — `withLogger` sobrescreve `res.end` em vez de usar eventos
 
-**Localização:** `lib/domain/settings.js`, linhas 60 e 76
+**Localização:** `lib/api/middleware.js`, linhas 317-336
 
-**Problema:** Existem dois pares de alias/funções originais:
-- `setSetting` é alias para `updateSetting`
-- `getAllSettings` é alias para `getAllSettingsRaw`
+**Problema:** O `withLogger` sobrescreve `res.end` para capturar o término da resposta. Isso pode conflitar com outros interceptadores de `res.end` (internos do Next.js ou outros middlewares) e encadear `bind` repetidamente, potencialmente causando problemas de memória em cenários de alta requisição.
 
-Isso adiciona complexidade desnecessária e confunde sobre qual função usar.
+**Sugestão:** Usar `res.on('finish', callback)` (evento nativo do Node.js http.ServerResponse) em vez de sobrescrever `res.end`. É mais seguro, não conflita com outros interceptadores e captura o momento correto da resposta.
 
-**Sugestão:** Remover os aliases e manter apenas as funções originais com nomes descritivos (`updateSetting`, `getAllSettingsRaw`). Ou, alternativamente, remover as funções originais e manter os aliases como as funções principais.
+---
 
-**Correção:** Removidos os aliases `setSetting` e `getAllSettings` de `lib/domain/settings.js`. Ajustados imports e chamadas em `pages/api/settings.js` (substituído `setSetting` por `updateSetting`). Atualizados 3 arquivos de teste: `tests/unit/domain/settings.test.js` (removido import e teste de alias), `tests/unit/lib/db/settings.test.js` (substituídos imports e chamadas de `setSetting`/`getAllSettings` por `updateSetting`/`getAllSettingsRaw`), `tests/unit/settings.cache.test.js` (substituídos mocks e chamadas). 16 testes passam.
+### 1.7 `api/utils.js` — `generateUUID` usa `Math.random` (não criptográfica)
+
+**Localização:** `lib/api/utils.js`, linhas 14-20
+
+**Problema:** O `generateUUID` usa `Math.random()`, que não é criptograficamente seguro. Para `requestId` de rastreamento isso é aceitável, mas se essa função for usada para tokens, refresh tokens ou qualquer valor sensível, seria vulnerável. O Node.js possui `crypto.randomUUID()` nativo (desde v14.17).
+
+**Sugestão:** Usar `crypto.randomUUID()` do Node.js quando disponível (com fallback para `Math.random` apenas em ambientes sem suporte). Isso elimina a implementação manual e garante entropia adequada.
+
+---
+
+### 1.8 `cache/cache.js` — Whitelist de IPs privados testa o IP original, não o normalizado
+
+**Localização:** `lib/cache/cache.js`, linhas 333-345
+
+**Problema:** A normalização IPv4-mapped IPv6 é aplicada em `normalizedIp` apenas para a whitelist permanente (linha 334). Porém, a whitelist dinâmica de redes privadas (linhas 340-345) testa o `ip` original com regex (`/^10\./`, `/^192\.168\./`, etc.). Um IP como `::ffff:192.168.1.10` (IPv4-mapped de IP privado) escaparia da whitelist privada e poderia ser rate-limited indevidamente — mesmo sendo um cliente interno legítimo.
+
+**Sugestão:** Aplicar as regex de redes privadas também sobre `normalizedIp` (ou usar `normalizedIp` para todos os testes de whitelist). Melhor ainda: extrair o IP real primeiro e usar uma única variável normalizada para todas as verificações.
+
+---
+
+### 1.9 `cache/cache.js` — Métricas retornadas por referência (mutáveis externamente)
+
+**Localização:** `lib/cache/cache.js`, linhas 110-117
+
+**Problema:** `getCacheMetrics()` retorna `{ ...metrics, ... }` — o spread cria um novo objeto, mas os valores numéricos são primitivos (imutáveis), então não há risco de mutação externa do objeto `metrics` em si. **Correção de entendimento:** o spread é seguro. Entretanto, as métricas acumulam entre cenários de teste sem função de reset.
+
+**Sugestão:** Adicionar `resetMetrics()` para uso em testes (zerando `redisHits`, `redisMisses`, `redisErrors`, `memoryHits`, `memoryMisses`, `fallbackActivations`, `totalGetOrSetCalls`, `singleFlightHits`). Evita que métricas de um cenário contaminem asserções de outro.
+
+---
+
+### 1.10 `auth/auth.js` — `withAuth` retorna formato de erro divergente do padrão da API
+
+**Localização:** `lib/auth/auth.js`, linhas 302-317
+
+**Problema:** O `withAuth` deste módulo retorna `res.status(401).json({ message: 'Não autenticado' })` — formato `{ message }` simples. O padrão do projeto (definido em `lib/api/response.js`) é `{ success: false, error: { code, message }, meta: { timestamp, requestId } }`. O `api/middleware.js` `withAuth` usa `unauthorized()` (padrão), mas este `withAuth` (usado pelo `adminCrudHandler` e por 11+ consumidores) não.
+
+**Sugestão:** Alinhar o retorno de `withAuth` de `lib/auth/auth.js` ao formato padronizado (`unauthorized(res, ...)` de `response.js`), ou documentar explicitamente a divergência se a compatibilidade com consumidores existentes for prioridade.
+
+---
+
+### 1.11 `domain/musicas.js` — `getPaginatedMusicas` retorna `musicas` e `data` duplicados
+
+**Localização:** `lib/domain/musicas.js`, linhas 113-118
+
+**Problema:** A função retorna `{ musicas, data, pagination }` onde `musicas` e `data` são a **mesma referência de array**. Isso duplica dados no payload JSON da API (o objeto é serializado com a mesma array em duas propriedades), aumentando o tamanho da resposta desnecessariamente.
+
+**Sugestão:** Verificar se os consumidores realmente precisam do alias `musicas` (compatibilidade com `AdminCrudBase`). Se sim, manter como está (é intencional). Caso contrário, remover o alias e usar apenas `data` — ou inverter e padronizar todos os módulos para retornarem apenas `data`.
+
+---
+
+### 1.12 `api/validate.js` — Verificação `error.issues` sem verificação de `error instanceof z.ZodError`
+
+**Localização:** `lib/api/validate.js`, linhas 71, 104, 147, 183
+
+**Problema:** A verificação `if (error.issues)` é robusta para erros Zod (mais que `instanceof`), mas um erro de qualquer outra origem que possua a propriedade `issues` seria classificado erroneamente como erro de validação Zod.
+
+**Sugestão:** Combinar ambas as verificações: `error.issues && error instanceof z.ZodError` para máxima precisão.
 
 ---
 
 ## 2. Ajustes Estruturais e Organizacionais
 
-### 2.1 `csvExport.js` — Função de frontend em diretório de lib server-side ✅
+### 2.1 `domain/products.js` — Não utiliza `shared-pagination.js` (paginação inline)
 
-**Localização:** `lib/csvExport.js`
+**Localização:** `lib/domain/products.js`, linhas 15-98
 
-**Problema:** Este arquivo é exclusivamente de frontend (manipula DOM, cria Blob, links temporários). Está localizado em `lib/` junto com módulos de servidor. Não há problema de build (pois não importa módulos de servidor), mas é semanticamente estranho.
+**Problema:** `getPaginatedProducts` e `getAllProducts` implementam paginação manual com queries SQL inline, enquanto `musicas.js`, `videos.js` e `posts.js` usam o helper `shared-pagination.js`. Isso cria inconsistência de padrão e duplicidade de lógica (cálculo de offset, count, totalPages).
 
-**Sugestão:** Mover para `utils/csvExport.js` ou `components/Utils/csvExport.js`, mantendo o diretório lib focado em módulos de servidor/infraestrutura.
-
-**Correção:** O arquivo foi movido de `lib/csvExport.js` para `utils/csvExport.js`. Os imports em `components/Admin/AdminAudit.js` e `components/Admin/AdminCrudBase.js` foram atualizados de `@/lib/csvExport` para `@/utils/csvExport`. O arquivo `lib/csvExport.js` foi removido. Nenhuma alteração na lógica interna do módulo.
+**Sugestão:** Migrar `products.js` para usar `paginate()` do `shared-pagination.js`, mantendo os filtros de preço (`minPrice`/`maxPrice`) como condições adicionais. A formatação de moeda seria aplicada no pós-processamento, como já é feito hoje.
 
 ---
 
-### 2.2 `handleUnauthorized.js` — Função de frontend em lib ✅
+### 2.2 `domain/products.js` — `createProduct` não aceita `options` nem usa transação
 
-**Localização:** `lib/handleUnauthorized.js`
+**Localização:** `lib/domain/products.js`, linhas 105-123
 
-**Problema:** Mesmo caso do `csvExport.js`. É uma função exclusiva de frontend (importa `react-hot-toast`, usa `router.reload()`).
+**Problema:** `createProduct(data)` não aceita `options` (padrão de `createMusica`, `createVideo`, `createPost` que aceitam `options = {}` para transações). Além disso, o cálculo de `MAX(position)` é feito **fora de transação**, sujeito a race condition em chamadas concorrentes — igual ao bug que já foi corrigido em `musicas.js` e `videos.js`.
 
-**Sugestão:** Mover para `hooks/useUnauthorized.js` ou `utils/handleUnauthorized.js`.
-
-**Correção:** O arquivo foi movido de `lib/handleUnauthorized.js` para `hooks/useUnauthorized.js`, com a função renomeada de `handleUnauthorized` para `useUnauthorized`. Os imports em `components/Admin/AdminAudit.js` e `components/Admin/AdminUsersTab.js` foram atualizados de `@/lib/handleUnauthorized` para `@/hooks/useUnauthorized`, e as chamadas correspondentes renomeadas. O arquivo `lib/handleUnauthorized.js` foi removido. O export de `useUnauthorized` no barrel `hooks/index.js` foi removido por não ter consumidores via barrel (ambos os componentes importam diretamente do arquivo específico). Nenhuma alteração na lógica interna do módulo.
+**Sugestão:** Alinhar com os demais módulos: aceitar `options = {}` como segundo parâmetro, envolver cálculo de `MAX(position)` + `INSERT` em `transaction()`, repassar `{ ...options, client }` ao `createRecord`.
 
 ---
 
-### 2.3 `reorder.js` — Função de frontend em lib ✅
+### 2.3 `domain/videos.js` — `deleteVideo` não aceita `options`
 
-**Localização:** `lib/reorder.js`
+**Localização:** `lib/domain/videos.js`, linhas 93-96
 
-**Problema:** Mesmo caso: função exclusiva de frontend que faz fetch para API e manipula DOM.
+**Problema:** `deleteVideo(id)` não aceita `options`, diferente de `updateVideo(id, videoData, options)` e dos demais módulos (`deleteMusica(id, options)`, `deletePost(id, options)`). Um consumidor não pode executar a deleção dentro de uma transação existente.
 
-**Sugestão:** Mover para `utils/reorder.js` ou integrar ao próprio `AdminCrudBase`.
-
-**Correção:** O arquivo foi movido de `lib/reorder.js` para `utils/reorder.js`. Os imports em `components/Admin/AdminPosts.js`, `components/Admin/AdminProducts.js`, `components/Admin/AdminVideos.js` e `components/Admin/AdminMusicas.js` foram atualizados de `@/lib/reorder` para `@/utils/reorder`. O arquivo `lib/reorder.js` foi removido. Nenhuma alteração na lógica interna do módulo.
+**Sugestão:** Adicionar `options = {}` como segundo parâmetro e repassar ao `deleteRecords('videos', { id }, options)`.
 
 ---
 
-### 2.4 `spotify.js` e `youtube.js` — Utilitários de extração em lib ✅
+### 2.4 `domain/products.js` — Formatação de moeda duplicada entre funções
 
-**Localização:** `lib/spotify.js`, `lib/youtube.js`
+**Localização:** `lib/domain/products.js`, linhas 56-61 e 87-92
 
-**Problema:** São utilitários de manipulação de strings (extração de ID de URLs), usados tanto no frontend quanto potencialmente no servidor. A localização em lib está correta, mas poderiam estar agrupados em um diretório `lib/utils/` ou `lib/media/`.
+**Problema:** O `Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })` é instanciado e aplicado em `getPaginatedProducts` e `getAllProducts` separadamente. A formatação é uma responsabilidade de apresentação que pode evoluir (ex: moeda configurável, locale dinâmico).
 
-**Sugestão:** Agrupar em `lib/media/spotify.js` e `lib/media/youtube.js` para organização temática.
-
-**Correção:** Os arquivos foram movidos de `lib/spotify.js` e `lib/youtube.js` para `lib/media/spotify.js` e `lib/media/youtube.js`, agrupando-os em um subdiretório temático `lib/media/`. Os imports em `components/Admin/fields/UrlField.js`, `components/Admin/AdminVideos.js`, `components/Performance/LazyIframe.js` e `components/Features/Music/MusicCard.js` foram atualizados de `@/lib/spotify` e `@/lib/youtube` para `@/lib/media/spotify` e `@/lib/media/youtube`. A movimentação foi feita via `git mv` para preservar o histórico. Nenhuma alteração na lógica interna dos módulos.
+**Sugestão:** Extrair uma função interna `formatPrice(price)` (ou `formatProducts(rows)`) para centralizar a formatação. Se a configuração de moeda for dinâmica (via settings), o `Intl.NumberFormat` poderia ser instanciado com a configuração atual.
 
 ---
 
-### 2.5 — `lib/api/index.js`: exports nomeados não utilizados removidos ✅
+### 2.5 `domain/musicas.js` — Sem função de reordenação (`reorderMusicas`)
 
-**Localização:** `lib/api/index.js`
+**Localização:** `lib/domain/musicas.js`
 
-**Problema:** O barrel file `lib/api/index.js` exportava 47 símbolos nomeados (classes de erro, funções de resposta, funções de validação e middlewares) que nenhum consumidor externo importava. As páginas em `pages/api/` importam apenas de `lib/api/adminCrudHandler.js` e `lib/api/helpers.js`, e os submódulos internos se importam entre si diretamente.
+**Problema:** `lib/domain/videos.js` possui `reorderVideos(items)`, mas `musicas.js`, `posts.js` e `products.js` não possuem função equivalente no domínio. A reordenação de músicas, posts e produtos é feita nos endpoints diretamente (ou via `utils/reorder.js` no frontend), sem a camada de domínio intermediária com transação e tratamento de erro parcial.
 
-**Correção:** O arquivo foi simplificado: todos os 47 exports nomeados foram removidos, mantendo apenas o `export default` com os 4 namespaces (`{ errors, response, validate, middleware }`). O teste `tests/unit/lib/api/index.test.js` foi ajustado para acessar os símbolos via objeto default (`apiIndex.errors.ApiError`, `apiIndex.response.success`, etc.) em vez de named imports.
-
-### 2.6 Separação difusa entre `lib/` raiz e `lib/api/` ✅
-
-**Localização:** `lib/` (raiz)
-
-**Problema:** Arquivos da raiz de `lib/` misturam responsabilidades:
-- Infraestrutura: `db.js`, `redis.js`, `logger.js`
-- Autenticação: `auth.js`
-- Cache: `cache.js`
-- CRUD genérico: `crud.js`
-- Frontend: `csvExport.js`, `reorder.js`, `handleUnauthorized.js`
-- Utilitários de mídia: `spotify.js`, `youtube.js`
-
-**Sugestão:** Criar subdiretórios temáticos como `lib/infra/`, `lib/auth/`, `lib/media/`, `lib/utils/` para melhor organização.
-
-**Correção:** Os 6 arquivos restantes na raiz de `lib/` foram movidos para subdiretórios temáticos via `git mv` (preservando histórico): `db.js`, `redis.js` e `logger.js` → `lib/infra/`; `auth.js` → `lib/auth/auth.js`; `cache.js` → `lib/cache/cache.js`; `crud.js` → `lib/crud/crud.js`. A raiz de `lib/` agora contém apenas subdiretórios (`api/`, `auth/`, `cache/`, `crud/`, `domain/`, `infra/`, `media/`, `seo/`). Os imports internos dos próprios arquivos movidos foram ajustados (ex: `./db.js` → `../infra/db.js` em `auth.js`, `cache.js` e `crud.js`; `./redis.js` e `./logger.js` → `../infra/...` em `cache.js`). Todos os importadores em `lib/api/` (3 arquivos), `lib/domain/` (8 arquivos), `pages/api/` e `pages/blog/` (~21 arquivos), `scripts/` e raiz do projeto (`jest.teardown.js`, `next-sitemap.config.js`, `proxy.js`, ~9 arquivos) foram atualizados para os novos paths. Os testes unitários diretos em `tests/unit/lib/` (5 arquivos + 9 em `tests/unit/lib/db/`), os testes de integração e unitários de pages (~80 arquivos, incluindo `jest.mock`/`jest.requireMock`/imports em profundidades de 2 a 5 níveis) e os comentários de uso em `tests/mocks/` (3 arquivos: `auth.js`, `cache.js`, `db-module.js`) foram atualizados. Nenhuma alteração na lógica interna dos módulos; nenhuma alteração em `jsconfig.json`, `jest.config.js` ou `knip.json` (alias `@/*` e glob `lib/**/*.js` já cobrem subdiretórios).
+**Sugestão:** Implementar `reorderMusicas`, `reorderPosts` e `reorderProducts` nos módulos de domínio seguindo o padrão de `reorderVideos` (transação + `Promise.allSettled` + log de falhas + rollback), ou criar uma função genérica `reorderRecords(table, items)` no `crud.js`.
 
 ---
 
-## 3. Melhorias de Performance e Manutenção
+### 2.6 `infra/logger.js` — `EMOJIS` e `LEVELS` não exportados
 
-### 3.1 `logger.js` — Logger extremamente simples, sem níveis adequados ✅
+**Localização:** `lib/infra/logger.js`, linhas 27-28
 
-**Localização:** `lib/infra/logger.js`
+**Problema:** As constantes `LEVELS` e `EMOJIS` são internas ao módulo. Não há como tê-las referenciadas por ferramentas externas (ex: um script de diagnóstico que queira conhecer os níveis suportados).
 
-**Problema:** O logger atual usa apenas emojis e `console.log/warn/error`. Não suporta:
-- Transporte para arquivo ou serviço externo
-- Formatação JSON estruturada
-- Níveis de log configuráveis por ambiente (exceto debug via variável)
-- Correlação com requestId
-
-**Sugestão:** Evoluir para usar uma biblioteca como `pino` ou `winston`, ou implementar um logger estruturado que produza JSON para melhor integração com ferramentas de observabilidade.
-
-**Correção:** Implementado logger estruturado nativo (sem dependências externas) em `lib/infra/logger.js`. Adicionados níveis hierárquicos configuráveis via `LOG_LEVEL` (`error` > `warn` > `info` > `debug`) com default inteligente por `NODE_ENV` (`error` em teste, `info` em produção, `debug` em desenvolvimento); `success` tratado como alias de `info`. Saída JSON estruturada em produção (linha única parseável com `{ timestamp, level, module, message, requestId?, args? }`), preservando formato legível com emojis em desenvolvimento/teste. Adicionada correlação via `requestId` usando `AsyncLocalStorage` do Node.js, com funções `setRequestId(id)` e `runWithRequestId(id, fn)`. Arquitetura de transports plugável: console (sempre ativo) + arquivo opcional via `LOG_FILE_PATH` (com rotação simples a 10 MB). Sanitização segura de `Error` (→ `{ name, message, stack }`) e objetos circulares (replacer com `WeakSet`). O contrato público `logger.<method>(module, message, ...args)` foi preservado, mantendo compatibilidade com os 33 consumidores existentes e os 5 mocks de teste. Criado teste unitário `tests/unit/lib/infra/logger.test.js` com 13 testes cobrindo filtro por nível, JSON em produção, `requestId`, sanitização e file transport. Documentação atualizada em `docs/PROJECT_lib.md` (seções 1.7, 6.2 e resumo).
+**Sugestão:** Exportar `LEVELS` (ou uma API como `getLevels()`) para permitir que ferramentas de diagnóstico/integração conheçam os níveis configuráveis. Baixa prioridade.
 
 ---
 
-### 3.2 `cache.js` — setInterval de safety net não gerenciado ✅
+## 3. Melhorias de Ferramenta, Manutenção e Performance
 
-**Localização:** `lib/cache.js`, linhas 39-82
+### 3.1 `infra/db.js` — Pool `max: 50` hardcoded, sem configuração via env
 
-**Problema:** O `setInterval` de 60s é criado no module scope e nunca é limpo em cenários de hot-reload (Next.js development) ou entre suítes de teste. Embora exista `cleanupRateLimitTimer()`, ele precisa ser chamado explicitamente.
+**Localização:** `lib/infra/db.js`, linhas 83-88
 
-**Correção:** O `setInterval` agora só é criado quando `process.env.NODE_ENV` está definido e não é `'test'`. Além disso, `cleanupRateLimitTimer()` é chamado no `jest.teardown.js` para garantir a limpeza do timer entre execuções de teste.
+**Problema:** O pool está configurado com valores fixos (`max: 50`, `min: 5`, `idleTimeoutMillis: 60000`, `connectionTimeoutMillis: 15000`). Em ambientes com recursos limitados (ex: servidor cloud de baixo custo, banco com limite de conexões), 50 conexões podem exaurir o PostgreSQL ou consumir memória desnecessária.
 
----
-
-### 3.3 `db.js` — Pool com 50 conexões pode ser alto
-
-**Localização:** `lib/db.js`, linha 78
-
-**Problema:** O pool está configurado com `max: 50`. Em ambientes com recursos limitados (ex: servidores cloud de baixo custo), isso pode exaurir o número de conexões permitidas pelo PostgreSQL ou consumir memória desnecessária.
-
-**Sugestão:** Tornar `max` configurável via variável de ambiente (`DB_POOL_MAX`), com fallback para 50, permitindo ajuste fino por ambiente.
+**Sugestão:** Tornar configuração via variáveis de ambiente com fallback: `DB_POOL_MAX` (default 50), `DB_POOL_MIN` (default 5), `DB_IDLE_TIMEOUT_MS` (default 60000), `DB_CONNECTION_TIMEOUT_MS` (default 15000). Permite ajuste fino por ambiente sem alterar código.
 
 ---
 
-### 3.4 `api/adminCrudHandler.js` — Permissões consultadas em toda requisição
+### 3.2 `infra/db.js` — Health check periódico contínuo (polling)
+
+**Localização:** `lib/infra/db.js`, linhas 17-64
+
+**Problema:** O health check executa a cada 60s ininterruptamente, independentemente do tráfego. Em ambientes com baixa atividade ou durante a madrugada, gera consultas `SELECT 1` desnecessárias ao banco.
+
+**Sugestão:** Implementar health check **reativo** — apenas quando uma query falha, ou com intervalo configurável via env. Alternativa: aumentar o intervalo em ambientes de baixa atividade.
+
+---
+
+### 3.3 `api/adminCrudHandler.js` — Permissões consultadas no banco a cada requisição
 
 **Localização:** `lib/api/adminCrudHandler.js`, linhas 95-99
 
-**Problema:** A verificação de permissão consulta a tabela `roles` no banco de dados a cada requisição admin. Para endpoints com alta frequência, isso adiciona latência desnecessária.
+**Problema:** A verificação de permissão consulta a tabela `roles` no banco a cada requisição admin (`SELECT permissions FROM roles WHERE name = $1`). Endpoints com alta frequência adicionam latência de banco desnecessária.
 
-**Sugestão:** Armazenar as permissões no token JWT no momento do login (em `auth.authenticateAndGenerateToken`) e validar a partir do token em vez de consultar o banco a cada requisição.
-
----
-
-### 3.5 `redis.js` — Duas tentativas sem backoff
-
-**Localização:** `lib/redis.js`, linhas 106-125
-
-**Problema:** `redisGet` faz duas tentativas idênticas e imediatas. Se a primeira falhou por congestionamento de rede, a segunda provavelmente falhará também. Não há backoff exponencial entre as tentativas.
-
-**Sugestão:** Implementar backoff simples (ex: 100ms entre tentativas) ou reduzir para uma única tentativa com fallback direto para memória, já que o `cache.js` já tem Single-Flight e cache L1.
-
-**Status:** **Resolvido** — O segundo bloco de retry foi removido de `redisGet()`. Agora a função tenta o Redis uma única vez e, em caso de falha, cai diretamente no fallback de memória. A redução foi de 2 chamadas de rede para 1 por requisição cacheada, eliminando ~50-150ms de latência desnecessária.
+**Sugestão:** Armazenar as permissões do cargo no payload do JWT no momento do login (`authenticateAndGenerateToken` já busca as permissões em `lib/auth/auth.js` linhas 277-284, mas não as inclui no token). Validar a partir do token em vez de consultar o banco. Atenção: permissões alteradas não refletiriam até o token expirar (1h) — aceitável para este contexto.
 
 ---
 
-### 3.6 `cache.js` — Métricas mutáveis em módulo global
+### 3.4 `api/errors.js` — `generateUUID` com `Math.random` em `ApiError`
 
-**Localização:** `lib/cache.js`, linhas 21-31
+**Localização:** `lib/api/errors.js`, linhas 27-39 (herda de `utils.js`)
 
-**Problema:** O objeto `metrics` é um mutable module-level state. Em testes, as métricas acumulam entre cenários se não forem resetadas manualmente. `getCacheMetrics()` retorna o próprio objeto, permitindo mutação externa.
+**Problema:** O `requestId` de cada erro usa `String.prototype.replace` com `Math.random`. Em Node.js >= 14.17, `crypto.randomUUID()` está disponível nativamente e é mais seguro e performático.
 
-**Sugestão:** Criar função `resetMetrics()` para uso em testes e retornar uma cópia do objeto em `getCacheMetrics()` para evitar mutação externa.
+**Sugestão:** Substituir a implementação em `utils.js` por `crypto.randomUUID()` (com try/catch para fallback em ambientes sem suporte). Também evita colisões teóricas de UUID em picos de erro.
+
+---
+
+### 3.5 `infra/redis.js` — Fallback em memória sem `redisExpire` correspondente
+
+**Localização:** `lib/infra/redis.js`, linhas 206-214
+
+**Problema:** `redisExpire` (usado pelo rate limit para definir TTL) não tem implementação de fallback em memória — quando Redis está offline, a função simplesmente não faz nada. Porém, o `redisIncr` de fallback já salva com TTL de 60s no `setInMemory`, então o comportamento do rate limit em memória é razoável. A divergência é que o `checkRateLimit` do `cache.js` chama `redisExpire` apenas quando Redis está conectado, então não há impacto funcional real.
+
+**Sugestão:** Documentar o comportamento ou adicionar comentário explicando que `redisExpire` é no-op quando Redis offline (o fallback do `redisIncr` já define TTL). Baixa prioridade.
+
+---
+
+### 3.6 `cache/cache.js` — `redisScan` e `invalidateCache` com wildcard em memória limitados
+
+**Localização:** `lib/cache/cache.js`, linhas 149-160 e `lib/infra/redis.js`, linhas 149-161
+
+**Problema:** A deleção por wildcard no cache em memória (`delAppMemoryCache` e `redisDel`) usa `key.replace(/\*/g, '')` e `startsWith(pattern)`. Isso limpa chaves que **começam** com o padrão, mas não chaves que contêm o padrão no meio. Para padrões como `posts:*`, funciona; mas para padrões como `*:public` (sufixo), não. O Redis SCAN trata isso corretamente apenas no Redis, não na memória.
+
+**Sugestão:** Se padrões com wildcard no meio/fim forem usados, implementar glob-to-regex para o fallback em memória. Caso a convenção seja sempre prefixo (`chave:*`), adicionar comentário documentando a limitação.
 
 ---
 
 ## 4. Duplicidade de Código
 
-### 4.1 Padrão de atualização parcial duplicado entre entidades de domínio
+### 4.1 Padrão de atualização parcial duplicado entre `updateMusica`, `updatePost`, `updateProduct`, `updateVideo`
 
-**Localização:** `lib/domain/musicas.js` (linhas 57-68), `lib/domain/posts.js` (linhas 84-96), `lib/domain/products.js` (linhas 134-143)
+**Localização:**
+- `lib/domain/musicas.js`, linhas 57-73
+- `lib/domain/posts.js`, linhas 83-99
+- `lib/domain/products.js`, linhas 133-154
+- `lib/domain/videos.js`, linhas 72-85
 
-**Problema:** As funções `updateMusica`, `updatePost` e `updateProduct` repetem o mesmo padrão de construção condicional do objeto de dados:
+**Problema:** As quatro funções repetem o mesmo padrão:
 ```javascript
 const data = {};
 if (campo !== undefined) data.campo = campo;
 // ...repetido para cada campo
+if (Object.keys(data).length > 0) data.updated_at = raw('CURRENT_TIMESTAMP');
+const [record] = await updateRecords('tabela', data, { id }, options);
 ```
 
-**Sugestão:** Criar um helper genérico `buildUpdateData(originalData, fields)` ou usar um utilitário como `lodash.pickBy` / `Object.fromEntries` com filtro de `undefined`.
+A única diferença são os campos de cada entidade e o nome da tabela.
+
+**Sugestão:** Criar helper genérico em `crud.js` ou `domain/shared-pagination.js`:
+```javascript
+buildUpdateData(originalData, allowedFields) // filtra campos !== undefined e adiciona updated_at
+```
+Reduziria ~80 linhas de código duplicado nos 4 módulos.
 
 ---
 
-### 4.2 Lógica de `raw('CURRENT_TIMESTAMP')` duplicada
+### 4.2 Lógica de `MAX(position) + 1` duplicada em `createMusica`, `createProduct`, `createVideo`
 
-**Localização:** `lib/domain/musicas.js` (linhas 42, 67), `lib/domain/posts.js` (linhas 94-95)
+**Localização:**
+- `lib/domain/musicas.js`, linhas 31-34
+- `lib/domain/products.js`, linhas 108-110
+- `lib/domain/videos.js`, linhas 55-58
 
-**Problema:** A adição de `raw('CURRENT_TIMESTAMP')` para `created_at` e `updated_at` é feita manualmente em cada função de criação/atualização.
+**Problema:** As três funções implementam a mesma lógica de buscar `MAX(position)` e incrementar. Há inconsistência: `musicas.js` e `videos.js` fazem dentro de transação; `products.js` faz fora (ver item 2.2).
 
-**Sugestão:** Centralizar no `crud.js`: adicionar um hook/timing automático para campos `created_at` e `updated_at` quando a tabela os possuir no schema.
-
----
-
-### 4.3 Padrão de `MAX(position)` duplicado
-
-**Localização:** `lib/domain/musicas.js` (linhas 32-33), `lib/domain/products.js` (linhas 109-110), `lib/domain/videos.js` (linhas 56-57)
-
-**Problema:** Cada função `create*` implementa a mesma lógica de buscar `MAX(position)` para definir a posição do novo item. Além da duplicação, há inconsistência: `musicas.js` e `products.js` fazem fora de transação, `videos.js` faz dentro de transação.
-
-**Sugestão:** Criar uma função `getNextPosition(table)` em `shared-pagination.js` ou no próprio `crud.js`, que execute dentro de uma transação se um client for fornecido.
+**Sugestão:** Criar função `getNextPosition(table, client?)` no `crud.js` ou módulo de domínio compartilhado, executando `SELECT COALESCE(MAX(position), 0) + 1 FROM table` com o `client` se fornecido. Também elimina a duplicação do COALESCE.
 
 ---
 
-### 4.4 Funções de reordenação com lógica similar
+### 4.3 Adição manual de `raw('CURRENT_TIMESTAMP')` para `created_at`/`updated_at`
 
-**Localização:** `lib/domain/videos.js` (linhas 90-112)
+**Localização:**
+- `lib/domain/musicas.js`, linhas 43, 69
+- `lib/domain/posts.js`, linhas 93-96
+- `lib/domain/products.js`, linhas 149-151
+- `lib/domain/videos.js`, linhas 80-82
+- `lib/domain/settings.js`, linha 52
 
-**Problema:** A função `reorderVideos` existe, mas não há `reorderMusicas`, `reorderPosts` ou `reorderProducts` nos respectivos módulos de domínio. A reordenação para músicas, posts e produtos é feita diretamente nos endpoints ou componentes.
+**Problema:** Cada função de criação/atualização adiciona manualmente `raw('CURRENT_TIMESTAMP')` para os campos de timestamp. Isso é propenso a esquecimento (ex: `createPost` não adiciona `created_at` — depende do default do banco).
 
-**Sugestão:** Implementar `reorderMusicas`, `reorderPosts` e `reorderProducts` nos módulos de domínio seguindo o padrão de `reorderVideos`, ou criar uma função genérica `reorderRecords(table, items)` no `crud.js`.
-
----
-
-### 4.5 Lógica de extração de IP duplicada
-
-**Localização:** `lib/api/middleware.js` (linha 198), `lib/auth.js` (indiretamente)
-
-**Problema:** Em `middleware.js`, a extração de IP para rate limit é feita inline (`req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown'`), enquanto `lib/api/helpers.js` possui `getClientIP()` que faz o mesmo de forma mais robusta.
-
-**Sugestão:** Substituir a extração inline em `middleware.js` pelo uso de `getClientIP()` importado de `helpers.js`.
+**Sugestão:** Centralizar no `crud.js`: ao detectar que a tabela possui `created_at`/`updated_at` no schema (`tableSchemas`), adicionar automaticamente `raw('CURRENT_TIMESTAMP')` quando o campo não for fornecido pelo chamador.
 
 ---
 
-## 5. Duplicidade de Textos e Conteúdos
+### 4.4 `formatted_price` duplicado entre `getPaginatedProducts` e `getAllProducts`
 
-### 5.1 Mensagens de erro hardcoded similares
+**Localização:** `lib/domain/products.js`, linhas 56-61 e 87-92
 
-**Localização:** `lib/api/adminCrudHandler.js` (linhas 68-71, 77-80, 85-88, 104-109, 113-118, 126-129, 142-146, 153-156, 221-224)
+**Problema:** A formatação de moeda está duplicada em ambas as funções (ver item 2.4). Além da duplicação, se a formatação evoluir (ex: moeda dinâmica), são dois pontos de manutenção.
 
-**Problema:** As mensagens de erro de método não permitido (405) aparecem em dois lugares diferentes dentro do mesmo arquivo (linhas 68-71 e 153-156), com conteúdo idêntico.
-
-**Sugestão:** Extrair para uma constante ou função reutilizável dentro do arquivo.
+**Sugestão:** Extrair `formatProductRows(rows)` ou `formatPrice(value)`.
 
 ---
 
-### 5.2 Descrições de seções duplicadas
+### 4.5 Mensagens de erro 405 duplicadas dentro de `adminCrudHandler.js`
 
-**Localização:** `lib/seo/config.js` (linhas 12-13, 57-72)
+**Localização:** `lib/api/adminCrudHandler.js`, linhas 66-72 e 152-158
 
-**Problema:** A `shortDescription` do `siteConfig` (`'Reflexões e ensinamentos sobre a fé cristã'`) é muito similar à descrição da seção `blog` (`'Reflexões e ensinamentos sobre a fé cristã'`), sendo exatamente idêntica.
+**Problema:** A resposta 405 de "Método não permitido" é construída em dois lugares, com código quase idêntico (header `Allow` + JSON `{ error, message }`). A única diferença é que a primeira checa `allowedMethods.includes(method)` e a segunda checa `handlers[method]` — mas a resposta é a mesma.
 
-**Sugestão:** Diferenciar a descrição geral do site da descrição da seção blog, ou referenciar a descrição geral dentro da seção blog para evitar repetição.
+**Sugestão:** Extrair para uma constante ou função local `methodNotAllowedResponse(res, method, allowedMethods)`.
 
 ---
 
-### 5.3 Descrições de RSS e site
+### 4.6 Extração de IP com estratégias diferentes
 
-**Localização:** `lib/seo/config.js` (linhas 12, 76)
+**Localização:**
+- `lib/api/middleware.js`, linha 198 — `req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown'`
+- `lib/api/helpers.js`, linhas 21-45 — `getClientIP(req)` com `trustProxy` opcional
+- `lib/api/adminCrudHandler.js`, linha 62 — `getClientIP(req)` sem `trustProxy` (usa socket)
+- `lib/cache/cache.js`, linhas 320-345 — `checkRateLimit(ip, ...)` recebe IP do chamador
 
-**Problema:** `siteConfig.description` (`'Reflexões, ensinamentos e inspiração sobre a fé cristã...'`) e `feed.description` (`'Últimas reflexões e ensinamentos'`) são semanticamente sobrepostas.
+**Problema:** O `withRateLimit` de `middleware.js` faz extração inline (confia no header `x-forwarded-for` primeiro), enquanto o `adminCrudHandler` usa `getClientIP` sem `trustProxy` (usa socket primeiro). Resultado: um endpoint protegido por `withRateLimit` pode identificar o cliente por um header falsificável, enquanto o admin identifica pelo socket confiável.
 
-**Sugestão:** Diferenciar a descrição longa (site) da descrição curta (feed RSS), ou referenciar uma a partir da outra.
+**Sugestão:** Substituir a extração inline no `withRateLimit` pelo `getClientIP(req, { trustProxy: true })` importado de `helpers.js` (ou `false`, alinhado com o admin). Unifica a estratégia e elimina a lógica inline.
+
+---
+
+## 5. Duplicidade de Textos, Descrições e Conteúdos
+
+### 5.1 Descrição do site duplicada na seção `blog` do `seo/config.js`
+
+**Localização:** `lib/seo/config.js`, linhas 12-13 e 57-72
+
+**Problema:** `siteConfig.shortDescription` é `'Reflexões e ensinamentos sobre a fé cristã'` e `siteConfig.sections.blog.description` é **exatamente a mesma string**. O conteúdo se repete em dois contextos diferentes (descrição geral do site vs. descrição da seção blog).
+
+**Sugestão:** Diferenciar as descrições (ex: seção blog com foco em artigos/estudos) ou referenciar a descrição geral dentro da seção blog para evitar duplicação literal.
+
+---
+
+### 5.2 Descrições de RSS e descrições de seção sobrepostas
+
+**Localização:** `lib/seo/config.js`, linhas 12, 58-72, 76-77
+
+**Problema:** `siteConfig.description` (`'Reflexões, ensinamentos e inspiração sobre a fé cristã, espiritualidade e a jornada de caminhar com Deus no dia a dia.'`), `feed.description` (`'Últimas reflexões e ensinamentos'`) e as descrições de seções (`'Reflexões e ensinamentos sobre a fé cristã'`, `'Músicas gospel e cristãs para edificar sua fé'`) são semanticamente sobrepostas e usam as mesmas palavras-chave.
+
+**Sugestão:** Definir cada descrição com um ângulo único: site (geral/longo), blog (artigos/estudos), feed (resumo recente), músicas (gospel/adoração), vídeos (pregações/testemunhos). Diferenciar as descrições ajuda no SEO ao evitar conteúdo duplicado entre páginas.
+
+---
+
+### 5.3 Nome "O Caminhar com Deus" repetido em múltiplas propriedades
+
+**Localização:** `lib/seo/config.js`, linhas 11-12, 78, 121-122, 147
+
+**Problema:** O nome do site aparece em: `siteConfig.name`, `feed.title`, `organization.name`, `website.name`. Em `feed.title` e `website.name`, é usado sem variação (`'O Caminhar com Deus - Feed RSS'` apenas adiciona sufixo). Isso não é um bug (é intencional para SEO), mas a repetição literal pode ser centralizada.
+
+**Sugestão:** Baixa prioridade. Referenciar `siteConfig.name` nas demais propriedades (ex: `` `${siteConfig.name} - Feed RSS` ``) para manutenção centralizada.
 
 ---
 
 ## 6. Pontos de Atenção Técnicos
 
-### 6.1 Interpolação direta de nomes de tabela no SQL em `shared-pagination.js`
+### 6.1 `domain/shared-pagination.js` — Interpolação direta de `tableName` no SQL
 
-**Localização:** `lib/domain/shared-pagination.js`, linhas 102-107
+**Localização:** `lib/domain/shared-pagination.js`, linhas 125-130
 
-**Problema:** O nome da tabela (`tableName`) é interpolado diretamente na string SQL. Embora o helper seja interno ao projeto e os nomes sejam controlados via código (não recebidos do usuário), isso ainda é um vetor potencial se no futuro houver uma função que aceite `tableName` como parâmetro externo.
+**Problema:** O nome da tabela (`tableName`) é interpolado diretamente na string SQL (`FROM ${tableName}`) e no `selectFields` (`PUBLIC_SELECT_FIELDS[tableName] || '*'`). Embora o helper seja interno e os nomes sejam passados por código controlado (não pelo usuário), qualquer futuro uso com entrada externa seria vulnerável a SQL injection.
 
-**Sugestão:** Adicionar validação de `tableName` com `_validateIdentifier` do `lib/crud/crud.js` ou manter whitelist de tabelas permitidas.
+**Sugestão:** Validar `tableName` com regex `^[a-zA-Z0-9_]+$` (mesmo padrão de `_validateIdentifier` de `lib/crud/crud.js`) ou manter um whitelist de tabelas permitidas no próprio módulo. Também documentar explicitamente que o parâmetro deve ser sempre código controlado.
 
 ---
 
-### 6.2 Dados de contato e endereço vazios em SEO
+### 6.2 `seo/config.js` — Dados de contato e endereço vazios
 
 **Localização:** `lib/seo/config.js`, linhas 46-52
 
-**Problema:** Os campos de endereço (`street`, `city`, `state`, `zipCode`) e `phone` estão vazios. Isso pode gerar dados incompletos no Schema.org se consumidos diretamente sem verificação.
+**Problema:** `phone` é `''` e `address` tem `street`, `city`, `state`, `zipCode` vazios. Se consumidos diretamente para gerar Schema.org ou contatos de página, gerariam dados incompletos/inválidos.
 
-**Sugestão:** Preencher com dados reais ou remover do Schema.org quando vazios (criar função que filtra campos vazios antes de serializar).
+**Sugestão:** Preencher com dados reais quando disponíveis, ou criar função utilitária que filtre campos vazios antes de serializar o Schema.org.
 
 ---
 
-### 6.3 `parseImages` em `utils.js` tem escopo limitado
+### 6.3 `api/utils.js` — `parseImages` com escopo limitado
 
 **Localização:** `lib/api/utils.js`, linhas 40-46
 
-**Problema:** A função `parseImages` faz apenas split + trim + filter. Não valida se as URLs são realmente válidas, não remove duplicatas e não normaliza formatos.
+**Problema:** `parseImages` faz split + trim + filter apenas. Não valida se as strings são URLs válidas, não remove duplicatas e não normaliza formatos (ex: protocolo ausente, URLs relativas).
 
-**Sugestão:** Adicionar validação básica de URL (ex: `URL.canParse()`) e remoção de duplicatas, ou renomear para algo mais genérico como `parseLinesToArray`.
-
----
-
-### 6.4 `api/middleware.js` — X-RateLimit-Remaining não reflete valor real
-
-**Localização:** `lib/api/middleware.js`, linhas 212-213
-
-**Problema:** O header `X-RateLimit-Remaining` retorna uma string textual (`'calculado via ${ip}:${endpoint}'`) em vez do número real de requisições restantes. Isso invalida o propósito do header para clientes que consomem essa informação programaticamente.
-
-**Sugestão:** Calcular o valor real decrementando do limite total o contador atual do rate limit, ou remover o header se o cálculo não for trivial.
+**Sugestão:** Adicionar validação básica (ex: `URL.canParse()` ou regex simples de URL) e remoção de duplicatas, **apenas se** um cenário de uso exigir. Caso contrário, renomear para algo mais genérico como `parseLinesToArray` para não implicar validação que não faz.
 
 ---
 
-### 6.5 `auth.js` — parseCookie / serializeCookie reinventam a roda
+### 6.4 `api/helpers.js` — `detectSpoofedIP` com lógica complexa
 
-**Localização:** `lib/auth.js`, linhas 8-30
+**Localização:** `lib/api/helpers.js`, linhas 81-141
 
-**Problema:** As funções `parseCookie` e `serializeCookie` são implementações manuais. Existem bibliotecas consolidadas (ex: `cookie`) que lidam com edge cases corretamente. O código atual tem um comentário na linha 7 dizendo "sem dependência externa", mas isso aumenta a superfície de manutenção.
+**Problema:** A função tem múltiplos cenários (localhost, IPv4-mapped, privado vs público, `::` prefix), o que aumenta a superfície de manutenção e risco de falsos positivos. Alguns ramos são redundantes (ex: o early return de localhost na linha 96-98 torna o caso 1 das linhas 114-117 inalcançável para `127.0.0.1`).
 
-**Sugestão:** Avaliar o uso da biblioteca `cookie` (já disponível no projeto, vide `__mocks__/cookie.js`) em vez de manter implementação manual, ou manter a implementação manual mas com testes unitários específicos.
-
----
-
-### 6.6 `api/middleware.js` — `withLogger` sobrescreve `res.end`
-
-**Localização:** `lib/api/middleware.js`, linhas 327-332
-
-**Problema:** O middleware `withLogger` sobrescreve o método `res.end` para capturar o momento da resposta. Isso pode causar conflitos se outros middlewares também sobrescreverem `res.end` (ex: Next.js internamente). A cadeia de `bind` encadeados pode causar memory leak em cenários de alta requisição.
-
-**Sugestão:** Usar eventos do Node.js (`res.on('finish', callback)`) em vez de sobrescrever `res.end`, que é mais seguro e não conflita com outros interceptadores.
+**Sugestão:** Simplificar: para endpoints admin, confiar apenas em `socket.remoteAddress` (não aceitar `x-forwarded-for`) já seria a medida mais segura. Documentar os cenários suportados e reduzir ramos redundantes (ex: remover o caso 1 da linha 114-117 que é inalcançável após o early return).
 
 ---
 
-### 6.7 `db.js` — Health check com intervalo fixo
+### 6.5 `domain/settings.js` — `getSetting` sem garantia de tipo
 
-**Localização:** `lib/db.js`, linhas 17-58
+**Localização:** `lib/domain/settings.js`, linhas 10-20
 
-**Problema:** O health check executa a cada 15 segundos ininterruptamente. Em ambientes com baixo tráfego ou durante a noite, isso gera consultas desnecessárias ao banco.
+**Problema:** `getSetting` retorna o valor armazenado na coluna `value`, que "geralmente é JSON" (comentário no código). Não há validação de schema nem garantia de tipo — um consumidor pode esperar string, número ou objeto e receber outro formato.
 
-**Sugestão:** Tornar o intervalo configurável ou implementar health check sob demanda (apenas quando uma query falha), em vez de polling contínuo.
-
-**Status:** **Parcialmente resolvido** — O intervalo foi ajustado de 15s para 60s, reduzindo a frequência de consultas de health check em 75%. A implementação de health check sob demanda (apenas quando uma query falha) permanece como melhoria futura.
+**Sugestão:** Implementar schema Zod por chave de configuração conhecida (ex: header settings, SEO settings) ou ao menos documentar os tipos esperados de cada chave no módulo. Para chaves desconhecidas, retornar o valor bruto com nota de que o tipo não é garantido.
 
 ---
 
-### 6.8 `api/adminCrudHandler.js` — Erros de banco expostos ao cliente
+### 6.6 `auth/auth.js` — `initializeAuth` executa DDL diretamente no código
 
-**Localização:** `lib/api/adminCrudHandler.js`, linhas 210-224
+**Localização:** `lib/auth/auth.js`, linhas 320-387
 
-**Problema:** Em caso de erro não mapeado (não é unique constraint, foreign key ou not null), a mensagem de erro original (`error.message`) é retornada ao cliente no campo `message` da resposta 500. Isso pode vazar informações internas do banco de dados.
+**Problema:** `initializeAuth` executa `CREATE TABLE IF NOT EXISTS users`, `ALTER TABLE users ADD COLUMN IF NOT EXISTS role`, `CREATE TABLE IF NOT EXISTS refresh_tokens` e `CREATE INDEX` diretamente. Isso duplica/compete com `scripts/migrations/` como fonte de schema. Em produção, migrações deveriam ser a única fonte canônica de estrutura de banco.
 
-**Sugestão:** Em produção, retornar sempre uma mensagem genérica ("Erro interno no servidor") e logar o erro original apenas no servidor.
-
----
-
-### 6.9 `api/adminCrudHandler.js` — Dupla invalidação de cache
-
-**Localização:** `lib/api/adminCrudHandler.js`, linhas 161-195 e 201-204
-
-**Problema:** A invalidação de cache ocorre em dois lugares:
-1. Dentro de `req.adminUtils.invalidateCache()`, chamado pelo handler específico (linha 161-195)
-2. Automaticamente após a execução do handler (linhas 201-204)
-
-Se o handler chamar `invalidateCache()` explicitamente, o cache será invalidado duas vezes.
-
-**Sugestão:** Remover a invalidação automática pós-handler e deixar apenas a chamada explícita via `req.adminUtils`, ou vice-versa. A duplicidade não causa erro funcional, apenas operação desnecessária.
+**Sugestão:** Revisar a estratégia: manter `initializeAuth` apenas para bootstrap (criar admin se não existir) e mover a criação de tabelas/índices para scripts de migração. Se mantido, garantir idempotência e compatibilidade com a fonte de migração.
 
 ---
 
-### 6.10 `domain/videos.js` — `reorderVideos` não reutiliza `reorder.js` ✅
+### 6.7 `auth/auth.js` — Cookies manuais (`parseCookie`/`serializeCookie`)
 
-**Localização:** `lib/domain/videos.js` (linhas 90-112), `utils/reorder.js`
+**Localização:** `lib/auth/auth.js`, linhas 8-31
 
-**Problema:** O arquivo `reorder.js` na raiz de `lib/` é um helper de frontend que faz fetch para a API. Já `reorderVideos` em `domain/videos.js` é uma função de servidor que executa SQL. Apesar do nome similar, têm propósitos completamente diferentes e não estão relacionados. Isso pode causar confusão.
+**Problema:** As funções de cookie são implementações manuais. O projeto já possui a biblioteca `cookie` referenciada em `__mocks__/cookie.js` (e provavelmente como dependência de outra lib). Cookies têm edge cases (valores com `;`, `=`, encoding de caracteres especiais) que implementações manuais podem não cobrir.
 
-**Sugestão:** Renomear `lib/reorder.js` para algo como `lib/frontendReorder.js` ou movê-lo para junto dos componentes que o utilizam, deixando claro que é um utilitário de frontend.
-
-**Correção:** O arquivo foi movido de `lib/reorder.js` para `utils/reorder.js` (vide item 2.3), tirando-o da raiz de `lib/` e aproximando-o dos componentes de frontend que o utilizam. A separação física entre o helper de frontend (`utils/reorder.js`) e a função de servidor (`lib/domain/videos.js` `reorderVideos`) torna explícito que têm propósitos diferentes. A função `reorderVideos` permanece inalterada em `lib/domain/videos.js`.
+**Sugestão:** Avaliar o uso da biblioteca `cookie` consolidada, ou manter a implementação manual **com testes unitários específicos** para edge cases (valores com caracteres especiais, múltiplos cookies, expiração). Se mantido, documentar os limites.
 
 ---
 
-### 6.11 `domain/settings.js` — `getSetting` retorna valor sem type safety
+### 6.8 `domain/settings.js` — `getSettings` usa `json_object_agg` que exige permissão de função de agregação
 
-**Localização:** `lib/domain/settings.js`
+**Localização:** `lib/domain/settings.js`, linhas 28-41
 
-**Problema:** `getSetting` retorna o valor da coluna `value` que geralmente é JSON. Não há garantia de tipo: um consumidor pode esperar string, número ou objeto, mas o banco pode devolver outro formato. Também não há schema de validação dos settings.
+**Problema:** `json_object_agg` é uma função de agregação do PostgreSQL. Em ambientes onde o usuário do banco tem permissões limitadas (ex: RLS, functions restritas), pode falhar. Se a tabela `settings` for grande, a agregação também carrega tudo em memória do Postgres.
 
-**Sugestão:** Implementar schema Zod para cada chave de configuração conhecida, garantindo type safety e validação na leitura.
+**Sugestão:** Verificar se o usuário de produção tem permissão para `json_object_agg`. Considerar fallback com query simples (SELECT key, value) e agregação em JS para bancos pequenos. Baixa prioridade se o ambiente já funciona.
 
 ---
 
-### 6.12 `api/helpers.js` — `detectSpoofedIP` com lógica muito complexa
+### 6.9 `domain/shared-pagination.js` — Mapa `PUBLIC_SELECT_FIELDS` cresce manualmente
 
-**Localização:** `lib/api/helpers.js`, linhas 86-145
+**Localização:** `lib/domain/shared-pagination.js`, linhas 25-30
 
-**Problema:** A função `detectSpoofedIP` tem lógica muito elaborada para detecção de spoofing, com múltiplos cenários (localhost, redes privadas, IPv4-mapped, públicos). Isso aumenta a complexidade de manutenção e pode ter falsos positivos.
+**Problema:** O mapa de seleção otimizada para listagens públicas precisa ser atualizado manualmente a cada nova tabela pública. Se uma nova entidade pública não for adicionada, cairá em `'*'` (SELECT completo) silenciosamente.
 
-**Sugestão:** Simplificar a lógica: o propósito principal da função é proteger endpoints admin. Nesses endpoints, confiar apenas no `socket.remoteAddress` e não aceitar `x-forwarded-for` já seria suficiente, já que o Next.js em produção geralmente roda atrás de proxy reverso (Nginx) que gerencia corretamente os headers.
+**Sugestão:** Documentar no módulo que novas tabelas públicas devem ser adicionadas ao mapa. Alternativa: derivar o mapa a partir do `tableSchemas` de `lib/crud/crud.js`, filtrando colunas pesadas (`content`, `embed_code`) automaticamente.
+
+---
+
+### 6.10 `api/index.js` — Barrel não exporta `helpers`, `utils` e `adminCrudHandler`
+
+**Localização:** `lib/api/index.js`, linhas 11-22
+
+**Problema:** O barrel exporta apenas 4 namespaces (`errors`, `response`, `validate`, `middleware`). `helpers.js`, `utils.js` e `adminCrudHandler.js` não são re-exportados — consumidores precisam importá-los diretamente. Isso é **intencional** (documentado na análise PROJECT_lib.md), mas cria um padrão inconsistente: parte da API é acessível via barrel, parte não.
+
+**Sugestão:** Documentar no barrel quais módulos são exportados e por quê, ou adicionar os módulos restantes para consistência (mesmo que os consumidores atuais importem diretamente).
+
+---
+
+### 6.11 `infra/logger.js` — `safeSerialize` com limite de profundidade de 10 níveis
+
+**Localização:** `lib/infra/logger.js`, linhas 59-99
+
+**Problema:** Objetos profundamente aninhados (> 10 níveis) são truncados com `[MaxDepth]`. Isso é intencional para evitar logs gigantes, mas pode omitir dados úteis em debug de erros complexos (ex: erros de ORM ou objetos de request muito aninhados).
+
+**Sugestão:** Documentar o limite de profundidade ou tornar configurável via `LOG_MAX_DEPTH`. Baixa prioridade — o limite atual é razoável para a maioria dos casos.
+
+---
+
+### 6.12 `infra/redis.js` — `initializationAttempted` impede re-tentativa após falha
+
+**Localização:** `lib/infra/redis.js`, linhas 14-22
+
+**Problema:** O guard `if (initializationAttempted) return redisInstance` impede que uma nova tentativa de inicialização ocorra após a primeira falha (ex: variáveis não configuradas no boot, mas configuradas depois em runtime). Em runtime normal isso é aceitável (env vars não mudam), mas em testes que alternam entre cenários com/sem Redis, o estado persiste.
+
+**Sugestão:** Em ambiente de teste, permitir resetar `initializationAttempted = false` e `redisInstance = null` via função de teste (ex: `resetRedisForTests()`), similar ao `resetPool()` de `db.js`. Ou simplesmente documentar que mudanças em env vars exigem restart.
+
+---
+
+### Resumo de Prioridades
+
+| Prioridade | Itens |
+|------------|-------|
+| **Alta** | 1.1 (erros de banco expostos), 1.2 (dupla invalidação de cache), 1.3 (413 vs 500), 2.2 (createProduct sem transação), 2.1 (products fora do padrão de paginação), 6.1 (interpolação de tableName), 6.4 (detectSpoofedIP complexo) |
+| **Média** | 1.4, 1.5, 1.6, 1.8, 2.3, 2.5, 3.1, 3.2, 3.3, 4.1, 4.2, 4.3, 4.5, 6.6, 6.7 |
+| **Baixa** | 1.7, 1.9, 1.10, 1.11, 1.12, 2.4, 2.6, 3.4, 3.5, 3.6, 4.4, 4.6, 5.1, 5.2, 5.3, 6.2, 6.3, 6.5, 6.8, 6.9, 6.10, 6.11, 6.12 |

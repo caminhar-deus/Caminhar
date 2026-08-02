@@ -624,6 +624,7 @@
 │   ├── PROJECT_raiz.md
 │   ├── PROJECT_scripts.md
 │   ├── PROJECT_tests.md
+│   ├── PROJECT_utils.md
 │   ├── resolvidos
 │   │   ├── analise-load-tests-orchestrator-02.md
 │   │   ├── analise-load-tests-orchestrator.md
@@ -654,7 +655,8 @@
 │   ├── UPGRADE_pages.md
 │   ├── UPGRADE_raiz.md
 │   ├── UPGRADE_scripts.md
-│   └── UPGRADE_tests.md
+│   ├── UPGRADE_tests.md
+│   └── UPGRADE_utils.md
 ├── eslint.config.js
 ├── estrutura_extras.html
 ├── estrutura_extras.txt
@@ -1250,4 +1252,4 @@
     ├── csvExport.js
     └── reorder.js
 
-194 directories, 1057 files
+194 directories, 1059 files
