@@ -260,7 +260,7 @@ describe('Library - Cache & Rate Limit', () => {
 
       expect(limited).toBe(false);
       expect(mockRedisExpire).toHaveBeenCalledWith(
-        'ratelimit:api:200.200.0.1',
+        'rate_limit:api:200.200.0.1',
         60,
         'NX'
       );

@@ -314,7 +314,7 @@ Módulo responsável pela padronização da camada de API: classes de erro, resp
 | `getOrSetCache(key, fetchFunction, ttlSeconds)` | Cache-Aside: memória L1 → Redis L2 → fetch. TTL padrão 1h. Serializa dados uma única vez e reutiliza para Redis e memória |
 | `invalidateCache(keyPattern)` | Invalida por chave exata ou padrão com `*` (usa SCAN no Redis). Sempre limpa também do cache em memória |
 | `clearAllCache(options)` | FLUSHDB com proteção — requer `{ confirm: true }`. Retorna `{ success, error? }` |
-| `checkRateLimit(ip, endpoint, limit, windowMs)` | Rate limit via Redis INCR+EXPIRE com fallback em Map local. Aceita `limit` como função. Whitelist para localhost e redes privadas |
+| `checkRateLimit(ip, endpoint, limit, windowMs)` | Rate limit via Redis INCR+EXPIRE com fallback em Map local. Contadores sob `rate_limit:${endpoint}:${ip}` (namespace único `rate_limit:*`, alinhado às chaves de whitelist/auditoria). Aceita `limit` como função. Whitelist para localhost e redes privadas |
 | `getCacheMetrics()` | Métricas: hits/misses/erros Redis e memória, tamanhos dos maps, status Redis, single-flight hits |
 | `cleanupRateLimitTimer()` | Limpa o timer de safety net (uso em testes) |
 | `clearAppMemoryCache()` | Limpa cache de aplicação em memória (uso em testes) |

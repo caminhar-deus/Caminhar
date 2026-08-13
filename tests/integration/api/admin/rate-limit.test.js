@@ -4,7 +4,7 @@ import { createMocks } from 'node-mocks-http';
 // Mocks the Redis instance methods
 const mockSmembers = jest.fn();
 const mockLrange = jest.fn();
-const mockKeys = jest.fn();
+const mockRedisScan = jest.fn();
 const mockPipelineGet = jest.fn();
 const mockPipelineTtl = jest.fn();
 const mockPipelineExec = jest.fn();
@@ -18,7 +18,6 @@ jest.mock('@upstash/redis', () => ({
   Redis: jest.fn(() => ({
     smembers: mockSmembers,
     lrange: mockLrange,
-    keys: mockKeys,
     pipeline: () => ({
       get: mockPipelineGet,
       ttl: mockPipelineTtl,
@@ -30,6 +29,17 @@ jest.mock('@upstash/redis', () => ({
     lpush: mockLpush,
     ltrim: mockLtrim,
   })),
+}));
+
+jest.mock('../../../../lib/infra/redis.js', () => ({
+  getRedisInstance: jest.fn(),
+  redisGet: jest.fn(),
+  redisSet: jest.fn(),
+  redisDel: jest.fn(),
+  redisScan: mockRedisScan,
+  redisIncr: jest.fn(),
+  redisExpire: jest.fn(),
+  redisFlushdb: jest.fn(),
 }));
 
 jest.mock('../../../../lib/auth/auth.js', () => ({
@@ -46,20 +56,23 @@ describe('API Admin - Rate Limit (/api/admin/rate-limit)', () => {
   let handler;
   const originalEnv = process.env;
 
-  beforeAll(async () => {
+  beforeAll(() => {
     // Define variáveis de ambiente simuladas ANTES de importar o módulo
     // Isso força o módulo a instanciar o objeto Redis real (mockado) e não cair no fallback Null
     process.env = { ...originalEnv, UPSTASH_REDIS_REST_URL: 'url', UPSTASH_REDIS_REST_TOKEN: 'token' };
-    const module = await import('../../../../pages/api/admin/rate-limit.js');
-    handler = module.default;
   });
-  
+
   afterAll(() => {
     process.env = originalEnv;
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
+    // Reset do registro de módulos para zerar o cache em memória do endpoint
+    // (BLOCKED_IPS_CACHE) entre os cenários
+    jest.resetModules();
+    const module = await import('../../../../pages/api/admin/rate-limit.js');
+    handler = module.default;
   });
 
   const getAuthenticatedMocks = (options = {}) => {
@@ -114,8 +127,8 @@ describe('API Admin - Rate Limit (/api/admin/rate-limit)', () => {
       expect(res._getData()).toContain('127.0.0.1');
     });
 
-    it('deve listar IPs bloqueados combinando keys e pipeline', async () => {
-      mockKeys.mockResolvedValueOnce(['rate_limit:10.0.0.5']);
+    it('deve listar IPs bloqueados combinando SCAN e pipeline', async () => {
+      mockRedisScan.mockResolvedValueOnce(['0', ['rate_limit:10.0.0.5']]);
       mockPipelineExec.mockResolvedValueOnce([10, 3600]); // count=10 (excede limite), ttl=3600
 
       const { req, res } = getAuthenticatedMocks({ method: 'GET' });
@@ -125,7 +138,7 @@ describe('API Admin - Rate Limit (/api/admin/rate-limit)', () => {
     });
     
     it('deve retornar array vazio se não houver chaves', async () => {
-      mockKeys.mockResolvedValueOnce([]);
+      mockRedisScan.mockResolvedValueOnce(['0', []]);
       const { req, res } = getAuthenticatedMocks({ method: 'GET' });
       await handler(req, res);
       expect(res._getStatusCode()).toBe(200);
@@ -159,7 +172,8 @@ describe('API Admin - Rate Limit (/api/admin/rate-limit)', () => {
 
   describe('Erros Gerais', () => {
     it('deve retornar 500 se o Redis falhar', async () => {
-      mockKeys.mockRejectedValueOnce(new Error('Redis crash'));
+      mockRedisScan.mockResolvedValueOnce(['0', ['rate_limit:10.0.0.5']]);
+      mockPipelineExec.mockRejectedValueOnce(new Error('Redis crash'));
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
       const { req, res } = getAuthenticatedMocks({ method: 'GET' });
       await handler(req, res);

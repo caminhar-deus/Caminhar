@@ -27,6 +27,7 @@
  *   node scripts/warm-routes.js                              # Aquece rotas padrão dos testes
  *   node scripts/warm-routes.js --slugs a,b,c                # Aquece slugs específicos
  *   node scripts/warm-routes.js --base-url http://localhost:3000  # URL customizada
+ *   node scripts/warm-routes.js --api                            # Aquece também as rotas de API públicas (aguarda o servidor)
  *   node scripts/warm-routes.js --retries 5                  # Número de tentativas (padrão: 3)
  *
  * ## Integração com Cypress
@@ -50,6 +51,13 @@ const MAX_RETRIES = parseInt(
   10
 );
 
+// Modo API: também aquece as rotas de API públicas (cold-compile + cold start do banco)
+const API_MODE = process.argv.includes('--api');
+
+// Modo API: espera máxima pelo servidor Next.js antes de iniciar o aquecimento
+const SERVER_WAIT_INTERVAL_MS = 2000;
+const SERVER_WAIT_MAX_MS = 120000; // 2 minutos
+
 /**
  * Slugs usados nos testes E2E do Cypress.
  * Extraídos de: cypress/e2e/post.cy.js e cypress/e2e/image_zoom.cy.js
@@ -68,6 +76,20 @@ const SEED_SLUGS = [
   'o-poder-da-gratidao',
   'versiculos-para-meditar',
   'proposito-e-vocacao',
+];
+
+/**
+ * Rotas de API públicas aquecidas no modo --api.
+ * Removem o cold-compile e o cold start do banco do primeiro acesso real,
+ * evitando avisos de "Slow resource" (>1000ms) no primeiro hit.
+ */
+const API_ROUTES = [
+  '/api/dicas?page=1&limit=6',
+  '/api/posts',
+  '/api/videos',
+  '/api/musicas',
+  '/api/products?public=true',
+  '/api/status',
 ];
 
 const PAGES_ROUTES = ['/', '/blog', '/admin'];
@@ -158,6 +180,35 @@ async function warmRoute(url, retries = MAX_RETRIES) {
   return false;
 }
 
+/**
+ * Aguarda o servidor Next.js ficar disponível (modo --api).
+ * Permite executar `npm run warm:api` em terminal auxiliar assim que o
+ * `npm run dev` for iniciado, sem falhar por conexão recusada.
+ */
+async function waitForServer() {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < SERVER_WAIT_MAX_MS) {
+    try {
+      const response = await fetch(`${BASE_URL}/api/status?mode=health`, {
+        signal: AbortSignal.timeout(5000),
+        headers: { 'User-Agent': 'Caminhar-Warmup/1.0' },
+      });
+      if (response.ok) {
+        log('success', `Servidor disponível em ${BASE_URL}`);
+        return true;
+      }
+    } catch (error) {
+      // Node (undici) embrulha ECONNREFUSED em "fetch failed" (cause.code)
+      const connectionRefused = error.code === 'ECONNREFUSED' || error.cause?.code === 'ECONNREFUSED';
+      if (connectionRefused) {
+        log('info', `Servidor ainda não disponível em ${BASE_URL} — aguardando...`);
+      }
+    }
+    await new Promise(resolve => setTimeout(resolve, SERVER_WAIT_INTERVAL_MS));
+  }
+  return false;
+}
+
 async function warmRoutes() {
   const allSlugs = [...new Set([...TEST_SLUGS, ...SEED_SLUGS])];
 
@@ -165,6 +216,16 @@ async function warmRoutes() {
   log('info', `Slugs de teste: ${TEST_SLUGS.join(', ')}`);
   log('info', `Slugs de seed: ${SEED_SLUGS.join(', ')}`);
   log('info', `Tentativas por rota: ${MAX_RETRIES}`);
+
+  if (API_MODE) {
+    log('info', 'Modo API ativado: aquecendo também as rotas de API públicas');
+  }
+
+  // Modo API: aguarda o servidor ficar disponível antes de iniciar (dev boot)
+  if (API_MODE && !(await waitForServer())) {
+    log('error', `Servidor não ficou disponível em ${BASE_URL} após ${SERVER_WAIT_MAX_MS / 1000}s.`);
+    process.exit(1);
+  }
 
   let hasErrors = false;
 
@@ -221,6 +282,15 @@ async function warmRoutes() {
         allOk = false;
         hasErrors = true;
       }
+    }
+  }
+
+  // Fase 6: Rotas de API públicas (somente no modo --api)
+  if (API_MODE) {
+    log('info', '\n🔌 Fase 6: Rotas de API públicas');
+    for (const route of API_ROUTES) {
+      const ok = await warmRoute(route);
+      if (!ok) hasErrors = true;
     }
   }
 

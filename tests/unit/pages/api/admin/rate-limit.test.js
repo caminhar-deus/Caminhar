@@ -1,12 +1,13 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 
+const mockRedisScan = jest.fn();
+
 const mockRedisInstance = {
   lpush: jest.fn(),
   ltrim: jest.fn(),
   smembers: jest.fn(),
   lrange: jest.fn(),
-  keys: jest.fn(),
   pipeline: jest.fn(() => ({
     get: jest.fn(),
     ttl: jest.fn(),
@@ -19,6 +20,17 @@ const mockRedisInstance = {
 
 jest.mock('@upstash/redis', () => ({
   Redis: function() { return mockRedisInstance; }
+}));
+
+jest.mock('../../../../../lib/infra/redis.js', () => ({
+  getRedisInstance: jest.fn(),
+  redisGet: jest.fn(),
+  redisSet: jest.fn(),
+  redisDel: jest.fn(),
+  redisScan: mockRedisScan,
+  redisIncr: jest.fn(),
+  redisExpire: jest.fn(),
+  redisFlushdb: jest.fn(),
 }));
 
 jest.mock('../../../../../lib/auth/auth.js', () => ({
@@ -110,7 +122,7 @@ describe('API - Admin - Rate Limit', () => {
 
   it('deve retornar IPs bloqueados e ignorar os que não excederam o limite', async () => {
     const handler = getHandler();
-    mockRedisInstance.keys.mockResolvedValueOnce(['rate_limit:10.0.0.1', 'rate_limit:10.0.0.2']);
+    mockRedisScan.mockResolvedValueOnce(['0', ['rate_limit:10.0.0.1', 'rate_limit:10.0.0.2']]);
     mockRedisInstance.pipeline.mockImplementationOnce(() => ({
       get: jest.fn(),
       ttl: jest.fn(),
@@ -124,7 +136,7 @@ describe('API - Admin - Rate Limit', () => {
 
   it('deve retornar array vazio se não houver chaves ativas no Redis', async () => {
     const handler = getHandler();
-    mockRedisInstance.keys.mockResolvedValueOnce([]);
+    mockRedisScan.mockResolvedValueOnce(['0', []]);
     const { req, res } = createMocks({ method: 'GET', query: {} });
     await handler(req, res);
     expect(res._getStatusCode()).toBe(200);
@@ -183,7 +195,12 @@ describe('API - Admin - Rate Limit', () => {
 
   it('deve cair no catch se ocorrer um erro interno e retornar 500', async () => {
     const handler = getHandler();
-    mockRedisInstance.keys.mockRejectedValueOnce(new Error('Redis Timeout'));
+    mockRedisScan.mockResolvedValueOnce(['0', ['rate_limit:10.0.0.1']]);
+    mockRedisInstance.pipeline.mockImplementationOnce(() => ({
+      get: jest.fn(),
+      ttl: jest.fn(),
+      exec: jest.fn().mockRejectedValue(new Error('Redis Timeout'))
+    }));
     const { req, res } = createMocks({ method: 'GET', query: { type: 'unknown' } });
     
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});

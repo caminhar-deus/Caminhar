@@ -23,6 +23,7 @@
     "test": "jest",
     "test:log": "mkdir -p logs && jest 2>&1 | tee logs/tests-output.log",
     "warm-routes": "node scripts/warm-routes.js",
+    "warm:api": "node scripts/warm-routes.js --api",
     "pretest:e2e": "node scripts/warm-routes.js",
     "test:e2e": "npx cypress run",
     "test:e2e:record": "npx cypress run --record --key 1c15e96c-3b79-4a4d-b2ec-7f0ffa209246",

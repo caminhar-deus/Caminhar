@@ -51,6 +51,7 @@ A raiz do projeto concentra **31 arquivos** (excluindo subpastas e arquivos bloq
 - **allowScripts:** Permissão para scripts nativos de `sharp`, `cypress`, `ssh2`, `protobufjs`, `cpu-features`, `unrs-resolver`.
 - **Scripts de carga centralizados:** A execução de testes de carga é feita pelo orquestrador `scripts/run-all-load-tests-sequentially.js`, acessível via `npm run test:load:all`.
 - **Script `test:e2e:record`:** contém uma chave de projeto Cypress (`1c15e96c-3b79-4a4d-b2ec-7f0ffa209246`) exposta diretamente no manifesto.
+- **Script `warm:api`:** pré-aquecimento das rotas de API públicas (`node scripts/warm-routes.js --api`), para execução em terminal auxiliar assim que o `npm run dev` for iniciado.
 
 > ⚠️ **Inconsistência:** o `engines` declara Node 24.18.0/npm 12.0.2, mas o `README.md` informa Node 24.16.0/npm 11.17.0.
 

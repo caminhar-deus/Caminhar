@@ -371,7 +371,7 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
 - **Localização:** `/pages/api/admin/rate-limit.js`
 - **Propósito:** Gerenciamento completo de rate limiting no Redis (Upstash).
 - **Funcionalidades:**
-  - **GET** (sem `type`): lista IPs bloqueados combinando `redis.keys('rate_limit:*')` com `pipeline` (get + ttl em uma única requisição), filtrando apenas quem excedeu `MAX_ATTEMPTS` (5).
+  - **GET** (sem `type`): lista IPs bloqueados via **SCAN paginado** (`redisScan` de `lib/infra/redis.js`; count 100, cap 2000) no lugar de `KEYS`, com `pipeline` restrita às chaves de contador (get + ttl em uma requisição) e filtrando apenas quem excedeu `MAX_ATTEMPTS` (5). Resultado agregado é cacheado em memória (TTL 15s) e invalidado em POST/DELETE bem-sucedidos.
   - **GET** `type=current_ip`: retorna IP atual do requisitante (prioriza `x-forwarded-for`, normaliza `::1`).
   - **GET** `type=whitelist`: lista IPs via `smembers('rate_limit:whitelist')`.
   - **GET** `type=audit`: lista logs de auditoria (lista `rate_limit:audit_logs` com limite de 100 registros) com paginação e filtros por data/busca (`parseAndFilterLogs`).
