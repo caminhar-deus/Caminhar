@@ -201,6 +201,18 @@
 
 ---
 
+### 5.4 `knip.json` — entradas obsoletas em `ignoreDependencies` corrigidas
+
+**Arquivo:** `/knip.json`
+
+**Problema:** As dependências `@babel/preset-env` e `@babel/preset-react` estavam em `ignoreDependencies`, mas passaram a ser detectadas como usadas pelo Knip (configuração Babel referenciada pelo transformer `babel-jest` em `jest.config.base.js`), gerando avisos de "Configuration hints" na execução do `npm run knip`.
+
+**Impacto:** Configuração com entradas desnecessárias e avisos recorrentes na ferramenta de análise.
+
+**Sugestão:** Remover as duas entradas de `ignoreDependencies` e adicionar `treatConfigHintsAsErrors: true` para que dicas de configuração pendentes façam o Knip falhar (exit code 1) — **aplicada** no `knip.json` atual.
+
+---
+
 ## 6. Performance
 
 ### 6.1 `next-sitemap.config.js` — queries ao banco no `additionalPaths`

@@ -230,7 +230,7 @@ A raiz do projeto concentra **31 arquivos** (excluindo subpastas e arquivos bloq
 
 **Propósito:** Configuração da ferramenta Knip para análise de código morto, dependências não utilizadas e arquivos órfãos.
 
-**Funcionalidades:** Schema referenciado (`./schema.knip.json`), path alias `@/*`, ignora `tests/`, `load-tests/`, `scripts/`, `examples/`, `.agents/`, `*.config.js`, `jest.setup.js`. Ignora dependências como `@babel/preset-env`, `@faker-js/faker`, `jsdom`. Regra de duplicidade desligada.
+**Funcionalidades:** Schema referenciado (`./schema.knip.json`), path alias `@/*`, ignora `tests/`, `load-tests/`, `scripts/`, `examples/`, `.agents/`, `*.config.js`, `jest.setup.js`. Ignora dependências como `@faker-js/faker`, `babel-jest`, `jsdom`. Dicas de configuração tratadas como erro (`treatConfigHintsAsErrors`). Regra de duplicidade desligada.
 
 ---
 
