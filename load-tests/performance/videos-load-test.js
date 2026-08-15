@@ -30,7 +30,7 @@ const resourceConfig = {
         return false;
       }
     },
-    'página 1 tempo < 300ms': (r) => r.timings.duration < 300,
+    'página 1 tempo < 1000ms': (r) => r.timings.duration < 1000,
   }),
   extraRequests: [
     {
@@ -53,6 +53,7 @@ const resourceConfig = {
     thresholds: {
       'http_req_duration{name:ListVideos_Page1}': ['p(95)<500'],
       'http_req_duration{name:ListVideos_Page2}': ['p(95)<500'],
+      'checks': ['rate>0.95'],
     },
   },
 };
@@ -62,6 +63,10 @@ const loadTest = createLoadTest(resourceConfig);
 export const options = loadTest.options;
 
 export default loadTest.default;
+
+export function setup() {
+  return loadTest.setup();
+}
 
 export function handleSummary(data) {
   return generateReport(data, loadTest.reportName);

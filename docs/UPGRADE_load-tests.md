@@ -203,6 +203,8 @@ Não há justificativa técnica clara para essa diferença, já que ambos são e
 
 **Sugestão:** Verificar se `requireAuth` deveria ser `false` para este teste, já que o endpoint é público, e decidir se a ausência de `setup()` é intencional ou uma omissão a corrigir.
 
+**Resolvido:** O `setup()` foi exportado (assim como no `musicas-load-test.js`), fazendo o k6 executar login e passar o token corretamente. O `requireAuth: true` foi mantido pois a configuração agora é funcional. Adicionalmente, a check `página 1 tempo < 300ms` foi ajustada para `< 1000ms` para tolerar cold start, e o threshold `checks: ['rate>0.95']` foi adicionado para garantir a qualidade dos checks.
+
 ---
 
 ## 5. Problemas de Segurança

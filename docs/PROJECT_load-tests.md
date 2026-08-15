@@ -373,17 +373,17 @@ Contém 17 scripts de teste de carga, stress e performance.
 
 **Estrutura:**
 - Configuração: perfil `medium` do `helpers/profiles.js`
-- **Não exporta `setup()`** — ao contrário do `musicas-load-test.js`, este arquivo não exporta função `setup()`, portanto o k6 não executa login e o `default()` nunca recebe token. O header `Authorization` não é adicionado e o endpoint é acessado como público.
+- Exporta `setup()` — executa login com validação de Content-Type (health check desativado)
 - `default()` — GET `/api/videos` (página 1) + GET `/api/videos?page=2&limit=5` (página 2)
 - Valida metadados de paginação (page=2, limit=5)
-- Thresholds específicos: `http_req_duration{name:ListVideos_Page1}` e `{name:ListVideos_Page2}` p(95)<500ms
+- Thresholds específicos: `http_req_duration{name:ListVideos_Page1}` e `{name:ListVideos_Page2}` p(95)<500ms, `checks` rate>0.95
 - `handleSummary()` — Gera relatório via `helpers/report.js`
 
 **Endpoints chamados:**
 - `GET /api/videos` — Listar vídeos (página 1)
 - `GET /api/videos?page=2&limit=5` — Listar vídeos (página 2)
 
-> **Nota técnica:** O arquivo define `requireAuth: true` na configuração, mas sem `setup()` exportado o login nunca ocorre. Como `/api/videos` é público, o teste funciona normalmente, porém a configuração de autenticação não tem efeito real.
+> **Nota técnica:** O arquivo define `requireAuth: true` na configuração e agora exporta `setup()`, portanto o login é executado e o header `Authorization` é enviado. Embora `/api/videos` seja um endpoint público, a autenticação é aplicada de forma consistente com os demais testes de carga.
 
 ---
 
