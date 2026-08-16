@@ -46,9 +46,18 @@ describe('API - Cleanup Test Data (/api/cleanup-test-data)', () => {
   });
 
   it('deve retornar 500 se o banco falhar', async () => {
-    query.mockRejectedValueOnce(new Error('DB Failed'));
-    const { req, res } = getMocks('DELETE', { username: 'admin' });
-    await handler(req, res);
-    expect(res._getStatusCode()).toBe(500);
+    // Suprime o console.error do logger disfarado como erro esperado do caminho
+    // de falha simulada, para não poluir a saída/estatística de logs em testes.
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      query.mockRejectedValueOnce(new Error('DB Failed'));
+      const { req, res } = getMocks('DELETE', { username: 'admin' });
+      await handler(req, res);
+      expect(res._getStatusCode()).toBe(500);
+      // Garante que somente o erro esperado foi logado (não mascara outros).
+      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('DB Failed'));
+    } finally {
+      errorSpy.mockRestore();
+    }
   });
 });

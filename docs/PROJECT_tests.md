@@ -141,7 +141,7 @@ Testes de endpoints públicos e CRUD de recursos. Usam `node-mocks-http` + mocks
 | Arquivo | Propósito |
 |---------|-----------|
 | `audit.test.js` | Testa `logActivity` do domínio de auditoria (INSERT em activity_logs) |
-| `cleanup-test-data.test.js` | Testa limpeza de dados de teste |
+| `cleanup-test-data.test.js` | Testa limpeza de dados de teste (inclui supressão e validação do log de erro esperado em falha de banco) |
 | `dicas.test.js` | CRUD de dicas |
 | `login.test.js` | Fluxo de login |
 | `musicas.create.test.js` | Criação de músicas |
