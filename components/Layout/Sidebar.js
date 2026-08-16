@@ -110,7 +110,7 @@ export const Sidebar = ({
     <div
       className={containerClasses}
       style={{ '--sidebar-breakpoint': `${breakpoint}px` }}
-      {...(mobileOpen ? { inert: '' } : {})}
+      {...(mobileOpen ? { inert: true } : {})}
     >
       {/* Mobile Toggle Button */}
       {collapsible && (

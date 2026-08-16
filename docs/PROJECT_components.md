@@ -181,7 +181,7 @@ Componentes de funcionalidades públicas do site, agrupados por domínio.
 
 **Localização:** `Layout/Sidebar.js`
 
-**Propósito:** Sidebar colapsável (esquerda/direita). Larguras sm/md/lg, persistência em localStorage (com debounce 300ms), modo mobile com overlay, breakpoint configurável. Subcomponentes: `Sidebar.Nav`, `Sidebar.NavItem`, `Sidebar.Section`, `Sidebar.Header`, `Sidebar.Footer`. 250 linhas.
+**Propósito:** Sidebar colapsável (esquerda/direita). Larguras sm/md/lg, persistência em localStorage (com debounce 300ms), modo mobile com overlay que aplica o atributo `inert` no container (valor booleano `true`) para bloqueio de foco do teclado atrás do overlay, breakpoint configurável. Subcomponentes: `Sidebar.Nav`, `Sidebar.NavItem`, `Sidebar.Section`, `Sidebar.Header`, `Sidebar.Footer`. 250 linhas.
 
 ### 3.5 index.js
 
