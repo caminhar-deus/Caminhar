@@ -64,7 +64,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Internal Server Error', message: result.message || 'Erro interno do servidor' });
   }
 
-  const { user, token, refreshToken } = result;
+  const { user, token, refreshToken, permissionsLoaded } = result;
 
   // 4. Decide o formato de resposta baseado no parâmetro ?response=
   const responseMode = req.query.response;
@@ -78,12 +78,14 @@ export default async function handler(req, res) {
         token_type: 'Bearer',
         expires_in: 3600,
         refresh_token: refreshToken,
+        refresh_token_stored: refreshToken !== undefined && refreshToken !== null,
         refresh_token_expires_in: 2592000,
         user: {
           userId: user.id,
           username: user.username,
           role: user.role,
           permissions: user.permissions,
+          permissionsLoaded,
         },
       },
       message: 'Autenticação bem-sucedida',
@@ -93,7 +95,9 @@ export default async function handler(req, res) {
 
   // Modo padrão: retorna cookie httpOnly + dados do usuário
   setAuthCookie(res, token);
-  setRefreshTokenCookie(res, refreshToken);
+  if (refreshToken) {
+    setRefreshTokenCookie(res, refreshToken);
+  }
 
   return res.status(200).json({
     success: true,
@@ -102,6 +106,7 @@ export default async function handler(req, res) {
       username: user.username,
       role: user.role,
       permissions: user.permissions,
+      permissionsLoaded,
     },
     message: 'Autenticação bem-sucedida',
     timestamp: new Date().toISOString(),

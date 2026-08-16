@@ -201,6 +201,7 @@ lib/api/index.js → lib/api/response.js
 lib/api/index.js → lib/api/validate.js
 lib/api/middleware.js → lib/auth/auth.js
 lib/api/middleware.js → lib/cache/cache.js
+lib/api/middleware.js → lib/infra/logger.js
 lib/api/middleware.js → lib/api/response.js
 lib/api/response.js → lib/api/utils.js
 lib/api/validate.js → lib/infra/logger.js
@@ -271,6 +272,7 @@ pages/api/admin/posts.js → lib/domain/posts.js
 pages/api/admin/posts.js → lib/infra/db.js
 pages/api/admin/rate-limit.js → lib/api/adminCrudHandler.js
 pages/api/admin/rate-limit.js → lib/infra/logger.js
+pages/api/admin/rate-limit.js → lib/infra/redis.js
 pages/api/admin/roles.js → lib/api/adminCrudHandler.js
 pages/api/admin/roles.js → lib/crud/crud.js
 pages/api/admin/roles.js → lib/infra/db.js

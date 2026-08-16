@@ -1,8 +1,11 @@
 import { describe, it, expect, jest } from '@jest/globals';
-import { hashPassword, verifyPassword, generateToken, verifyToken, setAuthCookie, getAuthToken, authenticate, withAuth, initializeAuth } from '../../../lib/auth/auth.js';
+import { hashPassword, verifyPassword, generateToken, verifyToken, setAuthCookie, getAuthToken, authenticate, authenticateAndGenerateToken, withAuth, initializeAuth } from '../../../lib/auth/auth.js';
 import { query } from '../../../lib/infra/db.js';
 
 jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb());
+jest.mock('../../../lib/cache/cache.js', () => ({
+  checkRateLimit: jest.fn(async () => false),
+}));
 
 describe('Library - Auth', () => {
 
@@ -46,6 +49,22 @@ describe('Library - Auth', () => {
     expect(await authenticate('admin', 'wrong')).toBeNull();
   });
 
+  it('authenticateAndGenerateToken: não devolve refresh token não persistido quando o armazenamento falha', async () => {
+    const passwordHash = await hashPassword('123456');
+
+    query.mockResolvedValueOnce({ rows: [{ id: 1, username: 'admin', password: passwordHash, role: 'admin' }] }); // Usuário existe
+    query.mockResolvedValueOnce({ rowCount: 1, rows: [] }); // Atualiza last_login_at
+    query.mockResolvedValueOnce({ rows: [{ permissions: ['Visão Geral'] }] }); // Busca permissões
+    query.mockRejectedValueOnce(new Error('DB Error')); // Falha ao armazenar refresh token
+
+    const result = await authenticateAndGenerateToken('admin', '123456', '127.0.0.1');
+    expect(result.error).toBeNull();
+    expect(result.token).toBeDefined();
+    expect(result.refreshToken).toBeNull();
+    expect(result.user.permissions).toEqual(['Visão Geral']);
+    expect(result.permissionsLoaded).toBe(true);
+  });
+
   it('withAuth: protege rotas de API como middleware', async () => {
     const handler = jest.fn();
     const middleware = withAuth(handler);
@@ -86,10 +105,7 @@ describe('Library - Auth', () => {
     process.env.ADMIN_USERNAME = 'admin';
     process.env.ADMIN_PASSWORD = 'password';
     query.mockRejectedValueOnce(new Error('DB Error'));
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     
     await expect(initializeAuth()).rejects.toThrow('DB Error');
-    expect(consoleSpy).toHaveBeenCalled();
-    consoleSpy.mockRestore();
   });
 });

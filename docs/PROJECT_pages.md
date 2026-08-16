@@ -423,8 +423,8 @@ Os três endpoints abaixo são usados pelo painel admin para **importar metadado
   - POST apenas (405 com header `Allow` para outros).
   - **Detecção de IP spoofing** via `detectSpoofedIP()` antes de autenticar; bloqueia com 403 se detectado.
   - Rate limiting por IP (5 tentativas/60s) delegado a `authenticateAndGenerateToken()` de `lib/auth/auth.js`.
-  - Modo web (padrão): define cookies httpOnly `token` e `refreshToken` via `setAuthCookie()`/`setRefreshTokenCookie()` e retorna `{ success, user }`.
-  - Modo API externa (`?response=body`): retorna `{ token, token_type, expires_in, refresh_token, refresh_token_expires_in, user }` no corpo.
+  - Modo web (padrão): define cookies httpOnly `token` e `refreshToken` via `setAuthCookie()`/`setRefreshTokenCookie()` e retorna `{ success, user }`. O cookie `refreshToken` só é definido quando o refresh token foi persistido com sucesso; `user` inclui `permissionsLoaded` indicando se as permissões do cargo foram carregadas.
+  - Modo API externa (`?response=body`): retorna `{ token, token_type, expires_in, refresh_token, refresh_token_expires_in, user }` no corpo. Quando o refresh token não foi persistido, `refresh_token` vem como `null` e `refresh_token_stored` como `false`.
   - Tratamento de erros específicos: `RATE_LIMITED` (429), `INVALID_CREDENTIALS` (401), `MISSING_FIELDS` (400).
 
 ### `/pages/api/auth/check.js`

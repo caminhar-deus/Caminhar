@@ -60,7 +60,7 @@ tests/
 
 ### `tests/setup.js`
 **Localização:** `/tests/setup.js`
-**Propósito:** Bootstrap central executado antes de todos os testes (ambiente jsdom). Configura polyfills (TextEncoder, TextDecoder, localStorage, matchMedia, IntersectionObserver, ResizeObserver, scrollTo, crypto.randomUUID, URL.revokeObjectURL), React Testing Library (timeout 5s), filtro de warnings conhecidos do `console.error`, cleanup automático pós-teste (`afterEach` com `cleanup()` e `jest.clearAllMocks()`), e utilitários globais (`global.wait()`, `global.suppressWarnings()`). Importa os matchers customizados. O polyfill do `IntersectionObserver` simula interseção imediata via `setTimeout` para que iframes com lazy loading sejam renderizados sem interação manual.
+**Propósito:** Bootstrap central executado antes de todos os testes (ambiente jsdom). Configura polyfills (TextEncoder, TextDecoder, localStorage, matchMedia, IntersectionObserver, ResizeObserver, scrollTo, crypto.randomUUID, URL.revokeObjectURL), React Testing Library (timeout 5s), filtro de warnings conhecidos do `console.error` — incluindo erros intencionais de auth (`KNOWN_INTENTIONAL_AUTH_ERRORS`: 'Erro ao inicializar sistema de autenticação' e 'Falha ao armazenar refresh token') —, cleanup automático pós-teste (`afterEach` com `cleanup()` e `jest.clearAllMocks()`), e utilitários globais (`global.wait()`, `global.suppressWarnings()`). Importa os matchers customizados. O polyfill do `IntersectionObserver` simula interseção imediata via `setTimeout` para que iframes com lazy loading sejam renderizados sem interação manual.
 
 ### `tests/setup.db.js`
 **Localização:** `/tests/setup.db.js`
@@ -355,7 +355,7 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 
 | Arquivo | Propósito |
 |---------|-----------|
-| `auth.test.js` | Módulo de autenticação (hash, JWT, cookies, middleware) |
+| `auth.test.js` | Módulo de autenticação (hash, JWT, cookies, middleware, refresh token não persistido) |
 | `cache.test.js` | Módulo de cache (L1 memória, L2 Redis, rate limit) |
 | `crud.test.js` | Módulo CRUD |
 | `db.test.js` | Módulo de banco (pool, closeDatabase) |

@@ -150,7 +150,12 @@ const KNOWN_API_WARNINGS = [
   'Isso geralmente significa que a rota API quebrou',
 ];
 
-const ALL_FILTERS = [...REACT_DEPRECATION_WARNINGS, ...KNOWN_API_WARNINGS];
+const KNOWN_INTENTIONAL_AUTH_ERRORS = [
+  'Erro ao inicializar sistema de autenticação',
+  'Falha ao armazenar refresh token',
+];
+
+const ALL_FILTERS = [...REACT_DEPRECATION_WARNINGS, ...KNOWN_API_WARNINGS, ...KNOWN_INTENTIONAL_AUTH_ERRORS];
 
 console.error = (...args) => {
   if (

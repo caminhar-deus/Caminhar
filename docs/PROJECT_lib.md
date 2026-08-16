@@ -166,7 +166,7 @@ Módulo responsável pela padronização da camada de API: classes de erro, resp
 |--------|-----------|
 | `composeMiddleware(...middlewares)` | Compõe middlewares da esquerda para direita via `reduceRight` |
 | `withMethod(allowedMethods)` | Restringe métodos HTTP → 405 se não permitido |
-| `withAuth(options)` | Autenticação com `roles` opcionais; usa `getAuthToken`/`verifyToken` de `lib/auth/auth.js`; adiciona `req.user` |
+| `withAuth(options)` | Autenticação com `roles` opcionais; usa `getAuthToken`/`verifyToken` de `lib/auth/auth.js`; adiciona `req.user`; loga `warn` em acesso sem token ou com token inválido |
 | `withOptionalAuth()` | Autenticação opcional — não bloqueia anônimos, apenas popula `req.user` se token válido |
 | `withRateLimit(options)` | Rate limit via `checkRateLimit` de `lib/cache/cache.js`. Suporta `maxRequests` como função dinâmica. Em produção, alerta se Redis não estiver disponível |
 | `withCors(options)` | CORS configurável. Em produção usa `ALLOWED_ORIGINS` (env); em dev usa `['*']`. Responde preflight OPTIONS |
@@ -274,12 +274,12 @@ Módulo responsável pela padronização da camada de API: classes de erro, resp
 | `hashPassword(password)` | Aplica hash bcrypt com 10 rounds de salt |
 | `verifyPassword(password, hashedPassword)` | Compara senha com hash armazenado |
 | `generateToken(user)` | Gera JWT com `userId`, `username`, `role` e expiração de 1h |
-| `verifyToken(token)` | Verifica e decodifica JWT; retorna `null` se inválido |
+| `verifyToken(token)` | Verifica e decodifica JWT; retorna `null` se inválido (registra o tipo da falha em nível `debug`, sem conteúdo do token) |
 | `setAuthCookie(res, token, options)` | Define cookie `httpOnly` com o token. Usa `res.appendHeader` para não sobrescrever outros cookies |
 | `getAuthCookie(req)` | Extrai token do cookie da requisição |
 | `getAuthToken(req)` | Extrai token do header `Authorization: Bearer` ou do cookie (fallback) |
 | `authenticate(username, password)` | Autentica usuário contra o banco de dados |
-| `authenticateAndGenerateToken(username, password, ip, options)` | Login completo: valida campos, aplica rate limit (5 tentativas/min), autentica, atualiza `last_login_at`, busca permissões do cargo, gera access token + refresh token |
+| `authenticateAndGenerateToken(username, password, ip, options)` | Login completo: valida campos, aplica rate limit (5 tentativas/min), autentica, atualiza `last_login_at`, busca permissões do cargo, gera access token + refresh token. Em sucesso retorna `{ user, token, refreshToken, permissionsLoaded, error }` — `refreshToken` vem `null` quando o armazenamento do refresh token falhar e `permissionsLoaded` vem `false` quando a consulta de permissões falhar |
 | `storeRefreshToken(userId, refreshToken)` | Armazena refresh token no banco com expiração de 30 dias |
 | `validateRefreshToken(refreshToken)` | Valida refresh token no banco (não revogado e não expirado) |
 | `revokeRefreshToken(refreshToken)` | Revoga um refresh token específico |
@@ -287,11 +287,11 @@ Módulo responsável pela padronização da camada de API: classes de erro, resp
 | `refreshAccessToken(refreshToken)` | Renovação completa com rotação: valida, revoga token atual, gera novo par e retorna `{ accessToken, refreshToken, user }` |
 | `setRefreshTokenCookie(res, token, options)` | Define cookie httpOnly com refresh token, path restrito a `/api/auth/refresh`, sameSite Strict |
 | `getRefreshTokenCookie(req)` | Extrai refresh token do cookie |
-| `withAuth(handler)` | Middleware que protege handlers exigindo token JWT válido |
+| `withAuth(handler)` | Middleware que protege handlers exigindo token JWT válido; loga `warn` em acesso sem token ou com token inválido |
 | `initializeAuth()` | Cria tabela `users` e `refresh_tokens` (se não existirem), migra coluna `role`, cria admin via variáveis de ambiente, cria índices |
 
 **Observações:**
-- `JWT_SECRET` é obrigatório em produção — sem ele, lança erro. Em desenvolvimento, gera chave determinística via `createHash('sha256')` a partir do ambiente local.
+- `JWT_SECRET` é obrigatório fora dos ambientes `development`/`test` — sem ele, lança erro. Nesses dois ambientes, gera chave derivada via `createHash('sha256')` a partir do ambiente local.
 - Funcionalidades de cookies (`parseCookie`, `serializeCookie`) são implementações manuais sem dependência externa (ver UPGRADE 6.7).
 - `initializeAuth` executa DDL (`CREATE TABLE`, `ALTER TABLE`) diretamente no código — importante garantir que `scripts/migrations/` seja a fonte canônica de schema.
 - Os parâmetros `ADMIN_USERNAME` e `ADMIN_PASSWORD` são obrigatórios para a inicialização.
