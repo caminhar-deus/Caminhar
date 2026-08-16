@@ -23,8 +23,20 @@ jest.mock('../../../../lib/auth/auth.js', () => {
   };
 });
 
+// Mock do logger para não imprimir o erro de handler intencional (caminho de 500) na saída do Jest
+jest.mock('../../../../lib/infra/logger.js', () => ({
+  logger: {
+    error: jest.fn(),
+    warn: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn(),
+    success: jest.fn(),
+  },
+}));
+
 import handler from '../../../../pages/api/admin/fetch-youtube.js';
 import { getAuthToken, verifyToken } from '../../../../lib/auth/auth.js';
+import { logger } from '../../../../lib/infra/logger.js';
 import { mockGlobalFetch } from '../../../helpers/index.js';
 
 describe('API Admin - Fetch YouTube (/api/admin/fetch-youtube)', () => {
@@ -93,6 +105,7 @@ describe('API Admin - Fetch YouTube (/api/admin/fetch-youtube)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(500);
+      expect(logger.error).toHaveBeenCalledWith('AdminCrudHandler', 'Erro no handler YouTube:', expect.any(Error));
       expect(JSON.parse(res._getData()).message).toContain('Não foi possível encontrar o vídeo');
     });
   });

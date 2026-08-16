@@ -14,6 +14,7 @@
 5. [Melhorias de Ferramenta, Manutenção e Performance](#5-melhorias-de-ferramenta-manutenção-e-performance)
 6. [Pontos de Atenção Técnica](#6-pontos-de-atenção-técnica)
 7. [Resumo das Ações Recomendadas](#7-resumo-das-ações-recomendadas)
+8. [Implementações Aplicadas](#8-implementações-aplicadas)
 
 ---
 
@@ -215,4 +216,26 @@
 
 ---
 
-> **Nota:** Este documento é um relatório de análise. Nenhuma alteração foi aplicada ao projeto. As ações listadas são recomendações para revisão e priorização futura.
+## 8. Implementações Aplicadas
+
+Os itens abaixo foram implementados após a elaboração deste relatório. As recomendações das seções 1–7 permanecem válidas para revisão e priorização futura.
+
+### 8.1 Supressão de log de erro intencional no teste do fetch-youtube
+
+**Arquivo:** `tests/integration/api/admin/fetch-youtube.test.js`
+
+**Descrição:** Adicionado `jest.mock` de `lib/infra/logger.js` (com `error`, `warn`, `info`, `debug` e `success` como `jest.fn()`) e uma asserção de `logger.error` no teste de caminho de erro (500), impedindo que o log intencional `[AdminCrudHandler] ❌ Erro no handler ...` seja impresso na saída do Jest, mantendo o fluxo exercitado.
+
+### 8.2 Expansão de cobertura para arquivos sem cobertura
+
+**Arquivos:**
+- `tests/integration/api/auth/refresh.test.js` → `pages/api/auth/refresh.js`
+- `tests/integration/api/admin/integrity.test.js` → `pages/api/admin/integrity.js`
+- `tests/unit/lib/domain/products.test.js` → `lib/domain/products.js`
+- `tests/unit/lib/infra/redis.test.js` → `lib/infra/redis.js`
+
+**Descrição:** Adicionados testes cobrindo módulos que estavam em 0% de cobertura, elevando a cobertura global para atender os `coverageThreshold` do `jest.config.js` (statements/lines ≥ 90%, functions ≥ 85%, branches ≥ 80%), com `npm run test:coverage` retornando status 0.
+
+---
+
+> **Nota:** Este documento é um relatório de análise. As ações listadas nas seções 1–7 são recomendações para revisão e priorização futura; a seção 8 registra as implementações aplicadas sobre o tema após a elaboração deste relatório.

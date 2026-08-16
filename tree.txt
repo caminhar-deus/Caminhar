@@ -380,8 +380,17 @@
 │   │   │   │   ├── response.js.html
 │   │   │   │   ├── utils.js.html
 │   │   │   │   └── validate.js.html
+│   │   │   ├── auth
+│   │   │   │   ├── auth.js.html
+│   │   │   │   └── index.html
 │   │   │   ├── auth.js.html
+│   │   │   ├── cache
+│   │   │   │   ├── cache.js.html
+│   │   │   │   └── index.html
 │   │   │   ├── cache.js.html
+│   │   │   ├── crud
+│   │   │   │   ├── crud.js.html
+│   │   │   │   └── index.html
 │   │   │   ├── crud.js.html
 │   │   │   ├── csvExport.js.html
 │   │   │   ├── db-example.js.html
@@ -399,7 +408,16 @@
 │   │   │   │   └── videos.js.html
 │   │   │   ├── handleUnauthorized.js.html
 │   │   │   ├── index.html
+│   │   │   ├── infra
+│   │   │   │   ├── db.js.html
+│   │   │   │   ├── index.html
+│   │   │   │   ├── logger.js.html
+│   │   │   │   └── redis.js.html
 │   │   │   ├── logger.js.html
+│   │   │   ├── media
+│   │   │   │   ├── index.html
+│   │   │   │   ├── spotify.js.html
+│   │   │   │   └── youtube.js.html
 │   │   │   ├── middleware
 │   │   │   │   ├── index.html
 │   │   │   │   └── rate-limit-proxy.js.html
@@ -437,7 +455,8 @@
 │   │   │       │   ├── index.html
 │   │   │       │   ├── login.js.html
 │   │   │       │   ├── login.v2.js.html
-│   │   │       │   └── logout.js.html
+│   │   │       │   ├── logout.js.html
+│   │   │       │   └── refresh.js.html
 │   │   │       ├── cleanup-test-data.js.html
 │   │   │       ├── dicas.js.html
 │   │   │       ├── helper
@@ -481,8 +500,17 @@
 │   │   │   ├── response.js.html
 │   │   │   ├── utils.js.html
 │   │   │   └── validate.js.html
+│   │   ├── auth
+│   │   │   ├── auth.js.html
+│   │   │   └── index.html
 │   │   ├── auth.js.html
+│   │   ├── cache
+│   │   │   ├── cache.js.html
+│   │   │   └── index.html
 │   │   ├── cache.js.html
+│   │   ├── crud
+│   │   │   ├── crud.js.html
+│   │   │   └── index.html
 │   │   ├── crud.js.html
 │   │   ├── csvExport.js.html
 │   │   ├── db-example.js.html
@@ -500,7 +528,16 @@
 │   │   │   └── videos.js.html
 │   │   ├── handleUnauthorized.js.html
 │   │   ├── index.html
+│   │   ├── infra
+│   │   │   ├── db.js.html
+│   │   │   ├── index.html
+│   │   │   ├── logger.js.html
+│   │   │   └── redis.js.html
 │   │   ├── logger.js.html
+│   │   ├── media
+│   │   │   ├── index.html
+│   │   │   ├── spotify.js.html
+│   │   │   └── youtube.js.html
 │   │   ├── middleware
 │   │   │   ├── index.html
 │   │   │   └── rate-limit-proxy.js.html
@@ -538,7 +575,8 @@
 │   │       │   ├── index.html
 │   │       │   ├── login.js.html
 │   │       │   ├── login.v2.js.html
-│   │       │   └── logout.js.html
+│   │       │   ├── logout.js.html
+│   │       │   └── refresh.js.html
 │   │       ├── cleanup-test-data.js.html
 │   │       ├── dicas.js.html
 │   │       ├── helper
@@ -1009,6 +1047,7 @@
 │   │   │   │   ├── fetch-ml.test.js
 │   │   │   │   ├── fetch-spotify.test.js
 │   │   │   │   ├── fetch-youtube.test.js
+│   │   │   │   ├── integrity.test.js
 │   │   │   │   ├── musicas.test.js
 │   │   │   │   ├── posts.test.js
 │   │   │   │   ├── rate-limit.test.js
@@ -1020,7 +1059,8 @@
 │   │   │   ├── auth
 │   │   │   │   ├── check.test.js
 │   │   │   │   ├── login.test.js
-│   │   │   │   └── logout.test.js
+│   │   │   │   ├── logout.test.js
+│   │   │   │   └── refresh.test.js
 │   │   │   ├── cleanup-test-data.test.js
 │   │   │   ├── dicas.test.js
 │   │   │   ├── login.test.js
@@ -1205,8 +1245,11 @@
 │       │   │   ├── settings.test.js
 │       │   │   └── updatePost.test.js
 │       │   ├── db.test.js
+│       │   ├── domain
+│       │   │   └── products.test.js
 │       │   ├── infra
-│       │   │   └── logger.test.js
+│       │   │   ├── logger.test.js
+│       │   │   └── redis.test.js
 │       │   ├── middleware.test.js
 │       │   ├── redis.test.js
 │       │   └── seo
@@ -1252,4 +1295,4 @@
     ├── csvExport.js
     └── reorder.js
 
-194 directories, 1059 files
+205 directories, 1091 files

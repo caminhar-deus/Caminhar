@@ -185,6 +185,7 @@ Testes de endpoints administrativos com autenticação.
 | `fetch-ml.test.js` | Fetch de dados de ML |
 | `fetch-spotify.test.js` | Fetch de dados do Spotify |
 | `fetch-youtube.test.js` | Fetch de dados do YouTube |
+| `integrity.test.js` | Verificação de integridade do sistema (banco, storage, backup, cache) |
 | `musicas.test.js` | CRUD admin de músicas |
 | `posts.test.js` | CRUD admin de posts |
 | `rate-limit.test.js` | Rate limiting |
@@ -200,6 +201,7 @@ Testes de endpoints administrativos com autenticação.
 | `check.test.js` | Verificação de autenticação |
 | `login.test.js` | Login |
 | `logout.test.js` | Logout |
+| `refresh.test.js` | Renovação de access token via refresh token (cookie/body) |
 
 ### 4.4 Autenticação v1 (`/tests/integration/auth/`)
 
@@ -395,11 +397,18 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | `settings.test.js` | Operações de configurações |
 | `updatePost.test.js` | Atualização de post (parcial) |
 
+#### Lib/Domain (`/tests/unit/lib/domain/`)
+
+| Arquivo | Propósito |
+|---------|-----------|
+| `products.test.js` | Operações de domínio de produtos (paginação com filtros, create/update/delete) |
+
 #### Lib/Infra (`/tests/unit/lib/infra/`)
 
 | Arquivo | Propósito |
 |---------|-----------|
 | `logger.test.js` | Logger |
+| `redis.test.js` | Módulo Redis (fallback em memória, Redis Upstash configurado, URL inválida, REDIS_URL) |
 
 #### Lib/SEO (`/tests/unit/lib/seo/`)
 
@@ -462,9 +471,9 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | **Matchers** | 6 arquivos |
 | **Mocks** | 9 arquivos |
 | **Examples** | 2 arquivos |
-| **Testes de Integração** | 54 arquivos |
-| **Testes Unitários** | ~122 arquivos |
-| **Total Aproximado** | **~210 arquivos** |
+| **Testes de Integração** | 56 arquivos |
+| **Testes Unitários** | ~124 arquivos |
+| **Total Aproximado** | **~214 arquivos** |
 
 ---
 
