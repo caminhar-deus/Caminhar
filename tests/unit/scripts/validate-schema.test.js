@@ -47,14 +47,44 @@ describe('validate-schema.js — Validação do schema do banco', () => {
   });
 
   it('deve validar schema corretamente com tabelas existentes', async () => {
-    jest.isolateModules(async () => {
-      const pg = await import('pg');
-      pg.mockQuery.mockResolvedValue({ rows: [{ '?column?': 1 }] }); // SELECT 1
-
-      const mod = await import('../../../scripts/validate-schema.js');
-      const result = await mod.validateSchema();
-      expect(typeof result).toBe('boolean');
+    // Import dinâmico direto (com await) garante uma espera determinística
+    // da Promise, ao contrário de jest.isolateModules(callback async).
+    const pg = await import('pg');
+    // Colunas esperadas, idênticas ao EXPECTED_SCHEMA de validate-schema.js.
+    const expectedColumnsByTable = {
+      posts: ['id', 'title', 'slug', 'excerpt', 'content', 'image_url', 'published', 'created_at', 'updated_at', 'views'],
+      videos: ['id', 'titulo', 'url_youtube', 'descricao', 'publicado', 'created_at', 'updated_at'],
+      musicas: ['id', 'titulo', 'artista', 'url_spotify', 'descricao', 'publicado', 'created_at', 'updated_at'],
+      users: ['id', 'username', 'password', 'role', 'created_at'],
+      settings: ['key', 'value', 'type', 'description', 'updated_at'],
+      images: ['id', 'filename', 'path', 'type', 'size', 'user_id'],
+    };
+    // Resposta condicional ao SQL: SELECT 1 retorna { '?column?': 1 },
+    // cada SELECT EXISTS retorna { exists: true }, e cada consulta de
+    // colunas (information_schema.columns) retorna as colunas da tabela.
+    pg.mockQuery.mockImplementation((text, values) => {
+      if (text.includes('SELECT EXISTS')) {
+        return Promise.resolve({ rows: [{ exists: true }] });
+      }
+      if (text.includes('SELECT column_name') || text.includes('information_schema.columns')) {
+        const tableName = values && values[0];
+        return Promise.resolve({
+          rows: (expectedColumnsByTable[tableName] || []).map(column_name => ({ column_name })),
+        });
+      }
+      return Promise.resolve({ rows: [{ '?column?': 1 }] });
     });
+
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { validateSchema } = await import('../../../scripts/validate-schema.js');
+    const result = await validateSchema();
+
+    expect(result).toBe(true);
+    expect(
+      errorSpy.mock.calls.some(([msg]) => String(msg).includes('Tabela faltando'))
+    ).toBe(false);
+    errorSpy.mockRestore();
   });
 
   it('deve retornar false em caso de erro de conexão', async () => {

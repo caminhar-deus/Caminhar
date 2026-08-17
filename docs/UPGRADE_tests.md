@@ -236,6 +236,24 @@ Os itens abaixo foram implementados após a elaboração deste relatório. As re
 
 **Descrição:** Adicionados testes cobrindo módulos que estavam em 0% de cobertura, elevando a cobertura global para atender os `coverageThreshold` do `jest.config.js` (statements/lines ≥ 90%, functions ≥ 85%, branches ≥ 80%), com `npm run test:coverage` retornando status 0.
 
+### 8.3 Supressão de log de erro intencional no teste de dicas
+
+**Arquivo:** `tests/integration/api/admin/dicas.test.js`
+
+**Descrição:** Nos testes de caminho de erro (500) de GET, POST, PUT e DELETE, adicionado `jest.spyOn(console, 'error').mockImplementation(() => {})` para suprimir o log intencional `[AdminCrudHandler] ❌ Erro no handler Dica:` da saída do Jest, e `jest.spyOn(logger, 'error')` com asserção de `logger.error` para validar que o erro continua sendo registrado, mantendo o fluxo exercitado. Padrão consistente com a supressão de `console.error` já usada em `posts`, `musicas` e `settings` e com a asserção de `logger.error` do `fetch-youtube`.
+
+### 8.4 Eliminação de erro falso no teste das operações de backup
+
+**Arquivo:** `tests/unit/lib/backup/backup.operations.test.js`
+
+**Descrição:** Adicionado `fs.promises.opendir.mockResolvedValue(createAsyncDirIterator([]))` no `beforeEach`, definindo um iterador assíncrono vazio padrão para o mock de `fs.promises.opendir`. Em testes de `createBackup` que não configuravam explicitamente o `opendir`, o mock retornava `undefined`, fazendo `getBackupFiles`/`cleanupOldBackups` lançarem um `TypeError: Cannot read properties of undefined (reading 'Symbol(Symbol.asyncIterator)')` redundante, impresso como `console.error` "Erro ao limpar backups antigos". Com o mock padrão, o fluxo nominal de limpeza é exercitado sem exceção.
+
+### 8.5 Eliminação de falso alerta no teste de validação de schema do banco
+
+**Arquivo:** `tests/unit/scripts/validate-schema.test.js`
+
+**Descrição:** No cenário "deve validar schema corretamente com tabelas existentes", o mock de `pg.mockQuery` passou a responder **condicionalmente pelo SQL**: para `SELECT EXISTS` retorna `{ rows: [{ exists: true }] }`, para a consulta de colunas (`information_schema.columns`) retorna as colunas esperadas do `EXPECTED_SCHEMA`, e para `SELECT 1` retorna `{ rows: [{ '?column?': 1 }] }`. A asserção foi endurecida de `expect(typeof result).toBe('boolean')` para `expect(result).toBe(true)`, com verificação adicional de que nenhum `console.error` de "Tabela faltando" é emitido. O `jest.isolateModules(async () => {...})` foi substituído por import dinâmico direto com `await`, garantindo espera determinística da Promise. Com isso, o ramo de sucesso do `validateSchema` (que antes emitia o falso alerta "⚠️ O banco de dados apresenta inconsistências com o código." e nunca era exercitado de fato) passa a ser validado corretamente.
+
 ---
 
 > **Nota:** Este documento é um relatório de análise. As ações listadas nas seções 1–7 são recomendações para revisão e priorização futura; a seção 8 registra as implementações aplicadas sobre o tema após a elaboração deste relatório.

@@ -103,6 +103,7 @@ describe('Operações de Backup (lib/backup.js)', () => {
     fs.promises.appendFile.mockResolvedValue();
     fs.promises.unlink.mockResolvedValue();
     fs.promises.writeFile.mockResolvedValue();
+    fs.promises.opendir.mockResolvedValue(createAsyncDirIterator([]));
 
     child_process.spawn.mockReturnValue({
       stdout: { pipe: jest.fn(dest => dest), on: jest.fn() },

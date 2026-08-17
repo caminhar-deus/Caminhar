@@ -181,7 +181,7 @@ Testes de endpoints administrativos com autenticação.
 | `audit.test.js` | Auditoria administrativa |
 | `backups.test.js` | Gerenciamento de backups |
 | `cache.test.js` | Gerenciamento de cache |
-| `dicas.test.js` | CRUD admin de dicas |
+| `dicas.test.js` | CRUD admin de dicas (supressão e validação do log de erro esperado no caminho 500) |
 | `fetch-ml.test.js` | Fetch de dados de ML |
 | `fetch-spotify.test.js` | Fetch de dados do Spotify |
 | `fetch-youtube.test.js` | Fetch de dados do YouTube |
@@ -381,7 +381,7 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | `backup.available.test.js` | Disponibilidade de backup |
 | `backup.cleanup.test.js` | Limpeza de backups |
 | `backup.logs.test.js` | Logs de backup |
-| `backup.operations.test.js` | Operações de backup |
+| `backup.operations.test.js` | Operações de backup (criação/restauração; mock padrão de `fs.promises.opendir` no beforeEach evita TypeError/erro falso na limpeza) |
 
 #### Lib/DB (`/tests/unit/lib/db/`)
 
@@ -442,7 +442,7 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | `migrate.test.js` | Gerenciador de migrações |
 | `reset-password.test.js` | Reset de senha |
 | `seed-all.test.js` | Seed de todos os dados |
-| `validate-schema.test.js` | Validação de schema do banco |
+| `validate-schema.test.js` | Validação de schema do banco (mock condicional por SQL cobre tabelas e colunas existentes; valida `result === true` no cenário de sucesso, sem falso alerta de "Tabela faltando") |
 
 #### Scripts/DB (`/tests/unit/scripts/db/`)
 

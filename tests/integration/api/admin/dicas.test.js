@@ -24,6 +24,7 @@ jest.mock('../../../../lib/auth/auth.js', () => ({
 import handler from '../../../../pages/api/admin/dicas.js';
 import { query } from '../../../../lib/infra/db.js';
 import { logActivity } from '../../../../lib/domain/audit.js';
+import { logger } from '../../../../lib/infra/logger.js';
 
 describe('API Admin - Dicas (/api/admin/dicas)', () => {
   beforeEach(() => {
@@ -68,10 +69,17 @@ describe('API Admin - Dicas (/api/admin/dicas)', () => {
     it('deve retornar 500 se ocorrer um erro no banco de dados', async () => {
       query.mockRejectedValueOnce(new Error('Erro no DB'));
 
+      // Suprime o console.error do log intencional do handler e captura a chamada para validação
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const loggerErrorSpy = jest.spyOn(logger, 'error');
+
       const { req, res } = getAuthenticatedMocks({ method: 'GET' });
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(500);
+      expect(loggerErrorSpy).toHaveBeenCalledWith('AdminCrudHandler', 'Erro no handler Dica:', expect.any(Error));
+      consoleSpy.mockRestore();
+      loggerErrorSpy.mockRestore();
     });
   });
 
@@ -95,9 +103,17 @@ describe('API Admin - Dicas (/api/admin/dicas)', () => {
 
     it('deve retornar 500 se ocorrer um erro ao criar', async () => {
       query.mockRejectedValueOnce(new Error('Erro DB'));
+
+      // Suprime o console.error do log intencional do handler e captura a chamada para validação
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const loggerErrorSpy = jest.spyOn(logger, 'error');
+
       const { req, res } = getAuthenticatedMocks({ method: 'POST', body });
       await handler(req, res);
       expect(res._getStatusCode()).toBe(500);
+      expect(loggerErrorSpy).toHaveBeenCalledWith('AdminCrudHandler', 'Erro no handler Dica:', expect.any(Error));
+      consoleSpy.mockRestore();
+      loggerErrorSpy.mockRestore();
     });
   });
 
@@ -117,9 +133,17 @@ describe('API Admin - Dicas (/api/admin/dicas)', () => {
 
     it('deve retornar 500 se ocorrer um erro no banco de dados ao atualizar', async () => {
       query.mockRejectedValueOnce(new Error('Erro DB'));
+
+      // Suprime o console.error do log intencional do handler e captura a chamada para validação
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const loggerErrorSpy = jest.spyOn(logger, 'error');
+
       const { req, res } = getAuthenticatedMocks({ method: 'PUT', body });
       await handler(req, res);
       expect(res._getStatusCode()).toBe(500);
+      expect(loggerErrorSpy).toHaveBeenCalledWith('AdminCrudHandler', 'Erro no handler Dica:', expect.any(Error));
+      consoleSpy.mockRestore();
+      loggerErrorSpy.mockRestore();
     });
   });
 
@@ -151,9 +175,17 @@ describe('API Admin - Dicas (/api/admin/dicas)', () => {
 
     it('deve retornar 500 se ocorrer um erro no banco de dados ao excluir', async () => {
       query.mockRejectedValueOnce(new Error('Erro DB'));
+
+      // Suprime o console.error do log intencional do handler e captura a chamada para validação
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const loggerErrorSpy = jest.spyOn(logger, 'error');
+
       const { req, res } = getAuthenticatedMocks({ method: 'DELETE', body });
       await handler(req, res);
       expect(res._getStatusCode()).toBe(500);
+      expect(loggerErrorSpy).toHaveBeenCalledWith('AdminCrudHandler', 'Erro no handler Dica:', expect.any(Error));
+      consoleSpy.mockRestore();
+      loggerErrorSpy.mockRestore();
     });
   });
 
