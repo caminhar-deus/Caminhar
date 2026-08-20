@@ -699,6 +699,8 @@
 ├── estrutura_extras.html
 ├── estrutura_extras.txt
 ├── estrutura.html
+├── estrutura_isolados.html
+├── estrutura_isolados.txt
 ├── estrutura.txt
 ├── examples
 │   ├── blog-post-seo-example.js
@@ -1295,4 +1297,4 @@
     ├── csvExport.js
     └── reorder.js
 
-205 directories, 1091 files
+205 directories, 1093 files

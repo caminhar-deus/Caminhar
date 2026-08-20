@@ -20,6 +20,9 @@
     "lint:fix": "eslint . --fix",
     "knip": "knip",
     "knip:watch": "knip --watch",
+    "depcruise:core": "depcruise --config .dependency-cruiser.core.cjs .",
+    "depcruise:extras": "depcruise --config .dependency-cruiser.extras.cjs .",
+    "depcruise:isolados": "depcruise --config .dependency-cruiser.isolados.cjs .",
     "test": "jest",
     "test:log": "mkdir -p logs && jest 2>&1 | tee logs/tests-output.log",
     "warm-routes": "node scripts/warm-routes.js",
@@ -115,8 +118,8 @@
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.2",
-    "@testing-library/user-event": "^14.6.4",
-    "cypress": "^15.20.1",
+    "@testing-library/user-event": "^14.6.5",
+    "cypress": "^15.21.0",
     "dependency-cruiser": "^18.2.0",
     "eslint": "^10.8.1",
     "eslint-plugin-cypress": "^7.0.0",
@@ -150,6 +153,6 @@
     "ssh2@1.17.0": true,
     "unrs-resolver@1.12.2": true,
     "protobufjs@7.6.5": true,
-    "cypress@15.20.1": true
+    "cypress@15.21.0": true
   }
 }
