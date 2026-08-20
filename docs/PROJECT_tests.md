@@ -170,7 +170,7 @@ Testes de endpoints públicos e CRUD de recursos. Usam `node-mocks-http` + mocks
 | `videos.flow.test.js` | Fluxo completo de vídeos |
 | `videos.integration.test.js` | Integração de vídeos |
 | `videos.pagination.api.test.js` | Paginação de vídeos |
-| `videos.test.js` | CRUD principal de vídeos |
+| `videos.test.js` | CRUD principal de vídeos (supressão e validação do log de erro esperado no caminho 500) |
 
 ### 4.2 API Administrativa (`/tests/integration/api/admin/`)
 

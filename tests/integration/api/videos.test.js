@@ -2,6 +2,7 @@ import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 
 import { testPublicGetEndpoint } from '../../helpers/crud-test';
 import { videoFactory } from '../../factories';
+import { logger } from '../../../lib/infra/logger.js';
 
 // Mocks declarados ANTES da importação do handler
 jest.mock('../../../lib/domain/videos.js', () => ({
@@ -79,10 +80,17 @@ testPublicGetEndpoint(handler, {
     it('deve extrair IP de cabeçalhos alternativos (x-forwarded-for) e propagar erro 500', async () => {
       checkRateLimit.mockRejectedValueOnce(new Error('Erro Interno de Rate Limit'));
 
+      // Suprime o console.error do log intencional do handler e captura a chamada para validação
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const loggerErrorSpy = jest.spyOn(logger, 'error');
+
       const { req, res } = cm({ method: 'GET', headers: { 'x-forwarded-for': '192.168.0.1, 10.0.0.1' } });
       await h(req, res);
 
       expect(res._getStatusCode()).toBe(500);
+      expect(loggerErrorSpy).toHaveBeenCalledWith('Videos', 'Erro ao buscar vídeos públicos:', expect.any(Error));
+      consoleSpy.mockRestore();
+      loggerErrorSpy.mockRestore();
     });
   });
 });
