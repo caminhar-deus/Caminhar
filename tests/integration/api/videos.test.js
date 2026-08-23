@@ -22,10 +22,6 @@ import { getOrSetCache, checkRateLimit } from '../../../lib/cache/cache.js';
 testPublicGetEndpoint(handler, {
   resourceName: 'videos',
   path: '/api/videos',
-  beforeEach: () => {
-    getOrSetCache.mockImplementation(async (key, cb) => await cb());
-    checkRateLimit.mockResolvedValue(false);
-  },
 }, ({ handler: h, createMocks: cm }) => {
   describe('Casos específicos', () => {
     beforeEach(() => {

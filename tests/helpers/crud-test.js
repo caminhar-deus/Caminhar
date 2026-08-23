@@ -41,15 +41,21 @@ export const testPublicGetEndpoint = (handler, resourceConfig = {}, customTests 
   const {
     resourceName = 'resource',
     path = '/api/resource',
+    skipMethodNotAllowed = false,
   } = resourceConfig;
 
   describe(`API Pública - ${capitalize(resourceName)} (${path})`, () => {
 
-    it(`deve retornar 405 para métodos não permitidos`, async () => {
-      const { req, res } = createMocks({ method: 'POST' });
-      await handler(req, res);
-      expect(res._getStatusCode()).toBe(405);
-    });
+    // O teste de 405 pode ser omitido para endpoints híbridos em que um método
+    // suportado exige autenticação (ex: POST autenticado em /api/posts), caso em
+    // que a requisição sem token retorna 401, não 405.
+    if (!skipMethodNotAllowed) {
+      it(`deve retornar 405 para métodos não permitidos`, async () => {
+        const { req, res } = createMocks({ method: 'POST' });
+        await handler(req, res);
+        expect(res._getStatusCode()).toBe(405);
+      });
+    }
 
     it('deve retornar 400 para parâmetros de paginação inválidos', async () => {
       const { req, res } = createMocks({ method: 'GET', query: { page: -1 } });

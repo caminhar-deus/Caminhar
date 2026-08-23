@@ -1,5 +1,6 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { createMocks } from 'node-mocks-http';
+
+import { testPublicGetEndpoint } from '../../helpers/crud-test';
 import { postFactory } from '../../factories';
 
 // Mocks declarados ANTES da importação do handler
@@ -16,63 +17,71 @@ import handler from '../../../pages/api/posts.js';
 import { getRecentPosts } from '../../../lib/domain/posts.js';
 import { getOrSetCache, checkRateLimit } from '../../../lib/cache/cache.js';
 
-describe('API Pública de Posts (GET /api/posts)', () => {
-  beforeEach(() => {
-    postFactory.resetId();
-    getOrSetCache.mockImplementation(async (key, fetchFunction) => await fetchFunction());
-    checkRateLimit.mockResolvedValue(false);
-  });
-
-  it('deve retornar 200 e a lista de posts com sucesso (Valores Default)', async () => {
-    const mockPostsResult = {
-      data: postFactory.list(2),
-      pagination: { page: 1, limit: 10, total: 2, totalPages: 1 }
-    };
-
-    getRecentPosts.mockResolvedValue(mockPostsResult);
-
-    const { req, res } = createMocks({ method: 'GET' });
-    await handler(req, res);
-
-    expect(res._getStatusCode()).toBe(200);
-    const responseData = res._getJSONData();
-
-    expect(responseData.success).toBe(true);
-    expect(responseData.data).toHaveLength(2);
-    expect(getRecentPosts).toHaveBeenCalledWith(10, 1, ''); // limit, page, search
-    expect(getOrSetCache).toHaveBeenCalledWith('posts:list:1:10', expect.any(Function), 7200);
-  });
-
-  it('deve repassar os parâmetros de paginação e busca corretamente', async () => {
-    getRecentPosts.mockResolvedValue({ data: [], pagination: {} });
-
-    const { req, res } = createMocks({
-      method: 'GET',
-      query: { page: '3', limit: '20', search: 'teste' }
+// Testes padrão via abstração. O teste de 405 é omitido porque /api/posts
+// aceita POST autenticado (sem token retorna 401, não 405).
+testPublicGetEndpoint(handler, {
+  resourceName: 'posts',
+  path: '/api/posts',
+  skipMethodNotAllowed: true,
+}, ({ handler: h, createMocks: cm }) => {
+  describe('Casos específicos', () => {
+    beforeEach(() => {
+      postFactory.resetId();
+      getOrSetCache.mockImplementation(async (key, fetchFunction) => await fetchFunction());
+      checkRateLimit.mockResolvedValue(false);
     });
-    await handler(req, res);
 
-    expect(getRecentPosts).toHaveBeenCalledWith(20, 3, 'teste');
-    expect(getOrSetCache).toHaveBeenCalledWith('posts:search:3:20:teste', expect.any(Function), 1800);
-  });
+    it('deve retornar 200 e a lista de posts com sucesso (Valores Default)', async () => {
+      const mockPostsResult = {
+        data: postFactory.list(2),
+        pagination: { page: 1, limit: 10, total: 2, totalPages: 1 }
+      };
 
-  it('deve retornar 400 se os parâmetros de paginação forem inválidos (ex: negativos ou acima de 100)', async () => {
-    const { req, res } = createMocks({ method: 'GET', query: { page: '-1' } });
-    await handler(req, res);
+      getRecentPosts.mockResolvedValue(mockPostsResult);
 
-    expect(res._getStatusCode()).toBe(400);
-    expect(res._getJSONData()).toEqual({ error: 'Bad Request', message: 'Parâmetros de paginação inválidos' });
-  });
+      const { req, res } = cm({ method: 'GET' });
+      await h(req, res);
 
-  it('deve retornar 500 em caso de erro interno no servidor ou banco de dados', async () => {
-    getRecentPosts.mockRejectedValue(new Error('Falha no banco de dados simulada'));
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      expect(res._getStatusCode()).toBe(200);
+      const responseData = res._getJSONData();
 
-    const { req, res } = createMocks({ method: 'GET' });
-    await handler(req, res);
+      expect(responseData.success).toBe(true);
+      expect(responseData.data).toHaveLength(2);
+      expect(getRecentPosts).toHaveBeenCalledWith(10, 1, ''); // limit, page, search
+      expect(getOrSetCache).toHaveBeenCalledWith('posts:list:1:10', expect.any(Function), 7200);
+    });
 
-    expect(res._getStatusCode()).toBe(500);
-    expect(res._getJSONData()).toEqual({ error: 'Internal Server Error', message: 'Erro interno do servidor ao buscar posts' });
-    consoleSpy.mockRestore();
+    it('deve repassar os parâmetros de paginação e busca corretamente', async () => {
+      getRecentPosts.mockResolvedValue({ data: [], pagination: {} });
+
+      const { req, res } = cm({
+        method: 'GET',
+        query: { page: '3', limit: '20', search: 'teste' }
+      });
+      await h(req, res);
+
+      expect(getRecentPosts).toHaveBeenCalledWith(20, 3, 'teste');
+      expect(getOrSetCache).toHaveBeenCalledWith('posts:search:3:20:teste', expect.any(Function), 1800);
+    });
+
+    it('deve retornar 400 se os parâmetros de paginação forem inválidos (ex: negativos ou acima de 100)', async () => {
+      const { req, res } = cm({ method: 'GET', query: { page: '-1' } });
+      await h(req, res);
+
+      expect(res._getStatusCode()).toBe(400);
+      expect(res._getJSONData()).toEqual({ error: 'Bad Request', message: 'Parâmetros de paginação inválidos' });
+    });
+
+    it('deve retornar 500 em caso de erro interno no servidor ou banco de dados', async () => {
+      getRecentPosts.mockRejectedValue(new Error('Falha no banco de dados simulada'));
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      const { req, res } = cm({ method: 'GET' });
+      await h(req, res);
+
+      expect(res._getStatusCode()).toBe(500);
+      expect(res._getJSONData()).toEqual({ error: 'Internal Server Error', message: 'Erro interno do servidor ao buscar posts' });
+      consoleSpy.mockRestore();
+    });
   });
 });
