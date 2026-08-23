@@ -259,6 +259,15 @@ Os itens abaixo foram implementados após a elaboração deste relatório. As re
 **Arquivo:** `tests/integration/api/videos.test.js`
 
 **Descrição:** No teste do caminho de erro (500) que propaga um erro de rate limit, adicionado `jest.spyOn(console, 'error').mockImplementation(() => {})` para suprimir o log intencional `[Videos] ❌ Erro ao buscar vídeos públicos:` da saída do Jest, e `jest.spyOn(logger, 'error')` com asserção de `logger.error` para validar que o erro continua sendo registrado, mantendo o fluxo exercitado.
+
+### 8.7 Padrão CRUD repetido em testes de integração
+
+**Arquivos:**
+- `tests/helpers/crud-test.js`
+- `tests/integration/api/posts.test.js`
+- `tests/integration/api/videos.test.js`
+
+**Descrição:** Expandido o uso do `crud-test.js` para `tests/integration/api/posts.test.js`, que ainda repetia o boilerplate de 405/401/400 manualmente. Adicionada a opção `skipMethodNotAllowed` em `testPublicGetEndpoint` para suprimir o teste padrão de 405 em endpoints híbridos (ex: `/api/posts`, que aceita POST autenticado — sem token retorna 401, não 405); os testes específicos de posts foram movidos para `customTests`, preservando todas as asserções existentes. Em `tests/integration/api/videos.test.js`, removida a chave `beforeEach` morta passada no `resourceConfig` (o helper a ignora; o `beforeEach` real já existia dentro de `customTests`).
 ---
 
 > **Nota:** Este documento é um relatório de análise. As ações listadas nas seções 1–7 são recomendações para revisão e priorização futura; a seção 8 registra as implementações aplicadas sobre o tema após a elaboração deste relatório.

@@ -93,7 +93,7 @@ tests/
 | `api.js` | Utilitários de API HTTP | `createApiMocks`, `createGetRequest`, `createPostRequest`, `createPutRequest`, `createDeleteRequest`, `createPatchRequest`, `executeHandler`, `createWebhookPayload`, `createAuthRequest`, `createCookieAuthRequest`, `getResponseBody` |
 | `auth.js` | Utilitários de autenticação | `createAuthToken`, `createExpiredToken`, `createInvalidToken`, `decodeToken`, `isValidToken`, `mockAuthenticatedUser`, `mockAuthenticatedAdmin`, `hashPassword`, `verifyPassword`, `createMockAuthMiddleware`, `mockAuthLib`, `clearAuthCookies`, `createBearerHeader`, `createAuthCookie`, `defaultTokenPayload`, `adminTokenPayload` |
 | `console.js` | Supressão controlada de console | `suppressConsoleError()`, `filterConsoleError(suppressList)`, `mockGlobalFetch()`, `createConfirmSpy(defaultValue)` |
-| `crud-test.js` | Abstração de testes CRUD de API | `testPublicGetEndpoint`, `testAdminCrudEndpoint`, `testAdminGetEndpoint` |
+| `crud-test.js` | Abstração de testes CRUD de API | `testPublicGetEndpoint` (com opção `skipMethodNotAllowed` para suprimir o teste padrão de 405 em endpoints híbridos), `testAdminCrudEndpoint`, `testAdminGetEndpoint` |
 | `db-test.js` | Testes com PostgreSQL real | `isDockerAvailable()`, `createTestDb()`, `applyMigrations()`, `withTransaction(pool)`, `truncateAll(pool)` |
 | `render.js` | Renderização de componentes React | `renderWithProviders`, `renderWithRouter`, `renderWithAuth`, `renderWithToast`, `testLoadingState`, `testErrorState`, `resizeWindow`, `setMobileViewport`, `setTabletViewport`, `setDesktopViewport`, `waitForAnimation`, `clickAndWait`, `fillForm`, `clearForm` |
 | `async-polyfills.js` | Polyfills assíncronos | `setupAsyncPolyfills()` — ReadableStream e MessageChannel, idempotente |
@@ -157,7 +157,7 @@ Testes de endpoints públicos e CRUD de recursos. Usam `node-mocks-http` + mocks
 | `posts.flow.test.js` | Fluxo completo de posts |
 | `posts.general.test.js` | Testes gerais de posts |
 | `posts.integration.test.js` | Integração de posts |
-| `posts.test.js` | CRUD principal de posts |
+| `posts.test.js` | CRUD principal de posts (usa `testPublicGetEndpoint` do `crud-test.js` com `skipMethodNotAllowed`; casos específicos em `customTests`) |
 | `posts.update.api.test.js` | Atualização de posts |
 | `products.test.js` | CRUD de produtos |
 | `settings.general.test.js` | Testes gerais de configurações |
