@@ -648,6 +648,7 @@ tests/integration/api/posts.test.js → lib/cache/cache.js
 tests/integration/api/posts.test.js → lib/domain/posts.js
 tests/integration/api/posts.test.js → pages/api/posts.js
 tests/integration/api/posts.test.js → tests/factories/index.js
+tests/integration/api/posts.test.js → tests/helpers/crud-test.js
 tests/integration/api/posts.test.js → tests/mocks/cache.js
 tests/integration/api/products.test.js → lib/auth/auth.js
 tests/integration/api/products.test.js → lib/cache/cache.js
@@ -676,6 +677,7 @@ tests/integration/api/videos.integration.test.js → lib/infra/db.js
 tests/integration/api/videos.integration.test.js → pages/api/videos.js
 tests/integration/api/videos.test.js → lib/cache/cache.js
 tests/integration/api/videos.test.js → lib/domain/videos.js
+tests/integration/api/videos.test.js → lib/infra/logger.js
 tests/integration/api/videos.test.js → pages/api/videos.js
 tests/integration/api/videos.test.js → tests/factories/index.js
 tests/integration/api/videos.test.js → tests/helpers/crud-test.js
