@@ -11,24 +11,20 @@ import { logger } from './lib/infra/logger.js';
  * Integra com o sistema de rate limit existente em lib/cache/cache.js (checkRateLimit),
  * que suporta Redis distribuído com fallback em memória.
  *
+ * O rate limit das rotas públicas de listagem/busca (posts, videos, musicas, products
+ * e dicas) é aplicado nos próprios handlers, evitando duplicidade de contagem com o
+ * middleware (cada request era contado 2x, dobrando o consumo do limite).
+ *
  * ## Rotas Protegidas
  *
  * | Rota | Limite | Janela | Propósito |
  * |------|--------|--------|-----------|
  * | `/api/auth/login` | 5 req | 1 min | Proteção contra brute force (P1) |
- * | `/api/posts` | 30 req | 1 min | Proteção DDoS contra busca massiva (P6) |
- * | `/api/videos` | 30 req | 1 min | Proteção DDoS contra busca massiva (P6) |
- * | `/api/musicas` | 30 req | 1 min | Proteção DDoS contra busca massiva (P6) |
- * | `/api/products` | 30 req | 1 min | Proteção DDoS contra busca massiva (P6) |
  */
 
-// Configuração de proteção DDoS para rotas públicas de listagem/busca
+// Configuração de proteção para rotas sensíveis
 const RATE_LIMIT_CONFIG = {
   '/api/auth/login': { limit: 5, window: 60000, key: 'api:auth:login' },
-  '/api/posts':       { limit: 30, window: 60000, key: 'api:public:posts' },
-  '/api/videos':      { limit: 30, window: 60000, key: 'api:public:videos' },
-  '/api/musicas':     { limit: 30, window: 60000, key: 'api:public:musicas' },
-  '/api/products':    { limit: 30, window: 60000, key: 'api:public:products' },
 };
 
 export async function proxy(request) {
@@ -85,7 +81,7 @@ export async function proxy(request) {
   return NextResponse.next();
 }
 
-// Configura o proxy para rodar nas rotas protegidas
+// Configura o proxy para rodar na rota de autenticação (demais proteções ficam nos handlers)
 export const config = {
-  matcher: ['/api/auth/login', '/api/posts', '/api/videos', '/api/musicas', '/api/products'],
+  matcher: ['/api/auth/login'],
 };

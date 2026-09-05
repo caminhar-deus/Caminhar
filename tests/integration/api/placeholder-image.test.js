@@ -1,11 +1,11 @@
-import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
-import { logger } from '../../../lib/infra/logger.js';
 
 jest.mock('fs', () => ({
   promises: {
     readdir: jest.fn(),
     readFile: jest.fn(),
+    stat: jest.fn(),
   }
 }));
 
@@ -25,22 +25,29 @@ jest.mock('../../../lib/infra/logger.js', () => ({
   },
 }));
 
-import handler from '../../../pages/api/placeholder-image.js';
-import fs from 'fs';
-import { getSetting } from '../../../lib/domain/settings.js';
+const MOCK_STATS = { mtime: new Date('2026-01-01T00:00:00.000Z'), mtimeMs: 1767225600000 };
 
 describe('API - Placeholder Image (/api/placeholder-image)', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+  let handler;
+  let fsPromises;
+  let getSetting;
+  let logger;
 
-  afterEach(() => {
-    jest.restoreAllMocks();
+  // Recarrega o módulo em cada teste para isolar o cache interno do filename
+  // (evita contaminação de estado entre cenários).
+  beforeEach(() => {
+    jest.resetModules();
+    jest.clearAllMocks();
+    handler = require('../../../pages/api/placeholder-image.js').default;
+    fsPromises = require('fs').promises;
+    getSetting = require('../../../lib/domain/settings.js').getSetting;
+    logger = require('../../../lib/infra/logger.js').logger;
   });
 
   it('deve retornar a imagem configurada no banco de dados', async () => {
     getSetting.mockResolvedValueOnce('/uploads/hero-image-123.jpg');
-    fs.promises.readFile.mockResolvedValueOnce(Buffer.from('image-data'));
+    fsPromises.stat.mockResolvedValueOnce(MOCK_STATS);
+    fsPromises.readFile.mockResolvedValueOnce(Buffer.from('image-data'));
     
     const { req, res } = createMocks();
     await handler(req, res);
@@ -48,13 +55,26 @@ describe('API - Placeholder Image (/api/placeholder-image)', () => {
     expect(res._getStatusCode()).toBe(200);
     expect(res.getHeader('Content-Type')).toBe('image/jpeg');
     expect(res.getHeader('Cache-Control')).toBe('public, max-age=86400, immutable');
+    expect(res.getHeader('Last-Modified')).toBe(MOCK_STATS.mtime.toUTCString());
     expect(res._getData()).toEqual(Buffer.from('image-data'));
+  });
+
+  it('deve responder 304 quando o navegador já possui a versão (If-None-Match)', async () => {
+    getSetting.mockResolvedValueOnce('/uploads/hero-image-123.jpg');
+    fsPromises.stat.mockResolvedValueOnce(MOCK_STATS);
+
+    const { req, res } = createMocks({ headers: { 'if-none-match': '"hero-image-123.jpg"' } });
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(304);
+    expect(fsPromises.readFile).not.toHaveBeenCalled();
   });
 
   it('deve ignorar erro no banco e tentar ler o diretório (fallback 1)', async () => {
     getSetting.mockRejectedValueOnce(new Error('DB falhou'));
-    fs.promises.readdir.mockResolvedValueOnce(['hero-image-1.png', 'hero-image-2.webp']);
-    fs.promises.readFile.mockResolvedValueOnce(Buffer.from('webp-data'));
+    fsPromises.readdir.mockResolvedValueOnce(['hero-image-1.png', 'hero-image-2.webp']);
+    fsPromises.stat.mockResolvedValueOnce(MOCK_STATS);
+    fsPromises.readFile.mockResolvedValueOnce(Buffer.from('webp-data'));
     
     const { req, res } = createMocks();
     await handler(req, res);
@@ -66,7 +86,7 @@ describe('API - Placeholder Image (/api/placeholder-image)', () => {
 
   it('deve retornar o SVG padrão se não houver configuração nem arquivo na pasta (fallback 2)', async () => {
     getSetting.mockResolvedValueOnce(null);
-    fs.promises.readdir.mockRejectedValueOnce(new Error('Dir não existe'));
+    fsPromises.readdir.mockRejectedValueOnce(new Error('Dir não existe'));
     
     const { req, res } = createMocks();
     await handler(req, res);

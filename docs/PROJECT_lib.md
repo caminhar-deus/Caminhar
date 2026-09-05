@@ -279,7 +279,7 @@ Módulo responsável pela padronização da camada de API: classes de erro, resp
 | `getAuthCookie(req)` | Extrai token do cookie da requisição |
 | `getAuthToken(req)` | Extrai token do header `Authorization: Bearer` ou do cookie (fallback) |
 | `authenticate(username, password)` | Autentica usuário contra o banco de dados |
-| `authenticateAndGenerateToken(username, password, ip, options)` | Login completo: valida campos, aplica rate limit (5 tentativas/min), autentica, atualiza `last_login_at`, busca permissões do cargo, gera access token + refresh token. Em sucesso retorna `{ user, token, refreshToken, permissionsLoaded, error }` — `refreshToken` vem `null` quando o armazenamento do refresh token falhar e `permissionsLoaded` vem `false` quando a consulta de permissões falhar |
+| `authenticateAndGenerateToken(username, password, ip, _options)` | Login completo: valida campos, autentica, atualiza `last_login_at`, busca permissões do cargo, gera access token + refresh token. Em sucesso retorna `{ user, token, refreshToken, permissionsLoaded, error }` — `refreshToken` vem `null` quando o armazenamento do refresh token falhar e `permissionsLoaded` vem `false` quando a consulta de permissões falhar. O rate limit de login (5 tentativas/min, chave `api:auth:login`) é aplicado em ponto único pelo middleware `proxy.js` |
 | `storeRefreshToken(userId, refreshToken)` | Armazena refresh token no banco com expiração de 30 dias |
 | `validateRefreshToken(refreshToken)` | Valida refresh token no banco (não revogado e não expirado) |
 | `revokeRefreshToken(refreshToken)` | Revoga um refresh token específico |
@@ -296,6 +296,7 @@ Módulo responsável pela padronização da camada de API: classes de erro, resp
 - `initializeAuth` executa DDL (`CREATE TABLE`, `ALTER TABLE`) diretamente no código — importante garantir que `scripts/migrations/` seja a fonte canônica de schema.
 - Os parâmetros `ADMIN_USERNAME` e `ADMIN_PASSWORD` são obrigatórios para a inicialização.
 - O `withAuth` deste módulo retorna `{ message }` simples, divergente do formato padronizado da API (ver UPGRADE 1.10).
+- `authenticateAndGenerateToken` não aplica mais rate limit internamente — o limite de login (5 tentativas/min, chave `api:auth:login`) passou a ser contado em ponto único no middleware `proxy.js` (antes cada tentativa era contada duas vezes, na função e no proxy).
 
 ---
 
@@ -561,7 +562,7 @@ Módulos de infraestrutura: conexão com banco, logging estruturado e cache dist
 - **Lazy initialization** — pool criado apenas no primeiro uso, garantindo compatibilidade com Jest mocks
 - **Health check periódico** — a cada 60s, verifica conectividade e recria o pool em caso de falha. Não inicia em ambiente de teste
 - **Handler de erro fatal** — em caso de erro no pool, fecha o pool defeituoso e reseta a referência para recriação na próxima query
-- **Pré-aquecimento** — no startup (não em teste), conecta uma vez com `SELECT 1` após 100ms
+- **Pré-aquecimento** — no startup (não em teste), conecta imediatamente na criação do pool (sem `setTimeout`) com `SELECT 1`, garantindo que a primeira conexão já esteja sendo estabelecida antes do primeiro request
 
 **Observações:** Re-exports removidos — importe diretamente dos módulos de origem (`crud.js`, `domain/settings.js`, `domain/audit.js`, `domain/posts.js`). O `max: 50` pode ser alto para ambientes limitados (ver UPGRADE 3.1).
 

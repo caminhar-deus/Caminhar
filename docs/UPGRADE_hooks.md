@@ -180,6 +180,16 @@
 
 ---
 
+## Implementações Aplicadas
+
+### `usePerformanceMetrics.js` — janela de cold start no report de recursos lentos
+
+**Arquivo:** `/hooks/usePerformanceMetrics.js` (`resourceObserver`)
+
+**Descrição:** Adicionada a constante `COLD_START_GRACE_MS` (15s). Recursos iniciados dentro dessa janela (comparação `entry.startTime >= coldStartEnd`) têm o `console.warn` `[Performance] Slow resource` suprimido em desenvolvimento (`debug`), pois a compilação sob demanda do Turbopack e o pool/Redis frios podem ultrapassar 1s no primeiro carregamento sem indicar lentidão real. Em produção (`debug=false`) o comportamento sem logs permanece inalterado, e o alerta continua ativo para recursos iniciados após a janela.
+
+---
+
 ## Resumo das Ocorrências
 
 | Categoria | Total | Arquivos Afetados |
@@ -190,4 +200,4 @@
 | Duplicidades | 2 | `AuthContext.js`/`PerformanceContext.js`, `useAdminCrud.js` |
 | Pontos de atenção | 5 | `useAdminCrud.js`, `usePerformanceMetrics.js` (2), `useUnauthorized.js`, `useApiFetch.js` |
 
-> **Nota:** Este documento é apenas um levantamento analítico. **Nenhuma alteração foi aplicada ao código.** As sugestões devem ser avaliadas quanto à relevância e impacto antes de qualquer implementação.
+> **Nota:** Este documento é um levantamento analítico. As sugestões das seções acima são recomendações para avaliação antes de qualquer implementação; a seção "Implementações Aplicadas" registra as implementações realizadas após a elaboração deste relatório.

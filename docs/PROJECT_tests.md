@@ -151,7 +151,7 @@ Testes de endpoints públicos e CRUD de recursos. Usam `node-mocks-http` + mocks
 | `musicas.pagination.test.js` | Paginação de músicas |
 | `musicas.test.js` | CRUD principal de músicas |
 | `musicas.update.test.js` | Atualização de músicas |
-| `placeholder-image.test.js` | Imagem de placeholder (hero/banner) com fallbacks |
+| `placeholder-image.test.js` | Imagem de placeholder (hero/banner) com fallbacks, isolamento do cache interno do filename e revalidação HTTP 304 (`If-None-Match`) |
 | `posts.create.api.test.js` | Criação de posts |
 | `posts.delete.test.js` | Exclusão de posts |
 | `posts.flow.test.js` | Fluxo completo de posts |

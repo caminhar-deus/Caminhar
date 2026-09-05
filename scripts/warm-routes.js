@@ -84,6 +84,8 @@ const SEED_SLUGS = [
  * evitando avisos de "Slow resource" (>1000ms) no primeiro hit.
  */
 const API_ROUTES = [
+  '/api/settings',
+  '/api/placeholder-image',
   '/api/dicas?page=1&limit=6',
   '/api/posts',
   '/api/videos',

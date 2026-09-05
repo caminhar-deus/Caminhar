@@ -542,6 +542,7 @@
 ├── cypress.config.js
 ├── data
 │   └── backups
+│       ├── backup.log
 │       ├── caminhar-pg-backup_2026-05-21T19-56-57Z.sql.gz.enc
 │       ├── caminhar-pg-backup_2026-05-21T19-56-57Z.sql.gz.sha256
 │       ├── caminhar-pg-backup_2026-05-22T10-18-54Z.sql.gz.enc
@@ -870,6 +871,7 @@
 │   │   └── video-thumbnails.js
 │   ├── migrate.js
 │   ├── migrations
+│   │   ├── 000-create-base-schema.js
 │   │   ├── 001-add-views-to-posts.js
 │   │   ├── 002-create-products-table.js
 │   │   ├── 003-add-position-to-products.js
@@ -880,7 +882,7 @@
 │   │   ├── 008-add-position-to-videos.js
 │   │   ├── 009-add-position-to-posts.js
 │   │   ├── 011-fix-entity-id-type.js
-│   │   ├── 012-add-performance-indexes.sql
+│   │   ├── 012-add-performance-indexes.js
 │   │   ├── 013-add-trgm-indexes.js
 │   │   ├── 014-add-dicas-index.js
 │   │   ├── 015-align-products-schema.js
@@ -1197,4 +1199,4 @@
     ├── csvExport.js
     └── reorder.js
 
-190 directories, 1008 files
+190 directories, 1010 files

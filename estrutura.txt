@@ -186,13 +186,12 @@ lib/api/adminCrudHandler.js → lib/domain/audit.js
 lib/api/adminCrudHandler.js → lib/infra/db.js
 lib/api/adminCrudHandler.js → lib/infra/logger.js
 lib/api/adminCrudHandler.js → lib/api/helpers.js
-lib/auth/auth.js → lib/cache/cache.js
 lib/auth/auth.js → lib/infra/db.js
 lib/auth/auth.js → lib/infra/logger.js
+lib/infra/db.js → lib/infra/logger.js
 lib/cache/cache.js → lib/infra/logger.js
 lib/cache/cache.js → lib/infra/redis.js
 lib/infra/redis.js → lib/infra/logger.js
-lib/infra/db.js → lib/infra/logger.js
 lib/domain/audit.js → lib/infra/db.js
 lib/api/errors.js → lib/api/utils.js
 lib/api/index.js → lib/api/errors.js

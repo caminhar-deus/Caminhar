@@ -81,6 +81,7 @@ function formatMetric(name, value) {
 const MAX_HISTORY_SIZE = 50;
 const METRICS_CACHE_MS = 60_000; // 1 minuto de cache para evitar reports duplicados
 const METRICS_VARIANCE_THRESHOLD = 0.05; // 5% de variação mínima para considerar mudança significativa
+const COLD_START_GRACE_MS = 15_000; // Janela de cold start (dev): ignora warnings de recursos lentos
 
 /**
  * Hook para monitoramento de Core Web Vitals e métricas de performance.
@@ -310,12 +311,19 @@ export function usePerformanceMetrics(options = {}) {
           }
         };
 
+        // Recursos iniciados dentro desta janela pertencem à inicialização:
+        // compilação sob demanda do Turbopack + pool/Redis frios no primeiro
+        // carregamento podem ultrapassar 1000ms sem indicar lentidão real.
+        const coldStartEnd = performance.now() + COLD_START_GRACE_MS;
+
         const resourceObserver = new PerformanceObserver((list) => {
           const entries = list.getEntries();
           entries.forEach((entry) => {
             // Report slow resources — ignora recursos de terceiros
             if (entry.duration > 1000 && !isThirdPartyResource(entry.name)) {
-              if (debug) {
+              // Suprime o warning durante a janela de cold start (dev apenas, pois
+              // o debug é falso em produção), preservando o alerta para lentidão real.
+              if (debug && entry.startTime >= coldStartEnd) {
                 console.warn(`[Performance] Slow resource: ${entry.name} (${Math.round(entry.duration)}ms)`);
               }
             }

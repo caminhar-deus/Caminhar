@@ -69,7 +69,7 @@ Ao analisar, agrupei os arquivos por responsabilidade para facilitar a leitura. 
 - **Propósito:** Página inicial pública do projeto "O Caminhar com Deus".
 - **Funcionalidades:**
   - Carrega configurações (título e subtítulo) via `fetch('/api/settings')` com **cache em `sessionStorage`** (TTL de 1 minuto) e fallback para valores padrão.
-  - Gerencia a URL da imagem hero com timestamp (`?t=${Date.now()}`) via `useEffect` para evitar Hydration Mismatch entre SSR e CSR.
+  - Usa URL **estável** da imagem hero (`/api/placeholder-image`) — o timestamp `?t=${Date.now()}` foi removido, evitando anular a cada carregamento o cache agressivo (`immutable`) definido no endpoint.
   - Exibe header com título, subtítulo, indicador de erro de configurações e imagem hero (`<img loading="lazy">`).
   - Renderiza os componentes `ContentTabs` e `Testimonials`.
   - SEO dinâmico via `next/head` (title e meta description).
@@ -218,9 +218,11 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
 - **Propósito:** Endpoint para servir a imagem principal da home (hero).
 - **Funcionalidades:**
   - Tenta buscar `home_image_url` na configuração do banco (`getSetting`), extrai o nome do arquivo via `path.basename`.
+  - Cache em memória do filename resolvido do banco (TTL de 5 minutos) — evita nova consulta a `getSetting` em cada request.
   - Fallback: procura o arquivo `hero-image-*` mais recente em `public/uploads/` (ordenação por nome).
   - Fallback final: gera um SVG placeholder inline (1100×320).
-  - Cache agressivo: `public, max-age=86400, immutable`, `ETag` e `Last-Modified`.
+  - Cache agressivo: `public, max-age=86400, immutable`, `ETag` (`"filename"`) e `Last-Modified` baseado no `mtime` do arquivo (estável entre requests).
+  - Revalidação HTTP: responde **304** quando o header `If-None-Match` corresponde ao ETag, sem reler o arquivo do disco.
   - Content-Type detectado pela extensão (png, webp, jpeg).
 
 ### `/pages/api/cleanup-test-data.js`

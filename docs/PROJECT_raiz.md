@@ -97,13 +97,14 @@ A raiz do projeto concentra **31 arquivos** (excluindo subpastas e arquivos bloq
 **Propósito:** Middleware global do Next.js para Rate Limiting e Proteção DDoS (convenção `proxy` do Next.js 16).
 
 **Principais funcionalidades:**
-- Rotas protegidas com limites: login (5 req/min), posts/videos/musicas/products (30 req/min cada).
+- Rota protegida com limite: `/api/auth/login` (5 req/min).
 - Identificação de IP via `X-Forwarded-For` (priorizado em socket local) ou `request.ip`.
 - Integração com Redis (`checkRateLimit`) com fallback em memória.
 - Bloqueio com status 429 e mensagem em português.
 - Logging via `logger.warn('Security', ...)` do módulo `lib/infra/logger.js`.
+- As rotas públicas de listagem/busca (posts, videos, musicas, products e dicas) têm rate limit aplicado nos próprios handlers, em ponto único.
 
-> ⚠️ **Divergência de limites:** o proxy limita posts/videos/musicas/products a 30 req/min, mas os próprios endpoints públicos definem limites diferentes (ex: `posts.js` usa 100/300 req/min; `musicas.js`/`dicas.js` usam 60 req/min). O proxy é a camada mais restritiva.
+> ⚠️ **Rate limit centralizado nos handlers:** o middleware protege somente `/api/auth/login`; as rotas públicas são limitadas exclusivamente nos handlers (limites próprios por endpoint). Antes, essas rotas eram contadas duas vezes por request (middleware + handler) e o proxy atuava como camada mais restritiva — a duplicidade foi removida.
 
 ---
 

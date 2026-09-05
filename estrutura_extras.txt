@@ -187,13 +187,12 @@ lib/api/adminCrudHandler.js → lib/domain/audit.js
 lib/api/adminCrudHandler.js → lib/infra/db.js
 lib/api/adminCrudHandler.js → lib/infra/logger.js
 lib/api/adminCrudHandler.js → lib/api/helpers.js
-lib/auth/auth.js → lib/cache/cache.js
 lib/auth/auth.js → lib/infra/db.js
 lib/auth/auth.js → lib/infra/logger.js
+lib/infra/db.js → lib/infra/logger.js
 lib/cache/cache.js → lib/infra/logger.js
 lib/cache/cache.js → lib/infra/redis.js
 lib/infra/redis.js → lib/infra/logger.js
-lib/infra/db.js → lib/infra/logger.js
 lib/domain/audit.js → lib/infra/db.js
 lib/api/errors.js → lib/api/utils.js
 lib/api/index.js → lib/api/errors.js
@@ -460,6 +459,7 @@ scripts/init-table.js → scripts/utils/load-env.js
 scripts/maintenance/clean-k6-videos.js → scripts/utils/cleanup.js
 scripts/migrate.js → scripts/db/connection.js
 scripts/migrate.js → scripts/utils/load-env.js
+scripts/migrations/000-create-base-schema.js → scripts/utils/init-table-utils.js
 scripts/migrations/001-add-views-to-posts.js → scripts/db/connection.js
 scripts/migrations/001-add-views-to-posts.js → scripts/utils/load-env.js
 scripts/migrations/002-create-products-table.js → scripts/db/connection.js

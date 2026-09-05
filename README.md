@@ -132,8 +132,9 @@ Componentes React organizados em 6 categorias:
 
 **Arquivo:** [`docs/PROJECT_data.md`](/docs/PROJECT_data.md)
 
-- **Banco de Dados:** PostgreSQL com 15 tabelas: `users`, `settings`, `images`, `categories`, `tags`, `posts`, `post_categories`, `post_tags`, `musicas`, `videos`, `products`, `dicas`, `activity_logs`, `roles`, `_migrations`
-- **11 migrações** aplicadas (criação de tabelas, índices TRGM para busca textual, campos de ordenação)
+- **Banco de Dados:** PostgreSQL com 16 tabelas: `users`, `settings`, `images`, `categories`, `tags`, `posts`, `post_categories`, `post_tags`, `musicas`, `videos`, `products`, `dicas`, `activity_logs`, `refresh_tokens`, `roles`, `_migrations`
+- **16 migrações** versionadas (000 a 016; criação de tabelas, índices TRGM para busca textual, campos de ordenação)
+- **Instalação limpa:** em um banco vazio, `npm run migrate` executa o baseline automaticamente (migração `000-create-base-schema` cria o schema base). Para recriar tabelas de conteúdo do zero, use `npm run db:reset` seguido de `npm run migrate`.
 - **Backups:** Dumps PostgreSQL em `data/backups/` com criptografia AES-256-GCM, compressão gzip, hash SHA-256, rotação automática (máx. 10 backups)
 
 ---

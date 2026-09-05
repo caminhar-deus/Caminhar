@@ -257,4 +257,12 @@
 
 ---
 
-> 📝 Este documento é puramente analítico — nenhuma alteração foi aplicada ao projeto. Serve como guia para futuras refatorações e correções.
+## Implementações Aplicadas
+
+### `warm-routes.js` — `API_ROUTES` ampliada
+
+**Descrição:** As rotas de API aquecidas no modo `--api` foram ampliadas com `/api/settings` e `/api/placeholder-image`, passando a cobrir também as rotas que apareciam como `[Performance] Slow resource` no primeiro carregamento em dev.
+
+---
+
+> 📝 Este documento é analítico — as seções 1–8 servem como guia para futuras refatorações e correções; a seção "Implementações Aplicadas" registra as implementações realizadas após a elaboração deste relatório.

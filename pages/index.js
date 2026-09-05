@@ -10,13 +10,10 @@ const SETTINGS_CACHE_TTL = 60000; // 1 minuto
 export default function Home() {
   const [title, setTitle] = useState('O Caminhar com Deus');
   const [subtitle, setSubtitle] = useState('Reflexões e ensinamentos sobre a fé, espiritualidade e a jornada cristã');
-  const [imageSrc, setImageSrc] = useState('/api/placeholder-image');
+  const [imageSrc] = useState('/api/placeholder-image');
   const [settingsError, setSettingsError] = useState(false);
 
   useEffect(() => {
-    // Atualiza a URL da imagem no lado do cliente para evitar Hydration Mismatch
-    setImageSrc(`/api/placeholder-image?t=${Date.now()}`);
-
     // Load settings from database com cache
     const loadSettings = async () => {
       // Verifica cache em sessionStorage

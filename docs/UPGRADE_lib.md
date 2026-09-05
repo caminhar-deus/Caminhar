@@ -1,7 +1,7 @@
 # Levantamento Analítico de Melhorias — `/lib`
 
 > **Data da análise:** 01/08/2026
-> **Objetivo:** Documentar o levantamento analítico das melhorias, correções possíveis e pontos de atenção identificados na análise atual dos arquivos da pasta `lib/`. Nenhuma alteração foi aplicada — apenas análise.
+> **Objetivo:** Documentar o levantamento analítico das melhorias, correções possíveis e pontos de atenção identificados na análise atual dos arquivos da pasta `lib/`. As implementações realizadas após esta análise estão registradas na seção "Implementações Aplicadas".
 > **Escopo:** Consolida apenas itens **pendentes** identificados na análise atual. Itens já resolvidos em análises anteriores (documentados em `docs/antigos/UPGRADE_lib.md` e `docs/resolvidos/UPGRADE_lib.md`) não são repetidos.
 
 ---
@@ -509,6 +509,18 @@ Reduziria ~80 linhas de código duplicado nos 4 módulos.
 **Problema:** O guard `if (initializationAttempted) return redisInstance` impede que uma nova tentativa de inicialização ocorra após a primeira falha (ex: variáveis não configuradas no boot, mas configuradas depois em runtime). Em runtime normal isso é aceitável (env vars não mudam), mas em testes que alternam entre cenários com/sem Redis, o estado persiste.
 
 **Sugestão:** Em ambiente de teste, permitir resetar `initializationAttempted = false` e `redisInstance = null` via função de teste (ex: `resetRedisForTests()`), similar ao `resetPool()` de `db.js`. Ou simplesmente documentar que mudanças em env vars exigem restart.
+
+---
+
+## Implementações Aplicadas
+
+### `infra/db.js` — pré-aquecimento do pool imediato
+
+**Descrição:** O pré-aquecimento do pool (conectar + `SELECT 1`) deixou de usar `setTimeout(100ms)` e passou a ser disparado imediatamente na criação do pool (`newPool.connect()`), ainda apenas fora de ambiente de teste, eliminando o atraso artificial para cobrir o primeiro request.
+
+### `auth/auth.js` — remoção do rate limit duplicado em `authenticateAndGenerateToken`
+
+**Descrição:** Removido o `checkRateLimit` interno (chave `api:auth:login`) que era aplicado em duplicidade com o middleware `proxy.js`. O rate limit de login (5 tentativas/min) agora é contado em ponto único no proxy; o parâmetro `options` foi renomeado para `_options`, preservando a assinatura consumida por `login.js`.
 
 ---
 

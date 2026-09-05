@@ -339,6 +339,8 @@ Isso invalida o cache agressivo definido no endpoint (`max-age=86400, immutable`
 
 **Sugestão:** Usar estratégia diferente para resolver o mismatch — por exemplo, definir a URL estável no SSR e atualizar apenas quando o usuário fizer upload de nova imagem, ou detectar a imagem via server-side.
 
+**Status:** ✅ Implementado — o timestamp foi removido (`/pages/index.js` usa URL estável) e o endpoint `/api/placeholder-image` ganhou cache em memória do filename resolvido (TTL 5 min), `Last-Modified` estável (baseado no `mtime`) e resposta `304` via `If-None-Match` sem reler o arquivo.
+
 ---
 
 ### 5.2 `admin.js` — `handleSaveSettings` faz duas requisições HTTP

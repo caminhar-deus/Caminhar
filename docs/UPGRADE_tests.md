@@ -268,6 +268,12 @@ Os itens abaixo foram implementados após a elaboração deste relatório. As re
 - `tests/integration/api/videos.test.js`
 
 **Descrição:** Expandido o uso do `crud-test.js` para `tests/integration/api/posts.test.js`, que ainda repetia o boilerplate de 405/401/400 manualmente. Adicionada a opção `skipMethodNotAllowed` em `testPublicGetEndpoint` para suprimir o teste padrão de 405 em endpoints híbridos (ex: `/api/posts`, que aceita POST autenticado — sem token retorna 401, não 405); os testes específicos de posts foram movidos para `customTests`, preservando todas as asserções existentes. Em `tests/integration/api/videos.test.js`, removida a chave `beforeEach` morta passada no `resourceConfig` (o helper a ignora; o `beforeEach` real já existia dentro de `customTests`).
+
+### 8.8 Atualização do teste de `/api/placeholder-image` (revalidação 304 e cache interno)
+
+**Arquivo:** `tests/integration/api/placeholder-image.test.js`
+
+**Descrição:** O teste foi atualizado para acompanhar a implementação do endpoint: adicionado mock de `fs.promises.stat` (necessário ao `Last-Modified` baseado no `mtime`), isolado o cache interno do filename entre cenários via `jest.resetModules()` + import dinâmico, e incluído caso de teste para a resposta **304** quando o header `If-None-Match` corresponde ao ETag — validando que o arquivo não é relido do disco nesse cenário.
 ---
 
 > **Nota:** Este documento é um relatório de análise. As ações listadas nas seções 1–7 são recomendações para revisão e priorização futura; a seção 8 registra as implementações aplicadas sobre o tema após a elaboração deste relatório.

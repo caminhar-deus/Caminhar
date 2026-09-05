@@ -75,6 +75,41 @@ const CHECKS = [
     expectedType: 'bigint',
     label: 'entity_id como BIGINT em activity_logs',
   },
+  {
+    id: '012',
+    name: '012-add-performance-indexes',
+    check: `SELECT indexname FROM pg_indexes WHERE indexname = 'idx_posts_fulltext_pt'`,
+    expected: 'idx_posts_fulltext_pt',
+    label: 'Índice full-text em posts (012)',
+  },
+  {
+    id: '013',
+    name: '013-add-trgm-indexes',
+    check: `SELECT indexname FROM pg_indexes WHERE indexname = 'idx_musicas_titulo_trgm'`,
+    expected: 'idx_musicas_titulo_trgm',
+    label: 'Índice trigram em musicas (013)',
+  },
+  {
+    id: '014',
+    name: '014-add-dicas-index',
+    check: `SELECT indexname FROM pg_indexes WHERE indexname = 'idx_dicas_published_id'`,
+    expected: 'idx_dicas_published_id',
+    label: 'Índice composto em dicas (014)',
+  },
+  {
+    id: '015',
+    name: '015-align-products-schema',
+    check: `SELECT column_name FROM information_schema.columns WHERE table_name = 'products' AND column_name = 'name'`,
+    expected: 'name',
+    label: 'Coluna "name" em products (015)',
+  },
+  {
+    id: '016',
+    name: '016-create-refresh-tokens-table',
+    check: `SELECT table_name FROM information_schema.tables WHERE table_name = 'refresh_tokens'`,
+    expected: 'refresh_tokens',
+    label: 'Tabela "refresh_tokens" (016)',
+  },
 ];
 
 async function verify() {

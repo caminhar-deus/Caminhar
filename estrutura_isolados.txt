@@ -114,6 +114,7 @@ scripts/init-table.js → scripts/utils/load-env.js
 scripts/maintenance/clean-k6-videos.js → scripts/utils/cleanup.js
 scripts/migrate.js → scripts/db/connection.js
 scripts/migrate.js → scripts/utils/load-env.js
+scripts/migrations/000-create-base-schema.js → scripts/utils/init-table-utils.js
 scripts/migrations/001-add-views-to-posts.js → scripts/db/connection.js
 scripts/migrations/001-add-views-to-posts.js → scripts/utils/load-env.js
 scripts/migrations/002-create-products-table.js → scripts/db/connection.js

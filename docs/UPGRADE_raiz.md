@@ -73,6 +73,8 @@
 
 **Sugestão:** Definir uma política única de rate limit por rota, documentada, e alinhar o `proxy.js` com os limites dos endpoints (ou vice-versa). Considerar se o proxy deve ser a camada mais restritiva ou apenas uma proteção grosseira.
 
+**Status:** ✅ Implementado — o `proxy.js` passou a proteger apenas `/api/auth/login`; as rotas públicas de listagem/busca são limitadas exclusivamente nos handlers, eliminando a divergência de limites entre as duas camadas.
+
 ---
 
 ### 2.2 CORS inconsistente entre grupos de endpoints no `next.config.js`
@@ -236,6 +238,8 @@
 **Impacto:** Latência adicional em endpoints de alta leitura (posts, videos, musicas, products).
 
 **Sugestão:** Avaliar se o rate limit deve ser aplicado antes ou depois do cache (os endpoints já têm rate limit interno). O proxy como camada mais restritiva pode ser redundante com o rate limit dos endpoints.
+
+**Status:** ✅ Implementado — o rate limit das rotas de listagem/busca foi removido do middleware (apenas `/api/auth/login` permanece no `proxy.js`), eliminando a latência do Redis por requisição nessas rotas; a proteção continua nos endpoints, que já possuíam rate limit interno.
 
 ---
 

@@ -6,6 +6,7 @@ loadEnv();
 
 const MIGRATION_TABLE = '_migrations';
 const MIGRATIONS = [
+  '000-create-base-schema',
   '001-add-views-to-posts',
   '002-create-products-table',
   '003-add-position-to-products',
@@ -16,6 +17,9 @@ const MIGRATIONS = [
   '008-add-position-to-videos',
   '009-add-position-to-posts',
   '011-fix-entity-id-type',
+  '012-add-performance-indexes',
+  '013-add-trgm-indexes',
+  '014-add-dicas-index',
   '015-align-products-schema',
   '016-create-refresh-tokens-table',
 ];
