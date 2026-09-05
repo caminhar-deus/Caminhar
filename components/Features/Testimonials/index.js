@@ -2,24 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useApiFetch, useDebounce } from '@/hooks';
 import styles from './Testimonials.module.css';
 
-const fallbackData = [
-  {
-    id: 1,
-    name: 'Palavra do dia',
-    content: 'Os artigos e reflexões mudaram a minha forma de ver as dificuldades do dia a dia. Encontrei muita paz e direcionamento nas mensagens.'
-  },
-  {
-    id: 2,
-    name: 'Oração do Dia',
-    content: 'A curadoria de músicas e os vídeos recomendados têm sido fundamentais nos meus momentos de devocional e oração. Trabalho incrível!'
-  },
-  {
-    id: 3,
-    name: 'Anjos do Dia',
-    content: 'Uso frequentemente os materiais do projeto para embasar os estudos com os jovens. É um conteúdo profundo e muito acessível.'
-  }
-];
-
 export default function Testimonials() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -38,9 +20,8 @@ export default function Testimonials() {
     staleTime: 60000, // 1 minuto de cache para evitar chamadas repetidas
   });
 
-  // Usa dados da API se disponíveis, senão fallback
-  const hasApiData = apiDicas?.data?.length > 0;
-  const dicas = hasApiData ? apiDicas.data : fallbackData;
+  // Usa somente os dados da API (sem fallback de conteúdo fictício)
+  const dicas = apiDicas?.data || [];
   const pagination = apiDicas?.pagination;
 
   // Atualiza totalPages quando a paginação chega
@@ -78,6 +59,9 @@ export default function Testimonials() {
     window.addEventListener('resize', debouncedHandleScroll);
     return () => window.removeEventListener('resize', debouncedHandleScroll);
   }, [dicas, debouncedHandleScroll]);
+
+  // Oculta a seção quando não há dicas cadastradas no banco
+  if (dicas.length === 0) return null;
 
   const hasCarousel = dicas.length > 3;
 

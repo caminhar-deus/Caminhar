@@ -37,7 +37,7 @@ describe('Componentes Features - Testimonials', () => {
     fetchMock.mockClear();
   });
 
-  it('deve carregar dados do fallback inicialmente e depois da API com sucesso', async () => {
+  it('deve exibir as dicas retornadas pela API com sucesso', async () => {
     const mockDicas = {
       success: true,
       data: [
@@ -49,32 +49,37 @@ describe('Componentes Features - Testimonials', () => {
 
     render(<Testimonials />);
 
-    expect(screen.getByText('Dicas do Dia')).toBeInTheDocument();
-
     await waitFor(() => {
+      expect(screen.getByText('Dicas do Dia')).toBeInTheDocument();
       expect(screen.getByText(/"Conteúdo API 1"/)).toBeInTheDocument();
     });
   });
 
-  it('deve manter o fallbackData se a API retornar erro ou exceção (Catch)', async () => {
+  it('deve ocultar a seção se a API retornar erro ou exceção (catch)', async () => {
     global.fetch.mockRejectedValueOnce(new Error('API Offline'));
     render(<Testimonials />);
 
     await waitFor(() => {
       expect(console.error).toHaveBeenCalledWith('Erro ao buscar as dicas do dia:', expect.any(Error));
-      expect(screen.getByText(/"Os artigos e reflexões mudaram/i)).toBeInTheDocument();
     });
+
+    expect(screen.queryByText('Dicas do Dia')).not.toBeInTheDocument();
+    expect(screen.queryByText(/"Os artigos e reflexões mudaram/i)).not.toBeInTheDocument();
   });
 
-  it('deve manter o fallbackData se a API retornar array vazio ou erro HTTP', async () => {
+  it('deve ocultar a seção se a API retornar erro HTTP ou array vazio', async () => {
     global.fetch.mockResolvedValueOnce({ ok: false });
     const { unmount: unmountFirst } = render(<Testimonials />);
-    await waitFor(() => expect(screen.getByText(/"Os artigos e reflexões mudaram/i)).toBeInTheDocument());
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText('Dicas do Dia')).not.toBeInTheDocument();
+    expect(screen.queryByText(/"Os artigos e reflexões mudaram/i)).not.toBeInTheDocument();
     unmountFirst();
 
     global.fetch.mockResolvedValueOnce({ ok: true, json: async () => [] });
     const { unmount: unmountSecond } = render(<Testimonials />);
-    await waitFor(() => expect(screen.getByText(/"Os artigos e reflexões mudaram/i)).toBeInTheDocument());
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(screen.queryByText('Dicas do Dia')).not.toBeInTheDocument();
+    expect(screen.queryByText(/"Os artigos e reflexões mudaram/i)).not.toBeInTheDocument();
     unmountSecond();
   });
 

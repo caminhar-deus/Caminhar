@@ -281,9 +281,9 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
 - **Propósito:** CRUD administrativo de dicas.
 - **Funcionalidades:**
   - GET (lista completa, inclui não publicadas).
-  - POST com validação Zod (`dicaSchema`) — nome e conteúdo obrigatórios, `published` default `true`.
+  - POST com validação Zod (`dicaSchema`) — nome e conteúdo obrigatórios, `published` default `true`; invalida `dicas:public:*`.
   - PUT com esquema de **atualização parcial**: se campos faltarem, busca valores atuais e faz merge antes de validar (`dicaUpdateSchema`); invalida `dicas:public:*`.
-  - DELETE com log de auditoria.
+  - DELETE com invalidação de `dicas:public:*` e log de auditoria.
   - Config: `rateLimit: 30/min`.
 
 #### `/pages/api/admin/products.js` — *não existe como rota separada*
@@ -562,3 +562,4 @@ Já documentado na seção [2. API Pública](#2-api-pública) — é o único ar
 - **13/06/2026:** try/catch adicionado no `login.js` em torno de `authenticateAndGenerateToken()`.
 - **28–30/07/2026:** Documentação consolidada em `PROJECT_pages.md` e `UPGRADE_pages.md`.
 - **01/08/2026:** Nova análise profunda dos 42 arquivos atuais — corrigidos pontos divergentes (Cache-Control real dos endpoints, `check.js` sem `withAuth`, `globals.css` com `body.modal-open`, `Home.module.css` sem gradiente), identificado bug `await await` em `admin/users.js` e outros pontos registrados no `UPGRADE_pages.md`.
+- **04/09/2026:** `admin/dicas.js` passa a invalidar `dicas:public:*` também no POST e no DELETE (o PUT já invalidava) — dica criada ou excluída no Painel Administrativo reflete imediatamente na página pública.

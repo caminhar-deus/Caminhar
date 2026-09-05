@@ -113,7 +113,7 @@ Definições JSON consumidas por `init-table.js` (nome da tabela, colunas, flag 
 | `schemas/posts.json` | `posts` | `dropBeforeCreate: true`; colunas title, slug (UNIQUE), excerpt, content, image_url, published, views, timestamps. |
 | `schemas/musicas.json` | `musicas` | `dropBeforeCreate: true`; colunas titulo, artista, url_spotify (NOT NULL), descricao, publicado, timestamps. |
 | `schemas/videos.json` | `videos` | `dropBeforeCreate: true`; colunas titulo, url_youtube (NOT NULL), descricao, publicado, timestamps. |
-| `schemas/dicas.json` | `dicas` | `dropBeforeCreate: false` (preserva dados); colunas name, content (NOT NULL), published; **contém seedData com 3 registros iniciais.** |
+| `schemas/dicas.json` | `dicas` | `dropBeforeCreate: false` (preserva dados); colunas name, content (NOT NULL), published; **sem `seedData`** (tabela criada vazia — registros dependem exclusivamente do Painel Administrativo). |
 
 ---
 

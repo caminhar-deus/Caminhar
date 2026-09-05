@@ -228,3 +228,13 @@
 | 7 | **Manutenção** | StructuredData: reimportação redundante de siteConfig/siteUrl. | SEO/StructuredData |
 | 8 | **Manutenção** | `UI/__tests__/` vazia — sem cobertura de testes para o Design System base. | UI |
 | 9 | **Manutenção** | `Admin/index.js` barrel incompleto — inconsistência de exportações. | Admin |
+
+---
+
+## Implementações Aplicadas
+
+### `components/Features/Testimonials/index.js` — remoção do fallback estático (`fallbackData`)
+
+**Descrição:** Item 2.5.3 resolvido: o array `fallbackData` (conteúdo fictício hardcoded) foi removido do componente. A seção "Dicas do Dia" passou a exibir exclusivamente os dados retornados pela API `/api/dicas` e a ocultar-se por completo quando não há dicas cadastradas (retorno `null`). Em `AdminDicas.js`, o `placeholder` do campo "Nome da Dica" foi ajustado de `Ex: Palavra do dia` para `Ex: Mensagem de fé`, eliminando resíduo do conteúdo fictício no painel.
+
+> 📝 Este documento é analítico — as seções 1–7 servem como guia para futuras refatorações e correções; a seção "Implementações Aplicadas" registra as implementações realizadas após a elaboração deste relatório.

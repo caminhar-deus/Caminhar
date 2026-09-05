@@ -585,3 +585,13 @@ Além disso, há um possível problema de ordem: substituir `&` por `&` pode cor
 6. **Duplicidade `fetchWithTimeout` + `urlSchema`** nos 3 fetchers — oportunidade clara de extração para `lib/`.
 7. **Padrão híbrido de rate limit** (dentro vs antes do cache) — precisa de decisão de arquitetura única.
 8. **Cache-Control** (300s vs 120s vs 86400s) — precisa de política centralizada e documentada.
+
+---
+
+## Implementações Aplicadas
+
+### `pages/api/admin/dicas.js` — invalidação de cache no POST e no DELETE
+
+**Descrição:** O CRUD administrativo de dicas passou a invalidar o cache público `dicas:public:*` também no POST (após o `INSERT`) e no DELETE (após o `DELETE`), alinhando-se ao PUT que já invalidava. Dica criada ou excluída no Painel Administrativo passa a refletir imediatamente na página pública, independentemente do TTL do cache.
+
+> 📝 Este documento é analítico — as seções 1–7 servem como guia para futuras refatorações e correções; a seção "Implementações Aplicadas" registra as implementações realizadas após a elaboração deste relatório.

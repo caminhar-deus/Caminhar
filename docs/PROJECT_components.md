@@ -149,7 +149,7 @@ Componentes de funcionalidades públicas do site, agrupados por domínio.
 
 ### 2.6 Testimonials (Dicas do Dia)
 
-**index.js** (`Testimonials/index.js`) — Seção "Dicas do Dia". Carrossel ou grid, fallback estático, navegação com setas, paginação, scroll detection com debounce. 174 linhas.
+**index.js** (`Testimonials/index.js`) — Seção "Dicas do Dia". Carrossel ou grid, navegação com setas, paginação, scroll detection com debounce; exibe apenas os dados retornados pela API `/api/dicas` e oculta a seção quando não há dicas cadastradas. 157 linhas.
 
 **Testimonials.module.css** (`Testimonials/`) — Estilos da seção, cards, navegação, hover effects, responsivo.
 

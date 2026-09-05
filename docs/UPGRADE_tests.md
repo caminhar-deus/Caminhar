@@ -274,6 +274,12 @@ Os itens abaixo foram implementados após a elaboração deste relatório. As re
 **Arquivo:** `tests/integration/api/placeholder-image.test.js`
 
 **Descrição:** O teste foi atualizado para acompanhar a implementação do endpoint: adicionado mock de `fs.promises.stat` (necessário ao `Last-Modified` baseado no `mtime`), isolado o cache interno do filename entre cenários via `jest.resetModules()` + import dinâmico, e incluído caso de teste para a resposta **304** quando o header `If-None-Match` corresponde ao ETag — validando que o arquivo não é relido do disco nesse cenário.
+
+### 8.9 Atualização do teste de `Testimonials` (seção oculta sem fallback estático)
+
+**Arquivo:** `tests/unit/components/Features/Testimonials/index.test.js`
+
+**Descrição:** O teste foi atualizado para acompanhar a remoção do `fallbackData` do componente `Testimonials`: os casos que validavam a exibição do conteúdo fictício em erro de rede (catch), erro HTTP e array vazio passaram a validar a **ocultação da seção** (verificação de ausência via `queryByText`), e o caso de sucesso passou a esperar a renderização pós-fetch. Removidas as referências aos textos de demonstração ("Os artigos e reflexões mudaram...") de todos os cenários de vazio.
 ---
 
 > **Nota:** Este documento é um relatório de análise. As ações listadas nas seções 1–7 são recomendações para revisão e priorização futura; a seção 8 registra as implementações aplicadas sobre o tema após a elaboração deste relatório.

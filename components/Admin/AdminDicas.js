@@ -68,7 +68,7 @@ export default function AdminDicas() {
 
   // Define os campos do modal de Criação/Edição
   const fields = [
-    { name: 'name', component: TextField, label: 'Nome da Dica', required: true, placeholder: 'Ex: Palavra do dia' },
+    { name: 'name', component: TextField, label: 'Nome da Dica', required: true, placeholder: 'Ex: Mensagem de fé' },
     { name: 'content', component: TextAreaField, label: 'Conteúdo da Mensagem', required: true, placeholder: 'Digite a mensagem inspiradora...', rows: 4 },
     { name: 'published', component: ToggleField, label: 'Status de Publicação', description: 'Ative para exibir esta dica no site público' }
   ];

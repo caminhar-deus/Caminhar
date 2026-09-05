@@ -289,4 +289,10 @@
 
 ---
 
+### `scripts/schemas/dicas.json` — remoção do `seedData` de demonstração
+
+**Descrição:** O bloco `seedData` de `schemas/dicas.json` foi removido (3 registros com conteúdo fictício de exemplo: "Palavra do dia", "Oração do Dia", "Anjos do Dia"). Tanto o `init-table.js` quanto a migração `000-create-base-schema.js` passam a criar/popular a tabela `dicas` vazia — os registros passam a depender exclusivamente do cadastro no Painel Administrativo.
+
+---
+
 > 📝 Este documento é analítico — as seções 1–8 servem como guia para futuras refatorações e correções; a seção "Implementações Aplicadas" registra as implementações realizadas após a elaboração deste relatório.

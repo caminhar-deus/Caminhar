@@ -35,6 +35,8 @@ async function handlePost(req, res) {
     'INSERT INTO dicas (name, content, published) VALUES ($1, $2, $3) RETURNING *',
     [name, content, published !== undefined ? published : true],
   );
+  // Invalida cache público para refletir mudanças imediatamente
+  await invalidateCache('dicas:public:*');
   await req.adminUtils.logActivity('CRIAR DICA', result.rows[0].id, `Criou a dica: ${name}`);
   return res.status(201).json(result.rows[0]);
 }
@@ -84,6 +86,8 @@ async function handleDelete(req, res) {
   const dicaQueryToDel = await query('SELECT name FROM dicas WHERE id = $1', [id]);
   const nameDica = dicaQueryToDel.rows[0]?.name || id;
   await query('DELETE FROM dicas WHERE id = $1', [id]);
+  // Invalida cache público para refletir mudanças imediatamente
+  await invalidateCache('dicas:public:*');
   await req.adminUtils.logActivity('EXCLUIR DICA', id, `Removeu a dica: ${nameDica}`);
   return res.status(200).json({ success: true });
 }
