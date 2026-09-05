@@ -18,7 +18,7 @@ scripts/
 ├── db/              → conexão e verificação de banco
 ├── diagnostics/     → diagnósticos pontuais
 ├── maintenance/     → manutenção de dados
-├── migrations/      → migrações de schema (001-016)
+├── migrations/      → migrações de schema (000-016)
 ├── schemas/         → definições JSON de tabelas
 ├── tests/           → testes manuais
 └── utils/           → módulos compartilhados
@@ -73,13 +73,14 @@ Base de apoio reutilizada por diversos scripts. Concentram a lógica comum e evi
 | Arquivo | Funcionalidade |
 |---------|----------------|
 | `migrate.js` (raiz) | **Executor central de migrações (257 linhas).** Cria tabela `_migrations`, lista pendentes vs aplicadas, executa dentro de transação, suporta `--status`, `--revert`, `--help`. Filtra apenas arquivos `.js` com padrão `NNN-*.js`. |
-| `migrations/seed-migrations-table.js` | Registra retroativamente na tabela `_migrations` as migrações já aplicadas antes do sistema de controle. Idempotente. |
-| `migrations/verify-applied.js` | Verifica no `information_schema` se cada migração (001-011) foi aplicada (coluna existe, tabela existe, tipo correto). |
+| `migrations/seed-migrations-table.js` | Registra retroativamente na tabela `_migrations` as migrações já aplicadas antes do sistema de controle (lista alinhada a 000-016). Idempotente. |
+| `migrations/verify-applied.js` | Verifica no `information_schema` se cada migração (001-016) foi aplicada (coluna existe, tabela existe, tipo correto). |
 
 ### Migrações de estrutura (padrão `.js` — exportam `up(pool)`/`down(pool)`)
 
 | Arquivo | Alteração |
 |---------|-----------|
+| `000-create-base-schema.js` | **Baseline de schema.** Cria o schema base em banco vazio (`CREATE TABLE IF NOT EXISTS`): posts, videos, musicas e dicas reaproveitando `scripts/schemas/*.json`, + users, settings, images, categories, tags, post_categories, post_tags, roles inline. Executa primeiro na ordem numérica. |
 | `001-add-views-to-posts.js` | Adiciona coluna `views INTEGER DEFAULT 0 NOT NULL` em `posts`. |
 | `002-create-products-table.js` | Cria tabela `products` (schema original: title, images, link_ml/shopee/amazon). |
 | `003-add-position-to-products.js` | Adiciona coluna `position INTEGER DEFAULT 9999` em `products`. |
@@ -97,7 +98,7 @@ Base de apoio reutilizada por diversos scripts. Concentram a lógica comum e evi
 
 | Arquivo | Alteração |
 |---------|-----------|
-| `012-add-performance-indexes.sql` | **Arquivo SQL puro.** Índices: GIN full-text (posts), composto de paginação (posts/musicas/videos/products), `LOWER(title)`, `settings.key`, `ANALYZE`. **⚠️ Não é executado pelo `migrate.js` por não ser `.js` (ver UPGRADE).** |
+| `012-add-performance-indexes.js` | **Convertida de `.sql` para `.js`.** Índices: GIN full-text (posts), composto de paginação (posts/musicas/videos/products), `LOWER(title)`, `settings.key`, `ANALYZE`. Executada pelo `migrate.js` e listada no `--status`. |
 | `013-add-trgm-indexes.js` | Habilita `pg_trgm` e cria índices GIN trigram para buscas `ILIKE` em musicas/videos/posts. |
 | `014-add-dicas-index.js` | Índice composto `(published, id ASC)` para paginação eficiente em `dicas`. |
 
@@ -211,7 +212,7 @@ Definições JSON consumidas por `init-table.js` (nome da tabela, colunas, flag 
 | Categoria | Quantidade | Arquivos |
 |-----------|:----------:|----------|
 | Backup | 5 | `backup.js`, `create-backup.js`, `restore-backup.js`, `init-backup.js`, `view-backup-logs.js` |
-| Migrações | 18 | `migrate.js` + `migrations/` (15) + `seed-migrations-table.js` + `verify-applied.js` |
+| Migrações | 19 | `migrate.js` + `migrations/` (16) + `seed-migrations-table.js` + `verify-applied.js` |
 | Schemas | 4 | `schemas/*.json` |
 | Seeds | 6 | `seed-all.js`, `seed-posts.js`, `seed-musicas.js`, `seed-videos.js`, `seed-products.js`, `seed-settings.js` |
 | Inicialização | 2 | `init-server.js`, `init-table.js` |

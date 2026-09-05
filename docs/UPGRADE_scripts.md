@@ -265,4 +265,28 @@
 
 ---
 
+### `scripts/migrations/000-create-base-schema.js` — baseline de schema em banco vazio
+
+**Descrição:** Nova migração `000` (executa primeiro na ordem numérica) cria o schema base completo em instalações limpas: `posts`, `videos`, `musicas` e `dicas` reaproveitando `scripts/schemas/*.json` via `buildCreateTableSQL`/`loadSchemaFromDir`, e `users`, `settings`, `images`, `categories`, `tags`, `post_categories`, `post_tags`, `roles` definidas inline — todas com `CREATE TABLE IF NOT EXISTS` (idempotente). Resolve o erro `relation "posts" does not exist` ao executar `npm run migrate` em banco recém-criado.
+
+---
+
+### `scripts/migrations/012-add-performance-indexes.js` — conversão de `.sql` para `.js`
+
+**Descrição:** Item 4.3 resolvido: `012-add-performance-indexes.sql` (ignorado pelo executor por não seguir o padrão `NNN-*.js`) foi convertido para `012-add-performance-indexes.js`, no padrão das demais migrações (`SQL`/`ROLLBACK_SQL` + `up(client)`/`down(client)`). Agora é executado pelo `migrate.js` e aparece no `--status`. O arquivo `.sql` foi removido.
+
+---
+
+### `scripts/migrations/verify-applied.js` — cobertura estendida para 012-016
+
+**Descrição:** Item 4.4 (parcial): os `CHECKS` de `verify-applied.js` foram ampliados para cobrir 012 (índice full-text em `posts`), 013 (índice trigram em `musicas`), 014 (índice composto em `dicas`), 015 (coluna `name` em `products`) e 016 (tabela `refresh_tokens`). O `validate-schema.js` permanece inalterado.
+
+---
+
+### `scripts/migrations/seed-migrations-table.js` — lista alinhada a 000-016
+
+**Descrição:** Item 4.5 resolvido: a lista `MIGRATIONS` foi atualizada para incluir `000-create-base-schema`, `012-add-performance-indexes`, `013-add-trgm-indexes` e `014-add-dicas-index`, alinhada às 16 migrações existentes.
+
+---
+
 > 📝 Este documento é analítico — as seções 1–8 servem como guia para futuras refatorações e correções; a seção "Implementações Aplicadas" registra as implementações realizadas após a elaboração deste relatório.

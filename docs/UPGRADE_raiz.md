@@ -113,6 +113,8 @@
 
 **Sugestão:** Atualizar o README com as contagens corretas (31 raiz, 42 páginas) e remover referências a arquivos que não existem mais (`generateTokensCSS.js`, tokens JS).
 
+**Status:** ✅ Implementado (parcial) — a seção **Dados** do `README.md` foi atualizada para refletir o novo baseline de migrações (16 tabelas, 16 migrações versionadas 000-016 e instrução de instalação limpa via `000-create-base-schema`), acompanhando as implementações em `scripts/migrations/`. As contagens de raiz/páginas (28 vs 31; 53 vs 42) e as referências a `generateTokensCSS.js`/Design Tokens permanecem abertas.
+
 ---
 
 ### 3.2 `proxy.js` — lógica de IP duplicada com `lib/api/helpers.js`

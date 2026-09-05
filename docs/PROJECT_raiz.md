@@ -314,6 +314,8 @@ A raiz do projeto concentra **31 arquivos** (excluindo subpastas e arquivos bloq
 
 > ⚠️ **Inconsistência:** o README informa "28 arquivos" na raiz e "53 arquivos" em páginas, mas a análise atual identifica 31 arquivos na raiz e 42 em páginas. O README também cita `generateTokensCSS.js` e Design Tokens que foram removidos.
 
+> 📌 A seção **Dados** do README foi atualizada: 16 tabelas, 16 migrações versionadas (000 a 016) e instrução de instalação limpa — a migração `000-create-base-schema` cria o schema base em banco vazio durante o `npm run migrate`.
+
 ---
 
 ### 5.2 `CHANGELOG.md`
