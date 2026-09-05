@@ -12,7 +12,8 @@ import { useApiFetch } from './useApiFetch';
  * @property {function} [onSuccess] - Callback após operação bem sucedida
  * @property {function} [onError] - Callback executado em caso de erro
  * @property {function} [onConfirmDelete] - Função assíncrona opcional para confirmação de exclusão.
- *   Se fornecida, o hook aguarda a Promise resolver. Se resolver com `true`, a exclusão prossegue.
+ *   Recebe o `id` do item a ser excluído. Se fornecida, o hook aguarda a Promise resolver.
+ *   Se resolver com `true`, a exclusão prossegue.
  *   Se não fornecida, usa `window.confirm` como fallback.
  */
 
@@ -204,7 +205,7 @@ export const useAdminCrud = ({
 
   const handleDelete = async (id) => {
     if (onConfirmDelete) {
-      const confirmed = await onConfirmDelete();
+      const confirmed = await onConfirmDelete(id);
       if (!confirmed) return;
     } else {
       if (!window.confirm('Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.')) return;
@@ -215,6 +216,7 @@ export const useAdminCrud = ({
     try {
       const response = await fetch(apiEndpoint, {
         method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
         signal: abortController.signal,
       });

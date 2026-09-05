@@ -280,6 +280,18 @@ Os itens abaixo foram implementados após a elaboração deste relatório. As re
 **Arquivo:** `tests/unit/components/Features/Testimonials/index.test.js`
 
 **Descrição:** O teste foi atualizado para acompanhar a remoção do `fallbackData` do componente `Testimonials`: os casos que validavam a exibição do conteúdo fictício em erro de rede (catch), erro HTTP e array vazio passaram a validar a **ocultação da seção** (verificação de ausência via `queryByText`), e o caso de sucesso passou a esperar a renderização pós-fetch. Removidas as referências aos textos de demonstração ("Os artigos e reflexões mudaram...") de todos os cenários de vazio.
+
+### 8.10 Atualização do teste de `AdminCrudBase` (fluxo de exclusão com confirmação em 1 clique)
+
+**Arquivo:** `tests/unit/components/Admin/AdminCrudBase.test.js`
+
+**Descrição:** Os 3 testes do fluxo de exclusão foram reestruturados para o novo contrato do `AdminCrudBase`/`useAdminCrud`: no clique em "Excluir", o `handleDelete` do hook chama `onConfirmDelete(id)` que abre o modal; o clique **único** em "Sim, excluir" resolve a Promise com `true` e fecha o modal na mesma interação (removida a simulação do ciclo de `loading` que sincronizava o fechamento); o cancelamento via botão de fechar resolve `false`. O teste de abertura do modal passou a usar `onConfirmDelete(1)` diretamente (sem chamar `handleDelete`), e o teste de confirmação passou a validar o clique único sem re-chamada de `handleDelete`.
+
+### 8.11 Novo teste do hook `useAdminCrud` (regressão da exclusão)
+
+**Arquivo:** `tests/unit/hooks/useAdminCrud.test.js` (primeiro teste de hooks — cria a pasta `tests/unit/hooks/`)
+
+**Descrição:** Criado teste unitário do hook `useAdminCrud` cobrindo o `handleDelete`: valida que o `DELETE` envia `Content-Type: application/json` com corpo `{ id }` (regressão da correção do parse do corpo pelo servidor), que `onConfirmDelete` recebe o `id` do item, e que a exclusão é abortada quando `onConfirmDelete` resolve `false` (sem chamar `fetch`). Usa `renderHook`/`act`, mock de `useApiFetch` e de `react-hot-toast`, com `mockGlobalFetch`.
 ---
 
 > **Nota:** Este documento é um relatório de análise. As ações listadas nas seções 1–7 são recomendações para revisão e priorização futura; a seção 8 registra as implementações aplicadas sobre o tema após a elaboração deste relatório.

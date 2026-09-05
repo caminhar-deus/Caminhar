@@ -136,7 +136,7 @@ describe('Componente Front-End - AdminCrudBase', () => {
     expect(mockUseAdminCrud.handleEdit).toHaveBeenCalledWith({ id: 1, name: 'Editável', status: false });
   });
 
-  it('deve abrir modal de confirmação ao clicar em Excluir e confirmar a exclusão', async () => {
+  it('deve abrir modal de confirmação ao clicar em Excluir', async () => {
     useAdminCrud.mockReturnValue({
       ...mockUseAdminCrud,
       items: [{ id: 1, name: 'Editável', status: false }]
@@ -144,72 +144,29 @@ describe('Componente Front-End - AdminCrudBase', () => {
 
     render(<AdminCrudBase {...defaultProps} />);
 
-    // Clica em Excluir
-    fireEvent.click(screen.getByText('Excluir'));
+    // O handleDelete do mock (que representa o hook) chama onConfirmDelete(id)
+    // para abrir o modal e aguardar a confirmação.
+    const passedOptions = useAdminCrud.mock.calls[useAdminCrud.mock.calls.length - 1][0];
+    const handleDelete = passedOptions.onConfirmDelete;
+    await act(async () => {
+      handleDelete(1);
+    });
 
     // Verifica que o modal de confirmação abriu
     expect(screen.getByTestId('confirm-modal')).toBeInTheDocument();
 
-    // O handleDelete do mock é uma função que espera receber resolução via onConfirmDelete
-    // Verificamos que onConfirmDelete foi passado ao hook
-    const passedOptions = useAdminCrud.mock.calls[useAdminCrud.mock.calls.length - 1][0];
+    // Verifica que onConfirmDelete recebe o id do item
     expect(passedOptions.onConfirmDelete).toBeDefined();
   });
 
-  it('deve confirmar exclusão ao clicar em "Sim, excluir" no modal', async () => {
-    const mockHandleDelete = jest.fn().mockResolvedValue();
-    useAdminCrud.mockReturnValue({
-      ...mockUseAdminCrud,
-      items: [{ id: 1, name: 'Editável', status: false }],
-      handleDelete: mockHandleDelete,
+  it('deve confirmar exclusão com um único clique em "Sim, excluir" no modal', async () => {
+    let latestOptions;
+    const mockHandleDelete = jest.fn().mockImplementation(async (id) => {
+      // Reproduz o fluxo real do hook: handleDelete chama onConfirmDelete(id),
+      // que abre o modal e aguarda a confirmação.
+      const confirmed = await latestOptions.onConfirmDelete(id);
+      if (!confirmed) return;
     });
-
-    const { rerender } = render(<AdminCrudBase {...defaultProps} />);
-
-    // Clica em Excluir para abrir o modal
-    fireEvent.click(screen.getByText('Excluir'));
-    expect(screen.getByTestId('confirm-modal')).toBeInTheDocument();
-
-    // Obtém a Promise de onConfirmDelete
-    const passedOptions = useAdminCrud.mock.calls[useAdminCrud.mock.calls.length - 1][0];
-    const confirmPromise = passedOptions.onConfirmDelete();
-
-    // Simula clique no botão "Sim, excluir" - que chama handleConfirmDelete
-    const btnSimExcluir = screen.getByText('Sim, excluir');
-    fireEvent.click(btnSimExcluir);
-
-    // Aguarda a Promise ser resolvida com true
-    const result = await act(async () => {
-      return await confirmPromise;
-    });
-
-    expect(result).toBe(true);
-
-    // Verifica que handleDelete foi chamado com o id do item (1)
-    expect(mockHandleDelete).toHaveBeenCalledWith(1);
-
-    // Simula ciclo de loading (true) e depois volta a false para disparar o useEffect que fecha o modal
-    useAdminCrud.mockReturnValue({
-      ...mockUseAdminCrud,
-      items: [{ id: 1, name: 'Editável', status: false }],
-      loading: true,
-      handleDelete: mockHandleDelete,
-    });
-    rerender(<AdminCrudBase {...defaultProps} />);
-
-    useAdminCrud.mockReturnValue({
-      ...mockUseAdminCrud,
-      items: [{ id: 1, name: 'Editável', status: false }],
-      loading: false,
-      handleDelete: mockHandleDelete,
-    });
-    rerender(<AdminCrudBase {...defaultProps} />);
-
-    expect(screen.queryByTestId('confirm-modal')).not.toBeInTheDocument();
-  });
-
-  it('deve cancelar exclusão ao fechar o modal sem confirmar', async () => {
-    const mockHandleDelete = jest.fn();
     useAdminCrud.mockReturnValue({
       ...mockUseAdminCrud,
       items: [{ id: 1, name: 'Editável', status: false }],
@@ -217,14 +174,54 @@ describe('Componente Front-End - AdminCrudBase', () => {
     });
 
     render(<AdminCrudBase {...defaultProps} />);
+    latestOptions = useAdminCrud.mock.calls[useAdminCrud.mock.calls.length - 1][0];
+
+    // Clica em Excluir (chama handleDelete do hook, que chama onConfirmDelete(id) e abre o modal)
+    fireEvent.click(screen.getByText('Excluir'));
+    expect(screen.getByTestId('confirm-modal')).toBeInTheDocument();
+
+    // Obtém a Promise de onConfirmDelete que está aguardando a confirmação
+    const passedOptions = useAdminCrud.mock.calls[useAdminCrud.mock.calls.length - 1][0];
+    const confirmPromise = passedOptions.onConfirmDelete(1);
+
+    // Simula clique ÚNICO no botão "Sim, excluir"
+    fireEvent.click(screen.getByText('Sim, excluir'));
+
+    // Aguarda a Promise ser resolvida com true na mesma interação
+    const result = await act(async () => {
+      return await confirmPromise;
+    });
+
+    expect(result).toBe(true);
+
+    // A confirmação apenas resolveu a Promise; o DELETE é responsabilidade do hook,
+    // que (no fluxo real) prossegue com o fetch após receber true.
+    expect(mockHandleDelete).toHaveBeenCalledWith(1);
+    expect(screen.queryByTestId('confirm-modal')).not.toBeInTheDocument();
+  });
+
+  it('deve cancelar exclusão ao fechar o modal sem confirmar', async () => {
+    let latestOptions;
+    const mockHandleDelete = jest.fn().mockImplementation(async (id) => {
+      const confirmed = await latestOptions.onConfirmDelete(id);
+      if (!confirmed) return;
+    });
+    useAdminCrud.mockReturnValue({
+      ...mockUseAdminCrud,
+      items: [{ id: 1, name: 'Editável', status: false }],
+      handleDelete: mockHandleDelete,
+    });
+
+    render(<AdminCrudBase {...defaultProps} />);
+    latestOptions = useAdminCrud.mock.calls[useAdminCrud.mock.calls.length - 1][0];
 
     // Clica em Excluir para abrir o modal
     fireEvent.click(screen.getByText('Excluir'));
     expect(screen.getByTestId('confirm-modal')).toBeInTheDocument();
 
-    // Obtém a Promise de onConfirmDelete
+    // Obtém a Promise de onConfirmDelete que está aguardando a confirmação
     const passedOptions = useAdminCrud.mock.calls[useAdminCrud.mock.calls.length - 1][0];
-    const confirmPromise = passedOptions.onConfirmDelete();
+    const confirmPromise = passedOptions.onConfirmDelete(1);
 
     // Fecha o modal clicando no botão de fechar (mock do Modal)
     fireEvent.click(screen.getByTestId('modal-close'));

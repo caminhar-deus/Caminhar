@@ -30,7 +30,7 @@ Sistema administrativo completo construído sobre um **CRUD genérico reutilizá
 
 ### 1.1 Núcleo do CRUD
 
-**AdminCrudBase.js** (`AdminCrudBase.js`) — Componente base genérico e reutilizável para todas as operações CRUD. Elimina duplicação entre gerenciadores de conteúdo. Funcionalidades: tabela configurável, formulário dinâmico, Drag & Drop com reversão automática em caso de falha, busca server-side, exportação CSV, toggle de status com rollback otimista, paginação, modo somente leitura, skeletons, validação Zod, modal de confirmação assíncrono para exclusão (via `Modal` da UI). Delega o formulário para `CrudForm` e a tabela para `CrudTable`. ~434 linhas.
+**AdminCrudBase.js** (`AdminCrudBase.js`) — Componente base genérico e reutilizável para todas as operações CRUD. Elimina duplicação entre gerenciadores de conteúdo. Funcionalidades: tabela configurável, formulário dinâmico, Drag & Drop com reversão automática em caso de falha, busca server-side, exportação CSV, toggle de status com rollback otimista, paginação, modo somente leitura, skeletons, validação Zod, modal de confirmação assíncrono para exclusão com confirmação em um único clique (via `Modal` da UI). Delega o formulário para `CrudForm` e a tabela para `CrudTable`. ~419 linhas.
 
 **CrudForm.js** (`CrudForm.js`) — Subcomponente de formulário dinâmico extraído do `AdminCrudBase`. Renderiza campos configuráveis com suporte a `renderCustomFormField`, validação Zod e callback de submit. 102 linhas.
 

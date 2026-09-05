@@ -49,6 +49,7 @@ tests/
     │   ├── SEO/                      #     Componentes de SEO
     │   └── UI/                       #     Componentes de UI
     ├── domain/                       #   Lógica de domínio
+    ├── hooks/                        #   Hooks React
     ├── lib/                          #   Bibliotecas
     ├── pages/                        #   Páginas (API routes)
     └── scripts/                      #   Scripts utilitários
@@ -240,7 +241,7 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | Arquivo | Propósito |
 |---------|-----------|
 | `AdminAudit.test.js` | Painel de auditoria: logs, paginação, filtro, exportação CSV, tratamento de 401 |
-| `AdminCrudBase.test.js` | Base CRUD: renderização, toggle booleano, estados de loading/erro |
+| `AdminCrudBase.test.js` | Base CRUD: renderização, toggle booleano, estados de loading/erro, fluxo de exclusão com confirmação em 1 clique |
 | `AdminDashboard.test.js` | Dashboard: estatísticas, permissões, cache em sessionStorage |
 | `AdminDicas.test.js` | CRUD de dicas |
 | `AdminMusicas.test.js` | CRUD de músicas |
@@ -353,7 +354,13 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | `settings.test.js` | Lógica de domínio de configurações (json_object_agg) |
 | `videos.test.js` | Lógica de domínio de vídeos (ILIKE, createRecord) |
 
-### 5.10 Lib (`/tests/unit/lib/`)
+### 5.10 Hooks (`/tests/unit/hooks/`)
+
+| Arquivo | Propósito |
+|---------|-----------|
+| `useAdminCrud.test.js` | Hook de CRUD admin — regressão do `handleDelete`: `DELETE` com `Content-Type: application/json` e corpo `{ id }`, `onConfirmDelete(id)` e aborto quando a confirmação resolve `false` |
+
+### 5.11 Lib (`/tests/unit/lib/`)
 
 | Arquivo | Propósito |
 |---------|-----------|
@@ -416,7 +423,7 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 |---------|-----------|
 | `config.test.js` | Configuração de SEO |
 
-### 5.11 Pages/API Edge Cases (`/tests/unit/pages/api/`)
+### 5.12 Pages/API Edge Cases (`/tests/unit/pages/api/`)
 
 | Arquivo | Propósito |
 |---------|-----------|
@@ -430,7 +437,7 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | `admin/stats.edge.test.js` | Edge case: stats |
 | `auth/login.edge.test.js` | Edge case: login (erro interno) |
 
-### 5.12 Scripts (`/tests/unit/scripts/`)
+### 5.13 Scripts (`/tests/unit/scripts/`)
 
 | Arquivo | Propósito |
 |---------|-----------|
@@ -472,8 +479,8 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | **Mocks** | 9 arquivos |
 | **Examples** | 2 arquivos |
 | **Testes de Integração** | 56 arquivos |
-| **Testes Unitários** | ~124 arquivos |
-| **Total Aproximado** | **~214 arquivos** |
+| **Testes Unitários** | ~125 arquivos |
+| **Total Aproximado** | **~215 arquivos** |
 
 ---
 

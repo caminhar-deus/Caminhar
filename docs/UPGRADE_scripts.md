@@ -295,4 +295,10 @@
 
 ---
 
+### `scripts/check-env.js` — verificação de conectividade com o PostgreSQL
+
+**Descrição:** Adicionada a função `checkDatabaseConnection()`, executada após a validação das variáveis de ambiente. Reutiliza `healthCheck()` e `closeDatabase()` de `lib/infra/db.js` para testar a conexão real com o banco via `DATABASE_URL`. Em sucesso, loga "PostgreSQL acessível e conexão validada com sucesso"; em falha, emite **aviso não-bloqueante** indicando que `DATABASE_URL`/credenciais precisam ser verificadas (a API retornará 500 até o banco ficar acessível) — o fluxo do `npm run dev`/`build`/`start` não é interrompido.
+
+---
+
 > 📝 Este documento é analítico — as seções 1–8 servem como guia para futuras refatorações e correções; a seção "Implementações Aplicadas" registra as implementações realizadas após a elaboração deste relatório.

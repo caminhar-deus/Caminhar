@@ -237,4 +237,10 @@
 
 **Descrição:** Item 2.5.3 resolvido: o array `fallbackData` (conteúdo fictício hardcoded) foi removido do componente. A seção "Dicas do Dia" passou a exibir exclusivamente os dados retornados pela API `/api/dicas` e a ocultar-se por completo quando não há dicas cadastradas (retorno `null`). Em `AdminDicas.js`, o `placeholder` do campo "Nome da Dica" foi ajustado de `Ex: Palavra do dia` para `Ex: Mensagem de fé`, eliminando resíduo do conteúdo fictício no painel.
 
+---
+
+### `components/Admin/AdminCrudBase.js` — correção do fluxo de confirmação de exclusão (confirmação em 1 clique)
+
+**Descrição:** O modal de confirmação de exclusão passou a ser aberto via `onConfirmDelete(id)` (callback injetado no `useAdminCrud`); o intermediário `handleDeleteWithConfirm` foi removido e a tabela passa a chamar `handleDelete` diretamente. No clique em "Sim, excluir", `handleConfirmDelete` apenas resolve a Promise com `true` e fecha o modal explicitamente — antes, o primeiro clique não resolvia Promise alguma (ela ainda não existia) e o segundo chamava `handleDelete` novamente, criando nova Promise pendente. Removido o `useEffect` de `loading` que fechava o modal e descartava a referência de resolução.
+
 > 📝 Este documento é analítico — as seções 1–7 servem como guia para futuras refatorações e correções; a seção "Implementações Aplicadas" registra as implementações realizadas após a elaboração deste relatório.

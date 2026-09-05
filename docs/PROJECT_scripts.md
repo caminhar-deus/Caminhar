@@ -182,7 +182,7 @@ Definições JSON consumidas por `init-table.js` (nome da tabela, colunas, flag 
 
 | Arquivo | Funcionalidade |
 |---------|----------------|
-| `check-env.js` | Valida variáveis de ambiente obrigatórias (`DATABASE_URL`, `JWT_SECRET`) e opcionais. Usa `@next/env`. |
+| `check-env.js` | Valida variáveis de ambiente obrigatórias (`DATABASE_URL`, `JWT_SECRET`) e opcionais, e verifica a conectividade com o PostgreSQL via `healthCheck()` de `lib/infra/db.js` (aviso não-bloqueante quando o banco está inacessível). Usa `@next/env`. |
 | `check-db-status.js` | Verifica conexão com o banco (versão PostgreSQL) e conta registros nas tabelas `posts`, `videos`, `musicas`, `users`. |
 | `check-sql-injection.js` | **Scanner de segurança (496 linhas).** Varre arquivos `.js` do projeto em busca de interpolação direta de variáveis em queries SQL sem prepared statements. Falsos positivos controlados (constantes, `validateIdentifier`, etc.). `--all` e `--path=` para escopo. |
 | `clean-orphaned-images.js` | Remove imagens órfãs de teste (`post-image-*`, `hero-image-*`) em `public/uploads/` não referenciadas no banco (`posts.image_url`, `settings.value`). |

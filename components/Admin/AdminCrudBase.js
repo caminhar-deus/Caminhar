@@ -106,33 +106,18 @@ export default function AdminCrudBase({
     itemsPerPage,
     searchTerm,
     onSuccess: handleSuccessWrapper,
-    onConfirmDelete: () => new Promise((resolve) => {
-      resolveRef.current = resolve;
-    }),
+    onConfirmDelete: (id) =>
+      new Promise((resolve) => {
+        resolveRef.current = resolve;
+        setConfirmDelete({ isOpen: true, itemId: id });
+      }),
   });
-
-  // Intercepta a exclusão para abrir o modal de confirmação.
-  // Se o usuário confirmar, chama handleDelete do hook para efetivar a exclusão.
-  const handleDeleteWithConfirm = (id) => {
-    setConfirmDelete({ isOpen: true, itemId: id });
-  };
-
-  // Fecha o modal de confirmação quando a operação termina (loading muda de true para false)
-  useEffect(() => {
-    if (!loading && confirmDelete.isOpen) {
-      setConfirmDelete({ isOpen: false, itemId: null });
-      resolveRef.current = null;
-    }
-  }, [loading]);
 
   // Handler chamado quando o usuário confirma a exclusão no modal
   const handleConfirmDelete = () => {
-    const id = confirmDelete.itemId;
     resolveRef.current?.(true);
     resolveRef.current = null;
-    if (id !== null) {
-      handleDelete(id);
-    }
+    setConfirmDelete({ isOpen: false, itemId: null });
   };
 
   // Efeito para exibir notificações de erro automaticamente
@@ -340,7 +325,7 @@ export default function AdminCrudBase({
         searchTerm={searchTerm}
         renderCustomCell={renderCustomCell}
         handleEdit={handleEdit}
-        handleDelete={handleDeleteWithConfirm}
+        handleDelete={handleDelete}
         handleToggleBoolean={handleToggleBoolean}
         localItems={localItems}
         setLocalItems={setLocalItems}

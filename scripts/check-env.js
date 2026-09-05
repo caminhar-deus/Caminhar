@@ -41,8 +41,28 @@ function checkEnv() {
   console.log('\x1b[32m%s\x1b[0m', '✅ Ambiente validado com sucesso.\n');
 }
 
+/**
+ * Verifica a conectividade com o PostgreSQL e emite aviso caso o banco
+ * não esteja acessível. Não interrompe o fluxo (apenas diagnóstico): uma
+ * falha aqui não bloqueia o `dev`, mas indica que a API retornará 500.
+ */
+async function checkDatabaseConnection() {
+  const { healthCheck, closeDatabase } = await import('../lib/infra/db.js');
+  try {
+    const healthy = await healthCheck();
+    if (healthy) {
+      console.log('\x1b[32m%s\x1b[0m', '✅ PostgreSQL acessível e conexão validada com sucesso.');
+    } else {
+      console.warn('\x1b[33m%s\x1b[0m', '⚠️  PostgreSQL indisponível/inacessível — a API retornará 500 até o banco estar de pé (verifique DATABASE_URL e credenciais).');
+    }
+  } finally {
+    await closeDatabase();
+  }
+}
+
 try {
   checkEnv();
+  await checkDatabaseConnection();
   process.exit(0);
 } catch (error) {
   console.error('❌ Erro:', error.message);

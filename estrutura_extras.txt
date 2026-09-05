@@ -433,6 +433,7 @@ pages/index.js → components/Features/ContentTabs/index.js
 pages/index.js → components/Features/Testimonials/index.js
 pages/index.js → pages/styles/Home.module.css
 scripts/check-db-status.js → lib/infra/db.js
+scripts/check-env.js → lib/infra/db.js
 scripts/check-server.js → scripts/utils/constants.js
 scripts/clean-k6-reports.js → scripts/utils/constants.js
 scripts/clean-load-test-posts.js → scripts/utils/cleanup.js
@@ -805,6 +806,8 @@ tests/unit/domain/videos.test.js → lib/crud/crud.js
 tests/unit/domain/videos.test.js → lib/domain/videos.js
 tests/unit/domain/videos.test.js → lib/infra/db.js
 tests/unit/domain/videos.test.js → tests/mocks/db-module.js
+tests/unit/hooks/useAdminCrud.test.js → hooks/useAdminCrud.js
+tests/unit/hooks/useAdminCrud.test.js → tests/helpers/index.js
 tests/unit/index.test.js → tests/mocks/next-setup.js
 tests/unit/lib/api/errors.test.js → lib/api/errors.js
 tests/unit/lib/api/index.test.js → lib/api/index.js

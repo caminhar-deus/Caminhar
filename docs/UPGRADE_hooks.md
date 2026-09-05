@@ -190,6 +190,14 @@
 
 ---
 
+### `useAdminCrud.js` — correção da exclusão: `Content-Type` no DELETE e `onConfirmDelete(id)`
+
+**Arquivo:** `/hooks/useAdminCrud.js`
+
+**Descrição:** O `fetch` do `handleDelete` passou a enviar `Content-Type: application/json`. Sem o header, o Next.js (Pages Router) não parseava o corpo `{ id }` do `DELETE` — o handler recebia `id` indefinido, executava `DELETE ... WHERE id = NULL` e respondia 200 mesmo sem excluir, fazendo o painel exibir "Item excluído com sucesso!" sem remoção real. Além disso, `onConfirmDelete` passou a receber o `id` do item (`await onConfirmDelete(id)`), habilitando o `AdminCrudBase` a abrir o modal com o item correto e confirmar a exclusão em um único clique. O JSDoc do `@property onConfirmDelete` foi atualizado para refletir o novo parâmetro.
+
+---
+
 ## Resumo das Ocorrências
 
 | Categoria | Total | Arquivos Afetados |
