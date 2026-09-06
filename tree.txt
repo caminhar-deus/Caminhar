@@ -65,7 +65,8 @@
 │   │   │   ├── ProductCard.js
 │   │   │   ├── ProductList.js
 │   │   │   ├── styles
-│   │   │   │   └── ProductCard.module.css
+│   │   │   │   ├── ProductCard.module.css
+│   │   │   │   └── ProductList.module.css
 │   │   │   └── styles.js
 │   │   ├── Testimonials
 │   │   │   ├── Testimonials.module.css
@@ -1202,4 +1203,4 @@
     ├── csvExport.js
     └── reorder.js
 
-191 directories, 1012 files
+191 directories, 1013 files

@@ -249,4 +249,10 @@
 
 **Descrição:** `fetchAuditLogs` passou a tratar `response.status === 401` com `window.location.reload()` e `return`, replicando o padrão já existente em `fetchData` (bloqueados/whitelist). Com isso, a expiração de sessão na aba de Logs de Auditoria também recarrega a página para o login, em vez de seguir para o `throw` e cair no `catch` com log de erro. Elimina a inconsistência interna do componente — a auditoria era a única rota de dados sem esse tratamento — e reduz parcialmente o ponto transversal 1 (tratamento de 401 repetido entre os componentes Admin).
 
+---
+
+### `components/Features/Products/ProductList.js` — migração de handlers inline de hover/foco a CSS Module
+
+**Descrição:** Item 7.4 resolvido para este componente: os 8 handlers inline (`onMouseEnter`, `onMouseLeave`, `onFocus`, `onBlur`) que manipulavam `e.currentTarget.style` — 4 no botão "Limpar filtros" e 4 nos botões de página — foram removidos e substituídos por pseudo-classes CSS no novo `components/Features/Products/styles/ProductList.module.css` (`.filterButton`, `.pageButton`, `.pageButtonActive`). A classe condicional `pageNum === currentPage` preserva o fundo `--color-primary-50` da página ativa e `:hover:not(:disabled)` reproduz a guarda original `pageNum !== currentPage && !pageLoading`. Reducida a quantidade de callbacks do componente e eliminada a manipulação imperativa de estilos.
+
 > 📝 Este documento é analítico — as seções 1–7 servem como guia para futuras refatorações e correções; a seção "Implementações Aplicadas" registra as implementações realizadas após a elaboração deste relatório.

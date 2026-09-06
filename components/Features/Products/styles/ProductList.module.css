@@ -1,0 +1,34 @@
+/* ProductList Styles
+ * Hover/foco dos botões de filtro e paginação.
+ * Substituem os handlers inline (onMouseEnter/onMouseLeave/onFocus/onBlur)
+ * por pseudo-classes, reduzindo callbacks desnecessários. */
+
+/* Botão "Limpar filtros" */
+.filterButton {
+  background-color: transparent;
+}
+
+.filterButton:hover {
+  background-color: var(--color-bg-secondary);
+}
+
+.filterButton:focus {
+  box-shadow: var(--color-focus-ring);
+}
+
+/* Botões numerados de paginação */
+.pageButton {
+  background-color: var(--color-bg-primary);
+}
+
+.pageButton:hover:not(:disabled) {
+  background-color: var(--color-bg-secondary);
+}
+
+.pageButton:focus {
+  box-shadow: var(--color-focus-ring);
+}
+
+.pageButtonActive {
+  background-color: var(--color-primary-50);
+}

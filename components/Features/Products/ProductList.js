@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useApiFetch, useDebounce } from '@/hooks';
 import ProductCard from './ProductCard';
 import { inputStyle, buttonBaseStyle } from './styles';
+import styles from './styles/ProductList.module.css';
 import { ErrorMessage, LoadingMessage, EmptyMessage } from '../../UI/StateMessages';
 import { Spinner } from '@/components/UI';
 
@@ -150,6 +151,7 @@ export default function ProductList() {
         {hasActiveFilters && (
           <button
             onClick={limparFiltros}
+            className={styles.filterButton}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -157,7 +159,6 @@ export default function ProductList() {
               padding: 'var(--spacing-2) var(--spacing-4)',
               borderRadius: 'var(--border-radius-md)',
               border: 'var(--border-width-1) solid var(--color-border-light)',
-              backgroundColor: 'transparent',
               color: 'var(--color-text-secondary)',
               fontSize: 'var(--font-size-sm)',
               fontWeight: 'var(--font-weight-medium)',
@@ -166,10 +167,6 @@ export default function ProductList() {
               outline: 'none',
               whiteSpace: 'nowrap',
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-bg-secondary)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-            onFocus={(e) => { e.currentTarget.style.boxShadow = 'var(--color-focus-ring)'; }}
-            onBlur={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
             aria-label="Limpar todos os filtros"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -251,6 +248,7 @@ export default function ProductList() {
                       key={pageNum}
                       onClick={() => handlePageChange(pageNum)}
                       disabled={pageNum === currentPage || pageLoading}
+                      className={pageNum === currentPage ? `${styles.pageButton} ${styles.pageButtonActive}` : styles.pageButton}
                       style={{
                         width: '36px',
                         height: '36px',
@@ -258,9 +256,6 @@ export default function ProductList() {
                         border: pageNum === currentPage
                           ? '2px solid var(--color-primary-500)'
                           : 'var(--border-width-1) solid var(--color-border-light)',
-                        backgroundColor: pageNum === currentPage
-                          ? 'var(--color-primary-50)'
-                          : 'var(--color-bg-primary)',
                         color: pageNum === currentPage
                           ? 'var(--color-primary-700)'
                           : 'var(--color-text-secondary)',
@@ -273,10 +268,6 @@ export default function ProductList() {
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
-                      onMouseEnter={(e) => { if (pageNum !== currentPage && !pageLoading) e.currentTarget.style.backgroundColor = 'var(--color-bg-secondary)'; }}
-                      onMouseLeave={(e) => { if (pageNum !== currentPage) e.currentTarget.style.backgroundColor = 'var(--color-bg-primary)'; }}
-                      onFocus={(e) => { e.currentTarget.style.boxShadow = 'var(--color-focus-ring)'; }}
-                      onBlur={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
                       aria-label={`Ir para página ${pageNum}`}
                       aria-current={pageNum === currentPage ? 'page' : undefined}
                     >

@@ -285,7 +285,7 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | `Music/MusicGallery.edge.test.js` | Galeria de músicas (edge cases) |
 | `Music/MusicGallery.test.js` | Galeria de músicas |
 | `Products/ProductCard.test.js` | Card de produto |
-| `Products/ProductList.test.js` | Lista de produtos |
+| `Products/ProductList.test.js` | Lista de produtos: render, estados de loading/erro/vazio, busca e filtros de preço (min/max na URL), limpar filtros, ordenação por position/ID via `transform` real, paginação (Anterior/Próxima, faixa > 5 páginas, loading overlay com fake timers) |
 | `Products/styles.test.js` | Estilos compartilhados de Products (`inputStyle` com whitelist/fallback seguro e `buttonBaseStyle`) |
 | `Testimonials/index.test.js` | Depoimentos (carrossel; seção oculta quando a API não retorna dicas — sem fallback estático) |
 | `Video/VideoCard.test.js` | Card de vídeo |

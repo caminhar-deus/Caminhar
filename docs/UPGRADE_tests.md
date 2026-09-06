@@ -319,6 +319,16 @@ Os itens abaixo foram implementados após a elaboração deste relatório. As re
 
 **Resultado:** `styles.js` passou de 50,98% para **100%** de statements/lines, **100%** de functions e **100%** de branches (4/4). Cobertura global do suite: 93,85% statements/lines, 86,06% branches e 88,83% functions, com `npm run test:coverage` retornando status 0 e 1155 testes aprovados (180 suites).
 
+### 8.15 Expansão de cobertura de `ProductList` (15,78% → 100% de functions, 91,22% → 100% de lines/statements)
+
+**Arquivos:**
+- `tests/unit/components/Features/Products/ProductList.test.js`
+- `components/Features/Products/ProductList.js` (migração de handlers inline a CSS Module, sem alteração de comportamento)
+
+**Descrição:** `ProductList.js` reportava 15,78% de functions (3/19), 84,84% de branches e 91,22% de statements/lines, pois o teste não exercia a `transform`, nem cliques de paginação, nem filtros. Causa raiz: o mock do hook `useApiFetch` devolvia os dados já transformados (`{ products, totalPages }`), de modo que a `transform` do componente nunca era executada. O teste foi atualizado de 11 para 17 casos: o mock do hook passou a emular o comportamento real aplicando `config.transform` sobre a resposta bruta da API (`mockReturnValue` → `{ data, pagination }`); `jest.clearAllMocks()` foi substituído por `mockUseApiFetch.mockReset()` (o primeiro preservava as implementações, vazando retornos entre testes); a asserção dos botões de paginação sem `expect` foi endurecida com `toHaveStyle('visibility: hidden')`; o teste de ordenação foi reescrito sem duplicar a lógica da `transform` (o mock entrega a resposta bruta desordenada). Novos testes de interação: limpar filtros (badge de contagem, botão "Limpar filtros"), inclusão de `minPrice`/`maxPrice` na URL, navegação a próxima/anterior página (mock por URL na página), loading overlay durante a troca de página com `jest.useFakeTimers` (overlay do Spinner, `opacity: 0.4`, `pointer-events: none`, botões desabilitados) e faixa de paginação com mais de 5 páginas (totalPages=8, faixas 1-5 → 2-6 → 3-7 → 4-8).
+
+**Resultado:** `ProductList.js` passou de 15,78% a **100%** de functions (11/11), de 84,84% a **96,7%** de branches (88/91; únicos ramos restantes: guarda defensiva de `handlePageChange` inalcançável por UI, e fallback/desempate internos do sort) e de 91,22% a **100%** de statements/lines (310/310). Cobertura global da suite: `components/Features/Products/ProductList.js` 100% statements/lines/functions, com `npm run test:coverage` retornando status 0 e 1161 testes aprovados (180 suites).
+
 ---
 
 > **Nota:** Este documento é um relatório de análise. As ações listadas nas seções 1–7 são recomendações para revisão e priorização futura; a seção 8 registra as implementações aplicadas sobre o tema após a elaboração deste relatório.

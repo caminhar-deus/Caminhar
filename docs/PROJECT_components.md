@@ -139,11 +139,13 @@ Componentes de funcionalidades públicas do site, agrupados por domínio.
 
 ### 2.5 Products
 
-**ProductList.js** (`Products/ProductList.js`) — Vitrine de produtos. Busca e filtro de preço com debounce único (500ms), paginação numerada (até 5 páginas visíveis), scroll suave, loading overlay para troca de página. 319 linhas.
+**ProductList.js** (`Products/ProductList.js`) — Vitrine de produtos. Busca e filtro de preço com debounce único (500ms), paginação numerada (até 5 páginas visíveis), scroll suave, loading overlay para troca de página. Hover/foco de filtros e paginação via CSS Module. 309 linhas.
 
 **ProductCard.js** (`Products/ProductCard.js`) — Card com carrossel de imagens, lightbox, link de compra. Otimizado com `React.memo`, Schema.org Product. 171 linhas.
 
 **ProductCard.module.css** (`Products/styles/`) — Card media, navegação, lightbox, links de loja.
+
+**ProductList.module.css** (`Products/styles/`) — Hover/foco dos botões de filtro e paginação (`.filterButton`, `.pageButton`, `.pageButtonActive`).
 
 **styles.js** (`Products/styles.js`) — Estilos compartilhados JS (`inputStyle`, `buttonBaseStyle`).
 

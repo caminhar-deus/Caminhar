@@ -135,6 +135,7 @@ components/UI/StateMessages.js → components/UI/index.js
 components/Features/Products/ProductList.js → components/UI/StateMessages.js
 components/Features/Products/ProductList.js → components/Features/Products/ProductCard.js
 components/Features/Products/ProductList.js → components/Features/Products/styles.js
+components/Features/Products/ProductList.js → components/Features/Products/styles/ProductList.module.css
 components/Features/Products/ProductList.js → components/UI/index.js
 components/Features/Products/ProductList.js → hooks/index.js
 components/Features/Products/ProductCard.js → lib/api/utils.js
