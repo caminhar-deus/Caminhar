@@ -255,4 +255,10 @@
 
 **Descrição:** Item 7.4 resolvido para este componente: os 8 handlers inline (`onMouseEnter`, `onMouseLeave`, `onFocus`, `onBlur`) que manipulavam `e.currentTarget.style` — 4 no botão "Limpar filtros" e 4 nos botões de página — foram removidos e substituídos por pseudo-classes CSS no novo `components/Features/Products/styles/ProductList.module.css` (`.filterButton`, `.pageButton`, `.pageButtonActive`). A classe condicional `pageNum === currentPage` preserva o fundo `--color-primary-50` da página ativa e `:hover:not(:disabled)` reproduz a guarda original `pageNum !== currentPage && !pageLoading`. Reducida a quantidade de callbacks do componente e eliminada a manipulação imperativa de estilos.
 
+---
+
+### `components/UI/Select.js` — correções de acessibilidade no modo custom (label órfã e botão de limpar inacessível)
+
+**Descrição:** O `<div role="combobox">` do modo custom passou a receber `id={selectId}` — antes, o label (com `htmlFor={selectId}`) apontava para um id inexistente nesse modo, deixando o combobox sem accessible name. Foi também removido o `aria-hidden={true}` do botão de limpar, mantendo o `aria-label="Limpar seleção"` — o botão passa a ser anunciável por leitores de tela (item 8 da seção 6 resolvido; o item 9 sobre `aria-activedescendant` permanece pendente). Nenhuma prop ou comportamento público foi alterado.
+
 > 📝 Este documento é analítico — as seções 1–7 servem como guia para futuras refatorações e correções; a seção "Implementações Aplicadas" registra as implementações realizadas após a elaboração deste relatório.

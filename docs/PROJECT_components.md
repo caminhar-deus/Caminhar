@@ -293,7 +293,7 @@ Componentes de funcionalidades públicas do site, agrupados por domínio.
 
 **Localização:** `UI/Select.js`
 
-**Propósito:** Select com modo nativo e modo custom (searchable + clearable). Dropdown estilizado, busca textual com debounce, teclado. 304 linhas.
+**Propósito:** Select com modo nativo e modo custom (searchable + clearable). Dropdown estilizado, busca textual com debounce, teclado. ARIA: combobox custom com `id` associado ao label (`htmlFor`) e botão de limpar anunciável (`aria-label`). 304 linhas.
 
 ### 6.5 Modal.js
 

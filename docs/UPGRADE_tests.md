@@ -331,4 +331,16 @@ Os itens abaixo foram implementados após a elaboração deste relatório. As re
 
 ---
 
+### 8.16 Expansão de cobertura do teste de `Select` (59,21% → 100%)
+
+**Arquivos:**
+- `tests/unit/components/UI/Select.test.js`
+- `components/UI/Select.js` (ajustes de acessibilidade no modo custom, sem alteração de comportamento)
+
+**Descrição:** O teste do `Select` foi expandido de 3 para 20 casos, cobrindo pela primeira vez o modo custom (antes apenas `renderNative` era exercitado). Modo custom: abertura por clique e teclado (Enter/Escape), fechamento por clique fora (`handleClickOutside`), input de busca visível apenas com o dropdown aberto (incluindo `stopPropagation` do clique), bloqueio de abertura quando `disabled`, seleção de opção com `onChange({ target: { value } })` e opção desabilitada ignorada. Busca com debounce via `jest.useFakeTimers` + `act`: filtro case-insensitive após 300ms, mensagem "Nenhuma opção encontrada" e cancelamento do debounce pendente ao fechar o dropdown antes do timeout. Limpar seleção: `onChange({ target: { value: '' } })` + `onClear` e botão oculto sem seleção. Valor controlado/não controlado: `value` atualiza o label, `defaultValue` com `aria-selected` na opção corrente e associação do label ao combobox via `id`. Modo nativo: `disabled`, foco/perda de foco, `aria-invalid`, `aria-describedby` (`-error`/`-helper`) e `role="alert"`. No componente, o combobox custom passou a receber `id={selectId}` e o botão de limpar teve o `aria-hidden` removido, permitindo as novas asserções de label/ARIA.
+
+**Resultado:** `Select.js` passou de 59,21% a **100%** de statements/lines (304/304), de 68,96% a **100%** de functions (13/13) e de 22,22% a **100%** de branches. Cobertura global do suite: 94,7% statements/lines, 86,87% branches e 92,79% functions, com `npm run test:coverage` retornando status 0 e 1178 testes aprovados (180 suites).
+
+---
+
 > **Nota:** Este documento é um relatório de análise. As ações listadas nas seções 1–7 são recomendações para revisão e priorização futura; a seção 8 registra as implementações aplicadas sobre o tema após a elaboração deste relatório.

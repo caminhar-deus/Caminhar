@@ -201,6 +201,7 @@ export const Select = forwardRef(({
         aria-expanded={isOpen}
         aria-haspopup="listbox"
         aria-invalid={error}
+        id={selectId}
         tabIndex={disabled ? -1 : 0}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -240,7 +241,6 @@ export const Select = forwardRef(({
             className={styles.clearButton}
             onClick={handleClear}
             aria-label="Limpar seleção"
-            aria-hidden={true}
             tabIndex={-1}
           >
             <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
