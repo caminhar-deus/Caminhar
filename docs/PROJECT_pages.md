@@ -272,6 +272,7 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
   - GET com `Cache-Control: no-store`, paginação/busca via `getPaginatedVideos()`.
   - POST com validação Zod (`videoSchema`) + validação de URL do YouTube via regex (`youtube.com/watch?v=` ou `youtu.be/` com ID de 11 caracteres).
   - PUT com validação parcial (Zod `partial()`), reordenação delegada a `reorderVideos()` de `lib/domain/videos.js`.
+  - Extração da mensagem de erro de validação centralizada na função exportada `getValidationMessage(validationError)` (primeiro erro de `fieldErrors` ou fallback `'Erro de validação desconhecido.'`), usada no POST e no PUT.
   - DELETE com ID de query ou body e log de auditoria.
   - Config: `permission: 'Gestão de Vídeos'`, `rateLimit: 300/min`, `cacheKeys: 'public_videos:*'`.
 
@@ -563,3 +564,4 @@ Já documentado na seção [2. API Pública](#2-api-pública) — é o único ar
 - **28–30/07/2026:** Documentação consolidada em `PROJECT_pages.md` e `UPGRADE_pages.md`.
 - **01/08/2026:** Nova análise profunda dos 42 arquivos atuais — corrigidos pontos divergentes (Cache-Control real dos endpoints, `check.js` sem `withAuth`, `globals.css` com `body.modal-open`, `Home.module.css` sem gradiente), identificado bug `await await` em `admin/users.js` e outros pontos registrados no `UPGRADE_pages.md`.
 - **04/09/2026:** `admin/dicas.js` passa a invalidar `dicas:public:*` também no POST e no DELETE (o PUT já invalidava) — dica criada ou excluída no Painel Administrativo reflete imediatamente na página pública.
+- **05/09/2026:** `admin/videos.js` centraliza a extração da mensagem de validação na função exportada `getValidationMessage()` (usada no POST e no PUT), eliminando a lógica duplicada na camada de rota.

@@ -594,4 +594,8 @@ Além disso, há um possível problema de ordem: substituir `&` por `&` pode cor
 
 **Descrição:** O CRUD administrativo de dicas passou a invalidar o cache público `dicas:public:*` também no POST (após o `INSERT`) e no DELETE (após o `DELETE`), alinhando-se ao PUT que já invalidava. Dica criada ou excluída no Painel Administrativo passa a refletir imediatamente na página pública, independentemente do TTL do cache.
 
+### `pages/api/admin/videos.js` — extração da mensagem de validação em `getValidationMessage()`
+
+**Descrição:** A lógica de extração da primeira mensagem de erro de validação, que estava duplicada entre o POST e o PUT (`Object.values(fieldErrors)[0]?.[0] || 'Erro de validação desconhecido.'`), passou a ser centralizada na função exportada `getValidationMessage(validationError)`, usada nos dois handlers. O fallback `'Erro de validação desconhecido.'` é conservado para erros de nível raiz do Zod (quando `fieldErrors` está vazio).
+
 > 📝 Este documento é analítico — as seções 1–7 servem como guia para futuras refatorações e correções; a seção "Implementações Aplicadas" registra as implementações realizadas após a elaboração deste relatório.

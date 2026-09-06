@@ -292,6 +292,15 @@ Os itens abaixo foram implementados após a elaboração deste relatório. As re
 **Arquivo:** `tests/unit/hooks/useAdminCrud.test.js` (primeiro teste de hooks — cria a pasta `tests/unit/hooks/`)
 
 **Descrição:** Criado teste unitário do hook `useAdminCrud` cobrindo o `handleDelete`: valida que o `DELETE` envia `Content-Type: application/json` com corpo `{ id }` (regressão da correção do parse do corpo pelo servidor), que `onConfirmDelete` recebe o `id` do item, e que a exclusão é abortada quando `onConfirmDelete` resolve `false` (sem chamar `fetch`). Usa `renderHook`/`act`, mock de `useApiFetch` e de `react-hot-toast`, com `mockGlobalFetch`.
+
+### 8.12 Correção do teste de fallback de validação em `admin/videos` (mock global de `Object.values` removido) + teste unitário de `getValidationMessage`
+
+**Arquivos:**
+- `tests/integration/api/admin/videos.test.js`
+- `tests/unit/videos.validation.test.js`
+
+**Descrição:** O teste de integração que forçava o fallback `'Erro de validação desconhecido.'` do CRUD admin de vídeos mockava `Object.values` globalmente (`jest.fn(() => [])`), o que quebrava o JIT interno do Zod 4 (`Doc.compile()` invoca `Object.values` ao compilar o fastpass) e fazia `safeParse` lançar `TypeError: Cannot read properties of undefined (reading 'alloc')` — capturado como 500 pelo `createAdminHandler` em vez de 400. O teste foi reescrito sem mock global, disparando o fallback de forma natural com `req.body = null` (input não-objeto → erro de nível raiz do Zod com `fieldErrors` vazio), e a asserção PUT (inalcançável por construção, já que `const { id, ...updateData } = req.body` sobre objeto vazio segue populando `fieldErrors`) foi removida. Adicionalmente, foi extraída a função exportada `getValidationMessage(validationError)` em `pages/api/admin/videos.js` (centraliza a extração da primeira mensagem de `fieldErrors`, com fallback), com teste unitário dedicado em `tests/unit/videos.validation.test.js` cobrindo os dois ramos: `fieldErrors` preenchido → primeira mensagem; `fieldErrors` vazio → fallback.
+
 ---
 
 > **Nota:** Este documento é um relatório de análise. As ações listadas nas seções 1–7 são recomendações para revisão e priorização futura; a seção 8 registra as implementações aplicadas sobre o tema após a elaboração deste relatório.

@@ -13,6 +13,13 @@ const videoSchema = z.object({
 
 const youtubeUrlRegex = /^https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=[\w-]{11}|youtu\.be\/[\w-]{11})(?:[&?].*)?$/;
 
+// Extrai a primeira mensagem de erro de validação, com fallback para erro desconhecido
+// quando fieldErrors estiver vazio (ex.: erros de nível raiz do Zod).
+export function getValidationMessage(validationError) {
+  const fieldErrors = validationError.flatten().fieldErrors;
+  return Object.values(fieldErrors)[0]?.[0] || 'Erro de validação desconhecido.';
+}
+
 async function handleGet(req, res) {
   res.setHeader('Cache-Control', 'no-store, max-age=0, must-revalidate');
   const page = parseInt(req.query.page) || 1;
@@ -25,9 +32,7 @@ async function handleGet(req, res) {
 async function handlePost(req, res) {
   const validation = videoSchema.safeParse(req.body);
   if (!validation.success) {
-    const fieldErrors = validation.error.flatten().fieldErrors;
-    const firstErrorMessage = Object.values(fieldErrors)[0]?.[0] || 'Erro de validação desconhecido.';
-    return res.status(400).json({ message: firstErrorMessage });
+    return res.status(400).json({ message: getValidationMessage(validation.error) });
   }
   if (!youtubeUrlRegex.test(req.body.url_youtube)) {
     return res.status(400).json({ message: 'URL do YouTube inválida' });
@@ -50,9 +55,7 @@ async function handlePut(req, res) {
 
   const validation = videoSchema.partial().safeParse(updateData);
   if (!validation.success) {
-    const fieldErrors = validation.error.flatten().fieldErrors;
-    const firstErrorMessage = Object.values(fieldErrors)[0]?.[0] || 'Erro de validação desconhecido.';
-    return res.status(400).json({ message: firstErrorMessage });
+    return res.status(400).json({ message: getValidationMessage(validation.error) });
   }
 
   if (updateData.url_youtube && !youtubeUrlRegex.test(updateData.url_youtube)) {

@@ -193,7 +193,7 @@ Testes de endpoints administrativos com autenticação.
 | `roles.test.js` | Gerenciamento de roles |
 | `users.create.test.js` | Criação de usuários |
 | `users.test.js` | CRUD de usuários |
-| `videos.test.js` | CRUD admin de vídeos |
+| `videos.test.js` | CRUD admin de vídeos (inclui fallback de validação com `fieldErrors` vazio sem mock de `Object.values`, usando `req.body = null`) |
 
 ### 4.3 Autenticação (`/tests/integration/api/auth/`)
 
@@ -234,7 +234,7 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | `clean-test-db.test.js` | Testa o script de limpeza de banco de dados de teste |
 | `index.test.js` | Testa a página do Blog (BlogIndex) — lista de posts e estado vazio |
 | `settings.cache.test.js` | Testa integração de cache da API de configurações (cache miss/hit/invalidação) |
-| `videos.validation.test.js` | Testa validação de vídeos (limite de caracteres, vídeo inexistente) |
+| `videos.validation.test.js` | Testa validação de vídeos (limite de caracteres, vídeo inexistente, extração de mensagem de validação via `getValidationMessage`) |
 
 ### 5.2 Componentes de Admin (`/tests/unit/components/Admin/`)
 

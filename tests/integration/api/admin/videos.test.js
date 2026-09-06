@@ -131,20 +131,14 @@ describe('API Admin - Vídeos (/api/admin/videos)', () => {
     expect(res._getStatusCode()).toBe(405);
   });
   
-  it('POST e PUT: deve retornar fallback de erro desconhecido se fieldErrors estiver vazio', async () => {
-    const originalValues = Object.values;
-    Object.values = jest.fn(() => []); // Força o fieldErrors a parecer vazio
+  it('POST: deve retornar fallback de erro desconhecido se fieldErrors estiver vazio', async () => {
+    const { req, res } = createMocks({ method: 'POST', body: {} });
+    req.body = null; // Input não-objeto gera erro de nível raiz no Zod, deixando fieldErrors vazio
 
-    const { req: reqPost, res: resPost } = createMocks({ method: 'POST', body: { titulo: '' } });
-    await handler(reqPost, resPost);
-    expect(resPost._getStatusCode()).toBe(400);
-    expect(resPost._getJSONData().message).toBe('Erro de validação desconhecido.');
+    await handler(req, res);
 
-    const { req: reqPut, res: resPut } = createMocks({ method: 'PUT', body: { id: 1, titulo: '' } });
-    await handler(reqPut, resPut);
-    expect(resPut._getStatusCode()).toBe(400);
-
-    Object.values = originalValues; // Restaura
+    expect(res._getStatusCode()).toBe(400);
+    expect(res._getJSONData().message).toBe('Erro de validação desconhecido.');
   });
 
   it('deve capturar erros globais (unique constraint ou DB default) e retornar 500', async () => {

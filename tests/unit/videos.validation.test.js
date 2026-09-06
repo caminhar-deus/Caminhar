@@ -1,6 +1,7 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
-import handler from '../../pages/api/admin/videos';
+import { z } from 'zod';
+import handler, { getValidationMessage } from '../../pages/api/admin/videos';
 import { createVideo, updateVideo } from '../../lib/domain/videos.js';
 
 // Mock do módulo de autenticação para ignorar a verificação de token neste teste
@@ -103,5 +104,28 @@ describe('Validação de API de Vídeos - Limite de Caracteres', () => {
 
     expect(res._getStatusCode()).toBe(404);
     expect(JSON.parse(res._getData())).toEqual({ message: 'Vídeo não encontrado' });
+  });
+});
+
+describe('getValidationMessage - extração de mensagem de erro de validação', () => {
+  it('retorna a primeira mensagem de erro quando fieldErrors está preenchido', () => {
+    const schema = z.object({
+      titulo: z.string().min(1, 'Título é obrigatório'),
+      url_youtube: z.string().min(1, 'URL do YouTube é obrigatória'),
+    });
+
+    const { error } = schema.safeParse({ titulo: '', url_youtube: '' });
+
+    expect(getValidationMessage(error)).toBe('Título é obrigatório');
+  });
+
+  it('retorna o fallback quando fieldErrors está vazio (erro de nível raiz)', () => {
+    const schema = z.object({
+      titulo: z.string().min(1, 'Título é obrigatório'),
+    });
+
+    const { error } = schema.safeParse(null);
+
+    expect(getValidationMessage(error)).toBe('Erro de validação desconhecido.');
   });
 });
