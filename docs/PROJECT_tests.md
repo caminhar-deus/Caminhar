@@ -271,7 +271,7 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | Arquivo | Propósito |
 |---------|-----------|
 | `IntegrityCheck.test.js` | Verificação de integridade |
-| `RateLimitViewer.test.js` | Visualizador de rate limit |
+| `RateLimitViewer.test.js` | Visualizador de rate limit: IPs bloqueados, whitelist, auditoria com busca/paginação, estados de erro, 401 em todas as rotas, refresh manual e auto-refresh de 15s |
 
 ### 5.3 Componentes de Funcionalidades (`/tests/unit/components/Features/`)
 

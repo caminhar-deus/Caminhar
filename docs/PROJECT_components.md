@@ -85,7 +85,7 @@ Adaptadores que delegam para os componentes base da UI, mantendo a API específi
 
 **IntegrityCheck.js** (`Tools/IntegrityCheck.js`) — Verificação de integridade do sistema (banco, cache, storage, backup, sistema). Auto-refresh 30s, cards por status (ok, error, warning, degraded). 281 linhas.
 
-**RateLimitViewer.js** (`Tools/RateLimitViewer.js`) — Visualização de rate limiting. Três abas (IPs Bloqueados, Whitelist, Logs de Auditoria), auto-refresh 15s, desbloqueio de IPs e adição à whitelist. 543 linhas.
+**RateLimitViewer.js** (`Tools/RateLimitViewer.js`) — Visualização de rate limiting. Três abas (IPs Bloqueados, Whitelist, Logs de Auditoria), auto-refresh 15s, desbloqueio de IPs e adição à whitelist, tratamento de sessão expirada (401) em todas as rotas de dados. 548 linhas.
 
 ### 1.8 Gerenciadores (Managers/)
 

@@ -95,7 +95,7 @@
 |---|------|-----------|------|
 | 1 | **Duplicidade** | Padrão fetch + tratamento 401 duplicado (AdminAudit, IntegrityCheck, RateLimitViewer, AdminUsersTab). RateLimitViewer não faz verificação de Content-Type. Extrair hook. | Tools |
 | 2 | **Manutenção** | Estilos inline extensos em ambos. Extrair para CSS Module. | Tools |
-| 3 | **Manutenção** | `RateLimitViewer.js` com 543 linhas — alto acoplamento. Considerar extração de subcomponentes (tabs, listas). | RateLimitViewer |
+| 3 | **Manutenção** | `RateLimitViewer.js` com 548 linhas — alto acoplamento. Considerar extração de subcomponentes (tabs, listas). | RateLimitViewer |
 | 4 | **Acessibilidade** | Abas internas do RateLimitViewer sem `role="tablist"`/`role="tab"`/`aria-selected`. | RateLimitViewer |
 
 ### 1.11 Managers
@@ -242,5 +242,11 @@
 ### `components/Admin/AdminCrudBase.js` — correção do fluxo de confirmação de exclusão (confirmação em 1 clique)
 
 **Descrição:** O modal de confirmação de exclusão passou a ser aberto via `onConfirmDelete(id)` (callback injetado no `useAdminCrud`); o intermediário `handleDeleteWithConfirm` foi removido e a tabela passa a chamar `handleDelete` diretamente. No clique em "Sim, excluir", `handleConfirmDelete` apenas resolve a Promise com `true` e fecha o modal explicitamente — antes, o primeiro clique não resolvia Promise alguma (ela ainda não existia) e o segundo chamava `handleDelete` novamente, criando nova Promise pendente. Removido o `useEffect` de `loading` que fechava o modal e descartava a referência de resolução.
+
+---
+
+### `components/Admin/Tools/RateLimitViewer.js` — tratamento de sessão expirada (401) na aba de auditoria
+
+**Descrição:** `fetchAuditLogs` passou a tratar `response.status === 401` com `window.location.reload()` e `return`, replicando o padrão já existente em `fetchData` (bloqueados/whitelist). Com isso, a expiração de sessão na aba de Logs de Auditoria também recarrega a página para o login, em vez de seguir para o `throw` e cair no `catch` com log de erro. Elimina a inconsistência interna do componente — a auditoria era a única rota de dados sem esse tratamento — e reduz parcialmente o ponto transversal 1 (tratamento de 401 repetido entre os componentes Admin).
 
 > 📝 Este documento é analítico — as seções 1–7 servem como guia para futuras refatorações e correções; a seção "Implementações Aplicadas" registra as implementações realizadas após a elaboração deste relatório.

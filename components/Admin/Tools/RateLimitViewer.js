@@ -63,6 +63,12 @@ function RateLimitViewer() {
         credentials: 'include',
       });
 
+      if (response.status === 401) {
+        // Sessão expirada — recarrega a página para voltar ao login
+        window.location.reload();
+        return;
+      }
+
       if (!response.ok) throw new Error('Falha ao carregar logs de auditoria');
 
       const data = await response.json();
