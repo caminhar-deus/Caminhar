@@ -286,6 +286,7 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | `Music/MusicGallery.test.js` | Galeria de músicas |
 | `Products/ProductCard.test.js` | Card de produto |
 | `Products/ProductList.test.js` | Lista de produtos |
+| `Products/styles.test.js` | Estilos compartilhados de Products (`inputStyle` com whitelist/fallback seguro e `buttonBaseStyle`) |
 | `Testimonials/index.test.js` | Depoimentos (carrossel; seção oculta quando a API não retorna dicas — sem fallback estático) |
 | `Video/VideoCard.test.js` | Card de vídeo |
 | `Video/VideoGallery.test.js` | Galeria de vídeos |
@@ -479,8 +480,8 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | **Mocks** | 9 arquivos |
 | **Examples** | 2 arquivos |
 | **Testes de Integração** | 56 arquivos |
-| **Testes Unitários** | ~125 arquivos |
-| **Total Aproximado** | **~215 arquivos** |
+| **Testes Unitários** | ~126 arquivos |
+| **Total Aproximado** | **~216 arquivos** |
 
 ---
 

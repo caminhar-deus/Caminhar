@@ -36,22 +36,6 @@ jest.mock('../../../../../hooks/useApiFetch', () => ({
   useApiFetch: (url, config) => mockUseApiFetch(url, config),
 }));
 
-// Mock do styles (JS objeto)
-jest.mock('../../../../../components/Features/Products/styles', () => ({
-  inputStyle: (paddingLeft) => ({
-    width: '100%',
-    padding: '12px',
-    paddingLeft: paddingLeft || '12px',
-    borderRadius: '8px',
-    border: '1px solid #ccc',
-  }),
-  buttonBaseStyle: (overrides) => ({
-    padding: '10px 24px',
-    borderRadius: '8px',
-    ...overrides,
-  }),
-}));
-
 describe('Componentes Features - Products - ProductList', () => {
   let consoleErrorSpy;
   let fetchMock;

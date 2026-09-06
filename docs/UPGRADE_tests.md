@@ -309,6 +309,16 @@ Os itens abaixo foram implementados após a elaboração deste relatório. As re
 
 **Resultado:** `RateLimitViewer.js` passou de 36,09% para **99,08%** de statements/lines, **100%** de functions e **92,62%** de branches. Cobertura global do suite: 93,71% statements/lines, 86,04% branches e 88,48% functions, com `npm run test:coverage` retornando status 0 e 1150 testes aprovados (179 suites).
 
+### 8.14 Expansão de cobertura de `styles.js` de Products (50,98% → 100%)
+
+**Arquivos:**
+- `tests/unit/components/Features/Products/styles.test.js` (novo)
+- `tests/unit/components/Features/Products/ProductList.test.js`
+
+**Descrição:** `styles.js` (estilos compartilhados de Products: `inputStyle` e `buttonBaseStyle`) reportava 50,98% de statements/lines e 0/2 functions, pois nenhum teste executava suas duas funções. `ProductList.test.js` mockeava o módulo com valores fixos (`'12px'`, `'#ccc'`) divergentes dos tokens `var()` reais; `ProductCard` não o importa (usa o CSS module) e `ContentTabs/index.test.js` apenas carrega o módulo, sem renderizar. Foi criado o teste unitário direto do módulo com 5 casos: `inputStyle()` com paddingLeft padrão, `inputStyle('46px')` (token da whitelist), `inputStyle` inválido → fallback ao token seguro (rama da whitelist de segurança), `buttonBaseStyle()` base completo e sobrescritura via `...custom`. Em `ProductList.test.js` foi removido o `jest.mock` do módulo `styles`, de modo que o componente renderiza com o módulo real e exercita ambas funções no fluxo real.
+
+**Resultado:** `styles.js` passou de 50,98% para **100%** de statements/lines, **100%** de functions e **100%** de branches (4/4). Cobertura global do suite: 93,85% statements/lines, 86,06% branches e 88,83% functions, com `npm run test:coverage` retornando status 0 e 1155 testes aprovados (180 suites).
+
 ---
 
 > **Nota:** Este documento é um relatório de análise. As ações listadas nas seções 1–7 são recomendações para revisão e priorização futura; a seção 8 registra as implementações aplicadas sobre o tema após a elaboração deste relatório.

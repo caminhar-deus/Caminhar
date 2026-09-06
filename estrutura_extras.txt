@@ -755,6 +755,7 @@ tests/unit/components/Features/Products/ProductCard.test.js → components/Featu
 tests/unit/components/Features/Products/ProductCard.test.js → tests/helpers/index.js
 tests/unit/components/Features/Products/ProductList.test.js → components/Features/Products/ProductList.js
 tests/unit/components/Features/Products/ProductList.test.js → tests/helpers/index.js
+tests/unit/components/Features/Products/styles.test.js → components/Features/Products/styles.js
 tests/unit/components/Features/Testimonials/index.test.js → components/Features/Testimonials/index.js
 tests/unit/components/Features/Testimonials/index.test.js → tests/helpers/index.js
 tests/unit/components/Features/Video/VideoCard.test.js → components/Features/Video/VideoCard.js
