@@ -29,14 +29,21 @@ export default async function globalTeardown() {
 
     // Aguardar finalização de eventuais callbacks assíncronos residuais
     // com timeout de segurança de 5s para evitar bloqueio indefinido
+    let teardownTimeout;
     await Promise.race([
       new Promise(resolve => setImmediate(resolve)),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Teardown timeout após 5s')), 5000)
-      ),
-    ]).catch(() => {
-      console.warn('⚠️ Teardown excedeu 5s, prosseguindo mesmo assim.');
-    });
+      new Promise((_, reject) => {
+        teardownTimeout = setTimeout(() => reject(new Error('Teardown timeout após 5s')), 5000);
+      }),
+    ])
+      .finally(() => {
+        // Cancela o timer de segurança assim que o race resolver,
+        // evitando que o setTimeout pendente segure o processo do Jest
+        clearTimeout(teardownTimeout);
+      })
+      .catch(() => {
+        console.warn('⚠️ Teardown excedeu 5s, prosseguindo mesmo assim.');
+      });
 
   } catch (error) {
     console.warn('⚠️ Aviso durante limpeza global dos testes:', error.message);

@@ -180,7 +180,7 @@ A raiz do projeto concentra **31 arquivos** (excluindo subpastas e arquivos bloq
 
 **Propósito:** Teardown global do Jest. Limpeza de conexões e recursos.
 
-**Funcionalidades:** Fecha Redis via `getRedisInstance().quit()`, PostgreSQL via `closeDatabase()`, container de testes (`global.__TEST_DB_CONTAINER__`), limpa timer de safety net do cache via `cleanupRateLimitTimer()`, aguarda resolução de polyfills assíncronos via `setupAsyncPolyfills()`. Usa `Promise.race` com `setImmediate` + timeout de segurança de 5s.
+**Funcionalidades:** Fecha Redis via `getRedisInstance().quit()`, PostgreSQL via `closeDatabase()`, container de testes (`global.__TEST_DB_CONTAINER__`), limpa timer de safety net do cache via `cleanupRateLimitTimer()`, aguarda resolução de polyfills assíncronos via `setupAsyncPolyfills()`. Usa `Promise.race` com `setImmediate` + timeout de segurança de 5s, cancelado via `clearTimeout` no `.finally()` assim que o race resolve.
 
 ---
 

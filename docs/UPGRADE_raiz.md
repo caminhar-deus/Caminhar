@@ -56,6 +56,20 @@
 
 ---
 
+### 1.4 `jest.teardown.js` — timer de segurança sem limpeza mantinha o processo do Jest vivo
+
+**Arquivo:** `/jest.teardown.js`
+
+**Problema:** O teardown global usa `Promise.race` entre `setImmediate` e um `setTimeout` de segurança de 5s, mas o timer de segurança não era cancelado. Como o `setImmediate` resolve primeiro no fluxo normal, o `setTimeout` de 5s permanecia pendente, mantendo o processo principal do Jest vivo após o fim dos testes e disparando o aviso "Jest did not exit one second after the test run has completed."
+
+**Impacto:** Aviso recorrente no final de toda execução de testes e de cobertura, poluindo os logs e atrasando a saída do processo em ~5s por execução.
+
+**Sugestão:** Guardar o retorno do `setTimeout` e cancelá-lo com `clearTimeout` assim que o `Promise.race` resolver, preservando o timeout como salvaguarda apenas em caso de travamento real do teardown.
+
+**Status:** ✅ Implementado — o `jest.teardown.js` passou a armazenar o timer em `teardownTimeout` e cancelá-lo no `.finally()` do `Promise.race`, eliminando o aviso e a espera de ~5s na saída do Jest.
+
+---
+
 ## 2. Segurança
 
 ### 2.1 Divergência de limites de rate limit entre `proxy.js` e os endpoints
