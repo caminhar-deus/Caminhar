@@ -1,37 +1,16 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Hook Cline: TaskComplete -> ai-memory: session-end
 #
-# TaskComplete Hook
-# 
-# Executes when a task completes successfully.
-# 
-# Input: { 
-#   taskId, 
-#   taskComplete: { 
-#     taskMetadata: { taskId: string, ulid: string, result: string, command: string } 
-#   }, 
-#   clineVersion, timestamp, ... 
-# }
-# Output: { cancel: boolean, contextModification?: string, errorMessage?: string }
-# 
-# Use cases:
-# - Run tests or validation
-# - Generate reports or summaries
-# - Notify stakeholders
-# - Trigger CI/CD pipelines
+# Instalação: renomeie para "TaskComplete" (sem extensão), coloque em
+#   .clinerules/hooks/TaskComplete  ou  ~/Documents/Cline/Hooks/TaskComplete
+# e rode: chmod +x TaskComplete
+#
+# Fecha o ciclo iniciado por TaskStart/TaskResume. No servidor ai-memory,
+# um evento "session-end" verdadeiro sintetiza a página sessions/<id>.md
+# e abre um Handoff para a próxima sessão (o que o TaskStart/TaskResume da
+# PRÓXIMA tarefa irá consumir). Não precisa de handoff de volta aqui.
+set -u
+LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$LIB_DIR/_ai_memory_cline_lib.sh"
 
-# Read JSON input from stdin
-INPUT=$(cat)
-
-# Parse input using jq (or fallback to basic parsing)
-if command -v jq &> /dev/null; then
-  TASK_ID=$(echo "$INPUT" | jq -r '.taskComplete.taskMetadata.taskId')
-  RESULT=$(echo "$INPUT" | jq -r '.taskComplete.taskMetadata.result')
-else
-  TASK_ID="<taskId>"
-  RESULT="<result>"
-fi
-
-echo "[TaskComplete] Task completed: $TASK_ID (result: $RESULT)" >&2
-
-# Return result
-echo '{"cancel":false,"contextModification":"","errorMessage":""}'
+amc_main "TaskComplete" "session-end" 0

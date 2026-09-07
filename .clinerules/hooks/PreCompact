@@ -1,52 +1,16 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Hook Cline: PreCompact -> ai-memory: pre-compact
 #
-# PreCompact Hook
-# 
-# Executes before conversation context is compacted (to free up token space).
-# 
-# Input: { 
-#   taskId, 
-#   preCompact: { 
-#     taskId: string,
-#     ulid: string,
-#     contextSize: number,
-#     compactionStrategy: string,
-#     previousApiReqIndex: number,
-#     tokensIn: number,
-#     tokensOut: number,
-#     tokensInCache: number,
-#     tokensOutCache: number,
-#     deletedRangeStart: number,
-#     deletedRangeEnd: number,
-#     contextJsonPath: string,
-#     contextRawPath: string
-#   }, 
-#   ... 
-# }
-# Output: { cancel: boolean, contextModification?: string, errorMessage?: string }
-# 
-# Use cases:
-# - Archive important conversation parts
-# - Log compaction events
-# - Add summary before context is lost
+# Instalação: renomeie para "PreCompact" (sem extensão), coloque em
+#   .clinerules/hooks/PreCompact  ou  ~/Documents/Cline/Hooks/PreCompact
+# e rode: chmod +x PreCompact
+#
+# Dispara antes do Cline truncar/comprimir o histórico da conversa para
+# liberar contexto. Avisa o ai-memory ANTES da perda de informação, para
+# que qualquer observação relevante já capturada não dependa do que será
+# descartado. Não bloqueia a compactação.
+set -u
+LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$LIB_DIR/_ai_memory_cline_lib.sh"
 
-# Read JSON input from stdin
-INPUT=$(cat)
-
-# Parse input using jq (or fallback to basic parsing)
-if command -v jq &> /dev/null; then
-  CONTEXT_SIZE=$(echo "$INPUT" | jq -r '.preCompact.contextSize')
-  STRATEGY=$(echo "$INPUT" | jq -r '.preCompact.compactionStrategy')
-  TOKENS_IN=$(echo "$INPUT" | jq -r '.preCompact.tokensIn')
-  TOKENS_OUT=$(echo "$INPUT" | jq -r '.preCompact.tokensOut')
-else
-  CONTEXT_SIZE="<size>"
-  STRATEGY="<strategy>"
-  TOKENS_IN="<tokens>"
-  TOKENS_OUT="<tokens>"
-fi
-
-echo "[PreCompact] About to compact conversation (contextSize: $CONTEXT_SIZE, strategy: $STRATEGY, tokensIn: $TOKENS_IN, tokensOut: $TOKENS_OUT)" >&2
-
-# Return result
-echo '{"cancel":false,"contextModification":"","errorMessage":""}'
+amc_main "PreCompact" "pre-compact" 0

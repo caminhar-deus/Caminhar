@@ -1,38 +1,34 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Hook Cline: PreToolUse -> ai-memory: pre-tool-use
 #
-# PreToolUse Hook
-# 
-# Executes before any tool is used (read_file, write_to_file, execute_command, etc.)
-# 
-# Input: { taskId, preToolUse: { toolName: string, parameters: object }, ... }
-# Output: { cancel: boolean, contextModification?: string, errorMessage?: string }
-# 
-# Use cases:
-# - Block dangerous operations
-# - Add safety checks before file modifications
-# - Log tool usage
-# - Validate parameters before execution
+# Instalação: renomeie para "PreToolUse" (sem extensão), coloque em
+#   .clinerules/hooks/PreToolUse  ou  ~/Documents/Cline/Hooks/PreToolUse
+# e rode: chmod +x PreToolUse
+#
+# Por padrão, este hook é PURAMENTE OBSERVACIONAL: registra a chamada de
+# ferramenta prestes a acontecer no ai-memory e libera a execução
+# (cancel=false, sem contextModification). O PreToolUse do Cline é o único
+# hook capaz de bloquear a ferramenta -- se você quiser adicionar regras de
+# bloqueio (ex.: impedir "execute_command" com "rm -rf /"), edite o bloco
+# "REGRAS DE BLOQUEIO" abaixo.
+set -u
+LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$LIB_DIR/_ai_memory_cline_lib.sh"
 
-# Read JSON input from stdin
-INPUT=$(cat)
+RAW="$(amc_read_stdin)"
+# O Cline envia os dados deste evento no bloco aninhado "preToolUse"
+# (não em campos soltos no topo do JSON).
+TOOL_NAME="$(amc_jget "$RAW" '.preToolUse.toolName')"
+TOOL_INPUT="$(amc_jget "$RAW" '.preToolUse.parameters | tostring')"
 
-# Parse input using jq (or fallback to basic parsing)
-if command -v jq &> /dev/null; then
-  TOOL=$(echo "$INPUT" | jq -r '.preToolUse.toolName')
-  COMMAND=$(echo "$INPUT" | jq -r '.preToolUse.parameters.command // empty')
-else
-  TOOL="<tool>"
-  COMMAND=""
-fi
+# ---- REGRAS DE BLOQUEIO (opcional, edite conforme sua necessidade) --------
+# Exemplo comentado: bloquear qualquer "execute_command" contendo "rm -rf /"
+# if [ "$TOOL_NAME" = "execute_command" ] && printf '%s' "$TOOL_INPUT" | grep -q 'rm -rf /'; then
+#   amc_emit_result "" true "Bloqueado pelo hook ai-memory: comando destrutivo detectado."
+# fi
+# ---------------------------------------------------------------------------
 
-# Example: Block dangerous operations
-if [[ "$TOOL" == "execute_command" ]] && [[ "$COMMAND" == *"rm -rf /"* ]]; then
-  echo '{"cancel":true,"errorMessage":"Dangerous command blocked by PreToolUse hook"}'
-  exit 0
-fi
+ENVELOPE="$(amc_build_envelope "$RAW" "pre-tool-use" "PreToolUse" "$TOOL_NAME $TOOL_INPUT")"
+amc_send "$ENVELOPE" "pre-tool-use" >/dev/null
 
-# Example: Log tool usage
-echo "[PreToolUse] Tool about to execute: $TOOL" >&2
-
-# Allow execution
-echo '{"cancel":false,"contextModification":"","errorMessage":""}'
+amc_emit_result "" false ""

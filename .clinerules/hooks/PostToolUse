@@ -1,46 +1,28 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Hook Cline: PostToolUse -> ai-memory: post-tool-use
 #
-# PostToolUse Hook
-# 
-# Executes after any tool is used successfully or fails.
-# 
-# Input: { 
-#   taskId, 
-#   postToolUse: { 
-#     toolName: string, 
-#     parameters: object,
-#     result: string,
-#     success: boolean,
-#     executionTimeMs: number
-#   }, 
-#   ... 
-# }
-# Output: { cancel: boolean, contextModification?: string, errorMessage?: string }
-# 
-# Use cases:
-# - Audit tool usage
-# - Validate results
-# - Trigger follow-up actions
-# - Monitor performance
+# Instalação: renomeie para "PostToolUse" (sem extensão), coloque em
+#   .clinerules/hooks/PostToolUse  ou  ~/Documents/Cline/Hooks/PostToolUse
+# e rode: chmod +x PostToolUse
+#
+# Puramente observacional: o resultado da ferramenta já ocorreu e não pode
+# ser desfeito por este hook. Registra nome da ferramenta + resultado + status
+# de sucesso (o corpo é truncado em 16 KiB pelo próprio hook antes de enviar,
+# e novamente a 2 KiB pelo servidor ai-memory para trechos de ferramenta)
+# para consolidação posterior via memory_consolidate.
+set -u
+LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$LIB_DIR/_ai_memory_cline_lib.sh"
 
-# Read JSON input from stdin
-INPUT=$(cat)
+RAW="$(amc_read_stdin)"
+# O Cline envia os dados deste evento no bloco aninhado "postToolUse"
+# (toolName, parameters, result, success, executionTimeMs) — não em
+# "toolResponse"/"tool_response"/"output" soltos no topo do JSON.
+TOOL_NAME="$(amc_jget "$RAW" '.postToolUse.toolName')"
+TOOL_OUTPUT="$(amc_jget "$RAW" '.postToolUse.result // (.postToolUse.parameters | tostring)')"
+TOOL_SUCCESS="$(amc_jget "$RAW" '.postToolUse.success')"
 
-# Parse input using jq (or fallback to basic parsing)
-if command -v jq &> /dev/null; then
-  TOOL=$(echo "$INPUT" | jq -r '.postToolUse.toolName')
-  SUCCESS=$(echo "$INPUT" | jq -r '.postToolUse.success')
-  DURATION=$(echo "$INPUT" | jq -r '.postToolUse.executionTimeMs')
-else
-  TOOL="<tool>"
-  SUCCESS="true"
-  DURATION="0"
-fi
+ENVELOPE="$(amc_build_envelope "$RAW" "post-tool-use" "PostToolUse" "$TOOL_NAME $TOOL_OUTPUT (success=$TOOL_SUCCESS)")"
+amc_send "$ENVELOPE" "post-tool-use" >/dev/null
 
-# Log tool completion
-STATUS="success"
-[[ "$SUCCESS" == "false" ]] && STATUS="failed"
-echo "[PostToolUse] Tool completed: $TOOL ($STATUS) in ${DURATION}ms" >&2
-
-# Return result
-echo '{"cancel":false,"contextModification":"","errorMessage":""}'
+amc_emit_result "" false ""
