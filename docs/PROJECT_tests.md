@@ -61,7 +61,7 @@ tests/
 
 ### `tests/setup.js`
 **Localização:** `/tests/setup.js`
-**Propósito:** Bootstrap central executado antes de todos os testes (ambiente jsdom). Configura polyfills (TextEncoder, TextDecoder, localStorage, matchMedia, IntersectionObserver, ResizeObserver, scrollTo, crypto.randomUUID, URL.revokeObjectURL), React Testing Library (timeout 5s), filtro de warnings conhecidos do `console.error` — incluindo erros intencionais de auth (`KNOWN_INTENTIONAL_AUTH_ERRORS`: 'Erro ao inicializar sistema de autenticação' e 'Falha ao armazenar refresh token') —, cleanup automático pós-teste (`afterEach` com `cleanup()` e `jest.clearAllMocks()`), e utilitários globais (`global.wait()`, `global.suppressWarnings()`). Importa os matchers customizados. O polyfill do `IntersectionObserver` simula interseção imediata via `setTimeout` para que iframes com lazy loading sejam renderizados sem interação manual.
+**Propósito:** Bootstrap central executado antes de todos os testes (ambiente jsdom). Configura polyfills (TextEncoder, TextDecoder, localStorage, matchMedia, IntersectionObserver, ResizeObserver, scrollTo, crypto.randomUUID, URL.revokeObjectURL), React Testing Library (timeout 5s), filtro de warnings conhecidos do `console.error` — incluindo erros intencionais de auth (`KNOWN_INTENTIONAL_AUTH_ERRORS`: 'Erro ao inicializar sistema de autenticação' e 'Falha ao armazenar refresh token') —, cleanup automático pós-teste (`afterEach` com `cleanup()` e `jest.clearAllMocks()`), e utilitários globais (`global.wait()`, `global.suppressWarnings()`). Importa os matchers customizados. O polyfill do `IntersectionObserver` simula interseção imediata via `setTimeout` para que iframes com lazy loading sejam renderizados sem interação manual. A seção `INFORMAÇÕES DE DEBUG` mantém os `console.log` de debug comentados para manter limpias as saídas de `npm run test` e `npm run test:coverage`.
 
 ### `tests/setup.db.js`
 **Localização:** `/tests/setup.db.js`
@@ -282,8 +282,8 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | `ContentTabs/ContentTabs.test.js` | Abas de conteúdo |
 | `ContentTabs/index.test.js` | Barrel de ContentTabs |
 | `Music/MusicCard.test.js` | Card de música (iframe Spotify) |
-| `Music/MusicGallery.edge.test.js` | Galeria de músicas (edge cases) |
-| `Music/MusicGallery.test.js` | Galeria de músicas |
+| `Music/MusicGallery.edge.test.js` | Galeria de músicas (edge cases): objeto sem `data` (fallback vazio), erro de rede, array plano com paginação calculada, `pagination` anidado e resposta nula (fallback seguro) |
+| `Music/MusicGallery.test.js` | Galeria de músicas: render com loading, erro com reintento, lista vazia, busca por término (contador de resultados, debounce 300ms), limpar busca ("✕"), ordenação (sort na URL), paginação Anterior/Próxima e busca sem resultados ("Limpar busca") |
 | `Products/ProductCard.test.js` | Card de produto |
 | `Products/ProductList.test.js` | Lista de produtos: render, estados de loading/erro/vazio, busca e filtros de preço (min/max na URL), limpar filtros, ordenação por position/ID via `transform` real, paginação (Anterior/Próxima, faixa > 5 páginas, loading overlay com fake timers) |
 | `Products/styles.test.js` | Estilos compartilhados de Products (`inputStyle` com whitelist/fallback seguro e `buttonBaseStyle`) |

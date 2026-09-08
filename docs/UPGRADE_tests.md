@@ -343,4 +343,24 @@ Os itens abaixo foram implementados após a elaboração deste relatório. As re
 
 ---
 
+### 8.17 Expansão de cobertura do teste de `MusicGallery` (87,04% → 100%)
+
+**Arquivos:**
+- `tests/unit/components/Features/Music/MusicGallery.test.js`
+- `tests/unit/components/Features/Music/MusicGallery.edge.test.js`
+
+**Descrição:** `MusicGallery.js` reportava 87,04% de statements/lines (168/193), 73,91% de branches (34/46) e 50% de functions (4/8), pois os testes não exercitavam as interações de busca, limpeza e ordenação, nem os formatos alternativos de resposta da API. O teste principal foi atualizado de 4 para 9 casos: busca por término (`fireEvent.change` + espera do debounce de 300ms, contador "1 resultado para..."), limpar a busca com o botão "✕", cambio de ordenação (`sort=recent` verificado na URL), retorno à página anterior com o botão "Anterior" (estado `disabled` na página 1) e busca sem resultados (mensagem "Nenhum resultado para..." + botão "Limpar busca"). O teste de edge cases foi atualizado de 2 para 5 casos, com adição do `jest.mock` de `MusicCard` (dummy, mesmo padrão do teste principal): resposta como array plano (paginação calculada 7/6 → 2 páginas), resposta com `pagination` anidado (`{ totalPages, total }`) e resposta nula (fallback seguro `{ totalPages: 1, totalItems: 0 }`).
+
+**Resultado:** `MusicGallery.js` passou de 87,04% a **100%** de statements/lines (193/193), de 50% a **100%** de functions (8/8), com `handleSearch`, `clearSearch`, `handleSortChange` e o onClick de "Anterior" agora exercitados; branches de 73,91% a **91,66%** (55/60; únicos ramos restantes: fallbacks defensivos `Number(...) || 1`, `musica.id || index` e `totalItems > 0`). Cobertura global: 94,84% statements/lines, 87,15% branches e 93,49% functions, com `npm run test:coverage` retornando status 0 e 1186 testes aprovados (180 suites).
+
+---
+
+### 8.18 Desativação do log de debug em `tests/setup.js`
+
+**Arquivo:** `tests/setup.js`
+
+**Descrição:** A seção `INFORMAÇÕES DE DEBUG` do setup global desativou os três `console.log` de debug (`🧪 Test Suite Architecture loaded`, `📦 Node.js version:` e `🎯 Environment:`), mantendo-os comentados. Os logs se repetiam em cada suíte, poluindo a saída de `npm run test` e `npm run test:coverage` com ~540 linhas de ruído; o restante do bootstrap permaneceu intacto.
+
+---
+
 > **Nota:** Este documento é um relatório de análise. As ações listadas nas seções 1–7 são recomendações para revisão e priorização futura; a seção 8 registra as implementações aplicadas sobre o tema após a elaboração deste relatório.

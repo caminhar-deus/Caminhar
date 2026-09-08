@@ -213,6 +213,8 @@ global.suppressWarnings = async (fn, patterns) => {
 // INFORMAÇÕES DE DEBUG
 // ============================================================================
 
-console.log('🧪 Test Suite Architecture loaded');
-console.log('📦 Node.js version:', process.version);
-console.log('🎯 Environment:', process.env.NODE_ENV || 'test');
+// Logs de debug desactivados para manter limpias as saídas
+// de `npm run test` e `npm run test:coverage` (~540 líneas de ruido).
+// console.log('🧪 Test Suite Architecture loaded');
+// console.log('📦 Node.js version:', process.version);
+// console.log('🎯 Environment:', process.env.NODE_ENV || 'test');
