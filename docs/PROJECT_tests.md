@@ -333,7 +333,7 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | `Button.test.js` | Botão |
 | `Card.test.js` | Card |
 | `index.test.js` | Barrel de UI |
-| `Input.test.js` | Campo de entrada |
+| `Input.test.js` | Campo de entrada: renderização com label/required/addons, helperText/errorMessage, `handleChange` (modo controlado e não controlado), botão de limpar (`clearable` com valor), `handleClear` com `onClear`/`onChange` |
 | `Modal.test.js` | Modal (preventScroll com classe CSS) |
 | `Select.test.js` | Campo de seleção: modo custom (searchable/clearable) com dropdown (clique, teclado Enter/Escape, clique-fora), busca com debounce de 300ms, limpar seleção (`onClear`/`onChange`), valor controlado/defaultValue com `aria-selected`; modo nativo com `disabled`, foco, `aria-invalid`/`aria-describedby` e erro/helper |
 | `Spinner.test.js` | Spinner de carregamento |

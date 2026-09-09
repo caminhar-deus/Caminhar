@@ -363,4 +363,14 @@ Os itens abaixo foram implementados após a elaboração deste relatório. As re
 
 ---
 
+### 8.19 Expansão de cobertura do teste de `Input` (50% → 100% functions)
+
+**Arquivo:** `tests/unit/components/UI/Input.test.js`
+
+**Descrição:** `Input.js` reportava 82,75% de statements/lines, 84,61% de branches e **50% de functions**, pois os testes não exercitavam as funções `handleChange` (modo controlado e não controlado) e `handleClear` (renderização do botão e ação de limpar). O teste foi expandido de 2 para 6 casos: atualização do valor interno quando não controlado (`fireEvent.change` e verificação do `input.value`), chamada de `onChange` quando controlado, renderização do botão de limpar quando `clearable` e com valor (`aria-label="Limpar campo"`), e ação de limpar com `onClear` e `onChange` (evento sintético com `target: { value: '' }`).
+
+**Resultado:** `Input.js` passou de 50% a **100%** de functions (3/3), com `handleChange` e `handleClear` agora exercitados; statements/lines de 82,75% a **98,62%** (141/143), branches de 84,61% a **96,55%** (28/29; único ramo restante: caminho não controlado do `handleClear`, linhas 54-55). Cobertura global: 94,97% statements/lines, 87,26% branches e 93,67% functions, com `npm run test:coverage` retornando status 0 e 1190 testes aprovados (180 suites).
+
+---
+
 > **Nota:** Este documento é um relatório de análise. As ações listadas nas seções 1–7 são recomendações para revisão e priorização futura; a seção 8 registra as implementações aplicadas sobre o tema após a elaboração deste relatório.
