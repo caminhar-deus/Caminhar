@@ -301,4 +301,10 @@
 
 ---
 
+### `scripts/run-all-load-tests-sequentially.js` — verificação de disponibilidade do k6
+
+**Descrição:** Adicionada a função `checkK6Available()` que verifica se o binário `k6` está instalado e disponível no PATH antes de executar os 30 scripts de teste de carga. Em caso de ausência, exibe mensagem clara com link para a documentação oficial de instalação (`https://k6.io/docs/get-started/installation/`) e alternativa via Docker, encerrando imediatamente com exit code 1 (fail-fast). Evita a execução desnecessária de 30 testes que falhariam com o erro genérico `/bin/sh: 1: k6: not found`.
+
+---
+
 > 📝 Este documento é analítico — as seções 1–8 servem como guia para futuras refatorações e correções; a seção "Implementações Aplicadas" registra as implementações realizadas após a elaboração deste relatório.

@@ -57,6 +57,19 @@ function checkServer() {
   });
 }
 
+/**
+ * Verifica se o k6 está instalado e disponível no PATH.
+ * Executa 'k6 version' e retorna true se disponível, false caso contrário.
+ */
+function checkK6Available() {
+  try {
+    execSync('k6 version', { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Garante que o diretório de relatórios existe
 if (!existsSync(REPORTS_DIR)) {
   mkdirSync(REPORTS_DIR, { recursive: true });
@@ -136,6 +149,16 @@ let overallExitCode = 0;
 try {
   await checkServer();
 } catch {
+  process.exit(1);
+}
+
+// Verifica se o k6 está instalado antes de executar os testes
+if (!checkK6Available()) {
+  console.error('\n❌ Erro: k6 não encontrado no sistema.');
+  console.error('   Instale o k6 para executar os testes de carga:');
+  console.error('   https://k6.io/docs/get-started/installation/\n');
+  console.error('   Ou use Docker:');
+  console.error('   docker run --rm -v $(pwd):/tests grafana/k6 run /tests/load-tests/...\n');
   process.exit(1);
 }
 

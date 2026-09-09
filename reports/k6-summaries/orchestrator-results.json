@@ -1,187 +1,163 @@
 {
-  "startTime": "2026-09-09T22:22:36.851Z",
+  "startTime": "2026-09-09T22:46:41.585Z",
   "totalScripts": 30,
-  "passed": 0,
-  "failed": 30,
+  "passed": 24,
+  "failed": 6,
   "skipped": 0,
   "categories": [
     {
       "name": "🧪 Performance Tests",
       "total": 17,
-      "passed": 0,
-      "failed": 17,
+      "passed": 14,
+      "failed": 3,
       "skipped": 0,
       "scripts": [
         {
           "name": "musicas-load-test",
-          "status": "fail",
-          "exitCode": 127
+          "status": "pass"
         },
         {
           "name": "videos-load-test",
-          "status": "fail",
-          "exitCode": 127
+          "status": "pass"
         },
         {
           "name": "musicas-crud-test",
-          "status": "fail",
-          "exitCode": 127
+          "status": "pass"
         },
         {
           "name": "videos-crud-test",
           "status": "fail",
-          "exitCode": 127
+          "exitCode": 99
         },
         {
           "name": "musicas-filter-test",
-          "status": "fail",
-          "exitCode": 127
+          "status": "pass"
         },
         {
           "name": "videos-filter-test",
-          "status": "fail",
-          "exitCode": 127
+          "status": "pass"
         },
         {
           "name": "musicas-pagination-test",
-          "status": "fail",
-          "exitCode": 127
+          "status": "pass"
         },
         {
           "name": "videos-pagination-test",
-          "status": "fail",
-          "exitCode": 127
+          "status": "pass"
         },
         {
           "name": "musicas-sort-test",
-          "status": "fail",
-          "exitCode": 127
+          "status": "pass"
         },
         {
           "name": "videos-sort-test",
-          "status": "fail",
-          "exitCode": 127
+          "status": "pass"
         },
         {
           "name": "musicas-search-test",
-          "status": "fail",
-          "exitCode": 127
+          "status": "pass"
         },
         {
           "name": "cache-warmup-test",
-          "status": "fail",
-          "exitCode": 127
+          "status": "pass"
         },
         {
           "name": "cache-performance-test",
           "status": "fail",
-          "exitCode": 127
+          "exitCode": 99
         },
         {
           "name": "pagination-test",
           "status": "fail",
-          "exitCode": 127
+          "exitCode": 99
         },
         {
           "name": "authenticated-flow-test",
-          "status": "fail",
-          "exitCode": 127
+          "status": "pass"
         },
         {
           "name": "create-post-flow",
-          "status": "fail",
-          "exitCode": 127
+          "status": "pass"
         },
         {
           "name": "stress-test-combined",
-          "status": "fail",
-          "exitCode": 127
+          "status": "pass"
         }
       ]
     },
     {
       "name": "🔍 Functional Tests",
       "total": 9,
-      "passed": 0,
-      "failed": 9,
+      "passed": 7,
+      "failed": 2,
       "skipped": 0,
       "scripts": [
         {
           "name": "health-check",
-          "status": "fail",
-          "exitCode": 127
+          "status": "pass"
         },
         {
           "name": "cache-headers-test",
-          "status": "fail",
-          "exitCode": 127
+          "status": "pass"
         },
         {
           "name": "backup-verification-test",
-          "status": "fail",
-          "exitCode": 127
+          "status": "pass"
         },
         {
           "name": "video-validation-test",
           "status": "fail",
-          "exitCode": 127
+          "exitCode": 99
         },
         {
           "name": "posts-tags-test",
-          "status": "fail",
-          "exitCode": 127
+          "status": "pass"
         },
         {
           "name": "posts-cursor-pagination-test",
           "status": "fail",
-          "exitCode": 127
+          "exitCode": 99
         },
         {
           "name": "search-content-test",
-          "status": "fail",
-          "exitCode": 127
+          "status": "pass"
         },
         {
           "name": "upload-flow-test",
-          "status": "fail",
-          "exitCode": 127
+          "status": "pass"
         },
         {
           "name": "recovery-test",
-          "status": "fail",
-          "exitCode": 127
+          "status": "pass"
         }
       ]
     },
     {
       "name": "🔒 Security Tests",
       "total": 4,
-      "passed": 0,
-      "failed": 4,
+      "passed": 3,
+      "failed": 1,
       "skipped": 0,
       "scripts": [
         {
           "name": "rate-limit-test",
-          "status": "fail",
-          "exitCode": 127
+          "status": "pass"
         },
         {
           "name": "ip-spoofing-test",
           "status": "fail",
-          "exitCode": 127
+          "exitCode": 99
         },
         {
           "name": "ddos-search-test",
-          "status": "fail",
-          "exitCode": 127
+          "status": "pass"
         },
         {
           "name": "login-negative-test",
-          "status": "fail",
-          "exitCode": 127
+          "status": "pass"
         }
       ]
     }
   ],
-  "endTime": "2026-09-09T22:22:40.594Z"
+  "endTime": "2026-09-09T23:03:19.861Z"
 }
