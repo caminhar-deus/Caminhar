@@ -93,6 +93,7 @@ Base de apoio reutilizada por diversos scripts. Concentram a lógica comum e evi
 | `011-fix-entity-id-type.js` | Altera `entity_id` de `INTEGER` para `BIGINT` em `activity_logs` (evita overflow com `Date.now()`). |
 | `015-align-products-schema.js` | Alinha schema de `products` ao esperado pelo código: renomeia `title→name`, `images→image_url`, adiciona `category`, unifica links em `link` (prioridade ML > Shopee > Amazon). |
 | `016-create-refresh-tokens-table.js` | Cria tabela `refresh_tokens` (suporte a refresh token no login). |
+| `017-add-thumbnail-to-videos.js` | Adiciona coluna `thumbnail VARCHAR(255)` em `videos` (`ADD COLUMN IF NOT EXISTS` - idempotente). |
 
 ### Migrações de performance/índices
 
@@ -112,7 +113,7 @@ Definições JSON consumidas por `init-table.js` (nome da tabela, colunas, flag 
 |---------|--------|-----------------|
 | `schemas/posts.json` | `posts` | `dropBeforeCreate: true`; colunas title, slug (UNIQUE), excerpt, content, image_url, published, views, timestamps. |
 | `schemas/musicas.json` | `musicas` | `dropBeforeCreate: true`; colunas titulo, artista, url_spotify (NOT NULL), descricao, publicado, timestamps. |
-| `schemas/videos.json` | `videos` | `dropBeforeCreate: true`; colunas titulo, url_youtube (NOT NULL), descricao, publicado, timestamps. |
+| `schemas/videos.json` | `videos` | `dropBeforeCreate: true`; colunas titulo, url_youtube (NOT NULL), descricao, thumbnail, publicado, timestamps. |
 | `schemas/dicas.json` | `dicas` | `dropBeforeCreate: false` (preserva dados); colunas name, content (NOT NULL), published; **sem `seedData`** (tabela criada vazia — registros dependem exclusivamente do Painel Administrativo). |
 
 ---
@@ -212,7 +213,7 @@ Definições JSON consumidas por `init-table.js` (nome da tabela, colunas, flag 
 | Categoria | Quantidade | Arquivos |
 |-----------|:----------:|----------|
 | Backup | 5 | `backup.js`, `create-backup.js`, `restore-backup.js`, `init-backup.js`, `view-backup-logs.js` |
-| Migrações | 19 | `migrate.js` + `migrations/` (16) + `seed-migrations-table.js` + `verify-applied.js` |
+| Migrações | 20 | `migrate.js` + `migrations/` (17) + `seed-migrations-table.js` + `verify-applied.js` |
 | Schemas | 4 | `schemas/*.json` |
 | Seeds | 6 | `seed-all.js`, `seed-posts.js`, `seed-musicas.js`, `seed-videos.js`, `seed-products.js`, `seed-settings.js` |
 | Inicialização | 2 | `init-server.js`, `init-table.js` |
@@ -226,7 +227,7 @@ Definições JSON consumidas por `init-table.js` (nome da tabela, colunas, flag 
 | Testes Manuais | 2 | `tests/*` |
 | CLI | 1 | `cli/validate-schema.js` |
 | Monitoramento | 1 | `monitor-disk-space.js` |
-| **Total** | **80** | — |
+| **Total** | **81** | — |
 
 ---
 

@@ -307,4 +307,16 @@
 
 ---
 
+### `scripts/schemas/videos.json` — adição da coluna `thumbnail`
+
+**Descrição:** Adicionada a coluna `thumbnail` (tipo `VARCHAR(255)`) ao schema JSON de vídeos. O schema agora inclui as colunas: `id`, `titulo`, `url_youtube`, `descricao`, `thumbnail`, `publicado`, `created_at` e `updated_at`. Alinha o schema base com o código da aplicação (domain layer, CRUD, API e componentes React) que já esperavam o campo `thumbnail`.
+
+---
+
+### `scripts/migrations/017-add-thumbnail-to-videos.js` — nova migração para coluna `thumbnail`
+
+**Descrição:** Nova migração `017` que adiciona a coluna `thumbnail` (tipo `VARCHAR(255)`) à tabela `videos` em bancos de dados existentes. Usa `ALTER TABLE videos ADD COLUMN IF NOT EXISTS thumbnail VARCHAR(255)` para garantir idempotência. A função `down()` remove a coluna com `DROP COLUMN IF EXISTS`. Resolve o erro `column "thumbnail" of relation "videos" does not exist` que ocorria ao criar vídeos em bancos onde a coluna não existia.
+
+---
+
 > 📝 Este documento é analítico — as seções 1–8 servem como guia para futuras refatorações e correções; a seção "Implementações Aplicadas" registra as implementações realizadas após a elaboração deste relatório.

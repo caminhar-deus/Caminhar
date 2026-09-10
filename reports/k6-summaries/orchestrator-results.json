@@ -1,15 +1,15 @@
 {
-  "startTime": "2026-09-09T22:46:41.585Z",
+  "startTime": "2026-09-10T00:23:42.399Z",
   "totalScripts": 30,
-  "passed": 24,
-  "failed": 6,
+  "passed": 26,
+  "failed": 4,
   "skipped": 0,
   "categories": [
     {
       "name": "🧪 Performance Tests",
       "total": 17,
-      "passed": 14,
-      "failed": 3,
+      "passed": 15,
+      "failed": 2,
       "skipped": 0,
       "scripts": [
         {
@@ -26,8 +26,7 @@
         },
         {
           "name": "videos-crud-test",
-          "status": "fail",
-          "exitCode": 99
+          "status": "pass"
         },
         {
           "name": "musicas-filter-test",
@@ -88,8 +87,8 @@
     {
       "name": "🔍 Functional Tests",
       "total": 9,
-      "passed": 7,
-      "failed": 2,
+      "passed": 8,
+      "failed": 1,
       "skipped": 0,
       "scripts": [
         {
@@ -106,8 +105,7 @@
         },
         {
           "name": "video-validation-test",
-          "status": "fail",
-          "exitCode": 99
+          "status": "pass"
         },
         {
           "name": "posts-tags-test",
@@ -159,5 +157,5 @@
       ]
     }
   ],
-  "endTime": "2026-09-09T23:03:19.861Z"
+  "endTime": "2026-09-10T00:40:17.030Z"
 }
