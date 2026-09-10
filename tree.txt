@@ -720,6 +720,7 @@
 ├── logs
 │   ├── coverage-output.log
 │   ├── eslint.log
+│   ├── load-tests.log
 │   └── tests-output.log
 ├── next-sitemap.config.js
 ├── next.config.js
@@ -888,6 +889,7 @@
 │   │   ├── 014-add-dicas-index.js
 │   │   ├── 015-align-products-schema.js
 │   │   ├── 016-create-refresh-tokens-table.js
+│   │   ├── 017-add-thumbnail-to-videos.js
 │   │   ├── seed-migrations-table.js
 │   │   └── verify-applied.js
 │   ├── monitor-disk-space.js
@@ -1203,4 +1205,4 @@
     ├── csvExport.js
     └── reorder.js
 
-191 directories, 1013 files
+191 directories, 1015 files

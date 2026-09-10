@@ -424,8 +424,11 @@ Os três endpoints abaixo são usados pelo painel admin para **importar metadado
 - **Propósito:** Endpoint de autenticação (login) — unificado para web e API externa.
 - **Funcionalidades:**
   - POST apenas (405 com header `Allow` para outros).
-  - **Detecção de IP spoofing** via `detectSpoofedIP()` antes de autenticar; bloqueia com 403 se detectado.
-  - Rate limiting por IP (5 tentativas/60s) delegado a `authenticateAndGenerateToken()` de `lib/auth/auth.js`.
+  - **Detecção de IP spoofing** via `detectSpoofedIP()` com controle de `strictMode` baseado em `NODE_ENV`:
+    - Em desenvolvimento (`NODE_ENV !== 'production'`): `strictMode=false` para evitar falsos positivos em testes de carga
+    - Em produção (`NODE_ENV=production'`): `strictMode=true` para detectar spoofing mesmo em localhost
+    - Suporte opcional à variável `ENABLE_STRICT_SPOOFING=true` para ativar o modo estrito em desenvolvimento (testes de segurança)
+  - Rate limiting por IP (5 tentativas/60s) aplicado em ponto único pelo middleware `proxy.js`.
   - Modo web (padrão): define cookies httpOnly `token` e `refreshToken` via `setAuthCookie()`/`setRefreshTokenCookie()` e retorna `{ success, user }`. O cookie `refreshToken` só é definido quando o refresh token foi persistido com sucesso; `user` inclui `permissionsLoaded` indicando se as permissões do cargo foram carregadas.
   - Modo API externa (`?response=body`): retorna `{ token, token_type, expires_in, refresh_token, refresh_token_expires_in, user }` no corpo. Quando o refresh token não foi persistido, `refresh_token` vem como `null` e `refresh_token_stored` como `false`.
   - Tratamento de erros específicos: `RATE_LIMITED` (429), `INVALID_CREDENTIALS` (401), `MISSING_FIELDS` (400).
@@ -565,3 +568,4 @@ Já documentado na seção [2. API Pública](#2-api-pública) — é o único ar
 - **01/08/2026:** Nova análise profunda dos 42 arquivos atuais — corrigidos pontos divergentes (Cache-Control real dos endpoints, `check.js` sem `withAuth`, `globals.css` com `body.modal-open`, `Home.module.css` sem gradiente), identificado bug `await await` em `admin/users.js` e outros pontos registrados no `UPGRADE_pages.md`.
 - **04/09/2026:** `admin/dicas.js` passa a invalidar `dicas:public:*` também no POST e no DELETE (o PUT já invalidava) — dica criada ou excluída no Painel Administrativo reflete imediatamente na página pública.
 - **05/09/2026:** `admin/videos.js` centraliza a extração da mensagem de validação na função exportada `getValidationMessage()` (usada no POST e no PUT), eliminando a lógica duplicada na camada de rota.
+- **09/09/2026:** Controle de `strictMode` baseado em `NODE_ENV` — `proxy.js` e `pages/api/auth/login.js` passam a controlar o parâmetro `strictMode` da função `detectSpoofedIP` com base no ambiente (`NODE_ENV`), evitando falsos positivos em testes de carga durante o desenvolvimento e mantendo a proteção em produção. Suporte opcional à variável `ENABLE_STRICT_SPOOFING=true` para testes de segurança em desenvolvimento.

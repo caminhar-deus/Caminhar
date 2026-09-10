@@ -17,7 +17,12 @@ export default async function handler(req, res) {
   }
 
   // 1. Detecção de IP spoofing
-  const spoofResult = detectSpoofedIP(req);
+  // Em desenvolvimento: strictMode=false para evitar falsos positivos em testes de carga
+  // Em produção: strictMode=true para detectar spoofing mesmo em localhost
+  // Testes de seguranço podem ativar strictMode via ENABLE_STRICT_SPOOFING=true
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+  const strictMode = process.env.ENABLE_STRICT_SPOOFING === 'true' ? true : !isDevelopment;
+  const spoofResult = detectSpoofedIP(req, { strictMode });
   // Suprime log para IPs locais (reduz poluição do terminal em desenvolvimento)
   if (spoofResult.socketIP !== '127.0.0.1') {
     logger.debug('Auth', `detectSpoofedIP: socket=${req.socket?.remoteAddress}, normalized=${spoofResult.socketIP}, forwarded=${spoofResult.forwardedIP}, isSpoofed=${spoofResult.isSpoofed}`);

@@ -141,6 +141,8 @@
 
 **Sugestão:** Avaliar se o `proxy.js` pode reutilizar a lógica de `lib/api/helpers.js` (respeitando as limitações do ambiente Edge/Middleware do Next.js, que pode não ter acesso a todas as funções da lib).
 
+**Status:** ✅ Implementado — o `proxy.js` passou a importar e utilizar `detectSpoofedIP()` de `lib/api/helpers.js` com `strictMode=true` para detecção de spoofing antes do rate limit. A lógica de extração de IP para rate limit permanece específica do middleware (necessária para compatibilidade com o ambiente Edge do Next.js), mas a detecção de spoofing agora é centralizada na lib.
+
 ---
 
 ## 4. Duplicidade de Código e Arquivos
@@ -282,6 +284,19 @@
 **Impacto:** Nenhum — apenas nota de escopo. Os workflows da raiz dependem dele, mas ele não é um arquivo da raiz.
 
 **Sugestão:** Nenhuma ação necessária; apenas registro para contexto.
+
+---
+
+## Implementações Aplicadas
+
+### `proxy.js` — controle de `strictMode` baseado em `NODE_ENV`
+
+**Descrição:** O middleware `proxy.js` passou a controlar o parâmetro `strictMode` da função `detectSpoofedIP` com base no ambiente, evitando falsos positivos em testes de carga durante o desenvolvimento:
+- Em desenvolvimento (`NODE_ENV !== 'production'`): `strictMode=false` para evitar bloqueios em testes de carga
+- Em produção (`NODE_ENV=production'`): `strictMode=true` para detectar spoofing mesmo em localhost
+- Suporte opcional à variável `ENABLE_STRICT_SPOOFING=true` para ativar o modo estrito em desenvolvimento quando necessário (testes de segurança)
+
+Essa alteração corrige o problema de testes de carga que falhavam com erro 403 "IP spoofing detectado" durante o setup de autenticação.
 
 ---
 

@@ -146,11 +146,11 @@ Módulo responsável pela padronização da camada de API: classes de erro, resp
 | Função | Descrição |
 |--------|-----------|
 | `getClientIP(req, options)` | Extrai o IP real do cliente. Se `trustProxy: true`, confia no header `x-forwarded-for`; caso contrário, usa `req.socket.remoteAddress` (não falsificável pelo cliente). Normaliza `::1` para `127.0.0.1`. Fallback final garantido para `127.0.0.1` |
-| `detectSpoofedIP(req)` | Compara o IP do socket com o header `x-forwarded-for` para detectar discrepância. Retorna `{ isSpoofed, socketIP, forwardedIP }`. Considera socket localhost como não-spoofing (comportamento normal do Next.js em dev). Detecta spoofing quando socket é privado e forwarded é público, ou quando socket é público e forwarded difere |
+| `detectSpoofedIP(req, options)` | Compara o IP do socket com o header `x-forwarded-for` para detectar discrepância. Retorna `{ isSpoofed, socketIP, forwardedIP }`. Parâmetro `options.strictMode` (padrão `false`): quando `true`, detecta spoofing mesmo quando socket é localhost (usado em testes de segurança). Quando `false`, considera socket localhost como não-spoofing (comportamento normal do Next.js em dev). Detecta spoofing quando socket é privado e forwarded é público, ou quando socket é público e forwarded difere |
 
 **Função interna:** `normalizeIP(ip)` — normaliza `::1` → `127.0.0.1` e `::ffff:x.x.x.x` → `x.x.x.x` (IPv4-mapped IPv6).
 
-**Observações:** Usado pelo `adminCrudHandler.js` para extração de IP confiável (sem `trustProxy` = usa socket diretamente, prevenindo spoofing via header) e detecção de spoofing. A lógica de `detectSpoofedIP` é elaborada com múltiplos cenários (ver UPGRADE item 6.4).
+**Observações:** Usado pelo `adminCrudHandler.js` para extração de IP confiável (sem `trustProxy` = usa socket diretamente, prevenindo spoofing via header) e detecção de spoofing. A lógica de `detectSpoofedIP` suporta dois modos: `strictMode=false` (padrão, permite localhost) e `strictMode=true` (detecta spoofing mesmo em localhost). O middleware `proxy.js` e o handler `pages/api/auth/login.js` controlam o `strictMode` com base no `NODE_ENV` e na variável opcional `ENABLE_STRICT_SPOOFING`.
 
 ---
 

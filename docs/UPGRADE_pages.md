@@ -598,4 +598,13 @@ Além disso, há um possível problema de ordem: substituir `&` por `&` pode cor
 
 **Descrição:** A lógica de extração da primeira mensagem de erro de validação, que estava duplicada entre o POST e o PUT (`Object.values(fieldErrors)[0]?.[0] || 'Erro de validação desconhecido.'`), passou a ser centralizada na função exportada `getValidationMessage(validationError)`, usada nos dois handlers. O fallback `'Erro de validação desconhecido.'` é conservado para erros de nível raiz do Zod (quando `fieldErrors` está vazio).
 
+### `pages/api/auth/login.js` — controle de `strictMode` baseado em `NODE_ENV`
+
+**Descrição:** O handler de login passou a controlar o parâmetro `strictMode` da função `detectSpoofedIP` com base no ambiente, evitando falsos positivos em testes de carga durante o desenvolvimento:
+- Em desenvolvimento (`NODE_ENV !== 'production'`): `strictMode=false` para evitar bloqueios em testes de carga
+- Em produção (`NODE_ENV=production'`): `strictMode=true` para detectar spoofing mesmo em localhost
+- Suporte opcional à variável `ENABLE_STRICT_SPOOFING=true` para ativar o modo estrito em desenvolvimento quando necessário (testes de segurança)
+
+Essa alteração, em conjunto com a atualização do middleware `proxy.js`, corrige o problema de testes de carga que falhavam com erro 403 "IP spoofing detectado" durante o setup de autenticação.
+
 > 📝 Este documento é analítico — as seções 1–7 servem como guia para futuras refatorações e correções; a seção "Implementações Aplicadas" registra as implementações realizadas após a elaboração deste relatório.

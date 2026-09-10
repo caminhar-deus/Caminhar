@@ -99,6 +99,11 @@ A raiz do projeto concentra **31 arquivos** (excluindo subpastas e arquivos bloq
 **Principais funcionalidades:**
 - Rota protegida com limite: `/api/auth/login` (5 req/min).
 - Identificação de IP via `X-Forwarded-For` (priorizado em socket local) ou `request.ip`.
+- Detecção de IP spoofing via `detectSpoofedIP()` de `lib/api/helpers.js` com controle de `strictMode` baseado em `NODE_ENV`:
+  - Em desenvolvimento (`NODE_ENV !== 'production'`): `strictMode=false` para evitar falsos positivos em testes de carga
+  - Em produção (`NODE_ENV=production'`): `strictMode=true` para detectar spoofing mesmo em localhost
+  - Suporte opcional à variável `ENABLE_STRICT_SPOOFING=true` para ativar o modo estrito em desenvolvimento (testes de segurança)
+- Bloqueio com status 403 para tentativas de spoofing detectadas.
 - Integração com Redis (`checkRateLimit`) com fallback em memória.
 - Bloqueio com status 429 e mensagem em português.
 - Logging via `logger.warn('Security', ...)` do módulo `lib/infra/logger.js`.

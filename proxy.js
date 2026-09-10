@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { checkRateLimit } from './lib/cache/cache.js';
 import { logger } from './lib/infra/logger.js';
+import { detectSpoofedIP } from './lib/api/helpers.js';
 
 /**
  * Middleware global do Next.js para Rate Limiting e Proteção DDoS.
@@ -59,6 +60,27 @@ export async function proxy(request) {
   // Caso contrário, usa o socket IP (produção ou conexão direta)
   const isLocalSocket = socketIP === '127.0.0.1' || socketIP === '::1' || socketIP === '::ffff:127.0.0.1';
   const ip = (isLocalSocket && forwardedFor) ? forwardedFor : socketIP;
+
+  // Detecção de IP spoofing antes do rate limit
+  // Em desenvolvimento: strictMode=false para evitar falsos positivos em testes de carga
+  // Em produção: strictMode=true para detectar spoofing mesmo em localhost
+  // Testes de seguranço podem ativar strictMode via ENABLE_STRICT_SPOOFING=true
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+  const strictMode = process.env.ENABLE_STRICT_SPOOFING === 'true' ? true : !isDevelopment;
+  const spoofResult = detectSpoofedIP(request, { strictMode });
+  if (spoofResult.isSpoofed) {
+    logger.warn('Security',
+      `⛔ Spoofing detectado | Rota: ${matchedRoute} | Socket: ${spoofResult.socketIP} | ` +
+      `Forwarded: ${spoofResult.forwardedIP} | UA: ${request.headers.get('user-agent') || 'Unknown'}`
+    );
+    return NextResponse.json(
+      {
+        error: 'Forbidden',
+        message: 'IP spoofing detectado. Requisição bloqueada.',
+      },
+      { status: 403 }
+    );
+  }
 
   const isRateLimited = await checkRateLimit(ip, config.key, config.limit, config.window);
 

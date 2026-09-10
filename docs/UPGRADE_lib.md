@@ -430,6 +430,8 @@ Reduziria ~80 linhas de código duplicado nos 4 módulos.
 
 **Sugestão:** Simplificar: para endpoints admin, confiar apenas em `socket.remoteAddress` (não aceitar `x-forwarded-for`) já seria a medida mais segura. Documentar os cenários suportados e reduzir ramos redundantes (ex: remover o caso 1 da linha 114-117 que é inalcançável após o early return).
 
+**Status:** ✅ Implementado (parcial) — adicionado parâmetro `options.strictMode` (padrão `false`) que permite detectar spoofing mesmo em ambiente localhost quando `true`. O modo padrão mantém o comportamento original de não bloquear requisições locais. O middleware `proxy.js` e o handler `login.js` utilizam `strictMode=true` para detecção rigorosa em testes de segurança. A estrutura de múltiplos cenários foi preservada para manter compatibilidade com os diferentes ambientes (desenvolvimento vs produção).
+
 ---
 
 ### 6.5 `domain/settings.js` — `getSetting` sem garantia de tipo
@@ -522,12 +524,30 @@ Reduziria ~80 linhas de código duplicado nos 4 módulos.
 
 **Descrição:** Removido o `checkRateLimit` interno (chave `api:auth:login`) que era aplicado em duplicidade com o middleware `proxy.js`. O rate limit de login (5 tentativas/min) agora é contado em ponto único no proxy; o parâmetro `options` foi renomeado para `_options`, preservando a assinatura consumida por `login.js`.
 
+### `api/helpers.js` — parâmetro `strictMode` em `detectSpoofedIP`
+
+**Descrição:** Adicionado parâmetro `options.strictMode` (padrão `false`) à função `detectSpoofedIP`. Quando `true`, detecta spoofing mesmo quando o socket é localhost, permitindo que testes de segurança validem a proteção contra IP spoofing em ambiente de desenvolvimento. O modo padrão (`false`) mantém o comportamento original de não bloquear requisições locais (comportamento normal do Next.js em desenvolvimento).
+
+### `proxy.js` — controle de `strictMode` baseado em `NODE_ENV`
+
+**Descrição:** O middleware `proxy.js` passou a controlar o parâmetro `strictMode` da função `detectSpoofedIP` com base no ambiente:
+- Em desenvolvimento (`NODE_ENV !== 'production'`): `strictMode=false` para evitar falsos positivos em testes de carga
+- Em produção (`NODE_ENV=production'`): `strictMode=true` para detectar spoofing mesmo em localhost
+- Suporte opcional à variável `ENABLE_STRICT_SPOOFING=true` para ativar o modo estrito em desenvolvimento quando necessário (testes de segurança)
+
+### `pages/api/auth/login.js` — controle de `strictMode` baseado em `NODE_ENV`
+
+**Descrição:** O handler de login passou a controlar o parâmetro `strictMode` da função `detectSpoofedIP` com base no ambiente, seguindo a mesma lógica do middleware `proxy.js`:
+- Em desenvolvimento (`NODE_ENV !== 'production'`): `strictMode=false` para permitir testes de carga sem bloqueio
+- Em produção (`NODE_ENV=production'`): `strictMode=true` para proteção contra spoofing
+- Suporte opcional à variável `ENABLE_STRICT_SPOOFING=true` para testes de segurança em desenvolvimento
+
 ---
 
 ### Resumo de Prioridades
 
 | Prioridade | Itens |
 |------------|-------|
-| **Alta** | 1.1 (erros de banco expostos), 1.2 (dupla invalidação de cache), 1.3 (413 vs 500), 2.2 (createProduct sem transação), 2.1 (products fora do padrão de paginação), 6.1 (interpolação de tableName), 6.4 (detectSpoofedIP complexo) |
+| **Alta** | 1.1 (erros de banco expostos), 1.2 (dupla invalidação de cache), 1.3 (413 vs 500), 2.2 (createProduct sem transação), 2.1 (products fora do padrão de paginação), 6.1 (interpolação de tableName) |
 | **Média** | 1.4, 1.5, 1.6, 1.8, 2.3, 2.5, 3.1, 3.2, 3.3, 4.1, 4.2, 4.3, 4.5, 6.6, 6.7 |
 | **Baixa** | 1.7, 1.9, 1.10, 1.11, 1.12, 2.4, 2.6, 3.4, 3.5, 3.6, 4.4, 4.6, 5.1, 5.2, 5.3, 6.2, 6.3, 6.5, 6.8, 6.9, 6.10, 6.11, 6.12 |
