@@ -319,4 +319,10 @@
 
 ---
 
+### `scripts/seed-all.js` — inclusão do `seed-settings.js` na lista de seeds
+
+**Descrição:** O `seed-all.js` foi atualizado para incluir o `seed-settings.js` na lista de seeds executados. Anteriormente, o orchestrador executava apenas `seed-posts.js`, `seed-musicas.js` e `seed-videos.js`, não populando a tabela `settings` com os valores padrão (`site_name`, `site_description`, `posts_per_page`, `videos_per_page`, `musicas_per_page`). Com a inclusão do `seed-settings.js`, o comando `npm run seed-all` agora popula todas as tabelas necessárias para o funcionamento correto da aplicação e dos testes de carga.
+
+---
+
 > 📝 Este documento é analítico — as seções 1–8 servem como guia para futuras refatorações e correções; a seção "Implementações Aplicadas" registra as implementações realizadas após a elaboração deste relatório.

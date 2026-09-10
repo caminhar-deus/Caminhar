@@ -68,7 +68,8 @@ async function seedAll() {
     const seeds = [
       'seed-posts.js',
       'seed-musicas.js',
-      'seed-videos.js'
+      'seed-videos.js',
+      'seed-settings.js'
     ];
 
     for (const seed of seeds) {

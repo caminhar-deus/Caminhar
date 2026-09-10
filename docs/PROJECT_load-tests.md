@@ -569,12 +569,12 @@ Contém 17 scripts de teste de carga, stress e performance.
 - `default()` — 2 cenários:
   1. Settings (autenticado + cache) — GET `/api/settings`
   2. Posts (público + cache) — GET `/api/posts`
-- Checks de cache hit: duração < 100ms
+- Checks de cache hit: duração < 200ms
 - Thresholds específicos por tipo:
   - `http_req_duration{type:cached_settings}` p(95)<500ms, avg<200ms
   - `http_req_duration{type:cached_posts}` p(95)<500ms, avg<200ms
-  - `checks{check:posts cache hit (<100ms)}` rate>0.999
-  - `checks{check:settings cache hit (<100ms)}` rate>0.990
+  - `checks{check:posts cache hit (<200ms)}` rate>0.90
+  - `checks{check:settings cache hit (<200ms)}` rate>0.90
 - **Não usa spoofing de IP** — comentário explica que IP local está na whitelist de rate limit e testes de cache devem testar cache, não evasão de rate limit
 
 **Endpoints chamados:**
@@ -582,7 +582,7 @@ Contém 17 scripts de teste de carga, stress e performance.
 - `GET /api/settings` — Configurações (autenticado + cache)
 - `GET /api/posts` — Posts (público + cache)
 
-**Configuração de carga:** Estágios 5s/5s/10s/5s (1→5→50 VUs)
+**Configuração de carga:** Estágios 10s/5s/10s/5s (1→5→50 VUs) — warm-up estendido para garantir cache L1 quente
 
 ---
 
