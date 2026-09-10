@@ -125,7 +125,7 @@ Definições JSON consumidas por `init-table.js` (nome da tabela, colunas, flag 
 | `init-table.js` | Script unificado de criação de tabelas. Lê schema JSON de `schemas/`, faz DROP (se `dropBeforeCreate`), cria tabela, adiciona colunas faltantes e popula seedData se vazio. Suporta `node init-table.js <tabela>`, `--table=`, `--help`. |
 | `init-server.js` | Inicializa autenticação e banco via `lib/auth/auth.js` (`initializeAuth`) e `closeDatabase`. Idempotente. Exports: `initializeServer()`, `cleanupServer()`. |
 | `seed-all.js` | Orquestrador de seeds: verifica conexão, opcionalmente reseta banco (`--clean` via `npm run db:reset`), executa `seed-posts`, `seed-musicas`, `seed-videos`, `seed-settings` via import dinâmico. |
-| `seed-posts.js` | Insere 7 posts de exemplo (6 publicados + 1 rascunho), com `ON CONFLICT (slug) DO NOTHING`. |
+| `seed-posts.js` | Insere 8 posts de exemplo (7 publicados + 1 rascunho), com `ON CONFLICT (slug) DO NOTHING`. |
 | `seed-musicas.js` | Insere 6 músicas de exemplo (títulos, artistas, URLs do Spotify). |
 | `seed-videos.js` | Insere 6 vídeos de exemplo (títulos, URLs do YouTube). |
 | `seed-products.js` | Insere 30 produtos religiosos com `@faker-js/faker` (nomes, preços, descrições, 1-3 imagens, link ML, categoria). |

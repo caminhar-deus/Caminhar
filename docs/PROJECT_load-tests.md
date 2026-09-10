@@ -723,7 +723,7 @@ Contém 9 scripts de teste funcional e validação.
 
 **Estrutura:**
 - Rota pública (sem autenticação) — GET `/api/posts?search={termo}&page=1&limit=10`
-- Termos de busca: `['Deus', 'Jesus', 'amor', 'fé', 'vida', 'caminho', 'luz']`
+- Termos de busca: `['Deus', 'Jesus', 'amor', 'fé', 'vida', 'caminhar', 'oração']`
 - Warm-up na primeira iteração para aquecer cache do servidor
 - Valida estrutura de resposta, status 200 e match do termo no título/excerpt/conteúdo
 - Threshold específico: `http_req_duration{name:SearchPosts}` p(95)<500ms, avg<200ms

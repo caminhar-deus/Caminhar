@@ -15,8 +15,11 @@ export const options = getProfile('light', {
   },
 });
 
-// Termos comuns que provavelmente existem no banco de dados
-const SEARCH_TERMS = ['Deus', 'Jesus', 'amor', 'fé', 'vida', 'caminho', 'luz'];
+// Termos comuns que existem literalmente nos posts de seed
+// Nota: a busca usa full-text search com stemming em português (plainto_tsquery),
+// que pode retornar variações morfológicas. Por isso, usamos termos que existem
+// literalmente nos dados de seed para garantir que a validação funcione corretamente.
+const SEARCH_TERMS = ['Deus', 'Jesus', 'amor', 'fé', 'vida', 'caminhar', 'oração'];
 
 let warmupDone = false;
 
@@ -73,7 +76,7 @@ export default function () {
 
       if (!matchFound) {
         const titles = posts.map(p => p.title).slice(0, 3).join(', ');
-        console.error(`❌ Busca retornou resultados (${titles}...), mas termo "${term}" não foi encontrado nos campos title, excerpt ou content. Verifique o mecanismo de busca.`);
+        console.error(`❌ Busca retornou resultados (${titles}...), mas termo "${term}" não foi encontrado nos campos title, excerpt ou content. A busca usa full-text search (stemming) — variações morfológicas são válidas.`);
       }
 
       return matchFound;

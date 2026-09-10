@@ -1,8 +1,8 @@
 {
-  "startTime": "2026-09-10T11:26:15.325Z",
+  "startTime": "2026-09-10T18:27:56.090Z",
   "totalScripts": 30,
-  "passed": 28,
-  "failed": 2,
+  "passed": 29,
+  "failed": 1,
   "skipped": 0,
   "categories": [
     {
@@ -85,8 +85,8 @@
     {
       "name": "🔍 Functional Tests",
       "total": 9,
-      "passed": 8,
-      "failed": 1,
+      "passed": 9,
+      "failed": 0,
       "skipped": 0,
       "scripts": [
         {
@@ -115,8 +115,7 @@
         },
         {
           "name": "search-content-test",
-          "status": "fail",
-          "exitCode": 99
+          "status": "pass"
         },
         {
           "name": "upload-flow-test",
@@ -155,5 +154,5 @@
       ]
     }
   ],
-  "endTime": "2026-09-10T11:43:10.283Z"
+  "endTime": "2026-09-10T18:44:47.343Z"
 }

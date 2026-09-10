@@ -60,6 +60,14 @@ async function seedPostRecords() {
         true
       ),
       (
+        'O Caminho da Fé', 
+        'o-caminho-da-fe', 
+        'Reflexões sobre o caminho da fé e como perseverar nas promessas de Deus.', 
+        'O caminho da fé nem sempre é fácil, mas é o caminho que nos leva à presença de Deus. Persevere nas promessas dEle.', 
+        'https://images.unsplash.com/photo-1491841550275-ad7854e35ca6?auto=format&fit=crop&w=800&q=80', 
+        true
+      ),
+      (
         'Post de Rascunho', 
         'post-de-rascunho', 
         'Este é um exemplo de post que ainda não foi publicado.', 
