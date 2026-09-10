@@ -39,8 +39,8 @@ set -u
 # ------------------------------------------------------------------------
 # Configuração (todas sobrescrevíveis via variável de ambiente)
 # ------------------------------------------------------------------------
-: "${AI_MEMORY_BIN:=ai-memory}"                # binário nativo, se estiver no PATH
-: "${AI_MEMORY_URL:=http://127.0.0.1:8765}"     # ajuste para a porta real do seu servidor ai-memory
+: "${AI_MEMORY_BIN:=ai-memory}"                 # binário nativo, se estiver no PATH
+: "${AI_MEMORY_URL:=http://127.0.0.1:49374}"    # ajuste para a porta real do seu servidor ai-memory
 : "${AI_MEMORY_TIMEOUT:=0.5}"                   # segundos (mesmo timeout curto usado nos hooks oficiais)
 : "${AI_MEMORY_EXTENSION_NS:=cline}"            # namespace usado para não colapsar em "other"
 : "${AI_MEMORY_DEBUG:=0}"                       # 1 = loga em stderr

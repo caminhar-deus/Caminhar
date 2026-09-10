@@ -176,6 +176,23 @@ for (const category of CATEGORIES) {
     scripts: [],
   };
 
+  // Antes dos testes de performance, garante que o banco tem dados para paginação
+  if (category.name === '🧪 Performance Tests') {
+    console.log(`\n════════════════════════════════════════════════════`);
+    console.log(`  🌱 Populando banco com posts de teste para paginação`);
+    console.log(`════════════════════════════════════════════════════\n`);
+    try {
+      execSync('node scripts/seed-posts.js', {
+        stdio: 'inherit',
+        shell: true,
+        timeout: 30000, // 30s timeout
+      });
+      console.log(`     ✅ Seed de posts realizado com sucesso\n`);
+    } catch (error) {
+      console.error(`     ⚠️  Seed de posts falhou (não crítico): ${error.message}\n`);
+    }
+  }
+
   for (const script of category.scripts) {
     const envVars = Object.entries(category.env)
       .filter(([, v]) => v !== undefined && v !== null)

@@ -1,15 +1,15 @@
 {
-  "startTime": "2026-09-10T02:35:35.710Z",
+  "startTime": "2026-09-10T11:26:15.325Z",
   "totalScripts": 30,
-  "passed": 26,
-  "failed": 4,
+  "passed": 28,
+  "failed": 2,
   "skipped": 0,
   "categories": [
     {
       "name": "🧪 Performance Tests",
       "total": 17,
-      "passed": 15,
-      "failed": 2,
+      "passed": 17,
+      "failed": 0,
       "skipped": 0,
       "scripts": [
         {
@@ -62,13 +62,11 @@
         },
         {
           "name": "cache-performance-test",
-          "status": "fail",
-          "exitCode": 99
+          "status": "pass"
         },
         {
           "name": "pagination-test",
-          "status": "fail",
-          "exitCode": 99
+          "status": "pass"
         },
         {
           "name": "authenticated-flow-test",
@@ -113,12 +111,12 @@
         },
         {
           "name": "posts-cursor-pagination-test",
-          "status": "fail",
-          "exitCode": 99
+          "status": "pass"
         },
         {
           "name": "search-content-test",
-          "status": "pass"
+          "status": "fail",
+          "exitCode": 99
         },
         {
           "name": "upload-flow-test",
@@ -157,5 +155,5 @@
       ]
     }
   ],
-  "endTime": "2026-09-10T02:52:19.484Z"
+  "endTime": "2026-09-10T11:43:10.283Z"
 }

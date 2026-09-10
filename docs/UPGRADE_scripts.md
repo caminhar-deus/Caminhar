@@ -325,4 +325,10 @@
 
 ---
 
+### `scripts/run-all-load-tests-sequentially.js` — seed de posts antes dos testes de performance
+
+**Descrição:** Adicionada a execução do `seed-posts.js` antes da categoria de Performance Tests. O orquestrador agora invoca `node scripts/seed-posts.js` para garantir que a tabela `posts` possua registros com `published = true` (6 posts publicados) antes da execução do teste de paginação (`pagination-test.js`). Sem essa alteração, o teste falhava por retornar array vazio — o endpoint `/api/posts` filtra apenas posts publicados e o banco estava vazio. Em caso de falha no seed, o erro é tratado como não-crítico e os testes prosseguem normalmente.
+
+---
+
 > 📝 Este documento é analítico — as seções 1–8 servem como guia para futuras refatorações e correções; a seção "Implementações Aplicadas" registra as implementações realizadas após a elaboração deste relatório.
