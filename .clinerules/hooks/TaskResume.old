@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Hook Cline: TaskResume -> ai-memory: session-start (retomada)
+#
+# Instalação: renomeie para "TaskResume" (sem extensão) em
+#   .clinerules/hooks/TaskResume  ou  ~/Documents/Cline/Hooks/TaskResume
+# e rode: chmod +x TaskResume
+#
+# Cline não expõe um evento nativo "SessionStart" isolado; TaskStart cobre
+# o início de tarefa nova e TaskResume cobre a retomada de uma tarefa
+# interrompida. Ambos são tratados aqui como "session-start" no ai-memory
+# (o campo native_event enviado preserva qual dos dois realmente ocorreu),
+# e ambos buscam/injetam handoff pendente.
+set -u
+LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$LIB_DIR/_ai_memory_cline_lib.sh"
+
+amc_main "TaskResume" "session-start" 1

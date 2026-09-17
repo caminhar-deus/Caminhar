@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Hook Cline: UserPromptSubmit -> ai-memory: user-prompt
+#
+# Instalação: renomeie para "UserPromptSubmit" (sem extensão), coloque em
+#   .clinerules/hooks/UserPromptSubmit  ou  ~/Documents/Cline/Hooks/UserPromptSubmit
+# e rode: chmod +x UserPromptSubmit
+#
+# Captura cada mensagem enviada pelo usuário ao Cline. O corpo é truncado
+# em 16 KiB (mesmo limite que o servidor ai-memory aplica a prompts).
+# Não injeta contexto de volta nem bloqueia o envio.
+set -u
+LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$LIB_DIR/_ai_memory_cline_lib.sh"
+
+amc_main "UserPromptSubmit" "user-prompt" 0

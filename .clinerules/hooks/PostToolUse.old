@@ -22,7 +22,7 @@ TOOL_NAME="$(amc_jget "$RAW" '.postToolUse.toolName')"
 TOOL_OUTPUT="$(amc_jget "$RAW" '.postToolUse.result // (.postToolUse.parameters | tostring)')"
 TOOL_SUCCESS="$(amc_jget "$RAW" '.postToolUse.success')"
 
-PAYLOAD="$(amc_build_payload "$RAW" "PostToolUse")"
-amc_send "$PAYLOAD" "post-tool-use" || true
+ENVELOPE="$(amc_build_envelope "$RAW" "post-tool-use" "PostToolUse" "$TOOL_NAME $TOOL_OUTPUT (success=$TOOL_SUCCESS)")"
+amc_send "$ENVELOPE" "post-tool-use" >/dev/null
 
 amc_emit_result "" false ""

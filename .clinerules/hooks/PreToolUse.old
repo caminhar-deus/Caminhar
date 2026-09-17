@@ -28,7 +28,7 @@ TOOL_INPUT="$(amc_jget "$RAW" '.preToolUse.parameters | tostring')"
 # fi
 # ---------------------------------------------------------------------------
 
-PAYLOAD="$(amc_build_payload "$RAW" "PreToolUse")"
-amc_send "$PAYLOAD" "pre-tool-use" || true
+ENVELOPE="$(amc_build_envelope "$RAW" "pre-tool-use" "PreToolUse" "$TOOL_NAME $TOOL_INPUT")"
+amc_send "$ENVELOPE" "pre-tool-use" >/dev/null
 
 amc_emit_result "" false ""

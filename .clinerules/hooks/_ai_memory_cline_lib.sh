@@ -5,33 +5,37 @@
 #
 # Todo hook de evento (TaskStart, PreToolUse, PostToolUse, ...) faz:
 #   . "$(dirname "$0")/_ai_memory_cline_lib.sh"
-#   amc_main "<cline_hook_name>" "<ai_memory_kind>"
+#   amc_main "<cline_hook_name>" "<ai_memory_kind>" [want_handoff:0|1]
 #
 # Contrato de entrada (Cline -> hook, via stdin, JSON):
 #   Campos comuns: "taskId", "hookName", "clineVersion", "timestamp",
 #   "workspaceRoots": [...], "userId", "model": { "provider", "slug" }.
-#   Além dos campos comuns, cada hook recebe um bloco ANINHADO específico,
-#   nomeado em camelCase a partir do próprio hookName (só o bloco do evento
-#   atual vem preenchido; os demais ficam ausentes):
+#   Bloco ANINHADO específico do evento, nomeado em camelCase a partir do
+#   próprio hookName (só o bloco do evento atual vem preenchido):
 #     "userPromptSubmit": { "prompt", "attachments": [...] }
 #     "preToolUse":       { "toolName", "parameters": {} }
 #     "postToolUse":      { "toolName", "parameters": {}, "result", "success", "executionTimeMs" }
 #     "taskStart":        { "taskMetadata": { "taskId", "ulid", "initialTask" } }
-#     "taskResume":       { "taskMetadata": {...}, "previousState": { "lastMessageTs", "messageCount", "conversationHistoryDeleted" } }
+#     "taskResume":       { "taskMetadata": {...}, "previousState": {...} }
 #     "taskCancel":       { "taskMetadata": { "taskId", "ulid", "completionStatus" } }
 #     "taskComplete":     { "taskMetadata": { "taskId", "ulid", "result", "command" } }
-#     "preCompact":       { "taskId", "ulid", "contextSize", "compactionStrategy",
-#                            "tokensIn", "tokensOut", "tokensInCache", "tokensOutCache", ... }
+#     "preCompact":       { "taskId", "ulid", "contextSize", "compactionStrategy", ... }
 #
 # Contrato de saída (hook -> Cline, via stdout, JSON):
 #   { "cancel": bool, "contextModification": string, "errorMessage": string }
-#   (stderr é usado livremente para debug/log, nunca stdout fora do JSON final)
+#   (stderr é livre para debug; stdout só o JSON final)
 #
-# Contrato com o ai-memory:
-#   - Preferencial: binário nativo `ai-memory hook --event <kind> --extension cline`
-#     (lê o envelope via stdin, faz spool+idempotência+handoff automaticamente)
-#   - Fallback: HTTP POST http(s)://<host>/hook?extension=cline (timeout curto,
-#     nunca bloqueia o Cline em caso de falha de rede)
+# Contrato com o ai-memory (POST /hook + GET /handoff):
+#   - POST $AI_MEMORY_URL/hook?event=<kind>&agent=cline&extension=cline
+#     com corpo JSON canônico em snake_case (session_id, cwd, model,
+#     prompt / tool_name+tool_input+tool_response, etc.) — formato que o
+#     roteador/sanitizador do ai-memory espera (cf. exemplos oficiais
+#     "agent=other" em docs/marker-file.md e docs/architecture.md).
+#   - GET $AI_MEMORY_URL/handoff?agent=cline&extension=cline&cwd=...
+#     apenas para TaskStart/TaskResume: devolve texto de handoff pendente
+#     que é injetado no Cline via "contextModification".
+#   - Todos os timeouts são curtos e nenhuma falha de rede deve travar o
+#     Cline (fire-and-forget; erros só viram log se AI_MEMORY_DEBUG=1).
 # ==============================================================================
 
 set -u
@@ -39,13 +43,15 @@ set -u
 # ------------------------------------------------------------------------
 # Configuração (todas sobrescrevíveis via variável de ambiente)
 # ------------------------------------------------------------------------
-: "${AI_MEMORY_BIN:=ai-memory}"                 # binário nativo, se estiver no PATH
-: "${AI_MEMORY_URL:=http://127.0.0.1:49374}"    # ajuste para a porta real do seu servidor ai-memory
-: "${AI_MEMORY_TIMEOUT:=0.5}"                   # segundos (mesmo timeout curto usado nos hooks oficiais)
+: "${AI_MEMORY_BIN:=ai-memory-hooks-disabled}"  # binário nativo (opt-in; sentinel desabilita)
+: "${AI_MEMORY_URL:=http://127.0.0.1:49374}"    # ajuste para a porta real do seu servidor
+: "${AI_MEMORY_TIMEOUT:=0.5}"                   # segundos (POST /hook — fire-and-forget)
+: "${AI_MEMORY_HANDOFF_TIMEOUT:=2.0}"           # segundos (GET /handoff — síncrono)
 : "${AI_MEMORY_EXTENSION_NS:=cline}"            # namespace usado para não colapsar em "other"
 : "${AI_MEMORY_DEBUG:=0}"                       # 1 = loga em stderr
 : "${AI_MEMORY_BODY_MAX_BYTES:=16384}"          # 16 KiB, mesmo limite documentado do servidor
 : "${AI_MEMORY_DISABLE:=0}"                     # 1 = desliga a integração sem remover os hooks
+: "${AI_MEMORY_AUTH_TOKEN:=}"                   # opcional; vira Authorization: Bearer quando setado
 
 amc_log() {
   [ "$AI_MEMORY_DEBUG" = "1" ] && printf '[ai-memory-cline] %s\n' "$*" >&2
@@ -63,7 +69,6 @@ amc_emit_result() {
         errorMessage: (if $err == "" then null else $err end)}
        | with_entries(select(.value != null))'
   else
-    # Fallback bem simples sem jq (evita depender de libs externas)
     printf '{'
     [ -n "$ctx" ] && printf '"contextModification": %s,' "$(amc_json_escape "$ctx")"
     [ -n "$err" ] && printf '"errorMessage": %s,' "$(amc_json_escape "$err")"
@@ -105,65 +110,125 @@ amc_truncate() {
   printf '%s' "$text" | head -c "$AI_MEMORY_BODY_MAX_BYTES"
 }
 
-# Monta o envelope canônico enviado ao ai-memory a partir do payload bruto do Cline.
-# amc_build_envelope <raw_json_cline> <ai_memory_kind> <cline_hook_name> <extra_body>
-amc_build_envelope() {
-  local raw="$1" kind="$2" native="$3" extra_body="$4"
-  local task_id cwd model ts body
-  task_id="$(amc_jget "$raw" '.taskId')"
-  cwd="$(amc_jget "$raw" '.workspaceRoots[0]')"
-  # "model" chega como objeto { provider, slug } no schema real do Cline;
-  # mantém compatibilidade com um eventual "model" plano (string) por segurança.
-  model="$(amc_jget "$raw" 'if (.model | type) == "object" then ((.model.provider // "unknown") + "/" + (.model.slug // "unknown")) else (.model // empty) end')"
-  ts="$(amc_jget "$raw" '.timestamp')"
-  [ -z "$ts" ] && ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  body="$(amc_truncate "$extra_body")"
+# ------------------------------------------------------------------------
+# Monta o corpo JSON canônico para o /hook do ai-memory.
+# O roteador/sanitizador do servidor extrai conteúdo de campos em snake_case
+# (session_id, cwd, prompt, tool_name, tool_input, tool_response, ...) —
+# por isso empacotamos os dados do Cline nesse formato, em vez de metê-los
+# numa string "body" opaca (que o servidor não consegue interpretar).
+# amc_build_payload <raw_json_cline> <cline_hook_name>
+# ------------------------------------------------------------------------
+amc_build_payload() {
+  local raw="$1" native="$2"
 
-  if command -v jq >/dev/null 2>&1; then
-    jq -n \
-      --arg source "cline" \
-      --arg event "$kind" \
-      --arg native_event "$native" \
-      --arg session_id "$task_id" \
-      --arg cwd "$cwd" \
-      --arg model "$model" \
-      --arg ts "$ts" \
-      --arg ext "$AI_MEMORY_EXTENSION_NS" \
-      --arg body "$body" \
-      '{source: $source, event: $event, native_event: $native_event,
-        session_id: $session_id, cwd: $cwd, model: $model,
-        timestamp: $ts, extension: $ext, body: $body}
-       | with_entries(select(.value != null and .value != ""))'
-  else
-    printf '{"source":"cline","event":"%s","native_event":"%s","session_id":"%s","cwd":"%s","model":"%s","timestamp":"%s","extension":"%s","body":%s}' \
-      "$kind" "$native" "$task_id" "$cwd" "$model" "$ts" "$AI_MEMORY_EXTENSION_NS" "$(amc_json_escape "$body")"
+  # Sem jq não há como transformar o payload com segurança; envia o bruto do
+  # Cline como corpo para que o servidor decida (fail-open, nunca trava).
+  if ! command -v jq >/dev/null 2>&1; then
+    printf '%s' "$raw"
+    return 0
   fi
+
+  printf '%s' "$raw" | jq -c --arg native "$native" --arg pwd "$PWD" '
+    def common: {
+      session_id: (.taskId // ""),
+      cwd: ((.workspaceRoots[0] // empty) // $pwd),
+      model: (if (.model | type) == "object"
+              then ((.model.provider // "unknown") + "/" + (.model.slug // "unknown"))
+              else (.model // "") end),
+      timestamp: (.timestamp // ""),
+      native_event: $native,
+      source: "cline"
+    };
+    common +
+    (if $native == "UserPromptSubmit" then
+       {prompt: (.userPromptSubmit.prompt // "")}
+     elif $native == "PreToolUse" then
+       {tool_name: (.preToolUse.toolName // ""),
+        tool_input: ((.preToolUse.parameters // {}) | tostring)}
+     elif $native == "PostToolUse" then
+       {tool_name: (.postToolUse.toolName // ""),
+        tool_input: ((.postToolUse.parameters // {}) | tostring),
+        tool_response: (.postToolUse.result // ""),
+        success: (.postToolUse.success // false),
+        execution_time_ms: (.postToolUse.executionTimeMs // 0)}
+     elif $native == "TaskStart" then
+       {initial_task: (.taskStart.taskMetadata.initialTask // "")}
+     elif $native == "TaskResume" then
+       {previous_state: ((.taskResume.previousState // {}) | tostring)}
+     elif $native == "TaskCancel" then
+       {completion_status: (.taskCancel.taskMetadata.completionStatus // "")}
+     elif $native == "TaskComplete" then
+       {result: ((.taskComplete.taskMetadata.result //
+                  .taskComplete.taskMetadata.command) // "")}
+     elif $native == "PreCompact" then
+       {compaction_strategy: (.preCompact.compactionStrategy // ""),
+        tokens_in:  (.preCompact.tokensIn  // 0),
+        tokens_out: (.preCompact.tokensOut // 0),
+        context_size: (.preCompact.contextSize // 0)}
+     else
+       {}
+     end)'
 }
 
-# Envia o envelope ao ai-memory. Retorna em stdout o texto de handoff (se houver,
-# só relevante para TaskStart/TaskResume). Nunca deve travar o Cline: timeout curto
-# e falhas são silenciosamente ignoradas (fire-and-forget), exceto em modo debug.
-# amc_send <envelope_json> <ai_memory_kind>
+# ------------------------------------------------------------------------
+# Envia o payload ao ai-memory (fire-and-forget; nunca deve travar o Cline).
+# Caminho 1 (se AI_MEMORY_BIN existir no PATH):
+#   ai-memory hook --event <kind> --agent cline --server-url <url> [--auth-token <tok>]
+# Caminho 2 (fallback HTTP):
+#   POST <url>/hook?event=<kind>&agent=cline&extension=<ns>
+# amc_send <payload_json> <ai_memory_kind>
+# ------------------------------------------------------------------------
 amc_send() {
-  local envelope="$1" kind="$2"
-  local out=""
+  local payload="$1" kind="$2"
 
-  if command -v "$AI_MEMORY_BIN" >/dev/null 2>&1; then
-    amc_log "usando binário nativo: $AI_MEMORY_BIN hook --event $kind --extension $AI_MEMORY_EXTENSION_NS"
-    out="$(printf '%s' "$envelope" | timeout "${AI_MEMORY_TIMEOUT}s" "$AI_MEMORY_BIN" hook \
-      --event "$kind" --extension "$AI_MEMORY_EXTENSION_NS" 2>>/tmp/ai-memory-cline.err)" || amc_log "binário nativo falhou/timeout"
-  else
-    amc_log "binário não encontrado no PATH, usando fallback HTTP -> ${AI_MEMORY_URL}/hook"
-    out="$(curl -sS -m "$AI_MEMORY_TIMEOUT" -X POST "${AI_MEMORY_URL}/hook?extension=${AI_MEMORY_EXTENSION_NS}" \
-      -H 'Content-Type: application/json' \
-      -d "$envelope" 2>>/tmp/ai-memory-cline.err)" || amc_log "POST /hook falhou/timeout"
+  if [ -n "$AI_MEMORY_BIN" ] && command -v "$AI_MEMORY_BIN" >/dev/null 2>&1; then
+    amc_log "usando binário nativo: $AI_MEMORY_BIN hook --event $kind --agent cline"
+    local args=(hook --event "$kind" --agent cline --server-url "$AI_MEMORY_URL")
+    [ -n "$AI_MEMORY_AUTH_TOKEN" ] && args+=(--auth-token "$AI_MEMORY_AUTH_TOKEN")
+    printf '%s' "$payload" \
+      | timeout "${AI_MEMORY_TIMEOUT}s" "$AI_MEMORY_BIN" "${args[@]}" \
+        >/dev/null 2>>/tmp/ai-memory-cline.err \
+      || amc_log "binário nativo falhou/timeout"
+    return 0
   fi
 
-  printf '%s' "$out"
+  local url="${AI_MEMORY_URL}/hook?event=${kind}&agent=cline&extension=${AI_MEMORY_EXTENSION_NS}"
+  amc_log "POST $url"
+  local auth=()
+  [ -n "$AI_MEMORY_AUTH_TOKEN" ] && auth=(-H "Authorization: Bearer $AI_MEMORY_AUTH_TOKEN")
+  curl -sS -m "$AI_MEMORY_TIMEOUT" -X POST "$url" \
+    -H 'Content-Type: application/json' \
+    "${auth[@]}" \
+    -d "$payload" >/dev/null 2>>/tmp/ai-memory-cline.err \
+    || amc_log "POST /hook falhou/timeout"
+}
+
+# ------------------------------------------------------------------------
+# GET /handoff — busca handoff pendente (só faz sentido em TaskStart/TaskResume).
+# Retorna em stdout o corpo da resposta (texto puro ou JSON; ver
+# amc_extract_handoff para a interpretação).
+# amc_fetch_handoff <cwd> <session_id>
+# ------------------------------------------------------------------------
+amc_fetch_handoff() {
+  local cwd="$1" sid="$2"
+  local base="${AI_MEMORY_URL}/handoff"
+
+  local args=(-sS -m "$AI_MEMORY_HANDOFF_TIMEOUT" -G "$base"
+              --data-urlencode "agent=cline"
+              --data-urlencode "extension=${AI_MEMORY_EXTENSION_NS}")
+  [ -n "$cwd" ] && args+=(--data-urlencode "cwd=$cwd")
+  [ -n "$sid" ] && args+=(--data-urlencode "session_id=$sid")
+
+  local auth=()
+  [ -n "$AI_MEMORY_AUTH_TOKEN" ] && auth=(-H "Authorization: Bearer $AI_MEMORY_AUTH_TOKEN")
+
+  amc_log "GET $base"
+  curl "${args[@]}" "${auth[@]}" 2>>/tmp/ai-memory-cline.err \
+    || amc_log "GET /handoff falhou/timeout"
 }
 
 # Tenta extrair um texto de handoff utilizável de uma resposta arbitrária
-# (json com chave context/handoff/markdown/body, ou texto puro).
+# (JSON com chave context/handoff/markdown/body/summary, ou texto puro).
 amc_extract_handoff() {
   local resp="$1" v
   [ -z "$resp" ] && return 0
@@ -184,14 +249,19 @@ amc_extract_handoff() {
   printf '%s' "$resp"
 }
 
+# ------------------------------------------------------------------------
 # Ponto de entrada padrão usado por todos os scripts de evento.
 # amc_main <cline_hook_name> <ai_memory_kind> [want_handoff:0|1]
 #
-# Extrai o corpo (extra_body) de cada evento a partir do bloco ANINHADO
-# correspondente ao hookName (ver schema documentado no topo deste arquivo).
+# Fluxo:
+#   1) lê stdin
+#   2) monta payload canônico a partir do bloco ANINHADO do evento
+#   3) POST /hook (fire-and-forget)
+#   4) se want_handoff=1, GET /handoff e injeta via contextModification
+# ------------------------------------------------------------------------
 amc_main() {
   local native="$1" kind="$2" want_handoff="${3:-0}"
-  local raw resp handoff extra_body=""
+  local raw payload
 
   if [ "$AI_MEMORY_DISABLE" = "1" ]; then
     printf '{}'
@@ -199,40 +269,18 @@ amc_main() {
   fi
 
   raw="$(amc_read_stdin)"
+  payload="$(amc_build_payload "$raw" "$native")"
 
-  case "$native" in
-    UserPromptSubmit)
-      extra_body="$(amc_jget "$raw" '.userPromptSubmit.prompt')"
-      ;;
-    PreToolUse)
-      extra_body="$(amc_jget "$raw" '.preToolUse.toolName') $(amc_jget "$raw" '.preToolUse.parameters | tostring')"
-      ;;
-    PostToolUse)
-      extra_body="$(amc_jget "$raw" '.postToolUse.toolName') $(amc_jget "$raw" '.postToolUse.result // (.postToolUse.parameters | tostring)') (success=$(amc_jget "$raw" '.postToolUse.success'))"
-      ;;
-    TaskStart)
-      extra_body="$(amc_jget "$raw" '.taskStart.taskMetadata.initialTask')"
-      ;;
-    TaskResume)
-      extra_body="$(amc_jget "$raw" '.taskResume.previousState | tostring')"
-      ;;
-    TaskCancel)
-      extra_body="$(amc_jget "$raw" '.taskCancel.taskMetadata.completionStatus')"
-      ;;
-    TaskComplete)
-      extra_body="$(amc_jget "$raw" '.taskComplete.taskMetadata.result // .taskComplete.taskMetadata.command')"
-      ;;
-    PreCompact)
-      extra_body="strategy=$(amc_jget "$raw" '.preCompact.compactionStrategy') tokensIn=$(amc_jget "$raw" '.preCompact.tokensIn') tokensOut=$(amc_jget "$raw" '.preCompact.tokensOut') contextSize=$(amc_jget "$raw" '.preCompact.contextSize')"
-      ;;
-    *)
-      extra_body=""
-      ;;
-  esac
-
-  resp="$(amc_send "$(amc_build_envelope "$raw" "$kind" "$native" "$extra_body")" "$kind")"
+  # Fire-and-forget: uma falha aqui nunca deve alterar o stdout do hook
+  # (o Cline exige JSON válido de volta). Logs vão para stderr.
+  amc_send "$payload" "$kind" || true
 
   if [ "$want_handoff" = "1" ]; then
+    local cwd sid handoff resp
+    cwd="$(amc_jget "$raw" '.workspaceRoots[0]')"
+    [ -z "$cwd" ] && cwd="$PWD"
+    sid="$(amc_jget "$raw" '.taskId')"
+    resp="$(amc_fetch_handoff "$cwd" "$sid")"
     handoff="$(amc_extract_handoff "$resp")"
     amc_emit_result "$handoff" false ""
   else

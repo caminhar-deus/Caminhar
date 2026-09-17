@@ -575,6 +575,7 @@
 │   ├── UPGRADE_scripts.md
 │   ├── UPGRADE_tests.md
 │   ├── UPGRADE_utils.md
+│   ├── ai-memory-error.md
 │   ├── antigos
 │   │   ├── PROJECT_components.md
 │   │   ├── PROJECT_cypress.md
@@ -1205,4 +1206,4 @@
     ├── csvExport.js
     └── reorder.js
 
-191 directories, 1015 files
+191 directories, 1016 files

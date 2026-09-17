@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Hook Cline: TaskStart -> ai-memory: session-start
+#
+# Instalação: copie/renomeie este arquivo (SEM extensão .sh) para
+#   .clinerules/hooks/TaskStart        (escopo do workspace)
+#   ~/Documents/Cline/Hooks/TaskStart  (escopo global)
+# e dê permissão de execução: chmod +x TaskStart
+#
+# Equivalente ao "SessionStart" dos outros agentes suportados pelo ai-memory:
+# marca o início da sessão de trabalho e busca o handoff pendente do agente/
+# sessão anterior, injetando-o de volta no Cline via "contextModification".
+set -u
+LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./_ai_memory_cline_lib.sh
+. "$LIB_DIR/_ai_memory_cline_lib.sh"
+
+amc_main "TaskStart" "session-start" 1
