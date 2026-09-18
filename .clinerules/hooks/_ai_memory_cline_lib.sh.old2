@@ -29,7 +29,8 @@
 #   - POST $AI_MEMORY_URL/hook?event=<kind>&agent=cline&extension=cline
 #     com corpo JSON canônico em snake_case (session_id, cwd, model,
 #     prompt / tool_name+tool_input+tool_response, etc.) — formato que o
-#     roteador/sanitizador do ai-memory espera.
+#     roteador/sanitizador do ai-memory espera (cf. exemplos oficiais
+#     "agent=other" em docs/marker-file.md e docs/architecture.md).
 #   - GET $AI_MEMORY_URL/handoff?agent=cline&extension=cline&cwd=...
 #     apenas para TaskStart/TaskResume: devolve texto de handoff pendente
 #     que é injetado no Cline via "contextModification".
@@ -143,10 +144,10 @@ amc_build_payload() {
        {prompt: (.userPromptSubmit.prompt // "")}
      elif $native == "PreToolUse" then
        {tool_name: (.preToolUse.toolName // ""),
-        tool_input: (.preToolUse.parameters // {})}
+        tool_input: ((.preToolUse.parameters // {}) | tostring)}
      elif $native == "PostToolUse" then
        {tool_name: (.postToolUse.toolName // ""),
-        tool_input: (.postToolUse.parameters // {}),
+        tool_input: ((.postToolUse.parameters // {}) | tostring),
         tool_response: (.postToolUse.result // ""),
         success: (.postToolUse.success // false),
         execution_time_ms: (.postToolUse.executionTimeMs // 0)}

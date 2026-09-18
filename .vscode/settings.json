@@ -1,3 +1,4 @@
 {
-  "css.lint.unknownProperties": "ignore"
+  "css.lint.unknownProperties": "ignore",
+  "python.analysis.typeCheckingMode": "strict"
 }
