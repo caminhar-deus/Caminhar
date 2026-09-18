@@ -58,7 +58,7 @@ MCP error -32603: malformed record in store: invalid uuid: invalid length: expec
 
 **Análise:** Sistema espera UUID de 32 caracteres. String vazia causa erro de validação. O sistema não trata UUID vazio como "usar sessão padrão".
 
-**Resolvido (2026-09-18):** `session_id` **vazio ou só com espaços** passou a equivaler a **campo omitido** no `memory_consolidate` — resolve a sessão concluída mais recente, exatamente como `memory_read_session_observations` já lia o id em branco. Um id **malformado** deixou de ser `-32603` e passou a `-32602` (`invalid params`), o mesmo código que `memory_auto_improve` já usava para o mesmo argumento; a mensagem (`malformed record in store: invalid uuid: …`) permaneceu igual. A causa era o par `Some("")` + `McpError::internal_error` no `memory_consolidate`, preservado de propósito no commit `5fa5d360` e fechado agora. A classificação de escopo do MCP também foi alinhada à rota web (`is_bad_request()`/`is_not_found()` → `-32602`; só `WriterRequired`/`Store` continuam `-32603`), o que corrige o Erro 8 na mesma rodada. Correção no fork `caminhar-deus/ai-memory`; imagem `ai-memory:fix-consolidate` reconstruída e container reimplantado.
+**Resolvido (2026-09-18):** `session_id` **vazio ou só com espaços** passou a equivaler a **campo omitido** no `memory_consolidate` — resolve a sessão concluída mais recente, exatamente como `memory_read_session_observations` já lia o id em branco. Um id **malformado** deixou de ser `-32603` e passou a `-32602` (`invalid params`), o mesmo código que `memory_auto_improve` já usava para o mesmo argumento; a mensagem (`malformed record in store: invalid uuid: …`) permaneceu igual. A causa era o par `Some("")` + `McpError::internal_error` no `memory_consolidate`, preservado de propósito no commit `5fa5d360` e fechado agora. A classificação de escopo do MCP também foi alinhada à rota web (`is_bad_request()`/`is_not_found()` → `-32602`; só `WriterRequired`/`Store` continuam `-32603`), o que corrige o Erro 8 na mesma rodada. Correção no fork `caminhar-deus/ai-memory`.
 
 Verificado no servidor vivo (2026-09-18, escopo `default/Caminhar`): `{"session_id": ""}` e o campo **omitido** resolvem a **mesma** página (`sessions/3e9f0f3e-…`, em `dry_run`); `{"session_id": "not-a-uuid"}` → `-32602`. No binário anterior (imagem antiga, mesma chamada) o retorno era `-32603` com a mensagem de UUID inválido.
 
@@ -136,6 +136,8 @@ ai-memory llm-test --provider gemini --model gemini-3.6-flash --prompt ping
 
 **Recorrência (2026-09-18, 03:12Z–03:32Z):** a mesma janela de indisponibilidade voltou, agora alternando `503 UNAVAILABLE` e `429` (`status`: `llm: gemini/gemini-3.6-flash error (status 429)`). Sete tentativas falharam nesse intervalo, mas **duas sessões fecharam por retry depois da janela** (`eba00679` às `03:14Z`, `35617c78` às `03:28Z`) — reforça que o tratamento correto é retry com backoff, não alterar o payload.
 
+**Mitigação implantada (2026-09-18):** o retry deixou de ser manual. `ai-memory-consolidate` passou a repetir a chamada de consolidação ao provedor com retry **curto e limitado** — 3 tentativas no total (a original + 2), 2 segundos fixos entre elas — e **somente** para falha transiente segundo `LlmError::is_transient()` (`429`, qualquer `5xx`, timeout ou falha de conexão). Erro determinístico (auth, schema, `4xx` que não seja `429`, resposta não parseável) continua falhando na primeira tentativa. O wrapper cobre os **dois** caminhos de consolidação (`consolidate_session` e `consolidate_session_multi`), então vale para o MCP, para a consolidação de SessionEnd e para o `serve`. Cobertura: 3 testes novos em `ai-memory-consolidate` — recupera o 503 dentro do orçamento, desiste ao esgotá-lo e não repete erro determinístico (este último também confirma que uma tentativa falha não grava página).
+
 ---
 
 ### Erro 7: Resposta do LLM truncada (`serde: EOF while parsing a string`)
@@ -158,6 +160,7 @@ MCP error -32603: serde: EOF while parsing a string at line 1 column 97534
 - Passar `instructions` conciso (limite de 2.000 caracteres) para limitar o tamanho das páginas.
 - Criar a página `_prompts/consolidation.md` no projeto com a preferência de concisão: hoje `default/Caminhar` **não** tem diretório `_prompts`, então toda consolidação usa apenas o prompt padrão.
 - Basta retry: 5 das 7 sessões do projeto concluíram na primeira tentativa.
+- O retry automático do **Erro 6** **não** cobre este caso: `LlmError::is_transient()` exclui `Serde`/`UnexpectedShape`, então a resposta truncada continua sendo reportada na primeira tentativa e as mitigações manuais acima seguem sendo o caminho.
 
 ---
 
@@ -176,6 +179,8 @@ MCP error -32603: project 'caminhar' not found in workspace 'default'
 **Análise:** o `.ai-memory.toml` deste repo declara `[project] name = "caminhar"` (minúsculo), enquanto o store registra o projeto como `Caminhar` (maiúsculo, ver `_meta.md` em `default`). As instruções do servidor MCP mandam ler workspace/projeto exatamente do marcador mais próximo — seguir o marcador aqui **quebra** toda chamada com escopo. Usar `workspace: "default"` + `project: "Caminhar"` funciona.
 
 **Correção aplicada (2026-09-18):** o `.ai-memory.toml` foi reescrito no formato que o leitor do ai-memory realmente entende — chave plana `workspace = "..."` / `project = "..."` (o par `[project] name` / `[workspace] name` que existia não é lido por `parse_key_in`, o que tornava o marcador inerte). O valor agora é `project = "Caminhar"`, idêntico ao nome gravado no store, então o marcador deixou de ser um caminho de quebra. Em paralelo, o erro de escopo do MCP passou a ser reportado como **`-32602` (invalid params)** em vez de `-32603`, com a mensagem inalterada. A alternativa por `ai-memory rename-project` não foi usada: mexeria no store e manteria o marcador inválido.
+
+Verificado no servidor vivo (2026-09-18): `project: "caminhar"` responde `-32602` com a mensagem `project 'caminhar' not found in workspace 'default'` e `project: "Caminhar"` volta a reportar as contagens; no CLI, o marcador passou a ser lido — `ai-memory embed --dry-run` na raiz do repo imprime `ai-memory: scope default/Caminhar (workspace + project from …/.ai-memory.toml)`.
 
 ---
 
@@ -306,13 +311,15 @@ As duas sessões que falharam no primeiro passe fecharam por **retry**: `35617c7
 
 | # | Item | Evidência | Situação |
 |---|------|-----------|----------|
-| 1 | 2 sessões travaram no 1º passe (`35617c78`, `eba00679`) | `35617c78`: 1× Erro 7 + 3× 503, depois 3× 503/429; `eba00679`: 1× falha + 3× 503 | Resolvido por retry (03:14Z e 03:28Z) |
+| 1 | 2 sessões travaram no 1º passe (`35617c78`, `eba00679`) | `35617c78`: 1× Erro 7 + 3× 503, depois 3× 503/429; `eba00679`: 1× falha + 3× 503 | Resolvido por retry (03:14Z e 03:28Z); retry automático implantado em 2026-09-18 (ver Erro 6) |
 | 2 | `_prompts/consolidation.md` inexistente | não há diretório `_prompts` no wiki de `default/Caminhar` | Sem preferências de projeto; provável causa do Erro 7 |
 | 3 | `.ai-memory.toml` diverge do store (`caminhar` × `Caminhar`) | Erro 8 | Corrigido (2026-09-18): marcador reescrito em chave plana com `project = "Caminhar"`; escopo do MCP passa a responder `-32602` |
 | 4 | 2 links latest não resolvidos | `status`: `unresolved: 2, stale: 0` | Herdado de 09-17; não sinalizado por `lint`/`curator` |
 | 5 | Títulos duplicados `user-prompt` | nenhuma página de sessão resta com esse título | Resolvido pelas consolidações (títulos descritivos) |
 
 > Corrigido nesta rodada: os embeddings em falta (pendência #2 de 2026-09-17) e a cobertura de consolidação (7/7 sessões). Seguem abertas as pendências 2 e 4.
+
+> **Pós-implementação (2026-09-18, rodada de código)** — os Erros 2 e 8 foram corrigidos e o Erro 6 ganhou mitigação automática (ver as seções respectivas). Publicado no fork `caminhar-deus/ai-memory`: commit `1ed8a7d5` no branch `fix/consolidate-optional-session-id`, anexado ao PR [#754](https://github.com/akitaonrails/ai-memory/pull/754) — retargetado pelo mantenedor de `main` para `release/2.4`, com 6 arquivos e 3 commits no diff. Verificação no commit publicado: `cargo fmt --all -- --check` e `cargo clippy -p ai-memory-mcp -p ai-memory-consolidate --all-targets -- -D warnings` limpos, e `cargo test -p ai-memory-consolidate -p ai-memory-mcp -p ai-memory-store` com 221 (4 ignorados), 431 e 452 (1 ignorado) aprovados — 0 falhas. A imagem `ai-memory:fix-consolidate` foi reconstruída a partir desse commit e o container reimplantado. O PR não tem checks de CI: nenhum workflow rodou nele.
 
 ---
 
@@ -321,9 +328,9 @@ As duas sessões que falharam no primeiro passe fecharam por **retry**: `35617c7
 1. Sempre fornecer UUID válido no formato 8-4-4-4-12
 2. Verificar que a sessão está "completed" antes de consolidar
 3. Aguardar finalização da sessão atual antes de tentar consolidar
-4. Implementar retry para erros 503 (sobrecarga do provedor)
+4. Implementar retry para erros 503 (sobrecarga do provedor) — implantado em 2026-09-18 (ver Erro 6)
 5. Documentar workarounds para referência futura
 6. Tratar `serde: EOF while parsing a string` como problema de **tamanho de saída**, não de rede: repetir, usar `multi_page: false` ou passar `instructions` conciso
 7. Criar `_prompts/consolidation.md` no projeto para fixar preferências de consolidação (concisão, nomenclatura em pt-BR) — hoje a página não existe
 8. Rodar o CLI `ai-memory` sempre a partir da raiz do projeto, ou com `--workspace`/`--project` explícitos (ver workaround 5)
-9. Alinhar o `name` do `.ai-memory.toml` com o nome gravado no store (`Caminhar`) para não quebrar chamadas com escopo (Erro 8)
+9. Alinhar o `name` do `.ai-memory.toml` com o nome gravado no store (`Caminhar`) para não quebrar chamadas com escopo (Erro 8) — aplicado em 2026-09-18
