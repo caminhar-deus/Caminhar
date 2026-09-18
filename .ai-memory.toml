@@ -1,5 +1,2 @@
-[project]
-name = "caminhar"
-
-[workspace]
-name = "default"
+workspace = "default"
+project = "Caminhar"

@@ -40,7 +40,7 @@ MCP error -32602: failed to deserialize parameters: missing field `session_id`
 
 **Resolvido (2026-09-17):** a omissão de `session_id` deixou de falhar. `ConsolidateArgs.session_id` virou `#[serde(default)] session_id: Option<String>` e o handler resolve a **sessão concluída mais recente** do projeto via `latest_completed_session_for_project`, o mesmo padrão já usado por `memory_auto_improve` e `memory_read_session_observations`. Correção no upstream `akitaonrails/ai-memory`: branch `fix/consolidate-optional-session-id` publicado no fork `caminhar-deus/ai-memory` (commit `5fa5d360`) e PR [#754](https://github.com/akitaonrails/ai-memory/pull/754) aberto. Enquanto não houver release do upstream com o fix, a correção roda **apenas localmente** (imagem `ai-memory:fix-consolidate`), portanto não chega por `ai-memory upgrade`.
 
-Verificado no servidor vivo: `required` deixou de listar `session_id`; tanto `{"session_id": null, "multi_page": true}` quanto `{}` passaram a resolver a mesma sessão que `memory_read_session_observations` sem id usa como padrão (`2a3d5b9d-…`), em `dry_run`. O caso da string vazia (**Erro 2**) permanece com o comportamento anterior, por decisão de escopo.
+Verificado no servidor vivo: `required` deixou de listar `session_id`; tanto `{"session_id": null, "multi_page": true}` quanto `{}` passaram a resolver a mesma sessão que `memory_read_session_observations` sem id usa como padrão (`2a3d5b9d-…`), em `dry_run`. O caso da string vazia (**Erro 2**) permaneceu com o comportamento anterior, por decisão de escopo — fechado em 2026-09-18 (ver Erro 2).
 
 ---
 
@@ -57,6 +57,10 @@ MCP error -32603: malformed record in store: invalid uuid: invalid length: expec
 ```
 
 **Análise:** Sistema espera UUID de 32 caracteres. String vazia causa erro de validação. O sistema não trata UUID vazio como "usar sessão padrão".
+
+**Resolvido (2026-09-18):** `session_id` **vazio ou só com espaços** passou a equivaler a **campo omitido** no `memory_consolidate` — resolve a sessão concluída mais recente, exatamente como `memory_read_session_observations` já lia o id em branco. Um id **malformado** deixou de ser `-32603` e passou a `-32602` (`invalid params`), o mesmo código que `memory_auto_improve` já usava para o mesmo argumento; a mensagem (`malformed record in store: invalid uuid: …`) permaneceu igual. A causa era o par `Some("")` + `McpError::internal_error` no `memory_consolidate`, preservado de propósito no commit `5fa5d360` e fechado agora. A classificação de escopo do MCP também foi alinhada à rota web (`is_bad_request()`/`is_not_found()` → `-32602`; só `WriterRequired`/`Store` continuam `-32603`), o que corrige o Erro 8 na mesma rodada. Correção no fork `caminhar-deus/ai-memory`; imagem `ai-memory:fix-consolidate` reconstruída e container reimplantado.
+
+Verificado no servidor vivo (2026-09-18, escopo `default/Caminhar`): `{"session_id": ""}` e o campo **omitido** resolvem a **mesma** página (`sessions/3e9f0f3e-…`, em `dry_run`); `{"session_id": "not-a-uuid"}` → `-32602`. No binário anterior (imagem antiga, mesma chamada) o retorno era `-32603` com a mensagem de UUID inválido.
 
 ---
 
@@ -171,7 +175,7 @@ MCP error -32603: project 'caminhar' not found in workspace 'default'
 
 **Análise:** o `.ai-memory.toml` deste repo declara `[project] name = "caminhar"` (minúsculo), enquanto o store registra o projeto como `Caminhar` (maiúsculo, ver `_meta.md` em `default`). As instruções do servidor MCP mandam ler workspace/projeto exatamente do marcador mais próximo — seguir o marcador aqui **quebra** toda chamada com escopo. Usar `workspace: "default"` + `project: "Caminhar"` funciona.
 
-**Correção não aplicada:** alinhar `name` no `.ai-memory.toml` para `Caminhar`, ou renomear o projeto no store (`ai-memory rename-project`). Nenhuma das duas foi executada.
+**Correção aplicada (2026-09-18):** o `.ai-memory.toml` foi reescrito no formato que o leitor do ai-memory realmente entende — chave plana `workspace = "..."` / `project = "..."` (o par `[project] name` / `[workspace] name` que existia não é lido por `parse_key_in`, o que tornava o marcador inerte). O valor agora é `project = "Caminhar"`, idêntico ao nome gravado no store, então o marcador deixou de ser um caminho de quebra. Em paralelo, o erro de escopo do MCP passou a ser reportado como **`-32602` (invalid params)** em vez de `-32603`, com a mensagem inalterada. A alternativa por `ai-memory rename-project` não foi usada: mexeria no store e manteria o marcador inválido.
 
 ---
 
@@ -304,11 +308,11 @@ As duas sessões que falharam no primeiro passe fecharam por **retry**: `35617c7
 |---|------|-----------|----------|
 | 1 | 2 sessões travaram no 1º passe (`35617c78`, `eba00679`) | `35617c78`: 1× Erro 7 + 3× 503, depois 3× 503/429; `eba00679`: 1× falha + 3× 503 | Resolvido por retry (03:14Z e 03:28Z) |
 | 2 | `_prompts/consolidation.md` inexistente | não há diretório `_prompts` no wiki de `default/Caminhar` | Sem preferências de projeto; provável causa do Erro 7 |
-| 3 | `.ai-memory.toml` diverge do store (`caminhar` × `Caminhar`) | Erro 8 | Não corrigido |
+| 3 | `.ai-memory.toml` diverge do store (`caminhar` × `Caminhar`) | Erro 8 | Corrigido (2026-09-18): marcador reescrito em chave plana com `project = "Caminhar"`; escopo do MCP passa a responder `-32602` |
 | 4 | 2 links latest não resolvidos | `status`: `unresolved: 2, stale: 0` | Herdado de 09-17; não sinalizado por `lint`/`curator` |
 | 5 | Títulos duplicados `user-prompt` | nenhuma página de sessão resta com esse título | Resolvido pelas consolidações (títulos descritivos) |
 
-> Corrigido nesta rodada: os embeddings em falta (pendência #2 de 2026-09-17) e a cobertura de consolidação (7/7 sessões). Seguem abertas as pendências 2, 3 e 4.
+> Corrigido nesta rodada: os embeddings em falta (pendência #2 de 2026-09-17) e a cobertura de consolidação (7/7 sessões). Seguem abertas as pendências 2 e 4.
 
 ---
 
