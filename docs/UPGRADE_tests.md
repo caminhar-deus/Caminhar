@@ -405,4 +405,16 @@ Os itens abaixo foram implementados após a elaboração deste relatório. As re
 
 ---
 
+### 8.23 Cobertura do fallback `value ?? ''` nos adaptadores de campo do Admin
+
+**Arquivos:**
+- `tests/unit/components/Admin/TextAreaField.test.js`
+- `tests/unit/components/Admin/TextField.test.js`
+
+**Descrição:** `TextAreaField.js` (linha 39) e `TextField.js` (linha 38) reportavam **50% de branches** (1/2), pois todos os casos existentes passavam string em `value` (`"Texto"` ou `""`) e o lado direito do fallback `value ?? ''` — alcançado quando o formulário recebe `null` do domínio (ex: `excerpt: post.excerpt ?? null` em `lib/domain/posts.js` chegando via `formData[name]` do `CrudForm`) — nunca era avaliado. Foi adicionado um caso em cada arquivo renderizando o campo com `value={null}`: o valor deve ser normalizado para string vazia (`toHaveValue('')`) e o campo deve permanecer controlado (após `fireEvent.change` sem atualização de estado, o DOM continua vazio e `onChange` é chamado).
+
+**Resultado:** `TextAreaField.js` e `TextField.js` passaram de 50% a **100%** de branches (2/2 cada), mantendo 100% de statements/lines/functions. Cobertura global: 95,28% statements/lines, 87,98% branches e 94,2% functions, com `npm run test:coverage:log` retornando status 0 e 1209 testes aprovados (180 suites).
+
+---
+
 > **Nota:** Este documento é um relatório de análise. As ações listadas nas seções 1–7 são recomendações para revisão e priorização futura; a seção 8 registra as implementações aplicadas sobre o tema após a elaboração deste relatório.

@@ -253,8 +253,8 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | `AdminVideos.test.js` | CRUD de vídeos (iframe embed) |
 | `ImageUploadField.test.js` | Campo de upload de imagem (toast.error, onUpload) |
 | `index.test.js` | Barrel de Admin |
-| `TextAreaField.test.js` | Campo de textarea |
-| `TextField.test.js` | Campo de texto |
+| `TextAreaField.test.js` | Campo de textarea (normalização de `value` nulo para string vazia, mantendo o campo controlado) |
+| `TextField.test.js` | Campo de texto (mesma normalização de `value` nulo do `TextAreaField`) |
 | `ToggleField.test.js` | Campo toggle |
 | `UrlField.test.js` | Campo de URL |
 | `withAdminAuth.test.js` | HOC de autenticação admin (com AuthProvider real) |

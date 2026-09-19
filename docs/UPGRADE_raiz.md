@@ -30,6 +30,8 @@
 
 **Sugestão:** Mover a chave para uma variável de ambiente (ex: `CYPRESS_RECORD_KEY`) e referenciá-la no script: `npx cypress run --record --key $CYPRESS_RECORD_KEY`. A chave deve ser rotacionada no painel do Cypress.
 
+**Status:** ✅ Implementado (parcial) — o script `test:e2e:record` passou a referenciar a variável de ambiente (`npm run cypress:run -- --record --key "$CYPRESS_RECORD_KEY"`), removendo a chave do manifesto. A rotação da chave no painel do Cypress permanece pendente.
+
 ---
 
 ### 1.2 Inconsistência de versão do Node.js entre `package.json` e `README.md`
@@ -297,6 +299,24 @@
 - Suporte opcional à variável `ENABLE_STRICT_SPOOFING=true` para ativar o modo estrito em desenvolvimento quando necessário (testes de segurança)
 
 Essa alteração corrige o problema de testes de carga que falhavam com erro 403 "IP spoofing detectado" durante o setup de autenticação.
+
+---
+
+### `jest.config.js` — thresholds de cobertura por diretório
+
+**Descrição:** Além do threshold global (branches 80%, functions 85%, lines/statements 90%), foram adicionados grupos por diretório avaliados sobre a cobertura agregada de cada pasta: `lib/domain/` (branches 78%, functions/lines/statements 95%), `pages/api/admin/` (branches 80%, functions 95%, lines/statements 90%) e `components/Admin/fields/` (branches 88%, functions/lines/statements 95%). Impede que uma regressão concentrada em um módulo crítico passe despercebida na média global.
+
+---
+
+### `jest.config.db.js` — relatório de cobertura isolado e escopo restrito
+
+**Descrição:** A suíte com banco real passou a usar `coverageDirectory: 'coverage-db'`, evitando sobrescrever o relatório da suíte principal (`coverage/`), e `collectCoverageFrom` restrito a `lib/domain/**/*.js` e `lib/infra/**/*.js`, medindo apenas as camadas alcançadas por esses testes.
+
+---
+
+### `package.json` — endurecimento dos scripts de teste
+
+**Descrição:** (1) `test:log`, `test:coverage:log`, `test:load:all:log` e `lint:log` passaram a executar via `bash -c 'set -o pipefail; …'`, propagando o código de saída real de Jest, ESLint e do orquestrador de carga (antes o `tee` devolvia sempre 0); (2) o pré-aquecimento de rotas foi concentrado no hook `precypress:run`, com `test:e2e` e `test:e2e:record` delegando para `cypress:run`; (3) `test:load:orchestrator` passou a delegar para `test:load:all`; (4) `test:ci` passou a usar `--bail`; (5) `test:db` foi renomeado para `test:db:unit`, com `--testPathPatterns` ancorado ao arquivo `tests/unit/lib/db.test.js`.
 
 ---
 

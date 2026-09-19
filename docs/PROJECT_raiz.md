@@ -44,13 +44,17 @@ A raiz do projeto concentra **31 arquivos** (excluindo subpastas e arquivos bloq
 **Propósito:** Manifesto do projeto. Define nome (`caminhar`), versão (`1.4.0`), engine (`Node.js 24.18.0`, `npm 12.0.2`), tipo de módulo (`ES Modules`), scripts, dependências e overrides.
 
 **Principais funcionalidades:**
-- **60 scripts** organizados em categorias: dev, build, lint, testes unitários, testes de banco, testes E2E (Cypress), testes de carga (k6, centralizados no orquestrador), gerenciamento de banco, backup, utilitários, segurança.
+- **63 scripts** organizados em categorias: dev, build, lint, testes unitários, testes de banco, testes E2E (Cypress), testes de carga (k6, centralizados no orquestrador), gerenciamento de banco, backup, utilitários, segurança.
 - **Dependências principais:** Next.js 16, React 19, bcryptjs, jsonwebtoken, pg, @upstash/redis, zod, sharp, formidable, react-hot-toast, web-vitals.
 - **DevDependencies:** Jest 30, Cypress 15, ESLint 10, Knip 6, Testing Library, Faker, Testcontainers, next-sitemap, dependency-cruiser.
 - **Overrides:** `tar`, `glob`, `minimatch`, `postcss`, `uuid`, `whatwg-encoding` — documentados via campo `_overridesReason`.
 - **allowScripts:** Permissão para scripts nativos de `sharp`, `cypress`, `ssh2`, `protobufjs`, `cpu-features`, `unrs-resolver`.
 - **Scripts de carga centralizados:** A execução de testes de carga é feita pelo orquestrador `scripts/run-all-load-tests-sequentially.js`, acessível via `npm run test:load:all`.
-- **Script `test:e2e:record`:** contém uma chave de projeto Cypress (`1c15e96c-3b79-4a4d-b2ec-7f0ffa209246`) exposta diretamente no manifesto.
+- **Script `test:e2e:record`:** exige a variável de ambiente `CYPRESS_RECORD_KEY` (a chave de gravação não fica no manifesto).
+- **Hooks e delegações:** `precypress:run` é o ponto único de pré-aquecimento (executado antes de `cypress:run`); `test:e2e` e `test:e2e:record` delegam para `cypress:run`, e `test:load:orchestrator` delega para `test:load:all`.
+- **Propagação de exit code:** `test:log`, `test:coverage:log`, `test:load:all:log` e `lint:log` executam via `bash -c 'set -o pipefail; …'`, garantindo que a falha real chegue ao código de saída do `npm`.
+- **Flags de execução:** `test:ci` usa `jest --ci --coverage --bail`; `test:db:unit` usa `--testPathPatterns` com padrão ancorado ao arquivo `tests/unit/lib/db.test.js`.
+- **Scripts de banco:** `test:db:container` (PostgreSQL real via Testcontainers) e `test:db:unit` (unitário com `pg` mockado, no config jsdom padrão). O nome `test:db:unit` substitui o antigo `test:db`.
 - **Script `warm:api`:** pré-aquecimento das rotas de API públicas (`node scripts/warm-routes.js --api`), para execução em terminal auxiliar assim que o `npm run dev` for iniciado.
 
 > ⚠️ **Inconsistência:** o `engines` declara Node 24.18.0/npm 12.0.2, mas o `README.md` informa Node 24.16.0/npm 11.17.0.
@@ -146,7 +150,7 @@ A raiz do projeto concentra **31 arquivos** (excluindo subpastas e arquivos bloq
 **Principais funcionalidades:**
 - Estende `jest.config.base.js`.
 - Ambiente `jsdom`. TestMatch: `**/*.test.js`.
-- Cobertura com provider V8. Thresholds: branches 80%, functions 85%, lines 90%, statements 90%.
+- Cobertura com provider V8. Thresholds: branches 80%, functions 85%, lines 90%, statements 90% (global) e grupos por diretório com limites próprios: `lib/domain/` (branches 78%, functions/lines/statements 95%), `pages/api/admin/` (branches 80%, functions 95%, lines/statements 90%) e `components/Admin/fields/` (branches 88%, functions/lines/statements 95%).
 - `transformIgnorePatterns` com exceções para `node-mocks-http`, `@faker-js`, `url`, `pg`, `@upstash/redis`, `uncrypto`.
 - `setupFilesAfterEnv: tests/setup.js`, `globalTeardown: jest.teardown.js`.
 - `moduleNameMapper` para CSS (`__mocks__/styleMock.js`). Timeout: 10s.
@@ -163,6 +167,7 @@ A raiz do projeto concentra **31 arquivos** (excluindo subpastas e arquivos bloq
 - Estende `jest.config.base.js`.
 - Ambiente `node`. TestMatch: `**/*.db.test.js`. Timeout: 30s.
 - `globalSetup: tests/global-setup.db.js`, `setupFilesAfterEnv: tests/setup.db.js`, `globalTeardown: jest.teardown.js`.
+- Cobertura isolada: `coverageDirectory: coverage-db`, com `collectCoverageFrom` restrito a `lib/domain/**` e `lib/infra/**` (não sobrescreve o relatório da suíte principal).
 - `transformIgnorePatterns` para `testcontainers`/`@testcontainers`.
 
 ---

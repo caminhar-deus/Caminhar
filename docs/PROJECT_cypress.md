@@ -68,10 +68,11 @@ Os seguintes scripts gerenciam a execução dos testes E2E:
 
 | Script | Comando | Descrição |
 |--------|---------|-----------|
-| `test:e2e` | `npx cypress run` | Executa os testes em modo headless |
-| `test:e2e:record` | `npx cypress run --record --key ...` | Executa com gravação no Cypress Cloud |
-| `cypress:open` | `cypress open` | Abre o Cypress no modo interativo |
-| `cypress:run` | `cypress run` | Executa os testes em modo headless |
+| `precypress:run` | `node scripts/warm-routes.js` | Hook de pré-aquecimento executado automaticamente antes de `npm run cypress:run` |
+| `test:e2e` | `npm run cypress:run` | Pré-aquece e executa os testes em modo headless |
+| `test:e2e:record` | `npm run cypress:run -- --record --key "$CYPRESS_RECORD_KEY"` | Pré-aquece e executa com gravação no Cypress Cloud (chave via variável de ambiente) |
+| `cypress:open` | `cypress open` | Abre o Cypress no modo interativo (sem pré-aquecimento) |
+| `cypress:run` | `cypress run` | Pré-aquece e executa os testes em modo headless |
 
 ---
 

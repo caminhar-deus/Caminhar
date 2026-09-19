@@ -132,6 +132,8 @@
 │       ├── icons.js
 │       └── index.js
 ├── coverage
+│   ├── TextAreaField.js.html
+│   ├── TextField.js.html
 │   ├── base.css
 │   ├── block-navigation.js
 │   ├── components
@@ -241,6 +243,8 @@
 │   ├── favicon.png
 │   ├── index.html
 │   ├── lcov-report
+│   │   ├── TextAreaField.js.html
+│   │   ├── TextField.js.html
 │   │   ├── base.css
 │   │   ├── block-navigation.js
 │   │   ├── components
@@ -522,6 +526,51 @@
 │   ├── prettify.js
 │   ├── sort-arrow-sprite.png
 │   └── sorter.js
+├── coverage-db
+│   ├── clover.xml
+│   ├── coverage-final.json
+│   ├── lcov-report
+│   │   ├── base.css
+│   │   ├── block-navigation.js
+│   │   ├── domain
+│   │   │   ├── audit.js.html
+│   │   │   ├── images.js.html
+│   │   │   ├── index.html
+│   │   │   ├── musicas.js.html
+│   │   │   ├── permissions.js.html
+│   │   │   ├── posts.js.html
+│   │   │   ├── products.js.html
+│   │   │   ├── settings.js.html
+│   │   │   ├── shared-pagination.js.html
+│   │   │   └── videos.js.html
+│   │   ├── favicon.png
+│   │   ├── index.html
+│   │   ├── infra
+│   │   │   ├── db.js.html
+│   │   │   ├── index.html
+│   │   │   ├── logger.js.html
+│   │   │   └── redis.js.html
+│   │   ├── prettify.css
+│   │   ├── prettify.js
+│   │   ├── scripts
+│   │   │   └── utils
+│   │   │       ├── index.html
+│   │   │       └── init-table-utils.js.html
+│   │   ├── sort-arrow-sprite.png
+│   │   ├── sorter.js
+│   │   └── tests
+│   │       ├── helpers
+│   │       │   ├── db-test.js.html
+│   │       │   └── index.html
+│   │       └── matchers
+│   │           ├── index.html
+│   │           ├── index.js.html
+│   │           ├── toBeISODate.js.html
+│   │           ├── toBeValidJSON.js.html
+│   │           ├── toHaveHeader.js.html
+│   │           ├── toHaveProperties.js.html
+│   │           └── toHaveStatus.js.html
+│   └── lcov.info
 ├── cypress
 │   ├── e2e
 │   │   ├── blog.cy.js
@@ -549,6 +598,7 @@
 │       ├── caminhar-pg-backup_2026-05-22T10-18-54Z.sql.gz.enc
 │       └── caminhar-pg-backup_2026-05-22T10-18-54Z.sql.gz.sha256
 ├── docs
+│   ├── PENDENCIAS_scripts_testes.md
 │   ├── PROJECT_components.md
 │   ├── PROJECT_cypress.md
 │   ├── PROJECT_data.md
@@ -1206,4 +1256,4 @@
     ├── csvExport.js
     └── reorder.js
 
-191 directories, 1016 files
+200 directories, 1057 files

@@ -20,6 +20,13 @@ export default {
   // Diretório próprio para não sobrescrever o relatório da suíte principal
   // (que usa 'coverage' e é consumido por análise de cobertura/CI).
   coverageDirectory: 'coverage-db',
+  // Mede apenas as camadas exercitadas pelos testes com banco real,
+  // evitando um relatório inflado por arquivos fora do alcance desta suíte.
+  collectCoverageFrom: [
+    'lib/domain/**/*.js',
+    'lib/infra/**/*.js',
+    '!**/*.test.js'
+  ],
   setupFilesAfterEnv: ['<rootDir>/tests/setup.db.js'],
   globalTeardown: '<rootDir>/jest.teardown.js',
   transformIgnorePatterns: [

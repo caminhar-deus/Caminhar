@@ -441,7 +441,9 @@ tests/integration/api/auth/check.test.js → pages/api/auth/check.js
 tests/integration/api/auth/login.test.js → lib/auth/auth.js
 tests/integration/api/auth/login.test.js → lib/cache/cache.js
 tests/integration/api/auth/login.test.js → pages/api/auth/login.js
+tests/integration/api/auth/logout.test.js → lib/infra/db.js
 tests/integration/api/auth/logout.test.js → pages/api/auth/logout.js
+tests/integration/api/auth/logout.test.js → tests/mocks/db-module.js
 tests/integration/api/auth/refresh.test.js → lib/auth/auth.js
 tests/integration/api/auth/refresh.test.js → lib/infra/logger.js
 tests/integration/api/auth/refresh.test.js → pages/api/auth/refresh.js
@@ -562,6 +564,7 @@ tests/unit/components/Admin/TextAreaField.test.js → components/Admin/fields/Te
 tests/unit/components/Admin/TextField.test.js → components/Admin/fields/TextField.js
 tests/unit/components/Admin/ToggleField.test.js → components/Admin/fields/ToggleField.js
 tests/unit/components/Admin/Tools/IntegrityCheck.test.js → components/Admin/Tools/IntegrityCheck.js
+tests/unit/components/Admin/Tools/IntegrityCheck.test.js → tests/helpers/console.js
 tests/unit/components/Admin/Tools/IntegrityCheck.test.js → tests/mocks/fetch.js
 tests/unit/components/Admin/Tools/RateLimitViewer.test.js → components/Admin/Tools/RateLimitViewer.js
 tests/unit/components/Admin/Tools/RateLimitViewer.test.js → tests/helpers/index.js

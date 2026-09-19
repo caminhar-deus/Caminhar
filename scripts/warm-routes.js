@@ -33,9 +33,10 @@
  * ## Integração com Cypress
  *
  *   npm run warm-routes              # Apenas pré-aquecimento
+ *   npm run cypress:run              # Pré-aquece (hook precypress:run) e executa testes
  *   npm run test:e2e                 # Pré-aquece e executa testes
- *   npm run test:e2e:record          # Pré-aquece e executa com gravação
- *   npm run cypress:run              # Apenas executa testes (sem pré-aquecimento)
+ *   npm run test:e2e:record          # Pré-aquece e executa com gravação (requer CYPRESS_RECORD_KEY)
+ *   npm run cypress:open             # Interface interativa (sem pré-aquecimento)
  */
 
 const BASE_URL = (process.argv

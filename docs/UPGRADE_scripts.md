@@ -337,4 +337,10 @@
 
 ---
 
+### `scripts/warm-routes.js` — comentário de integração com Cypress alinhado aos hooks do npm
+
+**Descrição:** O bloco de comentário `## Integração com Cypress` foi atualizado para refletir o fluxo atual: `npm run cypress:run` pré-aquece as rotas por meio do hook `precypress:run` (e, por delegação, `npm run test:e2e` e `npm run test:e2e:record` também); `test:e2e:record` passou a exigir a variável `CYPRESS_RECORD_KEY`; `npm run cypress:open` permanece sem pré-aquecimento. Nenhuma alteração de comportamento na execução do script.
+
+---
+
 > 📝 Este documento é analítico — as seções 1–8 servem como guia para futuras refatorações e correções; a seção "Implementações Aplicadas" registra as implementações realizadas após a elaboração deste relatório.
