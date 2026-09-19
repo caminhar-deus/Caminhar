@@ -38,12 +38,34 @@ export default {
   coverageReporters: ['text', 'lcov', 'html'],
 
   // ✅ Threshold mínimo de cobertura com buffer de segurança
+  // 'global' vale para o conjunto de todos os arquivos coletados.
+  // Cada grupo por diretório (chave terminando em '/') vale para a cobertura
+  // AGREGADA dos arquivos daquele diretório, impedindo que uma regressão
+  // concentrada em um módulo crítico passe despercebida na média global.
   coverageThreshold: {
     global: {
       branches: 80,
       functions: 85,
       lines: 90,
       statements: 90
+    },
+    'lib/domain/': {
+      branches: 78,
+      functions: 95,
+      lines: 95,
+      statements: 95
+    },
+    'pages/api/admin/': {
+      branches: 80,
+      functions: 95,
+      lines: 90,
+      statements: 90
+    },
+    'components/Admin/fields/': {
+      branches: 88,
+      functions: 95,
+      lines: 95,
+      statements: 95
     }
   },
 

@@ -27,4 +27,17 @@ describe('TextField Component', () => {
     fireEvent.change(screen.getByLabelText('Teste'), { target: { value: 'novo valor' } });
     expect(onChange).toHaveBeenCalled();
   });
+
+  it('deve normalizar value null para string vazia mantendo o input controlado', () => {
+    const onChange = jest.fn();
+    render(<TextField name="nome" label="Nome" value={null} onChange={onChange} />);
+
+    const input = screen.getByLabelText('Nome');
+    expect(input).toHaveValue('');
+
+    // Como o value é controlado (resolvido para ''), o DOM não mantém valor sem atualização de estado
+    fireEvent.change(input, { target: { value: 'novo valor' } });
+    expect(onChange).toHaveBeenCalled();
+    expect(input).toHaveValue('');
+  });
 });

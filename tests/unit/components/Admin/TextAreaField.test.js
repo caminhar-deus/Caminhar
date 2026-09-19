@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, jest } from '@jest/globals';
 import TextAreaField from '../../../../components/Admin/fields/TextAreaField.js';
 
@@ -24,5 +24,18 @@ describe('TextAreaField Component', () => {
     render(<TextAreaField name="desc" label="Desc" value="" onChange={jest.fn()} />);
     const textarea = screen.getByRole('textbox');
     expect(textarea).toHaveAttribute('rows', '3'); // Padrão
+  });
+
+  it('deve normalizar value null para string vazia mantendo o textarea controlado', () => {
+    const onChange = jest.fn();
+    render(<TextAreaField name="desc" label="Desc" value={null} onChange={onChange} />);
+
+    const textarea = screen.getByRole('textbox');
+    expect(textarea).toHaveValue('');
+
+    // Como o value é controlado (resolvido para ''), o DOM não mantém valor sem atualização de estado
+    fireEvent.change(textarea, { target: { value: 'novo valor' } });
+    expect(onChange).toHaveBeenCalled();
+    expect(textarea).toHaveValue('');
   });
 });

@@ -17,6 +17,9 @@ export default {
   testMatch: ['**/*.db.test.js'],
   testTimeout: 30000,
   collectCoverage: false,
+  // Diretório próprio para não sobrescrever o relatório da suíte principal
+  // (que usa 'coverage' e é consumido por análise de cobertura/CI).
+  coverageDirectory: 'coverage-db',
   setupFilesAfterEnv: ['<rootDir>/tests/setup.db.js'],
   globalTeardown: '<rootDir>/jest.teardown.js',
   transformIgnorePatterns: [
