@@ -320,6 +320,12 @@ Essa alteração corrige o problema de testes de carga que falhavam com erro 403
 
 ---
 
+### `eslint.config.js` — `coverage-db/` incluído nos diretórios ignorados
+
+**Descrição:** O `eslint.config.js` passou a ignorar `coverage-db/**`, junto de `coverage/**`. O diretório é gerado pela suíte com banco real (`coverageDirectory: 'coverage-db'` em `jest.config.db.js`) e já era ignorado pelo Git, mas não constava na lista `ignores` do flat config: o `eslint .` (e, portanto, `npm run lint` e `lint:log`, que usa `set -o pipefail`) percorria os assets do relatório HTML do Istanbul em `coverage-db/lcov-report/` (`base.css` e `block-navigation.js`), reportando 17 erros de CSS (`css/no-important`, `css/no-empty-blocks`, `css/font-family-fallbacks`) e 1 warning (`Unused eslint-disable directive`), com exit code 1. Nenhuma regra de lint foi alterada — a validação dos arquivos do projeto permanece integral.
+
+---
+
 ## Resumo das Recomendações
 
 | Prioridade | Item | Arquivo(s) | Descrição |

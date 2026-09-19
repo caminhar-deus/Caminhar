@@ -222,7 +222,7 @@ A raiz do projeto concentra **31 arquivos** (excluindo subpastas e arquivos bloq
 
 **Propósito:** Configuração do ESLint (Flat Config) para JS, JSX, JSON, Markdown e CSS.
 
-**Funcionalidades:** Regras por tipo de arquivo (JS geral, Cypress, React/JSX, Jest, k6, JSON, Markdown, CSS). Parser Babel para JSX. Globais específicos para cada contexto. Ignora `.next`, `out`, `build`, `reports`, `coverage`, `cypress/videos`, `cypress/screenshots`, `data`, `public/uploads`, `.agents`, `docs`, `package-lock.json`.
+**Funcionalidades:** Regras por tipo de arquivo (JS geral, Cypress, React/JSX, Jest, k6, JSON, Markdown, CSS). Parser Babel para JSX. Globais específicos para cada contexto. Ignora `.next`, `out`, `build`, `reports`, `coverage`, `coverage-db`, `cypress/videos`, `cypress/screenshots`, `data`, `public/uploads`, `.agents`, `docs`, `package-lock.json`.
 
 ---
 
