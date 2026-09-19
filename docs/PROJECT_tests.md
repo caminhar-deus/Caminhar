@@ -143,7 +143,7 @@ Testes de endpoints públicos e CRUD de recursos. Usam `node-mocks-http` + mocks
 |---------|-----------|
 | `audit.test.js` | Testa `logActivity` do domínio de auditoria (INSERT em activity_logs) |
 | `cleanup-test-data.test.js` | Testa limpeza de dados de teste (inclui supressão e validação do log de erro esperado em falha de banco) |
-| `dicas.test.js` | CRUD de dicas |
+| `dicas.test.js` | CRUD de dicas (paginação: 400 para parâmetros inválidos e `page`/`limit` explícitos) |
 | `login.test.js` | Fluxo de login |
 | `musicas.create.test.js` | Criação de músicas |
 | `musicas.delete.test.js` | Exclusão de músicas |
@@ -160,7 +160,7 @@ Testes de endpoints públicos e CRUD de recursos. Usam `node-mocks-http` + mocks
 | `posts.integration.test.js` | Integração de posts |
 | `posts.test.js` | CRUD principal de posts (usa `testPublicGetEndpoint` do `crud-test.js` com `skipMethodNotAllowed`; casos específicos em `customTests`) |
 | `posts.update.api.test.js` | Atualização de posts |
-| `products.test.js` | CRUD de produtos |
+| `products.test.js` | CRUD de produtos (paginação pública e admin: 400 para parâmetros inválidos e repasse de `page`/`limit` ao domínio) |
 | `settings.general.test.js` | Testes gerais de configurações |
 | `settings.test.js` | CRUD de configurações |
 | `stats.test.js` | Estatísticas |
@@ -201,7 +201,7 @@ Testes de endpoints administrativos com autenticação.
 |---------|-----------|
 | `check.test.js` | Verificação de autenticação |
 | `login.test.js` | Login |
-| `logout.test.js` | Logout |
+| `logout.test.js` | Logout (revogação do refresh token no banco via cookie e limpeza dos cookies `token` e `refreshToken`, inclusive quando a revogação falha) |
 | `refresh.test.js` | Renovação de access token via refresh token (cookie/body) |
 
 ### 4.4 Autenticação v1 (`/tests/integration/auth/`)
@@ -270,7 +270,7 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 
 | Arquivo | Propósito |
 |---------|-----------|
-| `IntegrityCheck.test.js` | Verificação de integridade |
+| `IntegrityCheck.test.js` | Verificação de integridade do sistema (banco, cache, armazenamento, backup e sistema): estados de erro e retry, resposta sem JSON, 401, refresh manual e auto-refresh de 30s |
 | `RateLimitViewer.test.js` | Visualizador de rate limit: IPs bloqueados, whitelist, auditoria com busca/paginação, estados de erro, 401 em todas as rotas, refresh manual e auto-refresh de 15s |
 
 ### 5.3 Componentes de Funcionalidades (`/tests/unit/components/Features/`)

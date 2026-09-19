@@ -55,6 +55,32 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       expect(res._getStatusCode()).toBe(200);
       expect(getPaginatedProducts).toHaveBeenCalledWith(1, 10, { search: '', minPrice: '', maxPrice: '' });
     });
+
+    it('deve retornar 400 para parâmetros de paginação inválidos', async () => {
+      const { req, res } = createMocks({
+        method: 'GET',
+        query: { public: 'true', page: '-1' }
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(400);
+    });
+
+    it('deve repassar page e limit explícitos para o domínio', async () => {
+      getPaginatedProducts.mockResolvedValueOnce({
+        data: [{ id: 2, name: 'Boné' }],
+        pagination: { page: 2, limit: 5, total: 6 }
+      });
+
+      const { req, res } = createMocks({
+        method: 'GET',
+        query: { public: 'true', page: '2', limit: '5' }
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      expect(getPaginatedProducts).toHaveBeenCalledWith(2, 5, { search: '', minPrice: '', maxPrice: '' });
+    });
   });
 
   describe('GET - Admin (autenticado)', () => {
@@ -79,6 +105,17 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       const { req, res } = createMocks({ method: 'GET' });
       await handler(req, res);
       expect(res._getStatusCode()).toBe(401);
+    });
+
+    it('deve retornar 400 para parâmetros de paginação inválidos', async () => {
+      const adminUser = userFactory({ role: 'admin' });
+      getAuthToken.mockReturnValue('admin-token');
+      verifyToken.mockReturnValue({ userId: adminUser.id, role: adminUser.role });
+
+      const { req, res } = createMocks({ method: 'GET', query: { limit: '101' } });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(400);
     });
   });
 

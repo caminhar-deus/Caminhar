@@ -373,4 +373,36 @@ Os itens abaixo foram implementados após a elaboração deste relatório. As re
 
 ---
 
+### 8.20 Expansão de cobertura do teste de `IntegrityCheck` (87,54% → 99,64%)
+
+**Arquivo:** `tests/unit/components/Admin/Tools/IntegrityCheck.test.js`
+
+**Descrição:** `IntegrityCheck.js` reportava 87,54% de statements/lines (246/281), 33,33% de branches (21/63) e **60% de functions** (3/5), pois os 4 casos existentes exercitavam apenas o caminho feliz (render inicial, status geral saudável, listagem dos checks retornados pela API e detalhes do sistema). O teste foi expandido de 4 para 14 casos: estado de erro com recuperação via "Tentar Novamente" (reintento com resposta bem-sucedida), mensagem de fallback quando o erro HTTP não traz `message` (erro 503 → `Erro 503 ao carregar integridade`), falha de rede (`mockFetchNetworkError`), resposta sem JSON (`content-type` `text/html`) e resposta sem `content-type`, sessão expirada (401), refresh manual (dados atualizados, endpoint e credenciais da requisição verificados, e retorno do botão ao estado normal), estado "Atualizando..." com botão desabilitado, auto-refresh de 30s com `jest.useFakeTimers` e interrupção do auto-refresh ao desmontar o componente. Como `window.location` e `window.location.reload` são somente leitura no jsdom (`Object.defineProperty` lança `TypeError`) e o `reload()` real emite o `jsdomError` "Not implemented: navigation (except hash changes)" de forma síncrona, a navegação do caso 401 passou a ser validada por essa evidência capturada no spy de `console.error` do helper `suppressConsoleError()`, somada à ausência do estado de erro.
+
+**Resultado:** `IntegrityCheck.js` passou de 87,54% a **99,64%** de statements/lines (280/281), de 60% a **100%** de functions (5/5) e de 33,33% a **62,33%** de branches (48/77); a única linha não coberta é o `case default` de `renderDetails` (linha 172). Cobertura global: 95,16% statements/lines, 87,71% branches e 94,02% functions, com `npm run test:coverage` retornando status 0 e 1200 testes aprovados (180 suites).
+
+---
+
+### 8.21 Expansão de cobertura do teste de `logout` (68,42% → 100%)
+
+**Arquivo:** `tests/integration/api/auth/logout.test.js`
+
+**Descrição:** `pages/api/auth/logout.js` reportava 68,42% de statements/lines (13/19), **50% de branches** (1/2) e 100% de functions, pois o único caso existente chamava o handler sem cookie (`createMocks({ method: 'POST' })`), de modo que `getRefreshTokenCookie()` retornava `undefined` e o bloco `if (refreshToken)` (linhas 7-12) — revogação do refresh token via `revokeRefreshToken()` e o `catch` que impede a falha de revogação de bloquear o logout — nunca era executado. O teste foi expandido de 1 para 3 casos: adicionado `jest.mock` de `lib/infra/db.js` reutilizando `tests/mocks/db-module.js` (`mockDb()`), no padrão já adotado em `tests/integration/api/admin/`, e dois casos novos — logout com cookie presente (verifica a chamada de `query` com `UPDATE refresh_tokens SET revoked = true` e o token do cookie, a limpeza dos cookies `token=;` e `refreshToken=;` e o retorno 200) e falha na revogação (`query` rejeitando) concluindo o logout com 200 e cookies limpos. O caso original foi preservado sem alterações.
+
+**Resultado:** `logout.js` passou de 68,42% a **100%** de statements/lines (19/19), de 50% a **100%** de branches (3/3) e 100% de functions, sem linhas descobertas (antes: 7-12); `revokeRefreshToken` (`lib/auth/auth.js`, linhas 104-109) deixou de estar descoberto. Cobertura global: 95,22% statements/lines, 87,75% branches e 94,2% functions, com `npm run test:coverage` retornando status 0 e 1202 testes aprovados (180 suites).
+
+---
+
+### 8.22 Expansão de cobertura do teste de paginação da API (96,87% → 100%)
+
+**Arquivos:**
+- `tests/integration/api/dicas.test.js`
+- `tests/integration/api/products.test.js`
+
+**Descrição:** `pages/api/helper/pagination.js` reportava 96,87% de statements/lines (62/64), **50% de branches** (3/6) e 100% de functions, pois todas as chamadas de `paginate()` nos testes ocorriam sem `page`/`limit`, de modo que `parseInt(undefined)` resultava em `NaN` e os defaults 1/10 eram aplicados — nem o caminho de parsing numérico válido nem o `throw new Error('INVALID_PAGINATION_PARAMS')` (linhas 28-29) eram executados. Como consequência, os tratamentos 400 de paginação inválida de `pages/api/dicas.js` (linhas 48-49) e de `pages/api/products.js` (`handlePublicGet`, linhas 39-40, e `handleAdminGet`, linhas 55-56) também permaneciam descobertos. Em `dicas.test.js` (de 3 para 5 casos), foram adicionados o 400 por parâmetros inválidos (`page: '-1'`, com verificação do corpo `{ error, message }`) e a paginação com `page`/`limit` explícitos (`page: '2'`, `limit: '5'` → 200, metadados `{ page: 2, limit: 5, total: 6, totalPages: 2 }` e verificação de que a query recebeu `[5, 5]`). Em `products.test.js` (de 15 para 18 casos), foram adicionados o 400 no GET público (`page: '-1'`), o repasse de `page: '2'`/`limit: '5'` ao domínio no GET público e o 400 no GET admin (`limit: '101'`, acima do limite máximo do helper). Os casos existentes foram preservados sem alterações.
+
+**Resultado:** `pagination.js` passou de 96,87% a **100%** de statements/lines (64/64), de 50% a **100%** de branches (11/11) e 100% de functions, sem linhas descobertas (antes: 28-29); `dicas.js` passou de 88,67% a **92,45%** de statements/lines (49/53) e de 60% a **70%** de branches (7/10), com o 400 por paginação inválida agora coberto e restando apenas o 429 de rate limit (linhas 22-23 e 45-46); `products.js` passou de 84,16% a **86,87%** de statements/lines (192/221) e de 69,38% a **72,22%** de branches, com os dois tratamentos de 400 por paginação inválida cobertos. Cobertura global: 95,28% statements/lines, 87,92% branches e 94,2% functions, com `npm run test:coverage:log` retornando status 0 e 1207 testes aprovados (180 suites).
+
+---
+
 > **Nota:** Este documento é um relatório de análise. As ações listadas nas seções 1–7 são recomendações para revisão e priorização futura; a seção 8 registra as implementações aplicadas sobre o tema após a elaboração deste relatório.

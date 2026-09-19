@@ -40,6 +40,44 @@ describe('API Pública - Dicas do Dia (/api/dicas)', () => {
     });
   });
 
+  it('deve retornar 400 para parâmetros de paginação inválidos', async () => {
+    const { req, res } = createMocks({ method: 'GET', query: { page: '-1' } });
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(400);
+
+    const response = JSON.parse(res._getData());
+    expect(response).toEqual({
+      error: 'Bad Request',
+      message: 'Parâmetros de paginação inválidos',
+    });
+  });
+
+  it('deve paginar com page e limit explícitos', async () => {
+    const mockDicas = [{ id: 2, name: 'Dica 2', content: 'Conteúdo' }];
+
+    query.mockResolvedValueOnce({ rows: [{ count: '6' }] }); // COUNT
+    query.mockResolvedValueOnce({ rows: mockDicas });         // SELECT
+
+    const { req, res } = createMocks({ method: 'GET', query: { page: '2', limit: '5' } });
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(200);
+
+    const response = JSON.parse(res._getData());
+    expect(response.data).toEqual(mockDicas);
+    expect(response.pagination).toEqual({
+      page: 2,
+      limit: 5,
+      total: 6,
+      totalPages: 2,
+    });
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining('LIMIT $1 OFFSET $2'),
+      [5, 5]
+    );
+  });
+
   it('deve retornar 500 se ocorrer um erro no banco', async () => {
     query.mockRejectedValueOnce(new Error('Erro DB'));
 
