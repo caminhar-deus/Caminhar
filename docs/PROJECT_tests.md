@@ -272,7 +272,7 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | Arquivo | Propósito |
 |---------|-----------|
 | `IntegrityCheck.test.js` | Verificação de integridade do sistema (banco, cache, armazenamento, backup e sistema): estados de erro e retry, resposta sem JSON, 401, refresh manual e auto-refresh de 30s |
-| `RateLimitViewer.test.js` | Visualizador de rate limit: IPs bloqueados, whitelist, auditoria com busca/paginação, estados de erro, 401 em todas as rotas, refresh manual e auto-refresh de 15s |
+| `RateLimitViewer.test.js` | Visualizador de rate limit: IPs bloqueados, whitelist, auditoria com busca/paginação, estados de erro, 401 em todas as rotas, refresh manual e auto-refresh de 15s (microtasks do auto-refresh aguardadas dentro de `await act`; 401 com `console.error` suprimido por `suppressConsoleError`) |
 
 ### 5.3 Componentes de Funcionalidades (`/tests/unit/components/Features/`)
 

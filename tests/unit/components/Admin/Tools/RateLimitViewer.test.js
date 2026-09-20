@@ -323,6 +323,7 @@ describe('Componentes Admin - Tools - RateLimitViewer', () => {
   });
 
   it('deve recargar a página quando a sessión expira (401 em bloqueados)', async () => {
+    const consoleErrorSpy = suppressConsoleError();
     setupRateLimitMock(fetchMock, { blocked: { status: 401, ok: false, json: async () => ({}) } });
 
     render(<RateLimitViewer />);
@@ -332,9 +333,11 @@ describe('Componentes Admin - Tools - RateLimitViewer', () => {
     await act(async () => { await global.wait(50); });
     expect(screen.queryByText('❌ Erro ao carregar dados de rate limit')).not.toBeInTheDocument();
     expect(screen.queryByText('Nenhum IP bloqueado no momento.')).toBeInTheDocument();
+    consoleErrorSpy?.mockRestore();
   });
 
   it('deve recargar a página quando a sessión expira (401 em whitelist)', async () => {
+    const consoleErrorSpy = suppressConsoleError();
     setupRateLimitMock(fetchMock, { whitelist: { status: 401, ok: false, json: async () => ({}) } });
 
     render(<RateLimitViewer />);
@@ -344,6 +347,7 @@ describe('Componentes Admin - Tools - RateLimitViewer', () => {
     await act(async () => { await global.wait(50); });
     expect(screen.queryByText('❌ Erro ao carregar dados de rate limit')).not.toBeInTheDocument();
     expect(screen.queryByText('Nenhum IP bloqueado no momento.')).toBeInTheDocument();
+    consoleErrorSpy?.mockRestore();
   });
 
   it('deve redirigir ao login quando a sessión expira na auditoría (401)', async () => {
@@ -404,7 +408,7 @@ describe('Componentes Admin - Tools - RateLimitViewer', () => {
       await act(async () => {});
       expect(global.fetch).toHaveBeenCalledTimes(2);
 
-      act(() => { jest.advanceTimersByTime(15000); });
+      await act(async () => { jest.advanceTimersByTime(15000); });
 
       expect(global.fetch).toHaveBeenCalledTimes(4);
     } finally {
