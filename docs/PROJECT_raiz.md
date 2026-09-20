@@ -44,7 +44,7 @@ A raiz do projeto concentra **31 arquivos** (excluindo subpastas e arquivos bloq
 **Propósito:** Manifesto do projeto. Define nome (`caminhar`), versão (`1.4.0`), engine (`Node.js 24.18.0`, `npm 12.0.2`), tipo de módulo (`ES Modules`), scripts, dependências e overrides.
 
 **Principais funcionalidades:**
-- **63 scripts** organizados em categorias: dev, build, lint, testes unitários, testes de banco, testes E2E (Cypress), testes de carga (k6, centralizados no orquestrador), gerenciamento de banco, backup, utilitários, segurança.
+- **66 scripts** organizados em categorias: dev, build, lint, testes unitários, testes de banco, testes E2E (Cypress), testes de carga (k6, centralizados no orquestrador), gerenciamento de banco, backup, utilitários, segurança, lint de workflows e diagnóstico.
 - **Dependências principais:** Next.js 16, React 19, bcryptjs, jsonwebtoken, pg, @upstash/redis, zod, sharp, formidable, react-hot-toast, web-vitals.
 - **DevDependencies:** Jest 30, Cypress 15, ESLint 10, Knip 6, Testing Library, Faker, Testcontainers, next-sitemap, dependency-cruiser.
 - **Overrides:** `tar`, `glob`, `minimatch`, `postcss`, `uuid`, `whatwg-encoding` — documentados via campo `_overridesReason`.
@@ -56,6 +56,7 @@ A raiz do projeto concentra **31 arquivos** (excluindo subpastas e arquivos bloq
 - **Flags de execução:** `test:ci` usa `jest --ci --coverage --bail`; `test:db:unit` usa `--testPathPatterns` com padrão ancorado ao arquivo `tests/unit/lib/db.test.js`.
 - **Scripts de banco:** `test:db:container` (PostgreSQL real via Testcontainers) e `test:db:unit` (unitário com `pg` mockado, no config jsdom padrão). O nome `test:db:unit` substitui o antigo `test:db`.
 - **Script `warm:api`:** pré-aquecimento das rotas de API públicas (`node scripts/warm-routes.js --api`), para execução em terminal auxiliar assim que o `npm run dev` for iniciado.
+- **Lint de workflows e diagnóstico:** `lint:workflows` executa o actionlint sobre `.github/workflows/` e `.github/actions/`; `diag:lsp` e `diag:reusable-workflow` executam os utilitários de `scripts/diagnostics/` (ver `PROJECT_scripts.md` e item M de `PENDENCIAS_scripts_testes.md`).
 
 > ⚠️ **Inconsistência:** o `engines` declara Node 24.18.0/npm 12.0.2, mas o `README.md` informa Node 24.16.0/npm 11.17.0.
 
@@ -284,11 +285,11 @@ A raiz do projeto concentra **31 arquivos** (excluindo subpastas e arquivos bloq
 
 ### 4.2 `pr-coverage.yml`
 
-**Localização:** `/home/qa/Projeto/Caminhar/pr-coverage.yml`
+**Localização:** `/home/qa/Projeto/Caminhar/.github/workflows/pr-coverage.yml`
 
 **Propósito:** Verificação de cobertura mínima em PRs com thresholds de 80% (branches), 85% (functions) e 90% (lines/statements).
 
-**Funcionalidades:** Estrutura em 2 jobs: `call-test-base` (chama o workflow reutilizável `test-base.yml` com `skip-k6: true` e `seed-db: false`) e `coverage-report` (executa Knip, gerencia comentários no PR e faz upload do relatório de cobertura). Os serviços PostgreSQL e Redis são providos pelo `test-base.yml`.
+**Funcionalidades:** Estrutura em 2 jobs: `coverage` (job autocontido — checkout, `./.github/actions/setup`, `jest --coverage` com `set -o pipefail` e upload dos artefatos `coverage-output` e `coverage-html`) e `coverage-report` (`needs: coverage`, executa o lint dos workflows com `actionlint`, o Knip, gerencia os comentários do PR e republica o relatório HTML). Por rodar em jsdom, o job de cobertura não depende do workflow reutilizável `test-base.yml`: não usa os serviços PostgreSQL/Redis, o `setup-db`, o build da aplicação nem o k6 — nem a referência local `uses: ./.github/workflows/test-base.yml`, que o editor sinaliza como `Unable to find reusable workflow` quando o language server inicia sem contexto de repositório (ver item M de `PENDENCIAS_scripts_testes.md`).
 
 ---
 

@@ -18,8 +18,11 @@
     "lint": "eslint .",
     "lint:log": "mkdir -p logs && bash -c 'set -o pipefail; eslint . 2>&1 | tee logs/eslint.log'",
     "lint:fix": "eslint . --fix",
+    "lint:workflows": "bash scripts/diagnostics/lint-workflows.sh",
     "knip": "knip",
     "knip:watch": "knip --watch",
+    "diag:lsp": "node scripts/diagnostics/lsp-reusable-workflow.js",
+    "diag:reusable-workflow": "esbuild scripts/diagnostics/repro-reusable-workflow.js --bundle --platform=node --format=cjs --outfile=node_modules/.cache/diagnostics/repro-reusable-workflow.cjs --log-level=error && node node_modules/.cache/diagnostics/repro-reusable-workflow.cjs",
     "depcruise:core": "depcruise --config .dependency-cruiser.core.cjs .",
     "depcruise:extras": "depcruise --config .dependency-cruiser.extras.cjs .",
     "depcruise:isolados": "depcruise --config .dependency-cruiser.isolados.cjs .",
@@ -104,6 +107,8 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@actions/languageservice": "^0.3.61",
+    "@actions/workflow-parser": "^0.3.61",
     "@babel/eslint-parser": "^8.0.6",
     "@babel/preset-env": "^8.0.6",
     "@babel/preset-react": "^8.0.1",
@@ -121,6 +126,7 @@
     "@testing-library/user-event": "^14.6.7",
     "cypress": "^16.1.0",
     "dependency-cruiser": "^18.3.1",
+    "esbuild": "^0.28.2",
     "eslint": "^10.11.0",
     "eslint-plugin-cypress": "^7.0.2",
     "globals": "^17.12.0",
@@ -129,7 +135,10 @@
     "jest-watch-typeahead": "^3.0.1",
     "knip": "^6.37.0",
     "next-sitemap": "^4.2.3",
-    "node-mocks-http": "^1.18.1"
+    "node-mocks-http": "^1.18.1",
+    "vscode-languageserver-textdocument": "^1.0.14",
+    "vscode-uri": "^3.2.0",
+    "yaml": "^2.9.1"
   },
   "overrides": {
     "tar": "^7.4.3",

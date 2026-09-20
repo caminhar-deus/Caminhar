@@ -4,24 +4,87 @@ on:
   pull_request:
     branches: [ main ]
 
+# Uma execução por PR: sem isso, dois pushes próximos geram execuções
+# concorrentes e o `coverage-report` da mais antiga apaga o comentário que a
+# mais nova acabou de publicar, republicando a saída de cobertura desatualizada.
+concurrency:
+  group: pr-coverage-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
-  call-test-base:
-    uses: ./.github/workflows/test-base.yml
-    with:
-      test-type: coverage
-      run-command: |
-        npx jest --coverage | tee coverage-output.txt
-      skip-k6: true
-      seed-db: false
-    secrets: inherit
+  # Job autocontido de propósito — este é o único job do repositório que não
+  # chama o workflow reutilizável `test-base.yml` (os workflows de carga,
+  # segurança e CI continuam chamando).
+  #
+  # 1. A suíte de cobertura roda em jsdom e não consome nada do que o
+  #    `test-base.yml` provisiona: serviços PostgreSQL/Redis, `setup-db`, build
+  #    da aplicação e k6. Chamá-lo obrigava o runner a subir serviços e a
+  #    construir/levantar o Next.js só para executar o jest.
+  # 2. Referências locais a workflows reutilizáveis são obrigatoriamente do tipo
+  #    `uses: ./.github/workflows/x.yml` e o language server da extensão
+  #    "GitHub Actions" as resolve lendo o arquivo a partir do contexto de
+  #    repositório recebido na inicialização. Quando o servidor sobe sem esse
+  #    contexto, a leitura falha e o parser converte a falha em "Unable to find
+  #    reusable workflow" — um falso positivo que aparece no editor mesmo com o
+  #    workflow válido e executando normalmente no GitHub. Referências locais de
+  #    *actions* (`.github/actions/*`) não passam por esse caminho e seguem
+  #    funcionando.
+  #
+  # Se a cobertura voltar a depender do ambiente compartilhado, o caminho é
+  # reintegrar o job ao `test-base.yml` (`test-type: coverage`, `skip-k6: true`,
+  # `skip-db-setup: true`, `seed-db: false`) ciente do aviso do editor.
+  coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: ./.github/actions/setup
+
+      # `set -o pipefail` é o que propaga o exit code do jest: sem ele o status
+      # do step seria o do `tee` (sempre zero) e uma cobertura abaixo do mínimo
+      # passaria como sucesso — o comentário no PR depende de o job falhar.
+      - name: Run Tests with Coverage
+        run: |
+          set -o pipefail
+          npx jest --coverage | tee coverage-output.txt
+
+      # `always()` mantém a saída publicada mesmo quando os thresholds reprovam
+      # a execução: é justamente esse arquivo que o `coverage-report` baixa para
+      # publicar o comentário no PR.
+      - name: Upload Coverage Output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-output
+          path: coverage-output.txt
+          retention-days: 7
+
+      # O relatório HTML é gerado neste runner e `coverage/` está no
+      # .gitignore, então o upload é o que permite ao `coverage-report`
+      # republicá-lo como `jest-coverage-report`.
+      - name: Upload Coverage HTML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: coverage/
+          if-no-files-found: ignore
+          retention-days: 7
 
   coverage-report:
-    needs: call-test-base
+    needs: coverage
     if: always()
     runs-on: ubuntu-latest
 
-    # Necessário para permitir que a Action crie comentários no PR
+    # Necessário para permitir que a Action crie/remova comentários no PR.
+    # Declarar `permissions` redefine todas as permissões não listadas para
+    # `none`, por isso `contents: read` (exigido pelo actions/checkout) é
+    # obrigatório: sem ele o checkout falha e o job inteiro para.
     permissions:
+      contents: read
       pull-requests: write
 
     steps:
@@ -31,27 +94,43 @@ jobs:
       - name: Setup Node.js Environment
         uses: ./.github/actions/setup
 
+      # `continue-on-error` impede que a ausência do artefato aborte o job:
+      # se os testes falharem antes de gerar a saída, o download retorna erro
+      # e os steps seguintes (comentário no PR e upload do relatório) seriam
+      # ignorados — o `if: always()` está no job, não nos steps.
       - name: Download Coverage Output
         uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           name: coverage-output
 
-      - name: Run Knip (Dead Code Analysis)
-        run: npm run knip
+      # O relatório HTML é gerado no runner do job de testes (coverage/ está
+      # no .gitignore e não vem no checkout), então precisa ser baixado aqui
+      # antes de ser republicado em `Upload Coverage HTML Report`.
+      - name: Download Coverage HTML Report
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: coverage-html
+          path: coverage
 
       - name: Remove Old Coverage Comments
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            // A API pagina em 30 comentários por padrão; sem `per_page` o
+            // comentário antigo de cobertura deixaria de ser encontrado em PRs
+            // movimentados e o step acumularia comentários duplicados.
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
+              per_page: 100,
             });
             const botComments = comments.filter(c => 
-              c.user.type === 'Bot' && 
-              c.body.includes('### ❌ Cobertura de Testes Abaixo do Mínimo Exigido')
+              c.user?.type === 'Bot' && 
+              (c.body || '').includes('### ❌ Cobertura de Testes Abaixo do Mínimo Exigido')
             );
             for (const comment of botComments) {
               await github.rest.issues.deleteComment({
@@ -62,13 +141,42 @@ jobs:
             }
 
       - name: Post PR Comment on Failure
-        if: ${{ needs.call-test-base.result == 'failure' }}
+        if: ${{ needs.coverage.result == 'failure' }}
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            const output = fs.readFileSync('coverage-output.txt', 'utf8');
+
+            // A API de comentários do GitHub aceita no máximo 65536 caracteres
+            // por comentário; o restante do template (título, <details>, cerca do
+            // bloco) consome parte desse orçamento.
+            const MAX_CHARS = 60000;
+
+            let output = fs.existsSync('coverage-output.txt')
+              ? fs.readFileSync('coverage-output.txt', 'utf8')
+              : '(saída de cobertura indisponível: o job de testes falhou antes de gerar coverage-output.txt)';
+
+            // A saída entra no template literal como VALOR (`${output}`), não é
+            // reavaliada como código: crases e `${` do texto não quebram o script
+            // e não devem ser "escapados" — o escape só acrescentaria barras
+            // invertidas visíveis no comentário publicado.
+
+            // A saída desta suíte passa de 170 KB e o começo é ruído (linhas PASS
+            // e console.error de cada suíte). O que explica a reprovação — a
+            // tabela de cobertura e as linhas "coverage threshold ... not met" —
+            // fica no FIM, então é o fim que precisa sobreviver ao corte.
+            const coverageTableHeader = output.indexOf('Uncovered Line #s');
+            if (coverageTableHeader !== -1) {
+              // Da linha que abre a tabela de cobertura até o fim: a tabela, os
+              // thresholds violados e o resumo da execução.
+              output = output.slice(output.lastIndexOf('\n', coverageTableHeader) + 1);
+            }
+
+            if (output.length > MAX_CHARS) {
+              const truncationMarker = '... (início da saída truncado)\n\n';
+              output = truncationMarker + output.slice(-(MAX_CHARS - truncationMarker.length));
+            }
 
             const comment = `### ❌ Cobertura de Testes Abaixo do Mínimo Exigido\nSua alteração resultou em uma cobertura de testes abaixo dos thresholds definidos (Branches: 80% | Functions: 85% | Lines: 90% | Statements: 90%).\n\n<details>\n<summary>📊 Ver Detalhes da Cobertura</summary>\n\n\`\`\`text\n${output}\n\`\`\`\n</details>`;
 
@@ -85,4 +193,18 @@ jobs:
         with:
           name: jest-coverage-report
           path: coverage/
+          if-no-files-found: ignore
           retention-days: 7
+
+      # As duas análises estáticas vêm depois do comentário e do upload de
+      # propósito: ambas podem reprovar a execução e, se viessem antes,
+      # suprimiriam os steps acima. O `actionlint` é determinístico e rápido —
+      # valida os workflows e as actions compostas do repositório (sintaxe,
+      # expressões, `needs`, `with:` de workflows reutilizáveis, incluindo os
+      # locais, e shellcheck nos `run:` quando disponível) — e o `knip` fica por
+      # último porque retorna exit code 1 ao encontrar código morto.
+      - name: Run actionlint (Workflow Lint)
+        run: npm run lint:workflows
+
+      - name: Run Knip (Dead Code Analysis)
+        run: npm run knip

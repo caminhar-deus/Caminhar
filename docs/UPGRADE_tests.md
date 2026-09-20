@@ -417,4 +417,14 @@ Os itens abaixo foram implementados após a elaboração deste relatório. As re
 
 ---
 
+### 8.24 Cobertura automatizada do step de comentário de cobertura do `pr-coverage.yml`
+
+**Arquivo:** `tests/unit/github-workflows/pr-coverage-comment.test.js`
+
+**Descrição:** O step "Post PR Comment on Failure" de `.github/workflows/pr-coverage.yml` monta o corpo do comentário por um script embutido no YAML, que trunca a saída de `jest --coverage` (mais de 170 KB) dentro do limite de 65536 caracteres da API de comentários do GitHub. O teste extrai esse script do próprio workflow e o executa como o `actions/github-script` executa — com `github` e `context` simulados — verificando o comentário publicado: limite de caracteres respeitado; tabela de cobertura, motivo do threshold e resumo do Jest preservados; ruído do começo (`PASS` e `console.error` de `act(...)`) descartado; fim da saída preservado quando a suíte quebra antes de imprimir a cobertura; crases, `${` e barras invertidas não corrompidos; e o marcador pesquisado pelo step "Remove Old Coverage Comments" presente. A amostra é virtual (o `require('fs')` do script recebe um shim que devolve o conteúdo em memória), então o teste não escreve em disco. Inclui controle negativo que reprova o preparo anterior (corte pelo começo + escape do texto).
+
+**Resultado:** 13 casos aprovados em `tests/unit/github-workflows/`, sem dependência de rede, banco ou arquivos temporários.
+
+---
+
 > **Nota:** Este documento é um relatório de análise. As ações listadas nas seções 1–7 são recomendações para revisão e priorização futura; a seção 8 registra as implementações aplicadas sobre o tema após a elaboração deste relatório.

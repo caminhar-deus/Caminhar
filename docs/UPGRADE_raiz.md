@@ -281,7 +281,7 @@
 
 **Arquivo:** `/home/qa/Projeto/Caminhar/.github/workflows/test-base.yml` (subpasta)
 
-**Problema:** O `test-base.yml` é referenciado pelos workflows da raiz (`pr-coverage.yml`, `load-tests.yml`, `security-tests.yml`) mas está em `.github/workflows/` (subpasta), fora do escopo desta análise de raiz.
+**Problema:** O `test-base.yml` é referenciado pelos workflows da raiz (`load-tests.yml`, `security-tests.yml`) mas está em `.github/workflows/` (subpasta), fora do escopo desta análise de raiz. O `pr-coverage.yml`, que também o referenciava da raiz, foi movido para a mesma subpasta e passou a executar a suíte de cobertura em job próprio, sem chamada reutilizável.
 
 **Impacto:** Nenhum — apenas nota de escopo. Os workflows da raiz dependem dele, mas ele não é um arquivo da raiz.
 
@@ -323,6 +323,12 @@ Essa alteração corrige o problema de testes de carga que falhavam com erro 403
 ### `eslint.config.js` — `coverage-db/` incluído nos diretórios ignorados
 
 **Descrição:** O `eslint.config.js` passou a ignorar `coverage-db/**`, junto de `coverage/**`. O diretório é gerado pela suíte com banco real (`coverageDirectory: 'coverage-db'` em `jest.config.db.js`) e já era ignorado pelo Git, mas não constava na lista `ignores` do flat config: o `eslint .` (e, portanto, `npm run lint` e `lint:log`, que usa `set -o pipefail`) percorria os assets do relatório HTML do Istanbul em `coverage-db/lcov-report/` (`base.css` e `block-navigation.js`), reportando 17 erros de CSS (`css/no-important`, `css/no-empty-blocks`, `css/font-family-fallbacks`) e 1 warning (`Unused eslint-disable directive`), com exit code 1. Nenhuma regra de lint foi alterada — a validação dos arquivos do projeto permanece integral.
+
+---
+
+### `package.json` — scripts de lint de workflows e de diagnóstico local
+
+**Descrição:** Incluídos três scripts: `lint:workflows` (`bash scripts/diagnostics/lint-workflows.sh` — actionlint sobre `.github/workflows/` e `.github/actions/`), `diag:lsp` (`node scripts/diagnostics/lsp-reusable-workflow.js`) e `diag:reusable-workflow` (empacota `scripts/diagnostics/repro-reusable-workflow.js` com `esbuild` antes de executar). Declaradas as dependências de desenvolvimento exigidas por eles: `@actions/languageservice`, `@actions/workflow-parser`, `vscode-uri`, `vscode-languageserver-textdocument`, `yaml` e `esbuild`. O `lint:workflows` passou a ser executado no job `coverage-report` de `.github/workflows/pr-coverage.yml`.
 
 ---
 

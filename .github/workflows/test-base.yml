@@ -6,7 +6,7 @@ on:
       test-type:
         required: true
         type: string
-        description: 'Tipo de teste (load ou security)'
+        description: 'Tipo de teste (load, security ou coverage)'
       run-command:
         required: true
         type: string
@@ -21,6 +21,11 @@ on:
         type: boolean
         default: true
         description: 'Semear dados no banco de teste'
+      skip-db-setup:
+        required: false
+        type: boolean
+        default: false
+        description: 'Pular o setup do banco de teste (para suítes que não acessam o Postgres, como a de cobertura)'
       extra-steps:
         required: false
         type: string
@@ -61,7 +66,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
+      # `skip-db-setup` permite pular o setup do banco quando a suíte não o
+      # acessa (ex.: cobertura, que roda em jsdom). Sem o pulo, o step
+      # `Setup Test Database` executaria `npm run setup:test-db`, comando de
+      # setup do banco que não existe em package.json.
       - uses: ./.github/actions/setup-db
+        if: ${{ !inputs.skip-db-setup }}
         with:
           seed: ${{ inputs.seed-db && 'true' || 'false' }}
       - uses: ./.github/actions/build-app
@@ -73,9 +83,21 @@ jobs:
         name: Extra Steps
         run: ${{ inputs.extra-steps }}
       - name: Upload Coverage Output
-        if: ${{ inputs.test-type == 'coverage' }}
+        if: ${{ always() && inputs.test-type == 'coverage' }}
         uses: actions/upload-artifact@v4
         with:
           name: coverage-output
           path: coverage-output.txt
+          retention-days: 7
+
+      # O relatório HTML (coverage/) é gerado neste runner e está no .gitignore:
+      # publicá-lo aqui é o que permite ao job `coverage-report` de
+      # pr-coverage.yml reenviá-lo como `jest-coverage-report`.
+      - name: Upload Coverage HTML
+        if: ${{ always() && inputs.test-type == 'coverage' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: coverage/
+          if-no-files-found: ignore
           retention-days: 7

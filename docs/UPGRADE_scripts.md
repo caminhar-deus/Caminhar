@@ -343,4 +343,22 @@
 
 ---
 
+### `scripts/diagnostics/lint-workflows.sh` — lint dos workflows do GitHub Actions
+
+**Descrição:** Novo script que executa o actionlint (versão fixada em 1.7.12) sobre `.github/workflows/` e `.github/actions/**/action.y{a,}ml`, resolvendo o binário por `ACTIONLINT_BIN`, PATH ou cache em `node_modules/.cache/actionlint` — com download da release oficial e SHA-256 conferido (linux/darwin, amd64/arm64) quando ausente no cache. Sem argumentos, o actionlint faz a descoberta padrão; os workflows que ainda estão na raiz (`ci.yml`, `load-tests.yml`, `security-tests.yml`) são passados explicitamente. Exposto como `npm run lint:workflows` e executado no job `coverage-report` de `pr-coverage.yml`.
+
+---
+
+### `scripts/diagnostics/lsp-reusable-workflow.js` — diagnóstico do falso positivo de workflow reutilizável local
+
+**Descrição:** Novo script que sobe o language server empacotado da extensão `github.vscode-github-actions` por stdio e valida um workflow que chama outro por caminho local (`uses: ./.github/workflows/x.yml`), imprimindo os arquivos que o server pediu para ler e os diagnósticos publicados para o documento. Com `--no-repos` o server é inicializado sem contexto de repositório, reproduzindo o `Unable to find reusable workflow` do editor (item M das pendências). Exposto como `npm run diag:lsp`.
+
+---
+
+### `scripts/diagnostics/repro-reusable-workflow.js` — validação com o motor do language server
+
+**Descrição:** Novo script que valida um workflow com o `@actions/languageservice` em quatro cenários de contexto de repositório (workspace conhecido, apenas client, sem provider e leitura do arquivo falhando). O cenário com `workspaceUri` é asserção — reprova o comando se o arquivo tiver diagnóstico real (schema, expressão, input inexistente) — e os demais documentam o mecanismo do falso positivo. Exposto como `npm run diag:reusable-workflow`, que empacota o script com `esbuild` antes de executar, porque o `@actions/workflow-parser` importa JSON sem `with { type: 'json' }` e o Node 22+ recusa o módulo.
+
+---
+
 > 📝 Este documento é analítico — as seções 1–8 servem como guia para futuras refatorações e correções; a seção "Implementações Aplicadas" registra as implementações realizadas após a elaboração deste relatório.

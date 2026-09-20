@@ -9,7 +9,7 @@
 
 ## 📂 Visão Geral da Estrutura
 
-A pasta `/scripts` contém **~80 arquivos** organizados por responsabilidade:
+A pasta `/scripts` contém **~84 arquivos** organizados por responsabilidade:
 
 ```
 scripts/
@@ -142,6 +142,9 @@ Definições JSON consumidas por `init-table.js` (nome da tabela, colunas, flag 
 | `count-posts.js` | Conta total de posts. Alerta se passar de `POST_ALERT_THRESHOLD` (10), indicando possível paginação. |
 | `diagnose-hero.js` | Diagnostica a imagem principal (hero): consulta chaves `hero_image`, `site_logo`, etc. na tabela `settings` e verifica se o arquivo físico existe em `public/uploads`. |
 | `list-last-posts.js` | Lista os 5 posts mais recentes (id, title, slug, published, created_at). |
+| `lint-workflows.sh` | Lint dos arquivos do GitHub Actions com **actionlint** 1.7.12. Resolve o binário por `ACTIONLINT_BIN`, PATH ou cache em `node_modules/.cache/actionlint` (o arquivo em cache carrega a versão no nome), baixando a release oficial com SHA-256 conferido quando necessário. Sem argumentos, o actionlint descobre `.github/workflows/` e `.github/actions/**/action.y{a,}ml`; os workflows que ainda estão na raiz (`ci.yml`, `load-tests.yml`, `security-tests.yml`) são passados explicitamente. Executado por `npm run lint:workflows` — inclusive no CI, no job `coverage-report` de `pr-coverage.yml`. |
+| `lsp-reusable-workflow.js` | Sobe o language server empacotado da extensão `github.vscode-github-actions` por stdio e valida um workflow que chama outro por caminho local, imprimindo quais arquivos o server pediu para ler e os diagnósticos recebidos. `--no-repos` reproduz o falso positivo `Unable to find reusable workflow` (item M das pendências). Requer o VS Code com a extensão instalada; comando: `npm run diag:lsp`. |
+| `repro-reusable-workflow.js` | Valida o workflow com o mesmo motor do language server (`@actions/languageservice`) em 4 cenários de contexto de repositório. O cenário com `workspaceUri` é asserção: reprova o comando quando o arquivo tem diagnóstico real (schema, expressão, input inexistente). Executado como `npm run diag:reusable-workflow`, que empacota com esbuild antes de rodar — o `@actions/workflow-parser` importa JSON sem `with { type: 'json' }` e o Node 22+ recusa o módulo. |
 
 ---
 
@@ -217,7 +220,7 @@ Definições JSON consumidas por `init-table.js` (nome da tabela, colunas, flag 
 | Schemas | 4 | `schemas/*.json` |
 | Seeds | 6 | `seed-all.js`, `seed-posts.js`, `seed-musicas.js`, `seed-videos.js`, `seed-products.js`, `seed-settings.js` |
 | Inicialização | 2 | `init-server.js`, `init-table.js` |
-| Diagnósticos | 5 | `diagnostics/*` |
+| Diagnósticos | 8 | `diagnostics/*` |
 | Manutenção | 5 | `maintenance/*` |
 | Testes de Carga | 4 | `generate-load-report.js`, `run-all-load-tests-sequentially.js`, `run-load-tests.sh`, `warm-routes.js` |
 | Limpeza | 10 | `clean-*.js`, `clear-*.js` (raiz) + `cleanup.js`, `cleanup-test-data.js` (utils) |
@@ -227,7 +230,7 @@ Definições JSON consumidas por `init-table.js` (nome da tabela, colunas, flag 
 | Testes Manuais | 2 | `tests/*` |
 | CLI | 1 | `cli/validate-schema.js` |
 | Monitoramento | 1 | `monitor-disk-space.js` |
-| **Total** | **81** | — |
+| **Total** | **84** | — |
 
 ---
 

@@ -49,6 +49,7 @@ tests/
     │   ├── SEO/                      #     Componentes de SEO
     │   └── UI/                       #     Componentes de UI
     ├── domain/                       #   Lógica de domínio
+    ├── github-workflows/             #   Workflows do GitHub Actions
     ├── hooks/                        #   Hooks React
     ├── lib/                          #   Bibliotecas
     ├── pages/                        #   Páginas (API routes)
@@ -467,6 +468,12 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | `date-format.test.js` | Formatação de datas |
 | `load-env.test.js` | Carregamento de variáveis de ambiente |
 
+### 5.14 Workflows do GitHub Actions (`/tests/unit/github-workflows/`)
+
+| Arquivo | Propósito |
+|---------|-----------|
+| `pr-coverage-comment.test.js` | Executa o script embutido no step `Post PR Comment on Failure` de `.github/workflows/pr-coverage.yml` — o mesmo texto que o `actions/github-script` executa — com `github` e `context` simulados, e verifica o comentário publicado: limite de 65536 caracteres da API, tabela de cobertura e motivo do threshold preservados, ruído do começo descartado, fim da saída mantido quando a suíte quebra antes da cobertura, crases/`${`/barras invertidas não corrompidos e o marcador pesquisado pelo step de limpeza presente. O arquivo amostra é virtual (shim de `require('fs')`), então o teste não escreve em disco. Inclui controle negativo do preparo anterior (corte pelo começo + escape do texto). |
+
 ---
 
 ## 6. Resumo Quantitativo
@@ -480,8 +487,8 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | **Mocks** | 9 arquivos |
 | **Examples** | 2 arquivos |
 | **Testes de Integração** | 56 arquivos |
-| **Testes Unitários** | ~126 arquivos |
-| **Total Aproximado** | **~216 arquivos** |
+| **Testes Unitários** | ~127 arquivos |
+| **Total Aproximado** | **~217 arquivos** |
 
 ---
 
