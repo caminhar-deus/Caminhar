@@ -161,10 +161,12 @@ describe('Componente Front-End - AdminCrudBase', () => {
 
   it('deve confirmar exclusão com um único clique em "Sim, excluir" no modal', async () => {
     let latestOptions;
+    let deletePromise;
     const mockHandleDelete = jest.fn().mockImplementation(async (id) => {
       // Reproduz o fluxo real do hook: handleDelete chama onConfirmDelete(id),
       // que abre o modal e aguarda a confirmação.
-      const confirmed = await latestOptions.onConfirmDelete(id);
+      deletePromise = latestOptions.onConfirmDelete(id);
+      const confirmed = await deletePromise;
       if (!confirmed) return;
     });
     useAdminCrud.mockReturnValue({
@@ -180,16 +182,12 @@ describe('Componente Front-End - AdminCrudBase', () => {
     fireEvent.click(screen.getByText('Excluir'));
     expect(screen.getByTestId('confirm-modal')).toBeInTheDocument();
 
-    // Obtém a Promise de onConfirmDelete que está aguardando a confirmação
-    const passedOptions = useAdminCrud.mock.calls[useAdminCrud.mock.calls.length - 1][0];
-    const confirmPromise = passedOptions.onConfirmDelete(1);
-
     // Simula clique ÚNICO no botão "Sim, excluir"
     fireEvent.click(screen.getByText('Sim, excluir'));
 
-    // Aguarda a Promise ser resolvida com true na mesma interação
+    // Aguarda a Promise real do fluxo (criada no clique em Excluir) ser resolvida com true
     const result = await act(async () => {
-      return await confirmPromise;
+      return await deletePromise;
     });
 
     expect(result).toBe(true);
@@ -202,8 +200,10 @@ describe('Componente Front-End - AdminCrudBase', () => {
 
   it('deve cancelar exclusão ao fechar o modal sem confirmar', async () => {
     let latestOptions;
+    let deletePromise;
     const mockHandleDelete = jest.fn().mockImplementation(async (id) => {
-      const confirmed = await latestOptions.onConfirmDelete(id);
+      deletePromise = latestOptions.onConfirmDelete(id);
+      const confirmed = await deletePromise;
       if (!confirmed) return;
     });
     useAdminCrud.mockReturnValue({
@@ -219,16 +219,12 @@ describe('Componente Front-End - AdminCrudBase', () => {
     fireEvent.click(screen.getByText('Excluir'));
     expect(screen.getByTestId('confirm-modal')).toBeInTheDocument();
 
-    // Obtém a Promise de onConfirmDelete que está aguardando a confirmação
-    const passedOptions = useAdminCrud.mock.calls[useAdminCrud.mock.calls.length - 1][0];
-    const confirmPromise = passedOptions.onConfirmDelete(1);
-
     // Fecha o modal clicando no botão de fechar (mock do Modal)
     fireEvent.click(screen.getByTestId('modal-close'));
 
-    // Aguarda a Promise ser resolvida com false
+    // Aguarda a Promise real do fluxo (criada no clique em Excluir) ser resolvida com false
     const result = await act(async () => {
-      return await confirmPromise;
+      return await deletePromise;
     });
 
     expect(result).toBe(false);
@@ -605,8 +601,10 @@ describe('Componente Front-End - AdminCrudBase', () => {
 
   it('deve cancelar a exclusão pelo botão Cancelar do modal (Linhas 361-363)', async () => {
     let latestOptions;
+    let deletePromise;
     const mockHandleDelete = jest.fn().mockImplementation(async (id) => {
-      const confirmed = await latestOptions.onConfirmDelete(id);
+      deletePromise = latestOptions.onConfirmDelete(id);
+      const confirmed = await deletePromise;
       if (!confirmed) return;
     });
     useAdminCrud.mockReturnValue({
@@ -621,14 +619,11 @@ describe('Componente Front-End - AdminCrudBase', () => {
     fireEvent.click(screen.getByText('Excluir'));
     expect(screen.getByTestId('confirm-modal')).toBeInTheDocument();
 
-    const passedOptions = useAdminCrud.mock.calls[useAdminCrud.mock.calls.length - 1][0];
-    const confirmPromise = passedOptions.onConfirmDelete(1);
-
     // Botão Cancelar do footer do modal (não o do formulário)
     fireEvent.click(within(screen.getByTestId('modal-footer')).getByText('Cancelar'));
 
     const result = await act(async () => {
-      return await confirmPromise;
+      return await deletePromise;
     });
 
     expect(result).toBe(false);

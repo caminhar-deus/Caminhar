@@ -242,7 +242,7 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | Arquivo | Propósito |
 |---------|-----------|
 | `AdminAudit.test.js` | Painel de auditoria: logs, paginação, filtro, exportação CSV, tratamento de 401 |
-| `AdminCrudBase.test.js` | Base CRUD: renderização, toggle booleano, estados de loading/erro, fluxo de exclusão com confirmação em 1 clique; reordenação com falha (toast de erro e reversão da ordem), atualização otimista e reversão do toggle, validação customizada (com e sem schema Zod, incluindo fallback de mensagem), cancelamento da exclusão pelo botão Cancelar do modal e contagem no singular |
+| `AdminCrudBase.test.js` | Base CRUD: renderização, toggle booleano, estados de loading/erro, fluxo de exclusão com confirmação em 1 clique (promise real do fluxo aguardada dentro de `act` nos 3 casos de exclusão); reordenação com falha (toast de erro e reversão da ordem), atualização otimista e reversão do toggle, validação customizada (com e sem schema Zod, incluindo fallback de mensagem), cancelamento da exclusão pelo botão Cancelar do modal e contagem no singular |
 | `AdminDashboard.test.js` | Dashboard: estatísticas, permissões, cache em sessionStorage |
 | `AdminDicas.test.js` | CRUD de dicas |
 | `AdminMusicas.test.js` | CRUD de músicas |

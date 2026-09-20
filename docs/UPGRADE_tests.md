@@ -447,4 +447,14 @@ Os itens abaixo foram implementados após a elaboração deste relatório. As re
 
 ---
 
+### 8.27 Eliminação dos warnings de `act` no teste de `AdminCrudBase` (promise real do fluxo aguardada)
+
+**Arquivo:** `tests/unit/components/Admin/AdminCrudBase.test.js`
+
+**Descrição:** Os 3 casos do fluxo de exclusão (confirmação pelo botão "Sim, excluir", cancelamento pelo botão de fechar do `Modal` e cancelamento pelo botão Cancelar do `modal-footer`) emitiam, cada um, o `console.error` `An update to AdminCrudBase inside a test was not wrapped in act(...)`: após o clique em "Excluir" — que já abre o modal e cria a promise do fluxo dentro do `mockHandleDelete` — o teste chamava `passedOptions.onConfirmDelete(1)` diretamente no corpo do caso, executando o `setConfirmDelete` de `components/Admin/AdminCrudBase.js` fora de `act()` e criando uma segunda promise que sobrescrevia `resolveRef.current` e deixava pendente a promise criada pelo clique. A chamada manual foi removida: a promise devolvida por `latestOptions.onConfirmDelete(id)` passou a ser capturada em `deletePromise` no próprio `mockHandleDelete` (dentro do `act` do `fireEvent.click`) e o `await act(async () => await deletePromise)` passou a aguardar essa promise única, mantendo as asserções dos 3 casos (`true` na confirmação, `false` nos dois cancelamentos, `mockHandleDelete` chamado com `1`, modal fechado e cobertura das linhas 361-363). Nenhuma alteração foi feita em código de produção.
+
+**Resultado:** As 3 ocorrências de `An update to AdminCrudBase inside a test was not wrapped in act(...)` deixaram de ser emitidas (`grep -c 'An update to AdminCrudBase' logs/coverage-output.log` = 0, antes 3) e a suíte isolada permanece com 29/29 testes aprovados. Cobertura de `AdminCrudBase.js` mantida em 100% de statements/lines, branches e functions. Cobertura global: 95,38% statements/lines, 88,15% branches e 94,55% functions, com `npm run test:coverage:log` retornando status 0 e 1229 testes aprovados (181 suites).
+
+---
+
 > **Nota:** Este documento é um relatório de análise. As ações listadas nas seções 1–7 são recomendações para revisão e priorização futura; a seção 8 registra as implementações aplicadas sobre o tema após a elaboração deste relatório.
