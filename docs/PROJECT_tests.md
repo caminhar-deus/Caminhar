@@ -62,7 +62,7 @@ tests/
 
 ### `tests/setup.js`
 **Localização:** `/tests/setup.js`
-**Propósito:** Bootstrap central executado antes de todos os testes (ambiente jsdom). Configura polyfills (TextEncoder, TextDecoder, localStorage, matchMedia, IntersectionObserver, ResizeObserver, scrollTo, crypto.randomUUID, URL.revokeObjectURL), React Testing Library (timeout 5s), filtro de warnings conhecidos do `console.error` — incluindo erros intencionais de auth (`KNOWN_INTENTIONAL_AUTH_ERRORS`: 'Erro ao inicializar sistema de autenticação' e 'Falha ao armazenar refresh token') —, cleanup automático pós-teste (`afterEach` com `cleanup()` e `jest.clearAllMocks()`), e utilitários globais (`global.wait()`, `global.suppressWarnings()`). Importa os matchers customizados. O polyfill do `IntersectionObserver` simula interseção imediata via `setTimeout` para que iframes com lazy loading sejam renderizados sem interação manual. A seção `INFORMAÇÕES DE DEBUG` mantém os `console.log` de debug comentados para manter limpias as saídas de `npm run test` e `npm run test:coverage`.
+**Propósito:** Bootstrap central executado antes de todos os testes (ambiente jsdom). Configura polyfills (TextEncoder, TextDecoder, localStorage, matchMedia, IntersectionObserver, ResizeObserver, scrollTo, crypto.randomUUID, URL.revokeObjectURL), React Testing Library (timeout 5s), filtro de warnings conhecidos do `console.error` — incluindo erros intencionais de auth (`KNOWN_INTENTIONAL_AUTH_ERRORS`: 'Erro ao inicializar sistema de autenticação' e 'Falha ao armazenar refresh token') e avisos de renderização do React 19 (`KNOWN_REACT_RENDERING_WARNINGS`: 'Encountered a script tag while rendering React component') —, cleanup automático pós-teste (`afterEach` com `cleanup()` e `jest.clearAllMocks()`), e utilitários globais (`global.wait()`, `global.suppressWarnings()`). Importa os matchers customizados. O polyfill do `IntersectionObserver` simula interseção imediata via `setTimeout` para que iframes com lazy loading sejam renderizados sem interação manual. A seção `INFORMAÇÕES DE DEBUG` mantém os `console.log` de debug comentados para manter limpias as saídas de `npm run test` e `npm run test:coverage`.
 
 ### `tests/setup.db.js`
 **Localização:** `/tests/setup.db.js`
@@ -451,7 +451,7 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | `migrate.test.js` | Gerenciador de migrações |
 | `reset-password.test.js` | Reset de senha |
 | `seed-all.test.js` | Seed de todos os dados |
-| `validate-schema.test.js` | Validação de schema do banco (mock condicional por SQL cobre tabelas e colunas existentes; valida `result === true` no cenário de sucesso, sem falso alerta de "Tabela faltando") |
+| `validate-schema.test.js` | Validação de schema do banco (mock condicional por SQL cobre tabelas e colunas existentes; valida `result === true` no cenário de sucesso, sem falso alerta de "Tabela faltando"; mock de `load-env` pelo registro CJS — o `.env` real não é carregado —, isolamento aguardado com `jest.isolateModulesAsync` e `console.log`/`console.error` silenciados por spies) |
 
 #### Scripts/DB (`/tests/unit/scripts/db/`)
 

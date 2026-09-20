@@ -29,7 +29,7 @@ Os demais scripts (`validate-schema.js`, `migrate.js`) **não possuem** top-leve
 | Teste | Status | Observação |
 |------|:------:|-----------|
 | `tests/unit/scripts/init-table.test.js` | ✅ Funciona | Testa funções puras de `init-table-utils.js` — sem `import.meta` |
-| `tests/unit/scripts/validate-schema.test.js` | ✅ Funciona | Usa `unstable_mockModule` + `isolateModules` |
+| `tests/unit/scripts/validate-schema.test.js` | ✅ Funciona | Usa `jest.mock` para o `load-env` e `jest.isolateModulesAsync` (aguardado) |
 | `tests/unit/scripts/migrate.test.js` | ✅ Funciona | Usa `jest.mock('fs')` com mock manual |
 | `tests/unit/scripts/db/connection.test.js` | ✅ Funciona | Usa `resetPool()` para recriar o singleton a cada teste |
 
@@ -162,7 +162,7 @@ Contém as seguintes funções exportadas, todas puras (sem `import.meta`, sem `
 
 A função `validateSchema()` já é exportada e não usa `import.meta`. O arquivo **não possui top-level `await`** — todo `await` está dentro de `async function validateSchema()`.
 
-**Teste:** `tests/unit/scripts/validate-schema.test.js` — usa `jest.unstable_mockModule` + `jest.isolateModules`. ✅
+**Teste:** `tests/unit/scripts/validate-schema.test.js` — usa `jest.mock` para o `load-env` e `jest.isolateModulesAsync`. ✅
 
 ### 4.3. `scripts/migrate.js`
 

@@ -155,7 +155,20 @@ const KNOWN_INTENTIONAL_AUTH_ERRORS = [
   'Falha ao armazenar refresh token',
 ];
 
-const ALL_FILTERS = [...REACT_DEPRECATION_WARNINGS, ...KNOWN_API_WARNINGS, ...KNOWN_INTENTIONAL_AUTH_ERRORS];
+// Avisos de renderização do React 19. O aviso abaixo é emitido uma única vez
+// por worker quando um <script> executável é renderizado pela árvore React no
+// cliente — situação produzida apenas pelo teste de sanidade do mock de
+// next/script (tests/mocks/next.js -> mockNextScript), não pelo código de produção.
+const KNOWN_REACT_RENDERING_WARNINGS = [
+  'Encountered a script tag while rendering React component',
+];
+
+const ALL_FILTERS = [
+  ...REACT_DEPRECATION_WARNINGS,
+  ...KNOWN_API_WARNINGS,
+  ...KNOWN_INTENTIONAL_AUTH_ERRORS,
+  ...KNOWN_REACT_RENDERING_WARNINGS,
+];
 
 console.error = (...args) => {
   if (

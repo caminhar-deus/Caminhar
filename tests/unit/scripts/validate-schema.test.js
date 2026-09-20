@@ -25,24 +25,41 @@ jest.unstable_mockModule('pg', () => {
   };
 });
 
-// Mock do módulo load-env via unstable_mockModule para compatibilidade ESM
-jest.unstable_mockModule('../../../scripts/utils/load-env.js', () => ({
+// Mock do load-env pelo registro CJS (jest.mock): o import estático de
+// './utils/load-env.js' feito por validate-schema.js é compilado para require()
+// pelo Babel, caminho que o unstable_mockModule (registro ESM) não intercepta —
+// sem esse registro o dotenv carrega o .env real durante a suíte.
+jest.mock('../../../scripts/utils/load-env.js', () => ({
   loadEnv: jest.fn(),
 }));
 
 describe('validate-schema.js — Validação do schema do banco', () => {
-  beforeEach(async () => {
+  let logSpy;
+  let errorSpy;
+
+  beforeEach(() => {
     process.env.DATABASE_URL = 'postgres://user:pass@localhost:5432/testdb';
+    // O módulo é um CLI: reporta a validação por console.log e os erros por
+    // console.error. Os spies mantêm a saída da suíte limpa e permitem
+    // assertar sobre o que foi registrado.
+    logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
     delete process.env.DATABASE_URL;
+    logSpy.mockRestore();
+    errorSpy.mockRestore();
   });
 
   it('deve exportar validateSchema como função', async () => {
-    jest.isolateModules(async () => {
+    await jest.isolateModulesAsync(async () => {
+      const { loadEnv } = await import('../../../scripts/utils/load-env.js');
       const mod = await import('../../../scripts/validate-schema.js');
       expect(typeof mod.validateSchema).toBe('function');
+      // Prova que a inicialização do módulo passou pelo mock (o .env real não
+      // chega a ser lido pelo dotenv).
+      expect(loadEnv).toHaveBeenCalled();
     });
   });
 
@@ -75,8 +92,6 @@ describe('validate-schema.js — Validação do schema do banco', () => {
       return Promise.resolve({ rows: [{ '?column?': 1 }] });
     });
 
-    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
     const { validateSchema } = await import('../../../scripts/validate-schema.js');
     const result = await validateSchema();
 
@@ -84,17 +99,20 @@ describe('validate-schema.js — Validação do schema do banco', () => {
     expect(
       errorSpy.mock.calls.some(([msg]) => String(msg).includes('Tabela faltando'))
     ).toBe(false);
-    errorSpy.mockRestore();
   });
 
   it('deve retornar false em caso de erro de conexão', async () => {
-    jest.isolateModules(async () => {
+    await jest.isolateModulesAsync(async () => {
       const pg = await import('pg');
       pg.mockQuery.mockRejectedValueOnce(new Error('Connection refused'));
 
       const mod = await import('../../../scripts/validate-schema.js');
       const result = await mod.validateSchema();
+
       expect(result).toBe(false);
+      expect(
+        errorSpy.mock.calls.some(([msg]) => String(msg).includes('Erro fatal ao validar schema'))
+      ).toBe(true);
     });
   });
 });

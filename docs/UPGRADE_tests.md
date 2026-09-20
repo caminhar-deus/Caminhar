@@ -437,4 +437,14 @@ Os itens abaixo foram implementados após a elaboração deste relatório. As re
 
 ---
 
+### 8.26 Correção do teste de validação de schema (mock de `load-env` pelo registro CJS, isolamento aguardado e console silenciado)
+
+**Arquivo:** `tests/unit/scripts/validate-schema.test.js`
+
+**Descrição:** A suíte imprimia ~70 linhas de ruído por execução (`◇ injected env (9) from .env`, dez `console.log` da validação e o `console.error` do caminho de erro) e carregava o `.env` real no worker do Jest: o mock de `scripts/utils/load-env.js` estava declarado com `jest.unstable_mockModule` (registro ESM), que não intercepta o `import` estático de `./utils/load-env.js` feito por `scripts/validate-schema.js` — compilado para `require()` pelo `@babel/plugin-transform-modules-commonjs` — de modo que o `dotenv.config()` de `loadEnv()` era executado de verdade (as chaves do `.env` menos `NODE_ENV` e `DATABASE_URL`, já definidas no worker, apareciam como `injected env (9)`). Os testes 1 e 3 também usavam `jest.isolateModules(async () => { … })`, cujo retorno não é aguardado pela API: as asserções executavam fora do ciclo do Jest, uma asserção falsa era reportada como sucesso e o erro só surgia depois como unhandled rejection que derrubava o worker. O mock passou a ser declarado com `jest.mock('../../../scripts/utils/load-env.js', () => ({ loadEnv: jest.fn() }))` (registro CJS, mesmo padrão de `migrate.test.js` e `clear-db.test.js`); os testes 1 e 3 passaram a usar `await jest.isolateModulesAsync(async () => { … })`; e `console.log`/`console.error` passaram a ser silenciados por spies criados no `beforeEach` e restaurados no `afterEach` (substituindo o spy local que existia apenas no teste 2). O teste 1 ganhou a asserção de que o `loadEnv` mock foi chamado (prova de que a inicialização do módulo não executa o dotenv) e o teste 3 passou a verificar a emissão de `Erro fatal ao validar schema` no spy de `console.error`. O mock de `pg` foi mantido como estava. Nenhuma alteração foi feita em código de produção.
+
+**Resultado:** Suíte 3/3 aprovada sem nenhuma saída de console e sem carregar o `.env` real (`grep -c 'injected env' logs/coverage-output.log` = 0, antes 1). Verificação de mutação: com uma asserção invertida em cada um dos testes 1 e 3, o Jest reporta FAIL do teste correspondente (antes, a asserção do teste 1 fora do ciclo do Jest era reportada como aprovada). Cobertura global: 95,38% statements/lines, 88,15% branches e 94,55% functions, com `npm run test:coverage:log` retornando status 0 e 1229 testes aprovados (181 suites).
+
+---
+
 > **Nota:** Este documento é um relatório de análise. As ações listadas nas seções 1–7 são recomendações para revisão e priorização futura; a seção 8 registra as implementações aplicadas sobre o tema após a elaboração deste relatório.
