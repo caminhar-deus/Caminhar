@@ -826,7 +826,6 @@
 │       ├── Home.module.css
 │       ├── globals.css
 │       └── variables.css
-├── pr-coverage.yml
 ├── proxy.js
 ├── public
 │   ├── placeholder.svg
@@ -911,7 +910,10 @@
 │   │   ├── check-videos-schema.js
 │   │   ├── count-posts.js
 │   │   ├── diagnose-hero.js
-│   │   └── list-last-posts.js
+│   │   ├── lint-workflows.sh
+│   │   ├── list-last-posts.js
+│   │   ├── lsp-reusable-workflow.js
+│   │   └── repro-reusable-workflow.js
 │   ├── generate-load-report.js
 │   ├── init-backup.js
 │   ├── init-server.js
@@ -1181,6 +1183,8 @@
 │       │   ├── posts.test.js
 │       │   ├── settings.test.js
 │       │   └── videos.test.js
+│       ├── github-workflows
+│       │   └── pr-coverage-comment.test.js
 │       ├── hooks
 │       │   └── useAdminCrud.test.js
 │       ├── index.test.js
@@ -1256,4 +1260,4 @@
     ├── csvExport.js
     └── reorder.js
 
-200 directories, 1057 files
+201 directories, 1060 files

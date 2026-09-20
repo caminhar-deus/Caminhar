@@ -427,4 +427,14 @@ Os itens abaixo foram implementados após a elaboração deste relatório. As re
 
 ---
 
+### 8.25 Cobertura integral do `AdminCrudBase` (95,94%/89,74%/85,71% → 100%)
+
+**Arquivo:** `tests/unit/components/Admin/AdminCrudBase.test.js`
+
+**Descrição:** `components/Admin/AdminCrudBase.js` reportava 95,94% de statements/lines (402/419), **89,74% de branches** (35/39) e **85,71% de functions** (12/14), com as linhas 169-171, 180, 200-209 e 361-363 descobertas — todas em caminhos reais de produção: o `catch` de `handleReorderWithFeedback` (reversão da ordem + `toast.error`), o callback `onOptimisticUpdate` de `handleToggleBoolean`, o bloco `if (validate)` de `validateForm` e o `onClick` do botão Cancelar do `Modal.Footer` de exclusão. Os branches descobertos 168 (`catch`), 183 (lado `: i` do `map` de `onRevert`), 199 (`if (validationSchema)` falso, pois `validateForm` nunca era chamado sem schema) e 220 (`localItems.length === 1`) não apareciam na coluna de linhas do relatório. O teste passou de 22 para 29 casos: falha na reordenação com `onReorder` rejeitando (toast de erro + ordem restaurada no DOM), atualização otimista do toggle com 2 itens, reversão do toggle no segundo item, validação customizada sem schema (executada com `formData`), propagação da mensagem do validador com fallback `Erro de validação customizada.` quando o erro não tem `message`, cancelamento da exclusão pelo botão Cancelar do footer do modal (desambiguado com `within` sobre `modal-footer`) e contagem no singular (`Total: 1 item`). O caso de Zod foi renomeado para explicitar que valida a precedência do schema sobre a validação customizada, sem alteração de asserção. Nenhuma alteração foi feita em código de produção.
+
+**Resultado:** `AdminCrudBase.js` passou a **100%** de statements/lines (419/419), branches (39/39) e functions (14/14), sem linhas descobertas (antes: 169-171, 180, 200-209, 361-363). Cobertura global: 95,38% statements/lines, 88,15% branches e 94,55% functions, com `npm run test:coverage:log` retornando status 0 e 1229 testes aprovados (181 suites).
+
+---
+
 > **Nota:** Este documento é um relatório de análise. As ações listadas nas seções 1–7 são recomendações para revisão e priorização futura; a seção 8 registra as implementações aplicadas sobre o tema após a elaboração deste relatório.

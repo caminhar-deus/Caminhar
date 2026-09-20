@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import AdminCrudBase from '../../../../components/Admin/AdminCrudBase.js';
 import { useAdminCrud } from '../../../../hooks/useAdminCrud.js';
@@ -344,7 +344,7 @@ describe('Componente Front-End - AdminCrudBase', () => {
     expect(screen.getByTestId('error-name')).toHaveTextContent('Invalido');
   });
 
-  it('deve validar formulário usando Zod e função customizada, lançando erro no handleSubmit', () => {
+  it('deve interromper na validação do Zod sem chamar a validação customizada', () => {
     const schema = z.object({ name: z.string().min(3) });
     const customValidate = jest.fn();
     const handleSubmitSpy = jest.fn((e, validateForm) => {
@@ -480,5 +480,166 @@ describe('Componente Front-End - AdminCrudBase', () => {
     
     // E que o formulário não está mais visivel
     expect(screen.queryByTestId('input-name')).not.toBeInTheDocument();
+  });
+
+  it('deve reverter a ordem e avisar quando a reordenação falhar (Linhas 168-171)', async () => {
+    useAdminCrud.mockReturnValue({ ...mockUseAdminCrud, items: [{ id: 1, name: 'Item 1' }, { id: 2, name: 'Item 2' }] });
+    const onReorder = jest.fn().mockRejectedValue(new Error('Falha ao reordenar'));
+    render(<AdminCrudBase {...defaultProps} reorderable={true} onReorder={onReorder} />);
+
+    // Nome do item é a 3ª célula (a 1ª é o handle de arrasto quando reorderable)
+    const getNames = () => screen.getAllByRole('row').slice(1).map((row) => row.querySelectorAll('td')[2].textContent);
+    expect(getNames()).toEqual(['Item 1', 'Item 2']);
+
+    const rows = screen.getAllByRole('row').slice(1); // Ignora thead
+    const mockDataTransfer = { effectAllowed: '', setData: jest.fn(), getData: jest.fn(() => '0') };
+
+    fireEvent.dragStart(rows[0], { dataTransfer: mockDataTransfer });
+    fireEvent.dragOver(rows[1]);
+    fireEvent.dragLeave(rows[1]);
+    fireEvent.drop(rows[1], { dataTransfer: mockDataTransfer });
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Erro ao salvar reordenação. A ordem foi revertida.');
+      expect(getNames()).toEqual(['Item 1', 'Item 2']);
+    });
+  });
+
+  it('deve refletir a atualização otimista do toggle no estado local (Linha 180)', async () => {
+    mockUseAdminCrud.toggleField.mockImplementationOnce(async (item, key, currentValue, { onOptimisticUpdate } = {}) => {
+      if (onOptimisticUpdate) onOptimisticUpdate(item, key, !currentValue);
+    });
+    useAdminCrud.mockReturnValue({
+      ...mockUseAdminCrud,
+      items: [{ id: 1, name: 'Item 1', status: false }, { id: 2, name: 'Item 2', status: false }]
+    });
+
+    render(<AdminCrudBase {...defaultProps} />);
+    fireEvent.click(screen.getAllByText('Rascunho')[1].closest('button'));
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Publicado')).toHaveLength(1);
+      expect(screen.getAllByText('Rascunho')).toHaveLength(1);
+    });
+  });
+
+  it('deve reverter o toggle sem afetar os demais itens da lista (Ramificação da Linha 183)', async () => {
+    mockUseAdminCrud.toggleField.mockImplementationOnce(async (item, key, currentValue, { onRevert } = {}) => {
+      if (onRevert) onRevert(item, key, currentValue);
+    });
+    useAdminCrud.mockReturnValue({
+      ...mockUseAdminCrud,
+      items: [{ id: 1, name: 'Item 1', status: false }, { id: 2, name: 'Item 2', status: false }]
+    });
+
+    render(<AdminCrudBase {...defaultProps} />);
+    fireEvent.click(screen.getAllByText('Rascunho')[1].closest('button'));
+
+    await waitFor(() => {
+      expect(mockUseAdminCrud.toggleField).toHaveBeenCalled();
+    });
+
+    expect(screen.getAllByText('Rascunho')).toHaveLength(2);
+    expect(screen.queryByText('Publicado')).not.toBeInTheDocument();
+  });
+
+  it('deve executar a validação customizada quando não há schema Zod (Linhas 200-209)', () => {
+    const customValidate = jest.fn();
+    const handleSubmitSpy = jest.fn((e, validateForm) => {
+      e.preventDefault();
+      validateForm();
+    });
+
+    useAdminCrud.mockReturnValue({
+      ...mockUseAdminCrud,
+      formData: { name: 'Nome válido' },
+      handleSubmit: handleSubmitSpy
+    });
+
+    render(<AdminCrudBase {...defaultProps} validate={customValidate} />);
+    fireEvent.click(screen.getByText('+ Novo'));
+    fireEvent.submit(screen.getByTestId('input-name').closest('form'));
+
+    expect(handleSubmitSpy).toHaveBeenCalled();
+    expect(customValidate).toHaveBeenCalledWith({ name: 'Nome válido' });
+  });
+
+  it('deve propagar a mensagem da validação customizada e usar fallback sem message (Linhas 205-207)', () => {
+    const mensagens = [];
+    const handleSubmitSpy = jest.fn((e, validateForm) => {
+      e.preventDefault();
+      try {
+        validateForm();
+      } catch (err) {
+        mensagens.push(err.message);
+      }
+    });
+
+    useAdminCrud.mockReturnValue({
+      ...mockUseAdminCrud,
+      formData: { name: 'A' },
+      handleSubmit: handleSubmitSpy
+    });
+
+    const { unmount } = render(
+      <AdminCrudBase
+        {...defaultProps}
+        validate={() => { throw new Error('Senha obrigatória'); }}
+      />
+    );
+    fireEvent.click(screen.getByText('+ Novo'));
+    fireEvent.submit(screen.getByTestId('input-name').closest('form'));
+    expect(mensagens).toEqual(['Senha obrigatória']);
+    unmount();
+
+    render(
+      <AdminCrudBase
+        {...defaultProps}
+        validate={() => { throw new Error(); }}
+      />
+    );
+    fireEvent.click(screen.getByText('+ Novo'));
+    fireEvent.submit(screen.getByTestId('input-name').closest('form'));
+    expect(mensagens).toEqual(['Senha obrigatória', 'Erro de validação customizada.']);
+  });
+
+  it('deve cancelar a exclusão pelo botão Cancelar do modal (Linhas 361-363)', async () => {
+    let latestOptions;
+    const mockHandleDelete = jest.fn().mockImplementation(async (id) => {
+      const confirmed = await latestOptions.onConfirmDelete(id);
+      if (!confirmed) return;
+    });
+    useAdminCrud.mockReturnValue({
+      ...mockUseAdminCrud,
+      items: [{ id: 1, name: 'Editável', status: false }],
+      handleDelete: mockHandleDelete,
+    });
+
+    render(<AdminCrudBase {...defaultProps} />);
+    latestOptions = useAdminCrud.mock.calls[useAdminCrud.mock.calls.length - 1][0];
+
+    fireEvent.click(screen.getByText('Excluir'));
+    expect(screen.getByTestId('confirm-modal')).toBeInTheDocument();
+
+    const passedOptions = useAdminCrud.mock.calls[useAdminCrud.mock.calls.length - 1][0];
+    const confirmPromise = passedOptions.onConfirmDelete(1);
+
+    // Botão Cancelar do footer do modal (não o do formulário)
+    fireEvent.click(within(screen.getByTestId('modal-footer')).getByText('Cancelar'));
+
+    const result = await act(async () => {
+      return await confirmPromise;
+    });
+
+    expect(result).toBe(false);
+    expect(screen.queryByTestId('confirm-modal')).not.toBeInTheDocument();
+  });
+
+  it('deve exibir o nome no singular quando houver exatamente 1 item', () => {
+    useAdminCrud.mockReturnValue({ ...mockUseAdminCrud, items: [{ id: 1, name: 'Único' }] });
+
+    render(<AdminCrudBase {...defaultProps} showItemCount={true} itemNameSingular="item" itemNamePlural="itens" />);
+
+    expect(screen.getByText('Total: 1 item')).toBeInTheDocument();
   });
 });
