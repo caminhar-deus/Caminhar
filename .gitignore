@@ -1,6 +1,8 @@
 # Logs
-tests-output.log
 coverage-output.log
+eslint.log
+load-tests.log
+tests-output.log
 logs
 *.log
 npm-debug.log*

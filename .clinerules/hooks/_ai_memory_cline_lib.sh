@@ -42,7 +42,7 @@ set -u
 # ------------------------------------------------------------------------
 # Configuração (todas sobrescrevíveis via variável de ambiente)
 # ------------------------------------------------------------------------
-: "${AI_MEMORY_BIN:=ai-memory-hooks-disabled}"  # binário nativo (opt-in; sentinel desabilita)
+: "${AI_MEMORY_BIN:=ai-memory}"                # binário nativo (padrão; fallback para curl se ausente)
 : "${AI_MEMORY_URL:=http://127.0.0.1:49374}"    # ajuste para a porta real do seu servidor
 : "${AI_MEMORY_TIMEOUT:=0.5}"                   # segundos (POST /hook — fire-and-forget)
 : "${AI_MEMORY_HANDOFF_TIMEOUT:=2.0}"           # segundos (GET /handoff — síncrono)

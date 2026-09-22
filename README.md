@@ -1,6 +1,6 @@
 # 🏞️ Caminhar com Deus
 
-**Versão:** 1.4.0 | **Engine:** Node.js 24.16.0, npm 11.17.0 | **Stack:** Next.js 16 + React 19
+**Versão:** 1.4.0 | **Engine:** Node.js 24.19.0, npm 12.0.2 | **Stack:** Next.js 16 + React 19
 
 Plataforma web para compartilhamento de conteúdo gospel. Inclui blog com artigos, músicas com integração Spotify, vídeos com integração YouTube, produtos com integração Mercado Livre, sistema administrativo completo, testes automatizados e CI/CD.
 
@@ -39,8 +39,8 @@ O **Caminhar com Deus** é uma aplicação web desenvolvida com Next.js (Pages R
 - **SEO completo** com Open Graph, Twitter Cards e Schema.org JSON-LD
 - **Cache** com Redis (Upstash) + fallback em memória local
 - **Backup automatizado** do PostgreSQL com criptografia AES-256-GCM e compressão gzip
-- **Testes automatizados** com ~157 arquivos (unitários, integração, E2E e carga)
-- **CI/CD** com GitHub Actions (4 workflows: CI, cobertura em PRs, testes de carga, testes de segurança)
+- **Testes automatizados** com 186 arquivos Jest (unitários e integração), 5 specs Cypress (E2E) e 37 arquivos de testes de carga
+- **CI/CD** com GitHub Actions (5 arquivos de workflow: CI, cobertura em PRs, testes de carga, testes de segurança e o reutilizável `test-base.yml`)
 - **Middlewares de proteção:** Rate limiting, DDoS, Content Security Policy, CORS
 
 ---
@@ -55,12 +55,12 @@ A pasta [`/docs`](/docs) contém documentos detalhados de análise para cada ár
 
 **Arquivo:** [`docs/PROJECT_raiz.md`](/docs/PROJECT_raiz.md)
 
-Documentação dos **28 arquivos** na raiz do projeto, agrupados por contexto:
+Documentação dos **29 arquivos** na raiz do projeto, agrupados por contexto:
 
-- **Configuração Principal:** `package.json` (88 scripts, ES Modules), `next.config.js` (headers de segurança e CORS), `next-sitemap.config.js` (sitemap XML + rotas dinâmicas do banco), `proxy.js` (Rate limiting e proteção DDoS com Redis)
-- **Testes:** `jest.config.js` (thresholds: branches 80%, functions 85%, lines 90%), `jest.config.db.js` (testes com PostgreSQL via Testcontainers), `jest.setup.js`, `jest.teardown.js`, `babel.jest.config.js`, `cypress.config.js`
+- **Configuração Principal:** `package.json` (66 scripts, ES Modules), `next.config.js` (headers de segurança e CORS), `next-sitemap.config.js` (sitemap XML + rotas dinâmicas do banco), `proxy.js` (Rate limiting e proteção DDoS com Redis)
+- **Testes:** `jest.config.js` (thresholds globais: branches 80%, functions 85%, lines/statements 90%, além de limites por diretório), `jest.config.db.js` (testes com PostgreSQL via Testcontainers), `jest.setup.js`, `jest.teardown.js`, `babel.jest.config.js`, `cypress.config.js`
 - **Qualidade:** `eslint.config.js` (Flat Config), `jsconfig.json` (aliases de importação), `knip.json` (análise de código morto)
-- **CI/CD:** `ci.yml`, `pr-coverage.yml`, `load-tests.yml`, `security-tests.yml`
+- **CI/CD:** `ci.yml`, `load-tests.yml`, `security-tests.yml` (os workflows de cobertura em PRs — `pr-coverage.yml` — e o reutilizável `test-base.yml` ficam em `.github/workflows/`)
 
 ---
 
@@ -83,14 +83,15 @@ Componentes React organizados em 6 categorias:
 
 **Arquivo:** [`docs/PROJECT_pages.md`](/docs/PROJECT_pages.md)
 
-**53 arquivos** no total:
+**42 arquivos** no total (37 JavaScript + 5 CSS):
 
 - **Páginas raiz (5):** `_app.js` (Toaster react-hot-toast), `_document.js` (CSS crítico, preconnect, CSP, Google Fonts), `index.js` (hero + ContentTabs + Testimonials), `admin.js` (painel completo com upload e crop de imagens), `design-system.js` (documentação visual dos componentes)
 - **API pública (10):** `/api/posts`, `/api/musicas`, `/api/videos`, `/api/products`, `/api/dicas`, `/api/settings`, `/api/status` (health check), `/api/upload-image` (validação com sharp), `/api/placeholder-image`, `/api/cleanup-test-data`
 - **API admin (15):** CRUD de posts, músicas, vídeos, produtos, dicas, usuários, cargos; gerenciamento de backups, cache, rate limit; auditoria; integridade; fetch de dados externos (Mercado Livre, Spotify, YouTube)
-- **API autenticação (3):** login, logout, check
+- **API autenticação (4):** login, logout, check, refresh
 - **Blog (2):** `index.js` (listagem SSR com paginação), `[slug].js` (detalhe com SEO, lightbox, compartilhamento)
-- **Estilos globais (5):** `globals.css`, `variables.css` (386 CSS Custom Properties dos design tokens), `generateTokensCSS.js`, CSS Modules
+- **Helper de API (1):** `pages/api/helper/pagination.js` (paginação compartilhada entre as rotas)
+- **Estilos globais (5 arquivos CSS):** `styles/globals.css`, `styles/variables.css` (348 CSS Custom Properties dos design tokens), `styles/DesignSystem.module.css`, `styles/Home.module.css`, `blog/Blog.module.css`
 - **Design Tokens (11):** cores, tipografia, espaçamentos, bordas, sombras, breakpoints, animações, opacidade, z-index
 
 ---
@@ -119,7 +120,7 @@ Componentes React organizados em 6 categorias:
 
 **Arquivo:** [`docs/PROJECT_lib.md`](/docs/PROJECT_lib.md)
 
-**~28 arquivos** divididos em 4 grupos:
+**26 arquivos** divididos em 4 grupos:
 
 - **Infraestrutura:** `auth.js` (bcryptjs, JWT, cookies httpOnly, rate limit no login), `cache.js` (Cache-Aside com Redis + memória, Single-Flight, rate limit distribuído), `crud.js` (SQL parametrizado com proteção contra injeção), `db.js` (pool PostgreSQL com lazy init, transações, retry automático), `redis.js` (Upstash Redis com fallback em memória), `logger.js` (logger leve com emojis)
 - **API (8 arquivos):** Classes de erro customizadas (10 tipos), middlewares (`composeMiddleware`, `withMethod`, `withAuth`, `withRateLimit`, `withCors`, `withCache`), respostas padronizadas, validação Zod, factory de handlers admin (`createAdminHandler`)
@@ -133,7 +134,7 @@ Componentes React organizados em 6 categorias:
 **Arquivo:** [`docs/PROJECT_data.md`](/docs/PROJECT_data.md)
 
 - **Banco de Dados:** PostgreSQL com 16 tabelas: `users`, `settings`, `images`, `categories`, `tags`, `posts`, `post_categories`, `post_tags`, `musicas`, `videos`, `products`, `dicas`, `activity_logs`, `refresh_tokens`, `roles`, `_migrations`
-- **16 migrações** versionadas (000 a 016; criação de tabelas, índices TRGM para busca textual, campos de ordenação)
+- **17 migrações** versionadas (000 a 017; criação de tabelas, índices TRGM para busca textual, campos de ordenação)
 - **Instalação limpa:** em um banco vazio, `npm run migrate` executa o baseline automaticamente (migração `000-create-base-schema` cria o schema base). Para recriar tabelas de conteúdo do zero, use `npm run db:reset` seguido de `npm run migrate`.
 - **Backups:** Dumps PostgreSQL em `data/backups/` com criptografia AES-256-GCM, compressão gzip, hash SHA-256, rotação automática (máx. 10 backups)
 
@@ -156,7 +157,7 @@ Componentes React organizados em 6 categorias:
 
 **Arquivo:** [`docs/PROJECT_tests.md`](/docs/PROJECT_tests.md)
 
-**~157 arquivos de teste** organizados em duas categorias:
+**186 arquivos de teste** organizados em duas categorias:
 
 - **Jest (jsdom):** Testes unitários e de integração com Jest 30 + React Testing Library + node-mocks-http
 - **Jest (node):** Testes de integração com PostgreSQL real via Testcontainers
@@ -167,7 +168,7 @@ Componentes React organizados em 6 categorias:
 - Matchers customizados: toBeISODate, toBeValidJSON, toHaveHeader, toHaveProperties, toHaveStatus
 - Mocks: db, auth, cache, fetch, next
 
-**Distribuição:** 39 testes de integração (API pública, admin, autenticação, domínio/BD real) + ~96 testes unitários (componentes, lib, domínio, páginas, scripts) + exemplos
+**Distribuição:** 56 testes de integração (API pública, admin, autenticação, domínio/BD real) + 127 testes unitários (componentes, lib, domínio, páginas, scripts) + 3 entre exemplos (`tests/examples/`) e mocks (`tests/mocks/`)
 
 ---
 
@@ -223,13 +224,13 @@ Componentes React organizados em 6 categorias:
 
 **Arquivo:** [`docs/PROJECT_scripts.md`](/docs/PROJECT_scripts.md)
 
-**~72 arquivos** em `scripts/` e subpastas, organizados por categoria:
+**85 arquivos** em `scripts/` e subpastas, organizados por categoria:
 
 | Categoria | Qtd | Descrição |
 |-----------|:---:|-----------|
 | Backup | 5 | `backup.js` (módulo central) + entry points (criar, restaurar, inicializar, ver logs) |
 | Seed | 5 | `seed-all.js` (orquestrador) + seeds de posts, músicas, vídeos, produtos |
-| Migrações | 16 | `migrate.js` (executor) + 14 migrações versionadas (001 a 013 + utilidades) |
+| Migrações | 19 | `migrate.js` (executor) + 17 migrações versionadas (000 a 017) + 2 utilitários (`seed-migrations-table.js`, `verify-applied.js`) |
 | Schemas JSON | 4 | Definições de tabelas (dicas, musicas, posts, videos) para `init-table.js` |
 | Inicialização | 4 | `init-table.js`, `init-server.js`, `init-backup.js`, `seed-settings.js` |
 | Limpeza | 10 | Banco (clear-db, clear-musicas, clean-load-test-posts), arquivos (clean-orphaned-images, clean-k6-reports), cache, auth locks |
@@ -246,16 +247,16 @@ Componentes React organizados em 6 categorias:
 |-----------|-----------|
 | **Framework** | Next.js 16 (Pages Router) |
 | **Frontend** | React 19 |
-| **Backend** | Node.js 24.16.0 (ES Modules) |
+| **Backend** | Node.js 24.19.0 (ES Modules) |
 | **Banco de Dados** | PostgreSQL |
 | **Cache** | Redis (Upstash) + fallback em memória |
 | **Autenticação** | JWT + bcryptjs + cookies httpOnly |
 | **Validação** | Zod |
 | **ORM/Query** | pg (Pool nativo) |
 | **Testes Unitários/Integração** | Jest 30 + React Testing Library |
-| **Testes E2E** | Cypress 15 |
+| **Testes E2E** | Cypress 16 |
 | **Testes de Carga** | k6 (Grafana Labs) |
-| **CI/CD** | GitHub Actions (4 workflows) |
+| **CI/CD** | GitHub Actions (5 arquivos de workflow, sendo 1 reutilizável) |
 | **Análise Estática** | Knip (código morto), ESLint 10 |
 | **SEO** | next-sitemap, Schema.org JSON-LD |
 
