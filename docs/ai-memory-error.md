@@ -1,7 +1,7 @@
 # Erros do AI-MEMORY — Diagnóstico e Resolução
 
 **Projeto:** Caminhar · **Escopo:** `default/Caminhar`
-**Diagnóstico:** 2026-09-11 → 2026-09-18 · **Correções publicadas:** v2.3.2 (2026-09-20) · **Verificação:** 2026-09-23
+**Diagnóstico:** 2026-09-11 → 2026-09-18 · **Correções publicadas:** v2.3.2 (2026-09-20) · **Verificação:** 2026-09-23 (práticas 3 e 4 do §6 corrigidas nesta data)
 
 **Status: 1, 2, 3 e 8 resolvidos; 6 mitigado parcialmente.** As correções dos erros 1, 2, 3 e 8 estão no upstream (`akitaonrails/ai-memory`) desde a **v2.3.2**, foram encaminhadas para a **v2.4.0** e estão em uso local pela imagem `akitaonrails/ai-memory:latest` (**2.4.0**). O Erro 6 tem correção de código pendente no upstream (retry no caminho de auto-improve).
 
@@ -139,8 +139,8 @@ Nenhuma delas é erro do ai-memory. As quatro foram encerradas em 2026-09-23.
 
 1. `dry_run: true` antes de consolidar em lote — preflight sem LLM e sem escrita.
 2. Descobrir o id da sessão com `memory_read_session_observations` (UUID do ai-memory). Ids do Cline (`1787943533338_3w6i6`) não servem.
-3. `ai-memory backup --to /tmp/ai-memory-backup-…tar.gz` antes de rodar consolidação em massa.
-4. Provedor: `ai-memory llm-test --provider gemini --model gemini-3.6-flash --prompt ping` antes de culpar o payload; `429`/`5xx` são retentados 2× automaticamente **na consolidação** (o auto-improve não retenta) e, se `attempts=3 parked=true` aparecer no log do scheduler, o claim precisa ser destravado à mão: `ai-memory auto-improve --session-id <uuid>` (rodando da raiz do projeto).
+3. Backup antes de consolidar em massa: o destino **precisa estar dentro do volume de dados** — o wrapper do host roda um container efêmero por comando e só monta `ai-memory-data` em `/data`, então `--to /tmp/…` grava dentro do container descartável e **o arquivo desaparece** ao fim do comando. Use `ai-memory backup --to /data/backups/ai-memory-backup-<data>.tar.gz`, que persiste em `/data/backups/` (modo 0600).
+4. Provedor: o `llm-test` **executado no host falha** com `provider not configured: GEMINI_API_KEY` (o container efêmero do CLI não herda o env do servidor); rode de dentro do servidor — `docker exec ai-memory ai-memory llm-test --provider gemini --model gemini-3.6-flash --prompt ping` (responde `Pong!` quando o Gemini está estável) — antes de culpar o payload; `429`/`5xx` são retentados 2× automaticamente **na consolidação** (o auto-improve não retenta) e, se `attempts=3 parked=true` aparecer no log do scheduler, o claim precisa ser destravado à mão: `ai-memory auto-improve --session-id <uuid>` (rodando da raiz do projeto).
 5. Saída truncada (Erro 7) **não** é retentada: repetir a chamada, usar `multi_page: false` ou `instructions` conciso — o projeto mantém a preferência de concisão em `_prompts/consolidation.md`.
 6. Rodar o CLI sempre da raiz do projeto (ou com `--workspace`/`--project` explícitos): o cwd define o escopo e um diretório errado produz `project 'Projetos' not found`.
 7. Cliente sem a tool MCP acoplada: `POST http://127.0.0.1:49374/mcp` (JSON-RPC Streamable HTTP, `stateful=false`, versão `2024-11-05`) na ordem `initialize` → `tools/list` → `memory_read_session_observations` → `memory_consolidate`.
