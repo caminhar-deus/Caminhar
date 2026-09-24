@@ -1,211 +1,419 @@
-# Levantamento Analítico de Melhorias — `/hooks/`
+# Análise da Pasta `/hooks/`
 
-> **Data:** 01/08/2026
-> **Objetivo:** Identificar oportunidades de melhoria nos hooks da pasta `/hooks` **sem aplicá-las ao código**.
+> **Data:** 24/09/2026
+> **Objetivo:** Documentação analítica individual de todos os arquivos da pasta `/hooks/`.
 > **Base:** Análise direta dos arquivos fonte atuais do projeto.
 
 ---
 
-## Índice
+## 1. Nome do documento
 
-1. [Correções de Código](#1-correções-de-código)
-2. [Ajustes Estruturais e Organizacionais](#2-ajustes-estruturais-e-organizacionais)
-3. [Melhorias de Performance e Manutenção](#3-melhorias-de-performance-e-manutenção)
-4. [Duplicidades e Redundâncias](#4-duplicidades-e-redundâncias)
-5. [Pontos de Atenção Técnica](#5-pontos-de-atenção-técnica)
+Análise da Pasta `/hooks/`
 
 ---
 
-## 1. Correções de Código
+## 2. Descrição geral
 
-### 1.1 — `useApiFetch.js`: inconsistência entre dependência serializada e comparação por referência
+Este documento apresenta a análise individual e sequencial de todos os arquivos da pasta `/hooks/` do projeto Caminhar. A finalidade é registrar a finalidade, responsabilidades, relações entre arquivos, possíveis problemas, melhorias, duplicidades e códigos mortos identificados em cada arquivo, com base no conteúdo real encontrado no código-fonte.
 
-**Arquivo:** `/hooks/useApiFetch.js` (linhas 50–56)
-**Problema:** O `useEffect` de estabilização de `options` usa `JSON.stringify(options)` como dependência, mas a condição interna compara `optionsRef.current !== options` (comparação por referência). Se o componente pai criar um novo objeto `options` a cada render com o mesmo conteúdo serializado, a dependência `serializedOptions` não muda, o efeito não executa e `optionsRef.current` permanece com a referência antiga. O `fetchData` continuará usando a referência antiga de `options`, mesmo que o conteúdo seja o mesmo. Isso é uma inconsistência lógica que pode causar comportamento inesperado em cenários de re-render com objetos `options` recriados.
-
-**Sugestão:** Alinhar a lógica — ou comparar por referência na dependência (usando `options` diretamente), ou comparar por conteúdo serializado na condição interna (`optionsRef.current !== serializedOptions`).
+O escopo abrange os 12 arquivos existentes na pasta `/hooks/`, organizados conforme a estrutura definida neste documento.
 
 ---
 
-### 1.2 — `useAdminCrud.js`: `handleSubmit` não envia `credentials: 'include'`
+## 3. Estrutura de arquivos e pastas
 
-**Arquivo:** `/hooks/useAdminCrud.js` (linhas 172–176)
-**Problema:** O `handleSubmit` (POST/PUT) faz `fetch(apiEndpoint, { method, headers, body })` **sem** `credentials: 'include'`. Já o `useApiFetch` (usado para a listagem) envia `credentials: 'include'` (linha 99). Essa inconsistência pode causar falhas de autenticação em operações de criação/edição quando a sessão depende de cookies, enquanto a listagem funciona normalmente.
+```
+/home/gus/Projetos/Caminhar/hooks/
+├── AuthContext.js
+├── AuthProvider.js
+├── PerformanceContext.js
+├── PerformanceProvider.js
+├── index.js
+├── useAdminAuth.js
+├── useAdminCrud.js
+├── useApiFetch.js
+├── useDebounce.js
+├── usePerformance.js
+├── usePerformanceMetrics.js
+└── useUnauthorized.js
+```
 
-**Sugestão:** Adicionar `credentials: 'include'` ao fetch de `handleSubmit` (e verificar `handleDelete` e `toggleField`).
-
----
-
-### 1.3 — `useAdminCrud.js`: `AbortController` criado mas não utilizado no `handleDelete`
-
-**Arquivo:** `/hooks/useAdminCrud.js` (linhas 214–220)
-**Problema:** O `handleDelete` cria `const abortController = new AbortController()` (linha 214) mas **não** passa `signal: abortController.signal` no fetch do DELETE (linha 216). O `AbortController` é instanciado e descartado sem uso, e o fetch não é cancelável. Isso é código morto e uma oportunidade perdida de cancelamento.
-
-**Sugestão:** Passar `signal: abortController.signal` no fetch do DELETE, ou remover a criação do `AbortController` se o cancelamento não for necessário.
-
----
-
-### 1.4 — `AuthProvider.js`: `logout` sem `try/catch` pode impedir limpeza do estado
-
-**Arquivo:** `/hooks/AuthProvider.js` (linhas 64–67)
-**Problema:** A função `logout` faz `await fetch('/api/auth/logout', ...)` sem `try/catch`. Se o fetch falhar (rede indisponível, servidor fora do ar), a Promise rejeita e `setUser(null)` **não** é executado. O usuário permanece "autenticado" no estado mesmo após tentar sair.
-
-**Sugestão:** Envolver o fetch em `try/catch` e garantir que `setUser(null)` seja executado no `finally`, independentemente do sucesso da requisição.
+Total de arquivos: **12**
 
 ---
 
-### 1.5 — `useAdminAuth.js`: erro de logout silenciado
+## 4. Análise individual de cada arquivo
 
-**Arquivo:** `/hooks/useAdminAuth.js` (linhas 48–57)
-**Problema:** O `handleLogout` captura o erro do `logout` com `try/catch` e apenas registra `console.error('Logout error:', err)`. O erro é silenciado para o consumidor — o callback `onLogoutRedirect` é executado mesmo se o logout falhar no servidor. Isso pode mascarar falhas reais de logout (ex.: token não invalidado no servidor).
+### 4.1 `AuthContext.js`
 
-**Sugestão:** Considerar repassar o erro ao consumidor (ex.: retornar `{ success: false, error }`) ou executar o `onLogoutRedirect` apenas em caso de sucesso, deixando a decisão para o consumidor.
+**Caminho:** `/home/gus/Projetos/Caminhar/hooks/AuthContext.js`
 
----
+**Arquivos acionados ou relacionados:**
+- `AuthProvider.js` — implementa o contexto definido neste arquivo
+- Componentes que consomem `AuthContext` via `useContext`
 
-## 2. Ajustes Estruturais e Organizacionais
-
-### 2.1 — `useUnauthorized.js`: padrão incomum de interrupção de fluxo
-
-**Arquivo:** `/hooks/useUnauthorized.js` (linhas 26–28)
-**Problema:** A função usa `await new Promise(() => {})` seguido de `throw new Error('Acesso não autorizado')`. Como a Promise nunca resolve, o `throw` é **inalcançável** — o código após o `await` nunca executa. O comportamento é intencional (interromper o fluxo), mas o `throw` é código morto e o padrão pode confundir leitores.
-
-**Sugestão:** Remover o `throw` inalcançável e documentar claramente que a função interrompe o fluxo via `await new Promise(() => {})` (ou usar um padrão mais explícito, como retornar uma Promise que nunca resolve).
+**Resumo do arquivo:**
+Define o contexto de autenticação da aplicação. Exporta `AuthContext` criado com `createContext` do React, contendo valores padrão para: `user` (null), `isAuthenticated` (false), `loading` (true), `loginLoading` (false), `login` (função assíncrona vazia) e `logout` (função assíncrona vazia). Documenta a estrutura via JSDoc `@typedef AuthContextValue`.
 
 ---
 
-### 2.2 — `index.js`: barrel não exporta hooks de uso interno
+### 4.2 `AuthProvider.js`
 
-**Arquivo:** `/hooks/index.js`
-**Problema:** O barrel exporta apenas 5 hooks (`PerformanceProvider`, `usePerformance`, `useApiFetch`, `useDebounce`, `useAdminAuth`). Hooks como `useAdminCrud`, `useUnauthorized`, `AuthProvider`, `AuthContext`, `PerformanceContext` e `usePerformanceMetrics` são importados diretamente pelos consumidores. Isso é intencional (evita poluição do barrel), mas cria dois padrões de importação no projeto: via barrel e via path direto.
+**Caminho:** `/home/gus/Projetos/Caminhar/hooks/AuthProvider.js`
 
-**Sugestão:** Documentar claramente a política de exportação do barrel (quais hooks devem ser exportados e quais devem ser importados diretamente) para manter consistência futura.
+**Arquivos acionados ou relacionados:**
+- `AuthContext.js`
+- `/api/auth/login` (POST), `/api/auth/check` (GET), `/api/auth/logout` (POST), `/api/auth/refresh` (POST)
 
----
+**Resumo do arquivo:**
+Implementa o provider de autenticação via `AuthContext.Provider`. Gerencia `user`, `isAuthenticated`, `loading` e `loginLoading` com `useState`. Funções: `login` (POST com `credentials: 'include'` e `AbortController`), `refreshSession` (POST que retorna boolean), `logout` (POST e `setUser(null)` — **sem `try/catch`**), `checkAuth` (verifica sessão no mount; em 401 chama `refreshSession()` que **não recebe o `signal`** do `AbortController`).
 
-## 3. Melhorias de Performance e Manutenção
+**Problemas identificados:**
 
-### 3.1 — `useApiFetch.js`: ausência de `AbortController` para cancelar fetches
+| # | Onde | Problema | Correção necessária |
+|---|---|---|---|
+| 1 | `logout` (linhas 64–67) | `await fetch(...)` sem `try/catch`. Se falhar, `setUser(null)` não executa. | Envolver em `try/catch/finally` com `setUser(null)` no `finally`. |
+| 2 | `checkAuth` → `refreshSession` (linhas 78–88) | `refreshSession()` não recebe o `signal` do `AbortController`. | Passar `signal` para `refreshSession()`. |
 
-**Arquivo:** `/hooks/useApiFetch.js`
-**Problema:** O `fetchData` não usa `AbortController`. Quando o componente desmonta ou a URL muda rapidamente (ex.: busca com debounce), fetches anteriores continuam em andamento e podem atualizar o estado de um componente desmontado (causando warnings do React) ou sobrescrever dados mais recentes com respostas atrasadas.
+**Melhorias identificadas:**
 
-**Sugestão:** Criar um `AbortController` por execução de `fetchData`, abortar no cleanup do `useEffect` e tratar `AbortError` silenciosamente (como já é feito em `AuthProvider.js`).
-
----
-
-### 3.2 — `usePerformanceMetrics.js`: `getMetrics` sem dependências no `useCallback`
-
-**Arquivo:** `/hooks/usePerformanceMetrics.js` (linhas 193–199)
-**Problema:** A função `getMetrics` é envolvida em `useCallback` **sem array de dependências**. Isso significa que uma nova referência de função é criada a cada render, anulando o propósito do `useCallback`. O `PerformanceProvider` (que memoiza o valor do contexto com `useMemo`) depende de `getMetrics` como dependência — a referência instável pode causar re-renders desnecessários do provider.
-
-**Sugestão:** Adicionar `[]` como array de dependências do `useCallback` de `getMetrics` (a função não depende de props/state, apenas de `metricsStore` que é um ref estável).
+| # | Onde | Melhoria | Justificativa |
+|---|---|---|---|
+| 1 | `logout` | `try/catch/finally` com `setUser(null)` no `finally`. | Garantir limpeza do estado. |
+| 2 | `refreshSession` | Receber `signal` para cancelamento. | Cancelamento completo no desmonte. |
 
 ---
 
-### 3.3 — `usePerformanceMetrics.js`: `sendBeacon` sem verificação de retorno
+### 4.3 `PerformanceContext.js`
 
-**Arquivo:** `/hooks/usePerformanceMetrics.js` (linhas 174–175)
-**Problema:** O `navigator.sendBeacon` retorna `true` se o dado foi enfileirado com sucesso e `false` caso contrário. O código não verifica o retorno — se `sendBeacon` falhar (ex.: payload muito grande, quota excedida), a métrica é silenciosamente perdida sem fallback para `fetch`.
+**Caminho:** `/home/gus/Projetos/Caminhar/hooks/PerformanceContext.js`
 
-**Sugestão:** Verificar o retorno de `sendBeacon` e, se `false`, fazer fallback para `fetch` com `keepalive` (que já está implementado no `else`).
+**Arquivos acionados ou relacionados:**
+- `PerformanceProvider.js`
+- Componentes que consomem `PerformanceContext` via `useContext`
 
----
+**Resumo do arquivo:**
+Define o contexto de métricas de performance via `createContext(null)`. Documenta estrutura via `@typedef PerformanceContextValue` com propriedades: `reportMetric`, `getMetrics`, `metrics`, `WEB_VITAL_METRICS`, `THRESHOLDS`, `getRating`, `formatMetric`.
 
-### 3.4 — `AuthProvider.js`: `refreshSession` sem `AbortController` no retry
+**Duplicidades identificadas:**
 
-**Arquivo:** `/hooks/AuthProvider.js` (linhas 80–88)
-**Problema:** No `checkAuth`, quando o status é 401, o código chama `refreshSession()` e depois refaz `GET /api/auth/check` com `signal: abortController.signal`. Porém, o `refreshSession()` em si não recebe o `signal` — se o componente desmontar durante a renovação, a requisição de refresh continua em andamento.
-
-**Sugestão:** Passar o `signal` do `AbortController` para o `refreshSession()` também, garantindo cancelamento completo no desmonte.
-
----
-
-## 4. Duplicidades e Redundâncias
-
-### 4.1 — Padrão de Contexto duplicado entre `AuthContext.js` e `PerformanceContext.js`
-
-**Arquivos:** `/hooks/AuthContext.js`, `/hooks/PerformanceContext.js`
-**Problema:** Ambos os arquivos seguem exatamente o mesmo padrão: `createContext` + `@typedef` JSDoc. A duplicidade é estrutural e aceitável (cada contexto tem seu propósito), mas a documentação JSDoc (`@typedef`) é repetida em `AuthContext.js`, `PerformanceContext.js`, `usePerformanceMetrics.js` e `PerformanceProvider.js` (o `PerformanceContextValue` é definido em 3 lugares).
-
-**Sugestão:** Considerar centralizar os `@typedef` em um único arquivo de tipos (ex.: `hooks/types.js`) e importá-los nos arquivos que os usam, reduzindo a manutenção de documentação duplicada.
+| # | Onde | Duplicidade | Justificativa |
+|---|---|---|---|
+| 1 | Estrutura | Padrão `createContext` + `@typedef` similar ao `AuthContext.js`. | Estrutural, mas pode ser padronizado. |
+| 2 | `@typedef PerformanceContextValue` | Definido também em `PerformanceProvider.js` e `usePerformanceMetrics.js`. | Centralizar tipos. |
 
 ---
 
-### 4.2 — Lógica de fetch de escrita duplicada em `useAdminCrud.js`
+### 4.4 `PerformanceProvider.js`
 
-**Arquivo:** `/hooks/useAdminCrud.js`
-**Problema:** O `handleSubmit`, `handleDelete` e `toggleField` implementam cada um sua própria lógica de `fetch` + tratamento de erro + toast. Embora cada operação tenha particularidades (método, corpo, callbacks), o padrão de `fetch` + `response.ok` + `toast` + `refetch` é repetido 3 vezes. O `useApiFetch` é usado apenas para a listagem (GET).
+**Caminho:** `/home/gus/Projetos/Caminhar/hooks/PerformanceProvider.js`
 
-**Sugestão:** Avaliar se uma abstração de "mutação" (ex.: `useMutation` ou uma função helper interna) poderia unificar o tratamento de erro/toast/refetch das operações de escrita, reduzindo a repetição. **Nota:** Isso é uma sugestão de arquitetura — a implementação atual é funcional e correta.
+**Arquivos acionados ou relacionados:**
+- `PerformanceContext.js`, `usePerformanceMetrics.js`
+- Componentes que consomem `PerformanceContext`
 
----
+**Resumo do arquivo:**
+Instancia `usePerformanceMetrics` uma vez e compartilha via `PerformanceContext.Provider`. Valor memoizado com `useMemo` dependendo de: `reportMetric`, `getMetrics`, `metrics`, `WEB_VITAL_METRICS`, `THRESHOLDS`, `getRating`, `formatMetric`.
 
-## 5. Pontos de Atenção Técnica
+**Pontos de atenção:**
 
-### 5.1 — `useAdminCrud.js`: `handleSubmit` e `handleDelete` sem `credentials: 'include'`
-
-**Arquivo:** `/hooks/useAdminCrud.js` (linhas 172, 216, 254)
-**Ponto de atenção:** Conforme detalhado na seção 1.2, as operações de escrita (POST/PUT/DELETE) não enviam `credentials: 'include'`, enquanto a listagem (via `useApiFetch`) envia. Se o backend depender de cookies de sessão para autorização, as operações de escrita podem falhar com 401 em produção, mesmo com a listagem funcionando. **Recomenda-se verificar o comportamento real em produção antes de considerar correção.**
-
----
-
-### 5.2 — `usePerformanceMetrics.js`: `WEB_VITAL_METRICS` e `THRESHOLDS` como constantes de módulo
-
-**Arquivo:** `/hooks/usePerformanceMetrics.js` (linhas 39–59)
-**Ponto de atenção:** As constantes `WEB_VITAL_METRICS` e `THRESHOLDS` são definidas no escopo do módulo e retornadas pelo hook. Como são objetos mutáveis, um consumidor poderia alterá-las acidentalmente, afetando o comportamento global do hook (ex.: modificar `THRESHOLDS.LCP.good`). Considerar congelar os objetos (`Object.freeze`) ou retornar cópias.
+| # | Onde | Ponto de atenção | Justificativa |
+|---|---|---|---|
+| 1 | `useMemo` (linhas 13–21) | Dependências incluem `getMetrics` e `reportMetric` que podem ser instáveis se `usePerformanceMetrics` não estabilizar com `useCallback`. | Instabilidade anula o `useMemo`. |
 
 ---
 
-### 5.3 — `usePerformanceMetrics.js`: `reportMetric` com `onReport` instável
+### 4.5 `index.js`
 
-**Arquivo:** `/hooks/usePerformanceMetrics.js` (linhas 104–190)
-**Ponto de atenção:** O `reportMetric` é memoizado com `useCallback` dependendo de `onReport`, `reportToAnalytics`, `analyticsEndpoint` e `debug`. Se o consumidor passar um `onReport` inline (nova referência a cada render), o `reportMetric` será recriado, o que pode re-registrar os `PerformanceObserver` no `useEffect` (que depende de `reportMetric`). Isso pode causar observers duplicados em cenários de re-render frequente.
+**Caminho:** `/home/gus/Projetos/Caminhar/hooks/index.js`
 
-**Sugestão:** Considerar usar um `useRef` para `onReport` (estabilizando a referência) ou documentar que `onReport` deve ser memoizado pelo consumidor.
+**Arquivos acionados ou relacionados:**
+- `PerformanceProvider.js`, `usePerformance.js`, `useApiFetch.js`, `useDebounce.js`, `useAdminAuth.js`
 
----
+**Resumo do arquivo:**
+Barrel que exporta 5 dos 12 arquivos. Não exporta: `useAdminCrud`, `useUnauthorized`, `AuthProvider`, `AuthContext`, `PerformanceContext`, `usePerformanceMetrics`.
 
-### 5.4 — `useUnauthorized.js`: dependência de `router.reload()`
+**Problemas identificados:**
 
-**Arquivo:** `/hooks/useUnauthorized.js` (linha 25)
-**Ponto de atenção:** O hook depende de `router.reload()` do Next.js para redirecionar ao login. Isso acopla o hook ao Next.js. Se o projeto migrar de framework ou precisar de uma abordagem diferente (ex.: redirect via `window.location`), o hook precisará ser revisto. A assinatura atual (`router` como parâmetro) já reduz o acoplamento, mas a implementação interna é específica do Next.js.
+| # | Onde | Problema | Correção necessária |
+|---|---|---|---|
+| 1 | Exportações (linhas 6–10) | Dois padrões de importação no projeto (barrel vs path direto). | Documentar política de exportação do barrel. |
 
----
+**Melhorias:**
 
-### 5.5 — `useApiFetch.js`: `staleTime` e `lastFetchRef` não resetados em `setData`
-
-**Arquivo:** `/hooks/useApiFetch.js` (linhas 92, 132)
-**Ponto de atenção:** Quando `setData` é chamado manualmente (atualização otimista), o `lastFetchRef.current` não é atualizado. Se `staleTime` estiver configurado, um fetch subsequente pode ser pulado incorretamente (considerando dados "frescos" quando na verdade foram definidos manualmente). O comportamento depende do caso de uso, mas merece atenção.
-
----
-
-## Implementações Aplicadas
-
-### `usePerformanceMetrics.js` — janela de cold start no report de recursos lentos
-
-**Arquivo:** `/hooks/usePerformanceMetrics.js` (`resourceObserver`)
-
-**Descrição:** Adicionada a constante `COLD_START_GRACE_MS` (15s). Recursos iniciados dentro dessa janela (comparação `entry.startTime >= coldStartEnd`) têm o `console.warn` `[Performance] Slow resource` suprimido em desenvolvimento (`debug`), pois a compilação sob demanda do Turbopack e o pool/Redis frios podem ultrapassar 1s no primeiro carregamento sem indicar lentidão real. Em produção (`debug=false`) o comportamento sem logs permanece inalterado, e o alerta continua ativo para recursos iniciados após a janela.
+| # | Onde | Melhoria | Justificativa |
+|---|---|---|---|
+| 1 | Exportações | Documentar política. | Consistência futura. |
 
 ---
 
-### `useAdminCrud.js` — correção da exclusão: `Content-Type` no DELETE e `onConfirmDelete(id)`
+### 4.6 `useAdminAuth.js`
 
-**Arquivo:** `/hooks/useAdminCrud.js`
+**Caminho:** `/home/gus/Projetos/Caminhar/hooks/useAdminAuth.js`
 
-**Descrição:** O `fetch` do `handleDelete` passou a enviar `Content-Type: application/json`. Sem o header, o Next.js (Pages Router) não parseava o corpo `{ id }` do `DELETE` — o handler recebia `id` indefinido, executava `DELETE ... WHERE id = NULL` e respondia 200 mesmo sem excluir, fazendo o painel exibir "Item excluído com sucesso!" sem remoção real. Além disso, `onConfirmDelete` passou a receber o `id` do item (`await onConfirmDelete(id)`), habilitando o `AdminCrudBase` a abrir o modal com o item correto e confirmar a exclusão em um único clique. O JSDoc do `@property onConfirmDelete` foi atualizado para refletir o novo parâmetro.
+**Arquivos acionados ou relacionados:**
+- `AuthContext.js` (via `useContext`)
+- Componentes de login/painel admin
+
+**Resumo do arquivo:**
+Encapsula lógica de autenticação para admin. Fornece `isAuthenticated`, `isChecking`, `handleLogin`, `handleLogout`, `loginLoading`, `loginError`. `handleLogout` silencia erro com `console.error` e executa `onLogoutRedirect` mesmo em falha.
+
+**Problemas identificados:**
+
+| # | Onde | Problema | Correção necessária |
+|---|---|---|---|
+| 1 | `handleLogout` (linhas 48–57) | Erro silenciado; `onLogoutRedirect` executa mesmo em falha. | Repassar erro ou condicionar ao sucesso. |
+
+**Melhorias:**
+
+| # | Onde | Melhoria | Justificativa |
+|---|---|---|---|
+| 1 | `handleLogout` | Condicionar `onLogoutRedirect` ao sucesso. | Evitar mascarar falhas. |
 
 ---
 
-## Resumo das Ocorrências
+### 4.7 `useAdminCrud.js`
 
-| Categoria | Total | Arquivos Afetados |
-|---|---|---|
-| Correções de código | 5 | `useApiFetch.js`, `useAdminCrud.js` (2), `AuthProvider.js`, `useAdminAuth.js` |
-| Ajustes estruturais | 2 | `useUnauthorized.js`, `index.js` |
-| Melhorias de performance | 4 | `useApiFetch.js`, `usePerformanceMetrics.js` (2), `AuthProvider.js` |
-| Duplicidades | 2 | `AuthContext.js`/`PerformanceContext.js`, `useAdminCrud.js` |
-| Pontos de atenção | 5 | `useAdminCrud.js`, `usePerformanceMetrics.js` (2), `useUnauthorized.js`, `useApiFetch.js` |
+**Caminho:** `/home/gus/Projetos/Caminhar/hooks/useAdminCrud.js`
 
-> **Nota:** Este documento é um levantamento analítico. As sugestões das seções acima são recomendações para avaliação antes de qualquer implementação; a seção "Implementações Aplicadas" registra as implementações realizadas após a elaboração deste relatório.
+**Arquivos acionados ou relacionados:**
+- `useApiFetch.js` (listagem GET com `credentials: 'include'`)
+- `react-hot-toast`
+- Componentes de CRUD administrativo
+
+**Resumo do arquivo:**
+Hook reutilizável para CRUD admin. Usa `useApiFetch` para GET e `fetch` próprio para escrita. Funções: `handleSubmit` (POST/PUT — **sem `credentials: 'include'`**), `handleDelete` (DELETE com `AbortController` correto, envia `{ id }`), `toggleField` (PUT — **sem `credentials: 'include'`**, com atualização otimista).
+
+**Problemas identificados:**
+
+| # | Onde | Problema | Correção necessária |
+|---|---|---|---|
+| 1 | `handleSubmit` (linhas 173–177) | `fetch` sem `credentials: 'include'`. | Adicionar `credentials: 'include'`. |
+| 2 | `toggleField` (linhas 256–260) | `fetch` sem `credentials: 'include'`. | Adicionar `credentials: 'include'`. |
+
+**Duplicidades identificadas:**
+
+| # | Onde | Duplicidade | Justificativa |
+|---|---|---|---|
+| 1 | `handleSubmit`, `handleDelete`, `toggleField` | Padrão `fetch` + erro + toast + `refetch` repetido 3x. | Avaliar abstração de mutação. |
+
+---
+
+### 4.8 `useApiFetch.js`
+
+**Caminho:** `/home/gus/Projetos/Caminhar/hooks/useApiFetch.js`
+
+**Arquivos acionados ou relacionados:**
+- `useAdminCrud.js`
+
+**Resumo do arquivo:**
+Hook genérico para GET com cache, stale time e refetch. Exporta `data`, `loading`, `error`, `refetch`, `setData`. Usa `useRef` para `optionsRef` e `lastFetch`, e `useEffect` para estabilizar `options` via `JSON.stringify`. `fetchData` trata erros de rede e respostas não-JSON.
+
+**Problemas identificados:**
+
+| # | Onde | Problema | Correção necessária |
+|---|---|---|---|
+| 1 | `useEffect` estabilização (linhas 50–56) | Dependência serializada vs comparação por referência (`optionsRef.current !== options`). | Alinhar: comparar por conteúdo serializado na condição. |
+| 2 | `fetchData` (linhas 58–103) | Sem `AbortController`. | Criar por execução e abortar no cleanup. |
+
+**Melhorias:**
+
+| # | Onde | Melhoria | Justificativa |
+|---|---|---|---|
+| 1 | `fetchData` | Adicionar `AbortController`. | Evitar estado em componente desmontado. |
+
+**Pontos de atenção:**
+
+| # | Onde | Ponto de atenção | Justificativa |
+|---|---|---|---|
+| 1 | `staleTime` + `lastFetchRef` (linhas 92, 116–122) | `setData` manual não atualiza `lastFetchRef`. | Pode pular fetch incorretamente. |
+
+---
+
+### 4.9 `useDebounce.js`
+
+**Caminho:** `/home/gus/Projetos/Caminhar/hooks/useDebounce.js`
+
+**Arquivos acionados ou relacionados:**
+- Hooks que usam debounce (ex.: buscas com `useApiFetch`)
+
+**Resumo do arquivo:**
+Hook utilitário de debounce. Retorna valor após delay (padrão 300ms). Usa `useState`, `useEffect`, `setTimeout` com cleanup.
+
+---
+
+### 4.10 `usePerformance.js`
+
+**Caminho:** `/home/gus/Projetos/Caminhar/hooks/usePerformance.js`
+
+**Arquivos acionados ou relacionados:**
+- `PerformanceContext.js`, `PerformanceProvider.js`
+
+**Resumo do arquivo:**
+Consome `PerformanceContext` via `useContext`. Valida se contexto existe (não `null`) e lança erro se usado fora de `PerformanceProvider`.
+
+---
+
+### 4.11 `usePerformanceMetrics.js`
+
+**Caminho:** `/home/gus/Projetos/Caminhar/hooks/usePerformanceMetrics.js`
+
+**Arquivos acionados ou relacionados:**
+- `PerformanceProvider.js`, `PerformanceContext.js`
+- `web-vitals` (import dinâmico cacheado em `webVitalsPromise`)
+- `/api/analytics/web-vitals`
+
+**Resumo do arquivo:**
+Coleta Web Vitals (LCP, CLS, INP, FCP, TTFB) e recursos (TBT, resource timing). Fornece `reportMetric`, `getMetrics`, `metrics`, `WEB_VITAL_METRICS`, `THRESHOLDS`, `getRating`, `formatMetric`. `getMetrics` em `useCallback` **sem dependências**. Objetos `WEB_VITAL_METRICS`/`THRESHOLDS` mutáveis no módulo. Envia via `sendBeacon` (sem verificação) ou `fetch` com `keepalive`.
+
+**Problemas identificados:**
+
+| # | Onde | Problema | Correção necessária |
+|---|---|---|---|
+| 1 | `getMetrics` (linhas 194–200) | `useCallback` sem array de dependências. | Adicionar `[]`. |
+| 2 | `sendBeacon` (linha 176) | Sem verificação de retorno. | Verificar e fazer fallback. |
+| 3 | `reportMetric` (linha 105) | `onReport` instável pode re-registrar observers. | `useRef` para `onReport`. |
+| 4 | `WEB_VITAL_METRICS`/`THRESHOLDS` (linhas 39–59) | Objetos mutáveis. | `Object.freeze`. |
+
+**Melhorias:**
+
+| # | Onde | Melhoria | Justificativa |
+|---|---|---|---|
+| 1 | `getMetrics` | Adicionar `[]`. | Estabilizar referência. |
+| 2 | `sendBeacon` | Fallback para `fetch`. | Evitar perda de métricas. |
+| 3 | `reportMetric` | `useRef` para `onReport`. | Evitar re-registro. |
+| 4 | Constantes | `Object.freeze`. | Prevenir mutação. |
+
+**Duplicidades:**
+
+| # | Onde | Duplicidade | Justificativa |
+|---|---|---|---|
+| 1 | `@typedef PerformanceContextValue` | Definido em 3 arquivos. | Centralizar tipos. |
+
+---
+
+### 4.12 `useUnauthorized.js`
+
+**Caminho:** `/home/gus/Projetos/Caminhar/hooks/useUnauthorized.js`
+
+**Arquivos acionados ou relacionados:**
+- `next/router` (parâmetro `router`)
+- `react-hot-toast` (import dinâmico)
+- Componentes com verificação de 401
+
+**Resumo do arquivo:**
+Interrompe fluxo em acesso não autorizado. Exibe toast, aguarda delay, chama `router.reload()` e suspende via `await new Promise(() => {})`. O `throw` na linha 28 é **inalcançável**.
+
+**Problemas identificados:**
+
+| # | Onde | Problema | Correção necessária |
+|---|---|---|---|
+| 1 | Linhas 27–28 | `throw` inalcançável após `await new Promise(() => {})`. | Remover `throw` e documentar. |
+
+**Melhorias:**
+
+| # | Onde | Melhoria | Justificativa |
+|---|---|---|---|
+| 1 | Padrão | Remover `throw` inalcançável. | Clareza. |
+
+**Pontos de atenção:**
+
+| # | Onde | Ponto de atenção | Justificativa |
+|---|---|---|---|
+| 1 | `router.reload()` | Acoplamento ao Next.js. | Migração exige revisão. |
+
+**Código morto:**
+
+| # | Onde | Código morto | Justificativa |
+|---|---|---|---|
+| 1 | Linha 28 | `throw new Error(...)`. | Inalcançável. |
+
+---
+
+## 5. Ajustes e correções
+
+| Arquivo | Onde | Problema | Correção |
+|---|---|---|---|
+| `AuthProvider.js` | `logout` (linhas 64–67) | Sem `try/catch`. `setUser(null)` não executa em falha. | `try/catch/finally` com `setUser(null)` no `finally`. |
+| `AuthProvider.js` | `checkAuth` → `refreshSession` (linhas 78–88) | `refreshSession()` sem `signal`. | Passar `signal`. |
+| `index.js` | Exportações (linhas 6–10) | Dois padrões de importação. | Documentar política. |
+| `useAdminAuth.js` | `handleLogout` (linhas 48–57) | Erro silenciado; callback executa em falha. | Condicionar ao sucesso. |
+| `useAdminCrud.js` | `handleSubmit` (linhas 173–177) | Sem `credentials: 'include'`. | Adicionar `credentials: 'include'`. |
+| `useAdminCrud.js` | `toggleField` (linhas 256–260) | Sem `credentials: 'include'`. | Adicionar `credentials: 'include'`. |
+| `useApiFetch.js` | Estabilização (linhas 50–56) | Inconsistência serialized vs referência. | Alinhar comparação. |
+| `useApiFetch.js` | `fetchData` (linhas 58–103) | Sem `AbortController`. | Criar por execução. |
+| `usePerformanceMetrics.js` | `getMetrics` (linhas 194–200) | Sem array de dependências. | Adicionar `[]`. |
+| `usePerformanceMetrics.js` | `sendBeacon` (linha 176) | Sem verificação. | Fallback para `fetch`. |
+| `usePerformanceMetrics.js` | `reportMetric` (linha 105) | `onReport` instável. | `useRef` para `onReport`. |
+| `usePerformanceMetrics.js` | Constantes (linhas 39–59) | Objetos mutáveis. | `Object.freeze`. |
+| `useUnauthorized.js` | Linhas 27–28 | `throw` inalcançável. | Remover `throw`. |
+
+---
+
+## 6. Melhorias
+
+| Arquivo | Onde | Melhoria | Justificativa |
+|---|---|---|---|
+| `AuthProvider.js` | `logout` | `try/catch/finally` com `setUser(null)` no `finally`. | Limpeza garantida do estado. |
+| `AuthProvider.js` | `refreshSession` | Receber `signal`. | Cancelamento no desmonte. |
+| `index.js` | Exportações | Documentar política. | Consistência de imports. |
+| `useAdminAuth.js` | `handleLogout` | Condicionar ao sucesso. | Evitar mascarar falhas. |
+| `useAdminCrud.js` | `handleSubmit`, `handleDelete`, `toggleField` | Abstração de mutação. | Reduzir duplicação. |
+| `useApiFetch.js` | `fetchData` | `AbortController`. | Evitar estado em componente desmontado. |
+| `usePerformanceMetrics.js` | `getMetrics` | Array de dependências `[]`. | Estabilizar referência. |
+| `usePerformanceMetrics.js` | `sendBeacon` | Fallback para `fetch`. | Evitar perda de métricas. |
+| `usePerformanceMetrics.js` | `reportMetric` | `useRef` para `onReport`. | Evitar re-registro. |
+| `usePerformanceMetrics.js` | Constantes | `Object.freeze`. | Prevenir mutação. |
+| `useUnauthorized.js` | Padrão | Remover `throw` inalcançável. | Clareza. |
+
+---
+
+## 7. Duplicidades
+
+| Arquivo(s) | Onde | Duplicidade | Justificativa |
+|---|---|---|---|
+| `AuthContext.js` / `PerformanceContext.js` | Estrutura | Padrão idêntico `createContext` + `@typedef`. | Pode ser padronizado. |
+| `PerformanceContext.js` / `PerformanceProvider.js` / `usePerformanceMetrics.js` | `@typedef PerformanceContextValue` | Definido em 3 arquivos. | Centralizar tipos. |
+| `useAdminCrud.js` | `handleSubmit`, `handleDelete`, `toggleField` | Padrão `fetch` + erro + toast + `refetch` repetido. | Avaliar abstração. |
+
+---
+
+## 8. Código morto
+
+| Arquivo | Onde | Código morto | Justificativa |
+|---|---|---|---|
+| `useUnauthorized.js` | Linha 28 | `throw new Error('Acesso não autorizado')` após `await new Promise(() => {})`. | Inalcançável. |
+
+---
+
+## Controle do processo
+
+| # | Arquivo | Identificado | Lido | Analisado | Atualizado | Relido | Validado |
+|---|---|---|---|---|---|---|---|
+| 1 | `AuthContext.js` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 2 | `AuthProvider.js` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 3 | `PerformanceContext.js` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 4 | `PerformanceProvider.js` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 5 | `index.js` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 6 | `useAdminAuth.js` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 7 | `useAdminCrud.js` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 8 | `useApiFetch.js` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 9 | `useDebounce.js` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 10 | `usePerformance.js` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 11 | `usePerformanceMetrics.js` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 12 | `useUnauthorized.js` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+---
+
+## Validação final
+
+Todos os 12 arquivos da pasta `/hooks/` foram individualmente analisados, documentados, relidos e validado. O documento final está objetivo, claro, consistente e fiel ao conteúdo real do projeto.
+
+### Resumo do processamento
+
+- **Total de arquivos analisados:** 12
+- **Total de problemas identificados:** 13
+- **Total de melhorias sugeridas:** 11
+- **Total de duplicidades identificadas:** 3
+- **Total de códigos mortos identificados:** 1
+- **Arquivos sem problemas identificados:** `AuthContext.js`, `PerformanceContext.js`, `PerformanceProvider.js`, `useDebounce.js`, `usePerformance.js`

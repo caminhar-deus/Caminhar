@@ -1,9 +1,10 @@
 # Análise Completa de Testes — Projeto Caminhar (`tests/`)
 
-> **Data:** 23/09/2026
+> **Data:** 24/09/2026
 > **Objeto:** Análise profunda e individual de todos os arquivos na pasta `/home/gus/Projetos/Caminhar/tests/`
-> **Total de arquivos:** 224
+> **Total de arquivos:** 224 (todos analisados e documentados)
 > **Escopo:** Documentação técnica de cada arquivo de teste
+> **Processo:** Análise sequencial com leitura completa, identificação de relações, registro de problemas, melhorias, duplicidades e código morto
 
 ---
 
@@ -537,6 +538,1286 @@ O sistema de factories segue o padrão **Factory Method** com composição via `
 
 ---
 
+
+
+
+## 2.1. Examples e Infraestrutura de Testes (Complementar)
+
+### tests/examples/component-example.test.js
+
+#### Finalidade
+Arquivo de demonstração educacional que ensina como utilizar os helpers de teste (factories, render helpers, mocks) para testar componentes React. **NÃO testa componentes reais da aplicação** — serve como documentação integrada e referência para desenvolvedores.
+
+#### Arquivos acionados
+- `../factories/post.js` — `postFactory`
+- `../helpers/render.js` — `renderWithProviders`, `renderWithRouter`, `renderWithAuth`, `setMobileViewport`, `setDesktopViewport`, `fillForm`
+- `../mocks/fetch.js` — `mockFetchSuccess`, `mockFetchError`
+- `../helpers/index.js` — `mockGlobalFetch`
+- `@testing-library/react` — `screen`, `waitFor`
+- `@jest/globals`
+
+#### Resumo
+Define componentes mockados inline (`MockPostList`, `MockPostForm`) e testa: renderização básica, interações do usuário (delete), estados de loading/error, interações de formulário, responsividade, integração com router, integração com auth, e fetch mockado. Inclui bloco extenso de comentários "best practices" (linhas 538-565).
+
+#### Problemas
+- Testa componentes mockados, não código real de produção — valor zero para validação de regressão
+- Bloco de documentação extenso (linhas 538-565) não deveria estar em arquivo de teste
+- `jest` importado mas nunca utilizado diretamente
+- `MockLoadingComponent`/`MockErrorComponent` definidos inline nos testes, não reutilizáveis
+- Teste de erro (linha 529) espera "Erro na requisição" mas o mock passa "Erro no servidor" — desconexão entre mock e asserção
+
+#### Melhorias
+- Mover bloco de best practices para README ou documentação separada
+- Extrair componentes mockados inline para arquivo compartilhado
+- Remover import não utilizado do `jest`
+- Corrigir mensagem de erro no teste
+- Usar componentes reais em vez de mocks para valor real de teste
+
+#### Duplicações
+- Padrão `renderWithProviders(<MockPostList posts={posts} />)` repetido em múltiplos testes
+- `postFactory.resetId()` em múltiplos blocos `beforeEach`
+
+#### Código morto
+- Linhas 538-565: bloco de comentário de documentação, não código de teste
+- Componentes mockados inline utilizados apenas uma vez cada
+
+---
+
+### tests/examples/simple-test.test.js
+
+#### Finalidade
+Demonstra a arquitetura de testes — factories, API helpers, auth helpers, custom matchers e mocks. Testa a infraestrutura de testes em si, não código de aplicação.
+
+#### Arquivos acionados
+- `../factories/post.js`, `../factories/music.js`, `../factories/video.js`, `../factories/user.js`
+- `../helpers/api.js` — `createApiMocks`, `createGetRequest`, `createPostRequest`
+- `../helpers/auth.js` — `createAuthToken`, `mockAuthenticatedUser`, `mockAuthenticatedAdmin`
+- `../mocks/index.js` — `mockQuery`, `mockFetchSuccess`
+- `@jest/globals`
+
+#### Resumo
+Verificam se factories produzem objetos com propriedades esperadas, se helpers de API/auth funcionam, se custom matchers (`toHaveStatus`, `toBeValidJSON`, `toBeISODate`, `toHaveHeader`) funcionam, e se utilitários mockados funcionam. Finaliza com demo de integração mostrando fluxo completo de criação de post.
+
+#### Problemas
+- Testes são tautológicos — verificam se helpers retornam o que foi passado (ex: `expect(post.title).toBe('Título Customizado')` quando esse foi o input)
+- Nenhum comportamento real de aplicação testado
+- Burden de manutenção: testes devem ser atualizados quando helpers mudam, mas não validam nada significativo
+- `userFactory.resetId()` chamado em `beforeEach` mas `userFactory` em si não é testado diretamente
+
+#### Melhorias
+- Renomear arquivo ou adicionar banner destacado: "ARCHITECTURE TESTS — NOT FEATURE TESTS"
+- Remover testes triviais de existência de propriedades
+- Adicionar testes de integração reais que testam comportamento da aplicação
+- Mover para local claramente marcado como "examples" ou "docs"
+
+#### Duplicações
+- `beforeEach` reseta todos os IDs de factory — padrão repetido
+- Estrutura similar `expect(x).toHaveProperty('y')` em testes de factories
+
+#### Código morto
+- Nenhum código morto direto, mas o arquivo inteiro testa infraestrutura em vez de features
+
+---
+
+### tests/helpers/async-polyfills.js
+
+#### Finalidade
+Aplicar polyfills assíncronos necessários para o ambiente de testes (Node.js + JSDOM). Exportada separadamente do `tests/setup.js` para que tanto setup quanto teardown possam importá-la sem depender de Jest.
+
+#### Arquivos acionados
+- `node:stream/web` — `ReadableStream`
+- `node:worker_threads` — `MessageChannel`, `MessagePort`
+- Consumido por `tests/setup.js` e teardown
+
+#### Resumo
+Exporta função `setupAsyncPolyfills()` que polyfilla `ReadableStream` (de `node:stream/web`) e `MessageChannel`/`MessagePort` (de `node:worker_threads`) apenas se não existirem em `globalThis`. Usa padrão singleton via `polyfillsPromise` para garantir idempotência — múltiplas chamadas retornam a mesma promise.
+
+#### Problemas
+- O catch de erros usa `console.warn` sem opção de suprimir — polui saída dos testes quando polyfills falham intencionalmente em alguns ambientes
+- Não há teste de cobertura para este arquivo de infraestrutura crítico
+- `MessagePort` polyfillado mas sem comentário explicando por que é necessário
+
+#### Melhorias
+- Adicionar arquivo de teste para este helper
+- Adicionar JSDoc explicando por que cada polyfill é necessário
+- Considerar falhar loudamente ou fornecer melhores diagnósticos em caso de falha
+- Renomear `polyfillsPromise` para `polyfillsInitPromise` para maior clareza
+
+#### Duplicações
+- Nenhuma
+
+#### Código morto
+- Nenhum
+
+---
+
+## 2.2. Matchers Customizados (Complementar)
+
+### tests/matchers/toBeValidJSON.js
+
+#### Finalidade
+Matcher customizado `toBeValidJSON` para verificar se uma resposta contém JSON válido, opcionalmente comparando com estrutura esperada.
+
+#### Arquivos acionados
+- Nenhum import interno — é carregado por `tests/matchers/index.js`
+- Utilizado por `tests/helpers/api.js`
+
+#### Resumo
+Extrai corpo da resposta de múltiplos formatos (`res.data`, `res._getData?.()`, `res.body`, direto), faz parse se for string, e:
+- Sem argumentos: apenas valida se é JSON válido
+- Com argumento: verifica se dados contêm as propriedades esperadas via `expect.objectContaining(expected)`
+
+#### Problemas
+- Falta guard para `received` null/undefined — se `received` for null, `received.data` lança erro
+- A mensagem de negação ("expected invalid JSON, but received valid JSON") é confusa
+- `this.utils.printReceived(data)` na mensagem de sucesso pode vazar objetos grandes na saída de teste
+
+#### Melhorias
+- Adicionar verificação explícita de null/undefined com mensagem clara
+- Adicionar JSDoc para comportamento `.not.`
+- Considerar truncar saída de `printReceived` para objetos grandes
+
+#### Duplicações
+- Padrão de extração de corpo (`received.data || received._getData?.() || received.body || received`) espelha lógica similar em `toHaveHeader.js` e `toHaveStatus.js`
+
+#### Código morto
+- Nenhum
+
+---
+
+### tests/matchers/toHaveHeader.js
+
+#### Finalidade
+Matcher `toHaveHeader` para verificar se uma resposta HTTP possui um header específico, opcionalmente com valor específico.
+
+#### Arquivos acionados
+- Nenhum import interno — carregado por `tests/matchers/index.js`
+
+#### Resumo
+Extrai headers de `received.headers`, `received.getHeaders?.()`, ou `received._getHeaders?.()`. Normaliza nome do header para lowercase. Se valor não especificado, verifica existência. Se especificado, verifica igualdade ou se valor está em array (útil para headers com múltiplos valores).
+
+#### Problemas
+- Busca case-insensitive incompleta: testa `headerName`, `headerName.toLowerCase()`, e `headerName.toUpperCase()`, mas não `headerName.charAt(0).toUpperCase() + headerName.slice(1).toLowerCase()` (padrão `Content-Type`)
+- Headers com vírgula (ex: `"text/html, application/xhtml+xml"`) não são tratados
+
+#### Melhorias
+- Usar `Object.keys(headers).find(k => k.toLowerCase() === normalizedName)` para case-insensitive real
+- Suportar headers multi-valor separados por vírgula
+
+#### Duplicações
+- Lógica de extração de headers duplicada com `toBeValidJSON.js` (extração de response body)
+
+#### Código morto
+- Nenhum
+
+---
+
+### tests/matchers/toHaveProperties.js
+
+#### Finalidade
+Matcher `toHaveProperties` para verificar se um objeto possui todas as propriedades listadas em um array.
+
+#### Arquivos acionados
+- Nenhum import interno — carregado por `tests/matchers/index.js`
+
+#### Resumo
+Aceita array de propriedades ou string única (convertida para array). Compara chaves do objeto recebido com lista de propriedades esperadas. Lista propriedades faltantes em mensagem de erro.
+
+#### Problemas
+- Não suporta propriedades aninhadas — apenas primeiro nível
+- Se `received` é null, trata como `receivedKeys = []` sem mensagem específica
+- Não verifica propriedades com valor `undefined` — `{ name: undefined }` passa em `toHaveProperties(['name'])`
+
+#### Melhorias
+- Adicionar opção `{ allowUndefined: false }` para rejeitar `undefined`
+- Mensagem diferenciando "received null" vs "received array"
+
+#### Duplicações
+- Nenhuma
+
+#### Código morto
+- Nenhum
+
+---
+
+### tests/matchers/toHaveStatus.js
+
+#### Finalidade
+Matcher `toHaveStatus` para verificar se uma resposta HTTP possui o código de status esperado.
+
+#### Arquivos acionados
+- Nenhum import interno — carregado por `tests/matchers/index.js`
+
+#### Resumo
+Extrai código de status de múltiplos formatos de resposta:
+- `received._getStatusCode()` (node-mocks-http)
+- `received.status` (fetch Response / Express)
+- `received.statusCode` (http.ServerResponse)
+- `undefined` (nenhum dos anteriores)
+
+Compara com `expected` e retorna resultado com mensagem formatada.
+
+#### Problemas
+- **Código morto inalcançável (linhas 24-25)**: `else if (received.statusCode !== undefined)` nunca é alcançado porque `typeof received.statusCode === 'number'` na linha 21 já captura todos os números. A única forma de alcançar linha 24 é se `statusCode` for um valor não-número, não-undefined (ex: string `"200"`), que define `status = "200"` (string) — então `status === expected` falha porque `"200" !== 200`
+
+#### Melhorias
+- Remover código morto (linhas 24-25) ou corrigir para tratar tipos não-números consistentemente
+- Usar `Number.isFinite()` para ambas as verificações para ser explícito
+
+#### Duplicações
+- Nenhuma
+
+#### Código morto
+- Linhas 24-25 são inalcançáveis para todos os inputs práticos
+
+---
+
+### tests/mocks/next.test.js
+
+#### Finalidade
+Teste de sanidade para verificar se os mocks centralizados do Next.js (`next-setup.js` e `next.js`) estão funcionando corretamente. Deve ser executado após atualizações do Next.js para detectar quebras silenciosas.
+
+#### Arquivos acionados
+- `@jest/globals`, React, `@testing-library/react`
+- `./next-setup.js` (importado no topo para registrar mocks)
+- Módulos do Next.js via `jest.requireMock()` e `await import()`
+
+#### Resumo
+Testa:
+- `next/router`: Verifica se `useRouter` é função e retorna propriedades esperadas (pathname, push, replace, reload, back, events, isReady)
+- `next/navigation`: Verifica exports (useRouter, usePathname, useSearchParams, useParams, redirect, notFound, permanentRedirect) e valores padrão
+- `next/image`: Renderiza e verifica elemento `img` com src/alt/width/height
+- `next/link`: Renderiza e verifica elemento `a` com href
+- `next/head`: Renderiza e verifica título
+- `next/script`: Renderiza e verifica elemento `script` com src
+- `next/headers`: Verifica se headers/cookies são funções assíncronas com métodos
+
+#### Problemas
+- **A maioria dos testes apenas verificam `.toBeDefined()` e `typeof === 'function'`**: Verificam existência mas não comportamento. Ex: `useRouter().push` é definido mas não testado que pode ser chamado e retorna o valor mockado
+- **Cobertura faltando**: Sem testes para `next/dynamic` (mockado em `next-setup.js` mas não testado aqui). Sem testes para `next/server` (`NextResponse.json`, `redirect`, `next`)
+- **Sem asserções comportamentais**: Teste de `NextImage` (linhas 80-91) é bom mas não testa que props não-img são spread corretamente
+
+#### Melhorias
+- Adicionar testes comportamentais: chamar `useRouter().push('/path')` e asserir que retorna promise resolvida
+- Adicionar testes para mocks de `next/dynamic` e `next/server`
+- Adicionar teste para `next/headers` verificar `headers().get('x-test')` retorna valor esperado
+
+#### Duplicações
+- Nenhuma
+
+#### Código morto
+- Nenhum
+
+---
+
+
+
+## 6.1. Testes de Integração — API Pública (Complementar)
+
+### tests/integration/api/placeholder-image.test.js
+
+#### Finalidade
+Testa o endpoint `/api/placeholder-image` que retorna a imagem configurada como "placeholder" do site, com cadeia de fallback em três níveis: (1) imagem salva no banco via `getSetting`, (2) primeiro arquivo do diretório `/uploads`, (3) SVG inline padrão.
+
+#### Arquivos acionados
+- `pages/api/placeholder-image.js` — handler real importado
+- `lib/domain/settings.js` — `getSetting` (mockado)
+- `lib/infra/db.js` — módulo de banco (mockado)
+- `lib/infra/logger.js` — `logger` (mockado)
+- `tests/mocks/db-module` — `mockDb`
+- `node-mocks-http`
+
+#### Resumo
+Testa 4 cenários: (1) retorna imagem configurada com headers corretos (Content-Type, Cache-Control, Last-Modified), (2) retorna 304 com `If-None-Match` correspondente, (3) fallback para leitura do diretório em caso de erro no DB, (4) retorna SVG padrão quando nada está disponível. Usa `jest.resetModules()` + `require` dinâmico em `beforeEach` porque o handler mantém nome do arquivo em cache interno.
+
+#### Problemas
+- `getSetting` variável atribuída em `beforeEach` mas mockada diretamente — atribuição redundante
+- Sem teste para listagem de diretório vazia após `readdir` bem-sucedido
+- `Cache-Control: immutable` com `max-age=86400` pode ser muito agressivo se imagens mudarem
+- Derivação de Content-Type a partir da extensão do filename não testada explicitamente para edge cases
+
+#### Melhorias
+- Adicionar teste para cenário de diretório vazio
+- Adicionar teste para diferentes formatos de imagem (png, webp)
+- Adicionar teste para falha no `stat` após `readdir` bem-sucedido
+- Extrair mock setup repetido para helper
+- Verificar o path real do arquivo sendo lido
+
+#### Duplicações
+- `getSetting.mockResolvedValueOnce(...)` + `fsPromises.stat.mockResolvedValueOnce(MOCK_STATS)` repetidos entre testes
+- Padrão `const { req, res } = createMocks()` comum a todos os testes de API
+
+#### Código morto
+- Nenhum
+
+---
+
+### tests/integration/api/posts.create.api.test.js
+
+#### Finalidade
+Testa lógica de criação de posts via API administrativa, mockando a camada de biblioteca.
+
+#### Arquivos acionados
+- `../lib/posts` — mockado com `{ virtual: true }` (path provavelmente incorreto)
+- `node-mocks-http`
+
+#### Resumo
+Define um `postsHandler` inline e testa: criação bem-sucedida (201), 400 para campos faltando, 405 para método errado.
+
+#### Problemas
+- **CRÍTICO: Mock path incorreto** — `../lib/posts` não corresponde à estrutura do projeto (deveria ser `../../../lib/posts`)
+- **Handler é reimplementado inline** — não testa código real da API
+- **Virtual mock sem módulo real** — `{ virtual: true }` cria um módulo fantasma
+- Duplica lógica de validação/handling que deveria estar no handler real
+- Inconsistente com outros testes de integração que mockam módulos reais
+
+#### Melhorias
+- Importar handler real em vez de redefinir inline
+- Corrigir path do mock para corresponder à estrutura do projeto
+- Adicionar testes de edge case (títulos longos, caracteres especiais no slug, erros de banco)
+- Remover o `postsHandler` local inteiramente
+
+#### Duplicações
+- Padrão `postsHandler` similar ao de `posts.general.test.js` e `posts.flow.test.js`
+- Lógica de criação reescrita em múltiplos arquivos
+
+#### Código morto
+- Função inteira `postsHandler` (linhas 13-33) — não testa implementação real
+
+---
+
+### tests/integration/api/posts.delete.test.js
+
+#### Finalidade
+Testa lógica de exclusão de posts via API administrativa.
+
+#### Arquivos acionados
+- `./lib/posts` — mockado com `{ virtual: true }` (path relativo, provavelmente incorreto)
+- `node-mocks-http`
+
+#### Resumo
+Testa `postsHandler` inline para DELETE: exclusão bem-sucedida (200), 404 para post não encontrado, 400 para ID faltando, 405 para método errado.
+
+#### Problemas
+- **Mock path é `./lib/posts`** — inconsistente com teste de create (`../lib/posts`) e provavelmente incorreto para ambos
+- **Handler reimplementado inline** — mesmo problema do teste de create
+- Sem teste para formatos de ID inválidos (string, negativo, zero)
+- Virtual mock sem módulo real de backing
+
+#### Melhorias
+- Importar handler real ou corrigir path do mock
+- Adicionar testes para formatos de ID inválidos
+- Adicionar teste para propagação de erro do `deletePost`
+- Remover reimplementação inline do handler
+
+#### Duplicações
+- Estrutura similar ao teste de create (adaptado para DELETE)
+- Mesmo padrão de validação/handling de outros testes de posts
+
+#### Código morto
+- Função inteira `postsHandler` (linhas 13-38) — código morto de teste
+
+---
+
+### tests/integration/api/posts.flow.test.js
+
+#### Finalidade
+Teste de integração para o fluxo completo: upload de imagem → criação de post com URL retornada.
+
+#### Arquivos acionados
+- `formidable` — mockado
+- `fs` — mockado
+- `lib/infra/db.js` — mockado via `tests/mocks/db-module`
+- `node-mocks-http`
+
+#### Resumo
+Testa um fluxo de 2 etapas: (1) upload de imagem via formidable com validação (deve ser image/, menos de 5MB), (2) criação de post usando a URL retornada. Verifica se o DB `INSERT` recebe a URL correta da imagem.
+
+#### Problemas
+- **AMBOS os handlers definidos inline** — nota explicitamente "não existe endpoint real"
+- `formidable.IncomingForm.mockImplementation` é frágil — depende de estrutura interna
+- Extração de extensão de arquivo: `'no-dot'.split('.').pop()` retorna a string inteira — bug potencial
+- Número mágico `5 * 1024 * 1024` deveria ser constante nomeada
+- Paths hardcoded (`/tmp`, `public/uploads/`) — deveria usar `path.join` ou config
+- `console.error` suprimido em `beforeAll` — esconde problemas reais
+- Sem testes para edge cases (arquivo oversized, não-imagem, campos faltando)
+
+#### Melhorias
+- Criar endpoints reais ou testar os existentes
+- Extrair números mágicos para constantes
+- Adicionar testes de edge case para falhas de validação
+- Usar `path.join` para construção de paths
+- Verificar se `unlink` é chamado em caso de erro para cleanup
+
+#### Duplicações
+- `postsHandler` similar ao de `posts.general.test.js` e `posts.create.api.test.js`
+- Poderia ser extraído para fixtures compartilhadas se este padrão for comum
+
+#### Código morto
+- Ambos `uploadHandler` (linhas 29-77) e `postsHandler` (linhas 80-101) são implementações de teste dead-only
+
+---
+
+### tests/integration/api/posts.general.test.js
+
+#### Finalidade
+Testes gerais para API de posts — GET (listagem) e POST (criação).
+
+#### Arquivos acionados
+- `lib/infra/db.js` — mockado
+- `lib/auth/auth.js` — mockado
+- `tests/mocks/db-module`
+- `node-mocks-http`
+
+#### Resumo
+Testa handler inline: GET retorna posts de `db.getAllPosts()`, POST cria com dados válidos (201), POST retorna 400 para campos faltando.
+
+#### Problemas
+- **Handler definido inline** — não testa código real da API
+- `withAuth` mock é um passthrough — não testa comportamento de auth
+- `updatePost` e `deletePost` mockados mas nunca utilizados
+- Sem teste para handling de erro 500 quando DB lança
+- Sem teste para falha de auth (401)
+- Teste de validação envia strings vazias mas não verifica qual campo específico disparou o erro
+
+#### Melhorias
+- Adicionar testes para propagação de erro de DB (status 500)
+- Adicionar teste de falha de auth
+- Adicionar testes de validação específicos por campo faltando
+- Testar handler real em vez de reimplementação
+- Remover métodos mockados não utilizados (`updatePost`, `deletePost`)
+
+#### Duplicações
+- `postsHandler` similar a outros arquivos de teste de posts
+- Padrão de mock similar ao de `placeholder-image.test.js`
+
+#### Código morto
+- Função inteira `handler` (linhas 21-43) — código morto de teste-only
+
+---
+
+### tests/integration/api/posts.integration.test.js
+
+#### Finalidade
+Testes de integração para o endpoint público `GET /api/posts` — valida tratamento de requisição, paginação, chaves de cache, rate limiting, e respostas de erro.
+
+#### Arquivos acionados
+- `lib/domain/posts.js` — `getRecentPosts`
+- `lib/cache/cache.js` — `getOrSetCache`, `checkRateLimit`, `invalidateCache`
+- `pages/api/posts.js` — handler real
+- `node-mocks-http`
+
+#### Resumo
+11 testes cobrindo: resposta bem-sucedida, parâmetros de paginação (page/limit), rejeição de método (405), params inválidos (400), rate limit (429), erro interno (500), valores default, formato de chave de cache, e parâmetro de busca. Mocka as camadas de domínio e cache; exercita o handler real de `pages/api/posts.js`.
+
+#### Problemas
+- Testa apenas GET — o handler real também suporta POST (com auth + validação Zod) mas nenhum teste de POST existe
+- `beforeEach` reimplementa o factory mock já definido em `jest.mock()` (linhas 35-38 duplicam linhas 15-18)
+- Asserção de chave de cache `posts:list:2:5` funciona mas `posts:search:1:10:test-term` usa formato diferente — nomenclatura inconsistente
+- `console.error` spy silencia erros mas `logger.error` no handler não é mockado, então ainda pode produzir saída
+
+#### Melhorias
+- Adicionar testes de POST (auth requerida)
+- Remover implementações `beforeEach` redundantes
+- Mockar módulo `logger`
+- Usar `res._getJSONData()` helper em vez de `JSON.parse(res._getData())` para consistência
+
+#### Duplicações
+- Padrão de reset `beforeEach` (`jest.clearAllMocks()` + `checkRateLimit.mockResolvedValue(false)` + `getOrSetCache.mockImplementation(...)`) duplicado do factory mock
+
+#### Código morto
+- Nenhum
+
+---
+
+### tests/integration/api/posts.update.api.test.js
+
+#### Finalidade
+Testa o fluxo PUT/update para posts — mas testa um **handler simulado inline**, NÃO o real `pages/api/admin/posts.js`.
+
+#### Arquivos acionados
+- `../lib/posts` (mock fantasma — path não resolve corretamente; deveria ser `../../../lib/domain/posts.js`)
+- `node-mocks-http`
+
+#### Resumo
+5 testes para um `postsHandler` inline que valida método, campos obrigatórios (title, slug, content), chama `updatePost`, retorna 200/404/400/405. O mock `{ virtual: true }` cria um módulo fantasma.
+
+#### Problemas
+- **CRÍTICO: Testa handler falso** — o handler real admin posts em `pages/api/admin/posts.js` usa `createAdminHandler`, validação Zod, atualizações parciais (todos campos opcionais), e RBAC. O handler deste teste exige `title + slug + content` mas o update real aceita campos parciais
+- **Mock path incorreto** — `../lib/posts` resolve para `tests/integration/lib/posts` que não existe; `virtual: true` permite isso mas significa que o mock nunca corresponde a código real
+- Não testa o endpoint real de forma alguma — dá falsa confiança
+- O handler real usa `createAdminHandler` que envolve com `withAuth`, checa permissões, e trata rate limiting — nada disso é testado aqui
+
+#### Melhorias
+- Substituir handler inline pelo real de `pages/api/admin/posts.js`
+- Corrigir path do mock para `../../../lib/domain/posts.js`
+- Atualizar expectativas de validação para corresponder schema Zod real (todos campos opcionais no update)
+
+#### Duplicações
+- Este arquivo duplica a intenção de `tests/integration/api/admin/posts.test.js` que DE FATO testa o handler real
+
+#### Código morto
+- Função inteira `postsHandler` (linhas 13-44) é código morto de teste-only
+
+---
+
+### tests/integration/api/products.test.js
+
+#### Finalidade
+Testes de integração abrangentes para `/api/products` — GET público, GET/POST/PUT/DELETE admin, autenticação, rate limiting, e edge cases.
+
+#### Arquivos acionados
+- `lib/domain/products.js` — 5 funções
+- `lib/auth/auth.js`
+- `lib/cache/cache.js`
+- `lib/domain/audit.js`
+- `lib/infra/logger.js`
+- `pages/api/products.js` — handler real
+- `tests/factories` — `userFactory`
+- `node-mocks-http`
+
+#### Resumo
+14 testes em 5 describe blocks. Testa paginação pública, CRUD admin com auth, rate limits, auditoria, invalidação de cache, resultados vazios, e métodos não suportados. Usa handler real.
+
+#### Problemas
+- `userFactory.resetId()` chamado em `beforeEach` (linha 41) — estado de factory pode vazar entre testes se não resetado
+- `updateProduct` mock retorna `[{ id: 1, name: 'Meia' }]` (array) mas handler real espera retorno raw — o handler real retorna `updatedProduct` diretamente (não array)
+- `deleteProduct` retorna `{ id: 1, name: 'Produto Deletado' }` mas handler real retorna `{ success: true, message: '...' }` — mismatch sugere que mocks não correspondem ao comportamento real de domínio
+- `verifyToken` retorna `{ username: 'admin' }` mas handler real acessa `req.user.username` — funciona por coincidência
+
+#### Melhorias
+- Alinhar shapes de retorno dos mocks com shapes reais de domínio
+- Testar erros de validação Zod explicitamente
+- Adicionar teste para path de throw `INVALID_PAGINATION_PARAMS`
+
+#### Duplicações
+- Setup de auth `beforeEach` repetido em describe blocks POST/PUT/DELETE (linhas 149-152, 172-175, 197-200) — poderia ser hoisted
+
+#### Código morto
+- Nenhum
+
+---
+
+### tests/integration/api/settings.general.test.js
+
+#### Finalidade
+Testa endpoint `/api/settings` — mas como `posts.update.api.test.js`, usa um **handler simulado inline**, não o real `pages/api/settings.js`.
+
+#### Arquivos acionados
+- `lib/infra/db.js` (via `tests/mocks/db-module`)
+- `lib/auth/auth.js` (mockado inline)
+- `node-mocks-http`
+
+#### Resumo
+3 testes para handler inline: 401 sem token, 200 GET com auth, 200 PUT com auth. O handler é definido no arquivo de teste (linhas 24-61).
+
+#### Problemas
+- **CRÍTICO: Testa handler falso** — o real `pages/api/settings.js` provavelmente tem lógica diferente (o arquivo de teste nunca o importa)
+- Comentário diz "Mock handler function since the file doesn't exist" (linha 23) — confirma que está conscientemente testando um stub
+- O mock de `withAuth` é trivialmente bypassado (sempre retorna verificação de `Bearer valid-token`)
+- Endpoint real de settings provavelmente tem validação, RBAC, e funções de domínio que estão completamente não testadas
+- Usa `test` em vez de `it` — inconsistência menor com outros arquivos
+
+#### Melhorias
+- Importar e testar handler real de `pages/api/settings.js`
+- Se handler real não existe, este arquivo de teste é inteiramente enganoso e deveria ser deletado ou reescrito
+
+#### Duplicações
+- Padrão `db.query.mockResolvedValue` + `createMocks` comum a todos os arquivos de teste
+
+#### Código morto
+- Função inteira `handler` (linhas 24-61) — scaffolding de teste puro que não exercita código de produção
+
+---
+
+### tests/integration/api/stats.test.js
+
+#### Finalidade
+Testes de integração para `/api/admin/stats` — valida gating de autenticação, agregação de estatísticas, e fallback para resultados vazios.
+
+#### Arquivos acionados
+- `pages/api/admin/stats` — handler real
+- `lib/infra/db` — `query`
+- `lib/auth/auth` — `getAuthToken`, `verifyToken`, `withAuth`
+- `node-mocks-http`
+
+#### Resumo
+3 testes: 401 sem token, 200 com token válido retornando stats (usersToday/Month/Year + posts), e fallback para 0 quando DB retorna vazio. O mock de `withAuth` implementa lógica auth realista inline.
+
+#### Problemas
+- O mock de `withAuth` (linhas 15-26) duplica a implementação real de `lib/auth/auth.js` — se a real mudar, este mock silenciosamente diverge
+- `query.mockImplementation` usa string matching com `sql.includes()` (linha 61) — frágil, quebraria se formatação SQL mudar
+- Apenas asserta `usersToday`, `usersMonth`, `usersYear`, e `posts` — outros 14 campos de stats retornados pelo handler não testados
+- O mock em linha 5 `jest.mock('../../../lib/infra/db', ...)` usa sem extensão enquanto linha 30 importa `from '../../../lib/infra/db'` — ambos funcionam mas inconsistentes
+
+#### Melhorias
+- Assertar todos os campos de stats na resposta
+- Usar `withAuth` real ou mock mais robusto
+- Adicionar teste para `verifyToken` retornando null (caso de token inválido)
+
+#### Duplicações
+- O mock de `withAuth` duplica a lógica real do middleware de autenticação
+
+#### Código morto
+- Nenhum
+
+---
+
+### tests/integration/api/status.test.js
+
+#### Finalidade
+Testa o endpoint de health check `/api/status` — validação de método, conectividade de banco, e fallback de ambiente.
+
+#### Arquivos acionados
+- `pages/api/status.js` — handler real
+- `lib/infra/db.js` — `query`
+- `tests/mocks/db-module`
+- `node-mocks-http`
+
+#### Resumo
+4 testes: 405 para não-GET, 200 com DB conectado, 200 com erro de DB, fallback de ambiente para 'development'. Usa handler real.
+
+#### Problemas
+- `import { query } from '../../../lib/infra/db.js'` na linha 4 acontece ANTES do `jest.mock()` na linha 6 — depende do hoisting do Jest mas é frágil/confuso
+- `delete process.env.NODE_ENV` na linha 39 é perigoso — se teste falhar antes da restauração, polui outros testes. Deveria usar `jest.replaceProperty` ou save/restore em `afterEach`
+- Testa apenas `database.status` e `api.environment` — não valida `api.version`, campos `system`, ou `timestamp`
+
+#### Melhorias
+- Mover import após `jest.mock`
+- Usar `jest.replaceProperty(process, 'env', ...)` para manipulação segura de ambiente
+- Adicionar asserções para todos os campos da resposta
+
+#### Duplicações
+- Usa mock compartilhado `db-module` (mesmo que `settings.general.test.js`)
+
+#### Código morto
+- Nenhum
+
+---
+
+### tests/integration/api/upload-image.test.js
+
+#### Finalidade
+Testa endpoint `/api/upload-image` — fluxo de upload, validação de arquivo (mimetype, size), naming de arquivo, integração com sharp, e updates de DB.
+
+#### Arquivos acionados
+- `pages/api/upload-image.js` — handler real
+- `sharp`
+- `formidable`
+- `fs`
+- `lib/auth/auth.js`
+- `lib/domain/settings.js`
+- `node-mocks-http`
+
+#### Resumo
+8 testes cobrindo: upload bem-sucedido, sem arquivo, mimetype inválido, arquivo oversized, path/nome de arquivo correto, update de DB para hero-image, falha de parse (500), e 405 para não-POST. Usa handler real.
+
+#### Problemas
+- Mock de `formidable` nas linhas 16-19 mocka default export mas import real na linha 43 usa `import formidable from 'formidable'` — funciona mas shape do mock é função retornando objeto, enquanto formidable real é uma classe
+- `beforeEach` (linhas 48-53) define `fs.existsSync.mockReturnValue(true)` mas não reseta mock de `formidable` — se um teste vazar `formplementation`, testes subsequentes herdam
+- Mock de `sharp` retorna metadados fixos mas não testa path de validação de dimensão (metadata.width > MAX_WIDTH)
+- `updateSetting` é chamado com `'home_image_url'` hardcoded — não testa que a chave de setting corresponde ao que está armazenado
+- Polyfill de `global.TextEncoder/TextDecoder` (linhas 5-6) necessário para node-mocks-http — deveria estar em setup file, não por-test
+
+#### Melhorias
+- Adicionar teste para dimensão muito grande (metadata > 1920)
+- Adicionar teste para arquivo corrompido (sharp lança)
+- Resetar mock de `formidable` em beforeEach
+- Mover polyfill de TextEncoder para setup do Jest
+
+#### Duplicações
+- Objeto `mockFile` é redefinido em cada teste (linhas 57-63, 112-118, 142-148, 172-178, 213-219) — poderia ser factory helper
+
+#### Código morto
+- Nenhum
+
+---
+
+
+
+## 9.1. Testes Unitários — Admin Fields (Complementar)
+
+### tests/unit/components/Admin/TextAreaField.test.js
+
+#### Finalidade
+Testar o componente `TextAreaField`, campo de texto multiline do painel administrativo.
+
+#### Arquivos acionados
+- `components/Admin/fields/TextAreaField.js` (componente sob teste)
+- `components/UI` — `TextArea` (componente base)
+- `@testing-library/react`, `@jest/globals`
+
+#### Resumo
+Testa: renderização com label, asterisco de required e contador de caracteres (`5 / 100 caracteres`), alternância hint/erro (quando error está presente, hint some e erro aparece), fallback de rows padrão (3), e normalização de `value=null` para string vazia.
+
+#### Problemas
+- Teste de normalização (caso 4) é parcialmente ilusório: após `fireEvent.change`, o valor do textarea continua `''` porque é um componente controlado sem `useState` interno — isso NÃO verifica que `onChange` alteraria o valor, apenas que o DOM mantém o estado inerte
+- Não testa propriedade `placeholder`, `className`, ou comportamento de `maxLength` real
+- Contador de caracteres não testado dinamicamente (apenas "5 / 100")
+
+#### Melhorias
+- Testar `placeholder` e `className` props
+- Adicionar teste verificando `maxLength` attribute no textarea
+- Clarificar que teste 4 testa padrão de componente controlado (ou removê-lo)
+
+#### Duplicações
+- **Estrutura quase idêntica à de `TextField.test.js`** — ambos têm mesma estrutura de 4 testes com mesmos nomes e padrões
+- `jest.fn()` para `onChange` em todos os casos
+
+#### Código morto
+- Nenhum
+
+---
+
+### tests/unit/components/Admin/TextField.test.js
+
+#### Finalidade
+Testar o componente `TextField`, adaptador do `Input` da UI para o admin.
+
+#### Arquivos acionados
+- `components/Admin/fields/TextField.js` (componente sob teste)
+- `components/UI` — `Input` (componente base)
+- `@testing-library/react`, `@jest/globals`
+
+#### Resumo
+Testa: renderização com label e asterisco de required, alternância hint/erro (mesmo padrão que TextAreaField), repasse de eventos nativos (`fireEvent.change` → `onChange` chamado), e normalização de `value=null` para string vazia.
+
+#### Problemas
+- **Falta teste de `type` prop**: Componente aceita `type` (padrão `'text'`) mas não há teste que verifique se é passado ao `Input`
+- **Falta teste de `placeholder` e `className`**
+- Teste 3 apenas verifica `toHaveBeenCalled()` sem verificar payload (value passado)
+- Teste 4 tem mesma ilusão do TextAreaField: confirmação é sobre DOM controlado sem estado, não sobre atualização
+
+#### Melhorias
+- Verificar `expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ target: { value: 'novo valor' } }))`
+- Testar prop `type="email"` ou `type="url"`
+- Testar `placeholder` e `className` props
+
+#### Duplicações
+- **Estrutura quase idêntica à de `TextAreaField.test.js`** — 4 testes com mesma estrutura. Forte candidato para shared test utilities ou factory
+
+#### Código morto
+- Nenhum
+
+---
+
+### tests/unit/components/Admin/ToggleField.test.js
+
+#### Finalidade
+Testar o `ToggleField`, campo booleano do admin.
+
+#### Arquivos acionados
+- `components/Admin/fields/ToggleField.js` (componente sob teste)
+- `@testing-library/react`, `@jest/globals`
+
+#### Resumo
+Testa renderização de labels de estado (default "Rascunho"/"Publicado" vs custom "Sim"/"Não"), suporte a `disabled`, repasse de click via checkbox, e descrição.
+
+#### Problemas
+- Apenas 2 testes — cobertura magra
+- Não testa `className` prop
+- Não testa `name` attribute no input
+- Não testa comportamento controlado (checked state reflects prop changes)
+- Não testa acessibilidade (`aria-checked`, role="switch")
+
+#### Melhorias
+- Adicionar teste de keydown no checkbox (Enter/Space)
+- Testar `aria-checked`, role="switch" se aplicável
+- Extrair mock para consistência
+
+#### Duplicações
+- Nenhuma significativa
+
+#### Código morto
+- Nenhum
+
+---
+
+### tests/unit/components/Admin/UrlField.test.js
+
+#### Finalidade
+Testar o `UrlField`, campo com validação específica de URL e preview de embed (YouTube, Spotify).
+
+#### Arquivos acionados
+- `components/Admin/fields/UrlField.js` (componente sob teste)
+- `@testing-library/react`, `@jest/globals`
+
+#### Resumo
+Testa renderização com required, validação de URL obrigatória, validação de formato genérico, validação + extração de ID do YouTube + preview, validação + extração de ID do Spotify + preview, validação customizada via `validate` prop, exibição de hint sem erro, `platform="generic"` sem preview, e exceção no construtor de URL.
+
+#### Problemas
+- Comentários referenciam linhas específicas do componente real ("Lines 126-127", "Lines 70-71") — **acoplamento estrutural**: refatorar o componente quebra os nomes dos testes
+- Teste de preview YouTube usa `rerender` com nova função mock em vez de reutilizar `onChange` — inconsistente
+- `getByRole('textbox')` funciona porque `type="url"` ainda renderiza como textbox role, mas poderia quebrar se tipo mudar
+
+#### Melhorias
+- Substituir referências a "Lines X" por descrições semânticas
+- Usar `getByRole('textbox', { name: /label/ })` para seleção mais robusta
+- Adicionar teste de `placeholder` prop (incluindo placeholders específicos de plataforma)
+- Adicionar teste de `className` prop
+
+#### Duplicações
+- `const onChange = jest.fn();` declarado em cada teste (7 vezes) — poderia ser hoisted para factory
+
+#### Código morto
+- Nenhum
+
+---
+
+## 11.1. Testes Unitários — Features (Complementar)
+
+### tests/unit/components/Features/Blog/BlogSection.test.js
+
+#### Finalidade
+Testar `BlogSection`, seção de listagem de posts do blog.
+
+#### Arquivos acionados
+- `components/Features/Blog/BlogSection` (componente sob teste)
+- `components/Features/Blog/PostCard` (mockado)
+- `tests/helpers/index.js` — `suppressConsoleError`, `mockGlobalFetch`
+- `@testing-library/react`, `@jest/globals`
+
+#### Resumo
+Testa: estado de loading inicial, retorno null quando não há posts, renderização de posts carregados, limite de posts + botão "Ver todos", botão oculto quando limit > total, tratamento silencioso de `success: false`, erro HTTP 500 com JSON, fallback "Unknown error" e falha de rede/JSON inválido.
+
+#### Problemas
+- Testes de erro (6-8) dependem fortemente de `consoleErrorSpy` — não verificam estado visual do componente após erro
+- `mockGlobalFetch` do helper cria mock mas `global.fetch.mockResolvedValueOnce` é usado diretamente — inconsistência entre `fetchMock` (helper) e `global.fetch` (diretamente)
+- `fetchMock` declarado mas nunca usado diretamente nos testes
+
+#### Melhorias
+- Verificar que componente retorna `container.toBeEmptyDOMElement()` em caso de erro (silêncio visual)
+- Testar interação com botão "Ver todos" (navegação)
+- Unificar uso de `fetchMock` vs `global.fetch`
+
+#### Duplicações
+- Objetos de resposta de erro (`{ ok: true, json: async () => ({...}) }`) repetidos entre testes
+
+#### Código morto
+- Nenhum
+
+---
+
+### tests/unit/components/Features/Blog/PostCard.test.js
+
+#### Finalidade
+Testar `PostCard`, card individual de post.
+
+#### Arquivos acionados
+- `components/Features/Blog/PostCard` (componente sob teste)
+- `@testing-library/react`, `@jest/globals`
+
+#### Resumo
+Testa: renderização completa (title, excerpt, category, image, link), placeholder quando `image_url=null`, texto customizado de "Ler mais", e resiliência sem categorias (`null`).
+
+#### Problemas
+- Sem teste para formatação de data (`created_at`)
+- Sem teste para `loading="lazy"` attribute na imagem
+- Sem teste para `aria-label` no link "Ler mais"
+- `mockPost.categories` usa `[{ name: 'Fé', slug: 'fe' }]` mas componente usa `cat.slug` como key — sem teste para múltiplas categorias ou slugs duplicados
+
+#### Melhorias
+- Testar formatação de data (ex: "10/10/2023")
+- Testar múltiplas categorias renderizando
+- Testar escape/normalização de slug no href
+
+#### Duplicações
+- Nenhuma
+
+#### Código morto
+- Nenhum
+
+---
+
+### tests/unit/components/Features/ContentTabs/ContentTabs.test.js
+
+#### Finalidade
+Testar `ContentTabs`, container de abas que alterna entre Blog, Músicas, Vídeos, Produtos.
+
+#### Arquivos acionados
+- `components/Features/ContentTabs/index.js` (componente sob teste)
+- Mocks: `Blog/BlogSection`, `Music/MusicGallery`, `Video/VideoGallery`, `Products/ProductList`
+- `@testing-library/react`, `@jest/globals`
+
+#### Resumo
+Testa aba padrão "Reflexões" (blog), alternância entre Músicas/Vídeos/Produtos, aba bloqueada ("Em Desenvolvimento") não troca conteúdo, e fallback via `React.useState` spy para abas desconhecidas.
+
+#### Problemas
+- **ANTIPADRÃO GRAVE**: `jest.spyOn(React, 'useState').mockReturnValueOnce(['projeto1', jest.fn()])` — **mocha implementação interna do React**. Quebra se componente for reestruturado
+- Teste 4 testa detalhes de implementação, não comportamento
+- Sem teste de `activeTab` aria attributes (`aria-selected`, `aria-controls`)
+- Sem teste que "Reflexões" tab está marcada como `active` por padrão (CSS class)
+
+#### Melhorias
+- **REMOVER teste 4** ou substituir por teste de prop/estado que injeta aba desconhecida de forma controlada
+- Adicionar teste para `aria-selected` attributes
+- Adicionar teste para `aria-controls` / `role="tablist"` / `role="tabpanel"`
+
+#### Duplicações
+- Nenhuma
+
+#### Código morto
+- `afterEach(() => { jest.restoreAllMocks(); })` é desnecessário se teste 4 for removido
+
+---
+
+### tests/unit/components/Features/Music/MusicCard.test.js
+
+#### Finalidade
+Testar `Card` de música individual com embed Spotify.
+
+#### Arquivos acionados
+- `components/Features/Music/MusicCard.js` (componente sob teste)
+- `tests/helpers/index.js` — `suppressConsoleError`
+- `@testing-library/react`, `@jest/globals`
+
+#### Resumo
+Testa título, artista, formatação de URL Spotify → embed (normal, intl-pt, URI `spotify:track:`), fallback para URL desconhecida (SoundCloud), URL nula ("Prévia indisponível", sem iframe, sem botão), URL nula → sem botão "Ouvir", e botão "Ouvir" → `window.open`.
+
+#### Problemas
+- `jest.spyOn(window, 'open').mockImplementation(() => {})` — mock NUNCA restaurado em `afterEach`. Afeta outros testes
+- Helper `suppressConsoleError` usado mas sem erros esperados nos casos 1-6 — pode mascarar problemas reais
+- Sem teste para `aria-label` attribute no botão
+- Sem teste para `rel="noopener"` ou atributos de segurança do link
+
+#### Melhorias
+- Adicionar `window.open.mockRestore()` ao `afterEach`
+- Testar que `window.open` é chamado exatamente uma vez (`toHaveBeenCalledTimes(1)`)
+- Testar formatação de URL com query params (`?si=xxx`)
+- Verificar `rel="noopener"` se `<a>` em vez de `window.open`
+
+#### Duplicações
+- Objeto `musica` redefinido em cada teste (3-4 vezes) — poderia usar factory function
+
+#### Código morto
+- Nenhum
+
+---
+
+### tests/unit/components/Features/Music/MusicGallery.edge.test.js
+
+#### Finalidade
+Testar edge cases do `MusicGallery` (galeria paginada de músicas).
+
+#### Arquivos acionados
+- `components/Features/Music/MusicGallery.js` (componente sob teste)
+- `components/Features/Music/MusicCard.js` (mockado)
+- `tests/helpers/index.js` — `suppressConsoleError`, `mockGlobalFetch`
+- `@testing-library/react`, `@jest/globals`
+
+#### Resumo
+Testa: fallback vazio quando API retorna objeto sem `data`, mensagem de erro quando `fetch` rejeita, array plano como resposta (paginação calculada), resposta com paginação anidada (`data` + `pagination.totalPages`), e resposta nula (`null`).
+
+#### Problemas
+- Nome "edge.test.js" sugere arquivo específico para edge cases, mas `MusicGallery.test.js` também testa cenários de erro — **duplicidade parcial**
+- Teste 3 usa 7 itens com 6 por página → espera "Página 1 de 2". Assume `itensPorPagina=6` hardcoded. Se componente mudar para 8 ou 12, teste quebra sem mensagem clara
+
+#### Melhorias
+- Combinar com `MusicGallery.test.js` ou documentar claramente a separação (edge vs happy path)
+- Extrair `itensPorPagina` para constante comparada com mock
+
+#### Duplicações
+- Mock do `MusicCard` é **idêntico** em `MusicGallery.test.js` e `MusicGallery.edge.test.js` — poderia ser compartilhado via `__mocks__` ou helper
+
+#### Código morto
+- Nenhum
+
+---
+
+### tests/unit/components/Features/Music/MusicGallery.test.js
+
+#### Finalidade
+Testar `MusicGallery` — happy path e funcionalidades principais.
+
+#### Arquivos acionados
+- `components/Features/Music/MusicGallery.js` (componente sob teste)
+- `components/Features/Music/MusicCard.js` (mockado)
+- `tests/helpers/index.js` — `mockGlobalFetch`
+- `@testing-library/react`, `@jest/globals`
+
+#### Resumo
+Testa: loading → carrega músicas, erro de API → mensagem + retry, nenhum resultado, navegação entre páginas, busca com termo e contador de resultados, limpar busca (botão ✕), mudança de ordenação (`sort=recent`), voltar à página anterior (botão Anterior), e sem resultados na busca + limpar.
+
+#### Problemas
+- Teste 4: `mockResolvedValueOnce` é chamado ANTES do clique, mas a sequência depende de que o primeiro `mockResolvedValueOnce` já foi consumido. Se a ordem de execução mudar, teste quebra
+- Teste 7 (sort): usa `global.fetch.mock.calls.map(call => call[0])` para inspecionar URLs — funciona, mas é frágil à ordem de chamadas
+- Testes 4, 6, 8, 9 usam múltiplos `mockResolvedValueOnce` em sequência — padrão repetitivo e propenso a erros de contagem
+
+#### Melhorias
+- Usar `mockImplementation` com switch de URL para tornar a ordem explícita
+- Testar scroll infinito ou lazy loading se aplicável
+
+#### Duplicações
+- Padrão `mockMusicas` é **idêntico** ao de `MusicGallery.edge.test.js` — deveria ser compartilhado
+- Mock do `MusicCard` é idêntico ao de `MusicGallery.edge.test.js`
+
+#### Código morto
+- Nenhum
+
+---
+
+### tests/unit/components/Features/Products/ProductCard.test.js
+
+#### Finalidade
+Testar `ProductCard`, card de produto com galeria de imagens e lightbox.
+
+#### Arquivos acionados
+- `components/Features/Products/ProductCard.js` (componente sob teste)
+- `lib/api/utils` (mockado) — `parseImages`
+- `tests/helpers/index.js` — `suppressConsoleError`
+- `@testing-library/react`, `@jest/globals`
+
+#### Resumo
+Testa renderização (nome, descrição, preço), "Sem imagem" quando `image_url=null` e `image_url=''`, botões de navegação com múltiplas imagens, navegação anterior/próxima, link do produto, ausência de link, abertura do lightbox ao clicar na imagem, fechar lightbox com Escape e clicando no overlay, botões de navegação no lightbox, e transição de opacidade da imagem (loading → loaded).
+
+#### Problemas
+- **Mock mismatch crítico**: Mock de `parseImages` usa `JSON.parse(images)` + fallback `[images]`, mas implementação real (`lib/api/utils.js:40-46`) usa `imagesString.split('
+').map(...).filter(...)`. Testes passam contra o mock mas não validam handling real de dados
+- `suppressConsoleError` mascara erros — não há verificação se erro é esperado
+- Mock de `parseImages` é simples e não exercita lógica real de parse
+
+#### Melhorias
+- Alinhar mock com implementação real de `parseImages`, ou importar função real e fornecer dados de teste separados por newline
+- Testar navegação circular (última imagem + próxima = primeira?)
+- Verificar `loading="lazy"` no `<img>` se aplicável
+
+#### Duplicações
+- Nenhuma significativa
+
+#### Código morto
+- Nenhum
+
+---
+
+### tests/unit/components/Features/Products/ProductList.test.js
+
+#### Finalidade
+Testar `ProductList`, lista paginada com filtros e ordenação.
+
+#### Arquivos acionados
+- `components/Features/Products/ProductList.js` (componente sob teste)
+- `hooks/useDebounce` (mockado)
+- `components/Features/Products/ProductCard` (mockado)
+- `components/UI/StateMessages` (mockado)
+- `hooks/useApiFetch` (mockado)
+- `tests/helpers/index.js`
+- `@testing-library/react`, `@jest/globals`
+
+#### Resumo
+Testa renderização com dados da API, loading state, erro, lista vazia, filtro sem resultados, controles de paginação, "Anterior" desabilitado na primeira página, "Próxima" desabilitado na última, paginação oculta (1 página), campos de busca e filtro de preço, limpar filtros, incluir minPrice/maxPrice na URL, navegação próxima/anterior, loading overlay durante troca de página, faixa de páginas visíveis (>5 páginas), ordenação por position e ID decrescente.
+
+#### Problemas
+- **Complexidade alta**: 17 testes com mocks encadeados — difícil manter
+- **Emulação frágil de hook**: Mock de `useApiFetch` (linhas 36-44) replica manualmente lógica de `transform` do hook real. Se hook real mudar, mock silenciosamente diverge
+- `jest.useFakeTimers()` chamado dentro de `it` mas `useRealTimers` apenas no `afterAll` — se teste falhar antes de `advanceTimersByTime`, estado dos timers vaza
+
+#### Melhorias
+- Extrair mocks complexos para factory functions reutilizáveis
+- Testar `transform` do hook em isolado
+- Mover `jest.useFakeTimers()` para `beforeEach` quando relevante
+
+#### Duplicações
+- Mock do `useApiFetch` é idêntico ao padrão usado em outros arquivos
+- Padrões de paginação duplicados com `VideoGallery.test.js`
+
+#### Código morto
+- Nenhum
+
+---
+
+### tests/unit/components/Features/Products/styles.test.js
+
+#### Finalidade
+Testar funções utilitárias de estilo (`inputStyle`, `buttonBaseStyle`).
+
+#### Arquivos acionados
+- `components/Features/Products/styles.js`
+
+#### Resumo
+Testa `inputStyle()` retorna objeto completo com tokens CSS, `inputStyle('46px')` aplica paddingLeft whitelist, `inputStyle('50px; color: red')` rejeita injeção e usa fallback, `buttonBaseStyle()` retorna objeto base, e `buttonBaseStyle(custom)` mescla overrides.
+
+#### Problemas
+- Testa detalhes de implementação (valores exatos de CSS) em vez de comportamento. Qualquer mudança de design token quebra testes sem regressão funcional
+- Teste de injeção CSS é bom mas testa apenas um vetor
+
+#### Melhorias
+- Parametrizar teste com `it.each` para cobrir todos valores da whitelist
+- Testar que `buttonBaseStyle` não muta objeto custom passado (imutabilidade)
+
+#### Duplicações
+- Nenhuma
+
+#### Código morto
+- Nenhum
+
+---
+
+### tests/unit/components/Features/Testimonials/index.test.js
+
+#### Finalidade
+Testar `Testimonials`, seção de dicas/testemunhos com carrossel horizontal.
+
+#### Arquivos acionados
+- `components/Features/Testimonials/index.js` (componente sob teste)
+- `tests/helpers/index.js` — `mockGlobalFetch`
+- `@testing-library/react`, `@jest/globals`
+
+#### Resumo
+Testa renderização de dicas da API, ocultar seção em erro/exceção, ocultar seção em HTTP erro ou array vazio, e carrossel com >3 itens (scroll, resize, unmount cleanup).
+
+#### Problemas
+- **Poluição global de HTMLElement.prototype** (linhas 20-24): Modifica `clientWidth`, `scrollWidth`, `scrollLeft` no prototype — afeta TODOS os elementos em TODOS os arquivos de teste no mesmo worker
+- **Console.error handling inconsistente**: Usa `console.error = jest.fn()` diretamente em vez do helper `suppressConsoleError`
+- **Hook bypass convoluted**: Componente usa `useApiFetch` internamente, mas teste mocka `global.fetch` diretamente — acoplamento indireto que pode quebrar se `useApiFetch` adicionar middleware/interceptors
+
+#### Melhorias
+- Usar helper `suppressConsoleError` para consistência
+- Evitar modificação de `HTMLElement.prototype` — usar mock element específico ou `Object.defineProperty` em elementos individuais
+- Refatorar para mockar em nível de `useApiFetch` em vez de `global.fetch`
+
+#### Duplicações
+- Padrão `screen.queryByText('Dicas do Dia')).not.toBeInTheDocument()` repetido em 3 testes
+
+#### Código morto
+- Nenhum
+
+---
+
+### tests/unit/components/Features/Video/VideoCard.test.js
+
+#### Finalidade
+Testar `VideoCard`, card de vídeo com iframe lazy.
+
+#### Arquivos acionados
+- `components/Features/Video/VideoCard.js` (componente sob teste)
+- `components/Performance` (mockado) — `LazyIframe`
+- `@testing-library/react`, `@jest/globals`
+
+#### Resumo
+Apenas 2 testes. Mocka `LazyIframe` e verifica se recebe props `src`, `title`, e `thumbnail` corretos. Testa renderização com descrição.
+
+#### Problemas
+- **Cobertura muito baixa** (2 testes)
+- Mock renderiza `thumbnail || 'null'` que renderiza string `'null'` quando thumbnail é `undefined` — não testa comportamento real de null-handling do componente
+- Sem teste para `titulo` faltando, `url_youtube` vazio/inválido, ou `video` prop null
+
+#### Melhorias
+- Adicionar testes para edge cases: missing optional props, null video object, empty strings
+- Adicionar PropTypes a `VideoCard.js` (inconsistência com outros componentes)
+- Testar que `provider="youtube"` e `aspectRatio="16/9"` são passados para `LazyIframe`
+
+#### Duplicações
+- Nenhuma
+
+#### Código morto
+- Nenhum
+
+---
+
+### tests/unit/components/Features/Video/VideoGallery.test.js
+
+#### Finalidade
+Testar `VideoGallery`, galeria paginada de vídeos com busca.
+
+#### Arquivos acionados
+- `components/Features/Video/VideoGallery.js` (componente sob teste)
+- `components/Features/Video/VideoCard.js` (mockado)
+- `components/UI/Spinner` (mockado)
+- `tests/helpers/index.js`
+- `@testing-library/react`, `@jest/globals`
+
+#### Resumo
+Testa loading → exibe vídeos, singular na contagem ("1 vídeo disponível"), busca com debounce e limpar, lista vazia + limpar busca, resposta sem data/pagination (fallbacks), erro de fetch + retry, erro HTTP (separado do anterior), e navegação entre páginas.
+
+#### Problemas
+- **Testes duplicados**: Teste 6 (erro fetch + retry) e teste 7 (erro HTTP) são quase idênticos — ambos testam erro 500 com retry
+- Timeout explícito de 15000ms nos testes 6, 7 — indica lentidão ou problema de setup
+- `jest.useFakeTimers()` é chamado no `beforeEach` global — afeta testes que não precisam de timers (1, 2, 5, 8), potencialmente causando timeouts
+
+#### Melhorias
+- Remover teste 7 (coberto pelo 6)
+- Mover `jest.useFakeTimers()` para dentro dos testes que precisam
+- Testar URL de busca com encoding especial (`search=Teste%20Especial`)
+
+#### Duplicações
+- Padrões de paginação duplicados com `ProductList.test.js` (testando "Anterior"/"Próxima" disabled states)
+- Padrão `mockGlobalFetch` + `global.fetch.mockResolvedValueOnce` duplicado em `Testimonials/index.test.js`
+
+#### Código morto
+- Nenhum
+
+---
+
+## 14.1. Testes Unitários — Lib (Complementar)
+
+### tests/unit/lib/crud.test.js
+
+#### Finalidade
+Testar funções utilitárias CRUD genéricas: `raw()`, `createRecord()`, `updateRecords()`, `deleteRecords()`, e `upsertRecord()`.
+
+#### Arquivos acionados
+- `lib/crud/crud.js` (módulo sob teste)
+- `lib/infra/db.js` (mockado)
+- `tests/mocks/db-module.js`
+
+#### Resumo
+Testa SQL passthrough (`NOW()`), proteção contra SQL injection (nomes de tabela/coluna inválidos), construção de queries INSERT/UPDATE/DELETE, e upsert (`ON CONFLICT DO UPDATE`).
+
+#### Problemas
+- **`beforeEach(() => {})` vazio** (linhas 10-11): Código morto — não faz nada, pode ser removido
+- **Acoplamento forte com formato SQL**: Testes usam `expect.stringMatching(/INSERT INTO .../)` com regex, tornando-os sensíveis a mudanças de whitespace ou ordenação de keywords
+- **Reset de mock inconsistente**: Usa `jest.mock` em nível de módulo mas não reseta `query.mockClear()` entre testes
+- **Cobertura faltando**: Sem testes para `_filterAllowedFields` whitelist behavior (exercido indiretamente mas não validado diretamente), sem teste para data objects vazios, sem teste para `returning` option override
+
+#### Melhorias
+- Remover `beforeEach` vazio
+- Adicionar `query.mockClear()` explícito em `beforeEach`
+- Testar whitelist filter diretamente (ex: `createRecord('products', { name: 'X', hacker_field: 'injected' })` deve strip `hacker_field`)
+- Adicionar teste para transaction client passthrough (`{ client: someMockClient }`)
+
+#### Duplicações
+- Padrão `expect(query).toHaveBeenCalledWith(expect.stringMatching(...), [...], { client: undefined })` repetido 5 vezes — poderia ser extraído para custom matcher
+
+#### Código morto
+- `beforeEach(() => {})` vazio nas linhas 10-11
+
+---
+
+## 8.1. Testes Unitários — Root (Complementar)
+
+### tests/unit/[slug].test.js
+
+#### Finalidade
+Teste unitário para a página de post individual do blog (`BlogPost`). Testa renderização de título, data, conteúdo, imagem, compartilhamento e estado sem-imagem.
+
+#### Arquivos acionados
+- `@jest/globals`, React, `@testing-library/react`
+- `./mocks/next-setup.js` (importado para registrar mocks)
+- Mock de CSS module inline
+- **Mock do componente `BlogPost` inline** — o componente real não existe
+
+#### Resumo
+Testa renderização básica, URLs de compartilhamento, e ausência de imagem. Usa mock inline do componente `BlogPost` com dados realistas.
+
+#### Problemas
+- **CRÍTICO: Mock inline do componente** — o teste NÃO testa o componente real. O componente é recriado dentro do teste, criando falsa sensação de cobertura. Se o componente real for alterado, este teste não capturará a mudança
+- **Caminho do arquivo real incerto** — o path `[slug].test.js` sugere que deveria testar `pages/blog/[slug].js` ou similar, mas o mock inline indica que o arquivo real não existe ou é inacessível
+- **CSS module mockado inline** — duplica a responsabilidade de `jest.config.js` `moduleNameMapper`
+- **Data formatada hardcoded** — `new Date(post.created_at).toLocaleDateString('pt-BR')` depende de locale do ambiente; CI pode retornar formato diferente
+
+#### Melhorias
+- **Importar o componente real** e remover mock inline
+- Se o componente real não existe, **criar o arquivo real** em vez de mockar no teste
+- Mover mock de CSS para `jest.config.js` `moduleNameMapper`
+- Usar `jest.spyOn(Date.prototype, 'toLocaleDateString')` para estabilizar datas
+
+#### Duplicações
+- Mock inline do `BlogPost` seria duplicado se existisse outro teste do componente real
+
+#### Código morto
+- O mock inline do `BlogPost` (linhas 23-77) é efetivamente código morto de produção
+
+---
 
 ## 3. Mocks e Setups
 

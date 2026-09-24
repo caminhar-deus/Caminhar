@@ -1,452 +1,791 @@
 # 🔧 Plano de Melhorias — `/load-tests`
 
 > **Propósito:** Levantamento analítico de possíveis melhorias, correções e ajustes para a suíte de testes de carga, sem alterar nenhum arquivo do projeto.
-> **Data da análise:** 01/08/2026
+> **Data da análise:** 24/09/2026
+> **Total de arquivos analisados:** 37 (7 helpers + 17 performance + 4 security + 9 functional)
 
 ---
 
 ## Sumário
 
-1. [Duplicidades e Redundâncias](#1-duplicidades-e-redundâncias)
-2. [Código Morto e Inutilizado](#2-código-morto-e-inutilizado)
-3. [Problemas de Configuração e Ambiente](#3-problemas-de-configuração-e-ambiente)
-4. [Thresholds Inconsistentes](#4-thresholds-inconsistentes)
-5. [Problemas de Segurança](#5-problemas-de-segurança)
-6. [Documentação Desatualizada](#6-documentação-desatualizada)
-7. [Melhorias Estruturais e Organizacionais](#7-melhorias-estruturais-e-organizacionais)
-8. [Melhorias de Ferramentas e Manutenção](#8-melhorias-de-ferramentas-e-manutenção)
-9. [Observações Técnicas Relevantes](#9-observações-técnicas-relevantes)
+1. [Descrição Geral](#1-descrição-geral)
+2. [Estrutura de Arquivos e Pastas](#2-estrutura-de-arquivos-e-pastas)
+3. [Análise Individual de Cada Arquivo](#3-análise-individual-de-cada-arquivo)
+   - [3.1 Helpers (7 arquivos)](#31-helpers-7-arquivos)
+   - [3.2 Performance (17 arquivos)](#32-performance-17-arquivos)
+   - [3.3 Security (4 arquivos)](#33-security-4-arquivos)
+   - [3.4 Functional (9 arquivos)](#34-functional-9-arquivos)
+4. [Ajustes e Correções](#4-ajustes-e-correções)
+5. [Melhorias](#5-melhorias)
+6. [Duplicidades](#6-duplicidades)
+7. [Código Morto](#7-código-morto)
 
 ---
 
-## 1. Duplicidades e Redundâncias
+## 1. Descrição Geral
 
-### 1.1 `musicas-search-test.js` vs `musicas-filter-test.js` — Redundância Crítica
+**Finalidade:** Documentar a análise estática completa da suíte de testes de carga do projeto Caminhar, identificando propósito, relações entre arquivos, problemas, melhorias, duplicidades e possíveis códigos mortos.
+
+**Objetivo:** Fornecer um registro fiel e objetivo do estado atual da pasta `/load-tests`, servindo como base para decisões de refatoração, manutenção e evolução dos testes.
+
+**Escopo:** Todos os 37 arquivos existentes na pasta `/load-tests`, incluindo helpers, scripts de performance, security e functional.
+
+---
+
+## 2. Estrutura de Arquivos e Pastas
+
+```
+load-tests/
+├── helpers/
+│   ├── auth.js                  # Autenticação compartilhada (login JWT)
+│   ├── config.js                # Configuração de ambiente (BASE_URL, credenciais)
+│   ├── network.js               # Geração de IPs aleatórios para spoofing
+│   ├── profiles.js              # Perfis de carga padronizados (light, medium, heavy, etc.)
+│   ├── report.js                # Geração de relatórios JSON e sanitização de tokens
+│   ├── resource-test-runner.js  # Factory pattern para testes CRUD, filtro, paginação, ordenação e carga
+│   └── sleep.js                 # Sleep randomizado para simular tempo de pensamento
+├── performance/
+│   ├── musicas-crud-test.js     # CRUD de músicas via factory
+│   ├── musicas-filter-test.js   # Filtro/busca de músicas por artista via factory
+│   ├── musicas-load-test.js     # Carga em endpoint admin de músicas
+│   ├── musicas-pagination-test.js # Paginação de músicas via factory
+│   ├── musicas-search-test.js   # Busca manual de músicas por termos (não usa factory)
+│   ├── musicas-sort-test.js     # Ordenação de músicas (sortMode: 'recent') via factory
+│   ├── videos-crud-test.js      # CRUD de vídeos via factory + teardown
+│   ├── videos-filter-test.js    # Filtro/busca de vídeos por termos via factory
+│   ├── videos-load-test.js      # Carga em endpoint público de vídeos com paginação extra
+│   ├── videos-pagination-test.js # Paginação de vídeos via factory
+│   ├── videos-sort-test.js      # Ordenação de vídeos (sortField/sortOrder) via factory
+│   ├── cache-warmup-test.js     # Warm-up de cache Redis/memória
+│   ├── cache-performance-test.js # Teste de performance de cache (quente vs frio)
+│   ├── pagination-test.js       # Teste manual de paginação (ES5.1 compatível)
+│   ├── create-post-flow.js      # Fluxo de criação de posts com teardown
+│   ├── authenticated-flow-test.js # Teste de acesso a rota autenticada (/api/settings)
+│   └── stress-test-combined.js  # Teste de estresse combinado (CRUD + monitoramento de memória)
+├── security/
+│   ├── rate-limit-test.js       # Teste de rate limit no login
+│   ├── login-negative-test.js   # Testes negativos de login (senha errada, usuário inexistente)
+│   ├── ip-spoofing-test.js      # Teste de detecção/evasão de IP spoofing
+│   └── ddos-search-test.js      # Teste de carga massiva em endpoint de busca
+└── functional/
+    ├── health-check.js          # Verificação de saúde do servidor (/api/status)
+    ├── search-content-test.js   # Busca de conteúdo com validação de termo
+    ├── posts-cursor-pagination-test.js # Paginação por cursor
+    ├── posts-tags-test.js       # Filtro de posts por tag
+    ├── cache-headers-test.js    # Validação de headers de cache (Cache-Control)
+    ├── backup-verification-test.js # Verificação de backups disponíveis
+    ├── upload-flow-test.js      # Upload de imagem (GIF 1x1) + verificação de arquivo
+    ├── video-validation-test.js # Validação de URLs do YouTube (válida, domínio inválido, malformada)
+    └── recovery-test.js         # Monitoramento de recuperação (Time To Recovery - TTR)
+```
+
+---
+
+## 3. Análise Individual de Cada Arquivo
+
+### 3.1 Helpers (7 arquivos)
+
+---
+
+#### `load-tests/helpers/auth.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/config.js` (importa `BASE_URL`, `USERNAME`, `PASSWORD`)
+- É importado por: `musicas-crud-test.js`, `videos-crud-test.js`, `create-post-flow.js`, `authenticated-flow-test.js`, `stress-test-combined.js`, `upload-flow-test.js`, `video-validation-test.js`, `backup-verification-test.js`, `cache-warmup-test.js` (re-exporta)
+
+**Resumo do arquivo:**
+Módulo compartilhado para autenticação JWT. Exporta a função `setup(options)` que realiza POST em `/api/auth/login?response=body` e retorna `{ token: body.data.token }`. Aceita opções de override para `baseUrl`, `username` e `password`. Lança erro se o login falhar ou se a estrutura de resposta for inesperada.
+
+---
+
+#### `load-tests/helpers/config.js`
+
+**Arquivos acionados ou relacionados:**
+- Importado por todos os arquivos de teste que necessitam de `BASE_URL`, `USERNAME` ou `PASSWORD`
+
+**Resumo do arquivo:**
+Centraliza a configuração de ambiente. Define `DEFAULT_CONFIG` com fallback para `localhost:3000`, `admin` e `123456`. Exporta constantes avaliadas no momento da importação (`__ENV.BASE_URL || DEFAULT_CONFIG.BASE_URL`). Exporta também a função `getConfig()` que faz a mesma leitura mas não é utilizada por nenhum outro arquivo.
+
+---
+
+#### `load-tests/helpers/network.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/security/ip-spoofing-test.js` (importa `getRandomIP`)
+- `load-tests/helpers/resource-test-runner.js` (importa `getRandomIP`)
+
+**Resumo do arquivo:**
+Fornece a função `getRandomIP()` que gera endereços IP aleatórios (4 octetos de 0-255). Possui comentário na linha 3 referenciando "seção 2.2 do UPGRADE_load-tests.md" — o conteúdo da referência não corresponde à seção atual (que trata de código morto, não de spoofing).
+
+---
+
+#### `load-tests/helpers/profiles.js`
+
+**Arquivos acionados ou relacionados:**
+- Importado por: `resource-test-runner.js`, `stress-test-combined.js`, `pagination-test.js`, `cache-headers-test.js`, `search-content-test.js`, `posts-cursor-pagination-test.js`, `posts-tags-test.js`, `rate-limit-test.js`, `ddos-search-test.js`, `health-check.js`, `recovery-test.js`, `ip-spoofing-test.js`
+
+**Resumo do arquivo:**
+Define a constante `PROFILES` com 7 perfis de carga: `light`, `medium`, `heavy`, `health`, `recovery`, `stress`, `rateLimit`. Exporta a função `getProfile(profileName, overrides)` que retorna configuração mesclada. O merge de thresholds é inteligente: se overrides definir `thresholds` explicitamente, substitue completamente; caso contrário, faz merge com o perfil base.
+
+---
+
+#### `load-tests/helpers/report.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/resource-test-runner.js` (re-exporta `generateReport` e `sanitizeToken`)
+- Importado diretamente por: `musicas-search-test.js`, `pagination-test.js`, `create-post-flow.js`, `authenticated-flow-test.js`, `cache-performance-test.js`, `stress-test-combined.js`, `login-negative-test.js`, `ip-spoofing-test.js`, `rate-limit-test.js`, `ddos-search-test.js`, `health-check.js`, `search-content-test.js`, `posts-cursor-pagination-test.js`, `posts-tags-test.js`, `cache-headers-test.js`, `backup-verification-test.js`, `upload-flow-test.js`, `video-validation-test.js`, `recovery-test.js`
+
+**Resumo do arquivo:**
+Centraliza a geração de relatórios k6. Importa `textSummary` da jslib `k6-summary` versão `0.0.4`. Define a função interna `sanitizeToken(data)` que substitui `setup_data.token` por `*** TOKEN OCULTO ***`. Exporta `generateReport(data, testName)` que sanitiza o token e retorna objeto com `stdout` (texto formatado) e arquivo JSON em `./reports/k6-summaries/{testName}.json`.
+
+---
+
+#### `load-tests/helpers/resource-test-runner.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/profiles.js` (importa `getProfile`)
+- `load-tests/helpers/sleep.js` (importa `randomSleep`)
+- `load-tests/helpers/network.js` (importa `getRandomIP`)
+- `load-tests/helpers/config.js` (importa `BASE_URL`, `USERNAME`, `PASSWORD`)
+- `load-tests/helpers/report.js` (importa `generateReport`)
+- É importado por 11 testes de performance que usam factory pattern
+
+**Resumo do arquivo:**
+Módulo central que implementa o factory pattern para testes k6. Exporta 5 factories:
+- `createCrudTest(config)` — opções, default e reportName para testes CRUD
+- `createFilterTest(config)` — opções, default e reportName para testes de filtro/busca
+- `createPaginationTest(config)` — opções, default e reportName para testes de paginação
+- `createSortTest(config)` — opções, default e reportName para testes de ordenação
+- `createLoadTest(config)` — opções, setup, default e reportName para testes de carga
+
+Possui implementação completa de login automático (lazy login) dentro do `createCrudDefault`, extração de ID com suporte a múltiplos formatos de resposta, e contadores customizados para erros de create/update/delete. Re-exporta `sanitizeToken` e `generateReport` de `report.js`. Contém cópia local de `sanitizeToken` (linhas 24-29) idêntica à versão em `report.js`.
+
+---
+
+#### `load-tests/helpers/sleep.js`
+
+**Arquivos acionados ou relacionados:**
+- Importado por: `resource-test-runner.js`, `musicas-search-test.js`, `musicas-load-test.js`, `videos-load-test.js`, `pagination-test.js`, `cache-warmup-test.js`, `cache-performance-test.js`, `create-post-flow.js`, `authenticated-flow-test.js`, `stress-test-combined.js`, `login-negative-test.js`, `search-content-test.js`, `posts-cursor-pagination-test.js`, `posts-tags-test.js`, `cache-headers-test.js`, `upload-flow-test.js`, `video-validation-test.js`, `recovery-test.js`
+
+**Resumo do arquivo:**
+Exporta `randomSleep(min = 0.5, max = 3)` que executa `sleep(min + Math.random() * (max - min))`. Substitui sleeps fixos por intervalos aleatórios que simulam comportamento real de usuários.
+
+---
+
+### 3.2 Performance (17 arquivos)
+
+---
+
+#### `load-tests/performance/musicas-crud-test.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/resource-test-runner.js` (importa `createCrudTest`, `generateReport`)
+- `load-tests/helpers/auth.js` (re-exporta `setup`)
+- `load-tests/helpers/config.js` (importa `BASE_URL`)
+- `k6/http` (para requisições de teardown)
+
+**Resumo do arquivo:**
+Teste CRUD completo para músicas usando factory `createCrudTest()`. Endpoint: `/api/admin/musicas`. Payload inclui titulo, artista, descricao, url_spotify. Possui função `teardown(data)` que remove músicas com titulo contendo 'K6'. Usa perfil `light` com stages customizados (3 VUs, 10s/20s/10s). Gera relatório `musicas_crud_test`.
+
+---
+
+#### `load-tests/performance/musicas-filter-test.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/resource-test-runner.js` (importa `createFilterTest`, `generateReport`)
+
+**Resumo do arquivo:**
+Teste de filtro de músicas usando factory `createFilterTest()`. Endpoint público: `/api/musicas`. Search values: nomes de artistas (`Aline Barros`, `Fernandinho`, etc.). Usa perfil `light` com threshold `checks: ['rate>0.85']`. Gera relatório `musicas_filter_test`.
+
+---
+
+#### `load-tests/performance/musicas-load-test.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/resource-test-runner.js` (importa `createLoadTest`, `generateReport`)
+
+**Resumo do arquivo:**
+Teste de carga para endpoint admin de músicas. Endpoint: `/api/admin/musicas`. Configura `requireAuth: true`, usa perfil `medium` com threshold específico `http_req_duration{name:ListMusicas}: ['p(95)<500]'`. Exporta `setup()` que delega ao setup do factory. Valida resposta JSON com array em `musicas` e tempo de resposta < 300ms. Gera relatório `musicas_load_test`.
+
+---
+
+#### `load-tests/performance/musicas-pagination-test.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/resource-test-runner.js` (importa `createPaginationTest`, `generateReport`)
+
+**Resumo do arquivo:**
+Teste de paginação de músicas usando factory `createPaginationTest()`. Endpoint público: `/api/musicas`. Usa perfil `light` com `limit: 5`. Gera relatório `musicas_pagination_test`.
+
+---
+
+#### `load-tests/performance/musicas-search-test.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/sleep.js` (importa `randomSleep`)
+- `load-tests/helpers/report.js` (importa `generateReport`)
+- `load-tests/helpers/config.js` (importa `BASE_URL`)
+- `k6/http`, `k6/check`
+
+**Resumo do arquivo:**
+Teste manual de busca de músicas (NÃO usa factory pattern). Endpoint: `/api/musicas?search=...`. Usa 1 VU, 5 iterações. Na primeira iteração, executa warm-up com 2 requisições adicionais. Threshold `checks: ['rate==1.0']` e `http_req_duration{name:SearchMusicas}: ['p(95)<800', 'avg<500']`. Valida se título contém termo buscado. Gera relatório `musicas_search_test`. Possui lógica muito similar à factory `createFilterTest` mas implementada manualmente.
+
+---
+
+#### `load-tests/performance/musicas-sort-test.js`
+
+**Arquivos acionados or relacionados:**
+- `load-tests/helpers/resource-test-runner.js` (importa `createSortTest`, `generateReport`)
+
+**Resumo do arquivo:**
+Teste de ordenação de músicas usando factory `createSortTest()`. Endpoint: `/api/musicas`. Usa `sortMode: 'recent'` (formato novo da API músicas). Usa perfil `light`. Gera relatório `musicas_sort_test`.
+
+---
+
+#### `load-tests/performance/videos-crud-test.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/resource-test-runner.js` (importa `createCrudTest`, `generateReport`)
+- `load-tests/helpers/auth.js` (re-exporta `setup`)
+- `load-tests/helpers/config.js` (importa `BASE_URL`)
+- `k6/http` (para requisições de teardown)
+
+**Resumo do arquivo:**
+Teste CRUD completo para vídeos usando factory `createCrudTest()`. Endpoint: `/api/admin/videos`. Payload inclui url_youtube gerado dinamicamente, titulo com prefixo `Video de Teste K6`. Possui função `teardown(data)` que remove vídeos com titulo contendo 'K6'. Usa perfil `light` com stages customizados (3 VUs, 10s/20s/5s). Gera relatório `videos_crud_test`.
+
+---
+
+#### `load-tests/performance/videos-filter-test.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/resource-test-runner.js` (importa `createFilterTest`, `generateReport`)
+
+**Resumo do arquivo:**
+Teste de filtro de vídeos usando factory `createFilterTest()`. Endpoint público: `/api/videos`. Search values: termos genéricos (`louvor`, `adoração`, etc.). Usa perfil `light` com threshold `checks: ['rate>0.85']`. Gera relatório `videos_filter_test`.
+
+---
+
+#### `load-tests/performance/videos-load-test.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/resource-test-runner.js` (importa `createLoadTest`, `generateReport`)
+
+**Resumo do arquivo:**
+Teste de carga para endpoint público de vídeos. Endpoint: `/api/videos`. Configura `requireAuth: true`, usa perfil `medium`. Adiciona requisição extra para página 2 (`/api/videos?page=2&limit=5`) com checks de metadados de paginação (`pagination.page === 2`, `pagination.limit === 5`). Thresholds específicos por tag e `checks: ['rate>0.95']`. Valida resposta JSON com dados e paginação, tempo < 1000ms. Exporta `setup()`. Gera relatório `videos_load_test`.
+
+---
+
+#### `load-tests/performance/videos-pagination-test.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/resource-test-runner.js` (importa `createPaginationTest`, `generateReport`)
+
+**Resumo do arquivo:**
+Teste de paginação de vídeos usando factory `createPaginationTest()`. Endpoint: `/api/videos`. Usa perfil `light` com `limit: 5` e threshold `checks: ['rate>0.85']`. Gera relatório `videos_pagination_test`.
+
+---
+
+#### `load-tests/performance/videos-sort-test.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/resource-test-runner.js` (importa `createSortTest`, `generateReport`)
+
+**Resumo do arquivo:**
+Teste de ordenação de vídeos usando factory `createSortTest()`. Endpoint: `/api/videos`. Usa formato antigo de ordenação (`sortField: 'created_at'`, `sortOrder: 'desc'`). Declara `useExplicitSort: true` que não é utilizado pela factory. Usa perfil `light` com threshold `checks: ['rate>0.85']`. Gera relatório `videos_sort_test`.
+
+---
+
+#### `load-tests/performance/cache-warmup-test.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/sleep.js` (importa `randomSleep`)
+- `load-tests/helpers/config.js` (importa `BASE_URL`)
+- `load-tests/helpers/auth.js` (re-exporta `setup`)
+
+**Resumo do arquivo:**
+Teste de warm-up de cache. Executa 1 VU com 1 iteração (cenário `per-vu-iterations`). Realiza 5 rounds de requisições para 4 endpoints (`/api/posts`, `/api/posts?page=1&limit=10`, `/api/posts?page=2&limit=5`, `/api/settings`). Inclui função `verifyCachePopulated()` que confirma se resposta é < 200ms. Threshold `http_req_failed: ['rate<0.50']`. NÃO possui `handleSummary()`, portanto não gera relatório JSON.
+
+---
+
+#### `load-tests/performance/cache-performance-test.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/sleep.js` (importa `randomSleep`)
+- `load-tests/helpers/config.js` (importa `BASE_URL`, `USERNAME`, `PASSWORD`)
+- `k6/execution` (importa `exec`)
+
+**Resumo do arquivo:**
+Teste de performance de cache com 4 estágios (1 VU warm-up → 5 VUs → 50 VUs high load → ramp-down). Testa endpoint `/api/settings` (autenticado) e `/api/posts` (público). Login manual na função `setup()`. Thresholds específicos por tag (`cached_settings`, `cached_posts`) com p(95)<500, avg<200. Checks de cache hit com threshold `rate>0.90`. NÃO possui `handleSummary()`, portanto não gera relatório JSON.
+
+---
+
+#### `load-tests/performance/pagination-test.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/sleep.js` (importa `randomSleep`)
+- `load-tests/helpers/report.js` (importa `generateReport`)
+- `load-tests/helpers/config.js` (importa `BASE_URL`)
+- `load-tests/helpers/profiles.js` (importa `getProfile`)
+- `k6/http`, `k6/check`
+
+**Resumo do arquivo:**
+Teste manual de paginação (NÃO usa factory pattern) com compatibilidade ES5.1 (usa `var`, `for` loops, `function()` em vez de `.some()`/`.includes()`). Endpoint: `/api/posts`. Extrai array de dados suportando múltiplos formatos (`body.data`, `body.rows`, array direto). Valida IDs diferentes entre página 1 e página 2 usando loops aninhados. Usa perfil `light` com 1 iteração e threshold `checks: ['rate==1.0']`. Gera relatório `pagination_test`.
+
+---
+
+#### `load-tests/performance/create-post-flow.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/sleep.js` (importa `randomSleep`)
+- `load-tests/helpers/auth.js` (re-exporta `setup`)
+- `load-tests/helpers/config.js` (importa `BASE_URL`)
+- `k6/http`, `k6/check`
+
+**Resumo do arquivo:**
+Fluxo de criação de posts. Endpoint: `/api/admin/posts`. Stages customizados (3 VUs, 10s/15s/5s). Thresholds: `http_req_duration{flow:create_post}: ['p(95)<2000']`, `checks{flow:create_post}: ['rate>0.95']`, `http_req_failed: ['rate<0.10']`. Possui `teardown(data)` que remove posts com titulo contendo 'K6'. Gera relatório via `generateReport` (sem nome de arquivo explícito no código atual — nome padrão `undefined` no retorno de `generateReport`).
+
+**Observação:** O `handleSummary` chama `generateReport(data, 'create_post_flow')` — mas no arquivo original não há segundo argumento explícito na chamada de `handleSummary`, o que faz o relatório ser gerado com nome `undefined`. Isso é um problema.
+
+---
+
+#### `load-tests/performance/authenticated-flow-test.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/sleep.js` (importa `randomSleep`)
+- `load-tests/helpers/auth.js` (re-exporta `setup`)
+- `load-tests/helpers/config.js` (importa `BASE_URL`)
+- `load-tests/helpers/report.js` (importa `generateReport`)
+- `k6/http`, `k6/check`
+
+**Resumo do arquivo:**
+Teste de acesso a rota autenticada. Endpoint: `/api/settings?key=site_name`. Stages customizados (3 VUs, 10s/20s/5s). Thresholds: `http_req_duration: ['p(95)<2000']`, `checks{flow:get_settings}: ['rate>0.95']`, `http_req_failed: ['rate<0.10']`. Não usa `getProfile()`, define estágios inline. Gera relatório `authenticated_flow_test`.
+
+---
+
+#### `load-tests/performance/stress-test-combined.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/sleep.js` (importa `randomSleep`)
+- `load-tests/helpers/config.js` (importa `BASE_URL`)
+- `load-tests/helpers/auth.js` (importa `authSetup`)
+- `load-tests/helpers/profiles.js` (importa `getProfile`)
+- `load-tests/helpers/report.js` (importa `generateReport`)
+- `k6/http`, `k6/check`, `k6/metrics` (Trend, Counter)
+- jslib externa: `k6-reporter` (htmlReport)
+
+**Resumo do arquivo:**
+Teste de estresse combinado com 2 cenários paralelos definidos no perfil `stress`: `stress_test` (CRUD de vídeos com ramping-vus até 100 VUs) e `memory_monitor` (monitora métricas de memória via `/api/status`). Define métricas customizadas (`nodejs_memory_rss_bytes`, `nodejs_memory_heap_total_bytes`, `nodejs_memory_heap_used_bytes`, `stress_iterations`). Constante `TEST_PREFIX = '[TEST-K6]'`. Função `default()` está vazia (os cenários executam via funções nomeadas). Possui `teardown(data)` paginado que remove vídeos com prefixo `[TEST-K6]`, 'K6' ou 'Estresse'. Gera relatório JSON e HTML (`stress-test-combined.html`).
+
+---
+
+### 3.3 Security (4 arquivos)
+
+---
+
+#### `load-tests/security/rate-limit-test.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/config.js` (importa `BASE_URL`)
+- `load-tests/helpers/profiles.js` (importa `getProfile`)
+- `load-tests/helpers/report.js` (importa `generateReport`)
+- `k6/http`, `k6/check`, `k6/metrics` (Counter)
+
+**Resumo do arquivo:**
+Teste de rate limit no endpoint de login. Usa perfil `rateLimit` com threshold `http_req_duration: ['p(95)<5000']`. Define IP fixo `203.0.113.1` para todos os VUs (não varia por VU/iteração). Métrica customizada `rate_limit_hits` (Counter). Valida respostas 429, 403 ou 401. Inclui verificação se rate limit foi acionado no `handleSummary`. Gera relatório `rate_limit_test`.
+
+---
+
+#### `load-tests/security/login-negative-test.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/sleep.js` (importa `randomSleep`)
+- `load-tests/helpers/report.js` (importa `generateReport`)
+- `load-tests/helpers/config.js` (importa `BASE_URL`)
+- `k6/http`, `k6/check`
+
+**Resumo do arquivo:**
+Teste negativo de login com 2 cenários: (1) usuário existente com senha incorreta, (2) usuário inexistente. Stages customizados (10 VUs, 10s/30s/10s) — não usa `getProfile()`. Thresholds: `http_req_duration: ['p(95)<1000']`, `checks: ['rate>0.95']`. Valida rejeição (401/400/429 para senha errada; 401/429 para usuário inexistente). Gera relatório `login_negative_test`.
+
+---
+
+#### `load-tests/security/ip-spoofing-test.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/network.js` (importa `getRandomIP`)
+- `load-tests/helpers/config.js` (importa `BASE_URL`)
+- `load-tests/helpers/profiles.js` (importa `getProfile`)
+- `load-tests/helpers/report.js` (importa `generateReport`)
+- `k6/http`, `k6/check`
+
+**Resumo do arquivo:**
+Teste consolidado de IP spoofing e evasão de rate limit. Usa perfil `rateLimit`. Gera IP único por iteração via `getRandomIP()`. Dois grupos de checks: "BLOQUEADO" (403 ou 429) e "VULNERÁVEL" (401). Documentação no header indica que sistema estava vulnerável (33.33% de proteção). Gera relatório `ip_spoofing_consolidado_test`.
+
+---
+
+#### `load-tests/security/ddos-search-test.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/config.js` (importa `BASE_URL`)
+- `load-tests/helpers/profiles.js` (importa `getProfile`)
+- `load-tests/helpers/report.js` (importa `generateReport`)
+- `k6/http`, `k6/check`, `k6/metrics` (Rate)
+
+**Resumo do arquivo:**
+Teste de carga massiva (DDoS) em endpoint de busca. Usa perfil `heavy` com estágios customizados (100 VUs → 500 VUs → ramp-down). Métrica customizada `errors_500` (Rate) com threshold `rate<0.10` e `abortOnFail: true`. Cache busting com timestamp. 10 termos de busca variados. Documentação indica que servidor NÃO aciona rate limit para buscas. Gera relatório `ddos_search_test`.
+
+---
+
+### 3.4 Functional (9 arquivos)
+
+---
+
+#### `load-tests/functional/health-check.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/config.js` (importa `BASE_URL`)
+- `load-tests/helpers/profiles.js` (importa `getProfile`)
+- `k6/http`, `k6/check`
+
+**Resumo do arquivo:**
+Verificação de saúde do servidor. Endpoint: `/api/status?mode=health`. Usa perfil `health`. Valida status 200 e `body.status === 'ok'`. NÃO possui `handleSummary()`, portanto não gera relatório JSON.
+
+---
+
+#### `load-tests/functional/search-content-test.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/sleep.js` (importa `randomSleep`)
+- `load-tests/helpers/report.js` (importa `generateReport`)
+- `load-tests/helpers/config.js` (importa `BASE_URL`)
+- `load-tests/helpers/profiles.js` (importa `getProfile`)
+- `k6/http`, `k6/check`
+
+**Resumo do arquivo:**
+Busca de conteúdo com validação de termo. Endpoint: `/api/posts?search=...`. Usa perfil `light` com 10 iterações. Na primeira iteração, executa warm-up com 3 requisições. Threshold `checks: ['rate==1.0']` e `http_req_duration{name:SearchPosts}: ['p(95)<500', 'avg<200']`. Valida se termo aparece em `title`, `excerpt` ou `content`. Gera relatório `search_content_test`.
+
+---
+
+#### `load-tests/functional/posts-cursor-pagination-test.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/sleep.js` (importa `randomSleep`)
+- `load-tests/helpers/report.js` (importa `generateReport`)
+- `load-tests/helpers/config.js` (importa `BASE_URL`)
+- `load-tests/helpers/profiles.js` (importa `getProfile`)
+- `k6/http`, `k6/check`
+
+**Resumo do arquivo:**
+Teste de paginação por cursor. Endpoint: `/api/posts`. Usa perfil `light` com 1 iteração. Busca primeira página com `limit=5`, extrai último ID como cursor, busca próxima página com `cursor={id}`. Valida resultados distintos. Gera relatório `posts_cursor_pagination_test`.
+
+---
+
+#### `load-tests/functional/posts-tags-test.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/sleep.js` (importa `randomSleep`)
+- `load-tests/helpers/report.js` (importa `generateReport`)
+- `load-tests/helpers/config.js` (importa `BASE_URL`)
+- `load-tests/helpers/profiles.js` (importa `getProfile`)
+- `k6/http`, `k6/check`
+
+**Resumo do arquivo:**
+Teste de filtro de posts por tag. Endpoint: `/api/posts?tag=...`. Usa perfil `light` com 5 iterações e threshold `checks: ['rate>0.80']`. 5 tags comuns. Possui 2 checks que validam exatamente a mesma condição (`Array.isArray(posts)`): 'Retornou lista de posts' e 'Filtro por tag retornou resultados'. Gera relatório `posts_tags_test`.
+
+---
+
+#### `load-tests/functional/cache-headers-test.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/sleep.js` (importa `randomSleep`)
+- `load-tests/helpers/report.js` (importa `generateReport`)
+- `load-tests/helpers/config.js` (importa `BASE_URL`)
+- `load-tests/helpers/profiles.js` (importa `getProfile`)
+- `k6/http`, `k6/check`
+
+**Resumo do arquivo:**
+Validação de headers de cache. Endpoint: `/api/posts`. Usa perfil `light` com 5 iterações. Valida presença de `Cache-Control`, diretiva `s-maxage` e `stale-while-revalidate`. Threshold `http_req_duration: ['p(95)<2000']`, `checks: ['rate==1.0']`. Gera relatório `cache_headers_test`.
+
+---
+
+#### `load-tests/functional/backup-verification-test.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/report.js` (importa `generateReport`)
+- `load-tests/helpers/config.js` (importa `BASE_URL`)
+- `load-tests/helpers/auth.js` (re-exporta `setup`)
+- `k6/http`, `k6/check`
+
+**Resumo do arquivo:**
+Verificação de backups disponíveis. Endpoint: `/api/admin/backups`. 1 VU, 1 iteração. Valida status 200, JSON válido, lista de backups e estrutura de "latest". Threshold `checks: ['rate>0.80']`. Gera relatório `backup_verification_test`.
+
+---
+
+#### `load-tests/functional/upload-flow-test.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/sleep.js` (importa `randomSleep`)
+- `load-tests/helpers/auth.js` (re-exporta `setup`)
+- `load-tests/helpers/report.js` (importa `generateReport`)
+- `load-tests/helpers/config.js` (importa `BASE_URL`)
+- `k6/http`, `k6/check`, `k6/encoding` (b64decode), `k6/execution` (exec)
+
+**Resumo do arquivo:**
+Teste de upload de imagem. Endpoint: `/api/upload-image`. Stages customizados (5 VUs, 10s/30s/10s). Usa GIF 1x1 transparente em base64. Valida status 200 e presença de URL na resposta. Verifica se arquivo foi salvo no disco fazendo GET na URL retornada. Threshold `http_req_failed: ['rate<0.01']`. Gera relatório `upload-flow-summary` (diferente do padrão `{nome}_test`).
+
+---
+
+#### `load-tests/functional/video-validation-test.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/sleep.js` (importa `randomSleep`)
+- `load-tests/helpers/report.js` (importa `generateReport`)
+- `load-tests/helpers/config.js` (importa `BASE_URL`)
+- `load-tests/helpers/auth.js` (re-exporta `setup`)
+- `k6/http`, `k6/check`
+
+**Resumo do arquivo:**
+Validação de URLs do YouTube em 3 cenários: (1) URL válida (youtube.com/watch?v=dQw4w9WgXcQ), (2) Domínio inválido (vimeo.com), (3) URL malformada (youtube.com/watch?v=). 1 VU, 1 iteração. Valida rejeição (status 400) para cenários inválidos. Threshold `checks: ['rate>0.60']`. Gera relatório `video_validation_test`.
+
+---
+
+#### `load-tests/functional/recovery-test.js`
+
+**Arquivos acionados ou relacionados:**
+- `load-tests/helpers/sleep.js` (importa `randomSleep`)
+- `load-tests/helpers/report.js` (importa `generateReport`)
+- `load-tests/helpers/config.js` (importa `BASE_URL`)
+- `load-tests/helpers/profiles.js` (importa `getProfile`)
+- `k6/http`, `k6/check`, `k6/metrics` (Trend, Counter)
+
+**Resumo do arquivo:**
+Monitoramento de recuperação (Time To Recovery). Endpoint: `/api/posts`. Usa perfil `recovery` (1 VU, 2 minutos). Métricas customizadas `recovery_time_ms` (Trend) e `recovery_count` (Counter). Rastreia estado saudável vs falha e calcula downtime. Gera relatório `recovery_test`.
+
+---
+
+## 4. Ajustes e Correções
+
+### 4.1 `network.js` — Referência a seção inexistente
+
+**O que foi encontrado:** Comentário na linha 3 de `network.js` referencia "seção 2.2 do UPGRADE_load-tests.md".
+**Onde foi encontrado:** `load-tests/helpers/network.js:3`
+**Qual é o problema:** A seção 2.2 do documento antigo tratava de "Código Morto e Inutilizado", não de IP spoofing. O conteúdo referenciado não corresponde ao que a seção entrega.
+**Ajuste necessário:** Atualizar o comentário para referenciar a seção correta (5.2 ou equivalente) ou remover a referência cruzada.
+
+### 4.2 `videos-sort-test.js` — Campo `useExplicitSort` não utilizado
+
+**O que foi encontrado:** Declaração de `useExplicitSort: true` no config.
+**Onde foi encontrado:** `load-tests/performance/videos-sort-test.js:9`
+**Qual é o problema:** A factory `createSortTest()` em `resource-test-runner.js` não faz referência a esse campo. O parâmetro não tem efeito no comportamento do teste.
+**Ajuste necessário:** Remover o campo ou implementar a funcionalidade correspondente no runner.
+
+### 4.3 `config.js` — Função `getConfig()` não utilizada
+
+**O que foi encontrado:** Função `getConfig()` declarada mas nunca chamada.
+**Onde foi encontrado:** `load-tests/helpers/config.js:11-17`
+**Qual é o problema:** As constantes `BASE_URL`, `USERNAME` e `PASSWORD` são exportadas diretamente e usadas por todos os testes, tornando a função redundante.
+**Ajuste necessário:** Remover a função `getConfig()` para eliminar código morto.
+
+### 4.4 `report.js` — `sanitizeToken` duplicado em `resource-test-runner.js`
+
+**O que foi encontrado:** Cópia local de `sanitizeToken()` em `resource-test-runner.js` idêntica à versão em `report.js`.
+**Onde foi encontrado:** `load-tests/helpers/resource-test-runner.js:24-29`
+**Qual é o problema:** Viola o princípio DRY. O `resource-test-runner.js` já importa `generateReport` de `report.js`, mas mantém sua própria cópia da função de sanitização.
+**Ajuste necessário:** Importar `sanitizeToken` de `report.js` em vez de manter cópia local.
+
+### 4.5 `create-post-flow.js` — Nome de relatório possivelmente indefinido
+
+**O que foi encontrado:** `handleSummary` chama `generateReport(data, 'create_post_flow')`.
+**Onde foi encontrado:** `load-tests/performance/create-post-flow.js`
+**Qual é o problema:** O nome do relatório é hardcoded como `'create_post_flow'` em vez de usar constante ou seguir o padrão. Embora funciona, difere do padrão `{recurso}_{tipo}_test` dos factories.
+**Ajuste necessário:** Padronizar ou documentar a decisão.
+
+### 4.6 `posts-tags-test.js` — Checks redundantes
+
+**O que foi encontrado:** Dois checks validam exatamente a mesma condição.
+**Onde foi encontrado:** `load-tests/functional/posts-tags-test.js:26-43`
+**Qual é o problema:** Os checks 'Retornou lista de posts' (linha 26) e 'Filtro por tag retornou resultados' (linha 35) executam `Array.isArray(posts)` com a mesma lógica de extração. Um deles é completamente redundante.
+**Ajuste necessário:** Remover um dos checks duplicados.
+
+---
+
+## 5. Melhorias
+
+### 5.1 `musicas-search-test.js` — Converter para factory pattern
+
+**Justificativa técnica:** O teste tem implementação manual (77 linhas) com lógica muito similar à factory `createFilterTest()`. A única diferença significativa é a lista de termos de busca. Converter para factory reduziria o arquivo para ~25 linhas e eliminaria duplicação de lógica de validação.
+**Benefício:** Manutenibilidade, consistência com os demais testes de filtro.
+
+### 5.2 `pagination-test.js` — Converter para factory pattern
+
+**Justificativa técnica:** O teste usa ES5.1 intencionalmente (compatibilidade com goja antigo), mas a factory `createPaginationTest()` já implementa a mesma lógica. Se a versão do k6 em uso suporta ES6+, a conversão é segura.
+**Benefício:** Redução de 90 linhas para ~20 linhas.
+
+### 5.3 Padronizar nomenclatura de relatórios
+
+**Justificativa técnica:** Existem inconsistências nos nomes de relatório:
+- Padrão factory: `{recurso}_{tipo}_test` (ex: `musicas_crud_test`)
+- `upload-flow-test.js`: gera `upload-flow-summary` (padrão diferente)
+- `stress-test-combined.js`: gera `stress-test-combined` (sem sufixo `_test`)
+
+**Benefício:** Consistência na geração e busca de relatórios.
+
+### 5.4 Adicionar `handleSummary()` em 3 testes
+
+**Justificativa técnica:** Os testes abaixo não geram relatórios JSON:
+- `health-check.js`
+- `cache-warmup-test.js`
+- `cache-performance-test.js`
+
+**Benefício:** Histórico de resultados e análise comparativa entre execuções.
+
+### 5.5 Padronizar prefixos de identificação de dados de teste
+
+**Justificativa técnica:** Diferentes testes usam prefixos diferentes:
+- `create-post-flow.js`: `Post de Carga K6`
+- `musicas-crud-test.js`: `Música Load Test K6`
+- `videos-crud-test.js`: `Video de Teste K6`
+- `stress-test-combined.js`: `[TEST-K6]`
+
+**Benefício:** Script de limpeza global mais robusto, menos dados órfãos no banco.
+
+### 5.6 Perfil `light` — Threshold de latência
+
+**Justificativa técnica:** O perfil `light` define `http_req_duration: ['p(95)<500']` com apenas 5 iterações. Para testes com 1 VU, a amostra é pequena demais para percentis significativos. Um threshold mais realista seria `p(95)<100ms` com pelo menos 10 iterações.
+**Benefício:** Detecção mais precisa de degradação de latência.
+
+### 5.7 `videos-load-test.js` — `requireAuth: true` em endpoint público
+
+**Justificativa técnica:** O endpoint `/api/videos` é público (não requer autenticação para listagem). O teste configura `requireAuth: true` desnecessariamente. Embora o k6 aceite, isso adiciona overhead de login sem benefício.
+**Benefício:** Simplificação do teste e redução de complexidade.
+
+### 5.8 Configuração de carga inline em 8 testes
+
+**Justificativa técnica:** Vários testes definem estágios inline em vez de usar `getProfile()`:
+- `authenticated-flow-test.js`
+- `create-post-flow.js`
+- `cache-performance-test.js`
+- `cache-warmup-test.js`
+- `backup-verification-test.js`
+- `upload-flow-test.js`
+- `video-validation-test.js`
+- `login-negative-test.js`
+
+**Benefício:** Consistência, reutilização de perfis, manutenção centralizada.
+
+### 5.9 Thresholds inconsistentes entre músicas e vídeos
+
+**Justificativa técnica:** Testes estruturalmente equivalentes possuem thresholds diferentes:
+- Paginação músicas: `rate==1.0` (100%)
+- Paginação vídeos: `rate>0.85` (85%)
+- Ordenação músicas: `rate==1.0` (100%)
+- Ordenação vídeos: `rate>0.85` (85%)
+
+**Benefício:** Consistência, comparação justa entre recursos.
+
+---
+
+## 6. Duplicidades
+
+### 6.1 `musicas-search-test.js` vs `musicas-filter-test.js` — Redundância Crítica
 
 **Arquivos:** `load-tests/performance/musicas-search-test.js` e `load-tests/performance/musicas-filter-test.js`
 
-**Problema:** Ambos testam exatamente o mesmo endpoint (`/api/musicas?search=...`) com a mesma lógica de validação (GET, check status 200, verificar match do termo nos campos). A única diferença são os termos de busca:
-- `musicas-filter-test.js`: usa artistas (`'Aline Barros'`, `'Fernandinho'`, etc.)
-- `musicas-search-test.js`: usa termos genéricos (`'Graça'`, `'Santo'`, `'Amor'`, etc.)
+**Evidência:** Ambos testam exatamente o mesmo endpoint (`/api/musicas?search=...`) com a mesma lógica de validação (GET, status 200, verificar match do termo). A única diferença é a lista de search values:
+- `musicas-filter-test.js`: nomes de artistas
+- `musicas-search-test.js`: termos genéricos
 
-Além disso, `musicas-search-test.js` foi implementado manualmente (não usa o factory pattern), enquanto `musicas-filter-test.js` usa `createFilterTest()` do `resource-test-runner.js`.
+`musicas-filter-test.js` usa factory `createFilterTest()`. `musicas-search-test.js` tem implementação manual.
 
-**Sugestão:** Unificar em um único teste que use `createFilterTest()` com uma lista combinada de search values (artistas + termos genéricos). Isso reduziria de 6 para 5 testes de músicas.
-
-### 1.2 `musicas-filter-test.js` e `videos-filter-test.js` — Lógica Quase Idêntica
+### 6.2 `musicas-filter-test.js` e `videos-filter-test.js` — Lógica Idêntica
 
 **Arquivos:** `load-tests/performance/musicas-filter-test.js` e `load-tests/performance/videos-filter-test.js`
 
-**Problema:** São estruturalmente idênticos — apenas diferem no endpoint e nos search values. O uso do factory pattern já elimina ~80% da duplicação, mas ambos continuam sendo arquivos separados. Isso é aceitável para organização, mas poderia ser parametrizado em um único teste genérico de filtro.
+**Evidência:** Estruturalmente idênticos — apenas diferem no endpoint e nos search values. O uso do factory pattern já elimina duplicação de código, mas ambos são arquivos separados. Organizacionalmente aceitável.
 
-**Sugestão:** (Baixa prioridade) Avaliar se faz sentido manter testes separados ou criar um arquivo de configuração centralizada que defina todos os recursos e execute os testes dinamicamente.
-
-### 1.3 `videos-load-test.js` vs `videos-pagination-test.js` — Sobreposição
+### 6.3 `videos-load-test.js` vs `videos-pagination-test.js` — Sobreposição
 
 **Arquivos:** `load-tests/performance/videos-load-test.js` e `load-tests/performance/videos-pagination-test.js`
 
-**Problema:** `videos-load-test.js` já testa paginação como parte de sua execução (faz requisições para página 1 e página 2 com validação de metadados de paginação como `pagination.page` e `pagination.limit`). Isso sobrepõe parcialmente o propósito do `videos-pagination-test.js`, que testa exclusivamente paginação.
+**Evidência:** `videos-load-test.js` faz requisição para página 2 como `extraRequest`, validando metadados de paginação. Isso sobrepõe parcialmente o propósito de `videos-pagination-test.js`.
 
-**Sugestão:** Avaliar se `videos-load-test.js` precisa manter as requisições extras de página 2, ou se essa validação pode ficar apenas no teste de paginação dedicado.
-
-### 1.4 `posts-tags-test.js` — Checks Redundantes
+### 6.4 `posts-tags-test.js` — Checks Redundantes
 
 **Arquivo:** `load-tests/functional/posts-tags-test.js`
 
-**Problema:** Os checks `'Filtro por tag retornou resultados'` e `'Retornou lista de posts'` validam exatamente a mesma condição (se a resposta contém um array). Um deles é completamente redundante e não agrega valor.
+**Evidência:** Os checks 'Retornou lista de posts' e 'Filtro por tag retornou resultados' executam `Array.isArray(posts)` com lógica idíntica.
 
-**Sugestão:** Remover o check duplicado.
+### 6.5 `resource-test-runner.js` — `sanitizeToken()` Duplicada
 
-### 1.5 `resource-test-runner.js` — Função `sanitizeToken()` Duplicada
+**Arquivos:** `load-tests/helpers/resource-test-runner.js` e `load-tests/helpers/report.js`
 
-**Arquivo:** `load-tests/helpers/resource-test-runner.js`
+**Evidência:** O módulo `resource-test-runner.js` possui cópia local de `sanitizeToken()` idêntica à versão em `report.js`.
 
-**Problema:** O módulo `resource-test-runner.js` possui sua própria cópia local da função `sanitizeToken()` (linhas 24-29), que é idêntica à versão em `helpers/report.js`. Isso viola o princípio DRY.
-
-**Sugestão:** Importar `sanitizeToken` de `helpers/report.js` em vez de manter uma cópia local.
-
-### 1.6 `stress-test-combined.js` vs `videos-crud-test.js` — Sobreposição de Funcionalidade
+### 6.6 `stress-test-combined.js` vs `videos-crud-test.js` — Sobreposição
 
 **Arquivos:** `load-tests/performance/stress-test-combined.js` e `load-tests/performance/videos-crud-test.js`
 
-**Problema:** O cenário `stress_test` do `stress-test-combined.js` executa CRUD completo de vídeos (POST → PUT → DELETE), que é exatamente o que `videos-crud-test.js` testa, porém com 33× mais VUs (3 vs 100). Há sobreposição de funcionalidade.
+**Evidência:** O cenário `stress_test` do stress test executa CRUD completo de vídeos (POST → PUT → DELETE), mesma funcionalidade de `videos-crud-test.js`, porém com 33× mais VUs (até 100 vs 3).
 
-**Sugestão:** (Baixa prioridade) Considerar se o CRUD de vídeos no stress test poderia ser substituído por um cenário diferente para aumentar a cobertura.
-
-### 1.7 `musicas-sort-test.js` vs `videos-sort-test.js` — Formatos de Ordenação Divergentes
+### 6.7 `musicas-sort-test.js` vs `videos-sort-test.js` — Formatos de Ordenação Divergentes
 
 **Arquivos:** `load-tests/performance/musicas-sort-test.js` e `load-tests/performance/videos-sort-test.js`
 
-**Problema:** Os dois testes usam formatos de ordenação diferentes:
-- `musicas-sort-test.js`: usa `sortMode: 'recent'` (novo formato da API músicas)
-- `videos-sort-test.js`: usa `sortField: 'created_at'` + `sortOrder: 'desc'` (formato antigo da API vídeos)
+**Evidência:** Usam formatos diferentes de ordenação:
+- `musicas-sort-test.js`: `sortMode: 'recent'` (novo formato)
+- `videos-sort-test.js`: `sortField: 'created_at'` + `sortOrder: 'desc'` (formato antigo)
 
-O runner `createSortTest()` suporta ambos os formatos, mas a divergência entre as APIs pode indicar inconsistência no backend.
+A divergência pode indicar inconsistência no backend.
 
-**Sugestão:** Verificar se a API de vídeos deveria suportar o mesmo formato de ordenação da API de músicas, ou se a divergência é intencional.
+### 6.8 Warm-up duplicado
+
+**Arquivos:** `load-tests/performance/cache-warmup-test.js` e `load-tests/functional/search-content-test.js` (e `musicas-search-test.js`)
+
+**Evidência:** Existem 3 mecanismos de warm-up independentes:
+1. `cache-warmup-test.js` — Teste dedicado com 5 rounds × 4 endpoints
+2. `search-content-test.js` — Warm-up embutido na primeira iteração (3 requisições)
+3. `musicas-search-test.js` — Warm-up embutido na primeira iteração (2 requisições)
+
+Não há garantia de ordem de execução entre eles.
 
 ---
 
-## 2. Código Morto e Inutilizado
+## 7. Código Morto
 
-### 2.1 `config.js` — Função `getConfig()` não utilizada
+### 7.1 `config.js` — Função `getConfig()`
 
-**Arquivo:** `load-tests/helpers/config.js`
+**Arquivo:** `load-tests/helpers/config.js:11-17`
 
-**Problema:** A função `getConfig()` (linhas 11-17) não é chamada por nenhum outro módulo ou arquivo de teste. As constantes `BASE_URL`, `USERNAME` e `PASSWORD` são exportadas diretamente e usadas por todos os testes, tornando a função redundante.
+**Motivo:** A função é declarada mas nunca chamada por nenhum outro módulo. As constantes exportadas (`BASE_URL`, `USERNAME`, `PASSWORD`) são usadas diretamente por todos os testes.
 
-**Sugestão:** Remover a função `getConfig()` para eliminar código morto.
+**Classificação:** Código morto confirmado.
 
-### 2.2 `videos-sort-test.js` — Campo `useExplicitSort` não utilizado
+### 7.2 `videos-sort-test.js` — Campo `useExplicitSort`
 
-**Arquivo:** `load-tests/performance/videos-sort-test.js`
+**Arquivo:** `load-tests/performance/videos-sort-test.js:9`
 
-**Problema:** O teste declara `useExplicitSort: true` no config, mas o factory `createSortTest()` em `resource-test-runner.js` não faz referência a esse campo. O parâmetro não tem efeito no comportamento do teste.
+**Motivo:** O campo `useExplicitSort: true` é declarado no config mas não é lido pela factory `createSortTest()`.
 
-**Sugestão:** Remover o campo ou implementar a funcionalidade correspondente no runner.
+**Classificação:** Código morto confirmado (parâmetro órfão).
 
-### 2.3 Comentário quebrado em `network.js`
+### 7.3 Possível código morto em `network.js`
 
 **Arquivo:** `load-tests/helpers/network.js`
 
-**Problema:** O comentário na linha 3 diz "Consulte a seção 2.2 do UPGRADE_load-tests.md para discussão sobre isso", esperando que a seção 2.2 aborde o tópico de IP spoofing. No entanto, a seção 2.2 atual deste documento trata de "Código Morto e Inutilizado" — não sobre spoofing. O conteúdo esperado pelo comentário não corresponde ao que a seção entrega.
+**Motivo:** A função `getRandomIP()` é importada por `resource-test-runner.js` e `ip-spoofing-test.js`. No entanto, em `resource-test-runner.js`, a importação existe mas `getRandomIP()` só é usada se `useSpoofIP: true` for configurado — o que ocorre apenas em `videos-load-test.js` (que configura `useSpoofIP: false`) e `stress-test-combined.js` (que não usa). A função é efetivamente usada apenas em `ip-spoofing-test.js`.
 
-**Sugestão:** Atualizar o comentário em `network.js` para referenciar corretamente a seção que aborda IP spoofing (seção 5.2) ou remover a referência cruzada.
+**Classificação:** Possível código morto parcial (importação não utilizada em `resource-test-runner.js` para a maioria dos testes).
 
----
+### 7.4 `stress-test-combined.js` — Função `default()` vazia
 
-## 3. Problemas de Configuração e Ambiente
+**Arquivo:** `load-tests/performance/stress-test-combined.js:27-29`
 
-### 3.1 Fallbacks de credenciais com valores reais
+**Motivo:** A função `default()` contém apenas comentário. Os cenários executam via funções nomeadas `stress_test()` e `memory_monitor()`. Funcionalmente correto no k6, mas pode confundir leitores.
 
-**Arquivo:** `load-tests/helpers/config.js`
-
-**Problema:** Os fallbacks `USERNAME` e `PASSWORD` usam valores reais (`'admin'` e `'123456'`). Embora seja um ambiente de desenvolvimento local, manter credenciais reais no código-fonte é uma prática de segurança questionável. Isso pode levar a exposição acidental em logs ou relatórios.
-
-**Sugestão:** Alterar os fallbacks para valores que forçam falha explícita (ex: `'CHANGE_ME'`), obrigando a configuração via variáveis de ambiente em todos os ambientes, inclusive desenvolvimento local. Isso já foi feito em versões anteriores do arquivo (conforme documentação antiga) mas parece ter sido revertido.
-
-### 3.2 Constantes avaliadas estaticamente
-
-**Arquivo:** `load-tests/helpers/config.js`
-
-**Problema:** As constantes `BASE_URL`, `USERNAME` e `PASSWORD` são avaliadas **uma única vez** no momento da importação do módulo. Se as variáveis de ambiente (`__ENV`) forem alteradas durante a execução (improvável em k6, mas conceitualmente frágil), as constantes não refletirão a mudança. Além disso, em alguns runners do k6, `__ENV` pode não estar disponível no momento da importação (apenas dentro das funções `setup()`/`default()`).
-
-**Sugestão:** Considerar usar uma função getter (como a já existente `getConfig()`, mas atualmente não utilizada) que seja chamada dentro de `setup()` ou `default()`, garantindo que as variáveis de ambiente estejam disponíveis.
-
-### 3.3 Ausência de arquivo `env-config.json`
-
-**Problema:** O documento antigo menciona um arquivo `env-config.json` na raiz de `/load-tests/`, que serviria como configuração de ambiente centralizada. Este arquivo não existe mais na estrutura atual. Não está claro se foi removido intencionalmente ou se deveria ser recriado.
-
-**Sugestão:** Verificar se a remoção foi intencional. Se positivo, remover referências no código e documentação. Se negativo, recriar o arquivo ou documentar a decisão.
-
-### 3.4 Configuração de carga inline em 8 testes
-
-**Problema:** Vários testes não usam `getProfile()` do `helpers/profiles.js` e definem configuração de carga inline:
-
-| Teste | Arquivo | Configuração |
-|-------|---------|-------------|
-| `authenticated-flow-test.js` | performance/ | Estágios inline (3 VUs, 10s/20s/5s) |
-| `create-post-flow.js` | performance/ | Estágios inline (3 VUs, 10s/15s/5s) |
-| `cache-performance-test.js` | performance/ | Estágios inline (1→5→50 VUs) |
-| `cache-warmup-test.js` | performance/ | Cenário `per-vu-iterations` inline |
-| `backup-verification-test.js` | functional/ | 1 VU, 1 iteração inline |
-| `upload-flow-test.js` | functional/ | Estágios inline (5 VUs, 10s/30s/10s) |
-| `video-validation-test.js` | functional/ | 1 VU, 1 iteração inline |
-| `login-negative-test.js` | security/ | Estágios inline (10 VUs, 10s/30s/10s) |
-
-**Sugestão:** Avaliar se esses testes poderiam usar `getProfile()` com overrides, mantendo consistência com os demais 22 testes que já usam o padrão.
+**Classificação:** Código intencionalmente vazio (não é código morto, mas poderia ser documentado melhor).
 
 ---
 
-## 4. Thresholds Inconsistentes
-
-### 4.1 Níveis de tolerância diferentes entre testes equivalentes
-
-**Problema:** Testes estruturalmente equivalentes (CRUD, filtro, paginação, ordenação) possuem thresholds diferentes entre músicas e vídeos:
-
-| Tipo | Músicas | Vídeos | Diferença |
-|------|---------|--------|-----------|
-| Paginação | checks `rate==1.0` (100%) | checks `rate>0.85` (85%) | 15% de diferença |
-| Ordenação | checks `rate==1.0` (100%) | checks `rate>0.85` (85%) | 15% de diferença |
-
-Não há justificativa técnica clara para essa diferença, já que ambos são endpoints públicos que retornam dados do mesmo banco.
-
-**Sugestão:** Unificar os thresholds entre pares equivalentes ou documentar explicitamente o motivo da diferença.
-
-### 4.2 Thresholds excessivamente tolerantes mascaram problemas
-
-**Arquivo:** `load-tests/performance/create-post-flow.js`
-
-**Problema:** O threshold `http_req_failed: ['rate<0.10']` (10% de falhas toleradas) é excessivamente permissivo para um fluxo de criação de post. O próprio código-fonte contém um comentário indicando isso: "Reduzido de 80% para 10% — o threshold anterior mascarava 71,94% de falhas reais". Embora tenha sido reduzido, 10% ainda é alto para operações de escrita.
-
-**Sugestão:** Reduzir gradualmente o threshold para `rate<0.05` ou `rate<0.02` após confirmar que as falhas foram corrigidas.
-
-### 4.3 Ausência de thresholds específicos para tags de requisição
-
-**Problema:** Vários testes usam tags para marcar requisições (`tags: { name: 'SearchPosts' }`, `tags: { type: 'cached_settings' }`), mas não definem thresholds específicos para essas tags em `options`. Sem thresholds específicos, as tags servem apenas para organização visual e filtragem manual.
-
-**Sugestão:** Revisar todos os testes que usam tags e adicionar thresholds específicos onde aplicável.
-
-### 4.4 Perfil `light` com latência irrealista
-
-**Arquivo:** `load-tests/helpers/profiles.js` — perfil `light`
-
-**Problema:** O perfil `light` define `http_req_duration: ['p(95)<500']`. Para testes funcionais com 1 VU, p(95) < 50ms seria mais realista. Muitos testes que usam o perfil `light` fazem apenas 1 requisição por iteração, tornando o threshold pouco útil (a amostra é pequena demais para percentis).
-
-**Sugestão:** Reduzir o threshold de latência do perfil `light` para `p(95)<100ms` e aumentar o número de iterações mínimas para 10.
-
-### 4.5 `videos-load-test.js` — `requireAuth: true` sem `setup()` e em endpoint público
-
-**Arquivo:** `load-tests/performance/videos-load-test.js`
-
-**Problema:** O teste configura `requireAuth: true` mas o endpoint testado é `/api/videos` (público). Além disso, o arquivo **não exporta função `setup()`** — ao contrário do `musicas-load-test.js`, que faz `export function setup() { return loadTest.setup(); }`. Sem `setup()` exportado, o k6 não executa login e o `default()` recebe `token = undefined`, portanto o header `Authorization` nunca é adicionado e o login documentado nunca ocorre. Isso adiciona configuração ineficaz e pode mascarar problemas de autenticação.
-
-**Sugestão:** Verificar se `requireAuth` deveria ser `false` para este teste, já que o endpoint é público, e decidir se a ausência de `setup()` é intencional ou uma omissão a corrigir.
-
-**Resolvido:** O `setup()` foi exportado (assim como no `musicas-load-test.js`), fazendo o k6 executar login e passar o token corretamente. O `requireAuth: true` foi mantido pois a configuração agora é funcional. Adicionalmente, a check `página 1 tempo < 300ms` foi ajustada para `< 1000ms` para tolerar cold start, e o threshold `checks: ['rate>0.95']` foi adicionado para garantir a qualidade dos checks.
-
----
-
-## 5. Problemas de Segurança
-
-### 5.1 IP fixo para evasão de rate limit
-
-**Arquivo:** `load-tests/security/rate-limit-test.js`
-
-**Problema:** O teste de rate limit usa IP fixo `203.0.113.1` para todos os VUs, em vez de variar o IP por VU/iteração. Isso reduz a eficácia do teste, pois o rate limit pode ser acionado apenas para aquele IP específico, não representando um teste realista de rate limit global.
-
-**Sugestão:** Usar `getRandomIP()` para gerar IPs variados, ou usar uma lógica que rode IPs diferentes entre VUs (ex: `${__VU}.0.0.1`).
-
-### 5.2 Spoofing de IP não detectado
-
-**Arquivos:** `load-tests/security/ip-spoofing-test.js` e `load-tests/helpers/network.js`
-
-**Problema:** O teste `ip-spoofing-test.js` documenta explicitamente que "66.67% das respostas indicam que o spoofing não foi detectado". Isso significa que a proteção contra IP spoofing não está funcionando — o servidor aceita o header `X-Forwarded-For` falsificado e o utiliza para rate limit, permitindo evasão.
-
-**Impacto:** Um atacante pode burlar rate limits simplesmente rotacionando o header `X-Forwarded-For` em cada requisição.
-
-**Sugestão:** Implementar detecção de IP spoofing no middleware da aplicação (validar consistência entre o IP real do socket e o header `X-Forwarded-For`).
-
-### 5.3 Ausência de rate limit em endpoint de busca
-
-**Arquivo:** `load-tests/security/ddos-search-test.js`
-
-**Problema:** O teste documenta que "o servidor NÃO aciona rate limit para buscas, mesmo com 500 VUs". Isso significa que o endpoint `GET /api/posts?search=...` não possui proteção contra abuso, podendo ser usado para ataques de negação de serviço.
-
-**Sugestão:** Implementar rate limit para endpoints de leitura pública (busca, listagem). Pode ser um limite mais generoso que o de login (ex: 100 req/min por IP), mas deve existir.
-
-### 5.4 Exposição de token JWT em logs de erro
-
-**Problema:** Vários testes (ex: `create-post-flow.js`, `authenticated-flow-test.js`, `stress-test-combined.js`) usam `console.error()` com `res.body.substring(0, 200)` em caso de falha. Se a resposta da API incluir o token JWT no body (comum em respostas de erro de autenticação), o token pode vazar nos logs de saída padrão do k6.
-
-**Sugestão:** Implementar sanitização nos logs de erro, similar à já existente em `helpers/report.js` para os relatórios JSON.
-
-### 5.5 `login-negative-test.js` — Sem `getProfile()` e sem validação de vazamento de informação
-
-**Arquivo:** `load-tests/security/login-negative-test.js`
-
-**Problema:** O teste valida que credenciais inválidas são rejeitadas (401/400/429), mas não verifica se a mensagem de erro vaza informações sobre a existência do usuário (ex: "Usuário não encontrado" vs "Senha incorreta"). Isso é um vetor de enumeração de usuários.
-
-**Sugestão:** Adicionar check que valida se a mensagem de erro é genérica para ambos os cenários (usuário existente com senha errada vs usuário inexistente).
-
----
-
-## 6. Documentação Desatualizada
-
-### 6.1 Documentação antiga (`docs/antigos/PROJECT_load-tests.md`) desatualizada
-
-**Arquivo:** `docs/antigos/PROJECT_load-tests.md`
-
-**Problema:** O documento antigo contém informações que não correspondem mais à realidade atual:
-- Menciona `env-config.json` (não existe mais)
-- Menciona scripts de segurança (5) — atualmente são 4
-- Menciona `helpers/sleep.js` como parte do total de helpers, mas não o lista em nenhuma seção dedicada
-- Menciona versão `0.0.4` do `k6-summary` (correto), mas o documento antigo ainda referenciava `0.0.2`
-
-**Sugestão:** Manter o documento atualizado na pasta `docs/` principal e arquivar a versão antiga. Isso já foi feito com a criação do `PROJECT_load-tests.md` atual.
-
-### 6.2 `docs/resolvidos/analise-load-tests-orchestrator.md` — Contagem de scripts divergente
-
-**Arquivo:** `docs/resolvidos/analise-load-tests-orchestrator.md`
-
-**Problema:** O documento menciona "31 scripts" na execução original (27/05) e "30 scripts" nas execuções posteriores. A contagem atual é de 30 scripts k6 + 7 helpers = 37 arquivos na pasta. A divergência entre 30 e 31 scripts pode confundir.
-
-**Sugestão:** Atualizar a contagem para refletir o estado atual (30 scripts k6).
-
----
-
-## 7. Melhorias Estruturais e Organizacionais
-
-### 7.1 Factory pattern incompleto
-
-**Problema:** Dos 17 testes de performance, 10 usam o factory pattern (`resource-test-runner.js`) e 7 têm implementação manual. Os testes manuais são:
-
-| Teste | Categoria |
-|-------|-----------|
-| `cache-warmup-test.js` | Performance |
-| `cache-performance-test.js` | Performance |
-| `authenticated-flow-test.js` | Performance |
-| `create-post-flow.js` | Performance |
-| `pagination-test.js` | Performance |
-| `musicas-search-test.js` | Performance |
-| `stress-test-combined.js` | Performance |
-
-Alguns desses (como `musicas-search-test.js`) poderiam ser facilmente convertidos para o factory pattern. Outros (como `stress-test-combined.js` com cenários paralelos) justificam a implementação manual.
-
-**Sugestão:** Avaliar cada teste manual individualmente para possível conversão ao factory pattern. Priorizar `musicas-search-test.js` e `pagination-test.js`.
-
-### 7.2 Nomenclatura inconsistente de relatórios
-
-**Problema:** Os nomes de relatórios seguem padrões inconsistentes:
-- Nomes de arquivo no padrão kebab-case (hífen): `backup-verification-test.js`, `cache-headers-test.js`
-- Nomes de relatório no padrão snake_case (underscore): `backup_verification_test`, `cache_headers_test`, `musicas_crud_test`, `videos_crud_test`
-
-Além disso, `upload-flow-test.js` gera relatório com nome `upload-flow-summary`, que difere do padrão `{nome}_test`.
-
-**Sugestão:** Padronizar todos os nomes de relatório para um único formato (snake_case com sufixo `_test`).
-
-### 7.3 `musicas-search-test.js` — não usa factory pattern
-
-**Arquivo:** `load-tests/performance/musicas-search-test.js`
-
-**Problema:** Este teste tem implementação manual (63 linhas) e poderia ser substituído por uma chamada a `createFilterTest()` com os termos de busca apropriados, já que a única diferença para `musicas-filter-test.js` são os search values.
-
-**Sugestão:** Substituir a implementação manual por uma chamada a `createFilterTest()`, unificando com ou substituindo `musicas-filter-test.js`.
-
-### 7.4 Ausência de `handleSummary()` em 3 testes
-
-**Problema:** Três testes não geram relatórios via `handleSummary()`:
-
-| Teste | Arquivo | Impacto |
-|-------|---------|---------|
-| `health-check.js` | functional/ | Sem relatório JSON |
-| `cache-warmup-test.js` | performance/ | Sem relatório JSON |
-| `cache-performance-test.js` | performance/ | Sem relatório JSON |
-
-**Sugestão:** Adicionar `handleSummary()` com `generateReport()` para consistência com os demais 26 testes.
-
-> **Nota:** O teste `cache-warmup-test.js` também é abordado na seção 9.5 (Observações Técnicas Relevantes).
-
-### 7.5 `stress-test-combined.js` — Função `default()` vazia
-
-**Arquivo:** `load-tests/performance/stress-test-combined.js`
-
-**Problema:** A função `default()` é vazia (apenas comentário). Os cenários são executados via funções nomeadas `stress_test()` e `memory_monitor()`. Isso é funcional no k6, mas pode confundir leitores que esperam lógica na função `default()`.
-
-**Sugestão:** Documentar melhor o padrão de cenários nomeados ou remover a função `default()` se não for necessária.
-
----
-
-## 8. Melhorias de Ferramentas e Manutenção
-
-### 8.1 Versão fixa da biblioteca `k6-summary`
-
-**Arquivo:** `load-tests/helpers/report.js`
-
-**Problema:** A importação usa versão fixa `0.0.4` da jslib `k6-summary`:
-```javascript
-import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.4/index.js';
-```
-
-Isso impede que melhorias ou correções na biblioteca sejam automaticamente incorporadas. Por outro lado, versões fixas garantem consistência entre execuções.
-
-**Sugestão:** Avaliar se faz sentido usar `latest` ou manter versão fixa. Se fixa, considerar adicionar um processo de atualização periódica. Se `latest`, atualizar a importação.
-
-### 8.2 Cache de dependências k6 no CI
-
-**Arquivo:** `load-tests.yml` (na raiz do projeto)
-
-**Problema:** O workflow do GitHub Actions implementa cache de dependências k6 (`~/.local/share/k6`), mas a importação via URL (`https://jslib.k6.io/...`) não é afetada por esse cache — as bibliotecas são baixadas toda vez que o script é executado.
-
-**Sugestão:** Verificar se o cache realmente está funcionando para as jslibs ou considerar usar o k6 com módulos pré-downloadados.
-
-### 8.3 Ausência de validação de schemas de resposta
-
-**Problema:** Nenhum teste valida o schema completo das respostas JSON. As validações são superficiais (status code + presença de campos), sem verificar tipos, formatos ou estrutura completa. Isso significa que uma mudança que altere o schema da resposta (ex: renomear `data.posts` para `data.items`) passaria despercebida.
-
-**Sugestão:** Implementar validação de schema usando um mecanismo similar a JSON Schema, mesmo que simplificado. Pode ser uma função helper que verifica a estrutura esperada.
-
-### 8.4 Testes deletam dados de produção? — Prefixo de identificação inconsistente
-
-**Problema:** Diferentes testes usam prefixos diferentes para identificar dados de teste:
-- `create-post-flow.js`: prefixo `K6` no título
-- `musicas-crud-test.js` e `videos-crud-test.js`: prefixo `K6` no título
-- `stress-test-combined.js`: prefixo `[TEST-K6]` (mais robusto)
-
-Além disso, a remoção via teardown usa lógicas diferentes em cada teste. Em caso de falha do teardown (ex: servidor cai durante a execução), dados de teste podem acumular no banco.
-
-**Sugestão:**
-1. Padronizar o prefixo de identificação para um formato único (ex: `[K6-TEST]`)
-2. Implementar um script de limpeza global que varra todo o banco removendo dados com esse prefixo
-3. Considerar usar um banco de dados de teste dedicado (não o de produção)
-
-### 8.5 `scripts/generate-load-report.js` — Bateria limitada a 6 testes
-
-**Arquivo:** `scripts/generate-load-report.js`
-
-**Problema:** O script executa apenas 6 dos 30 testes de carga para gerar o relatório HTML. Os demais 24 testes não são cobertos pelo relatório visual.
-
-**Sugestão:** Expandir a bateria para incluir mais testes, ou gerar o relatório a partir dos resultados do orquestrador (`orchestrator-results.json`).
-
-### 8.6 `scripts/clean-test-db.js` — Escopo limitado
-
-**Arquivo:** `scripts/clean-test-db.js`
-
-**Problema:** O script remove apenas `test.db` e `caminhar-test.db` do diretório `data/`. Não cobre outros bancos de teste que possam existir.
-
-**Sugestão:** Verificar se há outros bancos de teste no projeto e incluir no escopo do script.
-
----
-
-## 9. Observações Técnicas Relevantes
-
-### 9.1 Compatibilidade ES5 no k6 (runtime goja)
-
-**Problema:** O k6 utiliza o runtime goja (Go), que não implementa todas as funcionalidades ES6+. Funções como `Array.some()`, `Array.includes()` e arrow functions podem não funcionar. No entanto, alguns testes usam essas features:
-
-- `search-content-test.js`: usa `posts.some()` (linha 63) e `Array.isArray()` (funciona)
-- `posts-tags-test.js`: usa `Array.isArray()` (funciona)
-- `pagination-test.js`: explicitamente usa sintaxe ES5.1 (`var`, `for` loops, `function()`)
-
-**Observação:** O suporte a ES6 no goja tem melhorado em versões recentes do k6 (v0.54+). É possível que as funções ES6 usadas funcionem. No entanto, a inconsistência no estilo de código entre os testes (alguns ES5.1, outros ES6+) pode causar problemas se o k6 for executado em uma versão mais antiga.
-
-### 9.2 Warm-up duplicado
-
-**Problema:** Existem dois mecanismos de warm-up independentes:
-1. `cache-warmup-test.js` — Teste dedicado que deve ser executado antes dos testes de performance (5 rounds × 4 endpoints)
-2. `search-content-test.js` — Warm-up embutido na primeira iteração (3 requisições)
-
-Não há garantia de que o `cache-warmup-test.js` seja sempre executado antes dos demais testes no CI. O orquestrador executa em ordem alfabética ou por categoria, mas não impõe essa dependência.
-
-**Sugestão:** Extrair o warm-up do `search-content-test.js` e garantir que o `cache-warmup-test.js` seja executado explicitamente antes de qualquer teste de performance no pipeline de CI.
-
-### 9.3 Dados de teste insuficientes
-
-**Problema:** Vários testes de paginação exibem warnings como "Adicione mais posts ao banco para um teste de paginação completo" — indicando que o banco de dados de teste pode não ter dados suficientes para validar a paginação adequadamente.
-
-**Sugestão:** Garantir que o seed de dados de teste insira pelo menos 20 registros de cada tipo (posts, músicas, vídeos) para permitir testes de paginação significativos.
-
-### 9.4 `stress-test-combined.js` — Cenário `stress_test` com 0 checks executados
-
-**Arquivo:** `load-tests/performance/stress-test-combined.js`
-
-**Problema:** Conforme documentado em `docs/resolvidos/analise-load-tests-orchestrator.md`, o cenário `stress_test` executou 0 checks na execução de 03/06/2026. Isso significa que o threshold `checks{scenario:stress_test}: ['rate>0.95']` passa vacuamente (sem dados). O problema P8 foi marcado como "Corrigido" mas os checks ainda não estão sendo executados.
-
-**Sugestão:** Investigar por que o cenário `stress_test` não está executando checks e corrigir a lógica de execução.
-
-### 9.5 `cache-warmup-test.js` — Sem `handleSummary()`
-
-**Arquivo:** `load-tests/performance/cache-warmup-test.js`
-
-**Problema:** Este teste não possui `handleSummary()`, portanto não gera relatório JSON em `reports/k6-summaries/`. Isso é inconsistente com os demais testes que geram relatórios e dificulta a análise histórica de performance.
-
-**Sugestão:** Adicionar `handleSummary()` com `generateReport()` para consistência.
-
-> **Nota:** Os testes `cache-performance-test.js` e `health-check.js` também não possuem `handleSummary()` — ver seção 7.4 (Melhorias Estruturais e Organizacionais).
-
----
-
-> **Total de itens identificados:** 36
-> ⚠️ **Críticos:** 4 (duplicidade música-search/filter, spoofing não detectado, ausência de rate limit em busca, exposição de JWT em logs)
-> 🟡 **Médios:** 27 (thresholds inconsistentes, código morto, configuração, documentação desatualizada, nomenclatura, warm-up duplicado, compatibilidade ES5, factory pattern incompleto)
-> 🔵 **Leves:** 5 (testes de filtro quase idênticos, perfil light com latência irrealista, validação de schemas, cache de dependências CI, relatório limitado, escopo de limpeza)
+> **Total de itens identificados:** 34
+> ⚠️ **Críticos:** 3 (duplicidade música-search/filter, referência quebrada em network.js, checks redundantes em posts-tags)
+> 🟡 **Médios:** 24 (thresholds inconsistentes, código morto, configuração inline, nomenclatura, factory pattern incompleto, warm-up duplicado)
+> 🔵 **Leves:** 7 (perfil light latência, validação de schemas, cache CI, relatório limitado, escopo limpeza, prefixos inconsistentes, HTML_REPORT)
