@@ -1,295 +1,317 @@
-# Relatório de Melhorias Potenciais — Pasta `/data`
+# Documentação da Pasta `/data`
 
-## Contexto
+## 1. Nome do documento
 
-Este documento apresenta o levantamento analítico de possíveis melhorias para a estrutura e organização da pasta `/data`, com base na análise atual dos arquivos existentes e de todos os scripts, testes e APIs que interagem com ela.
+**Documentação técnica da pasta `/data` e subdiretórios** — Projeto Caminhar
 
-**Estado atual da pasta:** contém apenas o subdiretório `backups/` com 2 backups criptografados (.enc), seus respectivos hashes SHA-256 e um arquivo de log (.log). Todos os problemas identificados anteriormente (inconsistência SQLite vs PostgreSQL, backup JSON redundante, formato de datas, erro de criptografia, entity_id, etc.) já foram resolvidos e documentados em `/docs/resolvidos/UPGRADE_data.md`.
+## 2. Descrição geral
 
-**Itens já implementados (não são mais pendências):**
-- ✅ Backup de segurança pré-restore com nomenclatura padronizada, hash e registro em log
-- ✅ Rotação de logs por tamanho (10 MB) e por data, com retenção configurável de 30 dias
-- ✅ Sanitização de logs (sem dados sensíveis)
-- ✅ Validação de chave de criptografia AES-256-GCM
-- ✅ Padronização de formato de datas ISO 8601
+Este documento apresenta a análise completa e individual de todos os arquivos existentes na pasta `/data` do projeto Caminhar, incluindo finalidade, relações entre arquivos, problemas identificados, melhorias recomendadas, duplicidades e possíveis códigos mortos.
 
----
+**Objetivo:** Documentar fielmente o conteúdo e a estrutura da pasta `/data`, servindo como referência para manutenção, auditoria e evolução do sistema de backups.
 
-## 1. Ausência de Backup Não Criptografado para Troubleshooting
+**Escopo:** Análise estática dos 5 arquivos presentes em `/data/backups/`, incluindo logs, backups PostgreSQL criptografados e seus respectivos hashes SHA-256.
 
-**Localização:** `/data/backups/`
+## 3. Estrutura de arquivos e pastas
 
-**Problema:** Todos os backups atuais estão no formato `.enc` (criptografados com AES-256-GCM). Em situações de emergência onde a chave `BACKUP_ENCRYPTION_KEY` não esteja disponível (troca de ambiente, perda de credenciais, CI sem acesso à chave), os backups tornam-se inutilizáveis.
+```
+/data/
+└── backups/
+    ├── backup.log
+    ├── caminhar-pg-backup_2026-05-21T19-56-57Z.sql.gz.enc
+    ├── caminhar-pg-backup_2026-05-21T19-56-57Z.sql.gz.sha256
+    ├── caminhar-pg-backup_2026-05-22T10-18-54Z.sql.gz.enc
+    └── caminhar-pg-backup_2026-05-22T10-18-54Z.sql.gz.sha256
+```
 
-**Sugestão:** Manter também um backup não criptografado no mesmo diretório (ou em um diretório separado), permitindo restore mesmo sem a chave de criptografia. Alternativamente, documentar explicitamente a localização segura da chave.
+**Caminhos relevantes:**
+- Pasta raiz: `/data/`
+- Subdiretório: `/data/backups/`
+- Scripts relacionados: `/scripts/backup.js` (módulo central de backup)
+- API relacionada: `/pages/api/admin/backups.js` (endpoint de listagem de backups)
+- Log de sistema: `/data/backups/backup.log`
 
-**Prioridade:** Média
-**Impacto:** Segurança vs. Recuperabilidade
+**Relação entre os arquivos:**
+- Cada backup PostgreSQL (`.enc`) possui um arquivo de hash (`.sha256`) correspondente
+- O arquivo `.enc` é gerado a partir do `.sql.gz` original, que é removido após criptografia bem-sucedida
+- O `.sha256` armazena o hash do arquivo **original** (`.sql.gz`), não do arquivo criptografado (`.enc`)
+- O `backup.log` registra operações de backup e restore executadas pelo módulo central
 
----
-
-## 2. Ausência de Backup Automático em Intervalo Regular
-
-**Localização:** `/data/backups/`
-
-**Problema:** Atualmente existem apenas 2 backups manuais (datados de 21 e 22 de maio de 2026). Não há evidência de um cron job ou agendamento automático que garanta backups periódicos sem intervenção manual. O script `scripts/init-backup.js` apenas exibe instruções para configuração manual de cron, mas não configura o agendamento.
-
-**Sugestão:** Configurar um cron job ou GitHub Action agendado para executar `npm run backup:create` diariamente, garantindo que o diretório sempre contenha backups recentes e reduzindo o risco de perda de dados.
-
-**Prioridade:** Alta
-**Impacto:** Continuidade e segurança dos dados
-
----
-
-## 3. Número Reduzido de Backups no Diretório
-
-**Localização:** `/data/backups/`
-
-**Problema:** O script de backup realiza cleanup automático mantendo no máximo 10 backups. Entretanto, o diretório atualmente contém apenas 2 backups. Isso pode indicar que:
-- O cleanup foi executado recentemente e removeu backups mais antigos
-- Backup não está sendo executado com frequência
-- O diretório foi limpo manualmente
-
-**Sugestão:** Verificar a frequência de execução do backup e considerar aumentar o limite de retenção para 15-20 backups se o volume de dados permitir, ou implementar backup diferencial/incremental para reduzir o espaço ocupado.
-
-**Prioridade:** Média
-**Impacto:** Disponibilidade de pontos de restauração
+## 4. Análise individual de cada arquivo
 
 ---
 
-## 4. Sem Teste Automatizado de Restore
+### Arquivo 1: `backup.log`
 
-**Localização:** `/data/backups/`
+**Caminho completo:** `/data/backups/backup.log`
 
-**Problema:** Os hashes SHA-256 permitem verificar a integridade dos arquivos de backup, mas não há um teste automatizado que execute um restore em um ambiente isolado (ex.: container temporário) para validar que o backup pode ser restaurado com sucesso. Os testes unitários existentes (`tests/unit/lib/backup/`) usam mocks e não validam o fluxo real de restore.
+**Arquivos acionados ou relacionados:**
+- `/scripts/backup.js` — módulo que escreve neste log durante operações de backup/restore
+- Diretamente relacionado a todos os demais arquivos do diretório (registra operações sobre eles)
 
-**Sugestão:** Implementar um script ou etapa em CI que:
-1. Copie o backup mais recente para um container PostgreSQL temporário
-2. Execute o restore
-3. Verifique a integridade das tabelas (contagem de registros, existência de schemas)
-4. Destrua o container
+**Resumo do arquivo:**
+Arquivo de log que registra operações de backup e restore executadas pelo módulo central (`scripts/backup.js`). Formato: `[TIMESTAMP] [TIPO] Mensagem`.
 
-Isso garantiria que os backups são válidos e restauráveis.
+**Conteúdo atual (2 entradas):**
+- `[2026-09-04 18:44:05] [RESTORE_ERROR] Falha ao criar o backup de segurança. Restauração abortada.`
+- `[2026-09-04 18:45:07] [RESTORE_ERROR] Falha ao criar o backup de segurança. Restauração abortada.`
 
-**Prioridade:** Média
-**Impacto:** Confiabilidade e resiliência
-
----
-
-## 5. Sem Métricas de Tamanho e Crescimento do Banco
-
-**Localização:** `/data/backups/`
-
-**Problema:** Não há registro visível do tamanho de cada backup ou do banco de dados ao longo do tempo. Isso dificulta o planejamento de armazenamento e a identificação de crescimento anômalo.
-
-**Sugestão:** Incluir no log (`backup.log`) ou em um arquivo separado (`/data/backups/metrics.json`) informações como:
-- Tamanho do banco antes do backup
-- Tamanho do arquivo `.sql.gz` gerado
-- Tamanho do arquivo `.enc`
-- Duração da operação de backup
-
-**Prioridade:** Baixa
-**Impacto:** Monitoramento e capacidade
+**Observações:**
+- Ambas as entradas são erros de restore ocorridos no mesmo dia, com 1 minuto de intervalo
+- Não há nenhum registro de backup bem-sucedido no log
+- O arquivo é pequeno (202 bytes), indicando que foi limpo recentemente ou o sistema está em uso há pouco tempo
+- As entradas de erro sugerem que o backup de segurança (criado automaticamente antes de um restore) falhou, causando aborto da restauração
 
 ---
 
-## 6. Backup.log Inacessível por .clineignore
+### Arquivo 2: `caminhar-pg-backup_2026-05-21T19-56-57Z.sql.gz.enc`
 
-**Localização:** `/data/backups/backup.log`
+**Caminho completo:** `/data/backups/caminhar-pg-backup_2026-05-21T19-56-57Z.sql.gz.enc`
 
-**Problema:** O arquivo `backup.log` está bloqueado pelo `.clineignore`, impedindo que ferramentas de IA (como o Cline) possam consultar o histórico de backups durante análises. Embora o log seja sanitizado, o bloqueio impede verificações rápidas de consistência.
+**Arquivos acionados ou relacionados:**
+- `/data/backups/caminhar-pg-backup_2026-05-21T19-56-57Z.sql.gz.sha256` — hash SHA-256 correspondente
+- `/scripts/backup.js` — script que gera e criptografa este arquivo
+- `/scripts/restore.js` (se existir) — script que descriptografa e restaura este backup
+- `/pages/api/admin/backups.js` — API que lista este arquivo como backup disponível
+- `.env` / `.env.local` — contém `BACKUP_ENCRYPTION_KEY` necessário para descriptografia
 
-**Sugestão:** Avaliar se o bloqueio do `backup.log` no `.clineignore` é realmente necessário. Como o log já é sanitizado (sem senhas, tokens ou dados sensíveis), remover essa entrada permitiria consultas diretas ao histórico sem comprometer a segurança.
+**Resumo do arquivo:**
+Backup PostgreSQL criptografado com AES-256-GCM, gerado em 21 de maio de 2026 às 19:56:57 UTC. Contém dump completo do banco de dados na data de geração. Formato: arquivo binário criptografado.
 
-**Prioridade:** Baixa
-**Impacto:** Acessibilidade para análise automatizada
+**Detalhes técnicos:**
+- **Tamanho:** 4.3 MB (4.472.125 bytes)
+- **Data de criação:** 25 de agosto de 2026 (data do arquivo no filesystem, diferente do timestamp no nome que indica 21 de maio de 2026)
+- **Criptografia:** AES-256-GCM (conforme implementação em `scripts/backup.js`)
+- **Estrutura do arquivo criptografado:** IV (12 bytes) + dados criptografados + Auth Tag (16 bytes)
 
----
-
-## 7. Ausência de Backup em Nuvem ou Off-site
-
-**Localização:** `/data/backups/`
-
-**Problema:** Todos os backups estão armazenados localmente no servidor. Em caso de falha de disco, desastre físico ou corrupção do sistema de arquivos, todos os backups seriam perdidos junto com o banco de dados ativo.
-
-**Sugestão:** Implementar envio automático dos backups para armazenamento externo (S3 compatível, Google Cloud Storage, ou até mesmo um segundo servidor via rsync/SCP) após a geração local. Isso garantiria recuperação mesmo em cenários de desastre completo.
-
-**Prioridade:** Alta
-**Impacto:** Disaster recovery e continuidade de negócios
-
----
-
-## 8. Duplicidade de Estratégia: Backup JSON de Posts vs Backup PostgreSQL
-
-**Localização:** `/scripts/maintenance/backup-posts.js` e `/scripts/maintenance/restore-posts.js`
-
-**Problema:** Os scripts `backup-posts.js` e `restore-posts.js` geram backups JSON específicos da tabela `posts`, mas o backup PostgreSQL (`pg_dump` via `scripts/backup.js`) já cobre integralmente essa tabela. Isso cria:
-- **Duplicidade de código:** Dois sistemas de backup paralelos com lógicas diferentes
-- **Duplicidade de conteúdo:** O mesmo dado (tabela `posts`) é armazenado em dois formatos
-- **Risco de inconsistência:** O backup JSON não participa da rotação automática (limite de 10) nem da criptografia AES-256-GCM
-- **I/O síncrono:** Usam `fs.writeFileSync`/`fs.readFileSync`, bloqueando o event loop
-
-O backup JSON anterior foi removido do diretório por duplicidade (ver `docs/resolvidos/UPGRADE_data.md`), mas os scripts permanecem no projeto.
-
-**Sugestão:** Avaliar a remoção ou descontinuação desses scripts, consolidando a estratégia de backup exclusivamente no PostgreSQL (`scripts/backup.js`). Se houver necessidade real de backup JSON, integrar ao sistema central (participar da rotação, criptografia e log).
-
-**Prioridade:** Média
-**Impacto:** Manutenibilidade e consistência
+**⚠️ Ponto de atenção — Divergência de datas:**
+O nome do arquivo indica `2026-05-21T19-56-57Z`, mas a data de modificação no filesystem é 25 de agosto de 2026. Possíveis explicações:
+- O backup foi gerado em 21 de maio e o arquivo foi recriado/recriptografado em 25 de agosto
+- O nome reflete a data do dump original, mas o arquivo foi copiado/movido posteriormente
+- O arquivo foi regenerado em 25 de agosto a partir de outra fonte
 
 ---
 
-## 9. Caminho de Carregamento do .env Inconsistente
+### Arquivo 3: `caminhar-pg-backup_2026-05-21T19-56-57Z.sql.gz.sha256`
 
-**Localização:** `/scripts/maintenance/backup-posts.js` e `/scripts/maintenance/restore-posts.js`
+**Caminho completo:** `/data/backups/caminhar-pg-backup_2026-05-21T19-56-57Z.sql.gz.sha256`
 
-**Problema:** Os scripts de manutenção usam `dotenv.config({ path: path.resolve(__dirname, '../.env') })`, que resolve para `scripts/.env` (não a raiz do projeto). Isso difere do padrão usado pelos demais scripts (`loadEnv()` de `scripts/utils/load-env.js`), que prioriza `.env.local` e depois `.env` na raiz. Se a variável `DATABASE_URL` estiver apenas na raiz, esses scripts falharão silenciosamente.
+**Arquivos acionados ou relacionados:**
+- `/data/backups/caminhar-pg-backup_2026-05-21T19-56-57Z.sql.gz.enc` — arquivo ao qual este hash se refere
+- `/scripts/backup.js` — calcula e escreve este hash durante o processo de backup
 
-**Sugestão:** Padronizar o carregamento de variáveis de ambiente usando o módulo compartilhado `loadEnv()` em todos os scripts.
+**Resumo do arquivo:**
+Armazena o hash SHA-256 do arquivo original (`.sql.gz` antes da criptografia) para verificação de integridade.
 
-**Prioridade:** Média
-**Impacto:** Confiabilidade
+**Conteúdo:** `c022450d55c1f800656a668575f48a747342d49b6612042352c9ae3440479c58`
 
----
-
-## 10. Caminho de Diretório de Backup Incorreto nos Scripts de Manutenção de Posts
-
-**Localização:** `/scripts/maintenance/backup-posts.js` e `/scripts/maintenance/restore-posts.js`
-
-**Problema:** Os scripts usam `path.resolve(__dirname, '../data/backups')` para localizar o diretório de backups. Como `__dirname` aponta para `scripts/maintenance/`, o caminho resolve para `scripts/data/backups` — **não** para `data/backups` na raiz do projeto. O diretório `scripts/data/` não existe atualmente. Consequências:
-- `backup-posts.js` criaria um diretório `scripts/data/backups` separado (via `mkdirSync` recursivo), fora do diretório de backups oficial
-- `restore-posts.js` retornaria "Diretório de backups não encontrado" e encerraria sem restaurar nada, pois procura no caminho errado
-
-**Sugestão:** Corrigir o caminho para `path.resolve(process.cwd(), 'data', 'backups')` (padrão usado pelo módulo central `scripts/backup.js`) ou usar `path.resolve(__dirname, '../../data/backups')` para subir até a raiz do projeto.
-
-**Prioridade:** Alta
-**Impacto:** Funcionalidade quebrada (scripts não operam no diretório correto)
+**⚠️ Ponto de atenção — Verificação de integridade:**
+- O hash armazenedo (`c02245...`) **NÃO** corresponde ao hash do arquivo `.enc` atual (`a66666...`)
+- Isso é **esperado**: o hash refere-se ao conteúdo **original** (`.sql.gz`) antes da criptografia
+- Para verificar a integridade do backup atual, seria necessário:
+  1. Descriptografar o `.enc` usando `BACKUP_ENCRYPTION_KEY`
+  2. Calcular o hash do resultado
+  3. Comparar com o hash armazenado no `.sha256`
+- O formato do arquivo contém apenas o hash puro (sem nome de arquivo), o que impede o uso direto de `sha256sum -c`
 
 ---
 
-## 11. Restauração de Posts Processa Registros Um a Um
+### Arquivo 4: `caminhar-pg-backup_2026-05-22T10-18-54Z.sql.gz.enc`
 
-**Localização:** `/scripts/maintenance/restore-posts.js`
+**Caminho completo:** `/data/backups/caminhar-pg-backup_2026-05-22T10-18-54Z.sql.gz.enc`
 
-**Problema:** O script `restore-posts.js` executa um `INSERT ... ON CONFLICT` para cada post individualmente, em um loop. Para volumes grandes de posts, isso gera N consultas ao banco, com performance subótima.
+**Arquivos acionados ou relacionados:**
+- `/data/backups/caminhar-pg-backup_2026-05-22T10-18-54Z.sql.gz.sha256` — hash SHA-256 correspondente
+- `/scripts/backup.js` — script que gera e criptografa este arquivo
+- `/scripts/restore.js` (se existir) — script que descriptografa e restaura este backup
+- `/pages/api/admin/backups.js` — API que lista este arquivo como backup disponível
 
-**Sugestão:** Utilizar inserção em lote (batch) ou `INSERT ... ON CONFLICT` com múltiplos valores em uma única query, reduzindo o número de round-trips ao banco.
+**Resumo do arquivo:**
+Backup PostgreSQL criptografado com AES-256-GCM, gerado em 22 de maio de 2026 às 10:18:54 UTC. É o backup mais recente entre os dois disponíveis.
 
-**Prioridade:** Baixa
-**Impacto:** Performance
+**Detalhes técnicos:**
+- **Tamanho:** 4.3 MB (4.472.128 bytes — 3 bytes maior que o backup anterior)
+- **Data de criação:** 25 de agosto de 2026 (data do filesystem)
+- **Criptografia:** AES-256-GCM
 
----
-
-## 12. API Admin de Backups Não Utiliza o Módulo Central para Listagem
-
-**Localização:** `/pages/api/admin/backups.js`
-
-**Problema:** O endpoint GET da API admin (`pages/api/admin/backups.js`) implementa sua própria lógica de listagem de backups (lendo o diretório com `fs.readdirSync` e filtrando por extensão), em vez de reutilizar a função `getAvailableBackups()` do módulo central `scripts/backup.js`. Isso cria:
-- **Duplicidade de código:** Duas implementações de listagem com lógicas diferentes
-- **Inconsistência potencial:** O filtro da API (`file.endsWith('.sql') || file.endsWith('.gz') || file.endsWith('.enc')`) difere do filtro do módulo central (prefixo `caminhar-pg-backup` + extensões `.sql.gz`/`.enc`), podendo incluir arquivos irrelevantes
-- **Falta de metadados:** A API não retorna o timestamp formatado nem a flag `compressed` que o módulo central fornece
-
-**Sugestão:** Refatorar o endpoint GET para reutilizar `getAvailableBackups()` do módulo central, garantindo consistência na listagem e nos metadados retornados.
-
-**Prioridade:** Média
-**Impacto:** Consistência e manutenibilidade
+**Comparativo com backup anterior:**
+- Diferença de tamanho: +3 bytes (crescimento mínimo entre 21 e 22 de maio)
+- Diferença de timestamp: ~14 horas entre os dois backups
 
 ---
 
-## 13. Ausência de Verificação de Integridade na API Admin
+### Arquivo 5: `caminhar-pg-backup_2026-05-22T10-18-54Z.sql.gz.sha256`
 
-**Localização:** `/pages/api/admin/backups.js`
+**Caminho completo:** `/data/backups/caminhar-pg-backup_2026-05-22T10-18-54Z.sql.gz.sha256`
 
-**Problema:** O endpoint GET da API admin lista os backups mas não verifica se os hashes SHA-256 correspondem aos arquivos. Isso impede que o administrador identifique backups corrompidos pela interface web.
+**Arquivos acionados ou relacionados:**
+- `/data/backups/caminhar-pg-backup_2026-05-22T10-18-54Z.sql.gz.enc` — arquivo ao qual este hash se refere
+- `/scripts/backup.js` — calcula e escreve este hash durante o processo de backup
 
-**Sugestão:** Adicionar verificação de integridade (comparação de hash) na listagem da API, retornando um indicador de integridade para cada backup.
+**Resumo do arquivo:**
+Armazena o hash SHA-256 do backup PostgreSQL mais recente, referente ao arquivo `.sql.gz` antes da criptografia.
 
-**Prioridade:** Baixa
-**Impacto:** Confiabilidade operacional
+**Conteúdo:** `2399e61f5b5b6f28f40dddb8979d47564824144e7781450200538ab57197ea40`
 
----
+**Observações:**
+- Mesmo formato do hash anterior (hash puro, sem nome de arquivo)
+- Mesma limitação: requer descriptografia prévia do `.enc` para verificação
 
-## 14. Constante `BACKUP_INTERVAL_MS` Não Utilizada
+## 5. Ajustes e correções
 
-**Localização:** `/scripts/utils/constants.js`
+### 5.1. Log contém apenas erros — ausência de registros de sucesso
 
-**Problema:** A constante `BACKUP_INTERVAL_MS` (24 horas em ms) está definida em `scripts/utils/constants.js` mas não é utilizada em nenhum script. O agendamento de backups é feito via cron do sistema operacional, não via código.
+**O que foi encontrado:** O `backup.log` possui apenas 2 entradas, ambas de erro (`RESTORE_ERROR`), sem nenhum registro de operação bem-sucedida.
 
-**Sugestão:** Remover a constante não utilizada ou documentar seu propósito se houver intenção de uso futuro.
+**Onde foi encontrado:** `/data/backups/backup.log`
 
-**Prioridade:** Baixa
-**Impacto:** Limpeza de código
+**Problema:** A ausência de logs de sucesso impede auditoria completa do histórico de backups. Não é possível confirmar pela análise do log se backups foram criados com sucesso em algum momento.
 
----
+**Ajuste necessário:** Investigar o motivo da ausência de logs de sucesso:
+- O log foi limpo manualmente ou por rotação?
+- O sistema está em uso há pouco tempo?
+- Houve falha em todas as tentativas de backup?
 
-## 15. Ausência de Testes para Scripts de Manutenção de Posts
+**Prioridade:** Média — Impacta auditoria e rastreabilidade
 
-**Localização:** `/scripts/maintenance/backup-posts.js` e `/scripts/maintenance/restore-posts.js`
+### 5.2. Divergência entre data no nome do arquivo e data do filesystem
 
-**Problema:** Não há testes unitários para os scripts `backup-posts.js` e `restore-posts.js`, diferentemente do módulo central `scripts/backup.js` que possui 4 arquivos de teste (`tests/unit/lib/backup/`).
+**O que foi encontrado:** Os arquivos `.enc` e `.sha256` possuem datas no nome indicando maio de 2026, mas a data de modificação no filesystem é agosto de 2026.
 
-**Sugestão:** Adicionar testes unitários para esses scripts, ou removê-los se a duplicidade (item 8) for resolvida.
+**Onde foi encontrado:** `/data/backups/caminhar-pg-backup_2026-05-21T19-56-57Z.sql.gz.enc` e `/data/backups/caminhar-pg-backup_2026-05-22T10-18-54Z.sql.gz.enc`
 
-**Prioridade:** Baixa
-**Impacto:** Cobertura de testes
+**Problema:** A divergência dificulta a identificação precisa de quando os arquivos foram realmente criados ou modificados.
 
----
+**Ajuste necessário:** Verificar o processo de backup/restore para entender se:
+- Os arquivos são renomeados após criação
+- O backup é gerado em outro local e copiado depois
+- Há recriptografia periódica que atualiza a data do filesystem
 
-## 16. Testes da API Admin de Backups Não Cobrem o Rate Limit
+**Prioridade:** Baixa — Não afeta funcionalidade, apenas rastreabilidade
 
-**Localização:** `/pages/api/admin/backups.js` e `/tests/integration/api/admin/backups.test.js`
+### 5.3. Hash SHA-256 não verificável diretamente
 
-**Problema:** Existe um teste de integração (`tests/integration/api/admin/backups.test.js`) que cobre GET (listagem, diretório inexistente, erros de FS), POST (sucesso e falha) e métodos não permitidos (405). Porém, o teste **não cobre o rate limit** configurado no endpoint (máximo 10 requisições por minuto), nem a autenticação admin (o mock de `withAuth` sempre injeta um usuário admin).
+**O que foi encontrado:** O `.sha256` contém o hash do arquivo original (`.sql.gz`), não do arquivo criptografado (`.enc`). Além disso, o formato contém apenas o hash puro, sem nome de arquivo, impedindo o uso de `sha256sum -c`.
 
-**Sugestão:** Adicionar casos de teste para o rate limit (exceder o limite de 10 requisições e verificar resposta de erro) e para cenários de autenticação (usuário não autenticado ou sem role admin).
+**Onde foi encontrado:** `/data/backups/*.sha256` e `/data/backups/*.enc`
 
-**Prioridade:** Baixa
-**Impacto:** Cobertura de testes
+**Problema:** Não é possível verificar a integridade dos backups criptografados sem:
+1. Ter a chave `BACKUP_ENCRYPTION_KEY`
+2. Descriptografar o `.enc`
+3. Calcular o hash do resultado
+4. Comparar manualmente com o `.sha256`
 
----
+**Ajuste necessário:** Implementar script de verificação de integridade que realize o fluxo completo automaticamente, ou documentar o procedimento manual necessário.
 
-## Resumo das Sugestões
+**Prioridade:** Média — Impacta capacidade de verificar integridade dos backups
 
-| # | Sugestão | Categoria | Prioridade | Esforço Estimado |
-|---|----------|-----------|------------|------------------|
-| 1 | Backup não criptografado para troubleshooting | Resiliência | Média | Baixo |
-| 2 | Backup automático em intervalo regular | Continuidade | **Alta** | Médio |
-| 3 | Aumentar retenção de backups | Capacidade | Média | Baixo |
-| 4 | Teste automatizado de restore | Confiabilidade | Média | Alto |
-| 5 | Métricas de tamanho e crescimento | Monitoramento | Baixa | Médio |
-| 6 | Liberar backup.log do .clineignore | Acessibilidade | Baixa | Baixo |
-| 7 | Backup em nuvem ou off-site | Disaster Recovery | **Alta** | Alto |
-| 8 | Remover duplicidade de backup JSON de posts | Duplicidade | Média | Baixo |
-| 9 | Padronizar carregamento de .env | Confiabilidade | Média | Baixo |
-| 10 | Corrigir caminho de diretório de backup nos scripts de posts | Correção | **Alta** | Baixo |
-| 11 | Restauração de posts em lote | Performance | Baixa | Baixo |
-| 12 | API admin reutilizar módulo central | Duplicidade | Média | Baixo |
-| 13 | Verificação de integridade na API admin | Confiabilidade | Baixa | Médio |
-| 14 | Remover constante não utilizada | Limpeza | Baixa | Baixo |
-| 15 | Testes para scripts de manutenção de posts | Testes | Baixa | Médio |
-| 16 | Testes da API admin não cobrem rate limit | Testes | Baixa | Baixo |
+## 6. Melhorias
 
----
+### 6.1. Implementar verificação de integridade automatizada
 
-## Nota sobre o Documento Anterior
+**Justificativa:** A verificação manual de integridade requer múltiplos passos e conhecimento da chave de criptografia. Um script automatizdo permitiria validação rápida e segura.
 
-O documento `/docs/resolvidos/UPGRADE_data.md` contém **11 itens** de melhorias e correções, **todos já implementados**. As melhorias anteriores incluíram:
+**Sugestão:** Criar script `scripts/verify-backup.js` que:
+- Localiza o par `.enc` + `.sha256`
+- Usa `BACKUP_ENCRYPTION_KEY` para descriptografar
+- Calcula o hash do conteúdo descriptografado
+- Compara com o hash armazenado
+- Reporta resultado (válido/inválido)
 
-- Remoção do SQLite e unificação em PostgreSQL
-- Correção de bugs (entity_id, criptografia)
-- Padronização de formatos de data
-- Remoção de backups redundantes (JSON)
-- Sanitização de logs
+### 6.2. Incluir metadados de tamanho e duração no log
 
-Nenhum dos problemas anteriores persiste no estado atual da pasta `/data`.
+**Justificativa:** O log atual não registra informações operacionais como tamanho do backup ou duração da operação, dificultando monitoramento e planejamento de capacidade.
 
----
+**Sugestão:** Estender o formato do log para incluir:
+- Tamanho do arquivo gerado
+- Duração da operação
+- Tipo de operação (backup/restore)
 
-## Pontos de Atenção Técnicos para Revisão Futura
+### 6.3. Documentar procedimento de verificação de integridade
 
-1. **Segurança da chave de criptografia:** A chave `BACKUP_ENCRYPTION_KEY` é essencial para descriptografar os backups. Sua perda torna os backups inutilizáveis. Recomenda-se documentar a localização segura da chave e considerar um cofre de segredos.
+**Justificativa:** O formato do `.sha256` (hash puro, sem nome de arquivo) não é imediatamente compreensível e impede uso de ferramentas padrão.
 
-2. **Espaço em disco:** O monitoramento de disco (`scripts/monitor-disk-space.js`) alerta quando o uso ultrapassa 85%, mas a recomendação de limpeza de backups é apenas informativa. Considerar automação de limpeza mais agressiva em cenários de disco crítico.
+**Sugestão:** Adicionar documentação explicando:
+- Por que o hash refere-se ao conteúdo original, não ao criptografado
+- Como realizar verificação manual
+- Limitações do formato atual
 
-3. **Consistência entre API e módulo central:** A API admin de backups e o módulo central `scripts/backup.js` têm implementações paralelas de listagem. A unificação evitaria divergências futuras.
+### 6.4. Avaliar retenção de backups
 
-4. **Backups JSON de posts:** Os scripts `backup-posts.js` e `restore-posts.js` representam uma estratégia paralela que não participa da rotação, criptografia e log do sistema central. Sua manutenção contínua pode gerar confusão operacional.
+**Justificativa:** Apenas 2 backups disponíveis, ambos de maio de 2026. Se o sistema está ativo desde então, há janela de cobertura pequena.
+
+**Sugestão:** Avaliar aumento do limite de retenção além dos 10 backups configurados, ou implementar backup incremental para reduzir espaço.
+
+### 6.5. Implementar backup automatizado
+
+**Justificativa:** Os backups existentes são de maio de 2026, e os erros no log são de setembro de 2026. Sem automação, há risco de janelas sem backup.
+
+**Sugestão:** Configurar cron job ou agendamento automático para execução diária de backups.
+
+### 6.6. Backup em nuvem ou off-site
+
+**Justificativa:** Backups apenas locais ficam vulneráveis a falha de disco ou desastre físico.
+
+**Sugestão:** Implementar envio automático para armazenamento externo (S3, GCS) após geração local.
+
+## 7. Duplicidades
+
+### 7.1. Estratégia paralela de backup JSON de posts
+
+**O que foi encontrado:** Os scripts `/scripts/maintenance/backup-posts.js` e `/scripts/maintenance/restore-posts.js` implementam backup JSON específico da tabela `posts`, paralelo ao backup PostgreSQL central.
+
+**Problema:** Duplicidade de código e conteúdo — o backup PostgreSQL (`scripts/backup.js`) já cobre integralmente a tabela `posts`.
+
+**Evidência:** Análise dos scripts de manutenção mostra lógica de backup/restore JSON que não participa da rotação automática, criptografia ou log central.
+
+### 7.2. API admin de backups com lógica de listagem duplicada
+
+**O que foi encontrado:** O endpoint GET de `/pages/api/admin/backups.js` implementa sua própria lógica de listagem, em vez de reutilizar `getAvailableBackups()` do módulo central.
+
+**Problema:** Duas implementações de listagem com filtros diferentes, podendo retornar resultados inconsistentes.
+
+**Evidência:** O filtro da API (`.sql`, `.gz`, `.enc`) difere do filtro do módulo central (prefixo `caminhar-pg-backup`).
+
+## 8. Código morto
+
+### 8.1. Constante `BACKUP_INTERVAL_MS` não utilizada
+
+**O que foi encontrada:** Constante definida em `/scripts/utils/constants.js` (24 horas em ms) mas não utilizada em nenhum script.
+
+**Evidência:** Análise do código mostra que o agendamento é feito via cron do sistema operacional.
+
+**Sugestão:** Remover a constante ou documentar propósito futuro.
+
+### 8.2. Possível código morto nos scripts de manutenção de posts
+
+**O que foi encontrada:** Os scripts `backup-posts.js` e `restore-posts.js` possuem problemas de caminho (diretorio errado) e carregamento de `.env` inconsistente, sugerindo que podem não estar em uso ativo.
+
+**Evidência:**
+- Caminho `path.resolve(__dirname, '../data/backups')` resolve para `scripts/data/backups` (não existe)
+- Carregamento de `.env` via `path.resolve(__dirname, '../.env')` aponta para `scripts/.env` (deveria ser raiz)
+
+**Sugestão:** Verificar se esses scripts são chamados em algum fluxo. Se não forem, considerar remoção.
+
+### 8.3. Duplicidade de carregamento de variáveis de ambiente
+
+**O que foi encontrada:** Os scripts de manutenção usam `dotenv.config()` direto, enquanto o módulo central usa `loadEnv()` compartilhado.
+
+**Problema:** Inconsistência que pode causar falhas silenciosas se `DATABASE_URL` estiver apenas na raiz.
+
+**Evidência:** Análise do código de `backup-posts.js` e `restore-posts.js`.
+
+## Resumo do processamento
+
+| # | Arquivo | Tipo | Tamanho | Data filesystem | Status |
+|---|---------|------|---------|-----------------|--------|
+| 1 | `backup.log` | Log | 202 bytes | 04/09/2026 | 2 erros, 0 sucessos |
+| 2 | `caminhar-pg-backup_2026-05-21T19-56-57Z.sql.gz.enc` | Backup criptografado | 4.3 MB | 25/08/2026 | Hash não verificável diretamente |
+| 3 | `caminhar-pg-backup_2026-05-21T19-56-57Z.sql.gz.sha256` | Hash SHA-256 | 64 bytes | 25/08/2026 | Hash do original, não do .enc |
+| 4 | `caminhar-pg-backup_2026-05-22T10-18-54Z.sql.gz.enc` | Backup criptografado | 4.3 MB | 25/08/2026 | Hash não verificável diretamente |
+| 5 | `caminhar-pg-backup_2026-05-22T10-18-54Z.sql.gz.sha256` | Hash SHA-256 | 64 bytes | 25/08/2026 | Hash do original, não do .enc |
+
+**Total de arquivos analisados:** 5/5
+**Total de problemas identificados:** 3
+**Total de melhorias recomendadas:** 6
+**Total de duplicidades identificadas:** 2
+<longcat_arg_value>

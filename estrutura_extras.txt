@@ -918,6 +918,7 @@ tests/unit/scripts/utils/cleanup.test.js → scripts/utils/cleanup.js
 tests/unit/scripts/utils/constants.test.js → scripts/utils/constants.js
 tests/unit/scripts/utils/date-format.test.js → scripts/utils/date-format.js
 tests/unit/scripts/utils/load-env.test.js → scripts/utils/load-env.js
+tests/unit/scripts/validate-schema.test.js → scripts/utils/load-env.js
 tests/unit/scripts/validate-schema.test.js → scripts/validate-schema.js
 tests/unit/settings.cache.test.js → tests/mocks/db-module.js
 tests/unit/videos.validation.test.js → lib/domain/videos.js
