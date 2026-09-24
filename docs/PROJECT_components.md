@@ -1,6 +1,7 @@
 # Análise de Componentes — `/components`
 
-> **Data:** 31/07/2026  
+> **Data:** 23/09/2026  
+> **Última atualização completa:** 23/09/2026
 > **Objetivo:** Documentar todos os arquivos da pasta `components/`, descrevendo localização, propósito, funcionalidades e responsabilidades de cada módulo, com base na análise atual do código.
 
 ---
@@ -32,9 +33,9 @@ Sistema administrativo completo construído sobre um **CRUD genérico reutilizá
 
 **AdminCrudBase.js** (`AdminCrudBase.js`) — Componente base genérico e reutilizável para todas as operações CRUD. Elimina duplicação entre gerenciadores de conteúdo. Funcionalidades: tabela configurável, formulário dinâmico, Drag & Drop com reversão automática em caso de falha, busca server-side, exportação CSV, toggle de status com rollback otimista, paginação, modo somente leitura, skeletons, validação Zod, modal de confirmação assíncrono para exclusão com confirmação em um único clique (via `Modal` da UI). Delega o formulário para `CrudForm` e a tabela para `CrudTable`. ~419 linhas.
 
-**CrudForm.js** (`CrudForm.js`) — Subcomponente de formulário dinâmico extraído do `AdminCrudBase`. Renderiza campos configuráveis com suporte a `renderCustomFormField`, validação Zod e callback de submit. 102 linhas.
+**CrudForm.js** (`CrudForm.js`) — Subcomponente de formulário dinâmico extraído do `AdminCrudBase`. Renderiza campos configuráveis com suporte a `renderCustomFormField`, validação Zod e callback de submit. 101 linhas.
 
-**CrudTable.js** (`CrudTable.js`) — Subcomponente de tabela com paginação, skeleton loading, drag & drop, toggle de status, células customizáveis e estado vazio. 309 linhas.
+**CrudTable.js** (`CrudTable.js`) — Subcomponente de tabela com paginação, skeleton loading, drag & drop, toggle de status, células customizáveis e estado vazio. 308 linhas.
 
 ### 1.2 Gerenciadores de Conteúdo
 
@@ -42,11 +43,11 @@ Todos delegam ao `AdminCrudBase`, configurando campos, colunas e validação.
 
 **AdminPosts.js** (`AdminPosts.js`) — Gestão de posts. Geração automática de slug a partir do título (com feedback via toast), validação Zod, imagem de capa obrigatória para publicação, reordenação e exportação CSV. 251 linhas.
 
-**AdminMusicas.js** (`AdminMusicas.js`) — Gestão de músicas com integração Spotify. Botão "Puxar Dados" via `ExternalDataButton`, preview embed na tabela, validação Zod. 193 linhas.
+**AdminMusicas.js** (`AdminMusicas.js`) — Gestão de músicas com integração Spotify. Botão "Puxar Dados" via `ExternalDataButton`, preview embed na tabela, validação Zod. 192 linhas.
 
-**AdminVideos.js** (`AdminVideos.js`) — Gestão de vídeos com integração YouTube. Botão "Puxar Dados", preview com `LazyIframe`, paginação (10 itens/página), capa personalizada opcional. 226 linhas.
+**AdminVideos.js** (`AdminVideos.js`) — Gestão de vídeos com integração YouTube. Botão "Puxar Dados", preview com `LazyIframe`, paginação (10 itens/página), capa personalizada opcional. 225 linhas.
 
-**AdminProducts.js** (`AdminProducts.js`) — Gestão de produtos com integração Mercado Livre. Botão "Puxar Dados", campo `image_url` com múltiplas URLs (uma por linha, suporta carrossel), validação Zod. 169 linhas.
+**AdminProducts.js** (`AdminProducts.js`) — Gestão de produtos com integração Mercado Livre. Botão "Puxar Dados", campo `image_url` com múltiplas URLs (uma por linha, suporta carrossel), validação Zod. 168 linhas.
 
 **AdminDicas.js** (`AdminDicas.js`) — Gerenciamento de "Dicas do Dia". Delega ao `AdminCrudBase`. Documentação JSDoc detalhada. 123 linhas.
 
@@ -54,9 +55,9 @@ Todos delegam ao `AdminCrudBase`, configurando campos, colunas e validação.
 
 **AdminUsers.js** (`AdminUsers.js`) — Container de abas para "Gestão de Usuários" e "Gestão de Cargos". Lazy loading das abas inativas, navegação por teclado (setas), ARIA completo. 114 linhas.
 
-**AdminUsersTab.js** (`AdminUsersTab.js`) — CRUD de usuários. Senha com validação (mín. 6 caracteres, obrigatória para novos), select de cargos dinâmico com cache em `sessionStorage` (5 min), formatação de último login relativa (date-fns). 185 linhas.
+**AdminUsersTab.js** (`AdminUsersTab.js`) — CRUD de usuários. Senha com validação (mín. 6 caracteres, obrigatória para novos), select de cargos dinâmico com cache em `sessionStorage` (5 min), formatação de último login relativa (date-fns). 184 linhas.
 
-**AdminRolesTab.js** (`AdminRolesTab.js`) — CRUD de cargos. Checkboxes de permissões, normalização de nomes antigos (ex: 'Dicas' → 'Gestão de Dicas'), validação Zod. 85 linhas.
+**AdminRolesTab.js** (`AdminRolesTab.js`) — CRUD de cargos. Checkboxes de permissões, normalização de nomes antigos (ex: 'Dicas' → 'Gestão de Dicas'), validação Zod. 84 linhas.
 
 ### 1.4 Dashboard e Auditoria
 
@@ -83,21 +84,31 @@ Adaptadores que delegam para os componentes base da UI, mantendo a API específi
 
 ### 1.7 Ferramentas (Tools/)
 
-**IntegrityCheck.js** (`Tools/IntegrityCheck.js`) — Verificação de integridade do sistema (banco, cache, storage, backup, sistema). Auto-refresh 30s, cards por status (ok, error, warning, degraded). 281 linhas.
+**IntegrityCheck.js** (`Tools/IntegrityCheck.js`) — Verificação de integridade do sistema (banco, cache, storage, backup, sistema). Auto-refresh 30s, cards por status (ok, error, warning, degraded). 280 linhas.
 
 **RateLimitViewer.js** (`Tools/RateLimitViewer.js`) — Visualização de rate limiting. Três abas (IPs Bloqueados, Whitelist, Logs de Auditoria), auto-refresh 15s, desbloqueio de IPs e adição à whitelist, tratamento de sessão expirada (401) em todas as rotas de dados. 548 linhas.
 
 ### 1.8 Gerenciadores (Managers/)
 
-**BackupManager.js** (`Managers/BackupManager.js`) — Gerenciamento de backups. Exibe último backup, criação manual com modal de confirmação. 153 linhas.
+**BackupManager.js** (`Managers/BackupManager.js`) — Gerenciamento de backups. Exibe último backup, criação manual com modal de confirmação. 152 linhas.
 
-**CacheManager.js** (`Managers/CacheManager.js`) — Gerenciamento de cache Redis. Limpeza com confirmação, métricas de status (conexão, erros, fallbacks). 144 linhas.
+**CacheManager.js** (`Managers/CacheManager.js`) — Gerenciamento de cache Redis. Limpeza com confirmação, métricas de status (conexão, erros, fallbacks). 143 linhas.
 
 ### 1.9 Barrel e Estilos
 
 **index.js** (`index.js`) — Barrel export. Exporta `AdminCrudBase`, `AdminMusicasNew`, `AdminVideosNew`, `AdminPostsNew` e os campos de formulário. **Não exporta** AdminDashboard, AdminDicas, AdminAudit, Tools, Managers, AdminUsers, AdminRolesTab, AdminUsersTab, withAdminAuth.
 
-**styles/** — 7 arquivos CSS Module: `login.module.css`, `dashboard.module.css`, `crud.module.css`, `tabs.module.css`, `permissions.module.css`, `form.module.css`, `misc.module.css`.
+### 1.10 Módulos CSS Admin
+
+| Arquivo | Propósito |
+|---------|-----------|
+| `login.module.css` | Estilos do formulário de login e painel admin (`withAdminAuth.js`). |
+| `dashboard.module.css` | Cards de estatística, gráfico de barras, grid responsivo (`AdminDashboard.js`). |
+| `crud.module.css` | Tabela, formulário, botões de ação, paginação, status badges, skeleton loading, form Actions (`AdminCrudBase.js`, `AdminMusicas.js`). |
+| `tabs.module.css` | Abas, painel de abas, indicador ativo, ícones (`AdminUsers.js`). |
+| `permissions.module.css` | Checkboxes de permissões, grid de permissões, badges (`AdminRolesTab.js`). |
+| `form.module.css` | Grupos de formulário, inputs, preview de vídeo/URL (`ToggleField.js`, `UrlField.js`, `ImageUploadField.js`). |
+| `misc.module.css` | Botões compartilhados, sub navegação, placeholders, mensagens de erro/sucesso, estados vazios, preview, textarea, embed Spotify. |
 
 ---
 
@@ -155,6 +166,23 @@ Componentes de funcionalidades públicas do site, agrupados por domínio.
 
 **Testimonials.module.css** (`Testimonials/`) — Estilos da seção, cards, navegação, hover effects, responsivo.
 
+### 2.7 Módulos CSS Features
+
+| Componente | Arquivo | Propósito |
+|------------|---------|-----------|
+| Blog | `Blog/styles/Blog.module.css` | Grid responsivo, categorias, título, excerpt, footer. |
+| ContentTabs | `ContentTabs/styles/ContentTabs.module.css` | Estilos de abas, container com `min-height: 600px` para evitar layout shift, responsivo. |
+| MusicCard | `Music/styles/MusicCard.module.css` | Estilos do card de música. |
+| MusicGallery | `Music/styles/MusicGallery.module.css` | Grid 3 colunas, search, sort, pagination, responsivo. |
+| VideoGallery | `Video/styles/VideoGallery.module.css` | Grid, search, sort, pagination, responsivo. |
+| ProductCard | `Products/styles/ProductCard.module.css` | Card media, navegação, lightbox, links de loja. |
+| ProductList | `Products/styles/ProductList.module.css` | Hover/foco dos botões de filtro e paginação (`.filterButton`, `.pageButton`, `.pageButtonActive`). |
+| Testimonials | `Testimonials/Testimonials.module.css` | Estilos da seção, cards, navegação, hover effects, responsivo. |
+
+### 2.8 Estilos JS Compartilhados
+
+**styles.js** (`Products/styles.js`) — Estilos compartilhados JS (`inputStyle`, `buttonBaseStyle`). Define tokens de paddingLeft permitidos para evitar injeção de CSS. Usado por `ProductCard.js` e `ProductList.js`.
+
 ---
 
 ## 3. Layout (Design System — Layout)
@@ -190,6 +218,15 @@ Componentes de funcionalidades públicas do site, agrupados por domínio.
 **Localização:** `Layout/index.js`
 
 **Propósito:** Barrel export. Exporta named + default (com sufixo `Default`) para todos os componentes de layout.
+
+### 3.6 Módulos CSS Layout
+
+| Componente | Arquivo | Propósito |
+|------------|---------|-----------|
+| Container | `Layout/Container.module.css` | Tamanhos (sm/md/lg/xl/2xl/full), modo fluid, padding responsivo, Section e Article. |
+| Grid | `Layout/Grid.module.css` | Colunas 1-12, gaps (row/col), align/justify, spans, auto grid, responsivo via variáveis `--cols-*`. |
+| Stack | `Layout/Stack.module.css` | Direção column/row, spacing via `--stack-gap`, align/justify, wrap, responsive. |
+| Sidebar | `Layout/Sidebar.module.css` | Sidebar colapsável esquerda/direita, larguras sm/md/lg, overlay mobile com breakpoint 1024px. |
 
 ---
 
@@ -233,6 +270,13 @@ Componentes de funcionalidades públicas do site, agrupados por domínio.
 **Localização:** `Performance/index.js`
 
 **Propósito:** Barrel export. Exporta `ImageOptimized`, `LazyIframe`, `PreloadResources` (+ `getCriticalResources`), `CriticalCSS` (+ `extractCriticalCSS`, `removeCriticalCSS`).
+
+### 4.6 Módulos CSS e Recursos Estáticos
+
+| Arquivo | Propósito |
+|---------|-----------|
+| `ImageOptimized.module.css` | Animação de skeleton loader via `@keyframes pulse`. |
+| `criticalCSSRaw.js` | CSS crítico como string raw para inline. Usa `.js` em vez de `.css` para evitar conflitos com o Turbopack. Contém: reset básico, prevenção de FOIT/FOUT, layout crítico, skip link para acessibilidade, skeleton loading, e suporte a `prefers-reduced-motion`. |
 
 ---
 
@@ -349,11 +393,20 @@ Componentes de funcionalidades públicas do site, agrupados por domínio.
 
 **Propósito:** Barrel export. Exporta named + default (com sufixo `Default`) para todos os componentes UI. Mantém alias `Card` para `BaseCard` (compatibilidade com `pages/design-system.js`).
 
-### 6.14 __tests__/
+### 6.14 Módulos CSS UI
 
-**Localização:** `UI/__tests__/`
-
-**Status:** Pasta **vazia** (sem arquivos de teste).
+| Componente | Arquivo |
+|------------|---------|
+| Alert | `UI/Alert.module.css` |
+| Badge | `UI/Badge.module.css` |
+| BaseCard | `UI/BaseCard.module.css` |
+| Button | `UI/Button.module.css` |
+| Input | `UI/Input.module.css` |
+| Modal | `UI/Modal.module.css` |
+| Select | `UI/Select.module.css` |
+| Spinner | `UI/Spinner.module.css` |
+| TextArea | `UI/TextArea.module.css` |
+| Toast | `UI/Toast.module.css` |
 
 ---
 
@@ -363,5 +416,8 @@ Componentes de funcionalidades públicas do site, agrupados por domínio.
 - `BaseCard` unificado com antigo `Card.js` (removido), mantendo ambos os nomes via barrel export.
 - Admin Fields são adaptadores que delegam para componentes base da UI.
 - Uso extensivo de `PropTypes` com documentação JSDoc detalhada.
-- A pasta `UI/__tests__/` está vazia (sem arquivos de teste).
 - `Admin/index.js` é um barrel **incompleto** (não exporta todos os componentes Admin).
+- Todos os módulos CSS foram documentados individualmente neste documento.
+- As contagens de linhas foram verificadas via `wc -l` e corrigidas quando necessário.
+- O arquivo `criticalCSSRaw.js` usa extensão `.js` para evitar conflitos com o Turbopack do Next.js.
+- `Products/styles.js` implementa validação de tokens de paddingLeft para evitar injeção de CSS.

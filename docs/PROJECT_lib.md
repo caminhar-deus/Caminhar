@@ -1,6 +1,6 @@
 # Análise da Pasta `lib/`
 
-> **Data da análise:** 01/08/2026
+> **Data da análise:** 23/09/2026
 > **Projeto:** O Caminhar com Deus
 > **Objetivo:** Documentar de forma objetiva, técnica e organizada todos os arquivos da pasta `lib/` e suas subpastas, descrevendo localização, propósito, funcionalidades e responsabilidades de cada módulo.
 
@@ -62,7 +62,7 @@ Módulo responsável pela padronização da camada de API: classes de erro, resp
 - `default.validate` — Middlewares de validação Zod
 - `default.middleware` — Middlewares de composição
 
-**Observações:** Arquivo simplificado em relação à versão anterior (removidos 47 exports nomeados não consumidos externamente).
+**Observações:** [Histórico — não verificável no código atual] Arquivo simplificado em relação à versão anterior (removidos 47 exports nomeados não consumidos externamente).
 
 ---
 
@@ -171,7 +171,7 @@ Módulo responsável pela padronização da camada de API: classes de erro, resp
 | `withRateLimit(options)` | Rate limit via `checkRateLimit` de `lib/cache/cache.js`. Suporta `maxRequests` como função dinâmica. Em produção, alerta se Redis não estiver disponível |
 | `withCors(options)` | CORS configurável. Em produção usa `ALLOWED_ORIGINS` (env); em dev usa `['*']`. Responde preflight OPTIONS |
 | `withErrorHandler(options)` | Captura erros e delega para `handleError` de `response.js`. Opção `includeStack` para desenvolvimento |
-| `withLogger(options)` | Logging de requisições com duração — sobrescreve `res.end` para capturar finalização |
+|| `withLogger(options)` | Logging de requisições com duração — sobrescreve `res.end` para capturar finalização. Opção `logger` (default: `console.log`) permite substituir a função de log |
 | `withTimeout(timeoutMs)` | Timeout de requisição (default 10s) — responde 500 se exceder |
 | `withBodyParser(options)` | Valida tamanho do body (default 1MB) |
 | `withCache(maxAge)` | Adiciona header `Cache-Control: public, max-age` apenas para GET |
@@ -284,7 +284,7 @@ Módulo responsável pela padronização da camada de API: classes de erro, resp
 | `validateRefreshToken(refreshToken)` | Valida refresh token no banco (não revogado e não expirado) |
 | `revokeRefreshToken(refreshToken)` | Revoga um refresh token específico |
 | `revokeAllUserRefreshTokens(userId)` | Revoga todos os refresh tokens de um usuário |
-| `refreshAccessToken(refreshToken)` | Renovação completa com rotação: valida, revoga token atual, gera novo par e retorna `{ accessToken, refreshToken, user }` |
+|| `refreshAccessToken(refreshToken)` | Renovação completa com rotação: valida, revoga token atual, gera novo par e retorna `{ accessToken, refreshToken, user, error: null }` |
 | `setRefreshTokenCookie(res, token, options)` | Define cookie httpOnly com refresh token, path restrito a `/api/auth/refresh`, sameSite Strict |
 | `getRefreshTokenCookie(req)` | Extrai refresh token do cookie |
 | `withAuth(handler)` | Middleware que protege handlers exigindo token JWT válido; loga `warn` em acesso sem token ou com token inválido |

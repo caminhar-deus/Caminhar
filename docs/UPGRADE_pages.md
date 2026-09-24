@@ -1,610 +1,886 @@
-# Relatório de Melhorias e Correções — `/pages`
+# Análise Documentada — Pasta `/pages`
 
-> **Data da análise:** 01/08/2026
-> **Objetivo:** Levantamento analítico de possíveis melhorias identificadas nos 42 arquivos atuais da pasta `/pages`. **Nenhuma correção deve ser aplicada** — apenas documentar.
-> **Baseado em:** Análise profunda dos arquivos atuais (01/08/2026), com apoio dos documentos anteriores em `/docs/antigos/` e `/docs/resolvidos/` apenas quando relevantes. Em caso de divergência, prevalece a análise atual.
-
----
-
-## Índice
-
-1. [Correções de Código (Bugs)](#1-correções-de-código-bugs)
-2. [Duplicidade de Código](#2-duplicidade-de-código)
-3. [Inconsistências Arquiteturais](#3-inconsistências-arquiteturais)
-4. [Segurança](#4-segurança)
-5. [Performance](#5-performance)
-6. [Manutenibilidade e Padronização](#6-manutenibilidade-e-padronização)
-7. [Pontos Irrelevantes ou Obsoletos](#7-pontos-irrelevantes-ou-obsoletos)
+> **Data da análise:** 24/09/2026
+> **Objetivo:** Análise profunda, sequencial e individual de todos os 42 arquivos da pasta `/pages`, documentando finalidade, relações, estrutura e observações técnicas de cada arquivo.
+> **Escopo:** Cada arquivo será analisado individualmente (Leitura → Análise → Atualização → Releitura → Validação) antes de avançar para o próximo.
 
 ---
 
-## 1. Correções de Código (Bugs)
+## 1. Nome do documento
 
-### 1.1 `await await` duplicado em `admin/users.js`
+**Análise Documentada — Pasta `/pages`**
 
-**Arquivo:** `/pages/api/admin/users.js`
+---
 
-**Problema:** As linhas 68, 99 e 115 contêm `await await` duplicado antes de `req.adminUtils.logActivity(...)`:
-```js
-// linha 68
-await await req.adminUtils.logActivity('CRIAR USUÁRIO', ...);
-// linha 99
-await await req.adminUtils.logActivity('ATUALIZAR USUÁRIO', ...);
-// linha 115
-await await req.adminUtils.logActivity('EXCLUIR USUÁRIO', ...);
+## 2. Descrição geral
+
+Este documento apresenta a análise completa e individual de todos os arquivos da pasta `/pages` do projeto **Caminhar** (aplicativo Next.js).
+
+A finalidade é registrar a finalidade, responsabilidade, relações e características de cada arquivo, fornecendo uma referência técnica para manutenção, refatoração e evolução do projeto.
+
+A análise é realizada arquivo por arquivo, em sequência, com etapa obrigatória de releitura e validação após cada atualização.
+
+---
+
+## 3. Estrutura de arquivos e pastas
+
+```
+/pages/
+├── index.js                              (Página inicial)
+├── _app.js                               (Componente App do Next.js)
+├── _document.js                          (Documento HTML customizado)
+├── admin.js                              (Painel administrativo)
+├── design-system.js                      (Demo do design system)
+├── blog/
+│   ├── index.js                          (Listagem de posts do blog)
+│   ├── [slug].js                         (Página individual de post)
+│   └── Blog.module.css                   (Estilos do blog)
+├── styles/
+│   ├── Home.module.css                   (Estilos da home)
+│   ├── globals.css                       (Estilos globais)
+│   ├── DesignSystem.module.css           (Estilos do design system)
+│   └── variables.css                     (Variáveis CSS / tokens)
+└── api/
+    ├── posts.js                          (CRUD público de posts)
+    ├── dicas.js                          (CRUD público de dicas)
+    ├── musicas.js                        (CRUD público de músicas)
+    ├── videos.js                         (CRUD público de vídeos)
+    ├── products.js                       (CRUD público de produtos)
+    ├── settings.js                       (Configurações do site)
+    ├── status.js                         (Status/health check)
+    ├── upload-image.js                   (Upload de imagens)
+    ├── placeholder-image.js              (Imagem placeholder)
+    ├── cleanup-test-data.js              (Limpeza de dados de teste)
+    ├── auth/
+    │   ├── login.js                      (Autenticação de login)
+    │   ├── logout.js                     (Logout)
+    │   ├── refresh.js                    (Refresh de token)
+    │   └── check.js                      (Verificação de autenticação)
+    ├── admin/
+    │   ├── posts.js                      (CRUD admin de posts)
+    │   ├── dicas.js                      (CRUD admin de dicas)
+    │   ├── musicas.js                    (CRUD admin de músicas)
+    │   ├── videos.js                     (CRUD admin de vídeos)
+    │   ├── users.js                      (CRUD admin de usuários)
+    │   ├── roles.js                      (CRUD admin de roles)
+    │   ├── audit.js                      (Logs de auditoria)
+    │   ├── cache.js                      (Gerenciamento de cache)
+    │   ├── stats.js                      (Estatísticas)
+    │   ├── backups.js                    (Backups)
+    │   ├── integrity.js                  (Verificação de integridade)
+    │   ├── rate-limit.js                 (Rate limiting)
+    │   ├── fetch-spotify.js              (Fetcher Spotify)
+    │   ├── fetch-youtube.js              (Fetcher YouTube)
+    │   └── fetch-ml.js                   (Fetcher Mercado Livre)
+    └── helper/
+        └── pagination.js                 (Helper de paginação)
 ```
 
-**Impacto:** Em JavaScript, `await await` é sintaticamente válido (o segundo `await` resolve o resultado do primeiro), então **funciona**, mas é um erro de digitação que confunde a leitura e pode mascarar problemas se a função retornar algo inesperado. Não está no padrão dos demais arquivos admin (que usam `await` único).
-
-**Sugestão:** Remover o `await` duplicado nas 3 linhas, mantendo apenas `await req.adminUtils.logActivity(...)`.
+**Total: 42 arquivos**
 
 ---
 
-### 1.2 Import sem extensão no padrão ESM em `admin/backups.js`
-
-**Arquivo:** `/pages/api/admin/backups.js`
-
-**Problema:** A linha 1 importa `createBackup` de `'../../../scripts/backup'` **sem a extensão `.js`**:
-```js
-import { createBackup } from '../../../scripts/backup';
-```
-Enquanto todos os demais imports do projeto usam a extensão explícita (padrão ESM, ex: `'../../../lib/api/adminCrudHandler.js'`).
-
-**Impacto:** No Node.js com ES Modules estrito (indicação do projeto via `"type": "module"` ou `next.config`), imports sem extensão podem gerar `ERR_MODULE_NOT_FOUND` em runtime, dependendo da configuração de resolução.
-
-**Sugestão:** Adicionar a extensão `.js`: `from '../../../scripts/backup.js'`.
+## 4. Análise individual de cada arquivo
 
 ---
 
-### 1.3 Invalidação de cache redundante em `api/posts.js`
+### 4.1 `index.js`
 
-**Arquivo:** `/pages/api/posts.js`
+**Caminho:** `/pages/index.js`
 
-**Problema:** Após criar um post, o endpoint executa três invalidações de cache:
-```js
-await invalidateCache('posts:list:*');
-await invalidateCache('posts:search:*');
-await invalidateCache('posts:*');
-```
-O padrão glob `posts:*` já cobre `posts:list:*` e `posts:search:*`. As duas primeiras chamadas são **redundantes**.
+**Arquivos acionados ou relacionados:**
+- `/pages/styles/Home.module.css` — CSS Module com estilos da home
+- `/api/settings` — Endpoint buscado via `fetch` para obter `site_title` e `site_subtitle`
+- `/api/placeholder-image` — Endpoint usado como `src` da imagem hero
+- `../components/Features/ContentTabs` — Componente de abas de conteúdo
+- `../components/Features/Testimonials` — Componente de depoimentos
 
-**Impacto:** Três operações de Redis no lugar de uma, aumentando latência da criação de post e consumo de requisições Redis.
-
-**Sugestão:** Manter apenas `invalidateCache('posts:*')`.
+**Resumo:**
+Página inicial (home) do site. Componente funcional React/Next.js que gerencia estado local para `title`, `subtitle` e `imageSrc` com valores padrão definidos. No evento de montagem (`useEffect`), carrega as configurações do site da API `/api/settings`, utilizando cache em `sessionStorage` com TTL de 60 segundos para evitar requisições repetidas. Em caso de falha na API, exibe mensagem de erro. Renderiza: cabeçalho com título e subtítulo, imagem hero com lazy loading, componente `ContentTabs` e componente `Testimonials`.
 
 ---
 
-### 1.4 405 sem header `Allow` em `api/auth/check.js`
+### 4.2 `_app.js`
 
-**Arquivo:** `/pages/api/auth/check.js`
+**Caminho:** `/pages/_app.js`
 
-**Problema:** O retorno 405 para métodos não-GET **não inclui** `res.setHeader('Allow', ['GET'])`, ao contrário de `login.js` e `refresh.js` que definem o header.
+**Arquivos acionados ou relacionados:**
+- `/pages/styles/globals.css` — CSS global importado diretamente
+- `../hooks` — Exporta `PerformanceProvider` e `usePerformance` (monitoramento de performance)
+- `react-hot-toast` — Biblioteca externa para notificações toast
 
-**Impacto:** Clientes HTTP que dependem do header `Allow` para descobrir métodos suportados (padrão RFC 7231) podem falhar ou fazer retries incorretos.
-
-**Sugestão:** Adicionar `res.setHeader('Allow', ['GET'])` antes do retorno 405, padronizando com os demais endpoints auth.
-
----
-
-## 2. Duplicidade de Código
-
-### 2.1 Função `fetchWithTimeout()` duplicada em 3 fetchers admin
-
-**Arquivos:**
-- `/pages/api/admin/fetch-ml.js`
-- `/pages/api/admin/fetch-spotify.js`
-- `/pages/api/admin/fetch-youtube.js`
-
-**Problema:** Os três arquivos definem a **mesma função** `fetchWithTimeout(url, options, timeout=8000)` com `AbortController` — cerca de 10 linhas idênticas em cada um. Os schemas Zod de validação de URL (`urlSchema`) também são idênticos nos três.
-
-**Impacto:** Manutenção triplicada — se o timeout precisar mudar ou a função evoluir (ex: adicionar retry), são 3 pontos de alteração. Risco de divergência futura.
-
-**Sugestão:** Extrair `fetchWithTimeout` para um utilitário compartilhado em `lib/` (ex: `lib/api/fetchWithTimeout.js`) e importá-lo nos três arquivos.
+**Resumo:**
+Componente App raiz do Next.js que envolve todas as páginas da aplicação. Importa o CSS global, ativa o monitoramento de performance via hook customizado (`PerformanceProvider` + `usePerformance`), configura o componente `Toaster` do react-hot-toast com duração de 5 segundos e estilos baseados em variáveis CSS customizadas (`--color-success-*`, `--color-error-*`). Monitora mudanças de rota via `router.events` e loga apenas quando a variável de ambiente `NEXT_PUBLIC_LOG_ROUTE_CHANGES` for `'true'`. Renderiza o componente da página atual (`<Component {...pageProps} />`) envolto pelo provider de performance.
 
 ---
 
-### 2.2 Paginação manual reimplementada em `posts.js` e `videos.js`
+### 4.3 `_document.js`
 
-**Arquivos:**
-- `/pages/api/posts.js`
-- `/pages/api/videos.js`
+**Caminho:** `/pages/_document.js`
 
-**Problema:** Ambos reimplementam manualmente o parse/validação de paginação:
-```js
-const parsedPage = parseInt(req.query.page);
-const page = !isNaN(parsedPage) ? parsedPage : 1;
-const parsedLimit = parseInt(req.query.limit);
-const limit = !isNaN(parsedLimit) ? parsedLimit : 10;
-if (page < 1 || limit < 1 || limit > 100) { ... }
-```
-Enquanto o helper `helper/pagination.js` (`paginate()`) já centraliza exatamente essa lógica e é usado por `dicas.js` e `products.js`.
+**Arquivos acionados ou relacionados:**
+- `../lib/seo/config` — Exporta `siteConfig` com `language`, `name`, `shortName`, `description`, `url`
+- `../components/Performance/CriticalCSS` — Exporta `extractCriticalCSS()` para CSS crítico inline
+- `next/document` — Componentes `Html`, `Head`, `Main`, `NextScript`
+- Domínios externos: Google Fonts, YouTube, Spotify (preconnects, dns-prefetch, frame-src, img-src, script-src)
 
-**Impacto:** Código duplicado; divergência de comportamento possível (ex: `parseInt` sem radix vs com radix no helper, mensagens de erro diferentes).
-
-**Sugestão:** Migrar `posts.js` e `videos.js` para usar `paginate()` do helper, tratando o erro `INVALID_PAGINATION_PARAMS` de forma padronizada.
-
----
-
-### 2.3 Padrão de reordenação (`action: 'reorder'`) repetido nos CRUDs admin
-
-**Arquivos:**
-- `/pages/api/admin/posts.js`
-- `/pages/api/admin/musicas.js`
-- `/pages/api/admin/videos.js`
-
-**Problema:** Os três CRUDs implementam o mesmo padrão de reordenação em massa:
-- `posts.js`: valida `reorderSchema`/`reorderItemSchema` e chama `updateRecords('posts', { position }, { id })` em loop.
-- `musicas.js`: define `reorderSchema`/`reorderItemSchema` idênticos e chama `updateRecords('musicas', { position }, { id })`.
-- `videos.js`: delega para `reorderVideos()` de `lib/domain/videos.js` (padrão diferente dos outros dois).
-
-**Impacto:** Três implementações do mesmo conceito, duas com schemas Zod duplicados. `videos.js` usa a camada de domínio enquanto `posts.js`/`musicas.js` usam `updateRecords` direto. Divergência arquitetural entre CRUDs equivalentes.
-
-**Sugestão:** Padronizar a reordenação: ou todos delegam para a camada de domínio (como `videos.js`), ou todos usam um helper comum de reordenação.
+**Resumo:**
+Documento HTML customizado do Next.js que estrutura todas as páginas. Configura:
+- `Html` com `lang` dinâmico baseado em `siteConfig.language`
+- CSS crítico inline (cacheado em nível de módulo para evitar reprocessamento em SSR)
+- Preconnect e dns-prefetch para Google Fonts, YouTube e Spotify
+- Google Fonts (Inter + Montserrat) com `font-display: swap`
+- Content Security Policy detalhada (scripts, styles, fonts, imagens, frames, etc.)
+- Permissions Policy restritivas (desabilita acelerômero, câmera, geolocalização, etc.)
+- Meta tags de segurança (`X-UA-Compatible`, `referrer`)
+- Theme color para modos dark/light, meta tags Apple (PWA) e Microsoft
+- Script inline que remove o CSS crítico após `window.load` (performance) e marca `performance.mark('document_loaded')`
 
 ---
 
-### 2.4 `admin.js` — Funções utilitárias de imagem embutidas e não exportadas
+### 4.4 `admin.js`
 
-**Arquivo:** `/pages/admin.js`
+**Caminho:** `/pages/admin.js`
 
-**Problema:** `resizeImage()` (linhas 51-83) e `getCroppedImg()` (linhas 86-109) estão definidas dentro do arquivo do painel, sem exportação, somando ~58 linhas de lógica de processamento de imagem no mesmo arquivo do componente.
+**Arquivos acionados ou relacionados:**
+- `/pages/styles/login.module.css` — CSS Module de login (via `../components/Admin/styles/login.module.css`)
+- `/pages/styles/tabs.module.css` — CSS Module de abas (via `../components/Admin/styles/tabs.module.css`)
+- `/pages/styles/form.module.css` — CSS Module de formulário (via `../components/Admin/styles/form.module.css`)
+- `/pages/styles/misc.module.css` — CSS Module diversos (via `../components/Admin/styles/misc.module.css`)
+- `/api/auth/login` — Endpoint de autenticação (POST)
+- `/api/auth/check` — Endpoint de verificação de sessão (GET)
+- `/api/auth/logout` — Endpoint de logout (POST)
+- `/api/settings` — Endpoint de configurações (GET e PUT — 2 chamadas sequenciais)
+- `/api/upload-image` — Endpoint de upload de imagem (POST)
+- `../components/Admin/AdminPosts` — Componente de gerenciamento de posts
+- `../components/Admin/AdminMusicas` — Componente de gerenciamento de músicas
+- `../components/Admin/AdminVideos` — Componente de gerenciamento de vídeos
+- `../components/Admin/AdminProducts` — Componente de gerenciamento de produtos
+- `../components/Admin/AdminDicas` — Componente de gerenciamento de dicas
+- `../components/Admin/AdminDashboard` — Componente de dashboard
+- `../components/Admin/AdminUsers` — Componente de gerenciamento de usuários
+- `../components/Admin/AdminAudit` — Componente de auditoria
+- `../components/Admin/Tools/RateLimitViewer` — Componente de visualização de rate limit
+- `../components/Admin/Tools/IntegrityCheck` — Componente de verificação de integridade
+- `../components/Admin/Managers/BackupManager` — Componente de backups
+- `../components/Admin/Managers/CacheManager` — Componente de cache
+- `react-easy-crop` — Biblioteca externa para recorte de imagem
+- `react-hot-toast` — Biblioteca externa para notificações toast
 
-**Impacto:** Não reutilizável; difícil de testar isoladamente; infla o maior arquivo da pasta.
+**Resumo:**
+Painel administrativo completo — o maior arquivo do projeto (780 linhas). Gerencia autenticação de administração (login via `/api/auth/login`, verificação via `/api/auth/check`, logout via `/api/auth/logout`), configurações do site (título/subtítulo via `/api/settings`), upload e recorte de imagem (via `react-easy-crop` e `/api/upload-image`), e renderiza 10 abas funcionais com verificação de permissões: Dashboard, Posts, Músicas, Vídeos, Produtos, Dicas, Configuração de Cabeçalho, Segurança (com 4 sub-abas: Integridade, Backup, Rate Limit, Cache), Usuários e Auditoria.
 
-**Sugestão:** Extrair para `utils/` ou `lib/` (ex: `utils/imageUtils.js`) e importar no admin.
+A permissão é verificada pela função `hasPermission()` que retorna `true` se `currentUser.role === 'admin'` ou se a permission está no array `currentUser.permissions`. A aba de produtos usa `activeTab === 'projetos02'` como chave interna, inconsistente com o rótulo "Gestão de Produtos".
 
----
-
-### 2.5 `admin.js` — Mapeamento manual de 4 CSS Modules + estilos inline
-
-**Arquivo:** `/pages/admin.js`
-
-**Problema:** O admin importa 4 CSS Modules do diretório `components/Admin/styles/` (login, tabs, form, misc) e faz um mapeamento manual (`const styles = { container: loginStyles.container, ... }`). Além disso, dezenas de elementos usam `style={{...}}` inline (botão de logout, cabeçalho de boas-vindas, controles do cropper, preview, etc.).
-
-**Impacto:** Se uma classe for renomeada/removida no módulo, o mapeamento quebra sem erro em build. Estilos inline dificultam manutenção e não usam os tokens de forma consistente.
-
-**Sugestão:** Consolidar em um único CSS Module do admin (ex: `Admin/Admin.module.css`) e mover os estilos inline recorrentes para classes.
-
----
-
-### 2.6 `admin.js` — Bloco de estilos `<style>` duplicado para scroll
-
-**Arquivo:** `/pages/admin.js`
-
-**Problema:** O bloco `<style>{ html, body { overflow-y: scroll !important; } }</style>` aparece **duplicado** — na tela de login (linhas 369-374) e no painel autenticado (linhas 417-422). O `!important` força a barra de rolagem mesmo quando o conteúdo cabe na viewport.
-
-**Impacto:** Duplicação; `!important` é prática CSS desaconselhada; UX prejudicada em telas pequenas.
-
-**Sugestão:** Remover ambos os blocos e, se necessário, aplicar `overflow-y: auto` via classe CSS Module condicional.
-
----
-
-### 2.7 `variables.css` — Token `shadow-glow` duplicado
-
-**Arquivo:** `/pages/styles/variables.css`
-
-**Problema:** O token `--shadow-glow: 0 0 15px rgba(37, 99, 235, 0.3)` aparece **duas vezes** — nas linhas 278 e 290 (na linha 290 ele é redefinido com o mesmo valor antes de `shadow-glowPrimary`).
-
-**Impacto:** Redefinição redundante com o mesmo valor — sem impacto funcional, mas polui o fonte e sugere possível intenção de valores diferentes que nunca foram separados.
-
-**Sugestão:** Remover a segunda definição (linha 290), mantendo apenas uma ocorrência.
+**Problemas identificados:**
+1. `console.log('Login successful:', data.user)` (linha 226) — expõe objeto user completo no console do navegador
+2. Bloco `<style>{ html, body { overflow-y: scroll !important; } }</style>` duplicado — nas telas de login e painel autenticado
+3. `handleSaveSettings` executa 2 `fetch('/api/settings')` sequenciais (título + subtítulo) em vez de paralelo ou única chamada
+4. Funções `resizeImage()` (linhas 51-83) e `getCroppedImg()` (linhas 86-109) embutidas sem exportação/reuso
+5. Mapeamento manual de 4 CSS Classes com risco de quebra silenciosa
 
 ---
 
-## 3. Inconsistências Arquiteturais
+### 4.5 `design-system.js`
 
-### 3.1 `products.js` fora do padrão `createAdminHandler()`
+**Caminho:** `/pages/design-system.js`
 
-**Arquivo:** `/pages/api/products.js`
+**Arquivos acionados ou relacionados:**
+- `/pages/styles/DesignSystem.module.css` — CSS Module com estilos da página de demo
+- `../components/UI` — Componentes do Design System (Button, Input, TextArea, Select, Card, Modal, Spinner, Badge, Alert, Toast)
+- `../components/Layout` — Componentes de layout (Container, Grid, Stack, Sidebar)
+- `https://via.placeholder.com` — Serviço externo de imagens placeholder (linha 194)
 
-**Problema:** Enquanto todos os 15 endpoints admin usam o factory `createAdminHandler()`, o CRUD de produtos implementa seu próprio middleware `requireAuth()` inline, sem `withAuth`, sem `req.adminUtils.logActivity()` (usa `logActivity` importado diretamente de `lib/domain/audit`) e sem a invalidação automática de cache do factory (faz manualmente com `invalidateCache('products:*')`). Também não usa validação Zod nos dados de entrada de POST/PUT.
+**Resumo:**
+Página de demonstração completa do Design System. Renderiza exemplos visuais de todos os componentes disponíveis: botões (variantes e tamanhos), inputs, textarea, select, cards (default, elevated, outlined, interativo, com header/footer, com mídia), badges, alerts, spinners, modal e toast. Demonstra os componentes de layout (Stack vertical/horizontal, Grid responsivo). Serve como referência visual e documentação viva do sistema de design. Utiliza a fonte Inter + Montserrat (configuradas no `_document.js`).
 
-**Impacto:** Fragilidade de consistência — se o `createAdminHandler()` evoluir (novo formato de erro, nova proteção), `products.js` precisa de ajuste manual separado. Validação de entrada mais fraca que os demais CRUDs admin.
-
-**Sugestão:** Considerar migrar `products.js` para `createAdminHandler()` (mantendo o modo público via `?public=true`), ou criar um factory que suporte endpoints híbridos público+admin.
-
----
-
-### 3.2 `auth/check.js` não usa `withAuth` (validação manual)
-
-**Arquivo:** `/pages/api/auth/check.js`
-
-**Problema:** O endpoint valida manualmente com `getAuthToken()` + `verifyToken()` em vez de usar o middleware `withAuth` padronizado no projeto. A documentação anterior (28/06/2026) chegou a listar este endpoint como "GET protegido via `withAuth`", mas o código atual não usa `withAuth`.
-
-**Impacto:** Padrão de autenticação divergente — futuras melhorias no `withAuth` (ex: renovação automática de token, blacklist) não se aplicariam ao `check.js` automaticamente.
-
-**Sugestão:** Avaliar se `check.js` deve usar `withAuth` (que injeta `req.user`) para padronizar, preservando o formato de resposta atual (`{ success, data: { authenticated, user } }`).
+**Problemas identificados:**
+1. Dependência externa `https://via.placeholder.com/400x200/...` (linha 194) — pode quebrar se o serviço ficar indisponível
 
 ---
 
-### 3.3 Posicionamento do rate limit inconsistente entre endpoints públicos
+### 4.6 `blog/index.js`
 
-**Arquivos:**
-- `/pages/api/musicas.js` — rate limit **dentro** do callback de cache (`getOrSetCache`)
-- `/pages/api/posts.js` — rate limit **dentro** do callback de cache
-- `/pages/api/dicas.js` — rate limit **dentro** do callback de cache
-- `/pages/api/videos.js` — rate limit **antes** do cache
-- `/pages/api/products.js` — rate limit **antes** do cache
+**Caminho:** `/pages/blog/index.js`
 
-**Problema:** Há duas estratégias conflitantes: rate limit dentro do callback (não penaliza cache hits, comentado no código como intencional) vs rate limit antes do cache (garante proteção mesmo em cache hits).
+**Arquivos acionados ou relacionados:**
+- `/pages/blog/Blog.module.css` — CSS Module com estilos do blog
+- `../../components/Features/Blog/PostCard` — Componente de card de post
+- `../../lib/infra/db.js` — Módulo de conexão com banco (query SQL direta)
 
-**Impacto:** Comportamento de proteção diferente por endpoint. Quem define a regra? Um atacante pode explorar o padrão mais fraco.
-
-**Sugestão:** Definir uma política única e documentada (recomenda-se rate limit **antes** do cache, pois é mais seguro: protege mesmo quando o CDN/Redis devolve hit) e aplicá-la em todos os endpoints públicos.
+**Resumo:**
+Página de listagem de posts do blog. Usa Server-Side Rendering (`getServerSideProps`) para buscar posts publicados diretamente no banco de dados (query SQL com paginação manual — 9 posts por página). Serializa os dados com `JSON.parse(JSON.stringify(posts))` para evitar problemas de hidratação. Renderiza componente `PostCard` para cada post, com navegação de paginação manual (botões Anterior/Próxima). Em caso de erro na busca, exibe mensagem de fallback. Inclui link de volta para a home e title/description para SEO.
 
 ---
 
-### 3.4 Cache-Control inconsistente entre endpoints
+### 4.7 `blog/[slug].js`
 
-**Arquivos:**
-- `/pages/api/dicas.js`, `musicas.js`, `posts.js`, `videos.js` — `public, max-age=0, s-maxage=300, stale-while-revalidate=600`
-- `/pages/api/settings.js` (GET público) — `public, s-maxage=120, stale-while-revalidate=600`
-- `/pages/api/placeholder-image.js` — `public, max-age=86400, immutable`
-- `/pages/api/admin/*` (GET) — `no-store` em posts/musicas/videos; sem header nos demais
+**Caminho:** `/pages/blog/[slug].js`
 
-**Problema:** Três políticas diferentes de Cache-Control para endpoints públicos (300s, 120s, 86400s). A de settings (120s) e a de conteúdo (300s) não têm documentação sobre a intenção.
+**Arquivos acionados ou relacionados:**
+- `/pages/blog/Blog.module.css` — CSS Module com estilos do blog
+- `../../lib/infra/db.js` — Módulo de conexão com banco (query SQL direta)
+- `process.env.SITE_URL` — Variável de ambiente para URL base do site
 
-**Impacto:** Comportamento de cache imprevisível para consumidores da API.
-
-**Sugestão:** Centralizar políticas em constantes (ex: `CACHE_SHORT=120`, `CACHE_MEDIUM=300`, `CACHE_IMMUTABLE=86400`) e documentar quando usar cada uma.
-
----
-
-### 3.5 Formato de resposta diverge entre endpoints
-
-**Arquivos:** endpoints públicos
-
-**Problema:** O formato de resposta de sucesso não é uniforme:
-- `dicas.js` usa `paginatedResponse()` → `{ success, data, pagination }`
-- `musicas.js` retorna `{ success, data, pagination }`
-- `posts.js` retorna `{ success, ...result }` por padrão, e `{ success, data, pagination, timestamp }` com `?response=v1`
-- `videos.js` retorna `{ success, ...result }`
-- `products.js` retorna diretamente o `result` vindo da camada de domínio (`getPaginatedProducts()`/`getAllProducts()`), sem passar pelo envelope padronizado `paginatedResponse()` do helper
-- `settings.js` (público) retorna `settings` direto (objeto), e com `?response=v1` retorna `{ success, data, count, timestamp }`
-- `status.js` retorna `{ success, data, message, timestamp }`
-
-**Impacto:** Consumidores precisam tratar formatos diferentes por endpoint; incompatibilidade com o helper `paginatedResponse()` em parte deles.
-
-**Sugestão:** Adotar um envelope padrão único de sucesso (ex: `{ success, data, pagination? }`) em todos os endpoints públicos, mantendo `?response=v1` apenas como camada de compatibilidade legada.
+**Resumo:**
+Página de detalhe de post do blog (rota dinâmica `[slug]`). Usa Server-Side Rendering (`getServerSideProps`) para buscar o post pelo slug diretamente no banco de dados. Se o post não existe ou não está publicado, retorna 404 (`notFound: true`). Renderiza:
+- Tags SEO completas (title, description, Open Graph para Facebook/WhatsApp, Twitter Cards)
+- Imagem principal com lightbox de zoom (abre com clique, fecha com Esc ou clique)
+- Conteúdo do post com `white-space: pre-wrap`
+- Botões de compartilhamento: Facebook (sharer), WhatsApp (api.whatsapp.com), Instagram/Copiar Link (usa `navigator.share` ou fallback para clipboard)
+- URL absoluta para imagem (necessário para WhatsApp/Facebook) com fallback para `/default-og-image.jpg`
 
 ---
 
-## 4. Segurança
+### 4.8 `blog/Blog.module.css`
 
-### 4.1 `admin.js` — `console.log` de dados do usuário no navegador
+**Caminho:** `/pages/blog/Blog.module.css`
 
-**Arquivo:** `/pages/admin.js`, linha 226
+**Arquivos acionados ou relacionados:**
+- `/pages/blog/index.js` — Importa este CSS Module
+- `/pages/blog/[slug].js` — Importa este CSS Module
 
-**Problema:** Após login bem-sucedido, o código executa `console.log('Login successful:', data.user)` — expõe todo o objeto `user` (username, role, permissions, possivelmente ID) no console do navegador.
-
-**Impacto:** Em ambientes compartilhados ou com extensões maliciosas, vazamento mínimo de informações do usuário logado.
-
-**Sugestão:** Remover o log ou reduzir a `console.log('Login bem-sucedido para usuário:', data.user.username)` (sem o objeto completo).
-
----
-
-### 4.2 `rate-limit.js` — IP atual lido de `x-forwarded-for` sem validação
-
-**Arquivo:** `/pages/api/admin/rate-limit.js`, linha 99
-
-**Problema:** No modo `type=current_ip`, o código usa:
-```js
-const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
-```
-Isso confia no header `x-forwarded-for` diretamente, **sem a validação de spoofing** que o projeto padronizou em `getClientIP()` / `detectSpoofedIP()` (usados em `login.js` e nos endpoints públicos).
-
-**Impacto:** Um cliente pode forjar `X-Forwarded-For` e fazer o endpoint de visualização de rate limit exibir um IP falso — quebra da confiança da ferramenta de diagnóstico.
-
-**Sugestão:** Usar `getClientIP(req)` de `lib/api/helpers.js` (que aplica a mesma lógica segura de detecção de spoofing dos demais endpoints).
+**Resumo:**
+CSS Module compartilhado entre a listagem e a página de detalhe do blog. Define layout com grid responsivo (`auto-fill`, `minmax(300px, 1fr)` para cards), estilos de cabeçalho centralizado e container com `min-height: 100vh` e fundo `--color-bg-secondary`. Responsividade: título reduz de 2.5rem para 2rem em telas ≤768px.
 
 ---
 
-### 4.3 `cleanup-test-data.js` — Verificação de admin por username apenas
+### 4.9 `styles/Home.module.css`
 
-**Arquivo:** `/pages/api/cleanup-test-data.js`
+**Caminho:** `/pages/styles/Home.module.css`
 
-**Problema:** A checagem de admin é feita comparando `req.user.username !== process.env.ADMIN_USERNAME && req.user.username !== 'admin'`. Se um usuário com role `admin` tiver um username diferente (ex: "root"), o endpoint pode bloqueá-lo indevidamente; inversamente, a checagem é por string fixa, não por role no banco.
+**Arquivos acionados ou relacionados:**
+- `/pages/index.js` — Importa este CSS Module
 
-**Impacto:** Comportamento imprevisível dependendo dos usuários cadastrados; não segue o padrão RBAC dos demais endpoints admin (que consultam a tabela `roles`).
-
-**Sugestão:** Alinhar à verificação de permissão padrão do `createAdminHandler()` ou verificar a role no banco, em vez de comparar username.
-
----
-
-### 4.4 `admin.js` — Sem proteção server-side na página (toda a segurança depende do client)
-
-**Arquivo:** `/pages/admin.js`
-
-**Problema:** A página trata a autenticação via `useState(isAuthenticated)` no cliente. O acesso às APIs é protegido no servidor, mas a **página** em si `pages/admin.js` não tem verificação server-side (ex: `getServerSideProps` com redirect se não autenticado). Qualquer usuário pode acessar `/admin` e ver a tela de login; a proteção real depende inteiramente das APIs.
-
-**Impacto:** Baixo risco prático (as APIs protegem os dados), mas a página renderiza mesmo sem sessão, e não há redirect/SSR guard.
-
-**Sugestão:** Considerar SSR guard no `admin.js` (validar cookie no servidor e redirecionar) ou aceitar explicitamente a arquitetura client-side atual e documentá-la.
+**Resumo:**
+CSS Module da página inicial (home). Define layout com container flex, imagem hero com `object-fit: cover`, hover com `scale(1.05)`, border-radius e sombra. Totalmente baseado em tokens CSS (spacing, colors, font-size, border-radius). Responsividade com dois breakpoints: ≤768px e ≤480px, ajustando tamanhos de font e altura da imagem.
 
 ---
 
-## 5. Performance
+### 4.10 `styles/globals.css`
 
-### 5.1 `index.js` — Timestamp na URL da imagem anula o cache
+**Caminho:** `/pages/styles/globals.css`
 
-**Arquivo:** `/pages/index.js`, linha 17
+**Arquivos acionados ou relacionados:**
+- `/pages/styles/variables.css` — Importado via `@import './variables.css'` (linha 4)
+- `/pages/_app.js` — Importa este CSS global (linha 1)
 
-**Problema:** A URL da imagem hero usa `?t=${Date.now()}` para evitar Hydration Mismatch:
-```js
-setImageSrc(`/api/placeholder-image?t=${Date.now()}`);
-```
-Isso invalida o cache agressivo definido no endpoint (`max-age=86400, immutable`), pois cada carregamento gera uma query string nova.
-
-**Impacto:** Uma nova requisição HTTP para a mesma imagem a cada carregamento de página; o `ETag`/`immutable` do endpoint são anulados.
-
-**Sugestão:** Usar estratégia diferente para resolver o mismatch — por exemplo, definir a URL estável no SSR e atualizar apenas quando o usuário fizer upload de nova imagem, ou detectar a imagem via server-side.
-
-**Status:** ✅ Implementado — o timestamp foi removido (`/pages/index.js` usa URL estável) e o endpoint `/api/placeholder-image` ganhou cache em memória do filename resolvido (TTL 5 min), `Last-Modified` estável (baseado no `mtime`) e resposta `304` via `If-None-Match` sem reler o arquivo.
+**Resumo:**
+CSS global importado pelo componente `_app.js` que estabelece a base de estilos para toda a aplicação. Importa as variáveis CSS do `variables.css` (tokens), aplica `box-sizing: border-box` reset, define fonte padrão (`--font-family-body`), cores de fundo e texto, `overflow-y: auto` no body (scroll padrão), e classe utilitária `body.modal-open` com `overflow: hidden` para bloqueio de scroll quando modal está aberto (gerenciado pelo componente Modal).
 
 ---
 
-### 5.2 `admin.js` — `handleSaveSettings` faz duas requisições HTTP
+### 4.11 `styles/DesignSystem.module.css`
 
-**Arquivo:** `/pages/admin.js`, linhas 303-343
+**Caminho:** `/pages/styles/DesignSystem.module.css`
 
-**Problema:** Para salvar título e subtítulo, o código executa **dois `fetch('/api/settings')` sequenciais** (um para `site_title`, outro para `site_subtitle`).
+**Arquivos acionados ou relacionados:**
+- `/pages/design-system.js` — Importa este CSS Module
 
-**Impacto:** Dobra o tempo da operação (autenticação + validação + log + invalidação de cache em cada uma) e expõe risco de estado parcial (título salvo, subtítulo falhou).
-
-**Sugestão:** Ou executar as duas requisições em paralelo com `Promise.all`, ou (melhor) permitir envio de múltiplas configurações em uma única chamada ao endpoint `/api/settings`.
-
----
-
-### 5.3 `index.js` — Cache em `sessionStorage` com TTL curto e por aba
-
-**Arquivo:** `/pages/index.js`
-
-**Problema:** O cache de configurações em `sessionStorage` tem TTL de 1 minuto e é **por aba** do navegador (é limpo ao fechar a aba; não persiste entre abas).
-
-**Impacto:** Cada nova aba dispara nova requisição; o TTL curto reduz o benefício do cache.
-
-**Sugestão:** Avaliar `localStorage` com TTL maior, ou um estado global gerenciado (Context), se o frescor permitir.
+**Resumo:**
+CSS Module da página de demonstração do Design System. Define layout completo com: header em gradiente primário, seções com cards brancos (`border-radius-2xl`, `shadow-card`), footer escuro, grid de cores primárias/secundárias/feedback com swatches quadrados de 80×60px, espaçamento em tokens. Totalmente baseado em tokens CSS. Responsividade com breakpoint ≤768px (reduz padding, font-size e swatches).
 
 ---
 
-### 5.4 `_document.js` — Preconnects para domínios nem sempre usados
+### 4.12 `styles/variables.css`
 
-**Arquivo:** `/pages/_document.js`
+**Caminho:** `/pages/styles/variables.css`
 
-**Problema:** O documento faz preconnect/dns-prefetch para 6 domínios (Google Fonts×2, YouTube×2, Spotify×2) em **todas** as páginas. Páginas que não exibem músicas/vídeos (home simples, blog, admin) abrem conexões desnecessárias.
+**Arquivos acionados ou relacionados:**
+- `/pages/styles/globals.css` — Importado via `@import './variables.css'` (linha 4)
+- Todos os demais CSS Modules e componentes que utilizam tokens CSS customizados
 
-**Impacto:** Conexões TCP+TLS abertas sem necessidade, principalmente em mobile/rede lenta.
+**Resumo:**
+Arquivo central de Design Tokens (CSS Custom Properties). Define 386 linhas de variáveis CSS no seletor `:root`, organizadas em categorias: cores primárias (50-950), secundárias, neutras, feedback (success, error, warning, info), semânticas (bg, text, border), state colors, spiritual colors, spacing (numérico + semântico + seção + gap + padding + margin), typography (font-family, font-size, font-weight, line-height, letter-spacing), borders (width, radius), shadows (incluindo glow), breakpoints, containers, animation (duration, easing, transitions), opacity (incluindo alpha utilitários), z-index (incluindo camadas semânticas). Usado como fonte de verdade para todo o design system visual do projeto.
 
-**Sugestão:** (Já foi parcialmente tratado em 12/05/2026, quando preconnects foram reduzidos; hoje voltaram a existir 6 domínios.) Mover preconnects de YouTube/Spotify para as páginas/componentes que realmente os usam (galeria de vídeos, galeria de músicas), mantendo apenas Google Fonts no `_document.js`.
-
----
-
-### 5.5 `integrity.js` — Recursão síncrona para calcular tamanho de uploads
-
-**Arquivo:** `/pages/api/admin/integrity.js`
-
-**Problema:** `calculateSize()` usa `fs.readdirSync`/`fs.statSync` recursivos de forma **síncrona** sobre `public/uploads`. Com muitos arquivos, bloqueia o event loop do Node durante o diagnóstico.
-
-**Impacto:** Endpoint de diagnóstico pode travar o servidor Node temporariamente se a pasta de uploads crescer.
-
-**Sugestão:** Usar versões assíncronas (`fs.promises.readdir`, `fs.promises.stat`) ou limitar a profundidade/quantidade de arquivos escaneados.
+**Problemas identificados:**
+1. Token `--shadow-glow` duplicado (linhas 278 e 290) — redefinido com mesmo valor
 
 ---
 
-## 6. Manutenibilidade e Padronização
+### 4.13 `api/posts.js`
 
-### 6.1 `admin.js` — Arquivo excessivamente grande (780 linhas)
+**Caminho:** `/pages/api/posts.js`
 
-**Arquivo:** `/pages/admin.js`
+**Arquivos acionados ou relacionados:**
+- `../../lib/domain/posts.js` — Funções `getRecentPosts()` e `createPost()` (camada de domínio)
+- `../../lib/cache/cache.js` — Funções `getOrSetCache()`, `checkRateLimit()`, `invalidateCache()`
+- `../../lib/auth/auth.js` — Middleware `withAuth` (protege POST)
+- `../../lib/api/helpers.js` — Função `getClientIP()` (IP seguro contra spoofing)
+- `../../lib/infra/logger.js` — Logger estruturado (`logger.error()`)
+- `zod` — Validação de dados do POST
 
-**Problema:** O painel concentra: lógica de autenticação, upload/crop de imagem, mapeamento de 4 CSS Modules, dezenas de estilos inline, 10 blocos condicionais de abas (+4 sub-abas de segurança) e o formulário de cabeçalho. É o maior arquivo da pasta `/pages` e da aplicação.
+**Resumo:**
+Endpoint público de posts. **GET** lista posts com paginação manual (parseInt, default page=1, limit=10, limit máximo 100), busca opcional (`search`), cache Redis (TTL 2h para listagens, 30min para buscas), e rate limit de 300 req (listagem) ou 100 req (busca) — verificado **dentro** do callback de cache. **POST** protegido por `withAuth`, rate limit de 30 req/min, validação Zod, criação via `createPost()` e invalidação de cache. Suporte a `?response=v1` para compatibilidade legada. Cache-Control: `public, max-age=0, s-maxage=300, stale-while-revalidate=600`.
 
-**Impacto:** Dificuldade de navegação, manutenção e testes. Qualquer mudança pequena exige localizar o ponto em 780 linhas.
-
-**Sugestão:** Extração em componentes (ex: `AdminLogin`, `AdminHeaderConfig`, `AdminImageUploader`, `AdminImageCrop`), mantendo `admin.js` apenas como orquestrador de abas e estado.
-
----
-
-### 6.2 `admin.js` — 10 blocos condicionais de abas repetidos
-
-**Arquivo:** `/pages/admin.js`, linhas 446-544 e 547-776
-
-**Problema:** Cada aba tem um bloco `{hasPermission('X') && (<button>...)}` na barra e outro `{activeTab === 'x' && hasPermission('X') && (<AdminComponent />)}` no conteúdo. Adicionar uma nova aba exige alterar botões + conteúdo + permissões em pelo menos 3 lugares.
-
-**Impacto:** Código verboso e propenso a erro (ex: a aba de produtos usa `activeTab === 'projetos02'` enquanto o rótulo é "Gestão de Produtos" — nome interno inconsistente).
-
-**Sugestão:** Configuração declarativa de abas (array `{ key, label, icon, permission, component }`) e iteração para renderizar botões e conteúdos.
+**Problemas identificados:**
+1. Invalidação de cache redundante no POST (linhas 130-132): `posts:*` já cobre `posts:list:*` e `posts:search:*` — 3 operações no lugar de 1
+2. Paginação manual reimplementada (não usa `helper/pagination.js` que já é utilizado por `dicas.js` e `products.js`)
+3. Rate limit dentro do callback de cache (divergente de `videos.js` e `products.js` que fazem antes do cache)
 
 ---
 
-### 6.3 Nomenclatura inconsistente de rotas (pt/en)
+### 4.14 `api/auth/logout.js`
 
-**Arquivos:** `/pages/api/` inteiro
+**Caminho:** `/pages/api/auth/logout.js`
 
-**Problema:** Mistura de português e inglês nas rotas de API:
-- PT: `dicas.js`, `musicas.js`
-- EN: `posts.js`, `videos.js`, `products.js`, `settings.js`, `status.js`, `upload-image.js`, `placeholder-image.js`
+**Arquivos acionados ou relacionados:**
+- `../../../lib/auth/auth.js` — Funções `setAuthCookie()`, `setRefreshTokenCookie()`, `getRefreshTokenCookie()`, `revokeRefreshToken()`
 
-**Impacto:** Falta de padronização dificulta a descoberta e memorização das rotas para novos desenvolvedores.
-
-**Sugestão:** Definir idioma padrão para nomes de rota. Como o domínio é cristão em português e o próprio código usa mensagens PT-BR, recomenda-se manter coerência ou documentar a convenção adotada.
+**Resumo:**
+Endpoint de logout. Invalida o refresh token no banco via `revokeRefreshToken()` (se existir), depois limpa os cookies de autenticação (`auth` e `refresh_token`) definindo `maxAge: 0`. Retorna `{ success: true, message: 'Deslogado com sucesso' }`. Tratamento de erro silencioso na revogação do refresh token (falha não impede o logout).
 
 ---
 
-### 6.4 `products.js` — `parseInt` sem validação Zod (padrão mais frágil que os demais CRUDs)
+### 4.15 `api/auth/login.js`
 
-**Arquivo:** `/pages/api/products.js`
+**Caminho:** `/pages/api/auth/login.js`
 
-**Problema:** Enquanto `musicas.js` valida query com Zod e os CRUDs admin validam body com Zod, `products.js` usa apenas validação manual mínima (nome e preço obrigatórios no POST; sem validação de tipos no PUT). `updateProduct` recebe `req.body` inteiro sem sanitização.
+**Arquivos acionados ou relacionados:**
+- `../../../lib/auth/auth.js` — Funções `authenticateAndGenerateToken()`, `setAuthCookie()`, `setRefreshTokenCookie()`
+- `../../../lib/api/helpers.js` — Funções `detectSpoofedIP()`, `getClientIP()`
+- `../../../lib/infra/logger.js` — Logger estruturado
+- Variáveis de ambiente: `NODE_ENV`, `ENABLE_STRICT_SPOOFING`
 
-**Impacto:** Dados mal formatados podem chegar à camada de domínio e ao banco.
-
-**Sugestão:** Adicionar schemas Zod para criação/atualização de produtos, alinhando ao padrão dos demais CRUDs.
-
----
-
-### 6.5 `role` padrão `'admin'` na criação de usuário
-
-**Arquivo:** `/pages/api/admin/users.js`, linha 10
-
-**Problema:** O schema `userCreateSchema` define `role: z.string().optional().default('admin')` — **novos usuários são criados como admin por padrão** no POST.
-
-**Impacto:** Risco de segurança: se o formulário do painel não enviar `role`, o usuário criado vira administrador com acesso total, sem intenção explícita.
-
-**Sugestão:** Alterar o default para `'user'` (papel restrito) e exigir `role` explícito para elevação de privilégio, com validação de que o `role` informado existe na tabela `roles`.
+**Resumo:**
+Endpoint de autenticação unificado que suporta dois modos de resposta: cookie httpOnly (padrão) ou JSON body (API externa via `?response=body`). Fluxo: 1) Detecta IP spoofing com `detectSpoofedIP()` (strictMode baseado em NODE_ENV — desenvolvimento usa modo não-estrito, produção usa estrito); 2) Chama `authenticateAndGenerateToken()` com rate limit de 5 tentativas/60s; 3) Trata erros (RATE_LIMITED, INVALID_CREDENTIALS, MISSING_FIELDS, outros). Retorna dados do usuário com permissões e tokens (auth + refresh). Inclui header `Allow: ['POST']` no 405.
 
 ---
 
-### 6.6 `settings.js` — Valores padrão hardcoded no endpoint
+### 4.16 `api/auth/refresh.js`
 
-**Arquivo:** `/pages/api/settings.js`, linhas 68-74
+**Caminho:** `/pages/api/auth/refresh.js`
 
-**Problema:** Quando uma chave não existe no banco, o endpoint retorna valores padrão **hardcoded no arquivo da rota** (`site_name: 'Caminhar'`, `site_description`, `posts_per_page`, `videos_per_page`, `musicas_per_page`).
+**Arquivos acionados ou relacionados:**
+- `../../../lib/auth/auth.js` — Funções `refreshAccessToken()`, `setAuthCookie()`, `setRefreshTokenCookie()`, `getRefreshTokenCookie()`
+- `../../../lib/infra/logger.js` — Logger estruturado
 
-**Impacto:** Lógica de negócio embutida na camada de API; valores podem divergir das configurações reais semeadas no banco (ex: `scripts/seed-settings.js`).
-
-**Sugestão:** Mover os defaults para a camada de domínio (`lib/domain/settings.js`) ou para o seed, evitando duplicidade de fonte de verdade.
-
----
-
-### 6.7 `backups.js` e `integrity.js` — Lógica de listagem de arquivos duplicada
-
-**Arquivos:**
-- `/pages/api/admin/backups.js` (lista arquivos de `data/backups` com `.sql/.gz/.enc`)
-- `/pages/api/admin/integrity.js` (lista os mesmos arquivos, com `.sql/.dump/.gz/.enc`)
-
-**Problema:** Ambas leem `data/backups`, filtram por extensão e ordenam por data, mas com filtros levemente diferentes (`.dump` presente só no integrity) e estruturas de metadados distintas.
-
-**Impacto:** Duplicidade de lógica de leitura do diretório de backups com pequenas divergências.
-
-**Sugestão:** Extrair um helper comum (ex: `listBackupFiles()`) em `lib/` ou `scripts/utils/` usado pelos dois endpoints.
+**Resumo:**
+Endpoint de renovação de access token via refresh token. Obtém o refresh token do cookie (prioridade) ou do corpo da requisição (fallback para API sem cookies). Chama `refreshAccessToken()` para gerar novo par de tokens. Em caso de erro de refresh, limpa os cookies (maxAge: 0) e retorna 401. Em caso de sucesso, atualiza ambos os cookies (auth e refresh_token). Retorna JSON com tokens, user e tempos de expiração. Inclui header `Allow: ['POST']` no 405.
 
 ---
 
-### 6.8 `design-system.js` — Dependência externa de placeholder
+### 4.17 `api/auth/check.js`
 
-**Arquivo:** `/pages/design-system.js`, linha 194
+**Caminho:** `/pages/api/auth/check.js`
 
-**Problema:** O Card com mídia usa `https://via.placeholder.com/400x200/...` (serviço externo).
+**Arquivos acionados ou relacionados:**
+- `../../../lib/auth/auth.js` — Funções `getAuthToken()`, `verifyToken()`
+- `../../../lib/infra/logger.js` — Logger estruturado
 
-**Impacto:** Se o serviço via.placeholder estiver indisponível/offline, a demo de card com imagem quebra.
+**Resumo:**
+Endpoint de verificação de autenticação (GET). Valida o token JWT obtido do cookie ou header Authorization usando `getAuthToken()` + `verifyToken()` (validação manual, não usa `withAuth`). Retorna `{ success, data: { authenticated: true, user: { userId, username, role } } }`. Respostas de erro: 401 (token ausente/inválido), 500 (erro interno). 405 para métodos não-GET **sem header `Allow`** (diferente do padrão de `login.js` e `refresh.js`).
 
-**Sugestão:** Usar o endpoint interno `/api/placeholder-image` ou um SVG inline, eliminando a dependência externa.
-
----
-
-### 6.9 `fetch-ml.js` — Manipulação de strings de decodificação de HTML frágil
-
-**Arquivo:** `/pages/api/admin/fetch-ml.js`, linhas 122 e 139
-
-**Problema:** A limpeza de entidades HTML usa substituições parciais e específicas:
-```js
-title.replace(/"/g, '"').replace(/&#39;/g, "'").replace(/&/g, '&');
-```
-Além disso, há um possível problema de ordem: substituir `&` por `&` pode corromper entidades já decodificadas (ex: `&` → `&amp;` em casos de double-encoding).
-
-**Impacto:** Títulos com entidades HTML complexas (ex: `&eacute;`, `&Aacute;`) podem não ser decodificados corretamente.
-
-**Sugestão:** Usar um decodificador de entidades robusto (ex: `he` ou `entities` do npm) em vez de replace manual.
+**Problemas identificados:**
+1. Retorno 405 sem `res.setHeader('Allow', ['GET'])` — inconsistente com `login.js` e `refresh.js`
 
 ---
 
-## 7. Pontos Irrelevantes ou Obsoletos
+### 4.18 `api/placeholder-image.js`
 
-### 7.1 Seções de tokens removidas — documentação deve refletir
+**Caminho:** `/pages/api/placeholder-image.js`
 
-**Arquivos (removidos do projeto):**
-- `/pages/styles/tokens/*.js` (11 arquivos)
-- `/pages/styles/generateTokensCSS.js`
+**Arquivos acionados ou relacionados:**
+- `../../lib/domain/settings.js` — Função `getSetting()` (busca configuração do banco)
+- `../../lib/infra/logger.js` — Logger estruturado
 
-**Problema:** Não existem mais no disco. Documentos antigos (`docs/antigos/PROJECT_pages.md`) ainda os descrevem como arquivos ativos na seção 8.
-
-**Impacto:** Confusão para quem consulta a documentação antiga.
-
-**Sugestão:** A documentação atual (`docs/PROJECT_pages.md`) já os marca como removidos — manter assim e não recriá-los a partir dos docs antigos.
-
-### 7.2 Rota `?response=v1` — legado transitório
-
-**Arquivos:** `/pages/api/posts.js`, `/pages/api/settings.js`
-
-**Problema:** A compatibilidade `?response=v1` existe para clientes que migraram de `/api/v1/*` (removido em 13/05/2026). Se nenhum cliente externo utiliza, é código morto.
-
-**Sugestão:** Auditar se há consumidores externos de `?response=v1`; se não houver, considerar remoção futura para simplificar.
+**Resumo:**
+Endpoint de imagem placeholder (hero). Fluxo: 1) Tenta buscar a imagem configurada no banco (`home_image_url`) via `getSetting()`; 2) Fallback: procura arquivos `hero-image-*` em `public/uploads`; 3) Se encontrar, serve a imagem com cache agressivo (`max-age=86400, immutable`), `ETag` baseado no filename, `Last-Modified` baseado no `mtime` do arquivo, e suporte a `If-None-Match` (304 Not Modified); 4) Se não encontra, serve um SVG inline com texto informativo. Possui cache em memória do filename (TTL 5 min) para evitar consultas ao banco a cada request.
 
 ---
 
-## Resumo das Recomendações
+### 4.19 `api/settings.js`
 
-| Prioridade | Item | Arquivo(s) | Descrição |
-|:----------:|:----:|:----------:|-----------|
-| 🔴 Alta | 1.1 | `admin/users.js` | `await await` duplicado (3 ocorrências) |
-| 🔴 Alta | 1.2 | `admin/backups.js` | Import sem extensão `.js` no padrão ESM |
-| 🔴 Alta | 4.3 | `cleanup-test-data.js` | Verificação de admin por username em vez de role |
-| 🔴 Alta | 6.5 | `admin/users.js` | Default `role: 'admin'` na criação de usuário — risco de privilégio acidental |
-| 🟠 Média | 1.3 | `api/posts.js` | Invalidação de cache redundante (3 chamadas) |
-| 🟠 Média | 1.4 | `api/auth/check.js` | 405 sem header `Allow` |
-| 🟠 Média | 2.1 | `admin/fetch-*.js` | `fetchWithTimeout()` e `urlSchema` duplicados em 3 arquivos |
-| 🟠 Média | 2.2 | `api/posts.js`, `api/videos.js` | Paginação manual em vez de usar `helper/pagination.js` |
-| 🟠 Média | 2.3 | `admin/posts.js`, `admin/musicas.js`, `admin/videos.js` | Padrão `reorder` triplicado com abordagens diferentes |
-| 🟠 Média | 2.4 | `admin.js` | Funções de imagem embutidas (~58 linhas) sem reuso |
-| 🟠 Média | 2.5 | `admin.js` | 4 CSS Modules mapeados manualmente + estilos inline |
-| 🟠 Média | 3.1 | `api/products.js` | Fora do padrão `createAdminHandler()`; sem Zod |
-| 🟠 Média | 3.2 | `api/auth/check.js` | Não usa `withAuth` |
-| 🟠 Média | 3.3 | Endpoints públicos | Rate limit dentro vs antes do cache inconsistente |
-| 🟠 Média | 3.4 | Endpoints públicos | Cache-Control com 3 políticas diferentes |
-| 🟠 Média | 3.5 | Endpoints públicos | Formato de resposta de sucesso não uniforme |
-| 🟠 Média | 4.1 | `admin.js` | `console.log` do objeto user completo no navegador |
-| 🟠 Média | 4.2 | `admin/rate-limit.js` | `current_ip` confia em `x-forwarded-for` sem spoofing check |
-| 🟠 Média | 5.1 | `index.js` | Timestamp na URL anula cache da imagem hero |
-| 🟠 Média | 5.5 | `admin/integrity.js` | `fs.readdirSync`/`statSync` recursivo bloqueia event loop |
-| 🟠 Média | 6.2 | `admin.js` | 10 blocos condicionais de abas + sub-abas |
-| 🟠 Média | 6.4 | `api/products.js` | Sem validação Zod em POST/PUT |
-| 🟠 Média | 6.6 | `api/settings.js` | Defaults hardcoded na camada de rota |
-| 🟠 Média | 6.7 | `admin/backups.js`, `admin/integrity.js` | Lógica de listagem de backups duplicada |
-| 🟡 Baixa | 2.6 | `admin.js` | Bloco `<style>` de scroll duplicado + `!important` |
-| 🟡 Baixa | 2.7 | `styles/variables.css` | `--shadow-glow` duplicado |
-| 🟡 Baixa | 5.2 | `admin.js` | Duas requisições para salvar configurações |
-| 🟡 Baixa | 5.3 | `index.js` | Cache sessionStorage TTL curto e por aba |
-| 🟡 Baixa | 5.4 | `_document.js` | Preconnects para domínios não usados em todas as páginas |
-| 🟡 Baixa | 6.1 | `admin.js` | Arquivo muito grande (780 linhas) |
-| 🟡 Baixa | 6.3 | `/pages/api/` | Nomenclatura pt/en inconsistente |
-| 🟡 Baixa | 6.8 | `design-system.js` | Placeholder externo via.placeholder.com |
-| 🟡 Baixa | 6.9 | `admin/fetch-ml.js` | Decodificação de entidades HTML via replace manual frágil |
-| 🟢 Observação | 7.1 | `styles/tokens/*`, `generateTokensCSS.js` | Arquivos removidos — não recriar |
-| 🟢 Observação | 7.2 | `api/posts.js`, `api/settings.js` | Check de uso da compat `?response=v1` |
+**Caminho:** `/pages/api/settings.js`
+
+**Arquivos acionados ou relacionados:**
+- `../../lib/domain/settings.js` — Funções `getSettings()`, `getSetting()`, `updateSetting()`, `getAllSettingsRaw()`
+- `../../lib/auth/auth.js` — Funções `withAuth()`, `getAuthToken()`, `verifyToken()`
+- `../../lib/cache/cache.js` — Funções `getOrSetCache()`, `invalidateCache()`, `checkRateLimit()`
+- `../../lib/api/helpers.js` — Função `getClientIP()`
+- `../../lib/infra/logger.js` — Logger estruturado
+- `zod` — Validação de schemas
+
+**Resumo:**
+Endpoint unificado de configurações do sistema (GET, POST, PUT). **GET público** (sem `?key=`) retorna todas as configurações com cache 2h e rate limit 600 req/min (falha não aborta resposta). **GET com ?key=** exige autenticação (admin/editor) e retorna configuração específica; se não existir, retorna defaults hardcoded (`site_name`, `site_description`, `posts_per_page`, `videos_per_page`, `musicas_per_page`). **POST** protegido por `withAuth` (admin) — cria configuração com validação Zod. **PUT** protegido por `withAuth` (admin/editor) — atualiza configuração. Cache-Control: `public, s-maxage=120, stale-while-revalidate=600`. Suporte a `?response=v1`.
+
+**Problemas identificados:**
+1. Defaults hardcoded nas linhas 68-74 — valores de fallback definidos na camada de API em vez de na camada de domínio (ex: `lib/domain/settings.js`)
 
 ---
 
-## Pontos de Atenção Técnica para Revisão Futura (Resumo Rápido)
+### 4.20 `api/dicas.js`
 
-1. **`admin/users.js`** — `await await` (3x) + default `role='admin'` — **correção prioritária**.
-2. **`admin/backups.js`** — import ESM sem extensão — risco de runtime error.
-3. **`api/products.js`** — único CRUD fora do factory admin e sem Zod — inconsistência significativa.
-4. **`admin/rate-limit.js`** — leitura de IP sem a proteção anti-spoofing padrão do projeto — falha de confiança na ferramenta.
-5. **`api/auth/check.js`** — documentação anterior dizia "usa `withAuth`", mas o código atual não usa — a documentação foi corrigida neste levantamento.
-6. **Duplicidade `fetchWithTimeout` + `urlSchema`** nos 3 fetchers — oportunidade clara de extração para `lib/`.
-7. **Padrão híbrido de rate limit** (dentro vs antes do cache) — precisa de decisão de arquitetura única.
-8. **Cache-Control** (300s vs 120s vs 86400s) — precisa de política centralizada e documentada.
+**Caminho:** `/pages/api/dicas.js`
+
+**Arquivos acionados ou relacionados:**
+- `../../lib/infra/db.js` — Query SQL direta ao banco
+- `../../lib/cache/cache.js` — Funções `getOrSetCache()`, `checkRateLimit()`
+- `./helper/pagination.js` — Funções `paginate()`, `buildPaginationMeta()`, `paginatedResponse()`
+- `../../lib/api/helpers.js` — Função `getClientIP()`
+- `../../lib/infra/logger.js` — Logger estruturado
+
+**Resumo:**
+Endpoint público de dicas (GET). Usa o helper de paginação padronizado (`paginate()` para parse/validação de page/limit, `buildPaginationMeta()` para metadados, `paginatedResponse()` para envelope). Cache Redis com chave `dicas:public:published:${page}:${limit}`, rate limit de 60 req/min. Query SQL direta ao banco para buscar dicas publicadas (`published = true`), retornando `id`, `name`, `content`. Cache-Control: `public, max-age=0, s-maxage=300, stale-while-revalidate=600`. Trata erros de rate limit (429) e paginação inválida (400) especificamente.
 
 ---
 
-## Implementações Aplicadas
+### 4.21 `api/admin/posts.js`
 
-### `pages/api/admin/dicas.js` — invalidação de cache no POST e no DELETE
+**Caminho:** `/pages/api/admin/posts.js`
 
-**Descrição:** O CRUD administrativo de dicas passou a invalidar o cache público `dicas:public:*` também no POST (após o `INSERT`) e no DELETE (após o `DELETE`), alinhando-se ao PUT que já invalidava. Dica criada ou excluída no Painel Administrativo passa a refletir imediatamente na página pública, independentemente do TTL do cache.
+**Arquivos acionados ou relacionados:**
+- `../../../lib/domain/posts.js` — Funções `getPaginatedPosts()`, `createPost()`, `updatePost()`, `deletePost()`
+- `../../../lib/crud/crud.js` — Função `updateRecords()` (usada para reordenação)
+- `../../../lib/infra/db.js` — Query SQL direta
+- `../../../lib/api/adminCrudHandler.js` — Factory `createAdminHandler()`
+- `zod` — Validação de schemas (postCreateSchema, postUpdateDataSchema, reorderSchema, reorderItemSchema)
 
-### `pages/api/admin/videos.js` — extração da mensagem de validação em `getValidationMessage()`
+**Resumo:**
+CRUD administrativo de posts via `createAdminHandler()`. Rate limit 300 req/min, cache `posts:*` invalidado automaticamente nas mutações. **GET** lista posts paginados com `Cache-Control: no-store`. **POST** cria post com validação Zod. **PUT** suporta dois modos: reordenação em massa (`action: 'reorder'`) com `updateRecords()` em loop, ou atualização individual por ID. **DELETE** remove post. Todas as mutações geram log de auditoria via `req.adminUtils.logActivity()`.
 
-**Descrição:** A lógica de extração da primeira mensagem de erro de validação, que estava duplicada entre o POST e o PUT (`Object.values(fieldErrors)[0]?.[0] || 'Erro de validação desconhecido.'`), passou a ser centralizada na função exportada `getValidationMessage(validationError)`, usada nos dois handlers. O fallback `'Erro de validação desconhecido.'` é conservado para erros de nível raiz do Zod (quando `fieldErrors` está vazio).
+---
 
-### `pages/api/auth/login.js` — controle de `strictMode` baseado em `NODE_ENV`
+### 4.22 `api/admin/musicas.js`
 
-**Descrição:** O handler de login passou a controlar o parâmetro `strictMode` da função `detectSpoofedIP` com base no ambiente, evitando falsos positivos em testes de carga durante o desenvolvimento:
-- Em desenvolvimento (`NODE_ENV !== 'production'`): `strictMode=false` para evitar bloqueios em testes de carga
-- Em produção (`NODE_ENV=production'`): `strictMode=true` para detectar spoofing mesmo em localhost
-- Suporte opcional à variável `ENABLE_STRICT_SPOOFING=true` para ativar o modo estrito em desenvolvimento quando necessário (testes de segurança)
+**Caminho:** `/pages/api/admin/musicas.js`
 
-Essa alteração, em conjunto com a atualização do middleware `proxy.js`, corrige o problema de testes de carga que falhavam com erro 403 "IP spoofing detectado" durante o setup de autenticação.
+**Arquivos acionados ou relacionados:**
+- `../../../lib/domain/musicas.js` — Funções `getPaginatedMusicas()`, `createMusica()`, `updateMusica()`, `deleteMusica()`
+- `../../../lib/crud/crud.js` — Função `updateRecords()` (usada para reordenação)
+- `../../../lib/api/adminCrudHandler.js` — Factory `createAdminHandler()`
+- `zod` — Validação de schemas (musicaSchema, reorderSchema, reorderItemSchema)
 
-> 📝 Este documento é analítico — as seções 1–7 servem como guia para futuras refatorações e correções; a seção "Implementações Aplicadas" registra as implementações realizadas após a elaboração deste relatório.
+**Resumo:**
+CRUD administrativo de músicas via `createAdminHandler()`. Rate limit 300 req/min, cache `musicas:*` invalidado automaticamente nas mutações. **GET** lista músicas paginadas com `Cache-Control: no-store`. **POST** cria música com validação Zod e validação adicional de URL do Spotify (`isValidSpotifyUrl()`). **PUT** suporta dois modos: reordenação em massa (`action: 'reorder'`) com `updateRecords()` em loop, ou atualização individual por ID (permite toggle rápido de `publicado` sem reenviar todos os campos). **DELETE** remove música. Todas as mutações geram log de auditoria via `req.adminUtils.logActivity()`.
+
+---
+
+### 4.23 `api/admin/rate-limit.js`
+
+**Caminho:** `/pages/api/admin/rate-limit.js`
+
+**Arquivos acionados ou relacionados:**
+- `../../../lib/api/adminCrudHandler.js` — Factory `createAdminHandler()`
+- `../../../lib/infra/logger.js` — Logger estruturado
+- `../../../lib/infra/redis.js` — Função `redisScan()` (SCAN paginado)
+- `@upstash/redis` — Cliente Redis Upstash
+- `zod` — Validação de schemas
+
+**Resumo:**
+Endpoint de gerenciamento de rate limit (admin). Usa Upstash Redis para controlar whitelist e bloqueios. **GET** (`?type=...`): `current_ip` — retorna IP do requisitante; `whitelist` — lista IPs permitidos; `audit` — lista logs com paginação e filtros (data/busca); `export_csv` — exporta logs como CSV; default — lista IPs bloqueados com SCAN paginado e pipeline Redis, com cache em memória de 15s. **POST** adiciona IP à whitelist e remove bloqueio. **DELETE** remove da whitelist (`?type=whitelist`) ou desbloqueia IP manualmente. Requer Redis configurado (retorna 501 se não disponível).
+
+**Problemas identificados:**
+1. Leitura de IP no `type=current_ip` (linha 124): usa `req.headers['x-forwarded-for']` diretamente sem validação de spoofing — inconsistente com `getClientIP()` usado nos demais endpoints (login.js, posts.js, etc.)
+
+---
+
+### 4.24 `api/admin/videos.js`
+
+**Caminho:** `/pages/api/admin/videos.js`
+
+**Arquivos acionados ou relacionados:**
+- `../../../lib/domain/videos.js` — Funções `getPaginatedVideos()`, `createVideo()`, `updateVideo()`, `deleteVideo()`, `reorderVideos()`
+- `../../../lib/api/adminCrudHandler.js` — Factory `createAdminHandler()`
+- `zod` — Validação de schemas (videoSchema)
+
+**Resumo:**
+CRUD administrativo de vídeos via `createAdminHandler()`. Rate limit 300 req/min, cache `public_videos:*` invalidado automaticamente. **GET** lista vídeos paginados com `Cache-Control: no-store`. **POST** cria vídeo com validação Zod, regex de URL do YouTube (`youtubeUrlRegex`), e função `getValidationMessage()` para extrair primeira mensagem de erro (centralizada, exportada). **PUT** suporta dois modos: reordenação em massa via `reorderVideos()` (camada de domínio, diferente dos outros CRUDs que usam `updateRecords()` direto), ou atualização individual por ID. **DELETE** remove vídeo. Todas as mutações geram log de auditoria.
+
+---
+
+### 4.25 `api/admin/integrity.js`
+
+**Caminho:** `/pages/api/admin/integrity.js`
+
+**Arquivos acionados ou relacionados:**
+- `../../../lib/api/adminCrudHandler.js` — Factory `createAdminHandler()`
+- `../../../lib/infra/db.js` — Query SQL direta
+- `@upstash/redis` — Cliente Redis (importado dinamicamente)
+- `fs`, `path`, `os` — Módulos nativos do Node.js
+
+**Resumo:**
+Endpoint de verificação de integridade do sistema (GET). Executa 5 verificações: 1) Banco de dados (SELECT 1, tamanho, conexões); 2) Redis/Cache (ping); 3) Armazenamento (tamanho dos uploads, espaço em disco); 4) Backup (lista arquivos em `data/backups`, último backup); 5) Sistema (Node.js versão, plataforma, uptime, memória, CPU). Calcula status geral (healthy/degraded/warning). Funções utilitárias: `formatBytes()`, `formatUptime()`, `formatTimeAgo()`.
+
+**Problemas identificados:**
+1. Função `calculateSize()` recursiva síncrona (`fs.readdirSync`/`fs.statSync`) — pode bloquear o event loop se a pasta de uploads crescer significativamente
+
+---
+
+### 4.26 `api/admin/roles.js`
+
+**Caminho:** `/pages/api/admin/roles.js`
+
+**Arquivos acionados ou relacionados:**
+- `../../../lib/infra/db.js` — Query SQL direta
+- `../../../lib/crud/crud.js` — Funções `createRecord()`, `updateRecords()`, `deleteRecords()`
+- `../../../lib/api/adminCrudHandler.js` — Factory `createAdminHandler()`
+- `zod` — Validação de schemas
+
+**Resumo:**
+CRUD administrativo de roles/cargos via `createAdminHandler()`. Rate limit 30 req/min, requer permissão 'Segurança' ou 'Usuários'. **GET** lista roles; se a tabela não existir, cria automaticamente e popula com roles padrão ('admin' com permissões completas, 'user' com permissão básica). **POST** cria role com validação Zod (name + permissions array). **PUT** atualiza role. **DELETE** remove role. Todas as mutações geram log de auditoria.
+
+---
+
+### 4.27 `api/admin/fetch-spotify.js`
+
+**Caminho:** `/pages/api/admin/fetch-spotify.js`
+
+**Arquivos acionados ou relacionados:**
+- `../../../lib/api/adminCrudHandler.js` — Factory `createAdminHandler()`
+- `../../../lib/infra/logger.js` — Logger estruturado
+- `zod` — Validação de URL
+
+**Resumo:**
+Endpoint de busca de dados do Spotify (POST). Extrai título e artista de uma URL do Spotify usando 3 estratégias: 1) API oEmbed oficial do Spotify; 2) Leitura do código-fonte do iframe de embed; 3) Scraping das tags meta do HTML (user-agent Googlebot). Usa `fetchWithTimeout()` (AbortController, timeout 8s) e `urlSchema` (Zod) — ambos duplicados em `fetch-youtube.js` e `fetch-ml.js`. Retorna `{ title, artist }`. Gera log de auditoria.
+
+**Problemas identificados:**
+1. `fetchWithTimeout()` e `urlSchema` duplicados neste arquivo e em `fetch-youtube.js` e `fetch-ml.js` — lógica idêntica em 3 arquivos
+
+---
+
+### 4.28 `api/admin/fetch-youtube.js`
+
+**Caminho:** `/pages/api/admin/fetch-youtube.js`
+
+**Arquivos acionados ou relacionados:**
+- `../../../lib/api/adminCrudHandler.js` — Factory `createAdminHandler()`
+- `zod` — Validação de URL
+
+**Resumo:**
+Endpoint de gerenciamento de backups (admin). Rate limit 10 req/min. **GET** lista arquivos de backup em `data/backups` (filtra por `.sql`, `.gz`, `.enc`) ordenados por data, retorna o mais recente e lista completa. **POST** cria backup manual via `createBackup()`. Gera log de auditoria.
+
+**Problemas identificados:**
+1. Import sem extensão `.js` no padrão ESM: `from '../../../scripts/backup'` — todos os demais imports usam extensão explícita
+
+---
+
+### 4.30 `api/admin/users.js`
+
+**Caminho:** `/pages/api/admin/users.js`
+
+**Arquivos acionados ou relacionados:**
+- `../../../lib/infra/db.js` — Query SQL direta
+- `../../../lib/crud/crud.js` — Funções `createRecord()`, `updateRecords()`, `deleteRecords()`
+- `../../../lib/auth/auth.js` — Função `hashPassword()`
+- `../../../lib/api/adminCrudHandler.js` — Factory `createAdminHandler()`
+- `zod` — Validação de schemas
+
+**Resumo:**
+CRUD administrativo de usuários via `createAdminHandler()`. Rate limit 30 req/min, requer permissão 'Segurança' ou 'Usuários'. **GET** lista usuários com paginação e busca por username (nunca retorna senhas). **POST** cria usuário com hash de senha (`hashPassword()`), default `role: 'admin'` (problema). **PUT** atualiza usuário, permite mudança de senha opcional (só faz hash se a nova senha for enviada). **DELETE** remove usuário (auto-exclusão bloqueada — usuário não pode excluir a si mesmo). Todas as mutações geram log de auditoria.
+
+**Problemas identificados:**
+1. `await await` duplicado nas linhas 68, 99 e 115 antes de `req.adminUtils.logActivity()` — sintaticamente válido, mas erro de digitação que confunde a leitura
+2. Default `role: 'admin'` na criação de usuário (linha 10) — novos usuários são administradores por padrão, sem intenção explícita de elevação de privilégio
+
+---
+
+### 4.31 `api/admin/cache.js`
+
+**Caminho:** `/pages/api/admin/cache.js`
+
+**Arquivos acionados ou relacionados:**
+- `../../../lib/cache/cache.js` — Funções `clearAllCache()`, `getCacheMetrics()`
+- `../../../lib/api/adminCrudHandler.js` — Factory `createAdminHandler()`
+
+**Resumo:**
+Endpoint de gerenciamento de cache (admin). Rate limit 10 req/min, requer role admin (`requireAdmin: true`). **GET** retorna métricas do cache via `getCacheMetrics()`. **POST** e **DELETE** ambos limpam o cache via `clearAllCache({ confirm: true })` (FLUSHDB). Gera log de auditoria na limpeza.
+
+---
+
+### 4.32 `api/admin/audit.js`
+
+**Caminho:** `/pages/api/admin/audit.js`
+
+**Arquivos acionados ou relacionados:**
+- `../../../lib/infra/db.js` — Query SQL direta
+- `../../../lib/api/adminCrudHandler.js` — Factory `createAdminHandler()`
+
+**Resumo:**
+Endpoint de consulta a logs de auditoria (GET). Rate limit 30 req/min, requer permissão 'Auditoria' ou 'Segurança'. Lista registros da tabela `activity_logs` com paginação (padrão 50 por página) e filtros de data (`startDate`, `endDate`). Formata `user_id` baseando-se no `username`. Se a tabela não existir (instalação limpa), cria automaticamente e retorna lista vazia.
+
+---
+
+### 4.33 `api/admin/fetch-ml.js`
+
+**Caminho:** `/pages/api/admin/fetch-ml.js`
+
+**Arquivos acionados ou relacionados:**
+- `../../../lib/api/adminCrudHandler.js` — Factory `createAdminHandler()`
+- `../../../lib/infra/logger.js` — Logger estruturado
+- `zod` — Validação de URL
+
+**Resumo:**
+Endpoint de busca de dados do Mercado Livre (POST). Extrai informações de um produto/anúncio usando 3 estratégias: 1) API do Mercado Livre (`/items/{id}`); 2) API de produtos (`/products/{id}`) para produtos de catálogo; 3) Fallback de scraping do HTML da página. Extrai códigos MLB da URL e tenta cada um. Usa `fetchWithTimeout()` (AbortController, timeout 8s) e `urlSchema` (Zod) — ambos duplicados em `fetch-spotify.js` e `fetch-youtube.js`. Retorna `{ title, price, images, description }`. Gera log de auditoria.
+
+**Problemas identificados:**
+### 4.36 `api/cleanup-test-data.js`
+
+**Caminho:** `/pages/api/cleanup-test-data.js`
+
+**Arquivos acionados ou relacionados:**
+- `../../lib/auth/auth.js` — Middleware `withAuth()`
+- `../../lib/infra/db.js` — Query SQL direta
+- `../../lib/infra/logger.js` — Logger estruturado
+- Variável de ambiente: `process.env.ADMIN_USERNAME`
+
+**Resumo:**
+Endpoint de limpeza de dados de teste (DELETE). Protegido por `withAuth()`. Verifica se o usuário é admin comparando `req.user.username` com `process.env.ADMIN_USERNAME` ou string fixa `'admin'`. Executa `DELETE FROM posts WHERE slug LIKE 'post-carga-%'` para remover posts de teste criados em carga. Retorna quantidade de registros removidos (`rowCount`).
+
+**Problemas identificados:**
+1. Verificação de admin por username (string fixa) em vez de consultar role no banco — não segue o padrão RBAC dos demais endpoints admin
+
+---
+
+### 4.37 `api/products.js`
+
+**Caminho:** `/pages/api/products.js`
+
+**Arquivos acionados ou relacionados:**
+- `../../lib/domain/audit.js` — Função `logActivity()`
+- `../../lib/auth/auth.js` — Funções `getAuthToken()`, `verifyToken()`
+- `../../lib/cache/cache.js` — Funções `checkRateLimit()`, `invalidateCache()`, `getOrSetCache()`
+- `../../lib/domain/products.js` — Funções `getPaginatedProducts()`, `getAllProducts()`, `createProduct()`, `updateProduct()`, `deleteProduct()`
+- `./helper/pagination.js` — Função `paginate()`
+- `../../lib/api/helpers.js` — Função `getClientIP()`
+- `../../lib/infra/logger.js` — Logger estruturado
+
+**Resumo:**
+Endpoint híbrido (público + admin) de produtos. Não usa `createAdminHandler()` — implementa autenticação manual via `requireAuth()`. **GET** (`?public=true`) público com paginação, filtros (search, minPrice, maxPrice), cache, rate limit 60 req/min (antes do cache). **GET** (sem `?public=true`) admin via `requireAuth()`. **POST/PUT/DELETE** autenticados com rate limit 30 req/min. `logActivity()` importado diretamente de `lib/domain/audit` (não via `req.adminUtils`). Cache-Control não definido no GET público.
+
+**Problemas identificados:**
+1. Fora do padrão `createAdminHandler()` — todos os demais 15 CRUDs admin usam o factory
+2. Sem validação Zod nos dados de entrada de POST/PUT (apenas validação manual mínima de nome/preço obrigatórios)
+3. `updateProduct` recebe `req.body` inteiro sem sanitização
+
+---
+
+### 4.38 `api/musicas.js`
+
+**Caminho:** `/pages/api/musicas.js`
+
+**Arquivos acionados ou relacionados:**
+- `../../lib/domain/musicas.js` — Função `getPaginatedMusicas()`
+- `../../lib/cache/cache.js` — Funções `getOrSetCache()`, `checkRateLimit()`
+- `../../lib/api/helpers.js` — Função `getClientIP()`
+- `../../lib/infra/logger.js` — Logger estruturado
+- `zod` — Validação de query params
+
+**Resumo:**
+Endpoint público de músicas (GET). Valida query params com Zod (`page`, `limit`, `search`, `sort` com enum). Cache Redis com chave `musicas:${page}:${limit}:${sort}:${search}`, rate limit 60 req/min (verificado **dentro** do callback de cache). Cache-Control: `public, max-age=0, s-maxage=300, stale-while-revalidate=600`. Retorna `{ success, data, pagination }`.
+
+---
+
+### 4.39 `api/upload-image.js`
+
+**Caminho:** `/pages/api/upload-image.js`
+
+**Arquivos acionados ou relacionados:**
+- `../../lib/domain/settings.js` — Função `updateSetting()`
+- `../../lib/auth/auth.js` — Middleware `withAuth()`
+- `../../lib/infra/logger.js` — Logger estruturado
+- `formidable` — Parser de formulários multipart
+- `sharp` — Processamento de imagem (validação de metadados)
+- `crypto` — Geração de UUID para nome do arquivo
+
+**Resumo:**
+Endpoint de upload de imagem (POST). Protegido por `withAuth()`. Usa `formidable` para parse do multipart (bodyParser desabilitado). Validações: mimetype (jpeg, png, webp, gif), tamanho máximo 5MB, dimensões máximas 1920x1920 (via `sharp`), magic bytes. Gera nome seguro com `crypto.randomUUID()` e prefixo (`hero-image-` ou `post-image-` baseado em `uploadType`). Se `uploadType=setting_home_image`, atualiza configuração `home_image_url` no banco. Retorna `{ success, path, imageUrl }`.
+
+---
+
+### 4.40 `api/videos.js`
+
+**Caminho:** `/pages/api/videos.js`
+
+**Arquivos acionados ou relacionados:**
+- `../../lib/domain/videos.js` — Função `getPublicPaginatedVideos()`
+- `../../lib/cache/cache.js` — Funções `getOrSetCache()`, `checkRateLimit()`
+- `../../lib/api/helpers.js` — Função `getClientIP()`
+- `../../lib/infra/logger.js` — Logger estruturado
+
+**Resumo:**
+Endpoint público de vídeos (GET). Paginação manual (parseInt, default page=1, limit=10, limit máximo 100), busca opcional, sort (recent/oldest/alpha/alpha_desc mapeado para ORDER BY). Rate limit **antes** do cache (protege mesmo em cache hits). Cache-Control: `public, max-age=0, s-maxage=300, stale-while-revalidate=600`. Retorna `{ success, ...result }`.
+
+**Problemas identificados:**
+1. Paginação manual reimplementada (não usa `helper/pagination.js` que já é utilizado por `dicas.js` e `products.js`)
+
+---
+
+### 4.41 `api/status.js`
+
+**Caminho:** `/pages/api/status.js`
+
+**Arquivos acionados ou relacionados:**
+- `../../lib/infra/db.js` — Query SQL direta
+
+**Resumo:**
+Endpoint de health check/diagnóstico (GET). Dois modos: `?mode=health` retorna apenas `{ status: 'ok' }`; modo completo retorna diagnóstico com versão da API, ambiente, status do banco (postgres, teste SELECT 1), e métricas do sistema (nodeVersion, platform, uptime, memoryUsage). Substitui o antigo `/api/v1/status`.
+
+---
+
+### 4.42 `api/helper/pagination.js`
+
+**Caminho:** `/pages/api/helper/pagination.js`
+
+**Arquivos acionados ou relacionados:**
+- `/pages/api/dicas.js` — Importa `paginate()`, `buildPaginationMeta()`, `paginatedResponse()`
+- `/pages/api/products.js` — Importa `paginate()`
+
+**Resumo:**
+Helper de paginação reutilizável. Exporta 3 funções: `paginate(rawPage, rawLimit, maxLimit=100)` — parseia e valida parâmetros, lança erro `INVALID_PAGINATION_PARAMS` se inválidos; `buildPaginationMeta(page, limit, total)` — monta metadados (page, limit, total, totalPages); `paginatedResponse(data, pagination)` — monta envelope padronizado `{ success, data, pagination }`. Usa `parseInt` com radix 10.
+
+---
+
+
+
+### 4.34 `api/admin/stats.js`
+
+**Caminho:** `/pages/api/admin/stats.js`
+
+**Arquivos acionados ou relacionados:**
+- `../../../lib/infra/db.js` — Query SQL direta
+- `../../../lib/api/adminCrudHandler.js` — Factory `createAdminHandler()`
+
+**Resumo:**
+Endpoint de estatísticas do sistema (GET). Executa 19 contagens em paralelo via `Promise.all` para maior performance: total de posts, músicas, vídeos, produtos, usuários, dicas (cada um com versão published/draft), e usuários logados hoje/mês/ano. Retorna objeto com todas as contagens em um único response. Rate limit 30 req/min, requer permissão 'Visão Geral'.
+
+---
+
+### 4.35 `api/admin/dicas.js`
+
+**Caminho:** `/pages/api/admin/dicas.js`
+
+**Arquivos acionados ou relacionados:**
+- `../../../lib/infra/db.js` — Query SQL direta
+- `../../../lib/cache/cache.js` — Função `invalidateCache()`
+- `../../../lib/api/adminCrudHandler.js` — Factory `createAdminHandler()`
+- `zod` — Validação de schemas
+
+**Resumo:**
+CRUD administrativo de dicas via `createAdminHandler()`. Rate limit 30 req/min. **GET** lista todas as dicas ordenadas por ID. **POST** cria dica com validação Zod (name, content, published). **PUT** atualiza dica com merge de campos parciais — se campos obrigatórios não forem enviados, busca os valores atuais do banco para fazer merge antes da validação. **DELETE** remove dica. Todas as mutações (POST, PUT, DELETE) geram log de auditoria e invalidam o cache público `dicas:public:*`.
+
+---
+
+### 4.29 `api/admin/backups.js`
+
+**Caminho:** `/pages/api/admin/backups.js`
+
+**Arquivos acionados ou relacionados:**
+- `../../../scripts/backup` — Função `createBackup()`
+- `../../../lib/api/adminCrudHandler.js` — Factory `createAdminHandler()`
+- `fs`, `path` — Módulos nativos do Node.js
+
+**Resumo:**
+Endpoint de gerenciamento de backups (admin). Rate limit 10 req/min. **GET** lista arquivos de backup em `data/backups` (filtra por `.sql`, `.gz`, `.enc`) ordenados por data, retorna o mais recente e lista completa. **POST** cria backup manual via `createBackup()`. Gera log de auditoria.
+
+**Problemas identificados:**
+1. Import sem extensão `.js` no padrão ESM: `from '../../../scripts/backup'` — todos os demais imports usam extensão explícita
+
+---
+
+---
+
+
+
+
+---
+
+## 5. Ajustes e Correções
+
+Os seguintes problemas foram identificados e necessitam de correção:
+
+### 5.1 `await await` duplicado em `admin/users.js`
+- **O que:** `await await req.adminUtils.logActivity()` nas linhas 68, 99 e 115
+- **Onde:** `/pages/api/admin/users.js`
+- **Problema:** Erro de digitação que resulta em `await` duplicado
+- **Ajuste:** Remover o `await` duplicado
+
+### 5.2 Import sem extensão `.js` em `admin/backups.js`
+- **O que:** Import `from '../../../scripts/backup'` sem extensão
+- **Onde:** `/pages/api/admin/backups.js`, linha 1
+- **Problema:** ESM pode gerar `ERR_MODULE_NOT_FOUND` em runtime
+- **Ajuste:** Adicionar `.js`: `from '../../../scripts/backup.js'`
+
+### 5.3 Default `role: 'admin'` na criação de usuário
+- **O que:** `role: z.string().optional().default('admin')`
+- **Onde:** `/pages/api/admin/users.js`, linha 10
+- **Problema:** Novos usuários são admins por padrão
+- **Ajuste:** Alterar default para `'user'`
+
+### 5.4 Invalidação de cache redundante em `api/posts.js`
+- **O que:** 3 chamadas de invalidação (`posts:list:*`, `posts:search:*`, `posts:*`)
+- **Onde:** `/pages/api/posts.js`, linhas 130-132
+- **Problema:** `posts:*` já cobre os outros dois
+- **Ajuste:** Manter apenas `invalidateCache('posts:*')`
+
+### 5.5 Verificação de admin por username em `cleanup-test-data.js`
+- **O que:** `req.user.username !== process.env.ADMIN_USERNAME && req.user.username !== 'admin'`
+- **Onde:** `/pages/api/cleanup-test-data.js`, linha 12
+- **Problema:** Não segue o padrão RBAC do projeto
+- **Ajuste:** Usar verificação de role no banco
+
+---
+
+## 6. Melhorias Recomendadas
+
+### 6.1 Extrair `fetchWithTimeout()` para `lib/`
+- **Arquivos:** `fetch-ml.js`, `fetch-spotify.js`, `fetch-youtube.js`
+- **Justificativa:** Função idêntica (~10 linhas) duplicada em 3 arquivos
+
+### 6.2 Padronizar paginação com `helper/pagination.js`
+- **Arquivos:** `api/posts.js`, `api/videos.js`
+- **Justificativa:** Paginação manual reimplementada
+
+### 6.3 Padronizar posicionamento do rate limit
+- **Arquivos:** Endpoints públicos (posts, musicas, dicas vs videos, products)
+- **Justificativa:** Rate limit dentro vs antes do cache é inconsistente
+
+### 6.4 Centralizar políticas de Cache-Control
+- **Arquivos:** Endpoints públicos
+- **Justificativa:** 3 políticas diferentes (300s, 120s, 86400s)
+
+### 6.5 Padronizar formato de resposta de sucesso
+- **Arquivos:** Endpoints públicos
+- **Justificativa:** Formatos diferentes por endpoint
+
+### 6.6 Extrair funções de imagem do `admin.js`
+- **Arquivo:** `/pages/admin.js`
+- **Justificativa:** `resizeImage()` e `getCroppedImg()` (~58 linhas) sem reuso
+
+### 6.7 Configuração declarativa de abas no `admin.js`
+- **Arquivo:** `/pages/admin.js`
+- **Justificativa:** 10 blocos condicionais de abas. Sugestão: array declarativo
+
+### 6.8 Mover defaults de `settings.js` para `lib/domain/settings.js`
+- **Arquivo:** `/pages/api/settings.js`, linhas 68-74
+- **Justificativa:** Lógica de negócio hardcoded na camada de API
+
+---
+
+## 7. Duplicidades Identificadas
+
+| # | Tipo | Arquivos | Descrição |
+|---|------|----------|-----------|
+| 7.1 | Função duplicada | `fetch-ml.js`, `fetch-spotify.js`, `fetch-youtube.js` | `fetchWithTimeout()` e `urlSchema` idênticos |
+| 7.2 | Lógica duplicada | `api/posts.js`, `api/videos.js` | Paginação manual reimplementada |
+| 7.3 | Padrão duplicado | `admin/posts.js`, `admin/musicas.js`, `admin/videos.js` | Padrão `action: 'reorder'` com abordagens diferentes |
+| 7.4 | Leitura duplicada | `admin/backups.js`, `admin/integrity.js` | Lógica de listagem de backups com pequenas divergências |
+| 7.5 | Token duplicado | `styles/variables.css` | `--shadow-glow` definido 2x com mesmo valor |
+
+---
+
+## 8. Código Morto / Possível Código Morto
+
+| # | Tipo | Arquivo | Descrição |
+|---|------|---------|-----------|
+| 8.1 | Possível código morto | `api/posts.js`, `api/settings.js` | Compatibilidade `?response=v1` — auditar uso |
+| 8.2 | Dependência externa frágil | `design-system.js` | `via.placeholder.com` pode ficar indisponível |
+
+---
+
+## 9. Resumo Final
+
+- **Total de arquivos analisados:** 42 arquivos da pasta `/pages`
+- **Processamento:** Individual, sequencial, com releitura e validação obrigatória após cada arquivo
+- **Data da análise:** 24/09/2026
+- **Status:** ✅ Todos os 42 arquivos foram processados e documentados

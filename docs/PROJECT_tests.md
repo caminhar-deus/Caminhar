@@ -1,6 +1,6 @@
 # Análise do Projeto — Testes (`/tests/`)
 
-> **Data:** 02/08/2026
+> **Data:** 24/09/2026
 > **Objetivo:** Documentar de forma objetiva, clara e focada todos os arquivos de teste do projeto, descrevendo localização, propósito e funcionalidade de cada um, com base na análise atual dos arquivos.
 
 ---
@@ -34,16 +34,22 @@ tests/
 ├── mocks/                            # Mocks globais reutilizáveis
 ├── integration/                      # Testes de integração
 │   ├── api/                          #   Endpoints de API
-│   │   ├── *.test.js
+│   │   ├── *.test.js                 #     Testes de endpoints públicos e CRUD
 │   │   ├── admin/                    #     Endpoints administrativos
 │   │   └── auth/                     #     Endpoints de autenticação
-│   ├── auth/                         #   Autenticação v1
+│   ├── auth/                         #   Autenticação v1 (legacy)
 │   └── domain/                       #   Testes com PostgreSQL real (*.db.test.js)
 └── unit/                             # Testes unitários
     ├── *.test.js                     #   Páginas e utilitários
     ├── components/                   #   Componentes React
     │   ├── Admin/                    #     Componentes administrativos
     │   ├── Features/                 #     Componentes de funcionalidades
+    │   │   ├── Blog/                 #       Seção de blog e cards
+    │   │   ├── ContentTabs/          #       Abas de conteúdo
+    │   │   ├── Music/                #       Cards e galeria de músicas
+    │   │   ├── Products/             #       Cards, lista e estilos de produtos
+    │   │   ├── Testimonials/         #       Depoimentos (carrossel)
+    │   │   └── Video/                #       Cards e galeria de vídeos
     │   ├── Layout/                   #     Componentes de layout
     │   ├── Performance/              #     Componentes de performance
     │   ├── SEO/                      #     Componentes de SEO
@@ -62,11 +68,11 @@ tests/
 
 ### `tests/setup.js`
 **Localização:** `/tests/setup.js`
-**Propósito:** Bootstrap central executado antes de todos os testes (ambiente jsdom). Configura polyfills (TextEncoder, TextDecoder, localStorage, matchMedia, IntersectionObserver, ResizeObserver, scrollTo, crypto.randomUUID, URL.revokeObjectURL), React Testing Library (timeout 5s), filtro de warnings conhecidos do `console.error` — incluindo erros intencionais de auth (`KNOWN_INTENTIONAL_AUTH_ERRORS`: 'Erro ao inicializar sistema de autenticação' e 'Falha ao armazenar refresh token') e avisos de renderização do React 19 (`KNOWN_REACT_RENDERING_WARNINGS`: 'Encountered a script tag while rendering React component') —, cleanup automático pós-teste (`afterEach` com `cleanup()` e `jest.clearAllMocks()`), e utilitários globais (`global.wait()`, `global.suppressWarnings()`). Importa os matchers customizados. O polyfill do `IntersectionObserver` simula interseção imediata via `setTimeout` para que iframes com lazy loading sejam renderizados sem interação manual. A seção `INFORMAÇÕES DE DEBUG` mantém os `console.log` de debug comentados para manter limpias as saídas de `npm run test` e `npm run test:coverage`.
+**Propósito:** Bootstrap central executado antes de todos os testes (ambiente jsdom). Configura polyfills (TextEncoder, TextDecoder, localStorage, matchMedia, IntersectionObserver, ResizeObserver, scrollTo, crypto.randomUUID, URL.revokeObjectURL), React Testing Library (timeout 5s), filtro de warnings conhecidos do `console.error` — incluindo erros intencionais de auth (`KNOWN_INTENTIONAL_AUTH_ERRORS`: 'Erro ao inicializar sistema de autenticação' e 'Falha ao armazenar refresh token') e avisos de renderização do React 19 (`KNOWN_REACT_RENDERING_WARNINGS`: 'Encountered a script tag while rendering React component') —, cleanup automático pós-teste (`afterEach` com `cleanup()` e `jest.clearAllMocks()`), e utilitários globais (`global.wait()`, `global.suppressWarnings()`). Importa os matchers customizados via `./matchers/index.js` e os polyfills assíncronos de `./helpers/async-polyfills.js`. O polyfill do `IntersectionObserver` simula interseção imediata via `setTimeout` para que iframes com lazy loading sejam renderizados sem interação manual.
 
 ### `tests/setup.db.js`
 **Localização:** `/tests/setup.db.js`
-**Propósito:** Bootstrap específico para testes de integração com banco real (ambiente node). Versão enxuta sem polyfills DOM. Inclui apenas polyfills de ReadableStream e MessageChannel (necessários para testcontainers), filtro de `console.error` para warnings conhecidos da API, matchers customizados e `afterEach` com `jest.clearAllMocks()`.
+**Propósito:** Bootstrap específico para testes de integração com banco real (ambiente node). Versão enxuta sem polyfills DOM (localStorage, matchMedia, IntersectionObserver, ResizeObserver). Inclui apenas polyfills de ReadableStream e MessageChannel (necessários para testcontainers), filtro de `console.error` para warnings conhecidos da API (`KNOWN_API_WARNINGS`), matchers customizados e `afterEach` com `jest.clearAllMocks()`.
 
 ### `tests/global-setup.db.js`
 **Localização:** `/tests/global-setup.db.js`
@@ -95,7 +101,7 @@ tests/
 | `api.js` | Utilitários de API HTTP | `createApiMocks`, `createGetRequest`, `createPostRequest`, `createPutRequest`, `createDeleteRequest`, `createPatchRequest`, `executeHandler`, `createWebhookPayload`, `createAuthRequest`, `createCookieAuthRequest`, `getResponseBody` |
 | `auth.js` | Utilitários de autenticação | `createAuthToken`, `createExpiredToken`, `createInvalidToken`, `decodeToken`, `isValidToken`, `mockAuthenticatedUser`, `mockAuthenticatedAdmin`, `hashPassword`, `verifyPassword`, `createMockAuthMiddleware`, `mockAuthLib`, `clearAuthCookies`, `createBearerHeader`, `createAuthCookie`, `defaultTokenPayload`, `adminTokenPayload` |
 | `console.js` | Supressão controlada de console | `suppressConsoleError()`, `filterConsoleError(suppressList)`, `mockGlobalFetch()`, `createConfirmSpy(defaultValue)` |
-| `crud-test.js` | Abstração de testes CRUD de API | `testPublicGetEndpoint` (com opção `skipMethodNotAllowed` para suprimir o teste padrão de 405 em endpoints híbridos), `testAdminCrudEndpoint`, `testAdminGetEndpoint` |
+| `crud-test.js` | Abstração de testes CRUD de API | `testPublicGetEndpoint` (com opção `skipMethodNotAllowed`), `testAdminCrudEndpoint`, `testAdminGetEndpoint` |
 | `db-test.js` | Testes com PostgreSQL real | `isDockerAvailable()`, `createTestDb()`, `applyMigrations()`, `withTransaction(pool)`, `truncateAll(pool)` |
 | `render.js` | Renderização de componentes React | `renderWithProviders`, `renderWithRouter`, `renderWithAuth`, `renderWithToast`, `testLoadingState`, `testErrorState`, `resizeWindow`, `setMobileViewport`, `setTabletViewport`, `setDesktopViewport`, `waitForAnimation`, `clickAndWait`, `fillForm`, `clearForm` |
 | `async-polyfills.js` | Polyfills assíncronos | `setupAsyncPolyfills()` — ReadableStream e MessageChannel, idempotente |
@@ -145,33 +151,33 @@ Testes de endpoints públicos e CRUD de recursos. Usam `node-mocks-http` + mocks
 | `audit.test.js` | Testa `logActivity` do domínio de auditoria (INSERT em activity_logs) |
 | `cleanup-test-data.test.js` | Testa limpeza de dados de teste (inclui supressão e validação do log de erro esperado em falha de banco) |
 | `dicas.test.js` | CRUD de dicas (paginação: 400 para parâmetros inválidos e `page`/`limit` explícitos) |
-| `login.test.js` | Fluxo de login |
-| `musicas.create.test.js` | Criação de músicas |
-| `musicas.delete.test.js` | Exclusão de músicas |
-| `musicas.flow.test.js` | Fluxo completo de músicas |
-| `musicas.integration.test.js` | Integração de músicas |
-| `musicas.pagination.test.js` | Paginação de músicas |
-| `musicas.test.js` | CRUD principal de músicas |
-| `musicas.update.test.js` | Atualização de músicas |
+| `login.test.js` | Fluxo de login público (rate limit, autenticação, cookies) |
+| `musicas.create.test.js` | Criação de músicas (handler simulado) |
+| `musicas.delete.test.js` | Exclusão de músicas (handler simulado) |
+| `musicas.flow.test.js` | Fluxo completo de músicas (handler real `pages/api/admin/musicas`) |
+| `musicas.integration.test.js` | Integração de músicas (segurança: `WHERE publicado = true`) |
+| `musicas.pagination.test.js` | Paginação de músicas (handler simulado) |
+| `musicas.test.js` | CRUD principal de músicas (handler real `pages/api/musicas`, `testPublicGetEndpoint`) |
+| `musicas.update.test.js` | Atualização de músicas (handler simulado) |
 | `placeholder-image.test.js` | Imagem de placeholder (hero/banner) com fallbacks, isolamento do cache interno do filename e revalidação HTTP 304 (`If-None-Match`) |
-| `posts.create.api.test.js` | Criação de posts |
-| `posts.delete.test.js` | Exclusão de posts |
-| `posts.flow.test.js` | Fluxo completo de posts |
-| `posts.general.test.js` | Testes gerais de posts |
-| `posts.integration.test.js` | Integração de posts |
-| `posts.test.js` | CRUD principal de posts (usa `testPublicGetEndpoint` do `crud-test.js` com `skipMethodNotAllowed`; casos específicos em `customTests`) |
-| `posts.update.api.test.js` | Atualização de posts |
+| `posts.create.api.test.js` | Criação de posts (handler simulado) |
+| `posts.delete.test.js` | Exclusão de posts (handler simulado) |
+| `posts.flow.test.js` | Fluxo completo de posts (upload, criação, listagem) |
+| `posts.general.test.js` | Testes gerais de posts (handler real com `testPublicGetEndpoint`) |
+| `posts.integration.test.js` | Integração de posts (handler real `pages/api/posts`) |
+| `posts.test.js` | CRUD principal de posts (usa `testPublicGetEndpoint` com `skipMethodNotAllowed`) |
+| `posts.update.api.test.js` | Atualização de posts (handler simulado) |
 | `products.test.js` | CRUD de produtos (paginação pública e admin: 400 para parâmetros inválidos e repasse de `page`/`limit` ao domínio) |
 | `settings.general.test.js` | Testes gerais de configurações |
-| `settings.test.js` | CRUD de configurações |
-| `stats.test.js` | Estatísticas |
+| `settings.test.js` | CRUD de configurações (handler real com autenticação) |
+| `stats.test.js` | Estatísticas (contagens de usuários, posts, etc.) |
 | `status.test.js` | Endpoint `/api/status` (health check do banco) |
-| `upload-image.test.js` | Upload de imagem |
-| `videos.create.api.test.js` | Criação de vídeos |
-| `videos.delete.test.js` | Exclusão de vídeos |
-| `videos.flow.test.js` | Fluxo completo de vídeos |
-| `videos.integration.test.js` | Integração de vídeos |
-| `videos.pagination.api.test.js` | Paginação de vídeos |
+| `upload-image.test.js` | Upload de imagem (formidable, fs, sharp) |
+| `videos.create.api.test.js` | Criação de vídeos (handler simulado) |
+| `videos.delete.test.js` | Exclusão de vídeos (handler simulado) |
+| `videos.flow.test.js` | Fluxo completo de vídeos (handler real `pages/api/admin/videos`) |
+| `videos.integration.test.js` | Integração de vídeos (segurança: `WHERE publicado = true`) |
+| `videos.pagination.api.test.js` | Paginação de vídeos (handler simulado) |
 | `videos.test.js` | CRUD principal de vídeos (supressão e validação do log de erro esperado no caminho 500) |
 
 ### 4.2 API Administrativa (`/tests/integration/api/admin/`)
@@ -180,36 +186,36 @@ Testes de endpoints administrativos com autenticação.
 
 | Arquivo | Propósito |
 |---------|-----------|
-| `audit.test.js` | Auditoria administrativa |
-| `backups.test.js` | Gerenciamento de backups |
-| `cache.test.js` | Gerenciamento de cache |
+| `audit.test.js` | Auditoria administrativa (permissões, logs) |
+| `backups.test.js` | Gerenciamento de backups (listar, criar, restaurar) |
+| `cache.test.js` | Gerenciamento de cache (limpar, métricas) |
 | `dicas.test.js` | CRUD admin de dicas (supressão e validação do log de erro esperado no caminho 500) |
-| `fetch-ml.test.js` | Fetch de dados de ML |
+| `fetch-ml.test.js` | Fetch de dados do Mercado Livre |
 | `fetch-spotify.test.js` | Fetch de dados do Spotify |
 | `fetch-youtube.test.js` | Fetch de dados do YouTube |
 | `integrity.test.js` | Verificação de integridade do sistema (banco, storage, backup, cache) |
-| `musicas.test.js` | CRUD admin de músicas |
-| `posts.test.js` | CRUD admin de posts |
-| `rate-limit.test.js` | Rate limiting |
-| `roles.test.js` | Gerenciamento de roles |
+| `musicas.test.js` | CRUD admin de músicas (POST/GET/PUT/DELETE com `testAdminCrudEndpoint`) |
+| `posts.test.js` | CRUD admin de posts (POST/GET/PUT/DELETE com `testAdminCrudEndpoint`) |
+| `rate-limit.test.js` | Rate limiting (IPs bloqueados, whitelist, Upstash Redis) |
+| `roles.test.js` | Gerenciamento de roles (CRUD com permissões) |
 | `users.create.test.js` | Criação de usuários |
 | `users.test.js` | CRUD de usuários |
-| `videos.test.js` | CRUD admin de vídeos (inclui fallback de validação com `fieldErrors` vazio sem mock de `Object.values`, usando `req.body = null`) |
+| `videos.test.js` | CRUD admin de vídeos (inclui `reorderVideos`, fallback de validação com `fieldErrors` vazio) |
 
 ### 4.3 Autenticação (`/tests/integration/api/auth/`)
 
 | Arquivo | Propósito |
 |---------|-----------|
-| `check.test.js` | Verificação de autenticação |
-| `login.test.js` | Login |
-| `logout.test.js` | Logout (revogação do refresh token no banco via cookie e limpeza dos cookies `token` e `refreshToken`, inclusive quando a revogação falha) |
+| `check.test.js` | Verificação de autenticação (GET, token válido/inválido) |
+| `login.test.js` | Login (rate limit, refresh token, cookies) |
+| `logout.test.js` | Logout (revogação do refresh token no banco via cookie e limpeza dos cookies `token` e `refreshToken`) |
 | `refresh.test.js` | Renovação de access token via refresh token (cookie/body) |
 
 ### 4.4 Autenticação v1 (`/tests/integration/auth/`)
 
 | Arquivo | Propósito |
 |---------|-----------|
-| `auth.test.js` | Testes de autenticação v1 |
+| `auth.test.js` | Testes de autenticação v1 (legacy - login simulado, middleware `withAuth`) |
 
 ### 4.5 Domínio com Banco Real (`/tests/integration/domain/`)
 
@@ -217,11 +223,11 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 
 | Arquivo | Propósito |
 |---------|-----------|
-| `musicas.db.test.js` | Operações de músicas com banco real |
-| `posts.db.test.js` | Operações de posts com banco real |
-| `products.db.test.js` | Operações de produtos com banco real |
-| `settings.db.test.js` | Operações de configurações com banco real |
-| `videos.db.test.js` | Operações de vídeos com banco real |
+| `musicas.db.test.js` | Operações de músicas com banco real (create, update, delete, constraints) |
+| `posts.db.test.js` | Operações de posts com banco real (full-text search, transações) |
+| `products.db.test.js` | Operações de produtos com banco real (paginação, filtros) |
+| `settings.db.test.js` | Operações de configurações com banco real (json_object_agg) |
+| `videos.db.test.js` | Operações de vídeos com banco real (validação de URL) |
 
 ---
 
@@ -242,7 +248,7 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | Arquivo | Propósito |
 |---------|-----------|
 | `AdminAudit.test.js` | Painel de auditoria: logs, paginação, filtro, exportação CSV, tratamento de 401 |
-| `AdminCrudBase.test.js` | Base CRUD: renderização, toggle booleano, estados de loading/erro, fluxo de exclusão com confirmação em 1 clique (promise real do fluxo aguardada dentro de `act` nos 3 casos de exclusão); reordenação com falha (toast de erro e reversão da ordem), atualização otimista e reversão do toggle, validação customizada (com e sem schema Zod, incluindo fallback de mensagem), cancelamento da exclusão pelo botão Cancelar do modal e contagem no singular |
+| `AdminCrudBase.test.js` | Base CRUD: renderização, toggle booleano, estados de loading/erro, fluxo de exclusão com confirmação em 1 clique; reordenação com falha (toast de erro e reversão da ordem), atualização otimista e reversão do toggle, validação customizada (com e sem schema Zod), cancelamento da exclusão pelo botão Cancelar do modal e contagem no singular |
 | `AdminDashboard.test.js` | Dashboard: estatísticas, permissões, cache em sessionStorage |
 | `AdminDicas.test.js` | CRUD de dicas |
 | `AdminMusicas.test.js` | CRUD de músicas |
@@ -276,21 +282,48 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 
 ### 5.3 Componentes de Funcionalidades (`/tests/unit/components/Features/`)
 
+#### Blog (`/tests/unit/components/Features/Blog/`)
+
 | Arquivo | Propósito |
 |---------|-----------|
-| `Blog/BlogSection.test.js` | Seção de blog |
-| `Blog/PostCard.test.js` | Card de post |
-| `ContentTabs/ContentTabs.test.js` | Abas de conteúdo |
-| `ContentTabs/index.test.js` | Barrel de ContentTabs |
-| `Music/MusicCard.test.js` | Card de música (iframe Spotify) |
-| `Music/MusicGallery.edge.test.js` | Galeria de músicas (edge cases): objeto sem `data` (fallback vazio), erro de rede, array plano com paginação calculada, `pagination` anidado e resposta nula (fallback seguro) |
-| `Music/MusicGallery.test.js` | Galeria de músicas: render com loading, erro com reintento, lista vazia, busca por término (contador de resultados, debounce 300ms), limpar busca ("✕"), ordenação (sort na URL), paginação Anterior/Próxima e busca sem resultados ("Limpar busca") |
-| `Products/ProductCard.test.js` | Card de produto |
-| `Products/ProductList.test.js` | Lista de produtos: render, estados de loading/erro/vazio, busca e filtros de preço (min/max na URL), limpar filtros, ordenação por position/ID via `transform` real, paginação (Anterior/Próxima, faixa > 5 páginas, loading overlay com fake timers) |
-| `Products/styles.test.js` | Estilos compartilhados de Products (`inputStyle` com whitelist/fallback seguro e `buttonBaseStyle`) |
-| `Testimonials/index.test.js` | Depoimentos (carrossel; seção oculta quando a API não retorna dicas — sem fallback estático) |
-| `Video/VideoCard.test.js` | Card de vídeo |
-| `Video/VideoGallery.test.js` | Galeria de vídeos |
+| `BlogSection.test.js` | Seção de blog (renderização, fetch de posts, loading) |
+| `PostCard.test.js` | Card de post (renderização, categorias, data) |
+
+#### ContentTabs (`/tests/unit/components/Features/ContentTabs/`)
+
+| Arquivo | Propósito |
+|---------|-----------|
+| `ContentTabs.test.js` | Abas de conteúdo (mock dos componentes filhos Blog/Music/Video/Products) |
+| `index.test.js` | Barrel de ContentTabs (snapshot das exportações) |
+
+#### Music (`/tests/unit/components/Features/Music/`)
+
+| Arquivo | Propósito |
+|---------|-----------|
+| `MusicCard.test.js` | Card de música (iframe Spotify, abertura em nova aba) |
+| `MusicGallery.edge.test.js` | Galeria de músicas (edge cases): objeto sem `data` (fallback vazio), erro de rede, array plano com paginação calculada, `pagination` anidado e resposta nula (fallback seguro) |
+| `MusicGallery.test.js` | Galeria de músicas: render com loading, erro com reintento, lista vazia, busca por término (contador de resultados, debounce 300ms), limpar busca ("✕"), ordenação (sort na URL), paginação Anterior/Próxima e busca sem resultados ("Limpar busca") |
+
+#### Products (`/tests/unit/components/Features/Products/`)
+
+| Arquivo | Propósito |
+|---------|-----------|
+| `ProductCard.test.js` | Card de produto (preço formatado, imagens, parseImages) |
+| `ProductList.test.js` | Lista de produtos: render, estados de loading/erro/vazio, busca e filtros de preço (min/max na URL), limpar filtros, ordenação por position/ID, paginação (Anterior/Próxima, faixa > 5 páginas, loading overlay com fake timers) |
+| `styles.test.js` | Estilos compartilhados de Products (`inputStyle` com whitelist/fallback seguro e `buttonBaseStyle`) |
+
+#### Testimonials (`/tests/unit/components/Features/Testimonials/`)
+
+| Arquivo | Propósito |
+|---------|-----------|
+| `index.test.js` | Depoimentos (carrossel; seção oculta quando a API não retorna dicas — sem fallback estático) |
+
+#### Video (`/tests/unit/components/Features/Video/`)
+
+| Arquivo | Propósito |
+|---------|-----------|
+| `VideoCard.test.js` | Card de vídeo (mock de LazyIframe) |
+| `VideoGallery.test.js` | Galeria de vídeos (mock de VideoCard, fetch, paginação) |
 
 ### 5.4 Componentes de Layout (`/tests/unit/components/Layout/`)
 
@@ -298,7 +331,7 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 |---------|-----------|
 | `Container.test.js` | Container com subcomponentes Section/Article |
 | `Grid.test.js` | Grid com Item, Auto e Responsive |
-| `index.test.js` | Barrel de Layout |
+| `index.test.js` | Barrel de Layout (snapshot das exportações) |
 | `Sidebar.test.js` | Sidebar |
 | `Stack.test.js` | Stack |
 
@@ -308,7 +341,7 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 |---------|-----------|
 | `CriticalCSS.test.js` | CSS crítico (fallback padrão, remoção) |
 | `ImageOptimized.test.js` | Imagem otimizada |
-| `index.test.js` | Barrel de Performance |
+| `index.test.js` | Barrel de Performance (snapshot das exportações) |
 | `LazyIframe.test.js` | Iframe com lazy loading |
 | `PreloadResources.test.js` | Pré-carregamento de recursos |
 
@@ -319,7 +352,7 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | `ArticleSchema.test.js` | Schema.org Article |
 | `BreadcrumbSchema.test.js` | Schema.org Breadcrumb |
 | `Head.test.js` | Head do Next.js |
-| `index.test.js` | Barrel de SEO |
+| `index.test.js` | Barrel de SEO (snapshot das exportações) |
 | `MusicSchema.test.js` | Schema.org Music |
 | `OrganizationSchema.test.js` | Schema.org Organization |
 | `VideoSchema.test.js` | Schema.org Video |
@@ -333,7 +366,7 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | `Badge.test.js` | Badge |
 | `Button.test.js` | Botão |
 | `Card.test.js` | Card |
-| `index.test.js` | Barrel de UI |
+| `index.test.js` | Barrel de UI (snapshot das exportações) |
 | `Input.test.js` | Campo de entrada: renderização com label/required/addons, helperText/errorMessage, `handleChange` (modo controlado e não controlado), botão de limpar (`clearable` com valor), `handleClear` com `onClear`/`onChange` |
 | `Modal.test.js` | Modal (preventScroll com classe CSS) |
 | `Select.test.js` | Campo de seleção: modo custom (searchable/clearable) com dropdown (clique, teclado Enter/Escape, clique-fora), busca com debounce de 300ms, limpar seleção (`onClear`/`onChange`), valor controlado/defaultValue com `aria-selected`; modo nativo com `disabled`, foco, `aria-invalid`/`aria-describedby` e erro/helper |
@@ -436,7 +469,6 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | `admin/posts.edge.test.js` | Edge case: posts (req.user null) |
 | `admin/rate-limit.test.js` | Edge case: rate limit |
 | `admin/roles.edge.test.js` | Edge case: roles |
-| `admin/stats.edge.test.js` | Edge case: stats |
 | `auth/login.edge.test.js` | Edge case: login (erro interno) |
 
 ### 5.13 Scripts (`/tests/unit/scripts/`)
@@ -486,10 +518,14 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | **Matchers** | 6 arquivos |
 | **Mocks** | 9 arquivos |
 | **Examples** | 2 arquivos |
-| **Testes de Integração** | 56 arquivos |
-| **Testes Unitários** | ~127 arquivos |
-| **Total Aproximado** | **~217 arquivos** |
+| **Testes de Integração — API** | 50 arquivos |
+| **Testes de Integração — API Admin** | 15 arquivos |
+| **Testes de Integração — API Auth** | 4 arquivos |
+| **Testes de Integração — Auth v1** | 1 arquivo |
+| **Testes de Integração — Domínio (DB real)** | 5 arquivos |
+| **Testes Unitários** | 127 arquivos |
+| **Total Geral** | **~217 arquivos** |
 
 ---
 
-> **Nota:** Este documento reflete a análise atual dos arquivos em `/tests`. Em caso de divergência com documentos anteriores, prevalece esta análise.
+> **Nota:** Este documento reflete a análise atual dos arquivos em `/tests`. Em caso de divergência com documentos anteriores, prevalece esta análise. Contagem verificada em 24/09/2026: 217 arquivos `.js` no total.

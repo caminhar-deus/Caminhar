@@ -177,9 +177,9 @@ Todos os exemplos seguem a mesma estrutura:
 - **`components/Performance`:** `LazyIframe` (blog-post, musicas, videos), `ImageOptimized` (blog-post, homepage), `PreloadResources`/`getCriticalResources` (apenas homepage).
 - **`hooks`:** `usePerformance` (blog-post, homepage).
 
-### Relação com a Pasta `/tests/examples`
+### Cobertura de Testes
 
-A pasta `tests/examples/` (`component-example.test.js` e `simple-test.test.js`) contém **exemplos genéricos de como escrever testes** (demonstração da arquitetura de factories, helpers, mocks e matchers), e **não** contém testes automatizados específicos para os arquivos de `/examples`. Ou seja, os exemplos de SEO do projeto **não possuem cobertura de testes** atualmente.
+Os exemplos de SEO do projeto **não possuem cobertura de testes** automatizados dedicada. Não existe uma pasta `tests/examples/` no projeto.
 
 ### Arquivos Irrelevantes
 

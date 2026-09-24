@@ -13,7 +13,7 @@ O banco de dados principal do projeto **Caminhar** é acessado via `lib/infra/db
 ```
 data/
 └── backups/
-    ├── backup.log                                    (bloqueado pelo .clineignore)
+    ├── backup.log
     ├── caminhar-pg-backup_2026-05-21T19-56-57Z.sql.gz.enc
     ├── caminhar-pg-backup_2026-05-21T19-56-57Z.sql.gz.sha256
     ├── caminhar-pg-backup_2026-05-22T10-18-54Z.sql.gz.enc
@@ -46,7 +46,7 @@ data/
 
 ### 2.1 `backup.log`
 
-**Localização:** `/data/backups/backup.log` (arquivo bloqueado pelo `.clineignore`)
+**Localização:** `/data/backups/backup.log`
 
 **Propósito:** Registro sanitizado das operações de backup realizadas. Contém metadados das execuções sem dados sensíveis (senhas, tokens ou chaves).
 
@@ -57,7 +57,14 @@ data/
 - Retenção configurável: logs rotacionados com mais de 30 dias são removidos automaticamente
 - Buffer em memória com máximo de 100 linhas para consultas rápidas
 
-**Observação:** Arquivo não acessível diretamente pela análise. Sua existência está confirmada pela estrutura do diretório e referenciada nos scripts e documentos de backup do projeto.
+**Conteúdo atual do log (2 registros):**
+
+```
+[2026-09-04 18:44:05] [RESTORE_ERROR] Falha ao criar o backup de segurança. Restauração abortada.
+[2026-09-04 18:45:07] [RESTORE_ERROR] Falha ao criar o backup de segurança. Restauração abortada.
+```
+
+Os registros indicam duas tentativas de restauração que falharam em 4 de setembro de 2026, ambas por incapacidade de criar o backup de segurança pré-restore. A sequência sugere uma nova tentativa cerca de um minuto após a primeira falha.
 
 ---
 
@@ -71,6 +78,16 @@ data/
 - `2026-05-21T19-56-57Z` — timestamp ISO 8601 do momento do backup
 - `.sql.gz` — dump SQL comprimido com gzip
 - `.enc` — indicador de criptografia AES-256-GCM aplicada
+
+**Metadados do arquivo:**
+
+| Propriedade | Valor |
+|-------------|-------|
+| Tamanho | 4.472.125 bytes (~4,3 MB) |
+| Data de modificação | 25/08/2026 16:12:10 (UTC-3) |
+| Hash SHA-256 (conteúdo não criptografado) | `c022450d55c1f800656a668575f48a747342d49b6612042352c9ae3440479c58` |
+
+**Nota sobre o hash:** O arquivo `.sha256` armazena o hash do conteúdo **antes** da criptografia (o dump SQL comprimido original). Durante o restore, o backup é descriptografado antes da verificação de integridade (ver `scripts/backup.js` linhas 261-263 e 525-566).
 
 **Principais funcionalidades:**
 - Armazena dump completo do banco PostgreSQL via `pg_dump`
@@ -86,7 +103,15 @@ data/
 
 **Propósito:** Arquivo contendo o hash SHA-256 do backup correspondente, utilizado para verificação de integridade do arquivo antes de operações de restore.
 
-**Funcionalidade:** Permite confirmar que o arquivo de backup não foi corrompido ou adulterado desde sua geração. O hash é calculado via stream (sem carregar o arquivo inteiro na RAM).
+**Metadados do arquivo:**
+
+| Propriedade | Valor |
+|-------------|-------|
+| Tamanho | 64 bytes |
+| Data de modificação | 25/08/2026 16:12:10 (UTC-3) |
+| Conteúdo (hash SHA-256) | `c022450d55c1f800656a668575f48a747342d49b6612042352c9ae3440479c58` |
+
+**Funcionalidade:** Permite confirmar que o arquivo de backup não foi corrompido ou adulterado desde sua geração. O hash é calculado via stream (sem carregar o arquivo inteiro na RAM). O arquivo `.sha256` armazena o hash do conteúdo **antes** da criptografia (o dump SQL comprimido original). Durante o restore, o backup `.enc` é descriptografado e então o hash é verificado contra este valor.
 
 ---
 
@@ -94,7 +119,17 @@ data/
 
 **Localização:** `/data/backups/caminhar-pg-backup_2026-05-22T10-18-54Z.sql.gz.enc`
 
-**Propósito:** Backup completo do banco PostgreSQL realizado em **22 de maio de 2026 às 10:18:54 UTC**. Mesmo formato e características do backup anterior.
+**Propósito:** Backup completo do banco PostgreSQL realizado em **22 de maio de 2026 às 10:18:54 UTC**. O arquivo segue o mesmo padrão do backup anterior (`caminhar-pg-backup_YYYY-MM-DDTHH-MM-SSZ.sql.gz.enc`).
+
+**Metadados do arquivo:**
+
+| Propriedade | Valor |
+|-------------|-------|
+| Tamanho | 4.472.128 bytes (~4,3 MB) |
+| Data de modificação | 25/08/2026 16:12:10 (UTC-3) |
+| Hash SHA-256 (conteúdo não criptografado) | `2399e61f5b5b6f28f40dddb8979d47564824144e7781450200538ab57197ea40` |
+
+**Nota sobre o hash:** Assim como no backup anterior, o arquivo `.sha256` armazena o hash do conteúdo **antes** da criptografia. Durante o restore, o backup é descriptografado antes da verificação de integridade.
 
 ---
 
@@ -102,7 +137,17 @@ data/
 
 **Localização:** `/data/backups/caminhar-pg-backup_2026-05-22T10-18-54Z.sql.gz.sha256`
 
-**Propósito:** Hash SHA-256 do backup do dia 22 de maio de 2026, seguindo o mesmo padrão de verificação de integridade.
+**Propósito:** Arquivo contendo o hash SHA-256 do backup correspondente (22 de maio de 2026), utilizado para verificação de integridade do arquivo antes de operações de restore.
+
+**Metadados do arquivo:**
+
+| Propriedade | Valor |
+|-------------|-------|
+| Tamanho | 64 bytes |
+| Data de modificação | 25/08/2026 16:12:10 (UTC-3) |
+| Conteúdo (hash SHA-256) | `2399e61f5b5b6f28f40dddb8979d47564824144e7781450200538ab57197ea40` |
+
+**Funcionalidade:** Permite confirmar que o arquivo de backup não foi corrompido ou adulterado desde sua geração. O hash é calculado via stream (sem carregar o arquivo inteiro na RAM). O arquivo `.sha256` armazena o hash do conteúdo **antes** da criptografia (o dump SQL comprimido original). Durante o restore, o backup `.enc` é descriptografado e então o hash é verificado contra este valor.
 
 ---
 
@@ -431,5 +476,5 @@ caminhar-pg-backup_2026-05-22T10-18-54Z.sql.gz.sha256
 - Os backups são nomeados e organizados de forma padronizada, facilitando a identificação e o gerenciamento.
 - O sistema de criptografia AES-256-GCM é opcional e depende da variável `BACKUP_ENCRYPTION_KEY` estar configurada.
 - Os hashes SHA-256 acompanham cada backup, permitindo verificação de integridade antes de operações de restore.
-- O log `backup.log` não pôde ser analisado diretamente por estar bloqueado pelo `.clineignore`, mas sua finalidade está documentada no script `scripts/backup.js`.
+- O log `backup.log` contém registros de operações de restore que falharam em 4 de setembro de 2026 (ver seção 2.1 para detalhes do conteúdo).
 - Os scripts `scripts/maintenance/backup-posts.js` e `scripts/maintenance/restore-posts.js` geram backups JSON redundantes, pois o backup PostgreSQL já cobre a tabela `posts`. Essa duplicidade foi identificada anteriormente e o backup JSON antigo foi removido, mas os scripts permanecem no projeto.

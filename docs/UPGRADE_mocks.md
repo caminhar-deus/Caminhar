@@ -1,105 +1,209 @@
-# 🔧 Relatório de Análise — Melhorias Possíveis
+# 📋 Documentação de Análise — Mocks Manuais Automáticos
 
-## Mocks do Projeto (`__mocks__/` e `tests/mocks/`)
+## `__mocks__/`
 
-Este documento contém o levantamento analítico de melhorias possíveis para as pastas de mocks do projeto. **Nenhuma alteração foi aplicada** — apenas diagnóstico.
-
----
-
-# Parte 1 — `__mocks__/` (Mocks Manuais Automáticos)
+Este documento registra a análise individual de cada arquivo na pasta `__mocks__/`, identificando finalidade, relações, problemas, melhorias, duplicidades e possíveis códigos mortos.
 
 ---
 
-## 1. `__mocks__/cookie.js` — Mock Órfão (Crítico)
+## 1. Nome do documento
 
-**Arquivo:** `/home/qa/Projeto/Caminhar/__mocks__/cookie.js`
-
-### Problema
-
-O arquivo `__mocks__/cookie.js` é um **mock órfão** — não é consumido por nenhum teste, e a biblioteca que ele simula (`cookie`) não é mais utilizada no projeto.
-
-### Evidências
-
-1. **`lib/auth/auth.js` não importa a biblioteca `cookie`** — O código atual implementa funções próprias `parseCookie()` (linha 8) e `serializeCookie()` (linha 20), sem dependência externa.
-2. **Nenhum arquivo de teste chama `jest.mock('cookie')`** — A pesquisa em toda a pasta `tests/` não encontrou ocorrências.
-3. **O pacote `cookie` não está no `package.json`** — Ausente tanto em `dependencies` quanto em `devDependencies`.
-
-### Sugestão
-
-- **Remover o arquivo** `__mocks__/cookie.js` do projeto, eliminando código morto que não tem função.
-- Alternativamente, se houver planos de voltar a usar a biblioteca `cookie` no futuro, deixar documentado de forma explícita no cabeçalho do arquivo.
-
-### Impacto
-
-Nenhum — o arquivo não é referenciado por nenhuma configuração, teste ou dependência.
+**Documentação de Análise dos Mocks Manuais Automáticos (`__mocks__/`)**
 
 ---
 
-## 2. `__mocks__/styleMock.js` — Cobertura Limitada de Classes CSS (Médio)
+## 2. Descrição geral
 
-**Arquivo:** `/home/qa/Projeto/Caminhar/__mocks__/styleMock.js`
+**Finalidade:** Documentar a análise técnica dos arquivos de mock manual automático do Jest localizados em `__mocks__/`.
 
-### Problema
+**Objetivo:** Identificar a finalidade de cada mock, seus arquivos relacionados, problemas, melhorias, duplicidades e código morto.
 
-O mock mapeia apenas **uma classe CSS Module** (`skeletonBox`). Componentes que importem arquivos `.css` e utilizem outras classes (ex.: `container`, `title`, `form`, `button`) receberão `undefined` ao acessar `styles.container`, `styles.title`, etc.
-
-### Sugestões
-
-- **Expandir o mapeamento** para incluir todas as classes CSS Module utilizadas nos componentes do projeto.
-- Alternativamente, adotar uma abordagem **genérica via Proxy**:
-  ```js
-  export default new Proxy({}, { get: (target, prop) => prop });
-  ```
-
-### Impacto
-
-Baixo atualmente, mas tende a crescer conforme novos componentes com CSS Module forem adicionados e testados.
+**Escopo:** Todos os arquivos existentes em `/home/gus/Projetos/Caminhar/__mocks__/`:
+- `cookie.js`
+- `styleMock.js`
+- `pg.js`
 
 ---
 
-## 3. `__mocks__/pg.js` — Propriedades do Pool Fixas em 0 (Baixo)
+## 3. Estrutura de arquivos e pastas
 
-**Arquivo:** `/home/qa/Projeto/Caminhar/__mocks__/pg.js`
-
-### Problema
-
-As propriedades `totalCount`, `idleCount` e `waitingCount` do Pool retornam sempre `0`, impedindo testes de comportamentos condicionais baseados no estado do pool (ex.: health check que considera conexões ativas, vazamento de conexões).
-
-### Sugestão
-
-- Tornar essas propriedades configuráveis via função helper:
-  ```js
-  export function setPoolState(state) {
-    // substitui valores retornados por poolImplementation()
-  }
-  ```
-
-### Impacto
-
-Baixo — nenhum teste atual depende dessas propriedades. Melhoria preventiva.
+| Caminho | Tipo | Descrição |
+|---------|------|-----------|
+| `__mocks__/cookie.js` | Arquivo | Mock da biblioteca `cookie` (npm) |
+| `__mocks__/styleMock.js` | Arquivo | Mock de arquivos CSS Module |
+| `__mocks__/pg.js` | Arquivo | Mock da biblioteca `pg` (node-postgres) |
 
 ---
 
-## 4. `__mocks__/pg.js` — Singleton `mockQuery` Compartilhado (Médio)
+## 4. Análise individual de cada arquivo
 
-**Arquivo:** `/home/qa/Projeto/Caminhar/__mocks__/pg.js`
+---
 
-### Problema
+### 4.1. `cookie.js`
 
-`mockQuery` é um singleton compartilhado entre `Pool.query` e `connect().query`. Configurações de retorno afetam **todos os locais** que usam `Pool.query` ou `connect().query`, podendo gerar interferência entre testes consecutivos.
+**Caminho:** `/home/gus/Projetos/Caminhar/__mocks__/cookie.js`
 
-### Observação
+#### Arquivos acionados ou relacionados
 
-Problema **conhecido e documentado**. Análises anteriores (`docs/resolvidos/UPGRADE_mocks.md`, item 08) concluíram que a separação por instância quebraria a compatibilidade com os 14+ arquivos de teste existentes.
+**Nenhum.** O arquivo não é importado, referenciado ou consumido por nenhum outro arquivo no projeto.
 
-### Sugestão
+#### Resumo do arquivo
 
-- Avaliar, em eventual reestruturação, a migração para `mockQuery` independentes por instância de `Pool`.
-- Documentar de forma mais visível o padrão de uso correto nos `beforeEach` dos testes.
+Mock da biblioteca `cookie` (npm) para simulação de operações de parse e serialize de cookies HTTP em testes Jest.
 
-### Impacto
+- Exporta `serialize(name, value, options)` — Monta string de cookie com atributos (HttpOnly, Secure, SameSite, Max-Age, Path)
+- Exporta `parse(cookieHeader)` — Separa string de cookie em objeto chave/valor
+- Exporta objeto `cookieMock` como default
 
-Médio — design singleton pode mascarar bugs sutis em testes mais complexos.
+#### Contexto
+
+A biblioteca `cookie` não é mais utilizada no projeto. O arquivo `lib/auth/auth.js` implementa funções próprias `parseCookie()` e `serializeCookie()` sem dependência externa. O pacote `cookie` não está listado no `package.json`.
+
+---
+
+### 4.2. `styleMock.js`
+
+**Caminho:** `/home/gus/Projetos/Caminhar/__mocks__/styleMock.js`
+
+#### Arquivos acionados ou relacionados
+
+| Arquivo | Relação |
+|---------|---------|
+| `jest.config.js` | Referenciado via `moduleNameMapper` para `\\.css$` |
+
+#### Resumo do arquivo
+
+Mock para arquivos CSS Module, ativado automaticamente pelo Jest via configuração `moduleNameMapper` no `jest.config.js`.
+
+- Exporta objeto com mapeamento `skeletonBox: 'skeleton-box'`
+- Substitui imports de arquivos `.css` durante execução de testes
+
+---
+
+### 4.3. `pg.js`
+
+**Caminho:** `/home/gus/Projetos/Caminhar/__mocks__/pg.js`
+
+#### Arquivos acionados ou relacionados
+
+| Arquivo | Relação |
+|---------|---------|
+| `lib/infra/db.js` | Importa `Pool` de `pg` |
+| `jest.config.base.js` | Configuração `clearMocks: true` e `restoreMocks: true` |
+| `tests/unit/lib/db/createPost.test.js` | Usa `jest.mock('pg')` e importa `{ mockQuery, restorePoolImplementation }` |
+| `tests/unit/lib/db/deletePost.test.js` | Usa `jest.mock('pg')` e importa `{ mockQuery, restorePoolImplementation }` |
+| `tests/unit/lib/db/updatePost.test.js` | Usa `jest.mock('pg')` e importa `{ mockQuery, restorePoolImplementation }` |
+| `tests/unit/lib/db/query.test.js` | Usa `jest.mock('pg')` e importa `{ mockQuery, restorePoolImplementation }` |
+| `tests/unit/lib/db/getAllPosts.test.js` | Usa `jest.mock('pg')` e importa `{ mockQuery, restorePoolImplementation }` |
+| `tests/unit/lib/db/getPaginatedPosts.test.js` | Usa `jest.mock('pg')` e importa `{ mockQuery, restorePoolImplementation }` |
+| `tests/unit/lib/db/settings.test.js` | Usa `jest.mock('pg')` e importa `{ mockQuery, restorePoolImplementation }` |
+| `tests/unit/lib/db/musicas.test.js` | Usa `jest.mock('pg')` e importa `{ mockQuery, restorePoolImplementation }` |
+| `tests/unit/lib/db/saveImage.test.js` | Usa `jest.mock('pg')` e importa `{ mockQuery, restorePoolImplementation }` |
+| `tests/unit/lib/db.test.js` | Usa `jest.mock('pg')` e importa `{ Pool, restorePoolImplementation }` |
+| `tests/unit/scripts/clean-orphaned-images.test.js` | Usa `jest.mock('pg')` e importa `{ mockQuery }` |
+| `tests/helpers/db-test.js` | Importa `pg` como default |
+| `tests/unit/scripts/validate-schema.test.js` | Usa `jest.unstable_mockModule('pg')` com mock inline |
+
+#### Resumo do arquivo
+
+Mock manual compartilhado para a biblioteca `pg` (node-postgres), automaticamente ativado quando testes chamam `jest.mock('pg')`.
+
+Simula o Pool de conexões PostgreSQL com:
+
+- **`mockQuery`** — Singleton `jest.fn()` compartilhado entre `Pool.query` e `connect().query`
+- **`Pool`** — Função mock que retorna objeto com `query`, `end`, `on`, `connect` e propriedades de estado (`totalCount`, `idleCount`, `waitingCount`)
+- **`restorePoolImplementation()`** — Restaura implementação do Pool após `jest.clearAllMocks()` ou `jest.resetAllMocks()`
+- **`simulateQueryError(error)`** — Configura `mockQuery` para rejeitar com erro
+- **`simulateConnectionError(error)`** — Configura `connect()` para rejeitar com erro
+
+**Nota:** `simulateQueryError` e `simulateConnectionError` não são utilizados por nenhum teste no projeto, apenas documentados via JSDoc.
+
+---
+
+## 5. Ajustes e correções
+
+### 5.1. `cookie.js` — Mock órfão (Crítico)
+
+| Item | Detalhe |
+|------|---------|
+| **O que foi encontrado** | Mock da biblioteca `cookie` sem nenhum consumidor |
+| **Onde foi encontrado** | `/home/gus/Projetos/Caminhar/__mocks__/cookie.js` |
+| **Qual é o problema** | Código morto — arquivo não é referenciado por nenhum teste, código ou configuração |
+| **Correção necessária** | Remover o arquivo do projeto |
+
+### 5.2. `styleMock.js` — Cobertura limitada (Médio)
+
+| Item | Detalhe |
+|------|---------|
+| **O que foi encontrado** | Mapeamento de classes CSS restrito a `skeletonBox` |
+| **Onde foi encontrado** | `/home/gus/Projetos/Caminhar/__mocks__/styleMock.js` (linha 2) |
+| **Qual é o problema** | Componentes que utilizam outras classes CSS Module (ex.: `container`, `title`, `form`) recebem `undefined` ao acessar `styles.container`, `styles.title`, etc. |
+| **Correção necessária** | Expandir mapeamento para todas as classes CSS Module utilizadas ou adotar abordagem genérica via Proxy |
+
+### 5.3. `pg.js` — Propriedades do Pool fixas (Baixo)
+
+| Item | Detalhe |
+|------|---------|
+| **O que foi encontrado** | Propriedades `totalCount`, `idleCount`, `waitingCount` retornam sempre `0` |
+| **Onde foi encontrado** | `/home/gus/Projetos/Caminhar/__mocks__/pg.js` (linhas 42-44) |
+| **Qual é o problema** | Impede testes de comportamentos condicionais baseados no estado do pool (ex.: health check que considera conexões ativas) |
+| **Correção necessária** | Tornar propriedades configuráveis via função helper |
+
+---
+
+## 6. Melhorias
+
+### 6.1. `styleMock.js` — Abordagem genérica via Proxy
+
+**Justificativa técnica:** Em vez de manter mapeamento manual de classes CSS, utilizar Proxy que retorna a própria propriedade como string, evitando `undefined` para qualquer classe não mapeada.
+
+```js
+export default new Proxy({}, { get: (target, prop) => prop });
+```
+
+### 6.2. `pg.js` — Helper de configuração de estado do Pool
+
+**Justificativa técnica:** Permitir simulação de estados diferentes do pool para testes de health check e cenários de vazamento de conexões.
+
+```js
+export function setPoolState(state) {
+  // substitui valores retornados por poolImplementation()
+}
+```
+
+
+
+
+
+---
+
+## 8. Código morto
+
+### 8.1. `cookie.js` — Arquivo completo (Crítico)
+
+| Item | Detalhe |
+|------|---------|
+| **Arquivo** | `/home/gus/Projetos/Caminhar/__mocks__/cookie.js` |
+| **Tipo** | Arquivo órfão |
+| **Evidências** | Nenhum arquivo de teste chama `jest.mock('cookie')`; biblioteca `cookie` não está no `package.json`; `lib/auth/auth.js` implementa funções próprias |
+| **Recomendação** | Remover arquivo |
+
+### 8.2. `pg.js` — `simulateQueryError` e `simulateConnectionError` (Baixo)
+
+| Item | Detalhe |
+|------|---------|
+| **Arquivo** | `/home/gus/Projetos/Caminhar/__mocks__/pg.js` |
+| **Tipo** | Funções exportadas sem consumo identificado |
+| **Evidências** | Busca em `/tests/` não encontrou importações ou chamadas a essas funções. Apenas documentadas via JSDoc no próprio arquivo e em documentação (`docs/PROJECT_mocks.md`, `docs/resolvidos/UPGRADE_mocks.md`) |
+| **Recomendação** | Considerar remoção se não houver planos de uso, ou documentar explicitamente como helpers futuros |
+
+---
+
+## Controle do processo
+
+- [x] `cookie.js` — Identificado, lido, analisado, documentado, relido, validado
+- [x] `styleMock.js` — Identificado, lido, analisado, documentado, relido, validado
+- [x] `pg.js` — Identificado, lido, analisado, documentado, relido, validado
 
 ---
 
@@ -448,18 +552,20 @@ A estrutura das pastas `__mocks__/` e `tests/mocks/` segue a convenção padrão
 
 ---
 
-# 🔴 Resumo de Prioridades
+# Resumo de Prioridades
 
 | Prioridade | Item | Tipo | Descrição |
 |---|---|---|---|
-| 🔴 **Crítico** | 1 | Código morto | `cookie.js` — mock órfão sem uso |
+| 🔴 **Crítico** | 5.1 | Código morto | `cookie.js` — mock órfão sem uso |
 | 🔴 **Crítico** | 16 | Código morto | `auth.js` — mock órfão sem uso |
-| 🟡 **Médio** | 2 | Manutenibilidade | `styleMock.js` — cobertura limitada de classes CSS |
-| 🟡 **Médio** | 4 | Arquitetura | `mockQuery` singleton — interferência potencial entre testes |
-| 🟡 **Médio** | 5 | Duplicidade | `__mocks__/pg.js` vs `tests/mocks/db.js` — sobreposição |
+| 🟡 **Médio** | 5.2 | Manutenibilidade | `styleMock.js` — cobertura limitada de classes CSS |
+| 🟡 **Médio** | 6.3 | Arquitetura | `mockQuery` singleton — interferência potencial entre testes |
+| 🟡 **Médio** | 7.1 | Duplicidade | `__mocks__/pg.js` vs `tests/mocks/db.js` — sobreposição |
+| 🟡 **Médio** | 7.2 | Duplicidade | `pg.js` vs mock inline em `validate-schema.test.js` |
 | 🟡 **Médio** | 6 | Duplicidade | `tests/mocks/db.js` vs `tests/mocks/db-module.js` — sobreposição |
 | 🟡 **Médio** | 17 | Código subutilizado | `db.js` — consumo mínimo (235 linhas, 1 exemplo) |
-| 🟢 **Baixo** | 3 | Completude | Propriedades do Pool (`totalCount`, `idleCount`, `waitingCount`) fixas |
+| 🟢 **Baixo** | 5.3 | Completude | Propriedades do Pool (`totalCount`, `idleCount`, `waitingCount`) fixas |
+| 🟢 **Baixo** | 8.2 | Código morto | `simulateQueryError`/`simulateConnectionError` sem consumo |
 | 🟢 **Baixo** | 7 | Duplicidade | `mockTransaction` duplicado em `db.js` e `db-module.js` |
 | 🟢 **Baixo** | 8 | Código morto | `setupNextMocks()` deprecated em `next.js` |
 | 🟢 **Baixo** | 9 | Duplicidade | Configuração do router duplicada em `next.js` e `next-setup.js` |
@@ -472,4 +578,4 @@ A estrutura das pastas `__mocks__/` e `tests/mocks/` segue a convenção padrão
 | 🟢 **Baixo** | 18 | Código subutilizado | `next.js` — consumo apenas indireto via `next-setup.js` |
 | 🟢 **Baixo** | 19 | Código subutilizado | `index.js` — consumo mínimo (1 exemplo) |
 | 🟢 **Baixo** | 20 | Documentação | Documentação desatualizada em `docs/antigos/` |
-| ⚪ **Informativo** | 21 | Organização | Estrutura adequada — sem alteração necessária |
+

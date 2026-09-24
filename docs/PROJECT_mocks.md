@@ -31,7 +31,7 @@ A pasta `__mocks__/` contém **3 arquivos** e **nenhuma subpasta**. O Jest resol
 
 ## 1. `__mocks__/pg.js`
 
-**Localização:** `/home/qa/Projeto/Caminhar/__mocks__/pg.js`
+**Localização:** `/home/gus/Projetos/Caminhar/__mocks__/pg.js`
 **Tamanho:** 3.868 bytes (106 linhas)
 
 ### 📌 Propósito
@@ -86,14 +86,14 @@ export default { Pool, mockQuery };                    // Exportação default
 ### ⚠️ Observações Técnicas
 
 - O `mockQuery` é um **singleton** compartilhado entre `Pool.query` e `connect().query`. Isso garante que configurações como `mockResolvedValue` funcionem em ambas as rotas, mas pode gerar **interferência entre testes** se não for limpo adequadamente.
-- O `jest.config.js` utiliza `clearMocks: true`, que limpa apenas chamadas (`calls`) entre testes, preservando implementações. Portanto, `restorePoolImplementation()` só é necessário se o teste usar `jest.clearAllMocks()` ou `jest.resetAllMocks()`.
+- O `jest.config.base.js` utiliza `clearMocks: true` (herdado pelo `jest.config.js`), que limpa apenas chamadas (`calls`) entre testes, preservando implementações. Portanto, `restorePoolImplementation()` só é necessário se o teste usar `jest.clearAllMocks()` ou `jest.resetAllMocks()`.
 - As propriedades `totalCount`, `idleCount` e `waitingCount` são fixas em `0` — não é possível simular estados diferentes do pool.
 
 ---
 
 ## 2. `__mocks__/cookie.js`
 
-**Localização:** `/home/qa/Projeto/Caminhar/__mocks__/cookie.js`
+**Localização:** `/home/gus/Projetos/Caminhar/__mocks__/cookie.js`
 **Tamanho:** 1.169 bytes (45 linhas)
 
 ### 📌 Propósito
@@ -122,6 +122,7 @@ Este mock foi analisado e **não está sendo consumido por nenhum arquivo de tes
 1. **`lib/auth/auth.js` não utiliza a biblioteca `cookie`** — O arquivo implementa funções próprias `parseCookie()` e `serializeCookie()` nas linhas 8–30, sem dependência externa.
 2. **Nenhum arquivo de teste chama `jest.mock('cookie')`** — A pesquisa não encontrou ocorrências em nenhum arquivo da pasta `tests/`.
 3. **O pacote `cookie` não está nas dependências do projeto** — Não consta em `dependencies` nem em `devDependencies` no `package.json`.
+4. **O `jest.config.js` não referencia este mock** — O mapeamento via `moduleNameMapper` no `jest.config.js` apenas direciona arquivos `.css` para `__mocks__/styleMock.js`; não há entrada para `cookie`.
 
 **Conclusão:** O arquivo `__mocks__/cookie.js` é um **mock órfão** — resquício de uma versão anterior do projeto em que a autenticação dependia da biblioteca `cookie`. Permanece no repositório sem utilidade funcional.
 
@@ -129,7 +130,7 @@ Este mock foi analisado e **não está sendo consumido por nenhum arquivo de tes
 
 ## 3. `__mocks__/styleMock.js`
 
-**Localização:** `/home/qa/Projeto/Caminhar/__mocks__/styleMock.js`
+**Localização:** `/home/gus/Projetos/Caminhar/__mocks__/styleMock.js`
 **Tamanho:** 49 bytes (3 linhas)
 
 ### 📌 Propósito
@@ -150,6 +151,10 @@ Ativado no `jest.config.js` através do `moduleNameMapper`:
 ```
 
 Isso faz com que **qualquer importação de arquivo `.css`** nos componentes seja substituída por este objeto durante os testes.
+
+### 🧪 Consumo nos Testes
+
+Não há importação direta deste mock em nenhum arquivo de teste. O consumo é **indireto**, via `moduleNameMapper` do Jest: quando componentes importam arquivos `.css`, o Jest substitui pelo objeto definido aqui. O seletor `skeleton-box` é utilizado em `tests/unit/components/Admin/AdminCrudBase.test.js`, confirmando o funcionamento do mock.
 
 ### 🧩 Interface Exportada
 
@@ -183,7 +188,7 @@ A pasta `tests/mocks/` contém **9 arquivos** e **nenhuma subpasta**. Diferente 
 
 ## 1. `tests/mocks/index.js`
 
-**Localização:** `/home/qa/Projeto/Caminhar/tests/mocks/index.js`
+**Localização:** `/home/gus/Projetos/Caminhar/tests/mocks/index.js`
 **Tamanho:** 14 linhas
 
 ### 📌 Propósito
@@ -203,7 +208,7 @@ import { mockUseRouter, mockFetch, mockQuery } from '../mocks';
 
 ## 2. `tests/mocks/next.js`
 
-**Localização:** `/home/qa/Projeto/Caminhar/tests/mocks/next.js`
+**Localização:** `/home/gus/Projetos/Caminhar/tests/mocks/next.js`
 **Tamanho:** 213 linhas
 
 ### 📌 Propósito
@@ -231,7 +236,7 @@ Contém as **implementações individuais** dos mocks para componentes e hooks d
 
 ## 3. `tests/mocks/next-setup.js`
 
-**Localização:** `/home/qa/Projeto/Caminhar/tests/mocks/next-setup.js`
+**Localização:** `/home/gus/Projetos/Caminhar/tests/mocks/next-setup.js`
 **Tamanho:** 147 linhas
 
 ### 📌 Propósito
@@ -267,7 +272,7 @@ Registra automaticamente os `jest.mock()` para os seguintes módulos do Next.js:
 
 ## 4. `tests/mocks/next.test.js`
 
-**Localização:** `/home/qa/Projeto/Caminhar/tests/mocks/next.test.js`
+**Localização:** `/home/gus/Projetos/Caminhar/tests/mocks/next.test.js`
 **Tamanho:** 146 linhas
 
 ### 📌 Propósito
@@ -292,7 +297,7 @@ Teste de sanidade para os mocks do Next.js. Verifica se os mocks centralizados e
 
 ## 5. `tests/mocks/fetch.js`
 
-**Localização:** `/home/qa/Projeto/Caminhar/tests/mocks/fetch.js`
+**Localização:** `/home/gus/Projetos/Caminhar/tests/mocks/fetch.js`
 **Tamanho:** 181 linhas
 
 ### 📌 Propósito
@@ -322,7 +327,7 @@ Mocks para requisições `fetch`, permitindo simular respostas HTTP de APIs exte
 
 ## 6. `tests/mocks/db.js`
 
-**Localização:** `/home/qa/Projeto/Caminhar/tests/mocks/db.js`
+**Localização:** `/home/gus/Projetos/Caminhar/tests/mocks/db.js`
 **Tamanho:** 235 linhas
 
 ### 📌 Propósito
@@ -353,7 +358,7 @@ Mocks para operações de banco de dados em nível de query, oferecendo helpers 
 
 ## 7. `tests/mocks/db-module.js`
 
-**Localização:** `/home/qa/Projeto/Caminhar/tests/mocks/db-module.js`
+**Localização:** `/home/gus/Projetos/Caminhar/tests/mocks/db-module.js`
 **Tamanho:** 63 linhas
 
 ### 📌 Propósito
@@ -381,7 +386,7 @@ Utilizado via `jest.mock('../../../lib/infra/db.js', () => require('../../mocks/
 
 ## 8. `tests/mocks/cache.js`
 
-**Localização:** `/home/qa/Projeto/Caminhar/tests/mocks/cache.js`
+**Localização:** `/home/gus/Projetos/Caminhar/tests/mocks/cache.js`
 **Tamanho:** 29 linhas
 
 ### 📌 Propósito
@@ -403,7 +408,7 @@ Utilizado via `jest.mock('../../../lib/cache/cache.js', () => require('../../moc
 
 ## 9. `tests/mocks/auth.js`
 
-**Localização:** `/home/qa/Projeto/Caminhar/tests/mocks/auth.js`
+**Localização:** `/home/gus/Projetos/Caminhar/tests/mocks/auth.js`
 **Tamanho:** 67 linhas
 
 ### 📌 Propósito

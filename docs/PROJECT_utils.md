@@ -11,6 +11,16 @@ A pasta `/utils` contém **2 arquivos** responsáveis por funcionalidades utilit
 
 ---
 
+## Estrutura de Arquivos e Pastas
+
+```text
+/utils
+├── csvExport.js
+└── reorder.js
+```
+
+---
+
 ## 1. `utils/csvExport.js`
 
 ### Localização
@@ -18,6 +28,12 @@ A pasta `/utils` contém **2 arquivos** responsáveis por funcionalidades utilit
 
 ### Propósito
 Helper compartilhado para exportação de dados para **CSV** no lado do cliente. Centraliza a lógica de geração de arquivo com BOM UTF-8, criação de Blob, link temporário e download automático — eliminando a duplicação dessa rotina entre componentes administrativos.
+
+### Arquivos Acionados/Relacionados
+- `/components/Admin/AdminCrudBase.js` — importa e utiliza `exportToCSV`
+- `/components/Admin/AdminAudit.js` — importa e utiliza `exportToCSV`
+- `/tests/unit/components/Admin/AdminCrudBase.test.js` — testa exportação indiretamente
+- `/tests/unit/components/Admin/AdminAudit.test.js` — testa exportação indiretamente
 
 ### Funcionalidades
 
@@ -64,6 +80,20 @@ Não existem testes unitários diretos para `utils/csvExport.js`. A cobertura é
 
 ### Propósito
 Helper compartilhado para **reordenação (Drag & Drop)** de itens no painel administrativo. Substitui a lógica de `handleReorder` que anteriormente existia duplicada em `AdminMusicas.js`, `AdminPosts.js`, `AdminVideos.js` e `AdminProducts.js`.
+
+### Arquivos Acionados/Relacionados
+- `/components/Admin/AdminMusicas.js` — importa e utiliza `handleReorder`
+- `/components/Admin/AdminPosts.js` — importa e utiliza `handleReorder`
+- `/components/Admin/AdminVideos.js` — importa e utiliza `handleReorder`
+- `/components/Admin/AdminProducts.js` — importa e utiliza `handleReorder`
+- `/components/Admin/AdminCrudBase.js` — envolve o callback em `handleReorderWithFeedback`
+- `/tests/unit/components/Admin/AdminCrudBase.test.js` — testa reversão em caso de falha
+- `/tests/unit/components/Admin/AdminMusicas.test.js` — testa integração do D&D
+- `/tests/unit/components/Admin/AdminPosts.test.js` — testa integração do D&D
+- `/tests/unit/components/Admin/AdminVideos.test.js` — testa integração do D&D
+- `/tests/integration/api/admin/musicas.test.js` — valida contrato `{ action: 'reorder', items }`
+- `/tests/integration/api/admin/posts.test.js` — valida contrato `{ action: 'reorder', items }`
+- `/tests/integration/api/admin/videos.test.js` — valida contrato `{ action: 'reorder', items }`
 
 ### Funcionalidades
 
@@ -132,3 +162,5 @@ Não existem testes unitários diretos para `utils/reorder.js`. A cobertura é *
 - Os arquivos seguem o padrão **ES Modules** (`import`/`export`) do projeto.
 - Não há subpastas dentro de `/utils`.
 - Não há testes unitários dedicados especificamente para estes arquivos — a cobertura ocorre indiretamente por meio dos testes dos componentes consumidores.
+- A função `handleReorder` é **assíncrona** (`async function`) e retorna `Promise<void>`.
+- A função `exportToCSV` **não é assíncrona** — executa de forma síncrona, incluindo a criação do link e disparo do clique.

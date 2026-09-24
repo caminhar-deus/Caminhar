@@ -2,7 +2,7 @@
 
 ## Visão Geral
 
-A pasta `/cypress` contém os testes end-to-end (E2E) do projeto, utilizando o framework **Cypress** (`^15.19.0`). A estrutura conta com **5 arquivos de teste**, **25 cenários** distribuídos em 4 páginas/sistemas, e suporte com `fixtures/` e `support/`.
+A pasta `/cypress` contém os testes end-to-end (E2E) do projeto, utilizando o framework **Cypress** (`^16.1.0`). A estrutura conta com **5 arquivos de teste**, **25 cenários** distribuídos em 4 páginas/sistemas, e suporte com `fixtures/` e `support/`.
 
 A configuração global do Cypress está em `cypress.config.js` (na raiz do projeto), e os scripts de execução estão definidos no `package.json`.
 
@@ -20,7 +20,6 @@ cypress/
 │   └── navigation.cy.js    (3 cenários)  — Navegação entre páginas
 ├── fixtures/
 │   └── posts.json
-├── screenshots/            (vazio — gerado sob demanda em falhas)
 ├── support/
 │   ├── commands.js          (8 comandos customizados)
 │   └── e2e.js
@@ -233,11 +232,11 @@ Testa a funcionalidade de zoom de imagem (lightbox) em páginas de post do blog,
 
 ### `/cypress/screenshots/`
 
-**Estado atual:** Vazio.
+**Estado atual:** Diretório **não existe** no disco.
 
-**Propósito:** Diretório onde o Cypress salva screenshots automaticamente quando um teste falha em modo headless. O fato de estar vazio indica que não houve falhas em execuções recentes, ou que o diretório foi limpo.
+**Propósito:** Diretório onde o Cypress salva screenshots automaticamente quando um teste falha em modo headless. O fato de não existir indica que nunca houve falhas em execuções headless, ou que os testes nunca foram executados em modo headless desde que a pasta foi limpa/criada.
 
-**Nota:** Já incluído no `eslint.config.js` na lista de diretórios ignorados (`cypress/screenshots/**`).
+**Nota:** Incluída no `eslint.config.js` na lista de diretórios ignorados (`cypress/screenshots/**`).
 
 ---
 
@@ -269,7 +268,7 @@ Testa a funcionalidade de zoom de imagem (lightbox) em páginas de post do blog,
 | Arquivos de suporte | 2 (`commands.js`, `e2e.js`) |
 | Arquivos de fixture | 1 (`posts.json`) |
 | Total de linhas (todos os testes) | ~215 |
-| Diretórios de artefatos | 2 (`screenshots/`, `videos/`) |
+| Diretórios de artefatos | 1 (`videos/`) |
 
 ---
 
