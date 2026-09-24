@@ -1,9 +1,9 @@
 # Erros do AI-MEMORY — Diagnóstico e Resolução
 
 **Projeto:** Caminhar · **Escopo:** `default/Caminhar`
-**Diagnóstico:** 2026-09-11 → 2026-09-18 · **Correções publicadas:** v2.3.2 (2026-09-20) · **Verificação:** 2026-09-23 (práticas 3 e 4 do §6 corrigidas nesta data)
+**Diagnóstico:** 2026-09-11 → 2026-09-24 · **Correções publicadas:** v2.3.2 (2026-09-20) · **Verificação:** 2026-09-24 (provedor trocado para OpenRouter; Erro 9 resolvido com `LLM_API_KEY`; consolidação validada ponta a ponta)
 
-**Status: 1, 2, 3 e 8 resolvidos; 6 mitigado parcialmente.** As correções dos erros 1, 2, 3 e 8 estão no upstream (`akitaonrails/ai-memory`) desde a **v2.3.2**, foram encaminhadas para a **v2.4.0** e estão em uso local pela imagem `akitaonrails/ai-memory:latest` (**2.4.0**). O Erro 6 tem correção de código pendente no upstream (retry no caminho de auto-improve).
+**Status: 1, 2, 3, 8 e 9 resolvidos; 6 mitigado parcialmente; 10 e 11 contornados.** As correções dos erros 1, 2, 3 e 8 estão no upstream (`akitaonrails/ai-memory`) desde a **v2.3.2**, foram encaminhadas para a **v2.4.0** e estão em uso local pela imagem `akitaonrails/ai-memory:latest` (**2.4.0**). O Erro 6 tem correção de código pendente no upstream (retry no caminho de auto-improve). O **Erro 9 não era bug do upstream**: era o nome da variável da chave no provedor `openai-compat`. Os erros **10** e **11** são de escopo/operação do CLI e têm contorno conhecido.
 
 ---
 
@@ -19,6 +19,9 @@
 | 6 | `memory_consolidate` / `memory_auto_improve` / scheduler | `-32603 provider error 503` / `429` | indisponibilidade do provedor LLM (Gemini) + retry ausente no caminho de auto-improve (claim parkado em `AUTO_IMPROVE_CLAIM_MAX_ATTEMPTS = 3`) | 🟡 Mitigado parcialmente (retry automático só na consolidação, v2.3.2) |
 | 7 | `memory_consolidate` | `-32603 serde: EOF while parsing a string` | saída do LLM estourou o teto de tokens no fan-out `multi_page` | ✅ Mitigado (determinístico por design) |
 | 8 | qualquer tool com escopo | `-32603 project 'caminhar' not found in workspace 'default'` | `.ai-memory.toml` em formato que o leitor ignora + erro de escopo classificado como interno | ✅ Resolvido (config local + v2.3.2) |
+| 9 | `memory_consolidate` | `-32603 provider error 401: Missing Authentication header` | o caminho de chat do `openai-compat` lê **`LLM_API_KEY`** (ou `--api-key`); a chave estava no container como `OPENROUTER_API_KEY`/`OPENAI_API_KEY`, então o header `Authorization` não era enviado | ✅ Resolvido (env do container, 2026-09-24) |
+| 10 | `memory_write_page` | gravação "invisível": a página não aparece na leitura e o lint mantém o título antigo | chamada **sem** `workspace`/`project` gravou no escopo `default/scratch` em vez de `default/Caminhar` | ✅ Contornado (sempre passar `workspace: "default"` + `project: "Caminhar"`; órfãs removidas) |
+| 11 | `ai-memory embed` | `POST /admin/embed: 404 {"error":"project 'data' not found in workspace 'default'"}` | o CLI inferiu o projeto a partir do `--data-dir /data` quando as flags de escopo não foram passadas | ✅ Contornado (`ai-memory embed --workspace default --project Caminhar [--force]`) |
 
 ---
 
@@ -33,6 +36,10 @@
 | 2026-09-22 | Container reimplantado com `akitaonrails/ai-memory:latest` (2.4.0) e as correções verificadas ao vivo |
 | 2026-09-23 | Override `AI_MEMORY_IMAGE` e imagem `ai-memory:fix-consolidate` descartados; CLI e servidor na imagem oficial 2.4.0; aviso oficial de versão reativado |
 | 2026-09-23 | `ai-memory upgrade` exercitado: wrapper já atualizado e imagem `latest` já atual (mesmo digest oficial); hooks staged re-aplicados para `claude-code` e `codex` sem alterar `settings.json`/`hooks.json`; container recriado da mesma imagem oficial e script de recreate apagado depois |
+| 2026-09-24 18:48Z / 19:00Z | Provedor trocado de Gemini (`gemini-3.6-flash`) para `openai-compat` + OpenRouter (`liquid/lfm-2.5-2.6b:free`) por causa do Erro 6 — sem efeito porque a chave chegou como `OPENROUTER_API_KEY` e depois como `OPENAI_API_KEY` |
+| 2026-09-24 19:45Z | Erro 9 diagnosticado e resolvido: container recriado com **`LLM_API_KEY`** + `OPENAI_API_KEY`; `llm-test` voltou a responder |
+| 2026-09-24 19:47Z | Modelo trocado para `nvidia/nemotron-3-ultra-550b-a55b:free` depois de o `liquid/lfm-2.5-2.6b:free` (2,6 B) alucinar no primeiro teste real de consolidação |
+| 2026-09-24 19:48Z | Consolidação de `329cd318` validada ponta a ponta: saída fiel, com o aviso correto de que as observações não trazem detalhe substantivo, e título na convenção de `_prompts/consolidation.md` |
 
 O PR #754 está **fechado** (absorvido pelo #789): a correção deixou de ser exclusiva do fork, então a imagem local `ai-memory:fix-consolidate` e o override `AI_MEMORY_IMAGE` que a apontava ficaram obsoletos e foram **descartados** em 2026-09-23 (§5, item 1). A fonte oficial é `github.com/akitaonrails/ai-memory` (releases **v2.3.2 → v2.4.0**), sem uso operacional do fork.
 
@@ -101,22 +108,76 @@ project = "Caminhar"
 
 **Verificado ao vivo (2026-09-22):** `project: "caminhar"` → `-32602 project 'caminhar' not found in workspace 'default'`; `project: "Caminhar"` retorna as contagens. No CLI, o marcador passou a ser lido: `ai-memory embed --dry-run` na raiz do repo imprime `ai-memory: scope default/Caminhar (workspace + project from …/.ai-memory.toml)`.
 
+### Erro 9 — `401 Missing Authentication header` no `openai-compat`
+
+Depois da troca de provedor, `memory_consolidate` devolvia `-32603 provider error 401: {"error":{"message":"Missing Authentication header","code":401}}` e `ai-memory status` mostrava `llm: openai-compat/liquid/lfm-2.5-2.6b:free error (status 401 …)`. A chave era válida (73 caracteres, prefixo `sk-or-v1-`): o problema era o **nome da variável**.
+
+Prova A/B com a **mesma chave**, dentro do container, em `2026-09-24T19:01Z`:
+
+| Como a chave é exposta | Resultado |
+|---|---|
+| `OPENAI_API_KEY` (env do container) | `provider error 401: Missing Authentication header` |
+| `LLM_API_KEY` definida no ambiente do comando | resposta real do modelo (`Pong!`), `usage: in=11 out=257` |
+| `--api-key` na CLI | resposta real do modelo (`Pong!`), `usage: in=11 out=303` |
+
+O caminho de chat do `openai-compat` lê **`LLM_API_KEY`** (ou `--api-key`); `OPENAI_API_KEY`/`EMBEDDING_API_KEY` valem só para *embeddings* openai-compatible (mensagem do binário 2.4.0). Sem a variável certa o binário chama o OpenRouter **sem** header `Authorization`.
+
+**Correção aplicada em 2026-09-24T19:45Z** — container recriado preservando volume, porta, modelo e `--restart unless-stopped`, com as duas variáveis (`-e LLM_API_KEY -e OPENAI_API_KEY`, valores vindos do env do container anterior via `export`, sem passar pela linha de comando):
+
+```bash
+KEY=$(docker exec ai-memory sh -c 'printf %s "$OPENAI_API_KEY"')
+export LLM_API_KEY="$KEY" OPENAI_API_KEY="$KEY"
+docker rm -f ai-memory
+docker run -d --name ai-memory --restart unless-stopped \
+  -p 127.0.0.1:49374:49374 -v ai-memory-data:/data \
+  -e AI_MEMORY_LLM_PROVIDER=openai-compat \
+  -e AI_MEMORY_LLM_BASE_URL=https://openrouter.ai/api/v1 \
+  -e AI_MEMORY_LLM_MODEL=<modelo> \
+  -e AI_MEMORY_DATA_DIR=/data \
+  -e AI_MEMORY_ALLOWED_HOSTS=localhost,127.0.0.1,::1,host.docker.internal \
+  -e AI_MEMORY_IN_CONTAINER=1 \
+  -e LLM_API_KEY -e OPENAI_API_KEY \
+  akitaonrails/ai-memory:latest serve --transport http --bind 0.0.0.0:49374 --enable-web
+```
+
+**Nota de qualidade do modelo (2026-09-24).** O primeiro modelo escolhido, `liquid/lfm-2.5-2.6b:free` (2,6 B), produz saída ruim: na consolidação de teste inventou o propósito do projeto a partir do nome ("focada em navegação e exploração sistemática"), ignorou as preferências de `_prompts/consolidation.md` (título `Contexto do Projeto — Caminhar`, que voltaria a duplicar títulos) e gerou link inválido. Com `nvidia/nemotron-3-ultra-550b-a55b:free` a mesma sessão saiu fiel, com título `Sessão 329cd318 — …`. Modelos pequenos também tendem a operar com teto de tokens menor — a consolidação valida mínimos de 6.000 tokens de entrada e 1.000 de saída. Referência de comparativo do upstream (`docs/llm-provider-comparison.md`): Haiku 4.5 é o padrão recomendado, GPT-5.4-mini a alternativa barata, e modelos de *reasoning* são inelegíveis (a chamada trava).
+
+**Detalhe cosmético:** o LLM pode emitir `<br>` no corpo da página; o markdown fica correto com uma limpeza (`sed -i 's|<br><br>|\n\n|g; s|<br>|\n|g'`) e a preferência "use markdown puro, nunca tags HTML" foi acrescentada a `_prompts/consolidation.md`.
+
+**Limite estrutural da consolidação neste projeto.** O hook envia `tool_name`, `tool_input`, `tool_response`, `success` e `execution_time_ms` (verificado no payload cru do spool em `/data/hook-spool/`), mas a observação persistida sai como `title: "post-tool-use"`, `body: ""` — ou seja, o log de uma sessão não contém o que foi lido/escrito/decidido. Consolidar por LLM rende, no melhor caso, uma página de metadados (contagens, cronologia, prompts) e o modelo chega a registrar isso explicitamente. O conteúdo durável continua vindo das páginas curadas (`conceitos/`, `procedimentos/`, `decisoes/`, `_regras/`).
+
+### Erro 10 — `memory_write_page` sem escopo gravou em `default/scratch`
+
+Em `2026-09-24T19:02Z`, três chamadas de `memory_write_page` **sem** `workspace`/`project` foram gravadas no projeto **`scratch`** (diretório de escopo `01a04541-86e1-78f1-9680-720007cba5d6`), enquanto `memory_read_page`/`memory_recent` serviam `Caminhar` (`01a05962-d1d0-7bb2-8fc7-9db0cf93421b`). Sintomas: a página recém-escrita "não aparece"; a leitura devolve o corpo antigo; o lint continua vendo o título antigo.
+
+Confirmação: `_meta.md` do diretório de escopo (dizia `project: scratch`) e `find /data/wiki -name <arquivo> -printf '%TY-%Tm-%Td %TH:%TM %p'`. Sinal de alerta nas leituras de status: `memory_status` com `resolved_by: shared_slot` ou `startup_seed` (a chamada **não** foi casada com a sessão). Contorno: sempre passar `workspace: "default"` + `project: "Caminhar"`; as três páginas órfãs foram removidas com `memory_delete_page` (escopo `default`/`scratch`).
+
+### Erro 11 — `ai-memory embed` sem flags de escopo
+
+`ai-memory embed` sem `--workspace`/`--project` resolve o projeto pelo cwd/basename e falha com:
+
+```
+Error: POST /admin/embed: server returned 404 Not Found: {"error":"project 'data' not found in workspace 'default'"}
+```
+
+O nome `data` vem do `--data-dir /data` (ou de `AI_MEMORY_DATA_DIR`) interpretado como projeto. Contorno verificado em `2026-09-24T19:26Z` e `19:52Z`: `ai-memory embed --workspace default --project Caminhar` (acrescentar `--force` para recomputar vetores existentes). É o mesmo padrão de escopo da prática 6.
+
 ---
 
-## 4. Estado atual (métricas de 2026-09-23T00:50Z)
+## 4. Estado atual (métricas de 2026-09-24T19:55Z)
 
 | Métrica | Valor |
 |---------|-------|
-| Servidor | `ai-memory 2.4.0` em `akitaonrails/ai-memory:latest`, healthy, `127.0.0.1:49374` (container `d4a0d8a5de07` recriado em 2026-09-23T00:42Z) |
-| Páginas (latest / todas as versões) | 67 / 168 global · 58 / 153 em `default/Caminhar` |
-| Sessões | 69 global · 45 em `default/Caminhar` |
-| Observações | 4.602 global · 4.555 em `default/Caminhar` |
-| Índice FTS | páginas 168/168; observações 4.602/4.602 |
-| Embeddings | 167 linhas (`local/all-MiniLM-L6-v2`, 384d); 0 latest pages sem vetor |
-| Links entre páginas | 2 (`unresolved: 2`, `stale: 0`) |
-| Spool de ingestão | pending 2 (sessão em curso), retries 0 |
-| Armazenamento | 4,8 MiB (reclaimable 48,0 KiB, 1,0%) |
-| Provedor LLM | `gemini/gemini-3.6-flash` — último `503` absorvido pelo retry em `2026-09-22T12:57Z`; último `503` não absorvido (auto-improve → claim parkado, destravado às `20:46Z`) em `2026-09-22T16:58Z` |
+| Servidor | `ai-memory 2.4.0` em `akitaonrails/ai-memory:latest`, healthy, `127.0.0.1:49374` (container recriado em 2026-09-24T19:47Z, já com `LLM_API_KEY`) |
+| Páginas (latest / todas as versões) | 73 / 236 global · 62 / 218 em `default/Caminhar` |
+| Sessões | 96 global · 49 em `default/Caminhar` |
+| Observações | 5.317 global · 5.216 em `default/Caminhar` |
+| Índice FTS | páginas 236/236; observações 5.317/5.317 |
+| Embeddings | 87 linhas (`local/all-MiniLM-L6-v2`, 384d); 1 latest page sem vetor (a recém-consolidada) |
+| Links entre páginas | 5 (`unresolved: 2`, `stale: 0`) |
+| Spool de ingestão | pending 23 (sessões em curso), retries 0 |
+| Armazenamento | 6,4 MiB (reclaimable 136,0 KiB, 2,1%) |
+| Provedor LLM | `openai-compat` + OpenRouter, modelo `nvidia/nemotron-3-ultra-550b-a55b:free`; `llm-test` respondendo desde `2026-09-24T19:47Z`. Histórico recente: Gemini (`gemini-3.6-flash`, Erro 6) → `liquid/lfm-2.5-2.6b:free` (descartado por alucinar, §3 Erro 9) |
 | Embedder | `local/all-MiniLM-L6-v2` ok |
 | CLI | wrapper `~/.local/bin/ai-memory` idêntico ao release oficial (sha256 `38986e85…`) e servidor na mesma imagem oficial `akitaonrails/ai-memory:latest` (**2.4.0**); `AI_MEMORY_IMAGE` não é mais exportado e a imagem `ai-memory:fix-consolidate` foi descartada (§5, item 1); `ai-memory upgrade` confirma wrapper e imagem já na versão oficial (`wrapper already up to date`, `Image is up to date`) |
 
@@ -132,6 +193,9 @@ Nenhuma delas é erro do ai-memory. As quatro foram encerradas em 2026-09-23.
 | 2 | `_prompts/consolidation.md` não existia em `default/Caminhar` (nem no escopo `hermes`) | Página criada em `default/Caminhar` (`tier: semantic`, `pinned`, sem TTL) com as preferências de concisão, idioma e terminologia — é a mitigação do Erro 7 | ✅ Encerrado |
 | 3 | 2 latest pages sem embedding | Já satisfeito antes da passada final: `ai-memory status` reporta `0 latest pages missing` (167 vetores, 384d); nenhum `embed` extra foi necessário | ✅ Encerrado |
 | 4 | 2 links latest não resolvidos | Causa raiz: `index.md` do escopo **`default/tmp`** (não do Caminhar), gerado pelo bundle index OKF da migração de 2026-09-04, com links de diretório (`- [decisions/](decisions/)`, `- [notes/](notes/)`) que normalizam para um path que nunca casa com página (`to_page_id = NULL`); `lint` e `curator` só cobrem links cross-project, por design. Encerrado como ruído esperado, sem alteração de dados | ✅ Encerrado (esperado) |
+| 5 | 1 latest page sem vetor (a página recém-consolidada) | `ai-memory embed --workspace default --project Caminhar` → `{"embedded": 1, "skipped": 61, "failed": 0}` em 2026-09-24T19:57Z; sem flags de escopo o comando falha (§3, Erro 11) | ✅ Encerrado |
+| 6 | 33 páginas de `sessions/` ainda no resumo heurístico M3 (sem consolidação por LLM) | Consolidar em lote tem valor limitado enquanto a observação não carregar corpo (§3, Erro 9, "limite estrutural"): o resultado é uma página de metadados com título próprio e cronologia. O ganho real seria acabar com títulos herdados do prompt. Alternativa sistêmica: habilitar `AI_MEMORY_CONSOLIDATE_ON_SESSION_END=1` no container para consolidar automaticamente no fim de cada sessão (custo: 1 chamada de LLM por sessão; fallback determinístico em caso de falha do provedor) | 🟡 Aberta — decisão do operador |
+| 7 | `sessions/` com títulos herdados do prompt renderam 6 warnings `duplicate` no lint | Resolvido em 2026-09-24: 20 páginas renomeadas para `Sessão <id-curto> — <assunto>` por edição direta do markdown no wiki (o `serve` reindexa sozinho) + `ai-memory commit` (`c7057370`); varredura de títulos do frontmatter → 0 duplicados e `_lint/report.md` com 0 findings do tipo `duplicate`. Preferência registrada em `_prompts/consolidation.md` | ✅ Encerrado |
 
 ---
 
@@ -140,7 +204,7 @@ Nenhuma delas é erro do ai-memory. As quatro foram encerradas em 2026-09-23.
 1. `dry_run: true` antes de consolidar em lote — preflight sem LLM e sem escrita.
 2. Descobrir o id da sessão com `memory_read_session_observations` (UUID do ai-memory). Ids do Cline (`1787943533338_3w6i6`) não servem.
 3. Backup antes de consolidar em massa: o destino **precisa estar dentro do volume de dados** — o wrapper do host roda um container efêmero por comando e só monta `ai-memory-data` em `/data`, então `--to /tmp/…` grava dentro do container descartável e **o arquivo desaparece** ao fim do comando. Use `ai-memory backup --to /data/backups/ai-memory-backup-<data>.tar.gz`, que persiste em `/data/backups/` (modo 0600).
-4. Provedor: o `llm-test` **executado no host falha** com `provider not configured: GEMINI_API_KEY` (o container efêmero do CLI não herda o env do servidor); rode de dentro do servidor — `docker exec ai-memory ai-memory llm-test --provider gemini --model gemini-3.6-flash --prompt ping` (responde `Pong!` quando o Gemini está estável) — antes de culpar o payload; `429`/`5xx` são retentados 2× automaticamente **na consolidação** (o auto-improve não retenta) e, se `attempts=3 parked=true` aparecer no log do scheduler, o claim precisa ser destravado à mão: `ai-memory auto-improve --session-id <uuid>` (rodando da raiz do projeto).
+4. Provedor: o `llm-test` **executado no host falha** com `provider not configured: <ENV>` (o container efêmero do CLI não herda o env do servidor); rode de dentro do servidor — `docker exec ai-memory ai-memory llm-test --provider openai-compat --model <modelo> --base-url https://openrouter.ai/api/v1 --prompt ping` — antes de culpar o payload. Com o gateway OpenRouter a variável da chave é **`LLM_API_KEY`** (§3, Erro 9) e a chave precisa estar no **env do container do servidor**, não só na linha de comando do `docker exec`. `429`/`5xx` são retentados 2× automaticamente **na consolidação** (o auto-improve não retenta; `401`/`404` são determinísticos e não são retentados — repetir não adianta) e, se `attempts=3 parked=true` aparecer no log do scheduler, o claim precisa ser destravado à mão: `ai-memory auto-improve --session-id <uuid>` (rodando da raiz do projeto).
 5. Saída truncada (Erro 7) **não** é retentada: repetir a chamada, usar `multi_page: false` ou `instructions` conciso — o projeto mantém a preferência de concisão em `_prompts/consolidation.md`.
 6. Rodar o CLI sempre da raiz do projeto (ou com `--workspace`/`--project` explícitos): o cwd define o escopo e um diretório errado produz `project 'Projetos' not found`.
 7. Cliente sem a tool MCP acoplada: `POST http://127.0.0.1:49374/mcp` (JSON-RPC Streamable HTTP, `stateful=false`, versão `2024-11-05`) na ordem `initialize` → `tools/list` → `memory_read_session_observations` → `memory_consolidate`.
