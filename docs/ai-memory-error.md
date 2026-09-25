@@ -1,9 +1,9 @@
 # Erros do AI-MEMORY — Diagnóstico e Resolução
 
 **Projeto:** Caminhar · **Escopo:** `default/Caminhar`
-**Diagnóstico:** 2026-09-11 → 2026-09-24 · **Correções publicadas:** v2.3.2 (2026-09-20) · **Verificação:** 2026-09-24 (provedor trocado para OpenRouter; Erro 9 resolvido com `LLM_API_KEY`; consolidação validada ponta a ponta)
+**Diagnóstico:** 2026-09-11 → 2026-09-25 · **Correções publicadas:** v2.3.2 (2026-09-20) e v2.4.1 (2026-09-25, Erro 12) · **Verificação:** 2026-09-24 (provedor trocado para OpenRouter; Erro 9 resolvido com `LLM_API_KEY`; consolidação validada ponta a ponta) e 2026-09-25 (`ai-memory upgrade` → CLI e servidor em **2.4.1**; `status` com `links: 6 … (unresolved: 0, stale: 0)`)
 
-**Status: 1, 2, 3, 8 e 9 resolvidos; 6 mitigado parcialmente; 10 e 11 contornados.** As correções dos erros 1, 2, 3 e 8 estão no upstream (`akitaonrails/ai-memory`) desde a **v2.3.2**, foram encaminhadas para a **v2.4.0** e estão em uso local pela imagem `akitaonrails/ai-memory:latest` (**2.4.0**). O Erro 6 tem correção de código pendente no upstream (retry no caminho de auto-improve). O **Erro 9 não era bug do upstream**: era o nome da variável da chave no provedor `openai-compat`. Os erros **10** e **11** são de escopo/operação do CLI e têm contorno conhecido.
+**Status: 1, 2, 3, 8 e 9 resolvidos; 6 mitigado parcialmente; 10 e 11 contornados.** As correções dos erros 1, 2, 3 e 8 estão no upstream (`akitaonrails/ai-memory`) desde a **v2.3.2**, foram encaminhadas para a **v2.4.0** e estão em uso local pela imagem `akitaonrails/ai-memory:latest` (**2.4.1**). O Erro 6 tem correção de código pendente no upstream (retry no caminho de auto-improve). O **Erro 9 não era bug do upstream**: era o nome da variável da chave no provedor `openai-compat`. Os erros **10** e **11** são de escopo/operação do CLI e têm contorno conhecido. O **Erro 12** está corrigido no upstream: os dados em `2026-09-25` e o fix do extrator de links no **v2.4.1** (PR #915). As duas melhorias que viajavam no mesmo PR (#911 — finding `broken_link` intra-projeto e `status --workspace/--project`) foram **revertidas antes do v2.4.1** e ainda **não** estão na versão em uso.
 
 ---
 
@@ -22,6 +22,7 @@
 | 9 | `memory_consolidate` | `-32603 provider error 401: Missing Authentication header` | o caminho de chat do `openai-compat` lê **`LLM_API_KEY`** (ou `--api-key`); a chave estava no container como `OPENROUTER_API_KEY`/`OPENAI_API_KEY`, então o header `Authorization` não era enviado | ✅ Resolvido (env do container, 2026-09-24) |
 | 10 | `memory_write_page` | gravação "invisível": a página não aparece na leitura e o lint mantém o título antigo | chamada **sem** `workspace`/`project` gravou no escopo `default/scratch` em vez de `default/Caminhar` | ✅ Contornado (sempre passar `workspace: "default"` + `project: "Caminhar"`; órfãs removidas) |
 | 11 | `ai-memory embed` | `POST /admin/embed: 404 {"error":"project 'data' not found in workspace 'default'"}` | o CLI inferiu o projeto a partir do `--data-dir /data` quando as flags de escopo não foram passadas | ✅ Contornado (`ai-memory embed --workspace default --project Caminhar [--force]`) |
+| 12 | `ai-memory status` (linha `links`) | `7 latest-page links (unresolved: 3, stale: 0)` — 3 links que nunca resolvem | dois defeitos de normalização de alvo: (i) `relations: fixes: ["sessions/"]` (diretório) virou o literal `sessions/.md`; (ii) `index.md` de bundle OKF com links de diretório (`- [decisions/](decisions/)`) que não casam com path de página | ✅ Fix no upstream **v2.4.1** (PR #915, merge `d5ebec30`); dados corrigidos em 2026-09-25; as 2 melhorias do PR #911 foram revertidas antes do release e não estão no v2.4.1 |
 
 ---
 
@@ -40,8 +41,13 @@
 | 2026-09-24 19:45Z | Erro 9 diagnosticado e resolvido: container recriado com **`LLM_API_KEY`** + `OPENAI_API_KEY`; `llm-test` voltou a responder |
 | 2026-09-24 19:47Z | Modelo trocado para `nvidia/nemotron-3-ultra-550b-a55b:free` depois de o `liquid/lfm-2.5-2.6b:free` (2,6 B) alucinar no primeiro teste real de consolidação |
 | 2026-09-24 19:48Z | Consolidação de `329cd318` validada ponta a ponta: saída fiel, com o aviso correto de que as observações não trazem detalhe substantivo, e título na convenção de `_prompts/consolidation.md` |
+| 2026-09-25 12:04Z | Erro 12 diagnosticado: `status` com `links: 7 … (unresolved: 3)`; dois defeitos de normalização de alvo — diretório em `relations:` (`sessions/` → `sessions/.md`) e links de diretório no `index.md` do escopo `tmp` |
+| 2026-09-25 | Erro 12 com dados corrigidos no wiki (frontmatter da sessão + `index.md` do `tmp`, sem purgar o escopo): `links: 6 … (unresolved: 0, stale: 0)` |
+| 2026-09-25 20:28Z | PRs [#915](https://github.com/akitaonrails/ai-memory/pull/915) (patch: o fix do extrator) e [#911](https://github.com/akitaonrails/ai-memory/pull/911) (minor: finding `broken_link` intra-projeto + `status --workspace/--project`) mergeados no upstream, ambos com CI verde |
+| 2026-09-25 | `42467259` reverte o `#911` antes da tag, para manter a linha de patch enxuta — o mesmo tratamento dado a #904, #884 e aos docs #873: o minor fica para o próximo release |
+| 2026-09-25 21:46Z | Release **v2.4.1** (`433a19f3`) com o fix do extrator; `ai-memory upgrade` deixa CLI e servidor em 2.4.1 e o `status` confirma `links: 6 … (unresolved: 0, stale: 0)` |
 
-O PR #754 está **fechado** (absorvido pelo #789): a correção deixou de ser exclusiva do fork, então a imagem local `ai-memory:fix-consolidate` e o override `AI_MEMORY_IMAGE` que a apontava ficaram obsoletos e foram **descartados** em 2026-09-23 (§5, item 1). A fonte oficial é `github.com/akitaonrails/ai-memory` (releases **v2.3.2 → v2.4.0**), sem uso operacional do fork.
+O PR #754 está **fechado** (absorvido pelo #789): a correção deixou de ser exclusiva do fork, então a imagem local `ai-memory:fix-consolidate` e o override `AI_MEMORY_IMAGE` que a apontava ficaram obsoletos e foram **descartados** em 2026-09-23 (§5, item 1). A fonte oficial é `github.com/akitaonrails/ai-memory` (releases **v2.3.2 → v2.4.1**), sem uso operacional do fork — o fork voltou a ser usado apenas como origem de desenvolvimento/CI dos PRs #915 e #911 em 2026-09-25, nunca como fonte de imagem.
 
 ### Mudanças de comportamento entregues
 
@@ -161,6 +167,20 @@ Error: POST /admin/embed: server returned 404 Not Found: {"error":"project 'data
 ```
 
 O nome `data` vem do `--data-dir /data` (ou de `AI_MEMORY_DATA_DIR`) interpretado como projeto. Contorno verificado em `2026-09-24T19:26Z` e `19:52Z`: `ai-memory embed --workspace default --project Caminhar` (acrescentar `--force` para recomputar vetores existentes). É o mesmo padrão de escopo da prática 6.
+
+### Erro 12 — links não resolvidos: alvo de diretório em `relations:` e no bundle index
+
+Em `2026-09-25`, `ai-memory status` no Caminhar reportou `links: 7 latest-page links (unresolved: 3, stale: 0)` e `typed edges: causes: 1, fixes: 1`. Nada falhava em ingestão, consolidação ou busca: eram dois defeitos independentes de normalização de alvo, nenhum deles específico do Caminhar.
+
+**Defeito A — `relations:` com alvo de diretório (1 dos 3 links).** O frontmatter de `sessions/bc48d71b-c5de-5e54-ad4c-4fdf74814320.md` trazia `relations: { causes: ["conceitos/estado-atual.md"], fixes: ["sessions/"] }` (emitido na consolidação de `2026-09-25T02:04Z`). Em `crates/ai-memory-wiki/src/markdown.rs`, `extract_relation_links` anexava `.md` a qualquer último segmento sem ponto, então `sessions/` virava `sessions/.md` — path aceito por `PagePath::new` e gravado em `links` com `to_page_id = NULL`. A rota equivalente do corpo (`normalize_link_target`) tinha a guarda que faltava nessa função; versões anteriores da mesma página guardam 4 ocorrências históricas do mesmo alvo (`sessions/.md` ×3 e `sessoes/.md` ×1).
+
+**Defeito B — bundle index com links de diretório (2 dos 3 links).** O `index.md` do escopo `default/tmp` (não do Caminhar), gerado por `ensure_bundle_indexes` na migração OKF e regenerado pelo exportador de bundle, lista famílias como `- [decisions/](decisions/)`. O extrator preserva `decisions` (sem extensão) e nenhum path de página pode casar com ele. Esta entrada revisa a leitura do §5 item 4, que havia encerrado o caso como ruído esperado.
+
+Dados corrigidos em `2026-09-25` por edição direta do markdown no wiki (o `serve` reindexa sozinho): removido o `fixes: [...]` inválido do frontmatter da sessão e os dois links do `index.md` passaram a apontar para páginas reais (`decisions/arquitetura-e-infra.md`, `notes/projeto-caminhar.md`); o escopo `tmp` **não** foi purgado (segue como decisão do operador). Resultado: `links: 6 latest-page links (unresolved: 0, stale: 0)` e `typed edges: causes: 1`. As 4 linhas históricas com `to_path` degenerado continuam na tabela porque `links` fica preso à versão imutável da página — só as latest entram na contagem.
+
+Correção de código no upstream: o fix foi separado no PR **#915** — `last_segment_names_a_page` passou a recusar alvo de diretório (barra final) e `.md` sem radical nas duas rotas (`relations:` e corpo/wikilink), descartando com `warn!` em vez de gravar um path que nunca resolve. Mergeado em `2026-09-25T20:28Z` (merge `d5ebec30`) e publicado no **v2.4.1** (tag `433a19f3`, `2026-09-25T21:46Z`), que é a versão em uso após `ai-memory upgrade` — confirmado no tree do release (3 ocorrências do predicado) e na entrada `(#915)` do CHANGELOG do v2.4.1.
+
+As duas melhorias que viajavam no PR original foram separadas no PR **#911**: o finding `broken_link` intra-projeto (`reader.dangling_internal_links`) e o escopo em `ai-memory status --workspace/--project` com `links_scope` em `GET /admin/status` — com os testes adversariais exigidos pela regra do `AGENTS.md` (`status_scoped_links_rejects_partial_scope`, `…fails_closed_on_an_unknown_scope`, `…do_not_leak_across_workspaces`, `an_unresolved_same_project_link_is_a_broken_link_finding`) e a linha 9 de `docs/security-boundaries.md` atualizada. Foi mergeado em `b18cb1a3` e **revertido** em `42467259` antes da tag, junto com outros reverts da linha de patch (PRs #904, #884, docs #873): o **v2.4.1 não contém** essas melhorias — o CLI 2.4.1 responde `error: unexpected argument '--workspace' found` e `links_scope`/`ScopeLinkStatus`/`dangling_internal_links` não existem no tree do release (a página do PR aparece como *Merged*, mas o conteúdo foi desfeito no `main`). Ficam para o próximo release minor; se o upstream não as recolocar, o caminho é um PR novo (`feat`) sobre o `main` atual.
 
 ---
 
