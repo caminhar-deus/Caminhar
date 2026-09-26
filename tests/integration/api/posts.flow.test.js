@@ -3,6 +3,17 @@ import { createMocks } from 'node-mocks-http';
 
 // --- Mocks das Dependências ---
 
+// Mock do Logger (silencia chamadas de logger.error que vão ao console)
+jest.mock('../../../lib/infra/logger.js', () => ({
+  logger: {
+    info: jest.fn(),
+    success: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+  },
+}));
+
 // Mock do Formidable (Upload)
 jest.mock('formidable', () => ({
   IncomingForm: jest.fn(),
@@ -101,14 +112,6 @@ const postsHandler = async (req, res) => {
 };
 
 describe('Integração: Fluxo de Criação de Post com Imagem', () => {
-  beforeAll(() => {
-    jest.spyOn(console, 'error').mockImplementation(() => {});
-  });
-
-  afterAll(() => {
-    jest.restoreAllMocks();
-  });
-
   beforeEach(() => {
     jest.clearAllMocks();
     

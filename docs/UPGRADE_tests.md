@@ -939,7 +939,7 @@ Testa um fluxo de 2 etapas: (1) upload de imagem via formidable com validação 
 - Extração de extensão de arquivo: `'no-dot'.split('.').pop()` retorna a string inteira — bug potencial
 - Número mágico `5 * 1024 * 1024` deveria ser constante nomeada
 - Paths hardcoded (`/tmp`, `public/uploads/`) — deveria usar `path.join` ou config
-- `console.error` suprimido em `beforeAll` — esconde problemas reais
+|- `console.error` suprimido em `beforeAll` via `jest.spyOn(console, 'error')` — a supressão não funcionava porque `lib/infra/logger.js` capturava a referência ao `console` no momento do import, antes do spy ser aplicado; o `console.error` do logger (ex: `[DB] ❌ Erro ao executar consulta SQL`) ainda aparecia no log de cobertura. **Resolvido:** mock do módulo `lib/infra/logger.js` + remoção do `beforeAll`/`afterAll` com spy no console.
 - Sem testes para edge cases (arquivo oversized, não-imagem, campos faltando)
 
 #### Melhorias
