@@ -1,6 +1,6 @@
 {
   // OpenCode — configuração do PROJETO (mescla com ~/.config/opencode/opencode.json; o projeto vence).
-  // Formato v1 (servidores MCP em "mcp.<nome>"). Para OpenCode 2 beta veja docs/COMPATIBILIDADE.md.
+  // Formato v2 (servidores MCP em "mcp.servers.<nome>" com "disabled"). Ver docs de compatibilidade em ~/projetos/lab-opencode-stack/docs/COMPATIBILIDADE.md.
   // Para ver o resultado já mesclado: `opencode debug config`.
   "$schema": "https://opencode.ai/config.json",
 
@@ -81,13 +81,16 @@
   "watcher": { "ignore": ["node_modules/**", "dist/**", ".git/**", ".slim/clonedeps/repos/**"] },
   // Se o repositório for grande e o disco/WSL sofrer, considere "snapshot": false (perde o undo pela UI).
 
+  // Formato v2: servidores em "mcp.servers", com "disabled" (não "enabled").
   "mcp": {
     // Front-End-Checklist (MCP REMOTO). DESLIGADO: review_code envia código ao servidor deles.
-    // Ligue só numa sessão consciente. Alternativa local: skill (docs/INSTALACAO.md, etapa 4).
-    "frontend-checklist": {
-      "type": "remote",
-      "url": "https://mcp.frontendchecklist.io",
-      "enabled": false
+    // Ligue só numa sessão consciente. Alternativa local: a skill frontend-checklist-global (concedida ao oracle no slim).
+    "servers": {
+      "frontend-checklist": {
+        "type": "remote",
+        "url": "https://mcp.frontendchecklist.io",
+        "disabled": true
+      }
     }
     // ai-memory: não escreva à mão; use `ai-memory install-mcp --client opencode --apply`.
   }

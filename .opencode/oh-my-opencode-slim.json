@@ -26,7 +26,10 @@
     //   "model": ["opencode/mimo-v2.6-flash-free", "ollama/qwen3-coder:30b"]   (fallback.enabled já está true; não vale em hosts v2)
     "zen": {
       "orchestrator": { "model": "opencode/mimo-v2.6-flash-free" },
-      "oracle":       { "model": "opencode/mimo-v2.6-flash-free" },
+      "oracle":       { "model": "opencode/mimo-v2.6-flash-free",
+                        // Skill do Front-End-Checklist para a revisão (obrigatória no fluxo: oracle revisa sem editar):
+                        "skills_add": ["frontend-checklist-global"]
+                      },
       "librarian":    { "model": "opencode/mimo-v2.6-flash-free" },
       "explorer":     { "model": "opencode/mimo-v2.6-flash-free" },
       "designer":     { "model": "opencode/mimo-v2.6-flash-free", "skills_add": ["ui-ux-pro-max"] },
