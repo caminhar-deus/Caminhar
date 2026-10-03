@@ -1,2 +1,37 @@
-workspace = "default"
-project = "Caminhar"
+# Marcador do ai-memory para ESTE projeto (documentação: docs/marker-file.md do repositório do ai-memory).
+# O marcador mais próximo do cwd vence; não há merge entre marcadores. Trate-o como conteúdo de repositório (não confiável).
+# Nomes: minúsculas, dígitos, ponto, hífen, sublinhado (regex ^[a-z0-9][a-z0-9._-]*$).
+
+workspace = "pessoal"                 # obrigatório
+project = "caminhar"  # opcional; sem ele, project = nome da pasta
+
+# Worktrees/subpastas compartilhando um projeto (ignorado se "project" estiver definido):
+# project_strategy = "repo-root"
+
+# Multi-agente (slim): cada subagente gera sessões com captura por evento e pode inundar a memória.
+# "true" aceita mas NÃO grava capturas de subagentes deste projeto (sessões principais continuam gravadas).
+drop_subagent_captures = "true"
+
+# Briefing no início de toda sessão (gasta tokens SEMPRE; deixe desligado em modelo local de contexto curto):
+# [briefing]
+# inject_on_session_start = "true"
+# max_chars = 4000
+
+# Recall global (consulta sem escopo busca em todos os projetos): só para meta-repositórios.
+# [recall]
+# default_global = "true"
+
+[capture]
+# Padrões casam o caminho INTEIRO normalizado, relativo à pasta deste arquivo; usar apenas *, ? e **.
+# Eventos de ferramentas de arquivo/shell que citam esses caminhos são descartados antes de gravar ou enviar.
+# NÃO é DLP completo: prompts e texto livre não são filtrados.
+ignore_paths = [
+  ".env*",
+  "**/.env*",
+  "**/*.pem",
+  "**/*.key",
+  "**/secrets/**",
+  "**/.ssh/**",
+  # ADRs versionados no repositório (evita cópia desatualizada na wiki):
+  # "docs/adr/**",
+]

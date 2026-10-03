@@ -1,0 +1,97 @@
+{
+  // OpenCode — configuração do PROJETO (mescla com ~/.config/opencode/opencode.json; o projeto vence).
+  // Formato v1 (servidores MCP em "mcp.<nome>"). Para OpenCode 2 beta veja docs/COMPATIBILIDADE.md.
+  // Para ver o resultado já mesclado: `opencode debug config`.
+  "$schema": "https://opencode.ai/config.json",
+
+  // --- Privacidade e controle ---
+  "share": "disabled",          // sem links públicos de sessão
+  "autoupdate": false,          // use "notify" se quiser apenas ser avisado
+  // Só carrega os provedores listados (cloud e Zen não são carregados mesmo com chaves no ambiente).
+  // "opencode" = OpenCode Zen, necessário para o modelo mimo-v2.6-flash-free. "ollama" fica como base local.
+  // ATENÇÃO: com "opencode" ativo, prompts/código vão a servidores remotos (EUA) e, neste modelo free,
+  // os dados podem ser usados para melhorar o modelo. Para voltar 100% local: deixe só ["ollama"].
+  // Para um preset híbrido, acrescente o provedor aqui (ex.: "openai").
+  "enabled_providers": ["ollama", "opencode"],
+
+  // --- Modelos (TROQUE pelos nomes de `ollama list`) ---
+  // ATIVO: OpenCode Zen (remoto; grátis por tempo limitado). Formato: opencode/<model-id>.
+  // Para ativar: no TUI rode `/connect` > OpenCode Zen > cole a API key (https://opencode.ai/auth),
+  // ou exporte OPENCODE_API_KEY. Confira com `opencode models opencode` (se não listar: `opencode models --refresh`).
+  "model": "opencode/mimo-v2.6-flash-free",
+  "small_model": "opencode/mimo-v2.6-flash-free",   // títulos etc.
+  // Para voltar ao Ollama local: comente as 2 linhas acima e descomente as 2 abaixo.
+  // "model": "ollama/qwen3-coder:30b",
+  // "small_model": "ollama/qwen3-coder:30b",   // títulos etc. também locais
+
+  // Base OLLAMA mantida sem alterações (só é usada se selecionada em /models ou ao voltar "model" para ollama/...).
+  // O provedor "opencode" (Zen) é nativo: não precisa de bloco aqui.
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama (local)",
+      "options": {
+        "baseURL": "http://localhost:11434/v1",
+        // Modelos locais lentos: evite abortar por tempo. false desliga o limite.
+        "timeout": 600000,
+        "chunkTimeout": 120000
+      },
+      "models": {
+        "qwen3-coder:30b": {
+          "name": "Qwen3-Coder 30B (local)",
+          // Ajuste ao que a VRAM/RAM aguenta e configure o mesmo num_ctx no Ollama (16k-32k no mínimo).
+          "limit": { "context": 32768, "output": 8192 }
+        }
+      }
+    }
+    // Alternativas (mesmo padrão): llama-server http://127.0.0.1:8080/v1 ; LM Studio http://127.0.0.1:1234/v1
+  },
+
+  // --- Permissões: o padrão do OpenCode é permitir quase tudo. Aqui é restritivo; afrouxe com o tempo. ---
+  // Regras: a ÚLTIMA que casar vence (catch-all "*" primeiro). Comandos com argumentos precisam de "*".
+  "permission": {
+    "edit": "ask",
+    "webfetch": "ask",
+    "websearch": "ask",
+    "bash": {
+      "*": "ask",
+      "git status*": "allow",
+      "git diff*": "allow",
+      "git log*": "allow",
+      "ls*": "allow",
+      "grep *": "allow",
+      "rm -rf *": "deny",
+      "sudo *": "deny",
+      "git push *": "deny",
+      "git reset --hard*": "deny"
+    },
+    "read": {
+      "*": "allow",
+      "*.env": "deny",
+      "*.env.*": "deny",
+      "*.env.example": "allow",
+      "*.pem": "deny",
+      "*.key": "deny"
+    }
+    // external_directory e doom_loop já são "ask" por padrão.
+  },
+
+  // --- Contexto e desempenho no WSL ---
+  "compaction": { "auto": true, "prune": true },
+  "watcher": { "ignore": ["node_modules/**", "dist/**", ".git/**", ".slim/clonedeps/repos/**"] },
+  // Se o repositório for grande e o disco/WSL sofrer, considere "snapshot": false (perde o undo pela UI).
+
+  "mcp": {
+    // Front-End-Checklist (MCP REMOTO). DESLIGADO: review_code envia código ao servidor deles.
+    // Ligue só numa sessão consciente. Alternativa local: skill (docs/INSTALACAO.md, etapa 4).
+    "frontend-checklist": {
+      "type": "remote",
+      "url": "https://mcp.frontendchecklist.io",
+      "enabled": false
+    }
+    // ai-memory: não escreva à mão; use `ai-memory install-mcp --client opencode --apply`.
+  }
+
+  // "plugin": o instalador do slim registra a entrada. Depois, FIXE a versão (ex.: "oh-my-opencode-slim@X.Y.Z").
+  // Não rode `opencode serve/web` com "hostname": "0.0.0.0" ou "mdns": true sem entender o risco (docs/PRIVACIDADE.md).
+}

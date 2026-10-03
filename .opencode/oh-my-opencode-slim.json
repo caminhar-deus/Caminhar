@@ -1,0 +1,79 @@
+{
+  // oh-my-opencode-slim — overrides do PROJETO (vencem ~/.config/opencode/oh-my-opencode-slim.json[c]).
+  // Arquivo .json aceita comentários (JSONC). Valide com: oh-my-opencode-slim doctor
+  // Precedência entre campos de agente: ancestor < preset filho < "agents" raiz < opencode.json do host.
+
+  // Preset ativo: "zen" = MiMo V2.6 Flash Free (OpenCode Zen). Para voltar 100% ao Ollama local: "local".
+  "preset": "zen",
+
+  "presets": {
+    // 100% local. Dê o melhor modelo disponível ao orchestrator e ao oracle.
+    // "variant" (esforço de raciocínio) é específico de provedor: omitido aqui de propósito.
+    "local": {
+      "orchestrator": { "model": "ollama/qwen3-coder:30b" },
+      "oracle":       { "model": "ollama/qwen3-coder:30b"
+                        // O oracle já recebe a skill "simplify" por padrão. Para ADICIONAR a skill do checklist
+                        // (confirme o nome real da skill instalada): , "skills_add": ["<nome-da-skill-do-checklist>"]
+                      },
+      "librarian":    { "model": "ollama/qwen3-coder:30b" },
+      "explorer":     { "model": "ollama/qwen3-coder:30b" },
+      "designer":     { "model": "ollama/qwen3-coder:30b", "skills_add": ["ui-ux-pro-max"] },
+      "fixer":        { "model": "ollama/qwen3-coder:30b" }
+    },
+    // OpenCode Zen (remoto; free por tempo limitado): todos os agentes no mesmo modelo. Preset "local" acima segue intacto.
+    // Requer "opencode" em enabled_providers no opencode.jsonc e login (`/connect` > OpenCode Zen, ou OPENCODE_API_KEY).
+    // Fallback automático para o Ollama se o Zen falhar ou o modelo free sair do ar: troque cada "model" por um array, ex.:
+    //   "model": ["opencode/mimo-v2.6-flash-free", "ollama/qwen3-coder:30b"]   (fallback.enabled já está true; não vale em hosts v2)
+    "zen": {
+      "orchestrator": { "model": "opencode/mimo-v2.6-flash-free" },
+      "oracle":       { "model": "opencode/mimo-v2.6-flash-free" },
+      "librarian":    { "model": "opencode/mimo-v2.6-flash-free" },
+      "explorer":     { "model": "opencode/mimo-v2.6-flash-free" },
+      "designer":     { "model": "opencode/mimo-v2.6-flash-free", "skills_add": ["ui-ux-pro-max"] },
+      "fixer":        { "model": "opencode/mimo-v2.6-flash-free" }
+    }
+    // Híbrido de exemplo (lembre de adicionar o provedor em enabled_providers no opencode.jsonc):
+    // "hibrido": {
+    //   "extends": "local",
+    //   "orchestrator": { "model": "openai/SEU-MODELO", "variant": "high" },
+    //   "oracle":       { "model": ["openai/SEU-MODELO", "ollama/qwen3-coder:30b"], "variant": "high" }   // array = cadeia de fallback
+    // }
+    // Dica: "inheritModelFrom": "session" faz um agente seguir o /model da sessão (troca de modelo local sem editar 6 linhas).
+  },
+
+  // Permissões por agente (valem para todos os presets; fazem cumprir a tabela do AGENTS.md).
+  // Formato igual ao "permission" do OpenCode. Confirme com `doctor` e T8.
+  "agents": {
+    "explorer":  { "permission": { "edit": "deny" } },
+    "librarian": { "permission": { "edit": "deny" } },
+    "oracle":    { "permission": { "edit": "deny" } }
+  },
+
+  // MCPs embutidos do plugin (todos REMOTOS): websearch -> mcp.exa.ai ; context7 -> mcp.context7.com ; grep_app -> mcp.grep.app.
+  // Por padrão só o librarian usa os três (e o orchestrator "*" menos context7). Desligados globalmente aqui.
+  "disabled_mcps": ["websearch", "context7", "grep_app"],
+
+  // Notificação apenas (sem instalar sozinho). A trava real de versão é fixar "oh-my-opencode-slim@X.Y.Z" no opencode.json.
+  "autoUpdate": false,
+
+  "disabled_agents": ["observer"],   // já é o padrão; mantenha sem modelo multimodal
+  // "disabled_commands": ["loop"],  // opcional: desliga comandos que você não usa (interview, deepwork, reflect, loop)
+
+  // Fallback só faz sentido com cadeia de modelos (array). Em v2 o plugin o desativa de qualquer forma.
+  "fallback": { "enabled": true, "maxRetries": 3 },
+
+  "backgroundJobs": {
+    // Um backend local único degrada com sessões grandes simultâneas: converte background em foreground (sequencial).
+    // Com o preset "zen" (remoto) essa regra do ollama não se aplica; defaultConcurrency=1 abaixo segue valendo (pode subir se quiser).
+    "sameProviderPolicy": { "ollama": "foreground" },
+    "concurrency": { "defaultConcurrency": 1 },
+    // Sem timeout, uma tarefa travada prende o slot para sempre quando há limite de concorrência.
+    "wallClockTimeoutMs": 900000,
+    "abortGraceMs": 10000,
+    // Padrão é LIGADO: acorda o orquestrador ocioso a cada 5 min se houver todos incompletos.
+    // Em modelo local isso gera prompts extras e custo de GPU não pedidos; desligado aqui.
+    "orchestratorWake": { "enabled": false }
+  },
+
+  "multiplexer": { "type": "none" }   // "tmux" etc. só se você usa multiplexador no WSL
+}
