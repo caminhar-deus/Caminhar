@@ -14,12 +14,12 @@
   // Para um preset híbrido, acrescente o provedor aqui (ex.: "openai").
   "enabled_providers": ["ollama", "opencode"],
 
-  // --- Modelos (TROQUE pelos nomes de `ollama list`) ---
-  // ATIVO: OpenCode Zen (remoto; grátis por tempo limitado). Formato: opencode/<model-id>.
-  // Para ativar: no TUI rode `/connect` > OpenCode Zen > cole a API key (https://opencode.ai/auth),
-  // ou exporte OPENCODE_API_KEY. Confira com `opencode models opencode` (se não listar: `opencode models --refresh`).
-  "model": "opencode/mimo-v2.6-flash-free",
-  "small_model": "opencode/mimo-v2.6-flash-free",   // títulos etc.
+  // --- Modelos (TROQUE pelos nomes de `ollama list` / `opencode models`) ---
+  // ATIVO: OpenCode Zen (remoto; free por tempo limitado). Formato: opencode/<model-id>.
+  // Sessão segue o orchestrator do preset "zen" (Cenário 3 privacidade): space-bunny = zero-retention.
+  // small_model (títulos etc.) = mimo-v2.6-flash-free (leve). Login via `/connect` > OpenCode Zen ou OPENCODE_API_KEY.
+  "model": "opencode/space-bunny-free",
+  "small_model": "opencode/mimo-v2.6-flash-free",
   // Para voltar ao Ollama local: comente as 2 linhas acima e descomente as 2 abaixo.
   // "model": "ollama/qwen3-coder:30b",
   // "small_model": "ollama/qwen3-coder:30b",   // títulos etc. também locais
