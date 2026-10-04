@@ -63,7 +63,11 @@
       "rm -rf *": "deny",
       "sudo *": "deny",
       "git push *": "deny",
-      "git reset --hard*": "deny"
+      "git reset --hard*": "deny",
+      // T8 (04/10/2026): o matcher casa por início de segmento; estes 2 escapes passavam pelos denies acima.
+      // Limite conhecido: padrão de string NÃO é sandbox (`env git push`, `sh -c`, etc. continuam possíveis).
+      "git -C * push *": "deny",
+      "bash -c *": "deny"
     },
     "read": {
       "*": "allow",
