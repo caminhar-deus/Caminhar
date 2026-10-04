@@ -83,7 +83,8 @@
 }
 
 .errorSummary:focus {
-  outline: none;
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
   box-shadow: var(--color-focus-ring);
 }
 
@@ -96,15 +97,18 @@
 }
 
 .summaryList a {
-  display: inline-block;
-  padding: var(--spacing-1_5) 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: var(--spacing-1) 0;
   color: var(--color-error-800);
   text-decoration: underline;
   border-radius: var(--border-radius-sm);
 }
 
 .summaryList a:focus-visible {
-  outline: none;
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
   box-shadow: var(--color-focus-ring);
 }
 
@@ -155,7 +159,9 @@
 
 .input:focus {
   border-color: var(--color-primary-500);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
 }
 
 .input:disabled {
@@ -165,9 +171,15 @@
 }
 
 /* Erro de validação: borda + anel vermelho (não só cor: há texto abaixo) */
-.inputInvalid,
+.inputInvalid {
+  border-color: var(--color-error-500);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
 .inputInvalid:focus {
   border-color: var(--color-error-500);
+  outline: 2px solid var(--color-error-500);
+  outline-offset: 2px;
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
 
@@ -206,7 +218,8 @@
 }
 
 .toggle:focus-visible {
-  outline: none;
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
   box-shadow: var(--color-focus-ring);
 }
 
@@ -236,7 +249,8 @@
 }
 
 .link:focus-visible {
-  outline: none;
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
   box-shadow: var(--color-focus-ring);
 }
 

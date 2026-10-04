@@ -32,8 +32,17 @@ Efeitos especiais (grain, cursor customizado, parallax) são **não-autorizados*
 | Erro fundo / borda / texto | `--color-error-50` / `--color-error-200` / `--color-error-500` (–600 hover) | `#fef2f2` / `#fecaca` / `#ef4444` |
 | Sucesso | `--color-success-500` (texto escuro `--color-success-800`) | `#10b981` (`#065f46`) |
 | Aviso / info | `--color-warning-500` / `--color-info-500` | `#f59e0b` / `#3b82f6` |
-| Foco (anel) | `--color-focus-ring` (`0 0 0 3px #bfdbfe`) + `--color-focus-primary` | `#bfdbfe` / `#2563eb` |
+| Foco (anel duplo, norma §7) | `outline: 2px solid var(--color-focus-primary)` + `box-shadow: var(--color-focus-ring)` | `#2563eb` / `#bfdbfe` |
 | Desabilitado | `--color-disabled-background` / `--color-disabled-text` | `#e5e5e5` / `#a3a3a3` |
+
+Nota normativa de foco: `--color-focus-ring` sozinho tem contraste de 1,36:1 sobre
+`#fafafa` e **não** serve como único indicador (WCAG 2.2 SC 1.4.11 exige ≥ 3:1 para
+indicador de foco). Todo foco visível combina `outline: 2px solid
+var(--color-focus-primary)` (`#2563eb`, 4,95:1 sobre `#fafafa`) com o `box-shadow`
+como halo complementar — nunca um sem o outro, nunca `outline: none` seco. Exceção
+única: campo com erro de validação usa `outline: 2px solid var(--color-error-500)`
+(anel na cor do estado — ≈ 3,6:1 sobre claro, passa em 3:1 — em vez de azul sobre
+vermelho); ver §7 Campo.
 
 Pares com contraste AA verificado (texto normal ≥ 4.5:1): `#171717` sobre `#fafafa`
 (15.9:1); `#525252` sobre `#fafafa` (7.5:1); `#fafafa` sobre `#2563eb` (5.2:1);
@@ -92,21 +101,30 @@ toque ≥ 44×44px; gutter de 16px no mobile, 24–32px no desktop; verificar
   texto `--color-text-inverse`, hover `--color-hover-primary` + `--shadow-buttonHover`,
   active `--color-active-primary` + desloca 1px), `secondary`, `ghost`, `danger`,
   `success`; tamanhos `sm` 32 · `md` 40 · `lg` 48 · `xl` 56; `fullWidth`; foco visível
-  via `:focus-visible` + `box-shadow: var(--color-focus-ring)`; desabilitado com
+  via `:focus-visible` com a declaração exata `outline: 2px solid var(--color-focus-primary); outline-offset: 2px; box-shadow: var(--color-focus-ring);` (o `outline` é o indicador que passa em 3:1; o `box-shadow` é halo complementar — nunca um sem o outro, nunca `outline: none` seco); desabilitado com
   `opacity: var(--opacity-50)` + `cursor: not-allowed`; loading com spinner absoluto
   e conteúdo oculto por opacidade (layout não muda).
 - **Campo** (`Input.module.css`): `wrapper` em coluna com `gap: var(--spacing-1_5)`;
   `label` 14px `medium` em `--color-text-primary` + `*` obrigatório em
   `--color-error-500`; `input` altura 40 (`md`) / 48 (`lg`), borda 1px
-  `--color-border-light`, raio 12px, foco com borda `--color-primary-500` e anel
-  `0 0 0 3px rgba(37,99,235,.1)`; erro com borda `--color-error-500` e anel vermelho
-  + `.errorMessage` 12px em `--color-error-500` ligada por `aria-describedby`;
+  `--color-border-light`, raio 12px; foco válido com borda `--color-primary-500` mais
+  a declaração exata de foco do Botão (`outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px; box-shadow: var(--color-focus-ring);` — substitui o anel
+  `rgba(37,99,235,.1)` pelo halo tokenizado); campo inválido com borda
+  `--color-error-500` + halo vermelho existente, e **foco inválido com `outline: 2px
+  solid var(--color-error-500); outline-offset: 2px;`** (anel na cor do estado, nunca
+  azul sobre vermelho); a regra combinada desmembra-se — sem foco, o inválido segue
+  só com borda + halo, sem `outline`. O `outline: none` da base do input é permitido
+  porque cada `:focus` repõe o indicador. Erro com `.errorMessage` 12px em `--color-error-500` ligada por `aria-describedby`;
   desabilitado em `--color-bg-secondary`.
 - **Cartão**: fundo `--color-bg-primary`, raio `--border-radius-xl`, sombra
   `--shadow-md`, padding 24 mobile / 32–40 desktop.
 - **Feedback**: erro de formulário em bloco com fundo `--color-error-50`, borda
   `--color-error-200`, texto `--color-error-800/--color-error-500`, `role="alert"`;
-  sucesso pontual via `react-hot-toast` (já configurado em `_app.js`).
+  foco programático com a declaração exata de foco do Botão em `:focus` (não
+  `:focus-visible`, pois o foco é movido via código; o `outline` azul tem 4,72:1
+  sobre o fundo `--color-error-50`, então passa em 3:1 também aqui); sucesso pontual via
+  `react-hot-toast` (já configurado em `_app.js`).
 - **Ícones**: SVG vetorial de família única e consistente (traço uniforme), nunca emoji
   como ícone; decorativo com `aria-hidden="true"`, controle só-ícone com `aria-label`
   e estado (`aria-pressed`) anunciado.
@@ -126,13 +144,18 @@ nunca fica escondido atrás de sticky/overlay; alvos ≥ 44px.
 Hex fora dos tokens; novas fontes ou pesos sem override; Tailwind ou estilo inline no
 lugar de CSS Modules; bordas/arredondamentos/sombras arbitrários; emoji como ícone ou
 indicador de estado; bloquear colar no login; validar só no submit; toast como único
-relato de erro; foco invisível ou removido (`outline: none` sem anel substituto);
+relato de erro; foco invisível ou removido (`outline: none` sem o par `outline` +
+halo do §7 — o `outline: none` da base do input é permitido porque cada `:focus`
+repõe o indicador); usar só `box-shadow: var(--color-focus-ring)` como único indicador de
+foco (1,36:1 sobre claro, não passa em WCAG 2.2 SC 1.4.11);
 animação sem `reduced-motion`; texto informativo em contraste < 4.5:1; dois `h1`;
 CTA genérico ("Clique aqui"); lógica de negócio dentro de arquivos de estilo.
 
 ## 10. Checklist de pré-entrega
 
-Contraste AA (texto 4.5:1, não-texto 3:1); foco visível em todo interativo;
+Contraste AA (texto 4.5:1, não-texto 3:1); foco visível em todo interativo com o
+par do §7 (`outline: 2px solid var(--color-focus-primary)` + halo — o indicador
+passa em 3:1; no campo com erro, `outline` em `--color-error-500`);
 `prefers-reduced-motion` testado; 375/768/1024/1440 + paisagem; ordem de foco =
 ordem visual; erros com `aria-describedby` e resumo focável; toque ≥ 44px; sem emoji
 como ícone; sem token novo fora de `variables.css`; testes existentes continuam

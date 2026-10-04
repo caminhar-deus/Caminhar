@@ -2,6 +2,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/UI';
+import { resolveNext } from '@/utils/resolve-next';
 import styles from './styles/Login.module.css';
 
 /**
@@ -26,34 +27,6 @@ function validateField(name, value) {
     return value.trim() ? '' : MSG.emptyUsername;
   }
   return value ? '' : MSG.emptyPassword;
-}
-
-/**
- * Resolve o destino pós-login a partir de ?next= / ?returnUrl=.
- * Validação por resolução de URL (não por substring): o candidato precisa
- * começar com "/", não conter "//", "://", caracteres de controle (CRLF etc.)
- * nem "\\", e ao resolver contra um host fixo precisa manter a mesma origem.
- * Qualquer outro valor cai para /admin (evita open redirect).
- */
-function resolveNext(query) {
-  const first = (value) => (Array.isArray(value) ? value[0] : value);
-  const candidate = first(query?.next) || first(query?.returnUrl);
-  if (typeof candidate !== 'string') return '/admin';
-  if (
-    !candidate.startsWith('/') ||
-    candidate.includes('//') ||
-    candidate.includes('://') ||
-    // eslint-disable-next-line no-control-regex -- rejeição deliberada de controles (CRLF etc.)
-    /[\x00-\x1F\x7F\\]/.test(candidate)
-  ) {
-    return '/admin';
-  }
-  try {
-    const resolved = new URL(candidate, 'https://x.local');
-    return resolved.origin === 'https://x.local' ? candidate : '/admin';
-  } catch {
-    return '/admin';
-  }
 }
 
 const cx = (...classes) => classes.filter(Boolean).join(' ');
@@ -306,7 +279,7 @@ export default function LoginPage() {
           </Button>
 
           {loading && (
-            <p role="status" className={styles.loadingStatus}>
+            <p aria-hidden="true" className={styles.loadingStatus}>
               Entrando…
             </p>
           )}

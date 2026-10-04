@@ -32,9 +32,11 @@
 - `401` (`INVALID_CREDENTIALS`, "Credenciais inválidas") → mensagem da UI (item 6).
 - `429` (muitas tentativas, janela de 60s) → mensagem "Muitas tentativas…".
 - `403` (IP spoofing) e `500` → mensagem genérica de erro interno.
-- Qualquer resposta não-2xx tem forma `{ error, message }` — exibir `message` quando
-  houver, com fallback para a copy do item 6. Erro de rede (fetch rejeita) → mensagem
-  de conexão.
+- Qualquer resposta não-2xx tem forma `{ error, message }` — por UX e segurança, a
+  UI exibe a **copy deste arquivo (item 6), que tem precedência**; `data.message`
+  entra só como fallback quando não houver copy para o caso (na prática,
+  inalcançável enquanto a copy existir — intencional, para nunca vazar texto cru
+  do servidor ao usuário). Erro de rede (fetch rejeita) → mensagem de conexão.
 
 ## 3. Layout (mobile-first, ordem de foco = ordem visual)
 
@@ -54,7 +56,12 @@ Página (`min-height: 100vh`, fundo `--color-bg-secondary`, `display: flex`,
    `--color-error-50`, borda 1px `--color-error-200`, raio `--border-radius-md` 6px,
    padding `var(--spacing-2_5)` 10px, texto 14px `medium` em `--color-error-800`
    (`#991b1b`), com lista de itens linkados (`<a href="#login-usuario">…</a>`) nos
-   erros de validação.
+   erros de validação. Links da lista com altura clicável ≥ 44px pela declaração
+   exata `.summaryList a { display: inline-flex; align-items: center; min-height:
+   44px; padding: var(--spacing-1) 0; }` — o `min-height` garante o alvo sem
+   depender do `line-height`; `gap` da lista (`var(--spacing-1)`), `margin-top`,
+   `padding-left` e o marcador do `li` ficam inalterados (o `li` continua
+   `list-item`).
 4. Campo Usuário: `label htmlFor="login-usuario"` "Usuário" + `*`; `input`
    `id="login-usuario"`, `name="username"`, `type="text"`, `autoComplete="username"`,
    `required`, `aria-invalid` + `aria-describedby="login-usuario-erro"` quando inválido,
@@ -71,7 +78,16 @@ Página (`min-height: 100vh`, fundo `--color-bg-secondary`, `display: flex`,
    simples, não quebra nada; registrar como pendência em vez de improvisar destino.
 7. Botão submit: `type="submit"`, variante `primary`, tamanho `lg` (48px), `fullWidth`,
    texto "Entrar". Loading: desabilita botão + inputs, mostra spinner (padrão
-   `Button.module.css`) e troca o texto acessível via `aria-live` ("Entrando…").
+   `Button.module.css`) e troca o texto do `span` persistente com
+   `aria-live="polite"` ("Entrando…"). **Anunciador único**: só esse `span` anuncia
+   o loading. O texto visível "Entrando…" abaixo do botão é um `p` comum com
+   `aria-hidden="true"` e `className={styles.loadingStatus}` (montado só durante o
+   loading) — **sem** `role="status"` e sem nenhuma outra live region. Motivo: o
+   `Button` oculta o rótulo por opacidade durante o loading (só o spinner fica
+   visível, parado com `reduced-motion`), então o `p` preserva o estado visível
+   para quem enxerga sem gerar duplo anúncio; o `span` persistente (só o texto
+   muda) é o anunciador confiável, pois live region montada junto com o conteúdo
+   não é anunciada de forma confiável.
 8. Rodapé do cartão: `p` 14px `--color-text-secondary` "Ainda não tem conta? " + link
    "Voltar ao início" (`href="/"`) — sem cadastro público nesta entrega.
 
@@ -83,13 +99,25 @@ Espaçamento vertical do `form`: `display: flex`, `flex-direction: column`,
 - **Default**: input borda 1px `--color-border-light`, fundo `--color-bg-primary`.
 - **Hover (botão)**: `--color-hover-primary` + `var(--shadow-buttonHover)`, transição
   `var(--transition-background)` 150ms. Links: sublinhado.
-- **Focus**: input com borda `--color-primary-500` + `box-shadow: 0 0 0 3px
-  rgba(37,99,235,.1)`; botão e link "mostrar senha" com `:focus-visible` e
-  `box-shadow: var(--color-focus-ring)` (nunca `outline: none` seco). Resumo de erros
-  recebe foco programático após submit falho.
+- **Focus**: input válido com borda `--color-primary-500` + declaração exata
+  `.input:focus { border-color: var(--color-primary-500); outline: 2px solid
+  var(--color-focus-primary); outline-offset: 2px; box-shadow:
+  var(--color-focus-ring); }` (o `outline` `#2563eb` tem 4,95:1 sobre `#fafafa`;
+  o halo sozinho tem 1,36:1 e não basta, ver MASTER §2). Input inválido com
+  declaração exata `.inputInvalid:focus { border-color: var(--color-error-500);
+  outline: 2px solid var(--color-error-500); outline-offset: 2px; box-shadow:
+  0 0 0 3px rgba(239,68,68,.1); }` — anel na cor do estado (≈ 3,6:1 sobre claro),
+  nunca azul sobre vermelho; desmembrar a regra combinada atual (sem foco, o
+  inválido segue só com borda + halo, sem `outline`). O `outline: none` da base
+  `.input` é permitido porque cada `:focus` repõe o indicador. Botão, toggle
+  "mostrar senha", links e resumo de erros usam a declaração do input válido
+  (`:focus-visible`; resumo usa `:focus`, pois o foco é programático). Resumo de
+  erros recebe foco programático após submit falho.
 - **Loading**: `disabled` em botão + inputs; botão com `opacity: var(--opacity-50)` e
   `cursor: not-allowed`; `aria-busy="true"` no `form`; spinner gira (`spin 1s linear
-  infinite`); com `reduced-motion`, spinner parado + texto "Entrando…".
+  infinite`, `aria-hidden`, sem anúncio próprio); com `reduced-motion`, spinner
+  parado + texto visível "Entrando…" no `p` com `aria-hidden` (item 3.7); o anúncio
+  para leitor de tela vem só do `span` com `aria-live` dentro do botão.
 - **Erro de validação**: borda `--color-error-500` + anel `0 0 0 3px
   rgba(239,68,68,.1)` no campo, `.errorMessage` abaixo (12px `--color-error-700`),
   resumo no topo com foco.
@@ -104,7 +132,14 @@ Espaçamento vertical do `form`: `display: flex`, `flex-direction: column`,
 
 ```text
 state: username, password, showPassword=false, fieldErrors={}, summary=null, loading=false
-next = query.next || query.returnUrl (somente se string que começa com "/" e não contém "//" nem "://"; senão "/admin")
+next = resolveNext(query), onde resolveNext (extraída em `utils/resolve-next.js`, ver
+item 9): pega o primeiro elemento quando `query.next` é array (`?next=a&next=b` usa
+`a`), senão `query.returnUrl` (mesma regra de array); `next` tem precedência sobre
+`returnUrl`; se o valor escolhido não for string, retorna `/admin`. Rejeita
+(→ `/admin`) quando o candidato: não começa com `/`; contém `//`, `://` ou `\`;
+contém controle ou DEL (`/[\x00-\x1F\x7F\\]/` — deliberado, bloqueia CRLF header
+injection); ou quando `new URL(candidato, "https://x.local")` lançar exceção ou
+resolver para origem diferente de `https://x.local`.
 
 onBlur(campo): valida só esse campo (vazio → "Informe seu nome de usuário." / "Informe sua senha.")
 onSubmit(e):
@@ -116,7 +151,7 @@ onSubmit(e):
        se res.ok && data.success → router.push(next)
        se 401 → summary = "Usuário ou senha incorretos. Tente de novo."
        se 429 → summary = "Muitas tentativas. Aguarde um minuto e tente de novo."
-       senão → summary = data.message || "Não foi possível entrar. Tente de novo em instantes."
+       senão → summary = copy genérica deste arquivo ("Não foi possível entrar. Tente de novo em instantes."); `data.message` só como fallback quando não houver copy (item 2)
        focus("#login-erro-resumo")
   catch: summary = "Sem conexão. Verifique sua internet e tente de novo." + focus no resumo
   finally: loading=false
@@ -143,12 +178,15 @@ minuto e tente de novo." (429), "Não foi possível entrar. Tente de novo em ins
 `h1` único; labels associados; `aria-describedby` campo↔erro; `aria-invalid`;
 resumo `role="alert"` + `tabindex="-1"` focado após falha; toggle de senha com
 `aria-label` + `aria-pressed`; `autocomplete` correto; colar permitido; foco visível
-em tudo (anel `--color-focus-ring`); ordem de foco = ordem visual; contraste:
+em tudo (par do MASTER §7: `outline: 2px solid var(--color-focus-primary)` +
+halo — indicador ≥ 3:1; no campo inválido, `outline` em `--color-error-500`); ordem de foco = ordem visual; contraste:
 texto `#171717`/`#525252` sobre `#fafafa`, botão `#fafafa` sobre `#2563eb`,
 erros `#991b1b` sobre `#fee2e2` (todos ≥ 4.5:1); `prefers-reduced-motion` desliga
 transição, fade do erro e giro do spinner; toque ≥ 44px (botão 48px, toggle 44×44px,
-links com padding vertical que some 44px de altura clicável); erro nunca só por cor
-(texto + borda); `aria-busy` no loading; `aria-live="polite"` no texto do botão.
+links do resumo com `min-height: 44px` — item 3.3); erro nunca só por cor
+(texto + borda); `aria-busy` no loading; anunciador único do loading:
+`aria-live="polite"` no `span` persistente do botão, texto visível em `p` com
+`aria-hidden` (sem `role="status"`, sem segunda live region — item 3.7).
 
 ## 8. Responsividade
 
@@ -161,9 +199,38 @@ Testar 375 / 768 / 1024 / 1440.
 ## 9. O que o @fixer deve verificar antes de entregar
 
 Página abre em `/login` sem erro; submit vazio mostra 2 erros inline + resumo focado;
-`blur` valida por campo; 401 mostra "Usuário ou senha incorretos" sem limpar campos;
-loading desabilita tudo e impede duplo submit; sucesso redireciona para `?next=` válido
-ou `/admin` (com `next` malicioso `https://…` ignorado); navegação só-teclado completa
-o fluxo; `reduced-motion` e zoom 200% sem quebra; `npm run lint` e testes existentes
-passam. Pendências conhecidas: rota `/esqueci-senha` ainda não existe (link sem
-destino funcional); sem cadastro público (rodapé volta ao início).
+`blur` valida por campo; 401 mostra a copy sem limpar campos (sem vazar `data.message`);
+loading desabilita tudo e impede duplo submit, com anunciador único (só o `span` do
+botão; `p` visível com `aria-hidden`, sem `role="status"`); anel de foco duplo
+(`outline` 2px + halo) visível em botão, inputs (válido azul, inválido em
+`--color-error-500` com a regra desmembrada), toggle, links e resumo; links do
+resumo com altura clicável ≥ 44px; sucesso redireciona para `?next=` válido ou
+`/admin`; navegação só-teclado completa o fluxo; `reduced-motion` e zoom 200% sem
+quebra. Verificação de código: `npx eslint pages/login.js` (mais cada arquivo tocado)
+e `npx jest` — `npm run lint` quebra no repo com 429 erros pré-existentes de markdown
+em `.opencode/skills/**`, fora do escopo, então não usar como porta. Pendências
+conhecidas: rota `/esqueci-senha` ainda não existe (link sem destino funcional); sem
+cadastro público (rodapé volta ao início).
+
+### 9.1. Extração e teste de `resolveNext` (R5)
+
+Confirmado nome e localização: extrair `resolveNext` de `pages/login.js` para
+`utils/resolve-next.js` como export nomeado ESM (`export function resolveNext(query)`,
+mesmo padrão de `utils/reorder.js`), **sem mudar o algoritmo** (spec no item 5);
+`pages/login.js` passa a importar de `@/utils/resolve-next` (ou caminho relativo
+equivalente). Teste em `tests/unit/utils/resolve-next.test.js` (espelha a convenção
+`tests/unit/**` do repo). PoCs mínimos obrigatórios:
+
+- Válidos (retornam o candidato): `/admin`, `/admin/usuarios`, `/login?x=1`
+  (query preservada), `/a?b=c`.
+- Absolutos e protocol-relative (→ `/admin`): `https://evil.com`,
+  `http://evil.com/x`, `//evil.com`, `/foo//bar`, `/foo://bar`, `javascript:alert(1)`.
+- Barra invertida e controles (→ `/admin`): `/foo\bar`, `\evil`, `/foo` + `\n`,
+  `\r`, `\t`, `\x00`, DEL (`\x7f`), e candidato com CRLF (`%0d%0a` já decodificado).
+- Array: `?next=/a&next=https://evil.com` → usa o primeiro (`/a`);
+  `?next=https://evil.com&next=/a` → `/admin` (primeiro manda); `query.next = []`
+  (vazio) comporta-se como ausente (cai em `returnUrl` ou `/admin`); `next` ausente
+  com `?returnUrl=/b` → `/b`; `next` presente tem precedência sobre `returnUrl`.
+- Tipos e borda: `next` ausente/`undefined`/`null`/número/objeto → `/admin`;
+  string vazia → `/admin` (não começa com `/`); `/%2e%2e/` e similares seguem a regra
+  geral de resolução (só passa se a origem resolver para a mesma).
