@@ -1,0 +1,292 @@
+/* =============================================
+ * Login — spec: design-system/pages/login.md (override do MASTER)
+ * Mobile-first, CSS Modules (sem Tailwind), tokens de pages/styles/variables.css
+ * ============================================= */
+
+/* ── Página ── */
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-4);
+  background-color: var(--color-bg-secondary);
+}
+
+/* ── Cartão ── */
+.card {
+  width: 100%;
+  max-width: 440px;
+  /* auto nas bordas verticais evita corte do topo em telas baixas (paisagem) */
+  margin: auto 0;
+  padding: var(--spacing-6);
+  background-color: var(--color-bg-primary);
+  border-radius: var(--border-radius-xl);
+  box-shadow: var(--shadow-md);
+}
+
+@media (min-width: 640px) {
+  .card {
+    padding: var(--spacing-10);
+  }
+}
+
+/* ── Cabeçalho ── */
+.header {
+  margin-bottom: var(--spacing-6);
+}
+
+.eyebrow {
+  margin-bottom: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-wider);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.title {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-3xl);
+  line-height: var(--line-height-tight);
+  color: var(--color-text-primary);
+}
+
+.subtitle {
+  margin-top: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* ── Formulário ── */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-5);
+}
+
+.requiredNote {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+/* ── Resumo de erros (topo do form, focável) ── */
+.errorSummary {
+  padding: var(--spacing-2_5);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-error-800);
+  background-color: var(--color-error-50);
+  border: var(--border-width-1) solid var(--color-error-200);
+  border-radius: var(--border-radius-md);
+  animation: errorIn var(--duration-slow) var(--easing-standard);
+}
+
+.errorSummary:focus {
+  outline: none;
+  box-shadow: var(--color-focus-ring);
+}
+
+.summaryList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  margin-top: var(--spacing-2);
+  padding-left: var(--spacing-5);
+}
+
+.summaryList a {
+  display: inline-block;
+  padding: var(--spacing-1_5) 0;
+  color: var(--color-error-800);
+  text-decoration: underline;
+  border-radius: var(--border-radius-sm);
+}
+
+.summaryList a:focus-visible {
+  outline: none;
+  box-shadow: var(--color-focus-ring);
+}
+
+/* ── Campos ── */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1_5);
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+/* Asterisco obrigatório via CSS: mantém o texto do label (e o nome
+   acessível) como "Usuário"/"Senha"; a semântica vem do atributo required */
+.label::after {
+  content: '*';
+  margin-left: var(--spacing-1);
+  color: var(--color-error-500);
+}
+
+.inputWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input {
+  width: 100%;
+  height: var(--spacing-12);
+  padding: var(--padding-input-lg);
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-primary);
+  border: var(--border-width-1) solid var(--color-border-light);
+  border-radius: var(--border-radius-xl);
+  transition: var(--transition-all);
+  outline: none;
+}
+
+.input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.input:focus {
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.input:disabled {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-tertiary);
+  cursor: not-allowed;
+}
+
+/* Erro de validação: borda + anel vermelho (não só cor: há texto abaixo) */
+.inputInvalid,
+.inputInvalid:focus {
+  border-color: var(--color-error-500);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.hasToggle {
+  padding-right: var(--spacing-12);
+}
+
+.fieldError {
+  font-size: var(--font-size-xs);
+  color: var(--color-error-700);
+  animation: errorIn var(--duration-slow) var(--easing-standard);
+}
+
+/* ── Toggle "mostrar senha" (44×44, dentro do campo) ── */
+.toggle {
+  position: absolute;
+  top: 50%;
+  right: var(--spacing-0_5);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  color: var(--color-text-secondary);
+  background-color: transparent;
+  border: none;
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: var(--transition-color);
+}
+
+.toggle:hover:not(:disabled) {
+  color: var(--color-text-primary);
+}
+
+.toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--color-focus-ring);
+}
+
+.toggle:disabled {
+  cursor: not-allowed;
+  opacity: var(--opacity-50);
+}
+
+/* ── Linha auxiliar (link à direita, acima do botão) ── */
+.forgotRow {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.link {
+  display: inline-block;
+  padding: var(--spacing-3) 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-link);
+  border-radius: var(--border-radius-sm);
+  transition: var(--transition-color);
+}
+
+.link:hover {
+  color: var(--color-text-link-hover);
+  text-decoration: underline;
+}
+
+.link:focus-visible {
+  outline: none;
+  box-shadow: var(--color-focus-ring);
+}
+
+/* ── Rodapé do cartão ── */
+.footer {
+  margin-top: var(--spacing-6);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* ── Status de loading visível fora do botão (spinner congelado no
+      reduced-motion deixa o rótulo do botão oculto) ── */
+.loadingStatus {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+/* ── Entrada de erro: fade + deslize de 300ms (MASTER §5) ── */
+@keyframes errorIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Movimento reduzido: sem transição, sem fade e spinner parado ── */
+@media (prefers-reduced-motion: reduce) {
+  .errorSummary,
+  .fieldError {
+    animation: none;
+  }
+
+  .input,
+  .link,
+  .toggle {
+    transition: none;
+  }
+
+  /* Specificidade (0,2,0) via .page para vencer as regras de spinner do
+     Button.module.css/Spinner.module.css sem usar !important */
+  .page .submitButton,
+  .page .submitButton *,
+  .page .submitButton *::before,
+  .page .submitButton *::after {
+    animation: none;
+    transition: none;
+  }
+}
