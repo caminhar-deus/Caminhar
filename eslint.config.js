@@ -55,19 +55,45 @@ export default defineConfig([
   { files: ["**/*.json"], plugins: { json }, language: "json/json", extends: ["json/recommended"] },
   { files: ["**/*.jsonc"], plugins: { json }, language: "json/jsonc", extends: ["json/recommended"] },
 
-  // Config do oh-my-opencode-slim: apesar da extensão `.json`, o arquivo é
-  // JSONC — o próprio cabeçalho dele declara "Arquivo .json aceita comentários
-  // (JSONC). Valide com: oh-my-opencode-slim doctor". Sem este override, o
-  // bloco `**/*.json` aplica `json/json`, que proíbe comentários, e o arquivo
-  // falha no parse. Este é config de projeto mantida à mão (ao contrário de
-  // `.opencode/skills/**`, que é conteúdo gerado e está em `ignores`), então
-  // vale lintá-lo de verdade.
-  { files: [".opencode/oh-my-opencode-slim.json"], plugins: { json }, language: "json/jsonc", extends: ["json/recommended"] },
+  // Config do oh-my-opencode-slim: apesar da extensão `.json`, os arquivos são
+  // JSONC — o cabeçalho de `oh-my-opencode-slim.json` declara "Arquivo .json
+  // aceita comentários (JSONC). Valide com: oh-my-opencode-slim doctor". Sem
+  // este override, o bloco `**/*.json` aplica `json/json`, que proíbe
+  // comentários, e o arquivo falha no parse.
+  //
+  // O padrão é `**` e não o nome de um arquivo: o contrato do slim é "`.json`
+  // aceita comentários" para TUDO em `.opencode/`, então um override por
+  // arquivo só empurraria o mesmo erro para o próximo `.json` criado ali.
+  // Verificado: um `.opencode/qualquer.json` com `//` falhava no parse antes
+  // deste override.
+  //
+  // Custo de ser leniente: `json/jsonc` aceita estritamente mais que
+  // `json/json`, então um `.json` aqui que deveria ser estrito passa a tolerar
+  // comentário. Desprezível, e as regras do `json/recommended` continuam valendo.
+  // `.opencode/skills/**` não é afetado: está em `ignores`, que tem precedência.
+  { files: [".opencode/**/*.json"], plugins: { json }, language: "json/jsonc", extends: ["json/recommended"] },
 
   { files: ["**/*.json5"], plugins: { json }, language: "json/json5", extends: ["json/recommended"] },
 
   // Markdown
   { files: ["**/*.md"], plugins: { markdown }, language: "markdown/commonmark", extends: ["markdown/recommended"] },
+
+  // `markdown/no-missing-label-refs` é falso positivo para task-list do GFM:
+  // `- [ ] item` e `- [x] item` são lidos como link de referência com rótulo
+  // vazio (`''` / `'x'`), gerando "Label reference '' not found" em CADA item de
+  // checklist. Comprovado: um arquivo de 6 linhas com 2 checkboxes e 1 cerca de
+  // código sem linguagem produz 3 erros, sendo 2 deles desse falso positivo.
+  //
+  // A regra não tem como ser contornada por configuração — o único option
+  // aceito é `allowLabels`, que não afeta a interpretação de task-list. Como
+  // checklist é formato comum em README/CHANGELOG, a regra não é utilizável
+  // aqui: desligada, perde-se a detecção de referência de link quebrada em
+  // docs, concessão aceita (nenhum `.md` fora de `.opencode/` usa hoje).
+  //
+  // `markdown/fenced-code-language` foi MANTIDA: não é falso positivo, é
+  // apenas estrita, e satisfaz-la é trivial ( ```text ). Manter
+  // `markdown/no-multiple-h1` também: é regra de estrutura de documento válida.
+  { files: ["**/*.md"], rules: { "markdown/no-missing-label-refs": "off" } },
 
   // CSS
   { files: ["**/*.css"], plugins: { css }, language: "css/css", extends: ["css/recommended"], rules: { "css/no-invalid-properties": "off" } },

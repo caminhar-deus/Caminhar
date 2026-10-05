@@ -134,6 +134,397 @@
 │       ├── Toast.module.css
 │       ├── icons.js
 │       └── index.js
+├── coverage
+│   ├── base.css
+│   ├── block-navigation.js
+│   ├── components
+│   │   ├── Admin
+│   │   │   ├── AdminAudit.js.html
+│   │   │   ├── AdminCrudBase.js.html
+│   │   │   ├── AdminDashboard.js.html
+│   │   │   ├── AdminDicas.js.html
+│   │   │   ├── AdminMusicas.js.html
+│   │   │   ├── AdminPosts.js.html
+│   │   │   ├── AdminProducts.js.html
+│   │   │   ├── AdminRolesTab.js.html
+│   │   │   ├── AdminUsers.js.html
+│   │   │   ├── AdminUsersTab.js.html
+│   │   │   ├── AdminVideos.js.html
+│   │   │   ├── CrudForm.js.html
+│   │   │   ├── CrudTable.js.html
+│   │   │   ├── Managers
+│   │   │   │   ├── BackupManager.js.html
+│   │   │   │   ├── CacheManager.js.html
+│   │   │   │   └── index.html
+│   │   │   ├── Tools
+│   │   │   │   ├── IntegrityCheck.js.html
+│   │   │   │   ├── RateLimitViewer.js.html
+│   │   │   │   └── index.html
+│   │   │   ├── fields
+│   │   │   │   ├── ExternalDataButton.js.html
+│   │   │   │   ├── ImageUploadField.js.html
+│   │   │   │   ├── TextAreaField.js.html
+│   │   │   │   ├── TextField.js.html
+│   │   │   │   ├── ToggleField.js.html
+│   │   │   │   ├── UrlField.js.html
+│   │   │   │   └── index.html
+│   │   │   ├── index.html
+│   │   │   ├── index.js.html
+│   │   │   └── withAdminAuth.js.html
+│   │   ├── Features
+│   │   │   ├── Blog
+│   │   │   │   ├── BlogSection.js.html
+│   │   │   │   ├── PostCard.js.html
+│   │   │   │   └── index.html
+│   │   │   ├── ContentTabs
+│   │   │   │   ├── index.html
+│   │   │   │   └── index.js.html
+│   │   │   ├── Music
+│   │   │   │   ├── MusicCard.js.html
+│   │   │   │   ├── MusicGallery.js.html
+│   │   │   │   └── index.html
+│   │   │   ├── Products
+│   │   │   │   ├── ProductCard.js.html
+│   │   │   │   ├── ProductList.js.html
+│   │   │   │   ├── index.html
+│   │   │   │   └── styles.js.html
+│   │   │   ├── Testimonials
+│   │   │   │   ├── index.html
+│   │   │   │   └── index.js.html
+│   │   │   └── Video
+│   │   │       ├── VideoCard.js.html
+│   │   │       ├── VideoGallery.js.html
+│   │   │       └── index.html
+│   │   ├── Layout
+│   │   │   ├── Container.js.html
+│   │   │   ├── Grid.js.html
+│   │   │   ├── Sidebar.js.html
+│   │   │   ├── Stack.js.html
+│   │   │   ├── index.html
+│   │   │   └── index.js.html
+│   │   ├── Performance
+│   │   │   ├── CriticalCSS.js.html
+│   │   │   ├── ImageOptimized.js.html
+│   │   │   ├── LazyIframe.js.html
+│   │   │   ├── PreloadResources.js.html
+│   │   │   ├── index.html
+│   │   │   ├── index.js.html
+│   │   │   └── styles
+│   │   │       ├── criticalCSSRaw.js.html
+│   │   │       └── index.html
+│   │   ├── SEO
+│   │   │   ├── Head.js.html
+│   │   │   ├── StructuredData
+│   │   │   │   ├── ArticleSchema.js.html
+│   │   │   │   ├── BreadcrumbSchema.js.html
+│   │   │   │   ├── MusicSchema.js.html
+│   │   │   │   ├── OrganizationSchema.js.html
+│   │   │   │   ├── StructuredDataBase.js.html
+│   │   │   │   ├── VideoSchema.js.html
+│   │   │   │   ├── WebsiteSchema.js.html
+│   │   │   │   ├── index.html
+│   │   │   │   └── index.js.html
+│   │   │   ├── index.html
+│   │   │   └── index.js.html
+│   │   └── UI
+│   │       ├── Alert.js.html
+│   │       ├── Badge.js.html
+│   │       ├── BaseCard.js.html
+│   │       ├── Button.js.html
+│   │       ├── Input.js.html
+│   │       ├── Modal.js.html
+│   │       ├── Select.js.html
+│   │       ├── Spinner.js.html
+│   │       ├── StateMessages.js.html
+│   │       ├── TextArea.js.html
+│   │       ├── Toast.js.html
+│   │       ├── icons.js.html
+│   │       ├── index.html
+│   │       └── index.js.html
+│   ├── favicon.png
+│   ├── index.html
+│   ├── lcov-report
+│   │   ├── base.css
+│   │   ├── block-navigation.js
+│   │   ├── components
+│   │   │   ├── Admin
+│   │   │   │   ├── AdminAudit.js.html
+│   │   │   │   ├── AdminCrudBase.js.html
+│   │   │   │   ├── AdminDashboard.js.html
+│   │   │   │   ├── AdminDicas.js.html
+│   │   │   │   ├── AdminMusicas.js.html
+│   │   │   │   ├── AdminPosts.js.html
+│   │   │   │   ├── AdminProducts.js.html
+│   │   │   │   ├── AdminRolesTab.js.html
+│   │   │   │   ├── AdminUsers.js.html
+│   │   │   │   ├── AdminUsersTab.js.html
+│   │   │   │   ├── AdminVideos.js.html
+│   │   │   │   ├── CrudForm.js.html
+│   │   │   │   ├── CrudTable.js.html
+│   │   │   │   ├── Managers
+│   │   │   │   │   ├── BackupManager.js.html
+│   │   │   │   │   ├── CacheManager.js.html
+│   │   │   │   │   └── index.html
+│   │   │   │   ├── Tools
+│   │   │   │   │   ├── IntegrityCheck.js.html
+│   │   │   │   │   ├── RateLimitViewer.js.html
+│   │   │   │   │   └── index.html
+│   │   │   │   ├── fields
+│   │   │   │   │   ├── ExternalDataButton.js.html
+│   │   │   │   │   ├── ImageUploadField.js.html
+│   │   │   │   │   ├── TextAreaField.js.html
+│   │   │   │   │   ├── TextField.js.html
+│   │   │   │   │   ├── ToggleField.js.html
+│   │   │   │   │   ├── UrlField.js.html
+│   │   │   │   │   └── index.html
+│   │   │   │   ├── index.html
+│   │   │   │   ├── index.js.html
+│   │   │   │   └── withAdminAuth.js.html
+│   │   │   ├── Features
+│   │   │   │   ├── Blog
+│   │   │   │   │   ├── BlogSection.js.html
+│   │   │   │   │   ├── PostCard.js.html
+│   │   │   │   │   └── index.html
+│   │   │   │   ├── ContentTabs
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   └── index.js.html
+│   │   │   │   ├── Music
+│   │   │   │   │   ├── MusicCard.js.html
+│   │   │   │   │   ├── MusicGallery.js.html
+│   │   │   │   │   └── index.html
+│   │   │   │   ├── Products
+│   │   │   │   │   ├── ProductCard.js.html
+│   │   │   │   │   ├── ProductList.js.html
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   └── styles.js.html
+│   │   │   │   ├── Testimonials
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   └── index.js.html
+│   │   │   │   └── Video
+│   │   │   │       ├── VideoCard.js.html
+│   │   │   │       ├── VideoGallery.js.html
+│   │   │   │       └── index.html
+│   │   │   ├── Layout
+│   │   │   │   ├── Container.js.html
+│   │   │   │   ├── Grid.js.html
+│   │   │   │   ├── Sidebar.js.html
+│   │   │   │   ├── Stack.js.html
+│   │   │   │   ├── index.html
+│   │   │   │   └── index.js.html
+│   │   │   ├── Performance
+│   │   │   │   ├── CriticalCSS.js.html
+│   │   │   │   ├── ImageOptimized.js.html
+│   │   │   │   ├── LazyIframe.js.html
+│   │   │   │   ├── PreloadResources.js.html
+│   │   │   │   ├── index.html
+│   │   │   │   ├── index.js.html
+│   │   │   │   └── styles
+│   │   │   │       ├── criticalCSSRaw.js.html
+│   │   │   │       └── index.html
+│   │   │   ├── SEO
+│   │   │   │   ├── Head.js.html
+│   │   │   │   ├── StructuredData
+│   │   │   │   │   ├── ArticleSchema.js.html
+│   │   │   │   │   ├── BreadcrumbSchema.js.html
+│   │   │   │   │   ├── MusicSchema.js.html
+│   │   │   │   │   ├── OrganizationSchema.js.html
+│   │   │   │   │   ├── StructuredDataBase.js.html
+│   │   │   │   │   ├── VideoSchema.js.html
+│   │   │   │   │   ├── WebsiteSchema.js.html
+│   │   │   │   │   ├── index.html
+│   │   │   │   │   └── index.js.html
+│   │   │   │   ├── index.html
+│   │   │   │   └── index.js.html
+│   │   │   └── UI
+│   │   │       ├── Alert.js.html
+│   │   │       ├── Badge.js.html
+│   │   │       ├── BaseCard.js.html
+│   │   │       ├── Button.js.html
+│   │   │       ├── Input.js.html
+│   │   │       ├── Modal.js.html
+│   │   │       ├── Select.js.html
+│   │   │       ├── Spinner.js.html
+│   │   │       ├── StateMessages.js.html
+│   │   │       ├── TextArea.js.html
+│   │   │       ├── Toast.js.html
+│   │   │       ├── icons.js.html
+│   │   │       ├── index.html
+│   │   │       └── index.js.html
+│   │   ├── favicon.png
+│   │   ├── index.html
+│   │   ├── lib
+│   │   │   ├── api
+│   │   │   │   ├── adminCrudHandler.js.html
+│   │   │   │   ├── errors.js.html
+│   │   │   │   ├── helpers.js.html
+│   │   │   │   ├── index.html
+│   │   │   │   ├── index.js.html
+│   │   │   │   ├── middleware.js.html
+│   │   │   │   ├── response.js.html
+│   │   │   │   ├── utils.js.html
+│   │   │   │   └── validate.js.html
+│   │   │   ├── auth
+│   │   │   │   ├── auth.js.html
+│   │   │   │   └── index.html
+│   │   │   ├── cache
+│   │   │   │   ├── cache.js.html
+│   │   │   │   └── index.html
+│   │   │   ├── crud
+│   │   │   │   ├── crud.js.html
+│   │   │   │   └── index.html
+│   │   │   ├── domain
+│   │   │   │   ├── audit.js.html
+│   │   │   │   ├── images.js.html
+│   │   │   │   ├── index.html
+│   │   │   │   ├── musicas.js.html
+│   │   │   │   ├── permissions.js.html
+│   │   │   │   ├── posts.js.html
+│   │   │   │   ├── products.js.html
+│   │   │   │   ├── settings.js.html
+│   │   │   │   ├── shared-pagination.js.html
+│   │   │   │   └── videos.js.html
+│   │   │   ├── infra
+│   │   │   │   ├── db.js.html
+│   │   │   │   ├── index.html
+│   │   │   │   ├── logger.js.html
+│   │   │   │   └── redis.js.html
+│   │   │   ├── media
+│   │   │   │   ├── index.html
+│   │   │   │   ├── spotify.js.html
+│   │   │   │   └── youtube.js.html
+│   │   │   └── seo
+│   │   │       ├── config.js.html
+│   │   │       └── index.html
+│   │   ├── pages
+│   │   │   └── api
+│   │   │       ├── admin
+│   │   │       │   ├── audit.js.html
+│   │   │       │   ├── backups.js.html
+│   │   │       │   ├── cache.js.html
+│   │   │       │   ├── dicas.js.html
+│   │   │       │   ├── fetch-ml.js.html
+│   │   │       │   ├── fetch-spotify.js.html
+│   │   │       │   ├── fetch-youtube.js.html
+│   │   │       │   ├── index.html
+│   │   │       │   ├── integrity.js.html
+│   │   │       │   ├── musicas.js.html
+│   │   │       │   ├── posts.js.html
+│   │   │       │   ├── rate-limit.js.html
+│   │   │       │   ├── roles.js.html
+│   │   │       │   ├── stats.js.html
+│   │   │       │   ├── users.js.html
+│   │   │       │   └── videos.js.html
+│   │   │       ├── auth
+│   │   │       │   ├── check.js.html
+│   │   │       │   ├── index.html
+│   │   │       │   ├── login.js.html
+│   │   │       │   ├── logout.js.html
+│   │   │       │   └── refresh.js.html
+│   │   │       ├── cleanup-test-data.js.html
+│   │   │       ├── dicas.js.html
+│   │   │       ├── helper
+│   │   │       │   ├── index.html
+│   │   │       │   └── pagination.js.html
+│   │   │       ├── index.html
+│   │   │       ├── musicas.js.html
+│   │   │       ├── placeholder-image.js.html
+│   │   │       ├── posts.js.html
+│   │   │       ├── products.js.html
+│   │   │       ├── settings.js.html
+│   │   │       ├── status.js.html
+│   │   │       ├── upload-image.js.html
+│   │   │       └── videos.js.html
+│   │   ├── prettify.css
+│   │   ├── prettify.js
+│   │   ├── sort-arrow-sprite.png
+│   │   └── sorter.js
+│   ├── lcov.info
+│   ├── lib
+│   │   ├── api
+│   │   │   ├── adminCrudHandler.js.html
+│   │   │   ├── errors.js.html
+│   │   │   ├── helpers.js.html
+│   │   │   ├── index.html
+│   │   │   ├── index.js.html
+│   │   │   ├── middleware.js.html
+│   │   │   ├── response.js.html
+│   │   │   ├── utils.js.html
+│   │   │   └── validate.js.html
+│   │   ├── auth
+│   │   │   ├── auth.js.html
+│   │   │   └── index.html
+│   │   ├── cache
+│   │   │   ├── cache.js.html
+│   │   │   └── index.html
+│   │   ├── crud
+│   │   │   ├── crud.js.html
+│   │   │   └── index.html
+│   │   ├── domain
+│   │   │   ├── audit.js.html
+│   │   │   ├── images.js.html
+│   │   │   ├── index.html
+│   │   │   ├── musicas.js.html
+│   │   │   ├── permissions.js.html
+│   │   │   ├── posts.js.html
+│   │   │   ├── products.js.html
+│   │   │   ├── settings.js.html
+│   │   │   ├── shared-pagination.js.html
+│   │   │   └── videos.js.html
+│   │   ├── infra
+│   │   │   ├── db.js.html
+│   │   │   ├── index.html
+│   │   │   ├── logger.js.html
+│   │   │   └── redis.js.html
+│   │   ├── media
+│   │   │   ├── index.html
+│   │   │   ├── spotify.js.html
+│   │   │   └── youtube.js.html
+│   │   └── seo
+│   │       ├── config.js.html
+│   │       └── index.html
+│   ├── pages
+│   │   └── api
+│   │       ├── admin
+│   │       │   ├── audit.js.html
+│   │       │   ├── backups.js.html
+│   │       │   ├── cache.js.html
+│   │       │   ├── dicas.js.html
+│   │       │   ├── fetch-ml.js.html
+│   │       │   ├── fetch-spotify.js.html
+│   │       │   ├── fetch-youtube.js.html
+│   │       │   ├── index.html
+│   │       │   ├── integrity.js.html
+│   │       │   ├── musicas.js.html
+│   │       │   ├── posts.js.html
+│   │       │   ├── rate-limit.js.html
+│   │       │   ├── roles.js.html
+│   │       │   ├── stats.js.html
+│   │       │   ├── users.js.html
+│   │       │   └── videos.js.html
+│   │       ├── auth
+│   │       │   ├── check.js.html
+│   │       │   ├── index.html
+│   │       │   ├── login.js.html
+│   │       │   ├── logout.js.html
+│   │       │   └── refresh.js.html
+│   │       ├── cleanup-test-data.js.html
+│   │       ├── dicas.js.html
+│   │       ├── helper
+│   │       │   ├── index.html
+│   │       │   └── pagination.js.html
+│   │       ├── index.html
+│   │       ├── musicas.js.html
+│   │       ├── placeholder-image.js.html
+│   │       ├── posts.js.html
+│   │       ├── products.js.html
+│   │       ├── settings.js.html
+│   │       ├── status.js.html
+│   │       ├── upload-image.js.html
+│   │       └── videos.js.html
+│   ├── prettify.css
+│   ├── prettify.js
+│   ├── sort-arrow-sprite.png
+│   └── sorter.js
 ├── cypress
 │   ├── e2e
 │   │   ├── blog.cy.js
@@ -335,6 +726,8 @@
 │       └── rate-limit-test.js
 ├── load-tests.yml
 ├── logs
+│   ├── coverage-output.log
+│   ├── eslint.log
 │   └── tests-output.log
 ├── next-sitemap.config.js
 ├── next.config.js
@@ -829,10 +1222,9 @@
 │       │   └── resolve-next.test.js
 │       └── videos.validation.test.js
 ├── tree.txt
-├── tree.txt~
 └── utils
     ├── csvExport.js
     ├── reorder.js
     └── resolve-next.js
 
-129 directories, 707 files
+195 directories, 1033 files
