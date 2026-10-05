@@ -5,6 +5,29 @@ import { getPool, closePool } from '../db/connection.js';
 loadEnv();
 
 const MIGRATION_TABLE = '_migrations';
+
+/**
+ * ATENÇÃO — lista mantida MANUALMENTE (não é derivada de `scripts/migrations/*.js`).
+ *
+ * Este script é um BYPASS: marca migrações como aplicadas em `_migrations` SEM
+ * executá-las. Existe apenas para bancos pré-existentes que já tinham o schema
+ * aplicado antes do sistema de controle de versionamento.
+ *
+ * A lista está deliberadamente defasada: `017-add-thumbnail-to-videos` e
+ * `018-seed-default-roles` existem como arquivos em `scripts/migrations/`, mas
+ * NÃO constam aqui.
+ *
+ * NÃO adicione migrações novas nesta lista:
+ * - Registrar `018-seed-default-roles` aqui declararia o seed dos cargos
+ *   ('admin'/'user') como "feito" num banco com a tabela `roles` vazia — exatamente
+ *   o bug que a 018 existe para corrigir (o auto-criamento/DML no path de request
+ *   de `pages/api/admin/roles.js` foi removido);
+ * - o mesmo vale para qualquer migração futura: marcar sem executar esconde o
+ *   trabalho pendente de `node scripts/migrate.js`.
+ *
+ * Migração nova = executar com `node scripts/migrate.js` (README, "Instalação e
+ * Migrações"); depois, `verify-applied.js` confirma o efeito no banco.
+ */
 const MIGRATIONS = [
   '000-create-base-schema',
   '001-add-views-to-posts',

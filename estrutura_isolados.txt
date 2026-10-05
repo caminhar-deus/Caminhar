@@ -135,6 +135,8 @@ scripts/migrations/009-add-position-to-posts.js → scripts/db/connection.js
 scripts/migrations/009-add-position-to-posts.js → scripts/utils/load-env.js
 scripts/migrations/011-fix-entity-id-type.js → scripts/db/connection.js
 scripts/migrations/011-fix-entity-id-type.js → scripts/utils/load-env.js
+scripts/migrations/018-seed-default-roles.js → scripts/db/connection.js
+scripts/migrations/018-seed-default-roles.js → scripts/utils/load-env.js
 scripts/migrations/seed-migrations-table.js → scripts/db/connection.js
 scripts/migrations/seed-migrations-table.js → scripts/utils/load-env.js
 scripts/migrations/verify-applied.js → scripts/db/connection.js
@@ -156,6 +158,9 @@ scripts/seed-settings.js → scripts/db/connection.js
 scripts/seed-settings.js → scripts/utils/load-env.js
 scripts/seed-videos.js → scripts/db/connection.js
 scripts/seed-videos.js → scripts/utils/load-env.js
+scripts/setup-test-db.js → scripts/db/connection.js
+scripts/setup-test-db.js → scripts/utils/init-table-utils.js
+scripts/setup-test-db.js → scripts/utils/load-env.js
 scripts/utils/cleanup-test-data.js → scripts/utils/cleanup.js
 scripts/view-backup-logs.js → scripts/backup.js
 scripts/view-backup-logs.js → scripts/utils/load-env.js

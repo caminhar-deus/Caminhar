@@ -518,7 +518,7 @@ Endpoint de verificação de integridade do sistema (GET). Executa 5 verificaç�
 - `zod` — Validação de schemas
 
 **Resumo:**
-CRUD administrativo de roles/cargos via `createAdminHandler()`. Rate limit 30 req/min, requer permissão 'Segurança' ou 'Usuários'. **GET** lista roles; se a tabela não existir, cria automaticamente e popula com roles padrão ('admin' com permissões completas, 'user' com permissão básica). **POST** cria role com validação Zod (name + permissions array). **PUT** atualiza role. **DELETE** remove role. Todas as mutações geram log de auditoria.
+CRUD administrativo de roles/cargos via `createAdminHandler()`. Rate limit 30 req/min, requer permissão 'Segurança' ou 'Usuários'. **GET** lista roles e devolve `permissions` normalizado como array (`getRolePermissions`, de `lib/domain/permissions.js`); a tabela é criada pela migração `000-create-base-schema` e os cargos padrão ('admin' com as permissões de `lib/domain/permissions.js`, 'user' com permissão básica) são semeados pela migração `018-seed-default-roles` — sem auto-criação no path de request: se a tabela não existir (42P01), responde 500 com orientação de `npm run migrate`. **POST** cria role com validação Zod (name + permissions array). **PUT** atualiza role. **DELETE** remove role. Todas as mutações geram log de auditoria.
 
 ---
 
@@ -597,7 +597,7 @@ Endpoint de gerenciamento de cache (admin). Rate limit 10 req/min, requer role a
 - `../../../lib/api/adminCrudHandler.js` — Factory `createAdminHandler()`
 
 **Resumo:**
-Endpoint de consulta a logs de auditoria (GET). Rate limit 30 req/min, requer permissão 'Auditoria' ou 'Segurança'. Lista registros da tabela `activity_logs` com paginação (padrão 50 por página) e filtros de data (`startDate`, `endDate`). Formata `user_id` baseando-se no `username`. Se a tabela não existir (instalação limpa), cria automaticamente e retorna lista vazia.
+Endpoint de consulta a logs de auditoria (GET). Rate limit 30 req/min, requer permissão 'Auditoria' ou 'Segurança'. Lista registros da tabela `activity_logs` com paginação (padrão 50 por página) e filtros de data (`startDate`, `endDate`). Formata `user_id` baseando-se no `username`. Sem auto-criação no path de request: se a tabela não existir (42P01), responde 500 com orientação de `npm run migrate` — a tabela é criada pela migração `006-create-activity-logs`.
 
 ---
 

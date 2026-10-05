@@ -221,7 +221,12 @@ describeIf('Músicas — Integração com PostgreSQL Real', () => {
 
     const result = await tx.query(
       'SELECT * FROM musicas WHERE artista ILIKE $1 ORDER BY id',
-      ['%nacional%']
+      // ILIKE faz match por SUBSTRING: '%nacional%' casa também com
+      // "Banda **Internacional**" (…nacional), então o filtro legítimo
+      // devolveria 2 linhas. O termo abaixo identifica unicamente a linha
+      // esperada E mantém a prova de case-insensitivity (padrão em CAIXA
+      // ALTA casando com valor misto só funciona com ILIKE, não com LIKE).
+      ['%BANDA NACIONAL%']
     );
     expect(result.rows).toHaveLength(1);
     expect(result.rows[0].artista).toBe('Banda Nacional');
@@ -268,6 +273,13 @@ describeIf('Músicas — Integração com PostgreSQL Real', () => {
       url_spotify: `https://open.spotify.com/track/val-${Date.now()}`,
     });
 
+    // O PostgreSQL aborta a transação após o primeiro erro (SQLSTATE 25P02):
+    // todo comando seguinte falha com "current transaction is aborted…
+    // commands ignored until end of transaction block". Savepoint é o mecanismo
+    // para desfazer APENAS o comando que falhou e seguir lendo o estado da
+    // transação — sem ele o assert abaixo é impossível em banco real.
+    await tx.query('SAVEPOINT antes_do_erro');
+
     // Tenta inserir com NOT NULL violado
     await expect(
       tx.query(
@@ -275,6 +287,8 @@ describeIf('Músicas — Integração com PostgreSQL Real', () => {
         ['Música sem URL', null]
       )
     ).rejects.toThrow();
+
+    await tx.query('ROLLBACK TO SAVEPOINT antes_do_erro');
 
     const countResult = await tx.query("SELECT COUNT(*) FROM musicas WHERE titulo LIKE 'Música%'");
     expect(parseInt(countResult.rows[0].count, 10)).toBe(1);

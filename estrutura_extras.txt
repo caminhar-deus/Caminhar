@@ -185,9 +185,11 @@ hooks/AuthProvider.js → hooks/AuthContext.js
 lib/api/adminCrudHandler.js → lib/auth/auth.js
 lib/api/adminCrudHandler.js → lib/cache/cache.js
 lib/api/adminCrudHandler.js → lib/domain/audit.js
+lib/api/adminCrudHandler.js → lib/domain/permissions.js
 lib/api/adminCrudHandler.js → lib/infra/db.js
 lib/api/adminCrudHandler.js → lib/infra/logger.js
 lib/api/adminCrudHandler.js → lib/api/helpers.js
+lib/auth/auth.js → lib/domain/permissions.js
 lib/auth/auth.js → lib/infra/db.js
 lib/auth/auth.js → lib/infra/logger.js
 lib/infra/db.js → lib/infra/logger.js
@@ -336,8 +338,10 @@ pages/admin.js → components/Admin/styles/misc.module.css
 pages/admin.js → components/Admin/styles/tabs.module.css
 pages/admin.js → components/Admin/Tools/IntegrityCheck.js
 pages/admin.js → components/Admin/Tools/RateLimitViewer.js
+pages/admin.js → lib/domain/permissions.js
 pages/api/admin/audit.js → lib/api/adminCrudHandler.js
 pages/api/admin/audit.js → lib/infra/db.js
+pages/api/admin/audit.js → lib/infra/logger.js
 pages/api/admin/backups.js → lib/api/adminCrudHandler.js
 pages/api/admin/backups.js → scripts/backup.js
 scripts/backup.js → scripts/utils/constants.js
@@ -366,7 +370,9 @@ pages/api/admin/rate-limit.js → lib/infra/logger.js
 pages/api/admin/rate-limit.js → lib/infra/redis.js
 pages/api/admin/roles.js → lib/api/adminCrudHandler.js
 pages/api/admin/roles.js → lib/crud/crud.js
+pages/api/admin/roles.js → lib/domain/permissions.js
 pages/api/admin/roles.js → lib/infra/db.js
+pages/api/admin/roles.js → lib/infra/logger.js
 pages/api/admin/stats.js → lib/api/adminCrudHandler.js
 pages/api/admin/stats.js → lib/infra/db.js
 pages/api/admin/users.js → lib/api/adminCrudHandler.js
@@ -376,6 +382,8 @@ pages/api/admin/users.js → lib/infra/db.js
 pages/api/admin/videos.js → lib/api/adminCrudHandler.js
 pages/api/admin/videos.js → lib/domain/videos.js
 pages/api/auth/check.js → lib/auth/auth.js
+pages/api/auth/check.js → lib/domain/permissions.js
+pages/api/auth/check.js → lib/infra/db.js
 pages/api/auth/check.js → lib/infra/logger.js
 pages/api/auth/login.js → lib/api/helpers.js
 pages/api/auth/login.js → lib/auth/auth.js
@@ -433,6 +441,9 @@ pages/design-system.js → pages/styles/DesignSystem.module.css
 pages/index.js → components/Features/ContentTabs/index.js
 pages/index.js → components/Features/Testimonials/index.js
 pages/index.js → pages/styles/Home.module.css
+pages/login.js → pages/styles/Login.module.css
+pages/login.js → components/UI/index.js
+pages/login.js → utils/resolve-next.js
 scripts/check-db-status.js → lib/infra/db.js
 scripts/check-env.js → lib/infra/db.js
 scripts/check-server.js → scripts/utils/constants.js
@@ -482,6 +493,9 @@ scripts/migrations/009-add-position-to-posts.js → scripts/db/connection.js
 scripts/migrations/009-add-position-to-posts.js → scripts/utils/load-env.js
 scripts/migrations/011-fix-entity-id-type.js → scripts/db/connection.js
 scripts/migrations/011-fix-entity-id-type.js → scripts/utils/load-env.js
+scripts/migrations/018-seed-default-roles.js → lib/domain/permissions.js
+scripts/migrations/018-seed-default-roles.js → scripts/db/connection.js
+scripts/migrations/018-seed-default-roles.js → scripts/utils/load-env.js
 scripts/migrations/seed-migrations-table.js → scripts/db/connection.js
 scripts/migrations/seed-migrations-table.js → scripts/utils/load-env.js
 scripts/migrations/verify-applied.js → scripts/db/connection.js
@@ -504,6 +518,9 @@ scripts/seed-settings.js → scripts/db/connection.js
 scripts/seed-settings.js → scripts/utils/load-env.js
 scripts/seed-videos.js → scripts/db/connection.js
 scripts/seed-videos.js → scripts/utils/load-env.js
+scripts/setup-test-db.js → scripts/db/connection.js
+scripts/setup-test-db.js → scripts/utils/init-table-utils.js
+scripts/setup-test-db.js → scripts/utils/load-env.js
 scripts/utils/cleanup-test-data.js → scripts/utils/cleanup.js
 scripts/view-backup-logs.js → scripts/backup.js
 scripts/view-backup-logs.js → scripts/utils/load-env.js
@@ -587,7 +604,9 @@ tests/integration/api/admin/roles.test.js → lib/auth/auth.js
 tests/integration/api/admin/roles.test.js → lib/crud/crud.js
 tests/integration/api/admin/roles.test.js → lib/domain/audit.js
 tests/integration/api/admin/roles.test.js → lib/infra/db.js
+tests/integration/api/admin/roles.test.js → lib/infra/logger.js
 tests/integration/api/admin/roles.test.js → pages/api/admin/roles.js
+tests/integration/api/admin/roles.test.js → tests/helpers/roles.js
 tests/integration/api/admin/roles.test.js → tests/mocks/db-module.js
 tests/integration/api/admin/users.create.test.js → lib/auth/auth.js
 tests/integration/api/admin/users.create.test.js → lib/crud/crud.js
@@ -607,6 +626,8 @@ tests/integration/api/admin/videos.test.js → pages/api/admin/videos.js
 tests/integration/api/audit.test.js → lib/domain/audit.js
 tests/integration/api/audit.test.js → lib/infra/db.js
 tests/integration/api/auth/check.test.js → lib/auth/auth.js
+tests/integration/api/auth/check.test.js → lib/infra/db.js
+tests/integration/api/auth/check.test.js → lib/infra/logger.js
 tests/integration/api/auth/check.test.js → pages/api/auth/check.js
 tests/integration/api/auth/login.test.js → lib/auth/auth.js
 tests/integration/api/auth/login.test.js → lib/cache/cache.js
@@ -687,6 +708,10 @@ tests/integration/api/videos.test.js → tests/factories/index.js
 tests/integration/api/videos.test.js → tests/helpers/crud-test.js
 tests/integration/api/videos.test.js → tests/mocks/cache.js
 tests/integration/domain/musicas.db.test.js → tests/helpers/db-test.js
+tests/integration/domain/permissions.db.test.js → lib/api/adminCrudHandler.js
+tests/integration/domain/permissions.db.test.js → lib/domain/permissions.js
+tests/integration/domain/permissions.db.test.js → scripts/migrations/018-seed-default-roles.js
+tests/integration/domain/permissions.db.test.js → tests/helpers/db-test.js
 tests/integration/domain/posts.db.test.js → tests/helpers/db-test.js
 tests/integration/domain/products.db.test.js → tests/helpers/db-test.js
 tests/integration/domain/settings.db.test.js → tests/helpers/db-test.js
@@ -855,6 +880,7 @@ tests/unit/lib/db/settings.test.js → lib/domain/settings.js
 tests/unit/lib/db/settings.test.js → lib/infra/db.js
 tests/unit/lib/db/updatePost.test.js → lib/domain/posts.js
 tests/unit/lib/db/updatePost.test.js → lib/infra/db.js
+tests/unit/lib/domain/permissions.test.js → lib/domain/permissions.js
 tests/unit/lib/domain/products.test.js → lib/crud/crud.js
 tests/unit/lib/domain/products.test.js → lib/domain/products.js
 tests/unit/lib/domain/products.test.js → lib/infra/db.js
@@ -921,5 +947,6 @@ tests/unit/scripts/utils/load-env.test.js → scripts/utils/load-env.js
 tests/unit/scripts/validate-schema.test.js → scripts/utils/load-env.js
 tests/unit/scripts/validate-schema.test.js → scripts/validate-schema.js
 tests/unit/settings.cache.test.js → tests/mocks/db-module.js
+tests/unit/utils/resolve-next.test.js → utils/resolve-next.js
 tests/unit/videos.validation.test.js → lib/domain/videos.js
 tests/unit/videos.validation.test.js → pages/api/admin/videos.js

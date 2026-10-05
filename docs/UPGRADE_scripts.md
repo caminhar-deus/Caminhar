@@ -1484,7 +1484,7 @@ Nenhum código morto identificado. A função é invocada pelo entry point CLI e
 
 **Arquivos acionados ou relacionados:** `scripts/utils/load-env.js` — importa `loadEnv()`. `scripts/db/connection.js` — importa `getPool()` e `closePool()`.
 
-**Resumo do arquivo:** Script CLI que popula a tabela `_migrations` com os nomes das migrações já aplicadas manualmente. Lista todas as migrações de 000 a 017.
+**Resumo do arquivo:** Script CLI que popula a tabela `_migrations` com os nomes das migrações já aplicadas manualmente (bypass: marca como aplicada SEM executar). Lista as migrações de 000 a 016 e **não** inclui `017-add-thumbnail-to-videos` nem `018-seed-default-roles` de propósito — registrar a 018 declararia o seed dos cargos `admin`/`user` como feito num banco com a tabela `roles` vazia (ver o comentário no topo do script).
 
 **Ajustes e correções:** Nenhum problema identificado.
 
@@ -1603,7 +1603,7 @@ Todos os 85 arquivos da pasta `/home/gus/Projetos/Caminhar/scripts` foram indivi
 - **Scripts de teste manual:** 2 (`tests/manual-rate-limit.js`, `tests/manual-api-test.js`)
 - **Scripts de backup:** 4 (`backup.js`, `create-backup.js`, `restore-backup.js`, `init-backup.js`, `view-backup-logs.js`)
 - **Scripts de seed:** 7 (`seed-all.js`, `seed-posts.js`, `seed-musicas.js`, `seed-videos.js`, `seed-products.js`, `seed-settings.js`)
-- **Scripts de migração:** 18 (000 a 017, seed-migrations-table.js, verify-applied.js)
+- **Scripts de migração:** 20 (000 a 018, seed-migrations-table.js, verify-applied.js)
 - **Scripts de manutenção:** 5 (`clean-k6-videos.js`, `video-thumbnails.js`, `fix-hero-key.js`, `restore-posts.js`, `backup-posts.js`)
 - **Scripts utilitários:** 8 (`utils/cleanup.js`, `utils/load-env.js`, `utils/init-table-utils.js`, `utils/list-settings.js`, `utils/date-format.js`, `utils/constants.js`, `utils/update-setting.js`, `utils/cleanup-test-data.js`, `utils/list-table-columns.js`)
 - **Scripts de diagnóstico:** 7 (`list-last-posts.js`, `check-musicas-schema.js`, `check-videos-schema.js`, `count-posts.js`, `diagnose-hero.js`, `repro-reusable-workflow.js`, `lsp-reusable-workflow.js`, `lint-workflows.sh`)
@@ -1636,7 +1636,7 @@ Todos os 85 arquivos da pasta `/home/gus/Projetos/Caminhar/scripts` foram indivi
 - **Scripts de teste manual:** 2 (`tests/manual-rate-limit.js`, `tests/manual-api-test.js`)
 - **Scripts de backup:** 5 (`backup.js`, `create-backup.js`, `restore-backup.js`, `init-backup.js`, `view-backup-logs.js`)
 - **Scripts de seed:** 6 (`seed-all.js`, `seed-posts.js`, `seed-musicas.js`, `seed-videos.js`, `seed-products.js`, `seed-settings.js`)
-- **Scripts de migração:** 18 (000 a 017, seed-migrations-table.js, verify-applied.js)
+- **Scripts de migração:** 20 (000 a 018, seed-migrations-table.js, verify-applied.js)
 - **Scripts de manutenção:** 5 (`clean-k6-videos.js`, `video-thumbnails.js`, `fix-hero-key.js`, `restore-posts.js`, `backup-posts.js`)
 - **Scripts utilitários:** 9 (`utils/cleanup.js`, `utils/load-env.js`, `utils/init-table-utils.js`, `utils/list-settings.js`, `utils/date-format.js`, `utils/constants.js`, `utils/update-setting.js`, `utils/cleanup-test-data.js`, `utils/list-table-columns.js`)
 - **Scripts de diagnóstico:** 8 (`list-last-posts.js`, `check-musicas-schema.js`, `check-videos-schema.js`, `count-posts.js`, `diagnose-hero.js`, `repro-reusable-workflow.js`, `lsp-reusable-workflow.js`, `lint-workflows.sh`)

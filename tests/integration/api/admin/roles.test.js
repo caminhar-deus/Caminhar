@@ -42,6 +42,8 @@ import { query } from '../../../../lib/infra/db.js';
 import { createRecord, updateRecords, deleteRecords } from '../../../../lib/crud/crud.js';
 import { logActivity } from '../../../../lib/domain/audit.js';
 import { getAuthToken, verifyToken } from '../../../../lib/auth/auth.js';
+import { logger } from '../../../../lib/infra/logger.js';
+import { mockRolePermissions } from '../../../helpers/roles.js';
 
 describe('API Admin - Gestão de Cargos (/api/admin/roles)', () => {
   beforeEach(() => {
@@ -84,6 +86,60 @@ describe('API Admin - Gestão de Cargos (/api/admin/roles)', () => {
       await handler(req, res);
       expect(res._getStatusCode()).toBe(403);
     });
+
+    it('deve retornar 403 para não-admin com permissions TEXT (string JSON) sem as permissões exigidas', async () => {
+      verifyToken.mockReturnValue({ userId: 2, username: 'user', role: 'comum' });
+
+      // O banco devolve a coluna TEXT como STRING JSON, não como array
+      query.mockImplementationOnce(async () => ({
+        rows: [{ permissions: mockRolePermissions(['Visão Geral']) }],
+      }));
+
+      const { req, res } = createMocks({ method: 'GET' });
+      await handler(req, res);
+      expect(res._getStatusCode()).toBe(403);
+    });
+
+    it('deve retornar 403 quando a permissão exigida só aparece como substring do texto JSON (regressão de match de substring)', async () => {
+      verifyToken.mockReturnValue({ userId: 2, username: 'user', role: 'comum' });
+
+      // 'Usuários' aparece apenas como substring de outro valor — não é a permissão.
+      // Antes da normalização, `'["Auditoria de Usuários"]'.includes('Usuários')` era true.
+      query.mockImplementationOnce(async () => ({
+        rows: [{ permissions: mockRolePermissions(['Auditoria de Usuários']) }],
+      }));
+
+      const { req, res } = createMocks({ method: 'GET' });
+      await handler(req, res);
+      expect(res._getStatusCode()).toBe(403);
+    });
+
+    it('deve negar 403 e registrar logger.error quando a consulta de permissões FALHA (fail-closed)', async () => {
+      // Diferente dos casos acima (usuário SEM a permissão), aqui o banco falha:
+      // a negação precisa de telemetria para ser distinguível no log.
+      verifyToken.mockReturnValue({ userId: 2, username: 'user', role: 'comum' });
+
+      const dbError = new Error('relation "roles" does not exist');
+      query.mockImplementationOnce(async () => {
+        throw dbError;
+      });
+
+      const loggerErrorSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
+
+      const { req, res } = createMocks({ method: 'GET' });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(403);
+      expect(JSON.parse(res._getData()).message).toContain('Não foi possível verificar permissões');
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
+        'AdminCrudHandler',
+        expect.stringContaining('handler Role'),
+        dbError,
+      );
+      expect(loggerErrorSpy.mock.calls[0][1]).toContain('role "comum"');
+
+      loggerErrorSpy.mockRestore();
+    });
   });
 
   describe('GET - Listar Cargos', () => {
@@ -93,23 +149,22 @@ describe('API Admin - Gestão de Cargos (/api/admin/roles)', () => {
 
       expect(res._getStatusCode()).toBe(200);
       const data = JSON.parse(res._getData());
-      expect(data.data).toEqual([{ id: 1, name: 'admin' }]);
+      // Row sem `permissions` no mock agora chega com `permissions: []` normalizado
+      expect(data.data).toEqual([{ id: 1, name: 'admin', permissions: [] }]);
     });
 
-    it('deve interceptar erro 42P01 (Tabela inexistente), criar a tabela, semear dados e retornar 200', async () => {
-      let getCallCount = 0;
-      
+    it('deve devolver permissions como array normalizado (coluna TEXT do banco)', async () => {
       query.mockImplementation(async (sql) => {
-        if (sql.includes('SELECT permissions FROM roles')) return { rows: [{ permissions: [] }] };
-        
+        if (sql.includes('SELECT permissions FROM roles')) {
+          return { rows: [{ permissions: mockRolePermissions(['Segurança', 'Usuários']) }] };
+        }
         if (sql.includes('SELECT * FROM roles')) {
-          if (getCallCount === 0) {
-            getCallCount++;
-            const error = new Error('relation "roles" does not exist');
-            error.code = '42P01';
-            throw error;
-          }
-          return { rows: [{ id: 1, name: 'admin', permissions: '[]' }] };
+          return {
+            rows: [
+              { id: 2, name: 'editor', permissions: mockRolePermissions(['Posts/Artigos']) },
+              { id: 3, name: 'visitante' },
+            ],
+          };
         }
         return { rows: [] };
       });
@@ -118,9 +173,42 @@ describe('API Admin - Gestão de Cargos (/api/admin/roles)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(200);
-      // Garante que o comando de CREATE TABLE foi disparado durante o setup
-      expect(query).toHaveBeenCalledWith(expect.stringContaining('CREATE TABLE roles'));
-      expect(query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO roles'));
+      const data = JSON.parse(res._getData());
+      expect(data.data[0]).toEqual({ id: 2, name: 'editor', permissions: ['Posts/Artigos'] });
+      expect(Array.isArray(data.data[0].permissions)).toBe(true);
+      // Row sem o campo também sai com array (fail-closed), preservando os demais campos
+      expect(data.data[1]).toEqual({ id: 3, name: 'visitante', permissions: [] });
+    });
+
+    it('deve responder 500 com mensagem acionável quando a tabela roles não existe (42P01), sem executar DDL/DML', async () => {
+      query.mockImplementation(async (sql) => {
+        if (sql.includes('SELECT permissions FROM roles')) return { rows: [{ permissions: [] }] };
+
+        if (sql.includes('SELECT * FROM roles')) {
+          const error = new Error('relation "roles" does not exist');
+          error.code = '42P01';
+          throw error;
+        }
+        return { rows: [] };
+      });
+
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      const { req, res } = createMocks({ method: 'GET' });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(500);
+      const data = res._getJSONData();
+      expect(data.error).toBe('Erro interno no servidor');
+      expect(data.message).toContain('npm run migrate');
+
+      // Schema é responsabilidade das migrações: NENHUM DDL/DML no path de request
+      expect(query).not.toHaveBeenCalledWith(expect.stringContaining('CREATE TABLE roles'), expect.anything());
+      expect(query).not.toHaveBeenCalledWith(expect.stringContaining('INSERT INTO roles'), expect.anything());
+      // Forma com um único argumento (query(sql) sem params) — cobre o CREATE TABLE antigo
+      expect(query).not.toHaveBeenCalledWith(expect.stringContaining('CREATE TABLE roles'));
+
+      consoleSpy.mockRestore();
     });
 
     it('deve retornar 500 se o banco falhar com erro inesperado (diferente de 42P01)', async () => {
@@ -142,7 +230,13 @@ describe('API Admin - Gestão de Cargos (/api/admin/roles)', () => {
 
   describe('POST - Criar Cargo', () => {
     it('deve criar um cargo novo, logar a ação e retornar 201', async () => {
-      createRecord.mockResolvedValueOnce({ id: 5, name: 'Moderador' });
+      // `createRecord` usa RETURNING * sobre a coluna TEXT: a row CHEGA com
+      // `permissions` como STRING JSON — é isso que a resposta precisa normalizar.
+      createRecord.mockResolvedValueOnce({
+        id: 5,
+        name: 'Moderador',
+        permissions: mockRolePermissions(['Visão Geral']),
+      });
 
       const { req, res } = createMocks({ 
         method: 'POST', 
@@ -153,12 +247,25 @@ describe('API Admin - Gestão de Cargos (/api/admin/roles)', () => {
       expect(res._getStatusCode()).toBe(201);
       expect(createRecord).toHaveBeenCalledWith('roles', { name: 'Moderador', permissions: '["Visão Geral"]' });
       expect(logActivity).toHaveBeenCalledWith('admin_user', 'CRIAR CARGO', 'ROLE', 5, expect.any(String), expect.any(String));
+
+      // POST responde no MESMO formato do GET: `permissions` como array.
+      // O mock devolve string — se a normalização fosse removida, o array
+      // abaixo falharia (a resposta traria a string crua).
+      const data = res._getJSONData();
+      expect(Array.isArray(data.permissions)).toBe(true);
+      expect(data.permissions).toEqual(['Visão Geral']);
+      // Demais campos da row preservados
+      expect(data.id).toBe(5);
+      expect(data.name).toBe('Moderador');
     });
   });
 
   describe('PUT - Atualizar Cargo', () => {
     it('deve atualizar o cargo, processando permissões, e retornar 200', async () => {
-      updateRecords.mockResolvedValueOnce([{ id: 1, name: 'Super Admin' }]);
+      // RETURNING * sobre a coluna TEXT: row chega com `permissions` string
+      updateRecords.mockResolvedValueOnce([
+        { id: 1, name: 'Super Admin', permissions: mockRolePermissions(['Segurança']) },
+      ]);
 
       const { req, res } = createMocks({ 
         method: 'PUT', 
@@ -168,6 +275,20 @@ describe('API Admin - Gestão de Cargos (/api/admin/roles)', () => {
 
       expect(res._getStatusCode()).toBe(200);
       expect(updateRecords).toHaveBeenCalledWith('roles', { name: 'Super Admin', permissions: '["Segurança"]' }, { id: 1 });
+
+      // PUT responde no MESMO formato do GET: `permissions` como array
+      const data = res._getJSONData();
+      expect(Array.isArray(data.permissions)).toBe(true);
+      expect(data.permissions).toEqual(['Segurança']);
+      expect(data.id).toBe(1);
+      expect(data.name).toBe('Super Admin');
+
+      // Fallback preservado: sem row atualizada continua respondendo {}
+      updateRecords.mockResolvedValueOnce([]);
+      const second = createMocks({ method: 'PUT', body: { id: 99 } });
+      await handler(second.req, second.res);
+      expect(second.res._getStatusCode()).toBe(200);
+      expect(second.res._getJSONData()).toEqual({});
     });
   });
 

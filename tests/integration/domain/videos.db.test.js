@@ -53,11 +53,15 @@ async function insertTestVideo(overrides = {}) {
   };
   const data = { ...defaults, ...overrides };
 
+  // `created_at` é opcional: quando omitido mantém o DEFAULT CURRENT_TIMESTAMP
+  // (que no PostgreSQL é fixo para a transação INTEIRA). Testes de ORDENAÇÃO
+  // precisam passar datas explícitas, senão todas as linhas do teste nascem
+  // com o mesmo valor e o ORDER BY vira não-determinístico.
   const result = await tx.query(
-    `INSERT INTO videos (titulo, url_youtube, descricao, publicado, position)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO videos (titulo, url_youtube, descricao, publicado, position, created_at)
+     VALUES ($1, $2, $3, $4, $5, COALESCE($6, CURRENT_TIMESTAMP))
      RETURNING *`,
-    [data.titulo, data.url_youtube, data.descricao, data.publicado, data.position]
+    [data.titulo, data.url_youtube, data.descricao, data.publicado, data.position, data.created_at ?? null]
   );
   return result.rows[0];
 }
@@ -220,21 +224,29 @@ describeIf('Vídeos — Integração com PostgreSQL Real', () => {
   });
 
   it('deve ordenar vídeos por created_at DESC', async () => {
+    // CURRENT_TIMESTAMP é o MESMO para todas as linhas de uma transação
+    // (é o timestamp de início da transação), então sem datas explícitas os
+    // três vídeos nasceriam empatados e o ORDER BY seria não-determinístico.
     await insertTestVideo({
       titulo: 'Primeiro',
       url_youtube: `https://youtube.com/watch?v=prim-${Date.now()}`,
+      created_at: '2024-01-01T00:00:00Z',
     });
     await insertTestVideo({
       titulo: 'Segundo',
       url_youtube: `https://youtube.com/watch?v=seg-${Date.now()}`,
+      created_at: '2024-01-02T00:00:00Z',
     });
     await insertTestVideo({
       titulo: 'Terceiro',
       url_youtube: `https://youtube.com/watch?v=terc-${Date.now()}`,
+      created_at: '2024-01-03T00:00:00Z',
     });
 
     const result = await tx.query('SELECT * FROM videos ORDER BY created_at DESC');
     const titles = result.rows.map(r => r.titulo);
+    // Ordem estrita decrescente (subsume a asserção original abaixo)
+    expect(titles).toEqual(['Terceiro', 'Segundo', 'Primeiro']);
     expect(titles.indexOf('Terceiro')).toBeLessThan(titles.indexOf('Primeiro'));
   });
 
@@ -259,12 +271,19 @@ describeIf('Vídeos — Integração com PostgreSQL Real', () => {
     });
 
     // Tenta inserir com NOT NULL violado
+    //
+    // O PostgreSQL aborta a transação após o primeiro erro (SQLSTATE 25P02):
+    // todo comando seguinte falha com "current transaction is aborted…".
+    // Savepoint desfaza APENAS o comando que falhou e permite seguir lendo o
+    // estado da transação — sem ele o assert abaixo é impossível em banco real.
+    await tx.query('SAVEPOINT antes_do_erro');
     await expect(
       tx.query(
         'INSERT INTO videos (titulo, url_youtube) VALUES ($1, $2) RETURNING *',
         ['Vídeo sem URL', null]
       )
     ).rejects.toThrow();
+    await tx.query('ROLLBACK TO SAVEPOINT antes_do_erro');
 
     const countResult = await tx.query("SELECT COUNT(*) FROM videos WHERE titulo LIKE 'Vídeo%'");
     expect(parseInt(countResult.rows[0].count, 10)).toBe(1);

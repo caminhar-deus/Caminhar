@@ -1,5 +1,5 @@
 import { describe, it, expect, jest } from '@jest/globals';
-import { hashPassword, verifyPassword, generateToken, verifyToken, setAuthCookie, getAuthToken, authenticate, authenticateAndGenerateToken, withAuth, initializeAuth } from '../../../lib/auth/auth.js';
+import { hashPassword, verifyPassword, generateToken, verifyToken, setAuthCookie, getAuthToken, authenticate, authenticateAndGenerateToken, refreshAccessToken, withAuth, initializeAuth } from '../../../lib/auth/auth.js';
 import { query } from '../../../lib/infra/db.js';
 
 jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb());
@@ -54,7 +54,7 @@ describe('Library - Auth', () => {
 
     query.mockResolvedValueOnce({ rows: [{ id: 1, username: 'admin', password: passwordHash, role: 'admin' }] }); // Usuário existe
     query.mockResolvedValueOnce({ rowCount: 1, rows: [] }); // Atualiza last_login_at
-    query.mockResolvedValueOnce({ rows: [{ permissions: ['Visão Geral'] }] }); // Busca permissões
+    query.mockResolvedValueOnce({ rows: [{ permissions: '["Visão Geral"]' }] }); // Busca permissões (TEXT → string JSON)
     query.mockRejectedValueOnce(new Error('DB Error')); // Falha ao armazenar refresh token
 
     const result = await authenticateAndGenerateToken('admin', '123456', '127.0.0.1');
@@ -63,6 +63,45 @@ describe('Library - Auth', () => {
     expect(result.refreshToken).toBeNull();
     expect(result.user.permissions).toEqual(['Visão Geral']);
     expect(result.permissionsLoaded).toBe(true);
+  });
+
+  it('refreshAccessToken: devolve user.permissions normalizado a partir do TEXT do banco', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ user_id: 1 }] }) // validateRefreshToken
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // revokeRefreshToken (rotação)
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // storeRefreshToken (novo par)
+      .mockResolvedValueOnce({ rows: [{ id: 1, username: 'admin', role: 'comum' }] }) // SELECT users
+      .mockResolvedValueOnce({ rows: [{ permissions: '["Visão Geral"]' }] }); // roles (TEXT → string JSON)
+
+    const result = await refreshAccessToken('valid-refresh-token');
+
+    expect(result.error).toBeNull();
+    expect(result.accessToken).toBeDefined();
+    expect(result.refreshToken).toBeDefined();
+    expect(result.user).toEqual({
+      id: 1,
+      username: 'admin',
+      role: 'comum',
+      permissions: ['Visão Geral'],
+      permissionsLoaded: true,
+    });
+  });
+
+  it('refreshAccessToken: devolve permissions: [] sem quebrar o refresh se a consulta a roles falhar', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ user_id: 1 }] }) // validateRefreshToken
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // revokeRefreshToken (rotação)
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // storeRefreshToken (novo par)
+      .mockResolvedValueOnce({ rows: [{ id: 1, username: 'admin', role: 'comum' }] }) // SELECT users
+      .mockRejectedValueOnce(new Error('relation "roles" does not exist')); // roles falha
+
+    const result = await refreshAccessToken('valid-refresh-token');
+
+    expect(result.error).toBeNull();
+    expect(result.accessToken).toBeDefined();
+    expect(result.refreshToken).toBeDefined();
+    expect(result.user.permissions).toEqual([]);
+    expect(result.user.permissionsLoaded).toBe(false);
   });
 
   it('withAuth: protege rotas de API como middleware', async () => {

@@ -20,6 +20,26 @@
 import './matchers/index.js';
 
 // ============================================================================
+// MOCK DE 'pg' DESATIVADO (suíte com banco REAL)
+// ============================================================================
+//
+// `__mocks__/pg.js` fica na raiz do projeto (adjacente a node_modules), e o
+// Jest usa mocks manuais de módulos Node AUTOMATICAMENTE — sem precisar de
+// `jest.mock('pg')`. Em `CjsLoader.requireModule`, quando o módulo não está
+// no module map (caso de pacotes do node_modules), o caminho resolvido é
+// substituído pelo manual mock, a menos que haja `jest.unmock` explícito.
+//
+// Consequência: sem este `unmock`, TODA a suíte *.db.test.js enxergava o mock
+// (`new Pool()` → `connect().query()` → `jest.fn()` sem implementação →
+// `undefined`), o que derrubava as 73 asserções com
+// "Cannot read properties of undefined (reading 'rows' | 'rowCount')" e fazia
+// a fronteira de autoridade devolver 403 (fail-closed por query indefinida).
+//
+// A suíte principal (`npx jest`, tests/setup.js) NÃO é afetada: ela declara
+// `jest.mock('pg')` nos próprios arquivos de teste que precisam do mock.
+jest.unmock('pg');
+
+// ============================================================================
 // POLYFILLS
 // ============================================================================
 

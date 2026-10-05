@@ -134,7 +134,7 @@ Componentes React organizados em 6 categorias:
 **Arquivo:** [`docs/PROJECT_data.md`](/docs/PROJECT_data.md)
 
 - **Banco de Dados:** PostgreSQL com 16 tabelas: `users`, `settings`, `images`, `categories`, `tags`, `posts`, `post_categories`, `post_tags`, `musicas`, `videos`, `products`, `dicas`, `activity_logs`, `refresh_tokens`, `roles`, `_migrations`
-- **17 migrações** versionadas (000 a 017; criação de tabelas, índices TRGM para busca textual, campos de ordenação)
+- **18 migrações** versionadas (000 a 018; criação de tabelas, índices TRGM para busca textual, campos de ordenação, seed dos cargos padrão `admin`/`user`)
 - **Instalação limpa:** em um banco vazio, `npm run migrate` executa o baseline automaticamente (migração `000-create-base-schema` cria o schema base). Para recriar tabelas de conteúdo do zero, use `npm run db:reset` seguido de `npm run migrate`.
 - **Backups:** Dumps PostgreSQL em `data/backups/` com criptografia AES-256-GCM, compressão gzip, hash SHA-256, rotação automática (máx. 10 backups)
 
@@ -230,7 +230,7 @@ Componentes React organizados em 6 categorias:
 |-----------|:---:|-----------|
 | Backup | 5 | `backup.js` (módulo central) + entry points (criar, restaurar, inicializar, ver logs) |
 | Seed | 5 | `seed-all.js` (orquestrador) + seeds de posts, músicas, vídeos, produtos |
-| Migrações | 19 | `migrate.js` (executor) + 17 migrações versionadas (000 a 017) + 2 utilitários (`seed-migrations-table.js`, `verify-applied.js`) |
+| Migrações | 20 | `migrate.js` (executor) + 18 migrações versionadas (000 a 018) + 2 utilitários (`seed-migrations-table.js`, `verify-applied.js`) |
 | Schemas JSON | 4 | Definições de tabelas (dicas, musicas, posts, videos) para `init-table.js` |
 | Inicialização | 4 | `init-table.js`, `init-server.js`, `init-backup.js`, `seed-settings.js` |
 | Limpeza | 10 | Banco (clear-db, clear-musicas, clean-load-test-posts), arquivos (clean-orphaned-images, clean-k6-reports), cache, auth locks |

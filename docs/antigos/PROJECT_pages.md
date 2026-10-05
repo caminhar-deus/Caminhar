@@ -334,7 +334,7 @@
 - **Localização:** `/pages/api/admin/roles.js`
 - **Propósito:** Endpoint para gerenciamento de papéis (roles) e permissões.
 - **Funcionalidades:**
-  - GET: Lista roles e permissões (cria tabela automaticamente se não existir)
+  - GET: Lista roles e permissões (~~cria tabela automaticamente se não existir~~ — descrição superada em 04/10/2026: a criação vem da migração `000`, o seed de cargos da `018`, e `42P01` agora responde 500 orientando `npm run migrate`)
   - POST: Cria nova role com validação Zod (`roleSchema`) — nome obrigatório e permissões como array opcional (adicionado 12/05/2026)
   - PUT: Atualiza permissões de uma role com validação Zod (`roleUpdateSchema`) (adicionado 12/05/2026)
   - DELETE: Remove role

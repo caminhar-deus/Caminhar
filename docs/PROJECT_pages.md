@@ -481,8 +481,8 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
   - `zod` (dependência externa) — `roleSchema`, `roleUpdateSchema`.
 - **Propósito:** Gerenciamento de papéis (roles) e permissões.
 - **Funcionalidades:**
-  - GET: lista roles; **cria a tabela `roles` automaticamente** se não existir (código `42P01`) e popula os cargos padrão (`admin` com 9 permissões e `user` com "Visão Geral").
-  - POST/PUT com validação Zod (`roleSchema`/`roleUpdateSchema`); `permissions` serializado como JSONB.
+  - GET: lista roles e devolve `permissions` já normalizado como array via `getRolePermissions` (`lib/domain/permissions.js`); a coluna `roles.permissions` é `TEXT` com string JSON. A tabela é criada pela migração `000-create-base-schema` e os cargos padrão (`admin` com as permissões de `lib/domain/permissions.js`, `user` com "Visão Geral") são semeados pela migração `018-seed-default-roles` — não há DDL/DML no path de request. Se a tabela não existir (código `42P01`), responde 500 com orientação para rodar `npm run migrate`.
+  - POST/PUT com validação Zod (`roleSchema`/`roleUpdateSchema`); `permissions` serializado como string JSON (coluna `TEXT`).
   - DELETE com log de auditoria.
   - Config: `permission: ['Segurança', 'Usuários']`, `rateLimit: 30/min`.
 
@@ -498,7 +498,7 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
 - **Funcionalidades:**
   - GET com paginação e **filtro por intervalo de datas** (`startDate`/`endDate`) montado dinamicamente com parâmetros parametrizados ($1, $2).
   - Ordenação por `created_at DESC`.
-  - **Auto-criação da tabela `activity_logs`** se não existir (código `42P01`) e retorno de lista vazia.
+  - Se a tabela `activity_logs` não existir (código `42P01`), responde 500 com orientação para `npm run migrate` — sem auto-criação no path de request: a tabela é criada pela migração `006-create-activity-logs` (com `entity_id BIGINT` desde a `011`).
   - Normaliza `user_id` para o `username` registrado no log.
   - Config: `permission: ['Auditoria', 'Segurança']`, `rateLimit: 30/min`.
 

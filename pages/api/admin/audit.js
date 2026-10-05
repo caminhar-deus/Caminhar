@@ -1,5 +1,6 @@
 import { query } from '../../../lib/infra/db';
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
+import { logger } from '../../../lib/infra/logger.js';
 
 async function handleGet(req, res) {
   try {
@@ -41,20 +42,15 @@ async function handleGet(req, res) {
     return res.status(200).json({ data: logs, pagination: { page, limit, total, totalPages } });
   } catch (e) {
     if (e.code === '42P01') {
-      // Garante que a tabela exista se for uma instalação limpa
-      await query(`
-        CREATE TABLE IF NOT EXISTS activity_logs (
-          id SERIAL PRIMARY KEY,
-          username VARCHAR(255),
-          action VARCHAR(255),
-          entity_type VARCHAR(255),
-          entity_id INTEGER,
-          details TEXT,
-          ip_address VARCHAR(255),
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
-      return res.status(200).json({ data: [], pagination: { page: 1, limit: 50, total: 0, totalPages: 1 } });
+      // Schema é responsabilidade das migrações (`npm run migrate`), não do
+      // path de request: o CREATE TABLE inline foi removido (código morto — a
+      // migração 006 já cria a tabela — e com entity_id INTEGER divergia da 011,
+      // que converte para BIGINT).
+      logger.error('Audit', 'Schema desatualizado: tabela "activity_logs" ausente. Execute "npm run migrate".', e);
+      return res.status(500).json({
+        error: 'Erro interno no servidor',
+        message: 'Schema desatualizado: tabela "activity_logs" ausente. Execute "npm run migrate".',
+      });
     }
     throw e;
   }

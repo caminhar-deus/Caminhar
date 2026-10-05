@@ -110,6 +110,25 @@ const CHECKS = [
     expected: 'refresh_tokens',
     label: 'Tabela "refresh_tokens" (016)',
   },
+  {
+    id: '017',
+    name: '017-add-thumbnail-to-videos',
+    check: `SELECT column_name FROM information_schema.columns WHERE table_name = 'videos' AND column_name = 'thumbnail'`,
+    expected: 'thumbnail',
+    label: 'Coluna "thumbnail" em videos (017)',
+  },
+  {
+    id: '018',
+    name: '018-seed-default-roles',
+    // Verifica o EFEITO da 018 (seed dos cargos padrão). COUNT(DISTINCT name)
+    // em vez de COUNT(*): a migração 000 NÃO cria UNIQUE em roles.name (o
+    // índice único só vem da própria 018), então COUNT(*) contaria duplicatas
+    // (2 linhas 'admin' e nenhuma 'user' daria 2 = "Aplicada" indevidamente).
+    // O `expected: '2'` é comparado pelo loop (primeira coluna da row).
+    check: `SELECT COUNT(DISTINCT name) FROM roles WHERE name IN ('admin','user')`,
+    expected: '2',
+    label: 'Cargos padrão em roles (018)',
+  },
 ];
 
 async function verify() {
@@ -131,8 +150,16 @@ async function verify() {
       if (check.expectedType) {
         // Para migração 011: verificar o tipo da coluna
         found = result.rows.length > 0 && result.rows[0].data_type === check.expectedType;
+      } else if (check.expected !== undefined) {
+        // Compara a PRIMEIRA coluna da row com `expected` (todas as queries
+        // selecionam uma coluna só). Sem esta comparação `expected` era um
+        // campo morto — o resultado dependia apenas de `rows.length > 0`, o
+        // que seria sempre verdadeiro para agregados (COUNT) e tornaria o
+        // check 018 inútil.
+        const firstValue = result.rows.length > 0 ? String(Object.values(result.rows[0])[0]) : undefined;
+        found = firstValue === check.expected;
       } else {
-        // Para as demais: verificar se o registro existe
+        // Sem `expected`: a existência da row é o suficiente
         found = result.rows.length > 0;
       }
 

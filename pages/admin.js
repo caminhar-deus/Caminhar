@@ -6,6 +6,18 @@ import loginStyles from '../components/Admin/styles/login.module.css';
 import tabsStyles from '../components/Admin/styles/tabs.module.css';
 import formStyles from '../components/Admin/styles/form.module.css';
 import miscStyles from '../components/Admin/styles/misc.module.css';
+import { toPermissionArray } from '../lib/domain/permissions.js';
+
+/**
+ * Ponto único de normalização do estado `currentUser`.
+ * `permissions` é SEMPRE `string[]` venha de onde vier (login, /api/auth/check,
+ * fallback) — `toPermissionArray` aceita array (passthrough) e string JSON.
+ *
+ * @param {Object|null} user
+ * @returns {Object|null}
+ */
+const normalizeCurrentUser = (user) =>
+  user ? { ...user, permissions: toPermissionArray(user.permissions) } : user;
 
 // Mapeamento explícito para evitar conflito de classes com mesmo nome entre módulos
 const styles = {
@@ -32,6 +44,8 @@ const styles = {
   preview: miscStyles.preview,
   previewContent: miscStyles.previewContent,
   previewImage: miscStyles.previewImage,
+  errorMessage: miscStyles.errorMessage,
+  emptyState: miscStyles.emptyState,
 };
 import AdminPosts from '../components/Admin/AdminPosts';
 import RateLimitViewer from '../components/Admin/Tools/RateLimitViewer';
@@ -153,7 +167,7 @@ export default function Admin() {
             // O endpoint /api/auth/check retorna { success, data: { user: { ... } } }
             // Tenta extrair de data.data.user, data.user, ou usa o objeto inteiro como fallback
             const userData = data?.data?.user || data?.user || data;
-            setCurrentUser(userData);
+            setCurrentUser(normalizeCurrentUser(userData));
           }
           setIsAuthenticated(true);
           await loadSettings();
@@ -221,7 +235,7 @@ export default function Admin() {
         throw new Error((data && data.message) || 'Falha no login');
       }
 
-      setCurrentUser(data.user);
+      setCurrentUser(normalizeCurrentUser(data.user));
       setIsAuthenticated(true);
       console.log('Login successful:', data.user);
       // Recarrega a página para que o cookie de autenticação seja reconhecido
@@ -349,6 +363,35 @@ export default function Admin() {
     return Array.isArray(currentUser.permissions) && currentUser.permissions.includes(permission);
   };
 
+  // Estados de permissão para não-admin (apresentação; não altera `hasPermission`).
+  // `permissionsLoaded` vem do backend (`GET /api/auth/check` e refresh):
+  // false = o servidor falhou ao ler os cargos; true + lista vazia = cargo sem permissões.
+  const isNonAdmin = Boolean(currentUser) && currentUser.role !== 'admin';
+  const permissionsLoadFailed = isNonAdmin && currentUser.permissionsLoaded === false;
+  const hasNoPermissions = isNonAdmin
+    && currentUser.permissionsLoaded === true
+    && Array.isArray(currentUser.permissions)
+    && currentUser.permissions.length === 0;
+
+  // Permissão exigida por cada aba (espelha os `hasPermission(...)` da barra de abas).
+  // Serve só para apontar `aria-labelledby` do painel para um botão que existe no DOM;
+  // `undefined` omite o atributo quando a aba ativa não está visível.
+  const tabPermissionByValue = {
+    dashboard: 'Visão Geral',
+    posts: 'Posts/Artigos',
+    musicas: 'Gestão de Músicas',
+    videos: 'Gestão de Vídeos',
+    projetos02: 'Gestão de Produtos',
+    dicas: 'Gestão de Dicas',
+    header: 'Configuração de Cabeçalho',
+    security: 'Segurança',
+    users: 'Usuários',
+    logs: 'Auditoria',
+  };
+  const activeTabButtonId = hasPermission(tabPermissionByValue[activeTab])
+    ? `admin-tab-${activeTab}`
+    : undefined;
+
   // Função responsável por encerrar a sessão
   const handleLogout = async () => {
     try {
@@ -442,108 +485,170 @@ export default function Admin() {
             </div>
           </div>
 
-          <div className={styles.tabs}>
+          {permissionsLoadFailed && (
+            <div className={styles.errorMessage} role="alert">
+              <strong style={{ display: 'block', marginBottom: '4px' }}>Não foi possível carregar suas permissões</strong>
+              <span style={{ display: 'block', marginBottom: '12px' }}>
+                Houve uma falha ao verificar as permissões do seu cargo. Se o problema continuar depois de tentar novamente, fale com um administrador.
+              </span>
+              <button type="button" className={styles.button} onClick={() => router.reload()}>
+                Tentar novamente
+              </button>
+            </div>
+          )}
+
+          {hasNoPermissions && (
+            <section className={styles.emptyState} aria-labelledby="admin-sem-permissao-titulo">
+              <h2 id="admin-sem-permissao-titulo" style={{ marginTop: 0, marginBottom: '8px', fontSize: 'var(--font-size-xl)' }}>Nenhuma permissão atribuída</h2>
+              <p style={{ color: 'var(--color-text-secondary)', marginBottom: 0 }}>
+                O seu cargo ainda não tem acesso a nenhuma área do painel. Peça a um administrador para liberar as permissões.
+              </p>
+            </section>
+          )}
+
+          <div className={styles.tabs} role="tablist" aria-label="Seções do painel administrativo">
             {hasPermission('Visão Geral') && (
               <button
+                role="tab"
+                id="admin-tab-dashboard"
+                aria-selected={activeTab === 'dashboard'}
+                aria-controls="admin-tabpanel"
                 className={`${styles.tabButton} ${activeTab === 'dashboard' ? styles.activeTab : ''}`}
                 onClick={() => setActiveTab('dashboard')}
               >
-                <span className="icon">📊</span>
+                <span className="icon" aria-hidden="true">📊</span>
                 Visão Geral
               </button>
             )}
             
             {hasPermission('Posts/Artigos') && (
               <button
+                role="tab"
+                id="admin-tab-posts"
+                aria-selected={activeTab === 'posts'}
+                aria-controls="admin-tabpanel"
                 className={`${styles.tabButton} ${activeTab === 'posts' ? styles.activeTab : ''}`}
                 onClick={() => setActiveTab('posts')}
               >
-                <span className="icon">📝</span>
+                <span className="icon" aria-hidden="true">📝</span>
                 Posts/Artigos
               </button>
             )}
             
             {hasPermission('Gestão de Músicas') && (
               <button
+                role="tab"
+                id="admin-tab-musicas"
+                aria-selected={activeTab === 'musicas'}
+                aria-controls="admin-tabpanel"
                 className={`${styles.tabButton} ${activeTab === 'musicas' ? styles.activeTab : ''}`}
                 onClick={() => setActiveTab('musicas')}
               >
-                <span className="icon">🎵</span>
+                <span className="icon" aria-hidden="true">🎵</span>
                 Gestão de Músicas
               </button>
             )}
             
             {hasPermission('Gestão de Vídeos') && (
               <button
+                role="tab"
+                id="admin-tab-videos"
+                aria-selected={activeTab === 'videos'}
+                aria-controls="admin-tabpanel"
                 className={`${styles.tabButton} ${activeTab === 'videos' ? styles.activeTab : ''}`}
                 onClick={() => setActiveTab('videos')}
               >
-                <span className="icon">🎬</span>
+                <span className="icon" aria-hidden="true">🎬</span>
                 Gestão de Vídeos
               </button>
             )}
             
             {hasPermission('Gestão de Produtos') && (
               <button
+                role="tab"
+                id="admin-tab-projetos02"
+                aria-selected={activeTab === 'projetos02'}
+                aria-controls="admin-tabpanel"
                 className={`${styles.tabButton} ${activeTab === 'projetos02' ? styles.activeTab : ''}`}
                 onClick={() => setActiveTab('projetos02')}
               >
-                <span className="icon">📦</span>
+                <span className="icon" aria-hidden="true">📦</span>
                 Gestão de Produtos
               </button>
             )}
 
             {hasPermission('Gestão de Dicas') && (
               <button
+                role="tab"
+                id="admin-tab-dicas"
+                aria-selected={activeTab === 'dicas'}
+                aria-controls="admin-tabpanel"
                 className={`${styles.tabButton} ${activeTab === 'dicas' ? styles.activeTab : ''}`}
                 onClick={() => setActiveTab('dicas')}
               >
-                <span className="icon">💡</span>
+                <span className="icon" aria-hidden="true">💡</span>
                 Dicas do Dia
               </button>
             )}
             
             {hasPermission('Configuração de Cabeçalho') && (
               <button
+                role="tab"
+                id="admin-tab-header"
+                aria-selected={activeTab === 'header'}
+                aria-controls="admin-tabpanel"
                 className={`${styles.tabButton} ${activeTab === 'header' ? styles.activeTab : ''}`}
                 onClick={() => setActiveTab('header')}
               >
-                <span className="icon">🎨</span>
+                <span className="icon" aria-hidden="true">🎨</span>
                 Configuração de Cabeçalho
               </button>
             )}
             
             {hasPermission('Segurança') && (
               <button
+                role="tab"
+                id="admin-tab-security"
+                aria-selected={activeTab === 'security'}
+                aria-controls="admin-tabpanel"
                 className={`${styles.tabButton} ${activeTab === 'security' ? styles.activeTab : ''}`}
                 onClick={() => setActiveTab('security')}
               >
-                <span className="icon">🔒</span>
+                <span className="icon" aria-hidden="true">🔒</span>
                 Segurança
               </button>
             )}
             
             {hasPermission('Usuários') && (
               <button
+                role="tab"
+                id="admin-tab-users"
+                aria-selected={activeTab === 'users'}
+                aria-controls="admin-tabpanel"
                 className={`${styles.tabButton} ${activeTab === 'users' ? styles.activeTab : ''}`}
                 onClick={() => setActiveTab('users')}
               >
-                <span className="icon">👥</span>
+                <span className="icon" aria-hidden="true">👥</span>
                 Usuários
               </button>
             )}
             
             {hasPermission('Auditoria') && (
               <button
+                role="tab"
+                id="admin-tab-logs"
+                aria-selected={activeTab === 'logs'}
+                aria-controls="admin-tabpanel"
                 className={`${styles.tabButton} ${activeTab === 'logs' ? styles.activeTab : ''}`}
                 onClick={() => setActiveTab('logs')}
               >
-                <span className="icon">📜</span>
+                <span className="icon" aria-hidden="true">📜</span>
                 Auditoria
               </button>
             )}
           </div>
 
+          <div role="tabpanel" id="admin-tabpanel" aria-labelledby={activeTabButtonId}>
           {activeTab === 'header' && hasPermission('Configuração de Cabeçalho') && (
             <>
               <div className={styles.formGroup}>
@@ -773,6 +878,7 @@ export default function Admin() {
           {activeTab === 'projetos02' && hasPermission('Gestão de Produtos') && (
             <AdminProducts />
           )}
+          </div>
         </div>
       </main>
     </div>

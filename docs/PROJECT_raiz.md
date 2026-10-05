@@ -165,7 +165,7 @@ Subpastas existentes na raiz (fora do escopo, citadas como contexto ao longo do 
 
 **Resumo:** Template versionado das variáveis de ambiente do projeto, com valores placeholder e comentários explicativos. Organiza as 11 variáveis em dois blocos:
 
-- **Obrigatórias** (3): `DATABASE_URL` (conexão PostgreSQL, com exemplo para porta 5433), `JWT_SECRET` (chave de assinatura dos tokens JWT; o comentário recomenda `openssl rand -hex 32`), `BACKUP_ENCRYPTION_KEY` (chave de criptografia dos backups, 32 caracteres recomendados).
+- **Obrigatórias** (3): `DATABASE_URL` (conexão PostgreSQL, com exemplo local para porta 5432 e role `caminhar`), `JWT_SECRET` (chave de assinatura dos tokens JWT; o comentário recomenda `openssl rand -hex 32`), `BACKUP_ENCRYPTION_KEY` (chave de criptografia dos backups, 32 caracteres recomendados).
 - **Opcionais** (8): `ADMIN_USERNAME`/`ADMIN_PASSWORD` (credenciais iniciais do administrador), `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` (Redis para rate limiting persistente; sem elas o rate limit funciona em memória), `ADMIN_IP_WHITELIST` (IPs que nunca são bloqueados pelo middleware), `SITE_URL` (base para sitemap/SEO), `ALLOWED_ORIGINS` (CORS da API pública), `NODE_ENV` (`development`, `production` ou `test`).
 
 > **Nuance confirmada na análise:** o bloco "Obrigatórias" do template lista 3 variáveis, mas `scripts/check-env.js` só exige `DATABASE_URL` e `JWT_SECRET` — `BACKUP_ENCRYPTION_KEY` só é exigida pelo fluxo de backups (`scripts/init-backup.js`).
@@ -432,7 +432,7 @@ Subpastas existentes na raiz (fora do escopo, citadas como contexto ao longo do 
 
 > ⚠️ **Contagem desatualizada:** o README informa **"29 arquivos"** na raiz; a análise atual identifica **38**. As demais contagens conferem com os documentos de cada área (42 arquivos em páginas, 16 tabelas, 186 arquivos de teste).
 
-> 📌 A seção **Dados** do README registra: 16 tabelas, **17 migrações** versionadas (000 a 017) e instrução de instalação limpa — a migração `000-create-base-schema` cria o schema base em banco vazio durante o `npm run migrate`. A referência anterior a `generateTokensCSS.js` foi removida do README; os Design Tokens continuam documentados (11 arquivos em `pages/DesignTokens/`, conforme `PROJECT_pages.md`).
+> 📌 A seção **Dados** do README registra: 16 tabelas, **18 migrações** versionadas (000 a 018) e instrução de instalação limpa — a migração `000-create-base-schema` cria o schema base em banco vazio durante o `npm run migrate`. A referência anterior a `generateTokensCSS.js` foi removida do README; os Design Tokens continuam documentados (11 arquivos em `pages/DesignTokens/`, conforme `PROJECT_pages.md`).
 
 ---
 

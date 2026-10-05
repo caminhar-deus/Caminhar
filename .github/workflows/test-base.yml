@@ -66,10 +66,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
-      # `skip-db-setup` permite pular o setup do banco quando a suíte não o
-      # acessa (ex.: cobertura, que roda em jsdom). Sem o pulo, o step
-      # `Setup Test Database` executaria `npm run setup:test-db`, comando de
-      # setup do banco que não existe em package.json.
+      # `skip-db-setup` skips the database setup when the suite does not touch
+      # Postgres at all (e.g. coverage running in jsdom), avoiding pointless
+      # migrations/seeds for a database the tests never query.
       - uses: ./.github/actions/setup-db
         if: ${{ !inputs.skip-db-setup }}
         with:

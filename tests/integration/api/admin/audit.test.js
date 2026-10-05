@@ -103,26 +103,32 @@ describe('API Admin - Auditoria (/api/admin/audit)', () => {
       expect(query).toHaveBeenCalledWith(expect.stringContaining('created_at >='), expect.arrayContaining(['2026-01-01', '2026-12-31', 50, 0]));
     });
 
-    it('deve interceptar erro 42P01, criar a tabela de auditoria se não existir e retornar 200', async () => {
-      let countCall = 0;
+    it('deve responder 500 com mensagem acionável quando a tabela activity_logs não existe (42P01), sem executar DDL', async () => {
       query.mockImplementation(async (sql) => {
         if (sql.includes('SELECT permissions FROM roles')) return { rows: [{ permissions: ['Auditoria'] }] };
         if (sql.includes('SELECT COUNT(*)')) {
-          if (countCall === 0) {
-            countCall++;
-            const error = new Error('relation does not exist');
-            error.code = '42P01';
-            throw error;
-          }
+          const error = new Error('relation does not exist');
+          error.code = '42P01';
+          throw error;
         }
         return { rows: [] };
       });
 
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
       const { req, res } = createMocks({ method: 'GET' });
       await handler(req, res);
 
-      expect(res._getStatusCode()).toBe(200);
-      expect(query).toHaveBeenCalledWith(expect.stringContaining('CREATE TABLE IF NOT EXISTS activity_logs'));
+      expect(res._getStatusCode()).toBe(500);
+      const data = res._getJSONData();
+      expect(data.error).toBe('Erro interno no servidor');
+      expect(data.message).toContain('npm run migrate');
+
+      // Schema é responsabilidade das migrações: NENHUM DDL no path de request
+      expect(query).not.toHaveBeenCalledWith(expect.stringContaining('CREATE TABLE'), expect.anything());
+      expect(query).not.toHaveBeenCalledWith(expect.stringContaining('CREATE TABLE'));
+
+      consoleSpy.mockRestore();
     });
 
     it('deve retornar 500 em caso de erro inesperado no banco de dados', async () => {

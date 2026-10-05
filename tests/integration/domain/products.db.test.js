@@ -217,12 +217,19 @@ describeIf('Produtos — Integração com PostgreSQL Real', () => {
     await insertTestProduct({ name: 'Produto Válido', price: '30.00' });
 
     // Tenta inserir com NOT NULL violado
+    //
+    // O PostgreSQL aborta a transação após o primeiro erro (SQLSTATE 25P02):
+    // todo comando seguinte falha com "current transaction is aborted…".
+    // Savepoint desfaza APENAS o comando que falhou e permite seguir lendo o
+    // estado da transação — sem ele o assert abaixo é impossível em banco real.
+    await tx.query('SAVEPOINT antes_do_erro');
     await expect(
       tx.query(
         'INSERT INTO products (name, price, image_url) VALUES ($1, $2, $3) RETURNING *',
         ['Sem Imagens', '50.00', null]
       )
     ).rejects.toThrow();
+    await tx.query('ROLLBACK TO SAVEPOINT antes_do_erro');
 
     const countResult = await tx.query("SELECT COUNT(*) FROM products WHERE name LIKE 'Produto%'");
     expect(parseInt(countResult.rows[0].count, 10)).toBe(1);

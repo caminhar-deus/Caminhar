@@ -53,11 +53,15 @@ async function insertTestPost(overrides = {}) {
   };
   const data = { ...defaults, ...overrides };
 
+  // `created_at` é opcional: quando omitido mantém o DEFAULT CURRENT_TIMESTAMP
+  // (no PostgreSQL é fixo para a transação INTEIRA). Testes de ORDENAÇÃO
+  // precisam de datas explícitas, senão todas as linhas do teste nascem com o
+  // mesmo valor e o ORDER BY created_at vira não-determinístico.
   const result = await tx.query(
-    `INSERT INTO posts (title, slug, content, published, position)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO posts (title, slug, content, published, position, created_at)
+     VALUES ($1, $2, $3, $4, $5, COALESCE($6, CURRENT_TIMESTAMP))
      RETURNING *`,
-    [data.title, data.slug, data.content, data.published, data.position]
+    [data.title, data.slug, data.content, data.published, data.position, data.created_at ?? null]
   );
   return result.rows[0];
 }
@@ -193,12 +197,17 @@ describeIf('Posts — Integração com PostgreSQL Real', () => {
   });
 
   it('deve ordenar posts por created_at DESC', async () => {
-    await insertTestPost({ title: 'Primeiro', slug: `primeiro-${Date.now()}` });
-    await insertTestPost({ title: 'Segundo', slug: `segundo-${Date.now()}` });
-    await insertTestPost({ title: 'Terceiro', slug: `terceiro-${Date.now()}` });
+    // CURRENT_TIMESTAMP é o MESMO para todas as linhas de uma transação (é o
+    // timestamp de início da transação), então sem datas explícitas os três
+    // posts nasceriam empatados e o ORDER BY seria não-determinístico.
+    await insertTestPost({ title: 'Primeiro', slug: `primeiro-${Date.now()}`, created_at: '2024-01-01T00:00:00Z' });
+    await insertTestPost({ title: 'Segundo', slug: `segundo-${Date.now()}`, created_at: '2024-01-02T00:00:00Z' });
+    await insertTestPost({ title: 'Terceiro', slug: `terceiro-${Date.now()}`, created_at: '2024-01-03T00:00:00Z' });
 
     const result = await tx.query('SELECT * FROM posts ORDER BY created_at DESC');
     const titles = result.rows.map(r => r.title);
+    // Ordem estrita decrescente (subsume a asserção original abaixo)
+    expect(titles).toEqual(['Terceiro', 'Segundo', 'Primeiro']);
     expect(titles.indexOf('Terceiro')).toBeLessThan(titles.indexOf('Primeiro'));
   });
 
@@ -217,9 +226,15 @@ describeIf('Posts — Integração com PostgreSQL Real', () => {
 
     await insertTestPost({ title: 'Post Único', slug });
 
+    // O PostgreSQL aborta a transação após o primeiro erro (SQLSTATE 25P02):
+    // todo comando seguinte falha com "current transaction is aborted…".
+    // Savepoint desfaza APENAS o comando que falhou e permite seguir lendo o
+    // estado da transação — sem ele o assert abaixo é impossível em banco real.
+    await tx.query('SAVEPOINT antes_do_erro');
     await expect(
       insertTestPost({ title: 'Post Duplicado', slug })
     ).rejects.toThrow();
+    await tx.query('ROLLBACK TO SAVEPOINT antes_do_erro');
 
     const countResult = await tx.query(
       "SELECT COUNT(*) FROM posts WHERE title LIKE 'Post Válido%' OR title LIKE 'Post Único%' OR title LIKE 'Post Duplicado%'"
