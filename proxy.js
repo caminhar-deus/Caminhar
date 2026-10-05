@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { checkRateLimit } from './lib/cache/cache.js';
 import { logger } from './lib/infra/logger.js';
-import { detectSpoofedIP } from './lib/api/helpers.js';
+import { fromMiddlewareRequest, resolveClientIP, UNKNOWN_IP } from './lib/api/helpers.js';
 
 /**
  * Middleware global do Next.js para Rate Limiting e Proteção DDoS.
@@ -42,52 +42,41 @@ export async function proxy(request) {
 
   const config = RATE_LIMIT_CONFIG[matchedRoute];
 
-  // Identifica o IP do cliente de forma segura.
+  // Identifica o IP do cliente pelo modelo de confiança de TRUST_PROXY.
   //
-  // Em desenvolvimento/teste (Next.js + k6), o request.ip sempre retorna 127.0.0.1 ou ::1
-  // porque o servidor Node.js recebe a conexão localmente. O IP real do cliente só está
-  // disponível no header X-Forwarded-For, que o k6 envia com um IP público simulado
-  // (ex: 203.0.113.1) para testar o rate limit sem cair na whitelist de IPs locais.
-  //
-  // Em produção atrás de proxy reverso (Nginx), o proxy preenche X-Forwarded-For
-  // com o IP real do cliente, e o Next.js expõe via request.ip.
-  const forwardedFor = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
-  const socketIP = request.ip || '127.0.0.1';
+  // O middleware do Next não expõe o socket, então `fromMiddlewareRequest`
+  // devolve `socketIP: null`: sem um proxy confiável declarado não existe IP
+  // de cliente confiável neste runtime. Com TRUST_PROXY=N, a entrada confiável
+  // é a N-ésima da direita de X-Forwarded-For — o cliente não a controla.
+  const { clientIP, untrustedForwarded, hops } = resolveClientIP(fromMiddlewareRequest(request));
 
-  // Prioriza o header X-Forwarded-For quando:
-  // 1. O socket é localhost (desenvolvimento/teste) — o IP real está no header
-  // 2. Há um header válido presente
-  // Caso contrário, usa o socket IP (produção ou conexão direta)
-  const isLocalSocket = socketIP === '127.0.0.1' || socketIP === '::1' || socketIP === '::ffff:127.0.0.1';
-  const ip = (isLocalSocket && forwardedFor) ? forwardedFor : socketIP;
-
-  // Detecção de IP spoofing antes do rate limit
-  // Em desenvolvimento: strictMode=false para evitar falsos positivos em testes de carga
-  // Em produção: strictMode=true para detectar spoofing mesmo em localhost
-  // Testes de seguranço podem ativar strictMode via ENABLE_STRICT_SPOOFING=true
-  const isDevelopment = process.env.NODE_ENV !== 'production';
-  const strictMode = process.env.ENABLE_STRICT_SPOOFING === 'true' ? true : !isDevelopment;
-  const spoofResult = detectSpoofedIP(request, { strictMode });
-  if (spoofResult.isSpoofed) {
+  // Avisa o operador sobre topologia não declarada, sem bloquear a requisição.
+  if (untrustedForwarded) {
     logger.warn('Security',
-      `⛔ Spoofing detectado | Rota: ${matchedRoute} | Socket: ${spoofResult.socketIP} | ` +
-      `Forwarded: ${spoofResult.forwardedIP} | UA: ${request.headers.get('user-agent') || 'Unknown'}`
-    );
-    return NextResponse.json(
-      {
-        error: 'Forbidden',
-        message: 'IP spoofing detectado. Requisição bloqueada.',
-      },
-      { status: 403 }
+      `X-Forwarded-For divergente do socket sem TRUST_PROXY configurado (hops=${hops}) | ` +
+      `Rota: ${matchedRoute} | Cliente usado: ${clientIP} | ` +
+      `UA: ${request.headers.get('user-agent') || 'Unknown'}`
     );
   }
 
-  const isRateLimited = await checkRateLimit(ip, config.key, config.limit, config.window);
+  // Sem IP confiável, um limite por IP aqui seria um bucket único e global:
+  // qualquer visitante estouraria o limite e derrubaria o login de todos.
+  // O handler em `pages/api/auth/login.js` tem o socket e é o backstop real —
+  // ele divide a MESMA chave, então o bucket não é contado em dobro.
+  if (clientIP === UNKNOWN_IP) {
+    logger.warn('Security',
+      `Rate limit de ${matchedRoute} não aplicado: sem IP confiável no middleware ` +
+      `(TRUST_PROXY=${hops || 'não configurado'}). Defina TRUST_PROXY para o limite valer aqui.`
+    );
+    return NextResponse.next();
+  }
+
+  const isRateLimited = await checkRateLimit(clientIP, config.key, config.limit, config.window);
 
   if (isRateLimited) {
     const routeName = matchedRoute.replace('/api/', '');
     logger.warn('Security',
-      `⛔ Bloqueio DDoS (Rate Limit) | Rota: ${routeName} | IP: ${ip} | ` +
+      `⛔ Bloqueio DDoS (Rate Limit) | Rota: ${routeName} | IP: ${clientIP} | ` +
       `UA: ${request.headers.get('user-agent') || 'Unknown'}`
     );
 

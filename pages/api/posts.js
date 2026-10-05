@@ -95,7 +95,8 @@ async function handleGet(req, res) {
  */
 async function postHandler(req, res) {
   try {
-    // Rate limit em mutações — usando getClientIP (seguro contra spoofing)
+    // Rate limit em mutações — getClientIP aplica TRUST_PROXY e, sem proxy
+    // declarado, ignora X-Forwarded-For e usa o IP do socket
     const ip = getClientIP(req);
     const isRateLimited = await checkRateLimit(ip, 'api:posts:create', 30, 60000);
     if (isRateLimited) {

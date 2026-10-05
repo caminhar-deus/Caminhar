@@ -26,18 +26,29 @@ runs:
       shell: bash
       run: npm run build
       env:
-        DATABASE_URL: postgres://test_user:test_password@localhost:5432/caminhar_test
+        # `DATABASE_URL` vem do `env:` do job em `test-base.yml` (fonte única).
         JWT_SECRET: test-secret-for-build
 
+    # A saída do servidor vai para um arquivo no workspace, e não para o stdout
+    # do step: com `npm start &` o processo sobrevive ao step, então o log ia
+    # para o `/dev/null` do runner e sumia. Sem ele, um 500 em endpoint não tem
+    # causa diagnosticável — foi o que ocorreu no run 37303670048, em que 12
+    # testes reprovaram sem nenhuma pista do servidor. O passo
+    # "App Server Log" em `test-base.yml` imprime o final deste arquivo.
     - name: Start Application (Background)
       shell: bash
       run: |
-        npm start &
+        npm start > "$APP_LOG" 2>&1 &
         npx wait-on http://localhost:3000 --timeout 60000
       env:
+        APP_LOG: ${{ github.workspace }}/app-server.log
         PORT: 3000
         NODE_ENV: production
-        DATABASE_URL: postgres://test_user:test_password@localhost:5432/caminhar_test
+        # CI trata a aplicação como se houvesse 1 proxy confiável na frente:
+        # os testes k6 mandam `X-Forwarded-For` para simular IPs de clientes
+        # distintos e não caírem na whitelist de loopback.
+        TRUST_PROXY: 'true'
+        # `DATABASE_URL` vem do `env:` do job em `test-base.yml` (fonte única).
         REDIS_URL: redis://localhost:6379
         JWT_SECRET: test-jwt-secret-for-load-tests
         ADMIN_USERNAME: ${{ inputs.admin-username }}

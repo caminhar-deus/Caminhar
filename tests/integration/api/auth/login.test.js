@@ -12,8 +12,10 @@ jest.mock('../../../../lib/auth/auth', () => ({
   authenticateAndGenerateToken: jest.fn()
 }));
 
+// Neutraliza o rate limit nesta suíte: o alvo aqui é a lógica de autenticação,
+// não o limite de tentativas (que é coberto em testes próprios).
 jest.mock('../../../../lib/cache/cache', () => ({
-  checkRateLimit: jest.fn()
+  checkRateLimit: jest.fn(() => Promise.resolve(false))
 }));
 
 jest.mock('../../../../lib/infra/logger', () => {
@@ -33,6 +35,10 @@ jest.mock('../../../../lib/infra/logger', () => {
 describe('Integração: API de Login (/api/auth/login)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // mockClear não descarta respostas enfileiradas com mockResolvedValueOnce:
+    // sem o reset, o `true` do teste de 429 vaza para o teste seguinte.
+    checkRateLimit.mockReset();
+    checkRateLimit.mockResolvedValue(false);
   });
 
   it('deve retornar 405 para métodos não permitidos (ex: GET)', async () => {

@@ -22,7 +22,7 @@ describe('API - Admin - Dicas (Edge Cases)', () => {
     const mocks = createMocks({
       method: 'GET',
       headers: {},
-      socket: {}, // Força o fallback de IP para 'unknown' (linha 6)
+      socket: {}, // Sem remoteAddress: getClientIP cai no fallback 'unknown'
       body: {}
     });
     req = mocks.req;
@@ -30,7 +30,7 @@ describe('API - Admin - Dicas (Edge Cases)', () => {
     req.user = { username: 'admin' }; // Garante que logActivity seja acionado
   });
 
-  it('deve usar o IP 127.0.0.1 e valor padrão de published (true) no POST', async () => {
+  it('deve usar o IP unknown e valor padrão de published (true) no POST', async () => {
     req.method = 'POST';
     req.body = { name: 'Dica Nova', content: 'Conteúdo da Dica' }; // Sem enviar 'published'
     
@@ -38,10 +38,10 @@ describe('API - Admin - Dicas (Edge Cases)', () => {
     await handler(req, res);
 
     expect(db.query).toHaveBeenCalledWith(expect.any(String), ['Dica Nova', 'Conteúdo da Dica', true]);
-    expect(logActivity).toHaveBeenCalledWith('admin', 'CRIAR DICA', 'DICA', 1, 'Criou a dica: Dica Nova', '127.0.0.1');
+    expect(logActivity).toHaveBeenCalledWith('admin', 'CRIAR DICA', 'DICA', 1, 'Criou a dica: Dica Nova', 'unknown');
   });
 
-  it('deve usar o IP 127.0.0.1 e valor padrão de published (true) no PUT', async () => {
+  it('deve usar o IP unknown e valor padrão de published (true) no PUT', async () => {
     req.method = 'PUT';
     req.body = { id: 99, name: 'Dica Atualizada', content: 'Atualizado' }; // Sem enviar 'published'
 
@@ -49,6 +49,6 @@ describe('API - Admin - Dicas (Edge Cases)', () => {
     await handler(req, res);
 
     expect(db.query).toHaveBeenCalledWith(expect.any(String), ['Dica Atualizada', 'Atualizado', true, 99]);
-    expect(logActivity).toHaveBeenCalledWith('admin', 'ATUALIZAR DICA', 'DICA', 99, 'Atualizou a dica: Dica Atualizada', '127.0.0.1');
+    expect(logActivity).toHaveBeenCalledWith('admin', 'ATUALIZAR DICA', 'DICA', 99, 'Atualizou a dica: Dica Atualizada', 'unknown');
   });
 });

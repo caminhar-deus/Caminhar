@@ -1,60 +1,64 @@
 import http from 'k6/http';
 import { check } from 'k6';
+import { Counter } from 'k6/metrics';
 import { getRandomIP } from '../helpers/network.js';
 import { BASE_URL } from '../helpers/config.js';
 import { getProfile } from '../helpers/profiles.js';
 import { generateReport } from '../helpers/report.js';
 
 /**
- * Teste Consolidado — IP Spoofing / Evasão de Rate Limit
- *
- * Mescla os propósitos dos antigos testes separados (evasão + detecção)
- * em um único script com dois grupos de checks.
+ * Teste Consolidado — Evasão de Rate Limit por rotação de X-Forwarded-For
  *
  * ## Propósito
  *
- * Validar se o sistema está protegido contra:
- * 1. Evasão de rate limit via rotação do header X-Forwarded-For
- * 2. Detecção e bloqueio de IPs falsificados (spoofing)
+ * Simular o ataque clássico de bypass: o cliente escreve uma entrada
+ * diferente de X-Forwarded-For a cada requisição para ganhar um bucket de
+ * rate limit novo, enquanto o IP real permanece o mesmo.
  *
- * ## Comportamento esperado (proteção funcionando)
+ * ## Topologia simulada (TRUST_PROXY=1 na CI)
  *
- *   - 429 (Too Many Requests) → Rate limit é global, ignorou o IP falso
- *   - 403 (Forbidden) → Spoofing detectado e bloqueado ativamente
+ * A cadeia enviada tem DUAS entradas:
  *
- * ## Comportamento em caso de vulnerabilidade
+ *   X-Forwarded-For: <ip-falso-que-rotaciona>, <ip-real-constante>
  *
- *   - 401 (Unauthorized) → Rate limit foi burlado, IP falso foi aceito
+ * A última entrada é a que o proxy confiável acrescentou (o IP real do
+ * cliente). A primeira é a que o cliente forjou. O app lê pela direita, então
+ * todas as requisições caem no MESMO bucket.
  *
  * ## Interpretação dos Resultados
  *
  * | Cenário | Checks que PASSAM | Significado |
  * |---------|-------------------|-------------|
- * | Sistema protegido | `🛡️ BLOQUEADO:*` (alta taxa) | Spoofing/rejeitado corretamente |
- * | Sistema vulnerável | `⚠️ VULNERÁVEL:*` (alta taxa) | Sistema precisa de correção |
- * | Misto | Ambos com taxas intermediárias | Possível rate limit parcial |
+ * | Sistema protegido | `🛡️ BLOQUEADO: Rate limit por IP real (429)` (alta taxa) | Rotação do IP falso não evade o limite |
+ * | Sistema vulnerável | `⚠️ VULNERÁVEL: Evasão por rotação de IP falso (401)` (alta taxa) | App leu a entrada da esquerda; corrigir TRUST_PROXY/leitura do header |
  *
- * ## Estado Atual (27/05/2026)
+ * ## Comportamento esperado
  *
- * - Sistema está VULNERÁVEL: 33.33% de checks de proteção passando
- * - Checks `⚠️ VULNERÁVEL:*` representam 66.67% das respostas
- * - Ação necessária: Implementar detecção de spoofing no middleware
+ *   - 429 → a rotação não evitou o bloqueio (proteção funcionando)
+ *   - 401 → o limite foi burlado: cada IP falso virou um bucket novo
+ *
+ * Não há mais 403 por spoofing: a defesa é o rate limit por IP confiável.
  */
+
+// Métrica personalizada para contar evasões que chegaram a 401
+const EvasionSuccesses = new Counter('ip_rotation_evasions');
 
 const PROFILE_NAME = 'rateLimit';
 const REPORT_NAME = 'ip_spoofing_consolidado_test';
 
+// IP real do cliente, escrito pelo proxy à direita da cadeia — constante
+// durante todo o teste, ao contrário do IP forjado.
+const REAL_CLIENT_IP = '203.0.113.10';
+
 export const options = getProfile(PROFILE_NAME, {
   thresholds: {
     http_req_duration: ['p(95)<5000'],
-    // Threshold condicional: descomentar quando proteção estiver implementada
-    // 'checks{BLOQUEADO}': ['rate>0.80'],
   },
 });
 
 export default function () {
-  // Gera um IP único para esta iteração (tentativa de evadir rate limit)
-  const virtualIP = getRandomIP();
+  // IP forjado pelo cliente, rotativo a cada iteração (tentativa de evasão)
+  const forgedIP = getRandomIP();
 
   const payload = JSON.stringify({
     username: 'admin',
@@ -64,28 +68,37 @@ export default function () {
   const params = {
     headers: {
       'Content-Type': 'application/json',
-      // Tenta burlar o rate limit injetando IP falso no header padrão de proxy
-      'X-Forwarded-For': virtualIP,
+      // Cadeia de 2 entradas: a falsa (esquerda, rotativa) e a real (direita,
+      // acrescentada pelo proxy). O app lê pela direita, então a rotação da
+      // entrada falsificada não deve criar buckets novos.
+      'X-Forwarded-For': `${forgedIP}, ${REAL_CLIENT_IP}`,
     },
   };
 
   const res = http.post(`${BASE_URL}/api/auth/login?response=body`, payload, params);
 
-  // Grupo: Checks de Proteção (bloqueio ativo)
-  // Passam quando o sistema está protegido contra spoofing/evasão
+  if (res.status === 401) {
+    EvasionSuccesses.add(1);
+  }
+
+  // Checks de Proteção: passam quando a rotação do IP falso NÃO evitou o bloqueio
   check(res, {
-    '🛡️ BLOQUEADO: Spoofing detectado e rejeitado (403)': (r) => r.status === 403,
-    '🛡️ BLOQUEADO: Rate limit global ignorou IP falso (429)': (r) => r.status === 429,
+    '🛡️ BLOQUEADO: Rate limit por IP real (429)': (r) => r.status === 429,
   });
 
-  // Grupo: Checks de Vulnerabilidade (documentação de falha)
-  // Passam quando o sistema NÃO protegeu (documenta a vulnerabilidade)
+  // Checks de Vulnerabilidade: passam quando a rotação burlou o limite
   check(res, {
-    '⚠️ VULNERÁVEL: Rate limit foi burlado por IP falso (401)': (r) => r.status === 401,
-    '⚠️ VULNERÁVEL: Spoofing não foi detectado (401)': (r) => r.status === 401,
+    '⚠️ VULNERÁVEL: Evasão por rotação de IP falso (401)': (r) => r.status === 401,
   });
+
+  // Nota: intencionalmente sem sleep para forçar o mais rápido possível
 }
 
 export function handleSummary(data) {
+  const evasions = data.metrics.ip_rotation_evasions ? data.metrics.ip_rotation_evasions.values.count : 0;
+  if (evasions > 0) {
+    console.log(`\n⚠️  AVISO: ${evasions} requisição(ões) escaparam do rate limit via rotação de X-Forwarded-For.\n`);
+  }
+
   return generateReport(data, REPORT_NAME);
 }

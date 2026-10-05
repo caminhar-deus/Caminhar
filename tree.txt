@@ -555,6 +555,7 @@
 │   └── pages
 │       └── login.md
 ├── docs
+│   ├── DEPLOY_proxy_e_IP.md
 │   ├── PENDENCIAS_scripts_testes.md
 │   ├── PROJECT_components.md
 │   ├── PROJECT_cypress.md
@@ -764,6 +765,7 @@
 │   │   ├── dicas.js
 │   │   ├── helper
 │   │   │   └── pagination.js
+│   │   ├── ip-diagnostico.js
 │   │   ├── musicas.js
 │   │   ├── placeholder-image.js
 │   │   ├── posts.js
@@ -989,6 +991,7 @@
 │   │   │   │   └── refresh.test.js
 │   │   │   ├── cleanup-test-data.test.js
 │   │   │   ├── dicas.test.js
+│   │   │   ├── ip-diagnostico.test.js
 │   │   │   ├── login.test.js
 │   │   │   ├── musicas.create.test.js
 │   │   │   ├── musicas.delete.test.js
@@ -1155,6 +1158,7 @@
 │       ├── lib
 │       │   ├── api
 │       │   │   ├── errors.test.js
+│       │   │   ├── helpers.ip.test.js
 │       │   │   ├── index.test.js
 │       │   │   ├── middleware.test.js
 │       │   │   ├── response.test.js
@@ -1228,4 +1232,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-195 directories, 1034 files
+195 directories, 1038 files

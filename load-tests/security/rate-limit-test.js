@@ -20,7 +20,9 @@ export default function () {
     password: `senha_aleatoria_${Math.random()}`,
   });
 
-  // Adiciona X-Forwarded-For para simular um IP externo e evitar whitelist de localhost
+  // Cadeia com uma entrada só: a CI roda com TRUST_PROXY=true (1 hop),
+  // então o app lê este header e limita por IP real em vez de cair na
+  // whitelist de loopback. Sem TRUST_PROXY o header seria ignorado.
   const params = { 
     headers: { 
       'Content-Type': 'application/json',
@@ -47,14 +49,10 @@ export default function () {
         }
       },
     });
-  } else if (res.status === 403) {
-    // Spoofing detectado — também é uma proteção válida do sistema
-    check(res, {
-      '🛡️ BLOQUEADO: Spoofing detection bloqueou (403)': (r) => r.status === 403,
-    });
   } else {
+    // Não há mais bloqueio por spoofing: a proteção é o rate limit por IP.
     check(res, {
-      'ℹ️ PERMITIDO: Requisição autenticada (401)': (r) => r.status === 401,
+      'ℹ️ PERMITIDO: Requisição sem credenciais válidas (401)': (r) => r.status === 401,
     });
   }
 

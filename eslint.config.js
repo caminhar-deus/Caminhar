@@ -79,6 +79,13 @@ export default defineConfig([
   // não são falso positivo.
   { files: ["**/*.md"], rules: { "markdown/no-missing-label-refs": "off" } },
 
+  // `AGENTS.md` recebe um bloco de regras que o próprio Next.js reescreve a cada
+  // `next dev` (ver `node_modules/next/dist/server/lib/generate-agent-files.js`),
+  // e esse bloco começa com um H1. Como o arquivo volta sozinho, desligar a
+  // regra aqui é o único jeito de o `npm run lint` não quebrar sempre que
+  // alguém roda o dev server. A concessão é só para este arquivo.
+  { files: ["AGENTS.md"], rules: { "markdown/no-multiple-h1": "off" } },
+
   // CSS
   { files: ["**/*.css"], plugins: { css }, language: "css/css", extends: ["css/recommended"], rules: { "css/no-invalid-properties": "off" } },
 ]);

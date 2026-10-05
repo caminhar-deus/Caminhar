@@ -1,6 +1,12 @@
 import { authenticateAndGenerateToken, setAuthCookie, setRefreshTokenCookie } from '../../../lib/auth/auth';
-import { detectSpoofedIP, getClientIP } from '../../../lib/api/helpers.js';
+import { resolveClientIP, fromNodeRequest, UNKNOWN_IP } from '../../../lib/api/helpers.js';
+import { checkRateLimit } from '../../../lib/cache/cache.js';
 import { logger } from '../../../lib/infra/logger.js';
+
+/** Chave e janela compartilhadas com o `proxy.js` (bucket único, sem contagem dupla). */
+const LOGIN_RATE_LIMIT = { key: 'api:auth:login', limit: 5, window: 60000 };
+/** Backstop por usuário: 10 falhas em 5 min, independente de IP. */
+const LOGIN_USER_LIMIT = { key: 'api:auth:login:username', limit: 10, window: 300000 };
 
 /**
  * Endpoint de autenticação de usuários.
@@ -16,29 +22,41 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method Not Allowed', message: `Método ${req.method} não permitido` });
   }
 
-  // 1. Detecção de IP spoofing
-  // Em desenvolvimento: strictMode=false para evitar falsos positivos em testes de carga
-  // Em produção: strictMode=true para detectar spoofing mesmo em localhost
-  // Testes de seguranço podem ativar strictMode via ENABLE_STRICT_SPOOFING=true
-  const isDevelopment = process.env.NODE_ENV !== 'production';
-  const strictMode = process.env.ENABLE_STRICT_SPOOFING === 'true' ? true : !isDevelopment;
-  const spoofResult = detectSpoofedIP(req, { strictMode });
-  // Suprime log para IPs locais (reduz poluição do terminal em desenvolvimento)
-  if (spoofResult.socketIP !== '127.0.0.1') {
-    logger.debug('Auth', `detectSpoofedIP: socket=${req.socket?.remoteAddress}, normalized=${spoofResult.socketIP}, forwarded=${spoofResult.forwardedIP}, isSpoofed=${spoofResult.isSpoofed}`);
+  // 1. Resolve o IP do cliente pelo modelo de confiança de TRUST_PROXY
+  const { clientIP, untrustedForwarded, socketIP, forwardedIP } = resolveClientIP(fromNodeRequest(req));
+
+  // Topologia não declarada (há X-Forwarded-For, mas TRUST_PROXY está em 0):
+  // registra para o operador, sem bloquear a autenticação.
+  if (untrustedForwarded) {
+    logger.warn('Auth',
+      `X-Forwarded-For divergente do socket sem TRUST_PROXY | socket=${socketIP} | forwarded=${forwardedIP}`
+    );
   }
 
-  if (spoofResult.isSpoofed) {
-    return res.status(403).json({
-      error: 'Forbidden',
-      message: 'IP spoofing detectado. Requisição bloqueada.',
-    });
-  }
-
-  // Pega o IP real do usuário de forma segura (prevenindo spoofing) para rate limiting
-  const ip = getClientIP(req);
+  // IP usado no rate limit da autenticação
+  const ip = clientIP;
 
   const { username, password } = req.body;
+
+  // Limite por IP. Mesma chave e janela do `proxy.js`, então os dois
+  // compartilham um único bucket: o middleware rejeita antes de ler o corpo e
+  // este é o backstop quando o middleware não tem IP confiável.
+  // `lib/auth/auth.js` NÃO aplica limite nenhum (o parâmetro `ip` é ignorado
+  // lá), então sem esta chamada o login fica sem proteção de brute force.
+  //
+  // Sem IP confiável o limite é pulado de propósito: chavear por `unknown`
+  // criaria um bucket global que qualquer visitor esgota, derrubando o login
+  // de todos. Nesse caso resta o limite por usuário, abaixo.
+  if (ip !== UNKNOWN_IP) {
+    const ipLimited = await checkRateLimit(ip, LOGIN_RATE_LIMIT.key, LOGIN_RATE_LIMIT.limit, LOGIN_RATE_LIMIT.window);
+    if (ipLimited) {
+      logger.warn('Auth', `Rate limit de login excedido | IP: ${ip}`);
+      return res.status(429).json({
+        error: 'Too Many Requests',
+        message: 'Muitas tentativas de login. Tente novamente mais tarde.',
+      });
+    }
+  }
 
   // 2. Usa a função compartilhada de autenticação (rate limit + validação + token)
   let result;
@@ -58,6 +76,16 @@ export default async function handler(req, res) {
   }
 
   if (result.error === 'INVALID_CREDENTIALS') {
+    // Backstop por usuário: não depende de IP, então sobrevive tanto à
+    // rotação de X-Forwarded-For quanto à ausência de IP confiável.
+    // Conta só falhas, para não punir quem acerta o login.
+    if (username && await checkRateLimit(username, LOGIN_USER_LIMIT.key, LOGIN_USER_LIMIT.limit, LOGIN_USER_LIMIT.window)) {
+      logger.warn('Auth', `Rate limit por usuário excedido | usuário: ${username}`);
+      return res.status(429).json({
+        error: 'Too Many Requests',
+        message: 'Muitas tentativas de login. Tente novamente mais tarde.',
+      });
+    }
     return res.status(401).json({ error: 'Unauthorized', message: result.message });
   }
 

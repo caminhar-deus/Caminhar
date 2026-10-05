@@ -65,6 +65,19 @@ jobs:
     # chamada de workflow reutilizável (ver o input de mesmo nome acima).
     timeout-minutes: ${{ inputs.timeout-minutes }}
 
+    # Fonte única da string de conexão do job. Precisa estar no nível do job
+    # (e não em cada step) porque dois consumidores a usam:
+    #   1. `build-app` sobe a aplicação com ela;
+    #   2. `Run Tests` — o orquestrador (`scripts/run-all-load-tests-sequentially.js`,
+    #      linhas 185 e 231) dispara `seed-posts.js` e `clean-load-test-posts.js`
+    #      como SUBPROCESSOS via `execSync`, que herdiam `process.env` do step.
+    #      Sem `DATABASE_URL` no step, os dois abortam com "DATABASE_URL não
+    #      definida" e a bateria roda contra o banco sem os posts extras —
+    #      foi o que reprovou paginação/filtro/busca no run 37303670048.
+    # As credenciais espelham o bloco `services.postgres` abaixo.
+    env:
+      DATABASE_URL: postgres://test_user:test_password@localhost:5432/caminhar_test
+
     services:
       # Serviço PostgreSQL para o teste (isolado)
       postgres:
@@ -125,6 +138,28 @@ jobs:
       - if: ${{ always() && inputs.extra-steps != '' }}
         name: Extra Steps
         run: ${{ inputs.extra-steps }}
+      # Diagnóstico do servidor da aplicação. `build-app` sobe `npm start` com a
+      # saída redirecionada para `app-server.log` no workspace (ver
+      # `.github/actions/build-app/action.yml`); sem esta impressão, um 500 em
+      # qualquer endpoint chega ao log do workflow apenas como "checks 0%" ou
+      # "Página 1 vazia", sem causa. Foi o que tornou 12 reprovações do run
+      # 37303670048 impossíveis de diagnosticar.
+      #
+      # `always()`: o log importa justamente quando os testes falharam. Fica
+      # antes dos uploads para não competir com eles. `tail -200` e não o arquivo
+      # inteiro porque, sob carga, o Next.js escreve dezenas de milhares de
+      # linhas e o que interessa é o fim (a falha mais recente).
+      - name: App Server Log
+        if: ${{ always() }}
+        run: |
+          if [ ! -f "$APP_LOG" ]; then
+            echo "app-server.log não encontrado: o build-app não chegou a subir a aplicação."
+            exit 0
+          fi
+          echo "=== app-server.log: últimas 200 linhas ==="
+          tail -n 200 "$APP_LOG"
+        env:
+          APP_LOG: ${{ github.workspace }}/app-server.log
       # Os relatórios k6 (reports/k6-summaries/) são gerados por esta execução e
       # variam a cada run: commitá-los poluiria o histórico com artefato de
       # execução (o ESLint já ignora reports/**), então o artifact é o destino

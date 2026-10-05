@@ -193,6 +193,7 @@ lib/auth/auth.js → lib/domain/permissions.js
 lib/auth/auth.js → lib/infra/db.js
 lib/auth/auth.js → lib/infra/logger.js
 lib/infra/db.js → lib/infra/logger.js
+lib/cache/cache.js → lib/api/helpers.js
 lib/cache/cache.js → lib/infra/logger.js
 lib/cache/cache.js → lib/infra/redis.js
 lib/infra/redis.js → lib/infra/logger.js
@@ -387,6 +388,7 @@ pages/api/auth/check.js → lib/infra/db.js
 pages/api/auth/check.js → lib/infra/logger.js
 pages/api/auth/login.js → lib/api/helpers.js
 pages/api/auth/login.js → lib/auth/auth.js
+pages/api/auth/login.js → lib/cache/cache.js
 pages/api/auth/login.js → lib/infra/logger.js
 pages/api/auth/logout.js → lib/auth/auth.js
 pages/api/auth/refresh.js → lib/auth/auth.js
@@ -399,6 +401,8 @@ pages/api/dicas.js → lib/cache/cache.js
 pages/api/dicas.js → lib/infra/db.js
 pages/api/dicas.js → lib/infra/logger.js
 pages/api/dicas.js → pages/api/helper/pagination.js
+pages/api/ip-diagnostico.js → lib/api/adminCrudHandler.js
+pages/api/ip-diagnostico.js → lib/api/helpers.js
 pages/api/musicas.js → lib/api/helpers.js
 pages/api/musicas.js → lib/cache/cache.js
 pages/api/musicas.js → lib/domain/musicas.js
@@ -645,6 +649,8 @@ tests/integration/api/dicas.test.js → lib/cache/cache.js
 tests/integration/api/dicas.test.js → lib/infra/db.js
 tests/integration/api/dicas.test.js → pages/api/dicas.js
 tests/integration/api/dicas.test.js → tests/mocks/db-module.js
+tests/integration/api/ip-diagnostico.test.js → lib/auth/auth.js
+tests/integration/api/ip-diagnostico.test.js → pages/api/ip-diagnostico.js
 tests/integration/api/login.test.js → lib/auth/auth.js
 tests/integration/api/login.test.js → lib/cache/cache.js
 tests/integration/api/login.test.js → pages/api/auth/login.js
@@ -840,6 +846,7 @@ tests/unit/hooks/useAdminCrud.test.js → hooks/useAdminCrud.js
 tests/unit/hooks/useAdminCrud.test.js → tests/helpers/index.js
 tests/unit/index.test.js → tests/mocks/next-setup.js
 tests/unit/lib/api/errors.test.js → lib/api/errors.js
+tests/unit/lib/api/helpers.ip.test.js → lib/api/helpers.js
 tests/unit/lib/api/index.test.js → lib/api/index.js
 tests/unit/lib/api/middleware.test.js → lib/api/middleware.js
 tests/unit/lib/api/middleware.test.js → lib/api/response.js

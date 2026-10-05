@@ -83,6 +83,8 @@ describe('API de Usuários - Criação (POST /api/admin/users)', () => {
       headers: {
         'x-forwarded-for': '127.0.0.1',
       },
+      // Fonte confiável do IP: sem TRUST_PROXY o header é ignorado por design.
+      socket: { remoteAddress: '127.0.0.1' },
     });
 
     // Mock 1: Simula a busca de permissões do usuário admin (executada incondicionalmente)
