@@ -9,7 +9,7 @@ import { defineConfig } from "eslint/config";
 
 export default defineConfig([
   // Ignorar diretórios gerados e artefatos de build
-  { ignores: [".next/**", "out/**", "build/**", "reports/**", "coverage/**", "coverage-db/**", "cypress/videos/**", "cypress/screenshots/**", "data/**", "public/uploads/**", ".agents/**", "docs/**", "package-lock.json"] },
+  { ignores: [".next/**", "out/**", "build/**", "reports/**", "coverage/**", "coverage-db/**", "cypress/videos/**", "cypress/screenshots/**", "data/**", "public/uploads/**", ".agents/**", ".opencode/skills/**", "docs/**", "package-lock.json"] },
 
   // JavaScript padrão (browser + node) - parser padrão
   { files: ["**/*.{js,mjs,cjs}"], plugins: { js }, extends: ["js/recommended"], languageOptions: { globals: {...globals.browser, ...globals.node} }, rules: { "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }] } },
@@ -54,6 +54,16 @@ export default defineConfig([
   // JSON
   { files: ["**/*.json"], plugins: { json }, language: "json/json", extends: ["json/recommended"] },
   { files: ["**/*.jsonc"], plugins: { json }, language: "json/jsonc", extends: ["json/recommended"] },
+
+  // Config do oh-my-opencode-slim: apesar da extensão `.json`, o arquivo é
+  // JSONC — o próprio cabeçalho dele declara "Arquivo .json aceita comentários
+  // (JSONC). Valide com: oh-my-opencode-slim doctor". Sem este override, o
+  // bloco `**/*.json` aplica `json/json`, que proíbe comentários, e o arquivo
+  // falha no parse. Este é config de projeto mantida à mão (ao contrário de
+  // `.opencode/skills/**`, que é conteúdo gerado e está em `ignores`), então
+  // vale lintá-lo de verdade.
+  { files: [".opencode/oh-my-opencode-slim.json"], plugins: { json }, language: "json/jsonc", extends: ["json/recommended"] },
+
   { files: ["**/*.json5"], plugins: { json }, language: "json/json5", extends: ["json/recommended"] },
 
   // Markdown
