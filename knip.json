@@ -9,6 +9,7 @@
     "scripts/**",
     "examples/**",
     ".agents/**",
+    ".opencode/skills/**",
     "*.config.js",
     "jest.setup.js"
   ],

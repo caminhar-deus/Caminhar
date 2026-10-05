@@ -33,6 +33,36 @@ jobs:
   # Se a cobertura voltar a depender do ambiente compartilhado, o caminho é
   # reintegrar o job ao `test-base.yml` (`test-type: coverage`, `skip-k6: true`,
   # `skip-db-setup: true`, `seed-db: false`) ciente do aviso do editor.
+  # Gate de análise estática, separado do `coverage` e do `coverage-report` de
+  # propósito.
+  #
+  # 1. `npm run lint` (ESLint sobre JS/JSX/CSS/Markdown/JSON) é determinístico e
+  #    não precisa de banco nem de build. Dentro do `coverage-report` ele só
+  #    rodaria depois de `npm ci` + jest com coverage, ou seja, minutos depois de
+  #    a informação estar disponível — e dividiria o status com a publicação do
+  #    comentário, fazendo "falhou o lint?" ser indistinguível de "falhou a
+  #    cobertura?".
+  # 2. Ele também é o único gate que não existia: `actionlint` e `knip` já
+  #    rodavam no `coverage-report`, mas ESLint não era executado em lugar
+  #    nenhum da CI. Sem job, nenhum erro de lint era detectado antes do merge —
+  #    o comando existia e funcionava, apenas não era gate de ninguém.
+  #
+  # Reprovação aqui NÃO bloqueia o merge por configuração do repositório: só
+  # passa a ser obrigatório quando este check for marcado como required nas
+  # settings de branch protection do repositório.
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: ./.github/actions/setup
+
+      - name: Run ESLint
+        run: npm run lint
+
   coverage:
     runs-on: ubuntu-latest
 
