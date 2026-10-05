@@ -869,6 +869,7 @@
 │   │   ├── check-videos-schema.js
 │   │   ├── count-posts.js
 │   │   ├── diagnose-hero.js
+│   │   ├── lint-chars.js
 │   │   ├── lint-workflows.sh
 │   │   ├── list-last-posts.js
 │   │   ├── lsp-reusable-workflow.js
@@ -1227,4 +1228,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-195 directories, 1033 files
+195 directories, 1034 files

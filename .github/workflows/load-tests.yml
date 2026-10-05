@@ -1,0 +1,101 @@
+name: Load Tests (k6)
+
+# Este workflow é o PRIMEIRO consumidor do `test-base.yml`: desde `65d1cd3`
+# (quando foi criado como único workflow do repositório) ele nunca teve nenhum
+# chamador, ou seja, os serviços PostgreSQL/Redis, o `setup-db`, o `build-app` e
+# o k6 eram provisionados por ninguém — e nenhum dos 30 scripts k6 de
+# `load-tests/` tinha chance de rodar na CI. Este arquivo fecha esse caminho.
+#
+# Por que NÃO há gatilho `pull_request`: teste de carga em PR é anti-padrão —
+# é caro (sobe Postgres/Redis, `npm ci`, build, o Next.js e roda 30 scripts k6
+# sequenciais, cada um com até 600 s de timeout), é flaky (runner compartilhado,
+# ruído de CPU/rede) e mede o runner do GitHub, não a aplicação: latência e
+# throughput de um hosted runner gratuito não dizem nada sobre o ambiente real.
+# Carga se mede em ambiente controlado e em agendamento, nunca a cada push.
+on:
+  workflow_dispatch:
+    inputs:
+      admin-username:
+        description: 'Usuário admin autenticado pelos scripts k6'
+        required: false
+        type: string
+        default: 'admin'
+      admin-password:
+        description: 'Senha do admin autenticado pelos scripts k6'
+        required: false
+        type: string
+        default: 'password123'
+      seed-db:
+        description: 'Semear o banco antes da bateria (desmarque só para depurar)'
+        required: false
+        type: boolean
+        default: true
+  schedule:
+    # 04:17 UTC = 01:17 no horário de Brasília: madrugada, bem fora do horário
+    # comercial do Brasil (12:00–21:00 UTC). O minuto é 17, e não 0, de
+    # propósito: o GitHub agenda todos os crons de minuto 0 no mesmo instante e
+    # o pico do topo da hora atrasa (ou nem despacha) a execução — desviar do
+    # minuto 0 troca a fila do instante cheio pela pontualidade.
+    - cron: '17 4 * * *'
+
+# Teste de carga só é comparável quando roda sozinho: dois runs simultâneos
+# disputariam os runners do GitHub e os serviços (Postgres/Redis) de cada job,
+# contaminando latência/throughput — e, havendo qualquer reuso do banco de
+# serviço, os seeds e as limpezas de um run apagariam os dados do outro no meio
+# da bateria. `cancel-in-progress: false` (e não `true`): nunca se mata um
+# teste de carga no meio — um relatório parcial é pior do que esperar o run
+# anterior terminar.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  load-tests:
+    # Pior caso teórico: 30 scripts × timeout de 600 s por script do
+    # orquestrador (`execSync` com `timeout: 600000` em
+    # run-all-load-tests-sequentially.js) = 18.000 s ≈ 300 min — que sozinho
+    # quase esgota o limite padrão de 360 min, restando só ~60 min para
+    # `npm ci` + build + seeds + boot do Next.js. Caso realista: cada script k6
+    # roda na casa de 1–3 min (30–90 min no total) + ~15–20 min de setup
+    # ≈ 110 min; 180 min cobre esse pior caso real com folga e ainda derruba um
+    # job travado antes de desperdiçar 6 h de runner.
+    #
+    # O limite é passado por `with:` porque um job que chama workflow
+    # reutilizável não pode declarar `timeout-minutes` (o actionlint reprova e o
+    # GitHub recusaria o arquivo): `test-base.yml` o recebe como input e o aplica
+    # no job dele.
+    uses: ./.github/workflows/test-base.yml
+    with:
+      test-type: load
+      run-command: npm run test:load:safe
+      skip-k6: false
+      timeout-minutes: 180
+      # `skip-db-setup` permanece em `false` (o default) de propósito: os 30
+      # scripts batem em endpoints que LEEM do Postgres (paginação, busca,
+      # listagens, cache) — sem migrations/seeds não há dados e a bateria
+      # inteira reprovaria por vazio/404 em vez de reprovar uma regressão real.
+      skip-db-setup: false
+      # Em `schedule` o contexto `inputs` é vazio e a expressão viraria string
+      # vazia (o default do `test-base` só cobre input totalmente ausente); o
+      # `||` garante `true` em todo agendamento e preserva a escolha manual do
+      # dispatch, cujo default também é `true`.
+      seed-db: ${{ inputs.seed-db || github.event_name == 'schedule' }}
+      # Propagação das credenciais do `workflow_dispatch`. O `||` com os mesmos
+      # defaults do `test-base.yml` protege o agendamento, onde não há inputs —
+      # sem ele a app subiria com credenciais vazias e os scripts autenticados
+      # falhariam.
+      admin-username: ${{ inputs.admin-username || 'admin' }}
+      admin-password: ${{ inputs.admin-password || 'password123' }}
+      # Relatório como artifact, e não commitado: reports/k6-summaries/ muda a
+      # cada execução (o ESLint já o ignora via `reports/**`), então commitar
+      # resultado de execução criaria diff ruidoso em todo run e misturaria
+      # resultado velho com novo; artifact com `retention-days` preserva o JSON
+      # de thresholds e os summaries para análise sem tocar no histórico.
+      #
+      # O `mkdir` garante o diretório de saída; o upload em si é um step do
+      # próprio `test-base.yml` (`Upload k6 Reports`, com `retention-days` e
+      # `if-no-files-found: ignore`), porque `extra-steps` é interpolado num
+      # `run:` (shell não declara `uses:`) e um job que chama workflow
+      # reutilizável não pode declarar `steps`.
+      extra-steps: |
+        mkdir -p reports/k6-summaries

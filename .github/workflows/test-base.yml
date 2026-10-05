@@ -31,10 +31,39 @@ on:
         type: string
         default: ''
         description: 'Steps extras para executar ao final do job (ex.: upload de artifacts)'
+      # Credenciais do admin repassadas a dois lugares: ao `build-app` (que
+      # inicia a app com essas credenciais) e ao step `Run Tests` (onde os
+      # scripts k6 leem ADMIN_USERNAME/ADMIN_PASSWORD via __ENV). Os defaults
+      # são os mesmos de `.github/actions/build-app/action.yml` — sem isso os
+      # inputs do build-app ficariam inalcançáveis para quem chama este
+      # workflow, e as suítes autenticadas reprovariam.
+      admin-username:
+        required: false
+        type: string
+        default: 'admin'
+        description: 'Usuário admin do build da app e das suítes autenticadas'
+      admin-password:
+        required: false
+        type: string
+        default: 'password123'
+        description: 'Senha do admin do build da app e das suítes autenticadas'
+      # Limite de duração do job. Um job que chama workflow reutilizável NÃO
+      # aceita a chave `timeout-minutes` (GitHub: só `name`, `uses`, `with`,
+      # `secrets`, `needs`, `if`, `permissions` — o actionlint reprová-la), então
+      # o valor vem do chamador por aqui. 360 é o teto do GitHub (= default da
+      # plataforma), ou seja, ausência de override mantém o comportamento atual.
+      timeout-minutes:
+        required: false
+        type: number
+        default: 360
+        description: 'Limite em minutos do job de testes (máximo do GitHub: 360)'
 
 jobs:
   run-tests:
     runs-on: ubuntu-latest
+    # Vem do chamador via input: `timeout-minutes` não é chave válida num job de
+    # chamada de workflow reutilizável (ver o input de mesmo nome acima).
+    timeout-minutes: ${{ inputs.timeout-minutes }}
 
     services:
       # Serviço PostgreSQL para o teste (isolado)
@@ -74,13 +103,45 @@ jobs:
         with:
           seed: ${{ inputs.seed-db && 'true' || 'false' }}
       - uses: ./.github/actions/build-app
+        with:
+          admin-username: ${{ inputs.admin-username }}
+          admin-password: ${{ inputs.admin-password }}
       - if: ${{ !inputs.skip-k6 }}
         uses: grafana/setup-k6-action@v1
+      # Os scripts k6 leem BASE_URL/ADMIN_USERNAME/ADMIN_PASSWORD por __ENV, e o
+      # orquestrador (`execSync(..., { shell: true })`) herda o `process.env`
+      # deste step — sem estas variáveis os testes autenticados falham: o
+      # fallback de load-tests/helpers/config.js é '123456', que não é a senha
+      # com que a app é iniciada aqui.
       - name: Run Tests
         run: ${{ inputs.run-command }}
-      - if: ${{ inputs.extra-steps != '' }}
+        env:
+          ADMIN_USERNAME: ${{ inputs.admin-username }}
+          ADMIN_PASSWORD: ${{ inputs.admin-password }}
+          BASE_URL: http://localhost:3000
+      # `always()`, no mesmo padrão dos uploads de coverage abaixo: sem ele, uma
+      # falha no `Run Tests` pularia os passos extras e os relatórios/k6-summaries
+      # gerados até o momento nunca subiriam — justamente quando são necessários.
+      - if: ${{ always() && inputs.extra-steps != '' }}
         name: Extra Steps
         run: ${{ inputs.extra-steps }}
+      # Os relatórios k6 (reports/k6-summaries/) são gerados por esta execução e
+      # variam a cada run: commitá-los poluiria o histórico com artefato de
+      # execução (o ESLint já ignora reports/**), então o artifact é o destino
+      # do relatório. O upload fica AQUI (e não no `extra-steps`) porque esse
+      # input é interpolado num `run:` — shell não declara `uses:` — e um job
+      # que chama workflow reutilizável não pode declarar `steps`.
+      # `always()`: o orquestrador sai com código 1 quando algum script falha e é
+      # justamente nesse caso que os summaries interessam. `if-no-files-found:
+      # ignore` cobre abortos anteriores à geração dos relatórios.
+      - name: Upload k6 Reports
+        if: ${{ always() && inputs.test-type == 'load' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-load-test-reports
+          path: reports/k6-summaries/
+          retention-days: 30
+          if-no-files-found: ignore
       - name: Upload Coverage Output
         if: ${{ always() && inputs.test-type == 'coverage' }}
         uses: actions/upload-artifact@v4

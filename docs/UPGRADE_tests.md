@@ -6713,7 +6713,7 @@ function describeDbDomain(tableName, insertFn, testCases) {
 | 🔴 Alta | Substituir handlers simulados pelos reais nos 4 arquivos de API | Cobertura real |
 | 🔴 Alta | Adicionar teste de rate limit em create/delete/pagination | Segurança |
 | 🟡 Média | Extrair estrutura de domínio para helper reutilizável | Manutenibilidade |
-| � Média | Verificar `invalidateCache` e `logActivity` em `videos.flow.test.js` | Cobertura de efeitos colaterais |
+| 🟡 Média | Verificar `invalidateCache` e `logActivity` em `videos.flow.test.js` | Cobertura de efeitos colaterais |
 | 🟡 Média | Adicionar factories para todos os testes de API | Consistência |
 | 🟢 Baixa | Adicionar testes de UNIQUE constraint nos domínios | Integridade |
 | 🟢 Baixa | Adicionar testes de SQL injection | Segurança |
@@ -13184,7 +13184,7 @@ jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').moc
 
 **Problemas:**
 - ⚠️ **Snapshot implícito:** Testar valores hardcoded é frágil — qualquer mudança na constante quebra o teste. Melhor testar **invariantes** (ex: `MAX_BACKUPS > 0`, `BACKUP_INTERVAL_MS >= 86400000`).
-- ⚠� Faltam testes para constantes adicionais: `LOG_RETENTION_DAYS`, `LOG_MAX_SIZE_BYTES`, `DISK_THRESHOLD_PERCENT`, `DISK_PATH_DEFAULT`, `PRE_RESTORE_PREFIX`, `REPORTS_DIR`, `K6_SUMMARY_DIR`, `LOAD_TESTS_DIR`.
+- ⚠️ Faltam testes para constantes adicionais: `LOG_RETENTION_DAYS`, `LOG_MAX_SIZE_BYTES`, `DISK_THRESHOLD_PERCENT`, `DISK_PATH_DEFAULT`, `PRE_RESTORE_PREFIX`, `REPORTS_DIR`, `K6_SUMMARY_DIR`, `LOAD_TESTS_DIR`.
 
 **Melhoria recomendada:**
 - Testar invariantes em vez de valores exatos.
