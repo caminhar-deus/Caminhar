@@ -1151,7 +1151,7 @@ Simula um cenário de busca massiva (tipo DDoS) no endpoint de busca de posts. V
 - Gera busca aleatória com termos fixos: `['amor', 'paz', 'fé', 'luz', 'vida', 'caminho', 'verdade', 'esperança', 'coração', 'espírito']`
 - Cache busting via timestamp (`_t=${Date.now()}`) para forçar o servidor a processar cada requisição
 - Requisição usa `expectedStatuses: [200, 429]` (status 429 não é computado como falha `http_req_failed`) e tags `{type: ddos_search, name: DDoS_Search}`
-- Métrica `errors_500` (Rate, variável `ErrorRate500`) — alimentada com `true` para respostas 5xx; threshold `rate<0.10` com `abortOnFail: true` e `delayAbortEval: '5s'` (aborta o teste se mais de 10% das respostas forem erros 5xx)
+- Métrica `errors_500` (Rate, variável `ErrorRate500`) — alimentada com `true` para respostas 5xx; threshold `rate<0.50` **sem** `abortOnFail`/`delayAbortEval` (os 5xx são resultado a medir num teste de resiliência): taxa parcial é achado de capacidade reportado no resumo, ≥50% reprova o teste
 - Intencionalmente **sem `sleep()`** para máxima taxa de requisições
 - `handleSummary()` — Gera relatório via `generateReport()` com nome `ddos_search_test`
 - Configuração: perfil `heavy` com stages e thresholds totalmente sobrescritos — estágios 10s/30s/10s com 100→500→0 VUs

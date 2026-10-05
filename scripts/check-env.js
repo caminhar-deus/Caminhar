@@ -42,16 +42,27 @@ function checkEnv() {
 }
 
 /**
- * Verifica a conectividade com o PostgreSQL e emite aviso caso o banco
- * não esteja acessível. Não interrompe o fluxo (apenas diagnóstico): uma
- * falha aqui não bloqueia o `dev`, mas indica que a API retornará 500.
+ * Verifica a conectividade com o PostgreSQL.
+ *
+ * Por padrão é apenas diagnóstico: uma falha NÃO bloqueia o `dev` (a API
+ * simplesmente vai retornar 500 até o banco estar de pé). Com
+ * `CHECK_ENV_STRICT=true` a falha sai com código diferente de zero — é o
+ * comportamento usado na CI, onde subir com o banco quebrado produz minutos
+ * de 500 sem diagnóstico algum.
  */
 async function checkDatabaseConnection() {
+  const strict = ['true', '1'].includes(
+    String(process.env.CHECK_ENV_STRICT ?? '').trim().toLowerCase(),
+  );
   const { healthCheck, closeDatabase } = await import('../lib/infra/db.js');
   try {
     const healthy = await healthCheck();
     if (healthy) {
       console.log('\x1b[32m%s\x1b[0m', '✅ PostgreSQL acessível e conexão validada com sucesso.');
+    } else if (strict) {
+      throw new Error(
+        'PostgreSQL inacessível e CHECK_ENV_STRICT=true: abortando aqui, porque a API retornaria 500 em todos os endpoints (verifique DATABASE_URL, credenciais e se o banco está de pé).',
+      );
     } else {
       console.warn('\x1b[33m%s\x1b[0m', '⚠️  PostgreSQL indisponível/inacessível — a API retornará 500 até o banco estar de pé (verifique DATABASE_URL e credenciais).');
     }

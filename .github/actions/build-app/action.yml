@@ -44,6 +44,15 @@ runs:
         APP_LOG: ${{ github.workspace }}/app-server.log
         PORT: 3000
         NODE_ENV: production
+        # O postgres de serviço do CI é `postgres:15` puro, sem SSL (`SHOW ssl;`
+        # → off). Sem isto, qualquer consulta falharia com "The server does not
+        # support SSL connections" — o SSL é decisão de transporte (DATABASE_SSL),
+        # não de NODE_ENV.
+        DATABASE_SSL: 'false'
+        # Na CI a falha de banco deve abortar o start na hora: sem isto o check-env
+        # só avisava, a app subia com o banco quebrada e todo endpoint devolvia 500
+        # por ~7 minutos de k6 sem nenhum diagnóstico.
+        CHECK_ENV_STRICT: 'true'
         # CI trata a aplicação como se houvesse 1 proxy confiável na frente:
         # os testes k6 mandam `X-Forwarded-For` para simular IPs de clientes
         # distintos e não caírem na whitelist de loopback.

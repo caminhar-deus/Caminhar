@@ -426,6 +426,7 @@
 │   │   │       │   ├── index.html
 │   │   │       │   └── pagination.js.html
 │   │   │       ├── index.html
+│   │   │       ├── ip-diagnostico.js.html
 │   │   │       ├── musicas.js.html
 │   │   │       ├── placeholder-image.js.html
 │   │   │       ├── posts.js.html
@@ -513,6 +514,7 @@
 │   │       │   ├── index.html
 │   │       │   └── pagination.js.html
 │   │       ├── index.html
+│   │       ├── ip-diagnostico.js.html
 │   │       ├── musicas.js.html
 │   │       ├── placeholder-image.js.html
 │   │       ├── posts.js.html
@@ -790,6 +792,9 @@
 ├── proxy.js
 ├── public
 │   ├── placeholder.svg
+│   ├── robots.txt
+│   ├── sitemap-0.xml
+│   ├── sitemap.xml
 │   └── uploads
 │       ├── hero-image-1772141705599.webp
 │       ├── post-image-1772105143883.png
@@ -1232,4 +1237,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-195 directories, 1038 files
+195 directories, 1043 files

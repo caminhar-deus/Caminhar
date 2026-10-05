@@ -10,10 +10,9 @@ export default {
   
   // Robots.txt configuração
   robotsTxtOptions: {
-    additionalSitemaps: [
-      `${process.env.SITE_URL || 'http://localhost:3000'}/sitemap-musicas.xml`,
-      `${process.env.SITE_URL || 'http://localhost:3000'}/sitemap-videos.xml`,
-    ],
+    // Sem sitemap-musicas/sitemap-videos: não há rota de detalhe para essas
+    // entidades (pages/ só tem /blog/[slug]) e nenhum XML é gerado — anunciar
+    // os dois só mandaria o rastreador para 404. Ver comentário em additionalPaths.
     policies: [
       {
         userAgent: '*',
@@ -61,10 +60,10 @@ export default {
     const result = [];
     
     // Importar conexão com o banco
-    const { query } = await import('./lib/infra/db.js');
+    const { query, closeDatabase } = await import('./lib/infra/db.js');
 
     try {
-      // ✅ Buscar todos os posts publicados
+      // ✅ Buscar todos os posts publicados (rota de detalhe existe: /blog/[slug])
       const posts = await query('SELECT slug, updated_at FROM posts WHERE published = true');
       posts.rows.forEach(post => {
         result.push({
@@ -75,31 +74,23 @@ export default {
         });
       });
 
-      // ✅ Buscar todas as músicas publicadas
-      const musicas = await query('SELECT slug, updated_at FROM musicas WHERE published = true');
-      musicas.rows.forEach(musica => {
-        result.push({
-          loc: `/musicas/${musica.slug}`,
-          changefreq: 'weekly',
-          priority: 0.7,
-          lastmod: new Date(musica.updated_at).toISOString(),
-        });
-      });
-
-      // ✅ Buscar todos os vídeos publicados
-      const videos = await query('SELECT slug, updated_at FROM videos WHERE published = true');
-      videos.rows.forEach(video => {
-        result.push({
-          loc: `/videos/${video.slug}`,
-          changefreq: 'weekly',
-          priority: 0.7,
-          lastmod: new Date(video.updated_at).toISOString(),
-        });
-      });
-
+      // musicas e videos NÃO geram entradas aqui, e não é só a query que estava
+      // errada (a tabela não tem `slug` — a coluna é `publicado`, não `published`):
+      // pages/ não tem rota de detalhe para elas (só pages/blog/[slug].js). Sem
+      // rota, não há URL de detalhe legítima — gerar `/musicas/<algo>` seria
+      // publicar 404 no sitemap. Criar essas rotas é trabalho de produto
+      // (docs/PENDENCIAS_scripts_testes.md, item P), não de pipeline.
     } catch (error) {
       // TODO: Integrar com sistema de notificação (e-mail/Slack/webhook) em produção
       logger.error('Sitemap', 'Falha ao gerar sitemap dinâmico:', error.message);
+    } finally {
+      // O pool do pg mantém o event loop vivo: sem fechar, o processo do
+      // next-sitemap nunca termina e o `npm run build` trava no postbuild.
+      try {
+        await closeDatabase();
+      } catch (closeError) {
+        logger.warn('Sitemap', `Falha ao fechar o pool do banco: ${closeError.message}`);
+      }
     }
     
     return result;

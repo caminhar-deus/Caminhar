@@ -556,7 +556,7 @@ Módulos de infraestrutura: conexão com banco, logging estruturado e cache dist
 | `closeDatabase()` | Fecha o pool e limpa health check timer |
 | `resetPool()` | Reseta o pool (uso em testes) — desativa timers, remove listeners, fecha pool antigo |
 
-**Configurações do pool:** `max: 50`, `min: 5`, `idleTimeoutMillis: 60000`, `connectionTimeoutMillis: 15000`. SSL habilitado em produção (`rejectUnauthorized: false`).
+**Configurações do pool:** `max: 50`, `min: 5`, `idleTimeoutMillis: 60000`, `connectionTimeoutMillis: 15000`. SSL vem de `resolveSslConfig()`/`DATABASE_SSL` (`true`/`1` → `{ rejectUnauthorized: false }`, `false`/`0` → sem SSL, ausente → o driver respeita o `sslmode` da `DATABASE_URL`) — **não** de `NODE_ENV`.
 
 **Mecanismos internos:**
 - **Lazy initialization** — pool criado apenas no primeiro uso, garantindo compatibilidade com Jest mocks

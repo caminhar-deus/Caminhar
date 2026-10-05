@@ -1,5 +1,5 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-import { query, closeDatabase, transaction, healthCheck, getDatabaseInfo, resetPool, getPool } from '../../../lib/infra/db.js';
+import { query, closeDatabase, transaction, healthCheck, getDatabaseInfo, resetPool, getPool, resolveSslConfig } from '../../../lib/infra/db.js';
 import { Pool, restorePoolImplementation } from 'pg';
 
 jest.mock('pg');
@@ -76,19 +76,57 @@ describe('Library - Database', () => {
     expect(mockPoolInstance.end).toHaveBeenCalled();
   });
 
-  it('deve usar SSL em ambiente de produção', async () => {
-    const origEnv = process.env.NODE_ENV;
-    process.env.NODE_ENV = 'production';
-    resetPool(); // Força a recriação do pool
-    mockPoolInstance.query.mockResolvedValueOnce({ rows: [] });
-    
-    await query('SELECT 1');
-    
-    expect(Pool).toHaveBeenCalledWith(expect.objectContaining({
-      ssl: { rejectUnauthorized: false }
-    }));
-    
-    process.env.NODE_ENV = origEnv;
+  it('resolveSslConfig: valores de DATABASE_SSL mapeiam para a configuração do driver', () => {
+    expect(resolveSslConfig({ DATABASE_SSL: 'true' })).toEqual({ rejectUnauthorized: false });
+    expect(resolveSslConfig({ DATABASE_SSL: '1' })).toEqual({ rejectUnauthorized: false });
+    expect(resolveSslConfig({ DATABASE_SSL: 'false' })).toBe(false);
+    expect(resolveSslConfig({ DATABASE_SSL: '0' })).toBe(false);
+    // Ausente (ou inválido) -> undefined: o driver respeita o sslmode da URL
+    expect(resolveSslConfig({})).toBeUndefined();
+    expect(resolveSslConfig({ DATABASE_SSL: '' })).toBeUndefined();
+    expect(resolveSslConfig({ DATABASE_SSL: 'banana' })).toBeUndefined();
+  });
+
+  it('não força SSL por causa de NODE_ENV: o transporte vem de DATABASE_SSL', async () => {
+    const origNodeEnv = process.env.NODE_ENV;
+    const origDbSsl = process.env.DATABASE_SSL;
+    try {
+      process.env.NODE_ENV = 'production';
+      delete process.env.DATABASE_SSL; // regressão: production sozinho não pode ligar SSL
+      resetPool();
+      Pool.mockClear();
+      mockPoolInstance.query.mockResolvedValueOnce({ rows: [] });
+
+      await query('SELECT 1');
+
+      expect(Pool.mock.calls.at(-1)[0].ssl).toBeUndefined();
+    } finally {
+      if (origNodeEnv === undefined) delete process.env.NODE_ENV;
+      else process.env.NODE_ENV = origNodeEnv;
+      if (origDbSsl === undefined) delete process.env.DATABASE_SSL;
+      else process.env.DATABASE_SSL = origDbSsl;
+      resetPool();
+      getPool();
+    }
+  });
+
+  it('DATABASE_SSL=true liga o SSL mesmo fora de produção', async () => {
+    const origDbSsl = process.env.DATABASE_SSL;
+    try {
+      process.env.DATABASE_SSL = 'true';
+      resetPool();
+      Pool.mockClear();
+      mockPoolInstance.query.mockResolvedValueOnce({ rows: [] });
+
+      await query('SELECT 1');
+
+      expect(Pool.mock.calls.at(-1)[0].ssl).toEqual({ rejectUnauthorized: false });
+    } finally {
+      if (origDbSsl === undefined) delete process.env.DATABASE_SSL;
+      else process.env.DATABASE_SSL = origDbSsl;
+      resetPool();
+      getPool();
+    }
   });
 
   it('closeDatabase: propaga erro se falhar', async () => {

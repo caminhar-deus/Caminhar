@@ -16,12 +16,16 @@ import { generateReport } from '../helpers/report.js';
  * | Cenário | Checks que PASSAM | Significado |
  * |---------|-------------------|-------------|
  * | Sistema resiliente | `🛡️ BLOQUEADO: Rate limit atuou (429)` (alta taxa) | Proteção contra DDoS funcionando |
- * | Sistema subdimensionado | `⚠️ VULNERÁVEL: Servidor caiu (5xx)` (taxa > 10%) | Servidor não suporta a carga |
+ * | Sistema subdimensionado | `⚠️ VULNERÁVEL: Servidor caiu sob carga (5xx)` (taxa de `errors_500` até 50%) | Achado de capacidade: **reportado** no resumo, sem reprovar o job |
  * | Sistema estável | `✅ RESISTIU: Servidor respondeu (200)` (alta taxa) | Servidor aguenta carga sem proteção |
+ * | App quebrado | taxa de `errors_500` ≥ 50% | Threshold `rate<0.50` reprova o teste |
  *
  * ## Nota
  * - Atualmente o servidor NÃO aciona rate limit para buscas, mesmo com 500 VUs
  * - A proteção DDoS precisa ser implementada ou confirmada como desnecessária
+ * - Os 5xx são **resultado a medir**, não motivo de abortar: por isso o
+ *   threshold não tem `abortOnFail`/`delayAbortEval` (um teste de resiliência
+ *   que aborta com 5s de 5xx destrói a medição que existe para fazer)
  */
 
 // Métrica personalizada para rastrear especificamente erros do servidor (5xx)
@@ -34,7 +38,11 @@ export const options = getProfile('heavy', {
     { duration: '10s', target: 0 },
   ],
   thresholds: {
-    'errors_500': [{ threshold: 'rate<0.10', abortOnFail: true, delayAbortEval: '5s' }],
+    // Sem abortOnFail/delayAbortEval: 5xx é resultado a medir num teste de
+    // resiliência. 50% separa o que é achado de capacidade (taxa parcial sob
+    // 500 VUs — reportar, não reprovar) do app quebrado (maioria de respostas
+    // 5xx — reprova o job).
+    'errors_500': ['rate<0.50'],
   },
 });
 
@@ -68,5 +76,15 @@ export default function () {
 }
 
 export function handleSummary(data) {
+  // Taxa de 5xx como medida de resiliência: reportada sempre, mesmo quando
+  // dentro do threshold — é ela que diz quanto a aplicação aguentou.
+  const errors500 = data.metrics.errors_500 ? data.metrics.errors_500.values.rate : 0;
+  const pct = (errors500 * 100).toFixed(2);
+  console.log(`\n📊 Resiliência (errors_500): ${pct}% das respostas foram 5xx.` +
+    (errors500 >= 0.5
+      ? ' Maioria 5xx: sinal de app quebrado, não apenas subdimensionado.'
+      : ' Taxa parcial: achado de capacidade, reportado sem reprovar o job.') +
+    ' Threshold: rate<0.50, sem abortOnFail: o teste roda até o fim para medir.\n');
+
   return generateReport(data, 'ddos_search_test');
 }

@@ -431,7 +431,7 @@ Teste consolidado de IP spoofing e evasão de rate limit. Usa perfil `rateLimit`
 - `k6/http`, `k6/check`, `k6/metrics` (Rate)
 
 **Resumo do arquivo:**
-Teste de carga massiva (DDoS) em endpoint de busca. Usa perfil `heavy` com estágios customizados (100 VUs → 500 VUs → ramp-down). Métrica customizada `errors_500` (Rate) com threshold `rate<0.10` e `abortOnFail: true`. Cache busting com timestamp. 10 termos de busca variados. Documentação indica que servidor NÃO aciona rate limit para buscas. Gera relatório `ddos_search_test`.
+Teste de carga massiva (DDoS) em endpoint de busca. Usa perfil `heavy` com estágios customizados (100 VUs → 500 VUs → ramp-down). Métrica customizada `errors_500` (Rate) com threshold `rate<0.50` e sem `abortOnFail` (a taxa de 5xx é medida de resiliência, reportada no `handleSummary`). Cache busting com timestamp. 10 termos de busca variados. Documentação indica que servidor NÃO aciona rate limit para buscas. Gera relatório `ddos_search_test`.
 
 ---
 
