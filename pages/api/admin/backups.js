@@ -36,6 +36,7 @@ async function handlePost(req, res) {
 
 export default createAdminHandler({
   name: 'Backup',
+  permission: 'Segurança',
   allowedMethods: ['GET', 'POST'],
   handlers: { GET: handleGet, POST: handlePost },
   rateLimit: { max: 10, window: 60000 },

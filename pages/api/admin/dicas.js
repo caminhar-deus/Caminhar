@@ -94,6 +94,7 @@ async function handleDelete(req, res) {
 
 export default createAdminHandler({
   name: 'Dica',
+  permission: 'Gestão de Dicas',
   handlers: { GET: handleGet, POST: handlePost, PUT: handlePut, DELETE: handleDelete },
   rateLimit: { max: 30, window: 60000 },
 });

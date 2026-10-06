@@ -46,6 +46,7 @@ async function handlePost(req, res) {
 
 export default createAdminHandler({
   name: 'YouTube',
+  permission: 'Gestão de Vídeos',
   allowedMethods: ['POST'],
   handlers: { POST: handlePost },
 });

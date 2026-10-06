@@ -28,6 +28,10 @@ describe('API - Admin - Dicas (Edge Cases)', () => {
     req = mocks.req;
     res = mocks.res;
     req.user = { username: 'admin' }; // Garante que logActivity seja acionado
+
+    // RBAC: createAdminHandler queries roles.permissions before the handler runs,
+    // so this must be queued before each test's mockResolvedValueOnce.
+    db.query.mockResolvedValueOnce({ rows: [{ permissions: ['Gestão de Dicas'] }] });
   });
 
   it('deve usar o IP unknown e valor padrão de published (true) no POST', async () => {

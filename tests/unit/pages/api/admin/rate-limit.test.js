@@ -146,7 +146,7 @@ describe('API - Admin - Rate Limit', () => {
   it('deve adicionar IP à whitelist e registrar auditoria (POST)', async () => {
     const handler = getHandler();
     const { req, res } = createMocks({ method: 'POST', body: { ip: '1.1.1.1' } });
-    req.user = { username: 'admin' };
+    req.user = { username: 'admin', role: 'admin' };
     await handler(req, res);
     expect(mockRedisInstance.sadd).toHaveBeenCalledWith('rate_limit:whitelist', '1.1.1.1');
     expect(mockRedisInstance.del).toHaveBeenCalledWith('rate_limit:1.1.1.1');
@@ -164,7 +164,7 @@ describe('API - Admin - Rate Limit', () => {
   it('deve remover IP da whitelist (DELETE com type=whitelist)', async () => {
     const handler = getHandler();
     const { req, res } = createMocks({ method: 'DELETE', query: { type: 'whitelist', ip: '1.1.1.1' } });
-    req.user = { username: 'admin' };
+    req.user = { username: 'admin', role: 'admin' };
     await handler(req, res);
     expect(mockRedisInstance.srem).toHaveBeenCalledWith('rate_limit:whitelist', '1.1.1.1');
     expect(res._getStatusCode()).toBe(200);

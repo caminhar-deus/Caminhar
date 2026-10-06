@@ -29,6 +29,11 @@ import { logger } from '../../../../lib/infra/logger.js';
 describe('API Admin - Dicas (/api/admin/dicas)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // createAdminHandler queries roles.permissions (RBAC) before the handler runs:
+    // queue it first so each test's mockResolvedValueOnce still lands on the handler query.
+    query.mockReset();
+    query.mockResolvedValue({ rows: [], rowCount: 0 });
+    query.mockResolvedValueOnce({ rows: [{ permissions: ['Gestão de Dicas'] }] });
   });
 
   // Função utilitária para gerar os mocks HTTP já autenticados

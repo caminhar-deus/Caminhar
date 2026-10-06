@@ -119,6 +119,7 @@ async function handlePost(req, res) {
 
 export default createAdminHandler({
   name: 'Spotify',
+  permission: 'Gestão de Músicas',
   allowedMethods: ['POST'],
   handlers: { POST: handlePost },
 });

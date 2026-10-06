@@ -306,6 +306,7 @@ async function handleDelete(req, res) {
 
 export default createAdminHandler({
   name: 'RateLimit',
+  permission: 'Segurança',
   allowedMethods: ['GET', 'POST', 'DELETE'],
   handlers: {
     GET: handleGet,

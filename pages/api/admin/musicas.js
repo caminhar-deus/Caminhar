@@ -150,6 +150,7 @@ async function handleDelete(req, res) {
 
 export default createAdminHandler({
   name: 'Musica',
+  permission: 'Gestão de Músicas',
   handlers: { GET: handleGet, POST: handlePost, PUT: handlePut, DELETE: handleDelete },
   rateLimit: { max: 300, window: 60000 },
   cacheKeys: 'musicas:*',

@@ -158,6 +158,7 @@ async function handlePost(req, res) {
 
 export default createAdminHandler({
   name: 'MercadoLivre',
+  permission: 'Gestão de Produtos',
   allowedMethods: ['POST'],
   handlers: { POST: handlePost },
 });
