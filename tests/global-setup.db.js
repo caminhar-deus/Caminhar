@@ -45,7 +45,11 @@ export default async function globalSetup() {
       .withDatabase('caminhar_test')
       .withUsername('test')
       .withPassword('test')
-      .withReuse(true) // Reutilizar container entre execuções para performance
+      // Sem `.withReuse(true)`: `jest.teardown.js` sempre chama `.stop()` no
+      // container, então a reutilização nunca acontecia — o flag era no-op e
+      // criava a impressão enganosa de que o estado do banco persistia entre
+      // execuções. Container novo a cada run garante schema limpo (as
+      // migrations rodam em seguida), ao custo de poucos segundos de startup.
       .start();
 
     const connectionString = container.getConnectionUri();

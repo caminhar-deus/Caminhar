@@ -26,25 +26,25 @@
 
 | | |
 |---|---|
-| **Estado atual** | `cypress.config.js` ainda declara `allowCypressEnv: false`; o Cypress 16.1.0 avisa que a opção foi removida na versão 16.0.0. |
-| **Impacto** | Aviso repetido em toda execução e configuração sem efeito. |
-| **Ação necessária** | Remover a opção de `cypress.config.js`. |
+| **Estado atual** | **Resolvido.** A opção `allowCypressEnv: false` foi removida de `cypress.config.js` — o Cypress 16.0.0 (projeto em 16.1.1) removeu a opção, e declará-la emitia aviso a cada execução sem efeito. Ficou no lugar um comentário registrando o motivo da remoção. |
+| **Impacto** | Nenhum — o aviso recorrente deixou de aparecer. O acesso a `Cypress.env()` no navegador já é bloqueado por padrão. |
+| **Ação necessária** | Nenhuma. |
 
 ## J — Suíte com banco real não executa localmente
 
 | | |
 |---|---|
-| **Estado atual** | O container PostgreSQL não sobe (`Falha ao iniciar container PostgreSQL: Cannot read properties of undefined (reading 'split')`), o setup grava `TEST_DATABASE_URL='__docker_unavailable__'` e as 5 suítes de `tests/integration/domain/*.db.test.js` (70 testes) são ignoradas por `describe.skip` em `tests/helpers/db-test.js`. |
-| **Impacto** | Sem execução real, o relatório de `coverage-db/` reflete apenas os arquivos tocados por um run sem testes. |
-| **Ação necessária** | Investigar o stack de Testcontainers (imagem, pull e permissões) até o container subir. |
+| **Estado atual** | **Resolvido.** O erro `Cannot read properties of undefined (reading 'split')` vinha de `new PostgreSqlContainer()` sem argumento de imagem: o construtor exige a imagem explícita em `@testcontainers/postgresql`. Com a imagem declarada (`postgres:15`), o container sobe e a suíte roda de verdade — `npx jest --config jest.config.db.js` executa **73 asserções em 6 suítes, todas passando**, e `tests/setup.db.js` faz `jest.unmock('pg')` para o mock automático de `__mocks__/pg.js` não substituir o driver real. `scripts/migrate.js` também passou a usar `pg_advisory_lock` para evitar corrida entre execuções concorrentes. |
+| **Impacto** | Nenhum: `coverage-db/` agora reflete execuções reais. O `describe.skip` condicionado a `TEST_DATABASE_URL !== '__docker_unavailable__'` **continua no código** e é a rede de segurança correta — só não é mais acionado em ambiente com Docker. |
+| **Ação necessária** | Nenhuma. |
 
 ## K — Teardown global versus container reutilizável
 
 | | |
 |---|---|
-| **Estado atual** | `tests/global-setup.db.js` usa `.withReuse(true)` e `jest.teardown.js` finaliza `global.__TEST_DB_CONTAINER__`. |
-| **Impacto** | O encerramento no teardown pode anular a reutilização pretendida. Não há erro observado; item levantado por análise. |
-| **Ação necessária** | Definir e documentar se o teardown deve ou não parar containers reutilizáveis. Depende do item J. |
+| **Estado atual** | **Resolvido — decisão: sem reutilização.** A contradição existia de verdade: `tests/global-setup.db.js` usava `.withReuse(true)` enquanto `jest.teardown.js` sempre chama `global.__TEST_DB_CONTAINER__.stop()`. O teardown vencia sempre, então o flag era **no-op** — e pior, criava a impressão falsa de que o estado do banco persistia entre execuções. |
+| **Impacto** | Eliminada a falsa impressão de persistência entre execuções. Container novo a cada run custa alguns segundos de startup e garante schema limpo, com as migrations rodando em seguida. Sem isso, um container reutilizado poderia carregar schema ou dados de uma execução anterior e falhar de forma confusa. |
+| **Ação necessária** | Nenhuma. O teardown continua parando o container — é ele quem garante o estado limpo. |
 
 ## L — `setup-db` invoca script npm inexistente
 

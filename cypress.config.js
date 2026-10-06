@@ -32,8 +32,9 @@ export default defineConfig({
     // Tira screenshots automaticamente quando um teste falha.
     screenshotOnRunFailure: true,
 
-    // Desabilita o acesso inseguro a Cypress.env() no navegador.
-    allowCypressEnv: false,
+    // Nota: `allowCypressEnv` foi removido no Cypress 16.0.0 (aqui é 16.1.1)
+    // e não pode mais ser declarado — o acesso a `Cypress.env()` no navegador
+    // passou a ser bloqueado por padrão.
 
     // Informa ao Cypress que não há um arquivo de suporte global.
     supportFile: 'cypress/support/e2e.js',
