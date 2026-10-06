@@ -2,6 +2,7 @@
 import fs from 'fs';
 import dotenv from 'dotenv';
 import pg from 'pg';
+import { resolveSslConfig } from '../../lib/infra/db.js';
 import { POST_ALERT_THRESHOLD } from '../utils/constants.js';
 
 const { Pool } = pg;
@@ -14,7 +15,7 @@ dotenv.config();
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined
+  ssl: resolveSslConfig()
 });
 
 async function countPosts() {

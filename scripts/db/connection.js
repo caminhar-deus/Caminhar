@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { resolveSslConfig } from '../../lib/infra/db.js';
 const { Pool } = pg;
 
 let pool = null;
@@ -14,7 +15,10 @@ export function getPool() {
     if (!process.env.DATABASE_URL) {
       throw new Error('DATABASE_URL não definida. Verifique o arquivo .env ou .env.local.');
     }
-    pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: resolveSslConfig(),
+    });
   }
   return pool;
 }

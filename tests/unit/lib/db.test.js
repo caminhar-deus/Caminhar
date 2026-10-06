@@ -87,6 +87,28 @@ describe('Library - Database', () => {
     expect(resolveSslConfig({ DATABASE_SSL: 'banana' })).toBeUndefined();
   });
 
+  it('resolveSslConfig: sslmode na URL não é detectado como conflito quando o valor é apenas herdado', () => {
+    // Sem valor explícito, sslmode é a única fonte de verdade — não é conflito.
+    expect(resolveSslConfig({ DATABASE_URL: 'postgresql://u:p@h/d?sslmode=require' })).toBeUndefined();
+    expect(resolveSslConfig({
+      DATABASE_SSL: '',
+      DATABASE_URL: 'postgresql://u:p@h/d?sslmode=require',
+    })).toBeUndefined();
+  });
+
+  it('resolveSslConfig: valor explícito continua decidindo mesmo com sslmode na URL', () => {
+    // O driver sobrescreve `ssl` pelo connectionString (ver pg/lib/connection-parameters.js),
+    // então o valor explícito é o que `resolveSslConfig` devolve — e o app avisa.
+    expect(resolveSslConfig({
+      DATABASE_SSL: 'true',
+      DATABASE_URL: 'postgresql://u:p@h/d?sslmode=require',
+    })).toEqual({ rejectUnauthorized: false });
+    expect(resolveSslConfig({
+      DATABASE_SSL: 'false',
+      DATABASE_URL: 'postgresql://u:p@h/d?sslmode=require',
+    })).toBe(false);
+  });
+
   it('não força SSL por causa de NODE_ENV: o transporte vem de DATABASE_SSL', async () => {
     const origNodeEnv = process.env.NODE_ENV;
     const origDbSsl = process.env.DATABASE_SSL;

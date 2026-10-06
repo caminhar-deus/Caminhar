@@ -2,6 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 import pg from 'pg';
+import { resolveSslConfig } from '../lib/infra/db.js';
 import dotenv from 'dotenv';
 
 const { Pool } = pg;
@@ -10,6 +11,7 @@ dotenv.config();
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  ssl: resolveSslConfig(),
 });
 
 export async function cleanOrphanedImages() {

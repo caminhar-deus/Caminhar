@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import pg from 'pg';
+import { resolveSslConfig } from '../../lib/infra/db.js';
 import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
@@ -14,6 +15,7 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  ssl: resolveSslConfig(),
 });
 
 async function diagnoseHero() {

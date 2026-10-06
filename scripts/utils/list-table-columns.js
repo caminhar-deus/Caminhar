@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import pg from 'pg';
+import { resolveSslConfig } from '../../lib/infra/db.js';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -13,6 +14,7 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  ssl: resolveSslConfig(),
 });
 
 async function listTableColumns() {
