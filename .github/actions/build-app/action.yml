@@ -29,6 +29,21 @@ runs:
         # `DATABASE_URL` vem do `env:` do job em `test-base.yml` (fonte única).
         JWT_SECRET: test-secret-for-build
 
+    # Cria o usuário admin de que os testes k6 dependem. `initializeAuth()` (que
+    # faz a criação) é chamada apenas por `scripts/init-server.js`, e nenhum
+    # workflow da CI rodava esse script — `seed-all.js` semeia posts, vídeos,
+    # músicas e settings, mas não usuários. Sem este passo, todo login dos testes
+    # recebia 401 e o helper `load-tests/helpers/auth.js:31` lançava
+    # "Login falhou: 401", derrubando todos os cenários autenticados.
+    - name: Seed Admin User
+      shell: bash
+      run: npm run db:init
+      env:
+        # `DATABASE_URL` vem do `env:` do job em `test-base.yml` (fonte única).
+        DATABASE_SSL: 'false'
+        ADMIN_USERNAME: ${{ inputs.admin-username }}
+        ADMIN_PASSWORD: ${{ inputs.admin-password }}
+
     # A saída do servidor vai para um arquivo no workspace, e não para o stdout
     # do step: com `npm start &` o processo sobrevive ao step, então o log ia
     # para o `/dev/null` do runner e sumia. Sem ele, um 500 em endpoint não tem
