@@ -50,9 +50,10 @@
 - **Sugestão:** Usar `loadEnv()` de `scripts/utils/load-env.js` (que usa `process.cwd()`, correto) — o mesmo padrão já adotado nos demais scripts. Para `maintenance/`, o caminho correto seria `../../.env`.
 
 ### 1.5. Interpolação direta em SQL em `scripts/clean-orphaned-images.js`
-- **Arquivo:** `scripts/clean-orphaned-images.js` (linha 34)
+- **Arquivo:** `scripts/clean-orphaned-images.js` (linha 76 — a "linha 34" citada antes da mudança de 06/10/2026 era da versão anterior do arquivo)
 - **Problema:** `SELECT ${column} FROM ${table}` interpola nomes diretamente. Embora venham de whitelist fixa interna, é o mesmo padrão que o projeto evita em outros lugares.
-- **Sugestão:** Adicionar validação com `validateIdentifier()` (já existente em `scripts/utils/init-table-utils.js`) antes da interpolação, ou manter whitelist explícita com verificação em runtime.
+- **Whitelist:** `REF_COLUMNS` (linhas 22-29), constante fixa com 6 entradas — `posts.image_url`, `settings.value`, `products.image_url`, `videos.thumbnail`, `images.path`, `images.filename`. Nenhum valor vem de input, env ou argv; por isso o arquivo está na allowlist de `scripts/check-sql-injection.js:51`.
+- **Sugestão (avaliada em 06/10/2026, NÃO adotada):** adicionar validação com `validateIdentifier()` (já existente em `scripts/utils/init-table-utils.js`) antes da interpolação. Descartado: com a lista fixa e sem entrada externa a validação seria defensiva sem fechar vetor real, e tornaria a constante menos legível como documentação do schema.
 
 ### 1.6. Terceiro argumento ignorado em `seed-products.js`
 - **Arquivo:** `scripts/seed-products.js` (linha 36)

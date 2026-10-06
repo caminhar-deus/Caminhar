@@ -12911,29 +12911,35 @@ jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').moc
 #### 3.3 `scripts/clean-orphaned-images.test.js`
 
 **Arquivo sob teste:** `scripts/clean-orphaned-images.js`  
-**Escopo:** Remove arquivos de imagem do `public/uploads` que não são referenciados no banco (órfãos).
+**Escopo:** Varre arquivos de imagem do `public/uploads` que não são referenciados no banco (órfãos). Desde 2026-10-06 o script é **fail-closed**, roda em **modo relatório por padrão** e **move para lixeira** (`data/uploads-trash/`) em vez de apagar — ver `docs/PROJECT_scripts.md` e `decisions/2026-10-06-clean-images-fail-closed-lixeira`. Os prefixos `post-image-*`/`hero-image-*` são os de **produção** (`pages/api/upload-image.js:98`), não só fixtures de teste.
 
-**Testes (5 casos):**
+**Testes (10 casos — 5 originais + 5 adicionados em 06/10/2026):**
 
 | Teste | O que valida |
 |---|---|
-| Remove órfãos | Deleta arquivos não referenciados, preserva usados |
+| Remove órfãos | Modo delete: move para lixeira os não referenciados, preserva usados (`renameSync`) |
 | Diretório inexistente | Não chama `readdirSync`, não deleta nada |
 | Erro de banco | Captura exceção, loga `console.error`, não lança |
 | Coluna inexistente | Trata erro `42703`, loga `console.warn` com mensagem específica |
 | Arquivos irrelevantes | Ignora arquivos sem prefixos `post-image-`/`hero-image-` |
+| Modo relatório (padrão) | Sem argumentos, não escreve em disco; `result.mode === 'report'` |
+| Arquivo com <24h | Ignorado por idade mínima, `skippedNewCount` incrementado |
+| Falha de banco aborta | **Fail-closed**: nenhuma chamada de FS quando o banco falha |
+| Protege products/videos | Referências em `products.image_url` e `videos.thumbnail` são preservadas |
+| Diretório com prefixo | `isDirectory()` → skip silencioso |
 
 **Problemas:**
 - ✅ **Positivo:** Usa `mockQuery.mockReset()` + `clearAllMocks` para isolar.
 - ✅ **Positivo:** Valida mensagem de warn específica ("Aviso: Coluna 'image_url' não encontrada na tabela 'posts'").
-- ⚠️ O script usa `pg` diretamente (cria `new Pool`), mas o mock é feito via `jest.mock('pg')` automático + `import { mockQuery } from 'pg'` — depende de `__mocks__/pg.js` global. Se esse arquivo não existe, o mock falha silenciosamente.
-- ⚠️ Não testa cenário onde `fs.unlinkSync` lança erro (ex: permissão).
+- ✅ **Positivo (06/10/2026):** cobre as 4 salvaguardas do script — fail-closed, modo relatório, idade mínima e lixeira.
+- ✅ **Corrigido em 06/10/2026:** a dependência de `__mocks__/pg.js` **existe** (3868 bytes; exporta `mockQuery` na linha 26 e `Pool` na 48). A afirmação anterior de que o arquivo "não existe na árvore de testes" era falsa.
+- ⚠️ Não testa cenário onde `fs.renameSync` lança erro (ex: permissão, `EXDEV`).
 - ⚠️ O teste de "erro de banco" espera `console.error` chamado, mas não valida a mensagem.
 
 **Melhoria recomendada:**
-- Testar cenário de `fs.promises.access` falhando no `uploadsDir`.
-- Testar quando todos os arquivos são usados (nada deletado).
-- Testar múltiplas tabelas com colunas diferentes em sequência.
+- Testar `fs.renameSync` falhando (permissão) — ramo de fallback ainda sem cobertura.
+- Testar quando todos os arquivos são usados (nada movido).
+- Testar o CLI (`--delete` via `process.argv`), hoje só a função exportada é exercitada.
 
 ---
 
@@ -13267,7 +13273,7 @@ jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').moc
 
 | # | Descrição | Arquivos afetados |
 |---|---|---|
-| 6 | Mocks automáticos (`jest.mock('pg')` sem factory) dependem de `__mocks__/pg.js` global | `clean-orphaned-images.test.js` |
+| 6 | Mocks automáticos (`jest.mock('pg')` sem factory) usam o `__mocks__/pg.js` compartilhado — verificado que existe e exporta `mockQuery` | `clean-orphaned-images.test.js` |
 | 7 | Schemas duplicados em múltiplos describe | `init-table.test.js` |
 | 8 | Constantes faltando em `constants.test.js` | `LOG_RETENTION_DAYS`, `LOG_MAX_SIZE_BYTES`, `DISK_THRESHOLD_PERCENT`, etc. |
 | 9 | `migrate.test.js` sem testar `applyMigration`/`revertLastMigration` | Cobertura parcial |
@@ -13370,7 +13376,7 @@ beforeAll(() => {
 | Resíduo | Local | Observação |
 |---|---|---|
 | `jest.unstable_mockModule('date-fns', ...)` | `backup.test.js` | `backup.js` não usa `date-fns` desde refatoração para `date-format.js` |
-| Import `{ mockQuery } from 'pg'` | `clean-orphaned-images.test.js` | Depende de `__mocks__/pg.js` que pode não existir; o mock real é feito por `jest.mock('pg')` automático |
+| Import `{ mockQuery } from 'pg'` | `clean-orphaned-images.test.js` | Depende do `__mocks__/pg.js` compartilhado — verificado que existe e exporta `mockQuery` (linha 26) |
 | `afterEach` sem body | `reset-password.test.js` | Não há cleanup entre testes |
 | Mock de `dotenv/config` em `reset-password.test.js` vs `dotenv` em outros | Inconsistência | `reset-password.js` importa `dotenv` (não `dotenv/config`), mas o mock usa `dotenv/config` |
 
@@ -13381,7 +13387,7 @@ beforeAll(() => {
 |---|---|---|---|
 | `connection.test.js` | getPool, closePool, query | resetPool (indireto) | 85% |
 | `backup.test.js` | (só exports) | createBackup, restoreBackup, cleanupOldBackups, getBackupFiles, logBackupOperation, getBackupLogs, ensureBackupDirectory, generateBackupFilename, runPgDumpToFile, runPsqlFromFile, calculateFileHash, checkDiskBeforeBackup, rotateLogIfNeeded, cleanupOldLogs | 10% |
-| `clean-orphaned-images.test.js` | cleanOrphanedImages | (parcial — múltiplos branches) | 60% |
+| `clean-orphaned-images.test.js` | cleanOrphanedImages | (parcial — múltiplos branches) | 88.93% |
 | `clear-db.test.js` | (só imports) | clearDatabase, clearUploadsDir, askConfirmation | 15% |
 | `clear-musicas.test.js` | (só imports) | clearMusicRecords, askConfirmation | 10% |
 | `init-table.test.js` | buildCreateTableSQL, getSeedValues, buildSeedSQL, getTableName | loadSchemaFromDir | 75% |
@@ -14130,14 +14136,15 @@ O teste lê `.github/workflows/pr-coverage.yml` do disco. Se o workflow for movi
 
 #### 2.2 `tests/unit/scripts/clean-orphaned-images.test.js`
 
-**Finalidade**: Testa remoção de imagens órfãs não referenciadas no banco.
+**Finalidade**: Testa a varredura de imagens órfãs não referenciadas no banco. Desde 06/10/2026 o script é fail-closed, roda em modo relatório por padrão e move para lixeira em vez de apagar (`unlinkSync` removido).
 
 **Relações**: Mocks de `fs`, `dotenv`, `pg` (via `__mocks__/pg.js`).
 
 **Análise**:
-- **Forte**: 5 testes cobrem: remoção de órfão, diretório inexistente, erro de banco, coluna inexistente, e arquivos com prefixo desconhecido. Bom tratamento de erro (`code: '42703'`).
+- **Forte**: 10 testes (06/10/2026) cobrem os 5 cenários originais mais as 4 salvaguardas: fail-closed em falha de banco, modo relatório sem escrita em disco, idade mínima de 24h, e proteção das colunas `products.image_url`/`videos.thumbnail`. Bom tratamento de erro (`code: '42703'`).
 - **Problema**: O mock do `pg` depende de `__mocks__/pg.js` global — pode interferir com outros testes.
-- **Duplicação**: `fs.existsSync`/`readdirSync`/`unlinkSync` mockado em múltiplos testes.
+- **Problema**: Cobertura de linhas em 88.93%; ramos sem teste são `fs.renameSync` falhando e o wrapper do CLI.
+- **Duplicação**: `fs.existsSync`/`readdirSync`/`statSync`/`renameSync` mockados em múltiplos testes.
 
 ---
 
@@ -14383,7 +14390,7 @@ Os paths relativos (`../../../../../pages/...`) são frágeis — se o arquivo s
 | `login.edge.test.js` | 1 | ★★☆☆☆ | Baixo | Só erro 500 |
 | `upload-image.edge.test.js` | 1 | ★★★☆☆ | Baixo | Verifica só chamada |
 | `backup.test.js` | 6 | ★★☆☆☆ | Baixo | Só verifica exports |
-| `clean-orphaned-images.test.js` | 5 | ★★★★☆ | Alto | Depende __mocks__/pg |
+| `clean-orphaned-images.test.js` | 10 | ★★★★☆ | Alto | Depende __mocks__/pg; cobre as 4 salvaguardas do script |
 | `clear-db.test.js` | 4 | ★☆☆☆☆ | Muito Baixo | Testa mock, não script |
 | `clear-musicas.test.js` | 2 | ★☆☆☆☆ | Muito Baixo | Testa mock, não script |
 | `init-table.test.js` | 8 | ★★★★☆ | Alto | Faltam edge cases |
@@ -15683,11 +15690,11 @@ A maioria dos testes é superficial: verifica **exports** e chamadas de mock, se
 | Aspecto | Detalhe |
 |---------|---------|
 | **Finalidade** | Testar `cleanOrphanedImages` de `scripts/clean-orphaned-images.js`. |
-| **Relações** | Importa `../../../scripts/clean-orphaned-images.js`. Usa `mockQuery` do `pg` mockado automático (`__mocks__/pg.js` não existe; usa `jest.mock('pg')` + importação de `mockQuery` do `pg` mockado). |
-| **Escopo** | 5 cenários: remoção de órfão, diretório inexistente, erro de banco, coluna inexistente, arquivos irrelevantes. |
-| **Problemas** | 1. **Importação frágil de `mockQuery`**: `import { mockQuery } from 'pg'` depende de `pg` exportar `mockQuery` como named export — mas o script mockado padrão do Jest não faz isso; a suíte só funciona se houver um `__mocks__/pg.js` (não encontrado). 2. **SQL injection via template string**: o script concatena `SELECT ${column} FROM ${table}` sem validação — não há teste de segurança para nomes maliciosos. 3. **Teste de "erro de banco"** silencia `console.error` mas não verifica a mensagem. 4. **Teste de coluna inexistente** espera string `"Aviso: Coluna 'image_url' não encontrada na tabela 'posts'"`, mas o mock rejeita com código `42703` **sem especificar a tabela** — o teste pode passar por sorte se a primeira iteração do loop for a tabela `posts`. |
-| **Melhorias** | 1. Criar `__mocks__/pg.js` com `mockQuery` exportado. 2. Testar com nomes de tabela contendo caracteres especiais para validar segurança. 3. Testar com múltiplas tabelas (o loop atual só testa a primeira erro). 4. Verificar a mensagem exata de `console.error` e `console.warn`. |
-| **Código morto** | `jest.mock('fs')` é usado apenas para `fs.existsSync` e `fs.readdirSync` — `fs.unlinkSync` é chamado pelo script mas seu mock é automático. Sem problemas, mas o mock poderia ser `jest.mock('fs', () => ({ existsSync: jest.fn(), readdirSync: jest.fn(), unlinkSync: jest.fn() }))` para ser mais explícito. |
+| **Relações** | Importa `../../../scripts/clean-orphaned-images.js`. Usa `mockQuery` do `pg` mockado, resolvido pelo `__mocks__/pg.js` compartilhado (verificado: existe, `mockQuery` exportado na linha 26). |
+| **Escopo** | 10 cenários (06/10/2026): os 5 originais — remoção de órfão, diretório inexistente, erro de banco, coluna inexistente, arquivos irrelevantes — mais modo relatório (padrão), idade mínima <24h, fail-closed em falha de banco, proteção de `products.image_url`/`videos.thumbnail`, e skip de diretório. |
+| **Problemas** | 1. **Corrigido em 06/10/2026:** a premissa de que `__mocks__/pg.js` não existia era FALSA — o arquivo existe (3868 bytes) e exporta `mockQuery` (linha 26). A suíte não depende de sorte nem de mock automático frágil. 2. **SQL injection via template string**: o script concatena `SELECT ${column} FROM ${table}` — os nomes vêm de `REF_COLUMNS`, uma constante fixa no próprio código (6 entradas), não de input. Mantido na allowlist de `scripts/check-sql-injection.js:51` por isso. 3. **Teste de "erro de banco"** silencia `console.error` mas não verifica a mensagem. 4. **Teste de coluna inexistente** espera string `"Aviso: Coluna 'image_url' não encontrada na tabela 'posts'"`, mas o mock rejeita com código `42703` **sem especificar a tabela** — o teste pode passar por sorte se a primeira iteração do loop for a tabela `posts`. 5. **Ramos sem cobertura** (06/10/2026): `fs.renameSync` falhando e o wrapper do CLI — cobertura de linhas subiu de 60% para 88.93%. |
+| **Melhorias** | 1. ~~Criar `__mocks__/pg.js` com `mockQuery` exportado~~ — **obsoleto em 06/10/2026**: o arquivo já existe. 2. Testar `fs.renameSync` rejeitando (permissão / `EXDEV`). 3. Exercitar o CLI com `process.argv` contendo `--delete`. 4. Verificar a mensagem exata de `console.error` e `console.warn`. |
+| **Código morto** | Removido em 06/10/2026: o script não usa mais `fs.unlinkSync` (deleção definitiva) — órfãos são movidos para `data/uploads-trash/` via `fs.renameSync`. O mock de `fs` agora precisa cobrir `statSync`, `mkdirSync` e `renameSync`, todos automáticos por `jest.mock('fs')`. |
 | **Duplicação** | Padrão de `jest.mock('fs')` + `jest.mock('pg')` + `jest.mock('dotenv')` repetido em vários arquivos; o `cleanup.test.js` replica o mesmo arranjo. |
 
 ---
@@ -15870,7 +15877,7 @@ A maioria dos testes é superficial: verifica **exports** e chamadas de mock, se
 
 3. **Mock manual de `pg` repetido**: `connection.test.js`, `migrate.test.js`, `validate-schema.test.js` reconstroem o mock de `pg` com estrutura idêntica — candidato a fixture compartilhada.
 
-4. **Dependência de `__mocks__/pg.js`**: `clean-orphaned-images.test.js` importa `{ mockQuery }` de `pg`, mas o arquivo `__mocks__/pg.js` não existe na árvore de testes — a suíte falha silenciosamente se o mock automático do Jest não exportar `mockQuery`.
+4. **Dependência de `__mocks__/pg.js` (CORRIGIDO em 06/10/2026)**: a afirmação anterior de que o arquivo "não existe na árvore de testes" era falsa. Ele existe (3868 bytes) e exporta `mockQuery` na linha 26 — a suíte de `clean-orphaned-images.test.js` resolve o mock corretamente.
 
 #### Problemas de cobertura
 

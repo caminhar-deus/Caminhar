@@ -476,7 +476,7 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | Arquivo | Propósito |
 |---------|-----------|
 | `backup.test.js` | Script de backup |
-| `clean-orphaned-images.test.js` | Limpeza de imagens órfãs |
+| `clean-orphaned-images.test.js` | Varredura de imagens órfãs — cobre as 4 salvaguardas do script (fail-closed, modo relatório, idade mínima, lixeira) |
 | `clear-db.test.js` | Limpeza de banco |
 | `clear-musicas.test.js` | Limpeza de músicas |
 | `init-table.test.js` | Utilitários de schema de tabelas |

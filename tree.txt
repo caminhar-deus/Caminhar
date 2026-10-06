@@ -796,14 +796,6 @@
 │   ├── sitemap-0.xml
 │   ├── sitemap.xml
 │   └── uploads
-│       ├── hero-image-1772141705599.webp
-│       ├── post-image-1772105143883.png
-│       ├── post-image-1774660295704.png
-│       ├── post-image-1774660757289.png
-│       ├── post-image-1774752555186.png
-│       ├── post-image-1774752839426.png
-│       ├── post-image-1774752904235.webp
-│       └── post-image-6010b274-c22f-486a-80a9-dbf9c70d4535.png
 ├── reports
 │   ├── k6-summaries
 │   │   ├── CRUD_de_Músicas.html
@@ -1237,4 +1229,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-195 directories, 1043 files
+195 directories, 1035 files

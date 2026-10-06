@@ -455,6 +455,8 @@ scripts/clean-k6-reports.js → scripts/utils/constants.js
 scripts/clean-load-test-posts.js → scripts/utils/cleanup.js
 scripts/utils/cleanup.js → scripts/db/connection.js
 scripts/utils/cleanup.js → scripts/utils/load-env.js
+scripts/db/connection.js → lib/infra/db.js
+scripts/clean-orphaned-images.js → lib/infra/db.js
 scripts/clear-db.js → scripts/db/connection.js
 scripts/clear-db.js → scripts/utils/load-env.js
 scripts/clear-musicas.js → scripts/db/connection.js
@@ -465,7 +467,12 @@ scripts/validate-schema.js → scripts/db/connection.js
 scripts/validate-schema.js → scripts/utils/load-env.js
 scripts/create-backup.js → scripts/backup.js
 scripts/create-backup.js → scripts/utils/load-env.js
+scripts/diagnostics/check-musicas-schema.js → lib/infra/db.js
+scripts/diagnostics/check-videos-schema.js → lib/infra/db.js
+scripts/diagnostics/count-posts.js → lib/infra/db.js
 scripts/diagnostics/count-posts.js → scripts/utils/constants.js
+scripts/diagnostics/diagnose-hero.js → lib/infra/db.js
+scripts/diagnostics/list-last-posts.js → lib/infra/db.js
 scripts/generate-load-report.js → scripts/utils/constants.js
 scripts/init-backup.js → scripts/backup.js
 scripts/init-server.js → lib/auth/auth.js
@@ -473,7 +480,11 @@ scripts/init-server.js → lib/infra/db.js
 scripts/init-table.js → scripts/db/connection.js
 scripts/init-table.js → scripts/utils/init-table-utils.js
 scripts/init-table.js → scripts/utils/load-env.js
+scripts/maintenance/backup-posts.js → lib/infra/db.js
 scripts/maintenance/clean-k6-videos.js → scripts/utils/cleanup.js
+scripts/maintenance/fix-hero-key.js → lib/infra/db.js
+scripts/maintenance/restore-posts.js → lib/infra/db.js
+scripts/maintenance/video-thumbnails.js → lib/infra/db.js
 scripts/migrate.js → scripts/db/connection.js
 scripts/migrate.js → scripts/utils/load-env.js
 scripts/migrations/000-create-base-schema.js → scripts/utils/init-table-utils.js
@@ -526,6 +537,9 @@ scripts/setup-test-db.js → scripts/db/connection.js
 scripts/setup-test-db.js → scripts/utils/init-table-utils.js
 scripts/setup-test-db.js → scripts/utils/load-env.js
 scripts/utils/cleanup-test-data.js → scripts/utils/cleanup.js
+scripts/utils/list-settings.js → lib/infra/db.js
+scripts/utils/list-table-columns.js → lib/infra/db.js
+scripts/utils/update-setting.js → lib/infra/db.js
 scripts/view-backup-logs.js → scripts/backup.js
 scripts/view-backup-logs.js → scripts/utils/load-env.js
 tests/examples/component-example.test.js → tests/factories/post.js
