@@ -187,7 +187,7 @@ jobs:
 
       # O relatório HTML (coverage/) é gerado neste runner e está no .gitignore:
       # publicá-lo aqui é o que permite ao job `coverage-report` de
-      # pr-coverage.yml reenviá-lo como `jest-coverage-report`.
+      # test-coverage.yml reenviá-lo como `jest-coverage-report`.
       - name: Upload Coverage HTML
         if: ${{ always() && inputs.test-type == 'coverage' }}
         uses: actions/upload-artifact@v4

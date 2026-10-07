@@ -200,7 +200,7 @@ Subpastas existentes na raiz (fora do escopo, citadas como contexto ao longo do 
 
 **Caminho:** `/home/gus/Projetos/Caminhar/jest.config.js`
 
-**Arquivos acionados/relacionados:** importa `jest.config.base.js`; `babel.jest.config.js` (via base); `tests/setup.js` (`setupFilesAfterEnv`); `jest.teardown.js` (`globalTeardown`); `__mocks__/styleMock.js` (mapper de CSS); `package.json` (scripts `test`, `test:log`, `test:coverage`, `test:ci`, `test:watch`, `test:db:unit`); `.github/workflows/pr-coverage.yml` (executa o jest com cobertura); `knip.json` (ignora este arquivo da análise de órfãos).
+**Arquivos acionados/relacionados:** importa `jest.config.base.js`; `babel.jest.config.js` (via base); `tests/setup.js` (`setupFilesAfterEnv`); `jest.teardown.js` (`globalTeardown`); `__mocks__/styleMock.js` (mapper de CSS); `package.json` (scripts `test`, `test:log`, `test:coverage`, `test:ci`, `test:watch`, `test:db:unit`); `.github/workflows/test-coverage.yml` (executa o jest com cobertura); `knip.json` (ignora este arquivo da análise de órfãos).
 
 **Resumo:** Configuração principal do Jest (88 linhas) para testes unitários e de integração em ambiente `jsdom`. Estende a base e define: `testMatch: **/*.test.js`, `coverageProvider: 'v8'` (evita conflito com o plugin Istanbul do Babel), cobertura desativada por padrão (`collectCoverage: false` — ativada via CLI `--coverage` nos scripts `test:coverage`/`test:ci`), `collectCoverageFrom` restrito a `lib/`, `pages/api/` e `components/` (excluindo tests/coverage), `coverageReporters` text/lcov/html e **thresholds**: global branches 80/functions 85/lines 90/statements 90, mais grupos por diretório — `lib/domain/` (78/95/95/95), `pages/api/admin/` (80/95/90/90) e `components/Admin/fields/` (88/95/95/95). `transformIgnorePatterns` com exceções ESM para `node-mocks-http`, `@faker-js`, `url`, `pg`, `@upstash/redis`, `uncrypto`; `moduleNameMapper` estendido com `\.css$` → `__mocks__/styleMock.js`; timeout de 10s.
 
@@ -374,11 +374,11 @@ A raiz **não contém nenhum arquivo de workflow**: o GitHub Actions só lê wor
 
 Os workflows vigentes do repositório estão em `.github/workflows/` (subpasta, fora do escopo desta análise):
 
-- `pr-coverage.yml` — lint, cobertura Jest (`npx jest --ci --coverage`), actionlint e knip, em `pull_request: [main]`, `push: [main]` e `workflow_dispatch`;
+- `test-coverage.yml` — lint, cobertura Jest (`npx jest --ci --coverage`), actionlint e knip, em `pull_request: [main]`, `push: [main]` e `workflow_dispatch`;
 - `test-base.yml` — workflow reutilizável (`on: workflow_call`), com serviços PostgreSQL/Redis, build e k6;
 - `load-tests.yml` — testes de carga diários (`schedule: '17 4 * * *'` = 04:17 UTC) e sob demanda (`workflow_dispatch`), chamando `test-base.yml`.
 
-`pr-coverage.yml` também roda no push para `main` (ver item R de `docs/PENDENCIAS_scripts_testes.md`); `test-base.yml` e `load-tests.yml` não — o primeiro só é chamado, o segundo roda por `schedule`/`workflow_dispatch`.
+`test-coverage.yml` também roda no push para `main` (ver item R de `docs/PENDENCIAS_scripts_testes.md`); `test-base.yml` e `load-tests.yml` não — o primeiro só é chamado, o segundo roda por `schedule`/`workflow_dispatch`.
 
 ---
 
@@ -572,4 +572,4 @@ Os workflows vigentes do repositório estão em `.github/workflows/` (subpasta, 
 | 34 | `skills-lock.json` | Lockfile | 9.2 | ⚪ Acessório |
 | 35 | `tree.txt` | Documentação | 7.3 | ⚪ Acessório |
 
-> **Nota:** a raiz **não tem mais nenhum workflow** — os três arquivos `.yml` de CI/CD que existiam aqui (`ci`, `load-tests` e `security-tests`) foram removidos, por serem rascunhos que nunca chegaram a ser registrados no GitHub (a API de workflows devolve `total_count: 3`, todos em `.github/workflows/`) e portanto nunca tinham executado. Os três workflows vigentes do repositório são `pr-coverage.yml`, `test-base.yml` e `load-tests.yml`, todos em `.github/workflows/` (subpasta, fora do escopo deste documento) — ver seção 6.
+> **Nota:** a raiz **não tem mais nenhum workflow** — os três arquivos `.yml` de CI/CD que existiam aqui (`ci`, `load-tests` e `security-tests`) foram removidos, por serem rascunhos que nunca chegaram a ser registrados no GitHub (a API de workflows devolve `total_count: 3`, todos em `.github/workflows/`) e portanto nunca tinham executado. Os três workflows vigentes do repositório são `test-coverage.yml`, `test-base.yml` e `load-tests.yml`, todos em `.github/workflows/` (subpasta, fora do escopo deste documento) — ver seção 6.

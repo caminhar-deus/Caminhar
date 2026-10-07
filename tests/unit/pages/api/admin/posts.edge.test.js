@@ -2,7 +2,7 @@ import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals
 import { createMocks } from 'node-mocks-http';
 import handler from '../../../../../pages/api/admin/posts.js';
 import * as db from '../../../../../lib/infra/db.js';
-import * as cache from '../../../../../lib/cache/cache.js';
+import * as cacheModule from '../../../../../lib/cache/cache.js';
 import * as posts from '../../../../../lib/domain/posts.js';
 
 jest.mock('../../../../../lib/auth/auth.js', () => ({
@@ -49,7 +49,7 @@ describe('API - Admin - Posts (Edge Cases)', () => {
     });
     req = mocks.req;
     res = mocks.res;
-    cache.checkRateLimit.mockResolvedValue(false);
+    cacheModule.checkRateLimit.mockResolvedValue(false);
   });
 
   afterEach(() => {

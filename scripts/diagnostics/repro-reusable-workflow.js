@@ -21,7 +21,7 @@
  * e D são informativos (documentam o mecanismo do falso positivo).
  *
  * Uso:
- *   npm run diag:reusable-workflow                    # usa pr-coverage.yml
+ *   npm run diag:reusable-workflow                    # usa test-coverage.yml
  *   npm run diag:reusable-workflow -- load-tests.yml
  *   npm run diag:reusable-workflow -- --workspace <dir> <arquivo.yml>
  *
@@ -43,7 +43,7 @@ const MENSAGEM_FALSO_POSITIVO = 'Unable to find reusable workflow';
 
 function lerArgumentos(argv) {
   const opcoes = {
-    alvo: '.github/workflows/pr-coverage.yml',
+    alvo: '.github/workflows/test-coverage.yml',
     workspace: process.cwd(),
     ajuda: false
   };

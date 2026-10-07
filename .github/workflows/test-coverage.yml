@@ -19,8 +19,8 @@ on:
   workflow_dispatch:
 
 # O grupo é derivado do evento porque `github.event.pull_request` não existe em
-# `push`: com um grupo fixo, `pr-coverage-${{ github.event.pull_request.number }}`
-# viraria a string literal `pr-coverage-` e TODAS as execuções na `main`
+# `push`: com um grupo fixo, `test-coverage-${{ github.event.pull_request.number }}`
+# viraria a string literal `test-coverage-` e TODAS as execuções na `main`
 # colidiriam num único grupo, se cancelando entre si.
 #
 # - `pull_request`: grupo por número de PR e `cancel-in-progress: true` — dois
@@ -39,7 +39,7 @@ on:
 #
 # `format()` porque o `+` não concatena strings nas expressões do GitHub.
 concurrency:
-  group: ${{ github.event_name == 'pull_request' && format('pr-coverage-pr-{0}', github.event.pull_request.number) || format('pr-coverage-ref-{0}', github.ref) }}
+  group: ${{ github.event_name == 'pull_request' && format('test-coverage-pr-{0}', github.event.pull_request.number) || format('test-coverage-ref-{0}', github.ref) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # Menor privilégio no nível do workflow: `lint` e `coverage` só fazem checkout

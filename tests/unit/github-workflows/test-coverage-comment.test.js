@@ -1,5 +1,5 @@
 /**
- * Testes do step "Post PR Comment on Failure" de `.github/workflows/pr-coverage.yml`.
+ * Testes do step "Post PR Comment on Failure" de `.github/workflows/test-coverage.yml`.
  *
  * O corpo do comentário é montado por um script embutido no YAML, que trunca
  * uma saída de `jest --coverage` com mais de 170 KB dentro do limite de 65536
@@ -22,7 +22,7 @@ import path from 'path';
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import YAML from 'yaml';
 
-const CAMINHO_WORKFLOW = path.resolve(process.cwd(), '.github/workflows/pr-coverage.yml');
+const CAMINHO_WORKFLOW = path.resolve(process.cwd(), '.github/workflows/test-coverage.yml');
 const JOB = 'coverage-report';
 const NOME_STEP = 'Post PR Comment on Failure';
 const ARQUIVO_AMOSTRA = 'coverage-output.txt';
@@ -162,7 +162,7 @@ function preparoLegado(saida) {
   return truncada.replace(/`/g, '\\`').replace(/\$\{/g, '\\${');
 }
 
-describe('pr-coverage.yml — comentário de cobertura', () => {
+describe('test-coverage.yml — comentário de cobertura', () => {
   it('lê o script do step direto do workflow', () => {
     const script = scriptDoStep();
 
@@ -257,7 +257,7 @@ describe('pr-coverage.yml — comentário de cobertura', () => {
 });
 
 /**
- * Estas asserções cobrem o resto do `pr-coverage.yml` — gatilhos, guards de
+ * Estas asserções cobrem o resto do `test-coverage.yml` — gatilhos, guards de
  * evento, `concurrency`, permissões e timeouts — que nenhum teste de execução
  * alcança. O motivo é o modo de falha caro: apagar um guard mantém a suíte
  * verde enquanto o run de `push` quebra em `context.issue.number` e o
@@ -267,7 +267,7 @@ describe('pr-coverage.yml — comentário de cobertura', () => {
  * deixou a `main` sem gate nenhum. Nada disso aparece numa reprovação de
  * cobertura — por isso o YAML é lido do disco a cada execução, não de fixture.
  */
-describe('pr-coverage.yml — gatilhos, guards e configuração do gate', () => {
+describe('test-coverage.yml — gatilhos, guards e configuração do gate', () => {
   const wf = carregarWorkflow();
 
   /** Localiza um step pelo nome, com mensagem útil se ele sumir do YAML. */
@@ -328,9 +328,9 @@ describe('pr-coverage.yml — gatilhos, guards e configuração do gate', () => 
       // Duas substrutas, não a string inteira: o prefixo do grupo é cosmético
       // e renomeá-lo não deve reprovar o teste.
       expect(wf.concurrency.group).toContain(
-        "format('pr-coverage-pr-{0}', github.event.pull_request.number)"
+        "format('test-coverage-pr-{0}', github.event.pull_request.number)"
       );
-      expect(wf.concurrency.group).toContain("format('pr-coverage-ref-{0}', github.ref)");
+      expect(wf.concurrency.group).toContain("format('test-coverage-ref-{0}', github.ref)");
       expect(wf.concurrency['cancel-in-progress']).toBe(
         "${{ github.event_name == 'pull_request' }}"
       );

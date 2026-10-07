@@ -136,6 +136,7 @@
 ├── coverage
 │   ├── base.css
 │   ├── block-navigation.js
+│   ├── clean-orphaned-images.js.html
 │   ├── components
 │   │   ├── Admin
 │   │   │   ├── AdminAudit.js.html
@@ -245,6 +246,7 @@
 │   ├── lcov-report
 │   │   ├── base.css
 │   │   ├── block-navigation.js
+│   │   ├── clean-orphaned-images.js.html
 │   │   ├── components
 │   │   │   ├── Admin
 │   │   │   │   ├── AdminAudit.js.html
@@ -1145,7 +1147,7 @@
 │       │   ├── settings.test.js
 │       │   └── videos.test.js
 │       ├── github-workflows
-│       │   └── pr-coverage-comment.test.js
+│       │   └── test-coverage-comment.test.js
 │       ├── hooks
 │       │   └── useAdminCrud.test.js
 │       ├── index.test.js
@@ -1226,4 +1228,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-195 directories, 1032 files
+195 directories, 1034 files

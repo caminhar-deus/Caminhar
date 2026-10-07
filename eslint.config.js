@@ -14,6 +14,29 @@ export default defineConfig([
   // JavaScript padrão (browser + node) - parser padrão
   { files: ["**/*.{js,mjs,cjs}"], plugins: { js }, extends: ["js/recommended"], languageOptions: { globals: {...globals.browser, ...globals.node} }, rules: { "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }] } },
 
+  // `cache` é o nome de uma variável de escopo do programa emitida pelo helper
+  // `_interopRequireWildcard` do Babel 8 (o memo WeakMap de interop). Um
+  // `import * as cache` compila para `var cache = _interopRequireWildcard(...)` e
+  // sobrescreve essa variável pelo objeto namespace; a SEGUNDA importação namespace
+  // do mesmo arquivo então executa `cache.has(...)` sobre um objeto comum e falha
+  // com `TypeError: cache.has is not a function` — mensagem que aponta o helper
+  // Babel como culpado e joga o stack na linha errada. Vale para todo o JS do
+  // projeto porque o babel-jest também transforma `lib/` e `pages/` carregados
+  // pelos testes, não só os arquivos de teste. Prefira `import * as cacheModule`
+  // ou named import (`import { checkRateLimit }`), que não geram namespace.
+  {
+    files: ["**/*.{js,mjs,cjs}"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "ImportNamespaceSpecifier > Identifier[name='cache']",
+          message: "Não use `import * as cache`: `cache` colide com a variável de escopo do programa do helper _interopRequireWildcard (Babel 8) e faz a segunda importação namespace do arquivo falhar com `cache.has is not a function`. Use `import * as cacheModule` ou named import.",
+        },
+      ],
+    },
+  },
+
   // Cypress (arquivos de teste E2E e suporte)
   {
     files: ["cypress/**/*.js"],

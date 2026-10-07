@@ -3,7 +3,7 @@
 > **Data da análise:** 24/09/2026
 > **Objetivo:** Levantamento analítico de possíveis melhorias identificadas nos **35 arquivos** atuais da raiz do projeto (os três workflows `.yml` que existiam aqui foram removidos depois da análise). **Nenhuma correção deve ser aplicada** — apenas documentar.
 > **Baseado em:** Análise profunda dos arquivos atuais da raiz (24/09/2026), com apoio dos documentos anteriores em `/docs/` e conhecimento do projeto como um todo. Em caso de divergência, prevalece a análise atual.
-> **Atualização (07/10/2026):** os três arquivos `.yml` de workflow que existiam na raiz (`ci`, `load-tests` e `security-tests`) foram **removidos** — eram rascunhos que nunca chegaram a ser registrados como workflow no GitHub. As seções que os tratavam (5.3, 8.4, 8.5, 9.13, 9.29, 9.36 e 13.2) saíram deste documento, por isso a numeração das subseções tem lacunas. Os workflows vigentes do repositório estão em `.github/workflows/` (`pr-coverage.yml`, `test-base.yml` e `load-tests.yml`).
+> **Atualização (07/10/2026):** os três arquivos `.yml` de workflow que existiam na raiz (`ci`, `load-tests` e `security-tests`) foram **removidos** — eram rascunhos que nunca chegaram a ser registrados como workflow no GitHub. As seções que os tratavam (5.3, 8.4, 8.5, 9.13, 9.29, 9.36 e 13.2) saíram deste documento, por isso a numeração das subseções tem lacunas. Os workflows vigentes do repositório estão em `.github/workflows/` (`test-coverage.yml`, `test-base.yml` e `load-tests.yml`).
 
 
 ## Índice
@@ -304,7 +304,7 @@
 
 **Arquivo:** `/home/qa/Projeto/Caminhar/.github/workflows/test-base.yml` (subpasta)
 
-**Problema:** O `test-base.yml` está em `.github/workflows/` (subpasta), fora do escopo desta análise de raiz. Hoje ele é chamado apenas por `load-tests.yml` (também em `.github/workflows/`); o `pr-coverage.yml` executa a suíte de cobertura em job próprio, sem chamada reutilizável.
+**Problema:** O `test-base.yml` está em `.github/workflows/` (subpasta), fora do escopo desta análise de raiz. Hoje ele é chamado apenas por `load-tests.yml` (também em `.github/workflows/`); o `test-coverage.yml` executa a suíte de cobertura em job próprio, sem chamada reutilizável.
 
 **Impacto:** Nenhum — apenas nota de escopo. Os workflows do repositório dependem dele, mas ele não é um arquivo da raiz.
 

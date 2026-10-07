@@ -56,7 +56,7 @@ Sai com código 1 quando o documento recebe algum diagnóstico de erro.`;
 
 function lerArgumentos(argv) {
   const opcoes = {
-    alvo: '.github/workflows/pr-coverage.yml',
+    alvo: '.github/workflows/test-coverage.yml',
     workspace: process.cwd(),
     repos: true,
     extensao: undefined,

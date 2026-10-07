@@ -504,7 +504,7 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 
 | Arquivo | Propósito |
 |---------|-----------|
-| `pr-coverage-comment.test.js` | Executa o script embutido no step `Post PR Comment on Failure` de `.github/workflows/pr-coverage.yml` — o mesmo texto que o `actions/github-script` executa — com `github` e `context` simulados, e verifica o comentário publicado: limite de 65536 caracteres da API, tabela de cobertura e motivo do threshold preservados, ruído do começo descartado, fim da saída mantido quando a suíte quebra antes da cobertura, crases/`${`/barras invertidas não corrompidos e o marcador pesquisado pelo step de limpeza presente. O arquivo amostra é virtual (shim de `require('fs')`), então o teste não escreve em disco. Inclui controle negativo do preparo anterior (corte pelo começo + escape do texto). |
+| `test-coverage-comment.test.js` | Executa o script embutido no step `Post PR Comment on Failure` de `.github/workflows/test-coverage.yml` — o mesmo texto que o `actions/github-script` executa — com `github` e `context` simulados, e verifica o comentário publicado: limite de 65536 caracteres da API, tabela de cobertura e motivo do threshold preservados, ruído do começo descartado, fim da saída mantido quando a suíte quebra antes da cobertura, crases/`${`/barras invertidas não corrompidos e o marcador pesquisado pelo step de limpeza presente. O arquivo amostra é virtual (shim de `require('fs')`), então o teste não escreve em disco. Inclui controle negativo do preparo anterior (corte pelo começo + escape do texto). |
 
 ---
 

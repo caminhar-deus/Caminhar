@@ -13459,7 +13459,7 @@ beforeAll(() => {
 
 | # | Arquivo | Tipo | Linhas | Finalidade |
 |---|---------|------|--------|------------|
-| 1 | `tests/unit/github-workflows/pr-coverage-comment.test.js` | Teste lógico | 252 | Valida o script embutido no workflow `pr-coverage.yml` |
+| 1 | `tests/unit/github-workflows/test-coverage-comment.test.js` | Teste lógico | 252 | Valida o script embutido no workflow `test-coverage.yml` |
 | 2 | `tests/unit/components/Admin/__snapshots__/index.test.js.snap` | Snapshot | 16 | Lista exports do barrel Admin |
 | 3 | `tests/unit/components/Features/ContentTabs/__snapshots__/index.test.js.snap` | Snapshot | 7 | Lista exports do barrel ContentTabs |
 | 4 | `tests/unit/components/Layout/__snapshots__/index.test.js.snap` | Snapshot | 14 | Lista exports do barrel Layout |
@@ -13474,7 +13474,7 @@ beforeAll(() => {
 
 #### 1.1 Finalidade
 
-Testa a lógica do step **"Post PR Comment on Failure"** do workflow `.github/workflows/pr-coverage.yml`. O step é escrito em JavaScript inline dentro do YAML e é executado pelo `actions/github-script`. Este teste replica o comportamento desse script sem depender de:
+Testa a lógica do step **"Post PR Comment on Failure"** do workflow `.github/workflows/test-coverage.yml`. O step é escrito em JavaScript inline dentro do YAML e é executado pelo `actions/github-script`. Este teste replica o comportamento desse script sem depender de:
 
 - Disco (usa `require('fs')` shimado com amostra em memória)
 - GitHub API real (mock de `github.rest.issues.createContext`)
@@ -13486,7 +13486,7 @@ O teste implementa **três cenários** principais:
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│ pr-coverage-comment.test.js                                     │
+│ test-coverage-comment.test.js                                     │
 │                                                                  │
 │  Cenário A — cobertura abaixo do mínimo                         │
 │  ├── amostraComTabela(): gera 170 KB+ de saída                  │
@@ -13561,8 +13561,8 @@ Gera 900 iterações de `console.error` + `act(...)` para simular ~60 KB de ruí
 #### 1.5 Relações com Outros Arquivos
 
 ```
-pr-coverage-comment.test.js
-  ├── LÊ: .github/workflows/pr-coverage.yml (script do step)
+test-coverage-comment.test.js
+  ├── LÊ: .github/workflows/test-coverage.yml (script do step)
   ├── USA: yaml (parser), fs (readFileSync), @jest/globals
   └── VERIFICA:
       ├── Comentário cabe em 65536 chars
@@ -13570,7 +13570,7 @@ pr-coverage-comment.test.js
       ├── Tabela de cobertura no fim sobrevive ao truncamento
       └── Ruído do começo é descartado
 
-Workflow pr-coverage.yml
+Workflow test-coverage.yml
   ├── Job "coverage" → gera coverage-output.txt
   └── Job "coverage-report"
       ├── Step "Remove Old Coverage Comments" → busca pelo mesmo marcador
@@ -13914,12 +13914,12 @@ components/UI/index.js ─────────────► tests/unit/com
                                          └─► __snapshots__/index.test.js.snap
 ```
 
-#### 4.2 Dependências do Teste pr-coverage-comment
+#### 4.2 Dependências do Teste test-coverage-comment
 
 ```
-pr-coverage-comment.test.js
+test-coverage-comment.test.js
   ├── Depende DE:
-  │   ├── .github/workflows/pr-coverage.yml (lê o YAML)
+  │   ├── .github/workflows/test-coverage.yml (lê o YAML)
   │   ├── yaml package (parser)
   │   └── @jest/globals (describe/it/expect/beforeEach)
   │
@@ -13972,9 +13972,9 @@ Os testes atuais só verificam **existência** (shape). NÃO verificam:
 expect(typeof UIComponents.Button).toBe('function');
 ```
 
-#### 5.4 `pr-coverage-comment.test.js` — Dependência Implícita de Disco
+#### 5.4 `test-coverage-comment.test.js` — Dependência Implícita de Disco
 
-O teste lê `.github/workflows/pr-coverage.yml` do disco. Se o workflow for movido/renomeado, o teste quebra sem aviso claro (apenas `throw new Error`).
+O teste lê `.github/workflows/test-coverage.yml` do disco. Se o workflow for movido/renomeado, o teste quebra sem aviso claro (apenas `throw new Error`).
 
 **Recomendação:** Adicionar um comentário no workflow YAML informando que ele é testado por este arquivo, e vice-versa.
 
@@ -14307,9 +14307,9 @@ O teste lê `.github/workflows/pr-coverage.yml` do disco. Se o workflow for movi
 ---
 
 
-#### 3.1 `tests/unit/github-workflows/pr-coverage-comment.test.js`
+#### 3.1 `tests/unit/github-workflows/test-coverage-comment.test.js`
 
-**Finalidade**: Testa o script inline do step "Post PR Comment on Failure" do workflow `pr-coverage.yml`.
+**Finalidade**: Testa o script inline do step "Post PR Comment on Failure" do workflow `test-coverage.yml`.
 
 **Análise**:
 - **Forte**: 
@@ -14318,7 +14318,7 @@ O teste lê `.github/workflows/pr-coverage.yml` do disco. Se o workflow for movi
   - 12 testes em 4 describes cobrindo: cenário de cobertura abaixo do mínimo, suíte quebrada antes da cobertura, caracteres sensíveis (crases, `${`, backslashes), e controle negativo (prova que o preparo antigo era falho).
   - Limite de 65536 caracteres respeitado.
 - **Problema**: 
-  - Depende do arquivo `.github/workflows/pr-coverage.yml` existir e ter a estrutura exata.
+  - Depende do arquivo `.github/workflows/test-coverage.yml` existir e ter a estrutura exata.
   - Se o workflow mudar, o teste quebra — isso é desejável mas pode ser frágil.
 - **Melhoria**: Snapshot do script para detectar mudanças inesperadas no workflow.
 
@@ -14396,7 +14396,7 @@ Vários testes criam spies (`jest.spyOn(console, ...)`) sem restaurar em `afterE
 
 #### 5.5 Hardcoded paths vs `process.cwd()`
 
-Os paths relativos (`../../../../../pages/...`) são frágeis — se o arquivo se move, quebra. `pr-coverage-comment.test.js` usa `path.resolve(process.cwd(), ...)` — abordagem mais robusta.
+Os paths relativos (`../../../../../pages/...`) são frágeis — se o arquivo se move, quebra. `test-coverage-comment.test.js` usa `path.resolve(process.cwd(), ...)` — abordagem mais robusta.
 
 ---
 
@@ -14426,7 +14426,7 @@ Os paths relativos (`../../../../../pages/...`) são frágeis — se o arquivo s
 | `load-env.test.js` | 5 | ★★★☆☆ | Médio | ESM/CJS misturados |
 | `validate-schema.test.js` | 3 | ★★★★☆ | Médio | Schema hardcoded |
 | `connection.test.js` | 6 | ★★★★☆ | Alto | Mock compartilhado |
-| `pr-coverage-comment.test.js` | 12 | ★★★★★ | Alto | Depende YAML real |
+| `test-coverage-comment.test.js` | 12 | ★★★★★ | Alto | Depende YAML real |
 | Snapshots (6) | 6 | ★★★★☆ | Alto | Falta teste fonte |
 
 ---

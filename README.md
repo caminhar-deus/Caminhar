@@ -60,7 +60,7 @@ Documentação dos **29 arquivos** na raiz do projeto, agrupados por contexto:
 - **Configuração Principal:** `package.json` (66 scripts, ES Modules), `next.config.js` (headers de segurança e CORS), `next-sitemap.config.js` (sitemap XML + rotas dinâmicas do banco), `proxy.js` (Rate limiting e proteção DDoS com Redis)
 - **Testes:** `jest.config.js` (thresholds globais: branches 80%, functions 85%, lines/statements 90%, além de limites por diretório), `jest.config.db.js` (testes com PostgreSQL via Testcontainers), `jest.setup.js`, `jest.teardown.js`, `babel.jest.config.js`, `cypress.config.js`
 - **Qualidade:** `eslint.config.js` (Flat Config), `jsconfig.json` (aliases de importação), `knip.json` (análise de código morto)
-- **CI/CD:** nenhum arquivo de workflow na raiz — os três workflows (`pr-coverage.yml`, `load-tests.yml` e o reutilizável `test-base.yml`) ficam em `.github/workflows/`, único diretório lido pelo GitHub Actions
+- **CI/CD:** nenhum arquivo de workflow na raiz — os três workflows (`test-coverage.yml`, `load-tests.yml` e o reutilizável `test-base.yml`) ficam em `.github/workflows/`, único diretório lido pelo GitHub Actions
 
 ---
 

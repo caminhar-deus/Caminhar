@@ -346,7 +346,7 @@
 
 ### `scripts/diagnostics/lint-workflows.sh` — lint dos workflows do GitHub Actions
 
-**Descrição:** Novo script que executa o actionlint (versão fixada em 1.7.12) sobre `.github/workflows/` e `.github/actions/**/action.y{a,}ml`, resolvendo o binário por `ACTIONLINT_BIN`, PATH ou cache em `node_modules/.cache/actionlint` — com download da release oficial e SHA-256 conferido (linux/darwin, amd64/arm64) quando ausente no cache. Sem argumentos, o actionlint faz a descoberta padrão; o script não passa caminho nenhum por conta própria (termina em `exec "$bin" "$@"`), de modo que arquivos fora desses diretórios só são lintados se forem informados como argumento da chamada. Exposto como `npm run lint:workflows` e executado no job `coverage-report` de `pr-coverage.yml`.
+**Descrição:** Novo script que executa o actionlint (versão fixada em 1.7.12) sobre `.github/workflows/` e `.github/actions/**/action.y{a,}ml`, resolvendo o binário por `ACTIONLINT_BIN`, PATH ou cache em `node_modules/.cache/actionlint` — com download da release oficial e SHA-256 conferido (linux/darwin, amd64/arm64) quando ausente no cache. Sem argumentos, o actionlint faz a descoberta padrão; o script não passa caminho nenhum por conta própria (termina em `exec "$bin" "$@"`), de modo que arquivos fora desses diretórios só são lintados se forem informados como argumento da chamada. Exposto como `npm run lint:workflows` e executado no job `coverage-report` de `test-coverage.yml`.
 
 ---
 

@@ -2,7 +2,7 @@ import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../../../../../pages/api/auth/login.js';
 import * as auth from '../../../../../lib/auth/auth.js';
-import * as cache from '../../../../../lib/cache/cache.js';
+import * as cacheModule from '../../../../../lib/cache/cache.js';
 import * as loggerModule from '../../../../../lib/infra/logger.js';
 
 jest.mock('../../../../../lib/auth/auth.js', () => ({
@@ -33,7 +33,7 @@ jest.mock('../../../../../lib/infra/logger.js', () => {
 describe('API - Auth - Login (Edge Cases)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    cache.checkRateLimit.mockResolvedValue(false);
+    cacheModule.checkRateLimit.mockResolvedValue(false);
   });
 
   it('deve retornar 500 se ocorrer um erro interno durante a autenticação', async () => {
