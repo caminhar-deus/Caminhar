@@ -86,6 +86,39 @@ describe('API Admin - Integridade (/api/admin/integrity)', () => {
     expect(res._getStatusCode()).toBe(401);
   });
 
+  it('deve retornar 403 se o usuário não for admin e não tiver permissão', async () => {
+    // O catch do adminCrudHandler também devolve 403 quando a query de roles
+    // FALHA (fail-closed) — por isso este teste vem em par com o "allow"
+    // logo abaixo: só o par prova que a negação aqui é por FALTA DE PERMISSÃO
+    // e não por mock de banco no caminho errado.
+    verifyToken.mockReturnValue({ userId: 2, username: 'editor', role: 'comum' });
+    query.mockResolvedValueOnce({ rows: [{ permissions: ['Dashboard'] }] });
+
+    const { req, res } = createMocks({ method: 'GET' });
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(403);
+    const body = JSON.parse(res._getData());
+    expect(body.error).toContain('Acesso negado');
+    expect(body.message).toContain('Requer permissão');
+  });
+
+  it('não deve retornar 403 se o usuário não-admin tiver a permissão exigida', async () => {
+    // Companheiro do teste acima: mesmo cargo 'comum', mas COM 'Segurança'.
+    // Se o mock do banco estiver errado (query falhando/undefined), o fail-closed
+    // devolveria 403 aqui e o teste quebraria — é isso que o par garante.
+    verifyToken.mockReturnValue({ userId: 2, username: 'editor', role: 'comum' });
+    query.mockResolvedValueOnce({ rows: [{ permissions: ['Segurança'] }] });
+
+    const { req, res } = createMocks({ method: 'GET' });
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(200);
+    const body = JSON.parse(res._getData());
+    expect(body.checks.database.status).toBe('ok');
+    expect(body.checks.storage.status).toBe('ok');
+  });
+
   it('deve retornar 200 com diagnóstico completo (banco ok, storage ok, backup ok, cache warning)', async () => {
     const { req, res } = createMocks({ method: 'GET' });
     await handler(req, res);

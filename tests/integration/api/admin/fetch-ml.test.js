@@ -22,7 +22,11 @@ jest.mock('../../../../lib/auth/auth.js', () => {
   };
 });
 
+// Mock do DB para controlar a query de roles do RBAC (createAdminHandler)
+jest.mock('../../../../lib/infra/db.js', () => require('../../../mocks/db-module').mockDb());
+
 import handler from '../../../../pages/api/admin/fetch-ml.js';
+import { query } from '../../../../lib/infra/db.js';
 import { getAuthToken, verifyToken } from '../../../../lib/auth/auth.js';
 import { mockGlobalFetch } from '../../../helpers/index.js';
 
@@ -33,12 +37,69 @@ describe('API Admin - Fetch Mercado Livre (/api/admin/fetch-ml)', () => {
     jest.clearAllMocks();
     getAuthToken.mockReturnValue('fake-token');
     verifyToken.mockReturnValue({ userId: 1, role: 'admin' });
-    
+
+    // createAdminHandler consulta roles.permissions (RBAC) antes do handler:
+    // devolve a permissão exigida pelo recurso para o caminho padrão ser de
+    // PERMISSÃO CONCEDIDA (admin ignora, não-admin é autorizado).
+    query.mockImplementation(async (sql) => {
+      if (sql.includes('SELECT permissions FROM roles')) {
+        return { rows: [{ permissions: ['Gestão de Produtos'] }] };
+      }
+      return { rows: [], rowCount: 0 };
+    });
+
     fetchMock = mockGlobalFetch();
   });
 
   afterEach(() => {
     fetchMock?.mockRestore();
+  });
+
+  describe('Segurança e Autorização', () => {
+    it('deve retornar 403 se o usuário não for admin e não tiver permissão', async () => {
+      // O catch do adminCrudHandler também devolve 403 quando a query de roles
+      // FALHA (fail-closed) — por isso este teste vem em par com o "allow"
+      // logo abaixo: só o par prova que a negação aqui é por FALTA DE PERMISSÃO
+      // e não por mock de banco no caminho errado.
+      query.mockResolvedValueOnce({ rows: [{ permissions: ['Dashboard'] }] });
+      verifyToken.mockReturnValue({ userId: 2, username: 'editor', role: 'comum' });
+
+      const { req, res } = createMocks({ method: 'POST', body: { url: 'https://site.com/link?MLB111&item_id=MLB999' } });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(403);
+      // `error` é igual nos dois caminhos de 403 (falta de permissão ×
+      // fail-closed por falha de banco): só o `message` exigindo a permissão discrimina.
+      const body = JSON.parse(res._getData());
+      expect(body.error).toContain('Acesso negado');
+      expect(body.message).toContain('Requer permissão');
+      // O RBAC roda ANTES do handler: o deny não deve nem chegar no fetch
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    it('não deve retornar 403 se o usuário não-admin tiver a permissão exigida', async () => {
+      // Companheiro do teste acima: mesmo cargo 'comum', mas COM 'Gestão de Produtos'.
+      // Se o mock do banco estiver errado (query falhando/undefined), o fail-closed
+      // devolveria 403 aqui e o teste quebraria — é isso que o par garante.
+      query.mockResolvedValueOnce({ rows: [{ permissions: ['Gestão de Produtos'] }] });
+      verifyToken.mockReturnValue({ userId: 2, username: 'editor', role: 'comum' });
+
+      global.fetch.mockImplementation(async (url) => {
+        if (url.includes('/items/MLB999/description')) {
+          return { ok: true, json: async () => ({ plain_text: 'Descrição' }) };
+        }
+        if (url.includes('/items/MLB999')) {
+          return { ok: true, json: async () => ({ title: 'Produto', price: 99.9, pictures: [{ url: 'img.jpg' }] }) };
+        }
+        return { ok: false };
+      });
+
+      const { req, res } = createMocks({ method: 'POST', body: { url: 'https://site.com/link?MLB111&item_id=MLB999' } });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      expect(JSON.parse(res._getData()).title).toBe('Produto');
+    });
   });
 
   it('deve retornar 405 se não for POST, 401 sem auth e 400 sem URL ou sem código MLB', async () => {

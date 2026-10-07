@@ -22,7 +22,11 @@ jest.mock('../../../../lib/auth/auth.js', () => {
   };
 });
 
+// Mock do DB para controlar a query de roles do RBAC (createAdminHandler)
+jest.mock('../../../../lib/infra/db.js', () => require('../../../mocks/db-module').mockDb());
+
 import handler from '../../../../pages/api/admin/fetch-spotify.js';
+import { query } from '../../../../lib/infra/db.js';
 import { getAuthToken, verifyToken } from '../../../../lib/auth/auth.js';
 import { mockGlobalFetch } from '../../../helpers/index.js';
 
@@ -33,6 +37,17 @@ describe('API Admin - Fetch Spotify (/api/admin/fetch-spotify)', () => {
     jest.clearAllMocks();
     getAuthToken.mockReturnValue('fake-token');
     verifyToken.mockReturnValue({ userId: 1, role: 'admin' });
+
+    // createAdminHandler consulta roles.permissions (RBAC) antes do handler:
+    // devolve a permissão exigida pelo recurso para o caminho padrão ser de
+    // PERMISSÃO CONCEDIDA (admin ignora, não-admin é autorizado).
+    query.mockImplementation(async (sql) => {
+      if (sql.includes('SELECT permissions FROM roles')) {
+        return { rows: [{ permissions: ['Gestão de Músicas'] }] };
+      }
+      return { rows: [], rowCount: 0 };
+    });
+
     // Define um fallback padrão para evitar que chamadas subsequentes (Estratégias 2 e 3) retornem undefined
     fetchMock = mockGlobalFetch();
     fetchMock.mockResolvedValue({ ok: false });
@@ -60,6 +75,42 @@ describe('API Admin - Fetch Spotify (/api/admin/fetch-spotify)', () => {
       const { req, res } = createMocks({ method: 'POST', body: {} });
       await handler(req, res);
       expect(res._getStatusCode()).toBe(400);
+    });
+
+    it('deve retornar 403 se o usuário não for admin e não tiver permissão', async () => {
+      // O catch do adminCrudHandler também devolve 403 quando a query de roles
+      // FALHA (fail-closed) — por isso este teste vem em par com o "allow"
+      // logo abaixo: só o par prova que a negação aqui é por FALTA DE PERMISSÃO
+      // e não por mock de banco no caminho errado.
+      query.mockResolvedValueOnce({ rows: [{ permissions: ['Dashboard'] }] });
+      verifyToken.mockReturnValue({ userId: 2, username: 'editor', role: 'comum' });
+
+      const { req, res } = createMocks({ method: 'POST', body: { url: 'https://open.spotify.com/track/123' } });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(403);
+      // `error` é igual nos dois caminhos de 403 (falta de permissão ×
+      // fail-closed por falha de banco): só o `message` exigindo a permissão discrimina.
+      const body = JSON.parse(res._getData());
+      expect(body.error).toContain('Acesso negado');
+      expect(body.message).toContain('Requer permissão');
+      // O RBAC roda ANTES do handler: o deny não deve nem chegar no fetch
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    it('não deve retornar 403 se o usuário não-admin tiver a permissão exigida', async () => {
+      // Companheiro do teste acima: mesmo cargo 'comum', mas COM 'Gestão de Músicas'.
+      // Se o mock do banco estiver errado (query falhando/undefined), o fail-closed
+      // devolveria 403 aqui e o teste quebraria — é isso que o par garante.
+      query.mockResolvedValueOnce({ rows: [{ permissions: ['Gestão de Músicas'] }] });
+      verifyToken.mockReturnValue({ userId: 2, username: 'editor', role: 'comum' });
+      global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ title: 'Musica Teste' }) });
+
+      const { req, res } = createMocks({ method: 'POST', body: { url: 'https://open.spotify.com/track/123' } });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      expect(JSON.parse(res._getData()).title).toBe('Musica Teste');
     });
   });
 

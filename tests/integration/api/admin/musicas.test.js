@@ -35,6 +35,7 @@ jest.mock('../../../../lib/auth/auth.js', () => ({
 }));
 
 import handler from '../../../../pages/api/admin/musicas.js';
+import { query } from '../../../../lib/infra/db.js';
 import { getPaginatedMusicas, createMusica, updateMusica, deleteMusica } from '../../../../lib/domain/musicas.js';
 import { updateRecords } from '../../../../lib/crud/crud.js';
 import { logActivity } from '../../../../lib/domain/audit.js';
@@ -61,7 +62,53 @@ testAdminCrudEndpoint(handler, {
 
 // Testes específicos do recurso
 describe('API Admin - Gestão de Músicas (/api/admin/musicas) - Específicos', () => {
-  beforeEach(() => { jest.clearAllMocks(); });
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    // createAdminHandler consulta roles.permissions (RBAC) antes do handler:
+    // devolve a permissão exigida pelo recurso para que o caminho padrão seja
+    // de PERMISSÃO CONCEDIDA (admin ignora, não-admin é autorizado).
+    query.mockImplementation(async (sql) => {
+      if (sql.includes('SELECT permissions FROM roles')) {
+        return { rows: [{ permissions: ['Gestão de Músicas'] }] };
+      }
+      return { rows: [], rowCount: 0 };
+    });
+  });
+
+  describe('Segurança e Autorização', () => {
+    it('deve retornar 403 se o usuário não for admin e não tiver permissão', async () => {
+      // O catch do adminCrudHandler também devolve 403 quando a query de roles
+      // FALHA (fail-closed) — por isso este teste vem em par com o "allow"
+      // logo abaixo: só o par prova que a negação aqui é por FALTA DE PERMISSÃO
+      // e não por mock de banco no caminho errado.
+      query.mockResolvedValueOnce({ rows: [{ permissions: ['Dashboard'] }] });
+
+      const { req, res } = getAuthenticatedMocks({ method: 'GET' }, { userId: 2, username: 'editor', role: 'comum' });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(403);
+      // `error` é igual nos dois caminhos de 403 (falta de permissão ×
+      // fail-closed por falha de banco): só o `message` exigindo a permissão discrimina.
+      const body = JSON.parse(res._getData());
+      expect(body.error).toContain('Acesso negado');
+      expect(body.message).toContain('Requer permissão');
+    });
+
+    it('não deve retornar 403 se o usuário não-admin tiver a permissão exigida', async () => {
+      // Companheiro do teste acima: mesmo cargo 'comum', mas COM 'Gestão de Músicas'.
+      // Se o mock do banco estiver errado (query falhando/undefined), o fail-closed
+      // devolveria 403 aqui e o teste quebraria — é isso que o par garante.
+      query.mockResolvedValueOnce({ rows: [{ permissions: ['Gestão de Músicas'] }] });
+      getPaginatedMusicas.mockResolvedValueOnce({ musicas: [], pagination: { total: 0 } });
+
+      const { req, res } = getAuthenticatedMocks({ method: 'GET' }, { userId: 2, username: 'editor', role: 'comum' });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      expect(JSON.parse(res._getData())).toEqual({ musicas: [], pagination: { total: 0 } });
+    });
+  });
 
   describe('GET - Listar Músicas', () => {
     it('deve retornar 200, Cache-Control e listar músicas', async () => {

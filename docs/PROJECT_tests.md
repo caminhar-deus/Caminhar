@@ -170,7 +170,7 @@ Testes de endpoints públicos e CRUD de recursos. Usam `node-mocks-http` + mocks
 | `products.test.js` | CRUD de produtos (paginação pública e admin: 400 para parâmetros inválidos e repasse de `page`/`limit` ao domínio) |
 | `settings.general.test.js` | Testes gerais de configurações |
 | `settings.test.js` | CRUD de configurações (handler real com autenticação) |
-| `stats.test.js` | Estatísticas (contagens de usuários, posts, etc.) |
+| `stats.test.js` | Estatísticas (contagens de usuários, posts, etc.) + RBAC (deny/allow por permissão) |
 | `status.test.js` | Endpoint `/api/status` (health check do banco) |
 | `upload-image.test.js` | Upload de imagem (formidable, fs, sharp) |
 | `videos.create.api.test.js` | Criação de vídeos (handler simulado) |
@@ -187,16 +187,16 @@ Testes de endpoints administrativos com autenticação.
 | Arquivo | Propósito |
 |---------|-----------|
 | `audit.test.js` | Auditoria administrativa (permissões, logs) |
-| `backups.test.js` | Gerenciamento de backups (listar, criar, restaurar) |
+| `backups.test.js` | Gerenciamento de backups (listar, criar, restaurar) + RBAC (deny/allow por permissão) |
 | `cache.test.js` | Gerenciamento de cache (limpar, métricas) |
-| `dicas.test.js` | CRUD admin de dicas (supressão e validação do log de erro esperado no caminho 500) |
-| `fetch-ml.test.js` | Fetch de dados do Mercado Livre |
-| `fetch-spotify.test.js` | Fetch de dados do Spotify |
-| `fetch-youtube.test.js` | Fetch de dados do YouTube |
-| `integrity.test.js` | Verificação de integridade do sistema (banco, storage, backup, cache) |
-| `musicas.test.js` | CRUD admin de músicas (POST/GET/PUT/DELETE com `testAdminCrudEndpoint`) |
+| `dicas.test.js` | CRUD admin de dicas (supressão e validação do log de erro esperado no caminho 500) + RBAC (deny/allow por permissão) |
+| `fetch-ml.test.js` | Fetch de dados do Mercado Livre + RBAC (deny/allow por permissão) |
+| `fetch-spotify.test.js` | Fetch de dados do Spotify + RBAC (deny/allow por permissão) |
+| `fetch-youtube.test.js` | Fetch de dados do YouTube + RBAC (deny/allow por permissão) |
+| `integrity.test.js` | Verificação de integridade do sistema (banco, storage, backup, cache) + RBAC (deny/allow por permissão) |
+| `musicas.test.js` | CRUD admin de músicas (POST/GET/PUT/DELETE com `testAdminCrudEndpoint`) + RBAC (deny/allow por permissão) |
 | `posts.test.js` | CRUD admin de posts (POST/GET/PUT/DELETE com `testAdminCrudEndpoint`) |
-| `rate-limit.test.js` | Rate limiting (IPs bloqueados, whitelist, Upstash Redis) |
+| `rate-limit.test.js` | Rate limiting (IPs bloqueados, whitelist, Upstash Redis) + RBAC (deny/allow por permissão) |
 | `roles.test.js` | Gerenciamento de roles (CRUD com permissões) |
 | `users.create.test.js` | Criação de usuários |
 | `users.test.js` | CRUD de usuários |

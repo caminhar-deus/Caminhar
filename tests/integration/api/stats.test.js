@@ -50,6 +50,50 @@ describe('API de Estatísticas (/api/admin/stats)', () => {
     expect(query).not.toHaveBeenCalled(); // Garante que nenhuma query foi feita
   });
 
+  it('deve retornar 403 se o usuário não for admin e não tiver permissão', async () => {
+    // O catch do adminCrudHandler também devolve 403 quando a query de roles
+    // FALHA (fail-closed) — por isso este teste vem em par com o "allow"
+    // logo abaixo: só o par prova que a negação aqui é por FALTA DE PERMISSÃO
+    // e não por mock de banco no caminho errado.
+    getAuthToken.mockReturnValue('valid-token');
+    verifyToken.mockReturnValue({ userId: 2, username: 'editor', role: 'comum' });
+    query.mockResolvedValueOnce({ rows: [{ permissions: ['Dashboard'] }] });
+
+    const { req, res } = createMocks({ method: 'GET' });
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(403);
+    const body = res._getJSONData();
+    expect(body.error).toContain('Acesso negado');
+    expect(body.message).toContain('Requer permissão');
+  });
+
+  it('não deve retornar 403 se o usuário não-admin tiver a permissão exigida', async () => {
+    // Companheiro do teste acima: mesmo cargo 'comum', mas COM 'Visão Geral'.
+    // Se o mock do banco estiver errado (query falhando/undefined), o fail-closed
+    // devolveria 403 aqui e o teste quebraria — é isso que o par garante.
+    getAuthToken.mockReturnValue('valid-token');
+    verifyToken.mockReturnValue({ userId: 2, username: 'editor', role: 'comum' });
+
+    // A query de roles é a PRIMEIRA do request; as demais são as contagens do
+    // endpoint — por isso o mock ramifica por SQL em vez de devolver tudo igual.
+    query.mockImplementation(async (sql) => {
+      if (sql.includes('SELECT permissions FROM roles')) {
+        return { rows: [{ permissions: ['Visão Geral'] }] };
+      }
+      return { rows: [{ count: '4' }] };
+    });
+
+    const { req, res } = createMocks({ method: 'GET' });
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(200);
+    const stats = res._getJSONData();
+    expect(stats.posts).toBe(4);
+    expect(stats.usersToday).toBe(4);
+    expect(stats.dicas).toBe(4);
+  });
+
   it('deve retornar as contagens corretas de usuários logados e outras estatísticas', async () => {
     // Simula um usuário autenticado
     getAuthToken.mockReturnValue('valid-token');

@@ -1133,7 +1133,7 @@ Testa endpoint `/api/settings` — mas como `posts.update.api.test.js`, usa um *
 ### tests/integration/api/stats.test.js
 
 #### Finalidade
-Testes de integração para `/api/admin/stats` — valida gating de autenticação, agregação de estatísticas, e fallback para resultados vazios.
+Testes de integração para `/api/admin/stats` — valida gating de autenticação, gating de autorização (par deny/allow de RBAC por falta de permissão), agregação de estatísticas, e fallback para resultados vazios.
 
 #### Arquivos acionados
 - `pages/api/admin/stats` — handler real
@@ -1142,12 +1142,12 @@ Testes de integração para `/api/admin/stats` — valida gating de autenticaç�
 - `node-mocks-http`
 
 #### Resumo
-3 testes: 401 sem token, 200 com token válido retornando stats (usersToday/Month/Year + posts), e fallback para 0 quando DB retorna vazio. O mock de `withAuth` implementa lógica auth realista inline.
+5 testes: 401 sem token, o par RBAC deny/allow (403 com `message` contendo `Requer permissão` para cargo sem `Visão Geral` × 200 com a permissão, corpo validado), 200 com token válido retornando stats (usersToday/Month/Year + posts), e fallback para 0 quando DB retorna vazio. O mock de `withAuth` implementa lógica auth realista inline.
 
 #### Problemas
 - O mock de `withAuth` (linhas 15-26) duplica a implementação real de `lib/auth/auth.js` — se a real mudar, este mock silenciosamente diverge
-- `query.mockImplementation` usa string matching com `sql.includes()` (linha 61) — frágil, quebraria se formatação SQL mudar
-- Apenas asserta `usersToday`, `usersMonth`, `usersYear`, e `posts` — outros 14 campos de stats retornados pelo handler não testados
+- `query.mockImplementation` usa string matching com `sql.includes()` (linha 61) — frágil, quebraria se formatação SQL mudar (o allow RBAC também ramifica por SQL: roles → permissão, demais queries → counts)
+- Apenas asserta `usersToday`, `usersMonth`, `usersYear`, `posts` (e `dicas` no allow RBAC) — os demais campos de stats retornados pelo handler não testados
 - O mock em linha 5 `jest.mock('../../../lib/infra/db', ...)` usa sem extensão enquanto linha 30 importa `from '../../../lib/infra/db'` — ambos funcionam mas inconsistentes
 
 #### Melhorias
@@ -2647,11 +2647,12 @@ Testa o endpoint de auditoria que lista logs de atividade do sistema com pagina�
 Testa listagem de backups (GET) e criação de backup (POST), incluindo ordenação por data, tratamento de diretório vazio/inexistente, e falhas de filesystem e rotina de backup.
 
 #### Estrutura
-- **Mock Auth:** Simples `withAuth` injetando `req.user`
+- **Mock Auth:** Simples `withAuth` injetando `req.user` (com suporte a `req._userOverride` para cargo não-admin)
 - **Mock FS:** `jest.mock('fs')` completo
 - **Mock Script:** `jest.mock('../../../../scripts/backup.js')`
+- **Mock DB:** `jest.mock('lib/infra/db.js')` (novo — mocka a query RBAC `SELECT permissions FROM roles`)
 
-#### Testes (7)
+#### Testes (9)
 | Categoria | Teste | Status |
 |-----------|-------|--------|
 | GET | Listar backups ordenados | ✅ |
@@ -2660,6 +2661,8 @@ Testa listagem de backups (GET) e criação de backup (POST), incluindo ordenaç
 | GET | 500 em erro de FS | ✅ |
 | POST | Criar backup com sucesso | ✅ |
 | POST | 500 se createBackup falhar | ✅ |
+| RBAC | 403 cargo comum sem `Segurança` (deny; `message` com `Requer permissão`) | ✅ |
+| RBAC | 200 cargo comum com `Segurança` (allow; corpo `latest` validado) | ✅ |
 | Rotas | 405 PUT/DELETE | ✅ |
 
 #### Problemas Identificados
@@ -2736,18 +2739,21 @@ Testa consulta de métricas de cache (GET), limpeza de cache (POST/DELETE), perm
 **Handler:** `pages/api/admin/dicas.js`
 
 #### Finalidade
-Testa CRUD completo para dicas (dicas/conselhos), incluindo criação com fallback `published=true`, atualização, exclusão com busca prévia do nome para auditoria, e tratamento de erros.
+Testa CRUD completo para dicas (dicas/conselhos), incluindo criação com fallback `published=true`, atualização, exclusão com busca prévia do nome para auditoria, negação/concessão de RBAC por permissão, e tratamento de erros.
 
 #### Estrutura
 - **Mock DB:** `mockDb()` centralizado
 - **Mock Audit:** `lib/domain/audit.js`
-- **Mock Auth:** Header-based (`Bearer valid-token`)
+- **Mock Auth:** Header-based (`Bearer valid-token`) com `req._userOverride`
 - **Helper inline:** `getAuthenticatedMocks()` com `req.socket` para IP
+- **Helper RBAC:** `queueRolesQuery()` — `query.mockReset()` + reenfileiramento para que a variação do teste seja a 1ª query do request (a do RBAC), já que o `beforeEach` enfileira a roles query antes
 
-#### Testes (10)
+#### Testes (13)
 | Categoria | Teste | Status |
 |-----------|-------|--------|
 | Autenticação | 401 sem token | ✅ |
+| RBAC | 403 cargo comum sem `Gestão de Dicas` (deny; `message` com `Requer permissão`) | ✅ |
+| RBAC | 200 cargo comum com `Gestão de Dicas` (allow; corpo `{ data: [] }` validado) | ✅ |
 | GET | 200 lista de dicas | ✅ |
 | GET | 500 erro DB | ✅ |
 | POST | 201 criar com published=true fallback + log | ✅ |
@@ -2790,14 +2796,16 @@ Testa CRUD completo para dicas (dicas/conselhos), incluindo criação com fallba
 Testa a extração de dados de produtos do Mercado Livre via múltiplas estratégias: API de items, API de products, e fallback de HTML scraping. Prioriza `item_id` na URL quando presente.
 
 #### Estrutura
-- **Mock Auth:** Full mock
+- **Mock Auth:** Full mock (`verifyToken` controla o cargo)
 - **Mock Fetch:** `mockGlobalFetch()` helper
-- **Sem mocks de DB** (handler não persiste dados)
+- **Mock DB:** `jest.mock('lib/infra/db.js')` (novo — mocka a query RBAC de roles; o handler não persiste dados)
 
-#### Testes (5)
+#### Testes (7)
 | Categoria | Teste | Status |
 |-----------|-------|--------|
 | Validação | 405 GET, 401 sem auth, 400 sem url/MLB | ✅ |
+| RBAC | 403 cargo comum sem `Gestão de Produtos` (deny; `message` com `Requer permissão`, fetch não alcançado) | ✅ |
+| RBAC | 200 cargo comum com `Gestão de Produtos` (allow; corpo `title` validado) | ✅ |
 | Prioridade | Busca por item_id primeiro | ✅ |
 | Fallback 1 | API de products se items falha | ✅ |
 | Fallback 2 | HTML scraping se APIs falham | ✅ |
@@ -2836,15 +2844,18 @@ Testa a extração de dados de produtos do Mercado Livre via múltiplas estraté
 Testa extração de dados de faixas Spotify via três estratégias: oEmbed API, extração via iframe/Regex, e fallback por meta tags SEO (Googlebot).
 
 #### Estrutura
-- **Mock Auth:** Full mock
+- **Mock Auth:** Full mock (`verifyToken` controla o cargo)
 - **Mock Fetch:** `mockGlobalFetch()` com fallback `{ ok: false }`
+- **Mock DB:** `jest.mock('lib/infra/db.js')` (novo — mocka a query RBAC de roles)
 
-#### Testes (6)
+#### Testes (9)
 | Categoria | Teste | Status |
 |-----------|-------|--------|
 | Segurança | 405 não-POST | ✅ |
 | Segurança | 401 sem token inválido | ✅ |
 | Validação | 400 sem URL | ✅ |
+| RBAC | 403 cargo comum sem `Gestão de Músicas` (deny; `message` com `Requer permissão`, fetch não alcançado) | ✅ |
+| RBAC | 200 cargo comum com `Gestão de Músicas` (allow; corpo `title` validado) | ✅ |
 | Estratégia 1 | oEmbed API sucesso | ✅ |
 | Estratégia 2 | Iframe Regex | ✅ |
 | Estratégia 3 | Meta tags SEO | ✅ |
@@ -2881,26 +2892,29 @@ Testa extração de dados de faixas Spotify via três estratégias: oEmbed API, 
 **Handler:** `pages/api/admin/fetch-youtube.js`
 
 #### Finalidade
-Testa extração de dados de vídeos YouTube via oEmbed API, com tratamento de sucesso e falha.
+Testa extração de dados de vídeos YouTube via oEmbed API, com tratamento de sucesso e falha, e negação/concessão de RBAC por permissão.
 
 #### Estrutura
-- **Mock Auth:** Full mock
+- **Mock Auth:** Full mock (`verifyToken` controla o cargo)
 - **Mock Logger:** `lib/infra/logger.js`
 - **Mock Fetch:** `mockGlobalFetch()`
+- **Mock DB:** `jest.mock('lib/infra/db.js')` (novo — mocka a query RBAC de roles)
 
-#### Testes (4)
+#### Testes (7)
 | Categoria | Teste | Status |
 |-----------|-------|--------|
 | Segurança | 405 não-POST | ✅ |
 | Segurança | 401 sem auth | ✅ |
 | Validação | 400 sem URL | ✅ |
+| RBAC | 403 cargo comum sem `Gestão de Vídeos` (deny; `message` com `Requer permissão`, fetch não alcançado) | ✅ |
+| RBAC | 200 cargo comum com `Gestão de Vídeos` (allow; corpo `title` validado) | ✅ |
 | Sucesso | 200 com título via oEmbed | ✅ |
 | Erro | 500 se fetch falha | ✅ |
 
 #### Problemas Identificados
 
-1. **Cobertura mínima**
-   - Apenas 4 testes para um endpoint que provavelmente tem mais cenários (URL inválida, vídeo privado, região bloqueada)
+1. **Cobertura ainda sem validação de URL**
+   - Agora 7 testes (antes 5) com o par RBAC, mas seguem faltando cenários de URL inválida, vídeo privado e região bloqueada
 
 2. **Mock de logger desnecessariamente verbose**
    - Logger inteiro mockado (`error`, `warn`, `info`, `debug`, `success`) mas apenas `error` é usado
@@ -2928,15 +2942,17 @@ Testa extração de dados de vídeos YouTube via oEmbed API, com tratamento de s
 Testa diagnóstico de integridade do sistema: conexão com banco, storage de uploads, backups, e cache. Gera status agregado (`healthy`/`warning`/`degraded`).
 
 #### Estrutura
-- **Mock DB:** Query direta (sem `mockDb()`)
+- **Mock DB:** Query direta (sem `mockDb()`) com ramificação RBAC no `beforeEach` (`SELECT permissions FROM roles` → `['Segurança']`)
 - **Mock FS:** `jest.mock('fs')` com implementações default
-- **Mock Auth:** Full mock
+- **Mock Auth:** Full mock (`verifyToken` controla o cargo)
 - **Sem helper CRUD**
 
-#### Testes (5)
+#### Testes (7)
 | Categoria | Teste | Status |
 |-----------|-------|--------|
 | Autenticação | 401 sem auth | ✅ |
+| RBAC | 403 cargo comum sem `Segurança` (deny; `message` com `Requer permissão`) | ✅ |
+| RBAC | 200 cargo comum com `Segurança` (allow; `checks.database`/`checks.storage` validados) | ✅ |
 | Sucesso | 200 diagnóstico completo | ✅ |
 | Degrade | Status degraded se banco falha | ✅ |
 | Storage | Diretório uploads ausente | ✅ |
@@ -2976,18 +2992,20 @@ Testa diagnóstico de integridade do sistema: conexão com banco, storage de upl
 Testa CRUD de músicas com paginação, validação de URL do Spotify, reordenação em massa, invalidação de cache, e auditoria.
 
 #### Estrutura
-- **Mock DB:** `mockDb()`
+- **Mock DB:** `mockDb()` com ramificação RBAC no `beforeEach` (`SELECT permissions FROM roles` → `['Gestão de Músicas']`)
 - **Mock Domain:** `lib/domain/musicas.js` (getPaginatedMusicas, createMusica, etc.)
 - **Mock Crud:** `lib/crud/crud.js`
 - **Mock Cache:** `lib/cache/cache.js`
 - **Mock Audit:** `lib/domain/audit.js`
-- **Mock Auth:** Header-based
+- **Mock Auth:** Header-based com `req._userOverride`
 - **Helper:** `testAdminCrudEndpoint` (401 coberto)
 
-#### Testes (16)
+#### Testes (21)
 | Categoria | Teste | Status |
 |-----------|----|--------|
 | Autenticação | 401 (via helper) | ✅ |
+| RBAC | 403 cargo comum sem `Gestão de Músicas` (deny; `message` com `Requer permissão`) | ✅ |
+| RBAC | 200 cargo comum com `Gestão de Músicas` (allow; corpo `{ musicas, pagination }` validado) | ✅ |
 | GET | 200 com Cache-Control + lista | ✅ |
 | GET | 500 erro na busca | ✅ |
 | POST | 400 campos obrigatórios ausentes | ✅ |
@@ -3097,12 +3115,15 @@ Testa gerenciamento de rate limit: consulta de IPs bloqueados, whitelist, audito
 
 #### Estrutura
 - **Mock Redis:** `@upstash/redis` + `lib/infra/redis.js`
-- **Mock Auth:** Header-based
-- **Dynamic import:** `jest.resetModules()` + `await import()` em `beforeEach`
+- **Mock Auth:** Header-based com `req._userOverride`
+- **Mock DB:** `jest.mock('lib/infra/db.js')` (novo — query RBAC de roles)
+- **Dynamic import:** `jest.resetModules()` + `await import()` em `beforeEach` — o handler é reimportado fresco a cada teste, então o db também é importado dinamicamente no `beforeEach` para cair na MESMA instância (registry) que o handler usa
 
-#### Testes (9)
+#### Testes (12)
 | Categoria | Teste | Status |
 |-----------|----|--------|
+| RBAC | 403 cargo comum sem `Segurança` (deny; `message` com `Requer permissão`) | ✅ |
+| RBAC | 200 cargo comum com `Segurança` (allow; corpo `ip` validado) | ✅ |
 | GET | IP atual (type=current_ip) | ✅ |
 | GET | Whitelist | ✅ |
 | GET | Logs de auditoria com filtros | ✅ |
@@ -3116,9 +3137,9 @@ Testa gerenciamento de rate limit: consulta de IPs bloqueados, whitelist, audito
 
 #### Problemas Identificados
 
-1. **Complexidade excessiva no beforeEach**
-   - `jest.resetModules()` + dynamic import + clearAllMocks é frágil
-   - **Issue:** Se módulo tem estado global, pode vazar entre testes
+1. **Complexidade no beforeEach — agora intencional e documentada**
+   - `jest.resetModules()` + dynamic import + clearAllMocks é necessário, não acidental: o reset zera o cache do endpoint (`BLOCKED_IPS_CACHE`) entre testes, e o `await import()` do handler **e** do db no `beforeEach` pega a MESMA instância do registry recém-criado (sem isso, o mock de `query` apontaria para outra instância que a do handler)
+   - **Issue residual:** se algum módulo mantiver estado global fora do cache do endpoint, pode vazar entre testes
 
 2. **Dependência de variáveis de ambiente**
    - `UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN` definidas em `beforeAll`
@@ -3134,7 +3155,7 @@ Testa gerenciamento de rate limit: consulta de IPs bloqueados, whitelist, audito
 #### Melhorias Sugeridas
 - Consolidar mocks Redis em objeto único
 - Extrair fixtures de CSV para teste mais robusto
-- Documentar necessidade de dynamic import
+- Dynamic import já documentado no próprio `beforeEach` (por que o db precisa ser importado dinamicamente)
 
 ---
 
@@ -3375,6 +3396,8 @@ Mock de `SELECT permissions FROM roles` aparece em:
 - users.test.js
 - users.create.test.js
 - posts.test.js
+- dicas.test.js, musicas.test.js, backups.test.js, rate-limit.test.js, fetch-ml.test.js, fetch-spotify.test.js, fetch-youtube.test.js (par deny/allow de RBAC)
+- stats.test.js (par deny/allow de RBAC)
 
 **Recomendação:** Extrair helper `mockRolePermissions(permissions[])`.
 
@@ -3406,7 +3429,7 @@ Funções utilitárias locais similares em:
 
 | Lacuna | Arquivos Afetados | Descrição |
 |--------|-------------------|-----------|
-| Sem teste de autorização 403 | backups, cache, fetch-*, videos | Alguns endpoints não testam negação por falta de permissão |
+| ~~Sem teste de autorização 403~~ | backups, cache, fetch-*, videos | **RESOLVIDO:** todos os 15 endpoints de `pages/api/admin/` têm teste de negação; os 9 que declaravam `permission` sem teste de 403 ganharam o par deny/allow (deny asserindo `message` com `Requer permissão`, que só o ramo de falta de permissão devolve) |
 | Sem teste de rate limiting | dicas, fetch-*, integrity, roles | Apenas posts e users testam rate limit |
 | Sem teste de token expirado | todos | Nenhum teste simula token expirado/revogado |
 | Sem teste de auditoria negativa | todos | Nenhum teste verifica se `logActivity` NÃO é chamado em erro |
@@ -3475,16 +3498,16 @@ Funções utilitárias locais similares em:
 | Arquivo | Linhas | Testes | Complexidade | Problemas | Qualidade |
 |---------|--------|--------|--------------|-----------|-----------|
 | audit.test.js | 151 | 7 | Média | Mock duplicado, sem teste de ordenação | ⭐⭐⭐ |
-| backups.test.js | 85 | 7 | Baixa | Mock frágil, sem validação de body | ⭐⭐⭐ |
+| backups.test.js | 134 | 9 | Baixa | Mock frágil, POST sem validação de body | ⭐⭐⭐ |
 | cache.test.js | 97 | 7 | Baixa | DELETE não testado, métricas não validadas | ⭐⭐⭐ |
-| dicas.test.js | 199 | 10 | Alta | Boilerplate de logs duplicado | ⭐⭐⭐⭐ |
-| fetch-ml.test.js | 131 | 5 | Alta | Múltiplos asserts por teste, regex frágil | ⭐⭐⭐ |
-| fetch-spotify.test.js | 101 | 6 | Média | Token inválido não testado, sem rede | ⭐⭐⭐ |
-| fetch-youtube.test.js | 112 | 4 | Baixa | Cobertura mínima, sem URL inválida | ⭐⭐ |
-| integrity.test.js | 139 | 5 | Média | Sem teste healthy, paths frágeis | ⭐⭐⭐ |
-| musicas.test.js | 233 | 16 | Alta | Padrão duplicável, validação inconsistente | ⭐⭐⭐⭐ |
+| dicas.test.js | 245 | 13 | Alta | Boilerplate de logs duplicado | ⭐⭐⭐⭐ |
+| fetch-ml.test.js | 191 | 7 | Alta | Múltiplos asserts por teste, regex frágil | ⭐⭐⭐ |
+| fetch-spotify.test.js | 151 | 9 | Média | Token inválido não testado, sem rede | ⭐⭐⭐ |
+| fetch-youtube.test.js | 164 | 7 | Baixa | Sem URL inválida (RBAC deny/allow coberto) | ⭐⭐⭐ |
+| integrity.test.js | 171 | 7 | Média | Sem teste healthy, paths frágeis | ⭐⭐⭐ |
+| musicas.test.js | 279 | 21 | Alta | Padrão duplicável, validação inconsistente | ⭐⭐⭐⭐ |
 | posts.test.js | 252 | 19 | Alta | Permissões duplicadas, rate limit parcial | ⭐⭐⭐⭐⭐ |
-| rate-limit.test.js | 184 | 9 | Muito Alta | Mocks espalhados, dynamic import frágil | ⭐⭐⭐ |
+| rate-limit.test.js | 234 | 12 | Muito Alta | Mocks espalhados; dynamic import de db intencional | ⭐⭐⭐ |
 | roles.test.js | 192 | 9 | Alta | Mock verboso, sem permissão parcial | ⭐⭐⭐ |
 | users.create.test.js | 158 | 4 | Média | Duplicado com users.test.js | ⭐⭐⭐ |
 | users.test.js | 264 | 16 | Muito Alta | Duplicação, nomenclatura inconsistente | ⭐⭐⭐⭐ |
@@ -12758,7 +12781,7 @@ Não foi identificado código morto nos arquivos de teste — todos os `it()` po
 | `fetch-ml.edge.test.js` | 6 | Alta | Alta | Frágil no catch do scraping |
 | `fetch-spotify.edge.test.js` | 1 | Baixa | Baixa | Apenas 1 teste, sem cenários parciais |
 | `posts.edge.test.js` | 11 | Média | Média | Sem GET, mocks frágeis |
-| `rate-limit.test.js` | 13 | Alta | Alta | `resetModules` frágil |
+| `rate-limit.test.js` | 14 | Alta | Alta | `resetModules` + `require()` dinâmico intencional e documentado (isola estado por caso) |
 | `roles.edge.test.js` | 4 | Média | Média | Mock duplicado, sem tabela auto-criação |
 | `stats.edge.test.js` | 2 | Baixa | Baixa | Sem sucesso, handler usa console |
 | `login.edge.test.js` | 1 | Baixa | Baixa | Apenas 1 teste, sem cenários |

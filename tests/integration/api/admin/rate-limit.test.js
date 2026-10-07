@@ -42,12 +42,15 @@ jest.mock('../../../../lib/infra/redis.js', () => ({
   redisFlushdb: jest.fn(),
 }));
 
+// Mock do DB para controlar a query de roles do RBAC (createAdminHandler)
+jest.mock('../../../../lib/infra/db.js', () => require('../../../mocks/db-module').mockDb());
+
 jest.mock('../../../../lib/auth/auth.js', () => ({
   withAuth: jest.fn((h) => async (req, res) => {
     if (req.headers.authorization !== 'Bearer valid-token') {
       return res.status(401).json({ message: 'Não autenticado' });
     }
-    req.user = { userId: 1, username: 'admin', role: 'admin' };
+    req.user = req._userOverride || { userId: 1, username: 'admin', role: 'admin' };
     return h(req, res);
   }),
 }));
@@ -73,16 +76,64 @@ describe('API Admin - Rate Limit (/api/admin/rate-limit)', () => {
     jest.resetModules();
     const module = await import('../../../../pages/api/admin/rate-limit.js');
     handler = module.default;
+
+    // O resetModules acima cria um NOVO módulo db.js a cada teste, então o
+    // import estático apontaria para outra instância que a do handler.
+    // Importamos de novo (mesmo registry) e devolvemos a permissão exigida
+    // pelo recurso para que o caminho padrão seja de PERMISSÃO CONCEDIDA.
+    const dbModule = await import('../../../../lib/infra/db.js');
+    dbModule.query.mockImplementation(async (sql) => {
+      if (sql.includes('SELECT permissions FROM roles')) {
+        return { rows: [{ permissions: ['Segurança'] }] };
+      }
+      return { rows: [], rowCount: 0 };
+    });
   });
 
-  const getAuthenticatedMocks = (options = {}) => {
+  const getAuthenticatedMocks = (options = {}, userOverride = null) => {
     const { req, res } = createMocks({
       ...options,
       headers: { ...options.headers, authorization: 'Bearer valid-token' },
     });
+    if (userOverride) req._userOverride = userOverride;
     req.socket = { remoteAddress: '127.0.0.1' };
     return { req, res };
   };
+
+  describe('Segurança e Autorização', () => {
+    it('deve retornar 403 se o usuário não for admin e não tiver permissão', async () => {
+      // O catch do adminCrudHandler também devolve 403 quando a query de roles
+      // FALHA (fail-closed) — por isso este teste vem em par com o "allow"
+      // logo abaixo: só o par prova que a negação aqui é por FALTA DE PERMISSÃO
+      // e não por mock de banco no caminho errado.
+      const dbModule = await import('../../../../lib/infra/db.js');
+      dbModule.query.mockResolvedValueOnce({ rows: [{ permissions: ['Dashboard'] }] });
+
+      const { req, res } = getAuthenticatedMocks({ method: 'GET', query: { type: 'current_ip' } }, { userId: 2, username: 'editor', role: 'comum' });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(403);
+      // `error` é igual nos dois caminhos de 403 (falta de permissão ×
+      // fail-closed por falha de banco): só o `message` exigindo a permissão discrimina.
+      const body = JSON.parse(res._getData());
+      expect(body.error).toContain('Acesso negado');
+      expect(body.message).toContain('Requer permissão');
+    });
+
+    it('não deve retornar 403 se o usuário não-admin tiver a permissão exigida', async () => {
+      // Companheiro do teste acima: mesmo cargo 'comum', mas COM 'Segurança'.
+      // Se o mock do banco estiver errado (query falhando/undefined), o fail-closed
+      // devolveria 403 aqui e o teste quebraria — é isso que o par garante.
+      const dbModule = await import('../../../../lib/infra/db.js');
+      dbModule.query.mockResolvedValueOnce({ rows: [{ permissions: ['Segurança'] }] });
+
+      const { req, res } = getAuthenticatedMocks({ method: 'GET', query: { type: 'current_ip' } }, { userId: 2, username: 'editor', role: 'comum' });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      expect(JSON.parse(res._getData()).ip).toBe('127.0.0.1');
+    });
+  });
 
   describe('GET - Consultas', () => {
     it('deve retornar o IP atual quando type=current_ip', async () => {

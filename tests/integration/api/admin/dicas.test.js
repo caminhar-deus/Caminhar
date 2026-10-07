@@ -16,7 +16,7 @@ jest.mock('../../../../lib/auth/auth.js', () => ({
     if (req.headers.authorization !== 'Bearer valid-token') {
       return res.status(401).json({ message: 'Não autenticado' });
     }
-    req.user = { userId: 1, username: 'admin_user', role: 'admin' };
+    req.user = req._userOverride || { userId: 1, username: 'admin_user', role: 'admin' };
     return handler(req, res);
   }),
 }));
@@ -37,7 +37,7 @@ describe('API Admin - Dicas (/api/admin/dicas)', () => {
   });
 
   // Função utilitária para gerar os mocks HTTP já autenticados
-  const getAuthenticatedMocks = (options = {}) => {
+  const getAuthenticatedMocks = (options = {}, userOverride = null) => {
     const { req, res } = createMocks({
       ...options,
       headers: {
@@ -45,9 +45,20 @@ describe('API Admin - Dicas (/api/admin/dicas)', () => {
         authorization: 'Bearer valid-token',
       },
     });
+    if (userOverride) req._userOverride = userOverride;
     // Define um socket falso para o IP do Log de Auditoria não explodir
     req.socket = { remoteAddress: '127.0.0.1' };
     return { req, res };
+  };
+
+  // O RBAC consulta roles.permissions como PRIMEIRA query do request, mas o
+  // beforeEach já enfileira essa chamada (com a permissão do recurso). Resetamos
+  // a fila para que a variação do teste seja a primeira a ser consumida pelo
+  // handler, deixando o mock padrão ({rows: []}) para as queries seguintes do handler.
+  const queueRolesQuery = (permissions) => {
+    query.mockReset();
+    query.mockResolvedValue({ rows: [], rowCount: 0 });
+    query.mockResolvedValueOnce({ rows: [{ permissions }] });
   };
 
   describe('Autenticação e Proteção da Rota', () => {
@@ -55,6 +66,37 @@ describe('API Admin - Dicas (/api/admin/dicas)', () => {
       const { req, res } = createMocks({ method: 'GET' });
       await handler(req, res);
       expect(res._getStatusCode()).toBe(401);
+    });
+
+    it('deve retornar 403 se o usuário não for admin e não tiver permissão', async () => {
+      // O catch do adminCrudHandler também devolve 403 quando a query de roles
+      // FALHA (fail-closed) — por isso este teste vem em par com o "allow"
+      // logo abaixo: só o par prova que a negação aqui é por FALTA DE PERMISSÃO
+      // e não por mock de banco no caminho errado.
+      queueRolesQuery(['Dashboard']);
+
+      const { req, res } = getAuthenticatedMocks({ method: 'GET' }, { userId: 2, username: 'editor', role: 'comum' });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(403);
+      // `error` é igual nos dois caminhos de 403 (falta de permissão ×
+      // fail-closed por falha de banco): só o `message` exigindo a permissão discrimina.
+      const body = JSON.parse(res._getData());
+      expect(body.error).toContain('Acesso negado');
+      expect(body.message).toContain('Requer permissão');
+    });
+
+    it('não deve retornar 403 se o usuário não-admin tiver a permissão exigida', async () => {
+      // Companheiro do teste acima: mesmo cargo 'comum', mas COM 'Gestão de Dicas'.
+      // Se o mock do banco estiver errado (query falhando/undefined), o fail-closed
+      // devolveria 403 aqui e o teste quebraria — é isso que o par garante.
+      queueRolesQuery(['Gestão de Dicas']);
+
+      const { req, res } = getAuthenticatedMocks({ method: 'GET' }, { userId: 2, username: 'editor', role: 'comum' });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      expect(JSON.parse(res._getData())).toEqual({ data: [] });
     });
   });
 
