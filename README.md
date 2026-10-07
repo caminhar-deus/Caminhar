@@ -40,7 +40,7 @@ O **Caminhar com Deus** é uma aplicação web desenvolvida com Next.js (Pages R
 - **Cache** com Redis (Upstash) + fallback em memória local
 - **Backup automatizado** do PostgreSQL com criptografia AES-256-GCM e compressão gzip
 - **Testes automatizados** com 186 arquivos Jest (unitários e integração), 5 specs Cypress (E2E) e 37 arquivos de testes de carga
-- **CI/CD** com GitHub Actions (5 arquivos de workflow: CI, cobertura em PRs, testes de carga, testes de segurança e o reutilizável `test-base.yml`)
+- **CI/CD** com GitHub Actions (3 arquivos de workflow em `.github/workflows/`: lint/cobertura em `pull_request`, `push` para `main` e `workflow_dispatch`, testes de carga e o reutilizável `test-base.yml`)
 - **Middlewares de proteção:** Rate limiting, DDoS, Content Security Policy, CORS
 
 ---
@@ -60,7 +60,7 @@ Documentação dos **29 arquivos** na raiz do projeto, agrupados por contexto:
 - **Configuração Principal:** `package.json` (66 scripts, ES Modules), `next.config.js` (headers de segurança e CORS), `next-sitemap.config.js` (sitemap XML + rotas dinâmicas do banco), `proxy.js` (Rate limiting e proteção DDoS com Redis)
 - **Testes:** `jest.config.js` (thresholds globais: branches 80%, functions 85%, lines/statements 90%, além de limites por diretório), `jest.config.db.js` (testes com PostgreSQL via Testcontainers), `jest.setup.js`, `jest.teardown.js`, `babel.jest.config.js`, `cypress.config.js`
 - **Qualidade:** `eslint.config.js` (Flat Config), `jsconfig.json` (aliases de importação), `knip.json` (análise de código morto)
-- **CI/CD:** `ci.yml`, `load-tests.yml`, `security-tests.yml` (os workflows de cobertura em PRs — `pr-coverage.yml` — e o reutilizável `test-base.yml` ficam em `.github/workflows/`)
+- **CI/CD:** nenhum arquivo de workflow na raiz — os três workflows (`pr-coverage.yml`, `load-tests.yml` e o reutilizável `test-base.yml`) ficam em `.github/workflows/`, único diretório lido pelo GitHub Actions
 
 ---
 
@@ -216,7 +216,7 @@ Componentes React organizados em 6 categorias:
 
 **Helpers:** config, auth (login JWT), network (IP aleatório), profiles (7 perfis de carga), report (relatórios JSON sanitizados), sleep (pausa aleatória), resource-test-runner (factory pattern para reduzir duplicação CRUD)
 
-**Automação:** Workflow `load-tests.yml` com execução diária (03:00 UTC), relatórios retidos por 30 dias
+**Automação:** Workflow `load-tests.yml` (em `.github/workflows/`) com execução diária às 04:17 UTC (`cron: '17 4 * * *'` — o minuto 17 é deliberado, para fugir do pico do minuto 0), relatórios retidos por 30 dias
 
 ---
 
@@ -256,7 +256,7 @@ Componentes React organizados em 6 categorias:
 | **Testes Unitários/Integração** | Jest 30 + React Testing Library |
 | **Testes E2E** | Cypress 16 |
 | **Testes de Carga** | k6 (Grafana Labs) |
-| **CI/CD** | GitHub Actions (5 arquivos de workflow, sendo 1 reutilizável) |
+| **CI/CD** | GitHub Actions (3 arquivos de workflow em `.github/workflows/`, sendo 1 reutilizável) |
 | **Análise Estática** | Knip (código morto), ESLint 10 |
 | **SEO** | next-sitemap, Schema.org JSON-LD |
 

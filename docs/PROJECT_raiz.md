@@ -2,7 +2,7 @@
 
 > **Data da análise:** 02/08/2026 — revisão completa em 23/09/2026
 > **Objetivo:** Documentar os arquivos localizados na raiz do projeto `/home/gus/Projetos/Caminhar/`, descrevendo caminho exato, arquivos acionados/relacionados, propósito e funcionamento de cada um.
-> **Escopo:** Apenas os **38 arquivos da raiz** (subpastas e seus arquivos não entram nesta análise; são citados apenas como referência quando acionados por um arquivo da raiz). Todos os arquivos da raiz foram lidos e analisados — incluindo `.env`, `.gitignore` e `.clineignore`, que uma análise anterior registrava como bloqueados e que estão acessíveis. Os valores reais do `.env` não são reproduzidos neste documento por conterem segredos.
+> **Escopo:** Apenas os **35 arquivos da raiz** (subpastas e seus arquivos não entram nesta análise; são citados apenas como referência quando acionados por um arquivo da raiz). Todos os arquivos da raiz foram lidos e analisados — incluindo `.env`, `.gitignore` e `.clineignore`, que uma análise anterior registrava como bloqueados e que estão acessíveis. Os valores reais do `.env` não são reproduzidos neste documento por conterem segredos.
 
 ---
 
@@ -24,14 +24,13 @@
 
 ## Descrição Geral
 
-Este documento registra a análise individual de todos os arquivos localizados na raiz do projeto **Caminhar** — plataforma web de conteúdo católico construída em Next.js. A raiz concentra a configuração central da aplicação (manifesto, Next.js, middleware, ambiente), a configuração das suítes de teste (Jest, Cypress), as ferramentas de qualidade e análise estática (ESLint, Knip, dependency-cruiser), os workflows de CI/CD, a documentação de contexto e os artefatos gerados pelas ferramentas de análise.
+Este documento registra a análise individual de todos os arquivos localizados na raiz do projeto **Caminhar** — plataforma web de conteúdo católico construída em Next.js. A raiz concentra a configuração central da aplicação (manifesto, Next.js, middleware, ambiente), a configuração das suítes de teste (Jest, Cypress), as ferramentas de qualidade e análise estática (ESLint, Knip, dependency-cruiser), a documentação de contexto e os artefatos gerados pelas ferramentas de análise. Os workflows de CI/CD não estão na raiz — ver a seção 6.
 
-A raiz do projeto concentra **38 arquivos** (excluindo subpastas). Eles se dividem em:
+A raiz do projeto concentra **35 arquivos** (excluindo subpastas). Eles se dividem em:
 
 - **Configuração principal** — `package.json`, `next.config.js`, `next-sitemap.config.js`, `proxy.js`, `.env`, `.env.example`.
 - **Configuração de testes** — `jest.config.base.js`, `jest.config.js`, `jest.config.db.js`, `jest.setup.js`, `jest.teardown.js`, `babel.jest.config.js`, `cypress.config.js`.
 - **Qualidade/estática** — `eslint.config.js`, `jsconfig.json`, `knip.json`, `schema.knip.json`, `.dependency-cruiser.cjs`, `.dependency-cruiser.core.cjs`, `.dependency-cruiser.extras.cjs`, `.dependency-cruiser.isolados.cjs`.
-- **CI/CD** — `ci.yml`, `load-tests.yml`, `security-tests.yml`.
 - **Documentação/contexto** — `README.md`, `CHANGELOG.md`, `tree.txt`.
 - **Arquivos gerados (análise estática)** — `estrutura.html`, `estrutura.txt`, `estrutura_extras.html`, `estrutura_extras.txt`, `estrutura_isolados.html`, `estrutura_isolados.txt`.
 - **Lockfiles** — `package-lock.json`, `skills-lock.json`.
@@ -59,7 +58,6 @@ Escopo da análise — somente os arquivos da raiz (as subpastas da raiz aparece
 ├── CHANGELOG.md
 ├── README.md
 ├── babel.jest.config.js
-├── ci.yml
 ├── cypress.config.js
 ├── eslint.config.js
 ├── estrutura.html
@@ -75,14 +73,12 @@ Escopo da análise — somente os arquivos da raiz (as subpastas da raiz aparece
 ├── jest.teardown.js
 ├── jsconfig.json
 ├── knip.json
-├── load-tests.yml
 ├── next-sitemap.config.js
 ├── next.config.js
 ├── package-lock.json
 ├── package.json
 ├── proxy.js
 ├── schema.knip.json
-├── security-tests.yml
 ├── skills-lock.json
 └── tree.txt
 ```
@@ -204,7 +200,7 @@ Subpastas existentes na raiz (fora do escopo, citadas como contexto ao longo do 
 
 **Caminho:** `/home/gus/Projetos/Caminhar/jest.config.js`
 
-**Arquivos acionados/relacionados:** importa `jest.config.base.js`; `babel.jest.config.js` (via base); `tests/setup.js` (`setupFilesAfterEnv`); `jest.teardown.js` (`globalTeardown`); `__mocks__/styleMock.js` (mapper de CSS); `package.json` (scripts `test`, `test:log`, `test:coverage`, `test:ci`, `test:watch`, `test:db:unit`); `ci.yml` (executa `npm run test:ci`); `knip.json` (ignora este arquivo da análise de órfãos).
+**Arquivos acionados/relacionados:** importa `jest.config.base.js`; `babel.jest.config.js` (via base); `tests/setup.js` (`setupFilesAfterEnv`); `jest.teardown.js` (`globalTeardown`); `__mocks__/styleMock.js` (mapper de CSS); `package.json` (scripts `test`, `test:log`, `test:coverage`, `test:ci`, `test:watch`, `test:db:unit`); `.github/workflows/pr-coverage.yml` (executa o jest com cobertura); `knip.json` (ignora este arquivo da análise de órfãos).
 
 **Resumo:** Configuração principal do Jest (88 linhas) para testes unitários e de integração em ambiente `jsdom`. Estende a base e define: `testMatch: **/*.test.js`, `coverageProvider: 'v8'` (evita conflito com o plugin Istanbul do Babel), cobertura desativada por padrão (`collectCoverage: false` — ativada via CLI `--coverage` nos scripts `test:coverage`/`test:ci`), `collectCoverageFrom` restrito a `lib/`, `pages/api/` e `components/` (excluindo tests/coverage), `coverageReporters` text/lcov/html e **thresholds**: global branches 80/functions 85/lines 90/statements 90, mais grupos por diretório — `lib/domain/` (78/95/95/95), `pages/api/admin/` (80/95/90/90) e `components/Admin/fields/` (88/95/95/95). `transformIgnorePatterns` com exceções ESM para `node-mocks-http`, `@faker-js`, `url`, `pg`, `@upstash/redis`, `uncrypto`; `moduleNameMapper` estendido com `\.css$` → `__mocks__/styleMock.js`; timeout de 10s.
 
@@ -374,47 +370,15 @@ Subpastas existentes na raiz (fora do escopo, citadas como contexto ao longo do 
 
 ## 6. CI/CD e Automação (GitHub Actions)
 
-### 6.1 `ci.yml`
+A raiz **não contém nenhum arquivo de workflow**: o GitHub Actions só lê workflows de `.github/workflows/`, e os três arquivos `.yml` que existiam aqui (`ci`, `load-tests` e `security-tests`) foram **removidos** — eram rascunhos que nunca chegaram a ser registrados como workflow no GitHub (a API de workflows do repositório devolve `total_count: 3`, todos em `.github/workflows/`) e por isso nunca executaram.
 
-**Nome do arquivo:** `ci.yml`
+Os workflows vigentes do repositório estão em `.github/workflows/` (subpasta, fora do escopo desta análise):
 
-**Caminho:** `/home/gus/Projetos/Caminhar/ci.yml`
+- `pr-coverage.yml` — lint, cobertura Jest (`npx jest --ci --coverage`), actionlint e knip, em `pull_request: [main]`, `push: [main]` e `workflow_dispatch`;
+- `test-base.yml` — workflow reutilizável (`on: workflow_call`), com serviços PostgreSQL/Redis, build e k6;
+- `load-tests.yml` — testes de carga diários (`schedule: '17 4 * * *'` = 04:17 UTC) e sob demanda (`workflow_dispatch`), chamando `test-base.yml`.
 
-**Arquivos acionados/relacionados:** `.github/actions/setup/action.yml` (composite action local "Setup Node.js Environment", que executa `actions/setup-node@v4` com `cache: 'npm'` e `npm ci`; seu input `node-version` tem default `'24.15.0'`); `package.json` (executa `npm run test:ci` → `jest --ci --coverage --bail`); `package-lock.json` (usado pelo cache npm e pelo `npm ci`); `jest.config.js` (configuração usada pelo teste).
-
-**Resumo:** Workflow "Node.js CI" (20 linhas) — a CI básica do projeto. Dispara em `push` e `pull_request` para as branches `main`/`master`, roda em `ubuntu-latest` com um único job `test`: checkout (`actions/checkout@v4`), setup do ambiente via composite action local `./.github/actions/setup` (Node.js com cache npm + `npm ci`) e execução de `npm run test:ci`.
-
-> ⚠️ **Descoberta da análise (posição do arquivo):** este workflow está **na raiz do repositório**, mas o GitHub Actions só executa automaticamente workflows em `.github/workflows/`. Os únicos workflows nesse diretório são `pr-coverage.yml` e `test-base.yml`. O próprio `scripts/diagnostics/lint-workflows.sh` registra em comentário que `ci.yml`, `load-tests.yml` e `security-tests.yml` "ainda estão na raiz" e não são descobertos automaticamente nem pelo actionlint. Portanto, as três cópias na raiz **não são executadas pelo GitHub nesta localização** — para ativá-las seria necessário movê-las para `.github/workflows/`. Os arquivos são rastreados pelo Git (confirmado via `git ls-files`).
-
-> ⚠️ **Divergência de versão do Node:** o default do input `node-version` da composite action `setup` é `24.15.0`, enquanto o `engines` do `package.json` exige `24.19.0` — o `ci.yml` não sobrescreve o input, de modo que a CI instalaria Node 24.15.0 se executada.
-
----
-
-### 6.2 `load-tests.yml`
-
-**Nome do arquivo:** `load-tests.yml`
-
-**Caminho:** `/home/gus/Projetos/Caminhar/load-tests.yml`
-
-**Arquivos acionados/relacionados:** `.github/workflows/test-base.yml` (workflow reutilizável, chamado com `test-type: load` e `secrets: inherit`); `scripts/run-all-load-tests-sequentially.js` (orquestrador dos testes de carga, via `run-command`); `reports/k6-summaries/orchestrator-results.json` (lido na validação de thresholds via `jq`); `package.json` (script `test:load:all` equivalente local).
-
-**Resumo:** Workflow "Load Tests (k6)" (79 linhas) para execução diária dos testes de carga. Dispara por agenda (`cron: '0 3 * * *'` — 03:00 UTC, madrugada no Brasil) e manualmente (`workflow_dispatch`). Estrutura em 2 jobs: `call-test-base` (delega serviços PostgreSQL/Redis e steps comuns ao workflow reutilizável `test-base.yml`, executando o orquestrador `scripts/run-all-load-tests-sequentially.js`) e `validate-and-report` (`needs: call-test-base`, `if: always()`), que valida os thresholds a partir de `reports/k6-summaries/orchestrator-results.json` (falha o job se `failed > 0`, listando os scripts com falha e exit code), faz upload dos relatórios de `reports/` como artefato `k6-load-test-reports` (retenção 30 dias) e emite notificação de violação de threshold em caso de falha.
-
-> ⚠️ **Mesma ressalva de posição do `ci.yml` (seção 6.1):** este arquivo está na raiz do repositório, fora de `.github/workflows/` — o agendamento `cron` e o `workflow_dispatch` **não são ativados pelo GitHub nesta localização**. A chamada a `./.github/workflows/test-base.yml` em si é válida (o `test-base.yml` existe no diretório correto).
-
----
-
-### 6.3 `security-tests.yml`
-
-**Nome do arquivo:** `security-tests.yml`
-
-**Caminho:** `/home/gus/Projetos/Caminhar/security-tests.yml`
-
-**Arquivos acionados/relacionados:** `.github/workflows/test-base.yml` (workflow reutilizável, chamado com `test-type: security` e `secrets: inherit`); scripts k6 em `load-tests/`: `ddos-search-test.js`, `rate-limit-test.js`, `login-negative-test.js`, `ip-spoofing-test.js`; `proxy.js` (alvo indireto dos testes de rate limit/spoofing).
-
-**Resumo:** Workflow "Security Tests (k6)" (33 linhas) para testes de segurança. Dispara em `push` e `pull_request` para `main`, além de `workflow_dispatch` (execução manual). Estrutura em 2 jobs: `run-tests` (delega ao workflow reutilizável `test-base.yml` com `run-command` executando 4 scripts k6 de segurança — DDoS em busca, rate limit, login negativo e IP spoofing) e `upload-reports` (`needs: run-tests`, `if: always()`) que faz upload de `reports/k6-summaries/` como artefato `k6-security-test-reports` com retenção de 30 dias.
-
-> ⚠️ **Mesma ressalva de posição dos demais workflows (seção 6.1):** este arquivo está na raiz, fora de `.github/workflows/` — os gatilhos `push`/`pull_request` **não são ativados pelo GitHub nesta localização**.
+`pr-coverage.yml` também roda no push para `main` (ver item R de `docs/PENDENCIAS_scripts_testes.md`); `test-base.yml` e `load-tests.yml` não — o primeiro só é chamado, o segundo roda por `schedule`/`workflow_dispatch`.
 
 ---
 
@@ -426,11 +390,11 @@ Subpastas existentes na raiz (fora do escopo, citadas como contexto ao longo do 
 
 **Caminho:** `/home/gus/Projetos/Caminhar/README.md`
 
-**Arquivos acionados/relacionados:** referencia os documentos de análise da pasta `docs/` — `PROJECT_raiz.md` (este documento), `PROJECT_components.md`, `PROJECT_pages.md`, `PROJECT_hooks.md`, `PROJECT_lib.md`, `PROJECT_data.md`, `PROJECT_examples.md`, `PROJECT_tests.md`, `PROJECT_mocks.md`, `PROJECT_cypress.md`, `PROJECT_load-tests.md`, `PROJECT_scripts.md` — e os arquivos de configuração da raiz que resume (`package.json`, `next.config.js`, `next-sitemap.config.js`, `proxy.js`, `jest.config.js`, `jest.config.db.js`, `eslint.config.js`, `ci.yml`, `load-tests.yml`, `security-tests.yml`).
+**Arquivos acionados/relacionados:** referencia os documentos de análise da pasta `docs/` — `PROJECT_raiz.md` (este documento), `PROJECT_components.md`, `PROJECT_pages.md`, `PROJECT_hooks.md`, `PROJECT_lib.md`, `PROJECT_data.md`, `PROJECT_examples.md`, `PROJECT_tests.md`, `PROJECT_mocks.md`, `PROJECT_cypress.md`, `PROJECT_load-tests.md`, `PROJECT_scripts.md` — e os arquivos de configuração da raiz que resume (`package.json`, `next.config.js`, `next-sitemap.config.js`, `proxy.js`, `jest.config.js`, `jest.config.db.js`, `eslint.config.js`).
 
-**Resumo:** Documento principal do repositório (265 linhas) — porta de entrada do projeto "Caminhar com Deus". Declara versão 1.4.0, engine Node.js 24.19.0/npm 12.0.2 (em conformidade com o `package.json`) e stack Next.js 16 + React 19. Estrutura-se em: visão geral do projeto (blog, músicas/Spotify, vídeos/YouTube, produtos/Mercado Livre-Shopee-Amazon, admin com CRUD reutilizável, autenticação JWT com RBAC, SEO, cache Redis, backup criptografado, 186 arquivos Jest, 5 specs Cypress, 37 arquivos de testes de carga, CI/CD com 5 workflows), resumo de cada área do projeto com link para o documento detalhado correspondente em `docs/`, e tabela de principais tecnologias.
+**Resumo:** Documento principal do repositório (265 linhas) — porta de entrada do projeto "Caminhar com Deus". Declara versão 1.4.0, engine Node.js 24.19.0/npm 12.0.2 (em conformidade com o `package.json`) e stack Next.js 16 + React 19. Estrutura-se em: visão geral do projeto (blog, músicas/Spotify, vídeos/YouTube, produtos/Mercado Livre-Shopee-Amazon, admin com CRUD reutilizável, autenticação JWT com RBAC, SEO, cache Redis, backup criptografado, 186 arquivos Jest, 5 specs Cypress, 37 arquivos de testes de carga, CI/CD com 3 workflows em `.github/workflows/`), resumo de cada área do projeto com link para o documento detalhado correspondente em `docs/`, e tabela de principais tecnologias.
 
-> ⚠️ **Contagem desatualizada:** o README informa **"29 arquivos"** na raiz; a análise atual identifica **38**. As demais contagens conferem com os documentos de cada área (42 arquivos em páginas, 16 tabelas, 186 arquivos de teste).
+> ⚠️ **Contagem desatualizada:** o README informa **"29 arquivos"** na raiz; a análise atual identifica **35**. As demais contagens conferem com os documentos de cada área (42 arquivos em páginas, 16 tabelas, 186 arquivos de teste).
 
 > 📌 A seção **Dados** do README registra: 16 tabelas, **18 migrações** versionadas (000 a 018) e instrução de instalação limpa — a migração `000-create-base-schema` cria o schema base em banco vazio durante o `npm run migrate`. A referência anterior a `generateTokensCSS.js` foi removida do README; os Design Tokens continuam documentados (11 arquivos em `pages/DesignTokens/`, conforme `PROJECT_pages.md`).
 
@@ -442,7 +406,7 @@ Subpastas existentes na raiz (fora do escopo, citadas como contexto ao longo do 
 
 **Caminho:** `/home/gus/Projetos/Caminhar/CHANGELOG.md`
 
-**Arquivos acionados/relacionados:** nenhum arquivo é acionado. Referencia conceitualmente os arquivos que documenta: `security-tests.yml`, `load-tests.yml` (workflow de carga), scripts de backup em `scripts/`, `proxy.js` (rate limiting do login), `next.config.js` (headers de segurança/CORS), `next-sitemap.config.js` (SEO/sitemaps) e componentes de UI.
+**Arquivos acionados/relacionados:** nenhum arquivo é acionado. Referencia conceitualmente os arquivos que documenta — históricos de workflows já removidos da raiz (carga e segurança), scripts de backup em `scripts/`, `proxy.js` (rate limiting do login), `next.config.js` (headers de segurança/CORS), `next-sitemap.config.js` (SEO/sitemaps) e componentes de UI.
 
 **Resumo:** Registro de alterações do projeto (199 linhas), no formato [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/) com aderência ao Semantic Versioning (v2.0.0). Documenta 5 versões (`1.0.0`, `1.1.0`, `1.2.0`, `1.3.0`, `1.4.0`), com a mais recente sendo a **1.4.0 (2026-05-10)**. Cada versão organiza as mudanças em categorias (Adicionado, Melhorado, Segurança, SEO, Componentes UI, Corrigido etc.). Destaques da 1.4.0: sistema de testes de carga com k6 (28 scripts), workflow de segurança, sistema de backup com criptografia (gzip + AES-256-GCM + SHA-256, retenção de 10), rate limiting do login (5 tentativas/15 min com banimento progressivo), cache Redis com fallback local e autenticação JWT (1h, cookies httpOnly). O rodapé contém os links de comparação entre versões no GitHub. A versão 1.0.0 usa data placeholder (`2026-01-XX`) e registra o lançamento inicial (Next.js Pages Router, PostgreSQL, JWT+bcrypt, tema light/dark, integrações Spotify/YouTube/Mercado Livre).
 
@@ -458,7 +422,7 @@ Subpastas existentes na raiz (fora do escopo, citadas como contexto ao longo do 
 
 **Arquivos acionados/relacionados:** nenhum — é um snapshot estático da estrutura de diretórios, sem ser lido por nenhum script do projeto.
 
-**Resumo:** Snapshot da saída do comando `tree` (1.263 linhas) da estrutura de diretórios do projeto, no formato com `├──`/`└──`. A última linha declara o total: **"201 directories, 1060 files"**. Inclui o próprio `tree.txt` na listagem. É um artefato de referência propenso a desatualização — a análise atual identifica 38 arquivos na raiz (o snapshot não inclui dotfiles como `.env`, `.gitignore` etc., pois o `tree` por padrão não os lista), e o momento da captura não é identificável no arquivo.
+**Resumo:** Snapshot da saída do comando `tree` (1.229 linhas) da estrutura de diretórios do projeto, no formato com `├──`/`└──`. A última linha declara o total: **"195 directories, 1032 files"**. Inclui o próprio `tree.txt` na listagem. É um artefato de referência propenso a desatualização — a análise atual identifica 35 arquivos na raiz (o snapshot não inclui dotfiles como `.env`, `.gitignore` etc., pois o `tree` por padrão não os lista), e o momento da captura não é identificável no arquivo.
 
 ---
 
@@ -584,31 +548,28 @@ Subpastas existentes na raiz (fora do escopo, citadas como contexto ao longo do 
 | 10 | `CHANGELOG.md` | Documentação | 7.2 | 🟡 Importante |
 | 11 | `README.md` | Documentação | 7.1 | 🔴 Essencial |
 | 12 | `babel.jest.config.js` | Testes | 4.6 | 🟡 Importante |
-| 13 | `ci.yml` | CI/CD | 6.1 | 🔴 Essencial |
-| 14 | `cypress.config.js` | Testes | 4.7 | 🟡 Importante |
-| 15 | `eslint.config.js` | Qualidade | 5.1 | 🔴 Essencial |
-| 16 | `estrutura.html` | Gerado | 8.1 | ⚪ Acessório |
-| 17 | `estrutura.txt` | Gerado | 8.1 | ⚪ Acessório |
-| 18 | `estrutura_extras.html` | Gerado | 8.2 | ⚪ Acessório |
-| 19 | `estrutura_extras.txt` | Gerado | 8.2 | ⚪ Acessório |
-| 20 | `estrutura_isolados.html` | Gerado | 8.3 | ⚪ Acessório |
-| 21 | `estrutura_isolados.txt` | Gerado | 8.3 | ⚪ Acessório |
-| 22 | `jest.config.base.js` | Testes | 4.1 | 🟡 Importante |
-| 23 | `jest.config.db.js` | Testes | 4.3 | 🟡 Importante |
-| 24 | `jest.config.js` | Testes | 4.2 | 🔴 Essencial |
-| 25 | `jest.setup.js` | Testes | 4.4 | 🔴 Essencial |
-| 26 | `jest.teardown.js` | Testes | 4.5 | 🔴 Essencial |
-| 27 | `jsconfig.json` | Qualidade | 5.2 | 🟡 Importante |
-| 28 | `knip.json` | Qualidade | 5.3 | 🟡 Importante |
-| 29 | `load-tests.yml` | CI/CD | 6.2 | 🟡 Importante |
-| 30 | `next-sitemap.config.js` | Config. Principal | 3.3 | 🟡 Importante |
-| 31 | `next.config.js` | Config. Principal | 3.2 | 🔴 Essencial |
-| 32 | `package-lock.json` | Lockfile | 9.1 | 🔴 Essencial |
-| 33 | `package.json` | Config. Principal | 3.1 | 🔴 Essencial |
-| 34 | `proxy.js` | Config. Principal | 3.4 | 🔴 Essencial |
-| 35 | `schema.knip.json` | Qualidade | 5.4 | ⚪ Acessório |
-| 36 | `security-tests.yml` | CI/CD | 6.3 | 🟡 Importante |
-| 37 | `skills-lock.json` | Lockfile | 9.2 | ⚪ Acessório |
-| 38 | `tree.txt` | Documentação | 7.3 | ⚪ Acessório |
+| 13 | `cypress.config.js` | Testes | 4.7 | 🟡 Importante |
+| 14 | `eslint.config.js` | Qualidade | 5.1 | 🔴 Essencial |
+| 15 | `estrutura.html` | Gerado | 8.1 | ⚪ Acessório |
+| 16 | `estrutura.txt` | Gerado | 8.1 | ⚪ Acessório |
+| 17 | `estrutura_extras.html` | Gerado | 8.2 | ⚪ Acessório |
+| 18 | `estrutura_extras.txt` | Gerado | 8.2 | ⚪ Acessório |
+| 19 | `estrutura_isolados.html` | Gerado | 8.3 | ⚪ Acessório |
+| 20 | `estrutura_isolados.txt` | Gerado | 8.3 | ⚪ Acessório |
+| 21 | `jest.config.base.js` | Testes | 4.1 | 🟡 Importante |
+| 22 | `jest.config.db.js` | Testes | 4.3 | 🟡 Importante |
+| 23 | `jest.config.js` | Testes | 4.2 | 🔴 Essencial |
+| 24 | `jest.setup.js` | Testes | 4.4 | 🔴 Essencial |
+| 25 | `jest.teardown.js` | Testes | 4.5 | 🔴 Essencial |
+| 26 | `jsconfig.json` | Qualidade | 5.2 | 🟡 Importante |
+| 27 | `knip.json` | Qualidade | 5.3 | 🟡 Importante |
+| 28 | `next-sitemap.config.js` | Config. Principal | 3.3 | 🟡 Importante |
+| 29 | `next.config.js` | Config. Principal | 3.2 | 🔴 Essencial |
+| 30 | `package-lock.json` | Lockfile | 9.1 | 🔴 Essencial |
+| 31 | `package.json` | Config. Principal | 3.1 | 🔴 Essencial |
+| 32 | `proxy.js` | Config. Principal | 3.4 | 🔴 Essencial |
+| 33 | `schema.knip.json` | Qualidade | 5.4 | ⚪ Acessório |
+| 34 | `skills-lock.json` | Lockfile | 9.2 | ⚪ Acessório |
+| 35 | `tree.txt` | Documentação | 7.3 | ⚪ Acessório |
 
-> **Nota:** os três workflows de CI/CD da raiz (`ci.yml`, `load-tests.yml`, `security-tests.yml`) estão fora de `.github/workflows/` e por isso não são executados automaticamente pelo GitHub Actions nesta localização (ver seções 6.1–6.3). Os workflows ativos do repositório são `pr-coverage.yml` e `test-base.yml`, em `.github/workflows/` (subpasta, fora do escopo deste documento).
+> **Nota:** a raiz **não tem mais nenhum workflow** — os três arquivos `.yml` de CI/CD que existiam aqui (`ci`, `load-tests` e `security-tests`) foram removidos, por serem rascunhos que nunca chegaram a ser registrados no GitHub (a API de workflows devolve `total_count: 3`, todos em `.github/workflows/`) e portanto nunca tinham executado. Os três workflows vigentes do repositório são `pr-coverage.yml`, `test-base.yml` e `load-tests.yml`, todos em `.github/workflows/` (subpasta, fora do escopo deste documento) — ver seção 6.

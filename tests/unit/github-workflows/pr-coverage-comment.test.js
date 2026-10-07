@@ -27,6 +27,11 @@ const JOB = 'coverage-report';
 const NOME_STEP = 'Post PR Comment on Failure';
 const ARQUIVO_AMOSTRA = 'coverage-output.txt';
 
+/** Workflow inteiro, parseado do disco (fonte única de verdade). */
+function carregarWorkflow() {
+  return YAML.parse(fs.readFileSync(CAMINHO_WORKFLOW, 'utf8'));
+}
+
 /** Limite de caracteres da API de comentários do GitHub. */
 const MAX_CHARS_API = 65536;
 
@@ -103,7 +108,7 @@ function amostraSemTabela() {
 
 /** Script do step, lido do próprio workflow (fonte única de verdade). */
 function scriptDoStep() {
-  const workflow = YAML.parse(fs.readFileSync(CAMINHO_WORKFLOW, 'utf8'));
+  const workflow = carregarWorkflow();
   const step = workflow.jobs[JOB].steps.find(candidato => candidato.name === NOME_STEP);
   if (!step || !step.with || typeof step.with.script !== 'string') {
     throw new Error(`step "${NOME_STEP}" com script não encontrado em ${CAMINHO_WORKFLOW}`);
@@ -247,6 +252,104 @@ describe('pr-coverage.yml — comentário de cobertura', () => {
 
       expect(legado).toContain('\\`');
       expect(legado).toContain('\\${');
+    });
+  });
+});
+
+/**
+ * Estas asserções cobrem o resto do `pr-coverage.yml` — gatilhos, guards de
+ * evento, `concurrency`, permissões e timeouts — que nenhum teste de execução
+ * alcança. O motivo é o modo de falha caro: apagar um guard mantém a suíte
+ * verde enquanto o run de `push` quebra em `context.issue.number` e o
+ * `coverage-report` fica vermelho na `main`; renomear um job renomeia o check
+ * que a branch protection marca como required e todo PR trava em "Expected";
+ * tirar `push` do `on:` devolve o workflow ao estado de 0 runs que originalmente
+ * deixou a `main` sem gate nenhum. Nada disso aparece numa reprovação de
+ * cobertura — por isso o YAML é lido do disco a cada execução, não de fixture.
+ */
+describe('pr-coverage.yml — gatilhos, guards e configuração do gate', () => {
+  const wf = carregarWorkflow();
+
+  /** Localiza um step pelo nome, com mensagem útil se ele sumir do YAML. */
+  const stepDe = (job, nome) => {
+    const passo = wf.jobs[job].steps.find(candidato => candidato.name === nome);
+    if (!passo) throw new Error(`step "${nome}" não encontrado no job "${job}"`);
+    return passo;
+  };
+
+  // P1 — o gate precisa EXISTIR e NÃO MENTIR. É a regressão mais cara
+  // (o workflow já ficou com 0 runs por só declarar `pull_request`) e a mais
+  // fácil de cometer num "cleanup": nada aqui reprova em tempo de execução.
+  describe('P1 — o gate existe e não mente', () => {
+    it('dispara em push para main, em pull_request para main e via workflow_dispatch', () => {
+      // Sem `push` a `main` volta a não ter verificação nenhuma depois do merge.
+      expect(wf.on.push.branches).toContain('main');
+      expect(wf.on.pull_request.branches).toContain('main');
+      expect(Object.keys(wf.on)).toContain('workflow_dispatch');
+    });
+
+    it('guarda "Remove Old Coverage Comments" contra o evento push', () => {
+      // `context.issue.number` não existe em `push`: sem o guard, o
+      // `github-script` lança e derruba o job na `main`.
+      expect(stepDe(JOB, 'Remove Old Coverage Comments').if).toContain(
+        "github.event_name == 'pull_request'"
+      );
+    });
+
+    it('exige as DUAS condições em "Post PR Comment on Failure"', () => {
+      const condicao = stepDe(JOB, NOME_STEP).if;
+      // A segunda condição é o que faz o gate reportar a reprovação da
+      // cobertura; perdê-la, o job passa a falhar sem nunca explicar por quê.
+      expect(condicao).toContain("github.event_name == 'pull_request'");
+      expect(condicao).toContain("needs.coverage.result == 'failure'");
+    });
+
+    it('mantém os três jobs com os nomes que a branch protection marca como required', () => {
+      expect(Object.keys(wf.jobs).sort()).toEqual(['coverage', 'coverage-report', 'lint']);
+      expect(wf.jobs[JOB].if).toBe('always()');
+      expect(wf.jobs[JOB].needs).toBe('coverage');
+    });
+
+    it('mantém set -o pipefail e --ci no comando que mede a cobertura', () => {
+      const { run } = stepDe('coverage', 'Run Tests with Coverage');
+      // Sem `pipefail` o exit code é o do `tee` (sempre zero) e uma cobertura
+      // abaixo do mínimo passaria como sucesso — é o coração do gate.
+      expect(run).toContain('set -o pipefail');
+      expect(run).toContain('npx jest --ci --coverage');
+    });
+  });
+
+  // P2 — um literal `true` no `cancel-in-progress` faria os runs da `main` se
+  // matarem entre si, e um `permissions` mal declarado ou derruba o comentário
+  // no PR (checkout sem `contents: read`) ou gera um token com acesso a mais
+  // do que o gate usa.
+  describe('P2 — cancelamento por evento e menor privilégio', () => {
+    it('deriva o grupo de concurrency do evento e só cancela em pull_request', () => {
+      // Duas substrutas, não a string inteira: o prefixo do grupo é cosmético
+      // e renomeá-lo não deve reprovar o teste.
+      expect(wf.concurrency.group).toContain(
+        "format('pr-coverage-pr-{0}', github.event.pull_request.number)"
+      );
+      expect(wf.concurrency.group).toContain("format('pr-coverage-ref-{0}', github.ref)");
+      expect(wf.concurrency['cancel-in-progress']).toBe(
+        "${{ github.event_name == 'pull_request' }}"
+      );
+    });
+
+    it('mantém contents: read no workflow e contents + pull-requests no coverage-report', () => {
+      expect(wf.permissions).toEqual({ contents: 'read' });
+      expect(wf.jobs[JOB].permissions).toEqual({ contents: 'read', 'pull-requests': 'write' });
+    });
+  });
+
+  // P3 — nice-to-have: sem teto, um jest/eslint travado queima os 360 min do
+  // default do runner; os valores são folgados de propósito para não reprovar
+  // por lentidão.
+  describe('P3 — tempo-limite dos jobs', () => {
+    it('aplica timeout-minutes 15/45/20 em lint/coverage/coverage-report', () => {
+      expect(wf.jobs.lint['timeout-minutes']).toBe(15);
+      expect(wf.jobs.coverage['timeout-minutes']).toBe(45);
+      expect(wf.jobs[JOB]['timeout-minutes']).toBe(20);
     });
   });
 });

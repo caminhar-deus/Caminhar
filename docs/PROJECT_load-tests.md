@@ -33,7 +33,7 @@ A pasta `load-tests/` contém **37 arquivos** (30 scripts de teste k6 + 7 módul
 | **security/** | 4 | Testes de segurança (rate limit, spoofing, DDoS, login negativo) |
 
 **Arquivos fora da pasta** que integram o ecossistema de load tests:
-- `load-tests.yml` — Workflow CI/CD do GitHub Actions
+- `load-tests.yml` — Workflow CI/CD do GitHub Actions (em `.github/workflows/`)
 - `scripts/run-all-load-tests-sequentially.js` — Orquestrador que executa todos os 30 scripts
 - `scripts/run-load-tests.sh` — Wrapper bash do orquestrador
 - `scripts/clean-load-test-posts.js` — Limpeza de posts de teste no banco
@@ -93,7 +93,7 @@ A pasta `load-tests/` contém **37 arquivos** (30 scripts de teste k6 + 7 módul
     └── rate-limit-test.js
 ```
 
-Os arquivos relacionados fora da pasta (detalhados na seção [Arquivos Relacionados Fora da Pasta `load-tests/`](#arquivos-relacionados-fora-da-pasta-load-tests)) são: `load-tests.yml` (raiz do projeto) e os scripts `scripts/run-all-load-tests-sequentially.js`, `scripts/run-load-tests.sh`, `scripts/clean-load-test-posts.js`, `scripts/clear-test-auth-locks.js`, `scripts/generate-load-report.js`, `scripts/clean-k6-reports.js`, `scripts/clean-test-db.js`, `scripts/utils/cleanup.js`, `scripts/utils/constants.js`, `scripts/utils/load-env.js` e `scripts/check-sql-injection.js`.
+Os arquivos relacionados fora da pasta (detalhados na seção [Arquivos Relacionados Fora da Pasta `load-tests/`](#arquivos-relacionados-fora-da-pasta-load-tests)) são: `load-tests.yml` (em `.github/workflows/`) e os scripts `scripts/run-all-load-tests-sequentially.js`, `scripts/run-load-tests.sh`, `scripts/clean-load-test-posts.js`, `scripts/clear-test-auth-locks.js`, `scripts/generate-load-report.js`, `scripts/clean-k6-reports.js`, `scripts/clean-test-db.js`, `scripts/utils/cleanup.js`, `scripts/utils/constants.js`, `scripts/utils/load-env.js` e `scripts/check-sql-injection.js`.
 
 ## 4. Análise de Cada Arquivo
 
@@ -1199,14 +1199,14 @@ Teste negativo de autenticação que envia credenciais inválidas. Garante que o
 
 ### `load-tests.yml` (CI/CD)
 
-**Localização:** `/load-tests.yml` (raiz do projeto)
+**Localização:** `.github/workflows/load-tests.yml` (fora da pasta `load-tests/`, em `.github/workflows/`)
 
 **O que faz:** Workflow do GitHub Actions que executa a suíte completa de testes de carga em CI.
 
 **Propósito:** Automatizar a execução de todos os 30 scripts de teste de carga em ambiente isolado com PostgreSQL e Redis, com validação de thresholds e cache de dependências.
 
 **Estrutura do workflow:**
-1. **Schedule:** Execução automática diária às 03:00 UTC
+1. **Schedule:** Execução automática diária às 04:17 UTC (`cron: '17 4 * * *'` — o minuto 17 é deliberado: o GitHub agenda todos os crons de minuto 0 no mesmo instante e o pico atrasa a execução)
 2. **Triggers manuais:** via `workflow_dispatch`
 3. **Job `call-test-base`:** Reutiliza workflow `test-base.yml` com `test-type: load` e comando `node scripts/run-all-load-tests-sequentially.js`
 4. **Job `validate-and-report`:**

@@ -19,7 +19,7 @@ O que isso significa na prática:
   Fail-closed é a posição correta enquanto não há topologia declarada.
 - Nada aqui é urgente agora. Este documento existe para que a decisão de
   topologia, quando ela vier, seja tomada com evidência e não por tentativa e erro.
-- O único cenário **verificado em execução** é a CI: `load-tests.yml` sobe a app
+- O único cenário **verificado em execução** é a CI: `.github/workflows/load-tests.yml` sobe a app
   com `TRUST_PROXY=true` (§9), e é por isso que o modelo de confiança tem testes
   de regressão em `tests/unit/lib/api/helpers.ip.test.js` e k6 em
   `load-tests/security/ip-spoofing-test.js`.

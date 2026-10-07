@@ -9,13 +9,13 @@
 #
 # Uso:
 #   npm run lint:workflows                       # descobre .github/workflows e action.yml
-#   npm run lint:workflows -- ci.yml load-tests.yml
+#   npm run lint:workflows -- caminho/para/arquivo.yml
 #   ./scripts/diagnostics/lint-workflows.sh --format '{{json .}}'
 #
-# Sem argumentos, o actionlint procura os workflows em `.github/workflows/` e as
-# actions compostas em `.github/actions/**/action.y{a,}ml`. Os workflows que
-# ainda estão na raiz (`ci.yml`, `load-tests.yml`, `security-tests.yml`) não são
-# descobertos: passe-os explicitamente.
+# Sem argumentos, o actionlint só descobre os workflows em `.github/workflows/` e
+# as actions compostas em `.github/actions/**/action.y{a,}ml` — qualquer outro
+# arquivo precisa ser passado explicitamente como argumento (o script não
+# acrescenta caminho nenhum: ele termina em `exec "$bin" "$@"`).
 #
 # O binário é resolvido nesta ordem:
 #   1. $ACTIONLINT_BIN

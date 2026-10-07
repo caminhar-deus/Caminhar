@@ -1,15 +1,54 @@
-name: PR Test Coverage
+name: Lint & Test Coverage Gate
 
+# Por que `push` para `main` e não só `pull_request`: o projeto faz push direto
+# na `main`, então este workflow nunca executou e a `main` ficou sem nenhum
+# gate de suíte. Em `push` o gate valida o estado EFETIVO da `main` depois do
+# merge — e também cobre merge feito sem PR, revert e hotfix, que hoje não são
+# verificados em lugar nenhum. `workflow_dispatch` permite rodar o mesmo gate
+# sob demanda (bisect, revalidação de um SHA antigo).
+#
+# Custo aceito e NÃO deve ser "corrigido": o commit de merge roda duas vezes
+# (uma no PR, outra no push para a `main`). É a contraparte de (A) + (B)
+# juntos — o commit é testado no PR e reconfirmado na `main`. Suprimir uma das
+# duas reintroduziria a lacuna que este gatilho veio fechar.
 on:
+  push:
+    branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
 
-# Uma execução por PR: sem isso, dois pushes próximos geram execuções
-# concorrentes e o `coverage-report` da mais antiga apaga o comentário que a
-# mais nova acabou de publicar, republicando a saída de cobertura desatualizada.
+# O grupo é derivado do evento porque `github.event.pull_request` não existe em
+# `push`: com um grupo fixo, `pr-coverage-${{ github.event.pull_request.number }}`
+# viraria a string literal `pr-coverage-` e TODAS as execuções na `main`
+# colidiriam num único grupo, se cancelando entre si.
+#
+# - `pull_request`: grupo por número de PR e `cancel-in-progress: true` — dois
+#   pushes próximos no mesmo PR gerariam execuções concorrentes e o
+#   `coverage-report` da mais antiga apagaria o comentário que a mais nova
+#   acabou de publicar, republicando a saída de cobertura desatualizada.
+# - `push`/`workflow_dispatch`: grupo por `github.ref` com
+#   `cancel-in-progress: false`. O que isso faz de fato: o GitHub DESCARTA os
+#   runs PENDENTES do mesmo grupo quando um novo entra na fila, mas nunca
+#   interrompe o run já EM ANDAMENTO. Efeito prático: o `head` da `main` é
+#   sempre validado, enquanto commits intermediários de um push rápido podem
+#   ter a verificação pulada (fila descartada, não run morto no meio). É
+#   justamente o comportamento desejado — não se interrompe um gate em
+#   andamento, porque um resultado parcial é pior do que esperar (mesmo
+#   raciocínio de `.github/workflows/load-tests.yml`).
+#
+# `format()` porque o `+` não concatena strings nas expressões do GitHub.
 concurrency:
-  group: pr-coverage-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  group: ${{ github.event_name == 'pull_request' && format('pr-coverage-pr-{0}', github.event.pull_request.number) || format('pr-coverage-ref-{0}', github.ref) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Menor privilégio no nível do workflow: `lint` e `coverage` só fazem checkout
+# + `npm ci` e param com `contents: read` (exigido pelo actions/checkout). O
+# `coverage-report` declara `permissions` próprias, que SUBSTITUEM as do
+# workflow em vez de somar com elas — então nada se perde nesse job. Nenhum
+# step precisa de mais do que isto.
+permissions:
+  contents: read
 
 jobs:
   # Job autocontido de propósito — este é o único job do repositório que não
@@ -52,6 +91,10 @@ jobs:
   # settings de branch protection do repositório.
   lint:
     runs-on: ubuntu-latest
+    # Folga para não reprovar por lentidão (ESLint sobre o repo inteiro é
+    # determinístico, só demora); teto para derrubar um runner travado em vez
+    # de queimar os 360 min do default.
+    timeout-minutes: 15
 
     steps:
       - name: Checkout Repository
@@ -65,6 +108,11 @@ jobs:
 
   coverage:
     runs-on: ubuntu-latest
+    # Folga maior porque é a suíte inteira com instrumentação de cobertura
+    # (baseline local: ~20 s de jest puro, minutos no runner frio com `npm ci`);
+    # teto para derrubar um jest travado em vez de queimar os 360 min do
+    # default do runner.
+    timeout-minutes: 45
 
     steps:
       - name: Checkout Repository
@@ -76,16 +124,24 @@ jobs:
       # `set -o pipefail` é o que propaga o exit code do jest: sem ele o status
       # do step seria o do `tee` (sempre zero) e uma cobertura abaixo do mínimo
       # passaria como sucesso — o comentário no PR depende de o job falhar.
+      #
+      # `--ci` é redundância EXPLÍCITA: o jest já liga o modo CI por padrão
+      # quando detecta `isCI`, e o runner do GitHub tem `CI=true` — o comando
+      # antigo já rodava em modo CI lá. O que o flag garante é o modo CI também
+      # na execução LOCAL (fora de CI, sem `CI` setado), onde um snapshot criado
+      # pela primeira vez seria gravado silenciosamente em vez de reprovar. Ele
+      # também dá propósito ao `--ci` do script `test:ci` do package.json, cujo
+      # único chamador de CI era o `ci.yml`, já removido.
       - name: Run Tests with Coverage
         run: |
           set -o pipefail
-          npx jest --coverage | tee coverage-output.txt
+          npx jest --ci --coverage | tee coverage-output.txt
 
       # `always()` mantém a saída publicada mesmo quando os thresholds reprovam
       # a execução: é justamente esse arquivo que o `coverage-report` baixa para
       # publicar o comentário no PR.
       - name: Upload Coverage Output
-        if: always()
+        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: coverage-output
@@ -96,7 +152,7 @@ jobs:
       # .gitignore, então o upload é o que permite ao `coverage-report`
       # republicá-lo como `jest-coverage-report`.
       - name: Upload Coverage HTML
-        if: always()
+        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: coverage-html
@@ -108,6 +164,9 @@ jobs:
     needs: coverage
     if: always()
     runs-on: ubuntu-latest
+    # Folga para `npm ci` + actionlint + knip sobre o repo inteiro; teto para
+    # derrubar um runner travado em vez de queimar os 360 min do default.
+    timeout-minutes: 20
 
     # Necessário para permitir que a Action crie/remova comentários no PR.
     # Declarar `permissions` redefine todas as permissões não listadas para
@@ -126,8 +185,9 @@ jobs:
 
       # `continue-on-error` impede que a ausência do artefato aborte o job:
       # se os testes falharem antes de gerar a saída, o download retorna erro
-      # e os steps seguintes (comentário no PR e upload do relatório) seriam
-      # ignorados — o `if: always()` está no job, não nos steps.
+      # e derruba o run — nenhum dos dois downloads tem `if` algum, então o
+      # `always()` que existe está no job (que decide se ele roda) e nos
+      # uploads, nunca aqui.
       - name: Download Coverage Output
         uses: actions/download-artifact@v4
         continue-on-error: true
@@ -144,7 +204,12 @@ jobs:
           name: coverage-html
           path: coverage
 
+      # Guarda de evento: `context.issue.number` só existe em `pull_request`.
+      # Em `push` (ou `workflow_dispatch`) não há número de PR no contexto e o
+      # `github-script` lançaria erro, derrubando o job — e não há comentário
+      # antigo a remover de qualquer maneira.
       - name: Remove Old Coverage Comments
+        if: ${{ github.event_name == 'pull_request' }}
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -170,8 +235,11 @@ jobs:
               });
             }
 
+      # Duas condições, ambas obrigatórias: a falha da cobertura (original) e o
+      # `event_name`, porque comentar no PR só faz sentido em `pull_request` —
+      # em `push` não existe PR e `context.issue.number` quebraria o script.
       - name: Post PR Comment on Failure
-        if: ${{ needs.coverage.result == 'failure' }}
+        if: ${{ github.event_name == 'pull_request' && needs.coverage.result == 'failure' }}
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -219,7 +287,7 @@ jobs:
 
       - name: Upload Coverage HTML Report
         uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ always() }}
         with:
           name: jest-coverage-report
           path: coverage/

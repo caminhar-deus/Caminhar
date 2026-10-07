@@ -454,10 +454,10 @@ O script `test:e2e:record` utiliza variável de ambiente (`$CYPRESS_RECORD_KEY`)
 
 ## 2. Testes E2E Não Executados no Pipeline CI
 
-**Localização:** `/ci.yml` + `/package.json`
+**Localização:** `/.github/workflows/pr-coverage.yml` + `/package.json`
 
 **Descrição:**
-O pipeline de CI (`ci.yml`) executa apenas `npm run test:ci`, que roda a suíte Jest (`jest --ci --coverage`). Os testes E2E do Cypress (`npm run test:e2e`) **não são executados em nenhum momento no CI**.
+O pipeline de CI (`.github/workflows/pr-coverage.yml`) executa `npm run lint`, a suíte Jest (`npx jest --ci --coverage`), `actionlint` e `knip` — nenhum deles roda os testes E2E do Cypress (`npm run test:e2e`), que **não são executados em nenhum momento no CI**. Ele dispara em `pull_request`, em `push` para `main` e via `workflow_dispatch`; o histórico de **0 runs** (`total_count: 0` em `/actions/workflows/362371581/runs`) era o estado até 07/10/2026, enquanto o gatilho era somente `pull_request` e o projeto fazia push direto na `main` sem abrir PR.
 
 **Impacto:**
 - Regressões em funcionalidades críticas (blog, post, lightbox, navegação) não são detectadas automaticamente

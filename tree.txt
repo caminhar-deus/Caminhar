@@ -9,7 +9,6 @@
 │   ├── pg.js
 │   └── styleMock.js
 ├── babel.jest.config.js
-├── ci.yml
 ├── components
 │   ├── Admin
 │   │   ├── AdminAudit.js
@@ -727,7 +726,6 @@
 │       ├── ip-spoofing-test.js
 │       ├── login-negative-test.js
 │       └── rate-limit-test.js
-├── load-tests.yml
 ├── logs
 │   ├── coverage-output.log
 │   ├── eslint.log
@@ -938,7 +936,6 @@
 │   ├── validate-schema.js
 │   ├── view-backup-logs.js
 │   └── warm-routes.js
-├── security-tests.yml
 ├── skills-lock.json
 ├── tests
 │   ├── examples
@@ -1229,4 +1226,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-195 directories, 1035 files
+195 directories, 1032 files

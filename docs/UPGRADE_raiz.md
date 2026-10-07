@@ -1,8 +1,9 @@
 # Documento de Melhorias — Arquivos da Raiz do Projeto (`/`)
 
 > **Data da análise:** 24/09/2026
-> **Objetivo:** Levantamento analítico de possíveis melhorias identificadas nos **38 arquivos** atuais da raiz do projeto. **Nenhuma correção deve ser aplicada** — apenas documentar.
+> **Objetivo:** Levantamento analítico de possíveis melhorias identificadas nos **35 arquivos** atuais da raiz do projeto (os três workflows `.yml` que existiam aqui foram removidos depois da análise). **Nenhuma correção deve ser aplicada** — apenas documentar.
 > **Baseado em:** Análise profunda dos arquivos atuais da raiz (24/09/2026), com apoio dos documentos anteriores em `/docs/` e conhecimento do projeto como um todo. Em caso de divergência, prevalece a análise atual.
+> **Atualização (07/10/2026):** os três arquivos `.yml` de workflow que existiam na raiz (`ci`, `load-tests` e `security-tests`) foram **removidos** — eram rascunhos que nunca chegaram a ser registrados como workflow no GitHub. As seções que os tratavam (5.3, 8.4, 8.5, 9.13, 9.29, 9.36 e 13.2) saíram deste documento, por isso a numeração das subseções tem lacunas. Os workflows vigentes do repositório estão em `.github/workflows/` (`pr-coverage.yml`, `test-base.yml` e `load-tests.yml`).
 
 
 ## Índice
@@ -123,13 +124,13 @@
 
 **Arquivo:** `/README.md`
 
-**Problema:** O README informa "28 arquivos" na raiz e "53 arquivos" em páginas, mas a análise atual identifica **38 arquivos** na raiz e **42** em páginas. O README também cita `generateTokensCSS.js` e Design Tokens (11 arquivos) que foram **removidos** do projeto.
+**Problema:** O README informa "28 arquivos" na raiz e "53 arquivos" em páginas, mas a análise atual identifica **35 arquivos** na raiz e **42** em páginas. O README também cita `generateTokensCSS.js` e Design Tokens (11 arquivos) que foram **removidos** do projeto.
 
 **Impacto:** Documentação desatualizada que induz a erro novos desenvolvedores sobre a estrutura real do projeto.
 
-**Sugestão:** Atualizar o README com as contagens corretas (38 raiz, 42 páginas) e remover referências a arquivos que não existem mais (`generateTokensCSS.js`, tokens JS).
+**Sugestão:** Atualizar o README com as contagens corretas (35 raiz, 42 páginas) e remover referências a arquivos que não existem mais (`generateTokensCSS.js`, tokens JS).
 
-**Status:** ✅ Implementado (parcial) — a seção **Dados** do `README.md` foi atualizada para refletir o novo baseline de migrações (16 tabelas, 16 migrações versionadas 000-016 e instrução de instalação limpa via `000-create-base-schema`), acompanhando as implementações em `scripts/migrations/`. As contagens de raiz/páginas (28 vs 38; 53 vs 42) e as referências a `generateTokensCSS.js`/Design Tokens permanecem abertas.
+**Status:** ✅ Implementado (parcial) — a seção **Dados** do `README.md` foi atualizada para refletir o novo baseline de migrações (16 tabelas, 16 migrações versionadas 000-016 e instrução de instalação limpa via `000-create-base-schema`), acompanhando as implementações em `scripts/migrations/`. As contagens de raiz/páginas (28 vs 35; 53 vs 42) e as referências a `generateTokensCSS.js`/Design Tokens permanecem abertas.
 
 ---
 
@@ -165,7 +166,7 @@
 
 **Arquivo:** `/tree.txt`
 
-**Problema:** Snapshot da estrutura de diretórios (38 raiz, 46.264 sub-pastas/arquivos) que tende a desatualizar rapidamente.
+**Problema:** Snapshot da estrutura de diretórios (35 arquivos na raiz; a última linha declara 195 diretórios e 1.032 arquivos) que tende a desatualizar rapidamente.
 
 **Impacto:** Informação desatualizada; o arquivo já difere da estrutura real.
 
@@ -205,7 +206,7 @@
 
 ### 5.1 Proliferação de arquivos grandes na raiz
 
-**Arquivos:** `schema.knip.json` (1113 linhas), `skills-lock.json` (~945 linhas), `tree.txt` (38+46k linhas referenciando sub-pastas), `package-lock.json` (~602 KB), `estrutura.html`/`estrutura_extras.html`/`estrutura_isolados.html` (~1.1 MB cada), `estrutura.txt`/`estrutura_extras.txt`/`estrutura_isolados.txt` (~340 linhas cada)
+**Arquivos:** `schema.knip.json` (1113 linhas), `skills-lock.json` (~945 linhas), `tree.txt` (1.229 linhas), `package-lock.json` (~602 KB), `estrutura.html`/`estrutura_extras.html`/`estrutura_isolados.html` (~1.1 MB cada), `estrutura.txt`/`estrutura_extras.txt`/`estrutura_isolados.txt` (~340 linhas cada)
 
 **Problema:** A raiz concentra muitos arquivos grandes que não são código-fonte da aplicação.
 
@@ -224,18 +225,6 @@
 **Impacto:** Polui a raiz; é um artefato de ferramenta de IA.
 
 **Sugestão:** Mover para `.agents/` ou `config/`, mantendo a raiz enxuta.
-
----
-
-### 5.3 `ci.yml` — workflow básico alternativo ao padrão adotado
-
-**Arquivo:** `/ci.yml`
-
-**Problema:** Workflow de CI simples (checkout → setup node → install → lint → test) que replica parte da funcionalidade de workflows mais completos já existentes (`load-tests.yml`, `security-tests.yml`).
-
-**Impacto:** Risco de manutenção duplicada; se uma mudança de ambiente ou passo de build for necessária, precisa ser aplicada em múltiplos workflows.
-
-**Sugestão:** Documentar a intenção do `ci.yml` (é um workflow alternativo simplificado? É usado por algum ambiente específico?) ou consolidar com os workflows existentes.
 
 ---
 
@@ -315,9 +304,9 @@
 
 **Arquivo:** `/home/qa/Projeto/Caminhar/.github/workflows/test-base.yml` (subpasta)
 
-**Problema:** O `test-base.yml` é referenciado pelos workflows da raiz (`load-tests.yml`, `security-tests.yml`) mas está em `.github/workflows/` (subpasta), fora do escopo desta análise de raiz. O `pr-coverage.yml`, que também o referenciava da raiz, foi movido para a mesma subpasta e passou a executar a suíte de cobertura em job próprio, sem chamada reutilizável.
+**Problema:** O `test-base.yml` está em `.github/workflows/` (subpasta), fora do escopo desta análise de raiz. Hoje ele é chamado apenas por `load-tests.yml` (também em `.github/workflows/`); o `pr-coverage.yml` executa a suíte de cobertura em job próprio, sem chamada reutilizável.
 
-**Impacto:** Nenhum — apenas nota de escopo. Os workflows da raiz dependem dele, mas ele não é um arquivo da raiz.
+**Impacto:** Nenhum — apenas nota de escopo. Os workflows do repositório dependem dele, mas ele não é um arquivo da raiz.
 
 **Sugestão:** Nenhuma ação necessária; apenas registro para contexto.
 
@@ -325,7 +314,7 @@
 
 ## 8. Novos arquivos identificados (não documentados anteriormente)
 
-Esta seção documenta os arquivos que NÃO estavam presentes na análise anterior de 02/08/2026 (que cobria 31 arquivos) e que foram identificados na análise atual de 24/09/2026 (38 arquivos).
+Esta seção documenta os arquivos que NÃO estavam presentes na análise anterior de 02/08/2026 (que cobria 31 arquivos) e que foram identificados na análise atual de 24/09/2026 (38 arquivos à época; hoje são 35, após a remoção dos três workflows `.yml` da raiz).
 
 ### 8.1 `.ai-memory.toml`
 
@@ -372,35 +361,6 @@ Esta seção documenta os arquivos que NÃO estavam presentes na análise anteri
 **Arquivo:** `/home/gus/Projetos/Caminhar/.dependency-cruiser.isolados.cjs`
 
 **Descrição:** Configuração do dependency-cruiser focada em validação de código isolado. Contém 24 regras de forbidden, com os mesmos tipos de regras do arquivo extras.cjs, mas aplicadas a um contexto diferente.
-
-**Status:** Novo arquivo não documentado anteriormente.
-
----
-
-### 8.4 `ci.yml`
-
-**Arquivo:** `/home/gus/Projetos/Caminhar/ci.yml`
-
-**Descrição:** Workflow de CI básico. Executa nos eventos `push` (main, develop, feat/*, fix/*, chore/*, docs/*, refactor/*) e `pull_request` (target: main), em ubuntu-latest com Node.js 24 e npm 12.
-
-**Passos:**
-1. `checkout`: actions/checkout@v4
-2. `setup-node`: actions/setup-node@v4 (node-version: 24)
-3. `install`: npm ci (cache do npm habilitado)
-4. `lint`: npm run lint
-5. `test`: npm test
-
-**Observação:** Este workflow é uma versão simplificada do processo de CI, com apenas lint e test (sem build, sem deploy, sem testes de carga ou segurança).
-
-**Status:** Novo arquivo não documentado anteriormente.
-
----
-
-### 8.5 `security-tests.yml`
-
-**Arquivo:** `/home/gus/Projetos/Caminhar/security-tests.yml`
-
-**Descrição:** Workflow de testes de segurança no GitHub Actions. Executa em push/PR para main, com jobs de análise de segurança (dependências vulneráveis, scanning, etc.).
 
 **Status:** Novo arquivo não documentado anteriormente.
 
@@ -559,7 +519,7 @@ Também contém regras de teste/mock e regras genéricas. Opções: includeOnly 
 - `jsconfig.json` (paths)
 - Documentação em `/docs/`
 
-**Resumo:** Documentação principal do projeto Caminhar. Contém: visão geral, pré-requisitos (Node 24.16.0, npm 11.17.0 — **inconsistente** com package.json que exige 24.18.0/12.0.2), instalação, configuração de ambiente, scripts npm, estrutura de diretórios, rota do API, status do projeto, referências. Menções a arquivos removidos (`generateTokensCSS.js`, Design Tokens) que precisam ser removidas. Contagens desatualizadas (28 raiz vs 38 atuais; 53 páginas vs 42 atuais).
+**Resumo:** Documentação principal do projeto Caminhar. Contém: visão geral, pré-requisitos (Node 24.16.0, npm 11.17.0 — **inconsistente** com package.json que exige 24.18.0/12.0.2), instalação, configuração de ambiente, scripts npm, estrutura de diretórios, rota do API, status do projeto, referências. Menções a arquivos removidos (`generateTokensCSS.js`, Design Tokens) que precisam ser removidas. Contagens desatualizadas (28 raiz vs 35 atuais; 53 páginas vs 42 atuais).
 
 ---
 
@@ -572,18 +532,6 @@ Também contém regras de teste/mock e regras genéricas. Opções: includeOnly 
 - `package.json` (dependências @babel/core, @babel/preset-env, @babel/preset-react)
 
 **Resumo:** Configuração Babel para transformação de módulos ES em CommonJS para o Jest. Usa @babel/preset-env e @babel/preset-react com runtime automatico. Exporta como função que recebe api e opts. 293 bytes, 9 linhas.
-
----
-
-### 9.13 `ci.yml`
-
-**Caminho:** `/home/gus/Projetos/Caminhar/ci.yml`
-
-**Arquivos acionados/relacionados:**
-- `.github/workflows/` (outros workflows)
-- `package.json` (scripts test, lint)
-
-**Resumo:** Workflow de CI básico no GitHub Actions. Executa lint e test em push/PR para branches principais. Versão simplificada do processo completo de CI. 2.3KB, 46 linhas.
 
 ---
 
@@ -806,33 +754,6 @@ Tamanho: ~15KB.
 
 ---
 
-### 9.29 `load-tests.yml`
-
-**Caminho:** `/home/gus/Projetos/Caminhar/load-tests.yml`
-
-**Arquivos acionados/relacionados:**
-- `.github/workflows/test-base.yml` (workflow reutilizável chamado)
-- `package.json` (scripts de load test)
-- `next.config.js` (configurações de execução)
-
-**Resumo:** Workflow de testes de carga no GitHub Actions. Executa em push/PR para main, com 3 jobs:
-
-**Job `validate`:**
-- Valida que todos os arquivos do workflow estão bem formados
-- Executa em ubuntu-latest com Node 24
-- Steps: checkout, setup-node, install (npm ci), actionlint (todos .github/workflows/*.yml e .github/actions/**/*.yml), yamllint (todos os arquivos .yml), validação de sintaxe JavaScript dos scripts em scripts/diagnostics/ e scripts/test/*
-
-**Job `run-load-tests`:**
-- Executa os testes de carga reais
-- Executa em ubuntu-latest com Node 24
-- Steps: checkout, setup-node, install (npm ci), setup Docker Compose (imagem postgres:16-alpine, serviço postgres com healthcheck, variáveis de ambiente POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB, POSTGRES_PORT), espera healthcheck do postgres, setup do schema do banco via psql com DDL completo (41 tabelas), execução do script de teste de carga (node scripts/test/load-test.js) com EXIT_CODE capturado, GRAFANA_URL e GRAFANA_API_KEY exportados
-
-**Variáveis de ambiente usadas:** DATABASE_URL, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, REDIS_HOST, REDIS_PORT, REDIS_PASS, SESSION_SECRET, TEST_BASE_URL, LOAD_TEST_BASE_URL, BACKEND_URL, RESULTS_PORT, RESULTS_PATH, K6_PROMETHEUS_FROM, K6_PROMETHEUS_GRANULARITY, SCENARIO_NAME, COLUMNS, STRIP_ANSI, VIP_COUNT, PRIVATE_COUNT, FORCE_WAIT_MS, MIN_WAIT_MS, MAX_WAIT_MS, JWT_SECRET, SENTRY_DSN, SENTRY_TRACES_SAMPLE_RATE, K6_CHECKPOINT_DIR, K6_CHECKPOINT_INTERVAL, K6_CHECKPOINT_POLICY, K6_PROMETHEUS_RW_SERVER_URL, K6_PROMETHEUS_RW_KEY, K6_PROMETHEUS_RW_TRACK_EVENTS, K6_CHECKPOINT_STORE, K6_CHECKPOINT_PATH
-
-**Status:** ✅ Refinado — versão atual consolida melhorias de versões anteriores (jobs separados, validação de workflow, scripting, tratamento de erros, cleanup).
-
----
-
 ### 9.30 `next-sitemap.config.js`
 
 **Caminho:** `/home/gus/Projetos/Caminhar/next-sitemap.config.js`
@@ -977,22 +898,6 @@ Tamanho: 2.5KB, 77 linhas.
 
 ---
 
-### 9.36 `security-tests.yml`
-
-**Caminho:** `/home/gus/Projetos/Caminhar/security-tests.yml`
-
-**Arquivos acionados/relacionados:**
-- `.github/workflows/test-base.yml` (workflow reutilizável chamado)
-- `package.json` (dependências de segurança)
-
-**Resumo:** Workflow de testes de segurança no GitHub Actions. Executa análise de segurança das dependências e do código. Usa jobs similares ao load-tests.yml com validação de syntax e execução dos testes de segurança. 12.3KB.
-
-**Status:** Novo arquivo não documentado anteriormente.
-
-**Observação:** Este arquivo replica grande parte da estrutura do load-tests.yml, o que pode indicar oportunidade de consolidação ou extração de configurações comuns.
-
----
-
 ### 9.37 `skills-lock.json`
 
 **Caminho:** `/home/gus/Projetos/Caminhar/skills-lock.json`
@@ -1013,7 +918,7 @@ Tamanho: 2.5KB, 77 linhas.
 
 **Arquivos acionados/relacionados:** Nenhum (snapshot estático)
 
-**Resumo:** Snapshot da estrutura de diretórios do projeto. Contém lista de todos os diretórios e arquivos (38 na raiz, 46.264 em sub-pastas). Gera uma visão geral da estrutura do projeto. Tamanho: 1.3KB, 38 linhas + referências a sub-pastas.
+**Resumo:** Snapshot da estrutura de diretórios do projeto. Contém lista de todos os diretórios e arquivos (35 na raiz; a última linha declara 195 diretórios e 1.032 arquivos). Gera uma visão geral da estrutura do projeto. Tamanho: ~55KB, 1.229 linhas.
 
 **Status:** ⚠️ Snapshot estático que desatualiza rapidamente. Considerar remover ou gerar dinamicamente.
 
@@ -1047,7 +952,7 @@ Tamanho: 2.5KB, 77 linhas.
 
 ### 11.3 Consolidação de workflows do GitHub Actions
 
-**Justificativa:** security-tests.yml replica grande parte da estrutura do load-tests.yml. Extração de configurações comuns ou documentação da razão para manter workflows separados seria benéfico.
+**Justificativa (sem objeto):** o item original pedia consolidar o rascunho de testes de segurança da raiz, que replicava a estrutura do rascunho de carga da raiz. Os dois rascunhos foram removidos e hoje só existe um workflow de carga em `.github/workflows/load-tests.yml` — não há duplicidade a consolidar.
 
 ---
 
@@ -1083,16 +988,6 @@ Tamanho: 2.5KB, 77 linhas.
 
 ---
 
-### 13.2 Possível código morto — `ci.yml`
-
-**O que foi encontrado:** Workflow de CI alternativo simples, quando workflows mais completos já existem (load-tests.yml, security-tests.yml).
-
-**Motivo:** Não está claro qual é a intenção do ci.yml — ele pode ser um workflow legacy, um workflow alternativo para um ambiente específico, ou um workflow que não está sendo usado.
-
-**Classificação:** Possível código morto (não há evidência de que seja acionado regularmente ou tenha uma função única não coberta pelos outros workflows).
-
----
-
 ### 13.3 Possível código morto — `skills-lock.json`
 
 **O que foi encontrado:** Lockfile de skills de IA na raiz, sem referência em nenhum script ou configuração do projeto.
@@ -1105,7 +1000,7 @@ Tamanho: 2.5KB, 77 linhas.
 
 ## 14. Resumo da estrutura de arquivos
 
-### 14.1 Arquivos na raiz (38 arquivos)
+### 14.1 Arquivos na raiz (35 arquivos)
 
 ```
 /home/gus/Projetos/Caminhar/
@@ -1121,7 +1016,6 @@ Tamanho: 2.5KB, 77 linhas.
 ├── CHANGELOG.md (~50KB) — changelog completo
 ├── README.md (~12KB) — documentação principal
 ├── babel.jest.config.js (293B) — config Babel para Jest
-├── ci.yml (2.3KB) — workflow CI básico
 ├── cypress.config.js (325B) — config Cypress
 ├── eslint.config.js (6.9KB) — config ESLint flat
 ├── estrutura.html (~1.1MB) — relatório DC (HTML)
@@ -1137,16 +1031,14 @@ Tamanho: 2.5KB, 77 linhas.
 ├── jest.teardown.js (634B) — teardown global Jest
 ├── jsconfig.json (504B) — paths JS/TS
 ├── knip.json (~15KB) — config Knip
-├── load-tests.yml (12.3KB) — workflow load tests
 ├── next-sitemap.config.js (1.1KB) — config sitemap
 ├── next.config.js (5.6KB) — config Next.js
 ├── package-lock.json (~602KB) — lockfile npm
 ├── package.json (~7KB) — manifesto do projeto
 ├── proxy.js (2.5KB) — middleware Next.js
 ├── schema.knip.json (1113 linhas ~1.1MB) — schema Knip
-├── security-tests.yml (12.3KB) — workflow security tests
 ├── skills-lock.json (945 linhas) — lockfile skills IA
-└── tree.txt (1.3KB) — snapshot estrutura
+└── tree.txt (~55KB) — snapshot estrutura
 ```
 
 ---
@@ -1161,21 +1053,19 @@ Tamanho: 2.5KB, 77 linhas.
 | 🟠 Média | 1.3 | `jest.setup.js` | `console.log` de debug polui a saída dos testes |
 | 🟠 Média | 2.2 | `next.config.js` | CORS inconsistente entre grupos de endpoints |
 | 🟠 Média | 2.3 | `next.config.js` | `Access-Control-Allow-Origin` vazio quando `ALLOWED_ORIGINS` ausente |
-| 🟠 Média | 3.1 | `README.md` | Contagens desatualizadas (28 vs 38 raiz; 53 vs 42 páginas) + refs a arquivos removidos |
+| 🟠 Média | 3.1 | `README.md` | Contagens desatualizadas (28 vs 35 raiz; 53 vs 42 páginas) + refs a arquivos removidos |
 | 🟠 Média | 3.2 | `proxy.js` | Lógica de IP duplicada com `lib/api/helpers.js` |
 | 🟠 Média | 4.1 | `estrutura.*` (6 arquivos) | Artefatos de análise estática redundantes na raiz |
 | 🟠 Média | 4.3 | `schema.knip.json` | Schema local grande; usar schema oficial online |
 | 🟠 Média | 4.4 | `.dependency-cruiser.*.cjs` (4 arquivos) | Configurações com regras duplicadas |
 | 🟠 Média | 5.1 | Múltiplos | Proliferação de arquivos grandes na raiz |
 | 🟠 Média | 5.2 | `skills-lock.json` | Lockfile de IA na raiz; mover para `.agents/` |
-| 🟠 Média | 5.3 | `ci.yml` | Workflow CI básico que replica parte de workflows existentes |
 | 🟠 Média | 5.5 | Múltiplos Jest | 6 arquivos de configuração do Jest com responsabilidades distribuídas |
 | 🟡 Baixa | 6.1 | `next-sitemap.config.js` | Queries ao banco no `additionalPaths` (dependência no build) |
 | 🟡 Baixa | 6.2 | `proxy.js` | Rate limit em todas as requisições (latência em cache hits) |
 | 🟢 Observação | 7.1 | `rate-limit-proxy.js` | Arquivo removido — não recriar (usar `proxy.js`) |
 | 🟢 Observação | 7.2 | `test-base.yml` | Fora do escopo da raiz (subpasta `.github/workflows/`) |
 | 🟡 Baixa | 13.1 | `tree.txt` | Possível código morto — snapshot estático sem script de geração |
-| 🟡 Baixa | 13.2 | `ci.yml` | Possível código morto — workflow alternativo sem função claramente única |
 | 🟡 Baixa | 13.3 | `skills-lock.json` | Possível código morto — lockfile de IA sem referência no projeto |
 
 ---
@@ -1191,4 +1081,3 @@ Tamanho: 2.5KB, 77 linhas.
 7. **`schema.knip.json` / `skills-lock.json` / `tree.txt`** — arquivos grandes que poluem a raiz.
 8. **Configurações do Dependency Cruiser** — 4 arquivos com regras duplicadas, manutenção distribuída.
 9. **Configurações do Jest** — 6 arquivos com responsabilidades distribuídas, potencial de complexidade.
-10. **`ci.yml`** — workflow alternativo que pode ser redundante com workflows existentes.
