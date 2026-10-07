@@ -41,6 +41,19 @@ runs:
       env:
         # `DATABASE_URL` vem do `env:` do job em `test-base.yml` (fonte única).
         DATABASE_SSL: 'false'
+        # OBRIGATÓRIO: `scripts/init-server.js` importa `lib/auth/auth.js`, e o
+        # topo desse módulo (linhas 34-51) faz `throw` na IMPORTAÇÃO quando
+        # `JWT_SECRET` está ausente e `NODE_ENV` não é `development`/`test` — o
+        # fallback de chave derivada é proibido fora desses dois ambientes
+        # (decisão de segurança, commit 351d23aa). O runner do GitHub não define
+        # `NODE_ENV` em step de `run:`, então sem esta linha o passo morria com
+        # "JWT_SECRET environment variable is required outside
+        # development/test environments" — foi o que reprovou o run 37611884637
+        # (job `load-tests / run-tests`, step `Seed Admin User`).
+        # O valor é o mesmo do passo `Start Application`: o seed não assina token
+        # nenhum, mas manter uma única chave na action evita a leitura de que
+        # aqui o segredo pode ser qualquer um.
+        JWT_SECRET: test-jwt-secret-for-load-tests
         ADMIN_USERNAME: ${{ inputs.admin-username }}
         ADMIN_PASSWORD: ${{ inputs.admin-password }}
 
@@ -54,7 +67,15 @@ runs:
       shell: bash
       run: |
         npm start > "$APP_LOG" 2>&1 &
-        npx wait-on http://localhost:3000 --timeout 60000
+        # `--no-install` é deliberado: sem ele o `npx` CAÍ no download sob
+        # demanda quando o binário não está em `node_modules/.bin`, o que
+        # transformava o registry do npm em ponto de falha no meio do job (com a
+        # app já no ar, step vermelho sem causa aparente) e trazia uma versão não
+        # pinada e não reproduzível. `wait-on` é devDependency
+        # (`^9.5.1`, resolvida pelo lockfile que o `npm ci` respeita), então com
+        # `--no-install` o passo usa a versão instalada ou falha na hora —
+        # fail-closed em vez de download silencioso.
+        npx --no-install wait-on http://localhost:3000 --timeout 60000
       env:
         APP_LOG: ${{ github.workspace }}/app-server.log
         PORT: 3000
