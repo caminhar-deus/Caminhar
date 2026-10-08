@@ -86,9 +86,16 @@ jobs:
         with:
           name: cypress-videos
           path: cypress/videos/
-          if-no-files-found: ignore
+          # `warn`, não `ignore`: com `video: true` o Cypress SEMPRE gera um
+          # vídeo por spec, então um diretório vazio aqui significa que algo
+          # apagou os artefatos antes deste step — o próprio `e2e-isolated.js` já
+          # foi justamente esse bug (run 37770170647: `success` com
+          # `artifacts.total_count: 0`). `ignore` esconderia isso em silêncio.
+          if-no-files-found: warn
           retention-days: 7
 
+      # `screenshotOnRunFailure` só produz screenshot quando um teste reprova,
+      # então num run verde a ausência é o comportamento normal e esperado.
       - name: Upload Cypress Screenshots
         if: ${{ always() }}
         uses: actions/upload-artifact@v4

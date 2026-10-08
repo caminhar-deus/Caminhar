@@ -48,6 +48,7 @@
 - **Problema:** Todos usam `dotenv.config({ path: path.resolve(__dirname, '../.env') })`. Como `__dirname` aponta para `scripts/<subpasta>/`, o caminho resolve para `scripts/.env` — **que não existe**. O `.env` fica na raiz do projeto.
 - **Impacto:** Variáveis de ambiente não são carregadas nesses scripts quando executados diretamente; dependem de variáveis já exportadas no shell.
 - **Sugestão:** Usar `loadEnv()` de `scripts/utils/load-env.js` (que usa `process.cwd()`, correto) — o mesmo padrão já adotado nos demais scripts. Para `maintenance/`, o caminho correto seria `../../.env`.
+- **✅ RESOLVIDO para `diagnose-hero.js` (08/10/2026), junto com um segundo bug do mesmo tipo:** o caminho do `.env` passou a `path.resolve(__dirname, '../../.env')` e o comentário no script registra o motivo (sem isso, o `UPLOADS_DIR` do `.env` da raiz ficava invisível para o diagnóstico). Na mesma correção foi achado **outro caminho com um `..` a menos, que não estava em nenhuma pendência**: o script procurava a imagem em `path.resolve(__dirname, '../public/uploads')`, que resolvia para **`scripts/public/uploads`** — diretório inexistente —, e por isso o diagnóstico respondia "arquivo não encontrado" mesmo com o arquivo no lugar; hoje é `../../public/uploads` (raiz do repo), junto com o diretório ativo `UPLOADS_DIR`/`<raiz>/uploads`. **Os demais arquivos da lista continuam com o problema** (`utils/` e `maintenance/`): só `diagnose-hero.js` foi corrigido.
 
 ### 1.5. Interpolação direta em SQL em `scripts/clean-orphaned-images.js`
 - **Arquivo:** `scripts/clean-orphaned-images.js` (linha 76 — a "linha 34" citada antes da mudança de 06/10/2026 era da versão anterior do arquivo)
@@ -280,13 +281,13 @@
 
 ### `scripts/migrations/verify-applied.js` — cobertura estendida para 012-016
 
-**Descrição:** Item 4.4 (parcial): os `CHECKS` de `verify-applied.js` foram ampliados para cobrir 012 (índice full-text em `posts`), 013 (índice trigram em `musicas`), 014 (índice composto em `dicas`), 015 (coluna `name` em `products`) e 016 (tabela `refresh_tokens`). O `validate-schema.js` permanece inalterado.
+**Descrição:** Item 4.4 (parcial): os `CHECKS` de `verify-applied.js` foram ampliados para cobrir 012 (índice full-text em `posts`), 013 (índice trigram em `musicas`), 014 (índice composto em `dicas`), 015 (coluna `name` em `products`) e 016 (tabela `refresh_tokens`). O `validate-schema.js` permanece inalterado. *(Anotação de 08/10/2026: o título descreve a rodada da época. O arquivo hoje cobre **001-018** — 17 entradas, sem 010 — depois das migrações `017` (09/09/2026) e `018` (04/10/2026); ver `docs/PROJECT_scripts.md`.)*
 
 ---
 
 ### `scripts/migrations/seed-migrations-table.js` — lista alinhada a 000-016
 
-**Descrição:** Item 4.5 resolvido: a lista `MIGRATIONS` foi atualizada para incluir `000-create-base-schema`, `012-add-performance-indexes`, `013-add-trgm-indexes` e `014-add-dicas-index`, alinhada às 16 migrações existentes.
+**Descrição:** Item 4.5 resolvido: a lista `MIGRATIONS` foi atualizada para incluir `000-create-base-schema`, `012-add-performance-indexes`, `013-add-trgm-indexes` e `014-add-dicas-index`, alinhada às 16 migrações existentes. *(Anotação de 08/10/2026: a lista continua terminando em `016` — **`017` e `018` nunca entraram nela**; conferido por grep em `scripts/migrations/seed-migrations-table.js`. Ou seja, o título acima segue literalmente verdadeiro, e o ponto em aberto é se `017`/`018` deveriam ser retroativas — decisão do responsável, não corrigida aqui.)*
 
 ---
 
@@ -802,6 +803,8 @@ Nenhum código morto identificado. A função é invocada pelo entry point CLI e
 **Arquivos acionados ou relacionados:** `scripts/utils/load-env.js` — importa `loadEnv()`. `scripts/db/connection.js` — importa `query()` e `closePool()`.
 
 **Resumo do arquivo:** Script CLI que limpa todas as tabelas do banco de dados via `TRUNCATE TABLE posts, videos, musicas, images, settings, users RESTART IDENTITY CASCADE`. Solicita confirmação do usuário antes de executar. Também limpa o diretório `public/uploads/` (exceto `.gitkeep`). Fecha o pool ao final.
+
+**Atualização de 08/10/2026 (item U de `docs/PENDENCIAS_scripts_testes.md`):** a limpeza de uploads agora cobre **os dois** diretórios — o ativo `UPLOADS_DIR`/`<cwd>/uploads` **e** o legado `public/uploads`, com dedup por índice, `.gitkeep` preservado e diretórios inexistentes ignorados (função `clearUploadsDir()`). Além disso **`clearUploadsDir` passou a ser exportada** e a execução principal (`askConfirmation` + `clearDatabase`) ficou atrás de uma guarda `if (process.argv[1] && …endsWith('clear-db.js'))` com IIFE assíncrona (o Babel do Jest compila o script como CommonJS e não aceita top-level `await`), o que tornou o arquivo **importável por teste** — hoje consumido por `tests/unit/scripts/clear-db.test.js` (10 testes). A descrição corrente está em `docs/PROJECT_scripts.md`.
 
 **Ajustes e correções:** Lista de tabelas fixa no TRUNCATE não inclui `products`, `dicas`, `activity_logs` e `refresh_tokens`. Novas tabelas ficam de fora da limpeza "completa".
 
@@ -1341,7 +1344,9 @@ Nenhum código morto identificado. A função é invocada pelo entry point CLI e
 
 **Arquivos acionados ou relacionados:** Nenhum. Cria próprio `Pool` diretamente.
 
-**Resumo do arquivo:** Script CLI que gera thumbnails para vídeos existentes. Extrai frames de vídeos do YouTube e salva no diretório `public/uploads/`. Usa `ffmpeg` via `spawn`.
+**Resumo do arquivo:** Script CLI que gera thumbnails para vídeos existentes. Extrai o ID do vídeo da URL do YouTube por regex e grava em **banco**, na coluna `videos.thumbnail`, a URL `https://img.youtube.com/vi/<id>/maxresdefault.jpg` — **não baixa nem grava arquivo em disco**. Usa `pg` (pool próprio) e `dotenv` (com `.env.local` na frente, via `../../.env`).
+
+**Correção de 08/10/2026:** a versão anterior deste resumo dizia "extrai frames de vídeos do YouTube e **salva no diretório `public/uploads/`**. Usa **`ffmpeg` via `spawn`" — **obsoleto, o script não faz nada disso**: `grep -c` por `ffmpeg`, `spawn`, `uploads` e `writeFile` no arquivo devolve **0** em todas (as ocorrências de disco no script são só leitura de `.env`/`.env.local`). `ffmpeg` nem `spawn` sequer são importados; a "thumbnail" é uma URL do YouTube persistida em `videos.thumbnail`, sem processamento de vídeo.
 
 **Ajustes e correções:** Cria instância própria de `Pool` diretamente, não usando `getPool()` de `db/connection.js`.
 

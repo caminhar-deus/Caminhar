@@ -13,10 +13,16 @@
  *   ADMIN_PASSWORD - Senha do admin (obrigatório para testes autenticados)
  */
 
-import { execSync } from 'child_process';
+import { execSync, spawn } from 'child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { resolve, join } from 'path';
 import http from 'http';
+import {
+  BoundedTailBuffer,
+  MAX_CAPTURE_BYTES,
+  MAX_DETAILS_PER_GROUP,
+  extractFailureDetails,
+} from './lib/k6-output-parser.js';
 
 const REPORTS_DIR = resolve('./reports/k6-summaries');
 const RESULTS_FILE = join(REPORTS_DIR, 'orchestrator-results.json');
@@ -68,6 +74,104 @@ function checkK6Available() {
   } catch {
     return false;
   }
+}
+
+const K6_SCRIPT_TIMEOUT_MS = 600000; // 10 min timeout per script
+
+/**
+ * Executa um comando com tee de saída: ecoa stdout/stderr ao vivo para o
+ * terminal (o log do CI continua mostrando tudo, como com stdio: 'inherit')
+ * e guarda uma cópia limitada em memória (BoundedTailBuffer) para o relatório
+ * de erros detalhados.
+ *
+ * Nunca rejeita a promise: erro de spawn, timeout e sinal são reportados no
+ * resultado. `exitCode === 0` equivale ao "não lançou erro" do execSync.
+ */
+function runWithCapture(command, { timeoutMs = K6_SCRIPT_TIMEOUT_MS } = {}) {
+  return new Promise((resolveRun) => {
+    const capture = new BoundedTailBuffer();
+    let echoedBytes = 0;
+    let echoTruncated = false;
+    let timedOut = false;
+    let spawnError = null;
+    let exitCode = null;
+    let signal = null;
+    let settled = false;
+    let timeoutTimer = null;
+    let orphanTimer = null;
+
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      if (timeoutTimer) clearTimeout(timeoutTimer);
+      if (orphanTimer) clearTimeout(orphanTimer);
+      resolveRun({
+        exitCode,
+        signal,
+        timedOut,
+        spawnError,
+        truncated: capture.truncated || echoTruncated,
+        output: capture.toString(),
+      });
+    };
+
+    let child;
+    try {
+      child = spawn(command, [], { shell: true, stdio: ['inherit', 'pipe', 'pipe'] });
+    } catch (error) {
+      spawnError = error instanceof Error ? error.message : String(error);
+      finish();
+      return;
+    }
+
+    const handleChunk = (chunk, stream) => {
+      capture.push(chunk);
+      if (echoTruncated) return;
+      try {
+        const remaining = Math.max(0, MAX_CAPTURE_BYTES - echoedBytes);
+        const slice = chunk.length > remaining ? chunk.subarray(0, remaining) : chunk;
+        if (slice.length > 0) {
+          stream.write(slice);
+          echoedBytes += slice.length;
+        }
+        if (chunk.length > slice.length) {
+          echoTruncated = true;
+          stream.write(`\n[⚠️ saída truncada: limite de ${MAX_CAPTURE_BYTES} bytes por script — o restante não é ecoado]\n`);
+        }
+      } catch {
+        // Sem eco (ex.: pipe fechado), mas a captura continua.
+        echoTruncated = true;
+      }
+    };
+
+    child.stdout?.on('data', (chunk) => handleChunk(chunk, process.stdout));
+    child.stderr?.on('data', (chunk) => handleChunk(chunk, process.stderr));
+
+    child.on('error', (error) => {
+      spawnError = error instanceof Error ? error.message : String(error);
+      finish();
+    });
+
+    child.on('exit', (code, sig) => {
+      exitCode = code;
+      signal = sig;
+      // Rede de segurança: num timeout o shell morre, mas um processo neto
+      // (k6) pode ficar vivo segurando os pipes abertos — sem isto o
+      // orquestrador esperaria 'close' para sempre.
+      orphanTimer = setTimeout(finish, 3000);
+    });
+
+    child.on('close', finish);
+
+    timeoutTimer = setTimeout(() => {
+      timedOut = true;
+      try {
+        child.kill('SIGTERM');
+      } catch {
+        // processo já terminou
+      }
+    }, timeoutMs);
+  });
 }
 
 // Garante que o diretório de relatórios existe
@@ -206,18 +310,32 @@ for (const category of CATEGORIES) {
     console.log('');
 
     try {
-      execSync(fullCmd, {
-        stdio: 'inherit',
-        shell: true,
-        timeout: 600000, // 10 min timeout per script
-      });
-      console.log(`     ✅ ${script.name}: PASS\n`);
-      catResults.passed++;
-      catResults.scripts.push({ name: script.name, status: 'pass' });
+      const runResult = await runWithCapture(fullCmd);
+
+      if (runResult.exitCode === 0 && !runResult.spawnError) {
+        console.log(`     ✅ ${script.name}: PASS\n`);
+        catResults.passed++;
+        catResults.scripts.push({ name: script.name, status: 'pass' });
+      } else {
+        const signalSuffix = runResult.signal ? `, signal: ${runResult.signal}` : '';
+        console.error(`     ❌ ${script.name}: FAIL (exit code: ${runResult.exitCode ?? 'null'}${signalSuffix})\n`);
+        catResults.failed++;
+        // O parsing é só para relatório: nunca decide pass/fail e, por ser
+        // defensivo, nunca lança por cima do erro original.
+        const details = extractFailureDetails(runResult.output, {
+          exitCode: runResult.exitCode,
+          signal: runResult.signal,
+          timedOut: runResult.timedOut,
+          truncated: runResult.truncated,
+        });
+        catResults.scripts.push({ name: script.name, status: 'fail', exitCode: runResult.exitCode, details });
+        overallExitCode = 1;
+      }
     } catch (error) {
-      console.error(`     ❌ ${script.name}: FAIL (exit code: ${error.status})\n`);
+      // runWithCapture não rejeita; este catch é só cintura-e-suspensório.
+      console.error(`     ❌ ${script.name}: FAIL (exit code: ${error.status ?? 'null'})\n`);
       catResults.failed++;
-      catResults.scripts.push({ name: script.name, status: 'fail', exitCode: error.status });
+      catResults.scripts.push({ name: script.name, status: 'fail', exitCode: error.status ?? null });
       overallExitCode = 1;
     }
   }
@@ -288,5 +406,75 @@ if (results.failed > 0) {
 } else {
   console.log('✅ Todos os testes de carga passaram com sucesso!\n');
 }
+
+/**
+ * Imprime a seção de erros detalhados no fim do relatório: para cada script
+ * que falhou, exit code, checks reprovados (com a contagem `↳`), thresholds
+ * violados, mensagens `level=error` do console e avisos de truncamento.
+ * Sem scripts falhos, não imprime nada (relatório limpo permanece limpo).
+ */
+function printFailureDetails(resultsData) {
+  const failedScripts = resultsData.categories
+    .flatMap((category) => category.scripts)
+    .filter((entry) => entry.status === 'fail');
+
+  if (failedScripts.length === 0) return;
+
+  console.log('╔═══════════════════════════════════════════════════════════════════╗');
+  console.log('║   ❌ DETALHES DOS ERROS                                           ║');
+  console.log('╚═══════════════════════════════════════════════════════════════════╝');
+
+  for (const script of failedScripts) {
+    const details = script.details ?? {};
+    const signalSuffix = details.signal ? `, signal: ${details.signal}` : '';
+    console.log(`\n  ❌ ${script.name} — exit code: ${script.exitCode ?? 'null'}${signalSuffix}`);
+
+    if (details.timedOut) {
+      console.log('     ⏱️  Timeout de 10 min atingido antes de o script terminar.');
+    }
+    if (details.truncated) {
+      console.log(`     ⚠️  Saída truncada (${MAX_CAPTURE_BYTES / (1024 * 1024)} MB por script): nem todas as falhas podem estar listadas.`);
+    }
+
+    const failedChecks = details.failedChecks ?? [];
+    const failedThresholds = details.failedThresholds ?? [];
+    const consoleErrors = details.consoleErrors ?? [];
+
+    if (failedChecks.length > 0) {
+      console.log('     Checks que falharam:');
+      for (const entry of failedChecks) {
+        console.log(`       • ${entry.text}`);
+        if (entry.counts) console.log(`         ${entry.counts}`);
+      }
+    }
+
+    if (failedThresholds.length > 0) {
+      console.log('     Thresholds violados:');
+      for (const entry of failedThresholds) {
+        console.log(`       • ${entry.text}`);
+        if (entry.counts) console.log(`         ${entry.counts}`);
+      }
+    }
+
+    if (consoleErrors.length > 0) {
+      console.log('     Erros de console (level=error):');
+      for (const entry of consoleErrors) {
+        console.log(`       • ${entry.text}`);
+      }
+    }
+
+    if (failedChecks.length === 0 && failedThresholds.length === 0 && consoleErrors.length === 0) {
+      console.log('     Nenhum erro estruturado extraído da saída — veja o log completo acima.');
+    }
+
+    if (details.omittedCount > 0) {
+      console.log(`     (+${details.omittedCount} ocorrências omitidas por limite de ${MAX_DETAILS_PER_GROUP} por tipo)`);
+    }
+  }
+
+  console.log('');
+}
+
+printFailureDetails(results);
 
 process.exit(overallExitCode);

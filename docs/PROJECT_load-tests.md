@@ -35,6 +35,7 @@ A pasta `load-tests/` contém **37 arquivos** (30 scripts de teste k6 + 7 módul
 **Arquivos fora da pasta** que integram o ecossistema de load tests:
 - `load-tests.yml` — Workflow CI/CD do GitHub Actions (em `.github/workflows/`)
 - `scripts/run-all-load-tests-sequentially.js` — Orquestrador que executa todos os 30 scripts
+- `scripts/lib/k6-output-parser.js` — Módulo novo (08/10/2026) de parsing da saída do k6 para o relatório de falhas do orquestrador (checks reprovados, thresholds violados, erros de console)
 - `scripts/run-load-tests.sh` — Wrapper bash do orquestrador
 - `scripts/clean-load-test-posts.js` — Limpeza de posts de teste no banco
 - `scripts/clear-test-auth-locks.js` — Limpeza de bloqueios de autenticação no Redis
@@ -93,7 +94,7 @@ A pasta `load-tests/` contém **37 arquivos** (30 scripts de teste k6 + 7 módul
     └── rate-limit-test.js
 ```
 
-Os arquivos relacionados fora da pasta (detalhados na seção [Arquivos Relacionados Fora da Pasta `load-tests/`](#arquivos-relacionados-fora-da-pasta-load-tests)) são: `load-tests.yml` (em `.github/workflows/`) e os scripts `scripts/run-all-load-tests-sequentially.js`, `scripts/run-load-tests.sh`, `scripts/clean-load-test-posts.js`, `scripts/clear-test-auth-locks.js`, `scripts/generate-load-report.js`, `scripts/clean-k6-reports.js`, `scripts/clean-test-db.js`, `scripts/utils/cleanup.js`, `scripts/utils/constants.js`, `scripts/utils/load-env.js` e `scripts/check-sql-injection.js`.
+Os arquivos relacionados fora da pasta (detalhados na seção [Arquivos Relacionados Fora da Pasta `load-tests/`](#arquivos-relacionados-fora-da-pasta-load-tests)) são: `load-tests.yml` (em `.github/workflows/`) e os scripts `scripts/run-all-load-tests-sequentially.js`, `scripts/lib/k6-output-parser.js`, `scripts/run-load-tests.sh`, `scripts/clean-load-test-posts.js`, `scripts/clear-test-auth-locks.js`, `scripts/generate-load-report.js`, `scripts/clean-k6-reports.js`, `scripts/clean-test-db.js`, `scripts/utils/cleanup.js`, `scripts/utils/constants.js`, `scripts/utils/load-env.js` e `scripts/check-sql-injection.js`.
 
 ## 4. Análise de Cada Arquivo
 
@@ -1234,11 +1235,28 @@ Teste negativo de autenticação que envia credenciais inválidas. Garante que o
   - Após performance: `node scripts/clean-load-test-posts.js`
   - Após security: `node scripts/clear-test-auth-locks.js`
 - **Resultados** — Salva em `reports/k6-summaries/orchestrator-results.json`
+- **Captura de saída (tee)** — Cada script roda com `stdio: ['inherit', 'pipe', 'pipe']`: a saída é ecoada ao vivo para o terminal (o log do CI não perde nada) e guardada em buffer limitado a **5 MB por script**, com timeout de **10 min** por script; ao estourar o limite, imprime `[⚠️ saída truncada: limite de <N> bytes por script — o restante não é ecoado]`
+- **Relatório de falhas** — Só para scripts reprovados: `extractFailureDetails()` de `scripts/lib/k6-output-parser.js` (em `try/catch`, **nunca** decide pass/fail) extrai checks reprovados (com a contagem `↳`), thresholds violados e erros de console; a seção `❌ DETALHES DOS ERROS` é impressa **depois** do banner de totais, apenas se houver falha, e os mesmos detalhes vão para o campo `details` de cada script falho no JSON (scripts aprovados seguem sem `details`)
 - **Exit code** — Não-zero se houver falhas
 
 **Variáveis de ambiente necessárias:**
 - `ADMIN_USERNAME` — Nome do usuário admin (obrigatório)
 - `ADMIN_PASSWORD` — Senha do admin (obrigatório para testes autenticados)
+
+---
+
+### `scripts/lib/k6-output-parser.js`
+
+**Localização:** `/scripts/lib/k6-output-parser.js` (diretório `scripts/lib/` novo, 08/10/2026)
+
+**O que faz:** Extrai os erros estruturados da saída do k6 para o relatório de falhas do orquestrador — *checks que falharam* (com a linha `↳` de contagem), *thresholds violados* e *erros de console* (`level=error`/`fatal`).
+
+**Propósito:** Dar motivo visível a cada reprovação, sem obrigar ninguém a vasculhar o log bruto do job.
+
+**Estrutura:**
+- `BoundedTailBuffer` — buffer deslizante com os **últimos 5 MB** da saída (`MAX_CAPTURE_BYTES`), que é onde ficam resumo, thresholds e mensagens do k6; deduplica por texto, porque o k6 redesenha a mesma linha com `\r`
+- `MAX_DETAILS_PER_GROUP = 100` — teto de ocorrências por tipo, com contador `omittedCount`
+- `extractFailureDetails()` — consumido por `scripts/run-all-load-tests-sequentially.js` **só** no caminho de falha e dentro de `try/catch`: **nunca** decide pass/fail
 
 ---
 
@@ -1455,5 +1473,5 @@ Teste negativo de autenticação que envia credenciais inválidas. Garante que o
 ---
 
 > **Data da análise:** 23/09/2026 (análise anterior: 01/08/2026)
-> **Total de scripts analisados:** 37 arquivos na pasta `load-tests/` (30 scripts k6 + 7 helpers) + 12 arquivos relacionados fora da pasta
+> **Total de scripts analisados:** 37 arquivos na pasta `load-tests/` (30 scripts k6 + 7 helpers) + 13 arquivos relacionados fora da pasta
 > **Processo:** cada arquivo foi analisado individualmente e validado por releitura (análise → atualização → releitura → validação), conforme processo obrigatório de auditoria

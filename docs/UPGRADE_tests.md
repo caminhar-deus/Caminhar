@@ -12934,7 +12934,7 @@ jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').moc
 #### 3.3 `scripts/clean-orphaned-images.test.js`
 
 **Arquivo sob teste:** `scripts/clean-orphaned-images.js`  
-**Escopo:** Varre arquivos de imagem do `public/uploads` que não são referenciados no banco (órfãos). Desde 2026-10-06 o script é **fail-closed**, roda em **modo relatório por padrão** e **move para lixeira** (`data/uploads-trash/`) em vez de apagar — ver `docs/PROJECT_scripts.md` e `decisions/2026-10-06-clean-images-fail-closed-lixeira`. Os prefixos `post-image-*`/`hero-image-*` são os de **produção** (`pages/api/upload-image.js:98`), não só fixtures de teste.
+**Escopo:** Varre arquivos de imagem do `public/uploads` que não são referenciados no banco (órfãos). Desde 2026-10-06 o script é **fail-closed**, roda em **modo relatório por padrão** e **move para lixeira** (`data/uploads-trash/`) em vez de apagar — ver `docs/PROJECT_scripts.md` e `decisions/2026-10-06-clean-images-fail-closed-lixeira`. Os prefixos `post-image-*`/`hero-image-*` são os de **produção** (`pages/api/upload-image.js:98`), não só fixtures de teste. *(Anotação de 08/10/2026: a varredura hoje cobre **os dois** diretórios — o ativo `UPLOADS_DIR`/`<cwd>/uploads` **e** o legado `public/uploads`, com dedup entre eles e também por `filename`, porque a lixeira é plana — e não mais só o `public/uploads` citado acima; o estado corrente está em `docs/PROJECT_scripts.md`.)*
 
 **Testes (10 casos — 5 originais + 5 adicionados em 06/10/2026):**
 
@@ -12980,16 +12980,19 @@ jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').moc
 | Fecha conexão | `closeDatabase` é chamado |
 | Cancelamento | Se usuário não confirma, query não executa |
 
+**Atualização de 08/10/2026 — o arquivo saiu de 4 para 10 testes; a análise acima descreve a versão anterior.** Os 4 testes da tabela **foram mantidos como estão**; os 6 novos cobrem `clearUploadsDir()` com **`fs` real e diretórios temporários de verdade** (`fs.mkdtempSync(path.join(os.tmpdir(), …))` + `process.chdir` para o sandbox, de modo que o legado `<cwd>/public/uploads` resolve **dentro do temp** e o `public/uploads` real do projeto nunca é tocado; `UPLOADS_DIR` é salvo/restaurado). Cobertura: diretório ativo limpo, legado limpo, **dedup** quando `UPLOADS_DIR` aponta para o legado (um único `readdir` sobre o caminho), diretório inexistente ignorado sem lançar, `.gitkeep` preservado e **idempotência** (duas execuções sem erro). Para isso a linha `jest.mock('fs')` foi **removida** do arquivo — com o `fs` mockado os testes novos enxergariam o mock, não o disco, e provariam o mesmo que os antigos. Verificado por **teste de mutação**: tirando o `.filter()` de dedup e o guarda de `.gitkeep` do script, **3 dos 6 novos falham** — não são tautológicos. Os 4 antigos **continuam tautológicos e registrados como pendência X** de `docs/PENDENCIAS_scripts_testes.md`.
+
 **Problemas:**
 - 🔴 **Teste testa o mock, não o script:** O teste chama `libDb.query(TRUNCATE...)` diretamente, não invoca `clearDatabase()` do `clear-db.js`. O script real usa `query()` de `scripts/db/connection.js`, não `lib/infra/db.js`.
 - 🔴 **Teste do cancelamento é falso-positivo:** A validação é `if (!answer) { expect(query).not.toHaveBeenCalled() }` — é uma condicional JavaScript, não uma execução real do script. O script nunca é importado/testado.
 - ⚠️ `clear-db.js` não é importado — o `require('../../mocks/db-module')` aponta para `lib/infra/db.js`, que é um módulo diferente de `scripts/db/connection.js`.
 - ⚠️ Não testa `clearUploadsDir`.
+  - *(Anotação de 08/10/2026: **os dois itens acima deixaram de valer para `clearUploadsDir`**. O script ganhou guarda de CLI (`process.argv[1].endsWith('clear-db.js')` com IIFE assíncrona), então `clear-db.js` **passou a ser importado** por este arquivo, e `clearUploadsDir` tem 6 testes próprios com fs real e temp dirs. **`clearDatabase` e `askConfirmation` seguem sem teste de verdade** — os 4 testes antigos acima continuam intocados e tautológicos: ver pendência X de `docs/PENDENCIAS_scripts_testes.md`.)*
 
 **Melhoria recomendada:**
-- Importar `clear-db.js` e testar `clearDatabase()` isolando o `readline` (mock de `readline.question`).
-- Testar `clearUploadsDir` removendo arquivos de `public/uploads`.
-- Remover teste de cancelação falso (reescrever com mock de `readline`).
+- Importar `clear-db.js` e testar `clearDatabase()` isolando o `readline` (mock de `readline.question`). *(Parcialmente viabilizada em 08/10/2026: o import já funciona — a guarda de CLI do script permite — mas `clearDatabase`/`askConfirmation` ainda não são exportadas; ver pendência X de `docs/PENDENCIAS_scripts_testes.md`.)*
+- Testar `clearUploadsDir` removendo arquivos de `public/uploads`. *(Feito em 08/10/2026, **sem** usar o `public/uploads` real: o teste monta os dois diretórios num temp dir e aponta o `cwd` para lá — apagar arquivo do diretório real do projeto seria destrutivo e não reproduzível.)*
+- Remover teste de cancelação falso (reescrever com mock de `readline`). *(Pendente — pendência X.)*
 
 ---
 
@@ -13411,7 +13414,7 @@ beforeAll(() => {
 | `connection.test.js` | getPool, closePool, query | resetPool (indireto) | 85% |
 | `backup.test.js` | (só exports) | createBackup, restoreBackup, cleanupOldBackups, getBackupFiles, logBackupOperation, getBackupLogs, ensureBackupDirectory, generateBackupFilename, runPgDumpToFile, runPsqlFromFile, calculateFileHash, checkDiskBeforeBackup, rotateLogIfNeeded, cleanupOldLogs | 10% |
 | `clean-orphaned-images.test.js` | cleanOrphanedImages | (parcial — múltiplos branches) | 88.93% |
-| `clear-db.test.js` | (só imports) | clearDatabase, clearUploadsDir, askConfirmation | 15% |
+| `clear-db.test.js` | **`clearUploadsDir` (6 testes com fs real, desde 08/10/2026)** + os 4 testes antigos de import/mock | clearDatabase, askConfirmation (os 4 antigos continuam sem invocar o script) | 15% (estimativa da época — não reavaliada) |
 | `clear-musicas.test.js` | (só imports) | clearMusicRecords, askConfirmation | 10% |
 | `init-table.test.js` | buildCreateTableSQL, getSeedValues, buildSeedSQL, getTableName | loadSchemaFromDir | 75% |
 | `migrate.test.js` | listMigrationFiles, migrationNameFromFile, ensureMigrationTable, getAppliedMigrations | applyMigration, revertLastMigration, listStatus, showHelp | 45% |
@@ -15579,7 +15582,7 @@ Verifica: status 200
    - Upload tipo `setting_home_image` → updateSetting (não testado)
    - Erro interno → 500 (não testado)
 
-2. **Mock de `fs.existsSync` incompleto:** O mock retorna `false` apenas para paths contendo 'uploads' — mas o handler usa `path.join(process.cwd(), 'public', 'uploads')`. Se `process.cwd()` mudar, o mock pode não corresponder.
+2. **Mock de `fs.existsSync` incompleto:** O mock retorna `false` apenas para paths contendo 'uploads' — mas o handler usa `path.join(process.cwd(), 'public', 'uploads')`. Se `process.cwd()` mudar, o mock pode não corresponder. *(Anotação de 08/10/2026: a premissa do caminho mudou com a correção do item U de `docs/PENDENCIAS_scripts_testes.md` — o handler agora resolve `UPLOADS_DIR` ou `<cwd>/uploads`, fora de `public/`, e o teste de integração passou a asserir `path.join(process.cwd(), 'uploads')`; as linhas citadas acima são as da época desta análise.)*
 
 3. **Mock de `formidable` retorna estrutura fixa:** O mock retorna `{ image: [{ mimetype: 'image/jpeg', size: 1000, ... }] }` — mas o handler acessa `files.image?.[0] || files.image` (linha 60). O mock pode não corresponder ao comportamento real do formidable v3 (que retorna arrays).
 

@@ -385,7 +385,7 @@ Endpoint de verificação de autenticação (GET). Valida o token JWT obtido do 
 - `../../lib/infra/logger.js` — Logger estruturado
 
 **Resumo:**
-Endpoint de imagem placeholder (hero). Fluxo: 1) Tenta buscar a imagem configurada no banco (`home_image_url`) via `getSetting()`; 2) Fallback: procura arquivos `hero-image-*` em `public/uploads`; 3) Se encontrar, serve a imagem com cache agressivo (`max-age=86400, immutable`), `ETag` baseado no filename, `Last-Modified` baseado no `mtime` do arquivo, e suporte a `If-None-Match` (304 Not Modified); 4) Se não encontra, serve um SVG inline com texto informativo. Possui cache em memória do filename (TTL 5 min) para evitar consultas ao banco a cada request.
+Endpoint de imagem placeholder (hero). Fluxo: 1) Tenta buscar a imagem configurada no banco (`home_image_url`) via `getSetting()`; 2) Fallback: procura arquivos `hero-image-*` nos **dois** diretórios de upload — `<cwd>/uploads` (`UPLOADS_DIR`, ativo) e `public/uploads` (legado), nesta ordem; 3) Se encontrar, serve a imagem com cache agressivo (`max-age=86400, immutable`), `ETag` baseado no filename, `Last-Modified` baseado no `mtime` do arquivo, e suporte a `If-None-Match` (304 Not Modified); 4) Se não encontra, serve um SVG inline com texto informativo. Possui cache em memória do filename (TTL 5 min) para evitar consultas ao banco a cada request. **Observação (08/10/2026, item U de `docs/PENDENCIAS_scripts_testes.md`):** este handler **acessa o disco** (`fs.readdir`, `fs.stat`, `fs.readFile`) — a premissa anterior de que "só lê string" estava errada; com a mudança do diretório de upload ele teve que passar a consultar os dois diretórios, senão o placeholder da home quebraria com 500 (ENOENT).
 
 ---
 

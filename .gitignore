@@ -125,3 +125,11 @@ vite.config.ts.timestamp-*
 # artefatos é o upload do workflow de E2E (retention-days: 7), não o repositório.
 cypress/videos/
 cypress/screenshots/
+
+# Uploads de imagens enviados em runtime. Ficam FORA de `public/` porque
+# `next start` tira snapshot de `public/` na subida do processo: arquivo
+# gravado enquanto o servidor roda só passaria a ser servido no restart
+# (ver pages/api/upload-image.js e pages/api/uploads/[...path].js).
+# Caminho pode ser redirecionado por UPLOADS_DIR (ex.: volume persistente em
+# deploy com filesystem efêmero); a barra inicial ancora à raiz do repo.
+/uploads/

@@ -44,6 +44,28 @@ const nextConfig = {
     qualities: [75],
   },
 
+  // `/uploads/*` era servido estaticamente de `public/`, mas `next start`
+  // tira um snapshot de `public/` no início do processo: imagem enviada em
+  // runtime recebia URL de sucesso que respondia 404 até o restart. Os
+  // uploads agora vivem FORA de `public/` e são servidos por
+  // `pages/api/uploads/[...path].js`.
+  //
+  // Como `rewrites()` padrão roda DEPOIS da checagem do filesystem
+  // (afterFiles), o comportamento fica:
+  //   - arquivo já conhecido em `public/uploads` (legado) -> servido pelo
+  //     próprio Next, sem passar pela rota;
+  //   - qualquer outro `/uploads/...` (novo ou gravação em runtime) -> rewrite
+  //     -> rota, que lê o disco a cada request (sem snapshot) e ainda faz
+  //     fallback para `public/uploads`.
+  async rewrites() {
+    return [
+      {
+        source: '/uploads/:path*',
+        destination: '/api/uploads/:path*',
+      },
+    ];
+  },
+
   // Configure headers for CORS and security
   async headers() {
     return [

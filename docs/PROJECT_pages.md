@@ -24,13 +24,13 @@
 
 A pasta `/pages` é o coração do frontend e das rotas de API do projeto Next.js "Caminhar". Ela concentra:
 
-- **5 páginas raiz** — o app wrapper, o documento HTML customizado, a home pública, o painel administrativo e a vitrine do Design System.
-- **10 endpoints de API pública** — conteúdos acessíveis sem autenticação (posts, músicas, vídeos, dicas, produtos, configurações, status, upload, placeholder) com cache, rate limiting e paginação padronizados.
-- **15 endpoints administrativos** — CRUDs e ferramentas de gestão, todos protegidos pelo handler factory `createAdminHandler()`.
+- **6 páginas raiz** — o app wrapper, o documento HTML customizado, a home pública, o painel administrativo, a vitrine do Design System e a página de login (`/login`).
+- **10 endpoints de API pública** — conteúdos acessíveis sem autenticação (posts, músicas, vídeos, dicas, produtos, configurações, status, upload, placeholder, cleanup) com cache, rate limiting e paginação padronizados.
+- **16 endpoints administrativos** — 15 em `pages/api/admin/` (CRUDs e ferramentas de gestão, todos protegidos pelo handler factory `createAdminHandler()`) **mais `pages/api/ip-diagnostico.js`**, que fica na raiz de `pages/api/` mas usa o mesmo factory com `requireAdmin: true`.
 - **4 endpoints de autenticação** — login, logout, verificação de token e renovação via refresh token.
-- **1 helper** reutilizável de paginação.
+- **1 helper** reutilizável de paginação e **1 rota de uploads** (`pages/api/uploads/[...path].js`, alvo do `rewrite` de `/uploads/*`).
 - **2 páginas de blog + 1 CSS Module** — listagem e detalhe de posts com SSR direto ao banco.
-- **4 arquivos de estilo** — tokens CSS, reset global e CSS Modules de home e design system.
+- **5 arquivos de estilo** — tokens CSS, reset global e CSS Modules de home, login e design system.
 
 Arquivos com função puramente utilitária (helper) ou de suporte visual (CSS) foram agrupados em suas respectivas seções para facilitar a leitura.
 
@@ -44,6 +44,7 @@ Arquivos com função puramente utilitária (helper) ou de suporte visual (CSS) 
 ├── _document.js                # Documento HTML customizado (SEO, CSP, CSS crítico)
 ├── index.js                    # Home pública
 ├── admin.js                    # Painel administrativo
+├── login.js                    # Página de login geral (/login)
 ├── design-system.js            # Vitrine do Design System
 ├── api/
 │   ├── posts.js                # Posts: GET público + POST autenticado
@@ -56,6 +57,7 @@ Arquivos com função puramente utilitária (helper) ou de suporte visual (CSS) 
 │   ├── upload-image.js         # Upload de imagens (multipart)
 │   ├── placeholder-image.js    # Serve a imagem hero da home
 │   ├── cleanup-test-data.js    # Limpeza de dados de teste (DELETE)
+│   ├── ip-diagnostico.js       # Diagnóstico de topologia XFF (admin-only, GET)
 │   ├── auth/
 │   │   ├── login.js            # Login (web + API externa)
 │   │   ├── logout.js           # Logout e revogação de refresh token
@@ -77,6 +79,8 @@ Arquivos com função puramente utilitária (helper) ou de suporte visual (CSS) 
 │   │   ├── fetch-youtube.js    # Metadados de vídeo do YouTube (oEmbed)
 │   │   ├── fetch-spotify.js    # Metadados de música do Spotify
 │   │   └── fetch-ml.js         # Dados de produto do Mercado Livre
+│   ├── uploads/
+│   │   └── [...path].js        # Serve arquivos de <cwd>/uploads (rewrite de /uploads/*)
 │   └── helper/
 │       └── pagination.js       # Helper de paginação (não é endpoint)
 ├── blog/
@@ -87,6 +91,7 @@ Arquivos com função puramente utilitária (helper) ou de suporte visual (CSS) 
     ├── globals.css             # Reset + base tipográfica
     ├── variables.css           # Design tokens (CSS Custom Properties)
     ├── Home.module.css         # CSS Module da home
+    ├── Login.module.css        # CSS Module da página de login
     └── DesignSystem.module.css # CSS Module da vitrine
 ```
 
@@ -189,11 +194,27 @@ Arquivos com função puramente utilitária (helper) ou de suporte visual (CSS) 
   - Componentes de layout: Stack (vertical/horizontal) e Grid Responsivo.
   - Seção de documentação textual do que compõe o Design System (tokens, componentes, hooks `useTheme`).
 
+### `/pages/login.js`
+
+- **Caminho:** `/pages/login.js`
+- **Arquivos acionados/relacionados:**
+  - `pages/styles/Login.module.css` — CSS Module da página.
+  - `components/UI` (`Button`) e `utils/resolve-next` (`resolveNext` — destino pós-login, lido de `router.query`).
+  - Contrato da API: `POST /api/auth/login` com `{ username, password }` (cookie `httpOnly`).
+- **Propósito:** página de login geral do site, na rota `/login` (spec em `design-system/pages/login.md`, override do MASTER).
+- **Funcionalidades:**
+  - Formulário com validação por campo no `blur` e no submit, com mensagens próprias para credenciais inválidas, rate limit, falha de rede e campos vazios (`MSG`).
+  - Envio via `fetch('/api/auth/login', …)` e, no sucesso, `router.push(resolveNext(router.query))`.
+  - Campo de senha com botão mostrar/ocultar (`EyeIcon` inline), `aria-invalid`/`aria-describedby` ligados às mensagens de erro e `aria-busy` no submit; inputs desabilitados durante o carregamento; `noValidate` no `<form>` (a validação é a própria).
+- **Observação:** arquivo **criado em 03/10/2026** (commit `73dbc86`, depois ajustado em 04/10/2026 por `5beabc7`) — ambos posteriores à análise de 23/09/2026, data do cabeçalho deste documento; ver "Histórico de Mudanças Relevantes".
+
 ---
 
 ## 2. API Pública
 
 Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP, paginação, cache via `getOrSetCache`, rate limiting via `checkRateLimit` e respostas padronizadas `{ error, message }` em caso de falha.
+
+> **Fora desta seção, mas na raiz de `pages/api/`:** `ip-diagnostico.js` é admin-only (`requireAdmin: true`) e está documentado na seção 3 (API Admin) — ele não conta entre os 10 públicos.
 
 ### `/pages/api/helper/pagination.js`
 
@@ -337,7 +358,7 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
   - `lib/domain/settings.js` — `updateSetting()` (atualiza `home_image_url` quando `uploadType=setting_home_image`).
   - `lib/auth/auth.js` — `withAuth`.
   - `lib/infra/logger.js` — `logger`.
-  - Pasta `public/uploads/` — destino dos arquivos (criada se não existir).
+  - Pasta **`<cwd>/uploads/`** — destino dos arquivos (criada se não existir), fora de `public/`; caminho configurável por **`UPLOADS_DIR`** (volume persistente em filesystem efêmero). Servida pela rota nova `pages/api/uploads/[...path].js` via `rewrites()` em `next.config.js` (`/uploads/:path*` → `/api/uploads/:path*`) — a URL pública continua `/uploads/<arquivo>` (ver item U de `docs/PENDENCIAS_scripts_testes.md`).
 - **Propósito:** Endpoint de upload de imagens com múltiplas camadas de segurança.
 - **Funcionalidades:**
   - Método POST protegido por `withAuth`; `bodyParser: false` (usa `formidable`).
@@ -355,13 +376,13 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
 - **Arquivos acionados/relacionados:**
   - `lib/domain/settings.js` — `getSetting('home_image_url')`.
   - `lib/infra/logger.js` — `logger`.
-  - Pasta `public/uploads/` — leitura dos arquivos de imagem.
+  - Pastas **`<cwd>/uploads/`** (ativo, `UPLOADS_DIR`) e **`public/uploads/`** (legado) — leitura dos arquivos de imagem, nesta ordem.
   - `fs` e `path` (módulos nativos).
 - **Propósito:** Endpoint para servir a imagem principal da home (hero).
 - **Funcionalidades:**
   - Tenta buscar `home_image_url` na configuração do banco (`getSetting`), extrai o nome do arquivo via `path.basename`.
   - Cache em memória do filename resolvido do banco (TTL de 5 minutos) — evita nova consulta a `getSetting` em cada request; a invalidação de settings não alcança este cache local, por isso o TTL curto.
-  - Fallback: procura o arquivo `hero-image-*` mais recente em `public/uploads/` (ordenação por nome).
+  - Fallback: procura o arquivo `hero-image-*` mais recente nos **dois** diretórios — `<cwd>/uploads/` (`UPLOADS_DIR`) e `public/uploads/` (legado), nesta ordem (ordenação por nome).
   - Fallback final: gera um SVG placeholder inline (1100×320).
   - Cache agressivo: `public, max-age=86400, immutable`, `ETag` (`"filename"`) e `Last-Modified` baseado no `mtime` do arquivo (estável entre requests).
   - Revalidação HTTP: responde **304** quando o header `If-None-Match` corresponde ao ETag, sem reler o arquivo do disco.
@@ -384,7 +405,7 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
 
 ## 3. API Admin
 
-> **Padrão arquitetural:** Todos os 15 endpoints admin utilizam o **handler factory `createAdminHandler()`** de `lib/api/adminCrudHandler.js`, que centraliza: verificação de método HTTP + 405 padronizado em português, autenticação via `withAuth`, RBAC (checagem de permissão na tabela `roles`), rate limiting em mutações, invalidação automática de cache (via `cacheKeys`), injeção de `req.adminUtils.logActivity()` / `req.adminUtils.user` e try/catch unificado com mensagens de erro PostgreSQL traduzidas.
+> **Padrão arquitetural:** Os **15 endpoints de `pages/api/admin/`** — e também **`pages/api/ip-diagnostico.js`**, que fica na raiz de `pages/api/` — utilizam o **handler factory `createAdminHandler()`** de `lib/api/adminCrudHandler.js`, que centraliza: verificação de método HTTP + 405 padronizado em português, autenticação via `withAuth`, RBAC (checagem de permissão na tabela `roles`), rate limiting em mutações, invalidação automática de cache (via `cacheKeys`), injeção de `req.adminUtils.logActivity()` / `req.adminUtils.user` e try/catch unificado com mensagens de erro PostgreSQL traduzidas.
 
 ### CRUDs de Conteúdo
 
@@ -522,13 +543,13 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
   - `lib/infra/db.js` — `query()`.
   - `@upstash/redis` (import dinâmico) — ping do cache.
   - `fs`, `path`, `os` (módulos nativos) — verificações de armazenamento e sistema.
-  - Pastas `public/uploads/` e `data/backups/` — alvo das verificações.
+  - Pastas **`<cwd>/uploads/`** (`UPLOADS_DIR`, ativo), **`public/uploads/`** (legado) e `data/backups/` — alvo das verificações.
 - **Propósito:** Diagnóstico completo de integridade do sistema.
 - **Funcionalidades:**
   - GET com verificação de 5 dimensões:
     - **Banco de dados:** conexão (`SELECT 1`), latência, tamanho (`pg_database_size`), conexões ativas (`pg_stat_database`).
     - **Cache/Redis:** ping via `@upstash/redis`; status `warning` se não configurado (fallback para memória).
-    - **Armazenamento:** tamanho e contagem de arquivos em `public/uploads` (recursivo), espaço livre/total do disco via `fs.statfsSync`.
+    - **Armazenamento:** tamanho e contagem de arquivos nos **dois** diretórios de upload — `<cwd>/uploads` (`UPLOADS_DIR`) e o legado `public/uploads`, somados (recursivo), reportando `uploadsPath` e `legacyUploadsPath`; espaço livre/total do disco via `fs.statfsSync`.
     - **Backup:** listagem de arquivos em `data/backups` (.sql/.dump/.gz/.enc), último backup com idade formatada.
     - **Sistema:** versão Node, plataforma, arquitetura, hostname, uptime, memória RSS, CPU cores, ambiente.
   - Calcula status geral: `healthy` (tudo ok), `degraded` (algum erro), `warning` (algum aviso).
@@ -582,6 +603,20 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
   - **Função `redisSafe()`:** trata erros de rate limit do Upstash como fallback silencioso e propaga erros graves (timeout/conexão) para o handler superior.
   - Retorna 501 se Redis não estiver configurado (gerenciamento remoto indisponível no modo em memória).
   - Config: sem `permission` explícita na config.
+
+#### `/pages/api/ip-diagnostico.js`
+
+- **Caminho:** `/pages/api/ip-diagnostico.js` — **na raiz de `pages/api/`, não em `admin/`**, mas protegido pelo mesmo factory: `createAdminHandler({ …, requireAdmin: true })`.
+- **Arquivos acionados/relacionados:**
+  - `lib/api/adminCrudHandler.js` — `createAdminHandler`.
+  - `lib/api/helpers.js` — `fromNodeRequest`, `getTrustedProxyHops`, `resolveClientIP`.
+  - Procedimento de uso e leitura da resposta: `docs/DEPLOY_proxy_e_IP.md` §6 — aqui ficam só a existência da rota e a contagem.
+- **Propósito:** diagnóstico de topologia de proxy — relata **fatos** sobre como a requisição chegou (IP do socket, cadeia crua de `X-Forwarded-For`, hops efetivos, IP resolvido) e **incoerências verificáveis**, para o operador decidir o `TRUST_PROXY` com evidência.
+- **Funcionalidades:**
+  - GET admin-only, **sem efeito colateral** (não escreve em disco nem em banco).
+  - **Não sugere número de hops**: o comprimento da cadeia é controlável pelo cliente (ele escreve as entradas à esquerda), então não mede quantos proxies existem — hops é fato do deploy. A resposta traz `fatos` e `sinais` (cada sinal com `ok` e o texto do que fazer, montado por `montarOrientacao`).
+  - Helpers internos: `isLoopback`/`isPrivate` (classificação do IP), `parseChain` (quebra o header na ordem de chegada).
+- **Observação:** arquivo **criado em 05/10/2026** (commit `8fa3944`) — posterior à análise de 23/09/2026, que não o incluía; ver "Histórico de Mudanças Relevantes".
 
 ### Integrações Externas (Fetchers)
 
@@ -785,6 +820,16 @@ Já documentado na seção [2. API Pública](#2-api-pública) — é o único ar
 - **Propósito:** Estilos CSS Module da página inicial.
 - **Características:** layout flex column (min-height 100vh), `.title` uppercase com `letter-spacing: 2px` (sem gradiente), `.subtitle` com largura máxima 800px, `.settingsError` (itálico, cor terciária), `.imageContainer` (máx. 1100px, altura 320px, border-radius, sombra) e `.heroImage` con hover scale (1.05). Responsivo para 768px e 480px. Todos os valores usam CSS Custom Properties.
 
+### `/pages/styles/Login.module.css`
+
+- **Caminho:** `/pages/styles/Login.module.css`
+- **Arquivos acionados/relacionados:**
+  - Importado por `pages/login.js` — **único consumidor** (confirmado por grep no repositório).
+  - Consome CSS Custom Properties de `variables.css` (89 ocorrências de `var(--…)`).
+- **Propósito:** Estilos CSS Module da página de login (`/login`).
+- **Características:** 306 linhas, 22 seletores de topo (`.page`, `.card`, `.header`, `.title`, `.subtitle`, `.form`, `.field`, `.label`, `.input`, `.inputWrap`, `.hasToggle`, `.toggle`, `.inputInvalid`, `.fieldError`, `.errorSummary`, `.summaryList`, `.forgotRow`, `.link`, `.footer`, `.loadingStatus`, `.requiredNote`, `.eyebrow`), responsivo em `@media (min-width: 640px)` e com `@media (prefers-reduced-motion: reduce)` desligando as animações.
+- **Observação:** criado em **03/10/2026** junto com `pages/login.js` (commit `73dbc86`; ajustado em `5beabc7`, 04/10/2026); fora da análise de 23/09/2026.
+
 ### `/pages/styles/DesignSystem.module.css`
 
 - **Caminho:** `/pages/styles/DesignSystem.module.css`
@@ -800,15 +845,18 @@ Já documentado na seção [2. API Pública](#2-api-pública) — é o único ar
 
 | Categoria | Quantidade |
 |-----------|:----------:|
-| Páginas raiz | 5 |
+| Páginas raiz | 6 |
 | APIs públicas | 10 |
-| APIs admin | 15 |
+| APIs admin | 16 |
 | APIs autenticação | 4 |
 | Helper de API | 1 |
+| Rota de uploads | 1 |
 | Páginas blog | 2 |
 | CSS Module blog | 1 |
-| Estilos globais e módulos | 4 |
-| **Total** | **42** |
+| Estilos globais e módulos | 5 |
+| **Total** | **46** |
+
+> **Contagens conferidas no repositório em 08/10/2026** (`find pages -type f` = **46** arquivos: 40 `.js` + 6 `.css`). Detalhe das linhas: **Páginas raiz 6** = `_app`, `_document`, `index`, `admin`, `design-system`, **`login`**; **APIs admin 16** = os 15 de `pages/api/admin/` **+ `ip-diagnostico.js`**, que fica na raiz de `pages/api/` mas é `requireAdmin` (por isso não está entre os 10 públicos); **Rota de uploads 1** = `pages/api/uploads/[...path].js` (alvo do `rewrite` `/uploads/*`, que a tabela anterior não listava); **Estilos 5** = `globals`, `variables`, `Home`, **`Login`**, `DesignSystem`. As omissões de `login.js`, `Login.module.css`, `ip-diagnostico.js` e `uploads/[...path].js` vêm de entradas de arquivo posteriores à análise de 23/09/2026 (ver histórico abaixo).
 
 ---
 
@@ -822,3 +870,4 @@ Já documentado na seção [2. API Pública](#2-api-pública) — é o único ar
 - **05/09/2026:** `admin/videos.js` centraliza a extração da mensagem de validação na função exportada `getValidationMessage()` (usada no POST e no PUT), eliminando a lógica duplicada na camada de rota.
 - **09/09/2026:** Controle de `strictMode` baseado em `NODE_ENV` — `proxy.js` e `pages/api/auth/login.js` passam a controlar o parâmetro `strictMode` da função `detectSpoofedIP` com base no ambiente (`NODE_ENV`), evitando falsos positivos em testes de carga durante o desenvolvimento e mantendo a proteção em produção. Suporte opcional à variável `ENABLE_STRICT_SPOOFING=true` para testes de segurança em desenvolvimento.
 - **23/09/2026:** Reanálise completa dos 42 arquivos com processo sequencial (análise → atualização → releitura → validação). Adicionadas a seção "Estrutura de Arquivos e Pastas" e o campo "Arquivos acionados/relacionados" em todas as seções; corrigido o total de custom properties de `variables.css` (348 propriedades em 386 linhas — o número anterior confundia linhas com propriedades); registradas ausências de `permission` explícita na config de `admin/musicas.js`, `admin/dicas.js`, `admin/backups.js` e `admin/rate-limit.js`; detalhado o modo API externa do `login.js` (`refresh_token_stored`); confirmados os pontos de atenção existentes (`await await` em `admin/users.js`, import sem extensão em `admin/backups.js`, 405 sem `Allow` em `check.js` e `videos.js`).
+- **08/10/2026:** Reconciliação das contagens com o repositório — o total voltou a ser conferido com `find pages -type f` e passou de **42 para 46 arquivos** (a frase "42 arquivos" das entradas de 01/08 e 23/09 acima descreve o estado daquelas datas, e continua sendo o retrato delas). Quatro entradas posteriores à análise de 23/09 não estavam refletidas nem na árvore nem nas seções e foram acrescentadas: **`pages/login.js`** + **`pages/styles/Login.module.css`** (criados em `73dbc86`, 03/10/2026, ajustados em `5beabc7`, 04/10/2026), **`pages/api/ip-diagnostico.js`** (`8fa3944`, 05/10/2026, admin-only na raiz da API) e **`pages/api/uploads/[...path].js`** — este já constava na árvore mas faltava no "Resumo Quantitativo", e **ainda não está commitado** (arquivo novo no working tree; `git log --diff-filter=A` não retorna nada para ele). Os blocos "Visão Geral", árvore, seção 3 (agora "15 endpoints em `admin/` + `ip-diagnostico.js`") e a tabela de resumo foram ajustados; a diferença entre "10 endpoints de API pública" e os 11 arquivos `.js` na raiz de `pages/api/` é justamente o `ip-diagnostico.js`.

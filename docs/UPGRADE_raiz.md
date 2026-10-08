@@ -484,6 +484,8 @@ Também contém regras de teste/mock e regras genéricas. Opções: includeOnly 
 
 **Resumo:** Template de exemplo de variáveis de ambiente para o projeto. Contém TODAS as variáveis necessárias (banco de dados, Redis, NextAuth, Sentry, Docker, Kingship, auth, etc.) com valores de exemplo ou placeholders. 830 bytes, 42 linhas. Serve como documentação das variáveis de ambiente necessárias.
 
+**Anotação de 08/10/2026:** a contagem acima é o estado registrado na análise original. O arquivo hoje tem **3905 bytes / 78 linhas / 14 variáveis** (13 já estavam lá antes desta rodada, incluindo `DATABASE_SSL` e `TRUST_PROXY`, que a análise não listou; a 14ª é **`UPLOADS_DIR`**, acrescentada no bloco final das linhas 72-79 — ver `docs/PROJECT_raiz.md` §3.5 e `docs/DEPLOY_proxy_e_IP.md` §10).
+
 ---
 
 ### 9.9 `.gitignore`

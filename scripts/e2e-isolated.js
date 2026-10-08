@@ -87,6 +87,22 @@ const CHILD_STOP_GRACE_MS = 5000;
 const ARTIFACT_DIRS = ['cypress/videos', 'cypress/screenshots'];
 
 /**
+ * Detecta execução em CI.
+ *
+ * GitHub Actions define `CI=true` e `GITHUB_ACTIONS=true`. Checamos ambos: o
+ * primeiro é o padrão não-óbvio que vários provedores definem, o segundo é o
+ * que o GitHub garante.
+ *
+ * Usado só para decidir se os artefatos do Cypress são apagados no teardown — na
+ * CI eles precisam sobreviver para o `upload-artifact` do workflow.
+ *
+ * @returns {boolean}
+ */
+function isCI() {
+  return process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+}
+
+/**
  * Env das crianças (app, migrations, seed e Cypress).
  *
  * - `DATABASE_URL`/`DATABASE_SSL`: apontam SÓ para o container. `DATABASE_SSL=false`
@@ -280,7 +296,29 @@ async function cleanup() {
     }
   }
 
-  // 3. Artefatos de execução do Cypress — só os NÃO rastreados pelo git
+  // 3. Artefatos de execução do Cypress — só os NÃO rastreados pelo git, e
+  //    NUNCA na CI.
+  //
+  //    O `.github/workflows/e2e.yml` sobe `cypress/videos` e
+  //    `cypress/screenshots` como artifact DEPOIS deste script terminar. Como o
+  //    `upload-artifact` roda em step seguinte, apagar aqui destruiria a única
+  //    evidência de uma falha — e o `if-no-files-found: ignore` faria o step
+  //    passar em silêncio, então a CI ficaria verde entregando nada. Foi
+  //    exatamente o que aconteceu no primeiro run (37770170647): conclusion
+  //    "success" com `artifacts.total_count: 0`.
+  //
+  //    Localmente a limpeza continua valendo: os `.mp4` sobrescrevem os nomes
+  //    determinísticos do Cypress a cada execução e sujariam o `git status`.
+  //    (Eles já não são versionados — ver `.gitignore` — então "sujar o status"
+  //    não é mais o caso; o motivo que resta é não deixar 2,8 MB acumulados.)
+  if (isCI()) {
+    console.log(
+      '🧹 [e2e-isolated] CI detectada — preservando cypress/videos e ' +
+        'cypress/screenshots para o upload de artifact.',
+    );
+    return;
+  }
+
   for (const dir of ARTIFACT_DIRS) {
     try {
       const removed = removeUntrackedArtifacts(dir);

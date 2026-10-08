@@ -85,13 +85,22 @@ async function handleGet(req, res) {
 
   // ── 3. Verificação de Armazenamento ──────────────────────────
   try {
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+    // Diretório ativo (fora de `public/` — ver pages/api/upload-image.js) +
+    // legado em `public/uploads`, que continua ocupando disco e sendo servido
+    // por fallback em pages/api/uploads/[...path].js.
+    const uploadsDir = path.resolve(process.env.UPLOADS_DIR || path.join(process.cwd(), 'uploads'));
+    const legacyUploadsDir = path.join(process.cwd(), 'public', 'uploads');
+    const displayPath = (dir) => {
+      const rel = path.relative(process.cwd(), dir);
+      return rel && !rel.startsWith('..') && !path.isAbsolute(rel) ? `/${rel}` : dir;
+    };
+    const existingDirs = [uploadsDir, legacyUploadsDir].filter((dir) => fs.existsSync(dir));
 
-    if (fs.existsSync(uploadsDir)) {
-      const files = fs.readdirSync(uploadsDir);
-      const stats = fs.statfsSync(uploadsDir);
+    if (existingDirs.length > 0) {
+      const stats = fs.statfsSync(existingDirs[0]);
 
-      // Calcula tamanho total dos uploads
+      // Calcula tamanho total dos uploads (ativo + legado)
+      let totalFiles = 0;
       let totalSize = 0;
       const calculateSize = (dir) => {
         const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -104,12 +113,16 @@ async function handleGet(req, res) {
           }
         }
       };
-      calculateSize(uploadsDir);
+      for (const dir of existingDirs) {
+        totalFiles += fs.readdirSync(dir).length;
+        calculateSize(dir);
+      }
 
       checks.storage.status = 'ok';
       checks.storage.details = {
-        uploadsPath: '/public/uploads',
-        totalFiles: files.length,
+        uploadsPath: displayPath(uploadsDir),
+        legacyUploadsPath: displayPath(legacyUploadsDir),
+        totalFiles,
         totalSize: formatBytes(totalSize),
         diskFree: formatBytes(stats.bsize * stats.bavail),
         diskTotal: formatBytes(stats.bsize * stats.blocks),
@@ -118,7 +131,8 @@ async function handleGet(req, res) {
       checks.storage.status = 'warning';
       checks.storage.details = {
         message: 'Diretório de uploads não encontrado',
-        path: '/public/uploads',
+        path: displayPath(uploadsDir),
+        legacyPath: displayPath(legacyUploadsDir),
       };
     }
   } catch (error) {

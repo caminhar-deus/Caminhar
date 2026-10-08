@@ -12,7 +12,13 @@ let cachedHeroFilenameExpiresAt = 0;
 
 export default async function handler(req, res) {
   try {
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+    // Diretórios de upload: o ativo vive FORA de `public/` (snapshot do
+    // `next start` — ver pages/api/upload-image.js) e `public/uploads` segue
+    // como fallback de dados legados. A ordem importa: novo primeiro.
+    const uploadDirs = [
+      path.resolve(process.env.UPLOADS_DIR || path.join(process.cwd(), 'uploads')),
+      path.join(process.cwd(), 'public', 'uploads'),
+    ];
     let filename = (cachedHeroFilename && Date.now() < cachedHeroFilenameExpiresAt)
       ? cachedHeroFilename
       : null;
@@ -33,16 +39,25 @@ export default async function handler(req, res) {
 
       // 2. Fallback: Se não achou no banco, procura o arquivo mais recente na pasta
       if (!filename) {
-        const files = await fs.readdir(uploadDir).catch(() => []);
-        
-        // Procura por arquivos com prefixo antigo (hero-) ou novo (post-)
-        const imageFiles = files.filter(file => 
-          file.startsWith('hero-image-')
-        );
-        
-        // Pega o último (mais recente pelo nome/timestamp)
-        if (imageFiles.length > 0) {
-          filename = imageFiles.sort().pop();
+        for (const dir of uploadDirs) {
+          let files = [];
+          try {
+            files = (await fs.readdir(dir)) || [];
+          } catch {
+            files = [];
+          }
+
+          // Procura por arquivos com prefixo antigo (hero-) ou novo (post-)
+          const imageFiles = files.filter(file =>
+            file.startsWith('hero-image-')
+          );
+
+          // Pega o último (mais recente pelo nome/timestamp). O primeiro
+          // diretório com candidato vence (o ativo vem antes do legado).
+          if (imageFiles.length > 0) {
+            filename = imageFiles.sort().pop();
+            break;
+          }
         }
       }
 
@@ -52,16 +67,32 @@ export default async function handler(req, res) {
       }
     }
 
+    // Localiza o arquivo em qual dos diretórios ele existe (novo, depois legado)
+    let imagePath = null;
+    let stats = null;
     if (filename) {
+      for (const dir of uploadDirs) {
+        const candidate = path.join(dir, path.basename(filename));
+        try {
+          // `fs` aqui é `fs.promises` (import nomeado) — não `fs.promises.stat`
+          stats = await fs.stat(candidate);
+          imagePath = candidate;
+          break;
+        } catch {
+          // Não está neste diretório — tenta o próximo
+        }
+      }
+    }
+
+    if (imagePath) {
       // Serve the uploaded image with aggressive caching
-      const imagePath = path.join(uploadDir, filename);
 
       // Detecta tipo básico pela extensão ou assume jpeg
-      const ext = path.extname(filename).toLowerCase();
+      const ext = path.extname(imagePath).toLowerCase();
       const contentType = ext === '.png' ? 'image/png' : (ext === '.webp' ? 'image/webp' : 'image/jpeg');
 
       // Last-Modified estável baseado no mtime do arquivo (permite revalidação 304)
-      const stats = await fs.stat(imagePath);
+      // (`stats` já veio do stat acima — um segundo stat aqui quebraria o fluxo)
 
       // Set aggressive caching headers for better performance
       res.setHeader('Content-Type', contentType);

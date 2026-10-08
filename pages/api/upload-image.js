@@ -37,8 +37,15 @@ async function handler(req, res) {
   }
 
   try {
-    // Ensure upload directory exists
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+    // Ensure upload directory exists.
+    // FORA de `public/`: `next start` tira um snapshot de `public/` no início
+    // do processo, então um arquivo gravado em runtime não é servido até o
+    // próximo restart (GET devolvia 404 com URL de sucesso já emitida).
+    // O diretório padrão é `<cwd>/uploads` na raiz do repo (mesmo padrão de
+    // `reports/`); UPLOADS_DIR permite apontar para um volume persistente.
+    // A URL pública continua `/uploads/<arquivo>` — servida pela rota
+    // `pages/api/uploads/[...path].js` via rewrite em `next.config.js`.
+    const uploadDir = path.resolve(process.env.UPLOADS_DIR || path.join(process.cwd(), 'uploads'));
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }

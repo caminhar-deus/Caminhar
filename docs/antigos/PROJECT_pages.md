@@ -190,7 +190,7 @@
   - **Limite de dimensões**: Verifica largura e altura máxima (1920×1920px) com mensagem de erro informativa (adicionado 12/05/2026)
   - **Nome aleatório seguro**: Gera nome único com `crypto.randomUUID()` em vez de timestamp, eliminando previsibilidade e risco de sobrescrita (adicionado 12/05/2026)
   - **Extensão validada**: Extensão do arquivo validada contra lista de extensões permitidas; fallback seguro para `.jpg` (adicionado 12/05/2026)
-  - Salva em `/public/uploads/`
+  - Salva em `/public/uploads/` *(anotação de 08/10/2026: a partir da correção do item U de `docs/PENDENCIAS_scripts_testes.md` o destino passou a ser `<cwd>/uploads` (`UPLOADS_DIR`), fora de `public/` — este documento é um retrato de 13/05/2026)*
   - Retorna caminho da imagem
   - Respostas de erro padronizadas no formato `{ error, message }` (alterado 12/05/2026)
 

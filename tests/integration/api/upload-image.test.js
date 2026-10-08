@@ -1,5 +1,6 @@
 import { jest, describe, beforeEach, test, expect } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
+import path from 'path';
 import { TextEncoder, TextDecoder } from 'util';
 
 global.TextEncoder = TextEncoder;
@@ -197,10 +198,12 @@ describe('API de Upload de Imagem (/api/upload-image)', () => {
     expect(res._getStatusCode()).toBe(200);
 
     // Verifica se o rename foi chamado movendo do temp para o destino final correto
-    // O nome do arquivo usa crypto.randomUUID(), então verificamos apenas o padrão
+    // O nome do arquivo usa crypto.randomUUID(), então verificamos apenas o padrão.
+    // Destino agora é o diretório de uploads FORA de `public/` (snapshot do
+    // `next start` impedia servir arquivo gravado em runtime em `public/`).
     expect(fs.promises.rename).toHaveBeenCalledWith(
       mockFile.filepath,
-      expect.stringContaining('public/uploads')
+      expect.stringContaining(path.join(process.cwd(), 'uploads'))
     );
     
     expect(fs.promises.rename).toHaveBeenCalledWith(

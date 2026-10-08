@@ -165,7 +165,7 @@ scripts/
 
 ### `scripts/clean-orphaned-images.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/clean-orphaned-images.js`
-- **Propósito:** Remove imagens órfãs do sistema de arquivos que não estão referenciadas no banco de dados. Varre o diretório `public/uploads/` e exclui arquivos cujo registro não existe na tabela `images`.
+- **Propósito:** Remove imagens órfãs do sistema de arquivos que não estão referenciadas no banco de dados. Varre o diretório `public/uploads/` e exclui arquivos cujo registro não existe na tabela `images`. *(Anotação de 08/10/2026: descrição válida para a época desta análise. Desde então a varredura cobre **os dois** diretórios — o ativo `UPLOADS_DIR`/`<cwd>/uploads` **e** o legado `public/uploads`, com dedup entre eles — e o modo padrão passou a ser relatório com lixeira; o estado corrente está em `docs/PROJECT_scripts.md`.)*
 - **Dependências:** `dotenv`, `pg`, `fs`, `path`
 
 ### `scripts/clean-test-db.js`
@@ -180,7 +180,7 @@ scripts/
 
 ### `scripts/clear-db.js`
 - **Localização:** `/home/qa/Projeto/Caminhar/scripts/clear-db.js`
-- **Propósito:** Limpa completamente todas as tabelas do banco de dados usando `TRUNCATE CASCADE` nas tabelas de conteúdo (`posts`, `videos`, `musicas`, `images`, `settings`, `users`). Mantém a integridade referencial. Também limpa o diretório `public/uploads/`. Requer confirmação do usuário via prompt interativo (`readline`) antes de executar.
+- **Propósito:** Limpa completamente todas as tabelas do banco de dados usando `TRUNCATE CASCADE` nas tabelas de conteúdo (`posts`, `videos`, `musicas`, `images`, `settings`, `users`). Mantém a integridade referencial. Também limpa o diretório `public/uploads/`. Requer confirmação do usuário via prompt interativo (`readline`) antes de executar. *(Anotação de 08/10/2026: descrição válida para a época. Hoje a limpeza de uploads cobre **os dois** diretórios (`UPLOADS_DIR`/`<cwd>/uploads` **e** o legado `public/uploads`), e `clearUploadsDir()` é exportada com guarda de execução de CLI — ver `docs/PROJECT_scripts.md`.)*
 - **Segurança:** Prompt de confirmação impede execução acidental. I/O assíncrono com `fs.promises.*` para operações de arquivo (não bloqueante). Carregamento de ambiente centralizado via `scripts/utils/load-env.js`.
 - **Refatorado em:** 21/05/2026 — adicionado prompt de confirmação, migrado para `load-env.js`, I/O assíncrono, import estático e shebang.
 - **Atualizado em:** 07/06/2026 — migrado de `import { query, closeDatabase } from '../lib/db.js'` para `import { query, closePool } from './db/connection.js'`, usando o módulo compartilhado de conexão.

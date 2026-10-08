@@ -376,11 +376,21 @@ que qualquer comparação de suporte a `next start`. O Caminhar grava em disco:
 | `scripts/backup.js:27` | Backup diário às 02:00 (cron) |
 | `scripts/backup.js:104` | `fs.createWriteStream(outputPath)` |
 | `scripts/maintenance/backup-posts.js:34,42` | `mkdirSync` + `writeFileSync` de dump |
-| `pages/api/upload-image.js:43` | `fs.mkdirSync(uploadDir)` — upload de imagem |
+| `pages/api/upload-image.js:48,50` | `uploadDir` (resolvido de `UPLOADS_DIR`, senão `<cwd>/uploads`) + `fs.mkdirSync(uploadDir)` — upload de imagem (grava **fora** de `public/`; ver item U de `docs/PENDENCIAS_scripts_testes.md`) |
 
 Filesystem de serverless é **efêmero**: um redeploy apaga uploads e o histórico de
 backups. Isso elimina Vercel e qualquer execução serverless, independentemente de
-o `next start` ser suportado.
+o `next start` ser suportado. O diretório de uploads é o único dos quatro cujo
+caminho é configurável — **`UPLOADS_DIR`** aponta para o volume persistente no
+deploy com disco efêmero.
+
+**Desde 08/10/2026 a variável está em `.env.example`** (bloco "Opcionais",
+linhas 72-79, declarada como `UPLOADS_DIR=""`). O valor vem **vazio de
+propósito**: string vazia é *falsy* em JS, então `path.resolve(process.env.UPLOADS_DIR || …)`
+cai no default `<raiz-do-repo>/uploads`, e quem não toca no arquivo continua
+com o comportamento padrão. Em dev, deixe ausente/vazia; em produção com volume,
+aponte (`UPLOADS_DIR="/var/data/uploads"`). Ela também é listada em
+`docs/PROJECT_raiz.md` §3.5 — a explicação de uso fica aqui (§10).
 
 Restam, com disco persistente: VPS próprio com nginx, ou Railway / Render / Fly.io
 / Heroku **com volume persistente**. Todos rodam `next start` com Node persistente.

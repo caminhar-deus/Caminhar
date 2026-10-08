@@ -83,7 +83,7 @@ Os seguintes scripts gerenciam a execução dos testes E2E:
 
 **Por quê:** `npm run cypress:run` depende do banco de desenvolvimento (`.env` → `DATABASE_URL`) para renderizar `/blog`, `/blog/[slug]` e a home — os specs só passam se o banco estiver semeado do jeito certo, e a execução deixa sujeira nele. O orquestrador espelha o padrão que o repo já usa nos testes com banco real (`tests/global-setup.db.js`): PostgreSQL efêmero via Testcontainers.
 
-**Fluxo (tudo dentro de `try/finally`):** sobe o container `postgres:15` (mesma tag do serviço `postgres` do CI e de `tests/global-setup.db.js`, **sem** `.withReuse(true)`) → `scripts/migrate.js` apontado para o container → semeia os posts → reaproveita `.next/BUILD_ID` se existir, senão `npx next build` → `npx next start -p 3000` → espera a app responder HTTP 200 → `npx cypress run` **propagando o exit code** → no `finally`: derruba os processos filhos, `container.stop()` e limpa `cypress/videos/` e `cypress/screenshots/`.
+**Fluxo (tudo dentro de `try/finally`):** sobe o container `postgres:15` (mesma tag do serviço `postgres` do CI e de `tests/global-setup.db.js`, **sem** `.withReuse(true)`) → `scripts/migrate.js` apontado para o container → semeia os posts → reaproveita `.next/BUILD_ID` se existir, senão `npx next build` → `npx next start -p 3000` → espera a app responder HTTP 200 → `npx cypress run` **propagando o exit code** → no `finally`: derruba os processos filhos, `container.stop()` e limpa `cypress/videos/` e `cypress/screenshots/` **apenas em execução local**. Na CI a limpeza é pulada de propósito (`isCI()`: `CI === 'true'` ou `GITHUB_ACTIONS === 'true'`), porque na CI esses diretórios são a evidência de uma falha e o step de upload do `e2e.yml` roda **depois** do script — apagá-los destruiria a única pista de uma reprovação.
 
 **Garantia central:** o `DATABASE_URL` do banco de desenvolvimento **nunca** é passado aos filhos — é sempre sobrescrito com a URL do container (o `dotenv`/`@next/env` não sobrescreve variáveis já presentes no env), então o banco de dev não é referenciado em nenhum momento.
 
@@ -107,14 +107,19 @@ Os seguintes scripts gerenciam a execução dos testes E2E:
 | Gatilhos | `push` em `main` + `workflow_dispatch` — **sem `pull_request`** (decisão deliberada: coletar flakiness real antes de cobrar o E2E em todo PR) |
 | Runner / job | Job único, `ubuntu-latest`, `timeout-minutes: 15` |
 | Permissões / secrets | `permissions: contents: read`; **nenhum secret** (o run não grava no Cypress Cloud) |
-| Passos | checkout → setup-node (24.15.0, cache npm) → `npm ci` → `node scripts/e2e-isolated.js` (sem `continue-on-error`) → upload de `cypress/videos` e `cypress/screenshots` com `if: always()` e `retention-days: 7` |
+| Passos | checkout → setup-node (24.15.0, cache npm) → `npm ci` → `node scripts/e2e-isolated.js` (sem `continue-on-error`) → upload de `cypress/videos` (com `if-no-files-found: warn` — com `video: true` o Cypress sempre gera um vídeo por spec, então diretório vazio é anomalia e precisa aparecer) e de `cypress/screenshots` (mantém `ignore`, pois `screenshotOnRunFailure` só produz arquivo quando um teste reprova), ambos com `if: always()` e `retention-days: 7` |
 | Papel | É o **4º check** pretendido para a branch protection, junto de `lint`, `coverage` e `coverage-report` (ver item R de `docs/PENDENCIAS_scripts_testes.md`) |
 
 ### Validação (08/10/2026)
 
+**Local:**
+
 - **25 de 25 testes passando, exit code 0** — specs: `blog` 3/3, `home` 4/4, `image_zoom` 12/12, `navigation` 3/3, `post` 3/3.
 - **Execução com `.next` reaproveitado: 36,07 s.** **Execução fria, sem `.next` (compilando): 44,50 s.**
 - **Zero resíduo:** banco de desenvolvimento com 0 posts antes e depois (nunca referenciado), 0 containers órfãos, 0 processos `next`/`cypress` vivos, porta 3000 livre.
+- **Limpeza condicionada à CI (correção):** com `CI=true GITHUB_ACTIONS=true` o log é `🧹 [e2e-isolated] CI detectada — preservando cypress/videos e cypress/screenshots para o upload de artifact.` e os **5 `.mp4` sobrevivem** ao teardown (exit 0, 54,20 s); sem CI o log é `🧹 [e2e-isolated] Removidos 5 artefato(s) não rastreado(s) de cypress/videos/` e restam **0 vídeos** (exit 0).
+
+**Na CI — primeira execução da história do repositório:** run **`37770170647`** (sha `bad320f`, 08/10/2026), workflow `E2E Isolated (Cypress)`, **`conclusion: "success"`**. Tempos por step: `npm ci` **42 s**; **`Run E2E Isolated` 59 s** (contra os 44,50 s medidos localmente — ~33% mais lento, esperado em runner compartilhado); job inteiro **1m56s**, contra o `timeout-minutes: 15`. O gate no mesmo push, run **`37770170612`** (mesmo sha `bad320f`), também terminou verde, com o step `Build Application` em **7 s**. Detalhe do run `37770170647`: ele foi **verde com `artifacts.total_count: 0`** — a limpeza incondicional do script apagava os vídeos antes do upload (corrigido logo em seguida; ver a nota em `/cypress/videos/`).
 
 ---
 
@@ -296,7 +301,7 @@ Testa a funcionalidade de zoom de imagem (lightbox) em páginas de post do blog,
 
 **Propósito:** Diretório onde o Cypress salva as gravações em vídeo de cada execução de arquivo de teste (gerado quando `video: true` na configuração). Útil para debug visual de falhas em CI — no `e2e.yml` os vídeos são subidos como artefato mesmo quando o job falha (`if: always()`).
 
-**Nota:** Já incluído no `eslint.config.js` na lista de diretórios ignorados (`cypress/videos/**`). O `scripts/e2e-isolated.js` apaga esse conteúdo no `finally` de cada execução local.
+**Nota:** Já incluído no `eslint.config.js` na lista de diretórios ignorados (`cypress/videos/**`). O `scripts/e2e-isolated.js` apaga esse conteúdo no `finally` de cada **execução local**; na CI o conteúdo é **preservado de propósito** (`isCI()`), para o upload de artifact do `e2e.yml`. Essa condição **não existia na versão original**, que apagava os arquivos de forma incondicional — e assim produziu um **run verde sem nenhuma evidência**: o primeiro run de E2E na CI, `37770170647` (sha `bad320f`, 08/10/2026), terminou com `conclusion: "success"` mas `GET /actions/runs/37770170647/artifacts` respondeu **`total_count: 0`** — o teardown destruía a única prova de uma falha e o step de upload passava em silêncio. Por isso o `if-no-files-found` do step de vídeo virou `warn` (com `video: true` o Cypress sempre gera um vídeo por spec, então diretório vazio ali é anomalia).
 
 ---
 

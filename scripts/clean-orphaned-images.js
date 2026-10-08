@@ -49,8 +49,8 @@ export async function cleanOrphanedImages(options = {}) {
 
   console.log(
     deleteFiles
-      ? '🧹 Varredura de imagens órfãs em public/uploads (modo delete, movendo para data/uploads-trash)...'
-      : '🧹 Varredura de imagens órfãs em public/uploads (modo relatório)...'
+      ? '🧹 Varredura de imagens órfãs nos diretórios de uploads (UPLOADS_DIR/<cwd>/uploads e o legado public/uploads) (modo delete, movendo para data/uploads-trash)...'
+      : '🧹 Varredura de imagens órfãs nos diretórios de uploads (UPLOADS_DIR/<cwd>/uploads e o legado public/uploads) (modo relatório)...'
   );
 
   const result = {
@@ -111,23 +111,50 @@ export async function cleanOrphanedImages(options = {}) {
     result.protectedCount = usedFilenames.size;
     console.log(`📊 Total de arquivos protegidos (em uso): ${usedFilenames.size}`);
 
-    // 2. Listar arquivos na pasta uploads
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+    // 2. Listar arquivos nos diretórios de upload: o ativo (mesma resolução da
+    // aplicação: `UPLOADS_DIR` ou `<cwd>/uploads`) e o legado `public/uploads`.
+    // Diretórios inexistentes são ignorados silenciosamente.
+    const uploadDirs = [
+      path.resolve(process.env.UPLOADS_DIR || path.join(process.cwd(), 'uploads')),
+      path.join(process.cwd(), 'public', 'uploads'),
+    ].filter((dir, index, dirs) => dirs.indexOf(dir) === index);
 
-    if (!fs.existsSync(uploadsDir)) {
-      console.log('❌ Diretório public/uploads não encontrado.');
+    const existingDirs = uploadDirs.filter((dir) => fs.existsSync(dir));
+
+    if (existingDirs.length === 0) {
+      console.log(
+        'ℹ️  Nenhum diretório de uploads encontrado (nem o ativo nem o legado public/uploads) — nada a varrer.'
+      );
       return result;
     }
 
-    const files = fs.readdirSync(uploadsDir);
+    // Entradas {dir, file} de todos os diretórios existentes (ativo primeiro).
+    const entries = [];
+    for (const dir of existingDirs) {
+      for (const file of fs.readdirSync(dir)) {
+        entries.push({ dir, file });
+      }
+    }
+
     let trashReady = false;
+    // Um mesmo filename é considerado uma única vez mesmo existindo nos dois
+    // diretórios: a lixeira é plana e o segundo rename sobrescreveria o primeiro.
+    const seenFilenames = new Set();
+    // Origem real de cada arquivo movido, para a instrução de restauração.
+    const movedFiles = [];
 
     // 3. Verificar órfãos: relatório (default) ou movimentação para a lixeira
-    for (const file of files) {
+    for (const { dir: uploadsDir, file } of entries) {
       // Filtra apenas arquivos com os prefixos de produção (post-image-*, hero-image-*)
       if (!ORPHAN_PREFIXES.some((prefix) => file.startsWith(prefix))) {
         continue;
       }
+
+      // Já considerado em outro diretório — não processa de novo.
+      if (seenFilenames.has(file)) {
+        continue;
+      }
+      seenFilenames.add(file);
 
       const filePath = path.join(uploadsDir, file);
 
@@ -170,7 +197,8 @@ export async function cleanOrphanedImages(options = {}) {
           trashReady = true;
         }
         fs.renameSync(filePath, path.join(TRASH_DIR, file));
-        console.log(`🗑️  Movido para lixeira: ${file}`);
+        movedFiles.push({ file, sourceDir: uploadsDir });
+        console.log(`🗑️  Movido para lixeira: ${file} (origem: ${uploadsDir})`);
         result.movedCount++;
       } catch (err) {
         console.warn(`⚠️ Não foi possível mover '${file}': ${err.message}`);
@@ -180,8 +208,11 @@ export async function cleanOrphanedImages(options = {}) {
     if (deleteFiles) {
       if (result.movedCount > 0) {
         console.log(
-          `✅ Concluído: ${result.movedCount} movido(s) para data/uploads-trash (restaurar: mover de volta para public/uploads/).`
+          `✅ Concluído: ${result.movedCount} movido(s) para data/uploads-trash (restaurar: mover de volta para o diretório de origem de cada arquivo):`
         );
+        for (const { file, sourceDir } of movedFiles) {
+          console.log(`   - ${file} ← ${sourceDir}`);
+        }
       } else {
         console.log('✨ Nenhuma imagem órfã encontrada.');
       }
