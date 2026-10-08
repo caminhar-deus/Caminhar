@@ -121,6 +121,37 @@ jobs:
       - name: Setup Node.js Environment
         uses: ./.github/actions/setup
 
+      # CORREÇÃO DA RAIZ do "build quebrado passa verde": este gate roda lint,
+      # jest, actionlint e knip, mas NÃO construía a aplicação — o `next build`
+      # só existia em `.github/actions/build-app`, alcançado exclusivamente
+      # pelo cron de carga (que está vermelho). Um bump de dependência que
+      # quebrasse o build passava este gate em silêncio, exatamente como
+      # aconteceu no upgrade do Next 16.3 → 16.4.
+      #
+      # Step dentro do job `coverage`, NÃO um job novo: um job novo seria um
+      # QUARTO required check que teria que ser marcado na branch protection,
+      # enquanto um step não cria check nenhum.
+      #
+      # ANTES do jest de propósito: build (~1-2 min) é mais barato e mais
+      # fundamental que a suíte (~3 min) — config quebrada invalida tudo que
+      # vem abaixo, e quem reprova primeiro é o build.
+      #
+      # `DATABASE_URL` e `JWT_SECRET` são exatamente as `REQUIRED_VARS` de
+      # `scripts/check-env.js`, que o script `build` executa antes do
+      # `next build`. O valor do `JWT_SECRET` é fixo e de teste, no mesmo
+      # espírito do `.github/actions/build-app/action.yml`
+      # (`test-secret-for-build`).
+      #
+      # O `postbuild` (`next-sitemap`) LOGA erros de conexão com o banco neste
+      # step, porque não há Postgres no job — é esperado e NÃO reprova: o
+      # `next build` sai com exit 0 nessa situação (verificado localmente).
+      # Não trate esse ruído como a causa de uma falha futura.
+      - name: Build Application
+        run: npm run build
+        env:
+          DATABASE_URL: postgres://test_user:test_password@localhost:5432/caminhar_test
+          JWT_SECRET: test-secret-for-build
+
       # `set -o pipefail` é o que propaga o exit code do jest: sem ele o status
       # do step seria o do `tee` (sempre zero) e uma cobertura abaixo do mínimo
       # passaria como sucesso — o comentário no PR depende de o job falhar.

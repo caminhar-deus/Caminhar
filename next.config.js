@@ -2,23 +2,48 @@
 const nextConfig = {
   // Configure runtime settings to avoid Edge Runtime warnings
   serverExternalPackages: ['bcryptjs', 'jsonwebtoken'],
-  
-  // Configure webpack to handle Node.js modules properly (fallback for non-Turbopack builds)
-  webpack: (config, { isServer }) => {
-    // Add fallbacks for Node.js modules in client-side code
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        path: false,
-        url: false,
-        crypto: false,
-      };
-    }
-    
-    return config;
+
+  // Turbopack is the default builder since Next 16, so the `webpack()` block
+  // that used to sit here (`resolve.fallback` silencing `fs`, `path`, `url` and
+  // `crypto` for the client bundle) was being SILENTLY IGNORED: Turbopack never
+  // reads a `webpack` config, and the build only succeeded because the npm
+  // scripts passed `--turbo`. Drop the flag with the config still present and
+  // `next build` aborts with:
+  //   ERROR: This build is using Turbopack, with a 'webpack' config and no 'turbopack' config.
+  // So the config was removed and replaced by the Turbopack-native equivalent
+  // below, following `node_modules/next/dist/docs/.../upgrading/version-16.md`.
+  //
+  // READ THIS HONESTLY: this is defense in depth, NOT load-bearing. The guide
+  // itself says "it is preferable to refactor your modules so that client code
+  // doesn't ever import from modules using Node.js native modules" — and that
+  // is already the case here: the build passes without any of these aliases
+  // ever being applied, i.e. nothing in the client bundle needs them today.
+  // They exist only so a FUTURE client-side import of one of these built-ins
+  // degrades to an empty module instead of failing the bundle with
+  // "Module not found". If a real need ever appears, fix the import first.
+  //
+  // Only the `browser` condition is supported by Turbopack conditional aliasing
+  // (see `turbopack.md`), so server-side resolution keeps hitting the real
+  // built-ins — same intent as the old `if (!isServer)`.
+  turbopack: {
+    resolveAlias: {
+      fs: { browser: './utils/empty-browser-module.js' },
+      path: { browser: './utils/empty-browser-module.js' },
+      url: { browser: './utils/empty-browser-module.js' },
+      crypto: { browser: './utils/empty-browser-module.js' },
+    },
   },
-  
+
+  // `images.qualities` defaults to `[75]` since Next 16: `/_next/image` accepts
+  // ONLY the listed qualities and answers 400 for anything else.
+  // `components/Performance/ImageOptimized.js` ships `quality = 75`, i.e. it
+  // worked by coincidence with the default, not by design. Declaring it here
+  // makes the contract explicit — any new `quality` must be appended to this
+  // array, otherwise the image optimizer rejects it with 400.
+  images: {
+    qualities: [75],
+  },
+
   // Configure headers for CORS and security
   async headers() {
     return [
