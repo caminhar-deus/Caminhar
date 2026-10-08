@@ -40,7 +40,7 @@ O **Caminhar com Deus** é uma aplicação web desenvolvida com Next.js (Pages R
 - **Cache** com Redis (Upstash) + fallback em memória local
 - **Backup automatizado** do PostgreSQL com criptografia AES-256-GCM e compressão gzip
 - **Testes automatizados** com 186 arquivos Jest (unitários e integração), 5 specs Cypress (E2E) e 37 arquivos de testes de carga
-- **CI/CD** com GitHub Actions (3 arquivos de workflow em `.github/workflows/`: lint/cobertura em `pull_request`, `push` para `main` e `workflow_dispatch`, testes de carga e o reutilizável `test-base.yml`)
+- **CI/CD** com GitHub Actions (4 arquivos de workflow em `.github/workflows/`: lint/cobertura em `pull_request`, `push` para `main` e `workflow_dispatch`, E2E isolado do Cypress em `push` para `main` e `workflow_dispatch`, testes de carga e o reutilizável `test-base.yml`)
 - **Middlewares de proteção:** Rate limiting, DDoS, Content Security Policy, CORS
 
 ---
@@ -60,7 +60,7 @@ Documentação dos **29 arquivos** na raiz do projeto, agrupados por contexto:
 - **Configuração Principal:** `package.json` (66 scripts, ES Modules), `next.config.js` (headers de segurança e CORS), `next-sitemap.config.js` (sitemap XML + rotas dinâmicas do banco), `proxy.js` (Rate limiting e proteção DDoS com Redis)
 - **Testes:** `jest.config.js` (thresholds globais: branches 80%, functions 85%, lines/statements 90%, além de limites por diretório), `jest.config.db.js` (testes com PostgreSQL via Testcontainers), `jest.setup.js`, `jest.teardown.js`, `babel.jest.config.js`, `cypress.config.js`
 - **Qualidade:** `eslint.config.js` (Flat Config), `jsconfig.json` (aliases de importação), `knip.json` (análise de código morto)
-- **CI/CD:** nenhum arquivo de workflow na raiz — os três workflows (`test-coverage.yml`, `load-tests.yml` e o reutilizável `test-base.yml`) ficam em `.github/workflows/`, único diretório lido pelo GitHub Actions
+- **CI/CD:** nenhum arquivo de workflow na raiz — os quatro workflows (`test-coverage.yml`, `e2e.yml`, `load-tests.yml` e o reutilizável `test-base.yml`) ficam em `.github/workflows/`, único diretório lido pelo GitHub Actions
 
 ---
 
@@ -200,6 +200,8 @@ Componentes React organizados em 6 categorias:
 
 **Suporte:** 8 comandos customizados (`cy.login`, `cy.createPost`, `cy.viewportMobile/Tablet`, lightbox helpers), 1 fixture (`posts.json`)
 
+**Execução:** localmente via `npm run test:e2e` (contra o banco de desenvolvimento, com pré-aquecimento pelo hook `precypress:run`) ou `npm run cypress:open` para o modo interativo. A opção **isolada**, `npm run test:e2e:isolated` (`scripts/e2e-isolated.js`), sobe um Postgres descartável via Testcontainers, migra, semeia 4 posts, reaproveita `.next/BUILD_ID` ou compila, serve com `next start` e roda o Cypress propagando o exit code — **25/25 testes em ~36 s** (com `.next` reaproveitado) ou **~44 s** (compilando do zero), sem tocar o banco de desenvolvimento. No CI, o workflow `.github/workflows/e2e.yml` roda esse comando em `push` para `main` e via `workflow_dispatch` (**sem `pull_request`**, por decisão deliberada de coletar flakiness real antes de cobrir todo PR), subindo `cypress/videos` e `cypress/screenshots` como artefato mesmo em falha (`if: always()`). Detalhes em [`docs/PROJECT_cypress.md`](/docs/PROJECT_cypress.md) (seção "Execução Isolada").
+
 ---
 
 ### ⚡ Testes de Carga
@@ -224,7 +226,7 @@ Componentes React organizados em 6 categorias:
 
 **Arquivo:** [`docs/PROJECT_scripts.md`](/docs/PROJECT_scripts.md)
 
-**85 arquivos** em `scripts/` e subpastas, organizados por categoria:
+**89 arquivos** em `scripts/` e subpastas, organizados por categoria:
 
 | Categoria | Qtd | Descrição |
 |-----------|:---:|-----------|
@@ -235,7 +237,8 @@ Componentes React organizados em 6 categorias:
 | Inicialização | 4 | `init-table.js`, `init-server.js`, `init-backup.js`, `seed-settings.js` |
 | Limpeza | 10 | Banco (clear-db, clear-musicas, clean-load-test-posts), arquivos (clean-orphaned-images, clean-k6-reports), cache, auth locks |
 | Diagnóstico | 8 | `check-db-status`, `check-env`, `check-server`, `check-sql-injection`, `validate-schema` + 5 em `diagnostics/` |
-| Testes de Carga | 4 | Orquestrador Node.js, shell script, warm-routes |
+| Testes de Carga | 4 | Orquestrador Node.js, shell script, geração de relatório k6 |
+| Testes E2E | 2 | `warm-routes` (pré-aquecimento de rotas do Cypress) e `e2e-isolated` (Cypress contra Postgres descartável via Testcontainers) |
 | Manutenção | 4 | Backup/restore de posts, fix hero key, video thumbnails |
 | Utilitários | 9 | Conexão DB, constants, date-format, load-env, cleanup, init-table-utils |
 
@@ -256,7 +259,7 @@ Componentes React organizados em 6 categorias:
 | **Testes Unitários/Integração** | Jest 30 + React Testing Library |
 | **Testes E2E** | Cypress 16 |
 | **Testes de Carga** | k6 (Grafana Labs) |
-| **CI/CD** | GitHub Actions (3 arquivos de workflow em `.github/workflows/`, sendo 1 reutilizável) |
+| **CI/CD** | GitHub Actions (4 arquivos de workflow em `.github/workflows/`, sendo 1 reutilizável) |
 | **Análise Estática** | Knip (código morto), ESLint 10 |
 | **SEO** | next-sitemap, Schema.org JSON-LD |
 

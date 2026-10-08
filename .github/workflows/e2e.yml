@@ -1,0 +1,99 @@
+name: E2E Isolated (Cypress)
+
+# Por que workflow SEPARADO do `test-coverage.yml`: o E2E depende de Docker
+# (Testcontainers sobe um Postgres descartável) e é bem mais lento que o gate
+# rápido (lint + jest). Misturá-lo ao `test-coverage.yml` faria o check de
+# lint/teste passar a depender de infraestrutura que não é do código — uma
+# indisponibilidade do Docker ou uma falha do container reprovaria quem só
+# quer saber se o lint e a suíte unitária estão verdes.
+#
+# Por que `push` em `main` + `workflow_dispatch` e NÃO `pull_request`: decisão
+# deliberada de começar coletando dados de flakiness REAL em produção (runs na
+# `main`, com o estado efetivo do repositório) antes de cobrar o preço do E2E
+# em toda abertura de PR. `workflow_dispatch` permite rodar sob demanda
+# (bisect, revalidação de um SHA antigo).
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+# Mesmo padrão do `test-coverage.yml` na variante `push`/`workflow_dispatch`:
+# grupo por `github.ref` com `cancel-in-progress: false`. O GitHub descarta os
+# runs PENDENTES do mesmo grupo quando um novo entra na fila, mas nunca
+# interrompe o run já EM ANDAMENTO — não se mata um E2E no meio (assim como não
+# se mata um gate ou um teste de carga), porque um resultado parcial é pior do
+# que esperar. Sem a variante `pull_request` do grupo porque este workflow não
+# tem esse gatilho.
+#
+# `format()` porque o `+` não concatena strings nas expressões do GitHub.
+concurrency:
+  group: ${{ format('e2e-ref-{0}', github.ref) }}
+  cancel-in-progress: false
+
+# Menor privilégio no nível do workflow, como no `test-coverage.yml`: o único
+# step que exige permissão é o `actions/checkout` (`contents: read`).
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: 🧪 E2E isolado (Cypress + Testcontainers)
+    runs-on: ubuntu-latest
+    # Folga para não reprovar por lentidão (baseline local: ~36 s de execução
+    # quente, minutos no runner frio com `npm ci` + build do app); teto para
+    # derrubar um runner travado em vez de queimar os 360 min do default.
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Mesma versão e mesmo cache de npm do `test-coverage.yml` (que passa por
+      # `./.github/actions/setup` — action composta que internamente roda
+      # `actions/setup-node@v4` com node 24.15.0 e `cache: 'npm'`). Aqui o
+      # setup-node é declarado diretamente porque o `npm ci` precisa ser um
+      # step explícito abaixo: a composta já embute o `npm ci` dentro e
+      # reutilizá-la duplicaria a instalação (ou eliminaria o step).
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.15.0'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      # SEM `continue-on-error`: a falha do E2E tem que reprovar o job.
+      #
+      # O script é autocontido — sobe o Postgres descartável (Testcontainers),
+      # roda migrations, semeia, compila o app, sobe o `next start`, executa o
+      # Cypress e faz o teardown. Por isso NÃO há serviço de Postgres neste
+      # workflow, NÃO há `next start` manual e NÃO há passo de migrations.
+      #
+      # Nenhum secret/variável é declarado: o `test:e2e:isolated` não usa
+      # `CYPRESS_RECORD_KEY` (o `cypress.config.js` não tem `recordKey` e o
+      # run não grava no Cypress Cloud).
+      - name: Run E2E Isolated
+        run: node scripts/e2e-isolated.js
+
+      # `always()` para subir os artefatos também quando o E2E reprova — é
+      # justamente na falha que vídeo e screenshot servem para diagnosticar.
+      # `if-no-files-found: ignore` cobre abortos anteriores à geração dos
+      # arquivos (ex.: falha no `npm ci` ou no build, antes do Cypress rodar).
+      - name: Upload Cypress Videos
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-videos
+          path: cypress/videos/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload Cypress Screenshots
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots/
+          if-no-files-found: ignore
+          retention-days: 7

@@ -23,7 +23,8 @@ cypress/
 ├── support/
 │   ├── commands.js          (8 comandos customizados)
 │   └── e2e.js
-└── videos/                 (5 vídeos .mp4 de execuções anteriores)
+├── videos/                  (artefato de execução — fora do Git, ver `.gitignore`)
+└── screenshots/             (artefato de execução em falha — fora do Git, ver `.gitignore`)
 ```
 
 ---
@@ -67,11 +68,53 @@ Os seguintes scripts gerenciam a execução dos testes E2E:
 
 | Script | Comando | Descrição |
 |--------|---------|-----------|
-| `precypress:run` | `node scripts/warm-routes.js` | Hook de pré-aquecimento executado automaticamente antes de `npm run cypress:run` |
-| `test:e2e` | `npm run cypress:run` | Pré-aquece e executa os testes em modo headless |
+| `precypress:run` | `node scripts/warm-routes.js` | Hook de pré-aquecimento executado automaticamente antes de `npm run cypress:run`, **desde que o comando passe pelo npm** (`npm run cypress:run`, `npm run test:e2e`, `npm run test:e2e:record`). **Não roda** no E2E isolado: `scripts/e2e-isolated.js` chama `npx cypress run` diretamente e hooks de lifecycle do npm só disparam via `npm run <script>`. |
+| `test:e2e` | `npm run cypress:run` | Pré-aquece e executa os testes em modo headless contra o banco de desenvolvimento |
+| `test:e2e:isolated` | `node scripts/e2e-isolated.js` | E2E autocontido contra dados reais em **Postgres descartável** (Testcontainers `postgres:15`): container → migrations → seed de 4 posts → build (reaproveita `.next/BUILD_ID` se existir) → `next start` → `cypress run` com propagação de exit code → teardown em `try/finally`. Não depende do banco de desenvolvimento nem do pré-aquecimento. É o comando executado pelo workflow `.github/workflows/e2e.yml` (ver seção abaixo). |
 | `test:e2e:record` | `npm run cypress:run -- --record --key "$CYPRESS_RECORD_KEY"` | Pré-aquece e executa com gravação no Cypress Cloud (chave via variável de ambiente) |
 | `cypress:open` | `cypress open` | Abre o Cypress no modo interativo (sem pré-aquecimento) |
 | `cypress:run` | `cypress run` | Pré-aquece e executa os testes em modo headless |
+
+---
+
+## Execução Isolada (`test:e2e:isolated`)
+
+**Arquivos:** `scripts/e2e-isolated.js`, script npm `test:e2e:isolated` e workflow `.github/workflows/e2e.yml`.
+
+**Por quê:** `npm run cypress:run` depende do banco de desenvolvimento (`.env` → `DATABASE_URL`) para renderizar `/blog`, `/blog/[slug]` e a home — os specs só passam se o banco estiver semeado do jeito certo, e a execução deixa sujeira nele. O orquestrador espelha o padrão que o repo já usa nos testes com banco real (`tests/global-setup.db.js`): PostgreSQL efêmero via Testcontainers.
+
+**Fluxo (tudo dentro de `try/finally`):** sobe o container `postgres:15` (mesma tag do serviço `postgres` do CI e de `tests/global-setup.db.js`, **sem** `.withReuse(true)`) → `scripts/migrate.js` apontado para o container → semeia os posts → reaproveita `.next/BUILD_ID` se existir, senão `npx next build` → `npx next start -p 3000` → espera a app responder HTTP 200 → `npx cypress run` **propagando o exit code** → no `finally`: derruba os processos filhos, `container.stop()` e limpa `cypress/videos/` e `cypress/screenshots/`.
+
+**Garantia central:** o `DATABASE_URL` do banco de desenvolvimento **nunca** é passado aos filhos — é sempre sobrescrito com a URL do container (o `dotenv`/`@next/env` não sobrescreve variáveis já presentes no env), então o banco de dev não é referenciado em nenhum momento.
+
+### Seed — 4 posts (decisão registrada)
+
+- **Principal:** `mulher-virtuosa`, com imagem `public/e2e-fixture-mulher-virtuosa.jpg` — usado por `post.cy.js` e `image_zoom.cy.js`.
+- **3 de apoio, sem `image_url`:** `components/Features/Blog/BlogSection.js:59` só renderiza o `<Link href="/blog">` sob `{limit && posts.length > limit && ...}` e a home é montada com `limit={3}` (`components/Features/ContentTabs/index.js:22`) — logo o link "ver mais" só aparece com **4+ posts publicados**, e `cypress/e2e/navigation.cy.js:4` depende dele. Com 1 post, esse teste é impossível por construção e a suíte ficaria 24/25. Os 3 sem `image_url` também exercitam o caminho "post sem imagem" (`pages/blog/[slug].js:86` só renderiza o zoom quando `image_url` é truthy).
+- **`post-inexistente` NÃO é semeado:** é o caso de 404 que `image_zoom.cy.js:49` usa para provar que a página trata bem a ausência; criá-lo inverteria o sentido do teste.
+- **Todos com `published=true`:** `pages/blog/[slug].js:192` filtra por `published = true` e `lib/domain/posts.js:18` marca a listagem como `publishedOnly`, mas o default do schema em `scripts/schemas/posts.json` é `false`.
+
+### O que o E2E isolado não precisa
+
+- **Não usa `warm-routes.js`.** O bug do Turbopack (rotas dinâmicas compiladas preguiçosamente) existe **apenas em `next dev`**; em `next build` tudo é compilado antes — e o E2E roda contra build de produção. O `warmCriticalRoute()` do `e2e-isolated.js` é **diagnóstico de pré-voo** (um fetch que confirma que a app serve o post semeado), não um contorno.
+- **Não dispara o hook `precypress:run`** (hooks do npm só rodam via `npm run <script>`; o script chama `npx cypress run` direto).
+- **Nenhum spec foi alterado** para fazer a suíte passar.
+
+### Workflow `.github/workflows/e2e.yml` — 4º check
+
+| Campo | Valor |
+|-------|-------|
+| Gatilhos | `push` em `main` + `workflow_dispatch` — **sem `pull_request`** (decisão deliberada: coletar flakiness real antes de cobrar o E2E em todo PR) |
+| Runner / job | Job único, `ubuntu-latest`, `timeout-minutes: 15` |
+| Permissões / secrets | `permissions: contents: read`; **nenhum secret** (o run não grava no Cypress Cloud) |
+| Passos | checkout → setup-node (24.15.0, cache npm) → `npm ci` → `node scripts/e2e-isolated.js` (sem `continue-on-error`) → upload de `cypress/videos` e `cypress/screenshots` com `if: always()` e `retention-days: 7` |
+| Papel | É o **4º check** pretendido para a branch protection, junto de `lint`, `coverage` e `coverage-report` (ver item R de `docs/PENDENCIAS_scripts_testes.md`) |
+
+### Validação (08/10/2026)
+
+- **25 de 25 testes passando, exit code 0** — specs: `blog` 3/3, `home` 4/4, `image_zoom` 12/12, `navigation` 3/3, `post` 3/3.
+- **Execução com `.next` reaproveitado: 36,07 s.** **Execução fria, sem `.next` (compilando): 44,50 s.**
+- **Zero resíduo:** banco de desenvolvimento com 0 posts antes e depois (nunca referenciado), 0 containers órfãos, 0 processos `next`/`cypress` vivos, porta 3000 livre.
 
 ---
 
@@ -232,7 +275,7 @@ Testa a funcionalidade de zoom de imagem (lightbox) em páginas de post do blog,
 
 ### `/cypress/screenshots/`
 
-**Estado atual:** Diretório **não existe** no disco.
+**Estado atual:** Diretório **não existe** no disco (só é criado quando um teste falha em modo headless) e está **fora do Git** — regra `cypress/screenshots/` no `.gitignore`.
 
 **Propósito:** Diretório onde o Cypress salva screenshots automaticamente quando um teste falha em modo headless. O fato de não existir indica que nunca houve falhas em execuções headless, ou que os testes nunca foram executados em modo headless desde que a pasta foi limpa/criada.
 
@@ -242,18 +285,18 @@ Testa a funcionalidade de zoom de imagem (lightbox) em páginas de post do blog,
 
 ### `/cypress/videos/`
 
-**Estado atual:** Contém 5 arquivos `.mp4`.
+**Estado atual:** os **5 arquivos `.mp4`** (≈ 2,8 MB) que eram versionados foram **desindexados** (`git rm --cached`) e a pasta passou a estar no `.gitignore` (regra `cypress/videos/`). Motivo: o Cypress deriva nomes determinísticos e **sobrescrevia os arquivos versionados a cada execução**, sujando o `git status`; vídeo de execução é resíduo, não fonte.
 
-**Arquivos:**
+**Arquivos gerados a cada execução:**
 - `blog.cy.js.mp4`
 - `home.cy.js.mp4`
 - `image_zoom.cy.js.mp4`
 - `navigation.cy.js.mp4`
 - `post.cy.js.mp4`
 
-**Propósito:** Diretório onde o Cypress salva as gravações em vídeo de cada execução de arquivo de teste (gerado quando `video: true` na configuração). Útil para debug visual de falhas em CI.
+**Propósito:** Diretório onde o Cypress salva as gravações em vídeo de cada execução de arquivo de teste (gerado quando `video: true` na configuração). Útil para debug visual de falhas em CI — no `e2e.yml` os vídeos são subidos como artefato mesmo quando o job falha (`if: always()`).
 
-**Nota:** Já incluído no `eslint.config.js` na lista de diretórios ignorados (`cypress/videos/**`).
+**Nota:** Já incluído no `eslint.config.js` na lista de diretórios ignorados (`cypress/videos/**`). O `scripts/e2e-isolated.js` apaga esse conteúdo no `finally` de cada execução local.
 
 ---
 
@@ -268,16 +311,17 @@ Testa a funcionalidade de zoom de imagem (lightbox) em páginas de post do blog,
 | Arquivos de suporte | 2 (`commands.js`, `e2e.js`) |
 | Arquivos de fixture | 1 (`posts.json`) |
 | Total de linhas (todos os testes) | ~215 |
-| Diretórios de artefatos | 1 (`videos/`) |
+| Diretórios de artefatos | 2 (`videos/`, `screenshots/` — gerados por execução e fora do Git) |
 
 ---
 
 ## Observações Gerais
 
-- **Slugs reais do banco:** Os testes de `post.cy.js` e `image_zoom.cy.js` utilizam slugs que existem no banco PostgreSQL, validando o comportamento real da aplicação (sem mocks).
+- **Slugs reais do banco:** Os testes de `post.cy.js` e `image_zoom.cy.js` utilizam slugs que existem no banco PostgreSQL — no E2E isolado, os posts do container descartável semeados pelo próprio orquestrador (ver "Execução Isolada"), validando o comportamento real da aplicação (sem mocks).
 - **Padrão `data-testid`:** Todos os seletores em `image_zoom.cy.js` utilizam atributos `data-testid` semânticos, prática recomendada para resiliência dos testes.
 - **Comandos reutilizáveis:** Operações comuns do lightbox foram abstraídas em comandos customizados (`cy.openLightbox()`, `cy.lightboxShouldBeOpen()`, `cy.lightboxShouldBeClosed()`, `cy.closeLightboxByOverlay()`), promovendo reuso e legibilidade.
 - **Lint configurado:** O `eslint.config.js` já inclui o `eslint-plugin-cypress` com as regras recomendadas para arquivos `cypress/**/*.js`, e ignora `cypress/videos/**` e `cypress/screenshots/**`.
 - **Mocks por interceptação:** O comando `cy.login()` e `cy.createPost()` utilizam `cy.intercept()` para simular respostas de API sem necessidade de backend real (embora não sejam usados pelos testes atuais).
 - **Sem dependências de plugins:** O arquivo de configuração não registra plugins ou tarefas customizadas no `setupNodeEvents`.
-- **Execução manual:** Os testes E2E são executados manualmente via `npm run test:e2e` ou `npm run cypress:open`. O pipeline de CI (`.github/workflows/test-coverage.yml`) roda apenas `npm run lint`, a suíte Jest (`npx jest --ci --coverage`), `actionlint` e `knip` — não incluindo os testes E2E. Além disso, esse workflow dispara em `pull_request`, em `push` para `main` e via `workflow_dispatch` — o histórico de **0 runs** era o estado até 07/10/2026, enquanto o gatilho era somente `pull_request` e o projeto fazia push direto na `main`.
+- **Execução local:** `npm run test:e2e` (ou `npm run cypress:run`) contra o banco de desenvolvimento, com pré-aquecimento pelo hook `precypress:run`, ou `npm run cypress:open` para o modo interativo. Alternativa **isolada**: `npm run test:e2e:isolated`, que sobe seu próprio Postgres descartável e não depende do estado do banco de dev (ver seção "Execução Isolada").
+- **Execução no CI:** o E2E **entrou no pipeline** em 08/10/2026 pelo workflow dedicado `.github/workflows/e2e.yml` (job único, `timeout-minutes: 15`, `permissions: contents: read`, nenhum secret), que roda `node scripts/e2e-isolated.js` em `push` para `main` e via `workflow_dispatch` — **sem `pull_request`**, decisão deliberada de coletar flakiness real antes de cobrar o E2E em toda abertura de PR. É o **4º check** pretendido para a branch protection (junto de `lint`, `coverage` e `coverage-report`). O gate de cobertura (`.github/workflows/test-coverage.yml`) continua **sem** E2E: roda apenas `npm run lint`, a suíte Jest (`npx jest --ci --coverage`), `actionlint` e `knip` — e dispara em `pull_request`, em `push` para `main` e via `workflow_dispatch` (o histórico de **0 runs** era o estado até 07/10/2026, enquanto o gatilho era somente `pull_request` e o projeto fazia push direto na `main`).

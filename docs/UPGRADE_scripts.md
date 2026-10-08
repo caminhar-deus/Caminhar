@@ -160,12 +160,12 @@
 - **Problema:** Invocar `npm` para resetar o banco acopla o seed ao gerenciador de pacotes (lento, dependente de npm instalado, frágil em CI).
 - **Sugestão:** Importar e chamar as funções de reset diretamente (ex: `init-table.js` para as tabelas), ou documentar explicitamente a pré-condição.
 
-### 5.4. `warm-routes.js` com valores hardcoded sensíveis
+### 5.4. `warm-routes.js` com valores hardcoded sensíveis (PARCIALMENTE RESOLVIDO)
 - **Arquivo:** `scripts/warm-routes.js`
 - **Problema:**
-  - Slugs de teste/seed fixos (`mulher-virtuosa`, `post-inexistente`, slugs de seed) — desatualizam se os seeds mudarem.
-  - Rota de dados SSR hardcoded como `/_next/data/development/...` — o build pode usar `_next/data/<buildId>` (diferente de "development") em produção.
-- **Sugestão:** Tornar slugs configuráveis via args/env e detectar o buildId real (ou rodar apenas contra dev).
+  - ✅ **RESOLVIDO (08/10/2026) — build ID:** as fases 2 e 3 acessavam `/_next/data/development/...` com `development` hardcoded, caminho que **não existe em build de produção** (`/_next/data/development/…` respondia `{}` com HTTP 404 — caminho inexistente, não 404 legítimo da rota — e a resposta nem casava com os detectores do script, então as fases viravam ruído inútil). O script agora resolve o build ID lendo `.next/BUILD_ID`, com fallback `development` (que é o caso do `next dev`, onde o path é literalmente esse e não há `BUILD_ID` em disco).
+  - ⏳ **PENDENTE — slugs fixos:** os slugs de teste/seed continuam hardcoded (`mulher-virtuosa`, `post-inexistente`, slugs de seed) — desatualizam se os seeds mudarem.
+- **Sugestão:** Tornar slugs configuráveis via args/env (o flag `--slugs=` já existe e é o caminho natural). O trecho da sugestão sobre detectar o buildId está cumprido.
 
 ### 5.5. `monitor-disk-space.js` — recomendação desatualizada
 - **Arquivo:** `scripts/monitor-disk-space.js` (linha 264)

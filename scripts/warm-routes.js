@@ -39,6 +39,26 @@
  *   npm run cypress:open             # Interface interativa (sem pré-aquecimento)
  */
 
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// Build ID resolvido UMA única vez, no topo do script: as fases 2 e 3 acessam
+// `/_next/data/<buildId>/blog/<slug>.json`, e o segmento só é literalmente
+// `development` quando o servidor vem do `next dev`. Contra um build de
+// produção o caminho `development` NÃO existe (responde `{}` com HTTP 404 —
+// caminho inexistente, não um 404 legítimo da rota), e essa resposta nem casa
+// com os detectores do script (`isNextJsDefault404` / `isSsrNotFound`), então
+// as fases viravam ruído inútil. `next dev` não grava `.next/BUILD_ID`, daí o
+// fallback para `development`. (Pendência 5.4 de docs/UPGRADE_scripts.md.)
+const BUILD_ID_FILE = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '..', '.next', 'BUILD_ID'
+);
+const BUILD_ID = fs.existsSync(BUILD_ID_FILE)
+  ? fs.readFileSync(BUILD_ID_FILE, 'utf8').trim()
+  : 'development';
+
 const BASE_URL = (process.argv
   .find(a => a.startsWith('--base-url='))
   ?.split('=')[1] || 'http://localhost:3000').replace(/\/+$/, '');
@@ -242,13 +262,13 @@ async function warmRoutes() {
   // Fase 2: Rotas de dados SSR primeiro (mais leves, forçam compilação do módulo)
   log('info', '\n⚙️  Fase 2: Rotas de dados SSR (forçam compilação do [slug].js)');
   for (const slug of allSlugs) {
-    await warmRoute(`/_next/data/development/blog/${slug}.json?slug=${slug}`);
+    await warmRoute(`/_next/data/${BUILD_ID}/blog/${slug}.json?slug=${slug}`);
   }
 
   // Fase 3: Rotas dinâmicas /blog/[slug] via SSR data (caminho alternativo)
   log('info', '\n🌐 Fase 3: Rotas dinâmicas /blog/[slug] via SSR data');
   for (const slug of allSlugs) {
-    await warmRoute(`/_next/data/development/blog/${slug}.json?slug=${slug}`, 1);
+    await warmRoute(`/_next/data/${BUILD_ID}/blog/${slug}.json?slug=${slug}`, 1);
   }
 
   // Fase 4: Rotas HTML completas /blog/[slug]

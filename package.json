@@ -33,6 +33,7 @@
     "warm:api": "node scripts/warm-routes.js --api",
     "precypress:run": "node scripts/warm-routes.js",
     "test:e2e": "npm run cypress:run",
+    "test:e2e:isolated": "node scripts/e2e-isolated.js",
     "test:e2e:record": "npm run cypress:run -- --record --key \"$CYPRESS_RECORD_KEY\"",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",

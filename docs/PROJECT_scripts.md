@@ -9,7 +9,7 @@
 
 ## 📂 Visão Geral da Estrutura
 
-A pasta `/scripts` contém **85 arquivos** organizados por responsabilidade:
+A pasta `/scripts` contém **89 arquivos** organizados por responsabilidade:
 
 ```text
 scripts/
@@ -164,12 +164,20 @@ Definições JSON consumidas por `init-table.js` (nome da tabela, colunas, flag 
 
 ---
 
+## 🤖 Testes E2E — Cypress (`scripts/` raiz)
+
+| Arquivo | Funcionalidade |
+|---------|----------------|
+| `warm-routes.js` | **Pré-aquecimento de rotas (333 linhas).** Força compilação das rotas dinâmicas `/blog/[slug]` do Next.js/Turbopack (contorna bug "PageNotFoundError/ENOENT", que só ocorre em `next dev` — rotas dinâmicas compiladas preguiçosamente; em `next build` tudo é compilado antes). 6 fases: páginas estáticas (`/`, `/blog`, `/admin`), rotas de dados SSR (`/_next/data/<BUILD_ID>/blog/<slug>.json`, com o build ID lido de `.next/BUILD_ID` e fallback `development` — caso do `next dev`, que não grava `BUILD_ID`; em build de produção o path `development` não existe e respondia `{}` com HTTP 404), HTML completas, verificação final dos slugs de teste e, no modo `--api`, rotas de API públicas: `/api/settings`, `/api/placeholder-image`, `/api/dicas?page=1&limit=6`, `/api/posts`, `/api/videos`, `/api/musicas`, `/api/products?public=true`, `/api/status`. No modo `--api` aguarda o servidor subir (`waitForServer`, via `/api/status?mode=health`, timeout 2 min). Flags: `--slugs=`, `--base-url=`, `--retries=`, `--api`. Executado automaticamente pelo hook `precypress:run` antes de `npm run cypress:run` (hook que **não** roda no E2E isolado, pois `scripts/e2e-isolated.js` chama `npx cypress run` direto). Os slugs continuam fixos — pendência restante do item 5.4 de `docs/UPGRADE_scripts.md`. |
+| `e2e-isolated.js` | **Orquestrador do E2E isolado (574 linhas).** Executa o Cypress contra dados reais em um Postgres descartável (Testcontainers `postgres:15`, sem `.withReuse(true)`), tudo em `try/finally`: sobe o container → `migrate.js` apontado para o container → semeia 4 posts publicados (`mulher-virtuosa` com imagem fixture em `public/` + 3 sem imagem, mínimo para o link "ver mais" da home com `limit={3}`) → reaproveita `.next/BUILD_ID` ou roda `next build` → `next start -p 3000` → espera HTTP 200 → `npx cypress run` propagando o exit code → derruba filhos, para o container e limpa `cypress/videos/` e `cypress/screenshots/`. `DATABASE_URL` sempre sobrescrito com a URL do container (o banco de desenvolvimento nunca é referenciado). Executado por `npm run test:e2e:isolated` e pelo workflow `.github/workflows/e2e.yml`. Ver `docs/PROJECT_cypress.md` (seção "Execução Isolada"). |
+
+---
+
 ## 🚀 Testes de Carga e Performance (`scripts/` raiz)
 
 | Arquivo | Funcionalidade |
 |---------|----------------|
 | `check-server.js` | Verifica se o servidor está respondendo em `http://localhost:PORT` (timeout 2s via `utils/constants.js`). Exit 0 se OK, 1 se falhar. |
-| `warm-routes.js` | **Pré-aquecimento de rotas (313 linhas).** Força compilação das rotas dinâmicas `/blog/[slug]` do Next.js/Turbopack (contorna bug "PageNotFoundError/ENOENT"). 6 fases: páginas estáticas (`/`, `/blog`, `/admin`), rotas de dados SSR (`/_next/data/development/blog/<slug>.json`), HTML completas, verificação final dos slugs de teste e, no modo `--api`, rotas de API públicas: `/api/settings`, `/api/placeholder-image`, `/api/dicas?page=1&limit=6`, `/api/posts`, `/api/videos`, `/api/musicas`, `/api/products?public=true`, `/api/status`. No modo `--api` aguarda o servidor subir (`waitForServer`, via `/api/status?mode=health`, timeout 2 min). Flags: `--slugs=`, `--base-url=`, `--retries=`, `--api`. Executado automaticamente pelo hook `precypress:run` antes de `npm run cypress:run`. |
 | `generate-load-report.js` | Orquestra 6 testes k6 (authenticated-flow, create-post, videos-load, videos-crud, musicas-crud, musicas-load) e gera relatório HTML em `reports/load-report-<timestamp>.html`. Exige `ADMIN_PASSWORD`. Usa `--summary-export` do k6 para capturar métricas. |
 | `run-all-load-tests-sequentially.js` | **Orquestrador completo (291 linhas).** Executa 30 scripts k6 em 3 categorias (Performance: 17, Functional: 9, Security: 4), verifica servidor via HTTP, verifica disponibilidade do k6 (fail-fast com mensagem orientativa), executa seed de posts antes dos testes de performance (garante dados para paginação), executa cleanups pós-categoria (`clean-load-test-posts.js` e `clear-test-auth-locks.js`), salva resultados em `reports/k6-summaries/orchestrator-results.json`. Continua após falhas; exit != 0 se houver falha. |
 | `run-load-tests.sh` | Wrapper bash: verifica servidor via curl e executa o orquestrador Node. |

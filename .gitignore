@@ -117,3 +117,11 @@ vite.config.ts.timestamp-*
 # ------------------------------------------------------------------------------
 .ai-memory-data/
 .slim/clonedeps/repos/
+
+# Artefatos de execução do Cypress (vídeos e screenshots): são gerados a cada
+# run e SOBRESCRITOS — o Cypress deriva nomes determinísticos (ex.:
+# `blog.cy.js.mp4`), então deixá-los versionados sujava o `git status` em toda
+# execução e acumulava 2,8 MB de vídeo como resíduo no histórico. O destino dos
+# artefatos é o upload do workflow de E2E (retention-days: 7), não o repositório.
+cypress/videos/
+cypress/screenshots/
