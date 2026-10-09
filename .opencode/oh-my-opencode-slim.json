@@ -23,7 +23,11 @@
     // OpenCode Zen (remoto; free por tempo limitado). Preset "local" acima segue intacto.
     // Cenário 3 "privacidade" (pesquisa @librarian 03/10/2026): zero-retention no orchestrator,
     // modelos que logam/treinam só nos agentes menos expostos. Requer "opencode" em enabled_providers.
-    // Sem fallback: em hosts OpenCode v2 o slim desativa cadeias ("model": [a,b]) — trocar na mão se um cair.
+    // Cadeia ("model": [a,b]) FUNCIONA no host v2, mas pelo hook `v2.session.retry` do slim — a troca
+    // atômica de turno continua desabilitada. Ela só age para erros que o slim classifica como
+    // failover (rate limit, 401/403, 502/503/504, timeout). Erro de autenticação do free tier
+    // ("can only be used from within OpenCode") NÃO casa com nenhum padrão: pode não acionar a
+    // cadeia. Para esse caso, o que protege é ter modelos diferentes por agente.
     // Cota Zen: por IP/dia (~200 req observados); bloqueio é por modelo. Modelos free podem sumir (já houve deprecated).
     "zen": {
       "orchestrator": { "model": "opencode/space-bunny-free" },
@@ -31,8 +35,12 @@
                         // Skill do Front-End-Checklist para a revisão (obrigatória no fluxo: oracle revisa sem editar):
                         "skills_add": ["frontend-checklist-global"]
                       },
-      "librarian":    { "model": "opencode/nemotron-3.5-lightning-free" },
-      "explorer":     { "model": "opencode/nemotron-3.5-lightning-free" },
+      // Cadeia de fallback (09/10/2026): o primary continua sendo o nemotron; o mimo cobre a queda.
+      // Escolha deliberada por ser a opção reversível e sem custo. Ela NÃO separa explorer de
+      // librarian (ambos ainda usam nemotron), então uma indisponibilidade dele ainda atinge os dois
+      // ao mesmo tempo — só que agora um cai no mimo em vez de morrer.
+      "librarian":    { "model": ["opencode/nemotron-3.5-lightning-free", "opencode/mimo-v2.6-flash-free"] },
+      "explorer":     { "model": ["opencode/nemotron-3.5-lightning-free", "opencode/mimo-v2.6-flash-free"] },
       "designer":     { "model": "opencode/muse-spark-1.3-contributor-free", "skills_add": ["ui-ux-pro-max"] },
       "fixer":        { "model": "opencode/mimo-v2.6-flash-free" }
     }
