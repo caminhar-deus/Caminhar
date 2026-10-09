@@ -336,6 +336,7 @@ pages/api/status.js → lib/infra/db.js
 pages/api/upload-image.js → lib/auth/auth.js
 pages/api/upload-image.js → lib/domain/settings.js
 pages/api/upload-image.js → lib/infra/logger.js
+pages/api/uploads/[...path].js → lib/infra/logger.js
 pages/api/videos.js → lib/api/helpers.js
 pages/api/videos.js → lib/cache/cache.js
 pages/api/videos.js → lib/domain/videos.js

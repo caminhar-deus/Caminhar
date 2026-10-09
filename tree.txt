@@ -537,15 +537,11 @@
 │   │   └── post.cy.js
 │   ├── fixtures
 │   │   └── posts.json
+│   ├── screenshots
 │   ├── support
 │   │   ├── commands.js
 │   │   └── e2e.js
 │   └── videos
-│       ├── blog.cy.js.mp4
-│       ├── home.cy.js.mp4
-│       ├── image_zoom.cy.js.mp4
-│       ├── navigation.cy.js.mp4
-│       └── post.cy.js.mp4
 ├── cypress.config.js
 ├── data
 │   └── backups
@@ -775,6 +771,8 @@
 │   │   ├── settings.js
 │   │   ├── status.js
 │   │   ├── upload-image.js
+│   │   ├── uploads
+│   │   │   └── [...path].js
 │   │   └── videos.js
 │   ├── blog
 │   │   ├── Blog.module.css
@@ -791,6 +789,7 @@
 │       └── variables.css
 ├── proxy.js
 ├── public
+│   ├── e2e-fixture-mulher-virtuosa.jpg
 │   ├── placeholder.svg
 │   ├── robots.txt
 │   ├── sitemap-0.xml
@@ -873,10 +872,13 @@
 │   │   ├── list-last-posts.js
 │   │   ├── lsp-reusable-workflow.js
 │   │   └── repro-reusable-workflow.js
+│   ├── e2e-isolated.js
 │   ├── generate-load-report.js
 │   ├── init-backup.js
 │   ├── init-server.js
 │   ├── init-table.js
+│   ├── lib
+│   │   └── k6-output-parser.js
 │   ├── maintenance
 │   │   ├── backup-posts.js
 │   │   ├── clean-k6-videos.js
@@ -1225,7 +1227,8 @@
 ├── tree.txt
 └── utils
     ├── csvExport.js
+    ├── empty-browser-module.js
     ├── reorder.js
     └── resolve-next.js
 
-195 directories, 1034 files
+198 directories, 1034 files

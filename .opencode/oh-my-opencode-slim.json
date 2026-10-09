@@ -47,15 +47,32 @@
 
   // Permissões por agente (valem para todos os presets; fazem cumprir a tabela do AGENTS.md).
   // Formato igual ao "permission" do OpenCode. Confirme com `doctor` e T8.
+  //
+  // "edit" é a chave do host que cobre TODA mutação de arquivo (write/apply_patch passam por ela),
+  // então o "deny" abaixo é a trava real dos três agentes apenas-leitura. "bash" está negada para
+  // fechar o único caminho que restava de escrever sem pedir: com ele aberto, um sed/tee aprovado
+  // burlaria o "edit". "ast_grep_replace" é ferramenta injetada pelo slim e não pertence ao
+  // vocabulário de permissões do host, então precisa da linha explícita.
+  // ATENÇÃO: o slim NÃO impõe essa matriz por padrão (vale para todos os papéis, desde o 3.0).
+  // Quem segura o "não edita" da tabela do AGENTS.md é este bloco; se for removido, a trava vai
+  // junto e sobra apenas o texto do prompt.
+  // Consequência do bash negado: explorer e librarian perdem git log, ls e afins pelo terminal;
+  // o explorer continua mapeando com glob/grep/lsp e o librarian com context7 e gh_grep.
   "agents": {
-    "explorer":  { "permission": { "edit": "deny" } },
-    "librarian": { "permission": { "edit": "deny" } },
-    "oracle":    { "permission": { "edit": "deny" } }
+    "explorer":  { "permission": { "edit": "deny", "bash": "deny", "ast_grep_replace": "deny" } },
+    "librarian": { "permission": { "edit": "deny", "bash": "deny", "ast_grep_replace": "deny" } },
+    "oracle":    { "permission": { "edit": "deny", "bash": "deny", "ast_grep_replace": "deny" } },
+    // context7 ligado "por completo" (2026-10-08): o padrão do plugin daria só ao librarian
+    // ("*" menos context7 no orchestrator), então o orchestrator é liberado explicitamente aqui.
+    "orchestrator": { "mcps": ["*"] }
   },
 
-  // MCPs embutidos do plugin (todos REMOTOS): websearch -> mcp.exa.ai ; context7 -> mcp.context7.com ; grep_app -> mcp.grep.app.
-  // Por padrão só o librarian usa os três (e o orchestrator "*" menos context7). Desligados globalmente aqui.
-  "disabled_mcps": ["websearch", "context7", "grep_app"],
+  // MCPs embutidos do plugin (todos REMOTOS), os únicos dois: context7 -> mcp.context7.com ; gh_grep -> mcp.grep.app.
+  // gh_grep = pesquisa de código no GitHub. Librarian recebe os dois por padrão do plugin.
+  // Em 2026-10-08 o context7 foi LIGADO (chave opcional via CONTEXT7_API_KEY, ver bloco "agents" acima
+  // para o orchestrator). O librarian o usa como fonte primária de documentação oficial.
+  // "websearch" (Exa, removido em 2.2.x) e "grep_app" (nome nunca válido) são entradas inertes: não desligam nada.
+  "disabled_mcps": ["websearch", "grep_app"],
 
   // Notificação apenas (sem instalar sozinho). A trava real de versão é fixar "oh-my-opencode-slim@X.Y.Z" no opencode.json.
   "autoUpdate": false,

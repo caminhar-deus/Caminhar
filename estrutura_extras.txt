@@ -430,6 +430,7 @@ pages/api/status.js → lib/infra/db.js
 pages/api/upload-image.js → lib/auth/auth.js
 pages/api/upload-image.js → lib/domain/settings.js
 pages/api/upload-image.js → lib/infra/logger.js
+pages/api/uploads/[...path].js → lib/infra/logger.js
 pages/api/videos.js → lib/api/helpers.js
 pages/api/videos.js → lib/cache/cache.js
 pages/api/videos.js → lib/domain/videos.js
@@ -521,6 +522,7 @@ scripts/reset-password.js → scripts/db/connection.js
 scripts/reset-password.js → scripts/utils/load-env.js
 scripts/restore-backup.js → scripts/backup.js
 scripts/restore-backup.js → scripts/utils/load-env.js
+scripts/run-all-load-tests-sequentially.js → scripts/lib/k6-output-parser.js
 scripts/seed-all.js → scripts/db/connection.js
 scripts/seed-all.js → scripts/utils/load-env.js
 scripts/seed-musicas.js → scripts/db/connection.js
@@ -961,6 +963,7 @@ tests/unit/pages/api/upload-image.edge.test.js → pages/api/upload-image.js
 tests/unit/scripts/backup.test.js → scripts/backup.js
 tests/unit/scripts/clean-orphaned-images.test.js → scripts/clean-orphaned-images.js
 tests/unit/scripts/clear-db.test.js → lib/infra/db.js
+tests/unit/scripts/clear-db.test.js → scripts/clear-db.js
 tests/unit/scripts/clear-db.test.js → tests/mocks/db-module.js
 tests/unit/scripts/clear-musicas.test.js → lib/infra/db.js
 tests/unit/scripts/clear-musicas.test.js → tests/mocks/db-module.js

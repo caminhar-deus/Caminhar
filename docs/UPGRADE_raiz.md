@@ -484,7 +484,7 @@ Também contém regras de teste/mock e regras genéricas. Opções: includeOnly 
 
 **Resumo:** Template de exemplo de variáveis de ambiente para o projeto. Contém TODAS as variáveis necessárias (banco de dados, Redis, NextAuth, Sentry, Docker, Kingship, auth, etc.) com valores de exemplo ou placeholders. 830 bytes, 42 linhas. Serve como documentação das variáveis de ambiente necessárias.
 
-**Anotação de 08/10/2026:** a contagem acima é o estado registrado na análise original. O arquivo hoje tem **3905 bytes / 78 linhas / 14 variáveis** (13 já estavam lá antes desta rodada, incluindo `DATABASE_SSL` e `TRUST_PROXY`, que a análise não listou; a 14ª é **`UPLOADS_DIR`**, acrescentada no bloco final das linhas 72-79 — ver `docs/PROJECT_raiz.md` §3.5 e `docs/DEPLOY_proxy_e_IP.md` §10).
+**Anotação de 08/10/2026:** a contagem acima é o estado registrado na análise original. O arquivo hoje tem **4723 bytes / 93 linhas / 15 variáveis** (13 já estavam lá antes desta rodada, incluindo `DATABASE_SSL` e `TRUST_PROXY`, que a análise não listou; a 14ª é **`UPLOADS_DIR`**, acrescentada no bloco final das linhas 72-79 — ver `docs/PROJECT_raiz.md` §3.5 e `docs/DEPLOY_proxy_e_IP.md` §10; a 15ª é **`CONTEXT7_API_KEY`**, em bloco separado logo depois, que não é lida pelo app e serve ao MCP Context7 do plugin `oh-my-opencode-slim`).
 
 ---
 
@@ -1013,7 +1013,7 @@ Tamanho: 2.5KB, 77 linhas.
 ├── .dependency-cruiser.extras.cjs (6.2KB) — config DC extras
 ├── .dependency-cruiser.isolados.cjs (6.2KB) — config DC isolados
 ├── .env — variáveis de ambiente (SEGRETO, não lido)
-├── .env.example (830B) — template de variáveis
+├── .env.example (4.7KB) — template de variáveis
 ├── .gitignore (447B) — gitignore patterns
 ├── CHANGELOG.md (~50KB) — changelog completo
 ├── README.md (~12KB) — documentação principal
