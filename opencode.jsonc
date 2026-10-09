@@ -80,6 +80,22 @@
     // external_directory e doom_loop já são "ask" por padrão.
   },
 
+  // --- Permissões por agente ---
+  // O campo "permission" do bloco "agents" do .opencode/oh-my-opencode-slim.json NÃO é aplicado aos
+  // papéis built-in neste host: o slim emite as regras com a ação "bash", e o OpenCode v2 compila a
+  // ferramenta de terminal como "shell". Além disso, as regras do slim entram ANTES do "permission"
+  // global deste arquivo, e vale a última que casar — um "deny" do slim é sobreposto pelo "ask" daqui.
+  // Por isso a trava dos agentes apenas-leitura fica AQUI, no config do host, declarada por último.
+  // Conferir com `opencode debug agents`: as regras deste bloco aparecem no fim da lista compilada.
+  // "edit" cobre toda mutação de arquivo (não existem "write"/"apply_patch" no host);
+  // "bash" cobre o terminal, incluindo o desvio por sed/tee que burlaria o "edit";
+  // "ast_grep_replace" é a ferramenta de rewrite do ast-grep, injetada e sem equivalente no host.
+  "agent": {
+    "explorer":  { "permission": { "edit": "deny", "bash": "deny", "ast_grep_replace": "deny" } },
+    "librarian": { "permission": { "edit": "deny", "bash": "deny", "ast_grep_replace": "deny" } },
+    "oracle":    { "permission": { "edit": "deny", "bash": "deny", "ast_grep_replace": "deny" } }
+  },
+
   // --- Contexto e desempenho no WSL ---
   "compaction": { "auto": true, "prune": true },
   "watcher": { "ignore": ["node_modules/**", "dist/**", ".git/**", ".slim/clonedeps/repos/**"] },

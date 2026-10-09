@@ -45,23 +45,18 @@
     // Dica: "inheritModelFrom": "session" faz um agente seguir o /model da sessão (troca de modelo local sem editar 6 linhas).
   },
 
-  // Permissões por agente (valem para todos os presets; fazem cumprir a tabela do AGENTS.md).
-  // Formato igual ao "permission" do OpenCode. Confirme com `doctor` e T8.
+  // Permissões por agente: deliberadamente AUSENTES deste arquivo.
   //
-  // "edit" é a chave do host que cobre TODA mutação de arquivo (write/apply_patch passam por ela),
-  // então o "deny" abaixo é a trava real dos três agentes apenas-leitura. "bash" está negada para
-  // fechar o único caminho que restava de escrever sem pedir: com ele aberto, um sed/tee aprovado
-  // burlaria o "edit". "ast_grep_replace" é ferramenta injetada pelo slim e não pertence ao
-  // vocabulário de permissões do host, então precisa da linha explícita.
-  // ATENÇÃO: o slim NÃO impõe essa matriz por padrão (vale para todos os papéis, desde o 3.0).
-  // Quem segura o "não edita" da tabela do AGENTS.md é este bloco; se for removido, a trava vai
-  // junto e sobra apenas o texto do prompt.
-  // Consequência do bash negado: explorer e librarian perdem git log, ls e afins pelo terminal;
-  // o explorer continua mapeando com glob/grep/lsp e o librarian com context7 e gh_grep.
+  // O campo "permission" daqui NÃO é aplicado aos papéis built-in neste host. Motivos medidos em
+  // 09/10/2026 com `opencode debug agents` e com um explorer real executando `git log` sem recusa:
+  // (1) o slim emite as regras com a ação "bash", mas o OpenCode v2 compila a ferramenta de terminal
+  //     como "shell", então o "deny" do slim é uma entrada morta na lista compilada;
+  // (2) as regras do slim entram ANTES do "permission" global do host, e vale a última que casar —
+  //     o "ask" do `opencode.jsonc` sobrepõe o "deny" daqui.
+  //
+  // A trava de explorer/librarian/oracle vive em `opencode.jsonc`, bloco "agent", onde é declarada
+  // por último. Aqui ficam só as overrides que o slim realmente consome (modelo, prompt, mcps).
   "agents": {
-    "explorer":  { "permission": { "edit": "deny", "bash": "deny", "ast_grep_replace": "deny" } },
-    "librarian": { "permission": { "edit": "deny", "bash": "deny", "ast_grep_replace": "deny" } },
-    "oracle":    { "permission": { "edit": "deny", "bash": "deny", "ast_grep_replace": "deny" } },
     // context7 ligado "por completo" (2026-10-08): o padrão do plugin daria só ao librarian
     // ("*" menos context7 no orchestrator), então o orchestrator é liberado explicitamente aqui.
     "orchestrator": { "mcps": ["*"] }
