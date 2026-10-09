@@ -261,6 +261,12 @@
 
 ## Implementações Aplicadas
 
+### `scripts/seed-{posts,musicas,videos,settings}.js` + `seed-all.js` — seeds executados de verdade
+
+**Descrição:** Os 4 seeds do orquestrador exportam agora a função de seed como `default` e pararam de se auto-invocar no topo do módulo; `closePool()` e `process.exit` saíram de dentro deles (o `catch` relança o erro em vez de sair), e o uso como CLI segue por uma guarda `process.argv[1]` que é o único caminho que fecha o pool. `seed-all.js` passou a resolver `module.default ?? module.run`, falhar explicitamente quando o módulo não exporta função, aguardar cada seed, e fechar o pool uma única vez no `finally` (o `closePool()` do `checkDatabaseReady` foi removido). **Motivo:** nenhum dos seeds exportava função, então o `runSeed()` logava "concluído" sem esperar nada e o `process.exit(0)` final do `seed-all.js` matava o processo com os `INSERT` em voo — os dados seedados eram descartados. Foi o que reprovou `load-tests/performance/cache-performance-test.js` no run da CI de 09/10/2026 (check `settings response body is valid`, 0/273; `checks` em 83,33% contra o threshold de 0,95): a tabela `settings` ficava vazia, `getSettings()` devolvia `{}` e o check exige objeto não vazio. `seed-settings.js` era o mais exposto por fazer 5 inserts sequenciais. Nenhum outro script k6 caiu porque os que usam settings (`?key=site_name`) têm fallback hardcoded no handler de `pages/api/settings.js` — este era o único que dependia das linhas existirem. Validado com `node scripts/seed-all.js` contra Postgres local (4 seeds aguardados, exit 0) e `SELECT` confirmando as 5 chaves.
+
+---
+
 ### `warm-routes.js` — `API_ROUTES` ampliada
 
 **Descrição:** As rotas de API aquecidas no modo `--api` foram ampliadas com `/api/settings` e `/api/placeholder-image`, passando a cobrir também as rotas que apareciam como `[Performance] Slow resource` no primeiro carregamento em dev.
@@ -742,13 +748,19 @@ Nenhum código morto identificado. A função é invocada pelo entry point CLI e
 
 **Caminho completo:** `/home/gus/Projetos/Caminhar/scripts/seed-settings.js`
 
-**Arquivos acionados ou relacionados:** `scripts/utils/load-env.js` — importa `loadEnv()`. `scripts/db/connection.js` — importa `query()`.
+**Arquivos acionados ou relacionados:** `scripts/utils/load-env.js` — importa `loadEnv()`. `scripts/db/connection.js` — importa `query()` e `closePool()`.
 
-**Resumo do arquivo:** Script CLI que popula a tabela `settings` com 5 configurações padrão: `site_name`, `site_description`, `posts_per_page`, `videos_per_page`, `musicas_per_page`. Verifica se cada configuração já existe antes de inserir (idempotente). Não fecha o pool de conexão ao final (`closePool` não é chamado).
+**Resumo do arquivo:** Exporta (como `default`) a função que popula a tabela `settings` com 5 configurações padrão: `site_name`, `site_description`, `posts_per_page`, `videos_per_page`, `musicas_per_page`. Verifica se cada configuração já existe antes de inserir (idempotente). Executado por `seed-all.js`; o uso direto (`node scripts/seed-settings.js`) funciona por uma guarda `process.argv[1]`, único caminho que fecha o pool.
 
-**Ajustes e correções:** O pool de conexão não é fechado ao final da execução (`closePool` não é importado nem chamado), o que pode manter conexões abertas em execuções sequenciais (ex: dentro de `seed-all.js`).
+**Atualização de 09/10/2026:** a pendência abaixo (não fechar o pool) foi resolvida por decisão de projeto, e não por import de `closePool` indiscriminado: o pool pertence a quem executa. O script deixou de se auto-invocar no topo do módulo e de chamar `process.exit(0)` no fim — era isso que fazia o `seed-all.js` encerrar com os `INSERT` em voo e a tabela `settings` ficar vazia na CI, reprovando o `cache-performance-test`. O `closePool()` ficou apenas no caminho CLI.
 
-**Melhorias:** Importar e chamar `closePool()` ao final da execução, seguindo o padrão de outros seeds.
+**Atualização de 09/10/2026 (2ª rodada):** o `catch` por item deixou de engolir o erro. As falhas são acumuladas em um array e, ao fim do laço, um único `Error` é lançado com a contagem e a lista `chave (mensagem)` — o seed continua idempotente (as chaves que deram certo ficam populadas) e o chamador recebe a falha. Antes, um banco sem a tabela `settings` imprimia 5 erros, `✅ Seed de configurações concluído!` e **exit 0**, empurrando o problema para os testes de carga.
+
+**Atualização de 09/10/2026 (3ª rodada):** o comportamento passou a ter trava em `tests/unit/scripts/seed-settings.test.js` (5 cenários, incluindo o que reprova se o `throw` voltar a ser `console.error`). Para o módulo ser importável pelo Jest, o bloco de CLI teve que sair do top-level `await` para uma **IIFE assíncrona** — mesmo padrão de `clear-db.js` e `clean-orphaned-images.js`: o Babel compila o script como CommonJS nos testes, e top-level `await` ali é `SyntaxError`.
+
+**Ajustes e correções:** Nenhum problema pendente.
+
+**Melhorias:** Nenhuma melhoria necessária.
 
 **Duplicidades:** Nenhuma duplicidade identificada.
 
@@ -776,7 +788,21 @@ Nenhum código morto identificado. A função é invocada pelo entry point CLI e
 
 ### 9.17. `scripts/seed-musicas.js`
 
-**Caminho completo:** `/home/gus/Projetos/Caminhar/scripts/seed-musicas.js`---
+**Caminho completo:** `/home/gus/Projetos/Caminhar/scripts/seed-musicas.js`
+
+**Arquivos acionados ou relacionados:** `scripts/utils/load-env.js` — importa `loadEnv()`. `scripts/db/connection.js` — importa `query()`.
+
+**Resumo do arquivo:** Exporta (como `default`) a função que insere 6 músicas de exemplo (títulos, artistas, URLs do Spotify, descrição e `publicado`). Segue o contrato comum aos seeds do orquestrador (ver `docs/PROJECT_scripts.md`): não se auto-invoca, não chama `process.exit`, e o `closePool()` só acontece no caminho CLI, guardado por `process.argv[1]`. Sem isso o `seed-all.js` encerrava antes dos `INSERT` concluírem.
+
+**Ajustes e correções:** Nenhum problema pendente.
+
+**Melhorias:** Nenhuma melhoria necessária.
+
+**Duplicidades:** Nenhuma duplicidade identificada.
+
+**Código morto:** Nenhum código morto identificado. O script é referenciado em `seed-all.js`.
+
+---
 
 ### 9.26. `scripts/clear-cache.js`
 
@@ -1000,9 +1026,11 @@ Nenhum código morto identificado. A função é invocada pelo entry point CLI e
 
 **Caminho completo:** `/home/gus/Projetos/Caminhar/scripts/seed-all.js`
 
-**Arquivos acionados ou relacionados:** `scripts/utils/load-env.js` — importa `loadEnv()`. `scripts/db/connection.js` — importa `query()` e `closePool()`. `scripts/seed-posts.js`, `scripts/seed-musicas.js`, `scripts/seed-videos.js`, `scripts/seed-settings.js` — importados dinamicamente.
+**Arquivos acionados ou relacionados:** `scripts/utils/load-env.js` — importa `loadEnv()`. `scripts/db/connection.js` — importa `query()` e `closePool()` (dono do pool: fecha uma única vez, ao final). `scripts/seed-posts.js`, `scripts/seed-musicas.js`, `scripts/seed-videos.js`, `scripts/seed-settings.js` — importados dinamicamente; cada um exporta a função de seed como `default`.
 
-**Resumo do arquivo:** Orchestrador que executa todos os seeds do projeto em ordem: `seed-posts.js`, `seed-musicas.js`, `seed-videos.js`, `seed-settings.js`. Suporta flag `--clean` para resetar o banco antes de popular (executa `npm run db:reset`). Verifica conexão com o banco antes de iniciar.
+**Resumo do arquivo:** Orchestrador que executa todos os seeds do projeto em ordem: `seed-posts.js`, `seed-musicas.js`, `seed-videos.js`, `seed-settings.js`. Suporta flag `--clean` para resetar o banco antes de popular (executa `npm run db:reset`). Verifica conexão com o banco antes de iniciar. O `runSeed()` resolve `module.default ?? module.run`, **lança erro se o módulo não exportar função** e aguarda a execução; o `closePool()` foi para um único `finally` no fim do script e o `process.exit(0)` final virou saída normal com `process.exitCode`.
+
+**Atualização de 09/10/2026:** o `runSeed()` só funcionava por acidente — nenhum dos 4 seeds exportava função (todos se auto-invocavam no topo do módulo), então o log "concluído" era impresso sem esperar nada e o `process.exit(0)` encerrava o processo com os `INSERT` em voo, descartando os dados. Impacto observado: tabela `settings` vazia na CI e reprovação do `cache-performance-test`. O contrato dos seeds está em `docs/PROJECT_scripts.md`.
 
 **Ajustes e correções:** Invocar `npm run db:reset` via `execSync` acopla o seed ao gerenciador de pacotes (lento, dependente de npm instalado, frágil em CI).
 

@@ -70,6 +70,7 @@ Ativado via `jest.mock('pg')` nos seguintes **16 arquivos de teste**:
 - `tests/unit/scripts/clear-musicas.test.js`
 - `tests/unit/scripts/reset-password.test.js`
 - `tests/unit/scripts/seed-all.test.js`
+- `tests/unit/scripts/seed-settings.test.js`
 - `tests/unit/scripts/utils/cleanup.test.js`
 
 ### 🧩 Interface Exportada
@@ -378,7 +379,7 @@ Mock centralizado para o módulo `lib/infra/db.js`, exportando exatamente as mes
 Utilizado via `jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb())` em dezenas de arquivos de teste, incluindo:
 
 - **Testes de API** (`tests/integration/api/`): `posts`, `musicas`, `videos`, `dicas`, `settings`, `stats`, `roles`, `users`, `audit`, `backups`, `status`, `login`, `cleanup-test-data`, etc.
-- **Testes de scripts** (`tests/unit/scripts/`): `clear-db`, `clear-musicas`, `seed-all`, `reset-password`, `clean-orphaned-images`.
+- **Testes de scripts** (`tests/unit/scripts/`): `clear-db`, `clear-musicas`, `seed-all`, `seed-settings`, `reset-password`, `clean-orphaned-images`.
 - **Testes de domínio** (`tests/unit/domain/`): `settings`, `videos`, `posts`.
 - **Testes de lib** (`tests/unit/lib/`): `crud`, `auth`.
 

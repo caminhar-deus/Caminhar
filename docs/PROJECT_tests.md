@@ -483,6 +483,7 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | `migrate.test.js` | Gerenciador de migrações |
 | `reset-password.test.js` | Reset de senha |
 | `seed-all.test.js` | Seed de todos os dados |
+| `seed-settings.test.js` | Seed de configurações — cobre os 5 caminhos da função exportada `seedSettings()`: inserção das 5 chaves em ordem, idempotência (nenhum INSERT quando a chave já existe), falha parcial (rejeita com `1 de 5` e as demais chaves ainda são consultadas), falha total (`5 de 5` com todas as chaves na mensagem) e resolução no caminho feliz. Importa `scripts/seed-settings.js` com `jest.resetModules()` e mocka `scripts/db/connection.js` — o módulo que o script usa, e não `lib/infra/db.js` |
 | `validate-schema.test.js` | Validação de schema do banco (mock condicional por SQL cobre tabelas e colunas existentes; valida `result === true` no cenário de sucesso, sem falso alerta de "Tabela faltando"; mock de `load-env` pelo registro CJS — o `.env` real não é carregado —, isolamento aguardado com `jest.isolateModulesAsync` e `console.log`/`console.error` silenciados por spies) |
 
 #### Scripts/DB (`/tests/unit/scripts/db/`)

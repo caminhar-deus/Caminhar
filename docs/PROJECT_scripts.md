@@ -132,12 +132,14 @@ Definições JSON consumidas por `init-table.js` (nome da tabela, colunas, flag 
 |---------|----------------|
 | `init-table.js` | Script unificado de criação de tabelas (92 linhas). Lê schema JSON de `schemas/`, valida identificador da tabela, faz DROP (se `dropBeforeCreate`), cria tabela, adiciona colunas faltantes (se não drop) e popula seedData se vazio. Suporta `node init-table.js <tabela>`, `--table=`, `--help`. Importa funções de `utils/init-table-utils.js`. |
 | `init-server.js` | Inicializa autenticação e banco via `lib/auth/auth.js` (`initializeAuth`) e `closeDatabase`. Idempotente (flag `isInitialized`). Exports: `initializeServer()`, `cleanupServer()`. Executa automaticamente se chamado diretamente. |
-| `seed-all.js` | Orquestrador de seeds: verifica conexão (`SELECT 1`), opcionalmente reseta banco (`--clean` via `npm run db:reset`), executa `seed-posts.js`, `seed-musicas.js`, `seed-videos.js`, `seed-settings.js` via import dinâmico. Não executa `seed-products.js`. |
+| `seed-all.js` | Orquestrador de seeds: verifica conexão (`SELECT 1`), opcionalmente reseta banco (`--clean` via `npm run db:reset`), executa `seed-posts.js`, `seed-musicas.js`, `seed-videos.js`, `seed-settings.js` via import dinâmico e **aguarda a função exportada por cada um** (falha explícita se o módulo não exportar `default`/`run`). Fecha o pool uma única vez, ao final. Não executa `seed-products.js`. |
 | `seed-posts.js` | Insere 8 posts de exemplo (7 publicados + 1 rascunho), com `ON CONFLICT (slug) DO NOTHING`. URLs de imagem do Unsplash. |
 | `seed-musicas.js` | Insere 6 músicas de exemplo (títulos, artistas, URLs do Spotify). |
 | `seed-videos.js` | Insere 6 vídeos de exemplo (títulos, URLs do YouTube). |
 | `seed-products.js` | Insere 30 produtos religiosos com `@faker-js/faker` (nomes, preços, descrições, 1-3 imagens via LoremFlickr, link ML com 70% de chance, categoria aleatória). |
-| `seed-settings.js` | Cria 5 configurações padrão (`site_name`, `site_description`, `posts_per_page`, `videos_per_page`, `musicas_per_page`). Idempotente — verifica existência antes de inserir. |
+| `seed-settings.js` | Cria 5 configurações padrão (`site_name`, `site_description`, `posts_per_page`, `videos_per_page`, `musicas_per_page`). Idempotente — verifica existência antes de inserir. Falha de um item não é engolida: as chaves que derem certo ficam populadas e, ao fim, um único erro é lançado com a contagem e a lista das que falharam. |
+
+**Contrato comum aos 4 seeds do orquestrador (`seed-posts`, `seed-musicas`, `seed-videos`, `seed-settings`):** exportam a função de seed como `default`, não se auto-invocam no topo do módulo, não chamam `process.exit` e não fecham o pool — quem executa é o `seed-all.js`, dono do ciclo de vida. O uso como CLI (`node scripts/seed-X.js`) continua funcionando por uma guarda `process.argv[1]`, e só nesse caminho o pool é fechado. Antes de 09/10/2026 nenhum deles exportava função: o `seed-all.js` logava "concluído" sem aguardar nada e o `process.exit(0)` final abortava os `INSERT` em voo — foi o que reprovou o `cache-performance-test` na CI com a tabela `settings` vazia.
 
 ---
 

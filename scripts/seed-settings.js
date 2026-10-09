@@ -8,7 +8,7 @@
  */
 
 import { loadEnv } from './utils/load-env.js';
-import { query } from './db/connection.js';
+import { query, closePool } from './db/connection.js';
 
 loadEnv();
 
@@ -20,8 +20,14 @@ const DEFAULT_SETTINGS = [
   { key: 'musicas_per_page', value: '10', type: 'number', description: 'Quantidade de músicas por página' },
 ];
 
-async function seedSettings() {
+export default async function seedSettings() {
   console.log('📦 Inicializando configurações padrão...\n');
+
+  // Erros por item são acumulados em vez de engolidos: o seed é idempotente,
+  // então as chaves que derem certo ficam populadas mesmo com falha em outras,
+  // mas o chamador precisa receber um erro — senão `seed-all.js` reporta
+  // sucesso e a falha só aparece depois, nos testes de carga.
+  const falhas = [];
 
   for (const setting of DEFAULT_SETTINGS) {
     try {
@@ -43,14 +49,34 @@ async function seedSettings() {
       }
     } catch (error) {
       console.error(`  ❌ Erro ao criar ${setting.key}:`, error.message);
+      falhas.push({ key: setting.key, erro: error.message });
     }
   }
 
+  if (falhas.length > 0) {
+    throw new Error(
+      `Falha ao criar ${falhas.length} de ${DEFAULT_SETTINGS.length} configurações: ` +
+      falhas.map((f) => `${f.key} (${f.erro})`).join('; ')
+    );
+  }
+
   console.log('\n✅ Seed de configurações concluído!');
-  process.exit(0);
 }
 
-seedSettings().catch((error) => {
-  console.error('❌ Erro fatal:', error);
-  process.exit(1);
-});
+// Uso como CLI: só neste caminho fechamos o pool e sinalizamos exit code.
+// O corpo vai dentro de uma IIFE assíncrona porque o Babel compila o script
+// como CommonJS e não há suporte a top-level `await` nessa transformação — sem
+// isso o módulo não pode ser importado por testes (mesmo padrão de
+// `clear-db.js`).
+if (process.argv[1] && process.argv[1].endsWith('seed-settings.js')) {
+  (async () => {
+    try {
+      await seedSettings();
+    } catch (error) {
+      console.error('❌ Erro fatal:', error);
+      process.exitCode = 1;
+    } finally {
+      await closePool();
+    }
+  })();
+}

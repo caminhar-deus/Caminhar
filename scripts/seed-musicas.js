@@ -4,7 +4,7 @@ import { query, closePool } from './db/connection.js';
 
 loadEnv();
 
-async function seedMusicRecords() {
+export default async function seedMusicRecords() {
   try {
     console.log('🌱 Inserindo músicas de teste...');
     
@@ -22,10 +22,17 @@ async function seedMusicRecords() {
     console.log('✅ Músicas de teste inseridas com sucesso!');
   } catch (error) {
     console.error('❌ Erro ao inserir músicas:', error.message);
-    process.exit(1);
+    throw error;
+  }
+}
+
+// Uso como CLI: só neste caminho fechamos o pool e sinalizamos exit code.
+if (process.argv[1] && process.argv[1].endsWith('seed-musicas.js')) {
+  try {
+    await seedMusicRecords();
+  } catch (error) {
+    process.exitCode = 1;
   } finally {
     await closePool();
   }
 }
-
-seedMusicRecords();

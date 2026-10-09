@@ -979,6 +979,7 @@ tests/unit/scripts/reset-password.test.js → lib/infra/db.js
 tests/unit/scripts/reset-password.test.js → tests/mocks/db-module.js
 tests/unit/scripts/seed-all.test.js → lib/infra/db.js
 tests/unit/scripts/seed-all.test.js → tests/mocks/db-module.js
+tests/unit/scripts/seed-settings.test.js → scripts/seed-settings.js
 tests/unit/scripts/utils/cleanup.test.js → scripts/utils/cleanup.js
 tests/unit/scripts/utils/constants.test.js → scripts/utils/constants.js
 tests/unit/scripts/utils/date-format.test.js → scripts/utils/date-format.js

@@ -4,7 +4,7 @@ import { query, closePool } from './db/connection.js';
 
 loadEnv();
 
-async function seedVideoRecords() {
+export default async function seedVideoRecords() {
   try {
     console.log('🌱 Inserindo vídeos de teste...');
     
@@ -22,10 +22,17 @@ async function seedVideoRecords() {
     console.log('✅ Vídeos de teste inseridos com sucesso!');
   } catch (error) {
     console.error('❌ Erro ao inserir vídeos:', error.message);
-    process.exit(1);
+    throw error;
+  }
+}
+
+// Uso como CLI: só neste caminho fechamos o pool e sinalizamos exit code.
+if (process.argv[1] && process.argv[1].endsWith('seed-videos.js')) {
+  try {
+    await seedVideoRecords();
+  } catch (error) {
+    process.exitCode = 1;
   } finally {
     await closePool();
   }
 }
-
-seedVideoRecords();

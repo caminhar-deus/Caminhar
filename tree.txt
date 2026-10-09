@@ -1221,6 +1221,7 @@
 │       │   ├── migrate.test.js
 │       │   ├── reset-password.test.js
 │       │   ├── seed-all.test.js
+│       │   ├── seed-settings.test.js
 │       │   ├── utils
 │       │   │   ├── cleanup.test.js
 │       │   │   ├── constants.test.js
@@ -1238,4 +1239,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-200 directories, 1039 files
+200 directories, 1040 files

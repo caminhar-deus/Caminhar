@@ -13,7 +13,6 @@ async function checkDatabaseReady() {
   console.log('🔍 Verificando conexão com o banco de dados...');
   try {
     await query('SELECT 1');
-    await closePool();
     console.log('✅ Banco de dados está pronto.');
     return true;
   } catch (error) {
@@ -27,11 +26,14 @@ async function runSeed(scriptName) {
   try {
     const scriptPath = path.join(__dirname, scriptName);
     
-    // Importa dinamicamente e executa, em vez de criar sub-processo shell
-    // Nota: Requer que os arquivos de seed exportem uma função default ou 'run'
+    // Importa dinamicamente e executa, em vez de criar sub-processo shell.
+    // Os arquivos de seed exportam a função de seed como default (ou 'run').
     const module = await import(scriptPath);
-    if (module.default) await module.default();
-    else if (module.run) await module.run();
+    const seedFn = module.default ?? module.run;
+    if (typeof seedFn !== 'function') {
+      throw new Error(`${scriptName} não exporta uma função de seed (default ou run).`);
+    }
+    await seedFn();
     
     console.log(`✅ ${scriptName} concluído.`);
   } catch (error) {
@@ -85,8 +87,10 @@ async function seedAll() {
 
 try {
   await seedAll();
-  process.exit(0);
 } catch (error) {
   console.error('❌ Erro durante a execução dos seeds:', error.message);
-  process.exit(1);
+  process.exitCode = 1;
+} finally {
+  // Dono do ciclo de vida do pool: fecha uma única vez ao final.
+  await closePool();
 }

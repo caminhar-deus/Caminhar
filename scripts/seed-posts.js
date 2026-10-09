@@ -4,7 +4,7 @@ import { query, closePool } from './db/connection.js';
 
 loadEnv();
 
-async function seedPostRecords() {
+export default async function seedPostRecords() {
   try {
     console.log('🌱 Inserindo posts de teste...');
     
@@ -81,10 +81,17 @@ async function seedPostRecords() {
     console.log('✅ Posts de teste inseridos com sucesso!');
   } catch (error) {
     console.error('❌ Erro ao inserir posts:', error.message);
-    process.exit(1);
+    throw error;
+  }
+}
+
+// Uso como CLI: só neste caminho fechamos o pool e sinalizamos exit code.
+if (process.argv[1] && process.argv[1].endsWith('seed-posts.js')) {
+  try {
+    await seedPostRecords();
+  } catch (error) {
+    process.exitCode = 1;
   } finally {
     await closePool();
   }
 }
-
-seedPostRecords();
