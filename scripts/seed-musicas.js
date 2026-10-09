@@ -31,6 +31,7 @@ if (process.argv[1] && process.argv[1].endsWith('seed-musicas.js')) {
   try {
     await seedMusicRecords();
   } catch (error) {
+    console.error('❌ Erro fatal ao semear músicas:', error.message);
     process.exitCode = 1;
   } finally {
     await closePool();

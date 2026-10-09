@@ -1233,6 +1233,62 @@ Testa endpoint `/api/upload-image` — fluxo de upload, validação de arquivo (
 
 ---
 
+### tests/integration/api/uploads.test.js
+
+#### Finalidade
+Testa a rota de serviço `/api/uploads/[...path].js` — a peça de **segurança** introduzida pela correção do item U (`docs/PENDENCIAS_scripts_testes.md`). Ela substituiu o serving de `public/`, que o `next start` snapshotava no boot (upload em runtime dava 404 até o restart), e carrega a proteção contra path traversal.
+
+Antes desta rodada a rota **não tinha nenhum teste**. Uma regressão ali seria um problema de segurança, não de funcionalidade, e o único detector seria o cron de carga diário.
+
+#### Arquivos acionados
+- `pages/api/uploads/[...path].js` — handler real
+- `lib/infra/storage.js` — resolução das raízes (real)
+- `lib/infra/logger.js` — silenciado
+- `fs`, `path`, `os` — módulos nativos
+- `next.config.js` — só a asserção da `rewrites()`
+
+#### Resumo
+10 testes com **fs real** sobre diretórios temporários: serve do diretório ativo, serve do legado, prioridade do ativo quando o mesmo nome existe nos dois, 404 para inexistente, 404 sem caminho, 405 com `Allow: GET, HEAD`, HEAD 200 sem corpo, bloqueio de path traversal, bloqueio de caminho absoluto e null byte, e o invariante da URL pública (`rewrites()` mapeia `/uploads/:path*` → `/api/uploads/:path*`).
+
+#### Sandbox
+O sandbox inteiro mora num temp dir e o cwd é apontado para ele, de modo que o legado vira `<tmp>/public/uploads` e o `public/uploads` **real** do projeto nunca é lido nem alterado. `UPLOADS_DIR` é sobrescrito e restaurado no `afterEach`. Mesmo padrão de `tests/unit/scripts/clear-db.test.js`.
+
+#### Verificação por mutação
+A guarda de path traversal foi removida deliberadamente (`resolveInside()` sem a checagem `startsWith(baseDir + path.sep)`): **2 dos 10 testes reprovaram** e voltaram a passar com a guarda restaurada. Os testes de traversal não são decorativos — detectam a remoção da proteção.
+
+#### Problemas
+- Nenhum conhecido. Os 10 testes passam e a mutação acima foi revertida.
+
+---
+
+### tests/integration/api/upload-image-disk.test.js
+
+#### Finalidade
+Fecha o ciclo do item U com **disco real**: upload → arquivo gravado → mesma URL emitida servida com 200 pela rota de serviço.
+
+Os 8 testes de `upload-image.test.js` mockam `fs` e `formidable` por inteiro — verificam que `fs.promises.rename` foi *chamado*, mas nada grava, nada lê de volta e nada confirma que a URL emitida é servível. O teste chamado "Deve salvar o arquivo no diretório correto" **não salva no disco**.
+
+#### Arquivos acionados
+- `pages/api/upload-image.js` — handler real
+- `pages/api/uploads/[...path].js` — rota de serviço (segunda metade do ciclo)
+- `lib/infra/storage.js` — resolução da raiz (real)
+- `formidable`, `sharp` — **reais** (não mockados)
+- `lib/auth/auth.js`, `lib/domain/settings.js` — mockados (o upload exige JWT; o teste não toca no banco)
+
+#### Resumo
+2 testes: o ciclo completo (POST multipart com GIF 1×1 real → 200 com `path`/`imageUrl` no formato `/uploads/post-image-<uuid>.gif` → arquivo existe no diretório ativo com o mesmo conteúdo → **nada** gravado no legado → a rota serve a URL com 200 e o corpo idêntico) e a rejeição de formato não suportado sem deixar arquivo no disco.
+
+#### Detalhe de construção
+O `req` precisa ser ele próprio um `Readable` para o `formidable` real parseá-lo — `node-mocks-http` não produz isso, e copiar propriedades de um stream para um objeto comum não cria um stream (o `formidable` ficava esperando corpo que nunca chegava, com timeout). Por isso o `req` vem do builder multipart e o `res` é um duplo mínimo no formato que os handlers consomem (`status().json()`, `status().send()`, `setHeader()`).
+
+#### Verificação por mutação
+`upload-image.js` foi alterado para voltar a gravar em `public/uploads` (o destino que causava o 404 do item U): **1 dos 2 testes reprovou** e voltou a passar com a correção restaurada.
+
+#### Problemas
+- Nenhum conhecido. Os 2 testes passam e a mutação acima foi revertida.
+
+---
+
 
 
 ## 9.1. Testes Unitários — Admin Fields (Complementar)

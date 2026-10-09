@@ -800,8 +800,7 @@
 │   ├── placeholder.svg
 │   ├── robots.txt
 │   ├── sitemap-0.xml
-│   ├── sitemap.xml
-│   └── uploads
+│   └── sitemap.xml
 ├── reports
 │   ├── k6-summaries
 │   │   ├── CRUD_de_Músicas.html
@@ -1018,7 +1017,9 @@
 │   │   │   ├── settings.test.js
 │   │   │   ├── stats.test.js
 │   │   │   ├── status.test.js
+│   │   │   ├── upload-image-disk.test.js
 │   │   │   ├── upload-image.test.js
+│   │   │   ├── uploads.test.js
 │   │   │   ├── videos.create.api.test.js
 │   │   │   ├── videos.delete.test.js
 │   │   │   ├── videos.flow.test.js
@@ -1239,4 +1240,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-200 directories, 1040 files
+199 directories, 1042 files

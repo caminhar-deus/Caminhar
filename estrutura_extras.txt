@@ -729,8 +729,11 @@ tests/integration/api/stats.test.js → pages/api/admin/stats.js
 tests/integration/api/status.test.js → lib/infra/db.js
 tests/integration/api/status.test.js → pages/api/status.js
 tests/integration/api/status.test.js → tests/mocks/db-module.js
+tests/integration/api/upload-image-disk.test.js → pages/api/upload-image.js
+tests/integration/api/upload-image-disk.test.js → pages/api/uploads/[...path].js
 tests/integration/api/upload-image.test.js → lib/domain/settings.js
 tests/integration/api/upload-image.test.js → pages/api/upload-image.js
+tests/integration/api/uploads.test.js → pages/api/uploads/[...path].js
 tests/integration/api/videos.flow.test.js → lib/domain/audit.js
 tests/integration/api/videos.flow.test.js → lib/domain/videos.js
 tests/integration/api/videos.flow.test.js → pages/api/admin/videos.js

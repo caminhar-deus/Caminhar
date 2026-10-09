@@ -90,6 +90,7 @@ if (process.argv[1] && process.argv[1].endsWith('seed-posts.js')) {
   try {
     await seedPostRecords();
   } catch (error) {
+    console.error('❌ Erro fatal ao semear posts:', error.message);
     process.exitCode = 1;
   } finally {
     await closePool();

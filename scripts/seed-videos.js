@@ -31,6 +31,7 @@ if (process.argv[1] && process.argv[1].endsWith('seed-videos.js')) {
   try {
     await seedVideoRecords();
   } catch (error) {
+    console.error('❌ Erro fatal ao semear vídeos:', error.message);
     process.exitCode = 1;
   } finally {
     await closePool();

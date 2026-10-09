@@ -1,7 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
-<url><loc>http://localhost:3000</loc><lastmod>2026-10-09T13:06:39.734Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>http://localhost:3000/blog</loc><lastmod>2026-10-09T13:06:39.735Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>http://localhost:3000/design-system</loc><lastmod>2026-10-09T13:06:39.735Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>http://localhost:3000/login</loc><lastmod>2026-10-09T13:06:39.735Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>http://localhost:3000</loc><lastmod>2026-10-09T16:22:36.467Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>http://localhost:3000/blog</loc><lastmod>2026-10-09T16:22:36.468Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>http://localhost:3000/design-system</loc><lastmod>2026-10-09T16:22:36.468Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>http://localhost:3000/login</loc><lastmod>2026-10-09T16:22:36.468Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>http://localhost:3000/blog/bem-vindo-ao-caminhar-com-deus</loc><lastmod>2026-10-09T13:47:59.609Z</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+<url><loc>http://localhost:3000/blog/a-importancia-da-oracao</loc><lastmod>2026-10-09T13:47:59.609Z</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+<url><loc>http://localhost:3000/blog/fe-em-tempos-dificeis</loc><lastmod>2026-10-09T13:47:59.609Z</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+<url><loc>http://localhost:3000/blog/o-poder-da-gratidao</loc><lastmod>2026-10-09T13:47:59.609Z</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+<url><loc>http://localhost:3000/blog/versiculos-para-meditar</loc><lastmod>2026-10-09T13:47:59.609Z</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+<url><loc>http://localhost:3000/blog/proposito-e-vocacao</loc><lastmod>2026-10-09T13:47:59.609Z</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+<url><loc>http://localhost:3000/blog/o-caminho-da-fe</loc><lastmod>2026-10-09T13:47:59.609Z</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
 </urlset>
