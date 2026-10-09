@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { getSetting } from '../../lib/domain/settings.js';
 import { logger } from '../../lib/infra/logger.js';
+import { uploadRoots } from '../../lib/infra/storage.js';
 
 // Cache em memória do filename da imagem hero, evitando consultar o banco a cada
 // request. TTL curto e compatível com a invalidação de settings existente (que não
@@ -15,10 +16,8 @@ export default async function handler(req, res) {
     // Diretórios de upload: o ativo vive FORA de `public/` (snapshot do
     // `next start` — ver pages/api/upload-image.js) e `public/uploads` segue
     // como fallback de dados legados. A ordem importa: novo primeiro.
-    const uploadDirs = [
-      path.resolve(process.env.UPLOADS_DIR || path.join(process.cwd(), 'uploads')),
-      path.join(process.cwd(), 'public', 'uploads'),
-    ];
+    // A resolução e a ordem vivem em `lib/infra/storage.js`.
+    const uploadDirs = uploadRoots();
     let filename = (cachedHeroFilename && Date.now() < cachedHeroFilenameExpiresAt)
       ? cachedHeroFilename
       : null;
@@ -105,7 +104,11 @@ export default async function handler(req, res) {
         return res.status(304).end();
       }
 
-      const imageBuffer = await fs.readFile(imagePath);
+      // `turbopackIgnore`: o caminho é montado a partir do filename guardado no
+      // banco e da raiz de uploads, então é dinâmico e não é resolvível em build
+      // time. A marcação declara que o acesso é intencional. Ver
+      // `lib/infra/storage.js` para o contexto.
+      const imageBuffer = await fs.readFile(/*turbopackIgnore: true*/ imagePath);
       res.send(imageBuffer);
     } else {
       // Serve a default placeholder image

@@ -37,6 +37,7 @@
    - [6.1 `lib/infra/db.js`](#61-libinfradbjs)
    - [6.2 `lib/infra/logger.js`](#62-libinfraloggerjs)
    - [6.3 `lib/infra/redis.js`](#63-libinfraredisjs)
+   - [6.4 `lib/infra/storage.js`](#64-libinfrastoragejs)
 7. [Subpasta `lib/media/`](#7-subpasta-libmedia)
    - [7.1 `lib/media/spotify.js`](#71-libmediaspotifyjs)
    - [7.2 `lib/media/youtube.js`](#72-libmediayoutubejs)
@@ -536,7 +537,7 @@ Camada de domínio: funções específicas por entidade de negócio, construída
 
 ## 6. Subpasta `lib/infra/`
 
-Módulos de infraestrutura: conexão com banco, logging estruturado e cache distribuído.
+Módulos de infraestrutura: conexão com banco, logging estruturado, cache distribuído e resolução de caminhos de armazenamento.
 
 ### 6.1 `lib/infra/db.js`
 
@@ -627,6 +628,41 @@ Módulos de infraestrutura: conexão com banco, logging estruturado e cache dist
 4. Sem variáveis — fallback em memória
 
 **Observações:** Cache em memória de fallback com lazy cleanup acima de 1000 entradas. Design tolerante a falhas — o app nunca quebra por indisponibilidade do Redis.
+
+---
+
+### 6.4 `lib/infra/storage.js`
+
+**Localização:** `/lib/infra/storage.js`
+
+**Propósito:** Resolução única dos diretórios de armazenamento de uploads. Centraliza a expressão `path.resolve(process.env.UPLOADS_DIR || path.join(process.cwd(), 'uploads'))`, que antes estava duplicada em quatro handlers de `pages/api/` em três formatos diferentes (funções locais, expressão inlined, array inline).
+
+**Exportações:**
+
+| Exportação | Descrição |
+|------------|-----------|
+| `uploadsRoot()` | Diretório ativo dos uploads — `UPLOADS_DIR` quando definida, senão `<cwd>/uploads` |
+| `legacyUploadsRoot()` | Diretório legado `<cwd>/public/uploads`, mantido apenas como fallback de leitura |
+| `uploadRoots()` | `[uploadsRoot(), legacyUploadsRoot()]` — **na ordem de precedência**: ativo primeiro, legado depois. O primeiro diretório com candidato vence |
+
+**Por que o acesso é dinamicamente resolvido:**
+
+`UPLOADS_DIR` é intencionalmente uma variável de ambiente: aponta para o volume persistente no deploy com disco (ver `docs/DEPLOY_proxy_e_IP.md` §10). Filesystem de serverless é efêmero — um redeploy apagaria uploads e backups, o que elimina Vercel e qualquer execução serverless. `UPLOADS_DIR` é o que mantém essa porta aberta.
+
+O Turbopack não resolve `process.env.UPLOADS_DIR` em build time e emite `Dynamic filesystem access causes tracing of the whole project`. **O aviso não indica defeito:** o `.nft.json` resultante não é consumido por nada — o projeto não define `output: 'standalone'` e o deploy roda `next start` com disco persistente, ou seja, o trace é gerado e nunca lido. Remover o aviso exigiria remover `UPLOADS_DIR`, o que destruiria o suporte a volume persistente.
+
+Por isso a chamada de `path.resolve` em `uploadsRoot()` carrega a marcação `/*turbopackIgnore: true*/`, com comentário no próprio ponto.
+
+**Consumidores:**
+
+| Consumidor | Uso |
+|------------|-----|
+| `pages/api/uploads/[...path].js` | `uploadsRoot()`, `legacyUploadsRoot()` em `findFile()` |
+| `pages/api/upload-image.js` | `uploadsRoot()` — destino do upload e do `formidable` |
+| `pages/api/placeholder-image.js` | `uploadRoots()` — descoberta do filename e resolução do arquivo |
+| `pages/api/admin/integrity.js` | `uploadsRoot()`, `legacyUploadsRoot()` — diagnóstico de armazenamento |
+
+**Observações:** Depende apenas de `node:path`. Não faz I/O — devolve caminhos; as chamadas `fs.*` ficam nos handlers. A proteção contra path traversal permanece em `resolveInside()` em `pages/api/uploads/[...path].js`, fora deste módulo.
 
 ---
 
@@ -736,6 +772,7 @@ Utilitários de extração de IDs de plataformas de mídia.
 | **Infra** | `infra/db.js` | Pool PostgreSQL + query + transações + health check |
 | **Infra** | `infra/logger.js` | Logger estruturado (níveis, JSON, requestId, transports) |
 | **Infra** | `infra/redis.js` | Cliente Redis Upstash com fallback em memória |
+| **Infra** | `infra/storage.js` | Resolução única dos diretórios de upload (ativo + legado) |
 | **Mídia** | `media/spotify.js` | Extração de IDs do Spotify |
 | **Mídia** | `media/youtube.js` | Extração de IDs do YouTube |
 | **SEO** | `seo/config.js` | Configurações de SEO, Schema.org e utilitários |
@@ -748,4 +785,5 @@ pages/api/ → lib/api/middleware.js → lib/auth/auth.js, lib/cache/cache.js, l
 pages/api/ → lib/domain/*.js → lib/crud/crud.js, lib/infra/db.js, lib/domain/shared-pagination.js
 lib/domain/*.js → lib/crud/crud.js → lib/infra/db.js
 lib/api/*.js → lib/infra/logger.js, lib/infra/db.js, lib/auth/auth.js, lib/cache/cache.js
+pages/api/{uploads/[...path],upload-image,placeholder-image,admin/integrity}.js → lib/infra/storage.js
 lib/cache/cache.js → lib/infra/redis.js, lib/infra/logger.js

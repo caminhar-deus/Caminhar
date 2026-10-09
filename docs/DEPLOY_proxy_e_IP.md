@@ -376,7 +376,8 @@ que qualquer comparação de suporte a `next start`. O Caminhar grava em disco:
 | `scripts/backup.js:27` | Backup diário às 02:00 (cron) |
 | `scripts/backup.js:104` | `fs.createWriteStream(outputPath)` |
 | `scripts/maintenance/backup-posts.js:34,42` | `mkdirSync` + `writeFileSync` de dump |
-| `pages/api/upload-image.js:48,50` | `uploadDir` (resolvido de `UPLOADS_DIR`, senão `<cwd>/uploads`) + `fs.mkdirSync(uploadDir)` — upload de imagem (grava **fora** de `public/`; ver item U de `docs/PENDENCIAS_scripts_testes.md`) |
+| `lib/infra/storage.js:35` | `uploadsRoot()` — `path.resolve(process.env.UPLOADS_DIR \|\| path.join(process.cwd(), 'uploads'))`. Resolução única, importada por `upload-image.js`, `placeholder-image.js`, `uploads/[...path].js` e `admin/integrity.js` |
+| `pages/api/upload-image.js:49,51` | `fs.existsSync(uploadDir)` + `fs.mkdirSync(uploadDir)` — upload de imagem (grava **fora** de `public/`; ver item U de `docs/PENDENCIAS_scripts_testes.md`) |
 
 Filesystem de serverless é **efêmero**: um redeploy apaga uploads e o histórico de
 backups. Isso elimina Vercel e qualquer execução serverless, independentemente de
@@ -391,6 +392,18 @@ cai no default `<raiz-do-repo>/uploads`, e quem não toca no arquivo continua
 com o comportamento padrão. Em dev, deixe ausente/vazia; em produção com volume,
 aponte (`UPLOADS_DIR="/var/data/uploads"`). Ela também é listada em
 `docs/PROJECT_raiz.md` §3.5 — a explicação de uso fica aqui (§10).
+
+**Desde 09/10/2026 a resolução está centralizada em `lib/infra/storage.js`**
+(`uploadsRoot()`, `legacyUploadsRoot()`, `uploadRoots()`), importada pelos quatro
+handlers que leem ou escrevem no diretório. O módulo carrega a marcação
+`/*turbopackIgnore: true*/` na chamada de `path.resolve`, porque o Turbopack não
+consegue resolver `process.env.UPLOADS_DIR` em build time e emite
+`Dynamic filesystem access causes tracing of the whole project`. **O aviso não
+indica defeito**: o `.nft.json` resultante não é consumido por nada, já que o
+projeto não define `output: 'standalone'` (esta seção) e o deploy roda `next start`
+com disco. Remover `UPLOADS_DIR` para silenciar o aviso destruiria justamente o
+suporte a volume persistente que esta seção sustenta — por isso a marcação
+declara a decisão em vez de mascará-la.
 
 Restam, com disco persistente: VPS próprio com nginx, ou Railway / Render / Fly.io
 / Heroku **com volume persistente**. Todos rodam `next start` com Node persistente.

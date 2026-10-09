@@ -6,6 +6,7 @@ import sharp from 'sharp';
 import { updateSetting } from '../../lib/domain/settings.js';
 import { withAuth } from '../../lib/auth/auth.js';
 import { logger } from '../../lib/infra/logger.js';
+import { uploadsRoot } from '../../lib/infra/storage.js';
 
 /**
  * Remove um arquivo do disco de forma segura, ignorando erros silenciosamente.
@@ -45,7 +46,9 @@ async function handler(req, res) {
     // `reports/`); UPLOADS_DIR permite apontar para um volume persistente.
     // A URL pública continua `/uploads/<arquivo>` — servida pela rota
     // `pages/api/uploads/[...path].js` via rewrite em `next.config.js`.
-    const uploadDir = path.resolve(process.env.UPLOADS_DIR || path.join(process.cwd(), 'uploads'));
+    // A resolução vive em `lib/infra/storage.js` (ver o comentário de lá sobre
+    // por que o acesso dinâmico e o aviso do build são esperados).
+    const uploadDir = uploadsRoot();
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }

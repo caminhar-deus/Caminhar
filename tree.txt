@@ -435,6 +435,9 @@
 │   │   │       ├── settings.js.html
 │   │   │       ├── status.js.html
 │   │   │       ├── upload-image.js.html
+│   │   │       ├── uploads
+│   │   │       │   ├── [...path].js.html
+│   │   │       │   └── index.html
 │   │   │       └── videos.js.html
 │   │   ├── prettify.css
 │   │   ├── prettify.js
@@ -523,6 +526,9 @@
 │   │       ├── settings.js.html
 │   │       ├── status.js.html
 │   │       ├── upload-image.js.html
+│   │       ├── uploads
+│   │       │   ├── [...path].js.html
+│   │       │   └── index.html
 │   │       └── videos.js.html
 │   ├── prettify.css
 │   ├── prettify.js
@@ -676,7 +682,8 @@
 │   ├── infra
 │   │   ├── db.js
 │   │   ├── logger.js
-│   │   └── redis.js
+│   │   ├── redis.js
+│   │   └── storage.js
 │   ├── media
 │   │   ├── spotify.js
 │   │   └── youtube.js
@@ -1231,4 +1238,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-198 directories, 1034 files
+200 directories, 1039 files

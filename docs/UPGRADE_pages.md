@@ -383,6 +383,7 @@ Endpoint de verificação de autenticação (GET). Valida o token JWT obtido do 
 **Arquivos acionados ou relacionados:**
 - `../../lib/domain/settings.js` — Função `getSetting()` (busca configuração do banco)
 - `../../lib/infra/logger.js` — Logger estruturado
+- `../../lib/infra/storage.js` — `uploadRoots()` (resolução única dos dois diretórios, preservando a ordem ativo→legado)
 
 **Resumo:**
 Endpoint de imagem placeholder (hero). Fluxo: 1) Tenta buscar a imagem configurada no banco (`home_image_url`) via `getSetting()`; 2) Fallback: procura arquivos `hero-image-*` nos **dois** diretórios de upload — `<cwd>/uploads` (`UPLOADS_DIR`, ativo) e `public/uploads` (legado), nesta ordem; 3) Se encontrar, serve a imagem com cache agressivo (`max-age=86400, immutable`), `ETag` baseado no filename, `Last-Modified` baseado no `mtime` do arquivo, e suporte a `If-None-Match` (304 Not Modified); 4) Se não encontra, serve um SVG inline com texto informativo. Possui cache em memória do filename (TTL 5 min) para evitar consultas ao banco a cada request. **Observação (08/10/2026, item U de `docs/PENDENCIAS_scripts_testes.md`):** este handler **acessa o disco** (`fs.readdir`, `fs.stat`, `fs.readFile`) — a premissa anterior de que "só lê string" estava errada; com a mudança do diretório de upload ele teve que passar a consultar os dois diretórios, senão o placeholder da home quebraria com 500 (ENOENT).
@@ -496,6 +497,7 @@ CRUD administrativo de vídeos via `createAdminHandler()`. Rate limit 300 req/mi
 **Arquivos acionados ou relacionados:**
 - `../../../lib/api/adminCrudHandler.js` — Factory `createAdminHandler()`
 - `../../../lib/infra/db.js` — Query SQL direta
+- `../../../lib/infra/storage.js` — `uploadsRoot()` e `legacyUploadsRoot()` (resolução única dos diretórios)
 - `@upstash/redis` — Cliente Redis (importado dinamicamente)
 - `fs`, `path`, `os` — Módulos nativos do Node.js
 
@@ -679,6 +681,7 @@ Endpoint público de músicas (GET). Valida query params com Zod (`page`, `limit
 - `../../lib/domain/settings.js` — Função `updateSetting()`
 - `../../lib/auth/auth.js` — Middleware `withAuth()`
 - `../../lib/infra/logger.js` — Logger estruturado
+- `../../lib/infra/storage.js` — `uploadsRoot()` (resolução única do diretório de destino)
 - `formidable` — Parser de formulários multipart
 - `sharp` — Processamento de imagem (validação de metadados)
 - `crypto` — Geração de UUID para nome do arquivo
@@ -866,6 +869,7 @@ Os seguintes problemas foram identificados e necessitam de correção:
 | 7.3 | Padrão duplicado | `admin/posts.js`, `admin/musicas.js`, `admin/videos.js` | Padrão `action: 'reorder'` com abordagens diferentes |
 | 7.4 | Leitura duplicada | `admin/backups.js`, `admin/integrity.js` | Lógica de listagem de backups com pequenas divergências |
 | 7.5 | Token duplicado | `styles/variables.css` | `--shadow-glow` definido 2x com mesmo valor |
+| 7.6 | **Resolvido em 09/10/2026** | `uploads/[...path].js`, `upload-image.js`, `placeholder-image.js`, `admin/integrity.js` | A expressão `path.resolve(process.env.UPLOADS_DIR \|\| path.join(process.cwd(), 'uploads'))` estava duplicada nos quatro handlers, em três formatos (funções locais, expressão inlined, array inline). Extraída para `lib/infra/storage.js` (`uploadsRoot()`, `legacyUploadsRoot()`, `uploadRoots()`). Nenhuma lógica mudou: ordem das raízes, cache de 5 min do placeholder e a proteção contra path traversal em `resolveInside()` foram preservados. |
 
 ---
 

@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { logger } from '../../../lib/infra/logger.js';
+import { uploadsRoot, legacyUploadsRoot } from '../../../lib/infra/storage.js';
 
 /**
  * Serve arquivos de upload a partir do diretório de armazenamento que fica
@@ -35,22 +36,6 @@ const CONTENT_TYPES = {
 };
 
 /**
- * Diretório raiz dos uploads (configurável para volumes persistentes).
- * @returns {string} Caminho absoluto.
- */
-function uploadsRoot() {
-  return path.resolve(process.env.UPLOADS_DIR || path.join(process.cwd(), 'uploads'));
-}
-
-/**
- * Diretório legado, mantido apenas como fallback de leitura.
- * @returns {string} Caminho absoluto.
- */
-function legacyUploadsRoot() {
-  return path.join(process.cwd(), 'public', 'uploads');
-}
-
-/**
  * Resolve `relativePath` dentro de `baseDir`, rejeitando qualquer resultado
  * que escape do diretório base (path traversal, caminho absoluto, null byte).
  * @param {string} baseDir - Diretório raiz permitido.
@@ -74,7 +59,11 @@ async function findFile(relativePath) {
     const candidate = resolveInside(root, relativePath);
     if (!candidate) continue;
     try {
-      const stats = await fs.promises.stat(candidate);
+      // `turbopackIgnore`: o nome do arquivo vem da URL, então o caminho é
+      // dinâmico por definição e não é resolvível em build time. A marcação declara
+      // que o acesso é intencional; a proteção contra path traversal é a validação
+      // em `resolveInside`, acima. Ver `lib/infra/storage.js` para o contexto.
+      const stats = await fs.promises.stat(/*turbopackIgnore: true*/ candidate);
       if (stats.isFile()) return { filepath: candidate, stats };
     } catch {
       // Não existe neste root — tenta o próximo (fallback legado).

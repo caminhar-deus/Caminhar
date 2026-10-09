@@ -358,6 +358,7 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
   - `lib/domain/settings.js` — `updateSetting()` (atualiza `home_image_url` quando `uploadType=setting_home_image`).
   - `lib/auth/auth.js` — `withAuth`.
   - `lib/infra/logger.js` — `logger`.
+  - `lib/infra/storage.js` — `uploadsRoot()` (resolução única do diretório, no lugar da expressão inlined).
   - Pasta **`<cwd>/uploads/`** — destino dos arquivos (criada se não existir), fora de `public/`; caminho configurável por **`UPLOADS_DIR`** (volume persistente em filesystem efêmero). Servida pela rota nova `pages/api/uploads/[...path].js` via `rewrites()` em `next.config.js` (`/uploads/:path*` → `/api/uploads/:path*`) — a URL pública continua `/uploads/<arquivo>` (ver item U de `docs/PENDENCIAS_scripts_testes.md`).
 - **Propósito:** Endpoint de upload de imagens com múltiplas camadas de segurança.
 - **Funcionalidades:**
@@ -376,6 +377,7 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
 - **Arquivos acionados/relacionados:**
   - `lib/domain/settings.js` — `getSetting('home_image_url')`.
   - `lib/infra/logger.js` — `logger`.
+  - `lib/infra/storage.js` — `uploadRoots()` (resolução única dos dois diretórios, preservando a ordem ativo→legado).
   - Pastas **`<cwd>/uploads/`** (ativo, `UPLOADS_DIR`) e **`public/uploads/`** (legado) — leitura dos arquivos de imagem, nesta ordem.
   - `fs` e `path` (módulos nativos).
 - **Propósito:** Endpoint para servir a imagem principal da home (hero).
@@ -541,6 +543,7 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
 - **Arquivos acionados/relacionados:**
   - `lib/api/adminCrudHandler.js` — `createAdminHandler`.
   - `lib/infra/db.js` — `query()`.
+  - `lib/infra/storage.js` — `uploadsRoot()` e `legacyUploadsRoot()` (resolução única dos diretórios, no lugar das expressões inlined).
   - `@upstash/redis` (import dinâmico) — ping do cache.
   - `fs`, `path`, `os` (módulos nativos) — verificações de armazenamento e sistema.
   - Pastas **`<cwd>/uploads/`** (`UPLOADS_DIR`, ativo), **`public/uploads/`** (legado) e `data/backups/` — alvo das verificações.
@@ -871,3 +874,4 @@ Já documentado na seção [2. API Pública](#2-api-pública) — é o único ar
 - **09/09/2026:** Controle de `strictMode` baseado em `NODE_ENV` — `proxy.js` e `pages/api/auth/login.js` passam a controlar o parâmetro `strictMode` da função `detectSpoofedIP` com base no ambiente (`NODE_ENV`), evitando falsos positivos em testes de carga durante o desenvolvimento e mantendo a proteção em produção. Suporte opcional à variável `ENABLE_STRICT_SPOOFING=true` para testes de segurança em desenvolvimento.
 - **23/09/2026:** Reanálise completa dos 42 arquivos com processo sequencial (análise → atualização → releitura → validação). Adicionadas a seção "Estrutura de Arquivos e Pastas" e o campo "Arquivos acionados/relacionados" em todas as seções; corrigido o total de custom properties de `variables.css` (348 propriedades em 386 linhas — o número anterior confundia linhas com propriedades); registradas ausências de `permission` explícita na config de `admin/musicas.js`, `admin/dicas.js`, `admin/backups.js` e `admin/rate-limit.js`; detalhado o modo API externa do `login.js` (`refresh_token_stored`); confirmados os pontos de atenção existentes (`await await` em `admin/users.js`, import sem extensão em `admin/backups.js`, 405 sem `Allow` em `check.js` e `videos.js`).
 - **08/10/2026:** Reconciliação das contagens com o repositório — o total voltou a ser conferido com `find pages -type f` e passou de **42 para 46 arquivos** (a frase "42 arquivos" das entradas de 01/08 e 23/09 acima descreve o estado daquelas datas, e continua sendo o retrato delas). Quatro entradas posteriores à análise de 23/09 não estavam refletidas nem na árvore nem nas seções e foram acrescentadas: **`pages/login.js`** + **`pages/styles/Login.module.css`** (criados em `73dbc86`, 03/10/2026, ajustados em `5beabc7`, 04/10/2026), **`pages/api/ip-diagnostico.js`** (`8fa3944`, 05/10/2026, admin-only na raiz da API) e **`pages/api/uploads/[...path].js`** — este já constava na árvore mas faltava no "Resumo Quantitativo", e **ainda não está commitado** (arquivo novo no working tree; `git log --diff-filter=A` não retorna nada para ele). Os blocos "Visão Geral", árvore, seção 3 (agora "15 endpoints em `admin/` + `ip-diagnostico.js`") e a tabela de resumo foram ajustados; a diferença entre "10 endpoints de API pública" e os 11 arquivos `.js` na raiz de `pages/api/` é justamente o `ip-diagnostico.js`.
+- **09/10/2026:** A resolução do diretório de uploads — `path.resolve(process.env.UPLOADS_DIR || path.join(process.cwd(), 'uploads'))` — foi extraída de quatro handlers para o novo módulo `lib/infra/storage.js`, eliminando a duplicação. Quatro endpoints passaram a importar a resolução única em vez de expressá-la inline: **`uploads/[...path].js`** (as funções locais `uploadsRoot()` e `legacyUploadsRoot()` foram removidas e agora vêm do módulo), **`upload-image.js`**, **`placeholder-image.js`** (o array `uploadDirs` inline virou `uploadRoots()`, preservando a ordem ativo→legado) e **`admin/integrity.js`**. Nenhuma lógica de runtime mudou: ordem de resolução das raízes, cache de 5 minutos do `placeholder-image.js` e a proteção contra path traversal em `resolveInside()` foram preservados. O motivo da extração foi eliminar os 12 avisos `Dynamic filesystem access causes tracing of the whole project` do Turbopack (Next.js 16), buildando limpo. Os avisos restantes foram marcados com `/*turbopackIgnore: true*/`, que declara o acesso intencional em vez de mascará-lo.

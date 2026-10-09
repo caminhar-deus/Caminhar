@@ -27,7 +27,8 @@ lib/
 ├── infra/
 │   ├── redis.js           # Cliente Redis com fallback em memória
 │   ├── logger.js          # Logger estruturado com níveis e transportes
-│   └── db.js              # Pool PostgreSQL com health check e retry
+│   ├── db.js              # Pool PostgreSQL com health check e retry
+│   └── storage.js         # Resolução única dos diretórios de upload (UPLOADS_DIR)
 ├── media/
 │   ├── youtube.js         # Extração de ID de vídeos do YouTube
 │   └── spotify.js         # Extração e embed de tracks do Spotify
@@ -61,6 +62,7 @@ lib/
 - **infra/db.js** é a base para todos os módulos de domínio e crud
 - **infra/logger.js** é utilizado por todos os módulos para logging
 - **infra/redis.js** é consumido exclusivamente por **cache/cache.js**
+- **infra/storage.js** é consumido por quatro handlers em `pages/api/` (`uploads/[...path].js`, `upload-image.js`, `placeholder-image.js`, `admin/integrity.js`), que antes expressavam a resolução de `UPLOADS_DIR` inline
 - **crud/crud.js** é a base CRUD para todos os módulos de domínio
 - **domain/shared-pagination.js** é utilizado por posts, musicas e videos
 - **domain/audit.js** é utilizado por posts.js e adminCrudHandler.js
@@ -141,7 +143,23 @@ Pool PostgreSQL com lazy initialization, health check periódico (60s), auto-rec
 
 ---
 
-### 4.6 lib/media/youtube.js
+### 4.6 lib/infra/storage.js
+
+**Nome do arquivo:** `lib/infra/storage.js`
+
+**Arquivos relacionados:**
+- Importa: `path` (módulo nativo)
+- Exportado para: `pages/api/uploads/[...path].js`, `pages/api/upload-image.js`, `pages/api/placeholder-image.js`, `pages/api/admin/integrity.js`
+
+**Resumo:**
+Resolução única dos diretórios de armazenamento de uploads, criada em 09/10/2026. Exporta `uploadsRoot()` (ativo — `UPLOADS_DIR`, senão `<cwd>/uploads`), `legacyUploadsRoot()` (`<cwd>/public/uploads`, fallback de leitura) e `uploadRoots()` (os dois, na ordem de precedência ativo→legado). Não faz I/O: devolve caminhos, e as chamadas `fs.*` permanecem nos handlers.
+
+**Observações:**
+A expressão `path.resolve(process.env.UPLOADS_DIR || path.join(process.cwd(), 'uploads'))` estava duplicada em quatro handlers, em três formatos diferentes. A extração eliminou os 12 avisos `Dynamic filesystem access causes tracing of the whole project` do Turbopack (Next.js 16). A chamada de `path.resolve` carrega `/*turbopackIgnore: true*/`: o aviso é esperado e não indica defeito, porque o `.nft.json` gerado não é consumido — o projeto não usa `output: 'standalone'` e o deploy roda `next start` com disco. **Remover `UPLOADS_DIR` silenciaria o aviso e destruiria o suporte a volume persistente**, que é a razão de a variável existir (ver `docs/DEPLOY_proxy_e_IP.md` §10).
+
+---
+
+### 4.7 lib/media/youtube.js
 
 **Nome do arquivo:** `lib/media/youtube.js`
 
@@ -152,7 +170,7 @@ Função única `extractYoutubeId(url)` que extrai o ID de 11 caracteres de URLs
 
 ---
 
-### 4.7 lib/media/spotify.js
+### 4.8 lib/media/spotify.js
 
 **Nome do arquivo:** `lib/media/spotify.js`
 
@@ -163,7 +181,7 @@ Duas funções: `extractSpotifyId(url)` para extrair ID de track do Spotify (sup
 
 ---
 
-### 4.8 lib/domain/posts.js
+### 4.9 lib/domain/posts.js
 
 **Nome do arquivo:** `lib/domain/posts.js`
 
@@ -175,7 +193,7 @@ Domínio de posts com operações CRUD completas. `getRecentPosts` usa paginaç�
 
 ---
 
-### 4.9 lib/domain/images.js
+### 4.10 lib/domain/images.js
 
 **Nome do arquivo:** `lib/domain/images.js`
 
@@ -187,7 +205,7 @@ Função `saveImage` que valida metadados de imagem (filename, path, type, size,
 
 ---
 
-### 4.10 lib/domain/audit.js
+### 4.11 lib/domain/audit.js
 
 **Nome do arquivo:** `lib/domain/audit.js`
 
@@ -200,7 +218,7 @@ Função `logActivity` para registrar ações no log de auditoria. Aceita `optio
 
 ---
 
-### 4.11 lib/domain/shared-pagination.js
+### 4.12 lib/domain/shared-pagination.js
 
 **Nome do arquivo:** `lib/domain/shared-pagination.js`
 
@@ -213,7 +231,7 @@ Helper compartilhado de paginação com suporte a dois modos de busca: ILIKE com
 
 ---
 
-### 4.12 lib/domain/settings.js
+### 4.13 lib/domain/settings.js
 
 **Nome do arquivo:** `lib/domain/settings.js`
 
@@ -225,7 +243,7 @@ Gerenciamento de configurações (key-value). Funções: `getSetting`, `getSetti
 
 ---
 
-### 4.13 lib/domain/musicas.js
+### 4.14 lib/domain/musicas.js
 
 **Nome do arquivo:** `lib/domain/musicas.js`
 
@@ -237,7 +255,7 @@ Domínio de músicas. `getAllMusicas` (com busca opcional), `createMusica` (em t
 
 ---
 
-### 4.14 lib/domain/videos.js
+### 4.15 lib/domain/videos.js
 
 **Nome do arquivo:** `lib/domain/videos.js`
 
@@ -249,7 +267,7 @@ Domínio de vídeos. `getPaginatedVideos`, `getPublicPaginatedVideos`, `createVi
 
 ---
 
-### 4.15 lib/domain/products.js
+### 4.16 lib/domain/products.js
 
 **Nome do arquivo:** `lib/domain/products.js`
 
@@ -261,7 +279,7 @@ Domínio de produtos. Implementa paginação manual (não usa `shared-pagination
 
 ---
 
-### 4.16 lib/domain/permissions.js
+### 4.17 lib/domain/permissions.js
 
 **Nome do arquivo:** `lib/domain/permissions.js`
 
@@ -272,7 +290,7 @@ Exporta array congelado (`Object.freeze`) com 10 permissões disponíveis: Visã
 
 ---
 
-### 4.17 lib/crud/crud.js
+### 4.18 lib/crud/crud.js
 
 **Nome do arquivo:** `lib/crud/crud.js`
 
@@ -285,7 +303,7 @@ Operações CRUD genéricas com validação de campos via `tableSchemas`. Filtra
 
 ---
 
-### 4.18 lib/cache/cache.js
+### 4.19 lib/cache/cache.js
 
 **Nome do arquivo:** `lib/cache/cache.js`
 
@@ -298,7 +316,7 @@ Camada de cache com dois níveis (L1 memória, L2 Redis). Implementa `getOrSetCa
 
 ---
 
-### 4.19 lib/api/index.js
+### 4.20 lib/api/index.js
 
 **Nome do arquivo:** `lib/api/index.js`
 
@@ -311,7 +329,7 @@ Barrel que exporta 4 namespaces: errors, response, validate, middleware. Não ex
 
 ---
 
-### 4.20 lib/api/errors.js
+### 4.21 lib/api/errors.js
 
 **Nome do arquivo:** `lib/api/errors.js`
 
@@ -324,7 +342,7 @@ Classes de erro customizadas estendendo `ApiError`. Cada classe mapeia para um c
 
 ---
 
-### 4.21 lib/api/response.js
+### 4.22 lib/api/response.js
 
 **Nome do arquivo:** `lib/api/response.js`
 
@@ -337,7 +355,7 @@ Funções padronizadas de resposta HTTP. Sucesso: `success`, `paginated`, `creat
 
 ---
 
-### 4.22 lib/api/adminCrudHandler.js
+### 4.23 lib/api/adminCrudHandler.js
 
 **Nome do arquivo:** `lib/api/adminCrudHandler.js`
 
@@ -349,7 +367,7 @@ Factory `createAdminHandler` que gera handlers Next.js com: verificação de mé
 
 ---
 
-### 4.23 lib/api/validate.js
+### 4.24 lib/api/validate.js
 
 **Nome do arquivo:** `lib/api/validate.js`
 
@@ -361,7 +379,7 @@ Middlewares de validação Zod: `validateBody`, `validateQuery`, `validateParams
 
 ---
 
-### 4.24 lib/api/middleware.js
+### 4.25 lib/api/middleware.js
 
 **Nome do arquivo:** `lib/api/middleware.js`
 
@@ -373,7 +391,7 @@ Sistema de composição de middlewares. Funções: `composeMiddleware`, `withMet
 
 ---
 
-### 4.25 lib/api/helpers.js
+### 4.26 lib/api/helpers.js
 
 **Nome do arquivo:** `lib/api/helpers.js`
 
@@ -384,7 +402,7 @@ Helpers de IP: `getClientIP` (extração com trustProxy opcional), `normalizeIP`
 
 ---
 
-### 4.26 lib/api/utils.js
+### 4.27 lib/api/utils.js
 
 **Nome do arquivo:** `lib/api/utils.js`
 

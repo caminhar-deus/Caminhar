@@ -167,7 +167,7 @@ Subpastas existentes na raiz (fora do escopo, citadas como contexto ao longo do 
 
 > **Nuance confirmada na análise:** o bloco "Obrigatórias" do template lista 3 variáveis, mas `scripts/check-env.js` só exige `DATABASE_URL` e `JWT_SECRET` — `BACKUP_ENCRYPTION_KEY` só é exigida pelo fluxo de backups (`scripts/init-backup.js`). *(O bloco hoje lista **4**: `DATABASE_SSL` entrou depois da análise de 23/09/2026, junto com `TRUST_PROXY` nas opcionais; ambos seguem fora da exigência do `check-env`.)*
 
-> **Anexos posteriores à análise de 23/09/2026:** `DATABASE_SSL` e `TRUST_PROXY` (já presentes no `.env.example` desde antes de 08/10/2026 e ausentes da lista original de 11) e **`UPLOADS_DIR` (08/10/2026, bloco das linhas 72-79)**. O único consumidor da `UPLOADS_DIR` documentado aqui é `pages/api/upload-image.js` (`uploadDir`) — junto com os três scripts de manutenção citados em `docs/PROJECT_scripts.md`.
+> **Anexos posteriores à análise de 23/09/2026:** `DATABASE_SSL` e `TRUST_PROXY` (já presentes no `.env.example` desde antes de 08/10/2026 e ausentes da lista original de 11) e **`UPLOADS_DIR` (08/10/2026, bloco das linhas 72-79)**. O consumidor da `UPLOADS_DIR` documentado aqui é a resolução em **`lib/infra/storage.js` → `uploadsRoot()`** (desde 09/10/2026), importada por `pages/api/upload-image.js`, `pages/api/placeholder-image.js`, `pages/api/uploads/[...path].js` e `pages/api/admin/integrity.js` — junto com os três scripts de manutenção citados em `docs/PROJECT_scripts.md`, que mantêm a própria cópia da expressão.
 
 ---
 

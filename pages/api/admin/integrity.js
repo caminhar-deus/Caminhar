@@ -3,6 +3,7 @@ import { query } from '../../../lib/infra/db.js';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { uploadsRoot, legacyUploadsRoot } from '../../../lib/infra/storage.js';
 
 /**
  * Endpoint de verificação de integridade do sistema.
@@ -88,8 +89,10 @@ async function handleGet(req, res) {
     // Diretório ativo (fora de `public/` — ver pages/api/upload-image.js) +
     // legado em `public/uploads`, que continua ocupando disco e sendo servido
     // por fallback em pages/api/uploads/[...path].js.
-    const uploadsDir = path.resolve(process.env.UPLOADS_DIR || path.join(process.cwd(), 'uploads'));
-    const legacyUploadsDir = path.join(process.cwd(), 'public', 'uploads');
+    // A resolução vive em `lib/infra/storage.js` (ver o comentário de lá sobre
+    // por que o acesso dinâmico e o aviso do build são esperados).
+    const uploadsDir = uploadsRoot();
+    const legacyUploadsDir = legacyUploadsRoot();
     const displayPath = (dir) => {
       const rel = path.relative(process.cwd(), dir);
       return rel && !rel.startsWith('..') && !path.isAbsolute(rel) ? `/${rel}` : dir;

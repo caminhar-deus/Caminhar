@@ -359,6 +359,7 @@ pages/api/admin/fetch-spotify.js → lib/infra/logger.js
 pages/api/admin/fetch-youtube.js → lib/api/adminCrudHandler.js
 pages/api/admin/integrity.js → lib/api/adminCrudHandler.js
 pages/api/admin/integrity.js → lib/infra/db.js
+pages/api/admin/integrity.js → lib/infra/storage.js
 pages/api/admin/musicas.js → lib/api/adminCrudHandler.js
 pages/api/admin/musicas.js → lib/crud/crud.js
 pages/api/admin/musicas.js → lib/domain/musicas.js
@@ -409,6 +410,7 @@ pages/api/musicas.js → lib/domain/musicas.js
 pages/api/musicas.js → lib/infra/logger.js
 pages/api/placeholder-image.js → lib/domain/settings.js
 pages/api/placeholder-image.js → lib/infra/logger.js
+pages/api/placeholder-image.js → lib/infra/storage.js
 pages/api/posts.js → lib/api/helpers.js
 pages/api/posts.js → lib/auth/auth.js
 pages/api/posts.js → lib/cache/cache.js
@@ -430,7 +432,9 @@ pages/api/status.js → lib/infra/db.js
 pages/api/upload-image.js → lib/auth/auth.js
 pages/api/upload-image.js → lib/domain/settings.js
 pages/api/upload-image.js → lib/infra/logger.js
+pages/api/upload-image.js → lib/infra/storage.js
 pages/api/uploads/[...path].js → lib/infra/logger.js
+pages/api/uploads/[...path].js → lib/infra/storage.js
 pages/api/videos.js → lib/api/helpers.js
 pages/api/videos.js → lib/cache/cache.js
 pages/api/videos.js → lib/domain/videos.js
