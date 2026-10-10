@@ -88,12 +88,19 @@
   // Por isso a trava dos agentes apenas-leitura fica AQUI, no config do host, declarada por último.
   // Conferir com `opencode debug agents`: as regras deste bloco aparecem no fim da lista compilada.
   // "edit" cobre toda mutação de arquivo (não existem "write"/"apply_patch" no host);
-  // "bash" cobre o terminal, incluindo o desvio por sed/tee que burlaria o "edit";
   // "ast_grep_replace" é a ferramenta de rewrite do ast-grep, injetada e sem equivalente no host.
+  //
+  // "bash" NÃO pode ser negado aqui. Medido em 09/10/2026: com "bash": "deny", explorer, librarian e
+  // oracle caem com "OpenCode's free tier can only be used from within OpenCode" no primeiro turno,
+  // e a cadeia de fallback não salva — o modelo de reserva cai igual, porque o bloqueio vem do desvio
+  // de rota, não do modelo. Sem o "deny", os três funcionam; designer e fixer nunca tiveram o "deny"
+  // e funcionaram com o mesmo provedor e o mesmo modelo. O terminal desses três volta a ser governado
+  // pelo "permission" global acima ("bash": {"*": "ask"}), inclusive com os escapes de git push e
+  // "bash -c *" negados.
   "agent": {
-    "explorer":  { "permission": { "edit": "deny", "bash": "deny", "ast_grep_replace": "deny" } },
-    "librarian": { "permission": { "edit": "deny", "bash": "deny", "ast_grep_replace": "deny" } },
-    "oracle":    { "permission": { "edit": "deny", "bash": "deny", "ast_grep_replace": "deny" } }
+    "explorer":  { "permission": { "edit": "deny", "ast_grep_replace": "deny" } },
+    "librarian": { "permission": { "edit": "deny", "ast_grep_replace": "deny" } },
+    "oracle":    { "permission": { "edit": "deny", "ast_grep_replace": "deny" } }
   },
 
   // --- Contexto e desempenho no WSL ---

@@ -18,7 +18,7 @@
 | oracle | Revisa arquitetura, bugs e conformidade com o checklist | Implementar em massa |
 
 Desempate: aparência/UX → designer; verificação → oracle; código → fixer. Só o designer decide o design final.
-"Não edita" é imposto pelo bloco `agent` do `opencode.jsonc` (`edit`, `bash` e `ast_grep_replace` em `deny` para explorer, librarian e oracle) — o `permission` do `.opencode/oh-my-opencode-slim.json` NÃO é aplicado aos papéis built-in neste host; conferir com `opencode debug agents`.
+"Não edita" é imposto pelo bloco `agent` do `opencode.jsonc` (`edit` e `ast_grep_replace` em `deny` para explorer, librarian e oracle) — o `permission` do `.opencode/oh-my-opencode-slim.json` NÃO é aplicado aos papéis built-in neste host; conferir com `opencode debug agents`. O terminal desses três NÃO pode ser negado: com `bash` em `deny` eles caem com erro de free tier.
 
 ## 3. Memória (ai-memory)
 - Antes de propor arquitetura ou repetir tentativa antiga: consultar a memória (`memory_query`).
