@@ -121,14 +121,13 @@ tests/
 
 | Arquivo | Propósito | Funcionalidades |
 |---------|-----------|-----------------|
-| `index.js` | Barrel file | Reexporta `next.js`, `fetch.js`, `db.js`, `cache.js`, `auth.js`, `db-module.js` |
-| `next.js` | Mocks do Next.js | `mockUseRouter`, `mockNextImage`, `mockNextLink`, `mockNextHead`, `mockNextScript`, `mockNextDynamic`, `mockGetServerSideProps`, `mockGetStaticProps`, `mockGetStaticPaths`, `mockNextHeaders`, `mockNextCookies`, `setupNextMocks` (deprecated) |
+| `index.js` | Barrel file | Reexporta `next.js`, `fetch.js`, `db.js`, `cache.js`, `db-module.js` |
+| `next.js` | Mocks do Next.js | `mockUseRouter`, `mockNextImage`, `mockNextLink`, `mockNextHead`, `mockNextScript`, `mockNextDynamic`, `mockGetServerSideProps`, `mockGetStaticProps`, `mockGetStaticPaths`, `mockNextHeaders`, `mockNextCookies` |
 | `next-setup.js` | Setup automático de mocks do Next.js | Centraliza `jest.mock()` para `next/router`, `next/navigation`, `next/image`, `next/link`, `next/head`, `next/script`, `next/dynamic`, `next/headers`, `next/server` |
 | `next.test.js` | Teste de sanidade dos mocks do Next.js | Verifica que os mocks de `next/router`, `next/navigation`, `next/image`, `next/link`, `next/head`, `next/script`, `next/headers` funcionam corretamente |
 | `fetch.js` | Mocks de requisições fetch | `mockFetch`, `mockFetchSuccess`, `mockFetchError`, `mockFetchNotFound`, `mockFetchUnauthorized`, `mockFetchServerError`, `mockFetchNetworkError`, `mockFetchWithRoutes`, `mockFetchSequence`, `fetchDelay`, `setupFetchMock`, `clearFetchMock`, `fetchWasCalledWith`, `getLastFetchCall` |
-| `db.js` | Mocks de operações de banco | `mockQuery`, `mockQueryOne`, `mockQueryMany`, `mockQueryError`, `mockInsert`, `mockUpdate`, `mockDelete`, `mockTransaction`, `mockPool`, `queryWasCalledWith`, `getQueryParams`, `mockDbModule`, `mockPaginatedResult`, `clearQueryMocks`, `mockQuerySequence` |
+| `db.js` | Mocks de operações de banco | `mockQuery`, `mockQueryOne`, `mockQueryMany`, `mockQueryError`, `mockInsert`, `mockUpdate`, `mockDelete`, `mockTransaction`, `mockPool`, `queryWasCalledWith`, `getQueryParams`, `mockPaginatedResult`, `clearQueryMocks`, `mockQuerySequence` |
 | `cache.js` | Mocks de cache (Redis/memória) | `mockCacheModule(overrides)`, `resetCacheMocks(cacheMock)` |
-| `auth.js` | Mocks de autenticação | `mockAuthModule(overrides)`, `mockAuthFailure()`, `resetAuthMocks(authMock)` |
 | `db-module.js` | Mock centralizado de `lib/infra/db.js` | `mockDb(overrides)`, `mockDbError(error)`, `resetDbMocks(dbMock)` |
 
 ### 3.5 Examples (`/tests/examples/`)

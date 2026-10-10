@@ -189,25 +189,3 @@ export const mockNextCookies = (cookies = {}) => {
     },
   };
 };
-
-
-/**
- * Configura todos os mocks do Next.js
- * 
- * @deprecated Use o arquivo next-setup.js em vez desta função.
- * Basta importar '../../mocks/next-setup.js' no início do arquivo de teste.
- * 
- * Exemplo:
- *   import '../../mocks/next-setup.js';
- * 
- * @see tests/mocks/next-setup.js
- */
-export const setupNextMocks = () => {
-  jest.mock('next/router');
-  jest.mock('next/navigation');
-  jest.mock('next/image');
-  jest.mock('next/link');
-  jest.mock('next/head');
-  jest.mock('next/script');
-  jest.mock('next/dynamic');
-};

@@ -380,7 +380,6 @@ tests/examples/simple-test.test.js → tests/mocks/index.js
 tests/factories/music.js → tests/factories/base.js
 tests/factories/user.js → tests/factories/base.js
 tests/factories/video.js → tests/factories/base.js
-tests/mocks/index.js → tests/mocks/auth.js
 tests/mocks/index.js → tests/mocks/cache.js
 tests/mocks/index.js → tests/mocks/db-module.js
 tests/mocks/index.js → tests/mocks/db.js

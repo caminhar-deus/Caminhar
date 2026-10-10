@@ -176,11 +176,10 @@ Componentes React organizados em 6 categorias:
 
 **Arquivo:** [`docs/PROJECT_mocks.md`](/docs/PROJECT_mocks.md)
 
-**3 mocks manuais** do Jest em `__mocks__/`:
+**2 mocks manuais** do Jest em `__mocks__/`:
 
 1. **`pg.js`** — Mock completo do `pg.Pool` com `mockQuery` singleton, simulação de erros de query/conexão, restauração de implementação — ativo em 16 arquivos de teste
-2. **`cookie.js`** — Mock da biblioteca `cookie` (parse/serialize) — **não utilizado atualmente** (mock órfão)
-3. **`styleMock.js`** — Mock de arquivos `.css` para CSS Modules, ativado via `moduleNameMapper` no `jest.config.js`
+2. **`styleMock.js`** — Mock de arquivos `.css` para CSS Modules, ativado via `moduleNameMapper` no `jest.config.js`; mapeia apenas a classe `skeletonBox` (única classe CSS Module acessada em componentes cobertos por teste — as demais viram `undefined`, inofensivo no React)
 
 ---
 

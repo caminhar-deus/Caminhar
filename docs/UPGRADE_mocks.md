@@ -1,5 +1,30 @@
 # 📋 Documentação de Análise — Mocks Manuais Automáticos
 
+## ✅ Status das Correções (2026-10-09)
+
+> Seção de status adicionada após a conclusão das correções. O corpo do documento abaixo é o **registro histórico** da análise original e não foi alterado.
+
+| Item | Severidade real | Status | Ação tomada |
+|---|---|---|---|
+| 5.1 `__mocks__/cookie.js` — mock órfão | 🟢 Baixo | ✅ Resolvido | Arquivo removido do repositório (`git rm`) |
+| 16 `tests/mocks/auth.js` — mock órfão | 🟢 Baixo | ✅ Resolvido | Arquivo removido + export do barrel (`tests/mocks/index.js`) removido |
+| 5.2 `styleMock.js` — cobertura limitada | 🔵 Informativo | ⚪ Sem ação | Verificado: `skeletonBox` é a única classe CSS Module acessada em componentes cobertos por teste; as demais viram `undefined`, inofensivo no React |
+| 17 `tests/mocks/db.js` — consumo mínimo | 🟢 Baixo | 🟡 Parcial | `mockDbModule` removido (duplicava `mockDb` de `db-module.js`); o restante mantido por ser API de teste consumida (`mockQuery`, via barrel, em 1 exemplo) |
+| 8 `next.js` — `setupNextMocks()` deprecated | 🟢 Baixo | ✅ Resolvido | Função removida do arquivo |
+| 6.3 `mockQuery` singleton — interferência potencial | 🟡 Médio | 🔴 Em aberto | Requer decisão sobre a arquitetura do singleton antes de agir |
+| 5/6/7 duplicidade entre camadas de mocks | 🔵 Informativo | ⚪ Sem ação | Verificado: são camadas distintas (mock de biblioteca vs mock de módulo), não duplicidade |
+
+### ⚠️ Correção de premissas do documento original
+
+Dois erros de premissa na análise original devem ser lidos junto do corpo abaixo:
+
+1. **Não existem itens "Alto"** — a escala usada é 🔴 Crítico / 🟡 Médio / 🟢 Baixo. Qualquer menção a "Alto" em outro documento refere-se a outra escala/análise.
+2. **Os itens marcados "Crítico" (5.1 e 16) eram código morto** em arquivos de teste não executados, sem impacto em runtime, segurança ou na suíte — rebaixados para **Baixo** após verificação.
+
+> **Nota:** este documento contém caminhos com grafia histórica incorreta em alguns pontos (`/home/qa/Projeto/Caminhar/`, `/home/gus/Projetos/Caminhar/`). Não foram corrigidos: o texto abaixo é registro histórico da análise original.
+
+---
+
 ## `__mocks__/`
 
 Este documento registra a análise individual de cada arquivo na pasta `__mocks__/`, identificando finalidade, relações, problemas, melhorias, duplicidades e possíveis códigos mortos.
@@ -553,6 +578,8 @@ A estrutura das pastas `__mocks__/` e `tests/mocks/` segue a convenção padrão
 ---
 
 # Resumo de Prioridades
+
+> ⚠️ **Tabela superada:** as severidades abaixo são as da análise original (24/09/2026) e contradizem a [tabela de status](#-status-das-correções-2026-10-09) no topo deste documento — para severidade real e estado atual, consultar o topo. Mantida aqui como registro da análise original.
 
 | Prioridade | Item | Tipo | Descrição |
 |---|---|---|---|

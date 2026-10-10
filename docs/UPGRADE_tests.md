@@ -1955,7 +1955,6 @@ Testa renderização básica, URLs de compartilhamento, e ausência de imagem. U
   - `mockPool(options)`: Mock de pool de conexões.
   - `queryWasCalledWith(queryMock, pattern)`: Verifica se query foi chamada com padrão.
   - `getQueryParams(queryMock, callIndex)`: Obtém parâmetros de uma chamada.
-  - `mockDbModule(options)`: Módulo db mockado completo (similar ao `db-module.js`).
   - `mockPaginatedResult(data, page, limit)`: Simula paginação.
   - `clearQueryMocks(...queryMocks)`: Limpa múltiplos mocks.
   - `mockQuerySequence(responses)`: Mock com respostas sequenciais.
@@ -1972,7 +1971,7 @@ Testa renderização básica, URLs de compartilhamento, e ausência de imagem. U
   - Documentar comportamento de repetição da última resposta em `mockQuerySequence`.
 
 - **Duplicidades:**
-  - **Duplicidade com `mocks/db-module.js`:** `mockDbModule` (linha 173-183) é similar a `mockDb` de `db-module.js`. A lógica de `transaction` é duplicada (linhas 103-120 vs 19-34 de db-module.js). `mockPool` é duplicado.
+  - **Duplicidade com `mocks/db-module.js`:** `mockDbModule` (linha 173-183) é similar a `mockDb` de `db-module.js`. A lógica de `transaction` é duplicada (linhas 103-120 vs 19-34 de db-module.js). `mockPool` é duplicado. **(Resolvido 09/10/2026: `mockDbModule` foi removido de `db.js` por duplicar `mockDb` de `db-module.js`.)**
   - `mockQuerySequence` é similar a `mockFetchSequence` de `fetch.js` — padrão repetido.
 
 - **Código morto:**
@@ -2023,27 +2022,29 @@ Testa renderização básica, URLs de compartilhamento, e ausência de imagem. U
 
 #### mocks/index.js
 
+> ✅ **Resolvido (09/10/2026):** o conflito de `mockDbModule` era **premissa refutada** — verificado que `db-module.js` exporta `mockDb` (não `mockDbModule`) e os 72 exports do barrel eram todos distintos, sem colisão; ainda assim `mockDbModule` foi removido de `db.js`. `setupNextMocks` foi removido de `next.js` e o re-export de `auth.js` saiu do barrel (arquivo removido por órfão).
+
 - **Finalidade:** Ponto de entrada centralizado para todos os mocks reutilizáveis, permitindo import único `import { mockUseRouter, mockFetch } from '../mocks'`.
 
 - **Arquivos acionados:**
-  - Todos os outros arquivos em `tests/mocks/` (next, fetch, db, cache, auth, db-module)
+  - Todos os outros arquivos em `tests/mocks/` (next, fetch, db, cache, db-module)
 
-- **Resumo:** Re-exporta tudo de `next.js`, `fetch.js`, `db.js`, `cache.js`, `auth.js` e `db-module.js` via `export *`.
+- **Resumo:** Re-exporta tudo de `next.js`, `fetch.js`, `db.js`, `cache.js` e `db-module.js` via `export *`.
 
 - **Problemas:**
-  - **Conflito de nomes:** `mockDbModule` é exportado por `db.js` E `db-module.js` — o último sobrescreve o primeiro. Testes que importam de `mocks/index.js` podem receber implementação errada.
-  - `setupNextMocks` de `next.js` é re-exportado mas está deprecated — confunde consumidores.
+  - **Conflito de nomes (premissa refutada):** alegava-se que `mockDbModule` era exportado por `db.js` E `db-module.js`, com o último sobrescrevendo o primeiro e testes recebendo implementação errada. **Verificação posterior mostrou o contrário:** `db-module.js` exporta `mockDb`, não `mockDbModule`, e os 72 exports do barrel eram todos distintos, sem colisão. De qualquer forma, `mockDbModule` foi removido de `db.js`.
+  - ~~`setupNextMocks` de `next.js` é re-exportado mas está deprecated — confunde consumidores.~~ **(Resolvido: função removida de `next.js`.)**
 
 - **Melhorias:**
-  - Renomear `mockDbModule` de `db.js` para `mockDbGeneric` ou similar para evitar conflito.
-  - Remover re-exportação de `setupNextMocks` deprecated.
+  - ~~Renomear `mockDbModule` de `db.js` para `mockDbGeneric` ou similar para evitar conflito.~~ **(Não se aplica: premissa refutada e `mockDbModule` removido.)**
+  - ~~Remover re-exportação de `setupNextMocks` deprecated.~~ **(Concluído.)**
   - Adicionar comentário sobre a ordem de precedência dos `export *`.
 
 - **Duplicidades:**
-  - O conflito `mockDbModule` mencionado é uma duplicidade de exportação.
+  - ~~O conflito `mockDbModule` mencionado é uma duplicidade de exportação.~~ **(Refutado: não havia colisão de exports.)**
 
 - **Código morto:**
-  - A re-exportação de `setupNextMocks` é efetivamente código morto (deprecated e não usado pelo next-setup.js).
+  - ~~A re-exportação de `setupNextMocks` é efetivamente código morto (deprecated e não usado pelo next-setup.js).~~ **(Resolvido: função removida.)**
 
 ---
 
@@ -2095,16 +2096,16 @@ Testa renderização básica, URLs de compartilhamento, e ausência de imagem. U
   - `mockNextImage`, `mockNextLink`, `mockNextHead`, `mockNextScript`, `mockNextDynamic`: Componentes React mockados.
   - `mockGetServerSideProps`, `mockGetStaticProps`, `mockGetStaticPaths`: Builders para data fetching.
   - `mockNextHeaders(headers)`, `mockNextCookies(cookies)`: Builders parametrizáveis.
-  - `setupNextMocks()`: **@deprecated** — substituído pelo `next-setup.js`.
+  - ~~`setupNextMocks()`: **@deprecated** — substituído pelo `next-setup.js`.~~ **(Resolvido 09/10/2026: função removida.)**
 
 - **Problemas:**
-  - **`setupNextMocks()` deprecated:** A função existe mas está marcada como deprecated. Os `jest.mock()` dentro dela não têm factory function — criam mocks vazios sem comportamento.
+  - **`setupNextMocks()` deprecated:** ~~A função existe mas está marcada como deprecated.~~ **(Resolvido: função removida em 09/10/2026.)** Os `jest.mock()` dentro dela não tinham factory function — criavam mocks vazios sem comportamento.
   - **Funções potencialmente não usadas:** `mockGetServerSideProps`, `mockGetStaticProps`, `mockGetStaticPaths` não são referenciadas em `next-setup.js` nem no `index.js` de forma explícita.
   - **`mockNextHeaders`/`mockNextCookies` não usados:** O `next-setup.js` implementa sua própria versão inline em vez de usar estes builders.
   - **`mockNextDynamic` assíncrono:** Usa `useEffect` para carregar componente — pode causar warnings de act() em testes síncronos.
 
 - **Melhorias:**
-  - Remover `setupNextMocks()` deprecated.
+  - ~~Remover `setupNextMocks()` deprecated.~~ **(Concluído.)**
   - Verificar se `mockGetServerSideProps`, `mockGetStaticProps`, `mockGetStaticPaths` são usados em algum teste — se não, remover.
   - Fazer `next-setup.js` usar `mockNextHeaders`/`mockNextCookies` em vez de duplicar lógica.
 
@@ -2113,7 +2114,7 @@ Testa renderização básica, URLs de compartilhamento, e ausência de imagem. U
   - `mockNextHeaders`/`mockNextCookies` são duplicados inline no `next-setup.js`.
 
 - **Código morto:**
-  - `setupNextMocks()` (linhas 205-213) — deprecated e substituído pelo next-setup.js.
+  - ~~`setupNextMocks()` (linhas 205-213) — deprecated e substituído pelo next-setup.js.~~ **(Resolvido: função removida.)**
   - `mockGetServerSideProps`, `mockGetStaticProps`, `mockGetStaticPaths` — possivelmente não usados.
   - `mockNextHeaders`, `mockNextCookies` — possivelmente não usados (next-setup.js tem versão própria).
 
@@ -2500,7 +2501,6 @@ Mocks para operações de banco de PostgreSQL: query genérica, queryOne, queryM
 - `mockPool` — pool mockado com connect, end, on.
 - `queryWasCalledWith` — verifica se query foi chamada com padrão.
 - `getQueryParams` — extrai params de uma chamada.
-- `mockDbModule` — mock completo do módulo db.
 - `mockPaginatedResult` — simula resposta paginada.
 - `clearQueryMocks` — limpa N mocks.
 - `mockQuerySequence` — respostas sequenciais.
@@ -4786,6 +4786,7 @@ Três arquivos testam o mesmo handler:
 Vários testes implementam `withAuth` inline no mock, replicando a lógica real de `lib/auth/auth.js`. Se a lógica real mudar, os testes não refletem.
 
 **Recomendação:** centralizar o mock de `auth.js` em `tests/mocks/auth.js` e compartilhar.
+**Atualização (09/10/2026):** recomendação desatualizada — `tests/mocks/auth.js` chegou a existir, mas foi **removido por ser mock órfão** (nenhum teste o importava). Não recriar sem antes confirmar consumo real.
 
 #### Padrão 4: Nomenclatura inconsistente
 - `posts.create.api.test.js` / `posts.update.api.test.js` — sufixo `.api.`.
@@ -13450,7 +13451,6 @@ beforeAll(() => {
 **Recomendação:** Criar `tests/unit/scripts/helpers/common-mocks.js` com:
 - `mockPostgres()`
 - `mockFs()`
-- `mockDbModule()`
 - `setupDatabaseEnv()` / `teardownDatabaseEnv()`
 
 #### Código Morto / Resíduos

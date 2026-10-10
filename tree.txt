@@ -5,7 +5,6 @@
 ├── CLAUDE.md
 ├── README.md
 ├── __mocks__
-│   ├── cookie.js
 │   ├── pg.js
 │   └── styleMock.js
 ├── babel.jest.config.js
@@ -588,39 +587,7 @@
 │   ├── UPGRADE_scripts.md
 │   ├── UPGRADE_tests.md
 │   ├── UPGRADE_utils.md
-│   ├── ai-memory-error.md
-│   ├── antigos
-│   │   ├── PROJECT_components.md
-│   │   ├── PROJECT_cypress.md
-│   │   ├── PROJECT_data.md
-│   │   ├── PROJECT_examples.md
-│   │   ├── PROJECT_hooks.md
-│   │   ├── PROJECT_lib.md
-│   │   ├── PROJECT_load-tests.md
-│   │   ├── PROJECT_mocks.md
-│   │   ├── PROJECT_pages.md
-│   │   ├── PROJECT_raiz.md
-│   │   ├── PROJECT_scripts.md
-│   │   └── PROJECT_tests.md
-│   └── resolvidos
-│       ├── JEST_ESM.md
-│       ├── UPGRADE_components.md
-│       ├── UPGRADE_cypress.md
-│       ├── UPGRADE_data.md
-│       ├── UPGRADE_examples.md
-│       ├── UPGRADE_hooks.md
-│       ├── UPGRADE_lib.md
-│       ├── UPGRADE_load-tests.md
-│       ├── UPGRADE_mocks.md
-│       ├── UPGRADE_pages.md
-│       ├── UPGRADE_raiz.md
-│       ├── UPGRADE_scripts.md
-│       ├── UPGRADE_tests.md
-│       ├── analise-load-tests-orchestrator-02.md
-│       ├── analise-load-tests-orchestrator.md
-│       ├── plano-ajuste-thresholds-load-tests.md
-│       ├── plano-correcao-p3-create-post-flow.md
-│       └── plano-melhoria-logs-servidor.md
+│   └── ai-memory-error.md
 ├── eslint.config.js
 ├── estrutura.html
 ├── estrutura.txt
@@ -1043,7 +1010,6 @@
 │   │   ├── toHaveProperties.js
 │   │   └── toHaveStatus.js
 │   ├── mocks
-│   │   ├── auth.js
 │   │   ├── cache.js
 │   │   ├── db-module.js
 │   │   ├── db.js
@@ -1240,4 +1206,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-199 directories, 1042 files
+197 directories, 1010 files

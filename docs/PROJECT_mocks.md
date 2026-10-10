@@ -6,8 +6,8 @@ O projeto possui **duas pastas de mocks** com responsabilidades distintas, ambas
 
 | Pasta | Tipo | Mecanismo de Ativação | Propósito |
 |---|---|---|---|
-| `__mocks__/` | Mocks manuais automáticos | `jest.mock('<módulo>')` ou `moduleNameMapper` | Simular bibliotecas externas (`pg`, `cookie`) e arquivos de estilo (`.css`) |
-| `tests/mocks/` | Mocks de alto nível | Importação manual via alias `@mocks` | Simular módulos internos do projeto (Next.js, fetch, cache, auth, db) |
+| `__mocks__/` | Mocks manuais automáticos | `jest.mock('<módulo>')` ou `moduleNameMapper` | Simular bibliotecas externas (`pg`) e arquivos de estilo (`.css`) |
+| `tests/mocks/` | Mocks de alto nível | Importação manual via alias `@mocks` | Simular módulos internos do projeto (Next.js, fetch, cache, db) |
 
 A pasta `tests/mocks/` é acessível via alias `@mocks` configurado no `jest.config.base.js`:
 
@@ -19,12 +19,11 @@ A pasta `tests/mocks/` é acessível via alias `@mocks` configurado no `jest.con
 
 # Parte 1 — `__mocks__/` (Mocks Manuais Automáticos)
 
-A pasta `__mocks__/` contém **3 arquivos** e **nenhuma subpasta**. O Jest resolve automaticamente mocks manuais desta pasta quando um teste chama `jest.mock('<nome-do-modulo>')`, ou quando o mapeamento é configurado via `moduleNameMapper` no `jest.config.js`.
+A pasta `__mocks__/` contém **2 arquivos** e **nenhuma subpasta**. O Jest resolve automaticamente mocks manuais desta pasta quando um teste chama `jest.mock('<nome-do-modulo>')`, ou quando o mapeamento é configurado via `moduleNameMapper` no `jest.config.js`.
 
 | Arquivo | Propósito | Mecanismo de Ativação |
 |---|---|---|
 | `__mocks__/pg.js` | Mock da biblioteca `pg` (node-postgres) | `jest.mock('pg')` em arquivos de teste |
-| `__mocks__/cookie.js` | Mock da biblioteca `cookie` (npm) | `jest.mock('cookie')` — **atualmente não utilizado** |
 | `__mocks__/styleMock.js` | Mock de arquivos CSS Module | `moduleNameMapper` no `jest.config.js` |
 
 ---
@@ -75,6 +74,8 @@ Ativado via `jest.mock('pg')` nos seguintes **16 arquivos de teste**:
 
 ### 🧩 Interface Exportada
 
+> ⚠️ **Atenção — o `mockQuery` deste arquivo não é o mesmo de `tests/mocks/db.js`.** Ambos compartilham o nome, mas este é o singleton compartilhado do mock da biblioteca `pg` (16 arquivos de teste). Ver a seção [`tests/mocks/db.js`](#6-testsmocksdbjs).
+
 ```js
 export const mockQuery = jest.fn();                    // Singleton de query
 export const Pool = jest.fn(poolImplementation);       // Classe Pool mockada
@@ -92,44 +93,7 @@ export default { Pool, mockQuery };                    // Exportação default
 
 ---
 
-## 2. `__mocks__/cookie.js`
-
-**Localização:** `/home/gus/Projetos/Caminhar/__mocks__/cookie.js`
-**Tamanho:** 1.169 bytes (45 linhas)
-
-### 📌 Propósito
-
-Mock da biblioteca `cookie` (pacote npm), responsável por serializar (`serialize`) e fazer o parsing (`parse`) de cabeçalhos HTTP `Set-Cookie` e `Cookie`.
-
-### 🔍 Funcionalidades
-
-| Função | Descrição |
-|---|---|
-| **`serialize(name, value, options)`** | Simula a criação de um cookie HTTP. Concatena os atributos suportados (`HttpOnly`, `Secure`, `SameSite`, `Max-Age`, `Path`) com base no objeto `options`. Retorna a string formatada. |
-| **`parse(cookieHeader)`** | Simula a leitura de um cabeçalho `Cookie`. Divide a string pelo separador `;`, extrai pares `nome=valor` usando `indexOf('=')` + `slice()` (corrigido para suportar valores com `=`), e decodifica o valor com `decodeURIComponent`. |
-
-### 🧩 Interface Exportada
-
-```js
-export const serialize = jest.fn().mockImplementation(...);
-export const parse = jest.fn().mockImplementation(...);
-export default { serialize, parse };
-```
-
-### ⚠️ Orphan Mock — **Arquivo não utilizado atualmente**
-
-Este mock foi analisado e **não está sendo consumido por nenhum arquivo de teste no projeto atual**. As evidências:
-
-1. **`lib/auth/auth.js` não utiliza a biblioteca `cookie`** — O arquivo implementa funções próprias `parseCookie()` e `serializeCookie()` nas linhas 8–30, sem dependência externa.
-2. **Nenhum arquivo de teste chama `jest.mock('cookie')`** — A pesquisa não encontrou ocorrências em nenhum arquivo da pasta `tests/`.
-3. **O pacote `cookie` não está nas dependências do projeto** — Não consta em `dependencies` nem em `devDependencies` no `package.json`.
-4. **O `jest.config.js` não referencia este mock** — O mapeamento via `moduleNameMapper` no `jest.config.js` apenas direciona arquivos `.css` para `__mocks__/styleMock.js`; não há entrada para `cookie`.
-
-**Conclusão:** O arquivo `__mocks__/cookie.js` é um **mock órfão** — resquício de uma versão anterior do projeto em que a autenticação dependia da biblioteca `cookie`. Permanece no repositório sem utilidade funcional.
-
----
-
-## 3. `__mocks__/styleMock.js`
+## 2. `__mocks__/styleMock.js`
 
 **Localização:** `/home/gus/Projetos/Caminhar/__mocks__/styleMock.js`
 **Tamanho:** 49 bytes (3 linhas)
@@ -166,12 +130,13 @@ export default { skeletonBox: 'skeleton-box' };
 ### ⚠️ Observações Técnicas
 
 - Apenas a classe `skeletonBox` é mapeada. Se outros componentes utilizarem classes CSS Module diferentes (ex.: `container`, `title`, `form`), elas retornarão `undefined` nos testes, o que pode gerar falsos negativos ou dificultar a escrita de testes baseados em seletores CSS.
+- Na prática isso é **suficiente para o código testado**: `skeletonBox` é a única classe CSS Module acessada em componentes cobertos por teste (`CrudTable.js`, `AdminAudit.js`, `IntegrityCheck.js`). As demais classes (~272) viram `undefined`, o que é inofensivo no React — `className={undefined}` renderiza sem classe e não lança erro.
 
 ---
 
 # Parte 2 — `tests/mocks/` (Mocks de Alto Nível)
 
-A pasta `tests/mocks/` contém **9 arquivos** e **nenhuma subpasta**. Diferente de `__mocks__/`, estes mocks são **importados manualmente** pelos arquivos de teste, geralmente via alias `@mocks` ou caminho relativo. Eles simulam módulos internos do projeto e bibliotecas do Next.js.
+A pasta `tests/mocks/` contém **8 arquivos** e **nenhuma subpasta**. Diferente de `__mocks__/`, estes mocks são **importados manualmente** pelos arquivos de teste, geralmente via alias `@mocks` ou caminho relativo. Eles simulam módulos internos do projeto e bibliotecas do Next.js.
 
 | Arquivo | Propósito | Consumido por |
 |---|---|---|
@@ -183,14 +148,13 @@ A pasta `tests/mocks/` contém **9 arquivos** e **nenhuma subpasta**. Diferente 
 | `tests/mocks/db.js` | Mocks de operações de banco de dados (query, transaction, pool) | Uso mínimo (1 exemplo) |
 | `tests/mocks/db-module.js` | Mock do módulo `lib/infra/db.js` | Testes de API, scripts e domínio |
 | `tests/mocks/cache.js` | Mock do módulo de cache | Testes de API |
-| `tests/mocks/auth.js` | Mock do módulo `lib/auth/auth.js` | ⚠️ **Nenhum arquivo (órfão)** |
 
 ---
 
 ## 1. `tests/mocks/index.js`
 
 **Localização:** `/home/gus/Projetos/Caminhar/tests/mocks/index.js`
-**Tamanho:** 14 linhas
+**Tamanho:** 13 linhas
 
 ### 📌 Propósito
 
@@ -202,7 +166,7 @@ import { mockUseRouter, mockFetch, mockQuery } from '../mocks';
 
 ### 🔍 Funcionalidades
 
-- Reexporta todos os módulos de mocks: `next.js`, `fetch.js`, `db.js`, `cache.js`, `auth.js`, `db-module.js`.
+- Reexporta todos os módulos de mocks: `next.js`, `fetch.js`, `db.js`, `cache.js`, `db-module.js`.
 - Facilita o consumo dos mocks em testes com uma única importação.
 
 ---
@@ -210,7 +174,7 @@ import { mockUseRouter, mockFetch, mockQuery } from '../mocks';
 ## 2. `tests/mocks/next.js`
 
 **Localização:** `/home/gus/Projetos/Caminhar/tests/mocks/next.js`
-**Tamanho:** 213 linhas
+**Tamanho:** 191 linhas
 
 ### 📌 Propósito
 
@@ -231,7 +195,6 @@ Contém as **implementações individuais** dos mocks para componentes e hooks d
 | **`mockGetStaticPaths(paths)`** | Retorna um objeto `{ paths, fallback: false }` simulando o retorno do `getStaticPaths`. |
 | **`mockNextHeaders(headers)`** | Cria um objeto de headers mockado para o App Router (`get`, `set`, `delete`, `has`, `forEach`, `entries`, `keys`, `values`, iterador). |
 | **`mockNextCookies(cookies)`** | Cria um objeto de cookies mockado para o App Router (`get`, `set`, `delete`, `has`, `getAll`, iterador). |
-| **`setupNextMocks()`** | **⚠️ Deprecated** — Configura todos os mocks do Next.js via `jest.mock()`. Substituído pelo `next-setup.js`. |
 
 ---
 
@@ -329,7 +292,7 @@ Mocks para requisições `fetch`, permitindo simular respostas HTTP de APIs exte
 ## 6. `tests/mocks/db.js`
 
 **Localização:** `/home/gus/Projetos/Caminhar/tests/mocks/db.js`
-**Tamanho:** 235 linhas
+**Tamanho:** 218 linhas
 
 ### 📌 Propósito
 
@@ -350,10 +313,19 @@ Mocks para operações de banco de dados em nível de query, oferecendo helpers 
 | **`mockPool(options)`** | Cria um mock de pool de conexões. |
 | **`queryWasCalledWith(queryMock, pattern)`** | Verifica se uma query SQL foi chamada (suporta string e RegExp). |
 | **`getQueryParams(queryMock, callIndex)`** | Obtém os parâmetros de uma query. |
-| **`mockDbModule(options)`** | Cria um mock completo do módulo db. |
 | **`mockPaginatedResult(data, page, limit)`** | Simula um resultado de paginação. |
 | **`clearQueryMocks(...queryMocks)`** | Limpa todos os mocks de query. |
 | **`mockQuerySequence(responses)`** | Cria respostas sequenciais para query. |
+
+### 🧪 Consumo nos Testes
+
+**Consumo mínimo — 1 arquivo.** Apenas `tests/examples/simple-test.test.js` usa este módulo, e somente o export `mockQuery`, importado pelo barrel `../mocks/index.js`. Nenhum outro export é importado por qualquer arquivo de teste, e não há import direto de `tests/mocks/db.js`.
+
+> ⚠️ **Não confundir com `__mocks__/pg.js`.** Ambos exportam um símbolo chamado `mockQuery`, mas são coisas diferentes:
+> - `import { mockQuery } from 'pg'` → resolve para **`__mocks__/pg.js`** (mock da biblioteca, singleton compartilhado, ativo em **16** arquivos de teste, incluindo todos os de `tests/unit/lib/db/`).
+> - `import { mockQuery } from '../mocks/index.js'` → resolve para **`tests/mocks/db.js`** (factory que cria um mock novo a cada chamada, ativo em **1** arquivo).
+>
+> Os 16 testes em `tests/unit/lib/db/*.test.js` **não** usam este arquivo.
 
 ---
 
@@ -407,35 +379,6 @@ Utilizado via `jest.mock('../../../lib/cache/cache.js', () => require('../../moc
 
 ---
 
-## 9. `tests/mocks/auth.js`
-
-**Localização:** `/home/gus/Projetos/Caminhar/tests/mocks/auth.js`
-**Tamanho:** 67 linhas
-
-### 📌 Propósito
-
-Mocks centralizados para o módulo `lib/auth/auth.js`, simulando funções de autenticação.
-
-### 🔍 Funcionalidades
-
-| Função | Descrição |
-|---|---|
-| **`mockAuthModule(overrides)`** | Cria um módulo de autenticação mockado completo com: `hashPassword`, `verifyPassword`, `generateToken`, `verifyToken`, `setAuthCookie`, `getAuthCookie`, `getAuthToken`, `authenticate`, `authenticateAndGenerateToken`, `withAuth`, `initializeAuth`. |
-| **`mockAuthFailure()`** | Cria um módulo de autenticação que simula falha de autenticação (token nulo, credenciais inválidas, 401). |
-| **`resetAuthMocks(authMock)`** | Reseta todos os mocks de auth para comportamento padrão. |
-
-### ⚠️ Orphan Mock — **Arquivo não utilizado atualmente**
-
-Este mock foi analisado e **não está sendo consumido por nenhum arquivo de teste no projeto atual**. As evidências:
-
-1. **Nenhum arquivo de teste importa `mockAuthModule` ou `mockAuthFailure`** — A busca em todos os arquivos `.test.js` e `.js` da pasta `tests/` não encontrou referências a estas funções fora do próprio arquivo.
-2. **Nenhum arquivo de teste chama `jest.mock('../../../lib/auth/auth.js', () => require('../../mocks/auth').mockAuthModule())`** — A busca não encontrou ocorrências em nenhum arquivo da pasta `tests/`.
-3. **O `index.js` reexporta o módulo, mas o consumo é indireto e não utilizado** — Embora `tests/mocks/index.js` reexporte `auth.js`, nenhum teste importa de `index.js` as funções de auth.
-
-**Conclusão:** O arquivo `tests/mocks/auth.js` é um **mock órfão** — foi criado para centralizar mocks de autenticação, mas não é consumido por nenhum teste atualmente. Permanece no repositório sem utilidade funcional.
-
----
-
 # 📊 Resumo Geral
 
 ## `__mocks__/`
@@ -443,12 +386,11 @@ Este mock foi analisado e **não está sendo consumido por nenhum arquivo de tes
 | # | Arquivo | Propósito | Status | Consumido por |
 |---|---|---|---|---|
 | 1 | `__mocks__/pg.js` | Mock do `pg.Pool` para consultas SQL | ✅ Ativo | 16 arquivos de teste |
-| 2 | `__mocks__/cookie.js` | Mock da lib `cookie` (parse/serialize) | ⚠️ **Órfão** | Nenhum arquivo |
-| 3 | `__mocks__/styleMock.js` | Mock de arquivos `.css` para CSS Modules | ✅ Ativo | `jest.config.js` (moduleNameMapper) |
+| 2 | `__mocks__/styleMock.js` | Mock de arquivos `.css` para CSS Modules | ✅ Ativo | `jest.config.js` (moduleNameMapper) |
 
-**Total de arquivos:** 3 | **Subpastas:** Nenhuma
+**Total de arquivos:** 2 | **Subpastas:** Nenhuma
 **Mocks ativos:** 2 (pg.js, styleMock.js)
-**Mock órfão:** 1 (cookie.js)
+**Mock órfão:** 0
 
 ## `tests/mocks/`
 
@@ -459,14 +401,13 @@ Este mock foi analisado e **não está sendo consumido por nenhum arquivo de tes
 | 3 | `tests/mocks/next-setup.js` | Setup automático dos `jest.mock()` do Next.js | ✅ Ativo | Testes de componentes/páginas |
 | 4 | `tests/mocks/next.test.js` | Teste de sanidade dos mocks do Next.js | ✅ Ativo | Execução própria |
 | 5 | `tests/mocks/fetch.js` | Mocks para requisições `fetch` | ✅ Ativo | Testes de API e componentes |
-| 6 | `tests/mocks/db.js` | Mocks de operações de banco de dados | ✅ Ativo | Uso mínimo (1 exemplo) |
-| 7 | `tests/mocks/db-module.js` | Mock do módulo `lib/infra/db.js` | ✅ Ativo | Dezenas de testes de API, scripts e domínio |
+| 6 | `tests/mocks/db.js` | Mocks de operações de banco de dados | ✅ Ativo | Uso mínimo (1 exemplo) — ver nota na seção |
+| 7 | `tests/mocks/db-module.js` | Mock do módulo `lib/infra/db.js` | ✅ Ativo | **33 arquivos** de teste (API, scripts, domínio, lib) |
 | 8 | `tests/mocks/cache.js` | Mock do módulo de cache | ✅ Ativo | Testes de API |
-| 9 | `tests/mocks/auth.js` | Mock do módulo `lib/auth/auth.js` | ⚠️ **Órfão** | Nenhum arquivo |
 
-**Total de arquivos:** 9 | **Subpastas:** Nenhuma
+**Total de arquivos:** 8 | **Subpastas:** Nenhuma
 **Mocks ativos:** 8 (index.js, next.js, next-setup.js, next.test.js, fetch.js, db.js, db-module.js, cache.js)
-**Mock órfão:** 1 (auth.js)
+**Mock órfão:** 0
 
 ---
 
@@ -474,7 +415,7 @@ Este mock foi analisado e **não está sendo consumido por nenhum arquivo de tes
 
 As duas pastas de mocks têm **responsabilidades complementares**:
 
-- **`__mocks__/`** — Mocks **automáticos** de bibliotecas externas (`pg`, `cookie`) e arquivos de estilo (`.css`). Resolvidos pelo Jest por nome de módulo ou via `moduleNameMapper`.
-- **`tests/mocks/`** — Mocks de **alto nível** para módulos internos do projeto (Next.js, fetch, cache, auth, db) e cenários específicos dos testes. Importados manualmente pelos arquivos de teste.
+- **`__mocks__/`** — Mocks **automáticos** de bibliotecas externas (`pg`) e arquivos de estilo (`.css`). Resolvidos pelo Jest por nome de módulo ou via `moduleNameMapper`.
+- **`tests/mocks/`** — Mocks de **alto nível** para módulos internos do projeto (Next.js, fetch, cache, db) e cenários específicos dos testes. Importados manualmente pelos arquivos de teste.
 
 A separação segue a convenção padrão do Jest e mantém a arquitetura de testes organizada e escalável.

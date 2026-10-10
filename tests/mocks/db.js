@@ -166,23 +166,6 @@ export const getQueryParams = (queryMock, callIndex = -1) => {
 };
 
 /**
- * Cria um mock completo do módulo db
- * @param {Object} options - Opções
- * @returns {Object} Módulo db mockado
- */
-export const mockDbModule = (options = {}) => {
-  return {
-    query: options.query || jest.fn().mockResolvedValue({ rows: [] }),
-    transaction: options.transaction || mockTransaction,
-    pool: options.pool || mockPool(),
-    connect: options.connect || jest.fn().mockResolvedValue({
-      query: jest.fn(),
-      release: jest.fn(),
-    }),
-  };
-};
-
-/**
  * Simula um resultado de paginação
  * @param {Array} data - Dados completos
  * @param {number} page - Página atual
