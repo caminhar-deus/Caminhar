@@ -1109,25 +1109,26 @@ Testa o mecanismo de rate limiting da API, enviando requisições de login em al
 **Resumo:**
 Teste consolidado de IP spoofing que mescla os propósitos dos antigos testes separados (evasão de rate limit + detecção de spoofing) em um único script. Valida se o sistema está protegido contra evasão de rate limit via rotação do header `X-Forwarded-For` e se detecta/bloqueia ativamente IPs falsificados.
 
-- Perfil de carga: `rateLimit` com override de thresholds — `http_req_duration` p(95)<5000ms (há também um threshold condicional `checks{BLOQUEADO} rate>0.80` deixado comentado no código, para ativar quando a proteção estiver implementada)
+- Perfil de carga: `rateLimit` com override de thresholds — `http_req_duration` p(95)<5000ms **e `ip_rotation_evasion_rate` `rate<0.05`** (adicionado em 09/10/2026: sem ele o script imprimia o achado de evasão no log e saía com exit 0)
 - Gera um IP aleatório único por iteração via `getRandomIP()` do módulo `helpers/network.js`
 - Envia login com username `admin` e senha propositalmente errada (`wrong_password`), header `X-Forwarded-For` falsificado
 - **Sem `sleep()`** para máxima taxa de requisições
-- `handleSummary()` — Gera relatório via `generateReport()` com nome `ip_spoofing_consolidado_test`
+- `handleSummary()` — Gera relatório via `generateReport()` com nome `ip_spoofing_consolidado_test`; desde 09/10/2026 reporta a **taxa** de evasão com diagnóstico explícito, em vez da contagem bruta
 
 **Interpretação dos resultados:**
-- `🛡️ BLOQUEADO:*` (403 ou 429) → Sistema protegido — spoofing foi rejeitado ou rate limit global atuou
-- `⚠️ VULNERÁVEL:*` (401) → Sistema vulnerável — spoofing não foi detectado / rate limit foi burlado
 
-**Checks disponíveis:**
-| Check | Status HTTP | Significado |
-|-------|------------|-------------|
-| `🛡️ BLOQUEADO: Spoofing detectado e rejeitado` | 403 | Proteção ativa contra spoofing |
-| `🛡️ BLOQUEADO: Rate limit global ignorou IP falso` | 429 | Rate limit global (não há detecção específica) |
-| `⚠️ VULNERÁVEL: Rate limit foi burlado por IP falso` | 401 | Evasão de rate limit por spoofing |
-| `⚠️ VULNERÁVEL: Spoofing não foi detectado` | 401 | Spoofing não foi bloqueado ativamente |
+Os dois checks são **mutuamente exclusivos** por status HTTP — uma resposta tem um único status, então exatamente um dos dois passa por iteração. **Checks em 50% é o valor esperado**, não sintoma de falha.
 
-> **Estado registrado no próprio arquivo (27/05/2026):** na última execução registrada, o sistema estava VULNERÁVEL — 33,33% dos checks de proteção passando e 66,67% dos checks de vulnerabilidade; o cabeçalho do arquivo indica como ação necessária implementar detecção de spoofing no middleware.
+| Check | Status | Significado |
+|-------|--------|-------------|
+| `EVASÃO BLOQUEADA: rate limit por IP real (429)` | 429 | Rotação do IP falso **não** evitou o bloqueio — proteção funcionando |
+| `EVASÃO CONFIRMADA: rotação lida, não bloqueou (401)` | 401 | App leu a entrada **esquerda** do `X-Forwarded-For`; cada IP falso virou um bucket novo |
+
+**Métricas próprias:**
+- `ip_rotation_evasion_rate` (`Rate`) — proporção de respostas 401. **É esta que tem threshold** (`rate<0.05`); evasão sustentada reprova o job. Taxa, e não contagem, porque com senha errada de propósito os 401 do warm-up não são evasão.
+- `ip_rotation_evasions` (`Counter`) — contagem bruta de 401, mantida apenas para relatório.
+
+> **Nota (09/10/2026):** a verificação da cadeia mostrou que a proteção por IP está **correta** — `lib/api/helpers.js:142` resolve `chain[chain.length - hops]`, pegando a entrada **real** (direita) e ignorando a falsificada (esquerda). `pages/api/auth/login.js` mantém três camadas de rate limit (`:50-58`, `:64-67`, `:82-88`). Um 401 isolado é "credencial rejeitada", não evasão — daí a medição por taxa. Ver item V de `docs/PENDENCIAS_scripts_testes.md`.
 
 **Endpoints chamados:**
 - `POST /api/auth/login?response=body` — Autenticação (com `X-Forwarded-For` falsificado)
@@ -1456,7 +1457,7 @@ Teste negativo de autenticação que envia credenciais inválidas. Garante que o
 | `heavy` | `p(95) < 3000ms`, `failed < 10%` | `security/ddos-search-test.js` (substitui stages e thresholds por completo) |
 | `stress` | `p(95) < 3000ms`, `failed < 10%`, `checks > 95%` (tag `scenario:stress_test`), `heap < 1GB` | `performance/stress-test-combined.js` (sem overrides) |
 | `recovery` | Nenhum (thresholds vazios) | `functional/recovery-test.js` |
-| `rateLimit` | Nenhum (thresholds vazios) | `security/rate-limit-test.js` e `security/ip-spoofing-test.js` (ambos acrescentam apenas `http_req_duration` p(95)<5000ms via override) |
+| `rateLimit` | Nenhum (thresholds vazios) | `security/rate-limit-test.js` (acrescenta apenas `http_req_duration` p(95)<5000ms) e `security/ip-spoofing-test.js` (acrescenta `http_req_duration` p(95)<5000ms **e** `ip_rotation_evasion_rate` `rate<0.05`, desde 09/10/2026) |
 
 ### Módulos Compartilhados
 

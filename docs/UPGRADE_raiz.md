@@ -292,9 +292,9 @@
 
 **Arquivo (removido):** `/rate-limit-proxy.js`
 
-**Problema:** O documento antigo (`docs/antigos/PROJECT_raiz.md`) referencia `rate-limit-proxy.js`, mas o arquivo atual é `proxy.js` (convenção do Next.js 16). O `rate-limit-proxy.js` não existe mais.
+**Problema:** Uma versão anterior desta documentação referenciava `rate-limit-proxy.js`, mas o arquivo atual é `proxy.js` (convenção do Next.js 16). O `rate-limit-proxy.js` não existe mais. O documento que continha essa referência foi removido do repositório em 09/10/2026.
 
-**Impacto:** Confusão para quem consulta a documentação antiga.
+**Impacto:** Resolvido — não há mais documento antigo consultar.
 
 **Sugestão:** A documentação atual (`PROJECT_raiz.md`) já usa `proxy.js` — manter assim e não recriar o arquivo antigo.
 

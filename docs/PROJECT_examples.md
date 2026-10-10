@@ -189,5 +189,5 @@ Não há. Todos os 4 arquivos são relevantes e cumprem função de documentaç�
 
 ## Verificação de Duplicidades
 
-- O documento anterior de `/docs/antigos/PROJECT_examples.md` foi consolidado nesta versão, com correções de contagem de linhas (blog-post: 237→224; homepage: 77→75) e correção da nomenclatura do hook (`usePerformanceMetrics` → `usePerformance`, conforme o barrel `hooks/index.js`).
+- A versão anterior deste documento foi consolidada nesta versão (e depois removida do repositório em 09/10/2026), com correções de contagem de linhas (blog-post: 237→224; homepage: 77→75) e correção da nomenclatura do hook (`usePerformanceMetrics` → `usePerformance`, conforme o barrel `hooks/index.js`).
 - As informações equivalentes entre arquivos (padrão de imports, estrutura de fallback, uso de `getCanonicalUrl`) foram agrupadas na seção "Análise Consolidada" para evitar repetição.

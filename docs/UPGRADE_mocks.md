@@ -219,7 +219,7 @@ export function setPoolState(state) {
 |------|---------|
 | **Arquivo** | `/home/gus/Projetos/Caminhar/__mocks__/pg.js` |
 | **Tipo** | Funções exportadas sem consumo identificado |
-| **Evidências** | Busca em `/tests/` não encontrou importações ou chamadas a essas funções. Apenas documentadas via JSDoc no próprio arquivo e em documentação (`docs/PROJECT_mocks.md`, `docs/resolvidos/UPGRADE_mocks.md`) |
+| **Evidências** | Busca em `/tests/` não encontrou importações ou chamadas a essas funções. Apenas documentadas via JSDoc no próprio arquivo e em documentação (`docs/PROJECT_mocks.md`) |
 | **Recomendação** | Considerar remoção se não houver planos de uso, ou documentar explicitamente como helpers futuros |
 
 ---
@@ -552,20 +552,19 @@ Baixo — o arquivo é funcional, mas pode ser desnecessário dado o padrão de 
 
 ---
 
-## 20. Duplicidade de Documentação Desatualizada (Baixo)
+## 20. Duplicidade de Documentação Desatualizada (Baixo) — ✅ Resolvido 09/10/2026
 
-### Problema
+### Problema (histórico)
 
-`/home/qa/Projeto/Caminhar/docs/antigos/PROJECT_mocks.md` contém informações desatualizadas (cita `jest.mock('cookie')` em `auth.test.js`, o que não é mais verdade).
+A pasta `docs/antigos/` continha documentos desatualizados, entre eles `PROJECT_mocks.md`, que citava `jest.mock('cookie')` em `auth.test.js` — o que não era mais verdade.
 
-### Sugestão
+### Resolução
 
-- Arquivar ou remover documentos desatualizados da pasta `antigos/`.
-- Manter o novo `docs/PROJECT_mocks.md` como fonte única e atualizada.
+As pastas `docs/antigos/` e `docs/resolvidos/` foram **removidas do repositório** em 09/10/2026. `docs/PROJECT_mocks.md` é a fonte única e atualizada.
 
 ### Impacto
 
-Baixo — não afeta o código, apenas a clareza da documentação.
+Resolvido — não afeta o código; a documentação passa a ter fonte única.
 
 ---
 
@@ -604,5 +603,5 @@ A estrutura das pastas `__mocks__/` e `tests/mocks/` segue a convenção padrão
 | 🟢 **Baixo** | 15 | Completude | `cache.js` — cobertura limitada de cenários |
 | 🟢 **Baixo** | 18 | Código subutilizado | `next.js` — consumo apenas indireto via `next-setup.js` |
 | 🟢 **Baixo** | 19 | Código subutilizado | `index.js` — consumo mínimo (1 exemplo) |
-| 🟢 **Baixo** | 20 | Documentação | Documentação desatualizada em `docs/antigos/` |
+| ✅ **Resolvido** | 20 | Documentação | Pastas `docs/antigos/` e `docs/resolvidos/` removidas (09/10/2026) |
 

@@ -8,9 +8,8 @@
 Este documento identifica oportunidades de melhoria, pontos de atenção técnica e recomendações para a pasta `/cypress`, com base no estado atual dos arquivos. **Nenhuma alteração foi aplicada.**
 
 > **Documentos de referência consultados:**
-> - `/docs/antigos/PROJECT_cypress.md` — versão anterior, desatualizada (usada apenas como apoio)
-> - `/docs/resolvidos/UPGRADE_cypress.md` — problemas já resolvidos em iteração anterior (8 itens, todos resolvidos)
 > - `/docs/PROJECT_cypress.md` — análise consolidada atual da pasta `/cypress`
+> - Versões anteriores (`docs/antigos/`, `docs/resolvidos/`) foram removidas do repositório em 09/10/2026; as conclusões relevantes foram consolidadas neste documento e em `PROJECT_cypress.md`.
 
 ---
 
@@ -683,4 +682,4 @@ O comando `cy.login()` possui credenciais de administrador hardcoded como valore
 
 **Total:** 12 pontos identificados — **1 resolvido** (chave do Cypress Cloud), **11 pendentes**.
 
-> **Nota:** Os 8 problemas documentados em `/docs/resolvidos/UPGRADE_cypress.md` foram considerados **resolvidos** e não foram re-listados aqui, exceto quando permanecem relevantes no estado atual dos arquivos.
+> **Nota:** Uma iteração anterior documentou 8 problemas já resolvidos; esse documento foi removido do repositório em 09/10/2026 e não é re-listado aqui, exceto quando permanece relevante no estado atual dos arquivos.

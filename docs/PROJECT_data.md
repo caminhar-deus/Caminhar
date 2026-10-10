@@ -253,7 +253,7 @@ Os registros indicam duas tentativas de restauração que falharam em 4 de setem
 - Gera arquivo `posts-backup-<timestamp>.json`
 - Usa I/O síncrono (`fs.writeFileSync`)
 
-**Observação:** Este script gera um backup JSON redundante, pois o backup PostgreSQL (`pg_dump`) já cobre a tabela `posts`. O backup JSON anterior foi removido do diretório por duplicidade (ver `docs/resolvidos/UPGRADE_data.md`).
+**Observação:** Este script gera um backup JSON redundante, pois o backup PostgreSQL (`pg_dump`) já cobre a tabela `posts`. O backup JSON anterior foi removido do diretório por duplicidade.
 
 **⚠️ Inconsistência de caminho:** O script usa `path.resolve(__dirname, '../data/backups')`, que a partir de `scripts/maintenance/` resolve para `scripts/data/backups` — **não** para `data/backups` na raiz do projeto. O diretório `scripts/data/` não existe atualmente. Ao executar, o script criaria um diretório `scripts/data/backups` separado, fora do diretório de backups oficial.
 

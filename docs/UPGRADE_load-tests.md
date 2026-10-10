@@ -418,7 +418,7 @@ Teste negativo de login com 2 cenários: (1) usuário existente com senha incorr
 - `k6/http`, `k6/check`
 
 **Resumo do arquivo:**
-Teste consolidado de IP spoofing e evasão de rate limit. Usa perfil `rateLimit`. Gera IP único por iteração via `getRandomIP()`. Dois grupos de checks: "BLOQUEADO" (403 ou 429) e "VULNERÁVEL" (401). Documentação no header indica que sistema estava vulnerável (33.33% de proteção). Gera relatório `ip_spoofing_consolidado_test`.
+Teste consolidado de IP spoofing e evasão de rate limit. Usa perfil `rateLimit`. Gera IP único por iteração via `getRandomIP()`. Dois checks **mutuamente exclusivos** por status HTTP: `EVASÃO BLOQUEADA` (429) e `EVASÃO CONFIRMADA` (401) — checks em 50% é o valor esperado. Threshold `ip_rotation_evasion_rate` `rate<0.05` desde 09/10/2026. Gera relatório `ip_spoofing_consolidado_test`. (Descrição dos checks e thresholds atualizada em 09/10/2026 — o texto anterior citava um check de 403 e um estado "vulnerável" que não existem mais no arquivo.)
 
 ---
 
