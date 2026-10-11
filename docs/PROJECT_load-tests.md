@@ -1150,25 +1150,37 @@ Os dois checks são **mutuamente exclusivos** por status HTTP — uma resposta t
 **Resumo:**
 Simula um cenário de busca massiva (tipo DDoS) no endpoint de busca de posts. Verifica a resiliência do sistema sob alta frequência de requisições de busca, validando thresholds de performance e taxa de erro.
 
-- Gera busca aleatória com termos fixos: `['amor', 'paz', 'fé', 'luz', 'vida', 'caminho', 'verdade', 'esperança', 'coração', 'espírito']`
-- Cache busting via timestamp (`_t=${Date.now()}`) para forçar o servidor a processar cada requisição
+- Gera busca aleatória com termos fixos: `['amor', 'paz', 'fé', 'luz', 'vida', 'caminho', 'verdade', 'esperança', 'coração', 'espírito']`, acrescidos de **sufixo único por iteração** (`` `${termo}-${__VU}-${__ITER}` ``) — ver "Correção 09/10/2026" abaixo
 - Requisição usa `expectedStatuses: [200, 429]` (status 429 não é computado como falha `http_req_failed`) e tags `{type: ddos_search, name: DDoS_Search}`
+- Envia `X-Forwarded-For: 203.0.113.10` (RFC 5737, faixa de documentação), **constante** — este teste mede bloqueio; a evasão por rotação é de `ip-spoofing-test`
 - Métrica `errors_500` (Rate, variável `ErrorRate500`) — alimentada com `true` para respostas 5xx; threshold `rate<0.50` **sem** `abortOnFail`/`delayAbortEval` (os 5xx são resultado a medir num teste de resiliência): taxa parcial é achado de capacidade reportado no resumo, ≥50% reprova o teste
+- Métrica `search_block_rate` (Rate, variável `SearchBlockRate`) — alimentada com `true` para respostas 429; threshold **`rate>0.50`**, que dá poder de reprovação quando a proteção não atua
 - Intencionalmente **sem `sleep()`** para máxima taxa de requisições
-- `handleSummary()` — Gera relatório via `generateReport()` com nome `ddos_search_test`
+- `handleSummary()` — Gera relatório via `generateReport()` com nome `ddos_search_test`; reporta **duas** taxas: `errors_500` (resiliência) e `search_block_rate` (proteção da busca)
 - Configuração: perfil `heavy` com stages e thresholds totalmente sobrescritos — estágios 10s/30s/10s com 100→500→0 VUs
+
+**Correção 09/10/2026 — o teste passou a medir o que promete:**
+
+A versão anterior **não conseguia** exercitar a proteção, por duas causas independentes, ambas invisíveis porque o teste saía verde (100% de 200) enquanto prometia validar DDoS:
+
+1. **Termo de busca constante.** O cache de `pages/api/posts.js:46` é indexado pelo termo (TTL 30 min, `:51`) e o rate limit (`:58`) roda **dentro** do callback de cache — logo, só em cache miss. Com 10 termos e ~16.000 requisições havia ~10 verificações de rate limit contra um limite de 100/min: o limite era **estruturalmente inalcançável** e o check de 429 nunca podia passar. O `_t=${Date.now()}` que o teste enviava **não** fazia parte da chave de cache e não bustava nada.
+2. **IP resolvido era loopback.** A CI sobe o app com `TRUST_PROXY: 'true'` (1 hop) e o k6 roda no mesmo container, então sem `X-Forwarded-For` o app resolve o socket (`127.0.0.1`), que está na whitelist permanente de `lib/cache/cache.js:331` e **nunca** é rate-limited.
+
+Verificado por simulação: com termo fixo, 15.000 requisições produzem 4 chaves de cache (4 verificações de rate limit); com termo único, 15.000 chaves (15.000 verificações). E `resolveClientIP` (`lib/api/helpers.js:141`) resolve `127.0.0.1` sem header e `203.0.113.10` com header.
+
+**Efeito colateral conhecido:** termo único cria ~15.000 chaves de cache em ~50 s (antes: 10). TTL de 30 min com limpeza periódica de 60 s que só remove expiradas (`lib/cache/cache.js:73`) — nada é liberado durante o teste. Estimativa de **~11 MB** no cache L1 do processo, perdido no fim do job (CI é descartável). Se o teste passar a rodar fora de ambiente descartável, limitar o número de iterações.
 
 **Interpretação dos resultados:**
 | Cenário | Checks que PASSAM | Significado |
 |---------|-------------------|-------------|
 | Sistema resiliente | `🛡️ BLOQUEADO: Rate limit atuou (429)` (alta taxa) | Proteção contra DDoS funcionando |
-| Sistema subdimensionado | `⚠️ VULNERÁVEL: Servidor caiu (5xx)` (taxa > 10%) | Servidor não suporta a carga |
-| Sistema estável | `✅ RESISTIU: Servidor respondeu (200)` (alta taxa) | Servidor aguenta carga sem proteção |
+| Sistema subdimensionado | `⚠️ VULNERÁVEL: Servidor caiu (5xx)` (taxa parcial) | Servidor não suporta a carga |
+| Sistema estável | `✅ RESISTIU: Servidor respondeu (200)` (alta taxa) | **Rate limit NÃO limitou a busca: falha de proteção** |
 
-> **Nota registrada no próprio arquivo:** na última execução registrada, o servidor NÃO acionava rate limit para buscas, mesmo com 500 VUs; o cabeçalho do arquivo indica que a proteção DDoS precisava ser implementada ou confirmada como desnecessária.
+Os três checks são **mutuamente exclusivos por status HTTP** (uma resposta tem um único status), então a soma é 100% e a leitura de um percentual isolado não significa falha — leia os três juntos. Antes da correção de 09/10/2026, `🛡️ BLOQUEADO` era **inalcançável**; agora é o check que indica a proteção funcionando.
 
 **Endpoints chamados:**
-- `GET /api/posts?search={termo}&_t={timestamp}` — Busca de posts com cache busting
+- `GET /api/posts?search={termo}-{VU}-{ITER}` — Busca de posts com termo único por iteração (garante cache miss, logo verificação de rate limit) e header `X-Forwarded-For`
 
 ---
 

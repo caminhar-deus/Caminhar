@@ -431,7 +431,9 @@ Teste consolidado de IP spoofing e evasão de rate limit. Usa perfil `rateLimit`
 - `k6/http`, `k6/check`, `k6/metrics` (Rate)
 
 **Resumo do arquivo:**
-Teste de carga massiva (DDoS) em endpoint de busca. Usa perfil `heavy` com estágios customizados (100 VUs → 500 VUs → ramp-down). Métrica customizada `errors_500` (Rate) com threshold `rate<0.50` e sem `abortOnFail` (a taxa de 5xx é medida de resiliência, reportada no `handleSummary`). Cache busting com timestamp. 10 termos de busca variados. Documentação indica que servidor NÃO aciona rate limit para buscas. Gera relatório `ddos_search_test`.
+Teste de carga massiva (DDoS) em endpoint de busca. Usa perfil `heavy` com estágios customizados (100 VUs → 500 VUs → ramp-down). Gera relatório `ddos_search_test`.
+
+**Correção 09/10/2026 — o teste não media o que prometia.** A versão anterior era verde (100% de 200) sem nunca exercitar a proteção, por dois bloqueios independentes: (1) o termo de busca era constante e o rate limit de `pages/api/posts.js` roda dentro do callback de cache, então só havia ~10 verificações contra um limite de 100/min — e o `_t=${Date.now()}` não fazia parte da chave de cache; (2) sem `X-Forwarded-For`, o app resolvia o socket (`127.0.0.1` na CI, `TRUST_PROXY: 'true'`), que está na whitelist permanente de `lib/cache/cache.js` e nunca é limitado. Agora cada iteração usa termo único (`` `${termo}-${__VU}-${__ITER}` ``) e envia `X-Forwarded-For: 203.0.113.10` constante (este teste mede bloqueio; evasão por rotação é do `ip-spoofing-test`). Acrescida a métrica `search_block_rate` com threshold `rate>0.50`, que dá poder de reprovação quando a proteção não atua — antes isso era impossível. A métrica `errors_500` (`rate<0.50`, sem `abortOnFail`) segue sendo medida de resiliência, e as duas taxas são reportadas no `handleSummary`. Efeito colateral: ~15.000 chaves de cache em ~50 s (~11 MB no L1), perdido no fim do job.
 
 ---
 
