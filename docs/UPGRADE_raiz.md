@@ -3,7 +3,7 @@
 > **Data da análise:** 24/09/2026
 > **Objetivo:** Levantamento analítico de possíveis melhorias identificadas nos **35 arquivos** atuais da raiz do projeto (os três workflows `.yml` que existiam aqui foram removidos depois da análise). **Nenhuma correção deve ser aplicada** — apenas documentar.
 > **Baseado em:** Análise profunda dos arquivos atuais da raiz (24/09/2026), com apoio dos documentos anteriores em `/docs/` e conhecimento do projeto como um todo. Em caso de divergência, prevalece a análise atual.
-> **Atualização (07/10/2026):** os três arquivos `.yml` de workflow que existiam na raiz (`ci`, `load-tests` e `security-tests`) foram **removidos** — eram rascunhos que nunca chegaram a ser registrados como workflow no GitHub. As seções que os tratavam (5.3, 8.4, 8.5, 9.13, 9.29, 9.36 e 13.2) saíram deste documento, por isso a numeração das subseções tem lacunas. Os workflows vigentes do repositório estão em `.github/workflows/` (`test-coverage.yml`, `test-base.yml` e `load-tests.yml`).
+> **Atualização (07/10/2026):** os três arquivos `.yml` de workflow que existiam na raiz (`ci`, `load-tests` e `security-tests`) foram **removidos** — eram rascunhos que nunca chegaram a ser registrados como workflow no GitHub. As seções que os tratavam (5.3, 8.4, 8.5, 9.13, 9.29, 9.36 e 13.2) saíram deste documento, por isso a numeração das subseções tem lacunas. Os workflows vigentes do repositório estão em `.github/workflows/` (`test-coverage.yml`, `test-db-coverage.yml`, `test-base.yml` e `load-tests.yml`). **Atualização de 10/10/2026:** `test-db-coverage.yml` foi criado para cobrir na CI as 6 suítes `*.db.test.js` (73 asserções), que rodavam apenas localmente — ver `docs/PROJECT_raiz.md` §6 e a nota do item J em `docs/PENDENCIAS_scripts_testes.md`.
 
 
 ## Índice
@@ -304,7 +304,7 @@
 
 **Arquivo:** `/home/qa/Projeto/Caminhar/.github/workflows/test-base.yml` (subpasta)
 
-**Problema:** O `test-base.yml` está em `.github/workflows/` (subpasta), fora do escopo desta análise de raiz. Hoje ele é chamado apenas por `load-tests.yml` (também em `.github/workflows/`); o `test-coverage.yml` executa a suíte de cobertura em job próprio, sem chamada reutilizável.
+**Problema:** O `test-base.yml` está em `.github/workflows/` (subpasta), fora do escopo desta análise de raiz. Hoje ele é chamado apenas por `load-tests.yml` (também em `.github/workflows/`); o `test-coverage.yml` executa a suíte de cobertura em job próprio, sem chamada reutilizável. **Atualização de 10/10/2026:** segue sendo o único consumidor — e não é um bom consumidor para as suítes de banco, porque a suíte sobe o próprio container via Testcontainers e não consome nenhum dos provisionamentos do `test-base.yml`. É por isso que `test-db-coverage.yml` é autocontido.
 
 **Impacto:** Nenhum — apenas nota de escopo. Os workflows do repositório dependem dele, mas ele não é um arquivo da raiz.
 

@@ -378,10 +378,11 @@ A raiz **não contém nenhum arquivo de workflow**: o GitHub Actions só lê wor
 Os workflows vigentes do repositório estão em `.github/workflows/` (subpasta, fora do escopo desta análise):
 
 - `test-coverage.yml` — lint, cobertura Jest (`npx jest --ci --coverage`), actionlint e knip, em `pull_request: [main]`, `push: [main]` e `workflow_dispatch`;
+- `test-db-coverage.yml` — cobertura das 6 suítes com banco real (`*.db.test.js`, 73 asserções) via Testcontainers, nos mesmos gatilhos do `test-coverage.yml`. **Autocontido de propósito, não chama `test-base.yml`**: a suíte sobe o próprio container (`tests/global-setup.db.js:47`) e publica `TEST_DATABASE_URL`, sem ler o `DATABASE_URL` do serviço — logo nenhum dos quatro provisionamentos do `test-base.yml` (Postgres como service, `setup-db`, build da aplicação, k6) seria aproveitado. Inclui um guard que **reprova** se nenhuma suíte executou, porque o `global-setup.db.js:71-73` define a sentinela `__docker_unavailable__` e as suítes se auto-skippam quando o Docker falta — sem o guard, um runner sem Docker daria verde silencioso;
 - `test-base.yml` — workflow reutilizável (`on: workflow_call`), com serviços PostgreSQL/Redis, build e k6;
 - `load-tests.yml` — testes de carga diários (`schedule: '17 4 * * *'` = 04:17 UTC) e sob demanda (`workflow_dispatch`), chamando `test-base.yml`.
 
-`test-coverage.yml` também roda no push para `main` (ver item R de `docs/PENDENCIAS_scripts_testes.md`); `test-base.yml` e `load-tests.yml` não — o primeiro só é chamado, o segundo roda por `schedule`/`workflow_dispatch`.
+`test-coverage.yml` e `test-db-coverage.yml` também rodam no push para `main` (ver item R de `docs/PENDENCIAS_scripts_testes.md`); `test-base.yml` e `load-tests.yml` não — o primeiro só é chamado, o segundo roda por `schedule`/`workflow_dispatch`. `test-base.yml` tem hoje **um único consumidor**: `load-tests.yml` com `test-type: load`. Os modos `security` e `coverage` não têm consumidor — em particular os passos `Upload Coverage Output`/`Upload Coverage HTML` do `test-base.yml` nunca executam, porque o job de cobertura do `test-coverage.yml` é autocontido e publica os mesmos artefatos (`coverage-output`, `coverage-html`) por conta própria.
 
 ---
 

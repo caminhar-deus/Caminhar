@@ -1,0 +1,111 @@
+name: Test Coverage Gate (banco real)
+
+# Suíte com PostgreSQL real via Testcontainers — as 6 arquivos `*.db.test.js`,
+# 73 asserções, que hoje rodam APENAS localmente (`npm run test:db:container`).
+# O job `coverage` de `test-coverage.yml` não as executa: lá a suíte roda em
+# `jsdom`, que não consome nada de banco (item J do `docs/PENDENCIAS_scripts_testes.md`).
+#
+# POR QUE ESTE WORKFLOW NÃO CHAMA `test-base.yml`
+#
+# A suíte sobe o PRÓPRIO container (`tests/global-setup.db.js:47`,
+# `new PostgreSqlContainer(...)`), publicando a conexão em
+# `process.env.TEST_DATABASE_URL`. Ela NÃO lê `DATABASE_URL` do serviço. Então
+# os quatro provisionamentos do `test-base.yml` seriam pagos e não aproveitados:
+#
+# | Provisionado por `test-base.yml` | Usado por `*.db.test.js`?          |
+# |----------------------------------|-----------------------------------|
+# | `services.postgres` (postgres:15) | ❌ — Testcontainers sobe o seu   |
+# | `setup-db`                        | ❌ — a suíte roda as migrations   |
+# | `build-app` (Next.js + next start)| ❌ — `testEnvironment: 'node'`    |
+# | setup-k6                          | ❌ — sem k6 envolvido             |
+#
+# Chamá-lo custaria subir Postgres como service (que `skip-db-setup` NÃO evita:
+# o `services:` é do nível do job e o GitHub o provisiona antes dos steps) e
+# ainda assim construir e levantar a aplicação, para rodar jest sem HTTP.
+#
+# O runner `ubuntu-latest` já tem Docker instalado, que é o único pré-requisito.
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+# Mesmo raciocínio de `test-coverage.yml`: grupo por PR cancela execuções
+# antigas (o comentário publicado pela mais nova não pode ser sobrescrito pela
+# mais antiga); grupo por ref na `main` não cancela o run em andamento.
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('test-db-pr-{0}', github.event.pull_request.number) || format('test-db-ref-{0}', github.ref) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  coverage-db:
+    runs-on: ubuntu-latest
+    # Folga para `npm ci` + startup do container + 73 asserções com
+    # `testTimeout: 30000` cada (`jest.config.db.js:18`); teto para derrubar um
+    # runner travado em vez de queimar os 360 min do default da plataforma.
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: ./.github/actions/setup
+
+      # `set -o pipefail` é o que propaga o exit code do jest: sem ele o status
+      # do step seria o do `tee` (sempre zero) e uma suíte reprovada passaria
+      # como sucesso — mesmo mecanismo do job `coverage` de `test-coverage.yml`.
+      #
+      # `coverageDirectory: 'coverage-db'` (`jest.config.db.js:22`) é um
+      # diretório próprio, para não sobrescrever o relatório da suíte principal.
+      - name: Run DB Tests with Coverage
+        run: |
+          set -o pipefail
+          npx jest --config jest.config.db.js --ci --coverage | tee coverage-db-output.txt
+
+      # FALHA explícita quando o container não subiu.
+      #
+      # `tests/global-setup.db.js:71-73` define a sentinela
+      # `TEST_DATABASE_URL='__docker_unavailable__'` quando o Docker está
+      # ausente ou o container não sobe, e as suítes se auto-skippam
+      # (`tests/helpers/db-test.js:18-19`). Localmente isso é a rede de segurança
+      # correta (item J); numa CI seria um VERDE SILENCIOSO sem nenhuma asserção
+      # executada — a mesma classe de problema que o `ddos-search-test` tinha.
+      #
+      # Por isso o guard olha o arquivo de saída, que o jest escreve mesmo
+      # quando tudo é skippado, e reprova se nenhuma suíte rodou.
+      - name: Verify DB Suites Actually Ran
+        run: |
+          if grep -q 'skipped' coverage-db-output.txt && ! grep -qE 'Tests:.*[1-9][0-9]* passed' coverage-db-output.txt; then
+            echo "❌ Nenhuma suíte *.db.test.js executou — o container PostgreSQL provavelmente não subiu."
+            echo "--- saída do jest ---"
+            cat coverage-db-output.txt
+            exit 1
+          fi
+          echo "✅ Suítes com banco real executaram."
+
+      # `always()` mantém a saída e o relatório publicados mesmo quando os
+      # thresholds reprovam a execução — é justamente nesses casos que eles
+      # interessam.
+      - name: Upload Coverage Output
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-db-output
+          path: coverage-db-output.txt
+          retention-days: 7
+
+      # `coverage-db/` está no .gitignore e não vem no checkout; o upload é o
+      # que torna o relatório baixável.
+      - name: Upload Coverage HTML
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-db-html
+          path: coverage-db/
+          if-no-files-found: ignore
+          retention-days: 7
