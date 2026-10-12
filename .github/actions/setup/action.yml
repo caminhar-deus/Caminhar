@@ -32,11 +32,16 @@ runs:
       # um step separado e explícito (`Audit Dependencies` em test-base.yml),
       # onde os 4 high viram falha visível em vez de texto de warning.
       #
-      # `timeout-minutes` próprio: sem ele, um `npm ci` que conclui o trabalho
-      # mas não encerra o processo (observado no run 38133449606, tentativa 1 —
-      # o runner registrou `Terminate orphan process: pid (2824) (npm ci)` após
-      # 2h59m) consome a janela inteira do job e mata a bateria de testes, que
-      # nem chegou a começar. 20 min é folgado para o pior caso já observado
-      # (instalação a frio de 1105 pacotes).
-      run: npm ci --no-audit --no-fund
-      timeout-minutes: 20
+      # Limite de duração via `timeout`, e NÃO via a chave `timeout-minutes`:
+      # step de **composite action** não aceita `timeout-minutes` (o actionlint
+      # local não pegou, mas o runner sim — foi o que reprovou os 4 jobs do run
+      # 38190581378/38190581415 com
+      # `TemplateValidationException ... Unexpected value 'timeout-minutes'`).
+      # `timeout` é a chave correta e é entendida pelo shell do step.
+      #
+      # O que motivou o limite: um `npm ci` que conclui o trabalho mas não
+      # encerra o processo (run 38133449606, tentativa 1 — o runner registrou
+      # `Terminate orphan process: pid (2824) (npm ci)` após 2h59m) consumia a
+      # janela inteira do job e matava a bateria de testes, que nem começava.
+      # 20 min é folgado para o pior caso já observado (1105 pacotes a frio).
+      run: timeout 20m npm ci --no-audit --no-fund

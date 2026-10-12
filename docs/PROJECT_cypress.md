@@ -107,7 +107,7 @@ Os seguintes scripts gerenciam a execução dos testes E2E:
 | Gatilhos | `push` em `main` + `workflow_dispatch` — **sem `pull_request`** (decisão deliberada: coletar flakiness real antes de cobrar o E2E em todo PR) |
 | Runner / job | Job único, `ubuntu-latest`, `timeout-minutes: 15` |
 | Permissões / secrets | `permissions: contents: read`; **nenhum secret** (o run não grava no Cypress Cloud) |
-| Passos | checkout → setup-node (24.15.0, cache npm) → `npm ci` → `node scripts/e2e-isolated.js` (sem `continue-on-error`) → upload de `cypress/videos` (com `if-no-files-found: warn` — com `video: true` o Cypress sempre gera um vídeo por spec, então diretório vazio é anomalia e precisa aparecer) e de `cypress/screenshots` (mantém `ignore`, pois `screenshotOnRunFailure` só produz arquivo quando um teste reprova), ambos com `if: always()` e `retention-days: 7` |
+| Passos | checkout → setup-node (24.21.0, cache npm) → `npm ci --no-audit --no-fund` (limitado a 20 min) → `node scripts/e2e-isolated.js` (sem `continue-on-error`) → upload de `cypress/videos` (com `if-no-files-found: warn` — com `video: true` o Cypress sempre gera um vídeo por spec, então diretório vazio é anomalia e precisa aparecer) e de `cypress/screenshots` (mantém `ignore`, pois `screenshotOnRunFailure` só produz arquivo quando um teste reprova), ambos com `if: always()` e `retention-days: 7` |
 | Papel | É o **4º check** pretendido para a branch protection, junto de `lint`, `coverage` e `coverage-report` (ver item R de `docs/PENDENCIAS_scripts_testes.md`) |
 
 ### Validação (08/10/2026)

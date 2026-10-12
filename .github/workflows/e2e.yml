@@ -48,20 +48,30 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Mesma versão e mesmo cache de npm do `test-coverage.yml` (que passa por
-      # `./.github/actions/setup` — action composta que internamente roda
-      # `actions/setup-node@v4` com node 24.15.0 e `cache: 'npm'`). Aqui o
+      # Mesma versão, mesmo cache de npm e mesmos flags de instalação do
+      # `./.github/actions/setup` (action composta usada por `test-coverage.yml`),
+      # agora em 24.21.0 para bater com `engines.node` do package.json. Aqui o
       # setup-node é declarado diretamente porque o `npm ci` precisa ser um
       # step explícito abaixo: a composta já embute o `npm ci` dentro e
       # reutilizá-la duplicaria a instalação (ou eliminaria o step).
       - name: Setup Node.js Environment
         uses: actions/setup-node@v4
         with:
-          node-version: '24.15.0'
+          node-version: '24.21.0'
           cache: 'npm'
 
+      # `--no-audit --no-fund`: o audit roda por padrão ao fim do `ci` e só
+      # polui o log — a auditoria vive em `test-base.yml` (step `Audit
+      # Dependencies`). `timeout 20m`: um `npm ci` que conclui mas não encerra
+      # mataria a bateria inteira (ver o mesmo comentário no composite `setup`,
+      # que usa `timeout` do shell pelo mesmo motivo — step de composite não
+      # aceita a chave `timeout-minutes`).
+      #
+      # Aqui, por ser step de **workflow** e não de composite, `timeout-minutes`
+      # também seria válido; `timeout` do shell foi mantido para ficar
+      # idêntico ao composite e não ter dois jeitos de limitar a mesma coisa.
       - name: Install Dependencies
-        run: npm ci
+        run: timeout 20m npm ci --no-audit --no-fund
 
       # SEM `continue-on-error`: a falha do E2E tem que reprovar o job.
       #
