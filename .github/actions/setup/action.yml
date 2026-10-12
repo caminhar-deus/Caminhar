@@ -4,7 +4,16 @@ inputs:
   node-version:
     description: 'Node.js version to use'
     required: false
-    default: '24.15.0'
+    # Alinhado com `engines.node` do package.json (24.21.0). Antes era 24.15.0,
+    # o que fazia o `npm ci` emitir `EBADENGINE Unsupported engine` em TODO job
+    # da CI — silenciosamente, porque sem `engine-strict` o npm só avisa. Um
+    # patch atrás não muda comportamento, mas o aviso some do log e o ambiente
+    # deixa de divergir do declarado.
+    #
+    # O npm NÃO é pinado aqui: o 24.21.0 já vem com 11.19.0, que satisfaz
+    # `engines.npm: ">=11.19.0"`. Fixar um npm mais novo exigiria um
+    # `npm install -g npm@X` em todo job — custo e superfície sem retorno.
+    default: '24.21.0'
 
 runs:
   using: 'composite'
@@ -17,4 +26,17 @@ runs:
 
     - name: Install Dependencies
       shell: bash
-      run: npm ci
+      # `--no-audit --no-fund`: o `npm audit` roda por padrão ao final do `ci`
+      # e adiciona dezenas de segundos a CADA job da CI sem bloquear nada —
+      # nenhuma vulnerabilidade reprova o build aqui. A auditoria passa a ser
+      # um step separado e explícito (`Audit Dependencies` em test-base.yml),
+      # onde os 4 high viram falha visível em vez de texto de warning.
+      #
+      # `timeout-minutes` próprio: sem ele, um `npm ci` que conclui o trabalho
+      # mas não encerra o processo (observado no run 38133449606, tentativa 1 —
+      # o runner registrou `Terminate orphan process: pid (2824) (npm ci)` após
+      # 2h59m) consome a janela inteira do job e mata a bateria de testes, que
+      # nem chegou a começar. 20 min é folgado para o pior caso já observado
+      # (instalação a frio de 1105 pacotes).
+      run: npm ci --no-audit --no-fund
+      timeout-minutes: 20

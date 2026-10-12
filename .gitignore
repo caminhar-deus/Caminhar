@@ -41,6 +41,13 @@ pids
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
+# Relatórios de carga k6 — saída de execução, nunca versionada.
+# Sem esta entrada os 40 arquivos de `reports/k6-summaries/` ficam rastreados
+# pelo git e o step `Upload k6 Reports` publica artifact com o CONTEÚDO DO
+# REPOSITÓRIO, misturado com o resultado real do run (ver o comentário em
+# `.github/workflows/load-tests.yml` sobre por que viram artifact).
+reports/
+
 # ------------------------------------------------------------------------------
 # Testes e cobertura
 # ------------------------------------------------------------------------------

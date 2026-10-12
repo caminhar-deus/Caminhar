@@ -92,6 +92,15 @@ jobs:
       # resultado velho com novo; artifact com `retention-days` preserva o JSON
       # de thresholds e os summaries para análise sem tocar no histórico.
       #
+      # A não versionar é o que torna o artifact confiável, e isso precisou ser
+      # aplicado de fato em 11/10/2026: os 40 arquivos de `reports/k6-summaries/`
+      # estavam RASTREADOS pelo git (commits `48fa1cb`, `76071cf`) apesar deste
+      # comentário afirmar o contrário, e o `.gitignore` não cobria `reports/`.
+      # Consequência medida: na tentativa 1 do run 38133449606 — em que NENHUM
+      # teste rodou, todos os steps de teste `skipped` — o `Upload k6 Reports`
+      # publishou "40 files uploaded". O artifact era o conteúdo do repositório,
+      # não resultado de teste. Desversionado e adicionado ao `.gitignore`.
+      #
       # O `mkdir` garante o diretório de saída; o upload em si é um step do
       # próprio `test-base.yml` (`Upload k6 Reports`, com `retention-days` e
       # `if-no-files-found: ignore`), porque `extra-steps` é interpolado num

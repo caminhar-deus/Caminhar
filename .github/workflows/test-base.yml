@@ -88,8 +88,13 @@ jobs:
           POSTGRES_PASSWORD: test_password
         ports:
           - 5432:5432
+        # `-U test_user -d caminhar_test` no health-cmd: sem isso o `pg_isready`
+        # conecta com o usuário default do container (`root`), que não existe no
+        # Postgres — o healthcheck "passa" mas o servidor registra um
+        # `FATAL: role "root" does not exist` a cada 10s. Num run de 3h isso são
+        # ~1000 linhas de ruído no log do serviço, escondendo a falha real.
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U test_user -d caminhar_test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -108,6 +113,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
+      # Auditoria como step explícito, e não mais como texto de warning do
+      # `npm ci`. O `ci` instala com `--no-audit` (ver o composite `setup`), e
+      # sem este step as vulnerabilidades — hoje 4 high — só apareceriam como
+      # linhas de log que ninguém lê. `continue-on-error` mantém o gate atual:
+      # este job reporta, não reprova. Quando as high forem zeradas, troque por
+      # `continue-on-error: false` para passarem a barrar de verdade.
+      - name: Audit Dependencies
+        if: ${{ inputs.test-type == 'coverage' }}
+        shell: bash
+        run: npm audit --audit-level=high || echo "::warning::npm audit reportou vulnerabilidades high (não reprova o job)"
+        continue-on-error: true
       # `skip-db-setup` skips the database setup when the suite does not touch
       # Postgres at all (e.g. coverage running in jsdom), avoiding pointless
       # migrations/seeds for a database the tests never query.
