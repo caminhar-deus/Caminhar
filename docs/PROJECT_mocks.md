@@ -49,7 +49,7 @@ Mock centralizado e compartilhado para a biblioteca `pg` (node-postgres). Simula
 
 ### 🧪 Consumo nos Testes
 
-Ativado via `jest.mock('pg')` nos seguintes **16 arquivos de teste**:
+Ativado via `jest.mock('pg')` nos seguintes **13 arquivos de teste** (contagem conferida em 12/10/2026):
 
 **Testes de banco de dados (`tests/unit/lib/db/`)** — 10 arquivos:
 - `tests/unit/lib/db/createPost.test.js`
@@ -63,18 +63,16 @@ Ativado via `jest.mock('pg')` nos seguintes **16 arquivos de teste**:
 - `tests/unit/lib/db/updatePost.test.js`
 - `tests/unit/lib/db.test.js`
 
-**Testes de scripts (`tests/unit/scripts/`)** — 6 arquivos:
+**Testes de scripts (`tests/unit/scripts/`)** — 3 arquivos:
 - `tests/unit/scripts/clean-orphaned-images.test.js`
 - `tests/unit/scripts/clear-db.test.js`
-- `tests/unit/scripts/clear-musicas.test.js`
-- `tests/unit/scripts/reset-password.test.js`
-- `tests/unit/scripts/seed-all.test.js`
-- `tests/unit/scripts/seed-settings.test.js`
 - `tests/unit/scripts/utils/cleanup.test.js`
+
+> **Atualização de 12/10/2026:** as suítes `clear-musicas`, `reset-password` e `seed-all` saíram desta lista na refatoração de 12/10 — passaram a mockar `scripts/db/connection.js` (o módulo que os scripts realmente importam) diretamente, sem passar pelo mock de `pg` (`seed-settings`, refatorada em 09/10/2026, também já não constava). Em `clear-db.test.js` o `jest.mock('pg')` (e o `jest.mock('dotenv')`) segue declarado junto com o mock de `scripts/db/connection.js` — resquício da versão antiga da suíte; o `pg` não é mais o caminho de acesso ao banco desses testes. Ver também a seção [`tests/mocks/db-module.js`](#7-testsmocksdb-modulejs): **nenhuma suíte de `tests/unit/scripts/` usa mais `db-module.js`**.
 
 ### 🧩 Interface Exportada
 
-> ⚠️ **Atenção — o `mockQuery` deste arquivo não é o mesmo de `tests/mocks/db.js`.** Ambos compartilham o nome, mas este é o singleton compartilhado do mock da biblioteca `pg` (16 arquivos de teste). Ver a seção [`tests/mocks/db.js`](#6-testsmocksdbjs).
+> ⚠️ **Atenção — o `mockQuery` deste arquivo não é o mesmo de `tests/mocks/db.js`.** Ambos compartilham o nome, mas este é o singleton compartilhado do mock da biblioteca `pg` (13 arquivos de teste). Ver a seção [`tests/mocks/db.js`](#6-testsmocksdbjs).
 
 ```js
 export const mockQuery = jest.fn();                    // Singleton de query
@@ -146,7 +144,7 @@ A pasta `tests/mocks/` contém **8 arquivos** e **nenhuma subpasta**. Diferente 
 | `tests/mocks/next.test.js` | Teste de sanidade dos mocks do Next.js | Execução própria |
 | `tests/mocks/fetch.js` | Mocks para requisições `fetch` | Testes de API e componentes |
 | `tests/mocks/db.js` | Mocks de operações de banco de dados (query, transaction, pool) | Uso mínimo (1 exemplo) |
-| `tests/mocks/db-module.js` | Mock do módulo `lib/infra/db.js` | Testes de API, scripts e domínio |
+| `tests/mocks/db-module.js` | Mock do módulo `lib/infra/db.js` | Testes de API, domínio, lib e pages |
 | `tests/mocks/cache.js` | Mock do módulo de cache | Testes de API |
 
 ---
@@ -336,7 +334,7 @@ Mocks para operações de banco de dados em nível de query, oferecendo helpers 
 
 ### 📌 Propósito
 
-Mock centralizado para o módulo `lib/infra/db.js`, exportando exatamente as mesmas funções do módulo real. É o mock mais utilizado no projeto, consumido por dezenas de testes de API, scripts e domínio.
+Mock centralizado para o módulo `lib/infra/db.js`, exportando exatamente as mesmas funções do módulo real. É o mock mais utilizado no projeto, consumido por dezenas de testes de API, domínio, lib e pages (nenhum de `tests/unit/scripts/` — ver "Consumo nos Testes").
 
 ### 🔍 Funcionalidades
 
@@ -348,12 +346,15 @@ Mock centralizado para o módulo `lib/infra/db.js`, exportando exatamente as mes
 
 ### 🧪 Consumo nos Testes
 
-Utilizado via `jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb())` em dezenas de arquivos de teste, incluindo:
+Utilizado via `jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb())` em **29 arquivos de teste** (contagem conferida em 12/10/2026), incluindo:
 
-- **Testes de API** (`tests/integration/api/`): `posts`, `musicas`, `videos`, `dicas`, `settings`, `stats`, `roles`, `users`, `audit`, `backups`, `status`, `login`, `cleanup-test-data`, etc.
-- **Testes de scripts** (`tests/unit/scripts/`): `clear-db`, `clear-musicas`, `seed-all`, `seed-settings`, `reset-password`, `clean-orphaned-images`.
+- **Testes de API** (`tests/integration/api/`): `posts`, `posts.flow`, `posts.general`, `musicas`, `dicas`, `settings.general`, `status`, `placeholder-image`, `cleanup-test-data`, `auth/logout` e os de `admin/` (`posts`, `users`, `roles`, `audit`, `backups`, `musicas`, `dicas`, `rate-limit`, `fetch-ml`, `fetch-spotify`, `fetch-youtube`).
 - **Testes de domínio** (`tests/unit/domain/`): `settings`, `videos`, `posts`.
 - **Testes de lib** (`tests/unit/lib/`): `crud`, `auth`.
+- **Edge cases de pages** (`tests/unit/pages/api/admin/`): `posts.edge`, `stats.edge`, `dicas.edge`, `roles.edge`.
+- **`tests/unit/settings.cache.test.js`** (único arquivo unitário "solto" da raiz de `tests/unit/` que usa o mock).
+
+> **Atualização de 12/10/2026 — nenhuma suíte de `tests/unit/scripts/` usa mais `db-module.js`.** As suítes de `clear-db`, `clear-musicas`, `seed-all` e `reset-password` (e `seed-settings`, desde 09/10/2026) mockavam `lib/infra/db.js` por aqui, mas os scripts importam `query`/`closePool` de **`scripts/db/connection.js`** — o mock apontava para o módulo errado e não exercitava o caminho real. Hoje essas 5 suítes mockam `scripts/db/connection.js` diretamente. `tests/mocks/db-module.js` continua legítimo e em uso nos testes de API/domínio/lib/pages listados acima (nesses, `lib/infra/db.js` é o módulo realmente importado).
 
 ---
 
@@ -385,7 +386,7 @@ Utilizado via `jest.mock('../../../lib/cache/cache.js', () => require('../../moc
 
 | # | Arquivo | Propósito | Status | Consumido por |
 |---|---|---|---|---|
-| 1 | `__mocks__/pg.js` | Mock do `pg.Pool` para consultas SQL | ✅ Ativo | 16 arquivos de teste |
+| 1 | `__mocks__/pg.js` | Mock do `pg.Pool` para consultas SQL | ✅ Ativo | 13 arquivos de teste |
 | 2 | `__mocks__/styleMock.js` | Mock de arquivos `.css` para CSS Modules | ✅ Ativo | `jest.config.js` (moduleNameMapper) |
 
 **Total de arquivos:** 2 | **Subpastas:** Nenhuma
@@ -402,7 +403,7 @@ Utilizado via `jest.mock('../../../lib/cache/cache.js', () => require('../../moc
 | 4 | `tests/mocks/next.test.js` | Teste de sanidade dos mocks do Next.js | ✅ Ativo | Execução própria |
 | 5 | `tests/mocks/fetch.js` | Mocks para requisições `fetch` | ✅ Ativo | Testes de API e componentes |
 | 6 | `tests/mocks/db.js` | Mocks de operações de banco de dados | ✅ Ativo | Uso mínimo (1 exemplo) — ver nota na seção |
-| 7 | `tests/mocks/db-module.js` | Mock do módulo `lib/infra/db.js` | ✅ Ativo | **33 arquivos** de teste (API, scripts, domínio, lib) |
+| 7 | `tests/mocks/db-module.js` | Mock do módulo `lib/infra/db.js` | ✅ Ativo | **29 arquivos** de teste (API, domínio, lib, pages — nenhum de `tests/unit/scripts/`) |
 | 8 | `tests/mocks/cache.js` | Mock do módulo de cache | ✅ Ativo | Testes de API |
 
 **Total de arquivos:** 8 | **Subpastas:** Nenhuma

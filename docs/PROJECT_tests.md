@@ -476,12 +476,12 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 |---------|-----------|
 | `backup.test.js` | Script de backup |
 | `clean-orphaned-images.test.js` | Varredura de imagens órfãs — cobre as 4 salvaguardas do script (fail-closed, modo relatório, idade mínima, lixeira) |
-| `clear-db.test.js` | Limpeza de banco |
-| `clear-musicas.test.js` | Limpeza de músicas |
+| `clear-db.test.js` | Limpeza de banco — importa o script sob teste e mocka `scripts/db/connection.js` (o módulo que `clear-db.js` importa, e não `lib/infra/db.js`) e `readline` com resposta controlável; 16 testes: `askConfirmation` (6), `main()` nos caminhos `s`/`n`, `clearDatabase` (SQL lido do mock + caminho de erro) e os 6 preexistentes de `clearUploadsDir` com fs real e temp dirs |
+| `clear-musicas.test.js` | Limpeza de músicas — importa o script sob teste e mocka `scripts/db/connection.js` e `readline` (ver observações abaixo); 11 testes |
 | `init-table.test.js` | Utilitários de schema de tabelas |
 | `migrate.test.js` | Gerenciador de migrações |
-| `reset-password.test.js` | Reset de senha |
-| `seed-all.test.js` | Seed de todos os dados |
+| `reset-password.test.js` | Reset de senha — importa o script sob teste e mocka `scripts/db/connection.js`, `lib/auth/auth.js` (dynamic import compilado para `require`) e `load-env`; 7 testes sobre `resetPassword(targetUser, newPassword)` exportada, incluindo o teste da guarda de CLI |
+| `seed-all.test.js` | Seed de todos os dados — importa o script sob teste e mocka `scripts/db/connection.js`, os 4 seeds e `child_process` (`execSync` do `--clean`); 7 testes cobrindo `checkDatabaseReady`, `runSeed` (inclusive a validação de "não exporta função de seed"), `seedAll({ seedsDir })`, `main()` e a guarda de CLI |
 | `seed-settings.test.js` | Seed de configurações — cobre os 5 caminhos da função exportada `seedSettings()`: inserção das 5 chaves em ordem, idempotência (nenhum INSERT quando a chave já existe), falha parcial (rejeita com `1 de 5` e as demais chaves ainda são consultadas), falha total (`5 de 5` com todas as chaves na mensagem) e resolução no caminho feliz. Importa `scripts/seed-settings.js` com `jest.resetModules()` e mocka `scripts/db/connection.js` — o módulo que o script usa, e não `lib/infra/db.js` |
 | `validate-schema.test.js` | Validação de schema do banco (mock condicional por SQL cobre tabelas e colunas existentes; valida `result === true` no cenário de sucesso, sem falso alerta de "Tabela faltando"; mock de `load-env` pelo registro CJS — o `.env` real não é carregado —, isolamento aguardado com `jest.isolateModulesAsync` e `console.log`/`console.error` silenciados por spies) |
 
@@ -499,6 +499,12 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | `constants.test.js` | Constantes |
 | `date-format.test.js` | Formatação de datas |
 | `load-env.test.js` | Carregamento de variáveis de ambiente |
+
+#### Observações — as 4 suítes refatoradas (12/10/2026)
+
+As suítes `clear-db`, `clear-musicas`, `reset-password` e `seed-all` agora **importam o script sob teste** e mockam **`scripts/db/connection.js`** — o módulo que esses scripts realmente importam — junto com `readline` (e `lib/auth/auth.js`/`child_process` onde cabe). Antes de 12/10/2026 elas mockavam `lib/infra/db.js` (módulo que nenhum dos 4 scripts importa), reescreviam o SQL como literal no teste e nem importavam o arquivo; **nenhuma suíte em `tests/unit/scripts/` mocka mais `lib/infra/db.js` nem usa `tests/mocks/db-module.js`**. Contexto e árvore de mutação: `docs/PENDENCIAS_scripts_testes.md` (itens X e Y); contagens por suíte: `docs/UPGRADE_tests.md`.
+
+> **⚠️ Gotcha do mock dos seeds:** `jest.mock` de um `seed-*.js` precisa ser `{ __esModule: true, default: jest.fn() }`. Sem a flag `__esModule`, o Babel compila o `await import()` dinâmico do `runSeed()` para `interopRequireWildcard`, que devolve `{ default: { default: fn } }` — e o script lança "não exporta uma função de seed" mesmo com o mock no lugar.
 
 ### 5.14 Workflows do GitHub Actions (`/tests/unit/github-workflows/`)
 

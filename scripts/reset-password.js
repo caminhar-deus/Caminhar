@@ -4,11 +4,14 @@ import { query, closePool } from './db/connection.js';
 
 loadEnv();
 
-async function resetPassword() {
+// Os parâmetros têm os MESMOS defaults do comportamento antigo (leitura direta
+// de `process.argv`), o que torna a função testável sem depender de como o
+// Jest foi invocado: `main()` continua sem argumentos e lê o argv como antes.
+export async function resetPassword(
+  targetUser = process.argv[2] || 'admin',
+  newPassword = process.argv[3]
+) {
   const { hashPassword } = await import('../lib/auth/auth.js');
-
-  const targetUser = process.argv[2] || 'admin';
-  const newPassword = process.argv[3];
 
   if (!newPassword) {
     console.error('❌ Por favor, forneça a nova senha.');
@@ -44,4 +47,17 @@ async function resetPassword() {
   }
 }
 
-resetPassword();
+// Execução principal — só quando invocado como CLI
+// (`node scripts/reset-password.js <usuario> <senha>`), no mesmo estilo de
+// `clear-db.js`/`clear-musicas.js`. Importar o módulo (ex.: nos testes) não pode
+// tocar no banco nem chamar `process.exit(1)` de verdade — sem a guarda, o
+// import dispararia `resetPassword()` e mataria o worker do Jest.
+// A guarda chama `main()` sem `await` porque o Babel compila o script como
+// CommonJS e não há suporte a top-level `await` nessa transformação.
+export async function main() {
+  await resetPassword();
+}
+
+if (process.argv[1] && process.argv[1].endsWith('reset-password.js')) {
+  main();
+}

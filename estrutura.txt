@@ -770,15 +770,7 @@ tests/unit/pages/api/auth/login.edge.test.js → lib/cache/cache.js
 tests/unit/pages/api/auth/login.edge.test.js → lib/infra/logger.js
 tests/unit/pages/api/auth/login.edge.test.js → pages/api/auth/login.js
 tests/unit/pages/api/upload-image.edge.test.js → pages/api/upload-image.js
-tests/unit/scripts/clear-db.test.js → lib/infra/db.js
-tests/unit/scripts/clear-db.test.js → tests/mocks/db-module.js
-tests/unit/scripts/clear-musicas.test.js → lib/infra/db.js
-tests/unit/scripts/clear-musicas.test.js → tests/mocks/db-module.js
 tests/unit/scripts/reset-password.test.js → lib/auth/auth.js
-tests/unit/scripts/reset-password.test.js → lib/infra/db.js
-tests/unit/scripts/reset-password.test.js → tests/mocks/db-module.js
-tests/unit/scripts/seed-all.test.js → lib/infra/db.js
-tests/unit/scripts/seed-all.test.js → tests/mocks/db-module.js
 tests/unit/settings.cache.test.js → tests/mocks/db-module.js
 tests/unit/utils/resolve-next.test.js → utils/resolve-next.js
 tests/unit/videos.validation.test.js → lib/domain/videos.js

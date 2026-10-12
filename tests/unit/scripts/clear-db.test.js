@@ -10,8 +10,29 @@ jest.mock('dotenv');
 // diretórios de verdade são limpos. Mockar `fs` repetiria o mesmo problema
 // tautológico dos testes antigos.
 
-// Mock do lib/infra/db.js
-jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb());
+// Mock do módulo que o script REAL importa (`scripts/db/connection.js`, linha 7
+// do script). Substitui o mock antigo de `lib/infra/db.js`, que apontava para um
+// módulo que `clear-db.js` nem importa — por isso os 4 testes antigos eram
+// tautológicos. A factory cria os `jest.fn` nela mesma: referenciar um `const`
+// externo falharia com TDZ ("Cannot access 'mockQuery' before initialization")
+// porque o babel-plugin-jest-hoist move `jest.mock` acima das declarações. Os
+// MESMOS objetos chegam ao teste pelo import com alias `mock*` mais abaixo.
+jest.mock('../../../scripts/db/connection.js', () => ({
+  query: jest.fn(),
+  closePool: jest.fn(),
+}));
+
+// Mock do readline: SEM `__esModule`, para ser compatível com o
+// `import readline from 'readline'` do script (interop do Babel exige que o
+// mock seja o próprio módulo). A resposta vem do `mockAnswer` de escopo de
+// módulo, lido apenas quando o prompt é chamado (dentro dos testes), jamais na
+// hora de a factory rodar.
+jest.mock('readline', () => ({
+  createInterface: jest.fn(() => ({
+    question: jest.fn((_prompt, cb) => cb(mockAnswer)),
+    close: jest.fn(),
+  })),
+}));
 
 // Mock do load-env
 jest.mock('../../../scripts/utils/load-env.js', () => ({
@@ -20,61 +41,172 @@ jest.mock('../../../scripts/utils/load-env.js', () => ({
 
 // Import estático só é possível porque `clear-db.js` tem guarda de CLI: ao ser
 // importado ele NÃO executa `askConfirmation()` nem `clearDatabase()`.
-// (Prova extra: se a guarda faltasse, este arquivo travaria no prompt.)
-import { clearUploadsDir } from '../../../scripts/clear-db.js';
+// Sem a guarda, `main()` rodaria já no import. Com o `readline` MOCKADO isto
+// não trava no prompt: `main()` leria `mockAnswer`, ainda em TDZ, e daria
+// `ReferenceError` — a suíte falharia por motivo incidental, não por prova
+// intencional. Risco real, se um dia o mock de `readline` virar assíncrono:
+// o import executaria `clearUploadsDir()` com o cwd do repo e apagaria
+// `<repo>/uploads` de verdade.
+import {
+  askConfirmation,
+  clearDatabase,
+  clearUploadsDir,
+  main,
+} from '../../../scripts/clear-db.js';
+import { query as mockQuery, closePool as mockClosePool } from '../../../scripts/db/connection.js';
 
-describe('clear-db.js — Limpeza completa do banco', () => {
-  let libDb;
+// Resposta única devolvida pelo `readline` mockado ao próximo `question`.
+let mockAnswer = 's';
 
-  beforeEach(async () => {
-    process.env.DATABASE_URL = 'postgres://user:pass@localhost:5432/testdb';
-    libDb = await import('../../../lib/infra/db.js');
+// ---------------------------------------------------------------------------
+// Testes REAIS de `askConfirmation` — exercitam o `readline` do próprio script.
+// ---------------------------------------------------------------------------
+describe('askConfirmation — leitura da resposta do prompt', () => {
+  it.each([
+    ['s', true],
+    ['sim', true],
+    ['  S  ', true], // caixa alta com espaços: `trim()` + `toLowerCase()`
+    ['n', false],
+    ['', false],
+    ['x', false],
+  ])('responde %j → %s', async (answer, expected) => {
+    mockAnswer = answer;
+
+    await expect(askConfirmation()).resolves.toBe(expected);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Testes REAIS de `clearDatabase`/`main` — mock de `scripts/db/connection.js`
+// (o módulo que o script importa) + fs REAL em sandbox.
+//
+// O sandbox é OBRIGATÓRIO, não defensivo: `clearDatabase` chama
+// `clearUploadsDir()` dentro do try e essa função apaga arquivos de verdade
+// com base em `process.cwd()`/`UPLOADS_DIR`. Sem apontar o cwd para um temp
+// dir, o teste apagaria `<repo>/uploads` e `<repo>/public/uploads` de verdade.
+// Mesmo padrão do describe de `clearUploadsDir` abaixo.
+// ---------------------------------------------------------------------------
+describe('clearDatabase e main — confirmação, TRUNCATE e cancelamento', () => {
+  let tmpRoot;
+  let originalCwd;
+  let hadUploadsDir;
+  let originalUploadsDir;
+  let logSpy;
+  let warnSpy;
+  let errorSpy;
+  let exitSpy;
+
+  const logLines = () => logSpy.mock.calls.map((args) => args.join(' '));
+  const errorLines = () => errorSpy.mock.calls.map((args) => args.join(' '));
+
+  beforeEach(() => {
+    tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'clear-db-flow-'));
+    originalCwd = process.cwd();
+
+    hadUploadsDir = Object.prototype.hasOwnProperty.call(process.env, 'UPLOADS_DIR');
+    originalUploadsDir = process.env.UPLOADS_DIR;
+    // Caminho inexistente dentro do sandbox: `clearUploadsDir` reporta e segue.
+    process.env.UPLOADS_DIR = path.join(tmpRoot, 'nao-existe');
+    process.chdir(tmpRoot);
+
+    mockAnswer = 's';
+    mockQuery.mockResolvedValue({ rows: [], rowCount: 0 });
+    mockClosePool.mockResolvedValue(undefined);
+
+    logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    // Um `process.exit` real encerraria a suíte inteira; um `exit` burro (noop)
+    // deixaria o fluxo continuar de um jeito que em produção nunca aconteceria
+    // (o caminho "cancelado" de `main()` prosseguiria para `clearDatabase()`).
+    // Lançar um erro sentinela interrompe o fluxo no mesmo ponto do `exit` real
+    // e mantém o teste determinístico — sem poll de microtasks.
+    exitSpy = jest.spyOn(process, 'exit').mockImplementation((code) => {
+      throw new Error(`process.exit(${code})`);
+    });
   });
 
   afterEach(() => {
-    delete process.env.DATABASE_URL;
-  });
-
-  it('deve importar as dependências corretamente', () => {
-    expect(typeof libDb.query).toBe('function');
-    expect(typeof libDb.closeDatabase).toBe('function');
-  });
-
-  it('deve executar TRUNCATE nas tabelas corretas', async () => {
-    libDb.query.mockResolvedValue({ rows: [], rowCount: 0 });
-
-    // Simula a query TRUNCATE que o clearDatabase() executa
-    const sql = `TRUNCATE TABLE 
-        posts, videos, musicas, images, settings, users 
-      RESTART IDENTITY CASCADE;`;
-
-    await libDb.query(sql);
-
-    expect(libDb.query).toHaveBeenCalledWith(expect.stringContaining('TRUNCATE TABLE'));
-    expect(libDb.query).toHaveBeenCalledWith(expect.stringContaining('posts'));
-    expect(libDb.query).toHaveBeenCalledWith(expect.stringContaining('videos'));
-    expect(libDb.query).toHaveBeenCalledWith(expect.stringContaining('musicas'));
-    expect(libDb.query).toHaveBeenCalledWith(expect.stringContaining('settings'));
-    expect(libDb.query).toHaveBeenCalledWith(expect.stringContaining('users'));
-    expect(libDb.query).toHaveBeenCalledWith(expect.stringContaining('RESTART IDENTITY CASCADE'));
-  });
-
-  it('deve fechar a conexão após limpar', async () => {
-    libDb.query.mockResolvedValue({ rows: [], rowCount: 0 });
-
-    await libDb.query('TRUNCATE TABLE posts CASCADE');
-    await libDb.closeDatabase();
-
-    expect(libDb.closeDatabase).toHaveBeenCalled();
-  });
-
-  it('não deve executar TRUNCATE se usuário cancelar', () => {
-    // O script clear-db.js pede confirmação antes de executar
-    // O teste verifica que a query não é executada se a confirmação falhar
-    const answer = false; // Simula resposta negativa do usuário
-    if (!answer) {
-      expect(libDb.query).not.toHaveBeenCalled();
+    if (hadUploadsDir) {
+      process.env.UPLOADS_DIR = originalUploadsDir;
+    } else {
+      delete process.env.UPLOADS_DIR;
     }
+    // Restaurar o cwd ANTES de remover o sandbox que contém o cwd atual.
+    process.chdir(originalCwd);
+    if (tmpRoot && fs.existsSync(tmpRoot)) {
+      fs.rmSync(tmpRoot, { recursive: true, force: true });
+    }
+    logSpy.mockRestore();
+    warnSpy.mockRestore();
+    errorSpy.mockRestore();
+    exitSpy.mockRestore();
+  });
+
+  it("main com 's': executa o TRUNCATE, fecha o pool e não chama process.exit", async () => {
+    await main();
+
+    expect(mockQuery).toHaveBeenCalledTimes(1);
+    expect(mockClosePool).toHaveBeenCalledTimes(1);
+    expect(exitSpy).not.toHaveBeenCalled();
+    expect(logLines().join('\n')).toContain('Banco de dados limpo com sucesso');
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  it("main com 'n': não toca no banco nem no pool, loga o cancelamento e sai com 0", async () => {
+    mockAnswer = 'n';
+
+    await expect(main()).rejects.toThrow('process.exit(0)');
+
+    expect(mockQuery).not.toHaveBeenCalled();
+    expect(mockClosePool).not.toHaveBeenCalled();
+    expect(exitSpy).toHaveBeenCalledWith(0);
+    expect(logLines().join('\n')).toContain('cancelada');
+  });
+
+  it('clearDatabase: o SQL capturado do mock traz TRUNCATE com as 6 tabelas', async () => {
+    await clearDatabase();
+
+    expect(mockQuery).toHaveBeenCalledTimes(1);
+    // Aserções sobre o argumento RECEBIDO pelo mock — o SQL vive só no script,
+    // não é reescrito como literal aqui (o teste antigo fazia isso e provava
+    // nada).
+    const [sql] = mockQuery.mock.calls[0];
+    expect(sql).toMatch(/TRUNCATE\s+TABLE/i);
+    expect(sql).toContain('RESTART IDENTITY CASCADE');
+
+    // Contrato legítimo: a especificação das tabelas a limpar (inclui `images`,
+    // que os testes antigos esqueciam).
+    const tables = sql
+      .replace(/TRUNCATE\s+TABLE/i, '')
+      .replace(/RESTART\s+IDENTITY\s+CASCADE;?/i, '')
+      .split(',')
+      .map((table) => table.trim())
+      .filter(Boolean);
+    expect(tables).toEqual(['posts', 'videos', 'musicas', 'images', 'settings', 'users']);
+
+    expect(mockClosePool).toHaveBeenCalledTimes(1);
+    expect(exitSpy).not.toHaveBeenCalled();
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  it('clearDatabase com query rejeitada: loga o erro, sai com 1 e AINDA fecha o pool', async () => {
+    mockQuery.mockRejectedValueOnce(new Error('pool indisponível'));
+
+    await expect(clearDatabase()).rejects.toThrow('process.exit(1)');
+
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    expect(errorLines()[0]).toContain('Erro ao limpar o banco de dados');
+    expect(errorLines()[0]).toContain('pool indisponível');
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    // Semântica do `finally` em JS: o bloco roda quando o `try` lança, e o pool
+    // é fechado. Em produção, `process.exit(1)` (clear-db.js) encerra o
+    // processo sincronamente e o `finally` NUNCA executa — o pool morre junto
+    // com o processo, encerrado pelo SO. A asserção passa porque o mock de
+    // `process.exit` lança uma sentinel em vez de sair de verdade: ela cobre a
+    // semântica do bloco `finally` (detectável pela mutação "remover o
+    // finally"), não o comportamento do exit real.
+    expect(mockClosePool).toHaveBeenCalledTimes(1);
   });
 });
 

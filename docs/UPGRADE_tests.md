@@ -13025,7 +13025,7 @@ jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').moc
 
 #### 3.4 `scripts/clear-db.test.js`
 
-**Arquivo sob teste:** `scripts/clear-db.js` (e `lib/infra/db.js` via mock)  
+**Arquivo sob teste:** `scripts/clear-db.js` (hoje via mock de `scripts/db/connection.js`; a versão de 08/10/2026 ainda mockava `lib/infra/db.js`)  
 **Escopo:** Limpeza completa do banco (TRUNCATE em cascata + limpeza de uploads).
 
 **Testes (4 casos):**
@@ -13037,19 +13037,22 @@ jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').moc
 | Fecha conexão | `closeDatabase` é chamado |
 | Cancelamento | Se usuário não confirma, query não executa |
 
-**Atualização de 08/10/2026 — o arquivo saiu de 4 para 10 testes; a análise acima descreve a versão anterior.** Os 4 testes da tabela **foram mantidos como estão**; os 6 novos cobrem `clearUploadsDir()` com **`fs` real e diretórios temporários de verdade** (`fs.mkdtempSync(path.join(os.tmpdir(), …))` + `process.chdir` para o sandbox, de modo que o legado `<cwd>/public/uploads` resolve **dentro do temp** e o `public/uploads` real do projeto nunca é tocado; `UPLOADS_DIR` é salvo/restaurado). Cobertura: diretório ativo limpo, legado limpo, **dedup** quando `UPLOADS_DIR` aponta para o legado (um único `readdir` sobre o caminho), diretório inexistente ignorado sem lançar, `.gitkeep` preservado e **idempotência** (duas execuções sem erro). Para isso a linha `jest.mock('fs')` foi **removida** do arquivo — com o `fs` mockado os testes novos enxergariam o mock, não o disco, e provariam o mesmo que os antigos. Verificado por **teste de mutação**: tirando o `.filter()` de dedup e o guarda de `.gitkeep` do script, **3 dos 6 novos falham** — não são tautológicos. Os 4 antigos **continuam tautológicos e registrados como pendência X** de `docs/PENDENCIAS_scripts_testes.md`.
+**Atualização de 08/10/2026 — o arquivo saiu de 4 para 10 testes; a análise acima descreve a versão anterior.** Os 4 testes da tabela **foram mantidos como estão**; os 6 novos cobrem `clearUploadsDir()` com **`fs` real e diretórios temporários de verdade** (`fs.mkdtempSync(path.join(os.tmpdir(), …))` + `process.chdir` para o sandbox, de modo que o legado `<cwd>/public/uploads` resolve **dentro do temp** e o `public/uploads` real do projeto nunca é tocado; `UPLOADS_DIR` é salvo/restaurado). Cobertura: diretório ativo limpo, legado limpo, **dedup** quando `UPLOADS_DIR` aponta para o legado (um único `readdir` sobre o caminho), diretório inexistente ignorado sem lançar, `.gitkeep` preservado e **idempotência** (duas execuções sem erro). Para isso a linha `jest.mock('fs')` foi **removida** do arquivo — com o `fs` mockado os testes novos enxergariam o mock, não o disco, e provariam o mesmo que os antigos. Verificado por **teste de mutação**: tirando o `.filter()` de dedup e o guarda de `.gitkeep` do script, **3 dos 6 novos falham** — não são tautológicos.
 
-**Problemas:**
-- 🔴 **Teste testa o mock, não o script:** O teste chama `libDb.query(TRUNCATE...)` diretamente, não invoca `clearDatabase()` do `clear-db.js`. O script real usa `query()` de `scripts/db/connection.js`, não `lib/infra/db.js`.
-- 🔴 **Teste do cancelamento é falso-positivo:** A validação é `if (!answer) { expect(query).not.toHaveBeenCalled() }` — é uma condicional JavaScript, não uma execução real do script. O script nunca é importado/testado.
-- ⚠️ `clear-db.js` não é importado — o `require('../../mocks/db-module')` aponta para `lib/infra/db.js`, que é um módulo diferente de `scripts/db/connection.js`.
+**Atualização de 12/10/2026 — o arquivo saiu de 10 para 16 testes e os 4 testes tautológicos foram apagados; a pendência X de `docs/PENDENCIAS_scripts_testes.md` está RESOLVIDA.** Removidos: o describe tautológico (os 4 casos da tabela acima), o mock de `lib/infra/db.js` e o `beforeEach`/`afterEach` de `DATABASE_URL`. Adicionados: mock de **`scripts/db/connection.js`** (`query`/`closePool` — o módulo que `clear-db.js:7` realmente importa) e mock de `readline` com resposta controlável (`mockAnswer`). O SQL deixou de ser literal no teste: as asserções leem o argumento capturado do mock (`mockQuery.mock.calls[0]`), com a lista de tabelas esperada declarada como contrato — agora **incluindo `images`**, que os testes antigos esqueciam. Composição dos 16: **6** de `askConfirmation` (`s`, `sim`, `S` com espaços, `n`, vazio, `x`), **2** de `main()` nos caminhos `s` e `n`, **2** de `clearDatabase` (SQL + caminho de erro que exercita a semântica do `finally` — o bloco roda quando o `try` lança e fecha o pool; no caminho real o `process.exit(1)` encerra o processo antes e o pool morre junto com ele) e os **6** preexistentes de `clearUploadsDir`, byte-idênticos. No script, `askConfirmation` e `clearDatabase` passaram a ser `export` e o corpo da IIFE da guarda virou `export async function main()` (motivo: sem `main()`, provar "cancelado ⇒ nenhum TRUNCATE" exigiria forjar `process.argv[1]` e fazer poll de microtasks, porque a IIFE não devolve a promise) — **nenhum comportamento alterado** (ordem `console.log` → `query` → `clearUploadsDir`, `catch` com `console.error` + `process.exit(1)` e `finally` com `await closePool()` intactos). Os testes novos usam o **mesmo sandbox** de tmpdir + `process.chdir` + `UPLOADS_DIR` do describe de `clearUploadsDir`, porque `clearDatabase` chama `clearUploadsDir()` com fs real dentro do `try` — sem o sandbox, o teste apagaria `<repo>/uploads` e `<repo>/public/uploads` de verdade. `process.exit` é mockado para **lançar sentinel** (não ser noop), de modo que o fluxo pare no mesmo ponto do `exit` real. **Verificação por mutação: 9 mutações, zero sobreviventes** (`users`→`authors` 1 falha; remover `images` 1; remover `RESTART IDENTITY CASCADE` 1; `TRUNCATE TABLE`→`DELETE FROM` 1; remover o `await query(...)` 3; remover o `finally { closePool() }` 3; `askConfirmation` sempre `true` 4; inverter a comparação da linha 20 — negar `resolve(… === 's' || … === 'sim')`, de modo que `'s'`/`'sim'` passem a cancelar e qualquer outra resposta a prosseguir — 8 falhas (os 6 de `askConfirmation` + "main com 's'" que passa a cancelar + "main com 'n'" que passa a prosseguir; o número `4` registrado antes era coerente com um mock constante, não com a inversão real); remover a guarda de CLI derruba a suíte inteira). Estado final: `npx jest tests/unit/scripts/clear-db.test.js` → **16 passed**; `npm run lint` → **exit 0**.
+
+**Problemas (todos resolvidos — 08/10 e 12/10/2026 — descrição original preservada abaixo):**
+- 🔴 ~~**Teste testa o mock, não o script:** O teste chama `libDb.query(TRUNCATE...)` diretamente, não invoca `clearDatabase()` do `clear-db.js`. O script real usa `query()` de `scripts/db/connection.js`, não `lib/infra/db.js`.~~ *(Resolvido: os testes agora mockam `scripts/db/connection.js` e invocam `clearDatabase()`/`main()` do script importado.)*
+- 🔴 ~~**Teste do cancelamento é falso-positivo:** A validação é `if (!answer) { expect(query).not.toHaveBeenCalled() }` — é uma condicional JavaScript, não uma execução real do script. O script nunca é importado/testado.~~ *(Resolvido: o caminho `n` passa por `main()` + `askConfirmation()` com `readline` mockado; `process.exit` lança sentinel e o teste assera `query` não chamada.)*
+- ⚠️ ~~`clear-db.js` não é importado — o `require('../../mocks/db-module')` aponta para `lib/infra/db.js`, que é um módulo diferente de `scripts/db/connection.js`.~~ *(Resolvido: o mock agora é de `scripts/db/connection.js`.)*
 - ⚠️ Não testa `clearUploadsDir`.
   - *(Anotação de 08/10/2026: **os dois itens acima deixaram de valer para `clearUploadsDir`**. O script ganhou guarda de CLI (`process.argv[1].endsWith('clear-db.js')` com IIFE assíncrona), então `clear-db.js` **passou a ser importado** por este arquivo, e `clearUploadsDir` tem 6 testes próprios com fs real e temp dirs. **`clearDatabase` e `askConfirmation` seguem sem teste de verdade** — os 4 testes antigos acima continuam intocados e tautológicos: ver pendência X de `docs/PENDENCIAS_scripts_testes.md`.)*
+  - *(Anotação de 12/10/2026: **pendência X fechada.** `clearDatabase` e `askConfirmation` agora têm teste de verdade; os 4 testes antigos citados acima foram apagados.)*
 
 **Melhoria recomendada:**
-- Importar `clear-db.js` e testar `clearDatabase()` isolando o `readline` (mock de `readline.question`). *(Parcialmente viabilizada em 08/10/2026: o import já funciona — a guarda de CLI do script permite — mas `clearDatabase`/`askConfirmation` ainda não são exportadas; ver pendência X de `docs/PENDENCIAS_scripts_testes.md`.)*
+- Importar `clear-db.js` e testar `clearDatabase()` isolando o `readline` (mock de `readline.question`). ~~*(Parcialmente viabilizada em 08/10/2026: o import já funciona — a guarda de CLI do script permite — mas `clearDatabase`/`askConfirmation` ainda não são exportadas; ver pendência X de `docs/PENDENCIAS_scripts_testes.md`.)*~~ *(Feito em 12/10/2026: `clearDatabase`, `askConfirmation` e `main()` são exportadas e o `readline` é mockado com resposta controlável.)*
 - Testar `clearUploadsDir` removendo arquivos de `public/uploads`. *(Feito em 08/10/2026, **sem** usar o `public/uploads` real: o teste monta os dois diretórios num temp dir e aponta o `cwd` para lá — apagar arquivo do diretório real do projeto seria destrutivo e não reproduzível.)*
-- Remover teste de cancelação falso (reescrever com mock de `readline`). *(Pendente — pendência X.)*
+- Remover teste de cancelação falso (reescrever com mock de `readline`). ~~*(Pendente — pendência X.)*~~ *(Feito em 12/10/2026 — pendência X fechada.)*
 
 ---
 
@@ -13058,20 +13061,22 @@ jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').moc
 **Arquivo sob teste:** `scripts/clear-musicas.js`  
 **Escopo:** Remove todos os registros da tabela `musicas`.
 
-**Testes (2 casos):**
+**Testes (2 casos — análise histórica; em 12/10/2026 o arquivo passou a 10 testes, ver abaixo):**
 
 | Teste | O que valida |
 |---|---|
 | Executa DELETE | Query contém `DELETE` |
 | Fecha conexão | `closeDatabase` é chamado |
 
-**Problemas:**
-- 🔴 **Mesmo problema que `clear-db.test.js`:** Testa o mock `lib/infra/db.js`, não o script real.
-- 🔴 **`clear-musicas.js` não é importado** — o teste nem importa o arquivo sob teste.
-- ⚠️ O teste de "DELETE" é trivial: monta string `'DELETE FROM musicas'` e chama `libDb.query(sql)` — não valida comportamento do script.
+**Atualização de 12/10/2026 — o arquivo saiu de 2 para 11 testes e os 2 testes tautológicos foram apagados; a pendência Y de `docs/PENDENCIAS_scripts_testes.md` está RESOLVIDA.** A tabela acima descreve a versão antiga, mantida para histórico. O arquivo agora importa `scripts/clear-musicas.js` (o script ganhou `export` de `askConfirmation`/`clearMusicRecords`/`main()` e guarda de CLI), mocka **`scripts/db/connection.js`** e `readline` com resposta controlável, e lê o SQL do mock (`mockQuery.mock.calls[0]`) em vez de reescrevê-lo. Composição dos 11: **6** de `askConfirmation` (`s`, `sim`, `S` com espaços, `n`, vazio, `x`), **2** de `main` (caminhos `s`/`n`), **2** de `clearMusicRecords` (SQL capturado do mock + caminho de erro com `process.exit(1)` sentinela) e **1 teste de guarda de CLI** — com `argv[1]` terminando em `clear-musicas.js`, o módulo é recarregado com `jest.isolateModulesAsync` e a asserção é de que `main()` **disparou** (DELETE saiu pelo mock do registro isolado). Esse último teste fecha o furo que a mutação `if (false)` na guarda expôs: sem ele, desligar a guarda viraria o script num no-op silencioso sem nenhum teste reprovar.
+
+**Problemas (todos resolvidos em 12/10/2026 — descrição original preservada abaixo):**
+- 🔴 ~~**Mesmo problema que `clear-db.test.js` tinha até 12/10/2026 (agora item Y):** Testa o mock `lib/infra/db.js`, não o script real.~~ *(Resolvido: o mock agora é de `scripts/db/connection.js` e os testes invocam `askConfirmation()`/`clearMusicRecords()`/`main()` do script importado.)*
+- 🔴 ~~**`clear-musicas.js` não é importado** — o teste nem importa o arquivo sob teste.~~ *(Resolvido: o script é importado no topo do arquivo — só é possível porque passou a ter guarda de CLI.)*
+- ⚠️ ~~O teste de "DELETE" é trivial: monta string `'DELETE FROM musicas'` e chama `libDb.query(sql)` — não valida comportamento do script.~~ *(Resolvido: o SQL é lido de `mockQuery.mock.calls[0]`, ou seja, do argumento que o **script** passou ao mock.)*
 
 **Melhoria recomendada:**
-- Importar `clear-musicas.js` e testar `clearMusicRecords()` com mock de `readline`.
+- ~~Importar `clear-musicas.js` e testar `clearMusicRecords()` com mock de `readline`.~~ *(Feito em 12/10/2026.)*
 - Testar comportamento quando tabela está vazia (rowCount = 0).
 
 ---
@@ -13146,7 +13151,7 @@ jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').moc
 **Arquivo sob teste:** `scripts/reset-password.js`  
 **Escopo:** Redefinição de senha de usuário admin (hash + UPDATE/INSERT).
 
-**Testes (4 casos):**
+**Testes (4 casos — análise histórica; em 12/10/2026 o arquivo passou a 7 testes, ver abaixo):**
 
 | Teste | O que valida |
 |---|---|
@@ -13155,17 +13160,19 @@ jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').moc
 | INSERT se não existir | Quando UPDATE retorna 0 linhas, faz INSERT |
 | Fecha conexão | `closeDatabase` chamado |
 
-**Problemas:**
-- 🔴 **Teste testa mock, não script:** Chama `libDb.query(UPDATE...)` diretamente. O script real (`reset-password.js`) não é importado.
-- 🔴 **Ordem confusa de mocks:** No teste de INSERT, `mockResolvedValue` é chamado **depois** do `mockResolvedValueOnce` — o que significa que o primeiro `await libDb.query('UPDATE...')` usa `{rows: [{id:1}], rowCount:1}` (não simulando "usuário não encontrado"). O cenário real nunca é exercitado.
-- ⚠️ Não testa validação de argumento ausente (sem `process.argv[3]` → `process.exit(1)`).
-- ⚠️ Não testa erro de banco durante UPDATE ou INSERT.
+**Atualização de 12/10/2026 — o arquivo saiu de 4 para 7 testes e os problemas abaixo foram apagados junto com a versão antiga; a pendência Y de `docs/PENDENCIAS_scripts_testes.md` está RESOLVIDA.** A tabela acima descreve a versão antiga, mantida para histórico. O script passou a exportar `resetPassword(targetUser = process.argv[2] || 'admin', newPassword = process.argv[3])` e `main()`, com guarda de CLI — os defaults são idênticos à leitura direta de argv de antes, então o CLI não mudou. O arquivo agora importa `scripts/reset-password.js`, mocka **`scripts/db/connection.js`** e `lib/auth/auth.js` (carregado por `await import()` dinâmico no script; compilado para `require`, o `jest.mock` intercepta), e lê o SQL dos `mockQuery.mock.calls` em vez de reescrevê-lo. Composição dos 7: senha ausente (uso + `process.exit(1)` sentinela), UPDATE sem INSERT, UPDATE→INSERT com `rowCount: 0`, query rejeitada (exercitando a semântica do `finally`), `hashPassword` recebendo a senha crua, `main()` com defaults do argv, e **1 teste de guarda de CLI** — com `argv[1]` terminando em `reset-password.js`, o módulo é recarregado com `jest.isolateModulesAsync` e a asserção é de que `main()` **disparou** (hash + UPDATE saíram pelos mocks do registro isolado). Esse último teste fecha o furo que a mutação `if (false)` na guarda expôs: sem ele, desligar a guarda viraria `npm run db:reset:password` num no-op silencioso sem nenhum teste reprovar.
+
+**Problemas (todos resolvidos em 12/10/2026 — descrição original preservada abaixo):**
+- 🔴 ~~**Teste testa mock, não script:** Chama `libDb.query(UPDATE...)` diretamente. O script real (`reset-password.js`) não é importado.~~ *(Resolvido: o script é importado no topo do arquivo e os testes invocam `resetPassword()`/`main()`.)*
+- 🔴 ~~**Ordem confusa de mocks:** No teste de INSERT, `mockResolvedValue` é chamado **depois** do `mockResolvedValueOnce` — o que significa que o primeiro `await libDb.query('UPDATE...')` usa `{rows: [{id:1}], rowCount:1}` (não simulando "usuário não encontrado"). O cenário real nunca é exercitado.~~ *(Resolvido: o cenário de INSERT usa `mockResolvedValueOnce({ rowCount: 0 })` para o UPDATE, simulando exatamente "usuário não encontrado".)*
+- ⚠️ ~~Não testa validação de argumento ausente (sem `process.argv[3]` → `process.exit(1)`).~~ *(Resolvido: teste dedicado "sem senha", com `process.exit` sentinela.)*
+- ⚠️ ~~Não testa erro de banco durante UPDATE ou INSERT.~~ *(Resolvido: teste "query rejeitada" — nota: o `catch` do script só loga, sem `process.exit`.)*
 - ⚠️ Não testa chamada a `hashPassword` quando `libAuth.hashPassword` lança erro.
 
 **Melhoria recomendada:**
-- Importar `reset-password.js` e mockar `readline`/`process.argv`.
-- Corrigir lógica do teste de INSERT: primeiro mock deve ser `rowCount: 0` para UPDATE.
-- Testar path de erro de banco.
+- ~~Importar `reset-password.js` e mockar `readline`/`process.argv`.~~ *(Feito em 12/10/2026 — sem `readline`: o script não tem prompt; o argv é controlado por teste.)*
+- ~~Corrigir lógica do teste de INSERT: primeiro mock deve ser `rowCount: 0` para UPDATE.~~ *(Feito em 12/10/2026.)*
+- ~~Testar path de erro de banco.~~ *(Feito em 12/10/2026.)*
 
 ---
 
@@ -13174,25 +13181,27 @@ jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').moc
 **Arquivo sob teste:** `scripts/seed-all.js`  
 **Escopo:** Orquestrador de seeds (verifica conexão, executa seeds em ordem).
 
-**Testes (2 casos):**
+**Testes (2 casos — análise histórica; em 12/10/2026 o arquivo passou a 7 testes, ver abaixo):**
 
 | Teste | O que valida |
 |---|---|
 | Verifica conexão | Query `SELECT 1` retorna `{ '?column?': 1 }` |
 | Ordem de seeds | Array `['seed-posts.js', 'seed-musicas.js', 'seed-videos.js']` |
 
-**Problemas:**
-- 🔴 **Extremamente fraco:** O teste de "ordem de seeds" é um teste de array hardcoded — nem sequer importa o script. `seed-all.js` executa `seed-posts.js`, `seed-musicas.js`, `seed-videos.js`, `seed-settings.js` (4 itens), o teste verifica apenas 3.
-- 🔴 Não testa `runSeed` (import dinâmico).
-- 🔴 Não testa `--clean` flag.
-- 🔴 Não testa falha de conexão (retorno de `checkDatabaseReady()` → `false`).
-- 🔴 Não testa falha de seed individual.
+**Atualização de 12/10/2026 — o arquivo saiu de 2 para 7 testes e os 2 testes tautológicos (incluindo o array hardcoded acima, que nem importava o script) foram apagados; a pendência Y de `docs/PENDENCIAS_scripts_testes.md` está RESOLVIDA.** A tabela acima descreve a versão antiga, mantida para histórico. O arquivo agora importa `scripts/seed-all.js` (o script ganhou `export` de `checkDatabaseReady`/`runSeed`/`seedAll`/`main()` e guarda de CLI) e mocka **`scripts/db/connection.js`**, os **4 seeds** (`seed-posts`, `seed-musicas`, `seed-videos`, `seed-settings` — o teste antigo afirmava 3) e `child_process.execSync`. Detalhe que travava o import: `fileURLToPath(import.meta.url)` sobrevive à compilação CommonJS do Babel e o Jest 30 recusa o módulo com `ERR_REQUIRE_ESM` — eliminado com `seedsDir` como parâmetro com default `<cwd>/scripts`. Outro achado: `{ default: jest.fn() }` puro não basta nos mocks dos seeds — sem `__esModule: true`, o `interopRequireWildcard` do Babel devolve `{ default: { default: fn } }` e o script lança "não exporta uma função de seed". Composição dos 7: caminho feliz (`SELECT 1` + ordem real dos 4 seeds via `invocationCallOrder` + pool fechado), banco indisponível (nenhum seed), `--clean` (reset antes dos seeds), `--clean` com `execSync` falhando, seed individual falhando (o seguinte não roda), `main()` com falha (exitCode 1 + `finally`), e **1 teste de guarda de CLI** — com `argv[1]` terminando em `seed-all.js`, o módulo é recarregado com `jest.isolateModulesAsync` e a asserção é de que `main()` **disparou** (`SELECT 1` + os 4 seeds saíram pelos mocks do registro isolado). Esse último teste fecha o furo que a mutação `if (false)` na guarda expôs: sem ele, desligar a guarda viraria `npm run seed:all` num no-op silencioso sem nenhum teste reprovar.
+
+**Problemas (todos resolvidos em 12/10/2026 — descrição original preservada abaixo):**
+- 🔴 ~~**Extremamente fraco:** O teste de "ordem de seeds" é um teste de array hardcoded — nem sequer importa o script. `seed-all.js` executa `seed-posts.js`, `seed-musicas.js`, `seed-videos.js`, `seed-settings.js` (4 itens), o teste verifica apenas 3.~~ *(Resolvido: a ordem é derivada de `invocationCallOrder` dos mocks dos 4 seeds chamados pelo `seedAll()` real.)*
+- 🔴 ~~Não testa `runSeed` (import dinâmico).~~ *(Resolvido: todo caminho feliz passa por `runSeed`, que importa cada seed mockado.)*
+- 🔴 ~~Não testa `--clean` flag.~~ *(Resolvido: 2 testes dedicados — sucesso e falha do `execSync`.)*
+- 🔴 ~~Não testa falha de conexão (retorno de `checkDatabaseReady()` → `false`).~~ *(Resolvido: teste "banco indisponível".)*
+- 🔴 ~~Não testa falha de seed individual.~~ *(Resolvido: teste "um seed falhando".)*
 
 **Melhoria recomendada:**
-- Importar `seed-all.js` e mockar `child_process.execSync`, `fs.promises`, `path`.
-- Testar path de erro de conexão.
-- Testar que seeds são chamados em ordem correta.
-- Testar que `--clean` invoca `npm run db:reset`.
+- ~~Importar `seed-all.js` e mockar `child_process.execSync`, `fs.promises`, `path`.~~ *(Feito em 12/10/2026 — `fs`/`path` não precisaram de mock: o script não toca disco.)*
+- ~~Testar path de erro de conexão.~~ *(Feito em 12/10/2026.)*
+- ~~Testar que seeds são chamados em ordem correta.~~ *(Feito em 12/10/2026.)*
+- ~~Testar que `--clean` invoca `npm run db:reset`.~~ *(Feito em 12/10/2026.)*
 
 ---
 
@@ -13346,11 +13355,11 @@ jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').moc
 
 | # | Descrição | Arquivos afetados |
 |---|---|---|
-| 1 | **Testes testam o mock, não o script real** | `clear-db.test.js`, `clear-musicas.test.js`, `reset-password.test.js`, `seed-all.test.js` |
-| 2 | **Testes de cancelamento/falso-positivo** | `clear-db.test.js` (teste "não deve executar TRUNCATE se usuário cancelar") |
+| 1 | ~~**Testes testam o mock, não o script real**~~ *(Resolvido em 12/10/2026 — item Y: `clear-musicas.test.js`, `reset-password.test.js` e `seed-all.test.js` agora importam os scripts, com 11/7/7 testes; `clear-db.test.js` saiu da lista em 12/10/2026 — item X)* | Nenhum — os três citados passaram a importar os scripts |
+| 2 | **Testes de cancelamento/falso-positivo** | ~~`clear-db.test.js` (teste "não deve executar TRUNCATE se usuário cancelar")~~ — resolvido em 12/10/2026: o teste foi apagado (item X) |
 | 3 | **`backup.test.js` apenas verifica exports** | Nenhuma lógica de `createBackup`, `restoreBackup`, criptografia, hash, rotação |
 | 4 | **`cleanup.test.js` não testa `cleanTableByPattern`** | Função principal do módulo não coberta |
-| 5 | **`seed-all.test.js` testa array hardcoded** | Nem importa o script |
+| 5 | ~~**`seed-all.test.js` testa array hardcoded**~~ *(Resolvido em 12/10/2026 — o teste falso foi apagado; a ordem dos 4 seeds agora é derivada de `invocationCallOrder` — item Y)* | Nenhum — o script é importado |
 
 #### Moderados (⚠️)
 
@@ -13375,7 +13384,7 @@ jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').moc
 
 #### 5.1 Testar o Script Real (não o mock)
 
-Para `clear-db`, `clear-musicas`, `reset-password`, `seed-all`:
+~~Para `clear-musicas`, `reset-password`, `seed-all` (`clear-db` já segue este padrão desde 12/10/2026 — item X):~~ *(Estava desatualizado: os três também seguem o padrão desde 12/10/2026 — item Y de `docs/PENDENCIAS_scripts_testes.md`; todos mockam `scripts/db/connection.js` e importam o script, com 11/7/7 testes. O exemplo abaixo continua válido como ilustração do padrão.)*
 
 ```js
 // Padrão correto:
@@ -13442,8 +13451,8 @@ beforeAll(() => {
 
 | Padrão | Ocorrências |
 |---|---|
-| `jest.mock('pg'); jest.mock('fs'); jest.mock('dotenv');` | Repetido em `clear-db.test.js`, `clear-musicas.test.js`, `reset-password.test.js`, `clean-orphaned-images.test.js` |
-| `jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb());` | `clear-db.test.js`, `clear-musicas.test.js`, `reset-password.test.js`, `seed-all.test.js` |
+| `jest.mock('pg'); jest.mock('fs'); jest.mock('dotenv');` | `clean-orphaned-images.test.js` continua no padrão; ~~`clear-musicas.test.js`, `reset-password.test.js`~~ deixaram de mockar esses módulos em 12/10/2026 — eram mocks mortos (os scripts não importam nenhum dos três), e os arquivos hoje só mockam o que os scripts realmente importam (`clear-db.test.js` perdeu o `jest.mock('fs')` em 12/10/2026 — só `pg`/`dotenv` seguem) |
+| `jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb());` | ~~Nenhuma — padrão extinto.~~ `clear-db.test.js` trocou o mock por `scripts/db/connection.js` em 12/10/2026 (item X) e, em 12/10/2026, `clear-musicas.test.js`, `reset-password.test.js` e `seed-all.test.js` também trocaram (item Y) — hoje nenhum teste de script mocka `lib/infra/db.js` |
 | `process.env.DATABASE_URL = 'postgres://user:***@localhost:5432/testdb'` + `delete process.env.DATABASE_URL` | Praticamente todos os arquivos |
 | `musicasSchema` e `dicasSchema` | Duplicados em cada `describe` de `init-table.test.js` |
 | Mock de `loadEnv` | Repetido em `clear-db.test.js`, `migrate.test.js` |
@@ -13459,8 +13468,8 @@ beforeAll(() => {
 |---|---|---|
 | `jest.unstable_mockModule('date-fns', ...)` | `backup.test.js` | `backup.js` não usa `date-fns` desde refatoração para `date-format.js` |
 | Import `{ mockQuery } from 'pg'` | `clean-orphaned-images.test.js` | Depende do `__mocks__/pg.js` compartilhado — verificado que existe e exporta `mockQuery` (linha 26) |
-| `afterEach` sem body | `reset-password.test.js` | Não há cleanup entre testes |
-| Mock de `dotenv/config` em `reset-password.test.js` vs `dotenv` em outros | Inconsistência | `reset-password.js` importa `dotenv` (não `dotenv/config`), mas o mock usa `dotenv/config` |
+| ~~`afterEach` sem body~~ | ~~`reset-password.test.js`~~ | *(Resolvido em 12/10/2026: o `afterEach` restaura `process.argv` e os spies de `console`/`process.exit`.)* |
+| ~~Mock de `dotenv/config` em `reset-password.test.js` vs `dotenv` em outros~~ | ~~Inconsistência~~ | *(Resolvido em 12/10/2026: o mock de `dotenv`/`dotenv/config` foi removido — `reset-password.js` importa `loadEnv()` de `scripts/utils/load-env.js`, que é o que o teste mocka.)* |
 
 ---
 
@@ -13470,12 +13479,12 @@ beforeAll(() => {
 | `connection.test.js` | getPool, closePool, query | resetPool (indireto) | 85% |
 | `backup.test.js` | (só exports) | createBackup, restoreBackup, cleanupOldBackups, getBackupFiles, logBackupOperation, getBackupLogs, ensureBackupDirectory, generateBackupFilename, runPgDumpToFile, runPsqlFromFile, calculateFileHash, checkDiskBeforeBackup, rotateLogIfNeeded, cleanupOldLogs | 10% |
 | `clean-orphaned-images.test.js` | cleanOrphanedImages | (parcial — múltiplos branches) | 88.93% |
-| `clear-db.test.js` | **`clearUploadsDir` (6 testes com fs real, desde 08/10/2026)** + os 4 testes antigos de import/mock | clearDatabase, askConfirmation (os 4 antigos continuam sem invocar o script) | 15% (estimativa da época — não reavaliada) |
-| `clear-musicas.test.js` | (só imports) | clearMusicRecords, askConfirmation | 10% |
+| `clear-db.test.js` | **`askConfirmation` (6), `main` (2), `clearDatabase` (2), `clearUploadsDir` (6) — 16 testes desde 12/10/2026** | nenhuma função ficou de fora | estimativa de 15% era da época dos 4 testes tautológicos — reavaliar |
+| `clear-musicas.test.js` | **`askConfirmation` (6), `main` (2 + 1 guarda de CLI), `clearMusicRecords` (2) — 11 testes desde 12/10/2026** | nenhuma função ficou de fora | reavaliar (a estimativa de 10% era da época dos 2 testes tautológicos) |
 | `init-table.test.js` | buildCreateTableSQL, getSeedValues, buildSeedSQL, getTableName | loadSchemaFromDir | 75% |
 | `migrate.test.js` | listMigrationFiles, migrationNameFromFile, ensureMigrationTable, getAppliedMigrations | applyMigration, revertLastMigration, listStatus, showHelp | 45% |
-| `reset-password.test.js` | (chamadas diretas) | resetPassword, path de erro | 25% |
-| `seed-all.test.js` | (array hardcoded) | seedAll, runSeed, checkDatabaseReady | 10% |
+| `reset-password.test.js` | **`resetPassword` (senha ausente, UPDATE, INSERT, query rejeitada, hash), `main` (1 + 1 guarda de CLI) — 7 testes desde 12/10/2026** | caminho de erro do `hashPassword` | reavaliar (a estimativa de 25% era da época dos 4 testes tautológicos) |
+| `seed-all.test.js` | **`seedAll` (feliz, banco indisponível, `--clean` ×2, seed falhando), `runSeed`, `checkDatabaseReady`, `main` (1 + 1 guarda de CLI) — 7 testes desde 12/10/2026** | nenhuma função ficou de fora | reavaliar (a estimativa de 10% era da época dos 2 testes tautológicos) |
 | `validate-schema.test.js` | validateSchema (caminho feliz + erro) | tabela faltando, coluna faltando | 55% |
 | `utils/cleanup.test.js` | loadEnv (parcial) | cleanTableByPattern | 25% |
 | `utils/constants.test.js` | 11 constantes | 8 constantes faltando | 60% |
@@ -13493,12 +13502,12 @@ beforeAll(() => {
 | `scripts/db/connection.js` | `connection.test.js` | `jest.unstable_mockModule('pg')` | ✅ Adequado |
 | `scripts/backup.js` | `backup.test.js` | `child_process`, `fs`, `date-fns` | 🔴 Inadequado (só exports) |
 | `scripts/clean-orphaned-images.js` | `clean-orphaned-images.test.js` | `pg`, `fs`, `dotenv` | ⚠️ Parcial |
-| `scripts/clear-db.js` | `clear-db.test.js` | `lib/infra/db.js` | 🔴 Testa mock, não script |
-| `scripts/clear-musicas.js` | `clear-musicas.test.js` | `lib/infra/db.js` | 🔴 Testa mock, não script |
+| `scripts/clear-db.js` | `clear-db.test.js` | `scripts/db/connection.js`, `readline` | ✅ Adequado (16 testes desde 12/10/2026 — item X) |
+| `scripts/clear-musicas.js` | `clear-musicas.test.js` | `scripts/db/connection.js`, `readline`, `load-env` | ✅ Adequado (11 testes desde 12/10/2026 — item Y) |
 | `scripts/init-table.js` + `utils/init-table-utils.js` | `init-table.test.js` | (nenhum — funções puras) | ✅ Adequado |
 | `scripts/migrate.js` | `migrate.test.js` | `pg`, `fs`, `load-env`, `db/connection` | ⚠️ Parcial |
-| `scripts/reset-password.js` | `reset-password.test.js` | `pg`, `fs`, `dotenv/config`, `lib/auth`, `lib/infra/db` | 🔴 Testa mock, não script |
-| `scripts/seed-all.js` | `seed-all.test.js` | `pg`, `fs`, `dotenv`, `lib/infra/db` | 🔴 Inadequado |
+| `scripts/reset-password.js` | `reset-password.test.js` | `scripts/db/connection.js`, `lib/auth`, `load-env` | ✅ Adequado (7 testes desde 12/10/2026 — item Y) |
+| `scripts/seed-all.js` | `seed-all.test.js` | `scripts/db/connection.js`, os 4 `seed-*`, `child_process`, `load-env` | ✅ Adequado (7 testes desde 12/10/2026 — item Y) |
 | `scripts/validate-schema.js` | `validate-schema.test.js` | `pg`, `load-env` | ✅ Adequado |
 | `scripts/utils/cleanup.js` | `cleanup.test.js` | `fs`, `dotenv` | 🔴 Falta testar `cleanTableByPattern` |
 | `scripts/utils/constants.js` | `constants.test.js` | (nenhum) | ⚠️ Parcial (faltam constantes) |
@@ -14234,12 +14243,13 @@ O teste lê `.github/workflows/test-coverage.yml` do disco. Se o workflow for mo
 
 **Finalidade**: Verifica que `clearDatabase()` executa TRUNCATE nas tabelas corretas.
 
-**Relações**: Mocks de `pg`, `fs`, `dotenv`, `lib/infra/db.js`, `scripts/utils/load-env.js`.
+**Relações**: Mocks de `pg`, `fs`, `dotenv`, `lib/infra/db.js`, `scripts/utils/load-env.js`. *(Arranjo antigo — desde 12/10/2026 o arquivo mocka `scripts/db/connection.js` e `readline`, e não tem mais `fs`/`lib/infra/db.js`.)*
 
 **Análise**:
-- **Problema grave**: Este teste **não testa o script real** — testa o mock do `lib/infra/db.js`. O SQL é construído inline no teste, não no script. Não há garantia de que `clear-db.js` realmente executa esse TRUNCATE.
-- **Problema**: O teste "não deve executar TRUNCATE se usuário cancelar" é um teste falso — testa `if (!answer)` no próprio teste, não no script.
+- ~~**Problema grave**: Este teste **não testa o script real** — testa o mock do `lib/infra/db.js`. O SQL é construído inline no teste, não no script. Não há garantia de que `clear-db.js` realmente executa esse TRUNCATE.~~
+- ~~**Problema**: O teste "não deve executar TRUNCATE se usuário cancelar" é um teste falso — testa `if (!answer)` no próprio teste, não no script.~~
 - **Melhoria**: Importar e chamar a função real do script, ou pelo menos verificar que o script contém a string `TRUNCATE TABLE`.
+- **Resolvido em 12/10/2026 (item X de `docs/PENDENCIAS_scripts_testes.md`)**: os dois problemas acima foram apagados com os próprios testes — o arquivo agora importa `scripts/clear-db.js`, mocka `scripts/db/connection.js` e `readline`, lê o SQL de `mockQuery.mock.calls[0]` (incluindo `images`) e o cancelamento passa por `main()` + `askConfirmation()`. **16 testes**, verificados por 9 mutações sem sobreviventes.
 
 ---
 
@@ -14248,9 +14258,9 @@ O teste lê `.github/workflows/test-coverage.yml` do disco. Se o workflow for mo
 **Finalidade**: Verifica DELETE FROM musicas.
 
 **Análise**:
-- **Problema**: Mesmo problema que `clear-db.test.js` — testa o mock, não o script. Só 2 testes, ambos verificando que `libDb.query` foi chamado com SQL específico.
-- **Código morto**: Nenhum teste verifica o comportamento real do script.
-- **Melhada**: Chamar `clearMusicas()` do script.
+- ~~**Problema**: Mesmo problema que `clear-db.test.js` tinha até 12/10/2026 (agora item Y de `docs/PENDENCIAS_scripts_testes.md`) — testa o mock, não o script. Só 2 testes, ambos verificando que `libDb.query` foi chamado com SQL específico.~~ *(Resolvido em 12/10/2026 — item Y: **11 testes** que importam `scripts/clear-musicas.js`, mockando `scripts/db/connection.js` e `readline`, com o SQL lido de `mockQuery.mock.calls[0]` e um teste de guarda de CLI via `jest.isolateModulesAsync`.)*
+- ~~**Código morto**: Nenhum teste verifica o comportamento real do script.~~ *(Resolvido em 12/10/2026 — item Y.)*
+- ~~**Melhada**: Chamar `clearMusicas()` do script.~~ *(Feito em 12/10/2026 — a função real se chama `clearMusicRecords()`, e agora é ela que é chamada, junto com `askConfirmation()` e `main()`.)*
 
 ---
 
@@ -14283,8 +14293,8 @@ O teste lê `.github/workflows/test-coverage.yml` do disco. Se o workflow for mo
 **Finalidade**: Testa hashing de senha e UPDATE/INSERT na tabela users.
 
 **Análise**:
-- **Problema**: Novamente, testa o mock de `db` e `auth`, não o script real. O script `reset-password.js` provavelmente pede input do usuário (username, senha) — isso não é testado.
-- **Melhida**: Mockar `readline` ou input e testar o fluxo completo.
+- ~~**Problema**: Novamente, testa o mock de `db` e `auth`, não o script real. O script `reset-password.js` provavelmente pede input do usuário (username, senha) — isso não é testado.~~ *(Resolvido em 12/10/2026 — item Y de `docs/PENDENCIAS_scripts_testes.md`: **7 testes** que importam `scripts/reset-password.js`; a premissa de "input do usuário" estava errada — o script não tem prompt, lê `process.argv`, e os defaults da assinatura `resetPassword(targetUser, newPassword)` são testados junto com a guarda de CLI via `jest.isolateModulesAsync`.)*
+- ~~**Melhida**: Mockar `readline` ou input e testar o fluxo completo.~~ *(Feito em 12/10/2026 — sem `readline`, que o script não usa; o argv é controlado por teste.)*
 
 ---
 
@@ -14293,8 +14303,8 @@ O teste lê `.github/workflows/test-coverage.yml` do disco. Se o workflow for mo
 **Finalidade**: Verifica conexão e ordem de seeds.
 
 **Análise**:
-- **Problema**: Teste "deve executar seeds em ordem" é um teste falso — só verifica um array hardcoded no teste, não o seed-all.js real.
-- **Melhoria**: Importar `seedAll()` e verificar que chama cada seed na ordem.
+- ~~**Problema**: Teste "deve executar seeds em ordem" é um teste falso — só verifica um array hardcoded no teste, não o seed-all.js real.~~ *(Resolvido em 12/10/2026 — item Y de `docs/PENDENCIAS_scripts_testes.md`: **7 testes** que importam `scripts/seed-all.js`; a ordem dos **4** seeds agora é derivada de `invocationCallOrder` dos mocks chamados pelo `seedAll()` real, mais `--clean`, falhas e o teste de guarda de CLI via `jest.isolateModulesAsync`.)*
+- ~~**Melhoria**: Importar `seedAll()` e verificar que chama cada seed na ordem.~~ *(Feito em 12/10/2026.)*
 
 ---
 
@@ -14447,7 +14457,7 @@ Alguns testes usam `jest.unstable_mockModule` (ESM), outros usem `jest.mock` (CJ
 
 #### 5.3 Testes que testam o mock, não o script
 
-`clear-db.test.js`, `clear-musicas.test.js`, `reset-password.test.js`, `seed-all.test.js` testam o mock de `db` em vez do comportamento real do script. **Recomendação**: Refatorar para importar e testar as funções dos scripts.
+~~`clear-musicas.test.js`, `reset-password.test.js`, `seed-all.test.js` testam o mock de `db` em vez do comportamento real do script (`clear-db.test.js` deixou de entrar nessa lista em 12/10/2026 — ver item X). **Recomendação**: Refatorar para importar e testar as funções dos scripts.~~ *(Lista vazia desde 12/10/2026: `clear-db.test.js` saiu pelo item X e os três restantes pelo item Y de `docs/PENDENCIAS_scripts_testes.md` — todos importam os scripts e mockam `scripts/db/connection.js`. A recomendação foi cumprida.)*
 
 #### 5.4 Falta de `afterAll`/`afterEach` em alguns testes
 
@@ -14473,12 +14483,12 @@ Os paths relativos (`../../../../../pages/...`) são frágeis — se o arquivo s
 | `upload-image.edge.test.js` | 1 | ★★★☆☆ | Baixo | Verifica só chamada |
 | `backup.test.js` | 6 | ★★☆☆☆ | Baixo | Só verifica exports |
 | `clean-orphaned-images.test.js` | 10 | ★★★★☆ | Alto | Depende __mocks__/pg; cobre as 4 salvaguardas do script |
-| `clear-db.test.js` | 4 | ★☆☆☆☆ | Muito Baixo | Testa mock, não script |
-| `clear-musicas.test.js` | 2 | ★☆☆☆☆ | Muito Baixo | Testa mock, não script |
+| `clear-db.test.js` | 16 | — (reavaliar) | — | Resolvido em 12/10/2026: testa o script real (item X) |
+| `clear-musicas.test.js` | 11 | — (reavaliar) | — | Resolvido em 12/10/2026: testa o script real (item Y) |
 | `init-table.test.js` | 8 | ★★★★☆ | Alto | Faltam edge cases |
 | `migrate.test.js` | 5 | ★★★★☆ | Médio | Sem teste de run |
-| `reset-password.test.js` | 4 | ★★☆☆☆ | Baixo | Testa mock, não script |
-| `seed-all.test.js` | 2 | ★☆☆☆☆ | Muito Baixo | Teste falso |
+| `reset-password.test.js` | 7 | — (reavaliar) | — | Resolvido em 12/10/2026: testa o script real (item Y) |
+| `seed-all.test.js` | 7 | — (reavaliar) | — | Resolvido em 12/10/2026: testa o script real (item Y) |
 | `cleanup.test.js` | 2 | ★★☆☆☆ | Baixo | Mock não utilizado |
 | `constants.test.js` | 11 | ★★★★☆ | Alto | Hardcoded values |
 | `date-format.test.js` | 9 | ★★★★☆ | Alto | TZ-dependent |
@@ -14491,7 +14501,7 @@ Os paths relativos (`../../../../../pages/...`) são frágeis — se o arquivo s
 ---
 
 
-1. **Crítico**: Refatorar `clear-db.test.js`, `clear-musicas.test.js`, `reset-password.test.js`, `seed-all.test.js` para testar scripts reais, não mocks.
+1. ~~**Crítico**: Refatorar `clear-musicas.test.js`, `reset-password.test.js`, `seed-all.test.js` para testar scripts reais, não mocks (`clear-db.test.js` já foi refactorado em 12/10/2026 — item X).~~ *(Cumprido em 12/10/2026 — item Y de `docs/PENDENCIAS_scripts_testes.md`: os três importam os scripts, com 11/7/7 testes cada.)*
 2. **Alto**: Adicionar `afterEach`/`afterAll` com `jest.restoreAllMocks()` em todos os testes que criam spies.
 3. **Alto**: Padronizar estratégia de mock ESM vs CJS.
 4. **Médio**: Expandir cobertura de `login.edge.test.js` e `fetch-spotify.edge.test.js`.
@@ -15791,21 +15801,27 @@ A maioria dos testes é superficial: verifica **exports** e chamadas de mock, se
 | **Problemas** | 1. **Testa o mock, não o script**: todas as asserções são sobre `libDb.query` (o mock de `lib/infra/db.js`), não sobre o script `clear-db.js` em si. O script real nunca é importado ou executado. 2. **Teste de "cancelamento" é inócuo**: `const answer = false; if (!answer) { expect(...) }` — não exercita a função `askConfirmation()` do script, apenas verifica uma variável local `false`. 3. **TRUNCATE é hardcoded no teste**: a query SQL aparece como literal no teste, mas poderia asser contra o valor real extraído do script. |
 | **Melhorias** | 1. Importar `clear-db.js` e executar `clearDatabase()` com `readline` mockado para simular "s" e "n". 2. Verificar que `clearUploadsDir` é chamada após TRUNCATE. 3. Testar caminho de erro (query falha). 4. Validar a lista exata de tabelas no TRUCE. |
 | **Código morto** | `jest.mock('pg')` e `jest.mock('fs')` são desnecessários — o teste só importa `lib/infra/db.js` e `load-env.js`. |
-| **Duplicação** | Padrão de mock idêntico a `clear-musicas.test.js` (ambos testam o mock `db-module`). |
+| **Duplicação** | Padrão de mock idêntico a `clear-musicas.test.js` (ambos testavam o mock `db-module` — descrição histórica; os dois arquivos trocaram o mock por `scripts/db/connection.js` em 12/10/2026, itens X e Y). |
+
+> **Resolvido em 12/10/2026 (item X de `docs/PENDENCIAS_scripts_testes.md`).** As linhas acima descrevem a versão antiga, mantida para histórico. O arquivo agora tem **16 testes**: 6 de `askConfirmation`, 2 de `main` (caminhos `s`/`n`), 2 de `clearDatabase` (SQL + erro exercitando a semântica do `finally` — o bloco roda quando o `try` lança; no caminho real o `process.exit(1)` encerra o processo antes e o pool morre junto com ele) e os 6 preexistentes de `clearUploadsDir`. Mocks novos: `scripts/db/connection.js` e `readline` com resposta controlável; removidos o mock de `lib/infra/db.js` e o `beforeEach`/`afterEach` de `DATABASE_URL`. O SQL foi lido do mock (`mockQuery.mock.calls[0]`) em vez de escrito como literal, com a lista de tabelas — **incluindo `images`** — declarada como contrato. Todas as melhorias da tabela (1–4) foram feitas, `jest.mock('fs')` continua removido e a duplicação com `clear-musicas.test.js` acabou (a pendência Y, que replicava o arranjo antigo, fechou no mesmo dia — os três arquivos passaram a mockar `scripts/db/connection.js` também). Verificado por 9 mutações sem sobreviventes; `npx jest tests/unit/scripts/clear-db.test.js` → 16 passed.
 
 ---
 
 #### 4. `tests/unit/scripts/clear-musicas.test.js`
 
+> **Tabela histórica — a descrição abaixo é da versão com 2 testes, vigente até 12/10/2026.**
+
 | Aspecto | Detalhe |
 |---------|---------|
 | **Finalidade** | Verificar que `clear-musicas.js` executa DELETE FROM musicas e fecha conexão. |
-| **Relações** | Mesmo arranjo de `clear-db.test.js`: mocks de `pg`, `fs`, `dotenv`, `lib/infra/db.js`, `load-env.js`. |
+| **Relações** | Mesmo arranjo que `clear-db.test.js` tinha até 12/10/2026: mocks de `pg`, `fs`, `dotenv`, `lib/infra/db.js`, `load-env.js`. |
 | **Escopo** | 2 testes: DELETE e closeDatabase. |
 | **Problemas** | 1. **Não testa o script**: novamente, tudo é sobre o mock de `db.js`, não sobre `clear-musicas.js`. 2. **Teste de "DELETE" não verifica rowCount**: o mock retorna `rowCount: 5`, mas a asserção é apenas `stringContaining('DELETE')`. 3. **Código redundante com clear-db**: poderia ser um único teste parametrizado para scripts de limpeza. |
 | **Melhorias** | 1. Importar o script e testar `clearMusicRecords()`. 2. Simular confirmação do usuário via `readline` mock. 3. Verificar que `process.exit(1)` é chamado em caso de erro. |
 | **Código morto** | `jest.mock('pg')`, `jest.mock('fs')`, `jest.mock('dotenv')` — nenhum é usado indiretamente. |
-| **Duplicação** | Replica exatamente a estrutura de `clear-db.test.js`, apenas com query diferente. |
+| **Duplicação** | Replica exatamente a estrutura que `clear-db.test.js` tinha até 12/10/2026, apenas com query diferente. |
+
+> **Resolvido em 12/10/2026 (item Y de `docs/PENDENCIAS_scripts_testes.md`).** As linhas acima descrevem a versão antiga, mantida para histórico. O arquivo agora tem **11 testes**: 6 de `askConfirmation` (`s`, `sim`, `S` com espaços, `n`, vazio, `x`), 2 de `main` (caminhos `s`/`n`), 2 de `clearMusicRecords` (SQL lido de `mockQuery.mock.calls[0]` + caminho de erro com `process.exit(1)` sentinela) e **1 teste de guarda de CLI** — com `argv[1]` terminando em `clear-musicas.js`, o módulo é recarregado com `jest.isolateModulesAsync` e o teste assera que `main()` **disparou** (o DELETE saiu pelo mock do registro isolado); sem esse teste, a mutação `if (false)` na guarda passava em branco. Mocks agora: **`scripts/db/connection.js`** (o módulo que o script realmente importa) e `readline` com resposta controlável; removidos `pg`, `fs`, `dotenv` e `lib/infra/db.js` (eram mocks mortos — o script não importa nenhum). No script, `askConfirmation`, `clearMusicRecords` e `main()` passaram a ser `export` e a guarda de CLI chama `main()` sem `await` (Babel/CJS não tem top-level await) — **nenhum comportamento alterado**. Os 2 testes tautológicos da tabela foram apagados. Contagem esperada da suíte: **11 testes** (a verificação executada pelo orquestrador é `npx jest tests/unit/scripts/clear-musicas.test.js`).
 
 ---
 
@@ -15853,6 +15869,8 @@ A maioria dos testes é superficial: verifica **exports** e chamadas de mock, se
 
 #### 8. `tests/unit/scripts/reset-password.test.js`
 
+> **Tabela histórica — a descrição abaixo é da versão com 4 testes, vigente até 12/10/2026.**
+
 | Aspecto | Detalhe |
 |---------|---------|
 | **Finalidade** | Verificar que `reset-password.js` chama `hashPassword`, executa UPDATE, INSERT e fecha conexão. |
@@ -15861,11 +15879,15 @@ A maioria dos testes é superficial: verifica **exports** e chamadas de mock, se
 | **Problemas** | 1. **Testa o mock, não o script**: `reset-password.js` nunca é importado; tudo é sobre `libDb.query` e `libAuth.hashPassword`. 2. **Caminho feliz do script não é executado**: a função `resetPassword()` (que lê `process.argv`, chama `hashPassword`, decide UPDATE vs INSERT) nunca é chamada. 3. **Teste de INSERT** tem lógica confusa: `mockResolvedValueOnce` é chamado após já ter `mockResolvedValue` — a sequência real do script é UPDATE seguido condicional de INSERT, mas o teste não simula isso corretamente (o `mockResolvedValue` anterior já retorna `rowCount: 1`, então o UPDATE sempre "acha" o usuário). |
 | **Melhorias** | 1. Importar `reset-password.js` e executar `resetPassword()` com `process.argv` controlado. 2. Mockar `readline` ou `process.stdin` para interatividade (se houver). 3. Testar caminho de usuário inexistente (UPDATE retorna rowCount: 0). 4. Testar erro de `hashPassword`. |
 | **Código morto** | `jest.mock('pg')`, `jest.mock('fs')`, `jest.mock('dotenv/config')` — nenhum é usado diretamente. |
-| **Duplicação** | Estrutura idêntica a `clear-db.test.js` e `clear-musicas.test.js`. |
+| **Duplicação** | Estrutura idêntica à que `clear-db.test.js` tinha até 12/10/2026 e à de `clear-musicas.test.js`. |
+
+> **Resolvido em 12/10/2026 (item Y de `docs/PENDENCIAS_scripts_testes.md`).** As linhas acima descrevem a versão antiga, mantida para histórico. O arquivo agora tem **7 testes** que importam `scripts/reset-password.js`: senha ausente (loga uso, `process.exit(1)` sentinela, sem query nem `closePool`), UPDATE sem INSERT, UPDATE→INSERT com `rowCount: 0`, query rejeitada (exercitando a semântica do `finally` — o bloco roda quando o `try` **lança**), `hashPassword` recebendo a senha crua, `main()` com defaults do argv, e **1 teste de guarda de CLI** — com `argv[1]` terminando em `reset-password.js`, o módulo é recarregado com `jest.isolateModulesAsync` e o teste assera que `main()` **disparou** (hash + UPDATE saíram pelos mocks do registro isolado); sem esse teste, a mutação `if (false)` na guarda passava em branco. No script, `resetPassword` ganhou a assinatura `resetPassword(targetUser = process.argv[2] || 'admin', newPassword = process.argv[3])` (defaults idênticos à leitura direta de argv de antes) e `main()`/`resetPassword` passaram a ser exportados com guarda de CLI — **nenhum comportamento alterado**. Mocks agora: `scripts/db/connection.js`, `lib/auth/auth.js` e `load-env.js`; removidos `pg`, `fs`, `dotenv/config` e `lib/infra/db.js` (mocks mortos — o script não importa nenhum). Os 4 testes tautológicos da tabela foram apagados. Contagem esperada da suíte: **7 testes**.
 
 ---
 
 #### 9. `tests/unit/scripts/seed-all.test.js`
+
+> **Tabela histórica — a descrição abaixo é da versão com 2 testes, vigente até 12/10/2026.**
 
 | Aspecto | Detalhe |
 |---------|---------|
@@ -15876,6 +15898,8 @@ A maioria dos testes é superficial: verifica **exports** e chamadas de mock, se
 | **Melhorias** | 1. Importar e testar `seedAll()` com `child_process.execSync` mockado. 2. Testar ordem real de execução via mock dos módulos de seed. 3. Testar aborto em caso de `SELECT 1` falhar. 4. Testar `--clean`. |
 | **Código morto** | `jest.mock('pg')`, `jest.mock('fs')`, `jest.mock('dotenv')` — desnecessários (só importa `lib/infra/db.js`). |
 | **Duplicação** | Mesmo padrão dos scripts de limpeza. |
+
+> **Resolvido em 12/10/2026 (item Y de `docs/PENDENCIAS_scripts_testes.md`).** As linhas acima descrevem a versão antiga, mantida para histórico. O arquivo agora tem **7 testes** que importam `scripts/seed-all.js`: caminho feliz (`SELECT 1` + os **4** seeds na ordem real via `invocationCallOrder` + pool fechado), banco indisponível (nenhum seed roda), `--clean` (reset antes dos seeds), `--clean` com `execSync` falhando (a implementação do mock é resetada explicitamente no `beforeEach`, porque `clearMocks` zera calls, não implementações), um seed falhando (o seguinte não roda), `main()` com falha (exitCode 1 + `finally`) e **1 teste de guarda de CLI** — com `argv[1]` terminando em `seed-all.js`, o módulo é recarregado com `jest.isolateModulesAsync` e o teste assera que `main()` **disparou** (SELECT 1 + 4 seeds saíram pelos mocks do registro isolado); sem esse teste, a mutação `if (false)` na guarda passava em branco. No script, `checkDatabaseReady`, `runSeed` e `seedAll` passaram a ser `export`, o corpo top-level virou `main()` e a guarda chama `main()` sem `await` — **nenhum comportamento alterado**; o bloqueio do import (`import.meta` sobrevivendo à compilação CJS → `ERR_REQUIRE_ESM` no Jest 30) foi eliminado com `seedsDir` como parâmetro com default `<cwd>/scripts`. Mocks agora: `scripts/db/connection.js`, os 4 `seed-*` (com `__esModule: true`, obrigatório para o `interopRequireWildcard` do Babel), `child_process` e `load-env.js`; removidos `pg`, `fs`, `dotenv` e `lib/infra/db.js`. Os 2 testes tautológicos da tabela (incluindo o array hardcoded) foram apagados. Contagem esperada da suíte: **7 testes**.
 
 ---
 
@@ -15953,9 +15977,9 @@ A maioria dos testes é superficial: verifica **exports** e chamadas de mock, se
 
 #### Problemas estruturais
 
-1. **Testam mocks, não scripts**: `clear-db.test.js`, `clear-musicas.test.js`, `reset-password.test.js`, `seed-all.test.js` nunca importam ou executam os scripts reais — apenas o mock de `lib/infra/db.js`. Isso dá falsa sensação de cobertura.
+1. ~~**Testam mocks, não scripts**: `clear-musicas.test.js`, `reset-password.test.js`, `seed-all.test.js` nunca importam ou executam os scripts reais — apenas o mock de `lib/infra/db.js`. Isso dá falsa sensação de cobertura. (`clear-db.test.js` saiu desta lista em 12/10/2026 — ver item X de `docs/PENDENCIAS_scripts_testes.md`; os três restantes são o item Y.)~~ *(Resolvido: `clear-db.test.js` saiu pelo item X e os três restantes pelo item Y, ambos em 12/10/2026 — hoje todos importam os scripts e mockam `scripts/db/connection.js`, com 16/11/7/7 testes.)*
 
-2. **CLI guards impedem teste de `run()`**: scripts com `if (process.argv[1] ...)` são importados mas a função principal nunca é invocada nos testes.
+2. **CLI guards impedem teste de `run()`**: scripts com `if (process.argv[1] ...)` são importados mas a função principal nunca é invocada nos testes. *(Desde 12/10/2026 isso não vale mais para `clear-db`, `clear-musicas`, `reset-password` e `seed-all`: todos exportam `main()` e têm teste de guarda de CLI — a guarda é o que permite invocar a função principal com segurança via `jest.isolateModulesAsync` + `argv[1]` forjado.)*
 
 3. **Mock manual de `pg` repetido**: `connection.test.js`, `migrate.test.js`, `validate-schema.test.js` reconstroem o mock de `pg` com estrutura idêntica — candidato a fixture compartilhada.
 
@@ -15963,28 +15987,28 @@ A maioria dos testes é superficial: verifica **exports** e chamadas de mock, se
 
 #### Problemas de cobertura
 
-- Funções principais não testadas: `createBackup`, `restoreBackup`, `cleanupOldBackups`, `getAvailableBackups`, `getBackupLogs`, `initializeBackupSystem`, `clearDatabase`, `clearMusicRecords`, `resetPassword`, `seedAll`, `applyMigration`, `revertLastMigration`, `run`, `listStatus`, `cleanTableByPattern`.
-- Caminhos de erro raramente testados (apenas `validate-schema.test.js` testa erro de conexão).
-- Interação com `readline` (confirmação do usuário) nunca é mockada/testada.
+- Funções principais não testadas: `createBackup`, `restoreBackup`, `cleanupOldBackups`, `getAvailableBackups`, `getBackupLogs`, `initializeBackupSystem`, `applyMigration`, `revertLastMigration`, `run`, `listStatus`, `cleanTableByPattern` (`clearDatabase` e `askConfirmation` deixaram de estar nesta lista em 12/10/2026 — item X; `clearMusicRecords`, `resetPassword`, `seedAll`/`runSeed`/`checkDatabaseReady` deixaram em 12/10/2026 — item Y).
+- Caminhos de erro raramente testados (apenas `validate-schema.test.js` testa erro de conexão; desde 12/10/2026 `clear-db.test.js` e `clear-musicas.test.js` também cobrem `query` rejeitada, e `reset-password.test.js` cobre a query rejeitada no `catch`).
+- Interação com `readline` (confirmação do usuário) nunca é mockada/testada. *(Desde 12/10/2026 isso não vale mais para `clear-db.test.js` e `clear-musicas.test.js`, que mockam o `readline` com resposta controlável; para `reset-password.js` nunca valeu — o script não tem prompt (lê `process.argv`, hoje testado via assinatura de `resetPassword`).)*
 
 #### Problemas de qualidade
 
 - **Números mágicos em asserções**: `toHaveBeenCalledTimes(2)`, `rowCount: 5`, `MAX_BACKUPS = 10`.
 - **Testes redundantes**: `toMatch` seguido de `toBe` com mesma string.
-- **Teste falso positivo**: `seed-all.test.js` verifica array local, não o script.
-- **Teste de cancelamento inócuo**: `clear-db.test.js` usa variável local `false` em vez de testar `askConfirmation()`.
+- ~~**Teste falso positivo**: `seed-all.test.js` verifica array local, não o script.~~ *(Resolvido em 12/10/2026 — o teste falso foi apagado; a ordem dos 4 seeds agora é derivada de `invocationCallOrder` — item Y.)*
+- ~~**Teste de cancelamento inócuo**: `clear-db.test.js` usa variável local `false` em vez de testar `askConfirmation()`.~~ *(Resolvido em 12/10/2026 — o teste foi apagado junto com o describe tautológico; o cancelamento agora passa por `main()` + `askConfirmation()` com `readline` mockado — item X.)*
 
 #### Código morto
 
 - `existsSync`, `readdirSync`, `statSync` no mock de `fs` em `backup.test.js`.
 - `mockConnect` nos mocks de `pg` de `connection.test.js`, `migrate.test.js`, `validate-schema.test.js`.
-- `jest.mock('pg')`, `jest.mock('fs')`, `jest.mock('dotenv')` em arquivos que não usam esses módulos indiretamente (`clear-db`, `clear-musicas`, `reset-password`, `seed-all`, `cleanup`, `reset-password`).
+- `jest.mock('pg')`, `jest.mock('fs')`, `jest.mock('dotenv')` em arquivos que não usam esses módulos indiretamente — ~~(`clear-db`, `clear-musicas`, `reset-password`, `seed-all`, `cleanup`, `reset-password`) — em `clear-db` o `jest.mock('fs')` caiu em 12/10/2026; `pg`/`dotenv` seguem declarados~~ *(atualizado em 12/10/2026: os mocks mortos de `clear-db`, `clear-musicas`, `reset-password` e `seed-all` caíram nos itens X e Y — os quatro arquivos hoje só mockam o que os scripts realmente importam; sobra `cleanup`).*
 - `mockAccess` em `migrate.test.js`.
 
 #### Duplicações
 
 - Mock manual de `pg` em 3 arquivos (`connection.test.js`, `migrate.test.js`, `validate-schema.test.js`).
-- Estrutura de teste idêntica para `clear-db`, `clear-musicas`, `reset-password`, `seed-all` (todos testam `lib/infra/db.js` mockado).
+- ~~Estrutura de teste idêntica para `clear-musicas`, `reset-password`, `seed-all` (todos testam `lib/infra/db.js` mockado; `clear-db` saiu desse grupo em 12/10/2026, quando trocou o mock por `scripts/db/connection.js`).~~ *(Resolvido em 12/10/2026 — item Y: os três passaram a mockar `scripts/db/connection.js`; o arranjo antigo em que os 4 arquivos replicavam o mesmo mock de `lib/infra/db.js` não existe mais.)*
 - `loadEnv` testado em `load-env.test.js` e `cleanup.test.js`.
 - `musicasSchema` declarado 3 vezes em `init-table.test.js`.
 - `expectedColumnsByTable` em `validate-schema.test.js` espelha `EXPECTED_SCHEMA` do script.

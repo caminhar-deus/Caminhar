@@ -157,9 +157,10 @@
 - **Sugestão:** Usar `spawn('k6', ['run', ...], { env })` com array de argumentos — mesmo padrão seguro já usado em `backup.js`.
 
 ### 5.3. `seed-all.js` executa `npm run db:reset` via shell
-- **Arquivo:** `scripts/seed-all.js` (linha 52)
+- **Arquivo:** `scripts/seed-all.js` (`execSync('npm run db:reset', { stdio: 'inherit' })` dentro de `seedAll()` — o `child_process` é importado dinamicamente)
 - **Problema:** Invocar `npm` para resetar o banco acopla o seed ao gerenciador de pacotes (lento, dependente de npm instalado, frágil em CI).
 - **Sugestão:** Importar e chamar as funções de reset diretamente (ex: `init-table.js` para as tabelas), ou documentar explicitamente a pré-condição.
+- **Nota (12/10/2026):** a refatoração que tornou o script importável por teste (§9.38) mexeu em exports, guarda de CLI e na resolução do diretório dos seeds — **não** no shell: o `execSync`/`npm run db:reset` continua aqui.
 
 ### 5.4. `warm-routes.js` com valores hardcoded sensíveis (PARCIALMENTE RESOLVIDO)
 - **Arquivo:** `scripts/warm-routes.js`
@@ -545,6 +546,8 @@ Nenhum código morto identificado. O script é funcional e executável via CLI.
 
 Script CLI que reseta a senha de um usuário no banco de dados. Recebe o nome do usuário como argumento posicional (padrão: `admin`) e a nova senha como segundo argumento. Gera o hash da senha com `hashPassword()` e executa `UPDATE users SET password = $1 WHERE username = $2`. Se o usuário não existir, cria um novo registro com role `admin` via `INSERT`.
 
+**Atualização de 12/10/2026:** `resetPassword(targetUser = process.argv[2] || 'admin', newPassword = process.argv[3])` passou a ser **exportada** — os defaults são idênticos ao comportamento anterior (leitura direta de `process.argv`), o que torna a função testável sem depender de como o Jest foi invocado —, e o corpo de execução mora em `main()` exportada, atrás da guarda `if (process.argv[1] && …endsWith('reset-password.js')) { main(); }` **sem `await`** (mesmo padrão de `clear-db.js`/`clear-musicas.js`/`seed-all.js`: o Babel do Jest compila o script como CommonJS e top-level `await` ali é `SyntaxError`; `main()` exportada devolve a promise para o teste fazer `await main()` determinístico). Nenhum comportamento de CLI alterado. Hoje consumido por `tests/unit/scripts/reset-password.test.js` (**7 testes**, mockando `scripts/db/connection.js` e `lib/auth/auth.js`). A descrição corrente está em `docs/PROJECT_scripts.md`.
+
 **Ajustes e correções:**
 
 1. **Senha como argumento posicional:** A senha é recebida via `process.argv[3]`, o que a deixa visível no histórico de comandos do shell e em logs de processo. Risco de exposição de credencial em ambientes compartilhados.
@@ -756,7 +759,7 @@ Nenhum código morto identificado. A função é invocada pelo entry point CLI e
 
 **Atualização de 09/10/2026 (2ª rodada):** o `catch` por item deixou de engolir o erro. As falhas são acumuladas em um array e, ao fim do laço, um único `Error` é lançado com a contagem e a lista `chave (mensagem)` — o seed continua idempotente (as chaves que deram certo ficam populadas) e o chamador recebe a falha. Antes, um banco sem a tabela `settings` imprimia 5 erros, `✅ Seed de configurações concluído!` e **exit 0**, empurrando o problema para os testes de carga.
 
-**Atualização de 09/10/2026 (3ª rodada):** o comportamento passou a ter trava em `tests/unit/scripts/seed-settings.test.js` (5 cenários, incluindo o que reprova se o `throw` voltar a ser `console.error`). Para o módulo ser importável pelo Jest, o bloco de CLI teve que sair do top-level `await` para uma **IIFE assíncrona** — mesmo padrão de `clear-db.js` e `clean-orphaned-images.js`: o Babel compila o script como CommonJS nos testes, e top-level `await` ali é `SyntaxError`.
+**Atualização de 09/10/2026 (3ª rodada):** o comportamento passou a ter trava em `tests/unit/scripts/seed-settings.test.js` (5 cenários, incluindo o que reprova se o `throw` voltar a ser `console.error`). Para o módulo ser importável pelo Jest, o bloco de CLI teve que sair do top-level `await` para uma **IIFE assíncrona** — mesmo padrão de `clean-orphaned-images.js`: o Babel compila o script como CommonJS nos testes, e top-level `await` ali é `SyntaxError`. *(Em 12/10/2026 os scripts `clear-db.js`, `clear-musicas.js`, `reset-password.js` e `seed-all.js` passaram ao padrão mais recente de `main()` exportada — ver §9.27; `seed-settings.js` continua com a IIFE.)*
 
 **Ajustes e correções:** Nenhum problema pendente.
 
@@ -830,7 +833,9 @@ Nenhum código morto identificado. A função é invocada pelo entry point CLI e
 
 **Resumo do arquivo:** Script CLI que limpa todas as tabelas do banco de dados via `TRUNCATE TABLE posts, videos, musicas, images, settings, users RESTART IDENTITY CASCADE`. Solicita confirmação do usuário antes de executar. Também limpa o diretório `public/uploads/` (exceto `.gitkeep`). Fecha o pool ao final.
 
-**Atualização de 08/10/2026 (item U de `docs/PENDENCIAS_scripts_testes.md`):** a limpeza de uploads agora cobre **os dois** diretórios — o ativo `UPLOADS_DIR`/`<cwd>/uploads` **e** o legado `public/uploads`, com dedup por índice, `.gitkeep` preservado e diretórios inexistentes ignorados (função `clearUploadsDir()`). Além disso **`clearUploadsDir` passou a ser exportada** e a execução principal (`askConfirmation` + `clearDatabase`) ficou atrás de uma guarda `if (process.argv[1] && …endsWith('clear-db.js'))` com IIFE assíncrona (o Babel do Jest compila o script como CommonJS e não aceita top-level `await`), o que tornou o arquivo **importável por teste** — hoje consumido por `tests/unit/scripts/clear-db.test.js` (10 testes). A descrição corrente está em `docs/PROJECT_scripts.md`.
+**Atualização de 08/10/2026 (item U de `docs/PENDENCIAS_scripts_testes.md`):** a limpeza de uploads agora cobre **os dois** diretórios — o ativo `UPLOADS_DIR`/`<cwd>/uploads` **e** o legado `public/uploads`, com dedup por índice, `.gitkeep` preservado e diretórios inexistentes ignorados (função `clearUploadsDir()`). Além disso **`clearUploadsDir` passou a ser exportada** e a execução principal (`askConfirmation` + `clearDatabase`) ficou atrás de uma guarda `if (process.argv[1] && …endsWith('clear-db.js'))`, o que tornou o arquivo **importável por teste**. A descrição corrente está em `docs/PROJECT_scripts.md`.
+
+**Atualização de 12/10/2026 (item X de `docs/PENDENCIAS_scripts_testes.md`):** `askConfirmation` e `clearDatabase` passaram a ser **exportadas** e o corpo da execução principal foi extraído para `export async function main()`, com a guarda reduzida a `if (process.argv[1] && …endsWith('clear-db.js')) { main(); }` **sem `await`** — o `main()` exportado devolve a promise (a invocação assíncrona anterior da guarda não devolvia, o que tornaria o teste do caminho "cancelado" dependente de poll de microtasks) e o `await` ficou de fora porque o Babel do Jest compila o script como CommonJS e top-level `await` ali é `SyntaxError`. **Nenhum comportamento de CLI alterado.** A suíte `tests/unit/scripts/clear-db.test.js` saiu de **10 para 16 testes** e passou a mockar `scripts/db/connection.js` (o módulo que o script realmente importa) e `readline` em vez de `lib/infra/db.js`. Mesmo padrão aplicado a `clear-musicas.js` (§9.52), `reset-password.js` (§9.5) e `seed-all.js` (§9.38). A descrição corrente está em `docs/PROJECT_scripts.md`.
 
 **Ajustes e correções:** Lista de tabelas fixa no TRUNCATE não inclui `products`, `dicas`, `activity_logs` e `refresh_tokens`. Novas tabelas ficam de fora da limpeza "completa".
 
@@ -1031,6 +1036,8 @@ Nenhum código morto identificado. A função é invocada pelo entry point CLI e
 **Resumo do arquivo:** Orchestrador que executa todos os seeds do projeto em ordem: `seed-posts.js`, `seed-musicas.js`, `seed-videos.js`, `seed-settings.js`. Suporta flag `--clean` para resetar o banco antes de popular (executa `npm run db:reset`). Verifica conexão com o banco antes de iniciar. O `runSeed()` resolve `module.default ?? module.run`, **lança erro se o módulo não exportar função** e aguarda a execução; o `closePool()` foi para um único `finally` no fim do script e o `process.exit(0)` final virou saída normal com `process.exitCode`.
 
 **Atualização de 09/10/2026:** o `runSeed()` só funcionava por acidente — nenhum dos 4 seeds exportava função (todos se auto-invocavam no topo do módulo), então o log "concluído" era impresso sem esperar nada e o `process.exit(0)` encerrava o processo com os `INSERT` em voo, descartando os dados. Impacto observado: tabela `settings` vazia na CI e reprovação do `cache-performance-test`. O contrato dos seeds está em `docs/PROJECT_scripts.md`.
+
+**Atualização de 12/10/2026:** o script passou a exportar `checkDatabaseReady()`, `runSeed(scriptName, seedsDir)`, `seedAll({ seedsDir })` e `main()`, com a execução CLI atrás da guarda `if (process.argv[1] && …endsWith('seed-all.js')) { main(); }` **sem `await`** (mesmo padrão de `clear-db.js` §9.27: Babel compila como CommonJS e top-level `await` é `SyntaxError`; `main()` exportada devolve a promise para o teste). **`fileURLToPath(import.meta.url)` foi eliminado** — o `import.meta` sobrevive à compilação CommonJS do Babel (nenhum plugin o transforma) e o Jest 30 recusava o módulo com `ERR_REQUIRE_ESM`; a resolução do diretório dos seeds virou o parâmetro `seedsDir`, com default `path.join(process.cwd(), 'scripts')` (seguro porque as três invocações reais rodam da raiz). Hoje consumido por `tests/unit/scripts/seed-all.test.js` (**7 testes**). A descrição corrente está em `docs/PROJECT_scripts.md`.
 
 **Ajustes e correções:** Invocar `npm run db:reset` via `execSync` acopla o seed ao gerenciador de pacotes (lento, dependente de npm instalado, frágil em CI).
 
@@ -1282,7 +1289,9 @@ Nenhum código morto identificado. A função é invocada pelo entry point CLI e
 
 **Arquivos acionados ou relacionados:** `scripts/utils/load-env.js` — importa `loadEnv()`. `scripts/db/connection.js` — importa `query()` e `closePool()`.
 
-**Resumo do arquivo:** Script CLI que limpa a tabela `musicas` via `TRUNCATE TABLE musicas RESTART IDENTITY CASCADE`. Solicita confirmação do usuário antes de executar. Fecha o pool ao final.
+**Resumo do arquivo:** Script CLI que limpa a tabela `musicas` via `DELETE FROM musicas`. Solicita confirmação do usuário antes de executar. Fecha o pool ao final.
+
+**Atualização de 12/10/2026:** `askConfirmation` e `clearMusicRecords` passaram a ser **exportadas** e o corpo de execução mora em `main()` exportada, atrás da guarda `if (process.argv[1] && …endsWith('clear-musicas.js')) { main(); }` **sem `await`** (mesmo padrão de `clear-db.js` §9.27: o Babel do Jest compila o script como CommonJS e top-level `await` ali é `SyntaxError`; `main()` exportada devolve a promise para o teste). Nenhum comportamento de CLI alterado. Hoje consumido por `tests/unit/scripts/clear-musicas.test.js` (**11 testes**, mockando `scripts/db/connection.js` e `readline` em vez de `lib/infra/db.js`). A descrição corrente está em `docs/PROJECT_scripts.md`.
 
 **Ajustes e correções:** Nenhum problema identificado.
 
@@ -1617,37 +1626,6 @@ Nenhum código morto identificado. A função é invocada pelo entry point CLI e
 **Duplicidades:** Nenhuma duplicidade identificada.
 
 **Código morto:** Possível código morto. O script remove bancos SQLite locais, mas o projeto atual usa PostgreSQL. Sem referências ativas identificadas. Classificado como provável legado (seção 7.1).
-
----
-
-## Validação Final
-
-Todos os 85 arquivos da pasta `/home/gus/Projetos/Caminhar/scripts` foram individualmente analisados, documentados, relidos e validados. O documento `UPGRADE_scripts.md` agora contém:
-
-1. **Seções 1–8:** Análise original (correções, duplicidades, melhorias, pontos de atenção, arquivos legados, matriz de prioridade).
-2. **Seção "Implementações Aplicadas":** Registro das implementações realizadas após a elaboração do relatório.
-3. **Seção 9:** Análise individual de cada arquivo (9.1 a 9.70), cobrindo todos os 85 arquivos do diretório.
-
-**Resumo dos arquivos analisados por categoria:**
-- **Scripts de banco/db:** 3 (`db/connection.js`, `db/verify-migration.js`, `db/verify-db-functions.js`)
-- **Scripts de segurança:** 1 (`check-sql-injection.js`)
-- **Scripts de autenticação:** 1 (`reset-password.js`)
-- **Orquestradores de teste:** 2 (`run-all-load-tests-sequentially.js`, `generate-load-report.js`)
-- **Scripts de schema/validação:** 2 (`validate-schema.js`, `cli/validate-schema.js`)
-- **Scripts de teste manual:** 2 (`tests/manual-rate-limit.js`, `tests/manual-api-test.js`)
-- **Scripts de backup:** 4 (`backup.js`, `create-backup.js`, `restore-backup.js`, `init-backup.js`, `view-backup-logs.js`)
-- **Scripts de seed:** 7 (`seed-all.js`, `seed-posts.js`, `seed-musicas.js`, `seed-videos.js`, `seed-products.js`, `seed-settings.js`)
-- **Scripts de migração:** 20 (000 a 018, seed-migrations-table.js, verify-applied.js)
-- **Scripts de manutenção:** 5 (`clean-k6-videos.js`, `video-thumbnails.js`, `fix-hero-key.js`, `restore-posts.js`, `backup-posts.js`)
-- **Scripts utilitários:** 8 (`utils/cleanup.js`, `utils/load-env.js`, `utils/init-table-utils.js`, `utils/list-settings.js`, `utils/date-format.js`, `utils/constants.js`, `utils/update-setting.js`, `utils/cleanup-test-data.js`, `utils/list-table-columns.js`)
-- **Scripts de diagnóstico:** 7 (`list-last-posts.js`, `check-musicas-schema.js`, `check-videos-schema.js`, `count-posts.js`, `diagnose-hero.js`, `repro-reusable-workflow.js`, `lsp-reusable-workflow.js`, `lint-workflows.sh`)
-- **Scripts de inicialização:** 3 (`init-table.js`, `init-server.js`, `init-backup.js`)
-- **Scripts diversos:** 12 (`clear-cache.js`, `clear-db.js`, `clear-musicas.js`, `monitor-disk-space.js`, `db-shell.js`, `check-server.js`, `check-db-status.js`, `clean-load-test-posts.js`, `clean-orphaned-images.js`, `clean-test-db.js`, `clear-test-auth-locks.js`, `warm-routes.js`, `clean-k6-reports.js`, `run-load-tests.sh`, `check-env.js`, `migrate.js`)
-- **Schemas JSON:** 4 (`musicas.json`, `videos.json`, `posts.json`, `dicas.json`)
-
-**Total: 85 arquivos analisados e documentados.**
-
----
 
 > 📝 Este documento é analítico — as seções 1–8 servem como guia para futuras refatorações e correções; a seção "Implementações Aplicada" registra as implementações realizadas após a elaboração do relatório; a seção 9 documenta individualmente cada arquivo do diretório `/scripts`.
 

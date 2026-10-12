@@ -8,7 +8,7 @@ import { query, closePool } from './db/connection.js';
 
 loadEnv();
 
-function askConfirmation() {
+export function askConfirmation() {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
@@ -66,7 +66,7 @@ export async function clearUploadsDir() {
   }
 }
 
-async function clearDatabase() {
+export async function clearDatabase() {
   try {
     console.log('🗑️  Esvaziando todas as tabelas do banco de dados...');
 
@@ -92,16 +92,21 @@ async function clearDatabase() {
 // Execução principal — só quando invocado como CLI (`node scripts/clear-db.js`),
 // no mesmo estilo de `clean-orphaned-images.js`. Importar o módulo (ex.: nos
 // testes de `clearUploadsDir`) não pode pedir confirmação nem tocar o banco.
-// O corpo vai dentro de uma IIFE assíncrona porque o Babel compila o script
-// como CommonJS e não há suporte a top-level `await` nessa transformação.
-if (process.argv[1] && process.argv[1].endsWith('clear-db.js')) {
-  (async () => {
-    const confirmed = await askConfirmation();
-    if (!confirmed) {
-      console.log('❌ Operação cancelada pelo usuário.');
-      process.exit(0);
-    }
+// O corpo mora em `main()` (exportada para os testes fazerem `await main()`
+// de forma determinística — a IIFE antiga não devolvia a promise, o que
+// tornaria o teste do caminho "cancelado" dependente de poll de microtasks).
+// A guarda chama `main()` sem `await` porque o Babel compila o script como
+// CommonJS e não há suporte a top-level `await` nessa transformação.
+export async function main() {
+  const confirmed = await askConfirmation();
+  if (!confirmed) {
+    console.log('❌ Operação cancelada pelo usuário.');
+    process.exit(0);
+  }
 
-    await clearDatabase();
-  })();
+  await clearDatabase();
+}
+
+if (process.argv[1] && process.argv[1].endsWith('clear-db.js')) {
+  main();
 }
