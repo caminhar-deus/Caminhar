@@ -387,7 +387,8 @@
 │   │   │   │   ├── db.js.html
 │   │   │   │   ├── index.html
 │   │   │   │   ├── logger.js.html
-│   │   │   │   └── redis.js.html
+│   │   │   │   ├── redis.js.html
+│   │   │   │   └── storage.js.html
 │   │   │   ├── media
 │   │   │   │   ├── index.html
 │   │   │   │   ├── spotify.js.html
@@ -478,7 +479,8 @@
 │   │   │   ├── db.js.html
 │   │   │   ├── index.html
 │   │   │   ├── logger.js.html
-│   │   │   └── redis.js.html
+│   │   │   ├── redis.js.html
+│   │   │   └── storage.js.html
 │   │   ├── media
 │   │   │   ├── index.html
 │   │   │   ├── spotify.js.html
@@ -1205,4 +1207,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-197 directories, 1009 files
+197 directories, 1011 files

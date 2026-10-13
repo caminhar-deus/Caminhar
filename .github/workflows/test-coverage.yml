@@ -275,14 +275,26 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            // `await import(...)` e não `require(...)`: no `github-script` v9 o
-            // módulo passou a ser ESM e o `require` não é mais garantido no
-            // escopo do script (o próprio v9 documenta `require` falhando em
-            // runtime para pacotes ESM). `import()` dinâmico funciona tanto no
-            // wrapper CJS quanto no ESM, então o step não fica refém do modo
-            // como o action avalia o script. `node:fs` traz `existsSync` e
-            // `readFileSync`, usados abaixo.
-            const fs = await import('node:fs');
+            // `require('fs')` foi maintained de propósito. A migração para
+            // `await import('node:fs')` chegou a ser aplicada aqui achando que
+            // o v9 tinha removido o `require` do escopo do script — não tem.
+            // Conferido no fonte do `actions/github-script` v9
+            // (`dist/index.js`, função `run`): o script continua sendo avaliado
+            // com `require: wrapRequire` injetado, sendo `wrapRequire` um Proxy
+            // sobre o `require` do bundle que resolve `fs` e `node:fs`. Os
+            // breaks reais do v9 são outros e nenhum se aplica aqui:
+            // `require('@actions/github')` deixa de funcionar e `getOctokit`
+            // passa a ser parâmetro injetado (redeclará-lo com `const`/`let` dá
+            // SyntaxError).
+            //
+            // Manter `require` aqui não é só preferência: o teste
+            // `tests/unit/github-workflows/test-coverage-comment.test.js` lê
+            // este script do próprio workflow e o executa com `fs` simulado,
+            // injetando `require` no escopo. Trocar por `import()` dinâmico
+            // quebrou 10 testes com "A dynamic import callback was invoked
+            // without --experimental-vm-modules" — falha observada no run
+            // 38403842614 (13/10/2026). `require` é o contrato do teste.
+            const fs = require('fs');
 
             // A API de comentários do GitHub aceita no máximo 65536 caracteres
             // por comentário; o restante do template (título, <details>, cerca do

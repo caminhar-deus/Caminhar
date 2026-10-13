@@ -139,13 +139,17 @@ jobs:
       #    ser parâmetro injetado (redeclará-lo com `const`/`let` dá SyntaxError).
       #    Nenhum dos dois atinge este repo — nenhum script redeclara
       #    `getOctokit`, e ambos usam o objeto `github` já injetado com
-      #    `secrets.GITHUB_TOKEN`. Houve, porém, um ajuste real no bump: em
-      #    `test-coverage.yml` o `Post PR Comment on Failure` usava
-      #    `const fs = require('fs')`, e passou a `await import('node:fs')` —
-      #    `require` no escopo de um script ESM não é garantido, e o `import()`
-      #    dinâmico funciona nos dois modos de wrapper. Vale notar que esse step
-      #    só roda em `pull_request` com cobertura reprovada, ou seja, o modo de
-      #    falha em que um erro aqui passa despercebido num push verde.
+      #    `secrets.GITHUB_TOKEN`.
+      #    IMPORTANTE: o v9 NÃO removeu o `require` do escopo do script. Conferido
+      #    no fonte (`dist/index.js`): o script continua sendo avaliado com
+      #    `require: wrapRequire` injetado, um Proxy sobre o `require` do bundle
+      #    que resolve `fs`/`node:fs`. Uma versão anterior deste comentário
+      #    afirmava o contrário e levou a trocar `require('fs')` por
+      #    `await import('node:fs')` no `Post PR Comment on Failure` — o que
+      #    reprovou 10 testes no run 38403842614 (13/10/2026), porque
+      #    `tests/unit/github-workflows/test-coverage-comment.test.js` executa
+      #    esse script com `require` e `fs` injetados e não roda sob
+      #    `--experimental-vm-modules`. O `require('fs')` foi restaurado.
       # `grafana/setup-k6-action@v1` e as actions locais (`./.github/actions/*`)
       # ficaram fora do bump: não emitiram a annotation.
       - uses: actions/checkout@v7
