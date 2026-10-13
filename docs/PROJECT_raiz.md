@@ -384,6 +384,58 @@ Os workflows vigentes do repositório estão em `.github/workflows/` (subpasta, 
 
 `test-coverage.yml` e `test-db-coverage.yml` também rodam no push para `main` (ver item R de `docs/PENDENCIAS_scripts_testes.md`); `test-base.yml` e `load-tests.yml` não — o primeiro só é chamado, o segundo roda por `schedule`/`workflow_dispatch`. `test-base.yml` tem hoje **um único consumidor**: `load-tests.yml` com `test-type: load`. Os modos `security` e `coverage` não têm consumidor — em particular os passos `Upload Coverage Output`/`Upload Coverage HTML` do `test-base.yml` nunca executam, porque o job de cobertura do `test-coverage.yml` é autocontido e publica os mesmos artefatos (`coverage-output`, `coverage-html`) por conta própria.
 
+### 6.1 Watch item — `ubuntu-latest` migrará para Ubuntu 26.04 (19/10–19/11/2026)
+
+**Aviso (13/10/2026).** Os runs do commit `c5c392d` (13/10/2026) passaram a emitir, em cada job que usa o label, a notice:
+
+> The ubuntu-latest label will migrate to Ubuntu 26.04 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748
+
+É uma **notice de prazo, não um warning de erro** — nenhum run reprovou por isso; registra uma mudança de plataforma externa com data marcada. Fatos verificados na issue [`actions/runner-images#14748`](https://github.com/actions/runner-images/issues/14748): o rollout começa em **19/10/2026** e deve terminar até **19/11/2026**.
+
+**O que muda de fato.** Ubuntu 24.04.5 LTS → Ubuntu 26.04.1 LTS; kernel `6.17.0-1022-azure` → `7.0.0-1012-azure`; systemd 255 → 259. As ferramentas de CI permanecem nas **mesmas versões** (Docker Buildx, Minikube, AWS CLI, Azure CLI, Google Cloud CLI, Rust, Firefox e Java — este em 17.0.20+1 como default).
+
+**Pontos deste repositório afetados pela migração do label** — os 6 que declaram `runs-on: ubuntu-latest`:
+
+| Workflow | Linha | Job |
+|---|---|---|
+| `test-coverage.yml` | 93 | `lint` |
+| `test-coverage.yml` | 110 | `coverage` |
+| `test-coverage.yml` | 197 | `coverage-report` |
+| `test-db-coverage.yml` | 46 | `coverage-db` |
+| `test-base.yml` | 63 | `run-tests` (chamado via `load-tests.yml`) |
+| `e2e.yml` | 41 | `e2e` (E2E isolado — Cypress + Testcontainers) |
+
+**Avaliação de risco: BAIXO** — por raciocínio (break documentado na issue é Python; aqui não há `setup-python`) e, desde 13/10/2026, **confirmado empiricamente no ambiente local** (ver bloco "Validação antecipada" abaixo). O único break concreto documentado na issue é o `actions/setup-python` em 26.04 não conseguir instalar Python 3.8, 3.9 nem patch exato antigo — e **este repositório não usa `setup-python` em nenhum workflow** (verificado por varredura em `.github/`). O restante do stack é compatível para frente: Node é pinado em `engines.node: 24.21.0` e instalado via `actions/setup-node` (toolcache, não o sistema); as únicas dependências com possível binário nativo são `bcryptjs` (JS puro, sem binário) e `sharp` (prebuilds por plataforma, compatíveis com glibc mais novo); os serviços `postgres:15` e `redis:7-alpine` rodam em Docker (imagem não muda com o runner), e o E2E usa Testcontainers sobre o mesmo Docker.
+
+**Decisão: NÃO fixar a versão agora.** Fixar `ubuntu-24.04` evitaria a migração, mas congelaria o runner e criaria uma dependência a manter (revisão manual para não ficar preso numa imagem EOL) — sem ganho enquanto nada quebra. A recomendação do próprio GitHub para quem não precisa testar a imagem nova é esperar o rollout.
+
+**Validação antecipada no ambiente local (13/10/2026) — a máquina de desenvolvimento JÁ está em Ubuntu 26.04.** O `cat /etc/os-release` da máquina local devolve `PRETTY_NAME="Ubuntu 26.04.1 LTS"`, `VERSION_ID="26.04"` — a mesma versão para a qual o `ubuntu-latest` da CI vai migrar.
+
+> ⚠️ **Isto NÃO significa que a CI já esteja em 26.04.** A CI roda em **runners hospedados do GitHub**, que seguem em Ubuntu 24.04 até 19/10/2026 e migram para 26.04 até 19/11/2026. O SO desta máquina de desenvolvimento **não antecipa, não acelera e não altera** essa migração — são ambientes independentes. Confundir os dois é o erro mais provável de quem ler este item depois.
+
+O que isso muda de fato: a máquina local vira um **canal de validação antecipada** — uma prévia do ambiente que a CI terá depois de 19/10, útil para descobrir breakage de binário nativo, toolcache ou Docker **antes** do próximo push, em vez de nele. Medido na local (Ubuntu 26.04.1, WSL2), em 13/10/2026 — todos os valores verificados, não estimados:
+
+| Verificação | Valor medido | Contra o que se compara |
+|---|---|---|
+| `node -v` | `v24.21.0` | idêntico a `engines.node` |
+| `npm -v` | `12.2.0` | idêntico a `engines.npm` |
+| glibc (`ldd --version`) | `2.43` | mais novo que o da 24.04 — compatível para trás com os prebuilds |
+| kernel | `6.18.54.1-microsoft-standard-WSL2` | é **WSL2**, não o kernel Azure da imagem hospedada (ver ressalva abaixo) |
+| `docker --version` | `29.9.0` | Docker opera |
+| `sharp` (único binário nativo real) | carrega, `vips 8.18.7`, 19 formatos | o candidato provável de breakage funciona em 26.04 |
+| `npx jest --ci --coverage` | **189/189 suítes, 1407 testes, 0 falhas, 6 skipped, 7 snapshots** (107s) | **idêntico** ao run `38409100656` no runner 24.04 |
+
+**Ressalva honesta (obrigatória):** o ambiente local **não é equivalente** ao runner da CI. É WSL2 com kernel Microsoft, não o kernel Azure da imagem hospedada; e o caminho de **Docker/Testcontainers do job de E2E não está coberto** por esta validação local — o Testcontainers do `e2e.yml` sobe containers no Docker do **runner hospedado**, e o `docker --version` local não representa fielmente aquele caminho. A validação local cobre Node, npm, glibc, o binário do `sharp` e a suíte Jest; ela **rebaixa muito o risco estimado, mas não o zera**, e não substitui observar os primeiros runs de CI depois de 19/10/2026 — os gatilhos de reavaliação abaixo continuam valendo.
+
+**Gatilho objetivo de reavaliação** — reavaliar (e, se a migração for a causa, trocar `ubuntu-latest` por `ubuntu-24.04` na linha afetada; correção de uma linha, sem rollback de mais nada) se qualquer um destes sinais aparecer **após 19/10/2026** e não tiver outra causa identificável:
+
+1. falha de `npm ci` ou do build apontando binário nativo incompatível (candidato provável: `sharp`);
+2. erro de toolcache/instalação do `actions/setup-node`;
+3. falha de Testcontainers/Docker no job de E2E (`e2e.yml`) ou nos serviços do `test-base.yml`;
+4. aumento repentino e sustentado de duração dos jobs de carga (`.github/workflows/load-tests.yml`), fora da variação já conhecida do cron.
+
+Pendência de monitoramento registrada em `docs/PENDENCIAS_scripts_testes.md` (item AA) — **nenhuma mudança de código é necessária agora**.
+
 ---
 
 ## 7. Documentação e Contexto
