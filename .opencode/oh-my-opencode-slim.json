@@ -64,18 +64,38 @@
   //
   // A trava de explorer/librarian/oracle vive em `opencode.jsonc`, bloco "agent", onde é declarada
   // por último. Aqui ficam só as overrides que o slim realmente consome (modelo, prompt, mcps).
+  // Matriz de MCP por agente (13/10/2026). O slim compila isto em permissões "<mcp>_*": allow para os
+  // nomes listados, deny para todo MCP disponível fora da lista (parseList com "!" de negação).
+  //
+  //   MCP       | orchestrator | librarian | explorer/designer/fixer/oracle
+  //   ----------|--------------|-----------|-----------------------------
+  //   gh_grep   | allow        | allow     | deny
+  //   context7  | deny         | allow     | deny
+  //   ai-memory | allow        | deny      | deny  (o orchestrator é quem consulta a memória; o librarian não)
+  //
+  // Listas explícitas, sem "*": assim o context7 fica deny no orchestrator de forma explícita, e as
+  // listas vazias fixam o deny dos demais agentes em vez de depender do padrão do plugin. Nada além de
+  // gh_grep/ai-memory entra no orchestrator — até o frontend-checklist (MCP remoto, desligado) cai para deny.
+  // websearch NÃO entra aqui: é ferramenta nativa do host, não MCP — ela é controlada por permissão em
+  // opencode.jsonc (bloco "agent"). O slim NÃO recarrega config a quente: o efeito aparece no próximo
+  // start do host/service (`opencode debug agents` antes disso mostra o valor antigo).
   "agents": {
-    // context7 ligado "por completo" (2026-10-08): o padrão do plugin daria só ao librarian
-    // ("*" menos context7 no orchestrator), então o orchestrator é liberado explicitamente aqui.
-    "orchestrator": { "mcps": ["*"] }
+    "orchestrator": { "mcps": ["gh_grep", "ai-memory"] },
+    "librarian":    { "mcps": ["context7", "gh_grep"] },
+    "explorer":     { "mcps": [] },
+    "designer":     { "mcps": [] },
+    "fixer":        { "mcps": [] },
+    "oracle":       { "mcps": [] }
   },
 
   // MCPs embutidos do plugin (todos REMOTOS), os únicos dois: context7 -> mcp.context7.com ; gh_grep -> mcp.grep.app.
-  // gh_grep = pesquisa de código no GitHub. Librarian recebe os dois por padrão do plugin.
-  // Em 2026-10-08 o context7 foi LIGADO (chave opcional via CONTEXT7_API_KEY, ver bloco "agents" acima
-  // para o orchestrator). O librarian o usa como fonte primária de documentação oficial.
-  // "websearch" (Exa, removido em 2.2.x) e "grep_app" (nome nunca válido) são entradas inertes: não desligam nada.
-  "disabled_mcps": ["websearch", "grep_app"],
+  // gh_grep = pesquisa de código no GitHub; context7 = documentação oficial de libs (chave opcional via
+  // CONTEXT7_API_KEY no ambiente; sem chave funciona em cota gratuita).
+  // "disabled_mcps" aqui é VAZIO de propósito: quem decide o acesso é a matriz "agents" acima.
+  // Antes (até 13/10/2026) estava ["websearch", "grep_app"] — as duas entradas eram INERTES em 3.0.3:
+  // websearch era o MCP Exa, removido no slim 2.2.x (hoje é ferramenta nativa do host), e "grep_app"
+  // nunca foi nome válido (o correto é gh_grep). Conferido em dist/index.js: allBuiltinMcps = {context7, gh_grep}.
+  "disabled_mcps": [],
 
   // Notificação apenas (sem instalar sozinho). A trava real de versão é fixar "oh-my-opencode-slim@X.Y.Z" no opencode.json.
   "autoUpdate": false,
