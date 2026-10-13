@@ -520,18 +520,22 @@ As suítes `clear-db`, `clear-musicas`, `reset-password` e `seed-all` agora **im
 |-----------|:----------:|
 | **Configuração Global** | 3 arquivos |
 | **Factories** | 6 arquivos |
-| **Helpers** | 8 arquivos |
+| **Helpers** | 9 arquivos |
 | **Matchers** | 6 arquivos |
-| **Mocks** | 9 arquivos |
+| **Mocks** | 8 arquivos |
 | **Examples** | 2 arquivos |
-| **Testes de Integração — API** | 50 arquivos |
+| **Testes de Integração — API** | 34 arquivos |
 | **Testes de Integração — API Admin** | 15 arquivos |
 | **Testes de Integração — API Auth** | 4 arquivos |
 | **Testes de Integração — Auth v1** | 1 arquivo |
-| **Testes de Integração — Domínio (DB real)** | 5 arquivos |
-| **Testes Unitários** | 127 arquivos |
-| **Total Geral** | **~217 arquivos** |
+| **Testes de Integração — Domínio (DB real)** | 6 arquivos |
+| **Testes Unitários** | 131 arquivos |
+| **Total Geral** | **225 arquivos** |
 
 ---
 
-> **Nota:** Este documento reflete a análise atual dos arquivos em `/tests`. Em caso de divergência com documentos anteriores, prevalece esta análise. Contagem verificada em 24/09/2026: 217 arquivos `.js` no total.
+> **Nota:** Este documento reflete a análise atual dos arquivos em `/tests`. Em caso de divergência com documentos anteriores, prevalece esta análise.
+>
+> **Recount verificado em 12/10/2026: 225 arquivos `.js`.** A contagem anterior (217, de 24/09/2026) estava defasada em 8 arquivos. Recount feito com `find tests -name '*.js'`, por diretório — o mesmo critério da contagem original (arquivos `.js`, não apenas `*.test.js`). As maiores divergências foram **Integração — API (50 → 34)** e **Unitários (127 → 131)**.
+>
+> Duas linhas abaixo da tabela refletem a refatoração dos testes de scripts de 12/10/2026 (itens X e Y de `docs/PENDENCIAS_scripts_testes.md`): `tests/unit/scripts/` passou de 8 testes tautológicos para **25** que executam o script sob teste. Isso não altera o total de arquivos, porque nenhum foi criado ou removido — apenas reescrito.

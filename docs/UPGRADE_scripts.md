@@ -831,7 +831,7 @@ Nenhum código morto identificado. A função é invocada pelo entry point CLI e
 
 **Arquivos acionados ou relacionados:** `scripts/utils/load-env.js` — importa `loadEnv()`. `scripts/db/connection.js` — importa `query()` e `closePool()`.
 
-**Resumo do arquivo:** Script CLI que limpa todas as tabelas do banco de dados via `TRUNCATE TABLE posts, videos, musicas, images, settings, users RESTART IDENTITY CASCADE`. Solicita confirmação do usuário antes de executar. Também limpa o diretório `public/uploads/` (exceto `.gitkeep`). Fecha o pool ao final.
+**Resumo do arquivo:** Script CLI que limpa todas as tabelas do banco de dados via `TRUNCATE TABLE posts, videos, musicas, images, settings, users RESTART IDENTITY CASCADE`. Solicita confirmação do usuário antes de executar. Também limpa os diretórios de upload (exceto `.gitkeep`): o **ativo** (`UPLOADS_DIR` ou `<cwd>/uploads`) e o **legado** `public/uploads`, com dedup por índice e diretórios inexistentes ignorados. Fecha o pool ao final.
 
 **Atualização de 08/10/2026 (item U de `docs/PENDENCIAS_scripts_testes.md`):** a limpeza de uploads agora cobre **os dois** diretórios — o ativo `UPLOADS_DIR`/`<cwd>/uploads` **e** o legado `public/uploads`, com dedup por índice, `.gitkeep` preservado e diretórios inexistentes ignorados (função `clearUploadsDir()`). Além disso **`clearUploadsDir` passou a ser exportada** e a execução principal (`askConfirmation` + `clearDatabase`) ficou atrás de uma guarda `if (process.argv[1] && …endsWith('clear-db.js'))`, o que tornou o arquivo **importável por teste**. A descrição corrente está em `docs/PROJECT_scripts.md`.
 
