@@ -72,6 +72,8 @@
     "clean:images": "node scripts/clean-orphaned-images.js",
     "security:check-sql": "node scripts/check-sql-injection.js",
     "security:check-sql:all": "node scripts/check-sql-injection.js --all",
+    "security:check-credentials": "node scripts/check-hardcoded-credentials.js",
+    "security:check-credentials:all": "node scripts/check-hardcoded-credentials.js --all",
     "test:load:all": "node scripts/run-all-load-tests-sequentially.js",
     "test:load:all:log": "mkdir -p logs && bash -c 'set -o pipefail; node scripts/run-all-load-tests-sequentially.js 2>&1 | tee logs/load-tests.log'",
     "test:load:orchestrator": "npm run test:load:all",

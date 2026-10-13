@@ -22,23 +22,30 @@
 
 ## 1. Correções de Código Necessárias
 
-### 1.1. Referência quebrada em `scripts/db/verify-db-functions.js`
-- **Arquivo:** `scripts/db/verify-db-functions.js`
-- **Problema:** A linha 2 faz `import * as db from './db.js'`, mas **não existe `scripts/db/db.js`** — apenas `connection.js`.
-- **Impacto:** O script falha com `ERR_MODULE_NOT_FOUND` ao ser executado.
-- **Sugestão:** Importar de `../utils/load-env.js` (para `loadEnv`) e verificar as funções do módulo real `lib/infra/db.js` (conforme o propósito declarado), ou remover o script se desnecessário.
+### 1.1. Referência quebrada em `scripts/db/verify-db-functions.js` — ✅ RESOLVIDO (12/10/2026): arquivo removido
+- **Arquivo:** `scripts/db/verify-db-functions.js` (removido com `git rm`)
+- **Problema original:** A linha 2 fazia `import * as db from './db.js'`, mas **não existe `scripts/db/db.js`** — apenas `connection.js`.
+- **Correção aplicada:** O arquivo foi **removido**, e não consertado. A auditoria de 12/10/2026 encontrou um **segundo defeito que invalidava a "Sugestão" original**: mesmo corrigindo o caminho para `../../../lib/infra/db.js`, o script continuaria mentindo. Ele checava `db.getSetting`, mas **`lib/infra/db.js` nunca exportou `getSetting`** (exporta `resolveSslConfig`, `getPool`, `resetPool`, `query`, `closeDatabase`, `transaction`, `healthCheck`, `getDatabaseInfo`). `getSetting` vive em `lib/domain/settings.js` e já é coberto por `tests/unit/lib/db/settings.test.js` (7 testes). Consertar o import teria produzido um script funcional que imprime `❌ "getSetting" NÃO encontrada` — resposta tecnicamente verdadeira e praticamente enganosa, pior que a falha atual porque não é percebida.
+- **Verificação:** `node scripts/db/verify-db-functions.js` falhava com `ERR_MODULE_NOT_FOUND` (confirmado antes da remoção). Nenhum arquivo o importava e não havia entrada no `package.json`.
+- **Recomendação original (superada):** *"Importar de `../utils/load-env.js` … ou remover o script se desnecessário."* — adotada a segunda opção.
 
-### 1.2. Script `scripts/db/verify-migration.js` é um handler Next.js, não um script CLI
-- **Arquivo:** `scripts/db/verify-migration.js`
-- **Problema:** O arquivo exporta `withAuth(handler)` como default export (padrão de API route do Next.js) e importa de `../../../lib/auth/auth` e `../../../lib/infra/db` **sem extensão `.js`** — incompatível com ES Modules estrito. Localizado em `scripts/db/`, onde se esperam scripts executáveis.
-- **Impacto:** Não pode ser executado via `node`; se executado, quebra por falta de extensão nos imports.
-- **Sugestão:** Mover para `pages/api/` (ex: `pages/api/verify-migration.js`) se for um endpoint, ou reescrever como script CLI usando `db/connection.js`. Remover do diretório `scripts/db/` para evitar confusão.
+### 1.2. Script `scripts/db/verify-migration.js` é um handler Next.js, não um script CLI — ✅ RESOLVIDO (12/10/2026): arquivo removido
+- **Arquivo:** `scripts/db/verify-migration.js` (removido com `git rm`)
+- **Problema:** O arquivo exportava `withAuth(handler)` como default export (padrão de API route do Next.js) e importava de `../../../lib/auth/auth` e `../../../lib/infra/db` **sem extensão `.js`** — incompatível com ES Modules estrito. Localizado em `scripts/db/`, onde se esperam scripts executáveis.
+- **Correção aplicada:** arquivo **removido**, em vez de movido para `pages/api/`. Dois motivos:
+  1. A finalidade (verificação pós-migração) já é coberta por `scripts/migrations/verify-applied.js` (cobre 001-018) e `scripts/validate-schema.js`, ambos CLI e integrated ao fluxo do `package.json`.
+  2. **Mover seria introduzir um risco de segurança:** o handler usava `withAuth` (qualquer usuário autenticado) em vez de permissão de admin, expondo contagens de `users`/`posts`/`settings`/`images` e amostra de posts a qualquer autenticado. O endpoint equivalente e correto é `pages/api/admin/integrity.js`, que usa `createAdminHandler` com `permission: 'Segurança'`.
+- **Verificação:** nenhum arquivo importava este módulo e não havia entrada no `package.json`.
 
-### 1.3. Credenciais hardcoded em `scripts/tests/manual-api-test.js`
-- **Arquivo:** `scripts/tests/manual-api-test.js`
-- **Problema:** Linha 26-27 usa `username: 'admin'` e `password: 'password'` fixos.
-- **Risco:** Vazamento de credenciais se o repositório for exposto; teste falha se a senha real for diferente.
-- **Sugestão:** Ler de variáveis de ambiente (`ADMIN_USERNAME`, `ADMIN_PASSWORD`) com fallback, seguindo o padrão já usado em `generate-load-report.js`.
+### 1.3. Credenciais hardcoded em `scripts/tests/manual-api-test.js` — ✅ RESOLVIDO (12/10/2026): arquivo removido
+- **Arquivo:** `scripts/tests/manual-api-test.js` (removido com `git rm`)
+- **Problema original:** Linhas 26-27 usavam `username: 'admin'` e `password: 'password'` fixos.
+- **Correção aplicada:** O arquivo foi **removido**. A auditoria de 12/10/2026 mostrou que a credencial hardcoded era o **menor** dos problemas — o script inteiro era inoperante, por três defeitos adicionais que esta seção não registrava:
+  1. **A API testada não existe.** `baseUrl` é `http://localhost:3000/api/v1`, mas não há `pages/api/v1/` — o projeto não versiona a API. O script morria no Teste 1 (`GET /api/v1/status` → 404) e **nunca alcançava o login**, ou seja, a credencial hardcoded nunca era executada.
+  2. **`axios` não é dependência declarada.** `npm ls axios` mostra que ele existe em `node_modules` apenas por hoisting, como dependência transitiva de `wait-on@9.5.1`. `import axios from 'axios'` funcionava por acidente — um `npm ci` com hoist diferente ou a remoção do `wait-on` quebram o script.
+  3. **O contrato do login mudou.** `pages/api/auth/login.js:13` documenta que o token é retornado **por cookie httpOnly por padrão**, e **no body apenas com `?response=body`** (linhas 105-127). O script chamava o login sem esse parâmetro e lia `loginResponse.data.data.token` — que seria `undefined`, causando `TypeError` mesmo que o path existisse. Esta é a causa-raiz do item 5.6 abaixo, não "fragilidade genérica".
+- **Por que remover em vez de reescrever:** a cobertura equivalente já existe em `tests/integration/api/` (`status.test.js`, `login.test.js`, `auth/check.test.js`, `settings.test.js`), com `tests/helpers/api.js` e `tests/helpers/auth.js`, e roda em CI.
+- **Risco real (reavaliado):** a classificação 🔴 Alta / **Crítica** deste item estava superdimensionada. `admin`/`password` são placeholders genéricos, não um segredo real, e já estão no histórico do git de qualquer forma (último toque em `7973327`). O risco não era exposição — era o arquivo dar a impressão de cobrir a API enquanto não cobre nada (ele imprime `Endpoints testados: 7/7` em código que nunca passou).
 
 ### 1.4. Caminho `.env` incorreto em vários scripts de subpastas
 - **Arquivos afetados:**
@@ -120,11 +127,11 @@
 
 ## 4. Ajustes Estruturais e Organizacionais
 
-### 4.1. `scripts/db/verify-migration.js` no local errado
-- Ref.: item 1.2. Deveria ser endpoint de API em `pages/api/` ou reescrito como script. A pasta `scripts/db/` deveria conter apenas ferramentas de banco.
+### 4.1. `scripts/db/verify-migration.js` no local errado — ✅ RESOLVIDO (12/10/2026) via remoção
+- Ref.: item 1.2. Resolvido pela remoção do arquivo. `scripts/db/` passou a conter apenas `db/connection.js` (o módulo canônico de conexão).
 
-### 4.2. `scripts/db/verify-db-functions.js` órfão quebrado
-- Ref.: item 1.1. Ou é consertado (importando `lib/infra/db.js`) ou removido — atualmente é código morto que falha.
+### 4.2. `scripts/db/verify-db-functions.js` órfão quebrado — ✅ RESOLVIDO (12/10/2026) via remoção
+- Ref.: item 1.1. O arquivo foi removido em vez de consertado — ver o detalhamento do segundo defeito na seção 1.1.
 
 ### 4.3. Migração `012-add-performance-indexes.sql` fora do fluxo do executor
 - **Arquivo:** `scripts/migrations/012-add-performance-indexes.sql`
@@ -174,10 +181,9 @@
 - **Problema:** Quando o disco está cheio, sugere `npm run find-unused` — comando que não existe no `package.json` (não verificado na análise). Verificar se o alias existe; caso contrário, atualizar a mensagem.
 - **Sugestão:** Confirmar no `package.json` qual script npm de limpeza realmente existe (ex: limpeza de relatórios k6, backups antigos) e ajustar a dica para apontar o comando correto.
 
-### 5.6. `manual-api-test.js` assume estrutura fixa de resposta
-- **Arquivo:** `scripts/tests/manual-api-test.js`
-- **Problema:** Acessa `response.data.data.api.status`, `.data.data.database.status`, etc. — estrutura frágil; qualquer mudança na API quebra o teste sem mensagem clara.
-- **Sugestão:** Adicionar validação de campos antes do acesso, com mensagens descritivas.
+### 5.6. `manual-api-test.js` assume estrutura fixa de resposta — ✅ RESOLVIDO (12/10/2026) via remoção do arquivo
+- **Arquivo:** `scripts/tests/manual-api-test.js` (removido)
+- **Causa-raiz esclarecida:** não era fragilidade genérica de acesso (`response.data.data.api.status` etc.). O endpoint `pages/api/auth/login.js` foi refatorado para devolver o token **por cookie httpOnly por padrão** e **no body apenas com `?response=body`**; o script lia `data.data.token` sem esse parâmetro. Ver a seção 1.3.
 
 ---
 
@@ -227,13 +233,11 @@
 - **Problema:** Remove bancos SQLite locais (`data/test.db`, `caminhar-test.db`), mas o projeto usa PostgreSQL. Sem referências ativas identificadas na análise.
 - **Classificação:** Provável legado de fase anterior do projeto; pode ser mantido para compatibilidade ou removido após confirmação.
 
-### 7.2. `scripts/db/verify-db-functions.js`
-- **Problema:** Quebrado (item 1.1) sem função útil atualmente.
-- **Classificação:** Código morto; consertar ou remover.
+### 7.2. `scripts/db/verify-db-functions.js` — ✅ RESOLVIDO (12/10/2026): removido
+- **Classificação original:** código morto; consertar ou remover. → **Removido** (ver 1.1).
 
-### 7.3. `scripts/db/verify-migration.js`
-- **Problema:** Handler de API fora do lugar (item 1.2).
-- **Classificação:** Deslocado; mover para `pages/api/` ou remover de `scripts/`.
+### 7.3. `scripts/db/verify-migration.js` — ✅ RESOLVIDO (12/10/2026): removido
+- **Classificação original:** deslocado; mover para `pages/api/` ou remover de `scripts/`. → **Removido** (ver 1.2).
 
 ---
 
@@ -241,22 +245,25 @@
 
 | # | Problema | Gravidade | Esforço | Prioridade |
 |---|----------|:---------:|:-------:|:----------:|
-| 1.1 | Referência quebrada `verify-db-functions.js` | 🔴 Alta | Baixo | **Crítica** |
-| 1.3 | Credenciais hardcoded em `manual-api-test.js` | 🔴 Alta | Baixo | **Crítica** |
+| ~~1.1~~ | ~~Referência quebrada `verify-db-functions.js`~~ | — | — | ✅ **Resolvido 12/10** (removido) |
+| ~~1.3~~ | ~~Credenciais hardcoded em `manual-api-test.js`~~ | — | — | ✅ **Resolvido 12/10** (removido) |
+| ~~1.2~~ | ~~`verify-migration.js` no local errado~~ | — | — | ✅ **Resolvido 12/10** (removido) |
+| 5.2 | `execSync`/`exec` com shell nos orquestradores | 🟡 Média | Médio | **Alta** *(repromovida)* |
+| 6.7 | Variáveis vazias na string de comando (teste negativo) | 🟡 Média | Baixo | **Alta** *(repromovida)* |
 | 1.4 | Caminho `.env` incorreto em scripts de subpastas | 🟡 Média | Baixo | Alta |
-| 4.3 | Migração 012 `.sql` fora do executor | 🟡 Média | Médio | Alta |
-| 6.2 | `clear-db.js` sem tabelas novas (products, dicas, etc.) | 🟡 Média | Baixo | Alta |
+| 4.3 | Migração 012 `.sql` fora do executor | ✅ Resolvido | — | — |
+| 6.2 | `clear-db.js` sem tabelas novas (products, dicas, etc.) | 🟡 Média | Baixo | **Alta** *(repromovida)* |
 | 2.2 | `check-musicas-schema`/`check-videos-schema` duplicados | 🟢 Baixa | Baixo | Média |
 | 2.1 | `cleanup-test-data.js` duplicata de `clean-load-test-posts.js` | 🟢 Baixa | Baixo | Média |
-| 1.2 | `verify-migration.js` no local errado | 🟡 Média | Médio | Média |
 | 1.5 | Interpolação SQL em `clean-orphaned-images.js` | 🟡 Média | Baixo | Média |
-| 5.2 | `execSync`/`exec` com shell nos orquestradores | 🟡 Média | Médio | Média |
 | 4.4 | `validate-schema`/`verify-applied` desatualizados | 🟢 Baixa | Baixo | Média |
 | 2.3 | Padrões conflitantes de conexão (Pool próprio vs `connection.js`) | 🟢 Baixa | Médio | Média |
 | 6.6 | `URL.pathname` em `init-table.js` (Windows) | 🟢 Baixa | Baixo | Baixa |
 | 5.4 | `warm-routes.js` hardcoded (slugs e `_next/data/development`) | 🟢 Baixa | Médio | Baixa |
 | 2.4 | Orquestradores k6 duplicados | 🟢 Baixa | Médio | Baixa |
-| 7.x | Arquivos legados/deslocados (`clean-test-db`, `db/*`) | 🟢 Baixa | Baixo | Baixa |
+| 7.1 | Arquivo legado `clean-test-db.js` (SQLite) | 🟢 Baixa | Baixo | Baixa |
+
+> **Reavaliação de prioridade (12/10/2026).** A matriz original classificava 1.1 e 1.3 como 🔴 Alta / **Crítica**. A auditoria mostrou que os dois arquivos eram **código morto** — sem caller, sem entrada no `package.json` e fora de toda a CI —, ou seja, sem impacto de runtime que justificasse "crítica". A classificação 🔴 Alta das credenciais estava superdimensionada: `admin`/`password` são placeholders genéricos, não segredo real. Com esses dois fechados, os candidatos de maior custo real passaram a ser **5.2 / 6.7** (`execSync` com `shell: true` e variáveis concatenadas na string, nos orquestradores de carga — vetor real de quebra/injeção com `ADMIN_PASSWORD` contendo `$`, `;` ou aspas) e **6.2** (`clear-db.js` que faz "TRUNCATE completo" deixando `products`, `dicas`, `activity_logs` e `refresh_tokens` para trás). Ambos foram **repromovidos** nesta tabela. A reordenação dos itens de Média/Baixa fica para depois que 1.4 e 6.2 forem tratados.
 
 ---
 
@@ -432,9 +439,11 @@ Nenhum código morto identificado. Todas as quatro funções exportadas são uti
 
 ---
 
-### 9.2. `scripts/db/verify-migration.js`
+### 9.2. `scripts/db/verify-migration.js` — ✅ REMOVIDO (12/10/2026)
 
-**Caminho completo:** `/home/gus/Projetos/Caminhar/scripts/db/verify-migration.js`
+> **Registro preservado do arquivo removido.** Era um handler de API route do Next.js (`withAuth(handler)` + default export) fora de `pages/api/`, que executava contagens em paralelo nas tabelas `users`, `posts`, `settings` e `images` e buscava os 5 posts mais recentes. Removido em vez de movido: a verificação pós-migração é feita por `scripts/migrations/verify-applied.js` (cobre 001-018) e `scripts/validate-schema.js`; e mover para `pages/api/` exporia contagens de tabela a qualquer usuário autenticado, porque usava `withAuth` e não permissão de admin (o endpoint correto é `pages/api/admin/integrity.js`, com `createAdminHandler` e `permission: 'Segurança'`). Detalhamento na seção 1.2.
+
+**Caminho completo (histórico):** `/home/gus/Projetos/Caminhar/scripts/db/verify-migration.js`
 
 **Arquivos acionados ou relacionados:**
 - Nenhum arquivo no projeto importa este módulo. Os caminhos importados são `../../../lib/auth/auth` e `../../../lib/infra/db` (ambos existem no projeto, mas como módulos absolutos, não como dependências locais de `scripts/`).
@@ -465,9 +474,11 @@ Sim. O arquivo não é alcançado por nenhum fluxo do projeto na localização a
 
 ---
 
-### 9.3. `scripts/db/verify-db-functions.js`
+### 9.3. `scripts/db/verify-db-functions.js` — ✅ REMOVIDO (12/10/2026)
 
-**Caminho completo:** `/home/gus/Projetos/Caminhar/scripts/db/verify-db-functions.js`
+> **Registro preservado do arquivo removido.** Script CLI de 14 linhas que importava `* as db from './db.js'` (inexistente) e checava se `db.getSetting` existia. Removido em vez de consertado: `getSetting` **nunca foi exportado por `lib/infra/db.js`** — vive em `lib/domain/settings.js` e já é coberto por `tests/unit/lib/db/settings.test.js`. Detalhamento na seção 1.1.
+
+**Caminho completo (histórico):** `/home/gus/Projetos/Caminhar/scripts/db/verify-db-functions.js`
 
 **Arquivos acionados ou relacionados:**
 - Nenhum arquivo no projeto importa este módulo.
@@ -657,21 +668,17 @@ Nenhum código morto identificado. A função é invocada pelo entry point CLI e
 
 ---
 
-### 9.9. `scripts/tests/manual-api-test.js`
+### 9.9. `scripts/tests/manual-api-test.js` — ✅ REMOVIDO (12/10/2026)
 
-**Caminho completo:** `/home/gus/Projetos/Caminhar/scripts/tests/manual-api-test.js`
+> **Registro preservado do arquivo removido.** O arquivo foi removido com `git rm`. A análise original desta seção registrava apenas as credenciais hardcoded; a auditoria de 12/10/2026 identificou mais três defeitos que tornavam o script integralmente inoperante — `baseUrl` apontava para `/api/v1`, que não existe no projeto (não há `pages/api/v1/`); `axios` não é dependência declarada e existia apenas por hoisting de `wait-on`; e o login era chamado sem `?response=body`, contrato exigido por `pages/api/auth/login.js:13` para devolver o token no body. Detalhamento completo na seção 1.3.
 
-**Arquivos acionados ou relacionados:** Nenhum. Script CLI autônomo. Importa `axios` como dependência externa. Testa a API v1 do projeto.
+**Caminho completo (histórico):** `/home/gus/Projetos/Caminhar/scripts/tests/manual-api-test.js`
 
-**Resumo do arquivo:** Script de teste manual que valida 7 endpoints da API v1 do projeto: (1) status público, (2) login com credenciais, (3) verificação de autenticação, (4) listagem de configurações, (5) criação de configuração, (6) atualização de configuração, (7) tratamento de erro 401 com token inválido. Exibe resultados no console e captura erros com `process.exit(1)`.
+**Arquivos acionados ou relacionados (histórico):** Nenhum. Script CLI autônomo. Importa `axios` como dependência externa. Testava a API v1 do projeto.
 
-**Ajustes e correções:** Credenciais hardcoded nas linhas 26-27: `username: 'admin'` e `password: 'password'`. Se a senha real for diferente, o teste falha. Risco de vazamento se o repositório for exposto.
+**Resumo do arquivo (histórico):** Script de teste manual que validava 7 endpoints da API v1: (1) status público, (2) login com credenciais, (3) verificação de autenticação, (4) listagem de configurações, (5) criação de configuração, (6) atualização de configuração, (7) tratamento de erro 401 com token inválido.
 
-**Melhorias:** Ler credenciais de variáveis de ambiente (`ADMIN_USERNAME`, `ADMIN_PASSWORD`) com fallback, seguindo padrão já utilizado em outros scripts do projeto.
-
-**Duplicidades:** Nenhuma duplicidade identificada.
-
-**Código morto:** Nenhum código morto identificado. O script é funcional.
+**Por que remover em vez de reescrever:** a cobertura equivalente e automatizada já existe em `tests/integration/api/` (`status.test.js`, `login.test.js`, `auth/check.test.js`, `settings.test.js`), com os helpers `tests/helpers/api.js` e `tests/helpers/auth.js`, e roda em CI.
 
 ---
 
@@ -1640,12 +1647,12 @@ Todos os 85 arquivos da pasta `/home/gus/Projetos/Caminhar/scripts` foram indivi
 3. **Seção 9:** Análise individual de cada arquivo (9.1 a 9.70), cobrindo todos os 85 arquivos do diretório.
 
 **Resumo dos arquivos analisados por categoria:**
-- **Scripts de banco/db:** 3 (`db/connection.js`, `db/verify-migration.js`, `db/verify-db-functions.js`)
+- **Scripts de banco/db:** 1 (`db/connection.js`) — *era 3; `verify-migration.js` e `verify-db-functions.js` removidos em 12/10/2026*
 - **Scripts de segurança:** 1 (`check-sql-injection.js`)
 - **Scripts de autenticação:** 1 (`reset-password.js`)
 - **Orquestradores de teste:** 2 (`run-all-load-tests-sequentially.js`, `generate-load-report.js`)
 - **Scripts de schema/validação:** 2 (`validate-schema.js`, `cli/validate-schema.js`)
-- **Scripts de teste manual:** 2 (`tests/manual-rate-limit.js`, `tests/manual-api-test.js`)
+- **Scripts de teste manual:** 1 (`tests/manual-rate-limit.js`) — *era 2; `manual-api-test.js` removido em 12/10/2026*
 - **Scripts de backup:** 5 (`backup.js`, `create-backup.js`, `restore-backup.js`, `init-backup.js`, `view-backup-logs.js`)
 - **Scripts de seed:** 6 (`seed-all.js`, `seed-posts.js`, `seed-musicas.js`, `seed-videos.js`, `seed-products.js`, `seed-settings.js`)
 - **Scripts de migração:** 20 (000 a 018, seed-migrations-table.js, verify-applied.js)
@@ -1656,7 +1663,7 @@ Todos os 85 arquivos da pasta `/home/gus/Projetos/Caminhar/scripts` foram indivi
 - **Scripts diversos:** 16 (`clear-cache.js`, `clear-db.js`, `clear-musicas.js`, `monitor-disk-space.js`, `db-shell.js`, `check-server.js`, `check-db-status.js`, `clean-load-test-posts.js`, `clean-orphaned-images.js`, `clean-test-db.js`, `clear-test-auth-locks.js`, `warm-routes.js`, `clean-k6-reports.js`, `run-load-tests.sh`, `check-env.js`, `migrate.js`)
 - **Schemas JSON:** 4 (`musicas.json`, `videos.json`, `posts.json`, `dicas.json`)
 
-**Total: 85 arquivos analisados e documentados.**
+**Total: 85 arquivos analisados e documentados (3 removidos em 12/10/2026 → 82 presentes).**
 
 ---
 

@@ -61,8 +61,8 @@ Diretório novo, criado em 08/10/2026 junto com a captura de saída do orquestra
 | Arquivo | Funcionalidade |
 |---------|----------------|
 | `db/connection.js` | **Módulo central de conexão PostgreSQL.** Pool singleton: `getPool()`, `closePool()`, `resetPool()`, `query(text, params)`. Valida presença de `DATABASE_URL` antes de criar o pool. Usado por ~15 scripts e 10 migrações. |
-| `db/verify-db-functions.js` | Verifica funções exportadas por `lib/infra/db.js` via importação dinâmica. **⚠️ Importa `./db.js` da própria pasta `scripts/db/`, que não existe — referência quebrada.** |
-| `db/verify-migration.js` | Handler de página Next.js (`withAuth`) que verifica integridade pós-migração (contagens de users/posts/settings/images + últimos posts). Importa `lib/auth/auth` e `lib/infra/db` via caminhos relativos `../../../`. **⚠️ Não é um script executável standalone: é um handler de API Next.js no local errado.** |
+
+> **Removidos em 12/10/2026** (`git rm`, código morto): `db/verify-db-functions.js` importava `./db.js`, inexistente, e checava `getSetting` — que nunca foi exportado por `lib/infra/db.js` (está em `lib/domain/settings.js`, já coberto por `tests/unit/lib/db/settings.test.js`). `db/verify-migration.js` era um handler Next.js (`withAuth`) fora de `pages/api/`; a verificação pós-migração é feita por `migrations/verify-applied.js` (cobre 001-018) e `validate-schema.js`. Ver `docs/UPGRADE_scripts.md` §"Implementações Aplicadas".
 
 ---
 
@@ -176,8 +176,9 @@ Definições JSON consumidas por `init-table.js` (nome da tabela, colunas, flag 
 
 | Arquivo | Funcionalidade |
 |---------|----------------|
-| `manual-api-test.js` | Testa manualmente 7 endpoints da API v1 (`/status`, login, auth check, settings CRUD, erro 401) via axios. **⚠️ Contém credenciais `admin`/`password` hardcoded.** |
 | `manual-rate-limit.js` | Testa manualmente o rate limit do login: faz 7 tentativas HTTP para `/api/auth/login` e verifica se a 6ª é bloqueada (HTTP 429). |
+
+> **Removido em 12/10/2026** (`git rm`): `manual-api-test.js` apontava para `/api/v1`, versão que não existe no projeto (não há `pages/api/v1/`), então falhava no primeiro teste sem nunca alcançar o login. Além disso importava `axios`, que não é dependência declarada (existia apenas por hoisting de `wait-on`) e acessava o token no body sem `?response=body`, que é o contrato real de `pages/api/auth/login.js`. A cobertura equivalente está em `tests/integration/api/{status,login,auth/check,settings}`.
 
 ---
 
@@ -246,13 +247,13 @@ Definições JSON consumidas por `init-table.js` (nome da tabela, colunas, flag 
 | Testes de Carga | 5 | `generate-load-report.js`, `run-all-load-tests-sequentially.js`, `run-load-tests.sh`, `warm-routes.js`, `clean-k6-reports.js` |
 | Limpeza | 9 | `clean-*.js` e `clear-*.js` da raiz (7 — `clean-k6-reports.js` conta em Testes de Carga) + `cleanup.js`, `cleanup-test-data.js` (utils) |
 | Segurança/Validação | 6 | `check-env.js`, `check-db-status.js`, `check-sql-injection.js`, `check-server.js`, `validate-schema.js`, `reset-password.js` |
-| Banco | 4 | `db/connection.js`, `db/verify-db-functions.js`, `db/verify-migration.js` + `db-shell.js` |
+| Banco | 2 | `db/connection.js` + `db-shell.js` |
 | Utilidades | 7 | `load-env.js`, `constants.js`, `date-format.js`, `init-table-utils.js`, `list-settings.js`, `list-table-columns.js`, `update-setting.js` |
-| Testes Manuais | 2 | `tests/*` |
+| Testes Manuais | 1 | `tests/manual-rate-limit.js` |
 | CLI | 1 | `cli/validate-schema.js` |
 | Monitoramento | 1 | `monitor-disk-space.js` |
 | Biblioteca | 1 | `lib/k6-output-parser.js` |
-| **Total** | **90** | — |
+| **Total** | **87** | — |
 
 > **Contagens conferidas no repositório em 08/10/2026** (`find scripts -type f` = 90 arquivos; 36 na raiz). A tabela acima é uma **partição**: cada arquivo aparece em exatamente uma linha, e a soma fecha em 90 — que é o número da "Visão Geral da Estrutura". As linhas de Diagnósticos, Inicialização, Limpeza, E2E e Biblioteca e o Total estavam defasados desde a análise de 23/09/2026 (`lint-chars.js`, `setup-test-db.js`, `e2e-isolated.js` e `scripts/lib/k6-output-parser.js` não estavam em nenhuma linha; `clean-k6-reports.js` era contado duas vezes); a de Migrações defasou com a criação da `018` em 04/10/2026.
 

@@ -124,6 +124,28 @@ jobs:
         shell: bash
         run: npm audit --audit-level=high || echo "::warning::npm audit reportou vulnerabilidades high (não reprova o job)"
         continue-on-error: true
+      # Checks estáticos de segurança: SQL injection e credenciais hardcoded.
+      # Ambos reprovam o job (sem `continue-on-error`) — são análise estática,
+      # não tocam no banco e não podem dar falso positivo por estado de runtime,
+      # então uma reprovação aqui é sempre um achado real. Ficam ANTES do
+      # `setup-db` de propósito: reprovar cedo não gasta o runner subindo
+      # Postgres/Redis para uma bateria que não vai rodar.
+      #
+      # Contexto: nenhum workflow invocava `security:check-sql` — o
+      # `check-sql-injection.js` existia desde sempre sem gate, e foi por isso
+      # que `scripts/tests/manual-api-test.js` conseguiu entrar no repositório
+      # com `password: 'password'` fixo (removido em 12/10/2026). Os dois
+      # scanners agora têm executor automático.
+      #
+      # Sem `--all`: o escopo padrão já cobre `pages/`, `lib/`, `hooks/`,
+      # `components/` e `scripts/` — que é onde vive código de aplicação. Use
+      # `npm run security:check-credentials:all` / `security:check-sql:all`
+      # localmente quando quiser varrer o repositório inteiro.
+      - name: Security Checks (SQL injection + credenciais hardcoded)
+        shell: bash
+        run: |
+          npm run security:check-sql
+          npm run security:check-credentials
       # `skip-db-setup` skips the database setup when the suite does not touch
       # Postgres at all (e.g. coverage running in jsdom), avoiding pointless
       # migrations/seeds for a database the tests never query.

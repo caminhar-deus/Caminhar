@@ -475,6 +475,7 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | Arquivo | Propósito |
 |---------|-----------|
 | `backup.test.js` | Script de backup |
+| `check-hardcoded-credentials.test.js` | Scanner de credenciais hardcoded — exercita as funções **exportadas** do script (`scanFile`, `scanDirectory`, `buildReport`, `isCredentialName`, `IGNORE_FILES`) sobre arquivos reais criados em `os.tmpdir()` (sem mock de `fs`, porque a lógica do scanner é justamente sobre arquivos em disco). 7 testes: senha literal detectada como propriedade e como atribuição (com linha e coluna), `process.env` e `import.meta.env` **não** detectados, entrada de allowlist ignorada via `scanDirectory`, relatório contendo `arquivo:linha:coluna` e **o valor do segredo ausente do relatório** (`[REDACTED]`) |
 | `clean-orphaned-images.test.js` | Varredura de imagens órfãs — cobre as 4 salvaguardas do script (fail-closed, modo relatório, idade mínima, lixeira) |
 | `clear-db.test.js` | Limpeza de banco — importa o script sob teste e mocka `scripts/db/connection.js` (o módulo que `clear-db.js` importa, e não `lib/infra/db.js`) e `readline` com resposta controlável; 16 testes: `askConfirmation` (6), `main()` nos caminhos `s`/`n`, `clearDatabase` (SQL lido do mock + caminho de erro) e os 6 preexistentes de `clearUploadsDir` com fs real e temp dirs |
 | `clear-musicas.test.js` | Limpeza de músicas — importa o script sob teste e mocka `scripts/db/connection.js` e `readline` (ver observações abaixo); 11 testes |
@@ -529,13 +530,15 @@ As suítes `clear-db`, `clear-musicas`, `reset-password` e `seed-all` agora **im
 | **Testes de Integração — API Auth** | 4 arquivos |
 | **Testes de Integração — Auth v1** | 1 arquivo |
 | **Testes de Integração — Domínio (DB real)** | 6 arquivos |
-| **Testes Unitários** | 131 arquivos |
-| **Total Geral** | **225 arquivos** |
+| **Testes Unitários** | 132 arquivos |
+| **Total Geral** | **226 arquivos** |
 
 ---
 
 > **Nota:** Este documento reflete a análise atual dos arquivos em `/tests`. Em caso de divergência com documentos anteriores, prevalece esta análise.
 >
-> **Recount verificado em 12/10/2026: 225 arquivos `.js`.** A contagem anterior (217, de 24/09/2026) estava defasada em 8 arquivos. Recount feito com `find tests -name '*.js'`, por diretório — o mesmo critério da contagem original (arquivos `.js`, não apenas `*.test.js`). As maiores divergências foram **Integração — API (50 → 34)** e **Unitários (127 → 131)**.
+> **Recount verificado em 12/10/2026: 226 arquivos `.js`** — 225 no recount da manhã + 1 (`tests/unit/scripts/check-hardcoded-credentials.test.js`, criado na Fase 3 da auditoria dos scripts). A contagem anterior (217, de 24/09/2026) estava defasada em 9 arquivos. Recount feito com `find tests -name '*.js'`, por diretório — o mesmo critério da contagem original (arquivos `.js`, não apenas `*.test.js`). As maiores divergências foram **Integração — API (50 → 34)** e **Unitários (127 → 132)**.
 >
-> Duas linhas abaixo da tabela refletem a refatoração dos testes de scripts de 12/10/2026 (itens X e Y de `docs/PENDENCIAS_scripts_testes.md`): `tests/unit/scripts/` passou de 8 testes tautológicos para **25** que executam o script sob teste. Isso não altera o total de arquivos, porque nenhum foi criado ou removido — apenas reescrito.
+> Este quadro é a **única fonte de contagem** do projeto. `docs/UPGRADE_tests.md` não repete números globais — remete para cá — para não haver duas contagens divergindo.
+>
+> Duas linhas abaixo do §5.13 refletem a refatoração dos testes de scripts de 12/10/2026 (itens X e Y de `docs/PENDENCIAS_scripts_testes.md`): `tests/unit/scripts/` passou de 8 testes tautológicos para **25** que executam o script sob teste. No mesmo dia o diretório ganhou o 16º arquivo (`check-hardcoded-credentials.test.js`, +7 testes) — total de **16 arquivos / 123 testes** na suíte.

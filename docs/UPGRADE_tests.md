@@ -1,8 +1,8 @@
 # Análise Completa de Testes — Projeto Caminhar (`tests/`)
 
-> **Data:** 24/09/2026
+> **Data:** 24/09/2026 (revisões pontuais em 12/10/2026)
 > **Objeto:** Análise profunda e individual de todos os arquivos na pasta `/home/gus/Projetos/Caminhar/tests/`
-> **Total de arquivos:** 224 (todos analisados e documentados)
+> **Total de arquivos:** ver `docs/PROJECT_tests.md` §6 — este documento é a **fonte única** da contagem, para não haver dois números divergindo
 > **Escopo:** Documentação técnica de cada arquivo de teste
 > **Processo:** Análise sequencial com leitura completa, identificação de relações, registro de problemas, melhorias, duplicidades e código morto
 
@@ -12888,24 +12888,26 @@ Não foi identificado código morto nos arquivos de teste — todos os `it()` po
 ---
 
 
-A suíte `tests/unit/scripts/` contém **14 arquivos** de teste que validam scripts operacionais responsáveis por:
+A suíte `tests/unit/scripts/` contém **16 arquivos** de teste (recount de 12/10/2026 com `find tests/unit/scripts -name '*.test.js'`) que validam scripts operacionais responsáveis por:
 
 | Domínio | Scripts | Arquivos de Teste |
 |---|---|---|
 | Conexão/Infraestrutura | `scripts/db/connection.js` | `db/connection.test.js` |
 | Backup e Restauração | `scripts/backup.js` | `backup.test.js` |
+| Segurança (estático) | `scripts/check-hardcoded-credentials.js` | `check-hardcoded-credentials.test.js` |
 | Limpeza de Dados | `clear-db.js`, `clear-musicas.js`, `clean-orphaned-images.js`, `utils/cleanup.js` | `clear-db.test.js`, `clear-musicas.test.js`, `clean-orphaned-images.test.js`, `utils/cleanup.test.js` |
 | Inicialização de Tabelas | `init-table.js` + `utils/init-table-utils.js` | `init-table.test.js` |
 | Migrações | `scripts/migrate.js` | `migrate.test.js` |
 | Autenticação | `scripts/reset-password.js` | `reset-password.test.js` |
-| Seed/Orquestração | `scripts/seed-all.js` | `seed-all.test.js` |
+| Seed/Orquestração | `scripts/seed-all.js`, `seed-settings.js` | `seed-all.test.js`, `seed-settings.test.js` |
 | Validação de Schema | `scripts/validate-schema.js` | `validate-schema.test.js` |
 | Utilitários | `utils/constants.js`, `utils/date-format.js`, `utils/load-env.js` | `utils/constants.test.js`, `utils/date-format.test.js`, `utils/load-env.test.js` |
 
 **Padrões observados:**
 - Usa-se `@jest/globals` com ESM (`import { jest } from '@jest/globals'`).
 - Módulos com CLI guard (side-effects no top-level) são importados com `jest.isolateModulesAsync` para evitar execução automática.
-- Mock centralizado do banco em `tests/mocks/db-module.js` (padrão `mockDb()`).
+- Suítes de script que tocam o banco mockam **`scripts/db/connection.js`** — o módulo que esses scripts realmente importam. **`tests/mocks/db-module.js` NÃO é mais usado aqui** (verificação por grep em 12/10/2026: nenhuma suíte de `tests/unit/scripts/` o referencia); ele continua em uso por suítes de `lib/`, `domain/` e `pages/api/`.
+- `check-hardcoded-credentials.test.js` é a exceção ao padrão de mock: usa arquivos reais em `os.tmpdir()` em vez de mockar `fs`, porque a lógica do scanner *é* a leitura de arquivos em disco.
 
 ---
 
@@ -13535,7 +13537,7 @@ beforeAll(() => {
 | 6 | `tests/unit/components/SEO/__snapshots__/index.test.js.snap` | Snapshot | 17 | Lista exports do barrel SEO |
 | 7 | `tests/unit/components/UI/__snapshots__/index.test.js.snap` | Snapshot | 30 | Lista exports do barrel UI |
 
-**Total de arquivos de teste relacionados:** 127 arquivos `.test.js` no projeto, 7 arquivos `.snap`.
+**Total de arquivos de teste relacionados:** a contagem global de arquivos de teste e snapshots está em `docs/PROJECT_tests.md` §6 (fonte única). Para o recorte desta seção — workflow `test-coverage.yml` — os arquivos são o `test-coverage-comment.test.js` acima mais os 7 snapshots listados.
 
 ---
 
@@ -14372,6 +14374,32 @@ O teste lê `.github/workflows/test-coverage.yml` do disco. Se o workflow for mo
 - **Forte**: 6 testes. Bom teste de singleton (`pool1 === pool2`). Testa erro propagation.
 - **Problema**: `mockQuery` é compartilhado entre `query()` e `connect()` — pode mascarar bugs onde um usa mock e outro não.
 - **Duplicação**: Mock de `poolImplementation` é similar ao de `migrate.test.js`.
+
+---
+
+#### 2.15 `tests/unit/scripts/check-hardcoded-credentials.test.js`
+
+> **Adicionado em 12/10/2026** (Fase 3 da auditoria de `docs/UPGRADE_scripts.md`): suíte do scanner que impede o retorno de credenciais hardcoded em `scripts/`. Fecha o item 1.3 do UPGRADE de scripts, cuja credencial `password: 'password'` só entrou no repositório porque `security:check-sql` nunca rodou em CI.
+
+**Finalidade**: Testa `scripts/check-hardcoded-credentials.js` — scanner que procura literais de credencial (`password`, `passwd`, `senha`, `secret`, `token`, `apiKey`, `api_key`, `accessKey`, `privateKey`, `credentials`) atribuídos a string literal.
+
+**Relações**: Importa as funções **exportadas** do script (`scanFile`, `scanDirectory`, `buildReport`, `isCredentialName`, `IGNORE_FILES`) e escreve fixtures reais em `os.tmpdir()`. Não usa mock de `fs` — a lógica do scanner *é* a leitura de arquivos em disco.
+
+**Análise**:
+- **Forte**: 7 testes cobrindo o ciclo completo — detecção como propriedade e como atribuição (com linha e coluna), não-detecção de `process.env`/`import.meta.env`, bypass por allowlist via `scanDirectory`, e formatação do relatório. O teste de **redação** é o mais valioso: verifica que o relatório traz `arquivo:linha:coluna` **sem** conter o valor do segredo — sem ele, o próprio scanner viraria um vetor de vazamento nos logs de CI.
+- **Problema**: sem teste para `--path=` com caminho absoluto (limitação conhecida, herdada de `check-sql-injection.js`: `join(ROOT, '/abs')` mangleia o caminho).
+- **Observação**: a allowlist é por **basename**, então `e2e-isolated.js` é ignorado em qualquer diretório. É o mesmo mecanismo do `check-sql-injection.js` que ele espelha — consistência deliberada, mas é uma relaxação conhecida, não um esquecimento.
+
+---
+
+#### 2.16 `tests/unit/scripts/seed-settings.test.js`
+
+**Finalidade**: Cobre os 5 caminhos da função exportada `seedSettings()` de `scripts/seed-settings.js`.
+
+**Relações**: Importa o script com `jest.resetModules()` e mocka `scripts/db/connection.js` — o módulo que o script usa, e não `lib/infra/db.js`.
+
+**Análise**:
+- **Forte**: inserção das 5 chaves em ordem, **idempotência** (nenhum INSERT quando a chave já existe), falha parcial (rejeita com `1 de 5` e as demais chaves ainda são consultadas), falha total (`5 de 5` com todas as chaves na mensagem) e resolução no caminho feliz. Cobre o modo de falha que um teste apenas feliz não pegaria.
 
 ---
 
