@@ -111,7 +111,44 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
+      # Versões das actions oficiais: bump de 12/10/2026, depois da annotation
+      # "Uh oh! Node.js 20 is deprecated ... forced to run on Node.js 24" que o
+      # run 38246676774 (cron "Load Tests (k6)" #9) passou a emitir para
+      # checkout/setup-node/upload-artifact@v4 (e, no `test-coverage.yml`,
+      # download-artifact@v4 e github-script@v7). Breaking changes das release
+      # notes verificados contra o uso deste repositório — nenhum se aplica:
+      #  - `checkout` v5 = Node 24 (exige runner >= 2.327.1; o `ubuntu-latest`
+      #    do GitHub já é compatível); v6 persiste credenciais num arquivo
+      #    separado (transparente para nós); v7 = ESM e passa a BLOQUEAR checkout
+      #    de fork em `pull_request_target`/`workflow_run` — nenhum workflow
+      #    aqui usa esses gatilhos (só `push`, `pull_request`, `schedule`,
+      #    `workflow_dispatch` e `workflow_call`).
+      #  - `setup-node` v6 restringiu o cache automático a npm; aqui só existe
+      #    `cache: 'npm'` e o repo tem `package-lock.json` (sem yarn/pnpm) ->
+      #    sem efeito. v7 = ESM + novos outputs e deixou de exportar um
+      #    `NODE_AUTH_TOKEN` dummy, que ninguém consome.
+      #  - `upload-artifact` v5/v6 = Node 24; v7 acrescenta `archive: false`
+      #    (upload sem empacotar, opt-in) e ESM. Os inputs usados aqui (`name`,
+      #    `path`, `retention-days`, `if-no-files-found`) não mudaram.
+      #  - `download-artifact` v5 mudou o `path` apenas no download por ID;
+      #    aqui o download é SEMPRE por `name:` -> inalterado. v8 passou a ERRO
+      #    (e não só avisar) em hash divergente e pula a descompactação de
+      #    arquivo que não é zip.
+      #  - `github-script` v8 = Node 24; v9 documenta dois breaks de runtime:
+      #    `require('@actions/github')` deixa de funcionar e `getOctokit` passou a
+      #    ser parâmetro injetado (redeclará-lo com `const`/`let` dá SyntaxError).
+      #    Nenhum dos dois atinge este repo — nenhum script redeclara
+      #    `getOctokit`, e ambos usam o objeto `github` já injetado com
+      #    `secrets.GITHUB_TOKEN`. Houve, porém, um ajuste real no bump: em
+      #    `test-coverage.yml` o `Post PR Comment on Failure` usava
+      #    `const fs = require('fs')`, e passou a `await import('node:fs')` —
+      #    `require` no escopo de um script ESM não é garantido, e o `import()`
+      #    dinâmico funciona nos dois modos de wrapper. Vale notar que esse step
+      #    só roda em `pull_request` com cobertura reprovada, ou seja, o modo de
+      #    falha em que um erro aqui passa despercebido num push verde.
+      # `grafana/setup-k6-action@v1` e as actions locais (`./.github/actions/*`)
+      # ficaram fora do bump: não emitiram a annotation.
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
       # Auditoria como step explícito, e não mais como texto de warning do
       # `npm ci`. O `ci` instala com `--no-audit` (ver o composite `setup`), e
@@ -209,7 +246,7 @@ jobs:
       # ignore` cobre abortos anteriores à geração dos relatórios.
       - name: Upload k6 Reports
         if: ${{ always() && inputs.test-type == 'load' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: k6-load-test-reports
           path: reports/k6-summaries/
@@ -217,7 +254,7 @@ jobs:
           if-no-files-found: ignore
       - name: Upload Coverage Output
         if: ${{ always() && inputs.test-type == 'coverage' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-output
           path: coverage-output.txt
@@ -228,7 +265,7 @@ jobs:
       # test-coverage.yml reenviá-lo como `jest-coverage-report`.
       - name: Upload Coverage HTML
         if: ${{ always() && inputs.test-type == 'coverage' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-html
           path: coverage/

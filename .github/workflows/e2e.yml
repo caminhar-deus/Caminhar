@@ -46,7 +46,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # Mesma versão, mesmo cache de npm e mesmos flags de instalação do
       # `./.github/actions/setup` (action composta usada por `test-coverage.yml`),
@@ -55,7 +55,7 @@ jobs:
       # step explícito abaixo: a composta já embute o `npm ci` dentro e
       # reutilizá-la duplicaria a instalação (ou eliminaria o step).
       - name: Setup Node.js Environment
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '24.21.0'
           cache: 'npm'
@@ -92,7 +92,7 @@ jobs:
       # arquivos (ex.: falha no `npm ci` ou no build, antes do Cypress rodar).
       - name: Upload Cypress Videos
         if: ${{ always() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cypress-videos
           path: cypress/videos/
@@ -108,7 +108,7 @@ jobs:
       # então num run verde a ausência é o comportamento normal e esperado.
       - name: Upload Cypress Screenshots
         if: ${{ always() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cypress-screenshots
           path: cypress/screenshots/

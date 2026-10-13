@@ -198,8 +198,16 @@ Exporta `getRandomIP()` — Gera um endereço IPv4 aleatório no formato `x.x.x.
 | `heavy` | 50 VUs, estágios 10s/30s/10s (50s) | p(95) < 3000ms, failed < 10% | Estresse |
 | `health` | 20 VUs, estágios 5s/10s/5s (20s) | p(95) < 500ms, failed < 2% | Health check |
 | `recovery` | Cenário `chaos_monitor`: executor `constant-vus`, 1 VU constante por 2min | Nenhum (thresholds vazios) | Monitoramento de recuperação |
-| `stress` | 2 cenários paralelos: `stress_test` (executor `ramping-vus`, 0→20→50→100→0 VUs, estágios 30s/1m/30s/1m/30s/1m/20s, `gracefulRampDown: 30s`) e `memory_monitor` (executor `constant-vus`, 1 VU constante por 5min) | p(95) < 3000ms, failed < 10% e checks > 95% (todos com tag `{scenario:stress_test}`) e `nodejs_memory_heap_used_bytes` max < 1GB (1073741824 bytes) | Stress test combinado |
+| `stress` | 2 cenários paralelos: `stress_test` (executor `ramping-vus`, 0→20→50→100→0 VUs, estágios 30s/1m/30s/1m/30s/1m/20s, `gracefulRampDown: 30s`, `exec: 'stress_test'` — **correção de 13/10/2026**) e `memory_monitor` (executor `constant-vus`, 1 VU constante por 5min, `exec: 'memory_monitor'` — **correção de 13/10/2026**) | p(95) < 3000ms, failed < 10% e checks > 95% (todos com tag `{scenario:stress_test}`) e `nodejs_memory_heap_used_bytes` max < 1GB (1073741824 bytes) | Stress test combinado — bug comprovado em 13/10/2026 (runs #9 e #10), **corrigido em 13/10/2026, ainda não exercitado em CI** — ver advertência abaixo |
 | `rateLimit` | Cenário `brute_force`: executor `ramping-vus`, 0→20→50→0 VUs, estágios 10s/30s/10s (50s), `gracefulRampDown: 10s` | Nenhum (thresholds vazios) | Brute force / rate limit |
+
+> **⚠️ ADVERTÊNCIA (13/10/2026) — perfil `stress`: bug comprovado, CORRIGIDO EM 13/10/2026, AINDA NÃO EXERCITADO EM CI.**
+>
+> **Registro histórico do bug (runs #9 e #10, código sem `exec:`).** Até a correção de 13/10/2026, os três perfis que usam `scenarios:` — `recovery` (linha 56), `stress` (linha 68) e `rateLimit` (linha 99) — **nenhum declarava** a chave `exec:`. Sem `exec`, o k6 executa em **todo** cenário a função `default` exportada pelo script. Em `performance/stress-test-combined.js` a lógica **não** está na `default()` (que é um no-op explícito), então os cenários `stress_test` e `memory_monitor` executavam a função vazia: no run [`38246676774`](https://github.com/caminhar-deus/Caminhar/actions/runs/38246676774) (12/10/2026, nº 9) o script rodou 4m50s, consumiu **319.813.516 iterações sem fazer absolutamente nada** e ainda assim reportou `✅ stress-test-combined: PASS` — e o run [`38393117376`](https://github.com/caminhar-deus/Caminhar/actions/runs/38393117376) (13/10/2026, nº 10, sha `7590120`, ainda no código antigo) **reproduziu o bug de forma idêntica** (196.425.737 iterações, mesmas métricas zeradas/ausentes), provando que é determinístico — dois SHAs, dois dias. Os quatro thresholds do perfil passavam **por falta de amostras, não por desempenho** — no k6, threshold sobre métrica sem dados não reprova (mesmo mecanismo do gotcha `gotchas/k6-check-nao-altera-exit-code.md`). Evidência completa (métricas do artifact) na seção [`stress-test-combined.js`](#stress-test-combinedjs).
+>
+> **Contraste que isola a causa:** o perfil `rateLimit` também usa `scenarios:` sem `exec:`, mas `security/rate-limit-test.js` tem a lógica na `export default function()` (linha 17) — por isso aquele teste **funciona**. Perfis sem `exec:` são inofensivos enquanto a lógica estiver na `default()` e silenciosamente destrutivos quando não estiver. A diferença não é o perfil, é **onde** a lógica está no arquivo.
+>
+> **Status: corrigido em 13/10/2026, ainda não exercitado em CI.** O perfil `stress` agora declara `exec: 'stress_test'` no cenário `stress_test` e `exec: 'memory_monitor'` no cenário `memory_monitor` (correção aplicada em `load-tests/helpers/profiles.js`, **working tree — só entra em vigor após commit e push**; o próximo cron é o primeiro run que a exercita). **A correção foi deliberadamente NÃO replicada** a `recovery` (`chaos_monitor`) e `rateLimit` (`brute_force`): a lógica deles está na `export default function()` de `functional/recovery-test.js` (linha 20) e `security/rate-limit-test.js` (linha 17), então o cenário já executa a função certa; declarar `exec:` ali passaria a procurar funções que não existem e o k6 abortaria o teste. Pendência fechada em `docs/PENDENCIAS_scripts_testes.md`, item Z, com o critério de verificação do próximo run.
 
 **Exports:**
 - `PROFILES` — Objeto com todos os perfis
@@ -687,26 +695,52 @@ Testa o fluxo completo de criação de posts no blog: login → criação → li
 - Biblioteca externa: `https://raw.githubusercontent.com/benc-uk/k6-reporter/main/dist/bundle.js` (import de `htmlReport`)
 - Módulos k6: `k6/http`, `k6` (`check`, `sleep`), `k6/metrics` (`Trend`, `Counter`)
 
-**O que faz:** Teste de estresse combinado com múltiplos cenários executados simultaneamente. É o teste mais robusto e completo da suíte.
+**O que faz:** Teste de estresse combinado com múltiplos cenários executados simultaneamente. É o teste mais robusto e completo da suíte **em intenção de projeto** — em execução real (runs [`38246676774`](https://github.com/caminhar-deus/Caminhar/actions/runs/38246676774) e [`38393117376`](https://github.com/caminhar-deus/Caminhar/actions/runs/38393117376)) nenhum dos dois cenários chegou a executar, por bug corrigido em 13/10/2026, ver a advertência datada abaixo.
 
-**Propósito:** Simular cenário realista de produção com:
-- CRUD de vídeos sob carga crescente (20 → 50 → 100 VUs)
-- Monitoramento de memória do Node.js durante todo o teste
+**Propósito (intenção do código — ainda NÃO verificada em execução, mesmo após a correção de 13/10/2026 que só vigora após commit):** Simular cenário realista de produção com:
+- CRUD de vídeos sob carga crescente (20 → 50 → 100 VUs) — **intenção**: os runs de 12/10 e 13/10/2026 não realizaram nenhuma operação de CRUD
+- Monitoramento de memória do Node.js durante todo o teste — **intenção**: os mesmos runs não registraram nenhuma leitura de memória
 
 **Estrutura:**
-- **2 cenários paralelos** via `scenarios` do k6 — o k6 executa as funções exportadas com os mesmos nomes dos cenários:
-  1. `stress_test()` — Ramp-up progressivo (20, 50, 100 VUs), executa CRUD completo de vídeos com prefixo `[TEST-K6]` (URL do YouTube com ID de 11 caracteres `st${__VU}x${__ITER}` preenchido com zeros). Se o token do setup não estiver disponível, encerra a iteração silenciosamente (o monitoramento continua)
-  2. `memory_monitor()` — 1 VU constante por 5 min: GET `/api/status`, extrai `body.data.system` e registra as métricas de memória; `sleep(1)` entre leituras
-- `default()` — Vazia (os cenários nomeados executam via `stress_test()` e `memory_monitor()`)
+- **2 cenários paralelos** via `scenarios` do k6. **Correção factual (13/10/2026):** a versão anterior deste documento dizia que "o k6 executa as funções exportadas com os mesmos nomes dos cenários" — isso só acontece quando o cenário declara `exec: '<função>'`. Até 13/10/2026 os cenários do perfil `stress` **não declaravam `exec`** e, sem `exec`, o k6 roda em todo cenário a função `default` exportada pelo script (foi o que causou o bug, corrigido com a adição de `exec:` — ver advertência abaixo):
+  1. `stress_test()` — Ramp-up progressivo (20, 50, 100 VUs), executa CRUD completo de vídeos com prefixo `[TEST-K6]` (URL do YouTube com ID de 11 caracteres `st${__VU}x${__ITER}` preenchido com zeros). Se o token do setup não estiver disponível, encerra a iteração silenciosamente (o monitoramento continua). **Não executado nos runs #9 e #10** (bug); a partir do próximo run pós-commit, com `exec: 'stress_test'`, volta a ser a função do cenário
+  2. `memory_monitor()` — 1 VU constante por 5 min: GET `/api/status`, extrai `body.data.system` e registra as métricas de memória; `sleep(1)` entre leituras. **Não executado nos runs #9 e #10** (bug); a partir do próximo run pós-commit, com `exec: 'memory_monitor'`, volta a ser a função do cenário
+- `default()` — Vazia, e **foi exatamente essa vacuidade que fez o script não exercitar nada**: sem `exec:` nos cenários do perfil `stress`, o k6 executava esta `default()` em ambos. A versão anterior afirmava que ela era vazia "porque os cenários nomeados executam via `stress_test()` e `memory_monitor()`" — suposição factualmente errada, e justamente a que escondeu o bug documentado abaixo
 - `setup()` — Chama `authSetup()` de `helpers/auth.js`
 - `teardown()` — Limpa dados de teste com paginação completa (loop de páginas com `limit=100` até esvaziar), removendo vídeos cujo título contenha `[TEST-K6]`, `K6` ou `Estresse`
 - `handleSummary()` — Gera relatório via `generateReport()` com nome `stress-test-combined` + relatório HTML via `htmlReport` (biblioteca `benc-uk/k6-reporter`) em `./reports/k6-summaries/stress-test-combined.html`
+
+> **⚠️ ADVERTÊNCIA (13/10/2026) — BUG COMPROVADO, CORRIGIDO EM 13/10/2026, AINDA NÃO EXERCITADO EM CI (este script não testava nada).**
+>
+> **Causa (registro histórico — runs #9 e #10, código sem `exec:`).** Até a correção de 13/10/2026, `helpers/profiles.js` definia os cenários `stress_test` (linha 69) e `memory_monitor` (linha 83) dentro do perfil `stress` (linha 68) **sem a chave `exec:`**. Um cenário k6 sem `exec` executa a função `default` exportada pelo script — e aqui a `default()` é um no-op explícito. Os dois cenários, portanto, executavam a função vazia: no run 38246676774 (12/10/2026, nº 9) o script rodou 4m50s e consumiu **319.813.516 iterações sem fazer absolutamente nada**, reportando `✅ stress-test-combined: PASS` — e o run [`38393117376`](https://github.com/caminhar-deus/Caminhar/actions/runs/38393117376) (13/10/2026, nº 10, sha `7590120`, ainda no código antigo) **reproduziu o bug de forma idêntica** (196.425.737 iterações em 4m50s, mesmas métricas zeradas/ausentes), confirmando que o defeito é **determinístico** — dois SHAs, dois dias — e não flakiness nem estado de ambiente.
+>
+> **Evidência bruta** — artifact `reports/k6-summaries/stress-test-combined.json` do run [`38246676774`](https://github.com/caminhar-deus/Caminhar/actions/runs/38246676774) (12/10/2026), lida do `metrics` do k6:
+>
+> | Métrica no artifact | Valor | O que prova |
+> |---|---|---|
+> | `checks` | `rate: 0`, `passes: 0`, `fails: 0` | nenhum check executou — nem um único `check()` do `stress_test()` rodou |
+> | `http_reqs` | `count: 3`, `rate: 0.01` | 3 requisições no teste **inteiro**, e `http_req_failed` é `fails: 3 / passes: 0` — as 3 falharam e são as de `setup()`/`teardown()`, fora dos cenários |
+> | `stress_iterations` | **AUSENTE** das métricas | o `Counter` `StressIterations.add(1)` nunca foi alcançado — prova de que o corpo de `stress_test()` não executou |
+> | `nodejs_memory_rss_bytes` | **AUSENTE** | nenhuma leitura de memória RSS foi registrada |
+> | `nodejs_memory_heap_used_bytes` | todos os valores `0` | o corpo de `memory_monitor()` também não executou |
+> | `iteration_duration` | `avg 0.0007s` (~700 ns) | iterações instantâneas, coerente com função vazia |
+> | `setup_data.token` | presente (mascarado como `*** TOKEN OCULTO ***`) | o `setup()` rodou e devolveu token — a causa **não** é token ausente, é função não executada |
+>
+> **Por que o job ficou verde.** O perfil `stress` declara os thresholds `http_req_duration{scenario:stress_test}`, `http_req_failed{scenario:stress_test}`, `checks{scenario:stress_test}` e `nodejs_memory_heap_used_bytes`. No k6, threshold sobre métrica **sem amostras** não reprova — logo os quatro passaram **por falta de dados, não por desempenho**. É o mesmo mecanismo do gotcha já registrado em `gotchas/k6-check-nao-altera-exit-code.md`.
+>
+> **Contraste que prova a causa.** `security/rate-limit-test.js` usa o perfil `rateLimit`, que **também** usa `scenarios:` sem `exec:` — mas a lógica dele está na `export default function()` (linha 17), então o cenário `brute_force` executa a `default`, que é a função certa, e aquele teste **funciona**. A diferença não é o perfil, é **onde** a lógica está no arquivo: perfis sem `exec:` são inofensivos enquanto a lógica estiver na `default()` e silenciosamente destrutivos quando não estiver.
+>
+> **Sem relação com este bug:** os `checks` em 50% (`ip-spoofing-test`) e 33,33% (`ddos-search-test`) são comportamento correto e documentado no próprio código — checks mutuamente exclusivos por status HTTP, em que cada requisição satisfaz exatamente um (o cabeçalho do `ddos-search-test.js` diz que "a soma é 100% e a leitura de um percentual isolado não significa falha"). Os thresholds `ip_rotation_evasion_rate` (0,00%) e `search_block_rate` (99,95%) passaram, e `errors_500` ficou em 0,00%.
+>
+> **Correção aplicada em 13/10/2026, ainda não exercitada em CI:** o perfil `stress` de `load-tests/helpers/profiles.js` agora declara `exec: 'stress_test'` no cenário `stress_test` e `exec: 'memory_monitor'` no cenário `memory_monitor` (duas linhas; sem mudança de thresholds nem estágios). A correção está no **working tree — só entra em vigor após commit e push**, então o próximo cron é o primeiro run que a exercita. Pendência fechada em `docs/PENDENCIAS_scripts_testes.md` (item Z), que traz também o **critério de verificação objetivo** no artifact do próximo run (`checks.passes > 0`; `http_reqs` na casa das dezenas de milhares, hoje eram 3; `stress_iterations` presente, hoje ausente; `nodejs_memory_rss_bytes` presente, hoje ausente). Com ela, o teste passa a exercitar de fato 100 VUs contra a app por ~5 min e o cron **pode reprovar legitimamente pela primeira vez** — reprovação de capacidade, não de defeito (ver previsão detalhada no item Z).
 
 **Métricas customizadas:**
 - `nodejs_memory_rss_bytes` — Memória RSS (Trend)
 - `nodejs_memory_heap_total_bytes` — Heap total (Trend)
 - `nodejs_memory_heap_used_bytes` — Heap usado (Trend; threshold: max < 1GB)
 - `stress_iterations` — Counter incrementado quando a criação do vídeo falha em uma iteração do cenário de estresse
+
+> **Registro (13/10/2026):** nenhuma dessas métricas teve amostra registrada nos runs [`38246676774`](https://github.com/caminhar-deus/Caminhar/actions/runs/38246676774) e [`38393117376`](https://github.com/caminhar-deus/Caminhar/actions/runs/38393117376) — `stress_iterations` e `nodejs_memory_rss_bytes` nem aparecem nos artifacts, e `nodejs_memory_heap_used_bytes` veio todo em `0` (ver advertência acima). Naqueles runs elas existiam só como declaração no código, não como medição observada. Com a correção de 13/10/2026 (que só vigora após commit), espera-se que passem a registrar de verdade no próximo cron — `pages/api/status.js` devolve `data.system.{rss, heapTotal, heapUsed}`, que é exatamente o que `memory_monitor()` lê, e o threshold `nodejs_memory_heap_used_bytes: ['max<1073741824']` deixa de passar trivialmente por métrica vazia.
 
 **Endpoints chamados:**
 - `POST /api/auth/login` — Autenticação
@@ -1220,13 +1254,29 @@ Teste negativo de autenticação que envia credenciais inválidas. Garante que o
 **Propósito:** Automatizar a execução de todos os 30 scripts de teste de carga em ambiente isolado com PostgreSQL e Redis, com validação de thresholds e cache de dependências.
 
 **Estrutura do workflow:**
-1. **Schedule:** Execução automática diária às 04:17 UTC (`cron: '17 4 * * *'` — o minuto 17 é deliberado: o GitHub agenda todos os crons de minuto 0 no mesmo instante e o pico atrasa a execução)
+1. **Schedule:** Execução automática diária agendada para as 04:17 UTC (`cron: '17 4 * * *'` — o minuto 17 é deliberado: o GitHub agenda todos os crons de minuto 0 no mesmo instante e o pico do topo da hora atrasa a execução; o valor do cron foi **mantido**). **A execução observada, porém, não começa nesse horário:** nas execuções agendadas medidas via API pública do GitHub até o run `38246676774` (12/10/2026), o início real saiu de **+6,4 h a +19,1 h** após o horário do cron, concentrando-se em torno de **+7 h** — o run #9 começou às `2026-10-12T12:03:57Z` = **09:03 BRT**, dentro do horário comercial. O `created_at` do run já nasce atrasado (o run é criado ~7 h depois do horário do cron, antes de qualquer step deste workflow), o que aponta para a fila de agendamento do próprio GitHub — e **não** para o `concurrency` group nem para a fila de runners do repositório; a causa raiz não foi confirmada, apenas delimitada por essa evidência. Consequência: o horário do cron **não** é garantia de janela noturna (a versão anterior deste documento afirmava "madrugada, fora do horário comercial", o que a medição desmente). Ver o comentário no próprio `.github/workflows/load-tests.yml`, que é a fonte atual.
 2. **Triggers manuais:** via `workflow_dispatch`
-3. **Job `call-test-base`:** Reutiliza workflow `test-base.yml` com `test-type: load` e comando `node scripts/run-all-load-tests-sequentially.js`
-4. **Job `validate-and-report`:**
-   - **Validate Thresholds** — Lê `orchestrator-results.json` e lista testes que falharam
-   - **Upload Test Reports** — Upload dos relatórios como artefato (retidos por 30 dias)
-   - **Notify Threshold Violation** — Exibe resumo detalhado se thresholds foram violados
+3. **Job `load-tests`:** único job do workflow. Ele **chama** o workflow reutilizável `test-base.yml` (`uses: ./.github/workflows/test-base.yml`) com `test-type: load`, `run-command: npm run test:load:safe`, `skip-k6: false`, `timeout-minutes: 60`, `seed-db` e as credenciais do admin — todos repassados por `with:`, porque um job que chama workflow reutilizável não pode declarar `steps` nem `timeout-minutes`. É o `test-base.yml` que sobe Postgres/Redis, faz o `npm ci`, o setup do banco, o build/boot da app, roda a bateria e publica o artifact `Upload k6 Reports` (`retention-days` + `if-no-files-found: ignore`).
+   - **Não existe mais o job `validate-and-report`** (nem os steps `Validate Thresholds` e `Notify Threshold Violation` que a versão anterior deste documento descrevia): a validação de thresholds e a publicação dos relatórios são feitas pelo `test-base.yml` e pelos scripts k6 eles próprios. A versão anterior também atribuía a este job um comando `node scripts/run-all-load-tests-sequentially.js` direto — o comando passou a ser o `npm run test:load:safe`.
+4. **`concurrency`:** `group: ${{ github.workflow }}` com `cancel-in-progress: false` — dois runs de carga nunca rodam simultâneos (contaminariam latência/throughput e os seeds de um apagariam os dados do outro), e um run em andamento nunca é morto no meio. Efeito medido: no dia 12/10/2026 um `workflow_dispatch` manual (run #8, 11:59:43Z → 12:17:43Z) rodou antes do agendado (run #9), e o job do #9 ficou ~14 min na fila do grupo até 12:17:46Z, quando o #8 liberou.
+
+---
+
+### Registro de execução — run [`38246676774`](https://github.com/caminhar-deus/Caminhar/actions/runs/38246676774) (cron "Load Tests (k6)" nº 9, 12/10/2026)
+
+Registro datado da execução agendada usada como base de medição para as decisões sobre o `cron`, o `timeout-minutes` e o bump das GitHub Actions (nenhum dos dois arquivos deste documento tinha seção de runs — esta é a primeira entrada):
+
+| Campo | Valor medido |
+|-------|--------------|
+| Run / SHA | `38246676774` / `82e0ed5` |
+| Event / conclusion | `schedule` / `success` |
+| Job `load-tests / run-tests` | `12:17:46Z` → `12:36:16Z` = **18m30s** |
+| Step mais lento | `Run Tests` (`npm run test:load:safe`, 30 scripts k6) = **16m39s** (~33 s por script); o resto do setup soma ~1m45s (`Initialize containers` 35s, `npm ci` 59s, checkout 2s, `setup-db` 1s, build 5s, k6 1s; `Audit Dependencies` skipped; upload 1s) |
+| Início vs cron | `run_started_at` = `2026-10-12T12:03:57Z` = **09:03 BRT**, +7h47 após o horário do cron de 04:17 UTC (horário comercial — ver item 1 da seção `load-tests.yml` acima) |
+| Annotation no log | **"Uh oh! Node.js 20 is deprecated ... forced to run on Node.js 24"** para `actions/checkout@v4`, `actions/setup-node@v4` e `actions/upload-artifact@v4` (e, no `test-coverage.yml`, também `actions/download-artifact@v4` e `actions/github-script@v7`) |
+| Ação tomada (12/10/2026) | Bump das actions oficiais em `.github/`: `checkout`/`setup-node`/`upload-artifact` → **v7**, `download-artifact` → **v8**, `github-script` → **v9**. Breaking changes das release notes conferidas contra o uso deste repo (nenhuma se aplica) — ver o comentário no topo dos steps de `test-base.yml`. `grafana/setup-k6-action@v1` e as actions locais `./.github/actions/*` ficaram fora do bump (não emitiram a annotation). Efeito esperado: sumir a annotation e voltar a rodar em Node.js suportado, sem mudança de inputs. |
+| Decisões derivadas | `cron` mantido em `17 4 * * *` (comentário corrigido: a execução não roda na madrugada); `timeout-minutes` de 180 → **60** (18m30s medidos × 3.6 de folga) |
+| Bug descoberto na análise (13/10/2026) | A análise do artifact `reports/k6-summaries/stress-test-combined.json` e do log deste run revelou que o script `stress-test-combined` **não executou nenhum teste**: os cenários do perfil `stress` (`stress_test` e `memory_monitor`) não tinham `exec:`, então rodavam a `default()` vazia — 4m50s, **319.813.516 iterações instantâneas**, `checks` com `rate 0 / passes 0 / fails 0`, só 3 `http_reqs` (todas do `setup()`/`teardown()`, todas falhando), métricas `stress_iterations` e `nodejs_memory_rss_bytes` ausentes do artifact e `nodejs_memory_heap_used_bytes` todo em `0`. Ou seja, **o verde deste run (e o `✅ stress-test-combined: PASS`) não cobre o que o nome do script sugere** — os thresholds passaram por falta de amostras, não por desempenho. **Reprodução idêntica no run [`38393117376`](https://github.com/caminhar-deus/Caminhar/actions/runs/38393117376)** (cron nº 10, 13/10/2026, sha `7590120`, ainda no código antigo): mesmas métricas zeradas/ausentes, 196.425.737 iterações em 4m50s, bateria 30/30 passed — dois SHAs e dois dias com o mesmo resultado prova que o defeito é determinístico. **Bug corrigido em 13/10/2026** (`exec:` adicionado aos dois cenários do perfil `stress`), **ainda não exercitado em CI** — ver a seção [`stress-test-combined.js`](#stress-test-combinedjs) e `docs/PENDENCIAS_scripts_testes.md` (item Z, com o critério de verificação do próximo run). |
 
 ---
 

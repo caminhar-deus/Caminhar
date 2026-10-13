@@ -967,6 +967,7 @@ tests/unit/pages/api/auth/login.edge.test.js → lib/infra/logger.js
 tests/unit/pages/api/auth/login.edge.test.js → pages/api/auth/login.js
 tests/unit/pages/api/upload-image.edge.test.js → pages/api/upload-image.js
 tests/unit/scripts/backup.test.js → scripts/backup.js
+tests/unit/scripts/check-hardcoded-credentials.test.js → scripts/check-hardcoded-credentials.js
 tests/unit/scripts/clean-orphaned-images.test.js → scripts/clean-orphaned-images.js
 tests/unit/scripts/clear-db.test.js → scripts/clear-db.js
 tests/unit/scripts/clear-db.test.js → scripts/db/connection.js

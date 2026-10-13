@@ -64,9 +64,28 @@ export const PROFILES = {
   },
 
   // Perfil para stress test combinado (cenários paralelos)
+  //
+  // `exec:` é OBRIGATÓRIO aqui e sua ausência foi um bug silencioso. Um cenário
+  // k6 sem `exec:` executa a função `default` do script — e a `default()` de
+  // `stress-test-combined.js` é um no-op vazio, porque a lógica do teste está
+  // nas funções nomeadas. Resultado medido nos runs 38246676774 (12/10/2026) e
+  // 38393117376 (13/10/2026), ambos verdes: 4m50s de ramp-up com 100 VUs e
+  // ~200–320 milhões de iterações, ZERO requisições feitas pelos cenários,
+  // `checks` com 0 passes e `stress_iterations`/métricas de memória AUSENTES do
+  // artifact. Os thresholds (`checks{scenario:stress_test}` entre eles) passavam
+  // por não terem amostras, não por desempenho — e o script reportava PASS.
+  //
+  // NÃO replicar este `exec:` para os outros dois perfis com `scenarios:`
+  // (`recovery`/`chaos_monitor` e `rateLimit`/`brute_force`). A lógica deles está
+  // na `export default function()` dos respectivos scripts, então o cenário já
+  // executa a função certa; declarar `exec:` com o nome do cenário passaria a
+  // procurar uma função que não existe e o k6 abortaria o teste. A regra real:
+  // quando a lógica está em funções nomeadas, o cenário precisa de `exec:`;
+  // quando está na `default`, não deve ter.
   stress: {
     scenarios: {
       stress_test: {
+        exec: 'stress_test',
         executor: 'ramping-vus',
         startVUs: 0,
         stages: [
@@ -81,6 +100,7 @@ export const PROFILES = {
         gracefulRampDown: '30s',
       },
       memory_monitor: {
+        exec: 'memory_monitor',
         executor: 'constant-vus',
         vus: 1,
         duration: '5m',

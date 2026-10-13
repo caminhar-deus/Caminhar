@@ -31,11 +31,38 @@ on:
         type: boolean
         default: true
   schedule:
-    # 04:17 UTC = 01:17 no horário de Brasília: madrugada, bem fora do horário
-    # comercial do Brasil (12:00–21:00 UTC). O minuto é 17, e não 0, de
-    # propósito: o GitHub agenda todos os crons de minuto 0 no mesmo instante e
-    # o pico do topo da hora atrasa (ou nem despacha) a execução — desviar do
-    # minuto 0 troca a fila do instante cheio pela pontualidade.
+    # `cron: '17 4 * * *'` = 04:17 UTC = 01:17 no horário de Brasília. O minuto
+    # é 17, e não 0, de propósito: o GitHub agenda todos os crons de minuto 0 no
+    # mesmo instante e o pico do topo da hora atrasa (ou nem despacha) a
+    # execução — desviar do minuto 0 evita disputar esse pico. O valor do cron
+    # é mantido.
+    #
+    # CORREÇÃO (12/10/2026): a versão anterior deste comentário afirmava que a
+    # execução acontecia "na madrugada, bem fora do horário comercial do
+    # Brasil". A medição via API pública do GitHub desmente isso — o job NÃO
+    # começa às 04:17 UTC:
+    #
+    #   run   run_started_at         atraso vs 04:17 UTC
+    #   #9    2026-10-12T12:03:57Z   +7h47  (09:03 BRT = horário comercial)
+    #   #7    2026-10-11T23:23:45Z   +19h07 (pior caso medido)
+    #   #6    2026-10-10T10:38:34Z   +6h22  (melhor caso medido)
+    #   #1    2026-10-05T11:33:14Z   +7h16
+    #
+    # Nas execuções agendadas medidas entre 05/10 e 12/10/2026 (runs #1 a #9,
+    # inspecionados via API pública) o atraso variou de +6,4 h a +19,1 h, com 6
+    # das 8 medições `schedule` entre +7,0 h e +8,1 h — ou seja, ~7 h de
+    # atraso, não minutos. Um atraso de horas também não é explicado por fugir
+    # do topo da hora: o minuto 17 continua sendo a escolha certa para não
+    # disputar o pico do minuto 0, mas ele NÃO garante pontualidade.
+    #
+    # Origem do atraso: não é o `concurrency` group nem a fila de runners deste
+    # repo — o `created_at` do run já nasce ~7 h depois do horário do cron, ou
+    # seja, o run é criado atrasado antes de qualquer step deste workflow. Isso
+    # aponta para a fila de agendamento do próprio GitHub; a causa raiz não foi
+    # confirmada, apenas delimitada por essa evidência.
+    # Consequência prática: o horário do cron NÃO deve ser tratado como
+    # garantia de janela noturna (nem de qualquer janela) — quem precisar de
+    # horário específico não pode depender deste agendamento.
     - cron: '17 4 * * *'
 
 # Teste de carga só é comparável quando roda sozinho: dois runs simultâneos
@@ -51,14 +78,24 @@ concurrency:
 
 jobs:
   load-tests:
-    # Pior caso teórico: 30 scripts × timeout de 600 s por script do
-    # orquestrador (`execSync` com `timeout: 600000` em
-    # run-all-load-tests-sequentially.js) = 18.000 s ≈ 300 min — que sozinho
-    # quase esgota o limite padrão de 360 min, restando só ~60 min para
-    # `npm ci` + build + seeds + boot do Next.js. Caso realista: cada script k6
-    # roda na casa de 1–3 min (30–90 min no total) + ~15–20 min de setup
-    # ≈ 110 min; 180 min cobre esse pior caso real com folga e ainda derruba um
-    # job travado antes de desperdiçar 6 h de runner.
+    # Tempo REAL medido no run 38246676774 (cron "Load Tests (k6)" #9,
+    # 12/10/2026, job `load-tests / run-tests`, 12:17:46Z -> 12:36:16Z =
+    # 18m30s): setup inteiro ~1m45s (Initialize containers 35s, checkout 2s,
+    # `npm ci` 59s, setup-db 1s, build 5s, setup-k6 1s; audit pulado) e a
+    # bateria dos 30 scripts k6 — `Run Tests`, via `npm run test:load:safe` —
+    # em 16m39s (~33s por script); upload dos relatórios 1s. 60 min dá ~3.6x
+    # de folga sobre as 18m30s observadas e ainda derruba um job travado em 1
+    # hora em vez de três.
+    #
+    # O cálculo anterior justificava 180 min com "caso realista 30–90 min +
+    # 15–20 min de setup = 110 min"; esse número não bate com nenhuma execução
+    # medida — a bateria inteira leva ~17 min, não 30–90.
+    #
+    # Teto teórico continua sendo o `execSync` de 600 s por script do
+    # orquestrador (`scripts/run-all-load-tests-sequentially.js`): 30 × 600 s =
+    # 300 min, e só se TODOS os scripts travarem até o timeout individual.
+    # Esse caso é o que 60 min corta de propósito: um resultado parcial vale
+    # mais do que 3 h de runner, e o log do step mostra exatamente onde travou.
     #
     # O limite é passado por `with:` porque um job que chama workflow
     # reutilizável não pode declarar `timeout-minutes` (o actionlint reprova e o
@@ -69,7 +106,7 @@ jobs:
       test-type: load
       run-command: npm run test:load:safe
       skip-k6: false
-      timeout-minutes: 180
+      timeout-minutes: 60
       # `skip-db-setup` permanece em `false` (o default) de propósito: os 30
       # scripts batem em endpoints que LEEM do Postgres (paginação, busca,
       # listagens, cache) — sem migrations/seeds não há dados e a bateria

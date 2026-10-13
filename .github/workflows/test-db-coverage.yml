@@ -51,7 +51,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js Environment
         uses: ./.github/actions/setup
@@ -93,7 +93,7 @@ jobs:
       # interessam.
       - name: Upload Coverage Output
         if: ${{ always() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-db-output
           path: coverage-db-output.txt
@@ -103,7 +103,7 @@ jobs:
       # que torna o relatório baixável.
       - name: Upload Coverage HTML
         if: ${{ always() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-db-html
           path: coverage-db/

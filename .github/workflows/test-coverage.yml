@@ -98,7 +98,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js Environment
         uses: ./.github/actions/setup
@@ -116,7 +116,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js Environment
         uses: ./.github/actions/setup
@@ -173,7 +173,7 @@ jobs:
       # publicar o comentário no PR.
       - name: Upload Coverage Output
         if: ${{ always() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-output
           path: coverage-output.txt
@@ -184,7 +184,7 @@ jobs:
       # republicá-lo como `jest-coverage-report`.
       - name: Upload Coverage HTML
         if: ${{ always() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-html
           path: coverage/
@@ -209,7 +209,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js Environment
         uses: ./.github/actions/setup
@@ -220,7 +220,7 @@ jobs:
       # `always()` que existe está no job (que decide se ele roda) e nos
       # uploads, nunca aqui.
       - name: Download Coverage Output
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         continue-on-error: true
         with:
           name: coverage-output
@@ -229,7 +229,7 @@ jobs:
       # no .gitignore e não vem no checkout), então precisa ser baixado aqui
       # antes de ser republicado em `Upload Coverage HTML Report`.
       - name: Download Coverage HTML Report
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         continue-on-error: true
         with:
           name: coverage-html
@@ -241,7 +241,7 @@ jobs:
       # antigo a remover de qualquer maneira.
       - name: Remove Old Coverage Comments
         if: ${{ github.event_name == 'pull_request' }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -271,11 +271,18 @@ jobs:
       # em `push` não existe PR e `context.issue.number` quebraria o script.
       - name: Post PR Comment on Failure
         if: ${{ github.event_name == 'pull_request' && needs.coverage.result == 'failure' }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const fs = require('fs');
+            // `await import(...)` e não `require(...)`: no `github-script` v9 o
+            // módulo passou a ser ESM e o `require` não é mais garantido no
+            // escopo do script (o próprio v9 documenta `require` falhando em
+            // runtime para pacotes ESM). `import()` dinâmico funciona tanto no
+            // wrapper CJS quanto no ESM, então o step não fica refém do modo
+            // como o action avalia o script. `node:fs` traz `existsSync` e
+            // `readFileSync`, usados abaixo.
+            const fs = await import('node:fs');
 
             // A API de comentários do GitHub aceita no máximo 65536 caracteres
             // por comentário; o restante do template (título, <details>, cerca do
@@ -317,7 +324,7 @@ jobs:
             });
 
       - name: Upload Coverage HTML Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: ${{ always() }}
         with:
           name: jest-coverage-report
