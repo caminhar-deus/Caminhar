@@ -12,7 +12,7 @@
 |---|---|---|
 | orchestrator | Planeja, consulta memória, delega, reconcilia | Implementar trechos grandes |
 | explorer | Mapeia o repositório | Editar arquivos |
-| librarian | Busca documentação externa (Context7 + web) | Editar arquivos |
+| librarian | Busca documentação externa (context7 + gh_grep + websearch) | Editar arquivos |
 | designer | Decisões de UI/UX; usa `ui-ux-pro-max`; grava/lê `design-system/` | Alterar lógica de negócio |
 | fixer | Implementa tarefas bem delimitadas | Decidir arquitetura ou design |
 | oracle | Revisa arquitetura, bugs e conformidade com o checklist | Implementar em massa |
@@ -20,8 +20,8 @@
 Desempate: aparência/UX → designer; verificação → oracle; código → fixer. Só o designer decide o design final.
 "Não edita" é imposto pelo bloco `agent` do `opencode.jsonc` (`edit` e `ast_grep_replace` em `deny` para explorer, librarian e oracle) — o `permission` do `.opencode/oh-my-opencode-slim.json` NÃO é aplicado aos papéis built-in neste host; conferir com `opencode debug agents`. O terminal desses três NÃO pode ser negado: com `bash` em `deny` eles caem com erro de free tier.
 
-### 2.1 Matriz de pesquisa (websearch, gh_grep, context7)
-Definida em 13/10/2026. São três mecanismos diferentes, em três lugares diferentes:
+### 2.1 Matriz de pesquisa (websearch, webfetch, gh_grep, context7, ai-memory)
+Definida em 13/10/2026, com `webfetch` acrescentado em 14/10/2026. São três mecanismos diferentes, em três lugares diferentes:
 
 | Recurso | Tipo | Onde é controlado | orchestrator | librarian | explorer/designer/fixer/oracle |
 |---|---|---|---|---|---|
@@ -29,6 +29,7 @@ Definida em 13/10/2026. São três mecanismos diferentes, em três lugares difer
 | `gh_grep` | MCP remoto (plugin slim) | idem | allow | allow | deny |
 | `ai-memory` | MCP remoto (host) | idem | allow | deny | deny |
 | `websearch` | **ferramenta nativa do host** (não é MCP) | bloco `agent.permission` do `opencode.jsonc` | allow | allow | deny |
+| `webfetch` | **ferramenta nativa do host** (não é MCP) | idem | ask | ask | deny |
 
 Regras que evitam erro:
 - `websearch` NÃO é MCP. A entrada `"websearch"` em `disabled_mcps` do slim era inerte (o MCP Exa foi removido no slim 2.2.x) e por isso **essa lista está vazia**; o acesso ao websearch é permissão de ferramenta.
@@ -37,6 +38,7 @@ Regras que evitam erro:
 - O slim **não recarrega config a quente**: `opencode debug agents` só mostra a matriz nova depois de reiniciar o host/service. Mudança em `opencode.jsonc` aparece na hora.
 - Onde a **chave** fica: `CONTEXT7_API_KEY` e `EXA_API_KEY` vão no **`~/.bashrc`** (bloco próprio, fora do trecho gerenciado pelo slim), nunca no `.env` do projeto nem no `.env.example` — o Next.js lê `.env`, o processo do OpenCode não. A chave só entra em uso depois de `opencode service restart` (o service herda o ambiente do shell que o iniciou); sem chave, Context7 e Exa funcionam em modo anônimo/cota gratuita.
 - Permitir `websearch` não a liga de fato: o host ainda precisa de provedor com chave no ambiente (`TAVILY_API_KEY`, `PERPLEXITY_API_KEY`, `EXA_API_KEY` ou `PARALLEL_API_KEY`) e de `websearch:provider` != `false` (estado guardado em `~/.local/share/opencode/opencode.db`, chave `kv.websearch:provider`). Sem isso a chamada falha com `WebSearch.ProviderRequired`.
+- `webfetch` (14/10/2026): era `ask` para todos os agentes porque nenhum override o tocava — buraco de uma linha nesta matriz, já que os outros três recursos de rede eram negados aos mesmos quatro agentes. Passou a ser `deny` para explorer/designer/fixer/oracle. Três diferenças que evitam erro: o recurso da permissão é a **URL**, não a query (dá para allowlist por domínio, ex. `webfetch` + `https://opencode.ai/*` → `allow`); **não depende de provedor com chave**, ao contrário do `websearch`, então funciona mesmo sem nenhuma chave de busca; e o parâmetro `prompt` da ferramenta delega a um modelo secundário que falha no free tier (retorna 200 e não extrai nada) — busque a página e leia você mesmo.
 
 ## 3. Memória (ai-memory)
 - Antes de propor arquitetura ou repetir tentativa antiga: consultar a memória (`memory_query`).

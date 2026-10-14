@@ -1,6 +1,5 @@
 .
 ├── AGENTS.md
-├── AGENTS.md.bak-1791045413
 ├── CHANGELOG.md
 ├── CLAUDE.md
 ├── README.md
@@ -1207,4 +1206,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-197 directories, 1011 files
+197 directories, 1010 files
