@@ -1253,7 +1253,7 @@
       "source": "thedaviddias/Front-End-Checklist",
       "sourceType": "github",
       "skillPath": "skills/frontend-checklist-global/SKILL.md",
-      "computedHash": "c8e9902a12c7b64c16a553eb5e34420d515c816ca618276c3c51b109a8a17718"
+      "computedHash": "85e02df53ffdb817890a2d0538d2aab1358922d1cd5fd4ff62f2a0bdceda74fd"
     },
     "frontend-design": {
       "source": "anthropics/skills",
@@ -3427,7 +3427,7 @@
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/wizard/SKILL.md",
-      "computedHash": "3642db2041d66efa88407e958792268c5cace9e286ad0a93ae218bffc8aae448"
+      "computedHash": "49298bed80e7f722b071ad5d64798c75eb705bbbe0635b9bbffd08cd6fb81647"
     },
     "word-count": {
       "source": "thedaviddias/Front-End-Checklist",

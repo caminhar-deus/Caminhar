@@ -128,5 +128,5 @@ This aggregate skill routes to the Front-End Checklist MCP tools across 386 rule
 - **seo**: 93 rules · 19 high
 - **testing**: 13 rules · 7 high
 
-Rules browser: https://frontendchecklist.io/en/rules
+Rules browser: https://frontendchecklist.io/rules
 Full reference: https://frontendchecklist.io/llms-full.txt

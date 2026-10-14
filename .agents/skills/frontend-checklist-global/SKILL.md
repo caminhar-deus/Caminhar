@@ -7,7 +7,7 @@ metadata:
   difficulty: intermediate
   estimatedTime: "30"
   source: frontendchecklist.io
-  url: https://frontendchecklist.io/en/mcp
+  url: https://frontendchecklist.io/mcp
 ---
 
 # Front-End Checklist Global Audit
@@ -190,4 +190,4 @@ Use MCP retrieval instead of trying to recall rules from memory.
 
 See `references/categories.md` for category coverage and tool routing.
 
-MCP docs: https://frontendchecklist.io/en/mcp
+MCP docs: https://frontendchecklist.io/mcp
