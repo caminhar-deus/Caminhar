@@ -184,7 +184,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Infraestrutura Inicial
 
-- Node.js 24.15.0 como engine
+- Node.js 24.22.0 como engine
 - ES Modules como padrão
 - Configuração de lint e formatação
 - Estrutura de diretórios do projeto

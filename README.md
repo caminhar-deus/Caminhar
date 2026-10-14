@@ -1,6 +1,6 @@
 # 🏞️ Caminhar com Deus
 
-**Versão:** 1.4.0 | **Engine:** Node.js 24.21.0, npm 12.2.0 | **Stack:** Next.js 16 + React 19
+**Versão:** 1.4.0 | **Engine:** Node.js 24.22.0, npm 11.19.1 | **Stack:** Next.js 16 + React 19
 
 Plataforma web para compartilhamento de conteúdo gospel. Inclui blog com artigos, músicas com integração Spotify, vídeos com integração YouTube, produtos com integração Mercado Livre, sistema administrativo completo, testes automatizados e CI/CD.
 
@@ -250,7 +250,7 @@ Componentes React organizados em 6 categorias:
 |-----------|-----------|
 | **Framework** | Next.js 16 (Pages Router) |
 | **Frontend** | React 19 |
-| **Backend** | Node.js 24.21.0 (ES Modules) |
+| **Backend** | Node.js 24.22.0 (ES Modules) |
 | **Banco de Dados** | PostgreSQL |
 | **Cache** | Redis (Upstash) + fallback em memória |
 | **Autenticação** | JWT + bcryptjs + cookies httpOnly |

@@ -4,16 +4,16 @@ inputs:
   node-version:
     description: 'Node.js version to use'
     required: false
-    # Alinhado com `engines.node` do package.json (24.21.0). Antes era 24.15.0,
+    # Alinhado com `engines.node` do package.json (24.22.0). Antes era 24.15.0,
     # o que fazia o `npm ci` emitir `EBADENGINE Unsupported engine` em TODO job
     # da CI — silenciosamente, porque sem `engine-strict` o npm só avisa. Um
     # patch atrás não muda comportamento, mas o aviso some do log e o ambiente
     # deixa de divergir do declarado.
     #
-    # O npm NÃO é pinado aqui: o 24.21.0 já vem com 11.19.0, que satisfaz
-    # `engines.npm: ">=11.19.0"`. Fixar um npm mais novo exigiria um
+    # O npm NÃO é pinado aqui: o 24.22.0 já vem com um npm compatível com
+    # `engines.npm: "11.19.1"`. Fixar um npm mais novo exigiria um
     # `npm install -g npm@X` em todo job — custo e superfície sem retorno.
-    default: '24.21.0'
+    default: '24.22.0'
 
 runs:
   using: 'composite'

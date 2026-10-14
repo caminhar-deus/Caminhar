@@ -50,14 +50,14 @@ jobs:
 
       # Mesma versão, mesmo cache de npm e mesmos flags de instalação do
       # `./.github/actions/setup` (action composta usada por `test-coverage.yml`),
-      # agora em 24.21.0 para bater com `engines.node` do package.json. Aqui o
+      # agora em 24.22.0 para bater com `engines.node` do package.json. Aqui o
       # setup-node é declarado diretamente porque o `npm ci` precisa ser um
       # step explícito abaixo: a composta já embute o `npm ci` dentro e
       # reutilizá-la duplicaria a instalação (ou eliminaria o step).
       - name: Setup Node.js Environment
         uses: actions/setup-node@v7
         with:
-          node-version: '24.21.0'
+          node-version: '24.22.0'
           cache: 'npm'
 
       # `--no-audit --no-fund`: o audit roda por padrão ao fim do `ci` e só
