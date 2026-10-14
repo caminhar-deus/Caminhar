@@ -207,13 +207,14 @@ Componentes React organizados em 6 categorias:
 
 **Arquivo:** [`docs/PROJECT_load-tests.md`](/docs/PROJECT_load-tests.md)
 
-**30 scripts k6** organizados em 3 categorias + 7 módulos helpers:
+**30 scripts k6** organizados em 4 categorias + 7 módulos helpers:
 
 | Categoria | Qtd | Descrição |
 |-----------|:---:|-----------|
 | **Funcionais** | 9 | Health check, cache headers, search content, posts tags, cursor pagination, backup verification, video validation, upload flow, recovery test |
-| **Performance** | 17 | Cache warmup/performance, auth flow, create post, pagination, stress test combinado, CRUD/carga/filtro/paginação/ordenação de músicas e vídeos |
+| **Performance** | 16 | Cache warmup/performance, auth flow, create post, pagination, CRUD/carga/filtro/paginação/ordenação de músicas e vídeos |
 | **Segurança** | 4 | Login negativo, rate limit, IP spoofing, DDoS search |
+| **Stress** | 1 | Stress test combinado (CRUD de vídeos sob até 100 VUs + monitoramento de memória), executado **por último** desde 14/10/2026 — motivo e pendência em [`docs/PROJECT_load-tests.md`](/docs/PROJECT_load-tests.md) |
 
 **Helpers:** config, auth (login JWT), network (IP aleatório), profiles (7 perfis de carga), report (relatórios JSON sanitizados), sleep (pausa aleatória), resource-test-runner (factory pattern para reduzir duplicação CRUD)
 

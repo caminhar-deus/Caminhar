@@ -590,11 +590,12 @@ Nenhum código morto identificado. O script é funcional.
 
 **Resumo do arquivo:**
 
-Orquestrador completo de testes de carga (k6) que executa 30 scripts organizados em 3 categorias:
+Orquestrador completo de testes de carga (k6) que executa 30 scripts organizados em 4 categorias:
 
-1. **Performance Tests (17 scripts):** Testes de CRUD, filtro, paginação, ordenação, busca, cache e stress para `musicas`, `videos` e `posts`, além de fluxo autenticado e criação de posts.
+1. **Performance Tests (16 scripts):** Testes de CRUD, filtro, paginação, ordenação, busca e cache para `musicas`, `videos` e `posts`, além de fluxo autenticado e criação de posts.
 2. **Functional Tests (9 scripts):** Verificação de health check, headers de cache, backup, validação de vídeo, tags de posts, paginação por cursor, busca de conteúdo, upload e recuperação.
 3. **Security Tests (4 scripts):** Rate limiting, IP spoofing, DDoS em busca e teste negativo de login.
+4. **Stress Tests (1 script):** `stress-test-combined`, executado **por último de propósito** desde 14/10/2026 (era o #17, saiu da categoria Performance): gera ~24.500 mutações na tabela de vídeos e, no meio da bateria, deixava os scripts seguintes medindo um possivelmente degradado banco. Categoria própria para não rotular um teste de estresse como "Security"; preço aceito: ele passa a rodar sobre banco já sujo pelos outros 29. Experimento ainda não confirmado — fonte primária em `docs/PROJECT_load-tests.md` (seção do orquestrador) e pendência em `docs/PENDENCIAS_scripts_testes.md` (item AB).
 
 Fluxo de execução:
 - Verifica se o servidor está online via HTTP (fail-fast com mensagem orientativa).
@@ -607,8 +608,8 @@ Fluxo de execução:
 
 **Ajustes e correções:**
 
-1. **Uso de `execSync` com `shell: true`:** As linhas 185, 209, 231 e 248 executam comandos via `execSync` com `shell: true`. Embora os comandos atuais não incluam variáveis de ambiente com caracteres especiais diretamente na string, o padrão é frágil. Se `ADMIN_PASSWORD` conter `$`, `;`, aspas ou outros caracteres especiais, pode haver quebra ou injeção de comando.
-2. **Teste negativo de login com variáveis vazias na string:** A linha 125 inclui `-e ADMIN_USERNAME= -e ADMIN_PASSWORD=` diretamente na string de comando. Se o shell interpretar os espaços de forma diferente, o teste pode não rodar como esperado.
+1. **Uso de `execSync` com `shell: true`:** Quatro chamadas executam comandos via `execSync` com `shell: true` — a verificação do binário do k6 (`checkK6Available()`), o seed de posts no início da categoria Performance, o cleanup de posts no fim dessa categoria e o cleanup de bloqueios de autenticação no fim da categoria Security. **Referenciadas por função e não por número de linha**, porque números de linha envelhecem a cada edição do arquivo (uma referência por linha já estava desatualizada quando o `stress-test-combined` mudou de categoria em 14/10/2026). Embora os comandos atuais não incluam variáveis de ambiente com caracteres especiais diretamente na string, o padrão é frágil. Se `ADMIN_PASSWORD` conter `$`, `;`, aspas ou outros caracteres especiais, pode haver quebra ou injeção de comando.
+2. **Teste negativo de login com variáveis vazias na string:** A entrada `login-negative-test` na lista da categoria `🔒 Security Tests` inclui `-e ADMIN_USERNAME= -e ADMIN_PASSWORD=` diretamente na string de comando. Se o shell interpretar os espaços de forma diferente, o teste pode não rodar como esperado.
 
 **Melhorias:**
 Nenhuma melhoria necessária além da substituição de `execSync` por `spawn` com array de argumentos (conforme seção 5.2).

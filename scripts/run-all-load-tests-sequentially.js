@@ -201,7 +201,6 @@ const CATEGORIES = [
       { name: 'pagination-test',         cmd: 'k6 run load-tests/performance/pagination-test.js' },
       { name: 'authenticated-flow-test', cmd: 'k6 run load-tests/performance/authenticated-flow-test.js' },
       { name: 'create-post-flow',        cmd: 'k6 run load-tests/performance/create-post-flow.js' },
-      { name: 'stress-test-combined',    cmd: 'k6 run load-tests/performance/stress-test-combined.js' },
     ],
   },
   {
@@ -227,6 +226,49 @@ const CATEGORIES = [
       { name: 'ip-spoofing-test',        cmd: 'k6 run load-tests/security/ip-spoofing-test.js' },
       { name: 'ddos-search-test',        cmd: 'k6 run load-tests/security/ddos-search-test.js' },
       { name: 'login-negative-test',     cmd: 'k6 run -e ADMIN_USERNAME= -e ADMIN_PASSWORD= load-tests/security/login-negative-test.js' },
+    ],
+  },
+  {
+    // =====================================================================
+    // `stress-test-combined` FICA POR ÚLTIMO DE PROPÓSITO (14/10/2026).
+    //
+    // Antes ele era o último da categoria Performance, ou seja, o #17 de 30:
+    // rodava ANTES dos 9 Functional e dos 4 Security. Ele é, de longe, o
+    // script mais destrutivo da bateria — 8.189 iterações de CRUD completo,
+    // ~24.500 mutações (POST/PUT/DELETE) na tabela de vídeos. Comparando o p95
+    // entre o run 38246676774 (ele inerte, por causa do bug do `exec:`) e o
+    // 38543197931 (ele ativo), os scripts que rodavam DEPOIS dele subiram de
+    // +44% a +123%, enquanto os que rodavam antes variaram de −11% a +12%
+    // em direção misturada. O corte na posição #17 é nítido.
+    //
+    // Hipótese: as mutações deixam tuples mortos / páginas de índice sujas no
+    // Postgres sem tempo para o autovacuum, e quem roda depois mede um banco
+    // degradado em vez do comportamento normal do app.
+    //
+    // NÃO CONFIRMADA. São 2 execuções em runner hospedado compartilhado, e o
+    // `login-negative-test` (maior salto) tem p95 naturalmente instável. Por
+    // isso a mudança é um EXPERIMENTO, não uma certeza: rodando por último, os
+    // outros 29 scripts passam a medir um banco limpo, e o próximo run decide
+    // — se a degradação dos scripts finais sumir, a hipótese do autovacuum se
+    // sustenta; se persistir, era ruído de runner. Ver `docs/` para o registro.
+    //
+    // O preço aceito: o stress test passa a rodar sobre um banco já sujo
+    // pelos outros 29, então os números DELE ficam piores. Isso é aceitável —
+    // a medição que importa para os outros 29 é a de comportamento normal.
+    //
+    // Categoria própria, e não só o fim da lista de Security, para não rotular
+    // um teste de estresse como "Security" no log nem no relatório. O total de
+    // 30 scripts e as contagens por categoria são calculados por reduce/bloco
+    // genérico, então nada quebra com uma categoria a mais. Os cleanups
+    // pós-categoria são condicionados ao NOME da categoria (Performance e
+    // Security), e esta categoria é a última: não há cleanup a fazer depois
+    // dela, porque o próprio script já apaga os vídeos que cria, iteração a
+    // iteração (CREATE → UPDATE → DELETE).
+    // =====================================================================
+    name: '🔥 Stress Tests',
+    env: { ADMIN_USERNAME: process.env.ADMIN_USERNAME, ADMIN_PASSWORD: process.env.ADMIN_PASSWORD },
+    scripts: [
+      { name: 'stress-test-combined', cmd: 'k6 run load-tests/performance/stress-test-combined.js' },
     ],
   },
 ];
