@@ -10,9 +10,13 @@ inputs:
     # patch atrás não muda comportamento, mas o aviso some do log e o ambiente
     # deixa de divergir do declarado.
     #
-    # O npm NÃO é pinado aqui: o 24.22.0 já vem com um npm compatível com
-    # `engines.npm: "11.19.1"`. Fixar um npm mais novo exigiria um
-    # `npm install -g npm@X` em todo job — custo e superfície sem retorno.
+    # O npm NÃO é pinado aqui: o 24.22.0 embute npm 11.19.1 — correspondência
+    # EXATA com `engines.npm: "11.19.1"` (pin sem range). O 24.21.0 embutia
+    # 11.19.0 e o `npm ci` emitia `EBADENGINE` DOIS campos ao mesmo tempo
+    # (`node` e `npm`); subir o patch resolve os dois de uma vez, porque o
+    # `setup-node` instala a distribuição oficial, que já vem com o npm certo.
+    # Fixar um npm à parte exigiria um `npm install -g npm@X` em todo job —
+    # custo e superfície sem retorno.
     default: '24.22.0'
 
 runs:

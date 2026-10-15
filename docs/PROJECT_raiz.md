@@ -436,6 +436,30 @@ O que isso muda de fato: a máquina local vira um **canal de validação antecip
 
 Pendência de monitoramento registrada em `docs/PENDENCIAS_scripts_testes.md` (item AA) — **nenhuma mudança de código é necessária agora**.
 
+### 6.2 Par Node/npm: 24.22.0 embute npm 11.19.1 — e baseline do run #27 (14/10/2026)
+
+**O bump de `24.21.0` para `24.22.0` não foi cosmético — foi o patch que traz o npm correspondente.** Contra `nodejs.org/dist`: Node **24.22.0** embute npm **11.19.1**; Node **24.21.0** embute npm **11.19.0**. O `package.json` pinia `engines.npm` **exatamente** (`"11.19.1"`, sem `^`, sem `>=`), então com a CI em 24.21.0 o `npm ci` emitia `EBADENGINE Unsupported engine` em **dois campos ao mesmo tempo** — `node` (24.21.0 ≠ 24.22.0) e `npm` (11.19.0 ≠ 11.19.1) —, um aviso por job em toda a CI. Subir para 24.22.0 resolve os dois de uma vez: o `actions/setup-node` instala a distribuição oficial do Node, que **já embarca o npm 11.19.1** — sem `npm install -g` em nenhum job (é por isso que o npm não é pinado na CI; detalhe no comentário de `.github/actions/setup/action.yml`).
+
+**Baseline pós-correção — run #27 (sha `c7afd9d`, `main`, push de 2026-10-14T23:53Z): 5 jobs, 5 verdes, ZERO `EBADENGINE` nos logs.** Todos os números abaixo foram **lidos dos logs do run #27**, não estimados:
+
+| Job | Total | Etapa dominante |
+|---|---|---|
+| `lint` | 66s | setup+deps 54s · ESLint 6s |
+| `coverage` | 173s | testes 112.759s · build 5s |
+| `coverage-report` | 69s | actionlint 2s · knip 1s |
+| `coverage-db` | 78s | setup 46s · DB tests 4.105s |
+| `E2E isolado` | 119s | E2E 68s · `npm ci` 36s |
+
+- **Jest (coverage):** suítes `189 passed, 189 of 195 total`; testes `1407 passed, 73 skipped, 1480 total`; 7 snapshots passed; 112.759s.
+- **Cobertura `All files`:** 95.69% statements · 88.49% branches · 95.09% functions · 95.69% lines. Thresholds em `jest.config.js:45-50`: branches 80, functions 85, lines 90, statements 90 — **todas as 4 métricas acima**; a mais apertada é branches (88.49 contra 80).
+- **Jest (coverage-db):** 6 suítes, 73 testes, 4.105s — todos passando.
+- **E2E:** 5 specs, **25/25 testes**, `All specs passed!` em 6s — `blog.cy.js` 3, `home.cy.js` 4, `image_zoom.cy.js` 12, `navigation.cy.js` 3, `post.cy.js` 3; vídeo gerado por spec.
+- **ESLint (`eslint .`), Knip e actionlint 1.7.12:** limpos, zero findings.
+- **Única anotação** nos 5 jobs: a notice já rastreada da §6.1 (`ubuntu-latest` → Ubuntu 26.04).
+- **Runner:** Ubuntu **24.04.5 LTS**, image `ubuntu-24.04` `20261012.334.1`, runner `2.337.0`, região `eastus2` — a CI **ainda** está em 24.04; a migração da §6.1 continua pendente de rollout.
+
+A baseline serve de referência para o pós-migração do `ubuntu-latest` (§6.1): qualquer divergência de cobertura, duração ou resultado nos primeiros runs pós-19/10/2026 se compara contra estes valores, medidos em runner ainda em 24.04.
+
 ---
 
 ## 7. Documentação e Contexto
@@ -448,7 +472,7 @@ Pendência de monitoramento registrada em `docs/PENDENCIAS_scripts_testes.md` (i
 
 **Arquivos acionados/relacionados:** referencia os documentos de análise da pasta `docs/` — `PROJECT_raiz.md` (este documento), `PROJECT_components.md`, `PROJECT_pages.md`, `PROJECT_hooks.md`, `PROJECT_lib.md`, `PROJECT_data.md`, `PROJECT_examples.md`, `PROJECT_tests.md`, `PROJECT_mocks.md`, `PROJECT_cypress.md`, `PROJECT_load-tests.md`, `PROJECT_scripts.md` — e os arquivos de configuração da raiz que resume (`package.json`, `next.config.js`, `next-sitemap.config.js`, `proxy.js`, `jest.config.js`, `jest.config.db.js`, `eslint.config.js`).
 
-**Resumo:** Documento principal do repositório (265 linhas) — porta de entrada do projeto "Caminhar com Deus". Declara versão 1.4.0, engine Node.js 24.22.0/npm 11.19.1 (em conformidade com o `package.json`) e stack Next.js 16 + React 19. Estrutura-se em: visão geral do projeto (blog, músicas/Spotify, vídeos/YouTube, produtos/Mercado Livre-Shopee-Amazon, admin com CRUD reutilizável, autenticação JWT com RBAC, SEO, cache Redis, backup criptografado, 186 arquivos Jest, 5 specs Cypress, 37 arquivos de testes de carga, CI/CD com 3 workflows em `.github/workflows/`), resumo de cada área do projeto com link para o documento detalhado correspondente em `docs/`, e tabela de principais tecnologias.
+**Resumo:** Documento principal do repositório (265 linhas) — porta de entrada do projeto "Caminhar com Deus". Declara versão 1.4.0, engine Node.js 24.22.0/npm 11.19.1 (em conformidade com o `package.json`) e stack Next.js 16 + React 19. Estrutura-se em: visão geral do projeto (blog, músicas/Spotify, vídeos/YouTube, produtos/Mercado Livre-Shopee-Amazon, admin com CRUD reutilizável, autenticação JWT com RBAC, SEO, cache Redis, backup criptografado, 186 arquivos Jest, 5 specs Cypress, 37 arquivos de testes de carga, CI/CD com 5 workflows em `.github/workflows/`), resumo de cada área do projeto com link para o documento detalhado correspondente em `docs/`, e tabela de principais tecnologias.
 
 > ⚠️ **Contagem desatualizada:** o README informa **"29 arquivos"** na raiz; a análise atual identifica **35**. As demais contagens conferem com os documentos de cada área (42 arquivos em páginas, 16 tabelas, 186 arquivos de teste).
 
