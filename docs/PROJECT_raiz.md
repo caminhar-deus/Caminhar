@@ -455,7 +455,8 @@ Pendência de monitoramento registrada em `docs/PENDENCIAS_scripts_testes.md` (i
 - **Jest (coverage-db):** 6 suítes, 73 testes, 4.105s — todos passando.
 - **E2E:** 5 specs, **25/25 testes**, `All specs passed!` em 6s — `blog.cy.js` 3, `home.cy.js` 4, `image_zoom.cy.js` 12, `navigation.cy.js` 3, `post.cy.js` 3; vídeo gerado por spec.
 - **ESLint (`eslint .`), Knip e actionlint 1.7.12:** limpos, zero findings.
-- **Única anotação** nos 5 jobs: a notice já rastreada da §6.1 (`ubuntu-latest` → Ubuntu 26.04).
+- **Anotações nos 5 jobs — duas, não uma:** (a) a notice já rastreada da §6.1 (`ubuntu-latest` → Ubuntu 26.04); (b) **316 `npm warn` idênticos por job**, todos do step `npm ci` — 15 blocos `ERESOLVE overriding peer dependency` (15 × 21 linhas), de causa única: a duplicação esperada de `@babel/core` 7/8 trazida pelo `babel-preset-current-node-syntax@1.2.0` do Jest 30, catalogada no item AC de `docs/PENDENCIAS_scripts_testes.md`. Nenhuma das duas reprovou qualquer job, e nenhuma delas é `EBADENGINE`.
+- **Atualização de 15/10/2026:** o `npm ci` passou a emitir **315** linhas em vez de 316 — o override de `jsdom` (`package.json`) tirou do grafo o `whatwg-encoding` deprecado e, com ele, a única linha de deprecation; os 315 `ERESOLVE` permanecem, por decisão de não corrigir. **Esse número ainda não foi observado em run da CI** — a medição acima é a do run #27, anterior à mudança.
 - **Runner:** Ubuntu **24.04.5 LTS**, image `ubuntu-24.04` `20261012.334.1`, runner `2.337.0`, região `eastus2` — a CI **ainda** está em 24.04; a migração da §6.1 continua pendente de rollout.
 
 A baseline serve de referência para o pós-migração do `ubuntu-latest` (§6.1): qualquer divergência de cobertura, duração ou resultado nos primeiros runs pós-19/10/2026 se compara contra estes valores, medidos em runner ainda em 24.04.

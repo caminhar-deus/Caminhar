@@ -1083,6 +1083,7 @@
 │       │   │   └── index.test.js
 │       │   ├── Performance
 │       │   │   ├── CriticalCSS.test.js
+│       │   │   ├── CriticalCSSSSR.test.js
 │       │   │   ├── ImageOptimized.test.js
 │       │   │   ├── LazyIframe.test.js
 │       │   │   ├── PreloadResources.test.js
@@ -1206,4 +1207,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-197 directories, 1010 files
+197 directories, 1011 files

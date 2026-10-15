@@ -152,7 +152,7 @@
     "minimatch": "^10.2.2",
     "postcss": "^8.5.10",
     "uuid": "^14.0.0",
-    "whatwg-encoding": "^3.1.1"
+    "jsdom": "^30.1.2"
   },
   "_overridesReason": {
     "tar": "Correção de vulnerabilidade CVE em versões < 7.x",
@@ -160,7 +160,7 @@
     "minimatch": "Correção de vulnerabilidade CVE e performance",
     "postcss": "Garantir versão compatível com Next.js",
     "uuid": "Segurança: versões antigas usavam Math.random()",
-    "whatwg-encoding": "Correção de vulnerabilidade em versões < 3.x"
+    "jsdom": "Sobe o jsdom aninhado no jest-environment-jsdom de ^26 para ^30, que já usa @exodus/bytes em vez do whatwg-encoding deprecado"
   },
   "allowScripts": {
     "cpu-features@0.0.10": true,

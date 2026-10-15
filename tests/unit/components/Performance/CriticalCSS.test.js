@@ -72,10 +72,7 @@ describe('Componente de Performance - CriticalCSS', () => {
     expect(() => removeCriticalCSS('id-inexistente')).not.toThrow();
   });
 
-  it('removeCriticalCSS: deve retornar silenciosamente se document for undefined (SSR)', () => {
-    const originalDocument = global.document;
-    delete global.document;
-    expect(() => removeCriticalCSS()).not.toThrow();
-    global.document = originalDocument; // Restaura para não quebrar outros testes
-  });
+  // O teste de SSR (sem document) foi movido para CriticalCSSSSR.test.js,
+  // que roda com @jest-environment node — o jsdom@30 tornou `document`
+  // não-configurável, inviabilizando `delete global.document`.
 });

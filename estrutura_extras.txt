@@ -835,6 +835,7 @@ tests/unit/components/Layout/Sidebar.test.js → components/Layout/Sidebar.js
 tests/unit/components/Layout/Stack.test.js → components/Layout/Stack.js
 tests/unit/components/Layout/index.test.js → components/Layout/index.js
 tests/unit/components/Performance/CriticalCSS.test.js → components/Performance/CriticalCSS.js
+tests/unit/components/Performance/CriticalCSSSSR.test.js → components/Performance/CriticalCSS.js
 tests/unit/components/Performance/ImageOptimized.test.js → components/Performance/ImageOptimized.js
 tests/unit/components/Performance/ImageOptimized.test.js → tests/helpers/index.js
 tests/unit/components/Performance/LazyIframe.test.js → components/Performance/LazyIframe.js
