@@ -33,5 +33,5 @@ ignore_paths = [
   "**/secrets/**",
   "**/.ssh/**",
   # ADRs versionados no repositório (evita cópia desatualizada na wiki):
-  # "docs/adr/**",
+  "docs/adr/**",
 ]

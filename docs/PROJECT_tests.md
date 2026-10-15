@@ -76,7 +76,7 @@ tests/
 
 ### `tests/global-setup.db.js`
 **Localização:** `/tests/global-setup.db.js`
-**Propósito:** GlobalSetup para testes com banco real. Inicializa container PostgreSQL via Testcontainers com `.withReuse(true)` e disponibiliza a string de conexão via `process.env.TEST_DATABASE_URL`. Se o Docker não estiver disponível, define `TEST_DATABASE_URL = '__docker_unavailable__'` para que os testes sejam ignorados.
+**Propósito:** GlobalSetup para testes com banco real. Inicializa container PostgreSQL via Testcontainers e disponibiliza a string de conexão via `process.env.TEST_DATABASE_URL`. O container é criado **sem** `.withReuse(true)` — `jest.teardown.js` sempre chama `.stop()`, então reutilizar seria no-op; a justificativa está em `tests/global-setup.db.js` e em `docs/PENDENCIAS_scripts_testes.md`. Se o Docker não estiver disponível, define `TEST_DATABASE_URL = '__docker_unavailable__'` para que os testes sejam ignorados.
 
 ---
 

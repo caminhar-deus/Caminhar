@@ -22,6 +22,7 @@ Plataforma web para compartilhamento de conteúdo gospel. Inclui blog com artigo
   - [🤖 Testes E2E (Cypress)](#-testes-e2e-cypress)
   - [⚡ Testes de Carga](#-testes-de-carga)
   - [🔧 Scripts](#-scripts)
+  - [📐 Decisões de Arquitetura (ADR)](#-decisões-de-arquitetura-adr)
 - [Principais Tecnologias](#principais-tecnologias)
 
 ---
@@ -241,6 +242,16 @@ Componentes React organizados em 6 categorias:
 | Testes E2E | 2 | `warm-routes` (pré-aquecimento de rotas do Cypress) e `e2e-isolated` (Cypress contra Postgres descartável via Testcontainers) |
 | Manutenção | 4 | Backup/restore de posts, fix hero key, video thumbnails |
 | Utilitários | 9 | Conexão DB, constants, date-format, load-env, cleanup, init-table-utils |
+
+---
+
+### 📐 Decisões de Arquitetura (ADR)
+
+**Arquivo:** [`docs/adr/README.md`](/docs/adr/README.md)
+
+Os `docs/PROJECT_*.md` descrevem **como o projeto está hoje**; os **ADRs** registram **por que** cada decisão técnica importante foi tomada e quais alternativas foram descartadas. Um arquivo Markdown por decisão, versionado no Git, com numeração sequencial, cujo conteúdo não é reescrito depois de aceito (só o campo Status pode mudar).
+
+Decisões já registradas: Pages Router em vez de App Router, PostgreSQL sem ORM, cache em dois níveis, JWT com cookies `httpOnly` e RBAC, estratégia de testes e o gatilho do E2E.
 
 ---
 

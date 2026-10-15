@@ -588,6 +588,16 @@
 │   ├── UPGRADE_scripts.md
 │   ├── UPGRADE_tests.md
 │   ├── UPGRADE_utils.md
+│   ├── adr
+│   │   ├── 0001-record-architecture-decisions.md
+│   │   ├── 0002-nextjs-pages-router.md
+│   │   ├── 0003-postgres-without-orm.md
+│   │   ├── 0004-two-level-cache-with-memory-fallback.md
+│   │   ├── 0005-jwt-http-only-rbac.md
+│   │   ├── 0006-jest-testcontainers-and-manual-pg-mock.md
+│   │   ├── 0007-e2e-without-pull-request-trigger.md
+│   │   ├── README.md
+│   │   └── template.md
 │   └── ai-memory-error.md
 ├── eslint.config.js
 ├── estrutura.html
@@ -1207,4 +1217,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-197 directories, 1011 files
+198 directories, 1020 files
