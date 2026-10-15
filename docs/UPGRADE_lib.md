@@ -66,8 +66,8 @@ lib/
 - **crud/crud.js** é a base CRUD para todos os módulos de domínio
 - **domain/shared-pagination.js** é utilizado por posts, musicas e videos
 - **domain/audit.js** é utilizado por posts.js e adminCrudHandler.js
-- **cache/cache.js** é utilizado por middleware.js e adminCrudHandler.js
-- **api/response.js** e **api/errors.js** formam o padrão de resposta
+- **cache/cache.js** é utilizado por **adminCrudHandler.js**. [Correção 15/10/2026] A versão anterior deste item dizia "utilizado por middleware.js e adminCrudHandler.js": o vínculo com **middleware.js** é de código morto — `api/middleware.js` não tem nenhum importador de produção (só `tests/**`); ver `npm run lint:dead-api`
+- [Correção 15/10/2026] **api/response.js** e **api/errors.js** NÃO formam o padrão de resposta em produção (afirmação anterior falsa): ambos são código morto, sem importador de produção além de `tests/**`. O formato de resposta usado de fato é o do próprio `adminCrudHandler.js` (`{ error, message }`), e o `withAuth` vivo é o de `lib/auth/auth.js`
 - **api/utils.js** é utilizado por errors.js e response.js
 - **api/helpers.js** é utilizado por adminCrudHandler.js
 - **auth/auth.js** é utilizado por middleware.js e adminCrudHandler.js

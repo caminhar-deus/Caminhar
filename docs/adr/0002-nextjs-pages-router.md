@@ -9,10 +9,11 @@
 
 ## Contexto
 
-O projeto nasceu em **2026-01-26** já com Pages Router, antes do App Router
-existir: `next.config.js` apareceu no commit `81603e1`, em **2026-01-27**. Desde
-então a escolha nunca foi revisada, mesmo com o App Router já consolidado como
-caminho padrão do Next. Hoje o projeto tem 8 páginas em `pages/`
+O projeto nasceu em **2026-01-26** já com Pages Router: `next.config.js`
+apareceu no commit `81603e1`, em **2026-01-27**. O App Router já existia e já
+era o caminho padrão do `create-next-app` nessa data, então a escolha não é um
+acordo com a época — mas desde então ela nunca foi revisada nem registrada
+como decisão. Hoje o projeto tem 8 páginas em `pages/`
 (`_app.js`, `_document.js`, `index.js`, `admin.js`, `login.js`,
 `design-system.js`, `blog/index.js`, `blog/[slug].js`) e 32 arquivos de API em
 `pages/api/`. Não existe pasta `app/`. O stack está declarado em

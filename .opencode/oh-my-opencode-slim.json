@@ -9,6 +9,13 @@
   "presets": {
     // 100% local. Dê o melhor modelo disponível ao orchestrator e ao oracle.
     // "variant" (esforço de raciocínio) é específico de provedor: omitido aqui de propósito.
+    //
+    // EM REPOUSO (decisão do mantenedor, 15/10/2026): o preset local não será usado no momento e
+    // não há previsão de quando será. O preset "zen" é o caminho de trabalho. Isto NÃO é um
+    // endosso ao qwen3-coder:30b — ele nunca chegou a ser medido, porque o servidor Ollama
+    // estava desligado na única janela em que se tentou (ver ADR-0008, "Alternativas consideradas").
+    // Manter o bloco intacto é de propósito: se um dia o preset local for retomado, ele precisa
+    // de bateria de medição própria, não de herança da decisão de hoje.
     "local": {
       "orchestrator": { "model": "ollama/qwen3-coder:30b" },
       "oracle":       { "model": "ollama/qwen3-coder:30b"
@@ -21,26 +28,49 @@
       "fixer":        { "model": "ollama/qwen3-coder:30b" }
     },
     // OpenCode Zen (remoto; free por tempo limitado). Preset "local" acima segue intacto.
-    // Cenário 3 "privacidade" (pesquisa @librarian 03/10/2026): zero-retention no orchestrator,
-    // modelos que logam/treinam só nos agentes menos expostos. Requer "opencode" em enabled_providers.
+    // Requer "opencode" em enabled_providers (ver opencode.jsonc).
+    //
+    // Distribuição de 15/10/2026: bateria de 11 execuções reais, uma tarefa por modelo free
+    // disponível, com cada resposta conferida em arquivo:linha antes de aceitar. Resultado:
+    // NENHUM modelo se repete entre os 6 agentes — ver a limitação da cadeia logo abaixo.
+    //
+    // ORDEM DO ORCHESTRATOR (15/10/2026, decisão do mantenedor): space-bunny-free é o PRIMÁRIO e
+    // big-pickle a reserva. A bateria mediu big-pickle acima, mas mediu o MODELO numa tarefa
+    // pontual através de proxy — não a sessão inteira. A troca de primário ficou adiada até o
+    // orchestrator-bench rodar no papel real e dar evidência; sem ela, vale o modelo que já
+    // estava em produção.
+    //
+    // PRIVACIDADE: space-bunny-free é o único dos dois com garantia registrada — "zero-retention"
+    // (Cenário 3, pesquisa @librarian de 03/10/2026). big-pickle NÃO tem essa propriedade
+    // verificada e o benchmark não a confirma: como agora é reserva, se cair nele, tratar como
+    // free tier comum. Em qualquer dos casos, prompts e código do projeto vão a servidores
+    // remotos (EUA) e podem ser usados para melhorar o modelo — ver o aviso em opencode.jsonc.
+    //
     // Cadeia ("model": [a,b]) FUNCIONA no host v2, mas pelo hook `v2.session.retry` do slim — a troca
     // atômica de turno continua desabilitada. Ela só age para erros que o slim classifica como
     // failover (rate limit, 401/403, 502/503/504, timeout). Erro de autenticação do free tier
     // ("can only be used from within OpenCode") NÃO casa com nenhum padrão: pode não acionar a
     // cadeia. Para esse caso, o que protege é ter modelos diferentes por agente.
     // Cota Zen: por IP/dia (~200 req observados); bloqueio é por modelo. Modelos free podem sumir (já houve deprecated).
+    //
+    // MEDIÇÃO (por que cada modelo, e não o anterior):
+    //   big-pickle   refutou uma premissa falsa do prompt e devolveu plano com artefato e critério
+    //                de pronto por agente (medido no papel de orquestração, via proxy @oracle).
+    //                Venceu na bateria, mas é RESERVA do orchestrator — ver "ORDEM" acima.
+    //   step-5       8/8 linhas conferidas + 6 divergências do contexto que eu mesmo forneci.
+    //   deepseek-4.1 leu a doc E o código instalado do Next p/ fechar o que a doc não documenta
+    //                (mínimo de revalidate, Cache-Control em /api/*).
+    //   longcat      10/10; achou que o withAuth em uso é auth.js:324 (o rival apontou o errado).
+    //   muse-spark   12/12 tokens existem em variables.css; zero alucinação de token.
+    //   mimo         9/9 testes; formatação pt-BR e não-mutação reconferidas fora do agente.
     "zen": {
-      "orchestrator": { "model": "opencode/space-bunny-free" },
-      "oracle":       { "model": "opencode/mimo-v2.6-flash-free",
+      "orchestrator": { "model": ["opencode/space-bunny-free", "opencode/big-pickle"] },
+      "oracle":       { "model": "opencode/step-5-preview-free",
                         // Skill do Front-End-Checklist para a revisão (obrigatória no fluxo: oracle revisa sem editar):
                         "skills_add": ["frontend-checklist-global"]
                       },
-      // Cadeia de fallback (09/10/2026): o primary continua sendo o nemotron; o mimo cobre a queda.
-      // Escolha deliberada por ser a opção reversível e sem custo. Ela NÃO separa explorer de
-      // librarian (ambos ainda usam nemotron), então uma indisponibilidade dele ainda atinge os dois
-      // ao mesmo tempo — só que agora um cai no mimo em vez de morrer.
-      "librarian":    { "model": ["opencode/nemotron-3.5-lightning-free", "opencode/mimo-v2.6-flash-free"] },
-      "explorer":     { "model": ["opencode/nemotron-3.5-lightning-free", "opencode/mimo-v2.6-flash-free"] },
+      "librarian":    { "model": "opencode/deepseek-v4.1-flash-free" },
+      "explorer":     { "model": "opencode/longcat-2.5-preview-free" },
       "designer":     { "model": "opencode/muse-spark-1.3-contributor-free", "skills_add": ["ui-ux-pro-max"] },
       "fixer":        { "model": "opencode/mimo-v2.6-flash-free" }
     }

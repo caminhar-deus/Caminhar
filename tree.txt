@@ -596,6 +596,7 @@
 │   │   ├── 0005-jwt-http-only-rbac.md
 │   │   ├── 0006-jest-testcontainers-and-manual-pg-mock.md
 │   │   ├── 0007-e2e-without-pull-request-trigger.md
+│   │   ├── 0008-modelos-free-por-agente-sem-repeticao.md
 │   │   ├── README.md
 │   │   └── template.md
 │   └── ai-memory-error.md
@@ -1217,4 +1218,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-198 directories, 1020 files
+198 directories, 1021 files

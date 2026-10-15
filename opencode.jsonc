@@ -8,7 +8,8 @@
   "share": "disabled",          // sem links públicos de sessão
   "autoupdate": false,          // use "notify" se quiser apenas ser avisado
   // Só carrega os provedores listados (cloud e Zen não são carregados mesmo com chaves no ambiente).
-  // "opencode" = OpenCode Zen, necessário para o modelo mimo-v2.6-flash-free. "ollama" fica como base local.
+  // "opencode" = OpenCode Zen, necessário para os modelos free do preset "zen" (ver
+  // .opencode/oh-my-opencode-slim.json). "ollama" fica como base local.
   // ATENÇÃO: com "opencode" ativo, prompts/código vão a servidores remotos (EUA) e, neste modelo free,
   // os dados podem ser usados para melhorar o modelo. Para voltar 100% local: deixe só ["ollama"].
   // Para um preset híbrido, acrescente o provedor aqui (ex.: "openai").
@@ -16,7 +17,9 @@
 
   // --- Modelos (TROQUE pelos nomes de `ollama list` / `opencode models`) ---
   // ATIVO: OpenCode Zen (remoto; free por tempo limitado). Formato: opencode/<model-id>.
-  // Sessão segue o orchestrator do preset "zen" (Cenário 3 privacidade): space-bunny = zero-retention.
+  // Sessão segue o orchestrator do preset "zen" em .opencode/oh-my-opencode-slim.json — lá está
+  // space-bunny-free como primary e big-pickle de reserva, e o porquê medido de cada um dos 6 agentes.
+  // Troca de sessão para este model: só no próximo start (ou /model); esta sessão segue no anterior.
   // small_model (títulos etc.) = mimo-v2.6-flash-free (leve). Login via `/connect` > OpenCode Zen ou OPENCODE_API_KEY.
   "model": "opencode/space-bunny-free",
   "small_model": "opencode/mimo-v2.6-flash-free",

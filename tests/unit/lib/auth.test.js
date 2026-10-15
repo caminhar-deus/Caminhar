@@ -122,6 +122,58 @@ describe('Library - Auth', () => {
     expect(req.user.userId).toBe(1);
   });
 
+  it('withAuth: assinatura viva é withAuth(handler) — só aceita função e devolve middleware async (req, res)', async () => {
+    // Congela a assinatura do `withAuth` VIVO (lib/auth/auth.js:324) para que
+    // ele nunca seja confundido com o morto de lib/api/middleware.js:88
+    // (`withAuth({ roles })`, que aceita objeto de opções).
+    const handler = jest.fn(async () => 'ok-do-handler');
+    const middleware = withAuth(handler);
+
+    expect(typeof middleware).toBe('function');
+    expect(middleware.length).toBe(2); // async (req, res) => { ... }
+
+    const token = generateToken({ id: 1 });
+    const req = { headers: { authorization: `Bearer ${token}` } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+    await expect(middleware(req, res)).resolves.toBe('ok-do-handler');
+    expect(handler).toHaveBeenCalledWith(req, res);
+  });
+
+  it('withAuth: NÃO é o withAuth({ roles }) morto — objeto de opções no lugar do handler quebra detectavelmente', async () => {
+    // Comportamento real descoberto empiricamente: passar `{ roles: ['admin'] }`
+    // NÃO lança erro na montagem (withAuth não valida o argumento), devolve um
+    // middleware que responde 401 normalmente sem token, mas FALHA com TypeError
+    // quando autentica com sucesso — porque `handler(req, res)` chama um objeto.
+    // Ou seja: o objeto de opções não "funciona" como checagem de role nenhuma.
+    const middleware = withAuth({ roles: ['admin'] });
+    expect(typeof middleware).toBe('function'); // montagem não valida o handler
+
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+    await middleware({ headers: {} }, res); // Sem token: 401 sem tocar no objeto
+    expect(res.status).toHaveBeenCalledWith(401);
+
+    const token = generateToken({ id: 1 }); // Com token válido: TypeError na chamada
+    const req = { headers: { authorization: `Bearer ${token}` } };
+    await expect(middleware(req, res)).rejects.toThrow('handler is not a function');
+  });
+
+  it('withAuth: req.user injetado vem do payload decodificado do token', async () => {
+    const handler = jest.fn();
+    const middleware = withAuth(handler);
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+    const token = generateToken({ id: 7, username: 'maria', role: 'editor' });
+    const req = { headers: { authorization: `Bearer ${token}` } };
+    await middleware(req, res);
+
+    expect(req.user).toEqual(verifyToken(token)); // Mesmo payload que o JWT carrega
+    expect(req.user).toEqual(
+      expect.objectContaining({ userId: 7, username: 'maria', role: 'editor' })
+    );
+  });
+
   it('initializeAuth: cria tabelas e verifica criação/atualização do admin default', async () => {
     process.env.ADMIN_USERNAME = 'admin';
     process.env.ADMIN_PASSWORD = 'password';

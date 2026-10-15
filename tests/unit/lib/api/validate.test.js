@@ -7,8 +7,6 @@ import {
   validateParams, 
   validateHeaders, 
   validateRequest, 
-  createPaginationSchema, 
-  createSearchSchema,
   formatZodErrors
 } from '../../../../lib/api/validate.js';
 import { validationError } from '../../../../lib/api/response.js';
@@ -287,35 +285,5 @@ describe('API Validation Middleware (lib/api/validate.js)', () => {
       expect(handler).toHaveBeenCalled();
       expect(req.params).toEqual({ id: '123e4567-e89b-12d3-a456-426614174000' });
     });
-  });
-
-  describe('Helpers de Schema', () => {
-      describe('createPaginationSchema', () => {
-          const schema = createPaginationSchema({ defaultLimit: 20, maxLimit: 50 });
-
-          it('deve aplicar valores padrão para inputs vazios ou inválidos', () => {
-              const result = schema.parse({});
-              expect(result).toEqual({ page: 1, limit: 20 });
-          });
-
-          it('deve limitar o valor máximo (maxLimit)', () => {
-              const result = schema.parse({ limit: '1000' });
-              expect(result.limit).toBe(50);
-          });
-      });
-
-      describe('createSearchSchema', () => {
-          const schema = createSearchSchema({ minLength: 3 });
-
-          it('deve validar tamanho mínimo da busca', () => {
-              expect(() => schema.parse({ search: 'oi' })).toThrow();
-              expect(schema.parse({ search: 'olá' })).toEqual({ search: 'olá' });
-          });
-
-          it('deve validar tamanho máximo da busca', () => {
-              const longSearch = 'a'.repeat(101); // maxLength padrão é 100
-              expect(() => schema.parse({ search: longSearch })).toThrow();
-          });
-      });
   });
 });

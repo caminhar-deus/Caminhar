@@ -55,7 +55,7 @@ Módulo responsável pela padronização da camada de API: classes de erro, resp
 
 **Localização:** `/lib/api/index.js`
 
-**Propósito:** Barrel file — ponto de exportação centralizada dos submódulos da API. Exporta um objeto default com 4 namespaces: `errors`, `response`, `validate`, `middleware`. Os arquivos `adminCrudHandler.js`, `helpers.js` e `utils.js` não são re-exportados pelo barrel pois os consumidores externos os importam diretamente.
+**Propósito:** [Correção 15/10/2026] Barrel file em QUARENTENA — é CÓDIGO MORTO: nenhum importador de produção; os únicos consumidores estão em `tests/**` (ver `npm run lint:dead-api`). Exporta um objeto default com 4 namespaces: `errors`, `response`, `validate`, `middleware` — todos módulos mortos. `adminCrudHandler.js`, `helpers.js` e `utils.js` não são re-exportados pelo barrel e são importados diretamente (estes sim são ativos).
 
 **Funcionalidades:**
 - `default.errors` — Classes de erro customizadas
@@ -159,7 +159,7 @@ Módulo responsável pela padronização da camada de API: classes de erro, resp
 
 **Localização:** `/lib/api/middleware.js`
 
-**Propósito:** Sistema de composição de middlewares para APIs Next.js. Único módulo de middlewares do projeto. Compõe autenticação, validação, rate limiting, CORS, cache, timeout e logging.
+**Propósito:** Sistema de composição de middlewares para APIs Next.js. Compõe autenticação, validação, rate limiting, CORS, cache, timeout e logging. [Correção 15/10/2026] A afirmação anterior "Único módulo de middlewares do projeto" era falsa: este módulo é CÓDIGO MORTO — nenhum importador de produção (os únicos consumidores estão em `tests/**`; ver `npm run lint:dead-api`). O `withAuth` vivo é `withAuth(handler)` de `lib/auth/auth.js` (assinatura diferente do `withAuth(options)` morto documentado abaixo), usado pelas rotas de produção via `createAdminHandler` de `lib/api/adminCrudHandler.js`; não existe `composeMiddleware` vivo.
 
 **Funções exportadas:**
 
@@ -749,14 +749,14 @@ Utilitários de extração de IDs de plataformas de mídia.
 
 | Módulo | Arquivo | Responsabilidade Principal |
 |--------|---------|---------------------------|
-| **API — Índice** | `api/index.js` | Barrel export (errors, response, validate, middleware) |
+| **API — Índice** | `api/index.js` | ~~Barrel export (errors, response, validate, middleware)~~ **Quarentena — código morto** (sem importador de produção; só `tests/**`) |
 | **API — Admin** | `api/adminCrudHandler.js` | Factory de handlers CRUD administrativos |
-| **API — Erros** | `api/errors.js` | Classes de erro customizadas com HTTP codes |
+| **API — Erros** | `api/errors.js` | ~~Classes de erro customizadas com HTTP codes~~ **Quarentena — código morto** (sem importador de produção; só `tests/**`) |
 | **API — Helpers** | `api/helpers.js` | Extração de IP e detecção de spoofing |
-| **API — Middlewares** | `api/middleware.js` | Composição de middlewares (auth, CORS, rate limit, etc.) |
-| **API — Respostas** | `api/response.js` | Padronização de respostas JSON |
+| **API — Middlewares** | `api/middleware.js` | ~~Composição de middlewares (auth, CORS, rate limit, etc.)~~ **Quarentena — código morto** (sem importador de produção; só `tests/**`) |
+| **API — Respostas** | `api/response.js` | ~~Padronização de respostas JSON~~ **Quarentena — código morto** (sem importador de produção; só `tests/**`) |
 | **API — Utilitários** | `api/utils.js` | UUID, metadados, parse de imagens |
-| **API — Validação** | `api/validate.js` | Validação de entrada com Zod |
+| **API — Validação** | `api/validate.js` | ~~Validação de entrada com Zod~~ **Quarentena — código morto** (sem importador de produção; só `tests/**`) |
 | **Autenticação** | `auth/auth.js` | JWT, bcrypt, cookies, refresh tokens, login com rate limit |
 | **Cache** | `cache/cache.js` | Cache multi-nível (memória + Redis) + rate limit |
 | **CRUD Genérico** | `crud/crud.js` | Operações SQL genéricas parametrizadas com validação de schema |
@@ -781,9 +781,11 @@ Utilitários de extração de IDs de plataformas de mídia.
 
 ```
 pages/api/ → lib/api/adminCrudHandler.js → lib/api/helpers.js, lib/auth/auth.js, lib/domain/audit.js, lib/cache/cache.js, lib/infra/db.js, lib/infra/logger.js
-pages/api/ → lib/api/middleware.js → lib/auth/auth.js, lib/cache/cache.js, lib/api/response.js
 pages/api/ → lib/domain/*.js → lib/crud/crud.js, lib/infra/db.js, lib/domain/shared-pagination.js
 lib/domain/*.js → lib/crud/crud.js → lib/infra/db.js
 lib/api/*.js → lib/infra/logger.js, lib/infra/db.js, lib/auth/auth.js, lib/cache/cache.js
 pages/api/{uploads/[...path],upload-image,placeholder-image,admin/integrity}.js → lib/infra/storage.js
 lib/cache/cache.js → lib/infra/redis.js, lib/infra/logger.js
+```
+
+> **Nota (correção 15/10/2026):** a linha `pages/api/ → lib/api/middleware.js → lib/auth/auth.js, lib/cache/cache.js, lib/api/response.js` foi removida deste grafo porque não existe no código atual — nenhum arquivo em `pages/api/` importa `lib/api/middleware.js` (módulo em quarentena, código morto; os únicos consumidores estão em `tests/**`). O `withAuth` usado pelas rotas de produção vem de `lib/auth/auth.js` via `lib/api/adminCrudHandler.js`. Detecção: `npm run lint:dead-api`.
