@@ -18,7 +18,7 @@
   // --- Modelos (TROQUE pelos nomes de `ollama list` / `opencode models`) ---
   // ATIVO: OpenCode Zen (remoto; free por tempo limitado). Formato: opencode/<model-id>.
   // Sessão segue o orchestrator do preset "zen" em .opencode/oh-my-opencode-slim.json — lá está
-  // space-bunny-free como primary e big-pickle de reserva, e o porquê medido de cada um dos 6 agentes.
+  // space-bunny-free (sem reserva) e o porquê medido de cada um dos 6 agentes.
   // Troca de sessão para este model: só no próximo start (ou /model); esta sessão segue no anterior.
   // small_model (títulos etc.) = mimo-v2.6-flash-free (leve). Login via `/connect` > OpenCode Zen ou OPENCODE_API_KEY.
   "model": "opencode/space-bunny-free",

@@ -20,7 +20,6 @@
     "lint:fix": "eslint . --fix",
     "lint:workflows": "bash scripts/diagnostics/lint-workflows.sh",
     "lint:chars": "node scripts/diagnostics/lint-chars.js",
-    "lint:dead-api": "node scripts/diagnostics/lint-dead-api-modules.js",
     "knip": "knip",
     "knip:watch": "knip --watch",
     "diag:lsp": "node scripts/diagnostics/lsp-reusable-workflow.js",

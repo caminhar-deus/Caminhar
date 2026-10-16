@@ -597,6 +597,7 @@
 │   │   ├── 0006-jest-testcontainers-and-manual-pg-mock.md
 │   │   ├── 0007-e2e-without-pull-request-trigger.md
 │   │   ├── 0008-modelos-free-por-agente-sem-repeticao.md
+│   │   ├── 0009-dead-code-removal-lib-api.md
 │   │   ├── README.md
 │   │   └── template.md
 │   └── ai-memory-error.md
@@ -635,13 +636,8 @@
 ├── lib
 │   ├── api
 │   │   ├── adminCrudHandler.js
-│   │   ├── errors.js
 │   │   ├── helpers.js
-│   │   ├── index.js
-│   │   ├── middleware.js
-│   │   ├── response.js
-│   │   ├── utils.js
-│   │   └── validate.js
+│   │   └── utils.js
 │   ├── auth
 │   │   └── auth.js
 │   ├── cache
@@ -655,6 +651,7 @@
 │   │   ├── permissions.js
 │   │   ├── posts.js
 │   │   ├── products.js
+│   │   ├── query-schemas.js
 │   │   ├── settings.js
 │   │   ├── shared-pagination.js
 │   │   └── videos.js
@@ -1140,12 +1137,7 @@
 │       ├── index.test.js
 │       ├── lib
 │       │   ├── api
-│       │   │   ├── errors.test.js
-│       │   │   ├── helpers.ip.test.js
-│       │   │   ├── index.test.js
-│       │   │   ├── middleware.test.js
-│       │   │   ├── response.test.js
-│       │   │   └── validate.test.js
+│       │   │   └── helpers.ip.test.js
 │       │   ├── auth.test.js
 │       │   ├── backup
 │       │   │   ├── backup.available.test.js
@@ -1167,11 +1159,11 @@
 │       │   ├── db.test.js
 │       │   ├── domain
 │       │   │   ├── permissions.test.js
-│       │   │   └── products.test.js
+│       │   │   ├── products.test.js
+│       │   │   └── query-schemas.test.js
 │       │   ├── infra
 │       │   │   ├── logger.test.js
 │       │   │   └── redis.test.js
-│       │   ├── middleware.test.js
 │       │   ├── redis.test.js
 │       │   └── seo
 │       │       └── config.test.js
@@ -1218,4 +1210,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-198 directories, 1021 files
+198 directories, 1013 files

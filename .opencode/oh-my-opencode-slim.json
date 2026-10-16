@@ -40,11 +40,17 @@
     // orchestrator-bench rodar no papel real e dar evidência; sem ela, vale o modelo que já
     // estava em produção.
     //
-    // PRIVACIDADE: space-bunny-free é o único dos dois com garantia registrada — "zero-retention"
-    // (Cenário 3, pesquisa @librarian de 03/10/2026). big-pickle NÃO tem essa propriedade
-    // verificada e o benchmark não a confirma: como agora é reserva, se cair nele, tratar como
-    // free tier comum. Em qualquer dos casos, prompts e código do projeto vão a servidores
-    // remotos (EUA) e podem ser usados para melhorar o modelo — ver o aviso em opencode.jsonc.
+    // RESERVA DO ORCHESTRATOR SUSPENSA (16/10/2026): big-pickle e step-5-preview-free saíram do
+    // catálogo do Zen. O orchestrator fica só com space-bunny-free, SEM reserva — é o estado
+    // intermediário entre "funcionando" e "modelo escolhido": funciona, mas uma queda do primário
+    // deixa a sessão sem orquestrador. Reverter exige re-benchmarkar um substituto; não apontar
+    // para um id que saiu é pior que ficar sem reserva (ver ADR-0008, "Revisão").
+    //
+    // PRIVACIDADE: space-bunny-free tem garantia registrada — "zero-retention" (Cenário 3, pesquisa
+    // @librarian de 03/10/2026). Nemotron-3.5-super-vl-free (oracle) NÃO tem essa propriedade
+    // verificada e a bateria não a confirma: tratar como free tier comum. Em qualquer dos casos,
+    // prompts e código do projeto vão a servidores remotos (EUA) e podem ser usados para melhorar
+    // o modelo — ver o aviso em opencode.jsonc.
     //
     // Cadeia ("model": [a,b]) FUNCIONA no host v2, mas pelo hook `v2.session.retry` do slim — a troca
     // atômica de turno continua desabilitada. Ela só age para erros que o slim classifica como
@@ -54,18 +60,20 @@
     // Cota Zen: por IP/dia (~200 req observados); bloqueio é por modelo. Modelos free podem sumir (já houve deprecated).
     //
     // MEDIÇÃO (por que cada modelo, e não o anterior):
-    //   big-pickle   refutou uma premissa falsa do prompt e devolveu plano com artefato e critério
-    //                de pronto por agente (medido no papel de orquestração, via proxy @oracle).
-    //                Venceu na bateria, mas é RESERVA do orchestrator — ver "ORDEM" acima.
-    //   step-5       8/8 linhas conferidas + 6 divergências do contexto que eu mesmo forneci.
+    //   nemotron-vl  único que ACHOU a causa, não o sintoma: `adminCrudHandler.js:53` tem
+    //                `requireAdmin = false` e só 2 das 15 rotas admin o ativam — com
+    //                `users.js:10` criando role 'admin' por default, um editor com a permissão
+    //                "Usuários" vira admin. Os outros 3 candidatos acharam só o bypass em `:118`,
+    //                que é intencional. Custo: falhou em formato (escreveu "CONFIÂNCIA").
+//                Substituiu step-5-preview-free, que saiu do catálogo em 16/10/2026.
     //   deepseek-4.1 leu a doc E o código instalado do Next p/ fechar o que a doc não documenta
     //                (mínimo de revalidate, Cache-Control em /api/*).
     //   longcat      10/10; achou que o withAuth em uso é auth.js:324 (o rival apontou o errado).
     //   muse-spark   12/12 tokens existem em variables.css; zero alucinação de token.
     //   mimo         9/9 testes; formatação pt-BR e não-mutação reconferidas fora do agente.
     "zen": {
-      "orchestrator": { "model": ["opencode/space-bunny-free", "opencode/big-pickle"] },
-      "oracle":       { "model": "opencode/step-5-preview-free",
+      "orchestrator": { "model": "opencode/space-bunny-free" },
+      "oracle":       { "model": "opencode/nemotron-3.5-super-vl-free",
                         // Skill do Front-End-Checklist para a revisão (obrigatória no fluxo: oracle revisa sem editar):
                         "skills_add": ["frontend-checklist-global"]
                       },

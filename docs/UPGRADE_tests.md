@@ -3530,6 +3530,7 @@ Funções utilitárias locais similares em:
 
 3. **Criar `tests/helpers/errors.js`** com:
    - `withSuppressedLogs(fn)` — wrapper para testes de erro
+   - [Correção 15/10/2026] Esta sugestão foi escrita no contexto de `lib/api/errors.js`/`response.js`, removidos do repositório em 15/10/2026 — utilidade da sugestão hoje é duvidosa.
 
 4. **Padronizar nomenclatura de edge cases**
    - Remover prefixos como "✅ EDGE CASE"
@@ -10963,6 +10964,8 @@ O conjunto de testes unitários de `tests/unit/lib/` cobre as camadas fundamenta
 **Arquivo:** `tests/unit/lib/api/errors.test.js`  
 **Alvo:** `lib/api/errors.js`
 
+**[Correção 15/10/2026]** Tanto o arquivo de teste quanto o módulo alvo foram removidos do repositório em 15/10/2026 — código morto sem importadores de produção. Esta seção é registro do que existiu.
+
 **Finalidade:** Testar hierarquia de classes de erro customizadas da API.
 
 **Classes testadas:**
@@ -11003,6 +11006,8 @@ O conjunto de testes unitários de `tests/unit/lib/` cobre as camadas fundamenta
 **Arquivo:** `tests/unit/lib/api/index.test.js`  
 **Alvo:** `lib/api/index.js`
 
+**[Correção 15/10/2026]** Tanto o arquivo de teste quanto o módulo alvo foram removidos do repositório em 15/10/2026 — código morto sem importadores de produção. Esta seção é registro do que existiu.
+
 **Finalidade:** Verificar que o barril (`index.js`) exporta todos os submódulos.
 
 **Estrutura:** Um único teste que verifica a presença de:
@@ -11031,6 +11036,8 @@ O conjunto de testes unitários de `tests/unit/lib/` cobre as camadas fundamenta
 
 **Arquivo:** `tests/unit/lib/api/middleware.test.js`  
 **Alvo:** `lib/api/middleware.js`
+
+**[Correção 15/10/2026]** Tanto o arquivo de teste quanto o módulo alvo foram removidos do repositório em 15/10/2026 — código morto sem importadores de produção. Esta seção é registro do que existiu.
 
 **Finalidade:** Testar middlewares individuais e compostos.
 
@@ -11077,6 +11084,8 @@ O conjunto de testes unitários de `tests/unit/lib/` cobre as camadas fundamenta
 **Arquivo:** `tests/unit/lib/api/response.test.js`  
 **Alvo:** `lib/api/response.js`
 
+**[Correção 15/10/2026]** Tanto o arquivo de teste quanto o módulo alvo foram removidos do repositório em 15/10/2026 — código morto sem importadores de produção. Esta seção é registro do que existiu.
+
 **Finalidade:** Validar formatadores de resposta (sucesso, erro, handleError).
 
 **Funções testadas:**
@@ -11107,6 +11116,8 @@ O conjunto de testes unitários de `tests/unit/lib/` cobre as camadas fundamenta
 
 **Arquivo:** `tests/unit/lib/api/validate.test.js`  
 **Alvo:** `lib/api/validate.js`
+
+**[Correção 15/10/2026]** Tanto o arquivo de teste quanto o módulo alvo foram removidos do repositório em 15/10/2026 — código morto sem importadores de produção. Antes da remoção, os 4 testes dos helpers de schema (`createPaginationSchema`, `createSearchSchema`) foram movidos para `tests/unit/lib/domain/query-schemas.test.js`, cobrindo os helpers extraídos para o novo módulo vivo `lib/domain/query-schemas.js`. Esta seção é registro do que existiu.
 
 **Finalidade:** Testar middlewares de validação com Zod.
 
@@ -11301,6 +11312,8 @@ O conjunto de testes unitários de `tests/unit/lib/` cobre as camadas fundamenta
 **Arquivo:** `tests/unit/lib/middleware.test.js`  
 **Alvo:** `lib/api/middleware.js` (mesmo que `api/middleware.test.js`)
 
+**[Correção 15/10/2026]** Tanto o arquivo de teste quanto o módulo alvo foram removidos do repositório em 15/10/2026 — código morto sem importadores de produção. Esta seção é registro do que existiu.
+
 **Finalidade:** Testar subset de middlewares (os mais críticos).
 
 **Funções testadas:**
@@ -11393,6 +11406,8 @@ O conjunto de testes unitários de `tests/unit/lib/` cobre as camadas fundamenta
 │ domain/products.js → crud/crud.js + lib/infra/db.js                  │
 └──────────────────────────────────────────────────────────────────────┘
 ```
+
+> **[Correção 15/10/2026]** Diagrama da estrutura como existia em 24/09/2026: `api/index.js` (barril) e os submódulos `errors`, `response`, `validate` e `middleware` foram removidos do repositório em 15/10/2026. Em `lib/api/` restam apenas `adminCrudHandler.js`, `helpers.js` e `utils.js`.
 
 ---
 

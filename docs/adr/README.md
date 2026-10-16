@@ -18,6 +18,7 @@ apoio, não a fonte oficial; a decisão não é duplicada como página de memór
 | [0006](0006-jest-testcontainers-and-manual-pg-mock.md) | Estratégia de testes: Jest com Testcontainers e mock manual do `pg` | Aceito | 2026-10-14 |
 | [0007](0007-e2e-without-pull-request-trigger.md) | E2E em push para `main` e `workflow_dispatch`, sem gatilho em `pull_request` | Aceito | 2026-10-14 |
 | [0008](0008-modelos-free-por-agente-sem-repeticao.md) | Um modelo FREE distinto por agente, medido, sem repetição | Aceito | 2026-10-15 |
+| [0009](0009-dead-code-removal-lib-api.md) | Remover o código morto de `lib/api/` e extrair os schemas de query | Aceito | 2026-10-15 |
 
 ## Quando criar um ADR
 

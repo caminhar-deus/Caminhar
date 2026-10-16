@@ -9,14 +9,9 @@
 ## Índice
 
 1. [Subpasta `lib/api/`](#1-subpasta-libapi)
-   - [1.1 `lib/api/index.js`](#11-libapiindexjs)
-   - [1.2 `lib/api/adminCrudHandler.js`](#12-libapiadmincrudhandlerjs)
-   - [1.3 `lib/api/errors.js`](#13-libapierrorsjs)
-   - [1.4 `lib/api/helpers.js`](#14-libapihelpersjs)
-   - [1.5 `lib/api/middleware.js`](#15-libapimiddlewarejs)
-   - [1.6 `lib/api/response.js`](#16-libapiresponsejs)
-   - [1.7 `lib/api/utils.js`](#17-libapiutilsjs)
-   - [1.8 `lib/api/validate.js`](#18-libapivalidatejs)
+   - [1.1 `lib/api/adminCrudHandler.js`](#11-libapiadmincrudhandlerjs)
+   - [1.2 `lib/api/helpers.js`](#12-libapihelpersjs)
+   - [1.3 `lib/api/utils.js`](#13-libapiutilsjs)
 2. [Subpasta `lib/auth/`](#2-subpasta-libauth)
    - [2.1 `lib/auth/auth.js`](#21-libauthauthjs)
 3. [Subpasta `lib/cache/`](#3-subpasta-libcache)
@@ -30,9 +25,10 @@
    - [5.4 `lib/domain/permissions.js`](#54-libdomainpermissionsjs)
    - [5.5 `lib/domain/posts.js`](#55-libdomainpostsjs)
    - [5.6 `lib/domain/products.js`](#56-libdomainproductsjs)
-   - [5.7 `lib/domain/settings.js`](#57-libdomainsettingsjs)
-   - [5.8 `lib/domain/shared-pagination.js`](#58-libdomainshared-paginationjs)
-   - [5.9 `lib/domain/videos.js`](#59-libdomainvideosjs)
+   - [5.7 `lib/domain/query-schemas.js`](#57-libdomainquery-schemasjs)
+   - [5.8 `lib/domain/settings.js`](#58-libdomainsettingsjs)
+   - [5.9 `lib/domain/shared-pagination.js`](#59-libdomainshared-paginationjs)
+   - [5.10 `lib/domain/videos.js`](#510-libdomainvideosjs)
 6. [Subpasta `lib/infra/`](#6-subpasta-libinfra)
    - [6.1 `lib/infra/db.js`](#61-libinfradbjs)
    - [6.2 `lib/infra/logger.js`](#62-libinfraloggerjs)
@@ -49,25 +45,9 @@
 
 ## 1. Subpasta `lib/api/`
 
-Módulo responsável pela padronização da camada de API: classes de erro, respostas JSON consistentes, validação com Zod, composição de middlewares, helpers de IP e a factory de handlers administrativos.
+Camada de API: factory de handlers administrativos, helpers de IP e utilitários compartilhados. Só existem 3 arquivos nesta subpasta.
 
-### 1.1 `lib/api/index.js`
-
-**Localização:** `/lib/api/index.js`
-
-**Propósito:** [Correção 15/10/2026] Barrel file em QUARENTENA — é CÓDIGO MORTO: nenhum importador de produção; os únicos consumidores estão em `tests/**` (ver `npm run lint:dead-api`). Exporta um objeto default com 4 namespaces: `errors`, `response`, `validate`, `middleware` — todos módulos mortos. `adminCrudHandler.js`, `helpers.js` e `utils.js` não são re-exportados pelo barrel e são importados diretamente (estes sim são ativos).
-
-**Funcionalidades:**
-- `default.errors` — Classes de erro customizadas
-- `default.response` — Funções de resposta padronizadas
-- `default.validate` — Middlewares de validação Zod
-- `default.middleware` — Middlewares de composição
-
-**Observações:** [Histórico — não verificável no código atual] Arquivo simplificado em relação à versão anterior (removidos 47 exports nomeados não consumidos externamente).
-
----
-
-### 1.2 `lib/api/adminCrudHandler.js`
+### 1.1 `lib/api/adminCrudHandler.js`
 
 **Localização:** `/lib/api/adminCrudHandler.js`
 
@@ -104,39 +84,11 @@ Módulo responsável pela padronização da camada de API: classes de erro, resp
 - `user` — Dados do usuário autenticado
 - `ip` — IP confiável extraído via `getClientIP`
 
-**Observações:** O catch centralizado traduz erros comuns do PostgreSQL para português (unique constraint, foreign key, not null). Em caso de falha na tabela `roles`, permite apenas usuários com role `admin`. O handler final é envolvido por `withAuth` de `lib/auth/auth.js`. As respostas de erro deste módulo usam formato próprio `{ error, message }`, divergente do padrão `{ success, error: { code, message }, meta }` usado em `lib/api/response.js` (ver UPGRADE 1.1 e 1.10).
+**Observações:** O catch centralizado traduz erros comuns do PostgreSQL para português (unique constraint, foreign key, not null). Em caso de falha na tabela `roles`, permite apenas usuários com role `admin`. O handler final é envolvido por `withAuth` de `lib/auth/auth.js`. As respostas de erro deste módulo usam formato próprio `{ error, message }`, divergente do formato `{ success, error: { code, message }, meta }` que o antigo `lib/api/response.js` padronizava (módulo removido do repositório; ver UPGRADE 1.1 e 1.10).
 
 ---
 
-### 1.3 `lib/api/errors.js`
-
-**Localização:** `/lib/api/errors.js`
-
-**Propósito:** Classes de erro customizadas da API, cada uma mapeando para um código HTTP e código de erro semântico. Todas herdam de `ApiError` (que estende `Error`) e possuem `toJSON()` para resposta padronizada.
-
-**Classes exportadas:**
-
-| Classe | HTTP | Código | Uso |
-|--------|------|--------|-----|
-| `ApiError` | — | — | Classe base (requer `statusCode`, `code`, `details`, `meta`) |
-| `ValidationError` | 400 | VALIDATION_ERROR | Dados inválidos — aceita `errors` array de `{ field, message }` |
-| `AuthenticationError` | 401 | AUTHENTICATION_ERROR | Token ausente/expirado |
-| `ForbiddenError` | 403 | FORBIDDEN_ERROR | Permissão insuficiente |
-| `NotFoundError` | 404 | NOT_FOUND_ERROR | Recurso não encontrado — formata ID numérico `(id: 123)` e string `'admin'` |
-| `MethodNotAllowedError` | 405 | METHOD_NOT_ALLOWED | Método HTTP não permitido — aceita `method` e `allowed` |
-| `ConflictError` | 409 | CONFLICT_ERROR | Duplicidade/conflito de dados |
-| `RateLimitError` | 429 | RATE_LIMIT_ERROR | Muitas requisições — aceita `retryAfter` |
-| `ServerError` | 500 | SERVER_ERROR | Erro interno — aceita `originalError` para logging |
-| `ServiceUnavailableError` | 503 | SERVICE_UNAVAILABLE | Serviço temporariamente fora — sobrescreve `toJSON()` para incluir `retryAfter` no meta |
-
-**Funcionalidades comuns:**
-- `toJSON()` — Formato padronizado `{ success: false, error: { code, message, details? }, meta: { timestamp, requestId, ...meta } }`
-- Gera `requestId` via `generateUUID` de `utils.js`
-- Mantém stack trace via `Error.captureStackTrace`
-
----
-
-### 1.4 `lib/api/helpers.js`
+### 1.2 `lib/api/helpers.js`
 
 **Localização:** `/lib/api/helpers.js`
 
@@ -155,73 +107,7 @@ Módulo responsável pela padronização da camada de API: classes de erro, resp
 
 ---
 
-### 1.5 `lib/api/middleware.js`
-
-**Localização:** `/lib/api/middleware.js`
-
-**Propósito:** Sistema de composição de middlewares para APIs Next.js. Compõe autenticação, validação, rate limiting, CORS, cache, timeout e logging. [Correção 15/10/2026] A afirmação anterior "Único módulo de middlewares do projeto" era falsa: este módulo é CÓDIGO MORTO — nenhum importador de produção (os únicos consumidores estão em `tests/**`; ver `npm run lint:dead-api`). O `withAuth` vivo é `withAuth(handler)` de `lib/auth/auth.js` (assinatura diferente do `withAuth(options)` morto documentado abaixo), usado pelas rotas de produção via `createAdminHandler` de `lib/api/adminCrudHandler.js`; não existe `composeMiddleware` vivo.
-
-**Funções exportadas:**
-
-| Função | Descrição |
-|--------|-----------|
-| `composeMiddleware(...middlewares)` | Compõe middlewares da esquerda para direita via `reduceRight` |
-| `withMethod(allowedMethods)` | Restringe métodos HTTP → 405 se não permitido |
-| `withAuth(options)` | Autenticação com `roles` opcionais; usa `getAuthToken`/`verifyToken` de `lib/auth/auth.js`; adiciona `req.user`; loga `warn` em acesso sem token ou com token inválido |
-| `withOptionalAuth()` | Autenticação opcional — não bloqueia anônimos, apenas popula `req.user` se token válido |
-| `withRateLimit(options)` | Rate limit via `checkRateLimit` de `lib/cache/cache.js`. Suporta `maxRequests` como função dinâmica. Em produção, alerta se Redis não estiver disponível |
-| `withCors(options)` | CORS configurável. Em produção usa `ALLOWED_ORIGINS` (env); em dev usa `['*']`. Responde preflight OPTIONS |
-| `withErrorHandler(options)` | Captura erros e delega para `handleError` de `response.js`. Opção `includeStack` para desenvolvimento |
-|| `withLogger(options)` | Logging de requisições com duração — sobrescreve `res.end` para capturar finalização. Opção `logger` (default: `console.log`) permite substituir a função de log |
-| `withTimeout(timeoutMs)` | Timeout de requisição (default 10s) — responde 500 se exceder |
-| `withBodyParser(options)` | Valida tamanho do body (default 1MB) |
-| `withCache(maxAge)` | Adiciona header `Cache-Control: public, max-age` apenas para GET |
-| `publicApi(handler, options)` | Combinação pronta para APIs públicas: CORS + erro + rate limit + logger + método GET |
-| `protectedApi(handler, options)` | Combinação pronta para APIs autenticadas: CORS + erro + rate limit + logger + método + auth |
-
-**Observações:** A extração de IP no `withRateLimit` é feita inline (`req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown'`) em vez de usar `getClientIP` de `helpers.js` (ver UPGRADE item 4.6). O header `X-RateLimit-Remaining` retorna texto informativo em vez de número real (ver UPGRADE 1.5). `withBodyParser` retorna 500 em vez do código 413 correto para payload grande (ver UPGRADE 1.3). O `withErrorHandler` usa `console.error` em vez do `logger` estruturado (ver UPGRADE 1.4).
-
----
-
-### 1.6 `lib/api/response.js`
-
-**Localização:** `/lib/api/response.js`
-
-**Propósito:** Padronização de todas as respostas da API. Funções factory para respostas de sucesso e erro, garantindo formato JSON consistente em todos os endpoints.
-
-**Respostas de Sucesso:**
-
-| Função | HTTP | Descrição |
-|--------|------|-----------|
-| `success(res, data, meta)` | 200 | Resposta padrão `{ success, data, meta }` |
-| `paginated(res, data, pagination, meta)` | 200 | Lista paginada com `pagination: { page, limit, total, totalPages, hasNext, hasPrev }` |
-| `created(res, data, location, meta)` | 201 | Recurso criado, com header `Location` opcional |
-| `accepted(res, data, meta)` | 202 | Requisição aceita para processamento assíncrono |
-| `noContent(res)` | 204 | Sem conteúdo |
-| `updated(res, data, meta)` | 200/204 | Recurso atualizado — 204 se `data` for `null` |
-| `deleted(res, data, meta)` | 200/204 | Recurso deletado — 204 se `data` for `null` |
-
-**Respostas de Erro:**
-
-| Função | HTTP | Descrição |
-|--------|------|-----------|
-| `badRequest(res, message, errors, meta)` | 400 | Requisição inválida |
-| `validationError(res, message, errors, meta)` | 400 | Erro de validação |
-| `unauthorized(res, message, meta)` | 401 | Não autenticado + header `WWW-Authenticate: Bearer` |
-| `forbidden(res, message, meta)` | 403 | Acesso negado |
-| `notFound(res, resource, identifier, meta)` | 404 | Recurso não encontrado — formata ID como `(id: 123)` ou `'admin'` |
-| `methodNotAllowed(res, method, allowed, meta)` | 405 | Método não permitido + header `Allow` |
-| `conflict(res, message, meta)` | 409 | Conflito de dados |
-| `tooManyRequests(res, message, retryAfter, meta)` | 429 | Rate limit excedido + header `Retry-After` |
-| `serverError(res, message, meta)` | 500 | Erro interno do servidor |
-| `serviceUnavailable(res, message, retryAfter, meta)` | 503 | Serviço indisponível + header/`meta.retryAfter` |
-| `handleError(res, error, includeStack)` | — | Tratamento genérico: usa `error.toJSON()` se existir; caso contrário, infere `statusCode` e código a partir do `name` do erro. Inclui `stack` se `includeStack` |
-
-**Observações:** Todas as respostas incluem `meta.timestamp` e `meta.requestId` via `generateMeta` de `utils.js`. Formato de erro padrão: `{ success: false, error: { code, message, details? }, meta }`.
-
----
-
-### 1.7 `lib/api/utils.js`
+### 1.3 `lib/api/utils.js`
 
 **Localização:** `/lib/api/utils.js`
 
@@ -231,32 +117,9 @@ Módulo responsável pela padronização da camada de API: classes de erro, resp
 
 | Função | Descrição |
 |--------|-----------|
-| `generateUUID()` | Gera UUID v4 simples (Math.random) para rastreamento de requisições |
-| `generateMeta(customMeta)` | Gera metadados padrão `{ timestamp, requestId, ...customMeta }` |
 | `parseImages(imagesString)` | Transforma string de URLs separadas por quebra de linha em array de URLs limpas (trim + filter). Não valida formato URL nem remove duplicatas (ver UPGRADE 6.3) |
 
----
-
-### 1.8 `lib/api/validate.js`
-
-**Localização:** `/lib/api/validate.js`
-
-**Propósito:** Middlewares de validação de dados de entrada usando Zod. Garante que body, query, params e headers estejam no formato correto antes do processamento.
-
-**Funções exportadas:**
-
-| Função | Descrição |
-|--------|-----------|
-| `validateBody(schema)` | Valida body em POST/PUT/PATCH; atribui `req.body` com dados parseados |
-| `validateQuery(schema)` | Valida query parameters; atribui `req.query` |
-| `validateParams(schema)` | Valida parâmetros de rota dinâmica — extrai APENAS as chaves do schema do `req.query` (Next.js mistura route params e query strings) |
-| `validateHeaders(schema)` | Valida headers com normalização case-insensitive |
-| `validateRequest(schemas)` | Valida body + query + params combinados, coletando todos os erros de uma vez (usa `safeParse`) com campo `location` |
-| `formatZodErrors(zodError)` | Converte erros do Zod para `[{ field, message, code }]` |
-| `createPaginationSchema(options)` | Helper — schema para `page`/`limit` com transform de string para número, clamp de limite |
-| `createSearchSchema(options)` | Helper — schema para `search` com min/max length |
-
-**Observações:** Usa verificação `error.issues` (mais robusta que `instanceof`) para detectar erros do Zod. Loga erros inesperados via `logger` de `lib/infra/logger.js`. Os helpers de schema convertem strings de query para números automaticamente.
+[Correção 15/10/2026] `generateUUID()` e `generateMeta(customMeta)` foram removidos — ficaram órfãos com a remoção de `lib/api/` (seus únicos consumidores eram `errors.js`/`response.js`, também removidos).
 
 ---
 
@@ -473,7 +336,22 @@ Camada de domínio: funções específicas por entidade de negócio, construída
 
 ---
 
-### 5.7 `lib/domain/settings.js`
+### 5.7 `lib/domain/query-schemas.js`
+
+**Localização:** `/lib/domain/query-schemas.js`
+
+**Propósito:** Schemas Zod reutilizáveis de query string — validação de input (paginação e busca), sem dependência de SQL ou HTTP, para serem usados por qualquer rota ou por quem monta query na mão.
+
+**Funções exportadas:**
+
+| Função | Descrição |
+|--------|-----------|
+| `createPaginationSchema(options)` | Schema de `page`/`limit` com transform de string para número e clamp de limite. Options: `defaultPage` (1), `defaultLimit` (10), `maxLimit` (100) |
+| `createSearchSchema(options)` | Schema de `search` com min/max length. Options: `minLength` (1), `maxLength` (100) |
+
+---
+
+### 5.8 `lib/domain/settings.js`
 
 **Localização:** `/lib/domain/settings.js`
 
@@ -492,7 +370,7 @@ Camada de domínio: funções específicas por entidade de negócio, construída
 
 ---
 
-### 5.8 `lib/domain/shared-pagination.js`
+### 5.9 `lib/domain/shared-pagination.js`
 
 **Localização:** `/lib/domain/shared-pagination.js`
 
@@ -514,7 +392,7 @@ Camada de domínio: funções específicas por entidade de negócio, construída
 
 ---
 
-### 5.9 `lib/domain/videos.js`
+### 5.10 `lib/domain/videos.js`
 
 **Localização:** `/lib/domain/videos.js`
 
@@ -749,14 +627,9 @@ Utilitários de extração de IDs de plataformas de mídia.
 
 | Módulo | Arquivo | Responsabilidade Principal |
 |--------|---------|---------------------------|
-| **API — Índice** | `api/index.js` | ~~Barrel export (errors, response, validate, middleware)~~ **Quarentena — código morto** (sem importador de produção; só `tests/**`) |
 | **API — Admin** | `api/adminCrudHandler.js` | Factory de handlers CRUD administrativos |
-| **API — Erros** | `api/errors.js` | ~~Classes de erro customizadas com HTTP codes~~ **Quarentena — código morto** (sem importador de produção; só `tests/**`) |
 | **API — Helpers** | `api/helpers.js` | Extração de IP e detecção de spoofing |
-| **API — Middlewares** | `api/middleware.js` | ~~Composição de middlewares (auth, CORS, rate limit, etc.)~~ **Quarentena — código morto** (sem importador de produção; só `tests/**`) |
-| **API — Respostas** | `api/response.js` | ~~Padronização de respostas JSON~~ **Quarentena — código morto** (sem importador de produção; só `tests/**`) |
-| **API — Utilitários** | `api/utils.js` | UUID, metadados, parse de imagens |
-| **API — Validação** | `api/validate.js` | ~~Validação de entrada com Zod~~ **Quarentena — código morto** (sem importador de produção; só `tests/**`) |
+| **API — Utilitários** | `api/utils.js` | Parse de imagens |
 | **Autenticação** | `auth/auth.js` | JWT, bcrypt, cookies, refresh tokens, login com rate limit |
 | **Cache** | `cache/cache.js` | Cache multi-nível (memória + Redis) + rate limit |
 | **CRUD Genérico** | `crud/crud.js` | Operações SQL genéricas parametrizadas com validação de schema |
@@ -766,6 +639,7 @@ Utilitários de extração de IDs de plataformas de mídia.
 | **Domínio** | `domain/permissions.js` | Lista imutável de permissões de cargos |
 | **Domínio** | `domain/posts.js` | CRUD de posts com full-text search |
 | **Domínio** | `domain/products.js` | CRUD de produtos com formatação de moeda |
+| **Domínio** | `domain/query-schemas.js` | Schemas Zod de query string (paginação e busca) |
 | **Domínio** | `domain/settings.js` | Configurações dinâmicas do sistema |
 | **Domínio** | `domain/shared-pagination.js` | Paginação genérica com busca e SELECT otimizado |
 | **Domínio** | `domain/videos.js` | CRUD de vídeos com reordenação |
@@ -788,4 +662,4 @@ pages/api/{uploads/[...path],upload-image,placeholder-image,admin/integrity}.js 
 lib/cache/cache.js → lib/infra/redis.js, lib/infra/logger.js
 ```
 
-> **Nota (correção 15/10/2026):** a linha `pages/api/ → lib/api/middleware.js → lib/auth/auth.js, lib/cache/cache.js, lib/api/response.js` foi removida deste grafo porque não existe no código atual — nenhum arquivo em `pages/api/` importa `lib/api/middleware.js` (módulo em quarentena, código morto; os únicos consumidores estão em `tests/**`). O `withAuth` usado pelas rotas de produção vem de `lib/auth/auth.js` via `lib/api/adminCrudHandler.js`. Detecção: `npm run lint:dead-api`.
+> **Nota (correção 15/10/2026):** a linha `pages/api/ → lib/api/middleware.js → lib/auth/auth.js, lib/cache/cache.js, lib/api/response.js` foi removida deste grafo porque não existe no código atual — e o próprio `lib/api/middleware.js` (com `index.js`, `errors.js`, `response.js` e `validate.js`) foi removido do repositório em 15/10/2026. O `withAuth` usado pelas rotas de produção vem de `lib/auth/auth.js` via `lib/api/adminCrudHandler.js`.

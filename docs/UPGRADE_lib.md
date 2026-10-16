@@ -4,7 +4,7 @@
 
 **Análise Completa da Biblioteca `/lib` — Projeto Caminhar**
 Data: 24/09/2026
-Escopo: 26 arquivos JavaScript em `/home/gus/Projetos/Caminhar/lib/`
+Escopo: 26 arquivos JavaScript em `/home/gus/Projetos/Caminhar/lib/` [Correção 15/10/2026: o estado atual tem 22 arquivos — 5 removidos de `lib/api/` e 1 adicionado em `lib/domain/query-schemas.js`]
 
 ---
 
@@ -41,21 +41,19 @@ lib/
 │   ├── musicas.js         # Operações de músicas (CRUD + paginação)
 │   ├── videos.js          # Operações de vídeos (CRUD + paginação)
 │   ├── products.js        # Operações de produtos (CRUD + paginação)
+│   ├── query-schemas.js   # Schemas Zod de query string (paginação e busca) — adicionado em 15/10/2026
 │   └── permissions.js     # Lista congelada de permissões disponíveis
 ├── crud/
 │   └── crud.js            # Operações CRUD genéricas com filtro de campos
 ├── cache/
 │   └── cache.js           # Cache L1/L2 com rate limiting e métricas
 └── api/
-    ├── index.js           # Barrel de exportação da API
-    ├── errors.js          # Classes de erro customizadas (Zod-friendly)
-    ├── response.js        # Funções padronizadas de resposta HTTP
     ├── adminCrudHandler.js # Factory de handlers admin com RBAC
-    ├── validate.js        # Middlewares de validação com Zod
-    ├── middleware.js      # Composição de middlewares (CORS, rate limit, auth)
     ├── helpers.js         # Helpers de IP e detecção de spoofing
-    └── utils.js           # Utilitários (UUID, metadados, parseamento)
+    └── utils.js           # Utilitários (parseamento de imagens)
 ```
+
+[Correção 15/10/2026] A árvore acima foi atualizada: `index.js`, `errors.js`, `response.js`, `validate.js` e `middleware.js` foram removidos de `lib/api/` em 15/10/2026 (código morto, sem importadores de produção); foi adicionado `domain/query-schemas.js` (abaixo).
 
 ### Relacionamentos entre módulos
 
@@ -66,11 +64,13 @@ lib/
 - **crud/crud.js** é a base CRUD para todos os módulos de domínio
 - **domain/shared-pagination.js** é utilizado por posts, musicas e videos
 - **domain/audit.js** é utilizado por posts.js e adminCrudHandler.js
-- **cache/cache.js** é utilizado por **adminCrudHandler.js**. [Correção 15/10/2026] A versão anterior deste item dizia "utilizado por middleware.js e adminCrudHandler.js": o vínculo com **middleware.js** é de código morto — `api/middleware.js` não tem nenhum importador de produção (só `tests/**`); ver `npm run lint:dead-api`
-- [Correção 15/10/2026] **api/response.js** e **api/errors.js** NÃO formam o padrão de resposta em produção (afirmação anterior falsa): ambos são código morto, sem importador de produção além de `tests/**`. O formato de resposta usado de fato é o do próprio `adminCrudHandler.js` (`{ error, message }`), e o `withAuth` vivo é o de `lib/auth/auth.js`
-- **api/utils.js** é utilizado por errors.js e response.js
+- **cache/cache.js** é utilizado por **adminCrudHandler.js** e por 10 rotas de `pages/api/` (admin/*, auth/login, dicas, musicas, posts, products, settings, videos)
+- O formato de resposta em produção é o do próprio **adminCrudHandler.js** (`{ error, message }`) — não existe módulo central de respostas
+- **api/utils.js** é utilizado por `components/Features/Products/ProductCard.js` (parseImages)
 - **api/helpers.js** é utilizado por adminCrudHandler.js
-- **auth/auth.js** é utilizado por middleware.js e adminCrudHandler.js
+- **auth/auth.js** é utilizado por **adminCrudHandler.js**, rotas `pages/api/auth/{check,login,logout}.js`, `posts.js`, `settings.js`, `upload-image.js`, `cleanup-test-data.js` e scripts (`init-server.js`, migrações, `reset-password.js`, `validate-schema.js`)
+
+[Correção 15/10/2026] Os itens acima descrevem o estado atual: as referências a `middleware.js`, `response.js` e `errors.js` (código morto) foram removidas; esses módulos saíram do repositório em 15/10/2026.
 
 ---
 
@@ -95,7 +95,7 @@ Centraliza configurações de SEO do site "O Caminhar com Deus". Define URL base
 
 **Arquivos relacionados:**
 - Importa: `jsonwebtoken`, `bcryptjs`, `crypto`, `../infra/db.js` (query), `../infra/logger.js` (logger)
-- Exportado para: `lib/api/middleware.js`, `lib/api/adminCrudHandler.js`
+- Exportado para: `lib/api/adminCrudHandler.js` [Correção 15/10/2026: referência a `lib/api/middleware.js` removida — módulo removido do repositório]
 
 **Resumo:**
 Módulo completo de autenticação. Implementa hash/verificação de senha com bcrypt, geração e verificação de JWT, refresh tokens com rotação, manipulação manual de cookies (parse/serialização), middleware `withAuth`, função `initializeAuth` que cria tabelas e usuário admin, e `authenticateAndGenerateToken` que autentica e gera par de tokens (access + refresh).
@@ -309,7 +309,7 @@ Operações CRUD genéricas com validação de campos via `tableSchemas`. Filtra
 
 **Arquivos relacionados:**
 - Importa: `../infra/redis.js` (7 funções), `../infra/logger.js` (logger)
-- Exportado para: `lib/api/middleware.js`, `lib/api/adminCrudHandler.js`
+- Exportado para: `lib/api/adminCrudHandler.js` [Correção 15/10/2026: referência a `lib/api/middleware.js` removida — módulo removido do repositório]
 
 **Resumo:**
 Camada de cache com dois níveis (L1 memória, L2 Redis). Implementa `getOrSetCache` com Single-Flight (request coalescing via `inflightPromises`), `invalidateCache` com SCAN para wildcards, `clearAllCache` (FLUSHDB com confirmação), `checkRateLimit` com whitelist de IPs, fallback em memória, e métricas detalhadas.
@@ -327,6 +327,8 @@ Camada de cache com dois níveis (L1 memória, L2 Redis). Implementa `getOrSetCa
 **Resumo:**
 Barrel que exporta 4 namespaces: errors, response, validate, middleware. Não exporta helpers, utils nem adminCrudHandler — consumidores precisam importá-los diretamente.
 
+[Correção 15/10/2026] `lib/api/index.js` foi removido do repositório em 15/10/2026 — era código morto (nenhum consumidor via barrel; os únicos importadores eram testes, também removidos). A seção acima é registro da análise de 24/09/2026.
+
 ---
 
 ### 4.21 lib/api/errors.js
@@ -340,6 +342,8 @@ Barrel que exporta 4 namespaces: errors, response, validate, middleware. Não ex
 **Resumo:**
 Classes de erro customizadas estendendo `ApiError`. Cada classe mapeia para um código HTTP: ValidationError (400), AuthenticationError (401), ForbiddenError (403), NotFoundError (404), ConflictError (409), RateLimitError (429), ServerError (500), ServiceUnavailableError (503), MethodNotAllowedError (405). Todas incluem `toJSON()` padronizado com requestId via `generateUUID`.
 
+[Correção 15/10/2026] `lib/api/errors.js` foi removido do repositório em 15/10/2026 — era código morto (nenhum importador de produção; os únicos importadores eram testes, também removidos). A seção acima é registro da análise de 24/09/2026.
+
 ---
 
 ### 4.22 lib/api/response.js
@@ -352,6 +356,8 @@ Classes de erro customizadas estendendo `ApiError`. Cada classe mapeia para um c
 
 **Resumo:**
 Funções padronizadas de resposta HTTP. Sucesso: `success`, `paginated`, `created`, `accepted`, `noContent`, `updated`, `deleted`. Erro: `badRequest`, `validationError`, `unauthorized`, `forbidden`, `notFound`, `methodNotAllowed`, `conflict`, `tooManyRequests`, `serverError`, `serviceUnavailable`. `handleError` detecta erros com `toJSON` automaticamente.
+
+[Correção 15/10/2026] `lib/api/response.js` foi removido do repositório em 15/10/2026 — era código morto (nenhum importador de produção; os únicos importadores eram testes, também removidos). O formato de resposta vivo em produção é o do próprio `adminCrudHandler.js` (`{ error, message }`). A seção acima é registro da análise de 24/09/2026.
 
 ---
 
@@ -377,6 +383,8 @@ Factory `createAdminHandler` que gera handlers Next.js com: verificação de mé
 **Resumo:**
 Middlewares de validação Zod: `validateBody`, `validateQuery`, `validateParams`, `validateHeaders`, `validateRequest` (combina todos). Helpers `createPaginationSchema` e `createSearchSchema`. Usa `error.issues` em vez de `instanceof z.ZodError` para detecção.
 
+[Correção 15/10/2026] `lib/api/validate.js` foi removido do repositório em 15/10/2026 — era código morto (nenhum importador de produção; os únicos importadores eram testes, também removidos). Os 2 helpers úteis (`createPaginationSchema`, `createSearchSchema`) foram extraídos antes da remoção para `lib/domain/query-schemas.js` (módulo vivo, ver 4.28), com seus testes movidos para `tests/unit/lib/domain/query-schemas.test.js`. A seção acima é registro da análise de 24/09/2026.
+
 ---
 
 ### 4.25 lib/api/middleware.js
@@ -388,6 +396,8 @@ Middlewares de validação Zod: `validateBody`, `validateQuery`, `validateParams
 
 **Resumo:**
 Sistema de composição de middlewares. Funções: `composeMiddleware`, `withMethod`, `withAuth`, `withOptionalAuth`, `withRateLimit`, `withCors`, `withErrorHandler`, `withLogger`, `withTimeout`, `withBodyParser`, `withCache`, `publicApi`, `protectedApi`. Contém lógica inline de extração de IP em `withRateLimit`.
+
+[Correção 15/10/2026] `lib/api/middleware.js` foi removido do repositório em 15/10/2026 — era código morto (nenhum importador de produção; os únicos importadores eram testes, também removidos). Atenção ao homônimo: o `withAuth` VIVO é `withAuth(handler)` de `lib/auth/auth.js`, usado via `adminCrudHandler.js` — o `withAuth({ roles })` deste módulo morto tinha assinatura incompatível. A seção acima é registro da análise de 24/09/2026.
 
 ---
 
@@ -409,7 +419,20 @@ Helpers de IP: `getClientIP` (extração com trustProxy opcional), `normalizeIP`
 **Arquivos relacionados:** Módulo utilitário sem dependências externas
 
 **Resumo:**
-Três utilitários: `generateUUID` (implementação manual com Math.random), `generateMeta` (timestamp + requestId), `parseImages` (split/trim/filter de URLs separadas por quebra de linha).
+Utilitário único: `parseImages` (split/trim/filter de URLs separadas por quebra de linha), consumido por `components/Features/Products/ProductCard.js`.
+
+[Correção 15/10/2026] `generateUUID` e `generateMeta` foram removidos — ficaram órfãos com a remoção dos demais módulos de `lib/api/` (seus consumidores eram `errors.js` e `response.js`, também removidos; ver 4.21 e 4.22).
+
+---
+
+### 4.28 lib/domain/query-schemas.js
+
+**Nome do arquivo:** `lib/domain/query-schemas.js` [Adicionado em 15/10/2026 — não existia na análise de 24/09/2026]
+
+**Arquivos relacionados:** Importa apenas `zod`. Sem consumidores internos de `lib/` ainda.
+
+**Resumo:**
+Schemas Zod reutilizáveis de query string, extraídos de `lib/api/validate.js` antes da remoção daquele arquivo morto: `createPaginationSchema(options)` (page/limit com transform e clamp; defaults `defaultPage=1`, `defaultLimit=10`, `maxLimit=100`) e `createSearchSchema(options)` (search com min/max; defaults `minLength=1`, `maxLength=100`). Testes: `tests/unit/lib/domain/query-schemas.test.js`.
 
 ---
 
@@ -429,26 +452,31 @@ Três utilitários: `generateUUID` (implementação manual com Math.random), `ge
 **Onde:** Verificação de tamanho do body.
 **Problema:** Retorna `serverError` (HTTP 500) quando o correto para payload muito grande é 413.
 **Correção:** Criar resposta `payloadTooLarge` (413) em `response.js`.
+**[Correção 15/10/2026]** Achado nulo: `lib/api/middleware.js` (e `response.js`) foi removido do repositório; ver 4.25.
 
 ### 5.4 lib/api/middleware.js — `withErrorHandler` usa `console.error`
 **Onde:** Catch do error handler.
 **Problema:** Usa `console.error` em vez do `logger` estruturado.
 **Correção:** Substituir por `logger.error('API', ...)`.
+**[Correção 15/10/2026]** Achado nulo: `lib/api/middleware.js` foi removido do repositório; ver 4.25.
 
 ### 5.5 lib/api/middleware.js — Header `X-RateLimit-Remaining` inválido
 **Onde:** `withRateLimit`, resposta de rate limit.
 **Problema:** Header retorna string `"calculado via IP:endpoint"` em vez de número real.
 **Correção:** Calcular valor real ou remover header.
+**[Correção 15/10/2026]** Achado nulo: `lib/api/middleware.js` foi removido do repositório; ver 4.25.
 
 ### 5.6 lib/api/middleware.js — `withLogger` sobrescreve `res.end`
 **Onde:** Interceptação de resposta.
 **Problema:** Sobrescreve `res.end` que pode conflitar com outros interceptadores.
 **Correção:** Usar `res.on('finish', callback)` em vez de sobrescrever `res.end`.
+**[Correção 15/10/2026]** Achado nulo: `lib/api/middleware.js` foi removido do repositório; ver 4.25.
 
 ### 5.7 lib/api/utils.js — `generateUUID` usa `Math.random`
 **Onde:** Geração de UUID v4.
 **Problema:** `Math.random` não é criptograficamente seguro.
 **Correção:** Usar `crypto.randomUUID()` nativo (Node.js >= 14.17).
+**[Correção 15/10/2026]** Achado nulo: `generateUUID` foi removido do repositório (órfão após a remoção de `lib/api/`; ver 4.27) — a sugestão acima fica registrada para referência futura.
 
 ### 5.8 lib/cache/cache.js — Whitelist de IPs privados usa IP original
 **Onde:** `checkRateLimit`, whitelist dinâmica.
@@ -459,6 +487,7 @@ Três utilitários: `generateUUID` (implementação manual com Math.random), `ge
 **Onde:** Retorno de erros 401.
 **Problema:** Retorna `{ message }` simples em vez do padrão `{ success, error: { code, message }, meta }`.
 **Correção:** Alinhar ao formato padronizado via `unauthorized()` de `response.js`.
+**[Correção 15/10/2026]** `lib/api/response.js` (citado como destino da correção) foi removido do repositório — o `withAuth` vivo continua retornando `{ message }` simples.
 
 ### 5.10 lib/auth/auth.js — `initializeAuth` executa DDL diretamente
 **Onde:** Criação de tabelas e índices.
@@ -474,6 +503,7 @@ Três utilitários: `generateUUID` (implementação manual com Math.random), `ge
 **Onde:** Blocos catch das validações.
 **Problema:** Qualquer erro com propriedade `issues` seria tratado como ZodError.
 **Correção:** Combinar `error.issues && error instanceof z.ZodError`.
+**[Correção 15/10/2026]** Achado nulo: `lib/api/validate.js` foi removido do repositório (os helpers úteis saíram para `lib/domain/query-schemas.js`); ver 4.24.
 
 ### 5.13 lib/domain/products.js — Paginação inline (não usa shared-pagination)
 **Onde:** `getPaginatedProducts` e `getAllProducts`.
@@ -538,6 +568,7 @@ Três utilitários: `generateUUID` (implementação manual com Math.random), `ge
 **Problema:** `console.error` ignora o logger estruturado.
 **Melhoria:** Usar `logger.error('API', 'Erro na requisição:', error)`.
 **Justificativa:** Correlação de logs e formatação padronizada.
+**[Correção 15/10/2026]** `withErrorHandler` era de `lib/api/middleware.js`, removido do repositório — item sem alvo vivo.
 
 ### 6.10 Documentação de limitação no `PUBLIC_SELECT_FIELDS`
 **Problema:** Novas tabelas públicas não adicionadas ao mapa silenciosamente usam `SELECT *`.
@@ -571,8 +602,8 @@ Três utilitários: `generateUUID` (implementação manual com Math.random), `ge
 **Evidência:** Ambas contêm exatamente "Reflexões e ensinamentos sobre a fé cristã".
 
 ### 7.6 Extração de IP em múltiplos pontos
-**Onde:** `middleware.js` (inline), `helpers.js` (getClientIP), `adminCrudHandler.js` (getClientIP).
-**Evidência:** Estratégias diferentes — middleware confia em `x-forwarded-for`, admin usa socket.
+**Onde:** `helpers.js` (getClientIP), `adminCrudHandler.js` (getClientIP).
+**Evidência:** [Correção 15/10/2026] A análise de 24/09/2026 citava um terceiro ponto, `middleware.js` (inline, que confiava em `x-forwarded-for`); esse módulo foi removido do repositório em 15/10/2026, restando os dois pontos acima.
 
 ---
 
@@ -585,6 +616,7 @@ Três utilitários: `generateUUID` (implementação manual com Math.random), `ge
 ### 8.2 `lib/api/index.js` — barrel incompleto
 **Status:** Não exporta `helpers`, `utils`, `adminCrudHandler`.
 **Observação:** Conforme análise anterior, é intencional. Consumidores importam diretamente.
+**[Correção 15/10/2026]** `lib/api/index.js` foi removido do repositório em 15/10/2026 (nenhum consumidor via barrel); ver 4.20.
 
 ### 8.3 `lib/domain/musicas.js` — alias `musicas` em `getPaginatedMusicas`
 **Status:** Retorna `{ musicas, data, pagination }` onde `musicas === data`.
@@ -612,7 +644,7 @@ Três utilitários: `generateUUID` (implementação manual com Math.random), `ge
 
 | Métrica | Total |
 |---------|-------|
-| Arquivos analisados | 26 |
+| Arquivos analisados | 26 na data da análise — [Correção 15/10/2026] 22 no estado atual (5 removidos de `lib/api/`, 1 adicionado em `lib/domain/`) |
 | Seções no documento | 8 |
 | Problemas de correção (Seção 5) | 15 |
 | Melhorias recomendadas (Seção 6) | 10 |
