@@ -598,6 +598,8 @@
 │   │   ├── 0007-e2e-without-pull-request-trigger.md
 │   │   ├── 0008-modelos-free-por-agente-sem-repeticao.md
 │   │   ├── 0009-dead-code-removal-lib-api.md
+│   │   ├── 0010-admin-como-cargo-e-validacao-de-nome.md
+│   │   ├── 0011-erro-de-banco-503-e-refresh-token-fora-do-body.md
 │   │   ├── README.md
 │   │   └── template.md
 │   └── ai-memory-error.md
@@ -1033,6 +1035,7 @@
 │       ├── components
 │       │   ├── Admin
 │       │   │   ├── AdminAudit.test.js
+│       │   │   ├── AdminCrudBase.requestId.test.js
 │       │   │   ├── AdminCrudBase.test.js
 │       │   │   ├── AdminDashboard.test.js
 │       │   │   ├── AdminDicas.test.js
@@ -1133,7 +1136,8 @@
 │       ├── github-workflows
 │       │   └── test-coverage-comment.test.js
 │       ├── hooks
-│       │   └── useAdminCrud.test.js
+│       │   ├── useAdminCrud.test.js
+│       │   └── useApiFetch.test.js
 │       ├── index.test.js
 │       ├── lib
 │       │   ├── api
@@ -1175,6 +1179,7 @@
 │       │       │   ├── fetch-spotify.edge.test.js
 │       │       │   ├── posts.edge.test.js
 │       │       │   ├── rate-limit.test.js
+│       │       │   ├── request-id.test.js
 │       │       │   ├── roles.edge.test.js
 │       │       │   └── stats.edge.test.js
 │       │       ├── auth
@@ -1210,4 +1215,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-198 directories, 1013 files
+198 directories, 1018 files

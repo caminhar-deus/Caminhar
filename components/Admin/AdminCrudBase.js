@@ -87,6 +87,7 @@ export default function AdminCrudBase({
     items,
     loading,
     error,
+    requestId,
     formData,
     isEditing,
     currentPage,
@@ -122,17 +123,32 @@ export default function AdminCrudBase({
 
   // Efeito para exibir notificações de erro automaticamente
   useEffect(() => {
-    if (error?.message) {
-      // Mostra um toast genérico apenas se não houver erros de campo específicos,
-      // ou um mais amigável se for um erro de validação.
-      if (error.errors) {
-        // Se for um erro de validação com detalhes de campo, mostra um toast que guia o usuário.
-        toast.error('Verifique os campos em vermelho no formulário.');
-      } else {
-        toast.error(error.message);
-      }
+    if (!error) return;
+
+    // No fluxo real o `error` chega como STRING (contrato do `useApiFetch`,
+    // compartilhado com os componentes públicos); os erros estruturados do
+    // formulário vêm como objeto. Os dois formatos são aceitos aqui.
+    const message = typeof error === 'string' ? error : error?.message;
+    if (!message) return;
+
+    // Mostra um toast genérico apenas se não houver erros de campo específicos,
+    // ou um mais amigável se for um erro de validação.
+    if (typeof error === 'object' && error.errors) {
+      // Se for um erro de validação com detalhes de campo, mostra um toast que guia o usuário.
+      // O `requestId` fica de fora de propósito: aqui o usuário só precisa saber
+      // o que corrigir, e sufixo de suporte poluiria a instrução.
+      toast.error('Verifique os campos em vermelho no formulário.');
+    } else if (requestId) {
+      // Sufixo discreto ` (ref: <id>)` com o `X-Request-Id` para o usuário
+      // repassar ao suporte e o incidente ser localizável no log estruturado.
+      // Só um texto no mesmo toast do react-hot-toast — sem componente novo.
+      toast.error(`${message} (ref: ${requestId})`);
+    } else {
+      // Sem `requestId` (resposta de rota que não passa pelo admin handler):
+      // o texto do toast é o mesmo de sempre, sem sufixo.
+      toast.error(message);
     }
-  }, [error]);
+  }, [error, requestId]);
 
   // Sincroniza estado local com a API para permitir Drag & Drop instantâneo na UI
   useEffect(() => {

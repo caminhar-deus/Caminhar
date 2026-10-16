@@ -36,6 +36,7 @@ import { useApiFetch } from './useApiFetch';
  * @property {Array} items - Lista de itens
  * @property {boolean} loading - Estado de carregamento
  * @property {Object|null} error - Erro da operação
+ * @property {string|null} requestId - `X-Request-Id` do último erro de listagem (vindo do `useApiFetch`)
  * @property {Object} formData - Dados do formulário
  * @property {boolean} isEditing - Modo edição ativo
  * @property {number} currentPage - Página atual
@@ -95,6 +96,9 @@ export const useAdminCrud = ({
     data: apiData,
     loading,
     error,
+    // `X-Request-Id` do último erro — repassado em objeto separado porque o
+    // `error` é string e não pode carregar propriedades.
+    requestId,
     refetch,
   } = useApiFetch(autoFetch ? buildUrl(currentPage) : '', {
     options: { credentials: 'include' },
@@ -293,7 +297,7 @@ export const useAdminCrud = ({
   };
 
   return {
-    items, loading, error, formData, isEditing, currentPage, totalPages,
+    items, loading, error, requestId, formData, isEditing, currentPage, totalPages,
     handleInputChange, setFieldValue, handleEdit, handleSubmit, handleDelete,
     toggleField, resetForm, goToPage, refetch
   };

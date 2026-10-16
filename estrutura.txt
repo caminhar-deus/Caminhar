@@ -486,6 +486,9 @@ tests/integration/api/musicas.flow.test.js → lib/domain/musicas.js
 tests/integration/api/musicas.flow.test.js → pages/api/admin/musicas.js
 tests/integration/api/musicas.integration.test.js → lib/infra/db.js
 tests/integration/api/musicas.integration.test.js → pages/api/musicas.js
+tests/integration/api/musicas.pagination.test.js → lib/domain/musicas.js
+tests/integration/api/musicas.pagination.test.js → pages/api/musicas.js
+tests/integration/api/musicas.pagination.test.js → tests/mocks/cache.js
 tests/integration/api/musicas.test.js → lib/domain/musicas.js
 tests/integration/api/musicas.test.js → lib/infra/logger.js
 tests/integration/api/musicas.test.js → pages/api/musicas.js
@@ -565,6 +568,9 @@ tests/unit/[slug].test.js → tests/mocks/next-setup.js
 tests/unit/components/Admin/AdminAudit.test.js → components/Admin/AdminAudit.js
 tests/unit/components/Admin/AdminAudit.test.js → tests/helpers/index.js
 tests/unit/components/Admin/AdminAudit.test.js → tests/mocks/next-setup.js
+tests/unit/components/Admin/AdminCrudBase.requestId.test.js → components/Admin/AdminCrudBase.js
+tests/unit/components/Admin/AdminCrudBase.requestId.test.js → hooks/useAdminCrud.js
+tests/unit/components/Admin/AdminCrudBase.requestId.test.js → tests/helpers/index.js
 tests/unit/components/Admin/AdminCrudBase.test.js → components/Admin/AdminCrudBase.js
 tests/unit/components/Admin/AdminCrudBase.test.js → hooks/useAdminCrud.js
 tests/unit/components/Admin/AdminCrudBase.test.js → tests/helpers/index.js
@@ -674,6 +680,8 @@ tests/unit/domain/videos.test.js → lib/infra/db.js
 tests/unit/domain/videos.test.js → tests/mocks/db-module.js
 tests/unit/hooks/useAdminCrud.test.js → hooks/useAdminCrud.js
 tests/unit/hooks/useAdminCrud.test.js → tests/helpers/index.js
+tests/unit/hooks/useApiFetch.test.js → hooks/useApiFetch.js
+tests/unit/hooks/useApiFetch.test.js → tests/helpers/index.js
 tests/unit/index.test.js → tests/mocks/next-setup.js
 tests/unit/lib/api/helpers.ip.test.js → lib/api/helpers.js
 tests/unit/lib/auth.test.js → lib/auth/auth.js
@@ -731,6 +739,10 @@ tests/unit/pages/api/admin/posts.edge.test.js → lib/infra/db.js
 tests/unit/pages/api/admin/posts.edge.test.js → pages/api/admin/posts.js
 tests/unit/pages/api/admin/posts.edge.test.js → tests/mocks/db-module.js
 tests/unit/pages/api/admin/rate-limit.test.js → pages/api/admin/rate-limit.js
+tests/unit/pages/api/admin/request-id.test.js → lib/auth/auth.js
+tests/unit/pages/api/admin/request-id.test.js → lib/infra/db.js
+tests/unit/pages/api/admin/request-id.test.js → pages/api/admin/stats.js
+tests/unit/pages/api/admin/request-id.test.js → tests/mocks/db-module.js
 tests/unit/pages/api/admin/roles.edge.test.js → lib/auth/auth.js
 tests/unit/pages/api/admin/roles.edge.test.js → lib/crud/crud.js
 tests/unit/pages/api/admin/roles.edge.test.js → lib/domain/audit.js

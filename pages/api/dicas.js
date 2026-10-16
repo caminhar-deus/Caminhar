@@ -1,7 +1,7 @@
 import { query } from '../../lib/infra/db.js';
 import { getOrSetCache, checkRateLimit } from '../../lib/cache/cache.js';
 import { paginate, buildPaginationMeta, paginatedResponse } from './helper/pagination.js';
-import { getClientIP } from '../../lib/api/helpers.js';
+import { getClientIP, INVALID_PAGINATION_MESSAGE } from '../../lib/api/helpers.js';
 import { logger } from '../../lib/infra/logger.js';
 
 export default async function handler(req, res) {
@@ -45,7 +45,7 @@ export default async function handler(req, res) {
       return res.status(429).json({ error: 'Too Many Requests', message: 'Muitas requisições. Tente novamente mais tarde.' });
     }
     if (error.message === 'INVALID_PAGINATION_PARAMS') {
-      return res.status(400).json({ error: 'Bad Request', message: 'Parâmetros de paginação inválidos' });
+      return res.status(400).json({ error: 'Bad Request', message: INVALID_PAGINATION_MESSAGE });
     }
     logger.error('Dicas', 'Erro na API ao buscar dicas:', error);
     return res.status(500).json({ error: 'Internal Server Error', message: 'Erro ao buscar as dicas do dia' });

@@ -7,6 +7,18 @@ jest.mock('./lib/musicas', () => ({
   getPaginatedMusicas: jest.fn(),
 }), { virtual: true });
 
+// ── Mocks do handler REAL (pages/api/musicas.js) ─────────────────────────────
+jest.mock('../../../lib/domain/musicas.js', () => ({
+  getPaginatedMusicas: jest.fn(),
+}));
+jest.mock('../../../lib/cache/cache.js', () => require('../../mocks/cache').mockCacheModule());
+jest.mock('../../../lib/infra/logger.js', () => ({
+  logger: { error: jest.fn(), warn: jest.fn(), info: jest.fn(), debug: jest.fn(), success: jest.fn() },
+}));
+
+import realMusicasHandler from '../../../pages/api/musicas.js';
+import { getPaginatedMusicas } from '../../../lib/domain/musicas.js';
+
 const musicasLib = jest.requireMock('./lib/musicas');
 
 // Simulação do handler da API para fins de teste de integração da lógica de paginação
@@ -101,5 +113,53 @@ describe('API de Músicas - Paginação (/api/admin/musicas)', () => {
       totalPages: 3,
     });
     expect(musicasLib.getPaginatedMusicas).toHaveBeenCalledWith(2, 5);
+  });
+
+  // ── Contra o handler REAL (pages/api/musicas.js) ───────────────────────────
+  // Regressão: `limit=1000` devolvia 200 com 1000 itens, enquanto posts, videos,
+  // products e dicas rejeitam com 400 (mesma string de posts.js:40).
+  describe('Teto de limit (GET /api/musicas)', () => {
+    it('deve retornar 400 com "Parâmetros de paginação inválidos" para limit=1000', async () => {
+      // Sem o `.max(100)`, o handler passa o limit adiante e devolve 200 — é
+      // isso que este teste captura (mock resolve para expor o 200 antigo).
+      getPaginatedMusicas.mockResolvedValue({
+        data: [],
+        pagination: { page: 1, limit: 1000, total: 0, totalPages: 0 },
+      });
+
+      const { req, res } = createMocks({
+        method: 'GET',
+        url: '/api/musicas',
+        query: { limit: '1000' },
+      });
+
+      await realMusicasHandler(req, res);
+
+      expect(res._getStatusCode()).toBe(400);
+      expect(res._getJSONData()).toEqual({
+        error: 'Bad Request',
+        message: 'Parâmetros de paginação inválidos',
+        errors: { limit: ['Parâmetros de paginação inválidos'] },
+      });
+      expect(getPaginatedMusicas).not.toHaveBeenCalled();
+    });
+
+    it('deve aceitar limit=100 (teto permitido) com 200', async () => {
+      getPaginatedMusicas.mockResolvedValueOnce({
+        data: [{ id: 1, titulo: 'Musica 1' }],
+        pagination: { page: 1, limit: 100, total: 1, totalPages: 1 },
+      });
+
+      const { req, res } = createMocks({
+        method: 'GET',
+        url: '/api/musicas',
+        query: { limit: '100' },
+      });
+
+      await realMusicasHandler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      expect(getPaginatedMusicas).toHaveBeenCalledWith(1, 100, undefined, true, 'default');
+    });
   });
 });

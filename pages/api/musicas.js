@@ -1,7 +1,7 @@
 import { getPaginatedMusicas } from '../../lib/domain/musicas.js';
 import { getOrSetCache, checkRateLimit } from '../../lib/cache/cache.js';
 import { z } from 'zod';
-import { getClientIP } from '../../lib/api/helpers.js';
+import { getClientIP, INVALID_PAGINATION_MESSAGE, INVALID_PARAMS_MESSAGE } from '../../lib/api/helpers.js';
 import { logger } from '../../lib/infra/logger.js';
 
 /**
@@ -12,17 +12,23 @@ async function handleGet(req, res) {
     // Valida e sanitiza os parâmetros de entrada com Zod para maior robustez.
     const querySchema = z.object({
       page: z.coerce.number().int().positive().default(1),
-      limit: z.coerce.number().int().positive().default(10),
+      // Teto igual ao das demais rotas paginadas (posts, videos, products,
+      // dicas) — sem `.max()`, `?limit=1000` devolvia 200 com 1000 itens (ADR-0009).
+      limit: z.coerce.number().int().positive().max(100, INVALID_PAGINATION_MESSAGE).default(10),
       search: z.string().max(200).optional(),
       sort: z.enum(['default', 'recent', 'alpha']).optional().default('default'),
     });
 
     const validation = querySchema.safeParse(req.query);
     if (!validation.success) {
+      const errors = validation.error.flatten().fieldErrors;
+      // Erro de paginação devolve a MESMA string das demais rotas
+      // (`posts.js:40`); erros de `search`/`sort` mantêm o texto genérico.
+      const isPaginationError = Boolean(errors.page?.length || errors.limit?.length);
       return res.status(400).json({
         error: 'Bad Request',
-        message: 'Parâmetros inválidos.',
-        errors: validation.error.flatten().fieldErrors,
+        message: isPaginationError ? INVALID_PAGINATION_MESSAGE : INVALID_PARAMS_MESSAGE,
+        errors,
       });
     }
 

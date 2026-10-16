@@ -22,6 +22,9 @@ jest.mock('../../../../../lib/infra/logger.js', () => ({
     debug: jest.fn(),
     success: jest.fn(),
   },
+  // O adminCrudHandler usa o contexto assíncrono para correlação de logs
+  runWithRequestId: (id, fn) => fn(),
+  setRequestId: jest.fn(),
 }));
 
 describe('API Admin - Fetch ML (Edge Cases)', () => {

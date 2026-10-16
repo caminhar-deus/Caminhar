@@ -32,6 +32,9 @@ jest.mock('../../../../lib/infra/logger.js', () => ({
     debug: jest.fn(),
     success: jest.fn(),
   },
+  // O adminCrudHandler usa o contexto assíncrono para correlação de logs
+  runWithRequestId: (id, fn) => fn(),
+  setRequestId: jest.fn(),
 }));
 
 // Mock do DB para controlar a query de roles do RBAC (createAdminHandler)
@@ -159,7 +162,12 @@ describe('API Admin - Fetch YouTube (/api/admin/fetch-youtube)', () => {
 
       expect(res._getStatusCode()).toBe(500);
       expect(logger.error).toHaveBeenCalledWith('AdminCrudHandler', 'Erro no handler YouTube:', expect.any(Error));
-      expect(JSON.parse(res._getData()).message).toContain('Não foi possível encontrar o vídeo');
+      // A mensagem do `throw` não vaza mais ao cliente (500 é genérico por
+      // política); o texto específico continua indo só para o log, acima.
+      expect(JSON.parse(res._getData())).toEqual({
+        error: 'Erro interno no servidor',
+        message: 'Erro interno ao processar a solicitação.',
+      });
     });
   });
 });

@@ -61,9 +61,16 @@ describe('API Admin - Gestão de Usuários (/api/admin/users)', () => {
     hashPassword.mockResolvedValue('hashed_password_123');
 
     // Fallback padrão para queries
-    query.mockImplementation(async (sql) => {
+    query.mockImplementation(async (sql, params) => {
       if (sql.includes('SELECT permissions FROM roles')) {
         return { rows: [{ permissions: ['Usuários', 'Segurança'] }] };
+      }
+      // Validação de integridade do nome do cargo (ADR-0010): espelha a tabela
+      // `roles` (migração 018 semeia apenas 'admin' e 'user') — só cargo
+      // existente devolve row.
+      if (sql.includes('SELECT name FROM roles WHERE name')) {
+        const roleName = params?.[0];
+        return { rows: ['admin', 'user'].includes(roleName) ? [{ name: roleName }] : [] };
       }
       return { rows: [] };
     });
@@ -137,7 +144,7 @@ describe('API Admin - Gestão de Usuários (/api/admin/users)', () => {
   });
 
   describe('POST - Criar Usuário', () => {
-    const validPayload = { username: 'novo_user', password: '123' };
+    const validPayload = { username: 'novo_user', password: '123', role: 'admin' };
 
     it('deve retornar 400 se username ou senha estiverem ausentes', async () => {
       const { req, res } = createMocks({ method: 'POST', body: { username: 'apenas_user' } });
@@ -146,8 +153,9 @@ describe('API Admin - Gestão de Usuários (/api/admin/users)', () => {
     });
 
     it('deve retornar 400 se o usuário já existir no banco', async () => {
-      query.mockImplementation(async (sql) => {
+      query.mockImplementation(async (sql, params) => {
         if (sql.includes('SELECT permissions FROM roles')) return { rows: [{ permissions: ['Usuários'] }] };
+        if (sql.includes('SELECT name FROM roles WHERE name')) return { rows: [{ name: params?.[0] }] };
         if (sql.includes('SELECT id FROM users WHERE username')) return { rows: [{ id: 99 }] }; // Já existe
         return { rows: [] };
       });
@@ -168,6 +176,41 @@ describe('API Admin - Gestão de Usuários (/api/admin/users)', () => {
       expect(hashPassword).toHaveBeenCalledWith('123');
       expect(createRecord).toHaveBeenCalledWith('users', expect.objectContaining({ password: 'hashed_password_123' }), expect.any(Array));
       expect(logActivity).toHaveBeenCalledWith('admin_user', 'CRIAR USUÁRIO', 'USER', 5, expect.any(String), expect.any(String));
+    });
+
+    // ── Regressão ADR-0010: integridade do nome do cargo ────────────────
+
+    it('deve retornar 400 nomeando o cargo quando `role` não existe na tabela roles', async () => {
+      // Sem a validação, o handler segurava o cargo inexistente e gravava o
+      // usuário — que ficava sem permissão nenhuma (fail-closed mudo).
+      createRecord.mockResolvedValueOnce({ id: 7, username: 'novo_user', role: 'cargo-que-nao-existe' });
+
+      const { req, res } = createMocks({
+        method: 'POST',
+        body: { username: 'novo_user', password: '123', role: 'cargo-que-nao-existe' },
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(400);
+      const response = JSON.parse(res._getData());
+      expect(response.message).toContain('cargo-que-nao-existe');
+      expect(createRecord).not.toHaveBeenCalled();
+    });
+
+    it('deve retornar 400 quando o body não informa `role` (sem default implícito de admin)', async () => {
+      // O `.default('admin')` antigo criava administrador num POST direto sem
+      // cargo; a interface nunca envia `role` vazio (AdminUsersTab exige min(1)).
+      createRecord.mockResolvedValueOnce({ id: 8, username: 'sem_cargo', role: 'admin' });
+
+      const { req, res } = createMocks({
+        method: 'POST',
+        body: { username: 'sem_cargo', password: '123' },
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(400);
+      expect(JSON.parse(res._getData()).errors).toHaveProperty('role');
+      expect(createRecord).not.toHaveBeenCalled();
     });
   });
 
@@ -193,6 +236,22 @@ describe('API Admin - Gestão de Usuários (/api/admin/users)', () => {
       expect(hashPassword).not.toHaveBeenCalled();
       // Verifica se a propriedade "password" foi efetivamente deletada do payload de atualização
       expect(updateRecords).toHaveBeenCalledWith('users', expect.not.objectContaining({ password: expect.anything() }), { id: 2 }, expect.any(Array));
+    });
+
+    // ── Regressão ADR-0010: integridade do nome do cargo ────────────────
+
+    it('deve retornar 400 nomeando o cargo quando o PUT informa `role` inexistente', async () => {
+      updateRecords.mockResolvedValueOnce([{ id: 2, username: 'editado', role: 'cargo-que-nao-existe' }]);
+
+      const { req, res } = createMocks({
+        method: 'PUT',
+        body: { id: 2, username: 'editado', role: 'cargo-que-nao-existe' },
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(400);
+      expect(JSON.parse(res._getData()).message).toContain('cargo-que-nao-existe');
+      expect(updateRecords).not.toHaveBeenCalled();
     });
   });
 

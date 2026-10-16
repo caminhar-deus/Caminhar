@@ -7,7 +7,10 @@ import { z } from 'zod';
 const userCreateSchema = z.object({
   username: z.string().min(1, 'Nome de usuário é obrigatório'),
   password: z.string().min(1, 'Senha é obrigatória'),
-  role: z.string().optional().default('admin'),
+  // ADR-0010: SEM `.default('admin')` — quem cria usuário declara o cargo
+  // explicitamente; POST direto sem `role` é erro de validação, não criação
+  // implícita de administrador.
+  role: z.string({ error: 'Cargo é obrigatório' }).min(1, 'Cargo é obrigatório'),
 });
 
 const userUpdateSchema = z.object({
@@ -16,6 +19,25 @@ const userUpdateSchema = z.object({
   password: z.string().optional(),
   role: z.string().optional(),
 });
+
+/**
+ * Verifica se o cargo informado existe na tabela `roles` (integridade do nome — ADR-0010).
+ *
+ * Antes, `role` era string livre: nome de cargo inexistente era gravado e só aparecia
+ * depois como 403 genérico de permissão (o `adminCrudHandler` falha fechada com
+ * `getRolePermissions(undefined) === []`), sem nada que dissesse "cargo inexistente".
+ *
+ * Falha de banco NÃO é traduzida para 400 de "cargo inválido" — seria mentira: a
+ * exceção sobe para o `adminCrudHandler`, que já trata falha de leitura de `roles`
+ * como negação fechada.
+ *
+ * @param {string} role - Nome do cargo a validar
+ * @returns {Promise<boolean>} `true` se existir row em `roles` com esse nome
+ */
+async function roleExists(role) {
+  const { rows } = await query('SELECT name FROM roles WHERE name = $1', [role]);
+  return rows.length > 0;
+}
 
 async function handleGet(req, res) {
   const page = parseInt(req.query.page || '1', 10);
@@ -59,6 +81,15 @@ async function handlePost(req, res) {
 
   const { username, password, role } = validation.data;
 
+  // Integridade do nome do cargo (ADR-0010): 400 nomeando o cargo, não 403
+  // genérico de permissão depois. Erro de banco aqui sobe para o handler.
+  if (!(await roleExists(role))) {
+    return res.status(400).json({
+      error: 'Cargo inexistente',
+      message: `O cargo "${role}" não existe. Escolha um cargo já cadastrado.`,
+    });
+  }
+
   const existingUser = await query('SELECT id FROM users WHERE username = $1', [username]);
   if (existingUser.rows.length > 0) return res.status(400).json({ error: 'Este nome de usuário já está em uso.' });
 
@@ -86,6 +117,15 @@ async function handlePut(req, res) {
 
   const validatedData = { ...validation.data };
   delete validatedData.id;
+
+  // Integridade do nome do cargo (ADR-0010): só valida quando o PUT envia
+  // `role` (atualização parcial). Mesmo 400 nomeado do POST; falha de banco sobe.
+  if (validatedData.role !== undefined && !(await roleExists(validatedData.role))) {
+    return res.status(400).json({
+      error: 'Cargo inexistente',
+      message: `O cargo "${validatedData.role}" não existe. Escolha um cargo já cadastrado.`,
+    });
+  }
 
   // Se uma nova senha for enviada, criamos o hash. Se não, ignoramos e mantemos a antiga.
   if (validatedData.password && validatedData.password.trim() !== '') {

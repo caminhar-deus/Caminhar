@@ -17,8 +17,12 @@ devolve `null` em falha, sem expor o motivo.
 [`lib/domain/permissions.js`](../../lib/domain/permissions.js) define a lista
 de permissões congelada com `Object.freeze` e normaliza `roles.permissions` de
 forma fail-closed. [`lib/api/adminCrudHandler.js`](../../lib/api/adminCrudHandler.js)
-aplica RBAC a todas as rotas em `pages/api/admin/`, exigindo papel de admin e a
-permissão específica, com 403 quando falta a permissão. Os endpoints estão em
+aplica RBAC a todas as rotas em `pages/api/admin/` com semântica **disjuntiva**: a
+permissão específica basta, e `role === 'admin'` pula a checagem de permissão — com 403
+quando falta a permissão; só as rotas com `requireAdmin: true` (2 das 15) exigem papel
+de admin, e nelas o papel de admin já dispensa a checagem de permissão. *(Correção em
+2026-10-16: o texto original dizia "exigindo papel de admin **e** a permissão
+específica" — conjunção que o código nunca implementou; ver ADR-0010.)* Os endpoints estão em
 `pages/api/auth/{login,logout,check,refresh}.js`. O `JWT_SECRET` é obrigatório
 fora de `development`/`teste` — o próprio módulo lança erro nesse caso (ver
 [`lib/auth/auth.js`](../../lib/auth/auth.js)). O `CHANGELOG.md` 1.4.0

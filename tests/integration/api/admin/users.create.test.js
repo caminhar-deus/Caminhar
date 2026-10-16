@@ -89,7 +89,9 @@ describe('API de Usuários - Criação (POST /api/admin/users)', () => {
 
     // Mock 1: Simula a busca de permissões do usuário admin (executada incondicionalmente)
     query.mockResolvedValueOnce({ rows: [{ permissions: ['Segurança', 'Usuários'] }] });
-    // Mock 2: Simula que o usuário ainda não existe no banco
+    // Mock 2: Simula que o cargo 'editor' EXISTE na tabela `roles` (validação ADR-0010)
+    query.mockResolvedValueOnce({ rows: [{ name: 'editor' }] });
+    // Mock 3: Simula que o usuário ainda não existe no banco
     query.mockResolvedValueOnce({ rows: [] });
     // Mock: Simula o retorno do banco de dados, retornando apenas os campos que a API deve expor.
     createRecord.mockResolvedValueOnce({ id: 2, username: 'novo_usuario', role: 'editor' });
@@ -120,12 +122,14 @@ describe('API de Usuários - Criação (POST /api/admin/users)', () => {
   it('deve retornar 400 se o nome de usuário já estiver em uso', async () => {
     const { req, res } = createMocks({
       method: 'POST',
-      body: { username: 'usuario_existente', password: '123' },
+      body: { username: 'usuario_existente', password: '123', role: 'editor' },
     });
 
     // Mock 1: Simula a busca de permissões do usuário admin
     query.mockResolvedValueOnce({ rows: [{ permissions: ['Segurança', 'Usuários'] }] });
-    // Mock 2: Simula que a busca por usuário existente encontrou um resultado
+    // Mock 2: Simula que o cargo existe na tabela `roles` (validação ADR-0010)
+    query.mockResolvedValueOnce({ rows: [{ name: 'editor' }] });
+    // Mock 3: Simula que a busca por usuário existente encontrou um resultado
     query.mockResolvedValueOnce({ rows: [{ id: 1, username: 'usuario_existente' }] });
 
     await handler(req, res);

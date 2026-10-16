@@ -1,19 +1,41 @@
 import { query } from '../../../lib/infra/db';
 import { createRecord, updateRecords, deleteRecords } from '../../../lib/crud/crud';
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
-import { getRolePermissions } from '../../../lib/domain/permissions.js';
+import { getRolePermissions, permissionsList } from '../../../lib/domain/permissions.js';
 import { logger } from '../../../lib/infra/logger.js';
 import { z } from 'zod';
 
+/**
+ * `permissions` validado contra a lista oficial (`permissionsList`, ADR-0010).
+ * Antes era `z.array(z.string())`: uma permissão com nome errado era gravada e
+ * criava um cargo que não concede nada, sem denunciar o erro de digitação.
+ * Agora a escrita é rejeitada com 400 nomeando a permissão inválida.
+ */
+const permissionsField = z
+  .array(z.string())
+  .optional()
+  .superRefine((values, ctx) => {
+    if (!Array.isArray(values)) return;
+    values.forEach((permission, index) => {
+      if (!permissionsList.includes(permission)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `Permissão inválida: "${permission}" — não consta na lista oficial de permissões`,
+          path: [index],
+        });
+      }
+    });
+  });
+
 const roleSchema = z.object({
   name: z.string().min(1, 'Nome do cargo é obrigatório'),
-  permissions: z.array(z.string()).optional(),
+  permissions: permissionsField,
 });
 
 const roleUpdateSchema = z.object({
   id: z.number().int('ID deve ser um número inteiro').positive('ID deve ser positivo'),
   name: z.string().min(1, 'Nome do cargo é obrigatório').optional(),
-  permissions: z.array(z.string()).optional(),
+  permissions: permissionsField,
 });
 
 /**

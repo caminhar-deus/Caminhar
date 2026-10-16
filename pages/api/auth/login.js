@@ -110,9 +110,11 @@ export default async function handler(req, res) {
         token,
         token_type: 'Bearer',
         expires_in: 3600,
-        refresh_token: refreshToken,
+        // O refresh token NÃO é devolvido no body: nenhum consumidor o usa
+        // (grep em `load-tests/` não acha nada) e o `refresh.js` aceita o token
+        // pelo corpo, então expor aqui só ampliaria a superfície de vazamento.
+        // `refresh_token_stored` permanece: é booleano, não é o token.
         refresh_token_stored: refreshToken !== undefined && refreshToken !== null,
-        refresh_token_expires_in: 2592000,
         user: {
           userId: user.id,
           username: user.username,

@@ -3,7 +3,7 @@ import { getAuthToken, verifyToken } from '../../lib/auth/auth';
 import { checkRateLimit, invalidateCache, getOrSetCache } from '../../lib/cache/cache';
 import { getPaginatedProducts, getAllProducts, createProduct, updateProduct, deleteProduct } from '../../lib/domain/products.js';
 import { paginate } from './helper/pagination.js';
-import { getClientIP } from '../../lib/api/helpers.js';
+import { getClientIP, INVALID_PAGINATION_MESSAGE } from '../../lib/api/helpers.js';
 import { logger } from '../../lib/infra/logger.js';
 
 /**
@@ -37,7 +37,7 @@ async function handlePublicGet(req, res) {
     return res.status(200).json(result);
   } catch (error) {
     if (error.message === 'INVALID_PAGINATION_PARAMS') {
-      return res.status(400).json({ error: 'Bad Request', message: 'Parâmetros de paginação inválidos' });
+      return res.status(400).json({ error: 'Bad Request', message: INVALID_PAGINATION_MESSAGE });
     }
     throw error;
   }
@@ -53,7 +53,7 @@ async function handleAdminGet(req, res) {
     return res.status(200).json(result);
   } catch (error) {
     if (error.message === 'INVALID_PAGINATION_PARAMS') {
-      return res.status(400).json({ error: 'Bad Request', message: 'Parâmetros de paginação inválidos' });
+      return res.status(400).json({ error: 'Bad Request', message: INVALID_PAGINATION_MESSAGE });
     }
     throw error;
   }

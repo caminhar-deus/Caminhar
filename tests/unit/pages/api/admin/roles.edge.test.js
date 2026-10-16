@@ -73,12 +73,12 @@ describe('API - Admin - Roles (Edge Cases)', () => {
     });
     
     req.method = 'POST';
-    req.body = { name: 'Visitante', permissions: ['Leitura'] };
+    req.body = { name: 'Visitante', permissions: ['Visão Geral'] };
     createRecord.mockResolvedValueOnce({ id: 9, name: 'Visitante' });
 
     await handler(req, res);
     
-    expect(createRecord).toHaveBeenCalledWith('roles', expect.objectContaining({ permissions: '["Leitura"]' }));
+    expect(createRecord).toHaveBeenCalledWith('roles', expect.objectContaining({ permissions: '["Visão Geral"]' }));
     expect(res._getStatusCode()).toBe(201);
   });
 
@@ -93,7 +93,8 @@ describe('API - Admin - Roles (Edge Cases)', () => {
     
     req.method = 'PUT';
     req.query = { id: '99' };
-    req.body = { id: 99, name: 'Novo Nome', permissions: ['String'] }; // id no body é necessário para o handler
+    // Permissão da lista oficial (ADR-0010 valida `permissions` na escrita)
+    req.body = { id: 99, name: 'Novo Nome', permissions: ['Visão Geral'] }; // id no body é necessário para o handler
     
     updateRecords.mockResolvedValueOnce([]); // Retorna array vazio para forçar o || {}
 

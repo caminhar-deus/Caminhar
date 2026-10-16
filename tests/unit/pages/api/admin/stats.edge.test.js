@@ -57,8 +57,35 @@ describe('API - Admin - Stats (Edge Cases)', () => {
 
     expect(consoleSpy).toHaveBeenCalled();
     expect(res._getStatusCode()).toBe(500);
-    expect(res._getJSONData()).toEqual({ error: 'Erro interno no servidor', message: 'Erro Forçado no DB' });
-    
+    // A mensagem crua do erro NÃO pode vazar para o cliente: só o texto
+    // genérico (o detalhe fica no log acima).
+    expect(res._getJSONData()).toEqual({
+      error: 'Erro interno no servidor',
+      message: 'Erro interno ao processar a solicitação.',
+    });
+
+    consoleSpy.mockRestore();
+  });
+
+  it('deve retornar 503 + Retry-After quando o banco está indisponível', async () => {
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    db.query.mockReset();
+    // SQLSTATE 53300 = too_many_connections (verificado: o pg expõe o SQLSTATE
+    // em `error.code` e `query()` relança o erro original, sem wrap)
+    const unavailable = new Error('sorry, too many clients already');
+    unavailable.code = '53300';
+    db.query.mockRejectedValue(unavailable);
+
+    await handler(req, res);
+
+    expect(consoleSpy).toHaveBeenCalled();
+    expect(res._getStatusCode()).toBe(503);
+    expect(res.getHeader('Retry-After')).toBe('5');
+    expect(res._getJSONData()).toEqual({
+      error: 'Serviço temporariamente indisponível',
+      message: 'Serviço temporariamente indisponível. Tente novamente em instantes.',
+    });
+
     consoleSpy.mockRestore();
   });
 });

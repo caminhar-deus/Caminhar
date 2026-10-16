@@ -2,7 +2,7 @@ import { getRecentPosts, createPost } from '../../lib/domain/posts.js';
 import { getOrSetCache, checkRateLimit, invalidateCache } from '../../lib/cache/cache.js';
 import { withAuth } from '../../lib/auth/auth.js';
 import { z } from 'zod';
-import { getClientIP } from '../../lib/api/helpers.js';
+import { getClientIP, INVALID_PAGINATION_MESSAGE } from '../../lib/api/helpers.js';
 import { logger } from '../../lib/infra/logger.js';
 
 /**
@@ -38,7 +38,7 @@ async function handleGet(req, res) {
     const search = req.query.search || '';
 
     if (page < 1 || limit < 1 || limit > 100) {
-      return res.status(400).json({ error: 'Bad Request', message: 'Parâmetros de paginação inválidos' });
+      return res.status(400).json({ error: 'Bad Request', message: INVALID_PAGINATION_MESSAGE });
     }
 
     // Chave de cache mais eficiente: separa listagem de busca

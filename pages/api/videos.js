@@ -1,6 +1,6 @@
 import { getPublicPaginatedVideos } from '../../lib/domain/videos.js';
 import { getOrSetCache, checkRateLimit } from '../../lib/cache/cache.js';
-import { getClientIP } from '../../lib/api/helpers.js';
+import { getClientIP, INVALID_PAGINATION_MESSAGE } from '../../lib/api/helpers.js';
 import { logger } from '../../lib/infra/logger.js';
 
 /**
@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     const sort = req.query.sort || 'recent';
 
     if (page < 1 || limit < 1 || limit > 100) {
-      return res.status(400).json({ error: 'Bad Request', message: 'Parâmetros de paginação inválidos' });
+      return res.status(400).json({ error: 'Bad Request', message: INVALID_PAGINATION_MESSAGE });
     }
 
     // Mapeia o valor de sort para cláusula ORDER BY, ou usa default

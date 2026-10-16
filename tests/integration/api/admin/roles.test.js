@@ -258,6 +258,19 @@ describe('API Admin - Gestão de Cargos (/api/admin/roles)', () => {
       expect(data.id).toBe(5);
       expect(data.name).toBe('Moderador');
     });
+
+    it('deve retornar 400 nomeando a permissão que não consta na lista oficial (ADR-0010)', async () => {
+      const { req, res } = createMocks({
+        method: 'POST',
+        body: { name: 'Moderador', permissions: ['Visão Geral', 'Permissão Inventada'] },
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(400);
+      // A mensagem precisa nomear a permissão errada, senão é só "dados inválidos"
+      expect(JSON.stringify(res._getJSONData())).toContain('Permissão Inventada');
+      expect(createRecord).not.toHaveBeenCalled();
+    });
   });
 
   describe('PUT - Atualizar Cargo', () => {
@@ -289,6 +302,18 @@ describe('API Admin - Gestão de Cargos (/api/admin/roles)', () => {
       await handler(second.req, second.res);
       expect(second.res._getStatusCode()).toBe(200);
       expect(second.res._getJSONData()).toEqual({});
+    });
+
+    it('deve retornar 400 nomeando a permissão inválida também na atualização (ADR-0010)', async () => {
+      const { req, res } = createMocks({
+        method: 'PUT',
+        body: { id: 1, name: 'Super Admin', permissions: ['Permissão Inventada'] },
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(400);
+      expect(JSON.stringify(res._getJSONData())).toContain('Permissão Inventada');
+      expect(updateRecords).not.toHaveBeenCalled();
     });
   });
 

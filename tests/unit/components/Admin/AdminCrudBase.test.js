@@ -340,6 +340,35 @@ describe('Componente Front-End - AdminCrudBase', () => {
     expect(screen.getByTestId('error-name')).toHaveTextContent('Invalido');
   });
 
+  it('deve anexar o requestId ao toast de erro genérico quando o hook o traz', () => {
+    useAdminCrud.mockReturnValue({
+      ...mockUseAdminCrud,
+      error: 'Erro genérico',
+      requestId: 'req-abc-123'
+    });
+    render(<AdminCrudBase {...defaultProps} />);
+    expect(toast.error).toHaveBeenCalledTimes(1);
+    expect(toast.error).toHaveBeenCalledWith('Erro genérico (ref: req-abc-123)');
+  });
+
+  it('deve manter o toast sem sufixo quando não há requestId', () => {
+    useAdminCrud.mockReturnValue({ ...mockUseAdminCrud, error: 'Erro genérico', requestId: null });
+    render(<AdminCrudBase {...defaultProps} />);
+    expect(toast.error).toHaveBeenCalledTimes(1);
+    expect(toast.error).toHaveBeenCalledWith('Erro genérico');
+  });
+
+  it('não polui o toast de validação de campo com o requestId', () => {
+    useAdminCrud.mockReturnValue({
+      ...mockUseAdminCrud,
+      error: { message: 'Erro', errors: { name: ['Invalido'] } },
+      requestId: 'req-abc-123'
+    });
+    render(<AdminCrudBase {...defaultProps} />);
+    expect(toast.error).toHaveBeenCalledTimes(1);
+    expect(toast.error).toHaveBeenCalledWith('Verifique os campos em vermelho no formulário.');
+  });
+
   it('deve interromper na validação do Zod sem chamar a validação customizada', () => {
     const schema = z.object({ name: z.string().min(3) });
     const customValidate = jest.fn();

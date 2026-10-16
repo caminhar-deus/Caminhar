@@ -19,6 +19,8 @@ apoio, não a fonte oficial; a decisão não é duplicada como página de memór
 | [0007](0007-e2e-without-pull-request-trigger.md) | E2E em push para `main` e `workflow_dispatch`, sem gatilho em `pull_request` | Aceito | 2026-10-14 |
 | [0008](0008-modelos-free-por-agente-sem-repeticao.md) | Um modelo FREE distinto por agente, medido, sem repetição | Aceito | 2026-10-15 |
 | [0009](0009-dead-code-removal-lib-api.md) | Remover o código morto de `lib/api/` e extrair os schemas de query | Aceito | 2026-10-15 |
+| [0010](0010-admin-como-cargo-e-validacao-de-nome.md) | `ADMIN` é um cargo comum; autorização por cargo e permissão, com validação de nome | Aceito | 2026-10-16 |
+| [0011](0011-erro-de-banco-503-e-refresh-token-fora-do-body.md) | Erro de banco no painel responde 503 e não vaza mensagem; refresh token fora do body | Aceito | 2026-10-16 |
 
 ## Quando criar um ADR
 

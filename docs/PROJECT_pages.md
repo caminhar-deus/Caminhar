@@ -685,7 +685,7 @@ Os três endpoints abaixo são usados pelo painel admin para **importar metadado
     - Suporte opcional à variável `ENABLE_STRICT_SPOOFING=true` para ativar o modo estrito em desenvolvimento (testes de segurança).
   - Rate limiting por IP (5 tentativas/60s) aplicado dentro de `authenticateAndGenerateToken()`.
   - Modo web (padrão): define cookies httpOnly `token` e `refreshToken` via `setAuthCookie()`/`setRefreshTokenCookie()` e retorna `{ success, user }`. O cookie `refreshToken` só é definido quando o refresh token foi persistido com sucesso; `user` inclui `permissionsLoaded` indicando se as permissões do cargo foram carregadas.
-  - Modo API externa (`?response=body`): retorna `{ token, token_type, expires_in, refresh_token, refresh_token_stored, refresh_token_expires_in, user }` no corpo. Quando o refresh token não foi persistido, `refresh_token` vem como `null`/ausente e `refresh_token_stored` como `false`.
+  - Modo API externa (`?response=body`): retorna `{ token, token_type, expires_in, refresh_token_stored, user }` no corpo. **[Correção 16/10/2026]** `refresh_token` e `refresh_token_expires_in` saíram do body: nenhum consumidor lia esses campos (a varredura em `load-tests/`, único usuário do modo, não os encontra), portanto expor a credencial de 30 dias aqui não tinha contrapartida. Ver [`ADR-0011`](adr/0011-erro-de-banco-503-e-refresh-token-fora-do-body.md). O `refresh_token_stored` permanece por ser booleano, não credencial.
   - Tratamento de erros específicos: `RATE_LIMITED` (429), `INVALID_CREDENTIALS` (401), `MISSING_FIELDS` (400).
 
 ### `/pages/api/auth/check.js`

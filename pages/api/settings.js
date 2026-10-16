@@ -2,7 +2,7 @@ import { getSettings, getSetting, updateSetting, getAllSettingsRaw } from '../..
 import { withAuth, getAuthToken, verifyToken } from '../../lib/auth/auth.js';
 import { getOrSetCache, invalidateCache, checkRateLimit } from '../../lib/cache/cache.js';
 import { z } from 'zod';
-import { getClientIP } from '../../lib/api/helpers.js';
+import { getClientIP, INVALID_PARAMS_MESSAGE } from '../../lib/api/helpers.js';
 import { logger } from '../../lib/infra/logger.js';
 
 const SETTINGS_CACHE_TTL = 7200; // 2 horas
@@ -135,7 +135,7 @@ const handlePost = withAuth(async (req, res) => {
   if (!validation.success) {
     return res.status(400).json({
       error: 'Bad Request',
-      message: 'Parâmetros inválidos.',
+      message: INVALID_PARAMS_MESSAGE,
       errors: validation.error.flatten().fieldErrors,
     });
   }
@@ -172,7 +172,7 @@ const handlePut = withAuth(async (req, res) => {
   if (!validation.success) {
     return res.status(400).json({
       error: 'Bad Request',
-      message: 'Parâmetros inválidos.',
+      message: INVALID_PARAMS_MESSAGE,
       errors: validation.error.flatten().fieldErrors,
     });
   }
