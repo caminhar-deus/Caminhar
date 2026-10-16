@@ -236,7 +236,7 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
   - `lib/infra/db.js` — `query()` (PostgreSQL).
   - `lib/cache/cache.js` — `getOrSetCache` e `checkRateLimit`.
   - `pages/api/helper/pagination.js` — `paginate`, `buildPaginationMeta`, `paginatedResponse`.
-  - `lib/api/helpers.js` — `getClientIP`.
+  - `lib/api/helpers.js` — `getClientIP`, `INVALID_PAGINATION_MESSAGE`.
   - `lib/infra/logger.js` — `logger`.
 - **Propósito:** Endpoint público de listagem de dicas com paginação.
 - **Funcionalidades:**
@@ -246,7 +246,7 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
   - Rate limiting (`api:public:dicas`, 60 req/min) **dentro do callback de cache** para não penalizar cache hits.
   - Query com `SELECT COUNT(*)` + `SELECT ... WHERE published = true ORDER BY id ASC LIMIT/OFFSET` (parametrizado) em `Promise.all`.
   - Cache-Control: `public, max-age=0, s-maxage=300, stale-while-revalidate=600`.
-  - Tratamento de `RATE_LIMIT_EXCEEDED` (429) e `INVALID_PAGINATION_PARAMS` (400).
+  - Tratamento de `RATE_LIMIT_EXCEEDED` (429) e `INVALID_PAGINATION_PARAMS` (400 — mensagem via `INVALID_PAGINATION_MESSAGE` de `lib/api/helpers.js`, constante desde 16/10/2026).
 
 ### `/pages/api/musicas.js`
 
@@ -254,13 +254,14 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
 - **Arquivos acionados/relacionados:**
   - `lib/domain/musicas.js` — `getPaginatedMusicas()` (busca paginada).
   - `lib/cache/cache.js` — `getOrSetCache` e `checkRateLimit`.
-  - `lib/api/helpers.js` — `getClientIP`.
+  - `lib/api/helpers.js` — `getClientIP`, `INVALID_PAGINATION_MESSAGE`, `INVALID_PARAMS_MESSAGE`.
   - `lib/infra/logger.js` — `logger`.
   - `zod` (dependência externa) — validação de query params.
 - **Propósito:** Endpoint público de listagem de músicas com paginação, busca e ordenação.
 - **Funcionalidades:**
   - Método GET apenas (405 com header `Allow` para outros).
   - Validação de query params via **Zod** (`z.coerce.number().int().positive()` para page/limit, `search` máx. 200 chars, `sort` enum `default|recent|alpha`), com erros de campo retornados em `errors` (400).
+  - **[Correção 16/10/2026]** `limit` ganhou `.max(100)` — antes `?limit=1000` devolvia 200 com 1000 itens, enquanto as demais rotas paginadas (`posts`, `videos`, `products`, `dicas`) já devolviam 400 (mesmo teto do `createPaginationSchema`). O 400 de `page`/`limit` usa `INVALID_PAGINATION_MESSAGE` e o de `search`/`sort` usa `INVALID_PARAMS_MESSAGE` (constantes de `lib/api/helpers.js`).
   - Cache via `getOrSetCache` com chave `musicas:${page}:${limit}:${sort}:${search}`.
   - Rate limiting (`api:public:musicas`, 60 req/min) dentro do callback de cache.
   - Delega a busca para `getPaginatedMusicas()` em `lib/domain/musicas.js` (filtrando apenas músicas publicadas).
@@ -273,12 +274,12 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
   - `lib/domain/posts.js` — `getRecentPosts()` (GET) e `createPost()` (POST).
   - `lib/cache/cache.js` — `getOrSetCache`, `checkRateLimit`, `invalidateCache`.
   - `lib/auth/auth.js` — `withAuth` (protege o POST).
-  - `lib/api/helpers.js` — `getClientIP`.
+  - `lib/api/helpers.js` — `getClientIP`, `INVALID_PAGINATION_MESSAGE`.
   - `lib/infra/logger.js` — `logger`.
   - `zod` (dependência externa) — `postCreateSchema`.
 - **Propósito:** Endpoint unificado de posts — listagem pública e criação autenticada.
 - **Funcionalidades:**
-  - **GET** (público): paginação manual (`parseInt` sem helper), busca textual, chaves de cache diferenciadas (`posts:list:` para listagens com TTL 2h e `posts:search:` para buscas com TTL 30min), rate limiting dentro do callback de cache (100 req/min com busca, 300 req/min sem).
+  - **GET** (público): paginação manual (`parseInt` sem helper), busca textual, chaves de cache diferenciadas (`posts:list:` para listagens com TTL 2h e `posts:search:` para buscas com TTL 30min), rate limiting dentro do callback de cache (100 req/min com busca, 300 req/min sem). O 400 de paginação (page/limit fora do intervalo) usa `INVALID_PAGINATION_MESSAGE` de `lib/api/helpers.js` (constante desde 16/10/2026).
   - **POST** (autenticado via `withAuth(postHandler)`): validação Zod (`postCreateSchema`), rate limiting em mutações (`api:posts:create`, 30 req/min), invalidação de cache com três chamadas (`posts:list:*`, `posts:search:*`, `posts:*` — redundantes entre si).
   - Suporta `?response=v1` para compatibilidade com formato `{ success, data, pagination, timestamp }`.
   - Cache-Control: `public, max-age=0, s-maxage=300, stale-while-revalidate=600`.
@@ -289,12 +290,12 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
 - **Arquivos acionados/relacionados:**
   - `lib/domain/videos.js` — `getPublicPaginatedVideos()`.
   - `lib/cache/cache.js` — `getOrSetCache`, `checkRateLimit`.
-  - `lib/api/helpers.js` — `getClientIP`.
+  - `lib/api/helpers.js` — `getClientIP`, `INVALID_PAGINATION_MESSAGE`.
   - `lib/infra/logger.js` — `logger`.
 - **Propósito:** Endpoint público de listagem de vídeos com paginação, busca e ordenação.
 - **Funcionalidades:**
   - Método GET apenas (405 sem header `Allow`).
-  - Paginação manual (`parseInt` sem helper) com validação básica (page ≥ 1, 1 ≤ limit ≤ 100).
+  - Paginação manual (`parseInt` sem helper) com validação básica (page ≥ 1, 1 ≤ limit ≤ 100) — o 400 usa `INVALID_PAGINATION_MESSAGE` de `lib/api/helpers.js` (constante desde 16/10/2026).
   - Ordenação via `SORT_MAP` (`recent`, `oldest`, `alpha`, `alpha_desc`) com fallback para `recent`.
   - **Rate limiting antes do cache** (`api:public:videos`) — diferente de `musicas.js`/`posts.js`/`dicas.js`, que aplicam dentro do callback.
   - Cache via `getOrSetCache` com chave `public_videos:${page}:${limit}:${search}:${sort}`.
@@ -310,12 +311,12 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
   - `lib/auth/auth.js` — `getAuthToken`, `verifyToken` (middleware `requireAuth` inline).
   - `lib/cache/cache.js` — `getOrSetCache`, `checkRateLimit`, `invalidateCache`.
   - `pages/api/helper/pagination.js` — `paginate`.
-  - `lib/api/helpers.js` — `getClientIP`.
+  - `lib/api/helpers.js` — `getClientIP`, `INVALID_PAGINATION_MESSAGE`.
   - `lib/infra/logger.js` — `logger`.
 - **Propósito:** CRUD completo de produtos com modo público e administrativo.
 - **Funcionalidades:**
-  - **GET** `?public=true` (público): paginação via helper `paginate()`, filtros (search, minPrice, maxPrice) na chave de cache, rate limiting antes do cache (`api:public:products`, 60 req/min), delega para `getPaginatedProducts()` em `lib/domain/products.js`.
-  - **GET** (autenticado): listagem via `getAllProducts(page, limit)`.
+  - **GET** `?public=true` (público): paginação via helper `paginate()`, filtros (search, minPrice, maxPrice) na chave de cache, rate limiting antes do cache (`api:public:products`, 60 req/min), delega para `getPaginatedProducts()` em `lib/domain/products.js`. O catch de `INVALID_PAGINATION_PARAMS` responde 400 com `INVALID_PAGINATION_MESSAGE` (constante desde 16/10/2026).
+  - **GET** (autenticado): listagem via `getAllProducts(page, limit)` — mesmo tratamento do 400 de paginação.
   - **POST/PUT/DELETE** (autenticado): cria, atualiza e remove via camada de domínio, com rate limiting em mutações (`api:admin:products`, 30 req/min), invalidação de cache (`products:*`) e `logActivity()` para auditoria.
   - **Autenticação:** middleware `requireAuth()` definido inline (encapsula `getAuthToken()` + `verifyToken()`) — não usa `createAdminHandler()` nem `withAuth`.
   - Validação mínima em POST (nome e preço obrigatórios) e tratamento de `NO_DATA_TO_UPDATE` no PUT.
@@ -328,7 +329,7 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
   - `lib/domain/settings.js` — `getSettings`, `getSetting`, `updateSetting`, `getAllSettingsRaw`.
   - `lib/auth/auth.js` — `withAuth`, `getAuthToken`, `verifyToken`.
   - `lib/cache/cache.js` — `getOrSetCache`, `invalidateCache`, `checkRateLimit`.
-  - `lib/api/helpers.js` — `getClientIP`.
+  - `lib/api/helpers.js` — `getClientIP`, `INVALID_PARAMS_MESSAGE`.
   - `lib/infra/logger.js` — `logger`.
   - `zod` (dependência externa) — validação.
 - **Propósito:** Endpoint unificado de configurações do sistema.
@@ -336,7 +337,7 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
   - **GET** (público, sem `?key`): retorna configurações via `getSettings()`/`getAllSettingsRaw()` com cache `settings:all` (TTL 2h; `settings:v1:all` no modo v1), Cache-Control `public, s-maxage=120, stale-while-revalidate=600`, e rate limiting `fire-and-forget` (`api:public:settings`, 600 req/min — `checkRateLimit(...).catch(() => {})` para falhas de rate limit nunca abortarem a resposta).
   - **GET** (autenticado, com `?key`): verificação manual de token (`getAuthToken` + `verifyToken`), restrição a roles `admin`/`editor`, cache `settings:${key}` (TTL 2h), fallback para valores padrão hardcoded (`site_name`, `site_description`, `posts_per_page`, `videos_per_page`, `musicas_per_page`) e 404 se a chave não existir.
   - **POST** (autenticado via `withAuth`, apenas `admin`): validação Zod (`postSchema`), cria/atualiza via `updateSetting()` e invalida caches `settings:${key}`, `settings:all`, `settings:v1:all`.
-  - **PUT** (autenticado via `withAuth`): validação Zod, atualiza via `updateSetting()` e invalida os mesmos caches.
+  - **PUT** (autenticado via `withAuth`): validação Zod, atualiza via `updateSetting()` e invalida os mesmos caches. Em POST e PUT, o 400 de validação usa `INVALID_PARAMS_MESSAGE` de `lib/api/helpers.js` (constante desde 16/10/2026).
   - Suporta `?response=v1` para compatibilidade com formato `{ success, data, timestamp }`.
 
 ### `/pages/api/status.js`
@@ -407,7 +408,7 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
 
 ## 3. API Admin
 
-> **Padrão arquitetural:** Os **15 endpoints de `pages/api/admin/`** — e também **`pages/api/ip-diagnostico.js`**, que fica na raiz de `pages/api/` — utilizam o **handler factory `createAdminHandler()`** de `lib/api/adminCrudHandler.js`, que centraliza: verificação de método HTTP + 405 padronizado em português, autenticação via `withAuth`, RBAC (checagem de permissão na tabela `roles`), rate limiting em mutações, invalidação automática de cache (via `cacheKeys`), injeção de `req.adminUtils.logActivity()` / `req.adminUtils.user` e try/catch unificado com mensagens de erro PostgreSQL traduzidas.
+> **Padrão arquitetural:** Os **15 endpoints de `pages/api/admin/`** — e também **`pages/api/ip-diagnostico.js`**, que fica na raiz de `pages/api/` — utilizam o **handler factory `createAdminHandler()`** de `lib/api/adminCrudHandler.js`, que centraliza: verificação de método HTTP + 405 padronizado em português, autenticação via `withAuth`, RBAC (checagem de permissão na tabela `roles`), rate limiting em mutações, invalidação automática de cache (via `cacheKeys`), injeção de `req.adminUtils.logActivity()` / `req.adminUtils.user` e try/catch unificado com classificação de erros de banco. Desde 16/10/2026 toda resposta admin também carrega o header `X-Request-Id` (wrapper externo que cobre inclusive o 401 do `withAuth`) e indisponibilidade de banco responde 503 com `Retry-After: 5` — o detalhe desses dois mecanismos fica em [`docs/PROJECT_lib.md`](PROJECT_lib.md) §1.1, não se repete aqui.
 
 ### CRUDs de Conteúdo
 
@@ -485,14 +486,15 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
   - `lib/crud/crud.js` — `createRecord`, `updateRecords`, `deleteRecords`.
   - `lib/auth/auth.js` — `hashPassword`.
   - `zod` (dependência externa) — `userCreateSchema`, `userUpdateSchema`.
-- **Propósito:** CRUD administrativo de usuários (124 linhas).
+- **Propósito:** CRUD administrativo de usuários (163 linhas).
 - **Funcionalidades:**
   - GET com paginação (limite padrão 100) e busca por username (`LIKE` com `lower()`), **nunca retorna senhas** (seleciona apenas `id, username, role, created_at, last_login_at`).
   - POST com validação Zod (`userCreateSchema`), verificação de duplicidade de username e hash de senha via `hashPassword()`.
   - PUT com validação parcial, hash automático se nova senha enviada (senha vazia é ignorada).
   - DELETE: impede auto-exclusão do próprio usuário logado e registra auditoria.
   - Config: `permission: ['Segurança', 'Usuários']`, `rateLimit: 30/min`.
-  - ⚠️ **Ponto de atenção:** as linhas 68, 99 e 115 contêm `await await` duplicado antes de `req.adminUtils.logActivity(...)`.
+  - **[Correção 16/10/2026]** `role` no `userCreateSchema` deixou de ter `.default('admin')` — é obrigatório (`Cargo é obrigatório`); criação de admin implícita não existe mais. Nova função interna `roleExists()` valida o cargo contra a tabela `roles` no **POST** e no **PUT** (quando o PUT envia `role`): cargo inexistente responde **400** nomeando o cargo, em vez de gravar string livre que depois virava 403 genérico. `roleExists()` não tem `try/catch` de propósito — falha de banco sobe para o `adminCrudHandler`, que trata falha de leitura de `roles` como negação fechada (não vira 400 mentindo sobre o cargo). Ver [ADR-0010](adr/0010-admin-como-cargo-e-validacao-de-nome.md).
+  - [Correção 16/10/2026] As três chamadas de `req.adminUtils.logActivity(...)` (linhas 99, 139 e 155) tinham `await await` duplicado — o `adminUtils.logActivity` já é `async` e retorna `Promise` (`lib/domain/audit.js:12`), então o segundo `await` apenas re-esperava um valor já resolvido. Removido.
 
 #### `/pages/api/admin/roles.js`
 
@@ -505,7 +507,7 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
 - **Propósito:** Gerenciamento de papéis (roles) e permissões.
 - **Funcionalidades:**
   - GET: lista roles e devolve `permissions` já normalizado como array via `getRolePermissions` (`lib/domain/permissions.js`); a coluna `roles.permissions` é `TEXT` com string JSON. A tabela é criada pela migração `000-create-base-schema` e os cargos padrão (`admin` com as permissões de `lib/domain/permissions.js`, `user` com "Visão Geral") são semeados pela migração `018-seed-default-roles` — não há DDL/DML no path de request. Se a tabela não existir (código `42P01`), responde 500 com orientação para rodar `npm run migrate`.
-  - POST/PUT com validação Zod (`roleSchema`/`roleUpdateSchema`); `permissions` serializado como string JSON (coluna `TEXT`).
+  - POST/PUT com validação Zod (`roleSchema`/`roleUpdateSchema`); `permissions` serializado como string JSON (coluna `TEXT`). **[Correção 16/10/2026]** `permissions` deixou de ser `z.array(z.string())` e passou a ser validado contra a lista oficial (`permissionsList` de `lib/domain/permissions.js`) via `superRefine`: permissão fora da lista responde **400** nomeando a permissão inválida, em vez de gravar nome errado e criar cargo que não concede nada. Ver [ADR-0010](adr/0010-admin-como-cargo-e-validacao-de-nome.md).
   - DELETE com log de auditoria.
   - Config: `permission: ['Segurança', 'Usuários']`, `rateLimit: 30/min`.
 
@@ -875,3 +877,4 @@ Já documentado na seção [2. API Pública](#2-api-pública) — é o único ar
 - **23/09/2026:** Reanálise completa dos 42 arquivos com processo sequencial (análise → atualização → releitura → validação). Adicionadas a seção "Estrutura de Arquivos e Pastas" e o campo "Arquivos acionados/relacionados" em todas as seções; corrigido o total de custom properties de `variables.css` (348 propriedades em 386 linhas — o número anterior confundia linhas com propriedades); registradas ausências de `permission` explícita na config de `admin/musicas.js`, `admin/dicas.js`, `admin/backups.js` e `admin/rate-limit.js`; detalhado o modo API externa do `login.js` (`refresh_token_stored`); confirmados os pontos de atenção existentes (`await await` em `admin/users.js`, import sem extensão em `admin/backups.js`, 405 sem `Allow` em `check.js` e `videos.js`).
 - **08/10/2026:** Reconciliação das contagens com o repositório — o total voltou a ser conferido com `find pages -type f` e passou de **42 para 46 arquivos** (a frase "42 arquivos" das entradas de 01/08 e 23/09 acima descreve o estado daquelas datas, e continua sendo o retrato delas). Quatro entradas posteriores à análise de 23/09 não estavam refletidas nem na árvore nem nas seções e foram acrescentadas: **`pages/login.js`** + **`pages/styles/Login.module.css`** (criados em `73dbc86`, 03/10/2026, ajustados em `5beabc7`, 04/10/2026), **`pages/api/ip-diagnostico.js`** (`8fa3944`, 05/10/2026, admin-only na raiz da API) e **`pages/api/uploads/[...path].js`** — este já constava na árvore mas faltava no "Resumo Quantitativo", e **ainda não está commitado** (arquivo novo no working tree; `git log --diff-filter=A` não retorna nada para ele). Os blocos "Visão Geral", árvore, seção 3 (agora "15 endpoints em `admin/` + `ip-diagnostico.js`") e a tabela de resumo foram ajustados; a diferença entre "10 endpoints de API pública" e os 11 arquivos `.js` na raiz de `pages/api/` é justamente o `ip-diagnostico.js`.
 - **09/10/2026:** A resolução do diretório de uploads — `path.resolve(process.env.UPLOADS_DIR || path.join(process.cwd(), 'uploads'))` — foi extraída de quatro handlers para o novo módulo `lib/infra/storage.js`, eliminando a duplicação. Quatro endpoints passaram a importar a resolução única em vez de expressá-la inline: **`uploads/[...path].js`** (as funções locais `uploadsRoot()` e `legacyUploadsRoot()` foram removidas e agora vêm do módulo), **`upload-image.js`**, **`placeholder-image.js`** (o array `uploadDirs` inline virou `uploadRoots()`, preservando a ordem ativo→legado) e **`admin/integrity.js`**. Nenhuma lógica de runtime mudou: ordem de resolução das raízes, cache de 5 minutos do `placeholder-image.js` e a proteção contra path traversal em `resolveInside()` foram preservados. O motivo da extração foi eliminar os 12 avisos `Dynamic filesystem access causes tracing of the whole project` do Turbopack (Next.js 16), buildando limpo. Os avisos restantes foram marcados com `/*turbopackIgnore: true*/`, que declara o acesso intencional em vez de mascará-lo.
+- **16/10/2026:** Reconciliação com o commit `524074c` (motivo e contexto em [`ADR-0010`](adr/0010-admin-como-cargo-e-validacao-de-nome.md) e [`ADR-0011`](adr/0011-erro-de-banco-503-e-refresh-token-fora-do-body.md)). O ponto de atenção `await await` em `admin/users.js` foi resolvido — o `await` duplicado nas três chamadas de `logActivity` foi removido. `admin/users.js`: `role` ficou obrigatório no create (saiu o `.default('admin')`) e passou a ser verificado contra a tabela `roles` por `roleExists()` em POST e PUT (400 nomeando o cargo inexistente). `admin/roles.js`: `permissions` validado contra a lista oficial via `superRefine` (400 nomeando a permissão inválida). `musicas.js`: `limit` ganhou `.max(100)`, alinhando o teto às demais rotas paginadas. As seis rotas públicas com 400 de paginação/parâmetros (`dicas`, `musicas`, `posts`, `products`, `settings`, `videos`) passaram a importar `INVALID_PAGINATION_MESSAGE`/`INVALID_PARAMS_MESSAGE` de `lib/api/helpers.js` (definição e detalhe em [`PROJECT_lib.md`](PROJECT_lib.md) §1.2). `login.js`: `refresh_token`/`refresh_token_expires_in` saíram do body de `?response=body`. O wrapper de `requestId` e a política 503/500 do `createAdminHandler` afetam todas as respostas admin e ficam documentados em [`PROJECT_lib.md`](PROJECT_lib.md) §1.1, não neste documento.

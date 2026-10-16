@@ -345,6 +345,8 @@ Endpoint de logout. Invalida o refresh token no banco via `revokeRefreshToken()`
 **Resumo:**
 Endpoint de autenticação unificado que suporta dois modos de resposta: cookie httpOnly (padrão) ou JSON body (API externa via `?response=body`). Fluxo: 1) Detecta IP spoofing com `detectSpoofedIP()` (strictMode baseado em NODE_ENV — desenvolvimento usa modo não-estrito, produção usa estrito); 2) Chama `authenticateAndGenerateToken()` com rate limit de 5 tentativas/60s; 3) Trata erros (RATE_LIMITED, INVALID_CREDENTIALS, MISSING_FIELDS, outros). Retorna dados do usuário com permissões e tokens (auth + refresh). Inclui header `Allow: ['POST']` no 405.
 
+[Correção 16/10/2026] No modo `?response=body`, o corpo **não** devolve mais `refresh_token` nem `refresh_token_expires_in`: nenhum consumidor lia esses campos (a varredura em `load-tests/`, único usuário do modo, não os encontra), de modo que expor a credencial de longa duração aqui não tinha contrapartida. `refresh_token_stored` permanece por ser booleano. O parâmetro `?response=body` e os load-tests seguem como estavam — ver [ADR-0011](adr/0011-erro-de-banco-503-e-refresh-token-fora-do-body.md).
+
 ---
 
 ### 4.16 `api/auth/refresh.js`
@@ -571,9 +573,9 @@ Endpoint de gerenciamento de backups (admin). Rate limit 10 req/min. **GET** lis
 **Resumo:**
 CRUD administrativo de usuários via `createAdminHandler()`. Rate limit 30 req/min, requer permissão 'Segurança' ou 'Usuários'. **GET** lista usuários com paginação e busca por username (nunca retorna senhas). **POST** cria usuário com hash de senha (`hashPassword()`), default `role: 'admin'` (problema). **PUT** atualiza usuário, permite mudança de senha opcional (só faz hash se a nova senha for enviada). **DELETE** remove usuário (auto-exclusão bloqueada — usuário não pode excluir a si mesmo). Todas as mutações geram log de auditoria.
 
-**Problemas identificados:**
-1. `await await` duplicado nas linhas 68, 99 e 115 antes de `req.adminUtils.logActivity()` — sintaticamente válido, mas erro de digitação que confunde a leitura
-2. Default `role: 'admin'` na criação de usuário (linha 10) — novos usuários são administradores por padrão, sem intenção explícita de elevação de privilégio
+**Problemas identificados (ambos resolvidos em 16/10/2026 — ver §5.1 e o ADR-0010):**
+1. `await await` duplicado antes de `req.adminUtils.logActivity()` — sintaticamente válido, mas erro de digitação que confunde a leitura
+2. Default `role: 'admin'` na criação de usuário — novos usuários eram administradores por padrão, sem intenção explícita de elevação de privilégio
 
 ---
 
@@ -669,7 +671,9 @@ Endpoint híbrido (público + admin) de produtos. Não usa `createAdminHandler()
 - `zod` — Validação de query params
 
 **Resumo:**
-Endpoint público de músicas (GET). Valida query params com Zod (`page`, `limit`, `search`, `sort` com enum). Cache Redis com chave `musicas:${page}:${limit}:${sort}:${search}`, rate limit 60 req/min (verificado **dentro** do callback de cache). Cache-Control: `public, max-age=0, s-maxage=300, stale-while-revalidate=600`. Retorna `{ success, data, pagination }`.
+Endpoint público de músicas (GET). Valida query params com Zod (`page`, `limit`, `search`, `sort` com enum). Cache Redis com chave `musicas:${page}:${limit}:${sort}:${search}`, rate limit 60 req/min (
+
+[Correção 16/10/2026] `limit` ganhou `.max(100)`: antes `?limit=1000` devolvia 200 com 1000 itens, enquanto `posts`, `videos`, `products` e `dicas` já devolviam 400. O 400 de `page`/`limit` usa `INVALID_PAGINATION_MESSAGE` e o de `search`/`sort` usa `INVALID_PARAMS_MESSAGE`, ambas de `lib/api/helpers.js` ([ADR-0011](adr/0011-erro-de-banco-503-e-refresh-token-fora-do-body.md), decisão 4).verificado **dentro** do callback de cache). Cache-Control: `public, max-age=0, s-maxage=300, stale-while-revalidate=600`. Retorna `{ success, data, pagination }`.
 
 ---
 
@@ -797,6 +801,7 @@ Os seguintes problemas foram identificados e necessitam de correção:
 - **Onde:** `/pages/api/admin/users.js`
 - **Problema:** Erro de digitação que resulta em `await` duplicado
 - **Ajuste:** Remover o `await` duplicado
+- **[Resolvido 16/10/2026]** O `await` duplicado foi removido nas três chamadas (linhas 99, 139 e 155 no arquivo atual — a contagem mudou com as adições de `roleExists()` e da validação de cargo). O `adminUtils.logActivity` já é `async` e retorna `Promise`, então o segundo `await` apenas re-esperava um valor resolvido.
 
 ### 5.2 Import sem extensão `.js` em `admin/backups.js`
 - **O que:** Import `from '../../../scripts/backup'` sem extensão

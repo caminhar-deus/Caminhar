@@ -57,7 +57,7 @@ Camada de API: factory de handlers administrativos, helpers de IP e utilitários
 
 | Função | Descrição |
 |--------|-----------|
-| `createAdminHandler(config)` | Cria handler Next.js completo a partir de configuração |
+| `createAdminHandler(config)` | Cria o handler completo da rota a partir da configuração. O retorno **não** é mais o `withAuth(handler)` cru: é um wrapper externo `adminRequestHandler` que gera/saneia o `requestId`, seta o header `X-Request-Id` e delega para o handler autenticado dentro de `runWithRequestId` (ver Observações) |
 
 **Configuração aceita:**
 - `name` — Nome da entidade para logs e rate limit
@@ -68,7 +68,7 @@ Camada de API: factory de handlers administrativos, helpers de IP e utilitários
 - `cacheKeys` — Chave(s) de cache invalidadas automaticamente após mutação bem-sucedida
 - `allowedMethods` — Métodos permitidos (default: GET, POST, PUT, DELETE)
 
-**Ordem de execução do handler:**
+**Ordem de execução do handler:** antes de tudo, o wrapper externo gera/saneia o `requestId` e seta `X-Request-Id` (ver Observações); depois o handler autenticado executa:
 1. Verificação de método HTTP → 405 com header `Allow`
 2. Verificação de autenticação → 401 se `user` for nulo
 3. RBAC via `requireAdmin` → 403 se não for admin
@@ -84,7 +84,12 @@ Camada de API: factory de handlers administrativos, helpers de IP e utilitários
 - `user` — Dados do usuário autenticado
 - `ip` — IP confiável extraído via `getClientIP`
 
-**Observações:** O catch centralizado traduz erros comuns do PostgreSQL para português (unique constraint, foreign key, not null). Em caso de falha na tabela `roles`, permite apenas usuários com role `admin`. O handler final é envolvido por `withAuth` de `lib/auth/auth.js`. As respostas de erro deste módulo usam formato próprio `{ error, message }`, divergente do formato `{ success, error: { code, message }, meta }` que o antigo `lib/api/response.js` padronizava (módulo removido do repositório; ver UPGRADE 1.1 e 1.10).
+**Observações:**
+
+- **Wrapper externo de `requestId`:** `createAdminHandler` retorna `adminRequestHandler`, que envolve o `withAuth(handler)`. O wrapper precisa ficar FORA do `withAuth` porque o 401 nasce dentro dele, fora do `handler` — só assim o header vale para todas as respostas. O wrapper lê `x-request-id` do cliente (entrada não confiável: só aceita `/^[A-Za-z0-9._-]{1,128}$/`, senão gera `randomUUID()`), faz `res.setHeader('X-Request-Id', …)` uma única vez antes de qualquer resposta (vale para 401/403/405/429/500/503) e executa tudo dentro de `runWithRequestId` (`lib/infra/logger.js`), para que todos os logs da request carreguem o mesmo ID.
+- **Classificação de erro no catch:** indisponibilidade de banco/rede (SQLSTATEs `53300/08000/08003/08006/57P01/57P02/57P03` ou padrões de rede de `lib/infra/db.js`) responde **503** com `Retry-After: 5`; os demais erros respondem **500** com mensagem **genérica** — `error.message` cru não vai mais ao cliente. Só as traduções de negócio (unique constraint, foreign key, not null) permanecem como textos específios. Motivo da política: [ADR-0011](adr/0011-erro-de-banco-503-e-refresh-token-fora-do-body.md).
+- O bypass `role === 'admin'` (pula a checagem de permissão) tem comentário no código remetendo ao [ADR-0010](adr/0010-admin-como-cargo-e-validacao-de-nome.md) — o cargo `admin` é um cargo comum que contém todas as permissões por definição (migração 018).
+- Em caso de falha na tabela `roles`, permite apenas usuários com role `admin`. As respostas de erro deste módulo usam formato próprio `{ error, message }`, divergente do formato `{ success, error: { code, message }, meta }` que o antigo `lib/api/response.js` padronizava (módulo removido do repositório; ver UPGRADE 1.1 e 1.10).
 
 ---
 
@@ -102,6 +107,15 @@ Camada de API: factory de handlers administrativos, helpers de IP e utilitários
 | `detectSpoofedIP(req, options)` | Compara o IP do socket com o header `x-forwarded-for` para detectar discrepância. Retorna `{ isSpoofed, socketIP, forwardedIP }`. Parâmetro `options.strictMode` (padrão `false`): quando `true`, detecta spoofing mesmo quando socket é localhost (usado em testes de segurança). Quando `false`, considera socket localhost como não-spoofing (comportamento normal do Next.js em dev). Detecta spoofing quando socket é privado e forwarded é público, ou quando socket é público e forwarded difere |
 
 **Função interna:** `normalizeIP(ip)` — normaliza `::1` → `127.0.0.1` e `::ffff:x.x.x.x` → `x.x.x.x` (IPv4-mapped IPv6).
+
+**Constantes exportadas** (fonte única das mensagens de erro de paginação/parâmetros — os literais são contrato público, assertados por testes de integração):
+
+| Constante | Valor | Uso |
+|-----------|-------|-----|
+| `INVALID_PAGINATION_MESSAGE` | `'Parâmetros de paginação inválidos'` | 400 de `page`/`limit` fora do intervalo — importada por `dicas.js`, `musicas.js`, `posts.js`, `products.js` e `videos.js` |
+| `INVALID_PARAMS_MESSAGE` | `'Parâmetros inválidos.'` | 400 genérico de Zod/body — importada por `musicas.js` e `settings.js` |
+
+[Correção 16/10/2026] As duas constantes passaram a existir neste módulo (antes eram literais repetidos em 6 rotas de `pages/api/`). Ficam aqui — e não em `pages/api/helper/pagination.js` — porque as rotas que validam paginação sem usar o helper já importam este módulo (ver [ADR-0011](adr/0011-erro-de-banco-503-e-refresh-token-fora-do-body.md), decisão 4). Consumo pelas rotas: ver `docs/PROJECT_pages.md`.
 
 **Observações:** Usado pelo `adminCrudHandler.js` para extração de IP confiável (sem `trustProxy` = usa socket diretamente, prevenindo spoofing via header) e detecção de spoofing. A lógica de `detectSpoofedIP` suporta dois modos: `strictMode=false` (padrão, permite localhost) e `strictMode=true` (detecta spoofing mesmo em localhost). O middleware `proxy.js` e o handler `pages/api/auth/login.js` controlam o `strictMode` com base no `NODE_ENV` e na variável opcional `ENABLE_STRICT_SPOOFING`.
 
@@ -288,7 +302,7 @@ Camada de domínio: funções específicas por entidade de negócio, construída
 **Propósito:** Lista imutável de permissões disponíveis para cargos administrativos.
 
 **Exportação:**
-- `permissionsList` — Array congelado (`Object.freeze`) com: `'Visão Geral'`, `'Posts/Artigos'`, `'Gestão de Músicas'`, `'Gestão de Vídeos'`, `'Gestão de Produtos'`, `'Gestão de Dicas'`, `'Configuração de Cabeçalho'`, `'Segurança'`, `'Usuários'`, `'Auditoria'`.
+- `permissionsList` — Array congelado (`Object.freeze`) com: `'Visão Geral'`, `'Posts/Artigos'`, `'Gestão de Músicas'`, `'Gestão de Vídeos'`, `'Gestão de Produtos'`, `'Gestão de Dicas'`, `'Configuração de Cabeçalho'`, `'Segurança'`, `'Usuários'`, `'Auditoria'`. [Correção 16/10/2026] Passou a ter **export nomeado** além do `default` — consumido pela validação de escrita de `pages/api/admin/roles.js` ([ADR-0010](adr/0010-admin-como-cargo-e-validacao-de-nome.md)).
 
 **Observações:** Usado por componentes administrativos (checkboxes de permissões) e pelo RBAC do `adminCrudHandler.js`.
 

@@ -96,7 +96,7 @@ async function handlePost(req, res) {
   const hashedPassword = await hashPassword(password);
   const newUser = await createRecord('users', { username, password: hashedPassword, role }, ['id', 'username', 'role']);
 
-  await await req.adminUtils.logActivity('CRIAR USUÁRIO', newUser.id, `Criou o usuário: ${username}`);
+  await req.adminUtils.logActivity('CRIAR USUÁRIO', newUser.id, `Criou o usuário: ${username}`);
   return res.status(201).json(newUser);
 }
 
@@ -136,7 +136,7 @@ async function handlePut(req, res) {
 
   const updatedUsers = await updateRecords('users', validatedData, { id: updateId }, ['id', 'username', 'role']);
 
-  await await req.adminUtils.logActivity('ATUALIZAR USUÁRIO', updateId, `Atualizou o usuário: ${updatedUsers[0]?.username}`);
+  await req.adminUtils.logActivity('ATUALIZAR USUÁRIO', updateId, `Atualizou o usuário: ${updatedUsers[0]?.username}`);
   return res.status(200).json(updatedUsers[0] || {});
 }
 
@@ -152,7 +152,7 @@ async function handleDelete(req, res) {
 
   await deleteRecords('users', { id: deleteId });
 
-  await await req.adminUtils.logActivity('EXCLUIR USUÁRIO', deleteId, `Removeu o usuário: ${deletedUsername}`);
+  await req.adminUtils.logActivity('EXCLUIR USUÁRIO', deleteId, `Removeu o usuário: ${deletedUsername}`);
   return res.status(200).json({ success: true, message: 'Usuário removido com sucesso.' });
 }
 

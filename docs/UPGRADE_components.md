@@ -22,7 +22,9 @@ Componente base genérico para CRUD administrativo. Elimina duplicação entre A
 - `utils/csvExport.js` — exportação CSV
 - `hooks/useAdminCrud` — hook de CRUD
 
-**Resumo:** Componente genérico que centraliza lógica de CRUD com suporte a paginação, busca, reordenação via Drag & Drop, exportação CSV, confirmação de exclusão em modal, validação via Zod e validação customizada. Usa `useAdminCrud` hook para gerenciar estado e chamadas API.
+**Resumo:** Componente genérico que centraliza lógica de CRUD com suporte a paginação, busca, reordenação via Drag & Drop, exportação CSV, confirmação de exclusão em modal, validação via Zod
+
+[Correção 16/10/2026] O `useEffect` de notificação de erro passou a aceitar `error` como **string** (formato real vindo de `useApiFetch` via `useAdminCrud`) ou como objeto (erros estruturados do formulário). No erro de listagem, quando há `requestId` (o `X-Request-Id` que o servidor devolve nas respostas admin), o toast ganha o sufixo ` (ref: <id>)` para o usuário repassar ao suporte; sem `requestId`, o texto é o de sempre. O toast de validação de campo não recebe o sufixo. e validação customizada. Usa `useAdminCrud` hook para gerenciar estado e chamadas API.
 
 **Ajustes/Melhorias identificados:**
 - Código comentado na linha 80: `toast.success('Operação realizada com sucesso!')` — remover código morto

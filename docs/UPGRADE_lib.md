@@ -67,7 +67,7 @@ lib/
 - **cache/cache.js** é utilizado por **adminCrudHandler.js** e por 10 rotas de `pages/api/` (admin/*, auth/login, dicas, musicas, posts, products, settings, videos)
 - O formato de resposta em produção é o do próprio **adminCrudHandler.js** (`{ error, message }`) — não existe módulo central de respostas
 - **api/utils.js** é utilizado por `components/Features/Products/ProductCard.js` (parseImages)
-- **api/helpers.js** é utilizado por adminCrudHandler.js
+- **api/helpers.js** é utilizado por adminCrudHandler.js e por 6 rotas de `pages/api/` (`dicas`, `musicas`, `posts`, `products`, `settings`, `videos`) — [Correção 16/10/2026] as rotas importam também as constantes `INVALID_PAGINATION_MESSAGE`/`INVALID_PARAMS_MESSAGE`, que viraram a fonte única das mensagens de 400 de paginação/parâmetros (antes eram literais repetidos; ver [ADR-0011](adr/0011-erro-de-banco-503-e-refresh-token-fora-do-body.md), decisão 4)
 - **auth/auth.js** é utilizado por **adminCrudHandler.js**, rotas `pages/api/auth/{check,login,logout}.js`, `posts.js`, `settings.js`, `upload-image.js`, `cleanup-test-data.js` e scripts (`init-server.js`, migrações, `reset-password.js`, `validate-schema.js`)
 
 [Correção 15/10/2026] Os itens acima descrevem o estado atual: as referências a `middleware.js`, `response.js` e `errors.js` (código morto) foram removidas; esses módulos saíram do repositório em 15/10/2026.
@@ -283,7 +283,9 @@ Domínio de produtos. Implementa paginação manual (não usa `shared-pagination
 
 **Nome do arquivo:** `lib/domain/permissions.js`
 
-**Arquivos relacionados:** Módulo autônomo — lista estática consumida por componentes de UI de roles/permissions
+**Arquivos relacionados:** Módulo autônomo — lista estática consumida por componentes de UI de roles/permissions e, desde 16/10/2026, por `pages/api/admin/roles.js` na validação de escrita ([ADR-0010](adr/0010-admin-como-cargo-e-validacao-de-nome.md))
+
+**[Correção 16/10/2026]** `permissionsList` passou a ter **export nomeado** além do `default`, para que a validação de `admin/roles.js` possa importar a lista oficial em vez de duplicá-la.
 
 **Resumo:**
 Exporta array congelado (`Object.freeze`) com 10 permissões disponíveis: Visão Geral, Posts/Artigos, Gestão de Músicas, Gestão de Vídeos, Gestão de Produtos, Gestão de Dicas, Configuração de Cabeçalho, Segurança, Usuários, Auditoria.
@@ -370,6 +372,14 @@ Funções padronizadas de resposta HTTP. Sucesso: `success`, `paginated`, `creat
 
 **Resumo:**
 Factory `createAdminHandler` que gera handlers Next.js com: verificação de método HTTP, autenticação, RBAC (permissão por cargo via banco), detecção de IP spoofing, rate limiting em mutações, invalidação automática de cache, try/catch centralizado com tradução de erros do banco.
+
+**[Correção 16/10/2026]** Três mudanças (porquê em [ADR-0011](adr/0011-erro-de-banco-503-e-refresh-token-fora-do-body.md) e [ADR-0010](adr/0010-admin-como-cargo-e-validacao-de-nome.md)):
+
+1. O retorno deixou de ser o `withAuth(handler)` cru e passou a ser um wrapper externo (`adminRequestHandler`) que gera/saneia um `requestId` (lê `x-request-id` do cliente contra `/^[A-Za-z0-9._-]{1,128}$/`, senão `randomUUID()`), responde o header `X-Request-Id` antes de qualquer status — inclusive o 401, que nasce dentro do `withAuth` — e executa tudo dentro de `runWithRequestId` para que os logs carreguem o mesmo ID. O wrapper precisa ficar fora do `withAuth` por isso.
+2. O try/catch deixou de usar `error.message` cru como default: indisponibilidade de banco/rede responde **503** com `Retry-After: 5`, os demais erros respondem **500** com mensagem genérica, e só as traduções de negócio (unique constraint, foreign key, not null) continuam indo ao cliente.
+3. O bypass `role === 'admin'` (pula a checagem de permissão) recebeu comentário no código: é intencional, porque o cargo `admin` é um cargo comum que contém todas as permissões por definição (migração 018) — não é falha.
+
+Estado atual completo em [`PROJECT_lib.md`](PROJECT_lib.md) §1.1.
 
 ---
 

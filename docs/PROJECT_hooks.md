@@ -105,6 +105,7 @@ A pasta `/hooks` contém **12 arquivos** que implementam custom hooks React e se
 - **`toggleField(item, key, currentValue, options?)`:** Alterna campo booleano enviando apenas `{ id, [key]: newValue }` via `PUT`. Aceita objeto opcional `{ onOptimisticUpdate, onRevert }` para atualização otimista na UI antes da resposta do servidor e reversão automática em caso de falha. Usa `react-hot-toast` e chama `refetch()` após sucesso para sincronizar com o servidor. Retorna a Promise resolvida com o resultado da API.
 - **Paginação:** `goToPage(page)` navega respeitando limites (`totalPages`). `currentPage` e `totalPages` são extraídos automaticamente dos dados paginados da API.
 - **`refetch()`:** Exposto diretamente do `useApiFetch` (hook genérico compartilhado com Features públicas) para recarga manual da listagem.
+- **`requestId`:** Repassado do `useApiFetch` no retorno do hook (`string|null` — `X-Request-Id` do último erro de listagem). Vem em campo separado do `error` porque este é string e não carrega propriedades; consumido pelo `AdminCrudBase` para sufixar o toast de erro de listagem com `(ref: <id>)` (ver `docs/PROJECT_components.md`, AdminCrudBase).
 
 ---
 
@@ -119,10 +120,12 @@ A pasta `/hooks` contém **12 arquivos** que implementam custom hooks React e se
 - **`fetchData()`:** Função memoizada via `useCallback` que:
   - Verifica `navigator.onLine` antes de executar o fetch. Se off-line, define erro "Sem conexão com a internet", chama `onError` e interrompe (early return).
   - Executa `fetch(url, options)`.
+  - **Retry único em 503:** se a resposta for 503 com header `Retry-After` parseável (segundos inteiros ou data HTTP, RFC 9110 §10.2.5) e o método for idempotente (`GET`/`HEAD`/`OPTIONS`/`TRACE`/`PUT`/`DELETE` — definidos em `RETRYABLE_METHODS`), espera o tempo indicado e reenvia **uma única vez**. Implementado com `if`, sem laço: um segundo 503 segue adiante como erro normal. `POST`/`PATCH` nunca reenviam — o 503 nasce depois que a operação já começou a rodar no banco, e reenviar poderia duplicar registro.
   - Trata HTTP 304 como resposta sem corpo (não lança erro).
-  - Extrai mensagem de erro do corpo JSON da resposta quando o status não é ok.
+  - Extrai mensagem de erro do corpo JSON da resposta quando o status não é ok. Antes do `throw`, captura o header `x-request-id` da resposta como propriedade do `Error`.
+  - No `catch`, define `error` (**sempre string** — contrato compartilhado com os 5 componentes públicos consumidores) e, em um **estado separado `requestId`** (`string|null`, paralelo ao `error`), o `X-Request-Id` trazido pelo `Error` quando presente.
   - Aplica `transform` se fornecida.
-  - Retorna `{ data, loading, error, refetch, setData }`.
+  - Retorna `{ data, loading, error, requestId, refetch, setData }`.
 - **Reconexão automática:** Registra listener para evento `'online'` no `window`. Se o erro atual for de conectividade (mensagem contém "Sem conexão"), dispara `fetchData()` automaticamente ao restabelecer a conexão. O listener é removido no cleanup do `useEffect` e possui proteção SSR (`typeof window`).
 - **Cache simples (`staleTime`):** Se configurado, compara o timestamp do último fetch com o tempo decorrido. Se estiver dentro do período fresco, pula a requisição e mantém os dados em cache.
 - **`setData`:** Função exposta para definir dados manualmente (útil para atualizações otimistas fora do hook).

@@ -207,7 +207,15 @@ Hook reutilizável para CRUD admin. Usa `useApiFetch` para GET e `fetch` própri
 - `useAdminCrud.js`
 
 **Resumo do arquivo:**
-Hook genérico para GET com cache, stale time e refetch. Exporta `data`, `loading`, `error`, `refetch`, `setData`. Usa `useRef` para `optionsRef` e `lastFetch`, e `useEffect` para estabilizar `options` via `JSON.stringify`. `fetchData` trata erros de rede e respostas não-JSON.
+Hook genérico para GET com cache, stale time e refetch. Exporta `data`, `loading`, `error`, `requestId`, `refetch`, `setData`. Usa `useRef` para `optionsRef` e `lastFetch`, e `useEffect` para estabilizar
+
+[Correção 16/10/2026] Três mudanças:
+
+1. **`requestId` no retorno** (`string|null`, estado separado do `error`, que continua string por contrato com os componentes públicos). É preenchido com o header `x-request-id` da resposta de erro, capturado antes do `throw`.
+2. **Retry único em 503**: se a resposta for 503 com `Retry-After` parseável (segundos ou data HTTP, RFC 9110 §10.2.5) **e** o método for idempotente (`GET`/`HEAD`/`OPTIONS`/`TRACE`/`PUT`/`DELETE`), reenvia uma única vez após o atraso. Implementado com `if`, sem laço. `POST`/`PATCH` nunca reenviam — o 503 do servidor nasce depois que a operação já começou no banco, e reenviar poderia duplicar registro.
+3. `error` passou a ser lido do `err.message` sempre, e o `requestId` vive fora dele — antes, o `error` do `useApiFetch` era sempre string e o `AdminCrudBase` testava `error?.message`, que nunca era verdadeiro no fluxo real.
+
+`useAdminCrud` repassa o `requestId` no seu retorno, sem alterar o contrato de `error`. `options` via `JSON.stringify`. `fetchData` trata erros de rede e respostas não-JSON.
 
 **Problemas identificados:**
 
