@@ -7,6 +7,12 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [Não publicado]
+
+### Corrigido
+
+- **Upload de imagem acima de 5MB devolvia 500 em vez de 413.** O `maxFileSize` do formidable abortava o parse e o erro caía no `catch` que responde 500, tornando inalcançável a checagem de tamanho do próprio handler. Agora o excesso de tamanho responde `413` com a mensagem do limite, e a mensagem chega ao usuário em vez de um rótulo genérico.
+
 ## [1.4.0] - 2026-05-10
 
 ### Adicionado

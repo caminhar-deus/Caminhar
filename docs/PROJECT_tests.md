@@ -171,7 +171,8 @@ Testes de endpoints públicos e CRUD de recursos. Usam `node-mocks-http` + mocks
 | `settings.test.js` | CRUD de configurações (handler real com autenticação) |
 | `stats.test.js` | Estatísticas (contagens de usuários, posts, etc.) + RBAC (deny/allow por permissão) |
 | `status.test.js` | Endpoint `/api/status` (health check do banco) |
-| `upload-image.test.js` | Upload de imagem (formidable, fs, sharp) |
+| `upload-image-disk.test.js` | Upload com `formidable`, `fs` e `sharp` reais: grava em disco, a URL emitida é servida com 200, e o limite de 5MB responde 413 sem resíduo |
+| `upload-image.test.js` | Upload de imagem (formidable, fs e sharp mockados) — inclui os caminhos de erro: 413 por tamanho, 500 por parse genérico |
 | `videos.create.api.test.js` | Criação de vídeos (handler simulado) |
 | `videos.delete.test.js` | Exclusão de vídeos (handler simulado) |
 | `videos.flow.test.js` | Fluxo completo de vídeos (handler real `pages/api/admin/videos`) |

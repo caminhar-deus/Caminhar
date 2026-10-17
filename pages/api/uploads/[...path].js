@@ -105,7 +105,8 @@ async function handler(req, res) {
       return res.status(200).end();
     }
 
-    // Uploads são imagens limitadas a 5MB em `upload-image.js`; ler em buffer
+    // Uploads são imagens com limite de tamanho definido em `MAX_UPLOAD_BYTES`
+    // (`lib/infra/storage.js`) e aplicado em `upload-image.js`; ler em buffer
     // evita corrida entre stat e open, que um stream deixaria a resposta meio
     // enviada. Em erro, respondemos 500 limpo.
     const buffer = await fs.promises.readFile(found.filepath);

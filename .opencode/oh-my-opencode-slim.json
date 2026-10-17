@@ -3,7 +3,8 @@
   // Arquivo .json aceita comentários (JSONC). Valide com: oh-my-opencode-slim doctor
   // Precedência entre campos de agente: ancestor < preset filho < "agents" raiz < opencode.json do host.
 
-  // Preset ativo: "zen" = MiMo V2.6 Flash Free (OpenCode Zen). Para voltar 100% ao Ollama local: "local".
+  // Preset ativo: "zen" = OpenCode Zen remoto com 6 modelos free distintos, um por agente (ver o
+  // bloco "zen" abaixo). Para voltar 100% ao Ollama local: "local".
   "preset": "zen",
 
   "presets": {
@@ -40,11 +41,12 @@
     // orchestrator-bench rodar no papel real e dar evidência; sem ela, vale o modelo que já
     // estava em produção.
     //
-    // RESERVA DO ORCHESTRATOR SUSPENSA (16/10/2026): big-pickle e step-5-preview-free saíram do
-    // catálogo do Zen. O orchestrator fica só com space-bunny-free, SEM reserva — é o estado
-    // intermediário entre "funcionando" e "modelo escolhido": funciona, mas uma queda do primário
-    // deixa a sessão sem orquestrador. Reverter exige re-benchmarkar um substituto; não apontar
-    // para um id que saiu é pior que ficar sem reserva (ver ADR-0008, "Revisão").
+    // RESERVA DO ORCHESTRATOR RESTAURADA (16/10/2026, segunda medição do dia): big-pickle voltou ao
+    // catálogo do Zen, então a decisão de 15/10 ("space-bunny-free primário, big-pickle reserva")
+    // volta a valer sem bateria nova. A reserva continua sendo mitigação, não garantia: a cadeia só
+    // aciona no hook v2.session.retry e NÃO cobre o erro de autenticação do free tier (ver ADR-0008,
+    // "Revisão"). big-pickle já saiu do catálogo uma vez e voltou no mesmo dia — conferir com
+    // `opencode models` antes de confiar na reserva; id fora do catálogo falha em silêncio.
     //
     // PRIVACIDADE: space-bunny-free tem garantia registrada — "zero-retention" (Cenário 3, pesquisa
     // @librarian de 03/10/2026). Nemotron-3.5-super-vl-free (oracle) NÃO tem essa propriedade
@@ -59,20 +61,36 @@
     // cadeia. Para esse caso, o que protege é ter modelos diferentes por agente.
     // Cota Zen: por IP/dia (~200 req observados); bloqueio é por modelo. Modelos free podem sumir (já houve deprecated).
     //
+    // INVENTÁRIO (armadilha): `opencode models` esconde, na visão padrão, as versões anteriores de
+    // cada família. deepseek-v4.1-flash-free (o librarian), glm-5.3-flash-free,
+    // nemotron-3.5-lightning-free e nemotron-3-ultra-free só aparecem com `all: true` — e estão
+    // ativos e grátis. São 11 modelos free, não 7. Não "conserte" o id do librarian: ele existe.
+    // nemotron-3.5-lightning-free fica de fora: foi o que derrubou o explorer em 09/10/2026.
     // MEDIÇÃO (por que cada modelo, e não o anterior):
     //   nemotron-vl  único que ACHOU a causa, não o sintoma: `adminCrudHandler.js:53` tem
     //                `requireAdmin = false` e só 2 das 15 rotas admin o ativam — com
     //                `users.js:10` criando role 'admin' por default, um editor com a permissão
     //                "Usuários" vira admin. Os outros 3 candidatos acharam só o bypass em `:118`,
     //                que é intencional. Custo: falhou em formato (escreveu "CONFIÂNCIA").
-//                Substituiu step-5-preview-free, que saiu do catálogo em 16/10/2026.
+    //                Substituiu step-5-preview-free, que saiu do catálogo em 16/10/2026.
     //   deepseek-4.1 leu a doc E o código instalado do Next p/ fechar o que a doc não documenta
     //                (mínimo de revalidate, Cache-Control em /api/*).
     //   longcat      10/10; achou que o withAuth em uso é auth.js:324 (o rival apontou o errado).
     //   muse-spark   12/12 tokens existem em variables.css; zero alucinação de token.
     //   mimo         9/9 testes; formatação pt-BR e não-mutação reconferidas fora do agente.
+    //   beam-free    estreante de 05/10, medido em 3 papéis no mesmo dia: explorer 7/7 (incluiu o
+    //                adminCrudHandler.js:331); librarian 8/8 (declarou "a doc não documenta" onde a
+    //                doc cala); designer 4/4 (apontou --color-text-tertiary como proibido para texto
+    //                informativo, MASTER.md:49-51 — exatamente o erro que reprovou o nemotron neste
+    //                papel). Medido e disponível, mas não é primário de ninguém: o mantenedor manteve
+    //                a distribuição existente.
+    //   big-pickle   saiu e voltou ao catálogo no mesmo dia (16/10). Reserva do orchestrator. No
+    //                papel de oracle, hoje: CONTESTOU a premissa — achou que o maxFileSize do
+    //                formidable (upload-image.js:59) aborta o parse e o cliente recebe 500
+    //                (:127-129), não 400, e que a branch :83-86 é inalcançável; achou também o mock
+    //                de teste que fabricou a confiança (tests/integration/api/upload-image.test.js:148,168).
     "zen": {
-      "orchestrator": { "model": "opencode/space-bunny-free" },
+      "orchestrator": { "model": ["opencode/space-bunny-free", "opencode/big-pickle"] },
       "oracle":       { "model": "opencode/nemotron-3.5-super-vl-free",
                         // Skill do Front-End-Checklist para a revisão (obrigatória no fluxo: oracle revisa sem editar):
                         "skills_add": ["frontend-checklist-global"]

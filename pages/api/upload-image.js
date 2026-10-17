@@ -6,7 +6,7 @@ import sharp from 'sharp';
 import { updateSetting } from '../../lib/domain/settings.js';
 import { withAuth } from '../../lib/auth/auth.js';
 import { logger } from '../../lib/infra/logger.js';
-import { uploadsRoot } from '../../lib/infra/storage.js';
+import { uploadsRoot, MAX_UPLOAD_BYTES } from '../../lib/infra/storage.js';
 
 /**
  * Remove um arquivo do disco de forma segura, ignorando erros silenciosamente.
@@ -32,6 +32,26 @@ const MAX_WIDTH = 1920;
 const MAX_HEIGHT = 1920;
 const ALLOWED_MIMETYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
+// Códigos internos do `FormidableError` para "payload acima do limite".
+// Fonte: node_modules/formidable/src/FormidableError.js:10,17.
+// Constantes locais de propósito: `formidable` só expõe esses códigos pelo
+// namespace `errors` (`export * as errors`), e os testes que mockam o módulo
+// inteiro (`tests/integration/api/upload-image.test.js` e
+// `tests/unit/pages/api/upload-image.edge.test.js`) não o reproduzem — um
+// `errors` `undefined` aqui degradaria o `catch` para 500 em silêncio.
+const ERRO_TAMANHO_TOTAL = 1009; // biggerThanTotalMaxFileSize
+const ERRO_TAMANHO_ARQUIVO = 1016; // biggerThanMaxFileSize
+
+/** Verdadeiro quando o erro do formidable é "arquivo grande demais". */
+function ehErroDeTamanho(error) {
+  if (!error) return false;
+  return (
+    error.code === ERRO_TAMANHO_TOTAL ||
+    error.code === ERRO_TAMANHO_ARQUIVO ||
+    error.httpCode === 413
+  );
+}
+
 async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed', message: 'Método não permitido' });
@@ -56,7 +76,7 @@ async function handler(req, res) {
     const form = formidable({
       uploadDir,
       keepExtensions: true,
-      maxFileSize: 5 * 1024 * 1024, // 5MB
+      maxFileSize: MAX_UPLOAD_BYTES,
     });
 
     const [fields, files] = await new Promise((resolve, reject) => {
@@ -79,10 +99,11 @@ async function handler(req, res) {
       return res.status(400).json({ error: 'Bad Request', message: 'Formato de arquivo inválido' });
     }
 
-    // Validação de Tamanho (5MB)
-    if (imageFile.size > 5 * 1024 * 1024) {
+    // Validação de Tamanho (defesa em profundidade — o `maxFileSize` do
+    // formidable já interrompe o stream antes, respondendo 413 no `catch`)
+    if (imageFile.size > MAX_UPLOAD_BYTES) {
       await safeUnlink(imageFile.filepath);
-      return res.status(400).json({ error: 'Bad Request', message: 'Arquivo muito grande (tamanho máximo 5MB)' });
+      return res.status(413).json({ error: 'Payload Too Large', message: 'Arquivo muito grande (tamanho máximo 5MB)' });
     }
 
     // Validação de conteúdo real via magic bytes (sharp)
@@ -125,6 +146,11 @@ async function handler(req, res) {
     return res.status(200).json({ success: true, path: publicPath, imageUrl: publicPath });
 
   } catch (error) {
+    // Excesso de tamanho não é falha do servidor: o formidable interrompe o
+    // stream e rejeita o parse. Devolver 500 aqui escondia o motivo real.
+    if (ehErroDeTamanho(error)) {
+      return res.status(413).json({ error: 'Payload Too Large', message: 'Arquivo muito grande (tamanho máximo 5MB)' });
+    }
     logger.error('Upload', 'Erro ao fazer upload da imagem:', error);
     return res.status(500).json({ error: 'Internal Server Error', message: 'Erro ao fazer upload da imagem' });
   }

@@ -359,12 +359,12 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
   - `lib/domain/settings.js` — `updateSetting()` (atualiza `home_image_url` quando `uploadType=setting_home_image`).
   - `lib/auth/auth.js` — `withAuth`.
   - `lib/infra/logger.js` — `logger`.
-  - `lib/infra/storage.js` — `uploadsRoot()` (resolução única do diretório, no lugar da expressão inlined).
+  - `lib/infra/storage.js` — `uploadsRoot()` (resolução única do diretório, no lugar da expressão inlined) e `MAX_UPLOAD_BYTES` (limite de tamanho).
   - Pasta **`<cwd>/uploads/`** — destino dos arquivos (criada se não existir), fora de `public/`; caminho configurável por **`UPLOADS_DIR`** (volume persistente em filesystem efêmero). Servida pela rota nova `pages/api/uploads/[...path].js` via `rewrites()` em `next.config.js` (`/uploads/:path*` → `/api/uploads/:path*`) — a URL pública continua `/uploads/<arquivo>` (ver item U de `docs/PENDENCIAS_scripts_testes.md`).
 - **Propósito:** Endpoint de upload de imagens com múltiplas camadas de segurança.
 - **Funcionalidades:**
   - Método POST protegido por `withAuth`; `bodyParser: false` (usa `formidable`).
-  - Tamanho máximo de 5MB e tipos permitidos (JPEG, PNG, WebP, GIF) validados por `mimetype`.
+  - **Limite de tamanho:** `MAX_UPLOAD_BYTES` (5MB), declarado em `lib/infra/storage.js`. É aplicado como `maxFileSize` do `formidable`, que **interrompe o stream antes de o arquivo inteiro ir para o disco** — por isso ele não pode ser removido em favor da checagem pós-parse, que só roda com o arquivo já gravado. Excedente responde **413** com mensagem amigável (a checagem pós-parse é defesa em profundidade). Tipos permitidos (JPEG, PNG, WebP, GIF) validados por `mimetype`.
   - **Validação de conteúdo real** via `sharp.metadata()` (magic bytes) — impede arquivos com extensão falsa.
   - **Limite de dimensões:** 1920×1920px com mensagem de erro informativa.
   - **Nome aleatório seguro:** `crypto.randomUUID()` com prefixo `hero-image-` ou `post-image-` conforme `uploadType`.

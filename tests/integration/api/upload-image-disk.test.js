@@ -210,4 +210,25 @@ describe('Upload de imagem com disco real — ciclo completo do item U', () => {
     expect(res.statusCode).toBe(400);
     expect(fs.readdirSync(activeDir)).toEqual([]);
   });
+
+  test('arquivo acima de 5MB responde 413 e não deixa resíduo no disco', async () => {
+    const grande = Buffer.alloc(6 * 1024 * 1024, 0x47);
+    const req = buildMultipartReq(grande, 'grande.gif', 'image/gif', { uploadType: 'post' });
+    req.method = 'POST';
+    const res = buildRes();
+
+    await uploadHandler(req, res);
+
+    expect(res.statusCode).toBe(413);
+    expect(res.body.message).toContain('tamanho máximo 5MB');
+    // Nenhum arquivo final foi batizado/movido: o formidable interrompe o stream
+    // antes de o handler renomear.
+    expect(fs.readdirSync(activeDir).filter((n) => n.startsWith('post-image-'))).toEqual([]);
+    // O arquivo temporário do formidable é removido por um timer de ~1ms
+    // (`PersistentFile.destroy` → `setTimeout` → `fs.unlink`), então a limpeza
+    // não é síncrona com o retorno do handler. Aguarde antes de exigir o
+    // diretório vazio.
+    await new Promise((r) => setTimeout(r, 100));
+    expect(fs.readdirSync(activeDir)).toEqual([]);
+  });
 });

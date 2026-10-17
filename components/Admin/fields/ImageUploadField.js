@@ -70,7 +70,7 @@ export default function ImageUploadField({
         onChange({ target: { name, value: data.path } });
       } else {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || errorData.message || `Erro ${res.status}: Falha no upload`);
+        throw new Error(errorData.message || errorData.error || `Erro ${res.status}: Falha no upload`);
       }
     } catch (err) {
       console.error('Erro no upload:', err);

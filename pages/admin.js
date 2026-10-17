@@ -279,7 +279,8 @@ export default function Admin() {
           toast.error('Erro: O servidor retornou uma resposta inválida.');
         }
       } else {
-        toast.error('Erro ao atualizar imagem');
+        const errorData = await response.json().catch(() => ({}));
+        toast.error(errorData.message || errorData.error || 'Erro ao atualizar imagem');
       }
     } catch (error) {
       console.error('Error:', error);

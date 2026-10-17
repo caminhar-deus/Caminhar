@@ -119,6 +119,59 @@ foi escrito para exatamente esse caso.
 a `designer` e reprovado (`docs/adr/0009` e a bateria de 15/10). Ele volta ao catálogo e o papel
 que ganhou foi outro — a medição por papel não transfere entre papéis.
 
+### Re-análise de 16/10/2026 (segunda medição do dia): inventário e reserva restaurada
+
+A primeira análise de hoje montou **duas opções por agente** a partir de uma bateria de **cinco
+execuções reais**, conferidas em `arquivo:linha`. O mantenedor manteve a distribuição já em
+produção nos seis agentes. A única mudança resultante é a **restauração da reserva do
+orchestrator**, suspensa horas antes porque `big-pickle` tinha saído do catálogo — e que voltou.
+
+Esta seção é um acréscimo datado, não uma reescrita: a decisão (um modelo free distinto por agente)
+não mudou. O que mudou foram fatos — o inventário e a disponibilidade.
+
+**O inventário free é maior do que a visão padrão mostra.** `opencode models` esconde, na listagem
+padrão, as versões anteriores de cada família. Com `all: true` são **11** modelos free `active` e
+de custo 0, não 7:
+
+| Fora da visão padrão | Lançamento | Observação |
+|---|---|---|
+| `deepseek-v4.1-flash-free` | 10/09/2026 | é o `librarian` de hoje; **não saiu** do catálogo |
+| `glm-5.3-flash-free` | 26/08/2026 | nunca medido |
+| `nemotron-3.5-lightning-free` | 11/08/2026 | foi o que derrubou o `explorer` em 09/10; fica de fora |
+| `nemotron-3-ultra-free` | 04/06/2026 | nunca medido |
+
+Consequência prática: a seção "Saídas do catálogo em 16/10/2026" acima registra `big-pickle` como
+saído, e fica desatualizada no mesmo dia — ele voltou. **Inventário de catálogo free tem que ser
+feito com `all: true`**, senão a decisão passa a "corrigir" ids que existem e continuam funcionando.
+
+**Medições de 16/10/2026 (segunda bateria, 5 execuções, uma por papel):**
+
+| Modelo | Papel | Resultado conferido |
+|---|---|---|
+| `beam-free` (05/10, estreante) | `explorer` | 7/7 — `lib/auth/auth.js:324` e as 6 aplicações, incluindo `adminCrudHandler.js:331` |
+| `beam-free` | `librarian` | 8/8 — citaram a doc local e declararam "a doc não documenta" onde a doc cala (Cache-Control em Route Handlers do App Router) |
+| `beam-free` | `designer` | 4/4 — `--color-text-tertiary` proibido para texto informativo (`MASTER.md:49-51`), que é exatamente o erro que reprovou o `nemotron` neste papel; zero token alucinado |
+| `big-pickle` | `oracle` | Contestou a premissa: o `maxFileSize` do formidable (`upload-image.js:59`) aborta o parse e o cliente recebe **500** (`:127-129`), não 400; a branch `:83-86` é inalcançável; e o mock que fabricou a confiança está em `tests/integration/api/upload-image.test.js:148,168` |
+| `space-bunny-free` | `fixer` | 5/7 → 6/7 com correção mínima; **recusou chutar** um par de testes contraditórios e não editou o arquivo de teste |
+
+`beam-free` passou nos três papéis em que foi medido e é a primeira alternativa **fora** da
+distribuição atual para `librarian`, `explorer` e `designer`. Não entrou: o mantenedor manteve as
+seis escolhas já medidas. `big-pickle` passou hoje no papel de `oracle` e foi **melhor que o
+`nemotron-3.5-super-vl-free`** no mesmo teste, ao descer até o código do `formidable` instalado.
+
+**Reserva restaurada, ressalva mantida.** O orchestrator volta a
+`["opencode/space-bunny-free", "opencode/big-pickle"]` — a decisão de 15/10, agora que o
+`big-pickle` está de volta ao catálogo. Ela continua sendo mitigação e não garantia: a cadeia só
+aciona no hook `v2.session.retry`, e o erro de autenticação do free tier não casa com nenhum padrão
+de failover. E `big-pickle` **já demonstrou volatilidade** — saiu e voltou no mesmo dia. Conferir
+`opencode models` antes de confiar na reserva; id fora do catálogo falha em silêncio.
+
+**Limite imposto pela contagem.** Com seis primários distintos sobram **cinco** modelos free. Não
+existe reserva distinta para os seis agentes: ou um fica sem, ou a reserva é compartilhada por dois
+(e aí a queda dela derruba dois). O mantenedor escolheu **reserva só no orchestrator** — o único
+agente cujo modelo afeta a sessão inteira — e os outros cinco sem reserva, preservando o isolamento
+máximo que, nesta decisão, substitui a cadeia.
+
 ## Alternativas consideradas
 
 - **Manter o preset anterior, com as cadeias.** Descartado: preservava o acoplamento
@@ -170,9 +223,10 @@ que ganhou foi outro — a medição por papel não transfere entre papéis.
   garantia registrada. Tratar como free tier comum. Em qualquer dos casos, prompts e
   código do projeto vão a servidores remotos (EUA) e podem ser usados para melhorar o
   modelo — o aviso permanece em `opencode.jsonc`.
-- **O orchestrator está sem reserva desde 16/10/2026.** Uma indisponibilidade do primário
-  deixa a sessão sem orquestrador, sem recovery automático. Consequência direta de
-  `big-pickle` ter saído do catálogo.
+- **O orchestrator ficou sem reserva em 16/10/2026 até a segunda medição do dia.** Registrado
+  assim porque `big-pickle` tinha saído do catálogo; a reserva foi **restaurada** no mesmo dia,
+  quando o modelo voltou (ver "Re-análise de 16/10/2026"). A ressalva do parágrafo anterior
+  continua valendo: a cadeia não cobre o erro de autenticação do free tier.
 - **`nemotron-3.5-super-vl-free` reprovou no papel de `designer`** (usava
   `--color-text-tertiary` para texto informativo, proibido pelo `design-system/MASTER.md`
   §2) e foi aprovado no de `oracle`. A medição vale **por papel**, não por modelo: um
@@ -206,10 +260,11 @@ se pagou.
 
 **Pendências conhecidas deste ADR:**
 
-- **Orchestrator sem reserva.** Rodar o `orchestrator-bench` no papel real para escolher um
-  substituto do `big-pickle`. O script existe e está em `/tmp/opencode/bench-orch/`; exige
-  `OPENCODE_API_KEY` no ambiente de quem roda. Também decide se `space-bunny-free` se sustenta
-  como primário.
+- **Orchestrator sem reserva — RESOLVIDO em 16/10/2026.** `big-pickle` voltou ao catálogo e a
+  reserva foi restaurada (ver "Re-análise de 16/10/2026"). O `orchestrator-bench` continua em
+  aberto, porque é ele que decide se `space-bunny-free` se sustenta como primário — pergunta que
+  a bateria por proxy não responde. O script existe em `/tmp/opencode/bench-orch/` e exige
+  `OPENCODE_API_KEY` no ambiente de quem roda.
 - **Privacidade do `oracle` não verificada.** `nemotron-3.5-super-vl-free` é hoje o único
   dos seis sem garantia de retenção registrada. Se isso for requisito, verificar antes do
   próximo uso com código sensível.

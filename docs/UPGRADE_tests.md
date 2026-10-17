@@ -1266,7 +1266,7 @@ A guarda de path traversal foi removida deliberadamente (`resolveInside()` sem a
 #### Finalidade
 Fecha o ciclo do item U com **disco real**: upload → arquivo gravado → mesma URL emitida servida com 200 pela rota de serviço.
 
-Os 8 testes de `upload-image.test.js` mockam `fs` e `formidable` por inteiro — verificam que `fs.promises.rename` foi *chamado*, mas nada grava, nada lê de volta e nada confirma que a URL emitida é servível. O teste chamado "Deve salvar o arquivo no diretório correto" **não salva no disco**.
+Os 9 testes de `upload-image.test.js` mockam `fs` e `formidable` por inteiro — verificam que `fs.promises.rename` foi *chamado*, mas nada grava, nada lê de volta e nada confirma que a URL emitida é servível. O teste chamado "Deve salvar o arquivo no diretório correto" **não salva no disco**.
 
 #### Arquivos acionados
 - `pages/api/upload-image.js` — handler real
@@ -1276,16 +1276,19 @@ Os 8 testes de `upload-image.test.js` mockam `fs` e `formidable` por inteiro —
 - `lib/auth/auth.js`, `lib/domain/settings.js` — mockados (o upload exige JWT; o teste não toca no banco)
 
 #### Resumo
-2 testes: o ciclo completo (POST multipart com GIF 1×1 real → 200 com `path`/`imageUrl` no formato `/uploads/post-image-<uuid>.gif` → arquivo existe no diretório ativo com o mesmo conteúdo → **nada** gravado no legado → a rota serve a URL com 200 e o corpo idêntico) e a rejeição de formato não suportado sem deixar arquivo no disco.
+3 testes: (1) o ciclo completo — POST multipart com GIF 1×1 real → 200 com `path`/`imageUrl` no formato `/uploads/post-image-<uuid>.gif` → arquivo existe no diretório ativo com o mesmo conteúdo → **nada** gravado no legado → a rota serve a URL com 200 e o corpo idêntico; (2) a rejeição de formato não suportado sem deixar arquivo no disco; (3) a rejeição de arquivo acima do limite — 6MB reais → **413** com a mensagem do limite e nenhum resíduo no disco.
+
+O terceiro é o único que cobre o caminho de erro do `formidable` **de verdade**: `maxFileSize` interrompe o stream no meio, o parse rejeita e o `catch` do handler tem de distinguir erro de tamanho (413) de erro genérico (500). Os testes de `upload-image.test.js` alcançam a mesma lógica com o módulo mockado — ver `docs/PROJECT_pages.md` para o contrato do limite.
 
 #### Detalhe de construção
 O `req` precisa ser ele próprio um `Readable` para o `formidable` real parseá-lo — `node-mocks-http` não produz isso, e copiar propriedades de um stream para um objeto comum não cria um stream (o `formidable` ficava esperando corpo que nunca chegava, com timeout). Por isso o `req` vem do builder multipart e o `res` é um duplo mínimo no formato que os handlers consomem (`status().json()`, `status().send()`, `setHeader()`).
 
 #### Verificação por mutação
-`upload-image.js` foi alterado para voltar a gravar em `public/uploads` (o destino que causava o 404 do item U): **1 dos 2 testes reprovou** e voltou a passar com a correção restaurada.
+`upload-image.js` foi alterado para voltar a gravar em `public/uploads` (o destino que causava o 404 do item U): **1 dos 2 testes reprovou** e voltou a passar com a correção restaurada. (Mutação executada em 09/10/2026, quando o arquivo tinha 2 testes; o terceiro foi acrescentado em 16/10/2026.)
 
 #### Problemas
-- Nenhum conhecido. Os 2 testes passam e a mutação acima foi revertida.
+- Nenhum conhecido. Os 3 testes passam e a mutação acima foi revertida.
+- **Não cobre** o limite de dimensões (1920px) nem os magic bytes do `sharp` — pendência que vale para os dois arquivos de teste do endpoint.
 
 ---
 
@@ -4704,7 +4707,7 @@ Testar o upload de imagem: validação de arquivo, movimentação no FS, atualiz
 | Upload bem-sucedido | 200 |
 | Sem arquivo | 400 |
 | Arquivo não-imagem (PDF) | 400 |
-| Arquivo > 5MB | 400 |
+| Arquivo > 5MB | 413 |
 | Nome gerado corretamente (`post-image-{uuid}.png`) | 200 |
 | Upload de hero chama `updateSetting` | 200 |
 | Parse falha | 500 |
@@ -6083,23 +6086,24 @@ Testar o endpoint de health check: 405 para não-GET, 200 com DB conectado, 200 
 **Handler real:** ✅ SIM — importa `pages/api/upload-image.js`.
 
 #### Finalidade
-Testar o upload de imagem: sucesso, 400 sem arquivo, 400 mimetype inválido, 400 tamanho excedido, nome do arquivo, `updateSetting` para hero, 500 parse error, 405 não-POST.
+Testar o upload de imagem: sucesso, 400 sem arquivo, 400 mimetype inválido, 413 tamanho excedido (checagem pós-parse e parse abortado pelo `formidable`), nome do arquivo, `updateSetting` para hero, 500 parse error, 405 não-POST.
 
 #### Estrutura
-- 8 casos de teste
+- 9 casos de teste
 - Mocks: `sharp`, `formidable`, `fs`, `lib/auth/auth.js`, `lib/domain/settings.js`
 - Usa `TextEncoder`/`TextDecoder` polyfill global
 
-#### Relações com o código real (8 testes)
+#### Relações com o código real (9 testes)
 | Teste | Handler real | Status |
 |-------|-------------|--------|
 | POST processa upload | `formidable.parse` → `fs.promises.rename` → 200 | ✅ |
 | 400 sem arquivo | `files.image` indefinido → 400 | ✅ |
 | 400 mimetype inválido | `!ALLOWED_MIMETYPES.includes` → 400 | ✅ |
-| 400 tamanho > 5MB | `imageFile.size > 5*1024*1024` → 400 | ✅ |
+| 413 tamanho > 5MB (checagem pós-parse) | `imageFile.size > MAX_UPLOAD_BYTES` → 413 | ✅ |
+| 413 com parse abortado pelo limite | `FormidableError` (`code` 1009/1016) chega ao `catch` → 413 | ✅ |
 | Nome do arquivo correto | `prefix + uuid + ext` | ✅ |
 | `updateSetting` para hero | `uploadType === 'setting_home_image'` → `updateSetting` | ✅ |
-| 500 parse error | `cb(new Error(...))` → 500 | ✅ |
+| 500 parse error (erro genérico) | `cb(new Error(...))` **sem** `code` de tamanho → 500 | ✅ |
 | 405 GET | `req.method !== 'POST'` → 405 | ✅ |
 
 #### Problemas identificados
@@ -12792,18 +12796,14 @@ Testa o endpoint `/api/upload-image.js` (upload de imagens), cobrindo:
 
 3. **Spy de `console.error` com comportamento inesperado**: O `consoleSpy` (linha 54-57) lança erro se `err` for truthy, ou lança `new Error(msg)` se não for. Isso é incomum e pode mascarar erros reais do handler.
 
-4. **Não testa validações de segurança**: O handler valida mimetype, tamanho, dimensões e magic bytes (sharp), mas nenhum teste cobre esses cenários.
+4. **Validações de segurança parcialmente cobertas**: mimetype e tamanho têm teste. **Dimensões (1920px) e os magic bytes do `sharp` não têm** — o `sharp` é mockado, então `metadata()` nunca roda de verdade e o limite de dimensões nunca foi exercitado por nenhum dos dois arquivos de teste.
 
-5. **Mock de `formidable` não simula erro**: O `formidable.parse` sempre chama `cb(null, ...)` — não há teste para quando `err` é truthy.
+5. ~~**Mock de `formidable` não simula erro**~~ — **resolvido**: o parse agora é mockado com `err` truthy em dois casos (`code: 1016` → 413 e `Error` sem `code` → 500), e o caminho real está em `upload-image-disk.test.js`.
 
 #### Melhorias Sugeridas
-- Adicionar teste para 405 (método não POST)
-- Adicionar teste para 400 sem imagem
-- Adicionar teste para mimetype inválido
-- Adicionar teste para tamanho excedido (>5MB)
 - Adicionar teste para dimensões exatas (>1920px)
-- Adicionar teste para `setting_home_image` (prefixo `hero-image-`)
-- Adicionar teste para `formidable.parse` com erro
+
+> Os itens "405", "400 sem imagem", "mimetype inválido", "tamanho excedido", `setting_home_image` e `formidable.parse` com erro já existem neste arquivo (9 casos). Dimensões é o único pendente.
 
 ---
 

@@ -139,7 +139,7 @@ describe('API de Upload de Imagem (/api/upload-image)', () => {
     expect(JSON.parse(res._getData()).message).toBe('Formato de arquivo inválido');
   });
 
-  test('Deve retornar 400 se o arquivo for maior que 5MB', async () => {
+  test('Deve retornar 413 se o arquivo for maior que 5MB (checagem manual pós-parse)', async () => {
     const mockFile = {
       originalFilename: 'large-image.jpg',
       filepath: '/tmp/large-image.jpg',
@@ -165,7 +165,25 @@ describe('API de Upload de Imagem (/api/upload-image)', () => {
     });
 
     await handler(req, res);
-    expect(res._getStatusCode()).toBe(400);
+    expect(res._getStatusCode()).toBe(413);
+    expect(JSON.parse(res._getData()).message).toContain('tamanho máximo 5MB');
+  });
+
+  test('Deve retornar 413 quando o formidable aborta o parse por exceder maxFileSize', async () => {
+    // Caminho do `catch`: o `maxFileSize` interrompe o stream e o parse rejeita.
+    // O módulo `formidable` está mockado, então o erro é montado à mão com os
+    // mesmos `code`/`httpCode` da classe real (verdadeiro erro de tamanho, não
+    // um erro genérico — este continua respondendo 500).
+    formidable.mockImplementation(() => ({
+      parse: jest.fn((req, cb) => {
+        cb(Object.assign(new Error('options.maxFileSize exceeded'), { code: 1016, httpCode: 413 }));
+      }),
+    }));
+
+    const { req, res } = createMocks({ method: 'POST' });
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(413);
     expect(JSON.parse(res._getData()).message).toContain('tamanho máximo 5MB');
   });
 

@@ -533,6 +533,7 @@ Módulos de infraestrutura: conexão com banco, logging estruturado, cache distr
 
 | Exportação | Descrição |
 |------------|-----------|
+| `MAX_UPLOAD_BYTES` | Limite de tamanho de um arquivo enviado — 5MB. Fonte única do valor, usada pelo `maxFileSize` do `formidable` (que interrompe o stream) e pela checagem defensiva pós-parse |
 | `uploadsRoot()` | Diretório ativo dos uploads — `UPLOADS_DIR` quando definida, senão `<cwd>/uploads` |
 | `legacyUploadsRoot()` | Diretório legado `<cwd>/public/uploads`, mantido apenas como fallback de leitura |
 | `uploadRoots()` | `[uploadsRoot(), legacyUploadsRoot()]` — **na ordem de precedência**: ativo primeiro, legado depois. O primeiro diretório com candidato vence |
@@ -550,7 +551,7 @@ Por isso a chamada de `path.resolve` em `uploadsRoot()` carrega a marcação `/*
 | Consumidor | Uso |
 |------------|-----|
 | `pages/api/uploads/[...path].js` | `uploadsRoot()`, `legacyUploadsRoot()` em `findFile()` |
-| `pages/api/upload-image.js` | `uploadsRoot()` — destino do upload e do `formidable` |
+| `pages/api/upload-image.js` | `uploadsRoot()` — destino do upload e do `formidable`; `MAX_UPLOAD_BYTES` — limite de tamanho |
 | `pages/api/placeholder-image.js` | `uploadRoots()` — descoberta do filename e resolução do arquivo |
 | `pages/api/admin/integrity.js` | `uploadsRoot()`, `legacyUploadsRoot()` — diagnóstico de armazenamento |
 
