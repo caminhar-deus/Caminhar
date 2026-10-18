@@ -1,4 +1,5 @@
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { suppressConsoleError } from '../../helpers/console.js';
 
 // `loadEnv()` roda no topo do módulo, antes de qualquer teste: sem este mock,
 // o import real tentaria ler/validar os arquivos .env e poluiria (ou quebraria)
@@ -82,6 +83,11 @@ describe('seed-settings.js — Seed de configurações padrão', () => {
   });
 
   it('deve rejeitar reportando a falha parcial e ainda consultar as demais chaves', async () => {
+    // O console.error deste script NÃO passa por lib/infra/logger.js (é direto
+    // em scripts/seed-settings.js:51), então mockar o logger não resolveria.
+    // Silencia só este teste, que é um dos que provocam o erro de propósito.
+    const consoleErrorSpy = suppressConsoleError();
+
     // Só o INSERT de site_description falha. O catch por item acumula a falha
     // e o erro final precisa ser LANÇADO — se voltar a ser engolido, a promise
     // resolve e os asserts abaixo derrubam o teste.
@@ -100,9 +106,20 @@ describe('seed-settings.js — Seed de configurações padrão', () => {
     // As 5 chaves passaram pelo SELECT (inclusive a que falhou no INSERT),
     // ou seja, as outras 4 chegaram a ser consultadas.
     expect(chavesConsultadas()).toEqual(CHAVES_ESPERADAS);
+    // O log por item é a única evidência da falha parcial fora do erro lançado.
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('site_description'),
+      'connection timeout',
+    );
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+
+    consoleErrorSpy.mockRestore();
   });
 
   it('deve rejeitar listando as 5 chaves quando todos os INSERTs falham', async () => {
+    // Console.error direto do script (fora do logger): silencia só este teste.
+    const consoleErrorSpy = suppressConsoleError();
+
     // Falha total: todo INSERT rejeita; o resumo final deve citar todas as chaves.
     mockQuery.mockImplementation(async (sql) => {
       if (sql.includes('INSERT')) {
@@ -119,6 +136,14 @@ describe('seed-settings.js — Seed de configurações padrão', () => {
       expect(erro.message).toContain(chave);
     }
     expect(chavesConsultadas()).toEqual(CHAVES_ESPERADAS);
+    // Um log por INSERT que falhou — a falha total não pode virar silêncio.
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(5);
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Erro ao criar'),
+      'banco indisponível',
+    );
+
+    consoleErrorSpy.mockRestore();
   });
 
   it('deve resolver sem lançar no caminho feliz (o catch não pode engolir o erro)', async () => {

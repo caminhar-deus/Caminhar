@@ -1,8 +1,23 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-import { query, closeDatabase, transaction, healthCheck, getDatabaseInfo, resetPool, getPool, resolveSslConfig } from '../../../lib/infra/db.js';
-import { Pool, restorePoolImplementation } from 'pg';
 
 jest.mock('pg');
+
+// Mock do logger REAL (lib/infra/db.js importa { logger }): sem isto, os testes
+// de caminho de erro imprimem console.error e poluem a saída do Jest. Mesma
+// convenção de tests/integration/api/musicas.test.js.
+jest.mock('../../../lib/infra/logger.js', () => ({
+  logger: {
+    error: jest.fn(),
+    warn: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn(),
+    success: jest.fn(),
+  },
+}));
+
+import { query, closeDatabase, transaction, healthCheck, getDatabaseInfo, resetPool, getPool, resolveSslConfig } from '../../../lib/infra/db.js';
+import { Pool, restorePoolImplementation } from 'pg';
+import { logger } from '../../../lib/infra/logger.js';
 
 describe('Library - Database', () => {
   let mockClient;
@@ -41,6 +56,14 @@ describe('Library - Database', () => {
     mockPoolInstance.query.mockImplementation(() => Promise.reject(new Error('DB Timeout')));
     const res = await query('SELECT 1', [], { throwOnError: false });
     expect(res).toBeNull();
+
+    // O log de falha do query() era só ruído de console; com o logger mockado
+    // ele também cobre a linha de logger.error em lib/infra/db.js.
+    expect(logger.error).toHaveBeenCalledWith(
+      'DB',
+      'Erro ao executar consulta SQL',
+      expect.objectContaining({ message: 'DB Timeout' })
+    );
   });
 
   it('transaction: executa COMMIT em sucesso e injeta o client no callback', async () => {
@@ -63,6 +86,14 @@ describe('Library - Database', () => {
     
     await expect(transaction(cb)).rejects.toThrow('Tx Error');
     expect(client.query).toHaveBeenCalledWith('ROLLBACK');
+
+    // O log da falha da transação era só ruído de console; com o logger
+    // mockado ele também cobre a linha de logger.error em lib/infra/db.js.
+    expect(logger.error).toHaveBeenCalledWith(
+      'DB',
+      'Transação falhou e foi revertida',
+      expect.objectContaining({ error: 'Tx Error', timestamp: expect.any(String) })
+    );
   });
 
   it('healthCheck e getDatabaseInfo: retornam status e métricas via consultas estáticas', async () => {
@@ -154,15 +185,39 @@ describe('Library - Database', () => {
   it('closeDatabase: propaga erro se falhar', async () => {
     mockPoolInstance.end.mockRejectedValueOnce(new Error('Close Error'));
     await expect(closeDatabase()).rejects.toThrow('Close Error');
+
+    // O log de falha do closeDatabase era só ruído de console; com o logger
+    // mockado ele também cobre a linha de logger.error em lib/infra/db.js.
+    expect(logger.error).toHaveBeenCalledWith(
+      'DB',
+      'Erro ao fechar connection pool',
+      expect.objectContaining({ error: 'Close Error', timestamp: expect.any(String) })
+    );
   });
 
   it('healthCheck: retorna falso se ocorrer erro na consulta', async () => {
     mockPoolInstance.query.mockRejectedValueOnce(new Error('Health Error'));
     expect(await healthCheck()).toBe(false);
+
+    // O log de falha do healthCheck era só ruído de console; com o logger
+    // mockado ele também cobre a linha de logger.error em lib/infra/db.js.
+    expect(logger.error).toHaveBeenCalledWith(
+      'DB',
+      'Health check do banco de dados falhou',
+      expect.objectContaining({ error: 'Health Error', timestamp: expect.any(String) })
+    );
   });
 
   it('getDatabaseInfo: propaga erro se falhar', async () => {
     mockPoolInstance.query.mockRejectedValueOnce(new Error('Info Error'));
     await expect(getDatabaseInfo()).rejects.toThrow('Info Error');
+
+    // O log de falha do getDatabaseInfo era só ruído de console; com o logger
+    // mockado ele também cobre a linha de logger.error em lib/infra/db.js.
+    expect(logger.error).toHaveBeenCalledWith(
+      'DB',
+      'Erro ao obter informações do banco de dados',
+      expect.objectContaining({ error: 'Info Error', timestamp: expect.any(String) })
+    );
   });
 });

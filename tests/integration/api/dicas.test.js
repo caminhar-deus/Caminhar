@@ -3,9 +3,24 @@ import { createMocks } from 'node-mocks-http';
 
 jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb());
 
+// Convenção do projeto (ver tests/integration/api/musicas.test.js): o logger real
+// imprime via console.error e polui a saída do Jest nos testes que provocam
+// erros de propósito. Mockar o módulo silencia a saída E torna o log assertável.
+jest.mock('../../../lib/infra/logger.js', () => ({
+  logger: {
+    error: jest.fn(),
+    warn: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn(),
+    success: jest.fn(),
+  },
+}));
+
+// Importa o handler
 import handler from '../../../pages/api/dicas.js';
 import { query } from '../../../lib/infra/db.js';
 import { invalidateCache } from '../../../lib/cache/cache.js';
+import { logger } from '../../../lib/infra/logger.js';
 
 describe('API Pública - Dicas do Dia (/api/dicas)', () => {
   beforeEach(async () => {
@@ -85,6 +100,13 @@ describe('API Pública - Dicas do Dia (/api/dicas)', () => {
     await handler(req, res);
 
     expect(res._getStatusCode()).toBe(500);
+    // Sem o logger mockado este log era só ruído de console; agora ele também
+    // cobre a linha de logger.error do handler (pages/api/dicas.js).
+    expect(logger.error).toHaveBeenCalledWith(
+      'Dicas',
+      expect.stringContaining('Erro'),
+      expect.objectContaining({ message: 'Erro DB' })
+    );
   });
 
   it('deve retornar 405 se o método não for GET', async () => {

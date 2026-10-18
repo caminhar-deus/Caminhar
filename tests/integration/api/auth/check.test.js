@@ -1,10 +1,9 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
-import handler from '../../../../pages/api/auth/check.js';
-import * as auth from '../../../../lib/auth/auth.js';
-import { query } from '../../../../lib/infra/db.js';
-import { logger } from '../../../../lib/infra/logger.js';
 
+// Mocks ANTES da importação do handler (convenção dos demais arquivos de teste).
+// O logger real imprime via console.error e polui a saída do Jest nos testes
+// que provocam erro de propósito; mockar o módulo silencia E torna o log assertável.
 jest.mock('../../../../lib/auth/auth.js', () => ({
   getAuthToken: jest.fn(),
   verifyToken: jest.fn()
@@ -13,6 +12,21 @@ jest.mock('../../../../lib/auth/auth.js', () => ({
 jest.mock('../../../../lib/infra/db.js', () => ({
   query: jest.fn(),
 }));
+
+jest.mock('../../../../lib/infra/logger.js', () => ({
+  logger: {
+    error: jest.fn(),
+    warn: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn(),
+    success: jest.fn(),
+  },
+}));
+
+import handler from '../../../../pages/api/auth/check.js';
+import * as auth from '../../../../lib/auth/auth.js';
+import { query } from '../../../../lib/infra/db.js';
+import { logger } from '../../../../lib/infra/logger.js';
 
 describe('API Auth Check (/api/auth/check)', () => {
   beforeEach(() => { jest.clearAllMocks(); });
@@ -135,5 +149,12 @@ describe('API Auth Check (/api/auth/check)', () => {
     expect(res._getStatusCode()).toBe(500);
     const data = res._getJSONData();
     expect(data.error).toBe('Internal Server Error');
+    // Com o logger mockado, o log do caminho de erro deixa de ser só ruído de
+    // console e passa a cobrir a linha de logger.error do handler.
+    expect(logger.error).toHaveBeenCalledWith(
+      'Auth',
+      'Erro na verificação de autenticação:',
+      expect.any(Error)
+    );
   });
 });
