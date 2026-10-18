@@ -62,9 +62,13 @@ Consequências operacionais, todas aplicadas:
    `expectedStatuses` em params: a chave não existe e o erro é silencioso.
 3. **Nunca adicionar threshold em `checks` nos scripts de estado exclusivo.** Os
    três scripts envolvidos carregam isso em comentário no próprio código.
-4. **A versão do k6 é pinada em `k6-version: 'v2.3.0'`** — a mesma dos runs
-   #12–#14, de modo que pinar não altera nenhum comportamento já medido e só
-   impede a deriva.
+4. **A versão do k6 é pinada em `k6-version: '2.3.0'`** — a mesma dos runs
+   #12–#14 (verificado nos logs: ambos imprimem
+   `Downloading k6 version 2.3.0`), de modo que pinar não altera nenhum
+   comportamento já medido e só impede a deriva. **O valor é sem o prefixo `v`:**
+   a action monta a URL como `releases/download/v<k6-version>/…`, então passar
+   `v2.3.0` produz `vv2.3.0` e 404 — erro cometido na primeira aplicação e
+   detectado no run #15 (18/10/2026), que falhou no step de setup do k6.
 
 ## Alternativas consideradas
 
