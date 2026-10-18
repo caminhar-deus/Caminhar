@@ -112,11 +112,22 @@ async function handler(req, res) {
       metadata = await sharp(imageFile.filepath).metadata();
     } catch {
       await safeUnlink(imageFile.filepath);
-      return res.status(400).json({ error: 'Bad Request', message: 'Arquivo corrompido ou formato não suportado' });
+      // O texto antigo dizia "corrompido", o que prometia integridade de arquivo
+      // que este gate não verifica: o `sharp` lê só o HEADER. Medido: um JPEG
+      // truncado com header íntegro passa por aqui. O que se rejeita é "isto não
+      // é uma imagem legível" — e é isso que a mensagem diz.
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'Não foi possível ler a imagem. Envie um arquivo JPG, PNG, WebP ou GIF válido.',
+      });
     }
 
-    // Validação de dimensões máximas
-    if (metadata.width > MAX_WIDTH || metadata.height > MAX_HEIGHT) {
+    // Validação de dimensões máximas.
+    // `Number()` é defensivo: se `metadata` vier sem `width`/`height`, a
+    // comparação crua (`undefined > 1920` → `false`) deixaria passar. Medido que
+    // jpeg/png/gif sempre devolvem número, então isto não é bug ativo — é uma
+    // comparação a mais num gate de segurança.
+    if (Number(metadata.width) > MAX_WIDTH || Number(metadata.height) > MAX_HEIGHT) {
       await safeUnlink(imageFile.filepath);
       return res.status(400).json({
         error: 'Bad Request',

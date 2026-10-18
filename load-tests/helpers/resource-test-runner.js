@@ -21,13 +21,6 @@ import { generateReport } from './report.js';
 
 // --- HELPERS INTERNOS ---
 
-function sanitizeToken(data) {
-  if (data && data.setup_data && data.setup_data.token) {
-    data.setup_data.token = '*** TOKEN OCULTO ***';
-  }
-  return data;
-}
-
 /**
  * Gera nome padronizado para relatório.
  */
@@ -633,4 +626,4 @@ export function createLoadTest(resourceConfig) {
   };
 }
 
-export { sanitizeToken, generateReport };
+export { generateReport };

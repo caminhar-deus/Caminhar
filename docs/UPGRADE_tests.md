@@ -1276,9 +1276,13 @@ Os 9 testes de `upload-image.test.js` mockam `fs` e `formidable` por inteiro —
 - `lib/auth/auth.js`, `lib/domain/settings.js` — mockados (o upload exige JWT; o teste não toca no banco)
 
 #### Resumo
-3 testes: (1) o ciclo completo — POST multipart com GIF 1×1 real → 200 com `path`/`imageUrl` no formato `/uploads/post-image-<uuid>.gif` → arquivo existe no diretório ativo com o mesmo conteúdo → **nada** gravado no legado → a rota serve a URL com 200 e o corpo idêntico; (2) a rejeição de formato não suportado sem deixar arquivo no disco; (3) a rejeição de arquivo acima do limite — 6MB reais → **413** com a mensagem do limite e nenhum resíduo no disco.
+5 testes: (1) o ciclo completo — POST multipart com GIF 1×1 real → 200 com `path`/`imageUrl` no formato `/uploads/post-image-<uuid>.gif` → arquivo existe no diretório ativo com o mesmo conteúdo → **nada** gravado no legado → a rota serve a URL com 200 e o corpo idêntico; (2) a rejeição de formato não suportado sem deixar arquivo no disco; (3) a rejeição de arquivo acima do limite — 6MB reais → **413** com a mensagem do limite e nenhum resíduo no disco; (4) a rejeição por **dimensão** — JPEG real de 3000×1000 (~18KB, gerado em memória por `sharp({create})`) → **400** com `Dimensões máximas: 1920x1920px (atual: 3000x1000px)`; (5) a rejeição por **conteúdo** — payload que não é imagem declarado `Content-Type: image/jpeg` → **400** "Não foi possível ler a imagem. Envie um arquivo JPG, PNG, WebP ou GIF válido."
 
-O terceiro é o único que cobre o caminho de erro do `formidable` **de verdade**: `maxFileSize` interrompe o stream no meio, o parse rejeita e o `catch` do handler tem de distinguir erro de tamanho (413) de erro genérico (500). Os testes de `upload-image.test.js` alcançam a mesma lógica com o módulo mockado — ver `docs/PROJECT_pages.md` para o contrato do limite.
+O texto dessa mensagem mudou em 17/10/2026. O antigo ("Arquivo corrompido ou formato não suportado") prometia integridade de arquivo que o gate não verifica — o `sharp` lê **só o header**, e um JPEG truncado com header íntegro passa (medido). O gate garante "isto é uma imagem legível", e a mensagem agora diz isso.
+
+Os testes (4) e (5) são os únicos que alcançam o `sharp` **real** em caminho de erro, e isso importa mais do que parece: o gate de `mimetype` é **forjável** — `file.mimetype` vem do `Content-Type` da parte multipart (`Formidable.js:371`), controlado pelo cliente —, então o `sharp` é a única barreira entre um payload arbitrário e o disco. Antes do teste (5) essa barreira não tinha verificação automatizada.
+
+Os testes (2), (3), (4) e (5) morrem por motivos diferentes, e é essa diferença que os separa: (2) e (3) são recusados pelo `mimetype` e pelo `maxFileSize`, sem nunca chegar ao `sharp`; (4) e (5) passam por ambos e são recusados pelo **conteúdo real** do arquivo.
 
 #### Detalhe de construção
 O `req` precisa ser ele próprio um `Readable` para o `formidable` real parseá-lo — `node-mocks-http` não produz isso, e copiar propriedades de um stream para um objeto comum não cria um stream (o `formidable` ficava esperando corpo que nunca chegava, com timeout). Por isso o `req` vem do builder multipart e o `res` é um duplo mínimo no formato que os handlers consomem (`status().json()`, `status().send()`, `setHeader()`).
@@ -1287,8 +1291,9 @@ O `req` precisa ser ele próprio um `Readable` para o `formidable` real parseá-
 `upload-image.js` foi alterado para voltar a gravar em `public/uploads` (o destino que causava o 404 do item U): **1 dos 2 testes reprovou** e voltou a passar com a correção restaurada. (Mutação executada em 09/10/2026, quando o arquivo tinha 2 testes; o terceiro foi acrescentado em 16/10/2026.)
 
 #### Problemas
-- Nenhum conhecido. Os 3 testes passam e a mutação acima foi revertida.
-- **Não cobre** o limite de dimensões (1920px) nem os magic bytes do `sharp` — pendência que vale para os dois arquivos de teste do endpoint.
+- Nenhum conhecido. Os 5 testes passam.
+- **Verificação por mutação de 16/10/2026:** trocar `metadata.width > MAX_WIDTH || metadata.height > MAX_HEIGHT` por `false` reprova o teste (4); substituir a chamada ao `sharp` por um `{width: 100, height: 100}` fixo reprova o (5). Os dois ramos de rejeição do `sharp` estão de fato sob teste, não apenas afirmados.
+- **Ainda não cobre:** o **caso de fronteira** do limite de dimensão (1920×1920 deve passar, 1921 deve ser recusado) e a **integridade dos pixels** — o `sharp` lê só o header, então um JPEG truncado com header íntegro passa pela validação (medido: `metadata()` devolve as dimensões sem lançar). Nomear isso como cobertura seria errado.
 
 ---
 
@@ -12801,9 +12806,9 @@ Testa o endpoint `/api/upload-image.js` (upload de imagens), cobrindo:
 5. ~~**Mock de `formidable` não simula erro**~~ — **resolvido**: o parse agora é mockado com `err` truthy em dois casos (`code: 1016` → 413 e `Error` sem `code` → 500), e o caminho real está em `upload-image-disk.test.js`.
 
 #### Melhorias Sugeridas
-- Adicionar teste para dimensões exatas (>1920px)
+- Adicionar teste para o caso de fronteira do limite de dimensão (1920×1920 passa, 1921×1920 é recusado)
 
-> Os itens "405", "400 sem imagem", "mimetype inválido", "tamanho excedido", `setting_home_image` e `formidable.parse` com erro já existem neste arquivo (9 casos). Dimensões é o único pendente.
+> Os itens "405", "400 sem imagem", "mimetype inválido", "tamanho excedido", `setting_home_image` e `formidable.parse` com erro já existem neste arquivo (9 casos). Dimensão e magic bytes têm cobertura no arquivo de disco real (`upload-image-disk.test.js`, 5 casos). O único pendente aqui é a fronteira do limite.
 
 ---
 

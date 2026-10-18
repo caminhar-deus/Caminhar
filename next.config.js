@@ -163,6 +163,21 @@ const nextConfig = {
           },
         ],
       },
+      // Cobre OS DOIS caminhos de `/uploads/*`. `headers` roda antes do
+      // filesystem e do `afterFiles` rewrite (ordem de execução do Next 16.4.1),
+      // então alcança também o arquivo legado em `public/uploads/`, servido
+      // estaticamente e sem passar por `pages/api/uploads/[...path].js`.
+      //
+      // Sem isto, um `.svg` no diretório executaria script em navegação direta:
+      // o CSP da aplicação é `<meta http-equiv>` (`pages/_document.js`) e não
+      // vale para uma resposta servida como documento próprio. O `nosniff` vem
+      // da regra global acima.
+      {
+        source: '/uploads/:path*',
+        headers: [
+          { key: 'Content-Security-Policy', value: "default-src 'none'; sandbox" },
+        ],
+      },
     ];
   },
 };

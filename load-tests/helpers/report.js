@@ -9,10 +9,22 @@ import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.4/index.js';
  * Sanitiza token JWT nos dados do relatório, substituindo por "*** TOKEN OCULTO ***"
  * para evitar exposição do token em relatórios de saída.
  *
- * @param {Object} data - Dados do teste k6 (podem conter setup_data.token)
+ * Cobre dois formatos de setup_data:
+ * - objeto com token: `{ token: "..." }` → apenas o campo token é ocultado;
+ * - string crua (ex.: `loginRes.json('data.token')` retornando o JWT direto)
+ *   → a string inteira é substituída pelo marcador.
+ *
+ * @param {Object} data - Dados do teste k6 (podem conter setup_data.token ou setup_data string)
  */
 function sanitizeToken(data) {
-  if (data && data.setup_data && data.setup_data.token) {
+  if (!data || !data.setup_data) {
+    return;
+  }
+  if (typeof data.setup_data === 'string') {
+    data.setup_data = '*** TOKEN OCULTO ***';
+    return;
+  }
+  if (data.setup_data.token) {
     data.setup_data.token = '*** TOKEN OCULTO ***';
   }
 }

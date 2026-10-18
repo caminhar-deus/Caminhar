@@ -1,6 +1,6 @@
 import http from 'k6/http';
 import { check } from 'k6';
-import { Trend, Counter } from 'k6/metrics';
+import { Trend, Counter, Rate } from 'k6/metrics';
 import { randomSleep } from '../helpers/sleep.js';
 import { BASE_URL } from '../helpers/config.js';
 import { getProfile } from '../helpers/profiles.js';
@@ -10,8 +10,29 @@ import { generateReport } from '../helpers/report.js';
 const RecoveryTime = new Trend('recovery_time_ms');
 // Métrica para contar recuperações bem-sucedidas
 const RecoveryCount = new Counter('recovery_count');
+// Taxa de iterações em que o sistema NÃO estava saudável. Este é o gate real
+// do script: o `checks` agregado é 100% por construção (cada ramo do if
+// declara um único check que sempre passa), então ele não distingue "saudável"
+// de "caído". Baseline medida no run #14 (15–17/10/2026): 0,00% — o sistema
+// ficou de pé nas 145 iterações.
+const UnhealthyRate = new Rate('recovery_unhealthy_rate');
+// Qualquer status HTTP conta como resposta válida para este script: o ponto é
+// detectar a QUEDA (status != 200), não reprovar por 5xx. A chave correta é
+// `responseCallback` — `expectedStatuses` não existe em Params e era ignorada.
+const QUALQUER_STATUS = http.expectedStatuses({ min: 200, max: 599 });
 
-export const options = getProfile('recovery');
+// O `checks` agregado NÃO é sinal de saúde (100% por construção, porque cada
+// ramo do `if` declara um único check que sempre passa). O gate real é a
+// métrica `recovery_unhealthy_rate` abaixo — **nunca** adicionar threshold em
+// `checks` neste script.
+// `getProfile` SUBSTITUI thresholds em vez de mesclar, mas o perfil `recovery`
+// tem `thresholds: {}`, então nada é perdido ao passar `thresholds` aqui: este
+// é o único lugar da Fase 0 onde essa substituição é segura.
+export const options = getProfile('recovery', {
+  thresholds: {
+    'recovery_unhealthy_rate': ['rate<0.10'],
+  },
+});
 
 // Variáveis de estado para rastrear a queda (escopo do VU)
 let isSystemDown = false;
@@ -20,11 +41,12 @@ let failureStartTime = 0;
 export default function () {
   // Tenta acessar uma rota que depende estritamente do banco de dados (ex: listagem de posts)
   const res = http.get(`${BASE_URL}/api/posts`, {
-    expectedStatuses: { min: 200, max: 599 },
+    responseCallback: QUALQUER_STATUS,
   });
 
   // Consideramos "Saudável" se retornar 200 OK
   const isHealthy = res.status === 200;
+  UnhealthyRate.add(res.status !== 200);
 
   if (isHealthy) {
     check(res, {

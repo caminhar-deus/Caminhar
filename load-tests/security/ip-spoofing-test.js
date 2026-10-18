@@ -102,6 +102,12 @@ export default function () {
   // A nomenclatura evita a leitura invertida de antes, em que um check
   // vermelho com prefixo ⚠️/VULNERÁVEL era lido como problema sendo o
   // sinal de proteção funcionando.
+  //
+  // Por isso o agregado `checks` fica em 50,00% **por construção** (uma resposta
+  // tem um único status, então exatamente um dos dois passa): ele não é sinal de
+  // saúde. O veredito vem de `ip_rotation_evasion_rate` (`rate<0.05`), medido em
+  // 0,0041% / 0,0052% / 0,0039% nos runs #12–#14. **Nunca** adicionar threshold
+  // em `checks` neste script — reprovaria para sempre.
   check(res, {
     'EVASÃO BLOQUEADA: rate limit por IP real (429)': (r) => r.status === 429,
     'EVASÃO CONFIRMADA: rotação lida, não bloqueou (401)': (r) => r.status === 401,

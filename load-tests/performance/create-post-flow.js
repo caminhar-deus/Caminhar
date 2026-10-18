@@ -3,6 +3,7 @@ import { check } from 'k6';
 import { randomSleep } from '../helpers/sleep.js';
 import { setup } from '../helpers/auth.js';
 import { BASE_URL } from '../helpers/config.js';
+import { generateReport } from '../helpers/report.js';
 
 export const options = {
   stages: [
@@ -74,4 +75,8 @@ export function teardown(data) {
       }
     }
   }
+}
+
+export function handleSummary(data) {
+  return generateReport(data, 'create_post_flow');
 }

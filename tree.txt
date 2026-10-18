@@ -600,6 +600,7 @@
 │   │   ├── 0009-dead-code-removal-lib-api.md
 │   │   ├── 0010-admin-como-cargo-e-validacao-de-nome.md
 │   │   ├── 0011-erro-de-banco-503-e-refresh-token-fora-do-body.md
+│   │   ├── 0012-gate-da-suite-k6-por-metrica-propria.md
 │   │   ├── README.md
 │   │   └── template.md
 │   └── ai-memory-error.md
@@ -1171,6 +1172,7 @@
 │       │   ├── redis.test.js
 │       │   └── seo
 │       │       └── config.test.js
+│       ├── next.config.test.js
 │       ├── pages
 │       │   └── api
 │       │       ├── admin
@@ -1209,10 +1211,11 @@
 │       │   └── resolve-next.test.js
 │       └── videos.validation.test.js
 ├── tree.txt
+├── uploads
 └── utils
     ├── csvExport.js
     ├── empty-browser-module.js
     ├── reorder.js
     └── resolve-next.js
 
-198 directories, 1018 files
+199 directories, 1020 files

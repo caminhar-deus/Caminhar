@@ -20,7 +20,9 @@ export const options = {
     // O k6 conta qualquer 4xx como requisição falha. Este script só envia o GIF
     // 1×1 (43 bytes), então nunca chega ao limite e o threshold não é afetado.
     // Quem escrever um caso NEGATIVO de upload acima de 5MB precisa tratar o 413
-    // como esperado — via `setResponseCallback` — ou o threshold vai reprovar.
+    // como esperado — via `setResponseCallback` (setter global; por request a
+    // forma correta é o param `responseCallback` com `http.expectedStatuses(...)`)
+    // — ou o threshold vai reprovar.
     'http_req_failed': ['rate<0.01'],    // Taxa de erro abaixo de 1%
   },
 };

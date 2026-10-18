@@ -9,6 +9,7 @@ load-tests/functional/cache-headers-test.js → load-tests/helpers/report.js
 load-tests/functional/cache-headers-test.js → load-tests/helpers/sleep.js
 load-tests/functional/health-check.js → load-tests/helpers/config.js
 load-tests/functional/health-check.js → load-tests/helpers/profiles.js
+load-tests/functional/health-check.js → load-tests/helpers/report.js
 load-tests/functional/posts-cursor-pagination-test.js → load-tests/helpers/config.js
 load-tests/functional/posts-cursor-pagination-test.js → load-tests/helpers/profiles.js
 load-tests/functional/posts-cursor-pagination-test.js → load-tests/helpers/report.js
@@ -43,12 +44,15 @@ load-tests/performance/authenticated-flow-test.js → load-tests/helpers/config.
 load-tests/performance/authenticated-flow-test.js → load-tests/helpers/report.js
 load-tests/performance/authenticated-flow-test.js → load-tests/helpers/sleep.js
 load-tests/performance/cache-performance-test.js → load-tests/helpers/config.js
+load-tests/performance/cache-performance-test.js → load-tests/helpers/report.js
 load-tests/performance/cache-performance-test.js → load-tests/helpers/sleep.js
 load-tests/performance/cache-warmup-test.js → load-tests/helpers/auth.js
 load-tests/performance/cache-warmup-test.js → load-tests/helpers/config.js
+load-tests/performance/cache-warmup-test.js → load-tests/helpers/report.js
 load-tests/performance/cache-warmup-test.js → load-tests/helpers/sleep.js
 load-tests/performance/create-post-flow.js → load-tests/helpers/auth.js
 load-tests/performance/create-post-flow.js → load-tests/helpers/config.js
+load-tests/performance/create-post-flow.js → load-tests/helpers/report.js
 load-tests/performance/create-post-flow.js → load-tests/helpers/sleep.js
 load-tests/performance/musicas-crud-test.js → load-tests/helpers/auth.js
 load-tests/performance/musicas-crud-test.js → load-tests/helpers/config.js

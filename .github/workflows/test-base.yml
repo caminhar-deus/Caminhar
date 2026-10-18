@@ -198,8 +198,17 @@ jobs:
         with:
           admin-username: ${{ inputs.admin-username }}
           admin-password: ${{ inputs.admin-password }}
+      # Versão PINADA de propósito: sem `k6-version` a action instala a latest a
+      # cada semana, e uma mudança de versão pode alterar métricas, thresholds e
+      # o comportamento de `responseCallback` sem que nada no repositório mude.
+      # v2.3.0 é a versão que os runs #12–#14 (15–17/10/2026) usaram, ou seja,
+      # pinar aqui não altera o comportamento medido — só impede a deriva futura.
+      # Para atualizar: conferir a release antes, e comparar o artifact do cron
+      # (campo `metrics.*.thresholds`) contra o esperado.
       - if: ${{ !inputs.skip-k6 }}
         uses: grafana/setup-k6-action@v1
+        with:
+          k6-version: 'v2.3.0'
       # Os scripts k6 leem BASE_URL/ADMIN_USERNAME/ADMIN_PASSWORD por __ENV, e o
       # orquestrador (`execSync(..., { shell: true })`) herda o `process.env`
       # deste step — sem estas variáveis os testes autenticados falham: o

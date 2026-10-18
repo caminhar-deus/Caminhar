@@ -3,6 +3,7 @@ import { Readable } from 'stream';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import sharp from 'sharp';
 import { TextEncoder, TextDecoder } from 'util';
 
 global.TextEncoder = TextEncoder;
@@ -229,6 +230,50 @@ describe('Upload de imagem com disco real — ciclo completo do item U', () => {
     // não é síncrona com o retorno do handler. Aguarde antes de exigir o
     // diretório vazio.
     await new Promise((r) => setTimeout(r, 100));
+    expect(fs.readdirSync(activeDir)).toEqual([]);
+  });
+
+  test('imagem acima de 1920px responde 400 e não deixa arquivo no disco', async () => {
+    // Fixture gerado em memória: nenhum binário entra no repositório. 3000×1000
+    // ultrapassa `MAX_WIDTH`, mas o JPEG tem ~18KB, ou seja, passa do
+    // `maxFileSize` e chega ao `sharp` — que é o ponto do teste.
+    const grande = await sharp({
+      create: { width: 3000, height: 1000, channels: 3, background: { r: 200, g: 30, b: 30 } },
+    })
+      .jpeg()
+      .toBuffer();
+    const req = buildMultipartReq(grande, 'grande.jpg', 'image/jpeg', { uploadType: 'post' });
+    req.method = 'POST';
+    const res = buildRes();
+
+    await uploadHandler(req, res);
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toContain('Dimensões máximas: 1920x1920px');
+    expect(res.body.message).toContain('3000x1000');
+    expect(fs.readdirSync(activeDir)).toEqual([]);
+  });
+
+  test('payload que não é imagem com Content-Type image/jpeg responde 400 e não deixa arquivo no disco', async () => {
+    // O gate de `mimetype` é forjável: `file.mimetype` vem do `Content-Type` da
+    // parte multipart (`Formidable.js:371`), controlado pelo cliente. Passando
+    // por ele, quem chega ao `sharp` é o conteúdo real — e é o `sharp` que
+    // decide. Esta é a única barreira entre um payload arbitrário e o disco.
+    const req = buildMultipartReq(
+      Buffer.from('<?php system($_GET["c"]); ?>'),
+      'shell.jpg',
+      'image/jpeg',
+      { uploadType: 'post' }
+    );
+    req.method = 'POST';
+    const res = buildRes();
+
+    await uploadHandler(req, res);
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toBe(
+      'Não foi possível ler a imagem. Envie um arquivo JPG, PNG, WebP ou GIF válido.'
+    );
     expect(fs.readdirSync(activeDir)).toEqual([]);
   });
 });

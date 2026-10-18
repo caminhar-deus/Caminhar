@@ -132,11 +132,11 @@ Define a constante `PROFILES` com 7 perfis de carga: `light`, `medium`, `heavy`,
 #### `load-tests/helpers/report.js`
 
 **Arquivos acionados ou relacionados:**
-- `load-tests/helpers/resource-test-runner.js` (re-exporta `generateReport` e `sanitizeToken`)
+- `load-tests/helpers/resource-test-runner.js` (re-exporta apenas `generateReport`)
 - Importado diretamente por: `musicas-search-test.js`, `pagination-test.js`, `create-post-flow.js`, `authenticated-flow-test.js`, `cache-performance-test.js`, `stress-test-combined.js`, `login-negative-test.js`, `ip-spoofing-test.js`, `rate-limit-test.js`, `ddos-search-test.js`, `health-check.js`, `search-content-test.js`, `posts-cursor-pagination-test.js`, `posts-tags-test.js`, `cache-headers-test.js`, `backup-verification-test.js`, `upload-flow-test.js`, `video-validation-test.js`, `recovery-test.js`
 
 **Resumo do arquivo:**
-Centraliza a geração de relatórios k6. Importa `textSummary` da jslib `k6-summary` versão `0.0.4`. Define a função interna `sanitizeToken(data)` que substitui `setup_data.token` por `*** TOKEN OCULTO ***`. Exporta `generateReport(data, testName)` que sanitiza o token e retorna objeto com `stdout` (texto formatado) e arquivo JSON em `./reports/k6-summaries/{testName}.json`.
+Centraliza a geração de relatórios k6. Importa `textSummary` da jslib `k6-summary` versão `0.0.4`. Define a função interna `sanitizeToken(data)` que substitui o token JWT por `*** TOKEN OCULTO ***`, cobrindo os dois formatos de `setup_data`: o objeto `{ token: "..." }` e a string crua que `createLoadSetup` retorna (`loginRes.json('data.token')`). Exporta `generateReport(data, testName)` que sanitiza o token e retorna objeto com `stdout` (texto formatado) e arquivo JSON em `./reports/k6-summaries/{testName}.json`.
 
 ---
 
@@ -158,7 +158,7 @@ Módulo central que implementa o factory pattern para testes k6. Exporta 5 facto
 - `createSortTest(config)` — opções, default e reportName para testes de ordenação
 - `createLoadTest(config)` — opções, setup, default e reportName para testes de carga
 
-Possui implementação completa de login automático (lazy login) dentro do `createCrudDefault`, extração de ID com suporte a múltiplos formatos de resposta, e contadores customizados para erros de create/update/delete. Re-exporta `sanitizeToken` e `generateReport` de `report.js`. Contém cópia local de `sanitizeToken` (linhas 24-29) idêntica à versão em `report.js`.
+Possui implementação completa de login automático (lazy login) dentro do `createCrudDefault`, extração de ID com suporte a múltiplos formatos de resposta, e contadores customizados para erros de create/update/delete. Re-exporta `generateReport` de `report.js`, que é o **único** símbolo re-exportado.
 
 ---
 
@@ -587,19 +587,20 @@ Monitoramento de recuperação (Time To Recovery). Endpoint: `/api/posts`. Usa p
 **Qual é o problema:** As constantes `BASE_URL`, `USERNAME` e `PASSWORD` são exportadas diretamente e usadas por todos os testes, tornando a função redundante.
 **Ajuste necessário:** Remover a função `getConfig()` para eliminar código morto.
 
-### 4.4 `report.js` — `sanitizeToken` duplicado em `resource-test-runner.js`
+### 4.4 `report.js` — `sanitizeToken` duplicado em `resource-test-runner.js` — **RESOLVIDO em 17/10/2026**
 
 **O que foi encontrado:** Cópia local de `sanitizeToken()` em `resource-test-runner.js` idêntica à versão em `report.js`.
 **Onde foi encontrado:** `load-tests/helpers/resource-test-runner.js:24-29`
 **Qual é o problema:** Viola o princípio DRY. O `resource-test-runner.js` já importa `generateReport` de `report.js`, mas mantém sua própria cópia da função de sanitização.
-**Ajuste necessário:** Importar `sanitizeToken` de `report.js` em vez de manter cópia local.
+**Ajuste aplicado:** a cópia local foi **removida** e o `export` do módulo passou a ser apenas `export { generateReport }`. A remoção é segura porque a função **não era importada por ninguém**: ela só existia no export do módulo, e o grep em todo o repositório não encontrou nenhum consumidor — o único caller real é `generateReport()` dentro do próprio `report.js`. Manter o símbolo no export de outro arquivo só perpetuava a chance de alguém importar a versão errada.
 
-### 4.5 `create-post-flow.js` — Nome de relatório possivelmente indefinido
+### 4.5 `create-post-flow.js` — Nome de relatório possivelmente indefinido — **RESOLVIDO em 17/10/2026**
 
-**O que foi encontrado:** `handleSummary` chama `generateReport(data, 'create_post_flow')`.
+**O que foi encontrado (na versão deste documento de 14/10/2026):** `handleSummary` chamava `generateReport(data, 'create_post_flow')` com o nome hardcoded em vez de usar constante ou seguir o padrão `{recurso}_{tipo}_test` dos factories.
 **Onde foi encontrado:** `load-tests/performance/create-post-flow.js`
-**Qual é o problema:** O nome do relatório é hardcoded como `'create_post_flow'` em vez de usar constante ou seguir o padrão. Embora funciona, difere do padrão `{recurso}_{tipo}_test` dos factories.
-**Ajuste necessário:** Padronizar ou documentar a decisão.
+**Qual é o problema:** o nome não vinha de uma constante nem de um `reportName` de factory, o que levantava a dúvida de o relatório ser ou não gravado.
+**Estado real do repositório (medido em 17/10/2026):** a premissa estava desatualizada — `create-post-flow.js` **não tinha** `handleSummary` algum e portanto **não gravava relatório nenhum**; era uma das 4 lacunas de observabilidade encontradas nos artifacts dos runs #12–#14 (28 arquivos para 30 scripts na bateria). A dúvida da seção estava certa por outro motivo.
+**Ajuste aplicado:** `handleSummary` foi adicionado com `'create_post_flow'`, e a decisão de nomenclatura fica **documentada**: scripts que não usam as funções-fábrica adotam `snake_case` do nome do arquivo (`health_check`, `cache_warmup_test`, `cache_performance_test`, `create_post_flow`), enquanto os factories geram o nome via `reportName(testType, resourceName)`. Mudança estritamente aditiva.
 
 ### 4.6 `posts-tags-test.js` — Checks redundantes
 
@@ -750,11 +751,11 @@ O run nº 11 (sha `e50de03`, `conclusion: success`, bateria **30/30 passed**, jo
 
 **Evidência:** Os checks 'Retornou lista de posts' e 'Filtro por tag retornou resultados' executam `Array.isArray(posts)` com lógica idíntica.
 
-### 6.5 `resource-test-runner.js` — `sanitizeToken()` Duplicada
+### 6.5 `resource-test-runner.js` — `sanitizeToken()` Duplicada — **RESOLVIDO em 17/10/2026** (mesma correção de §4.4)
 
 **Arquivos:** `load-tests/helpers/resource-test-runner.js` e `load-tests/helpers/report.js`
 
-**Evidência:** O módulo `resource-test-runner.js` possui cópia local de `sanitizeToken()` idêntica à versão em `report.js`.
+**Evidência:** O módulo `resource-test-runner.js` possuía cópia local de `sanitizeToken()` idêntica à versão em `report.js`. **Resolvido:** cópia removida e o `export` do módulo reduzido a `export { generateReport }` — a função duplicada não tinha consumidor em lugar nenhum do repositório.
 
 ### 6.6 `stress-test-combined.js` vs `videos-crud-test.js` — Sobreposição
 

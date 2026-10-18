@@ -39,6 +39,11 @@ import { generateReport } from '../helpers/report.js';
  * `ip-spoofing-test` mede evasão por rotação). Sem o header, `resolveClientIP`
  * (`lib/api/helpers.js:141`) ignora o header e volta ao loopback.
  *
+ * O callback de status esperado (`responseCallback`, com 200 e 429) é o que
+ * impede o 429 de contar como falha: sem ele o k6 trata 429 como erro (o
+ * default é 200–399) e `http_req_failed` marcaria ~100% mesmo com a proteção
+ * funcionando.
+ *
  * ## Interpretação dos Resultados
  *
  * | Cenário | Check que passa | Significado |
@@ -50,6 +55,11 @@ import { generateReport } from '../helpers/report.js';
  * Os três checks são **mutuamente exclusivos por status HTTP** (uma resposta tem
  * um único status), então a soma é 100% e a leitura de um percentual isolado
  * não significa falha — leia os três juntos.
+ *
+ * Por isso o agregado `checks` fica em 33,33% **por construção** (exatamente um
+ * dos três passa por iteração): ele não é sinal de saúde. O veredito vem de
+ * `search_block_rate` e `errors_500`. **Nunca** adicionar
+ * `checks: ['rate==1.0']` neste script — reprovaria para sempre.
  *
  * ## Threshold que dá poder de reprovação
  *
@@ -91,6 +101,13 @@ const SEARCH_TERMS = ['amor', 'paz', 'fé', 'luz', 'vida', 'caminho', 'verdade',
 const ErrorRate500 = new Rate('errors_500');
 const SearchBlockRate = new Rate('search_block_rate');
 
+// Status aceitos como "esperados": 200 = o servidor respondeu e o rate limit
+// NÃO limitou; 429 = o rate limit agiu. Sem este callback o k6 trata 429 como
+// falha (default é 200–399) e `http_req_failed` marca ~100% de falha mesmo
+// com a proteção funcionando. A chave correta do param é `responseCallback` —
+// `expectedStatuses` NÃO existe em Params e era ignorada em silêncio.
+const RESPOSTAS_ESPERADAS = http.expectedStatuses(200, 429);
+
 export const options = getProfile('heavy', {
   stages: [
     { duration: '10s', target: 100 },
@@ -125,7 +142,7 @@ export default function () {
         'X-Forwarded-For': ATTACKER_IP,
       },
       tags: { type: 'ddos_search', name: 'DDoS_Search' },
-      expectedStatuses: [200, 429],
+      responseCallback: RESPOSTAS_ESPERADAS,
     }
   );
 

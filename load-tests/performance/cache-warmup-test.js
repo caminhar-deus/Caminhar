@@ -3,6 +3,7 @@ import { check } from 'k6';
 import { randomSleep } from '../helpers/sleep.js';
 import { BASE_URL } from '../helpers/config.js';
 import { setup } from '../helpers/auth.js';
+import { generateReport } from '../helpers/report.js';
 
 /**
  * Teste de warm-up do cache.
@@ -88,4 +89,8 @@ export default function (data) {
   }
 
   console.log(`[Warmup] ✅ Cache populado com sucesso após ${endpoints.length * 5} requisições`);
+}
+
+export function handleSummary(data) {
+  return generateReport(data, 'cache_warmup_test');
 }

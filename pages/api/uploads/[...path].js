@@ -100,6 +100,12 @@ async function handler(req, res) {
     res.setHeader('Cache-Control', 'public, max-age=3600');
     res.setHeader('Content-Length', found.stats.size);
     res.setHeader('Last-Modified', found.stats.mtime.toUTCString());
+    // Hardening de conteúdo enviado pelo usuário fica em `next.config.js`
+    // (`headers()` com `source: '/uploads/:path*'`), e NÃO aqui: essa regra roda
+    // antes do `afterFiles` rewrite, então cobre também o arquivo legado em
+    // `public/uploads/`, que é servido estaticamente sem passar por esta rota.
+    // Um `setHeader` aqui duplicaria a fonte e cobriria só um dos caminhos.
+    // O mesmo vale para `X-Content-Type-Options`, que vem da regra global.
 
     if (req.method === 'HEAD') {
       return res.status(200).end();

@@ -3,6 +3,7 @@ import { check } from 'k6';
 import { randomSleep } from '../helpers/sleep.js';
 import exec from 'k6/execution';
 import { BASE_URL, USERNAME, PASSWORD } from '../helpers/config.js';
+import { generateReport } from '../helpers/report.js';
 
 export const options = {
   // Cenário de teste de cache:
@@ -94,4 +95,8 @@ export default function (token) {
   });
 
   randomSleep(0.5, 3);
+}
+
+export function handleSummary(data) {
+  return generateReport(data, 'cache_performance_test');
 }

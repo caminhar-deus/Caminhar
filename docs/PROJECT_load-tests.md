@@ -233,7 +233,7 @@ Exporta `generateReport(data, testName)` — Sanitiza os dados e retorna o objet
 - `./reports/k6-summaries/<testName>.json` — arquivo JSON com os dados completos do teste
 
 **Segurança:**
-- A função interna `sanitizeToken()` (não exportada por este módulo; re-exportada via `helpers/resource-test-runner.js`) substitui o token JWT de `setup_data.token` por `*** TOKEN OCULTO ***` antes de exportar os dados, garantindo que todos os arquivos que usam `generateReport()` sanitizem automaticamente.
+- A função interna `sanitizeToken()` (não exportada por este módulo) substitui o token JWT por `*** TOKEN OCULTO ***` antes de exportar os dados, garantindo que todos os arquivos que usam `generateReport()` sanitizem automaticamente. Ela cobre **dois formatos de `setup_data`**: o objeto `{ token: "..." }` (só o campo `token` é ocultado) e a **string crua** — a forma que `createLoadSetup` produz ao retornar `loginRes.json('data.token')` direto, que é o que os scripts de carga (`musicas-load-test`, `videos-load-test`) produzem. **Correção de 17/10/2026:** até então só o primeiro formato era tratado, e esses dois scripts publicavam o JWT do admin em texto claro no artifact — medido nos runs #12–#14, em que 2 dos 9 JSON com `setup_data` vazavam o token.
 
 > **Nota:** Utiliza versão fixa `https://jslib.k6.io/k6-summary/0.0.4/index.js` — versão fixa é mais segura que `latest` para evitar breaking changes.
 
@@ -267,7 +267,7 @@ Exporta `randomSleep(min = 0.5, max = 3)` — Executa `sleep()` com duração al
 - `helpers/network.js` (import de `getRandomIP`, usado pela opção `useSpoofIP`)
 - `helpers/config.js` (import de `BASE_URL`, `USERNAME`, `PASSWORD`)
 - `helpers/profiles.js` (import de `getProfile`)
-- `helpers/report.js` (import de `generateReport`, re-exportado junto com `sanitizeToken`)
+- `helpers/report.js` (import de `generateReport`, o único re-export deste módulo)
 - Módulos k6: `k6/http`, `k6` (`check`), `k6/metrics` (`Counter`), `k6/execution` (`exec`, usado nos aborts do setup)
 - Consumido por: todos os 10 scripts de teste de músicas e vídeos que usam as funções-fábrica (CRUD, filtro, paginação, ordenação e carga de músicas e vídeos)
 
@@ -286,8 +286,7 @@ Todas as funções-fábrica retornam um objeto `{ options, default, reportName }
 | `createPaginationTest(config)` | `publicEndpoint`, `itemsPath`, `responsePath`, `resourceName`, `limit` | Gera options + default() para teste de paginação com validação cruzada de IDs entre páginas |
 | `createSortTest(config)` | `publicEndpoint`, `sortMode`/`sortField`+`sortOrder`, `itemsPath`, `dateField` | Gera options + default() para teste de ordenação (explícita ou comportamento padrão) com verificação de datas |
 | `createLoadTest(config)` | `endpoint`, `requireAuth`, `useSpoofIP`, `healthCheck`, `checkResponse`, `extraRequests[]`, `customSetup` | Gera options + setup() + default() para teste de carga com suporte a health check, IP spoofing e requisições extras |
-| `sanitizeToken(data)` | — | Oculta token JWT em relatórios (re-export de `report.js`) |
-| `generateReport(data, testName)` | — | Re-export de `helpers/report.js` |
+| `generateReport(data, testName)` | — | Re-export de `helpers/report.js` (único símbolo re-exportado; a cópia local de `sanitizeToken` foi removida em 17/10/2026 por ser código morto — ver `UPGRADE_load-tests.md` §4.4) |
 
 **Funcionalidades internas:**
 - `createCrudOptions` — Mescla o perfil base com `optionsOverrides`; se os overrides definirem `stages`, remove `iterations` e `vus` do perfil base (o k6 não permite ambos simultaneamente). Acrescenta thresholds `<prefixo>_create_errors`, `_update_errors` e `_delete_errors` com `count==0` (prefixo definido por `metricsPrefix` ou `resourceName`).
@@ -670,7 +669,7 @@ Testa o fluxo completo de criação de posts no blog: login → criação → li
 - `teardown()` — Lista posts admin e remove posts com `K6` no título; suporta formatos `body.data.posts`, `body.posts` e `body.data`
 - Configuração: `options` inline (não usa `helpers/profiles.js`) — 3 VUs, estágios 10s/15s/5s
 - Thresholds: `http_req_duration{flow:create_post}` p(95)<2000ms, `checks{flow:create_post}` rate>0.95, `http_req_failed` rate<0.10 (comentário no código registra que o limite foi reduzido de 80% para 10% porque o threshold anterior mascarava 71,94% de falhas reais)
-- **Não possui `handleSummary()`** — não importa `helpers/report.js` e não gera relatório JSON (correção: versões anteriores deste documento afirmavam que gerava)
+- **`handleSummary()` adicionado em 17/10/2026** — antes não existia e o script não gerava relatório JSON, o que explicava parte da diferença entre 28 arquivos no artifact e 30 scripts na bateria. Grava `reports/k6-summaries/create_post_flow.json`. A mudança é estritamente aditiva: nenhuma opção, threshold, cenário, `setup` ou `teardown` foi alterado. O nome `'create_post_flow'` segue o padrão snake_case dos scripts que não usam as funções-fábrica (decisão registrada em `UPGRADE_load-tests.md` §4.5)
 
 **Endpoints chamados:**
 - `POST /api/auth/login` — Autenticação
@@ -784,7 +783,7 @@ Resultado medido: os 4 critérios do item Z resolveram no estado esperado (o 3º
 - 4 endpoints aquecidos (posts, posts paginados ×2, settings autenticado) × 5 rounds cada (20 requisições no total; comentário no código registra aumento de 3 para 5 rounds para assegurar TTL estável)
 - `verifyCachePopulated()` — Requisição extra de confirmação em `/api/posts` (status 200 e duração < 200ms); exibe aviso se o cache não estiver confirmado como quente
 - Thresholds: apenas `http_req_failed rate<0.50` (sem thresholds de latência agressivos)
-- **Não possui `handleSummary()`** — não gera relatório JSON
+- **`handleSummary()` adicionado em 17/10/2026** — antes não gerava relatório JSON; agora grava `reports/k6-summaries/cache_warmup_test.json`. Mudança estritamente aditiva (import + função), sem alterar opções, cenário, thresholds ou `setup()`
 
 **Endpoints chamados:**
 - `POST /api/auth/login` — Autenticação
@@ -805,7 +804,8 @@ Resultado medido: os 4 critérios do item Z resolveram no estado esperado (o 3º
 - `helpers/config.js` — `BASE_URL`, `USERNAME`, `PASSWORD`
 - `helpers/sleep.js` — `randomSleep(0.5, 3)`
 - Módulos k6: `k6/http`, `k6` (`check`), `k6/execution` (`exec`, usado nos aborts do setup)
-- Não importa `helpers/auth.js`, `helpers/profiles.js` nem `helpers/report.js`
+- Não importa `helpers/auth.js` nem `helpers/profiles.js`
+- `helpers/report.js` — `generateReport` (importado em 17/10/2026, com a adição do `handleSummary()`; ver "O que faz" abaixo)
 
 **O que faz:** Teste comparativo de performance entre requisições cacheadas e não cacheadas.
 
@@ -824,7 +824,7 @@ Resultado medido: os 4 critérios do item Z resolveram no estado esperado (o 3º
   - `checks{check:settings cache hit (<200ms)}` rate>0.90
   - `http_req_failed` rate<0.05 e `checks` rate>0.95 (genéricos)
 - **Não usa spoofing de IP** — comentário explica que IP local está na whitelist de rate limit, que a detecção de spoofing bloquearia requisições com `X-Forwarded-For` divergente do socket e que testes de cache devem testar cache, não evasão de rate limit
-- **Não usa `helpers/profiles.js` nem `helpers/report.js`** — `options` inline e sem `handleSummary()` (não gera relatório JSON)
+- **Não usa `helpers/profiles.js`** — `options` inline. **`handleSummary()` adicionado em 17/10/2026**: grava `reports/k6-summaries/cache_performance_test.json`; mudança estritamente aditiva (import + função), sem alterar opções, thresholds ou `setup()`
 
 **Endpoints chamados:**
 - `POST /api/auth/login` — Autenticação
@@ -857,7 +857,7 @@ Teste de carga específico para o endpoint de health check da API. Verifica se o
 - Rota pública (sem autenticação) — GET `/api/status?mode=health`
 - Valida status 200 e body com `status === 'ok'` (via `r.json('status')`)
 - Não usa `randomSleep` (requisições contínuas)
-- **Não possui `handleSummary()`** (teste leve sem geração de relatório)
+- **`handleSummary()` adicionado em 17/10/2026** — antes não gerava relatório JSON (o doc o descrevia como "teste leve sem geração de relatório"); agora grava `reports/k6-summaries/health_check.json`. Mudança estritamente aditiva (import + função), sem alterar perfil, VUs ou thresholds
 
 **Endpoints chamados:**
 - `GET /api/status?mode=health` — Health check
@@ -1260,7 +1260,7 @@ Teste negativo de autenticação que envia credenciais inválidas. Garante que o
 **Propósito:** Automatizar a execução de todos os 30 scripts de teste de carga em ambiente isolado com PostgreSQL e Redis, com validação de thresholds e cache de dependências.
 
 **Estrutura do workflow:**
-1. **Schedule:** Execução automática diária agendada para as 04:17 UTC (`cron: '17 4 * * *'` — o minuto 17 é deliberado: o GitHub agenda todos os crons de minuto 0 no mesmo instante e o pico do topo da hora atrasa a execução; o valor do cron foi **mantido**). **A execução observada, porém, não começa nesse horário:** nas execuções agendadas medidas via API pública do GitHub até o run `38246676774` (12/10/2026), o início real saiu de **+6,4 h a +19,1 h** após o horário do cron, concentrando-se em torno de **+7 h** — o run #9 começou às `2026-10-12T12:03:57Z` = **09:03 BRT**, dentro do horário comercial. **Atualização (14/10/2026):** o run nº 11 (`38543197931`, `schedule`, `success`) foi criado às `09:33:18Z` = **06:33 BRT** = **+5h16** após o cron de 04:17 UTC — o **menor atraso medido até agora**; a série medida até aqui vai de **+6h22 a +19h11** (run #9: +7h47; run #10: +7h34), e mesmo o menor deles continua **fora da madrugada** — por isso a decisão de **manter** o cron `17 4 * * *` **não muda**. O `created_at` do run já nasce atrasado (o run é criado ~7 h depois do horário do cron, antes de qualquer step deste workflow), o que aponta para a fila de agendamento do próprio GitHub — e **não** para o `concurrency` group nem para a fila de runners do repositório; a causa raiz não foi confirmada, apenas delimitada por essa evidência. Consequência: o horário do cron **não** é garantia de janela noturna (a versão anterior deste documento afirmava "madrugada, fora do horário comercial", o que a medição desmente). Ver o comentário no próprio `.github/workflows/load-tests.yml`, que é a fonte atual.
+1. **Schedule:** execução automática diária agendada para as **04:17 UTC** (`cron: '17 4 * * *'` — o minuto 17 é deliberado: o GitHub agenda todos os crons de minuto 0 no mesmo instante e o pico do topo da hora atrasa a execução; o valor do cron foi **mantido**). **A execução observada não começa nesse horário:** nas 13 execuções agendadas medidas via API pública do GitHub (runs #1–#14 de 05/10 a 17/10/2026, sem o #8, que foi `workflow_dispatch`), o `created_at` do run já nasce atrasado — é o próprio run que é criado depois do horário, antes de qualquer step. Atraso medido: **+4h19 a +7h46**, mediana **+6h49** — ou seja, horas, nunca minutos, e **nenhuma** execução agendada teve pontualidade aceitável. Melhor caso: run #14, `2026-10-17T08:36:24Z` = 05:36 BRT (+4h19); pior caso: run #9, `2026-10-12T12:03:57Z` = 09:03 BRT (+7h46). Mesmo assim o horário do cron **não é garantia de janela noturna** (nem de qualquer janela), e é por isso que a decisão de **manter** `17 4 * * *` não muda: quem precisar de horário específico não pode depender deste agendamento. A origem não é o `concurrency` group nem a fila de runners deste repositório; a causa raiz (fila de agendamento do próprio GitHub) **não foi confirmada**, apenas delimitada por essa evidência. **A tabela completa, o critério de medição (`created_at`, e não `run_started_at`) e a correção de uma afirmação anterior (o antigo "pior caso +19h07" vinha de um re-run, não do agendamento) estão no comentário do próprio `.github/workflows/load-tests.yml`, que é a fonte atual deste dado** — não são replicados aqui.
 2. **Triggers manuais:** via `workflow_dispatch`
 3. **Job `load-tests`:** único job do workflow. Ele **chama** o workflow reutilizável `test-base.yml` (`uses: ./.github/workflows/test-base.yml`) com `test-type: load`, `run-command: npm run test:load:safe`, `skip-k6: false`, `timeout-minutes: 60`, `seed-db` e as credenciais do admin — todos repassados por `with:`, porque um job que chama workflow reutilizável não pode declarar `steps` nem `timeout-minutes`. É o `test-base.yml` que sobe Postgres/Redis, faz o `npm ci`, o setup do banco, o build/boot da app, roda a bateria e publica o artifact `Upload k6 Reports` (`retention-days` + `if-no-files-found: ignore`).
    - **Não existe mais o job `validate-and-report`** (nem os steps `Validate Thresholds` e `Notify Threshold Violation` que a versão anterior deste documento descrevia): a validação de thresholds e a publicação dos relatórios são feitas pelo `test-base.yml` e pelos scripts k6 eles próprios. A versão anterior também atribuía a este job um comando `node scripts/run-all-load-tests-sequentially.js` direto — o comando passou a ser o `npm run test:load:safe`.
@@ -1296,7 +1296,7 @@ Registro datado da execução que **validou a correção do `stress-test-combine
 | Event / conclusion | `schedule` (cron `17 4 * * *`) / **`success`** |
 | Job `load-tests / run-tests` | `09:33:18Z` → `09:51:19Z` = **18m01s** |
 | Bateria | **30/30 passed, 0 failed, 0 skipped** (Performance 17/17, Functional 9/9, Security 4/4) — recorte da época: a partir do próximo run o corte por categoria é **16/9/4/1**, com o `stress-test-combined` em categoria própria (`🔥 Stress Tests`), ver "Ordem de execução" abaixo |
-| Início vs cron | `created_at` `09:33:18Z` = **06:33 BRT**, **+5h16** após o cron de 04:17 UTC — o menor atraso medido até agora (anteriores: +6h22 a +19h11); **ainda não é madrugada e a decisão de manter o cron não muda** (ver item 1 da seção `load-tests.yml` acima) |
+| Início vs cron | `created_at` `09:33:18Z` = **06:33 BRT**, **+5h16** após o cron de 04:17 UTC — o menor atraso medido **até este run** (a faixa completa, medida nos 13 runs agendados de #1 a #14, está no registro dos runs #12–#14 abaixo e no comentário de `.github/workflows/load-tests.yml`); **ainda não é madrugada e a decisão de manter o cron não muda** (ver item 1 da seção `load-tests.yml` acima) |
 | O que validou | Primeiro run com `exec: 'stress_test'` e `exec: 'memory_monitor'` em vigor: os 4 critérios de verificação do item Z resolvidos no estado esperado (o 3º, `stress_iterations`, segue `ausente` — por ser o estado saudável) e os 4 thresholds do perfil `stress` passaram com **amostras reais** — tabelas, aritmética e não-regressão **nesta mesma seção, logo abaixo** |
 | Observação registrada | Diferença de p95 entre o run #9 e o #11 nos scripts posteriores ao `stress-test-combined` — **hipótese NÃO confirmada**; tabela completa, contraprova e o experimento **aplicado em 14/10/2026** (stress movido para o fim, agora #30) na observação datada da seção do orquestrador abaixo; registro da pendência em `docs/PENDENCIAS_scripts_testes.md`, **item AB** |
 
@@ -1328,6 +1328,43 @@ Registro datado da execução que **validou a correção do `stress-test-combine
 2. **`teardown` sem a linha `🧹 Teardown: N vídeos removidos` = correto.** O log do run #11 não tem nenhuma linha desse tipo, e não é problema: o `stress_test` faz DELETE dentro de cada iteração (CREATE → UPDATE → DELETE, com os 3 checks passando), então não sobra resíduo com prefixo `[TEST-K6]` para o `teardown` apagar. A função só loga quando `totalDeleted > 0` (`stress-test-combined.js:188-190`); as 2 `http_reqs` de paginação correspondem à página 1 (vídeos que não casaram os prefixos de teste) e à página 2 (vazia — o loop quebra em `videos.length === 0`).
 
 **Também medido:** o cron **não** reprovou. A "reprovação legítima" prevista em 13/10/2026 (pela whitelist de loopback do `checkRateLimit`, que deixaria as mutações ilimitadas na CI) é possibilidade futura, não o que ocorreu: os quatro thresholds passaram com dados reais e folga grande (p95 de 3,46 ms contra limite de 3000 ms; 0 falhas em 24567 requisições de mutação).
+
+### Registro de execução — runs [`38711048683`](https://github.com/caminhar-deus/Caminhar/actions/runs/38711048683), [`38877864558`](https://github.com/caminhar-deus/Caminhar/actions/runs/38877864558) e [`39017995354`](https://github.com/caminhar-deus/Caminhar/actions/runs/39017995354) (cron "Load Tests (k6)" nº 12, 13 e 14, 15–17/10/2026)
+
+Os três runs são homogêneos — 30/30 passed, nenhum step falho — e estão registrados juntos porque o que eles prodzem de novo é a **primeira amostra de 3 execuções** do experimento do **item AB** (o `stress-test-combined` movido para o fim da bateria em 14/10/2026). Valores medidos nos artifacts `k6-load-test-reports` (IDs 11961428110, 12037400326 e 12095977407) e na API pública do GitHub; nada aqui é estimado.
+
+| Campo | Run #12 | Run #13 | Run #14 |
+|-------|---------|---------|---------|
+| Run / SHA | `38711048683` / `0e912d3` | `38877864558` / `1d9a24f` | `39017995354` / `646ac92` |
+| Event / conclusion | `schedule` / **`success`** | `schedule` / **`success`** | `schedule` / **`success`** |
+| Job `load-tests / run-tests` | `09:10:59Z` → `09:28:59Z` = **18m00s** | `09:03:47Z` → `09:21:45Z` = **17m58s** | `08:36:26Z` → `08:54:34Z` = **18m08s** |
+| Bateria (step `Run Tests`) | **16m29s** | **16m37s** | **16m39s** |
+| Bateria | **30/30 passed**, 0 failed, 0 skipped — Performance 16 + Functional 9 + Security 4 + **Stress 1** | idem | idem |
+| Artifact | 43.660 B, 28 arquivos | 43.704 B, 28 arquivos | 43.638 B, 28 arquivos |
+| Steps `skipped` | `Audit Dependencies`, `Upload Coverage Output/HTML` | idem | idem |
+| `created_at` vs cron `04:17` UTC | **+4h53** (06:10 BRT) | **+4h46** (06:03 BRT) | **+4h19** (05:36 BRT) — **menor atraso já medido** |
+
+O timeout de 60 min seguiu folgado: o job mais longo (#14, 18m08s) usou **30%** dele. Nenhum run teve step `failure`, e `security:check-sql`, `setup-db`, `build-app` e `setup-k6` saíram verdes nos três.
+
+**Experimento do item AB — 3 amostras pós-mudança (o critério de decisão declarado era "se a degradação dos scripts seguintes sumir, a hipótese do banco se sustenta"):**
+
+Comparação do p95 de cada script contra o run #11 (baseline, quando o `stress-test-combined` ainda era o #17 e contaminava tudo que vinha depois), nos 3 runs em que ele já é o #30. Grupo "tratado" = scripts que no #11 rodavam **depois** dele; grupo "controle" = scripts que rodavam **antes** (não são afetados pela hipótese e servem de referência de ruído do runner).
+
+| Grupo | n | mediana | faixa |
+|---|---|---|---|
+| Tratado (rodavam depois do stress no #11) | 30 | **−5%** | −50% .. +30% |
+| Controle (rodavam antes no #11) | 39 | **+8%** | −14% .. +58% |
+
+**Leitura — evidência parcial, NÃO fecha o item como confirmado.** A separação vai na direção que a hipótese previa (tratado ~13 pontos melhor que controle), mas o critério declarado era "a degradação **sumiu**", e ela não sumiu: 9 das 30 medidas do grupo tratado continuam positivas, e o próprio grupo controle **subiu** de mediana (+8%), o que indica deriva de runner entre execuções e não apenas efeito do stress. Com 3 amostras e ruído por script de −50% a +58%, efeito de ~13 pontos não separa experimento de ruído. **A mudança de ordem permanece aplicada** (é a ordem correta independentemente do resultado — o script destrutivo não deveria contaminar a medição dos outros) e o **item AB continua ABERTO**, aguardando mais amostras. As 2 execuções que eram contraprova na versão de 14/10/2026 agora são 5.
+
+**Outlier do run #14 — p95 do `stress-test-combined` de 3,40 ms para 24,91 ms, e NÃO é atribuível ao código.** Os três runs fizeram o mesmo trabalho (8432–8510 iterações, 32828–33140 checks, 100% de aprovação, zero erro de rede) e o checkout é o mesmo `ubuntu24/20261012.334`. A assinatura do outlier é de cauda, não de geral: no #14 a **mediana ficou mais rápida** (1,82 ms contra 2,24 ms) e o p90 ficou igual (3,29 contra 3,03), enquanto `avg` saltou de 2,34 para 8,34 e o `max` de 90 para 850 ms. Duas hipóteses foram testadas e **descartadas por medição**: (a) *stall de checkpoint do Postgres* — os dois runs têm um checkpoint longo caindo dentro da janela do stress (#13: 46,6 s; #14: 51,5 s), então a duração dele não distingue os casos; (b) *regressão de código do commit `646ac92`* — o commit toca `lib/infra/storage.js`, `pages/api/upload-image.js` e `pages/api/uploads/[...path].js`, nenhum deles no caminho do stress (CRUD de vídeos). **O fator de confusão que sobra é o runner: o #13 rodou em `Region: eastus` e o #14 em `Region: mexicocentral`** (mesma imagem, provedor Azure diferente), que é causa conhecida de cauda de latência em runner hospedado compartilhado. Conclusão registrada: **atribuição inconclusiva, sem regressão estabelecida** — o próximo cron que rodar em `eastus` é o que fecha a questão, e o critério é p95 do stress abaixo de 5 ms.
+
+### Achados de observação nos runs #12–#14 (não são falha funcional; 2 foram corrigidos em 17/10/2026)
+
+1. **`checks` agregado não é interpretável em 2 scripts de segurança.** `ip-spoofing-test` fecha em **50,00%** (126868 passes / 126868 fails) e `ddos-search-test` em **33,33%**, porque declaram checks *inversos* entre si — um afirma "🛡️ BLOQUEADO (429)" e o outro "EVASÃO CONFIRMADA: não bloqueou (401)" —, de modo que exatamente um dos dois pode passar por iteração. **Não é falso verde:** os dois scripts não declaram threshold `checks` justamente por isso, e o veredito vem de métricas próprias, que passaram com folga — `search_block_rate` 99,92% / 99,94% / 99,94% (limite `rate>0.50`) e `ip_rotation_evasion_rate` 0,0052% / 0,0041% / 0,0039% (limite `rate<0.05`). O risco é prospectivo: quem adicionasse `checks: ['rate==1.0']` a qualquer um dos dois reprovaria para sempre.
+2. **4 dos 30 scripts não gravavam relatório** — `cache-warmup-test`, `cache-performance-test`, `create-post-flow` e `health-check` não tinham `handleSummary`, o que explica 28 arquivos para 30 scripts: os números deles existiam só no log do job, que expira junto com o run. **Corrigido em 17/10/2026.**
+3. **JWT do admin semeado vazando no artifact** — 9 dos 27 JSON por artifact carregavam `setup_data`; 7 vinham saneados (`{"token": "*** TOKEN OCULTO ***"}`) e **2 vazavam o token em texto claro** (`musicas_load_test.json` e `videos_load_test.json`). Causa: `sanitizeToken` (`load-tests/helpers/report.js:14`) só cobre o caminho `data.setup_data.token`, mas `createLoadSetup` (`load-tests/helpers/resource-test-runner.js:536`) retorna `loginRes.json('data.token')` — uma **string crua**, forma que o sanitizador nunca alcançava. Risco prático baixo (o `JWT_SECRET` é secret do repo e o Postgres do runner é efêmero), mas é credencial em artefato baixável por qualquer pessoa durante a retenção de 30 dias. **Corrigido em 17/10/2026.**
+4. **24 dos 26 scripts de teste não têm threshold `http_req_failed`.** O silêncio vem de `checks`, que cobre as requisições verificadas, mas uma requisição **sem check** passa em branco. Caso medido: `musicas-search-test` fez 7 requisições, 1 falhou (14,28% de `http_req_failed`) e nenhum check cobre aquela requisição — o threshold `checks: ['rate==1.0']` passou mesmo assim. Em `video-validation-test` os 50% de `http_req_failed` são as duas respostas 400 intencionais (`Domínio Inválido`, `URL Malformada`), ou seja, corretos. **Observação em aberto, sem correção** — exige decisão sobre quais scripts devem ganhar `setResponseCallback` para tratar 4xx esperado.
 
 ---
 
