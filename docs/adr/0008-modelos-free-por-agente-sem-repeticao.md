@@ -70,10 +70,15 @@ escolhido por medição e não por conveniência.
 |---|---|---|
 | `orchestrator` | `space-bunny-free` | sem reserva — ver "Saídas do catálogo" |
 | `oracle` | `nemotron-3.5-super-vl-free` | achou a causa da escalada de privilégio, não o sintoma — ver "Saídas do catálogo" |
-| `librarian` | `deepseek-v4.1-flash-free` | leu a doc **e** o código instalado do Next para fechar lacuna da doc |
 | `explorer` | `longcat-2.5-preview-free` | 10/10; localizou o `withAuth` em uso, que o rival errou |
-| `designer` | `muse-spark-1.3-contributor-free` | 12/12 tokens conferidos em `variables.css`; zero alucinação |
+| `designer` | `beam-free` | 4/4; apontou o `--color-text-tertiary` como proibido para texto informativo — ver "18/10/2026" |
 | `fixer` | `mimo-v2.6-flash-free` | 9/9 testes; formatação e não-mutação reconferidas fora do agente |
+
+> A tabela é a de **18/10/2026**. Antes dela havia seis linhas: o `librarian`
+> (`deepseek-v4.1-flash-free`) deixou de existir quando o slim 3.0.5 fundiu-o no
+> `explorer`, e o `designer` trocou de modelo porque o `muse-spark-1.3-contributor-free`
+> saiu do catálogo. As duas mudanças estão em "18/10/2026"; o histórico fica em
+> "Saídas do catálogo em 16/10/2026" e em "Re-análise de 16/10/2026".
 
 A escolha partiu de uma bateria de **15/10/2026**: uma tarefa real por modelo free,
 com a resposta conferida em `arquivo:linha` antes de aceitar. A regra de escolha foi
@@ -189,6 +194,42 @@ existe reserva distinta para os seis agentes: ou um fica sem, ou a reserva é co
 (e aí a queda dela derruba dois). O mantenedor escolheu **reserva só no orchestrator** — o único
 agente cujo modelo afeta a sessão inteira — e os outros cinco sem reserva, preservando o isolamento
 máximo que, nesta decisão, substitui a cadeia.
+
+### 18/10/2026: o `designer` parou de funcionar — `muse-spark` saiu do catálogo
+
+O gatilho (a) da seção "Revisão" disparou de novo, e desta vez **em silêncio para quem não
+testou**: `muse-spark-1.3-contributor-free` (lançado em 02/09/2026) deixou o catálogo do Zen,
+e só restou o `muse-spark-1.3` **pago**, a 1,25/4,25 por Mtok.
+
+O `designer` estava apontando para o id que saiu. **Não foi hypothetical**: o host rejeita o
+spawn na hora, com `Model "opencode/muse-spark-1.3-contributor-free" is not available`. O agente
+ficou indisponível por completo — silenciosamente, do ponto de vista de quem só lê a config,
+porque o preset continua válido para o schema e o `opencode debug config` passa.
+
+A contagem de modelos free caiu de 11 para **10**.
+
+**Substituto: `beam-free`, sem bateria nova.** Ele já tinha medição *deste mesmo papel*, em
+16/10/2026: 4/4, e — o ponto decisivo — apontou `--color-text-tertiary` como proibido para
+texto informativo (`MASTER.md:49-51`), que é exatamente o teste que reprovou o
+`nemotron-3.5-super-vl-free` neste papel. Regerar a bateria só consumiria cota para reconfirmar o
+mesmo id, que não mudou. Revalidado no dia, contra o catálogo atual: as três citações
+(`MASTER.md:49-51`, `variables.css:93`, `variables.css:94`) conferem.
+
+O `beam-free` não era primário de ninguém, então a troca não gerou repetição.
+
+### 18/10/2026: `deepseek-v4.1-flash-free` segue órfão, e o papel que ele sabia fazer mudou
+
+O slim 3.0.5 fundiu o `librarian` no `explorer` (mudança upstream, não do projeto). Com isso o
+`deepseek-v4.1-flash-free` ficou sem dono: está **ativo e gratuito**, com variantes
+`low`/`high`/`max`, e ninguém o usa.
+
+**Não foi promovido por analogia, e essa é a parte que importa.** O `deepseek` foi medido no
+papel de *librarian* (doc externa); o `longcat` foi medido no papel de *explorer antigo* (só
+varredura de repositório, 10/10). O `explorer` de hoje é a **união dos dois** — herdou
+`context7` e `gh_grep`. Pela regra desta mesma decisão, **medição vale por papel, e o papel
+mudou**: nenhum dos dois candidatos foi medido na união. Trocar por argumento de histórico seria
+repetir o erro que a seção "Saídas do catálogo" já registrou — apontar para o id disponível em
+vez de medir o substituto.
 
 ## Alternativas consideradas
 

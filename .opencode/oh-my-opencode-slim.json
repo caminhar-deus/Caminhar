@@ -64,7 +64,8 @@
     // INVENTÁRIO (armadilha): `opencode models` esconde, na visão padrão, as versões anteriores de
     // cada família. deepseek-v4.1-flash-free, glm-5.3-flash-free,
     // nemotron-3.5-lightning-free e nemotron-3-ultra-free só aparecem com `all: true` — e estão
-    // ativos e grátis. São 11 modelos free, não 7.
+    // ativos e grátis. São 10 modelos free, não 6 — e a contagem muda: muse-spark-1.3-contributor-free
+    // saiu em 18/10/2026. Confira antes de confiar nesta lista.
     // nemotron-3.5-lightning-free fica de fora: foi o que derrubou o explorer em 09/10/2026.
     //
     // ÓRFÃO (18/10/2026): deepseek-v4.1-flash-free era o modelo do librarian. Com o merge do 3.0.5
@@ -80,14 +81,16 @@
     //   deepseek-4.1 leu a doc E o código instalado do Next p/ fechar o que a doc não documenta
     //                (mínimo de revalidate, Cache-Control em /api/*).
     //   longcat      10/10; achou que o withAuth em uso é auth.js:324 (o rival apontou o errado).
-    //   muse-spark   12/12 tokens existem em variables.css; zero alucinação de token.
+    //   muse-spark   SAIU DO CATÁLOGO em 18/10/2026 (era o designer: 12/12 tokens conferidos em
+    //                variables.css; zero alucinação). Só restou o `muse-spark-1.3` PAGO. Substituído
+    //                no designer pelo beam-free, medido no mesmo papel.
     //   mimo         9/9 testes; formatação pt-BR e não-mutação reconferidas fora do agente.
     //   beam-free    estreante de 05/10, medido em 3 papéis no mesmo dia: explorer 7/7 (incluiu o
     //                adminCrudHandler.js:331); librarian 8/8 (declarou "a doc não documenta" onde a
     //                doc cala); designer 4/4 (apontou --color-text-tertiary como proibido para texto
     //                informativo, MASTER.md:49-51 — exatamente o erro que reprovou o nemotron neste
-    //                papel). Medido e disponível, mas não é primário de ninguém: o mantenedor manteve
-    //                a distribuição existente.
+    //                papel). AGORA É O DESIGNER (18/10/2026), substituindo o muse-spark que saiu
+    //                do catálogo; a medição de 16/10 é deste mesmo papel, então não há herança.
     //   big-pickle   saiu e voltou ao catálogo no mesmo dia (16/10). Reserva do orchestrator. No
     //                papel de oracle, hoje: CONTESTOU a premissa — achou que o maxFileSize do
     //                formidable (upload-image.js:59) aborta o parse e o cliente recebe 500
@@ -102,9 +105,12 @@
       // O 3.0.5 fundiu o librarian no explorer (MARKETPLACE_BUILTIN_RENAMES em dist/index.js).
       // O explorer carrega hoje as duas responsabilidades: varredura do repo (longcat) e
       // doc externa (context7/gh_grep, em "agents" abaixo). O modelo segue o do explorer, medido
-      // no papel de repo. deepseek-v4.1-flash-free ficou órfão — ver a nota no fim do arquivo.
+      // no papel de repo. deepseek-v4.1-flash-free ficou órfão — ver a nota "ÓRFÃO" acima.
       "explorer":     { "model": "opencode/longcat-2.5-preview-free" },
-      "designer":     { "model": "opencode/muse-spark-1.3-contributor-free", "skills_add": ["ui-ux-pro-max"] },
+      // designer: 18/10/2026, muse-spark-1.3-contributor-free SAIU do catálogo do Zen e o agente
+      // parou de funcionar (o host rejeita o spawn: "Model ... is not available"). Trocado para
+      // beam-free, que já tinha medição deste papel em 16/10 — ver a entrada dele abaixo.
+      "designer":     { "model": "opencode/beam-free", "skills_add": ["ui-ux-pro-max"] },
       "fixer":        { "model": "opencode/mimo-v2.6-flash-free" }
     }
     // Híbrido de exemplo (lembre de adicionar o provedor em enabled_providers no opencode.jsonc):
