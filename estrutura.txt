@@ -474,6 +474,7 @@ tests/integration/api/cleanup-test-data.test.js → pages/api/cleanup-test-data.
 tests/integration/api/cleanup-test-data.test.js → tests/mocks/db-module.js
 tests/integration/api/dicas.test.js → lib/cache/cache.js
 tests/integration/api/dicas.test.js → lib/infra/db.js
+tests/integration/api/dicas.test.js → lib/infra/logger.js
 tests/integration/api/dicas.test.js → pages/api/dicas.js
 tests/integration/api/dicas.test.js → tests/mocks/db-module.js
 tests/integration/api/ip-diagnostico.test.js → lib/auth/auth.js
@@ -692,6 +693,7 @@ tests/unit/lib/crud.test.js → lib/crud/crud.js
 tests/unit/lib/crud.test.js → lib/infra/db.js
 tests/unit/lib/crud.test.js → tests/mocks/db-module.js
 tests/unit/lib/db.test.js → lib/infra/db.js
+tests/unit/lib/db.test.js → lib/infra/logger.js
 tests/unit/lib/db/createPost.test.js → lib/domain/posts.js
 tests/unit/lib/db/createPost.test.js → lib/infra/db.js
 tests/unit/lib/db/deletePost.test.js → lib/domain/posts.js
@@ -759,6 +761,7 @@ tests/unit/pages/api/auth/login.edge.test.js → lib/infra/logger.js
 tests/unit/pages/api/auth/login.edge.test.js → pages/api/auth/login.js
 tests/unit/pages/api/upload-image.edge.test.js → pages/api/upload-image.js
 tests/unit/scripts/reset-password.test.js → lib/auth/auth.js
+tests/unit/scripts/seed-settings.test.js → tests/helpers/console.js
 tests/unit/settings.cache.test.js → tests/mocks/db-module.js
 tests/unit/utils/resolve-next.test.js → utils/resolve-next.js
 tests/unit/videos.validation.test.js → lib/domain/videos.js

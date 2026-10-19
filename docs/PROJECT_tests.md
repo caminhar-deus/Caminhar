@@ -513,6 +513,15 @@ As suítes `clear-db`, `clear-musicas`, `reset-password` e `seed-all` agora **im
 | Arquivo | Propósito |
 |---------|-----------|
 | `test-coverage-comment.test.js` | Executa o script embutido no step `Post PR Comment on Failure` de `.github/workflows/test-coverage.yml` — o mesmo texto que o `actions/github-script` executa — com `github` e `context` simulados, e verifica o comentário publicado: limite de 65536 caracteres da API, tabela de cobertura e motivo do threshold preservados, ruído do começo descartado, fim da saída mantido quando a suíte quebra antes da cobertura, crases/`${`/barras invertidas não corrompidos e o marcador pesquisado pelo step de limpeza presente. O arquivo amostra é virtual (shim de `require('fs')`), então o teste não escreve em disco. Inclui controle negativo do preparo anterior (corte pelo começo + escape do texto). |
+| `k6-version-pin.test.js` | Percorre **todos** os `.yml` de `.github/workflows/` (em vez de fixar um arquivo) e exige que todo uso de `grafana/setup-k6-action` declare `k6-version` **sem o prefixo `v`** — a action monta a URL de release como `releases/download/v<versão>/k6-v<versão>-…`, então `v2.3.0` produz `vv2.3.0` e 404, que foi exatamente o que derrubou o cron nº 15 (18/10/2026). Inclui um helper que torna explícita a formação da URL e um controle negativo que prova que a regra rejeita o valor com `v`. |
+
+### 5.15 Testes da Suíte de Carga (`/tests/unit/load-tests/`)
+
+| Arquivo | Propósito |
+|---------|-----------|
+| `profiles.test.js` | Testes de **caracterização** de `getProfile`/`PROFILES` (`load-tests/helpers/profiles.js`): travam o comportamento real de hoje, incluindo o **descarte** dos thresholds do perfil base quando o override traz `thresholds` — a perda silenciosa catalogada no item AD de `docs/PENDENCIAS_scripts_testes.md`. Os 2 casos do descarte são marcados como limitação conhecida e apontam a Fase 1, que os terá de reescrever de propósito. Incluem invariantes da matriz de perfis e um controle negativo que prova ter força (mutar o resultado de `getProfile` não contamina `PROFILES`). |
+
+> **Por que o primeiro teste de `load-tests/` só apareceu em 19/10/2026:** até então nada em `load-tests/` era exercitado por jest, e a Fase 1 do item AD mexe justamente na função que hoje perde thresholds em silêncio — sem o teste, a correção poderia reintroduzir a mesma falha sem ninguém perceber. Aplicar a mudança da Fase 1 reprova exatamente os 2 casos de caracterização, o que foi verificado por mutação.
 
 ---
 
@@ -531,14 +540,14 @@ As suítes `clear-db`, `clear-musicas`, `reset-password` e `seed-all` agora **im
 | **Testes de Integração — API Auth** | 4 arquivos |
 | **Testes de Integração — Auth v1** | 1 arquivo |
 | **Testes de Integração — Domínio (DB real)** | 6 arquivos |
-| **Testes Unitários** | 132 arquivos |
-| **Total Geral** | **226 arquivos** |
+| **Testes Unitários** | 134 arquivos |
+| **Total Geral** | **228 arquivos** |
 
 ---
 
 > **Nota:** Este documento reflete a análise atual dos arquivos em `/tests`. Em caso de divergência com documentos anteriores, prevalece esta análise.
 >
-> **Recount verificado em 12/10/2026: 226 arquivos `.js`** — 225 no recount da manhã + 1 (`tests/unit/scripts/check-hardcoded-credentials.test.js`, criado na Fase 3 da auditoria dos scripts). A contagem anterior (217, de 24/09/2026) estava defasada em 9 arquivos. Recount feito com `find tests -name '*.js'`, por diretório — o mesmo critério da contagem original (arquivos `.js`, não apenas `*.test.js`). As maiores divergências foram **Integração — API (50 → 34)** e **Unitários (127 → 132)**.
+> **Recount verificado em 19/10/2026: 228 arquivos `.js`** — 226 no recount de 12/10/2026 + 2 (`tests/unit/load-tests/profiles.test.js` e `tests/unit/github-workflows/k6-version-pin.test.js`, criados para travar os gates da suíte k6). A contagem anterior (217, de 24/09/2026) estava defasada em 11 arquivos. Recount feito com `find tests -name '*.js'`, por diretório — o mesmo critério da contagem original (arquivos `.js`, não apenas `*.test.js`). As maiores divergências foram **Integração — API (50 → 34)** e **Unitários (127 → 134)**.
 >
 > Este quadro é a **única fonte de contagem** do projeto. `docs/UPGRADE_tests.md` não repete números globais — remete para cá — para não haver duas contagens divergindo.
 >

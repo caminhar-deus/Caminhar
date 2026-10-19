@@ -729,7 +729,7 @@ Testa o fluxo completo de criação de posts no blog: login → criação → li
 >
 > **Contraste que prova a causa.** `security/rate-limit-test.js` usa o perfil `rateLimit`, que **também** usa `scenarios:` sem `exec:` — mas a lógica dele está na `export default function()` (linha 17), então o cenário `brute_force` executa a `default`, que é a função certa, e aquele teste **funciona**. A diferença não é o perfil, é **onde** a lógica está no arquivo: perfis sem `exec:` são inofensivos enquanto a lógica estiver na `default()` e silenciosamente destrutivos quando não estiver.
 >
-> **Sem relação com este bug:** os `checks` em 50% (`ip-spoofing-test`) e 33,33% (`ddos-search-test`) são comportamento correto e documentado no próprio código — checks mutuamente exclusivos por status HTTP, em que cada requisição satisfaz exatamente um (o cabeçalho do `ddos-search-test.js` diz que "a soma é 100% e a leitura de um percentual isolado não significa falha"). Os thresholds `ip_rotation_evasion_rate` (0,00%) e `search_block_rate` (99,95%) passaram, e `errors_500` ficou em 0,00%.
+> **Sem relação com este bug:** os `checks` em 50% (`ip-spoofing-test`) e 33,33% (`ddos-search-test`) são comportamento correto e documentado no próprio código — checks mutuamente exclusivos por status HTTP, em que cada requisição satisfaz exatamente um (o cabeçalho do `ddos-search-test.js` diz que "a soma é 100% e a leitura de um percentual isolado não significa falha"). Os thresholds `ip_rotation_evasion_rate` (0,00%) e `search_block_rate` (99,95%) passaram, e `errors_500` ficou em 0,00%. A regra que vale para toda a suíte está no [ADR-0012](adr/0012-gate-da-suite-k6-por-metrica-propria.md).
 >
 > **Correção aplicada em 13/10/2026, ~~ainda não exercitada em CI~~ VALIDADA EM CI EM 14/10/2026 PELO RUN [`38543197931`](https://github.com/caminhar-deus/Caminhar/actions/runs/38543197931):** o perfil `stress` de `load-tests/helpers/profiles.js` agora declara `exec: 'stress_test'` no cenário `stress_test` e `exec: 'memory_monitor'` no cenário `memory_monitor` (duas linhas; sem mudança de thresholds nem estágios). ~~A correção está no **working tree — só entra em vigor após commit e push**, então o próximo cron é o primeiro run que a exercita.~~ A correção entrou em vigor antes do run nº 11 (sha `e50de03`), que foi o primeiro run a exercitá-la. Pendência fechada em `docs/PENDENCIAS_scripts_testes.md` (item Z), que traz também o **critério de verificação objetivo** no artifact do próximo run (`checks.passes > 0`; `http_reqs` na casa das dezenas de milhares, hoje eram 3; `stress_iterations` presente, hoje ausente; `nodejs_memory_rss_bytes` presente, hoje ausente) — **cumprido em 14/10/2026 (ver "Validação" logo abaixo)**. Com ela, o teste passa a exercitar de fato 100 VUs contra a app por ~5 min e o cron **pode reprovar legitimamente pela primeira vez** — reprovação de capacidade, não de defeito (previsão detalhada no item Z; no run nº 11 o cron **não** reprovou, porque os thresholds passaram com folga grande).
 
@@ -996,7 +996,7 @@ Testa o filtro de posts por tag na API pública. Verifica se a rota `/api/posts?
 Testa a capacidade de recuperação do sistema após uma falha (banco de dados offline). Valida que o sistema detecta falhas e se recupera automaticamente, medindo o tempo de recuperação (TTR).
 
 - Configuração: perfil `recovery` do `helpers/profiles.js` (cenário `chaos_monitor`: 1 VU constante por 2 minutos, sem thresholds)
-- Monitora rota `/api/posts` que depende estritamente do banco de dados, com `expectedStatuses: { min: 200, max: 599 }` (qualquer status conta, sem marcar `http_req_failed`)
+- Monitora rota `/api/posts` que depende estritamente do banco de dados, com `responseCallback: http.expectedStatuses({ min: 200, max: 599 })` (qualquer status conta, sem marcar `http_req_failed`)
 - Estados `isSystemDown`/`failureStartTime` (escopo do VU) para rastrear início/fim de quedas — ao detectar retorno do 200 após uma queda, loga o tempo de downtime
 - Métricas: `recovery_time_ms` (Trend, variável `RecoveryTime`) e `recovery_count` (Counter, variável `RecoveryCount`)
 - `handleSummary()` — Se nenhuma recuperação ocorreu e todos os checks passaram, loga mensagem de estabilidade; gera relatório via `generateReport()` com nome `recovery_test`
@@ -1157,7 +1157,7 @@ Teste consolidado de IP spoofing que mescla os propósitos dos antigos testes se
 
 **Interpretação dos resultados:**
 
-Os dois checks são **mutuamente exclusivos** por status HTTP — uma resposta tem um único status, então exatamente um dos dois passa por iteração. **Checks em 50% é o valor esperado**, não sintoma de falha.
+Os dois checks são **mutuamente exclusivos** por status HTTP — uma resposta tem um único status, então exatamente um dos dois passa por iteração. **Checks em 50% é o valor esperado**, não sintoma de falha. A regra que vale para toda a suíte está no [ADR-0012](adr/0012-gate-da-suite-k6-por-metrica-propria.md).
 
 | Check | Status | Significado |
 |-------|--------|-------------|
@@ -1191,7 +1191,7 @@ Os dois checks são **mutuamente exclusivos** por status HTTP — uma resposta t
 Simula um cenário de busca massiva (tipo DDoS) no endpoint de busca de posts. Verifica a resiliência do sistema sob alta frequência de requisições de busca, validando thresholds de performance e taxa de erro.
 
 - Gera busca aleatória com termos fixos: `['amor', 'paz', 'fé', 'luz', 'vida', 'caminho', 'verdade', 'esperança', 'coração', 'espírito']`, acrescidos de **sufixo único por iteração** (`` `${termo}-${__VU}-${__ITER}` ``) — ver "Correção 09/10/2026" abaixo
-- Requisição usa `expectedStatuses: [200, 429]` (status 429 não é computado como falha `http_req_failed`) e tags `{type: ddos_search, name: DDoS_Search}`
+- Requisição usa `responseCallback: http.expectedStatuses(200, 429)` (status 429 não é computado como falha `http_req_failed`) e tags `{type: ddos_search, name: DDoS_Search}`
 - Envia `X-Forwarded-For: 203.0.113.10` (RFC 5737, faixa de documentação), **constante** — este teste mede bloqueio; a evasão por rotação é de `ip-spoofing-test`
 - Métrica `errors_500` (Rate, variável `ErrorRate500`) — alimentada com `true` para respostas 5xx; threshold `rate<0.50` **sem** `abortOnFail`/`delayAbortEval` (os 5xx são resultado a medir num teste de resiliência): taxa parcial é achado de capacidade reportado no resumo, ≥50% reprova o teste
 - Métrica `search_block_rate` (Rate, variável `SearchBlockRate`) — alimentada com `true` para respostas 429; threshold **`rate>0.50`**, que dá poder de reprovação quando a proteção não atua
@@ -1217,7 +1217,7 @@ Verificado por simulação: com termo fixo, 15.000 requisições produzem 4 chav
 | Sistema subdimensionado | `⚠️ VULNERÁVEL: Servidor caiu (5xx)` (taxa parcial) | Servidor não suporta a carga |
 | Sistema estável | `✅ RESISTIU: Servidor respondeu (200)` (alta taxa) | **Rate limit NÃO limitou a busca: falha de proteção** |
 
-Os três checks são **mutuamente exclusivos por status HTTP** (uma resposta tem um único status), então a soma é 100% e a leitura de um percentual isolado não significa falha — leia os três juntos. Antes da correção de 09/10/2026, `🛡️ BLOQUEADO` era **inalcançável**; agora é o check que indica a proteção funcionando.
+Os três checks são **mutuamente exclusivos por status HTTP** (uma resposta tem um único status), então a soma é 100% e a leitura de um percentual isolado não significa falha — leia os três juntos. Antes da correção de 09/10/2026, `🛡️ BLOQUEADO` era **inalcançável**; agora é o check que indica a proteção funcionando. A regra que vale para toda a suíte está no [ADR-0012](adr/0012-gate-da-suite-k6-por-metrica-propria.md).
 
 **Endpoints chamados:**
 - `GET /api/posts?search={termo}-{VU}-{ITER}` — Busca de posts com termo único por iteração (garante cache miss, logo verificação de rate limit) e header `X-Forwarded-For`
@@ -1260,7 +1260,7 @@ Teste negativo de autenticação que envia credenciais inválidas. Garante que o
 **Propósito:** Automatizar a execução de todos os 30 scripts de teste de carga em ambiente isolado com PostgreSQL e Redis, com validação de thresholds e cache de dependências.
 
 **Estrutura do workflow:**
-1. **Schedule:** execução automática diária agendada para as **04:17 UTC** (`cron: '17 4 * * *'` — o minuto 17 é deliberado: o GitHub agenda todos os crons de minuto 0 no mesmo instante e o pico do topo da hora atrasa a execução; o valor do cron foi **mantido**). **A execução observada não começa nesse horário:** nas 13 execuções agendadas medidas via API pública do GitHub (runs #1–#14 de 05/10 a 17/10/2026, sem o #8, que foi `workflow_dispatch`), o `created_at` do run já nasce atrasado — é o próprio run que é criado depois do horário, antes de qualquer step. Atraso medido: **+4h19 a +7h46**, mediana **+6h49** — ou seja, horas, nunca minutos, e **nenhuma** execução agendada teve pontualidade aceitável. Melhor caso: run #14, `2026-10-17T08:36:24Z` = 05:36 BRT (+4h19); pior caso: run #9, `2026-10-12T12:03:57Z` = 09:03 BRT (+7h46). Mesmo assim o horário do cron **não é garantia de janela noturna** (nem de qualquer janela), e é por isso que a decisão de **manter** `17 4 * * *` não muda: quem precisar de horário específico não pode depender deste agendamento. A origem não é o `concurrency` group nem a fila de runners deste repositório; a causa raiz (fila de agendamento do próprio GitHub) **não foi confirmada**, apenas delimitada por essa evidência. **A tabela completa, o critério de medição (`created_at`, e não `run_started_at`) e a correção de uma afirmação anterior (o antigo "pior caso +19h07" vinha de um re-run, não do agendamento) estão no comentário do próprio `.github/workflows/load-tests.yml`, que é a fonte atual deste dado** — não são replicados aqui.
+1. **Schedule:** execução automática diária agendada para as **04:17 UTC** (`cron: '17 4 * * *'` — o minuto 17 é deliberado, para não disputar o pico de todos os crons de minuto 0; o valor do cron foi **mantido**). **A execução observada não começa nesse horário:** nas 15 execuções agendadas medidas (05–19/10/2026) o atraso foi de +4h19 a +7h46, mediana +6h34 — horas, nunca minutos, e nenhuma execução teve pontualidade aceitável. A causa raiz (fila de agendamento do próprio GitHub) **não foi confirmada**, apenas delimitada por essa evidência. **A tabela completa das 15 execuções e o critério de medição estão no comentário do próprio `.github/workflows/load-tests.yml`, que é a fonte deste dado** — não são replicados aqui.
 2. **Triggers manuais:** via `workflow_dispatch`
 3. **Job `load-tests`:** único job do workflow. Ele **chama** o workflow reutilizável `test-base.yml` (`uses: ./.github/workflows/test-base.yml`) com `test-type: load`, `run-command: npm run test:load:safe`, `skip-k6: false`, `timeout-minutes: 60`, `seed-db` e as credenciais do admin — todos repassados por `with:`, porque um job que chama workflow reutilizável não pode declarar `steps` nem `timeout-minutes`. É o `test-base.yml` que sobe Postgres/Redis, faz o `npm ci`, o setup do banco, o build/boot da app, roda a bateria e publica o artifact `Upload k6 Reports` (`retention-days` + `if-no-files-found: ignore`).
    - **Não existe mais o job `validate-and-report`** (nem os steps `Validate Thresholds` e `Notify Threshold Violation` que a versão anterior deste documento descrevia): a validação de thresholds e a publicação dos relatórios são feitas pelo `test-base.yml` e pelos scripts k6 eles próprios. A versão anterior também atribuía a este job um comando `node scripts/run-all-load-tests-sequentially.js` direto — o comando passou a ser o `npm run test:load:safe`.
@@ -1364,7 +1364,60 @@ Comparação do p95 de cada script contra o run #11 (baseline, quando o `stress-
 1. **`checks` agregado não é interpretável em 2 scripts de segurança.** `ip-spoofing-test` fecha em **50,00%** (126868 passes / 126868 fails) e `ddos-search-test` em **33,33%**, porque declaram checks *inversos* entre si — um afirma "🛡️ BLOQUEADO (429)" e o outro "EVASÃO CONFIRMADA: não bloqueou (401)" —, de modo que exatamente um dos dois pode passar por iteração. **Não é falso verde:** os dois scripts não declaram threshold `checks` justamente por isso, e o veredito vem de métricas próprias, que passaram com folga — `search_block_rate` 99,92% / 99,94% / 99,94% (limite `rate>0.50`) e `ip_rotation_evasion_rate` 0,0052% / 0,0041% / 0,0039% (limite `rate<0.05`). O risco é prospectivo: quem adicionasse `checks: ['rate==1.0']` a qualquer um dos dois reprovaria para sempre.
 2. **4 dos 30 scripts não gravavam relatório** — `cache-warmup-test`, `cache-performance-test`, `create-post-flow` e `health-check` não tinham `handleSummary`, o que explica 28 arquivos para 30 scripts: os números deles existiam só no log do job, que expira junto com o run. **Corrigido em 17/10/2026.**
 3. **JWT do admin semeado vazando no artifact** — 9 dos 27 JSON por artifact carregavam `setup_data`; 7 vinham saneados (`{"token": "*** TOKEN OCULTO ***"}`) e **2 vazavam o token em texto claro** (`musicas_load_test.json` e `videos_load_test.json`). Causa: `sanitizeToken` (`load-tests/helpers/report.js:14`) só cobre o caminho `data.setup_data.token`, mas `createLoadSetup` (`load-tests/helpers/resource-test-runner.js:536`) retorna `loginRes.json('data.token')` — uma **string crua**, forma que o sanitizador nunca alcançava. Risco prático baixo (o `JWT_SECRET` é secret do repo e o Postgres do runner é efêmero), mas é credencial em artefato baixável por qualquer pessoa durante a retenção de 30 dias. **Corrigido em 17/10/2026.**
-4. **24 dos 26 scripts de teste não têm threshold `http_req_failed`.** O silêncio vem de `checks`, que cobre as requisições verificadas, mas uma requisição **sem check** passa em branco. Caso medido: `musicas-search-test` fez 7 requisições, 1 falhou (14,28% de `http_req_failed`) e nenhum check cobre aquela requisição — o threshold `checks: ['rate==1.0']` passou mesmo assim. Em `video-validation-test` os 50% de `http_req_failed` são as duas respostas 400 intencionais (`Domínio Inválido`, `URL Malformada`), ou seja, corretos. **Observação em aberto, sem correção** — exige decisão sobre quais scripts devem ganhar `setResponseCallback` para tratar 4xx esperado.
+4. **23 dos 30 scripts não têm threshold efetivo de `http_req_failed`** (contagem por artifact, não por código: 7 têm, 23 não). O silêncio vem de `checks`, que cobre as requisições verificadas, mas uma requisição **sem check** passa em branco. Caso medido: `musicas-search-test` fez 7 requisições, 1 falhou (14,28% de `http_req_failed`) e nenhum check cobre aquela requisição — o threshold `checks: ['rate==1.0']` passou mesmo assim. Em `video-validation-test` os 50% de `http_req_failed` são as duas respostas 400 intencionais (`Domínio Inválido`, `URL Malformada`), ou seja, corretos. **A causa-raiz e o plano de correção estão no item AD** de `docs/PENDENCIAS_scripts_testes.md` — a contagem e a lista de scripts não se repetem aqui.
+
+### Registro de execução — runs [`39113170891`](https://github.com/caminhar-deus/Caminhar/actions/runs/39113170891) e [`39233955292`](https://github.com/caminhar-deus/Caminhar/actions/runs/39233955292) (cron "Load Tests (k6)" nº 15 e 16, 18–19/10/2026)
+
+Os dois runs são a **validação em produção da Fase 0** do plano de gates: o #15 reprovou por um erro de configuração, e o #16 é a primeira execução que exercita a correção. Registrados juntos porque o que o #16 prova só se entende contra o #15.
+
+| Campo | Run #15 | Run #16 |
+|-------|---------|---------|
+| Run / SHA | `39113170891` / `b370773` | `39233955292` / `27dc56d` |
+| Event / conclusion | `schedule` / **`failure`** | `schedule` / **`success`** |
+| Job `load-tests / run-tests` | `08:53:08Z` → `08:54:30Z` = **1m22s** | `09:57:50Z` → `10:16:06Z` = **18m16s** |
+| Onde parou | Step 9 `grafana/setup-k6-action` → **`failure`**; step 10 `Run Tests` → `skipped` | Todos os steps verdes |
+| Bateria | **não executou** — nenhum script rodou | **30/30 passed**, 0 failed, 0 skipped (16 + 9 + 4 + 1), **16m36s** |
+| Artifact | **vazio** (0 arquivos) | `k6-load-test-reports`, 49.940 B, **32 arquivos** (antes 28) |
+| `created_at` vs cron | `2026-10-18T08:53:05Z` = 05:53 BRT = **+4h36** | `2026-10-19T09:57:47Z` = 06:57 BRT = **+5h40** |
+| Região do runner | `westus3` | `westus` |
+
+**O #15 reprovou por um erro de um caractere, e ele é instructive.** O step 9 recebeu `k6-version: 'v2.3.0'`, mas a action **prefixa `v`**: montou `releases/download/vv2.3.0/k6-vv2.3.0-linux-amd64.tar.gz` e recebeu `##[error]Unexpected HTTP response: 404`. A correção é `'2.3.0'`, que é o formato do próprio README da action (`k6-version: '0.49.0'`). O run durou 1m22s porque reprovou no setup: **`Run Tests` ficou `skipped` e o artifact veio vazio**, ou seja, nenhuma das correções da Fase 0 chegou a ser exercitada. O valor correto está confirmado nos logs dos runs #13 e #14, que imprimem `Downloading k6 version 2.3.0` — pinar em `2.3.0` não altera nenhum comportamento já medido.
+
+**O #16 validou a Fase 0 nos três critérios de pronto**, medidos no artifact (não no código):
+
+| Critério | Esperado | Medido no #16 |
+|---|---|---|
+| `ddos_search_test.json` → `http_req_failed` | perto de 0 | **0,00%** — 117231 amostras, 0 falhas (era **99,94%**) |
+| `recovery_test.json` → `recovery_unhealthy_rate` | presente, `ok: true` | presente, rate **0,00%** em 144 iterações, threshold `rate<0.10` → `ok: true` |
+| `orchestrator-results.json` | 30/30 | 30/30, 0 failed, 0 skipped |
+
+**A causa do 99,94%** foi a chave `expectedStatuses`, que não é válida no k6 e era descartada em silêncio, fazendo os 429 — o sinal de que a proteção funcionou — contarem como falha. Diagnóstico e decisão: [`adr/0012`](adr/0012-gate-da-suite-k6-por-metrica-propria.md).
+
+**Footprint exato da Fase 0, verificado por comparação de thresholds:** o campo `metrics.*.thresholds` do #14 e do #16 difere em **um único arquivo** — `recovery_test.json` passou de `[]` para `['rate<0.10']`. Nenhum outro threshold foi alterado, adicionado ou perdido em toda a suíte.
+
+**Ganhos colaterais confirmados no mesmo run:**
+- **JWT não vaza mais.** 12 arquivos com `setup_data`, todos com o marcador `*** TOKEN OCULTO ***` — incluindo `musicas_load_test.json` e `videos_load_test.json`, que eram exatamente os 2 que publicavam o token em texto claro, e mais `cache_performance_test.json`.
+- **Os 4 `handleSummary` novos gravaram relatório** — `cache_warmup_test.json`, `cache_performance_test.json`, `create_post_flow.json` e `health_check.json`. É a razão de 28 → 32 arquivos.
+- **k6 pinado e instalado**: `Downloading k6 version 2.3.0`.
+- **Gates de segurança verdes**: `search_block_rate` 99,91% (limite 50%), `errors_500` 0,00% (limite 50%), `ip_rotation_evasion_rate` 0,0055% (limite 5%).
+- **Demais workflows no mesmo SHA**: 4 workflows, 6 check runs, todos `success`.
+
+---
+
+### O p95 do `stress-test-combined` era o runner, não o código — questão fechada
+
+O registro dos runs #12–#14 deixou o outlier do #14 como **atribuição inconclusiva**, com duas hipóteses descartadas por medição (stall de checkpoint do Postgres e regressão de código) e um fator de confusão remanescente: a região do runner. O #16 fecha a questão:
+
+| Run | Região | p95 do `stress-test-combined` | avg | max |
+|-----|--------|---------------------------|-----|-----|
+| #12 | — | 3,24 ms | 2,27 ms | 75,6 ms |
+| #13 | `eastus` | 3,40 ms | 2,34 ms | 90,1 ms |
+| **#14** | **`mexicocentral`** | **24,91 ms** | 8,34 ms | 849,8 ms |
+| #16 | `westus` | **3,85 ms** | 2,64 ms | 95,6 ms |
+
+Mesmo código e mesmo número de iterações, −85% no p95 quando a região muda. **Conclusão: o outlier do #14 foi o runner, e não o `stress-test-combined`.** A assinatura era de cauda, não de geral — no #14 a mediana ficou *mais rápida* (1,82 ms contra 2,24 ms) e o p90 ficou igual, enquanto `avg` e `max` dispararam.
+
+**Quatro regiões diferentes em quatro runs medidos** — `eastus` (#13), `mexicocentral` (#14), `westus3` (#15), `westus` (#16) — e o GitHub não oferece escolha de região em runners hospedados. Consequência operacional que vale para todo o resto da suíte: **latência entre runs deste projeto não é comparável sem anotar a região.** Fora o `stress-test-combined`, o p95 do #16 ficou +5% a +42% sobre o #14, o que é compatível com a troca de região, e nenhum check falhou em nenhum dos 26 scripts.
 
 ---
 
@@ -1588,7 +1641,7 @@ Comparação do p95 de cada script contra o run #11 (baseline, quando o `stress-
 
 4. **Perfis de carga padronizados** — A maioria dos scripts usa `getProfile()` de `helpers/profiles.js` para definir VUs, duração e thresholds, garantindo consistência. Exceções que definem `options` inline: `performance/musicas-search-test.js`, `performance/authenticated-flow-test.js`, `performance/create-post-flow.js`, `performance/cache-performance-test.js`, `functional/backup-verification-test.js`, `functional/upload-flow-test.js`, `functional/video-validation-test.js` e `security/login-negative-test.js`. Atenção: quando um perfil é usado com `thresholds` explícitos em `overrides`, os thresholds do perfil base são **substituídos por completo** (comportamento de `getProfile()`).
 
-5. **Relatórios padronizados** — Os scripts que geram relatório usam `generateReport()` de `helpers/report.js` (direta ou indiretamente via `resource-test-runner.js`) para gerar relatórios JSON em `./reports/k6-summaries/`, com sanitização automática do token JWT. Não geram relatório (sem `handleSummary()`): `performance/create-post-flow.js`, `performance/cache-warmup-test.js`, `performance/cache-performance-test.js` e `functional/health-check.js`. O `performance/stress-test-combined.js` é o único que gera também um relatório HTML adicional.
+5. **Relatórios padronizados** — Todos os 30 scripts da bateria usam `generateReport()` de `helpers/report.js` (direta ou indiretamente via `resource-test-runner.js`) para gerar relatórios JSON em `./reports/k6-summaries/`, com sanitização automática do token JWT. **Até 17/10/2026 isso não era verdade:** 4 scripts (`performance/create-post-flow.js`, `performance/cache-warmup-test.js`, `performance/cache-performance-test.js` e `functional/health-check.js`) não tinham `handleSummary()` e não gravavam relatório nenhum — o que explicava o artifact de 28 arquivos para 30 scripts. O `performance/stress-test-combined.js` é o único que gera também um relatório HTML adicional.
 
 6. **Sleep randomizado** — Os scripts usam `randomSleep()` de `helpers/sleep.js` para simular comportamento real de usuário, com faixas distintas por tipo de operação:
    - Consulta leve (GET pública): 0.5s – 3s

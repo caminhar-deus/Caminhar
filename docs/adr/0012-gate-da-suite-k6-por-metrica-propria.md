@@ -93,6 +93,21 @@ Consequências operacionais, todas aplicadas:
 
 ## Consequências
 
+### Validado em produção
+
+A decisão foi aplicada e **validada em produção** no run [`39233955292`](https://github.com/caminhar-deus/Caminhar/actions/runs/39233955292) (cron nº 16, 19/10/2026, `success`, 30/30 passed), medindo o artifact e não o código:
+
+| Consequência da decisão | Estado medido |
+|---|---|
+| `responseCallback` faz o 429 deixar de contar como falha | `ddos_search_test.json` com `http_req_failed` em **0,00%** (117231 amostras), contra **99,94%** medidos nos runs #12–#14 |
+| `recovery-test` deixou de ser o script sem gate | `recovery_unhealthy_rate` presente, rate **0,00%** em 144 iterações, threshold `rate<0.10` com `ok: true` |
+| O `checks` agregado não é lido como veredito | `ip-spoofing` em 50,00% e `ddos-search` em 33,33% no #16, e o run passou — a leitura correta é a das métricas próprias, que passaram com folga (`search_block_rate` 99,91%, `ip_rotation_evasion_rate` 0,0055%) |
+| A versão pinada não altera comportamento medido | O log do #16 imprime `Downloading k6 version 2.3.0`, idêntico ao que os runs #13 e #14 instalavam sem pin |
+
+**O pin foi validado pela via negativa primeiro.** O run [`39113170891`](https://github.com/caminhar-deus/Caminhar/actions/runs/39113170891) (nº 15, 18/10/2026) reprovou com `Unexpected HTTP response: 404` porque o valor foi escrito como `'v2.3.0'` e a action prefixa `v`, montando `vv2.3.0`. Nele, `Run Tests` ficou `skipped` e o artifact veio vazio — nenhuma das consequências acima chegou a ser exercitada, e é por isso que o registro é feito contra dois runs e não só contra o verde.
+
+**Footprint verificado por diferença de thresholds entre artifacts:** entre os runs #14 e #16, o campo `metrics.*.thresholds` difere em **um único arquivo** — `recovery_test.json`, que passou de `[]` para `['rate<0.10']`. Nenhum outro threshold da suíte foi alterado, adicionado ou perdido.
+
 ### Positivas
 
 - `recovery-test` deixa de ser o único script sem gate.
@@ -109,13 +124,13 @@ Consequências operacionais, todas aplicadas:
   manter os dois em acordo.
 - **Pin de versão exige manutenção.** Atualizar o k6 passa a ser uma decisão
   consciente, com comparação de artifact, em vez de acontecer sozinho.
-- **Este ADR não cobre a causa-raiz da outra lacuna auditada.** O
-  `getProfile` ([`helpers/profiles.js`](../../load-tests/helpers/profiles.js))
-  descarta o perfil inteiro quando o override traz `thresholds`, e 4 dos 5
-  factories reagem a isso de formas diferentes — o que faz 23 dos 30 scripts
-  ficarem **sem qualquer threshold efetivo de `http_req_failed`**, já em
-  produção. Essa correção está especificada e não aplicada: ver o **item AD** de
-  [`../PENDENCIAS_scripts_testes.md`](../PENDENCIAS_scripts_testes.md).
+- **Este ADR não cobre a outra lacuna auditada.** O `getProfile`
+  ([`helpers/profiles.js`](../../load-tests/helpers/profiles.js)) descarta o perfil
+  inteiro quando o override traz `thresholds` — o que deixa **23 dos 30 scripts sem
+  qualquer threshold efetivo de `http_req_failed`**, já em produção. A causa-raiz,
+  a lista de scripts e o plano de correção estão no **item AD** de
+  [`../PENDENCIAS_scripts_testes.md`](../PENDENCIAS_scripts_testes.md), que é a fonte
+  desse dado.
 
 ## Revisão
 

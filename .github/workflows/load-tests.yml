@@ -46,15 +46,17 @@ on:
     #
     #   run  created_at             atraso vs 04:17 UTC    BRT
     #   #14  2026-10-17T08:36:24Z  +4h19  (melhor caso)   05:36
+    #   #15  2026-10-18T08:53:05Z  +4h36                 05:53
     #   #13  2026-10-16T09:03:44Z  +4h46                 06:03
     #   #12  2026-10-15T09:10:57Z  +4h53                 06:10
     #   #11  2026-10-14T09:33:18Z  +5h16                 06:33
-    #   #9   2026-10-12T12:03:57Z  +7h46  (pior caso)    09:03
+    #   #16  2026-10-19T09:57:47Z  +5h40                 06:57
     #   #1   2026-10-05T11:33:14Z  +7h16                 08:33
+    #   #9   2026-10-12T12:03:57Z  +7h46  (pior caso)    09:03
     #
-    # Medição completa (13 execuções `schedule`, runs #1–#14 sem o #8, que foi
-    # `workflow_dispatch`; 05–17/10/2026): o atraso variou de **+4h19 a
-    # +7h46**, mediana **+6h49** — ou seja, horas, nunca minutos. Nenhuma
+    # Medição completa (15 execuções `schedule`, runs #1–#16 sem o #8, que foi
+    # `workflow_dispatch`; 05–19/10/2026): o atraso variou de **+4h19 a
+    # +7h46**, mediana **+6h34** — ou seja, horas, nunca minutos. Nenhuma
     # execução agendada teve pontualidade aceitável.
     #
     # CORREÇÃO DE UMA AFIRMAÇÃO ANTERIOR (17/10/2026): a versão deste comentário
@@ -66,9 +68,12 @@ on:
     # +6h4 a +19h1.
     #
     # Tendência sem causa conhecida: os runs #1–#10 (05–13/10) atrasaram entre
-    # +6h21 e +7h46, e os #11–#14 (14–17/10) entre +4h19 e +5h16 — o atraso
+    # +6h21 e +7h46, e os #11–#16 (14–19/10) entre +4h19 e +5h40 — o atraso
     # vem diminuindo, sem que nada deste repositório tenha mudado. Registrado
     # como observação, não como garantia: a causa raiz continua não confirmada.
+    # (O run #15 reprovou por um erro de configuração no setup do k6, não por
+    # atraso; o #16 foi o primeiro a validar a correção — ver
+    # `docs/PROJECT_load-tests.md`, registro dos runs #15 e #16.)
     #
     # Origem do atraso: não é o `concurrency` group nem a fila de runners deste
     # repo — o `created_at` do run já nasce horas depois do horário do cron, ou

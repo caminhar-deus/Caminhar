@@ -9,6 +9,13 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Não publicado]
 
+### Adicionado
+
+- **Cobertura de teste para os gates da suíte k6**, que até agora não tinha nenhuma — nada em `load-tests/` era exercitado por jest.
+  - `tests/unit/load-tests/profiles.test.js`: 9 testes de caracterização de `getProfile`/`PROFILES`. Travam o comportamento atual, incluindo o descarte de thresholds do perfil base quando o override traz `thresholds`, com os 2 casos do descarte marcados como limitação conhecida e apontando o item AD. Inclui controle negativo que prova ter força (mutar o resultado de `getProfile` não contamina `PROFILES`).
+  - `tests/unit/github-workflows/k6-version-pin.test.js`: varre **todos** os `.yml` de `.github/workflows/` em vez de fixar um arquivo, e exige que todo uso de `grafana/setup-k6-action` tenha `k6-version` **sem prefixo `v`**, com um helper que torna explícita a formação da URL de release. É a regra que teria reprovado o run #15 no CI de push, em vez de 20 horas depois no cron.
+  - Ambos com **prova de mutação executada e registrada**: reintroduzir `k6-version: 'v2.3.0'` reprova 3 asserções do segundo arquivo; simular a Fase 1 no `profiles.js` reprova exatamente os 2 casos de caracterização marcados como limitação.
+
 ### Corrigido
 
 - **`designer` estava completamente fora de operação.** O `muse-spark-1.3-contributor-free` saiu do catálogo do OpenCode Zen em 18/10/2026 (só restou o `muse-spark-1.3` **pago**), e o preset ainda apontava para o id que saiu. O host rejeita o spawn na hora com `Model "opencode/muse-spark-1.3-contributor-free" is not available` — falha explícita, mas invisível para quem só lê a config, porque o preset continua válido para o schema e `opencode debug config` passa. Trocado para `beam-free`, que já tinha medição **do mesmo papel** em 16/10 (4/4, e apontou o `--color-text-tertiary` como proibido para texto informativo, exatamente o teste que reprovou o `nemotron-3.5-super-vl-free` no designer). Revalidado contra o catálogo atual no dia. O `beam-free` não era primário de ninguém, então não houve repetição. Contagem de modelos free: 11 → 10. O `deepseek-v4.1-flash-free` continua órfão e ativo: **não** foi promovido por analogia, porque o papel que ele sabia fazer (doc externa) foi fundido no `explorer` e nenhum dos dois candidatos foi medido no papel novo.

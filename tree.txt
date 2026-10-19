@@ -827,6 +827,40 @@
 ├── schema.knip.json
 ├── scripts
 │   ├── backup.js
+│   ├── bench
+│   │   └── orchestrator
+│   │       ├── LEIA-ME.md
+│   │       ├── conferir.js
+│   │       ├── gabarito.md
+│   │       ├── resultados
+│   │       │   ├── big-pickle-1.meta.json
+│   │       │   ├── big-pickle-1.ndjson
+│   │       │   ├── big-pickle-1.t2.meta.json
+│   │       │   ├── big-pickle-1.t2.ndjson
+│   │       │   ├── big-pickle-2.meta.json
+│   │       │   ├── big-pickle-2.ndjson
+│   │       │   ├── big-pickle-2.t2.meta.json
+│   │       │   ├── big-pickle-2.t2.ndjson
+│   │       │   ├── big-pickle-3.meta.json
+│   │       │   ├── big-pickle-3.ndjson
+│   │       │   ├── big-pickle-3.t2.meta.json
+│   │       │   ├── big-pickle-3.t2.ndjson
+│   │       │   ├── conferencia.md
+│   │       │   ├── space-bunny-free-1.meta.json
+│   │       │   ├── space-bunny-free-1.ndjson
+│   │       │   ├── space-bunny-free-1.t2.meta.json
+│   │       │   ├── space-bunny-free-1.t2.ndjson
+│   │       │   ├── space-bunny-free-2.meta.json
+│   │       │   ├── space-bunny-free-2.ndjson
+│   │       │   ├── space-bunny-free-2.t2.meta.json
+│   │       │   ├── space-bunny-free-2.t2.ndjson
+│   │       │   ├── space-bunny-free-3.meta.json
+│   │       │   ├── space-bunny-free-3.ndjson
+│   │       │   ├── space-bunny-free-3.t2.meta.json
+│   │       │   └── space-bunny-free-3.t2.ndjson
+│   │       ├── rodar.js
+│   │       ├── rubrica.md
+│   │       └── tarefa.md
 │   ├── check-db-status.js
 │   ├── check-env.js
 │   ├── check-hardcoded-credentials.js
@@ -1135,6 +1169,7 @@
 │       │   ├── settings.test.js
 │       │   └── videos.test.js
 │       ├── github-workflows
+│       │   ├── k6-version-pin.test.js
 │       │   └── test-coverage-comment.test.js
 │       ├── hooks
 │       │   ├── useAdminCrud.test.js
@@ -1172,6 +1207,8 @@
 │       │   ├── redis.test.js
 │       │   └── seo
 │       │       └── config.test.js
+│       ├── load-tests
+│       │   └── profiles.test.js
 │       ├── next.config.test.js
 │       ├── pages
 │       │   └── api
@@ -1218,4 +1255,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-199 directories, 1020 files
+203 directories, 1053 files

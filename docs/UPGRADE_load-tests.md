@@ -303,7 +303,7 @@ Teste de ordenação de vídeos usando factory `createSortTest()`. Endpoint: `/a
 - `load-tests/helpers/auth.js` (re-exporta `setup`)
 
 **Resumo do arquivo:**
-Teste de warm-up de cache. Executa 1 VU com 1 iteração (cenário `per-vu-iterations`). Realiza 5 rounds de requisições para 4 endpoints (`/api/posts`, `/api/posts?page=1&limit=10`, `/api/posts?page=2&limit=5`, `/api/settings`). Inclui função `verifyCachePopulated()` que confirma se resposta é < 200ms. Threshold `http_req_failed: ['rate<0.50']`. NÃO possui `handleSummary()`, portanto não gera relatório JSON.
+Teste de warm-up de cache. Executa 1 VU com 1 iteração (cenário `per-vu-iterations`). Realiza 5 rounds de requisições para 4 endpoints (`/api/posts`, `/api/posts?page=1&limit=10`, `/api/posts?page=2&limit=5`, `/api/settings`). Inclui função `verifyCachePopulated()` que confirma se resposta é < 200ms. Threshold `http_req_failed: ['rate<0.50']`. **Possui `handleSummary()` desde 17/10/2026** e grava `reports/k6-summaries/{cache_warmup_test,cache_performance_test,health_check}.json`.
 
 ---
 
@@ -315,7 +315,7 @@ Teste de warm-up de cache. Executa 1 VU com 1 iteração (cenário `per-vu-itera
 - `k6/execution` (importa `exec`)
 
 **Resumo do arquivo:**
-Teste de performance de cache com 4 estágios (1 VU warm-up → 5 VUs → 50 VUs high load → ramp-down). Testa endpoint `/api/settings` (autenticado) e `/api/posts` (público). Login manual na função `setup()`. Thresholds específicos por tag (`cached_settings`, `cached_posts`) com p(95)<500, avg<200. Checks de cache hit com threshold `rate>0.90`. NÃO possui `handleSummary()`, portanto não gera relatório JSON.
+Teste de performance de cache com 4 estágios (1 VU warm-up → 5 VUs → 50 VUs high load → ramp-down). Testa endpoint `/api/settings` (autenticado) e `/api/posts` (público). Login manual na função `setup()`. Thresholds específicos por tag (`cached_settings`, `cached_posts`) com p(95)<500, avg<200. Checks de cache hit com threshold `rate>0.90`. **Possui `handleSummary()` desde 17/10/2026** e grava `reports/k6-summaries/{cache_warmup_test,cache_performance_test,health_check}.json`.
 
 ---
 
@@ -344,7 +344,7 @@ Teste manual de paginação (NÃO usa factory pattern) com compatibilidade ES5.1
 **Resumo do arquivo:**
 Fluxo de criação de posts. Endpoint: `/api/admin/posts`. Stages customizados (3 VUs, 10s/15s/5s). Thresholds: `http_req_duration{flow:create_post}: ['p(95)<2000']`, `checks{flow:create_post}: ['rate>0.95']`, `http_req_failed: ['rate<0.10']`. Possui `teardown(data)` que remove posts com titulo contendo 'K6'. Gera relatório via `generateReport` (sem nome de arquivo explícito no código atual — nome padrão `undefined` no retorno de `generateReport`).
 
-**Observação:** O `handleSummary` chama `generateReport(data, 'create_post_flow')` — mas no arquivo original não há segundo argumento explícito na chamada de `handleSummary`, o que faz o relatório ser gerado com nome `undefined`. Isso é um problema.
+**Observação (RESOLVIDO em 17/10/2026):** esta análise descrevia o `handleSummary` chamando `generateReport` sem segundo argumento, o que geraria relatório com nome `undefined`. Na versão atual o script tem `handleSummary` e chama `generateReport(data, 'create_post_flow')` explicitamente, gravando `reports/k6-summaries/create_post_flow.json`; a decisão de nomenclatura está em §4.5.
 
 ---
 
@@ -449,7 +449,7 @@ Teste de carga massiva (DDoS) em endpoint de busca. Usa perfil `heavy` com está
 - `k6/http`, `k6/check`
 
 **Resumo do arquivo:**
-Verificação de saúde do servidor. Endpoint: `/api/status?mode=health`. Usa perfil `health`. Valida status 200 e `body.status === 'ok'`. NÃO possui `handleSummary()`, portanto não gera relatório JSON.
+Verificação de saúde do servidor. Endpoint: `/api/status?mode=health`. Usa perfil `health`. Valida status 200 e `body.status === 'ok'`. **Possui `handleSummary()` desde 17/10/2026** e grava `reports/k6-summaries/{cache_warmup_test,cache_performance_test,health_check}.json`.
 
 ---
 
@@ -666,14 +666,16 @@ O run nº 11 (sha `e50de03`, `conclusion: success`, bateria **30/30 passed**, jo
 
 **Benefício:** Consistência na geração e busca de relatórios.
 
-### 5.4 Adicionar `handleSummary()` em 3 testes
+### 5.4 Adicionar `handleSummary()` em 3 testes — **RESOLVIDO em 17/10/2026**
 
-**Justificativa técnica:** Os testes abaixo não geram relatórios JSON:
+**Justificativa técnica (original):** Os testes abaixo não geravam relatórios JSON:
 - `health-check.js`
 - `cache-warmup-test.js`
 - `cache-performance-test.js`
 
 **Benefício:** Histórico de resultados e análise comparativa entre execuções.
+
+**O que foi feito:** os 3 scripts receberam `handleSummary`, e um quarto que a análise não listou também — `create-post-flow.js` — foi corrigido pelo mesmo caminho, porque o motivo era o mesmo (o relatório não era gravado). Hoje **os 30 scripts da bateria gravam relatório JSON**, e o artifact do cron passou de 28 para 32 arquivos (confirmado no run nº 16, 19/10/2026). A lista de scripts e as métricas do artifact estão em `docs/PROJECT_load-tests.md`; a decisão de nomenclatura dos relatórios, em §4.5.
 
 ### 5.5 Padronizar prefixos de identificação de dados de teste
 
