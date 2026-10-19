@@ -92,15 +92,15 @@
   },
   "homepage": "https://github.com/caminhar-deus/Caminhar#readme",
   "dependencies": {
-    "@next/env": "^16.4.1",
+    "@next/env": "^16.4.2",
     "@upstash/redis": "^1.39.0",
     "bcryptjs": "^3.0.3",
     "date-fns": "^4.4.0",
     "dotenv": "^18.0.8",
     "formidable": "^3.5.4",
-    "jsdom": "^30.1.2",
+    "jsdom": "^30.1.3",
     "jsonwebtoken": "^9.0.3",
-    "next": "^16.4.1",
+    "next": "^16.4.2",
     "pg": "^8.23.1",
     "prop-types": "^15.8.1",
     "react": "^19.3.1",
@@ -114,10 +114,11 @@
   "devDependencies": {
     "@actions/languageservice": "^0.3.61",
     "@actions/workflow-parser": "^0.3.61",
+    "@babel/core": "^8.0.7",
     "@babel/eslint-parser": "^8.0.7",
     "@babel/preset-env": "^8.0.7",
     "@babel/preset-react": "^8.0.1",
-    "@eslint/css": "^2.0.0",
+    "@eslint/css": "^2.0.1",
     "@eslint/js": "^10.0.1",
     "@eslint/json": "^2.1.1",
     "@eslint/markdown": "^8.0.3",
@@ -132,13 +133,13 @@
     "cypress": "^16.2.0",
     "dependency-cruiser": "^18.6.0",
     "esbuild": "^0.28.2",
-    "eslint": "^10.12.0",
+    "eslint": "^10.13.0",
     "eslint-plugin-cypress": "^7.0.2",
     "globals": "^17.13.0",
     "jest": "^30.5.2",
     "jest-environment-jsdom": "^30.5.2",
     "jest-watch-typeahead": "^3.0.1",
-    "knip": "^6.41.0",
+    "knip": "^6.42.0",
     "next-sitemap": "^4.2.3",
     "node-mocks-http": "^1.18.1",
     "vscode-languageserver-textdocument": "^1.0.15",
@@ -152,7 +153,11 @@
     "minimatch": "^10.2.2",
     "postcss": "^8.5.10",
     "uuid": "^14.0.0",
-    "jsdom": "^30.1.2"
+    "jsdom": "^30.1.3",
+    "katex": "^0.18.2",
+    "babel-preset-current-node-syntax": {
+      "@babel/core": "^8.0.7"
+    }
   },
   "_overridesReason": {
     "tar": "Correção de vulnerabilidade CVE em versões < 7.x",
@@ -160,7 +165,9 @@
     "minimatch": "Correção de vulnerabilidade CVE e performance",
     "postcss": "Garantir versão compatível com Next.js",
     "uuid": "Segurança: versões antigas usavam Math.random()",
-    "jsdom": "Sobe o jsdom aninhado no jest-environment-jsdom de ^26 para ^30, que já usa @exodus/bytes em vez do whatwg-encoding deprecado"
+    "jsdom": "Sobe o jsdom aninhado no jest-environment-jsdom de ^26 para ^30, que já usa @exodus/bytes em vez do whatwg-encoding deprecado",
+    "katex": "Segurança: GHSA-238p-pmpm-9mq7, corrigido na 0.18.2; só entra via @eslint/markdown (lint)",
+    "babel-preset-current-node-syntax": "Plugins syntax-* do Jest 30 declaram peer @babel/core ^7; o projeto usa Babel 8 (ajuste só de declaração)"
   },
   "allowScripts": {
     "cpu-features@0.0.10": true,

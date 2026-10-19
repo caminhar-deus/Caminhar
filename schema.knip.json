@@ -574,6 +574,10 @@
           "title": "fast plugin configuration (https://knip.dev/reference/plugins/fast)",
           "$ref": "#/definitions/plugin"
         },
+        "filesystem-routing": {
+          "title": "filesystem-routing plugin configuration (https://knip.dev/reference/plugins/filesystem-routing)",
+          "$ref": "#/definitions/plugin"
+        },
         "flue": {
           "title": "flue plugin configuration (https://knip.dev/reference/plugins/flue)",
           "$ref": "#/definitions/plugin"
@@ -938,6 +942,10 @@
           "title": "size-limit plugin configuration (https://knip.dev/reference/plugins/size-limit)",
           "$ref": "#/definitions/plugin"
         },
+        "solidjs-vite-plugin": {
+          "title": "solidjs-vite-plugin plugin configuration (https://knip.dev/reference/plugins/solidjs-vite-plugin)",
+          "$ref": "#/definitions/plugin"
+        },
         "sst": {
           "title": "sst plugin configuration (https://knip.dev/reference/plugins/sst)",
           "$ref": "#/definitions/plugin"
@@ -1028,6 +1036,10 @@
         },
         "tsdown": {
           "title": "tsdown plugin configuration (https://knip.dev/reference/plugins/tsdown)",
+          "$ref": "#/definitions/plugin"
+        },
+        "tsrs": {
+          "title": "tsrs plugin configuration (https://knip.dev/reference/plugins/tsrs)",
           "$ref": "#/definitions/plugin"
         },
         "tsup": {
