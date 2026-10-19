@@ -7,6 +7,24 @@
 
 > Status possíveis: Proposto | Aceito | Rejeitado | Obsoleto | Substituído por ADR-NNNN
 
+> **Revisão 18/10/2026 — parcialmente superada pelo merge do slim 3.0.5.**
+> O slim 3.0.5 fundiu o agente `librarian` no `explorer`
+> (`MARKETPLACE_BUILTIN_RENAMES` em `dist/index.js`: `librarian -> explorer`) e o
+> removeu de `SUBAGENT_NAMES`. O texto abaixo está preservado como registro do que
+> foi medido em 15/10/2026, quando o librarian existia. O que mudou de fato:
+> (1) a distribuição passou de seis agentes para cinco — a distinção
+> librarian-vs-explorer que motivou o princípio de "um modelo por agente" **deixou de
+> existir**, e o explorador ficou com o `longcat-2.5-preview-free`;
+> (2) `deepseek-v4.1-flash-free`, medido aqui como o melhor modelo de doc externa,
+> ficou **órfão** — está ativo no catálogo, mas nenhum agente o usa;
+> (3) a garantia "nenhum modelo se repete entre os 6 agentes" continua válida por
+> vacuidade, já que são 5.
+>
+> O princípio central deste ADR — medir em bateria real antes de promover, e
+> verificar se o id ainda existe no catálogo — **continua valendo** e foi o que
+> permitiu detectar o órfão. Para a decisão sobre o que fazer com o deepseek,
+> ver a nota no preset `zen`.
+
 ## Contexto
 
 O projeto roda em **OpenCode Zen**, Provider `opencode`, cujos modelos são

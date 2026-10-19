@@ -97,39 +97,44 @@
   // oracle caem com "OpenCode's free tier can only be used from within OpenCode" no primeiro turno,
   // e a cadeia de fallback não salva — o modelo de reserva cai igual, porque o bloqueio vem do desvio
   // de rota, não do modelo. Sem o "deny", os três funcionam; designer e fixer nunca tiveram o "deny"
-  // e funcionaram com o mesmo provedor e o mesmo modelo. O terminal desses três volta a ser governado
+  // e funcionaram com o mesmo provedor e o mesmo modelo. O terminal desses volta a ser governado
   // pelo "permission" global acima ("bash": {"*": "ask"}), inclusive com os escapes de git push e
-  // "bash -c *" negados.
+  // "bash -c *" negados. (O "librarian" do teste de 09/10 não existe mais desde 18/10/2026; ver o bloco
+  // "agent" mais abaixo. A conclusão sobre o "bash" continua valendo para quem sobrou.)
   //
   // websearch (13/10/2026): é ferramenta NATIVA do host (não MCP, não do slim), então quem controla o
   // acesso é este bloco, e não "mcps" no oh-my-opencode-slim.json. Matriz combinada com os MCPs:
   //
-  //   ferramenta | orchestrator | librarian | explorer/designer/fixer/oracle
-  //   ----------|--------------|-----------|-----------------------------
-  //   websearch  | allow        | allow     | deny
-  //   gh_grep    | allow        | allow     | deny   (via "mcps" no slim)
-  //   context7   | deny         | allow     | deny   (via "mcps" no slim)
-  //   webfetch   | ask          | ask       | deny   (recurso = a URL)
+  //   ferramenta | orchestrator | explorer | designer/fixer/oracle
+  //   ----------|--------------|----------|-----------------------------
+  //   websearch  | allow        | allow    | deny
+  //   gh_grep    | allow        | allow    | deny   (via "mcps" no slim)
+  //   context7   | deny         | allow    | deny   (via "mcps" no slim)
+  //   webfetch   | ask          | ask      | deny   (recurso = a URL)
   //
   // O "websearch": "ask" global acima continua valendo como padrão; aqui o deny explícito fecha
-  // explorer/oracle/designer/fixer e o allow cobre orchestrator/librarian. Nota de operação: permitir a
+  // explorer/oracle/designer/fixer e o allow cobre orchestrator/explorer. Nota de operação: permitir a
   // ferramenta não a liga de fato — o host ainda precisa de um provedor com chave (TAVILY_API_KEY,
   // PERPLEXITY_API_KEY, EXA_API_KEY ou PARALLEL_API_KEY no ambiente) e de "websearch:provider" != false.
   //
   // webfetch (14/10/2026): era "ask" para TODO agente, porque nenhum override o tocava (medido em
   // `opencode debug agents`). Isso deixava um buraco de uma linha na §2.1 do AGENTS.md: a matriz nega
   // websearch, gh_grep e context7 para explorer/designer/fixer/oracle, mas o quarto recurso de rede
-  // continuava liberado para esses mesmos quatro. Agora segue o mesmo padrão. Ficou "ask", e nao
-  // "allow", para orchestrator e librarian de proposito: o recurso do webfetch e a URL, o que permite
-  // trocar por allowlist de dominio depois (ex.: "https://opencode.ai/*" -> "allow") sem tocar no resto.
+  // continuava liberado para esses mesmos quatro. Agora segue o mesmo padrão. Ficou "ask", e não
+  // "allow", para orchestrator e explorer de propósito: o recurso do webfetch é a URL, o que permite
+  // trocar por allowlist de domínio depois (ex.: "https://opencode.ai/*" -> "allow") sem tocar no resto.
+  //
+  // 18/10/2026: o slim 3.0.5 fundiu o librarian no explorer. A linha "librarian" foi REMOVIDA, não
+  // renomeada: mantê-la criava um agente fantasma (mode primary, sem prompt nem modelo) que
+  // enganava o `opencode debug agents`. As permissões de rede dela migraram para o explorer, que
+  // passou a ser também o agente de documentação externa.
   "agent": {
     // "orchestrator" é um papel injetado pelo plugin slim, não um papel built-in do host. A regra só
     // vale se o host aplicar o bloco para ele — conferido em `opencode debug agents` (13/10/2026).
     // O "webfetch": "ask" nos dois primeiros é redundante com o global; fica explícito para que
-    // "só orchestrator e librarian" fique legível no arquivo, e não implícito num default distante.
+    // "só orchestrator e explorer" fique legível no arquivo, e não implícito num default distante.
     "orchestrator": { "permission": { "websearch": "allow", "webfetch": "ask" } },
-    "explorer":  { "permission": { "edit": "deny", "ast_grep_replace": "deny", "websearch": "deny", "webfetch": "deny" } },
-    "librarian": { "permission": { "edit": "deny", "ast_grep_replace": "deny", "websearch": "allow", "webfetch": "ask" } },
+    "explorer":  { "permission": { "edit": "deny", "ast_grep_replace": "deny", "websearch": "allow", "webfetch": "ask" } },
     "oracle":    { "permission": { "edit": "deny", "ast_grep_replace": "deny", "websearch": "deny", "webfetch": "deny" } },
     "designer":  { "permission": { "websearch": "deny", "webfetch": "deny" } },
     "fixer":     { "permission": { "websearch": "deny", "webfetch": "deny" } }

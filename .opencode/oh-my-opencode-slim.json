@@ -3,8 +3,9 @@
   // Arquivo .json aceita comentários (JSONC). Valide com: oh-my-opencode-slim doctor
   // Precedência entre campos de agente: ancestor < preset filho < "agents" raiz < opencode.json do host.
 
-  // Preset ativo: "zen" = OpenCode Zen remoto com 6 modelos free distintos, um por agente (ver o
-  // bloco "zen" abaixo). Para voltar 100% ao Ollama local: "local".
+  // Preset ativo: "zen" = OpenCode Zen remoto com 5 modelos free distintos, um por agente (ver o
+  // bloco "zen" abaixo). Para voltar 100% ao Ollama local: "local". Eram 6 até 18/10/2026, quando o
+  // slim 3.0.5 fundiu o librarian no explorer e um deles ficou órfão.
   "preset": "zen",
 
   "presets": {
@@ -23,7 +24,6 @@
                         // O oracle já recebe a skill "simplify" por padrão. Para ADICIONAR a skill do checklist
                         // (confirme o nome real da skill instalada): , "skills_add": ["<nome-da-skill-do-checklist>"]
                       },
-      "librarian":    { "model": "ollama/qwen3-coder:30b" },
       "explorer":     { "model": "ollama/qwen3-coder:30b" },
       "designer":     { "model": "ollama/qwen3-coder:30b", "skills_add": ["ui-ux-pro-max"] },
       "fixer":        { "model": "ollama/qwen3-coder:30b" }
@@ -62,10 +62,14 @@
     // Cota Zen: por IP/dia (~200 req observados); bloqueio é por modelo. Modelos free podem sumir (já houve deprecated).
     //
     // INVENTÁRIO (armadilha): `opencode models` esconde, na visão padrão, as versões anteriores de
-    // cada família. deepseek-v4.1-flash-free (o librarian), glm-5.3-flash-free,
+    // cada família. deepseek-v4.1-flash-free, glm-5.3-flash-free,
     // nemotron-3.5-lightning-free e nemotron-3-ultra-free só aparecem com `all: true` — e estão
-    // ativos e grátis. São 11 modelos free, não 7. Não "conserte" o id do librarian: ele existe.
+    // ativos e grátis. São 11 modelos free, não 7.
     // nemotron-3.5-lightning-free fica de fora: foi o que derrubou o explorer em 09/10/2026.
+    //
+    // ÓRFÃO (18/10/2026): deepseek-v4.1-flash-free era o modelo do librarian. Com o merge do 3.0.5
+    // ele ficou sem dono — o explorer ficou com o longcat, medido no papel de repo. Não "conserte"
+    // o id: ele existe e está ativo, só não está em uso. Medir antes de promover.
     // MEDIÇÃO (por que cada modelo, e não o anterior):
     //   nemotron-vl  único que ACHOU a causa, não o sintoma: `adminCrudHandler.js:53` tem
     //                `requireAdmin = false` e só 2 das 15 rotas admin o ativam — com
@@ -95,7 +99,10 @@
                         // Skill do Front-End-Checklist para a revisão (obrigatória no fluxo: oracle revisa sem editar):
                         "skills_add": ["frontend-checklist-global"]
                       },
-      "librarian":    { "model": "opencode/deepseek-v4.1-flash-free" },
+      // O 3.0.5 fundiu o librarian no explorer (MARKETPLACE_BUILTIN_RENAMES em dist/index.js).
+      // O explorer carrega hoje as duas responsabilidades: varredura do repo (longcat) e
+      // doc externa (context7/gh_grep, em "agents" abaixo). O modelo segue o do explorer, medido
+      // no papel de repo. deepseek-v4.1-flash-free ficou órfão — ver a nota no fim do arquivo.
       "explorer":     { "model": "opencode/longcat-2.5-preview-free" },
       "designer":     { "model": "opencode/muse-spark-1.3-contributor-free", "skills_add": ["ui-ux-pro-max"] },
       "fixer":        { "model": "opencode/mimo-v2.6-flash-free" }
@@ -118,16 +125,24 @@
   // (2) as regras do slim entram ANTES do "permission" global do host, e vale a última que casar —
   //     o "ask" do `opencode.jsonc` sobrepõe o "deny" daqui.
   //
-  // A trava de explorer/librarian/oracle vive em `opencode.jsonc`, bloco "agent", onde é declarada
+  // A trava de explorer/oracle vive em `opencode.jsonc`, bloco "agent", onde é declarada
   // por último. Aqui ficam só as overrides que o slim realmente consome (modelo, prompt, mcps).
-  // Matriz de MCP por agente (13/10/2026). O slim compila isto em permissões "<mcp>_*": allow para os
-  // nomes listados, deny para todo MCP disponível fora da lista (parseList com "!" de negação).
+  // Matriz de MCP por agente (13/10/2026; ajustada em 18/10/2026). O slim compila isto em permissões
+  // "<mcp>_*": allow para os nomes listados, deny para todo MCP disponível fora da lista
+  // (parseList com "!" de negação).
   //
-  //   MCP       | orchestrator | librarian | explorer/designer/fixer/oracle
-  //   ----------|--------------|-----------|-----------------------------
-  //   gh_grep   | allow        | allow     | deny
-  //   context7  | deny         | allow     | deny
-  //   ai-memory | allow        | deny      | deny  (o orchestrator é quem consulta a memória; o librarian não)
+  //   MCP       | orchestrator | explorer | designer/fixer/oracle
+  //   ----------|--------------|----------|-----------------------------
+  //   gh_grep   | allow        | allow    | deny
+  //   context7  | deny         | allow    | deny
+  //   ai-memory | allow        | deny     | deny  (o orchestrator é quem consulta a memória)
+  //
+  // 18/10/2026: o slim 3.0.5 fundiu o librarian no explorer (MARKETPLACE_BUILTIN_RENAMES no
+  // dist/index.js: librarian -> explorer). A linha "librarian" da matriz deixou de existir e as
+  // permissões dela migraram para o explorer: context7 e gh_grep agora são dele. Consequência
+  // aceita por decisão do mantenedor: o explorer deixou de ser só "varredura de repo" e passou a
+  // ser também o agente de documentação externa. As regras de conduta que eram do librarian estão
+  // em `.opencode/oh-my-opencode-slim/explorer_append.md`.
   //
   // Listas explícitas, sem "*": assim o context7 fica deny no orchestrator de forma explícita, e as
   // listas vazias fixam o deny dos demais agentes em vez de depender do padrão do plugin. Nada além de
@@ -137,8 +152,7 @@
   // start do host/service (`opencode debug agents` antes disso mostra o valor antigo).
   "agents": {
     "orchestrator": { "mcps": ["gh_grep", "ai-memory"] },
-    "librarian":    { "mcps": ["context7", "gh_grep"] },
-    "explorer":     { "mcps": [] },
+    "explorer":     { "mcps": ["context7", "gh_grep"] },
     "designer":     { "mcps": [] },
     "fixer":        { "mcps": [] },
     "oracle":       { "mcps": [] }
