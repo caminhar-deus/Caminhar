@@ -69,17 +69,19 @@ escolhido por medição e não por conveniência.
 
 | Agente | Modelo | Papel da medição |
 |---|---|---|
-| `orchestrator` | `space-bunny-free` | sem reserva — ver "Saídas do catálogo" |
+| `orchestrator` | `minimax-m3.1-flash-free` (reserva: `big-pickle`) | 21/24 itens do Camada B em 3 execuções; 0 erros verificáveis — ver "19/10/2026 (mais tarde)" |
 | `oracle` | `nemotron-3.5-super-vl-free` | achou a causa da escalada de privilégio, não o sintoma — ver "Saídas do catálogo" |
 | `explorer` | `longcat-2.5-preview-free` | 10/10; localizou o `withAuth` em uso, que o rival errou |
-| `designer` | `beam-free` | 4/4; apontou o `--color-text-tertiary` como proibido para texto informativo — ver "18/10/2026" |
-| `fixer` | `mimo-v2.6-flash-free` | 9/9 testes; formatação e não-mutação reconferidas fora do agente |
+| `designer` | `beam-free` | 3/3 no papel novo + 4/4 em 16/10; apontou o `--color-text-tertiary` como proibido para texto informativo |
+| `fixer` | `mimo-v2.6-flash-free` | 9/9 testes; e em 19/10: correção reaplicada e suíte rodada de verdade, com o teste novo falhando no código original |
 
-> A tabela é a de **18/10/2026**. Antes dela havia seis linhas: o `librarian`
+> A tabela é a de **19/10/2026, mais tarde**. Antes dela havia seis linhas: o `librarian`
 > (`deepseek-v4.1-flash-free`) deixou de existir quando o slim 3.0.5 fundiu-o no
 > `explorer`, e o `designer` trocou de modelo porque o `muse-spark-1.3-contributor-free`
-> saiu do catálogo. As duas mudanças estão em "18/10/2026"; o histórico fica em
-> "Saídas do catálogo em 16/10/2026" e em "Re-análise de 16/10/2026".
+> saiu do catálogo. Na mesma tarde o `space-bunny-free` — o primário do `orchestrator` —
+> também saiu, e o primário passou a ser o `minimax-m3.1-flash-free` (medido hoje neste
+> papel: 21/24 itens do Camada B, 0 erros verificáveis). O histórico fica em "Saídas do
+> catálogo em 16/10/2026", em "Re-análise de 16/10/2026" e em "19/10/2026 (mais tarde)".
 
 A escolha partiu de uma bateria de **15/10/2026**: uma tarefa real por modelo free,
 com a resposta conferida em `arquivo:linha` antes de aceitar. A regra de escolha foi
@@ -379,6 +381,157 @@ corrigido e datado no próprio gabarito.
 **O que continua sem medição:** a diferença entre uma sessão de uma tarefa e um dia de
 trabalho. Este bench fecha a lacuna do *papel*; não fecha a da *duração*.
 
+## 19/10/2026 (mais tarde): `space-bunny-free` saiu do catálogo — e a reserva NÃO assumiu
+
+**O que aconteceu.** `space-bunny-free` deixou de existir no catálogo do Zen. Três
+provas independentes: `opencode models` não o lista mais; a busca por "space-bunny" na
+API de modelos volta zero; e o spawn responde `provider.no-route: "Model
+unavailable: opencode/space-bunny-free"`. Era o **primário** da cadeia do orchestrator.
+
+**O achado que muda a leitura da cadeia.** A sessão **não** caiu na reserva
+(`big-pickle`): caiu no **default do provider** (`minimax-m3.1-flash-free`). A
+explicação está no log do slim (`oh-my-opencode-slim.*.log`), no hook
+`v2.session.retry`:
+
+```
+[foreground-fallback] v2 retry hook observed {"agent":"orchestrator","from":"open…ee","failover":false,"steering":true}
+```
+
+`failover: false`. A cadeia só age quando `isFailoverError(error)` é verdadeiro, e o
+erro de id fora do catálogo é `provider.no-route` — "Model unavailable" — que **não**
+casa com nenhum padrão de failover (rate limit, 401/403, 502/503/504, timeout). O
+código do slim confirma: `FAILOVER_ERROR_TYPES` tem `provider.rate-limit`,
+`provider.quota`, `provider.auth`, `provider.internal` — e `provider.no-route` não
+está lá.
+
+**Consequência para o desenho desta decisão.** A reserva da cadeia protege contra
+*rate limit* e *5xx*, que são os erros frequentes. Ela **não** protege contra "o
+primário saiu do catálogo" — nesse caso o mecanismo é outro: conferir `opencode
+models` e trocar o id apontado. Isto vale para as duas entradas do AGENTS.md que
+mandam conferir o inventário: não é preciosismo, é o que impede a sessão de trocar de
+modelo sem ninguém decidir.
+
+**A medição que redecidiu o primário.** O bench do orchestrator rodou de novo, com
+memória limpa entre execuções (ver "o que a bateria precisou corrigir" abaixo): 3
+execuções por modelo, 2 turnos por sessão, gabarito conferido fora do modelo, e a
+pontuação do Camada B conferida item a item por `scripts/bench/orchestrator/pontuar.js`.
+
+| Modelo | Itens do Camada B | Execuções com ≥1 erro | Onde erra |
+|---|---|---|---|
+| `minimax-m3.1-flash-free` | **21/24** | 3/3 | o `405` (0/3) |
+| `big-pickle` | 19/24 | 3/3 | o `405` (0/3) + a contagem de rotas em 1 execução |
+| `space-bunny-free` | 20/24 | 2/3 | o `405` em 2 execuções + a contagem de rotas em 1 |
+
+O desempate é o critério desta decisão — **menos erros verificáveis** — e o minimax
+vence por 2 itens. Os três modelos erram o mesmo item: **o `405`** (o `MASTER` do
+gabarito exige distinguir "só o GET responde" de "a escrita responde 405"). O
+space-bunny, que era o primário, era o único que acertava o `405` em 1 de 3 execuções
+— e o modelo saiu do catálogo. A lacuna do `405` é comum aos três e não é o que
+separa.
+
+**Verificação de um detalhe que mudou de lado.** O `minimax-2` afirmou "32 rotas
+registradas pelo Next (`.next/routes-manifest.json`)" e deu como achado central que
+`helper/pagination.js` é uma rota registrada que só devolve 500. Conferi no manifest:
+ele registra **31** rotas em `/api/` — 30 arquivos com handler, mais o
+`helper/pagination` (que não tem `export default`) — e o `uploads/[...path].js` é
+catch-all, fora de `staticRoutes`. Ou seja: o gabarito está **certo** (32 arquivos,
+31 com handler) e o modelo errou a contagem. O detalhe do `500` é real, mas a
+contagem que ele.inventoryou estava errada, e é isso que conta.
+
+**Decisão.** `minimax-m3.1-flash-free` vira o **primário** do orchestrator;
+`big-pickle` segue como **reserva**, agora com o alcance declarado: cobre rate limit e
+5xx, **não** cobre a saída do primário do catálogo.
+
+### O que a bateria precisou corrigir — e por que isso é parte do resultado
+
+Três defeitos de método apareceram nesta rodada, todos medidos, todos corrigidos. Eles
+são registrados porque o próximo bench de qualquer papel vai esbarrar neles:
+
+1. **A memória do projeto é uma via de contaminação do gabarito.** O modelo sob teste
+   grava a RESPOSTA da tarefa na memória do projeto (`notes/auditoria-auth-pages-api-
+   2026-10-19.md`) e a execução seguinte a lê de volta — o mesmo que ler o gabarito,
+   por um caminho que o detector de `scripts/bench/` não via. O `rodar.js` agora apaga
+   a página depois de cada execução, e o `conferir.js` marca a leitura dessa página
+   como contaminação. Sem isso, a série mede quem consulta a memória, não quem
+   orquestra.
+2. **Falso positivo de contaminação por `ls`.** O detector tratava qualquer comando
+   com `scripts/bench/` como leitura do gabarito. Uma execução que roda `ls
+   scripts/bench/` — para confirmar que o diretório existe, sem abrir nada — era
+   marcada como contaminada e descartada. Agora só conta leitura de **arquivo**.
+3. **Falso positivo de citação por caminho relativo.** `MASTER.md` e
+   `Input.module.css` são escritos pelo modelo na forma relativa ao diretório que ele
+   conhece; resolvidos por prefixo fixo, apontavam para o arquivo errado (o do próprio
+   bench) e a citação certa era reprovada. Agora o candidato é resolvido por **sufixo**
+   no repositório inteiro.
+
+## 19/10/2026: baterias de **papel** para `designer` e `fixer`
+
+O bench do orchestrator mede o papel do agente primário, que é único. Para os outros
+papéis, o mecanismo é o inverso: o papel é o **agente** (`--agent designer`) e o modelo
+é o que se troca:
+
+```
+opencode run --agent designer --model opencode/beam-free --format json --auto "<tarefa>"
+```
+
+O `--model` sobrepõe o modelo que o preset define para o agente, sem mudar prompt,
+skills nem permissões. Harness novo em `scripts/bench/papeis/`, com tarefa e gabarito
+próprios por papel — as tarefas do orchestrator (auditoria de `pages/api/`) não têm
+nada a ver com conformidade de token nem com correção de código.
+
+**`designer` — conformidade de foco e contraste** (1 execução por modelo). Gabarito
+com três pontos, todos conferidos contra `design-system/MASTER.md` e
+`pages/styles/variables.css`: o `:focus-visible` do `Button` usa **só** o
+`box-shadow` do anel (proibido por `MASTER.md:149-150`); a proibição do
+`--color-text-tertiary` para texto informativo (`MASTER.md:49-51`); e os **quatro**
+usos do token no `Input` (`:39` placeholder, `:49` desabilitado, `:102` ícone
+decorativo — permitidos; `:167` `.helperText`, que é mensagem de erro e **viola**).
+
+| Modelo | Acertos | Citações | Nota |
+|---|---|---|---|
+| `beam-free` | 3/3 | válidas | o mais curto (2.910 chars) |
+| `minimax-m3.1-flash-free` | 3/3 | válidas | o mais longo (9.168 chars) |
+| `longcat-2.5-preview-free` | 3/3 | válidas | |
+| `deepseek-v4.1-flash-free` | 3/3 | válidas | |
+
+Os quatro acertaram os três pontos — o que **não** discrimina. O desempate foi custo e
+histórico: o `beam-free` fica, por ser o único com **duas** medições neste papel
+(16/10 e hoje) e o mais barato em tokens. Nenhum dos quatro alucinou contraste ou hex:
+todos os ratios citados batem com o `MASTER.md`.
+
+**`fixer` — vazamento de `error.message` em rota pública** (1 execução por modelo). O
+veredito aqui **não** é a resposta do modelo: a correção de cada execução foi
+**reaplicada** a partir do que ela gravou e a suíte foi rodada de verdade
+(`scripts/bench/papeis/conferir-fixer.js`): o teste novo tem de **falhar** no código
+original, **passar** no corrigido, e a suíte inteira tem de ficar verde.
+
+| Modelo | Corrigiu produção | Teste novo falha no original | Passa no corrigido | Suíte verde | Editou teste existente | Nota |
+|---|---|---|---|---|---|---|
+| `mimo-v2.6-flash-free` | sim | sim | sim | sim | não | 1.359 testes verdes |
+| `minimax-m3.1-flash-free` | sim | sim | sim | sim | não | provou o teste contra o código **antes** de corrigir (falhou 3×) |
+| `longcat-2.5-preview-free` | sim | — | sim | sim | **SIM** | editou `status.test.js` em vez de criar arquivo novo |
+| `beam-free` | sim | sim | sim | sim | não | **contaminado**: leu `gabarito-fixer.md` |
+
+O `longcat` é o único que **violou a regra 1** da tarefa (não editar o arquivo de
+teste existente para fazê-lo passar) — e a consequência é mensurável: o teste novo
+dele não é separável, porque mora dentro do arquivo editado, então não há como
+prová-lo contra o código original. O `beam-free` foi descartado por contaminação: ele
+leu o gabarito (`grep -n ... scripts/bench/papeis/gabarito-fixer.md`), o que anula a
+medição. Os dois que sobraram — `mimo` e `minimax` — empataram no critério (erro
+verificável zero). Desempate: o `mimo` **já estava em produção** e tem a medição de
+15/10 somada; o `minimax` provou o teste contra o código antigo, o que é um plus de
+rigor, não um erro. Mantido o `mimo`.
+
+**Um defeito de método que só a bateria de papel revelou.** A tarefa do `fixer` é
+corrigir um defeito **real** do código. Na primeira rodada, o primeiro fixer corrigiu
+`pages/api/status.js` e as execuções seguintes **herdaram o arquivo já corrigido**: o
+bench deixou de medir o papel e passou a medir quem escreve teste para um arquivo
+pronto. O `rodar.js` agora restaura o repositório entre execuções. A restauração é
+`git checkout --` em arquivo rastreado e remoção em não rastreado — **nunca**
+`git reset --hard`, que apagaria trabalho do usuário — e ela **preserva** o que é do
+bench, que por definição não é rastreado. (Na primeira tentativa dessa restauração o
+diretório do bench foi apagado, e foi reconstruído.)
+
 ## Alternativas consideradas
 
 - **Manter o preset anterior, com as cadeias.** Descartado: preservava o acoplamento
@@ -446,9 +599,19 @@ trabalho. Este bench fecha a lacuna do *papel*; não fecha a da *duração*.
 - **Modelos free podem desaparecer sem aviso.** Não há substituto automático: se um
   dos seis sair do catálogo, o agente fica sem modelo até re-benchmarkar. **Já aconteceu:**
   `step-5-preview-free` e `big-pickle` saíram em menos de 24 h (16/10/2026).
-- **A cadeia do orchestrator é fraca pelo mesmo motivo das anteriores** — não cobre
-  o erro de autenticação do free tier. Ela cobre rate limit e erros de rede, e é
-  melhor do que nada, mas não deve ser tratada como garantia.
+- **A cadeia do orchestrator é uma mitigação estreita, e a medição de 19/10 delimitou
+  o alcance.** Ela cobre rate limit, 401/403, 502/503/504 e timeout — os erros
+  frequentes. Ela **não** cobre a saída do primário do catálogo: o `provider.no-route`
+  ("Model unavailable") não é classificado como failover (`failover: false` no log do
+  slim), e a sessão cai no default do provider em vez da reserva. O que protege contra
+  esse modo de falha é conferir `opencode models` e trocar o id apontado — não a cadeia.
+- **A reserva é do orchestrator porque o modelo dele afeta a sessão inteira.** Vale
+  registrar que a reserva só é acionada em erro de *transporte*, e que ela é por
+  definição um modelo que o orchestrator não usa como primário.
+- **Todos os três modelos medidos erram o `405`** no Camada B do bench do
+  orchestrator (o `space-bunny` errou em 2 de 3 execuções, o `big-pickle` e o
+  `minimax` em 3 de 3). É lacuna comum, não é o que separa — mas o `space-bunny` era
+  o único que acertava, e saiu do catálogo. O item segue no gabarito.
 - **O benchmark não é reprodutível ao longo do tempo**: modelos do catálogo Zen são
   atualizados, e o mesmo id pode passar a responder diferente.
 
@@ -475,8 +638,20 @@ se pagou.
   nenhuma troca é justificada. O bench agora vive em `scripts/bench/orchestrator/` — o
   script antigo, em `/tmp/opencode/bench-orch/`, se foi com a limpeza do `/tmp` e exigia
   `OPENCODE_API_KEY`.
+- **Primário do orchestrator — RESOLVIDO em 19/10/2026 (mais tarde).** `space-bunny-free`
+  saiu do catálogo e a reserva **não** assumiu: a sessão caiu no default do provider, porque
+  o erro `provider.no-route` não é classificado como failover (`failover: false` no log do
+  slim). O primário passou a `minimax-m3.1-flash-free`, medido no mesmo papel (21/24 itens
+  do Camada B, 0 erros verificáveis). A reserva (`big-pickle`) segue declarada, com o
+  alcance delimitado: cobre rate limit e 5xx, **não** cobre a saída do primário do catálogo.
+- **Papéis com só uma medição viva — PARCIALMENTE RESOLVIDO em 19/10/2026.** O `designer`
+  tinha uma única medição viva (`beam-free`, desde 18/10) e o `fixer` tinha duas
+  (`space-bunny-free` e `mimo`), das quais uma morreu. Rodaram baterias de papel novas
+  (`scripts/bench/papeis/`): o `designer` tem **quatro** modelos medidos no papel e o
+  `fixer` tem **três** (o quarto foi descartado por contaminação). A "medição vale por
+  papel" continua valendo para quem quiser promover um quinto.
 - **Privacidade do `oracle` não verificada.** `nemotron-3.5-super-vl-free` é hoje o único
-  dos seis sem garantia de retenção registrada. Se isso for requisito, verificar antes do
+  dos cinco sem garantia de retenção registrada. Se isso for requisito, verificar antes do
   próximo uso com código sensível.
 - **Ruído de formato do `oracle`.** Ele não complyou o formato pedido numa das execuções.
   Se isso aparecer em revisão real, o critério de troca precisa considerar acabamento, não só

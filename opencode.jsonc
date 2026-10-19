@@ -18,10 +18,16 @@
   // --- Modelos (TROQUE pelos nomes de `ollama list` / `opencode models`) ---
   // ATIVO: OpenCode Zen (remoto; free por tempo limitado). Formato: opencode/<model-id>.
   // Sessão segue o orchestrator do preset "zen" em .opencode/oh-my-opencode-slim.json — lá está
-  // space-bunny-free (sem reserva) e o porquê medido de cada um dos 6 agentes.
+  // minimax-m3.1-flash-free como primário e big-pickle como reserva, e o porquê medido de cada
+  // um dos 5 agentes.
+  // 19/10/2026: este campo apontava para opencode/space-bunny-free, que SAIU do catálogo do
+  // Zen. A sessão não caía na reserva do preset — caía no DEFAULT do provider, porque um id
+  // fora do catálogo dá `provider.no-route`, que o slim NÃO classifica como failover. Trocado
+  // para o mesmo primário do preset. Confira `opencode models` antes de confiar neste id: um
+  // id morto falha em silêncio.
   // Troca de sessão para este model: só no próximo start (ou /model); esta sessão segue no anterior.
   // small_model (títulos etc.) = mimo-v2.6-flash-free (leve). Login via `/connect` > OpenCode Zen ou OPENCODE_API_KEY.
-  "model": "opencode/space-bunny-free",
+  "model": "opencode/minimax-m3.1-flash-free",
   "small_model": "opencode/mimo-v2.6-flash-free",
   // Para voltar ao Ollama local: comente as 2 linhas acima e descomente as 2 abaixo.
   // "model": "ollama/qwen3-coder:30b",

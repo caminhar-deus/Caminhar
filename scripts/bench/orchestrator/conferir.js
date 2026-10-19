@@ -15,6 +15,7 @@
  * Uso: npm run bench:orch:conferir
  */
 import { readdir, readFile, writeFile, stat } from 'node:fs/promises';
+import { statSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
@@ -40,7 +41,7 @@ const cacheLinhas = new Map();
 let indiceBasename = null;
 
 /**
- * Resolve a citação a partir da raiz e, se não achar, por sufixo dentro de `pages/api/`.
+ * Todos os arquivos que podem ser o alvo de uma citação, na ordem em que são tentados.
  *
  * Os modelos escrevem o caminho relativo ao diretório auditado — `admin/users.js` para
  * `pages/api/admin/users.js`, `settings.js` para `pages/api/settings.js` — que é a forma
@@ -48,7 +49,7 @@ let indiceBasename = null;
  * citações como inexistentes: em 19/10/2026 isso produziu 16 "caminhos não encontrados"
  * numa execução cujo texto estava correto.
  */
-async function resolverCitacao(alvo) {
+function candidatosDe(alvo) {
   const candidatos = [alvo, path.posix.join(DIRETORIO_AUDITADO, alvo)];
   // Também tenta cada sufixo do caminho: `admin/users.js` -> `users.js`.
   const partes = alvo.split('/');
@@ -56,23 +57,55 @@ async function resolverCitacao(alvo) {
     const sufixo = partes.slice(i).join('/');
     candidatos.push(sufixo, path.posix.join(DIRETORIO_AUDITADO, sufixo));
   }
+  return candidatos;
+}
 
-  for (const candidato of candidatos) {
-    if (cacheLinhas.has(candidato)) {
-      const guardado = cacheLinhas.get(candidato);
-      if (guardado !== null) return guardado;
-      continue;
+/**
+ * Resolve uma citação para os arquivos que podem ser o alvo, com a contagem de linhas
+ * de cada um.
+ *
+ * São dois conjuntos, com papéis diferentes:
+ * - `diretos`: o caminho como escrito, ou com o prefixo `pages/api/`, ou um sufixo dele.
+ *   É o que decide "abreviada": se o modelo escreveu `adminCrudHandler.js` e o arquivo
+ *   está em `lib/api/`, o caminho está abreviado — e o modelo tinha o mesmo ponto de
+ *   Vista, só que abreviado.
+ * - `porNome`: todos os arquivos do repositório com o mesmo nome-base. É o que
+ *   desambigua `dicas.js` entre `pages/api/dicas.js` e `pages/api/admin/dicas.js`.
+ *
+ * Devolver só o primeiro candidato foi um erro do conferidor: em 19/10/2026 a citação
+ * `dicas.js:97` (que o modelo escreveu na lista de permissões das rotas de `admin/`)
+ * resolveu para `pages/api/dicas.js` — 53 linhas — e foi marcada como inválida, quando o
+ * alvo real era `pages/api/admin/dicas.js:97`, que existe e tem exatamente o conteúdo
+ * alegado. O critério certo é: a citação é inválida quando NENHUM dos candidatos tem a
+ * linha citada.
+ */
+async function resolverCitacao(alvo, indice) {
+  const diretos = [];
+  const porNome = [];
+  const vistos = new Set();
+
+  const registrar = async (caminho, destino) => {
+    if (vistos.has(caminho)) return;
+    vistos.add(caminho);
+    if (cacheLinhas.has(caminho)) {
+      const guardado = cacheLinhas.get(caminho);
+      if (guardado !== null) destino.push({ caminho, linhas: guardado });
+      return;
     }
     let total;
     try {
-      total = (await readFile(path.join(RAIZ, candidato), 'utf8')).split('\n').length;
+      total = (await readFile(path.join(RAIZ, caminho), 'utf8')).split('\n').length;
     } catch {
       total = null;
     }
-    cacheLinhas.set(candidato, total);
-    if (total !== null) return total;
-  }
-  return null;
+    cacheLinhas.set(caminho, total);
+    if (total !== null) destino.push({ caminho, linhas: total });
+  };
+
+  for (const candidato of candidatosDe(alvo)) await registrar(candidato, diretos);
+  for (const relativo of indice.get(path.posix.basename(alvo)) ?? []) await registrar(relativo, porNome);
+
+  return { diretos, porNome };
 }
 
 /** Separa o texto do modelo dos eventos de log: só as partes `text` viram resposta. */
@@ -100,11 +133,82 @@ function extrairTexto(ndjson) {
 // campo marcava toda execução como contaminada.
 const CAMPOS_ALVO = ['path', 'filePath', 'file', 'pattern', 'query', 'command'];
 
-/** Contaminação = alguma tool tentou abrir algo sob `scripts/bench/`. */
+// Um caminho sob `scripts/bench/` que é ARQUIVO é contaminação. O que é apenas o
+// diretório (`ls scripts/bench/`) não é: listar nomes não revela o gabarito.
+//
+// Medido em 19/10/2026: o detector marcou como contaminada uma execução cujo único
+// comando com `scripts/bench/` era `ls scripts/bench/ | head -3`, feito para confirmar
+// que o diretório existia — o próprio comando dizia "nenhum arquivo aberto". Era o
+// terceiro falso positivo dessa detectoria (o de 19/10: o modelo repassou ao subagente
+// a própria proibição; o mesmo dia: caminho relativo ao diretório auditado; e agora:
+// listagem de diretório). Regra nova: só conta leitura de ARQUIVO.
+const REGEX_CAMINHO_BENCH = /scripts\/bench\/[A-Za-z0-9_.\-/[\]]*/g;
+
+/** Verdadeiro quando o caminho apontado existe no repositório como arquivo. */
+function ehArquivoDoRepo(caminho) {
+  try {
+    return statSync(path.join(RAIZ, caminho)).isFile();
+  } catch {
+    return false;
+  }
+}
+
+/** Extrai de um comando de shell os caminhos sob `scripts/bench/` que são arquivos. */
+function arquivosDoBenchNoComando(comando) {
+  const achados = new Set();
+  for (const bruto of comando.match(REGEX_CAMINHO_BENCH) ?? []) {
+    const limpo = bruto.replace(/[.,;'")\]]+$/, '').replace(/\/$/, '');
+    if (limpo.endsWith('scripts/bench')) continue;
+    if (ehArquivoDoRepo(limpo)) achados.add(limpo);
+  }
+  return achados;
+}
+
+/**
+ * Contaminação = alguma tool tentou abrir um ARQUIVO sob `scripts/bench/`.
+ *
+ * Há uma segunda via de contaminação, medida em 19/10/2026: o **ai-memory**. O modelo
+ * sob teste grava a resposta da tarefa na memória do projeto e a execução seguinte a lê
+ * de volta — o que é o mesmo que ler o gabarito, só que por um caminho que o detector
+ * antigo não via. Um modelo que consultou a memória do projeto é anotado como
+ * confundidor (o ADR-0008 já registrava o ai-memory como confundidor conhecido, por um
+ * caso menor); um modelo que leu a página que CONTA A RESPOSTA é executado contaminado.
+ *
+ * O sinal é a PÁGINA, não a pergunta: uma `memory_query` cujo texto menciona "auditoria"
+ * é uma busca, não uma leitura de resposta. Só conta quando a página da resposta é
+ * lida de fato — pelo `path` de um `memory_read_page` ou pelo `path` de um hit no
+ * resultado de uma `memory_query`.
+ */
+const PAGINA_DA_RESPOSTA = /notes\/auditoria-auth-pages-api/;
+
+function analiseMemoria(tools) {
+  let consultou = false;
+  let contaminante = false;
+  for (const t of tools) {
+    const estado = t.entrada?.estado || t.entrada || {};
+    const entrada = t.entrada || {};
+    const codigo = typeof entrada.code === 'string' ? entrada.code : '';
+    const comando = typeof entrada.command === 'string' ? entrada.command : '';
+    const texto = `${codigo} ${comando}`;
+    if (!/memory_read_page|memory_query|memory_recent|memory_briefing/.test(texto)) continue;
+    consultou = true;
+    // `path` de um memory_read_page: a página lida.
+    const caminho = typeof entrada.path === 'string' ? entrada.path : '';
+    const saida = typeof t.saida === 'string' ? t.saida : '';
+    if (PAGINA_DA_RESPOSTA.test(caminho) || PAGINA_DA_RESPOSTA.test(saida)) contaminante = true;
+    void estado;
+  }
+  return { consultou, contaminante };
+}
+
 function houveContaminacao(tools) {
   return tools.some((t) => CAMPOS_ALVO.some((campo) => {
     const valor = t.entrada?.[campo];
-    return typeof valor === 'string' && valor.includes('scripts/bench/');
+    if (typeof valor !== 'string') return false;
+    if (campo === 'command') return arquivosDoBenchNoComando(valor).size > 0;
+    if (!valor.includes('scripts/bench/')) return false;
+    const limpo = valor.replace(/[.,;'")\]]+$/, '').replace(/\/$/, '');
+    return ehArquivoDoRepo(limpo);
   }));
 }
 
@@ -180,6 +284,7 @@ async function analisar(arquivo) {
 
   const delegacoes = tools.filter((t) => t.nome === 'subagent');
   const contaminado = houveContaminacao(tools);
+  const memoria = analiseMemoria(tools);
 
   const citadas = new Map();
   for (const m of resposta.matchAll(REGEX_CITACAO)) {
@@ -193,18 +298,33 @@ async function analisar(arquivo) {
   const abreviadas = [];
   const indice = await indicePorBasename();
   for (const [alvo, linhas] of citadas) {
-    const total = await resolverCitacao(alvo);
-    if (total === null) {
-      const candidatos = indice.get(path.posix.basename(alvo)) || [];
-      if (candidatos.length > 0) {
-        abreviadas.push(`${alvo} -> ${candidatos.join(' ou ')}`);
-      } else {
-        invalidas.push(`${alvo} (nenhum arquivo do repositório tem esse nome)`);
-      }
+    const { diretos, porNome } = await resolverCitacao(alvo, indice);
+    const todos = [...diretos, ...porNome];
+    if (todos.length === 0) {
+      invalidas.push(`${alvo} (nenhum arquivo do repositório tem esse nome)`);
       continue;
     }
+    // A citação é inválida quando NENHUM dos candidatos possíveis tem a linha citada.
+    // Ver o comentário de `resolverCitacao`: em 19/10/2026 uma citação correta
+    // (`dicas.js:97` = `pages/api/admin/dicas.js:97`) foi reprovada porque o primeiro
+    // candidato encontrado (`pages/api/dicas.js`, 53 linhas) era outro arquivo.
+    let alvoReal = null;
     for (const linha of linhas) {
-      if (linha > total) invalidas.push(`${alvo}:${linha} (o arquivo tem ${total} linhas)`);
+      const cabem = todos.filter((e) => linha <= e.linhas);
+      if (cabem.length === 0) {
+        const detalhe = todos.map((e) => `${e.caminho} (${e.linhas} linhas)`).join(' ou ');
+        invalidas.push(`${alvo}:${linha} (nenhum candidato tem a linha: ${detalhe})`);
+      } else {
+        alvoReal ??= cabem[0].caminho;
+      }
+    }
+    // "Abreviada" = o caminho escrito não aponta para o arquivo que tem a linha citada.
+    // É forma, não erro: `admin/users.js` é `pages/api/admin/users.js` e `dicas.js` na
+    // lista de `admin/` é `pages/api/admin/dicas.js`.
+    if (alvoReal && !diretos.some((e) => e.caminho === alvoReal)) {
+      if (!abreviadas.some((a) => a.startsWith(`${alvo} ->`))) {
+        abreviadas.push(`${alvo} -> ${alvoReal}`);
+      }
     }
   }
 
@@ -215,6 +335,8 @@ async function analisar(arquivo) {
     delegacoes,
     tools,
     contaminado,
+    consultouMemoria: memoria.consultou,
+    memoriaContaminante: memoria.contaminante,
     citacoes: citadas.size,
     linhasCitadas: [...citadas.values()].reduce((t, s) => t + s.size, 0),
     invalidas,
@@ -232,8 +354,10 @@ function linhaRelatorio(r) {
   if (r.abreviadas.length > 0) problemas.push(`${r.abreviadas.length} abreviada(s)`);
   if (tamanho === 0) problemas.push('**sem resposta final**');
   else if (tamanho < TAMANHO_MINIMO_RESPOSTA) problemas.push(`resposta curta (${tamanho} caracteres)`);
+  if (r.memoriaContaminante) problemas.push('leu a resposta da tarefa na memória do projeto');
+  const suja = r.contaminado || r.memoriaContaminante;
   return [
-    `| ${r.arquivo} | ${r.delegou ? `sim (${r.delegacoes.length})` : '**não**'} | ${citacoes} | ${problemas.length ? problemas.join('; ') : '—'} | ${r.contaminado ? '**SIM — descartar**' : 'não'} |`,
+    `| ${r.arquivo} | ${r.delegou ? `sim (${r.delegacoes.length})` : '**não**'} | ${citacoes} | ${problemas.length ? problemas.join('; ') : '—'} | ${suja ? '**SIM — descartar**' : 'não'} |`,
   ].join('\n');
 }
 
@@ -265,6 +389,14 @@ async function main() {
   const sujas = relatorios.filter((r) => r.contaminado);
   if (sujas.length > 0) {
     console.log(`\n${sujas.length} execução(ões) contaminada(s) — alguma tool tentou abrir algo em \`scripts/bench/\`, então leu o gabarito. Descarte na hora de comparar.`);
+  }
+  const memoriaSuja = relatorios.filter((r) => r.memoriaContaminante);
+  if (memoriaSuja.length > 0) {
+    console.log(`\n${memoriaSuja.length} execução(ões) contaminada(s) pela MEMÓRIA do projeto — leram a página que contém a resposta da tarefa. É o mesmo que ler o gabarito, por outro caminho. Descarte.`);
+  }
+  const consultou = relatorios.filter((r) => r.consultouMemoria && !r.memoriaContaminante);
+  if (consultou.length > 0) {
+    console.log(`\n${consultou.length} execução(ões) consultaram a memória do projeto sem ler a resposta da tarefa — é o confundidor conhecido do ADR-0008. Anote na Camada C: comparar com um modelo que não consultou não isola o modelo.`);
   }
   const semDelegar = relatorios.filter((r) => !r.delegou);
   if (semDelegar.length > 0) {

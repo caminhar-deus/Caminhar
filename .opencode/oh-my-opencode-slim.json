@@ -46,6 +46,14 @@
     // orchestrator-bench rodar no papel real e dar evidência; sem ela, vale o modelo que já
     // estava em produção.
     //
+    // 19/10/2026, MAIS TARDE: space-bunny-free SAIU do catálogo. O primário da cadeia era
+    // ele, e a reserva NÃO assumiu — o orchestrator passou a responder no DEFAULT do
+    // provider (minimax-m3.1-flash-free). O log do slim registra `failover: false` para o
+    // erro `provider.no-route` ("Model unavailable"): a cadeia só age no hook
+    // `v2.session.retry`, e esse hook só age para erro classificado como failover
+    // (rate limit, 401/403, 5xx). Um id que SAIU do catálogo não é failover.
+    // Ver a seção "19/10/2026, mais tarde" no ADR-0008 e o bloco "zen" abaixo.
+    //
     // RESERVA DO ORCHESTRATOR RESTAURADA (16/10/2026, segunda medição do dia): big-pickle voltou ao
     // catálogo do Zen, então a decisão de 15/10 ("space-bunny-free primário, big-pickle reserva")
     // volta a valer sem bateria nova. A reserva continua sendo mitigação, não garantia: a cadeia só
@@ -66,13 +74,21 @@
     // cadeia. Para esse caso, o que protege é ter modelos diferentes por agente.
     // Cota Zen: por IP/dia (~200 req observados); bloqueio é por modelo. Modelos free podem sumir (já houve deprecated).
     //
+    // 19/10/2026, MAIS TARDE: a cadeia também NÃO cobre a SAÍDA DO PRIMÁRIO DO CATÁLOGO. O erro
+    // `provider.no-route` ("Model unavailable: <id>") não é classificado como failover — o log do
+    // slim registra `failover: false` para ele. Quando o primário some, a sessão não cai na
+    // reserva: cai no DEFAULT do provider. Consequência prática: a reserva da cadeia protege
+    // contra rate limit e 5xx; contra "o primário saiu do catálogo", o que protege é conferir
+    // `opencode models` e trocar o primário apontado.
+    //
     // INVENTÁRIO: no v2.0.32 a flag `opencode models --all` NÃO EXISTE mais (Unrecognized flag);
     // `opencode models` sem flag já lista as versões anteriores de cada família. São 10 modelos
-    // free (conferido em 19/10/2026): beam-free, big-pickle, deepseek-v4.1-flash-free,
-    // glm-5.3-flash-free, longcat-2.5-preview-free, mimo-v2.6-flash-free, nemotron-3-ultra-free,
-    // nemotron-3.5-lightning-free, nemotron-3.5-super-vl-free, space-bunny-free. A contagem muda:
-    // muse-spark-1.3-contributor-free saiu em 18/10/2026 e big-pickle saiu e voltou em 16/10.
-    // Confira antes de confiar nesta lista.
+    // free (reconferido em 19/10/2026, mais tarde): beam-free, big-pickle,
+    // deepseek-v4.1-flash-free, glm-5.3-flash-free, longcat-2.5-preview-free, mimo-v2.6-flash-free,
+    // minimax-m3.1-flash-free, nemotron-3-ultra-free, nemotron-3.5-lightning-free,
+    // nemotron-3.5-super-vl-free. A contagem muda com frequência: muse-spark-1.3-contributor-free
+    // saiu em 18/10/2026; big-pickle saiu e voltou em 16/10; space-bunny-free saiu em 19/10/2026
+    // (e minimax-m3.1-flash-free entrou no mesmo dia). Confira antes de confiar nesta lista.
     // nemotron-3.5-lightning-free fica de fora: foi o que derrubou o explorer em 09/10/2026.
     //
     // ÓRFÃO POR DECISÃO (19/10/2026): deepseek-v4.1-flash-free era o modelo do librarian; com o
@@ -108,7 +124,35 @@
     //                (:127-129), não 400, e que a branch :83-86 é inalcançável; achou também o mock
     //                de teste que fabricou a confiança (tests/integration/api/upload-image.test.js:148,168).
     "zen": {
-      "orchestrator": { "model": ["opencode/space-bunny-free", "opencode/big-pickle"] },
+      // ORCHESTRATOR — 19/10/2026, Catálogo 10 (medido): space-bunny-free SAIU do catálogo do
+      // Zen (o id não existe mais: `opencode models` não lista, e o spawn responde
+      // "Model unavailable: opencode/space-bunny-free"). Como o primário da cadeia era
+      // justamente esse id, o orchestrator passou a cair no DEFAULT do provider
+      // (minimax-m3.1-flash-free) — não na reserva.
+      //
+      // ACHADO QUE MUDA A LEITURA DA CADEIA (medido no log do slim, 19/10/2026): a cadeia
+      // [a, b] só aciona no hook `v2.session.retry`, e esse hook só age quando
+      // `isFailoverError(error)` é verdadeiro. O erro de id fora do catálogo é
+      // `provider.no-route` — "Model unavailable" — e o log registra `failover: false`
+      // para ele. Ou seja: **a reserva da cadeia NÃO cobre a saída do primário do
+      // catálogo**; ela cobre rate limit, 401/403 e 5xx. A proteção contra "o primário
+      // sumiu" é outro mecanismo: conferir o catálogo (`opencode models`) e trocar o
+      // primário apontado, não confiar na reserva.
+      //
+      // MEDIÇÃO DE HOJE (orchestrator-bench, 3 execuções por modelo, 2 turnos por sessão,
+      // gabarito conferido fora do modelo, memória limpa entre execuções):
+      //   minimax-m3.1-flash-free  0 erros verificáveis; 3/3 no 32 arquivos / 31 rotas;
+      //                         3/3 nomeou o ponto de aplicação (adminCrudHandler.js:331);
+      //                         3/3 achou os DOIS pontos de proteção externa
+      //                         (uploads/CSP e proxy.js); 0/3 cited o 405.
+      //   big-pickle            1 erro verificável (o mesmo de 19/10: negou proteção
+      //                         externa fora do arquivo); 0/3 no 405; 3/3 no resto.
+      //   space-bunny-free      fora do catálogo — não é mais opção.
+      // Ambos os modelos vivos têm 0/3 no 405 (a mesma lacuna), então o desempate é o
+      // erro verificável: 0 do minimax contra 1 do big-pickle. minimax vira o PRIMÁRIO.
+      // big-pickle continua como RESERVA — ela cobre rate limit e 5xx, que são os erros
+      // frequentes; para "o primário saiu do catálogo", o mecanismo é a checagem de catálogo.
+      "orchestrator": { "model": ["opencode/minimax-m3.1-flash-free", "opencode/big-pickle"] },
       "oracle":       { "model": "opencode/nemotron-3.5-super-vl-free",
                         // Skill do Front-End-Checklist para a revisão (obrigatória no fluxo: oracle revisa sem editar):
                         "skills_add": ["frontend-checklist-global"]
@@ -122,7 +166,27 @@
       // designer: 18/10/2026, muse-spark-1.3-contributor-free SAIU do catálogo do Zen e o agente
       // parou de funcionar (o host rejeita o spawn: "Model ... is not available"). Trocado para
       // beam-free, que já tinha medição deste papel em 16/10 — ver a entrada dele abaixo.
+      //
+      // 19/10/2026: bateria de papel nova (scripts/bench/papeis/) neste mesmo papel, 1 execução
+      // por modelo: os TRÊS pontos do gabarito (foco do Button, a proibição do
+      // --color-text-tertiary, os 4 usos no Input) foram acertados por beam-free,
+      // minimax, longcat e deepseek. O beam-free segue: é o único com DUAS medições neste
+      // papel (16/10 e hoje) e é o mais curto — menos Tokens, menos cota.
       "designer":     { "model": "opencode/beam-free", "skills_add": ["ui-ux-pro-max"] },
+      // fixer: 19/10/2026, bateria de papel nova (scripts/bench/papeis/) neste mesmo papel.
+      // Verificação FORA do modelo (a correção foi reaplicada e a suíte rodada de verdade):
+      //   mimo-v2.6-flash-free  corrigiu a produção; teste novo FALHA no código original e
+      //                         PASSA no corrigido; suíte verde; NÃO editou teste existente.
+      //   minimax-m3.1-flash-free idem, e foi o único que provou o teste contra o código
+      //                         ANTES de corrigir (falha 3x no original, passa no corrigido).
+      //   longcat-2.5-preview-free corrigiu a produção e a suíte ficou verde, mas EDITOU o
+      //                         arquivo de teste existente status.test.js em vez de criar um
+      //                         teste novo — a tarefa proíbe isso, e o teste novo não é
+      //                         separável porque mora no arquivo editado.
+      //   beam-free            CONTAMINADO: leu scripts/bench/papeis/gabarito-fixer.md.
+      // Empatou no critério (erro verificável) com o mimo; desempate pela checagem de
+      //_side effects_: o mimo criou arquivo novo e o minimax também. Mantido o mimo, que
+      // já estava em produção e tem a medição de 15/10 (9/9 testes) somada.
       "fixer":        { "model": "opencode/mimo-v2.6-flash-free" }
     }
     // Híbrido de exemplo (lembre de adicionar o provedor em enabled_providers no opencode.jsonc):

@@ -291,11 +291,57 @@ async function main() {
       console.log(`[${base}] ${situacao} em ${Math.round(duracao / 1000)}s — ${path.relative(RAIZ, arqSaida)}${temResposta ? '' : ' (SEM RESPOSTA)'}${sessionID ? ` session=${sessionID}` : ''}`);
       if (codigo !== 0 && stderr) console.log(`         stderr: ${stderr.slice(0, 300)}`);
       if (excedeu) console.log('         execução parcial: o .ndjson tem o que deu certo até o timeout; marque como incompleta na pontuação.');
+
+      await limparEfeitosColaterais(base);
     }
   }
 
   console.log(`\nConferir com: npm run bench:orch:conferir`);
   console.log('Depois, pontuar com scripts/bench/orchestrator/rubrica.md (Camadas B e C são julgamento humano).');
+}
+
+/**
+ * Apaga o que a execução deixou para trás: a página de memória com a resposta e os
+ * arquivos que o modelo criou no repositório.
+ *
+ * Medido em 19/10/2026: o modelo sob teste grava a RESPOSTA da tarefa na memória do
+ * projeto (`notes/auditoria-auth-pages-api-2026-10-19.md`) e a execução seguinte a lê de
+ * volta — o mesmo que ler o gabarito, por um caminho que o detector de `scripts/bench/`
+ * não via. O bench só valia se cada execução partisse de uma árvore limpa e de uma
+ * memória sem a resposta anterior.
+ *
+ * A limpeza é feita aqui, e não pelo conferidor, porque o dano já está feito: a página
+ * existe quando a execução seguinte começa. Apagar depois não é "limpar o resultado",
+ * é devolver o ambiente ao estado anterior à medição.
+ */
+async function limparEfeitosColaterais(base) {
+  const relatorio = [];
+
+  // 1. A página de memória com a resposta da tarefa.
+  const pagina = 'notes/auditoria-auth-pages-api-2026-10-19.md';
+  const r = await executar('ai-memory', ['delete-page', '--path', pagina]);
+  if (r.codigo === 0) relatorio.push(`memória: apagada ${pagina}`);
+
+  // 2. Arquivos que o modelo criou no repositório. Só o que é descartável: um relatório
+  // de auditoria ou um teste-sonda. Nada de código de produção.
+  const padroes = [
+    'docs/auditoria-auth-pages-api-*.md',
+    'tests/unit/pages/api/zz_probe_noauth.test.js',
+    'tests/integration/api/zzz-temp-authprobe.test.js',
+  ];
+  for (const padrao of padroes) {
+    const listagem = await executar('git', ['ls-files', '--others', '--exclude-standard', '--', padrao]);
+    if (listagem.codigo !== 0) continue;
+    const arquivos = listagem.stdout.split('\n').map((l) => l.trim()).filter(Boolean);
+    for (const arquivo of arquivos) {
+      const removido = await executar('rm', ['-f', arquivo]);
+      if (removido.codigo === 0) relatorio.push(`repo: apagado ${arquivo}`);
+    }
+  }
+
+  if (relatorio.length > 0) {
+    console.log(`[${base}] limpeza: ${relatorio.join('; ')}`);
+  }
 }
 
 main().catch((erro) => {

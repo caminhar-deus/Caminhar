@@ -133,12 +133,14 @@ vite.config.ts.timestamp-*
 cypress/videos/
 cypress/screenshots/
 
-# Saída das execuções do bench do orchestrator (scripts/bench/orchestrator).
+# Saída das execuções dos benches (scripts/bench/orchestrator e scripts/bench/papeis).
 # São transcripts crus de sessão: pesados, específicos de cada máquina e do momento, e
 # só interessam enquanto se está comparando os modelos. O gabarito e a rubrica, que
 # são a parte estável, ficam versionados ao lado.
 scripts/bench/orchestrator/resultados/*
 !scripts/bench/orchestrator/resultados/.gitkeep
+scripts/bench/papeis/resultados/*
+!scripts/bench/papeis/resultados/.gitkeep
 
 # Uploads de imagens enviados em runtime. Ficam FORA de `public/` porque
 # `next start` tira snapshot de `public/` na subida do processo: arquivo
