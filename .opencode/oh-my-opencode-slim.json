@@ -36,6 +36,11 @@
     // NENHUM modelo se repete entre os 6 agentes — ver a limitação da cadeia logo abaixo.
     //
     // ORDEM DO ORCHESTRATOR (15/10/2026, decisão do mantenedor): space-bunny-free é o PRIMÁRIO e
+    // big-pickle a reserva. Em 19/10/2026 o orchestrator-bench (scripts/bench/orchestrator/)
+    // rodou de verdade: 6 execuções, 2 turnos por sessão, gabarito conferido fora do modelo.
+    // space-bunny-free SE SUSTENTA — 1 erro verificável por modelo, os dois no mesmo ponto, e
+    // o critério desta decisão é "menos erros verificáveis". Nenhuma troca. Ver o ADR-0008,
+    // seção "19/10/2026: o orchestrator-bench rodou".
     // big-pickle a reserva. A bateria mediu big-pickle acima, mas mediu o MODELO numa tarefa
     // pontual através de proxy — não a sessão inteira. A troca de primário ficou adiada até o
     // orchestrator-bench rodar no papel real e dar evidência; sem ela, vale o modelo que já
@@ -61,16 +66,22 @@
     // cadeia. Para esse caso, o que protege é ter modelos diferentes por agente.
     // Cota Zen: por IP/dia (~200 req observados); bloqueio é por modelo. Modelos free podem sumir (já houve deprecated).
     //
-    // INVENTÁRIO (armadilha): `opencode models` esconde, na visão padrão, as versões anteriores de
-    // cada família. deepseek-v4.1-flash-free, glm-5.3-flash-free,
-    // nemotron-3.5-lightning-free e nemotron-3-ultra-free só aparecem com `all: true` — e estão
-    // ativos e grátis. São 10 modelos free, não 6 — e a contagem muda: muse-spark-1.3-contributor-free
-    // saiu em 18/10/2026. Confira antes de confiar nesta lista.
+    // INVENTÁRIO: no v2.0.32 a flag `opencode models --all` NÃO EXISTE mais (Unrecognized flag);
+    // `opencode models` sem flag já lista as versões anteriores de cada família. São 10 modelos
+    // free (conferido em 19/10/2026): beam-free, big-pickle, deepseek-v4.1-flash-free,
+    // glm-5.3-flash-free, longcat-2.5-preview-free, mimo-v2.6-flash-free, nemotron-3-ultra-free,
+    // nemotron-3.5-lightning-free, nemotron-3.5-super-vl-free, space-bunny-free. A contagem muda:
+    // muse-spark-1.3-contributor-free saiu em 18/10/2026 e big-pickle saiu e voltou em 16/10.
+    // Confira antes de confiar nesta lista.
     // nemotron-3.5-lightning-free fica de fora: foi o que derrubou o explorer em 09/10/2026.
     //
-    // ÓRFÃO (18/10/2026): deepseek-v4.1-flash-free era o modelo do librarian. Com o merge do 3.0.5
-    // ele ficou sem dono — o explorer ficou com o longcat, medido no papel de repo. Não "conserte"
-    // o id: ele existe e está ativo, só não está em uso. Medir antes de promover.
+    // ÓRFÃO POR DECISÃO (19/10/2026): deepseek-v4.1-flash-free era o modelo do librarian; com o
+    // merge do 3.0.5 ficou sem dono. A bateria que faltava rodou no papel novo (repo + doc externa
+    // via context7/gh_grep, uma execução por modelo, citações conferidas em arquivo:linha):
+    // longcat 7/7 e 16/16 aplicações; deepseek 7/7 e 15/16 (omitiu ip-diagnostico.js:186); zero
+    // erros verificáveis nos dois. Empate no pedido, incumbent mais completo — o explorer CONTINUA
+    // com o longcat e o deepseek segue órfão por decisão medida, não por esquecimento. Ver a
+    // seção "19/10/2026" do ADR-0008.
     // MEDIÇÃO (por que cada modelo, e não o anterior):
     //   nemotron-vl  único que ACHOU a causa, não o sintoma: `adminCrudHandler.js:53` tem
     //                `requireAdmin = false` e só 2 das 15 rotas admin o ativam — com
@@ -104,8 +115,9 @@
                       },
       // O 3.0.5 fundiu o librarian no explorer (MARKETPLACE_BUILTIN_RENAMES em dist/index.js).
       // O explorer carrega hoje as duas responsabilidades: varredura do repo (longcat) e
-      // doc externa (context7/gh_grep, em "agents" abaixo). O modelo segue o do explorer, medido
-      // no papel de repo. deepseek-v4.1-flash-free ficou órfão — ver a nota "ÓRFÃO" acima.
+      // doc externa (context7/gh_grep, em "agents" abaixo). O longcat foi medido no papel de repo
+      // em 15/10 e no papel novo — repo + doc externa — em 19/10/2026. O deepseek correu no mesmo
+      // papel novo e não ganhou; ver a nota "ÓRFÃO POR DECISÃO" acima.
       "explorer":     { "model": "opencode/longcat-2.5-preview-free" },
       // designer: 18/10/2026, muse-spark-1.3-contributor-free SAIU do catálogo do Zen e o agente
       // parou de funcionar (o host rejeita o spawn: "Model ... is not available"). Trocado para

@@ -4,17 +4,19 @@
 > **Diretório analisado:** `/scripts`  
 > **Objetivo:** Descrever a finalidade, localização e funcionamento de cada script e subpasta.  
 > **Data da análise:** 23/09/2026  
-> **Última atualização:** 12/10/2026 — `clear-db.js`, `clear-musicas.js`, `reset-password.js` e `seed-all.js` com contrato exportado e `main()` + guarda de CLI sem `await`; `seed-all.js` sem `import.meta` e com `seedsDir` parametrizável; suítes desses 4 scripts refeitas contra os módulos que eles realmente importam
+> **Última atualização:** 19/10/2026 — `scripts/bench/orchestrator/` (bench do papel do `orchestrator`: `rodar.js` abre sessão real por modelo e grava em streaming, `conferir.js` mede delegação, citações e contaminação, mais `tarefa.md`, `gabarito.md` e `rubrica.md`); scripts `bench:orch:rodar` e `bench:orch:conferir` no `package.json`
 
 ---
 
 ## 📂 Visão Geral da Estrutura
 
-A pasta `/scripts` contém **90 arquivos** organizados por responsabilidade:
+A pasta `/scripts` contém **95 arquivos versionados** (96 no disco, contando o
+`.ndjson` de uma execução do bench, que o `.gitignore` exclui):
 
 ```text
 scripts/
 ├── [raiz]           → 36 scripts executáveis/manutenção
+├── bench/           → 1 subpasta: bench do orchestrator
 ├── cli/             → entry points CLI
 ├── db/              → conexão e verificação de banco
 ├── diagnostics/     → diagnósticos pontuais
@@ -182,6 +184,44 @@ Definições JSON consumidas por `init-table.js` (nome da tabela, colunas, flag 
 
 ---
 
+## 🧪 Bench do Orchestrator (`scripts/bench/`)
+
+Instrumentação de medição de modelo, não manutenção. Existe porque **nenhuma outra
+bateria do projeto mede o papel do `orchestrator`**: ele é o agente primário da sessão,
+não existe como subagente, e a tool `subagent` não o alcança — as baterias de 15/10 e
+16/10/2026 o exercitaram por proxy. O `docs/adr/0008` §"Ordem do orchestrator" registra
+isso como a evidência que faltava para trocar o primário.
+
+| Arquivo | Funcionalidade |
+|---------|----------------|
+| `bench/orchestrator/rodar.js` | Executa a mesma tarefa em um ou mais modelos via `opencode run --model ... --format json --auto`, e grava `resultados/<modelo>-<n>.ndjson` (em **streaming**, para que execução morta ou interrompida por timeout deixe evidência) e `<modelo>-<n>.meta.json` (sessionID, código de saída, duração, stderr). Confere cada id contra `opencode models` antes de rodar: id fora do catálogo falha em silêncio no spawn e pareceria falha do modelo. Opções: `-m/--modelo`, `-n/--repeticoes`, `--timeout-min`, `--sobrescrever`, `--dry-run`. |
+| `bench/orchestrator/conferir.js` | Camada A da rubrica, sem juízo: houve delegação (a saída cita a tool `subagent`), cada citação `arquivo:linha` existe de verdade, e a execução foi contaminada por leitura do gabarito. Gera `resultados/conferencia.md`. **Não** julga o conteúdo — isso é humano, contra o gabarito. |
+| `bench/orchestrator/tarefa.md` | O prompt enviado ao modelo. Não editar durante uma série: muda a tarefa, invalida a comparação. |
+| `bench/orchestrator/gabarito.md` | Resposta conferida em `arquivo:linha`, linha a linha, com os erros típicos anotados. **Proibido ao modelo**: a tarefa e o runner pedem para não ler `scripts/bench/`, e o `conferir.js` marca a execução como contaminada. |
+| `bench/orchestrator/rubrica.md` | Como pontuar: Camada A (automática), Camada B (acerto contra o gabarito) e Camada C (orquestração — quem conduz, não quem acerta). Registra também o que o bench **não** mede. |
+| `bench/orchestrator/LEIA-ME.md` | Porta de entrada: como rodar, o que cada arquivo é, e a fraqueza conhecida (contaminação). |
+
+**Comandos:**
+
+```bash
+npm run bench:orch:rodar -- --dry-run                # confere sem gastar cota
+npm run bench:orch:rodar -- --repeticoes 1           # 1 execução por modelo
+npm run bench:orch:conferir                          # Camada A
+```
+
+Executa-se por `npm run`, nunca por chamada direta: `rodar.js` usa `import.meta.dirname`
+para achar a raiz do repositório e o `package.json` precisa estar como `"type": "module"`.
+
+**Sem `OPENCODE_API_KEY`.** A execução passa pelo host do OpenCode, que já tem credencial
+guardada. O bench de 16/10/2026 exigia chave porque chamava a API do Zen de fora — caminho
+que o free tier recusa (*"can only be used from within OpenCode"*).
+
+**Os artefatos de execução não são versionados.** `resultados/` está no `.gitignore`
+(exceção para o `.gitkeep`): são transcripts crus de sessão, pesados e específicos de cada
+máquina e momento.
+
+---
+
 ## 🤖 Testes E2E — Cypress (`scripts/` raiz)
 
 | Arquivo | Funcionalidade |
@@ -250,12 +290,13 @@ Definições JSON consumidas por `init-table.js` (nome da tabela, colunas, flag 
 | Banco | 2 | `db/connection.js` + `db-shell.js` |
 | Utilidades | 7 | `load-env.js`, `constants.js`, `date-format.js`, `init-table-utils.js`, `list-settings.js`, `list-table-columns.js`, `update-setting.js` |
 | Testes Manuais | 1 | `tests/manual-rate-limit.js` |
+| Bench | 7 | `bench/orchestrator/` (4 `.md` + 2 `.js` + `resultados/.gitkeep`) |
 | CLI | 1 | `cli/validate-schema.js` |
 | Monitoramento | 1 | `monitor-disk-space.js` |
 | Biblioteca | 1 | `lib/k6-output-parser.js` |
-| **Total** | **87** | — |
+| **Total** | **94** | — |
 
-> **Contagens conferidas no repositório em 08/10/2026** (`find scripts -type f` = 90 arquivos; 36 na raiz). A tabela acima é uma **partição**: cada arquivo aparece em exatamente uma linha, e a soma fecha em 90 — que é o número da "Visão Geral da Estrutura". As linhas de Diagnósticos, Inicialização, Limpeza, E2E e Biblioteca e o Total estavam defasados desde a análise de 23/09/2026 (`lint-chars.js`, `setup-test-db.js`, `e2e-isolated.js` e `scripts/lib/k6-output-parser.js` não estavam em nenhuma linha; `clean-k6-reports.js` era contado duas vezes); a de Migrações defasou com a criação da `018` em 04/10/2026.
+> **Contagens conferidas no repositório em 19/10/2026** (`find scripts -type f` = 96, sendo 1 o `.ndjson` de execução que o `.gitignore` exclui; a tabela acima é uma **partição** e soma 94). O número "90" que valia aqui até 18/10/2026 já estava defasado: entre a medição de 08/10 e hoje a pasta tinha 88 arquivos antes do bench, ou seja, **-2** de saldo líquido, e `check-hardcoded-credentials.js` segue sem linha própria nesta tabela. Não auditei de onde saiu o saldo; o que está aqui é o estado medido, e a divergência está declarada em vez de arredondada.
 
 ---
 

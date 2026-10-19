@@ -20,6 +20,8 @@
     "lint:fix": "eslint . --fix",
     "lint:workflows": "bash scripts/diagnostics/lint-workflows.sh",
     "lint:chars": "node scripts/diagnostics/lint-chars.js",
+    "bench:orch:rodar": "node scripts/bench/orchestrator/rodar.js",
+    "bench:orch:conferir": "node scripts/bench/orchestrator/conferir.js",
     "knip": "knip",
     "knip:watch": "knip --watch",
     "diag:lsp": "node scripts/diagnostics/lsp-reusable-workflow.js",

@@ -23,7 +23,8 @@
 > O princípio central deste ADR — medir em bateria real antes de promover, e
 > verificar se o id ainda existe no catálogo — **continua valendo** e foi o que
 > permitiu detectar o órfão. Para a decisão sobre o que fazer com o deepseek,
-> ver a nota no preset `zen`.
+> ver a nota no preset `zen`. **A bateria que faltava rodou em 19/10/2026** —
+> ver "19/10/2026" no fim do texto.
 
 ## Contexto
 
@@ -231,6 +232,153 @@ mudou**: nenhum dos dois candidatos foi medido na união. Trocar por argumento d
 repetir o erro que a seção "Saídas do catálogo" já registrou — apontar para o id disponível em
 vez de medir o substituto.
 
+## 19/10/2026: a bateria do papel novo rodou — `longcat` fica, e o órfão vira decisão
+
+Fecha a pendência que a seção "18/10/2026: `deepseek-v4.1-flash-free` segue órfão"
+deixou em aberto. Dois passes, **a mesma tarefa**, sequenciais, um por modelo — e
+toda citação foi conferida em `arquivo:linha` pelo orquestrador, não pelo modelo.
+
+**A tarefa é o papel novo inteiro, numa só:** (A) todos os pontos em que `withAuth`
+é aplicado, em `arquivo:linha` — gabarito de 7 pontos: a definição mais 6
+aplicações em produção; (B) **somente por `context7`/`gh_grep`**, como o Next.js 16
+define o `Cache-Control` de um Route Handler do App Router e qual o papel do
+`revalidate`, com a exigência de declarar explicitamente o que **não** está
+documentado, sem preencher a lacuna de memória.
+
+**Dois bloqueios da sessão anterior foram resolvidos antes de medir.** (a) Não havia
+MCP nenhum — falso: `opencode.list_mcp_resources` devolve `[]` porque esses
+servidores expõem **feramentas**, não **recursos**; `gh_grep` respondeu de verdade e
+os dois passes usaram `context7` e `gh_grep`. (b) O inventário com
+`opencode models --all` não roda mais no v2.0.32 (`Unrecognized flag: --all`); sem
+a flag, `opencode models` lista **10** modelos free — o mesmo número do preset, com
+`big-pickle` de volta e `muse-spark-1.3-contributor-free` fora, como esperado.
+
+| | `longcat-2.5-preview-free` | `deepseek-v4.1-flash-free` |
+|---|---|---|
+| Parte A — os 7 pontos pedidos | **7/7** | **7/7** |
+| Parte A — todas as aplicações em produção | **16/16** (incluiu `pages/api/ip-diagnostico.js:186`) | 15/16 (omitiu `pages/api/ip-diagnostico.js:186`) |
+| Parte B — `revalidate` documentado, com trecho | ✓ | ✓ |
+| Parte B — `Cache-Control` ausente do doc do App Router | ✓ | ✓ |
+| Erros verificáveis | **0** | **0** |
+
+A conclusão da Parte B foi conferida contra os docs do **16.4.2** instalados em
+`node_modules/next/dist/docs/`: `revalidate` está em `01-app/03-api-reference/03-file-conventions/route.md:270-284`,
+e `Cache-Control` tem **zero** ocorrência no doc de Route Handler do App Router — a
+única receita oficial é do Pages Router (`next-config-js/headers.md:424`). Ambos os
+modelos chegaram nisso, pelos dois caminhos.
+
+**Veredito: empate no que foi pedido, e o incumbent mais completo.** A regra desta
+decisão é "o modelo com menos erros verificáveis na tarefa que ele vai executar de
+fato", e ninguém cometeu erro verificável. O critério de desempate que existe —
+cobertura — favorece o `longcat`, que mapeou as 16 aplicações em produção contra 15.
+**Não há evidência para trocar o `explorer`, e nenhuma troca foi feita.**
+
+O `deepseek-v4.1-flash-free` deixa de ser órfão por acidente (slim 3.0.5) e passa a
+ser **órfão por decisão medida**: ativo, gratuito, sem dono, e com a troca já
+avaliada no papel certo. Reexaminar exige uma tarefa onde elevença — não a mesma,
+de novo.
+
+**Ressalva de versionamento:** os dois passes resolveram o `context7` para
+`/vercel/next.js/v16.2.9`, enquanto o projeto roda **16.4.2** — o Context7 não tem a
+versão exata indexada. Não é diferencial entre os dois, e as afirmações foram
+conferidas na 16.4.2 antes de serem aceitas.
+
+**O `orchestrator-bench` foi reescrito em 19/10/2026 e continua sem execução
+comparativa.** O original vivia em `/tmp/opencode/bench-orch/` e morreu com a limpeza do
+`/tmp`; ele exigia `OPENCODE_API_KEY` porque chamava a API do Zen de fora — caminho que o
+free tier recusa (*"can only be used from within OpenCode"*). A versão nova está em
+`scripts/bench/orchestrator/` e **não precisa de chave**: roda `opencode run --model ...
+--format json`, que abre uma sessão real pelo host, com a credencial já guardada.
+
+Isso é mais fiel, não menos: a medição por proxy era justamente a fraqueza apontada no
+começo deste ADR, e uma sessão de verdade é o papel que o orchestrator exerce. O `--model`
+troca só o agente primário, então `explorer`, `oracle`, `designer` e `fixer` seguem com os
+modelos do preset e a variável fica isolada.
+
+**Comparabilidade perdida, e registrada:** o bench novo **não é** o bench de 16/10/2026.
+Não é a mesma implementação nem a mesma série, e qualquer número novo entra como medição
+nova — não como continuação.
+
+## 19/10/2026: o `orchestrator-bench` rodou — `space-bunny-free` se sustenta
+
+A evidência que faltava desde 15/10/2026 foi medida. **Veredito: o primário atual se
+sustenta, e nenhuma troca de primário é justificada.** A pergunta que este ADR mantinha
+aberta — trocar `space-bunny-free` por um modelo medido — teve resposta, e a resposta foi
+não trocar.
+
+**A medição.** Seis execuções (3 por modelo), cada uma em dois turnos da **mesma sessão**,
+com a tarefa de `scripts/bench/orchestrator/tarefa.md`: auditar a autenticação de
+`pages/api/` com gabarito conferido em `arquivo:linha`. O `--model` troca só o agente
+primário, então `explorer`, `oracle`, `designer` e `fixer` ficam nos modelos do preset e a
+variável fica isolada. Todo o gabarito foi conferido **fora do modelo**, como nas baterias
+anteriores.
+
+**O desenho precisou de um segundo turno, e isso é o achado de método.** A tool `subagent`
+ignora `background`: sempre devolve *"working in the background… you will be notified"*, e o
+`opencode run` encerra ali. **Nenhuma das 6 execuções de turno único entregou resposta
+final** — todas terminaram no aviso de que a delegação tinha sido disparada. Em turno
+único o bench mede o *dispatcher*, não o orchestrator. O segundo turno continua a sessão,
+com o resultado do subagente já disponível, e é o que produz a resposta final. **Sem ele a
+série não teria medido nada** — e isso é defeito do desenho, não dos modelos.
+
+**Camada A (automática).** 6/6 delegaram exatamente uma vez, todas para o `explorer`;
+0/12 contaminações; **zero citações de arquivo/linha inválidas** nas 6 respostas finais, e
+nenhum nome de arquivo alucinado. O único defeito de forma: `big-pickle` teve 5 citações
+em caminho abreviado (`adminCrudHandler.js` em vez de
+`lib/api/adminCrudHandler.js`), `space-bunny-free` 0.
+
+**Camada B (acerto).** Os dois modelos acertaram 32 arquivos e nomearam o arquivo que não
+é rota em 3/3, e os dois acharam os dois pontos de proteção externa. Divergiram no
+detalhe:
+
+| Item | `space-bunny-free` | `big-pickle` |
+|---|---|---|
+| 32 arquivos / nomeia o não-rota | 3/3 | 3/3 |
+| 31 rotas (o `helper/pagination.js` não é rota) | 1/3 | 2/3 |
+| `405` impede escrita anônima nas rotas de leitura | 1/3 | 0/3 |
+| proteção externa em `next.config.js` (CSP do `/uploads`) | 3/3 | 3/3 |
+| proteção externa em `proxy.js` (rate limit do login) | 2/3 | 2/3 |
+| ponto de **aplicação** (`adminCrudHandler.js:331`, não o import) | 3/3 | 3/3 |
+
+**Erro verificável: empate, e é o mesmo em ambos.** Cada modelo cometeu **um**, na mesma
+fronteira: negar que existe proteção fora da rota depois de procurar o nome antigo. Duas
+execuções afirmaram com segurança que não há `middleware.js`/`middleware.ts` — e `proxy.js`
+existe e está ativo. `big-pickle-2` escreveu *"Não há proteção de outra natureza envolvida:
+sem middleware global"*; `space-bunny-free-3` escreveu *"Não existe camada externa"* depois
+de listar onde havia procurado. O critério desta decisão é "o modelo com menos erros
+verificáveis", e com um para cada lado **não há base para trocar**.
+
+**Camada C (orquestração) — o que realmente separou.** `big-pickle-3` recebeu do `@oracle`
+a afirmação de que `proxy.js` era **código morto** por não se chamar `middleware.js`, e
+**verificou contra a doc local do Next antes de aceitar**: em
+`node_modules/next/dist/docs/01-app/01-getting-started/16-proxy.md` está escrito *"Starting
+with Next.js 16, Middleware is now called Proxy"*. Rejeitou o `oracle`, manteve o `explorer`
+e registrou o conflito na resposta. Conferido: a correção dele está certa e o `oracle`
+errou — `proxy.js` é a convenção de middleware do Next 16. É exatamente o comportamento que
+este ADR busca: contestação em vez de aceitação de contexto. `big-pickle-1` reconciliou
+arquivo a arquivo, corrigiu citações contra o código, declarou não ter editado nada e
+apontou uma anomalia real (PUT de `settings.js` sem checagem de role).
+`space-bunny-free-3` usou `NÃO DETERMINADO` exatamente onde a evidência não sustenta
+afirmar.
+
+**Ressalva de confundidor, registrada:** `big-pickle` consultou o `ai-memory` antes de
+delegar em 2 das 3 execuções e encontrou ali o registro do RBAC de `adminCrudHandler.js`. Em
+produção isso é legítimo e útil; no bench encurta o trabalho de quem já tem a resposta
+documentada em outra fonte. Comparar esse modelo com um que não consultou não isola o modelo.
+
+**Conclusão.** `space-bunny-free` **se sustenta** como primário, agora com medição no papel
+real em vez de por proxy — que era exatamente a ressalva que mantinha a troca em suspenso
+desde 15/10. `big-pickle` volta ao que sempre foi aqui: **reserva**, que é o que a contagem
+do inventário permite.
+
+O resultado vale tanto pelo que mediu quanto pelo que descobriu de caminho: **o gabarito
+do bench estava errado** — perguntava por "alguma" proteção externa e respondia só pelo
+`next.config.js`, esquecendo o `proxy.js`. Erro meu, pego na conferência fora do modelo;
+corrigido e datado no próprio gabarito.
+
+**O que continua sem medição:** a diferença entre uma sessão de uma tarefa e um dia de
+trabalho. Este bench fecha a lacuna do *papel*; não fecha a da *duração*.
+
 ## Alternativas consideradas
 
 - **Manter o preset anterior, com as cadeias.** Descartado: preservava o acoplamento
@@ -320,10 +468,13 @@ se pagou.
 **Pendências conhecidas deste ADR:**
 
 - **Orchestrator sem reserva — RESOLVIDO em 16/10/2026.** `big-pickle` voltou ao catálogo e a
-  reserva foi restaurada (ver "Re-análise de 16/10/2026"). O `orchestrator-bench` continua em
-  aberto, porque é ele que decide se `space-bunny-free` se sustenta como primário — pergunta que
-  a bateria por proxy não responde. O script existe em `/tmp/opencode/bench-orch/` e exige
-  `OPENCODE_API_KEY` no ambiente de quem roda.
+  reserva foi restaurada (ver "Re-análise de 16/10/2026").
+- **Orchestrator-bench — RESOLVIDO em 19/10/2026.** Era a evidência que faltava para decidir
+  se `space-bunny-free` se sustenta como primário. Rodou (ver "19/10/2026" no fim do texto):
+  **`space-bunny-free` se sustenta**, com um erro verificável por modelo no papel e empate, e
+  nenhuma troca é justificada. O bench agora vive em `scripts/bench/orchestrator/` — o
+  script antigo, em `/tmp/opencode/bench-orch/`, se foi com a limpeza do `/tmp` e exigia
+  `OPENCODE_API_KEY`.
 - **Privacidade do `oracle` não verificada.** `nemotron-3.5-super-vl-free` é hoje o único
   dos seis sem garantia de retenção registrada. Se isso for requisito, verificar antes do
   próximo uso com código sensível.

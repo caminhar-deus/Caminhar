@@ -9,7 +9,11 @@ import { defineConfig } from "eslint/config";
 
 export default defineConfig([
   // Ignorar diretórios gerados e artefatos de build
-  { ignores: [".next/**", "out/**", "build/**", "reports/**", "coverage/**", "coverage-db/**", "cypress/videos/**", "cypress/screenshots/**", "data/**", "public/uploads/**", ".agents/**", ".opencode/skills/**", "docs/**", "package-lock.json"] },
+  // `scripts/bench/orchestrator/resultados/` entra pela mesma razão de `reports/**` e
+  // `coverage/**`: é saída gerada, já ignorada pelo git, e o ESLint não lê `.gitignore`.
+  // Sem esta entrada, o `conferencia.md` do bench (que tem um H1 por execução) reprova
+  // `markdown/no-multiple-h1` a cada `npm run lint`.
+  { ignores: [".next/**", "out/**", "build/**", "reports/**", "coverage/**", "coverage-db/**", "cypress/videos/**", "cypress/screenshots/**", "data/**", "public/uploads/**", ".agents/**", ".opencode/skills/**", "docs/**", "scripts/bench/orchestrator/resultados/**", "package-lock.json"] },
 
   // JavaScript padrão (browser + node) - parser padrão
   { files: ["**/*.{js,mjs,cjs}"], plugins: { js }, extends: ["js/recommended"], languageOptions: { globals: {...globals.browser, ...globals.node} }, rules: { "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }] } },
