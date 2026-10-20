@@ -109,6 +109,12 @@ const SearchBlockRate = new Rate('search_block_rate');
 const RESPOSTAS_ESPERADAS = http.expectedStatuses(200, 429);
 
 export const options = getProfile('heavy', {
+  // Escape hatch deliberado: `errors_500: ['rate<0.50']` abaixo diz que até
+  // 50% de 5xx é achado de capacidade (reportar, não reprovar) — se o
+  // `http_req_failed: rate<0.10` do perfil `heavy` fosse mesclado, o job
+  // reprovaria justamente o cenário parcialmente 5xx que este script precisa
+  // sobreviver para conseguir reportá-lo.
+  replaceThresholds: true,
   stages: [
     { duration: '10s', target: 100 },
     { duration: '30s', target: 500 },

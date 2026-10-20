@@ -1,19 +1,18 @@
 /**
- * Testes de caracterização de `load-tests/helpers/profiles.js`.
+ * Testes de `load-tests/helpers/profiles.js`.
  *
- * A auditoria da suíte de carga encontrou perda SILENCIOSA de thresholds: hoje,
- * quando `getProfile` recebe `overrides.thresholds`, os thresholds do perfil
- * base são descartados por inteiro em vez de mesclados. Um script que declara
- * thresholds parciais perde os restantes sem nenhum aviso — o k6 roda com menos
- * restrições do que o código sugere e o run continua verde (item AD de
- * `docs/PENDENCIAS_scripts_testes.md`).
+ * ESTADO ATUAL (Fase 1 do item AD de `docs/PENDENCIAS_scripts_testes.md`
+ * aplicada): `getProfile` MESCLA `thresholds` por padrão, chave a chave — a
+ * chave repetida é substituída pelo override e a que só existe no perfil base
+ * é preservada. Os thresholds do perfil base deixaram de ser descartados, o
+ * que devolve 10 thresholds a 13 scripts que hoje rodam sem eles; o run de
+ * cron #17 (20/10/2026, 30/30 passed) mediu todos esses thresholds voltando
+ * e aprovando com folga.
  *
- * Estes testes são de CARACTERIZAÇÃO: afirmam o comportamento REAL de hoje,
- * incluindo o descarte, para travar a implementação atual e registrar o defeito
- * de forma executável. A Fase 1 da pendência adicionará o escape hatch
- * `replaceThresholds: true` e fará `getProfile` mesclar thresholds por padrão —
- * nesse momento os casos que marcamos como "limitação conhecida" terão de ser
- * atualizados de propósito (não serão atualizados por acidente).
+ * Para quem precisa da semântica antiga existe o escape hatch EXPLÍCITO
+ * `overrides.replaceThresholds: true`, que descarta o base por inteiro — e a
+ * chave não pode vazar para o objeto devolvido, porque esse objeto é o
+ * `options` do k6, que não admite chaves desconhecidas.
  *
  * O módulo alvo é JS puro, sem import de k6, então o jest o importa direto:
  * o `babel.jest.config.js` converte os ES Modules para CommonJS.
@@ -24,7 +23,7 @@ import { PROFILES, getProfile } from '../../../load-tests/helpers/profiles';
 /** Mensagem do erro lançado para nomes inválidos — lista os perfis válidos. */
 const FRASE_ERRO = /Perfil desconhecido/;
 
-describe('getProfile — caracterização do comportamento atual', () => {
+describe('getProfile — merge por padrão e escape hatch explícito', () => {
   it('sem overrides devolve exatamente os thresholds do perfil base', () => {
     const perfil = getProfile('light');
 
@@ -36,8 +35,8 @@ describe('getProfile — caracterização do comportamento atual', () => {
   });
 
   it('overrides sem thresholds preservam os thresholds do base', () => {
-    // Este é o caminho que já funciona: o spread mantém os thresholds do base
-    // quando `overrides.thresholds` é undefined.
+    // O spread mantém os thresholds do base quando `overrides.thresholds`
+    // é undefined.
     const stages = [{ duration: '5s', target: 2 }, { duration: '5s', target: 0 }];
     const perfil = getProfile('light', { stages });
 
@@ -45,36 +44,65 @@ describe('getProfile — caracterização do comportamento atual', () => {
     expect(perfil.thresholds).toEqual(PROFILES.light.thresholds);
   });
 
-  it('overrides COM thresholds descartam os do base — limitação CONHECIDA', () => {
-    // LIMITAÇÃO CONHECIDA, não desejo: `hasExplicitThresholds` troca o objeto
-    // inteiro em vez de mesclar. A Fase 1 (item AD de
-    // docs/PENDENCIAS_scripts_testes.md) substituirá a substituição total por
-    // merge com escape hatch explícito `replaceThresholds: true` — quando isso
-    // acontecer, este caso terá de ser reescrito de propósito.
-    const substitutes = { http_req_failed: ['rate<0.01'] };
-    const perfil = getProfile('light', { thresholds: substitutes });
+  it('overrides COM thresholds MESCLAM com os do base', () => {
+    // Comportamento novo da Fase 1: `hasExplicitThresholds` não substitui
+    // mais o objeto inteiro. A chave do base que não está no override
+    // SOBREVIVE, e a chave repetida é SUBSTITUÍDA pelo override.
+    const substituto = { http_req_failed: ['rate<0.01'] };
+    const perfil = getProfile('light', { thresholds: substituto });
 
-    // O descarte é afirmado explicitamente: nada do perfil base sobrevive.
-    expect(perfil.thresholds).toEqual(substitutes);
+    // Chave só do override entra:
+    expect(perfil.thresholds.http_req_failed).toEqual(['rate<0.01']);
+    // Chaves só do base sobrevivem:
+    expect(perfil.thresholds.checks).toEqual(['rate==1.0']);
+    expect(perfil.thresholds.http_req_duration).toEqual(['p(95)<500']);
+    expect(perfil.thresholds).toEqual({
+      checks: ['rate==1.0'],
+      http_req_duration: ['p(95)<500'],
+      http_req_failed: ['rate<0.01'],
+    });
+  });
+
+  it('sobrescrita parcial troca a chave repetida e PRESERVA a que só existe no base', () => {
+    // Modo mais sutil do merge: quem sobrepõe só `checks` quer o valor novo
+    // de `checks`, mas continua querendo `http_req_duration` do base.
+    const perfil = getProfile('light', { thresholds: { checks: ['rate==0.99'] } });
+
+    expect(perfil.thresholds.checks).toEqual(['rate==0.99']);
+    expect(perfil.thresholds.http_req_duration).toEqual(['p(95)<500']);
+    expect(Object.keys(perfil.thresholds).sort()).toEqual(['checks', 'http_req_duration']);
+  });
+
+  it('replaceThresholds: true descarta o base por inteiro — só o override sobrevive', () => {
+    // Escape hatch explícito: reproduz a substituição total antiga para quem
+    // precisa dela (ex.: `ddos-search-test.js`, cuja tolerância de 50% de 5xx
+    // seria contradita pelo `http_req_failed` do perfil `heavy`).
+    const perfil = getProfile('light', {
+      replaceThresholds: true,
+      thresholds: { http_req_failed: ['rate<0.01'] },
+    });
+
+    expect(perfil.thresholds).toEqual({ http_req_failed: ['rate<0.01'] });
     expect(perfil.thresholds).not.toHaveProperty('checks');
     expect(perfil.thresholds).not.toHaveProperty('http_req_duration');
   });
 
-  it('sobrescrita parcial troca a chave repetida e PERDE a que só existe no base', () => {
-    // Mesma limitação conhecida do caso anterior, no modo mais sutil: quem
-    // sobrepõe só `checks` provavelmente quer manter `http_req_duration`, mas o
-    // resultado atual o descarta. A Fase 1 mudará este resultado para merge.
-    const perfil = getProfile('light', { thresholds: { checks: ['rate==0.99'] } });
+  it('replaceThresholds não vaza para o objeto devolvido', () => {
+    // O resultado é o `options` do k6: uma chave desconhecida lá é lixo.
+    const perfil = getProfile('light', {
+      replaceThresholds: true,
+      thresholds: { checks: ['rate>0.9'] },
+    });
 
-    expect(perfil.thresholds.checks).toEqual(['rate==0.99']);
-    expect(perfil.thresholds.http_req_duration).toBeUndefined();
-    expect(Object.keys(perfil.thresholds)).toEqual(['checks']);
+    expect(perfil).not.toHaveProperty('replaceThresholds');
+    expect(perfil.replaceThresholds).toBeUndefined();
+    expect(JSON.stringify(perfil)).not.toContain('replaceThresholds');
   });
 
   it('recovery e rateLimit devolvem thresholds vazios — intencional, não bug', () => {
     // Os dois perfis foram desenhados sem threshold nenhum (`thresholds: {}`);
     // `recovery-test.js` declarou o seu próprio depois de o perfil existir.
-    // Diferente dos casos acima, aqui o vazio É o comportamento correto.
+    // Aqui o vazio É o comportamento correto.
     expect(getProfile('recovery').thresholds).toEqual({});
     expect(getProfile('rateLimit').thresholds).toEqual({});
   });
@@ -119,9 +147,9 @@ describe('PROFILES — invariantes da matriz de perfis', () => {
 /**
  * Controle negativo: o bloco mais importante deste arquivo. Sem ele, seria
  * possível "passar" estes testes com uma implementação que devolve o objeto do
- * módulo por referência — e aí qualquer teste de merge da Fase 1 passaria a
- * enxergar estado contaminado por outro teste. As asserções abaixo só passam
- * porque `getProfile` constrói um objeto novo a cada chamada.
+ * módulo por referência — e aí os testes de merge passariam a enxergar estado
+ * contaminado por outro teste. As asserções abaixo só passam porque `getProfile`
+ * constrói um objeto novo a cada chamada.
  */
 describe('getProfile — controle negativo (o teste tem força)', () => {
   it('devolve objeto novo a cada chamada e mutar o resultado não altera PROFILES', () => {

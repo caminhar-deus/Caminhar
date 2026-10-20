@@ -134,9 +134,24 @@ export const PROFILES = {
 
 /**
  * Retorna um perfil de carga mesclado com configurações personalizadas.
- * @param {string} profileName - Nome do perfil ('light', 'medium', 'heavy', 'health', 'recovery', 'rateLimit')
- * @param {Object} overrides - Configurações para sobrescrever/mesclar com o perfil base
- * @returns {Object} Configuração mesclada
+ *
+ * `thresholds` é MESCLADO por padrão, chave a chave: a chave repetida é
+ * substituída pelo `overrides.thresholds` e a chave que só existe no perfil
+ * base é preservada (era essa a perda silenciosa do item AD de
+ * `docs/PENDENCIAS_scripts_testes.md`).
+ *
+ * Escape hatch: `overrides.replaceThresholds: true` descarta os thresholds do
+ * perfil base por inteiro e mantém apenas `overrides.thresholds` — a
+ * semântica antiga, agora explícita e escolhida, para scripts que documentam
+ * uma tolerância própria incompatível com o gate do perfil base.
+ *
+ * @param {string} profileName - Nome do perfil ('light', 'medium', 'heavy', 'health', 'recovery', 'stress', 'rateLimit')
+ * @param {Object} [overrides] - Configurações para sobrescrever/mesclar com o perfil base
+ * @param {boolean} [overrides.replaceThresholds] - Escape hatch: `true` +
+ *   `overrides.thresholds` definido descarta os thresholds do base por
+ *   inteiro. A chave é consumida aqui e NÃO vai para o objeto devolvido — o
+ *   resultado é o `options` do k6, que não admite chaves desconhecidas.
+ * @returns {Object} Configuração mesclada (nunca contém `replaceThresholds`)
  */
 export function getProfile(profileName, overrides = {}) {
   const baseProfile = PROFILES[profileName];
@@ -144,18 +159,21 @@ export function getProfile(profileName, overrides = {}) {
     throw new Error(`Perfil desconhecido: "${profileName}". Use um dos: ${Object.keys(PROFILES).join(', ')}`);
   }
 
-  // Se overrides incluir thresholds explicitamente, sobrescreve completamente
-  // Se não, faz merge com o perfil base
-  const hasExplicitThresholds = overrides && overrides.thresholds !== undefined;
-  
+  // Escape hatch: consumido aqui para não vazar como chave do `options`.
+  const { replaceThresholds = false, ...resto } = overrides || {};
+  const temThresholdsNoOverride = resto.thresholds !== undefined;
+
   return {
     ...baseProfile,
-    ...overrides,
-    thresholds: hasExplicitThresholds
-      ? overrides.thresholds
-      : {
-          ...baseProfile.thresholds,
-          ...(overrides.thresholds || {}),
-        },
+    ...resto,
+    thresholds:
+      // Substituição total, só quando pedida explicitamente (e há o que
+      // substituir); sem isso, merge chave a chave com o perfil base.
+      replaceThresholds && temThresholdsNoOverride
+        ? resto.thresholds
+        : {
+            ...baseProfile.thresholds,
+            ...(resto.thresholds || {}),
+          },
   };
 }

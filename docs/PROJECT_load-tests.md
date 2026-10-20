@@ -211,7 +211,7 @@ Exporta `getRandomIP()` — Gera um endereço IPv4 aleatório no formato `x.x.x.
 
 **Exports:**
 - `PROFILES` — Objeto com todos os perfis
-- `getProfile(profileName, overrides)` — Retorna perfil mesclado com sobrescritas. Se `overrides.thresholds` for fornecido explicitamente, substitui completamente os thresholds do perfil base; caso contrário, faz merge dos thresholds do perfil base com os informados. Lança `Error` com mensagem descritiva se o perfil solicitado não existir.
+- `getProfile(profileName, overrides)` — Retorna perfil mesclado com sobrescritas. **`thresholds` é MESCLADO por padrão, chave a chave**: a chave repetida é substituída pelo `overrides.thresholds` e a que só existe no perfil base é preservada. O escape hatch `overrides.replaceThresholds: true` descarta os thresholds do base por inteiro (semântica antiga, agora explícita) e **não vaza** para o objeto devolvido, que é o `options` do k6. Lança `Error` com mensagem descritiva se o perfil solicitado não existir.
 
 ---
 
@@ -352,7 +352,7 @@ Testa o filtro de músicas por termo de busca (artista) via runner genérico. Va
 - Array de artistas: `['Aline Barros', 'Fernandinho', 'Gabriela Rocha', 'Diante do Trono', 'Preto no Branco']`
 - Valida que os itens retornados contêm o termo buscado (validação suave — ver `createFilterDefault` no runner)
 - `handleSummary()` — Gera relatório via `generateReport()` com nome `musicas_filter_test`
-- Configuração: perfil `light` com override de thresholds — `checks: rate>0.85` (substitui completamente os thresholds do perfil base, que exigiam `checks rate==1.0` e `p(95)<500ms`)
+- Configuração: perfil `light` com override de thresholds — `checks: rate>0.85`, que substitui a chave `checks` do perfil base; o `http_req_duration: p(95)<500` do base é preservado (merge chave a chave), que **substitui** a chave `checks` do perfil base (que exigia `checks rate==1.0`); o `http_req_duration: p(95)<500ms` do base é **preservado**, porque o merge é chave a chave
 
 **Endpoints chamados:**
 - `GET /api/musicas?search={termo}` — Listar com filtro
@@ -371,7 +371,7 @@ Testa o filtro de músicas por termo de busca (artista) via runner genérico. Va
 **Resumo:**
 Teste de carga que simula múltiplos usuários acessando a listagem admin de músicas simultaneamente, via runner genérico. Valida o comportamento da API `/api/admin/musicas` sob carga progressiva, garantindo thresholds de performance.
 
-- Configuração: perfil `medium` com override de thresholds — `http_req_duration{name:ListMusicas}` p(95)<500ms (substitui completamente os thresholds do perfil `medium`)
+- Configuração: perfil `medium` com override de thresholds — `http_req_duration{name:ListMusicas}` p(95)<500ms, que é uma **chave distinta** do `http_req_duration` do perfil base: o base é preservado, e o script fica com `http_req_duration: p(95)<1000` e `http_req_failed: rate<0.05` **além** do threshold taggeado
 - `setup()` — Wrapper local que chama o setup gerado pelo runner: login com validação de Content-Type (health check desativado — `healthCheck: false`)
 - `checkResponse` — Valida Content-Type JSON, lista de músicas como array (`r.json('musicas')`) e tempo de resposta < 300ms
 - `requireAuth: true`, `useSpoofIP: false`
@@ -506,7 +506,7 @@ Testa o filtro de vídeos por termo de busca via runner genérico. Valida que o 
 - Array de termos: `['louvor', 'adoração', 'testemunho', 'pregação', 'estudo']`
 - Valida que os itens retornados contêm o termo buscado (validação suave — ver `createFilterDefault` no runner)
 - `handleSummary()` — Gera relatório via `generateReport()` com nome `videos_filter_test`
-- Configuração: perfil `light` com override de thresholds — `checks: rate>0.85` (substitui completamente os thresholds do perfil base)
+- Configuração: perfil `light` com override de thresholds — `checks: rate>0.85`, que substitui a chave `checks` do perfil base; o `http_req_duration: p(95)<500` do base é preservado (merge chave a chave), que substitui a chave `checks` do perfil base; o `http_req_duration: p(95)<500ms` do base é preservado (merge chave a chave)
 
 **Endpoints chamados:**
 - `GET /api/videos?search={termo}` — Listar com filtro
@@ -525,7 +525,7 @@ Testa o filtro de vídeos por termo de busca via runner genérico. Valida que o 
 **Resumo:**
 Teste de carga que simula múltiplos usuários acessando a listagem pública de vídeos, com 2 requisições por iteração (páginas 1 e 2), via runner genérico. Valida a performance da API de vídeos sob carga progressiva.
 
-- Configuração: perfil `medium` com override de thresholds — `http_req_duration{name:ListVideos_Page1}` e `{name:ListVideos_Page2}` p(95)<500ms e `checks` rate>0.95 (substituem completamente os thresholds do perfil `medium`)
+- Configuração: perfil `medium` com override de thresholds — `http_req_duration{name:ListVideos_Page1}` e `{name:ListVideos_Page2}` p(95)<500ms e `checks` rate>0.95; o perfil base é preservado (merge chave a chave), o que devolve `http_req_duration: p(95)<1000` e `http_req_failed: rate<0.05` do perfil `medium`
 - `setup()` — Wrapper local que chama o setup gerado pelo runner: login com validação de Content-Type (health check desativado)
 - `default()` — GET `/api/videos` (página 1, tag `ListVideos_Page1`) + requisição extra GET `/api/videos?page=2&limit=5` (tag `ListVideos_Page2`)
 - `checkResponse` — Valida objeto com vídeos (aceita `body.data`, `body.videos` ou array direto), metadados de paginação (`body.pagination`) e tempo da página 1 < 1000ms
@@ -559,7 +559,7 @@ Testa a paginação do endpoint público de vídeos via runner genérico. Valida
 - Validação cruzada: IDs da página 1 vs página 2 (não devem se repetir)
 - Soft pass se página 2 estiver vazia
 - `handleSummary()` — Gera relatório via `generateReport()` com nome `videos_pagination_test`
-- Configuração: perfil `light` com override de thresholds — `checks: rate>0.85`
+- Configuração: perfil `light` com override de thresholds — `checks: rate>0.85`, que substitui a chave `checks` do perfil base; o `http_req_duration: p(95)<500` do base é preservado (merge chave a chave)
 
 **Endpoints chamados:**
 - `GET /api/videos?page=1&limit=5` — Listar página 1
@@ -582,7 +582,7 @@ Testa a ordenação dos resultados de vídeos via runner genérico. Valida que o
 - Rota pública (sem autenticação) — `sort=created_at&order=desc` (formato `sort` + `order` da API vídeos), `dateField: created_at` (padrão), itens em `data` (`itemsPath: 'data'`)
 - Valida que as datas estão em ordem decrescente (soft pass com menos de 2 itens)
 - `handleSummary()` — Gera relatório via `generateReport()` com nome `videos_sort_test`
-- Configuração: perfil `light` com override de thresholds — `checks: rate>0.85`
+- Configuração: perfil `light` com override de thresholds — `checks: rate>0.85`, que substitui a chave `checks` do perfil base; o `http_req_duration: p(95)<500` do base é preservado (merge chave a chave)
 
 > **Observação não confirmada:** o `resourceConfig` define `useExplicitSort: true`, porém essa chave **não é consumida** por `createSortTest()`/`createSortDefault()` no `helpers/resource-test-runner.js` (a função lê apenas `publicEndpoint`, `sortMode`, `sortField`, `sortOrder`, `dateField`, `itemsPath`, `responsePath`, `resourceName` e `sleepDuration`). A chave aparenta ser resquício de versão anterior do runner e não tem efeito no comportamento do teste.
 
@@ -614,7 +614,7 @@ Teste funcional de paginação baseada em page/offset para posts públicos. Vali
 - Validação cruzada ES5.1-compatible (k6/goja não suporta `.some()`/`.includes()`)
 - Soft pass se página 2 estiver vazia
 - `handleSummary()` — Gera relatório via `generateReport()` com nome `pagination_test`
-- Configuração: perfil `light` com override — `iterations: 1` e thresholds explícitos `checks: rate==1.0` (substituem completamente os thresholds do perfil base)
+- Configuração: perfil `light` com override — `iterations: 1` e thresholds explícitos `checks: rate==1.0`, que substituem a chave `checks` do perfil base; o `http_req_duration: p(95)<500` do base é preservado (merge chave a chave)
 
 **Endpoints chamados:**
 - `GET /api/posts?page={n}&limit={n}` — Paginação offset-based
@@ -944,7 +944,7 @@ Testa a paginação baseada em cursor para o recurso de posts. Valida o funciona
 - Se a página 1 estiver vazia, encerra com warning ("Adicione dados ao banco"); lista vazia na página 2 passa como válida
 - Aceita respostas em `body.data` ou array direto
 - `handleSummary()` — Gera relatório via `generateReport()` com nome `posts_cursor_pagination_test`
-- Configuração: perfil `light` com override — `iterations: 1` e thresholds `checks: rate==1.0`
+- Configuração: perfil `light` com override — `iterations: 1` e thresholds `checks: rate==1.0`, que substituem a chave `checks` do perfil base; o `http_req_duration: p(95)<500` do base é preservado (merge chave a chave)
 
 **Endpoints chamados:**
 - `GET /api/posts?limit=5` — Listar posts (página 1)
@@ -1026,7 +1026,7 @@ Testa a busca de conteúdo textual nos posts públicos. Valida que o mecanismo d
 - Termos de busca: `['Deus', 'Jesus', 'amor', 'fé', 'vida', 'caminhar', 'oração']` — escolhidos por existirem literalmente nos posts de seed (a busca usa full-text search com stemming em português, `plainto_tsquery`, que pode retornar variações morfológicas)
 - Warm-up na primeira iteração (3 requisições com tag `WarmUp`: `Deus`, `Jesus`, `amor`) para aquecer o cache do servidor Next.js
 - Checks: status 200, estrutura válida (array em `body.data` ou direto) e **match rígido** do termo no `title`/`excerpt`/`content` de pelo menos um post (falha o check se não encontrar; a API pública retorna `content` truncado em 2000 caracteres justamente para permitir esta validação)
-- Configuração: perfil `light` com override — `iterations: 10` e thresholds `checks` rate==1.0 e `http_req_duration{name:SearchPosts}` p(95)<500ms, avg<200ms
+- Configuração: perfil `light` com override — `iterations: 10` e thresholds `checks` rate==1.0 e `http_req_duration{name:SearchPosts}` p(95)<500ms, avg<200ms. A chave taggeada é distinta do `http_req_duration` do perfil base, então o merge preserva o `p(95)<500` **do perfil** — que é o que o comentário do script pretendia ("complementar, não substitui")
 - `handleSummary()` — Gera relatório via `generateReport()` com nome `search_content_test`
 
 **Endpoints chamados:**
@@ -1404,20 +1404,51 @@ Os dois runs são a **validação em produção da Fase 0** do plano de gates: o
 
 ---
 
+### Registro de execução — run [`39400845626`](https://github.com/caminhar-deus/Caminhar/actions/runs/39400845626) (cron "Load Tests (k6)" nº 17, 20/10/2026)
+
+Segunda medição da Fase 0, com o **mesmo código** do run #16 — o único commit entre os dois (`4fa0d25`) trata de catálogo de modelos e não toca a suíte k6. O objetivo era confirmar que o estado validado no #16 é **estável**, e não apenas verde uma vez.
+
+| Campo | Valor medido |
+|-------|--------------|
+| Run / SHA | `39400845626` / `4fa0d25` |
+| Event / conclusion | `schedule` (cron `17 4 * * *`) / **`success`** |
+| Job `load-tests / run-tests` | `09:27:53Z` → `09:46:08Z` = **18m15s** |
+| Bateria | **30/30 passed**, 0 failed, 0 skipped (16 + 9 + 4 + 1), **16m38s** |
+| Steps | todos verdes; nenhum `failure` e **nenhum warning** no job |
+| Artifact | `k6-load-test-reports`, 49.913 B, **32 arquivos** |
+| `created_at` vs cron | `2026-10-20T09:27:50Z` = 06:27 BRT = **+5h10** |
+| Região do runner | **`westus2`** — quinta região em cinco runs medidos |
+| k6 | `Downloading k6 version 2.3.0` — o pin do run #15 está correto em produção |
+
+**Os três critérios da Fase 0, reconfirmados no artifact:**
+
+| Critério | #16 | #17 |
+|---|---|---|
+| `ddos_search_test.json` → `http_req_failed` | 0,00% (117231 amostras) | **0,00%** (121143 amostras) |
+| `recovery_test.json` → `recovery_unhealthy_rate` | 0,00% em 144 iterações, `ok: true` | **0,00%** em 156 iterações, `ok: true` |
+| `orchestrator-results.json` | 30/30 | **30/30** |
+
+Gates de segurança: `search_block_rate` 99,92% (limite 50%), `errors_500` 0,00% (limite 50%), `ip_rotation_evasion_rate` 0,0053% (limite 5%). Sanitização do token: 12 arquivos com `setup_data`, **nenhum** vazando. Thresholds efetivos de `http_req_failed`: **7 de 30** — exatamente os mesmos 7 do #16, o que confirma que nada foi alterado nem perdido entre as duas execuções.
+
+**Estabilidade medida (#16 → #17):** p95 mediano **−11%**, spread mediano de **1,12x** (faixa 1,01x–1,41x) entre os dois runs, contra 1,08x–1,83x na série de 4 runs anterior. Nenhum check falhou em nenhum dos 26 scripts de ambos os runs, e o `stress-test-combined` ficou em 3,73 ms — colado nos 3,24/3,40/3,85 ms dos runs normais e longe dos 24,91 ms do outlier do #14.
+
+---
+
 ### O p95 do `stress-test-combined` era o runner, não o código — questão fechada
 
-O registro dos runs #12–#14 deixou o outlier do #14 como **atribuição inconclusiva**, com duas hipóteses descartadas por medição (stall de checkpoint do Postgres e regressão de código) e um fator de confusão remanescente: a região do runner. O #16 fecha a questão:
+O registro dos runs #12–#14 deixou o outlier do #14 como **atribuição inconclusiva**, com duas hipóteses descartadas por medição (stall de checkpoint do Postgres e regressão de código) e um fator de confusão remanescente: a região do runner. O #16 fecha a questão, e o #17 confirma:
 
 | Run | Região | p95 do `stress-test-combined` | avg | max |
 |-----|--------|---------------------------|-----|-----|
 | #12 | — | 3,24 ms | 2,27 ms | 75,6 ms |
 | #13 | `eastus` | 3,40 ms | 2,34 ms | 90,1 ms |
 | **#14** | **`mexicocentral`** | **24,91 ms** | 8,34 ms | 849,8 ms |
-| #16 | `westus` | **3,85 ms** | 2,64 ms | 95,6 ms |
+| #16 | `westus` | 3,85 ms | 2,64 ms | 95,6 ms |
+| #17 | `westus2` | 3,73 ms | 2,53 ms | 93,9 ms |
 
 Mesmo código e mesmo número de iterações, −85% no p95 quando a região muda. **Conclusão: o outlier do #14 foi o runner, e não o `stress-test-combined`.** A assinatura era de cauda, não de geral — no #14 a mediana ficou *mais rápida* (1,82 ms contra 2,24 ms) e o p90 ficou igual, enquanto `avg` e `max` dispararam.
 
-**Quatro regiões diferentes em quatro runs medidos** — `eastus` (#13), `mexicocentral` (#14), `westus3` (#15), `westus` (#16) — e o GitHub não oferece escolha de região em runners hospedados. Consequência operacional que vale para todo o resto da suíte: **latência entre runs deste projeto não é comparável sem anotar a região.** Fora o `stress-test-combined`, o p95 do #16 ficou +5% a +42% sobre o #14, o que é compatível com a troca de região, e nenhum check falhou em nenhum dos 26 scripts.
+**Cinco regiões diferentes em cinco runs medidos** — `eastus` (#13), `mexicocentral` (#14), `westus3` (#15), `westus` (#16), `westus2` (#17) — e o GitHub não oferece escolha de região em runners hospedados. Consequência operacional que vale para todo o resto da suíte: **latência entre runs deste projeto não é comparável sem anotar a região.** Fora o `stress-test-combined`, o p95 do #16 ficou +5% a +42% sobre o #14 e o do #17 ficou −29% a +10% sobre o #16 (medianas de −11% e spread mediano de 1,12x, faixa 1,01x–1,41x), o que é compatível com a variação de runner — e nenhum check falhou em nenhum dos scripts, em nenhum dos dois runs.
 
 ---
 

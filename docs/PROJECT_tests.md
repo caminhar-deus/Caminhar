@@ -519,9 +519,9 @@ As suítes `clear-db`, `clear-musicas`, `reset-password` e `seed-all` agora **im
 
 | Arquivo | Propósito |
 |---------|-----------|
-| `profiles.test.js` | Testes de **caracterização** de `getProfile`/`PROFILES` (`load-tests/helpers/profiles.js`): travam o comportamento real de hoje, incluindo o **descarte** dos thresholds do perfil base quando o override traz `thresholds` — a perda silenciosa catalogada no item AD de `docs/PENDENCIAS_scripts_testes.md`. Os 2 casos do descarte são marcados como limitação conhecida e apontam a Fase 1, que os terá de reescrever de propósito. Incluem invariantes da matriz de perfis e um controle negativo que prova ter força (mutar o resultado de `getProfile` não contamina `PROFILES`). |
+| `profiles.test.js` | Testes de `getProfile`/`PROFILES` (`load-tests/helpers/profiles.js`): travam a **semântica de merge dos thresholds** — por padrão o perfil base é preservado e só as chaves repetidas são substituídas pelo override, e o escape hatch `replaceThresholds: true` descarta o base por inteiro sem vazar para o `options` do k6. Incluem invariantes da matriz de perfis e um controle negativo que prova ter força (mutar o resultado de `getProfile` não contamina `PROFILES`). |
 
-> **Por que o primeiro teste de `load-tests/` só apareceu em 19/10/2026:** até então nada em `load-tests/` era exercitado por jest, e a Fase 1 do item AD mexe justamente na função que hoje perde thresholds em silêncio — sem o teste, a correção poderia reintroduzir a mesma falha sem ninguém perceber. Aplicar a mudança da Fase 1 reprova exatamente os 2 casos de caracterização, o que foi verificado por mutação.
+> **Por que o primeiro teste de `load-tests/` só apareceu em 19/10/2026:** até então nada em `load-tests/` era exercitado por jest, e a Fase 1 do item AD mexe justamente na função que até 20/10/2026 perdia thresholds em silêncio — sem o teste, a correção poderia reintroduzir a mesma falha sem ninguém perceber. **O teste foi reescrito junto com a correção** (a caracterização do descarte virou a do merge) e **verificado por mutação**: reverter o `getProfile` para a semântica antiga reprova exatamente os 2 casos de merge, e restaurar o verde.
 
 ---
 

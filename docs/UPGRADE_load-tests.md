@@ -125,7 +125,7 @@ Fornece a função `getRandomIP()` que gera endereços IP aleatórios (4 octetos
 - Importado por: `resource-test-runner.js`, `stress-test-combined.js`, `pagination-test.js`, `cache-headers-test.js`, `search-content-test.js`, `posts-cursor-pagination-test.js`, `posts-tags-test.js`, `rate-limit-test.js`, `ddos-search-test.js`, `health-check.js`, `recovery-test.js`, `ip-spoofing-test.js`
 
 **Resumo do arquivo:**
-Define a constante `PROFILES` com 7 perfis de carga: `light`, `medium`, `heavy`, `health`, `recovery`, `stress`, `rateLimit`. Exporta a função `getProfile(profileName, overrides)` que retorna configuração mesclada. O merge de thresholds é inteligente: se overrides definir `thresholds` explicitamente, substitue completamente; caso contrário, faz merge com o perfil base.
+Define a constante `PROFILES` com 7 perfis de carga: `light`, `medium`, `heavy`, `health`, `recovery`, `stress`, `rateLimit`. Exporta a função `getProfile(profileName, overrides)` que retorna configuração mesclada. **O merge de thresholds é chave a chave: por padrão o perfil base é preservado** e só as chaves repetidas são substituídas pelo `overrides.thresholds` — a semântica antiga (substituição total) continua disponível, mas só de forma explícita, via `overrides.replaceThresholds: true`, que é consumida dentro da função e não vaza para o `options` do k6.
 
 ---
 

@@ -124,13 +124,7 @@ A decisão foi aplicada e **validada em produção** no run [`39233955292`](http
   manter os dois em acordo.
 - **Pin de versão exige manutenção.** Atualizar o k6 passa a ser uma decisão
   consciente, com comparação de artifact, em vez de acontecer sozinho.
-- **Este ADR não cobre a outra lacuna auditada.** O `getProfile`
-  ([`helpers/profiles.js`](../../load-tests/helpers/profiles.js)) descarta o perfil
-  inteiro quando o override traz `thresholds` — o que deixa **23 dos 30 scripts sem
-  qualquer threshold efetivo de `http_req_failed`**, já em produção. A causa-raiz,
-  a lista de scripts e o plano de correção estão no **item AD** de
-  [`../PENDENCIAS_scripts_testes.md`](../PENDENCIAS_scripts_testes.md), que é a fonte
-  desse dado.
+- **A outra lacuna auditada foi corrigida em 20/10/2026 (Fase 1 do item AD).** O `getProfile` ([`helpers/profiles.js`](../../load-tests/helpers/profiles.js)) descartava o perfil inteiro quando o override trazia `thresholds`, o que deixava **23 dos 30 scripts sem qualquer threshold efetivo de `http_req_failed`**, já em produção. Agora ele **mescla por padrão, chave a chave**, e o descarte total só acontece de forma explícita, via `overrides.replaceThresholds: true` — usado onde o script declara uma tolerância incompatível com o gate do perfil base. A lista de scripts afetados e o plano restante (Fase 2) estão no **item AD** de [`../PENDENCIAS_scripts_testes.md`](../PENDENCIAS_scripts_testes.md), que é a fonte desse dado.
 
 ## Revisão
 
