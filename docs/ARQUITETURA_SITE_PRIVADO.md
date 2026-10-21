@@ -1,0 +1,252 @@
+# ARQUITETURA DO SITE — ÁREA PRIVADA (PAINEL ADMINISTRATIVO)
+
+> Escopo: painel administrativo em `/admin` (acesso só com login). A área pública está em `docs/ARQUITETURA_SITE_PUBLICO.md`.
+> Fonte: 23 capturas de tela do painel (ambiente local `localhost:3000/admin`).
+> Última atualização: 2026-10-21
+> Legenda: [PLANEJADO] = alvo ainda não implementado, informado pelo dono | [OBSERVADO] = visto nas imagens | [HIPÓTESE] = inferido, confirmar antes de assumir.
+
+---
+
+## 1. Visão geral
+
+- **Nome:** Painel Administrativo do "O Caminhar com Deus".
+- **URL:** `localhost:3000/admin`. Todas as telas e abas mostram a mesma URL [OBSERVADO], então a navegação é interna (abas controladas no cliente). [HIPÓTESE] Next.js, com página única `/admin`.
+- **Autenticação:** sessão logada. Cabeçalho mostra "Olá, **admin**" e botão vermelho "Sair / Logout".
+- **Autorização:** por cargos (roles) com permissões por aba (seção 6). Cada aba do painel corresponde a uma permissão.
+- **Infraestrutura vista na aba Segurança:** armazenamento de arquivos para uploads, backups criptografados (`.sql.gz.enc`), rate limiting por IP e log de auditoria. Banco de dados e cache: ver `docs/ARQUITETURA_SITE_PUBLICO.md` §1.
+- **Layout:** cartão branco central (~1000 px) sobre fundo cinza claro; título "Painel Administrativo" à esquerda; usuário e logout à direita; abas com emoji e sublinhado azul na aba ativa; botões: azul (Exportar CSV, Atualizar), verde (criar/salvar), cinza (Cancelar), vermelho (Excluir, Logout, Limpar cache).
+
+## 2. Navegação principal (10 abas)
+
+A barra quebra em 3 linhas. A ordem abaixo é a ordem visual.
+
+| # | Aba | Emoji | Função |
+|---|---|---|---|
+| 1 | Visão Geral | 📊 | Painel de contagens (aba padrão ao entrar) |
+| 2 | Posts/Artigos | 📝 | CRUD de reflexões e estudos |
+| 3 | Gestão de Músicas | 🎵 | CRUD de músicas (Spotify) |
+| 4 | Gestão de Vídeos | 🎬 | CRUD de vídeos (YouTube) |
+| 5 | Gestão de Produtos | 📦 | CRUD de produtos religiosos |
+| 6 | Dicas do Dia | 💡 | CRUD de dicas |
+| 7 | Configuração de Cabeçalho | 🎨 | Título, subtítulo e banner do site público |
+| 8 | Segurança | 🔒 | Integridade, backup, rate limiting, cache |
+| 9 | Usuários | 👥 | Usuários/admins e cargos |
+| 10 | Auditoria | 📜 | Histórico global de ações |
+
+Subabas internas existem em Segurança (4) e Usuários (2).
+
+## 3. Padrão comum das telas de conteúdo (Posts, Músicas, Vídeos, Produtos, Dicas)
+
+Todas seguem o mesmo modelo, com pequenas variações:
+
+1. **Cabeçalho da seção:** título ("Gerenciar Posts", "Gestão de Músicas", etc.) + "Total: N itens cadastrados".
+2. **Barra de ações (à direita):** campo "Buscar item..." (com lupa) → botão azul "Exportar CSV" → botão verde "+ Novo ...".
+3. **Tabela de listagem:** primeira coluna com ícone ☰ (indica reordenação por arrastar [HIPÓTESE]), depois colunas específicas e coluna "Ações". Estado vazio em itálico.
+4. **Formulário de criação/edição:** abre acima da tabela ao clicar em "+ Novo". O botão verde vira "Cancelar" (cinza) e o "Exportar CSV" permanece.
+5. **Publicação:** checkbox de publicar + selo de status ("Rascunho" amarelo / "Publicado" verde). Só itens publicados aparecem no site público.
+6. **Botão "⚡ Puxar Dados"** nos campos de link (Spotify, YouTube, Produto): preenche dados automaticamente a partir da URL [HIPÓTESE]. Cor do botão muda por tipo: verde (Spotify), vermelho (YouTube), amarelo (Produto).
+
+## 4. Detalhe das abas de conteúdo
+
+### 4.1 Visão Geral
+- **Título:** "Visão Geral do Sistema".
+- **6 cartões** (3 x 2) com ícone, número grande e rótulo:
+  | Cartão | Detalhe exibido |
+  |---|---|
+  | Artigos | "✅ N Pub \| 📝 N Rasc" (publicados / rascunhos) |
+  | Músicas | idem |
+  | Vídeos | idem |
+  | Produtos | idem |
+  | Dicas | idem |
+  | Usuários | "Ativos: Hoje (N) • Mês (N) • Ano (N)" |
+- **Distribuição de Conteúdo:** barras horizontais por categoria, com cor própria: Artigos (azul), Músicas (verde), Vídeos (vermelho), Produtos (laranja), Dicas (roxo), Usuários (ciano). Mostra o valor dentro da barra quando maior que zero.
+- **Estado observado:** tudo em 0, exceto Usuários = 1.
+
+### 4.2 Posts/Artigos
+- **Título:** "Gerenciar Posts". Botão: "+ Novo Post".
+- **Tabela:** ☰ | ID | Título | Status | Data | Ações. Vazio: "Nenhum post encontrado."
+- **Formulário:**
+  | Campo | Obrigatório | Regra/dica |
+  |---|---|---|
+  | Título | Sim | "Título do post" |
+  | Slug (URL amigável) | Sim | "Usado na URL do post. Ex: meusite.com/blog/exemplo-de-slug" |
+  | Resumo | Não | até 500 caracteres, contador "0 / 500"; "Aparece na listagem do blog" |
+  | Conteúdo | Não | área grande de texto livre ("Conteúdo completo do post...") |
+  | Imagem de Capa | Não | URL (`https://...`) ou botão verde "Upload" |
+  | Publicar post imediatamente | — | desmarcado por padrão → "Rascunho"; "Se desmarcado, o post será salvo como rascunho." |
+  Botão final: "Salvar".
+- **Ligação com o site público:** o Resumo alimenta o cartão de Reflexões & Estudos; a Imagem de Capa é a capa do cartão; o Slug forma a URL da leitura. [HIPÓTESE] o editor de Conteúdo é texto simples (sem editor rico visível).
+
+### 4.3 Gestão de Músicas
+- **Botão:** "+ Nova Música".
+- **Tabela:** ☰ | ID | Título | Artista | Spotify | Status | Ações. Vazio: "Nenhuma música cadastrada ainda."
+- **Formulário:**
+  - Título da Música * ("Nome da música")
+  - Nome do Artista * ("Nome do artista")
+  - Link do Spotify * (formato `https://open.spotify.com/track/...`) + botão "⚡ Puxar Dados"
+  - Publicar música imediatamente (desmarcado → Rascunho)
+  - Botão "Cadastrar Música"
+- **Relação com o público:** o link Spotify gera o player incorporado e o botão "Ouvir no Spotify". O erro "Page not found" visto no site público indica link/ID inválido ou fora do formato `/track/` (ver `docs/ARQUITETURA_SITE_PUBLICO.md` §3.3).
+
+### 4.4 Gestão de Vídeos
+- **Botão:** "+ Novo Vídeo".
+- **Tabela:** ☰ | ID | Título | YouTube | Status | Ações. Vazio: "Nenhum vídeo cadastrado ainda."
+- **Formulário:**
+  - Título do Vídeo * ("Nome do vídeo")
+  - Descrição (até 500 caracteres)
+  - Link do YouTube * (`https://www.youtube.com/watch?v=...`) + botão "⚡ Puxar Dados"
+  - Capa Personalizada (URL ou "Upload"): "Opcional. Se vazio, usará a miniatura padrão do YouTube."
+  - Publicar vídeo imediatamente (desmarcado → Rascunho)
+  - Botão "Cadastrar Vídeo"
+- **Relação com o público:** a descrição aparece sob o título no cartão. O erro "Video unavailable" vem do vídeo em si (removido, privado, bloqueado por direitos autorais ou sem permissão de incorporação), não do formulário.
+
+### 4.5 Gestão de Produtos
+- **Botão:** "+ Novo Produto".
+- **Tabela:** ☰ | ID | Status | Imagem | Produto | Valor | Link | Ações. Vazio: "Nenhum produto cadastrado. Comece adicionando um!"
+- **Formulário:**
+  - Nome do Produto * (ex.: "Bíblia de Estudo")
+  - Valor * (ex.: "R$ 89,90") — campo de texto; [HIPÓTESE] o filtro Mín/Máx do site público precisa converter esse texto em número.
+  - URLs das Imagens * (uma por linha; "A primeira imagem será a capa. Suporta carrossel.")
+  - Descrição ("Detalhes sobre o produto...")
+  - Link do Produto + botão amarelo "⚡ Puxar Dados" (Amazon, Mercado Livre, Shopee)
+  - Produto Publicado — **marcado por padrão** (selo "Publicado"); "Desmarque para transformar o produto em um Rascunho (ocultar da vitrine pública)."
+  - Botão "Salvar Produto"
+- **Diferença importante:** Produtos e Dicas nascem publicados; Posts, Músicas e Vídeos nascem como rascunho.
+
+### 4.6 Dicas do Dia
+- **Título:** "Gerenciar Dicas do Dia". Botão: "+ Novo". **Não tem "Exportar CSV".**
+- **Tabela:** ID | Nome | Conteúdo | Status | Ações (sem coluna ☰). Vazio: "Nenhum item cadastrado ainda."
+- **Formulário (2 colunas):**
+  - Nome da Dica * (ex.: "Mensagem de fé")
+  - Conteúdo da Mensagem * ("Digite a mensagem inspiradora...")
+  - Status de Publicação — marcado por padrão; "Ative para exibir esta dica no site público."
+  - Botão "Salvar"
+- **Relação com o público:** "Nome da Dica" é o autor/fonte em negrito e "Conteúdo" é o texto entre aspas no bloco "Dicas do Dia" (ex.: a dica de teste "Teste 10").
+
+### 4.7 Configuração de Cabeçalho
+- **Campos:**
+  - Título da Página (valor canônico em `docs/ARQUITETURA_SITE_PUBLICO.md` §1 e §2)
+  - Subtítulo (valor canônico em `docs/ARQUITETURA_SITE_PUBLICO.md` §1 e §2)
+  - Imagem Principal (1100×320) — seletor de arquivo ("Choose File")
+- **Botões:** "Atualizar Imagem" (envia só a imagem) e "Salvar Configurações" (salva título e subtítulo).
+- **Visualização:** prévia ao vivo com título e subtítulo (a imagem não aparece na prévia por enquanto).
+- **Relação com o público:** controla o cabeçalho e o banner que aparecem em todas as abas do site. O público exibe o título em caixa alta, provavelmente por CSS. [HIPÓTESE]
+
+## 5. Segurança, Usuários e Auditoria
+
+### 5.1 Segurança — subabas
+Barra interna com 4 subabas: 🛡️ Verificação de Integridade | 💾 Backup do Sistema | 🔒 Rate Limiting | ⚡ Cache do Sistema.
+
+**Verificação de Integridade** (botão "🔄 Atualizar"; faixa verde "✅ Sistema Saudável"):
+| Componente | Dados mostrados (valores observados) |
+|---|---|
+| Banco de Dados | Status Conectado; Latência 0 ms; Tamanho 9.3 MB; Conexões 5 |
+| Cache/Redis | Status Conectado; Tipo Upstash Redis |
+| Armazenamento | Arquivos 0; Tamanho 0 B (continua abaixo; possivelmente há mais componentes) |
+
+**Backup do Sistema:**
+- Texto: backups automáticos diários; backup manual possível.
+- "Último Backup Realizado": arquivo `caminhar-pg-backup_2026-05-22T10-18-54Z.sql.gz.enc`, data exibida 02/10/2026 20:53:04, tamanho 4367.31 KB.
+- Botão azul "📥 Realizar Backup Agora".
+- **Incoerência:** o nome do arquivo traz 2026-05-22 mas a data exibida é 02/10/2026. Verificar se a data vem do arquivo ou do carimbo do servidor.
+
+**Rate Limiting:** botão "🔄 Atualizar"; filtros "🔒 Bloqueados (0)", "✅ Whitelist (0)", "📋 Auditoria". Vazio: "Nenhum IP bloqueado no momento. Todas as requisições estão dentro dos limites configurados." Rodapé: "Atualização automática a cada 15s".
+
+**Cache do Sistema:** explica que limpar o cache força buscar dados novos do banco ("use se as alterações não estiverem aparecendo no site"). Botão vermelho "Limpar Cache Redis". Status: "✅ Redis Conectado", Erros 0, Fallbacks 0, Tamanho Local 0 entradas, Última Falha Nenhuma.
+
+### 5.2 Usuários — subabas
+**Gestão de Usuários e Admins:**
+- **Finalidade:** é onde se controlam os usuários e as senhas com acesso ao Painel Administrativo. Cada usuário é vinculado a um cargo, e é o cargo que define o que ele pode usar.
+- Botão "+ Novo Usuário"; "Total: 1 usuário cadastrado".
+- Tabela: ID | Usuário | Cargo (selo) | Último Login (tempo relativo, ex. "há 7 minutos") | Ações (verde "Editar", vermelho "Excluir").
+- Registro atual: ID 1, `admin`, cargo `admin`.
+- **Usuário `admin`:** [PLANEJADO] é o administrador raiz. Nasce e permanece vinculado ao cargo `admin`, e não pode nem deve ser excluído.
+- Formulário: Nome de Usuário / E-mail * (ex.: "novo.admin"); Senha (mínimo 6 caracteres, "armazenada com hash seguro"; em branco na edição mantém a atual); Cargo / Permissão (lista "Selecione um cargo", obrigatória — "O cargo define os níveis de acesso deste usuário no sistema"); botão "Salvar".
+
+**Gestão de Cargos:**
+- **Finalidade:** cada cargo reúne as permissões que liberam o acesso às ferramentas do Painel Administrativo. As permissões são as próprias abas do painel (seção 6): o que o cargo não listar, o usuário não vê.
+- Título "Gestão de Cargos e Permissões"; botão "+ Novo Cargo"; "Total: 1 cargo cadastrado".
+- Tabela: ID | Nome do Cargo | Permissões Vinculadas (etiquetas azuis) | Ações (Editar/Excluir).
+- Registro atual: ID 3, `admin`, com as 10 permissões.
+- **Cargo `admin`:** [PLANEJADO] é o único cargo que vem habilitado por padrão com todas as permissões existentes (as 10 da seção 6). Não pode nem deve ser excluído.
+- Formulário: Nome do Cargo * (ex.: "Editor de Conteúdo") + 10 caixas de permissão (pelo menos uma é obrigatória): Visão Geral, Posts/Artigos, Gestão de Músicas, Gestão de Vídeos, Gestão de Produtos, Gestão de Dicas, Configuração de Cabeçalho, Segurança, Usuários, Auditoria. Botão "Salvar".
+- O nome da permissão "Gestão de Dicas" corresponde à aba "Dicas do Dia".
+- O ID 3 indica que os cargos 1 e 2 já existiram e foram removidos (a auditoria mostra a exclusão do cargo `user`).
+
+### 5.3 Auditoria
+- **Título:** "Histórico Global de Auditoria".
+- **Filtros:** busca "Buscar ações, usuários ou detalhes...", data/hora inicial, data/hora final (inputs `datetime-local`, formato mm/dd/yyyy), botão verde "Exportar CSV", botão "Atualizar".
+- **Tabela rolável:** Data/Hora | Usuário | Ação Executada | Detalhes.
+- **Registros observados (20/10/2026):**
+  | Hora | Usuário | Ação | Detalhes |
+  |---|---|---|---|
+  | 17:16:44 | admin | EXCLUIR CARGO | Removeu o cargo: user |
+  | 17:13:10 | admin | EXCLUIR DICA | Removeu a dica: Teste 10 |
+  | 17:13:05 até 17:12:56 | admin | EXCLUIR VÍDEO (6 registros) | Removeu o vídeo: undefined |
+- **Bug:** o log de exclusão de vídeo grava `undefined` no lugar do título. O código de exclusão de vídeos deve passar o título ao log.
+- **Padrão de ação:** `VERBO + OBJETO` em caixa alta (EXCLUIR CARGO/DICA/VÍDEO). Outras ações (criar, editar, login) provavelmente existem mais abaixo na lista. [HIPÓTESE]
+
+## 6. Mapa permissão → aba
+| Permissão | Aba do painel |
+|---|---|
+| Visão Geral | 📊 Visão Geral |
+| Posts/Artigos | 📝 Posts/Artigos |
+| Gestão de Músicas | 🎵 Gestão de Músicas |
+| Gestão de Vídeos | 🎬 Gestão de Vídeos |
+| Gestão de Produtos | 📦 Gestão de Produtos |
+| Gestão de Dicas | 💡 Dicas do Dia |
+| Configuração de Cabeçalho | 🎨 Configuração de Cabeçalho |
+| Segurança | 🔒 Segurança |
+| Usuários | 👥 Usuários |
+| Auditoria | 📜 Auditoria |
+
+## 7. Ligação entre painel e site público
+| Painel | Efeito no site público |
+|---|---|
+| Configuração de Cabeçalho | Título, subtítulo e banner 1100×320 de todas as abas |
+| Posts/Artigos (publicados) | Cartões e páginas da aba Reflexões & Estudos |
+| Gestão de Músicas (publicadas) | Cartões da aba Músicas |
+| Gestão de Vídeos (publicados) | Cartões da aba Vídeos |
+| Gestão de Produtos (publicados) | Vitrine da aba Produtos Religiosos |
+| Dicas do Dia (publicadas) | Bloco "Dicas do Dia" no fim de todas as abas |
+| Cache do Sistema | Se uma alteração não aparecer no site, limpar o cache Redis |
+
+A aba pública "Em Desenvolvimento" não tem gestão no painel.
+
+## 8. Estado atual e inconsistências
+
+**Bugs — corrigir no código**
+
+| # | Item | Status |
+|---|---|---|
+| 2 | **Log de vídeos:** campo "undefined" nos registros de EXCLUIR VÍDEO. | aberto |
+| 3 | **Data do backup:** nome do arquivo (2026-05-22) diverge da data exibida (02/10/2026). | aberto |
+| 8 | **Exclusão do admin:** o botão "Excluir" existe no usuário `admin` e no cargo `admin`, e a API não tem trava — a de usuário só impede excluir a própria conta logada (`pages/api/admin/users.js`), e a de cargo não verifica nada (`pages/api/admin/roles.js`). **Lacuna (falta implementar):** o usuário `admin` e o cargo `admin` não podem ser excluídos — a API deve recusar a exclusão e o painel não deve oferecer a ação; o vínculo do usuário `admin` com o cargo `admin` também não pode ser alterado. | aberto |
+| 9 | **Formatos regionais:** campos de data em mm/dd/yyyy e botão de arquivo em inglês, diferentes do pt-BR do restante. | aberto |
+
+**A confirmar**
+
+| # | Item | Status |
+|---|---|---|
+| 1 | **Painel vazio, site público com conteúdo:** nas capturas do site público havia 3 posts, 18 músicas, 18 vídeos e 1 dica; neste painel Artigos, Músicas, Vídeos, Produtos e Dicas aparecem com 0. A auditoria mostra exclusão de dica e de vídeos, então o painel provavelmente foi limpo depois. Se o site público ainda mostrar conteúdo antigo, usar "Limpar Cache Redis". Confirmar também se posts e músicas foram apagados. | a confirmar |
+| 5 | **Padrões de publicação divergentes:** Posts, Músicas e Vídeos nascem como rascunho; Produtos e Dicas nascem publicados. | a confirmar |
+| 6 | **Dicas sem "Exportar CSV"**, diferente das outras seções de conteúdo. | a confirmar |
+| 10 | **Confirmação de exclusão:** não observada nas imagens. Verificar se existe diálogo de confirmação. | a confirmar |
+
+**Decisões do dono**
+
+| # | Item | Status |
+|---|---|---|
+| 4 | **Nomenclatura:** a permissão é "Gestão de Dicas" e a aba é "Dicas do Dia". | aberto |
+| 7 | **Senha mínima de 6 caracteres:** fraca. Considerar elevar para pelo menos 10 a 12 e exigir senha forte para admin. | aberto |
+
+## 9. Regras de proteção do painel administrativo
+- Não renomear abas, permissões nem a ordem das abas sem pedido; renomear uma permissão exige migração dos cargos já salvos.
+- Toda nova aba do painel deve ter uma permissão correspondente em Gestão de Cargos e aparecer na tabela da seção 6.
+- **Proteção do `admin` (regras ainda não implementadas — ver §8, item 8):**
+  - O usuário `admin` e o cargo `admin` não podem ser excluídos: a API deve recusar a exclusão e o painel não deve oferecer a ação.
+  - O usuário `admin` vem e permanece vinculado ao cargo `admin`; esse vínculo não pode ser alterado.
+  - O cargo `admin` é o único que vem habilitado por padrão com todas as permissões existentes; os demais cargos nascem com as permissões marcadas no formulário.
+- Toda ação de criar, editar, excluir ou configurar deve gerar um registro de Auditoria com título/identificador real (nunca `undefined`).
+- Manter o padrão visual e de fluxo da seção 3 em novas telas de conteúdo.
+- Nunca expor senhas; manter o hash seguro. Não registrar senhas nos logs.

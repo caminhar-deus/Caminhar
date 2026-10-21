@@ -560,8 +560,12 @@
 │   └── pages
 │       └── login.md
 ├── docs
+│   ├── AGENTS_OPERACAO.md
+│   ├── ARQUITETURA_SITE_PRIVADO.md
+│   ├── ARQUITETURA_SITE_PUBLICO.md
 │   ├── DEPLOY_proxy_e_IP.md
 │   ├── PENDENCIAS_scripts_testes.md
+│   ├── PENDENCIAS_seguranca-rotas-api.md
 │   ├── PROJECT_components.md
 │   ├── PROJECT_cypress.md
 │   ├── PROJECT_data.md
@@ -828,39 +832,78 @@
 ├── scripts
 │   ├── backup.js
 │   ├── bench
-│   │   └── orchestrator
-│   │       ├── LEIA-ME.md
+│   │   ├── orchestrator
+│   │   │   ├── LEIA-ME.md
+│   │   │   ├── conferir.js
+│   │   │   ├── gabarito.md
+│   │   │   ├── pontuar.js
+│   │   │   ├── resultados
+│   │   │   │   ├── big-pickle-1.meta.json
+│   │   │   │   ├── big-pickle-1.ndjson
+│   │   │   │   ├── big-pickle-1.t2.meta.json
+│   │   │   │   ├── big-pickle-1.t2.ndjson
+│   │   │   │   ├── big-pickle-2.meta.json
+│   │   │   │   ├── big-pickle-2.ndjson
+│   │   │   │   ├── big-pickle-2.t2.meta.json
+│   │   │   │   ├── big-pickle-2.t2.ndjson
+│   │   │   │   ├── big-pickle-3.meta.json
+│   │   │   │   ├── big-pickle-3.ndjson
+│   │   │   │   ├── big-pickle-3.t2.meta.json
+│   │   │   │   ├── big-pickle-3.t2.ndjson
+│   │   │   │   ├── conferencia.md
+│   │   │   │   ├── minimax-m3.1-flash-free-1.meta.json
+│   │   │   │   ├── minimax-m3.1-flash-free-1.ndjson
+│   │   │   │   ├── minimax-m3.1-flash-free-1.t2.meta.json
+│   │   │   │   ├── minimax-m3.1-flash-free-1.t2.ndjson
+│   │   │   │   ├── minimax-m3.1-flash-free-2.meta.json
+│   │   │   │   ├── minimax-m3.1-flash-free-2.ndjson
+│   │   │   │   ├── minimax-m3.1-flash-free-2.t2.meta.json
+│   │   │   │   ├── minimax-m3.1-flash-free-2.t2.ndjson
+│   │   │   │   ├── minimax-m3.1-flash-free-3.meta.json
+│   │   │   │   ├── minimax-m3.1-flash-free-3.ndjson
+│   │   │   │   ├── minimax-m3.1-flash-free-3.t2.meta.json
+│   │   │   │   ├── minimax-m3.1-flash-free-3.t2.ndjson
+│   │   │   │   ├── space-bunny-free-1.meta.json
+│   │   │   │   ├── space-bunny-free-1.ndjson
+│   │   │   │   ├── space-bunny-free-1.t2.meta.json
+│   │   │   │   ├── space-bunny-free-1.t2.ndjson
+│   │   │   │   ├── space-bunny-free-2.meta.json
+│   │   │   │   ├── space-bunny-free-2.ndjson
+│   │   │   │   ├── space-bunny-free-2.t2.meta.json
+│   │   │   │   ├── space-bunny-free-2.t2.ndjson
+│   │   │   │   ├── space-bunny-free-3.meta.json
+│   │   │   │   ├── space-bunny-free-3.ndjson
+│   │   │   │   ├── space-bunny-free-3.t2.meta.json
+│   │   │   │   └── space-bunny-free-3.t2.ndjson
+│   │   │   ├── rodar.js
+│   │   │   ├── rubrica.md
+│   │   │   └── tarefa.md
+│   │   └── papeis
+│   │       ├── conferir-fixer.js
 │   │       ├── conferir.js
-│   │       ├── gabarito.md
+│   │       ├── gabarito-designer.md
+│   │       ├── gabarito-fixer.md
 │   │       ├── resultados
-│   │       │   ├── big-pickle-1.meta.json
-│   │       │   ├── big-pickle-1.ndjson
-│   │       │   ├── big-pickle-1.t2.meta.json
-│   │       │   ├── big-pickle-1.t2.ndjson
-│   │       │   ├── big-pickle-2.meta.json
-│   │       │   ├── big-pickle-2.ndjson
-│   │       │   ├── big-pickle-2.t2.meta.json
-│   │       │   ├── big-pickle-2.t2.ndjson
-│   │       │   ├── big-pickle-3.meta.json
-│   │       │   ├── big-pickle-3.ndjson
-│   │       │   ├── big-pickle-3.t2.meta.json
-│   │       │   ├── big-pickle-3.t2.ndjson
 │   │       │   ├── conferencia.md
-│   │       │   ├── space-bunny-free-1.meta.json
-│   │       │   ├── space-bunny-free-1.ndjson
-│   │       │   ├── space-bunny-free-1.t2.meta.json
-│   │       │   ├── space-bunny-free-1.t2.ndjson
-│   │       │   ├── space-bunny-free-2.meta.json
-│   │       │   ├── space-bunny-free-2.ndjson
-│   │       │   ├── space-bunny-free-2.t2.meta.json
-│   │       │   ├── space-bunny-free-2.t2.ndjson
-│   │       │   ├── space-bunny-free-3.meta.json
-│   │       │   ├── space-bunny-free-3.ndjson
-│   │       │   ├── space-bunny-free-3.t2.meta.json
-│   │       │   └── space-bunny-free-3.t2.ndjson
+│   │       │   ├── designer-beam-free-1.meta.json
+│   │       │   ├── designer-beam-free-1.ndjson
+│   │       │   ├── designer-deepseek-v4.1-flash-free-1.meta.json
+│   │       │   ├── designer-deepseek-v4.1-flash-free-1.ndjson
+│   │       │   ├── designer-longcat-2.5-preview-free-1.meta.json
+│   │       │   ├── designer-longcat-2.5-preview-free-1.ndjson
+│   │       │   ├── designer-minimax-m3.1-flash-free-1.meta.json
+│   │       │   ├── designer-minimax-m3.1-flash-free-1.ndjson
+│   │       │   ├── fixer-beam-free-1.meta.json
+│   │       │   ├── fixer-beam-free-1.ndjson
+│   │       │   ├── fixer-longcat-2.5-preview-free-1.meta.json
+│   │       │   ├── fixer-longcat-2.5-preview-free-1.ndjson
+│   │       │   ├── fixer-mimo-v2.6-flash-free-1.meta.json
+│   │       │   ├── fixer-mimo-v2.6-flash-free-1.ndjson
+│   │       │   ├── fixer-minimax-m3.1-flash-free-1.meta.json
+│   │       │   └── fixer-minimax-m3.1-flash-free-1.ndjson
 │   │       ├── rodar.js
-│   │       ├── rubrica.md
-│   │       └── tarefa.md
+│   │       ├── tarefa-designer.md
+│   │       └── tarefa-fixer.md
 │   ├── check-db-status.js
 │   ├── check-env.js
 │   ├── check-hardcoded-credentials.js
@@ -1255,4 +1298,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-203 directories, 1053 files
+205 directories, 1094 files
