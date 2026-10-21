@@ -1432,6 +1432,69 @@ Gates de segurança: `search_block_rate` 99,92% (limite 50%), `errors_500` 0,00%
 
 **Estabilidade medida (#16 → #17):** p95 mediano **−11%**, spread mediano de **1,12x** (faixa 1,01x–1,41x) entre os dois runs, contra 1,08x–1,83x na série de 4 runs anterior. Nenhum check falhou em nenhum dos 26 scripts de ambos os runs, e o `stress-test-combined` ficou em 3,73 ms — colado nos 3,24/3,40/3,85 ms dos runs normais e longe dos 24,91 ms do outlier do #14.
 
+
+---
+
+### Registro de execução — run [`39576629604`](https://github.com/caminhar-deus/Caminhar/actions/runs/39576629604) (cron "Load Tests (k6)" nº 18, 21/10/2026)
+
+**Primeira execução com a Fase 1 do item AD no ar** — este run é o que valida em produção a correção do `getProfile` (merge de thresholds) e, principalmente, o **piloto** do gate de `http_req_failed` que a Fase 2 usou para calibrar limites — desfecho que divergiu do plano original (ver "Fase 2 do item AD" abaixo).
+
+| Campo | Valor medido |
+|-------|--------------|
+| Run / SHA | `39576629604` / `8790444` (commit da Fase 1) |
+| Event / conclusion | `schedule` (cron `17 4 * * *`) / **`success`** |
+| Job `load-tests / run-tests` | `09:23:53Z` → `09:41:52Z` = **17m59s** |
+| Bateria | **30/30 passed**, 0 failed, 0 skipped, **16m35s** |
+| Artifact | `k6-load-test-reports`, 50.010 B, **32 arquivos** |
+| `created_at` vs cron | `2026-10-21T09:23:51Z` = 06:23 BRT = **+5h06** |
+| Região do runner | **`westus3`** — sexta região em seis runs medidos |
+| k6 | `Downloading k6 version 2.3.0` |
+| Steps | todos verdes; **nenhum warning** e nenhum erro no job |
+
+**O piloto — os 2 gates novos de `http_req_failed`, herdados do perfil `medium`:**
+
+| Script | `http_req_failed` medido | Threshold | ok |
+|---|---|---|---|
+| `musicas_load_test` | **0,00%** (68 requisições) | `rate<0.05` | **true** |
+| `videos_load_test` | **0,00%** (133 requisições) | `rate<0.05` | **true** |
+
+Estes são os **primeiros gates de taxa de erro sobre requisições** que esses dois scripts tiveram: antes herdavam apenas o threshold taggeado de latência. Passaram com folga total, o que é o dado que a Fase 2 usou para calibrar o gate sem copiá-lo de um perfil — e o dado que faz o gate ser **medido** em vez de presumido. (O desfecho da Fase 2 não foi "escalar o gate aos outros 22 scripts": ver a seção da Fase 2 abaixo.)
+
+**Todos os thresholds da suíte, avaliados um a um no artifact: 80 no total, 80 `ok`, 0 falharam.** O footprint da Fase 1 em produção é exatamente o previsto: os **13 thresholds recuperados** estão presentes e passaram, nenhum threshold foi removido, e a contagem de scripts com `http_req_failed` efetivo saiu de **7 para 9 de 30** (os 2 de carga), com 21 sem.
+
+| Verificação | Resultado |
+|---|---|
+| `ddos_search_test` → `http_req_failed` | 0,00% (130175 amostras), sem threshold (o `replaceThresholds: true` mantém o comportamento) |
+| `ddos_search_test` → `search_block_rate` / `errors_500` | 99,92% (limite 50%) / 0,00% (limite 50%) — ambos `ok` |
+| `recovery_test` → `recovery_unhealthy_rate` | 0,00% em 151 iterações, `ok: true` |
+| `ip_spoofing` → `ip_rotation_evasion_rate` | 0,0052% (limite 5%) |
+| Sanitização do token | 12 arquivos com `setup_data`, **nenhum** vazando |
+| Checks falhos | 0 em todos os scripts, exceto os 2 de estado exclusivo (`ddos-search` 33,33% e `ip-spoofing` 50% por construção) |
+
+**Estabilidade (#17 → #18):** p95 mediano **−1%**, spread mediano **1,04x** (faixa 1,00x–2,18x) — a maior estabilidade já observada. O `stress-test-combined` ficou em 3,71 ms (de 3,85), colado na série normal. **Um único outlier, e é benigno:** `search_content_test` teve o p95 de 3,11 para 6,77 ms (+118%), mas a **mediana ficou em 1,20 ms** (era 1,14) e o p90 em 2,36 ms (era 2,78) — a assinatura de **uma requisição isolada** de 13,4 ms, não de degradação geral, e 74x abaixo do limite de 500 ms.
+
+---
+
+### Fase 2 do item AD — aplicada em 21/10/2026, aguardando o cron #19
+
+**O que mudou no código (5 arquivos) e por quê.** A auditoria dos 30 scripts mostrou que a premissa do plano original da Fase 2 ("um gate de `http_req_failed` por script, calibrado por volume") estava errada: **dos 20 scripts que ficam sem gate de taxa, 6 esperam 4xx por desenho e 14 têm `check` de status** — o instrumento certo para "a resposta foi a esperada?". O que faltava na maioria **não era gate de taxa, era `check` onde havia ponto cego** (warm-up e teardown).
+
+| Arquivo | Mudança | Por quê |
+|---|---|---|
+| `load-tests/performance/musicas-search-test.js` | URL do warm-up com `encodeURIComponent()`; 2 warm-ups com `check` de status | **Bug real e determinístico**: `?search=Graça` mandava o byte UTF-8 cru no request target, e o parser HTTP do Node respondia **400 Bad Request antes de a aplicação** — `http_req_failed` = 0,142857 (1 de 7), **idêntico** nos runs #15, #17 e #18, com a suíte reportando PASS |
+| `load-tests/functional/search-content-test.js` | 3 warm-ups capturados + `check` de status | mesmo furo: warm-up sem `check` é invisível para `checks: ['rate==1.0']` |
+| `load-tests/performance/musicas-crud-test.js` | `check` na listagem do teardown e em cada delete (200 ou 404) | limpeza que falha deixa lixo "K6" no banco **sem** reprovar a execução |
+| `load-tests/performance/videos-crud-test.js` | idem | idem |
+| `load-tests/functional/posts-tags-test.js` | `http_req_failed: ['rate<0.20']` | **único script que precisava de gate de taxa**: cada requisição roda 3 checks e, numa resposta 500, só 1 falha (o check de "lista de posts" cai no fallback `[]`, que passa no `Array.isArray`) — até 2 das 5 (40%) poderiam falhar e a execução ainda passaria com `checks: ['rate>0.80']`; com `rate<0.20` a **primeira** falha já reprova (1/5 = 20%) |
+
+**O `http_req_failed` do `musicas-search` era um bug, não ruído.** A taxa de 0,142857 (1 de 7 requisições) medida nos runs #15, #17 e #18 não era variação de runner: era **a mesma requisição** — o warm-up com `?search=Graça` — respondendo 400 antes da aplicação, três runs seguidos. Reproduzido localmente: a URL crua devolve **400**, `Gra%C3%A7a` devolve **200** e `Santo` devolve **200**.
+
+**Calibragem de `http_req_failed` é sempre por taxa — a "contagem absoluta" não existe.** Uma recomendação anterior de calibrar por contagem absoluta (`count<…`) é **impossível**: no k6 v2.3.0, `js/modules/k6/metrics/metric_type.go` devolve `[]string{tokenRate}` para o tipo `Rate` — a métrica `Rate` **só** aceita o token `rate`, e `count` é token de `Counter`. Um `count<` ali **não produziria gate nenhum**, em vez de medir o que se propunha.
+
+**Cobertura travada por teste.** `tests/unit/load-tests/error-gate-coverage.test.js` (11 testes) fixa: (a) a parte estática de toda URL de requisição da suíte é ASCII; (b) os 6 scripts que esperam 4xx por desenho **não** declaram `http_req_failed`; (c) os 4 marcadores de `check` do warm-up/teardown existem nos 4 scripts; (d) o `posts-tags` declara `rate<0.20`; (e) quem declara `http_req_failed` entre os perfis (`light`/`recovery`/`rateLimit` não; `medium`/`heavy`/`health` sim); (f) o inventário tem 30 scripts. **Prova de mutação executada:** as 5 mudanças revertidas uma a uma reprovaram o teste correspondente (5/5), com a suíte restaurada ao final.
+
+**O que esperar no cron #19 (22/10/2026).** `http_req_failed` **com threshold** em **10 dos 30** scripts (os 9 da Fase 1 + `posts_tags`); `musicas_search` com `http_req_failed` = 0/7 (o warm-up agora responde 200); `posts_tags` com 0,00% e 15/15 checks; 30/30 passed. **Conferir no artifact, não no código** — é onde a Fase 1 mostrou que a mentira mora. O registro do #19 fica nesta seção, com o número de thresholds avaliados.
+
 ---
 
 ### O p95 do `stress-test-combined` era o runner, não o código — questão fechada
@@ -1445,10 +1508,11 @@ O registro dos runs #12–#14 deixou o outlier do #14 como **atribuição inconc
 | **#14** | **`mexicocentral`** | **24,91 ms** | 8,34 ms | 849,8 ms |
 | #16 | `westus` | 3,85 ms | 2,64 ms | 95,6 ms |
 | #17 | `westus2` | 3,73 ms | 2,53 ms | 93,9 ms |
+| #18 | `westus3` | 3,71 ms | 2,64 ms | 84,6 ms |
 
 Mesmo código e mesmo número de iterações, −85% no p95 quando a região muda. **Conclusão: o outlier do #14 foi o runner, e não o `stress-test-combined`.** A assinatura era de cauda, não de geral — no #14 a mediana ficou *mais rápida* (1,82 ms contra 2,24 ms) e o p90 ficou igual, enquanto `avg` e `max` dispararam.
 
-**Cinco regiões diferentes em cinco runs medidos** — `eastus` (#13), `mexicocentral` (#14), `westus3` (#15), `westus` (#16), `westus2` (#17) — e o GitHub não oferece escolha de região em runners hospedados. Consequência operacional que vale para todo o resto da suíte: **latência entre runs deste projeto não é comparável sem anotar a região.** Fora o `stress-test-combined`, o p95 do #16 ficou +5% a +42% sobre o #14 e o do #17 ficou −29% a +10% sobre o #16 (medianas de −11% e spread mediano de 1,12x, faixa 1,01x–1,41x), o que é compatível com a variação de runner — e nenhum check falhou em nenhum dos scripts, em nenhum dos dois runs.
+**Seis regiões diferentes em seis runs medidos** — `eastus` (#13), `mexicocentral` (#14), `westus3` (#15), `westus` (#16), `westus2` (#17), `westus3` (#18) — e o GitHub não oferece escolha de região em runners hospedados. Consequência operacional que vale para todo o resto da suíte: **latência entre runs deste projeto não é comparável sem anotar a região.** Fora o `stress-test-combined`, o p95 do #16 ficou +5% a +42% sobre o #14 e o do #17 ficou −29% a +10% sobre o #16 (medianas de −11% e spread mediano de 1,12x, faixa 1,01x–1,41x), o que é compatível com a variação de runner — e nenhum check falhou em nenhum dos scripts, em nenhum dos dois runs.
 
 ---
 
@@ -1477,7 +1541,7 @@ Mesmo código e mesmo número de iterações, −85% no p95 quando a região mud
 - **Exit code** — Não-zero se houver falhas
 - **Ordem de execução (medição de 14/10/2026 — recorte da época):** ~~os 17 Performance rodam primeiro e o `stress-test-combined` é o **#17 dos 30 scripts** (último da Performance, `scripts/run-all-load-tests-sequentially.js:204`), logo **antes** dos 9 Functional e dos 4 Security~~ **a partir de 14/10/2026 o `stress-test-combined` saiu da categoria Performance e virou o #30 (último dos 30)**, numa 4ª categoria própria: a bateria roda **16 Performance → 9 Functional → 4 Security → 1 Stress**. Motivo (comentário de fonte primária no próprio código, `scripts/run-all-load-tests-sequentially.js:232-267`): o script é o mais destrutivo da bateria — 8189 iterações de CRUD completo, ~24.500 mutações na tabela de vídeos — e rodando no meio dela deixava os scripts seguintes medindo um possivelmente degradado banco. Categoria própria (e não o fim da lista de Security) para não rotular um teste de estresse como "Security" no log nem no relatório. **Preço aceito:** o stress passa a rodar sobre banco já sujo pelos outros 29, então os números *dele* ficam piores — aceitável, porque a medição que importa é a dos outros 29. **Experimento ainda não confirmado** (a hipótese do `autovacuum` segue NÃO confirmada): o próximo run decide — ver a observação datada abaixo e `docs/PENDENCIAS_scripts_testes.md`, item AB
 
-> **⚠️ OBSERVAÇÃO (14/10/2026) — ordem da bateria e p95 dos scripts seguintes: hipótese NÃO confirmada; experimento APLICADO em 14/10/2026, decisão no próximo run.**
+> **⚠️ OBSERVAÇÃO (14/10/2026) — ordem da bateria e p95 dos scripts seguintes: hipótese NÃO confirmada; experimento APLICADO em 14/10/2026. ENCERRADA em 21/10/2026 — degradação não reproduzida em 5 amostras pós-mudança; o encerramento está no fim deste bloco.**
 >
 > **Medição (fonte primária da evidência — `docs/PENDENCIAS_scripts_testes.md` item AB só registra status e ponteiro):** comparando o p95 do run [`38543197931`](https://github.com/caminhar-deus/Caminhar/actions/runs/38543197931) (#11, primeiro com o stress test de fato executando) com o do run [`38246676774`](https://github.com/caminhar-deus/Caminhar/actions/runs/38246676774) (#9, em que ele não exercitava nada) — ambos medidos quando o `stress-test-combined` **ainda era o #17** da bateria:
 >
@@ -1494,7 +1558,29 @@ Mesmo código e mesmo número de iterações, −85% no p95 quando a região mud
 >
 > **Hipótese (NÃO confirmada):** as 24.567 mutações do stress test deixam tuples mortos / páginas de índice sujas no Postgres sem tempo para o `autovacuum`, e os scripts seguintes medem um banco degradado. **Contraprova que impede tratar isto como defeito confirmado:** são apenas **2 execuções**, em **runner hospedado compartilhado**, e o `login-negative-test` (maior salto) é um teste de login sob carga alta, cujo p95 é naturalmente instável — duas amostras não separam efeito de ruído. Nenhum run reprovou (bateria 30/30 no #11).
 >
-> **Experimento APLICADO em 14/10/2026 (não é mais "proposto"):** o `stress-test-combined` foi movido para uma **4ª categoria própria** (`🔥 Stress Tests`) no **fim** da bateria e é agora o **#30 dos 30** — os outros 29 passam a medir um banco limpo, e o próximo run é o experimento: se a degradação dos scripts finais **sumir**, a hipótese do banco se sustenta; se **persistir**, era ruído de runner. **A hipótese segue NÃO confirmada até esse run** — esta observação é medição + experimento, não defeito estabelecido. Registro da pendência (status, hipótese em resumo e critério de decisão): `docs/PENDENCIAS_scripts_testes.md`, **item AB (ABERTA, prioridade média)**. Nenhuma mudança em `load-tests/` nem nos thresholds foi feita — mexeu-se **só** na ordem/categorias do orquestrador.
+> **Experimento APLICADO em 14/10/2026 (não é mais "proposto"):** o `stress-test-combined` foi movido para uma **4ª categoria própria** (`🔥 Stress Tests`) no **fim** da bateria e é agora o **#30 dos 30** — os outros 29 passam a medir um banco limpo, e o próximo run é o experimento: se a degradação dos scripts finais **sumir**, a hipótese do banco se sustenta; se **persistir**, era ruído de runner. **A hipótese segue NÃO confirmada até esse run** — encerramento em 21/10/2026, no bloco seguinte. Esta observação é medição + experimento, não defeito estabelecido. Registro da pendência (status, hipótese em resumo e critério de decisão): `docs/PENDENCIAS_scripts_testes.md`, **item AB (RESOLVIDA em 21/10/2026)**. Nenhuma mudança em `load-tests/` nem nos thresholds foi feita — mexeu-se **só** na ordem/categorias do orquestrador.
+
+> **✅ ENCERRAMENTO (21/10/2026) — 5 amostras pós-mudança (#12 a #17): a degradação NÃO foi reproduzida.**
+>
+> **Medições do experimento** (p95 de cada script contra o run #11, baseline em que o `stress-test-combined` ainda era o #17 da bateria):
+>
+> | Amostra | Runs | Grupo tratado (rodavam **depois** do stress) | Grupo controle (rodavam **antes**, não afetados pela hipótese) | Separação |
+> |---|---|---|---|---|
+> | 3 primeiros runs pós-mudança | #12, #13, #14 (15–17/10/2026) — 3 verdes, 30/30 passed | n=30, mediana **−5%**, faixa −50%..+30% | n=39, mediana **+8%**, faixa −14%..+58% | ~13 pontos |
+> | 5ª amostra | #17 (20/10/2026) | n=50, mediana **−1%** (30 de 50 medições mais rápidas) | n=65, mediana **+7%** (21 de 65) | 8 pontos |
+>
+> **Por que isso encerra o item, em quatro pontos:**
+>
+> 1. **O grupo tratado ficou na mediana do ruído** (−1% na 5ª amostra) — não há degradação mensurável nos scripts que rodam depois do stress.
+> 2. **O controle, que a hipótese não atinge, piorou mais** (+7%) que o grupo tratado. Se a degradação viesse das mutações do stress, o controle não poderia piorar: ele roda **antes** delas.
+> 3. **A separação encolheu** de ~13 para 8 pontos entre as amostras, na direção esperada se o efeito for ruído.
+> 4. **A escala do ruído engole o efeito:** ±50%..+58% por script, em runner hospedado compartilhado — 6 regiões medidas em 6 runs, com o p95 do `stress-test-combined` indo de 3,40 ms a 24,91 ms com o **mesmo código** e o **mesmo número de iterações**.
+>
+> **Nenhum run reprovou** — as 6 baterias medidas fecharam 30/30 passed; nunca houve impacto funcional, só uma diferença de latência não explicada.
+>
+> **A 6ª amostra (run #18, 21/10/2026) não repete a comparação tratado/controle** — ela exigiria o baseline do #11 de novo —, mas corrobora o encerramento: p95 mediano da bateria **−1%** contra o #17, spread mediano **1,04x** (faixa 1,00x–2,18x), a maior estabilidade já observada, e o `stress-test-combined` em 3,71 ms, colado na série normal.
+>
+> **A mudança de ordem PERMANECE APLICADA** (o `stress-test-combined` é o #30 dos 30, na categoria própria `🔥 Stress Tests`), mantida por princípio — um script destrutivo não deve contaminar a medição dos outros 29 — e sem custo medido. Status da pendência: `docs/PENDENCIAS_scripts_testes.md`, item AB (**RESOLVIDA**).
 
 **Variáveis de ambiente necessárias:**
 - `ADMIN_USERNAME` — Nome do usuário admin (obrigatório)

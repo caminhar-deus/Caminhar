@@ -923,6 +923,7 @@ tests/unit/lib/infra/logger.test.js → lib/infra/logger.js
 tests/unit/lib/infra/redis.test.js → lib/infra/redis.js
 tests/unit/lib/redis.test.js → lib/infra/redis.js
 tests/unit/lib/seo/config.test.js → lib/seo/config.js
+tests/unit/load-tests/error-gate-coverage.test.js → load-tests/helpers/profiles.js
 tests/unit/load-tests/profiles.test.js → load-tests/helpers/profiles.js
 tests/unit/pages/api/admin/dicas.edge.test.js → lib/domain/audit.js
 tests/unit/pages/api/admin/dicas.edge.test.js → lib/infra/db.js

@@ -27,8 +27,29 @@ export default function () {
   if (!warmupDone) {
     warmupDone = true;
     console.log('🔥 Warm-up: aquecendo cache do servidor...');
-    http.get(`${BASE_URL}/api/musicas?search=Graça`, { tags: { name: 'WarmUp' } });
-    http.get(`${BASE_URL}/api/musicas?search=Santo`, { tags: { name: 'WarmUp' } });
+    // POR QUE encodeURIComponent AQUI: a URL com o byte UTF-8 cru ("Graça")
+    // chega ao parser HTTP do Node como request target inválido e gera
+    // 400 Bad Request ANTES da aplicação responder. Como o warm-up não tinha
+    // `check`, a suíte reportava PASS mesmo assim — os runs #15, #17 e #18
+    // mediram `http_req_failed` = 0,142857 (1 de 7 requisições) idêntico.
+    // O percent-encoding é o mesmo da requisição verificada abaixo.
+    const warmupInicial = http.get(
+      `${BASE_URL}/api/musicas?search=${encodeURIComponent('Graça')}`,
+      { tags: { name: 'WarmUp' } },
+    );
+    // POR QUE check AQUI: sem ele, uma resposta fora de 2xx no warm-up era
+    // invisível para o `checks: ['rate==1.0']` — foi exatamente esse o furo
+    // que escondeu o 400 do byte cru.
+    check(warmupInicial, {
+      'Warm-up (busca inicial): status é 200': (r) => r.status === 200,
+    });
+    const warmupControle = http.get(
+      `${BASE_URL}/api/musicas?search=${encodeURIComponent('Santo')}`,
+      { tags: { name: 'WarmUp' } },
+    );
+    check(warmupControle, {
+      'Warm-up (busca de controle): status é 200': (r) => r.status === 200,
+    });
   }
 
   const term = SEARCH_TERMS[Math.floor(Math.random() * SEARCH_TERMS.length)];

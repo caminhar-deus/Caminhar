@@ -520,6 +520,7 @@ As suítes `clear-db`, `clear-musicas`, `reset-password` e `seed-all` agora **im
 | Arquivo | Propósito |
 |---------|-----------|
 | `profiles.test.js` | Testes de `getProfile`/`PROFILES` (`load-tests/helpers/profiles.js`): travam a **semântica de merge dos thresholds** — por padrão o perfil base é preservado e só as chaves repetidas são substituídas pelo override, e o escape hatch `replaceThresholds: true` descarta o base por inteiro sem vazar para o `options` do k6. Incluem invariantes da matriz de perfis e um controle negativo que prova ter força (mutar o resultado de `getProfile` não contamina `PROFILES`). |
+| `error-gate-coverage.test.js` | 11 testes que travam a **cobertura de gate de erro** da suíte k6: a parte estática de toda URL de requisição é ASCII (o byte UTF-8 cru no request target é o que provocava o 400 antes da aplicação), os 6 scripts que esperam 4xx por desenho **não** declaram `http_req_failed`, os 4 marcadores de `check` do warm-up/teardown existem nos 4 scripts, o `posts-tags` declara `rate<0.20`, e quem declara `http_req_failed` entre os perfis (`light`/`recovery`/`rateLimit` não; `medium`/`heavy`/`health` sim). **Verificado por mutação:** as 5 mudanças da Fase 2 revertidas uma a uma reprovaram o teste correspondente (5/5). |
 
 > **Por que o primeiro teste de `load-tests/` só apareceu em 19/10/2026:** até então nada em `load-tests/` era exercitado por jest, e a Fase 1 do item AD mexe justamente na função que até 20/10/2026 perdia thresholds em silêncio — sem o teste, a correção poderia reintroduzir a mesma falha sem ninguém perceber. **O teste foi reescrito junto com a correção** (a caracterização do descarte virou a do merge) e **verificado por mutação**: reverter o `getProfile` para a semântica antiga reprova exatamente os 2 casos de merge, e restaurar o verde.
 
@@ -540,14 +541,14 @@ As suítes `clear-db`, `clear-musicas`, `reset-password` e `seed-all` agora **im
 | **Testes de Integração — API Auth** | 4 arquivos |
 | **Testes de Integração — Auth v1** | 1 arquivo |
 | **Testes de Integração — Domínio (DB real)** | 6 arquivos |
-| **Testes Unitários** | 134 arquivos |
-| **Total Geral** | **228 arquivos** |
+| **Testes Unitários** | 135 arquivos |
+| **Total Geral** | **229 arquivos** |
 
 ---
 
 > **Nota:** Este documento reflete a análise atual dos arquivos em `/tests`. Em caso de divergência com documentos anteriores, prevalece esta análise.
 >
-> **Recount verificado em 19/10/2026: 228 arquivos `.js`** — 226 no recount de 12/10/2026 + 2 (`tests/unit/load-tests/profiles.test.js` e `tests/unit/github-workflows/k6-version-pin.test.js`, criados para travar os gates da suíte k6). A contagem anterior (217, de 24/09/2026) estava defasada em 11 arquivos. Recount feito com `find tests -name '*.js'`, por diretório — o mesmo critério da contagem original (arquivos `.js`, não apenas `*.test.js`). As maiores divergências foram **Integração — API (50 → 34)** e **Unitários (127 → 134)**.
+> **Recount verificado em 21/10/2026: 229 arquivos `.js`** — 228 no recount de 19/10/2026 + 1 (`tests/unit/load-tests/error-gate-coverage.test.js`, que trava a cobertura de gate de erro da suíte k6). O recount anterior (226, de 12/10/2026 → 228 em 19/10/2026) somava os 2 arquivos que travaram os gates do `getProfile` e do pin do k6. A contagem mais antiga (217, de 24/09/2026) estava defasada em 12 arquivos. Recount feito com `find tests -name '*.js'`, por diretório — o mesmo critério da contagem original (arquivos `.js`, não apenas `*.test.js`). As maiores divergências foram **Integração — API (50 → 34)** e **Unitários (127 → 135)**.
 >
 > Este quadro é a **única fonte de contagem** do projeto. `docs/UPGRADE_tests.md` não repete números globais — remete para cá — para não haver duas contagens divergindo.
 >

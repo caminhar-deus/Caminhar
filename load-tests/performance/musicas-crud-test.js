@@ -1,4 +1,5 @@
 import http from 'k6/http';
+import { check } from 'k6';
 import { createCrudTest, generateReport } from '../helpers/resource-test-runner.js';
 import { setup } from '../helpers/auth.js';
 import { BASE_URL } from '../helpers/config.js';
@@ -40,13 +41,28 @@ export function teardown(data) {
   };
 
   // Limpeza: apaga músicas K6 fantasmas deixadas por VUs interrompidos
+  //
+  // POR QUE check AQUI: o teardown não tinha `check` nenhum, então uma
+  // limpeza que falhasse (listagem ou delete fora do esperado) deixaria lixo
+  // "K6" no banco SEM reprovar a execução. O `checks: ['rate==1.0']` do
+  // perfil `light` (via createCrudTest) já cobre as requisições do teardown.
   const res = http.get(`${BASE_URL}/api/admin/musicas?limit=100`, { headers: authHeaders });
+  check(res, {
+    'Teardown (listagem de músicas K6): status é 200': (r) => r.status === 200,
+  });
   if (res.status === 200) {
     const body = res.json();
     const musicas = body.musicas || body.data || [];
     for (const musica of musicas) {
       if (musica.titulo && musica.titulo.includes('K6')) {
-        http.del(`${BASE_URL}/api/admin/musicas`, JSON.stringify({ id: musica.id }), { headers: authHeaders });
+        // 200 = removido; 404 = já não existe (limpeza cumprida);
+        // qualquer outro status reprova a execução.
+        check(
+          http.del(`${BASE_URL}/api/admin/musicas`, JSON.stringify({ id: musica.id }), { headers: authHeaders }),
+          {
+            'Teardown (delete de música K6): status é 200 ou 404': (r) => r.status === 200 || r.status === 404,
+          },
+        );
       }
     }
   }

@@ -605,6 +605,7 @@
 │   │   ├── 0010-admin-como-cargo-e-validacao-de-nome.md
 │   │   ├── 0011-erro-de-banco-503-e-refresh-token-fora-do-body.md
 │   │   ├── 0012-gate-da-suite-k6-por-metrica-propria.md
+│   │   ├── 0013-agent-process-rules-vs-area-architecture-docs.md
 │   │   ├── README.md
 │   │   └── template.md
 │   └── ai-memory-error.md
@@ -1251,6 +1252,7 @@
 │       │   └── seo
 │       │       └── config.test.js
 │       ├── load-tests
+│       │   ├── error-gate-coverage.test.js
 │       │   └── profiles.test.js
 │       ├── next.config.test.js
 │       ├── pages
@@ -1298,4 +1300,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-205 directories, 1094 files
+205 directories, 1096 files

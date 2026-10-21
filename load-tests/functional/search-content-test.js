@@ -29,9 +29,21 @@ export default function () {
   if (!warmupDone) {
     warmupDone = true;
     console.log('🔥 Warm-up: aquecendo cache do servidor...');
-    http.get(`${BASE_URL}/api/posts?search=Deus&page=1&limit=10`, { tags: { name: 'WarmUp' } });
-    http.get(`${BASE_URL}/api/posts?search=Jesus&page=1&limit=10`, { tags: { name: 'WarmUp' } });
-    http.get(`${BASE_URL}/api/posts?search=amor&page=1&limit=10`, { tags: { name: 'WarmUp' } });
+    // POR QUE check AQUI: as requisições de warm-up não tinham `check`, então
+    // uma resposta fora de 2xx era invisível para o `checks: ['rate==1.0']`
+    // (mesmo furo que escondeu o 400 do byte cru em musicas-search-test.js).
+    const warmupDeus = http.get(`${BASE_URL}/api/posts?search=Deus&page=1&limit=10`, { tags: { name: 'WarmUp' } });
+    check(warmupDeus, {
+      'Warm-up (Deus): status é 200': (r) => r.status === 200,
+    });
+    const warmupJesus = http.get(`${BASE_URL}/api/posts?search=Jesus&page=1&limit=10`, { tags: { name: 'WarmUp' } });
+    check(warmupJesus, {
+      'Warm-up (Jesus): status é 200': (r) => r.status === 200,
+    });
+    const warmupAmor = http.get(`${BASE_URL}/api/posts?search=amor&page=1&limit=10`, { tags: { name: 'WarmUp' } });
+    check(warmupAmor, {
+      'Warm-up (amor): status é 200': (r) => r.status === 200,
+    });
   }
   // Seleciona um termo aleatório
   const term = SEARCH_TERMS[Math.floor(Math.random() * SEARCH_TERMS.length)];

@@ -69,6 +69,16 @@ Consequências operacionais, todas aplicadas:
    a action monta a URL como `releases/download/v<k6-version>/…`, então passar
    `v2.3.0` produz `vv2.3.0` e 404 — erro cometido na primeira aplicação e
    detectado no run #15 (18/10/2026), que falhou no step de setup do k6.
+5. **O instrumento é escolhido pela natureza da lacuna, não por padronização**
+   (consequência acrescentada em 21/10/2026, com a Fase 2 do item AD).
+   Onde o furo é "ninguém olha para esta requisição" (warm-up e teardown), a
+   correção é `check` de status: é mais barato que um gate de taxa e aponta
+   *qual* requisição falhou. Onde o furo é "o erro não é visível por nenhum
+   check" (uma resposta 500 que o `check` engole porque o fallback ainda
+   satisfaz a asserção), a correção é gate de taxa próprio. **Não se adiciona
+   gate de taxa a script que espera 4xx por desenho** (6 deles) **nem a script
+   cujo erro já é coberto por `check`** (14 deles): gate que nunca reprova
+   nada é ruído que dá falsa sensação de cobertura.
 
 ## Alternativas consideradas
 
@@ -107,6 +117,22 @@ A decisão foi aplicada e **validada em produção** no run [`39233955292`](http
 **O pin foi validado pela via negativa primeiro.** O run [`39113170891`](https://github.com/caminhar-deus/Caminhar/actions/runs/39113170891) (nº 15, 18/10/2026) reprovou com `Unexpected HTTP response: 404` porque o valor foi escrito como `'v2.3.0'` e a action prefixa `v`, montando `vv2.3.0`. Nele, `Run Tests` ficou `skipped` e o artifact veio vazio — nenhuma das consequências acima chegou a ser exercitada, e é por isso que o registro é feito contra dois runs e não só contra o verde.
 
 **Footprint verificado por diferença de thresholds entre artifacts:** entre os runs #14 e #16, o campo `metrics.*.thresholds` difere em **um único arquivo** — `recovery_test.json`, que passou de `[]` para `['rate<0.10']`. Nenhum outro threshold da suíte foi alterado, adicionado ou perdido.
+
+**A Fase 1 (correção do `getProfile`, item AD) foi validada em produção pelo run [`39576629604`](https://github.com/caminhar-deus/Caminhar/actions/runs/39576629604) (nº 18, 21/10/2026, `success`, 30/30 passed):** os **13 thresholds recuperados** estão presentes no artifact e **80 thresholds avaliados, 80 `ok`, 0 falharam**; nenhum threshold foi removido; e a contagem de scripts com `http_req_failed` efetivo subiu de **7 para 9 de 30** — os 2 de carga, que passaram com **0,00%** de falha sobre 68 e 133 requisições. Esses 2 são o **piloto vivo** do gate de taxa que a Fase 2 usou para calibrar limites — mas o desfecho da Fase 2 **não foi** "levar o gate aos demais scripts" (ver o bloco abaixo).
+
+**A Fase 2 (item AD) foi APLICADA em 21/10/2026 e espera o cron #19 (22/10/2026) para a validação em produção.** A auditoria dos 30 scripts mudou a premissa do plano original ("um gate de `http_req_failed` por script"): **depois da Fase 2, 10 dos 30 scripts têm `http_req_failed`** (os 9 da Fase 1 + `posts_tags`), **6 nunca podem tê-lo** (esperam 4xx/429 por desenho: `video-validation`, `ddos-search`, `ip-spoofing`, `rate-limit`, `recovery`, `login-negative`) **e 14 são cobertos por `check` de status** — o instrumento que esta ADR define como o certo para "a resposta foi a esperada?". O que faltava na maioria **não era gate de taxa, era `check` onde havia ponto cego**: o warm-up e o teardown.
+
+| Arquivo | Mudança | Por quê |
+|---|---|---|
+| `performance/musicas-search-test.js` | URL do warm-up com `encodeURIComponent()` + `check` de status nos 2 warm-ups | **Bug real e determinístico**: `?search=Graça` mandava o byte UTF-8 cru no request target e o parser HTTP do Node respondia **400 antes de a aplicação** (`http_req_failed` = 0,142857 = 1/7, **idêntico** nos runs #15, #17 e #18, com a suíte reportando PASS) |
+| `functional/search-content-test.js` | os 3 warm-ups capturados + `check` de status | mesmo furo: warm-up sem `check` é invisível para `checks: ['rate==1.0']` |
+| `performance/musicas-crud-test.js` | `check` na listagem do teardown e em cada delete (200 ou 404) | limpeza que falha deixa lixo "K6" no banco **sem** reprovar a execução |
+| `performance/videos-crud-test.js` | idem | idem |
+| `functional/posts-tags-test.js` | `http_req_failed: ['rate<0.20']` | **único script que precisava de gate de taxa**: cada requisição roda 3 checks e, numa resposta 500, só 1 falha (o check de "lista de posts" cai no fallback `[]`, que passa no `Array.isArray`) — até 2 das 5 (40%) poderiam falhar e a execução ainda passaria com `checks: ['rate>0.80']`; com `rate<0.20` a **primeira** falha já reprova (1/5 = 20%) |
+
+**Correção de uma recomendação errada, registrada para não voltar:** a calibragem de `http_req_failed` é **sempre por taxa** (`rate<…`). A ideia de "contagem absoluta" via `count<…` é **impossível** nessa métrica — no k6 v2.3.0, `js/modules/k6/metrics/metric_type.go` devolve `[]string{tokenRate}` para o tipo `Rate`: a métrica `Rate` **só** aceita o token `rate`, e `count` é token de `Counter`. Um `count<` ali **não produziria gate nenhum**, em vez de medir o que se propunha.
+
+**Cobertura travada por teste:** `tests/unit/load-tests/error-gate-coverage.test.js` (11 testes) — ASCII na parte estática de toda URL de requisição da suíte; a lista de 6 scripts que esperam 4xx por desenho **sem** `http_req_failed`; os 4 marcadores de `check` do warm-up/teardown; o `rate<0.20` do `posts-tags`; quem declara `http_req_failed` entre os perfis; e o inventário de 30 scripts. **Prova de mutação executada:** as 5 mudanças revertidas uma a uma reprovaram o teste correspondente (5/5), com a suíte restaurada ao final.
 
 ### Positivas
 
