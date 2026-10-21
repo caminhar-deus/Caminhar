@@ -23,6 +23,9 @@ apoio, não a fonte oficial; a decisão não é duplicada como página de memór
 | [0011](0011-erro-de-banco-503-e-refresh-token-fora-do-body.md) | Erro de banco no painel responde 503 e não vaza mensagem; refresh token fora do body | Aceito | 2026-10-16 |
 | [0012](0012-gate-da-suite-k6-por-metrica-propria.md) | Na suíte k6, reprovação vem de métrica própria com threshold; `checks` agregado é diagnóstico | Aceito | 2026-10-17 |
 | [0013](0013-agent-process-rules-vs-area-architecture-docs.md) | Regras de processo do agente no `AGENTS.md`; regras de proteção de cada área no seu documento de arquitetura | Aceito | 2026-10-21 |
+| [0014](0014-padrao-significa-mais-recentes-e-curadoria-como-posicionados.md) | "Padrão" significa "Mais recentes" e a curadoria manual vira a opção "Posicionados" | Aceito | 2026-10-21 |
+| [0015](0015-link-externo-assistir-no-youtube-no-cartao-de-video.md) | Link externo "Assistir no YouTube" no cartão de vídeo | Aceito | 2026-10-21 |
+| [0016](0016-seletor-de-ordenacao-de-produtos-no-servidor.md) | Seletor de ordenação de Produtos com ordenação no servidor | Aceito | 2026-10-21 |
 
 ## Quando criar um ADR
 

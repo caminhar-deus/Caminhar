@@ -46,7 +46,10 @@ describe('Componente Front-End - MusicGallery', () => {
       expect(screen.getByText('Hino da Vitória')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Página 1 de 2')).toBeInTheDocument();
+    // Live region da paginação (MASTER §7 / decisão D4)
+    const pageInfo = screen.getByText('Página 1 de 2');
+    expect(pageInfo).toHaveAttribute('aria-live', 'polite');
+    expect(pageInfo).toHaveAttribute('aria-atomic', 'true');
   });
 
   it('deve exibir erro se a API falhar e permitir tentar novamente', async () => {
@@ -174,14 +177,14 @@ describe('Componente Front-End - MusicGallery', () => {
     });
 
     const sortSelect = screen.getByLabelText('Ordenar músicas');
-    fireEvent.change(sortSelect, { target: { value: 'recent' } });
+    fireEvent.change(sortSelect, { target: { value: 'oldest' } });
 
     await waitFor(() => {
       const urls = global.fetch.mock.calls.map((call) => call[0]);
-      expect(urls.some((url) => url.includes('sort=recent'))).toBe(true);
+      expect(urls.some((url) => url.includes('sort=oldest'))).toBe(true);
     });
 
-    expect(sortSelect).toHaveValue('recent');
+    expect(sortSelect).toHaveValue('oldest');
   });
 
   it('deve voltar à página anterior com o botão Anterior', async () => {

@@ -2,9 +2,17 @@ import { logActivity } from '../../lib/domain/audit';
 import { getAuthToken, verifyToken } from '../../lib/auth/auth';
 import { checkRateLimit, invalidateCache, getOrSetCache } from '../../lib/cache/cache';
 import { getPaginatedProducts, getAllProducts, createProduct, updateProduct, deleteProduct } from '../../lib/domain/products.js';
+import { updateRecords } from '../../lib/crud/crud.js';
 import { paginate } from './helper/pagination.js';
-import { getClientIP, INVALID_PAGINATION_MESSAGE } from '../../lib/api/helpers.js';
+import { getClientIP, INVALID_PAGINATION_MESSAGE, INVALID_PARAMS_MESSAGE } from '../../lib/api/helpers.js';
 import { logger } from '../../lib/infra/logger.js';
+import { z } from 'zod';
+
+// Ordenações aceitas pelo GET público (spec design-system/pages/home.md §1.3).
+// "Posicionados" (positioned) expõe a curadoria manual por `position` feita no
+// painel (PLANO_ACAO F4 / ADR-0014) e fica isolado na chave de cache junto com
+// os demais valores.
+const PUBLIC_SORT_ENUM = ['default', 'positioned', 'oldest', 'price_asc', 'price_desc'];
 
 /**
  * Handler para GET público (sem autenticação)
@@ -13,6 +21,13 @@ async function handlePublicGet(req, res) {
   try {
     const { page, limit } = paginate(req.query.page, req.query.limit);
 
+    // Valida o sort com o mesmo rigor dos demais handlers: valor inválido → 400.
+    const sortValidation = z.enum(PUBLIC_SORT_ENUM).safeParse(req.query.sort || 'default');
+    if (!sortValidation.success) {
+      return res.status(400).json({ error: 'Bad Request', message: INVALID_PARAMS_MESSAGE });
+    }
+    const sort = sortValidation.data;
+
     // Extrai filtros opcionais da query string
     const filters = {
       search: req.query.search || '',
@@ -20,8 +35,8 @@ async function handlePublicGet(req, res) {
       maxPrice: req.query.maxPrice || '',
     };
 
-    // Inclui filtros na cache key para evitar resultados incorretos em cache hits
-    const cacheKey = `products:public:${page}:${limit}:${filters.search}:${filters.minPrice}:${filters.maxPrice}`;
+    // Inclui filtros E sort na cache key para evitar resultados incorretos em cache hits
+    const cacheKey = `products:public:${page}:${limit}:${sort}:${filters.search}:${filters.minPrice}:${filters.maxPrice}`;
 
     // Rate limit ANTES do cache — garante proteção mesmo em cache hits
     const ip = getClientIP(req);
@@ -31,7 +46,7 @@ async function handlePublicGet(req, res) {
     }
 
     const result = await getOrSetCache(cacheKey, async () => {
-      return await getPaginatedProducts(page, limit, filters);
+      return await getPaginatedProducts(page, limit, filters, sort);
     });
 
     return res.status(200).json(result);
@@ -110,6 +125,20 @@ async function handlePost(req, res) {
 }
 
 /**
+ * Schemas da ação customizada de reordenação em massa (Drag & Drop).
+ * Posições são 1-based (utils/reorder.js) e precisam ser positivas.
+ */
+const reorderItemSchema = z.object({
+  id: z.number().int('ID do item deve ser um número inteiro').positive('ID do item deve ser positivo'),
+  position: z.number().int('Posição deve ser um número inteiro').positive('Posição deve ser positiva'),
+});
+
+const reorderSchema = z.object({
+  action: z.literal('reorder'),
+  items: z.array(reorderItemSchema).min(1, 'Array de itens para reordenar não pode ser vazio'),
+});
+
+/**
  * Handler para PUT (atualização) — autenticado
  */
 async function handlePut(req, res) {
@@ -118,6 +147,35 @@ async function handlePut(req, res) {
   const isRateLimited = await checkRateLimit(ip, 'api:admin:products', 30, 60000);
   if (isRateLimited) {
     return res.status(429).json({ error: 'Too Many Requests', message: 'Muitas requisições. Tente novamente mais tarde.' });
+  }
+
+  // Intercepta a ação customizada de reordenação ANTES de validar `id`:
+  // o payload de reorder não traz `id` no corpo da requisição.
+  if (req.body && req.body.action === 'reorder') {
+    const reorderValidation = reorderSchema.safeParse(req.body);
+    if (!reorderValidation.success) {
+      return res.status(400).json({
+        message: 'Dados inválidos para reordenação',
+        errors: reorderValidation.error.flatten().fieldErrors,
+      });
+    }
+
+    const { items } = reorderValidation.data;
+    for (const item of items) {
+      await updateRecords('products', { position: item.position }, { id: item.id });
+    }
+
+    await invalidateCache('products:*');
+    await logActivity(
+      req.user.username,
+      'REORDENAR PRODUTOS',
+      'PRODUCT',
+      items[0].id,
+      `Reordenou ${items.length} produto${items.length > 1 ? 's' : ''}`,
+      ip
+    );
+
+    return res.status(200).json({ success: true, message: 'Ordem atualizada' });
   }
 
   const updateId = parseInt(req.body.id || req.query.id, 10);

@@ -1477,6 +1477,8 @@ Estes são os **primeiros gates de taxa de erro sobre requisições** que esses 
 
 ### Fase 2 do item AD — aplicada em 21/10/2026, aguardando o cron #19
 
+**Commit que leva a Fase 2 para o ar:** `8e460f9` (21/10/2026) — é com este código que o cron #19 roda. Árvore limpa no commit; validação local re-executada no mesmo estado: `npm run lint` 0, `npm run knip` 0, `npx jest tests/unit/load-tests` 22/22.
+
 **O que mudou no código (5 arquivos) e por quê.** A auditoria dos 30 scripts mostrou que a premissa do plano original da Fase 2 ("um gate de `http_req_failed` por script, calibrado por volume") estava errada: **dos 20 scripts que ficam sem gate de taxa, 6 esperam 4xx por desenho e 14 têm `check` de status** — o instrumento certo para "a resposta foi a esperada?". O que faltava na maioria **não era gate de taxa, era `check` onde havia ponto cego** (warm-up e teardown).
 
 | Arquivo | Mudança | Por quê |

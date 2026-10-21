@@ -16,7 +16,7 @@ async function handleGet(req, res) {
       // dicas) — sem `.max()`, `?limit=1000` devolvia 200 com 1000 itens (ADR-0009).
       limit: z.coerce.number().int().positive().max(100, INVALID_PAGINATION_MESSAGE).default(10),
       search: z.string().max(200).optional(),
-      sort: z.enum(['default', 'recent', 'alpha']).optional().default('default'),
+      sort: z.enum(['default', 'positioned', 'oldest', 'alpha', 'alpha_desc']).optional().default('default'),
     });
 
     const validation = querySchema.safeParse(req.query);

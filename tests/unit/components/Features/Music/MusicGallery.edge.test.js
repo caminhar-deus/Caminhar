@@ -49,6 +49,7 @@ describe('Componentes Features - Music - MusicGallery (Edge Cases)', () => {
   });
 
   it('deve suportar resposta como array plano e calcular a paginação', async () => {
+    // 13 itens / 12 por página → 2 páginas no fallback de paginação
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => [
@@ -59,6 +60,12 @@ describe('Componentes Features - Music - MusicGallery (Edge Cases)', () => {
         { id: 5, titulo: 'Acústico', artista: 'Cantor A' },
         { id: 6, titulo: 'Ao vivo', artista: 'Banda C' },
         { id: 7, titulo: 'Gospel Hit', artista: 'Cantor E' },
+        { id: 8, titulo: 'Adoração Profunda', artista: 'Cantor F' },
+        { id: 9, titulo: 'Canção da Manhã', artista: 'Banda G' },
+        { id: 10, titulo: 'Hino Antigo', artista: 'Cantor H' },
+        { id: 11, titulo: 'Louvor Vivo', artista: 'Coral I' },
+        { id: 12, titulo: 'Santo Espírito', artista: 'Cantor J' },
+        { id: 13, titulo: 'Graça Infinita', artista: 'Banda K' },
       ],
     });
 
@@ -68,7 +75,7 @@ describe('Componentes Features - Music - MusicGallery (Edge Cases)', () => {
       expect(screen.getByText('Gospel Hit')).toBeInTheDocument();
     });
 
-    // 7 elementos / 6 por página → paginação calculada a 2 páginas
+    // 13 elementos / 12 por página → paginação calculada a 2 páginas
     expect(screen.getByText('Página 1 de 2')).toBeInTheDocument();
   });
 

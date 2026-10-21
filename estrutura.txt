@@ -146,7 +146,9 @@ components/Features/Video/VideoGallery.js → components/Features/Video/VideoCar
 components/Features/Video/VideoGallery.js → components/UI/StateMessages.js
 components/Features/Video/VideoGallery.js → hooks/index.js
 components/Features/Video/VideoCard.js → components/Performance/index.js
+components/Features/Video/VideoCard.js → components/Features/Video/styles/VideoCard.module.css
 components/Features/Video/VideoCard.js → components/UI/index.js
+components/Features/Video/VideoCard.js → lib/media/youtube.js
 components/Performance/index.js → components/Performance/CriticalCSS.js
 components/Performance/index.js → components/Performance/ImageOptimized.js
 components/Performance/index.js → components/Performance/LazyIframe.js
@@ -313,6 +315,7 @@ pages/api/posts.js → lib/infra/logger.js
 pages/api/products.js → lib/api/helpers.js
 pages/api/products.js → lib/auth/auth.js
 pages/api/products.js → lib/cache/cache.js
+pages/api/products.js → lib/crud/crud.js
 pages/api/products.js → lib/domain/audit.js
 pages/api/products.js → lib/domain/products.js
 pages/api/products.js → lib/infra/logger.js
@@ -514,6 +517,7 @@ tests/integration/api/posts.test.js → tests/helpers/crud-test.js
 tests/integration/api/posts.test.js → tests/mocks/cache.js
 tests/integration/api/products.test.js → lib/auth/auth.js
 tests/integration/api/products.test.js → lib/cache/cache.js
+tests/integration/api/products.test.js → lib/crud/crud.js
 tests/integration/api/products.test.js → lib/domain/audit.js
 tests/integration/api/products.test.js → lib/domain/products.js
 tests/integration/api/products.test.js → pages/api/products.js
@@ -763,6 +767,8 @@ tests/unit/pages/api/upload-image.edge.test.js → pages/api/upload-image.js
 tests/unit/scripts/reset-password.test.js → lib/auth/auth.js
 tests/unit/scripts/seed-settings.test.js → tests/helpers/console.js
 tests/unit/settings.cache.test.js → tests/mocks/db-module.js
+tests/unit/utils/reorder.test.js → utils/reorder.js
+tests/unit/utils/reorder.test.js → tests/helpers/index.js
 tests/unit/utils/resolve-next.test.js → utils/resolve-next.js
 tests/unit/videos.validation.test.js → lib/domain/videos.js
 tests/unit/videos.validation.test.js → pages/api/admin/videos.js

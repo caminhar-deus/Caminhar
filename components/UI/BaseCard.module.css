@@ -136,8 +136,13 @@
 }
 
 /* Content */
+/* Flex column com flex: 1: ativa o empurrão para o fundo de qualquer filho
+ * com `margin-top: auto`/`flex: 1` (rodapé alinhado em todos os cartões —
+ * spec home.md §6.2 / MASTER §7 "Cartão"). */
 .content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
   padding: var(--spacing-4);
 }
 

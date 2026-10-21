@@ -1,5 +1,6 @@
 # Caminhar — Design System (MASTER)
 
+> Última atualização: 2026-10-21 (decisões D1–D5 do checklist front-end: rodapé do cartão de produto, foco dos seletores de ordenação, alvo de toque 44px, `aria-live` na paginação, guard global de `prefers-reduced-motion`).
 > Fonte de verdade global de UI/UX do projeto. Gerado com a skill `ui-ux-pro-max`
 > (`--design-system`: estilo **Minimalism & Swiss**, par editorial **Newsreader + Roboto**,
 > buscas de `ux` para autenticação acessível e validação com resumo de erros) e
@@ -86,8 +87,27 @@ botão `--padding-button-md/lg`; input `--padding-input-md/lg`; card
   `--easing-standard`; usar `--transition-background`, `--transition-border`,
   `--transition-all` (botões/inputs). Entradas de erro com fade+deslize de 300ms.
 - `prefers-reduced-motion: reduce` **obrigatório**: desligar transições, animações
-  (spinner vira indicador estático com texto) e qualquer deslocamento.
-
+  (spinner vira indicador estático com texto) e qualquer deslocamento. Implementação
+  global via guard em `pages/styles/globals.css` (snippet abaixo) — não depender de
+  regra local por componente; regras locais (ex.: `Login.module.css`) podem
+  permanecer por especificidade/claridade, mas o guard é a norma.
+  Snippet literal do guard (colar em `pages/styles/globals.css`, após o reset base):
+  ```css
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+  ```
+  Componentes com animação funcional (spinner de loading) devem fornecer fallback
+  estático com texto sob reduced-motion (já previsto no Login). O guard não substitui
+  esse fallback: ele desliga a animação; o texto estático é responsabilidade do
+  componente.
 ## 6. Breakpoints e responsividade (mobile-first)
 
 `--breakpoint-sm` 640 · `md` 768 · `lg` 1024 · `xl` 1280 · `2xl` 1536;
@@ -95,6 +115,12 @@ containers `--container-*` equivalentes. Regra: desenhar em 375px primeiro; mira
 toque ≥ 44×44px; gutter de 16px no mobile, 24–32px no desktop; verificar
 375 / 768 / 1024 / 1440 e orientação paisagem.
 
+Exceção normativa — campos de filtro em barra densa (busca, preço, ordenação):
+altura mínima 40px é permitida **somente** quando o alvo de toque efetivo (altura +
+área clicável estendida) for ≥ 44px; caso contrário, usar 44px como mínimo. Os
+seletores de ordenação das três abas públicas (Produtos, Músicas, Vídeos) usam
+44px (decisão D3). Inputs de busca/preço permanecem em ~42px (padding vertical
+`--spacing-3_5`), cujo alvo efetivo atinge 44px pelo padding clicável.
 ## 7. Componentes-base (reutilizar `components/UI/*.module.css`, não reinventar)
 
 - **Botão** (`Button.module.css`): variantes `primary` (fundo `--color-primary-500`,
@@ -118,7 +144,35 @@ toque ≥ 44×44px; gutter de 16px no mobile, 24–32px no desktop; verificar
   porque cada `:focus` repõe o indicador. Erro com `.errorMessage` 12px em `--color-error-500` ligada por `aria-describedby`;
   desabilitado em `--color-bg-secondary`.
 - **Cartão**: fundo `--color-bg-primary`, raio `--border-radius-xl`, sombra
-  `--shadow-md`, padding 24 mobile / 32–40 desktop.
+  `--shadow-md`, padding 24 mobile / 32–40 desktop. O `.content` do `BaseCard`
+  é `display: flex; flex-direction: column` com `flex: 1`, para que qualquer
+  `.footer` (próprio do BaseCard ou da página) com `margin-top: auto` cole no
+  fundo do cartão — padrão global, não restringir a um único tipo de cartão.
+  O espaço livre dentro do cartão é absorvido pelo elemento de corpo com
+  `flex: 1` (PostCard: `.excerpt`; ProductCard: `.productDescription`; VideoCard:
+  descrição opcional); preço/botão/link do rodapé ficam colados no fundo. Não
+  adicionar `margin-top: auto` no rodapé do ProductCard (preço + `.linksContainer`
+  já colam via `flex-grow` da descrição) — ver `design-system/pages/home.md` §6.
+
+- **Paginação de listas públicas** (padrão único para todas as abas): controle
+  `❮ Anterior | Página X de Y (Z itens) | Próxima ❯`, "Anterior" desabilitado
+  na página 1, "Próxima" desabilitada na última, ocultar quando houver ≤ 1
+  página; em ≤ 480px a informação ocupa linha própria (`width: 100%`,
+  `text-align: center`, `order: -1`) acima dos dois botões. Texto do contador
+  com pluralização pt-BR ("música(s)", "vídeo(s)", "produto(s)").
+  Acessibilidade: o elemento `.pageInfo` (o `<span>` com "Página X de Y (Z
+  itens)") recebe `aria-live="polite"` e `aria-atomic="true"`, para que a troca
+  de página seja anunciada ao leitor de tela. Vale para as três abas (Produtos,
+  Músicas, Vídeos). Snippet: `<span className={styles.pageInfo} aria-live="polite" aria-atomic="true">…</span>`.
+- **Seletor de ordenação (select de filtro em barra de filtros)**: controle `<select>` com altura 44px (decisão D3), raio `--border-radius-lg`, borda 1px `--color-border-light`, fundo `--color-bg-primary`, texto `--color-text-primary`, `font-size: var(--font-size-sm)`, `font-weight: var(--font-weight-medium)`, chevron SVG data-URI cor `--color-text-tertiary`, `appearance: none`. Hover: borda `--color-primary-500` (Músicas: borda verde Spotify `#1DB954` no hover, diferença de marca intencional). Focus: borda `--color-primary-500` mais a declaração exata de foco do Botão — `outline: 2px solid var(--color-focus-primary); outline-offset: 2px; box-shadow: var(--color-focus-ring);` — nunca só troca de borda, nunca `outline: none` seco. Músicas mantém a borda verde de marca no `:focus` (diferença de marca entre abas), mas o indicador de foco (outline + halo) permanece azul — único do sistema. Desabilitado durante troca de página (`pageLoading`): `opacity: var(--opacity-50)`, `cursor: not-allowed`, `pointer-events: none`. Regra replicada em 3 CSS Modules (`ProductList.module.css`, `MusicGallery.module.css`, `VideoGallery.module.css`); este é o contrato canônico — qualquer desvio é bug. Snippet literal do `:focus` (Músicas troca a borda por `#1DB954`):
+  ```css
+  .sortSelect:focus {
+    border-color: var(--color-primary-500);
+    outline: 2px solid var(--color-focus-primary);
+    outline-offset: 2px;
+    box-shadow: var(--color-focus-ring);
+  }
+  ```
 - **Feedback**: erro de formulário em bloco com fundo `--color-error-50`, borda
   `--color-error-200`, texto `--color-error-800/--color-error-500`, `role="alert"`;
   foco programático com a declaração exata de foco do Botão em `:focus` (não
@@ -148,8 +202,10 @@ relato de erro; foco invisível ou removido (`outline: none` sem o par `outline`
 halo do §7 — o `outline: none` da base do input é permitido porque cada `:focus`
 repõe o indicador); usar só `box-shadow: var(--color-focus-ring)` como único indicador de
 foco (1,36:1 sobre claro, não passa em WCAG 2.2 SC 1.4.11);
-animação sem `reduced-motion`; texto informativo em contraste < 4.5:1; dois `h1`;
-CTA genérico ("Clique aqui"); lógica de negócio dentro de arquivos de estilo.
+animação sem `reduced-motion`; transição/animação sem o guard global de
+`prefers-reduced-motion` em `pages/styles/globals.css` (§5); texto informativo em
+contraste < 4.5:1; dois `h1`; CTA genérico ("Clique aqui"); lógica de negócio
+dentro de arquivos de estilo.
 
 ## 10. Checklist de pré-entrega
 

@@ -22,6 +22,10 @@
 }
 
 .spotifyButton {
+  /* Cola o botão no fundo do cartão (spec home.md §6.2); align-self evita
+   * que o flex column estique a largura do botão. */
+  margin-top: auto;
+  align-self: flex-start;
   padding: var(--spacing-2) var(--spacing-4);
   border-radius: var(--border-radius-md);
   border: none;

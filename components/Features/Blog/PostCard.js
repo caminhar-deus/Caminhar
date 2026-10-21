@@ -17,16 +17,11 @@ export default function PostCard({ post, readMoreText = 'Ler mais →' }) {
         />
       }
     >
-      {post.categories && post.categories.length > 0 && (
-        <div style={{ marginBottom: 'var(--spacing-3)' }}>
-          {post.categories.map(cat => (
-            <span key={cat.slug} className={styles.category}>
-              {cat.name}
-            </span>
-          ))}
-        </div>
-      )}
-
+      {/* TODO(PLANO_ACAO_SITE_PUBLICO.md D-20): os chips de categoria foram
+          removidos porque a listagem pública de posts não devolve
+          `categories` e não existe mecanismo no painel para criar/atribuir
+          categorias (junction `post_categories` nunca é populada). Reavaliar
+          quando houver CRUD de categorias. */}
       <h3 className={styles.cardTitle}>
         {post.title}
       </h3>

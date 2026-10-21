@@ -26,26 +26,28 @@
   font-size: var(--font-size-lg);
 }
 
+/* Grade 3/2/1 igual às demais abas (spec home.md §5.3 — unifica as 4 abas) */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--spacing-8);
 }
 
-/* PostCard Styles */
-.category {
-  font-size: var(--font-size-xs);
-  color: var(--color-primary-500);
-  background-color: var(--color-primary-50);
-  padding: var(--spacing-1) var(--spacing-3);
-  border-radius: 50px;
-  font-weight: var(--font-weight-semibold);
-  text-transform: uppercase;
-  display: inline-block;
-  margin-right: var(--spacing-2);
-  margin-bottom: var(--spacing-2);
+/* Tablet landscape: 2 colunas */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
+/* Tablet portrait / mobile: 1 coluna */
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* PostCard Styles */
 .cardTitle {
   font-size: var(--font-size-xl);
   margin: 0 0 var(--spacing-3) 0;

@@ -67,9 +67,11 @@ describe('Componente Front-End - BlogSection', () => {
   });
 
   it('deve respeitar a propriedade limit e mostrar botão de ver todos se houverem mais posts', async () => {
+    // Com o limite pedido à API (F2.1), o servidor devolve no máximo `limit`
+    // itens; o botão depende do `pagination.total` REAL da resposta.
     global.fetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ success: true, data: mockPosts }),
+      json: async () => ({ success: true, data: mockPosts.slice(0, 2), pagination: { total: 3 } }),
     });
     render(<BlogSection limit={2} />);
 
@@ -82,7 +84,7 @@ describe('Componente Front-End - BlogSection', () => {
   it('não deve mostrar botão de ver todos se limit for maior que a quantidade de posts', async () => {
     global.fetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ success: true, data: mockPosts }),
+      json: async () => ({ success: true, data: mockPosts, pagination: { total: 3 } }),
     });
     render(<BlogSection limit={5} />);
 
@@ -92,44 +94,44 @@ describe('Componente Front-End - BlogSection', () => {
     });
   });
 
-  it('deve lidar silenciosamente com erros de lógica da API (sucesso: false)', async () => {
+  it('deve renderizar nada quando a API retorna formato lógico inválido (sucesso: false)', async () => {
     global.fetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: false }),
     });
-    render(<BlogSection />);
-    await waitFor(() => expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Formato inesperado da API'), expect.any(Object)));
+    // O fallback defensivo do transform devolve { posts: [], total: 0 } e a
+    // seção não renderiza nada; o log de console foi removido do caminho público.
+    const { container } = render(<BlogSection />);
+    await waitFor(() => expect(container).toBeEmptyDOMElement());
   });
 
-  it('deve lidar silenciosamente com erros HTTP (ex: 500) com retorno JSON', async () => {
+  it('deve renderizar nada quando a API falha com erros HTTP (ex: 500) com retorno JSON', async () => {
     global.fetch.mockResolvedValueOnce({
       ok: false,
       status: 500,
       json: async () => ({ message: 'Erro no servidor' }),
     });
-    render(<BlogSection />);
-    await waitFor(() => expect(consoleErrorSpy).toHaveBeenCalledWith('Erro ao carregar posts:', expect.objectContaining({ message: 'Erro no servidor' })));
+    const { container } = render(<BlogSection />);
+    await waitFor(() => expect(container).toBeEmptyDOMElement());
   });
 
-  it('deve usar fallback "Unknown error" se a API retornar erro HTTP sem mensagem', async () => {
+  it('deve renderizar nada quando a API retorna erro HTTP sem mensagem (fallback "Unknown error")', async () => {
     global.fetch.mockResolvedValueOnce({
       ok: false,
       status: 404,
       json: async () => ({ }),
     });
-    render(<BlogSection />);
-    await waitFor(() => expect(consoleErrorSpy).toHaveBeenCalledWith('Erro ao carregar posts:', expect.objectContaining({ message: 'Erro HTTP 404' })));
+    const { container } = render(<BlogSection />);
+    await waitFor(() => expect(container).toBeEmptyDOMElement());
   });
 
-  it('deve lidar silenciosamente com falha de rede ou JSON inválido', async () => {
+  it('deve renderizar nada quando há falha de rede ou JSON inválido', async () => {
     global.fetch.mockResolvedValueOnce({
       ok: false,
       status: 500,
       json: () => Promise.reject(new Error('Unparsable')),
     });
-    render(<BlogSection />);
-    await waitFor(() => expect(consoleErrorSpy).toHaveBeenCalledWith(
-      'Erro ao carregar posts:', expect.objectContaining({ message: 'Erro HTTP 500' })
-    ));
+    const { container } = render(<BlogSection />);
+    await waitFor(() => expect(container).toBeEmptyDOMElement());
   });
 });

@@ -36,7 +36,7 @@ describe('Componente Front-End - AdminPosts', () => {
     await passedProps.onReorder([{ id: 1 }, { id: 2 }], 1, 10);
     expect(global.fetch).toHaveBeenCalledWith('/api/admin/posts', expect.objectContaining({
       method: 'PUT',
-      body: JSON.stringify({ action: 'reorder', items: [{ id: 1, position: 0 }, { id: 2, position: 1 }] })
+      body: JSON.stringify({ action: 'reorder', items: [{ id: 1, position: 1 }, { id: 2, position: 2 }] })
     }));
     
     global.fetch.mockResolvedValueOnce({ ok: false });

@@ -223,6 +223,9 @@ A aba pública "Em Desenvolvimento" não tem gestão no painel.
 | 3 | **Data do backup:** nome do arquivo (2026-05-22) diverge da data exibida (02/10/2026). | aberto |
 | 8 | **Exclusão do admin:** o botão "Excluir" existe no usuário `admin` e no cargo `admin`, e a API não tem trava — a de usuário só impede excluir a própria conta logada (`pages/api/admin/users.js`), e a de cargo não verifica nada (`pages/api/admin/roles.js`). **Lacuna (falta implementar):** o usuário `admin` e o cargo `admin` não podem ser excluídos — a API deve recusar a exclusão e o painel não deve oferecer a ação; o vínculo do usuário `admin` com o cargo `admin` também não pode ser alterado. | aberto |
 | 9 | **Formatos regionais:** campos de data em mm/dd/yyyy e botão de arquivo em inglês, diferentes do pt-BR do restante. | aberto |
+| 11 | **Reordenação de posts sempre falhava:** o helper enviava `position = 0` (0-based) e o schema exige posição positiva → HTTP 400 e a curadoria nunca persistia. | **corrigido em 2026-10-21** — `utils/reorder.js` passou a enviar posições 1-based. |
+| 12 | **Reordenação de produtos inexistente:** o painel chamava `PUT /api/products` com `action: "reorder"`, mas a rota pública não tratava essa ação → HTTP 400. | **corrigido em 2026-10-21** — branch de reordenação adicionado em `pages/api/products.js`, com invalidação de cache e registro de Auditoria. |
+| 13 | **Reordenação sem registro de Auditoria:** reordenar posts, músicas ou vídeos não gerava registro na Auditoria, contra a regra de §9 ("toda ação de … configurar deve gerar um registro"); o reorder de vídeos ainda não validava `id`/`position`. | **corrigido em 2026-10-21** — os três endpoints registram a ação com identificador real; vídeos passaram a validar o payload. |
 
 **A confirmar**
 
@@ -248,5 +251,6 @@ A aba pública "Em Desenvolvimento" não tem gestão no painel.
   - O usuário `admin` vem e permanece vinculado ao cargo `admin`; esse vínculo não pode ser alterado.
   - O cargo `admin` é o único que vem habilitado por padrão com todas as permissões existentes; os demais cargos nascem com as permissões marcadas no formulário.
 - Toda ação de criar, editar, excluir ou configurar deve gerar um registro de Auditoria com título/identificador real (nunca `undefined`).
+- A reordenação por arrastar grava posições **1-based** (`utils/reorder.js`): a primeira posição da página 1 é `1`. Os schemas dos endpoints exigem `position` positiva — não voltar a 0-based.
 - Manter o padrão visual e de fluxo da seção 3 em novas telas de conteúdo.
 - Nunca expor senhas; manter o hash seguro. Não registrar senhas nos logs.

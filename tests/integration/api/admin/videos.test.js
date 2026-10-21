@@ -75,6 +75,34 @@ describe('API Admin - Vídeos (/api/admin/videos)', () => {
     expect(reorderVideos).toHaveBeenCalledWith(body.items);
   });
 
+  it('PUT: deve retornar 400 para payload de reordenação inválido', async () => {
+    const { req, res } = createMocks({
+      method: 'PUT',
+      body: { action: 'reorder', items: [{ id: 1, position: 0 }] },
+    });
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(400);
+    // Zod flatten agrupa os erros do array sob o caminho `items`
+    const { errors } = res._getJSONData();
+    expect(errors).toHaveProperty('items');
+    expect(errors.items[0]).toContain('Posição deve ser positiva');
+    expect(reorderVideos).not.toHaveBeenCalled();
+
+    const { req: reqId, res: resId } = createMocks({
+      method: 'PUT',
+      body: { action: 'reorder', items: [{ id: 'abc', position: 1 }] },
+    });
+    await handler(reqId, resId);
+
+    expect(resId._getStatusCode()).toBe(400);
+    const idErrors = resId._getJSONData().errors;
+    expect(idErrors).toHaveProperty('items');
+    // O problema é o `id` ("expected number..." / mensagem do schema)
+    expect(idErrors.items[0]).toMatch(/number|ID/i);
+    expect(reorderVideos).not.toHaveBeenCalled();
+  });
+
   it('PUT: deve retornar 400 se faltar ID ou se a url for inválida', async () => {
     const { req, res } = createMocks({ method: 'PUT', body: { titulo: 'Editado' } });
     await handler(req, res);

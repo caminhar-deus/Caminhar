@@ -162,6 +162,17 @@ describe('API Admin - Gestão de Posts (/api/admin/posts) - Específicos', () =>
       expect(res._getStatusCode()).toBe(200);
       expect(updateRecords).toHaveBeenCalledTimes(2);
       expect(invalidateCache).toHaveBeenCalledWith('posts:*');
+
+      // Auditoria (regra §9 do painel): ação REORDENAR POSTS com id real (nunca undefined)
+      expect(logActivity).toHaveBeenCalledWith(
+        'admin',
+        'REORDENAR POSTS',
+        'POST',
+        1,
+        expect.any(String),
+        '127.0.0.1'
+      );
+      expect(logActivity.mock.calls[0][3]).not.toBeUndefined();
     });
 
     it('deve retornar 400 se a reordenação for inválida', async () => {

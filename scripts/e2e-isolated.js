@@ -351,16 +351,17 @@ function runStep(label, command, args, env) {
 /**
  * Posts de apoio, necessários apenas para o `navigation.cy.js` passar.
  *
- * POR QUE EXISTEM: `components/Features/Blog/BlogSection.js:59` só renderiza o
- * `<Link href="/blog">` sob a condição `{limit && posts.length > limit && ...}`,
+ * POR QUE EXISTEM: `components/Features/Blog/BlogSection.js:60` só renderiza o
+ * `<Link href="/blog">` sob a condição `{limit && total > posts.length && ...}`,
  * e `components/Features/ContentTabs/index.js:22` monta a home com
- * `limit={3}`. O link "ver mais" — único `href="/blog"` exato que a home
- * possui — portanto só aparece com **4 ou mais** posts publicados.
+ * `limit={6}`. Como o limite é pedido **à API** (`?limit=6`), `posts.length`
+ * nunca passa de 6 e o link "ver mais" — único `href="/blog"` exato que a
+ * home possui — só aparece quando o total real de posts publicados é
+ * **maior que 6**, ou seja, com **7 ou mais** posts publicados.
  * `cypress/e2e/navigation.cy.js:4` depende desse link.
  *
- * Isso não é arbitrário: com 1 post o teste é impossível por construção, e ele
- * foi escrito contra um banco de desenvolvimento que já tinha conteúdo. Baixar
- * o seed para 1 faz o teste 24/25 falhar de novo.
+ * Isso não é arbitrário: com menos posts o link não existe e o teste é
+ * impossível por construção. Baixar o seed faz o teste 24/25 falhar de novo.
  *
  * Os posts de apoio ficam **sem `image_url`**, o que também deixa o caminho
  * "post sem imagem" exercitado — o `<Image>` só é renderizado quando
@@ -381,6 +382,21 @@ const SUPPORT_POSTS = [
     slug: 'caminho-da-serenidade',
     title: 'O Caminho da Serenidade',
     excerpt: 'Paz em meio à correria: um exercício de espera.',
+  },
+  {
+    slug: 'raizes-profundas',
+    title: 'Raízes Profundas',
+    excerpt: 'O que sustenta a fé quando a seca aperta.',
+  },
+  {
+    slug: 'espera-do-alvorecer',
+    title: 'A Espera do Alvorecer',
+    excerpt: 'De madrugada, a alma aprende a esperar.',
+  },
+  {
+    slug: 'sabedoria-do-dia-a-dia',
+    title: 'A Sabedoria do Dia a Dia',
+    excerpt: 'Pequenas decisões, grandes direções.',
   },
 ];
 
@@ -416,7 +432,7 @@ async function seedPosts(databaseUrl) {
         content:
           `${post.title}\n\nConteúdo de teste gerado por scripts/e2e-isolated.js. ` +
           'Este post de apoio existe para que o link "ver mais" da home seja ' +
-          'renderizado (BlogSection.js:59 exige mais de 3 posts) e vive apenas ' +
+          'renderizado (BlogSection.js:60 exige mais de 6 posts) e vive apenas ' +
           'no banco descartável da execução.',
         imageUrl: null,
       })),
@@ -451,11 +467,11 @@ async function seedPosts(databaseUrl) {
     const { rows: contagem } = await client.query(
       'SELECT count(*)::int AS total FROM posts WHERE published = true',
     );
-    if (contagem[0].total < 4) {
+    if (contagem[0].total < 7) {
       throw new Error(
         `Seed insuficiente: ${contagem[0].total} posts publicados, ` +
-          'são necessários ao menos 4 para o link "ver mais" da home ' +
-          '(BlogSection.js:59 com limit={3}).',
+          'são necessários ao menos 7 para o link "ver mais" da home ' +
+          '(BlogSection.js:60 com limit={6}).',
       );
     }
 

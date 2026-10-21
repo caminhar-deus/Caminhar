@@ -173,6 +173,11 @@ describe('Componente Front-End - VideoGallery', () => {
       expect(screen.getByText('Página 1 de 2')).toBeInTheDocument();
     });
 
+    // Live region da paginação (MASTER §7 / decisão D4)
+    const pageInfo = screen.getByText('Página 1 de 2');
+    expect(pageInfo).toHaveAttribute('aria-live', 'polite');
+    expect(pageInfo).toHaveAttribute('aria-atomic', 'true');
+
     const nextBtn = screen.getByText('Próxima ❯');
     await act(async () => { fireEvent.click(nextBtn); });
 

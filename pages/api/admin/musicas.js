@@ -17,7 +17,7 @@ const musicaSchema = z.object({
 
 const reorderItemSchema = z.object({
   id: z.number().int('ID deve ser um número inteiro').positive('ID deve ser positivo'),
-  position: z.number().int('Posição deve ser um número inteiro'),
+  position: z.number().int('Posição deve ser um número inteiro').positive('Posição deve ser positiva'),
 });
 
 const reorderSchema = z.object({
@@ -81,6 +81,11 @@ async function handlePut(req, res) {
     for (const item of items) {
       await updateRecords('musicas', { position: item.position }, { id: item.id });
     }
+    await req.adminUtils.logActivity(
+      'REORDENAR MÚSICAS',
+      items[0].id,
+      `Reordenou ${items.length} música${items.length > 1 ? 's' : ''}`
+    );
     return res.status(200).json({ success: true, message: 'Ordem atualizada' });
   }
 

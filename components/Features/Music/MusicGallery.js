@@ -4,10 +4,14 @@ import { LoadingMessage, ErrorMessage } from '@/components/UI/StateMessages';
 import MusicCard from './MusicCard';
 import styles from './styles/MusicGallery.module.css';
 
+// Spec design-system/pages/home.md §2.1: "Padrão" equivale a Mais recentes
+// (created_at DESC); "Posicionados" é a curadoria manual do painel (position ASC).
 const SORT_OPTIONS = [
-  { value: 'default', label: 'Ordem padrão' },
-  { value: 'recent', label: 'Mais recentes' },
+  { value: 'default', label: 'Padrão' },
+  { value: 'positioned', label: 'Posicionados' },
+  { value: 'oldest', label: 'Mais antigos' },
   { value: 'alpha', label: 'A-Z' },
+  { value: 'alpha_desc', label: 'Z-A' },
 ];
 
 export default function MusicGallery() {
@@ -18,7 +22,7 @@ export default function MusicGallery() {
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   const { data: musicasResponse, loading, error } = useApiFetch(
-    `/api/musicas?public=true&page=${currentPage}&limit=6&search=${debouncedSearchTerm}&sort=${sortBy}`,
+    `/api/musicas?public=true&page=${currentPage}&limit=12&search=${debouncedSearchTerm}&sort=${sortBy}`,
     {
       deps: [currentPage, debouncedSearchTerm, sortBy],
     }
@@ -51,9 +55,9 @@ export default function MusicGallery() {
       };
     }
 
-    // Fallback seguro baseado no array de dados
+    // Fallback seguro baseado no array de dados (12 por página, como a API)
     const items = Array.isArray(response) ? response : response.data || [];
-    const calculatedPages = Math.ceil(items.length / 6);
+    const calculatedPages = Math.ceil(items.length / 12);
     return {
       totalPages: calculatedPages > 0 ? calculatedPages : 1,
       totalItems: items.length,
@@ -172,7 +176,7 @@ export default function MusicGallery() {
               >
                 ❮ Anterior
               </button>
-              <span className={styles.pageInfo}>
+              <span className={styles.pageInfo} aria-live="polite" aria-atomic="true">
                 Página {currentPage} de {totalPages}
                 {totalItems > 0 && <span className={styles.totalInfo}> ({totalItems} música{totalItems !== 1 ? 's' : ''})</span>}
               </span>

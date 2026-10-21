@@ -82,6 +82,11 @@ async function handlePut(req, res) {
     for (const item of items) {
       await updateRecords('posts', { position: item.position }, { id: item.id });
     }
+    await req.adminUtils.logActivity(
+      'REORDENAR POSTS',
+      items[0].id,
+      `Reordenou ${items.length} artigo${items.length > 1 ? 's' : ''}`
+    );
     return res.status(200).json({ success: true, message: 'Ordem atualizada' });
   }
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, within } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import ProductList from '../../../../../components/Features/Products/ProductList.js';
 import { suppressConsoleError, mockGlobalFetch } from '../../../../helpers/index.js';
@@ -184,10 +184,13 @@ describe('Componentes Features - Products - ProductList', () => {
 
     render(<ProductList />);
 
-    expect(screen.getByText('Anterior')).toBeInTheDocument();
-    expect(screen.getByText('Próxima')).toBeInTheDocument();
-    expect(screen.getByText('1')).toBeInTheDocument();
-    expect(screen.getByText('2')).toBeInTheDocument();
+    // Padrão único das abas: ❮ Anterior | Página X de Y | Próxima ❯
+    expect(screen.getByLabelText('Página anterior')).toBeInTheDocument();
+    expect(screen.getByLabelText('Próxima página')).toBeInTheDocument();
+    // Live region da paginação (MASTER §7 / decisão D4)
+    const pageInfo = screen.getByText('Página 1 de 2');
+    expect(pageInfo).toHaveAttribute('aria-live', 'polite');
+    expect(pageInfo).toHaveAttribute('aria-atomic', 'true');
   });
 
   it('deve desabilitar botão "Anterior" na primeira página', () => {
@@ -195,15 +198,12 @@ describe('Componentes Features - Products - ProductList', () => {
 
     render(<ProductList />);
 
-    const anteriorBtn = screen.getByText('Anterior');
+    const anteriorBtn = screen.getByLabelText('Página anterior');
     expect(anteriorBtn).toBeDisabled();
-    expect(screen.getByText('Próxima')).not.toBeDisabled();
-    // Página atual destacada como ativa
-    const page1Btn = screen.getByText('1');
-    expect(page1Btn).toBeDisabled();
+    expect(screen.getByLabelText('Próxima página')).not.toBeDisabled();
   });
 
-  it('deve desabilitar botão "Próxima" na última página', () => {
+  it('deve esconder a paginação (não renderizar) quando há apenas 1 página', () => {
     mockUseApiFetch.mockReturnValue({
       data: { data: defaultApiResponse.data, pagination: { totalPages: 1 } },
       loading: false,
@@ -212,25 +212,8 @@ describe('Componentes Features - Products - ProductList', () => {
 
     render(<ProductList />);
 
-    const proximaBtn = screen.getByText('Próxima');
-    expect(proximaBtn).toBeDisabled();
-  });
-
-  it('deve esconder paginação visualmente quando há apenas 1 página', () => {
-    mockUseApiFetch.mockReturnValue({
-      data: { data: defaultApiResponse.data, pagination: { totalPages: 1 } },
-      loading: false,
-      error: null,
-    });
-
-    render(<ProductList />);
-
-    // O container de paginação deve estar com visibility: hidden
-    const paginationContainer = screen.getByText('Anterior').closest('div');
-    expect(paginationContainer).toHaveStyle('visibility: hidden');
-    // Como o container não tem um data-testid, verificamos que o botão Próxima está desabilitado
-    expect(screen.getByText('Próxima')).toBeDisabled();
-    expect(screen.getByText('1')).toBeDisabled();
+    expect(screen.queryByLabelText('Página anterior')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Próxima página')).not.toBeInTheDocument();
   });
 
   it('deve exibir campos de busca e filtro de preço', () => {
@@ -283,7 +266,7 @@ describe('Componentes Features - Products - ProductList', () => {
     render(<ProductList />);
     expect(screen.getByText('Produto Página 1')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('Próxima'));
+    fireEvent.click(screen.getByLabelText('Próxima página'));
 
     expect(mockUseApiFetch.mock.calls.at(-1)?.[0]).toContain('page=2');
     expect(screen.getByText('Produto Página 2')).toBeInTheDocument();
@@ -298,7 +281,7 @@ describe('Componentes Features - Products - ProductList', () => {
     render(<ProductList />);
     expect(screen.getByLabelText('Página anterior')).toBeDisabled();
 
-    fireEvent.click(screen.getByText('Próxima'));
+    fireEvent.click(screen.getByLabelText('Próxima página'));
     advancePageLoadingTimer();
     expect(screen.getByText('Produto Página 2')).toBeInTheDocument();
     expect(screen.getByLabelText('Página anterior')).not.toBeDisabled();
@@ -315,98 +298,94 @@ describe('Componentes Features - Products - ProductList', () => {
 
     render(<ProductList />);
 
-    let grid = screen.getByText('Produto Página 1').closest('div[style*="opacity"]');
-    expect(grid).toHaveStyle('opacity: 1');
+    // O loading da grade é classe CSS (D5.1), não style inline
+    const getGrid = () => screen.getByTestId('mock-product-card').parentElement;
 
-    fireEvent.click(screen.getByText('Próxima'));
+    let grid = getGrid();
+    expect(grid).not.toHaveClass('products-grid-loading');
 
-    // pageLoading ativo: overlay do Spinner, grid com opacidade reduzida e sem interação
-    grid = screen.getByText('Produto Página 2').closest('div[style*="opacity"]');
-    expect(grid).toHaveStyle('opacity: 0.4');
-    expect(grid).toHaveStyle('pointer-events: none');
+    fireEvent.click(screen.getByLabelText('Próxima página'));
+
+    // pageLoading ativo: overlay do Spinner, grid com a classe de opacidade
+    // reduzida, seletor de ordenação desabilitado e Próxima disabled
+    grid = getGrid();
+    expect(grid).toHaveClass('products-grid-loading');
     expect(screen.getByRole('status')).toBeInTheDocument();
-    expect(screen.getByText('Próxima')).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Ir para página 3' })).toHaveStyle('cursor: not-allowed');
+    expect(screen.getByLabelText('Próxima página')).toBeDisabled();
+    expect(screen.getByLabelText('Ordenar produtos')).toBeDisabled();
 
     advancePageLoadingTimer();
 
     // pageLoading removido após a transição
-    grid = screen.getByText('Produto Página 2').closest('div[style*="opacity"]');
-    expect(grid).toHaveStyle('opacity: 1');
+    grid = getGrid();
+    expect(grid).not.toHaveClass('products-grid-loading');
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
-    expect(screen.getByText('Próxima')).not.toBeDisabled();
+    expect(screen.getByLabelText('Próxima página')).not.toBeDisabled();
+    expect(screen.getByLabelText('Ordenar produtos')).not.toBeDisabled();
   });
 
-  it('deve ajustar a faixa de páginas visíveis quando há mais de 5 páginas', () => {
-    jest.useFakeTimers();
-    setupPaginatedApiMock(8);
-
-    render(<ProductList />);
-
-    const pageButton = (num) => screen.getByRole('button', { name: `Ir para página ${num}` });
-    const hasPageButton = (num) => screen.queryByRole('button', { name: `Ir para página ${num}` }) !== null;
-
-    // Página 1: faixa inicial 1 a 5
-    expect(hasPageButton(1)).toBe(true);
-    expect(hasPageButton(5)).toBe(true);
-    expect(hasPageButton(6)).toBe(false);
-
-    // Página 3: faixa permanece 1 a 5
-    fireEvent.click(screen.getByText('Próxima'));
-    advancePageLoadingTimer();
-    fireEvent.click(screen.getByText('Próxima'));
-    advancePageLoadingTimer();
-    expect(pageButton(3)).toBeDisabled();
-    expect(hasPageButton(6)).toBe(false);
-
-    // Página 4: faixa 2 a 6
-    fireEvent.click(screen.getByText('Próxima'));
-    advancePageLoadingTimer();
-    expect(hasPageButton(2)).toBe(true);
-    expect(hasPageButton(6)).toBe(true);
-    expect(hasPageButton(1)).toBe(false);
-
-    // Página 5: faixa 3 a 7
-    fireEvent.click(screen.getByText('Próxima'));
-    advancePageLoadingTimer();
-    expect(hasPageButton(3)).toBe(true);
-    expect(hasPageButton(7)).toBe(true);
-    expect(hasPageButton(2)).toBe(false);
-
-    // Página 6 (limite final): faixa 4 a 8
-    fireEvent.click(pageButton(6));
-    advancePageLoadingTimer();
-    expect(pageButton(6)).toBeDisabled();
-    expect(hasPageButton(4)).toBe(true);
-    expect(hasPageButton(8)).toBe(true);
-    expect(hasPageButton(3)).toBe(false);
-  });
-
-  it('deve ordenar produtos por position e ID (decrescente)', () => {
-    const produtosDesordenados = [
+  it('deve enviar o sort escolhido na URL, preservar a ordem do servidor e voltar à página 1', () => {
+    // A ordenação é do servidor (F1.2): o componente NÃO re-ordena no cliente,
+    // apenas repassa a ordem recebida e o parâmetro sort na URL.
+    const produtosNaOrdemDoServidor = [
       { id: 1, name: 'Produto 1', description: 'Desc 1', price: 'R$ 10,00', position: 1 },
       { id: 3, name: 'Produto 3', description: 'Desc 3', price: 'R$ 30,00', position: 1 },
       { id: 5, name: 'Produto 5', description: 'Desc 5', price: 'R$ 50,00', position: 3 },
       { id: 4, name: 'Produto 4', description: 'Desc 4', price: 'R$ 40,00' },
     ];
 
-    // A ordenação é responsabilidade da `transform` do próprio componente;
-    // o mock entrega apenas a resposta bruta da API, sem pré-ordenar.
-    // `pagination` sem `totalPages` exerce o fallback a 1 página.
     mockUseApiFetch.mockReturnValue({
-      data: { data: produtosDesordenados, pagination: {} },
+      data: { data: produtosNaOrdemDoServidor, pagination: { totalPages: 1, total: 4 } },
       loading: false,
       error: null,
     });
 
     render(<ProductList />);
 
+    // Ordem do servidor preservada (sem re-sort client-side)
     const cards = screen.getAllByTestId('mock-product-card');
-    // position=1 ordena por id descendente: Produto 3(id=3), Produto 1(id=1),
-    // depois position=3, depois produto sem position (fallback 9999)
-    expect(cards[0]).toHaveAttribute('data-product-id', '3');
-    expect(cards[1]).toHaveAttribute('data-product-id', '1');
+    expect(cards[0]).toHaveAttribute('data-product-id', '1');
+    expect(cards[1]).toHaveAttribute('data-product-id', '3');
     expect(cards[2]).toHaveAttribute('data-product-id', '5');
     expect(cards[3]).toHaveAttribute('data-product-id', '4');
+
+    // Sort padrão presente na URL e seletor com as opções da spec
+    expect(mockUseApiFetch.mock.calls.at(-1)?.[0]).toContain('sort=default');
+    const sortSelect = screen.getByLabelText('Ordenar produtos');
+    expect(screen.getByRole('option', { name: 'Padrão' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Mais antigos' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Menor preço' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Maior preço' })).toBeInTheDocument();
+
+    // Trocar a ordenação envia o novo sort e reseta para a página 1
+    fireEvent.change(sortSelect, { target: { value: 'price_asc' } });
+    const lastUrl = mockUseApiFetch.mock.calls.at(-1)?.[0] || '';
+    expect(lastUrl).toContain('sort=price_asc');
+    expect(lastUrl).toContain('page=1');
+  });
+
+  it('deve expor "Posicionados" logo após "Padrão" e pedir sort=positioned na URL', () => {
+    setupApiMock();
+
+    render(<ProductList />);
+
+    const sortSelect = screen.getByLabelText('Ordenar produtos');
+
+    // "Padrão" continua sendo o valor inicial do seletor
+    expect(sortSelect).toHaveValue('default');
+    expect(mockUseApiFetch.mock.calls.at(-1)?.[0]).toContain('sort=default');
+
+    // Ordem exata da spec design-system/pages/home.md §1.3
+    const optionLabels = within(sortSelect)
+      .getAllByRole('option')
+      .map((option) => option.textContent.trim());
+    expect(optionLabels).toEqual(['Padrão', 'Posicionados', 'Mais antigos', 'Menor preço', 'Maior preço']);
+
+    // Escolher "Posicionados" pede sort=positioned na query string (servidor ordena)
+    fireEvent.change(sortSelect, { target: { value: 'positioned' } });
+
+    const lastUrl = mockUseApiFetch.mock.calls.at(-1)?.[0] || '';
+    expect(lastUrl).toContain('sort=positioned');
+    expect(lastUrl).toContain('page=1');
   });
 });

@@ -51,10 +51,10 @@ describe('Componente Front-End - AdminMusicas', () => {
     // Teste de SUCESSO
     global.fetch.mockResolvedValueOnce({ ok: true });
     render(<AdminMusicas />);
-    await passedProps.onReorder([{ id: 1 }, { id: 2 }], 1, 10); // página 1, offset 0
+    await passedProps.onReorder([{ id: 1 }, { id: 2 }], 1, 10); // página 1 → posições 1-based (1, 2)
     expect(global.fetch).toHaveBeenCalledWith('/api/admin/musicas', expect.objectContaining({
       method: 'PUT',
-      body: JSON.stringify({ action: 'reorder', items: [{ id: 1, position: 0 }, { id: 2, position: 1 }] })
+      body: JSON.stringify({ action: 'reorder', items: [{ id: 1, position: 1 }, { id: 2, position: 2 }] })
     }));
 
     // Teste de FALHA

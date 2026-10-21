@@ -11,6 +11,11 @@ jest.mock('../../../lib/domain/products.js', () => ({
   deleteProduct: jest.fn(),
 }));
 
+// O branch de reordenação do PUT usa updateRecords('products', ...)
+jest.mock('../../../lib/crud/crud.js', () => ({
+  updateRecords: jest.fn(),
+}));
+
 jest.mock('../../../lib/auth/auth.js', () => ({
   getAuthToken: jest.fn(),
   verifyToken: jest.fn(),
@@ -32,6 +37,7 @@ jest.mock('../../../lib/infra/logger.js', () => ({
 
 import handler from '../../../pages/api/products.js';
 import { getPaginatedProducts, getAllProducts, createProduct, updateProduct, deleteProduct } from '../../../lib/domain/products.js';
+import { updateRecords } from '../../../lib/crud/crud.js';
 import { getAuthToken, verifyToken } from '../../../lib/auth/auth.js';
 import { checkRateLimit, invalidateCache } from '../../../lib/cache/cache.js';
 import { logActivity } from '../../../lib/domain/audit.js';
@@ -53,7 +59,51 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(200);
-      expect(getPaginatedProducts).toHaveBeenCalledWith(1, 10, { search: '', minPrice: '', maxPrice: '' });
+      expect(getPaginatedProducts).toHaveBeenCalledWith(1, 10, { search: '', minPrice: '', maxPrice: '' }, 'default');
+    });
+
+    it('deve repassar o sort válido ao domínio', async () => {
+      getPaginatedProducts.mockResolvedValueOnce({
+        data: [{ id: 3, name: 'Terceiro' }],
+        pagination: { page: 1, limit: 10, total: 3 }
+      });
+
+      const { req, res } = createMocks({
+        method: 'GET',
+        query: { public: 'true', sort: 'price_asc' }
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      expect(getPaginatedProducts).toHaveBeenCalledWith(1, 10, { search: '', minPrice: '', maxPrice: '' }, 'price_asc');
+    });
+
+    it('deve aceitar sort=positioned (curadoria manual) no GET público', async () => {
+      getPaginatedProducts.mockResolvedValueOnce({
+        data: [{ id: 4, name: 'Terceiro' }],
+        pagination: { page: 1, limit: 10, total: 4 }
+      });
+
+      const { req, res } = createMocks({
+        method: 'GET',
+        query: { public: 'true', sort: 'positioned' }
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      expect(getPaginatedProducts).toHaveBeenCalledWith(1, 10, { search: '', minPrice: '', maxPrice: '' }, 'positioned');
+    });
+
+    it('deve retornar 400 para sort inválido no GET público', async () => {
+      const { req, res } = createMocks({
+        method: 'GET',
+        query: { public: 'true', sort: 'invalido' }
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(400);
+      expect(res._getJSONData()).toEqual({ error: 'Bad Request', message: 'Parâmetros inválidos.' });
+      expect(getPaginatedProducts).not.toHaveBeenCalled();
     });
 
     it('deve retornar 400 para parâmetros de paginação inválidos', async () => {
@@ -79,7 +129,7 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(200);
-      expect(getPaginatedProducts).toHaveBeenCalledWith(2, 5, { search: '', minPrice: '', maxPrice: '' });
+      expect(getPaginatedProducts).toHaveBeenCalledWith(2, 5, { search: '', minPrice: '', maxPrice: '' }, 'default');
     });
   });
 
@@ -193,6 +243,76 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
     });
   });
 
+  describe('PUT - Reordenação (Autenticada)', () => {
+    beforeEach(() => {
+      getAuthToken.mockReturnValue('valid-token');
+      verifyToken.mockReturnValue({ username: 'admin' });
+    });
+
+    const reorderBody = {
+      action: 'reorder',
+      items: [{ id: 5, position: 1 }, { id: 6, position: 2 }],
+    };
+
+    it('deve reordenar, invalidar cache e registrar auditoria com id real', async () => {
+      const { req, res } = createMocks({ method: 'PUT', body: reorderBody });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      expect(res._getJSONData()).toEqual({ success: true, message: 'Ordem atualizada' });
+
+      // Uma chamada por item, com a posição recebida (1-based)
+      expect(updateRecords).toHaveBeenCalledTimes(2);
+      expect(updateRecords).toHaveBeenNthCalledWith(1, 'products', { position: 1 }, { id: 5 });
+      expect(updateRecords).toHaveBeenNthCalledWith(2, 'products', { position: 2 }, { id: 6 });
+
+      expect(invalidateCache).toHaveBeenCalledWith('products:*');
+
+      // Auditoria (regra §9 do painel): identificador real, nunca undefined
+      expect(logActivity).toHaveBeenCalledWith(
+        'admin',
+        'REORDENAR PRODUTOS',
+        'PRODUCT',
+        5,
+        expect.any(String),
+        expect.any(String)
+      );
+      expect(logActivity.mock.calls[0][3]).not.toBeUndefined();
+    });
+
+    it('deve retornar 400 para payload inválido (position 0) sem tocar nos dados', async () => {
+      const { req, res } = createMocks({
+        method: 'PUT',
+        body: { action: 'reorder', items: [{ id: 1, position: 0 }] }
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(400);
+      // Zod flatten agrupa os erros do array sob o caminho `items`
+      const { errors } = res._getJSONData();
+      expect(errors).toHaveProperty('items');
+      expect(errors.items[0]).toContain('Posição deve ser positiva');
+      expect(updateRecords).not.toHaveBeenCalled();
+      expect(logActivity).not.toHaveBeenCalled();
+    });
+
+    it('deve retornar 400 para payload inválido (id não numérico)', async () => {
+      const { req, res } = createMocks({
+        method: 'PUT',
+        body: { action: 'reorder', items: [{ id: 'abc', position: 1 }] }
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(400);
+      // Zod flatten agrupa os erros do array sob o caminho `items`
+      const idErrors = res._getJSONData().errors;
+      expect(idErrors).toHaveProperty('items');
+      // O problema é o `id` ("expected number..." / mensagem do schema)
+      expect(idErrors.items[0]).toMatch(/number|ID/i);
+      expect(updateRecords).not.toHaveBeenCalled();
+    });
+  });
+
   describe('DELETE - Exclusão (Autenticada)', () => {
     beforeEach(() => {
       getAuthToken.mockReturnValue('valid-token');
@@ -239,7 +359,7 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(200);
-      expect(getPaginatedProducts).toHaveBeenCalledWith(1, 10, { search: 'teste', minPrice: '10', maxPrice: '100' });
+      expect(getPaginatedProducts).toHaveBeenCalledWith(1, 10, { search: 'teste', minPrice: '10', maxPrice: '100' }, 'default');
     });
 
     it('deve tratar a falta de token (isAdmin = false) de forma silenciosa no GET', async () => {
@@ -256,7 +376,7 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(200);
-      expect(getPaginatedProducts).toHaveBeenCalledWith(1, 10, { search: 'teste', minPrice: '', maxPrice: '' });
+      expect(getPaginatedProducts).toHaveBeenCalledWith(1, 10, { search: 'teste', minPrice: '', maxPrice: '' }, 'default');
     });
   });
 });

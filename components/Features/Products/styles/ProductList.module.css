@@ -1,7 +1,7 @@
 /* ProductList Styles
- * Hover/foco dos botões de filtro e paginação.
- * Substituem os handlers inline (onMouseEnter/onMouseLeave/onFocus/onBlur)
- * por pseudo-classes, reduzindo callbacks desnecessários. */
+ * Hover/foco dos botões de filtro, seletor de ordenação, contador de
+ * resultados, grade 3/2/1 e paginação no padrão das demais abas
+ * (spec design-system/pages/home.md §§1, 4 e 5). */
 
 /* Botão "Limpar filtros" */
 .filterButton {
@@ -16,19 +16,207 @@
   box-shadow: var(--color-focus-ring);
 }
 
-/* Botões numerados de paginação */
-.pageButton {
+/* Seletor de ordenação (spec §1.2) */
+.sortWrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sortLabel {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+.sortSelect {
+  height: 44px;
+  padding: 0 var(--spacing-8) 0 var(--spacing-3);
+  border: var(--border-width-1) solid var(--color-border-light);
+  border-radius: var(--border-radius-lg);
   background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a3a3a3' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--spacing-3) center;
+  background-size: 12px;
+  transition: var(--transition-all);
+  max-width: 300px;
 }
 
-.pageButton:hover:not(:disabled) {
-  background-color: var(--color-bg-secondary);
+.sortSelect:hover:not(:disabled) {
+  border-color: var(--color-primary-500);
 }
 
-.pageButton:focus {
+/* Foco: par exato do sistema (outline azul + halo), nunca só a borda */
+.sortSelect:focus {
+  border-color: var(--color-primary-500);
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
   box-shadow: var(--color-focus-ring);
 }
 
+/* Desabilitado durante troca de página (pageLoading) — spec §1.2 */
+.sortSelectDisabled {
+  opacity: var(--opacity-50);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Contador de resultados (spec §1.5) */
+.searchInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 var(--spacing-2);
+  margin-bottom: var(--spacing-2);
+}
+
+.resultCount {
+  color: var(--color-primary-500);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Grade de produtos — 3 colunas no desktop, igualando Músicas/Vídeos (spec §5) */
+.productsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  padding: 20px clamp(8px, 2vw, 20px);
+}
+
+/* Opacidade da grade durante a troca de página (decisão D5.1) */
+.productsGridLoading {
+  opacity: 0.4;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .productsGridLoading {
+    transition: none;
+  }
+}
+
+/* Tablet landscape: 2 colunas */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .productsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+/* Tablet portrait / mobile: 1 coluna */
+@media (max-width: 768px) {
+  .productsGrid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+/* Small mobile */
+@media (max-width: 360px) {
+  .productsGrid {
+    gap: 1.25rem;
+  }
+}
+
+/* Mobile (≤ 640px): o seletor ocupa linha própria com a largura da busca */
+@media (max-width: 640px) {
+  .sortWrapper {
+    flex: 1 1 100%;
+    max-width: 400px;
+  }
+
+  .sortSelect {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+/* Paginação no padrão único das abas (spec §4 / MASTER §7) */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding: 1rem 0;
+}
+
+.pageButton {
+  padding: 0.5rem 1.25rem;
+  min-height: 44px;
+  border: var(--border-width-1) solid var(--color-border-light);
+  border-radius: 50px;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: var(--transition-all);
+}
+
+.pageButton:hover:not(:disabled) {
+  border-color: var(--color-primary-500);
+  color: var(--color-primary-500);
+  background-color: var(--color-primary-50);
+}
+
+.pageButton:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
+}
+
+.pageButton:disabled {
+  opacity: var(--opacity-50);
+  cursor: not-allowed;
+}
+
+.pageButtonDisabled {
+  opacity: var(--opacity-50);
+  cursor: not-allowed;
+}
+
+.pageInfo {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.totalInfo {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+/* Em ≤ 480px a informação de página ocupa linha própria acima dos botões */
+@media (max-width: 480px) {
+  .pagination {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .pageButton {
+    padding: 0.4rem 1rem;
+    font-size: 0.8rem;
+  }
+
+  .pageInfo {
+    font-size: 0.8rem;
+    width: 100%;
+    text-align: center;
+    order: -1;
+  }
+}
+
+/* Mantido para outros usos (não é usado na paginação atual) */
 .pageButtonActive {
   background-color: var(--color-primary-50);
 }

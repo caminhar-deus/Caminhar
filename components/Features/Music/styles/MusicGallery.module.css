@@ -115,6 +115,7 @@
 }
 
 .sortSelect {
+  height: 44px;
   padding: 0.5rem 2rem 0.5rem 0.75rem;
   border: 2px solid var(--color-border-light, #e0e0e0);
   border-radius: 50px;
@@ -131,9 +132,14 @@
   background-size: 12px;
 }
 
+/* Foco: a borda verde `#1DB954` no `:focus` é diferença de marca intencional
+ * entre as abas (decisão do @designer, spec home.md §2.3). O indicador de foco
+ * é só o par azul do sistema — outline + halo. Nunca verde. */
 .sortSelect:focus {
   border-color: #1DB954;
-  box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.1);
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
 }
 
 .sortSelect:hover {

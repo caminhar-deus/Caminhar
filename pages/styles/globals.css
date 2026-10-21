@@ -32,3 +32,18 @@ a {
   text-decoration: none;
 }
 
+/* Guard global de movimento reduzido (MASTER §5) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    /* eslint-disable-next-line css/no-important */
+    animation-duration: 0.01ms !important;
+    /* eslint-disable-next-line css/no-important */
+    animation-iteration-count: 1 !important;
+    /* eslint-disable-next-line css/no-important */
+    transition-duration: 0.01ms !important;
+    /* eslint-disable-next-line css/no-important */
+    scroll-behavior: auto !important;
+  }
+}

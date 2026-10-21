@@ -75,6 +75,7 @@
 │   │       ├── VideoCard.js
 │   │       ├── VideoGallery.js
 │   │       └── styles
+│   │           ├── VideoCard.module.css
 │   │           └── VideoGallery.module.css
 │   ├── Layout
 │   │   ├── Container.js
@@ -379,6 +380,7 @@
 │   │   │   │   ├── permissions.js.html
 │   │   │   │   ├── posts.js.html
 │   │   │   │   ├── products.js.html
+│   │   │   │   ├── query-schemas.js.html
 │   │   │   │   ├── settings.js.html
 │   │   │   │   ├── shared-pagination.js.html
 │   │   │   │   └── videos.js.html
@@ -471,6 +473,7 @@
 │   │   │   ├── permissions.js.html
 │   │   │   ├── posts.js.html
 │   │   │   ├── products.js.html
+│   │   │   ├── query-schemas.js.html
 │   │   │   ├── settings.js.html
 │   │   │   ├── shared-pagination.js.html
 │   │   │   └── videos.js.html
@@ -558,6 +561,7 @@
 ├── design-system
 │   ├── MASTER.md
 │   └── pages
+│       ├── home.md
 │       └── login.md
 ├── docs
 │   ├── AGENTS_OPERACAO.md
@@ -566,6 +570,7 @@
 │   ├── DEPLOY_proxy_e_IP.md
 │   ├── PENDENCIAS_scripts_testes.md
 │   ├── PENDENCIAS_seguranca-rotas-api.md
+│   ├── PLANO_ACAO_SITE_PUBLICO.md
 │   ├── PROJECT_components.md
 │   ├── PROJECT_cypress.md
 │   ├── PROJECT_data.md
@@ -606,6 +611,9 @@
 │   │   ├── 0011-erro-de-banco-503-e-refresh-token-fora-do-body.md
 │   │   ├── 0012-gate-da-suite-k6-por-metrica-propria.md
 │   │   ├── 0013-agent-process-rules-vs-area-architecture-docs.md
+│   │   ├── 0014-padrao-significa-mais-recentes-e-curadoria-como-posicionados.md
+│   │   ├── 0015-link-externo-assistir-no-youtube-no-cartao-de-video.md
+│   │   ├── 0016-seletor-de-ordenacao-de-produtos-no-servidor.md
 │   │   ├── README.md
 │   │   └── template.md
 │   └── ai-memory-error.md
@@ -1290,14 +1298,16 @@
 │       │   └── validate-schema.test.js
 │       ├── settings.cache.test.js
 │       ├── utils
+│       │   ├── reorder.test.js
 │       │   └── resolve-next.test.js
 │       └── videos.validation.test.js
 ├── tree.txt
 ├── uploads
+│   └── post-image-255714e9-57d2-46f8-8a97-b8e02b170861.png
 └── utils
     ├── csvExport.js
     ├── empty-browser-module.js
     ├── reorder.js
     └── resolve-next.js
 
-205 directories, 1096 files
+205 directories, 1106 files

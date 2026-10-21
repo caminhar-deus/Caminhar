@@ -5,7 +5,7 @@ import VideoCard from './VideoCard';
 import styles from './styles/VideoGallery.module.css';
 
 const SORT_OPTIONS = [
-  { value: 'recent', label: 'Mais recentes' },
+  { value: 'recent', label: 'Padrão' },
   { value: 'oldest', label: 'Mais antigos' },
   { value: 'alpha', label: 'A-Z' },
   { value: 'alpha_desc', label: 'Z-A' },
@@ -20,7 +20,7 @@ export default function VideoGallery() {
 
   const params = new URLSearchParams({
     page: currentPage.toString(),
-    limit: '6',
+    limit: '12',
     search: debouncedSearchTerm,
     sort: sortBy,
   });
@@ -153,7 +153,7 @@ export default function VideoGallery() {
               >
                 ❮ Anterior
               </button>
-              <span className={styles.pageInfo}>
+              <span className={styles.pageInfo} aria-live="polite" aria-atomic="true">
                 Página {currentPage} de {totalPages}
                 {totalItems > 0 && <span className={styles.totalInfo}> ({totalItems} vídeo{totalItems !== 1 ? 's' : ''})</span>}
               </span>

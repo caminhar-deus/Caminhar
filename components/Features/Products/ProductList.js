@@ -1,16 +1,26 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useApiFetch, useDebounce } from '@/hooks';
 import ProductCard from './ProductCard';
-import { inputStyle, buttonBaseStyle } from './styles';
+import { inputStyle } from './styles';
 import styles from './styles/ProductList.module.css';
 import { ErrorMessage, LoadingMessage, EmptyMessage } from '../../UI/StateMessages';
 import { Spinner } from '@/components/UI';
+
+// Spec design-system/pages/home.md §1.3 — ordem exata das opções do seletor.
+const SORT_OPTIONS = [
+  { value: 'default', label: 'Padrão' },
+  { value: 'positioned', label: 'Posicionados' },
+  { value: 'oldest', label: 'Mais antigos' },
+  { value: 'price_asc', label: 'Menor preço' },
+  { value: 'price_desc', label: 'Maior preço' },
+];
 
 export default function ProductList() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
+  const [sortBy, setSortBy] = useState('default');
   const [pageLoading, setPageLoading] = useState(false);
   const listRef = useRef(null);
   const itemsPerPage = 12;
@@ -38,27 +48,27 @@ export default function ProductList() {
     setMaxPrice('');
   };
 
-  let url = `/api/products?page=${currentPage}&limit=${itemsPerPage}&public=true&search=${encodeURIComponent(debouncedFilters.search)}`;
+  let url = `/api/products?page=${currentPage}&limit=${itemsPerPage}&public=true&sort=${sortBy}&search=${encodeURIComponent(debouncedFilters.search)}`;
   if (debouncedFilters.minPrice) url += `&minPrice=${debouncedFilters.minPrice}`;
   if (debouncedFilters.maxPrice) url += `&maxPrice=${debouncedFilters.maxPrice}`;
 
   const { data: responseData, loading, error } = useApiFetch(url, {
-    deps: [currentPage, debouncedFilters],
+    deps: [currentPage, debouncedFilters, sortBy],
     staleTime: 5000,
     transform: (result) => {
-      // Garante a ordenação do mais novo para o mais antigo (maior ID)
-      const products = (result.data || []).sort((a, b) => {
-        const posA = a.position ?? 9999;
-        const posB = b.position ?? 9999;
-        if (posA === posB) return b.id - a.id;
-        return posA - posB;
-      });
-      return { products, totalPages: result.pagination?.totalPages || 1 };
+      // A ordenação é do servidor (sort no endpoint público) — nada de
+      // re-ordenar no cliente (PLANO_ACAO F1.2).
+      return {
+        products: result.data || [],
+        totalPages: result.pagination?.totalPages || 1,
+        total: result.pagination?.total || 0,
+      };
     },
   });
 
   const products = responseData?.products || [];
   const totalPages = responseData?.totalPages || 1;
+  const totalItems = responseData?.total || 0;
 
   // Controla loading específico de paginação (troca de página)
   useEffect(() => {
@@ -80,6 +90,12 @@ export default function ProductList() {
     if (newPage === currentPage || newPage < 1 || newPage > totalPages) return;
     setPageLoading(true);
     setCurrentPage(newPage);
+  };
+
+  const handleSortChange = (e) => {
+    setSortBy(e.target.value);
+    // Trocar a ordenação sempre volta para a primeira página
+    setCurrentPage(1);
   };
 
   return (
@@ -147,6 +163,25 @@ export default function ProductList() {
           />
         </div>
 
+        {/* Seletor de ordenação (spec home.md §1) — após preço, antes de "Limpar filtros" */}
+        <div className={styles.sortWrapper}>
+          <label htmlFor="sort-select-products" className={styles.sortLabel}>Ordenar por:</label>
+          <select
+            id="sort-select-products"
+            value={sortBy}
+            onChange={handleSortChange}
+            className={`${styles.sortSelect} ${pageLoading ? styles.sortSelectDisabled : ''}`}
+            aria-label="Ordenar produtos"
+            disabled={pageLoading}
+          >
+            {SORT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* Botão limpar filtros — visível apenas quando há filtros ativos */}
         {hasActiveFilters && (
           <button
@@ -177,6 +212,17 @@ export default function ProductList() {
         )}
       </div>
 
+      {/* Contador de resultados (spec home.md §1.5) — mesmo padrão das outras abas */}
+      {!loading && !error && products.length > 0 && (
+        <div className={styles.searchInfo}>
+          <span className={styles.resultCount}>
+            {debouncedFilters.search
+              ? `${totalItems} resultado${totalItems !== 1 ? 's' : ''} para "${debouncedFilters.search}"`
+              : `Mostrando ${products.length} de ${totalItems} produto${totalItems !== 1 ? 's' : ''}`}
+          </span>
+        </div>
+      )}
+
       {/* Container com altura mínima para evitar Layout Shift */}
       <div ref={listRef} style={{ minHeight: '600px' }}>
         {/* Tratamento de Estados */}
@@ -189,15 +235,9 @@ export default function ProductList() {
         {/* Listagem de Produtos */}
         {!error && products.length > 0 && (
           <>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-              gap: 'clamp(16px, 3vw, 24px)',
-              padding: '20px clamp(8px, 2vw, 20px)',
-              opacity: pageLoading ? 0.4 : 1,
-              transition: 'opacity 0.2s ease',
-              pointerEvents: pageLoading ? 'none' : 'auto',
-            }}>
+            <div
+              className={`${styles.productsGrid}${pageLoading ? ` ${styles.productsGridLoading}` : ''}`}
+            >
               {products.map(product => (
                 <ProductCard key={product.id} product={product} />
               ))}
@@ -210,101 +250,37 @@ export default function ProductList() {
               </div>
             )}
   
-            {/* Controles de Paginação — sempre no DOM para evitar layout shift */}
-            <div style={{ 
-              display: 'flex', justifyContent: 'center', gap: 'clamp(8px, 2vw, 16px)', 
-              marginTop: '30px', paddingBottom: '20px',
-              visibility: totalPages > 1 ? 'visible' : 'hidden',
-              pointerEvents: totalPages > 1 ? 'auto' : 'none',
-              minHeight: '48px', alignItems: 'center', flexWrap: 'wrap',
-            }}>
-              <button 
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1 || pageLoading}
-                style={paginationButtonStyle(currentPage === 1 || pageLoading)}
-                aria-label="Página anterior"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
-                  <polyline points="15 18 9 12 15 6"/>
-                </svg>
-                Anterior
-              </button>
-              
-              {/* Botões de página numerados (para até 5 páginas visíveis) */}
-              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                  let pageNum;
-                  if (totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (currentPage <= 3) {
-                    pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  } else {
-                    pageNum = currentPage - 2 + i;
-                  }
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => handlePageChange(pageNum)}
-                      disabled={pageNum === currentPage || pageLoading}
-                      className={pageNum === currentPage ? `${styles.pageButton} ${styles.pageButtonActive}` : styles.pageButton}
-                      style={{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: 'var(--border-radius-md)',
-                        border: pageNum === currentPage
-                          ? '2px solid var(--color-primary-500)'
-                          : 'var(--border-width-1) solid var(--color-border-light)',
-                        color: pageNum === currentPage
-                          ? 'var(--color-primary-700)'
-                          : 'var(--color-text-secondary)',
-                        fontWeight: pageNum === currentPage ? '700' : '500',
-                        fontSize: '0.9rem',
-                        cursor: pageLoading ? 'not-allowed' : 'pointer',
-                        transition: 'var(--transition-all)',
-                        outline: 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                      aria-label={`Ir para página ${pageNum}`}
-                      aria-current={pageNum === currentPage ? 'page' : undefined}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
+            {/* Paginação no padrão das demais abas (spec home.md §4) —
+                oculta quando há ≤ 1 página */}
+            {totalPages > 1 && (
+              <div className={styles.pagination}>
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1 || pageLoading}
+                  className={`${styles.pageButton} ${currentPage === 1 || pageLoading ? styles.pageButtonDisabled : ''}`}
+                  aria-label="Página anterior"
+                  type="button"
+                >
+                  ❮ Anterior
+                </button>
+                <span className={styles.pageInfo} aria-live="polite" aria-atomic="true">
+                  Página {currentPage} de {totalPages}
+                  {totalItems > 0 && <span className={styles.totalInfo}> ({totalItems} produto{totalItems !== 1 ? 's' : ''})</span>}
+                </span>
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages || pageLoading}
+                  className={`${styles.pageButton} ${currentPage === totalPages || pageLoading ? styles.pageButtonDisabled : ''}`}
+                  aria-label="Próxima página"
+                  type="button"
+                >
+                  Próxima ❯
+                </button>
               </div>
-              
-              <button 
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages || pageLoading}
-                style={paginationButtonStyle(currentPage === totalPages || pageLoading)}
-                aria-label="Próxima página"
-              >
-                Próxima
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: '6px' }}>
-                  <polyline points="9 18 15 12 9 6"/>
-                </svg>
-              </button>
-            </div>
+            )}
           </>
         )}
       </div>
     </div>
   );
 }
-
-// Estilos auxiliares para os botões de paginação
-const paginationButtonStyle = (disabled) => buttonBaseStyle({
-  backgroundColor: disabled ? 'var(--color-bg-secondary)' : 'var(--color-bg-primary)',
-  color: disabled ? 'var(--color-text-tertiary)' : 'var(--color-text-primary)',
-  cursor: disabled ? 'not-allowed' : 'pointer',
-  boxShadow: disabled ? 'none' : 'var(--shadow-sm)',
-  display: 'flex',
-  alignItems: 'center',
-  minHeight: '40px',
-  minWidth: '44px',
-  justifyContent: 'center',
-});

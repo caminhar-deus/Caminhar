@@ -13,6 +13,18 @@ const videoSchema = z.object({
 
 const youtubeUrlRegex = /^https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=[\w-]{11}|youtu\.be\/[\w-]{11})(?:[&?].*)?$/;
 
+// Validação da reordenação em massa (Drag & Drop) — mesmo padrão dos
+// endpoints de posts e músicas: ids e posições inteiros positivos (1-based).
+const reorderItemSchema = z.object({
+  id: z.number().int('ID deve ser um número inteiro').positive('ID deve ser positivo'),
+  position: z.number().int('Posição deve ser um número inteiro').positive('Posição deve ser positiva'),
+});
+
+const reorderSchema = z.object({
+  action: z.literal('reorder'),
+  items: z.array(reorderItemSchema).min(1, 'Array de itens para reordenar não pode ser vazio'),
+});
+
 // Extrai a primeira mensagem de erro de validação, com fallback para erro desconhecido
 // quando fieldErrors estiver vazio (ex.: erros de nível raiz do Zod).
 export function getValidationMessage(validationError) {
@@ -44,7 +56,20 @@ async function handlePost(req, res) {
 
 async function handlePut(req, res) {
   if (req.body.action === 'reorder') {
+    const reorderValidation = reorderSchema.safeParse(req.body);
+    if (!reorderValidation.success) {
+      return res.status(400).json({
+        message: 'Dados inválidos para reordenação',
+        errors: reorderValidation.error.flatten().fieldErrors,
+      });
+    }
+    const { items } = reorderValidation.data;
     await reorderVideos(req.body.items);
+    await req.adminUtils.logActivity(
+      'REORDENAR VÍDEOS',
+      items[0].id,
+      `Reordenou ${items.length} vídeo${items.length > 1 ? 's' : ''}`
+    );
     return res.status(200).json({ message: 'Ordem atualizada com sucesso' });
   }
 

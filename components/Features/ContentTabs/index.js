@@ -19,7 +19,7 @@ export default function ContentTabs() {
   const renderContent = () => {
     switch (activeTab) {
       case 'reflexoes':
-        return <BlogSection limit={3} />;
+        return <BlogSection limit={6} />;
       case 'produtos':
         return <ProductList />;
       case 'musicas':
@@ -29,7 +29,7 @@ export default function ContentTabs() {
       case 'projeto1':
         return <PlaceholderContent />;
       default:
-        return <BlogSection limit={3} />;
+        return <BlogSection limit={6} />;
     }
   };
 

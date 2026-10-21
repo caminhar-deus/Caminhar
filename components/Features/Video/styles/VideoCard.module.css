@@ -1,0 +1,34 @@
+/* VideoCard Styles (spec design-system/pages/home.md §3) */
+
+/* Link externo "Assistir no YouTube" — rodapé do cartão, abaixo da descrição.
+ * margin-top: auto cola no fundo (o `.content` do BaseCard é flex column). */
+.watchLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-height: 44px;
+  padding: var(--spacing-2) 0;
+  margin-top: auto;
+  color: var(--color-text-link);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+}
+
+.watchLink:hover {
+  color: var(--color-text-link-hover);
+  text-decoration: underline;
+}
+
+.watchLink:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
+}
+
+/* ≤ 480px: mantém alinhado à esquerda ocupando a largura do cartão */
+@media (max-width: 480px) {
+  .watchLink {
+    width: 100%;
+  }
+}
