@@ -22,6 +22,7 @@ apoio, não a fonte oficial; a decisão não é duplicada como página de memór
 | [0010](0010-admin-como-cargo-e-validacao-de-nome.md) | `ADMIN` é um cargo comum; autorização por cargo e permissão, com validação de nome | Aceito | 2026-10-16 |
 | [0011](0011-erro-de-banco-503-e-refresh-token-fora-do-body.md) | Erro de banco no painel responde 503 e não vaza mensagem; refresh token fora do body | Aceito | 2026-10-16 |
 | [0012](0012-gate-da-suite-k6-por-metrica-propria.md) | Na suíte k6, reprovação vem de métrica própria com threshold; `checks` agregado é diagnóstico | Aceito | 2026-10-17 |
+| [0013](0013-agent-process-rules-vs-area-architecture-docs.md) | Regras de processo do agente no `AGENTS.md`; regras de proteção de cada área no seu documento de arquitetura | Aceito | 2026-10-21 |
 
 ## Quando criar um ADR
 
