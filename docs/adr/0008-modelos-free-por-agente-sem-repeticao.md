@@ -532,6 +532,64 @@ pronto. O `rodar.js` agora restaura o repositório entre execuções. A restaura
 bench, que por definição não é rastreado. (Na primeira tentativa dessa restauração o
 diretório do bench foi apagado, e foi reconstruído.)
 
+## 22/10/2026: primeira observação de campo (dias 20–22) — durabilidade não foi falsificada
+
+A ferida que a seção de 19/10 deixou em aberto ("sessão de uma tarefa vs um dia de
+trabalho") recebeu o primeiro dado, e ele veio de graça: os dias 20–22/10/2026 foram
+trabalho real do mantenedor conduzido pelo orchestrator, e a memória do projeto guardou o
+percurso. Isto é **observação de campo**, não bateria — sem gabarito preparado (a Camada B
+não é aplicável) e sem comparação (sem gabarito, e no campo quem roda é o primário em
+função — o `minimax-m3.1-flash-free`, no cargo desde a saída do `space-bunny-free` em
+19/10; `big-pickle` só entra como fallback). O campo mede exatamente o que o bench não
+via: o comportamento do papel ao longo de dias e de sessões encadeadas.
+
+**O que os três dias produziram** (commits conferidos no log do repositório; a memória
+não prende cada commit à sessão que o produziu — as sessões se sobrepõem no tempo, e os
+commits só ficam amarrados onde a página de origem os lista):
+
+- **20/10** — harmonização dos dois documentos de arquitetura e do `AGENTS.md` (sessão
+  com 21 prompts de revisão de documentação, atravessa 20→21/10).
+- **21/10** — o dia mais pesado, cinco commits: ADR-0013, cron de carga com k6, design e
+  arquitetura (`5f7ec24`, `5f6492a`, `8e460f9`, `b7950f1`), e a **passa de segurança das
+  rotas de API** — 9 defeitos corrigidos na ordem aprovada pelo dono (A1 → B1+B2 →
+  A2…A6 → C1), com o `docs/adr/0017`-checagem-de-permissao, testes de negação com mutação
+  verificada, suite e lint verdes (194 suites / 1413 testes), nos commits `087d934` e
+  `c6cef12` — estes dois listados explicitamente na página da decisão.
+- **22/10** — avaliação dos ciclos de cron/k6 pelos links de CI (`699e112`, "AI-MEMORY
+  and k6 Load Test").
+
+**Sinal principal, de durabilidade.** As sessões atravessaram dias — a das baterias de
+papel capturou de 19/10 13:28 até 22/10, a de cron/k6 de 18/10 até 22/10 — e a continuidade
+foi reconstruída por handoff entre sessões ("foram feitos diversos outros ajustes em uma
+outra sessão" foi reconciliado sem perder o fio). No dia mais pesado (21/10), a saída foi
+trabalho que passou em teste e em lint: nenhuma evidência de degradação de fim de dia.
+
+**Erro tipo-Camada-B pego no campo (com ressalva).** Uma auditoria de segurança por modelo
+classificou o S8 como "escalada latente"; estava errado — o `docs/adr/0010` rejeita
+explicitamente essa leitura, o código documenta o bypass do cargo `admin` como "POR
+DESENHO" (`adminCrudHandler.js:186-190`) e teste deny/allow cobre o comportamento. O erro
+sobreviveu à classificação inicial e foi pego na rodada de correção; virou gotcha com regra
+operacional ("ler `docs/adr/` como fonte primária antes de classificar qualquer coisa em
+`pages/api/admin/`"). É o tipo de erro verificável que o campo consegue medir — com a
+ressalva de que a recuperação foi do dono, e o relatório não permite atribuir o erro a um
+modelo específico do preset.
+
+**Sinal de manutenção do instrumento.** A passa de segurança invalidou o ground truth do
+bench, e o orchestrator recalibrou os **três** arquivos na mesma rodada — `gabarito.md`,
+`pontuar.js` e `rubrica.md` (agora: 31 arquivos, todos rota; `adminCrudHandler.js:305`) —
+e registrou a regra: toda mudança de superfície em `pages/api/` obriga a recalibração dos
+três na mesma rodada. Conferido no disco. As seções datadas de 19/10 deste ADR descrevem o
+gabarito **anterior** (32 arquivos, o helper não-rota, `:331`); elas continuam valendo como
+histórico do dia delas.
+
+**Limitações honestas.** Janela única, sem controle: não falsifica degradação sutil, e a
+memória não captura cota, então requisições por dia não são mensuráveis por esse caminho. O
+que a janela conclui é negativo no bom sentido: **nada no campo contradiz a decisão do
+primário**. Gatilho para escalar ao bench de fila (duas sessões comparativas, fila de
+tarefas encadeadas igual para os dois modelos): padrão suspeito no campo — degradação
+visível, erro repetido junto ao fim de um dia longo, o primário caindo no meio do trabalho.
+Até lá, não gastar cota com isso.
+
 ## Alternativas consideradas
 
 - **Manter o preset anterior, com as cadeias.** Descartado: preservava o acoplamento
@@ -650,6 +708,13 @@ se pagou.
   (`scripts/bench/papeis/`): o `designer` tem **quatro** modelos medidos no papel e o
   `fixer` tem **três** (o quarto foi descartado por contaminação). A "medição vale por
   papel" continua valendo para quem quiser promover um quinto.
+- **Durabilidade de um dia — EM OBSERVAÇÃO DE CAMPO desde 22/10/2026.** O bench mede o
+  papel numa sessão de uma tarefa; o que falta medir é a fila de tarefas de um dia de
+  trabalho. Primeira janela de campo: 20–22/10 (ver seção "22/10/2026" neste texto) —
+  nenhuma evidência de degradação, mas janela única e sem controle. **Gatilho para escalar
+  ao bench de fila** (duas sessões comparativas, a mesma fila de tarefas para os dois
+  modelos): padrão suspeito no campo — degradação visível, erro repetido ao fim de dia
+  longo, primário caindo no meio do trabalho. Até lá, não gastar cota.
 - **Privacidade do `oracle` não verificada.** `nemotron-3.5-super-vl-free` é hoje o único
   dos cinco sem garantia de retenção registrada. Se isso for requisito, verificar antes do
   próximo uso com código sensível.
