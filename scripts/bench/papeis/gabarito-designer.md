@@ -1,25 +1,34 @@
 # Gabarito — papel do `designer` (conformidade de foco e contraste)
 
-Conferido no código em 19/10/2026. **Nenhum modelo sob teste pode ler este arquivo.**
+Conferido no código em 19/10/2026 e **recalibrado em 22/10/2026** — o MASTER mudou
+em 21/10 (§7/§9 reescritas) e as linhas de referência se deslocaram: a declaração
+exata do foco do botão hoje está em `MASTER.md:130` (antes `:104`), o anti-padrão
+"box-shadow como único indicador" em `:202-203` (antes `:149-150`) e a proibição
+do `#a3a3a3` em `:50-51` (antes `:49-51`, já era próximo). As citações desta
+versão conferem no código **de 22/10/2026**. **Nenhum modelo sob teste pode ler
+este arquivo.**
 
-A fonte da verdade normativa é `design-system/MASTER.md`. O contrato concreto são os
-tokens de `pages/styles/variables.css` e os componentes em `components/UI/`.
+A fonte da verdade normativa é `design-system/MASTER.md` (hoje: `MASTER.md:36-39`
+tokens de foco, `:39-44` nota normativa, `:130` declaração do botão, `:200-203`
+anti-padrões de foco, `:205-206` contraste de texto informativo, `:211-212`
+checklist). O contrato concreto são os tokens de `pages/styles/variables.css`
+(`:89-95` bg/text, `:110-111` foco) e os componentes em `components/UI/`.
 
 ## P1 — o foco do `Button` NÃO está conforme
 
 | | |
 |---|---|
 | **Onde** | `components/UI/Button.module.css:21-24` — a regra `.button:focus-visible` |
-| **O que está errado** | A regra faz `outline: none` (`:22`) e deixa **só** `box-shadow: var(--color-focus-ring)` (`:23`) como indicador. O `MASTER.md` proíbe exatamente isso: usar só o `box-shadow` do anel como único indicador de foco, porque o anel tem 1,36:1 sobre claro e não passa em WCAG 2.2 SC 1.4.11 (`MASTER.md:149-150`). |
-| **A regra que a proíbe** | `MASTER.md:149-150` — "usar só `box-shadow: var(--color-focus-ring)` como único indicador de foco (1,36:1 sobre claro, não passa em WCAG 2.2 SC 1.4.11)". E `MASTER.md:147-148`: "foco invisível ou removido (`outline: none` sem o par `outline` + halo do §7)". |
-| **A declaração correta** | O par do §7: `outline: 2px solid var(--color-focus-primary)` + `box-shadow` do halo (`MASTER.md:35`, e a declaração exata em `MASTER.md:104` e `MASTER.md:111-112`). O `outline` é o indicador que passa em 3:1; o `box-shadow` é halo complementar — nunca um sem o outro, nunca `outline: none` seco. |
-| **Tokens envolvidos** | `--color-focus-primary` = `#2563eb` (4,95:1 sobre `#fafafa`) e `--color-focus-ring` = `#bfdbfe` (`MASTER.md:35`) |
+| **Onde está errado** | A regra faz `outline: none` (`:22`) e deixa **só** `box-shadow: var(--color-focus-ring)` (`:23`) como indicador. O `MASTER.md` proíbe exatamente isso: usar só o `box-shadow` do anel como único indicador de foco, porque o anel tem 1,36:1 sobre claro e não passa em WCAG 2.2 SC 1.4.11 (`MASTER.md:40-41`, anti-padrão em `:203`). |
+| **A regra que a proíbe** | `MASTER.md:203` — "usar só `box-shadow: var(--color-focus-ring)` como único indicador de foco (1,36:1 sobre claro, não passa em WCAG 2.2 SC 1.4.11)" (com continuação na `:204`). E `MASTER.md:201`: "foco invisível ou removido (`outline: none` sem o par `outline` + halo do §7)". |
+| **A declaração correta** | O par do §7: `outline: 2px solid var(--color-focus-primary)` + `box-shadow` do halo (`MASTER.md:36-44`, e a declaração exata para o botão em `MASTER.md:130`). O `outline` é o indicador que passa em 3:1; o `box-shadow` é halo complementar — nunca um sem o outro, nunca `outline: none` seco. |
+| **Tokens envolvidos** | `--color-focus-primary` = `#2563eb` (4,95:1 sobre `#fafafa`) e `--color-focus-ring` = `#bfdbfe` (`MASTER.md:36`; `pages/styles/variables.css:110-111`) |
 
 Resposta que acerta: identifica `Button.module.css:21-24`, diz que **não** está
-conforme, nomeia a proibição de `MASTER.md:149-150` (ou `:147-148`), e dá o par
+conforme, nomeia a proibição de `MASTER.md:203` (ou `:201`), e dá o par
 `outline` + `box-shadow` como correção.
 
-**Erro típico:** dizer que `outline: none` está permitido (o `MASTER.md:148` só
+**Erro típico:** dizer que `outline: none` está permitido (o `MASTER.md:200-201` só
 permite o `outline: none` da **base do input**, que é reposto pelo `:focus` de cada
 campo — não é o caso do botão, cujo `:focus-visible` é o único indicador). Ou
 aceitar o `box-shadow` sozinho.
@@ -28,13 +37,13 @@ aceitar o `box-shadow` sozinho.
 
 | | |
 |---|---|
-| **Onde** | `design-system/MASTER.md:49-51` |
-| **A proibição** | `#a3a3a3` (que é `--color-text-tertiary`, `pages/styles/variables.css:95`) sobre fundo claro **não passa** no contraste AA de 4,5:1 exigido para texto normal. O `MASTER.md:50` diz: "usar só para placeholder e texto decorativo, nunca para informação". |
-| **Onde pode** | Placeholder e texto decorativo (`MASTER.md:50`). Ícones com função precisam de ≥ 3:1 contra o fundo adjacente (`MASTER.md:51`). |
+| **Onde** | `design-system/MASTER.md:49-52` |
+| **A proibição** | `#a3a3a3` (que é `--color-text-tertiary`, `pages/styles/variables.css:95`) sobre fundo claro **não passa** no contraste AA de 4,5:1 exigido para texto normal (`MASTER.md:48`). O `MASTER.md:50-51` diz: "usar só para placeholder e texto decorativo, nunca para informação". |
+| **Onde pode** | Placeholder e texto decorativo (`MASTER.md:51`). Ícones com função precisam de ≥ 3:1 contra o fundo adjacente (`MASTER.md:51-52`). |
 | **Referência de contraste** | `--color-text-primary` `#171717` sobre `#fafafa` = 15,9:1; `--color-text-secondary` `#525252` sobre `#fafafa` = 7,5:1 (`MASTER.md:48-49`) |
 
 Resposta que acerta: diz que é proibido para **texto informativo**, e que vale para
-placeholder e texto decorativo, citando `MASTER.md:49-51`.
+placeholder e texto decorativo, citando `MASTER.md:49-52`.
 
 **Erro típico:** dizer que o token pode ser usado em texto de apoio/legenda. Ou
 inverter: dizer que ele "passa" porque 3:1 basta.
@@ -70,9 +79,9 @@ que reprova o uso.
 1. Aceitar o `box-shadow` sozinho como indicador de foco, porque o `MASTER.md`
    menciona `--color-focus-ring` mais de uma vez sem repetir que ele é **halo**.
 2. Chamar `--color-text-tertiary` de "proibido" sem a ressalva do placeholder — o
-   `MASTER.md:50` é o texto exato, e a ressalva é o que a tarefa pergunta.
+   `MASTER.md:50-51` é o texto exato, e a ressalva é o que a tarefa pergunta.
 3. Citar `MASTER.md` sem linha, ou com linha do parágrafo errado (o §2 é
-   `MASTER.md:21-51`; as proibições do §9 são `MASTER.md:142-152`).
+   o bloco normativo `MASTER.md:48-52`; as proibições do §9 são `MASTER.md:200-206`).
 4. Não ver que `Button.module.css:23` usa **só** o anel — é a linha que faz a
    regra estar errada.
 5. Contar só três usos de `--color-text-tertiary` no `Input` e deixar o

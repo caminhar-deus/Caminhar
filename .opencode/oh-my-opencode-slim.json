@@ -177,6 +177,21 @@
       // (21/10) é candidato a bench; nemotron-3-ultra-free segue sem dono. RETENÇÃO: nenhum dos
       // dois tem zero-retention registrado — tratar como free tier comum (ver ADR-0008).
       "orchestrator": { "model": ["opencode/big-pickle", "opencode/glm-5.3-flash-free"] },
+      // RESERVA = glm-5.3-flash-free: era o modelo em que o provider vem caindo na prática desde
+      // a saída do space-bunny (default, inclusive nesta sessão) — declará-lo formalmente alinha
+      // a cadeia com o comportamento real e volta a cobrir rate limit/5xx com um modelo que
+      // nenhum outro agente usa como primário. MEDIÇÃO 22/10 (tarde; bench por papel, 2 turnos,
+      // gabarito FORA do modelo; ADR-0008 §22/10 (tarde)): Camada B 7/8 do gabarito (só o item
+      // `proxy.js`) — a melhor execução única da tabela do `pontuar.js`; Camada C NÃO ORQUESTROU
+      // (nenhum `subagent` — mediu bem como analista, não como primário). A reserva mede a
+      // sessão que ENTRA no lugar do primário, não a condução; big-pickle segue primário.
+      // flint-40b-free (21/10) é candidato a bench; nemotron-3-ultra-free segue sem dono.
+      // RETENÇÃO: nenhum dos dois tem zero-retention registrado — tratar como free tier comum
+      // (ver ADR-0008).
+      "orchestrator": { "model": ["opencode/big-pickle", "opencode/glm-5.3-flash-free"] },
+      // ORACLE — 22/10 (tarde): o glm-5.3-flash-free ESTREOU no papel (caso S8, veredito
+      // correto "não se sustenta", 0 erros verificáveis, divergências doc×código reais) —
+      // segundo candidato vivo; o nemotron-3.5-super-vl segue (medições de 15/10 e 16/10).
       "oracle":       { "model": "opencode/nemotron-3.5-super-vl-free",
                         // Skill do Front-End-Checklist para a revisão (obrigatória no fluxo: oracle revisa sem editar):
                         "skills_add": ["frontend-checklist-global"]
@@ -227,6 +242,10 @@
       // Empatou no critério (erro verificável) com o mimo; desempate pela checagem de
       //_side effects_: o mimo criou arquivo novo e o minimax também. Mantido o mimo, que
       // já estava em produção e tem a medição de 15/10 (9/9 testes) somada.
+      // FIXER — 22/10 (tarde): o glm-5.3-flash-free passou no instrumento novo (regressão
+      // plantada do S1: teste novo falha no original regredido, passa no corrigido, suíte
+      // inteira verde, não editou teste existente) — segundo candidato vivo ao papel; o mimo
+      // segue, com medições de 15/10 e 19/10 no papel.
       "fixer":        { "model": "opencode/mimo-v2.6-flash-free" }
     }
     // Híbrido de exemplo (lembre de adicionar o provedor em enabled_providers no opencode.jsonc):

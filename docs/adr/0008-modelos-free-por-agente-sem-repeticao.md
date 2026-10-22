@@ -652,6 +652,118 @@ hoje), `glm-5.3-flash-free` e `nemotron-3-ultra-free`. RETENÇÃO: nenhum modelo
 provider — tratar todo o free tier como sem garantia de retenção até conferir na fonte.
 
 ## Alternativas consideradas aqui (22/10/2026)
+## 22/10/2026 (tarde): o `glm-5.3-flash-free` medido em TODOS os papéis — instrumento do `fixer` recalibrado com regressão plantada
+
+A reserva do `orchestrator` nunca tinha sido medida no papel real, e a rodada da manhã
+(seção "22/10 (mais tarde)") deixou três instrumentos desalinhados com o código do dia.
+O mantenedor pediu a bateria completa: o glm medido nos **cinco** papéis, um por vez,
+pontuado FORA do modelo pelo critério do ADR.
+
+### Recalibração de instrumento (mesma rodada, como o hook exige)
+
+- **`fixer` — regressão plantada.** O S1 (vazamento de `error.message` em
+  `pages/api/status.js`) foi CORRIGIDO no HEAD em 21/10, o que deixou a tarefa de 19/10
+  sem objeto: a primeira execução do glm (manhã) diagnosticou com honestidade que a
+  correção já estava no disco e **não editou nada** — comportamento correto, medição sem
+  objeto. A execução ficou registrada como `fixer-glm-5.3-flash-free-1-sem-objeto.ndjson`
+  (não descartada, não pontuada). O instrumento novo: `scripts/bench/papeis/regressao-s1.js`
+  devolve o disco ao estado do bug antes do spawn (`rodar.js`) e o conferidor
+  (`conferir-fixer.js`) reaplica a mesma regressão antes de revalidar as edições —
+  `pages/api/status.js` é rastreado, então a limpeza padrão desfaz. **Prova fora do
+  modelo:** com a regressão aplicada, o teste existente
+  `tests/integration/api/status.test.js:51-63` (`not.toContain('DB Offline')`) FALHA
+  (1 failed / 7 passed); no HEAD, 8/8 verdes. Frágil por desenho: se o bloco de `catch`
+  mudar, o helper falha alto em vez de plantar qualquer coisa.
+- **`designer` — gabarito recalibrado.** O `design-system/MASTER.md` foi reescrito em
+  21/10: a declaração exata do foco do botão está hoje em `MASTER.md:130` (antes `:104`),
+  o anti-padrão "box-shadow como único indicador" em `:202-203` (antes `:149-150`),
+  `outline: none` seco em `:201` (antes `:147-148`), a proibição do `#a3a3a3` em `:50-51`
+  (antes `:49-51`), texto informativo em `:205-206`. Os quatro usos do token no `Input`
+  (`:39/:49/:102/:167`) e a nota do `BaseCard.module.css:129` não mudaram.
+- **`oracle` — instrumento novo.** Caso S8 real: um "achado" de escalada de privilégio
+  cujo veredito correto é **não se sustentar** (tarefa + gabarito novos em
+  `scripts/bench/papeis/tarefa-oracle.md` / `gabarito-oracle.md`).
+
+### A rodada do glm (7 sessões de bench hoje; catálogo de 9 modelos free)
+
+**Camada A (automática) — limpa nos 5 papéis:** 0 citação inválida, 0 contaminação no
+`conferir.js`; duas exposições INCIDENTAIS declaradas de forma transparente (explorer e
+fixer: o grep global vazou 2 linhas de preview de `scripts/bench/` sem leitura dirigida;
+nenhum dos dois abriu ou procurou o diretório — mesma limitação que os candidatos de
+19/10 tiveram, declarada e não invalidante).
+
+- **`explorer` — PASSA (0 erros verificáveis).** Parte A: 6/6 pontos de `withAuth`
+  (definição `lib/auth/auth.js:324` + 5 aplicações confirmadas uma a uma), armadilhas
+  cobertas (imports, comentários, `status.js` com `verifyToken`, rota extinta), e
+  verificação de que `app/` não existe. Parte B: declarou **zero** ocorrências de
+  `Cache-Control` na página do Route Handler (conferido: 0 em `route.md`), apontou o
+  `revalidate` como opção correta e marcou **NÃO DETERMINADO** o que os docs não
+  documentam — com notas de versão (v16.2.9 vs canary). 35 tool calls.
+- **`designer` — PASSA com ressalva.** P1 ✓ (`Button.module.css:21-24`, `outline: none`
+  seco + halo como único indicador, correção com o par completo — e citou `MASTER.md:130`,
+  a linha CERTA do MASTER de hoje, que o gabarito antigo ainda não via). P2 ✓ (proibido
+  para informação, permitido para placeholder/decorativo, `:50-51`). P3 **parcial**:
+  listou os quatro usos do `--color-text-tertiary` no `Input` — inclusive `helperText`
+  `:167`, a violação — mas não atribuiu veredicto por uso. Dois off-by-one de linha
+  (`:203-204` e `:206-207` vs `:202-203` e `:205-206`). Nenhum erro verificável de
+  conteúdo; epílogo de fechamento confuso (nota de forma).
+- **`fixer` (instrumento novo) — PASSA (3/3 verificações do conferidor).** Corrigiu
+  `pages/api/status.js` (mensagem fixa pt-BR, `catch` sem binding, 200 preservado),
+  criou `tests/integration/api/status.error-leak.test.js` com 3 casos; o teste novo
+  FALHA no código original regredido, PASSA no corrigido, e a suíte inteira fica verde
+  NA CÓPIA DO BENCH (1421 passed / 73 skipped = 1418 do repo + os 3 casos do teste
+  novo; lint 0/0). NÃO editou teste existente (regra 1). Sob o
+  instrumento novo, o glm é o único candidato com 3/3; as medições de 19/10 dos rivais
+  partem do disco da época e NÃO são comparáveis sob o instrumento novo (as pontuações
+  de 19/10 permanecem as oficiais da época).
+- **`oracle` — PASSA (veredito correto, 0 erros verificáveis).** O "achado" de escalada
+  **não se sustenta**: `role` é obrigatório no schema (`pages/api/admin/users.js:10-14`),
+  validado contra `roles` (`:100-105`), o cargo `admin` é comum por DESENHO
+  (`ADR-0010:15-17/:63-67/:90-92`), o bypass é intencional (`lib/api/permissions.js:55-58`)
+  e a permissão é a unidade (`:60-63`); `requireAdmin = false` em
+  `lib/api/adminCrudHandler.js:120` é consistente. Testes citados conferidos
+  (`users.test.js:147/:169-179/:183-198/:200-213`) com ressalva honesta (o ator dos
+  testes é admin). Divergências doc×código REAIS: o README não tem mais a tabela que o
+  `ADR-0010:18-26` cita como referência; `docs/ARQUITETURA_SITE_PRIVADO.md:224`
+  (exclusão do admin) está atrás do código. Citações conferidas fora do modelo
+  (Camada A: nenhuma inválida).
+- **`orchestrator` — Camada B: 7/8 (a melhor execução única da tabela do `pontuar.js`).
+  Erro único: o item `proxy.js` não apareceu na resposta; os outros sete itens ok
+  (31 arquivos, 31 rotas, ponto de aplicação, segurança no `next.config.js`, 405).
+  Camada C: **NÃO ORQUESTROU** — nenhum tool `subagent` nas duas sessões; respondeu
+  "na mão" com a auditoria inteira. Pela rubrica, sem delegação não houve condução:
+  o glm mediu bem como ANALISTA, não como primário. Os rivais históricos
+  (`minimax` 17/24, `space-bunny` 14/24 no instrumento antigo) não são comparáveis com
+  o instrumento de 22/10 rodado no mesmo dia; a comparação válida está no instrumento de
+  cada época.
+
+### Decisão
+
+Nenhuma troca de atribuição. `big-pickle` segue primário do `orchestrator` e o
+`glm-5.3-flash-free` segue reserva — só que agora a reserva é **medida**: Camada B 7/8
+no gabarito, Camada C sem orquestração (reserva cobre queda de modelo, não substitui a
+condução; é o que a cadeia promete e o que ela cumpre). `mimo` segue `fixer` e
+`nemotron-3.5-super-vl` segue `oracle` — o glm estreia como segundo candidato vivo em
+ambos os papéis, com medição maior que zero. O preset registrou a medição nos blocos
+do `orchestrator` (a reserva deixou de ser "nunca medida") e dos papéis onde o glm
+também passou.
+
+## Alternativas consideradas aqui (22/10/2026, tarde)
+
+- **Trocar o `oracle`/`fixer` pelo glm, que acabou de passar.** Descartado: o critério do
+  ADR é menos erros verificáveis E não repetir modelos entre agentes — trocar um primário
+  medido por um que acabou de medir igualmente limpo não ganha nada e perde a redundância
+  (o glm é a reserva do `orchestrator`; dar outro papel a ele consolida o mesmo id em
+  duas cadeias).
+- **Descartar a execução do glm no papel do `fixer` da manhã ("sem objeto").** Descartado:
+  o ADR registra observação negativa como evidência — ela é o motivo direto da
+  recalibração e previne a mesma leitura errada em rodada futura ("por que não editou?
+  O instrumento estava rompelmente certo, o código é que estava corrigido").
+- **Comparar rivais de 19/10 sob o instrumento novo.** Descartado: o "código original"
+  de 19/10 é outro disco; reexecutar os candidatos antigos sob a regressão plantada mede
+  o acoplamento entre as `oldString` que eles gravaram e o estado de hoje, não o modelo.
+
+
 
 - **Aproveitar a saída do `longcat` para apontar o `explorer` direto no `flint-40b-free`
   (o estreante).** Descartado: contra a regra do próprio ADR — medição vale por papel, e

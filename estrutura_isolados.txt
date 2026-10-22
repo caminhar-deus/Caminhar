@@ -95,6 +95,8 @@ load-tests/security/rate-limit-test.js → load-tests/helpers/profiles.js
 load-tests/security/rate-limit-test.js → load-tests/helpers/report.js
 scripts/backup.js → scripts/utils/constants.js
 scripts/backup.js → scripts/utils/date-format.js
+scripts/bench/papeis/conferir-fixer.js → scripts/bench/papeis/regressao-s1.js
+scripts/bench/papeis/rodar.js → scripts/bench/papeis/regressao-s1.js
 scripts/check-server.js → scripts/utils/constants.js
 scripts/clean-k6-reports.js → scripts/utils/constants.js
 scripts/clean-load-test-posts.js → scripts/utils/cleanup.js
