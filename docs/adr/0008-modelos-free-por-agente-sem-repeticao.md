@@ -710,7 +710,8 @@ nenhum dos dois abriu ou procurou o diretório — mesma limitação que os cand
   `pages/api/status.js` (mensagem fixa pt-BR, `catch` sem binding, 200 preservado),
   criou `tests/integration/api/status.error-leak.test.js` com 3 casos; o teste novo
   FALHA no código original regredido, PASSA no corrigido, e a suíte inteira fica verde
-  (1421 passed / 73 skipped, lint 0/0). NÃO editou teste existente (regra 1). Sob o
+  NA CÓPIA DO BENCH (1421 passed / 73 skipped = 1418 do repo + os 3 casos do teste
+  novo; lint 0/0). NÃO editou teste existente (regra 1). Sob o
   instrumento novo, o glm é o único candidato com 3/3; as medições de 19/10 dos rivais
   partem do disco da época e NÃO são comparáveis sob o instrumento novo (as pontuações
   de 19/10 permanecem as oficiais da época).
