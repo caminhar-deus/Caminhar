@@ -7,6 +7,12 @@ arquivos que esta tarefa nomeia.
 `200` mesmo quando o banco está fora, e nesse caminho de erro põe a mensagem
 crua do banco na resposta (`error.message`).
 
+**Estado do ambiente:** esta execução é uma medição com o bug **deliberadamente
+reintroduzido no disco** — o vazamento já foi corrigido no histórico do projeto, mas
+aqui ele está de volta, no disco, e é o objeto da tarefa. Ignore `git log`, `git diff
+HEAD` e comparações com o histórico: o seu trabalho é sobre o código que está no
+disco, e o parágrafo acima descreve o que ele faz neste momento.
+
 O que a rota deve fazer:
 
 - Continuar respondendo `200` — é um health check, e o frontend depende desse status.

@@ -21,12 +21,14 @@
  * Uso:
  *   node scripts/bench/papeis/rodar.js --agente designer --modelo opencode/beam-free
  *   node scripts/bench/papeis/rodar.js --agente fixer --modelo opencode/mimo-v2.6-flash-free
+ *   node scripts/bench/papeis/rodar.js --agente oracle --modelo opencode/glm-5.3-flash-free
  */
 import { spawn } from 'node:child_process';
 import { mkdir, writeFile, readFile, access } from 'node:fs/promises';
 import { createWriteStream, constants } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { aplicarRegressao } from './regressao-s1.js';
 
 const RAIZ = path.resolve(import.meta.dirname, '..', '..', '..');
 const DIR = path.join(RAIZ, 'scripts', 'bench', 'papeis');
@@ -36,11 +38,21 @@ const TAREFAS = {
   designer: 'tarefa-designer.md',
   fixer: 'tarefa-fixer.md',
   explorer: 'tarefa-explorer.md',
+  oracle: 'tarefa-oracle.md',
 };
 
 const PADRAO_MODELOS = {
   designer: ['opencode/beam-free'],
   fixer: ['opencode/mimo-v2.6-flash-free'],
+  // explorer: candidatos da bateria do papel de 22/10/2026 (longcat-2.5-preview-free saiu do
+  // catálogo). RESULTADO: deepseek venceu (0 erros verificáveis) e é o modelo do preset;
+  // flint-40b-free caiu com provider 503 na única execução. Lista conferida com `opencode
+  // models` — id fora do catálogo falha em silêncio no spawn.
+  explorer: ['opencode/deepseek-v4.1-flash-free', 'opencode/flint-40b-free'],
+  // oracle: papel novo (22/10/2026) — triagem de achado de auditoria com fundamento em
+  // decisão de projeto (tarefa-oracle.md + gabarito-oracle.md). glm é o único modelo sem
+  // medição em catálogo vivo (fora os excluídos da rodada).
+  oracle: ['opencode/glm-5.3-flash-free'],
 };
 
 /** Arquivos deste bench — nunca são tocados pela restauração do repo. */
@@ -83,7 +95,7 @@ function parseArgs(argv) {
       throw new Error(`Argumento desconhecido: ${arg}`);
     }
   }
-  if (!opts.agente) throw new Error('Informe --agente (designer | fixer | explorer)');
+  if (!opts.agente) throw new Error('Informe --agente (designer | fixer | explorer | oracle)');
   if (!TAREFAS[opts.agente]) {
     throw new Error(`Agente sem tarefa definida: ${opts.agente}. Conhecidos: ${Object.keys(TAREFAS).join(', ')}`);
   }
@@ -262,6 +274,19 @@ async function main() {
       ];
 
       console.log(`[${base}] rodando… (timeout ${opts.timeoutMin} min)`);
+      // O fixer mede hoje a correção do S1 com o bug REINTRODUZIDO no disco:
+      // o vazamento foi corrigido no HEAD em 21/10, sem o que a tarefa de
+      // 19/10 fica sem objeto (glm 22/10: diagnosticou "já corrigido" e não
+      // editou — comportamento honesto, medição sem objeto). A regressão é
+      // plantada aqui e a restauração de pós-execução a desfaz pelo
+      // `git checkout` padrão (status.js é rastreado).
+      if (opts.agente === 'fixer') {
+        try {
+          await aplicarRegressao(RAIZ);
+        } catch (erro) {
+          throw new Error(`Falha ao preparar a regressão do S1 para o fixer: ${erro.message}`);
+        }
+      }
       const inicio = Date.now();
       const { codigo, stderr } = await executarSessao(args, arqSaida, opts.timeoutMin * 60 * 1000);
       const duracao = Date.now() - inicio;

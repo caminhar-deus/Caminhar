@@ -16,6 +16,7 @@ import { spawn } from 'node:child_process';
 import { readFile, writeFile, rm, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import { aplicarRegressao } from './regressao-s1.js';
 
 const RAIZ = path.resolve(import.meta.dirname, '..', '..', '..');
 const DIR = path.join(RAIZ, 'scripts', 'bench', 'papeis');
@@ -117,11 +118,15 @@ async function main() {
 
     // 1. o teste novo, no código ORIGINAL, tem de falhar
     await restaurar();
+    // Desde 21/10 o S1 está corrigido no HEAD: o "código original" da tarefa é
+    // o disco com a regressão plantada (o mesmo que a execução viu).
+    await aplicarRegressao(RAIZ);
     await aplicarEscritas(escritas);
     const noOriginal = await rodarJest(testesNovos);
 
     // 2. o teste novo, no código CORRIGIDO, tem de passar
     await restaurar();
+    await aplicarRegressao(RAIZ);
     await aplicarEscritas(escritas);
     await aplicarEdicoes(edicoes);
     const noCorrigido = await rodarJest(testesNovos);
