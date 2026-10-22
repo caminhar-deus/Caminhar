@@ -284,7 +284,7 @@ async function main() {
         try {
           await aplicarRegressao(RAIZ);
         } catch (erro) {
-          throw new Error(`Falha ao preparar a regressão do S1 para o fixer: ${erro.message}`);
+          throw new Error(`Falha ao preparar a regressão do S1 para o fixer: ${erro.message}`, { cause: erro });
         }
       }
       const inicio = Date.now();
