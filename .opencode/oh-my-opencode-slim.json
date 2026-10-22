@@ -91,6 +91,13 @@
     // (e minimax-m3.1-flash-free entrou no mesmo dia). Confira antes de confiar nesta lista.
     // nemotron-3.5-lightning-free fica de fora: foi o que derrubou o explorer em 09/10/2026.
     //
+    // 22/10/2026: inventário reconferido — 9 modelos free (conferido com a tool interna de
+    // modelos, ~todas as versões de família): beam-free, big-pickle, deepseek-v4.1-flash-free,
+    // flint-40b-free (NOVO, 21/10), glm-5.3-flash-free, mimo-v2.6-flash-free, nemotron-3-ultra-free,
+    // nemotron-3.5-lightning-free, nemotron-3.5-super-vl-free. Saíram do catálogo neste ciclo:
+    // longcat-2.5-preview-free (quebrou o explorer) e minimax-m3.1-flash-free (primário morto do
+    // orchestrator). Confira antes de confiar nesta lista.
+    //
     // ÓRFÃO POR DECISÃO (19/10/2026): deepseek-v4.1-flash-free era o modelo do librarian; com o
     // merge do 3.0.5 ficou sem dono. A bateria que faltava rodou no papel novo (repo + doc externa
     // via context7/gh_grep, uma execução por modelo, citações conferidas em arquivo:linha):
@@ -152,7 +159,17 @@
       // erro verificável: 0 do minimax contra 1 do big-pickle. minimax vira o PRIMÁRIO.
       // big-pickle continua como RESERVA — ela cobre rate limit e 5xx, que são os erros
       // frequentes; para "o primário saiu do catálogo", o mecanismo é a checagem de catálogo.
-      "orchestrator": { "model": ["opencode/minimax-m3.1-flash-free", "opencode/big-pickle"] },
+      // ORCHESTRATOR — 22/10/2026: minimax-m3.1-flash-free SAIU do catálogo (não aparece nem no
+      // inventário completo; nem como versão anterior de família). big-pickle vira PRIMÁRIO: é o
+      // único vivo com medição no papel real (orchestrator-bench 19/10: 19/24 itens do Camada B,
+      // 1 erro verificável por execução — o primário medido anterior tinha 21/24 e saiu).
+      // RESERVA = glm-5.3-flash-free: nunca medido no papel, mas é o modelo em que o provider
+      // vem caindo na prática desde a saída do space-bunny (default, inclusive nesta sessão) —
+      // declará-lo formalmente alinha a cadeia com o comportamento real e volta a cobrir
+      // rate limit/5xx com um modelo que nenhum outro agente usa como primário. flint-40b-free
+      // (21/10) é candidato a bench; nemotron-3-ultra-free segue sem dono. RETENÇÃO: nenhum dos
+      // dois tem zero-retention registrado — tratar como free tier comum (ver ADR-0008).
+      "orchestrator": { "model": ["opencode/big-pickle", "opencode/glm-5.3-flash-free"] },
       "oracle":       { "model": "opencode/nemotron-3.5-super-vl-free",
                         // Skill do Front-End-Checklist para a revisão (obrigatória no fluxo: oracle revisa sem editar):
                         "skills_add": ["frontend-checklist-global"]
