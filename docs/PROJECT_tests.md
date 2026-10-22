@@ -521,6 +521,7 @@ As suítes `clear-db`, `clear-musicas`, `reset-password` e `seed-all` agora **im
 |---------|-----------|
 | `profiles.test.js` | Testes de `getProfile`/`PROFILES` (`load-tests/helpers/profiles.js`): travam a **semântica de merge dos thresholds** — por padrão o perfil base é preservado e só as chaves repetidas são substituídas pelo override, e o escape hatch `replaceThresholds: true` descarta o base por inteiro sem vazar para o `options` do k6. Incluem invariantes da matriz de perfis e um controle negativo que prova ter força (mutar o resultado de `getProfile` não contamina `PROFILES`). |
 | `error-gate-coverage.test.js` | 11 testes que travam a **cobertura de gate de erro** da suíte k6: a parte estática de toda URL de requisição é ASCII (o byte UTF-8 cru no request target é o que provocava o 400 antes da aplicação), os 6 scripts que esperam 4xx por desenho **não** declaram `http_req_failed`, os 4 marcadores de `check` do warm-up/teardown existem nos 4 scripts, o `posts-tags` declara `rate<0.20`, e quem declara `http_req_failed` entre os perfis (`light`/`recovery`/`rateLimit` não; `medium`/`heavy`/`health` sim). **Verificado por mutação:** as 5 mudanças da Fase 2 revertidas uma a uma reprovaram o teste correspondente (5/5). |
+| `sort-contract-coverage.test.js` | 5 testes que travam o **contrato de `sort`** entre a suíte e as rotas públicas: extraem do código-fonte o conjunto de valores que cada rota aceita (enum inline `sort: z.enum([...])` ou constante `*_SORT_ENUM`) e exigem que todo valor de `sort` que um script de ordenação envie esteja no enum vigente; e que o formato legado `sort=<campo>&order=<dir>` só seja usado contra rota com **fallback** (que aceita qualquer valor, então não reprova a suíte). É a guarda que teria reprovado o cron #19 **antes** do disparo — o script mandava `?sort=recent`, valor que o ADR-0014 tirou do enum de `/api/musicas`, e a rota passou a devolver 400. **Verificado por mutação:** voltar o script para `sort=recent` reprova 2 das 5 asserções; tirar `default` do enum da rota reprova 3. |
 
 > **Por que o primeiro teste de `load-tests/` só apareceu em 19/10/2026:** até então nada em `load-tests/` era exercitado por jest, e a Fase 1 do item AD mexe justamente na função que até 20/10/2026 perdia thresholds em silêncio — sem o teste, a correção poderia reintroduzir a mesma falha sem ninguém perceber. **O teste foi reescrito junto com a correção** (a caracterização do descarte virou a do merge) e **verificado por mutação**: reverter o `getProfile` para a semântica antiga reprova exatamente os 2 casos de merge, e restaurar o verde.
 
@@ -541,14 +542,14 @@ As suítes `clear-db`, `clear-musicas`, `reset-password` e `seed-all` agora **im
 | **Testes de Integração — API Auth** | 4 arquivos |
 | **Testes de Integração — Auth v1** | 1 arquivo |
 | **Testes de Integração — Domínio (DB real)** | 6 arquivos |
-| **Testes Unitários** | 135 arquivos |
-| **Total Geral** | **229 arquivos** |
+| **Testes Unitários** | 138 arquivos |
+| **Total Geral** | **232 arquivos** |
 
 ---
 
 > **Nota:** Este documento reflete a análise atual dos arquivos em `/tests`. Em caso de divergência com documentos anteriores, prevalece esta análise.
 >
-> **Recount verificado em 21/10/2026: 229 arquivos `.js`** — 228 no recount de 19/10/2026 + 1 (`tests/unit/load-tests/error-gate-coverage.test.js`, que trava a cobertura de gate de erro da suíte k6). O recount anterior (226, de 12/10/2026 → 228 em 19/10/2026) somava os 2 arquivos que travaram os gates do `getProfile` e do pin do k6. A contagem mais antiga (217, de 24/09/2026) estava defasada em 12 arquivos. Recount feito com `find tests -name '*.js'`, por diretório — o mesmo critério da contagem original (arquivos `.js`, não apenas `*.test.js`). As maiores divergências foram **Integração — API (50 → 34)** e **Unitários (127 → 135)**.
+> **Recount verificado em 22/10/2026: 232 arquivos `.js`** — 229 no recount de 21/10/2026 + 3 (`tests/unit/utils/reorder.test.js` e `tests/unit/lib/api/permissions.test.js`, entrados em 21/10/2026 pela outra sessão, e `tests/unit/load-tests/sort-contract-coverage.test.js`, que trava o contrato de `sort` entre a suíte e as rotas públicas). O recount anterior (229, de 21/10/2026) somava o `tests/unit/load-tests/error-gate-coverage.test.js`, que trava a cobertura de gate de erro da suíte k6; antes disso, 226 (12/10/2026) → 228 (19/10/2026) somava os 2 arquivos que travaram os gates do `getProfile` e do pin do k6. A contagem mais antiga (217, de 24/09/2026) estava defasada em 15 arquivos. Recount feito com `find tests -name '*.js'`, por diretório — o mesmo critério da contagem original (arquivos `.js`, não apenas `*.test.js`). As maiores divergências foram **Integração — API (50 → 34)** e **Unitários (127 → 138)**.
 >
 > Este quadro é a **única fonte de contagem** do projeto. `docs/UPGRADE_tests.md` não repete números globais — remete para cá — para não haver duas contagens divergindo.
 >

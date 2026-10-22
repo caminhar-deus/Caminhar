@@ -1477,7 +1477,7 @@ Estes são os **primeiros gates de taxa de erro sobre requisições** que esses 
 
 ### Fase 2 do item AD — aplicada em 21/10/2026, aguardando o cron #19
 
-**Commit que leva a Fase 2 para o ar:** `8e460f9` (21/10/2026) — é com este código que o cron #19 roda. Árvore limpa no commit; validação local re-executada no mesmo estado: `npm run lint` 0, `npm run knip` 0, `npx jest tests/unit/load-tests` 22/22.
+**Commit que leva a Fase 2 para o ar:** `8e460f9` (21/10/2026). Árvore limpa no commit; validação local re-executada no mesmo estado: `npm run lint` 0, `npm run knip` 0, `npx jest tests/unit/load-tests` 22/22. **Correção (22/10/2026):** o cron #19 **não** rodou este código — o cron roda a ponta da `main`, e entre `8e460f9` e o disparo entraram mais 3 commits de outra sessão (`b7950f1` Design e Arquitetura, `087d934` move de `pages/api/helper/pagination.js` → `lib/api/pagination.js`, `c6cef12` API e Test e Docs 02). O #19 rodou `c6cef12` (ver o registro do #19 abaixo).
 
 **O que mudou no código (5 arquivos) e por quê.** A auditoria dos 30 scripts mostrou que a premissa do plano original da Fase 2 ("um gate de `http_req_failed` por script, calibrado por volume") estava errada: **dos 20 scripts que ficam sem gate de taxa, 6 esperam 4xx por desenho e 14 têm `check` de status** — o instrumento certo para "a resposta foi a esperada?". O que faltava na maioria **não era gate de taxa, era `check` onde havia ponto cego** (warm-up e teardown).
 
@@ -1496,6 +1496,51 @@ Estes são os **primeiros gates de taxa de erro sobre requisições** que esses 
 **Cobertura travada por teste.** `tests/unit/load-tests/error-gate-coverage.test.js` (11 testes) fixa: (a) a parte estática de toda URL de requisição da suíte é ASCII; (b) os 6 scripts que esperam 4xx por desenho **não** declaram `http_req_failed`; (c) os 4 marcadores de `check` do warm-up/teardown existem nos 4 scripts; (d) o `posts-tags` declara `rate<0.20`; (e) quem declara `http_req_failed` entre os perfis (`light`/`recovery`/`rateLimit` não; `medium`/`heavy`/`health` sim); (f) o inventário tem 30 scripts. **Prova de mutação executada:** as 5 mudanças revertidas uma a uma reprovaram o teste correspondente (5/5), com a suíte restaurada ao final.
 
 **O que esperar no cron #19 (22/10/2026).** `http_req_failed` **com threshold** em **10 dos 30** scripts (os 9 da Fase 1 + `posts_tags`); `musicas_search` com `http_req_failed` = 0/7 (o warm-up agora responde 200); `posts_tags` com 0,00% e 15/15 checks; 30/30 passed. **Conferir no artifact, não no código** — é onde a Fase 1 mostrou que a mentira mora. O registro do #19 fica nesta seção, com o número de thresholds avaliados.
+
+### Cron #19 (22/10/2026) — FALHOU: reprovou o `musicas-sort-test`, e a causa foi o contrato de `sort` do ADR-0014
+
+**O que foi medido (metadados públicos do run, via API do GitHub).**
+
+| Campo | Valor medido |
+|-------|--------------|
+| Run / SHA | `39755449685` / `c6cef12` — **não** `8e460f9` (ver a correção acima) |
+| Event / conclusion | `schedule` (cron `17 4 * * *`) / **`failure`** |
+| Job `load-tests / run-tests` | `09:26:38Z` → `09:44:33Z` = **17m55s** (o #18 levou 17m59s: a bateria inteira rodou — o orquestrador registra a falha e **continua**) |
+| Steps | 1–9, 11–13 e 28–31 **OK**; **"Run Tests" (step 10) reprovou** com exit code 1; "Upload Coverage" skipped |
+| Artifact | `k6-load-test-reports` (id `12416367637`), 50.668 B, enviado (step 13 ✓) |
+| **Resumo do orquestrador (lido no log)** | **30 scripts · ✅ 29 passed · ❌ 1 failed · ⏭️ 0 skipped** |
+
+**Causa raiz — CONFIRMADA no log do step "Run Tests".** O bloco "❌ DETALHES DOS ERROS" do orquestrador nomeia **um** script reprovado, e é exatamente o previsto:
+
+```
+❌ musicas-sort-test — exit code: 99
+   Checks que falharam:
+     • Status é 200                  ↳  0% — ✓ 0 / ✗ 1
+     • Retornou lista de musicas     ↳  0% — ✓ 0 / ✗ 1
+   Thresholds violados:
+     • checks.....................: 33.33%  ✓ 1       ✗ 2
+   Erros de console (level=error):
+     • thresholds on metrics 'checks' have been crossed
+```
+
+O ADR-0014 (21/10/2026, aceito) trocou o contrato público de `sort` de `/api/musicas`: `recent` **saiu**, entraram `positioned`, `oldest` e `alpha_desc` — e a rota passou a validar com `z.enum`, então valor fora do conjunto devolve **400**. O `load-tests/performance/musicas-sort-test.js` continuou mandando `sortMode: 'recent'` → `GET /api/musicas?sort=recent` → 400 → **2 dos 3 checks falharam** ("Status é 200" e "Retornou lista de musicas"; o terceiro, de ordenação, retorna `true` por construção quando o corpo não é array) → `checks` = 1/3 = **33,33%** contra o threshold `checks: ['rate==1.0']` do perfil `light` → script reprovado (exit 99 do k6) → o orquestrador acumula `results.failed` e sai com código 1 → o step "Run Tests" reprova e o job cai. O `33,33%` do log casa com a aritmética do `createSortTest` (1 request, 3 checks, 1 passed).
+
+Prova executável do enum (`z.enum` do antes e do depois): `sort=recent` → válido antes / **inválido (400)** depois; `sort=default` → válido nos dois; `sort=positioned` → inválido antes / válido depois.
+
+**Não foi a Fase 2.** A Fase 2 mudou 5 scripts (`posts-tags`, `musicas-search`, `search-content`, `musicas-crud`, `videos-crud`) — **nenhum** deles é o `musicas-sort-test`; e nenhuma das rotas que eles tocam mudou em `b7950f1`/`c6cef12` (`GET /api/posts` ficou igual; `GET /api/admin/musicas` e `/api/admin/videos` não mudaram de contrato). **Foi** o ajuste da outra sessão — que trocou o contrato da API e **não** atualizou o script da suíte. O log confirma os dois lados: o único reprovado é o `musicas-sort-test`, e **os 5 scripts da Fase 2 passaram** (ver a lista abaixo).
+
+**O que a outra sessão mudou e NÃO quebrou a suíte (para o registro).** `/api/status` sem `?mode=health` passou a exigir token (401) — o único script que usava era o `stress-test-combined`, **corrigido no mesmo `c6cef12`**; `POST /api/posts` foi removido (405) — nenhum script k6 fazia POST ali (`create-post-flow` já usava `/api/admin/posts`); `lib/api/adminCrudHandler.js` passou a compartilhar a checagem de RBAC com `lib/api/permissions.js`, **sem** mudar o comportamento observável (o cargo `admin` segue com o bypass do ADR-0010); `pages/api/helper/pagination.js` foi movido para `lib/api/pagination.js` (mudança de caminho, não de comportamento).
+
+**Correção aplicada (22/10/2026).** `musicas-sort-test.js` passou a mandar `sortMode: 'default'` — "Padrão" = "Mais recentes" (`created_at DESC`), exatamente a ordenação que o check "Ordenação correta (Decrescente)" valida. **Guarda nova:** `tests/unit/load-tests/sort-contract-coverage.test.js` (5 testes) extrai o enum de `sort` das rotas estritas (`/api/musicas`, `/api/products`) do código-fonte e exige que todo valor de `sort` enviado por um script de ordenação esteja no enum vigente — o que teria reprovado o #19 **antes** do cron, e não depois. **Prova de mutação executada:** (a) voltar o script para `sort=recent` reprovou 2 dos 5 testes; (b) tirar `default` do enum da rota reprovou 3 dos 5; suíte restaurada ao final (27/27 em `tests/unit/load-tests`).
+
+**O que o log confirmou (e o que ele não diz).** O bloco de erros do orquestrador fecha as duas perguntas que importavam: (1) **`musicas_sort_test` foi o único script reprovado** — 29 passaram, 1 reprovou, 0 pulados; (2) o mecanismo é o 400 do `sort` removido, com os **nomes** dos checks e o **33,33%** batendo com a aritmética do `createSortTest`. Os **números exatos** de `http_req_failed`/`checks` dos 30 scripts continuam apenas no artifact (`k6-load-test-reports` e `reports/k6-summaries/orchestrator-results.json`), que exige token para baixar — mas os 29 passes já implicam que **todo threshold dos outros 29 scripts foi cumprido**, e isso confirma a Fase 2 em produção:
+- `musicas-search` passou → os 2 `check` de warm-up (adicionados na Fase 2) responderam 200 → o 400 do byte UTF-8 cru está corrigido de verdade, agora **coberto** pelo gate `checks: ['rate==1.0']` (antes ele era invisível).
+- `search-content` passou → os 3 `check` de warm-up idem.
+- `posts-tags` passou → o gate novo `http_req_failed: ['rate<0.20']` segurou: com 5 requisições, **1 falha já seria 20%** (e reprovaria) → o run #19 teve **0 requisições falhas** nesse script.
+- `musicas-crud` e `videos-crud` passaram → os `check` de teardown (listagem admin 200 e delete 200/404) seguraram: a limpeza deixou o banco limpo **e** visível.
+- Os 24 scripts restantes passaram → as mudanças da outra sessão (`b7950f1`, `087d934`, `c6cef12`) não introduziram **nenhuma** outra regressão na suíte.
+
+**Lição.** O risco prospectivo do item AD ("mudança de contrato de API" como um dos riscos dos 23 scripts sem gate) era real — e era este. O script que reprovou **não** era dos 23 sem gate: tinha `checks: ['rate==1.0']`, que enxergou o 400. O que faltava era a **detecção do drift de contrato** (API mudou, script ficou), não um gate novo — e é isso que a guarda nova faz. A segunda lição é de processo: **quem troca o contrato público de uma rota tem de atualizar, no mesmo passo, os scripts da suíte que a exercitam** — o ADR-0014 mudou o enum de `sort` e o `musicas-sort-test.js` ficou mandando o valor antigo. O ADR-0014 documenta o contrato novo com clareza; o que faltava era o **passo de conferência** da suíte, que agora está automatizado por `sort-contract-coverage.test.js`.
 
 ---
 

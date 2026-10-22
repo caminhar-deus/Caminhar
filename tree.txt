@@ -1263,7 +1263,8 @@
 │       │       └── config.test.js
 │       ├── load-tests
 │       │   ├── error-gate-coverage.test.js
-│       │   └── profiles.test.js
+│       │   ├── profiles.test.js
+│       │   └── sort-contract-coverage.test.js
 │       ├── next.config.test.js
 │       ├── pages
 │       │   └── api
@@ -1312,4 +1313,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-204 directories, 1109 files
+204 directories, 1110 files
