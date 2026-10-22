@@ -80,6 +80,9 @@ export default function AdminRolesTab() {
     <AdminCrudBase apiEndpoint="/api/admin/roles" title="Gestão de Cargos e Permissões"
       fields={fields} columns={columns} initialFormData={{ name: '', permissions: [] }}
       validationSchema={roleSchema} newButtonText="+ Novo Cargo" searchable={false}
-      showItemCount={true} itemNameSingular="cargo cadastrado" itemNamePlural="cargos cadastrados" />
+      showItemCount={true} itemNameSingular="cargo cadastrado" itemNamePlural="cargos cadastrados"
+      // Trava de integridade: a linha do cargo `admin` não exibe "Excluir"
+      // (o backend também recusa — a escondida da UI não é a garantia).
+      canDelete={(item) => item.name !== 'admin'} />
   );
 }

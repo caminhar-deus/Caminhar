@@ -1,6 +1,6 @@
 import { query } from '../../lib/infra/db.js';
 import { getOrSetCache, checkRateLimit } from '../../lib/cache/cache.js';
-import { paginate, buildPaginationMeta, paginatedResponse } from './helper/pagination.js';
+import { paginate, buildPaginationMeta, paginatedResponse } from '../../lib/api/pagination.js';
 import { getClientIP, INVALID_PAGINATION_MESSAGE } from '../../lib/api/helpers.js';
 import { logger } from '../../lib/infra/logger.js';
 

@@ -39,6 +39,20 @@ async function roleExists(role) {
   return rows.length > 0;
 }
 
+/**
+ * Usuário administrador protegido (trava de integridade — §9 do doc privado).
+ *
+ * É o usuário criado com `process.env.ADMIN_USERNAME` em `lib/auth/auth.js`
+ * (cujo boot força o cargo dele para `admin`). Sem a variável definida, o
+ * default é `'admin'` (mesmo default de `.env.example`). A leitura é feita por
+ * chamada — não em tempo de módulo — para refletir o ambiente de execução.
+ *
+ * @returns {string} Username do administrador que não pode ser excluído nem ter o cargo alterado
+ */
+function getProtectedAdminUsername() {
+  return process.env.ADMIN_USERNAME || 'admin';
+}
+
 async function handleGet(req, res) {
   const page = parseInt(req.query.page || '1', 10);
   const limit = parseInt(req.query.limit || '100', 10);
@@ -127,6 +141,23 @@ async function handlePut(req, res) {
     });
   }
 
+  // Trava de integridade do administrador (§9 do doc privado): o vínculo do
+  // usuário protegido com o cargo `admin` não pode ser alterado. Só consulta o
+  // alvo quando o PUT tenta trocar de cargo; reenviar o MESMO cargo `admin` é
+  // idempotente (permitido) e PUT sem `role` não é afetado. Na recusa, o
+  // `updateRecords` não é chamado.
+  if (validatedData.role !== undefined && validatedData.role !== 'admin') {
+    const targetQuery = await query('SELECT username FROM users WHERE id = $1', [updateId]);
+    const targetUsername = targetQuery.rows[0]?.username;
+
+    if (targetUsername === getProtectedAdminUsername()) {
+      return res.status(400).json({
+        error: 'Vínculo do administrador protegido',
+        message: `O usuário administrador "${targetUsername}" não pode ter o vínculo com o cargo "admin" alterado.`,
+      });
+    }
+  }
+
   // Se uma nova senha for enviada, criamos o hash. Se não, ignoramos e mantemos a antiga.
   if (validatedData.password && validatedData.password.trim() !== '') {
     validatedData.password = await hashPassword(validatedData.password);
@@ -149,6 +180,17 @@ async function handleDelete(req, res) {
   // Busca o nome do usuário antes de deletar para o Log
   const userQueryToDel = await query('SELECT username FROM users WHERE id = $1', [deleteId]);
   const deletedUsername = userQueryToDel.rows[0]?.username || deleteId;
+
+  // Trava de integridade do administrador (§9 do doc privado): o usuário
+  // protegido (`ADMIN_USERNAME`) não pode ser excluído — sem essa trava, outro
+  // admin o remove sem resistência e o painel fica sem conta administrativa.
+  // Na recusa, o `deleteRecords` não é chamado.
+  if (deletedUsername === getProtectedAdminUsername()) {
+    return res.status(400).json({
+      error: 'Usuário administrador protegido',
+      message: `O usuário administrador "${deletedUsername}" não pode ser excluído.`,
+    });
+  }
 
   await deleteRecords('users', { id: deleteId });
 

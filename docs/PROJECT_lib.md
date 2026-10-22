@@ -115,7 +115,7 @@ Camada de API: factory de handlers administrativos, helpers de IP e utilitários
 | `INVALID_PAGINATION_MESSAGE` | `'Parâmetros de paginação inválidos'` | 400 de `page`/`limit` fora do intervalo — importada por `dicas.js`, `musicas.js`, `posts.js`, `products.js` e `videos.js` |
 | `INVALID_PARAMS_MESSAGE` | `'Parâmetros inválidos.'` | 400 genérico de Zod/body — importada por `musicas.js` e `settings.js` |
 
-[Correção 16/10/2026] As duas constantes passaram a existir neste módulo (antes eram literais repetidos em 6 rotas de `pages/api/`). Ficam aqui — e não em `pages/api/helper/pagination.js` — porque as rotas que validam paginação sem usar o helper já importam este módulo (ver [ADR-0011](adr/0011-erro-de-banco-503-e-refresh-token-fora-do-body.md), decisão 4). Consumo pelas rotas: ver `docs/PROJECT_pages.md`.
+[Correção 16/10/2026] As duas constantes passaram a existir neste módulo (antes eram literais repetidos em 6 rotas de `pages/api/`). Ficam aqui — e não em `lib/api/pagination.js` — porque as rotas que validam paginação sem usar o helper já importam este módulo (ver [ADR-0011](adr/0011-erro-de-banco-503-e-refresh-token-fora-do-body.md), decisão 4). Consumo pelas rotas: ver `docs/PROJECT_pages.md`.
 
 **Observações:** Usado pelo `adminCrudHandler.js` para extração de IP confiável (sem `trustProxy` = usa socket diretamente, prevenindo spoofing via header) e detecção de spoofing. A lógica de `detectSpoofedIP` suporta dois modos: `strictMode=false` (padrão, permite localhost) e `strictMode=true` (detecta spoofing mesmo em localhost). O middleware `proxy.js` e o handler `pages/api/auth/login.js` controlam o `strictMode` com base no `NODE_ENV` e na variável opcional `ENABLE_STRICT_SPOOFING`.
 

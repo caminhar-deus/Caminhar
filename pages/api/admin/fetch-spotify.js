@@ -9,6 +9,20 @@ const urlSchema = z.object({
 });
 
 /**
+ * Mensagem genérica de 500, igual à do `lib/api/adminCrudHandler.js`
+ * (`GENERIC_ERROR_MESSAGE`): `error.message` cru nunca chega ao cliente.
+ * O texto é literal local porque o módulo não exporta a constante.
+ */
+const GENERIC_ERROR_MESSAGE = 'Erro interno ao processar a solicitação.';
+
+/**
+ * Erro de negócio: mensagem amigável e intencional (ex.: link inválido),
+ * devolvida ao operador como está. Qualquer outro erro do `catch` vira
+ * mensagem genérica — nunca `error.message` cru.
+ */
+class BusinessError extends Error {}
+
+/**
  * Executa fetch com timeout via AbortController.
  */
 async function fetchWithTimeout(url, options = {}, timeout = FETCH_TIMEOUT) {
@@ -106,14 +120,21 @@ async function handlePost(req, res) {
     }
 
     if (!title && !artist) {
-      throw new Error('Não foi possível identificar a música. Verifique se o link é válido.');
+      throw new BusinessError('Não foi possível identificar a música. Verifique se o link é válido.');
     }
 
     await req.adminUtils.logActivity('FETCH SPOTIFY', null, `Buscou dados da música: ${title}`);
     // Retorna com Fallback
     return res.status(200).json({ title, artist: artist || 'Artista não identificado' });
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    // Erro de negócio: mensagem amigável, devolvida como está (sem log de erro).
+    if (error instanceof BusinessError) {
+      return res.status(500).json({ error: error.message });
+    }
+    // Erro inesperado: o detalhe cru fica só no log do servidor; o cliente
+    // recebe a mensagem genérica (padrão do `adminCrudHandler.js`).
+    logger.error('FetchSpotify', 'Erro interno inesperado ao buscar dados da música:', error);
+    return res.status(500).json({ error: 'Erro interno no servidor', message: GENERIC_ERROR_MESSAGE });
   }
 }
 

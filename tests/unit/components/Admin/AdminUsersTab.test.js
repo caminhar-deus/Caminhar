@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import AdminUsersTab from '../../../../components/Admin/AdminUsersTab.js';
+import CrudTable from '../../../../components/Admin/CrudTable.js';
 import toast from 'react-hot-toast';
 import { mockGlobalFetch } from '../../../helpers/index.js';
 import '../../../mocks/next-setup.js';
@@ -41,6 +42,41 @@ describe('Componente Front-End - AdminUsersTab', () => {
     render(<AdminUsersTab />);
     expect(passedProps.title).toBe('Gestão de Usuários e Admins');
     expect(passedProps.apiEndpoint).toBe('/api/admin/users');
+  });
+
+  // Trava de integridade do administrador (§9 do doc privado): a linha do
+  // usuário `admin` não exibe "Excluir"; um usuário comum continua exibindo.
+  // O AdminCrudBase está mockado aqui, então renderiza a tabela real com o
+  // `canDelete` que o AdminUsersTab repassa — é o DOM que o painel montaria.
+  it('não exibe o botão "Excluir" na linha do administrador e exibe no usuário comum', () => {
+    render(<AdminUsersTab />);
+
+    const renderRow = (item) => render(
+      <CrudTable
+        columns={passedProps.columns}
+        items={[item]}
+        loading={false}
+        canDelete={passedProps.canDelete}
+        handleEdit={jest.fn()}
+        handleDelete={jest.fn()}
+        handleToggleBoolean={jest.fn()}
+        localItems={[item]}
+        setLocalItems={jest.fn()}
+        setDragOverIndex={jest.fn()}
+        title={passedProps.title}
+        setIsFormVisible={jest.fn()}
+      />
+    );
+
+    const adminRow = renderRow({ id: 1, username: 'admin', role: 'admin' });
+    expect(screen.getByText('Editar')).toBeInTheDocument(); // Editar continua sempre visível
+    expect(screen.queryByText('Excluir')).not.toBeInTheDocument();
+    adminRow.unmount();
+
+    const commonRow = renderRow({ id: 2, username: 'outro_usuario', role: 'user' });
+    expect(screen.getByText('Editar')).toBeInTheDocument();
+    expect(screen.getByText('Excluir')).toBeInTheDocument();
+    commonRow.unmount();
   });
 
   it('validateUser: deve exigir senha de no mínimo 6 caracteres para novos usuários', () => {

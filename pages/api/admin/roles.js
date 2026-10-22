@@ -109,6 +109,18 @@ async function handleDelete(req, res) {
   const deleteId = req.body.id || parseInt(req.query.id);
   const roleQueryToDel = await query('SELECT name FROM roles WHERE id = $1', [deleteId]);
   const roleName = roleQueryToDel.rows[0]?.name || deleteId;
+
+  // Trava de integridade do cargo `admin` (§9 do doc privado): é a linha
+  // semeada pela migração 018 que dá acesso ao painel; apagá-la deixaria os
+  // administradores sem cargo. EDITAR as permissões dele continua permitido
+  // (ADR-0010: `admin` é cargo comum). Na recusa, o `deleteRecords` não é chamado.
+  if (roleName === 'admin') {
+    return res.status(400).json({
+      error: 'Cargo admin protegido',
+      message: 'O cargo "admin" não pode ser excluído.',
+    });
+  }
+
   await deleteRecords('roles', { id: deleteId });
   await req.adminUtils.logActivity('EXCLUIR CARGO', deleteId, `Removeu o cargo: ${roleName}`);
   return res.status(200).json({ success: true, message: 'Cargo removido com sucesso' });

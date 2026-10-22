@@ -16,6 +16,14 @@ jest.mock('../../../lib/crud/crud.js', () => ({
   updateRecords: jest.fn(),
 }));
 
+// A guarda de permissão consulta a tabela `roles` — default devolve um cargo
+// COM a permissão, para que os testes existentes (que mockiam o token sem
+// cargo) continuem no mesmo caminho de 200/201. Os casos de RBAC sobrescrevem
+// a resposta com mockResolvedValueOnce.
+jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb({
+  query: jest.fn().mockResolvedValue({ rows: [{ permissions: '["Gestão de Produtos"]' }] }),
+}));
+
 jest.mock('../../../lib/auth/auth.js', () => ({
   getAuthToken: jest.fn(),
   verifyToken: jest.fn(),
@@ -32,7 +40,7 @@ jest.mock('../../../lib/domain/audit.js', () => ({
 }));
 
 jest.mock('../../../lib/infra/logger.js', () => ({
-  logger: { error: jest.fn() },
+  logger: { error: jest.fn(), warn: jest.fn() },
 }));
 
 import handler from '../../../pages/api/products.js';
@@ -41,6 +49,7 @@ import { updateRecords } from '../../../lib/crud/crud.js';
 import { getAuthToken, verifyToken } from '../../../lib/auth/auth.js';
 import { checkRateLimit, invalidateCache } from '../../../lib/cache/cache.js';
 import { logActivity } from '../../../lib/domain/audit.js';
+import { query } from '../../../lib/infra/db.js';
 
 describe('API Pública/Admin - Produtos (/api/products)', () => {
   beforeEach(() => {
@@ -335,6 +344,117 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(404);
+    });
+  });
+
+  describe('RBAC — Gestão de Produtos', () => {
+    beforeEach(() => {
+      getAuthToken.mockReturnValue('valid-token');
+      // Token válido, mas o cargo NÃO tem a permissão de gestão de produtos.
+      // `mockResolvedValue` (não Once) deixa os testes de lado permitido
+      // sobrescreverem com `mockResolvedValueOnce`, que tem precedência.
+      verifyToken.mockReturnValue({ username: 'editor', role: 'editor' });
+      query.mockResolvedValue({ rows: [{ permissions: '["Visão Geral"]' }] });
+    });
+
+    it('POST sem "Gestão de Produtos" deve retornar 403 sem criar o produto', async () => {
+      const { req, res } = createMocks({ method: 'POST', body: { name: 'Camisa', price: '89.90' } });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(403);
+      expect(res._getJSONData()).toEqual({
+        error: 'Acesso negado',
+        message: 'Acesso negado. Requer permissão: Gestão de Produtos.',
+      });
+      expect(createProduct).not.toHaveBeenCalled();
+      expect(logActivity).not.toHaveBeenCalled();
+    });
+
+    it('PUT (atualização normal) sem a permissão deve retornar 403 sem atualizar', async () => {
+      const { req, res } = createMocks({ method: 'PUT', body: { id: 1, name: 'Meia', price: '20,00' } });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(403);
+      expect(updateProduct).not.toHaveBeenCalled();
+      expect(logActivity).not.toHaveBeenCalled();
+    });
+
+    it("PUT com action 'reorder' sem a permissão deve retornar 403 sem reordenar", async () => {
+      const { req, res } = createMocks({
+        method: 'PUT',
+        body: { action: 'reorder', items: [{ id: 5, position: 1 }, { id: 6, position: 2 }] },
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(403);
+      expect(updateRecords).not.toHaveBeenCalled();
+      expect(logActivity).not.toHaveBeenCalled();
+    });
+
+    it('DELETE sem a permissão deve retornar 403 sem excluir', async () => {
+      const { req, res } = createMocks({ method: 'DELETE', body: { id: 1 } });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(403);
+      expect(deleteProduct).not.toHaveBeenCalled();
+      expect(logActivity).not.toHaveBeenCalled();
+    });
+
+    it('GET sem ?public=true e sem a permissão deve retornar 403', async () => {
+      const { req, res } = createMocks({ method: 'GET' });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(403);
+      expect(getAllProducts).not.toHaveBeenCalled();
+    });
+
+    it('GET com ?public=true continua público (sem token, sem consulta de permissão)', async () => {
+      // Sem token nenhum: o branch público não passa por requireAuth
+      getAuthToken.mockReturnValue(null);
+      getPaginatedProducts.mockResolvedValueOnce({
+        data: [{ id: 1, name: 'Tênis' }],
+        pagination: { page: 1, limit: 10, total: 1 },
+      });
+
+      const { req, res } = createMocks({ method: 'GET', query: { public: 'true' } });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      expect(getAuthToken).not.toHaveBeenCalled();
+      expect(query).not.toHaveBeenCalled();
+    });
+
+    it('POST com cargo que TEM "Gestão de Produtos" deve criar o produto (201)', async () => {
+      query.mockResolvedValueOnce({
+        rows: [{ permissions: '["Visão Geral", "Gestão de Produtos"]' }],
+      });
+      createProduct.mockResolvedValueOnce({ id: 10, name: 'Camisa', price: '89.90' });
+
+      const { req, res } = createMocks({ method: 'POST', body: { name: 'Camisa', price: '89.90' } });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(201);
+      expect(createProduct).toHaveBeenCalledWith(expect.objectContaining({ name: 'Camisa' }));
+    });
+
+    it("POST com role 'admin' deve criar o produto mesmo sem a permissão na lista do cargo (bypass ADR-0010)", async () => {
+      verifyToken.mockReturnValue({ username: 'admin', role: 'admin' });
+      // Cargo admin devolvido pelo banco SEM "Gestão de Produtos": o bypass
+      // é por desenho — o admin passa após a consulta, não em vez dela.
+      query.mockResolvedValueOnce({ rows: [{ permissions: '["Visão Geral"]' }] });
+      createProduct.mockResolvedValueOnce({ id: 11, name: 'Boné', price: '29.90' });
+
+      const { req, res } = createMocks({ method: 'POST', body: { name: 'Boné', price: '29.90' } });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(201);
+      expect(createProduct).toHaveBeenCalledWith(expect.objectContaining({ name: 'Boné' }));
+      // A consulta de permissões roda MESMO para o admin (decisão de desenho)
+      expect(query).toHaveBeenCalledWith(
+        'SELECT permissions FROM roles WHERE name = $1',
+        ['admin'],
+        { log: false },
+      );
     });
   });
 

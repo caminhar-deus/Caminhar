@@ -91,7 +91,7 @@ Componentes React organizados em 6 categorias:
 - **API admin (15):** CRUD de posts, músicas, vídeos, produtos, dicas, usuários, cargos; gerenciamento de backups, cache, rate limit; auditoria; integridade; fetch de dados externos (Mercado Livre, Spotify, YouTube)
 - **API autenticação (4):** login, logout, check, refresh
 - **Blog (2):** `index.js` (listagem SSR com paginação), `[slug].js` (detalhe com SEO, lightbox, compartilhamento)
-- **Helper de API (1):** `pages/api/helper/pagination.js` (paginação compartilhada entre as rotas)
+- **Helper de API (1):** `lib/api/pagination.js` (paginação compartilhada entre as rotas)
 - **Estilos globais (5 arquivos CSS):** `styles/globals.css`, `styles/variables.css` (348 CSS Custom Properties dos design tokens), `styles/DesignSystem.module.css`, `styles/Home.module.css`, `blog/Blog.module.css`
 - **Design Tokens (11):** cores, tipografia, espaçamentos, bordas, sombras, breakpoints, animações, opacidade, z-index
 

@@ -18,14 +18,6 @@ Cypress.Commands.add('login', (email = 'admin@caminhar.com', password = 'senha12
   cy.wait('@loginRequest');
 });
 
-// Comando para criar um post via API mockada
-Cypress.Commands.add('createPost', (post) => {
-  cy.intercept('POST', '/api/posts', {
-    statusCode: 201,
-    body: { ...post, id: Date.now() }
-  }).as('createPost');
-});
-
 // Comando para definir viewport mobile
 Cypress.Commands.add('viewportMobile', () => {
   cy.viewport(375, 667);

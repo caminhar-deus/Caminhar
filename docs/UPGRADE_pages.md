@@ -303,20 +303,19 @@ Arquivo central de Design Tokens (CSS Custom Properties). Define 386 linhas de v
 **Caminho:** `/pages/api/posts.js`
 
 **Arquivos acionados ou relacionados:**
-- `../../lib/domain/posts.js` — Funções `getRecentPosts()` e `createPost()` (camada de domínio)
-- `../../lib/cache/cache.js` — Funções `getOrSetCache()`, `checkRateLimit()`, `invalidateCache()`
-- `../../lib/auth/auth.js` — Middleware `withAuth` (protege POST)
+- `../../lib/domain/posts.js` — Função `getRecentPosts()` (camada de domínio)
+- `../../lib/cache/cache.js` — Funções `getOrSetCache()`, `checkRateLimit()`
 - `../../lib/api/helpers.js` — Função `getClientIP()` (IP seguro contra spoofing)
 - `../../lib/infra/logger.js` — Logger estruturado (`logger.error()`)
-- `zod` — Validação de dados do POST
 
 **Resumo:**
-Endpoint público de posts. **GET** lista posts com paginação manual (parseInt, default page=1, limit=10, limit máximo 100), busca opcional (`search`), cache Redis (TTL 2h para listagens, 30min para buscas), e rate limit de 300 req (listagem) ou 100 req (busca) — verificado **dentro** do callback de cache. **POST** protegido por `withAuth`, rate limit de 30 req/min, validação Zod, criação via `createPost()` e invalidação de cache. Suporte a `?response=v1` para compatibilidade legada. Cache-Control: `public, max-age=0, s-maxage=300, stale-while-revalidate=600`.
+Endpoint público de posts, **somente leitura**. **GET** lista posts com paginação manual (parseInt, default page=1, limit=10, limit máximo 100), busca opcional (`search`), cache Redis (TTL 2h para listagens, 30min para buscas), e rate limit de 300 req (listagem) ou 100 req (busca) — verificado **dentro** do callback de cache. Suporte a `?response=v1` para compatibilidade legada. Cache-Control: `public, max-age=0, s-maxage=300, stale-while-revalidate=600`.
+
+> **Atualizado em 21/10/2026:** o `POST` desta rota foi **removido** (era protegido só por `withAuth`, sem conferir cargo — um caminho de escrita duplicado, já que o painel cria post em `/api/admin/posts`, que exige a permissão `Posts/Artigos`). A rota passou a responder 405 a qualquer método que não seja GET, e `zod` e `withAuth` saíram das dependências do arquivo. A criação de post é feita só pelo painel.
 
 **Problemas identificados:**
-1. Invalidação de cache redundante no POST (linhas 130-132): `posts:*` já cobre `posts:list:*` e `posts:search:*` — 3 operações no lugar de 1
-2. Paginação manual reimplementada (não usa `helper/pagination.js` que já é utilizado por `dicas.js` e `products.js`)
-3. Rate limit dentro do callback de cache (divergente de `videos.js` e `products.js` que fazem antes do cache)
+1. Paginação manual reimplementada (não usa o helper de paginação que já é utilizado por `dicas.js` e `products.js`)
+2. Rate limit dentro do callback de cache (divergente de `videos.js` e `products.js` que fazem antes do cache)
 
 ---
 
@@ -419,7 +418,7 @@ Endpoint unificado de configurações do sistema (GET, POST, PUT). **GET públic
 **Arquivos acionados ou relacionados:**
 - `../../lib/infra/db.js` — Query SQL direta ao banco
 - `../../lib/cache/cache.js` — Funções `getOrSetCache()`, `checkRateLimit()`
-- `./helper/pagination.js` — Funções `paginate()`, `buildPaginationMeta()`, `paginatedResponse()`
+- `../../lib/api/pagination.js` — Funções `paginate()`, `buildPaginationMeta()`, `paginatedResponse()`
 - `../../lib/api/helpers.js` — Função `getClientIP()`
 - `../../lib/infra/logger.js` — Logger estruturado
 
@@ -645,7 +644,7 @@ Endpoint de limpeza de dados de teste (DELETE). Protegido por `withAuth()`. Veri
 - `../../lib/auth/auth.js` — Funções `getAuthToken()`, `verifyToken()`
 - `../../lib/cache/cache.js` — Funções `checkRateLimit()`, `invalidateCache()`, `getOrSetCache()`
 - `../../lib/domain/products.js` — Funções `getPaginatedProducts()`, `getAllProducts()`, `createProduct()`, `updateProduct()`, `deleteProduct()`
-- `./helper/pagination.js` — Função `paginate()`
+- `../../lib/api/pagination.js` — Função `paginate()`
 - `../../lib/api/helpers.js` — Função `getClientIP()`
 - `../../lib/infra/logger.js` — Logger estruturado
 
@@ -709,7 +708,7 @@ Endpoint de upload de imagem (POST). Protegido por `withAuth()`. Usa `formidable
 Endpoint público de vídeos (GET). Paginação manual (parseInt, default page=1, limit=10, limit máximo 100), busca opcional, sort (recent/oldest/alpha/alpha_desc mapeado para ORDER BY). Rate limit **antes** do cache (protege mesmo em cache hits). Cache-Control: `public, max-age=0, s-maxage=300, stale-while-revalidate=600`. Retorna `{ success, ...result }`.
 
 **Problemas identificados:**
-1. Paginação manual reimplementada (não usa `helper/pagination.js` que já é utilizado por `dicas.js` e `products.js`)
+1. Paginação manual reimplementada (não usa `lib/api/pagination.js` que já é utilizado por `dicas.js` e `products.js`)
 
 ---
 
@@ -725,9 +724,9 @@ Endpoint de health check/diagnóstico (GET). Dois modos: `?mode=health` retorna 
 
 ---
 
-### 4.42 `api/helper/pagination.js`
+### 4.42 `api/helper/pagination.js` → `lib/api/pagination.js`
 
-**Caminho:** `/pages/api/helper/pagination.js`
+**Caminho:** `/lib/api/pagination.js` (era `/pages/api/helper/pagination.js`)
 
 **Arquivos acionados ou relacionados:**
 - `/pages/api/dicas.js` — Importa `paginate()`, `buildPaginationMeta()`, `paginatedResponse()`
@@ -735,6 +734,8 @@ Endpoint de health check/diagnóstico (GET). Dois modos: `?mode=health` retorna 
 
 **Resumo:**
 Helper de paginação reutilizável. Exporta 3 funções: `paginate(rawPage, rawLimit, maxLimit=100)` — parseia e valida parâmetros, lança erro `INVALID_PAGINATION_PARAMS` se inválidos; `buildPaginationMeta(page, limit, total)` — monta metadados (page, limit, total, totalPages); `paginatedResponse(data, pagination)` — monta envelope padronizado `{ success, data, pagination }`. Usa `parseInt` com radix 10.
+
+> **Atualizado em 21/10/2026:** o arquivo foi **movido** de `pages/api/helper/pagination.js` para `lib/api/pagination.js`. Dentro de `pages/api/`, o Next.js o registrava como rota estática — e, como não tem `export default`, a rota `/api/helper/pagination` respondia 500, sem ninguém consumir. Fora de `pages/api/` ele é só código compartilhado; os dois importadores foram ajustados.
 
 ---
 

@@ -25,13 +25,14 @@ parece perfeito e não mediu nada.
 
 ## Camada B — julgamento humano, contra o `gabarito.md`
 
-**B1. Pergunta 1 — contagem de rotas.** Acertou 32 arquivos e 31 rotas, e nomeou o arquivo
-que não é rota? Se disse 32 rotas sem ressalva, é erro.
+**B1. Pergunta 1 — contagem de rotas.** Acertou 31 arquivos e 31 rotas, e reconheceu que
+**todos** os arquivos de `pages/api/` agora são rota? Se inventar um "arquivo que não é
+rota" (o helper de paginação saiu de `pages/api/` em 21/10/2026), é erro.
 
 **B2. Pergunta 2 — grupos e ponto de aplicação.** Os quatro grupos estão lá, com as
-contagens certas? As citações apontam para onde a autenticação é **aplicada**
-(`adminCrudHandler.js:331`) e não para o import? `settings.js` aparece nos dois grupos a que
-pertence?
+contagens certas (16 admin via factory, 2 com `withAuth` direto, 1 parcial, 4 manuais)? As
+citações apontam para onde a autenticação é **aplicada** (`adminCrudHandler.js:305`) e não
+para o import? `settings.js` aparece nos dois grupos a que pertence?
 
 **B3. Pergunta 3 — o que responde sem token.** Separou o que é intencional do que é leitura
 pública? Citou o `405` que impede escrita anônima nas rotas de leitura, ou apenas disse que

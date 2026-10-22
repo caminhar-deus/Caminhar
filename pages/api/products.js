@@ -3,8 +3,9 @@ import { getAuthToken, verifyToken } from '../../lib/auth/auth';
 import { checkRateLimit, invalidateCache, getOrSetCache } from '../../lib/cache/cache';
 import { getPaginatedProducts, getAllProducts, createProduct, updateProduct, deleteProduct } from '../../lib/domain/products.js';
 import { updateRecords } from '../../lib/crud/crud.js';
-import { paginate } from './helper/pagination.js';
+import { paginate } from '../../lib/api/pagination.js';
 import { getClientIP, INVALID_PAGINATION_MESSAGE, INVALID_PARAMS_MESSAGE } from '../../lib/api/helpers.js';
+import { checkRolePermission } from '../../lib/api/permissions.js';
 import { logger } from '../../lib/infra/logger.js';
 import { z } from 'zod';
 
@@ -92,6 +93,51 @@ function requireAuth(req, res) {
 
   req.user = user;
   return user;
+}
+
+/**
+ * Permissão exigida em TODA operação de painel de produtos (GET sem
+ * `?public=true`, POST, PUT e DELETE). O GET público (`?public=true`) NÃO
+ * passa por esta guarda — é o que o site público consome.
+ */
+const PRODUCT_PERMISSION = 'Gestão de Produtos';
+
+/**
+ * Guarda de permissão — roda DEPOIS de `requireAuth` (que responde 401 sem
+ * token ou com token inválido). Responde 403 quando o token é válido mas o
+ * cargo não tem a permissão (ou quando a checagem falha — fail-closed, com a
+ * mesma redação das rotas `admin/`). O cargo `admin` passa por desenho
+ * (bypass herdado do helper — ADR-0010).
+ *
+ * @returns {Promise<boolean>} true se permitido; senão respondeu 403 e devolve false.
+ */
+async function requirePermission(req, res) {
+  const permissionCheck = await checkRolePermission(req.user?.role, PRODUCT_PERMISSION);
+
+  if (permissionCheck.allowed) {
+    return true;
+  }
+
+  // Falha de LEITURA do cargo: nega (fail-closed) com telemetria própria.
+  if (permissionCheck.reason === 'error') {
+    logger.error(
+      'Products',
+      `Falha ao verificar permissões (fail-closed; role "${req.user?.role}"; cargo não pôde ser lido):`,
+      permissionCheck.error,
+    );
+    res.status(403).json({
+      error: 'Acesso negado',
+      message: 'Acesso negado. Não foi possível verificar permissões.',
+    });
+    return false;
+  }
+
+  // Usuário autenticado sem a permissão exigida.
+  res.status(403).json({
+    error: 'Acesso negado',
+    message: `Acesso negado. Requer permissão: ${PRODUCT_PERMISSION}.`,
+  });
+  return false;
 }
 
 /**
@@ -248,25 +294,29 @@ export default async function handler(req, res) {
         const isPublic = req.query.public === 'true';
 
         if (isPublic) {
-          // GET público não exige autenticação
+          // GET público não exige autenticação nem permissão
           return handlePublicGet(req, res);
         }
 
-        // GET autenticado (admin)
+        // GET do painel (inclui rascunhos) — exige permissão
         if (!requireAuth(req, res)) return;
+        if (!(await requirePermission(req, res))) return;
         return handleAdminGet(req, res);
       }
 
       case 'POST':
         if (!requireAuth(req, res)) return;
+        if (!(await requirePermission(req, res))) return;
         return handlePost(req, res);
 
       case 'PUT':
         if (!requireAuth(req, res)) return;
+        if (!(await requirePermission(req, res))) return;
         return handlePut(req, res);
 
       case 'DELETE':
         if (!requireAuth(req, res)) return;
+        if (!(await requirePermission(req, res))) return;
         return handleDelete(req, res);
 
       default:

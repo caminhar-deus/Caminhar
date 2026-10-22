@@ -17,12 +17,11 @@ import handler from '../../../pages/api/posts.js';
 import { getRecentPosts } from '../../../lib/domain/posts.js';
 import { getOrSetCache, checkRateLimit } from '../../../lib/cache/cache.js';
 
-// Testes padrão via abstração. O teste de 405 é omitido porque /api/posts
-// aceita POST autenticado (sem token retorna 401, não 405).
+// Testes padrão via abstração. A rota é GET-only, então o teste de 405
+// (POST sem método permitido → 405) volta a valer sem skip.
 testPublicGetEndpoint(handler, {
   resourceName: 'posts',
   path: '/api/posts',
-  skipMethodNotAllowed: true,
 }, ({ handler: h, createMocks: cm }) => {
   describe('Casos específicos', () => {
     beforeEach(() => {

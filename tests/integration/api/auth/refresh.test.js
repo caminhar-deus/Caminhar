@@ -20,18 +20,50 @@ jest.mock('../../../../lib/infra/logger', () => {
   return { ...mockMethods, logger: { ...mockMethods } };
 });
 
+// Cache/rate limit mockados: os testes que NÃO simulam limite precisam do
+// `checkRateLimit` retornando false de forma determinística.
+jest.mock('../../../../lib/cache/cache.js', () => require('../../../mocks/cache').mockCacheModule());
+
 import * as auth from '../../../../lib/auth/auth';
 import { logger } from '../../../../lib/infra/logger';
+import { checkRateLimit } from '../../../../lib/cache/cache.js';
 
 describe('API Auth - Refresh (/api/auth/refresh)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    checkRateLimit.mockResolvedValue(false);
   });
 
   it('deve retornar 405 para métodos diferentes de POST', async () => {
     const { req, res } = createMocks({ method: 'GET' });
     await handler(req, res);
     expect(res._getStatusCode()).toBe(405);
+  });
+
+  it('deve retornar 429 quando o rate limit por IP for excedido', async () => {
+    checkRateLimit.mockResolvedValueOnce(true);
+    const { req, res } = createMocks({ method: 'POST', body: {}, socket: { remoteAddress: '203.0.113.20' } });
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(429);
+    expect(res._getJSONData()).toEqual({
+      error: 'Too Many Requests',
+      message: 'Muitas tentativas de renovação de token. Tente novamente mais tarde.',
+    });
+    // Mesmo padrão do login.js: chave própria, 30 req/min, IP resolvido via modelo TRUST_PROXY
+    expect(checkRateLimit).toHaveBeenCalledWith('203.0.113.20', 'api:auth:refresh', 30, 60000);
+    // O limite roda ANTES de qualquer leitura de refresh token
+    expect(auth.getRefreshTokenCookie).not.toHaveBeenCalled();
+    expect(auth.refreshAccessToken).not.toHaveBeenCalled();
+  });
+
+  it('deve pular o rate limit quando não há IP confiável (sem criar bucket global)', async () => {
+    auth.getRefreshTokenCookie.mockReturnValue(null);
+    const { req, res } = createMocks({ method: 'POST', body: {} }); // sem socket → IP 'unknown'
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(401);
+    expect(checkRateLimit).not.toHaveBeenCalled();
   });
 
   it('deve retornar 401 quando não houver refresh token no cookie nem no body', async () => {

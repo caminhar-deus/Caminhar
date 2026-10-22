@@ -8,6 +8,18 @@ import handler from '../../../../pages/api/auth/logout.js';
 import { query } from '../../../../lib/infra/db.js';
 
 describe('API Auth - Logout (/api/auth/logout)', () => {
+  it('deve retornar 405 para métodos diferentes de POST', async () => {
+    const { req, res } = createMocks({ method: 'GET' });
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(405);
+    expect(res._getHeaders()['allow']).toEqual(['POST']);
+    expect(res._getJSONData()).toEqual({
+      error: 'Method Not Allowed',
+      message: 'Método não permitido',
+    });
+  });
+
   it('deve limpar o cookie de token definindo a expiração para o passado e retornar sucesso', async () => {
     const { req, res } = createMocks({ method: 'POST' });
     await handler(req, res);

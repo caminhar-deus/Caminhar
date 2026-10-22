@@ -326,6 +326,25 @@ describe('API Admin - Gestão de Cargos (/api/admin/roles)', () => {
       expect(deleteRecords).toHaveBeenCalledWith('roles', { id: 3 });
       expect(logActivity).toHaveBeenCalledWith(expect.any(String), 'EXCLUIR CARGO', 'ROLE', 3, 'Removeu o cargo: editor', expect.any(String));
     });
+
+    // ── Trava de integridade do cargo `admin` (§9 do doc privado) ────────
+
+    it('deve retornar 400 impedindo a exclusão do cargo admin', async () => {
+      query.mockImplementation(async (sql) => {
+        if (sql.includes('SELECT permissions FROM roles')) return { rows: [{ permissions: ['Segurança', 'Usuários'] }] };
+        if (sql.includes('SELECT name FROM roles')) return { rows: [{ name: 'admin' }] };
+        return { rows: [] };
+      });
+
+      const { req, res } = createMocks({ method: 'DELETE', query: { id: '1' } });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(400);
+      const response = JSON.parse(res._getData());
+      expect(response.error).toBeDefined();
+      expect(response.message).toContain('cargo "admin" não pode ser excluído');
+      expect(deleteRecords).not.toHaveBeenCalled();
+    });
   });
 
   describe('Tratamento de Erros e Rotas', () => {

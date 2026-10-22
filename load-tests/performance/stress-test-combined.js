@@ -127,8 +127,24 @@ export function stress_test(data) {
 }
 
 // --- Cenário de Monitoramento (nome deve corresponder ao perfil: memory_monitor) ---
-export function memory_monitor() {
-  const res = http.get(`${BASE_URL}/api/status`);
+export function memory_monitor(data) {
+  // O /api/status sem ?mode=health (modo diagnóstico) exige token válido —
+  // sem ele a rota responde 401. Em k6, todo cenário recebe o retorno do
+  // setup() como argumento (mesmo padrão do stress_test e do teardown).
+  const token = data && data.token;
+
+  // Se o setup falhou (sem token), não faz a requisição que sabidamente
+  // falharia — registra o aviso e sai, como o stress_test faz.
+  if (!token) {
+    console.warn('[memory_monitor] Token não disponível do setup. Requisição de diagnóstico ignorada.');
+    return; // Sai silenciosamente - o stress_test continua rodando
+  }
+
+  const authHeaders = {
+    'Authorization': `Bearer ${token}`,
+  };
+
+  const res = http.get(`${BASE_URL}/api/status`, { headers: authHeaders });
 
   check(res, {
     'Monitor: status é 200': (r) => r.status === 200,

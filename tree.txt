@@ -614,6 +614,7 @@
 │   │   ├── 0014-padrao-significa-mais-recentes-e-curadoria-como-posicionados.md
 │   │   ├── 0015-link-externo-assistir-no-youtube-no-cartao-de-video.md
 │   │   ├── 0016-seletor-de-ordenacao-de-produtos-no-servidor.md
+│   │   ├── 0017-checagem-de-permissao-modulo-compartilhado-e-protecao-por-rota.md
 │   │   ├── README.md
 │   │   └── template.md
 │   └── ai-memory-error.md
@@ -653,6 +654,8 @@
 │   ├── api
 │   │   ├── adminCrudHandler.js
 │   │   ├── helpers.js
+│   │   ├── pagination.js
+│   │   ├── permissions.js
 │   │   └── utils.js
 │   ├── auth
 │   │   └── auth.js
@@ -760,8 +763,6 @@
 │   │   │   └── refresh.js
 │   │   ├── cleanup-test-data.js
 │   │   ├── dicas.js
-│   │   ├── helper
-│   │   │   └── pagination.js
 │   │   ├── ip-diagnostico.js
 │   │   ├── musicas.js
 │   │   ├── placeholder-image.js
@@ -1229,7 +1230,8 @@
 │       ├── index.test.js
 │       ├── lib
 │       │   ├── api
-│       │   │   └── helpers.ip.test.js
+│       │   │   ├── helpers.ip.test.js
+│       │   │   └── permissions.test.js
 │       │   ├── auth.test.js
 │       │   ├── backup
 │       │   │   ├── backup.available.test.js
@@ -1310,4 +1312,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-205 directories, 1106 files
+204 directories, 1109 files

@@ -26,6 +26,7 @@ apoio, não a fonte oficial; a decisão não é duplicada como página de memór
 | [0014](0014-padrao-significa-mais-recentes-e-curadoria-como-posicionados.md) | "Padrão" significa "Mais recentes" e a curadoria manual vira a opção "Posicionados" | Aceito | 2026-10-21 |
 | [0015](0015-link-externo-assistir-no-youtube-no-cartao-de-video.md) | Link externo "Assistir no YouTube" no cartão de vídeo | Aceito | 2026-10-21 |
 | [0016](0016-seletor-de-ordenacao-de-produtos-no-servidor.md) | Seletor de ordenação de Produtos com ordenação no servidor | Aceito | 2026-10-21 |
+| [0017](0017-checagem-de-permissao-modulo-compartilhado-e-protecao-por-rota.md) | A checagem de permissão é um módulo compartilhado, e a proteção por rota passa a ser conferida no servidor | Aceito | 2026-10-21 |
 
 ## Quando criar um ADR
 

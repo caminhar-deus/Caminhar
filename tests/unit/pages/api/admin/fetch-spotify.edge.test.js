@@ -24,6 +24,12 @@ jest.mock('../../../../../lib/infra/logger.js', () => ({
   setRequestId: jest.fn(),
 }));
 
+// Auditoria com falha simulada: `req.adminUtils.logActivity` (injetado pelo
+// `createAdminHandler` real) rejeita, forçando o catch externo inesperado.
+jest.mock('../../../../../lib/domain/audit.js', () => ({
+  logActivity: jest.fn().mockRejectedValue(new Error('falha na auditoria')),
+}));
+
 describe('API - Admin - Fetch Spotify (Edge Cases)', () => {
   let fetchMock;
 
@@ -58,5 +64,35 @@ describe('API - Admin - Fetch Spotify (Edge Cases)', () => {
     // Verifica se a API lidou corretamente retornando o erro de fallback final (status 500)
     expect(res._getStatusCode()).toBe(500);
     expect(res._getJSONData()).toEqual({ error: 'Não foi possível identificar a música. Verifique se o link é válido.' });
+  });
+
+  it('deve devolver mensagem genérica (nunca error.message cru) quando o erro é inesperado', async () => {
+    auth.getAuthToken.mockReturnValue('valid_token');
+    auth.verifyToken.mockReturnValue({ role: 'admin' });
+
+    const { req, res } = createMocks({
+      method: 'POST',
+      body: { url: 'https://open.spotify.com/track/123456789' },
+      user: { role: 'admin' },
+    });
+
+    // Estratégia 1 recupera o título, mas a auditoria (injetada pelo
+    // `createAdminHandler` real via `req.adminUtils`) falha: caminho
+    // inesperado do catch externo (antes expunha o message cru).
+    global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ title: 'Musica Teste' }) });
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(500);
+    expect(res._getJSONData()).toEqual({
+      error: 'Erro interno no servidor',
+      message: 'Erro interno ao processar a solicitação.',
+    });
+    // O detalhe cru continua registrado no log do servidor
+    expect(logger.error).toHaveBeenCalledWith(
+      'FetchSpotify',
+      'Erro interno inesperado ao buscar dados da música:',
+      expect.any(Error),
+    );
   });
 });

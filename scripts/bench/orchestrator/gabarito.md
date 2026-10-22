@@ -1,4 +1,4 @@
-# Gabarito — conferido no código em 19/10/2026
+# Gabarito — conferido no código em 21/10/2026
 
 Este é o gabarito da tarefa. **Nenhum modelo sob teste pode ler este arquivo**: ele fica
 no repositório porque `/tmp` é volátil demais (foi o que perdeu o bench de 16/10/2026), e a
@@ -8,21 +8,29 @@ contaminação é detectada pelo `conferir.js`, que marca a execução se a saí
 Toda linha abaixo foi conferida abrindo o arquivo. Se o código mudar, este gabarito
 perde: confira de novo antes de comparar duas execuções.
 
+> **Recalibrado em 21/10/2026**, depois das correções de segurança das rotas de API: o
+> helper de paginação saiu de `pages/api/`, o `POST` público de `/api/posts` foi removido e
+> o diagnóstico de `/api/status` passou a exigir token. A versão anterior (19/10/2026)
+> valia para 32 arquivos e 31 rotas — ela está no histórico do Git.
+
 ## 1. Quantos arquivos, quantas rotas
 
-- **32 arquivos** em `pages/api/`.
-- **31 rotas**. `pages/api/helper/pagination.js` **não é rota**: não tem export default,
-  exporta três funções auxiliares (`:20`, `:43`, `:58`) e é importado por
-  `pages/api/dicas.js:3`.
+- **31 arquivos** em `pages/api/` — e **todos os 31 são rota**: cada um tem `export default`.
+  Antes havia um não-rota (`pages/api/helper/pagination.js`, movido para
+  `lib/api/pagination.js` em 21/10/2026).
+- **31 rotas** (30 em `staticRoutes` do manifest + `uploads/[...path].js`, que é
+  catch-all e não aparece em `staticRoutes`).
+- **Nenhuma rota responde 500 por falta de handler** — a condição que existia antes
+  (o helper dentro de `pages/api/`) foi eliminada.
 
 ## 2. Grupos por mecanismo de autenticação
 
 | Grupo | Rotas | Onde a autenticação é aplicada |
 |---|---|---|
-| Admin via factory | 16 | `lib/api/adminCrudHandler.js:331` (`withAuth(handler)`), alcançado por `createAdminHandler` em cada rota |
-| `withAuth` direto | 3 | `pages/api/posts.js:152`, `pages/api/upload-image.js:170`, `pages/api/cleanup-test-data.js:26` |
-| `withAuth` parcial | 1 | `pages/api/settings.js` — GET público (`:22-24`), POST (`:129`) e PUT (`:163`) com `withAuth` |
-| Autenticação manual | 3 | `pages/api/auth/check.js`, `pages/api/products.js` (`requireAuth` em `:65`, usado em `:198`, `:203`, `:207`, `:211`), `pages/api/settings.js` |
+| Admin via factory | 16 | `lib/api/adminCrudHandler.js:305` (`withAuth(handler)`), alcançado por `createAdminHandler` em cada rota |
+| `withAuth` direto | 2 | `pages/api/cleanup-test-data.js:26`, `pages/api/upload-image.js:170` |
+| `withAuth` parcial | 1 | `pages/api/settings.js` — GET público, POST (`:129`) e PUT (`:163`) com `withAuth` |
+| Autenticação manual | 4 | `pages/api/auth/check.js` (`:65`,`:74`), `pages/api/products.js` (`requireAuth` em `:81`, usado em `:302,308,313,318`), `pages/api/status.js` (`:34`,`:39` — só o diagnóstico; `?mode=health` em `:27` é público), `pages/api/settings.js` |
 
 As 16 admin são as 15 de `pages/api/admin/` mais `pages/api/ip-diagnostico.js:186`.
 
@@ -99,11 +107,12 @@ modelo sob teste.
 
 ## O que um modelo costuma errar aqui
 
-1 **Contar 32 como 33.** Medido em 19/10/2026: duas execuções responderam 33 arquivos. São
-32, todos `.js`.
+1 **Contar 32 como 33.** Medido em 19/10/2026: duas execuções responderam 33 arquivos. Na
+calibração de 19/10 eram 32, todos `.js`; **agora são 31** (o helper de paginação saiu
+de `pages/api/` em 21/10/2026) — e todos são rota.
 
 2 **Citar a linha do import em vez da aplicação.** `import { withAuth } from '...'` não é
-autenticação; `adminCrudHandler.js:331` é.
+autenticação; `adminCrudHandler.js:305` é.
 
 3 **Esquecer `settings.js` no grupo manual** e dizer que o GET é protegido.
 

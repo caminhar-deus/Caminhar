@@ -5,6 +5,15 @@ implementados**, porque a correção muda comportamento de rotas públicas e mer
 revisão própria. A revisão de 20/10 reclassificou um item (o **S8**, que não é defeito) e
 apertou o diagnóstico de dois outros (o **S4** e o **S5**).
 
+**Execução de 21/10/2026:** o dono aprovou a ordem de aplicação
+(`A1 → B1+B2 → A2+A3+A4+A5+A6 → C1`). Os itens já aplicados nesta rodada estão marcados
+**RESOLVIDO** com a data e com o que foi feito; os que dependem de decisão ou ainda não
+foram aplicados seguem **ABERTO**. As decisões do dono que mudaram o plano original:
+**B1** — aplicar a permissão `Gestão de Produtos` no servidor, direto em
+`pages/api/products.js` (não criar `pages/api/admin/products.js`); **B2** — remover o
+`POST` público de `/api/posts` (não apenas guardá-lo); **C1** — `?mode=health` continua
+público e o diagnóstico passa a exigir token.
+
 **Origem dos achados:** a bateria de papel do `fixer` (`scripts/bench/papeis/`) rodou a
 tarefa "corrija o vazamento de `error.message` em rota pública" e o
 `orchestrator-bench` auditou a superfície de autenticação de `pages/api/`. **Todos os
@@ -18,6 +27,18 @@ modelo de acesso declarado em [`docs/adr/0010`](adr/0010-admin-como-cargo-e-vali
 o **S8 não é defeito** (é a decisão do ADR-0010, e está testado como tal), e o **S4 e o S5**
 passaram de "será que é intencional?" para omissão **com alvo identificado** — a permissão
 que faltava existe e já é usada em outro lugar do painel.
+
+**Reanálise de 21/10/2026 (após os ajustes da outra sessão):** os itens foram reconferidos
+no código **depois** das mudanças de 21/10 (`pages/api/products.js` com o branch de
+reordenação, `admin/posts.js` e `admin/videos.js` com registro de Auditoria, e os documentos
+de arquitetura `ARQUITETURA_SITE_PUBLICO.md` / `ARQUITETURA_SITE_PRIVADO.md`). **Resultado:
+nenhum achado foi resolvido** — S1, S2, S3, S5, S6, S7 e S9 seguem como estavam (os arquivos
+desses achados não foram tocados). **O S4 ficou mais forte** (a superfície de escrita sem
+guarda passou de 3 para 4 operações) e **um achado novo entrou: o S10** (falta de proteção do
+usuário `admin` e do cargo `admin` na API), que a outra sessão já tinha registrado no
+documento da área privada (`ARQUITETURA_SITE_PRIVADO.md` §8, item 8) sem implementá-lo.
+O **S8 continua fechado** — o `ADR-0010` e o código de `admin/users.js` e `admin/roles.js` não
+mudaram.
 
 **Já implementados (para contraste):** o rate limit de `/api/auth/login` (por IP em
 `proxy.js:27-29` + matcher em `proxy.js:96-98`, e por usuário em
@@ -37,67 +58,67 @@ permissão **por desenho** (`adminCrudHandler.js:186-190`, documentado no ADR-00
 
 | | |
 |---|---|
-| **Estado atual** | **ABERTO.** A rota é **pública** (sem `withAuth` nem `requireAuth` — conferido: `pages/api/status.js` não importa nenhum dos dois). No `catch` do health check ela coloca a mensagem crua do driver na resposta: `pages/api/status.js:61` — `status.data.database.details.error = error.message;`. |
+| **Estado atual** | **RESOLVIDO em 21/10/2026.** A mensagem crua do driver saiu da resposta: `details.error` passou a ser uma mensagem fixa (`'Falha ao conectar ao banco de dados'`), com o `status: 'error'` e o HTTP **200** mantidos. O erro original continua no log do servidor — a camada de banco (`lib/infra/db.js`) já registra o `logger.error` com o erro cru. **O teste que faltava foi escrito:** `tests/integration/api/status.test.js` agora afirma que a mensagem do banco **não** aparece no corpo, o que impede a regressão de voltar em silêncio. |
 | **Impacto** | Qualquer requisição GET a `/api/status` durante uma falha de banco devolve o texto do driver do Postgres — tipicamente host, porta e usuário (`connect ECONNREFUSED 10.0.0.5:5432 - password authentication failed for user "..."`). É informação de infraestrutura para um atacante, e a rota não exige nada para responder. O `status.data.database.status` = `'error'` e o HTTP **200** estão corretos (é health check) e **não** devem mudar. |
 | **Correção proposta** | Trocar `error.message` por uma mensagem fixa e genérica, mantendo `status: 'error'` e o 200. O erro cru continua registrado no servidor pela camada de banco (`lib/infra/db.js:281`), então o diagnóstico não se perde. |
-| **Teste que falta** | `tests/integration/api/status.test.js` cobre hoje o 200 e `status === 'error'` (`:31-35`), mas **não** cobre que a mensagem do banco não aparece no corpo. Sem esse teste, a regressão volta em silêncio. |
+| **Teste que falta** | — (resolvido em 21/10/2026). O teste foi escrito: a falha do banco é montada com uma mensagem reconhecível e o caso afirma que ela **não** aparece no corpo JSON. |
 
 ## S2 — `pages/api/status.js` expõe diagnóstico do processo em rota pública
 
 | | |
 |---|---|
-| **Estado atual** | **ABERTO.** A mesma rota pública devolve, em `GET /api/status` (sem `?mode=health`): `environment` (`NODE_ENV`) em `status.js:31`, `nodeVersion` em `:41`, `platform` em `:42`, `uptime` em `:43` e métricas de memória (`rss`, `heapTotal`, `heapUsed`) em `:45-47`. |
+| **Estado atual** | **RESOLVIDO em 21/10/2026.** A rota foi **dividida**: `?mode=health` continua **público** (sem token, sem permissão) e é o que o health check de infraestrutura e o k6 usam; o **diagnóstico** (sem `?mode=health`) passou a exigir **token válido** — sem token ou com token inválido, responde 401. O payload do diagnóstico **não mudou**: as métricas de memória continuam lá, agora atrás de autenticação. A rota não exige permissão nem cargo — é diagnóstico, não painel. O consumidor que quebrava foi ajustado: o cenário k6 `memory_monitor` passou a receber o `data` do `setup()` e a enviar o token (e, sem token, sai sem fazer a requisição, como o `stress_test` já fazia). **Decisão do dono:** separar — proteger a rota inteira quebraria o health check público sem necessidade. |
 | **Impacto** | Exposição de versão do Node e de fingerprinting do processo por uma rota sem autenticação. A versão do Node, em especial, reduz o espaço de ataque: permite casar a versão com CVEs conhecidas. |
 | **Impacto (uso legítimo)** | `load-tests/performance/stress-test-combined.js:131` consome `/api/status` **sem** `?mode=health`; e o comentário do próprio arquivo (`:44`) diz que as métricas de memória existem "para monitoramento via k6 (P4)". Ou seja: há um consumidor que depende desses dados. A correção **não** pode ser "remover os campos" sem decidir o que o k6 passa a ler. |
-| **Correção proposta** | Decidir o contrato: ou `/api/status` deixa de ser público e passa a exigir token, ou os dados sensíveis (versão, fingerprint) saem e ficam só em `?mode=health` — o que exige ajustar o `stress-test-combined.js` junto. |
-| **Ação necessária** | Decisão do mantenedor sobre o contrato da rota, porque as duas saídas mexem em consumidores diferentes. |
+| **Correção proposta** | — (aplicada em 21/10/2026). O contrato escolhido foi o terceiro caminho: `?mode=health` público, diagnóstico com token. |
+| **Ação necessária** | — (resolvido em 21/10/2026). O dono escolheu a separação; o único consumidor afetado (`memory_monitor` do k6) foi ajustado. |
 
 ## S3 — `pages/api/helper/pagination.js` é código vivo dentro de `pages/api/`
 
 | | |
 |---|---|
-| **Estado atual** | **ABERTO.** O arquivo **não** é código morto: é importado por duas rotas de produção (`pages/api/dicas.js:3` e `pages/api/products.js:5`) e o `knip` **não** o acusa, porque o import existe. Mas, por estar dentro de `pages/api/`, o Next o registra como rota estática: `/api/helper/pagination` aparece em `.next/routes-manifest.json`. O arquivo não tem `export default` (só três exports nomeados, `pages/api/helper/pagination.js:20,43,58`), então a rota não tem handler e responde 500. |
+| **Estado atual** | **RESOLVIDO em 21/10/2026.** O módulo foi movido de `pages/api/helper/pagination.js` para `lib/api/pagination.js` — fora de `pages/api/`, o Next não o registra mais como rota. Os dois importadores foram ajustados (`pages/api/dicas.js`, `pages/api/products.js`) e nenhum import do caminho antigo sobrou. **Verificado no manifest regerado:** a rota `/api/helper/pagination` não existe mais e o total de rotas em `/api/` caiu de 31 para **30**. A varredura de `pages/api/` confirma que **nenhum** arquivo ali ficou sem `export default` — a condição que criou o endpoint 500 não existe mais. |
 | **Impacto** | Um endpoint público que só devolve 500 — superfície desnecessária, e um 500 em rota que o health check do load test (`load-tests/functional/health-check.js:11`) não cobre porque usa `?mode=health`. O achado é do modelo `minimax-2` e **bateu**: o erro dele foi na contagem ("32 rotas registradas"; são 31), não neste ponto. |
 | **Correção proposta** | Mover o módulo para `lib/` e ajustar os dois imports (`pages/api/dicas.js:3`, `pages/api/products.js:5`). **Não remover**: é código vivo. A alternativa seria manter no lugar e aceitar o endpoint 500, o que é pior. |
-| **Ação necessária** | Ajustar os imports e o caminho do módulo; verificar se algum teste importa o caminho antigo. |
+| **Ação necessária** | — (resolvido em 21/10/2026). |
 
 ## S4 — `pages/api/products.js` não confere a permissão `Gestão de Produtos` nas escritas
 
 | | |
 |---|---|
-| **Estado atual** | **ABERTO — omissão confirmada (revisão de 20/10).** O `GET` sem `?public=true` e o `GET` com `?public=true` separam (`pages/api/products.js:190-198`), mas `POST`, `PUT` e `DELETE` exigem **apenas token**: `requireAuth` (`:65-80`) valida o JWT e nada mais — o arquivo **não menciona `role`, `permission` nem `requireAdmin` em lugar nenhum** (conferido por busca no arquivo inteiro). `POST` (`:203`), `PUT` (`:207`) e `DELETE` (`:211`) ficam abertos a qualquer usuário autenticado, inclusive `role: 'user'` (que tem só `Visão Geral` — `scripts/migrations/018-seed-default-roles.js:41`). |
+| **Estado atual** | **RESOLVIDO em 21/10/2026.** A permissão `Gestão de Produtos` passou a ser exigida **no servidor**, em todas as operações de painel da rota: `GET` sem `?public=true` (o que devolve rascunhos), `POST`, `PUT` (incluindo o branch de reordenação) e `DELETE`. O `GET` com `?public=true` **continua público** — é o que o site público consome. A checagem saiu de dentro do `adminCrudHandler` para um módulo compartilhado, `lib/api/permissions.js` (`checkRolePermission`), usado agora pelas duas rotas — sem mudar o comportamento observável das 14 rotas `admin/`. O bypass do cargo `admin` continua valendo por desenho (ADR-0010). **Decisão do dono:** aplicar a permissão direto em `/api/products`, sem criar `/api/admin/products.js`. |
 | **Por que é omissão, e não desenho** | A permissão **`Gestão de Produtos` existe** em `permissionsList` (`lib/domain/permissions.js:16`) — e é exatamente ela que o painel usa para esconder a aba de produtos do usuário sem permissão (`pages/admin.js:567` e `pages/admin.js:879`, `hasPermission('Gestão de Produtos')`). Ou seja: **a permissão é exigida só no cliente**. A rota que faz a escrita (`components/Admin/AdminProducts.js:149`, `apiEndpoint="/api/products"`, e o reorder em `:161`) não confere nada além do token. Some a isso que **não existe `pages/api/admin/products.js`** — o CRUD de produtos é o único da API admin sem rota própria —, enquanto `README.md:91` anuncia "API admin (15): CRUD de posts, músicas, vídeos, **produtos**, dicas…". O padrão do resto do projeto: `admin/posts.js:138` exige `Posts/Artigos`, `admin/dicas.js` exige `Gestão de Dicas`, `admin/fetch-ml.js:161` exige `Gestão de Produtos`. |
 | **Impacto** | Um usuário com qualquer token válido — inclusive `role: 'user'`, o mais restrito — cria, altera e apaga o catálogo de produtos. A barreira existe na interface e **não** existe na API: chamar a rota direto contorna o `hasPermission`. |
 | **Correção proposta** | Exigir a permissão `Gestão de Produtos` no servidor, no mesmo padrão de `admin/posts.js:138` — e escrever o teste de negação no par deny/allow de `docs/adr/0010`. |
-| **Ação necessária** | **Decisão do mantenedor sobre qual rota sobrevive:** (a) criar `pages/api/admin/products.js` com `permission: 'Gestão de Produtos'` e apontar o painel para ela, **ou** (b) aplicar a permissão direto em `pages/api/products.js`. A (a) é mais consistente com o resto da API admin; a (b) é menor. O que **não** está em discussão é que a escrita precisa de servidor, e não só de interface. |
+| **Ação necessária** | — (resolvido em 21/10/2026). O dono escolheu a opção (b): a permissão foi aplicada direto em `pages/api/products.js`, sem criar rota nova na API admin. |
 
 ## S5 — `pages/api/posts.js` mantém um caminho de escrita sem permissão, duplicado do que já é guardado
 
 | | |
 |---|---|
-| **Estado atual** | **ABERTO — caminho duplicado (revisão de 20/10).** O `POST` aplica `withAuth` (`pages/api/posts.js:152`), que valida o token mas **não** o cargo — o arquivo não menciona `role` nem `admin`. O `GET` é público por desenho (`:18-19`). |
+| **Estado atual** | **RESOLVIDO em 21/10/2026.** O `POST` público foi **removido**: `pages/api/posts.js` ficou somente leitura e responde 405 a qualquer método que não seja GET. A criação de post é feita só pelo painel, em `/api/admin/posts`, que exige a permissão `Posts/Artigos`. Nenhum consumidor legítimo do `POST` existia (o front só lê; os load tests só leem). O comando morto `cy.createPost` foi removido junto, e o caso de 405 que o helper pulava (`skipMethodNotAllowed: true`) voltou a valer — a opção, que ficou sem chamador, foi removida do helper. **Decisão do dono:** remover o caminho, não apenas guardá-lo. |
 | **Por que importa** | O painel **não** usa essa rota: `components/Admin/AdminPosts.js:230` aponta para `/api/admin/posts`, que exige `Posts/Artigos` (`pages/api/admin/posts.js:138`). Ou seja, existe **um caminho guardado e um caminho não guardado** para a mesma criação de post — e o conteúdo do post é público (`published` é campo aceito no schema, `pages/api/posts.js:116`). Nenhum consumidor legítimo de `POST /api/posts` foi encontrado: o front faz só `GET` (`components/Features/Blog/BlogSection.js:8`) e os load tests só leem. |
 | **Impacto** | Qualquer usuário autenticado cria e publica post por uma rota que ninguém usa — superfície de escrita desnecessária e sem guarda. |
 | **Correção proposta** | Duas saídas, ambas baratas: (a) exigir `Posts/Artigos` no `POST` público, ou (b) **remover** o `POST` de `pages/api/posts.js`, já que o `admin/posts.js` cobre o caso — o que também tornaria o título do teste existente verdadeiro: `tests/integration/api/posts.integration.test.js:93` se chama "deve rejeitar métodos não GET", mas só exercita o `PUT` (o `POST` não é testado). |
-| **Ação necessária** | **Decisão do mantenedor:** guardar ou remover. Se remover, conferir o `cypress/support/commands.js:23`, que intercepta `POST /api/posts`. |
+| **Ação necessária** | — (resolvido em 21/10/2026). O dono escolheu remover; o comando morto `cy.createPost` foi retirado junto. |
 
 ## S6 — `pages/api/auth/logout.js` aceita qualquer método HTTP
 
 | | |
 |---|---|
-| **Estado atual** | **ABERTO.** O handler não checa `req.method`: `pages/api/auth/logout.js:3` vai direto para revogar o refresh token e limpar os cookies. Um `GET` desloga a sessão. |
+| **Estado atual** | **RESOLVIDO em 21/10/2026.** O handler agora aceita **apenas `POST`** e responde **405** nos demais métodos, no mesmo padrão de `pages/api/status.js`. A busca por consumidores de `GET /api/auth/logout` não achou nenhum — o que resolvia o caso do `<img src="/api/auth/logout">` de terceiro. |
 | **Impacto** | Deslogar por navegação: `<img src="/api/auth/logout">` numa página de terceiro desloga a sessão do usuário. O cookie de auth é `SameSite=Lax` (`lib/auth/auth.js:201`) e o de refresh é `SameSite=Strict` (`:170`), então a requisição chega no contexto de navegação de topo. A consequência é negação de serviço de sessão, não exposição de dado. |
 | **Correção proposta** | Aceitar só `POST` (ou `GET`+`POST` explícito) e responder 405 nos demais, como `pages/api/status.js:11-16` já faz. |
-| **Ação necessária** | Verificar se algum consumidor faz `GET` no logout (o `pages/admin.js` ou o frontend). |
+| **Ação necessária** | — (resolvido em 21/10/2026). Nenhum consumidor de `GET` foi encontrado. |
 
 ## S7 — `pages/api/auth/check.js` e `refresh.js` sem rate limit
 
 | | |
 |---|---|
-| **Estado atual** | **ABERTO.** Só `pages/api/auth/login.js` tem rate limit (`:51` por IP, `:82` por usuário). `auth/check.js` e `auth/refresh.js` não têm nenhum: não importam `checkRateLimit`. O matcher do `proxy.js` (`:96-98`) cobre **apenas** `/api/auth/login`. |
+| **Estado atual** | **RESOLVIDO em 21/10/2026.** As duas rotas passaram a ter rate limit por IP, no mesmo padrão do `login`: `pages/api/auth/check.js` (60 req/min, chave `api:auth:check`) e `pages/api/auth/refresh.js` (30 req/min, chave `api:auth:refresh`). O IP vem de `getClientIP`, que aplica o modelo `TRUST_PROXY` — nunca do `x-forwarded-for` cru. |
 | **Impacto** | `check.js` valida um JWT a cada chamada e `refresh.js` renova token — ambos sem limite de tentativas, em rota pública. A magnitude depende de quanto cada uma custa ao servidor; `check.js` faz verificação de assinatura, que é barata. É a lacuna que o `proxy.js` já treatou para o `login` (o matcher dele cobre **só** `/api/auth/login`) e que não foi tratada nos outros dois. |
 | **Correção proposta** | Rate limit por IP nos dois, no mesmo padrão do `login`. |
-| **Ação necessária** | Decidir o limite. Atenção ao `refresh.js`: um limite por IP afeta usuários atrás de NAT compartilhado. |
+| **Ação necessária** | — (resolvido em 21/10/2026). Limites: 60 req/min em `check.js` e 30 req/min em `refresh.js`. O risco de NAT compartilhado segue valendo para `refresh.js`. |
 
 ## S8 — `pages/api/admin/users.js` aceita qualquer cargo existente → **FECHADO: não é defeito**
 
@@ -120,9 +141,19 @@ de pendências e passa a ser registro de decisão.
 
 | | |
 |---|---|
-| **Estado atual** | **ABERTO.** `pages/api/admin/fetch-spotify.js:116` e `pages/api/admin/fetch-ml.js:155` devolvem a mensagem crua do erro. |
+| **Estado atual** | **RESOLVIDO em 21/10/2026.** As duas rotas (`pages/api/admin/fetch-spotify.js` e `pages/api/admin/fetch-ml.js`) agora separam o **erro de negócio** — que tem mensagem escrita à mão, como "Não foi possível identificar a música. Verifique se o link é válido." — do **erro inesperado**, que passou a devolver a mensagem genérica padrão do projeto, com o detalhe cru apenas no log do servidor. O `error.message` cru deixou de chegar ao cliente. |
 | **Impacto** | **Menor** que S1: as duas rotas são de `admin/`, com RBAC — só quem tem a permissão vê. Ainda assim, a mensagem do driver vai para o cliente de um admin, e um admin não precisa da mensagem do driver para agir. |
-| **Ação necessária** |junto com S1, na mesma revisão de tratamento de erro. |
+| **Ação necessária** | — (resolvido em 21/10/2026), junto com o S1. |
+
+## S10 — a API não protege o usuário `admin` nem o cargo `admin` (novo em 21/10)
+
+| | |
+|---|---|
+| **Estado atual** | **RESOLVIDO em 21/10/2026.** A API agora recusa, com 400 nomeado: excluir o usuário administrador (identificado por `process.env.ADMIN_USERNAME`, com default `admin` — a mesma variável que o cria em `lib/auth/auth.js:361,374`), alterar o cargo desse usuário para algo diferente de `admin`, e excluir o cargo `admin`. No painel, o botão "Excluir" deixou de ser renderizado nas linhas protegidas (`canDelete` novo em `CrudTable`, repassado por `AdminUsersTab` e `AdminRolesTab`) — mas a garantia é a API, não a interface. A regra já existia escrita em `ARQUITETURA_SITE_PRIVADO.md` §9; o que faltava era a implementação. |
+| **Onde já está registrado** | `docs/ARQUITETURA_SITE_PRIVADO.md` §8, item 8 ("Exclusão do admin"), com o status **aberto** e a marcação de "lacuna (falta implementar)" — e a regra de proteção correspondente em §9 ("Proteção do `admin`"). A regra **já existe**; o que falta é a implementação na API e a retirada do botão no painel. |
+| **Impacto** | Um admin — ou qualquer um com a permissão `Usuários`/`Segurança` (a rota exige uma das duas, `users.js:161`) — pode remover o acesso administrativo do sistema. É o mesmo vetor do S8, pelo outro lado: o S8 diz que **vincular** `admin` é função da permissão; este diz que **desvincular e apagar** também é, e não há trava para nenhuma das duas. A diferença é que apagar o cargo `admin` **não é** recuperável pela interface (a semeadura da migração 018 é o que restaura `admin` e `user`, e só roda com `npm run migrate`). |
+| **Correção proposta** | Na API: recusar a exclusão do usuário `admin` e do cargo `admin`, e recusar a alteração do cargo do usuário `admin` — com 400 nomeado, no padrão das validações existentes. No painel: não oferecer a ação nessas linhas. Regra do §9 do documento privado: "o usuário `admin` vem e permanece vinculado ao cargo `admin`; esse vínculo não pode ser alterado". |
+| **Ação necessária** | — (resolvido em 21/10/2026). Executado antes do S4, como sugerido. |
 
 ---
 

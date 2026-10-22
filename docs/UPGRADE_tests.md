@@ -4453,18 +4453,19 @@ Testar o endpoint público `GET /api/posts` usando o helper `testPublicGetEndpoi
 | Paginação `page=3`, `limit=20`, `search=teste` | 200 |
 | Paginação inválida `page=-1` | 400 |
 | Erro interno | 500 |
-| (Helper) `skipMethodNotAllowed: true` | omitido 405 |
+| (Helper) método não permitido (`POST`) | 405 |
 | (Helper) paginação inválida `page=-1` | 400 |
 
 #### Relações
-- Usa `testPublicGetEndpoint(handler, { resourceName: 'posts', path: '/api/posts', skipMethodNotAllowed: true }, callback)`.
+- Usa `testPublicGetEndpoint(handler, { resourceName: 'posts', path: '/api/posts' }, callback)`.
 - Usa `postFactory.list(2)` para gerar dados.
 - Importa `getRecentPosts` e `getOrSetCache` mockados.
+
+> **Atualizado em 21/10/2026:** com a remoção do `POST` público de `/api/posts` (a criação de post passou a ser só pelo painel, em `/api/admin/posts`, que exige a permissão `Posts/Artigos`), a rota ficou somente leitura. O `skipMethodNotAllowed: true` deixou de ser necessário — o caso de 405 voltou a valer e é coberto pelo helper. A opção `skipMethodNotAllowed` do helper `testPublicGetEndpoint` ficou sem nenhum chamador e foi removida.
 
 #### Problemas
 - **Conflito com `posts.integration.test.js`:** os dois arquivos testam o mesmo handler real com as mesmas situações. `posts.test.js` é a versão "refatorada com helper", mas `posts.integration.test.js` não foi removido. Manter ambos gera manutenção duplicada.
 - **Cache key com `search`:** teste espera `posts:search:3:20:teste` e TTL `1800`. Handler real gera `posts:search:3:20:teste` apenas se `search.toLowerCase().trim() === 'teste'`. Funciona, mas frágil.
-- **405 omitido:** o helper permite `skipMethodNotAllowed: true` porque o handler real aceita `POST` (autenticado) na mesma rota. Isso é documentado no helper, mas uma regressão no POST não seria capturada aqui.
 - **`getRecentPosts` chamado com `(limit, page, search)`:** teste espera `(20, 3, 'teste')` — a ordem dos argumentos é `(limit, page, search)`. Handler real chama `getRecentPosts(limit, page, search)`. Correto.
 
 #### Melhorias

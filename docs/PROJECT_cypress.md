@@ -149,7 +149,6 @@ Define comandos customizados reutilizáveis em todos os testes E2E, encapsulando
 | Comando | Parâmetros | Descrição |
 |---------|-------------|-----------|
 | `cy.login(email, password)` | `email` (default: `admin@caminhar.com`), `password` (default: `senha123`) | Simula login como admin via interceptação de API |
-| `cy.createPost(post)` | `post` (objeto com dados do post) | Mocka a criação de um post via interceptação de API |
 | `cy.viewportMobile()` | — | Altera viewport para 375×667 (iPhone SE) |
 | `cy.viewportTablet()` | — | Altera viewport para 768×1024 (iPad) |
 | `cy.lightboxShouldBeOpen()` | — | Verifica se o lightbox de imagem está visível |
@@ -157,7 +156,9 @@ Define comandos customizados reutilizáveis em todos os testes E2E, encapsulando
 | `cy.openLightbox()` | — | Clica no container de zoom e verifica abertura do lightbox |
 | `cy.closeLightboxByOverlay()` | — | Fecha o lightbox clicando no overlay e verifica remoção |
 
-**Observação:** Os comandos `cy.login()` e `cy.createPost()` **não são utilizados** por nenhum teste atual.
+**Observação:** O comando `cy.login()` **não é utilizado** por nenhum teste atual.
+
+> **Removido em 21/10/2026:** o comando `cy.createPost()` deixou de existir junto com o `POST` público de `/api/posts` — a criação de post passou a ser feita só pelo painel, em `/api/admin/posts` (que exige a permissão `Posts/Artigos`). A rota pública ficou somente leitura.
 
 ---
 
@@ -326,7 +327,7 @@ Testa a funcionalidade de zoom de imagem (lightbox) em páginas de post do blog,
 - **Padrão `data-testid`:** Todos os seletores em `image_zoom.cy.js` utilizam atributos `data-testid` semânticos, prática recomendada para resiliência dos testes.
 - **Comandos reutilizáveis:** Operações comuns do lightbox foram abstraídas em comandos customizados (`cy.openLightbox()`, `cy.lightboxShouldBeOpen()`, `cy.lightboxShouldBeClosed()`, `cy.closeLightboxByOverlay()`), promovendo reuso e legibilidade.
 - **Lint configurado:** O `eslint.config.js` já inclui o `eslint-plugin-cypress` com as regras recomendadas para arquivos `cypress/**/*.js`, e ignora `cypress/videos/**` e `cypress/screenshots/**`.
-- **Mocks por interceptação:** O comando `cy.login()` e `cy.createPost()` utilizam `cy.intercept()` para simular respostas de API sem necessidade de backend real (embora não sejam usados pelos testes atuais).
+- **Mocks por interceptação:** O comando `cy.login()` utiliza `cy.intercept()` para simular respostas de API sem necessidade de backend real (embora não seja usado pelos testes atuais).
 - **Sem dependências de plugins:** O arquivo de configuração não registra plugins ou tarefas customizadas no `setupNodeEvents`.
 - **Execução local:** `npm run test:e2e` (ou `npm run cypress:run`) contra o banco de desenvolvimento, com pré-aquecimento pelo hook `precypress:run`, ou `npm run cypress:open` para o modo interativo. Alternativa **isolada**: `npm run test:e2e:isolated`, que sobe seu próprio Postgres descartável e não depende do estado do banco de dev (ver seção "Execução Isolada").
 - **Execução no CI:** o E2E **entrou no pipeline** em 08/10/2026 pelo workflow dedicado `.github/workflows/e2e.yml` (job único, `timeout-minutes: 15`, `permissions: contents: read`, nenhum secret), que roda `node scripts/e2e-isolated.js` em `push` para `main` e via `workflow_dispatch` — **sem `pull_request`**, decisão deliberada de coletar flakiness real antes de cobrar o E2E em toda abertura de PR. É o **4º check** pretendido para a branch protection (junto de `lint`, `coverage` e `coverage-report`). O gate de cobertura (`.github/workflows/test-coverage.yml`) continua **sem** E2E: roda apenas `npm run lint`, a suíte Jest (`npx jest --ci --coverage`), `actionlint` e `knip` — e dispara em `pull_request`, em `push` para `main` e via `workflow_dispatch` (o histórico de **0 runs** era o estado até 07/10/2026, enquanto o gatilho era somente `pull_request` e o projeto fazia push direto na `main`).

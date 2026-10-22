@@ -180,6 +180,9 @@ export default function AdminUsersTab() {
     <AdminCrudBase apiEndpoint="/api/admin/users" title="Gestão de Usuários e Admins"
       fields={fields} columns={columns} initialFormData={{ username: '', password: '', role: '' }}
       validationSchema={userSchema} validate={validateUser} newButtonText="+ Novo Usuário" searchable={false}
-      showItemCount={true} itemNameSingular="usuário cadastrado" itemNamePlural="usuários cadastrados" />
+      showItemCount={true} itemNameSingular="usuário cadastrado" itemNamePlural="usuários cadastrados"
+      // Trava de integridade: a linha do administrador protegido não exibe "Excluir"
+      // (o backend também recusa — a escondida da UI não é a garantia).
+      canDelete={(item) => item.username !== 'admin'} />
   );
 }

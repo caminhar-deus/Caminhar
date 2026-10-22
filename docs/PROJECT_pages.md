@@ -47,11 +47,11 @@ Arquivos com função puramente utilitária (helper) ou de suporte visual (CSS) 
 ├── login.js                    # Página de login geral (/login)
 ├── design-system.js            # Vitrine do Design System
 ├── api/
-│   ├── posts.js                # Posts: GET público + POST autenticado
+│   ├── posts.js                # Posts: GET público (rota somente leitura)
 │   ├── musicas.js              # Músicas públicas (paginado, busca, ordenação)
 │   ├── videos.js               # Vídeos públicos (paginado, busca, ordenação)
 │   ├── dicas.js                # Dicas públicas (paginado)
-│   ├── products.js             # Produtos: CRUD público/autenticado
+│   ├── products.js             # Produtos: GET público + painel (exige 'Gestão de Produtos')
 │   ├── settings.js             # Configurações do sistema (GET/POST/PUT)
 │   ├── status.js               # Health check e diagnóstico
 │   ├── upload-image.js         # Upload de imagens (multipart)
@@ -216,13 +216,17 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
 
 > **Fora desta seção, mas na raiz de `pages/api/`:** `ip-diagnostico.js` é admin-only (`requireAdmin: true`) e está documentado na seção 3 (API Admin) — ele não conta entre os 10 públicos.
 
-### `/pages/api/helper/pagination.js`
+### `/lib/api/pagination.js`
 
-- **Caminho:** `/pages/api/helper/pagination.js`
+- **Caminho:** `/lib/api/pagination.js`
 - **Arquivos acionados/relacionados:**
   - Importado por `pages/api/dicas.js` (`paginate`, `buildPaginationMeta`, `paginatedResponse`) e `pages/api/products.js` (`paginate`).
   - Não importa nenhum arquivo — é um módulo puro, sem dependências.
 - **Propósito:** Helper reutilizável de paginação (não é endpoint HTTP).
+- **Movido em 21/10/2026:** morava em `pages/api/helper/pagination.js`. Dentro de
+  `pages/api/`, o Next.js o registrava como rota estática — e, como não tem
+  `export default`, `/api/helper/pagination` respondia 500, alcançável por qualquer
+  visitante. Fora de `pages/api/`, ele é só código compartilhado.
 - **Funcionalidades:**
   - `paginate(rawPage, rawLimit, maxLimit=100)` — parseia e valida parâmetros, retorna `{ page, limit, offset }`; lança `INVALID_PAGINATION_PARAMS` se inválidos (page/limit < 1 ou limit > maxLimit; defaults: page 1, limit 10).
   - `buildPaginationMeta(page, limit, total)` — retorna `{ page, limit, total, totalPages }`.
@@ -235,7 +239,7 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
 - **Arquivos acionados/relacionados:**
   - `lib/infra/db.js` — `query()` (PostgreSQL).
   - `lib/cache/cache.js` — `getOrSetCache` e `checkRateLimit`.
-  - `pages/api/helper/pagination.js` — `paginate`, `buildPaginationMeta`, `paginatedResponse`.
+  - `lib/api/pagination.js` — `paginate`, `buildPaginationMeta`, `paginatedResponse`.
   - `lib/api/helpers.js` — `getClientIP`, `INVALID_PAGINATION_MESSAGE`.
   - `lib/infra/logger.js` — `logger`.
 - **Propósito:** Endpoint público de listagem de dicas com paginação.
@@ -271,16 +275,14 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
 
 - **Caminho:** `/pages/api/posts.js`
 - **Arquivos acionados/relacionados:**
-  - `lib/domain/posts.js` — `getRecentPosts()` (GET) e `createPost()` (POST).
-  - `lib/cache/cache.js` — `getOrSetCache`, `checkRateLimit`, `invalidateCache`.
-  - `lib/auth/auth.js` — `withAuth` (protege o POST).
+  - `lib/domain/posts.js` — `getRecentPosts()`.
+  - `lib/cache/cache.js` — `getOrSetCache`, `checkRateLimit`.
   - `lib/api/helpers.js` — `getClientIP`, `INVALID_PAGINATION_MESSAGE`.
   - `lib/infra/logger.js` — `logger`.
-  - `zod` (dependência externa) — `postCreateSchema`.
-- **Propósito:** Endpoint unificado de posts — listagem pública e criação autenticada.
+- **Propósito:** Endpoint público de posts — **somente leitura**. A criação de post é feita pelo painel, em `/api/admin/posts` (que exige a permissão `Posts/Artigos`).
 - **Funcionalidades:**
   - **GET** (público): paginação manual (`parseInt` sem helper), busca textual, chaves de cache diferenciadas (`posts:list:` para listagens com TTL 2h e `posts:search:` para buscas com TTL 30min), rate limiting dentro do callback de cache (100 req/min com busca, 300 req/min sem). O 400 de paginação (page/limit fora do intervalo) usa `INVALID_PAGINATION_MESSAGE` de `lib/api/helpers.js` (constante desde 16/10/2026).
-  - **POST** (autenticado via `withAuth(postHandler)`): validação Zod (`postCreateSchema`), rate limiting em mutações (`api:posts:create`, 30 req/min), invalidação de cache com três chamadas (`posts:list:*`, `posts:search:*`, `posts:*` — redundantes entre si).
+  - **[Correção 21/10/2026]** O `POST` foi **removido**: era protegido só por `withAuth`, sem conferir cargo — um caminho de escrita duplicado, já que o painel cria post em `/api/admin/posts` (permissão `Posts/Artigos`). A rota responde **405** a qualquer método que não seja GET, e `zod`, `withAuth` e `createPost` saíram do arquivo.
   - Suporta `?response=v1` para compatibilidade com formato `{ success, data, pagination, timestamp }`.
   - Cache-Control: `public, max-age=0, s-maxage=300, stale-while-revalidate=600`.
 
@@ -310,15 +312,16 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
   - `lib/domain/audit.js` — `logActivity` (auditoria nas mutações).
   - `lib/auth/auth.js` — `getAuthToken`, `verifyToken` (middleware `requireAuth` inline).
   - `lib/cache/cache.js` — `getOrSetCache`, `checkRateLimit`, `invalidateCache`.
-  - `pages/api/helper/pagination.js` — `paginate`.
+  - `lib/api/pagination.js` — `paginate`.
+  - `lib/api/permissions.js` — `checkRolePermission` (guarda de permissão).
   - `lib/api/helpers.js` — `getClientIP`, `INVALID_PAGINATION_MESSAGE`.
   - `lib/infra/logger.js` — `logger`.
 - **Propósito:** CRUD completo de produtos com modo público e administrativo.
 - **Funcionalidades:**
   - **GET** `?public=true` (público): paginação via helper `paginate()`, filtros (search, minPrice, maxPrice) na chave de cache, rate limiting antes do cache (`api:public:products`, 60 req/min), delega para `getPaginatedProducts()` em `lib/domain/products.js`. O catch de `INVALID_PAGINATION_PARAMS` responde 400 com `INVALID_PAGINATION_MESSAGE` (constante desde 16/10/2026).
-  - **GET** (autenticado): listagem via `getAllProducts(page, limit)` — mesmo tratamento do 400 de paginação.
-  - **POST/PUT/DELETE** (autenticado): cria, atualiza e remove via camada de domínio, com rate limiting em mutações (`api:admin:products`, 30 req/min), invalidação de cache (`products:*`) e `logActivity()` para auditoria.
-  - **Autenticação:** middleware `requireAuth()` definido inline (encapsula `getAuthToken()` + `verifyToken()`) — não usa `createAdminHandler()` nem `withAuth`.
+  - **GET** (autenticado): listagem via `getAllProducts(page, limit)` — mesmo tratamento do 400 de paginação. **[Correção 21/10/2026]** passa a exigir a permissão `Gestão de Produtos`.
+  - **POST/PUT/DELETE** (autenticado): cria, atualiza e remove via camada de domínio, com rate limiting em mutações (`api:admin:products`, 30 req/min), invalidação de cache (`products:*`) e `logActivity()` para auditoria. **[Correção 21/10/2026]** passam a exigir a permissão `Gestão de Produtos` — inclusive o branch de reordenação (`action: 'reorder'`), que reescreve o `position` de qualquer produto.
+  - **Autenticação:** middleware `requireAuth()` definido inline (encapsula `getAuthToken()` + `verifyToken()`) — não usa `createAdminHandler()` nem `withAuth`. A **permissão** é conferida em separado, por `requirePermission()`, que chama `checkRolePermission()` de `lib/api/permissions.js` (módulo compartilhado com o `adminCrudHandler`; o cargo `admin` passa por desenho — ADR-0010). O `GET` com `?public=true` continua **sem** autenticação e **sem** permissão.
   - Validação mínima em POST (nome e preço obrigatórios) e tratamento de `NO_DATA_TO_UPDATE` no PUT.
   - GET admin e mutações delegam para `lib/domain/products.js`, mas sem validação Zod nos dados de entrada.
 
@@ -345,11 +348,12 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
 - **Caminho:** `/pages/api/status.js`
 - **Arquivos acionados/relacionados:**
   - `lib/infra/db.js` — `query()` (teste `SELECT 1` de conexão).
+  - `lib/auth/auth.js` — `getAuthToken`, `verifyToken` (verificação manual do token).
 - **Propósito:** Endpoint de diagnóstico e health check do sistema.
 - **Funcionalidades:**
-  - **GET** `?mode=health`: retorna apenas `{ status: 'ok' }` para health checks de infraestrutura.
-  - **GET** (padrão): retorna diagnóstico completo — versão da API, ambiente, timestamp, status do banco PostgreSQL (teste `SELECT 1`), e métricas do sistema (Node.js, plataforma, uptime, memória RSS/heap — comentário do código indica uso em monitoramento via k6).
-  - Em caso de falha de conexão com o banco, registra o erro nos detalhes mas mantém status 200 com `database.status = 'error'`.
+  - **GET** `?mode=health`: retorna apenas `{ status: 'ok' }` para health checks de infraestrutura. **Público** — sem token e sem permissão.
+  - **GET** (padrão): retorna diagnóstico completo — versão da API, ambiente, timestamp, status do banco PostgreSQL (teste `SELECT 1`), e métricas do sistema (Node.js, plataforma, uptime, memória RSS/heap — comentário do código indica uso em monitoramento via k6). **[Correção 21/10/2026]** **passa a exigir token válido** (401 sem token ou com token inválido) — é o que fecha a exposição de fingerprinting do processo por rota sem autenticação. A rota não exige permissão nem cargo: é diagnóstico, não painel. O cenário k6 `memory_monitor` passou a enviar o token.
+  - Em caso de falha de conexão com o banco, mantém status 200 com `database.status = 'error'`. **[Correção 21/10/2026]** o detalhe passou a ser uma mensagem **fixa** (`'Falha ao conectar ao banco de dados'`) — a mensagem crua do driver não chega mais ao cliente; ela fica no log do servidor (`lib/infra/db.js`).
 
 ### `/pages/api/upload-image.js`
 
@@ -701,6 +705,7 @@ Os três endpoints abaixo são usados pelo painel admin para **importar metadado
   - GET apenas.
   - **Não usa `withAuth`** — valida manualmente com `getAuthToken(req)` (prioriza header `Authorization: Bearer` com fallback para cookie `token`) e `verifyToken(token)`.
   - Retorna 401 se token ausente ou inválido/expirado.
+  - **[Correção 21/10/2026]** Rate limit por IP: 60 req/min, chave `api:auth:check` (o IP vem de `getClientIP`, que aplica o modelo `TRUST_PROXY`).
   - Sucesso: `{ success: true, data: { authenticated: true, user: { userId, username, role } }, message }`.
   - ⚠️ **Ponto de atenção:** o 405 não retorna o header `Allow` (diferente de `login.js`/`refresh.js`).
 
@@ -713,6 +718,7 @@ Os três endpoints abaixo são usados pelo painel admin para **importar metadado
 - **Propósito:** Renovação do access token via refresh token.
 - **Funcionalidades:**
   - POST apenas (405 com header `Allow`).
+  - **[Correção 21/10/2026]** Rate limit por IP: 30 req/min, chave `api:auth:refresh` (o IP vem de `getClientIP`, que aplica o modelo `TRUST_PROXY`).
   - Obtém refresh token do **cookie** (`getRefreshTokenCookie`) ou do **body** (`req.body.refreshToken`).
   - Delega a rotação (revoga token atual e gera novo par) a `refreshAccessToken()` de `lib/auth/auth.js`.
   - Sucesso: atualiza cookies e retorna `{ token, token_type, expires_in, refresh_token, refresh_token_expires_in, user }`.
@@ -725,7 +731,7 @@ Os três endpoints abaixo são usados pelo painel admin para **importar metadado
   - `lib/auth/auth.js` — `setAuthCookie`, `setRefreshTokenCookie`, `getRefreshTokenCookie`, `revokeRefreshToken`.
 - **Propósito:** Endpoint de logout.
 - **Funcionalidades:**
-  - Aceita qualquer método HTTP.
+  - **[Correção 21/10/2026]** Aceita **apenas `POST`** — os demais métodos respondem **405**. Antes aceitaria qualquer método, e um `GET` deslogava a sessão.
   - Extrai o refresh token do cookie e invalida no banco via `revokeRefreshToken()` (falha na revogação não impede o logout).
   - Limpa os cookies `token` e `refreshToken` com `maxAge: 0` usando as mesmas funções de criação (opções consistentes).
   - Retorna `{ success: true, message }`.
@@ -734,9 +740,9 @@ Os três endpoints abaixo são usados pelo painel admin para **importar metadado
 
 ## 5. Helper de API
 
-### `/pages/api/helper/pagination.js`
+### `/lib/api/pagination.js`
 
-Já documentado na seção [2. API Pública](#2-api-pública) — é o único arquivo da pasta `helper/` e serve de suporte para todos os endpoints que precisam de paginação padronizada.
+Já documentado na seção [2. API Pública](#2-api-pública) — serve de suporte para todos os endpoints que precisam de paginação padronizada. **Movido para `lib/` em 21/10/2026** (ver o motivo na seção 2): dentro de `pages/api/` ele virava uma rota que só respondia 500.
 
 ---
 

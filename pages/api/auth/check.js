@@ -1,7 +1,12 @@
 import { getAuthToken, verifyToken } from '../../../lib/auth/auth.js';
 import { logger } from '../../../lib/infra/logger.js';
 import { query } from '../../../lib/infra/db.js';
+import { getClientIP, UNKNOWN_IP } from '../../../lib/api/helpers.js';
+import { checkRateLimit } from '../../../lib/cache/cache.js';
 import { getRolePermissions, isPermissionParseFailure } from '../../../lib/domain/permissions.js';
+
+/** Limite por IP: 60 req/min — mesmo padrão de `login.js`, com chave própria. */
+const CHECK_RATE_LIMIT = { key: 'api:auth:check', limit: 60, window: 60000 };
 
 /**
  * Endpoint de verificação de autenticação.
@@ -37,6 +42,22 @@ export default async function handler(req, res) {
       error: 'Method Not Allowed',
       message: 'Método não permitido - apenas GET é aceito',
     });
+  }
+
+  // Limite por IP (mesmo padrão do `login.js`, com `getClientIP` do modelo
+  // TRUST_PROXY — nunca o `x-forwarded-for` cru). Sem IP confiável o limite
+  // é pulado de propósito: chavear por `unknown` criaria um bucket global
+  // que qualquer visitor esgota, derrubando o check de todos.
+  const ip = getClientIP(req);
+  if (ip !== UNKNOWN_IP) {
+    const ipLimited = await checkRateLimit(ip, CHECK_RATE_LIMIT.key, CHECK_RATE_LIMIT.limit, CHECK_RATE_LIMIT.window);
+    if (ipLimited) {
+      logger.warn('Auth', `Rate limit de /api/auth/check excedido | IP: ${ip}`);
+      return res.status(429).json({
+        error: 'Too Many Requests',
+        message: 'Muitas tentativas de verificação de autenticação. Tente novamente mais tarde.',
+      });
+    }
   }
 
   try {

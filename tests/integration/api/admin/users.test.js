@@ -253,6 +253,44 @@ describe('API Admin - Gestão de Usuários (/api/admin/users)', () => {
       expect(JSON.parse(res._getData()).message).toContain('cargo-que-nao-existe');
       expect(updateRecords).not.toHaveBeenCalled();
     });
+
+    // ── Trava de integridade do administrador protegido (§9 doc privado) ──
+
+    it('deve retornar 400 ao tentar mudar o cargo do usuário administrador protegido', async () => {
+      const protectedAdmin = process.env.ADMIN_USERNAME || 'admin';
+      query.mockImplementation(async (sql) => {
+        if (sql.includes('SELECT permissions FROM roles')) return { rows: [{ permissions: ['Usuários', 'Segurança'] }] };
+        if (sql.includes('SELECT name FROM roles WHERE name')) return { rows: [{ name: 'user' }] };
+        if (sql.includes('SELECT username FROM users WHERE id')) return { rows: [{ username: protectedAdmin }] };
+        return { rows: [] };
+      });
+
+      const { req, res } = createMocks({ method: 'PUT', body: { id: 7, role: 'user' } });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(400);
+      const response = JSON.parse(res._getData());
+      expect(response.error).toBeDefined();
+      expect(response.message).toContain('admin');
+      expect(updateRecords).not.toHaveBeenCalled();
+    });
+
+    it('deve permitir reenviar o MESMO cargo `admin` para o administrador (idempotente)', async () => {
+      const protectedAdmin = process.env.ADMIN_USERNAME || 'admin';
+      query.mockImplementation(async (sql) => {
+        if (sql.includes('SELECT permissions FROM roles')) return { rows: [{ permissions: ['Usuários', 'Segurança'] }] };
+        if (sql.includes('SELECT name FROM roles WHERE name')) return { rows: [{ name: 'admin' }] };
+        if (sql.includes('SELECT username FROM users WHERE id')) return { rows: [{ username: protectedAdmin }] };
+        return { rows: [] };
+      });
+      updateRecords.mockResolvedValueOnce([{ id: 7, username: protectedAdmin, role: 'admin' }]);
+
+      const { req, res } = createMocks({ method: 'PUT', body: { id: 7, role: 'admin' } });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      expect(updateRecords).toHaveBeenCalledWith('users', { role: 'admin' }, { id: 7 }, expect.any(Array));
+    });
   });
 
   describe('DELETE - Excluir Usuário', () => {
@@ -268,6 +306,27 @@ describe('API Admin - Gestão de Usuários (/api/admin/users)', () => {
       await handler(req, res);
       expect(res._getStatusCode()).toBe(200);
       expect(deleteRecords).toHaveBeenCalledWith('users', { id: 3 });
+    });
+
+    // ── Trava de integridade do administrador protegido (§9 doc privado) ──
+
+    it('deve retornar 400 impedindo a exclusão do usuário administrador protegido', async () => {
+      const protectedAdmin = process.env.ADMIN_USERNAME || 'admin';
+      query.mockImplementation(async (sql) => {
+        if (sql.includes('SELECT permissions FROM roles')) return { rows: [{ permissions: ['Usuários', 'Segurança'] }] };
+        if (sql.includes('SELECT username FROM users WHERE id')) return { rows: [{ username: protectedAdmin }] };
+        return { rows: [] };
+      });
+
+      // ID diferente do logado (userId 1): só a trava do administrador barra aqui
+      const { req, res } = createMocks({ method: 'DELETE', body: { id: 5 } });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(400);
+      const response = JSON.parse(res._getData());
+      expect(response.error).toBeDefined();
+      expect(response.message).toContain('não pode ser excluído');
+      expect(deleteRecords).not.toHaveBeenCalled();
     });
   });
 

@@ -29,7 +29,10 @@ export default function CrudTable({
   itemsPerPage,
   title,
   isFormVisible,
-  setIsFormVisible
+  setIsFormVisible,
+  // Trava de integridade do administrador: decide se a linha atual pode ser
+  // excluída (linhas protegidas escondem só o "Excluir"; "Editar" permanece).
+  canDelete = () => true
 }) {
   // Renderiza uma célula da tabela
   const renderCell = (item, column) => {
@@ -212,14 +215,18 @@ export default function CrudTable({
                         >
                           Editar
                         </button>
-                        <button
-                          className={styles.deleteButton}
-                          onClick={() => handleDelete(item.id)}
-                          disabled={loading}
-                          type="button"
-                        >
-                          Excluir
-                        </button>
+                        {/* Ação condicional (não de estilo): linhas protegidas
+                            (ex.: usuário/cargo `admin`) não exibem "Excluir". */}
+                        {canDelete(item) && (
+                          <button
+                            className={styles.deleteButton}
+                            onClick={() => handleDelete(item.id)}
+                            disabled={loading}
+                            type="button"
+                          >
+                            Excluir
+                          </button>
+                        )}
                       </div>
                     </td>
                   )}
@@ -305,5 +312,6 @@ CrudTable.propTypes = {
   title: PropTypes.string.isRequired,
   isFormVisible: PropTypes.bool,
   setIsFormVisible: PropTypes.func.isRequired,
-  itemsPerPage: PropTypes.number
+  itemsPerPage: PropTypes.number,
+  canDelete: PropTypes.func
 };

@@ -197,4 +197,27 @@ describe('API Admin - Fetch ML (Edge Cases)', () => {
     }));
     expect(logger.error).toHaveBeenCalledWith('FetchML', 'Falha no fallback de scraping HTML:', expect.any(Error));
   });
+
+  it('deve devolver mensagem genérica (nunca error.message cru) quando o erro é inesperado', async () => {
+    // `decodeURIComponent` com '%' malformado lança URIError: caminho
+    // inesperado no catch externo da rota (antes expunha o message cru).
+    const { req, res } = createMocks({
+      method: 'POST',
+      body: { url: 'https://produto.mercadolivre.com.br/MLB-9999%ZZ' }
+    });
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(500);
+    expect(res._getJSONData()).toEqual({
+      error: 'Erro interno no servidor',
+      message: 'Erro interno ao processar a solicitação.',
+    });
+    // O detalhe cru continua registrado no log do servidor
+    expect(logger.error).toHaveBeenCalledWith(
+      'FetchML',
+      'Erro interno inesperado ao buscar dados do produto:',
+      expect.any(Error),
+    );
+  });
 });

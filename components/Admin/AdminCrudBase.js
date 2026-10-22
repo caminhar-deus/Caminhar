@@ -38,6 +38,7 @@ import CrudTable from './CrudTable';
  * @param {string} [props.itemNameSingular='item'] - Nome do item no singular
  * @param {string} [props.itemNamePlural='itens'] - Nome do item no plural
  * @param {boolean} [props.readOnly=false] - Desativa formulário e edição (Somente Leitura)
+ * @param {Function} [props.canDelete] - Decide se a linha pode ser excluída (default `() => true`); linhas protegidas escondem só o "Excluir"
  */
 export default function AdminCrudBase({
   apiEndpoint,
@@ -63,7 +64,8 @@ export default function AdminCrudBase({
   showItemCount = false,
   itemNameSingular = 'item',
   itemNamePlural = 'itens',
-  readOnly = false
+  readOnly = false,
+  canDelete
 }) {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -357,6 +359,7 @@ export default function AdminCrudBase({
         title={title}
         isFormVisible={isFormVisible}
         setIsFormVisible={setIsFormVisible}
+        canDelete={canDelete}
       />
 
       {/* Modal de confirmação de exclusão */}
@@ -431,5 +434,6 @@ AdminCrudBase.propTypes = {
   showItemCount: PropTypes.bool,
   itemNameSingular: PropTypes.string,
   itemNamePlural: PropTypes.string,
-  readOnly: PropTypes.bool
+  readOnly: PropTypes.bool,
+  canDelete: PropTypes.func
 };
