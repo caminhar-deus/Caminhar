@@ -35,6 +35,7 @@ const SAIDA = path.join(DIR, 'resultados');
 const TAREFAS = {
   designer: 'tarefa-designer.md',
   fixer: 'tarefa-fixer.md',
+  explorer: 'tarefa-explorer.md',
 };
 
 const PADRAO_MODELOS = {
@@ -82,7 +83,7 @@ function parseArgs(argv) {
       throw new Error(`Argumento desconhecido: ${arg}`);
     }
   }
-  if (!opts.agente) throw new Error('Informe --agente (designer | fixer)');
+  if (!opts.agente) throw new Error('Informe --agente (designer | fixer | explorer)');
   if (!TAREFAS[opts.agente]) {
     throw new Error(`Agente sem tarefa definida: ${opts.agente}. Conhecidos: ${Object.keys(TAREFAS).join(', ')}`);
   }
