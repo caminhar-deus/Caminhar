@@ -98,13 +98,6 @@
     // longcat-2.5-preview-free (quebrou o explorer) e minimax-m3.1-flash-free (primário morto do
     // orchestrator). Confira antes de confiar nesta lista.
     //
-    // 22/10/2026: inventário reconferido — 9 modelos free (conferido com a tool interna de
-    // modelos, ~todas as versões de família): beam-free, big-pickle, deepseek-v4.1-flash-free,
-    // flint-40b-free (NOVO, 21/10), glm-5.3-flash-free, mimo-v2.6-flash-free, nemotron-3-ultra-free,
-    // nemotron-3.5-lightning-free, nemotron-3.5-super-vl-free. Saíram do catálogo neste ciclo:
-    // longcat-2.5-preview-free (quebrou o explorer) e minimax-m3.1-flash-free (primário morto do
-    // orchestrator). Confira antes de confiar nesta lista.
-    //
     // DEEPSEEK DEIXOU DE SER ÓRFÃO (22/10/2026): o longcat-2.5-preview-free — vencedor da
     // bateria de 19/10 no papel novo (7/7 e 16/16 aplicações; deepseek 7/7 e 15/16 naquela
     // rodada) — SAIU do catálogo, e a bateria do papel rodou de novo com gabarito recalibrado
