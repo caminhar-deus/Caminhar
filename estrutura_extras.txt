@@ -455,6 +455,8 @@ pages/index.js → pages/styles/Home.module.css
 pages/login.js → pages/styles/Login.module.css
 pages/login.js → components/UI/index.js
 pages/login.js → utils/resolve-next.js
+scripts/bench/papeis/conferir-fixer.js → scripts/bench/papeis/regressao-s1.js
+scripts/bench/papeis/rodar.js → scripts/bench/papeis/regressao-s1.js
 scripts/check-db-status.js → lib/infra/db.js
 scripts/check-env.js → lib/infra/db.js
 scripts/check-server.js → scripts/utils/constants.js
