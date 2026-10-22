@@ -41,9 +41,6 @@ const TAREFAS = {
 const PADRAO_MODELOS = {
   designer: ['opencode/beam-free'],
   fixer: ['opencode/mimo-v2.6-flash-free'],
-  // explorer: candidatos da bateria de 22/10/2026 (longcat-2.5-preview-free saiu do catálogo;
-  // lista conferida com `opencode models` — id fora do catálogo falha em silêncio no spawn).
-  explorer: ['opencode/deepseek-v4.1-flash-free', 'opencode/flint-40b-free'],
 };
 
 /** Arquivos deste bench — nunca são tocados pela restauração do repo. */
