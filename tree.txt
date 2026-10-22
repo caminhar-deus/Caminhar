@@ -861,6 +861,10 @@
 │   │   │   │   ├── big-pickle-3.t2.meta.json
 │   │   │   │   ├── big-pickle-3.t2.ndjson
 │   │   │   │   ├── conferencia.md
+│   │   │   │   ├── glm-5.3-flash-free-1.meta.json
+│   │   │   │   ├── glm-5.3-flash-free-1.ndjson
+│   │   │   │   ├── glm-5.3-flash-free-1.t2.meta.json
+│   │   │   │   ├── glm-5.3-flash-free-1.t2.ndjson
 │   │   │   │   ├── minimax-m3.1-flash-free-1.meta.json
 │   │   │   │   ├── minimax-m3.1-flash-free-1.ndjson
 │   │   │   │   ├── minimax-m3.1-flash-free-1.t2.meta.json
@@ -892,28 +896,47 @@
 │   │       ├── conferir-fixer.js
 │   │       ├── conferir.js
 │   │       ├── gabarito-designer.md
+│   │       ├── gabarito-explorer.md
 │   │       ├── gabarito-fixer.md
+│   │       ├── gabarito-oracle.md
+│   │       ├── regressao-s1.js
 │   │       ├── resultados
 │   │       │   ├── conferencia.md
 │   │       │   ├── designer-beam-free-1.meta.json
 │   │       │   ├── designer-beam-free-1.ndjson
 │   │       │   ├── designer-deepseek-v4.1-flash-free-1.meta.json
 │   │       │   ├── designer-deepseek-v4.1-flash-free-1.ndjson
+│   │       │   ├── designer-glm-5.3-flash-free-1.meta.json
+│   │       │   ├── designer-glm-5.3-flash-free-1.ndjson
 │   │       │   ├── designer-longcat-2.5-preview-free-1.meta.json
 │   │       │   ├── designer-longcat-2.5-preview-free-1.ndjson
 │   │       │   ├── designer-minimax-m3.1-flash-free-1.meta.json
 │   │       │   ├── designer-minimax-m3.1-flash-free-1.ndjson
+│   │       │   ├── explorer-deepseek-v4.1-flash-free-1.meta.json
+│   │       │   ├── explorer-deepseek-v4.1-flash-free-1.ndjson
+│   │       │   ├── explorer-flint-40b-free-1.meta.json
+│   │       │   ├── explorer-flint-40b-free-1.ndjson
+│   │       │   ├── explorer-glm-5.3-flash-free-1.meta.json
+│   │       │   ├── explorer-glm-5.3-flash-free-1.ndjson
 │   │       │   ├── fixer-beam-free-1.meta.json
 │   │       │   ├── fixer-beam-free-1.ndjson
+│   │       │   ├── fixer-glm-5.3-flash-free-1-sem-objeto.meta.json
+│   │       │   ├── fixer-glm-5.3-flash-free-1-sem-objeto.ndjson
+│   │       │   ├── fixer-glm-5.3-flash-free-1.meta.json
+│   │       │   ├── fixer-glm-5.3-flash-free-1.ndjson
 │   │       │   ├── fixer-longcat-2.5-preview-free-1.meta.json
 │   │       │   ├── fixer-longcat-2.5-preview-free-1.ndjson
 │   │       │   ├── fixer-mimo-v2.6-flash-free-1.meta.json
 │   │       │   ├── fixer-mimo-v2.6-flash-free-1.ndjson
 │   │       │   ├── fixer-minimax-m3.1-flash-free-1.meta.json
-│   │       │   └── fixer-minimax-m3.1-flash-free-1.ndjson
+│   │       │   ├── fixer-minimax-m3.1-flash-free-1.ndjson
+│   │       │   ├── oracle-glm-5.3-flash-free-1.meta.json
+│   │       │   └── oracle-glm-5.3-flash-free-1.ndjson
 │   │       ├── rodar.js
 │   │       ├── tarefa-designer.md
-│   │       └── tarefa-fixer.md
+│   │       ├── tarefa-explorer.md
+│   │       ├── tarefa-fixer.md
+│   │       └── tarefa-oracle.md
 │   ├── check-db-status.js
 │   ├── check-env.js
 │   ├── check-hardcoded-credentials.js
@@ -1313,4 +1336,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-204 directories, 1110 files
+204 directories, 1133 files
