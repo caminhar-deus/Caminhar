@@ -28,6 +28,7 @@ apoio, não a fonte oficial; a decisão não é duplicada como página de memór
 | [0016](0016-seletor-de-ordenacao-de-produtos-no-servidor.md) | Seletor de ordenação de Produtos com ordenação no servidor | Aceito | 2026-10-21 |
 | [0017](0017-checagem-de-permissao-modulo-compartilhado-e-protecao-por-rota.md) | A checagem de permissão é um módulo compartilhado, e a proteção por rota passa a ser conferida no servidor | Aceito | 2026-10-21 |
 | [0018](0018-rewrite-wip-history-before-publishing.md) | Reescrever o histórico de um WIP antes de publicar, nunca depois do merge | Aceito | 2026-10-22 |
+| [0019](0019-pr-only-comment-steps-stay-in-coverage-report.md) | Os steps de comentário de PR ficam guardados dentro do job `coverage-report` | Aceito | 2026-10-22 |
 
 ## Quando criar um ADR
 
