@@ -93,6 +93,10 @@ function sufixosPorNome(alvo) {
 
 function contaminada(tools) {
   for (const t of tools) {
+    // A memória do projeto é via de contaminação (ADR-0008, 19/10/2026): a execução
+    // grava a RESPOSTA da tarefa e a execução seguinte a lê de volta — o mesmo que
+    // ler o gabarito. Toda escrita E toda consulta com propósito de resposta contam.
+    if (typeof t.nome === 'string' && t.nome.startsWith('memory_')) return true;
     const e = t.entrada || {};
     for (const campo of ['path', 'filePath', 'file', 'pattern', 'query']) {
       const v = e[campo];

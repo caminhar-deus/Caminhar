@@ -590,6 +590,80 @@ tarefas encadeadas igual para os dois modelos): padrão suspeito no campo — de
 visível, erro repetido junto ao fim de um dia longo, o primário caindo no meio do trabalho.
 Até lá, não gastar cota com isso.
 
+## 22/10/2026 (mais tarde): bateria do papel do `explorer` — o `deepseek` assume com 0 erros, o `flint` estreia sem operância
+
+**Motivo da rodada.** O inventário reconferido neste dia (9 modelos free, `all:true`) mostrou
+duas saídas e uma entrada: saíram `longcat-2.5-preview-free` — o modelo declarado do
+`explorer` desde a fusão do librarian (3.0.5) — e `minimax-m3.1-flash-free` (primário morto do
+`orchestrator`, já remaped para `big-pickle` + reserva `glm-5.3-flash-free`); entrou
+`flint-40b-free` (21/10, nunca medido). Um id fora do catálogo não spawna: o `explorer`
+estava parado.
+
+**Recalibração obrigatória antes de medir.** O gabarito do papel novo de 19/10 estava
+obsoleto — a passa de segurança de 21/10 mudou a superfície de `pages/api/`. Ground truth
+reconstruído FORA do modelo, conferindo cada ponto no código: **6 pontos** (1 definição +
+5 aplicações) — `lib/auth/auth.js:324`, `lib/api/adminCrudHandler.js:305`,
+`pages/api/upload-image.js:170`, `pages/api/settings.js:129` e `:163`,
+`pages/api/cleanup-test-data.js:26` — com armadilhas preservadas (imports, comentários
+incluindo `status.js:32`, e a rota `status.js` que usa `verifyToken` por construção). Parte
+B conferida na doc instalada (Next 16.4.2): `revalidate` como route segment config em
+`node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/route.md:270-284`,
+e **zero** ocorrências de `Cache-Control` no mesmo doc — receita manual só no `headers.md`
+(Pages Router, `:395-399`, `:424`, `:431`).
+
+**Candidatos e aparelho.** 2 candidatos (o instrumento novo do papel: `tarefa-explorer.md`,
+`gabarito-explorer.md`; `rodar.js` restaura o repo entre execuções; contaminação também
+detectada por tools `memory_*`), 1 execução cada, sequencial.
+
+| Modelo | Erros verificáveis | Parte A | Parte B | Nota |
+|---|---|---|---|---|
+| `deepseek-v4.1-flash-free` | **0** | 6/6 pontos; armadilhas iludidas | citações conferidas no source | 98s; sem edição; sem memória |
+| `flint-40b-free` | — (sem operância) | não entregou | não entregou | sessão caiu em 287s |
+
+**`deepseek-v4.1-flash-free` — vencedor.** Parte A com as 7 citações locais batendo linha a
+linha (inclui os points auxiliares: dispatch em `settings.js:26`/`:28`, wrapper de `requestId`
+em `adminCrudHandler.js:313-326`) e mais dois extras não pedidos e verdadeiros: apontou o
+`withAuth({ roles })` de `lib/api/middleware.js` como extinto (não há hit no repo) e citou o
+padrão de `status.js` por dentro. Parte B usou **só** `context7` (docs pinadas v16.2.9) e
+`gh_grep` (canary), conforme a tarefa; o validador local marcou 5 citações como inválidas e a
+conferência fora do modelo mostrou que **todas são reais**: os caminhos apontam para o repo
+externo `vercel/next.js` (a tarefa aceita URL da doc online) — `app-route.ts:461` e
+`self-hosting.mdx:99` conferem linha a linha na canary, e os trechos de `cdn-caching.mdx`,
+`cache-control.ts` e `15-route-handlers.mdx` existem com o texto citado. Honestidade
+documental no padrão do papel: 6 lacunas declaradas `NÃO DETERMINADO` e ressalva explícita de
+versão (docs v16.2.9 vs canary diferente). **Deixa de ser órfão** (a decisão de 19/10 o
+mantinha sem dono por decisão medida — ela continua válida como histórico): assume o
+`explorer`.
+
+**`flint-40b-free` — primeira medição, sem operância.** 12 chamadas de tool (grep×4,
+glob×2, read×6), 4 frases de plano e nenhuma parte entregue: a sessão morreu com
+`provider.internal` (503, "Endpoint is unavailable") antes da resposta final. Não houve
+contaminação (nenhum acesso a `scripts/bench/`, nenhum `memory_*`) nem edição de arquivo —
+o que se mede é a entrega: zero pontos respondidos. É o estreante do dia 21/10; reavaliar
+em rodada futura quando voltar a ser candidato. **Não confundir com o gatilho de fila** da
+observação de campo: um crash isolado de um candidado em bench não é "erro repetido ao fim
+de dia longo" nem "primário caindo no meio do trabalho" — não dispara o bench de fila.
+
+**Cadeia do `explorer` depois da rodada:** `deepseek-v4.1-flash-free` único. Não há reserva
+declarada para o papel; a reserva operacional continua sendo conferir `opencode models`
+quando um agente não spawnar. Não medidos neste papel: `flint-40b-free` (sem operância
+hoje), `glm-5.3-flash-free` e `nemotron-3-ultra-free`. RETENÇÃO: nenhum modelo novo do ciclo
+(`flint-40b-free`, `nemotron-3-ultra-free`) tem zero-retention registrado no catálogo do
+provider — tratar todo o free tier como sem garantia de retenção até conferir na fonte.
+
+## Alternativas consideradas aqui (22/10/2026)
+
+- **Aproveitar a saída do `longcat` para apontar o `explorer` direto no `flint-40b-free`
+  (o estreante).** Descartado: contra a regra do próprio ADR — medição vale por papel, e
+  medir vale mais do que nunca medir. A rodada de hoje mediu e ele não entregou.
+- **Mandar o `oracle` na vaga interina e só depois bater candidatos.** Descartado: não
+  há reserva de papel e o custo do bench é baixo (~3 min/execução no free tier); a
+  cadeia de reserva do `orchestrator` não serve de jazz para outro papel (erros de
+  failover são da cadeia do papél que os declarou).
+- **Rerunner a bateria do `flint` com +1 repetição hoje.** Descartado: a execução caiu
+  com 503 de provider e um rerun imediato mede mais o rate limit free-tier do que o
+  papel; reavaliação fica para rodada futura, com cota própria.
+
 ## Alternativas consideradas
 
 - **Manter o preset anterior, com as cadeias.** Descartado: preservava o acoplamento

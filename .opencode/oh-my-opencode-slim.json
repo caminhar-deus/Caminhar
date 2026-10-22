@@ -91,13 +91,27 @@
     // (e minimax-m3.1-flash-free entrou no mesmo dia). Confira antes de confiar nesta lista.
     // nemotron-3.5-lightning-free fica de fora: foi o que derrubou o explorer em 09/10/2026.
     //
-    // ÓRFÃO POR DECISÃO (19/10/2026): deepseek-v4.1-flash-free era o modelo do librarian; com o
-    // merge do 3.0.5 ficou sem dono. A bateria que faltava rodou no papel novo (repo + doc externa
-    // via context7/gh_grep, uma execução por modelo, citações conferidas em arquivo:linha):
-    // longcat 7/7 e 16/16 aplicações; deepseek 7/7 e 15/16 (omitiu ip-diagnostico.js:186); zero
-    // erros verificáveis nos dois. Empate no pedido, incumbent mais completo — o explorer CONTINUA
-    // com o longcat e o deepseek segue órfão por decisão medida, não por esquecimento. Ver a
-    // seção "19/10/2026" do ADR-0008.
+    // 22/10/2026: inventário reconferido — 9 modelos free (conferido com a tool interna de
+    // modelos, ~todas as versões de família): beam-free, big-pickle, deepseek-v4.1-flash-free,
+    // flint-40b-free (NOVO, 21/10), glm-5.3-flash-free, mimo-v2.6-flash-free, nemotron-3-ultra-free,
+    // nemotron-3.5-lightning-free, nemotron-3.5-super-vl-free. Saíram do catálogo neste ciclo:
+    // longcat-2.5-preview-free (quebrou o explorer) e minimax-m3.1-flash-free (primário morto do
+    // orchestrator). Confira antes de confiar nesta lista.
+    //
+    // 22/10/2026: inventário reconferido — 9 modelos free (conferido com a tool interna de
+    // modelos, ~todas as versões de família): beam-free, big-pickle, deepseek-v4.1-flash-free,
+    // flint-40b-free (NOVO, 21/10), glm-5.3-flash-free, mimo-v2.6-flash-free, nemotron-3-ultra-free,
+    // nemotron-3.5-lightning-free, nemotron-3.5-super-vl-free. Saíram do catálogo neste ciclo:
+    // longcat-2.5-preview-free (quebrou o explorer) e minimax-m3.1-flash-free (primário morto do
+    // orchestrator). Confira antes de confiar nesta lista.
+    //
+    // DEEPSEEK DEIXOU DE SER ÓRFÃO (22/10/2026): o longcat-2.5-preview-free — vencedor da
+    // bateria de 19/10 no papel novo (7/7 e 16/16 aplicações; deepseek 7/7 e 15/16 naquela
+    // rodada) — SAIU do catálogo, e a bateria do papel rodou de novo com gabarito recalibrado
+    // (a passa de segurança de 21/10 mudou a superfície de pages/api/; ground truth: 6 pontos).
+    // O deepseek venceu com zero erros verificáveis e assume o explorer; o estreante
+    // flint-40b-free não entregou as partes (sessão caiu com provider 503). Ver a seção
+    // "22/10/2026 (mais tarde)" do ADR-0008.
     // MEDIÇÃO (por que cada modelo, e não o anterior):
     //   nemotron-vl  único que ACHOU a causa, não o sintoma: `adminCrudHandler.js:53` tem
     //                `requireAdmin = false` e só 2 das 15 rotas admin o ativam — com
@@ -152,17 +166,43 @@
       // erro verificável: 0 do minimax contra 1 do big-pickle. minimax vira o PRIMÁRIO.
       // big-pickle continua como RESERVA — ela cobre rate limit e 5xx, que são os erros
       // frequentes; para "o primário saiu do catálogo", o mecanismo é a checagem de catálogo.
-      "orchestrator": { "model": ["opencode/minimax-m3.1-flash-free", "opencode/big-pickle"] },
+      // ORCHESTRATOR — 22/10/2026: minimax-m3.1-flash-free SAIU do catálogo (não aparece nem no
+      // inventário completo; nem como versão anterior de família). big-pickle vira PRIMÁRIO: é o
+      // único vivo com medição no papel real (orchestrator-bench 19/10: 19/24 itens do Camada B,
+      // 1 erro verificável por execução — o primário medido anterior tinha 21/24 e saiu).
+      // RESERVA = glm-5.3-flash-free: nunca medido no papel, mas é o modelo em que o provider
+      // vem caindo na prática desde a saída do space-bunny (default, inclusive nesta sessão) —
+      // declará-lo formalmente alinha a cadeia com o comportamento real e volta a cobrir
+      // rate limit/5xx com um modelo que nenhum outro agente usa como primário. flint-40b-free
+      // (21/10) é candidato a bench; nemotron-3-ultra-free segue sem dono. RETENÇÃO: nenhum dos
+      // dois tem zero-retention registrado — tratar como free tier comum (ver ADR-0008).
+      "orchestrator": { "model": ["opencode/big-pickle", "opencode/glm-5.3-flash-free"] },
       "oracle":       { "model": "opencode/nemotron-3.5-super-vl-free",
                         // Skill do Front-End-Checklist para a revisão (obrigatória no fluxo: oracle revisa sem editar):
                         "skills_add": ["frontend-checklist-global"]
                       },
       // O 3.0.5 fundiu o librarian no explorer (MARKETPLACE_BUILTIN_RENAMES em dist/index.js).
-      // O explorer carrega hoje as duas responsabilidades: varredura do repo (longcat) e
-      // doc externa (context7/gh_grep, em "agents" abaixo). O longcat foi medido no papel de repo
-      // em 15/10 e no papel novo — repo + doc externa — em 19/10/2026. O deepseek correu no mesmo
-      // papel novo e não ganhou; ver a nota "ÓRFÃO POR DECISÃO" acima.
-      "explorer":     { "model": "opencode/longcat-2.5-preview-free" },
+      // O explorer carrega as duas responsabilidades: varredura do repo e doc externa
+      // (context7/gh_grep, em "agents" abaixo).
+      //
+      // EXPLORER — 22/10/2026: o longcat-2.5-preview-free, no cargo desde a fusão do 3.0.5
+      // (medições em 15/10 e 19/10), SAIU do catálogo — e um id fora do catálogo não spawna.
+      // Bateria do papel refeita com gabarito recalibrado (1 execução por candidato; citações
+      // conferidas FORA do modelo; ground truth: 6 pontos de withAuth + doc externa):
+      //   deepseek-v4.1-flash-free  0 erros verificáveis. Parte A: 6/6 pontos e armadilhas
+      //                         iludidas (imports, comentários, status.js, withAuth({roles})
+      //                         extinto). Parte B: as 5 citações que o validador local marcou
+      //                         inválidas são reais — conferidas linha a linha no repo do
+      //                         Next (app-route.ts:461 e self-hosting.mdx:99 exatos); 6
+      //                         "NÃO DETERMINADO" declarados e ressalva de versão dos docs
+      //                         (v16.2.9 vs canary). 98s. AGORA É O EXPLORER — deixa de ser
+      //                         órfão por decisão de 19/10.
+      //   flint-40b-free           SEM OPERÂNCIA: 12 chamadas de tool, nenhum trecho
+      //                         conclusivo; sessão caiu em 287s com provider.internal 503
+      //                         ("Endpoint is unavailable") sem entregar as partes. Primeira
+      //                         medição do estreante de 21/10 — reavaliar em rodada futura;
+      //                         não confundir com o gatilho de fila da observação de campo.
+      "explorer":     { "model": "opencode/deepseek-v4.1-flash-free" },
       // designer: 18/10/2026, muse-spark-1.3-contributor-free SAIU do catálogo do Zen e o agente
       // parou de funcionar (o host rejeita o spawn: "Model ... is not available"). Trocado para
       // beam-free, que já tinha medição deste papel em 16/10 — ver a entrada dele abaixo.
