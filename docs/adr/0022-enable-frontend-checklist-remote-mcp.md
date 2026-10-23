@@ -49,8 +49,8 @@ A página oficial do fornecedor (`https://frontendchecklist.io/mcp`) declara: se
 - **Envio de código a terceiro.** `review_code` transmite o trecho revisado; a garantia de "não armazenado/não logado" é declaração do fornecedor. Mitigação: só para orchestrator/oracle, com a regra de nunca usar em código sensível.
 - **Custo de contexto.** 11 ferramentas a mais por sessão desses dois papéis, num modelo free de contexto curto.
 - **Disponibilidade de terceiro.** Se o servidor cair ou mudar o contrato, os dois papéis perdem a ferramenta; a skill local permanece como alternativa.
-- **Não verificado nesta sessão:** a exposição de `prompts`/`resources`/MCP App ao modelo pelo host OpenCode v2.1.4. O que está garantido são as 11 ferramentas; o restante depende do cliente.
-- **Reinício obrigatório do host.** O plugin slim não recarrega config a quente: `opencode debug agents` só mostra a matriz nova depois de reiniciar o host/service. Até lá, a permissão compilada continua em `deny` para todos os papéis (estado observado logo após a edição).
+- **O que o host expõe, verificado após o restart (23/10/2026):** as 11 ferramentas entram como tools; os 399 `resources` (+3 templates) **não** viram tools, mas são legíveis pelas ferramentas do host `opencode.list_mcp_resources` e `opencode.read_mcp_resource` (leitura de `frontendchecklist://rules/<slug>` confirmada). Os 5 `prompts` e o MCP App (`ui://`) não têm caminho de uso no OpenCode v2.1.4.
+- **Reinício obrigatório do host.** O plugin slim não recarrega config a quente: `opencode debug agents` só mostra a matriz nova depois de reiniciar o host/service. Logo após a edição, a permissão compilada continuava em `deny` para todos os papéis; depois do restart de 23/10/2026, conferido: `allow` em orchestrator e oracle, `deny` nos demais. O `opencode mcp list` já mostrava `connected` antes do restart — conexão e permissão são camadas diferentes.
 
 ## Revisão
 
