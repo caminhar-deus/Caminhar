@@ -1,76 +1,10 @@
 {
   "version": 1,
   "skills": {
-    "404-page": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/404-page/SKILL.md",
-      "computedHash": "1299b088e4566009be31d97e0cc1cb0cdbeb6cd6cdbc2bcc68e9f7c905a37d49"
-    },
-    "about-page": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/about-page/SKILL.md",
-      "computedHash": "9c1ac9663da5b00483456c4a39ece4924f84349faac92e7a90f875504f69f266"
-    },
     "accessibility-compliance": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "36d3b046163c42251732b3127c042f6b8eb7d91fcbf7ef9ae79fde79e9c99369"
-    },
-    "accessibility-testing": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/accessibility-testing/SKILL.md",
-      "computedHash": "e97d7074aad263411318690dc063541be7ef023ed29d3806dcfa363a7bc6a378"
-    },
-    "accessible-authentication": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/accessible-authentication/SKILL.md",
-      "computedHash": "c0ef6cc9607c580abfe59ca937544fbfde481313f3377bf98845b3eb20f21c34"
-    },
-    "accessible-notifications": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/accessible-notifications/SKILL.md",
-      "computedHash": "e014ca1f014089eacc5262aa8e0142b40cf4658e60f9a4e108215757499b0174"
-    },
-    "accessible-tables": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/accessible-tables/SKILL.md",
-      "computedHash": "a462e6b66c0096019f57ae1fc22e7a3b9e6f104c50b14014dd63bc05ec631471"
-    },
-    "accessible-tooltips": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/accessible-tooltips/SKILL.md",
-      "computedHash": "b91c0e600c877de37fa9d945e1946dcf14f25fb7337e6d0de6b921d8ee2df573"
-    },
-    "accesskeys": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/accesskeys/SKILL.md",
-      "computedHash": "23b73f1e872a60cb1014c98c8d87057e8a89226bfc178d520b8fb66a34fd3274"
-    },
-    "accordion-accessibility": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/accordion-accessibility/SKILL.md",
-      "computedHash": "ccf0c5f5351c01627a7703a1706e60b41af95db1478d2de90fbb243fe9b9da6f"
-    },
-    "affiliate-disclosure": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/affiliate-disclosure/SKILL.md",
-      "computedHash": "a89c4ad272ebe837108a32bf8165d774b225af563b083fa200e6306bf444d5c2"
-    },
-    "ai-content": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/ai-content/SKILL.md",
-      "computedHash": "f1fddb9117180073448dacdf9388ce65788e013b06ad28f969c4e8ed4df9c5d1"
     },
     "airflow-dag-patterns": {
       "source": "wshobson/agents",
@@ -82,46 +16,10 @@
       "sourceType": "github",
       "computedHash": "b2ca295de7f9c86c444f1fa21239e22e0eb7013ced1c652169b9402cc96ff744"
     },
-    "all-noindex-pages": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/all-noindex-pages/SKILL.md",
-      "computedHash": "60a0f0cc6aef6930b10be5a18a51ec56e92bb689cf82a0c32fe556707cc466ea"
-    },
-    "alt-text": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/alt-text/SKILL.md",
-      "computedHash": "879f85f429ace7f07dd884ad4c4aed4415c64b22aa2e3e25c11aef76fd7ca8a8"
-    },
-    "anchor-smooth-scroll": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/anchor-smooth-scroll/SKILL.md",
-      "computedHash": "7348a69eda387df12b2889fa8d8c6fe7b356a5564fd066c4765b1bf3107aa2e9"
-    },
-    "anchor-text": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/anchor-text/SKILL.md",
-      "computedHash": "4c00522ef36f3eafa053fd1db48c9dac4d771a63a28d9082e19b881aa9ecd370"
-    },
     "angular-migration": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "f9d81476e0f743d804aab855e978a88d135b4f7fefb0912733a94b95e8538fa7"
-    },
-    "animated-content": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/animated-content/SKILL.md",
-      "computedHash": "ce67711c44c358e0c5e79f5ba699501a13d806ec7b7213e5dea2123f02f68ea0"
-    },
-    "animation-performance": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/animation-performance/SKILL.md",
-      "computedHash": "80d16301b25badb9e1ce59f3cbd79c8ffff0d1334c19fbc121f836c2acadb083"
     },
     "anti-reversing-techniques": {
       "source": "wshobson/agents",
@@ -143,144 +41,6 @@
       "sourceType": "github",
       "computedHash": "cf81f4523a2fd3017590cf2792fe305e4375d2f75d22037b92f05852e22feae2"
     },
-    "aria-allowed-attr": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/aria-allowed-attr/SKILL.md",
-      "computedHash": "e272a380206780ae38c0bcb7fbe501093e90eeef29c1288a63ff640b69563487"
-    },
-    "aria-command-name": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/aria-command-name/SKILL.md",
-      "computedHash": "1cccd3f36d87bbcb3c1a605f73608b46e7bbf50c888c453400cbc8188368a420"
-    },
-    "aria-deprecated-role": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/aria-deprecated-role/SKILL.md",
-      "computedHash": "00d5fbbf57c9905284420e2d95ef1d048bb79b3535fd1a2e1c183e62935f4757"
-    },
-    "aria-dialog-name": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/aria-dialog-name/SKILL.md",
-      "computedHash": "b5df7d1913b39737f8b924be9534e06ca369b1b8468ffc8b4c5f9db49589d1b5"
-    },
-    "aria-hidden-body": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/aria-hidden-body/SKILL.md",
-      "computedHash": "8b54a5d82d98ac9f66bba886a1091654c430da99fe3e2fddae4497005e6f3728"
-    },
-    "aria-hidden-focus": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/aria-hidden-focus/SKILL.md",
-      "computedHash": "6200ab66c96b3f92910d8ac6b8f78395d70654393506b6031c3da50f3eda4ce2"
-    },
-    "aria-input-field-name": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/aria-input-field-name/SKILL.md",
-      "computedHash": "64173a257fd81372eefa95138c2684fd7d42aa1ce1aa11f19d3bc1fc67984567"
-    },
-    "aria-labels": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/aria-labels/SKILL.md",
-      "computedHash": "aad912872f27300dc6b704cdd85430bde48a64c7e0e579cfc1a12b4d0a8fbca7"
-    },
-    "aria-live-regions": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/aria-live-regions/SKILL.md",
-      "computedHash": "24ec10cbac0417390d48afa111ada4fa48066de3d3dee1bf03b65f5eeb2ec88b"
-    },
-    "aria-meter-name": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/aria-meter-name/SKILL.md",
-      "computedHash": "62c89f8fb453f42d6af267632b7c708a29769437a0b1674ebb0e5ea58d1b80f9"
-    },
-    "aria-progressbar-name": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/aria-progressbar-name/SKILL.md",
-      "computedHash": "84eff824b0e9e4b39ba6ed8eb5e57253c44a5451078bf3873aea5f50450af51f"
-    },
-    "aria-required-attr": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/aria-required-attr/SKILL.md",
-      "computedHash": "5061a22487acc7df69e96c36b9a266dd066113d4aceff02a0e5a564e7f5fa3cf"
-    },
-    "aria-required-children": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/aria-required-children/SKILL.md",
-      "computedHash": "710ec57c13afb81ac6b6d937ef245d1ae8a5d5fef1c369d703eb0097f49e6c9d"
-    },
-    "aria-required-parent": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/aria-required-parent/SKILL.md",
-      "computedHash": "1c9d279e28c77ec433cad7be8368d0c5ab49998e1c52c0fe4f2542a34dfe9e30"
-    },
-    "aria-roles": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/aria-roles/SKILL.md",
-      "computedHash": "63bfee924a0e57ac366455458dbd448d353c63c9dcd6fa156ee05ea1ebb6bf02"
-    },
-    "aria-text": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/aria-text/SKILL.md",
-      "computedHash": "97b8e2e64b1d0510cc5ff650eea98dd89b2eeb632c4f4199aa0dcb3554accae0"
-    },
-    "aria-toggle-field-name": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/aria-toggle-field-name/SKILL.md",
-      "computedHash": "ea8a024487871c121534d2e2a2167bb1e6b0381ec23e58b0dfbc0b1adfe94670"
-    },
-    "aria-tooltip-name": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/aria-tooltip-name/SKILL.md",
-      "computedHash": "b78134fbef09bc8da4ae7729cee6eb20a0f66d81b226cefd4e920d90c45d9002"
-    },
-    "aria-treeitem-name": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/aria-treeitem-name/SKILL.md",
-      "computedHash": "098c594ad2845bea76a3ba9f2de6e65a090440ebb79458386ea552c37e92393b"
-    },
-    "aria-valid-attr": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/aria-valid-attr/SKILL.md",
-      "computedHash": "8323e7a42c8063ef253187fb8c8bafaeb15435e56f5fb73b1f42e1073af1dbf8"
-    },
-    "aria-valid-attr-value": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/aria-valid-attr-value/SKILL.md",
-      "computedHash": "6574e2dd8cc376d50abd0d9f3e3b4fbd41b4350be624356093c348377df90dc9"
-    },
-    "article": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/article/SKILL.md",
-      "computedHash": "b52a3a2e181d78c00053ad4741ea5999e5e4b9a8f0eb834f1ee3f5ebd7868237"
-    },
-    "article-links": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/article-links/SKILL.md",
-      "computedHash": "d7f04d455531792a3971c31ff1293673fabb7ff4718ba640febdaad1bbb497d4"
-    },
     "ask-matt": {
       "source": "mattpocock/skills",
       "sourceType": "github",
@@ -297,64 +57,10 @@
       "sourceType": "github",
       "computedHash": "1b3eb8844b681218b506727ad63d9849686a94b902ef323a2d9b3d5636fcf34e"
     },
-    "audio-descriptions": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/audio-descriptions/SKILL.md",
-      "computedHash": "cc339f893a45df45ebaa35b22b259526d7da020b364a1992edbcedf6c2027639"
-    },
     "auth-implementation-patterns": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "d38d7eef32534d75370b72be089faee9f58e84a33b7273d601e42eb308017dfb"
-    },
-    "author-byline": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/author-byline/SKILL.md",
-      "computedHash": "546dc73b9c200ed47193df074d008d897cf934029f2d4773028fa6bc0b3aebaa"
-    },
-    "author-expertise": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/author-expertise/SKILL.md",
-      "computedHash": "7588b3b1836410dd4026fb7561a01c10cf5d102e411d1dc8c2042520c40c8f72"
-    },
-    "author-info": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/author-info/SKILL.md",
-      "computedHash": "e7843b39969a2eb7ea47bc38be6c79a7fa1493993e87c41fec477e142858668c"
-    },
-    "autofocus-avoidance": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/autofocus-avoidance/SKILL.md",
-      "computedHash": "e161fbcb5613389d0d8fa04554548edbfb606ed7015c6c614ddf8055f5617943"
-    },
-    "autoplay-media": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/autoplay-media/SKILL.md",
-      "computedHash": "0ed34c2672cdc8ec13d5df972fc5a62d84bd7564dcb5f56641bb7b2d4b54cfb4"
-    },
-    "avif-format": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/avif-format/SKILL.md",
-      "computedHash": "ac7fd76f77db79ca3e8204e36dd39ae6e53bcd54937d68d4dcf2c9e435f75acc"
-    },
-    "avoid-eval": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/avoid-eval/SKILL.md",
-      "computedHash": "f3e4d7a4130965b54fd734b55491abec9cdd1c785226ffec71dd13766ed00fe4"
-    },
-    "back-forward-cache": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/back-forward-cache/SKILL.md",
-      "computedHash": "463b3aa3ac233915c2cf3ed090e213ce40f859939d120639ff673a622a6a3b0b"
     },
     "backtesting-frameworks": {
       "source": "wshobson/agents",
@@ -391,128 +97,20 @@
       "sourceType": "github",
       "computedHash": "b9eec031399f3b81ea2c896af5fb1cab4b2b1231219e8266c1c1503f2190ee9a"
     },
-    "blocked-links": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/blocked-links/SKILL.md",
-      "computedHash": "d568644d2b087bd5512b02803783d2de0abc89a396536a9db14039b0316c432e"
-    },
     "brand-guidelines": {
       "source": "anthropics/skills",
       "sourceType": "github",
       "computedHash": "e48840db6ea772ceecdb68b4e50f8cc77e2534b7580aeaf4a6fe6ee7bd845d7d"
-    },
-    "breadcrumb": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/breadcrumb/SKILL.md",
-      "computedHash": "e38f3bf79cb2ea0714f10c0d001ce26fe9e78ca7e8e1b27d351ee86496a8c878"
-    },
-    "breadcrumb-navigation": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/breadcrumb-navigation/SKILL.md",
-      "computedHash": "d765dea5f7453581bd19b4a33d047986eca476d747c160d758756025ec26276e"
-    },
-    "broken-external-links": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/broken-external-links/SKILL.md",
-      "computedHash": "eb7294872403d5b4b36cff09ad665110079689a6f918c3984dbdcbbfd1a9ab4b"
-    },
-    "broken-html": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/broken-html/SKILL.md",
-      "computedHash": "86db11fd0d505a6212ee6b98eacb837dcce77d99fa0794dc7dfc0b34fba81c26"
-    },
-    "broken-images": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/broken-images/SKILL.md",
-      "computedHash": "73d14276e73c0fb16971cd658fa05b70e234d9073e3f2903587b35ca8b6c9ff9"
-    },
-    "broken-links": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/broken-links/SKILL.md",
-      "computedHash": "428942caa9185dd6138cf999e4c16e47ba793f62b06e4c93dfcdc2bcc53ad8b3"
-    },
-    "browser-caching": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/browser-caching/SKILL.md",
-      "computedHash": "f0ddb1484c29e6c735785a5faf27f77fac0bd4fbd6a6a93aa2ce6e24cac2227a"
-    },
-    "browser-required": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/browser-required/SKILL.md",
-      "computedHash": "154fcdf277063b7216e4931965b32024db48ebad16773e14ff7b746725fc0151"
-    },
-    "button-name": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/button-name/SKILL.md",
-      "computedHash": "56bbb0baa2c54efb147d8b98da50105e8637f2a168009b15d8ba2ace4301611f"
-    },
-    "canonical-chain": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/canonical-chain/SKILL.md",
-      "computedHash": "ced8668f224f49f96964d12d545bb9a9b95d9937251dd1245516ed20f444c350"
-    },
-    "canonical-header": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/canonical-header/SKILL.md",
-      "computedHash": "e2c1c0dc079a6390b57865f7646e2030f3ee678f91c7ee9e92b579058c86a6ae"
-    },
-    "canonical-url": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/canonical-url/SKILL.md",
-      "computedHash": "5c90a1838d6831374505e77d342939ef7ab95039473e7d656841ed73dca613da"
     },
     "canvas-design": {
       "source": "anthropics/skills",
       "sourceType": "github",
       "computedHash": "3fa7ea60170023ad8268bf9fd734ea75dd404279a2ef8ddf5abaa1102ad8e5f4"
     },
-    "carousel-accessibility": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/carousel-accessibility/SKILL.md",
-      "computedHash": "f9c08eabae0d13dfc0dc31d178eb0d0c57c89df8581ca50312ba3b48c932673a"
-    },
-    "cascade-layers": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/cascade-layers/SKILL.md",
-      "computedHash": "3851771cd1959b33046454c87f2ba7110e586fc67ca56ff13a3504bed19e8cdd"
-    },
-    "cdn": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/cdn/SKILL.md",
-      "computedHash": "fc826043cf364949781b509c606042bb6d281f31f8bbcde268aed6930370b5f5"
-    },
     "changelog-automation": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "186f3db6c967bd19ff6ffeeb5d6cae84f7443cdae50835b57f61449a5696e7a4"
-    },
-    "charset": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/charset/SKILL.md",
-      "computedHash": "ea4c66ea48cdea2ab1413365364b122f79f9f5d3057f1f2db45d6d60ec5491d5"
-    },
-    "citations": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/citations/SKILL.md",
-      "computedHash": "86fefc7494e2ca73ca34061b88a19a4ae03d28921249426935e80a72996d3822"
     },
     "ckm:banner-design": {
       "source": "nextlevelbuilder/ui-ux-pro-max-skill",
@@ -555,12 +153,6 @@
       "skillPath": "skills/in-progress/claude-handoff/SKILL.md",
       "computedHash": "43a71462e5ad089e652133fe6f8c3c3835688a143e0ad973d6c5b803d1dbafe7"
     },
-    "clean-up-comments": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/clean-up-comments/SKILL.md",
-      "computedHash": "35da2716a79a4fa8ae19388a002a15e6b51764faa4f3d8bc26ba8102bb74cbe5"
-    },
     "code-review": {
       "source": "mattpocock/skills",
       "sourceType": "github",
@@ -572,111 +164,21 @@
       "sourceType": "github",
       "computedHash": "0f585a4ad2f6d8353069ca9051c6f0e8865abb9d3a6a268d423784c3c3852962"
     },
-    "code-splitting": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/code-splitting/SKILL.md",
-      "computedHash": "17f3631f87b2f0b5ab65a8f54042606ef033e9e2230f6ee91949fcf198175f0f"
-    },
     "codebase-design": {
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/codebase-design/SKILL.md",
       "computedHash": "b2888e4f4e8c0af3bfd557575a64b905c44e6248c3101d72077816882b3a92b9"
     },
-    "color-contrast": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/color-contrast/SKILL.md",
-      "computedHash": "6a47b36243dcb60b35549b6dad159e13751780a691d3c8edad880f62e0edd4cb"
-    },
-    "color-oklch": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/color-oklch/SKILL.md",
-      "computedHash": "ca7137952504c5cdb83e0fe514461ad43963d115688b256bee1743421d98d023"
-    },
     "competitive-landscape": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "b312307bc16b8dd98b9ff9657a95d69d51870030179e60066004fd2399cdb69a"
     },
-    "compression": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/compression/SKILL.md",
-      "computedHash": "a6b030be6d37065d51d93e5bcb182bca778d551de030deac21589bcf7e6663ee"
-    },
-    "consent-mode": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/consent-mode/SKILL.md",
-      "computedHash": "a136c0b16875db1af0453476e50df3234883c17eb69ca77cf9f800348d6a29b9"
-    },
-    "consistent-help": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/consistent-help/SKILL.md",
-      "computedHash": "e14395031182a82c3f1d58bb31ae3391f3b31a1c5a1ab9dbd1f7f3e3d7a6d643"
-    },
-    "console-cleanup": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/console-cleanup/SKILL.md",
-      "computedHash": "21f6e5567c5193821f58ccf51481cf237140eb02d9b442351584e134b5dc21be"
-    },
-    "const-let": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/const-let/SKILL.md",
-      "computedHash": "e880a791851fa32e8c63a48479cc6fef71ab4d53a1264e24e87e40514c0a3256"
-    },
-    "contact-page": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/contact-page/SKILL.md",
-      "computedHash": "6b688313c577114d22aa999b7c9d186f6dff6d39d2826d53530b4bcc6f4abf76"
-    },
-    "container-queries": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/container-queries/SKILL.md",
-      "computedHash": "35957d971ced0f24a30fba63057a62cc14ad4b59d2286957df2041bf9e1d4485"
-    },
-    "content-dates": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/content-dates/SKILL.md",
-      "computedHash": "afa70ae914b1d5a1b245fef764c2ebe85e21411732ad12e5bf5b5d447cb4dcbd"
-    },
-    "content-security-policy": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/content-security-policy/SKILL.md",
-      "computedHash": "703136500ec0a1c24abe03fdb3961aaa5bc45cb95732e262be6dece91bdf30a8"
-    },
-    "content-without-css": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/content-without-css/SKILL.md",
-      "computedHash": "ea0bd6325fd6c7b5c452cb90e21a2e78db01b9471b9e19c6116a0c2180f2484b"
-    },
     "context-driven-development": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "3c1f0ac51a407035a55d114fd621e4a078ee7764831f6d46be8865bf2fd5d5ef"
-    },
-    "contract-testing": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/contract-testing/SKILL.md",
-      "computedHash": "07281aee0b4762135acd85aa4cedd8e312f5e64bf6c0526bf9f04c3336f751b5"
-    },
-    "cookie-consent": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/cookie-consent/SKILL.md",
-      "computedHash": "8c5b1da0f4805e0dcd874fca46a94478f9a93ddcb90e7b932b79ebe821912cd6"
     },
     "cost-optimization": {
       "source": "wshobson/agents",
@@ -687,126 +189,6 @@
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "e5cc10b9f389e4744069b7f455923d59ffa56a7fa07d2b8488a5b1ec86d5f305"
-    },
-    "critical-images": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/critical-images/SKILL.md",
-      "computedHash": "6d589baa56e82a22b974722b7fed79a400881638ad88877e7f1b6a0efff68a53"
-    },
-    "critical-request-chains": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/critical-request-chains/SKILL.md",
-      "computedHash": "fd01d89f2741c64f667405c9c1fc364933ecc13c10133e91e1c981a9ba461f37"
-    },
-    "cross-browser-testing": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/cross-browser-testing/SKILL.md",
-      "computedHash": "0c767520aeea4ae8858f22bf3343f0baf38e4186da96995cf83419afc3514f7a"
-    },
-    "cross-origin-isolation": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/cross-origin-isolation/SKILL.md",
-      "computedHash": "5fbe1e8c8dea45bbb674642d9d72949f72e7b823ec6a7f66218f5fc4c170f6f0"
-    },
-    "cross-origin-security": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/cross-origin-security/SKILL.md",
-      "computedHash": "81bc6e984bacd2c6bc1a12f36bf036438286779aad37b2f5c94722cfce6ccaa8"
-    },
-    "css-at-property": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/css-at-property/SKILL.md",
-      "computedHash": "d4cdd8e52cef18945bb6b07bc330cb8042092714b759e29dd54508a2d77fed6f"
-    },
-    "css-containment": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/css-containment/SKILL.md",
-      "computedHash": "ca9f15d2dace9d70afec100dcefd7745551afbad4151efe0ba40f36686a8771e"
-    },
-    "css-critical": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/css-critical/SKILL.md",
-      "computedHash": "7e811e1f0c2c5dd35dd74e7a9287c7d358165c6e0a6f1baf17c298ee15675725"
-    },
-    "css-custom-properties": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/css-custom-properties/SKILL.md",
-      "computedHash": "8324deca9f3147016fad03484308b3edd9d8330479a57d37b49efbe46205507f"
-    },
-    "css-file-size": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/css-file-size/SKILL.md",
-      "computedHash": "ff6c83dc254848f704f78ed9191e4cb43de50edeb416606c576e2075480e9b12"
-    },
-    "css-grid": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/css-grid/SKILL.md",
-      "computedHash": "14b950265da369e867c3420b65cb9b67c70a87dd9d6eb363046ee28921417e6a"
-    },
-    "css-minification": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/css-minification/SKILL.md",
-      "computedHash": "1ee9227d65b3e6fe76330ca7ef3252cfbbbdcf75f60f2bc36ab5679322234c2f"
-    },
-    "css-non-blocking": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/css-non-blocking/SKILL.md",
-      "computedHash": "3ed96a69f2ea31f6550231047c761484b55327dd877f462771fa761e841ce3af"
-    },
-    "css-order": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/css-order/SKILL.md",
-      "computedHash": "5ff042b970ab3948cfef2871b30ded9d507120d8d5e0d1c9cf2958e4c9a2ebe2"
-    },
-    "css-print": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/css-print/SKILL.md",
-      "computedHash": "8a2e897c0c5b942e635163ae61b4ce83ed26ce225a9a002c18e7d03ffc634eae"
-    },
-    "cumulative-layout-shift": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/cumulative-layout-shift/SKILL.md",
-      "computedHash": "84e7690314579e89c59056587a3c33b6cf961746a30cc8c0a78f7e43476f245a"
-    },
-    "currency-formatting": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/currency-formatting/SKILL.md",
-      "computedHash": "61accf0c90ba8467a4abb061d93c90b51b926e80951af7564bc73ec6d51aa81a"
-    },
-    "custom-element-accessibility": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/custom-element-accessibility/SKILL.md",
-      "computedHash": "dcb148621c82905ad07e5a9d8a41a693de5f7165faf96dfb7331491cdf80bfe7"
-    },
-    "dark-mode-css": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/dark-mode-css/SKILL.md",
-      "computedHash": "eafa2f65331114edd85ba00736b94024c24aef7e2e4a36c8aa0f735c425df68c"
-    },
-    "data-minimisation": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/data-minimisation/SKILL.md",
-      "computedHash": "93ddaf0b351714f5279afc265c9c4e34ac72add28de1cbdb2b737f8f75ed6088"
     },
     "data-quality-frameworks": {
       "source": "wshobson/agents",
@@ -828,51 +210,15 @@
       "sourceType": "github",
       "computedHash": "9b0374786cb8db1c5dda878681bc953e97d5d200b33d2b06ace9ac13db1270e9"
     },
-    "dead-end-pages": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/dead-end-pages/SKILL.md",
-      "computedHash": "a76f36cb81364a46df6bfd86daf105ef12da7608ec831a8c1de727d6c9023633"
-    },
-    "debounce-throttle": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/debounce-throttle/SKILL.md",
-      "computedHash": "c59c02241251787618e97083e17736288ea07a7ecec25380390a2b62c6c40bef"
-    },
     "debugging-strategies": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "4946473a374cc2caf51871e51e40051025703517bb578ce9b01b6cadf72a0c0e"
     },
-    "decorative-elements": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/decorative-elements/SKILL.md",
-      "computedHash": "57905c3041a94ad4fe1e5159c5f9cc3dd27e087a4c23fd34fa542d00f2b1826b"
-    },
-    "defer-async": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/defer-async/SKILL.md",
-      "computedHash": "0ab1e35fb5259ebfcbed50ea9f3370f578765ecd8777c1b953e0c2e44ac2d03b"
-    },
     "defi-protocol-templates": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "bfb56b8fd2ee13a0407c4832d074f334588b5164696b6d56257eadea47d3a98a"
-    },
-    "definition-list": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/definition-list/SKILL.md",
-      "computedHash": "1776edf766b4aff1e64dc9cddda0682d2227d8aaa457c66751aff6c5fa5d773a"
-    },
-    "dependency-audit": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/dependency-audit/SKILL.md",
-      "computedHash": "a026339bc97dc5fdf8cae25183e6be35d261d5d76f88b2d9ec7d06ac3dabc9c8"
     },
     "dependency-upgrade": {
       "source": "wshobson/agents",
@@ -900,62 +246,20 @@
       "skillPath": "skills/engineering/diagnosing-bugs/SKILL.md",
       "computedHash": "ede7254edbd22fcab97a0941511f7d440d8f9a249348fea97c50987ad5501674"
     },
-    "dimensions": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/dimensions/SKILL.md",
-      "computedHash": "1052be84e0c210dbb264db1a3d9916f94799f1bb72bb0d732f0bc8d012e19408"
-    },
-    "direction-attribute": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/direction-attribute/SKILL.md",
-      "computedHash": "8c3f1d9d3aaf073012a83489af8748aeda9a72edfb4ea572d06c741c9b7a6f8a"
-    },
-    "disclaimers": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/disclaimers/SKILL.md",
-      "computedHash": "bfe8ed491091326dae7275825efd3a9dc769a9332cbbacc5b5d0893cc9cafcf9"
-    },
     "distributed-tracing": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "00107a1bfd2f4b0d09fbf76a87c779d92ee74bbdc3936b2d283461824e6cfd91"
-    },
-    "dlitem": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/dlitem/SKILL.md",
-      "computedHash": "2fec62858dcf539f006371f4835df924f36c84c5362bb3ed5afc0f14d42616ce"
     },
     "doc-coauthoring": {
       "source": "anthropics/skills",
       "sourceType": "github",
       "computedHash": "b964e4c3ffe13f66f76dd7919073e60c7aec622cd8a8363bb36323188100cf8e"
     },
-    "doctype": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/doctype/SKILL.md",
-      "computedHash": "a706556701c77d1e3a0a04e76d2f81db22d5ebb6f18b948c5afcc850e37c2acd"
-    },
     "docx": {
       "source": "anthropics/skills",
       "sourceType": "github",
       "computedHash": "6962db07127ee540a56e4677f65576d0727668a1d67f7da8bc978f10791c2bfe"
-    },
-    "dom-performance": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/dom-performance/SKILL.md",
-      "computedHash": "78c977fe2a58733d7a510233eb66295d89d810f9e79fe0b9e0cc565cb00f9f86"
-    },
-    "dom-size": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/dom-size/SKILL.md",
-      "computedHash": "be3597f57f6106622c18c547582d1cc67d23b509c7c4b1b482c3eb050b86f176"
     },
     "domain-modeling": {
       "source": "mattpocock/skills",
@@ -968,64 +272,10 @@
       "sourceType": "github",
       "computedHash": "b9af7afad1aba77bf12adfc523062292b11f629de5c4595a68ae0bb2103f0a28"
     },
-    "draggable-accessibility": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/draggable-accessibility/SKILL.md",
-      "computedHash": "f0cd30852cd2429a7dd4d99495388ccc73a66bc74199716e899d091257592606"
-    },
-    "duplicate-description": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/duplicate-description/SKILL.md",
-      "computedHash": "21d981c1bbadf0903e748aaa74a0408c21b0866487c03e9aa1152dbcc2a0a9de"
-    },
-    "duplicate-id-active": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/duplicate-id-active/SKILL.md",
-      "computedHash": "309364d7e856281372592df0591606b64b3a18016de1228d81ba874482399404"
-    },
-    "duplicate-id-aria": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/duplicate-id-aria/SKILL.md",
-      "computedHash": "5a08d2fdbe696ad6ed67bb7bf3fa56591b6a2466c863dd78ed7c731f9188b9e6"
-    },
-    "duplicate-js": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/duplicate-js/SKILL.md",
-      "computedHash": "bf4d49139437171e59fef5a3853adc69d6ac6852fa09eda212530fece580d164"
-    },
-    "e2e-testing": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/e2e-testing/SKILL.md",
-      "computedHash": "57905c94c334a5edf6359cb028aae92ff04ac0c7c56dced812717cf0959ebe35"
-    },
     "e2e-testing-patterns": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "37ea37e42a81c926ebd81924691a15fb657df7c8a52b863c34967e5ab99cdc22"
-    },
-    "editorial-policy": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/editorial-policy/SKILL.md",
-      "computedHash": "055cbdae18c01cf97a75a9190caabd15b1117eae67be4c5e84569bbc62af6e95"
-    },
-    "element-hiding": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/element-hiding/SKILL.md",
-      "computedHash": "d6f708d90ecd5f43c6dcd8a609f793802ce4aa3283404e2bbd1f9e0fc52bda1b"
-    },
-    "embedded-or-inline-css": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/embedded-or-inline-css/SKILL.md",
-      "computedHash": "273d444c4e51745fc2e1a971457d92cb6b3a8152baee5e6bc2b89bd68fa54b60"
     },
     "embedding-strategies": {
       "source": "wshobson/agents",
@@ -1037,217 +287,25 @@
       "sourceType": "github",
       "computedHash": "95e8a53af543b4af65dc74efd85bce3fad97877908f1b7d44de2f52b92abcd9e"
     },
-    "empty-heading": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/empty-heading/SKILL.md",
-      "computedHash": "cbf0126d6452c5e202924877bad6281c56c95f7d10f429689fc6d8552cd6cdd7"
-    },
-    "empty-links": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/empty-links/SKILL.md",
-      "computedHash": "e68a11f1dbf941bdd53d34750720f16644df1e3bfeb66f059bbddde54123c55f"
-    },
-    "error-handling": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/error-handling/SKILL.md",
-      "computedHash": "ec32492bfe91a3aa3304fccea997a7b8dcfa40fa27016f1d11556ebe1a40fa9c"
-    },
     "error-handling-patterns": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "824c53fa080765f05862d3ec0ef829aaff9f8d544f9de0039b8fcafa6bc1a899"
-    },
-    "error-images": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/error-images/SKILL.md",
-      "computedHash": "536b7e11c9e799baceb2c1f6f0c480ddc9e227a06de4a600507d3bbb29ace129"
-    },
-    "error-monitoring": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/error-monitoring/SKILL.md",
-      "computedHash": "ee49d2016c254d454458a0bfc3e723daa52691dd2365a312fcca01529cf44af8"
-    },
-    "es-modules": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/es-modules/SKILL.md",
-      "computedHash": "e7d22b30389b9827732db788ff3e03609a1db3c013d7f45017d7ce3a20bcb674"
     },
     "evaluation-methodology": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "7dcf134d3f3c3228bf736aee0bae4260cf180a0cc883a0c16f003d939dc043aa"
     },
-    "event-delegation": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/event-delegation/SKILL.md",
-      "computedHash": "52ea3dbef32a81cb9fc669e357709d79a8b096232b541ebc98ca9d549c095b80"
-    },
     "event-store-design": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "702c669f452ef05dd5e4b00f65473889d91d23faaa689a5139d223e2f0467a0a"
     },
-    "external-links": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/external-links/SKILL.md",
-      "computedHash": "707ab2562b2183fe9893aca5e2425c44333bd025965dd4ea4ccfb7acaa09621b"
-    },
-    "faq": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/faq/SKILL.md",
-      "computedHash": "dee107c064cd4b62b813087382ea6d50ef667694aff4371f6461314a40cf3123"
-    },
     "fastapi-templates": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "8fdfb9bad6aef892b4f16ef3b07ef5eea3b0497d37eeaeddb07244d657cc8711"
-    },
-    "favicon": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/favicon/SKILL.md",
-      "computedHash": "722f9c14bb3663bc01a872700de7200461020cb4a7cbfc20dcd80dc6a2944d94"
-    },
-    "favicons": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/favicons/SKILL.md",
-      "computedHash": "a9136f3c1e4711da87cd3bd0f7b602ea66a5abb6e12b1fadb70d24c5544bc1fc"
-    },
-    "fetchpriority-attribute": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/fetchpriority-attribute/SKILL.md",
-      "computedHash": "50718e49dced09ce72738db73637940d5fd0b9a3416ee8eddc6413d93b452ea4"
-    },
-    "figure-figcaption": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/figure-figcaption/SKILL.md",
-      "computedHash": "4c644bc2797606e5853ea79a4de35c37db0f3bd8e5cb28a2179cc3e4ac3460a3"
-    },
-    "file-upload-accessibility": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/file-upload-accessibility/SKILL.md",
-      "computedHash": "245d2e5b30e44373ff99ede95b2409f6811c29b7edf28e1ca1670f11a3c2d460"
-    },
-    "filename-quality": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/filename-quality/SKILL.md",
-      "computedHash": "15ce2b484873290fcd8a9ce4e53a42c76d90f65abcf3211324e54d06b8c4a63a"
-    },
-    "find-npm-packages": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/find-npm-packages/SKILL.md",
-      "computedHash": "8fc1cd8c6c2dc0d728831b62fa8a275b21d4deff658e3ff5479a594f28cfeab9"
-    },
-    "first-contentful-paint": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/first-contentful-paint/SKILL.md",
-      "computedHash": "4a9693cac764a2891a5b31bedf7705ef0a38e21b2c942079675b6e8b465399c5"
-    },
-    "flashing-content": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/flashing-content/SKILL.md",
-      "computedHash": "3b07ed4c5d7932dd8da5ed6105ed19c2b64e1c2dc1f72de4ded66323174bb80d"
-    },
-    "flexbox-patterns": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/flexbox-patterns/SKILL.md",
-      "computedHash": "b27397ae59787897c861a92e11b407dbb9726cb939de556ac24bdc1fbc8a10ea"
-    },
-    "focus-management": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/focus-management/SKILL.md",
-      "computedHash": "1b414249d4b162999d1abcb9c8db7388f7f33c10c3d50018bfccf86a7b768c60"
-    },
-    "focus-not-obscured": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/focus-not-obscured/SKILL.md",
-      "computedHash": "d9fa9cca3f1c378d79edb13913f5c40d854c077fd34c3383e03b43895f7e9ed6"
-    },
-    "focus-order": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/focus-order/SKILL.md",
-      "computedHash": "6618f8bab2a9a7f5aebb380415a6477d0fce7793e6eb0382699972bce20cf760"
-    },
-    "focus-styles": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/focus-styles/SKILL.md",
-      "computedHash": "c5d47bb9de185c9ef2d18d2ab4c04b9c392cbbfc8936d5c57b028585f65a07ff"
-    },
-    "font-loading": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/font-loading/SKILL.md",
-      "computedHash": "4fb6f835214660df77f9c22593e4fbf15627d20adad08699519e10e1c7b27646"
-    },
-    "font-size": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/font-size/SKILL.md",
-      "computedHash": "ba1140e6c25b91db0d7aefd309cf5bf7ee1f169c2c5ecc3f53f959825e8212cf"
-    },
-    "form-captcha": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/form-captcha/SKILL.md",
-      "computedHash": "7f5cf3049cd8c7541f806c59afc4b7f6e9a289eb1ff8abb209b755911b29b4fd"
-    },
-    "form-field-multiple-labels": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/form-field-multiple-labels/SKILL.md",
-      "computedHash": "c167c80451f1fa14826593046297d907d0cdf8e96e80fd32b889cdb9c8604ba3"
-    },
-    "form-https": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/form-https/SKILL.md",
-      "computedHash": "c9d9aabb900fa7c305c705b34ab84f0e79ee47f6b8eb99bdfc45914d291fff3e"
-    },
-    "form-labels": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/form-labels/SKILL.md",
-      "computedHash": "3eab7526177cf43c7071c06ece7c906d55dbab574f6d885d7c6ad78ae7cb2171"
-    },
-    "form-validation": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/form-validation/SKILL.md",
-      "computedHash": "d89085bb2e547ddc63c96cb2955497a32dd77b803ded91fadc49a33671230c2e"
-    },
-    "frame-title": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/frame-title/SKILL.md",
-      "computedHash": "054fe9288d6c834ea3eb9c04a5381ce01837fe6fdf28bdb823f7bb50fd63e981"
-    },
-    "freshness": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/freshness/SKILL.md",
-      "computedHash": "6177fcbf9949684cd417a487e727790805f0c592fb0f0ab05f91399d7083715f"
     },
     "frontend-checklist-global": {
       "source": "thedaviddias/Front-End-Checklist",
@@ -1264,12 +322,6 @@
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "168cc9708309cdecdbb7f618ab564d2897efc65715abc472a77265479e517c50"
-    },
-    "geo-meta": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/geo-meta/SKILL.md",
-      "computedHash": "0dc2bb4dda6a63f9d5569682496e82a0e06bf9bdb87a57b7368af2cae9a2c5b6"
     },
     "git-advanced-workflows": {
       "source": "wshobson/agents",
@@ -1330,18 +382,6 @@
       "skillPath": "skills/productivity/grilling/SKILL.md",
       "computedHash": "ef1641a2047b71b60f1942cd35efb47d3afc9d584dff5a0b01f8c7db923aaa08"
     },
-    "gtm-present": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/gtm-present/SKILL.md",
-      "computedHash": "c8e6ddd2807a57a324deae4bf786c475f4b76b8401436d4cc867165519aad95a"
-    },
-    "h1": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/h1/SKILL.md",
-      "computedHash": "d6d2b3dd28fda0894f9490249335a74d33d71a5c6c5f641ffa7b1c4d3a3178c1"
-    },
     "hads": {
       "source": "wshobson/agents",
       "sourceType": "github",
@@ -1353,100 +393,10 @@
       "skillPath": "skills/productivity/handoff/SKILL.md",
       "computedHash": "8ebcf017c0a59681f3c2f1ebf90e32f481954a068181a75151c44aa2c55de4b4"
     },
-    "has-selector": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/has-selector/SKILL.md",
-      "computedHash": "2af1de05044d3036321e15df8dc899837f02bf2c9ba233738b92e8ca6030d410"
-    },
-    "heading-hierarchy": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/heading-hierarchy/SKILL.md",
-      "computedHash": "cdf972cf5fb606660629ebf607b43af09d831863d8b6b5a78f6838c6223a9a6b"
-    },
-    "heading-order": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/heading-order/SKILL.md",
-      "computedHash": "6b01fff46166b3d6aad2c131d4220112d55b9dca6300f26455284bf93ef0ca3a"
-    },
     "helm-chart-scaffolding": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "227baa46e7fcf59448b7f670ba504a0dbd6ae0e5d80338c066037e01b2b15755"
-    },
-    "horizontal-scroll": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/horizontal-scroll/SKILL.md",
-      "computedHash": "51d632b26632bf61341ea092d4330b9c73e480e8d4fdb900a014a81078c61f22"
-    },
-    "hreflang": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/hreflang/SKILL.md",
-      "computedHash": "30b1a5f204acbab4e5d5de5626c411910589f19b96511f47306cfa6898df01fa"
-    },
-    "hsts": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/hsts/SKILL.md",
-      "computedHash": "163498b2cfbc99e2689ba5e8297b9793f56a8d3903dc728cf358386dcaba8289"
-    },
-    "html-resource-hints": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/html-resource-hints/SKILL.md",
-      "computedHash": "eae97613d1521c7d4bf42e54851bdf92a0c412a8b434a18452d4ec545a64a008"
-    },
-    "html-size": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/html-size/SKILL.md",
-      "computedHash": "76c94da8790e1f23a9f6039ad1a25bafe9cf5b5329c9e9063f7d8ec5eb748fc7"
-    },
-    "html-xml-lang-mismatch": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/html-xml-lang-mismatch/SKILL.md",
-      "computedHash": "fcfb91715f9cc97ac93b54e1364710eda4bd7809e1716ab31713d9096d8eed19"
-    },
-    "html5-semantic-elements": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/html5-semantic-elements/SKILL.md",
-      "computedHash": "c40adec5e159dd6ee55884e11a68dec2865f6a59b41bc9485fd683144a5257d5"
-    },
-    "http-requests": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/http-requests/SKILL.md",
-      "computedHash": "3b1373fb116200ef9e62dd87109a7318532f5bd2ef9a490bc8c81b8a222f4e98"
-    },
-    "http-to-https": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/http-to-https/SKILL.md",
-      "computedHash": "2495bc72031397545c234e4ef08d3af74fff9d367163f78430f2244b4d97fc7f"
-    },
-    "http2": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/http2/SKILL.md",
-      "computedHash": "5bf3d9adefb6e731677efa09cf0c470050fc290fedb94d04eefc760945dd026d"
-    },
-    "https": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/https/SKILL.md",
-      "computedHash": "c10e639ef855085d467b15406c371ca36862a1e131766644aeadc1cafb70eae0"
-    },
-    "https-downgrade": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/https-downgrade/SKILL.md",
-      "computedHash": "4b4204ca50d13937f52f9ee6ce3d708af0f1193e585d8ee8888eb25fb22ef974"
     },
     "hybrid-cloud-networking": {
       "source": "wshobson/agents",
@@ -1457,54 +407,6 @@
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "6154f05d5f388612f0fa19fa7b3d2b1c03bcf5e7d968641df118f09cb9c14f72"
-    },
-    "hyphens": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/hyphens/SKILL.md",
-      "computedHash": "cfbcf372af1328668a2b01988d2dc21acb6ee1de50646297fc358755c060fb5f"
-    },
-    "identical-links-same-purpose": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/identical-links-same-purpose/SKILL.md",
-      "computedHash": "9df30e4b9e9a23a2a8381b461d28a16bf571c9109bc52c75497a416b6d6f92a0"
-    },
-    "image-cdn": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/image-cdn/SKILL.md",
-      "computedHash": "9887e4c9f65f9ec8b6b7d7786f08bfa21c4eaa5a7ef6c9026fd3394b0aac56e5"
-    },
-    "image-compression": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/image-compression/SKILL.md",
-      "computedHash": "1f28337ff7765cec9f5b7439991bb2f13a78a144ad6a662fed4e44aaeff06742"
-    },
-    "image-file-size": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/image-file-size/SKILL.md",
-      "computedHash": "6dd5f4efba1e1824b7ff234082f8a405fbaeeaf801acb4185a12b700883e66e8"
-    },
-    "image-optimization": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/image-optimization/SKILL.md",
-      "computedHash": "d0857a57763b453e4aa8491247f7dc66826e2853e7befe76581187b829edb426"
-    },
-    "image-redundant-alt": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/image-redundant-alt/SKILL.md",
-      "computedHash": "b2307bb27b58b3b582c629f1261d90a40bcc524daac62aeec48b211cf5369ed2"
-    },
-    "immutable-patterns": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/immutable-patterns/SKILL.md",
-      "computedHash": "42ecdefb3ceaf601fe0997dc6fde28bdfe3b7fc4801dfb78817df2f8d8fc6a07"
     },
     "implement": {
       "source": "mattpocock/skills",
@@ -1518,162 +420,36 @@
       "skillPath": "skills/engineering/implement-spec/SKILL.md",
       "computedHash": "f0db7dafd236fff9dc40da566cb72bbad6802674f64617b06959b00a436c7d5b"
     },
-    "import-on-interaction": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/import-on-interaction/SKILL.md",
-      "computedHash": "e51a7c62574ebd686a95fcda7e34e4586b9a2f20d8b670bc9280d5ab59017135"
-    },
-    "import-on-visibility": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/import-on-visibility/SKILL.md",
-      "computedHash": "07a62953a457d78e3d110079d4e430848dc67f25e75a6f263ddf72f8d095b21c"
-    },
     "improve-codebase-architecture": {
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/improve-codebase-architecture/SKILL.md",
       "computedHash": "ac2c94885f34ff8492dc12aa4543182f661f32ea1722b8d6b6c2c7045af33ae3"
     },
-    "improve-rule": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/improve-rule/SKILL.md",
-      "computedHash": "e55a1a6428ab0fc776a67c15e292fa31db324cbb5c37a1f69ce9f68292e7b78b"
-    },
     "incident-runbook-templates": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "435b81f6eb6e2b5425072b2bd994084a629cedbeb4c4b3c6738ae71be8664876"
-    },
-    "inclusive-language": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/inclusive-language/SKILL.md",
-      "computedHash": "4218618d04cbf4c652f484b00d9fc8b2e2ad0e50232bf8a373c960b753dcd3c1"
-    },
-    "indexability": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/indexability/SKILL.md",
-      "computedHash": "8a3b25e6c760aea0d0c56addfe9874f7e1c0db161bf0733c94b2c1c84e81b107"
-    },
-    "indexability-conflicts": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/indexability-conflicts/SKILL.md",
-      "computedHash": "5ee81a458fb9c6044dea5c0f488ee1916668cd812e22f74557891db1723fc298"
-    },
-    "input-image-alt": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/input-image-alt/SKILL.md",
-      "computedHash": "1ce2000fd59430a9dbe2d8d92fc96e4f529ceb24a96405a5ae6c81e3cd783b9b"
-    },
-    "input-types": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/input-types/SKILL.md",
-      "computedHash": "cc0a7d0548b89cbdff4333b5aed2755c911588a50ede3e153fc6c796ba6ad5f1"
-    },
-    "integration-testing": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/integration-testing/SKILL.md",
-      "computedHash": "37907b0cbab705fe4c61a5e7549997adfb6dede7b7044550858a07bedd35cc53"
     },
     "interaction-design": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "1fac9a5aff8463e98b935a0a1b48452d71afcfa50a3bc4b7af9510bfdd8a1731"
     },
-    "interaction-to-next-paint": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/interaction-to-next-paint/SKILL.md",
-      "computedHash": "fdcbebe90b4c0c3bc674850a0e637d177abe5c570fdbdfaca810f0744203573b"
-    },
     "internal-comms": {
       "source": "anthropics/skills",
       "sourceType": "github",
       "computedHash": "0bdc8867452b7ab9ef6167f6b0db2025ce5fb03773d3f85efcef2dfeb9d4976d"
-    },
-    "internal-links": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/internal-links/SKILL.md",
-      "computedHash": "8be06cd401f2b89f186503a79bb3d2cd9eecde744c95dffeaa287ddacad64b73"
-    },
-    "interstitials": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/interstitials/SKILL.md",
-      "computedHash": "d4df4eb71575147022787de474f05d69bdc8c3f191a5de0529333838f763e063"
-    },
-    "invalid-links": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/invalid-links/SKILL.md",
-      "computedHash": "9d868694fcdb3e588d336d2af085c1ad88b6922a2479f27c0a11f8a8706d8eef"
     },
     "istio-traffic-management": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "188b7478edfd2166f1c4af24550aa9ca5dc93e90f4b1469d56cb1760e93ee6e2"
     },
-    "javascript-inline": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/javascript-inline/SKILL.md",
-      "computedHash": "41aed0ece6ffad1eb692a19af2285fc73e18280defd5597e20cd7fc652a6cdcd"
-    },
-    "javascript-linter": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/javascript-linter/SKILL.md",
-      "computedHash": "3920907595f04a4045e7a67472af413692e3e4c017eb67280807a33b6d9d5167"
-    },
-    "javascript-minification": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/javascript-minification/SKILL.md",
-      "computedHash": "c189883980a5c14a1fd2f701b67434f569d66db20890ce13863f9ef15ed151f6"
-    },
     "javascript-testing-patterns": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "8d0a8d7615ff343770af0218720691d56c55ae258793565936c8b3a97e188f51"
-    },
-    "js-file-size": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/js-file-size/SKILL.md",
-      "computedHash": "890885c73beff0ba7e2cf792574502b62064b6dd6d136ee452e0b10691727ce9"
-    },
-    "js-libraries": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/js-libraries/SKILL.md",
-      "computedHash": "0588f3eae65f9c3c608124815343f853b3ba42781de53edf1791ea44cfda3cff"
-    },
-    "js-redirects": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/js-redirects/SKILL.md",
-      "computedHash": "af97dfc2e0bed3352e05a5f4f932cd10581c951bac9411f9a921ed1838994417"
-    },
-    "json-ld-valid": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/json-ld-valid/SKILL.md",
-      "computedHash": "8d2332500699bc88bd160db4a0060d4ab094f961087ff6b6ccdb1bbffe73538e"
-    },
-    "json-safety": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/json-safety/SKILL.md",
-      "computedHash": "a5a7b4eb624aa9dd2ad45065cf26c6bb70ed17c084dc33fa117fd5dda5c6267f"
     },
     "k8s-manifest-generator": {
       "source": "wshobson/agents",
@@ -1685,181 +461,31 @@
       "sourceType": "github",
       "computedHash": "47d2fe175423c7bc4f26019b3acf0ea7d3f37159172a217466c50b8d1b83cbb4"
     },
-    "keyboard-navigation": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/keyboard-navigation/SKILL.md",
-      "computedHash": "9fa4c8f4371166b15ace7e7a852ecbd73eed4fe0180ca653b7d951ebb0eb783b"
-    },
-    "keyword-stuffing": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/keyword-stuffing/SKILL.md",
-      "computedHash": "14874feec53c7c518e1427cbeaefa5ef119838c8c9211f646c2ba448a05afc36"
-    },
     "kpi-dashboard-design": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "983fc05352d393c6e23bc22be9e36c5a64cdfc461758bc1d8e474e15c72751ca"
-    },
-    "label-content-name-mismatch": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/label-content-name-mismatch/SKILL.md",
-      "computedHash": "15b6ecf4df6d9ee72cccaafc23be1a21afa20067b18d9e6a47f21580754ca703"
-    },
-    "landmark-one-main": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/landmark-one-main/SKILL.md",
-      "computedHash": "67698bc676ae940bf6915ae77b87ed29376c26bc9801530204d5fb770b20044b"
-    },
-    "landmark-regions": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/landmark-regions/SKILL.md",
-      "computedHash": "9b3dc07404d917bc75ab92b01ce470ecfb2935e2ea4a9e26cc51bf3097a93094"
-    },
-    "lang-attribute": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/lang-attribute/SKILL.md",
-      "computedHash": "5f34c0bd000749913f29ba31a1ec28ffe7167024c560a1a131dc9812068a975e"
     },
     "langchain-architecture": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "8bcb9750c6e564da50f8a6b4e8a9b60030a48a1323e5dee64c37469d3192c683"
     },
-    "largest-contentful-paint": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/largest-contentful-paint/SKILL.md",
-      "computedHash": "68c88cf9ded9fb825d5e880ab84a5d1f21a641da12ca6ca52630649017471f7e"
-    },
-    "lazy-above-fold": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/lazy-above-fold/SKILL.md",
-      "computedHash": "95262b0b990f8f2ab24c076a07afe69ba96d078450f27a215decbf8d2f441e12"
-    },
-    "lazy-loading": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/lazy-loading/SKILL.md",
-      "computedHash": "012c5d5bfaa76c2c8ab91289d0c4ebc4dad361cdab5becfe052af5b7d6ff21be"
-    },
-    "leaked-secrets": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/leaked-secrets/SKILL.md",
-      "computedHash": "d25bfb3af235bc3d03f31360861e2ce155a4ac13cbe58723f9def228f9969ece"
-    },
-    "legacy-js": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/legacy-js/SKILL.md",
-      "computedHash": "28a7499aaef1f04a9d79b56106e1d9b9c9bf05f1a1a09c28807448f88196bb71"
-    },
-    "length": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/length/SKILL.md",
-      "computedHash": "c644abec31bb38e6e3e07f38dc069495d6f1584fb38c240d4af20c68a20c0cdb"
-    },
-    "link-checker": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/link-checker/SKILL.md",
-      "computedHash": "7a51d6726fcb5a715bb6881f0c3b0885e23a9f66c9ddb176ae016f7d26f8c712"
-    },
-    "link-in-text-block": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/link-in-text-block/SKILL.md",
-      "computedHash": "726dae56df7e1e83fb3eea42e6751542039405c297badb42f947d6679de6d1f7"
-    },
-    "link-text": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/link-text/SKILL.md",
-      "computedHash": "52b84c10fc30b59352fda288dcd8ae99cca1a47cdb0337b8e67f12eaf0640ad4"
-    },
     "linkerd-patterns": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "30707431b0d9fde5be78fa47da0dad8c782e742adeeb4e10986e27e1ddddae0a"
-    },
-    "list-structure": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/list-structure/SKILL.md",
-      "computedHash": "2df61ed8f4629e59bc3dd383563f592f3673dd06922b33088a4ca1f338c25836"
-    },
-    "list-virtualization": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/list-virtualization/SKILL.md",
-      "computedHash": "da863f0387c604cbbd306e1192a25818a7b5128136f02ffe488b68f1cf14d53c"
-    },
-    "listitem": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/listitem/SKILL.md",
-      "computedHash": "839a2b81d2e0d3d09db8dd6b9588ba8dfb2f6c8f7e904067b2c648a7016c09ef"
     },
     "llm-evaluation": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "e6ecef1dfafd90f7aed14b1ef54c4ced5c84183416e36b03bcb657e3fe8f5098"
     },
-    "llm-parsability": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/llm-parsability/SKILL.md",
-      "computedHash": "faa23147aaf577ffb9d5dc599d6469270cced0326421249b204935d8573bb81d"
-    },
-    "llms-txt": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/llms-txt/SKILL.md",
-      "computedHash": "8858b11e25a0d475f5dd5245429d2603c00cb1b234dd04799f2b41eee8d2066e"
-    },
-    "loading-indicators": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/loading-indicators/SKILL.md",
-      "computedHash": "5f48176b4a060927d97c5e62b1cd1be412ad9b9d9cca07d57ca964c1fc90bc52"
-    },
-    "local-business": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/local-business/SKILL.md",
-      "computedHash": "92b539d377bfb69d9bf11a5fee91e5fb2e9607e0dad8fc05489734d0772e961a"
-    },
-    "locale-images": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/locale-images/SKILL.md",
-      "computedHash": "8302d83e2d4143fa3b24f252053bfdfccb6572fdb728e4aba43668beae1e5d0e"
-    },
-    "logical-properties": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/logical-properties/SKILL.md",
-      "computedHash": "086c21ec6af1a56fea6176992aa886b58f1cd1cf8c5470bacc16a17ea1b14236"
-    },
     "loop-me": {
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/in-progress/loop-me/SKILL.md",
       "computedHash": "72e01a16929dbf6583afc469a49d64b28b1be4a6034c900decd94cd5a69ba6e6"
-    },
-    "lowercase": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/lowercase/SKILL.md",
-      "computedHash": "e6666b3dc2311695ab02af0064e1022022676ab59d4b32c14cfafa073066eb33"
     },
     "market-sizing-analysis": {
       "source": "wshobson/agents",
@@ -1876,40 +502,10 @@
       "sourceType": "github",
       "computedHash": "082e9e851d3870b91116dbd6e13368b31de183807e5b1be8a155c63bdda5c77b"
     },
-    "memory-leaks": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/memory-leaks/SKILL.md",
-      "computedHash": "f54c6ab43a7e9637cce9b0b127300b477f6dfd3d7ad5fd95152a0e37d2c3b80c"
-    },
     "memory-safety-patterns": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "69876e154d9fc72702a0844ee944b1bba4f05d2d4c247ae1248d247d3190b162"
-    },
-    "meta-description": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/meta-description/SKILL.md",
-      "computedHash": "576e7d7722e395104194d7fbd3bce32e047a5ef1e1c4286e7cfcd838fb67633e"
-    },
-    "meta-in-body": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/meta-in-body/SKILL.md",
-      "computedHash": "96add7e16ca2d1346b52980a034910fbdf653a2ec3f7bd1a11912d86386fc31e"
-    },
-    "meta-refresh": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/meta-refresh/SKILL.md",
-      "computedHash": "5da29fe4c0f7b037d6f7e34f3028d901431b7c1fb6b543cc1a53eaa4d5298cc4"
-    },
-    "meta-title": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/meta-title/SKILL.md",
-      "computedHash": "48431ce80dd1347837325488febc7def76ed2a7cdde89ffd2ad74933eb27381b"
     },
     "microservices-patterns": {
       "source": "wshobson/agents",
@@ -1921,18 +517,6 @@
       "sourceType": "github",
       "skillPath": "skills/misc/migrate-to-shoehorn/SKILL.md",
       "computedHash": "6397731ced114f3657aa88b55ed13d1344a56d77ca449c568e3200c21740fa99"
-    },
-    "mime-type": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/mime-type/SKILL.md",
-      "computedHash": "b4cf00cdd9e71ebb337f97288f8ec0e8a3a7ea5d3423843f5d3ea326e4a24325"
-    },
-    "mixed-content": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/mixed-content/SKILL.md",
-      "computedHash": "5bd81c20775f3b9d5b4aae5fe071459ec41132babafd2b37ee60b5449022a6d7"
     },
     "ml-pipeline-workflow": {
       "source": "wshobson/agents",
@@ -1948,36 +532,6 @@
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "3902f919488d8ddc983e157bbcd5f16b739b84eeaab57002bf52b7f9601ed6ad"
-    },
-    "mobile-testing": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/mobile-testing/SKILL.md",
-      "computedHash": "f7293f725ff4af77eff1114833ccb91c1116120aba24e374cff9bf921387839b"
-    },
-    "mock-best-practices": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/mock-best-practices/SKILL.md",
-      "computedHash": "63e092c4242bb7f0b72d31a98822e5cd187733253b60adff34021e2d7bcd95ab"
-    },
-    "modal-accessibility": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/modal-accessibility/SKILL.md",
-      "computedHash": "ce689f98342e18b13373a3a828342abf51b0bbe22114cc7a53a81168e16a9ba9"
-    },
-    "modern-array-methods": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/modern-array-methods/SKILL.md",
-      "computedHash": "ac7543350a6bc1bca8980b92f60e403f773fdc994e8528f6587ddc2fbfb0c814"
-    },
-    "modern-format": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/modern-format/SKILL.md",
-      "computedHash": "1785b29b50e91de48fc1195c6aa86fd0b13c84391ed9f3f8db626ad35964c3f0"
     },
     "modern-javascript-patterns": {
       "source": "wshobson/agents",
@@ -2004,36 +558,6 @@
       "sourceType": "github",
       "computedHash": "9e2f76e06a3a0d4e76b4955469b9ca65951a1f0229c39ec961b1e8ff8a03a31e"
     },
-    "mutation-testing": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/mutation-testing/SKILL.md",
-      "computedHash": "b29ba6d4a1cc915bff87f2494986e964d965f35bc07bef1e5431de03544594c3"
-    },
-    "naming-conventions": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/naming-conventions/SKILL.md",
-      "computedHash": "661cbfdef37a6481810637582178cf1f7c4cb255acd35c63d22175725047544c"
-    },
-    "nap-consistency": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/nap-consistency/SKILL.md",
-      "computedHash": "f324dd173d6d34c5c4169fc1b2aed7f3807f6c7adc8f2e90c2670dbef2494ce4"
-    },
-    "navigation-landmark": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/navigation-landmark/SKILL.md",
-      "computedHash": "8c977b31f0a173e2d0f1806ce3730a82dcbe31e9bd4ba057548439c20b93cba6"
-    },
-    "new-tab": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/new-tab/SKILL.md",
-      "computedHash": "b42b38a06e3c11fb0df4e9c877896a7cd48250fee1704e6f4a968544f76e6c75"
-    },
     "next-best-practices": {
       "source": "vercel-labs/next-skills",
       "sourceType": "github",
@@ -2059,87 +583,15 @@
       "sourceType": "github",
       "computedHash": "c883a841507a4fb8e6eb0dbf802c98a613ebc92a9aae2a581e459700577953e6"
     },
-    "no-explicit-any": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/no-explicit-any/SKILL.md",
-      "computedHash": "6cb2604f99e4b7371a310e9d9b3f5fa4d76a9a0c62c52d46ccd1230f5c0fa11e"
-    },
-    "no-unchecked-indexed-access": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/no-unchecked-indexed-access/SKILL.md",
-      "computedHash": "74670d4b8354198b97782cfcaed915f7632a1422325f45d127064308e7168a52"
-    },
     "nodejs-backend-patterns": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "c6a99966c2565acc388e574039127abc770bb9a3338be761e421e16f023f702b"
     },
-    "nofollow-internal": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/nofollow-internal/SKILL.md",
-      "computedHash": "0000139bcd23605de6348a7a2014de3a6f66fb34634de075a1144e586417f4a7"
-    },
-    "noindex-in-sitemap": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/noindex-in-sitemap/SKILL.md",
-      "computedHash": "f1ccc9506375c653442a19073cc50c9f20992ca14e78d1c6bfd02d7c35256155"
-    },
-    "noscript-tag": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/noscript-tag/SKILL.md",
-      "computedHash": "e23d12cdf4a7a59ab723e195990ca940ea249b4f223c4cda0759cba119340ce2"
-    },
-    "nosnippet": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/nosnippet/SKILL.md",
-      "computedHash": "5efae28576b7b0048a924892e27bd8b0c624431ffd226713b5272e3c4faa29d0"
-    },
     "nx-workspace-patterns": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "c998c269c46455ad2bd9a1b61fb7db9ced887ddca40c2f3e54a610c6d9f9b09c"
-    },
-    "object-alt": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/object-alt/SKILL.md",
-      "computedHash": "e459475e48880cdcc114cad62ccff2ca33e051cbb02e1785248ac5481191e884"
-    },
-    "offline-fallback": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/offline-fallback/SKILL.md",
-      "computedHash": "2fe184c637161cdea077dcf7571265ee5effa3067bbd244ee6bf58ba1c953723"
-    },
-    "offscreen-lazy": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/offscreen-lazy/SKILL.md",
-      "computedHash": "7370a7826635642f6717cd78a1c7b6e90365a7baaa5c34984ec007a6dd436589"
-    },
-    "og-image-size": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/og-image-size/SKILL.md",
-      "computedHash": "daf2d48675eb52aa55448cc8f4bb5e79df9f26ce48250ee384331e224235583c"
-    },
-    "og-tags": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/og-tags/SKILL.md",
-      "computedHash": "082c412b154d7372724d8f5ba652f9f04e2c770f687ef343c54fe79ce31b4762"
-    },
-    "og-url-match": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/og-url-match/SKILL.md",
-      "computedHash": "48fb43a1555ac394dc00c7561b46ac51a4642dc6136bfc591697ac1bc8d0a44e"
     },
     "on-call-handoff-patterns": {
       "source": "wshobson/agents",
@@ -2151,60 +603,6 @@
       "sourceType": "github",
       "computedHash": "a18234366d829a7c87ac8f419846da9fe010c3b52b78be2f28e2e2d101b77273"
     },
-    "optimized": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/optimized/SKILL.md",
-      "computedHash": "f596894c65faa4c983e21cab5f7a774111eaeb4846ceb6539a258aeda2801cf7"
-    },
-    "organization": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/organization/SKILL.md",
-      "computedHash": "993c73700e5c4e1443b53e4d7f562a26dbeb3ba5f796562dd277f91d67e99776"
-    },
-    "orientation": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/orientation/SKILL.md",
-      "computedHash": "676b9e13d34c98b911b7ff9e10c48a6ab6f07a87ccefb242991c087a5d3adc6a"
-    },
-    "orphan-pages": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/orphan-pages/SKILL.md",
-      "computedHash": "bef5aaaed1429b0cdd833c41868b983a4236694ce2e4c2e27a59e94a929c8c4c"
-    },
-    "page-load-time": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/page-load-time/SKILL.md",
-      "computedHash": "51ce50b2a46c45af854a1e47d387e647dd670adc0e6d4be885bfc632b8783b65"
-    },
-    "page-weight": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/page-weight/SKILL.md",
-      "computedHash": "f60f039205e7958e1221c52cb273f68801e126eb4339bb1d061dcce10b3fafcf"
-    },
-    "pagination": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/pagination/SKILL.md",
-      "computedHash": "e342a699f2ba3686f065d75a9585cb481e4ddcd3bac327751ca40f87a6ca6943"
-    },
-    "pagination-accessibility": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/pagination-accessibility/SKILL.md",
-      "computedHash": "0de451800534c29e634870362072137950b89deddc7135418c97e1f8e79d66d3"
-    },
-    "parallax-effects": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/parallax-effects/SKILL.md",
-      "computedHash": "abd1659e021fb6d5097207f198b0b36e26e0a4dac232f099ef0dc71c1aa09174"
-    },
     "parallel-debugging": {
       "source": "wshobson/agents",
       "sourceType": "github",
@@ -2214,24 +612,6 @@
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "617031278f41d922198a161d3c698a553a340afb47755237a005898f01789e26"
-    },
-    "parameters": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/parameters/SKILL.md",
-      "computedHash": "d84216149aa44efcd2ac6840daa649e93bf08f53a484ce741bef7ac7aec5b369"
-    },
-    "password-field-security": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/password-field-security/SKILL.md",
-      "computedHash": "6cfc9f2b27c7cf69f2efed6c2f0ef4add213de82a9a1a85679386d6bc813aa2d"
-    },
-    "paste-inputs": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/paste-inputs/SKILL.md",
-      "computedHash": "bd4970e3e8e6f15e806ba36dd137fcfcda1810c8db891a8f26385f807d0475d1"
     },
     "paypal-integration": {
       "source": "wshobson/agents",
@@ -2248,54 +628,6 @@
       "sourceType": "github",
       "computedHash": "cfbc539377088ca7e44a813b30c306327385bbd973cd7a721e1743f60837dd62"
     },
-    "pdf-size": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/pdf-size/SKILL.md",
-      "computedHash": "656180da034bcf0245039cc1002b74b299c8868dd119a4e72efb4912ebbf185d"
-    },
-    "performance-budget": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/performance-budget/SKILL.md",
-      "computedHash": "d81e98050cfd3ff234303b879679490a42ddb2452e1b3fbd1bd46fdf95943350"
-    },
-    "performance-resource-hints": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/performance-resource-hints/SKILL.md",
-      "computedHash": "00e30288827b73e9f510522a0a13553ffef14151ef1aac5def6f8421eb0ab501"
-    },
-    "permissions-policy": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/permissions-policy/SKILL.md",
-      "computedHash": "57f3b02da51e7d72166b53ed6707e33e3d2b05f4dd469cf3346160ed8af56c1b"
-    },
-    "physical-address": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/physical-address/SKILL.md",
-      "computedHash": "cd85b33d3a1bbbfc5e856b64d8d8a509acfa57e5e37118b5011c4f753fbd9561"
-    },
-    "picture-element": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/picture-element/SKILL.md",
-      "computedHash": "301f425de176ff64d8bc326a638cb3ea76b0414285c88118b05077f7f9ba5de4"
-    },
-    "plain-language": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/plain-language/SKILL.md",
-      "computedHash": "5ade654fe572b0947dc4cd591608599b1ff0b491c4aa3e30c801aac96cc927c2"
-    },
-    "pluralization": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/pluralization/SKILL.md",
-      "computedHash": "b9766f3b35a944300745fb1e9b97a78e5dd9ac87151fa139167de1803a010399"
-    },
     "postgresql-table-design": {
       "source": "wshobson/agents",
       "sourceType": "github",
@@ -2310,30 +642,6 @@
       "source": "anthropics/skills",
       "sourceType": "github",
       "computedHash": "6b8b859d26f93aa059c9870d1ab76b44ab69e3d6757ce4a03cc94cb760888073"
-    },
-    "preconnect": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/preconnect/SKILL.md",
-      "computedHash": "d1b5fabb51cf00f24ed4c207cef32e4c284bb4aeab3fb4aec09f1aabe6370f2a"
-    },
-    "privacy-policy": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/privacy-policy/SKILL.md",
-      "computedHash": "0c3a76baff57d463ecad94829d60122b5ebef79c9358a0ebb23651938bbdbea8"
-    },
-    "product": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/product/SKILL.md",
-      "computedHash": "87949394f48800be793595b960af08f74f54791aa2136756deac8d9bd62d7af9"
-    },
-    "progressive-jpeg": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/progressive-jpeg/SKILL.md",
-      "computedHash": "0fcdf9ec08a1daa8ee47df9173cc9e5b9c80ecc069f5e3b17cece11fdd188050"
     },
     "projection-patterns": {
       "source": "wshobson/agents",
@@ -2365,12 +673,6 @@
       "sourceType": "github",
       "skillPath": "skills/engineering/prototype/SKILL.md",
       "computedHash": "d3fc74689bd993e39c44bfae510d014eecffbeec2922764b065377fd1327c0f6"
-    },
-    "pwa-installability": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/pwa-installability/SKILL.md",
-      "computedHash": "8dd284e28f0d8b95bb3a1bb995637c55360e826e7b72426664a00c5e2ab60f51"
     },
     "python-anti-patterns": {
       "source": "wshobson/agents",
@@ -2442,12 +744,6 @@
       "sourceType": "github",
       "computedHash": "85d67e5a633eb8fa7f34db9afa7e45ffbc254a4af19171572e7f319e6099a40e"
     },
-    "quality": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/quality/SKILL.md",
-      "computedHash": "0e7fc6e22b5f38482c8c16b196533e10dd689c3a533684305846208f45f8d69c"
-    },
     "rag-implementation": {
       "source": "wshobson/agents",
       "sourceType": "github",
@@ -2473,94 +769,16 @@
       "sourceType": "github",
       "computedHash": "7c63f9bf6ce2e2884b2da61e899a2701068b53ef6e87fc29e3c04a199e3092cb"
     },
-    "reading-level": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/reading-level/SKILL.md",
-      "computedHash": "9a8e0cb4e7ad2939f16ec3f5f72ca2200d084f00c50e7112132edad1e6d7c794"
-    },
-    "redirect-chain": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/redirect-chain/SKILL.md",
-      "computedHash": "9b4399f81a86c360ebc0d8db97a3e312313117092745aed21473e6e90af41687"
-    },
-    "redirect-chains": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/redirect-chains/SKILL.md",
-      "computedHash": "bda152255d6aee4e6509e296ef822ae5a7331104f1e6239ad5b172f4fc5934e3"
-    },
-    "reduced-motion": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/reduced-motion/SKILL.md",
-      "computedHash": "9c05c95c5163f699e5a7c7547a1d31702597562c6efa9142b93e62ac63c560a8"
-    },
-    "redundant-entry": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/redundant-entry/SKILL.md",
-      "computedHash": "0fa4610dab5f58497735f15c016003824d43c28fb6fe8aedd73e53bc1bd42e5f"
-    },
-    "referrer-policy": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/referrer-policy/SKILL.md",
-      "computedHash": "d78fe77bee3aa6879adfd62f1507d6bf6e337abcd04fd71b516c11e07df6181f"
-    },
-    "render-blocking": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/render-blocking/SKILL.md",
-      "computedHash": "eef10dd56d87a0c44a46cc3e4aaf41869930c34f70f0f95b308278ebcc115a57"
-    },
     "research": {
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/research/SKILL.md",
       "computedHash": "c8c1cba327a6f824b554cd978079a3dadd7406d73174f8fb9bfef58824691970"
     },
-    "reset-css": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/reset-css/SKILL.md",
-      "computedHash": "3f29698e5af0cb708551d01fcf6a97bf5e7d9a0c2a380611e62d8fbba15fcdd3"
-    },
-    "resource-hints": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/resource-hints/SKILL.md",
-      "computedHash": "34950f79f94d98b594476d18361a957821b1a34e98e10b716efdba4d6d96af26"
-    },
     "responsive-design": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "0977c17696ab66ea613ce5b83c856bc7cd01332d98ae237dac7539840fe96187"
-    },
-    "responsive-images": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/responsive-images/SKILL.md",
-      "computedHash": "cd1c281aaa704c5081cd576b7557d901872794bcd23b00b464fdb504cf796ddb"
-    },
-    "responsive-size": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/responsive-size/SKILL.md",
-      "computedHash": "a2adeb3511cc8cb3b6fe45940e980fc9f5ce5154f4a5fe8f10ff16e1cfbdef8e"
-    },
-    "responsive-units": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/responsive-units/SKILL.md",
-      "computedHash": "44544dca1138ae69785b41c39a8b53baf5064a53a84b144dfd93e5e5c9fbc3eb"
-    },
-    "retina-display": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/retina-display/SKILL.md",
-      "computedHash": "99741c31241fcde99fbca3903f13ac0f36865a42c47076d72104d02145cf84a2"
     },
     "retro": {
       "source": "mattpocock/skills",
@@ -2568,46 +786,10 @@
       "skillPath": "skills/engineering/retro/SKILL.md",
       "computedHash": "b8d55851a2909e26c2dbb2e8563719c87b3b700559f604e4df344f8c27e21047"
     },
-    "review": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/review/SKILL.md",
-      "computedHash": "5e51d76e941de898fc4f591d5707f2353a78474c12e8de9d4a97fb3e1fa22eb9"
-    },
-    "right-to-erasure": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/right-to-erasure/SKILL.md",
-      "computedHash": "ce96834e01988bf16daa40289c07d73538db91b133c4d3aa269c7a4f618d101e"
-    },
     "risk-metrics-calculation": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "8f1b5209ae3880297eaac5f7b438c3bf9eee0363d5bdefd1a1b8d324142f060e"
-    },
-    "robots-meta": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/robots-meta/SKILL.md",
-      "computedHash": "a2add501ecc4a07b0ca46c3a122245170ab4cc7b93be8d666c8c7775fe28bcae"
-    },
-    "robots-meta-conflict": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/robots-meta-conflict/SKILL.md",
-      "computedHash": "ee90b6b983c3356c97aa20f78dd7689bb14d1bfadbb3840a939af78288709ade"
-    },
-    "robots-txt": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/robots-txt/SKILL.md",
-      "computedHash": "210fe095a6d9a2e6eb0e5363b9f12875103d739c6732860797ab2e3eb4383714"
-    },
-    "runtime-validation": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/runtime-validation/SKILL.md",
-      "computedHash": "415b91a3f6cb8424699dddd02dfb025f4be77abdce2873c10ca00317e07d156d"
     },
     "rust-async-patterns": {
       "source": "wshobson/agents",
@@ -2630,36 +812,6 @@
       "skillPath": "skills/misc/scaffold-exercises/SKILL.md",
       "computedHash": "354c91f6dbc9b058632f30594aacb4edc6d25012596585abb00402af8d7ec5e9"
     },
-    "scheduler-yield": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/scheduler-yield/SKILL.md",
-      "computedHash": "2866c7e6e1693d575a49e6059e9d6c80c2d313fbc24372a4452d3a6def112ced"
-    },
-    "schema-noindex-conflict": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/schema-noindex-conflict/SKILL.md",
-      "computedHash": "bb98d105db8a5adbbd450e5fb7f420186931ccf467fc4bb554b3265df3100ad5"
-    },
-    "screen-reader-testing": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/screen-reader-testing/SKILL.md",
-      "computedHash": "5bb1eba59673cd3ef4b84addec2427b58cee3bdadc2fa996991f6477d3f850b0"
-    },
-    "scrolljacking": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/scrolljacking/SKILL.md",
-      "computedHash": "1381150d1c2b5cc46fe21ef9a0a15c3e392810f0b59924322d403893f8b55da3"
-    },
-    "search-input": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/search-input/SKILL.md",
-      "computedHash": "d83e119136cff51b78cb230d61f810d0e10356efca470c5c524ad305f5e7671f"
-    },
     "secrets-management": {
       "source": "wshobson/agents",
       "sourceType": "github",
@@ -2670,52 +822,10 @@
       "sourceType": "github",
       "computedHash": "58355374dea00ec5a732711a0586adb06ca6d1ef148e6ca16950e4e0a0a9643e"
     },
-    "select-name": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/select-name/SKILL.md",
-      "computedHash": "10cf37915ed4e1ca3ded2861cf72ae6b024cdf081f4500f5b90570caad5c1e9a"
-    },
-    "semantic-lists": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/semantic-lists/SKILL.md",
-      "computedHash": "9b2bf742bd98aeb0e72631c63abc6e97b27ac9122440335fd083341351aff8d7"
-    },
-    "sensory-instructions": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/sensory-instructions/SKILL.md",
-      "computedHash": "418226ee660c00b09fe7b43683ac1c7b1a9b6523e8cd129d1995001b01ee30db"
-    },
-    "service-area": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/service-area/SKILL.md",
-      "computedHash": "7b705e80f7f00733faa764ff8414406b4599b1c8fbce420aed2fb1ebb7d99d2a"
-    },
     "service-mesh-observability": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "df9c95d37d8a7bffb8e19152912e7a8cd317ddd9bf3279739b01f881dfebeb74"
-    },
-    "service-worker": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/service-worker/SKILL.md",
-      "computedHash": "41f8a5a477eb987bdbb76641b1732e88d59d4085421658c4df15ea1c9dc656fc"
-    },
-    "session-cookie-flags": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/session-cookie-flags/SKILL.md",
-      "computedHash": "0dc2bda1fba46316e1cd7bf41ee95ed29dcccbcebea7d760249b71b0593b4a9b"
-    },
-    "session-timeout-recovery": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/session-timeout-recovery/SKILL.md",
-      "computedHash": "677c1485486f1eb339e9206529419ebabc52fe6d071d4230490f2ba505cd827b"
     },
     "setup-matt-pocock-skills": {
       "source": "mattpocock/skills",
@@ -2735,12 +845,6 @@
       "skillPath": "skills/in-progress/setup-ts-deep-modules/SKILL.md",
       "computedHash": "61508216ede38d8cfa712879197a76f75f4896615dbf7abc3f62571f8f5923cc"
     },
-    "share-buttons": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/share-buttons/SKILL.md",
-      "computedHash": "b5c302a7e8edcfac5aa1f97258d924db5f2cee4f47aea26746ef69df2d4c6bac"
-    },
     "shellcheck-configuration": {
       "source": "wshobson/agents",
       "sourceType": "github",
@@ -2756,52 +860,10 @@
       "sourceType": "github",
       "computedHash": "3f057d0714eb6685f95c72046732b368ee1e77f5252d14102c69a4c3b376a475"
     },
-    "sitemap": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/sitemap/SKILL.md",
-      "computedHash": "ce8c20b3fe62f9024712fa6b2177ebca88ed95d69f66c1ff0d1d2b21164c39bd"
-    },
-    "sitemap-4xx": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/sitemap-4xx/SKILL.md",
-      "computedHash": "a197ff5208e275c3971aae9c2188a7f611cf43a34a05869860e201c0310307c8"
-    },
-    "sitemap-coverage": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/sitemap-coverage/SKILL.md",
-      "computedHash": "cb8caed18f463fefde9ec49877d4683f4cb9c70426866a9c27bbfc04c1d7c1a9"
-    },
-    "sitemap-domain": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/sitemap-domain/SKILL.md",
-      "computedHash": "34f92809c60477508086332da413e4f5162efff34171eeec5fc066be8982d819"
-    },
-    "sitemap-valid": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/sitemap-valid/SKILL.md",
-      "computedHash": "13b1a35f0aa191d7f54155ac7f86d1b4219b787619db1a770fadc553b70f208a"
-    },
     "skill-creator": {
       "source": "anthropics/skills",
       "sourceType": "github",
       "computedHash": "5ea13a6d9f0d4bb694405d79acd00cadec0d21bb138c4dd10fcf3c500cb835c2"
-    },
-    "skip-link": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/skip-link/SKILL.md",
-      "computedHash": "a969bdda3688400734d8d968641349b72b02e61340ade638ce377d4cf34bd609"
-    },
-    "skip-navigation": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/skip-navigation/SKILL.md",
-      "computedHash": "2d0f8f9c13d89460381fd61f6e5cd46f0b6cd66d0fc83ba856970d9bf5e3b502"
     },
     "slack-gif-creator": {
       "source": "anthropics/skills",
@@ -2813,74 +875,20 @@
       "sourceType": "github",
       "computedHash": "42401f6f1039dcf20db7c872135632ed7725a4dbdfa840e03d72c51eae7ae0b1"
     },
-    "slug-keywords": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/slug-keywords/SKILL.md",
-      "computedHash": "c2e368d6ca93f22eb69974adebe2dabe851b39f81102b1e3f503ee70ca629e5b"
-    },
-    "social-profiles": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/social-profiles/SKILL.md",
-      "computedHash": "8dadc14a7a98dd079f45439f0520673d7f233ec3978fe95b88e1817c55b57768"
-    },
     "solidity-security": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "6e5da171c220c6e8b8abae8e31c77f532812d6739d597f6f4a043ca2b7044f1e"
-    },
-    "source-maps": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/source-maps/SKILL.md",
-      "computedHash": "7e5e794f69adb5cf26de6cf77ea1908c53402058f9122acd64f6fac8614a6a48"
     },
     "spark-optimization": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "64a08e0fd03ec1aed2d589eb6dad6fcc42fd9d9b09c9ffaa116ca2f9f0a70785"
     },
-    "special-chars": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/special-chars/SKILL.md",
-      "computedHash": "767dd2c60619e19709769cc0cc0b607161a08a344b74ba39f1e0753678f05678"
-    },
-    "specificity-management": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/specificity-management/SKILL.md",
-      "computedHash": "529d695d165deaefa1de5ba3768b0f88e92c42a7aae32963788380d912d50c8a"
-    },
-    "speculation-rules": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/speculation-rules/SKILL.md",
-      "computedHash": "8150f2efae43b31814857d8db0de21dc959580339299694c678d48ab21c79d7f"
-    },
-    "sprite-generation": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/sprite-generation/SKILL.md",
-      "computedHash": "36696e112d9f924cfd4d916ef5fe0e33cae77e647a869511e157419142dc9510"
-    },
     "sql-optimization-patterns": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "53d0e34ed28c0cb9d9829d37e9fc9dd49bbfbbfce6f7c68f88a45c2cb34b9f60"
-    },
-    "srcset": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/srcset/SKILL.md",
-      "computedHash": "3b88b23b1c7f142693fe2680bd8c9dbe5a8565c89ecb1c7191397b1f30544e2c"
-    },
-    "stack-trace-exposure": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/stack-trace-exposure/SKILL.md",
-      "computedHash": "14ff634a166e9fe3cab76dcefd82b6eb5dbd39cf5ceffdf84a9c6e58f1f70631"
     },
     "startup-financial-modeling": {
       "source": "wshobson/agents",
@@ -2892,18 +900,6 @@
       "sourceType": "github",
       "computedHash": "fa8fdfe13cb69e6fc899ff924efa262610694dc27eafcc400f645b3ece7caa8f"
     },
-    "stop-words": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/stop-words/SKILL.md",
-      "computedHash": "8fa079606535bab2c04a5446e5d3dc973a3232eb9132c8c4a785df72e42acce9"
-    },
-    "streaming-html": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/streaming-html/SKILL.md",
-      "computedHash": "b7aaa2b78ce60324fa8ee4d5462c746330b24f4634fc663b527b8232d6ca2388"
-    },
     "stride-analysis-patterns": {
       "source": "wshobson/agents",
       "sourceType": "github",
@@ -2913,30 +909,6 @@
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "2ea87d17f71bbc8fb206af2e90d8345c9a978ee36c7874bcccdb0fdd8cdd745c"
-    },
-    "structured-data": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/structured-data/SKILL.md",
-      "computedHash": "6e9600fbf880687fc98f911595cf543a55542a83ef83afc8a3361896fe161000"
-    },
-    "styles-lint": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/styles-lint/SKILL.md",
-      "computedHash": "3a9440d635289a3b29a6d1f50da31893aa9520b618214a3c6d61e12ef5251314"
-    },
-    "subgrid": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/subgrid/SKILL.md",
-      "computedHash": "bfebb1115f2b4b1f7b0f04ba0b13a1ddd61ef67cec615acb8ae032a4f7cdedc2"
-    },
-    "subresource-integrity": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/subresource-integrity/SKILL.md",
-      "computedHash": "fdcc722d0e0a21506a7b1388e7973c0df21bbe619cf83a6e182a4cfd70cee60b"
     },
     "supabase": {
       "source": "supabase/agent-skills",
@@ -2948,42 +920,6 @@
       "sourceType": "github",
       "computedHash": "d606a1146be6d54fb9e73f718b5320b9acac5ff2ba2d7230a555df4b5a923b4a"
     },
-    "svg-inline": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/svg-inline/SKILL.md",
-      "computedHash": "f38b2df08865c157cda39ec4b51c527febc67ce80802341414e3b2081919e8f5"
-    },
-    "svg-optimization": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/svg-optimization/SKILL.md",
-      "computedHash": "15cb9e08e6f392cea23d8bac8aa327628d7828e3529366a63e73634cdf6533a0"
-    },
-    "tabindex": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/tabindex/SKILL.md",
-      "computedHash": "9f46deb7494f098a8d29557a958de0639f759ed922fe97114f1352269520079a"
-    },
-    "table-duplicate-name": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/table-duplicate-name/SKILL.md",
-      "computedHash": "0baa45c6ccbae2ceb91136b524b2e356253373b56da40b85e5cb84b1c7c9d659"
-    },
-    "table-headers": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/table-headers/SKILL.md",
-      "computedHash": "3e94655c4e0fe2e6e475e40e42c6cb8855d407cc02581474ef09699666f568b3"
-    },
-    "tabs-accessibility": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/tabs-accessibility/SKILL.md",
-      "computedHash": "a25c12ba4ec11d7bc1ae2aae4758964ea99c3b362e82c080013c5dd550a9c619"
-    },
     "tailwind-design-system": {
       "source": "wshobson/agents",
       "sourceType": "github",
@@ -2993,12 +929,6 @@
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "ed4d1652bdc81a055e2ab2e13bf288836c3a6174009d9a780e4dd4b4be42d1ae"
-    },
-    "td-headers-attr": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/td-headers-attr/SKILL.md",
-      "computedHash": "6965b58a1a0e6dd0d71825815eba9d36f9c8ea322e4a2e3dcf451a0030f0d143"
     },
     "tdd": {
       "source": "mattpocock/skills",
@@ -3027,12 +957,6 @@
       "sourceType": "github",
       "computedHash": "f85895efd16d19d379e57231f70b0e3c5471d8fa7c97bb68c9b6ce00f6ad05b9"
     },
-    "tel-mailto": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/tel-mailto/SKILL.md",
-      "computedHash": "8d08b080f739cacdae91a8871a9e82bab46d20c14405e4186ea45e6a75f47d7b"
-    },
     "template-skill": {
       "source": "anthropics/skills",
       "sourceType": "github",
@@ -3043,74 +967,20 @@
       "sourceType": "github",
       "computedHash": "749b486daa5a8c68d33dff3e3fbc523cec2728db729bdd9366f2c8bcabc8f992"
     },
-    "terms-of-service": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/terms-of-service/SKILL.md",
-      "computedHash": "62bfc4dbf507b11357bea5a92e2f66463584064bd454adfc96724b7f1f9c970e"
-    },
     "terraform-module-library": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "0cef0ea4f217dd30f7b3b22aeac2a3bbdfa0649e3b7fcece5d5fb0ea87306647"
-    },
-    "test-coverage": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/test-coverage/SKILL.md",
-      "computedHash": "1e24f987331e0036cc023999b2173c685afdc4ed922827747595e205efd7ea4c"
-    },
-    "text-expansion": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/text-expansion/SKILL.md",
-      "computedHash": "7801872ed28c49e27f52c25fbbc861216494df4ed01441e1512eb806f22e0cd5"
-    },
-    "text-in-images": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/text-in-images/SKILL.md",
-      "computedHash": "d441fe15057340ae0518a4e7e678638f700632ca55ab7006146cdfa9254a90c6"
-    },
-    "text-resizing": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/text-resizing/SKILL.md",
-      "computedHash": "cbfea1175d6931c07973aaa117e68b1d6facc56fc857b1f71d58262a5278efbd"
-    },
-    "th-has-data-cells": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/th-has-data-cells/SKILL.md",
-      "computedHash": "8239ca47ed6b5d2b2bf0a99e52cc7ddd47de1d992b9637d1c65aa264cf64d53e"
     },
     "theme-factory": {
       "source": "anthropics/skills",
       "sourceType": "github",
       "computedHash": "598ddfa9784ae2a8c55be5dbb047b98564d875dea6f4669168a87ae1ea1a4ed3"
     },
-    "third-party-cookies": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/third-party-cookies/SKILL.md",
-      "computedHash": "dc022c39ac72dae4b2c29785a566da2d95428e9e2b162911d7a81e75ac73ac50"
-    },
-    "third-party-scripts": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/third-party-scripts/SKILL.md",
-      "computedHash": "1557f1d888b7da7df2ab20a589273c274ce795957116c543b8a2699c9e485525"
-    },
     "threat-mitigation-mapping": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "b2d4ee1f9b75989778a4206a91355e45addda2eba8dbc97a5e1874701fc791d3"
-    },
-    "title-unique": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/title-unique/SKILL.md",
-      "computedHash": "997471f1a36e0c47503ce8286b6a5d6cd9f8c0f397f840da2877966b67cd665a"
     },
     "to-questionnaire": {
       "source": "mattpocock/skills",
@@ -3130,34 +1000,10 @@
       "skillPath": "skills/engineering/to-tickets/SKILL.md",
       "computedHash": "5f871bdc46a9212222214ba399be4965374208af1bd7f48f1271bef72841dd31"
     },
-    "token-storage-security": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/token-storage-security/SKILL.md",
-      "computedHash": "ff022091bc38fd249bebb45ca8c882340c52e261b5c27a49852ae3c18bfa8f5a"
-    },
-    "touch-targets": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/touch-targets/SKILL.md",
-      "computedHash": "5c8340cd6cf24d54d055cee0aca8af8ce3b0ce0672e7805d9d7ad43e091a8efb"
-    },
     "track-management": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "7f086653348bd02f86992a189c8fe78bede343cea1724a7c2ea701e6a4d76b04"
-    },
-    "trailing-slash": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/trailing-slash/SKILL.md",
-      "computedHash": "e6cfbff890243344190ac5b2cc74764344edcc60eb540818f564f34cc08a5c36"
-    },
-    "translation-strings": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/translation-strings/SKILL.md",
-      "computedHash": "f1f8a7bd346cc9204211ccf425d218beb3f780d35765eb4a298d8d8b154d576d"
     },
     "triage": {
       "source": "mattpocock/skills",
@@ -3165,79 +1011,25 @@
       "skillPath": "skills/engineering/triage/SKILL.md",
       "computedHash": "a683e69163e23630f39c05a50fb9d83a3795a6a6fbd317357669e082cd43a158"
     },
-    "trust-signals": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/trust-signals/SKILL.md",
-      "computedHash": "f3848237217342fa9e86e74755905b2a565b138929c6c2af828313b8a65e3169"
-    },
-    "ttfb": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/ttfb/SKILL.md",
-      "computedHash": "e5b8224b7760717cbb85358eb88c483dcb8fad2abaefe633be5652fe444c4d9d"
-    },
     "turborepo-caching": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "e0891d5543574b98be4224ce970b4b08507e3b61a4444cd6db9eee2fc79570ca"
-    },
-    "twitter-cards": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/twitter-cards/SKILL.md",
-      "computedHash": "afdd2e89ad6a1f9817468aa165c00053521ce89b1f7cdfb41d103b9235b21f4c"
-    },
-    "type-coercion": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/type-coercion/SKILL.md",
-      "computedHash": "4604fed40b729ccf11821c6798fc815a9863eef7a1c6d123facc521f0e8afeac"
-    },
-    "type-only-imports": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/type-only-imports/SKILL.md",
-      "computedHash": "2b947f0a4929b322a05ed3b7e484b82f65a346b0ac8f9f64997c6addb749e912"
     },
     "typescript-advanced-types": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "3a3be8c925f96ac4e1280db28a01677e7ca5197f3792de2bbf35ab3bb324b6dd"
     },
-    "typescript-strict-mode": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/typescript-strict-mode/SKILL.md",
-      "computedHash": "49ace7a8573999401b140637dad810bc914db1f8856b5f9b16ce09d71ff332ba"
-    },
     "ui-ux-pro-max": {
       "source": "nextlevelbuilder/ui-ux-pro-max-skill",
       "sourceType": "github",
       "computedHash": "0a413bf988d06481f69bb81df2070741c3ba12dd9f1be2706d57f259c905992d"
     },
-    "unique-id": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/unique-id/SKILL.md",
-      "computedHash": "e26c1ff9bada8571661e2cd2e755d680367db25ec0442f6a9a9010e3685a55fb"
-    },
-    "unit-tests": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/unit-tests/SKILL.md",
-      "computedHash": "fdb125084963451c2649cf42a1e62328230d55616c4b6664c05b744f9444320a"
-    },
     "unity-ecs-patterns": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "e67fd60e82074a1a2882774b05c8938111c4b1b370eecc6698e6adb7787ae928"
-    },
-    "unused-css": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/unused-css/SKILL.md",
-      "computedHash": "da044b09230ae1b3d935e4721fabf24c5206af796783dcb0b23b8f54c97e5886"
     },
     "uv-package-manager": {
       "source": "wshobson/agents",
@@ -3274,70 +1066,10 @@
       "sourceType": "github",
       "computedHash": "4fea9144f604256d0a21faaea904b7e205e7676e316721ba5fdd68c2600c7d42"
     },
-    "video": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/video/SKILL.md",
-      "computedHash": "00230debabfb13e784ed36787d369ce98d04f717c2149dc7986de74e73977328"
-    },
-    "video-accessibility": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/video-accessibility/SKILL.md",
-      "computedHash": "8cec79b5352975c075730ddaa06889ba6207857633c1432ee7e8fd8570c07982"
-    },
-    "video-captions": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/video-captions/SKILL.md",
-      "computedHash": "d2d719d52413b2718f8259f3026a9cf14d552140312425d497f5c7ff972164f0"
-    },
-    "video-optimization": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/video-optimization/SKILL.md",
-      "computedHash": "310705f3db6ebcdf38ea15c4dc46b40ec4cf1986c263ff8c1a3be310d713e1ae"
-    },
-    "video-thumbnail": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/video-thumbnail/SKILL.md",
-      "computedHash": "d23e8df16db70786a39a0c2fd3adf260c850471b7e78f6c511aa27e559a683da"
-    },
-    "view-transitions": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/view-transitions/SKILL.md",
-      "computedHash": "38e9fe9e71ad11ed28cddeae289837ad076ff8c260d80057014f4200470c191b"
-    },
-    "viewport": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/viewport/SKILL.md",
-      "computedHash": "b41e3d2e0751d55be26389a0b35d1a211fbf9917a6c167f143ed976b66261dc4"
-    },
-    "viewport-zoom": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/viewport-zoom/SKILL.md",
-      "computedHash": "de2b27501482c52a0afa6f9f92a4b2a843de0735588bbe3579176cb35d46ebc7"
-    },
     "visual-design-foundations": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "9f0f44bd206036f17f69cf78f3f3b5f9c0e0118672574ffd35c4c34c3d574d16"
-    },
-    "visual-regression": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/visual-regression/SKILL.md",
-      "computedHash": "cccd0a80b2925852f63cecdef2a32ac7ac8427a4fd77acbb267a8b84b246877b"
-    },
-    "w3c-compliant": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/w3c-compliant/SKILL.md",
-      "computedHash": "60742781c10b770dd50dae6cdde86bbe548a0c117e7c4aa696a7b4cc2cb7cbcd"
     },
     "wait-what": {
       "source": "mattpocock/skills",
@@ -3356,18 +1088,6 @@
       "sourceType": "github",
       "computedHash": "df495bdd3466d293e019fa191422d0a3e6cb9c50f275189a70d9da25add075ac"
     },
-    "weak-internal-links": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/weak-internal-links/SKILL.md",
-      "computedHash": "eea272fbf84c11746c72d0d42365ef8262c2deec400b0b0016fb4de687fa672f"
-    },
-    "web-app-manifest": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/web-app-manifest/SKILL.md",
-      "computedHash": "1ce6e67482a182cfc90110a4d85bf5098a1e5d4c9b2dad1f5c8803854cdb7c0a"
-    },
     "web-artifacts-builder": {
       "source": "anthropics/skills",
       "sourceType": "github",
@@ -3383,12 +1103,6 @@
       "sourceType": "github",
       "computedHash": "a6a44d5498f7e8f68289902f3dedfc6f38ae0cee1e96527c80724cf27f727c2a"
     },
-    "web-storage": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/web-storage/SKILL.md",
-      "computedHash": "8256dfc1387f4958d4124f7caaecd398fd0cffbba5a29ec6af3a865006fa4910"
-    },
     "web3-testing": {
       "source": "wshobson/agents",
       "sourceType": "github",
@@ -3399,41 +1113,11 @@
       "sourceType": "github",
       "computedHash": "ad5b1fc52807e9afa4635e59218a026b164dc58b6c3f41b0f7c644dcd6ccf572"
     },
-    "webfont-format": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/webfont-format/SKILL.md",
-      "computedHash": "6ea37f83df7c1c0779af569280825376bcb8b51dee3d99e459ed29678318e590"
-    },
-    "webp-format": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/webp-format/SKILL.md",
-      "computedHash": "c77c111f142960462bdf81a1bac2e3070ec12995dd186885e84106da06e4b2ff"
-    },
-    "webpagetest": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/webpagetest/SKILL.md",
-      "computedHash": "05c779b2d68f679965cfe8efb243e42e7f63fc0488021ef83b54beb09d6734ba"
-    },
-    "website-search": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/website-search/SKILL.md",
-      "computedHash": "ec8810e760efb3b4018ab935137df0152e2d3ca87d79c686214e6361c099fb91"
-    },
     "wizard": {
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/wizard/SKILL.md",
       "computedHash": "49298bed80e7f722b071ad5d64798c75eb705bbbe0635b9bbffd08cd6fb81647"
-    },
-    "word-count": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/word-count/SKILL.md",
-      "computedHash": "42244d9c78c82fd836073a55c150cb5c6f16c06b618d97b7a7c0eceb2b6317f1"
     },
     "workflow-orchestration-patterns": {
       "source": "wshobson/agents",
@@ -3469,34 +1153,10 @@
       "skillPath": "skills/in-progress/writing-shape/SKILL.md",
       "computedHash": "0d0ac1150c4d65f8370ad194fc097ee17855247f6e5943d05f075806980e7401"
     },
-    "x-content-type": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/x-content-type/SKILL.md",
-      "computedHash": "9223f1ddd1efbb0bcb08e19767730288af66bd3c396601b6c4b8ad539c07a03c"
-    },
-    "x-frame-options": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/x-frame-options/SKILL.md",
-      "computedHash": "f3f98d0d3eb724adeae38872dbcdee26ad4fd44a5e4dcc711770ea05a10674d4"
-    },
     "xlsx": {
       "source": "anthropics/skills",
       "sourceType": "github",
       "computedHash": "efd0c8011cf0677d8075cf93867ecec804f9a8754a777e1d2fdb46197e9c247f"
-    },
-    "ymyl-detection": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/ymyl-detection/SKILL.md",
-      "computedHash": "9a3affa63e6f261e8ee1a0ce0a5d2527824abca4f75d5501840d9a337f4e8902"
-    },
-    "zoom-reflow": {
-      "source": "thedaviddias/Front-End-Checklist",
-      "sourceType": "github",
-      "skillPath": "skills/zoom-reflow/SKILL.md",
-      "computedHash": "86494dfd42de81ad1d131991abe5790c3e0787e18f7a7e2d720581443381f2ab"
     }
   }
 }

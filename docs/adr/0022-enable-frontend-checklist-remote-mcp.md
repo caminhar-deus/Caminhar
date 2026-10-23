@@ -26,7 +26,7 @@ A página oficial do fornecedor (`https://frontendchecklist.io/mcp`) declara: se
    - `orchestrator`: `allow` — consulta de regra isolada sem abrir lane;
    - `oracle`: `allow` — dono da revisão de checklist (é o papel que fecha a entrega);
    - `explorer`, `designer`, `fixer`: `deny` — não revisam entrega.
-3. **Manter a skill local** `frontend-checklist-global` como caminho padrão para consulta de regra, porque cobre o mesmo corpus (386 regras) sem enviar código do projeto.
+3. **Manter a skill local** `frontend-checklist-global` como caminho padrão para consulta de regra, porque cobre o mesmo corpus (386 regras) sem enviar código do projeto. *(Revisado no mesmo dia: a skill fica, mas o corpus de regras local foi podado — ver §Poda do corpus local.)*
 4. **Regra de uso registrada** em `AGENTS.md` §5: `review_code` e `audit_url` só quando o pedido for revisar código/URL, nunca por iniciativa própria e nunca com código sensível (segredos, `.env`, credenciais). Ferramentas de consulta (`get_rule`, `search_rules`, `fix_rule`, `explain_rule`, `check_rule`, `list_categories`, `get_workflow`, `get_checklist_rules`, `get_quick_reference`) não enviam código e são sempre seguras.
 
 ## Alternativas consideradas
@@ -48,10 +48,26 @@ A página oficial do fornecedor (`https://frontendchecklist.io/mcp`) declara: se
 
 - **Envio de código a terceiro.** `review_code` transmite o trecho revisado; a garantia de "não armazenado/não logado" é declaração do fornecedor. Mitigação: só para orchestrator/oracle, com a regra de nunca usar em código sensível.
 - **Custo de contexto.** 11 ferramentas a mais por sessão desses dois papéis, num modelo free de contexto curto.
-- **Disponibilidade de terceiro.** Se o servidor cair ou mudar o contrato, os dois papéis perdem a ferramenta; a skill local permanece como alternativa.
+- **Disponibilidade de terceiro.** Se o servidor cair ou mudar o contrato, os dois papéis perdem a ferramenta — e, desde a §Poda do corpus local, também perdem a consulta de regra; a `frontend-checklist-global` só mantém o roteamento e os guardrails.
 - **O que o host expõe, verificado após o restart (23/10/2026):** as 11 ferramentas entram como tools; os 399 `resources` (+3 templates) **não** viram tools, mas são legíveis pelas ferramentas do host `opencode.list_mcp_resources` e `opencode.read_mcp_resource` (leitura de `frontendchecklist://rules/<slug>` confirmada). Os 5 `prompts` e o MCP App (`ui://`) não têm caminho de uso no OpenCode v2.1.4.
 - **Reinício obrigatório do host.** O plugin slim não recarrega config a quente: `opencode debug agents` só mostra a matriz nova depois de reiniciar o host/service. Logo após a edição, a permissão compilada continuava em `deny` para todos os papéis; depois do restart de 23/10/2026, conferido: `allow` em orchestrator e oracle, `deny` nos demais. O `opencode mcp list` já mostrava `connected` antes do restart — conexão e permissão são camadas diferentes.
 
+## Poda do corpus local (23/10/2026)
+
+A decisão 3 foi revista no mesmo dia, depois de medir o custo real das skills locais:
+
+- **Removidas** as 390 skills locais do repositório `thedaviddias/Front-End-Checklist` (388 de regra + `improve-rule` + `find-npm-packages`): 779 arquivos, 2,97 MB. Ficou apenas `frontend-checklist-global`.
+- **`skills-lock.json`**: as 390 entradas correspondentes foram apagadas (614 → 224). Sem isso o lock passaria a descrever um disco que não existe.
+- **Motivo (medido, não estimado):** as 391 entradas do corpus custavam ≈ 89,5 mil caracteres (≈ 22 mil tokens) de *listing* no bloco `<available_skills>` de **toda** sessão, em todos os papéis.
+- **Equivalência de conteúdo conferida** numa regra-amostra: `get_rule("alt-text")` devolveu 8.544 caracteres estruturados contra 8.049 bytes do par local `SKILL.md` + `references/rule.md`. O MCP serve o mesmo texto.
+- **A `frontend-checklist-global` é autossuficiente:** seus `references/categories.md` roteiam para as *ferramentas* do MCP e não referenciam nenhuma das 390 skills removidas.
+
+**Por que apagar em vez de filtrar:** o bloco `<available_skills>` é montado pelo host varrendo os diretórios; o `skills_remove` do slim é por agente e seu efeito sobre esse bloco não foi verificado (`opencode debug agents` não expõe a lista de skills). A única forma verificável de tirar as entradas do prompt é o diretório não existir.
+
+**Custo aceito:** a consulta de regra deixa de ser local/offline — passa a depender de rede e do servidor de terceiro. Sem MCP, a única fonte local é o resumo e os guardrails embutidos na `frontend-checklist-global`.
+
+**Reversão:** `git revert` do commit da poda restaura diretórios e entradas do lock no mesmo passo.
+
 ## Revisão
 
-Reavaliar se: (a) o fornecedor passar a exigir autenticação ou mudar o tratamento de dados; (b) o custo de contexto das 11 ferramentas atrapalhar sessões reais; (c) a skill local e o servidor divergirem de conteúdo; (d) algum papel além de orchestrator/oracle precisar de auditoria de código ou URL.
+Reavaliar se: (a) o fornecedor passar a exigir autenticação ou mudar o tratamento de dados; (b) o custo de contexto das 11 ferramentas atrapalhar sessões reais; (c) a skill local e o servidor divergirem de conteúdo; (d) algum papel além de orchestrator/oracle precisar de auditoria de código ou URL; (e) o MCP ficar indisponível com frequência — nesse caso, `git revert` da poda devolve o corpus local e o custo de contexto volta a ser o preço da autonomia.
