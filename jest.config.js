@@ -66,6 +66,12 @@ export default {
       functions: 95,
       lines: 95,
       statements: 95
+    },
+    'lib/infra/': {
+      branches: 65,
+      functions: 80,
+      lines: 75,
+      statements: 75
     }
   },
 

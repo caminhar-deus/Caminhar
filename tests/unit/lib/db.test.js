@@ -220,4 +220,108 @@ describe('Library - Database', () => {
       expect.objectContaining({ error: 'Info Error', timestamp: expect.any(String) })
     );
   });
+
+  describe('Pool fatal error handler', () => {
+    it('loga erro fatal, encerra pool, zera pool se ainda for o mesmo e loga info', async () => {
+      let errorHandler;
+      mockPoolInstance.on = jest.fn((event, cb) => {
+        if (event === 'error') errorHandler = cb;
+        return mockPoolInstance;
+      });
+
+      resetPool();
+      getPool();
+
+      expect(mockPoolInstance.on).toHaveBeenCalledWith('error', expect.any(Function));
+      expect(typeof errorHandler).toBe('function');
+
+      logger.error.mockClear();
+      logger.info.mockClear();
+
+      await errorHandler(new Error('connection terminated'));
+
+      expect(logger.error).toHaveBeenCalledWith(
+        'DB',
+        'Erro fatal no pool de conexões PostgreSQL:',
+        'connection terminated'
+      );
+      expect(mockPoolInstance.end).toHaveBeenCalled();
+      expect(logger.info).toHaveBeenCalledWith('DB', 'Pool de conexões recriado após erro fatal');
+    });
+
+    it('não propaga exceção se end() falhar e ainda zera pool quando é o mesmo', async () => {
+      let errorHandler;
+      mockPoolInstance.on = jest.fn((event, cb) => {
+        if (event === 'error') errorHandler = cb;
+        return mockPoolInstance;
+      });
+
+      mockPoolInstance.end.mockRejectedValueOnce(new Error('end failed'));
+
+      resetPool();
+      getPool();
+
+      logger.error.mockClear();
+      logger.info.mockClear();
+
+      await expect(errorHandler(new Error('fatal'))).resolves.toBeUndefined();
+
+      expect(logger.error).toHaveBeenCalledWith(
+        'DB',
+        'Erro fatal no pool de conexões PostgreSQL:',
+        'fatal'
+      );
+      expect(mockPoolInstance.end).toHaveBeenCalled();
+      expect(logger.info).toHaveBeenCalledWith('DB', 'Pool de conexões recriado após erro fatal');
+    });
+
+    it('não zera nem loga info se o pool já foi substituído', async () => {
+      const oldPool = mockPoolInstance;
+      let errorHandler;
+      const oldOn = oldPool.on;
+      oldPool.on = jest.fn((event, cb) => {
+        if (event === 'error') errorHandler = cb;
+        if (typeof oldOn === 'function') {
+          return oldOn.call(oldPool, event, cb);
+        }
+        return oldPool;
+      });
+
+      resetPool();
+      getPool();
+
+      if (!errorHandler) {
+        const calls = oldPool.on.mock.calls;
+        const errCall = calls.find((c) => c[0] === 'error');
+        if (errCall) errorHandler = errCall[1];
+      }
+
+      expect(typeof errorHandler).toBe('function');
+
+      const newPool = {
+        query: jest.fn(),
+        connect: jest.fn(() => Promise.resolve({ query: jest.fn(), release: jest.fn() })),
+        end: jest.fn(() => Promise.resolve()),
+        on: jest.fn(),
+        removeAllListeners: jest.fn(),
+      };
+      Pool.mockImplementationOnce(() => newPool);
+      resetPool();
+      getPool();
+
+      logger.error.mockClear();
+      logger.info.mockClear();
+      oldPool.end.mockClear();
+
+      await errorHandler(new Error('old pool error'));
+
+      expect(logger.error).toHaveBeenCalledWith(
+        'DB',
+        'Erro fatal no pool de conexões PostgreSQL:',
+        'old pool error'
+      );
+      expect(oldPool.end).toHaveBeenCalled();
+      expect(logger.info).not.toHaveBeenCalled();
+    });
+  });
 });
