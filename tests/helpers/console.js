@@ -23,6 +23,13 @@ export const suppressConsoleError = () => {
 /**
  * Cria um spy para console.error que SUPRIME apenas warnings conhecidos
  * (comportamento inverso do allowList — os padrões listados são SILENCIADOS)
+ *
+ * Comportamento:
+ *   (a) Suprime APENAS as mensagens que casam com algum padrão de suppressList;
+ *   (b) REPASSA as demais mensagens ao console.error original (não silencia);
+ *   (c) Todas as chamadas — suprimidas ou repassadas — ficam registradas no
+ *       spy, permitindo assertar spy.mock.calls ANTES do mockRestore().
+ *
  * @param {string[]} suppressList - Lista de padrões de mensagens a SUPRIMIR
  * @returns {jest.SpyInstance}
  *
@@ -32,12 +39,17 @@ export const suppressConsoleError = () => {
  *   spy.mockRestore();
  */
 export const filterConsoleError = (suppressList = []) => {
+  // Captura a implementação ANTES de instalar o mock: jest.spyOn substitui
+  // console.error pelo próprio mock, então chamadas a console.error DENTRO do
+  // mockImplementation re-entrariam nele mesmo → RangeError (call stack).
+  // Capturar fora do callback garante que o log não casado chegue ao original.
+  const originalError = console.error;
   return jest.spyOn(console, 'error').mockImplementation((...args) => {
     const msg = args.join(' ');
     if (suppressList.some(pattern => msg.includes(pattern))) {
       return;
     }
-    console.error(...args);
+    originalError.call(console, ...args);
   });
 };
 

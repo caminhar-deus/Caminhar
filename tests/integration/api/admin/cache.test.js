@@ -1,7 +1,8 @@
-import { describe, it, expect, jest, beforeEach, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../../../../pages/api/admin/cache.js';
 import { clearAllCache } from '../../../../lib/cache/cache.js';
+import { suppressConsoleError } from '../../../helpers/console.js';
 
 jest.mock('../../../../lib/auth/auth.js', () => {
   const mockModule = {
@@ -40,11 +41,13 @@ jest.mock('../../../../lib/cache/cache.js', () => ({
 import { getAuthToken, verifyToken } from '../../../../lib/auth/auth.js';
 
 describe('API Admin - Cache (/api/admin/cache)', () => {
-  const originalConsoleError = console.error;
+  let consoleErrorSpy;
 
-  beforeAll(() => { console.error = () => {}; });
-  afterAll(() => { console.error = originalConsoleError; });
-  beforeEach(() => { jest.clearAllMocks(); });
+  beforeEach(() => {
+    consoleErrorSpy = suppressConsoleError();
+    jest.clearAllMocks();
+  });
+  afterEach(() => { consoleErrorSpy?.mockRestore(); });
 
   it('deve retornar 401 sem token para método GET', async () => {
     getAuthToken.mockReturnValueOnce(null);

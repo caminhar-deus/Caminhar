@@ -1,8 +1,9 @@
-import { describe, it, expect, jest, beforeEach, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../../../../pages/api/admin/backups.js';
 import { createBackup } from '../../../../scripts/backup.js';
 import fs from 'fs';
+import { suppressConsoleError } from '../../../helpers/console.js';
 
 // Mock do DB para controlar a query de roles do RBAC (createAdminHandler)
 jest.mock('../../../../lib/infra/db.js', () => require('../../../mocks/db-module').mockDb());
@@ -20,11 +21,10 @@ jest.mock('../../../../scripts/backup.js', () => ({
 jest.mock('fs');
 
 describe('API Admin - Backups (/api/admin/backups)', () => {
-  const originalConsoleError = console.error;
+  let consoleErrorSpy;
 
-  beforeAll(() => { console.error = () => {}; });
-  afterAll(() => { console.error = originalConsoleError; });
   beforeEach(() => {
+    consoleErrorSpy = suppressConsoleError();
     jest.clearAllMocks();
 
     // createAdminHandler consulta roles.permissions (RBAC) antes do handler:
@@ -37,6 +37,7 @@ describe('API Admin - Backups (/api/admin/backups)', () => {
       return { rows: [], rowCount: 0 };
     });
   });
+  afterEach(() => { consoleErrorSpy?.mockRestore(); });
 
   it('GET: deve retornar 403 se o usuário não for admin e não tiver permissão', async () => {
     // O catch do adminCrudHandler também devolve 403 quando a query de roles

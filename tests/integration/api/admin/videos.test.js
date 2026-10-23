@@ -1,8 +1,9 @@
-import { describe, it, expect, jest, beforeEach, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../../../../pages/api/admin/videos.js';
 import { getPaginatedVideos, createVideo, updateVideo, deleteVideo, reorderVideos } from '../../../../lib/domain/videos.js';
 import { invalidateCache } from '../../../../lib/cache/cache.js';
+import { suppressConsoleError } from '../../../helpers/console.js';
 
 jest.mock('../../../../lib/auth/auth.js', () => ({
   withAuth: (handler) => async (req, res) => {
@@ -25,11 +26,13 @@ jest.mock('../../../../lib/cache/cache.js', () => ({
 }));
 
 describe('API Admin - Vídeos (/api/admin/videos)', () => {
-  const originalConsoleError = console.error;
+  let consoleErrorSpy;
 
-  beforeAll(() => { console.error = () => {}; });
-  afterAll(() => { console.error = originalConsoleError; });
-  beforeEach(() => { jest.clearAllMocks(); });
+  beforeEach(() => {
+    consoleErrorSpy = suppressConsoleError();
+    jest.clearAllMocks();
+  });
+  afterEach(() => { consoleErrorSpy?.mockRestore(); });
 
   it('deve retornar 403 se o usuário não for admin', async () => {
     const { req, res } = createMocks({ method: 'GET' });

@@ -1,16 +1,15 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, jest, beforeAll, beforeEach, afterAll } from '@jest/globals';
+import { describe, it, expect, jest, beforeAll, beforeEach, afterEach, afterAll } from '@jest/globals';
 import Testimonials from '../../../../../components/Features/Testimonials/index.js';
-import { mockGlobalFetch } from '../../../../helpers/index.js';
+import { mockGlobalFetch, suppressConsoleError } from '../../../../helpers/index.js';
 
 describe('Componentes Features - Testimonials', () => {
-  const originalConsoleError = console.error;
   let fetchMock;
+  let consoleErrorSpy;
   let originalClientWidth, originalScrollWidth, originalScrollLeft;
 
   beforeAll(() => {
-    console.error = jest.fn();
     fetchMock = mockGlobalFetch();
 
     originalClientWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth');
@@ -24,7 +23,6 @@ describe('Componentes Features - Testimonials', () => {
   });
 
   afterAll(() => {
-    console.error = originalConsoleError;
     fetchMock?.mockRestore();
     delete HTMLElement.prototype.scrollBy;
 
@@ -34,8 +32,10 @@ describe('Componentes Features - Testimonials', () => {
   });
 
   beforeEach(() => {
+    consoleErrorSpy = suppressConsoleError();
     fetchMock.mockClear();
   });
+  afterEach(() => { consoleErrorSpy?.mockRestore(); });
 
   it('deve exibir as dicas retornadas pela API com sucesso', async () => {
     const mockDicas = {
@@ -60,7 +60,7 @@ describe('Componentes Features - Testimonials', () => {
     render(<Testimonials />);
 
     await waitFor(() => {
-      expect(console.error).toHaveBeenCalledWith('Erro ao buscar as dicas do dia:', expect.any(Error));
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Erro ao buscar as dicas do dia:', expect.any(Error));
     });
 
     expect(screen.queryByText('Dicas do Dia')).not.toBeInTheDocument();

@@ -9,7 +9,6 @@
  * Inclui apenas:
  * - Polyfills de APIs Node.js (ReadableStream, MessageChannel)
  * - Custom matchers
- * - Filtro de console.error para warnings conhecidos
  */
 
 // ============================================================================
@@ -67,27 +66,6 @@ jest.unmock('pg');
     }
   }
 })();
-
-// ============================================================================
-// FILTRO DE console.error
-// ============================================================================
-
-const originalConsoleError = console.error;
-
-const KNOWN_API_WARNINGS = [
-  'API /api/posts retornou conteúdo inválido',
-  'Isso geralmente significa que a rota API quebrou',
-];
-
-console.error = (...args) => {
-  if (
-    typeof args[0] === 'string' &&
-    KNOWN_API_WARNINGS.some(pattern => args[0].includes(pattern))
-  ) {
-    return;
-  }
-  originalConsoleError.call(console, ...args);
-};
 
 // ============================================================================
 // CLEANUP AUTOMÁTICO

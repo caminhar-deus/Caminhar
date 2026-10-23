@@ -133,54 +133,6 @@ configure({
 });
 
 // ============================================================================
-// MOCK GLOBAIS
-// ============================================================================
-
-// Substituição direta do console.error para filtrar warnings conhecidos
-// Não usa jest.spyOn para evitar conflitos com o ciclo de restauração do Jest entre suítes de teste
-const originalConsoleError = console.error;
-
-const REACT_DEPRECATION_WARNINGS = [
-  'Warning: ReactDOM.render is no longer supported',
-  'Warning: React.createFactory()',
-];
-
-const KNOWN_API_WARNINGS = [
-  'API /api/posts retornou conteúdo inválido',
-  'Isso geralmente significa que a rota API quebrou',
-];
-
-const KNOWN_INTENTIONAL_AUTH_ERRORS = [
-  'Erro ao inicializar sistema de autenticação',
-  'Falha ao armazenar refresh token',
-];
-
-// Avisos de renderização do React 19. O aviso abaixo é emitido uma única vez
-// por worker quando um <script> executável é renderizado pela árvore React no
-// cliente — situação produzida apenas pelo teste de sanidade do mock de
-// next/script (tests/mocks/next.js -> mockNextScript), não pelo código de produção.
-const KNOWN_REACT_RENDERING_WARNINGS = [
-  'Encountered a script tag while rendering React component',
-];
-
-const ALL_FILTERS = [
-  ...REACT_DEPRECATION_WARNINGS,
-  ...KNOWN_API_WARNINGS,
-  ...KNOWN_INTENTIONAL_AUTH_ERRORS,
-  ...KNOWN_REACT_RENDERING_WARNINGS,
-];
-
-console.error = (...args) => {
-  if (
-    typeof args[0] === 'string' &&
-    ALL_FILTERS.some(pattern => args[0].includes(pattern))
-  ) {
-    return;
-  }
-  originalConsoleError.call(console, ...args);
-};
-
-// ============================================================================
 // CLEANUP AUTOMÁTICO
 // ============================================================================
 

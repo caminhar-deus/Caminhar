@@ -1,6 +1,7 @@
 import { describe, it, expect, jest } from '@jest/globals';
 import { hashPassword, verifyPassword, generateToken, verifyToken, setAuthCookie, getAuthToken, authenticate, authenticateAndGenerateToken, refreshAccessToken, withAuth, initializeAuth } from '../../../lib/auth/auth.js';
 import { query } from '../../../lib/infra/db.js';
+import { filterConsoleError } from '../../helpers/console.js';
 
 jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb());
 jest.mock('../../../lib/cache/cache.js', () => ({
@@ -57,12 +58,20 @@ describe('Library - Auth', () => {
     query.mockResolvedValueOnce({ rows: [{ permissions: '["Visão Geral"]' }] }); // Busca permissões (TEXT → string JSON)
     query.mockRejectedValueOnce(new Error('DB Error')); // Falha ao armazenar refresh token
 
-    const result = await authenticateAndGenerateToken('admin', '123456', '127.0.0.1');
-    expect(result.error).toBeNull();
-    expect(result.token).toBeDefined();
-    expect(result.refreshToken).toBeNull();
-    expect(result.user.permissions).toEqual(['Visão Geral']);
-    expect(result.permissionsLoaded).toBe(true);
+    const consoleErrorSpy = filterConsoleError(['Falha ao armazenar refresh token']);
+    try {
+      const result = await authenticateAndGenerateToken('admin', '123456', '127.0.0.1');
+      expect(result.error).toBeNull();
+      expect(result.token).toBeDefined();
+      expect(result.refreshToken).toBeNull();
+      expect(result.user.permissions).toEqual(['Visão Geral']);
+      expect(result.permissionsLoaded).toBe(true);
+      // O log intencional de "Falha ao armazenar refresh token" realmente
+      // ocorreu — asserta antes do mockRestore, que limpa as chamadas do spy
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Falha ao armazenar refresh token'));
+    } finally {
+      consoleErrorSpy.mockRestore();
+    }
   });
 
   it('refreshAccessToken: devolve user.permissions normalizado a partir do TEXT do banco', async () => {
@@ -189,14 +198,31 @@ describe('Library - Auth', () => {
 
   it('initializeAuth: lança erro se credenciais de admin não estiverem no env', async () => {
     delete process.env.ADMIN_USERNAME;
-    await expect(initializeAuth()).rejects.toThrow('ADMIN_USERNAME and ADMIN_PASSWORD environment variables must be set');
+    const consoleErrorSpy = filterConsoleError(['Erro ao inicializar sistema de autenticação']);
+    try {
+      await expect(initializeAuth()).rejects.toThrow('ADMIN_USERNAME and ADMIN_PASSWORD environment variables must be set');
+      // O log intencional de "Erro ao inicializar..." realmente ocorreu (o erro
+      // interno é logado antes de ser relançado, mesmo sem credenciais no env).
+      // Asserta antes do mockRestore, que limpa as chamadas do spy
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Erro ao inicializar sistema de autenticação'));
+    } finally {
+      consoleErrorSpy.mockRestore();
+    }
   });
 
   it('initializeAuth: repassa erros do banco de dados e loga no console', async () => {
     process.env.ADMIN_USERNAME = 'admin';
     process.env.ADMIN_PASSWORD = 'password';
     query.mockRejectedValueOnce(new Error('DB Error'));
-    
-    await expect(initializeAuth()).rejects.toThrow('DB Error');
+
+    const consoleErrorSpy = filterConsoleError(['Erro ao inicializar sistema de autenticação']);
+    try {
+      await expect(initializeAuth()).rejects.toThrow('DB Error');
+      // O log intencional de "Erro ao inicializar..." realmente ocorreu —
+      // asserta antes do mockRestore, que limpa as chamadas do spy
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Erro ao inicializar sistema de autenticação'));
+    } finally {
+      consoleErrorSpy.mockRestore();
+    }
   });
 });

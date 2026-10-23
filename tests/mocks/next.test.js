@@ -14,6 +14,7 @@
 import { jest, describe, it, expect } from '@jest/globals';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { filterConsoleError } from '../helpers/console.js';
 
 // Importa o setup centralizado que registra todos os jest.mock()
 import './next-setup.js';
@@ -117,12 +118,25 @@ describe('Mocks do Next.js (Sanidade)', () => {
   describe('next/script', () => {
     it('deve renderizar como elemento script', async () => {
       const { default: NextScript } = await import('next/script');
-      const { container } = render(
-        React.createElement(NextScript, { src: '/test.js' })
-      );
-      const script = container.querySelector('script');
-      expect(script).toBeInTheDocument();
-      expect(script).toHaveAttribute('src', '/test.js');
+      const consoleErrorSpy = filterConsoleError(['Encountered a script tag while rendering React component']);
+      try {
+        const { container } = render(
+          React.createElement(NextScript, { src: '/test.js' })
+        );
+        const script = container.querySelector('script');
+        expect(script).toBeInTheDocument();
+        expect(script).toHaveAttribute('src', '/test.js');
+        // O mock produz um <script> executável de verdade — é por isso que o
+        // React 19 emite o aviso de renderização, e é essa prova que o teste
+        // de sanidade busca (o aviso é esperado, não é ruído). Asserta antes
+        // do mockRestore, que limpa as chamadas do spy. A assinatura real é
+        // console.error(string) — uma única string formatada
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          expect.stringContaining('Encountered a script tag while rendering React component')
+        );
+      } finally {
+        consoleErrorSpy.mockRestore();
+      }
     });
   });
 
