@@ -591,10 +591,12 @@ tests/integration/api/admin/audit.test.js → tests/mocks/db-module.js
 tests/integration/api/admin/backups.test.js → lib/infra/db.js
 tests/integration/api/admin/backups.test.js → pages/api/admin/backups.js
 tests/integration/api/admin/backups.test.js → scripts/backup.js
+tests/integration/api/admin/backups.test.js → tests/helpers/console.js
 tests/integration/api/admin/backups.test.js → tests/mocks/db-module.js
 tests/integration/api/admin/cache.test.js → lib/auth/auth.js
 tests/integration/api/admin/cache.test.js → lib/cache/cache.js
 tests/integration/api/admin/cache.test.js → pages/api/admin/cache.js
+tests/integration/api/admin/cache.test.js → tests/helpers/console.js
 tests/integration/api/admin/dicas.test.js → lib/domain/audit.js
 tests/integration/api/admin/dicas.test.js → lib/infra/db.js
 tests/integration/api/admin/dicas.test.js → lib/infra/logger.js
@@ -661,6 +663,7 @@ tests/integration/api/admin/users.test.js → tests/mocks/db-module.js
 tests/integration/api/admin/videos.test.js → lib/cache/cache.js
 tests/integration/api/admin/videos.test.js → lib/domain/videos.js
 tests/integration/api/admin/videos.test.js → pages/api/admin/videos.js
+tests/integration/api/admin/videos.test.js → tests/helpers/console.js
 tests/integration/api/audit.test.js → lib/domain/audit.js
 tests/integration/api/audit.test.js → lib/infra/db.js
 tests/integration/api/auth/check.test.js → lib/auth/auth.js
@@ -777,6 +780,7 @@ tests/matchers/index.js → tests/matchers/toHaveHeader.js
 tests/matchers/index.js → tests/matchers/toHaveProperties.js
 tests/matchers/index.js → tests/matchers/toHaveStatus.js
 tests/mocks/next-setup.js → tests/mocks/next.js
+tests/mocks/next.test.js → tests/helpers/console.js
 tests/mocks/next.test.js → tests/mocks/next-setup.js
 tests/setup.db.js → tests/matchers/index.js
 tests/setup.js → tests/helpers/async-polyfills.js
@@ -909,6 +913,7 @@ tests/unit/lib/api/permissions.test.js → lib/infra/logger.js
 tests/unit/lib/api/permissions.test.js → tests/mocks/db-module.js
 tests/unit/lib/auth.test.js → lib/auth/auth.js
 tests/unit/lib/auth.test.js → lib/infra/db.js
+tests/unit/lib/auth.test.js → tests/helpers/console.js
 tests/unit/lib/auth.test.js → tests/mocks/db-module.js
 tests/unit/lib/backup/backup.available.test.js → scripts/backup.js
 tests/unit/lib/backup/backup.cleanup.test.js → scripts/backup.js

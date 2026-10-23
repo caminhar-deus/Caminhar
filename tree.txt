@@ -570,6 +570,7 @@
 │   ├── DEPLOY_proxy_e_IP.md
 │   ├── PENDENCIAS_scripts_testes.md
 │   ├── PENDENCIAS_seguranca-rotas-api.md
+│   ├── PLANO_ACAO_P3_FILTRO_CONSOLE.md
 │   ├── PLANO_ACAO_SITE_PUBLICO.md
 │   ├── PROJECT_components.md
 │   ├── PROJECT_cypress.md
@@ -615,6 +616,9 @@
 │   │   ├── 0015-link-externo-assistir-no-youtube-no-cartao-de-video.md
 │   │   ├── 0016-seletor-de-ordenacao-de-produtos-no-servidor.md
 │   │   ├── 0017-checagem-de-permissao-modulo-compartilhado-e-protecao-por-rota.md
+│   │   ├── 0018-rewrite-wip-history-before-publishing.md
+│   │   ├── 0019-pr-only-comment-steps-stay-in-coverage-report.md
+│   │   ├── 0020-supressao-de-console-error-local-por-teste.md
 │   │   ├── README.md
 │   │   └── template.md
 │   └── ai-memory-error.md
@@ -1323,6 +1327,8 @@
 │       │   │   └── load-env.test.js
 │       │   └── validate-schema.test.js
 │       ├── settings.cache.test.js
+│       ├── tests-hygiene
+│       │   └── console-no-global-assignment.test.js
 │       ├── utils
 │       │   ├── reorder.test.js
 │       │   └── resolve-next.test.js
@@ -1336,4 +1342,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-204 directories, 1133 files
+205 directories, 1138 files
