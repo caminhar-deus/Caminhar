@@ -71,7 +71,9 @@ Detalhes de operação do slim (matriz de pesquisa websearch/webfetch/gh_grep/co
 ## 5. Qualidade front-end (Front-End-Checklist)
 - Revisar **depois** de implementar, só no que mudou (acessibilidade, performance, SEO, segurança, i18n).
 - Listar violações com arquivo, regra, gravidade e correção.
-- O MCP remoto recebe o código de `review_code` e a URL de `audit_url`: só com aprovação explícita e nunca com código sensível. Preferir a skill local.
+- Fonte: o MCP remoto `frontend-checklist` (ligado em 23/10/2026, ADR-0022) tem 11 ferramentas só de leitura (`review_code`, `audit_url`, `get_rule`, `fix_rule`, `explain_rule`, `check_rule`, `search_rules`, `get_workflow`, `get_checklist_rules`, `get_quick_reference`, `list_categories`), sem autenticação. Só **orchestrator e oracle** o usam; a revisão de entrega é sempre do oracle.
+- Custos e limites reais: `review_code` envia o trecho de código ao servidor do fornecedor e `audit_url` envia a URL pública — **nunca com código sensível** (segredos, `.env`, credenciais). A skill local `frontend-checklist-global` cobre o mesmo corpus de regras sem enviar código, mas não tem as ferramentas de auditoria de código/URL; prefira-a para consulta de regra isolada.
+- `review_code` e `audit_url` só entram em cena quando o pedido for revisar código ou auditar URL — nunca por iniciativa própria, e nunca com código sensível. Consulta de regra (`get_rule`, `search_rules`, `fix_rule`) não envia código do projeto e é sempre segura.
 
 ## 6. Segurança e limites
 - Sem comandos destrutivos (`rm -rf`, `git reset --hard`, `git push --force`, drop de banco) sem confirmação.

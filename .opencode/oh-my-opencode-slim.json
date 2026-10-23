@@ -258,11 +258,12 @@
   // "<mcp>_*": allow para os nomes listados, deny para todo MCP disponível fora da lista
   // (parseList com "!" de negação).
   //
-  //   MCP       | orchestrator | explorer | designer/fixer/oracle
-  //   ----------|--------------|----------|-----------------------------
-  //   gh_grep   | allow        | allow    | deny
-  //   context7  | deny         | allow    | deny
-  //   ai-memory | allow        | deny     | deny  (o orchestrator é quem consulta a memória)
+  //   MCP                | orchestrator | explorer | designer/fixer | oracle
+  //   -------------------|--------------|----------|----------------|-------
+  //   gh_grep            | allow        | allow    | deny           | deny
+  //   context7           | deny         | allow    | deny           | deny
+  //   ai-memory          | allow        | deny     | deny           | deny  (o orchestrator é quem consulta a memória)
+  //   frontend-checklist | allow        | deny     | deny           | allow (revisão de código/URL; ligado em 23/10/2026, ADR-0022)
   //
   // 18/10/2026: o slim 3.0.5 fundiu o librarian no explorer (MARKETPLACE_BUILTIN_RENAMES no
   // dist/index.js: librarian -> explorer). A linha "librarian" da matriz deixou de existir e as
@@ -272,17 +273,19 @@
   // em `.opencode/oh-my-opencode-slim/explorer_append.md`.
   //
   // Listas explícitas, sem "*": assim o context7 fica deny no orchestrator de forma explícita, e as
-  // listas vazias fixam o deny dos demais agentes em vez de depender do padrão do plugin. Nada além de
-  // gh_grep/ai-memory entra no orchestrator — até o frontend-checklist (MCP remoto, desligado) cai para deny.
+  // listas vazias fixam o deny dos demais agentes em vez de depender do padrão do plugin.
+  // 23/10/2026 (ADR-0022): o frontend-checklist (MCP remoto) foi LIGADO e concedido a orchestrator e
+  // oracle. O oracle é o dono da revisão de checklist (AGENTS.md §5); o orchestrator tem acesso para
+  // consultar regra isolada sem abrir lane. designer/fixer continuam em deny: quem revisa é o oracle.
   // websearch NÃO entra aqui: é ferramenta nativa do host, não MCP — ela é controlada por permissão em
   // opencode.jsonc (bloco "agent"). O slim NÃO recarrega config a quente: o efeito aparece no próximo
   // start do host/service (`opencode debug agents` antes disso mostra o valor antigo).
   "agents": {
-    "orchestrator": { "mcps": ["gh_grep", "ai-memory"] },
+    "orchestrator": { "mcps": ["gh_grep", "ai-memory", "frontend-checklist"] },
     "explorer":     { "mcps": ["context7", "gh_grep"] },
     "designer":     { "mcps": [] },
     "fixer":        { "mcps": [] },
-    "oracle":       { "mcps": [] }
+    "oracle":       { "mcps": ["frontend-checklist"] }
   },
 
   // MCPs embutidos do plugin (todos REMOTOS), os únicos dois: context7 -> mcp.context7.com ; gh_grep -> mcp.grep.app.

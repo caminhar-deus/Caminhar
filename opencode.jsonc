@@ -157,13 +157,18 @@
 
   // Formato v2: servidores em "mcp.servers", com "disabled" (não "enabled").
   "mcp": {
-    // Front-End-Checklist (MCP REMOTO). DESLIGADO: review_code envia código ao servidor deles.
-    // Ligue só numa sessão consciente. Alternativa local: a skill frontend-checklist-global (concedida ao oracle no slim).
+    // Front-End-Checklist (MCP REMOTO), LIGADO em 2026-10-23 (ADR-0022).
+    // Servidor: https://mcp.frontendchecklist.io — sem autenticação, 11 ferramentas só de leitura.
+    // PRIVACIDADE: `review_code` envia o trecho de código ao servidor deles (declarado como não
+    // armazenado/não logado, com telemetria anônima — afirmação do fornecedor, não verificável aqui);
+    // `audit_url` envia apenas a URL pública. Não use com código sensível (AGENTS.md §5).
+    // Acesso por agente é decidido no slim (".opencode/oh-my-opencode-slim.json" > "agents"): hoje
+    // orchestrator e oracle. Para desligar de vez: volte "disabled" para true e reinicie o host.
     "servers": {
       "frontend-checklist": {
         "type": "remote",
         "url": "https://mcp.frontendchecklist.io",
-        "disabled": true
+        "disabled": false
       }
     }
     // ai-memory: não escreva à mão; use `ai-memory install-mcp --client opencode --apply`.

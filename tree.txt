@@ -627,6 +627,7 @@
 │   │   ├── 0019-pr-only-comment-steps-stay-in-coverage-report.md
 │   │   ├── 0020-supressao-de-console-error-local-por-teste.md
 │   │   ├── 0021-cobertura-do-handler-de-erro-fatal-do-pool-postgresql-em-lib-infra-db.js.md
+│   │   ├── 0022-enable-frontend-checklist-remote-mcp.md
 │   │   ├── README.md
 │   │   └── template.md
 │   └── ai-memory-error.md
@@ -1350,4 +1351,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-205 directories, 1146 files
+205 directories, 1147 files

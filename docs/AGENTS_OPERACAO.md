@@ -10,17 +10,18 @@
 
 "Não edita" é imposto pelo bloco `agent` do `opencode.jsonc` (`edit` e `ast_grep_replace` em `deny` para explorer e oracle) — o `permission` do `.opencode/oh-my-opencode-slim.json` NÃO é aplicado aos papéis built-in neste host; conferir com `opencode debug agents`. O terminal desses dois NÃO pode ser negado: com `bash` em `deny` eles caem com erro de free tier.
 
-## 2. Matriz de pesquisa (websearch, webfetch, gh_grep, context7, ai-memory)
+## 2. Matriz de pesquisa (websearch, webfetch, gh_grep, context7, ai-memory, frontend-checklist)
 
-Definida em 13/10/2026, com `webfetch` acrescentado em 14/10/2026 e a coluna `librarian` removida em 18/10/2026 (merge do slim 3.0.5). São três mecanismos diferentes, em três lugares diferentes:
+Definida em 13/10/2026, com `webfetch` acrescentado em 14/10/2026, a coluna `librarian` removida em 18/10/2026 (merge do slim 3.0.5) e `frontend-checklist` ligado em 23/10/2026 (ADR-0022). São três mecanismos diferentes, em três lugares diferentes:
 
-| Recurso | Tipo | Onde é controlado | orchestrator | explorer | designer/fixer/oracle |
-|---|---|---|---|---|---|
-| `context7` | MCP remoto (plugin slim) | `agents.<agente>.mcps` em `.opencode/oh-my-opencode-slim.json` | deny | allow | deny |
-| `gh_grep` | MCP remoto (plugin slim) | idem | allow | allow | deny |
-| `ai-memory` | MCP remoto (host) | idem | allow | deny | deny |
-| `websearch` | **ferramenta nativa do host** (não é MCP) | bloco `agent.permission` do `opencode.jsonc` | allow | allow | deny |
-| `webfetch` | **ferramenta nativa do host** (não é MCP) | idem | ask | ask | deny |
+| Recurso | Tipo | Onde é controlado | orchestrator | explorer | designer/fixer | oracle |
+|---|---|---|---|---|---|---|
+| `context7` | MCP remoto (plugin slim) | `agents.<agente>.mcps` em `.opencode/oh-my-opencode-slim.json` | deny | allow | deny | deny |
+| `gh_grep` | MCP remoto (plugin slim) | idem | allow | allow | deny | deny |
+| `ai-memory` | MCP remoto (host) | idem | allow | deny | deny | deny |
+| `frontend-checklist` | MCP remoto (host) | idem | allow | deny | deny | allow |
+| `websearch` | **ferramenta nativa do host** (não é MCP) | bloco `agent.permission` do `opencode.jsonc` | allow | allow | deny | deny |
+| `webfetch` | **ferramenta nativa do host** (não é MCP) | idem | ask | ask | deny | deny |
 
 ### Regras que evitam erro
 
