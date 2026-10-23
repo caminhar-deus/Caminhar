@@ -30,6 +30,7 @@ apoio, não a fonte oficial; a decisão não é duplicada como página de memór
 | [0018](0018-rewrite-wip-history-before-publishing.md) | Reescrever o histórico de um WIP antes de publicar, nunca depois do merge | Aceito | 2026-10-22 |
 | [0019](0019-pr-only-comment-steps-stay-in-coverage-report.md) | Os steps de comentário de PR ficam guardados dentro do job `coverage-report` | Aceito | 2026-10-22 |
 | [0020](0020-supressao-de-console-error-local-por-teste.md) | Supressão de `console.error` é local ao teste que a provoca, nunca global no setup | Aceito | 2026-10-22 |
+| [0021](0021-cobertura-do-handler-de-erro-fatal-do-pool-postgresql-em-lib-infra-db.js.md) | Cobertura do handler de erro fatal do pool PostgreSQL em `lib/infra/db.js` | Aceito | 2026-10-23 |
 
 ## Quando criar um ADR
 
