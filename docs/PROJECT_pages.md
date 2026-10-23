@@ -292,15 +292,16 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
 - **Arquivos acionados/relacionados:**
   - `lib/domain/videos.js` — `getPublicPaginatedVideos()`.
   - `lib/cache/cache.js` — `getOrSetCache`, `checkRateLimit`.
-  - `lib/api/helpers.js` — `getClientIP`, `INVALID_PAGINATION_MESSAGE`.
+  - `lib/api/helpers.js` — `getClientIP`, `INVALID_PAGINATION_MESSAGE`, `INVALID_PARAMS_MESSAGE`.
+  - `zod` — validação do query string (`page`, `limit`, `search`, `sort`).
   - `lib/infra/logger.js` — `logger`.
 - **Propósito:** Endpoint público de listagem de vídeos com paginação, busca e ordenação.
 - **Funcionalidades:**
   - Método GET apenas (405 sem header `Allow`).
-  - Paginação manual (`parseInt` sem helper) com validação básica (page ≥ 1, 1 ≤ limit ≤ 100) — o 400 usa `INVALID_PAGINATION_MESSAGE` de `lib/api/helpers.js` (constante desde 16/10/2026).
-  - Ordenação via `SORT_MAP` (`recent`, `oldest`, `alpha`, `alpha_desc`) com fallback para `recent`.
+  - **[Correção 23/10/2026]** Paginação/parâmetros validados com Zod (mesmo padrão de `musicas.js`): `page` (inteiro positivo, default 1), `limit` (1–100, default 10 — o 400 usa `INVALID_PAGINATION_MESSAGE` de `lib/api/helpers.js`), `search` (string, máximo 200 caracteres) e `sort` (enum **estreito** `recent | oldest | alpha | alpha_desc`, default `recent`). Valor fora do enum devolve **400** com `INVALID_PARAMS_MESSAGE` — antes havia fallback silencioso para `recent`, que fazia um script de carga que mandasse `sort=created_at` validar o default em vez do parâmetro.
+  - Ordenação via `SORT_MAP` com desempate determinístico por `id` na MESMA direção da coluna principal (`created_at DESC, id DESC`, `created_at ASC, id ASC`, `titulo ASC, id ASC`, `titulo DESC, id DESC`) — sem ele, itens empatados poderiam trocar de posição entre páginas.
   - **Rate limiting antes do cache** (`api:public:videos`) — diferente de `musicas.js`/`posts.js`/`dicas.js`, que aplicam dentro do callback.
-  - Cache via `getOrSetCache` com chave `public_videos:${page}:${limit}:${search}:${sort}`.
+  - Cache via `getOrSetCache` com chave `public_videos:${page}:${limit}${search ? ':'+search : ''}:${sort}`, usando `sort`/`search` **já validados** (nunca o valor cru da query).
   - Delega a busca para `getPublicPaginatedVideos()` em `lib/domain/videos.js`.
   - Cache-Control: `public, max-age=0, s-maxage=300, stale-while-revalidate=600`.
 

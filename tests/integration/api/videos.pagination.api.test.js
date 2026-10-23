@@ -1,102 +1,63 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 
-// Mock da biblioteca de vídeos
-// Ajuste o caminho '../lib/videos' se sua função estiver em outro lugar (ex: '../lib/domain/videos')
-jest.mock('../lib/videos', () => ({
-  getPaginatedVideos: jest.fn(),
-}), { virtual: true });
+import { INVALID_PAGINATION_MESSAGE } from '../../../lib/api/helpers.js';
 
-const videosLib = jest.requireMock('../lib/videos');
+// Mocks declarados ANTES da importação do handler (mesmo padrão de videos.test.js).
+// Antes este arquivo mockava '../lib/videos' com { virtual: true } — caminho
+// inexistente — e testava um handler FALSO. Agora exercita o handler real.
+jest.mock('../../../lib/domain/videos.js', () => ({
+  getPublicPaginatedVideos: jest.fn(),
+}));
 
-// Simulação do handler da API para fins de teste de integração
-// Isso valida como o controller processa a requisição GET com query params
-const videosHandler = async (req, res) => {
-  const { method, query } = req;
+jest.mock('../../../lib/cache/cache.js', () => require('../../mocks/cache').mockCacheModule());
 
-  if (method !== 'GET') {
-    return res.status(405).json({ message: 'Method Not Allowed' });
-  }
+// Importa o handler real
+import handler from '../../../pages/api/videos.js';
 
-  try {
-    // Extrai e converte os parâmetros de paginação (com valores padrão)
-    const page = parseInt(query.page || '1', 10);
-    const limit = parseInt(query.limit || '10', 10);
-
-    // Chama a função de domínio mockada
-    const result = await videosLib.getPaginatedVideos(page, limit);
-    
-    return res.status(200).json(result);
-  } catch {
-    return res.status(500).json({ message: 'Erro interno ao buscar vídeos' });
-  }
-};
+// Importa as funções mockadas para controlá-las
+import { getPublicPaginatedVideos } from '../../../lib/domain/videos.js';
+import { getOrSetCache, checkRateLimit } from '../../../lib/cache/cache.js';
 
 describe('API de Vídeos - Paginação (/api/videos)', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    getPublicPaginatedVideos.mockClear();
+    getOrSetCache.mockImplementation(async (key, cb) => await cb());
+    checkRateLimit.mockResolvedValue(false);
   });
 
-  it('deve retornar a lista de vídeos paginada com sucesso (status 200)', async () => {
-    const mockResult = {
-      videos: [
-        { id: 1, title: 'Vídeo 1', url: 'https://youtube.com/1' },
-        { id: 2, title: 'Vídeo 2', url: 'https://youtube.com/2' }
-      ],
-      pagination: {
-        page: 1,
-        limit: 10,
-        total: 2,
-        totalPages: 1
-      }
-    };
+  it('deve paginar com page/limit informados e repassar o orderBy default com desempate', async () => {
+    getPublicPaginatedVideos.mockResolvedValueOnce({ data: [], pagination: { page: 2, limit: 5 } });
 
     const { req, res } = createMocks({
       method: 'GET',
-      query: { page: '1', limit: '10' },
+      query: { page: '2', limit: '5' },
     });
 
-    // Configura o mock para retornar os dados simulados
-    videosLib.getPaginatedVideos.mockResolvedValue(mockResult);
-
-    await videosHandler(req, res);
+    await handler(req, res);
 
     expect(res._getStatusCode()).toBe(200);
-    const data = JSON.parse(res._getData());
-    
-    expect(data).toEqual(mockResult);
-    expect(videosLib.getPaginatedVideos).toHaveBeenCalledWith(1, 10);
+    expect(getPublicPaginatedVideos).toHaveBeenCalledWith(2, 5, '', 'created_at DESC, id DESC');
   });
 
-  it('deve usar valores padrão para page e limit se não forem informados', async () => {
-    const { req, res } = createMocks({
-      method: 'GET',
-      query: {}, // Sem parâmetros
-    });
+  it('deve usar os defaults (page=1, limit=10, sort=recent) quando não informado', async () => {
+    getPublicPaginatedVideos.mockResolvedValueOnce({ data: [], pagination: {} });
 
-    videosLib.getPaginatedVideos.mockResolvedValue({ videos: [], pagination: {} });
+    const { req, res } = createMocks({ method: 'GET', query: {} });
 
-    await videosHandler(req, res);
+    await handler(req, res);
 
     expect(res._getStatusCode()).toBe(200);
-    // Verifica se chamou com os defaults (page=1, limit=10) definidos no handler
-    expect(videosLib.getPaginatedVideos).toHaveBeenCalledWith(1, 10);
+    expect(getPublicPaginatedVideos).toHaveBeenCalledWith(1, 10, '', 'created_at DESC, id DESC');
   });
 
-  it('deve retornar 500 se houver erro na camada de serviço', async () => {
-    const { req, res } = createMocks({ method: 'GET' });
+  it('deve retornar 400 com INVALID_PAGINATION_MESSAGE para limit acima de 100', async () => {
+    const { req, res } = createMocks({ method: 'GET', query: { limit: '101' } });
 
-    videosLib.getPaginatedVideos.mockRejectedValue(new Error('Erro de conexão com banco'));
+    await handler(req, res);
 
-    await videosHandler(req, res);
-
-    expect(res._getStatusCode()).toBe(500);
-    expect(JSON.parse(res._getData())).toEqual({ message: 'Erro interno ao buscar vídeos' });
-  });
-
-  it('deve retornar 405 para métodos não permitidos (ex: POST)', async () => {
-    const { req, res } = createMocks({ method: 'POST' });
-    await videosHandler(req, res);
-    expect(res._getStatusCode()).toBe(405);
+    expect(res._getStatusCode()).toBe(400);
+    expect(JSON.parse(res._getData()).message).toBe(INVALID_PAGINATION_MESSAGE);
+    expect(getPublicPaginatedVideos).not.toHaveBeenCalled();
   });
 });

@@ -401,12 +401,21 @@ function createSortOptions(resourceConfig) {
 
 /**
  * Cria a função default() para teste de ordenação.
+ *
+ * Regra nova (23/10/2026): teste de carga que não consegue validar não pode
+ * reportar verde. Antes, resposta sem array e datas inválidas eram soft pass
+ * (`return true`) — mascaravam violação de contrato como sucesso. Agora só
+ * `< 2` itens é inconclusivo (banco magro, decisão do dono); o resto reprova.
+ *
+ * `sortMode` é OBRIGATÓRIO: nenhuma rota pública entende o formato legado
+ * `sort=<campo>&order=<dir>` (o cron #19 e o fallback de /api/videos
+ * mostraram que ele só validava o default da rota, nunca o parâmetro).
  */
 function createSortDefault(resourceConfig) {
   const {
     publicEndpoint,
     sortMode,
-    sortField = 'created_at',
+    limit = null,
     sortOrder = 'desc',
     dateField = 'created_at',
     itemsPath,
@@ -415,11 +424,19 @@ function createSortDefault(resourceConfig) {
     sleepDuration = null,
   } = resourceConfig;
 
-  // Define a URL: se sortMode foi fornecido, usa o novo formato (API músicas).
-  // Caso contrário, usa o formato antigo sort + order (API vídeos).
-  const urlSuffix = sortMode
-    ? `sort=${sortMode}`
-    : `sort=${sortField}&order=${sortOrder}`;
+  if (!sortMode) {
+    throw new Error(
+      'createSortTest exige sortMode (formato legado sort=<campo>&order=<dir> não existe em nenhuma rota)'
+    );
+  }
+
+  // URL com os parâmetros validados: `sort` sempre (enum da rota) e `limit`
+  // só quando declarado — mede a MESMA entrada de cache que o componente usa.
+  // `page` fica implícito (default 1); nenhum outro parâmetro é inventado.
+  // Concatenção pura de propósito: o runtime do k6 (goja) não garante
+  // `URLSearchParams`, e os valores vêm de literais do `resourceConfig`
+  // (sem entrada de usuário), então não há o que codificar.
+  const urlSuffix = limit !== null ? `sort=${sortMode}&limit=${limit}` : `sort=${sortMode}`;
 
   const getItems = (body) => {
     if (itemsPath) {
@@ -463,11 +480,15 @@ function createSortDefault(resourceConfig) {
         }
 
         if (!Array.isArray(items)) {
-          console.warn(`⚠️ Resposta não continha um array de ${resourceName} para validar a ordenação.`);
-          return true;
+          // Violação de contrato da API, não "dados insuficientes": a rota
+          // promete uma lista e devolveu outra coisa → reprova.
+          console.warn(`⚠️ Resposta de ${resourceName} não era um array — contrato da API violado.`);
+          return false;
         }
 
         if (items.length < 2) {
+          // Único soft pass restante: banco magro é inconclusivo, não falha
+          // (decisão do dono, 23/10/2026).
           console.warn(`⚠️ Poucos ${resourceName} para validar ordenação. Adicione mais dados.`);
           return true;
         }
@@ -475,6 +496,10 @@ function createSortDefault(resourceConfig) {
         for (let i = 0; i < items.length - 1; i++) {
           const dateA = new Date(items[i][dateField] || items[i].createdAt).getTime();
           const dateB = new Date(items[i + 1][dateField] || items[i + 1].createdAt).getTime();
+          if (Number.isNaN(dateA) || Number.isNaN(dateB)) {
+            console.warn(`⚠️ Data inválida em ${dateField}/createdAt — não é possível validar a ordenação.`);
+            return false;
+          }
           if (sortOrder === 'desc' && dateA < dateB) return false;
           if (sortOrder === 'asc' && dateA > dateB) return false;
         }

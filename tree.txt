@@ -240,6 +240,7 @@
 │   │       ├── icons.js.html
 │   │       ├── index.html
 │   │       └── index.js.html
+│   ├── db.js.html
 │   ├── favicon.png
 │   ├── index.html
 │   ├── lcov-report
@@ -350,6 +351,7 @@
 │   │   │       ├── icons.js.html
 │   │   │       ├── index.html
 │   │   │       └── index.js.html
+│   │   ├── db.js.html
 │   │   ├── favicon.png
 │   │   ├── index.html
 │   │   ├── lib
@@ -360,6 +362,8 @@
 │   │   │   │   ├── index.html
 │   │   │   │   ├── index.js.html
 │   │   │   │   ├── middleware.js.html
+│   │   │   │   ├── pagination.js.html
+│   │   │   │   ├── permissions.js.html
 │   │   │   │   ├── response.js.html
 │   │   │   │   ├── utils.js.html
 │   │   │   │   └── validate.js.html
@@ -453,6 +457,8 @@
 │   │   │   ├── index.html
 │   │   │   ├── index.js.html
 │   │   │   ├── middleware.js.html
+│   │   │   ├── pagination.js.html
+│   │   │   ├── permissions.js.html
 │   │   │   ├── response.js.html
 │   │   │   ├── utils.js.html
 │   │   │   └── validate.js.html
@@ -570,6 +576,7 @@
 │   ├── DEPLOY_proxy_e_IP.md
 │   ├── PENDENCIAS_scripts_testes.md
 │   ├── PENDENCIAS_seguranca-rotas-api.md
+│   ├── PLANO_ACAO_COBERTURA_DB_POOL_ERROR.md
 │   ├── PLANO_ACAO_P3_FILTRO_CONSOLE.md
 │   ├── PLANO_ACAO_SITE_PUBLICO.md
 │   ├── PROJECT_components.md
@@ -619,6 +626,7 @@
 │   │   ├── 0018-rewrite-wip-history-before-publishing.md
 │   │   ├── 0019-pr-only-comment-steps-stay-in-coverage-report.md
 │   │   ├── 0020-supressao-de-console-error-local-por-teste.md
+│   │   ├── 0021-cobertura-do-handler-de-erro-fatal-do-pool-postgresql-em-lib-infra-db.js.md
 │   │   ├── README.md
 │   │   └── template.md
 │   └── ai-memory-error.md
@@ -1342,4 +1350,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-205 directories, 1138 files
+205 directories, 1146 files

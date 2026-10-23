@@ -55,7 +55,7 @@ load-tests/
 │   ├── videos-filter-test.js    # Filtro/busca de vídeos por termos via factory
 │   ├── videos-load-test.js      # Carga em endpoint público de vídeos com paginação extra
 │   ├── videos-pagination-test.js # Paginação de vídeos via factory
-│   ├── videos-sort-test.js      # Ordenação de vídeos (sortField/sortOrder) via factory
+│   ├── videos-sort-test.js      # Ordenação de vídeos (sortMode) via factory
 │   ├── cache-warmup-test.js     # Warm-up de cache Redis/memória
 │   ├── cache-performance-test.js # Teste de performance de cache (quente vs frio)
 │   ├── pagination-test.js       # Teste manual de paginação (ES5.1 compatível)
@@ -291,7 +291,7 @@ Teste de paginação de vídeos usando factory `createPaginationTest()`. Endpoin
 - `load-tests/helpers/resource-test-runner.js` (importa `createSortTest`, `generateReport`)
 
 **Resumo do arquivo:**
-Teste de ordenação de vídeos usando factory `createSortTest()`. Endpoint: `/api/videos`. Usa formato antigo de ordenação (`sortField: 'created_at'`, `sortOrder: 'desc'`). Declara `useExplicitSort: true` que não é utilizado pela factory. Usa perfil `light` com threshold `checks: ['rate>0.85']`. Gera relatório `videos_sort_test`.
+Teste de ordenação de vídeos usando factory `createSortTest()`. Endpoint: `/api/videos`. Usa o enum da rota (`sortMode: 'recent'`) com `limit: 12` (paridade com o `limit` do componente `VideoGallery.js`, que é a entrada real de cache). Sem override de thresholds: gate herdado `checks: ['rate==1.0']` do perfil `light`. Gera relatório `videos_sort_test`. (Antes da correção de 23/10/2026 mandava `?sort=created_at&order=desc`, formato que nenhuma rota entende — caía no fallback `recent` e validava o default —, tinha uma chave de config morta nunca lida pelo runner e afrouxava o gate para 85%.)
 
 ---
 
@@ -573,12 +573,12 @@ Monitoramento de recuperação (Time To Recovery). Endpoint: `/api/posts`. Usa p
 **Qual é o problema:** A seção 2.2 do documento antigo tratava de "Código Morto e Inutilizado", não de IP spoofing. O conteúdo referenciado não corresponde ao que a seção entrega.
 **Ajuste necessário:** Atualizar o comentário para referenciar a seção correta (5.2 ou equivalente) ou remover a referência cruzada.
 
-### 4.2 `videos-sort-test.js` — Campo `useExplicitSort` não utilizado
+### 4.2 `videos-sort-test.js` — Campo `useExplicitSort` não utilizado — **RESOLVIDO em 23/10/2026**
 
 **O que foi encontrado:** Declaração de `useExplicitSort: true` no config.
 **Onde foi encontrado:** `load-tests/performance/videos-sort-test.js:9`
 **Qual é o problema:** A factory `createSortTest()` em `resource-test-runner.js` não faz referência a esse campo. O parâmetro não tem efeito no comportamento do teste.
-**Ajuste necessário:** Remover o campo ou implementar a funcionalidade correspondente no runner.
+**Ajuste aplicado:** o campo foi **removido** junto com a reescrita do `resourceConfig` (23/10/2026: `sortMode: 'recent'` + `limit: 12`, sem override de thresholds). A guarda contra reincidência é o teste bidirecional de chaves em `tests/unit/load-tests/sort-contract-coverage.test.js`: toda chave top-level de um `resourceConfig` de `createSortTest` precisa ser consumida pelo runner.
 
 ### 4.3 `config.js` — Função `getConfig()` não utilizada
 
@@ -717,7 +717,7 @@ O run nº 11 (sha `e50de03`, `conclusion: success`, bateria **30/30 passed**, jo
 - Paginação músicas: `rate==1.0` (100%)
 - Paginação vídeos: `rate>0.85` (85%)
 - Ordenação músicas: `rate==1.0` (100%)
-- Ordenação vídeos: `rate>0.85` (85%)
+- Ordenação vídeos: ~~85%~~ **100% (`rate==1.0`) desde 23/10/2026** — o override foi removido junto com a correção do `videos-sort-test.js` (o gate passou a valer de fato quando o script parou de cair no fallback da rota)
 
 **Benefício:** Consistência, comparação justa entre recursos.
 
@@ -765,15 +765,17 @@ O run nº 11 (sha `e50de03`, `conclusion: success`, bateria **30/30 passed**, jo
 
 **Evidência:** O cenário `stress_test` do stress test executa CRUD completo de vídeos (POST → PUT → DELETE), mesma funcionalidade de `videos-crud-test.js`, porém com 33× mais VUs (até 100 vs 3).
 
-### 6.7 `musicas-sort-test.js` vs `videos-sort-test.js` — Formatos de Ordenação Divergentes
+### 6.7 `musicas-sort-test.js` vs `videos-sort-test.js` — Formatos de Ordenação Divergentes — **RESOLVIDO em 23/10/2026**
 
 **Arquivos:** `load-tests/performance/musicas-sort-test.js` e `load-tests/performance/videos-sort-test.js`
 
-**Evidência:** Usam formatos diferentes de ordenação:
-- `musicas-sort-test.js`: `sortMode: 'recent'` (novo formato)
-- `videos-sort-test.js`: `sortField: 'created_at'` + `sortOrder: 'desc'` (formato antigo)
+**Evidência (quando levantada):** Usavam formatos diferentes de ordenação:
+- `musicas-sort-test.js`: `sortMode: 'default'` (formato enum da rota)
+- `videos-sort-test.js`: campo/ordem de data no estilo legado (`sort`+`order`), que a rota nem lia
 
-A divergência pode indicar inconsistência no backend.
+A divergência indicava inconsistência — e era pior: o formato do vídeo caía no fallback da rota e validava o default.
+
+**Ajuste aplicado:** os dois scripts usam `sortMode` (enum da rota). O runner passou a exigir `sortMode` e a montar a URL por concatenação simples da query string — sem `URLSearchParams`, que o runtime do k6 não garante — (+ `limit` opcional em vídeos).
 
 ### 6.8 Warm-up duplicado
 
@@ -798,13 +800,13 @@ Não há garantia de ordem de execução entre eles.
 
 **Classificação:** Código morto confirmado.
 
-### 7.2 `videos-sort-test.js` — Campo `useExplicitSort`
+### 7.2 `videos-sort-test.js` — Campo `useExplicitSort` — **RESOLVIDO em 23/10/2026**
 
-**Arquivo:** `load-tests/performance/videos-sort-test.js:9`
+**Arquivo:** `load-tests/performance/videos-sort-test.js:9` (linha da versão antiga)
 
-**Motivo:** O campo `useExplicitSort: true` é declarado no config mas não é lido pela factory `createSortTest()`.
+**Motivo:** O campo `useExplicitSort: true` era declarado no config mas não é lido pela factory `createSortTest()`.
 
-**Classificação:** Código morto confirmado (parâmetro órfão).
+**Classificação:** Código morto confirmado (parâmetro órfão). **Removido em 23/10/2026** — a guarda em `tests/unit/load-tests/sort-contract-coverage.test.js` (teste bidirecional de chaves) impede a volta de chaves órfãs nos `resourceConfig` de ordenação.
 
 ### 7.3 Possível código morto em `network.js`
 

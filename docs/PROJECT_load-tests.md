@@ -284,7 +284,7 @@ Todas as funções-fábrica retornam um objeto `{ options, default, reportName }
 | `createCrudTest(config)` | `adminEndpoint`, `payloadTemplate`, `resourceName`, `uniqueIdGenerator`, `profileName` | Gera options + default() para teste CRUD (create/update/delete) com métricas de erro e sleep entre operações |
 | `createFilterTest(config)` | `publicEndpoint`, `searchField`, `searchValues[]`, `responsePath`, `resourceName` | Gera options + default() para teste de filtro por termo de busca |
 | `createPaginationTest(config)` | `publicEndpoint`, `itemsPath`, `responsePath`, `resourceName`, `limit` | Gera options + default() para teste de paginação com validação cruzada de IDs entre páginas |
-| `createSortTest(config)` | `publicEndpoint`, `sortMode`/`sortField`+`sortOrder`, `itemsPath`, `dateField` | Gera options + default() para teste de ordenação (explícita ou comportamento padrão) com verificação de datas |
+| `createSortTest(config)` | `publicEndpoint`, `sortMode` (obrigatório), `limit`, `sortOrder`, `itemsPath`, `responsePath`, `dateField`, `resourceName`, `sleepDuration`, `profileName` | Gera options + default() para teste de ordenação com verificação de datas. `sortMode` é obrigatório desde 23/10/2026 (o formato legado `sort=<campo>&order=<dir>` foi removido do runner). URL montada por concatenação simples da query string (sem `URLSearchParams`, que o runtime do k6 não garante): `sort=<sortMode>` sempre, `limit=<n>` só quando declarado |
 | `createLoadTest(config)` | `endpoint`, `requireAuth`, `useSpoofIP`, `healthCheck`, `checkResponse`, `extraRequests[]`, `customSetup` | Gera options + setup() + default() para teste de carga com suporte a health check, IP spoofing e requisições extras |
 | `generateReport(data, testName)` | — | Re-export de `helpers/report.js` (único símbolo re-exportado; a cópia local de `sanitizeToken` foi removida em 17/10/2026 por ser código morto — ver `UPGRADE_load-tests.md` §4.4) |
 
@@ -293,7 +293,7 @@ Todas as funções-fábrica retornam um objeto `{ options, default, reportName }
 - `createCrudDefault` — Implementa lazy login com cache de token (fallback quando o token do `setup()` não está disponível), extração de ID com suporte a múltiplos formatos de resposta (`{id}`, `{data:{id}}`, `{data:{resource:{id}}}`), e geração de payload a partir de `payloadTemplate` (função que recebe o ID único, ou objeto copiado). O UPDATE acrescenta o sufixo `" - Updated"` ao campo `titulo`; o DELETE envia `{ [idField]: resourceId }`.
 - `createFilterDefault` — Suporta caminhos aninhados de resposta (`data.musicas`). O check "Filtro funcionou (termo encontrado)" é uma validação suave: se o termo não for encontrado nos campos `titulo`/`title`/`artista`/`artist` dos itens, registra warning no console, mas o check ainda passa.
 - `createPaginationDefault` — Validação cruzada de IDs entre páginas 1 e 2; se a página 1 estiver vazia, encerra a iteração com warning; se a página 2 estiver vazia, apenas registra warning (soft pass).
-- `createSortDefault` — Suporta dois formatos de URL: `sort=<mode>` (API músicas) e `sort=<field>&order=<order>` (API vídeos). Verifica datas em ordem crescente/decrescente com fallback para o campo `createdAt`; soft pass se houver menos de 2 itens.
+- `createSortDefault` — Lança erro se `sortMode` não declarado (o formato legado `sort=<field>&order=<order>` foi removido em 23/10/2026 — nenhuma rota o entende); monta a URL por concatenação simples da query string (sem `URLSearchParams`, que o runtime do k6 não garante): `sort=<mode>` sempre, `limit=<n>` só quando declarado. Verifica datas em ordem crescente/decrescente com fallback para o campo `createdAt`; **soft pass apenas com menos de 2 itens** — resposta não-array e data inválida reprovam o check (regra: teste de carga que não consegue validar não pode reportar verde).
 - `createLoadSetup` — Health check opcional (GET na raiz de `BASE_URL`; aborta via `exec.test.abort` se a conexão for recusada, status 0) + login com validação de status 200 e de Content-Type JSON (aborta em caso de falha). Retorna o token JWT como string direta (`loginRes.json('data.token')`), não como objeto.
 - `createLoadDefault` — Requisição principal com tags nomeadas (padrão `List<Recurso>`) + requisições extras (ex: página 2) com seus próprios tags e checks; sleep randomizado de 0.5s a 2s ao final.
 
@@ -446,14 +446,14 @@ Testa a busca textual no endpoint de músicas com diferentes termos. Garante que
 **Resumo:**
 Testa a ordenação dos resultados de músicas via runner genérico. Valida que o endpoint público de músicas ordena corretamente os resultados.
 
-- Rota pública (sem autenticação) — `sort=recent` (novo formato da API músicas), `dateField: created_at`, resposta em `data`
+- Rota pública (sem autenticação) — `sortMode: 'default'` (enum da API músicas pós-ADR-0014: `default | positioned | oldest | alpha | alpha_desc`), `dateField: created_at`, resposta em `data`
 - Valida que as datas (`created_at`, com fallback para `createdAt`) estão em ordem decrescente
 - Soft pass se poucos dados no banco (menos de 2 itens — inconclusivo)
 - Configuração: perfil `light` com 1 iteração (imposto pelo runner)
 - `handleSummary()` — Gera relatório via `generateReport()` com nome `musicas_sort_test`
 
 **Endpoints chamados:**
-- `GET /api/musicas?sort=recent` — Listar ordenado
+- `GET /api/musicas?sort=default` — Listar ordenado
 
 ---
 
@@ -579,15 +579,16 @@ Testa a paginação do endpoint público de vídeos via runner genérico. Valida
 **Resumo:**
 Testa a ordenação dos resultados de vídeos via runner genérico. Valida que o endpoint público de vídeos ordena corretamente os resultados por data de criação decrescente.
 
-- Rota pública (sem autenticação) — `sort=created_at&order=desc` (formato `sort` + `order` da API vídeos), `dateField: created_at` (padrão), itens em `data` (`itemsPath: 'data'`)
-- Valida que as datas estão em ordem decrescente (soft pass com menos de 2 itens)
+- Rota pública (sem autenticação) — `sortMode: 'recent'` + `limit: 12` (enum da API vídeos: `recent | oldest | alpha | alpha_desc`; a rota REJEITA 400 qualquer valor fora do conjunto), `dateField: created_at` (padrão), itens em `data` (`itemsPath: 'data'`)
+- `limit: 12` casa com o `limit` real do componente `VideoGallery.js`: a chave de cache pública é `public_videos:<page>:<limit>[:<search>]:<sort>`, então outro limit mediria outra entrada de cache
+- Valida que as datas estão em ordem decrescente; soft pass APENAS com menos de 2 itens (banco magro é inconclusivo) — resposta não-array e data inválida REPROVAM o check
 - `handleSummary()` — Gera relatório via `generateReport()` com nome `videos_sort_test`
-- Configuração: perfil `light` com override de thresholds — `checks: rate>0.85`, que substitui a chave `checks` do perfil base; o `http_req_duration: p(95)<500` do base é preservado (merge chave a chave)
-
-> **Observação não confirmada:** o `resourceConfig` define `useExplicitSort: true`, porém essa chave **não é consumida** por `createSortTest()`/`createSortDefault()` no `helpers/resource-test-runner.js` (a função lê apenas `publicEndpoint`, `sortMode`, `sortField`, `sortOrder`, `dateField`, `itemsPath`, `responsePath`, `resourceName` e `sleepDuration`). A chave aparenta ser resquício de versão anterior do runner e não tem efeito no comportamento do teste.
+- Configuração: perfil `light` sem override de thresholds — o gate herdado é `checks: rate==1.0` e o `http_req_duration: p(95)<500` do perfil base
 
 **Endpoints chamados:**
-- `GET /api/videos?sort=created_at&order=desc` — Listar ordenado
+- `GET /api/videos?sort=recent&limit=12` — Listar ordenado
+
+> **Correção 23/10/2026 (item a).** Antes o script mandava `?sort=created_at&order=desc`: `created_at` não é chave do enum nem de `SORT_MAP` da rota, e o formato `order` nunca existiu — a requisição caía no fallback `recent`, ou seja, o teste validava o DEFAULT, não o parâmetro. O `optionsOverrides` afrouxava o gate para 85% (o par músicas usava `rate==1.0`) e o config declarava uma chave morta que o runner nunca leu. Depois: `sortMode: 'recent'` validado pelo enum + `limit: 12` alinhado ao componente, sem override de threshold (gate volta a `rate==1.0` com `p(95)<500` preservado pelo merge chave-a-chave), e a rota `/api/videos` endurecida (Zod enum, 400 sem fallback, desempate por `id`). **Lição (mesma do cron #19):** contrato de API muda e o script fica para trás — agora há guarda bidirecional de chaves (`sort-contract-coverage.test.js`) e paridade teste×componente para o `limit`.
 
 ---
 
@@ -1364,7 +1365,7 @@ Comparação do p95 de cada script contra o run #11 (baseline, quando o `stress-
 1. **`checks` agregado não é interpretável em 2 scripts de segurança.** `ip-spoofing-test` fecha em **50,00%** (126868 passes / 126868 fails) e `ddos-search-test` em **33,33%**, porque declaram checks *inversos* entre si — um afirma "🛡️ BLOQUEADO (429)" e o outro "EVASÃO CONFIRMADA: não bloqueou (401)" —, de modo que exatamente um dos dois pode passar por iteração. **Não é falso verde:** os dois scripts não declaram threshold `checks` justamente por isso, e o veredito vem de métricas próprias, que passaram com folga — `search_block_rate` 99,92% / 99,94% / 99,94% (limite `rate>0.50`) e `ip_rotation_evasion_rate` 0,0052% / 0,0041% / 0,0039% (limite `rate<0.05`). O risco é prospectivo: quem adicionasse `checks: ['rate==1.0']` a qualquer um dos dois reprovaria para sempre.
 2. **4 dos 30 scripts não gravavam relatório** — `cache-warmup-test`, `cache-performance-test`, `create-post-flow` e `health-check` não tinham `handleSummary`, o que explica 28 arquivos para 30 scripts: os números deles existiam só no log do job, que expira junto com o run. **Corrigido em 17/10/2026.**
 3. **JWT do admin semeado vazando no artifact** — 9 dos 27 JSON por artifact carregavam `setup_data`; 7 vinham saneados (`{"token": "*** TOKEN OCULTO ***"}`) e **2 vazavam o token em texto claro** (`musicas_load_test.json` e `videos_load_test.json`). Causa: `sanitizeToken` (`load-tests/helpers/report.js:14`) só cobre o caminho `data.setup_data.token`, mas `createLoadSetup` (`load-tests/helpers/resource-test-runner.js:536`) retorna `loginRes.json('data.token')` — uma **string crua**, forma que o sanitizador nunca alcançava. Risco prático baixo (o `JWT_SECRET` é secret do repo e o Postgres do runner é efêmero), mas é credencial em artefato baixável por qualquer pessoa durante a retenção de 30 dias. **Corrigido em 17/10/2026.**
-4. **23 dos 30 scripts não têm threshold efetivo de `http_req_failed`** (contagem por artifact, não por código: 7 têm, 23 não). O silêncio vem de `checks`, que cobre as requisições verificadas, mas uma requisição **sem check** passa em branco. Caso medido: `musicas-search-test` fez 7 requisições, 1 falhou (14,28% de `http_req_failed`) e nenhum check cobre aquela requisição — o threshold `checks: ['rate==1.0']` passou mesmo assim. Em `video-validation-test` os 50% de `http_req_failed` são as duas respostas 400 intencionais (`Domínio Inválido`, `URL Malformada`), ou seja, corretos. **A causa-raiz e o plano de correção estão no item AD** de `docs/PENDENCIAS_scripts_testes.md` — a contagem e a lista de scripts não se repetem aqui.
+4. **23 dos 30 scripts não têm threshold efetivo de `http_req_failed`** (contagem por artifact, não por código: 7 têm, 23 não). O silêncio vem de `checks`, que cobre as requisições verificadas, mas uma requisição **sem check** passa em branco. Caso medido: `musicas-search-test` fez 7 requisições, 1 falhou (14,28% de `http_req_failed`) e nenhum check cobre aquela requisição — o threshold `checks: ['rate==1.0']` passou mesmo assim. Em `video-validation-test` os 50% de `http_req_failed` são as duas respostas 400 intencionais (`Domínio Inválido`, `URL Malformada`), ou seja, corretos. **A causa-raiz e o plano de correção estão no item AD** de `docs/PENDENCIAS_scripts_testes.md` — a contagem e a lista de scripts não se repetem aqui. **Fechado em 23/10/2026:** o cron #20 mediu **10** scripts com gate efetivo de `http_req_failed` e **0 scripts sem nenhum threshold** — ver a seção "Cron #20" abaixo.
 
 ### Registro de execução — runs [`39113170891`](https://github.com/caminhar-deus/Caminhar/actions/runs/39113170891) e [`39233955292`](https://github.com/caminhar-deus/Caminhar/actions/runs/39233955292) (cron "Load Tests (k6)" nº 15 e 16, 18–19/10/2026)
 
@@ -1475,7 +1476,7 @@ Estes são os **primeiros gates de taxa de erro sobre requisições** que esses 
 
 ---
 
-### Fase 2 do item AD — aplicada em 21/10/2026, aguardando o cron #19
+### Fase 2 do item AD — aplicada em 21/10/2026, validada nos crons #19 e #20
 
 **Commit que leva a Fase 2 para o ar:** `8e460f9` (21/10/2026). Árvore limpa no commit; validação local re-executada no mesmo estado: `npm run lint` 0, `npm run knip` 0, `npx jest tests/unit/load-tests` 22/22. **Correção (22/10/2026):** o cron #19 **não** rodou este código — o cron roda a ponta da `main`, e entre `8e460f9` e o disparo entraram mais 3 commits de outra sessão (`b7950f1` Design e Arquitetura, `087d934` move de `pages/api/helper/pagination.js` → `lib/api/pagination.js`, `c6cef12` API e Test e Docs 02). O #19 rodou `c6cef12` (ver o registro do #19 abaixo).
 
@@ -1495,7 +1496,7 @@ Estes são os **primeiros gates de taxa de erro sobre requisições** que esses 
 
 **Cobertura travada por teste.** `tests/unit/load-tests/error-gate-coverage.test.js` (11 testes) fixa: (a) a parte estática de toda URL de requisição da suíte é ASCII; (b) os 6 scripts que esperam 4xx por desenho **não** declaram `http_req_failed`; (c) os 4 marcadores de `check` do warm-up/teardown existem nos 4 scripts; (d) o `posts-tags` declara `rate<0.20`; (e) quem declara `http_req_failed` entre os perfis (`light`/`recovery`/`rateLimit` não; `medium`/`heavy`/`health` sim); (f) o inventário tem 30 scripts. **Prova de mutação executada:** as 5 mudanças revertidas uma a uma reprovaram o teste correspondente (5/5), com a suíte restaurada ao final.
 
-**O que esperar no cron #19 (22/10/2026).** `http_req_failed` **com threshold** em **10 dos 30** scripts (os 9 da Fase 1 + `posts_tags`); `musicas_search` com `http_req_failed` = 0/7 (o warm-up agora responde 200); `posts_tags` com 0,00% e 15/15 checks; 30/30 passed. **Conferir no artifact, não no código** — é onde a Fase 1 mostrou que a mentira mora. O registro do #19 fica nesta seção, com o número de thresholds avaliados.
+**O que se esperava no cron #19 (22/10/2026).** `http_req_failed` **com threshold** em **10 dos 30** scripts (os 9 da Fase 1 + `posts_tags`); `musicas_search` com `http_req_failed` = 0/7 (o warm-up agora responde 200); `posts_tags` com 0,00% e 15/15 checks; 30/30 passed. **Conferir no artifact, não no código** — é onde a Fase 1 mostrou que a mentira mora. **Resultado:** o #19 fechou **29/30**, com o único reprovado fora da Fase 2 (`musicas-sort-test`, drift de `sort`) — os 5 scripts alterados passaram, como registra a seção do #19 logo abaixo; o **#20** (23/10/2026) fechou **30/30** e é o registro de referência desta seção, com o inventário de thresholds efetivos.
 
 ### Cron #19 (22/10/2026) — FALHOU: reprovou o `musicas-sort-test`, e a causa foi o contrato de `sort` do ADR-0014
 
@@ -1541,6 +1542,48 @@ Prova executável do enum (`z.enum` do antes e do depois): `sort=recent` → vá
 - Os 24 scripts restantes passaram → as mudanças da outra sessão (`b7950f1`, `087d934`, `c6cef12`) não introduziram **nenhuma** outra regressão na suíte.
 
 **Lição.** O risco prospectivo do item AD ("mudança de contrato de API" como um dos riscos dos 23 scripts sem gate) era real — e era este. O script que reprovou **não** era dos 23 sem gate: tinha `checks: ['rate==1.0']`, que enxergou o 400. O que faltava era a **detecção do drift de contrato** (API mudou, script ficou), não um gate novo — e é isso que a guarda nova faz. A segunda lição é de processo: **quem troca o contrato público de uma rota tem de atualizar, no mesmo passo, os scripts da suíte que a exercitam** — o ADR-0014 mudou o enum de `sort` e o `musicas-sort-test.js` ficou mandando o valor antigo. O ADR-0014 documenta o contrato novo com clareza; o que faltava era o **passo de conferência** da suíte, que agora está automatizado por `sort-contract-coverage.test.js`.
+
+---
+
+### Cron #20 (23/10/2026) — PASSOU: 30/30, e o inventário dos thresholds efetivos fecha o item AD
+
+**O que foi medido (metadados públicos do run, via API do GitHub).**
+
+| Campo | Valor medido |
+|-------|--------------|
+| Run / SHA | `39931445152` / `1fc79d56` ("test(db): cover pool fatal error handler and add lib/infra coverage threshold") |
+| Event / conclusion | `schedule` / **`success`** |
+| Janela do run | `09:22:56Z` → `09:40:59Z` = **18m03s** |
+| Job `load-tests / run-tests` | `09:22:59Z` → `09:40:58Z` = **17m59s** |
+| Step 10 "Run Tests" | `09:24:17Z` → `09:40:53Z` = **16m36s**, `success` |
+| Steps pulados | 5, 14 e 15 (os mesmos que o #19 pulou, por desenho do workflow) |
+| Artifact | `k6-load-test-reports` (id `12491844729`), **50.529 B**, `sha256:fa891ba3…`, expira `2026-11-22` |
+| Anotações | **2**, ambas `notice` — a migração do `ubuntu-latest` para Ubuntu 26 (item AA); **0 warning, 0 failure** |
+
+**A bateria: 30/30 — derivado do exit code, não do log.** O step "Run Tests" executa `npm run test:load:safe` → `scripts/run-all-load-tests-sequentially.js`, que marca `overallExitCode = 1` em **qualquer** script reprovado (`:374` e `:381`) e termina com `process.exit(overallExitCode)` (`:522`). Step verde ⇒ **zero** scripts reprovados ⇒ **30/30**. É o inverso exato do #19, em que 29/30 fez o step sair 1. A duração confirma que o verde não vem de execução encurtada: **17m59s**, contra 17m59s do #18 e 17m55s do #19 — nos três a bateria inteira rodou.
+
+| Run | SHA | Job | Bateria | Conclusão |
+|-----|-----|-----|---------|-----------|
+| #18 (21/10) | `8790444` | 17m59s | 30/30 | `success` — 1º com a Fase 1 no ar |
+| #19 (22/10) | `c6cef12` | 17m55s | **29/30** | `failure` — `musicas-sort-test`, drift de `sort` |
+| **#20 (23/10)** | **`1fc79d56`** | **17m59s** | **30/30** | **`success`** — 1º com a correção do #19 no ar |
+
+**O SHA testado contém a correção do #19 — e a guarda que a trava.** `git show 1fc79d56:load-tests/performance/musicas-sort-test.js` traz `sortMode: 'default'` (L12), e `tests/unit/load-tests/sort-contract-coverage.test.js` existe no mesmo commit. Ou seja, o verde do #20 é o primeiro que exercita `sort=default` de fato em produção; o script que derrubou o #19 fecha com `checks rate==1.0` **e** `http_req_duration p(95)<500` cumpridos.
+
+**Thresholds efetivos: 81 — conferidos resolvendo as `options`, não lendo os scripts.** O "Pronto quando" do item AD pede que a lista **declarada** bata com a **aplicada**. A leitura do artifact segue bloqueada (`GET /actions/artifacts/…/zip` → **401**; `GET /actions/jobs/…/logs` → **403**; não há credencial local), então a conferência foi feita pelo caminho que o próprio item autoriza — `options.thresholds` é resolvível em Node puro. Numa **cópia** de `load-tests/` em `/tmp` (nenhum arquivo do repositório foi tocado), com stubs locais de `k6`, `k6/http`, `k6/metrics`, `k6/execution` e `k6/encoding` e `globalThis.__ENV = {}`, os 30 scripts foram importados e a cadeia `script → factory → getProfile` executada — **o mesmo pipeline que o k6 executa** até chegar em `options.thresholds`. Os 2 imports remotos (`helpers/report.js` → jslib, `stress-test-combined.js` → k6-reporter) foram trocados por stubs **só na cópia**.
+
+| Verificação | Resultado |
+|-------------|-----------|
+| Scripts resolvidos sem erro | **30 de 30** (0 exceções de import/execução) |
+| Thresholds efetivos no total | **81**, em 29 grupos distintos de métrica: 23 `http_req_duration`, 19 `checks` e 9 `http_req_failed` **sem tag** (51), 19 thresholds com tag `{name:…}`/`{type:…}`/`{flow:…}`/`{scenario:…}` em 15 grupos (incluindo o `{scenario:stress_test}` do stress) e 11 métricas próprias, uma por script (`search_block_rate`, `errors_500`, `ip_rotation_evasion_rate`, `recovery_unhealthy_rate`, `nodejs_memory_heap_used_bytes` e as 6 de erro de CRUD de músicas/vídeos) — **51 + 19 + 11 = 81** |
+| Scripts **sem nenhum** threshold | **0** |
+| Scripts com gate efetivo de `http_req_failed` | **10** — `health-check`, `posts-tags-test`, `upload-flow-test`, `authenticated-flow-test`, `cache-performance-test`, `cache-warmup-test`, `create-post-flow`, `musicas-load-test`, `stress-test-combined` (`{scenario:stress_test}`) e `videos-load-test` |
+
+**A aritmética fecha com o #18, e é a prova de que nada se perdeu no caminho.** O #18 avaliou **80** thresholds no artifact, todos `ok`; a Fase 2 acrescentou **exatamente um** — o `http_req_failed: ['rate<0.20']` do `posts-tags` — e o resultado é **81**. Um número maior por qualquer outro motivo (threshold duplicado, herança inesperada) ou menor (perda silenciosa, o defeito original do item) apareceria aqui.
+
+**Os 6 scripts que esperam 4xx por desenho seguem sem `http_req_failed`**, confirmado no inventário: `video-validation-test` (`checks rate>0.60` + `p(95)<5000`), `ddos-search-test` (`search_block_rate` + `errors_500`), `ip-spoofing-test` (`ip_rotation_evasion_rate`), `rate-limit-test` (`p(95)<5000`), `recovery-test` (`recovery_unhealthy_rate`) e `login-negative-test` (`checks rate>0.95` + `p(95)<1000`). Nenhum deles ganhou gate de taxa — exatamente a decisão registrada na Fase 2.
+
+**Resíduo honesto, declarado.** O artifact continua sem leitura (401/403), então este registro **não** afirma "li os `metrics.*.thresholds` do k6". Afirma o que mediu: (a) o run e o step estão verdes, e o orquestrador só sai 1 se algum script reprovar; (b) os 81 thresholds que o k6 recebe de `options.thresholds` foram resolvidos pelo mesmo código que o k6 executa; (c) os testes unitários provam que a resolução tem força — mutar o `getProfile` de volta para a semântica antiga muda a lista resolvida. O que isso não cobre é o k6 **avaliar** cada threshold contra as métricas do run — e essa metade o #18 já cobriu: 80 thresholds avaliados, todos `ok`, no artifact. Com a correção do #19 no ar, os 30 scripts verdes e o inventário em 81, o item AD não tem mais pendência técnica.
 
 ---
 
