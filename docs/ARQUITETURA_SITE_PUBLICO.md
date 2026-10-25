@@ -38,9 +38,25 @@ Todas as abas compartilham o mesmo esqueleto:
 4. **Conteúdo da aba** (seção 3).
 5. **Dicas do Dia** — bloco fixo, igual em todas as abas (seção 4).
 
+### 2.1 Mapeamento entre abas (site privado × site público)
+
+A correspondência entre as abas administrativas e suas abas públicas de exibição é a seguinte:
+
+| Site privado — aba administrativa | Site público — aba de exibição |
+|---|---|
+| Posts/Artigos | Reflexões & Estudos |
+| Gestão de Músicas | Músicas |
+| Gestão de Vídeos | Vídeos |
+| Gestão de Produtos | Produtos Religiosos |
+| Dicas do Dia | Dicas do Dia |
+
+Esse mapeamento deve ser mantido de forma consistente em toda a documentação.
+
 ## 3. Abas
 
 ### 3.1 Reflexões & Estudos (padrão)
+- **Fonte de dados:** corresponde à aba administrativa **Posts/Artigos** (§2.1). **Somente registros com status Publicado** são exibidos. Registros em **Rascunho** não são exibidos no site público.
+- **Cadastro ilimitado:** Não há limite de registros cadastrados na aba **Posts/Artigos** do painel, seja qual for o status. Todos os registros **publicados** dessa aba são elegíveis para exibição nesta aba pública, sem limite definido por essas regras.
 - **Propósito:** [PLANEJADO] publicar reflexões e estudos próprios e de outras pessoas do meio católico cristão; conteúdo com imagens e textos.
 - **Título da seção:** "Reflexões & Estudos". **Subtítulo:** "Edifique sua fé com nossos artigos mais recentes".
 - **Layout:** grade de 3 colunas x 2 linhas = 6 cartões por página (2 colunas em tablet, 1 coluna no mobile), com os artigos mais recentes. O limite de 6 é pedido **à API** (`/api/posts?response=v1&limit=6`), não cortado no cliente.
@@ -55,6 +71,8 @@ Todas as abas compartilham o mesmo esqueleto:
 - **Regra:** desabilitada e sem clique; não implementar nem habilitar sem pedido explícito do dono (ver §8).
 
 ### 3.3 Músicas
+- **Fonte de dados:** corresponde à aba administrativa **Gestão de Músicas** (§2.1). **Somente registros com status Publicado** são exibidos. Registros em **Rascunho** não são exibidos no site público.
+- **Cadastro ilimitado:** Não há limite de registros cadastrados na aba **Gestão de Músicas** do painel, seja qual for o status. Todos os registros **publicados** dessa aba são elegíveis para exibição nesta aba pública, sem limite definido por essas regras.
 - **Propósito:** [PLANEJADO] catálogo com links e informações que levam ao Spotify.
 - **Controles:** campo de busca "Pesquisar por música ou artista..."; seletor "Ordenar:"; contador verde "Mostrando X de Y músicas".
 - **Ordenação:** o seletor abre com a opção **Padrão** selecionada, que equivale a ordenar por "Mais recentes" (`created_at DESC`); as demais opções são **"Posicionados"** (curadoria manual do painel, `position ASC`), "Mais antigos", "A-Z" e "Z-A". Decisão registrada em [ADR-0014](adr/0014-padrao-significa-mais-recentes-e-curadoria-como-posicionados.md).
@@ -63,6 +81,8 @@ Todas as abas compartilham o mesmo esqueleto:
 - **Paginação:** "❮ Anterior | Página X de Y (Z músicas) | Próxima ❯". "Anterior" fica desabilitado na página 1.
 
 ### 3.4 Vídeos
+- **Fonte de dados:** corresponde à aba administrativa **Gestão de Vídeos** (§2.1). **Somente registros com status Publicado** são exibidos. Registros em **Rascunho** não são exibidos no site público.
+- **Cadastro ilimitado:** Não há limite de registros cadastrados na aba **Gestão de Vídeos** do painel, seja qual for o status. Todos os registros **publicados** dessa aba são elegíveis para exibição nesta aba pública, sem limite definido por essas regras.
 - **Propósito:** [PLANEJADO] links de vídeos do YouTube.
 - **Controles:** campo de busca "Pesquisar por título ou descrição..."; seletor "Ordenar:"; contador azul "Mostrando X de Y vídeos".
 - **Ordenação:** o seletor abre com a opção **Padrão** selecionada, que equivale a ordenar por "Mais recentes"; as demais opções são "Mais antigos", "A-Z" e "Z-A".
@@ -96,6 +116,7 @@ Todas as abas compartilham o mesmo esqueleto:
 
 ## 6. Origem dos dados
 - Banner, posts, músicas, vídeos, produtos e dicas são **todos** gerenciados pelo painel administrativo — cada um tem sua aba de CRUD lá (posts, músicas, vídeos, produtos, dicas, usuários e cargos). A hipótese foi confirmada no código.
+- **Fluxo de publicação:** Um registro é cadastrado em sua aba administrativa correspondente (Posts/Artigos, Gestão de Músicas, Gestão de Vídeos, Gestão de Produtos ou Dicas do Dia). Pode permanecer como **Rascunho** ou ser alterado para **Publicado**. Enquanto em **Rascunho**, permanece disponível no painel, mas **não é exibido** na aba pública correspondente. Quando em **Publicado**, é **exibido** na aba pública correspondente (§2.1). Não há limite de cadastros nessas cinco abas, independentemente do status. A quantidade exibida no público corresponde a **todos os registros publicados** de cada respectiva aba, sem limite definido por essas regras.
 - Persistência: PostgreSQL, acessado pelo pool `pg` (ver §1).
 
 ## 7. Pendências e bugs conhecidos (prioridade)

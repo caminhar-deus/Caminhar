@@ -35,6 +35,20 @@ A barra quebra em 3 linhas. A ordem abaixo é a ordem visual.
 
 Subabas internas existem em Segurança (4) e Usuários (2).
 
+### 2.1 Mapeamento entre abas (site privado × site público)
+
+A correspondência entre as abas administrativas e suas abas públicas de exibição é a seguinte:
+
+| Site privado — aba administrativa | Site público — aba de exibição |
+|---|---|
+| Posts/Artigos | Reflexões & Estudos |
+| Gestão de Músicas | Músicas |
+| Gestão de Vídeos | Vídeos |
+| Gestão de Produtos | Produtos Religiosos |
+| Dicas do Dia | Dicas do Dia |
+
+Esse mapeamento deve ser mantido de forma consistente em toda a documentação.
+
 ## 3. Padrão comum das telas de conteúdo (Posts, Músicas, Vídeos, Produtos, Dicas)
 
 Todas seguem o mesmo modelo, com pequenas variações:
@@ -43,8 +57,15 @@ Todas seguem o mesmo modelo, com pequenas variações:
 2. **Barra de ações (à direita):** campo "Buscar item..." (com lupa) → botão azul "Exportar CSV" → botão verde "+ Novo ...".
 3. **Tabela de listagem:** primeira coluna com ícone ☰ (indica reordenação por arrastar [HIPÓTESE]), depois colunas específicas e coluna "Ações". Estado vazio em itálico.
 4. **Formulário de criação/edição:** abre acima da tabela ao clicar em "+ Novo". O botão verde vira "Cancelar" (cinza) e o "Exportar CSV" permanece.
-5. **Publicação:** checkbox de publicar + selo de status ("Rascunho" amarelo / "Publicado" verde). Só itens publicados aparecem no site público.
+5. **Publicação:** checkbox de publicar + selo de status ("Rascunho" amarelo / "Publicado" verde). **Apenas registros com status Publicado são exibidos no site público. Registros com status Rascunho permanecem disponíveis no painel administrativo, mas não são exibidos nas abas públicas correspondentes.**
 6. **Botão "⚡ Puxar Dados"** nos campos de link (Spotify, YouTube, Produto): preenche dados automaticamente a partir da URL [HIPÓTESE]. Cor do botão muda por tipo: verde (Spotify), vermelho (YouTube), amarelo (Produto).
+
+### 3.1 Regras de cadastro e exibição
+
+- **Quantidade ilimitada:** Nas abas **Posts/Artigos**, **Gestão de Músicas**, **Gestão de Vídeos**, **Gestão de Produtos** e **Dicas do Dia**, **não há limite de registros cadastrados**. É permitido cadastrar quantos registros forem necessários, independentemente de estarem com status **Rascunho** ou **Publicado**.
+- **Exibição exclusiva por publicação:** Somente registros com status **Publicado** são exibidos na aba pública correspondente, conforme o mapeamento da seção 2.1. Registros em **Rascunho** não devem ser exibidos no site público.
+- **Sem mistura de conteúdos:** Cada aba pública exibe exclusivamente os registros publicados de sua respectiva aba administrativa, sem misturar conteúdos entre diferentes categorias.
+- **Reflexo da publicação:** Ao alterar um registro de **Rascunho** para **Publicado** (ou vice-versa), essa mudança deve refletir na aba pública correspondente, respeitando as regras acima.
 
 ## 4. Detalhe das abas de conteúdo
 
@@ -201,15 +222,21 @@ Barra interna com 4 subabas: 🛡️ Verificação de Integridade | 💾 Backup 
 | Auditoria | 📜 Auditoria |
 
 ## 7. Ligação entre painel e site público
-| Painel | Efeito no site público |
-|---|---|
-| Configuração de Cabeçalho | Título, subtítulo e banner 1100×320 de todas as abas |
-| Posts/Artigos (publicados) | Cartões e páginas da aba Reflexões & Estudos |
-| Gestão de Músicas (publicadas) | Cartões da aba Músicas |
-| Gestão de Vídeos (publicados) | Cartões da aba Vídeos |
-| Gestão de Produtos (publicados) | Vitrine da aba Produtos Religiosos |
-| Dicas do Dia (publicadas) | Bloco "Dicas do Dia" no fim de todas as abas |
-| Cache do Sistema | Se uma alteração não aparecer no site, limpar o cache Redis |
+
+| Site privado — aba administrativa | Site público — aba de exibição | Efeito no site público |
+|---|---|---|
+| Posts/Artigos | Reflexões & Estudos | Somente registros **publicados** aparecem em cartões/páginas da aba Reflexões & Estudos. Registros em **Rascunho** não são exibidos. |
+| Gestão de Músicas | Músicas | Somente registros **publicados** aparecem na grade da aba Músicas. Registros em **Rascunho** não são exibidos. |
+| Gestão de Vídeos | Vídeos | Somente registros **publicados** aparecem na grade da aba Vídeos. Registros em **Rascunho** não são exibidos. |
+| Gestão de Produtos | Produtos Religiosos | Somente registros **publicados** aparecem na vitrine da aba Produtos Religiosos. Registros em **Rascunho** não são exibidos. |
+| Dicas do Dia | Dicas do Dia | Somente registros **publicados** aparecem no bloco "Dicas do Dia" no fim de todas as abas. Registros em **Rascunho** não são exibidos. |
+| Configuração de Cabeçalho | Todas as abas públicas | Título, subtítulo e banner 1100×320 de todas as abas |
+| Cache do Sistema | Todas as abas públicas | Se uma alteração não aparecer no site, limpar o cache Redis |
+
+**Regras gerais de exibição:**
+- Não há limite de quantidade de registros cadastrados nas cinco abas administrativas acima, seja o status **Rascunho** ou **Publicado**.
+- A quantidade de registros **publicados** exibidos no site público não está sujeita a um limite definido por essas regras — são exibidos todos os registros com status **Publicado** de cada respectiva aba.
+- Cada aba pública apresenta exclusivamente os registros publicados de sua aba administrativa correspondente, sem mistura de conteúdos entre categorias diferentes.
 
 A aba pública "Em Desenvolvimento" não tem gestão no painel.
 
