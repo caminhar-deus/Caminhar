@@ -10,10 +10,14 @@ export default function MusicCard({ musica }) {
   if (temSpotify) {
     try {
       const converted = getSpotifyEmbedUrl(musica.url_spotify);
-      embedUrl = `${converted}?utm_source=generator&theme=0`;
+      if (converted && typeof converted === 'string' && converted.includes('/embed/track/')) {
+        embedUrl = `${converted}?utm_source=generator&theme=0`;
+      } else {
+        embedUrl = '';
+      }
     } catch (error) {
       console.error('Erro ao converter URL do Spotify:', error);
-      embedUrl = `${musica.url_spotify}?utm_source=generator&theme=0`;
+      embedUrl = '';
     }
   }
 

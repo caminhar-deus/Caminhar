@@ -3,8 +3,10 @@ import { updateRecords } from '../../../lib/crud/crud.js';
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
 import { z } from 'zod';
 
+import { isSpotifyTrackUrl } from '../../../lib/media/spotify.js';
+
 const isValidSpotifyUrl = (url) => {
-  return url.includes('spotify.com') || url.includes('spotify:');
+  return isSpotifyTrackUrl(url);
 };
 
 const musicaSchema = z.object({
@@ -52,7 +54,7 @@ async function handlePost(req, res) {
   const { titulo, artista, descricao, url_spotify, publicado } = validation.data;
 
   if (!isValidSpotifyUrl(url_spotify)) {
-    return res.status(400).json({ message: 'URL do Spotify inválida' });
+    return res.status(400).json({ message: 'URL do Spotify inválida. Apenas links de faixa (track) são suportados para embed.' });
   }
 
   const novaMusica = await createMusica({
@@ -114,7 +116,7 @@ async function handlePut(req, res) {
 
   // Se url_spotify foi enviado, valida; se não (ex: toggle de status), pula validação
   if (url_spotify !== undefined && !isValidSpotifyUrl(url_spotify)) {
-    return res.status(400).json({ message: 'URL do Spotify inválida' });
+    return res.status(400).json({ message: 'URL do Spotify inválida. Apenas links de faixa (track) são suportados para embed.' });
   }
 
   const musicaAtualizada = await updateMusica(id, {

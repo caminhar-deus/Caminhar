@@ -52,8 +52,9 @@ describe('Componentes Features - Music - MusicCard', () => {
     const musica = { titulo: 'A', artista: 'B', url_spotify: 'https://soundcloud.com/track/123' };
     render(<MusicCard musica={musica} />);
 
-    const iframe = await screen.findByTestId('embed-iframe');
-    expect(iframe).toHaveAttribute('src', expect.stringContaining('https://soundcloud.com/track/123'));
+    expect(screen.getByText('Prévia indisponível')).toBeInTheDocument();
+    expect(screen.queryByTestId('embed-iframe')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Ouvir/i })).toBeInTheDocument();
   });
 
   it('deve tratar URL nula de forma segura sem lançar exceção e mostrar Prévia indisponível', async () => {

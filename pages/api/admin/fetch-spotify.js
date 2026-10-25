@@ -1,6 +1,7 @@
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
 import { z } from 'zod';
 import { logger } from '../../../lib/infra/logger.js';
+import { isSpotifyTrackUrl } from '../../../lib/media/spotify.js';
 
 const FETCH_TIMEOUT = 8000; // 8 segundos
 
@@ -46,6 +47,10 @@ async function handlePost(req, res) {
   }
 
   const { url } = validation.data;
+
+  if (!isSpotifyTrackUrl(url)) {
+    throw new BusinessError('Apenas links de faixa (track) do Spotify são suportados para pré-visualização/embeb.');
+  }
 
   try {
     let title = '';
