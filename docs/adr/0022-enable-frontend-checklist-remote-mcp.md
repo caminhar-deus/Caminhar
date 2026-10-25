@@ -68,6 +68,27 @@ A decisão 3 foi revista no mesmo dia, depois de medir o custo real das skills l
 
 **Reversão:** `git revert` do commit da poda restaura diretórios e entradas do lock no mesmo passo.
 
+## A/B do `deny` para designer/fixer (25/10/2026)
+
+A pergunta em aberto era liberar o MCP para os dois papéis. Foi respondida com medição, não com intuição.
+
+**Desenho.** Quatro células — `designer` e `fixer`, cada um com e sem `frontend-checklist` em `agents.<papel>.mcps` — mesma tarefa read-only de 4 perguntas sobre `components/UI/` e `design-system/MASTER.md`, mesmo modelo por papel (`opencode/beam-free` no designer, `opencode/mimo-v2.6-flash-free` no fixer), uma execução por célula. A correção foi feita **fora do modelo**, contra `scripts/bench/papeis/gabarito-designer.md`. Critério escrito antes: liberar só se houvesse ≥ 1 acerto verificável novo, **e** 0 erro verificável novo, **e** custo ≤ ~2k tokens.
+
+| Célula | Duração | Tool calls | 1º input | Soma input | Chamadas ao checklist |
+|---|---|---|---|---|---|
+| designer sem MCP | 44 s | 12 | 10.620 | 26.065 | 0 |
+| designer com MCP | 56 s | 15 | 10.204 | 46.790 | **0** |
+| fixer sem MCP | 207 s | 14 | 8.062 | 35.366 | 0 |
+| fixer com MCP | 179 s | 13 | 2.563 | 52.463 | **0** |
+
+**Resultado.** As quatro respostas acertam o gabarito inteiro (foco do botão em `Button.module.css:21-24` contra `MASTER.md:130`/`:203`; os quatro usos de `--color-text-tertiary` com o `.helperText:167` reprovado; contraste 2,42:1 contra SC 1.4.3; o `<img>` decorativo sem achado). Zero erro verificável novo em qualquer célula. O `fixer` com MCP trouxe um achado a mais — o mesmo padrão de `.helperText` em `Select.module.css:121` e `TextArea.module.css:110` (conferido: as regras existem, com a cor em `:123`/`:112`) — mas **não** foi o MCP que o produziu: nenhuma das duas células liberadas chamou a ferramenta.
+
+**Descoberta técnica que muda o custo.** Neste host (OpenCode 2.1.4 + code mode), conceder o MCP a um subagente **não** injeta as 11 definições de ferramenta no prompt: os 20.457 chars (≈ 5.114 tokens) medidos em `tools/list` são o tamanho do payload, não o que entra no contexto. A diferença de 1º input entre as células ficou dentro do ruído (≤ ~0,5k, para menos). O acesso existe só pelo catálogo do `execute` (`tools["frontend-checklist"].get_rule`), e a permissão do slim vale ali também: com `deny` o mesmo código devolve `Unknown tool 'frontend-checklist.get_rule'`; com o grant, devolve o `title` da regra. O namespace, porém, aparece tarde e não é indexado por `search()` — o subagente não tem como descobrir que a ferramenta existe, o que explica 0 chamadas nas duas células liberadas.
+
+**Correção operacional.** `opencode run --standalone` **aplica** a config nova (sobe um servidor privado do zero); o serviço de fundo da TUI é que fica com o estado antigo até `opencode service restart`. A nota anterior de que "editar o slim sem reiniciar dá falso negativo" vale para o serviço de fundo, não para o `--standalone` — foi assim que este A/B pôde ser medido sem restart.
+
+**Decisão: manter o `deny` nos dois papéis.** O ganho medido é zero e o `deny` mantém a superfície de egresso (`review_code`, `audit_url`) fechada neles. O argumento de economia de contexto, usado antes, não se sustenta: negar não economiza os 5.114 tokens porque eles nunca entravam no prompt. A revisão de entrega continua com o oracle, e o orchestrator consulta regra isolada quando precisa.
+
 ## Revisão
 
-Reavaliar se: (a) o fornecedor passar a exigir autenticação ou mudar o tratamento de dados; (b) o custo de contexto das 11 ferramentas atrapalhar sessões reais; (c) a skill local e o servidor divergirem de conteúdo; (d) algum papel além de orchestrator/oracle precisar de auditoria de código ou URL; (e) o MCP ficar indisponível com frequência — nesse caso, `git revert` da poda devolve o corpus local e o custo de contexto volta a ser o preço da autonomia.
+Reavaliar se: (a) o fornecedor passar a exigir autenticação ou mudar o tratamento de dados; (b) o custo de contexto das 11 ferramentas atrapalhar sessões reais; (c) a skill local e o servidor divergirem de conteúdo; (d) algum papel além de orchestrator/oracle precisar de auditoria de código ou URL — medido em 25/10/2026 e descartado para designer/fixer, mas a medição muda se o host passar a expor tools de MCP na lista normal do subagente; (e) o MCP ficar indisponível com frequência — nesse caso, `git revert` da poda devolve o corpus local e o custo de contexto volta a ser o preço da autonomia.
