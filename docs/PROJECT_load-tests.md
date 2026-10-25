@@ -1612,7 +1612,7 @@ Prova executável do enum (`z.enum` do antes e do depois): `sort=recent` → vá
 
 #### Observabilidade do resumo — da página do run em vez do zip
 
-O resíduo acima tem saída que **não** depende de credencial: `scripts/summarize-k6-reports.js`, chamado pelo `extra-steps` de `load-tests.yml` (dentro do step `Extra Steps` do `test-base.yml`, que roda com `always()`, **antes** do `Upload k6 Reports`), lê `reports/k6-summaries/` e faz *append* de um digest em `$GITHUB_STEP_SUMMARY`:
+O resíduo acima tem saída que **não** depende de credencial: `scripts/summarize-k6-reports.js` (**commit `54d2fce`**, 25/10/2026), chamado pelo `extra-steps` de `load-tests.yml` (dentro do step `Extra Steps` do `test-base.yml`, que roda com `always()`, **antes** do `Upload k6 Reports`), lê `reports/k6-summaries/` e faz *append* de um digest em `$GITHUB_STEP_SUMMARY`:
 
 - totais do orquestrador (`passed/totalScripts`, reprovados, ignorados e duração);
 - scripts reprovados com `exitCode` e os thresholds/checks que o orquestrador extraiu em `details`;

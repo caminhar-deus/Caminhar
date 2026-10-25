@@ -1031,6 +1031,7 @@
 │   ├── seed-settings.js
 │   ├── seed-videos.js
 │   ├── setup-test-db.js
+│   ├── summarize-k6-reports.js
 │   ├── tests
 │   │   └── manual-rate-limit.js
 │   ├── utils
@@ -1299,6 +1300,7 @@
 │       │       └── config.test.js
 │       ├── load-tests
 │       │   ├── error-gate-coverage.test.js
+│       │   ├── orchestrator-parity.test.js
 │       │   ├── profiles.test.js
 │       │   └── sort-contract-coverage.test.js
 │       ├── next.config.test.js
@@ -1329,6 +1331,7 @@
 │       │   ├── reset-password.test.js
 │       │   ├── seed-all.test.js
 │       │   ├── seed-settings.test.js
+│       │   ├── summarize-k6-reports.test.js
 │       │   ├── utils
 │       │   │   ├── cleanup.test.js
 │       │   │   ├── constants.test.js
@@ -1351,4 +1354,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-205 directories, 1147 files
+205 directories, 1150 files
