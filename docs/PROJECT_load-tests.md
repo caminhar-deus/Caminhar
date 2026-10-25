@@ -1587,6 +1587,44 @@ Prova executável do enum (`z.enum` do antes e do depois): `sort=recent` → vá
 
 ---
 
+### Crons #21 e #22 (24–25/10/2026) — dois verdes consecutivos no SHA da correção do item AE
+
+**O que foi medido (metadados públicos, via API do GitHub; log e artifact continuam 401/403 sem credencial).**
+
+| Campo | #21 | #22 |
+|-------|-----|-----|
+| Run / SHA | `40079858762` / `686050e` | `40179603339` / `686050e` |
+| Event / conclusion | `schedule` / **`success`** | `schedule` / **`success`** |
+| Janela do run | `08:54:29Z` → `09:12:20Z` = **17m51s** | `09:11:14Z` → `09:29:17Z` = **18m03s** |
+| Job `load-tests / run-tests` | `08:54:31Z` → `09:12:19Z` = **17m48s** | `09:11:17Z` → `09:29:16Z` = **17m59s** |
+| Step 10 "Run Tests" | `08:55:42Z` → `09:12:16Z` = **16m34s** | `09:12:39Z` → `09:29:12Z` = **16m33s** |
+| Steps pulados | 5, 14 e 15 (por desenho) | idem |
+| Artifact | `k6-load-test-reports` id `12555386257`, **50.678 B**, `sha256:4ce66fd1…` | id `12594347879`, **50.458 B**, `sha256:ff431435…` |
+| Anotações | **1** `notice` — migração do `ubuntu-latest` (item AA) | idem |
+
+**É o primeiro teste real do item AE em CI.** O commit `8d5c981` (23/10) corrigiu `videos-sort-test.js`; o `#20` testou `1fc79d56`, que é **anterior** a ele. Os dois runs desta seção testaram `686050e`, **descendente de `8d5c981`** (`git merge-base --is-ancestor 8d5c981 686050e`), e `git show 686050e:load-tests/performance/videos-sort-test.js` traz `sortMode: 'recent'` e `limit: 12` — o parâmetro real, não o fallback. `git diff 8d5c981 686050e -- load-tests .github scripts` está **vazio**: nada mudou na suíte entre a correção e o SHA testado, então o verde mede exatamente a correção.
+
+**30/30 derivado do exit code, com duas provas estruturais desta vez.** A derivação é a mesma do #20: `scripts/run-all-load-tests-sequentially.js` marca `overallExitCode = 1` em qualquer script reprovado e termina em `process.exit(overallExitCode)`, e o orquestrador **não tem ramo de skip** (`skipped` só é inicializado e somado, nunca incrementado) — step verde ⇒ zero reprovações. Somam-se: (a) **paridade registro×disco em 30/30** — 30 entradas `cmd: 'k6 run …'` para 30 arquivos em `load-tests/{functional,performance,security}`, sem órfão e sem duplicata (atenção: `login-negative-test` é `k6 run -e ADMIN_USERNAME= -e ADMIN_PASSWORD= <path>`, então um padrão que exija `k6 run <path>` direto conta 29 e dá falso alarme); essa paridade passou a ser **travada por teste** — `tests/unit/load-tests/orchestrator-parity.test.js` compara as entradas `cmd:` do orquestrador com os arquivos do disco, porque o tripwire de 30 que já existia (`error-gate-coverage.test.js:246`) conta só os **arquivos**, e apagar uma entrada de `CATEGORIES` mantendo o `.js` passaria verde com 29/29; (b) o **artifact existe e tem o mesmo volume** dos anteriores — #20 50.529 B, #21 50.678 B, #22 50.458 B —, e com `if-no-files-found: ignore` um diretório vazio **não** criaria artifact, o que confirma a geração dos 31 JSONs (30 scripts + `orchestrator-results.json`).
+
+**Estabilidade — nenhum sinal de degradação.** Job: #20 **17m59s**, #21 **17m48s**, #22 **17m59s**; bateria: **16m36s**, **16m34s**, **16m33s**. A duração do #22 é idêntica à do #20 dentro de 3 s, com o mesmo k6 pinado (`2.3.0`) — os três artifacts são comparáveis entre si. Por item AA, nenhum dos 4 sinais de alerta da migração do runner apareceu: os dois runs são posteriores a 19/10/2026 e a duração sustenta o mesmo patamar.
+
+**Resíduo honesto.** Log do step (403) e download do artifact (401) seguem inacessíveis sem credencial, então esta seção **não** afirma ter lido os `metrics.*.thresholds` do k6 nestes dois runs: os 81 thresholds **avaliados** seguem cobertos pelo #18 (80, todos `ok`) mais o previsto do #20 (81), e o inventário **resolvido** pelo mesmo pipeline de `options.thresholds` vale para o código, não para a execução. Fechar essa lacuna sem credencial é o objetivo do digest no `$GITHUB_STEP_SUMMARY` (ver "Observabilidade do resumo" abaixo).
+
+#### Observabilidade do resumo — da página do run em vez do zip
+
+O resíduo acima tem saída que **não** depende de credencial: `scripts/summarize-k6-reports.js`, chamado pelo `extra-steps` de `load-tests.yml` (dentro do step `Extra Steps` do `test-base.yml`, que roda com `always()`, **antes** do `Upload k6 Reports`), lê `reports/k6-summaries/` e faz *append* de um digest em `$GITHUB_STEP_SUMMARY`:
+
+- totais do orquestrador (`passed/totalScripts`, reprovados, ignorados e duração);
+- scripts reprovados com `exitCode` e os thresholds/checks que o orquestrador extraiu em `details`;
+- **inventário agregado de thresholds** — total de regras, quantas reprovadas e quantos relatórios declaram gate de `http_req_failed` (com as regras): o número que, no #20, só saiu de conferência manual do artifact;
+- tabela por script com p(95) de `http_req_duration` e quantidade de thresholds violados.
+
+**Contrato:** o script **nunca** sai com código ≠ 0 (diretório ausente vira uma linha de aviso e o job segue). O gate continua sendo o exit code do `Run Tests`; um erro de formatação no digest não pode reprovar — nem mascarar — a bateria. Cobertura: `tests/unit/scripts/summarize-k6-reports.test.js` (9 testes), incluindo os **dois formatos** de relatório que o k6 já produziu neste repositório — o atual (`values` + `thresholds: { regra: { ok } }`) e o legado de 09/2026 ainda presente em `reports/k6-summaries/` (valores inline + `thresholds: { regra: boolean }`); sem o fallback, relatório antigo saía com p(95) `—` e com os thresholds reprovados fora da contagem.
+
+**Menor privilégio:** `load-tests.yml` ganhou `permissions: contents: read` — o job só faz checkout e publica summary, e sem o bloco herdava o token default com escrita que nunca usa. `test-base.yml` **não** foi tocado de propósito: ele é compartilhado com `test-coverage.yml`, cujo comentário de PR precisa de `pull-requests: write`.
+
+---
+
 ### O p95 do `stress-test-combined` era o runner, não o código — questão fechada
 
 O registro dos runs #12–#14 deixou o outlier do #14 como **atribuição inconclusiva**, com duas hipóteses descartadas por medição (stall de checkpoint do Postgres e regressão de código) e um fator de confusão remanescente: a região do runner. O #16 fecha a questão, e o #17 confirma:

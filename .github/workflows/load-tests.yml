@@ -100,6 +100,13 @@ concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: false
 
+# Permissão mínima do token: este workflow só LER o repositório (checkout) e
+# publicar o digest no step summary — nenhuma etapa escreve no repo, abre PR ou
+# comenta issue. Sem o bloco, o job herda o token default com permissões de
+# escrita que aqui nunca são usadas (menor privilégio).
+permissions:
+  contents: read
+
 jobs:
   load-tests:
     # Tempo REAL medido no run 38246676774 (cron "Load Tests (k6)" #9,
@@ -169,3 +176,8 @@ jobs:
       # reutilizável não pode declarar `steps`.
       extra-steps: |
         mkdir -p reports/k6-summaries
+        # O step `Extra Steps` do `test-base.yml` roda com `always()`, antes do
+        # `Upload k6 Reports`, então o digest entra no $GITHUB_STEP_SUMMARY mesmo
+        # quando a bateria reprova — e este script nunca sai com código ≠ 0 (o
+        # gate real continua sendo o exit code do `Run Tests`).
+        node scripts/summarize-k6-reports.js
