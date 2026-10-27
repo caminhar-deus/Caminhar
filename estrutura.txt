@@ -254,6 +254,7 @@ pages/api/admin/fetch-ml.js → lib/api/adminCrudHandler.js
 pages/api/admin/fetch-ml.js → lib/infra/logger.js
 pages/api/admin/fetch-spotify.js → lib/api/adminCrudHandler.js
 pages/api/admin/fetch-spotify.js → lib/infra/logger.js
+pages/api/admin/fetch-spotify.js → lib/media/spotify.js
 pages/api/admin/fetch-youtube.js → lib/api/adminCrudHandler.js
 pages/api/admin/integrity.js → lib/api/adminCrudHandler.js
 pages/api/admin/integrity.js → lib/infra/db.js
@@ -261,6 +262,7 @@ pages/api/admin/integrity.js → lib/infra/storage.js
 pages/api/admin/musicas.js → lib/api/adminCrudHandler.js
 pages/api/admin/musicas.js → lib/crud/crud.js
 pages/api/admin/musicas.js → lib/domain/musicas.js
+pages/api/admin/musicas.js → lib/media/spotify.js
 pages/api/admin/posts.js → lib/api/adminCrudHandler.js
 pages/api/admin/posts.js → lib/crud/crud.js
 pages/api/admin/posts.js → lib/domain/posts.js

@@ -32,6 +32,7 @@ apoio, não a fonte oficial; a decisão não é duplicada como página de memór
 | [0020](0020-supressao-de-console-error-local-por-teste.md) | Supressão de `console.error` é local ao teste que a provoca, nunca global no setup | Aceito | 2026-10-22 |
 | [0021](0021-cobertura-do-handler-de-erro-fatal-do-pool-postgresql-em-lib-infra-db.js.md) | Cobertura do handler de erro fatal do pool PostgreSQL em `lib/infra/db.js` | Aceito | 2026-10-23 |
 | [0022](0022-enable-frontend-checklist-remote-mcp.md) | Ligar o MCP remoto Front-End-Checklist, restrito a orchestrator e oracle | Aceito | 2026-10-23 |
+| [0023](0023-spotify-embed-limitado-a-tracks-com-fallback.md) | Embed do Spotify limitado a tracks, com fallback gracioso no card | Aceito | 2026-10-27 |
 
 ## Quando criar um ADR
 

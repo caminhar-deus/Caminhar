@@ -2,7 +2,7 @@
 
 > Escopo: apenas a área pública (qualquer visitante). O painel administrativo está documentado em `docs/ARQUITETURA_SITE_PRIVADO.md`.
 > Fonte: 12 capturas de tela do site em desenvolvimento + descrição do dono do projeto.
-> Última atualização: 2026-10-21
+> Última atualização: 2026-10-27
 > Legenda: [PLANEJADO] = alvo ainda não implementado, informado pelo dono | [OBSERVADO] = visto nas imagens | [HIPÓTESE] = inferido, confirmar antes de assumir.
 
 ---
@@ -76,6 +76,7 @@ Esse mapeamento deve ser mantido de forma consistente em toda a documentação.
 - **Propósito:** [PLANEJADO] catálogo com links e informações que levam ao Spotify.
 - **Controles:** campo de busca "Pesquisar por música ou artista..."; seletor "Ordenar:"; contador verde "Mostrando X de Y músicas".
 - **Ordenação:** o seletor abre com a opção **Padrão** selecionada, que equivale a ordenar por "Mais recentes" (`created_at DESC`); as demais opções são **"Posicionados"** (curadoria manual do painel, `position ASC`), "Mais antigos", "A-Z" e "Z-A". Decisão registrada em [ADR-0014](adr/0014-padrao-significa-mais-recentes-e-curadoria-como-posicionados.md).
+- **Embed e fallback:** apenas **tracks** do Spotify são embeddáveis — a URL cadastrada no painel é convertida para `open.spotify.com/embed/track/<id>`. Quando a URL não é um track válido, o cartão **não renderiza iframe**: exibe "Prévia indisponível" e mantém o botão "🎵 Ouvir no Spotify" (link externo para a URL original). O painel recusa cadastro/edição de URL não-track desde a origem. Decisão registrada em [ADR-0023](adr/0023-spotify-embed-limitado-a-tracks-com-fallback.md); §7, itens 1 e 9.
 - **Grade:** 3 colunas x 4 linhas = 12 itens por página.
 - **Cartão de música:** player incorporado do Spotify (embed) → título → artista (cinza) → botão verde "🎵 Ouvir no Spotify" (link externo).
 - **Paginação:** "❮ Anterior | Página X de Y (Z músicas) | Próxima ❯". "Anterior" fica desabilitado na página 1.
@@ -122,7 +123,7 @@ Esse mapeamento deve ser mantido de forma consistente em toda a documentação.
 ## 7. Pendências e bugs conhecidos (prioridade)
 | # | Item | Prioridade | Status |
 |---|---|---|---|
-| 1 | 5 embeds do Spotify com "Page not found" e 1 com faixa errada (Caminho no Deserto) | Alta | aberto |
+| 1 | 5 embeds do Spotify com "Page not found" e 1 com faixa errada (Caminho no Deserto) | Alta | **resolvido em 2026-10-27** — embed do Spotify passou a aceitar apenas tracks, com fallback "Prévia indisponível" + botão externo (ADR-0023); a base atual de teste só tem tracks válidos, e a faixa "Caminho no Deserto" não consta mais |
 | 2 | 6/6 vídeos do YouTube indisponíveis; "Ousado Amor" bloqueado por direitos autorais | Alta | aberto — mitigado pelo link externo "Assistir no YouTube" no cartão (§3.4) |
 | 3 | Capa quebrada no post "Fé em Tempos Difíceis" | Média | aberto |
 | 4 | Dados de teste em "Dicas do Dia" ("Teste 10") | Média | aberto |
@@ -130,7 +131,7 @@ Esse mapeamento deve ser mantido de forma consistente em toda a documentação.
 | 6 | Cartões de post com rodapé desalinhado | Baixa | **resolvido em 2026-10-21** — o `.content` do `BaseCard` passou a ser flex column (§3.1) |
 | 7 | Aba "Em Desenvolvimento" sem definição | Planejamento | aberto |
 | 8 | Produtos sem cadastro | Planejamento | aberto |
-| 9 | Considerar fallback quando embed falhar (mostrar só o botão/link) | Sugestão | **parcial** — vídeos têm o link externo (§3.4); o embed do Spotify segue sem fallback |
+| 9 | Considerar fallback quando embed falhar (mostrar só o botão/link) | Sugestão | **resolvido em 2026-10-27** — vídeos têm o link externo (§3.4, ADR-0015) e o embed do Spotify agora tem fallback (§3.3, ADR-0023) |
 | 10 | Reordenar posts no painel está quebrado: a reordenação envia `position = 0` e o schema exige posição positiva → erro 400 | Alta | **resolvido em 2026-10-21** — o helper passou a enviar posições 1-based (`utils/reorder.js`); a curadoria por `position` passou a valer (§3.1) |
 | 11 | Reordenar produtos no painel está quebrado: `PUT /api/products` não trata `action: "reorder"` | Alta | **resolvido em 2026-10-21** — `PUT /api/products` agora trata `action: "reorder"` (com invalidação de cache e registro de Auditoria); a opção "Posicionados" foi exposta no seletor (§3.5) |
 | 12 | A rota `/blog` (lista completa) ignora a curadoria por `position`, mostra 9 por página e o CTA diz "Ler artigo completo →" (aqui o rótulo é "Ler mais →") | Média | aberto |

@@ -628,6 +628,7 @@
 │   │   ├── 0020-supressao-de-console-error-local-por-teste.md
 │   │   ├── 0021-cobertura-do-handler-de-erro-fatal-do-pool-postgresql-em-lib-infra-db.js.md
 │   │   ├── 0022-enable-frontend-checklist-remote-mcp.md
+│   │   ├── 0023-spotify-embed-limitado-a-tracks-com-fallback.md
 │   │   ├── README.md
 │   │   └── template.md
 │   └── ai-memory-error.md
@@ -1347,6 +1348,7 @@
 │       └── videos.validation.test.js
 ├── tree.txt
 ├── uploads
+│   ├── hero-image-c56bdc10-2a0e-4ed7-a1c2-186ae5b7ad23.webp
 │   └── post-image-255714e9-57d2-46f8-8a97-b8e02b170861.png
 └── utils
     ├── csvExport.js
@@ -1354,4 +1356,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-205 directories, 1150 files
+205 directories, 1152 files

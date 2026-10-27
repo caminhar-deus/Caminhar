@@ -2,7 +2,7 @@
 
 > Escopo: painel administrativo em `/admin` (acesso só com login). A área pública está em `docs/ARQUITETURA_SITE_PUBLICO.md`.
 > Fonte: 23 capturas de tela do painel (ambiente local `localhost:3000/admin`).
-> Última atualização: 2026-10-21
+> Última atualização: 2026-10-27
 > Legenda: [PLANEJADO] = alvo ainda não implementado, informado pelo dono | [OBSERVADO] = visto nas imagens | [HIPÓTESE] = inferido, confirmar antes de assumir.
 
 ---
@@ -107,7 +107,7 @@ Todas seguem o mesmo modelo, com pequenas variações:
   - Link do Spotify * (formato `https://open.spotify.com/track/...`) + botão "⚡ Puxar Dados"
   - Publicar música imediatamente (desmarcado → Rascunho)
   - Botão "Cadastrar Música"
-- **Relação com o público:** o link Spotify gera o player incorporado e o botão "Ouvir no Spotify". O erro "Page not found" visto no site público indica link/ID inválido ou fora do formato `/track/` (ver `docs/ARQUITETURA_SITE_PUBLICO.md` §3.3).
+- **Relação com o público:** o link Spotify gera o player incorporado e o botão "Ouvir no Spotify". Apenas **tracks** são suportados: o formulário, a API e o "⚡ Puxar Dados" recusam link não-track (playlist, álbum, episódio) com a mensagem "Apenas links de faixa (track) são suportados para embed." (decisão em [ADR-0023](adr/0023-spotify-embed-limitado-a-tracks-com-fallback.md)). No site público, URL não-track deixada de versões antigas exibe "Prévia indisponível" em vez de iframe quebrado (ver `docs/ARQUITETURA_SITE_PUBLICO.md` §3.3).
 
 ### 4.4 Gestão de Vídeos
 - **Botão:** "+ Novo Vídeo".
