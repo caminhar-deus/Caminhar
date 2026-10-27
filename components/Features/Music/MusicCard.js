@@ -6,20 +6,11 @@ import styles from './styles/MusicCard.module.css';
 export default function MusicCard({ musica }) {
   const temSpotify = Boolean(musica.url_spotify);
 
-  let embedUrl = '';
-  if (temSpotify) {
-    try {
-      const converted = getSpotifyEmbedUrl(musica.url_spotify);
-      if (converted && typeof converted === 'string' && converted.includes('/embed/track/')) {
-        embedUrl = `${converted}?utm_source=generator&theme=0`;
-      } else {
-        embedUrl = '';
-      }
-    } catch (error) {
-      console.error('Erro ao converter URL do Spotify:', error);
-      embedUrl = '';
-    }
-  }
+  // `getSpotifyEmbedUrl` devolve a URL de embed só para track válido e `null`
+  // caso contrário — contrato do ADR-0023. Fora do track, o card cai no
+  // fallback ("Prévia indisponível") sem renderizar iframe quebrado.
+  const embedSrc = temSpotify ? getSpotifyEmbedUrl(musica.url_spotify) : null;
+  const embedUrl = embedSrc ? `${embedSrc}?utm_source=generator&theme=0` : '';
 
   const handleSpotifyClick = (e) => {
     e.preventDefault();

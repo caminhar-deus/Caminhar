@@ -124,10 +124,10 @@ Esse mapeamento deve ser mantido de forma consistente em toda a documentação.
 | # | Item | Prioridade | Status |
 |---|---|---|---|
 | 1 | 5 embeds do Spotify com "Page not found" e 1 com faixa errada (Caminho no Deserto) | Alta | **resolvido em 2026-10-27** — embed do Spotify passou a aceitar apenas tracks, com fallback "Prévia indisponível" + botão externo (ADR-0023); a base atual de teste só tem tracks válidos, e a faixa "Caminho no Deserto" não consta mais |
-| 2 | 6/6 vídeos do YouTube indisponíveis; "Ousado Amor" bloqueado por direitos autorais | Alta | aberto — mitigado pelo link externo "Assistir no YouTube" no cartão (§3.4) |
-| 3 | Capa quebrada no post "Fé em Tempos Difíceis" | Média | aberto |
-| 4 | Dados de teste em "Dicas do Dia" ("Teste 10") | Média | aberto |
-| 5 | Banner principal sem imagem (placeholder) | Média | aberto — **falta de dado**, não de integração: a home já lê `home_image_url` do painel (§2.2) |
+| 2 | 6/6 vídeos do YouTube indisponíveis; "Ousado Amor" bloqueado por direitos autorais | Alta | **obsoleto em 2026-10-27** — a tabela `videos` foi limpa pelo dono (0 registros): o dado que gerava o problema não existe mais. Se vídeos com link indisponível voltarem a ser cadastrados, o link externo "Assistir no YouTube" (§3.4) segue como mitigação |
+| 3 | Capa quebrada no post "Fé em Tempos Difíceis" | Média | **obsoleto em 2026-10-27** — a tabela `posts` foi limpa pelo dono (0 registros): o post não existe mais |
+| 4 | Dados de teste em "Dicas do Dia" ("Teste 10") | Média | **obsoleto em 2026-10-27** — a tabela `dicas` foi limpa pelo dono (0 registros): a dica de teste foi excluída |
+| 5 | Banner principal sem imagem (placeholder) | Média | **parcial** — o dado agora existe: `home_image_url` aponta para `/uploads/hero-image-c56bdc10-2a0e-4ed7-a1c2-186ae5b7ad23.webp`, arquivo presente em `public/uploads/` (conferido em 27/10/2026); falta a confirmação visual no navegador (o dev server estava fora do ar na checagem) |
 | 6 | Cartões de post com rodapé desalinhado | Baixa | **resolvido em 2026-10-21** — o `.content` do `BaseCard` passou a ser flex column (§3.1) |
 | 7 | Aba "Em Desenvolvimento" sem definição | Planejamento | aberto |
 | 8 | Produtos sem cadastro | Planejamento | aberto |

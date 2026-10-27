@@ -48,7 +48,7 @@ describe('Componentes Features - Music - MusicCard', () => {
     expect(iframe).toHaveAttribute('src', expect.stringContaining('https://open.spotify.com/embed/track/zzxyxxww'));
   });
 
-  it('deve usar a URL original (fallback) caso o formato seja desconhecido', async () => {
+  it('deve exibir o fallback sem iframe caso o formato seja desconhecido', async () => {
     const musica = { titulo: 'A', artista: 'B', url_spotify: 'https://soundcloud.com/track/123' };
     render(<MusicCard musica={musica} />);
 
