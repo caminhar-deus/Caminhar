@@ -2,6 +2,7 @@
 
 exports[`[Barrel] Admin Components Index deve exportar a estrutura esperada do barrel Admin 1`] = `
 [
+  "AdminCategories",
   "AdminCrudBase",
   "AdminMusicasNew",
   "AdminPostsNew",

@@ -143,6 +143,30 @@ describe('API Admin - Gestão de Posts (/api/admin/posts) - Específicos', () =>
       expect(invalidateCache).toHaveBeenCalledWith('posts:*');
     });
 
+    it('deve retornar 400 quando category_ids contém id de categoria inexistente', async () => {
+      // O domínio valida existência antes do INSERT e lança INVALID_CATEGORY_ID;
+      // a rota traduz para 400 com erro de campo (antes virava 500 genérico de FK)
+      const invalidCategoryError = new Error('Uma ou mais categorias informadas não existem');
+      invalidCategoryError.code = 'INVALID_CATEGORY_ID';
+      createPost.mockRejectedValueOnce(invalidCategoryError);
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      try {
+        const { req, res } = getAuthenticatedMocks({
+          method: 'POST',
+          body: { ...validCreatePayload, category_ids: [999] },
+        });
+        await handler(req, res);
+
+        expect(res._getStatusCode()).toBe(400);
+        const body = JSON.parse(res._getData());
+        expect(body.message).toContain('não existem');
+        expect(body.errors).toHaveProperty('category_ids');
+      } finally {
+        consoleSpy.mockRestore();
+      }
+    });
+
     it('deve retornar 500 se ocorrer um erro ao criar', async () => {
       createPost.mockRejectedValueOnce(new Error('Erro DB'));
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});

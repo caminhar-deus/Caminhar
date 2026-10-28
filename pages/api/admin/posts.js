@@ -15,6 +15,7 @@ const postCreateSchema = z.object({
     message: 'A URL da imagem deve ser um link completo (https://...) ou um caminho local válido (/uploads/...).'
   }).optional(),
   published: z.boolean().optional(),
+  category_ids: z.array(z.number().int().positive()).optional(),
 });
 
 const postUpdateDataSchema = z.object({
@@ -27,6 +28,7 @@ const postUpdateDataSchema = z.object({
     message: 'A URL da imagem deve ser um link completo (https://...) ou um caminho local válido (/uploads/...).'
   }).optional(),
   published: z.boolean().optional(),
+  category_ids: z.array(z.number().int().positive()).optional(),
 });
 
 const reorderItemSchema = z.object({
@@ -60,12 +62,23 @@ async function handlePost(req, res) {
       errors: validationResult.error.flatten().fieldErrors
     });
   }
-  const { title, slug, excerpt, content, image_url, published } = validationResult.data;
+  const { title, slug, excerpt, content, image_url, published, category_ids } = validationResult.data;
 
-  const newPost = await createPost({ title, slug, excerpt, content, image_url, published });
+  try {
+    const newPost = await createPost({ title, slug, excerpt, content, image_url, published, category_ids });
 
-  await req.adminUtils.logActivity('CRIAR POST', newPost.id, `Criou o artigo: ${title}`);
-  return res.status(201).json(newPost);
+    await req.adminUtils.logActivity('CRIAR POST', newPost.id, `Criou o artigo: ${title}`);
+    return res.status(201).json(newPost);
+  } catch (error) {
+    // Erros de categoria são do cliente (payload inválido), não do servidor
+    if (error?.code === 'INVALID_CATEGORY_ID') {
+      return res.status(400).json({
+        message: error.message,
+        errors: { category_ids: [error.message] }
+      });
+    }
+    throw error;
+  }
 }
 
 async function handlePut(req, res) {
@@ -111,13 +124,24 @@ async function handlePut(req, res) {
     return res.status(400).json({ message: 'Nenhum dado fornecido para atualização' });
   }
 
-  const updatedPost = await updatePost(postId, updatePayload);
-  if (!updatedPost) {
-    return res.status(404).json({ message: 'Post não encontrado' });
-  }
+  try {
+    const updatedPost = await updatePost(postId, updatePayload);
+    if (!updatedPost) {
+      return res.status(404).json({ message: 'Post não encontrado' });
+    }
 
-  await req.adminUtils.logActivity('ATUALIZAR POST', postId, `Atualizou o artigo: ${updatedPost.title}`);
-  return res.status(200).json(updatedPost);
+    await req.adminUtils.logActivity('ATUALIZAR POST', postId, `Atualizou o artigo: ${updatedPost.title}`);
+    return res.status(200).json(updatedPost);
+  } catch (error) {
+    // Erros de categoria são do cliente (payload inválido), não do servidor
+    if (error?.code === 'INVALID_CATEGORY_ID') {
+      return res.status(400).json({
+        message: error.message,
+        errors: { category_ids: [error.message] }
+      });
+    }
+    throw error;
+  }
 }
 
 async function handleDelete(req, res) {

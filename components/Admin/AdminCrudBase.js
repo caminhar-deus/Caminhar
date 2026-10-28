@@ -39,6 +39,7 @@ import CrudTable from './CrudTable';
  * @param {string} [props.itemNamePlural='itens'] - Nome do item no plural
  * @param {boolean} [props.readOnly=false] - Desativa formulário e edição (Somente Leitura)
  * @param {Function} [props.canDelete] - Decide se a linha pode ser excluída (default `() => true`); linhas protegidas escondem só o "Excluir"
+ * @param {Function} [props.mapItemToFormData] - Mapeia o item antes de preencher o formulário na edição (ex.: `post.categories` → `category_ids` em AdminPosts)
  */
 export default function AdminCrudBase({
   apiEndpoint,
@@ -65,7 +66,8 @@ export default function AdminCrudBase({
   itemNameSingular = 'item',
   itemNamePlural = 'itens',
   readOnly = false,
-  canDelete
+  canDelete,
+  mapItemToFormData
 }) {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -121,6 +123,13 @@ export default function AdminCrudBase({
     resolveRef.current?.(true);
     resolveRef.current = null;
     setConfirmDelete({ isOpen: false, itemId: null });
+  };
+
+  // Wrapper do `handleEdit`: dá ao chamador a chance de mapear o item antes de
+  // preencher o formulário (ex.: transformar `post.categories` em `category_ids`
+  // em AdminPosts — spec posts.md §2.2). Sem a prop, o item vai como está.
+  const handleEditItem = (item) => {
+    handleEdit(mapItemToFormData ? mapItemToFormData(item) : item);
   };
 
   // Efeito para exibir notificações de erro automaticamente
@@ -342,7 +351,7 @@ export default function AdminCrudBase({
         reorderable={reorderable}
         searchTerm={searchTerm}
         renderCustomCell={renderCustomCell}
-        handleEdit={handleEdit}
+        handleEdit={handleEditItem}
         handleDelete={handleDelete}
         handleToggleBoolean={handleToggleBoolean}
         localItems={localItems}
@@ -435,5 +444,6 @@ AdminCrudBase.propTypes = {
   itemNameSingular: PropTypes.string,
   itemNamePlural: PropTypes.string,
   readOnly: PropTypes.bool,
-  canDelete: PropTypes.func
+  canDelete: PropTypes.func,
+  mapItemToFormData: PropTypes.func
 };

@@ -1,0 +1,116 @@
+/*
+ * Estilos do AdminPosts: toggle "Posts | Categorias" (spec posts.md §3.2–§3.3)
+ * e campo de seleção de categorias (spec posts.md §2.2).
+ * Tokens sempre via variável (spec posts.md §0); nenhum hex novo.
+ */
+
+/* ── Toggle segmentado ─────────────────────────────────────────────── */
+.toggle {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin-bottom: var(--spacing-4);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-lg);
+  /*
+   * Sem `overflow: hidden` (previsto na spec §3.2): ele recortaria o anel de
+   * foco exigido em §3.3 (`outline-offset: 2px`). Os cantos externos são
+   * arredondados por botão abaixo, mantendo o mesmo visual.
+   */
+}
+
+.toggleButton {
+  padding: var(--spacing-2) var(--spacing-4);
+  border: none;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  min-height: 40px;
+}
+
+.toggleButton + .toggleButton {
+  border-left: 1px solid var(--color-border-light);
+}
+
+.toggleButtonActive {
+  background: var(--color-primary-500);
+  color: var(--color-text-inverse);
+}
+
+/* Cantos externos (raio do contêiner menos a borda de 1px) */
+.toggleButton:first-child {
+  border-top-left-radius: calc(var(--border-radius-lg) - 1px);
+  border-bottom-left-radius: calc(var(--border-radius-lg) - 1px);
+}
+
+.toggleButton:last-child {
+  border-top-right-radius: calc(var(--border-radius-lg) - 1px);
+  border-bottom-right-radius: calc(var(--border-radius-lg) - 1px);
+}
+
+/* Par do MASTER §7: outline + halo nunca um sem o outro */
+.toggleButton:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
+  /* Garante que o anel não fique pintado atrás do botão irmão */
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Campo de seleção de categorias (checkboxes) ───────────────────── */
+.categoryField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1_5);
+}
+
+.categoryLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.categoryGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-lg);
+}
+
+/* Par do MASTER §7 Campo (borda --color-error-500 + halo vermelho). O halo usa
+   o token de erro com alfa definido em variables.css — sem hex fora de token */
+.categoryGroupError {
+  border-color: var(--color-error-500);
+  box-shadow: 0 0 0 3px var(--color-error-halo);
+}
+
+.categoryOption {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-height: 32px;
+  padding: var(--spacing-1) var(--spacing-2);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.categoryOption input {
+  cursor: pointer;
+}
+
+.categoryEmpty,
+.categoryHint {
+  margin: 0;
+  font-size: var(--font-size-xs); /* 12px */
+  color: var(--color-text-tertiary);
+}
+
+.categoryError {
+  font-size: var(--font-size-xs); /* 12px */
+  color: var(--color-error-500);
+}

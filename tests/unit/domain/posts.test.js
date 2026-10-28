@@ -52,7 +52,8 @@ describe('Domain - Posts (lib/domain/posts.js)', () => {
 
       const result = await getRecentPosts(10, 2, ''); // limit 10, page 2
 
-      expect(result.data).toEqual([{ id: 1, title: 'Post 1' }]);
+      // 'categories' é anexado pós-paginate (query complementar) — vazio sem vínculos
+      expect(result.data).toEqual([{ id: 1, title: 'Post 1', categories: [] }]);
       expect(result.pagination).toEqual({ page: 2, limit: 10, total: 15, totalPages: 2 });
       
       // Verifica se os parâmetros [limit, offset] foram repassados na ordem correta

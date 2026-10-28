@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import AdminPosts from '../../../../components/Admin/AdminPosts.js';
 import { mockGlobalFetch } from '../../../helpers/index.js';
@@ -17,6 +17,14 @@ describe('Componente Front-End - AdminPosts', () => {
 
   beforeEach(() => {
     fetchMock = mockGlobalFetch();
+    // Resposta padrão: o AdminPosts agora busca as categorias no mount
+    // (`GET /api/admin/categories?all=1`) além das demais chamadas.
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: () => null },
+      json: async () => ({ data: [] }),
+    });
   });
 
   afterEach(() => {
@@ -130,5 +138,129 @@ describe('Componente Front-End - AdminPosts', () => {
     const { container } = render(titleCol.render({ title: 'Post sem imagem', image_url: null }));
     expect(screen.getByText('Post sem imagem')).toBeInTheDocument();
     expect(container.querySelector('img')).not.toBeInTheDocument();
+  });
+
+  // ── Toggle "Posts | Categorias" (spec posts.md §3.2–§3.3) ──────────
+  it('deve iniciar na visão Posts e alternar para Categorias e voltar', () => {
+    render(<AdminPosts />);
+
+    const group = screen.getByRole('group', { name: 'Visualização da aba Posts/Artigos' });
+    expect(group).toBeInTheDocument();
+
+    const postsButton = screen.getByRole('button', { name: 'Posts' });
+    const categoriesButton = screen.getByRole('button', { name: 'Categorias' });
+    expect(postsButton).toHaveAttribute('aria-pressed', 'true');
+    expect(categoriesButton).toHaveAttribute('aria-pressed', 'false');
+    expect(passedProps.title).toBe('Gerenciar Posts');
+
+    fireEvent.click(categoriesButton);
+    expect(screen.getByRole('button', { name: 'Posts' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('button', { name: 'Categorias' })).toHaveAttribute('aria-pressed', 'true');
+    // O AdminCrudBase está mockado: o mock recebe a config do AdminCategories
+    expect(passedProps.title).toBe('Gerenciar Categorias');
+    expect(passedProps.apiEndpoint).toBe('/api/admin/categories');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Posts' }));
+    expect(passedProps.title).toBe('Gerenciar Posts');
+    expect(passedProps.apiEndpoint).toBe('/api/admin/posts');
+  });
+
+  it('deve buscar as categorias no mount em /api/admin/categories?all=1', async () => {
+    render(<AdminPosts />);
+    await waitFor(() =>
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/admin/categories?all=1',
+        expect.objectContaining({ credentials: 'include' })
+      )
+    );
+  });
+
+  // ── Campo de atribuição de categorias (spec posts.md §2.2) ─────────
+  it('deve configurar o campo category_ids conforme a spec', () => {
+    render(<AdminPosts />);
+
+    const field = passedProps.fields.find((f) => f.name === 'category_ids');
+    expect(field).toBeDefined();
+    expect(field.label).toBe('Categorias');
+    expect(field.gridColumn).toBe('span 2');
+    expect(field.hint).toBe('Opcional. Selecione uma ou mais categorias.');
+    expect(typeof field.component).toBe('function');
+    expect(passedProps.initialFormData.category_ids).toEqual([]);
+
+    // Schema aceita post sem categoria
+    expect(() => passedProps.validationSchema.parse({
+      title: 'T', slug: 't', published: false,
+    })).not.toThrow();
+    expect(() => passedProps.validationSchema.parse({
+      title: 'T', slug: 't', category_ids: [1, 2],
+    })).not.toThrow();
+  });
+
+  it('mapItemToFormData: deve preencher category_ids a partir de post.categories', () => {
+    render(<AdminPosts />);
+
+    expect(passedProps.mapItemToFormData({
+      id: 7,
+      title: 'Post',
+      categories: [{ id: 1, name: 'Fé', slug: 'fe' }, { id: 3, name: 'Oração', slug: 'oracao' }],
+    }).category_ids).toEqual([1, 3]);
+
+    // Sem categories (payload antigo) vira array vazio, nunca undefined
+    expect(passedProps.mapItemToFormData({ id: 7 }).category_ids).toEqual([]);
+  });
+
+  it('CategorySelectField: deve renderizar checkboxes e alternar a seleção', () => {
+    render(<AdminPosts />);
+    const CategoryField = passedProps.fields.find((f) => f.name === 'category_ids').component;
+    const onChange = jest.fn();
+
+    render(
+      <CategoryField
+        name="category_ids"
+        value={[1]}
+        onChange={onChange}
+        label="Categorias"
+        hint="Opcional. Selecione uma ou mais categorias."
+        options={[{ id: 1, name: 'Fé', slug: 'fe' }, { id: 2, name: 'Oração', slug: 'oracao' }]}
+      />
+    );
+
+    const checkboxes = screen.getAllByRole('checkbox');
+    expect(checkboxes).toHaveLength(2);
+    expect(checkboxes[0]).toBeChecked();
+    expect(checkboxes[1]).not.toBeChecked();
+
+    // Grupo acessível com rótulo visível
+    expect(screen.getByRole('group', { name: 'Categorias' })).toBeInTheDocument();
+    expect(screen.getByText('Opcional. Selecione uma ou mais categorias.')).toBeInTheDocument();
+
+    fireEvent.click(checkboxes[1]);
+    expect(onChange).toHaveBeenLastCalledWith({ target: { name: 'category_ids', value: [1, 2] } });
+
+    fireEvent.click(checkboxes[0]);
+    expect(onChange).toHaveBeenLastCalledWith({ target: { name: 'category_ids', value: [] } });
+  });
+
+  it('CategorySelectField: deve exibir o estado vazio quando não há categorias', () => {
+    render(<AdminPosts />);
+    const CategoryField = passedProps.fields.find((f) => f.name === 'category_ids').component;
+
+    const { container } = render(
+      <CategoryField
+        name="category_ids"
+        value={[]}
+        onChange={jest.fn()}
+        label="Categorias"
+        options={[]}
+      />
+    );
+
+    expect(
+      screen.getByText('Nenhuma categoria cadastrada. Crie na aba "Categorias".')
+    ).toBeInTheDocument();
+    expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
+    // O campo não some: o rótulo continua visível acima do grupo
+    expect(container.querySelector('label')).toHaveTextContent('Categorias');
+    expect(screen.getByRole('group', { name: 'Categorias' })).toBeInTheDocument();
   });
 });

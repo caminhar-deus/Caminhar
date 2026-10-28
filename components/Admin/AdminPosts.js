@@ -1,12 +1,15 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import AdminCrudBase from './AdminCrudBase';
+import AdminCategories from './AdminCategories';
 import TextField from './fields/TextField';
 import TextAreaField from './fields/TextAreaField';
 import ImageUploadField from './fields/ImageUploadField';
 import ToggleField from './fields/ToggleField';
 import { handleReorder } from '@/utils/reorder';
+import { useApiFetch } from '@/hooks/useApiFetch';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
+import styles from './styles/adminPosts.module.css';
 
 /**
  * Schema de validação para posts
@@ -20,7 +23,9 @@ const postSchema = z.object({
     !val || val === '' || val.startsWith('http') || val.startsWith('/'), {
     message: 'Por favor, insira uma URL completa (https://...) ou um caminho local válido (/uploads/...).'
   }).optional(),
-  published: z.boolean().optional()
+  published: z.boolean().optional(),
+  // Campo opcional: post sem categoria é válido (spec posts.md §2.2)
+  category_ids: z.array(z.number()).optional()
 });
 
 /**
@@ -32,6 +37,68 @@ const generateSlug = (title) => {
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
+};
+
+/**
+ * Campo de seleção de categorias do formulário de post (spec posts.md §2.1–§2.2).
+ *
+ * Grupo de checkboxes com wrap (mesma estrutura do `PermissionsSelectField` de
+ * `AdminRolesTab.js`), valor como `number[]` de ids.
+ *
+ * @param {Object} props
+ * @param {string} props.name - Nome do campo (`category_ids`)
+ * @param {number[]} props.value - Ids das categorias selecionadas
+ * @param {Function} props.onChange - Handler no formato `{ target: { name, value } }`
+ * @param {string} props.label - Rótulo visível acima do grupo
+ * @param {string} [props.error] - Mensagem de erro de validação
+ * @param {string} [props.hint] - Texto auxiliar abaixo do grupo
+ * @param {string} [props.gridColumn] - Grid column aplicado pelo AdminCrudBase
+ * @param {Array<{id:number,name:string,slug:string}>} props.options - Categorias cadastradas
+ */
+const CategorySelectField = ({ name, value, onChange, label, error, hint, gridColumn, options = [] }) => {
+  const selected = Array.isArray(value) ? value : [];
+  const labelId = `${name}-label`;
+  const hintId = `${name}-hint`;
+  const errorId = `${name}-error`;
+
+  const toggleCategory = (categoryId) => {
+    const next = selected.includes(categoryId)
+      ? selected.filter((id) => id !== categoryId)
+      : [...selected, categoryId];
+    onChange({ target: { name, value: next } });
+  };
+
+  return (
+    <div style={{ gridColumn }} className={styles.categoryField}>
+      <label id={labelId} className={styles.categoryLabel}>{label}</label>
+      <div
+        className={error ? `${styles.categoryGroup} ${styles.categoryGroupError}` : styles.categoryGroup}
+        role="group"
+        aria-labelledby={labelId}
+        aria-describedby={error ? errorId : hint ? hintId : undefined}
+      >
+        {options.length === 0 ? (
+          <p className={styles.categoryEmpty} aria-live="polite">
+            Nenhuma categoria cadastrada. Crie na aba &quot;Categorias&quot;.
+          </p>
+        ) : (
+          options.map((category, index) => (
+            <label key={category.id ?? category.slug} className={styles.categoryOption}>
+              <input
+                type="checkbox"
+                id={index === 0 ? `${name}-${category.id}` : undefined}
+                checked={selected.includes(category.id)}
+                onChange={() => toggleCategory(category.id)}
+              />
+              {category.name}
+            </label>
+          ))
+        )}
+      </div>
+      {hint && !error && <p id={hintId} className={styles.categoryHint}>{hint}</p>}
+      {error && <span id={errorId} className={styles.categoryError}>{error}</span>}
+    </div>
+  );
 };
 
 /**
@@ -89,6 +156,13 @@ const fields = [
     activeLabel: 'Publicado',
     inactiveLabel: 'Rascunho',
     gridColumn: 'span 2'
+  },
+  {
+    name: 'category_ids',
+    component: CategorySelectField,
+    label: 'Categorias',
+    gridColumn: 'span 2',
+    hint: 'Opcional. Selecione uma ou mais categorias.'
   }
 ];
 
@@ -148,7 +222,8 @@ const initialFormData = {
   excerpt: '',
   content: '',
   image_url: '',
-  published: false
+  published: false,
+  category_ids: []
 };
 
 /**
@@ -165,9 +240,37 @@ const validate = (data) => {
  * AdminPostsNew - Componente refatorado usando AdminCrudBase
  * 
  * Demonstra uso de upload de imagens e geração automática de slug.
+ * Inclui o toggle "Posts | Categorias" (spec posts.md §3) que alterna entre
+ * este CRUD e o {@link AdminCategories}.
  */
 export default function AdminPostsNew() {
   const slugGeneratedRef = useRef(false);
+
+  // Aba interna: 'posts' (default) ou 'categories' (spec posts.md §3.2)
+  const [view, setView] = useState('posts');
+
+  // Lista completa de categorias para o campo de atribuição (spec posts.md §2.2)
+  const { data: categoriesData } = useApiFetch('/api/admin/categories?all=1', {
+    options: { credentials: 'include' },
+    initialData: { data: [] },
+  });
+  const categories = Array.isArray(categoriesData?.data) ? categoriesData.data : [];
+
+  // Anexa as opções ao campo `category_ids` (o array base é constante)
+  const formFields = fields.map((field) => (
+    field.name === 'category_ids' ? { ...field, options: categories } : field
+  ));
+
+  /**
+   * Ao editar, preenche `category_ids` a partir de `post.categories` (ids) —
+   * o hook grava o item inteiro no formulário (spec posts.md §2.2).
+   */
+  const mapItemToFormData = (item) => ({
+    ...item,
+    category_ids: Array.isArray(item.categories)
+      ? item.categories.map((category) => category.id)
+      : [],
+  });
 
   /**
    * Renderizador customizado para campos especiais
@@ -225,27 +328,62 @@ export default function AdminPostsNew() {
     return null; // Deixa o AdminCrudBase renderizar os outros campos normalmente
   };
 
+  const toggleButtonClass = (active) => (
+    active ? `${styles.toggleButton} ${styles.toggleButtonActive}` : styles.toggleButton
+  );
+
   return (
-    <AdminCrudBase
-      apiEndpoint="/api/admin/posts"
-      title="Gerenciar Posts"
-      fields={fields}
-      columns={columns}
-      initialFormData={initialFormData}
-      validationSchema={postSchema}
-      validate={validate}
-      renderCustomFormField={renderCustomFormField}
-      newButtonText="+ Novo Post"
-      saveButtonText="Salvar"
-      updateButtonText="Atualizar"
-      emptyMessage="Nenhum post encontrado."
-      searchable={true}
-      exportable={true}
-      reorderable={true}
-      onReorder={(items, page, perPage) => handleReorder('/api/admin/posts', items, page, perPage)}
-      showItemCount={true}
-      itemNameSingular="post cadastrado"
-      itemNamePlural="posts cadastrados"
-    />
+    <>
+      {/* Toggle "Posts | Categorias" (spec posts.md §3.2–§3.3) */}
+      <div
+        role="group"
+        aria-label="Visualização da aba Posts/Artigos"
+        className={styles.toggle}
+      >
+        <button
+          type="button"
+          aria-pressed={view === 'posts'}
+          onClick={() => setView('posts')}
+          className={toggleButtonClass(view === 'posts')}
+        >
+          Posts
+        </button>
+        <button
+          type="button"
+          aria-pressed={view === 'categories'}
+          onClick={() => setView('categories')}
+          className={toggleButtonClass(view === 'categories')}
+        >
+          Categorias
+        </button>
+      </div>
+
+      {view === 'posts' ? (
+        <AdminCrudBase
+          apiEndpoint="/api/admin/posts"
+          title="Gerenciar Posts"
+          fields={formFields}
+          columns={columns}
+          initialFormData={initialFormData}
+          validationSchema={postSchema}
+          validate={validate}
+          renderCustomFormField={renderCustomFormField}
+          mapItemToFormData={mapItemToFormData}
+          newButtonText="+ Novo Post"
+          saveButtonText="Salvar"
+          updateButtonText="Atualizar"
+          emptyMessage="Nenhum post encontrado."
+          searchable={true}
+          exportable={true}
+          reorderable={true}
+          onReorder={(items, page, perPage) => handleReorder('/api/admin/posts', items, page, perPage)}
+          showItemCount={true}
+          itemNameSingular="post cadastrado"
+          itemNamePlural="posts cadastrados"
+        />
+      ) : (
+        <AdminCategories />
+      )}
+    </>
   );
 }

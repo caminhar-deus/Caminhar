@@ -15,6 +15,7 @@ export { default as AdminCrudBase } from './AdminCrudBase';
 export { default as AdminMusicasNew } from './AdminMusicas';
 export { default as AdminVideosNew } from './AdminVideos';
 export { default as AdminPostsNew } from './AdminPosts';
+export { default as AdminCategories } from './AdminCategories';
 
 // Campos de Formulário
 export { default as TextField } from './fields/TextField';

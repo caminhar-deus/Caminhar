@@ -48,6 +48,29 @@
 }
 
 /* PostCard Styles */
+
+/* Chips de categoria (spec posts.md §1.3 — nunca hex novo, só tokens) */
+.categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  margin: 0 0 var(--spacing-3) 0;
+}
+
+.category {
+  font-size: var(--font-size-xs);
+  color: var(--color-primary-500);
+  background-color: var(--color-primary-50);
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--border-radius-full);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  display: inline-block;
+  white-space: nowrap;
+}
+
 .cardTitle {
   font-size: var(--font-size-xl);
   margin: 0 0 var(--spacing-3) 0;

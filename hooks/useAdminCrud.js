@@ -183,8 +183,13 @@ export const useAdminCrud = ({
       const data = await response.json();
 
       if (!response.ok) {
-        const apiError = new Error(data.error || 'Ocorreu um erro na API.');
-        if (data.details) {
+        // APIs admin devolvem { message } (e algumas legadas { error }); detalhes
+        // de campo chegam como { errors: { campo: [msgs] } } (Zod flatten) ou
+        // como { details: [{ field, message }] } no padrão antigo.
+        const apiError = new Error(data.error || data.message || 'Ocorreu um erro na API.');
+        if (data.errors && typeof data.errors === 'object') {
+          apiError.errors = data.errors;
+        } else if (data.details) {
           apiError.errors = data.details.reduce((acc, curr) => {
             acc[curr.field] = [curr.message];
             return acc;

@@ -23,12 +23,17 @@ describe('getPaginatedPosts', () => {
       if (text.includes('COUNT(*)')) {
         return Promise.resolve({ rows: [{ count: '50' }] });
       }
+      // Query complementar de categorias (pós-paginate) — sem vínculos
+      if (text.includes('post_categories')) {
+        return Promise.resolve({ rows: [] });
+      }
       return Promise.resolve({ rows: [{ id: 1, title: 'Post 1' }] });
     });
 
     const result = await getPaginatedPosts(page, limit);
 
-    expect(mockQuery).toHaveBeenCalledTimes(2);
+    // SELECT de dados + COUNT + query complementar de categorias
+    expect(mockQuery).toHaveBeenCalledTimes(3);
     
     // Verifica parâmetros da query de posts (offset calculado)
     // Sem busca: LIMIT $1 OFFSET $2 -> params: [limit, offset]
@@ -37,7 +42,8 @@ describe('getPaginatedPosts', () => {
 
     expect(result).toEqual({
       // A chave foi alterada para 'data' para manter consistência com o hook useAdminCrud
-      data: [{ id: 1, title: 'Post 1' }],
+      // 'categories' é anexado pós-paginate (query complementar) — vazio sem vínculos
+      data: [{ id: 1, title: 'Post 1', categories: [] }],
       pagination: {
         page: 1,
         limit: 10,

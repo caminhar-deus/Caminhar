@@ -23,7 +23,7 @@ A barra quebra em 3 linhas. A ordem abaixo é a ordem visual.
 | # | Aba | Emoji | Função |
 |---|---|---|---|
 | 1 | Visão Geral | 📊 | Painel de contagens (aba padrão ao entrar) |
-| 2 | Posts/Artigos | 📝 | CRUD de reflexões e estudos |
+| 2 | Posts/Artigos | 📝 | CRUD de reflexões e estudos + CRUD de categorias (toggle "Posts \| Categorias") |
 | 3 | Gestão de Músicas | 🎵 | CRUD de músicas (Spotify) |
 | 4 | Gestão de Vídeos | 🎬 | CRUD de vídeos (YouTube) |
 | 5 | Gestão de Produtos | 📦 | CRUD de produtos religiosos |
@@ -85,6 +85,7 @@ Todas seguem o mesmo modelo, com pequenas variações:
 
 ### 4.2 Posts/Artigos
 - **Título:** "Gerenciar Posts". Botão: "+ Novo Post".
+- **Toggle de visualização (desde 2026-10-27, ADR-0024):** no topo da aba, controle segmentado **"Posts | Categorias"** alterna entre o CRUD de posts e o CRUD de categorias (§4.2.1). Padrão: "Posts".
 - **Tabela:** ☰ | ID | Título | Status | Data | Ações. Vazio: "Nenhum post encontrado."
 - **Formulário:**
   | Campo | Obrigatório | Regra/dica |
@@ -94,9 +95,23 @@ Todas seguem o mesmo modelo, com pequenas variações:
   | Resumo | Não | até 500 caracteres, contador "0 / 500"; "Aparece na listagem do blog" |
   | Conteúdo | Não | área grande de texto livre ("Conteúdo completo do post...") |
   | Imagem de Capa | Não | URL (`https://...`) ou botão verde "Upload" |
+  | Categorias | Não | grupo de checkboxes com as categorias cadastradas; "Opcional. Selecione uma ou mais categorias." Sem categorias cadastradas, exibe "Nenhuma categoria cadastrada. Crie na aba \"Categorias\"." |
   | Publicar post imediatamente | — | desmarcado por padrão → "Rascunho"; "Se desmarcado, o post será salvo como rascunho." |
   Botão final: "Salvar".
-- **Ligação com o site público:** o Resumo alimenta o cartão de Reflexões & Estudos; a Imagem de Capa é a capa do cartão; o Slug forma a URL da leitura. [HIPÓTESE] o editor de Conteúdo é texto simples (sem editor rico visível).
+- **Ligação com o site público:** o Resumo alimenta o cartão de Reflexões & Estudos; a Imagem de Capa é a capa do cartão; o Slug forma a URL da leitura; as Categorias aparecem como chips no cartão público. [HIPÓTESE] o editor de Conteúdo é texto simples (sem editor rico visível).
+
+### 4.2.1 Categorias (dentro da aba Posts/Artigos)
+- **API:** `/api/admin/categories` (CRUD completo; permissão **Posts/Artigos**; mutações invalidam o cache `posts:*`). `GET /api/admin/categories?all=1` devolve a lista completa sem paginação (usado pelo campo de seleção do formulário de post).
+- **Tabela:** ID (60px) | Nome | Slug. Vazio: "Nenhuma categoria cadastrada."
+- **Formulário:**
+  | Campo | Obrigatório | Regra/dica |
+  |---|---|---|
+  | Nome | Sim | "Nome da categoria"; ao sair do campo, gera o slug automaticamente (uma vez) se o slug estiver vazio |
+  | Slug (URL amigável) | Sim | "Gerado automaticamente a partir do nome; pode ser editado."; apenas minúsculas, números e hífens |
+- **Slug duplicado:** a API devolve **409** "Já existe uma categoria com esse slug"; o toast exibe a mensagem e o formulário permanece aberto.
+- **Validações que devolvem 400:** `category_ids` com id de categoria inexistente é recusado antes do INSERT (o post não é criado/atualizado); nome sem nenhum caractere alfanumérico é recusado por não gerar slug.
+- **Exclusão:** modal padrão de confirmação do painel; os vínculos post↔categoria são removidos em cascata (sem aviso adicional de posts afetados).
+- **Decisão:** [ADR-0024](adr/0024-crud-categorias-posts-chips-display-only.md) — CRUD completo escolhido pelo dono; permissão reutilizada (sem permissão nova no RBAC); chips display-only na frente pública (links para arquivo por categoria ficam para evolução futura).
 
 ### 4.3 Gestão de Músicas
 - **Botão:** "+ Nova Música".
@@ -247,9 +262,9 @@ A aba pública "Em Desenvolvimento" não tem gestão no painel.
 | # | Item | Status |
 |---|---|---|
 | 2 | **Log de vídeos:** campo "undefined" nos registros de EXCLUIR VÍDEO. | **corrigido em 2026-10-21** — o log grava o título do vídeo excluído (`deletedVideo.titulo`, `pages/api/admin/videos.js:109`). |
-| 3 | **Data do backup:** nome do arquivo (2026-05-22) diverge da data exibida (02/10/2026). | aberto |
+| 3 | **Data do backup:** nome do arquivo (2026-05-22) divergia da data exibida (02/10/2026). | **corrigido em 2026-10-27** — a API `/api/admin/backups` passou a reutilizar a listagem do `scripts/backup.js` (`getAvailableBackups`), ordenada pela data de criação gravada no próprio nome do arquivo; o mtime (que cópias do diretório reescrevem) deixou de ser usado |
 | 8 | **Exclusão do admin:** o botão "Excluir" existia no usuário `admin` e no cargo `admin`, e a API não tinha trava — a de usuário só impedia excluir a própria conta logada (`pages/api/admin/users.js`), e a de cargo não verificava nada (`pages/api/admin/roles.js`). | **corrigido em 2026-10-21** — a API recusa com 400 nomeado: excluir o usuário administrador (`process.env.ADMIN_USERNAME`, default `admin`), trocar o cargo dele para não-`admin` e excluir o cargo `admin`; o painel não renderiza mais o botão "Excluir" nas linhas protegidas (`canDelete` em `CrudTable`, repassado por `AdminUsersTab`/`AdminRolesTab`). Detalhes em `docs/PENDENCIAS_seguranca-rotas-api.md` (S10). |
-| 9 | **Formatos regionais:** campos de data em mm/dd/yyyy e botão de arquivo em inglês, diferentes do pt-BR do restante. | aberto |
+| 9 | **Formatos regionais:** campos de data em mm/dd/yyyy e botão de arquivo em inglês, diferentes do pt-BR do restante. | **corrigido em 2026-10-27** — o upload do banner usa botão "Escolher arquivo" em pt-BR (input nativo oculto); os filtros de período da Auditoria usam campo com máscara dd/mm/aaaa hh:mm (`components/Admin/fields/DateTimeBRField.js`) no lugar do `datetime-local` nativo; valores exibidos (KB, economia, `R$`) usam separador decimal pt-BR. O campo de edição de preço mantém o formato de dado original. A revisão do checklist (27/10) acrescentou nomes acessíveis aos novos controles (`htmlFor`/`aria-label`), `aria-live` no nome do arquivo selecionado, mensagem de erro inline com `aria-invalid` no campo de data e foco `:focus-visible` tokenizado no botão e no campo |
 | 11 | **Reordenação de posts sempre falhava:** o helper enviava `position = 0` (0-based) e o schema exige posição positiva → HTTP 400 e a curadoria nunca persistia. | **corrigido em 2026-10-21** — `utils/reorder.js` passou a enviar posições 1-based. |
 | 12 | **Reordenação de produtos inexistente:** o painel chamava `PUT /api/products` com `action: "reorder"`, mas a rota pública não tratava essa ação → HTTP 400. | **corrigido em 2026-10-21** — branch de reordenação adicionado em `pages/api/products.js`, com invalidação de cache e registro de Auditoria. |
 | 13 | **Reordenação sem registro de Auditoria:** reordenar posts, músicas ou vídeos não gerava registro na Auditoria, contra a regra de §9 ("toda ação de … configurar deve gerar um registro"); o reorder de vídeos ainda não validava `id`/`position`. | **corrigido em 2026-10-21** — os três endpoints registram a ação com identificador real; vídeos passaram a validar o payload. |

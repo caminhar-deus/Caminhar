@@ -62,6 +62,8 @@
   --color-error-500: #ef4444;
   --color-error-600: #dc2626;
   --color-error-700: #b91c1c;
+  /* Halo de erro (10% do error-500) — usado em foco/erro de campo (MASTER §7) */
+  --color-error-halo: rgba(239, 68, 68, 0.1);
   --color-error-800: #991b1b;
   --color-error-900: #7f1d1d;
   --color-warning-50: #fffbeb;
