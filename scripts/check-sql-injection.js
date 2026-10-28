@@ -12,6 +12,14 @@
  * 3. query() chamado com variável que foi construída via template literal com interpolação
  *    (detecção indireta — rastreia construção de variáveis locais)
  *
+ * Regra de isenção por estrutura (ADR-0026): interpolação de variável vinda de
+ * `for (const x of LISTA)` quando LISTA é uma `const` array de strings literais
+ * puras declarada no próprio arquivo — o padrão do `scripts/reset-db.js`
+ * (ADR-0025). O identificador interpolado produz apenas nomes da lista fixa;
+ * não há input externo e identificadores em DDL não são parametrizáveis no
+ * Postgres (sem plpgsql). Template literal, identificador ou expressão dentro
+ * da lista desqualificam a isenção.
+ *
  * Falsos positivos conhecidos e ignorados:
  * - Comentários de código
  * - Identificadores SQL (nomes de tabelas/colunas) vindos de whitelists fixas
@@ -31,19 +39,25 @@
 
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join, extname, relative } from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const ROOT = join(__dirname, '..');
+// ROOT via process.cwd() — mesma decisão documentada em
+// scripts/check-hardcoded-credentials.js e scripts/reset-db.js: as invocações
+// reais (`npm run security:check-sql` — cron de carga via test-base.yml e o
+// gate de push via test-coverage.yml — e execução manual no console) partem da
+// raiz do projeto, e o `import.meta.url` não sobrevive à compilação CommonJS do
+// Babel no Jest (o teste unitário importa este módulo).
+const ROOT = process.cwd();
 
 const IGNORE_DIRS = [
   'node_modules', '.next', 'out', 'build', 'dist', '.git',
   'coverage', '.nyc_output', 'public/uploads', 'data', 'reports', '__mocks__',
 ];
 
-const IGNORE_FILES = [
+/**
+ * Allowlist por nome de arquivo (basename), mesmo mecanismo de
+ * check-hardcoded-credentials.js. Cada entrada explica por que o arquivo é isento.
+ */
+export const IGNORE_FILES = [
   'next.config.js', 'babel.jest.config.js', 'jest.config.js',
   'jest.setup.js', 'jest.teardown.js', 'knip.json', 'schema.knip.json',
   'cypress.config.js', 'rate-limit-proxy.js',
@@ -77,14 +91,14 @@ const SAFE_CONSTANTS = new Set([
 /**
  * Verifica se um diretório deve ser ignorado.
  */
-function shouldIgnoreDir(dirPath) {
+export function shouldIgnoreDir(dirPath) {
   return dirPath.split('/').some((part) => IGNORE_DIRS.includes(part));
 }
 
 /**
- * Verifica se um arquivo deve ser ignorado.
+ * Verifica se um arquivo deve ser ignorado (allowlist por nome + extensão).
  */
-function shouldIgnoreFile(filePath) {
+export function shouldIgnoreFile(filePath) {
   const fileName = filePath.split('/').pop();
   if (IGNORE_FILES.includes(fileName)) return true;
   const ext = extname(fileName);
@@ -94,7 +108,7 @@ function shouldIgnoreFile(filePath) {
 /**
  * Escaneia um diretório recursivamente coletando arquivos .js/.mjs.
  */
-function scanDirectory(dirPath, files = []) {
+export function scanDirectory(dirPath, files = []) {
   try {
     const entries = readdirSync(dirPath);
     for (const entry of entries) {
@@ -128,7 +142,7 @@ function isCommentLine(line) {
  * @param {string[]} lines - Linhas do arquivo
  * @returns {Set<string>} Conjunto de nomes de variáveis constantes string
  */
-function extractLocalConstants(lines) {
+export function extractLocalConstants(lines) {
   const constants = new Set();
   // Padrão: const NOME = 'valor'  ou  const NOME = "valor"
   const constRegex = /^\s*const\s+([a-zA-Z_]\w*)\s*=\s*['"][^'"]*['"]\s*;?\s*$/;
@@ -142,6 +156,67 @@ function extractLocalConstants(lines) {
   }
 
   return constants;
+}
+
+/**
+ * Extrai listas locais do tipo array de strings literais puras, em uma única
+ * linha: `const NOME = ['a', 'b'];`. Antecedente da regra de isenção por
+ * estrutura (ADR-0026). O conteúdo deve sobrar apenas como vírgulas/espaços
+ * depois de remover os literais entre aspas — template literal, identificador
+ * ou chamada no meio da lista desqualificam (fluxo dinâmico, nunca isento).
+ *
+ * @param {string[]} lines - Linhas do arquivo
+ * @returns {Map<string, boolean>} Lista -> true, para lookup O(1)
+ */
+export function extractConstantLists(lines) {
+  const lists = new Map();
+  // Apenas `const` (não é escaneado: `let`/`var` são variáveis reatribuíveis)
+  const listRegex = /^\s*const\s+([a-zA-Z_$][\w$]*)\s*=\s*\[(.*)\]\s*;?\s*$/;
+
+  for (const line of lines) {
+    if (isCommentLine(line)) continue;
+
+    const match = line.match(listRegex);
+    if (!match) continue;
+
+    // Remove cada literal entre aspas simples/duplas; o que sobrar deve ser
+    // só vírgula/espaço. Template literal (backtick) NÃO é removido aqui: sobra
+    // com ${...} ou texto e rejeita a lista — fluxo dinâmico não é isento.
+    const inner = match[2].replace(/(['"])(?:\\.|(?!\1).)*\1/g, '');
+    if (/^[\s,]*$/.test(inner)) {
+      lists.set(match[1], true);
+    }
+  }
+
+  return lists;
+}
+
+/**
+ * Coleta os vínculos `for (const x of FONTE)` do arquivo (forma sem
+ * destructuring, suficiente para o padrão do reset-db.js). A SEGURANÇA do
+ * vínculo é decidida em isSafeInterpolation() contra extractConstantLists():
+ * `for (const x of listTables())` fica registrado aqui e NUNCA é isento.
+ *
+ * @param {string[]} lines - Linhas do arquivo
+ * @returns {Map<string, string>} varíavel do loop -> nome da fonte
+ */
+export function findLoopVars(lines) {
+  const loopVars = new Map();
+  // `\)?` opcional: aceita fonte de chamada (`of listTables()`) — registrada
+  // de propósito, pois a checagem de segurança contra extractConstantLists()
+  // disserá NUNCA isenção para fonte que não é const array de literais.
+  const loopRegex = /\bfor\s*\(\s*(?:const|let|var)\s+([a-zA-Z_$][\w$]*)\s+of\s+([a-zA-Z_$][\w$]*)\s*\)?/;
+
+  for (const line of lines) {
+    if (isCommentLine(line)) continue;
+
+    const match = line.match(loopRegex);
+    if (match) {
+      loopVars.set(match[1], match[2]);
+    }
+  }
+
+  return loopVars;
 }
 
 /**
@@ -189,7 +264,7 @@ function hasSafeVariableInterpolation(lines, lineIndex) {
  * @param {string[]} lines - Linhas do arquivo
  * @returns {Set<string>} Conjunto de nomes de variáveis validadas
  */
-function collectValidatedVariables(lines) {
+export function collectValidatedVariables(lines) {
   const validated = new Set();
   const validatedVarRegex = /(?:const|let|var)\s+([a-zA-Z_]\w*)\s*=\s*validateIdentifier\(/;
 
@@ -211,7 +286,7 @@ function collectValidatedVariables(lines) {
  * @param {string[]} lines - Linhas do arquivo
  * @returns {Map<string, number>} Mapa de nomeVariável -> linha onde foi definida
  */
-function findInterpolatedVariables(lines) {
+export function findInterpolatedVariables(lines) {
   const interpolated = new Map();
   // Padrão: const VAR = `...${...}...`
   // Ou: let VAR = `...${...}...` / VAR = `...${...}...`
@@ -242,7 +317,7 @@ function findInterpolatedVariables(lines) {
  * Obtém o nome da variável sendo interpolada em ${...} dentro de um template literal.
  * Ex: `${schema.table}` -> ['schema.table']
  */
-function extractInterpolatedVars(sqlString) {
+export function extractInterpolatedVars(sqlString) {
   const vars = [];
   const regex = /\$\{([^}]+)\}/g;
   let match;
@@ -259,14 +334,19 @@ function extractInterpolatedVars(sqlString) {
  *   - É uma constante string local (extractLocalConstants)
  *   - Foi validada por validateIdentifier
  *   - É protegida por _validateIdentifier
+ *   - Vem de `for (const x of LISTA)` onde LISTA é array const de literais
+ *     puros no mesmo arquivo (extractConstantLists + findLoopVars — ADR-0026)
  *
  * @param {string} line - Linha contendo a expressão SQL
  * @param {Set<string>} localConstants - Constantes string locais do arquivo
+ * @param {Set<string>} validatedVars - Variáveis validadas por validateIdentifier
  * @param {string[]} lines - Todas as linhas do arquivo
  * @param {number} lineIdx - Índice da linha atual
+ * @param {Map<string, boolean>} constLists - Listas const de literais (extractConstantLists)
+ * @param {Map<string, string>} loopVars - vínculos for...of (findLoopVars)
  * @returns {boolean} true se todas as variáveis são seguras
  */
-function isSafeInterpolation(line, localConstants, validatedVars, lines, lineIdx) {
+export function isSafeInterpolation(line, localConstants, validatedVars, lines, lineIdx, constLists = new Map(), loopVars = new Map()) {
   const interpolatedVars = extractInterpolatedVars(line);
   if (interpolatedVars.length === 0) return true;
 
@@ -276,6 +356,7 @@ function isSafeInterpolation(line, localConstants, validatedVars, lines, lineIdx
 
     // Verifica se é constante hardcoded
     if (SAFE_CONSTANTS.has(baseVarName)) continue;
+    // Verifica se é constante string local
     if (localConstants.has(baseVarName)) continue;
 
     // Verifica se a variável foi validada por validateIdentifier (global no arquivo)
@@ -285,6 +366,12 @@ function isSafeInterpolation(line, localConstants, validatedVars, lines, lineIdx
     if (hasSafeVariableInterpolation(lines, lineIdx)) continue;
     if (hasValidateIdentifier(lines, lineIdx)) continue;
 
+    // Regra de isenção por estrutura (ADR-0026): variável vinculada por
+    // `for (const x of LISTA)` com LISTA sendo const array de strings literais
+    // puras declarada no próprio arquivo (ex: TABLES_TO_DROP do reset-db.js).
+    const loopSource = loopVars.get(baseVarName);
+    if (loopSource && constLists.has(loopSource)) continue;
+
     // Se alguma variável não passou nos checks, considera perigosa
     return false;
   }
@@ -293,131 +380,142 @@ function isSafeInterpolation(line, localConstants, validatedVars, lines, lineIdx
 }
 
 /**
- * Detecção principal: procura por query()/pool.query() com interpolação direta
- * sem prepared statements (array de parâmetros).
- * Também detecta interpolações indiretas via variáveis construídas com template literals.
+ * Escaneia o conteúdo de um arquivo (caminho apenas para o relatório).
+ * O núcleo da análise linha a linha — scanFile() só lê o arquivo e delega,
+ * para o teste unitário exercitar a MESMA lógica de produção em memória
+ * (precedente de check-hardcoded-credentials.js).
  */
-function scanFile(filePath) {
+export function scanContent(content, filePath = '<conteúdo>') {
+  const lines = content.split('\n');
+  const localConstants = extractLocalConstants(lines);
+  const validatedVars = collectValidatedVariables(lines);
+  const interpolatedVars = findInterpolatedVariables(lines);
+  const constLists = extractConstantLists(lines);
+  const loopVars = findLoopVars(lines);
+
   const findings = [];
 
-  try {
-    const content = readFileSync(filePath, 'utf-8');
-    const lines = content.split('\n');
-    const localConstants = extractLocalConstants(lines);
-    const validatedVars = collectValidatedVariables(lines);
-    const interpolatedVars = findInterpolatedVariables(lines);
+  for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+    const line = lines[lineIdx];
 
-    for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
-      const line = lines[lineIdx];
+    // Ignora linhas de comentário
+    if (isCommentLine(line)) continue;
 
-      // Ignora linhas de comentário
-      if (isCommentLine(line)) continue;
+    // Verifica se o código está próximo de _validateIdentifier (caso seguro)
+    const isProtected = hasValidateIdentifier(lines, lineIdx);
 
-      // Verifica se o código está próximo de _validateIdentifier (caso seguro)
-      const isProtected = hasValidateIdentifier(lines, lineIdx);
+    // Se está protegido, pula (safe identifier pattern)
+    if (isProtected) continue;
 
-      // Se está protegido, pula (safe identifier pattern)
-      if (isProtected) continue;
+    // ===== REGRA 1: pool.query() com 1 argumento e interpolação =====
+    const poolQuerySingle = line.match(/pool\.query\s*\(\s*`[^`]*\$\{[^}]*\}[^`]*`\s*\)/i);
+    if (poolQuerySingle) {
+      const isSafe = isSafeInterpolation(line, localConstants, validatedVars, lines, lineIdx, constLists, loopVars);
+      if (!isSafe) {
+        findings.push({
+          severity: 'CRÍTICO',
+          file: filePath,
+          line: lineIdx + 1,
+          description: 'pool.query() com interpolação sem prepared statement (1 argumento)',
+          code: line.trim().substring(0, 150),
+        });
+      }
+      continue;
+    }
 
-      // ===== REGRA 1: pool.query() com 1 argumento e interpolação =====
-      const poolQuerySingle = line.match(/pool\.query\s*\(\s*`[^`]*\$\{[^}]*\}[^`]*`\s*\)/i);
-      if (poolQuerySingle) {
-        const isSafe = isSafeInterpolation(line, localConstants, validatedVars, lines, lineIdx);
+    // ===== REGRA 2: query() com template literal + interpolação SEM array =====
+    const queryRegex = /(?:^|\s)(?:await\s+)?query\s*\(\s*`/i;
+    const queryMatch = line.match(queryRegex);
+
+    if (queryMatch) {
+      const openParenIdx = line.indexOf('(', queryMatch.index);
+      if (openParenIdx === -1) continue;
+
+      const afterOpenParen = line.substring(openParenIdx + 1).trim();
+
+      if (!afterOpenParen.startsWith('`')) continue;
+      if (!afterOpenParen.includes('${')) continue;
+
+      const closesWithParen = afterOpenParen.match(/`\s*\)/);
+      const hasCommaThenArray = afterOpenParen.match(/`\s*,\s*\[/);
+
+      if (closesWithParen && !hasCommaThenArray) {
+        const isSafe = isSafeInterpolation(line, localConstants, validatedVars, lines, lineIdx, constLists, loopVars);
         if (!isSafe) {
           findings.push({
             severity: 'CRÍTICO',
             file: filePath,
             line: lineIdx + 1,
-            description: 'pool.query() com interpolação sem prepared statement (1 argumento)',
+            description: 'query() com interpolação e sem array de parâmetros',
             code: line.trim().substring(0, 150),
           });
         }
-        continue;
       }
+      continue;
+    }
 
-      // ===== REGRA 2: query() com template literal + interpolação SEM array =====
-      const queryRegex = /(?:^|\s)(?:await\s+)?query\s*\(\s*`/i;
-      const queryMatch = line.match(queryRegex);
-
-      if (queryMatch) {
-        const openParenIdx = line.indexOf('(', queryMatch.index);
-        if (openParenIdx === -1) continue;
-
-        const afterOpenParen = line.substring(openParenIdx + 1).trim();
-
-        if (!afterOpenParen.startsWith('`')) continue;
-        if (!afterOpenParen.includes('${')) continue;
-
-        const closesWithParen = afterOpenParen.match(/`\s*\)/);
-        const hasCommaThenArray = afterOpenParen.match(/`\s*,\s*\[/);
-
-        if (closesWithParen && !hasCommaThenArray) {
-          const isSafe = isSafeInterpolation(line, localConstants, validatedVars, lines, lineIdx);
+    // ===== REGRA 3: Detecção indireta — query(variavel) onde variavel foi construída com interpolação =====
+    // Padrões: await query(variavel)  ou  query(variavel)
+    const indirectRegex = /(?:await\s+)?query\s*\(\s*([a-zA-Z_]\w*)\s*\)/i;
+    const indirectMatch = line.match(indirectRegex);
+    if (indirectMatch) {
+      const varName = indirectMatch[1];
+      if (interpolatedVars.has(varName)) {
+        // Verifica se, apesar de ter interpolação, a variável usa identificadores seguros
+        const varDefLine = interpolatedVars.get(varName);
+        if (varDefLine !== undefined) {
+          const isSafe = isSafeInterpolation(lines[varDefLine], localConstants, validatedVars, lines, varDefLine, constLists, loopVars);
           if (!isSafe) {
             findings.push({
               severity: 'CRÍTICO',
               file: filePath,
               line: lineIdx + 1,
-              description: 'query() com interpolação e sem array de parâmetros',
+              description: 'query() com variável contendo interpolação indireta (via template literal)',
               code: line.trim().substring(0, 150),
             });
           }
         }
-        continue;
       }
+      continue;
+    }
 
-      // ===== REGRA 3: Detecção indireta — query(variavel) onde variavel foi construída com interpolação =====
-      // Padrões: await query(variavel)  ou  query(variavel)
-      const indirectRegex = /(?:await\s+)?query\s*\(\s*([a-zA-Z_]\w*)\s*\)/i;
-      const indirectMatch = line.match(indirectRegex);
-      if (indirectMatch) {
-        const varName = indirectMatch[1];
-        if (interpolatedVars.has(varName)) {
-          // Verifica se, apesar de ter interpolação, a variável usa identificadores seguros
-          const varDefLine = interpolatedVars.get(varName);
-          if (varDefLine !== undefined) {
-            const isSafe = isSafeInterpolation(lines[varDefLine], localConstants, validatedVars, lines, varDefLine);
-            if (!isSafe) {
-              findings.push({
-                severity: 'CRÍTICO',
-                file: filePath,
-                line: lineIdx + 1,
-                description: 'query() com variável contendo interpolação indireta (via template literal)',
-                code: line.trim().substring(0, 150),
-              });
-            }
-          }
-        }
-        continue;
-      }
-
-      // ===== REGRA 4: pool.query(variavel) onde variavel foi construída com interpolação =====
-      const poolIndirectRegex = /pool\.query\s*\(\s*([a-zA-Z_]\w*)\s*\)/i;
-      const poolIndirectMatch = line.match(poolIndirectRegex);
-      if (poolIndirectMatch) {
-        const varName = poolIndirectMatch[1];
-        if (interpolatedVars.has(varName)) {
-          const varDefLine = interpolatedVars.get(varName);
-          if (varDefLine !== undefined) {
-            const isSafe = isSafeInterpolation(lines[varDefLine], localConstants, validatedVars, lines, varDefLine);
-            if (!isSafe) {
-              findings.push({
-                severity: 'CRÍTICO',
-                file: filePath,
-                line: lineIdx + 1,
-                description: 'pool.query() com variável contendo interpolação indireta (via template literal)',
-                code: line.trim().substring(0, 150),
-              });
-            }
+    // ===== REGRA 4: pool.query(variavel) onde variavel foi construída com interpolação =====
+    const poolIndirectRegex = /pool\.query\s*\(\s*([a-zA-Z_]\w*)\s*\)/i;
+    const poolIndirectMatch = line.match(poolIndirectRegex);
+    if (poolIndirectMatch) {
+      const varName = poolIndirectMatch[1];
+      if (interpolatedVars.has(varName)) {
+        const varDefLine = interpolatedVars.get(varName);
+        if (varDefLine !== undefined) {
+          const isSafe = isSafeInterpolation(lines[varDefLine], localConstants, validatedVars, lines, varDefLine, constLists, loopVars);
+          if (!isSafe) {
+            findings.push({
+              severity: 'CRÍTICO',
+              file: filePath,
+              line: lineIdx + 1,
+              description: 'pool.query() com variável contendo interpolação indireta (via template literal)',
+              code: line.trim().substring(0, 150),
+            });
           }
         }
       }
     }
-  } catch (err) {
-    console.error(`  ⚠️  Erro ao ler ${filePath}: ${err.message}`);
   }
 
   return findings;
+}
+
+/**
+ * Escaneia um arquivo .js/.mjs em busca de interpolação SQL sem prepared statement.
+ */
+export function scanFile(filePath) {
+  try {
+    const content = readFileSync(filePath, 'utf-8');
+    return scanContent(content, filePath);
+  } catch (err) {
+    console.error(`  ⚠️  Erro ao ler ${filePath}: ${err.message}`);
+    return [];
+  }
 }
 
 function printResults(allFindings, totalFiles) {
@@ -495,10 +593,14 @@ function main() {
   return printResults(allFindings, files.length);
 }
 
-try {
-  const success = main();
-  process.exit(success ? 0 : 1);
-} catch (error) {
-  console.error('❌ Erro durante a verificação:', error.message);
-  process.exit(1);
+// Execução principal — só quando invocado como CLI, no mesmo padrão do
+// check-hardcoded-credentials.js e do reset-db.js: importar o módulo (ex.: no
+// teste unitário) não pode chamar process.exit e matar o worker do Jest.
+if (process.argv[1] && process.argv[1].endsWith('check-sql-injection.js')) {
+  try {
+    process.exit(main() ? 0 : 1);
+  } catch (error) {
+    console.error('❌ Erro durante a verificação:', error.message);
+    process.exit(1);
+  }
 }
