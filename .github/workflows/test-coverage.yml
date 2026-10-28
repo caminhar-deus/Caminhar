@@ -106,6 +106,21 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
+      # Mesmos dois scanners herdados do `test-base.yml` (step `Security
+      # Checks`) — análise estática: não tocam no banco, não precisam de build
+      # e não podem dar falso positivo por estado de runtime, então cabem no
+      # job `lint` aqui. Até 28/10/2026 o ÚNICO executor automático deles era
+      # o cron "Load Tests (k6)" — foi assim que o `scripts/reset-db.js` criado
+      # pelo ADR-0025 reprovou a cron #25 (run 40673567814) enquanto os quatro
+      # push-gates do mesmo SHA seguiam verdes: um commit que violasse os
+      # scanners só era descoberto no dia seguinte. Decisão e política de
+      # falsos positivos em docs/adr/0026-scanners-estaticos-no-gate-de-push-e-allowlist.md.
+      - name: Security Checks (SQL injection + credenciais hardcoded)
+        shell: bash
+        run: |
+          npm run security:check-sql
+          npm run security:check-credentials
+
   coverage:
     runs-on: ubuntu-latest
     # Folga maior porque é a suíte inteira com instrumentação de cobertura
