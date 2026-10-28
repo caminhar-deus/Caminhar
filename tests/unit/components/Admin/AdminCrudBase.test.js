@@ -377,6 +377,15 @@ describe('Componente Front-End - AdminCrudBase', () => {
     expect(chamada.columns.map((col) => col.key)).toEqual(['id', 'name', 'status']);
   });
 
+  it('deve expor o campo de busca com nome acessível (WCAG 4.1.2 — regra aria-input-field-name)', () => {
+    render(<AdminCrudBase {...defaultProps} searchable={true} />);
+
+    // getByLabelText falha se o input não tiver aria-label/label associado
+    const busca = screen.getByLabelText('Buscar item');
+    expect(busca).toBeInTheDocument();
+    expect(busca).toHaveAttribute('aria-label', 'Buscar item');
+  });
+
   it('deve exibir notificação de erro vinda do hook e destacar erros de campo', () => {
     useAdminCrud.mockReturnValue({ ...mockUseAdminCrud, error: { message: 'Erro genérico' } });
     const { rerender } = render(<AdminCrudBase {...defaultProps} />);

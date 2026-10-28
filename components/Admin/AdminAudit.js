@@ -89,6 +89,7 @@ export default function AdminAudit() {
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
           <input
             type="text" placeholder="Buscar ações, usuários ou detalhes..."
+            aria-label="Buscar ações, usuários ou detalhes"
             value={search} onChange={(e) => setSearch(e.target.value)}
             style={{ padding: '10px', minWidth: '200px', flex: 1, maxWidth: '300px', borderRadius: '6px', border: '1px solid #d1d5db', backgroundColor: '#f9fafb' }}
           />

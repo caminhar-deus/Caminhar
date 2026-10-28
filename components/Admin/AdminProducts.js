@@ -81,10 +81,9 @@ const columns = [
   },
   { key: 'name', header: 'Produto', render: (item) => <strong>{item.name}</strong> },
   { key: 'price', header: 'Valor', format: (value) => value ? `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-' },
-  { 
-    key: 'link', header: 'Link',
-    render: (item) => item.link ? <span title="Link">🔗</span> : <span style={{ color: '#9ca3af' }}>-</span>
-  }
+  { key: 'link', header: 'Link' }
+  // Sem render customizado: o CrudTable renderiza URLs como link acessível
+  // "Abrir link" (target="_blank", rel="noopener noreferrer") e "-" quando vazio.
 ];
 
 const initialFormData = {

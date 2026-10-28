@@ -177,15 +177,14 @@ describe('Componente Front-End - AdminProducts', () => {
     expect(screen.getByText('Sem foto')).toBeInTheDocument();
   });
 
-  it('coluna link: deve exibir icone de link se houver', () => {
+  it('coluna link: sem render customizado — CrudTable renderiza link acessível "Abrir link" (correção A11y, sem emoji)', () => {
     render(<AdminProducts />);
     const linkCol = passedProps.columns.find(c => c.key === 'link');
-    
-    render(linkCol.render({ link: 'a' }));
-    expect(screen.getByTitle('Link')).toBeInTheDocument();
 
-    render(linkCol.render({ link: '' }));
-    expect(screen.getByText('-')).toBeInTheDocument();
+    // A correção de acessibilidade removeu o render customizado com emoji 🔗:
+    // a coluna cai no render padrão do CrudTable (link "Abrir link" com
+    // target="_blank" e rel="noopener noreferrer"; "-" quando vazio).
+    expect(linkCol.render).toBeUndefined();
   });
 
   it('CheckboxWrapper interno: deve simular ativação e desativação do Status do produto', () => {

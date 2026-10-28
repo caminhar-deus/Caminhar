@@ -839,10 +839,10 @@ export default function Admin() {
                 aria-label="Ferramentas de segurança"
               >
                 {[
-                  { key: 'integrity', label: '🛡️ Verificação de Integridade' },
-                  { key: 'backup', label: '💾 Backup do Sistema' },
-                  { key: 'ratelimit', label: '🔒 Rate Limiting' },
-                  { key: 'cache', label: '⚡ Cache do Sistema' },
+                  { key: 'integrity', icon: '🛡️', label: 'Verificação de Integridade' },
+                  { key: 'backup', icon: '💾', label: 'Backup do Sistema' },
+                  { key: 'ratelimit', icon: '🔒', label: 'Rate Limiting' },
+                  { key: 'cache', icon: '⚡', label: 'Cache do Sistema' },
                 ].map(subTab => (
                   <button
                     key={subTab.key}
@@ -852,6 +852,7 @@ export default function Admin() {
                     className={`${styles.tabButton}${activeSecurityTab === subTab.key ? ` ${styles.activeTab}` : ''}`}
                     onClick={() => setActiveSecurityTab(subTab.key)}
                   >
+                    <span className="icon" aria-hidden="true">{subTab.icon}</span>
                     {subTab.label}
                   </button>
                 ))}

@@ -316,6 +316,7 @@ function RateLimitViewer() {
                     value={newIp}
                     onChange={(e) => setNewIp(e.target.value)}
                     placeholder="Ex: 192.168.1.1"
+                    aria-label="Endereço IP para adicionar à lista"
                     style={{
                       width: '100%',
                       padding: '8px 12px',
@@ -408,6 +409,7 @@ function RateLimitViewer() {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Buscar por IP ou usuário..."
+                  aria-label="Buscar por IP ou usuário"
                   style={{
                     flex: 1,
                     padding: '8px 12px',

@@ -143,6 +143,7 @@
 │   ├── components
 │   │   ├── Admin
 │   │   │   ├── AdminAudit.js.html
+│   │   │   ├── AdminCategories.js.html
 │   │   │   ├── AdminCrudBase.js.html
 │   │   │   ├── AdminDashboard.js.html
 │   │   │   ├── AdminDicas.js.html
@@ -164,6 +165,7 @@
 │   │   │   │   ├── RateLimitViewer.js.html
 │   │   │   │   └── index.html
 │   │   │   ├── fields
+│   │   │   │   ├── DateTimeBRField.js.html
 │   │   │   │   ├── ExternalDataButton.js.html
 │   │   │   │   ├── ImageUploadField.js.html
 │   │   │   │   ├── TextAreaField.js.html
@@ -254,6 +256,7 @@
 │   │   ├── components
 │   │   │   ├── Admin
 │   │   │   │   ├── AdminAudit.js.html
+│   │   │   │   ├── AdminCategories.js.html
 │   │   │   │   ├── AdminCrudBase.js.html
 │   │   │   │   ├── AdminDashboard.js.html
 │   │   │   │   ├── AdminDicas.js.html
@@ -275,6 +278,7 @@
 │   │   │   │   │   ├── RateLimitViewer.js.html
 │   │   │   │   │   └── index.html
 │   │   │   │   ├── fields
+│   │   │   │   │   ├── DateTimeBRField.js.html
 │   │   │   │   │   ├── ExternalDataButton.js.html
 │   │   │   │   │   ├── ImageUploadField.js.html
 │   │   │   │   │   ├── TextAreaField.js.html
@@ -382,6 +386,7 @@
 │   │   │   │   └── index.html
 │   │   │   ├── domain
 │   │   │   │   ├── audit.js.html
+│   │   │   │   ├── categories.js.html
 │   │   │   │   ├── images.js.html
 │   │   │   │   ├── index.html
 │   │   │   │   ├── musicas.js.html
@@ -411,6 +416,7 @@
 │   │   │       │   ├── audit.js.html
 │   │   │       │   ├── backups.js.html
 │   │   │       │   ├── cache.js.html
+│   │   │       │   ├── categories.js.html
 │   │   │       │   ├── dicas.js.html
 │   │   │       │   ├── fetch-ml.js.html
 │   │   │       │   ├── fetch-spotify.js.html
@@ -477,6 +483,7 @@
 │   │   │   └── index.html
 │   │   ├── domain
 │   │   │   ├── audit.js.html
+│   │   │   ├── categories.js.html
 │   │   │   ├── images.js.html
 │   │   │   ├── index.html
 │   │   │   ├── musicas.js.html
@@ -506,6 +513,7 @@
 │   │       │   ├── audit.js.html
 │   │       │   ├── backups.js.html
 │   │       │   ├── cache.js.html
+│   │       │   ├── categories.js.html
 │   │       │   ├── dicas.js.html
 │   │       │   ├── fetch-ml.js.html
 │   │       │   ├── fetch-spotify.js.html
@@ -1373,11 +1381,13 @@
 │   ├── hero-image-7bbe6c61-f987-4bf8-8fd1-323b64866f7e.webp
 │   ├── hero-image-92be74dc-8a4f-4015-9b25-89ba9a7cb7cc.webp
 │   ├── hero-image-c56bdc10-2a0e-4ed7-a1c2-186ae5b7ad23.webp
-│   └── post-image-255714e9-57d2-46f8-8a97-b8e02b170861.png
+│   ├── post-image-1676f90c-ea50-4930-978d-3c35cf0f4138.png
+│   ├── post-image-255714e9-57d2-46f8-8a97-b8e02b170861.png
+│   └── post-image-3c237d6b-ac1c-485e-a31f-338664c24808.png
 └── utils
     ├── csvExport.js
     ├── empty-browser-module.js
     ├── reorder.js
     └── resolve-next.js
 
-206 directories, 1175 files
+206 directories, 1185 files

@@ -81,7 +81,7 @@ export default function CrudTable({
           style={Object.keys(customStyle).length > 0 ? customStyle : undefined}
           title="Clique para alterar o status rapidamente"
         >
-          <span style={{ display: 'flex', alignItems: 'center' }}>{value ? activeIcon : inactiveIcon}</span>
+          <span style={{ display: 'flex', alignItems: 'center' }} aria-hidden="true">{value ? activeIcon : inactiveIcon}</span>
           <span>{value ? activeText : inactiveText}</span>
         </button>
       );

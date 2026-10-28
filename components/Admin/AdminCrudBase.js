@@ -265,6 +265,7 @@ export default function AdminCrudBase({
               <input 
                 type="text"
                 placeholder="Buscar item..."
+                aria-label="Buscar item"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{ 
