@@ -33,6 +33,9 @@ apoio, não a fonte oficial; a decisão não é duplicada como página de memór
 | [0021](0021-cobertura-do-handler-de-erro-fatal-do-pool-postgresql-em-lib-infra-db.js.md) | Cobertura do handler de erro fatal do pool PostgreSQL em `lib/infra/db.js` | Aceito | 2026-10-23 |
 | [0022](0022-enable-frontend-checklist-remote-mcp.md) | Ligar o MCP remoto Front-End-Checklist, restrito a orchestrator e oracle | Aceito | 2026-10-23 |
 | [0023](0023-spotify-embed-limitado-a-tracks-com-fallback.md) | Embed do Spotify limitado a tracks, com fallback gracioso no card | Aceito | 2026-10-27 |
+| [0024](0024-crud-categorias-posts-chips-display-only.md) | CRUD completo de categorias de posts com chips display-only na frente pública | Aceito | 2026-10-27 |
+| [0025](0025-reset-completo-banco-migrations-idempotentes-nomenclatura-publicacao.md) | Reset completo do banco via migrations idempotentes e nomenclatura de publicação documentada | Aceito | 2026-10-27 |
+| [0026](0026-scanners-estaticos-no-gate-de-push-e-allowlist.md) | Scanners estáticos no gate de push e allowlist documentada por arquivo | Aceito | 2026-10-28 |
 
 ## Quando criar um ADR
 

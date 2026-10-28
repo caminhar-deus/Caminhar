@@ -1625,6 +1625,39 @@ O resíduo acima tem saída que **não** depende de credencial: `scripts/summari
 
 ---
 
+### Crons #23, #24 e #25 (26–28/10/2026) — dois verdes consecutivos e a falha de `schedule` pelo falso positivo do scanner SQL
+
+**O que foi medido (metadados públicos, via API do GitHub; log do step e artifact continuam 401/403 sem credencial).**
+
+| Campo | #23 | #24 | #25 |
+|-------|-----|-----|-----|
+| Run / SHA | [`40305440986`](https://github.com/caminhar-deus/Caminhar/actions/runs/40305440986) / `80d16f1` | [`40483879235`](https://github.com/caminhar-deus/Caminhar/actions/runs/40483879235) / `80d16f1` | [`40673567814`](https://github.com/caminhar-deus/Caminhar/actions/runs/40673567814) / `bc8deb7` |
+| Event / conclusion | `schedule` / **`success`** | `schedule` / **`success`** | `schedule` / **`failure`** |
+| Janela do run | `10:11:25Z` → `10:29:22Z` = **17m57s** | `09:50:42Z` → `10:08:44Z` = **18m02s** | `10:37:16Z` → `10:39:14Z` = **1m58s** |
+| Atraso sobre o cron (04:17Z) | +5h54 | +5h34 | +6h20 |
+| Job `load-tests / run-tests` | 17m53s | 17m59s | **1m54s** |
+| Step 6 `Security Checks (SQL injection + credenciais hardcoded)` | `10:12:36Z` → `10:12:36Z`, **success** | `09:51:49Z` → `09:51:50Z`, **success** | `10:39:08Z` → `10:39:09Z`, **failure** |
+| Step 10 `Run Tests` | 16m29s, success | 16m41s, success | **skipped** (falha anterior) |
+| Steps pulados | 5, 14 e 15 (por desenho) | idem | 5, 14 e 15 (por desenho) + 7 a 10 (após a falha) |
+| Artifact `k6-load-test-reports` | id `12643506905`, **50.629 B** | id `12724204210`, **50.488 B** | **inexistente** (`total_count: 0`) — a bateria não rodou |
+| Anotações | 1 `notice` — migração do `ubuntu-latest` (item AA) | idem | 1 `failure` (`Process completed with exit code 1.`) + 1 `notice` (item AA) |
+
+**#23 e #24 (26–27/10/2026): estabilidade sem mudança de código.** Os dois crons rodaram o MESMO SHA (`80d16f1`) — nenhum push entre as janelas — e repetiram o padrão dos #21/#22 (job ~18min, bateria 16m29s/16m41s, artifact em ~50 kB, `Security Checks` em ~0s; atraso +5h54/+5h34, dentro da faixa +4h19..+7h46 documentada). A única anotação nos dois é o `notice` já conhecido do runner (item AA).
+
+**#25 (28/10/2026): falha de `schedule` fora da bateria.** O job parou no step 6 — `npm run security:check-sql` com exit 1 — a 1m49s do início; os steps dependentes (`setup-db`, `build-app`, `Run Tests`, uploads de cobertura) foram pulados, os marcados com `always()` rodaram e nenhum artifact saiu, coerente com `if-no-files-found: ignore` sobre um diretório de relatórios nunca gerado.
+
+**Causa: falso positivo do scanner `check-sql-injection` no `scripts/reset-db.js`, criado pelo commit `fa5b836` (ADR-0025, 27/10/2026).** O scanner flagra a Regra 2 (`query()` com template literal e interpolação sem array de parâmetros) na linha 53 — a instrução `DROP TABLE IF EXISTS ${table} CASCADE;` executada por `await query(...)`. A variável vem de `for (const table of TABLES_TO_DROP)`, onde `TABLES_TO_DROP` é uma lista `const` de strings literais puras declarada no próprio arquivo — sem input externo. Identificador em DDL não é parametrizável no PostgreSQL (sem plpgsql). O código é seguro; o scanner não reconhecia a estrutura (e o módulo não exportava nada — nenhum teste cobria o script).
+
+**Por que só a cron pegou:** os scanners eram executados automaticamente em UM lugar só — o `test-base.yml`, consumido exclusivamente pela cron de carga — e nenhum gate de push rodava. O #24 (09:50Z de 27/10) rodou `80d16f1`, o último SHA sem o `reset-db.js`; o primeiro executor automático contendo o arquivo foi o #25, no dia seguinte. O run nem sequer é de acessibilidade: não existe workflow de a11y neste repositório — o rótulo "A11y" vem apenas do título do commit no topo da `main` quando o cron disparou (`bc8deb7`, "ATT - A11y").
+
+**Reprodução determinística local** (Node `24.22.0`, mesma versão pinada em CI): `node scripts/check-sql-injection.js` → exit 1, achado único `CRÍTICO · scripts/reset-db.js:53 · query() com interpolação e sem array de parâmetros`; idem com `--all` — nenhum outro arquivo do repositório gera achado.
+
+**Resolução (28/10/2026, três commits):** `2ef7817` — allowlist documentada por arquivo para o `reset-db.js` no `IGNORE_FILES` do scanner (mesmo mecanismo do `clean-orphaned-images.js`, contrato da lista travado por `tests/unit/scripts/reset-db.test.js`); `2b0c3ac` — os scanners passam a rodar a cada push: novo step `Security Checks (SQL injection + credenciais hardcoded)` no job `lint` do `test-coverage.yml`, com os mesmos dois comandos do `test-base.yml` (um push que ferir um scanner reprova no gate de ~18min, não no cron do dia seguinte); `a4fd1c1` — scanner refatorado em módulo testável (`scanContent()` exportado como núcleo linha a linha, CLI só sob guard de `process.argv[1]`), nova regra de isenção para a variável vinda de `for (const x of LISTA)` com LISTA `const` de strings literais puras (`extractConstantLists()` + `findLoopVars()`) e 17 testes unitários (`tests/unit/scripts/check-sql-injection.test.js`) com mutações mortas (matar a regra do loop, aceitar qualquer colchete como lista válida e deixar de ignorar comentários reprovam a suíte). Decisão e política de falsos positivos: `docs/adr/0026-scanners-estaticos-no-gate-de-push-e-allowlist.md`.
+
+**Resíduo honesto:** o log do step dos scanners (403) e os artifacts (401) continuam inacessíveis sem credencial — este registro NÃO afirma ter lido a saída textual do `security:check-sql` no CI; afirma metadados públicos + o workflow + a reprodução local determinística do mesmo comando, exit code e ciclo de arquivos. **Critério de fechamento:** cron #26 (29/10/2026) voltar a passar no step 6 com os três commits na `main`; e os próximos passes do job `lint` nos pushs agora exercitam os scanners (commit `bc8deb7` e seus runs verdes anteriores mostram que nunca rodavam).
+
+---
+
 ### O p95 do `stress-test-combined` era o runner, não o código — questão fechada
 
 O registro dos runs #12–#14 deixou o outlier do #14 como **atribuição inconclusiva**, com duas hipóteses descartadas por medição (stall de checkpoint do Postgres e regressão de código) e um fator de confusão remanescente: a região do runner. O #16 fecha a questão, e o #17 confirma:
@@ -1868,8 +1901,11 @@ Mesmo código e mesmo número de iterações, −85% no p95 quando a região mud
 **Propósito:** Detectar vulnerabilidades de SQL injection no código-fonte.
 
 **Estrutura:**
-- 4 regras de detecção (interpolação direta, template literal sem array, detecção indireta, pool.query indireto)
-- Ignora falsos positivos conhecidos (comentários, whitelists, `validateIdentifier()`)
+- 4 regras de detecção (interpolação direta em `pool.query()`, `query()` com template literal e interpolação sem array de parâmetros — a Regra 2 que gerou o falso positivo do cron #25 no `reset-db.js` (run `40673567814`, 28/10/2026) —, detecção indireta via variável construída com template literal, `pool.query()` indireto)
+- **Isenção por estrutura (ADR-0026):** variável interpolada é isenta quando vem de `for (const x of LISTA)` com LISTA sendo `const` array de strings literais puras declarado no próprio arquivo — exports `extractConstantLists()` e `findLoopVars()`; lista com identificador, template literal ou chamada, e declaração `let`/`var`, desqualificam a isenção
+- **Allowlist por nome de arquivo (`IGNORE_FILES`)**, mesmo mecanismo de `check-hardcoded-credentials.js`, com justificativa por entrada: `clean-orphaned-images.js`, `reset-db.js`, o próprio scanner, entre outros
+- **Módulo testável** — `scanContent()` exportado como núcleo linha a linha (precedente do scanner de credenciais) e CLI apenas sob guard de `process.argv[1]`; testes: `tests/unit/scripts/check-sql-injection.test.js` (17 testes)
+- Executado a cada push desde 28/10/2026 (step `Security Checks` do job `lint` em `test-coverage.yml`, ADR-0026) e na cron de carga (`test-base.yml`)
 - Exit codes: 0 (nenhuma vulnerabilidade), 1 (vulnerabilidades encontradas)
 
 ---

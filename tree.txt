@@ -1348,6 +1348,7 @@
 │       ├── scripts
 │       │   ├── backup.test.js
 │       │   ├── check-hardcoded-credentials.test.js
+│       │   ├── check-sql-injection.test.js
 │       │   ├── clean-orphaned-images.test.js
 │       │   ├── clear-db.test.js
 │       │   ├── clear-musicas.test.js

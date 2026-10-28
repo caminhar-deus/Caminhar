@@ -835,6 +835,7 @@ tests/unit/pages/blog.index.test.js → pages/blog/index.js
 tests/unit/pages/blog.index.test.js → tests/helpers/index.js
 tests/unit/pages/index.test.js → pages/index.js
 tests/unit/pages/index.test.js → tests/helpers/index.js
+tests/unit/scripts/check-sql-injection.test.js → scripts/check-sql-injection.js
 tests/unit/scripts/reset-password.test.js → lib/auth/auth.js
 tests/unit/scripts/schema-sources.test.js → lib/crud/crud.js
 tests/unit/scripts/schema-sources.test.js → lib/domain/shared-pagination.js
