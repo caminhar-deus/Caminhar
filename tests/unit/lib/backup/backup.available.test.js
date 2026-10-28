@@ -86,11 +86,12 @@ describe('getAvailableBackups', () => {
     expect(backups[1].filename).toContain('2026-01-11');
     expect(backups[2].filename).toContain('2026-01-10');
 
-    // Deve ter o formato correto
+    // Deve ter o formato correto (o campo `date` é a data parseada do nome)
     // Nota: a função getAvailableBackups remove o 'Z' final do timestamp
     expect(backups[0]).toEqual({
       filename: `${BACKUP_PREFIX}_2026-01-12T12-00-00Z.sql.gz`,
       timestamp: '2026-01-12 12-00-00',
+      date: new Date('2026-01-12T12:00:00.000Z'),
       size: fakeSize,
       compressed: true,
     });

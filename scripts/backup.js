@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'fs';
 import path from 'path';
-import { formatISODate, formatLogDate } from './utils/date-format.js';
+import { formatISODate, formatLogDate, parseBackupTimestamp } from './utils/date-format.js';
 import zlib from 'zlib';
 import { spawn } from 'child_process';
 import crypto from 'crypto';
@@ -76,14 +76,14 @@ async function getBackupFiles(maxFiles = Infinity) {
     }
   }
 
-  // Ordena por timestamp ISO 8601 (mais recente primeiro)
+  // Ordena pelo timestamp do NOME (mais recente primeiro); sem timestamp vai para o fim
   uniqueFiles.sort((a, b) => {
-    const timestampA = a.match(/(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z)/)?.[0];
-    const timestampB = b.match(/(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z)/)?.[0];
-    if (!timestampA && !timestampB) return 0;
-    if (!timestampA) return 1;
-    if (!timestampB) return -1;
-    return timestampB.localeCompare(timestampA);
+    const dateA = parseBackupTimestamp(a);
+    const dateB = parseBackupTimestamp(b);
+    if (!dateA && !dateB) return 0;
+    if (!dateA) return 1;
+    if (!dateB) return -1;
+    return dateB - dateA;
   });
 
   // Aplica limite: retorna apenas os primeiros maxFiles
@@ -598,8 +598,14 @@ async function getAvailableBackups(maxFiles = DEFAULT_LIST_LIMIT) {
     // Mapeia para objetos com metadados (assíncrono com fs.promises — item 3.2)
     const backupList = [];
     for (const file of files) {
-      const timestampMatch = file.match(/(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z)/);
-      const timestamp = timestampMatch ? timestampMatch[0] : 'unknown';
+      // Data de criação vem do NOME do arquivo (parseBackupTimestamp), não do
+      // mtime — cópias/movimentações reescrevem o mtime e o painel exibia data
+      // divergente do nome. O campo legado `timestamp` ("2026-05-22 10-18-54")
+      // continua derivado da mesma data.
+      const date = parseBackupTimestamp(file);
+      const timestamp = date
+        ? date.toISOString().replace(/:/g, '-').replace(/\.\d{3}Z$/, 'Z')
+        : 'unknown';
       const formattedDate = timestamp.replace('T', ' ');
 
       let size = 0;
@@ -611,6 +617,7 @@ async function getAvailableBackups(maxFiles = DEFAULT_LIST_LIMIT) {
       backupList.push({
         filename: file,
         timestamp: formattedDate.replace(/-(\d{2})Z$/, '-$1'),
+        date,
         size,
         compressed: true
       });

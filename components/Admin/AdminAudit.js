@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import { exportToCSV } from '@/utils/csvExport';
 import { useUnauthorized } from '@/hooks/useUnauthorized';
 import crudStyles from './styles/crud.module.css';
+import DateTimeBRField from './fields/DateTimeBRField';
 
 export default function AdminAudit() {
   const [logs, setLogs] = useState([]);
@@ -91,18 +92,18 @@ export default function AdminAudit() {
             value={search} onChange={(e) => setSearch(e.target.value)}
             style={{ padding: '10px', minWidth: '200px', flex: 1, maxWidth: '300px', borderRadius: '6px', border: '1px solid #d1d5db', backgroundColor: '#f9fafb' }}
           />
-          <input
-            type="datetime-local"
+          <DateTimeBRField
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
             style={{ padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', backgroundColor: '#f9fafb' }}
+            ariaLabel="Data Inicial"
             title="Data Inicial"
           />
-          <input
-            type="datetime-local"
+          <DateTimeBRField
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
             style={{ padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', backgroundColor: '#f9fafb' }}
+            ariaLabel="Data Final"
             title="Data Final"
           />
           <button onClick={handleExportCSV} type="button" style={{ padding: '10px 16px', backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '500', whiteSpace: 'nowrap' }}>

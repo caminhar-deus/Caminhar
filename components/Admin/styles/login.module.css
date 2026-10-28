@@ -63,6 +63,14 @@
   background-color: var(--color-hover-primary);
 }
 
+/* Foco visível tokenizado (MASTER §7): outline é o indicador que passa em 3:1,
+   box-shadow é halo complementar — nunca um sem o outro, nunca outline: none seco */
+.button:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
+}
+
 .error {
   color: var(--color-error-500);
   font-size: var(--font-size-sm);

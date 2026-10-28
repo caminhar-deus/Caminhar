@@ -82,7 +82,7 @@ export default function AdminBackupManager() {
               📅 Data: {new Date(latestBackup.date).toLocaleString('pt-BR')}
             </div>
             <div style={{ fontSize: '0.9em', color: '#555' }}>
-              💾 Tamanho: {(latestBackup.size / 1024).toFixed(2)} KB
+              💾 Tamanho: {(latestBackup.size / 1024).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KB
             </div>
           </div>
         ) : (

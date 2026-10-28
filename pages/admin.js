@@ -673,9 +673,23 @@ export default function Admin() {
               </div>
 
               <div className={styles.formGroup}>
-                <label>Imagem Principal (1100x320)</label>
+                <label htmlFor="banner-file-input">Imagem Principal (1100x320)</label>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                    className={styles.button}
+                    style={{ padding: '10px 16px' }}
+                  >
+                    Escolher arquivo
+                  </button>
+                  <span aria-live="polite" style={{ fontSize: '0.9rem', color: '#666' }}>
+                    {imageFile ? imageFile.name : 'Nenhum arquivo escolhido'}
+                  </span>
+                </div>
                 <input
                   ref={fileInputRef}
+                  id="banner-file-input"
                   type="file"
                   accept="image/*"
                   onChange={async (e) => {
@@ -701,7 +715,7 @@ export default function Admin() {
                       reader.readAsDataURL(file);
                     }
                   }}
-                  className={styles.input}
+                  style={{ display: 'none' }}
                 />
                 
                 {isCropping && cropImageSrc ? (
@@ -742,9 +756,9 @@ export default function Admin() {
                   <div style={{ margin: '15px 0' }}>
                     <p style={{ marginBottom: '5px', fontSize: '0.9rem', color: '#666' }}>Pré-visualização da seleção:</p>
                     <div style={{ fontSize: '0.85rem', color: '#555', marginBottom: '10px', background: '#f8f9fa', padding: '10px', borderRadius: '6px', border: '1px solid #e9ecef' }}>
-                      <div>📦 <strong>Original:</strong> {(originalSize / 1024).toFixed(2)} KB</div>
-                      <div>✨ <strong>Otimizado:</strong> {(imageFile.size / 1024).toFixed(2)} KB</div>
-                      <div style={{ color: '#28a745', marginTop: '4px', fontWeight: '600' }}>📉 Economia de {originalSize > 0 ? ((1 - imageFile.size / originalSize) * 100).toFixed(0) : 0}%</div>
+                      <div>📦 <strong>Original:</strong> {(originalSize / 1024).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KB</div>
+                      <div>✨ <strong>Otimizado:</strong> {(imageFile.size / 1024).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KB</div>
+                      <div style={{ color: '#28a745', marginTop: '4px', fontWeight: '600' }}>📉 Economia de {originalSize > 0 ? ((1 - imageFile.size / originalSize) * 100).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : 0}%</div>
                     </div>
                     <img 
                       src={URL.createObjectURL(imageFile)} 

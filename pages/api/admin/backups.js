@@ -1,31 +1,21 @@
-import { createBackup } from '../../../scripts/backup';
+import { createBackup, getAvailableBackups } from '../../../scripts/backup';
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
-import fs from 'fs';
-import path from 'path';
 
 async function handleGet(req, res) {
-  const backupDir = path.join(process.cwd(), 'data', 'backups');
+  try {
+    // Reusa a listagem do script de backup, que ordena pelo timestamp gravado
+    // no NOME do arquivo (data de criação, gerada por `formatISODate`) — não
+    // pelo mtime, que cópias/movimentações do diretório reescrevem e que fazia
+    // o painel exibir uma data meses divergente do nome (§8 do doc privado,
+    // item 3). A extração do timestamp vive em `parseBackupTimestamp`.
+    const backups = await getAvailableBackups();
+    const files = backups.map((b) => ({ name: b.filename, date: b.date, size: b.size }));
+    const latest = files.length > 0 ? files[0] : null;
 
-  if (!fs.existsSync(backupDir)) {
-    return res.status(200).json({ latest: null });
+    return res.status(200).json({ latest, backups: files });
+  } catch {
+    return res.status(500).json({ error: 'Internal Server Error', message: 'Erro ao listar backups' });
   }
-
-  // Lê o diretório, filtra arquivos de backup e ordena por data
-  const files = fs.readdirSync(backupDir)
-    .filter(file => file.endsWith('.sql') || file.endsWith('.gz') || file.endsWith('.enc'))
-    .map(file => {
-      const stats = fs.statSync(path.join(backupDir, file));
-      return {
-        name: file,
-        date: stats.mtime,
-        size: stats.size
-      };
-    })
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
-
-  const latest = files.length > 0 ? files[0] : null;
-
-  return res.status(200).json({ latest, backups: files });
 }
 
 async function handlePost(req, res) {

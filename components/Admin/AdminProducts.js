@@ -80,7 +80,7 @@ const columns = [
     }
   },
   { key: 'name', header: 'Produto', render: (item) => <strong>{item.name}</strong> },
-  { key: 'price', header: 'Valor', format: (value) => value ? `R$ ${value}` : '-' },
+  { key: 'price', header: 'Valor', format: (value) => value ? `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-' },
   { 
     key: 'link', header: 'Link',
     render: (item) => item.link ? <span title="Link">🔗</span> : <span style={{ color: '#9ca3af' }}>-</span>

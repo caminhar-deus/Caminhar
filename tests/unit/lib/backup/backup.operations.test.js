@@ -21,6 +21,7 @@ jest.mock('crypto', () => ({
 }));
 
 jest.mock('../../../../scripts/utils/date-format.js', () => ({
+  ...jest.requireActual('../../../../scripts/utils/date-format.js'),
   formatISODate: jest.fn(() => '2026-01-15T02-00-00Z'),
   formatLogDate: jest.fn(() => '2026-01-15 02:00:00'),
 }));

@@ -1,8 +1,7 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 import handler from '../../../../pages/api/admin/backups.js';
-import { createBackup } from '../../../../scripts/backup.js';
-import fs from 'fs';
+import { createBackup, getAvailableBackups } from '../../../../scripts/backup.js';
 import { suppressConsoleError } from '../../../helpers/console.js';
 
 // Mock do DB para controlar a query de roles do RBAC (createAdminHandler)
@@ -15,10 +14,15 @@ jest.mock('../../../../lib/auth/auth.js', () => ({
     return handler(req, res);
   }
 }));
+// A rota é um wrapper fino sobre o script de backup: a listagem (GET) usa
+// getAvailableBackups, que ordena pelo timestamp gravado no NOME do arquivo
+// (data de criação) — não pelo mtime, que cópias/movimentações reescrevem
+// (doc privado §8, item 3). A extração vive em parseBackupTimestamp
+// (tests/unit/scripts/date-format.test.js).
 jest.mock('../../../../scripts/backup.js', () => ({
-  createBackup: jest.fn()
+  createBackup: jest.fn(),
+  getAvailableBackups: jest.fn(),
 }));
-jest.mock('fs');
 
 describe('API Admin - Backups (/api/admin/backups)', () => {
   let consoleErrorSpy;
@@ -63,7 +67,7 @@ describe('API Admin - Backups (/api/admin/backups)', () => {
     // Se o mock do banco estiver errado (query falhando/undefined), o fail-closed
     // devolveria 403 aqui e o teste quebraria — é isso que o par garante.
     query.mockResolvedValueOnce({ rows: [{ permissions: ['Segurança'] }] });
-    fs.existsSync.mockReturnValueOnce(false);
+    getAvailableBackups.mockResolvedValueOnce([]);
 
     const { req, res } = createMocks({ method: 'GET' });
     req._userOverride = { username: 'editor', role: 'comum' };
@@ -73,13 +77,24 @@ describe('API Admin - Backups (/api/admin/backups)', () => {
     expect(res._getJSONData().latest).toBeNull();
   });
 
-  it('GET: deve listar backups ordenados se o diretório existir', async () => {
-    fs.existsSync.mockReturnValueOnce(true);
-    fs.readdirSync.mockReturnValueOnce(['backup1.sql.gz', 'backup2.sql']);
-    fs.statSync.mockImplementation((file) => ({
-      mtime: file.includes('backup1') ? new Date('2026-04-05') : new Date('2026-04-06'),
-      size: 1024
-    }));
+  it('GET: deve listar backups com a data de criação extraída do nome do arquivo', async () => {
+    // Ordem já vem do script (mais recente primeiro, pelo timestamp do nome)
+    getAvailableBackups.mockResolvedValueOnce([
+      {
+        filename: 'caminhar-pg-backup_2026-05-22T10-18-54Z.sql.gz.enc',
+        timestamp: '2026-05-22 10-18-54',
+        date: new Date('2026-05-22T10:18:54.000Z'),
+        size: 4472128,
+        compressed: true,
+      },
+      {
+        filename: 'caminhar-pg-backup_2026-05-21T19-56-57Z.sql.gz.enc',
+        timestamp: '2026-05-21 19-56-57',
+        date: new Date('2026-05-21T19:56:57.000Z'),
+        size: 4472125,
+        compressed: true,
+      },
+    ]);
 
     const { req, res } = createMocks({ method: 'GET' });
     await handler(req, res);
@@ -87,27 +102,22 @@ describe('API Admin - Backups (/api/admin/backups)', () => {
     expect(res._getStatusCode()).toBe(200);
     const data = res._getJSONData();
     expect(data.backups).toHaveLength(2);
-    expect(data.latest.name).toBe('backup2.sql');
+    expect(data.latest.name).toBe('caminhar-pg-backup_2026-05-22T10-18-54Z.sql.gz.enc');
+    // A data exposta deve corresponder ao timestamp do nome — não ao mtime,
+    // que é o que causava a divergência "nome 2026-05-22 × exibida 02/10/2026"
+    expect(new Date(data.latest.date).toISOString()).toBe('2026-05-22T10:18:54.000Z');
   });
 
-  it('GET: deve retornar array vazio em latest se arquivos não existirem', async () => {
-    fs.existsSync.mockReturnValueOnce(true);
-    fs.readdirSync.mockReturnValueOnce([]);
-    const { req, res } = createMocks({ method: 'GET' });
-    await handler(req, res);
-    expect(res._getJSONData().latest).toBeNull();
-  });
-
-  it('GET: deve retornar null se o diretório não existir', async () => {
-    fs.existsSync.mockReturnValueOnce(false);
+  it('GET: deve devolver latest null quando não houver backups', async () => {
+    getAvailableBackups.mockResolvedValueOnce([]);
     const { req, res } = createMocks({ method: 'GET' });
     await handler(req, res);
     expect(res._getStatusCode()).toBe(200);
     expect(res._getJSONData().latest).toBeNull();
   });
-  
-  it('GET: deve capturar erros do Filesystem e retornar 500', async () => {
-    fs.existsSync.mockImplementationOnce(() => { throw new Error('FS Error'); });
+
+  it('GET: deve capturar erros da listagem e retornar 500', async () => {
+    getAvailableBackups.mockRejectedValueOnce(new Error('FS Error'));
     const { req, res } = createMocks({ method: 'GET' });
     await handler(req, res);
     expect(res._getStatusCode()).toBe(500);

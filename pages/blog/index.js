@@ -2,28 +2,34 @@ import Head from 'next/head';
 import Link from 'next/link';
 import styles from './Blog.module.css';
 import PostCard from '../../components/Features/Blog/PostCard';
-import { query } from '../../lib/infra/db.js';
+import { getRecentPosts } from '../../lib/domain/posts.js';
+import { getOrSetCache } from '../../lib/cache/cache.js';
 
 export async function getServerSideProps({ query: queryParams }) {
   try {
-    const page = parseInt(queryParams.page || '1');
+    const parsedPage = parseInt(queryParams.page || '1');
+    const page = Number.isInteger(parsedPage) && parsedPage >= 1 ? parsedPage : 1;
     const limit = 9;
-    const offset = (page - 1) * limit;
 
-    // Query direta ao banco — elimina latência de rede e overhead HTTP
-    const postsResult = await query(
-      'SELECT * FROM posts WHERE published = true ORDER BY created_at DESC LIMIT $1 OFFSET $2',
-      [limit, offset]
+    // Mesma camada de domínio e a MESMA chave de cache da listagem sem busca
+    // da API `/api/posts` — /blog e a aba pública compartilham a entrada de
+    // cache e a ordenação curada (`position ASC, created_at DESC`) do
+    // `paginate`. Antes este SSR reimplementava a query em SQL ad hoc
+    // (`ORDER BY created_at DESC`) e ignorava a curadoria (doc público §7,
+    // item 12).
+    const result = await getOrSetCache(
+      `posts:list:${page}:${limit}`,
+      () => getRecentPosts(limit, page, ''),
+      7200
     );
-    const totalResult = await query(
-      'SELECT COUNT(*) FROM posts WHERE published = true'
-    );
 
-    const posts = postsResult.rows;
-    const totalPosts = parseInt(totalResult.rows[0].count, 10);
-    const totalPages = Math.ceil(totalPosts / limit);
-
-    return { props: { posts: JSON.parse(JSON.stringify(posts)), currentPage: page, totalPages } };
+    return {
+      props: {
+        posts: JSON.parse(JSON.stringify(result.data)),
+        currentPage: page,
+        totalPages: result.pagination.totalPages,
+      },
+    };
   } catch (error) {
     console.error('Erro ao buscar posts no SSR:', error);
     return { props: { posts: [], currentPage: 1, totalPages: 1, fetchError: true } };
@@ -59,7 +65,7 @@ export default function BlogIndex({ posts, currentPage, totalPages, fetchError }
         ) : (
           <div className={styles.grid}>
             {posts.map((post) => (
-              <PostCard key={post.id} post={post} readMoreText="Ler artigo completo →" />
+              <PostCard key={post.id} post={post} />
             ))}
           </div>
         )}
