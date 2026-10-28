@@ -148,6 +148,9 @@ scripts/migrations/seed-migrations-table.js → scripts/utils/load-env.js
 scripts/migrations/verify-applied.js → scripts/db/connection.js
 scripts/migrations/verify-applied.js → scripts/utils/load-env.js
 scripts/monitor-disk-space.js → scripts/utils/constants.js
+scripts/reset-db.js → scripts/db/connection.js
+scripts/reset-db.js → scripts/migrate.js
+scripts/reset-db.js → scripts/utils/load-env.js
 scripts/reset-password.js → scripts/db/connection.js
 scripts/reset-password.js → scripts/utils/load-env.js
 scripts/restore-backup.js → scripts/backup.js

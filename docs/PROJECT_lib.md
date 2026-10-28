@@ -394,13 +394,13 @@ Camada de domínio: funções específicas por entidade de negócio, construída
 
 | Função | Descrição |
 |--------|-----------|
-| `paginate(tableName, params)` | Executa paginação com busca em paralelo (COUNT + dados via `Promise.all`). Parâmetros: `page`, `limit`, `search`, `publishedOnly`, `publishedField`, `orderBy`, `searchOptions` |
+| `paginate(tableName, params)` | Executa paginação com busca em paralelo (COUNT + dados via `Promise.all`). Parâmetros: `page`, `limit`, `search`, `publishedOnly`, `publishedField` (**obrigatório** quando `publishedOnly=true` — sem default; ver §12.1 de `PROJECT_data.md`), `orderBy`, `searchOptions` |
 
 **Estratégias de busca:**
 - **ILIKE** (`searchOptions.fields`): Para músicas (`titulo`, `artista`) e vídeos (`titulo`, `descricao`). Usa `%termo%` com `ILIKE` e índice trigram
 - **tsvector** (`searchOptions.tsvector`): Para posts com full-text search em português (`plainto_tsquery`)
 
-**SELECT otimizado para listagens públicas:** O mapa `PUBLIC_SELECT_FIELDS` define colunas específicas por tabela (`posts`, `musicas`, `videos`, `dicas`) quando `publishedOnly=true`, evitando `SELECT *` (exclui colunas pesadas como `content`). Para `dicas`, o mapa usa campo `name` (não `title`).
+**SELECT otimizado para listagens públicas:** O mapa `PUBLIC_SELECT_FIELDS` define colunas específicas por tabela (`posts`, `musicas`, `videos`) quando `publishedOnly=true`, evitando `SELECT *` (exclui colunas pesadas como `content`). A coluna de publicação diverge por tabela (`published` em posts, `publicado` em musicas/videos) e o mapa respeita os nomes reais. `products` e `dicas` **não** têm entrada no mapa — suas listagens públicas usam SQL próprio (`lib/domain/products.js`, `pages/api/dicas.js`); a listagem pública de vídeos inclui `thumbnail` (capa personalizada usada pelo `VideoCard`/`LazyIframe`).
 
 **Observações:** O nome da tabela é interpolado diretamente no SQL sem validação de identificador (ver UPGRADE 6.1). O termo de busca é normalizado com `.toLowerCase().trim()` em ambos os modos.
 

@@ -635,6 +635,7 @@
 │   │   ├── 0022-enable-frontend-checklist-remote-mcp.md
 │   │   ├── 0023-spotify-embed-limitado-a-tracks-com-fallback.md
 │   │   ├── 0024-crud-categorias-posts-chips-display-only.md
+│   │   ├── 0025-reset-completo-banco-migrations-idempotentes-nomenclatura-publicacao.md
 │   │   ├── README.md
 │   │   └── template.md
 │   └── ai-memory-error.md
@@ -1024,6 +1025,7 @@
 │   │   ├── seed-migrations-table.js
 │   │   └── verify-applied.js
 │   ├── monitor-disk-space.js
+│   ├── reset-db.js
 │   ├── reset-password.js
 │   ├── restore-backup.js
 │   ├── run-all-load-tests-sequentially.js
@@ -1270,6 +1272,7 @@
 │       ├── domain
 │       │   ├── posts.test.js
 │       │   ├── settings.test.js
+│       │   ├── shared-pagination.test.js
 │       │   └── videos.test.js
 │       ├── github-workflows
 │       │   ├── k6-version-pin.test.js
@@ -1345,7 +1348,9 @@
 │       │   │   └── connection.test.js
 │       │   ├── init-table.test.js
 │       │   ├── migrate.test.js
+│       │   ├── reset-db.test.js
 │       │   ├── reset-password.test.js
+│       │   ├── schema-sources.test.js
 │       │   ├── seed-all.test.js
 │       │   ├── seed-settings.test.js
 │       │   ├── summarize-k6-reports.test.js
@@ -1375,4 +1380,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-206 directories, 1170 files
+206 directories, 1175 files

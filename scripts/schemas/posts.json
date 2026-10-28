@@ -11,7 +11,8 @@
     { "name": "published", "type": "BOOLEAN", "constraints": "DEFAULT false" },
     { "name": "views", "type": "INTEGER", "constraints": "DEFAULT 0 NOT NULL" },
     { "name": "created_at", "type": "TIMESTAMP WITH TIME ZONE", "constraints": "DEFAULT CURRENT_TIMESTAMP" },
-    { "name": "updated_at", "type": "TIMESTAMP WITH TIME ZONE", "constraints": "DEFAULT CURRENT_TIMESTAMP" }
+    { "name": "updated_at", "type": "TIMESTAMP WITH TIME ZONE", "constraints": "DEFAULT CURRENT_TIMESTAMP" },
+    { "name": "position", "type": "INTEGER", "constraints": "DEFAULT 9999" }
   ],
   "seedData": []
 }

@@ -543,6 +543,9 @@ scripts/migrations/seed-migrations-table.js → scripts/utils/load-env.js
 scripts/migrations/verify-applied.js → scripts/db/connection.js
 scripts/migrations/verify-applied.js → scripts/utils/load-env.js
 scripts/monitor-disk-space.js → scripts/utils/constants.js
+scripts/reset-db.js → scripts/db/connection.js
+scripts/reset-db.js → scripts/migrate.js
+scripts/reset-db.js → scripts/utils/load-env.js
 scripts/reset-password.js → lib/auth/auth.js
 scripts/reset-password.js → scripts/db/connection.js
 scripts/reset-password.js → scripts/utils/load-env.js
@@ -930,6 +933,9 @@ tests/unit/domain/settings.test.js → lib/crud/crud.js
 tests/unit/domain/settings.test.js → lib/domain/settings.js
 tests/unit/domain/settings.test.js → lib/infra/db.js
 tests/unit/domain/settings.test.js → tests/mocks/db-module.js
+tests/unit/domain/shared-pagination.test.js → lib/domain/shared-pagination.js
+tests/unit/domain/shared-pagination.test.js → lib/infra/db.js
+tests/unit/domain/shared-pagination.test.js → tests/mocks/db-module.js
 tests/unit/domain/videos.test.js → lib/crud/crud.js
 tests/unit/domain/videos.test.js → lib/domain/videos.js
 tests/unit/domain/videos.test.js → lib/infra/db.js
@@ -1046,9 +1052,14 @@ tests/unit/scripts/date-format.test.js → scripts/utils/date-format.js
 tests/unit/scripts/db/connection.test.js → scripts/db/connection.js
 tests/unit/scripts/init-table.test.js → scripts/utils/init-table-utils.js
 tests/unit/scripts/migrate.test.js → scripts/migrate.js
+tests/unit/scripts/reset-db.test.js → scripts/migrate.js
+tests/unit/scripts/reset-db.test.js → scripts/reset-db.js
 tests/unit/scripts/reset-password.test.js → lib/auth/auth.js
 tests/unit/scripts/reset-password.test.js → scripts/db/connection.js
 tests/unit/scripts/reset-password.test.js → scripts/reset-password.js
+tests/unit/scripts/schema-sources.test.js → lib/crud/crud.js
+tests/unit/scripts/schema-sources.test.js → lib/domain/shared-pagination.js
+tests/unit/scripts/schema-sources.test.js → scripts/validate-schema.js
 tests/unit/scripts/seed-all.test.js → scripts/db/connection.js
 tests/unit/scripts/seed-all.test.js → scripts/seed-all.js
 tests/unit/scripts/seed-all.test.js → scripts/seed-musicas.js

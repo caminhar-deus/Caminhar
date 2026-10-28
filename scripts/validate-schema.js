@@ -4,26 +4,58 @@ import { getPool, closePool } from './db/connection.js';
 
 loadEnv();
 
-// Definição do Schema Esperado com base no código (lib/infra/db.js, lib/auth/auth.js, migrations)
-const EXPECTED_SCHEMA = {
+// Definição do Schema Esperado, fiel ao estado real do banco (conferido no
+// information_schema em 27/10/2026): colunas estruturais das migrations
+// (position em posts/musicas/videos — 007/008/009; thumbnail em videos — 017;
+// last_login_at em users — 005) e as tabelas de products/dicas (que não têm
+// schema JSON) e auxiliares do schema base (000).
+// ATENÇÃO: a coluna de publicação diverge por tabela — `published` em
+// posts/products/dicas, `publicado` em musicas/videos (docs/PROJECT_data.md).
+// (exportado para o teste de consistência de fontes de schema —
+// tests/unit/scripts/schema-sources.test.js)
+export const EXPECTED_SCHEMA = {
   posts: [
-    'id', 'title', 'slug', 'excerpt', 'content', 'image_url', 'published', 'created_at', 'updated_at', 'views'
+    'id', 'title', 'slug', 'excerpt', 'content', 'image_url', 'published', 'views', 'position', 'created_at', 'updated_at'
   ],
   videos: [
-    'id', 'titulo', 'url_youtube', 'descricao', 'publicado', 'created_at', 'updated_at'
+    'id', 'titulo', 'url_youtube', 'descricao', 'thumbnail', 'publicado', 'position', 'created_at', 'updated_at'
   ],
   musicas: [
-    'id', 'titulo', 'artista', 'url_spotify', 'descricao', 'publicado', 'created_at', 'updated_at'
+    'id', 'titulo', 'artista', 'url_spotify', 'descricao', 'publicado', 'position', 'created_at', 'updated_at'
+  ],
+  products: [
+    'id', 'name', 'price', 'image_url', 'description', 'position', 'published', 'category', 'link', 'created_at', 'updated_at'
+  ],
+  dicas: [
+    'id', 'name', 'content', 'published', 'created_at', 'updated_at'
+  ],
+  categories: [
+    'id', 'name', 'slug'
+  ],
+  tags: [
+    'id', 'name', 'slug'
+  ],
+  post_categories: [
+    'post_id', 'category_id'
+  ],
+  post_tags: [
+    'post_id', 'tag_id'
+  ],
+  roles: [
+    'id', 'name', 'permissions', 'created_at', 'updated_at'
   ],
   users: [
-    'id', 'username', 'password', 'role', 'created_at'
+    'id', 'username', 'password', 'role', 'last_login_at', 'created_at', 'updated_at'
+  ],
+  refresh_tokens: [
+    'id', 'user_id', 'token', 'expires_at', 'revoked', 'created_at'
   ],
   // Tabelas inferidas pelo uso em lib/infra/db.js
   settings: [
-    'key', 'value', 'type', 'description', 'updated_at'
+    'id', 'key', 'value', 'type', 'description', 'created_at', 'updated_at'
   ],
   images: [
-    'id', 'filename', 'path', 'type', 'size', 'user_id'
+    'id', 'filename', 'path', 'type', 'size', 'user_id', 'uploaded_at'
   ]
 };
 

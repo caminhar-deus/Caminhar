@@ -1,4 +1,7 @@
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+// EXPECTED_SCHEMA é exportado justamente para o mock do banco derivar dele —
+// sem duplicar a lista de colunas esperadas (fonte única em validate-schema.js)
+import { EXPECTED_SCHEMA } from '../../../scripts/validate-schema.js';
 
 // Mock do pg antes de qualquer importação
 jest.unstable_mockModule('pg', () => {
@@ -67,15 +70,8 @@ describe('validate-schema.js — Validação do schema do banco', () => {
     // Import dinâmico direto (com await) garante uma espera determinística
     // da Promise, ao contrário de jest.isolateModules(callback async).
     const pg = await import('pg');
-    // Colunas esperadas, idênticas ao EXPECTED_SCHEMA de validate-schema.js.
-    const expectedColumnsByTable = {
-      posts: ['id', 'title', 'slug', 'excerpt', 'content', 'image_url', 'published', 'created_at', 'updated_at', 'views'],
-      videos: ['id', 'titulo', 'url_youtube', 'descricao', 'publicado', 'created_at', 'updated_at'],
-      musicas: ['id', 'titulo', 'artista', 'url_spotify', 'descricao', 'publicado', 'created_at', 'updated_at'],
-      users: ['id', 'username', 'password', 'role', 'created_at'],
-      settings: ['key', 'value', 'type', 'description', 'updated_at'],
-      images: ['id', 'filename', 'path', 'type', 'size', 'user_id'],
-    };
+    // Colunas esperadas derivadas do próprio EXPECTED_SCHEMA (fonte única)
+    const expectedColumnsByTable = EXPECTED_SCHEMA;
     // Resposta condicional ao SQL: SELECT 1 retorna { '?column?': 1 },
     // cada SELECT EXISTS retorna { exists: true }, e cada consulta de
     // colunas (information_schema.columns) retorna as colunas da tabela.

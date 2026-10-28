@@ -410,7 +410,7 @@ O sistema de backup é gerenciado pelo script `scripts/backup.js` e oferece as s
 
 ## 12. Estrutura do Banco de Dados (Contexto)
 
-O banco PostgreSQL gerenciado por este sistema de backup contém **15 tabelas**:
+O banco PostgreSQL gerenciado por este sistema de backup contém **16 tabelas**:
 
 | Tabela | Descrição |
 |--------|-----------|
@@ -428,29 +428,58 @@ O banco PostgreSQL gerenciado por este sistema de backup contém **15 tabelas**:
 | `dicas` | Dicas cadastradas |
 | `activity_logs` | Log de auditoria |
 | `roles` | Cargos e permissões |
+| `refresh_tokens` | Tokens de refresh de sessão (migration 016) |
 | `_migrations` | Controle de versão das migrações aplicadas |
+
+### 12.1 Nomenclatura da coluna de publicação (divergência histórica entre tabelas)
+
+A coluna booleana de publicação **não tem nome único** entre as tabelas de conteúdo — é divergência histórica da criação separada das tabelas, **mantida por decisão do dono (27/10/2026)** por ser consistente dentro de cada tabela em todas as camadas (schema JSON, banco, domínio, API e formulário do painel):
+
+| Tabela | Coluna | Default (nascimento) |
+|--------|--------|----------------------|
+| `posts` | `published` | `false` (rascunho) |
+| `musicas` | `publicado` | `false` (rascunho) |
+| `videos` | `publicado` | `false` (rascunho) |
+| `products` | `published` | `true` (publicado) |
+| `dicas` | `published` | `true` (publicado) |
+
+Regras decorrentes:
+- O `paginate()` de `lib/domain/shared-pagination.js` exige `publishedField` **explícito** quando `publishedOnly=true` (não há default — um valor errado geraria erro SQL em runtime).
+- O `SELECT` otimizado das listagens públicas (`PUBLIC_SELECT_FIELDS`) cobre apenas `posts`, `musicas` e `videos`; `products` e `dicas` têm SQL próprio nas suas APIs.
+- `views` (posts) existe no banco, mas é incrementada por query dedicada e **não** entra nos campos permitidos do CRUD genérico (`tableSchemas` em `lib/crud/crud.js`).
+- A paridade entre as fontes de schema (JSONs × `tableSchemas` × `PUBLIC_SELECT_FIELDS` × `EXPECTED_SCHEMA` de `scripts/validate-schema.js`) é travada por `tests/unit/scripts/schema-sources.test.js`.
+- Unificar a nomenclatura (`publicado` → `published`) é evolução futura e exige migration + ripple em domínio/API/UI — nunca mudar uma fonte isoladamente.
 
 ---
 
 ## 13. Migrações Aplicadas
 
-A tabela `_migrations` registra **11 migrações** executadas no schema do banco:
+A tabela `_migrations` registra **17 migrações** executadas no schema do banco (conferido no banco em 27/10/2026):
 
 | ID | Nome | Descrição |
 |----|------|-----------|
-| 1 | `001-add-views-to-posts` | Adiciona coluna de visualizações aos posts |
-| 2 | `002-create-products-table` | Cria tabela de produtos |
-| 3 | `003-add-position-to-products` | Adiciona campo de ordenação aos produtos |
-| 4 | `004-add-published-to-products` | Adiciona campo de publicação aos produtos |
-| 5 | `005-add-last-login-to-users` | Adiciona campo de último login aos usuários |
-| 6 | `006-create-activity-logs` | Cria tabela de log de auditoria |
-| 7 | `007-add-position-to-musicas` | Adiciona campo de ordenação às músicas |
-| 8 | `008-add-position-to-videos` | Adiciona campo de ordenação aos vídeos |
-| 9 | `009-add-position-to-posts` | Adiciona campo de ordenação aos posts |
-| 10 | `011-fix-entity-id-type` | Altera `entity_id` de INTEGER para BIGINT em `activity_logs` |
-| 11 | `013-add-trgm-indexes` | Adiciona índices de busca textual (pg_trgm) |
+| 1 | `000-create-base-schema` | Cria as tabelas de conteúdo (a partir de `scripts/schemas/`) e as auxiliares |
+| 2 | `001-add-views-to-posts` | Adiciona coluna de visualizações aos posts |
+| 3 | `002-create-products-table` | Cria tabela de produtos |
+| 4 | `003-add-position-to-products` | Adiciona campo de ordenação aos produtos |
+| 5 | `004-add-published-to-products` | Adiciona campo de publicação aos produtos |
+| 6 | `005-add-last-login-to-users` | Adiciona campo de último login aos usuários |
+| 7 | `006-create-activity-logs` | Cria tabela de log de auditoria |
+| 8 | `007-add-position-to-musicas` | Adiciona campo de ordenação às músicas |
+| 9 | `008-add-position-to-videos` | Adiciona campo de ordenação aos vídeos |
+| 10 | `009-add-position-to-posts` | Adiciona campo de ordenação aos posts |
+| 11 | `011-fix-entity-id-type` | Altera `entity_id` de INTEGER para BIGINT em `activity_logs` |
+| 12 | `012-add-performance-indexes` | Índices compostos de paginação (posts, musicas, videos, products, settings) |
+| 13 | `013-add-trgm-indexes` | Adiciona índices de busca textual (pg_trgm) |
+| 14 | `014-add-dicas-index` | Índice composto (published, id) para a listagem pública de dicas |
+| 15 | `015-align-products-schema` | Alinha o schema de products (category, link; remove colunas legadas) |
+| 16 | `016-create-refresh-tokens-table` | Cria a tabela de tokens de refresh de sessão |
+| 17 | `017-add-thumbnail-to-videos` | Adiciona thumbnail personalizada aos vídeos |
+| 18 | `018-seed-default-roles` | Semeia os cargos padrão `admin` e `user` |
 
-**Observação:** As migrations `010-sync-sqlite-pg-schemas` e `012-migrate-sqlite-to-pg` foram criadas durante a unificação SQLite → PostgreSQL, mas seus arquivos foram removidos posteriormente. As alterações de schema correspondentes já estão presentes no banco.
+**Observação:** A migration `010-sync-sqlite-pg-schemas` foi criada durante a unificação SQLite → PostgreSQL, mas seu arquivo foi removido posteriormente. As alterações de schema correspondentes já estão presentes no banco (a numeração salta de 009 para 011 por isso).
+
+**Reset:** `npm run db:reset` dropa as tabelas de conteúdo e auxiliares, limpa `_migrations` por inteiro e reaplica TODAS as migrations (`scripts/reset-db.js`) — todas são idempotentes. Não dropa `products` (sem schema JSON; dados preservados), `users`, `settings`, `images`, `roles`, `activity_logs` nem `refresh_tokens`.
 
 ---
 

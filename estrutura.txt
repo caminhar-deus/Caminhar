@@ -732,6 +732,9 @@ tests/unit/domain/settings.test.js → lib/crud/crud.js
 tests/unit/domain/settings.test.js → lib/domain/settings.js
 tests/unit/domain/settings.test.js → lib/infra/db.js
 tests/unit/domain/settings.test.js → tests/mocks/db-module.js
+tests/unit/domain/shared-pagination.test.js → lib/domain/shared-pagination.js
+tests/unit/domain/shared-pagination.test.js → lib/infra/db.js
+tests/unit/domain/shared-pagination.test.js → tests/mocks/db-module.js
 tests/unit/domain/videos.test.js → lib/crud/crud.js
 tests/unit/domain/videos.test.js → lib/domain/videos.js
 tests/unit/domain/videos.test.js → lib/infra/db.js
@@ -832,6 +835,8 @@ tests/unit/pages/blog.index.test.js → tests/helpers/index.js
 tests/unit/pages/index.test.js → pages/index.js
 tests/unit/pages/index.test.js → tests/helpers/index.js
 tests/unit/scripts/reset-password.test.js → lib/auth/auth.js
+tests/unit/scripts/schema-sources.test.js → lib/crud/crud.js
+tests/unit/scripts/schema-sources.test.js → lib/domain/shared-pagination.js
 tests/unit/scripts/seed-settings.test.js → tests/helpers/console.js
 tests/unit/settings.cache.test.js → tests/mocks/db-module.js
 tests/unit/utils/reorder.test.js → utils/reorder.js
