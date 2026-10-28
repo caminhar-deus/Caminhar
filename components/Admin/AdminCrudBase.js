@@ -34,6 +34,9 @@ import CrudTable from './CrudTable';
  * @param {boolean} [props.reorderable=false] - Habilita reordenação (Drag & Drop)
  * @param {Function} [props.onReorder] - Callback disparado ao reordenar
  * @param {boolean} [props.exportable=false] - Habilita botão de exportar para CSV
+ * @param {Array} [props.exportColumns] - Colunas usadas SOMENTE no CSV exportado (default: `columns`).
+ *   Útil quando um `format` de coluna é apresentacional e descarta dado (ex.: truncamento de
+ *   conteúdo em AdminDicas) — o export pode então usar o valor integral sem alterar a tabela.
  * @param {boolean} [props.showItemCount=false] - Exibe a contagem total de itens abaixo do título
  * @param {string} [props.itemNameSingular='item'] - Nome do item no singular
  * @param {string} [props.itemNamePlural='itens'] - Nome do item no plural
@@ -62,6 +65,7 @@ export default function AdminCrudBase({
   reorderable = false,
   onReorder,
   exportable = false,
+  exportColumns,
   showItemCount = false,
   itemNameSingular = 'item',
   itemNamePlural = 'itens',
@@ -169,11 +173,13 @@ export default function AdminCrudBase({
   // Os itens exibidos vêm da API (já filtrados server-side quando searchTerm está presente)
   const displayedItems = localItems;
 
-  // Função para exportar os dados visíveis para CSV
+  // Função para exportar os dados visíveis para CSV.
+  // Usa exportColumns (se fornecida) em vez de columns, permitindo que o CSV
+  // carregue o valor integral quando um format de coluna é só apresentacional.
   const handleExportCSV = () => {
     exportToCSV({
       data: displayedItems,
-      columns: columns.map(col => ({
+      columns: (exportColumns || columns).map(col => ({
         key: col.key,
         header: col.header,
         format: col.format
@@ -440,6 +446,13 @@ AdminCrudBase.propTypes = {
   searchable: PropTypes.bool,
   reorderable: PropTypes.bool,
   exportable: PropTypes.bool,
+  exportColumns: PropTypes.arrayOf(
+    PropTypes.shape({
+      key: PropTypes.string.isRequired,
+      header: PropTypes.string.isRequired,
+      format: PropTypes.func
+    })
+  ),
   showItemCount: PropTypes.bool,
   itemNameSingular: PropTypes.string,
   itemNamePlural: PropTypes.string,

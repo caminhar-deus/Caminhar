@@ -3,9 +3,18 @@ import { render, screen, fireEvent, waitFor, act, within } from '@testing-librar
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import AdminCrudBase from '../../../../components/Admin/AdminCrudBase.js';
 import { useAdminCrud } from '../../../../hooks/useAdminCrud.js';
+import { exportToCSV } from '../../../../utils/csvExport.js';
 import toast from 'react-hot-toast';
 import { z } from 'zod';
 import { mockGlobalFetch } from '../../../helpers/index.js';
+
+// Spy transparente sobre o export real: os testes abaixo continuam exercendo a
+// implementação verdadeira (URL.createObjectURL etc.) e o teste de exportColumns
+// consegue assertar os argumentos recebidos.
+jest.mock('../../../../utils/csvExport.js', () => {
+  const actual = jest.requireActual('../../../../utils/csvExport.js');
+  return { exportToCSV: jest.fn((opts) => actual.exportToCSV(opts)) };
+});
 
 jest.mock('react-hot-toast', () => ({
   success: jest.fn(),
@@ -324,6 +333,48 @@ describe('Componente Front-End - AdminCrudBase', () => {
     render(<AdminCrudBase {...defaultProps} exportable={true} />);
     fireEvent.click(screen.getByText('Exportar CSV'));
     expect(toast.error).toHaveBeenCalledWith('Não há dados para exportar.');
+  });
+
+  it('deve usar exportColumns no CSV quando fornecida (em vez das columns da tabela)', () => {
+    // Simula o caso AdminDicas: a coluna da tabela trunca o conteúdo via format,
+    // mas o CSV deve carregar o valor integral (colunas de export próprias).
+    useAdminCrud.mockReturnValue({
+      ...mockUseAdminCrud,
+      items: [{ id: 1, name: 'Dica', content: 'X'.repeat(120), status: true }]
+    });
+
+    render(
+      <AdminCrudBase
+        {...defaultProps}
+        exportable={true}
+        exportColumns={[{ key: 'content', header: 'Conteúdo' }]}
+      />
+    );
+
+    fireEvent.click(screen.getByText('Exportar CSV'));
+
+    expect(exportToCSV).toHaveBeenCalledWith(
+      expect.objectContaining({
+        columns: [expect.objectContaining({ key: 'content', header: 'Conteúdo' })],
+        filename: 'teste_crud_export'
+      })
+    );
+    // A coluna da tabela NÃO pode vazar para o export quando exportColumns é dada
+    const chamada = exportToCSV.mock.calls.at(-1)[0];
+    expect(chamada.columns.some((col) => col.key === 'status')).toBe(false);
+  });
+
+  it('deve usar as columns da tabela no export quando exportColumns não é fornecida (retrocompatível)', () => {
+    useAdminCrud.mockReturnValue({
+      ...mockUseAdminCrud,
+      items: [{ id: 1, name: 'Item', status: true }]
+    });
+
+    render(<AdminCrudBase {...defaultProps} exportable={true} />);
+    fireEvent.click(screen.getByText('Exportar CSV'));
+
+    const chamada = exportToCSV.mock.calls.at(-1)[0];
+    expect(chamada.columns.map((col) => col.key)).toEqual(['id', 'name', 'status']);
   });
 
   it('deve exibir notificação de erro vinda do hook e destacar erros de campo', () => {

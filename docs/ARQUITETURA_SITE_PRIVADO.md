@@ -150,7 +150,7 @@ Todas seguem o mesmo modelo, com pequenas variações:
 - **Diferença importante:** Produtos e Dicas nascem publicados; Posts, Músicas e Vídeos nascem como rascunho.
 
 ### 4.6 Dicas do Dia
-- **Título:** "Gerenciar Dicas do Dia". Botão: "+ Novo". **Não tem "Exportar CSV".**
+- **Título:** "Gerenciar Dicas do Dia". Botões: "Exportar CSV" e "+ Novo" (padrão §3, igual às demais telas de conteúdo). O CSV traz o **conteúdo integral** da dica (a coluna "Conteúdo" da tabela trunca a 80 caracteres apenas para exibição).
 - **Tabela:** ID | Nome | Conteúdo | Status | Ações (sem coluna ☰). Vazio: "Nenhum item cadastrado ainda."
 - **Formulário (2 colunas):**
   - Nome da Dica * (ex.: "Mensagem de fé")
@@ -275,7 +275,7 @@ A aba pública "Em Desenvolvimento" não tem gestão no painel.
 |---|---|---|
 | 1 | **Painel vazio, site público com conteúdo:** nas capturas do site público havia 3 posts, 18 músicas, 18 vídeos e 1 dica; neste painel Artigos, Músicas, Vídeos, Produtos e Dicas aparecem com 0. A auditoria mostra exclusão de dica e de vídeos, então o painel provavelmente foi limpo depois. Se o site público ainda mostrar conteúdo antigo, usar "Limpar Cache Redis". Confirmar também se posts e músicas foram apagados. | a confirmar |
 | 5 | **Padrões de publicação divergentes:** Posts, Músicas e Vídeos nascem como rascunho; Produtos e Dicas nascem publicados. | **confirmado em 2026-10-27** — conferido no banco (`information_schema`) e no código: `posts.published`, `musicas.publicado` e `videos.publicado` têm `DEFAULT false` (nascem rascunho); `products.published` e `dicas.published` têm `DEFAULT true` (nascem publicados). Formulários e APIs coerentes (Dicas: `published ?? true`; Posts: `?? false`; toggle de Produto com `published: true`). Comportamento intencional por tipo de conteúdo, conforme §4.2 |
-| 6 | **Dicas sem "Exportar CSV"**, diferente das outras seções de conteúdo. | a confirmar |
+| 6 | **Dicas sem "Exportar CSV"**, diferente das outras seções de conteúdo. | **confirmado e corrigido em 2026-10-27** — a causa era o `AdminDicas` não passar `exportable={true}` ao `AdminCrudBase` (prop default `false`; as outras 4 telas de conteúdo passavam). Habilitado, com `exportColumns` própria no CSV para o conteúdo integral (o `format` da tabela trunca a 80 caracteres só para exibição). Mecanismo de export inalterado (`utils/csvExport.js`, client-side, dados da página atual) |
 | 10 | **Confirmação de exclusão:** não observada nas imagens. Verificar se existe diálogo de confirmação. | **confirmado em 2026-10-27** — existe e é padronizado: todos os 8 CRUDs (Posts, Músicas, Vídeos, Produtos, Dicas, Categorias, Usuários, Cargos) usam o `AdminCrudBase`, cujo `useAdminCrud` chama `onConfirmDelete` antes de qualquer DELETE — um único modal com Cancelar/Excluir (`components/Admin/AdminCrudBase.js`). Não há `window.confirm` nativo em uso (só fallback no hook para usos futuros sem modal) |
 
 **Decisões do dono**

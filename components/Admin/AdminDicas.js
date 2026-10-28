@@ -83,6 +83,15 @@ export default function AdminDicas() {
       itemNameSingular="dica"
       itemNamePlural="dicas"
       searchable={true}
+      exportable={true}
+      // CSV com o conteúdo integral: o format da coluna da tabela trunca a 80
+      // caracteres (só apresentacional) e descartaria o dado principal da dica.
+      exportColumns={[
+        { key: 'id', header: 'ID' },
+        { key: 'name', header: 'Nome' },
+        { key: 'content', header: 'Conteúdo' },
+        { key: 'published', header: 'Status' }
+      ]}
     />
   );
 }
