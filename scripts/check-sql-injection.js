@@ -49,6 +49,14 @@ const IGNORE_FILES = [
   'cypress.config.js', 'rate-limit-proxy.js',
   // Script de limpeza de imagens: usa tabelas/colunas de whitelist fixa, não de input do usuário
   'clean-orphaned-images.js',
+  // Reset completo do banco (ADR-0025): `TABLES_TO_DROP` é lista de literais
+  // fixa declarada no próprio arquivo, sem input externo — mesmo mecanismo de
+  // `clean-orphaned-images.js`, e o contrato da lista fica travado por
+  // tests/unit/scripts/reset-db.test.js. Identificador em DDL não é
+  // parametrizável no Postgres sem plpgsql. Falso positivo capturado pela
+  // cron "Load Tests (k6)" #25 (run 40673567814, 28/10/2026); exceção
+  // registrada em docs/adr/0026-scanners-estaticos-no-gate-de-push-e-allowlist.md.
+  'reset-db.js',
   // Próprio scanner, não precisa ser escaneado
   'check-sql-injection.js',
 ];
