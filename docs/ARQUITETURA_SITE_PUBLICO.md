@@ -25,7 +25,7 @@
 Todas as abas compartilham o mesmo esqueleto:
 
 1. **Cabeçalho** — título "O CAMINHAR COM DEUS" (caixa alta, negrito, centralizado) + subtítulo.
-2. **Banner principal (hero)** — área 1100x320 px. Hoje mostra o placeholder "Imagem Principal (1100x320) — Faça upload de uma imagem no painel administrativo". A imagem vem do painel admin — o link com o painel **já funciona** (a home lê a configuração `home_image_url`, alimentada pelo upload de imagem `hero-image-*` mais recente); o que falta é o **dado**, não a integração (ver §7, item 5). É comum a todas as abas.
+2. **Banner principal (hero)** — área 1100x320 px. A imagem vem do painel admin: a home lê a configuração `home_image_url` (gravada pelo upload no painel) e a usa diretamente como `src` do `<img>`. Cada upload gera filename único (`hero-image-<uuid>.<ext>`), então a URL muda a cada troca e o cache do navegador por URL é seguro — a imagem nova aparece na próxima visita à home, sem janela de cache. Quando a setting não existe, o `<img>` usa o fallback `/api/placeholder-image`, que resolve o hero mais recente no servidor (cache HTTP curto, 5 min, sem `immutable`). É comum a todas as abas.
 3. **Barra de abas (navegação)** — 5 abas com emoji:
    | Ordem | Aba | Emoji | Estado |
    |---|---|---|---|
@@ -127,7 +127,7 @@ Esse mapeamento deve ser mantido de forma consistente em toda a documentação.
 | 2 | 6/6 vídeos do YouTube indisponíveis; "Ousado Amor" bloqueado por direitos autorais | Alta | **obsoleto em 2026-10-27** — a tabela `videos` foi limpa pelo dono (0 registros): o dado que gerava o problema não existe mais. Se vídeos com link indisponível voltarem a ser cadastrados, o link externo "Assistir no YouTube" (§3.4) segue como mitigação |
 | 3 | Capa quebrada no post "Fé em Tempos Difíceis" | Média | **obsoleto em 2026-10-27** — a tabela `posts` foi limpa pelo dono (0 registros): o post não existe mais |
 | 4 | Dados de teste em "Dicas do Dia" ("Teste 10") | Média | **obsoleto em 2026-10-27** — a tabela `dicas` foi limpa pelo dono (0 registros): a dica de teste foi excluída |
-| 5 | Banner principal sem imagem (placeholder) | Média | **parcial** — o dado agora existe: `home_image_url` aponta para `/uploads/hero-image-c56bdc10-2a0e-4ed7-a1c2-186ae5b7ad23.webp`, arquivo presente em `public/uploads/` (conferido em 27/10/2026); falta a confirmação visual no navegador (o dev server estava fora do ar na checagem) |
+| 5 | Banner principal sem imagem (placeholder) | Média | **resolvido em 2026-10-27** — a home usa `home_image_url` diretamente como `src` (filename único por upload → cache por URL seguro) e o fallback `/api/placeholder-image` perdeu o cache `immutable` de 24h e o cache em memória de 5 min do filename (causa do banner desatualizado após troca no painel) |
 | 6 | Cartões de post com rodapé desalinhado | Baixa | **resolvido em 2026-10-21** — o `.content` do `BaseCard` passou a ser flex column (§3.1) |
 | 7 | Aba "Em Desenvolvimento" sem definição | Planejamento | aberto |
 | 8 | Produtos sem cadastro | Planejamento | aberto |

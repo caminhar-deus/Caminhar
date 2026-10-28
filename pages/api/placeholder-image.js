@@ -4,13 +4,6 @@ import { getSetting } from '../../lib/domain/settings.js';
 import { logger } from '../../lib/infra/logger.js';
 import { uploadRoots } from '../../lib/infra/storage.js';
 
-// Cache em memória do filename da imagem hero, evitando consultar o banco a cada
-// request. TTL curto e compatível com a invalidação de settings existente (que não
-// alcança este cache local); após o TTL, a resolução é refeita do zero.
-const HERO_FILENAME_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos
-let cachedHeroFilename = null;
-let cachedHeroFilenameExpiresAt = 0;
-
 export default async function handler(req, res) {
   try {
     // Diretórios de upload: o ativo vive FORA de `public/` (snapshot do
@@ -18,51 +11,46 @@ export default async function handler(req, res) {
     // como fallback de dados legados. A ordem importa: novo primeiro.
     // A resolução e a ordem vivem em `lib/infra/storage.js`.
     const uploadDirs = uploadRoots();
-    let filename = (cachedHeroFilename && Date.now() < cachedHeroFilenameExpiresAt)
-      ? cachedHeroFilename
-      : null;
+    let filename = null;
 
-    // 1. Tenta buscar a imagem definida nas configurações do banco de dados
+    // 1. Tenta buscar a imagem definida nas configurações do banco de dados.
+    // Sem cache em memória do filename: a invalidação de settings (PUT
+    // /api/settings) não alcança um cache local de módulo, e o valor antigo
+    // ficava até 5 min após a troca do banner. A query é barata e o ETag
+    // (por filename) cobre a revalidação 304.
+    try {
+      // Tenta buscar a configuração da imagem principal
+      const dbImage = await getSetting('home_image_url');
+
+      if (dbImage && typeof dbImage === 'string') {
+        // dbImage geralmente é '/uploads/post-image-123.png', pegamos só o nome do arquivo
+        filename = path.basename(dbImage);
+      }
+    } catch (dbError) {
+      logger.warn('Placeholder', 'Não foi possível ler a configuração do banco:', dbError.message);
+    }
+
+    // 2. Fallback: Se não achou no banco, procura o arquivo mais recente na pasta
     if (!filename) {
-      try {
-        // Tenta buscar a configuração da imagem principal
-        const dbImage = await getSetting('home_image_url');
-        
-        if (dbImage && typeof dbImage === 'string') {
-          // dbImage geralmente é '/uploads/post-image-123.png', pegamos só o nome do arquivo
-          filename = path.basename(dbImage);
+      for (const dir of uploadDirs) {
+        let files = [];
+        try {
+          files = (await fs.readdir(dir)) || [];
+        } catch {
+          files = [];
         }
-      } catch (dbError) {
-        logger.warn('Placeholder', 'Não foi possível ler a configuração do banco:', dbError.message);
-      }
 
-      // 2. Fallback: Se não achou no banco, procura o arquivo mais recente na pasta
-      if (!filename) {
-        for (const dir of uploadDirs) {
-          let files = [];
-          try {
-            files = (await fs.readdir(dir)) || [];
-          } catch {
-            files = [];
-          }
+        // Procura por arquivos com prefixo antigo (hero-) ou novo (post-)
+        const imageFiles = files.filter(file =>
+          file.startsWith('hero-image-')
+        );
 
-          // Procura por arquivos com prefixo antigo (hero-) ou novo (post-)
-          const imageFiles = files.filter(file =>
-            file.startsWith('hero-image-')
-          );
-
-          // Pega o último (mais recente pelo nome/timestamp). O primeiro
-          // diretório com candidato vence (o ativo vem antes do legado).
-          if (imageFiles.length > 0) {
-            filename = imageFiles.sort().pop();
-            break;
-          }
+        // Pega o último (mais recente pelo nome/timestamp). O primeiro
+        // diretório com candidato vence (o ativo vem antes do legado).
+        if (imageFiles.length > 0) {
+          filename = imageFiles.sort().pop();
+          break;
         }
-      }
-
-      if (filename) {
-        cachedHeroFilename = filename;
-        cachedHeroFilenameExpiresAt = Date.now() + HERO_FILENAME_CACHE_TTL_MS;
       }
     }
 
@@ -84,8 +72,6 @@ export default async function handler(req, res) {
     }
 
     if (imagePath) {
-      // Serve the uploaded image with aggressive caching
-
       // Detecta tipo básico pela extensão ou assume jpeg
       const ext = path.extname(imagePath).toLowerCase();
       const contentType = ext === '.png' ? 'image/png' : (ext === '.webp' ? 'image/webp' : 'image/jpeg');
@@ -93,9 +79,13 @@ export default async function handler(req, res) {
       // Last-Modified estável baseado no mtime do arquivo (permite revalidação 304)
       // (`stats` já veio do stat acima — um segundo stat aqui quebraria o fluxo)
 
-      // Set aggressive caching headers for better performance
+      // Cache MODERADO e sem `immutable`: esta URL é estável mas o conteúdo
+      // dela muda quando o banner é trocado no painel — `immutable` fazia o
+      // navegador nem reconsultar por 24h (causa do banner desatualizado).
+      // O caminho principal hoje é a home usar a URL da setting diretamente
+      // (filename único por upload); este endpoint é o fallback.
       res.setHeader('Content-Type', contentType);
-      res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
+      res.setHeader('Cache-Control', 'public, max-age=300');
       res.setHeader('ETag', `"${filename}"`);
       res.setHeader('Last-Modified', stats.mtime.toUTCString());
 

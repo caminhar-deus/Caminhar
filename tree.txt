@@ -10,6 +10,7 @@
 ├── components
 │   ├── Admin
 │   │   ├── AdminAudit.js
+│   │   ├── AdminCategories.js
 │   │   ├── AdminCrudBase.js
 │   │   ├── AdminDashboard.js
 │   │   ├── AdminDicas.js
@@ -29,6 +30,8 @@
 │   │   │   ├── IntegrityCheck.js
 │   │   │   └── RateLimitViewer.js
 │   │   ├── fields
+│   │   │   ├── DateTimeBRField.js
+│   │   │   ├── DateTimeBRField.module.css
 │   │   │   ├── ExternalDataButton.js
 │   │   │   ├── ImageUploadField.js
 │   │   │   ├── TextAreaField.js
@@ -37,6 +40,7 @@
 │   │   │   └── UrlField.js
 │   │   ├── index.js
 │   │   ├── styles
+│   │   │   ├── adminPosts.module.css
 │   │   │   ├── crud.module.css
 │   │   │   ├── dashboard.module.css
 │   │   │   ├── form.module.css
@@ -568,7 +572,8 @@
 │   ├── MASTER.md
 │   └── pages
 │       ├── home.md
-│       └── login.md
+│       ├── login.md
+│       └── posts.md
 ├── docs
 │   ├── AGENTS_OPERACAO.md
 │   ├── ARQUITETURA_SITE_PRIVADO.md
@@ -629,6 +634,7 @@
 │   │   ├── 0021-cobertura-do-handler-de-erro-fatal-do-pool-postgresql-em-lib-infra-db.js.md
 │   │   ├── 0022-enable-frontend-checklist-remote-mcp.md
 │   │   ├── 0023-spotify-embed-limitado-a-tracks-com-fallback.md
+│   │   ├── 0024-crud-categorias-posts-chips-display-only.md
 │   │   ├── README.md
 │   │   └── template.md
 │   └── ai-memory-error.md
@@ -679,6 +685,7 @@
 │   │   └── crud.js
 │   ├── domain
 │   │   ├── audit.js
+│   │   ├── categories.js
 │   │   ├── images.js
 │   │   ├── musicas.js
 │   │   ├── permissions.js
@@ -758,6 +765,7 @@
 │   │   │   ├── audit.js
 │   │   │   ├── backups.js
 │   │   │   ├── cache.js
+│   │   │   ├── categories.js
 │   │   │   ├── dicas.js
 │   │   │   ├── fetch-ml.js
 │   │   │   ├── fetch-spotify.js
@@ -1077,6 +1085,7 @@
 │   │   │   │   ├── audit.test.js
 │   │   │   │   ├── backups.test.js
 │   │   │   │   ├── cache.test.js
+│   │   │   │   ├── categories.test.js
 │   │   │   │   ├── dicas.test.js
 │   │   │   │   ├── fetch-ml.test.js
 │   │   │   │   ├── fetch-spotify.test.js
@@ -1161,6 +1170,7 @@
 │       ├── components
 │       │   ├── Admin
 │       │   │   ├── AdminAudit.test.js
+│       │   │   ├── AdminCategories.test.js
 │       │   │   ├── AdminCrudBase.requestId.test.js
 │       │   │   ├── AdminCrudBase.test.js
 │       │   │   ├── AdminDashboard.test.js
@@ -1185,6 +1195,8 @@
 │       │   │   ├── UrlField.test.js
 │       │   │   ├── __snapshots__
 │       │   │   │   └── index.test.js.snap
+│       │   │   ├── fields
+│       │   │   │   └── DateTimeBRField.test.js
 │       │   │   ├── index.test.js
 │       │   │   └── withAdminAuth.test.js
 │       │   ├── Features
@@ -1290,6 +1302,7 @@
 │       │   │   └── updatePost.test.js
 │       │   ├── db.test.js
 │       │   ├── domain
+│       │   │   ├── categories.test.js
 │       │   │   ├── permissions.test.js
 │       │   │   ├── products.test.js
 │       │   │   └── query-schemas.test.js
@@ -1306,25 +1319,28 @@
 │       │   └── sort-contract-coverage.test.js
 │       ├── next.config.test.js
 │       ├── pages
-│       │   └── api
-│       │       ├── admin
-│       │       │   ├── dicas.edge.test.js
-│       │       │   ├── fetch-ml.edge.test.js
-│       │       │   ├── fetch-spotify.edge.test.js
-│       │       │   ├── posts.edge.test.js
-│       │       │   ├── rate-limit.test.js
-│       │       │   ├── request-id.test.js
-│       │       │   ├── roles.edge.test.js
-│       │       │   └── stats.edge.test.js
-│       │       ├── auth
-│       │       │   └── login.edge.test.js
-│       │       └── upload-image.edge.test.js
+│       │   ├── api
+│       │   │   ├── admin
+│       │   │   │   ├── dicas.edge.test.js
+│       │   │   │   ├── fetch-ml.edge.test.js
+│       │   │   │   ├── fetch-spotify.edge.test.js
+│       │   │   │   ├── posts.edge.test.js
+│       │   │   │   ├── rate-limit.test.js
+│       │   │   │   ├── request-id.test.js
+│       │   │   │   ├── roles.edge.test.js
+│       │   │   │   └── stats.edge.test.js
+│       │   │   ├── auth
+│       │   │   │   └── login.edge.test.js
+│       │   │   └── upload-image.edge.test.js
+│       │   ├── blog.index.test.js
+│       │   └── index.test.js
 │       ├── scripts
 │       │   ├── backup.test.js
 │       │   ├── check-hardcoded-credentials.test.js
 │       │   ├── clean-orphaned-images.test.js
 │       │   ├── clear-db.test.js
 │       │   ├── clear-musicas.test.js
+│       │   ├── date-format.test.js
 │       │   ├── db
 │       │   │   └── connection.test.js
 │       │   ├── init-table.test.js
@@ -1348,6 +1364,9 @@
 │       └── videos.validation.test.js
 ├── tree.txt
 ├── uploads
+│   ├── hero-image-6f52bad9-383f-4bcc-82c4-d1d94869d22c.webp
+│   ├── hero-image-7bbe6c61-f987-4bf8-8fd1-323b64866f7e.webp
+│   ├── hero-image-92be74dc-8a4f-4015-9b25-89ba9a7cb7cc.webp
 │   ├── hero-image-c56bdc10-2a0e-4ed7-a1c2-186ae5b7ad23.webp
 │   └── post-image-255714e9-57d2-46f8-8a97-b8e02b170861.png
 └── utils
@@ -1356,4 +1375,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-205 directories, 1152 files
+206 directories, 1170 files

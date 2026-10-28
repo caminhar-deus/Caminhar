@@ -33,8 +33,7 @@ describe('API - Placeholder Image (/api/placeholder-image)', () => {
   let getSetting;
   let logger;
 
-  // Recarrega o módulo em cada teste para isolar o cache interno do filename
-  // (evita contaminação de estado entre cenários).
+  // Recarrega o módulo em cada teste para isolar estado entre cenários.
   beforeEach(() => {
     jest.resetModules();
     jest.clearAllMocks();
@@ -48,15 +47,37 @@ describe('API - Placeholder Image (/api/placeholder-image)', () => {
     getSetting.mockResolvedValueOnce('/uploads/hero-image-123.jpg');
     fsPromises.stat.mockResolvedValueOnce(MOCK_STATS);
     fsPromises.readFile.mockResolvedValueOnce(Buffer.from('image-data'));
-    
+
     const { req, res } = createMocks();
     await handler(req, res);
-    
+
     expect(res._getStatusCode()).toBe(200);
     expect(res.getHeader('Content-Type')).toBe('image/jpeg');
-    expect(res.getHeader('Cache-Control')).toBe('public, max-age=86400, immutable');
+    // Cache moderado e SEM immutable: a URL é estável mas o conteúdo muda
+    // quando o banner é trocado no painel
+    expect(res.getHeader('Cache-Control')).toBe('public, max-age=300');
     expect(res.getHeader('Last-Modified')).toBe(MOCK_STATS.mtime.toUTCString());
     expect(res._getData()).toEqual(Buffer.from('image-data'));
+  });
+
+  it('não tem cache em memória: duas chamadas seguidas refletem a setting atualizada', async () => {
+    // Causa-raiz do banner desatualizado: o módulo guardava o filename por
+    // 5 min e a invalidação de settings não o alcançava
+    getSetting.mockResolvedValueOnce('/uploads/hero-image-antiga.jpg');
+    fsPromises.stat.mockResolvedValueOnce(MOCK_STATS);
+    fsPromises.readFile.mockResolvedValueOnce(Buffer.from('antiga'));
+
+    getSetting.mockResolvedValueOnce('/uploads/hero-image-nova.jpg');
+    fsPromises.stat.mockResolvedValueOnce(MOCK_STATS);
+    fsPromises.readFile.mockResolvedValueOnce(Buffer.from('nova'));
+
+    const primeira = createMocks();
+    await handler(primeira.req, primeira.res);
+    const segunda = createMocks();
+    await handler(segunda.req, segunda.res);
+
+    expect(primeira.res._getData()).toEqual(Buffer.from('antiga'));
+    expect(segunda.res._getData()).toEqual(Buffer.from('nova'));
   });
 
   it('deve responder 304 quando o navegador já possui a versão (If-None-Match)', async () => {

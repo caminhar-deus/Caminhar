@@ -4,50 +4,46 @@ import { useState, useEffect } from 'react';
 import ContentTabs from '../components/Features/ContentTabs';
 import Testimonials from '../components/Features/Testimonials';
 
-const SETTINGS_CACHE_KEY = 'home_settings';
-const SETTINGS_CACHE_TTL = 60000; // 1 minuto
-
 export default function Home() {
   const [title, setTitle] = useState('O Caminhar com Deus');
   const [subtitle, setSubtitle] = useState('Reflexões e ensinamentos sobre a fé, espiritualidade e a jornada cristã');
-  const [imageSrc] = useState('/api/placeholder-image');
+  // O banner vem da configuração `home_image_url` (gravada pelo painel). Cada
+  // upload gera filename único, então a URL muda a cada troca e o cache do
+  // navegador por URL é seguro. Fallback: endpoint que resolve o hero no
+  // servidor (quando a setting não existe).
+  const [imageSrc, setImageSrc] = useState('/api/placeholder-image');
   const [settingsError, setSettingsError] = useState(false);
 
   useEffect(() => {
-    // Load settings from database com cache
+    // Load settings from database. Sem cache em sessionStorage: o servidor já
+    // cacheia as settings (TTL 2h, invalidado no PUT) — uma camada no cliente
+    // só atrasava a visualização de mudanças feitas no painel.
     const loadSettings = async () => {
-      // Verifica cache em sessionStorage
-      try {
-        const cached = sessionStorage.getItem(SETTINGS_CACHE_KEY);
-        if (cached) {
-          const { data, timestamp } = JSON.parse(cached);
-          if (Date.now() - timestamp < SETTINGS_CACHE_TTL) {
-            setTitle(data.site_title || 'O Caminhar com Deus');
-            setSubtitle(data.site_subtitle || 'Reflexões e ensinamentos sobre a fé, espiritualidade e a jornada cristã');
-            return;
-          }
-        }
-      } catch {
-        // Cache corrompido, ignora
-      }
-
       try {
         const response = await fetch('/api/settings');
         if (response.ok) {
           const settings = await response.json();
           setTitle(settings.site_title || 'O Caminhar com Deus');
           setSubtitle(settings.site_subtitle || 'Reflexões e ensinamentos sobre a fé, espiritualidade e a jornada cristã');
-          setSettingsError(false);
-          
-          // Atualiza cache
-          try {
-            sessionStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify({
-              data: settings,
-              timestamp: Date.now()
-            }));
-          } catch {
-            // sessionStorage cheio, ignora
+          // Defesa em profundidade (revisão do oracle): a setting é gravada por
+          // admin autenticado, mas o `src` não deve aceitar esquemas arbitrários
+          // (javascript:, data:) — só caminho relativo ou URL http(s) da mesma
+          // origem; caso contrário, mantém o fallback.
+          const heroUrl = settings.home_image_url;
+          const isSafeHeroUrl =
+            typeof heroUrl === 'string' &&
+            (heroUrl.startsWith('/') ||
+              (() => {
+                try {
+                  return new URL(heroUrl, window.location.origin).origin === window.location.origin;
+                } catch {
+                  return false;
+                }
+              })());
+          if (isSafeHeroUrl) {
+            setImageSrc(heroUrl);
           }
+          setSettingsError(false);
         } else {
           console.warn('Settings API retornou status', response.status, '- usando valores padrão');
           setSettingsError(true);
