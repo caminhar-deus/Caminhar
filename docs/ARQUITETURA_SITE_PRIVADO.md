@@ -274,15 +274,15 @@ A aba pública "Em Desenvolvimento" não tem gestão no painel.
 | # | Item | Status |
 |---|---|---|
 | 1 | **Painel vazio, site público com conteúdo:** nas capturas do site público havia 3 posts, 18 músicas, 18 vídeos e 1 dica; neste painel Artigos, Músicas, Vídeos, Produtos e Dicas aparecem com 0. A auditoria mostra exclusão de dica e de vídeos, então o painel provavelmente foi limpo depois. Se o site público ainda mostrar conteúdo antigo, usar "Limpar Cache Redis". Confirmar também se posts e músicas foram apagados. | a confirmar |
-| 5 | **Padrões de publicação divergentes:** Posts, Músicas e Vídeos nascem como rascunho; Produtos e Dicas nascem publicados. | a confirmar |
+| 5 | **Padrões de publicação divergentes:** Posts, Músicas e Vídeos nascem como rascunho; Produtos e Dicas nascem publicados. | **confirmado em 2026-10-27** — conferido no banco (`information_schema`) e no código: `posts.published`, `musicas.publicado` e `videos.publicado` têm `DEFAULT false` (nascem rascunho); `products.published` e `dicas.published` têm `DEFAULT true` (nascem publicados). Formulários e APIs coerentes (Dicas: `published ?? true`; Posts: `?? false`; toggle de Produto com `published: true`). Comportamento intencional por tipo de conteúdo, conforme §4.2 |
 | 6 | **Dicas sem "Exportar CSV"**, diferente das outras seções de conteúdo. | a confirmar |
-| 10 | **Confirmação de exclusão:** não observada nas imagens. Verificar se existe diálogo de confirmação. | a confirmar |
+| 10 | **Confirmação de exclusão:** não observada nas imagens. Verificar se existe diálogo de confirmação. | **confirmado em 2026-10-27** — existe e é padronizado: todos os 8 CRUDs (Posts, Músicas, Vídeos, Produtos, Dicas, Categorias, Usuários, Cargos) usam o `AdminCrudBase`, cujo `useAdminCrud` chama `onConfirmDelete` antes de qualquer DELETE — um único modal com Cancelar/Excluir (`components/Admin/AdminCrudBase.js`). Não há `window.confirm` nativo em uso (só fallback no hook para usos futuros sem modal) |
 
 **Decisões do dono**
 
 | # | Item | Status |
 |---|---|---|
-| 4 | **Nomenclatura:** a permissão é "Gestão de Dicas" e a aba é "Dicas do Dia". | aberto |
+| 4 | **Nomenclatura:** a permissão é "Gestão de Dicas" e a aba é "Dicas do Dia". | **decidido em 2026-10-27 — manter.** O mapeamento permissão ↔ aba já está documentado no §4.2 e segue o padrão do projeto (`Posts/Artigos` ↔ aba "Reflexões & Estudos" também difere); renomear a permissão exigiria migração dos valores gravados em `roles.permissions` sem ganho funcional |
 | 7 | **Senha mínima de 6 caracteres:** fraca. Considerar elevar para pelo menos 10 a 12 e exigir senha forte para admin. | aberto |
 
 ## 9. Regras de proteção do painel administrativo
