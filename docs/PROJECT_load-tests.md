@@ -1654,9 +1654,28 @@ O resíduo acima tem saída que **não** depende de credencial: `scripts/summari
 
 **Resolução (28/10/2026, três commits):** `2ef7817` — allowlist documentada por arquivo para o `reset-db.js` no `IGNORE_FILES` do scanner (mesmo mecanismo do `clean-orphaned-images.js`, contrato da lista travado por `tests/unit/scripts/reset-db.test.js`); `2b0c3ac` — os scanners passam a rodar a cada push: novo step `Security Checks (SQL injection + credenciais hardcoded)` no job `lint` do `test-coverage.yml`, com os mesmos dois comandos do `test-base.yml` (um push que ferir um scanner reprova no gate de ~18min, não no cron do dia seguinte); `a4fd1c1` — scanner refatorado em módulo testável (`scanContent()` exportado como núcleo linha a linha, CLI só sob guard de `process.argv[1]`), nova regra de isenção para a variável vinda de `for (const x of LISTA)` com LISTA `const` de strings literais puras (`extractConstantLists()` + `findLoopVars()`) e 17 testes unitários (`tests/unit/scripts/check-sql-injection.test.js`) com mutações mortas (matar a regra do loop, aceitar qualquer colchete como lista válida e deixar de ignorar comentários reprovam a suíte). Decisão e política de falsos positivos: `docs/adr/0026-scanners-estaticos-no-gate-de-push-e-allowlist.md`.
 
-**Validação em produção, ainda no 28/10/2026:** o push de `01cb9d1` disparou os três gates de push — todos `success` (runs [`40731834724`](https://github.com/caminhar-deus/Caminhar/actions/runs/40731834724) Lint & Test Coverage Gate, `40731834569` Coverage (banco real) e `40731834539` E2E) — e, no `40731834724`, o job `lint` executou o **step 5 `Security Checks (SQL injection + credenciais hardcoded)` com `success` (~1s, 17:03:23Z → 17:03:24Z)**, logo após o `Run ESLint`: produção prova que o gate agora roda os scanners (nenhum push anterior a este exercitava o step). Falta o critério final: cron #26 (29/10/2026) verde no step 6.
+**Validação em produção, ainda no 28/10/2026:** o push de `01cb9d1` disparou os três gates de push — todos `success` (runs [`40731834724`](https://github.com/caminhar-deus/Caminhar/actions/runs/40731834724) Lint & Test Coverage Gate, `40731834569` Coverage (banco real) e `40731834539` E2E) — e, no `40731834724`, o job `lint` executou o **step 5 `Security Checks (SQL injection + credenciais hardcoded)` com `success` (~1s, 17:03:23Z → 17:03:24Z)**, logo após o `Run ESLint`: produção prova que o gate agora roda os scanners (nenhum push anterior a este exercitava o step). O critério final foi confirmado no dia seguinte — ver o fechamento abaixo (cron #26).
 
-**Resíduo honesto:** o log do step dos scanners (403) e os artifacts (401) continuam inacessíveis sem credencial — este registro NÃO afirma ter lido a saída textual do `security:check-sql` no CI; afirma metadados públicos + o workflow + a reprodução local determinística do mesmo comando, exit code e ciclo de arquivos. **Critério de fechamento:** cron #26 (29/10/2026) voltar a passar no step 6 com os três commits na `main`; e os próximos passes do job `lint` nos pushs agora exercitam os scanners (commit `bc8deb7` e seus runs verdes anteriores mostram que nunca rodavam).
+**Resíduo honesto:** o log do step dos scanners (403) e os artifacts (401) continuam inacessíveis sem credencial — este registro NÃO afirma ter lido a saída textual do `security:check-sql` no CI; afirma metadados públicos + o workflow + a reprodução local determinística do mesmo comando, exit code e ciclo de arquivos (fechamento da cron #26 na mesma base). Os passes do job `lint` nos pushs passaram a exercitar os scanners — os runs verdes anteriores ao `2b0c3ac` (ex.: os do SHA `bc8deb7`) nunca os rodavam.
+
+---
+
+### Fechamento — cron #26 (29/10/2026), run [`40861305099`](https://github.com/caminhar-deus/Caminhar/actions/runs/40861305099) no SHA `5c54bbc` — critério do ADR-0026 atendido
+
+**Job [`123404934463`](https://github.com/caminhar-deus/Caminhar/actions/runs/40861305099/job/123404934463) — metadados públicos, via API (log/artifact seguem sem credencial):**
+
+| Campo | #26 |
+|-------|-----|
+| Event / conclusion | `schedule` / **`success`** |
+| Janela do run | `10:55:04Z` → `11:13:13Z` = **18m09s** (atraso +6h38, na faixa documentada) |
+| Job `load-tests / run-tests` | `10:55:07Z` → `11:13:12Z` = 18m05s |
+| Step 6 `Security Checks (SQL injection + credenciais hardcoded)` | `10:56:21Z` → `10:56:21Z`, **success** (~0s) |
+| Step 10 `Run Tests` | `10:56:31Z` → `11:13:08Z` = 16m37s, success — exit 0 do orquestrador significa **30/30** |
+| Steps pulados | 5, 14 e 15 (por desenho) |
+| Artifact `k6-load-test-reports` | id `12891694473`, **50.505 B** |
+| Anotações | 1 `notice` — migração do `ubuntu-latest` (item AA); **nenhuma** de falha |
+
+Com a allowlist do `reset-db.js` e a regra de isenção por lista fixa na `main` (a cron rodou o SHA `5c54bbc`), o step 6 voltou ao padrão de ~0s/success dos #23/#24 e nenhuma anotação de `failure` sobrou no job. **O incidente do run #25 está encerrado** conforme o ADR-0026: a exceção documentada (allowlist por arquivo + regra de isenção pela classe) funciona em produção tanto na cron quanto no gate de push (validado em 28/10, run `40731834724`).
 
 ---
 
