@@ -20,6 +20,7 @@ export default function ProductList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
+  const [category, setCategory] = useState('');
   const [sortBy, setSortBy] = useState('default');
   const [pageLoading, setPageLoading] = useState(false);
   const listRef = useRef(null);
@@ -27,7 +28,7 @@ export default function ProductList() {
 
   // Unifica filtros em um único objeto com um único debounce
   // para evitar requisições desnecessárias ao backend
-  const filters = useMemo(() => ({ search: searchTerm, minPrice, maxPrice }), [searchTerm, minPrice, maxPrice]);
+  const filters = useMemo(() => ({ search: searchTerm, minPrice, maxPrice, category }), [searchTerm, minPrice, maxPrice, category]);
   const debouncedFilters = useDebounce(filters, 500);
 
   // Reseta para página 1 quando os filtros debounced mudam
@@ -36,21 +37,23 @@ export default function ProductList() {
   }, [debouncedFilters]);
 
   // Verifica se há filtros ativos
-  const hasActiveFilters = debouncedFilters.search || debouncedFilters.minPrice || debouncedFilters.maxPrice;
+  const hasActiveFilters = debouncedFilters.search || debouncedFilters.minPrice || debouncedFilters.maxPrice || debouncedFilters.category;
 
   // Conta quantos filtros estão ativos
-  const activeFilterCount = [debouncedFilters.search, debouncedFilters.minPrice, debouncedFilters.maxPrice]
+  const activeFilterCount = [debouncedFilters.search, debouncedFilters.minPrice, debouncedFilters.maxPrice, debouncedFilters.category]
     .filter(Boolean).length;
 
   const limparFiltros = () => {
     setSearchTerm('');
     setMinPrice('');
     setMaxPrice('');
+    setCategory('');
   };
 
   let url = `/api/products?page=${currentPage}&limit=${itemsPerPage}&public=true&sort=${sortBy}&search=${encodeURIComponent(debouncedFilters.search)}`;
   if (debouncedFilters.minPrice) url += `&minPrice=${debouncedFilters.minPrice}`;
   if (debouncedFilters.maxPrice) url += `&maxPrice=${debouncedFilters.maxPrice}`;
+  if (debouncedFilters.category) url += `&category=${encodeURIComponent(debouncedFilters.category)}`;
 
   const { data: responseData, loading, error } = useApiFetch(url, {
     deps: [currentPage, debouncedFilters, sortBy],
@@ -62,6 +65,7 @@ export default function ProductList() {
         products: result.data || [],
         totalPages: result.pagination?.totalPages || 1,
         total: result.pagination?.total || 0,
+        categories: result.categories || [],
       };
     },
   });
@@ -69,6 +73,7 @@ export default function ProductList() {
   const products = responseData?.products || [];
   const totalPages = responseData?.totalPages || 1;
   const totalItems = responseData?.total || 0;
+  const categories = responseData?.categories || [];
 
   // Controla loading específico de paginação (troca de página)
   useEffect(() => {
@@ -162,6 +167,27 @@ export default function ProductList() {
             aria-label="Preço máximo"
           />
         </div>
+
+        {/* Seletor de categoria (facet da API) — antes da ordenação */}
+        {categories.length > 0 && (
+          <div className={styles.sortWrapper}>
+            <label htmlFor="category-filter-products" className={styles.sortLabel}>Categoria:</label>
+            <select
+              id="category-filter-products"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className={`${styles.sortSelect} ${pageLoading ? styles.sortSelectDisabled : ''}`}
+              disabled={pageLoading}
+            >
+              <option value="">Todas</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Seletor de ordenação (spec home.md §1) — após preço, antes de "Limpar filtros" */}
         <div className={styles.sortWrapper}>
@@ -280,6 +306,19 @@ export default function ProductList() {
             )}
           </>
         )}
+
+        {/* Aviso de divulgação de afiliados (decisão D2 do dono, 28/10/2026) —
+            texto padrão sujeito a revisão do dono antes do commit */}
+        <p
+          style={{
+            marginTop: 'var(--spacing-8)',
+            textAlign: 'center',
+            fontSize: 'var(--font-size-xs)',
+            color: 'var(--color-text-secondary)',
+          }}
+        >
+          Alguns links são de afiliados: podemos receber uma comissão pelas compras realizadas, sem custo adicional para você.
+        </p>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@
 
 > Escopo: painel administrativo em `/admin` (acesso só com login). A área pública está em `docs/ARQUITETURA_SITE_PUBLICO.md`.
 > Fonte: 23 capturas de tela do painel (ambiente local `localhost:3000/admin`).
-> Última atualização: 2026-10-27
+> Última atualização: 2026-10-29
 > Legenda: [PLANEJADO] = alvo ainda não implementado, informado pelo dono | [OBSERVADO] = visto nas imagens | [HIPÓTESE] = inferido, confirmar antes de assumir.
 
 ---
@@ -141,13 +141,15 @@ Todas seguem o mesmo modelo, com pequenas variações:
 - **Tabela:** ☰ | ID | Status | Imagem | Produto | Valor | Link | Ações. Vazio: "Nenhum produto cadastrado. Comece adicionando um!"
 - **Formulário:**
   - Nome do Produto * (ex.: "Bíblia de Estudo")
-  - Valor * (ex.: "R$ 89,90") — campo de texto; [HIPÓTESE] o filtro Mín/Máx do site público precisa converter esse texto em número.
-  - URLs das Imagens * (uma por linha; "A primeira imagem será a capa. Suporta carrossel.")
+  - Valor * (ex.: "R$ 89,90") — aceita "R$ 89,90", "89,90" ou "89.90"; a API normaliza e grava como número (`NUMERIC(10,2)` desde a migration 019 — ADR-0026). O filtro Mín/Máx do site público compara **número**, não texto. Na edição, o campo exibe o valor no formato pt-BR.
+  - Imagens do Produto * — upload pelo botão "Adicionar imagem" (preview com remoção) **ou** colar URLs, uma por linha; a primeira imagem é a capa e as demais formam o carrossel.
   - Descrição ("Detalhes sobre o produto...")
-  - Link do Produto + botão amarelo "⚡ Puxar Dados" (Amazon, Mercado Livre, Shopee)
+  - Categoria (ex.: "livros", "terços"; vazio vira "geral") — alimenta o filtro de categoria da vitrine.
+  - Link do Produto + botão amarelo "⚡ Puxar Dados" — aceita links da **Amazon, Mercado Livre e Shopee**. O Mercado Livre usa API pública; Amazon e Shopee dependem da leitura das meta tags da página e podem falhar se a loja bloquear a leitura automática (preenchimento manual nesse caso).
   - Produto Publicado — **marcado por padrão** (selo "Publicado"); "Desmarque para transformar o produto em um Rascunho (ocultar da vitrine pública)."
   - Botão "Salvar Produto"
 - **Diferença importante:** Produtos e Dicas nascem publicados; Posts, Músicas e Vídeos nascem como rascunho.
+- **Fluxo definido em 2026-10-28/29** (após análise aprovada pelo dono): cadastro → validação Zod no cliente e na API (paridade: nome, imagem e preço obrigatórios; link opcional válido) → gravação normalizada → invalidação do cache `products:*` → auditoria. A vitrine pública filtra por busca, faixa de preço e categoria, ordena no servidor e exibe o aviso de afiliados no rodapé.
 
 ### 4.6 Dicas do Dia
 - **Título:** "Gerenciar Dicas do Dia". Botões: "Exportar CSV" e "+ Novo" (padrão §3, igual às demais telas de conteúdo). O CSV traz o **conteúdo integral** da dica (a coluna "Conteúdo" da tabela trunca a 80 caracteres apenas para exibição).

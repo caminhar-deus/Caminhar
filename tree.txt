@@ -644,6 +644,8 @@
 │   │   ├── 0023-spotify-embed-limitado-a-tracks-com-fallback.md
 │   │   ├── 0024-crud-categorias-posts-chips-display-only.md
 │   │   ├── 0025-reset-completo-banco-migrations-idempotentes-nomenclatura-publicacao.md
+│   │   ├── 0026-scanners-estaticos-no-gate-de-push-e-allowlist.md
+│   │   ├── 0027-preco-produto-numeric-e-fluxo-cadastro.md
 │   │   ├── README.md
 │   │   └── template.md
 │   └── ai-memory-error.md
@@ -1030,6 +1032,7 @@
 │   │   ├── 016-create-refresh-tokens-table.js
 │   │   ├── 017-add-thumbnail-to-videos.js
 │   │   ├── 018-seed-default-roles.js
+│   │   ├── 019-products-price-numeric.js
 │   │   ├── seed-migrations-table.js
 │   │   └── verify-applied.js
 │   ├── monitor-disk-space.js
@@ -1279,6 +1282,7 @@
 │       │       └── Header.test.js.snap
 │       ├── domain
 │       │   ├── posts.test.js
+│       │   ├── products.test.js
 │       │   ├── settings.test.js
 │       │   ├── shared-pagination.test.js
 │       │   └── videos.test.js
@@ -1391,4 +1395,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-206 directories, 1185 files
+206 directories, 1190 files

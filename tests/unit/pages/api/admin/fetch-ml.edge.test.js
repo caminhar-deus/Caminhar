@@ -220,4 +220,73 @@ describe('API Admin - Fetch ML (Edge Cases)', () => {
       expect.any(Error),
     );
   });
+
+  it('deve detectar link da Amazon e extrair dados das meta tags (multi-loja)', async () => {
+    const { req, res } = createMocks({
+      method: 'POST',
+      body: { url: 'https://www.amazon.com.br/dp/B0ABC123?tag=afiliado' }
+    });
+
+    global.fetch.mockResolvedValue({
+      ok: true,
+      text: async () => `
+        <html><head>
+          <meta property="og:title" content="Produto Amazon : Amazon.com.br">
+          <meta property="og:image" content="https://img.amazon/a.jpg">
+          <meta property="og:description" content="Descrição Amazon">
+          <meta property="product:price:amount" content="149.90">
+        </head></html>
+      `
+    });
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(200);
+    expect(res._getJSONData()).toEqual(expect.objectContaining({
+      title: 'Produto Amazon',
+      price: 149.9,
+      images: 'https://img.amazon/a.jpg',
+      description: 'Descrição Amazon'
+    }));
+  });
+
+  it('deve detectar link da Shopee e limpar o sufixo do título', async () => {
+    const { req, res } = createMocks({
+      method: 'POST',
+      body: { url: 'https://shopee.com.br/product/123/456' }
+    });
+
+    global.fetch.mockResolvedValue({
+      ok: true,
+      text: async () => `
+        <html><head>
+          <meta property="og:title" content="Terço de São Miguel | Shopee Brasil">
+          <meta property="og:image" content="https://img.shopee/t.jpg">
+          <meta property="product:price:amount" content="29,90">
+        </head></html>
+      `
+    });
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(200);
+    expect(res._getJSONData()).toEqual(expect.objectContaining({
+      title: 'Terço de São Miguel',
+      price: 29.9,
+      images: 'https://img.shopee/t.jpg'
+    }));
+  });
+
+  it('deve recusar link de loja não suportada com 400', async () => {
+    const { req, res } = createMocks({
+      method: 'POST',
+      body: { url: 'https://www.lojaqualquer.com.br/produto/1' }
+    });
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(400);
+    expect(res._getJSONData()).toEqual(expect.objectContaining({ error: 'Loja não suportada' }));
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
 });

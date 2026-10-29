@@ -1,7 +1,7 @@
 import { logActivity } from '../../lib/domain/audit';
 import { getAuthToken, verifyToken } from '../../lib/auth/auth';
 import { checkRateLimit, invalidateCache, getOrSetCache } from '../../lib/cache/cache';
-import { getPaginatedProducts, getAllProducts, createProduct, updateProduct, deleteProduct } from '../../lib/domain/products.js';
+import { getPaginatedProducts, getAllProducts, createProduct, updateProduct, deleteProduct, normalizePrice, getProductCategories } from '../../lib/domain/products.js';
 import { updateRecords } from '../../lib/crud/crud.js';
 import { paginate } from '../../lib/api/pagination.js';
 import { getClientIP, INVALID_PAGINATION_MESSAGE, INVALID_PARAMS_MESSAGE } from '../../lib/api/helpers.js';
@@ -14,6 +14,27 @@ import { z } from 'zod';
 // painel (PLANO_ACAO F4 / ADR-0014) e fica isolado na chave de cache junto com
 // os demais valores.
 const PUBLIC_SORT_ENUM = ['default', 'positioned', 'oldest', 'price_asc', 'price_desc'];
+
+/**
+ * Schemas de validação de produto (paridade com o Zod do cliente em
+ * components/Admin/AdminProducts.js). O price aceita os formatos que o
+ * formulário e o "Puxar Dados" produzem ("R$ 89,90", "89,90", "89.90")
+ * e é normalizado para número pelo domínio.
+ */
+const productFieldSchemas = {
+  name: z.string().trim().min(1, 'Nome do produto é obrigatório'),
+  description: z.string().optional(),
+  price: z.union([z.string(), z.number()])
+    .transform((value) => normalizePrice(value))
+    .refine((value) => value !== null, 'Valor inválido — use um preço como 89,90'),
+  image_url: z.string().trim().min(1, 'Ao menos uma imagem é obrigatória'),
+  category: z.string().trim().min(1).optional(),
+  link: z.string().url('URL inválida').optional().or(z.literal('')),
+  published: z.boolean().optional(),
+};
+
+const productCreateSchema = z.object(productFieldSchemas);
+const productUpdateSchema = z.object(productFieldSchemas).partial();
 
 /**
  * Handler para GET público (sem autenticação)
@@ -34,10 +55,11 @@ async function handlePublicGet(req, res) {
       search: req.query.search || '',
       minPrice: req.query.minPrice || '',
       maxPrice: req.query.maxPrice || '',
+      category: req.query.category || '',
     };
 
     // Inclui filtros E sort na cache key para evitar resultados incorretos em cache hits
-    const cacheKey = `products:public:${page}:${limit}:${sort}:${filters.search}:${filters.minPrice}:${filters.maxPrice}`;
+    const cacheKey = `products:public:${page}:${limit}:${sort}:${filters.search}:${filters.minPrice}:${filters.maxPrice}:${filters.category}`;
 
     // Rate limit ANTES do cache — garante proteção mesmo em cache hits
     const ip = getClientIP(req);
@@ -47,7 +69,12 @@ async function handlePublicGet(req, res) {
     }
 
     const result = await getOrSetCache(cacheKey, async () => {
-      return await getPaginatedProducts(page, limit, filters, sort);
+      const [products, categories] = await Promise.all([
+        getPaginatedProducts(page, limit, filters, sort),
+        getProductCategories(),
+      ]);
+      // Facet de categorias para o filtro da vitrine (ProductList)
+      return { ...products, categories };
     });
 
     return res.status(200).json(result);
@@ -151,14 +178,17 @@ async function handlePost(req, res) {
     return res.status(429).json({ error: 'Too Many Requests', message: 'Muitas requisições. Tente novamente mais tarde.' });
   }
 
-  const { name, description, price, image_url, category, link } = req.body;
-
-  if (!name || !price) {
-    return res.status(400).json({ error: 'Bad Request', message: 'Nome e preço são obrigatórios' });
+  const validation = productCreateSchema.safeParse(req.body);
+  if (!validation.success) {
+    return res.status(400).json({
+      error: 'Bad Request',
+      message: 'Dados inválidos para o produto',
+      errors: validation.error.flatten().fieldErrors,
+    });
   }
 
   try {
-    const newProduct = await createProduct({ name, description, price, image_url, category, link });
+    const newProduct = await createProduct(validation.data);
 
     await invalidateCache('products:*');
     await logActivity(req.user.username, 'CRIAR PRODUTO', 'PRODUCT', newProduct.id, `Criou o produto: ${name}`, ip);
@@ -229,15 +259,26 @@ async function handlePut(req, res) {
     return res.status(400).json({ error: 'Bad Request', message: 'ID inválido' });
   }
 
+  // Validação com paridade ao cliente; `id`/`action` são descartados pelo
+  // schema (só campos de produto seguem para o domínio).
+  const validation = productUpdateSchema.safeParse(req.body);
+  if (!validation.success) {
+    return res.status(400).json({
+      error: 'Bad Request',
+      message: 'Dados inválidos para o produto',
+      errors: validation.error.flatten().fieldErrors,
+    });
+  }
+
   try {
-    const updatedProduct = await updateProduct(updateId, req.body);
+    const updatedProduct = await updateProduct(updateId, validation.data);
 
     if (!updatedProduct) {
       return res.status(404).json({ error: 'Not Found', message: 'Produto não encontrado' });
     }
 
     await invalidateCache('products:*');
-    await logActivity(req.user.username, 'ATUALIZAR PRODUTO', 'PRODUCT', updateId, `Atualizou o produto: ${req.body.name || updateId}`, ip);
+    await logActivity(req.user.username, 'ATUALIZAR PRODUTO', 'PRODUCT', updateId, `Atualizou o produto: ${validation.data.name || updateId}`, ip);
 
     return res.status(200).json(updatedProduct);
   } catch (error) {

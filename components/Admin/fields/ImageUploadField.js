@@ -31,9 +31,19 @@ export default function ImageUploadField({
   error,
   hint,
   placeholder = 'https://... ou faça upload',
-  className = ''
+  className = '',
+  multiple = false
 }) {
   const [uploading, setUploading] = useState(false);
+
+  // No modo múltiplo, cada upload vira uma nova linha (o produto usa a
+  // primeira imagem como capa e as demais no carrossel — parseImages).
+  const applyUploadedUrl = (url) => {
+    if (!multiple) return url;
+    const current = (value || '').split('\n').map((line) => line.trim()).filter(Boolean);
+    if (current.includes(url)) return current.join('\n');
+    return [...current, url].join('\n');
+  };
 
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
@@ -44,7 +54,7 @@ export default function ImageUploadField({
       setUploading(true);
       try {
         const url = await onUpload(file, uploadType);
-        if (url) onChange({ target: { name, value: url } });
+        if (url) onChange({ target: { name, value: applyUploadedUrl(url) } });
       } finally {
         setUploading(false);
       }
@@ -67,7 +77,7 @@ export default function ImageUploadField({
       
       if (res.ok) {
         const data = await res.json();
-        onChange({ target: { name, value: data.path } });
+        onChange({ target: { name, value: applyUploadedUrl(data.path) } });
       } else {
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.message || errorData.error || `Erro ${res.status}: Falha no upload`);
@@ -80,6 +90,15 @@ export default function ImageUploadField({
     }
   };
 
+  const images = multiple
+    ? (value || '').split('\n').map((line) => line.trim()).filter(Boolean)
+    : (value ? [value] : []);
+
+  const removeImage = (urlToRemove) => {
+    const next = images.filter((url) => url !== urlToRemove).join('\n');
+    onChange({ target: { name, value: next } });
+  };
+
   return (
     <div className={`${styles.formGroup} ${className}`}>
       <label htmlFor={name}>
@@ -87,17 +106,31 @@ export default function ImageUploadField({
         {required && <span style={{ color: '#dc3545', marginLeft: '4px' }}>*</span>}
       </label>
       <div style={{ display: 'flex', gap: '10px' }}>
-        <input
-          id={name}
-          type="text"
-          name={name}
-          value={value}
-          onChange={onChange}
-          placeholder={placeholder}
-          required={required}
-          className={styles.input}
-          style={{ flex: 1 }}
-        />
+        {multiple ? (
+          <textarea
+            id={name}
+            name={name}
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            required={required}
+            className={styles.input}
+            rows={3}
+            style={{ flex: 1 }}
+          />
+        ) : (
+          <input
+            id={name}
+            type="text"
+            name={name}
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            required={required}
+            className={styles.input}
+            style={{ flex: 1 }}
+          />
+        )}
         <label 
           className={styles.saveButton}
           style={{ 
@@ -108,7 +141,7 @@ export default function ImageUploadField({
             alignItems: 'center'
           }}
         >
-          {uploading ? 'Enviando...' : 'Upload'}
+          {uploading ? 'Enviando...' : (multiple ? 'Adicionar imagem' : 'Upload')}
           <input
             type="file"
             accept="image/*"
@@ -119,19 +152,45 @@ export default function ImageUploadField({
         </label>
       </div>
       
-      {value && (
-        <div style={{ marginTop: '10px' }}>
-          <img 
-            src={value} 
-            alt="Preview" 
-            style={{ 
-              maxWidth: '100%', 
-              maxHeight: '200px', 
-              objectFit: 'cover', 
-              borderRadius: '6px',
-              border: '1px solid #e9ecef'
-            }} 
-          />
+      {images.length > 0 && (
+        <div style={{ marginTop: '10px', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+          {images.map((url, index) => (
+            <div key={`${url}-${index}`} style={{ position: 'relative' }}>
+              <img 
+                src={url} 
+                alt={multiple ? `Preview ${index + 1}` : 'Preview'} 
+                style={{ 
+                  maxWidth: '100%', 
+                  maxHeight: '200px', 
+                  objectFit: 'cover', 
+                  borderRadius: '6px',
+                  border: '1px solid #e9ecef'
+                }} 
+              />
+              {multiple && (
+                <button
+                  type="button"
+                  onClick={() => removeImage(url)}
+                  aria-label={`Remover imagem ${index + 1}`}
+                  style={{
+                    position: 'absolute',
+                    top: '4px',
+                    right: '4px',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '24px',
+                    height: '24px',
+                    cursor: 'pointer',
+                    backgroundColor: 'rgba(0,0,0,0.65)',
+                    color: '#fff',
+                    lineHeight: 1
+                  }}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          ))}
         </div>
       )}
       
@@ -159,5 +218,6 @@ ImageUploadField.propTypes = {
   error: PropTypes.string,
   hint: PropTypes.string,
   placeholder: PropTypes.string,
-  className: PropTypes.string
+  className: PropTypes.string,
+  multiple: PropTypes.bool
 };

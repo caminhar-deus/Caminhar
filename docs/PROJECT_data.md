@@ -447,6 +447,7 @@ Regras decorrentes:
 - O `paginate()` de `lib/domain/shared-pagination.js` exige `publishedField` **explícito** quando `publishedOnly=true` (não há default — um valor errado geraria erro SQL em runtime).
 - O `SELECT` otimizado das listagens públicas (`PUBLIC_SELECT_FIELDS`) cobre apenas `posts`, `musicas` e `videos`; `products` e `dicas` têm SQL próprio nas suas APIs.
 - `views` (posts) existe no banco, mas é incrementada por query dedicada e **não** entra nos campos permitidos do CRUD genérico (`tableSchemas` em `lib/crud/crud.js`).
+- `products.price` é **`NUMERIC(10,2)`** desde a migration `019-products-price-numeric` (29/10/2026, ADR-0027; padrão de migrations idempotentes do ADR-0025). O texto digitado ("R$ 89,90", "89,90" ou "89.90") é normalizado na entrada pelo domínio/API; filtros e ordenação comparam número, não string.
 - A paridade entre as fontes de schema (JSONs × `tableSchemas` × `PUBLIC_SELECT_FIELDS` × `EXPECTED_SCHEMA` de `scripts/validate-schema.js`) é travada por `tests/unit/scripts/schema-sources.test.js`.
 - Unificar a nomenclatura (`publicado` → `published`) é evolução futura e exige migration + ripple em domínio/API/UI — nunca mudar uma fonte isoladamente.
 
@@ -454,7 +455,7 @@ Regras decorrentes:
 
 ## 13. Migrações Aplicadas
 
-A tabela `_migrations` registra **17 migrações** executadas no schema do banco (conferido no banco em 27/10/2026):
+A tabela `_migrations` registra as migrações executadas no schema do banco (conferido em 27/10/2026; a `019` foi criada em 29/10/2026 e entra na próxima execução de `npm run migrate`):
 
 | ID | Nome | Descrição |
 |----|------|-----------|
@@ -476,6 +477,7 @@ A tabela `_migrations` registra **17 migrações** executadas no schema do banco
 | 16 | `016-create-refresh-tokens-table` | Cria a tabela de tokens de refresh de sessão |
 | 17 | `017-add-thumbnail-to-videos` | Adiciona thumbnail personalizada aos vídeos |
 | 18 | `018-seed-default-roles` | Semeia os cargos padrão `admin` e `user` |
+| 19 | `019-products-price-numeric` | Converte `products.price` de VARCHAR para NUMERIC(10,2), normalizando valores existentes (criada em 29/10/2026) |
 
 **Observação:** A migration `010-sync-sqlite-pg-schemas` foi criada durante a unificação SQLite → PostgreSQL, mas seu arquivo foi removido posteriormente. As alterações de schema correspondentes já estão presentes no banco (a numeração salta de 009 para 011 por isso).
 

@@ -79,7 +79,7 @@ describe('Componente Front-End - AdminProducts', () => {
     );
     render(CustomField);
     fireEvent.click(screen.getByText('⚡ Puxar Dados'));
-    expect(toast.error).toHaveBeenCalledWith('Cole o link do Mercado Livre no campo primeiro!');
+    expect(toast.error).toHaveBeenCalledWith('Cole o link do produto no campo primeiro!');
   });
 
   it('handleFetchML: deve buscar dados e atualizar campos com sucesso', async () => {
@@ -96,7 +96,7 @@ describe('Componente Front-End - AdminProducts', () => {
     render(CustomField);
     
     fireEvent.click(screen.getByText('⚡ Puxar Dados'));
-    expect(toast.loading).toHaveBeenCalledWith('Pescando dados no Mercado Livre...');
+    expect(toast.loading).toHaveBeenCalledWith('Puxando dados da loja...');
     
     await waitFor(() => {
       expect(setFieldValue).toHaveBeenCalledWith('name', 'Produto');

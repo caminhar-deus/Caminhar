@@ -36,6 +36,7 @@ apoio, não a fonte oficial; a decisão não é duplicada como página de memór
 | [0024](0024-crud-categorias-posts-chips-display-only.md) | CRUD completo de categorias de posts com chips display-only na frente pública | Aceito | 2026-10-27 |
 | [0025](0025-reset-completo-banco-migrations-idempotentes-nomenclatura-publicacao.md) | Reset completo do banco via migrations idempotentes e nomenclatura de publicação documentada | Aceito | 2026-10-27 |
 | [0026](0026-scanners-estaticos-no-gate-de-push-e-allowlist.md) | Scanners estáticos no gate de push e allowlist documentada por arquivo | Aceito | 2026-10-28 |
+| [0027](0027-preco-produto-numeric-e-fluxo-cadastro.md) | Preço de produto como NUMERIC(10,2) e fluxo de cadastro de produtos definido | Aceito | 2026-10-29 |
 
 ## Quando criar um ADR
 

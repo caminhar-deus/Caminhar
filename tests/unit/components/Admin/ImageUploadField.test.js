@@ -117,4 +117,50 @@ describe('ImageUploadField Component', () => {
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Erro 500: Falha no upload'));
     consoleSpy.mockRestore();
   });
+
+  it('multiple: deve anexar o upload em nova linha preservando as URLs existentes', async () => {
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ path: '/uploads/new-img.jpg' })
+    });
+
+    const onChange = jest.fn();
+    render(<ImageUploadField name="image_url" label="Imagens" value={'https://a.jpg\nhttps://b.jpg'} onChange={onChange} multiple />);
+
+    fireEvent.change(document.querySelector('input[type="file"]'), { target: { files: [new File([''], 'a.png', { type: 'image/png' })] } });
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith({
+        target: { name: 'image_url', value: 'https://a.jpg\nhttps://b.jpg\n/uploads/new-img.jpg' }
+      });
+    });
+  });
+
+  it('multiple: deve renderizar um preview por imagem e remover pela linha correspondente', () => {
+    const onChange = jest.fn();
+    render(<ImageUploadField name="image_url" label="Imagens" value={'https://a.jpg\nhttps://b.jpg'} onChange={onChange} multiple />);
+
+    expect(screen.getByAltText('Preview 1')).toHaveAttribute('src', 'https://a.jpg');
+    expect(screen.getByAltText('Preview 2')).toHaveAttribute('src', 'https://b.jpg');
+
+    fireEvent.click(screen.getByLabelText('Remover imagem 2'));
+
+    expect(onChange).toHaveBeenCalledWith({ target: { name: 'image_url', value: 'https://a.jpg' } });
+  });
+
+  it('multiple: deve deduplicar quando a mesma URL é enviada de novo', async () => {
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ path: '/uploads/dup.jpg' })
+    });
+
+    const onChange = jest.fn();
+    render(<ImageUploadField name="image_url" label="Imagens" value="/uploads/dup.jpg" onChange={onChange} multiple />);
+
+    fireEvent.change(document.querySelector('input[type="file"]'), { target: { files: [new File([''], 'a.png', { type: 'image/png' })] } });
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith({ target: { name: 'image_url', value: '/uploads/dup.jpg' } });
+    });
+  });
 });

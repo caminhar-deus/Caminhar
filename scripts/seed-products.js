@@ -14,7 +14,8 @@ async function seedProducts() {
     for (let i = 0; i < TOTAL_PRODUCTS; i++) {
       // Dados gerados dinamicamente
       const name = faker.commerce.productName();
-      const price = `R$ ${faker.commerce.price({ min: 20, max: 350, dec: 2 })}`;
+      // price é NUMERIC(10,2) desde a migration 019 — enviar número, não texto
+      const price = Number(faker.commerce.price({ min: 20, max: 350, dec: 2 }));
       const description = faker.commerce.productDescription();
       
       // Gera de 1 a 3 imagens por produto simulando o nosso comportamento de Carrossel

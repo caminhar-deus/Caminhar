@@ -9,6 +9,8 @@ jest.mock('../../../lib/domain/products.js', () => ({
   createProduct: jest.fn(),
   updateProduct: jest.fn(),
   deleteProduct: jest.fn(),
+  getProductCategories: jest.fn(),
+  normalizePrice: jest.fn((v) => (v === null || v === undefined || v === '' ? null : Number(v))),
 }));
 
 // O branch de reordenação do PUT usa updateRecords('products', ...)
@@ -44,7 +46,7 @@ jest.mock('../../../lib/infra/logger.js', () => ({
 }));
 
 import handler from '../../../pages/api/products.js';
-import { getPaginatedProducts, getAllProducts, createProduct, updateProduct, deleteProduct } from '../../../lib/domain/products.js';
+import { getPaginatedProducts, getAllProducts, createProduct, updateProduct, deleteProduct, getProductCategories } from '../../../lib/domain/products.js';
 import { updateRecords } from '../../../lib/crud/crud.js';
 import { getAuthToken, verifyToken } from '../../../lib/auth/auth.js';
 import { checkRateLimit, invalidateCache } from '../../../lib/cache/cache.js';
@@ -55,6 +57,7 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
   beforeEach(() => {
     userFactory.resetId();
     checkRateLimit.mockResolvedValue(false);
+    getProductCategories.mockResolvedValue([]);
   });
 
   describe('GET - Público (sem autenticação)', () => {
@@ -68,7 +71,7 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(200);
-      expect(getPaginatedProducts).toHaveBeenCalledWith(1, 10, { search: '', minPrice: '', maxPrice: '' }, 'default');
+      expect(getPaginatedProducts).toHaveBeenCalledWith(1, 10, { search: '', minPrice: '', maxPrice: '', category: '' }, 'default');
     });
 
     it('deve repassar o sort válido ao domínio', async () => {
@@ -84,7 +87,7 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(200);
-      expect(getPaginatedProducts).toHaveBeenCalledWith(1, 10, { search: '', minPrice: '', maxPrice: '' }, 'price_asc');
+      expect(getPaginatedProducts).toHaveBeenCalledWith(1, 10, { search: '', minPrice: '', maxPrice: '', category: '' }, 'price_asc');
     });
 
     it('deve aceitar sort=positioned (curadoria manual) no GET público', async () => {
@@ -100,7 +103,7 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(200);
-      expect(getPaginatedProducts).toHaveBeenCalledWith(1, 10, { search: '', minPrice: '', maxPrice: '' }, 'positioned');
+      expect(getPaginatedProducts).toHaveBeenCalledWith(1, 10, { search: '', minPrice: '', maxPrice: '', category: '' }, 'positioned');
     });
 
     it('deve retornar 400 para sort inválido no GET público', async () => {
@@ -138,7 +141,7 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(200);
-      expect(getPaginatedProducts).toHaveBeenCalledWith(2, 5, { search: '', minPrice: '', maxPrice: '' }, 'default');
+      expect(getPaginatedProducts).toHaveBeenCalledWith(2, 5, { search: '', minPrice: '', maxPrice: '', category: '' }, 'default');
     });
   });
 
@@ -183,7 +186,7 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       getAuthToken.mockReturnValue('valid-token');
       verifyToken.mockReturnValue({ username: 'admin' });
       checkRateLimit.mockResolvedValueOnce(true);
-      const { req, res } = createMocks({ method: 'POST', body: { name: 'Camisa', price: '89.90' } });
+      const { req, res } = createMocks({ method: 'POST', body: { name: 'Camisa', price: '89.90', image_url: 'https://img.jpg' } });
       await handler(req, res);
       expect(res._getStatusCode()).toBe(429);
     });
@@ -212,11 +215,11 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
 
     it('deve criar o produto e registrar log', async () => {
       createProduct.mockResolvedValueOnce({ id: 10, name: 'Camisa', price: '89.90' });
-      const { req, res } = createMocks({ method: 'POST', body: { name: 'Camisa', price: '89.90' } });
+      const { req, res } = createMocks({ method: 'POST', body: { name: 'Camisa', price: '89.90', image_url: 'https://img.jpg' } });
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(201);
-      expect(createProduct).toHaveBeenCalledWith(expect.objectContaining({ name: 'Camisa', price: '89.90' }));
+      expect(createProduct).toHaveBeenCalledWith(expect.objectContaining({ name: 'Camisa', price: 89.9 }));
       expect(logActivity).toHaveBeenCalledWith('admin', 'CRIAR PRODUTO', 'PRODUCT', 10, expect.any(String), expect.any(String));
     });
 
@@ -358,7 +361,7 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
     });
 
     it('POST sem "Gestão de Produtos" deve retornar 403 sem criar o produto', async () => {
-      const { req, res } = createMocks({ method: 'POST', body: { name: 'Camisa', price: '89.90' } });
+      const { req, res } = createMocks({ method: 'POST', body: { name: 'Camisa', price: '89.90', image_url: 'https://img.jpg' } });
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(403);
@@ -430,7 +433,7 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       });
       createProduct.mockResolvedValueOnce({ id: 10, name: 'Camisa', price: '89.90' });
 
-      const { req, res } = createMocks({ method: 'POST', body: { name: 'Camisa', price: '89.90' } });
+      const { req, res } = createMocks({ method: 'POST', body: { name: 'Camisa', price: '89.90', image_url: 'https://img.jpg' } });
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(201);
@@ -444,7 +447,7 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       query.mockResolvedValueOnce({ rows: [{ permissions: '["Visão Geral"]' }] });
       createProduct.mockResolvedValueOnce({ id: 11, name: 'Boné', price: '29.90' });
 
-      const { req, res } = createMocks({ method: 'POST', body: { name: 'Boné', price: '29.90' } });
+      const { req, res } = createMocks({ method: 'POST', body: { name: 'Boné', price: '29.90', image_url: 'https://img.jpg' } });
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(201);
@@ -479,7 +482,7 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(200);
-      expect(getPaginatedProducts).toHaveBeenCalledWith(1, 10, { search: 'teste', minPrice: '10', maxPrice: '100' }, 'default');
+      expect(getPaginatedProducts).toHaveBeenCalledWith(1, 10, { search: 'teste', minPrice: '10', maxPrice: '100', category: '' }, 'default');
     });
 
     it('deve tratar a falta de token (isAdmin = false) de forma silenciosa no GET', async () => {
@@ -496,7 +499,7 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(200);
-      expect(getPaginatedProducts).toHaveBeenCalledWith(1, 10, { search: 'teste', minPrice: '', maxPrice: '' }, 'default');
+      expect(getPaginatedProducts).toHaveBeenCalledWith(1, 10, { search: 'teste', minPrice: '', maxPrice: '', category: '' }, 'default');
     });
   });
 });

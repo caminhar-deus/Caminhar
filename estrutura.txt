@@ -69,9 +69,11 @@ components/Admin/AdminPosts.js → utils/reorder.js
 components/Admin/fields/ImageUploadField.js → components/Admin/styles/form.module.css
 components/Admin/AdminProducts.js → components/Admin/AdminCrudBase.js
 components/Admin/AdminProducts.js → components/Admin/fields/ExternalDataButton.js
+components/Admin/AdminProducts.js → components/Admin/fields/ImageUploadField.js
 components/Admin/AdminProducts.js → components/Admin/fields/TextAreaField.js
 components/Admin/AdminProducts.js → components/Admin/fields/TextField.js
 components/Admin/AdminProducts.js → components/Admin/fields/ToggleField.js
+components/Admin/AdminProducts.js → lib/api/utils.js
 components/Admin/AdminProducts.js → utils/reorder.js
 components/Admin/AdminRolesTab.js → components/Admin/AdminCrudBase.js
 components/Admin/AdminRolesTab.js → components/Admin/fields/TextField.js
@@ -224,6 +226,7 @@ lib/domain/posts.js → lib/infra/db.js
 lib/domain/posts.js → lib/domain/audit.js
 lib/domain/posts.js → lib/domain/categories.js
 lib/domain/posts.js → lib/domain/shared-pagination.js
+lib/domain/products.js → lib/api/utils.js
 lib/domain/products.js → lib/crud/crud.js
 lib/domain/products.js → lib/infra/db.js
 lib/domain/settings.js → lib/crud/crud.js
@@ -266,6 +269,7 @@ pages/api/admin/dicas.js → lib/api/adminCrudHandler.js
 pages/api/admin/dicas.js → lib/cache/cache.js
 pages/api/admin/dicas.js → lib/infra/db.js
 pages/api/admin/fetch-ml.js → lib/api/adminCrudHandler.js
+pages/api/admin/fetch-ml.js → lib/api/utils.js
 pages/api/admin/fetch-ml.js → lib/infra/logger.js
 pages/api/admin/fetch-spotify.js → lib/api/adminCrudHandler.js
 pages/api/admin/fetch-spotify.js → lib/infra/logger.js
@@ -729,6 +733,10 @@ tests/unit/domain/posts.test.js → lib/domain/audit.js
 tests/unit/domain/posts.test.js → lib/domain/posts.js
 tests/unit/domain/posts.test.js → lib/infra/db.js
 tests/unit/domain/posts.test.js → tests/mocks/db-module.js
+tests/unit/domain/products.test.js → lib/crud/crud.js
+tests/unit/domain/products.test.js → lib/domain/products.js
+tests/unit/domain/products.test.js → lib/infra/db.js
+tests/unit/domain/products.test.js → tests/mocks/db-module.js
 tests/unit/domain/settings.test.js → lib/crud/crud.js
 tests/unit/domain/settings.test.js → lib/domain/settings.js
 tests/unit/domain/settings.test.js → lib/infra/db.js
@@ -835,7 +843,6 @@ tests/unit/pages/blog.index.test.js → pages/blog/index.js
 tests/unit/pages/blog.index.test.js → tests/helpers/index.js
 tests/unit/pages/index.test.js → pages/index.js
 tests/unit/pages/index.test.js → tests/helpers/index.js
-tests/unit/scripts/check-sql-injection.test.js → scripts/check-sql-injection.js
 tests/unit/scripts/reset-password.test.js → lib/auth/auth.js
 tests/unit/scripts/schema-sources.test.js → lib/crud/crud.js
 tests/unit/scripts/schema-sources.test.js → lib/domain/shared-pagination.js

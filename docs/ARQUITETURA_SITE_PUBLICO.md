@@ -2,7 +2,7 @@
 
 > Escopo: apenas a área pública (qualquer visitante). O painel administrativo está documentado em `docs/ARQUITETURA_SITE_PRIVADO.md`.
 > Fonte: 12 capturas de tela do site em desenvolvimento + descrição do dono do projeto.
-> Última atualização: 2026-10-27
+> Última atualização: 2026-10-29
 > Legenda: [PLANEJADO] = alvo ainda não implementado, informado pelo dono | [OBSERVADO] = visto nas imagens | [HIPÓTESE] = inferido, confirmar antes de assumir.
 
 ---
@@ -92,13 +92,13 @@ Esse mapeamento deve ser mantido de forma consistente em toda a documentação.
 - **Paginação:** "❮ Anterior | Página X de Y (Z vídeos) | Próxima ❯". "Anterior" fica desabilitado na página 1.
 
 ### 3.5 Produtos Religiosos
-- **Propósito:** [PLANEJADO] vitrine de produtos com links de afiliado/compra para Amazon, Mercado Livre e Shopee.
-- **Controles:** campo de busca "Buscar produtos por nome..." (com ícone de lupa); filtros de preço "Mín (R$)" e "Máx (R$)"; seletor "Ordenar por:" (depois do preço e antes do botão "Limpar filtros").
+- **Propósito:** vitrine de produtos com links de afiliado/compra para Amazon, Mercado Livre e Shopee.
+- **Controles:** campo de busca "Buscar produtos por nome..." (com ícone de lupa); filtros de preço "Mín (R$)" e "Máx (R$)"; seletor "Categoria:" (aparece quando há categorias publicadas, com "Todas" como padrão); seletor "Ordenar por:" (depois do preço e antes do botão "Limpar filtros"). O filtro de categoria consulta o facet `categories` da API (categorias distintas dos produtos publicados).
 - **Ordenação:** o seletor abre com a opção **Padrão** selecionada, que equivale a ordenar por "Mais recentes" (`created_at DESC`); as demais opções são **"Posicionados"** (curadoria manual do painel, `position ASC, id ASC`), "Mais antigos", "Menor preço" e "Maior preço". A ordenação é feita no **servidor** (parâmetro `sort` na API), não no cliente. A opção "Posicionados" passou a ser exposta em 2026-10-21, depois de corrigido o reordenamento no painel (ver §7, item 11). Decisão registrada em [ADR-0016](adr/0016-seletor-de-ordenacao-de-produtos-no-servidor.md).
 - **Grade:** 3 colunas x 4 linhas = 12 itens por página (2 colunas em tablet, 1 coluna no mobile).
 - **Contador:** "Mostrando X de Y produtos" ou "X resultados para \"termo\"" (quando há busca).
 - **Paginação:** "❮ Anterior | Página X de Y (Z produtos) | Próxima ❯". "Anterior" fica desabilitado na página 1 e a "Próxima" na última; a paginação só aparece quando há mais de uma página.
-- **Cuidado:** links de afiliados exigem aviso de divulgação. [HIPÓTESE] definir texto antes de publicar produtos.
+- **Cuidado:** links de afiliados exigem aviso de divulgação. Implementado em 2026-10-28 (decisão do dono): o rodapé da vitrine exibe "Alguns links são de afiliados: podemos receber uma comissão pelas compras realizadas, sem custo adicional para você."
 
 ## 4. Dicas do Dia (global)
 - **Posição:** sempre no fim da página, em qualquer aba.
