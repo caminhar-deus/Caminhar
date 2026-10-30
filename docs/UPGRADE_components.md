@@ -891,6 +891,8 @@ CSS Module para ImageOptimized. Define keyframe pulse e skeletonLoader (backgrou
 
 ## 5. SEO
 
+> **Removido em 2026-10-30 (ADR-0032).** Os componentes desta seção (`components/SEO/Head.js`, `components/SEO/StructuredData/*`, `components/SEO/index.js`) não tinham importadores e foram excluídos, junto com as 8 funções utilitárias mortas de `lib/seo/config.js`. O SEO do site é feito com `next/head` nas próprias páginas (blog lê `site_title` do painel no SSR); `lib/seo/config.js` mantém apenas `siteUrl` e `siteConfig` (`_document.js` e fallback do blog). O texto abaixo fica como registro histórico.
+
 ### 5.1 SEOHead.js
 
 **Localização:** `components/SEO/Head.js`

@@ -100,18 +100,6 @@
 │   │   └── styles
 │   │       ├── ImageOptimized.module.css
 │   │       └── criticalCSSRaw.js
-│   ├── SEO
-│   │   ├── Head.js
-│   │   ├── StructuredData
-│   │   │   ├── ArticleSchema.js
-│   │   │   ├── BreadcrumbSchema.js
-│   │   │   ├── MusicSchema.js
-│   │   │   ├── OrganizationSchema.js
-│   │   │   ├── StructuredDataBase.js
-│   │   │   ├── VideoSchema.js
-│   │   │   ├── WebsiteSchema.js
-│   │   │   └── index.js
-│   │   └── index.js
 │   └── UI
 │       ├── Alert.js
 │       ├── Alert.module.css
@@ -649,6 +637,8 @@
 │   │   ├── 0028-importacao-mercado-livre-preview-e-preco-positivo.md
 │   │   ├── 0029-unificacao-published-default-false.md
 │   │   ├── 0030-null-tolerant-admin-edit-schemas.md
+│   │   ├── 0031-password-policy-12-complexity-shared-module.md
+│   │   ├── 0032-site-name-unification-and-seo-cleanup.md
 │   │   ├── README.md
 │   │   └── template.md
 │   └── ai-memory-error.md
@@ -659,11 +649,6 @@
 ├── estrutura_extras.txt
 ├── estrutura_isolados.html
 ├── estrutura_isolados.txt
-├── examples
-│   ├── blog-post-seo-example.js
-│   ├── homepage-seo-example.js
-│   ├── musicas-seo-example.js
-│   └── videos-seo-example.js
 ├── hooks
 │   ├── AuthContext.js
 │   ├── AuthProvider.js
@@ -692,7 +677,8 @@
 │   │   ├── permissions.js
 │   │   └── utils.js
 │   ├── auth
-│   │   └── auth.js
+│   │   ├── auth.js
+│   │   └── password-policy.js
 │   ├── cache
 │   │   └── cache.js
 │   ├── crud
@@ -1256,17 +1242,6 @@
 │       │   │   ├── __snapshots__
 │       │   │   │   └── index.test.js.snap
 │       │   │   └── index.test.js
-│       │   ├── SEO
-│       │   │   ├── ArticleSchema.test.js
-│       │   │   ├── BreadcrumbSchema.test.js
-│       │   │   ├── Head.test.js
-│       │   │   ├── MusicSchema.test.js
-│       │   │   ├── OrganizationSchema.test.js
-│       │   │   ├── VideoSchema.test.js
-│       │   │   ├── WebsiteSchema.test.js
-│       │   │   ├── __snapshots__
-│       │   │   │   └── index.test.js.snap
-│       │   │   └── index.test.js
 │       │   ├── SeoPerformance.test.js
 │       │   ├── UI
 │       │   │   ├── Alert.test.js
@@ -1399,4 +1374,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-206 directories, 1194 files
+201 directories, 1174 files

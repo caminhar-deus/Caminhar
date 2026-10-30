@@ -437,6 +437,7 @@ export default function Admin() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className={styles.loginInput}
+                autoComplete="current-password"
                 required
               />
               <button type="submit" className={styles.button}>

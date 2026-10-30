@@ -152,6 +152,10 @@ const fields = [
   },
   {
     name: 'password', component: TextField, label: 'Senha', type: 'password',
+    // autocomplete="new-password" evita o preenchimento automático da senha
+    // salva no navegador ao criar/editar usuário; minLength espelha a política
+    // (12+) para o navegador barrar antes do submit (ADR-0031).
+    autoComplete: 'new-password', minLength: 12,
     placeholder: 'Deixe em branco para manter a senha atual (apenas na edição)', gridColumn: 'span 2',
     hint: 'Mínimo de 12 caracteres, com letra maiúscula, minúscula e número. Armazenada com hash seguro.'
   },

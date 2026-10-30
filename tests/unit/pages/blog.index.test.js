@@ -17,10 +17,14 @@ jest.mock('../../../lib/domain/posts.js', () => ({
 jest.mock('../../../lib/cache/cache.js', () => ({
   getOrSetCache: jest.fn(),
 }));
+jest.mock('../../../lib/domain/settings.js', () => ({
+  getSetting: jest.fn(),
+}));
 
 import { getServerSideProps, default as BlogIndex } from '../../../pages/blog/index.js';
 import { getRecentPosts } from '../../../lib/domain/posts.js';
 import { getOrSetCache } from '../../../lib/cache/cache.js';
+import { getSetting } from '../../../lib/domain/settings.js';
 
 describe('pages/blog/index.js', () => {
   const fakeResult = {
@@ -32,6 +36,7 @@ describe('pages/blog/index.js', () => {
     jest.clearAllMocks();
     mockCapturedProps.length = 0;
     getOrSetCache.mockImplementation((key, fn) => fn());
+    getSetting.mockResolvedValue('O Caminhar com Deus');
   });
 
   describe('getServerSideProps', () => {
@@ -42,10 +47,21 @@ describe('pages/blog/index.js', () => {
 
       expect(getRecentPosts).toHaveBeenCalledWith(9, 2, '');
       expect(getOrSetCache).toHaveBeenCalledWith('posts:list:2:9', expect.any(Function), 7200);
+      expect(getOrSetCache).toHaveBeenCalledWith('settings:site_title', expect.any(Function), 7200);
       expect(props.posts).toEqual(fakeResult.data);
       expect(props.currentPage).toBe(2);
       expect(props.totalPages).toBe(3);
+      expect(props.siteTitle).toBe('O Caminhar com Deus');
       expect(props.fetchError).toBeUndefined();
+    });
+
+    it('devolve siteTitle null quando o setting não existe (fallback fica no componente)', async () => {
+      getRecentPosts.mockResolvedValue(fakeResult);
+      getSetting.mockResolvedValue(null);
+
+      const { props } = await getServerSideProps({ query: {} });
+
+      expect(props.siteTitle).toBeNull();
     });
 
     it('normaliza página inválida para 1', async () => {

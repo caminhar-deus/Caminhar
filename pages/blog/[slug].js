@@ -4,12 +4,14 @@ import Link from 'next/link';
 import styles from './Blog.module.css';
 import { query } from '../../lib/infra/db.js';
 import { siteConfig } from '../../lib/seo/config';
+import { getSetting } from '../../lib/domain/settings.js';
+import { getOrSetCache } from '../../lib/cache/cache.js';
 
 /**
  * Página de detalhe de post do blog (rota canônica).
  * Renderizada via SSR com query direta ao banco (sem fetch HTTP interno).
  */
-export default function BlogPost({ post }) {
+export default function BlogPost({ post, siteTitle }) {
   const [isImageZoomed, setIsImageZoomed] = useState(false);
   const [currentUrl, setCurrentUrl] = useState('');
   const lightboxRef = useRef(null);
@@ -38,6 +40,10 @@ export default function BlogPost({ post }) {
     }
   }, [isImageZoomed]);
 
+  // Nome do site vem do painel (settings `site_title`, unificação ADR-0032);
+  // fallback no valor estático caso o setting não exista/venha vazio.
+  const siteName = siteTitle || siteConfig.name;
+
   // Define a URL base do site (fallback para localhost se não estiver definida)
   const siteUrl = process.env.SITE_URL || 'http://localhost:3000';
   const postUrl = `${siteUrl}/blog/${post.slug}`;
@@ -50,7 +56,7 @@ export default function BlogPost({ post }) {
   return (
     <div className={styles.container} style={{ padding: '40px 20px' }}>
       <Head>
-        <title>{`${post.title} | ${siteConfig.name}`}</title>
+        <title>{`${post.title} | ${siteName}`}</title>
         <meta name="description" content={post.excerpt || post.content?.substring(0, 160)} />
 
         {/* Open Graph / Facebook / WhatsApp */}
@@ -59,7 +65,7 @@ export default function BlogPost({ post }) {
         <meta property="og:title" content={post.title} />
         <meta property="og:description" content={post.excerpt || post.content?.substring(0, 160)} />
         <meta property="og:image" content={imageUrl} />
-        <meta property="og:site_name" content={siteConfig.name} />
+        <meta property="og:site_name" content={siteName} />
         <meta property="og:locale" content="pt_BR" />
         <meta property="article:published_time" content={post.created_at} />
 
@@ -199,7 +205,16 @@ export async function getServerSideProps({ params }) {
       return { notFound: true };
     }
 
-    return { props: { post: JSON.parse(JSON.stringify(post)) } };
+    // Mesma chave de cache da API `/api/settings` (`settings:site_title`) —
+    // o PUT do painel invalida essa chave, então o SSR reflete a troca sem
+    // esperar o TTL (unificação ADR-0032).
+    const siteTitle = await getOrSetCache(
+      'settings:site_title',
+      () => getSetting('site_title'),
+      7200
+    );
+
+    return { props: { post: JSON.parse(JSON.stringify(post)), siteTitle: siteTitle || null } };
   } catch (error) {
     console.error('[Posts] ❌ Erro ao buscar post no SSR:', error);
     return { notFound: true };
