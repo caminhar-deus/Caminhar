@@ -196,6 +196,14 @@ describe('Componente Front-End - AdminPosts', () => {
     })).not.toThrow();
   });
 
+  it('validationSchema: aceita nulls do banco na edição full-row (excerpt/content/image_url)', () => {
+    // createPost grava `?? null` — rows com null existem por design; o form
+    // reenvia a row inteira na edição e o schema do cliente não pode rejeitá-la.
+    expect(() => passedProps.validationSchema.parse({
+      title: 'T', slug: 't', excerpt: null, content: null, image_url: null, published: false, category_ids: [],
+    })).not.toThrow();
+  });
+
   it('mapItemToFormData: deve preencher category_ids a partir de post.categories', () => {
     render(<AdminPosts />);
 

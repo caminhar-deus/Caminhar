@@ -17,12 +17,12 @@ import styles from './styles/adminPosts.module.css';
 const postSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório').max(200, 'Título deve ter no máximo 200 caracteres'),
   slug: z.string().min(1, 'Slug é obrigatório').regex(/^[a-z0-9-]+$/, 'Slug deve conter apenas letras minúsculas, números e hífens'),
-  excerpt: z.string().max(500, 'Resumo deve ter no máximo 500 caracteres').optional(),
-  content: z.string().optional(),
-  image_url: z.string().refine(val => 
+  excerpt: z.string().max(500, 'Resumo deve ter no máximo 500 caracteres').optional().nullable(),
+  content: z.string().optional().nullable(),
+  image_url: z.string().refine(val =>
     !val || val === '' || val.startsWith('http') || val.startsWith('/'), {
     message: 'Por favor, insira uma URL completa (https://...) ou um caminho local válido (/uploads/...).'
-  }).optional(),
+  }).optional().nullable(),
   published: z.boolean().optional(),
   // Campo opcional: post sem categoria é válido (spec posts.md §2.2)
   category_ids: z.array(z.number()).optional()

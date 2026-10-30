@@ -33,7 +33,10 @@ async function handlePost(req, res) {
   const { name, content, published } = validation.data;
   const result = await query(
     'INSERT INTO dicas (name, content, published) VALUES ($1, $2, $3) RETURNING *',
-    [name, content, published !== undefined ? published : true],
+    // ADR-0029: dica nasce como rascunho (default false). O form do painel
+    // sempre envia o toggle; este fallback só vale para chamada direta à API
+    // sem `published` no corpo.
+    [name, content, published !== undefined ? published : false],
   );
   // Invalida cache público para refletir mudanças imediatamente
   await invalidateCache('dicas:public:*');

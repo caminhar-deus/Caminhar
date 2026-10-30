@@ -34,14 +34,14 @@ describe('API - Admin - Dicas (Edge Cases)', () => {
     db.query.mockResolvedValueOnce({ rows: [{ permissions: ['Gestão de Dicas'] }] });
   });
 
-  it('deve usar o IP unknown e valor padrão de published (true) no POST', async () => {
+  it('deve usar o IP unknown e valor padrão de published (false, ADR-0029) no POST', async () => {
     req.method = 'POST';
     req.body = { name: 'Dica Nova', content: 'Conteúdo da Dica' }; // Sem enviar 'published'
     
     db.query.mockResolvedValueOnce({ rows: [{ id: 1, name: 'Dica Nova' }] });
     await handler(req, res);
 
-    expect(db.query).toHaveBeenCalledWith(expect.any(String), ['Dica Nova', 'Conteúdo da Dica', true]);
+    expect(db.query).toHaveBeenCalledWith(expect.any(String), ['Dica Nova', 'Conteúdo da Dica', false]);
     expect(logActivity).toHaveBeenCalledWith('admin', 'CRIAR DICA', 'DICA', 1, 'Criou a dica: Dica Nova', 'unknown');
   });
 

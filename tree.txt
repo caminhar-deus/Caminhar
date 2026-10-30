@@ -648,6 +648,7 @@
 │   │   ├── 0027-preco-produto-numeric-e-fluxo-cadastro.md
 │   │   ├── 0028-importacao-mercado-livre-preview-e-preco-positivo.md
 │   │   ├── 0029-unificacao-published-default-false.md
+│   │   ├── 0030-null-tolerant-admin-edit-schemas.md
 │   │   ├── README.md
 │   │   └── template.md
 │   └── ai-memory-error.md
@@ -1398,4 +1399,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-206 directories, 1193 files
+206 directories, 1194 files

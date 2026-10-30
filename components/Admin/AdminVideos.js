@@ -16,8 +16,8 @@ import { z } from 'zod';
 const videoSchema = z.object({
   titulo: z.string().min(1, 'Título é obrigatório'),
   url_youtube: z.string().min(1, 'URL do YouTube é obrigatória'),
-  descricao: z.string().max(500, 'Descrição deve ter no máximo 500 caracteres').optional(),
-  thumbnail: z.string().optional()
+  descricao: z.string().max(500, 'Descrição deve ter no máximo 500 caracteres').optional().nullable(),
+  thumbnail: z.string().optional().nullable()
 });
 
 /**

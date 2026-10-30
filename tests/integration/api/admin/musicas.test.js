@@ -174,6 +174,15 @@ describe('API Admin - Gestão de Músicas (/api/admin/musicas) - Específicos', 
       expect(logActivity).toHaveBeenCalled();
     });
 
+    it('deve criar com descricao null (paridade com rows do banco)', async () => {
+      createMusica.mockResolvedValueOnce({ id: 7, ...validCreatePayload, descricao: null });
+      const { req, res } = getAuthenticatedMocks({ method: 'POST', body: { ...validCreatePayload, descricao: null } });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(201);
+      expect(createMusica).toHaveBeenCalledWith(expect.objectContaining({ descricao: null }));
+    });
+
     it('deve retornar 500 se houver erro ao criar', async () => {
       createMusica.mockRejectedValueOnce(new Error('Erro DB'));
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -223,6 +232,32 @@ describe('API Admin - Gestão de Músicas (/api/admin/musicas) - Específicos', 
       expect(res._getStatusCode()).toBe(200);
       expect(logActivity).toHaveBeenCalled();
       expect(invalidateCache).toHaveBeenCalledWith('musicas:*');
+    });
+
+    it('deve aceitar edição full-row com descricao null (rows reais do banco) e retornar 200', async () => {
+      // O form envia a row inteira na edição (useAdminCrud.handleEdit grava o
+      // item completo) e rows com descricao null existem no banco — o form de
+      // músicas não tem o campo. O schema não pode rejeitar null (repro do
+      // caso "Auditoria dos outros Admin").
+      updateMusica.mockResolvedValueOnce({ id: 59, titulo: 'Quero Nascer de Novo - Playback', descricao: null });
+      const { req, res } = getAuthenticatedMocks({
+        method: 'PUT',
+        body: {
+          id: 59,
+          titulo: 'Quero Nascer de Novo - Playback',
+          artista: 'Aline Brasil',
+          url_spotify: 'spotify:track:123',
+          descricao: null,
+          position: 16,
+          published: true,
+          created_at: '2026-10-27T13:58:23.538Z',
+          updated_at: '2026-10-27T13:58:23.538Z',
+        },
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      expect(updateMusica).toHaveBeenCalledWith(59, expect.objectContaining({ descricao: null }));
     });
 
     it('deve retornar 500 se houver erro ao atualizar', async () => {

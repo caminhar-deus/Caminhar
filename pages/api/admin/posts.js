@@ -8,12 +8,12 @@ import { z } from 'zod';
 const postCreateSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
   slug: z.string().min(1, 'Slug é obrigatório'),
-  excerpt: z.string().optional(),
-  content: z.string().optional(),
+  excerpt: z.string().optional().nullable(),
+  content: z.string().optional().nullable(),
   image_url: z.string().refine(val =>
     !val || val === '' || val.startsWith('http') || val.startsWith('/'), {
     message: 'A URL da imagem deve ser um link completo (https://...) ou um caminho local válido (/uploads/...).'
-  }).optional(),
+  }).optional().nullable(),
   published: z.boolean().optional(),
   category_ids: z.array(z.number().int().positive()).optional(),
 });
@@ -21,12 +21,12 @@ const postCreateSchema = z.object({
 const postUpdateDataSchema = z.object({
   title: z.string().min(1, 'Título não pode ser vazio').optional(),
   slug: z.string().min(1, 'Slug não pode ser vazio').optional(),
-  excerpt: z.string().optional(),
-  content: z.string().optional(),
+  excerpt: z.string().optional().nullable(),
+  content: z.string().optional().nullable(),
   image_url: z.string().refine(val =>
     !val || val === '' || val.startsWith('http') || val.startsWith('/'), {
     message: 'A URL da imagem deve ser um link completo (https://...) ou um caminho local válido (/uploads/...).'
-  }).optional(),
+  }).optional().nullable(),
   published: z.boolean().optional(),
   category_ids: z.array(z.number().int().positive()).optional(),
 });

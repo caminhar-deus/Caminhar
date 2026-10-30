@@ -235,6 +235,29 @@ describe('API Admin - Gestão de Posts (/api/admin/posts) - Específicos', () =>
       expect(invalidateCache).toHaveBeenCalledWith('posts:*');
     });
 
+    it('deve aceitar edição full-row com nulls do banco (excerpt/content/image_url) e retornar 200', async () => {
+      // createPost grava `excerpt ?? null` / `image_url ?? null` — rows com
+      // null existem por design e o form reenvia a row inteira na edição.
+      updatePost.mockResolvedValueOnce({ id: 30, title: 'T' });
+      const { req, res } = getAuthenticatedMocks({
+        method: 'PUT',
+        body: {
+          id: 30,
+          title: 'T',
+          slug: 't',
+          excerpt: null,
+          content: null,
+          image_url: null,
+          published: false,
+          category_ids: [],
+        },
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      expect(updatePost).toHaveBeenCalledWith(30, expect.objectContaining({ excerpt: null, content: null, image_url: null }));
+    });
+
     it('deve retornar 500 se ocorrer um erro ao atualizar', async () => {
       updatePost.mockRejectedValueOnce(new Error('Erro DB'));
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});

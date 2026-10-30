@@ -131,10 +131,10 @@ describe('API Admin - Dicas (/api/admin/dicas)', () => {
   });
 
   describe('POST - Criar Dica', () => {
-    const body = { name: 'Nova Dica', content: 'Texto da dica' }; // 'published' ausente (testando fallback = true)
+    const body = { name: 'Nova Dica', content: 'Texto da dica' }; // 'published' ausente (testando fallback = false, ADR-0029)
 
-    it('deve retornar 201, criar a dica com o fallback published=true e registrar log', async () => {
-      const mockResult = { id: 10, ...body, published: true };
+    it('deve retornar 201, criar a dica como rascunho (fallback published=false) e registrar log', async () => {
+      const mockResult = { id: 10, ...body, published: false };
       query.mockResolvedValueOnce({ rows: [mockResult] });
 
       const { req, res } = getAuthenticatedMocks({ method: 'POST', body });
@@ -143,8 +143,8 @@ describe('API Admin - Dicas (/api/admin/dicas)', () => {
       expect(res._getStatusCode()).toBe(201);
       expect(JSON.parse(res._getData())).toEqual(mockResult);
       
-      // Garante que o array de parametros sanou o 'published' recebendo TRUE no terceiro lugar
-      expect(query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO dicas'), ['Nova Dica', 'Texto da dica', true]);
+      // Garante que o array de parametros sanou o 'published' recebendo FALSE no terceiro lugar (ADR-0029)
+      expect(query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO dicas'), ['Nova Dica', 'Texto da dica', false]);
       expect(logActivity).toHaveBeenCalledWith('admin_user', 'CRIAR DICA', 'DICA', 10, 'Criou a dica: Nova Dica', '127.0.0.1');
     });
 

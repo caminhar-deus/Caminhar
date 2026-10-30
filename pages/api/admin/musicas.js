@@ -12,7 +12,7 @@ const isValidSpotifyUrl = (url) => {
 const musicaSchema = z.object({
   titulo: z.string().min(1, 'Título é obrigatório'),
   artista: z.string().min(1, 'Artista é obrigatório'),
-  descricao: z.string().optional(),
+  descricao: z.string().optional().nullable(),
   url_spotify: z.string().min(1, 'URL do Spotify é obrigatória'),
   published: z.boolean().optional(),
 });
@@ -96,8 +96,8 @@ async function handlePut(req, res) {
   const validation = z.object({
     id: z.number().int('ID deve ser um número inteiro').positive('ID deve ser positivo'),
     titulo: z.string().min(1, 'Título é obrigatório').optional(),
-    artista: z.string().min(1, 'Artista é obrigatório').optional(),
-    descricao: z.string().optional(),
+    artista: z.string().min(1, 'Artista é obrigatório').optional().nullable(),
+    descricao: z.string().optional().nullable(),
     url_spotify: z.string().min(1, 'URL do Spotify é obrigatória').optional(),
     published: z.boolean().optional(),
   }).safeParse({

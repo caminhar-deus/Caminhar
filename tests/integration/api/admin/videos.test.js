@@ -125,6 +125,22 @@ describe('API Admin - Vídeos (/api/admin/videos)', () => {
     expect(updateVideo).toHaveBeenCalledWith(1, { titulo: 'Editado' });
   });
 
+  it('PUT: deve aceitar descricao/thumbnail null (rows criadas via API gravam null) e retornar 200', async () => {
+    updateVideo.mockResolvedValueOnce({ id: 2, titulo: 'T' });
+    const body = {
+      id: 2,
+      titulo: 'T',
+      url_youtube: 'https://www.youtube.com/watch?v=abc12345678',
+      descricao: null,
+      thumbnail: null,
+      published: true,
+    };
+    const { req, res } = createMocks({ method: 'PUT', body });
+    await handler(req, res);
+    expect(res._getStatusCode()).toBe(200);
+    expect(updateVideo).toHaveBeenCalledWith(2, expect.objectContaining({ descricao: null, thumbnail: null }));
+  });
+
   it('PUT: deve retornar 404 se não encontrar vídeo para atualizar', async () => {
     updateVideo.mockResolvedValueOnce(null);
     const { req, res } = createMocks({ method: 'PUT', body: { id: 1, titulo: 'T' } });
