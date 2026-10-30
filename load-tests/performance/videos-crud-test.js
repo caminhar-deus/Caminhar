@@ -10,7 +10,7 @@ const resourceConfig = {
     url_youtube: `https://www.youtube.com/watch?v=${String(Math.random()).padStart(11, '0').slice(-11)}`,
     titulo: `Video de Teste K6 ${uniqueId}`,
     descricao: 'Descrição do vídeo de teste automatizado.',
-    publicado: false,
+    published: false,
   }),
   resourceName: 'videos',
   uniqueIdGenerator: () => `${__VU}-${__ITER}-${Date.now()}`,

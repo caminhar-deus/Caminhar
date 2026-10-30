@@ -122,9 +122,9 @@ Definições JSON consumidas por `init-table.js` (nome da tabela, colunas, flag 
 | Arquivo | Tabela | Particularidade |
 |---------|--------|-----------------|
 | `schemas/posts.json` | `posts` | `dropBeforeCreate: true`; colunas: id (SERIAL PK), title, slug (UNIQUE NOT NULL), excerpt, content, image_url, published (DEFAULT false), views (DEFAULT 0 NOT NULL), timestamps. |
-| `schemas/musicas.json` | `musicas` | `dropBeforeCreate: true`; colunas: id, titulo (NOT NULL), artista, url_spotify (NOT NULL), descricao, publicado (DEFAULT false), timestamps. |
-| `schemas/videos.json` | `videos` | `dropBeforeCreate: true`; colunas: id, titulo (NOT NULL), url_youtube (NOT NULL), descricao, thumbnail, publicado (DEFAULT false), timestamps. |
-| `schemas/dicas.json` | `dicas` | `dropBeforeCreate: false` (preserva dados); colunas: id, name (NOT NULL), content (NOT NULL), published (DEFAULT true), timestamps (WITHOUT TIME ZONE); **sem `seedData`** (tabela criada vazia — registros dependem exclusivamente do Painel Administrativo). |
+| `schemas/musicas.json` | `musicas` | `dropBeforeCreate: true`; colunas: id, titulo (NOT NULL), artista, url_spotify (NOT NULL), descricao, published (DEFAULT false), timestamps. |
+| `schemas/videos.json` | `videos` | `dropBeforeCreate: true`; colunas: id, titulo (NOT NULL), url_youtube (NOT NULL), descricao, thumbnail, published (DEFAULT false), timestamps. |
+| `schemas/dicas.json` | `dicas` | `dropBeforeCreate: false` (preserva dados); colunas: id, name (NOT NULL), content (NOT NULL), published (DEFAULT false desde a migration 020/ADR-0029 — antes `true`), timestamps (WITHOUT TIME ZONE); **sem `seedData`** (tabela criada vazia — registros dependem exclusivamente do Painel Administrativo). |
 
 ---
 

@@ -14,7 +14,7 @@ const musicaSchema = z.object({
   artista: z.string().min(1, 'Artista é obrigatório'),
   descricao: z.string().optional(),
   url_spotify: z.string().min(1, 'URL do Spotify é obrigatória'),
-  publicado: z.boolean().optional(),
+  published: z.boolean().optional(),
 });
 
 const reorderItemSchema = z.object({
@@ -51,7 +51,7 @@ async function handlePost(req, res) {
     });
   }
 
-  const { titulo, artista, descricao, url_spotify, publicado } = validation.data;
+  const { titulo, artista, descricao, url_spotify, published } = validation.data;
 
   if (!isValidSpotifyUrl(url_spotify)) {
     return res.status(400).json({ message: 'URL do Spotify inválida. Apenas links de faixa (track) são suportados para embed.' });
@@ -62,7 +62,7 @@ async function handlePost(req, res) {
     artista,
     descricao,
     url_spotify,
-    publicado: publicado !== undefined ? publicado : false
+    published: published !== undefined ? published : false
   });
 
   await req.adminUtils.logActivity('CRIAR MÚSICA', novaMusica.id, `Criou a música: ${titulo}`);
@@ -92,14 +92,14 @@ async function handlePut(req, res) {
   }
 
   // Validação para atualização: campos de texto são opcionais para permitir
-  // toggle rápido de status (publicado) sem precisar reenviar todos os campos.
+  // toggle rápido de status (published) sem precisar reenviar todos os campos.
   const validation = z.object({
     id: z.number().int('ID deve ser um número inteiro').positive('ID deve ser positivo'),
     titulo: z.string().min(1, 'Título é obrigatório').optional(),
     artista: z.string().min(1, 'Artista é obrigatório').optional(),
     descricao: z.string().optional(),
     url_spotify: z.string().min(1, 'URL do Spotify é obrigatória').optional(),
-    publicado: z.boolean().optional(),
+    published: z.boolean().optional(),
   }).safeParse({
     ...req.body,
     id: typeof req.body.id === 'string' ? parseInt(req.body.id, 10) : req.body.id,
@@ -112,7 +112,7 @@ async function handlePut(req, res) {
     });
   }
 
-  const { id, titulo, artista, descricao, url_spotify, publicado } = validation.data;
+  const { id, titulo, artista, descricao, url_spotify, published } = validation.data;
 
   // Se url_spotify foi enviado, valida; se não (ex: toggle de status), pula validação
   if (url_spotify !== undefined && !isValidSpotifyUrl(url_spotify)) {
@@ -124,7 +124,7 @@ async function handlePut(req, res) {
     artista,
     descricao,
     url_spotify,
-    publicado
+    published
   });
 
   if (!musicaAtualizada) {

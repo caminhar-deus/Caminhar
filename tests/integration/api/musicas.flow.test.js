@@ -44,7 +44,7 @@ describe('Integração: Fluxo Completo de Músicas (API + DB)', () => {
       artista: 'Artista Teste',
       descricao: 'Descrição teste',
       url_spotify: 'https://open.spotify.com/track/123456789',
-      publicado: false
+      published: false
     };
 
     const { req: createReq, res: createRes } = createMocks({

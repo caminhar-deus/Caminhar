@@ -7,7 +7,7 @@
     { "name": "url_youtube", "type": "VARCHAR(255)", "constraints": "NOT NULL" },
     { "name": "descricao", "type": "TEXT" },
     { "name": "thumbnail", "type": "VARCHAR(255)" },
-    { "name": "publicado", "type": "BOOLEAN", "constraints": "DEFAULT false" },
+    { "name": "published", "type": "BOOLEAN", "constraints": "DEFAULT false" },
     { "name": "created_at", "type": "TIMESTAMP WITH TIME ZONE", "constraints": "DEFAULT CURRENT_TIMESTAMP" },
     { "name": "updated_at", "type": "TIMESTAMP WITH TIME ZONE", "constraints": "DEFAULT CURRENT_TIMESTAMP" },
     { "name": "position", "type": "INTEGER", "constraints": "DEFAULT 9999" }

@@ -26,7 +26,9 @@ describe('Domain - shared-pagination (lib/domain/shared-pagination.js)', () => {
       expect(result.pagination.total).toBe(1);
       const sql = query.mock.calls[0][0];
       expect(sql).not.toContain('published = true');
-      expect(sql).not.toContain('publicado = true');
+      // Guarda anti-regressão da unificação (ADR-0029): o nome antigo não
+      // pode voltar a aparecer em SQL de listagem.
+      expect(sql).not.toContain('publicado');
     });
   });
 
@@ -36,15 +38,15 @@ describe('Domain - shared-pagination (lib/domain/shared-pagination.js)', () => {
         page: 1,
         limit: 10,
         publishedOnly: true,
-        publishedField: 'publicado',
+        publishedField: 'published',
       });
 
       const sql = query.mock.calls[0][0];
-      expect(sql).toContain('SELECT id, titulo, url_youtube, descricao, thumbnail, position, publicado, created_at, updated_at FROM videos');
-      expect(sql).toContain('publicado = true');
+      expect(sql).toContain('SELECT id, titulo, url_youtube, descricao, thumbnail, position, published, created_at, updated_at FROM videos');
+      expect(sql).toContain('published = true');
     });
 
-    it('listagem pública de posts filtra pela coluna published (nomenclatura própria da tabela)', async () => {
+    it('listagem pública de posts filtra pela coluna published (nunca o `publicado` antigo)', async () => {
       await paginate('posts', {
         page: 1,
         limit: 10,
@@ -54,6 +56,8 @@ describe('Domain - shared-pagination (lib/domain/shared-pagination.js)', () => {
 
       const sql = query.mock.calls[0][0];
       expect(sql).toContain('published = true');
+      // Guarda anti-regressão da unificação (ADR-0029): o nome antigo não
+      // pode voltar a aparecer em SQL de listagem pública.
       expect(sql).not.toContain('publicado');
     });
 
@@ -62,12 +66,12 @@ describe('Domain - shared-pagination (lib/domain/shared-pagination.js)', () => {
         page: 1,
         limit: 10,
         publishedOnly: true,
-        publishedField: 'publicado',
+        publishedField: 'published',
       });
 
       const sql = query.mock.calls[0][0];
       expect(sql).not.toContain('SELECT *');
-      expect(sql).toContain('SELECT id, titulo, artista, url_spotify, descricao, position, publicado, created_at, updated_at FROM musicas');
+      expect(sql).toContain('SELECT id, titulo, artista, url_spotify, descricao, position, published, created_at, updated_at FROM musicas');
     });
   });
 });

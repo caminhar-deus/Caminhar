@@ -26,7 +26,7 @@ export default function (data) {
   const validPayload = JSON.stringify({
     titulo: 'Vídeo Válido K6',
     url_youtube: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-    publicado: false
+    published: false
   });
 
   const resValid = http.post(`${BASE_URL}/api/admin/videos`, validPayload, { headers });
@@ -45,7 +45,7 @@ export default function (data) {
   const invalidDomainPayload = JSON.stringify({
     titulo: 'Vídeo Domínio Inválido',
     url_youtube: 'https://vimeo.com/123456789',
-    publicado: false
+    published: false
   });
 
   const resInvalidDomain = http.post(`${BASE_URL}/api/admin/videos`, invalidDomainPayload, {
@@ -74,7 +74,7 @@ export default function (data) {
   const malformedPayload = JSON.stringify({
     titulo: 'Vídeo URL Quebrada',
     url_youtube: 'youtube.com/watch?v=', // Falta protocolo e ID
-    publicado: false
+    published: false
   });
 
   const resMalformed = http.post(`${BASE_URL}/api/admin/videos`, malformedPayload, {

@@ -11,7 +11,7 @@ const resourceConfig = {
     artista: 'Artista K6',
     descricao: 'Teste de carga automatizado',
     url_spotify: 'https://open.spotify.com/track/testk6',
-    publicado: true,
+    published: true,
   }),
   resourceName: 'musicas',
   uniqueIdGenerator: () => `${__VU}-${__ITER}-${Date.now()}`,

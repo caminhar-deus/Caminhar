@@ -75,7 +75,9 @@ export default {
       });
 
       // musicas e videos NÃO geram entradas aqui, e não é só a query que estava
-      // errada (a tabela não tem `slug` — a coluna é `publicado`, não `published`):
+      // errada à época (a tabela não tem `slug` — e a coluna de publicação, que
+      // era `publicado`, virou `published` em todas as tabelas na migration 020,
+      // ADR-0029):
       // pages/ não tem rota de detalhe para elas (só pages/blog/[slug].js). Sem
       // rota, não há URL de detalhe legítima — gerar `/musicas/<algo>` seria
       // publicar 404 no sitemap. Criar essas rotas é trabalho de produto

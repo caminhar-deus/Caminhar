@@ -77,7 +77,7 @@ const generateMusicDefaults = (id) => {
     artista: artists[index % artists.length],
     url_imagem: `https://picsum.photos/300/300?random=${id}`,
     url_spotify: generateSpotifyUrl(),
-    publicado: true,
+    published: true,
     created_at: date.toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -96,7 +96,7 @@ export const musicFactory = createBaseFactory(generateMusicDefaults);
  * @returns {Object} Música não publicada
  */
 export const unpublishedMusicFactory = (overrides = {}) =>
-  musicFactory({ publicado: false, ...overrides });
+  musicFactory({ published: false, ...overrides });
 
 /**
  * Cria uma música publicada
@@ -104,7 +104,7 @@ export const unpublishedMusicFactory = (overrides = {}) =>
  * @returns {Object} Música publicada
  */
 export const publishedMusicFactory = (overrides = {}) =>
-  musicFactory({ publicado: true, ...overrides });
+  musicFactory({ published: true, ...overrides });
 
 /**
  * Cria uma música com URL do Spotify inválida (para testes de validação)
@@ -127,7 +127,7 @@ export const createMusicInput = (overrides = {}) => ({
   artista: overrides.artista ?? 'Artista Teste',
   url_imagem: overrides.url_imagem ?? 'https://picsum.photos/300/300',
   url_spotify: overrides.url_spotify ?? generateSpotifyUrl(),
-  publicado: overrides.publicado ?? true,
+  published: overrides.published ?? true,
   ...overrides,
 });
 
@@ -141,7 +141,7 @@ export const updateMusicInput = (overrides = {}) => ({
   ...(overrides.artista && { artista: overrides.artista }),
   ...(overrides.url_imagem && { url_imagem: overrides.url_imagem }),
   ...(overrides.url_spotify && { url_spotify: overrides.url_spotify }),
-  ...(overrides.publicado !== undefined && { publicado: overrides.publicado }),
+  ...(overrides.published !== undefined && { published: overrides.published }),
   ...overrides,
 });
 

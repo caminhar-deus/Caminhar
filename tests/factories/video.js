@@ -75,7 +75,7 @@ const generateVideoDefaults = (id) => {
     url_youtube: generateYoutubeUrl(youtubeId),
     youtube_id: youtubeId,
     descricao: videoDescriptions[index % videoDescriptions.length],
-    publicado: true,
+    published: true,
     thumbnail_url: `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`,
     created_at: date.toISOString(),
     updated_at: new Date().toISOString(),
@@ -95,7 +95,7 @@ export const videoFactory = createBaseFactory(generateVideoDefaults);
  * @returns {Object} Vídeo não publicado
  */
 export const unpublishedVideoFactory = (overrides = {}) =>
-  videoFactory({ publicado: false, ...overrides });
+  videoFactory({ published: false, ...overrides });
 
 /**
  * Cria um vídeo publicado
@@ -103,7 +103,7 @@ export const unpublishedVideoFactory = (overrides = {}) =>
  * @returns {Object} Vídeo publicado
  */
 export const publishedVideoFactory = (overrides = {}) =>
-  videoFactory({ publicado: true, ...overrides });
+  videoFactory({ published: true, ...overrides });
 
 /**
  * Cria um vídeo com URL do YouTube inválida (para testes de validação)
@@ -125,7 +125,7 @@ export const createVideoInput = (overrides = {}) => ({
   titulo: overrides.titulo ?? 'Novo Vídeo de Teste',
   url_youtube: overrides.url_youtube ?? generateYoutubeUrl(),
   descricao: overrides.descricao ?? 'Descrição do vídeo de teste...',
-  publicado: overrides.publicado ?? true,
+  published: overrides.published ?? true,
   ...overrides,
 });
 
@@ -138,7 +138,7 @@ export const updateVideoInput = (overrides = {}) => ({
   ...(overrides.titulo && { titulo: overrides.titulo }),
   ...(overrides.url_youtube && { url_youtube: overrides.url_youtube }),
   ...(overrides.descricao && { descricao: overrides.descricao }),
-  ...(overrides.publicado !== undefined && { publicado: overrides.publicado }),
+  ...(overrides.published !== undefined && { published: overrides.published }),
   ...overrides,
 });
 

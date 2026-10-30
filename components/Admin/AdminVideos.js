@@ -63,7 +63,7 @@ const fields = [
     hint: 'Opcional. Se vazio, usará a miniatura padrão do YouTube.'
   },
   {
-    name: 'publicado',
+    name: 'published',
     component: ToggleField,
     label: 'Publicar vídeo imediatamente',
     description: 'Se desmarcado, o vídeo será salvo como rascunho.',
@@ -132,7 +132,7 @@ const columns = [
     }
   },
   {
-    key: 'publicado',
+    key: 'published',
     header: 'Status',
     // Customizando as cores especificamente para a aba de Vídeos (Estilo Youtube)
     activeBgColor: '#fee2e2', // Fundo vermelho claro
@@ -151,7 +151,7 @@ const initialFormData = {
   descricao: '',
   url_youtube: '',
   thumbnail: null,
-  publicado: false
+  published: false
 };
 
 /**

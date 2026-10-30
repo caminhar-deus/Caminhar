@@ -5,7 +5,7 @@
     { "name": "id", "type": "SERIAL", "constraints": "PRIMARY KEY" },
     { "name": "name", "type": "VARCHAR(255)", "constraints": "NOT NULL" },
     { "name": "content", "type": "TEXT", "constraints": "NOT NULL" },
-    { "name": "published", "type": "BOOLEAN", "constraints": "DEFAULT true" },
+    { "name": "published", "type": "BOOLEAN", "constraints": "DEFAULT false" },
     { "name": "created_at", "type": "TIMESTAMP WITHOUT TIME ZONE", "constraints": "DEFAULT CURRENT_TIMESTAMP" },
     { "name": "updated_at", "type": "TIMESTAMP WITHOUT TIME ZONE", "constraints": "DEFAULT CURRENT_TIMESTAMP" }
   ]

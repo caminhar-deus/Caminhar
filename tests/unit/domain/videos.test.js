@@ -60,13 +60,13 @@ describe('Domain - Vídeos (lib/domain/videos.js)', () => {
   });
 
   describe('getPublicPaginatedVideos()', () => {
-    it('deve buscar obrigatoriamente apenas vídeos publicados (publicado = true)', async () => {
+    it('deve buscar obrigatoriamente apenas vídeos publicados (published = true)', async () => {
       query.mockResolvedValue({ rows: [] });
 
       await getPublicPaginatedVideos(1, 10, 'Next.js');
 
-      // A API pública possui a cláusula fixa "publicado = true" além da busca
-      expect(query).toHaveBeenNthCalledWith(1, expect.stringContaining('WHERE publicado = true AND (titulo ILIKE $1'), ['%next.js%', 10, 0]);
+      // A API pública possui a cláusula fixa "published = true" além da busca
+      expect(query).toHaveBeenNthCalledWith(1, expect.stringContaining('WHERE published = true AND (titulo ILIKE $1'), ['%next.js%', 10, 0]);
     });
   });
 
@@ -84,7 +84,7 @@ describe('Domain - Vídeos (lib/domain/videos.js)', () => {
         url_youtube: 'xyz',
         descricao: null,  // fallback validado
         thumbnail: null,  // fallback validado
-        publicado: false, // fallback validado
+        published: false, // fallback validado
         position: 6       // 5 + 1
       }, { client: { isFakeClient: true } });
     });

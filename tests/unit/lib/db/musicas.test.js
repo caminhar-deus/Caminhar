@@ -82,7 +82,7 @@ describe('Funções de Músicas (DB)', () => {
         artista: 'Artista Teste',
         descricao: 'Descrição Teste',
         url_spotify: 'https://spotify.com/track/123',
-        publicado: true
+        published: true
       };
 
       const mockDbResponse = { id: 1, ...novaMusica, created_at: new Date().toISOString() };
@@ -100,8 +100,8 @@ describe('Funções de Músicas (DB)', () => {
       const [insertText, insertValues] = insertCall;
 
       const normalizedText = insertText.replace(/\s+/g, ' ').trim();
-      expect(normalizedText).toContain('INSERT INTO musicas (titulo, artista, descricao, url_spotify, publicado, position, created_at) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP) RETURNING *');
-      expect(insertValues).toEqual([novaMusica.titulo, novaMusica.artista, novaMusica.descricao, novaMusica.url_spotify, novaMusica.publicado, 6]);
+      expect(normalizedText).toContain('INSERT INTO musicas (titulo, artista, descricao, url_spotify, published, position, created_at) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP) RETURNING *');
+      expect(insertValues).toEqual([novaMusica.titulo, novaMusica.artista, novaMusica.descricao, novaMusica.url_spotify, novaMusica.published, 6]);
 
       expect(result).toEqual(mockDbResponse);
     });
@@ -119,7 +119,7 @@ describe('Funções de Músicas (DB)', () => {
       // Chamadas: BEGIN, SELECT MAX(position), INSERT, COMMIT
       const insertCall = mockQuery.mock.calls[2];
       const insertParams = insertCall[1];
-      // Espera null para campos opcionais, false para publicado e 1 para position
+      // Espera null para campos opcionais, false para published e 1 para position
       expect(insertParams).toEqual(['Música Básica', null, null, null, false, 1]);
     });
   });
@@ -130,7 +130,7 @@ describe('Funções de Músicas (DB)', () => {
       const atualizacao = {
         titulo: 'Música Atualizada',
         artista: 'Artista Atualizado',
-        publicado: false
+        published: false
       };
       mockQuery.mockResolvedValue({ rows: [{ id, ...atualizacao }] });
 
@@ -140,7 +140,7 @@ describe('Funções de Músicas (DB)', () => {
       const [text, values] = mockQuery.mock.calls[0];
 
       const normalizedText = text.replace(/\s+/g, ' ').trim();
-      expect(normalizedText).toContain('UPDATE musicas SET titulo = $1, artista = $2, publicado = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING *');
+      expect(normalizedText).toContain('UPDATE musicas SET titulo = $1, artista = $2, published = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING *');
 
       expect(values).toEqual([atualizacao.titulo, atualizacao.artista, false, id]);
       

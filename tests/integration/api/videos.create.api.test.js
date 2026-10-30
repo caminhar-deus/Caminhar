@@ -48,7 +48,7 @@ describe('API de Vídeos - Criação (/api/videos)', () => {
       titulo: 'Novo Vídeo de Teste',
       url_youtube: 'https://youtube.com/watch?v=123456',
       descricao: 'Descrição do vídeo de teste...',
-      publicado: true
+      published: true
     };
 
     const { req, res } = createMocks({
@@ -72,7 +72,7 @@ describe('API de Vídeos - Criação (/api/videos)', () => {
   it('deve retornar 400 se campos obrigatórios estiverem faltando', async () => {
     const invalidVideo = {
       descricao: 'Vídeo sem título e url',
-      publicado: true
+      published: true
     };
 
     const { req, res } = createMocks({
@@ -91,7 +91,7 @@ describe('API de Vídeos - Criação (/api/videos)', () => {
     const invalidUrlVideo = {
       titulo: 'Vídeo com URL Inválida',
       url_youtube: 'https://vimeo.com/123456', // URL de outro serviço
-      publicado: true
+      published: true
     };
 
     const { req, res } = createMocks({

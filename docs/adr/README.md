@@ -38,6 +38,7 @@ apoio, não a fonte oficial; a decisão não é duplicada como página de memór
 | [0026](0026-scanners-estaticos-no-gate-de-push-e-allowlist.md) | Scanners estáticos no gate de push e allowlist documentada por arquivo | Aceito | 2026-10-28 |
 | [0027](0027-preco-produto-numeric-e-fluxo-cadastro.md) | Preço de produto como NUMERIC(10,2) e fluxo de cadastro de produtos definido | Aceito | 2026-10-29 |
 | [0028](0028-importacao-mercado-livre-preview-e-preco-positivo.md) | Importação do Mercado Livre por preview de link, preço obrigatório maior que zero e correções da vitrine | Aceito | 2026-10-29 |
+| [0029](0029-unificacao-published-default-false.md) | Unificação da nomenclatura de publicação (`published` em todas as tabelas) e default `false` — nada nasce publicado | Aceito | 2026-10-29 |
 
 ## Quando criar um ADR
 

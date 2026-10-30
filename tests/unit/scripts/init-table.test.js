@@ -15,7 +15,7 @@ describe('init-table-utils — buildCreateTableSQL', () => {
       { name: 'id', type: 'SERIAL', constraints: 'PRIMARY KEY' },
       { name: 'titulo', type: 'VARCHAR(255)', constraints: 'NOT NULL' },
       { name: 'artista', type: 'VARCHAR(255)' },
-      { name: 'publicado', type: 'BOOLEAN', constraints: 'DEFAULT false' },
+      { name: 'published', type: 'BOOLEAN', constraints: 'DEFAULT false' },
     ],
     seedData: [],
   };
@@ -27,7 +27,7 @@ describe('init-table-utils — buildCreateTableSQL', () => {
     expect(sql).toContain('CREATE TABLE IF NOT EXISTS musicas');
     expect(sql).toContain('id SERIAL PRIMARY KEY');
     expect(sql).toContain('titulo VARCHAR(255) NOT NULL');
-    expect(sql).toContain('publicado BOOLEAN DEFAULT false');
+    expect(sql).toContain('published BOOLEAN DEFAULT false');
   });
 });
 
@@ -52,7 +52,7 @@ describe('init-table-utils — getSeedValues', () => {
       { name: 'id', type: 'SERIAL', constraints: 'PRIMARY KEY' },
       { name: 'titulo', type: 'VARCHAR(255)', constraints: 'NOT NULL' },
       { name: 'artista', type: 'VARCHAR(255)' },
-      { name: 'publicado', type: 'BOOLEAN', constraints: 'DEFAULT false' },
+      { name: 'published', type: 'BOOLEAN', constraints: 'DEFAULT false' },
     ],
     seedData: [],
   };

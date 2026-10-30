@@ -43,7 +43,7 @@ describe('API de Músicas - Criação (/api/admin/musicas)', () => {
       artista: 'Artista Teste',
       url_spotify: 'https://spotify.com/track/123',
       url_imagem: 'https://example.com/image.jpg',
-      publicado: true
+      published: true
     };
 
     const { req, res } = createMocks({

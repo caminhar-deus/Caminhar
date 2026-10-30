@@ -48,7 +48,7 @@ const fields = [
     hint: 'Formato: https://open.spotify.com/track/...'
   },
   {
-    name: 'publicado',
+    name: 'published',
     component: ToggleField,
     label: 'Publicar música imediatamente',
     description: 'Se desmarcado, a música será salva como rascunho.',
@@ -95,7 +95,7 @@ const columns = [
     )
   },
   {
-    key: 'publicado',
+    key: 'published',
     header: 'Status',
     activeBgColor: '#dcfce3', // Fundo verde claro (Estilo Spotify)
     activeColor: '#166534', // Texto verde escuro
@@ -112,7 +112,7 @@ const initialFormData = {
   titulo: '',
   artista: '',
   url_spotify: '',
-  publicado: false
+  published: false
 };
 
 /**

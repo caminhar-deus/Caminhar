@@ -9,7 +9,7 @@ export default async function seedVideoRecords() {
     console.log('🌱 Inserindo vídeos de teste...');
     
     await query(`
-      INSERT INTO videos (titulo, url_youtube, descricao, publicado)
+      INSERT INTO videos (titulo, url_youtube, descricao, published)
       VALUES 
       ('Ousado Amor', 'https://www.youtube.com/watch?v=o-YBDTqX_ZU', 'Uma reflexão sobre o amor de Deus.', true),
       ('Lindo És', 'https://www.youtube.com/watch?v=zSif77IVs_Y', 'Canção de adoração.', true),

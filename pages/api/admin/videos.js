@@ -8,7 +8,7 @@ const videoSchema = z.object({
   url_youtube: z.string().min(1, 'URL do YouTube é obrigatória'),
   descricao: z.string().max(500, 'Descrição deve ter no máximo 500 caracteres').optional().nullable(),
   thumbnail: z.string().optional().nullable(),
-  publicado: z.boolean().optional()
+  published: z.boolean().optional()
 });
 
 const youtubeUrlRegex = /^https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=[\w-]{11}|youtu\.be\/[\w-]{11})(?:[&?].*)?$/;

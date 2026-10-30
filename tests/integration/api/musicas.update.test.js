@@ -55,7 +55,7 @@ describe('API de Músicas - Atualização (/api/admin/musicas)', () => {
       titulo: 'Música Atualizada',
       artista: 'Novo Artista',
       url_spotify: 'https://spotify.com/track/updated',
-      publicado: true
+      published: true
     };
 
     const { req, res } = createMocks({

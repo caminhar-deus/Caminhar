@@ -50,11 +50,11 @@ CREATE INDEX IF NOT EXISTS idx_settings_key_order
 
 -- 7. Índice para musicas
 CREATE INDEX IF NOT EXISTS idx_musicas_pagination
-  ON musicas (publicado, position, created_at DESC);
+  ON musicas (published, position, created_at DESC);
 
--- 8. Índice para videos (coluna se chama 'publicado' igual musicas)
+-- 8. Índice para videos (mesma nomenclatura 'published' de musicas — ADR-0029)
 CREATE INDEX IF NOT EXISTS idx_videos_pagination
-  ON videos (publicado, position, created_at DESC);
+  ON videos (published, position, created_at DESC);
 
 -- 9. Índice para products
 CREATE INDEX IF NOT EXISTS idx_products_pagination

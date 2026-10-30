@@ -9,7 +9,7 @@ export default async function seedMusicRecords() {
     console.log('🌱 Inserindo músicas de teste...');
     
     await query(`
-      INSERT INTO musicas (titulo, artista, url_spotify, descricao, publicado)
+      INSERT INTO musicas (titulo, artista, url_spotify, descricao, published)
       VALUES 
       ('Caminho no Deserto', 'Soraya Moraes', 'https://open.spotify.com/track/0d28khcov6AiegSCpG5TuT', 'Uma canção sobre fé no deserto.', true),
       ('Ousado Amor', 'Isaias Saad', 'https://open.spotify.com/track/1y7OxO5i6sfrBV52VUICE8', 'O amor de Deus é impressionante.', true),

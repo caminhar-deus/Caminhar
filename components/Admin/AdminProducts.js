@@ -117,7 +117,9 @@ const initialFormData = {
   price: '',
   link: '',
   category: '',
-  published: true
+  // Rascunho por padrão (ADR-0029): nada nasce publicado; o operador
+  // publica conscientemente pelo toggle.
+  published: false
 };
 
 export default function AdminProducts() {

@@ -22,8 +22,8 @@ const schemasDir = path.resolve(__dirname, '../../../scripts/schemas');
 // mudar uma fonte isoladamente.
 const PUBLISHED_COLUMN = {
   posts: 'published',
-  musicas: 'publicado',
-  videos: 'publicado',
+  musicas: 'published',
+  videos: 'published',
   products: 'published',
   dicas: 'published',
 };

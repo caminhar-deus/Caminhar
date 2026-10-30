@@ -150,27 +150,27 @@ describe('API Admin - Gestão de Músicas (/api/admin/musicas) - Específicos', 
     });
 
     it('deve criar, registrar log, invalidar cache e retornar 201', async () => {
-      const mockCreated = { id: 5, ...validCreatePayload, publicado: true };
+      const mockCreated = { id: 5, ...validCreatePayload, published: true };
       createMusica.mockResolvedValueOnce(mockCreated);
 
-      const { req, res } = getAuthenticatedMocks({ method: 'POST', body: { ...validCreatePayload, publicado: true } });
+      const { req, res } = getAuthenticatedMocks({ method: 'POST', body: { ...validCreatePayload, published: true } });
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(201);
-      expect(createMusica).toHaveBeenCalledWith(expect.objectContaining({ publicado: true }));
+      expect(createMusica).toHaveBeenCalledWith(expect.objectContaining({ published: true }));
       expect(logActivity).toHaveBeenCalledWith('admin', 'CRIAR MÚSICA', 'MUSICA', 5, 'Criou a música: Hino', '127.0.0.1');
       expect(invalidateCache).toHaveBeenCalledWith('musicas:*');
     });
 
-    it('deve criar com publicado=false se não enviado e pular log se sem user', async () => {
-      createMusica.mockResolvedValueOnce({ id: 6, ...validCreatePayload, publicado: false });
+    it('deve criar com published=false se não enviado e pular log se sem user', async () => {
+      createMusica.mockResolvedValueOnce({ id: 6, ...validCreatePayload, published: false });
       const { req, res } = getAuthenticatedMocks({ method: 'POST', body: validCreatePayload }, null);
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(201);
-      expect(createMusica).toHaveBeenCalledWith(expect.objectContaining({ publicado: false }));
-      // O handler registra log mesmo com user null; o importante é validar que createMusica foi chamado com publicado: false
-      expect(createMusica).toHaveBeenCalledWith(expect.objectContaining({ publicado: false }));
+      expect(createMusica).toHaveBeenCalledWith(expect.objectContaining({ published: false }));
+      // O handler registra log mesmo com user null; o importante é validar que createMusica foi chamado com published: false
+      expect(createMusica).toHaveBeenCalledWith(expect.objectContaining({ published: false }));
       expect(logActivity).toHaveBeenCalled();
     });
 

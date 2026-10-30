@@ -34,7 +34,7 @@ describe('Integração API Pública: Validação de Segurança (Banco de Dados) 
     });
   });
 
-  it('deve garantir que a query SQL inclua "WHERE publicado = true"', async () => {
+  it('deve garantir que a query SQL inclua "WHERE published = true"', async () => {
     const { req, res } = createMocks({
       method: 'GET',
     });
@@ -46,11 +46,11 @@ describe('Integração API Pública: Validação de Segurança (Banco de Dados) 
     // Verifica se a query enviada ao banco realmente contém o filtro de segurança
     const dataCall = query.mock.calls.find(call => call[0].includes('FROM videos') && call[0].includes('LIMIT'));
     const countCall = query.mock.calls.find(call => call[0].includes('COUNT(*)'));
-    expect(dataCall[0]).toContain('WHERE publicado = true');
-    expect(countCall[0]).toContain('WHERE publicado = true');
+    expect(dataCall[0]).toContain('WHERE published = true');
+    expect(countCall[0]).toContain('WHERE published = true');
   });
 
-  it('deve manter o filtro "publicado = true" mesmo quando houver busca', async () => {
+  it('deve manter o filtro "published = true" mesmo quando houver busca', async () => {
     const { req, res } = createMocks({
       method: 'GET',
       query: { search: 'Culto' }
@@ -62,7 +62,7 @@ describe('Integração API Pública: Validação de Segurança (Banco de Dados) 
 
     // Verifica se ambos os filtros estão presentes na query (segurança + busca)
     const dataCall = query.mock.calls.find(call => call[0].includes('FROM videos') && call[0].includes('LIMIT'));
-    expect(dataCall[0]).toContain('WHERE publicado = true AND');
+    expect(dataCall[0]).toContain('WHERE published = true AND');
     expect(dataCall[1]).toEqual(expect.arrayContaining(['%culto%']));
   });
 });

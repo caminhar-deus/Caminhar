@@ -21,10 +21,10 @@ async function handleGet(req, res) {
     query('SELECT COUNT(*) FROM users'),
     query('SELECT COUNT(*) FROM posts WHERE published = true'),
     query('SELECT COUNT(*) FROM posts WHERE published = false'),
-    query('SELECT COUNT(*) FROM musicas WHERE publicado = true'),
-    query('SELECT COUNT(*) FROM musicas WHERE publicado = false'),
-    query('SELECT COUNT(*) FROM videos WHERE publicado = true'),
-    query('SELECT COUNT(*) FROM videos WHERE publicado = false'),
+    query('SELECT COUNT(*) FROM musicas WHERE published = true'),
+    query('SELECT COUNT(*) FROM musicas WHERE published = false'),
+    query('SELECT COUNT(*) FROM videos WHERE published = true'),
+    query('SELECT COUNT(*) FROM videos WHERE published = false'),
     query('SELECT COUNT(*) FROM users WHERE last_login_at >= CURRENT_DATE'), // Logados Hoje
     query("SELECT COUNT(*) FROM users WHERE last_login_at >= date_trunc('month', CURRENT_DATE)"), // Logados no Mês
     query("SELECT COUNT(*) FROM users WHERE last_login_at >= date_trunc('year', CURRENT_DATE)"), // Logados no Ano

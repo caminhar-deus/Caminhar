@@ -57,7 +57,7 @@ export function stress_test(data) {
     url_youtube: videoUrl,
     titulo: videoTitle,
     descricao: `${TEST_PREFIX} Descrição do vídeo de estresse ${uniqueId}.`,
-    publicado: false,
+    published: false,
   });
 
   const createRes = http.post(`${BASE_URL}/api/admin/videos`, createPayload, {
@@ -100,7 +100,7 @@ export function stress_test(data) {
     id: videoId,
     titulo: `${TEST_PREFIX} Video Atualizado ${uniqueId}`, 
     url_youtube: videoUrl, 
-    publicado: false 
+    published: false 
   });
   
   const updateRes = http.put(`${BASE_URL}/api/admin/videos`, updatePayload, { 

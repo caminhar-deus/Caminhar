@@ -9,8 +9,8 @@ loadEnv();
 // (position em posts/musicas/videos — 007/008/009; thumbnail em videos — 017;
 // last_login_at em users — 005) e as tabelas de products/dicas (que não têm
 // schema JSON) e auxiliares do schema base (000).
-// ATENÇÃO: a coluna de publicação diverge por tabela — `published` em
-// posts/products/dicas, `publicado` em musicas/videos (docs/PROJECT_data.md).
+// ATENÇÃO: a coluna de publicação é `published` em TODAS as tabelas
+// (unificação `publicado`→`published` pela migration 020 — ADR-0029).
 // (exportado para o teste de consistência de fontes de schema —
 // tests/unit/scripts/schema-sources.test.js)
 export const EXPECTED_SCHEMA = {
@@ -18,10 +18,10 @@ export const EXPECTED_SCHEMA = {
     'id', 'title', 'slug', 'excerpt', 'content', 'image_url', 'published', 'views', 'position', 'created_at', 'updated_at'
   ],
   videos: [
-    'id', 'titulo', 'url_youtube', 'descricao', 'thumbnail', 'publicado', 'position', 'created_at', 'updated_at'
+    'id', 'titulo', 'url_youtube', 'descricao', 'thumbnail', 'published', 'position', 'created_at', 'updated_at'
   ],
   musicas: [
-    'id', 'titulo', 'artista', 'url_spotify', 'descricao', 'publicado', 'position', 'created_at', 'updated_at'
+    'id', 'titulo', 'artista', 'url_spotify', 'descricao', 'published', 'position', 'created_at', 'updated_at'
   ],
   products: [
     'id', 'name', 'price', 'image_url', 'description', 'position', 'published', 'category', 'link', 'created_at', 'updated_at'

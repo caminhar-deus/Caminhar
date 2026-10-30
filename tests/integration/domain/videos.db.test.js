@@ -48,7 +48,7 @@ async function insertTestVideo(overrides = {}) {
     titulo: 'Vídeo de Teste',
     url_youtube: `https://youtube.com/watch?v=${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     descricao: 'Descrição do vídeo de teste.',
-    publicado: true,
+    published: true,
     position: 0,
   };
   const data = { ...defaults, ...overrides };
@@ -58,10 +58,10 @@ async function insertTestVideo(overrides = {}) {
   // precisam passar datas explícitas, senão todas as linhas do teste nascem
   // com o mesmo valor e o ORDER BY vira não-determinístico.
   const result = await tx.query(
-    `INSERT INTO videos (titulo, url_youtube, descricao, publicado, position, created_at)
+    `INSERT INTO videos (titulo, url_youtube, descricao, published, position, created_at)
      VALUES ($1, $2, $3, $4, $5, COALESCE($6, CURRENT_TIMESTAMP))
      RETURNING *`,
-    [data.titulo, data.url_youtube, data.descricao, data.publicado, data.position, data.created_at ?? null]
+    [data.titulo, data.url_youtube, data.descricao, data.published, data.position, data.created_at ?? null]
   );
   return result.rows[0];
 }
@@ -81,7 +81,7 @@ describeIf('Vídeos — Integração com PostgreSQL Real', () => {
     expect(video).toHaveProperty('id');
     expect(video.id).toEqual(expect.any(Number));
     expect(video.titulo).toBe('Novo Vídeo');
-    expect(video.publicado).toBe(true);
+    expect(video.published).toBe(true);
     expect(video.created_at).toBeTruthy();
     expect(video.updated_at).toBeTruthy();
   });

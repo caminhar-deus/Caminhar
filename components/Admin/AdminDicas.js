@@ -79,7 +79,7 @@ export default function AdminDicas() {
       apiEndpoint="/api/admin/dicas"
       columns={columns}
       fields={fields}
-      initialFormData={{ name: '', content: '', published: true }}
+      initialFormData={{ name: '', content: '', published: false }}
       itemNameSingular="dica"
       itemNamePlural="dicas"
       searchable={true}

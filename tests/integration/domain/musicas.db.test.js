@@ -49,16 +49,16 @@ async function insertTestMusica(overrides = {}) {
     artista: 'Artista Teste',
     url_spotify: `https://open.spotify.com/track/${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     descricao: 'Descrição da música de teste.',
-    publicado: true,
+    published: true,
     position: 0,
   };
   const data = { ...defaults, ...overrides };
 
   const result = await tx.query(
-    `INSERT INTO musicas (titulo, artista, url_spotify, descricao, publicado, position)
+    `INSERT INTO musicas (titulo, artista, url_spotify, descricao, published, position)
      VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING *`,
-    [data.titulo, data.artista, data.url_spotify, data.descricao, data.publicado, data.position]
+    [data.titulo, data.artista, data.url_spotify, data.descricao, data.published, data.position]
   );
   return result.rows[0];
 }
@@ -79,7 +79,7 @@ describeIf('Músicas — Integração com PostgreSQL Real', () => {
     expect(musica.id).toEqual(expect.any(Number));
     expect(musica.titulo).toBe('Nova Música');
     expect(musica.artista).toBe('Novo Artista');
-    expect(musica.publicado).toBe(true);
+    expect(musica.published).toBe(true);
     expect(musica.created_at).toBeTruthy();
     expect(musica.updated_at).toBeTruthy();
   });
