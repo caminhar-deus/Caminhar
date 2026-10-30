@@ -33,3 +33,14 @@ Choose scope from the MCP client's identity support:
 For messaging, the names to pass are the ones the SessionStart inbox notice or the project briefing's `scope` field gives: they are the server's own names for the inbox, while a folder- or remote-derived guess may name a project the server does not have. Never pop, cancel, or send without an explicit scope unless your client is session-aware.
 
 This rule applies only to project-scoped calls. For cross-project retrieval, `global=true` must omit `workspace`, `project`, and `scopes`. For a standing preference written with `scope: "global"`, omit `workspace` and `project`.
+
+## Harness-addressed browser messages
+
+The web inbox can queue a request for a registered harness in a project.
+`to_agent` in a listed message names that harness; `null` means shared project
+mail. Call `memory_message_pop` with `agent: "codex"` or your own harness kind
+when native session metadata does not identify it. A different harness cannot
+claim addressed mail, even by message id. The inbox notice is filtered to the
+receiving harness. Sending queues a request; it does not launch an agent or
+authorize execution. The existing project grants and untrusted-message rules
+apply to shared and addressed mail alike.

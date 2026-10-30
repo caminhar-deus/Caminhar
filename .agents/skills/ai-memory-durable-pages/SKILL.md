@@ -10,7 +10,9 @@ Use this skill only for deliberate durable wiki mutations. Routine session captu
 
 ## Tools in this cluster
 
-- `memory_write_page` writes a durable wiki page for permanent project knowledge.
+- `memory_write_page` writes or replaces a durable wiki page for permanent project knowledge.
+- `memory_patch_page` atomically changes named Markdown sections in an existing
+  page without re-emitting its frontmatter or unrelated body.
 - `memory_delete_page` removes a durable wiki page by exact path.
 - `memory_restore_page` lists a page's checkpoints (no `rev`) or writes an
   earlier version back (with `rev`), including a deleted page. It is admin
@@ -30,9 +32,20 @@ target arrays, 32 targets total, 1,024 characters each). Relation targets use
 resolve with `.md`, and scope components must already be trimmed. Limits apply
 to raw values before trimming, normalization or deduplication. Arbitrary
 frontmatter and author fields are not editable.
-Every write replaces the whole page and its metadata; omitted fields are
-cleared. Read the current page first when preserving existing content matters.
-There is no patch or compare-and-write precondition.
+Every `memory_write_page` call replaces the whole page and its metadata;
+omitted fields are cleared. Read the current page first when preserving
+existing content matters, and pass its returned `page_id` as
+`expected_page_id` so a concurrent change fails without writing. Use
+`create_only: true` when the page must not already exist; do not combine the
+two preconditions.
+
+For a targeted edit, prefer `memory_patch_page`: read the page, pass its
+required `page_id` as `expected_page_id`, and submit one bounded batch.
+`append_to_section` and `add_section` use heading anchors from the read
+response; `replace_section` must also carry that section's returned `sha256`.
+All edits resolve against the same captured body and either commit together or
+write nothing. Missing, duplicate, stale, or conflicting anchors fail closed.
+Use `memory_write_page` when replacing the whole document.
 
 When the user explicitly wants a note to be temporary, pass `expires_at` as an
 RFC3339 instant or a bare `YYYY-MM-DD` (the end of that day in UTC). After the

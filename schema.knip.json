@@ -454,6 +454,10 @@
           "title": "borp plugin configuration (https://knip.dev/reference/plugins/borp)",
           "$ref": "#/definitions/plugin"
         },
+        "buf": {
+          "title": "buf plugin configuration (https://knip.dev/reference/plugins/buf)",
+          "$ref": "#/definitions/plugin"
+        },
         "bumpp": {
           "title": "bumpp plugin configuration (https://knip.dev/reference/plugins/bumpp)",
           "$ref": "#/definitions/plugin"
@@ -532,6 +536,10 @@
         },
         "drizzle": {
           "title": "Drizzle plugin configuration (https://knip.dev/reference/plugins/drizzle)",
+          "$ref": "#/definitions/plugin"
+        },
+        "electron-forge": {
+          "title": "Electron Forge plugin configuration (https://knip.dev/reference/plugins/electron-forge)",
           "$ref": "#/definitions/plugin"
         },
         "electron-vite": {
@@ -630,6 +638,10 @@
           "title": "knex plugin configuration (https://knip.dev/reference/plugins/knex)",
           "$ref": "#/definitions/plugin"
         },
+        "kysely-codegen": {
+          "title": "kysely-codegen plugin configuration (https://knip.dev/reference/plugins/kysely-codegen)",
+          "$ref": "#/definitions/plugin"
+        },
         "ladle": {
           "title": "ladle plugin configuration (https://knip.dev/reference/plugins/ladle)",
           "$ref": "#/definitions/plugin"
@@ -640,6 +652,10 @@
         },
         "lefthook": {
           "title": "lefthook plugin configuration (https://knip.dev/reference/plugins/lefthook)",
+          "$ref": "#/definitions/plugin"
+        },
+        "lingui": {
+          "title": "lingui plugin configuration (https://knip.dev/reference/plugins/lingui)",
           "$ref": "#/definitions/plugin"
         },
         "lint-staged": {
@@ -672,6 +688,14 @@
         },
         "marko": {
           "title": "marko plugin configuration (https://knip.dev/reference/plugins/marko)",
+          "$ref": "#/definitions/plugin"
+        },
+        "mastra": {
+          "title": "mastra plugin configuration (https://knip.dev/reference/plugins/mastra)",
+          "$ref": "#/definitions/plugin"
+        },
+        "mcp": {
+          "title": "mcp plugin configuration (https://knip.dev/reference/plugins/mcp)",
           "$ref": "#/definitions/plugin"
         },
         "mdx": {
@@ -848,6 +872,10 @@
         },
         "prisma": {
           "title": "Prisma plugin configuration (https://knip.dev/reference/plugins/prisma)",
+          "$ref": "#/definitions/plugin"
+        },
+        "purgecss": {
+          "title": "purgecss plugin configuration (https://knip.dev/reference/plugins/purgecss)",
           "$ref": "#/definitions/plugin"
         },
         "quasar": {

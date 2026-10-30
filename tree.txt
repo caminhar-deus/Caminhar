@@ -647,6 +647,7 @@
 │   │   ├── 0026-scanners-estaticos-no-gate-de-push-e-allowlist.md
 │   │   ├── 0027-preco-produto-numeric-e-fluxo-cadastro.md
 │   │   ├── 0028-importacao-mercado-livre-preview-e-preco-positivo.md
+│   │   ├── 0029-unificacao-published-default-false.md
 │   │   ├── README.md
 │   │   └── template.md
 │   └── ai-memory-error.md
@@ -1034,6 +1035,7 @@
 │   │   ├── 017-add-thumbnail-to-videos.js
 │   │   ├── 018-seed-default-roles.js
 │   │   ├── 019-products-price-numeric.js
+│   │   ├── 020-unify-published-column.js
 │   │   ├── seed-migrations-table.js
 │   │   └── verify-applied.js
 │   ├── monitor-disk-space.js
@@ -1396,4 +1398,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-206 directories, 1191 files
+206 directories, 1193 files
