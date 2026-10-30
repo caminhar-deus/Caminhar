@@ -22,6 +22,8 @@ Onde a coluna é nullable no banco, o schema Zod passa a aceitar `null`: `.optio
 
 O form de músicas **continua sem** campo `descricao` (decisão do dono nesta data; pendência de produto).
 
+> **Atualização 2026-10-30 (ADR-0031, mesmo dia):** a pendência de produto foi executada — o form de Músicas ganhou o campo `descricao` (`TextAreaField`, até 500 caracteres, paridade com Vídeos) e os schemas client e server de músicas declaram `descricao: z.string().max(500).optional().nullable()`. A tolerância a `null` desta decisão permanece; a observação de revisão "schema client de músicas não declara descricao" ficou resolvida.
+
 ## Alternativas consideradas
 
 - **Transform `null` → `undefined` nos handlers:** descartada — espalharia normalização por handler; `.nullable()` é o padrão já adotado no server de vídeos.

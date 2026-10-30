@@ -123,6 +123,14 @@ describe('API Administrativa de Configurações (/api/settings)', () => {
       expect(res._getStatusCode()).toBe(400);
     });
 
+    it('deve retornar 400 se site_title for salvo vazio (cabeçalho não pode ficar sem título)', async () => {
+      const { req, res } = createMocks({ method: 'PUT', body: { key: 'site_title', value: '   ' } });
+      await handler(req, res);
+      expect(res._getStatusCode()).toBe(400);
+      expect(JSON.parse(res._getData()).errors).toHaveProperty('value');
+      expect(updateSetting).not.toHaveBeenCalled();
+    });
+
     it('deve retornar 500 se ocorrer um erro interno ao atualizar', async () => {
       updateSetting.mockRejectedValueOnce(new Error('Erro interno'));
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});

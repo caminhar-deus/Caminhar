@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import styles from './Blog.module.css';
 import { query } from '../../lib/infra/db.js';
+import { siteConfig } from '../../lib/seo/config';
 
 /**
  * Página de detalhe de post do blog (rota canônica).
@@ -49,7 +50,7 @@ export default function BlogPost({ post }) {
   return (
     <div className={styles.container} style={{ padding: '40px 20px' }}>
       <Head>
-        <title>{`${post.title} | O Caminhar com Deus`}</title>
+        <title>{`${post.title} | ${siteConfig.name}`}</title>
         <meta name="description" content={post.excerpt || post.content?.substring(0, 160)} />
 
         {/* Open Graph / Facebook / WhatsApp */}
@@ -58,7 +59,7 @@ export default function BlogPost({ post }) {
         <meta property="og:title" content={post.title} />
         <meta property="og:description" content={post.excerpt || post.content?.substring(0, 160)} />
         <meta property="og:image" content={imageUrl} />
-        <meta property="og:site_name" content="O Caminhar com Deus" />
+        <meta property="og:site_name" content={siteConfig.name} />
         <meta property="og:locale" content="pt_BR" />
         <meta property="article:published_time" content={post.created_at} />
 

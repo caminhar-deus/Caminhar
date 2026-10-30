@@ -79,20 +79,22 @@ describe('Componente Front-End - AdminUsersTab', () => {
     commonRow.unmount();
   });
 
-  it('validateUser: deve exigir senha de no mínimo 6 caracteres para novos usuários', () => {
+  it('validateUser: deve exigir senha conforme a política (12+ com maiúscula, minúscula e número) para novos usuários', () => {
     render(<AdminUsersTab />);
     const { validate } = passedProps;
-    expect(() => validate({ id: null, password: '' })).toThrow(/senha é obrigatória/);
-    expect(() => validate({ id: null, password: '123' })).toThrow(/mínimo 6 caracteres/);
-    expect(() => validate({ id: null, password: 'password' })).not.toThrow();
+    expect(() => validate({ id: null, password: '' })).toThrow(/mínimo 12 caracteres/);
+    expect(() => validate({ id: null, password: '123' })).toThrow(/mínimo 12 caracteres/);
+    expect(() => validate({ id: null, password: 'password' })).toThrow(/mínimo 12 caracteres/); // sem maiúscula/número
+    expect(() => validate({ id: null, password: 'Password1234' })).not.toThrow();
   });
 
   it('validateUser: deve validar nova senha na edição, se fornecida', () => {
     render(<AdminUsersTab />);
     const { validate } = passedProps;
     expect(() => validate({ id: 1, password: '' })).not.toThrow(); // Senha em branco (mantém atual)
-    expect(() => validate({ id: 1, password: '123' })).toThrow(/nova senha deve ter/);
-    expect(() => validate({ id: 1, password: 'newpassword' })).not.toThrow();
+    expect(() => validate({ id: 1, password: '123' })).toThrow(/mínimo 12 caracteres/);
+    expect(() => validate({ id: 1, password: 'newpassword' })).toThrow(/mínimo 12 caracteres/); // sem maiúscula/número
+    expect(() => validate({ id: 1, password: 'NewPassword123' })).not.toThrow();
   });
 
   it('formatLastLogin: deve formatar a data ou exibir fallback', () => {
@@ -227,17 +229,17 @@ describe('Componente Front-End - AdminUsersTab', () => {
     it('validateUser: fluxo completo — senha inválida para novo usuário', () => {
       render(<AdminUsersTab />);
       const { validate } = passedProps;
-      expect(() => validate({ id: null, password: '' })).toThrow(/senha é obrigatória/);
-      expect(() => validate({ id: null, password: '12345' })).toThrow(/mínimo 6 caracteres/);
-      expect(() => validate({ id: null, password: '123456' })).not.toThrow();
+      expect(() => validate({ id: null, password: '' })).toThrow(/mínimo 12 caracteres/);
+      expect(() => validate({ id: null, password: '12345' })).toThrow(/mínimo 12 caracteres/);
+      expect(() => validate({ id: null, password: 'Password1234' })).not.toThrow();
     });
 
     it('validateUser: fluxo completo — senha inválida na edição', () => {
       render(<AdminUsersTab />);
       const { validate } = passedProps;
       expect(() => validate({ id: 1, password: '' })).not.toThrow();
-      expect(() => validate({ id: 1, password: '12345' })).toThrow(/nova senha deve ter/);
-      expect(() => validate({ id: 1, password: '123456' })).not.toThrow();
+      expect(() => validate({ id: 1, password: '12345' })).toThrow(/mínimo 12 caracteres/);
+      expect(() => validate({ id: 1, password: 'Password1234' })).not.toThrow();
     });
   });
 });

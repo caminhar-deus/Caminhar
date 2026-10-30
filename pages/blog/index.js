@@ -4,6 +4,7 @@ import styles from './Blog.module.css';
 import PostCard from '../../components/Features/Blog/PostCard';
 import { getRecentPosts } from '../../lib/domain/posts.js';
 import { getOrSetCache } from '../../lib/cache/cache.js';
+import { siteConfig } from '../../lib/seo/config';
 
 export async function getServerSideProps({ query: queryParams }) {
   try {
@@ -40,7 +41,7 @@ export default function BlogIndex({ posts, currentPage, totalPages, fetchError }
   return (
     <div className={styles.container} style={{ padding: '40px 20px' }}>
       <Head>
-        <title>Blog - O Caminhar com Deus</title>
+        <title>{`Blog - ${siteConfig.name}`}</title>
         <meta name="description" content="Compartilhando a jornada da fé através de reflexões e estudos." />
       </Head>
 

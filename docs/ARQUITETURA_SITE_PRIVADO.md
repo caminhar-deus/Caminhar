@@ -2,7 +2,7 @@
 
 > Escopo: painel administrativo em `/admin` (acesso só com login). A área pública está em `docs/ARQUITETURA_SITE_PUBLICO.md`.
 > Fonte: 23 capturas de tela do painel (ambiente local `localhost:3000/admin`).
-> Última atualização: 2026-10-29
+> Última atualização: 2026-10-30
 > Legenda: [PLANEJADO] = alvo ainda não implementado, informado pelo dono | [OBSERVADO] = visto nas imagens | [HIPÓTESE] = inferido, confirmar antes de assumir.
 
 ---
@@ -119,6 +119,7 @@ Todas seguem o mesmo modelo, com pequenas variações:
 - **Formulário:**
   - Título da Música * ("Nome da música")
   - Nome do Artista * ("Nome do artista")
+  - Descrição (até 500 caracteres) — opcional, `TextAreaField` com contador (mesmo padrão de Vídeos)
   - Link do Spotify * (formato `https://open.spotify.com/track/...`) + botão "⚡ Puxar Dados"
   - Publicar música imediatamente (desmarcado → Rascunho)
   - Botão "Cadastrar Música"
@@ -287,7 +288,7 @@ A aba pública "Em Desenvolvimento" não tem gestão no painel.
 | # | Item | Status |
 |---|---|---|
 | 4 | **Nomenclatura:** a permissão é "Gestão de Dicas" e a aba é "Dicas do Dia". | **decidido em 2026-10-27 — manter.** O mapeamento permissão ↔ aba já está documentado no §4.2 e segue o padrão do projeto (`Posts/Artigos` ↔ aba "Reflexões & Estudos" também difere); renomear a permissão exigiria migração dos valores gravados em `roles.permissions` sem ganho funcional |
-| 7 | **Senha mínima de 6 caracteres:** fraca. Considerar elevar para pelo menos 10 a 12 e exigir senha forte para admin. | aberto |
+| 7 | **Senha mínima de 6 caracteres:** fraca. Considerar elevar para pelo menos 10 a 12 e exigir senha forte para admin. | **decidido e executado em 2026-10-30 (ADR-0031)** — política única em `lib/auth/password-policy.js`: mínimo de **12 caracteres** com letra maiúscula, minúscula e número, aplicada à criação e à troca de senha no painel de Usuários (server + client). A senha atual do admin continua válida até a próxima troca; o login não valida comprimento |
 | 16 | **Unificação da nomenclatura de publicação:** coluna `published` em todas as tabelas de conteúdo e default `false` (nada nasce publicado; formulários abrem com o toggle desmarcado) — executa a "evolução futura" registrada no ADR-0025 (item 3). | **decidido e executado em 2026-10-29 (ADR-0029)** — migration `020-unify-published-column` (rename `publicado`→`published` em musicas/videos, preservando dados; `SET DEFAULT false` em musicas, videos, dicas e products); sweep em lockstep no código, testes e schemas (guarda `schema-sources.test.js`); índices da migration 012 atualizados para replay pós `db:reset`. **Deploy: rodar `npm run migrate` no banco de produção** |
 
 ## 9. Regras de proteção do painel administrativo

@@ -1,12 +1,13 @@
 import { query } from '../../../lib/infra/db';
 import { createRecord, updateRecords, deleteRecords } from '../../../lib/crud/crud';
 import { hashPassword } from '../../../lib/auth/auth';
+import { strongPasswordPattern, passwordPolicyMessage } from '../../../lib/auth/password-policy.js';
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
 import { z } from 'zod';
 
 const userCreateSchema = z.object({
-  username: z.string().min(1, 'Nome de usuário é obrigatório'),
-  password: z.string().min(1, 'Senha é obrigatória'),
+  username: z.string().min(3, 'O nome de usuário deve ter no mínimo 3 caracteres'),
+  password: z.string().refine((v) => strongPasswordPattern.test(v), { message: passwordPolicyMessage }),
   // ADR-0010: SEM `.default('admin')` — quem cria usuário declara o cargo
   // explicitamente; POST direto sem `role` é erro de validação, não criação
   // implícita de administrador.
@@ -15,8 +16,10 @@ const userCreateSchema = z.object({
 
 const userUpdateSchema = z.object({
   id: z.number().int('ID deve ser um número inteiro').positive('ID deve ser positivo'),
-  username: z.string().min(1, 'Nome de usuário não pode ser vazio').optional(),
-  password: z.string().optional(),
+  username: z.string().min(3, 'O nome de usuário deve ter no mínimo 3 caracteres').optional(),
+  // Senha vazia/só espaços = "manter a atual" (o handler descarta); quando
+  // preenchida, vale a política completa (ADR-0031).
+  password: z.string().refine((v) => v.trim() === '' || strongPasswordPattern.test(v.trim()), { message: passwordPolicyMessage }).optional(),
   role: z.string().optional(),
 });
 

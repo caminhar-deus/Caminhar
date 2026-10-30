@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import AdminCrudBase from './AdminCrudBase';
 import TextField from './fields/TextField';
 import { z } from 'zod';
+import { isValidPassword, passwordPolicyMessage } from '@/lib/auth/password-policy';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -15,19 +16,20 @@ const userSchema = z.object({
 });
 
 const validateUser = (data) => {
-  // Validação para novos usuários: a senha é obrigatória e deve ter no mínimo 6 caracteres.
-  if (!data.id && (!data.password || data.password.trim().length < 6)) {
-    const error = new Error('A senha é obrigatória e deve ter no mínimo 6 caracteres.');
+  // Política de senha (ADR-0031): 12+ caracteres com maiúscula, minúscula e
+  // número — mesma regra do server (lib/auth/password-policy.js).
+  if (!data.id && (!data.password || !isValidPassword(data.password))) {
+    const error = new Error(passwordPolicyMessage);
     error.errors = {
-      password: ['A senha deve ter no mínimo 6 caracteres para novos usuários.']
+      password: [passwordPolicyMessage]
     };
     throw error;
   }
-  // Validação para atualização: se uma nova senha for fornecida, ela também deve ter no mínimo 6 caracteres.
-  if (data.id && data.password && data.password.trim().length > 0 && data.password.trim().length < 6) {
-    const error = new Error('A nova senha deve ter no mínimo 6 caracteres.');
+  // Validação para atualização: se uma nova senha for fornecida, vale a mesma política.
+  if (data.id && data.password && data.password.trim().length > 0 && !isValidPassword(data.password)) {
+    const error = new Error(passwordPolicyMessage);
     error.errors = {
-      password: ['A nova senha deve ter no mínimo 6 caracteres.']
+      password: [passwordPolicyMessage]
     };
     throw error;
   }
@@ -151,7 +153,7 @@ const fields = [
   {
     name: 'password', component: TextField, label: 'Senha', type: 'password',
     placeholder: 'Deixe em branco para manter a senha atual (apenas na edição)', gridColumn: 'span 2',
-    hint: 'Mínimo de 6 caracteres. Armazenada com hash seguro.'
+    hint: 'Mínimo de 12 caracteres, com letra maiúscula, minúscula e número. Armazenada com hash seguro.'
   },
   {
     name: 'role', component: RoleSelectField, label: 'Cargo / Permissão',

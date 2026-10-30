@@ -2,7 +2,7 @@
 
 > Escopo: apenas a área pública (qualquer visitante). O painel administrativo está documentado em `docs/ARQUITETURA_SITE_PRIVADO.md`.
 > Fonte: 12 capturas de tela do site em desenvolvimento + descrição do dono do projeto.
-> Última atualização: 2026-10-29
+> Última atualização: 2026-10-30
 > Legenda: [PLANEJADO] = alvo ainda não implementado, informado pelo dono | [OBSERVADO] = visto nas imagens | [HIPÓTESE] = inferido, confirmar antes de assumir.
 
 ---
@@ -136,6 +136,8 @@ Esse mapeamento deve ser mantido de forma consistente em toda a documentação.
 | 11 | Reordenar produtos no painel está quebrado: `PUT /api/products` não trata `action: "reorder"` | Alta | **resolvido em 2026-10-21** — `PUT /api/products` agora trata `action: "reorder"` (com invalidação de cache e registro de Auditoria); a opção "Posicionados" foi exposta no seletor (§3.5) |
 | 12 | A rota `/blog` (lista completa) ignora a curadoria por `position`, mostra 9 por página e o CTA diz "Ler artigo completo →" (aqui o rótulo é "Ler mais →") | Média | **resolvido em 2026-10-27** — o SSR de `/blog` passou a usar a mesma camada de domínio e a mesma chave de cache da API `/api/posts` (`getRecentPosts`), obedecendo à curadoria por `position` (§3.1); o CTA voltou ao rótulo padrão "Ler mais →". Mantidos os 9 itens por página (tamanho ainda sem definição própria na documentação) |
 | 13 | Chips de categoria do cartão de post nunca aparecem: a listagem pública de posts não devolve `categories` | Baixa | **resolvido em 2026-10-27** — CRUD completo de categorias no painel (ADR-0024): a listagem pública devolve `categories` por post e o cartão voltou a exibir os chips (display-only, sem link — não há página de arquivo por categoria) |
+| 14 | Nome do site tem fontes divergentes: o painel grava `site_title` (consumido só pela home e pelo título do painel); o blog usa `siteConfig.name` (`lib/seo/config.js`, mesmo valor renderizado desde 2026-10-30); a chave `site_name` do seed/fallback não tem consumidores. Unificação completa (todo o SEO lendo settings do painel) exige config de SEO assíncrona | Planejamento | aberto — mínimo já feito em 2026-10-30 (validação de vazio no Cabeçalho, fallback alinhado a `site_title`, blog lendo `siteConfig.name`) |
+| 15 | `components/SEO/` (Head, StructuredData, index) é código morto: nenhum importador em `pages/`/`components/` (confirmado por grep em 2026-10-30); `_document.js` usa o Head nativo do Next. Remover (candidato a ferramenta de dead-code, ex.: knip). `lib/seo/config.js` NÃO é morto — o blog consome `siteConfig.name` | Baixa | aberto |
 
 ## 8. Regras de proteção do site público
 - A ordem das abas, o nome do site e os textos fixos (título, subtítulos e rótulos) só mudam com pedido explícito do dono.

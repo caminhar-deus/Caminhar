@@ -144,7 +144,7 @@ describe('API Admin - Gestão de Usuários (/api/admin/users)', () => {
   });
 
   describe('POST - Criar Usuário', () => {
-    const validPayload = { username: 'novo_user', password: '123', role: 'admin' };
+    const validPayload = { username: 'novo_user', password: 'SenhaForte123', role: 'admin' };
 
     it('deve retornar 400 se username ou senha estiverem ausentes', async () => {
       const { req, res } = createMocks({ method: 'POST', body: { username: 'apenas_user' } });
@@ -173,7 +173,7 @@ describe('API Admin - Gestão de Usuários (/api/admin/users)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(201);
-      expect(hashPassword).toHaveBeenCalledWith('123');
+      expect(hashPassword).toHaveBeenCalledWith('SenhaForte123');
       expect(createRecord).toHaveBeenCalledWith('users', expect.objectContaining({ password: 'hashed_password_123' }), expect.any(Array));
       expect(logActivity).toHaveBeenCalledWith('admin_user', 'CRIAR USUÁRIO', 'USER', 5, expect.any(String), expect.any(String));
     });
@@ -187,7 +187,7 @@ describe('API Admin - Gestão de Usuários (/api/admin/users)', () => {
 
       const { req, res } = createMocks({
         method: 'POST',
-        body: { username: 'novo_user', password: '123', role: 'cargo-que-nao-existe' },
+        body: { username: 'novo_user', password: 'SenhaForte123', role: 'cargo-que-nao-existe' },
       });
       await handler(req, res);
 
@@ -204,7 +204,7 @@ describe('API Admin - Gestão de Usuários (/api/admin/users)', () => {
 
       const { req, res } = createMocks({
         method: 'POST',
-        body: { username: 'sem_cargo', password: '123' },
+        body: { username: 'sem_cargo', password: 'SenhaForte123' },
       });
       await handler(req, res);
 
@@ -218,12 +218,21 @@ describe('API Admin - Gestão de Usuários (/api/admin/users)', () => {
     it('deve fazer hash de uma NOVA senha se ela for fornecida', async () => {
       updateRecords.mockResolvedValueOnce([{ id: 2, username: 'editado' }]);
       
-      const { req, res } = createMocks({ method: 'PUT', body: { id: 2, password: 'nova_senha' } });
+      const { req, res } = createMocks({ method: 'PUT', body: { id: 2, password: 'NovaSenha123' } });
       await handler(req, res);
       
       expect(res._getStatusCode()).toBe(200);
-      expect(hashPassword).toHaveBeenCalledWith('nova_senha');
+      expect(hashPassword).toHaveBeenCalledWith('NovaSenha123');
       expect(updateRecords).toHaveBeenCalledWith('users', expect.objectContaining({ password: 'hashed_password_123' }), { id: 2 }, expect.any(Array));
+    });
+
+    it('deve retornar 400 se a nova senha não atender à política (ADR-0031)', async () => {
+      const { req, res } = createMocks({ method: 'PUT', body: { id: 2, password: 'nova_senha' } }); // sem maiúscula/número
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(400);
+      expect(JSON.parse(res._getData()).errors).toHaveProperty('password');
+      expect(updateRecords).not.toHaveBeenCalled();
     });
 
     it('NÃO deve processar hash ou tentar alterar a senha se o campo vier vazio ou ausente', async () => {

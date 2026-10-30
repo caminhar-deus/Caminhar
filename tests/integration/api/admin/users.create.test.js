@@ -73,7 +73,7 @@ describe('API de Usuários - Criação (POST /api/admin/users)', () => {
   it('deve criar um novo usuário com sucesso quando os dados são válidos', async () => {
     const newUserPayload = {
       username: 'novo_usuario',
-      password: 'senha_forte_123',
+      password: 'SenhaForte123',
       role: 'editor',
     };
 
@@ -122,7 +122,7 @@ describe('API de Usuários - Criação (POST /api/admin/users)', () => {
   it('deve retornar 400 se o nome de usuário já estiver em uso', async () => {
     const { req, res } = createMocks({
       method: 'POST',
-      body: { username: 'usuario_existente', password: '123', role: 'editor' },
+      body: { username: 'usuario_existente', password: 'SenhaForte123', role: 'editor' },
     });
 
     // Mock 1: Simula a busca de permissões do usuário admin
@@ -136,6 +136,33 @@ describe('API de Usuários - Criação (POST /api/admin/users)', () => {
 
     expect(res._getStatusCode()).toBe(400);
     expect(JSON.parse(res._getData())).toEqual({ error: 'Este nome de usuário já está em uso.' });
+    expect(createRecord).not.toHaveBeenCalled();
+  });
+
+  it('deve retornar 400 se a senha não atender à política (12+ com maiúscula, minúscula e número)', async () => {
+    // ADR-0031: política de senha única (lib/auth/password-policy.js).
+    const { req, res } = createMocks({
+      method: 'POST',
+      body: { username: 'novo_usuario', password: 'senha_forte_123', role: 'editor' }, // sem maiúscula
+    });
+    query.mockResolvedValueOnce({ rows: [{ permissions: ['Segurança', 'Usuários'] }] });
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(400);
+    expect(JSON.parse(res._getData()).errors).toHaveProperty('password');
+    expect(createRecord).not.toHaveBeenCalled();
+  });
+
+  it('deve retornar 400 se o username tiver menos de 3 caracteres', async () => {
+    const { req, res } = createMocks({
+      method: 'POST',
+      body: { username: 'ab', password: 'SenhaForte123', role: 'editor' },
+    });
+    query.mockResolvedValueOnce({ rows: [{ permissions: ['Segurança', 'Usuários'] }] });
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(400);
+    expect(JSON.parse(res._getData()).errors).toHaveProperty('username');
     expect(createRecord).not.toHaveBeenCalled();
   });
 

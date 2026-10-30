@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import styles from './styles/crud.module.css';
 import AdminCrudBase from './AdminCrudBase';
 import TextField from './fields/TextField';
+import TextAreaField from './fields/TextAreaField';
 import UrlField from './fields/UrlField';
 import ToggleField from './fields/ToggleField';
 import ExternalDataButton from './fields/ExternalDataButton';
@@ -14,6 +15,7 @@ import { z } from 'zod';
 const musicaSchema = z.object({
   titulo: z.string().min(1, 'Título é obrigatório'),
   artista: z.string().min(1, 'Artista é obrigatório'),
+  descricao: z.string().max(500, 'Descrição deve ter no máximo 500 caracteres').optional().nullable(),
   url_spotify: z.string().min(1, 'URL do Spotify é obrigatória')
 });
 
@@ -36,6 +38,16 @@ const fields = [
     required: true,
     placeholder: 'Nome do artista',
     gridColumn: 'span 1'
+  },
+  {
+    name: 'descricao',
+    component: TextAreaField,
+    label: 'Descrição',
+    rows: 3,
+    maxLength: 500,
+    placeholder: 'Descrição da música (máximo 500 caracteres)',
+    gridColumn: 'span 2',
+    hint: 'Use até 500 caracteres para descrever a música'
   },
   {
     name: 'url_spotify',
@@ -111,6 +123,7 @@ const columns = [
 const initialFormData = {
   titulo: '',
   artista: '',
+  descricao: '',
   url_spotify: '',
   published: false
 };

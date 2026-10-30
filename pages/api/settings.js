@@ -63,10 +63,11 @@ async function handleGet(req, res) {
       }
 
       // Fallback: se a configuração não existir, retorna valor padrão hardcoded
-      // para garantir que endpoints que dependem de configurações (ex: site_name)
-      // não quebrem durante testes e operação normal.
+      // para garantir que endpoints que dependem de configurações (ex: site_title)
+      // não quebrem durante testes e operação normal. `site_title` é a chave que
+      // o painel grava e a home consome (`site_name` não tem consumidores).
       const DEFAULT_VALUES = {
-        site_name: 'Caminhar',
+        site_title: 'O Caminhar com Deus',
         site_description: 'Compartilhando mensagens de fé e esperança',
         posts_per_page: '10',
         videos_per_page: '10',
@@ -161,11 +162,19 @@ const handlePost = withAuth(async (req, res) => {
  * PUT: Atualiza configuração existente (autenticado, admin/editor)
  */
 const handlePut = withAuth(async (req, res) => {
+  // Título e subtítulo alimentam o cabeçalho do site público: valor vazio (ou
+  // só espaços) deixaria a home sem título. As demais chaves seguem aceitando
+  // qualquer valor (`z.any()` — números, booleanos etc.).
+  const TEXT_SETTINGS = ['site_title', 'site_subtitle'];
   const bodySchema = z.object({
     key: z.string().min(1, { message: 'A chave (key) é obrigatória.' }),
     value: z.any(),
     type: z.string().optional(),
     description: z.string().optional(),
+  }).superRefine((data, ctx) => {
+    if (TEXT_SETTINGS.includes(data.key) && (typeof data.value !== 'string' || data.value.trim().length === 0)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['value'], message: 'O valor não pode ficar vazio.' });
+    }
   });
 
   const validation = bodySchema.safeParse(req.body);

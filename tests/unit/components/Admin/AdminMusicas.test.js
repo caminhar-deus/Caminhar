@@ -37,6 +37,17 @@ describe('Componente Front-End - AdminMusicas', () => {
     expect(passedProps.apiEndpoint).toBe('/api/admin/musicas');
   });
 
+  it('deve validar descricao no schema (opcional, nullable, até 500 caracteres)', () => {
+    render(<AdminMusicas />);
+    const schema = passedProps.validationSchema;
+
+    expect(schema.safeParse({ titulo: 'T', artista: 'A', url_spotify: 'https://open.spotify.com/track/x', descricao: '' }).success).toBe(true);
+    expect(schema.safeParse({ titulo: 'T', artista: 'A', url_spotify: 'https://open.spotify.com/track/x', descricao: null }).success).toBe(true);
+    expect(schema.safeParse({ titulo: 'T', artista: 'A', url_spotify: 'https://open.spotify.com/track/x' }).success).toBe(true);
+    expect(schema.safeParse({ titulo: 'T', artista: 'A', url_spotify: 'https://open.spotify.com/track/x', descricao: 'd'.repeat(500) }).success).toBe(true);
+    expect(schema.safeParse({ titulo: 'T', artista: 'A', url_spotify: 'https://open.spotify.com/track/x', descricao: 'd'.repeat(501) }).success).toBe(false);
+  });
+
   it('deve renderizar a coluna de Spotify customizada contendo link e Iframe HTML', () => {
     render(<AdminMusicas />);
     const spotifyCol = passedProps.columns.find(c => c.key === 'url_spotify');
