@@ -35,6 +35,10 @@ describe('API Admin - Fetch Mercado Livre (/api/admin/fetch-ml)', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // A API do Mercado Livre só é consultada quando existe token OAuth
+    // (desde abr/2025 ela exige Authorization). Os casos abaixo exercitam
+    // justamente o caminho da API.
+    process.env.ML_ACCESS_TOKEN = 'test-token';
     getAuthToken.mockReturnValue('fake-token');
     verifyToken.mockReturnValue({ userId: 1, role: 'admin' });
 
@@ -53,6 +57,7 @@ describe('API Admin - Fetch Mercado Livre (/api/admin/fetch-ml)', () => {
 
   afterEach(() => {
     fetchMock?.mockRestore();
+    delete process.env.ML_ACCESS_TOKEN;
   });
 
   describe('Segurança e Autorização', () => {
@@ -182,11 +187,13 @@ describe('API Admin - Fetch Mercado Livre (/api/admin/fetch-ml)', () => {
     expect(data.price).toBe(2499.99); // O código substituiu o . por nada e a , por .
   });
 
-  it('deve retornar 500 se nada for encontrado (link inativo)', async () => {
+  it('deve retornar 502 se nada for encontrado (link inativo)', async () => {
     global.fetch.mockResolvedValue({ ok: false }); // Tudo falha, HTML e APIs
     const { req, res } = createMocks({ method: 'POST', body: { url: 'https://produto.mercadolivre.com.br/MLB-0000' } });
     await handler(req, res);
-    expect(res._getStatusCode()).toBe(500);
-    expect(JSON.parse(res._getData()).error).toContain('Anúncio inativo ou link inválido');
+    // 502: o link é válido, a leitura da loja é que falhou (antes era 500,
+    // que misturava "loja bloqueou" com "servidor quebrou").
+    expect(res._getStatusCode()).toBe(502);
+    expect(JSON.parse(res._getData()).error).toContain('Não foi possível ler os dados deste link');
   });
 });

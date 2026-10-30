@@ -95,6 +95,7 @@ export default function AdminCrudBase({
     items,
     loading,
     error,
+    formError,
     requestId,
     formData,
     isEditing,
@@ -338,7 +339,7 @@ export default function AdminCrudBase({
           formData={formData}
           handleInputChange={handleInputChange}
           setFieldValue={setFieldValue}
-          error={error}
+          error={formError || error}
           renderCustomFormField={renderCustomFormField}
           loading={loading}
           isEditing={isEditing}

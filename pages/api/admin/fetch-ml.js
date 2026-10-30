@@ -42,7 +42,17 @@ const GENERIC_ERROR_MESSAGE = 'Erro interno ao processar a solicitação.';
  * devolvida ao operador como está. Qualquer outro erro do `catch` vira
  * mensagem genérica — nunca `error.message` cru.
  */
-class BusinessError extends Error {}
+class BusinessError extends Error {
+  /**
+   * @param {string} message - Mensagem amigável exibida ao operador.
+   * @param {number} [status=502] - 502: falha ao ler a loja externa (o link é
+   *   válido, o dado é que não veio). 422: bloqueio anti-bot conhecido.
+   */
+  constructor(message, status = 502) {
+    super(message);
+    this.status = status;
+  }
+}
 
 /**
  * Executa fetch com timeout via AbortController.
@@ -60,6 +70,20 @@ async function fetchWithTimeout(url, options = {}, timeout = FETCH_TIMEOUT) {
 
 const BROWSER_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Accept-Language': 'pt-BR,pt;q=0.9'
+};
+
+/**
+ * Headers de "link preview" para o Mercado Livre.
+ *
+ * Verificado em 29/10/2026: com UA de navegador a partir do servidor, a página
+ * do produto responde 302 → `/gz/account-verification` (muro anti-bot, sem
+ * `<title>` nem `og:*`). Com o UA de um robô de preview o ML entrega a versão
+ * de compartilhamento (16 KB) com `og:title`, `og:image` e `og:description` —
+ * sem preço, que é preenchido manualmente pelo operador.
+ */
+const LINK_PREVIEW_HEADERS = {
+  'User-Agent': 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
   'Accept-Language': 'pt-BR,pt;q=0.9'
 };
 
@@ -111,11 +135,26 @@ function decodeHtmlEntities(text) {
  * Usada pelo fallback do Mercado Livre e como via principal da Amazon e
  * da Shopee (que não oferecem API pública sem credenciais).
  */
-async function scrapeFromHtml(url, { titleCleanup } = {}) {
-  const htmlRes = await fetchWithTimeout(url, { headers: BROWSER_HEADERS });
+async function scrapeFromHtml(url, { titleCleanup, headers = BROWSER_HEADERS } = {}) {
+  const htmlRes = await fetchWithTimeout(url, { headers });
   if (!htmlRes.ok) return null;
 
   const html = await htmlRes.text();
+
+  // Muro anti-bot do Mercado Livre: a página responde 302 para
+  // `/gz/account-verification` (assets `suspicious-traffic-frontend`). Essa
+  // página não tem título nem meta tags — sem esta checagem o operador
+  // recebia "anúncio inativo", que é falso. Vira erro de negócio para chegar
+  // ao operador com a orientação correta.
+  if (
+    /account-verification|suspicious-traffic-frontend/i.test(htmlRes.url || '') ||
+    /suspicious-traffic-frontend/i.test(html)
+  ) {
+    throw new BusinessError(
+      'O Mercado Livre bloqueou a leitura automática deste link. Preencha nome, preço e imagem manualmente.',
+      422,
+    );
+  }
 
   const getMeta = (prop) => {
     const m = html.match(new RegExp(`<meta[^>]+(?:property|name|itemprop)="${prop}"[^>]+content="([^"]+)"`, 'i')) ||
@@ -133,7 +172,10 @@ async function scrapeFromHtml(url, { titleCleanup } = {}) {
   title = decodeHtmlEntities(title);
   if (titleCleanup) title = titleCleanup(title);
 
-  let price = normalizePrice(priceMatch) ?? 0;
+  // `null` (e nunca 0) quando a página não expõe preço: o preview do Mercado
+  // Livre traz título, imagem e descrição, mas não traz valor. Zero seria um
+  // preço falso — e passaria pela validação do formulário.
+  const price = normalizePrice(priceMatch);
 
   return {
     title,
@@ -144,88 +186,143 @@ async function scrapeFromHtml(url, { titleCleanup } = {}) {
 }
 
 /**
- * Mercado Livre: API pública de itens/produtos, com fallback de scraping.
+ * Coleta os códigos de anúncio (MLB…) e os user products (MLBU…) da URL.
+ *
+ * Armadilha do link da busca do Mercado Livre: o `wid` vem DENTRO DO
+ * FRAGMENTO (`…/up/MLBU1104166422#polycard_client=…&wid=MLB2134743881`), não
+ * na query string — `new URL(url).searchParams.get('wid')` devolve `null`.
+ * Por isso a leitura é feita no texto bruto, antes de qualquer parse de URL.
+ *
+ * `MLBU…` é o "user product" (ficha/variante do vendedor) e NÃO casa com
+ * `MLB[-_]?\d+`; o recurso `/user-products/{id}` só responde ao próprio
+ * vendedor autenticado, então o código é coletado apenas para diagnóstico.
+ *
+ * @param {string} decodedUrl
+ * @returns {{ itemCodes: string[], userProductCodes: string[] }}
+ */
+function extractMercadoLivreCodes(decodedUrl) {
+  const normalize = (code) => code.replace(/[-_]/g, '').toUpperCase();
+
+  const ordered = [];
+
+  // Anúncio explícito (`item_id`) tem prioridade; depois o `wid` do fragmento.
+  const explicitItem = decodedUrl.match(/item_id[:=](MLB[-_]?\d+)/i);
+  if (explicitItem) ordered.push(normalize(explicitItem[1]));
+
+  const widMatch = decodedUrl.match(/[?&#]wid=(MLB[-_]?\d+)/i);
+  if (widMatch) ordered.push(normalize(widMatch[1]));
+
+  // Demais códigos MLB presentes na URL (path, query ou fragmento).
+  for (const code of decodedUrl.match(/MLB[-_]?\d+/gi) || []) {
+    ordered.push(normalize(code));
+  }
+
+  return {
+    itemCodes: [...new Set(ordered)],
+    userProductCodes: [
+      ...new Set((decodedUrl.match(/MLBU[-_]?\d+/gi) || []).map(normalize)),
+    ],
+  };
+}
+
+/**
+ * Mercado Livre: API (somente com token OAuth) e preview da página.
+ *
+ * Desde abril/2025 a API exige `Authorization: Bearer` em `/items` e
+ * `/products`. Sem credencial as respostas são 403
+ * (`PA_UNAUTHORIZED_RESULT_FROM_POLICIES`) e 401 (`authorization value not
+ * present`) — verificado em 29/10/2026. Enquanto não houver app OAuth
+ * configurado (`ML_ACCESS_TOKEN`), não gastamos requisições condenadas: o
+ * caminho que funciona é o preview da página.
  */
 async function fetchMercadoLivre(decodedUrl) {
-  // Extrai todos os possíveis códigos MLB da URL
-  const matches = decodedUrl.match(/MLB[-_]?\d+/gi);
-  if (!matches || matches.length === 0) {
-    throw new BusinessError('Nenhum código de produto (MLB) encontrado no link.');
-  }
-
-  // Limpa os IDs encontrados e remove duplicatas
-  let idsToTry = [...new Set(matches.map(id => id.replace(/[-_]/g, '').toUpperCase()))];
-
-  // Se houver um "item_id" explícito, dá prioridade a ele no início da fila
-  const paramMatch = decodedUrl.match(/item_id[:=](MLB[-_]?\d+)/i);
-  if (paramMatch) {
-    const explicitId = paramMatch[1].replace(/[-_]/g, '').toUpperCase();
-    idsToTry.sort((a, b) => a === explicitId ? -1 : b === explicitId ? 1 : 0);
-  }
+  const token = (process.env.ML_ACCESS_TOKEN || '').trim();
+  const { itemCodes } = extractMercadoLivreCodes(decodedUrl);
 
   let foundData = null;
 
-  // Tenta buscar informações na API para cada ID encontrado na URL (Items ou Products)
-  for (const id of idsToTry) {
-    // 1. Tenta como um Anúncio Padrão (Item)
-    const itemRes = await fetchWithTimeout(`https://api.mercadolibre.com/items/${id}`);
-    if (itemRes.ok) {
-      const itemData = await itemRes.json();
-      const descRes = await fetchWithTimeout(`https://api.mercadolibre.com/items/${id}/description`);
+  if (token) {
+    const authHeaders = { Authorization: `Bearer ${token}` };
 
-      foundData = {
-        title: itemData.title,
-        price: itemData.price || 0,
-        images: itemData.pictures?.map(pic => pic.secure_url || pic.url).join('\n') || '',
-        description: descRes.ok ? (await descRes.json()).plain_text : ''
-      };
-      break; // Sucesso
-    }
+    for (const id of itemCodes) {
+      // 1. Tenta como um Anúncio Padrão (Item)
+      const itemRes = await fetchWithTimeout(
+        `https://api.mercadolibre.com/items/${id}`,
+        { headers: authHeaders },
+      );
+      if (itemRes.ok) {
+        const itemData = await itemRes.json();
+        const descRes = await fetchWithTimeout(
+          `https://api.mercadolibre.com/items/${id}/description`,
+          { headers: authHeaders },
+        );
 
-    // 2. Tenta como um Produto de Catálogo (Product)
-    const prodRes = await fetchWithTimeout(`https://api.mercadolibre.com/products/${id}`);
-    if (prodRes.ok) {
-      const prodData = await prodRes.json();
-      const realItemId = prodData.buy_box_winner?.item_id;
-
-      let description = '';
-      if (realItemId) {
-        const descRes = await fetchWithTimeout(`https://api.mercadolibre.com/items/${realItemId}/description`);
-        if (descRes.ok) description = (await descRes.json()).plain_text;
+        foundData = {
+          title: itemData.title,
+          price: itemData.price ?? null,
+          images: itemData.pictures?.map(pic => pic.secure_url || pic.url).join('\n') || '',
+          description: descRes.ok ? (await descRes.json()).plain_text : ''
+        };
+        break; // Sucesso
       }
 
-      foundData = {
-        title: prodData.name,
-        price: prodData.buy_box_winner?.price || 0,
-        images: prodData.pictures?.map(pic => pic.url).join('\n') || '',
-        description
-      };
-      break; // Sucesso
+      // 2. Tenta como um Produto de Catálogo (Product)
+      const prodRes = await fetchWithTimeout(
+        `https://api.mercadolibre.com/products/${id}`,
+        { headers: authHeaders },
+      );
+      if (prodRes.ok) {
+        const prodData = await prodRes.json();
+        const realItemId = prodData.buy_box_winner?.item_id;
+
+        let description = '';
+        if (realItemId) {
+          const descRes = await fetchWithTimeout(
+            `https://api.mercadolibre.com/items/${realItemId}/description`,
+            { headers: authHeaders },
+          );
+          if (descRes.ok) description = (await descRes.json()).plain_text;
+        }
+
+        foundData = {
+          title: prodData.name,
+          price: prodData.buy_box_winner?.price ?? null,
+          images: prodData.pictures?.map(pic => pic.url).join('\n') || '',
+          description
+        };
+        break; // Sucesso
+      }
     }
   }
 
-  // 3. Fallback de Segurança (Scraping): Se as APIs bloquearem a requisição, lemos o HTML da página!
+  // 3. Preview da página: título, imagem e descrição (o preço vem `null`).
   if (!foundData) {
     try {
       foundData = await scrapeFromHtml(decodedUrl, {
+        headers: LINK_PREVIEW_HEADERS,
         titleCleanup: (title) => title.replace(/\s*\|\s*MercadoLivre.*/i, '').trim(),
       });
 
       if (foundData) {
         // Compatibilidade com o formato antigo: "Produto - R$ 89,90" no título
-        if (foundData.price === 0 && foundData.title.includes(' - R$')) {
+        if (foundData.price === null && foundData.title.includes(' - R$')) {
           const parts = foundData.title.split(' - R$');
           foundData.title = parts[0].trim();
-          foundData.price = normalizePrice(parts[1]) ?? 0;
+          foundData.price = normalizePrice(parts[1]);
         }
       }
     } catch (scrapeErr) {
+      // Bloqueio anti-bot é erro de negócio (422) e precisa chegar ao
+      // operador; qualquer outra falha (rede, HTML ilegível) fica só no log.
+      if (scrapeErr instanceof BusinessError) throw scrapeErr;
       logger.error('FetchML', 'Falha no fallback de scraping HTML:', scrapeErr);
     }
   }
 
   if (!foundData) {
-    throw new BusinessError('Anúncio inativo ou link inválido (Nenhum produto/item encontrado).');
+    throw new BusinessError(
+      'Não foi possível ler os dados deste link no Mercado Livre. Preencha nome, preço e imagem manualmente.',
+    );
   }
 
   return foundData;
@@ -292,7 +389,7 @@ async function handlePost(req, res) {
   } catch (error) {
     // Erro de negócio: mensagem amigável, devolvida como está (sem log de erro).
     if (error instanceof BusinessError) {
-      return res.status(500).json({ error: error.message });
+      return res.status(error.status).json({ error: error.message });
     }
     // Erro inesperado (ex.: `decodeURIComponent` com `%` malformado, falha de
     // `logActivity`): o detalhe cru fica só no log do servidor; o cliente

@@ -5,11 +5,14 @@ import AdminProducts from '../../../../components/Admin/AdminProducts.js';
 import toast from 'react-hot-toast';
 import { mockGlobalFetch } from '../../../helpers/index.js';
 
-jest.mock('react-hot-toast', () => ({
-  error: jest.fn(),
-  success: jest.fn(),
-  loading: jest.fn().mockReturnValue('toast-id'),
-}));
+jest.mock('react-hot-toast', () => {
+  // O default export é chamável (toast('msg')) e também tem os helpers.
+  const toast = jest.fn();
+  toast.error = jest.fn();
+  toast.success = jest.fn();
+  toast.loading = jest.fn().mockReturnValue('toast-id');
+  return { __esModule: true, default: toast };
+});
 
 let passedProps;
 jest.mock('../../../../components/Admin/AdminCrudBase', () => {
@@ -199,5 +202,27 @@ describe('Componente Front-End - AdminProducts', () => {
     fireEvent.click(checkboxInput); // Alterna o checkbox
     expect(onChange).toHaveBeenCalled();
     expect(onChange.mock.calls[0][0].target.name).toBe('published');
+  });
+
+  it('handleFetchML: deve deixar o preço vazio e avisar quando a loja não informa o valor', async () => {
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ title: 'Sem preço', price: null, images: 'img.jpg', description: 'Desc' })
+    });
+
+    render(<AdminProducts />);
+    const setFieldValue = jest.fn();
+    const CustomField = passedProps.renderCustomFormField(
+      { name: 'link', component: (props) => <input {...props} /> }, { link: 'https://ml.com' }, jest.fn(), setFieldValue
+    );
+    render(CustomField);
+    fireEvent.click(screen.getByText('⚡ Puxar Dados'));
+
+    await waitFor(() => {
+      // Nunca "0.00": um produto de graça iria para a vitrine
+      expect(setFieldValue).toHaveBeenCalledWith('price', '');
+      expect(setFieldValue).not.toHaveBeenCalledWith('price', '0.00');
+      expect(toast).toHaveBeenCalledWith('A loja não informou o preço — digite o valor antes de salvar.');
+    });
   });
 });

@@ -40,6 +40,13 @@ describe('Componentes Features - Products - ProductCard', () => {
     expect(screen.getByText('R$ 50,00')).toBeInTheDocument();
   });
 
+  it('deve preferir formatted_price ("R$ 149,90") ao valor cru da API ("149.90")', () => {
+    render(<ProductCard product={{ ...baseProduct, price: '149.90', formatted_price: 'R$ 149,90' }} />);
+
+    expect(screen.getByText('R$ 149,90')).toBeInTheDocument();
+    expect(screen.queryByText('149.90')).not.toBeInTheDocument();
+  });
+
   it('deve exibir "Sem imagem" quando o produto não possui imagens', () => {
     const product = { ...baseProduct, image_url: null };
     render(<ProductCard product={product} />);

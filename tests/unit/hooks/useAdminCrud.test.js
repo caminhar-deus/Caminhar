@@ -82,3 +82,82 @@ describe('Hook - useAdminCrud (handleDelete)', () => {
     expect(toast.success).not.toHaveBeenCalled();
   });
 });
+
+describe('Hook - useAdminCrud (handleSubmit: erros da API)', () => {
+  const baseConfig = {
+    apiEndpoint: '/api/products',
+    initialFormData: { name: '', price: '' },
+    autoFetch: false,
+  };
+
+  let fetchMock;
+
+  beforeEach(() => {
+    fetchMock = mockGlobalFetch();
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    fetchMock.mockRestore();
+  });
+
+  const submit = async (result) => {
+    await act(async () => {
+      await result.current.handleSubmit({ preventDefault: jest.fn() }, null);
+    });
+  };
+
+  it('deve expor os erros de campo (formError) e orientar pelo toast quando a validação da API reprova', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({
+        error: 'Bad Request',
+        message: 'Dados inválidos para o produto',
+        errors: { price: ['Valor deve ser maior que zero'] },
+      }),
+    });
+
+    const { result } = renderHook(() => useAdminCrud(baseConfig));
+    await submit(result);
+
+    // Antes o toast mostrava o "Bad Request" cru (data.error vencia data.message)
+    expect(toast.error).toHaveBeenCalledWith(
+      'Verifique os campos em vermelho no formulário.',
+      { id: 'toast-id' }
+    );
+    expect(result.current.formError?.errors).toEqual({
+      price: ['Valor deve ser maior que zero'],
+    });
+  });
+
+  it('deve mostrar a mensagem humana da API quando o erro não tem detalhes de campo', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ error: 'Bad Request', message: 'Dados inválidos para o produto' }),
+    });
+
+    const { result } = renderHook(() => useAdminCrud(baseConfig));
+    await submit(result);
+
+    expect(toast.error).toHaveBeenCalledWith('Dados inválidos para o produto', { id: 'toast-id' });
+    expect(result.current.formError).toBeNull();
+  });
+
+  it('deve limpar os erros de campo ao iniciar um novo envio', async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ error: 'Bad Request', errors: { price: ['Valor deve ser maior que zero'] } }),
+      })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 1 }) });
+
+    const { result } = renderHook(() => useAdminCrud(baseConfig));
+
+    await submit(result);
+    expect(result.current.formError).not.toBeNull();
+
+    await submit(result);
+    expect(result.current.formError).toBeNull();
+    expect(toast.success).toHaveBeenCalled();
+  });
+});

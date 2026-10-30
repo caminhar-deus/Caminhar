@@ -37,6 +37,7 @@ import { useApiFetch } from './useApiFetch';
  * @property {boolean} loading - Estado de carregamento
  * @property {Object|null} error - Erro da operação
  * @property {string|null} requestId - `X-Request-Id` do último erro de listagem (vindo do `useApiFetch`)
+ * @property {Error|null} formError - Erro do último save com detalhes de campo (`err.errors`); limpo a cada novo envio, ao editar e ao resetar
  * @property {Object} formData - Dados do formulário
  * @property {boolean} isEditing - Modo edição ativo
  * @property {number} currentPage - Página atual
@@ -74,6 +75,10 @@ export const useAdminCrud = ({
 }) => {
   const [formData, setFormData] = useState(initialFormData);
   const [isEditing, setIsEditing] = useState(false);
+  // Erro do último save COM detalhes de campo (err.errors) — o CrudForm lê
+  // `error.errors[campo][0]` para pintar o campo em vermelho. Erros de
+  // listagem continuam no `error` do useApiFetch (string).
+  const [formError, setFormError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -149,17 +154,21 @@ export const useAdminCrud = ({
   const handleEdit = (item) => {
     setIsEditing(true);
     setFormData(item);
+    setFormError(null);
   };
 
   const resetForm = useCallback(() => {
     setIsEditing(false);
     setFormData(initialFormData);
+    setFormError(null);
   }, [initialFormData]);
 
   const handleSubmit = async (e, customValidator) => {
     e.preventDefault();
 
     const loadingToastId = toast.loading(isEditing ? 'Atualizando item...' : 'Criando item...');
+    // Cada novo envio limpa os campos em vermelho do envio anterior.
+    setFormError(null);
 
     try {
       if (customValidator) {
@@ -186,7 +195,12 @@ export const useAdminCrud = ({
         // APIs admin devolvem { message } (e algumas legadas { error }); detalhes
         // de campo chegam como { errors: { campo: [msgs] } } (Zod flatten) ou
         // como { details: [{ field, message }] } no padrão antigo.
-        const apiError = new Error(data.error || data.message || 'Ocorreu um erro na API.');
+        // `message` é o texto humano ("Dados inválidos para o produto");
+        // `error` costuma ser a frase técnica do HTTP ("Bad Request") — e era
+        // ele que aparecia no toast, sem dizer o que corrigir. Rotas que só
+        // enviam `error` (ex.: fetch-ml, handler genérico 500) caem no
+        // fallback e continuam legíveis.
+        const apiError = new Error(data.message || data.error || 'Ocorreu um erro na API.');
         if (data.errors && typeof data.errors === 'object') {
           apiError.errors = data.errors;
         } else if (data.details) {
@@ -207,7 +221,14 @@ export const useAdminCrud = ({
       }
 
     } catch (err) {
-      toast.error(err.message || 'Falha na operação.', { id: loadingToastId });
+      if (err.errors && typeof err.errors === 'object') {
+        // Erro de validação com detalhes de campo: guarda para o CrudForm
+        // pintar os campos em vermelho e orienta pelo toast.
+        setFormError(err);
+        toast.error('Verifique os campos em vermelho no formulário.', { id: loadingToastId });
+      } else {
+        toast.error(err.message || 'Falha na operação.', { id: loadingToastId });
+      }
       if (onError) onError(err);
     }
   };
@@ -302,7 +323,7 @@ export const useAdminCrud = ({
   };
 
   return {
-    items, loading, error, requestId, formData, isEditing, currentPage, totalPages,
+    items, loading, error, formError, requestId, formData, isEditing, currentPage, totalPages,
     handleInputChange, setFieldValue, handleEdit, handleSubmit, handleDelete,
     toggleField, resetForm, goToPage, refetch
   };

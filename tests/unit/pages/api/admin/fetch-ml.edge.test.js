@@ -34,10 +34,14 @@ describe('API Admin - Fetch ML (Edge Cases)', () => {
     fetchMock = mockGlobalFetch();
     auth.getAuthToken.mockReturnValue('fake-token');
     auth.verifyToken.mockReturnValue({ role: 'admin' });
+    // A API do Mercado Livre só é consultada quando existe token OAuth
+    // (desde abr/2025 ela exige Authorization em /items e /products).
+    process.env.ML_ACCESS_TOKEN = 'test-token';
   });
 
   afterEach(() => {
     fetchMock?.mockRestore();
+    delete process.env.ML_ACCESS_TOKEN;
   });
 
   it('deve testar a ordenação do array com b === explicitId (linha 35)', async () => {
@@ -52,7 +56,7 @@ describe('API Admin - Fetch ML (Edge Cases)', () => {
 
     await handler(req, res);
 
-    expect(res._getStatusCode()).toBe(500);
+    expect(res._getStatusCode()).toBe(502);
     // O fetch deve ter chamado MLB2222 (item_id explícito) primeiro, depois MLB1111
     expect(global.fetch.mock.calls[0][0]).toContain('MLB2222');
   });
@@ -121,7 +125,7 @@ describe('API Admin - Fetch ML (Edge Cases)', () => {
     expect(res._getStatusCode()).toBe(200);
     expect(res._getJSONData()).toEqual(expect.objectContaining({
       title: 'Título no Fallback',
-      price: 0,
+      price: null,
       images: 'Imagem.jpg',
       description: 'Descrição do Fallback'
     }));
@@ -174,7 +178,8 @@ describe('API Admin - Fetch ML (Edge Cases)', () => {
     });
 
     await handler(req, res);
-    expect(res._getJSONData()).toEqual(expect.objectContaining({ price: 0, images: 'http://pic.jpg' }));
+    // Preço ausente na resposta da API vira null (não 0)
+    expect(res._getJSONData()).toEqual(expect.objectContaining({ price: null, images: 'http://pic.jpg' }));
   });
 
   it('deve estourar catch do fallback de scraping quando htmlRes.text falhar (linha 118, 120)', async () => {
@@ -191,9 +196,11 @@ describe('API Admin - Fetch ML (Edge Cases)', () => {
 
     await handler(req, res);
 
-    expect(res._getStatusCode()).toBe(500);
+    // 502: link válido, leitura da loja falhou (antes era 500 com a mensagem
+    // falsa de "anúncio inativo")
+    expect(res._getStatusCode()).toBe(502);
     expect(res._getJSONData()).toEqual(expect.objectContaining({
-      error: 'Anúncio inativo ou link inválido (Nenhum produto/item encontrado).'
+      error: 'Não foi possível ler os dados deste link no Mercado Livre. Preencha nome, preço e imagem manualmente.'
     }));
     expect(logger.error).toHaveBeenCalledWith('FetchML', 'Falha no fallback de scraping HTML:', expect.any(Error));
   });
@@ -288,5 +295,102 @@ describe('API Admin - Fetch ML (Edge Cases)', () => {
     expect(res._getStatusCode()).toBe(400);
     expect(res._getJSONData()).toEqual(expect.objectContaining({ error: 'Loja não suportada' }));
     expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('deve importar o link real da vitrine (/up/MLBU… com wid no fragmento) pelo preview', async () => {
+    const { req, res } = createMocks({
+      method: 'POST',
+      body: {
+        // Link real do bug (29/10/2026): o wid vem DEPOIS do "#", não na query
+        url: 'https://www.mercadolivre.com.br/crucifixo-de-mesa-parede-madeira-com-metal-sao-bento-25cm/up/MLBU1104166422#polycard_client=search-desktop&wid=MLB2134743881&sid=search'
+      }
+    });
+
+    global.fetch.mockImplementation(async (url) => {
+      // API sem credencial válida: 403/401 na vida real
+      if (url.includes('api.mercadolibre.com')) return { ok: false };
+      return {
+        ok: true,
+        url: 'https://www.mercadolivre.com.br/crucifixo-de-mesa-parede-madeira-com-metal-sao-bento-25cm/up/MLBU1104166422',
+        text: async () => `
+          <html><head>
+            <meta property="og:title" content="Crucifixo De Mesa Parede Madeira Com Metal São Bento 25cm" />
+            <meta property="og:image" content="https://http2.mlstatic.com/D_NQ_NP_741439-MLA104575435325_012026-OO.png" />
+            <meta property="og:description" content="Lindo crucifixo de mesa com pé removível." />
+          </head></html>
+        `
+      };
+    });
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(200);
+    const data = res._getJSONData();
+    expect(data.title).toBe('Crucifixo De Mesa Parede Madeira Com Metal São Bento 25cm');
+    expect(data.images).toContain('http2.mlstatic.com');
+    expect(data.description).toContain('crucifixo de mesa');
+    // O preview não expõe preço: null (nunca 0) — o operador digita
+    expect(data.price).toBeNull();
+    // O `wid` do fragmento foi reconhecido como código do anúncio
+    expect(global.fetch.mock.calls.some(([u]) => String(u).includes('/items/MLB2134743881'))).toBe(true);
+  });
+
+  it('deve avisar sobre bloqueio anti-bot (422) em vez de dizer que o anúncio está inativo', async () => {
+    const { req, res } = createMocks({
+      method: 'POST',
+      body: { url: 'https://www.mercadolivre.com.br/produto/up/MLBU1104166422' }
+    });
+
+    global.fetch.mockImplementation(async (url) => {
+      if (url.includes('api.mercadolibre.com')) return { ok: false };
+      return {
+        ok: true,
+        // O ML redireciona para o muro de verificação quando desconfia do cliente
+        url: 'https://www.mercadolivre.com.br/gz/account-verification?go=https%3A%2F%2Fwww.mercadolivre.com.br',
+        text: async () => '<html><head><link href="https://http2.mlstatic.com/frontend-assets/suspicious-traffic-frontend/gz.css" /></head></html>'
+      };
+    });
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(422);
+    expect(res._getJSONData().error).toContain('bloqueou a leitura automática');
+  });
+
+  it('não deve chamar a API do Mercado Livre quando não há token OAuth', async () => {
+    delete process.env.ML_ACCESS_TOKEN;
+
+    const { req, res } = createMocks({
+      method: 'POST',
+      body: { url: 'https://produto.mercadolivre.com.br/MLB-1234-produto' }
+    });
+
+    global.fetch.mockResolvedValue({
+      ok: true,
+      text: async () => '<meta property="og:title" content="Produto Preview" />'
+    });
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(200);
+    expect(global.fetch.mock.calls.every(([u]) => !String(u).includes('api.mercadolibre.com'))).toBe(true);
+  });
+
+  it('deve aceitar link que só tem MLBU (sem wid) e resolver pelo preview', async () => {
+    const { req, res } = createMocks({
+      method: 'POST',
+      body: { url: 'https://www.mercadolivre.com.br/algum-produto/up/MLBU1104166422' }
+    });
+
+    global.fetch.mockResolvedValue({
+      ok: true,
+      text: async () => '<meta property="og:title" content="Produto UP" />'
+    });
+
+    await handler(req, res);
+
+    // Antes devolvia 400 "Nenhum código de produto (MLB) encontrado no link."
+    expect(res._getStatusCode()).toBe(200);
+    expect(res._getJSONData().title).toBe('Produto UP');
   });
 });

@@ -7,6 +7,7 @@ import ImageUploadField from './fields/ImageUploadField';
 import ExternalDataButton from './fields/ExternalDataButton';
 import { handleReorder } from '@/utils/reorder';
 import { normalizePrice } from '@/lib/api/utils';
+import toast from 'react-hot-toast';
 import { z } from 'zod';
 
 /** Schema de validação Zod para os produtos */
@@ -19,8 +20,14 @@ const productSchema = z.object({
   price: z.preprocess(
     (value) => normalizePrice(value),
     z.number({ required_error: 'Valor é obrigatório', invalid_type_error: 'Valor inválido — use um preço como 89,90' })
+      // Preço zero não é preço: evita publicar R$ 0,00 quando a leitura
+      // automática da loja não devolve o valor (preview do ML).
+      .positive('Valor deve ser maior que zero')
   ),
   link: z.string().url('URL inválida').optional().or(z.literal('')),
+  // Paridade com a API: opcional; string vazia é aceita aqui e o servidor
+  // aplica o default "geral" (o campo sempre existe no formulário).
+  category: z.string().optional(),
   published: z.boolean().optional()
 });
 
@@ -130,8 +137,19 @@ export default function AdminProducts() {
   // Função para processar os dados vindos da loja (com lógica extra de formatação)
   const handleFetchMLSuccess = (data, setFieldValue) => {
     setFieldValue('name', data.title);
-    setFieldValue('price', data.price.toFixed(2));
     setFieldValue('image_url', data.images);
+
+    // O preço pode vir nulo: o preview do Mercado Livre entrega título, imagem
+    // e descrição, mas não o valor. Gravar "0.00" criaria um produto de graça;
+    // o campo fica vazio e o operador digita antes de salvar.
+    const price = Number(data.price);
+    if (Number.isFinite(price) && price > 0) {
+      setFieldValue('price', price.toFixed(2));
+    } else {
+      setFieldValue('price', '');
+      toast('A loja não informou o preço — digite o valor antes de salvar.');
+    }
+
     if (data.description) {
       setFieldValue('description', data.description);
     }

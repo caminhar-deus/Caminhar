@@ -96,7 +96,9 @@ const ProductCard = memo(function ProductCard({ product }) {
         <h3 itemProp="name" className={styles.productName}>{product.name}</h3>
         <p itemProp="description" className={styles.productDescription} title={product.description}>{product.description}</p>
         <strong itemProp="offers" itemScope itemType="https://schema.org/Offer" className={styles.productPrice}>
-          <span itemProp="price">{product.price}</span>
+          {/* A API já manda `formatted_price` (Intl pt-BR); o fallback cobre
+              chamadas diretas do componente com o valor cru. */}
+          <span itemProp="price">{product.formatted_price || product.price}</span>
         </strong>
         
         <div className={styles.linksContainer}>
@@ -161,7 +163,8 @@ ProductCard.propTypes = {
     id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
     name: PropTypes.string.isRequired,
     description: PropTypes.string,
-    price: PropTypes.string,
+    price: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    formatted_price: PropTypes.string,
     image_url: PropTypes.string,
     link: PropTypes.string,
     position: PropTypes.number,

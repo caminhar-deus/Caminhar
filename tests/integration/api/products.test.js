@@ -220,13 +220,45 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
 
       expect(res._getStatusCode()).toBe(201);
       expect(createProduct).toHaveBeenCalledWith(expect.objectContaining({ name: 'Camisa', price: 89.9 }));
-      expect(logActivity).toHaveBeenCalledWith('admin', 'CRIAR PRODUTO', 'PRODUCT', 10, expect.any(String), expect.any(String));
+      // A descrição do log precisa carregar o NOME do produto. Antes o handler
+      // usava a variável livre `name` (inexistente no escopo do Node; no jsdom
+      // resolvia para `window.name` = ""), então em produção a linha lançava
+      // ReferenceError DEPOIS do INSERT e o operador recebia 500 com o produto
+      // já gravado no banco.
+      expect(logActivity).toHaveBeenCalledWith('admin', 'CRIAR PRODUTO', 'PRODUCT', 10, 'Criou o produto: Camisa', expect.any(String));
     });
 
     it('deve retornar 400 se nome e preço estiverem ausentes', async () => {
       const { req, res } = createMocks({ method: 'POST', body: {} });
       await handler(req, res);
       expect(res._getStatusCode()).toBe(400);
+    });
+
+    it('deve rejeitar preço zero (400) — preço zero não é preço', async () => {
+      const { req, res } = createMocks({
+        method: 'POST',
+        body: { name: 'Brinde', price: 0, image_url: 'https://img.jpg' }
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(400);
+      expect(createProduct).not.toHaveBeenCalled();
+      expect(res._getJSONData().errors.price[0]).toContain('maior que zero');
+    });
+
+    it('deve aceitar categoria vazia (o formulário sempre envia a chave) e deixar o domínio aplicar "geral"', async () => {
+      // Regressão do Bad Request de 29/10/2026: `category: ''` era rejeitado
+      // por `min(1)` mesmo com `.optional()` (que só tolera chave ausente).
+      createProduct.mockResolvedValueOnce({ id: 11, name: 'Crucifixo' });
+      const { req, res } = createMocks({
+        method: 'POST',
+        body: { name: 'Crucifixo', price: '149,90', image_url: 'https://img.jpg', category: '', published: true }
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(201);
+      const arg = createProduct.mock.calls.at(-1)[0];
+      expect(arg.category).toBeUndefined();
     });
   });
 
@@ -252,6 +284,16 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(404);
+    });
+
+    it('deve ignorar categoria vazia no update (não gravar "" no banco)', async () => {
+      updateProduct.mockResolvedValueOnce([{ id: 1, name: 'Meia' }]);
+      const { req, res } = createMocks({ method: 'PUT', body: { id: 1, name: 'Meia', category: '' } });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      const arg = updateProduct.mock.calls.at(-1)[1];
+      expect(arg.category).toBeUndefined();
     });
   });
 

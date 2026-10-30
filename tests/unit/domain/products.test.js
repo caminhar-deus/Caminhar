@@ -150,6 +150,38 @@ describe('Domain - Produtos (lib/domain/products.js)', () => {
         price: null,
       }));
     });
+
+    it('deve respeitar published=false na criação (rascunho)', async () => {
+      query.mockResolvedValueOnce({ rows: [{ max_pos: 0 }] });
+      createRecord.mockResolvedValueOnce({ id: 12 });
+
+      await createProduct({ name: 'Rascunho', price: 10, published: false });
+
+      expect(createRecord).toHaveBeenCalledWith('products', expect.objectContaining({
+        published: false,
+      }));
+    });
+
+    it('não deve enviar published quando o campo não veio (mantém o default do banco)', async () => {
+      query.mockResolvedValueOnce({ rows: [{ max_pos: 0 }] });
+      createRecord.mockResolvedValueOnce({ id: 13 });
+
+      await createProduct({ name: 'Sem flag', price: 10 });
+
+      const record = createRecord.mock.calls.at(-1)[1];
+      expect(record).not.toHaveProperty('published');
+    });
+
+    it('deve aplicar o default "geral" quando a categoria vem vazia', async () => {
+      query.mockResolvedValueOnce({ rows: [{ max_pos: 0 }] });
+      createRecord.mockResolvedValueOnce({ id: 14 });
+
+      await createProduct({ name: 'Sem categoria', price: 10, category: '' });
+
+      expect(createRecord).toHaveBeenCalledWith('products', expect.objectContaining({
+        category: 'geral',
+      }));
+    });
   });
 
   describe('updateProduct()', () => {

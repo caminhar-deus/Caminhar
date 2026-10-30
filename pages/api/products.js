@@ -26,9 +26,19 @@ const productFieldSchemas = {
   description: z.string().optional(),
   price: z.union([z.string(), z.number()])
     .transform((value) => normalizePrice(value))
-    .refine((value) => value !== null, 'Valor inválido — use um preço como 89,90'),
+    .refine((value) => value !== null, 'Valor inválido — use um preço como 89,90')
+    // Preço zero não é preço: sem esta regra o "Puxar Dados" que não recebe
+    // valor (preview do Mercado Livre) publicaria um produto de R$ 0,00.
+    .refine((value) => value !== 0, 'Valor deve ser maior que zero'),
   image_url: z.string().trim().min(1, 'Ao menos uma imagem é obrigatória'),
-  category: z.string().trim().min(1).optional(),
+  // O formulário SEMPRE envia a chave (initialFormData manda ''), e
+  // `.optional()` sozinho só tolera chave ausente — por isso todo save sem
+  // categoria digitada dava 400 "Bad Request". '' vira undefined: o create
+  // aplica o default "geral" do domínio (como o doc §4.5 promete) e o update
+  // pula o campo em vez de gravar string vazia no banco (a facet de
+  // categorias da vitrine listaria um bucket vazio).
+  category: z.string().trim().optional()
+    .transform((value) => (value && value.length > 0 ? value : undefined)),
   link: z.string().url('URL inválida').optional().or(z.literal('')),
   published: z.boolean().optional(),
 };
@@ -191,7 +201,7 @@ async function handlePost(req, res) {
     const newProduct = await createProduct(validation.data);
 
     await invalidateCache('products:*');
-    await logActivity(req.user.username, 'CRIAR PRODUTO', 'PRODUCT', newProduct.id, `Criou o produto: ${name}`, ip);
+    await logActivity(req.user.username, 'CRIAR PRODUTO', 'PRODUCT', newProduct.id, `Criou o produto: ${validation.data.name}`, ip);
 
     return res.status(201).json(newProduct);
   } catch (error) {

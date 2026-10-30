@@ -646,6 +646,7 @@
 │   │   ├── 0025-reset-completo-banco-migrations-idempotentes-nomenclatura-publicacao.md
 │   │   ├── 0026-scanners-estaticos-no-gate-de-push-e-allowlist.md
 │   │   ├── 0027-preco-produto-numeric-e-fluxo-cadastro.md
+│   │   ├── 0028-importacao-mercado-livre-preview-e-preco-positivo.md
 │   │   ├── README.md
 │   │   └── template.md
 │   └── ai-memory-error.md
@@ -1395,4 +1396,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-206 directories, 1190 files
+206 directories, 1191 files
