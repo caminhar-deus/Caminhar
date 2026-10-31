@@ -2,16 +2,17 @@ import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import toast from 'react-hot-toast';
 import { useAdminCrud } from '../../../hooks/useAdminCrud.js';
+import { useApiFetch } from '../../../hooks/useApiFetch.js';
 import { mockGlobalFetch } from '../../helpers/index.js';
 
 // Mock do useApiFetch (usado pelo hook para a listagem), evitando chamadas reais
 jest.mock('../../../hooks/useApiFetch.js', () => ({
-  useApiFetch: () => ({
+  useApiFetch: jest.fn(() => ({
     data: { data: [], pagination: null },
     loading: false,
     error: null,
     refetch: jest.fn(),
-  }),
+  })),
 }));
 
 jest.mock('react-hot-toast', () => ({
@@ -159,5 +160,47 @@ describe('Hook - useAdminCrud (handleSubmit: erros da API)', () => {
     await submit(result);
     expect(result.current.formError).toBeNull();
     expect(toast.success).toHaveBeenCalled();
+  });
+});
+
+describe('Hook - useAdminCrud (total do conjunto)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('deve expor totalItems do pagination para o contador do painel', () => {
+    useApiFetch.mockReturnValue({
+      data: {
+        data: [{ id: 1 }],
+        pagination: { page: 1, limit: 10, total: 11, totalPages: 2 },
+      },
+      loading: false,
+      error: null,
+      requestId: null,
+      refetch: jest.fn(),
+    });
+
+    const { result } = renderHook(() =>
+      useAdminCrud({ apiEndpoint: '/api/products', initialFormData: {}, usePagination: true })
+    );
+
+    expect(result.current.totalItems).toBe(11);
+    expect(result.current.totalPages).toBe(2);
+  });
+
+  it('deve cair no tamanho da lista quando a API não retorna paginação', () => {
+    useApiFetch.mockReturnValue({
+      data: { data: [{ id: 1 }, { id: 2 }], pagination: null },
+      loading: false,
+      error: null,
+      requestId: null,
+      refetch: jest.fn(),
+    });
+
+    const { result } = renderHook(() =>
+      useAdminCrud({ apiEndpoint: '/api/products', initialFormData: {} })
+    );
+
+    expect(result.current.totalItems).toBe(2);
   });
 });

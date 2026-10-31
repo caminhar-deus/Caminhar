@@ -2,7 +2,7 @@
 
 > Escopo: apenas a área pública (qualquer visitante). O painel administrativo está documentado em `docs/ARQUITETURA_SITE_PRIVADO.md`.
 > Fonte: 12 capturas de tela do site em desenvolvimento + descrição do dono do projeto.
-> Última atualização: 2026-10-30
+> Última atualização: 2026-10-31
 > Legenda: [PLANEJADO] = alvo ainda não implementado, informado pelo dono | [OBSERVADO] = visto nas imagens | [HIPÓTESE] = inferido, confirmar antes de assumir.
 
 ---
@@ -130,7 +130,7 @@ Esse mapeamento deve ser mantido de forma consistente em toda a documentação.
 | 5 | Banner principal sem imagem (placeholder) | Média | **resolvido em 2026-10-27** — a home usa `home_image_url` diretamente como `src` (filename único por upload → cache por URL seguro) e o fallback `/api/placeholder-image` perdeu o cache `immutable` de 24h e o cache em memória de 5 min do filename (causa do banner desatualizado após troca no painel) |
 | 6 | Cartões de post com rodapé desalinhado | Baixa | **resolvido em 2026-10-21** — o `.content` do `BaseCard` passou a ser flex column (§3.1) |
 | 7 | Aba "Em Desenvolvimento" sem definição | Planejamento | aberto |
-| 8 | Produtos sem cadastro | Planejamento | aberto |
+| 8 | Produtos sem cadastro | Planejamento | **obsoleto/resolvido em 2026-10-31** — a ausência era de **dados de teste**, não do fluxo: com o banco de exercício, cadastro, edição, exclusão, persistência, Rascunho/Publicado e vitrine foram validados ao vivo. A validação encontrou dois defeitos reais **no painel** (não na vitrine): o GET admin de `/api/products` ignorava `search`, e a lista não pedia paginação — a API devolvia 10 itens por padrão e o 11º produto ficava invisível, com o contador "Total: 10". Ambos corrigidos em 2026-10-31 (busca server-side em nome/descrição + 10 itens por página, total do conjunto no contador). Estado do banco na data: 11 produtos de teste, 10 publicados e 1 rascunho (id 3, oculto na vitrine) |
 | 9 | Considerar fallback quando embed falhar (mostrar só o botão/link) | Sugestão | **resolvido em 2026-10-27** — vídeos têm o link externo (§3.4, ADR-0015) e o embed do Spotify agora tem fallback (§3.3, ADR-0023) |
 | 10 | Reordenar posts no painel está quebrado: a reordenação envia `position = 0` e o schema exige posição positiva → erro 400 | Alta | **resolvido em 2026-10-21** — o helper passou a enviar posições 1-based (`utils/reorder.js`); a curadoria por `position` passou a valer (§3.1) |
 | 11 | Reordenar produtos no painel está quebrado: `PUT /api/products` não trata `action: "reorder"` | Alta | **resolvido em 2026-10-21** — `PUT /api/products` agora trata `action: "reorder"` (com invalidação de cache e registro de Auditoria); a opção "Posicionados" foi exposta no seletor (§3.5) |

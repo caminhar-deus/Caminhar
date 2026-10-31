@@ -69,6 +69,25 @@ describe('Domínio - Products (lib/domain/products.js)', () => {
         [20, 0],
       );
     });
+
+    it('deve buscar por nome/descrição e paginar o conjunto filtrado', async () => {
+      query.mockResolvedValueOnce({ rows: [{ count: '2' }] });
+      query.mockResolvedValueOnce({ rows: [{ id: 2, name: 'Bíblia', price: '10' }] });
+
+      const result = await getAllProducts(1, 10, 'Bíblia');
+
+      expect(query).toHaveBeenNthCalledWith(
+        1,
+        'SELECT COUNT(*) FROM products WHERE (name ILIKE $1 OR description ILIKE $1)',
+        ['%Bíblia%'],
+      );
+      expect(query).toHaveBeenNthCalledWith(
+        2,
+        'SELECT * FROM products WHERE (name ILIKE $1 OR description ILIKE $1) ORDER BY position ASC, id ASC LIMIT $2 OFFSET $3',
+        ['%Bíblia%', 10, 0],
+      );
+      expect(result.pagination).toEqual({ page: 1, limit: 10, total: 2, totalPages: 1 });
+    });
   });
 
   describe('createProduct', () => {

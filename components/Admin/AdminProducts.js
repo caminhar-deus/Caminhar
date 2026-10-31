@@ -189,6 +189,10 @@ export default function AdminProducts() {
       columns={columns}
       initialFormData={initialFormData}
       validationSchema={productSchema}
+      // 10 por página (padrão de AdminVideos): sem isso a API admin devolve
+      // só a 1ª página e os demais produtos ficam invisíveis no painel.
+      usePagination={true}
+      itemsPerPage={10}
       // Na edição, exibe o preço no formato pt-BR ("R$ 89,90") — decisão do
       // dono (§8.9): o campo mantém a UX de formato regional. Na gravação,
       // o schema normaliza de volta para número.

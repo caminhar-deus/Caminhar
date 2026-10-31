@@ -102,7 +102,10 @@ async function handlePublicGet(req, res) {
 async function handleAdminGet(req, res) {
   try {
     const { page, limit } = paginate(req.query.page, req.query.limit);
-    const result = await getAllProducts(page, limit);
+    // Busca server-side (antes era só local no painel e a API a ignorava).
+    // `req.query.search` pode vir como array em querystrings duplicadas.
+    const search = typeof req.query.search === 'string' ? req.query.search : '';
+    const result = await getAllProducts(page, limit, search);
     return res.status(200).json(result);
   } catch (error) {
     if (error.message === 'INVALID_PAGINATION_PARAMS') {

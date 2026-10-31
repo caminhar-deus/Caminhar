@@ -74,6 +74,7 @@ describe('Componente Front-End - AdminCrudBase', () => {
     isEditing: false,
     currentPage: 1,
     totalPages: 1,
+    totalItems: 0,
     handleInputChange: jest.fn(),
     setFieldValue: jest.fn(),
     handleEdit: jest.fn(),
@@ -114,6 +115,25 @@ describe('Componente Front-End - AdminCrudBase', () => {
     expect(screen.getByText('Teste CRUD')).toBeInTheDocument();
     expect(screen.getByText('Total: 0 itens')).toBeInTheDocument();
     expect(screen.getByText('Vazio.')).toBeInTheDocument();
+  });
+
+  it('deve exibir o total do conjunto filtrado (todas as páginas) quando paginado', () => {
+    useAdminCrud.mockReturnValue({
+      ...mockUseAdminCrud,
+      items: [{ id: 1, name: 'Produto', status: false }],
+      totalItems: 11,
+      totalPages: 2,
+    });
+    render(
+      <AdminCrudBase
+        {...defaultProps}
+        usePagination={true}
+        showItemCount={true}
+        itemNameSingular="produto cadastrado"
+        itemNamePlural="produtos cadastrados"
+      />
+    );
+    expect(screen.getByText('Total: 11 produtos cadastrados')).toBeInTheDocument();
   });
 
   it('deve renderizar a tabela de itens e os skeletons enquanto carrega', () => {
@@ -271,6 +291,18 @@ describe('Componente Front-End - AdminCrudBase', () => {
 
     fireEvent.click(screen.getByText('Próxima'));
     expect(mockUseAdminCrud.goToPage).toHaveBeenCalledWith(3);
+  });
+
+  it('deve anunciar a paginação e voltar à página 1 ao alterar a busca', () => {
+    useAdminCrud.mockReturnValue({ ...mockUseAdminCrud, usePagination: true, currentPage: 2, totalPages: 3 });
+    render(<AdminCrudBase {...defaultProps} usePagination={true} searchable={true} />);
+
+    const pageInfo = screen.getByText('Página 2 de 3');
+    expect(pageInfo).toHaveAttribute('aria-live', 'polite');
+    expect(pageInfo).toHaveAttribute('aria-atomic', 'true');
+
+    fireEvent.change(screen.getByPlaceholderText('Buscar item...'), { target: { value: 'Bíblia' } });
+    expect(mockUseAdminCrud.goToPage).toHaveBeenCalledWith(1);
   });
 
   it('deve alternar booleanos nativamente, acionar o toggleField e re-renderizar', async () => {

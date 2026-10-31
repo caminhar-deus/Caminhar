@@ -159,7 +159,23 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(200);
-      expect(getAllProducts).toHaveBeenCalledWith(1, 10);
+      expect(getAllProducts).toHaveBeenCalledWith(1, 10, '');
+    });
+
+    it('deve repassar o termo de busca do painel para o domínio', async () => {
+      const adminUser = userFactory({ role: 'admin' });
+      getAuthToken.mockReturnValue('admin-token');
+      verifyToken.mockReturnValue({ userId: adminUser.id, role: adminUser.role });
+      getAllProducts.mockResolvedValueOnce({
+        data: [{ id: 2, name: 'Bíblia' }],
+        pagination: { page: 1, limit: 10, total: 1, totalPages: 1 }
+      });
+
+      const { req, res } = createMocks({ method: 'GET', query: { search: 'Bíblia' } });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      expect(getAllProducts).toHaveBeenCalledWith(1, 10, 'Bíblia');
     });
 
     it('deve retornar 401 no GET admin se não enviar token', async () => {

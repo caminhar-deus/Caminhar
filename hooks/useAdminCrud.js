@@ -42,6 +42,7 @@ import { useApiFetch } from './useApiFetch';
  * @property {boolean} isEditing - Modo edição ativo
  * @property {number} currentPage - Página atual
  * @property {number} totalPages - Total de páginas
+ * @property {number} totalItems - Total de itens do conjunto filtrado (todas as páginas)
  * @property {function} handleInputChange - Manipula mudança em inputs
  * @property {function} setFieldValue - Define valor de campo específico
  * @property {function} handleEdit - Inicia modo edição
@@ -116,6 +117,9 @@ export const useAdminCrud = ({
   // Extrai items e paginação dos dados retornados
   const items = apiData?.data || [];
   const pagination = apiData?.pagination;
+  // Total do conjunto filtrado (não só a página). Usado pelo contador do
+  // AdminCrudBase; quando a API não pagina, cai no tamanho da lista.
+  const totalItems = pagination?.total ?? items.length;
 
   // Atualiza paginação quando os dados mudam
   useEffect(() => {
@@ -323,7 +327,7 @@ export const useAdminCrud = ({
   };
 
   return {
-    items, loading, error, formError, requestId, formData, isEditing, currentPage, totalPages,
+    items, loading, error, formError, requestId, formData, isEditing, currentPage, totalPages, totalItems,
     handleInputChange, setFieldValue, handleEdit, handleSubmit, handleDelete,
     toggleField, resetForm, goToPage, refetch
   };

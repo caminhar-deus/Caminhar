@@ -257,7 +257,7 @@ export default function CrudTable({
           >
             Anterior
           </button>
-          <span className={styles.paginationInfo}>
+          <span className={styles.paginationInfo} aria-live="polite" aria-atomic="true">
             Página {currentPage} de {totalPages}
           </span>
           <button

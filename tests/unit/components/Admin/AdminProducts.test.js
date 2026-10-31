@@ -37,6 +37,10 @@ describe('Componente Front-End - AdminProducts', () => {
     render(<AdminProducts />);
     expect(screen.getByTestId('mock-crud')).toBeInTheDocument();
     expect(passedProps.title).toBe('Gestão de Produtos');
+    // Lista paginada em 10 itens (mesmo padrão de AdminVideos): sem isso a API
+    // admin devolve só a 1ª página e o 11º produto fica invisível.
+    expect(passedProps.usePagination).toBe(true);
+    expect(passedProps.itemsPerPage).toBe(10);
   });
 
   it('deve fazer requisição PUT para reordenar produtos', async () => {

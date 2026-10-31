@@ -101,6 +101,7 @@ export default function AdminCrudBase({
     isEditing,
     currentPage,
     totalPages,
+    totalItems,
     handleInputChange,
     setFieldValue,
     handleEdit,
@@ -173,6 +174,10 @@ export default function AdminCrudBase({
 
   // Os itens exibidos vêm da API (já filtrados server-side quando searchTerm está presente)
   const displayedItems = localItems;
+
+  // Contador do cabeçalho: com paginação, reflete o total do conjunto filtrado
+  // (todas as páginas), não apenas os itens da página corrente.
+  const totalItemCount = usePagination ? totalItems : localItems.length;
 
   // Função para exportar os dados visíveis para CSV.
   // Usa exportColumns (se fornecida) em vez de columns, permitindo que o CSV
@@ -251,7 +256,7 @@ export default function AdminCrudBase({
           <h2 style={{ margin: 0 }}>{title}</h2>
           {showItemCount && (
             <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', fontWeight: '500' }}>
-              Total: {localItems.length} {localItems.length === 1 ? itemNameSingular : itemNamePlural}
+              Total: {totalItemCount} {totalItemCount === 1 ? itemNameSingular : itemNamePlural}
             </span>
           )}
         </div>
@@ -268,7 +273,12 @@ export default function AdminCrudBase({
                 placeholder="Buscar item..."
                 aria-label="Buscar item"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  // Busca server-side + paginação: voltar à 1ª página evita
+                  // ficar numa página vazia do conjunto filtrado.
+                  if (usePagination) goToPage(1);
+                }}
                 style={{ 
                   padding: '8px 12px 8px 34px', 
                   borderRadius: '6px', 
