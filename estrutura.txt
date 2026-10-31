@@ -731,6 +731,7 @@ tests/unit/domain/videos.test.js → lib/domain/videos.js
 tests/unit/domain/videos.test.js → lib/infra/db.js
 tests/unit/domain/videos.test.js → tests/mocks/db-module.js
 tests/unit/hooks/useAdminCrud.test.js → hooks/useAdminCrud.js
+tests/unit/hooks/useAdminCrud.test.js → hooks/useApiFetch.js
 tests/unit/hooks/useAdminCrud.test.js → tests/helpers/index.js
 tests/unit/hooks/useApiFetch.test.js → hooks/useApiFetch.js
 tests/unit/hooks/useApiFetch.test.js → tests/helpers/index.js
