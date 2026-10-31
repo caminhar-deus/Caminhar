@@ -7,7 +7,6 @@
     "tests/**",
     "load-tests/**",
     "scripts/**",
-    "examples/**",
     ".agents/**",
     ".opencode/skills/**",
     "*.config.js",

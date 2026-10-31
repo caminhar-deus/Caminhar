@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import AdminCrudBase from './AdminCrudBase';
 import TextField from './fields/TextField';
 import { z } from 'zod';
-import { isValidPassword, passwordPolicyMessage } from '@/lib/auth/password-policy';
+import { isValidPassword, passwordPolicyMessage, PASSWORD_MIN_LENGTH } from '@/lib/auth/password-policy';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -155,7 +155,7 @@ const fields = [
     // autocomplete="new-password" evita o preenchimento automático da senha
     // salva no navegador ao criar/editar usuário; minLength espelha a política
     // (12+) para o navegador barrar antes do submit (ADR-0031).
-    autoComplete: 'new-password', minLength: 12,
+    autoComplete: 'new-password', minLength: PASSWORD_MIN_LENGTH,
     placeholder: 'Deixe em branco para manter a senha atual (apenas na edição)', gridColumn: 'span 2',
     hint: 'Mínimo de 12 caracteres, com letra maiúscula, minúscula e número. Armazenada com hash seguro.'
   },

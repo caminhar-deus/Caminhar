@@ -91,6 +91,7 @@ Detalhes de operação do slim (matriz de pesquisa websearch/webfetch/gh_grep/co
 5. Área tocada (site público ou painel): as regras de proteção do documento de arquitetura dessa área foram respeitadas (§0.2, regras 1 e 2) e, em mudança estrutural, o arquivo de arquitetura e a data de "Última atualização" foram atualizados (§0.2, regra 5).
 6. Se houve decisão de arquitetura relevante: registrada em `docs/adr/` (ver §3). Senão, nada a registrar. Handoff criado se a sessão terminar incompleta.
 7. Resumo curto do que mudou e do que ficou pendente.
+8. Gate de código morto e de workflows: `npm run knip` e `npm run lint:workflows` sem erros. O CI reprova nos dois (`coverage-report` em `.github/workflows/test-coverage.yml`; `knip.json` tem `treatConfigHintsAsErrors: true`) — export sem consumidor e ignore de diretório removido são erros.
 
 <!-- ai-memory:start -->
 ## Long-term memory (ai-memory)
