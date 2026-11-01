@@ -16,7 +16,7 @@ A pasta `components/` é o coração da interface do projeto, organizada por **m
 | `Features/` | Funcionalidades públicas do site (Blog, Músicas, Vídeos, Produtos, Dicas, Abas) |
 | `Layout/` | Design System de layout (Container, Grid, Stack, Sidebar) |
 | `Performance/` | Otimizações de performance (imagens, iframes, preload, CSS crítico) |
-| `SEO/` | Meta tags e dados estruturados (JSON-LD) |
+| `[removido em ADR-0032]` | Removido (sem importadores) |
 | `UI/` | Design System base (Button, Input, Modal, Toast, etc.) |
 
 Todos os componentes usam **CSS Modules** para escopo de estilos e **variáveis CSS** (`var(--color-*)`, `var(--spacing-*)`) para tema consistente. Há uso extensivo de `PropTypes` e documentação JSDoc.
@@ -282,36 +282,10 @@ Componentes de funcionalidades públicas do site, agrupados por domínio.
 
 ---
 
-## 5. SEO
+## Componentes de SEO
 
-**Localização raiz:** `components/SEO/`
+**Removido em 2026-10-30 (ADR-0032).** `components/SEO/` (Head, StructuredData, index) foi removido por não ter importadores. As 8 funções utilitárias mortas foram podadas de `lib/seo/config.js`. O SEO usa `next/head` nas páginas; `lib/seo/config.js` mantém apenas `siteUrl` e `siteConfig` (usados por `_document.js` e fallback do blog).
 
-### 5.1 Head.js
-
-**Localização:** `SEO/Head.js`
-
-**Propósito:** Meta tags SEO completas. Title, description, keywords, canonical (normalizada), Open Graph, Twitter Cards, favicons, manifest, geo tags, controle de indexação. 164 linhas.
-
-### 5.2 StructuredData
-
-**Localização:** `SEO/StructuredData/`
-
-- **StructuredDataBase.js:** Componente base para JSON-LD. Sanitização via `sanitizeJsonLd`. Reexporta `siteConfig`, `siteUrl`, `formatSchemaDate`, `getImageUrl`.
-- **OrganizationSchema.js:** Schema.org Organization (ONG religiosa). Logo, contato, `knowsAbout`.
-- **WebsiteSchema.js:** Schema.org WebSite. `SearchAction`, `isAccessibleForFree`.
-- **ArticleSchema.js:** Schema.org Article + BlogPosting. Author, publisher, dates, keywords.
-- **BreadcrumbSchema.js:** Schema.org BreadcrumbList. Gera "Início" automaticamente.
-- **MusicSchema.js:** Schema.org MusicRecording. Artista, álbum, duração, letra, Spotify/YouTube.
-- **VideoSchema.js:** Schema.org VideoObject. Thumbnail, duração, views, transcrição.
-- **index.js:** Barrel file. Exporta apenas named exports (`OrganizationSchema`, `WebsiteSchema`, `ArticleSchema`, `BreadcrumbSchema`, `MusicSchema`, `VideoSchema`). O `export default` foi removido por não ser utilizado.
-
-### 5.3 index.js
-
-**Localização:** `SEO/index.js`
-
-**Propósito:** Barrel export. Exporta `SEOHead`, os schemas de StructuredData e reexporta `siteConfig`, `getCanonicalUrl`, `getImageUrl` da lib/seo/config.
-
----
 
 ## 6. UI (Design System — Base)
 
@@ -414,7 +388,7 @@ Componentes de funcionalidades públicas do site, agrupados por domínio.
 
 ## Observações Finais
 
-- A pasta `components/` está organizada por módulo/domínio: Admin, Features, Layout, Performance, SEO, UI.
+- A pasta `components/` está organizada por módulo/domínio: Admin, Features, Layout, Performance, UI. (components/SEO removido em ADR-0032)
 - `BaseCard` unificado com antigo `Card.js` (removido), mantendo ambos os nomes via barrel export.
 - Admin Fields são adaptadores que delegam para componentes base da UI.
 - Uso extensivo de `PropTypes` com documentação JSDoc detalhada.

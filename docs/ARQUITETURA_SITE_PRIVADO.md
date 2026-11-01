@@ -300,7 +300,7 @@ A aba pública "Em Desenvolvimento" não tem gestão no painel.
 ## 9. Regras de proteção do painel administrativo
 - Não renomear abas, permissões nem a ordem das abas sem pedido; renomear uma permissão exige migração dos cargos já salvos.
 - Toda nova aba do painel deve ter uma permissão correspondente em Gestão de Cargos e aparecer na tabela da seção 6.
-- **Proteção do `admin` (regras ainda não implementadas — ver §8, item 8):**
+- **Proteção do `admin` (implementadas — ver §8, item 8):**
   - O usuário `admin` e o cargo `admin` não podem ser excluídos: a API deve recusar a exclusão e o painel não deve oferecer a ação.
   - O usuário `admin` vem e permanece vinculado ao cargo `admin`; esse vínculo não pode ser alterado.
   - O cargo `admin` é o único que vem habilitado por padrão com todas as permissões existentes; os demais cargos nascem com as permissões marcadas no formulário.

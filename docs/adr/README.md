@@ -39,6 +39,9 @@ apoio, não a fonte oficial; a decisão não é duplicada como página de memór
 | [0027](0027-preco-produto-numeric-e-fluxo-cadastro.md) | Preço de produto como NUMERIC(10,2) e fluxo de cadastro de produtos definido | Aceito | 2026-10-29 |
 | [0028](0028-importacao-mercado-livre-preview-e-preco-positivo.md) | Importação do Mercado Livre por preview de link, preço obrigatório maior que zero e correções da vitrine | Aceito | 2026-10-29 |
 | [0029](0029-unificacao-published-default-false.md) | Unificação da nomenclatura de publicação (`published` em todas as tabelas) e default `false` — nada nasce publicado | Aceito | 2026-10-29 |
+| [0030](0030-null-tolerant-admin-edit-schemas.md) | Schemas de edição do painel toleram `null` vindo do banco | Aceito | 2026-10-30 |
+| [0031](0031-password-policy-12-complexity-shared-module.md) | Política de senha única (12 caracteres + complexidade) no painel | Aceito | 2026-10-30 |
+| [0032](0032-site-name-unification-and-seo-cleanup.md) | Nome do site unificado no blog (settings do painel) e remoção do SEO morto | Aceito | 2026-10-30 |
 
 ## Quando criar um ADR
 

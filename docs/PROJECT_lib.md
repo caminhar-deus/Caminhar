@@ -37,8 +37,8 @@
 7. [Subpasta `lib/media/`](#7-subpasta-libmedia)
    - [7.1 `lib/media/spotify.js`](#71-libmediaspotifyjs)
    - [7.2 `lib/media/youtube.js`](#72-libmediayoutubejs)
-8. [Subpasta `lib/seo/`](#8-subpasta-libseo)
-   - [8.1 `lib/seo/config.js`](#81-libseoconfigjs)
+8. [Subpasta `lib/seo/config`](#8-subpasta-libseo)
+   - [8.1 `lib/seo/configconfig.js`](#81-libseoconfigjs)
 9. [Resumo Consolidado](#9-resumo-consolidado)
 
 ---
@@ -596,45 +596,10 @@ Utilitários de extração de IDs de plataformas de mídia.
 
 ---
 
-## 8. Subpasta `lib/seo/`
+## 8. Subpasta 
 
-### 8.1 `lib/seo/config.js`
+**Estado (ADR-0032):**  removido. De  restam apenas  e  (usados por  e fallback do blog). As funções utilitárias mortas (, , , , , , , ) foram podadas.
 
-**Localização:** `/lib/seo/config.js`
-
-**Propósito:** Centralização de todas as configurações de SEO do site "O Caminhar com Deus", incluindo metadados, Schema.org, breadcrumbs e funções utilitárias.
-
-**Configuração exportada (`siteConfig`):**
-
-| Seção | Conteúdo |
-|-------|----------|
-| Básico | `name`, `shortName`, `description`, `shortDescription`, `url`, `language` (pt-BR), `locale` (pt_BR), `timezone` |
-| Branding | `logo`, `defaultImage`, `favicon` |
-| Autor | `author.name`, `author.email`, `author.url` |
-| Social | URLs de Twitter, Facebook, Instagram, YouTube, Spotify |
-| Contato | `email`, `phone`, `address` (dados de endereço vazios) |
-| Seções | `blog`, `musicas`, `videos` — cada com `name`, `description`, `slug` |
-| Feed RSS | `title`, `description`, `copyright` |
-| SEO técnico | `noindexPaths` (admin, api, test, _next, 404, 500), `sitemap` (changefreq/priority), `ogImage` (1200×630) |
-| Schema.org Organization | `@type: Organization`, `name`, `url`, `logo`, `sameAs`, `contactPoint` |
-| Schema.org WebSite | `@type: WebSite`, `potentialAction: SearchAction` |
-
-**Funções utilitárias exportadas:**
-
-| Função | Descrição |
-|--------|-----------|
-| `getCanonicalUrl(path)` | Gera URL canônica completa (prefixa com `siteUrl`) |
-| `getImageUrl(imagePath)` | Resolve URL absoluta de imagem (fallback: `defaultImage`) |
-| `formatSchemaDate(date)` | Formata data para ISO 8601; `null` se inválida |
-| `truncateDescription(text, maxLength)` | Trunca texto para meta description (160 chars default), cortando na última palavra |
-| `extractKeywords(tags, max)` | Extrai keywords de tags (lowercase, limitado a 10) |
-| `sanitizeJsonLd(schema)` | Sanitiza JSON-LD prevenindo XSS — escapa `</script>` |
-| `shouldIndex(path)` | Verifica se página deve ser indexada (suporta wildcard `/*` no padrão) |
-| `generateBreadcrumb(items)` | Gera breadcrumb com "Início" fixo + itens |
-
-**Observações:** `siteUrl` vem de `SITE_URL` env com fallback `http://localhost:3000`. Campos de endereço e telefone estão vazios (ver UPGRADE 6.2). Descrições de seção duplicam a descrição geral do site (ver UPGRADE 5.1/5.2).
-
----
 
 ## 9. Resumo Consolidado
 
@@ -664,7 +629,7 @@ Utilitários de extração de IDs de plataformas de mídia.
 | **Infra** | `infra/storage.js` | Resolução única dos diretórios de upload (ativo + legado) |
 | **Mídia** | `media/spotify.js` | Extração de IDs do Spotify |
 | **Mídia** | `media/youtube.js` | Extração de IDs do YouTube |
-| **SEO** | `seo/config.js` | Configurações de SEO, Schema.org e utilitários |
+| **SEO** | `lib/seo/config.js` | Configurações de SEO (siteUrl/siteConfig). Funções utilitárias podadas em ADR-0032. |
 
 ### Fluxos de dependência principais
 
