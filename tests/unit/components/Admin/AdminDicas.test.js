@@ -20,6 +20,12 @@ describe('Componente Front-End - AdminDicas', () => {
     expect(passedProps.title).toBe('Gerenciar Dicas do Dia');
     expect(passedProps.apiEndpoint).toBe('/api/admin/dicas');
     expect(passedProps.itemNameSingular).toBe('dica');
+    expect(passedProps.usePagination).toBe(true);
+    expect(passedProps.itemsPerPage).toBe(10);
+    // Lista paginada em 10 itens (mesmo padrão de AdminVideos): sem isso a API
+    // admin devolve só a 1ª página e as demais dicas ficam invisíveis.
+    expect(passedProps.usePagination).toBe(true);
+    expect(passedProps.itemsPerPage).toBe(10);
   });
 
   it('a coluna "content" deve formatar e truncar textos maiores que 80 caracteres', () => {

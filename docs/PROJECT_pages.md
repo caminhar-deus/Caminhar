@@ -476,7 +476,7 @@ Todos os endpoints públicos seguem o mesmo padrão: validação de método HTTP
   - `zod` (dependência externa) — `dicaSchema`, `dicaUpdateSchema`.
 - **Propósito:** CRUD administrativo de dicas.
 - **Funcionalidades:**
-  - GET (lista completa, inclui não publicadas).
+  - GET com paginação (limite padrão 10) e busca em name/content, inclui não publicadas.
   - POST com validação Zod (`dicaSchema`) — nome e conteúdo obrigatórios, `published` default `true`; invalida `dicas:public:*`.
   - PUT com esquema de **atualização parcial**: se campos faltarem, busca valores atuais e faz merge antes de validar (`dicaUpdateSchema`); invalida `dicas:public:*`.
   - DELETE com invalidação de `dicas:public:*` e log de auditoria.

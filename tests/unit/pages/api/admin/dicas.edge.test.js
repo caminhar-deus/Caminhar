@@ -3,6 +3,7 @@ import { createMocks } from 'node-mocks-http';
 import handler from '../../../../../pages/api/admin/dicas.js';
 import * as db from '../../../../../lib/infra/db.js';
 import { logActivity } from '../../../../../lib/domain/audit.js';
+import { getPaginatedDicas } from '../../../../../lib/domain/dicas.js';
 
 jest.mock('../../../../../lib/infra/db.js', () => require('../../../../mocks/db-module').mockDb());
 
@@ -12,6 +13,12 @@ jest.mock('../../../../../lib/auth/auth.js', () => ({
 
 jest.mock('../../../../../lib/domain/audit.js', () => ({
   logActivity: jest.fn()
+}));
+
+// Mock do domínio: sem isso o GET chamaria o banco real para paginar (o
+// beforeEach já enfileira a resposta do RBAC para db.query).
+jest.mock('../../../../../lib/domain/dicas.js', () => ({
+  getPaginatedDicas: jest.fn()
 }));
 
 describe('API - Admin - Dicas (Edge Cases)', () => {
@@ -32,6 +39,25 @@ describe('API - Admin - Dicas (Edge Cases)', () => {
     // RBAC: createAdminHandler queries roles.permissions before the handler runs,
     // so this must be queued before each test's mockResolvedValueOnce.
     db.query.mockResolvedValueOnce({ rows: [{ permissions: ['Gestão de Dicas'] }] });
+  });
+
+  it('deve paginar e buscar no GET via domínio (page/limit/search repassados)', async () => {
+    req.method = 'GET';
+    req.query = { page: '2', limit: '5', search: 'fé' };
+
+    const paginated = {
+      data: [{ id: 3, name: 'Mensagem de fé', content: 'Confie em Deus.' }],
+      pagination: { page: 2, limit: 5, total: 12, totalPages: 3 },
+    };
+    getPaginatedDicas.mockResolvedValueOnce(paginated);
+
+    await handler(req, res);
+
+    expect(getPaginatedDicas).toHaveBeenCalledWith(2, 5, 'fé');
+    expect(res._getStatusCode()).toBe(200);
+    const body = res._getJSONData();
+    expect(body.data).toEqual(paginated.data);
+    expect(body.pagination).toEqual(paginated.pagination);
   });
 
   it('deve usar o IP unknown e valor padrão de published (false, ADR-0029) no POST', async () => {

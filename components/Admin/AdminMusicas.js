@@ -189,6 +189,10 @@ export default function AdminMusicasNew() {
       columns={columns}
       initialFormData={initialFormData}
       validationSchema={musicaSchema}
+      // 10 por página (padrão de AdminVideos): sem isso a API admin devolve
+      // só a 1ª página e as demais músicas ficam invisíveis no painel.
+      usePagination={true}
+      itemsPerPage={10}
       newButtonText="+ Nova Música"
       saveButtonText="Cadastrar Música"
       updateButtonText="Atualizar Música"
@@ -201,6 +205,8 @@ export default function AdminMusicasNew() {
       showItemCount={true}
       itemNameSingular="música cadastrada"
       itemNamePlural="músicas cadastradas"
+      usePagination={true}
+      itemsPerPage={10}
     />
   );
 }

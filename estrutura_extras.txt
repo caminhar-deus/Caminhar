@@ -203,6 +203,7 @@ lib/domain/categories.js → lib/crud/crud.js
 lib/domain/categories.js → lib/infra/db.js
 lib/domain/categories.js → lib/domain/shared-pagination.js
 lib/domain/shared-pagination.js → lib/infra/db.js
+lib/domain/dicas.js → lib/domain/shared-pagination.js
 lib/domain/images.js → lib/crud/crud.js
 lib/domain/musicas.js → lib/crud/crud.js
 lib/domain/musicas.js → lib/infra/db.js
@@ -350,6 +351,7 @@ pages/api/admin/categories.js → lib/domain/categories.js
 pages/api/admin/categories.js → lib/infra/db.js
 pages/api/admin/dicas.js → lib/api/adminCrudHandler.js
 pages/api/admin/dicas.js → lib/cache/cache.js
+pages/api/admin/dicas.js → lib/domain/dicas.js
 pages/api/admin/dicas.js → lib/infra/db.js
 pages/api/admin/fetch-ml.js → lib/api/adminCrudHandler.js
 pages/api/admin/fetch-ml.js → lib/api/utils.js
@@ -979,6 +981,9 @@ tests/unit/lib/db/updatePost.test.js → lib/infra/db.js
 tests/unit/lib/domain/categories.test.js → lib/domain/categories.js
 tests/unit/lib/domain/categories.test.js → lib/infra/db.js
 tests/unit/lib/domain/categories.test.js → tests/mocks/db-module.js
+tests/unit/lib/domain/dicas.test.js → lib/domain/dicas.js
+tests/unit/lib/domain/dicas.test.js → lib/infra/db.js
+tests/unit/lib/domain/dicas.test.js → tests/mocks/db-module.js
 tests/unit/lib/domain/permissions.test.js → lib/domain/permissions.js
 tests/unit/lib/domain/products.test.js → lib/crud/crud.js
 tests/unit/lib/domain/products.test.js → lib/domain/products.js
@@ -991,6 +996,7 @@ tests/unit/lib/seo/config.test.js → lib/seo/config.js
 tests/unit/load-tests/error-gate-coverage.test.js → load-tests/helpers/profiles.js
 tests/unit/load-tests/profiles.test.js → load-tests/helpers/profiles.js
 tests/unit/pages/api/admin/dicas.edge.test.js → lib/domain/audit.js
+tests/unit/pages/api/admin/dicas.edge.test.js → lib/domain/dicas.js
 tests/unit/pages/api/admin/dicas.edge.test.js → lib/infra/db.js
 tests/unit/pages/api/admin/dicas.edge.test.js → pages/api/admin/dicas.js
 tests/unit/pages/api/admin/dicas.edge.test.js → tests/mocks/db-module.js

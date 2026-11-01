@@ -35,6 +35,10 @@ describe('Componente Front-End - AdminMusicas', () => {
     expect(screen.getByTestId('mock-crud')).toBeInTheDocument();
     expect(passedProps.title).toBe('Gestão de Músicas');
     expect(passedProps.apiEndpoint).toBe('/api/admin/musicas');
+    // Lista paginada em 10 itens (mesmo padrão de AdminVideos): sem isso a API
+    // admin devolve só a 1ª página e as demais músicas ficam invisíveis.
+    expect(passedProps.usePagination).toBe(true);
+    expect(passedProps.itemsPerPage).toBe(10);
   });
 
   it('deve validar descricao no schema (opcional, nullable, até 500 caracteres)', () => {

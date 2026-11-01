@@ -140,6 +140,10 @@ export default function AdminCategories() {
       initialFormData={initialFormData}
       validationSchema={categorySchema}
       renderCustomFormField={renderCustomFormField}
+      // 10 por página (padrão de AdminVideos): sem isso a API admin devolve
+      // só a 1ª página e as demais categorias ficam invisíveis no painel.
+      usePagination={true}
+      itemsPerPage={10}
       newButtonText="+ Nova Categoria"
       saveButtonText="Salvar"
       updateButtonText="Atualizar"
@@ -148,6 +152,8 @@ export default function AdminCategories() {
       showItemCount={true}
       itemNameSingular="categoria cadastrada"
       itemNamePlural="categorias cadastradas"
+      usePagination={true}
+      itemsPerPage={10}
     />
   );
 }

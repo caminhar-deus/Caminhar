@@ -36,6 +36,10 @@ describe('Componente Front-End - AdminPosts', () => {
     expect(screen.getByTestId('mock-crud')).toBeInTheDocument();
     expect(passedProps.title).toBe('Gerenciar Posts');
     expect(passedProps.apiEndpoint).toBe('/api/admin/posts');
+    // Lista paginada em 10 itens (mesmo padrão de AdminVideos): sem isso a API
+    // admin devolve só a 1ª página e os demais posts ficam invisíveis.
+    expect(passedProps.usePagination).toBe(true);
+    expect(passedProps.itemsPerPage).toBe(10);
   });
 
   it('deve fazer requisição PUT para reordenar posts e lidar com sucesso e falha', async () => {
@@ -159,6 +163,9 @@ describe('Componente Front-End - AdminPosts', () => {
     // O AdminCrudBase está mockado: o mock recebe a config do AdminCategories
     expect(passedProps.title).toBe('Gerenciar Categorias');
     expect(passedProps.apiEndpoint).toBe('/api/admin/categories');
+    // Categorias também é paginada em 10 itens (mesmo padrão de AdminVideos)
+    expect(passedProps.usePagination).toBe(true);
+    expect(passedProps.itemsPerPage).toBe(10);
 
     fireEvent.click(screen.getByRole('button', { name: 'Posts' }));
     expect(passedProps.title).toBe('Gerenciar Posts');

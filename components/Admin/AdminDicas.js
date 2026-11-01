@@ -83,6 +83,10 @@ export default function AdminDicas() {
       itemNameSingular="dica"
       itemNamePlural="dicas"
       searchable={true}
+      // 10 por página (padrão de AdminVideos): sem isso a API admin devolve
+      // só a 1ª página e as demais dicas ficam invisíveis no painel.
+      usePagination={true}
+      itemsPerPage={10}
       exportable={true}
       // CSV com o conteúdo integral: o format da coluna da tabela trunca a 80
       // caracteres (só apresentacional) e descartaria o dado principal da dica.
@@ -92,6 +96,8 @@ export default function AdminDicas() {
         { key: 'content', header: 'Conteúdo' },
         { key: 'published', header: 'Status' }
       ]}
+      usePagination={true}
+      itemsPerPage={10}
     />
   );
 }

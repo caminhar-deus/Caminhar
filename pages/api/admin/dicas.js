@@ -1,4 +1,5 @@
 import { query } from '../../../lib/infra/db.js';
+import { getPaginatedDicas } from '../../../lib/domain/dicas.js';
 import { invalidateCache } from '../../../lib/cache/cache.js';
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
 import { z } from 'zod';
@@ -17,8 +18,16 @@ const dicaUpdateSchema = z.object({
 });
 
 async function handleGet(req, res) {
-  const result = await query('SELECT * FROM dicas ORDER BY id ASC');
-  return res.status(200).json({ data: result.rows });
+  // Desabilita cache para garantir que a lista administrativa esteja sempre atualizada
+  res.setHeader('Cache-Control', 'no-store, max-age=0, must-revalidate');
+
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const search = req.query.search || '';
+
+  const result = await getPaginatedDicas(page, limit, search);
+
+  return res.status(200).json(result);
 }
 
 async function handlePost(req, res) {

@@ -86,7 +86,9 @@ Todas seguem o mesmo modelo, com pequenas variações:
 ### 4.2 Posts/Artigos
 - **Título:** "Gerenciar Posts". Botão: "+ Novo Post".
 - **Toggle de visualização (desde 2026-10-27, ADR-0024):** no topo da aba, controle segmentado **"Posts | Categorias"** alterna entre o CRUD de posts e o CRUD de categorias (§4.2.1). Padrão: "Posts".
+- **Listagem e busca (2026-10-31):** a lista é paginada em **10 itens por página** (`Anterior`/`Próxima`/`Página X de Y`) e a busca do cabeçalho é **server-side** com paginação. O contador do topo mostra o **total do conjunto filtrado** (todas as páginas), não apenas os itens da página; alterar a busca volta para a página 1. O "Exportar CSV" exporta apenas os itens da página visível.
 - **Tabela:** ☰ | ID | Título | Status | Data | Ações. Vazio: "Nenhum post encontrado."
+- **Listagem e busca (2026-10-31):** a lista é paginada em **10 itens por página** (`Anterior`/`Próxima`/`Página X de Y`, mesmo padrão de Vídeos) e a busca do cabeçalho é **server-side** em título (`GET /api/admin/posts?search=...`, filtro `ILIKE` antes da contagem e da paginação). O contador do topo mostra o **total do conjunto filtrado** (todas as páginas), não apenas os itens da página; alterar a busca volta para a página 1. Antes, o painel não pedia paginação e a API admin devolvia só a primeira página (10 itens). O "Exportar CSV" continua exportando apenas os itens da página visível (comportamento documentado em §8, item 6).
 - **Formulário:**
   | Campo | Obrigatório | Regra/dica |
   |---|---|---|
@@ -102,6 +104,7 @@ Todas seguem o mesmo modelo, com pequenas variações:
 
 ### 4.2.1 Categorias (dentro da aba Posts/Artigos)
 - **API:** `/api/admin/categories` (CRUD completo; permissão **Posts/Artigos**; mutações invalidam o cache `posts:*`). `GET /api/admin/categories?all=1` devolve a lista completa sem paginação (usado pelo campo de seleção do formulário de post).
+- **Listagem e busca (2026-10-31):** a listagem do CRUD é paginada em **10 por página** (`Anterior`/`Próxima`/`Página X de Y`, mesmo padrão de Vídeos) e a busca do cabeçalho é **server-side** em nome/slug (`GET /api/admin/categories?search=...`, filtro `ILIKE` antes da contagem e da paginação). O contador do topo mostra o **total do conjunto filtrado** (todas as páginas); alterar a busca volta para a página 1. Antes, o painel não pedia paginação e a API admin devolvia só a primeira página (10 itens); o `?all=1` (lista completa) continua sendo usado apenas pelo select do formulário de post.
 - **Tabela:** ID (60px) | Nome | Slug. Vazio: "Nenhuma categoria cadastrada."
 - **Formulário:**
   | Campo | Obrigatório | Regra/dica |
@@ -115,6 +118,7 @@ Todas seguem o mesmo modelo, com pequenas variações:
 
 ### 4.3 Gestão de Músicas
 - **Botão:** "+ Nova Música".
+- **Listagem e busca (2026-10-31):** a lista é paginada em **10 itens por página** (`Anterior`/`Próxima`/`Página X de Y`) e a busca do cabeçalho é **server-side** com paginação. O contador do topo mostra o **total do conjunto filtrado** (todas as páginas), não apenas os itens da página; alterar a busca volta para a página 1. Antes, o painel não pedia paginação e a API admin devolvia só a primeira página (10 itens): com **16 músicas** no banco, **6 ficavam invisíveis** e o contador mostrava "Total: 10". O "Exportar CSV" exporta apenas os itens da página visível.
 - **Tabela:** ☰ | ID | Título | Artista | Spotify | Status | Ações. Vazio: "Nenhuma música cadastrada ainda."
 - **Formulário:**
   - Título da Música * ("Nome da música")
@@ -155,6 +159,7 @@ Todas seguem o mesmo modelo, com pequenas variações:
 
 ### 4.6 Dicas do Dia
 - **Título:** "Gerenciar Dicas do Dia". Botões: "Exportar CSV" e "+ Novo" (padrão §3, igual às demais telas de conteúdo). O CSV traz o **conteúdo integral** da dica (a coluna "Conteúdo" da tabela trunca a 80 caracteres apenas para exibição).
+- **Listagem e busca (2026-10-31):** a lista é paginada em **10 itens por página** (`Anterior`/`Próxima`/`Página X de Y`) e a busca do cabeçalho é **server-side** em nome/conteúdo (`GET /api/admin/dicas?search=...`). Antes, o GET admin ignorava `search`, `page` e `limit` (listagem completa), de modo que a busca digitada não filtrava os resultados. O contador do topo mostra o **total do conjunto filtrado** (todas as páginas); alterar a busca volta para a página 1. O "Exportar CSV" exporta apenas os itens da página visível.
 - **Tabela:** ID | Nome | Conteúdo | Status | Ações (sem coluna ☰). Vazio: "Nenhum item cadastrado ainda."
 - **Formulário (2 colunas):**
   - Nome da Dica * (ex.: "Mensagem de fé")

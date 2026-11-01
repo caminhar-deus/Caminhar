@@ -50,8 +50,8 @@ describe('Componente Front-End - AdminCategories', () => {
       expect(screen.getByText('oracao')).toBeInTheDocument();
     });
 
-    // Listagem sem paginação: a URL é o endpoint puro
-    expect(fetchMock).toHaveBeenCalledWith('/api/admin/categories', { credentials: 'include' });
+    // Listagem paginada em 10 itens (mesmo padrão das demais telas de conteúdo)
+    expect(fetchMock).toHaveBeenCalledWith('/api/admin/categories?page=1&limit=10', { credentials: 'include' });
   });
 
   it('deve exibir a mensagem de lista vazia', async () => {

@@ -369,6 +369,10 @@ export default function AdminPostsNew() {
           validate={validate}
           renderCustomFormField={renderCustomFormField}
           mapItemToFormData={mapItemToFormData}
+          // 10 por página (padrão de AdminVideos): sem isso a API admin devolve
+          // só a 1ª página e os demais posts ficam invisíveis no painel.
+          usePagination={true}
+          itemsPerPage={10}
           newButtonText="+ Novo Post"
           saveButtonText="Salvar"
           updateButtonText="Atualizar"
@@ -380,6 +384,8 @@ export default function AdminPostsNew() {
           showItemCount={true}
           itemNameSingular="post cadastrado"
           itemNamePlural="posts cadastrados"
+          usePagination={true}
+          itemsPerPage={10}
         />
       ) : (
         <AdminCategories />

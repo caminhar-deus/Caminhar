@@ -583,7 +583,6 @@
 │   ├── PROJECT_components.md
 │   ├── PROJECT_cypress.md
 │   ├── PROJECT_data.md
-│   ├── PROJECT_examples.md
 │   ├── PROJECT_hooks.md
 │   ├── PROJECT_lib.md
 │   ├── PROJECT_load-tests.md
@@ -596,7 +595,6 @@
 │   ├── UPGRADE_components.md
 │   ├── UPGRADE_cypress.md
 │   ├── UPGRADE_data.md
-│   ├── UPGRADE_examples.md
 │   ├── UPGRADE_hooks.md
 │   ├── UPGRADE_lib.md
 │   ├── UPGRADE_load-tests.md
@@ -686,6 +684,7 @@
 │   ├── domain
 │   │   ├── audit.js
 │   │   ├── categories.js
+│   │   ├── dicas.js
 │   │   ├── images.js
 │   │   ├── musicas.js
 │   │   ├── permissions.js
@@ -1297,6 +1296,7 @@
 │       │   ├── db.test.js
 │       │   ├── domain
 │       │   │   ├── categories.test.js
+│       │   │   ├── dicas.test.js
 │       │   │   ├── permissions.test.js
 │       │   │   ├── products.test.js
 │       │   │   └── query-schemas.test.js
