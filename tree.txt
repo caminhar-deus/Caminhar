@@ -235,6 +235,7 @@
 │   │       ├── index.html
 │   │       └── index.js.html
 │   ├── db.js.html
+│   ├── dicas.js.html
 │   ├── favicon.png
 │   ├── index.html
 │   ├── lcov-report
@@ -348,6 +349,7 @@
 │   │   │       ├── index.html
 │   │   │       └── index.js.html
 │   │   ├── db.js.html
+│   │   ├── dicas.js.html
 │   │   ├── favicon.png
 │   │   ├── index.html
 │   │   ├── lib
@@ -375,6 +377,7 @@
 │   │   │   ├── domain
 │   │   │   │   ├── audit.js.html
 │   │   │   │   ├── categories.js.html
+│   │   │   │   ├── dicas.js.html
 │   │   │   │   ├── images.js.html
 │   │   │   │   ├── index.html
 │   │   │   │   ├── musicas.js.html
@@ -472,6 +475,7 @@
 │   │   ├── domain
 │   │   │   ├── audit.js.html
 │   │   │   ├── categories.js.html
+│   │   │   ├── dicas.js.html
 │   │   │   ├── images.js.html
 │   │   │   ├── index.html
 │   │   │   ├── musicas.js.html
@@ -1374,4 +1378,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-201 directories, 1174 files
+201 directories, 1178 files

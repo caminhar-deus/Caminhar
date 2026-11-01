@@ -91,26 +91,40 @@ describe('API Admin - Dicas (/api/admin/dicas)', () => {
       // Se o mock do banco estiver errado (query falhando/undefined), o fail-closed
       // devolveria 403 aqui e o teste quebraria — é isso que o par garante.
       queueRolesQuery(['Gestão de Dicas']);
-
+ 
+      // Agora GET é paginado via getPaginatedDicas (paginate faz SELECT + COUNT)
+      query
+        .mockResolvedValueOnce({ rows: [] }) // dados
+        .mockResolvedValueOnce({ rows: [{ count: '0' }] }); // count
+ 
       const { req, res } = getAuthenticatedMocks({ method: 'GET' }, { userId: 2, username: 'editor', role: 'comum' });
       await handler(req, res);
-
+ 
       expect(res._getStatusCode()).toBe(200);
-      expect(JSON.parse(res._getData())).toEqual({ data: [] });
+      const body = JSON.parse(res._getData());
+      expect(body).toHaveProperty('data');
+      expect(body).toHaveProperty('pagination');
+      expect(body.data).toEqual([]);
     });
   });
 
   describe('GET - Listar Dicas', () => {
     it('deve retornar 200 e a lista de dicas', async () => {
       const mockDicas = [{ id: 1, name: 'Dica 1', content: 'Conteúdo 1' }];
-      query.mockResolvedValueOnce({ rows: mockDicas });
+      // paginate faz SELECT + COUNT
+      query
+        .mockResolvedValueOnce({ rows: mockDicas })
+        .mockResolvedValueOnce({ rows: [{ count: '1' }] });
 
       const { req, res } = getAuthenticatedMocks({ method: 'GET' });
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(200);
-      expect(JSON.parse(res._getData())).toEqual({ data: mockDicas });
-      expect(query).toHaveBeenCalledWith('SELECT * FROM dicas ORDER BY id ASC');
+      const body = JSON.parse(res._getData());
+      expect(body).toHaveProperty('data');
+      expect(body).toHaveProperty('pagination');
+      expect(body.data).toEqual(mockDicas);
+      expect(body.pagination).toEqual({ page: 1, limit: 10, total: 1, totalPages: 1 });
     });
 
     it('deve retornar 500 se ocorrer um erro no banco de dados', async () => {

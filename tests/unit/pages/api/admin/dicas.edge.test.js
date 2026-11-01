@@ -81,4 +81,150 @@ describe('API - Admin - Dicas (Edge Cases)', () => {
     expect(db.query).toHaveBeenCalledWith(expect.any(String), ['Dica Atualizada', 'Atualizado', true, 99]);
     expect(logActivity).toHaveBeenCalledWith('admin', 'ATUALIZAR DICA', 'DICA', 99, 'Atualizou a dica: Dica Atualizada', 'unknown');
   });
+
+  it('deve retornar 400 se id não for enviado no PUT', async () => {
+    req.method = 'PUT';
+    req.body = { name: 'Sem ID', content: 'Teste' };
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(400);
+    expect(res._getJSONData()).toEqual({ message: 'ID é obrigatório' });
+  });
+
+  it('deve retornar 404 se dica não existir no PUT', async () => {
+    req.method = 'PUT';
+    req.body = { id: 123, name: 'Teste', content: 'Conteúdo' };
+
+    db.query.mockResolvedValueOnce({ rows: [] });
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(404);
+    expect(res._getJSONData()).toEqual({ message: 'Dica não encontrada' });
+  });
+
+  it('deve retornar 400 em caso de validação inválida no POST', async () => {
+    req.method = 'POST';
+    req.body = { name: '', content: '' };
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(400);
+    expect(res._getJSONData()).toHaveProperty('message', 'Dados inválidos para criação de dica');
+    expect(res._getJSONData()).toHaveProperty('errors');
+  });
+
+  it('deve retornar 400 em caso de validação inválida no PUT', async () => {
+    req.method = 'PUT';
+    req.body = { id: 10, name: '', content: '' };
+
+    db.query.mockResolvedValueOnce({ rows: [{ id: 10, name: 'Antigo', content: 'Antigo', published: true }] });
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(400);
+    expect(res._getJSONData()).toHaveProperty('message', 'Dados inválidos para atualização de dica');
+    expect(res._getJSONData()).toHaveProperty('errors');
+  });
+
+  it('deve excluir dica com log e invalidação de cache', async () => {
+    req.method = 'DELETE';
+    req.body = { id: 5 };
+
+    db.query
+      .mockResolvedValueOnce({ rows: [{ name: 'Dica X' }] }) // busca nome
+      .mockResolvedValueOnce({ rows: [] }); // delete
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(200);
+    expect(res._getJSONData()).toEqual({ success: true });
+    expect(logActivity).toHaveBeenCalledWith('admin', 'EXCLUIR DICA', 'DICA', 5, 'Removeu a dica: Dica X', 'unknown');
+  });
+
+  it('deve excluir dica mesmo sem nome encontrado (fallback para id)', async () => {
+    req.method = 'DELETE';
+    req.body = { id: 7 };
+
+    db.query
+      .mockResolvedValueOnce({ rows: [] }) // busca nome não encontra
+      .mockResolvedValueOnce({ rows: [] }); // delete
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(200);
+    expect(res._getJSONData()).toEqual({ success: true });
+    expect(logActivity).toHaveBeenCalledWith('admin', 'EXCLUIR DICA', 'DICA', 7, 'Removeu a dica: 7', 'unknown');
+  });
+
+  it('deve usar valores padrão no GET quando query ausente', async () => {
+    req.method = 'GET';
+    req.query = {};
+
+    const paginated = {
+      data: [],
+      pagination: { page: 1, limit: 10, total: 0, totalPages: 0 },
+    };
+    getPaginatedDicas.mockResolvedValueOnce(paginated);
+
+    await handler(req, res);
+
+    expect(getPaginatedDicas).toHaveBeenCalledWith(1, 10, '');
+    expect(res._getStatusCode()).toBe(200);
+  });
+
+  it('deve criar dica com published true quando enviado explicitamente', async () => {
+    req.method = 'POST';
+    req.body = { name: 'Dica Publicada', content: 'Conteúdo', published: true };
+
+    db.query.mockResolvedValueOnce({ rows: [{ id: 2, name: 'Dica Publicada', published: true }] });
+    await handler(req, res);
+
+    expect(db.query).toHaveBeenCalledWith(expect.any(String), ['Dica Publicada', 'Conteúdo', true]);
+    expect(res._getStatusCode()).toBe(201);
+  });
+
+  it('deve atualizar dica mantendo published do existente quando não enviado', async () => {
+    req.method = 'PUT';
+    req.body = { id: 50, name: 'Atualizada' };
+
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 50, name: 'Antiga', content: 'Conteúdo antigo', published: false }] })
+      .mockResolvedValueOnce({ rows: [{ id: 50, name: 'Atualizada', content: 'Conteúdo antigo', published: false }] });
+
+    await handler(req, res);
+
+    expect(db.query).toHaveBeenCalledWith(expect.any(String), ['Atualizada', 'Conteúdo antigo', false, 50]);
+    expect(res._getStatusCode()).toBe(200);
+  });
+
+  it('deve atualizar dica mantendo content do existente quando não enviado', async () => {
+    req.method = 'PUT';
+    req.body = { id: 51, content: 'Novo conteúdo' };
+
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 51, name: 'Nome', content: 'Antigo', published: true }] })
+      .mockResolvedValueOnce({ rows: [{ id: 51, name: 'Nome', content: 'Novo conteúdo', published: true }] });
+
+    await handler(req, res);
+
+    expect(db.query).toHaveBeenCalledWith(expect.any(String), ['Nome', 'Novo conteúdo', true, 51]);
+    expect(res._getStatusCode()).toBe(200);
+  });
+
+  it('deve excluir dica usando fallback para id quando name for falsy', async () => {
+    req.method = 'DELETE';
+    req.body = { id: 9 };
+
+    db.query
+      .mockResolvedValueOnce({ rows: [{ name: null }] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(200);
+    expect(res._getJSONData()).toEqual({ success: true });
+    expect(logActivity).toHaveBeenCalledWith('admin', 'EXCLUIR DICA', 'DICA', 9, 'Removeu a dica: 9', 'unknown');
+  });
 });
