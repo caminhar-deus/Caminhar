@@ -48,7 +48,7 @@ A correspondência entre as abas administrativas e suas abas públicas de exibi�
 | Gestão de Músicas | Músicas |
 | Gestão de Vídeos | Vídeos |
 | Gestão de Produtos | Produtos Religiosos |
-| Dicas do Dia | Dicas do Dia |
+| Gestão de Dicas | Dicas do Dia |
 
 Esse mapeamento deve ser mantido de forma consistente em toda a documentação.
 
