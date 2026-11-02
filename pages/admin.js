@@ -56,7 +56,8 @@ import AdminMusicas from '../components/Admin/AdminMusicas';
 import AdminVideos from '../components/Admin/AdminVideos';
 import AdminProducts from '../components/Admin/AdminProducts';
 import AdminDicas from '../components/Admin/AdminDicas';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
+import { Spinner } from '@/components/UI';
 import AdminDashboard from '../components/Admin/AdminDashboard';
 import AdminUsers from '../components/Admin/AdminUsers';
 import AdminAudit from '../components/Admin/AdminAudit';
@@ -125,15 +126,11 @@ const getCroppedImg = (imageSrc, pixelCrop) => {
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
   const [title, setTitle] = useState('O Caminhar com Deus');
   const [subtitle, setSubtitle] = useState('Reflexões e ensinamentos sobre a fé, espiritualidade e a jornada cristã');
   const [imageFile, setImageFile] = useState(null);
   const [originalSize, setOriginalSize] = useState(0);
   const [currentImageUrl, setCurrentImageUrl] = useState('');
-  const [error, setError] = useState('');
-  const setLoading = useState(false)[1];
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [activeSecurityTab, setActiveSecurityTab] = useState('integrity');
@@ -171,6 +168,8 @@ export default function Admin() {
           }
           setIsAuthenticated(true);
           await loadSettings();
+        } else {
+          router.replace('/login?next=/admin');
         }
       } catch (error) {
         if (error.name === 'AbortError') {
@@ -178,6 +177,7 @@ export default function Admin() {
           console.log('Verificação de autenticação cancelada pelo React.');
         } else {
           console.error('Auth check failed:', error);
+          router.replace('/login?next=/admin');
         }
       }
     };
@@ -204,49 +204,6 @@ export default function Admin() {
       }
     } catch (error) {
       console.error('Failed to load settings:', error);
-    }
-  };
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-        credentials: 'include',
-      });
-
-      let data;
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        data = await response.json();
-      } else {
-        // Se não for JSON (ex: erro 404 ou 500 HTML), lança um erro legível
-        throw new Error(`Erro de conexão com o servidor (${response.status})`);
-      }
-
-      if (!response.ok) {
-        throw new Error((data && data.message) || 'Falha no login');
-      }
-
-      setCurrentUser(normalizeCurrentUser(data.user));
-      setIsAuthenticated(true);
-      console.log('Login successful:', data.user);
-      // Recarrega a página para que o cookie de autenticação seja reconhecido
-      // nas requisições subsequentes às rotas admin
-      window.location.href = '/admin';
-
-    } catch (error) {
-      setError(error.message);
-      console.warn('Login failed:', error.message);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -402,7 +359,7 @@ export default function Admin() {
     }
     setIsAuthenticated(false);
     setCurrentUser(null);
-    router.reload(); // Força o recarregamento da página para limpar todo o estado e voltar à tela de login
+    router.replace('/login?next=/admin');
   };
 
   if (!isAuthenticated) {
@@ -410,45 +367,14 @@ export default function Admin() {
       <div className={styles.container}>
         <Head>
           <title>Admin - O Caminhar com Deus</title>
-          <style>{`
-            /* Força a barra de rolagem para evitar o solavanco da página */
-            html, body {
-              overflow-y: scroll !important;
-            }
-          `}</style>
         </Head>
-        <Toaster position="top-right" />
 
-        <main className={styles.main}>
-          <div className={styles.loginContainer}>
-            <h1>Área Administrativa</h1>
-            <form onSubmit={handleLogin} className={styles.loginForm}>
-              <input
-                type="text"
-                placeholder="Usuário"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className={styles.loginInput}
-                required
-              />
-              <input
-                type="password"
-                placeholder="Senha"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={styles.loginInput}
-                autoComplete="current-password"
-                required
-              />
-              <button type="submit" className={styles.button}>
-                Entrar
-              </button>
-              {error && (
-                <div className={styles.error}>
-                  {error}
-                </div>
-              )}
-            </form>
+        <main className={styles.main} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+          <div style={{ textAlign: 'center' }}>
+            <Spinner size="lg" />
+            <p style={{ marginTop: 'var(--spacing-4)', color: 'var(--color-text-secondary)' }}>
+              Verificando permissões de acesso...
+            </p>
           </div>
         </main>
       </div>
@@ -457,6 +383,9 @@ export default function Admin() {
 
   return (
     <div className={styles.container}>
+      <a href="#main-content" className="skip-link">
+        Pular para o conteúdo principal
+      </a>
       <Head>
         <title>Admin - O Caminhar com Deus</title>
         <style>{`
@@ -466,9 +395,8 @@ export default function Admin() {
           }
         `}</style>
       </Head>
-      <Toaster position="top-right" />
 
-      <main className={styles.main}>
+      <main id="main-content" className={styles.main}>
         <div className={styles.adminPanel}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
             <h1 style={{ margin: 0 }}>Painel Administrativo</h1>

@@ -24,6 +24,8 @@
 /* Table Styles */
 .tableContainer {
   overflow-x: auto;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
   margin-bottom: var(--spacing-8);
 }
 
@@ -133,6 +135,21 @@
   background-color: var(--color-info-600);
 }
 
+.editButton:focus-visible,
+.deleteButton:focus-visible,
+.addButton:focus-visible,
+.exportButton:focus-visible,
+.paginationButton:focus-visible,
+.statusToggle:focus-visible,
+.cancelButton:focus-visible,
+.saveButton:focus-visible,
+.link:focus-visible,
+.spotifyLink:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
+}
+
 /* Pagination */
 .pagination {
   display: flex;
@@ -147,6 +164,11 @@
   color: var(--color-text-inverse);
   border: none;
   padding: var(--spacing-2) var(--spacing-4);
+  min-height: 40px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
@@ -165,7 +187,8 @@
 
 .paginationInfo {
   font-size: var(--font-size-sm);
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
 }
 
 /* Status Badge */
@@ -224,13 +247,13 @@
 
 /* Empty states */
 .emptyCell {
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   font-style: italic;
 }
 
 .emptyStateRow {
   text-align: center;
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   font-style: italic;
   padding: var(--spacing-5);
 }

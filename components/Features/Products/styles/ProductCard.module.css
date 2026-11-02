@@ -42,15 +42,24 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background-color: var(--color-bg-primary, rgba(255, 255, 255, 0.8));
+  background-color: var(--color-bg-primary, rgba(255, 255, 255, 0.9));
   border: none;
   border-radius: var(--border-radius-full);
-  width: 30px;
-  height: 30px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   outline: none;
   box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
   transition: var(--transition-shadow), var(--transition-background);
+}
+
+.navButton:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
 }
 
 .navButtonLeft {
@@ -80,7 +89,7 @@
 
 .productDescription {
   margin: 0 0 var(--spacing-4) 0;
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
   flex: 1;
   display: -webkit-box;

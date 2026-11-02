@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Modal } from '@/components/UI';
+import { Modal, Button } from '@/components/UI';
 
 export default function AdminBackupManager() {
   const [latestBackup, setLatestBackup] = useState(null);
@@ -52,9 +52,9 @@ export default function AdminBackupManager() {
   };
 
   return (
-    <div style={{ padding: '20px', border: '1px solid #eee', borderRadius: '8px', marginTop: '20px', backgroundColor: '#fff' }}>
-      <h3 style={{ marginTop: 0 }}>Backup do Sistema</h3>
-      <p style={{ color: '#666', marginBottom: '20px', fontSize: '0.95rem' }}>
+    <div style={{ padding: '20px', border: '1px solid var(--color-border-light)', borderRadius: '8px', marginTop: '20px', backgroundColor: 'var(--color-bg-primary)' }}>
+      <h3 style={{ marginTop: 0, color: 'var(--color-text-primary)' }}>Backup do Sistema</h3>
+      <p style={{ color: 'var(--color-text-secondary)', marginBottom: '20px', fontSize: '0.95rem' }}>
         Gerencie os backups do banco de dados. O sistema realiza backups automáticos diariamente, mas você pode forçar um backup manual aqui.
       </p>
 
@@ -62,8 +62,9 @@ export default function AdminBackupManager() {
         <div style={{ 
           padding: '10px', 
           marginBottom: '15px', 
-          backgroundColor: message.includes('Erro') || message.includes('❌') ? '#ffebee' : '#e8f5e9',
-          color: message.includes('Erro') || message.includes('❌') ? '#c62828' : '#2e7d32',
+          backgroundColor: message.includes('Erro') || message.includes('❌') ? 'var(--color-error-50)' : 'var(--color-success-50)',
+          color: message.includes('Erro') || message.includes('❌') ? 'var(--color-error-700)' : 'var(--color-success-700)',
+          border: `1px solid ${message.includes('Erro') || message.includes('❌') ? 'var(--color-error-200)' : 'var(--color-success-200)'}`,
           borderRadius: '4px',
           fontWeight: '500'
         }}>
@@ -72,40 +73,33 @@ export default function AdminBackupManager() {
       )}
 
       <div style={{ marginBottom: '20px' }}>
-        <h4 style={{ marginBottom: '10px', fontSize: '1rem' }}>Último Backup Realizado</h4>
+        <h4 style={{ marginBottom: '10px', fontSize: '1rem', color: 'var(--color-text-primary)' }}>Último Backup Realizado</h4>
         {loading ? (
-          <p style={{ color: '#666' }}>Carregando informações...</p>
+          <p style={{ color: 'var(--color-text-secondary)' }}>Carregando informações...</p>
         ) : latestBackup ? (
-          <div style={{ backgroundColor: '#f8f9fa', padding: '15px', borderRadius: '6px', border: '1px solid #e9ecef' }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '5px', color: '#333' }}>📄 {latestBackup.name}</div>
-            <div style={{ fontSize: '0.9em', color: '#555' }}>
+          <div style={{ backgroundColor: 'var(--color-bg-secondary)', padding: '15px', borderRadius: '6px', border: '1px solid var(--color-border-light)' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '5px', color: 'var(--color-text-primary)' }}>
+              📄 {latestBackup.name}
+            </div>
+            <div style={{ fontSize: '0.9em', color: 'var(--color-text-secondary)' }}>
               📅 Data: {new Date(latestBackup.date).toLocaleString('pt-BR')}
             </div>
-            <div style={{ fontSize: '0.9em', color: '#555' }}>
+            <div style={{ fontSize: '0.9em', color: 'var(--color-text-secondary)' }}>
               💾 Tamanho: {(latestBackup.size / 1024).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KB
             </div>
           </div>
         ) : (
-          <p style={{ color: '#666', fontStyle: 'italic' }}>Nenhum backup encontrado.</p>
+          <p style={{ color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>Nenhum backup encontrado.</p>
         )}
       </div>
 
-      <button
+      <Button
+        variant="primary"
         onClick={() => setShowConfirm(true)}
         disabled={creating}
-        style={{
-          padding: '10px 20px',
-          backgroundColor: creating ? '#94a3b8' : '#0070f3',
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: creating ? 'not-allowed' : 'pointer',
-          fontWeight: '500',
-          transition: 'background-color 0.2s'
-        }}
       >
         {creating ? '⏳ Criando Backup...' : '📥 Realizar Backup Agora'}
-      </button>
+      </Button>
 
       <Modal
         isOpen={showConfirm}
@@ -114,35 +108,19 @@ export default function AdminBackupManager() {
         size="sm"
         footer={
           <Modal.Footer>
-            <button
+            <Button
+              variant="secondary"
               onClick={() => setShowConfirm(false)}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#6c757d',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontWeight: '500'
-              }}
             >
               Cancelar
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="primary"
               onClick={handleCreateBackup}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#0070f3',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontWeight: '500',
-                marginLeft: '8px'
-              }}
+              style={{ marginLeft: '8px' }}
             >
               Confirmar
-            </button>
+            </Button>
           </Modal.Footer>
         }
       >

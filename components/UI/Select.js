@@ -288,6 +288,9 @@ export const Select = forwardRef(({
       {useCustomMode ? renderCustom() : renderNative()}
       {error && errorMessage && (
         <span id={errorId} className={styles.errorMessage} role="alert">
+          <svg viewBox="0 0 24 24" fill="none" width="14" height="14" aria-hidden="true" style={{ flexShrink: 0 }}>
+            <path d="M12 9v4m0 4h.01M10.615 3.892 2.39 17.098c-.456.79-.684 1.184-.642 1.509.037.284.236.534.535.642.33.116.768-.015 1.643-.278L12 17.5l8.074.471c.875.263 1.313.394 1.643.278.299-.108.498-.358.535-.642.042-.325-.186-.72-.642-1.509L13.385 3.892c-.444-.77-.666-1.156-.955-1.295a1 1 0 0 0-.86 0c-.289.14-.511.525-.955 1.295z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
           {errorMessage}
         </span>
       )}

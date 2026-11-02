@@ -51,7 +51,7 @@ export default function VideoCard({ video }) {
       {video.descricao && (
         <p style={{ 
           margin: 0, 
-          color: 'var(--color-text-tertiary)', 
+          color: 'var(--color-text-secondary)', 
           fontSize: 'var(--font-size-sm)', 
           lineHeight: 'var(--line-height-normal)',
           display: '-webkit-box',

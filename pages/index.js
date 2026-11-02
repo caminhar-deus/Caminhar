@@ -60,13 +60,16 @@ export default function Home() {
 
   return (
     <div className={styles.container}>
+      <a href="#main-content" className="skip-link">
+        Pular para o conteúdo principal
+      </a>
       <Head>
         <title>{title}</title>
         <meta name="description" content={subtitle} />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main className={styles.main}>
+      <main id="main-content" className={styles.main}>
         <div className={styles.header}>
           <h1 className={styles.title}>{title}</h1>
           <p className={styles.subtitle}>
@@ -84,6 +87,8 @@ export default function Home() {
             src={imageSrc}
             alt="Caminhar com Deus"
             className={styles.heroImage}
+            width={1100}
+            height={320}
             loading="lazy"
           />
         </div>

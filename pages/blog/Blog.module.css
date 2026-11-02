@@ -2,11 +2,12 @@
 .container {
   min-height: 100vh;
   background-color: var(--color-bg-secondary);
+  padding: var(--spacing-10) var(--spacing-5);
 }
 
 .header {
   text-align: center;
-  margin-bottom: 50px;
+  margin-bottom: var(--spacing-12);
 }
 
 .title {
@@ -18,6 +19,53 @@
 .subtitle {
   color: var(--color-text-secondary);
   font-size: 1.1rem;
+}
+
+.backLinkWrapper {
+  max-width: 1200px;
+  margin: 0 auto var(--spacing-8) auto;
+}
+
+.backLink {
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-height: 44px;
+  padding: 0 var(--spacing-2);
+  border-radius: var(--border-radius-sm);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-sm);
+  transition: var(--transition-all);
+}
+
+.backLink:hover {
+  color: var(--color-text-primary);
+  text-decoration: underline;
+}
+
+.backLink:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
+}
+
+.errorBanner {
+  text-align: center;
+  color: var(--color-error-800, #991b1b);
+  background-color: var(--color-error-100, #fee2e2);
+  padding: var(--spacing-5);
+  border-radius: var(--border-radius-lg);
+  margin: var(--spacing-5) auto;
+  max-width: 1200px;
+}
+
+.emptyState {
+  text-align: center;
+  color: var(--color-text-secondary);
+  padding: var(--spacing-10) var(--spacing-4);
+  font-size: var(--font-size-lg);
 }
 
 .grid {

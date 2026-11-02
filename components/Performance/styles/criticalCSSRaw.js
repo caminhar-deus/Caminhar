@@ -23,7 +23,7 @@ body{
   min-height:100vh;
   line-height:1.6;
   color:var(--color-text-primary, #333);
-  background:var(--color-bg-primary, #fff);
+  background:var(--color-bg-primary, #fafafa);
 }
 
 /* Container principal */

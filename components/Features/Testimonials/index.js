@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApiFetch, useDebounce } from '@/hooks';
+import { Pagination } from '@/components/UI';
 import styles from './Testimonials.module.css';
 
 export default function Testimonials() {
@@ -131,27 +132,11 @@ export default function Testimonials() {
       </div>
 
       {totalPages > 1 && (
-        <div className={styles['testimonials-pagination']}>
-          <button
-            onClick={() => goToPage(currentPage - 1)}
-            disabled={currentPage <= 1}
-            className={`${styles['pag-btn']} ${currentPage <= 1 ? styles['pag-disabled'] : ''}`}
-          >
-            ← Anterior
-          </button>
-
-          <span className={styles['pag-info']}>
-            Página {currentPage} de {totalPages}
-          </span>
-
-          <button
-            onClick={() => goToPage(currentPage + 1)}
-            disabled={currentPage >= totalPages}
-            className={`${styles['pag-btn']} ${currentPage >= totalPages ? styles['pag-disabled'] : ''}`}
-          >
-            Próximo →
-          </button>
-        </div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={goToPage}
+        />
       )}
     </section>
   );

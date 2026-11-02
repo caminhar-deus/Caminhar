@@ -40,7 +40,9 @@
 
 .textarea:focus {
   border-color: var(--color-primary-500);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
 }
 
 .textarea:disabled {
@@ -83,7 +85,9 @@
 
 .hasError .textarea:focus {
   border-color: var(--color-error-500);
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+  outline: 2px solid var(--color-error-500);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px var(--color-error-halo);
 }
 
 /* Footer */
@@ -103,18 +107,14 @@
   gap: var(--spacing-1);
 }
 
-.errorMessage::before {
-  content: '⚠';
-}
-
 .helperText {
   font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
 }
 
 .counter {
   font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   font-variant-numeric: tabular-nums;
 }
 

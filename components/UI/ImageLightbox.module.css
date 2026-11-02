@@ -1,0 +1,133 @@
+/* ImageLightbox - Componente de visualização ampliada acessível */
+.overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.88);
+  /* eslint-disable-next-line css/use-baseline */
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-4);
+  cursor: zoom-out;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.contentWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 90vw;
+  max-height: 90vh;
+  cursor: default;
+}
+
+.image {
+  max-width: 90vw;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: var(--border-radius-lg);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  user-select: none;
+}
+
+.closeButton {
+  position: fixed;
+  top: var(--spacing-4);
+  right: var(--spacing-4);
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: #ffffff;
+  border: var(--border-width-1) solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--border-radius-full);
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  transition: var(--transition-all);
+  z-index: 10000;
+}
+
+.closeButton:hover {
+  background-color: rgba(0, 0, 0, 0.9);
+  color: var(--color-error-400);
+  transform: scale(1.05);
+}
+
+.closeButton:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
+}
+
+.navButton {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: #ffffff;
+  border: var(--border-width-1) solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--border-radius-full);
+  cursor: pointer;
+  transition: var(--transition-all);
+  z-index: 10000;
+}
+
+.navButton:hover {
+  background-color: rgba(0, 0, 0, 0.9);
+  color: var(--color-primary-400);
+}
+
+.navButton:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
+}
+
+.navButtonLeft {
+  composes: navButton;
+  left: var(--spacing-4);
+}
+
+.navButtonRight {
+  composes: navButton;
+  right: var(--spacing-4);
+}
+
+.counter {
+  position: fixed;
+  bottom: var(--spacing-4);
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(0, 0, 0, 0.6);
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-xs);
+  z-index: 10000;
+}

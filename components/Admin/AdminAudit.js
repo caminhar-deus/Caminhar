@@ -107,29 +107,59 @@ export default function AdminAudit() {
             ariaLabel="Data Final"
             title="Data Final"
           />
-          <button onClick={handleExportCSV} type="button" style={{ padding: '10px 16px', backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '500', whiteSpace: 'nowrap' }}>
+          <button 
+            onClick={handleExportCSV} 
+            type="button" 
+            style={{ 
+              padding: '10px 16px', 
+              minHeight: '44px',
+              backgroundColor: 'var(--color-success-500)', 
+              color: 'var(--color-text-inverse)', 
+              border: 'none', 
+              borderRadius: '6px', 
+              cursor: 'pointer', 
+              fontWeight: '500', 
+              whiteSpace: 'nowrap',
+              transition: 'background-color 0.2s'
+            }}
+          >
             Exportar CSV
           </button>
-          <button onClick={() => fetchLogs(1)} disabled={loading} style={{ padding: '10px 16px', backgroundColor: loading ? '#e5e7eb' : '#f3f4f6', border: '1px solid #d1d5db', borderRadius: '6px', cursor: loading ? 'not-allowed' : 'pointer', fontWeight: '500' }}>
+          <button 
+            onClick={() => fetchLogs(1)} 
+            disabled={loading} 
+            type="button"
+            style={{ 
+              padding: '10px 16px', 
+              minHeight: '44px',
+              backgroundColor: loading ? 'var(--color-bg-tertiary)' : 'var(--color-bg-secondary)', 
+              border: '1px solid var(--color-border-light)', 
+              borderRadius: '6px', 
+              cursor: loading ? 'not-allowed' : 'pointer', 
+              fontWeight: '500',
+              color: 'var(--color-text-primary)',
+              transition: 'background-color 0.2s'
+            }}
+          >
             Atualizar
           </button>
         </div>
       </div>
 
-      <div style={{ overflowX: 'auto', overflowY: 'auto', flex: 1, maxHeight: '600px', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
+      <div style={{ overflowX: 'auto', overflowY: 'auto', flex: 1, maxHeight: '600px', borderRadius: '6px', border: '1px solid var(--color-border-light)' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
-          <thead style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: '#f9fafb', boxShadow: 'inset 0 -2px 0 #e5e7eb' }}>
+          <thead style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'var(--color-bg-secondary)', boxShadow: 'inset 0 -2px 0 var(--color-border-light)' }}>
             <tr>
-              <th style={{ padding: '12px 16px', fontWeight: '600', color: '#374151' }}>Data/Hora</th>
-              <th style={{ padding: '12px 16px', fontWeight: '600', color: '#374151' }}>Usuário</th>
-              <th style={{ padding: '12px 16px', fontWeight: '600', color: '#374151' }}>Ação Executada</th>
-              <th style={{ padding: '12px 16px', fontWeight: '600', color: '#374151' }}>Detalhes</th>
+              <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--color-text-primary)' }}>Data/Hora</th>
+              <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--color-text-primary)' }}>Usuário</th>
+              <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--color-text-primary)' }}>Ação Executada</th>
+              <th style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--color-text-primary)' }}>Detalhes</th>
             </tr>
           </thead>
           <tbody>
             {loading && logs.length === 0 ? (
               Array.from({ length: 8 }).map((_, index) => (
-                <tr key={`skeleton-${index}`} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                <tr key={`skeleton-${index}`} style={{ borderBottom: '1px solid var(--color-border-light)' }}>
                   <td style={{ padding: '12px 16px' }}><div className={crudStyles.skeletonBox} style={{ width: '130px' }}></div></td>
                   <td style={{ padding: '12px 16px' }}><div className={crudStyles.skeletonBox} style={{ width: '80px' }}></div></td>
                   <td style={{ padding: '12px 16px' }}><div className={crudStyles.skeletonBox} style={{ width: '100px' }}></div></td>
@@ -137,16 +167,16 @@ export default function AdminAudit() {
                 </tr>
               ))
             ) : filteredLogs.length === 0 ? (
-              <tr><td colSpan="4" style={{ padding: '30px', textAlign: 'center', color: '#6b7280' }}>Nenhum registro de log encontrado.</td></tr>
+              <tr><td colSpan="4" style={{ padding: '30px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>Nenhum registro de log encontrado.</td></tr>
             ) : (
               filteredLogs.map(log => (
-                <tr key={log.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                  <td style={{ padding: '12px 16px', color: '#6b7280', whiteSpace: 'nowrap' }}>
+                <tr key={log.id} style={{ borderBottom: '1px solid var(--color-border-light)' }}>
+                  <td style={{ padding: '12px 16px', color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>
                     {new Date(log.created_at || log.timestamp).toLocaleString('pt-BR')}
                   </td>
-                  <td style={{ padding: '12px 16px', fontWeight: '500' }}>{log.user_id}</td>
-                  <td style={{ padding: '12px 16px', fontWeight: '600', color: '#374151' }}>{log.action}</td>
-                  <td style={{ padding: '12px 16px', color: '#4b5563' }}>{log.details}</td>
+                  <td style={{ padding: '12px 16px', fontWeight: '500', color: 'var(--color-text-primary)' }}>{log.user_id}</td>
+                  <td style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--color-text-primary)' }}>{log.action}</td>
+                  <td style={{ padding: '12px 16px', color: 'var(--color-text-secondary)' }}>{log.details}</td>
                 </tr>
               ))
             )}
@@ -160,17 +190,19 @@ export default function AdminAudit() {
           <button
             onClick={() => fetchLogs(page - 1)}
             disabled={page === 1 || loading}
-            style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #d1d5db', backgroundColor: page === 1 || loading ? '#f3f4f6' : '#fff', color: page === 1 || loading ? '#9ca3af' : '#374151', cursor: page === 1 || loading ? 'not-allowed' : 'pointer', fontWeight: '500', transition: 'all 0.2s' }}
+            type="button"
+            style={{ padding: '8px 16px', minHeight: '44px', minWidth: '44px', borderRadius: '6px', border: '1px solid var(--color-border-light)', backgroundColor: page === 1 || loading ? 'var(--color-bg-secondary)' : 'var(--color-bg-primary)', color: page === 1 || loading ? 'var(--color-text-tertiary)' : 'var(--color-text-primary)', cursor: page === 1 || loading ? 'not-allowed' : 'pointer', fontWeight: '500', transition: 'all 0.2s' }}
           >
             Anterior
           </button>
-          <span style={{ fontSize: '0.9rem', color: '#4b5563', fontWeight: '500' }}>
+          <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', fontWeight: '500' }}>
             Página {page} de {totalPages}
           </span>
           <button
             onClick={() => fetchLogs(page + 1)}
             disabled={page === totalPages || loading}
-            style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #d1d5db', backgroundColor: page === totalPages || loading ? '#f3f4f6' : '#fff', color: page === totalPages || loading ? '#9ca3af' : '#374151', cursor: page === totalPages || loading ? 'not-allowed' : 'pointer', fontWeight: '500', transition: 'all 0.2s' }}
+            type="button"
+            style={{ padding: '8px 16px', minHeight: '44px', minWidth: '44px', borderRadius: '6px', border: '1px solid var(--color-border-light)', backgroundColor: page === totalPages || loading ? 'var(--color-bg-secondary)' : 'var(--color-bg-primary)', color: page === totalPages || loading ? 'var(--color-text-tertiary)' : 'var(--color-text-primary)', cursor: page === totalPages || loading ? 'not-allowed' : 'pointer', fontWeight: '500', transition: 'all 0.2s' }}
           >
             Próxima
           </button>

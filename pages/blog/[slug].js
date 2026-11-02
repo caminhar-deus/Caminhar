@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 import styles from './Blog.module.css';
+import { ImageLightbox } from '../../components/UI';
 import { query } from '../../lib/infra/db.js';
 import { siteConfig } from '../../lib/seo/config';
 import { getSetting } from '../../lib/domain/settings.js';
@@ -14,31 +16,10 @@ import { getOrSetCache } from '../../lib/cache/cache.js';
 export default function BlogPost({ post, siteTitle }) {
   const [isImageZoomed, setIsImageZoomed] = useState(false);
   const [currentUrl, setCurrentUrl] = useState('');
-  const lightboxRef = useRef(null);
 
   useEffect(() => {
     setCurrentUrl(window.location.href);
   }, []);
-
-  // Fecha o zoom da imagem com a tecla 'Esc'
-  useEffect(() => {
-    const handleEsc = (event) => {
-      if (event.key === 'Escape') {
-        setIsImageZoomed(false);
-      }
-    };
-    window.addEventListener('keydown', handleEsc);
-    return () => {
-      window.removeEventListener('keydown', handleEsc);
-    };
-  }, []);
-
-  // Move o foco para o lightbox quando aberto
-  useEffect(() => {
-    if (isImageZoomed && lightboxRef.current) {
-      lightboxRef.current.focus();
-    }
-  }, [isImageZoomed]);
 
   // Nome do site vem do painel (settings `site_title`, unificação ADR-0032);
   // fallback no valor estático caso o setting não exista/venha vazio.
@@ -105,37 +86,13 @@ export default function BlogPost({ post, siteTitle }) {
               />
             </div>
 
-            {isImageZoomed && (
-              <div
-                ref={lightboxRef}
-                tabIndex={-1}
-                data-testid="image-lightbox"
-                role="dialog"
-                aria-modal="true"
-                aria-label={`Imagem ampliada: ${post.title}`}
-                style={{
-                  position: 'fixed',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: '100%',
-                  backgroundColor: 'rgba(0, 0, 0, 0.85)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  zIndex: 1000,
-                  cursor: 'zoom-out'
-                }}
-                onClick={() => setIsImageZoomed(false)}
-              >
-                <img
-                  src={post.image_url}
-                  alt={post.title}
-                  data-testid="image-lightbox-img"
-                  style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', boxShadow: '0 0 30px rgba(0,0,0,0.5)' }}
-                />
-              </div>
-            )}
+            <ImageLightbox
+              isOpen={isImageZoomed}
+              onClose={() => setIsImageZoomed(false)}
+              image={post.image_url}
+              alt={post.title}
+              overlayTestId="image-lightbox"
+            />
           </>
         )}
 
@@ -174,7 +131,7 @@ export default function BlogPost({ post, siteTitle }) {
                   }).catch(console.error);
                 } else {
                   navigator.clipboard.writeText(postUrl);
-                  alert('Link copiado! Você pode colar no Instagram ou outra rede social.');
+                  toast.success('Link copiado! Você pode colar no Instagram ou outra rede social.');
                 }
               }}
               style={{ backgroundColor: '#C13584', color: 'white', padding: '10px 20px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '0.9rem', fontWeight: '500', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '8px' }}

@@ -37,7 +37,7 @@
   padding: var(--spacing-3) var(--spacing-6);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-medium);
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   cursor: pointer;
   transition: var(--transition-all);
   white-space: nowrap;
@@ -48,6 +48,12 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
+}
+
+.tabButton:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
 }
 
 .tabButton:hover {
@@ -107,7 +113,7 @@
   justify-content: center;
   align-items: center;
   min-height: 600px;
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-lg);
 }
 
@@ -136,7 +142,7 @@
 }
 
 .placeholderText {
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-lg);
   margin-bottom: var(--spacing-8);
   line-height: var(--line-height-relaxed);
@@ -153,7 +159,7 @@
 }
 
 .imagePlaceholder {
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
   text-align: center;
 }

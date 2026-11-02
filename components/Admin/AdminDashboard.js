@@ -142,8 +142,16 @@ export default function AdminDashboard({ setActiveTab, userPermissions = [], isA
         <div className={styles.sectionHeader}>
           <h2>Visão Geral do Sistema</h2>
         </div>
-        {loading && <div style={{ textAlign: 'center', padding: '50px', color: 'var(--color-text-secondary)' }}>⏳ Carregando painel de estatísticas...</div>}
-        {error && <div style={{ textAlign: 'center', padding: '50px', color: 'var(--color-error-500)' }}>❌ Erro: {error}</div>}
+        {loading && (
+          <div aria-live="polite" style={{ textAlign: 'center', padding: '50px', color: 'var(--color-text-secondary)' }}>
+            ⏳ Carregando painel de estatísticas...
+          </div>
+        )}
+        {error && (
+          <div role="alert" style={{ textAlign: 'center', padding: '50px', color: 'var(--color-error-500)' }}>
+            ❌ Erro: {error}
+          </div>
+        )}
       </div>
     );
   }
@@ -161,13 +169,22 @@ export default function AdminDashboard({ setActiveTab, userPermissions = [], isA
             key={item.key} 
             className={styles.statCard} 
             onClick={() => item.tabId && setActiveTab && setActiveTab(item.tabId)}
+            onKeyDown={(e) => {
+              if (item.tabId && setActiveTab && (e.key === 'Enter' || e.key === ' ')) {
+                e.preventDefault();
+                setActiveTab(item.tabId);
+              }
+            }}
+            role={item.tabId ? 'button' : undefined}
+            tabIndex={item.tabId ? 0 : undefined}
+            aria-label={item.tabId ? `Ir para ${item.label}: ${item.count} itens cadastrados` : undefined}
             style={{ cursor: item.tabId ? 'pointer' : 'default' }}
           >
-            <div className={styles.statIcon}>{item.icon}</div>
+            <div className={styles.statIcon} aria-hidden="true">{item.icon}</div>
             <div className={styles.statInfo}>
               <span className={styles.statNumber}>{item.count}</span>
               <span className={styles.statLabel}>{item.label}</span>
-              {item.details && <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: '4px', fontWeight: '500' }}>{item.details}</span>}
+              {item.details && <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: '4px', fontWeight: '500' }}>{item.details}</span>}
             </div>
           </div>
         ))}

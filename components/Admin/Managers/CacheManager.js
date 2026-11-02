@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { Modal } from '@/components/UI';
+import { Modal, Button } from '@/components/UI';
 
 export default function AdminCacheManager() {
   const [loading, setLoading] = useState(false);
@@ -55,30 +55,21 @@ export default function AdminCacheManager() {
   };
 
   return (
-    <div style={{ marginTop: '2rem', padding: '1.5rem', border: '1px solid #eaeaea', borderRadius: '8px', backgroundColor: '#fff' }}>
-      <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', borderBottom: '1px solid #eee', paddingBottom: '0.5rem' }}>
+    <div style={{ marginTop: '2rem', padding: '1.5rem', border: '1px solid var(--color-border-light)', borderRadius: '8px', backgroundColor: 'var(--color-bg-primary)' }}>
+      <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '0.5rem', color: 'var(--color-text-primary)' }}>
         Cache do Sistema
       </h2>
-      <p style={{ marginBottom: '1rem', color: '#666', fontSize: '0.9rem' }}>
+      <p style={{ marginBottom: '1rem', color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
         Limpar o cache força o sistema a buscar dados atualizados do banco de dados imediatamente. Use isso se as alterações não estiverem aparecendo no site.
       </p>
       
-      <button
+      <Button
+        variant="danger"
         onClick={() => setShowConfirm(true)}
         disabled={loading}
-        style={{
-          padding: '0.6rem 1.2rem',
-          backgroundColor: loading ? '#ccc' : '#dc3545',
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: loading ? 'not-allowed' : 'pointer',
-          fontWeight: 'bold',
-          transition: 'background-color 0.2s'
-        }}
       >
         {loading ? 'Limpando...' : 'Limpar Cache Redis'}
-      </button>
+      </Button>
 
       <Modal
         isOpen={showConfirm}
@@ -87,35 +78,19 @@ export default function AdminCacheManager() {
         size="sm"
         footer={
           <Modal.Footer>
-            <button
+            <Button
+              variant="secondary"
               onClick={() => setShowConfirm(false)}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#6c757d',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontWeight: '500'
-              }}
             >
               Cancelar
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="danger"
               onClick={handleClearCache}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#dc3545',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontWeight: '500',
-                marginLeft: '8px'
-              }}
+              style={{ marginLeft: '8px' }}
             >
               Confirmar
-            </button>
+            </Button>
           </Modal.Footer>
         }
       >
@@ -124,12 +99,15 @@ export default function AdminCacheManager() {
 
       {cacheMetrics && (
         <div style={{ marginTop: '1.5rem' }}>
-          <h3 style={{ fontSize: '1rem', marginBottom: '0.8rem' }}>📊 Status do Cache Redis</h3>
-          <div style={{ backgroundColor: cacheMetrics.redisConnected ? '#e8f5e9' : '#ffebee', padding: '15px', borderRadius: '6px', border: '1px solid #e9ecef' }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '8px', color: cacheMetrics.redisConnected ? '#2e7d32' : '#c62828' }}>
+          <h3 style={{ fontSize: '1rem', marginBottom: '0.8rem', color: 'var(--color-text-primary)' }}>
+            <span aria-hidden="true" style={{ marginRight: '6px' }}>📊</span>
+            Status do Cache Redis
+          </h3>
+          <div style={{ backgroundColor: cacheMetrics.redisConnected ? 'var(--color-success-50)' : 'var(--color-error-50)', padding: '15px', borderRadius: '6px', border: `1px solid ${cacheMetrics.redisConnected ? 'var(--color-success-200)' : 'var(--color-error-200)'}` }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '8px', color: cacheMetrics.redisConnected ? 'var(--color-success-700)' : 'var(--color-error-700)' }}>
               {cacheMetrics.redisConnected ? '✅ Redis Conectado' : '❌ Redis Desconectado'}
             </div>
-            <div style={{ fontSize: '0.9em', color: '#555', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+            <div style={{ fontSize: '0.9em', color: 'var(--color-text-secondary)', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
               <div>⚠️ Erros: {cacheMetrics.redisErrors}</div>
               <div>🔄 Fallbacks: {cacheMetrics.fallbackActivations}</div>
               <div>📍 Tamanho Local: {cacheMetrics.localMapSize} entradas</div>

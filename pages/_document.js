@@ -42,7 +42,7 @@ export default function Document() {
         {/* Google Fonts com font-display: swap para evitar FOIT */}
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap"
         />
 
         {/* CSS Crítico Inline */}
@@ -90,8 +90,8 @@ export default function Document() {
         <link rel="icon" href="/favicon.ico" sizes="any" />
         
         {/* Theme Color para navegadores */}
-        <meta name="theme-color" content="#2c3e50" media="(prefers-color-scheme: light)" />
-        <meta name="theme-color" content="#1a252f" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#171717" media="(prefers-color-scheme: dark)" />
 
         {/* Meta tags Apple */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -103,7 +103,7 @@ export default function Document() {
         <meta name="application-name" content={siteConfig.name} />
         <meta name="msapplication-tooltip" content={siteConfig.description} />
         <meta name="msapplication-starturl" content="/" />
-        <meta name="msapplication-navbutton-color" content="#2c3e50" />
+        <meta name="msapplication-navbutton-color" content="#fafafa" />
 
         {/* Canonical base */}
         <link rel="canonical" href={siteConfig.url} />

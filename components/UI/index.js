@@ -15,6 +15,8 @@ export { Spinner } from './Spinner';
 export { Badge } from './Badge';
 export { Alert, defaultIcons } from './Alert';
 export { Toast, useToast } from './Toast';
+export { Pagination } from './Pagination';
+export { ImageLightbox } from './ImageLightbox';
 export { defaultIcons as Icons } from './icons';
 
 // Re-exportações padrão

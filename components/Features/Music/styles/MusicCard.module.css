@@ -17,7 +17,7 @@
 
 .musicArtist {
   margin: 0 0 var(--spacing-3) 0;
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
 }
 
@@ -26,6 +26,10 @@
    * que o flex column estique a largura do botão. */
   margin-top: auto;
   align-self: flex-start;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: var(--spacing-2) var(--spacing-4);
   border-radius: var(--border-radius-md);
   border: none;
@@ -35,10 +39,17 @@
   cursor: pointer;
   font-size: var(--font-size-xs);
   transition: var(--transition-opacity);
+  text-decoration: none;
 }
 
 .spotifyButton:hover {
   opacity: 0.85;
+}
+
+.spotifyButton:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
 }
 
 .noEmbed {
@@ -48,6 +59,6 @@
   height: 152px;
   background-color: var(--color-bg-secondary, #282828);
   border-radius: var(--border-radius-xl, 12px);
-  color: var(--color-text-tertiary, #888);
+  color: var(--color-text-secondary, #525252);
   font-size: var(--font-size-sm, 0.875rem);
 }

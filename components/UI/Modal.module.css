@@ -66,15 +66,15 @@
 }
 
 .closeButton {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--spacing-8);
-  height: var(--spacing-8);
+  min-width: 44px;
+  min-height: 44px;
   padding: 0;
   border: none;
   background: transparent;
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   cursor: pointer;
   border-radius: var(--border-radius-lg);
   transition: var(--transition-all);
@@ -86,8 +86,9 @@
 }
 
 .closeButton:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3);
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
 }
 
 /* Description */

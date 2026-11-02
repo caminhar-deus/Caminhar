@@ -22,7 +22,7 @@
 }
 
 .subtitle {
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-lg);
 }
 
@@ -79,7 +79,7 @@
 }
 
 .excerpt {
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-relaxed);
   margin-bottom: var(--spacing-6);
@@ -97,7 +97,7 @@
 
 .date {
   font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
 }
 
 .readMore {
@@ -105,10 +105,21 @@
   font-weight: var(--font-weight-semibold);
   font-size: var(--font-size-sm);
   text-decoration: none;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--border-radius-sm);
+  padding: 0 var(--spacing-2);
 }
 
 .readMore:hover {
   text-decoration: underline;
+}
+
+.readMore:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
 }
 
 @media (max-width: 768px) {

@@ -39,19 +39,25 @@
 /* Close Button */
 .closeButton {
   flex-shrink: 0;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--spacing-6);
-  height: var(--spacing-6);
-  padding: 0;
+  min-width: 44px;
+  min-height: 44px;
+  padding: var(--spacing-2);
   border: none;
   background: transparent;
   cursor: pointer;
   border-radius: var(--border-radius-md);
   transition: var(--transition-all);
-  margin-top: calc(-1 * var(--spacing-1));
-  margin-right: calc(-1 * var(--spacing-1));
+  margin-top: calc(-1 * var(--spacing-2));
+  margin-right: calc(-1 * var(--spacing-2));
+}
+
+.closeButton:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
 }
 
 /* Variants - Subtle (default) */

@@ -21,8 +21,10 @@ components/UI/index.js → components/UI/Badge.js
 components/UI/index.js → components/UI/BaseCard.js
 components/UI/index.js → components/UI/Button.js
 components/UI/index.js → components/UI/icons.js
+components/UI/index.js → components/UI/ImageLightbox.js
 components/UI/index.js → components/UI/Input.js
 components/UI/index.js → components/UI/Modal.js
+components/UI/index.js → components/UI/Pagination.js
 components/UI/index.js → components/UI/Select.js
 components/UI/index.js → components/UI/Spinner.js
 components/UI/index.js → components/UI/TextArea.js
@@ -31,8 +33,10 @@ components/UI/Alert.js → components/UI/Alert.module.css
 components/UI/Alert.js → components/UI/icons.js
 components/UI/Badge.js → components/UI/Badge.module.css
 components/UI/BaseCard.js → components/UI/BaseCard.module.css
+components/UI/ImageLightbox.js → components/UI/ImageLightbox.module.css
 components/UI/Input.js → components/UI/Input.module.css
 components/UI/Modal.js → components/UI/Modal.module.css
+components/UI/Pagination.js → components/UI/Pagination.module.css
 components/UI/Select.js → components/UI/Select.module.css
 components/UI/Spinner.js → components/UI/Spinner.module.css
 components/UI/TextArea.js → components/UI/TextArea.module.css
@@ -137,6 +141,7 @@ components/Features/ContentTabs/index.js → components/Features/Video/VideoGall
 components/Features/ContentTabs/index.js → components/Features/ContentTabs/styles/ContentTabs.module.css
 components/Features/Music/MusicGallery.js → components/Features/Music/MusicCard.js
 components/Features/Music/MusicGallery.js → components/Features/Music/styles/MusicGallery.module.css
+components/Features/Music/MusicGallery.js → components/UI/index.js
 components/Features/Music/MusicGallery.js → components/UI/StateMessages.js
 components/Features/Music/MusicGallery.js → hooks/index.js
 components/Features/Music/MusicCard.js → components/Performance/LazyIframe.js
@@ -155,6 +160,7 @@ components/Features/Products/ProductCard.js → components/Features/Products/sty
 components/Features/Products/ProductCard.js → components/UI/index.js
 components/Features/Video/VideoGallery.js → components/Features/Video/styles/VideoGallery.module.css
 components/Features/Video/VideoGallery.js → components/Features/Video/VideoCard.js
+components/Features/Video/VideoGallery.js → components/UI/index.js
 components/Features/Video/VideoGallery.js → components/UI/StateMessages.js
 components/Features/Video/VideoGallery.js → hooks/index.js
 components/Features/Video/VideoCard.js → components/Performance/index.js
@@ -168,6 +174,7 @@ components/Performance/index.js → components/Performance/PreloadResources.js
 components/Performance/CriticalCSS.js → components/Performance/styles/criticalCSSRaw.js
 components/Performance/ImageOptimized.js → components/Performance/styles/ImageOptimized.module.css
 components/Features/Testimonials/index.js → components/Features/Testimonials/Testimonials.module.css
+components/Features/Testimonials/index.js → components/UI/index.js
 components/Features/Testimonials/index.js → hooks/index.js
 components/Layout/Container.js → components/Layout/Container.module.css
 components/Layout/Grid.js → components/Layout/Grid.module.css
@@ -337,6 +344,7 @@ pages/admin.js → components/Admin/styles/tabs.module.css
 pages/admin.js → components/Admin/Tools/IntegrityCheck.js
 pages/admin.js → components/Admin/Tools/RateLimitViewer.js
 pages/admin.js → lib/domain/permissions.js
+pages/admin.js → components/UI/index.js
 pages/api/admin/audit.js → lib/api/adminCrudHandler.js
 pages/api/admin/audit.js → lib/infra/db.js
 pages/api/admin/audit.js → lib/infra/logger.js
@@ -451,12 +459,14 @@ pages/api/videos.js → lib/cache/cache.js
 pages/api/videos.js → lib/domain/shared-pagination.js
 pages/api/videos.js → lib/domain/videos.js
 pages/api/videos.js → lib/infra/logger.js
+pages/blog/[slug].js → components/UI/index.js
 pages/blog/[slug].js → lib/cache/cache.js
 pages/blog/[slug].js → lib/domain/settings.js
 pages/blog/[slug].js → lib/infra/db.js
 pages/blog/[slug].js → lib/seo/config.js
 pages/blog/[slug].js → pages/blog/Blog.module.css
 pages/blog/index.js → components/Features/Blog/PostCard.js
+pages/blog/index.js → components/UI/index.js
 pages/blog/index.js → lib/cache/cache.js
 pages/blog/index.js → lib/domain/posts.js
 pages/blog/index.js → lib/domain/settings.js
@@ -909,8 +919,10 @@ tests/unit/components/UI/Alert.test.js → components/UI/Alert.js
 tests/unit/components/UI/Badge.test.js → components/UI/Badge.js
 tests/unit/components/UI/Button.test.js → components/UI/Button.js
 tests/unit/components/UI/Card.test.js → components/UI/BaseCard.js
+tests/unit/components/UI/ImageLightbox.test.js → components/UI/ImageLightbox.js
 tests/unit/components/UI/Input.test.js → components/UI/Input.js
 tests/unit/components/UI/Modal.test.js → components/UI/Modal.js
+tests/unit/components/UI/Pagination.test.js → components/UI/Pagination.js
 tests/unit/components/UI/Select.test.js → components/UI/Select.js
 tests/unit/components/UI/Spinner.test.js → components/UI/Spinner.js
 tests/unit/components/UI/TextArea.test.js → components/UI/TextArea.js

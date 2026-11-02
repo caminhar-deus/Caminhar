@@ -32,6 +32,28 @@ a {
   text-decoration: none;
 }
 
+/* Skip link acessível (WCAG SC 2.4.1) */
+.skip-link {
+  position: absolute;
+  top: -999px;
+  left: var(--spacing-4);
+  z-index: 1000;
+  padding: var(--spacing-2) var(--spacing-4);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  border: var(--border-width-2) solid var(--color-focus-primary);
+  border-radius: var(--border-radius-md);
+  font-weight: var(--font-weight-medium);
+  box-shadow: var(--shadow-lg);
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  top: var(--spacing-4);
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+}
+
 /* Guard global de movimento reduzido (MASTER §5) */
 @media (prefers-reduced-motion: reduce) {
   *,

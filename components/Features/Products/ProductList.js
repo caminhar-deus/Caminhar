@@ -4,7 +4,7 @@ import ProductCard from './ProductCard';
 import { inputStyle } from './styles';
 import styles from './styles/ProductList.module.css';
 import { ErrorMessage, LoadingMessage, EmptyMessage } from '../../UI/StateMessages';
-import { Spinner } from '@/components/UI';
+import { Spinner, Pagination } from '@/components/UI';
 
 // Spec design-system/pages/home.md §1.3 — ordem exata das opções do seletor.
 const SORT_OPTIONS = [
@@ -276,34 +276,15 @@ export default function ProductList() {
               </div>
             )}
   
-            {/* Paginação no padrão das demais abas (spec home.md §4) —
-                oculta quando há ≤ 1 página */}
-            {totalPages > 1 && (
-              <div className={styles.pagination}>
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1 || pageLoading}
-                  className={`${styles.pageButton} ${currentPage === 1 || pageLoading ? styles.pageButtonDisabled : ''}`}
-                  aria-label="Página anterior"
-                  type="button"
-                >
-                  ❮ Anterior
-                </button>
-                <span className={styles.pageInfo} aria-live="polite" aria-atomic="true">
-                  Página {currentPage} de {totalPages}
-                  {totalItems > 0 && <span className={styles.totalInfo}> ({totalItems} produto{totalItems !== 1 ? 's' : ''})</span>}
-                </span>
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages || pageLoading}
-                  className={`${styles.pageButton} ${currentPage === totalPages || pageLoading ? styles.pageButtonDisabled : ''}`}
-                  aria-label="Próxima página"
-                  type="button"
-                >
-                  Próxima ❯
-                </button>
-              </div>
-            )}
+            {/* Paginação unificada no padrão das demais abas */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemLabel="produto"
+              disabled={pageLoading}
+              onPageChange={handlePageChange}
+            />
           </>
         )}
 

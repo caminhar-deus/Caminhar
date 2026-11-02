@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useApiFetch, useDebounce } from '@/hooks';
 import { LoadingMessage, ErrorMessage } from '@/components/UI/StateMessages';
+import { Pagination } from '@/components/UI';
 import VideoCard from './VideoCard';
 import styles from './styles/VideoGallery.module.css';
 
@@ -145,32 +146,13 @@ export default function VideoGallery() {
             ))}
           </div>
 
-          {totalPages > 1 && (
-            <div className={styles.pagination}>
-              <button
-                onClick={() => goToPage(currentPage - 1)}
-                disabled={currentPage <= 1}
-                className={`${styles.pageButton} ${currentPage <= 1 ? styles.pageButtonDisabled : ''}`}
-                aria-label="Página anterior"
-                type="button"
-              >
-                ❮ Anterior
-              </button>
-              <span className={styles.pageInfo} aria-live="polite" aria-atomic="true">
-                Página {currentPage} de {totalPages}
-                {totalItems > 0 && <span className={styles.totalInfo}> ({totalItems} vídeo{totalItems !== 1 ? 's' : ''})</span>}
-              </span>
-              <button
-                onClick={() => goToPage(currentPage + 1)}
-                disabled={currentPage >= totalPages}
-                className={`${styles.pageButton} ${currentPage >= totalPages ? styles.pageButtonDisabled : ''}`}
-                aria-label="Próxima página"
-                type="button"
-              >
-                Próxima ❯
-              </button>
-            </div>
-          )}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            itemLabel="vídeo"
+            onPageChange={goToPage}
+          />
         </>
       )}
     </div>

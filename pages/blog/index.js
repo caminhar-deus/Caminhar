@@ -2,6 +2,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import styles from './Blog.module.css';
 import PostCard from '../../components/Features/Blog/PostCard';
+import { Pagination } from '../../components/UI';
 import { getRecentPosts } from '../../lib/domain/posts.js';
 import { getOrSetCache } from '../../lib/cache/cache.js';
 import { getSetting } from '../../lib/domain/settings.js';
@@ -52,30 +53,33 @@ export default function BlogIndex({ posts, currentPage, totalPages, fetchError, 
   // Nome do site do painel com fallback estático (unificação ADR-0032).
   const siteName = siteTitle || siteConfig.name;
   return (
-    <div className={styles.container} style={{ padding: '40px 20px' }}>
+    <div className={styles.container}>
+      <a href="#main-content" className="skip-link">
+        Pular para o conteúdo principal
+      </a>
       <Head>
         <title>{`Blog - ${siteName}`}</title>
         <meta name="description" content="Compartilhando a jornada da fé através de reflexões e estudos." />
       </Head>
 
-      <div style={{ marginBottom: '30px', maxWidth: '1200px', margin: '0 auto 30px auto' }}>
-        <Link href="/" style={{ color: 'var(--color-text-secondary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px' }}>
+      <div className={styles.backLinkWrapper}>
+        <Link href="/" className={styles.backLink}>
           ← Voltar para a Home
         </Link>
       </div>
 
-      <header className={styles.header} style={{ marginBottom: '50px', textAlign: 'center' }}>
+      <header className={styles.header}>
         <h1 className={styles.title}>Blog</h1>
         <p className={styles.subtitle}>Compartilhando a jornada da fé</p>
       </header>
 
-      <main>
+      <main id="main-content">
         {fetchError ? (
-          <p style={{ textAlign: 'center', color: 'var(--color-error-800, #991b1b)', background: 'var(--color-error-100, #fee2e2)', padding: '20px', borderRadius: '8px', margin: '20px 0' }}>
+          <p className={styles.errorBanner}>
             Desculpe, não foi possível carregar os posts no momento. Tente novamente mais tarde.
           </p>
         ) : posts.length === 0 ? (
-          <p style={{ textAlign: 'center' }}>Nenhum post publicado ainda.</p>
+          <p className={styles.emptyState}>Nenhum post publicado ainda.</p>
         ) : (
           <div className={styles.grid}>
             {posts.map((post) => (
@@ -84,37 +88,11 @@ export default function BlogIndex({ posts, currentPage, totalPages, fetchError, 
           </div>
         )}
 
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', marginTop: '50px' }}>
-            {currentPage > 1 ? (
-              <Link href={`/blog?page=${currentPage - 1}`} style={{
-                padding: '10px 20px',
-                backgroundColor: 'var(--color-bg-primary)',
-                border: '1px solid var(--color-border-light)',
-                borderRadius: '6px',
-                color: 'var(--color-text-primary)',
-                textDecoration: 'none'
-              }}>
-                &larr; Anterior
-              </Link>
-            ) : null}
-            
-            <span style={{ color: 'var(--color-text-secondary)' }}>Página {currentPage} de {totalPages}</span>
-
-            {currentPage < totalPages ? (
-              <Link href={`/blog?page=${currentPage + 1}`} style={{
-                padding: '10px 20px',
-                backgroundColor: 'var(--color-bg-primary)',
-                border: '1px solid var(--color-border-light)',
-                borderRadius: '6px',
-                color: 'var(--color-text-primary)',
-                textDecoration: 'none'
-              }}>
-                Próxima &rarr;
-              </Link>
-            ) : null}
-          </div>
-        )}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          getPageUrl={(p) => `/blog?page=${p}`}
+        />
       </main>
     </div>
   );

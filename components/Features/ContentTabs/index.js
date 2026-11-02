@@ -54,7 +54,7 @@ export default function ContentTabs() {
               aria-controls={tab.id + '-panel'}
               disabled={tab.id === 'projeto1'}
             >
-              <span className={styles.tabIcon}>{tab.icon}</span>
+              <span className={styles.tabIcon} aria-hidden="true">{tab.icon}</span>
               {tab.label}
             </button>
           ))}
