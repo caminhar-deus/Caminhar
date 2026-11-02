@@ -165,12 +165,18 @@ export async function getServerSideProps({ params }) {
 
     // Mesma chave de cache da API `/api/settings` (`settings:site_title`) —
     // o PUT do painel invalida essa chave, então o SSR reflete a troca sem
-    // esperar o TTL (unificação ADR-0032).
-    const siteTitle = await getOrSetCache(
-      'settings:site_title',
-      () => getSetting('site_title'),
-      7200
-    );
+    // esperar o TTL (unificação ADR-0032). Isolado em try/catch para que falhas
+    // no cache do título não impeçam a renderização de um post existente.
+    let siteTitle = null;
+    try {
+      siteTitle = await getOrSetCache(
+        'settings:site_title',
+        () => getSetting('site_title'),
+        7200
+      );
+    } catch (cacheErr) {
+      console.warn('[Posts] ⚠️ Falha ao obter site_title do cache no SSR, usando fallback:', cacheErr.message);
+    }
 
     return { props: { post: JSON.parse(JSON.stringify(post)), siteTitle: siteTitle || null } };
   } catch (error) {

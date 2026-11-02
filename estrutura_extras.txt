@@ -323,6 +323,7 @@ load-tests/security/login-negative-test.js → load-tests/helpers/sleep.js
 load-tests/security/rate-limit-test.js → load-tests/helpers/config.js
 load-tests/security/rate-limit-test.js → load-tests/helpers/profiles.js
 load-tests/security/rate-limit-test.js → load-tests/helpers/report.js
+pages/404.js → lib/seo/config.js
 pages/_app.js → hooks/index.js
 pages/_app.js → pages/styles/globals.css
 pages/_document.js → components/Performance/CriticalCSS.js
@@ -1010,6 +1011,7 @@ tests/unit/lib/redis.test.js → lib/infra/redis.js
 tests/unit/lib/seo/config.test.js → lib/seo/config.js
 tests/unit/load-tests/error-gate-coverage.test.js → load-tests/helpers/profiles.js
 tests/unit/load-tests/profiles.test.js → load-tests/helpers/profiles.js
+tests/unit/pages/404.test.js → pages/404.js
 tests/unit/pages/api/admin/dicas.edge.test.js → lib/domain/audit.js
 tests/unit/pages/api/admin/dicas.edge.test.js → lib/domain/dicas.js
 tests/unit/pages/api/admin/dicas.edge.test.js → lib/infra/db.js
@@ -1053,6 +1055,10 @@ tests/unit/pages/blog.index.test.js → lib/domain/posts.js
 tests/unit/pages/blog.index.test.js → lib/domain/settings.js
 tests/unit/pages/blog.index.test.js → pages/blog/index.js
 tests/unit/pages/blog.index.test.js → tests/helpers/index.js
+tests/unit/pages/blog.slug.test.js → lib/cache/cache.js
+tests/unit/pages/blog.slug.test.js → lib/infra/db.js
+tests/unit/pages/blog.slug.test.js → pages/blog/[slug].js
+tests/unit/pages/blog.slug.test.js → tests/helpers/index.js
 tests/unit/pages/index.test.js → pages/index.js
 tests/unit/pages/index.test.js → tests/helpers/index.js
 tests/unit/scripts/backup.test.js → scripts/backup.js

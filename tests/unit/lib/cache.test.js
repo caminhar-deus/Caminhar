@@ -115,6 +115,38 @@ describe('Library - Cache & Rate Limit', () => {
       expect(fetchFn).not.toHaveBeenCalled();
     });
 
+    it('retorna string primitiva com segurança do Redis (ex: site_title)', async () => {
+      // Valor gravado com JSON.stringify("O Caminhar com Deus")
+      mockRedisGet.mockResolvedValue(JSON.stringify('O Caminhar com Deus'));
+      const fetchFn = jest.fn();
+
+      const data = await getOrSetCache('settings:site_title', fetchFn);
+
+      expect(data).toBe('O Caminhar com Deus');
+      expect(fetchFn).not.toHaveBeenCalled();
+    });
+
+    it('retorna string pura não-JSON sem lançar SyntaxError (fallback resiliente)', async () => {
+      // String pura gravada diretamente no Redis sem formatação JSON
+      mockRedisGet.mockResolvedValue('O Caminhar com Deus');
+      const fetchFn = jest.fn();
+
+      const data = await getOrSetCache('raw-string-key', fetchFn);
+
+      expect(data).toBe('O Caminhar com Deus');
+      expect(fetchFn).not.toHaveBeenCalled();
+    });
+
+    it('retorna dado já desserializado caso o cliente Redis devolva objeto', async () => {
+      mockRedisGet.mockResolvedValue({ alreadyParsed: true });
+      const fetchFn = jest.fn();
+
+      const data = await getOrSetCache('parsed-key', fetchFn);
+
+      expect(data).toEqual({ alreadyParsed: true });
+      expect(fetchFn).not.toHaveBeenCalled();
+    });
+
     it('chama fetchFunction se não houver cache (Cache Miss) e salva no Redis', async () => {
       mockRedisGet.mockResolvedValue(null);
       const fetchFn = jest.fn().mockResolvedValue({ db: true });

@@ -84,6 +84,7 @@ describe('Infra - Redis (lib/infra/redis.js)', () => {
     expect(Redis).toHaveBeenCalledWith({
       url: 'https://upstash.example.com',
       token: 'tokenteste123',
+      automaticDeserialization: false,
     });
 
     await expect(redis.redisGet('chave')).resolves.toBe('valor-remoto');
