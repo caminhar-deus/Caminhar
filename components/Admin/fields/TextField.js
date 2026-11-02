@@ -51,7 +51,7 @@ export default function TextField({
 TextField.propTypes = {
   name: PropTypes.string.isRequired,
   label: PropTypes.string.isRequired,
-  value: PropTypes.string.isRequired,
+  value: PropTypes.string,
   onChange: PropTypes.func.isRequired,
   type: PropTypes.oneOf(['text', 'email', 'password', 'number', 'tel', 'search']),
   placeholder: PropTypes.string,

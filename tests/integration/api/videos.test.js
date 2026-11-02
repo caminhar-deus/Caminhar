@@ -73,7 +73,7 @@ testPublicGetEndpoint(handler, {
       await h(req, res);
 
       expect(res._getStatusCode()).toBe(200);
-      expect(getPublicPaginatedVideos).toHaveBeenCalledWith(1, 10, '', 'titulo ASC, id ASC');
+      expect(getPublicPaginatedVideos).toHaveBeenCalledWith(1, 10, '', 'lower(unaccent(titulo)) ASC, id ASC');
     });
 
     it('deve rejeitar sort fora do enum com 400 e INVALID_PARAMS_MESSAGE (sem fallback)', async () => {

@@ -58,7 +58,8 @@ export const Select = forwardRef(({
   const [selectedLabel, setSelectedLabel] = useState('');
 
   const isControlled = value !== undefined;
-  const currentValue = isControlled ? value : defaultValue;
+  const normalizedValue = value === null ? '' : value;
+  const currentValue = isControlled ? normalizedValue : defaultValue;
 
   // Atualiza o label quando o valor muda
   useEffect(() => {
@@ -164,7 +165,7 @@ export const Select = forwardRef(({
         onChange={(e) => onChange?.(e)}
         onFocus={() => setIsOpen(true)}
         onBlur={() => setIsOpen(false)}
-        value={value}
+        value={normalizedValue}
         defaultValue={defaultValue}
         disabled={disabled}
         {...props}

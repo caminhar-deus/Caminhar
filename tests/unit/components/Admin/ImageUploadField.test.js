@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import ImageUploadField from '../../../../components/Admin/fields/ImageUploadField.js';
+import CrudForm from '../../../../components/Admin/CrudForm.js';
 import { mockGlobalFetch } from '../../../helpers/index.js';
 import toast from 'react-hot-toast';
 
@@ -162,5 +163,125 @@ describe('ImageUploadField Component', () => {
     await waitFor(() => {
       expect(onChange).toHaveBeenCalledWith({ target: { name: 'image_url', value: '/uploads/dup.jpg' } });
     });
+  });
+
+  it('deve normalizar value null para string vazia no modo simples sem avisos no console e limpar o DOM ao alternar para null', () => {
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const onChange = jest.fn();
+      const { rerender } = render(
+        <ImageUploadField name="thumbnail" label="Thumbnail" value={null} onChange={onChange} />
+      );
+
+      const input = screen.getByLabelText('Thumbnail');
+      expect(input).toHaveValue('');
+      expect(screen.queryByAltText('Preview')).not.toBeInTheDocument();
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+
+      rerender(
+        <ImageUploadField name="thumbnail" label="Thumbnail" value="https://example.com/capa.jpg" onChange={onChange} />
+      );
+      expect(input).toHaveValue('https://example.com/capa.jpg');
+      expect(screen.getByAltText('Preview')).toHaveAttribute('src', 'https://example.com/capa.jpg');
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+
+      rerender(
+        <ImageUploadField name="thumbnail" label="Thumbnail" value={null} onChange={onChange} />
+      );
+      expect(input).toHaveValue('');
+      expect(screen.queryByAltText('Preview')).not.toBeInTheDocument();
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    } finally {
+      consoleErrorSpy.mockRestore();
+    }
+  });
+
+  it('multiple: deve normalizar value null no textarea, permitir upload e limpar o DOM ao voltar para null sem avisos no console', async () => {
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ path: '/uploads/primeira.jpg' })
+      });
+
+      const onChange = jest.fn();
+      const { rerender } = render(
+        <ImageUploadField name="image_url" label="Imagens" value={null} onChange={onChange} multiple />
+      );
+
+      const textarea = screen.getByLabelText('Imagens');
+      expect(textarea).toHaveValue('');
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+
+      fireEvent.change(document.querySelector('input[type="file"]'), {
+        target: { files: [new File([''], 'a.png', { type: 'image/png' })] }
+      });
+
+      await waitFor(() => {
+        expect(onChange).toHaveBeenCalledWith({
+          target: { name: 'image_url', value: '/uploads/primeira.jpg' }
+        });
+      });
+
+      rerender(
+        <ImageUploadField name="image_url" label="Imagens" value={'https://a.jpg\nhttps://b.jpg'} onChange={onChange} multiple />
+      );
+      expect(textarea).toHaveValue('https://a.jpg\nhttps://b.jpg');
+
+      rerender(
+        <ImageUploadField name="image_url" label="Imagens" value={null} onChange={onChange} multiple />
+      );
+      expect(textarea).toHaveValue('');
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    } finally {
+      consoleErrorSpy.mockRestore();
+    }
+  });
+
+  it('integração CrudForm: não deve emitir aviso ao iniciar com thumbnail null nem reter valor fantasma ao trocar edição para item com null', () => {
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const fields = [
+        {
+          name: 'thumbnail',
+          component: ImageUploadField,
+          label: 'Thumbnail Customizada (Opcional)',
+          uploadType: 'video'
+        }
+      ];
+      const baseProps = {
+        fields,
+        handleInputChange: jest.fn(),
+        setFieldValue: jest.fn(),
+        error: null,
+        loading: false,
+        isEditing: false,
+        updateButtonText: 'Atualizar',
+        saveButtonText: 'Salvar',
+        handleSubmit: jest.fn(),
+        validateForm: jest.fn()
+      };
+
+      const { rerender } = render(
+        <CrudForm {...baseProps} formData={{ thumbnail: null }} />
+      );
+
+      const input = screen.getByLabelText('Thumbnail Customizada (Opcional)');
+      expect(input).toHaveValue('');
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+
+      rerender(
+        <CrudForm {...baseProps} isEditing formData={{ thumbnail: 'https://cdn.site/video-a.jpg' }} />
+      );
+      expect(input).toHaveValue('https://cdn.site/video-a.jpg');
+
+      rerender(
+        <CrudForm {...baseProps} isEditing formData={{ thumbnail: null }} />
+      );
+      expect(input).toHaveValue('');
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    } finally {
+      consoleErrorSpy.mockRestore();
+    }
   });
 });

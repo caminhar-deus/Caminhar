@@ -35,6 +35,7 @@ export default function UrlField({
   className = ''
 }) {
   const [validationError, setValidationError] = useState('');
+  const normalizedValue = value ?? '';
 
   // Extrai ID do YouTube usando helper centralizado
   const getYouTubeId = useCallback((url) => {
@@ -81,10 +82,10 @@ export default function UrlField({
 
   // Gera preview baseado na plataforma
   const renderPreview = () => {
-    if (!value) return null;
+    if (!normalizedValue) return null;
 
-    const youtubeId = getYouTubeId(value);
-    const spotifyId = getSpotifyId(value);
+    const youtubeId = getYouTubeId(normalizedValue);
+    const spotifyId = getSpotifyId(normalizedValue);
 
     if (platform === 'youtube' && youtubeId) {
       return (
@@ -144,7 +145,7 @@ export default function UrlField({
         id={name}
         type="url"
         name={name}
-        value={value}
+        value={normalizedValue}
         onChange={handleChange}
         placeholder={placeholder || platformPlaceholders[platform]}
         required={required}
@@ -167,7 +168,7 @@ export default function UrlField({
 UrlField.propTypes = {
   name: PropTypes.string.isRequired,
   label: PropTypes.string.isRequired,
-  value: PropTypes.string.isRequired,
+  value: PropTypes.string,
   onChange: PropTypes.func.isRequired,
   platform: PropTypes.oneOf(['youtube', 'spotify', 'generic']),
   showPreview: PropTypes.bool,

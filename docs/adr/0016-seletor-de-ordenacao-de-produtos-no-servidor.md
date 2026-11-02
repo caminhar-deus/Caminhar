@@ -109,3 +109,6 @@ Permanecem em aberto:
   Produtos). A inconsistência é de vocabulário do enum, não de comportamento.
   Unificar os nomes exigiria mudança de contrato (quebraria URLs/cache em
   produção) e foi deliberadamente deixada como follow-up.
+  **Atualização de 2026-11-01 ([ADR-0033](0033-videos-posicionados-indice-e-ordenacao-alfabetica.md)):**
+  Vídeos passou a aceitar também `positioned` (como Músicas); o vocabulário `recent`
+  permanece, e a divergência de nomes segue como follow-up.

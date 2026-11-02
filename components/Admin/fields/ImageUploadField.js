@@ -36,13 +36,19 @@ export default function ImageUploadField({
 }) {
   const [uploading, setUploading] = useState(false);
 
+  // Normaliza null/undefined (ex.: colunas NULL do banco ou initialFormData)
+  // para string vazia, mantendo o input/textarea sempre controlado no React.
+  const normalizedValue = value ?? '';
+  const images = multiple
+    ? normalizedValue.split('\n').map((line) => line.trim()).filter(Boolean)
+    : (normalizedValue ? [normalizedValue] : []);
+
   // No modo múltiplo, cada upload vira uma nova linha (o produto usa a
   // primeira imagem como capa e as demais no carrossel — parseImages).
   const applyUploadedUrl = (url) => {
     if (!multiple) return url;
-    const current = (value || '').split('\n').map((line) => line.trim()).filter(Boolean);
-    if (current.includes(url)) return current.join('\n');
-    return [...current, url].join('\n');
+    if (images.includes(url)) return images.join('\n');
+    return [...images, url].join('\n');
   };
 
   const handleFileChange = async (e) => {
@@ -90,10 +96,6 @@ export default function ImageUploadField({
     }
   };
 
-  const images = multiple
-    ? (value || '').split('\n').map((line) => line.trim()).filter(Boolean)
-    : (value ? [value] : []);
-
   const removeImage = (urlToRemove) => {
     const next = images.filter((url) => url !== urlToRemove).join('\n');
     onChange({ target: { name, value: next } });
@@ -110,7 +112,7 @@ export default function ImageUploadField({
           <textarea
             id={name}
             name={name}
-            value={value}
+            value={normalizedValue}
             onChange={onChange}
             placeholder={placeholder}
             required={required}
@@ -123,7 +125,7 @@ export default function ImageUploadField({
             id={name}
             type="text"
             name={name}
-            value={value}
+            value={normalizedValue}
             onChange={onChange}
             placeholder={placeholder}
             required={required}
@@ -209,7 +211,7 @@ export default function ImageUploadField({
 ImageUploadField.propTypes = {
   name: PropTypes.string.isRequired,
   label: PropTypes.string.isRequired,
-  value: PropTypes.string.isRequired,
+  value: PropTypes.string,
   onChange: PropTypes.func.isRequired,
   onUpload: PropTypes.func,
   uploadEndpoint: PropTypes.string,

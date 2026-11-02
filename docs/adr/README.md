@@ -42,6 +42,7 @@ apoio, não a fonte oficial; a decisão não é duplicada como página de memór
 | [0030](0030-null-tolerant-admin-edit-schemas.md) | Schemas de edição do painel toleram `null` vindo do banco | Aceito | 2026-10-30 |
 | [0031](0031-password-policy-12-complexity-shared-module.md) | Política de senha única (12 caracteres + complexidade) no painel | Aceito | 2026-10-30 |
 | [0032](0032-site-name-unification-and-seo-cleanup.md) | Nome do site unificado no blog (settings do painel) e remoção do SEO morto | Aceito | 2026-10-30 |
+| [0033](0033-videos-posicionados-indice-e-ordenacao-alfabetica.md) | Vídeos ganham "Posicionados", índice para recent/oldest e A-Z independente da colação | Aceito | 2026-11-01 |
 
 ## Quando criar um ADR
 

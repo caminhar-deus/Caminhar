@@ -55,7 +55,7 @@ export default function TextAreaField({
 TextAreaField.propTypes = {
   name: PropTypes.string.isRequired,
   label: PropTypes.string.isRequired,
-  value: PropTypes.string.isRequired,
+  value: PropTypes.string,
   onChange: PropTypes.func.isRequired,
   rows: PropTypes.number,
   maxLength: PropTypes.number,

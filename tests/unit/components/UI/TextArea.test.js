@@ -169,4 +169,35 @@ describe('Componente UI - TextArea', () => {
     
     preventDefault.mockRestore();
   });
+
+  it('deve tratar value null como controlado vazio sem avisos do React e limpar o DOM ao voltar para null', () => {
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const onChange = jest.fn();
+      const { rerender } = render(
+        <TextArea label="Resumo" value={null} onChange={onChange} maxLength={50} showCount />
+      );
+
+      const textarea = screen.getByLabelText('Resumo');
+      expect(textarea).toHaveValue('');
+      expect(screen.getByText('0 / 50 caracteres')).toBeInTheDocument();
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+
+      rerender(
+        <TextArea label="Resumo" value="Texto preenchido" onChange={onChange} maxLength={50} showCount />
+      );
+      expect(textarea).toHaveValue('Texto preenchido');
+      expect(screen.getByText('16 / 50 caracteres')).toBeInTheDocument();
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+
+      rerender(
+        <TextArea label="Resumo" value={null} onChange={onChange} maxLength={50} showCount />
+      );
+      expect(textarea).toHaveValue('');
+      expect(screen.getByText('0 / 50 caracteres')).toBeInTheDocument();
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    } finally {
+      consoleErrorSpy.mockRestore();
+    }
+  });
 });

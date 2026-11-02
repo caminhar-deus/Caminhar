@@ -40,7 +40,8 @@ export const Input = forwardRef(({
 
   const [internalValue, setInternalValue] = useState('');
   const isControlled = value !== undefined;
-  const currentValue = isControlled ? value : internalValue;
+  const normalizedValue = value === null ? '' : value;
+  const currentValue = isControlled ? normalizedValue : internalValue;
 
   const handleChange = (e) => {
     if (!isControlled) {
@@ -103,7 +104,7 @@ export const Input = forwardRef(({
           className={inputClasses}
           aria-invalid={error}
           aria-describedby={error ? errorId : helperText ? helperId : undefined}
-          value={isControlled ? value : undefined}
+          value={normalizedValue}
           onChange={handleChange}
           {...props}
         />

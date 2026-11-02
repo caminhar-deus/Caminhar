@@ -5,16 +5,30 @@ import { getClientIP, INVALID_PAGINATION_MESSAGE, INVALID_PARAMS_MESSAGE } from 
 import { logger } from '../../lib/infra/logger.js';
 
 /**
+ * Expressão de ordenação alfabética do título, independente da colação do
+ * cluster PostgreSQL: em `C`/`C.UTF-8`, `ORDER BY titulo` põe as maiúsculas
+ * antes das minúsculas e os acentuados no fim. `unaccent` PRIMEIRO e `lower`
+ * depois — em cluster `C` puro o `lower()` não minusculiza `É`/`Á`, então a
+ * ordem inversa deixaria "Éden" fora do lugar. Requer a extensão `unaccent`
+ * (migration 021).
+ */
+const TITULO_ORDEM = 'lower(unaccent(titulo))';
+
+/**
  * Mapeamento dos valores de sort para cláusulas ORDER BY.
  * Todas as cláusulas têm desempate determinístico por `id` na MESMA direção
  * da coluna principal — sem ele, itens com o mesmo valor da coluna poderiam
  * trocar de posição entre páginas (ordem não determinística na paginação).
+ * `positioned` é a curadoria manual do painel (arrastar e soltar grava
+ * `position`); `recent`/`oldest` usam `idx_videos_recent` e `positioned` usa
+ * `idx_videos_pagination` (migrations 012 e 021).
  */
 const SORT_MAP = {
   recent: 'created_at DESC, id DESC',
+  positioned: 'position ASC, id ASC',
   oldest: 'created_at ASC, id ASC',
-  alpha: 'titulo ASC, id ASC',
-  alpha_desc: 'titulo DESC, id DESC',
+  alpha: `${TITULO_ORDEM} ASC, id ASC`,
+  alpha_desc: `${TITULO_ORDEM} DESC, id DESC`,
 };
 
 /**
@@ -38,7 +52,7 @@ export default async function handler(req, res) {
       // dicas) — sem `.max()`, `?limit=1000` devolvia 200 com 1000 itens (ADR-0009).
       limit: z.coerce.number().int().positive().max(100, INVALID_PAGINATION_MESSAGE).default(10),
       search: z.string().max(200).optional(),
-      sort: z.enum(['recent', 'oldest', 'alpha', 'alpha_desc']).optional().default('recent'),
+      sort: z.enum(['recent', 'positioned', 'oldest', 'alpha', 'alpha_desc']).optional().default('recent'),
     });
 
     const validation = querySchema.safeParse(req.query);

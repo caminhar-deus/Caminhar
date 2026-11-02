@@ -55,7 +55,8 @@ export const TextArea = forwardRef(({
     .filter(Boolean)
     .join(' ');
 
-  const currentLength = (value || defaultValue || '').length;
+  const normalizedValue = value === null ? '' : value;
+  const currentLength = (normalizedValue || defaultValue || '').length;
   const isOverLimit = maxLength && currentLength > maxLength;
 
   const internalRef = useRef(null);
@@ -121,7 +122,7 @@ export const TextArea = forwardRef(({
     if (!textarea) return;
 
     calculateHeight(textarea);
-  }, [autoResize, minRows, maxRows, value, defaultValue]);
+  }, [autoResize, minRows, maxRows, normalizedValue, defaultValue]);
 
   return (
     <div className={wrapperClasses}>
@@ -147,7 +148,7 @@ export const TextArea = forwardRef(({
         aria-describedby={error ? errorId : helperText ? helperId : undefined}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
-        value={value}
+        value={normalizedValue}
         defaultValue={defaultValue}
         maxLength={!blockOnLimit ? maxLength : undefined}
         {...props}

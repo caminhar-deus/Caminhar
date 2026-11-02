@@ -125,6 +125,18 @@
 │       ├── icons.js
 │       └── index.js
 ├── coverage
+│   ├── Admin
+│   │   └── fields
+│   │       ├── ImageUploadField.js.html
+│   │       ├── TextAreaField.js.html
+│   │       ├── TextField.js.html
+│   │       ├── UrlField.js.html
+│   │       └── index.html
+│   ├── UI
+│   │   ├── Input.js.html
+│   │   ├── Select.js.html
+│   │   ├── TextArea.js.html
+│   │   └── index.html
 │   ├── base.css
 │   ├── block-navigation.js
 │   ├── clean-orphaned-images.js.html
@@ -235,9 +247,22 @@
 │   │       ├── index.html
 │   │       └── index.js.html
 │   ├── db.js.html
+│   ├── dicas.js.html
 │   ├── favicon.png
 │   ├── index.html
 │   ├── lcov-report
+│   │   ├── Admin
+│   │   │   └── fields
+│   │   │       ├── ImageUploadField.js.html
+│   │   │       ├── TextAreaField.js.html
+│   │   │       ├── TextField.js.html
+│   │   │       ├── UrlField.js.html
+│   │   │       └── index.html
+│   │   ├── UI
+│   │   │   ├── Input.js.html
+│   │   │   ├── Select.js.html
+│   │   │   ├── TextArea.js.html
+│   │   │   └── index.html
 │   │   ├── base.css
 │   │   ├── block-navigation.js
 │   │   ├── clean-orphaned-images.js.html
@@ -348,6 +373,7 @@
 │   │   │       ├── index.html
 │   │   │       └── index.js.html
 │   │   ├── db.js.html
+│   │   ├── dicas.js.html
 │   │   ├── favicon.png
 │   │   ├── index.html
 │   │   ├── lib
@@ -365,7 +391,8 @@
 │   │   │   │   └── validate.js.html
 │   │   │   ├── auth
 │   │   │   │   ├── auth.js.html
-│   │   │   │   └── index.html
+│   │   │   │   ├── index.html
+│   │   │   │   └── password-policy.js.html
 │   │   │   ├── cache
 │   │   │   │   ├── cache.js.html
 │   │   │   │   └── index.html
@@ -375,6 +402,7 @@
 │   │   │   ├── domain
 │   │   │   │   ├── audit.js.html
 │   │   │   │   ├── categories.js.html
+│   │   │   │   ├── dicas.js.html
 │   │   │   │   ├── images.js.html
 │   │   │   │   ├── index.html
 │   │   │   │   ├── musicas.js.html
@@ -462,7 +490,8 @@
 │   │   │   └── validate.js.html
 │   │   ├── auth
 │   │   │   ├── auth.js.html
-│   │   │   └── index.html
+│   │   │   ├── index.html
+│   │   │   └── password-policy.js.html
 │   │   ├── cache
 │   │   │   ├── cache.js.html
 │   │   │   └── index.html
@@ -472,6 +501,7 @@
 │   │   ├── domain
 │   │   │   ├── audit.js.html
 │   │   │   ├── categories.js.html
+│   │   │   ├── dicas.js.html
 │   │   │   ├── images.js.html
 │   │   │   ├── index.html
 │   │   │   ├── musicas.js.html
@@ -637,6 +667,7 @@
 │   │   ├── 0030-null-tolerant-admin-edit-schemas.md
 │   │   ├── 0031-password-policy-12-complexity-shared-module.md
 │   │   ├── 0032-site-name-unification-and-seo-cleanup.md
+│   │   ├── 0033-videos-posicionados-indice-e-ordenacao-alfabetica.md
 │   │   ├── README.md
 │   │   └── template.md
 │   └── ai-memory-error.md
@@ -1022,6 +1053,7 @@
 │   │   ├── 018-seed-default-roles.js
 │   │   ├── 019-products-price-numeric.js
 │   │   ├── 020-unify-published-column.js
+│   │   ├── 021-videos-public-sort-support.js
 │   │   ├── seed-migrations-table.js
 │   │   └── verify-applied.js
 │   ├── monitor-disk-space.js
@@ -1374,4 +1406,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-201 directories, 1174 files
+207 directories, 1200 files

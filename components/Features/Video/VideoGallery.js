@@ -4,8 +4,11 @@ import { LoadingMessage, ErrorMessage } from '@/components/UI/StateMessages';
 import VideoCard from './VideoCard';
 import styles from './styles/VideoGallery.module.css';
 
+// "Padrão" equivale a Mais recentes (created_at DESC); "Posicionados" é a
+// curadoria manual do painel (position ASC) — mesmo padrão de Músicas e Produtos.
 const SORT_OPTIONS = [
   { value: 'recent', label: 'Padrão' },
+  { value: 'positioned', label: 'Posicionados' },
   { value: 'oldest', label: 'Mais antigos' },
   { value: 'alpha', label: 'A-Z' },
   { value: 'alpha_desc', label: 'Z-A' },

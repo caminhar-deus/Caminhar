@@ -2,7 +2,7 @@
 
 > Escopo: apenas a área pública (qualquer visitante). O painel administrativo está documentado em `docs/ARQUITETURA_SITE_PRIVADO.md`.
 > Fonte: 12 capturas de tela do site em desenvolvimento + descrição do dono do projeto.
-> Última atualização: 2026-10-31
+> Última atualização: 2026-11-01
 > Legenda: [PLANEJADO] = alvo ainda não implementado, informado pelo dono | [OBSERVADO] = visto nas imagens | [HIPÓTESE] = inferido, confirmar antes de assumir.
 
 ---
@@ -86,7 +86,7 @@ Esse mapeamento deve ser mantido de forma consistente em toda a documentação.
 - **Cadastro ilimitado:** Não há limite de registros cadastrados na aba **Gestão de Vídeos** do painel, seja qual for o status. Todos os registros **publicados** dessa aba são elegíveis para exibição nesta aba pública, sem limite definido por essas regras.
 - **Propósito:** [PLANEJADO] links de vídeos do YouTube.
 - **Controles:** campo de busca "Pesquisar por título ou descrição..."; seletor "Ordenar:"; contador azul "Mostrando X de Y vídeos".
-- **Ordenação:** o seletor abre com a opção **Padrão** selecionada, que equivale a ordenar por "Mais recentes"; as demais opções são "Mais antigos", "A-Z" e "Z-A".
+- **Ordenação:** o seletor abre com a opção **Padrão** selecionada, que equivale a ordenar por "Mais recentes" (`created_at DESC`); as demais opções são **"Posicionados"** (curadoria manual do painel, `position ASC, id ASC`), "Mais antigos", "A-Z" e "Z-A". "Posicionados" foi exposta em 2026-11-01 (item AE, [ADR-0033](adr/0033-videos-posicionados-indice-e-ordenacao-alfabetica.md)), depois de Músicas e Produtos. A-Z e Z-A ignoram acentos e caixa (`lower(unaccent(titulo))`), independentemente da colação do banco.
 - **Grade:** 3 x 4 = 12 por página.
 - **Cartão de vídeo:** player incorporado do YouTube (16:9) → título → descrição curta → **link externo "Assistir no YouTube"** no rodapé do cartão: abre o vídeo canônico no YouTube em nova aba (`rel="noopener noreferrer"`), montado a partir do ID do vídeo, com a URL bruta como fallback. Decisão registrada em [ADR-0015](adr/0015-link-externo-assistir-no-youtube-no-cartao-de-video.md).
 - **Paginação:** "❮ Anterior | Página X de Y (Z vídeos) | Próxima ❯". "Anterior" fica desabilitado na página 1.

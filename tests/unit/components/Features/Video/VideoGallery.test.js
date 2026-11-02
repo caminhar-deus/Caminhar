@@ -188,4 +188,30 @@ describe('Componente Front-End - VideoGallery', () => {
 
     await waitFor(() => expect(global.fetch).toHaveBeenNthCalledWith(3, expect.stringContaining('page=1'), expect.any(Object)));
   });
+
+  it('deve oferecer as opções de ordenação na ordem do contrato e pedir sort=positioned ao selecionar "Posicionados"', async () => {
+    global.fetch.mockResolvedValue({ ok: true, json: async () => mockVideos });
+
+    render(<VideoGallery />);
+    await waitFor(() => expect(screen.getByText('Vídeo Teste 1')).toBeInTheDocument());
+
+    // Mesmo padrão de Músicas e Produtos: "Posicionados" na 2ª posição, no mesmo select.
+    const select = screen.getByLabelText('Ordenar vídeos');
+    expect(Array.from(select.options).map((o) => [o.value, o.textContent])).toEqual([
+      ['recent', 'Padrão'],
+      ['positioned', 'Posicionados'],
+      ['oldest', 'Mais antigos'],
+      ['alpha', 'A-Z'],
+      ['alpha_desc', 'Z-A'],
+    ]);
+    expect(global.fetch).toHaveBeenNthCalledWith(1, expect.stringContaining('sort=recent'), expect.any(Object));
+
+    await act(async () => { fireEvent.change(select, { target: { value: 'positioned' } }); });
+
+    await waitFor(() =>
+      expect(global.fetch).toHaveBeenNthCalledWith(2, expect.stringContaining('sort=positioned'), expect.any(Object))
+    );
+    // Trocar a ordenação volta para a página 1
+    expect(global.fetch).toHaveBeenNthCalledWith(2, expect.stringContaining('page=1'), expect.any(Object));
+  });
 });

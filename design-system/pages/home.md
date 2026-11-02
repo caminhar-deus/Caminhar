@@ -1,6 +1,6 @@
 # Página pública inicial (home) — spec de implementação (override do MASTER)
 
-> Última atualização: 2026-10-21 (decisões D1–D5 do checklist front-end: rodapé do cartão de produto, foco dos seletores de ordenação, alvo de toque 44px, `aria-live` na paginação, guard global de `prefers-reduced-motion`; exposição de "Posicionados" no seletor de Produtos — F4.2 concluído, opção exposta, legenda auxiliar não implementada).
+> Última atualização: 2026-11-01 ("Posicionados" exposto também no seletor de Vídeos — item AE, ADR-0033, mesma decisão D6). Anterior: 2026-10-21 (decisões D1–D5 do checklist front-end: rodapé do cartão de produto, foco dos seletores de ordenação, alvo de toque 44px, `aria-live` na paginação, guard global de `prefers-reduced-motion`; exposição de "Posicionados" no seletor de Produtos — F4.2 concluído, opção exposta, legenda auxiliar não implementada).
 > Override de `design-system/MASTER.md`. Tudo aqui vence o MASTER; o que não for mencionado segue o MASTER. Stack: Next.js Pages Router + React + CSS Modules + variáveis CSS (sem Tailwind). Idioma da interface: pt-BR. Tokens: sempre a variável, nunca hex.
 
 > Escopo: a página única com abas (`pages/index.js` + `components/Features/ContentTabs`). Esta spec cobre os 6 itens definidos no `docs/PLANO_ACAO_SITE_PUBLICO.md` (F1.3, F1.4, F1.6, F2.3 + decisões de design) e não toca lógica de negócio nem o painel administrativo.
@@ -74,7 +74,7 @@
 ### 2.2 Posicionados: mesmo select, sem distinção visual
 - **Recomendação: entra no mesmo `<select>`**, sem badge, cor ou agrupamento próprio. O rótulo "Posicionados" já comunica.
 - Legenda auxiliar "Ordem definida no painel administrativo." (12px, `--color-text-tertiary`) abaixo do select quando `positioned` estiver ativo: **não aprovada** (decisão D6). O rótulo "Posicionados" já comunica a origem da ordenação; a legenda seria ruído visual repetido a cada troca de aba e não é requisito de acessibilidade. Estado atual do código: sem legenda. Se no futuro a curadoria precisar ser sinalizada, reabrir esta decisão.
-- "Posicionados" está exposto em Músicas e (desde 2026-10-21) em Produtos; a curadoria funciona no painel para ambas as abas. A ressalva "pode ser exposto hoje" não se aplica mais.
+- "Posicionados" está exposto em Músicas e (desde 2026-10-21) em Produtos; a curadoria funciona no painel para ambas as abas. A ressalva "pode ser exposto hoje" não se aplica mais. Em Vídeos, a opção foi exposta em 2026-11-01 (item AE, ADR-0033), na 2ª posição do mesmo select e sob a mesma decisão D6 (sem legenda).
 
 ### 2.3 Demais ajustes visuais
 - Rótulo do controle permanece "Ordenar:" (label visível, `htmlFor="sort-select"`). `aria-label="Ordenar músicas"`.
@@ -198,6 +198,7 @@
 - Produtos — opções: "Padrão", "Posicionados", "Mais antigos", "Menor preço", "Maior preço" (expõe "Posicionados" desde 2026-10-21).
 - Produtos — contador: "Mostrando X de Y produto(s)" / "X resultado(s) para \"termo\"".
 - Músicas — opções: "Padrão", "Posicionados", "Mais antigos", "A-Z", "Z-A".
+- Vídeos — opções: "Padrão", "Posicionados", "Mais antigos", "A-Z", "Z-A" (mesmo `<select>`, sem distinção visual nem legenda — decisão D6; expõe "Posicionados" desde 2026-11-01, ADR-0033).
 - Vídeos — link: "Assistir no YouTube".
 - Paginação (todas as abas): "❮ Anterior", "Página X de Y (Z itens)", "Próxima ❯".
 

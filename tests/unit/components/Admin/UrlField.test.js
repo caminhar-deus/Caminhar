@@ -90,4 +90,35 @@ describe('UrlField Component', () => {
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'http://' } }); 
     expect(screen.getByText('URL inválida')).toBeInTheDocument();
   });
+
+  it('deve normalizar value null para string vazia sem avisos no console e limpar o DOM ao voltar para null', () => {
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const onChange = jest.fn();
+      const { rerender } = render(
+        <UrlField name="url_youtube" label="URL do YouTube" value={null} onChange={onChange} platform="youtube" showPreview />
+      );
+
+      const input = screen.getByRole('textbox');
+      expect(input).toHaveValue('');
+      expect(screen.queryByTitle('Preview do vídeo')).not.toBeInTheDocument();
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+
+      rerender(
+        <UrlField name="url_youtube" label="URL do YouTube" value="https://www.youtube.com/watch?v=dQw4w9WgXcQ" onChange={onChange} platform="youtube" showPreview />
+      );
+      expect(input).toHaveValue('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+      expect(screen.getByTitle('Preview do vídeo')).toBeInTheDocument();
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+
+      rerender(
+        <UrlField name="url_youtube" label="URL do YouTube" value={null} onChange={onChange} platform="youtube" showPreview />
+      );
+      expect(input).toHaveValue('');
+      expect(screen.queryByTitle('Preview do vídeo')).not.toBeInTheDocument();
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    } finally {
+      consoleErrorSpy.mockRestore();
+    }
+  });
 });

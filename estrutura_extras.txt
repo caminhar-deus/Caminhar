@@ -846,6 +846,7 @@ tests/unit/components/Admin/AdminUsersTab.test.js → tests/helpers/index.js
 tests/unit/components/Admin/AdminUsersTab.test.js → tests/mocks/next-setup.js
 tests/unit/components/Admin/AdminVideos.test.js → components/Admin/AdminVideos.js
 tests/unit/components/Admin/AdminVideos.test.js → tests/helpers/index.js
+tests/unit/components/Admin/ImageUploadField.test.js → components/Admin/CrudForm.js
 tests/unit/components/Admin/ImageUploadField.test.js → components/Admin/fields/ImageUploadField.js
 tests/unit/components/Admin/ImageUploadField.test.js → tests/helpers/index.js
 tests/unit/components/Admin/Managers/BackupManager.test.js → components/Admin/Managers/BackupManager.js

@@ -155,11 +155,11 @@ describe('Contrato de `sort` entre a suíte k6 e as rotas públicas', () => {
     }
   });
 
-  it('/api/videos tem enum estrito, sem fallback, e referencia INVALID_PARAMS_MESSAGE (correção 23/10/2026)', () => {
+  it('/api/videos tem enum estrito, sem fallback, e referencia INVALID_PARAMS_MESSAGE (correção 23/10/2026; `positioned` entrou com o item AE)', () => {
     const videos = ROTAS.find((r) => r.endpoint === '/api/videos');
     const { aceitos, temFallback } = contratoDaRota(videos);
     expect(temFallback).toBe(false);
-    expect([...aceitos].sort()).toEqual(['alpha', 'alpha_desc', 'oldest', 'recent']);
+    expect([...aceitos].sort()).toEqual(['alpha', 'alpha_desc', 'oldest', 'positioned', 'recent']);
     expect(ler(videos.arquivo)).toContain('INVALID_PARAMS_MESSAGE');
   });
 

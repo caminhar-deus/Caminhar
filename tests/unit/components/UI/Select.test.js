@@ -244,5 +244,44 @@ describe('Componente UI - Select', () => {
       expect(selectWithError.getAttribute('aria-describedby')).toContain('-error');
       expect(screen.getByRole('alert')).toHaveTextContent('Erro aqui');
     });
+
+    it('deve tratar value null como controlado vazio sem avisos do React nos modos nativo e custom', () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      try {
+        const onChange = jest.fn();
+        const { rerender, unmount } = render(
+          <Select label="Categoria" options={options} value={null} onChange={onChange} />
+        );
+
+        const select = screen.getByLabelText('Categoria');
+        expect(select).toHaveValue('');
+        expect(consoleErrorSpy).not.toHaveBeenCalled();
+
+        rerender(<Select label="Categoria" options={options} value="1" onChange={onChange} />);
+        expect(select).toHaveValue('1');
+        expect(consoleErrorSpy).not.toHaveBeenCalled();
+
+        rerender(<Select label="Categoria" options={options} value={null} onChange={onChange} />);
+        expect(select).toHaveValue('');
+        expect(consoleErrorSpy).not.toHaveBeenCalled();
+
+        unmount();
+
+        const { rerender: rerenderCustom } = render(
+          <Select label="Custom" options={options} clearable searchable value="1" onChange={onChange} />
+        );
+        expect(screen.getByText('Opção 1')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Limpar seleção' })).toBeInTheDocument();
+
+        rerenderCustom(
+          <Select label="Custom" options={options} clearable searchable value={null} onChange={onChange} />
+        );
+        expect(screen.getByText('Selecione...')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Limpar seleção' })).not.toBeInTheDocument();
+        expect(consoleErrorSpy).not.toHaveBeenCalled();
+      } finally {
+        consoleErrorSpy.mockRestore();
+      }
+    });
   });
 });

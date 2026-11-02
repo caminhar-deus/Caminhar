@@ -65,4 +65,39 @@ describe('Componente UI - Input', () => {
       })
     );
   });
+
+  it('deve tratar value null como controlado vazio sem avisos do React e preservar defaultValue quando undefined', () => {
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const onChange = jest.fn();
+      const { rerender } = render(
+        <Input label="Capa" value={null} onChange={onChange} clearable id="input-null" />
+      );
+
+      const input = screen.getByLabelText('Capa');
+      expect(input).toHaveValue('');
+      expect(screen.queryByRole('button', { name: /limpar campo/i })).not.toBeInTheDocument();
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+
+      rerender(
+        <Input label="Capa" value="https://img.jpg" onChange={onChange} clearable id="input-null" />
+      );
+      expect(input).toHaveValue('https://img.jpg');
+      expect(screen.getByRole('button', { name: /limpar campo/i })).toBeInTheDocument();
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+
+      rerender(
+        <Input label="Capa" value={null} onChange={onChange} clearable id="input-null" />
+      );
+      expect(input).toHaveValue('');
+      expect(screen.queryByRole('button', { name: /limpar campo/i })).not.toBeInTheDocument();
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+
+      render(<Input label="Livre com default" defaultValue="valor-inicial" id="input-default" />);
+      expect(screen.getByLabelText('Livre com default')).toHaveValue('valor-inicial');
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    } finally {
+      consoleErrorSpy.mockRestore();
+    }
+  });
 });

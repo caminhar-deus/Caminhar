@@ -250,6 +250,76 @@ describeIf('Vídeos — Integração com PostgreSQL Real', () => {
     expect(titles.indexOf('Terceiro')).toBeLessThan(titles.indexOf('Primeiro'));
   });
 
+  // ── Ordenação pública de /api/videos (item AE, migration 021) ──────────────
+  // As cláusulas abaixo são as de `SORT_MAP` em pages/api/videos.js (travadas
+  // literalmente em tests/integration/api/videos.pagination.api.test.js).
+
+  it('migration 021 aplicada: extensão unaccent e idx_videos_recent existem', async () => {
+    const ext = await tx.query("SELECT 1 FROM pg_extension WHERE extname = 'unaccent'");
+    expect(ext.rows).toHaveLength(1);
+
+    const idx = await tx.query(
+      "SELECT indexdef FROM pg_indexes WHERE tablename = 'videos' AND indexname = 'idx_videos_recent'"
+    );
+    expect(idx.rows).toHaveLength(1);
+    expect(idx.rows[0].indexdef).toContain('(published, created_at DESC, id DESC)');
+  });
+
+  it('A-Z e Z-A por lower(unaccent(titulo)) ordenam acentos e caixa sem depender da colação do cluster', async () => {
+    // Em cluster `C`/`C.UTF-8`, `ORDER BY titulo` devolveria
+    // Ave, Ave Maria, Ousado Amor, Zebra, Zélia, abba, amor, ave, Ágape, Éden, ótimo…
+    const titulos = ['Ave Maria', 'ótimo caminho', 'Zélia', 'amor', 'Éden', 'Ousado Amor', 'abba', 'Ágape', 'Zebra'];
+    for (const [i, titulo] of titulos.entries()) {
+      await insertTestVideo({ titulo, url_youtube: `https://youtube.com/watch?v=az-${i}-${Date.now()}` });
+    }
+
+    const asc = await tx.query('SELECT titulo FROM videos ORDER BY lower(unaccent(titulo)) ASC, id ASC');
+    expect(asc.rows.map((r) => r.titulo)).toEqual([
+      'abba', 'Ágape', 'amor', 'Ave Maria', 'Éden', 'ótimo caminho', 'Ousado Amor', 'Zebra', 'Zélia',
+    ]);
+
+    const desc = await tx.query('SELECT titulo FROM videos ORDER BY lower(unaccent(titulo)) DESC, id DESC');
+    expect(desc.rows.map((r) => r.titulo)).toEqual(asc.rows.map((r) => r.titulo).reverse());
+  });
+
+  it('Posicionados ordena por position ASC e desempata por id', async () => {
+    const c = await insertTestVideo({ titulo: 'C', position: 2, url_youtube: `https://youtube.com/watch?v=pc-${Date.now()}` });
+    const a = await insertTestVideo({ titulo: 'A', position: 1, url_youtube: `https://youtube.com/watch?v=pa-${Date.now()}` });
+    const b = await insertTestVideo({ titulo: 'B', position: 2, url_youtube: `https://youtube.com/watch?v=pb-${Date.now()}` });
+
+    const result = await tx.query('SELECT id FROM videos ORDER BY position ASC, id ASC');
+    // position 1 primeiro; entre as duas de position 2, a de menor id (c foi criada antes de b)
+    expect(result.rows.map((r) => r.id)).toEqual([a.id, c.id, b.id]);
+  });
+
+  it('os índices atendem as ordens da rota: recent/oldest sem Sort explícito, positioned pelo índice de paginação', async () => {
+    // Tabela minúscula + seq scan/bitmap/sort desligados: o planner só escapa do
+    // Sort explícito se existir índice que entregue a ordem pedida. É prova de
+    // que o índice SERVE a ordem (o ganho de tempo foi medido em 50 000 linhas
+    // na migration 021).
+    await tx.query('SET LOCAL enable_seqscan = off');
+    await tx.query('SET LOCAL enable_bitmapscan = off');
+    await tx.query('SET LOCAL enable_sort = off');
+
+    const plan = async (orderBy) => {
+      const res = await tx.query(
+        `EXPLAIN SELECT id, titulo FROM videos WHERE published = true ORDER BY ${orderBy} LIMIT 12`
+      );
+      return res.rows.map((r) => r['QUERY PLAN']).join('\n');
+    };
+
+    const recent = await plan('created_at DESC, id DESC');
+    expect(recent).toContain('idx_videos_recent');
+    expect(recent).not.toMatch(/\bSort\b/);
+
+    const oldest = await plan('created_at ASC, id ASC');
+    expect(oldest).toContain('Index Scan Backward using idx_videos_recent');
+    expect(oldest).not.toMatch(/\bSort\b/);
+
+    const positioned = await plan('position ASC, id ASC');
+    expect(positioned).toContain('idx_videos_pagination');
+  });
+
   it('deve contar o total de registros corretamente', async () => {
     await insertTestVideo({
       titulo: 'Contagem 1',
