@@ -1,18 +1,16 @@
 import { getPublicPaginatedVideos } from '../../lib/domain/videos.js';
+import { buildAlphaOrderSql } from '../../lib/domain/shared-pagination.js';
 import { getOrSetCache, checkRateLimit } from '../../lib/cache/cache.js';
 import { z } from 'zod';
 import { getClientIP, INVALID_PAGINATION_MESSAGE, INVALID_PARAMS_MESSAGE } from '../../lib/api/helpers.js';
 import { logger } from '../../lib/infra/logger.js';
 
 /**
- * Expressão de ordenação alfabética do título, independente da colação do
- * cluster PostgreSQL: em `C`/`C.UTF-8`, `ORDER BY titulo` põe as maiúsculas
- * antes das minúsculas e os acentuados no fim. `unaccent` PRIMEIRO e `lower`
- * depois — em cluster `C` puro o `lower()` não minusculiza `É`/`Á`, então a
- * ordem inversa deixaria "Éden" fora do lugar. Requer a extensão `unaccent`
- * (migration 021).
+ * Expressão compartilhada de ordenação alfabética do título, independente da
+ * colação do cluster PostgreSQL (unificada com Músicas — ADR-0033 §Revisão).
+ * Requer a extensão `unaccent` (migration 021).
  */
-const TITULO_ORDEM = 'lower(unaccent(titulo))';
+const TITULO_ORDEM = buildAlphaOrderSql('titulo');
 
 /**
  * Mapeamento dos valores de sort para cláusulas ORDER BY.

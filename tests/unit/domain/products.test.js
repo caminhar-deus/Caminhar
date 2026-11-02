@@ -67,7 +67,7 @@ describe('Domain - Produtos (lib/domain/products.js)', () => {
       // comparava lexicograficamente.
       expect(query).toHaveBeenNthCalledWith(
         2,
-        expect.stringContaining('ORDER BY created_at DESC LIMIT $3 OFFSET $4'),
+        expect.stringContaining('ORDER BY created_at DESC, id DESC LIMIT $3 OFFSET $4'),
         [50, 100, 10, 0]
       );
     });
@@ -86,14 +86,21 @@ describe('Domain - Produtos (lib/domain/products.js)', () => {
       expect(query).toHaveBeenNthCalledWith(2, expect.stringContaining('WHERE published = true'), [10, 0]);
     });
 
-    it('deve suportar ordenação por preço (price_asc / price_desc)', async () => {
+    it.each([
+      ['default', 'ORDER BY created_at DESC, id DESC'],
+      ['positioned', 'ORDER BY position ASC, id ASC'],
+      ['oldest', 'ORDER BY created_at ASC, id ASC'],
+      ['price_asc', 'ORDER BY price ASC, id ASC'],
+      ['price_desc', 'ORDER BY price DESC, id DESC'],
+      ['desconhecido', 'ORDER BY created_at DESC, id DESC'],
+    ])('deve aplicar cláusula ORDER BY com desempate determinístico por id para sort=%s', async (sort, expectedOrder) => {
       query
         .mockResolvedValueOnce({ rows: [{ count: '2' }] })
         .mockResolvedValueOnce({ rows: [] });
 
-      await getPaginatedProducts(1, 10, {}, 'price_asc');
+      await getPaginatedProducts(1, 10, {}, sort);
 
-      expect(query).toHaveBeenNthCalledWith(2, expect.stringContaining('ORDER BY price ASC'), expect.anything());
+      expect(query).toHaveBeenNthCalledWith(2, expect.stringContaining(expectedOrder), expect.anything());
     });
 
     it('deve formatar formatted_price a partir do preço numérico', async () => {

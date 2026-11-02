@@ -79,13 +79,19 @@ visual e sem legenda (decisão D6 de `design-system/pages/home.md`).
 - A ordenação alfabética por função não usa índice (como antes: não havia índice em
   `titulo`). Se o catálogo crescer muito, avaliar índice sobre uma função IMMUTABLE
   encapsulando `unaccent`.
-- **Mesma causa fora do escopo**, registrada em `docs/PENDENCIAS_scripts_testes.md` (item
-  AF): `musicas.alpha`/`alpha_desc` ainda ordenam por `titulo`, e
-  `idx_musicas_pagination`/`idx_products_pagination` têm o mesmo desalinhamento da 012.
+- **Mesma causa fora do escopo na data deste ADR**, registrada em `docs/PENDENCIAS_scripts_testes.md`
+  (item AF): `musicas.alpha`/`alpha_desc` ainda ordenavam por `titulo`, e
+  `idx_musicas_pagination`/`idx_products_pagination` tinham o mesmo desalinhamento da 012.
+  **Resolvido em 2026-11-02** (ver §Revisão abaixo).
 
 ## Revisão
 
-Reavaliar se: (a) o catálogo de vídeos passar de alguns milhares de itens (índice funcional
-para A-Z); (b) o item AF for executado em Músicas, para unificar a expressão de ordenação
-alfabética entre as abas; (c) a colação do banco de produção for verificada como linguística
-e o dono preferir remover a dependência de `unaccent`.
+Reavaliar se: (a) o catálogo de vídeos ou músicas passar de alguns milhares de itens (índice
+funcional para A-Z); ~~(b) o item AF for executado em Músicas, para unificar a expressão de
+ordenação alfabética entre as abas~~ **(cumprido em 2026-11-02: `buildAlphaOrderSql` extraído
+em `lib/domain/shared-pagination.js` e compartilhado por `pages/api/videos.js` e
+`lib/domain/musicas.js`; desempate determinístico por `id` estendido a todas as opções de
+`musicas` e `products`; índices `idx_musicas_recent` e `idx_products_recent` criados na
+migration `022-musicas-products-public-sort-support` mantendo `idx_*_pagination`)**; (c) a
+colação do banco de produção for verificada como linguística e o dono preferir remover a
+dependência de `unaccent`.

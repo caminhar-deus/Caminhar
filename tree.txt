@@ -1054,6 +1054,7 @@
 │   │   ├── 019-products-price-numeric.js
 │   │   ├── 020-unify-published-column.js
 │   │   ├── 021-videos-public-sort-support.js
+│   │   ├── 022-musicas-products-public-sort-support.js
 │   │   ├── seed-migrations-table.js
 │   │   └── verify-applied.js
 │   ├── monitor-disk-space.js
@@ -1406,4 +1407,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-207 directories, 1200 files
+207 directories, 1201 files

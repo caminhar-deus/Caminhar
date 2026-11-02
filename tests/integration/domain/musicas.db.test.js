@@ -51,14 +51,15 @@ async function insertTestMusica(overrides = {}) {
     descricao: 'Descrição da música de teste.',
     published: true,
     position: 0,
+    created_at: null,
   };
   const data = { ...defaults, ...overrides };
 
   const result = await tx.query(
-    `INSERT INTO musicas (titulo, artista, url_spotify, descricao, published, position)
-     VALUES ($1, $2, $3, $4, $5, $6)
+    `INSERT INTO musicas (titulo, artista, url_spotify, descricao, published, position, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7::timestamptz, CURRENT_TIMESTAMP))
      RETURNING *`,
-    [data.titulo, data.artista, data.url_spotify, data.descricao, data.published, data.position]
+    [data.titulo, data.artista, data.url_spotify, data.descricao, data.published, data.position, data.created_at]
   );
   return result.rows[0];
 }
@@ -248,6 +249,79 @@ describeIf('Músicas — Integração com PostgreSQL Real', () => {
 
     const result = await tx.query('SELECT * FROM musicas ORDER BY position ASC, created_at DESC');
     expect(result.rows[0].position).toBeLessThanOrEqual(result.rows[1].position);
+  });
+
+  // ── Ordenação pública de /api/musicas (item AF, migration 022) ──────────────
+  // Cláusulas idênticas às de `orderByMap` em lib/domain/musicas.js (travadas
+  // em tests/unit/lib/db/musicas.test.js e tests/integration/api/musicas.integration.test.js).
+
+  it('migration 022 aplicada: extensão unaccent e idx_musicas_recent existem', async () => {
+    const ext = await tx.query("SELECT 1 FROM pg_extension WHERE extname = 'unaccent'");
+    expect(ext.rows).toHaveLength(1);
+
+    const idx = await tx.query(
+      "SELECT indexdef FROM pg_indexes WHERE tablename = 'musicas' AND indexname = 'idx_musicas_recent'"
+    );
+    expect(idx.rows).toHaveLength(1);
+    expect(idx.rows[0].indexdef).toContain('(published, created_at DESC, id DESC)');
+  });
+
+  it('A-Z e Z-A por lower(unaccent(titulo)) ordenam acentos e caixa sem depender da colação do cluster', async () => {
+    const titulos = ['Ave Maria', 'ótimo caminho', 'Zélia', 'amor', 'Éden', 'Ousado Amor', 'abba', 'Ágape', 'Zebra'];
+    for (const [i, titulo] of titulos.entries()) {
+      await insertTestMusica({
+        titulo,
+        url_spotify: `https://open.spotify.com/track/az-${i}-${Date.now()}`,
+      });
+    }
+
+    const asc = await tx.query('SELECT titulo FROM musicas ORDER BY lower(unaccent(titulo)) ASC, id ASC');
+    expect(asc.rows.map((r) => r.titulo)).toEqual([
+      'abba', 'Ágape', 'amor', 'Ave Maria', 'Éden', 'ótimo caminho', 'Ousado Amor', 'Zebra', 'Zélia',
+    ]);
+
+    const desc = await tx.query('SELECT titulo FROM musicas ORDER BY lower(unaccent(titulo)) DESC, id DESC');
+    expect(desc.rows.map((r) => r.titulo)).toEqual(asc.rows.map((r) => r.titulo).reverse());
+  });
+
+  it('desempata de forma determinística por id em created_at igual e position igual', async () => {
+    const sameTs = '2025-05-10T12:00:00Z';
+    const m1 = await insertTestMusica({ titulo: 'M1', position: 2, created_at: sameTs });
+    const m2 = await insertTestMusica({ titulo: 'M2', position: 1, created_at: sameTs });
+    const m3 = await insertTestMusica({ titulo: 'M3', position: 2, created_at: sameTs });
+
+    const recent = await tx.query('SELECT id FROM musicas ORDER BY created_at DESC, id DESC');
+    expect(recent.rows.map((r) => r.id)).toEqual([m3.id, m2.id, m1.id]);
+
+    const oldest = await tx.query('SELECT id FROM musicas ORDER BY created_at ASC, id ASC');
+    expect(oldest.rows.map((r) => r.id)).toEqual([m1.id, m2.id, m3.id]);
+
+    const positioned = await tx.query('SELECT id FROM musicas ORDER BY position ASC, id ASC');
+    expect(positioned.rows.map((r) => r.id)).toEqual([m2.id, m1.id, m3.id]);
+  });
+
+  it('os índices atendem as ordens públicas: default/oldest sem Sort explícito, positioned pelo índice de paginação', async () => {
+    await tx.query('SET LOCAL enable_seqscan = off');
+    await tx.query('SET LOCAL enable_bitmapscan = off');
+    await tx.query('SET LOCAL enable_sort = off');
+
+    const plan = async (orderBy) => {
+      const res = await tx.query(
+        `EXPLAIN SELECT id, titulo FROM musicas WHERE published = true ORDER BY ${orderBy} LIMIT 12`
+      );
+      return res.rows.map((r) => r['QUERY PLAN']).join('\n');
+    };
+
+    const recent = await plan('created_at DESC, id DESC');
+    expect(recent).toContain('idx_musicas_recent');
+    expect(recent).not.toMatch(/\bSort\b/);
+
+    const oldest = await plan('created_at ASC, id ASC');
+    expect(oldest).toContain('Index Scan Backward using idx_musicas_recent');
+    expect(oldest).not.toMatch(/\bSort\b/);
+
+    const positioned = await plan('position ASC, id ASC');
+    expect(positioned).toContain('idx_musicas_pagination');
   });
 
   it('deve contar o total de registros corretamente', async () => {

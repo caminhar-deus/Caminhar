@@ -30,8 +30,8 @@ describe('Funções de Músicas (DB)', () => {
       // Verifica a chamada da query de dados (independente da ordem do Promise.all)
       const dataCall = mockQuery.mock.calls.find(call => call[0].includes('SELECT * FROM musicas'));
       const normalizedSqlData = dataCall[0].replace(/\s+/g, ' ').trim();
-      // "Padrão" passou a ser Mais recentes (created_at DESC) — PLANO_ACAO F1.1 (D-07)
-      expect(normalizedSqlData).toContain('ORDER BY created_at DESC LIMIT $1 OFFSET $2');
+      // "Padrão" = Mais recentes com desempate determinístico por id (item AF / ADR-0014)
+      expect(normalizedSqlData).toContain('ORDER BY created_at DESC, id DESC LIMIT $1 OFFSET $2');
       expect(dataCall[1]).toEqual([10, 0]); // Padrão: limit=10, offset=0
 
       // Verifica a chamada da query de contagem
@@ -72,6 +72,27 @@ describe('Funções de Músicas (DB)', () => {
 
       const dataCall = mockQuery.mock.calls.find(call => call[0].includes('SELECT * FROM musicas'));
       expect(dataCall[1]).toEqual([5, 5]); // limit=5, offset=(2-1)*5=5
+    });
+
+    it.each([
+      ['default', 'ORDER BY created_at DESC, id DESC LIMIT $1 OFFSET $2'],
+      ['positioned', 'ORDER BY position ASC, id ASC LIMIT $1 OFFSET $2'],
+      ['oldest', 'ORDER BY created_at ASC, id ASC LIMIT $1 OFFSET $2'],
+      ['alpha', 'ORDER BY lower(unaccent(titulo)) ASC, id ASC LIMIT $1 OFFSET $2'],
+      ['alpha_desc', 'ORDER BY lower(unaccent(titulo)) DESC, id DESC LIMIT $1 OFFSET $2'],
+      ['desconhecido', 'ORDER BY created_at DESC, id DESC LIMIT $1 OFFSET $2'],
+    ])('deve aplicar cláusula ORDER BY determinística para sort=%s', async (sort, expectedOrderClause) => {
+      mockQuery.mockImplementation((text) => {
+        if (text.includes('COUNT(*)')) return Promise.resolve({ rows: [{ count: '0' }] });
+        return Promise.resolve({ rows: [] });
+      });
+
+      await getPaginatedMusicas(1, 12, '', true, sort);
+
+      const dataCall = mockQuery.mock.calls.find(call => call[0].includes('FROM musicas') && call[0].includes('LIMIT'));
+      const normalizedSqlData = dataCall[0].replace(/\s+/g, ' ').trim();
+      expect(normalizedSqlData).toContain('WHERE published = true');
+      expect(normalizedSqlData).toContain(expectedOrderClause);
     });
   });
 

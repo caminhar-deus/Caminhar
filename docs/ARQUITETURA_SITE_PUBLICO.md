@@ -2,7 +2,7 @@
 
 > Escopo: apenas a área pública (qualquer visitante). O painel administrativo está documentado em `docs/ARQUITETURA_SITE_PRIVADO.md`.
 > Fonte: 12 capturas de tela do site em desenvolvimento + descrição do dono do projeto.
-> Última atualização: 2026-11-01
+> Última atualização: 2026-11-02
 > Legenda: [PLANEJADO] = alvo ainda não implementado, informado pelo dono | [OBSERVADO] = visto nas imagens | [HIPÓTESE] = inferido, confirmar antes de assumir.
 
 ---
@@ -75,7 +75,7 @@ Esse mapeamento deve ser mantido de forma consistente em toda a documentação.
 - **Cadastro ilimitado:** Não há limite de registros cadastrados na aba **Gestão de Músicas** do painel, seja qual for o status. Todos os registros **publicados** dessa aba são elegíveis para exibição nesta aba pública, sem limite definido por essas regras.
 - **Propósito:** [PLANEJADO] catálogo com links e informações que levam ao Spotify.
 - **Controles:** campo de busca "Pesquisar por música ou artista..."; seletor "Ordenar:"; contador verde "Mostrando X de Y músicas".
-- **Ordenação:** o seletor abre com a opção **Padrão** selecionada, que equivale a ordenar por "Mais recentes" (`created_at DESC`); as demais opções são **"Posicionados"** (curadoria manual do painel, `position ASC`), "Mais antigos", "A-Z" e "Z-A". Decisão registrada em [ADR-0014](adr/0014-padrao-significa-mais-recentes-e-curadoria-como-posicionados.md).
+- **Ordenação:** o seletor abre com a opção **Padrão** selecionada, que equivale a ordenar por "Mais recentes" (`created_at DESC, id DESC`); as demais opções são **"Posicionados"** (curadoria manual do painel, `position ASC, id ASC`), "Mais antigos" (`created_at ASC, id ASC`), "A-Z" e "Z-A". A-Z e Z-A ignoram acentos e caixa (`lower(unaccent(titulo))`), independentemente da colação do banco, compartilhando a mesma expressão de Vídeos ([ADR-0033](adr/0033-videos-posicionados-indice-e-ordenacao-alfabetica.md)). Decisão de "Padrão" e "Posicionados" registrada em [ADR-0014](adr/0014-padrao-significa-mais-recentes-e-curadoria-como-posicionados.md).
 - **Embed e fallback:** apenas **tracks** do Spotify são embeddáveis — a URL cadastrada no painel é convertida para `open.spotify.com/embed/track/<id>`. Quando a URL não é um track válido, o cartão **não renderiza iframe**: exibe "Prévia indisponível" e mantém o botão "🎵 Ouvir no Spotify" (link externo para a URL original). O painel recusa cadastro/edição de URL não-track desde a origem. Decisão registrada em [ADR-0023](adr/0023-spotify-embed-limitado-a-tracks-com-fallback.md); §7, itens 1 e 9.
 - **Grade:** 3 colunas x 4 linhas = 12 itens por página.
 - **Cartão de música:** player incorporado do Spotify (embed) → título → artista (cinza) → botão verde "🎵 Ouvir no Spotify" (link externo).
@@ -94,7 +94,7 @@ Esse mapeamento deve ser mantido de forma consistente em toda a documentação.
 ### 3.5 Produtos Religiosos
 - **Propósito:** vitrine de produtos com links de afiliado/compra para Amazon, Mercado Livre e Shopee.
 - **Controles:** campo de busca "Buscar produtos por nome..." (com ícone de lupa); filtros de preço "Mín (R$)" e "Máx (R$)"; seletor "Categoria:" (aparece quando há categorias publicadas, com "Todas" como padrão); seletor "Ordenar por:" (depois do preço e antes do botão "Limpar filtros"). O filtro de categoria consulta o facet `categories` da API (categorias distintas dos produtos publicados).
-- **Ordenação:** o seletor abre com a opção **Padrão** selecionada, que equivale a ordenar por "Mais recentes" (`created_at DESC`); as demais opções são **"Posicionados"** (curadoria manual do painel, `position ASC, id ASC`), "Mais antigos", "Menor preço" e "Maior preço". A ordenação é feita no **servidor** (parâmetro `sort` na API), não no cliente. A opção "Posicionados" passou a ser exposta em 2026-10-21, depois de corrigido o reordenamento no painel (ver §7, item 11). Decisão registrada em [ADR-0016](adr/0016-seletor-de-ordenacao-de-produtos-no-servidor.md).
+- **Ordenação:** o seletor abre com a opção **Padrão** selecionada, que equivale a ordenar por "Mais recentes" (`created_at DESC, id DESC`); as demais opções são **"Posicionados"** (curadoria manual do painel, `position ASC, id ASC`), "Mais antigos" (`created_at ASC, id ASC`), "Menor preço" (`price ASC, id ASC`) e "Maior preço" (`price DESC, id DESC`). A ordenação é feita no **servidor** (parâmetro `sort` na API), não no cliente, com desempate determinístico por `id` em todas as opções. A opção "Posicionados" passou a ser exposta em 2026-10-21, depois de corrigido o reordenamento no painel (ver §7, item 11). Decisão registrada em [ADR-0016](adr/0016-seletor-de-ordenacao-de-produtos-no-servidor.md).
 - **Grade:** 3 colunas x 4 linhas = 12 itens por página (2 colunas em tablet, 1 coluna no mobile).
 - **Contador:** "Mostrando X de Y produtos" ou "X resultados para \"termo\"" (quando há busca).
 - **Paginação:** "❮ Anterior | Página X de Y (Z produtos) | Próxima ❯". "Anterior" fica desabilitado na página 1 e a "Próxima" na última; a paginação só aparece quando há mais de uma página.

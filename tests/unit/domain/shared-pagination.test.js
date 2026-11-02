@@ -3,7 +3,7 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 // Mocks para as dependências de banco
 jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb());
 
-import { paginate } from '../../../lib/domain/shared-pagination.js';
+import { paginate, buildAlphaOrderSql } from '../../../lib/domain/shared-pagination.js';
 import { query } from '../../../lib/infra/db.js';
 
 describe('Domain - shared-pagination (lib/domain/shared-pagination.js)', () => {
@@ -72,6 +72,24 @@ describe('Domain - shared-pagination (lib/domain/shared-pagination.js)', () => {
       const sql = query.mock.calls[0][0];
       expect(sql).not.toContain('SELECT *');
       expect(sql).toContain('SELECT id, titulo, artista, url_spotify, descricao, position, published, created_at, updated_at FROM musicas');
+    });
+  });
+
+  describe('buildAlphaOrderSql (ordenação alfabética independente de colação)', () => {
+    it('usa `titulo` como coluna padrão e preserva a ordem obrigatória `lower(unaccent(...))`', () => {
+      expect(buildAlphaOrderSql()).toBe('lower(unaccent(titulo))');
+      expect(buildAlphaOrderSql('name')).toBe('lower(unaccent(name))');
+    });
+
+    it.each([
+      [''],
+      ['titulo ASC'],
+      ['titulo; DROP TABLE musicas'],
+      ['1coluna'],
+      [null],
+      [123],
+    ])('rejeita identificador SQL inválido (%p)', (invalidColumn) => {
+      expect(() => buildAlphaOrderSql(invalidColumn)).toThrow(/Identificador de coluna inválido/);
     });
   });
 });

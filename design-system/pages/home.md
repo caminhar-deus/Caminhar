@@ -1,6 +1,6 @@
 # Página pública inicial (home) — spec de implementação (override do MASTER)
 
-> Última atualização: 2026-11-01 ("Posicionados" exposto também no seletor de Vídeos — item AE, ADR-0033, mesma decisão D6). Anterior: 2026-10-21 (decisões D1–D5 do checklist front-end: rodapé do cartão de produto, foco dos seletores de ordenação, alvo de toque 44px, `aria-live` na paginação, guard global de `prefers-reduced-motion`; exposição de "Posicionados" no seletor de Produtos — F4.2 concluído, opção exposta, legenda auxiliar não implementada).
+> Última atualização: 2026-11-02 (anotações SQL de ordenação de Músicas e Produtos alinhadas com `lower(unaccent(titulo))` e desempate por `id` — item AF, ADR-0033). Anterior: 2026-11-01 ("Posicionados" exposto também no seletor de Vídeos — item AE, ADR-0033, mesma decisão D6); 2026-10-21 (decisões D1–D5 do checklist front-end: rodapé do cartão de produto, foco dos seletores de ordenação, alvo de toque 44px, `aria-live` na paginação, guard global de `prefers-reduced-motion`; exposição de "Posicionados" no seletor de Produtos — F4.2 concluído, opção exposta, legenda auxiliar não implementada).
 > Override de `design-system/MASTER.md`. Tudo aqui vence o MASTER; o que não for mencionado segue o MASTER. Stack: Next.js Pages Router + React + CSS Modules + variáveis CSS (sem Tailwind). Idioma da interface: pt-BR. Tokens: sempre a variável, nunca hex.
 
 > Escopo: a página única com abas (`pages/index.js` + `components/Features/ContentTabs`). Esta spec cobre os 6 itens definidos no `docs/PLANO_ACAO_SITE_PUBLICO.md` (F1.3, F1.4, F1.6, F2.3 + decisões de design) e não toca lógica de negócio nem o painel administrativo.
@@ -33,11 +33,11 @@
 - Desabilitado durante troca de página (`pageLoading`): `opacity: var(--opacity-50)`, `cursor: not-allowed`, `pointer-events: none`.
 
 ### 1.3 Opções (ordem exata, visíveis hoje)
-1. **Padrão** — value `default` — equivale a `created_at DESC` (Mais recentes).
+1. **Padrão** — value `default` — equivale a `created_at DESC, id DESC` (Mais recentes).
 2. **Posicionados** — value `positioned` — curadoria manual por `position ASC, id ASC` (`orderByMap.positioned` em `lib/domain/products.js`). Exposto desde 2026-10-21 (F4.2 concluído): o reordenamento por arrastar no painel grava posições 1-based e `PUT /api/products` aceita `action: "reorder"`. A curadoria vem do painel administrativo; a ordem é definida lá, não pelo usuário final.
-3. **Mais antigos** — value `oldest` — `created_at ASC`.
-4. **Menor preço** — value `price_asc` — `price ASC`.
-5. **Maior preço** — value `price_desc` — `price DESC`.
+3. **Mais antigos** — value `oldest` — `created_at ASC, id ASC`.
+4. **Menor preço** — value `price_asc` — `price ASC, id ASC`.
+5. **Maior preço** — value `price_desc` — `price DESC, id DESC`.
 
 > Estado atual (2026-10-21): a opção está exposta e o seletor não exibe legenda auxiliar abaixo do select. A legenda "Ordem definida no painel administrativo." (12px, `--color-text-tertiary`) foi **considerada e não aprovada** (decisão D6, abaixo) — o rótulo "Posicionados" já comunica a origem da ordenação, e a legenda seria ruído visual repetido a cada troca de aba. Se no futuro a curadoria precisar ser sinalizada, reabrir esta decisão.
 
@@ -63,11 +63,11 @@
 ## 2. Seletor de Músicas — renomear e reposicionar opções — F1.1
 
 ### 2.1 Lista final (ordem exata)
-1. **Padrão** — value `default` — Mais recentes (`created_at DESC`).
-2. **Posicionados** — value `positioned` — curadoria manual (`position ASC`).
-3. **Mais antigos** — value `oldest` — `created_at ASC`.
-4. **A-Z** — value `alpha` — `titulo ASC`.
-5. **Z-A** — value `alpha_desc` — `titulo DESC`.
+1. **Padrão** — value `default` — Mais recentes (`created_at DESC, id DESC`).
+2. **Posicionados** — value `positioned` — curadoria manual (`position ASC, id ASC`).
+3. **Mais antigos** — value `oldest` — `created_at ASC, id ASC`.
+4. **A-Z** — value `alpha` — `lower(unaccent(titulo)) ASC, id ASC`.
+5. **Z-A** — value `alpha_desc` — `lower(unaccent(titulo)) DESC, id DESC`.
 
 > "Mais recentes" deixa de existir como opção separada (virou "Padrão"). O default do estado `sortBy` passa a ser `default`.
 

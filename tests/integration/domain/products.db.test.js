@@ -53,14 +53,25 @@ async function insertTestProduct(overrides = {}) {
     category: 'geral',
     published: true,
     position: 0,
+    created_at: null,
   };
   const data = { ...defaults, ...overrides };
 
   const result = await tx.query(
-    `INSERT INTO products (name, price, image_url, description, link, category, published, position)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `INSERT INTO products (name, price, image_url, description, link, category, published, position, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, COALESCE($9::timestamptz, CURRENT_TIMESTAMP))
      RETURNING *`,
-    [data.name, data.price, data.image_url, data.description, data.link, data.category, data.published, data.position]
+    [
+      data.name,
+      data.price,
+      data.image_url,
+      data.description,
+      data.link,
+      data.category,
+      data.published,
+      data.position,
+      data.created_at,
+    ]
   );
   return result.rows[0];
 }
@@ -203,6 +214,61 @@ describeIf('Produtos — Integração com PostgreSQL Real', () => {
 
     const result = await tx.query('SELECT * FROM products ORDER BY position ASC, id ASC');
     expect(result.rows[0].position).toBeLessThanOrEqual(result.rows[1].position);
+  });
+
+  // ── Ordenação pública de /api/products (item AF, migration 022) ─────────────
+  // Cláusulas idênticas às de `orderByMap` em lib/domain/products.js (travadas
+  // em tests/unit/domain/products.test.js).
+
+  it('migration 022 aplicada: idx_products_recent existe com chave (published, created_at DESC, id DESC)', async () => {
+    const idx = await tx.query(
+      "SELECT indexdef FROM pg_indexes WHERE tablename = 'products' AND indexname = 'idx_products_recent'"
+    );
+    expect(idx.rows).toHaveLength(1);
+    expect(idx.rows[0].indexdef).toContain('(published, created_at DESC, id DESC)');
+  });
+
+  it('desempata de forma determinística por id em created_at igual e em price igual', async () => {
+    const sameTs = '2025-05-10T12:00:00Z';
+    const p1 = await insertTestProduct({ name: 'P1', price: '49.90', created_at: sameTs });
+    const p2 = await insertTestProduct({ name: 'P2', price: '49.90', created_at: sameTs });
+    const p3 = await insertTestProduct({ name: 'P3', price: '89.90', created_at: sameTs });
+
+    const recent = await tx.query('SELECT id FROM products ORDER BY created_at DESC, id DESC');
+    expect(recent.rows.map((r) => r.id)).toEqual([p3.id, p2.id, p1.id]);
+
+    const oldest = await tx.query('SELECT id FROM products ORDER BY created_at ASC, id ASC');
+    expect(oldest.rows.map((r) => r.id)).toEqual([p1.id, p2.id, p3.id]);
+
+    const priceAsc = await tx.query('SELECT id FROM products ORDER BY price ASC, id ASC');
+    expect(priceAsc.rows.map((r) => r.id)).toEqual([p1.id, p2.id, p3.id]);
+
+    const priceDesc = await tx.query('SELECT id FROM products ORDER BY price DESC, id DESC');
+    expect(priceDesc.rows.map((r) => r.id)).toEqual([p3.id, p2.id, p1.id]);
+  });
+
+  it('os índices atendem as ordens públicas: default/oldest sem Sort explícito, positioned pelo índice de paginação', async () => {
+    await tx.query('SET LOCAL enable_seqscan = off');
+    await tx.query('SET LOCAL enable_bitmapscan = off');
+    await tx.query('SET LOCAL enable_sort = off');
+
+    const plan = async (orderBy) => {
+      const res = await tx.query(
+        `EXPLAIN SELECT id, name, price FROM products WHERE published = true ORDER BY ${orderBy} LIMIT 12`
+      );
+      return res.rows.map((r) => r['QUERY PLAN']).join('\n');
+    };
+
+    const recent = await plan('created_at DESC, id DESC');
+    expect(recent).toContain('idx_products_recent');
+    expect(recent).not.toMatch(/\bSort\b/);
+
+    const oldest = await plan('created_at ASC, id ASC');
+    expect(oldest).toContain('Index Scan Backward using idx_products_recent');
+    expect(oldest).not.toMatch(/\bSort\b/);
+
+    const positioned = await plan('position ASC, id ASC');
+    expect(positioned).toContain('idx_products_pagination');
   });
 
   it('deve contar o total de registros corretamente', async () => {
