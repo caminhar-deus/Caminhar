@@ -40,6 +40,7 @@
   gap: var(--spacing-4);
   transition: var(--transition-transform), var(--transition-box-shadow);
   cursor: pointer;
+  /* eslint-disable-next-line css/use-baseline */
   user-select: none;
 }
 

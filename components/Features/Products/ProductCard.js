@@ -1,4 +1,4 @@
-import React, { memo, useState, useEffect, useRef } from 'react';
+import React, { memo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { parseImages } from '../../../lib/api/utils';
 import { BaseCard, ImageLightbox } from '@/components/UI';

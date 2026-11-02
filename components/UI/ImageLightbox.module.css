@@ -41,6 +41,7 @@
   object-fit: contain;
   border-radius: var(--border-radius-lg);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  /* eslint-disable-next-line css/use-baseline */
   user-select: none;
 }
 

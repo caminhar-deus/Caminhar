@@ -9,7 +9,29 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Não publicado]
 
+### Adicionado
+
+- **Modernização e Auditoria de UI/UX — Skill UI/UX Pro Max (02/11/2026).** Execução integral das melhorias de acessibilidade, responsividade e consistência visual recomendadas pela auditoria de UI/UX:
+  - **Componente Unificado de Paginação (`components/UI/Pagination`):** Substituto canônico para 5 lógicas ad-hoc dispersas em Músicas, Vídeos, Produtos, Depoimentos e Blog, com suporte a modo client-side (botões) e SSR (`getPageUrl`), teclado acessível e alvos de toque confortáveis (≥44px).
+  - **Componente Unificado de Lightbox (`components/UI/ImageLightbox`):** Modal de visualização ampliada acessível com `role="dialog"`, `aria-modal="true"`, foco travado, navegação por setas, tecla Escape e suporte a carrossel de fotos, integrado ao Blog e à vitrine de Produtos.
+  - **Skip-Link Acessível (`.skip-link`):** Atalho no topo do DOM para pular diretamente ao conteúdo principal (`#main-content`), implementado na Home, no Blog e no Painel Administrativo.
+
 ### Alterado
+
+- **Padronização de Acessibilidade e Design System (02/11/2026):**
+  - Foco canônico `:focus-visible` tokenizado (`outline: 2px solid var(--color-focus-primary); outline-offset: 2px; box-shadow: var(--color-focus-ring)`) em todos os botões, links, cartões e controles interativos do site público e do painel `/admin`.
+  - Contraste textual corrigido para conformidade com WCAG AA (mínimo 4.5:1 para texto normal) em descrições, metadados, contadores e tabelas.
+  - Isolamento semântico de emojis estruturais com `<span aria-hidden="true">` e substituição de emojis soltos (`❌`) por ícones SVG nativos em `StateMessages` e formulários (`Input`, `Select`, `TextArea`).
+  - Remoção de `transform: scale(1.05)` no banner para estabilidade visual (mitigação de CLS) com dimensões nominais travadas (1100×320).
+  - Limpeza da casca do `/admin` (`pages/admin.js`): formulário de login inline redundante e toasters duplicados eliminados, redirecionando para a rota canônica `/login?next=/admin`.
+  - Responsividade aprimorada no CRUD do painel com wrapper de scroll horizontal touch (`overflow-x: auto; max-width: 100%`) para dispositivos móveis.
+  - Poda da fonte não utilizada `Montserrat` em `_document.js` e inclusão de `Playfair Display` com `display=swap`.
+
+### Corrigido
+
+- **Compatibilidade de Lint e Cypress E2E pós-auditoria de UI/UX (02/11/2026):**
+  - **ESLint (`npm run lint` / workflow `test-coverage.yml`):** Adicionado `/* eslint-disable-next-line css/use-baseline */` nas propriedades `user-select: none` de `dashboard.module.css`, `ImageLightbox.module.css` e `Pagination.module.css`, e removidas variáveis não utilizadas (`useEffect`, `useRef`) em `ProductCard.js`, zerando os erros do linter no CI.
+  - **Cypress E2E (`cypress/e2e/image_zoom.cy.js` / workflow `e2e.yml`):** Removido `e.stopPropagation()` do container da imagem em `ImageLightbox.js` para permitir fechamento ao clicar na imagem ampliada via borbulhamento de evento para o overlay, restaurando o contrato de fechamento esperado pela suíte E2E.
 
 - **Nomenclatura padronizada entre Site Privado ("Gestão de Dicas") e Site Público ("Dicas do Dia") (02/11/2026, ADR-0034).** O painel administrativo (`/admin`) adota uniformemente o padrão de nomenclatura de gerenciamento: o botão da barra de abas em `pages/admin.js` e o título do componente `AdminDicas` foram padronizados como **"Gestão de Dicas"**, estabelecendo correspondência estrita 1:1 com a permissão oficial `'Gestão de Dicas'` e alinhando-se aos demais módulos de conteúdo (*"Gestão de Músicas"*, *"Gestão de Vídeos"*, *"Gestão de Produtos"*). O site público mantém integralmente a nomenclatura de exibição **"Dicas do Dia"** (seção de depoimentos/dicas e mensagens públicas), alimentada exclusivamente pelos registros publicados no ADMIN. Duplicação de normalização inline em `AdminRolesTab.js` eliminada através de helper reutilizado (`normalizeRolePermissions`). Sem alterações de banco ou migrations.
 

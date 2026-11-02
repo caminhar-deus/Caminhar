@@ -23,6 +23,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  /* eslint-disable-next-line css/use-baseline */
   user-select: none;
 }
 

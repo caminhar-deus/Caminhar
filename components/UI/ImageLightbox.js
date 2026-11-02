@@ -97,7 +97,7 @@ export function ImageLightbox({
         &times;
       </button>
 
-      <div className={styles.contentWrapper} onClick={(e) => e.stopPropagation()}>
+      <div className={styles.contentWrapper}>
         <img
           key={activeImage}
           src={activeImage}
