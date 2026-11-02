@@ -117,7 +117,7 @@ Esse mapeamento deve ser mantido de forma consistente em toda a documentação.
 
 ## 6. Origem dos dados
 - Banner, posts, músicas, vídeos, produtos e dicas são **todos** gerenciados pelo painel administrativo — cada um tem sua aba de CRUD lá (posts, músicas, vídeos, produtos, dicas, usuários e cargos). A hipótese foi confirmada no código.
-- **Fluxo de publicação:** Um registro é cadastrado em sua aba administrativa correspondente (Posts/Artigos, Gestão de Músicas, Gestão de Vídeos, Gestão de Produtos ou Dicas do Dia). Pode permanecer como **Rascunho** ou ser alterado para **Publicado**. Enquanto em **Rascunho**, permanece disponível no painel, mas **não é exibido** na aba pública correspondente. Quando em **Publicado**, é **exibido** na aba pública correspondente (§2.1). Não há limite de cadastros nessas cinco abas, independentemente do status. A quantidade exibida no público corresponde a **todos os registros publicados** de cada respectiva aba, sem limite definido por essas regras.
+- **Fluxo de publicação:** Um registro é cadastrado em sua aba administrativa correspondente (Posts/Artigos, Gestão de Músicas, Gestão de Vídeos, Gestão de Produtos ou Gestão de Dicas). Pode permanecer como **Rascunho** ou ser alterado para **Publicado**. Enquanto em **Rascunho**, permanece disponível no painel, mas **não é exibido** na aba pública correspondente. Quando em **Publicado**, é **exibido** na aba pública correspondente (§2.1). Não há limite de cadastros nessas cinco abas, independentemente do status. A quantidade exibida no público corresponde a **todos os registros publicados** de cada respectiva aba, sem limite definido por essas regras.
 - Persistência: PostgreSQL, acessado pelo pool `pg` (ver §1).
 
 ## 7. Pendências e bugs conhecidos (prioridade)

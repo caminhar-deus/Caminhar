@@ -171,7 +171,7 @@ Arquivos com função puramente utilitária (helper) ou de suporte visual (CSS) 
   - **Autenticação:** login via `POST /api/auth/login` com `credentials: 'include'`, verificação de sessão via `GET /api/auth/check` (com `AbortController` para cancelamento), redirect pós-login para `/admin` e logout que limpa a sessão e recarrega a página.
   - **Controle de permissões:** cada aba é exibida conforme `hasPermission(permission)` — usuários com `role === 'admin'` têm acesso total; demais dependem do array `permissions`.
   - **Upload e crop de imagens:** `react-easy-crop` com proporção 1100:320, zoom ajustável (1–3), funções utilitárias `resizeImage()` (máx. 1100px de largura) e `getCroppedImg()` (saída WebP), preview com estatísticas de compressão (economia percentual).
-  - **Abas de gestão:** Visão Geral (dashboard), Posts/Artigos, Gestão de Músicas, Gestão de Vídeos, Gestão de Produtos, Dicas do Dia.
+  - **Abas de gestão:** Visão Geral (dashboard), Posts/Artigos, Gestão de Músicas, Gestão de Vídeos, Gestão de Produtos, Gestão de Dicas.
   - **Configuração de Cabeçalho:** edição de título, subtítulo e imagem principal com preview em tempo real e envio para `/api/upload-image` (`uploadType=setting_home_image`).
   - **Segurança:** quatro sub-abas — Verificação de Integridade, Backup do Sistema, Rate Limiting e Cache do Sistema.
   - **Usuários e Auditoria:** gerenciamento de usuários e consulta de logs de ações administrativas.

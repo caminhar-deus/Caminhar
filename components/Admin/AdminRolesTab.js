@@ -4,11 +4,21 @@ import { z } from 'zod';
 import permissionsList from '@/lib/domain/permissions';
 import styles from './styles/permissions.module.css';
 
+/**
+ * Normaliza permissões legadas (ex: 'Dicas' para 'Gestão de Dicas') e deduplica.
+ * Centraliza a regra de compatibilidade eliminando duplicidade no componente.
+ *
+ * @param {unknown} value - Array bruto de permissões
+ * @returns {string[]} Array normalizado e deduplicado
+ */
+const normalizeRolePermissions = (value) => {
+  const raw = Array.isArray(value) ? value : [];
+  return [...new Set(raw.map((p) => (p === 'Dicas' ? 'Gestão de Dicas' : p)))];
+};
+
 // Componente customizado para selecionar as permissões do cargo via Checkboxes
 const PermissionsSelectField = ({ name, value, onChange, label, error, gridColumn }) => {
-  // Normaliza permissões antigas e remove duplicatas (ex: 'Dicas' para 'Gestão de Dicas')
-  const rawSelected = Array.isArray(value) ? value : [];
-  const selected = [...new Set(rawSelected.map(p => p === 'Dicas' ? 'Gestão de Dicas' : p))];
+  const selected = normalizeRolePermissions(value);
 
   const togglePerm = (perm) => {
     if (selected.includes(perm)) {
@@ -61,9 +71,8 @@ const columns = [
   {
     key: 'permissions', header: 'Permissões Vinculadas',
     render: (item) => {
-      const rawPerms = Array.isArray(item.permissions) ? item.permissions : [];
       // Normaliza para exibição e filtra apenas as permissões válidas da lista atual
-      const perms = [...new Set(rawPerms.map(p => p === 'Dicas' ? 'Gestão de Dicas' : p))].filter(p => permissionsList.includes(p));
+      const perms = normalizeRolePermissions(item.permissions).filter((p) => permissionsList.includes(p));
       return (
         <div className={styles.permissionsBadgeContainer}>
           {perms.map(p => (

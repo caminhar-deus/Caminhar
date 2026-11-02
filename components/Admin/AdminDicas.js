@@ -5,11 +5,12 @@ import TextAreaField from '@/components/Admin/fields/TextAreaField';
 import ToggleField from '@/components/Admin/fields/ToggleField';
 
 /**
- * Componente de gerenciamento de "Dicas do Dia".
+ * Componente de Gestão de Dicas no painel administrativo.
  *
  * Delega toda a lógica CRUD para o {@link AdminCrudBase}, atuando como
  * componente de configuração que define as colunas da tabela e os campos
- * do formulário de criação/edição.
+ * do formulário de criação/edição. Os registros publicados alimentam a
+ * seção "Dicas do Dia" no site público.
  *
  * @component
  * @returns {JSX.Element} Painel de gerenciamento de dicas
@@ -75,7 +76,7 @@ export default function AdminDicas() {
 
   return (
     <AdminCrudBase
-      title="Gerenciar Dicas do Dia"
+      title="Gestão de Dicas"
       apiEndpoint="/api/admin/dicas"
       columns={columns}
       fields={fields}

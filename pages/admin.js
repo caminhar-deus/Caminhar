@@ -589,7 +589,7 @@ export default function Admin() {
                 onClick={() => setActiveTab('dicas')}
               >
                 <span className="icon" aria-hidden="true">💡</span>
-                Dicas do Dia
+                Gestão de Dicas
               </button>
             )}
             

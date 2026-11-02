@@ -51,7 +51,7 @@ Todos delegam ao `AdminCrudBase`, configurando campos, colunas e validação.
 
 **AdminProducts.js** (`AdminProducts.js`) — Gestão de produtos com integração Mercado Livre. Botão "Puxar Dados", campo `image_url` com múltiplas URLs (uma por linha, suporta carrossel), validação Zod. 168 linhas.
 
-**AdminDicas.js** (`AdminDicas.js`) — Gerenciamento de "Dicas do Dia". Delega ao `AdminCrudBase`. Documentação JSDoc detalhada. 123 linhas.
+**AdminDicas.js** (`AdminDicas.js`) — Gestão de Dicas no painel administrativo (alimenta o bloco público "Dicas do Dia"). Delega ao `AdminCrudBase`. Documentação JSDoc detalhada. 123 linhas.
 
 ### 1.3 Usuários e Cargos
 

@@ -2,7 +2,7 @@
 
 > Escopo: painel administrativo em `/admin` (acesso só com login). A área pública está em `docs/ARQUITETURA_SITE_PUBLICO.md`.
 > Fonte: 23 capturas de tela do painel (ambiente local `localhost:3000/admin`).
-> Última atualização: 2026-10-31
+> Última atualização: 2026-11-02
 > Legenda: [PLANEJADO] = alvo ainda não implementado, informado pelo dono | [OBSERVADO] = visto nas imagens | [HIPÓTESE] = inferido, confirmar antes de assumir.
 
 ---
@@ -27,7 +27,7 @@ A barra quebra em 3 linhas. A ordem abaixo é a ordem visual.
 | 3 | Gestão de Músicas | 🎵 | CRUD de músicas (Spotify) |
 | 4 | Gestão de Vídeos | 🎬 | CRUD de vídeos (YouTube) |
 | 5 | Gestão de Produtos | 📦 | CRUD de produtos religiosos |
-| 6 | Dicas do Dia | 💡 | CRUD de dicas |
+| 6 | Gestão de Dicas | 💡 | CRUD de dicas |
 | 7 | Configuração de Cabeçalho | 🎨 | Título, subtítulo e banner do site público |
 | 8 | Segurança | 🔒 | Integridade, backup, rate limiting, cache |
 | 9 | Usuários | 👥 | Usuários/admins e cargos |
@@ -45,7 +45,7 @@ A correspondência entre as abas administrativas e suas abas públicas de exibi�
 | Gestão de Músicas | Músicas |
 | Gestão de Vídeos | Vídeos |
 | Gestão de Produtos | Produtos Religiosos |
-| Dicas do Dia | Dicas do Dia |
+| Gestão de Dicas | Dicas do Dia |
 
 Esse mapeamento deve ser mantido de forma consistente em toda a documentação.
 
@@ -62,7 +62,7 @@ Todas seguem o mesmo modelo, com pequenas variações:
 
 ### 3.1 Regras de cadastro e exibição
 
-- **Quantidade ilimitada:** Nas abas **Posts/Artigos**, **Gestão de Músicas**, **Gestão de Vídeos**, **Gestão de Produtos** e **Dicas do Dia**, **não há limite de registros cadastrados**. É permitido cadastrar quantos registros forem necessários, independentemente de estarem com status **Rascunho** ou **Publicado**.
+- **Quantidade ilimitada:** Nas abas **Posts/Artigos**, **Gestão de Músicas**, **Gestão de Vídeos**, **Gestão de Produtos** e **Gestão de Dicas**, **não há limite de registros cadastrados**. É permitido cadastrar quantos registros forem necessários, independentemente de estarem com status **Rascunho** ou **Publicado**.
 - **Exibição exclusiva por publicação:** Somente registros com status **Publicado** são exibidos na aba pública correspondente, conforme o mapeamento da seção 2.1. Registros em **Rascunho** não devem ser exibidos no site público.
 - **Sem mistura de conteúdos:** Cada aba pública exibe exclusivamente os registros publicados de sua respectiva aba administrativa, sem misturar conteúdos entre diferentes categorias.
 - **Reflexo da publicação:** Ao alterar um registro de **Rascunho** para **Publicado** (ou vice-versa), essa mudança deve refletir na aba pública correspondente, respeitando as regras acima.
@@ -157,8 +157,8 @@ Todas seguem o mesmo modelo, com pequenas variações:
 - **Regra única de nascimento (ADR-0029, 29/10/2026):** todos os tipos de conteúdo — Posts, Músicas, Vídeos, Produtos e Dicas — nascem como **rascunho** (`DEFAULT false` no banco; toggle dos formulários desmarcado). Nada é publicado sem ação consciente do operador.
 - **Fluxo definido em 2026-10-28/29** (após análise aprovada pelo dono): cadastro → validação Zod no cliente e na API (paridade: nome, imagem e preço > 0 obrigatórios; link opcional válido) → gravação normalizada → invalidação do cache `products:*` → auditoria. A vitrine pública filtra por busca, faixa de preço e categoria, ordena no servidor, exibe o preço formatado (`R$ 149,90`) e o aviso de afiliados no rodapé.
 
-### 4.6 Dicas do Dia
-- **Título:** "Gerenciar Dicas do Dia". Botões: "Exportar CSV" e "+ Novo" (padrão §3, igual às demais telas de conteúdo). O CSV traz o **conteúdo integral** da dica (a coluna "Conteúdo" da tabela trunca a 80 caracteres apenas para exibição).
+### 4.6 Gestão de Dicas
+- **Título:** "Gestão de Dicas". Botões: "Exportar CSV" e "+ Novo" (padrão §3, igual às demais telas de conteúdo). O CSV traz o **conteúdo integral** da dica (a coluna "Conteúdo" da tabela trunca a 80 caracteres apenas para exibição).
 - **Listagem e busca (2026-10-31):** a lista é paginada em **10 itens por página** (`Anterior`/`Próxima`/`Página X de Y`) e a busca do cabeçalho é **server-side** em nome/conteúdo (`GET /api/admin/dicas?search=...`). Antes, o GET admin ignorava `search`, `page` e `limit` (listagem completa), de modo que a busca digitada não filtrava os resultados. O contador do topo mostra o **total do conjunto filtrado** (todas as páginas); alterar a busca volta para a página 1. O "Exportar CSV" exporta apenas os itens da página visível.
 - **Tabela:** ID | Nome | Conteúdo | Status | Ações (sem coluna ☰). Vazio: "Nenhum item cadastrado ainda."
 - **Formulário (2 colunas):**
@@ -215,7 +215,7 @@ Barra interna com 4 subabas: 🛡️ Verificação de Integridade | 💾 Backup 
 - Registro atual: ID 3, `admin`, com as 10 permissões.
 - **Cargo `admin`:** [PLANEJADO] é o único cargo que vem habilitado por padrão com todas as permissões existentes (as 10 da seção 6). Não pode nem deve ser excluído.
 - Formulário: Nome do Cargo * (ex.: "Editor de Conteúdo") + 10 caixas de permissão (pelo menos uma é obrigatória): Visão Geral, Posts/Artigos, Gestão de Músicas, Gestão de Vídeos, Gestão de Produtos, Gestão de Dicas, Configuração de Cabeçalho, Segurança, Usuários, Auditoria. Botão "Salvar".
-- O nome da permissão "Gestão de Dicas" corresponde à aba "Dicas do Dia".
+- A permissão "Gestão de Dicas" corresponde à aba administrativa "Gestão de Dicas", cujos registros publicados alimentam o bloco "Dicas do Dia" no site público.
 - O ID 3 indica que os cargos 1 e 2 já existiram e foram removidos (a auditoria mostra a exclusão do cargo `user`).
 
 ### 5.3 Auditoria
@@ -239,7 +239,7 @@ Barra interna com 4 subabas: 🛡️ Verificação de Integridade | 💾 Backup 
 | Gestão de Músicas | 🎵 Gestão de Músicas |
 | Gestão de Vídeos | 🎬 Gestão de Vídeos |
 | Gestão de Produtos | 📦 Gestão de Produtos |
-| Gestão de Dicas | 💡 Dicas do Dia |
+| Gestão de Dicas | 💡 Gestão de Dicas |
 | Configuração de Cabeçalho | 🎨 Configuração de Cabeçalho |
 | Segurança | 🔒 Segurança |
 | Usuários | 👥 Usuários |
@@ -253,7 +253,7 @@ Barra interna com 4 subabas: 🛡️ Verificação de Integridade | 💾 Backup 
 | Gestão de Músicas | Músicas | Somente registros **publicados** aparecem na grade da aba Músicas. Registros em **Rascunho** não são exibidos. |
 | Gestão de Vídeos | Vídeos | Somente registros **publicados** aparecem na grade da aba Vídeos. Registros em **Rascunho** não são exibidos. |
 | Gestão de Produtos | Produtos Religiosos | Somente registros **publicados** aparecem na vitrine da aba Produtos Religiosos. Registros em **Rascunho** não são exibidos. |
-| Dicas do Dia | Dicas do Dia | Somente registros **publicados** aparecem no bloco "Dicas do Dia" no fim de todas as abas. Registros em **Rascunho** não são exibidos. |
+| Gestão de Dicas | Dicas do Dia | Somente registros **publicados** aparecem no bloco "Dicas do Dia" no fim de todas as abas. Registros em **Rascunho** não são exibidos. |
 | Configuração de Cabeçalho | Todas as abas públicas | Título, subtítulo e banner 1100×320 de todas as abas |
 | Cache do Sistema | Todas as abas públicas | Se uma alteração não aparecer no site, limpar o cache Redis |
 
@@ -293,7 +293,7 @@ A aba pública "Em Desenvolvimento" não tem gestão no painel.
 
 | # | Item | Status |
 |---|---|---|
-| 4 | **Nomenclatura:** a permissão é "Gestão de Dicas" e a aba é "Dicas do Dia". | **decidido em 2026-10-27 — manter.** O mapeamento permissão ↔ aba já está documentado no §4.2 e segue o padrão do projeto (`Posts/Artigos` ↔ aba "Reflexões & Estudos" também difere); renomear a permissão exigiria migração dos valores gravados em `roles.permissions` sem ganho funcional |
+| 4 | **Nomenclatura:** a permissão é "Gestão de Dicas" e a aba era "Dicas do Dia". | **decidido e padronizado em 2026-11-02 (ADR-0034)** — o painel administrativo adota uniformemente "Gestão de Dicas" (aba, título e permissão), enquanto o site público mantém "Dicas do Dia" (bloco e títulos públicos), estabelecendo paridade 1:1 estrita no painel e preservando o vínculo funcional |
 | 7 | **Senha mínima de 6 caracteres:** fraca. Considerar elevar para pelo menos 10 a 12 e exigir senha forte para admin. | **decidido e executado em 2026-10-30 (ADR-0031)** — política única em `lib/auth/password-policy.js`: mínimo de **12 caracteres** com letra maiúscula, minúscula e número, aplicada à criação e à troca de senha no painel de Usuários (server + client). A senha atual do admin continua válida até a próxima troca; o login não valida comprimento |
 | 16 | **Unificação da nomenclatura de publicação:** coluna `published` em todas as tabelas de conteúdo e default `false` (nada nasce publicado; formulários abrem com o toggle desmarcado) — executa a "evolução futura" registrada no ADR-0025 (item 3). | **decidido e executado em 2026-10-29 (ADR-0029)** — migration `020-unify-published-column` (rename `publicado`→`published` em musicas/videos, preservando dados; `SET DEFAULT false` em musicas, videos, dicas e products); sweep em lockstep no código, testes e schemas (guarda `schema-sources.test.js`); índices da migration 012 atualizados para replay pós `db:reset`. **Deploy: rodar `npm run migrate` no banco de produção** |
 

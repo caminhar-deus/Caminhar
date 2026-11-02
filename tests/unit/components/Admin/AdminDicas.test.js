@@ -17,7 +17,7 @@ describe('Componente Front-End - AdminDicas', () => {
     render(<AdminDicas />);
     
     expect(screen.getByTestId('mock-crud')).toBeInTheDocument();
-    expect(passedProps.title).toBe('Gerenciar Dicas do Dia');
+    expect(passedProps.title).toBe('Gestão de Dicas');
     expect(passedProps.apiEndpoint).toBe('/api/admin/dicas');
     expect(passedProps.itemNameSingular).toBe('dica');
     // Lista paginada em 10 itens (mesmo padrão de AdminVideos): sem isso a API
