@@ -2,7 +2,7 @@
 
 > Escopo: `docs/ARQUITETURA_SITE_PUBLICO.md` (área pública) e o código que a implementa.
 > Base: leitura integral do documento + varredura do código público (páginas, componentes de aba, APIs públicas, camada de domínio e CSS das grades).
-> Data: 2026-10-21 · Status: **em execução — Fases 0–3 concluídas; Fases 4–5 em andamento** (nada commitado).
+> Data: 2026-10-21 · Status: **concluído e executado em 2026-10-21** (Fases 0–5 concluídas no commit `b7950f1`; decisões oficiais em [ADR-0014](adr/0014-padrao-significa-mais-recentes-e-curadoria-como-posicionados.md), [ADR-0015](adr/0015-link-externo-assistir-no-youtube-no-cartao-de-video.md) e [ADR-0016](adr/0016-seletor-de-ordenacao-de-produtos-no-servidor.md)). As seções §1–§7 abaixo preservam o diagnóstico original anterior à execução.
 > Legenda: [PLANEJADO] = alvo ainda não implementado, informado pelo dono | [OBSERVADO] = visto nas capturas | [HIPÓTESE] = inferido, confirmar no código.
 
 ---

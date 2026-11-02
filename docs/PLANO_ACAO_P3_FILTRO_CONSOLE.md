@@ -1,6 +1,6 @@
 # Plano de Ação — P3: filtro global de `console.error` nos testes
 
-> **Status:** proposta, aguardando aprovação. Nada foi alterado.
+> **Status:** concluído e executado em 2026-10-22 (Fases 1–4 aplicadas no commit `e4bbc7a`; decisão oficial e invariante registrados em [ADR-0020](adr/0020-supressao-de-console-error-local-por-teste.md)). O restante deste documento preserva o diagnóstico e o plano originais.
 > **Data:** 2026-10-22
 > **Área:** infraestrutura de testes (não é site público nem painel — regras do
 > `AGENTS.md` §0.1 não se aplicam; ver "Classificação" ao final).

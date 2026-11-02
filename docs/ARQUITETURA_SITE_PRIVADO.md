@@ -86,7 +86,6 @@ Todas seguem o mesmo modelo, com pequenas variações:
 ### 4.2 Posts/Artigos
 - **Título:** "Gerenciar Posts". Botão: "+ Novo Post".
 - **Toggle de visualização (desde 2026-10-27, ADR-0024):** no topo da aba, controle segmentado **"Posts | Categorias"** alterna entre o CRUD de posts e o CRUD de categorias (§4.2.1). Padrão: "Posts".
-- **Listagem e busca (2026-10-31):** a lista é paginada em **10 itens por página** (`Anterior`/`Próxima`/`Página X de Y`) e a busca do cabeçalho é **server-side** com paginação. O contador do topo mostra o **total do conjunto filtrado** (todas as páginas), não apenas os itens da página; alterar a busca volta para a página 1. O "Exportar CSV" exporta apenas os itens da página visível.
 - **Tabela:** ☰ | ID | Título | Status | Data | Ações. Vazio: "Nenhum post encontrado."
 - **Listagem e busca (2026-10-31):** a lista é paginada em **10 itens por página** (`Anterior`/`Próxima`/`Página X de Y`, mesmo padrão de Vídeos) e a busca do cabeçalho é **server-side** em título (`GET /api/admin/posts?search=...`, filtro `ILIKE` antes da contagem e da paginação). O contador do topo mostra o **total do conjunto filtrado** (todas as páginas), não apenas os itens da página; alterar a busca volta para a página 1. Antes, o painel não pedia paginação e a API admin devolvia só a primeira página (10 itens). O "Exportar CSV" continua exportando apenas os itens da página visível (comportamento documentado em §8, item 6).
 - **Formulário:**

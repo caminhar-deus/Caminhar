@@ -1,7 +1,6 @@
 # Plano de Ação — Cobertura do handler de erro fatal do pool (`lib/infra/db.js:136`)
 
-> Documento de análise e plano. **Nada foi implementado.** Este arquivo apenas relata
-> o diagnóstico e propõe opções para decisão do dono.
+> **Status:** concluído e executado em 2026-10-23 (Opção A + E aplicada no commit `7346513` e decisão oficial registrada em [ADR-0021](adr/0021-cobertura-do-handler-de-erro-fatal-do-pool-postgresql-em-lib-infra-db.js.md), commit `1fc79d5`). O restante deste documento preserva o diagnóstico e o plano originais.
 
 ## 1. Resumo executivo
 
