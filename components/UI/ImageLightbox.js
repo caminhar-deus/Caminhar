@@ -13,19 +13,21 @@ export function ImageLightbox({
   currentIndex = 0,
   onIndexChange,
   alt = 'Imagem ampliada',
+  ariaLabel = 'Visualização ampliada da imagem',
   overlayTestId = 'image-lightbox-overlay',
   imageTestId = 'image-lightbox-img',
 }) {
+  const containerRef = useRef(null);
   const closeButtonRef = useRef(null);
   const allImages = images.length > 0 ? images : image ? [image] : [];
   const activeImage = allImages[currentIndex] || allImages[0] || '';
 
-  // Focus lock no botão fechar e bloqueio de scroll
+  // Focus lock no container do lightbox (gerenciado via useRef + tabIndex) e bloqueio de scroll
   useEffect(() => {
     if (isOpen) {
       document.body.classList.add('modal-open');
       const timer = setTimeout(() => {
-        closeButtonRef.current?.focus();
+        containerRef.current?.focus();
       }, 50);
       return () => {
         clearTimeout(timer);
@@ -78,9 +80,10 @@ export function ImageLightbox({
 
   return (
     <div
+      ref={containerRef}
       role="dialog"
       aria-modal="true"
-      aria-label="Visualização ampliada da imagem"
+      aria-label={ariaLabel}
       tabIndex={-1}
       className={styles.overlay}
       onClick={onClose}
@@ -146,6 +149,7 @@ ImageLightbox.propTypes = {
   currentIndex: PropTypes.number,
   onIndexChange: PropTypes.func,
   alt: PropTypes.string,
+  ariaLabel: PropTypes.string,
   overlayTestId: PropTypes.string,
   imageTestId: PropTypes.string,
 };

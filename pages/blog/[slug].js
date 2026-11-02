@@ -91,6 +91,7 @@ export default function BlogPost({ post, siteTitle }) {
               onClose={() => setIsImageZoomed(false)}
               image={post.image_url}
               alt={post.title}
+              ariaLabel={`Imagem ampliada: ${post.title}`}
               overlayTestId="image-lightbox"
             />
           </>
