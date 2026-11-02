@@ -70,6 +70,10 @@ build/Release
 dist
 out
 
+# Artefatos de sitemap e robots gerados pelo next-sitemap no postbuild
+/public/robots.txt
+/public/sitemap*.xml
+
 # Gatsby: descomente a linha abaixo se usar Gatsby (e não Next.js)
 # https://nextjs.org/blog/next-9-1#public-directory-support
 # public
