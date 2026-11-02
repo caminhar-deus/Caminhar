@@ -109,6 +109,23 @@ deixou de existir:
 Continua valendo: "Padrão" é "Mais recentes" (`created_at DESC`) em todas as
 abas, e nenhuma ordenação é feita no cliente.
 
+**2026-11-02 — paridade da ordem de curadoria no painel administrativo.** A
+verificação ponta a ponta pendente no primeiro risco desta decisão identificou que
+`GET /api/admin/musicas` compartilhava `getPaginatedMusicas` sem informar `sort`
+e passou a receber `created_at DESC` em 2026-10-21, desfazendo visualmente a
+ordem de Drag & Drop ao recarregar/paginar no painel e gerando colisões de
+`position` 1-based (`utils/reorder.js`) entre páginas quando há mais de 10
+músicas. Corrigido sem alterar o contrato público: `GET /api/admin/musicas`
+solicita `'positioned'` explicitamente, `getPaginatedMusicas` usa `'positioned'`
+(`position ASC, id ASC`) como default quando `publishedOnly = false` (mantendo
+`'default'` = `created_at DESC, id DESC` quando `publishedOnly = true`),
+`getAllMusicas` alinha o desempate para `position ASC, id ASC`, e
+`lib/domain/videos.js` alinha os defaults de `getPaginatedVideos`
+(`position ASC, id ASC`) e `getPublicPaginatedVideos` (`created_at DESC, id DESC`).
+Com isso, as três abas com seletor `"Posicionados"` (Músicas, Vídeos e Produtos)
+listam no `/admin` exatamente por `position ASC, id ASC`, enquanto Posts/Artigos
+permanece em `position ASC, created_at DESC`.
+
 Reavaliar se: (a) o dono quiser que "Padrão" volte a significar a ordem curada;
 (b) a curadoria passar a valer também na rota `/blog` (ver §7, item 12 do
 documento público); (c) aparecer ordenação por categoria ou por destaque.

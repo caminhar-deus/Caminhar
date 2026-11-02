@@ -117,7 +117,7 @@ Todas seguem o mesmo modelo, com pequenas variações:
 
 ### 4.3 Gestão de Músicas
 - **Botão:** "+ Nova Música".
-- **Listagem e busca (2026-10-31):** a lista é paginada em **10 itens por página** (`Anterior`/`Próxima`/`Página X de Y`) e a busca do cabeçalho é **server-side** com paginação. O contador do topo mostra o **total do conjunto filtrado** (todas as páginas), não apenas os itens da página; alterar a busca volta para a página 1. Antes, o painel não pedia paginação e a API admin devolvia só a primeira página (10 itens): com **16 músicas** no banco, **6 ficavam invisíveis** e o contador mostrava "Total: 10". O "Exportar CSV" exporta apenas os itens da página visível.
+- **Listagem e busca (2026-10-31 / curadoria alinhada em 2026-11-02):** a lista é paginada em **10 itens por página** (`Anterior`/`Próxima`/`Página X de Y`), ordenada pela curadoria manual (`position ASC, id ASC`, espelhando a opção `"Posicionados"` do site público — [ADR-0014](adr/0014-padrao-significa-mais-recentes-e-curadoria-como-posicionados.md)), e a busca do cabeçalho é **server-side** com paginação. O contador do topo mostra o **total do conjunto filtrado** (todas as páginas), não apenas os itens da página; alterar a busca volta para a página 1. Antes de 31/10/2026, o painel não pedia paginação e a API admin devolvia só a primeira página (10 itens): com **16 músicas** no banco, **6 ficavam invisíveis** e o contador mostrava "Total: 10". O "Exportar CSV" exporta apenas os itens da página visível.
 - **Tabela:** ☰ | ID | Título | Artista | Spotify | Status | Ações. Vazio: "Nenhuma música cadastrada ainda."
 - **Formulário:**
   - Título da Música * ("Nome da música")
@@ -130,6 +130,7 @@ Todas seguem o mesmo modelo, com pequenas variações:
 
 ### 4.4 Gestão de Vídeos
 - **Botão:** "+ Novo Vídeo".
+- **Listagem e busca:** a lista é paginada em **10 itens por página** (`Anterior`/`Próxima`/`Página X de Y`), ordenada pela curadoria manual (`position ASC, id ASC`, espelhando `"Posicionados"` no site público — [ADR-0014](adr/0014-padrao-significa-mais-recentes-e-curadoria-como-posicionados.md) e [ADR-0033](adr/0033-videos-posicionados-indice-e-ordenacao-alfabetica.md)), com busca **server-side** em título/descrição (`GET /api/admin/videos?search=...`).
 - **Tabela:** ☰ | ID | Título | YouTube | Status | Ações. Vazio: "Nenhum vídeo cadastrado ainda."
 - **Formulário:**
   - Título do Vídeo * ("Nome do vídeo")
@@ -143,7 +144,7 @@ Todas seguem o mesmo modelo, com pequenas variações:
 ### 4.5 Gestão de Produtos
 - **Botão:** "+ Novo Produto".
 - **Tabela:** ☰ | ID | Status | Imagem | Produto | Valor | Link | Ações. Vazio: "Nenhum produto cadastrado. Comece adicionando um!"
-- **Listagem e busca (2026-10-31):** a lista é paginada em **10 itens por página** (`Anterior`/`Próxima`/`Página X de Y`, mesmo padrão de Vídeos) e a busca do cabeçalho é **server-side** em nome/descrição (`GET /api/products?search=...`, filtro `ILIKE` antes da contagem e da paginação). O contador do topo mostra o **total do conjunto filtrado** (todas as páginas), não apenas os itens da página; alterar a busca volta para a página 1. Antes, a API admin devolvia só a primeira página (10 itens) e ignorava `search`: o 11º produto ficava invisível e a busca parecia não filtrar.
+- **Listagem e busca (2026-10-31):** a lista é paginada em **10 itens por página** (`Anterior`/`Próxima`/`Página X de Y`, mesmo padrão de Vídeos), ordenada pela curadoria manual (`position ASC, id ASC`, espelhando `"Posicionados"` na vitrine pública), e a busca do cabeçalho é **server-side** em nome/descrição (`GET /api/products?search=...`, filtro `ILIKE` antes da contagem e da paginação). O contador do topo mostra o **total do conjunto filtrado** (todas as páginas), não apenas os itens da página; alterar a busca volta para a página 1. Antes, a API admin devolvia só a primeira página (10 itens) e ignorava `search`: o 11º produto ficava invisível e a busca parecia não filtrar.
 - **Formulário:**
   - Nome do Produto * (ex.: "Bíblia de Estudo")
   - Valor * (ex.: "R$ 89,90") — aceita "R$ 89,90", "89,90" ou "89.90"; a API normaliza e grava como número (`NUMERIC(10,2)` desde a migration 019 — ADR-0027). **Preço zero é recusado** ("Valor deve ser maior que zero"): preço ausente não pode virar R$ 0,00 na vitrine. O filtro Mín/Máx do site público compara **número**, não texto. Na edição, o campo exibe o valor no formato pt-BR.

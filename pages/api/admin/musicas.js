@@ -35,7 +35,9 @@ async function handleGet(req, res) {
   const limit = parseInt(req.query.limit) || 10;
   const search = req.query.search || '';
 
-  const result = await getPaginatedMusicas(page, limit, search);
+  // Lista administrativa segue a ordem de curadoria (position ASC, id ASC)
+  // exigida pelo Drag & Drop 1-based de utils/reorder.js (ADR-0014).
+  const result = await getPaginatedMusicas(page, limit, search, false, 'positioned');
 
   // 🔇 Log removido conforme plano de melhoria de logs (consulta vazava dados)
   

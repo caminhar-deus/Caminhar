@@ -96,8 +96,6 @@ export default function AdminDicas() {
         { key: 'content', header: 'Conteúdo' },
         { key: 'published', header: 'Status' }
       ]}
-      usePagination={true}
-      itemsPerPage={10}
     />
   );
 }

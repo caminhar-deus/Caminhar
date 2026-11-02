@@ -85,7 +85,7 @@ describe('Integração: Fluxo Completo de Músicas (API + DB)', () => {
     const listData = JSON.parse(listRes._getData());
     expect(Array.isArray(listData.musicas)).toBe(true);
     expect(listData.musicas[0].titulo).toBe(newMusica.titulo);
-    expect(getPaginatedMusicas).toHaveBeenCalled();
+    expect(getPaginatedMusicas).toHaveBeenCalledWith(1, 10, '', false, 'positioned');
 
     // =================================================================
     // PASSO 3: EXCLUIR MÚSICA (DELETE)
@@ -140,11 +140,13 @@ describe('Integração: Fluxo Completo de Músicas (API + DB)', () => {
 
     expect(res._getStatusCode()).toBe(200);
     
-    // Verifica se a query foi chamada com o filtro WHERE LIKE e o parâmetro correto
+    // Verifica se a query foi chamada com o filtro de busca e ordenação administrativa de curadoria
     expect(getPaginatedMusicas).toHaveBeenCalledWith(
-      expect.any(Number),
-      expect.any(Number),
-      searchTerm
+      1,
+      10,
+      searchTerm,
+      false,
+      'positioned'
     );
   });
 });

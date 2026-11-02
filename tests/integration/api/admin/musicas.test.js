@@ -111,7 +111,7 @@ describe('API Admin - Gestão de Músicas (/api/admin/musicas) - Específicos', 
   });
 
   describe('GET - Listar Músicas', () => {
-    it('deve retornar 200, Cache-Control e listar músicas', async () => {
+    it('deve retornar 200, Cache-Control e listar músicas na ordem de curadoria (positioned)', async () => {
       const mockResult = { musicas: [{ id: 1, titulo: 'Hino' }], pagination: { total: 1 } };
       getPaginatedMusicas.mockResolvedValueOnce(mockResult);
 
@@ -120,7 +120,22 @@ describe('API Admin - Gestão de Músicas (/api/admin/musicas) - Específicos', 
 
       expect(res._getStatusCode()).toBe(200);
       expect(res.getHeader('Cache-Control')).toBe('no-store, max-age=0, must-revalidate');
+      expect(getPaginatedMusicas).toHaveBeenCalledWith(1, 10, '', false, 'positioned');
       expect(JSON.parse(res._getData())).toEqual(mockResult);
+    });
+
+    it('deve repassar page, limit e search mantendo publishedOnly=false e sort=positioned', async () => {
+      const mockResult = { musicas: [], pagination: { total: 0 } };
+      getPaginatedMusicas.mockResolvedValueOnce(mockResult);
+
+      const { req, res } = getAuthenticatedMocks({
+        method: 'GET',
+        query: { page: '2', limit: '10', search: 'Salmo' },
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      expect(getPaginatedMusicas).toHaveBeenCalledWith(2, 10, 'Salmo', false, 'positioned');
     });
 
     it('deve retornar 500 em caso de erro na busca', async () => {

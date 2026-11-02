@@ -233,22 +233,45 @@ describeIf('Músicas — Integração com PostgreSQL Real', () => {
     expect(result.rows[0].artista).toBe('Banda Nacional');
   });
 
-  it('deve ordenar músicas por position ASC, created_at DESC', async () => {
-    await insertTestMusica({
-      titulo: 'Primeira',
-      artista: 'Artista',
-      url_spotify: `https://open.spotify.com/track/prim-${Date.now()}`,
-      position: 1,
+  it('deve ordenar músicas no painel administrativo por position ASC, id ASC (incluindo rascunhos e desempatando entre páginas)', async () => {
+    // Cenário real de curadoria no painel (/admin):
+    // - mOldCuratedSecond: criada antes, publicada, movida para position 2
+    // - mNewCuratedFirst: criada depois (created_at mais recente), rascunho, movida para position 1
+    // - mTiedA e mTiedB: empate de position = 2 (ex.: dados legados ou reordenação parcial), desempatadas por id ASC
+    const mOldCuratedSecond = await insertTestMusica({
+      titulo: 'Antiga na Posição 2',
+      published: true,
+      position: 2,
+      created_at: '2025-01-10T10:00:00Z',
     });
-    await insertTestMusica({
-      titulo: 'Segunda',
-      artista: 'Artista',
-      url_spotify: `https://open.spotify.com/track/seg-${Date.now()}`,
-      position: 0,
+    const mNewCuratedFirst = await insertTestMusica({
+      titulo: 'Recente Rascunho na Posição 1',
+      published: false,
+      position: 1,
+      created_at: '2025-06-15T18:00:00Z',
+    });
+    const mTiedB = await insertTestMusica({
+      titulo: 'Empate Posição 2 (ID maior)',
+      published: true,
+      position: 2,
+      created_at: '2025-07-01T12:00:00Z',
+    });
+    const mLast = await insertTestMusica({
+      titulo: 'Última Posição 3',
+      published: false,
+      position: 3,
+      created_at: '2025-08-01T12:00:00Z',
     });
 
-    const result = await tx.query('SELECT * FROM musicas ORDER BY position ASC, created_at DESC');
-    expect(result.rows[0].position).toBeLessThanOrEqual(result.rows[1].position);
+    const page1 = await tx.query('SELECT id, titulo, published, position FROM musicas ORDER BY position ASC, id ASC LIMIT 2 OFFSET 0');
+    const page2 = await tx.query('SELECT id, titulo, published, position FROM musicas ORDER BY position ASC, id ASC LIMIT 2 OFFSET 2');
+
+    // Página 1: position 1 (mesmo sendo rascunho e mais recente) -> menor id com position 2
+    expect(page1.rows.map((r) => r.id)).toEqual([mNewCuratedFirst.id, mOldCuratedSecond.id]);
+    expect(page1.rows[0].published).toBe(false);
+
+    // Página 2: maior id com position 2 -> position 3 (sem repetição nem omissão entre páginas)
+    expect(page2.rows.map((r) => r.id)).toEqual([mTiedB.id, mLast.id]);
   });
 
   // ── Ordenação pública de /api/musicas (item AF, migration 022) ──────────────

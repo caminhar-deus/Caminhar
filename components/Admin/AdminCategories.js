@@ -152,8 +152,6 @@ export default function AdminCategories() {
       showItemCount={true}
       itemNameSingular="categoria cadastrada"
       itemNamePlural="categorias cadastradas"
-      usePagination={true}
-      itemsPerPage={10}
     />
   );
 }

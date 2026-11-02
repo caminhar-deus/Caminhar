@@ -30,8 +30,8 @@ describe('Funções de Músicas (DB)', () => {
       // Verifica a chamada da query de dados (independente da ordem do Promise.all)
       const dataCall = mockQuery.mock.calls.find(call => call[0].includes('SELECT * FROM musicas'));
       const normalizedSqlData = dataCall[0].replace(/\s+/g, ' ').trim();
-      // "Padrão" = Mais recentes com desempate determinístico por id (item AF / ADR-0014)
-      expect(normalizedSqlData).toContain('ORDER BY created_at DESC, id DESC LIMIT $1 OFFSET $2');
+      // Uso interno/painel (publishedOnly=false, sem sort): ordem de curadoria com desempate por id (ADR-0014)
+      expect(normalizedSqlData).toContain('ORDER BY position ASC, id ASC LIMIT $1 OFFSET $2');
       expect(dataCall[1]).toEqual([10, 0]); // Padrão: limit=10, offset=0
 
       // Verifica a chamada da query de contagem
@@ -72,6 +72,34 @@ describe('Funções de Músicas (DB)', () => {
 
       const dataCall = mockQuery.mock.calls.find(call => call[0].includes('SELECT * FROM musicas'));
       expect(dataCall[1]).toEqual([5, 5]); // limit=5, offset=(2-1)*5=5
+    });
+
+    it('deve usar Mais recentes (created_at DESC, id DESC) como padrão quando publishedOnly=true e sort omitido', async () => {
+      mockQuery.mockImplementation((text) => {
+        if (text.includes('COUNT(*)')) return Promise.resolve({ rows: [{ count: '0' }] });
+        return Promise.resolve({ rows: [] });
+      });
+
+      await getPaginatedMusicas(1, 12, '', true);
+
+      const dataCall = mockQuery.mock.calls.find(call => call[0].includes('FROM musicas') && call[0].includes('LIMIT'));
+      const normalizedSqlData = dataCall[0].replace(/\s+/g, ' ').trim();
+      expect(normalizedSqlData).toContain('WHERE published = true');
+      expect(normalizedSqlData).toContain('ORDER BY created_at DESC, id DESC LIMIT $1 OFFSET $2');
+      expect(dataCall[1]).toEqual([12, 0]);
+    });
+
+    it('deve usar curadoria (position ASC, id ASC) como fallback quando publishedOnly=false e sort desconhecido', async () => {
+      mockQuery.mockImplementation((text) => {
+        if (text.includes('COUNT(*)')) return Promise.resolve({ rows: [{ count: '0' }] });
+        return Promise.resolve({ rows: [] });
+      });
+
+      await getPaginatedMusicas(1, 10, '', false, 'desconhecido');
+
+      const dataCall = mockQuery.mock.calls.find(call => call[0].includes('SELECT * FROM musicas'));
+      const normalizedSqlData = dataCall[0].replace(/\s+/g, ' ').trim();
+      expect(normalizedSqlData).toContain('ORDER BY position ASC, id ASC LIMIT $1 OFFSET $2');
     });
 
     it.each([
@@ -193,7 +221,7 @@ describe('Funções de Músicas (DB)', () => {
       expect(mockQuery).toHaveBeenCalledTimes(1);
       const [text, values] = mockQuery.mock.calls[0];
       const normalizedText = text.replace(/\s+/g, ' ').trim();
-      expect(normalizedText).toBe('SELECT * FROM musicas ORDER BY position ASC, created_at DESC');
+      expect(normalizedText).toBe('SELECT * FROM musicas ORDER BY position ASC, id ASC');
       expect(values).toEqual([]);
     });
 
@@ -202,7 +230,7 @@ describe('Funções de Músicas (DB)', () => {
       await getAllMusicas('Rock');
       const [text, values] = mockQuery.mock.calls[0];
       const normalizedText = text.replace(/\s+/g, ' ').trim();
-      expect(normalizedText).toBe('SELECT * FROM musicas WHERE titulo ILIKE $1 OR artista ILIKE $1 ORDER BY position ASC, created_at DESC');
+      expect(normalizedText).toBe('SELECT * FROM musicas WHERE titulo ILIKE $1 OR artista ILIKE $1 ORDER BY position ASC, id ASC');
       expect(values).toEqual(['%Rock%']);
     });
   });

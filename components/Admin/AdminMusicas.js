@@ -205,8 +205,6 @@ export default function AdminMusicasNew() {
       showItemCount={true}
       itemNameSingular="música cadastrada"
       itemNamePlural="músicas cadastradas"
-      usePagination={true}
-      itemsPerPage={10}
     />
   );
 }

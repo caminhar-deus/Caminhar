@@ -384,8 +384,6 @@ export default function AdminPostsNew() {
           showItemCount={true}
           itemNameSingular="post cadastrado"
           itemNamePlural="posts cadastrados"
-          usePagination={true}
-          itemsPerPage={10}
         />
       ) : (
         <AdminCategories />

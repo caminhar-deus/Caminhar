@@ -285,8 +285,8 @@ Camada de domínio: funções específicas por entidade de negócio, construída
 
 | Função | Descrição |
 |--------|-----------|
-| `getAllMusicas(search)` | Lista todas as músicas com busca opcional por título/artista (ILIKE). Ordena por `position ASC, created_at DESC` |
-| `getPaginatedMusicas(page, limit, search, publishedOnly, sort)` | Lista paginada via `paginate()` do `shared-pagination.js`. Aceita `sort`: `default` (position), `recent` (created_at), `alpha` (titulo). Retorna `{ musicas, data, pagination }` |
+| `getAllMusicas(search)` | Lista todas as músicas com busca opcional por título/artista (ILIKE). Ordena por `position ASC, id ASC` (curadoria manual com desempate determinístico) |
+| `getPaginatedMusicas(page, limit, search, publishedOnly, sort)` | Lista paginada via `paginate()` do `shared-pagination.js`. Aceita `sort`: `default` (`created_at DESC, id DESC`), `positioned` (`position ASC, id ASC`), `oldest` (`created_at ASC, id ASC`), `alpha` (`lower(unaccent(titulo)) ASC, id ASC`) e `alpha_desc` (`lower(unaccent(titulo)) DESC, id DESC`). Quando `sort` é omitido, usa `'default'` na vitrine pública (`publishedOnly=true`) e `'positioned'` no painel/uso interno (`publishedOnly=false`). Retorna `{ musicas, data, pagination }` |
 | `createMusica(musica, options)` | Cria música via `transaction()`. Calcula `MAX(position)` + 1 dentro da transação (evita race condition). Usa `raw('CURRENT_TIMESTAMP')` para `created_at` |
 | `updateMusica(id, musica, options)` | Atualização parcial — só inclui campos explicitamente fornecidos. Adiciona `updated_at: raw('CURRENT_TIMESTAMP')` condicionalmente |
 | `deleteMusica(id, options)` | Remove música pelo ID |
@@ -416,8 +416,8 @@ Camada de domínio: funções específicas por entidade de negócio, construída
 
 | Função | Descrição |
 |--------|-----------|
-| `getPaginatedVideos(page, limit, search, publishedOnly, orderBy)` | Videos paginados via `paginate()`. Busca ILIKE em `titulo` e `descricao` |
-| `getPublicPaginatedVideos(page, limit, search, orderBy)` | Alias para `getPaginatedVideos` com `publishedOnly=true` |
+| `getPaginatedVideos(page, limit, search, publishedOnly, orderBy)` | Vídeos paginados via `paginate()`. Busca ILIKE em `titulo` e `descricao`. Default de `orderBy`: `position ASC, id ASC` (curadoria do painel — ADR-0014 / ADR-0033) |
+| `getPublicPaginatedVideos(page, limit, search, orderBy)` | Alias para `getPaginatedVideos` com `publishedOnly=true`. Default de `orderBy`: `created_at DESC, id DESC` (Mais recentes na vitrine pública) |
 | `createVideo(videoData, options)` | Cria vídeo via `transaction()` — cálculo de `MAX(position)` + INSERT atômico. Aceita `options` repassado ao `createRecord` |
 | `updateVideo(id, videoData, options)` | Atualização parcial — só inclui campos fornecidos. Adiciona `updated_at` condicionalmente. Aceita `options` |
 | `deleteVideo(id)` | Remove vídeo por ID |

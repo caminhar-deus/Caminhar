@@ -34,7 +34,7 @@ describe('Domain - Vídeos (lib/domain/videos.js)', () => {
   });
 
   describe('getPaginatedVideos()', () => {
-    it('deve calcular paginação e retornar dados corretamente sem busca', async () => {
+    it('deve calcular paginação e retornar dados corretamente sem busca (ordem padrão de curadoria position ASC, id ASC)', async () => {
       query
         .mockResolvedValueOnce({ rows: [{ id: 1, titulo: 'Vídeo Admin' }] }) // Retorno dos dados
         .mockResolvedValueOnce({ rows: [{ count: '20' }] });                 // Retorno do COUNT(*)
@@ -44,8 +44,10 @@ describe('Domain - Vídeos (lib/domain/videos.js)', () => {
       expect(result.data).toEqual([{ id: 1, titulo: 'Vídeo Admin' }]);
       expect(result.pagination).toEqual({ page: 2, limit: 5, total: 20, totalPages: 4 });
       
-      // Verifica se limit e offset ($1 e $2) foram passados nas posições corretas
-      expect(query).toHaveBeenNthCalledWith(1, expect.stringContaining('LIMIT $1 OFFSET $2'), [5, 5]);
+      // Verifica ordem padrão de curadoria com desempate por id e limit/offset ($1 e $2)
+      const normalizedSql = query.mock.calls[0][0].replace(/\s+/g, ' ').trim();
+      expect(normalizedSql).toContain('ORDER BY position ASC, id ASC LIMIT $1 OFFSET $2');
+      expect(query).toHaveBeenNthCalledWith(1, expect.any(String), [5, 5]);
       expect(query).toHaveBeenNthCalledWith(2, expect.stringContaining('SELECT COUNT(*)'), []);
     });
 
@@ -60,13 +62,25 @@ describe('Domain - Vídeos (lib/domain/videos.js)', () => {
   });
 
   describe('getPublicPaginatedVideos()', () => {
-    it('deve buscar obrigatoriamente apenas vídeos publicados (published = true)', async () => {
+    it('deve buscar obrigatoriamente apenas vídeos publicados (published = true) e ordenar por Mais recentes (created_at DESC, id DESC) por padrão', async () => {
       query.mockResolvedValue({ rows: [] });
 
       await getPublicPaginatedVideos(1, 10, 'Next.js');
 
-      // A API pública possui a cláusula fixa "published = true" além da busca
-      expect(query).toHaveBeenNthCalledWith(1, expect.stringContaining('WHERE published = true AND (titulo ILIKE $1'), ['%next.js%', 10, 0]);
+      // A API pública possui a cláusula fixa "published = true" além da busca e ordem padrão Mais recentes
+      const normalizedSql = query.mock.calls[0][0].replace(/\s+/g, ' ').trim();
+      expect(normalizedSql).toContain('WHERE published = true AND (titulo ILIKE $1 OR descricao ILIKE $1) ORDER BY created_at DESC, id DESC LIMIT $2 OFFSET $3');
+      expect(query).toHaveBeenNthCalledWith(1, expect.any(String), ['%next.js%', 10, 0]);
+    });
+
+    it('deve repassar cláusula orderBy personalizada (ex.: Posicionados)', async () => {
+      query.mockResolvedValue({ rows: [] });
+
+      await getPublicPaginatedVideos(1, 6, '', 'position ASC, id ASC');
+
+      const normalizedSql = query.mock.calls[0][0].replace(/\s+/g, ' ').trim();
+      expect(normalizedSql).toContain('WHERE published = true ORDER BY position ASC, id ASC LIMIT $1 OFFSET $2');
+      expect(query).toHaveBeenNthCalledWith(1, expect.any(String), [6, 0]);
     });
   });
 
