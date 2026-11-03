@@ -454,7 +454,7 @@ Regras decorrentes:
 
 ## 13. Migrações Aplicadas
 
-A tabela `_migrations` registra as migrações executadas no schema do banco (conferido em 27/10/2026; a `019` foi criada em 29/10/2026 e entra na próxima execução de `npm run migrate`):
+A tabela `_migrations` registra as migrações executadas no schema do banco. Estado conferido em **03/11/2026** com `npm run migrate:status` no banco de desenvolvimento: **22 de 22 aplicadas, 0 pendentes** (inclui as migrations `019` a `022`, criadas em 29/10 e 02/11/2026):
 
 | ID | Nome | Descrição |
 |----|------|-----------|
@@ -478,6 +478,8 @@ A tabela `_migrations` registra as migrações executadas no schema do banco (co
 | 18 | `018-seed-default-roles` | Semeia os cargos padrão `admin` e `user` |
 | 19 | `019-products-price-numeric` | Converte `products.price` de VARCHAR para NUMERIC(10,2), normalizando valores existentes (criada em 29/10/2026) |
 | 20 | `020-unify-published-column` | Renomeia `publicado`→`published` em musicas/videos (dados preservados) e fixa `DEFAULT false` em musicas, videos, dicas e products — ADR-0029 (aplicada em 29/10/2026) |
+| 21 | `021-videos-public-sort-support` | Cria `idx_videos_recent (published, created_at DESC, id DESC)` para `recent`/`oldest`, mantém `idx_videos_pagination` para `positioned` e habilita a extensão `unaccent` para o A-Z/Z-A de `/api/videos` — ADR-0033 (aplicada) |
+| 22 | `022-musicas-products-public-sort-support` | Cria `idx_musicas_recent` e `idx_products_recent` (mesma chave da 021) para `default`/`oldest`, mantém os índices `*_pagination` para `positioned` e reafirma `CREATE EXTENSION IF NOT EXISTS unaccent` para o A-Z/Z-A de `/api/musicas` — ADR-0033 §Revisão (aplicada) |
 
 **Observação:** A migration `010-sync-sqlite-pg-schemas` foi criada durante a unificação SQLite → PostgreSQL, mas seu arquivo foi removido posteriormente. As alterações de schema correspondentes já estão presentes no banco (a numeração salta de 009 para 011 por isso).
 

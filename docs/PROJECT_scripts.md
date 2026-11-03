@@ -4,7 +4,7 @@
 > **Diretório analisado:** `/scripts`  
 > **Objetivo:** Descrever a finalidade, localização e funcionamento de cada script e subpasta.  
 > **Data da análise:** 23/09/2026  
-> **Última atualização:** 19/10/2026 — `scripts/bench/orchestrator/` (bench do papel do `orchestrator`: `rodar.js` abre sessão real por modelo e grava em streaming, `conferir.js` mede delegação, citações e contaminação, mais `tarefa.md`, `gabarito.md` e `rubrica.md`); scripts `bench:orch:rodar` e `bench:orch:conferir` no `package.json`
+> **Última atualização:** 03/11/2026 — baseline de migrations atualizada para **22 arquivos (000–022)**: as migrations `019` a `022` entraram na tabela e a contagem da categoria no resumo foi corrigida. Atualização anterior: 19/10/2026 — `scripts/bench/orchestrator/` (bench do papel do `orchestrator`: `rodar.js` abre sessão real por modelo e grava em streaming, `conferir.js` mede delegação, citações e contaminação, mais `tarefa.md`, `gabarito.md` e `rubrica.md`); scripts `bench:orch:rodar` e `bench:orch:conferir` no `package.json`
 
 ---
 
@@ -22,7 +22,7 @@ scripts/
 ├── diagnostics/     → diagnósticos pontuais
 ├── lib/             → módulos de biblioteca (parsing de saída do k6)
 ├── maintenance/     → manutenção de dados
-├── migrations/      → migrações de schema (000-018)
+├── migrations/      → migrações de schema (000-022)
 ├── schemas/         → definições JSON de tabelas
 ├── tests/           → testes manuais
 └── utils/           → módulos compartilhados
@@ -111,7 +111,11 @@ Diretório novo, criado em 08/10/2026 junto com a captura de saída do orquestra
 | `015-align-products-schema.js` | Alinha schema de `products` ao esperado pelo código: renomeia `title→name`, `images→image_url`, adiciona `category`, unifica links em `link` (prioridade ML > Shopee > Amazon). |
 | `016-create-refresh-tokens-table.js` | Cria tabela `refresh_tokens` (suporte a refresh token no login: user_id, token UNIQUE, expires_at, revoked) + índices. |
 | `017-add-thumbnail-to-videos.js` | Adiciona coluna `thumbnail VARCHAR(255)` em `videos` (`ADD COLUMN IF NOT EXISTS` — idempotente). |
-| `018-seed-default-roles.js` | **Última migração (04/10/2026).** Garante o índice único `idx_roles_name` em `roles(name)` (idempotente, pré-requisito do `ON CONFLICT (name)` — sem ele o Postgres responde `42P10`) e faz upsert dos cargos padrão `admin` (com as permissões de `lib/domain/permissions.js`) e `user`. Fecha a lacuna deixada pela 000, que cria a tabela `roles` vazia. |
+| `018-seed-default-roles.js` | Garante o índice único `idx_roles_name` em `roles(name)` (idempotente, pré-requisito do `ON CONFLICT (name)` — sem ele o Postgres responde `42P10`) e faz upsert dos cargos padrão `admin` (com as permissões de `lib/domain/permissions.js`) e `user`. Fecha a lacuna deixada pela 000, que cria a tabela `roles` vazia. |
+| `019-products-price-numeric.js` | Converte `products.price` de `VARCHAR` para `NUMERIC(10,2)`, normalizando os valores existentes (ADR-0027; padrão idempotente do ADR-0025). |
+| `020-unify-published-column.js` | Renomeia `publicado`→`published` em `musicas` e `videos` (rename preserva dados) e fixa `DEFAULT false` em `musicas`, `videos`, `dicas` e `products` — ADR-0029. |
+| `021-videos-public-sort-support.js` | Cria `idx_videos_recent (published, created_at DESC, id DESC)` para `recent`/`oldest`, mantém `idx_videos_pagination` (serve `positioned` via Incremental Sort) e habilita `CREATE EXTENSION IF NOT EXISTS unaccent` para `lower(unaccent(titulo))` no A-Z/Z-A — ADR-0033. |
+| `022-musicas-products-public-sort-support.js` | Cria `idx_musicas_recent` e `idx_products_recent` (mesma chave da 021) para `default`/`oldest`, mantém `idx_musicas_pagination`/`idx_products_pagination` para `positioned` e repete `CREATE EXTENSION IF NOT EXISTS unaccent` para `/api/musicas?sort=alpha` — ADR-0033 §Revisão. **Última migração (02/11/2026).** |
 
 ---
 
@@ -277,7 +281,7 @@ máquina e momento.
 | Categoria | Quantidade | Arquivos |
 |-----------|:----------:|----------|
 | Backup | 5 | `backup.js`, `create-backup.js`, `restore-backup.js`, `init-backup.js`, `view-backup-logs.js` |
-| Migrações | 21 | `migrate.js` + `migrations/` (18 arquivos 000-018) + `seed-migrations-table.js` + `verify-applied.js` |
+| Migrações | 25 | `migrate.js` + `migrations/` (22 arquivos 000-022) + `seed-migrations-table.js` + `verify-applied.js` |
 | Schemas | 4 | `schemas/*.json` |
 | Seeds | 6 | `seed-all.js`, `seed-posts.js`, `seed-musicas.js`, `seed-videos.js`, `seed-products.js`, `seed-settings.js` |
 | Inicialização | 3 | `init-server.js`, `init-table.js`, `setup-test-db.js` |
