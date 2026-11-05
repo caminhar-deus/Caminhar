@@ -1,12 +1,12 @@
 # Retorno Semanal — Auditoria Técnica do Projeto Caminhar
 
 ## 1. Identificação da auditoria
-- **Data e horário da execução:** 04/11/2026, 21:45 (BRT) — *Atualizado em 05/11/2026, 18:20 (BRT) pós-diagnóstico de CI e blindagem do Lightbox*
-- **Período analisado:** 28/10/2026 a 04/11/2026 (últimos 7 dias)
+- **Data e horário da execução:** 04/11/2026, 21:45 (BRT) — *Atualizado em 05/11/2026, 19:15 (BRT) com 100% dos workflows aprovados no GitHub Actions (370 runs)*
+- **Período analisado:** 29/10/2026 a 05/11/2026 (últimos 7 dias)
 - **Fontes consultadas:**
   - Logs locais (`logs/coverage-output.log`, `logs/tests-output.log`, `logs/eslint.log`)
   - Workflows e execuções do GitHub Actions (`.github/workflows/e2e.yml`, `load-tests.yml`, `test-base.yml`, `test-coverage.yml`, `test-db-coverage.yml`)
-  - API REST do GitHub Actions (`https://api.github.com/repos/caminhar-deus/Caminhar/actions/runs`), validada com sucesso via `GITHUB_TOKEN` em `.env.local` (Status HTTP 200, 360 execuções registradas)
+  - API REST do GitHub Actions (`https://api.github.com/repos/caminhar-deus/Caminhar/actions/runs`), validada via `npm run diag:actions` e `GITHUB_TOKEN` em `.env.local` (Status HTTP 200, 370 execuções registradas)
   - Histórico de commits do Git nos últimos 7 dias
   - Documentação de arquitetura e pendências (`AGENTS.md`, `docs/ARQUITETURA_SITE_PUBLICO.md`, `docs/ARQUITETURA_SITE_PRIVADO.md`, `docs/PENDENCIAS_scripts_testes.md`, `docs/PROJECT_raiz.md`)
 - **Situação geral da auditoria:** Concluída com sucesso. Todas as ocorrências e oportunidades identificadas foram tratadas, implementadas e validadas com sucesso. Conexão com a API do GitHub Actions plenamente operacional.
@@ -53,7 +53,7 @@
 - **Validação da API do GitHub Actions:**
   - Status HTTP retornado: **200 OK**
   - Autenticação: Bearer token configurado em `.env.local` (`GITHUB_TOKEN`)
-  - Volume de execuções auditáveis: **360 workflow runs** catalogados no repositório.
+  - Volume de execuções auditáveis: **370 workflow runs** catalogados no repositório (com as 6 execuções mais recentes dos commits de hoje 100% aprovadas: Runs #112/#113 de E2E, #118/#119 de Lint e #103/#104 de DB Coverage).
 
 ---
 
@@ -113,6 +113,7 @@ O projeto Caminhar encontra-se em excelente estado de saúde técnica, estabilid
   - *Execução do Plano de Ação:* Implementadas Ações 01 a 04 com sucesso. Todas as ocorrências resolvidas; 208 suítes / 1654 testes aprovados; Knip e ESLint 100% limpos.
   - *Integração da API do GitHub Actions:* Configurado `GITHUB_TOKEN` em `.env.local` e validado acesso direto às execuções de CI com status HTTP 200 (360 workflow runs registrados).
 - **05/11/2026:**
-  - *Diagnóstico Automatizado do GitHub Actions (`npm run diag:actions`):* Consulta e análise de 364 runs históricos e 50 recentes (47 sucessos, 3 falhas).
+  - *Diagnóstico Automatizado do GitHub Actions (`npm run diag:actions`):* Consulta e análise de 370 runs históricos e 50 recentes (47 sucessos, 3 falhas históricas em 02/11).
   - *Investigação Técnica das Falhas:* Conclusão e relatório forense comprovando que as falhas das runs #106, #107 e #112 em 02/11/2026 foram tratadas e resolvidas nos commits `50ae05c` e `1dc73ce`.
   - *Execução do Plano de Ação:* Implementada a Ação 06 com restauração de foco acessível (WAI-ARIA Modal Dialog) em `ImageLightbox.js` e 3 novos testes unitários de blindagem contra regressão em `ImageLightbox.test.js`. 100% dos testes (1.657 testes) e gates estáticos aprovados.
+  - *Confirmação no GitHub Actions:* Os pushes realizados acionaram 6 novos workflow runs na `main` (E2E Cypress Runs #112 e #113, Lint Runs #118 e #119, Test Coverage Gate Runs #103 e #104), todos concluídos com status **success**. Zero falhas ativas no repositório.
