@@ -67,4 +67,50 @@ describe('Componente UI - ImageLightbox', () => {
     fireEvent.click(prevBtn);
     expect(onIndexChange).toHaveBeenCalledWith(0);
   });
+
+  it('deve chamar onClose ao clicar diretamente na imagem ampliada por propagação', () => {
+    const onClose = jest.fn();
+    render(
+      <ImageLightbox isOpen={true} onClose={onClose} image="/test.jpg" alt="Foto teste" />
+    );
+
+    const img = screen.getByAltText('Foto teste');
+    fireEvent.click(img);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('deve respeitar ariaLabel customizado e overlayTestId quando fornecidos', () => {
+    render(
+      <ImageLightbox
+        isOpen={true}
+        onClose={() => {}}
+        image="/test.jpg"
+        ariaLabel="Imagem ampliada: Mulher Virtuosa"
+        overlayTestId="image-lightbox"
+      />
+    );
+
+    const dialog = screen.getByRole('dialog', { name: 'Imagem ampliada: Mulher Virtuosa' });
+    expect(dialog).toBeInTheDocument();
+    expect(dialog).toHaveAttribute('data-testid', 'image-lightbox');
+  });
+
+  it('deve restaurar o foco para o elemento previamente ativo ao fechar o lightbox', () => {
+    const triggerButton = document.createElement('button');
+    triggerButton.textContent = 'Abrir zoom';
+    document.body.appendChild(triggerButton);
+    triggerButton.focus();
+    expect(document.activeElement).toBe(triggerButton);
+
+    const { rerender } = render(
+      <ImageLightbox isOpen={true} onClose={() => {}} image="/test.jpg" />
+    );
+
+    rerender(
+      <ImageLightbox isOpen={false} onClose={() => {}} image="/test.jpg" />
+    );
+
+    expect(document.activeElement).toBe(triggerButton);
+    document.body.removeChild(triggerButton);
+  });
 });

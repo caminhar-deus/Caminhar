@@ -19,19 +19,28 @@ export function ImageLightbox({
 }) {
   const containerRef = useRef(null);
   const closeButtonRef = useRef(null);
+  const previouslyFocusedElementRef = useRef(null);
   const allImages = images.length > 0 ? images : image ? [image] : [];
   const activeImage = allImages[currentIndex] || allImages[0] || '';
 
-  // Focus lock no container do lightbox (gerenciado via useRef + tabIndex) e bloqueio de scroll
+  // Focus lock no container do lightbox (gerenciado via useRef + tabIndex), restauração de foco ao fechar e bloqueio de scroll
   useEffect(() => {
     if (isOpen) {
-      document.body.classList.add('modal-open');
+      if (typeof document !== 'undefined') {
+        previouslyFocusedElementRef.current = document.activeElement;
+        document.body.classList.add('modal-open');
+      }
       const timer = setTimeout(() => {
         containerRef.current?.focus();
       }, 50);
       return () => {
         clearTimeout(timer);
-        document.body.classList.remove('modal-open');
+        if (typeof document !== 'undefined') {
+          document.body.classList.remove('modal-open');
+        }
+        if (previouslyFocusedElementRef.current && typeof previouslyFocusedElementRef.current.focus === 'function') {
+          previouslyFocusedElementRef.current.focus();
+        }
       };
     }
   }, [isOpen]);
