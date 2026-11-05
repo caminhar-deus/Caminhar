@@ -1,7 +1,7 @@
 # Retorno Semanal — Auditoria Técnica do Projeto Caminhar
 
 ## 1. Identificação da auditoria
-- **Data e horário da execução:** 04/11/2026, 21:45 (BRT) — *Atualizado em 05/11/2026, 00:15 (BRT) pós-validação da API do GitHub Actions*
+- **Data e horário da execução:** 04/11/2026, 21:45 (BRT) — *Atualizado em 05/11/2026, 18:20 (BRT) pós-diagnóstico de CI e blindagem do Lightbox*
 - **Período analisado:** 28/10/2026 a 04/11/2026 (últimos 7 dias)
 - **Fontes consultadas:**
   - Logs locais (`logs/coverage-output.log`, `logs/tests-output.log`, `logs/eslint.log`)
@@ -75,6 +75,13 @@
 - **Status:** **RESOLVIDO em 05/11/2026**
 - **Ação Executada:** Configuração de Personal Access Token com escopo *Actions: Read-only* em `.env.local` e validação com status HTTP 200, superando a limitação anterior de consulta externa.
 
+### 5.5. Diagnóstico de CI e Blindagem de Acessibilidade/Regressão do Lightbox
+- **Status:** **RESOLVIDO em 05/11/2026**
+- **Ação Executada:**
+  1. Criação e integração do script de diagnóstico de automação `scripts/diagnostics/check-github-actions.js` (`npm run diag:actions`), catalogando 364 runs históricos e 50 recentes (47 sucessos, 3 falhas pontuais investigadas e sanadas).
+  2. Implementação da restauração de foco acessível (WAI-ARIA Modal Dialog) ao fechar o diálogo em `components/UI/ImageLightbox.js` via `previouslyFocusedElementRef`.
+  3. Adição de 3 testes unitários de regressão em `tests/unit/components/UI/ImageLightbox.test.js` (clique na imagem via borbulhamento, respeito a `ariaLabel`/`overlayTestId` customizados e restauração do elemento ativo ao fechar), elevando a suíte para 7/7 aprovados e totalizando 1.657 testes passando no projeto.
+
 ---
 
 ## 6. Processos sem ocorrências identificadas
@@ -91,11 +98,12 @@
 - **Ação 03: Descomissionamento de Arquivo Órfão (`jest.setup.js`) e Unificação de Polyfills** → **Concluído**
 - **Ação 04: Ampliação de Cobertura com Testes Parametrizados de *Null Tolerance*** → **Concluído**
 - **Ação 05: Integração e Validação da API do GitHub Actions** → **Concluído**
+- **Ação 06: Diagnóstico de CI, Restauração de Foco e Blindagem de Testes do Lightbox** → **Concluído**
 
 ---
 
 ## 8. Conclusão técnica
-O projeto Caminhar encontra-se em excelente estado de saúde técnica, estabilidade e conformidade arquitetural. As ações propostas foram executadas com sucesso, eliminando o aviso de vazamento de workers nos testes, reduzindo o tempo de execução da suíte pela metade, aumentando a cobertura de testes contra entradas inválidas, saneando arquivos legados da infraestrutura de testes e habilitando o monitoramento direto das execuções do GitHub Actions via API REST.
+O projeto Caminhar encontra-se em excelente estado de saúde técnica, estabilidade e conformidade arquitetural. As ações propostas foram executadas com sucesso, eliminando o aviso de vazamento de workers nos testes, reduzindo o tempo de execução da suíte pela metade, aumentando a cobertura de testes contra entradas inválidas, saneando arquivos legados da infraestrutura de testes, habilitando o monitoramento direto das execuções do GitHub Actions via API REST e blindando a acessibilidade e contratos de teste do componente unificado de lightbox.
 
 ---
 
@@ -104,3 +112,7 @@ O projeto Caminhar encontra-se em excelente estado de saúde técnica, estabilid
   - *Auditoria inicial:* Identificado aviso de teardown de worker no Jest e oportunidades de melhoria preventiva em tolerância a nulos e código órfão.
   - *Execução do Plano de Ação:* Implementadas Ações 01 a 04 com sucesso. Todas as ocorrências resolvidas; 208 suítes / 1654 testes aprovados; Knip e ESLint 100% limpos.
   - *Integração da API do GitHub Actions:* Configurado `GITHUB_TOKEN` em `.env.local` e validado acesso direto às execuções de CI com status HTTP 200 (360 workflow runs registrados).
+- **05/11/2026:**
+  - *Diagnóstico Automatizado do GitHub Actions (`npm run diag:actions`):* Consulta e análise de 364 runs históricos e 50 recentes (47 sucessos, 3 falhas).
+  - *Investigação Técnica das Falhas:* Conclusão e relatório forense comprovando que as falhas das runs #106, #107 e #112 em 02/11/2026 foram tratadas e resolvidas nos commits `50ae05c` e `1dc73ce`.
+  - *Execução do Plano de Ação:* Implementada a Ação 06 com restauração de foco acessível (WAI-ARIA Modal Dialog) em `ImageLightbox.js` e 3 novos testes unitários de blindagem contra regressão em `ImageLightbox.test.js`. 100% dos testes (1.657 testes) e gates estáticos aprovados.
