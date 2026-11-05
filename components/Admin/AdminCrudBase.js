@@ -80,6 +80,15 @@ export default function AdminCrudBase({
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, itemId: null });
   const resolveRef = useRef(null);
+  const scrollTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (scrollTimerRef.current) {
+        clearTimeout(scrollTimerRef.current);
+      }
+    };
+  }, []);
 
   // Wrapper para exibir notificações de sucesso automaticamente
   const handleSuccessWrapper = useCallback(() => {
@@ -329,7 +338,8 @@ export default function AdminCrudBase({
               resetForm();
               setIsFormVisible(true);
               // Scroll para o formulário
-              setTimeout(() => document.getElementById('crud-form')?.scrollIntoView({ behavior: 'smooth' }), 50);
+              if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+              scrollTimerRef.current = setTimeout(() => document.getElementById('crud-form')?.scrollIntoView({ behavior: 'smooth' }), 50);
             }}
             className={styles.addButton}
             disabled={loading}

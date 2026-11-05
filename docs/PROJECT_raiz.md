@@ -29,7 +29,7 @@ Este documento registra a análise individual de todos os arquivos localizados n
 A raiz do projeto concentra **35 arquivos** (excluindo subpastas). Eles se dividem em:
 
 - **Configuração principal** — `package.json`, `next.config.js`, `next-sitemap.config.js`, `proxy.js`, `.env`, `.env.example`.
-- **Configuração de testes** — `jest.config.base.js`, `jest.config.js`, `jest.config.db.js`, `jest.setup.js`, `jest.teardown.js`, `babel.jest.config.js`, `cypress.config.js`.
+- **Configuração de testes** — `jest.config.base.js`, `jest.config.js`, `jest.config.db.js`, `jest.teardown.js`, `babel.jest.config.js`, `cypress.config.js` (com setup padronizado em `tests/setup.js`).
 - **Qualidade/estática** — `eslint.config.js`, `jsconfig.json`, `knip.json`, `schema.knip.json`, `.dependency-cruiser.cjs`, `.dependency-cruiser.core.cjs`, `.dependency-cruiser.extras.cjs`, `.dependency-cruiser.isolados.cjs`.
 - **Documentação/contexto** — `README.md`, `CHANGELOG.md`, `tree.txt`.
 - **Arquivos gerados (análise estática)** — `estrutura.html`, `estrutura.txt`, `estrutura_extras.html`, `estrutura_extras.txt`, `estrutura_isolados.html`, `estrutura_isolados.txt`.
@@ -69,7 +69,6 @@ Escopo da análise — somente os arquivos da raiz (as subpastas da raiz aparece
 ├── jest.config.base.js
 ├── jest.config.db.js
 ├── jest.config.js
-├── jest.setup.js
 ├── jest.teardown.js
 ├── jsconfig.json
 ├── knip.json
@@ -224,15 +223,9 @@ Subpastas existentes na raiz (fora do escopo, citadas como contexto ao longo do 
 
 ---
 
-### 4.4 `jest.setup.js`
+### 4.4 `jest.setup.js` (Descomissionado)
 
-**Nome do arquivo:** `jest.setup.js`
-
-**Caminho:** `/home/gus/Projetos/Caminhar/jest.setup.js`
-
-**Arquivos acionados/relacionados:** `jest.config.js` (`setupFilesAfterEnv: tests/setup.js`); devDependencies `@testing-library/jest-dom` e `undici` (polyfills). Nota: o `jest.config.db.js` usa `tests/setup.db.js`, não este arquivo.
-
-**Resumo:** Setup global da suíte Jest principal (26 linhas). Importa `@testing-library/jest-dom` (matchers como `.toBeInTheDocument()`), define `TextEncoder`/`TextDecoder` globais a partir do módulo `util` do Node (exigência do jsdom) e instala polyfills de `Request`/`Response`/`Headers` via `undici` (necessários para testes de middleware e API do Next.js), com `try/catch` silencioso caso o `undici` não esteja disponível. Termina com dois `console.log` de debug ("Jest setup running with ES modules", "Node.js version") que poluem a saída dos testes.
+**Status:** Removido em novembro/2026. A suíte principal utiliza padronizadamente `tests/setup.js` e a de banco utiliza `tests/setup.db.js`. A entrada correspondente em `knip.json` foi limpa.
 
 ---
 
@@ -306,7 +299,7 @@ Subpastas existentes na raiz (fora do escopo, citadas como contexto ao longo do 
 
 **Arquivos acionados/relacionados:** `schema.knip.json` (referenciado em `$schema`); `package.json` (scripts `knip`, `knip:watch`; o Knip lê as dependências nele declaradas); `jsconfig.json` (o alias `@/*` espelha o deste arquivo).
 
-**Resumo:** Configuração do Knip (28 linhas) para análise de código morto, dependências não utilizadas e arquivos órfãos. Define: `$schema` local (`./schema.knip.json`), path alias `@/*`, `ignore` para `tests/**`, `load-tests/**`, `scripts/**`, `examples/**`, `.agents/**`, `*.config.js` e `jest.setup.js`; `ignoreBinaries: []`; `ignoreDependencies` com 5 pacotes (`@faker-js/faker`, `@jest/reporters`, `babel-jest`, `jest-watch-typeahead`, `jsdom`); `ignoreExportsUsedInFile: true`; `treatConfigHintsAsErrors: true` e regra `duplicates: "off"`.
+**Resumo:** Configuração do Knip (28 linhas) para análise de código morto, dependências não utilizadas e arquivos órfãos. Define: `$schema` local (`./schema.knip.json`), path alias `@/*`, `ignore` para `tests/**`, `load-tests/**`, `scripts/**`, `examples/**`, `.agents/**` e `*.config.js`; `ignoreBinaries: []`; `ignoreDependencies` com 5 pacotes (`@faker-js/faker`, `@jest/reporters`, `babel-jest`, `jest-watch-typeahead`, `jsdom`); `ignoreExportsUsedInFile: true`; `treatConfigHintsAsErrors: true` e regra `duplicates: "off"`.
 
 ---
 
@@ -641,7 +634,7 @@ A baseline serve de referência para o pós-migração do `ubuntu-latest` (§6.1
 | 21 | `jest.config.base.js` | Testes | 4.1 | 🟡 Importante |
 | 22 | `jest.config.db.js` | Testes | 4.3 | 🟡 Importante |
 | 23 | `jest.config.js` | Testes | 4.2 | 🔴 Essencial |
-| 24 | `jest.setup.js` | Testes | 4.4 | 🔴 Essencial |
+| 24 | `tests/setup.js` | Testes | 4.4 | 🔴 Essencial |
 | 25 | `jest.teardown.js` | Testes | 4.5 | 🔴 Essencial |
 | 26 | `jsconfig.json` | Qualidade | 5.2 | 🟡 Importante |
 | 27 | `knip.json` | Qualidade | 5.3 | 🟡 Importante |

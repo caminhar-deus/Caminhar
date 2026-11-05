@@ -42,30 +42,9 @@ jest.unmock('pg');
 // POLYFILLS
 // ============================================================================
 
-// Polyfill ReadableStream (necessário para testcontainers/undici)
-(async () => {
-  if (typeof globalThis.ReadableStream === 'undefined') {
-    try {
-      const { ReadableStream } = await import('node:stream/web');
-      globalThis.ReadableStream = ReadableStream;
-    } catch (e) {
-      console.warn(`⚠️ Polyfill ReadableStream failed: ${e.message}`);
-    }
-  }
-})();
-
-// Polyfill MessageChannel/MessagePort (necessário para testcontainers)
-(async () => {
-  if (typeof globalThis.MessageChannel === 'undefined') {
-    try {
-      const { MessageChannel, MessagePort } = await import('node:worker_threads');
-      globalThis.MessageChannel = MessageChannel;
-      globalThis.MessagePort = MessagePort;
-    } catch (e) {
-      console.warn(`⚠️ Polyfill MessageChannel failed: ${e.message}`);
-    }
-  }
-})();
+// Polyfills assíncronos (ReadableStream, MessageChannel) — compartilhado com tests/setup.js e jest.teardown.js
+import { setupAsyncPolyfills } from './helpers/async-polyfills.js';
+setupAsyncPolyfills();
 
 // ============================================================================
 // CLEANUP AUTOMÁTICO

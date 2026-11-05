@@ -1,3 +1,4 @@
+import { useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import styles from './styles/crud.module.css';
 
@@ -34,6 +35,16 @@ export default function CrudTable({
   // excluída (linhas protegidas escondem só o "Excluir"; "Editar" permanece).
   canDelete = () => true
 }) {
+  const scrollTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (scrollTimerRef.current) {
+        clearTimeout(scrollTimerRef.current);
+      }
+    };
+  }, []);
+
   // Renderiza uma célula da tabela
   const renderCell = (item, column) => {
     const { key, render, format } = column;
@@ -208,7 +219,8 @@ export default function CrudTable({
                           onClick={() => {
                             handleEdit(item);
                             setIsFormVisible(true);
-                            setTimeout(() => document.getElementById('crud-form')?.scrollIntoView({ behavior: 'smooth' }), 50);
+                            if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+                            scrollTimerRef.current = setTimeout(() => document.getElementById('crud-form')?.scrollIntoView({ behavior: 'smooth' }), 50);
                           }}
                           disabled={loading}
                           type="button"

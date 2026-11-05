@@ -775,6 +775,205 @@ também passou.
   com 503 de provider e um rerun imediato mede mais o rate limit free-tier do que o
   papel; reavaliação fica para rodada futura, com cota própria.
 
+## 03/11/2026: revisão de catálogo — uma saída, uma estreia, **nenhuma troca**
+
+O mantenedor pediu a revisão dos modelos FREE disponíveis porque houve "pequenas
+mudanças". O catálogo foi conferido no host **v2.2.5** com `opencode models` (sem
+flag: a visão padrão já lista todas as versões de família desde o v2.0.32).
+
+### Inventário (03/11/2026) — 9 modelos free
+
+`beam-free`, `big-pickle`, `deepseek-v4.1-flash-free`, `flint-40b-free`,
+`glm-5.3-flash-free`, `mimo-v2.6-flash-free`, `nemotron-3.5-lightning-free`,
+`nemotron-3.5-super-vl-free`, **`pulse-alpha-free` (estreante)**.
+
+Diferença exata contra o inventário de 22/10/2026:
+
+- **saiu** `nemotron-3-ultra-free` (nunca teve dono; nenhuma atribuição afetada);
+- **estreou** `pulse-alpha-free` (sem medição em nenhum papel).
+
+### Os seis ids atribuídos continuam vivos
+
+Conferido fora da config, com `opencode debug agents`: `orchestrator` resolve
+`big-pickle`, `oracle` resolve `nemotron-3.5-super-vl-free`, `explorer` resolve
+`deepseek-v4.1-flash-free`, `designer` resolve `beam-free`, `fixer` resolve
+`mimo-v2.6-flash-free`; a reserva do `orchestrator`, `glm-5.3-flash-free`, aparece
+no catálogo. Nenhum id atribuído saiu — o gatilho (a) da seção "Revisão" não
+atingiu nenhum papel.
+
+### Distribuição vigente (sem alteração)
+
+| Agente | Ativo | Reserva |
+|---|---|---|
+| orchestrator | `opencode/big-pickle` | `opencode/glm-5.3-flash-free` |
+| oracle | `opencode/nemotron-3.5-super-vl-free` | — |
+| explorer | `opencode/deepseek-v4.1-flash-free` | — |
+| designer | `opencode/beam-free` | — |
+| fixer | `opencode/mimo-v2.6-flash-free` | — |
+
+`big-pickle` segue sendo o único id do catálogo sem o sufixo `-free`; o custo zero
+dele já foi confirmado (ver "Decisão"). A limitação da cadeia não mudou: ela cobre
+rate limit, 401/403 e 5xx, **não** cobre "o primário saiu do catálogo"
+(`provider.no-route`, `failover: false`). Contra isso, o mecanismo continua sendo
+conferir `opencode models` — a revisão de hoje é justamente esse mecanismo.
+
+### `pulse-alpha-free`: rodou limpo, mas **não pôde ser pontuado**
+
+Uma execução no papel `designer` (`scripts/bench/papeis/rodar.js --agente
+designer --modelo opencode/pulse-alpha-free`): 250 s, 9.189 caracteres de resposta,
+**0 citação inválida e 0 contaminação** na Camada A do `conferir.js`.
+
+A pontuação contra o gabarito, porém, é inválida: **o instrumento do papel está
+desatualizado**. O `gabarito-designer.md` espera
+
+- `Button.module.css:21-24` com `outline: none` + `box-shadow` sozinho — o código de
+  hoje tem o par completo em `:21-25` (`outline: 2px solid var(--color-focus-primary)`
+  + `outline-offset` + halo), conforme `MASTER.md:130`;
+- `Input.module.css:49/:102/:167` — hoje os usos migraram para `:51`, `:104` e o
+  `.helperText` (`:165-168`) usa `--color-text-secondary`, não o terciário;
+- tokens em `variables.css:95/:110/:111` — hoje `:97`, `:112`, `:113` (e
+  `--color-disabled-text` em `:115`).
+
+O modelo respondeu "está conforme" e citou exatamente o estado atual do disco —
+conferido linha a linha **fora do modelo**. Ou seja: a execução não mede o modelo
+contra o gabarito, mede o gabarito contra o código. Antes de promover qualquer
+candidato no papel `designer`, o gabarito precisa de recalibração (como foi feito
+com o `fixer` em 22/10). Por isso `pulse-alpha` **não** recebeu papel: a regra do
+ADR é medir por papel, e hoje não há instrumento válido para o único papel em que
+ele rodou.
+
+### Decisão
+
+Nenhuma troca de atribuição e nenhum id novo promovido. O preset `zen` foi mantido;
+só o bloco "INVENTÁRIO" do arquivo foi atualizado com a lista de 03/11 e com a
+observação de que `pulse-alpha-free` é o único free sem medição. Config é comentário:
+não exige restart do host.
+
+### Alternativas descartadas nesta rodada
+
+- **Apontar `pulse-alpha-free` para a reserva do `orchestrator` no lugar do `glm`.**
+  Descartado: o glm tem medição no papel (Camada B 7/8) e o pulse-alpha não tem
+  nenhuma; trocar evidência por entusiasmo com o estreante é o erro que a seção
+  "Medir antes de pegar o próximo id da lista" já pagou uma vez.
+- **Bater os quatro papéis restantes com o pulse-alpha hoje.** Descartado nesta
+  rodada: o papel `designer` — o mais barato — acabou de expor instrumento
+  desatualizado; rodar os outros antes de recalibrar produziria mais execuções
+  inapontáveis e gastaria cota free-tier sem decisão possível no fim.
+- **Remover `flint-40b-free` e `nemotron-3.5-lightning-free` do inventário do
+  preset.** Descartado: continuam no catálogo. O primeiro segue candidato a uma
+  segunda medição (a única caiu com 503 antes de entregar); o segundo continua
+  excluído por histórico (derrubou o `explorer` em 09/10), não por ausência.
+
+## 04/11/2026: bateria 9×5 fechada e redistribuição — `orchestrator`, `oracle` e `explorer` trocam
+
+O mantenedor pediu os ajustes dos modelos FREE recomendados por agente, com a
+condição explícita de que o `orchestrator` mantenha um modelo FREE como reserva.
+A entrada da decisão foi a matriz 9×5 completa: **todos os 9 modelos free medidos
+em todos os 5 papéis** (45 células com medição válida), rodada em 03–04/11/2026.
+
+### Onde e como mediu
+
+- **Todo o bench viveu numa cópia com baseline próprio e git próprio** (`/var/tmp/free-matrix`;
+  histórico completo exportado de `opencode.db` em `.historicos/`). **O repositório real não foi
+  alterado pela bateria** (conferido por mtime e `git status`).
+- **A cota free derrubou 28 sessões** em 03/11 + 04/11 de manhã (`provider.free-limit`, 429). A
+  janela reseta às **21:13 local (00:13 UTC)** e as re-medições correram depois do reset — em
+  04/11, 10 pares de manhã e 5 pares à noite (21:24–21:52), **sem nenhum 429 novo**.
+- **Todas as citações conferidas fora do modelo** (mesma regra das baterias anteriores), e a
+  correção do papel `fixer` foi validada com **Jest real**: o teste novo falha no código
+  original, passa no corrigido e a suíte inteira fica verde — 7/7 execuções (a única que violou
+  regra de forma, `nemotron-lightning`, editou o teste existente em vez de criar teste novo).
+- **Confundidores registrados**: (1) os modelos que morreram 2× por cota em janela larga foram
+  `big-pickle`, `deepseek-v4.1-flash-free` e `mimo-v2.6-flash-free`; (2) três execução do papel
+  `orchestrator` (`deepseek`, `mimo`, `pulse`) consultaram o `ai-memory` — decisões e gotchas
+  reais do projeto, **nunca** a página-resposta da tarefa (o runner a apaga antes do spawn);
+  comparação com modelo que não consultou não isola só o modelo; (3) subagentes herdados do
+  preset também morreram por cota, e "degradar bem" virou sinal de qualidade; (4) falso
+  positivos do instrumento (32 arquivos/32 rotas desde o ADR-0024; âncoras mudadas pela passe
+  de segurança) foram recalibrados **só na cópia** — ver "Instrumentos" abaixo.
+
+### Resultado por papel (o que decide a troca)
+
+| Papel | Observação decidida |
+|---|---|
+| orchestrator | Camada B: `deepseek` **8/8**, `pulse` 8/8, `mimo` 7/8, `beam` 7/8, `flint`/`super-vl` 6/8, `lightning` 1/8; `big-pickle` H* (tarefa antiga); `glm` H (7/8 de 22/10). O `deepseek` foi o **único que delegou a revisão a @oracle e reconciliou** o retorno — comportamento de primário, não de analista. |
+| explorer | 9/9 células com as 6/6 âncoras de `withAuth`. O que separa é a profundidade documental: `big-pickle`/`mimo`/`pulse`/`deepseek` trazem "o que a doc NÃO diz"; `beam`/`flint` o mínimo; `lightning` declara em prosa sem `arquivo:linha`. |
+| oracle | 5 triagens completas do caso S8 (veredito certo + 3/3 âncoras): `beam`, `deepseek`, `flint`, `mimo`, `pulse`. O `flint` mapeou também o drift documental `users.js:161→206`. `lightning` 2/3; `super-vl`/`big-pickle` H*; `glm` H. |
+| designer | 9/9 no conteúdo. Ressalva de forma para `lightning`/`super-vl`: sem citação `arquivo:linha`. |
+| fixer | 7/7 com suíte Jest verde (verificação fora do modelo); 6 criaram teste novo. |
+
+### Instrumentos (nada aplicado no repo)
+
+Os gabaritos e pontuadores foram recalibrados para a verdade do disco de hoje (32 arquivos/32
+rotas em `pages/api/` desde o ADR-0024; âncoras de linha exatas nos 4 gabaritos de papel) —
+**aplicados somente na cópia**, e o diff vive em `/var/tmp/prop.patch`. O mantenedor decidiu
+**deixar como proposta**: o repositório segue com os instrumentos de 22/10 (31 rotas + âncoras
+antigas). Consequência deliberada: as medições desta seção **não são reproduzíveis no repo
+até aplicar o patch** — a cópia é a fonte da evidência.
+
+### Distribuição nova
+
+| Agente | PRIMÁRIO (04/11/2026) | RESERVA |
+|---|---|---|
+| orchestrator | `opencode/deepseek-v4.1-flash-free` | `opencode/glm-5.3-flash-free` |
+| oracle | `opencode/flint-40b-free` | — |
+| explorer | `opencode/pulse-alpha-free` | — |
+| designer | `opencode/beam-free` (mantém) | — |
+| fixer | `opencode/mimo-v2.6-flash-free` (mantém) | — |
+
+Nenhum id se repete entre os primários (cinco ids distintos; a reserva do `orchestrator`
+não é primário de nenhum outro agente). O `small_model` da sessão (`opencode.jsonc`) segue
+o `mimo-v2.6-flash-free`.
+
+### Por que cada troca
+
+- **`orchestrator`: `deepseek-v4.1-flash-free` entra, `big-pickle` sai; `glm-5.3-flash-free`
+  segue reserva.** O `deepseek` é o único 8/8 da Camada B com a sessão inteira no papel:
+  delegou a revisão a @oracle, reconciliou o retorno e escreveu a auditoria com `arquivo:linha`
+  conferível. O `big-pickle` não voltou a ser medido no papel atual (H*: 3 execuções da tarefa
+  antiga de 19/10), morreu 2× por cota em janela larga e **saiu do catálogo uma vez em 16/10** —
+  primário que morre por cota arrasta a sessão inteira. A reserva continuou
+  **obrigatoriamente FREE** (condição do mantenedor) e o `glm` é o candidato vivo com a melhor
+  medição no nível da reserva (7/8 da Camada B em 22/10, medindo a sessão que entra, não a
+  condução) e **nunca morreu por cota** nas observações. O `pulse` (8/8 também) fica mais
+  valioso no `explorer` como primário do que como reserva esperando cadência.
+- **`oracle`: `flint-40b-free` entra.** A evidência atual do `super-vl` no caso S8 é de tarefa
+  anterior (H*, 16/10, gabarito diferente). O `flint` entregou o S8 completo HOJE e até agora
+  nunca caiu por cota (a única execução que o condenava — 503 sem resposta — é de 22/10, antes
+  da recalibração do instrumento). A troca também evita repetir id entre as cadeias.
+- **`explorer`: `pulse-alpha-free` entra.** O `deepseek` sobe para o `orchestrator` — e a regra
+  "sem repetição" manda liberar o id. O `pulse` estreou em 03/11 e hoje tem medição nos 5
+  papéis: no `explorer`, 6/6 âncoras com Parte B que declara o que a próxima doc não documenta.
+  A troca do `deepseek` **não é por falha**: 0 erros verificáveis em 22/10.
+- **`designer` e `fixer` mantidos com reconfirmação.** `beam`: único 3/3 do papel com citação
+  `arquivo:linha` em tudo. `mimo`: medições de 15/10 e 19/10 no papel (a célula da bateria é
+  `H` — skip), nunca morreu por cota.
+- **Catálogo: 10 free, `crouton-alpha-free` estreante sem medição** (reconferido em 04/11).
+  Não promovido — regra "medir por papel antes de apontar".
+
+### Decisão
+
+Aplicado no preset `.opencode/oh-my-opencode-slim.json` (blocos `zen.orchestrator`,
+`zen.oracle`, `zen.explorer` com comentários datados) e em `opencode.jsonc` (`"model"` da
+sessão passa a apontar o `deepseek` — para a SESSÃO atual o valor vale no próximo start do
+host; troca manual com `/model` se precisar agora). `CHANGELOG.md` registra a troca. As
+regras de permissão/skills/MCP dos agentes não mudaram.
+
+### Alternativas descartadas nesta rodada
+
+- **`big-pickle` ou `deepseek` como `fixer` (eram os validados com Jest hoje).** Descartado:
+  o `deepseek` já assume o `orchestrator` como primário — o mesmo id funcionaria em duas
+  cadeias ao mesmo tempo, contra a regra "nenhum id se repete"; e `big-pickle` morreu 2× por
+  cota no dia — fixer precisa completar correções, não morrer no meio.
+- **`pulse-alpha-free` como reserva do `orchestrator`.** Descartado: o `glm` já tem a
+  medição da função (7/8, 22/10) e nunca caiu por cota; mover o `pulse` para reserva deixaria
+  o `explorer` sem dono medido e o `glm` sem uso — redundância sem ganho.
+- **Manter o `super-vl` no `oracle`.** Descartado: a única evidência no papel atual era H*,
+  e os 6/8 de hoje no papel do `orchestrator` não elevam a medida do papel do `oracle`.
+- **Trocar `mimo` (`fixer`) por `flint`/`beam`.** Descartado: sem ganho verificável e quebra
+  a regra "todo id medido no próprio papel" — o `mimo` tem o papel com mais medições
+  vivas (15/10, 19/10).
+
 ## Alternativas consideradas
 
 - **Manter o preset anterior, com as cadeias.** Descartado: preservava o acoplamento
@@ -900,6 +1099,12 @@ se pagou.
   ao bench de fila** (duas sessões comparativas, a mesma fila de tarefas para os dois
   modelos): padrão suspeito no campo — degradação visível, erro repetido ao fim de dia
   longo, primário caindo no meio do trabalho. Até lá, não gastar cota.
+- **Instrumento do `designer` desatualizado — ABERTO em 03/11/2026.** O
+  `gabarito-designer.md` foi recalibrado em 22/10 e o código mudou depois: o foco do
+  `Button` passou a ter o par completo (`Button.module.css:21-25`) e o `.helperText`
+  migrou para `--color-text-secondary` (`Input.module.css:165-168`). Enquanto o
+  gabarito não for recalibrado, **nenhum** candidato pode ser promovido no papel — a
+  execução `designer-pulse-alpha-free-1.ndjson` guarda a evidência da divergência.
 - **Privacidade do `oracle` não verificada.** `nemotron-3.5-super-vl-free` é hoje o único
   dos cinco sem garantia de retenção registrada. Se isso for requisito, verificar antes do
   próximo uso com código sensível.

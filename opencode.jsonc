@@ -18,8 +18,11 @@
   // --- Modelos (TROQUE pelos nomes de `ollama list` / `opencode models`) ---
   // ATIVO: OpenCode Zen (remoto; free por tempo limitado). Formato: opencode/<model-id>.
   // Sessão segue o orchestrator do preset "zen" em .opencode/oh-my-opencode-slim.json — lá está
-  // minimax-m3.1-flash-free como primário e big-pickle como reserva, e o porquê medido de cada
-  // um dos 5 agentes.
+  // deepseek-v4.1-flash-free como primário e glm-5.3-flash-free como reserva, e o porquê medido
+  // de cada um dos 5 agentes. 04/11/2026: bateria 9×5 completa abriu a troca do big-pickle
+  // (não medido no papel atual + cota morta 2× em 03–04/11) para o deepseek (único 8/8 na
+  // Camada B do papel, revisão delegada a @oracle), e trocou também oracle e explorer — ver
+  // ADR-0008 §"04/11/2026".
   // 19/10/2026: este campo apontava para opencode/space-bunny-free, que SAIU do catálogo do
   // Zen. A sessão não caía na reserva do preset — caía no DEFAULT do provider, porque um id
   // fora do catálogo dá `provider.no-route`, que o slim NÃO classifica como failover. Trocado
@@ -28,10 +31,10 @@
   // Troca de sessão para este model: só no próximo start (ou /model); esta sessão segue no anterior.
   // small_model (títulos etc.) = mimo-v2.6-flash-free (leve). Login via `/connect` > OpenCode Zen ou OPENCODE_API_KEY.
   // 22/10/2026: minimax-m3.1-flash-free SAIU do catálogo do Zen (não aparece nem no inventário
-  // completo). O primário da sessão é agora igual ao do preset ("Sessão segue o orchestrator do
-  // preset"): big-pickle, com glm-5.3-flash-free como reserva da cadeia. Conferir `opencode models`
+  // completo); o primário da sessão passou a ser o do preset NAQUELA data (big-pickle, com glm
+  // reserva) — substituído pelo deepseek em 04/11/2026 (bloco acima). Conferir `opencode models`
   // antes de confiar; id fora do catálogo falha em silêncio.
-  "model": "opencode/big-pickle",
+  "model": "opencode/deepseek-v4.1-flash-free",
   "small_model": "opencode/mimo-v2.6-flash-free",
   // Para voltar ao Ollama local: comente as 2 linhas acima e descomente as 2 abaixo.
   // "model": "ollama/qwen3-coder:30b",

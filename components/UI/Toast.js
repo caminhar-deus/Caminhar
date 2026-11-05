@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import styles from './Toast.module.css';
 import { defaultIcons } from './icons';
 
@@ -45,6 +45,15 @@ export const Toast = ({
 }) => {
   const [isVisible, setIsVisible] = useState(isOpen);
   const [isExiting, setIsExiting] = useState(false);
+  const exitTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (exitTimerRef.current) {
+        clearTimeout(exitTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     setIsVisible(isOpen);
@@ -52,7 +61,10 @@ export const Toast = ({
 
   const handleClose = useCallback(() => {
     setIsExiting(true);
-    setTimeout(() => {
+    if (exitTimerRef.current) {
+      clearTimeout(exitTimerRef.current);
+    }
+    exitTimerRef.current = setTimeout(() => {
       setIsVisible(false);
       setIsExiting(false);
       onClose?.();

@@ -73,12 +73,18 @@ if (typeof global.IntersectionObserver === 'undefined') {
       this.callback = callback;
       // Simula interseção imediata para que iframes com lazy loading
       // sejam renderizados nos testes sem necessidade de interação
-      this._timer = setTimeout(() => callback([{ isIntersecting: true }]), 0);
+      const timer = setTimeout(() => callback([{ isIntersecting: true }]), 0);
+      if (timer && typeof timer.unref === 'function') {
+        timer.unref();
+      }
+      this._timer = timer;
     }
     observe() { return null; }
     unobserve() { return null; }
     disconnect() {
-      clearTimeout(this._timer);
+      if (this._timer) {
+        clearTimeout(this._timer);
+      }
       return null;
     }
   };
@@ -139,6 +145,12 @@ configure({
 afterEach(() => {
   cleanup();
   jest.clearAllMocks();
+  try {
+    jest.clearAllTimers();
+  } catch {
+    // Ignora quando a suíte usa timers reais
+    void 0;
+  }
 });
 
 // ============================================================================

@@ -11,6 +11,25 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Adicionado
 
+- **Auditoria Técnica Semanal e Resiliência de Testes (04/11/2026):**
+  - **Suíte de Testes de Tolerância a Nulos (`tests/unit/pages/api/admin/null-tolerance.edge.test.js`):** 9 testes parametrizados validando contratos Zod e tratamento de erros 400 descritivos diante de payloads vazios, nulos e corrompidos nos endpoints de posts, dicas, músicas e vídeos, garantindo prevenção de exceções 500.
+  - **Relatório Semanal de Auditoria (`docs/retorno_da_semana.md`):** Documentação estruturada abrangendo logs locais, workflows de CI, análise de cobertura e histórico do ciclo semanal.
+  - **Validação de Acesso à API do GitHub Actions:** Configuração e homologação de acesso via `GITHUB_TOKEN` em `.env.local` (HTTP 200, 360 workflow runs auditáveis).
+
+### Corrigido
+
+- **Vazamento de Workers no Jest e Impropriedade de Teardown (04/11/2026):**
+  - Eliminação do aviso `A worker process has failed to exit gracefully and has been force exited` ao final da execução dos testes. Saneados temporizadores assíncronos (`setTimeout`) em `Button.js` (efeito *ripple*), `Toast.js` (animação de saída) e `AdminCrudBase.js` / `CrudTable.js` (rolagem suave) com cancelamento explícito no desmonte (`useEffect`/`useRef`).
+  - Adição de `.unref()` no polyfill de `IntersectionObserver` e inclusão de `jest.clearAllTimers()` no gancho `afterEach` de `tests/setup.js`.
+  - Tempo de execução da suíte completa de testes (`npm test`) reduzido de 117s para 63s (208 suítes / 1654 testes aprovados).
+
+### Removido
+
+- **Arquivo Órfão de Teste (`jest.setup.js`) e Saneamento do Knip (04/11/2026):**
+  - Remoção de `jest.setup.js` na raiz e exclusão da regra de ignore no `knip.json`.
+  - Unificação de polyfills assíncronos em `tests/setup.db.js` importando `setupAsyncPolyfills()` de `tests/helpers/async-polyfills.js`.
+  - Atualização documental em `docs/PROJECT_raiz.md`.
+
 - **Modernização e Auditoria de UI/UX — Skill UI/UX Pro Max (02/11/2026).** Execução integral das melhorias de acessibilidade, responsividade e consistência visual recomendadas pela auditoria de UI/UX:
   - **Componente Unificado de Paginação (`components/UI/Pagination`):** Substituto canônico para 5 lógicas ad-hoc dispersas em Músicas, Vídeos, Produtos, Depoimentos e Blog, com suporte a modo client-side (botões) e SSR (`getPageUrl`), teclado acessível e alvos de toque confortáveis (≥44px).
   - **Componente Unificado de Lightbox (`components/UI/ImageLightbox`):** Modal de visualização ampliada acessível com `role="dialog"`, `aria-modal="true"`, foco travado, navegação por setas, tecla Escape e suporte a carrossel de fotos, integrado ao Blog e à vitrine de Produtos.
@@ -52,6 +71,8 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - **Salvar produto com o campo Categoria vazio dava "Bad Request" (29/10/2026).** O formulário sempre envia `category: ''` e o schema da API exigia `min(1)` quando a chave existia — `.optional()` só tolera chave ausente. Categoria vazia agora vira `undefined`: o create aplica o default `geral` (como o doc já prometia) e o update pula o campo em vez de gravar string vazia. **Melhoria de UX no hook compartilhado `useAdminCrud`:** o toast de erro passou a preferir a mensagem humana da API (`data.message`) à frase técnica (`data.error`, o "Bad Request" que o operador via sem saber o porquê) e os erros de campo da validação passam a pintar o campo em vermelho no formulário, com o toast "Verifique os campos em vermelho no formulário.". `category` entrou no schema Zod do cliente por paridade.
 
 ### Alterado
+
+- **Redistribuição dos modelos FREE do preset `zen` — `orchestrator`, `oracle` e `explorer` trocam de modelo (04/11/2026, ADR-0008 §"04/11/2026").** A bateria 9×5 fechou com os 9 modelos free medidos nos 5 papéis (45 células com medição válida, citações conferidas fora do modelo; bench inteiro em cópia com baseline próprio — nenhum arquivo do projeto foi alterado). Com os gabaritos recalibrados (32 arquivos/32 rotas em `pages/api/`): o `deepseek-v4.1-flash-free` — único 8/8 na Camada B do papel do `orchestrator` e o único que delegou e reconciliou a revisão com @oracle — assume o primário, com o `glm-5.3-flash-free` mantido como reserva (reserva obrigatoriamente FREE: 7/8 medido em 22/10, nunca morreu por cota). O `big-pickle` sai do primário: não voltou a ser medido no papel atual e a cota morreu 2× na janela larga de 03–04/11. O `flint-40b-free` assume o `oracle` (caso S8 completo na medição atual; a evidência do `nemotron-3.5-super-vl` no papel é de tarefa antiga), e o `pulse-alpha-free` — estreante de 03/11, medido depois nos 5 papéis — assume o `explorer` liberado pelo `deepseek`; nenhum id se repete entre os primários. `designer` (`beam-free`) e `fixer` (`mimo-v2.6-flash-free`) mantidos com reconfirmação da bateria. O estreante `crouton-alpha-free` (10º free do catálogo) segue sem medição e sem papel. Em `.opencode/oh-my-opencode-slim.json` (blocos `zen.*`) e `opencode.jsonc` (`"model"` da sessão → `deepseek`; vale no próximo start do host).
 
 - **Artefatos de sitemap e robots desindexados do Git, ignorados pelo `.gitignore` e gerados em build/sob demanda (02/11/2026).** Os arquivos `public/robots.txt`, `public/sitemap.xml` e `public/sitemap-0.xml` estavam sendo rastreados pelo Git, apontavam para `http://localhost:3000` e eram reescritos a cada `npm run build` (via hook `postbuild` do `next-sitemap`), sujando continuamente a árvore de trabalho (`git status`) e trazendo risco de versionamento de URLs locais ou dados de homologação/teste em commits (como ocorrido no incidente histórico registrado em `gotchas/build-regrava-sitemap-e-tree-versionados.md`). **Agora:** os artefatos foram removidos do índice do Git (`git rm --cached`) preservando seus arquivos físicos no disco; o `.gitignore` foi atualizado para ignorar `/public/robots.txt` e `/public/sitemap*.xml`; `package.json` ganhou o script `"sitemap": "next-sitemap"` para permitir a geração sob demanda em desenvolvimento sem precisar executar o build completo; o Next.js serve arquivos de `public/` estaticamente em runtime sem requerer que estejam versionados; e a geração canônica em produção continua garantida pelo `postbuild` durante o deploy com a variável `SITE_URL`.
 

@@ -679,7 +679,8 @@
 │   │   ├── 0034-standardize-admin-gestao-de-dicas-and-public-dicas-do-dia.md
 │   │   ├── README.md
 │   │   └── template.md
-│   └── ai-memory-error.md
+│   ├── ai-memory-error.md
+│   └── retorno_da_semana.md
 ├── eslint.config.js
 ├── estrutura.html
 ├── estrutura.txt
@@ -703,7 +704,6 @@
 ├── jest.config.base.js
 ├── jest.config.db.js
 ├── jest.config.js
-├── jest.setup.js
 ├── jest.teardown.js
 ├── jsconfig.json
 ├── knip.json
@@ -974,6 +974,8 @@
 │   │       │   ├── designer-longcat-2.5-preview-free-1.ndjson
 │   │       │   ├── designer-minimax-m3.1-flash-free-1.meta.json
 │   │       │   ├── designer-minimax-m3.1-flash-free-1.ndjson
+│   │       │   ├── designer-pulse-alpha-free-1.meta.json
+│   │       │   ├── designer-pulse-alpha-free-1.ndjson
 │   │       │   ├── explorer-deepseek-v4.1-flash-free-1.meta.json
 │   │       │   ├── explorer-deepseek-v4.1-flash-free-1.ndjson
 │   │       │   ├── explorer-flint-40b-free-1.meta.json
@@ -1364,6 +1366,7 @@
 │       │   │   │   ├── dicas.edge.test.js
 │       │   │   │   ├── fetch-ml.edge.test.js
 │       │   │   │   ├── fetch-spotify.edge.test.js
+│       │   │   │   ├── null-tolerance.edge.test.js
 │       │   │   │   ├── posts.edge.test.js
 │       │   │   │   ├── rate-limit.test.js
 │       │   │   │   ├── request-id.test.js
@@ -1421,4 +1424,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-207 directories, 1215 files
+207 directories, 1218 files

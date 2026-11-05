@@ -825,6 +825,7 @@ tests/matchers/index.js → tests/matchers/toHaveStatus.js
 tests/mocks/next-setup.js → tests/mocks/next.js
 tests/mocks/next.test.js → tests/helpers/console.js
 tests/mocks/next.test.js → tests/mocks/next-setup.js
+tests/setup.db.js → tests/helpers/async-polyfills.js
 tests/setup.db.js → tests/matchers/index.js
 tests/setup.js → tests/helpers/async-polyfills.js
 tests/setup.js → tests/matchers/index.js
@@ -1025,6 +1026,16 @@ tests/unit/pages/api/admin/fetch-spotify.edge.test.js → lib/auth/auth.js
 tests/unit/pages/api/admin/fetch-spotify.edge.test.js → lib/infra/logger.js
 tests/unit/pages/api/admin/fetch-spotify.edge.test.js → pages/api/admin/fetch-spotify.js
 tests/unit/pages/api/admin/fetch-spotify.edge.test.js → tests/helpers/index.js
+tests/unit/pages/api/admin/null-tolerance.edge.test.js → lib/cache/cache.js
+tests/unit/pages/api/admin/null-tolerance.edge.test.js → lib/domain/musicas.js
+tests/unit/pages/api/admin/null-tolerance.edge.test.js → lib/domain/posts.js
+tests/unit/pages/api/admin/null-tolerance.edge.test.js → lib/domain/videos.js
+tests/unit/pages/api/admin/null-tolerance.edge.test.js → lib/infra/db.js
+tests/unit/pages/api/admin/null-tolerance.edge.test.js → pages/api/admin/dicas.js
+tests/unit/pages/api/admin/null-tolerance.edge.test.js → pages/api/admin/musicas.js
+tests/unit/pages/api/admin/null-tolerance.edge.test.js → pages/api/admin/posts.js
+tests/unit/pages/api/admin/null-tolerance.edge.test.js → pages/api/admin/videos.js
+tests/unit/pages/api/admin/null-tolerance.edge.test.js → tests/mocks/db-module.js
 tests/unit/pages/api/admin/posts.edge.test.js → lib/cache/cache.js
 tests/unit/pages/api/admin/posts.edge.test.js → lib/domain/posts.js
 tests/unit/pages/api/admin/posts.edge.test.js → lib/infra/db.js
