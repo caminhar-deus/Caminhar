@@ -28,13 +28,13 @@ function texto(ndjson) {
   return partes.join('\n');
 }
 
-// Cada item: [rótulo, teste]. A verdade está conferida no código em 21/10/2026:
-// 31 arquivos em pages/api/, **todos** com `export default` (o helper de paginação
-// saiu de pages/api/ em 21/10/2026); o Next registra 31 rotas (30 em staticRoutes
-// + `uploads/[...path].js`, que é catch-all) e nenhuma delas responde 500.
+// Cada item: [rótulo, teste]. A verdade está conferida no código em 03/11/2026:
+// 32 arquivos em pages/api/, **todos** com `export default` (o helper de paginação
+// saiu de pages/api/ em 21/10/2026; `admin/categories.js` entrou depois, ADR-0024);
+// as 32 rotas incluem `uploads/[...path].js`, que é catch-all, e nenhuma responde 500.
 const ITENS = [
-  ['31 arquivos', (r) => /\b31\b/.test(r) && /arquivo/i.test(r)],
-  ['31 rotas/handler', (r) => /\b31\b/.test(r) && /(rota|handler)/i.test(r)],
+  ['32 arquivos', (r) => /\b32\b/.test(r) && /arquivo/i.test(r)],
+  ['32 rotas/handler', (r) => /\b32\b/.test(r) && /(rota|handler)/i.test(r)],
   ['todos são rota', (r) => !/não (é|e uma) rota|não-rota|não é handler/i.test(r)],
   ['ponto de aplicação :305', (r) => r.includes('adminCrudHandler.js:305')],
   ['ip-diagnostico :186', (r) => r.includes('ip-diagnostico.js:186')],

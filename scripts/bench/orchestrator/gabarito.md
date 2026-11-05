@@ -12,14 +12,19 @@ perde: confira de novo antes de comparar duas execuções.
 > helper de paginação saiu de `pages/api/`, o `POST` público de `/api/posts` foi removido e
 > o diagnóstico de `/api/status` passou a exigir token. A versão anterior (19/10/2026)
 > valia para 32 arquivos e 31 rotas — ela está no histórico do Git.
+>
+> **Recalibrado de novo em 03/11/2026**: entrou `pages/api/admin/categories.js`
+> (ADR-0024), então são **32 arquivos e 32 rotas**. Os 31 voltaram a aparecer na
+> contagem no lugar dos 32, e por isso o número do §1 e o item correspondente de
+> `pontuar.js` foram atualizados juntos.
 
 ## 1. Quantos arquivos, quantas rotas
 
-- **31 arquivos** em `pages/api/` — e **todos os 31 são rota**: cada um tem `export default`.
+- **32 arquivos** em `pages/api/` — e **todos os 32 são rota**: cada um tem `export default`.
   Antes havia um não-rota (`pages/api/helper/pagination.js`, movido para
-  `lib/api/pagination.js` em 21/10/2026).
-- **31 rotas** (30 em `staticRoutes` do manifest + `uploads/[...path].js`, que é
-  catch-all e não aparece em `staticRoutes`).
+  `lib/api/pagination.js` em 21/10/2026); `admin/categories.js` entrou depois (ADR-0024).
+- **32 rotas** — a contagem inclui `uploads/[...path].js`, que é catch-all e não aparece
+  em `staticRoutes` do manifest.
 - **Nenhuma rota responde 500 por falta de handler** — a condição que existia antes
   (o helper dentro de `pages/api/`) foi eliminada.
 
@@ -107,9 +112,9 @@ modelo sob teste.
 
 ## O que um modelo costuma errar aqui
 
-1 **Contar 32 como 33.** Medido em 19/10/2026: duas execuções responderam 33 arquivos. Na
-calibração de 19/10 eram 32, todos `.js`; **agora são 31** (o helper de paginação saiu
-de `pages/api/` em 21/10/2026) — e todos são rota.
+1 **Contar 33 como 34.** Medido em 19/10/2026: duas execuções responderam 33 arquivos. Na
+calibração de 19/10 eram 32, todos `.js`; o helper de paginação saiu de `pages/api/` em
+21/10/2026 (31) e `admin/categories.js` entrou depois (32, ADR-0024) — e todos são rota.
 
 2 **Citar a linha do import em vez da aplicação.** `import { withAuth } from '...'` não é
 autenticação; `adminCrudHandler.js:305` é.

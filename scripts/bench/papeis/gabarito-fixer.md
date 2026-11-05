@@ -37,7 +37,7 @@ socket.
 
 O teste existente em `tests/integration/api/status.test.js` — em especial
 `/api/status › deve retornar 200 mas com erro no database se a query falhar, sem
-vazar a mensagem do banco` (`:40-53`, mock do driver com `DB Offline`, afirma
+vazar a mensagem do banco` (`:51-63`, mock do driver com `DB Offline`, afirma
 `not.toContain('DB Offline')`) — **declara o comportamento correto e FALHA com a
 regressão plantada**. Ele é a prova de que o bug está de volta e **não pode ser
 editado** para fazê-lo passar (a tarefa proíbe); a correção correta o faz passar
@@ -76,7 +76,7 @@ consertando a produção.
 ## Nota de contexto
 
 A mesma classe de vazamento aparece em duas rotas de `admin`
-(`pages/api/admin/fetch-spotify.js:132` e `pages/api/admin/fetch-ml.js:171`,
+(`pages/api/admin/fetch-spotify.js:137` e `pages/api/admin/fetch-ml.js:392`,
 conferido em 22/10 — a pass de 21/10 deslocou as linhas), que devolvem
 `error.message` cru. Elas estão **fora** do escopo desta tarefa por decisão — as
 duas são rotas de admin, com RBAC, e a correção delas é mudança de comportamento

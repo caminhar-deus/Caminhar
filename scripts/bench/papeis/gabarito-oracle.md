@@ -22,15 +22,15 @@ quem tem a permissão `Usuários`). A pergunta do bench: **o achado se sustenta?
 - `docs/adr/0010-...md:90-92` — o ADR rejeita explicitamente tratar "criar admin" como
   escalada ("Contradiz o modelo de acesso declarado").
 - ADR-0010 registrou a auditoria original que chegou à leitura de escalada (:28-31 — era
-  sobre `role: z.string().optional().default('admin')` na `users.js:10` antiga).
+  sobre `role: z.string().optional().default('admin')` na `users.js:10` antiga (arquivo de então)).
 
 ## Pontos de citação no código atual (obrigatórios; cobertura omissa = erro)
 
 | # | Ponto | Evidência ATUAL (22/10/2026) |
 |---|---|---|
 | 1 | O bypass do cargo `admin` é **por desenho**, no código | `lib/api/permissions.js:55-57` — `` `role === 'admin'` pula a checagem de permissão POR DESENHO (ADR-0010) `` → `{ allowed: true, reason: 'admin' }`. Também vale o header `lib/api/permissions.js:7-9` e o apontador `lib/api/adminCrudHandler.js:161-163` (adianta que o bypass vive em `permissions.js` desde a extração de 21/10) |
-| 2 | A criação em `users.js` exige cargo explícito e valida existência | `pages/api/admin/users.js:10-13` — "ADR-0010: SEM `.default('admin')`"; `role: z.string({…}).min(1, …)`; validação de existência → 400 nomeando o cargo em `:98` (`roleExists` definida em `:37`) |
-| 3 | Permissão que habilita criar usuário | `pages/api/admin/users.js:203` — `permission: ['Segurança', 'Usuários']` (a tabela do doc de pendências registra `:161`, que **mudou** com a passa) |
+| 2 | A criação em `users.js` exige cargo explícito e valida existência | `pages/api/admin/users.js:11-14` — "ADR-0010: SEM `.default('admin')`"; `role: z.string({…}).min(1, …)`; validação de existência → 400 nomeando o cargo em `:103` (`roleExists` definida em `:40`) |
+| 3 | Permissão que habilita criar usuário | `pages/api/admin/users.js:206` — `permission: ['Segurança', 'Usuários']` (a tabela do doc de pendências registra `:161`, que **mudou** com a passa) |
 
 ## Pontos opcionais (bônus de rigor, não obrigação)
 
@@ -50,7 +50,7 @@ quem tem a permissão `Usuários`). A pergunta do bench: **o achado se sustenta?
   mudou para `:161-163`); é a transcrição do doc de 20/10 sem conferir o código.
 - **Afirmar que o `default('admin')` ainda existe** em `users.js` — foi removido
   (hoje cargo é obrigatório, `:10-13`).
-- **Citar a exigência de permissão como `users.js:161`** sem conferir (hoje `:203`) —
+- **Citar a exigência de permissão como `users.js:161`** sem conferir (hoje `:206`) —
   só conta como erro se nenhuma divergência for apontada.
 
 ## Critério de decisão (ADR-0008)

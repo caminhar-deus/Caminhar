@@ -12,7 +12,7 @@ A fonte da verdade normativa é `design-system/MASTER.md` (hoje: `MASTER.md:36-3
 tokens de foco, `:39-44` nota normativa, `:130` declaração do botão, `:200-203`
 anti-padrões de foco, `:205-206` contraste de texto informativo, `:211-212`
 checklist). O contrato concreto são os tokens de `pages/styles/variables.css`
-(`:89-95` bg/text, `:110-111` foco) e os componentes em `components/UI/`.
+(`:89-97` bg/text, `:112-113` foco) e os componentes em `components/UI/`.
 
 ## P1 — o foco do `Button` NÃO está conforme
 
@@ -22,7 +22,7 @@ checklist). O contrato concreto são os tokens de `pages/styles/variables.css`
 | **Onde está errado** | A regra faz `outline: none` (`:22`) e deixa **só** `box-shadow: var(--color-focus-ring)` (`:23`) como indicador. O `MASTER.md` proíbe exatamente isso: usar só o `box-shadow` do anel como único indicador de foco, porque o anel tem 1,36:1 sobre claro e não passa em WCAG 2.2 SC 1.4.11 (`MASTER.md:40-41`, anti-padrão em `:203`). |
 | **A regra que a proíbe** | `MASTER.md:203` — "usar só `box-shadow: var(--color-focus-ring)` como único indicador de foco (1,36:1 sobre claro, não passa em WCAG 2.2 SC 1.4.11)" (com continuação na `:204`). E `MASTER.md:201`: "foco invisível ou removido (`outline: none` sem o par `outline` + halo do §7)". |
 | **A declaração correta** | O par do §7: `outline: 2px solid var(--color-focus-primary)` + `box-shadow` do halo (`MASTER.md:36-44`, e a declaração exata para o botão em `MASTER.md:130`). O `outline` é o indicador que passa em 3:1; o `box-shadow` é halo complementar — nunca um sem o outro, nunca `outline: none` seco. |
-| **Tokens envolvidos** | `--color-focus-primary` = `#2563eb` (4,95:1 sobre `#fafafa`) e `--color-focus-ring` = `#bfdbfe` (`MASTER.md:36`; `pages/styles/variables.css:110-111`) |
+| **Tokens envolvidos** | `--color-focus-primary` = `#2563eb` (4,95:1 sobre `#fafafa`) e `--color-focus-ring` = `#bfdbfe` (`MASTER.md:36`; `pages/styles/variables.css:112-113`) |
 
 Resposta que acerta: identifica `Button.module.css:21-24`, diz que **não** está
 conforme, nomeia a proibição de `MASTER.md:203` (ou `:201`), e dá o par
@@ -38,7 +38,7 @@ aceitar o `box-shadow` sozinho.
 | | |
 |---|---|
 | **Onde** | `design-system/MASTER.md:49-52` |
-| **A proibição** | `#a3a3a3` (que é `--color-text-tertiary`, `pages/styles/variables.css:95`) sobre fundo claro **não passa** no contraste AA de 4,5:1 exigido para texto normal (`MASTER.md:48`). O `MASTER.md:50-51` diz: "usar só para placeholder e texto decorativo, nunca para informação". |
+| **A proibição** | `#a3a3a3` (que é `--color-text-tertiary`, `pages/styles/variables.css:97`) sobre fundo claro **não passa** no contraste AA de 4,5:1 exigido para texto normal (`MASTER.md:48`). O `MASTER.md:50-51` diz: "usar só para placeholder e texto decorativo, nunca para informação". |
 | **Onde pode** | Placeholder e texto decorativo (`MASTER.md:51`). Ícones com função precisam de ≥ 3:1 contra o fundo adjacente (`MASTER.md:51-52`). |
 | **Referência de contraste** | `--color-text-primary` `#171717` sobre `#fafafa` = 15,9:1; `--color-text-secondary` `#525252` sobre `#fafafa` = 7,5:1 (`MASTER.md:48-49`) |
 
@@ -56,8 +56,8 @@ todos a mesma coisa. Cada uso precisa de um veredito separado:
 | Linha | Regra | O que o texto representa | Aceitável? |
 |---|---|---|---|
 | `Input.module.css:39` | `.input::placeholder` | **placeholder** | **Sim** — é o uso permitido (`MASTER.md:50`) |
-| `Input.module.css:49` | `.input:disabled` | **texto desabilitado** | **Sim** — texto desabilitado não é informação; o contraste de texto desabilitado está fora da exigência de 4,5:1 do WCAG 2.2 SC 1.4.3. O projeto tem token próprio para isso: `--color-disabled-text` (`variables.css:113`), também `#a3a3a3` |
-| `Input.module.css:102` | `.leftAddon` / `.rightAddon` (ícone dentro do campo) | **ícone decorativo** (o `pointer-events: none` em `:103` mostra que não é interativo) | **Sim** — o `MASTER.md:51` exige ≥ 3:1 só para "ícones com função"; aqui não há função |
+| `Input.module.css:51` | `.input:disabled` | **texto desabilitado** | **Sim** — texto desabilitado não é informação; o contraste de texto desabilitado está fora da exigência de 4,5:1 do WCAG 2.2 SC 1.4.3. O projeto tem token próprio para isso: `--color-disabled-text` (`variables.css:113`), também `#a3a3a3` |
+| `Input.module.css:104` | `.leftAddon` / `.rightAddon` (ícone dentro do campo) | **ícone decorativo** (o `pointer-events: none` em `:105` mostra que não é interativo) | **Sim** — o `MASTER.md:51` exige ≥ 3:1 só para "ícones com função"; aqui não há função |
 | `Input.module.css:167` | `.helperText` | **texto de ajuda/erro** — é informação | **Não** — `.helperText` carrega a mensagem de erro do campo, e `MASTER.md:50` proíbe `--color-text-tertiary` para informação |
 
 Resposta que acerta: separa os três usos permitidos (placeholder, desabilitado,
@@ -69,7 +69,7 @@ Resposta que acerta: separa os três usos permitidos (placeholder, desabilitado,
 proibido, ou não notar o `.helperText` de `Input.module.css:167` — que é a linha
 que reprova o uso.
 
-> Nota de conferência: o mesmo token aparece em `components/UI/BaseCard.module.css:129`
+> Nota de conferência: o mesmo token aparece em `components/UI/BaseCard.module.css:130`
 > (`.headerSubtitle` — também texto informativo, também reprovado pelo mesmo
 > `MASTER.md:50`). A tarefa pergunta sobre o `Input`; mentionar o `BaseCard` é sinal
 > de leitura atenta, não de erro.

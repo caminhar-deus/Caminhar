@@ -902,14 +902,26 @@ em todos os 5 papéis** (45 células com medição válida), rodada em 03–04/1
 | designer | 9/9 no conteúdo. Ressalva de forma para `lightning`/`super-vl`: sem citação `arquivo:linha`. |
 | fixer | 7/7 com suíte Jest verde (verificação fora do modelo); 6 criaram teste novo. |
 
-### Instrumentos (nada aplicado no repo)
+### Instrumentos (aplicados ao repo em 05/11/2026)
 
-Os gabaritos e pontuadores foram recalibrados para a verdade do disco de hoje (32 arquivos/32
-rotas em `pages/api/` desde o ADR-0024; âncoras de linha exatas nos 4 gabaritos de papel) —
-**aplicados somente na cópia**, e o diff vive em `/var/tmp/prop.patch`. O mantenedor decidiu
-**deixar como proposta**: o repositório segue com os instrumentos de 22/10 (31 rotas + âncoras
-antigas). Consequência deliberada: as medições desta seção **não são reproduzíveis no repo
-até aplicar o patch** — a cópia é a fonte da evidência.
+Os gabaritos e pontuadores foram recalibrados para a verdade do disco (32 arquivos/32 rotas
+em `pages/api/` desde o ADR-0024; âncoras de linha exatas nos 4 gabaritos de papel) — durante
+o bench, aplicados **somente na cópia**, com o diff em `/var/tmp/prop.patch`. O mantenedor
+autorizou a aplicação no repo em 05/11/2026 (`git apply`, commit "bench: recalibrate
+instruments to 32-route ground truth"), encerrando a pendência de reprodução: o repo agora
+mede contra o MESMO ground truth da bateria de 03–04/11, e a numeração 31/31 do instrumento
+de 22/10 deixou de ser válida.
+
+Alcance exato do patch (185 linhas, 6 arquivos): `gabarito.md` + `pontuar.js` (contagem
+31→32 em ambos) e as âncoras de linha dos 4 gabaritos de papel. **Fora do alcance**:
+nenhum validador de citação foi alterado — o `conferir.js` do `orchestrator` e o
+`scripts/bench/papeis/conferir.js` resolvem caminhos só pelas raízes do projeto, de modo
+que citação a **doc externa do Next** (`node_modules/next/dist/docs/...`, `.mdx` do repo
+canônico) segue marcada "caminho não encontrado": na bateria isso foi compensado conferindo
+as citações FORA do modelo (regra corrente), nunca por código novo. Pendência estrutural
+registrada para a próxima rodada de bench: derivar a contagem/âncoras do disco no runtime
+(em vez de hardcode) e fail-fast no `rodar.js` conferindo as âncoras antes do spawn — a
+recalibração deixa de ser descoberta por gasto de cota.
 
 ### Distribuição nova
 

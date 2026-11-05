@@ -11,8 +11,8 @@ A passa de segurança de 21/10 mudou a superfície de `pages/api/`; a lista do g
 | 1 | Definição: `lib/auth/auth.js:324` | `export function withAuth(handler) {` |
 | 2 | `lib/api/adminCrudHandler.js:305` | `const authenticatedHandler = withAuth(handler);` — ponto único de entrada das rotas admin que usam o helper (comentário `:307-309`) |
 | 3 | `pages/api/upload-image.js:170` | `export default withAuth(handler);` |
-| 4 | `pages/api/settings.js:129` | `const handlePost = withAuth(async ...)` — usado pelo `POST` do handler default (`pages/api/settings.js:26`) |
-| 5 | `pages/api/settings.js:163` | `const handlePut = withAuth(async ...)` — usado pelo `PUT` |
+| 4 | `pages/api/settings.js:130` | `const handlePost = withAuth(async ...)` — usado pelo `POST` do handler default (`pages/api/settings.js:26`) |
+| 5 | `pages/api/settings.js:164` | `const handlePut = withAuth(async ...)` — usado pelo `PUT` |
 | 6 | `pages/api/cleanup-test-data.js:26` | `export default withAuth(handler);` |
 
 **Não contam (armadilhas do gabarito):**
