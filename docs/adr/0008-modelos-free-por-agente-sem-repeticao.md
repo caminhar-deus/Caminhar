@@ -914,14 +914,51 @@ de 22/10 deixou de ser válida.
 
 Alcance exato do patch (185 linhas, 6 arquivos): `gabarito.md` + `pontuar.js` (contagem
 31→32 em ambos) e as âncoras de linha dos 4 gabaritos de papel. **Fora do alcance**:
-nenhum validador de citação foi alterado — o `conferir.js` do `orchestrator` e o
-`scripts/bench/papeis/conferir.js` resolvem caminhos só pelas raízes do projeto, de modo
-que citação a **doc externa do Next** (`node_modules/next/dist/docs/...`, `.mdx` do repo
-canônico) segue marcada "caminho não encontrado": na bateria isso foi compensado conferindo
-as citações FORA do modelo (regra corrente), nunca por código novo. Pendência estrutural
-registrada para a próxima rodada de bench: derivar a contagem/âncoras do disco no runtime
-(em vez de hardcode) e fail-fast no `rodar.js` conferindo as âncoras antes do spawn — a
-recalibração deixa de ser descoberta por gasto de cota.
+nenhum validador de citação foi alterado pelo patch — os `conferir.js` do `orchestrator`
+e de `scripts/bench/papeis/` resolviam caminhos só pelas raízes do projeto, e as citações
+à **doc externa do Next** (`node_modules/next/dist/docs/...`, `.mdx` do repo canônico)
+continuavam marcadas "caminho não encontrado"; durante a bateria, compensadas conferindo
+FORA do modelo (regra corrente). A correção **em código** do validador de papéis veio no
+mesmo dia 05/11, depois da revisão do mantenedor — ver "Validador de citações dos papéis"
+abaixo. Pendência estrutural registrada para a próxima rodada de bench: derivar a
+contagem/âncoras do disco no runtime (em vez de hardcode) e fail-fast no `rodar.js`
+conferindo as âncoras antes do spawn — a recalibração deixa de ser descoberta por gasto
+de cota.
+
+### Validador de citações dos papéis (corrigido em 05/11/2026)
+
+Reprodução na cópia (`/var/tmp/free-matrix`, NDJSONs reais de 03–04/11) mostrou que as
+reprovações de citação da Camada A eram, na maior parte, falso positivo do instrumento
+— as mesmas classes já sanadas no `orchestrator/conferir.js`:
+
+1. **Retomada da regra de 19/10 dentro do `papeis/`.** O "primeiro candidato achado"
+   decidia, e a bateria repetiu o bug documentado no `orchestrator` (`dicas.js`):
+   `roles.js:113` caiu no `tests/helpers/roles.js` (22 linhas) enquanto
+   `pages/api/admin/roles.js` (133) tem a linha citada; `posts.js:152` caiu em
+   `pages/api/posts.js` (85) com `pages/api/admin/posts.js` (171) e
+   `lib/domain/posts.js` (181) no disco. Agora todos os candidatos entram e a citação
+   é inválida **só quando nenhum deles tem a linha**.
+2. **Reserva em `node_modules/next/dist`.** `route.md`, `headers.md`,
+   `incremental-cache/index.js` são do Next instalado que os papéis citam de propósito
+   (`AGENTS.md` manda ler o guia instalado). A colisão de 19/10 tinha punido a linha
+   certa: `incremental-cache/index.js:73` era resolvida ao stub `tests/mocks/index.js`
+   (13 linhas) em vez de `node_modules/next/dist/server/lib/incremental-cache/index.js`
+   (555 linhas, linha 73 com o conteúdo exato citado). A reserva entra DEPOIS das
+   raízes do projeto e nunca no mesmo índice — critério de `constroiIndice` mantido.
+3. **Categorias de fonte, não de erro.** Citação **abreviada** ("...") resolve por
+   padrão e é sinalizada (`node_modules/.../02-guides/cdn-caching.md → .../01-app/
+   02-guides/cdn-caching.md`); citação **externa ao disco** (repo upstream
+   `packages/next/...`, URLs `//github.com/...`, extensão `.mdx` — o dist só traz
+   `.md` —, `.ts` com irmão `.js`/`.d.ts` no dist) é sinalizada, nunca reprovada.
+
+Efeito verificado: de 8 execuções com citação reprovada para **2 sobrando** —
+`gabarito-designer.md` no designer `beam` (deliberada: `scripts/bench/` fora do índice
+por decisão de 19/10, e a linha citada 62 é vazia — o conteúdo citado está na 59;
+comportamento do modelo, mantida a "exposição declarada" de 03/11) e
+`docs/PROJECT_scripts.md:707` no explorer `super-vl` (documento com 308 linhas; o
+modelo fabricou número). Nada mudou nas classes mecânicas de execução
+(`citacoesPosArquivoEditado`, `criadasRemovidas`, fluxo `contaminada()`), nem no
+`orchestrator/conferir.js`.
 
 ### Distribuição nova
 

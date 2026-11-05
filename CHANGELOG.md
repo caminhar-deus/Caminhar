@@ -18,6 +18,10 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Corrigido
 
+- **Falsos Positivos do Validador de Citações dos Papéis (05/11/2026):**
+  - `scripts/bench/papeis/conferir.js` reprovava citações reais nas baterias 9×5. Correção em três pontos: categoria `abreviada(s)` para formas escritas com reticências; resolução de reserva em `node_modules/next/dist`, com a regra de 19/10 ("inválida só quando nenhum candidato tem a linha citada") que o "primeiro achado" repetia em forma nova (`roles.js:113`, `posts.js:152`, `headers.md:399`); e categoria `externa(s)` para fontes fora do disco (repo upstream `packages/next/...`, URLs GitHub, extensão `.mdx`, `.ts` com irmão `.js`/`.d.ts` no dist).
+  - Reprovações caíram de 8 execuções com citação reprovada para 2 justificadas restantes (a deliberada do `gabarito-designer.md` do `beam` e a genuína `docs/PROJECT_scripts.md:707` do `super-vl`). `orchestrator/conferir.js` e as classes mecânicas de execução intocadas. Ver ADR-0008 ("Validador de citações dos papéis").
+
 - **Vazamento de Workers no Jest e Impropriedade de Teardown (04/11/2026):**
   - Eliminação do aviso `A worker process has failed to exit gracefully and has been force exited` ao final da execução dos testes. Saneados temporizadores assíncronos (`setTimeout`) em `Button.js` (efeito *ripple*), `Toast.js` (animação de saída) e `AdminCrudBase.js` / `CrudTable.js` (rolagem suave) com cancelamento explícito no desmonte (`useEffect`/`useRef`).
   - Adição de `.unref()` no polyfill de `IntersectionObserver` e inclusão de `jest.clearAllTimers()` no gancho `afterEach` de `tests/setup.js`.

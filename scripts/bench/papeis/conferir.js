@@ -6,14 +6,16 @@
  * - o modelo respondeu alguma coisa (a execução entregou texto);
  * - o modelo **editou** algum arquivo, e quais (isto é o sinal central no papel do
  *   `fixer`: um `fixer` que não edita nada não fez o trabalho);
- * - toda citação `arquivo:linha` existe de verdade;
+ * - toda citação `arquivo:linha` existe de verdade — no disco do projeto, no
+ *   pacote instalado (`node_modules/next/dist`) ou, se a fonte veio de fora do
+ *   disco (repo upstream, URL), sinalizada em categoria própria;
  * - a execução tocou o gabarito (`scripts/bench/`) — contaminação.
  *
  * O que **não** é automático: se a resposta está *correta*. Isso é julgamento
  * humano, contra `gabarito-<papel>.md`, como em todas as baterias deste projeto.
  */
 import { readdir, readFile, writeFile } from 'node:fs/promises';
-import { statSync, readdirSync } from 'node:fs';
+import { readFileSync, statSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
@@ -91,6 +93,103 @@ function sufixosPorNome(alvo) {
   return indicePorNome.get(path.posix.basename(alvo)) ?? [];
 }
 
+/* ---------------------------------------------------------------
+ * Citações sobre o Next instalado e sobre o repo upstream (ADR-0008, 05/11/2026).
+ * Medido nas baterias 9×5: os papeis citam docs e código do Next de propósito
+ * (o AGENTS.md manda ler o guia instalado em `node_modules/next/dist/docs/`), e
+ * o `constroiIndice` — que cobre só este repositório — reprovou citações reais:
+ * - `route.md`, `headers.md`, `self-hosting.md` existem em
+ *   `node_modules/next/dist/docs/01-app/...`;
+ * - `incremental-cache/index.js:73` é de
+ *   `node_modules/next/dist/server/lib/incremental-cache/index.js` (555 linhas) —
+ *   a colisão por nome com `tests/mocks/index.js` puniu a linha certa;
+ * - `packages/next/src/...` e URLs `//github.com/...` têm fonte FORA do disco.
+ *
+ * O pacote é resolvedor de RESERVA: entra após as raízes do projeto, nunca no
+ * mesmo índice — o critério do `constroiIndice` (comentários acima, 19/10/2026)
+ * não muda.
+ */
+let caminhosProjetoMemo = null;
+let caminhosDistMemo = null;
+
+function caminhosProjeto() {
+  if (caminhosProjetoMemo) return caminhosProjetoMemo;
+  sufixosPorNome('-placeholder-');
+  caminhosProjetoMemo = [...new Set([...indicePorNome.values()].flat())].sort();
+  return caminhosProjetoMemo;
+}
+
+function caminhosNextDist() {
+  if (caminhosDistMemo) return caminhosDistMemo;
+  const arquivos = [];
+  const pilha = [path.join(RAIZ, 'node_modules', 'next', 'dist')];
+  while (pilha.length > 0) {
+    const atual = pilha.pop();
+    let entradas;
+    try { entradas = readdirSync(atual, { withFileTypes: true }); } catch { continue; }
+    for (const entrada of entradas) {
+      const completo = path.join(atual, entrada.name);
+      if (entrada.isDirectory()) { pilha.push(completo); continue; }
+      arquivos.push(path.relative(RAIZ, completo).split(path.sep).join('/'));
+    }
+  }
+  caminhosDistMemo = arquivos.sort();
+  return caminhosDistMemo;
+}
+
+function resolverEmNextDist(alvo) {
+  const arquivos = caminhosNextDist();
+  if (arquivos.length === 0) return [];
+  const partes = alvo.split('/');
+  for (let i = 0; i < partes.length; i += 1) {
+    const sufixo = partes.slice(i).join('/');
+    const achados = arquivos.filter((p) => p.endsWith(`/${sufixo}`));
+    if (achados.length > 0) {
+      // O mesmo módulo existe em build CJS (`server/lib/...`) e ESM (`esm/server/...`).
+      // A CJS tem prioridade na ordem: foi o layout da citação real testada.
+      const normais = achados.filter((p) => !p.includes('/esm/'));
+      const esm = achados.filter((p) => p.includes('/esm/'));
+      return [...normais, ...esm];
+    }
+  }
+  return [];
+}
+
+// "..." no caminho é forma escrita, não endereço: `node_modules/.../02-guides/
+// cdn-caching.md`, `.../15-route-handlers.md`, `docs/adr/0010-...md`. Vira padrão
+// que casa com arquivos reais; os "..." representam o trecho que o modelo cortou.
+function padraoAbreviado(alvo) {
+  if (!alvo.includes('...')) return null;
+  const corpo = alvo.split('...').map((pedaco) => pedaco.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*');
+  return new RegExp(`${corpo}$`);
+}
+
+function resolverPorPadrao(padrao) {
+  return caminhosProjeto().find((p) => padrao.test(p))
+    ?? caminhosNextDist().find((p) => padrao.test(p))
+    ?? null;
+}
+
+// Fonte fora do disco: layout do repo upstream (`packages/next/...`) e caminhos
+// extraídos de URL (`//github.com/...`). A bateria empurra o papel a buscar fora
+// (gh_grep, guia do repo upstream); nada no disco poderia validar — sinaliza.
+function externaAoDisco(alvo) {
+  return alvo.startsWith('//') || alvo.includes('github.com') || alvo.startsWith('packages/');
+}
+
+const linhasDeMemo = new Map();
+
+function linhasDe(caminhoRelativo) {
+  if (!linhasDeMemo.has(caminhoRelativo)) {
+    try {
+      linhasDeMemo.set(caminhoRelativo, readFileSync(path.join(RAIZ, caminhoRelativo), 'utf8').split('\n').length);
+    } catch {
+      linhasDeMemo.set(caminhoRelativo, 0);
+    }
+  }
+  return linhasDeMemo.get(caminhoRelativo);
+}
+
 function contaminada(tools) {
   for (const t of tools) {
     // A memória do projeto é via de contaminação (ADR-0008, 19/10/2026): a execução
@@ -142,20 +241,36 @@ async function conferir(arquivo) {
   }
 
   const invalidas = [];
+  const abreviadas = [];
+  const externas = [];
   for (const [alvo, linhas] of citadas) {
-    const candidatos = [alvo, path.posix.join('pages/api', alvo)];
+    // Fonte fora do disco vem PRIMEIRO: layout do repo upstream (`packages/next/...`)
+    // e URLs (`//github.com/...`) fecham a lista antes de qualquer tentativa.
+    if (externaAoDisco(alvo)) { externas.push(alvo); continue; }
+
+    const diretos = [alvo, path.posix.join('pages/api', alvo)];
     const partes = alvo.split('/');
+    const sufixos = [];
     for (let i = 1; i < partes.length; i += 1) {
       const sufixo = partes.slice(i).join('/');
-      candidatos.push(sufixo, path.posix.join('pages/api', sufixo));
+      sufixos.push(sufixo, path.posix.join('pages/api', sufixo));
     }
-    for (const sufixo of sufixosPorNome(alvo)) candidatos.push(sufixo);
 
-    let achado = null;
-    for (const c of candidatos) {
-      if (ehArquivo(c)) { achado = c; break; }
+    // TODOS os candidatos existentes entram — o primeiro achado NÃO é campeão. É a
+    // regra que o conferidor do orchestrator consertou em 19/10/2026 (comentário de
+    // `resolverCitacao` lá) e que estas baterias repetiram: `roles.js:113` caiu no
+    // `tests/helpers/roles.js` (22 linhas) enquanto `pages/api/admin/roles.js` (133)
+    // tem a linha; `posts.js:152` caiu em `pages/api/posts.js` (85) com
+    // `pages/api/admin/posts.js` (171) e `lib/domain/posts.js` (181) no disco.
+    const lista = [];
+    for (const c of [...diretos, ...sufixos]) {
+      if (ehArquivo(c) && !lista.includes(c)) lista.push(c);
     }
-    if (!achado) {
+    for (const c of sufixosPorNome(alvo)) {
+      if (ehArquivo(c) && !lista.includes(c)) lista.push(c);
+    }
+
+    if (lista.length === 0) {
       // Arquivo **novo**, criado pela própria execução, não está mais no disco: a
       // restauração do repo o removeu entre a execução e a conferência. Não é erro
       // de citação — é consequência da medição. Sinalizado, não reprovado.
@@ -163,23 +278,56 @@ async function conferir(arquivo) {
         criadasRemovidas.push(alvo);
         continue;
       }
-      invalidas.push(`${alvo} (arquivo não encontrado)`);
-      continue;
+      // Origem pela extensão: docs do repo upstream só existem em .mdx — o pacote
+      // instalado traz .md (a árvore instalada tem 0 .mdx) —, e fontes .ts do
+      // upstream têm seu irmão .js/.d.ts no dist (`app-route.ts`). É fonte externa,
+      // não citação inexistente — sinalizada, nunca reprovada.
+      const terminaTs = alvo.endsWith('.ts');
+      const origemTs = terminaTs
+        && (resolverEmNextDist(alvo.replace(/\.ts$/, '.js')).length > 0
+          || resolverEmNextDist(alvo.replace(/\.ts$/, '.d.ts')).length > 0);
+      if (alvo.endsWith('.mdx') || origemTs) {
+        externas.push(alvo);
+        continue;
+      }
+      // Citação abreviada com "..." ou basename do Next instalado: forma escrita
+      // comum nos papéis (`node_modules/.../02-guides/cdn-caching.md`, `route.md`,
+      // `incremental-cache/index.js`). Resolve na raiz reserva e sinaliza — reprovar
+      // aqui puniu citações reais (ver o comentário de `caminhosNextDist`).
+      const padrao = padraoAbreviado(alvo);
+      const porPadrao = padrao ? resolverPorPadrao(padrao) : null;
+      const porDist = porPadrao ? [] : resolverEmNextDist(alvo);
+      const reservados = porPadrao ? [porPadrao] : porDist;
+      if (reservados.length > 0) {
+        lista.push(...reservados);
+      } else {
+        invalidas.push(`${alvo} (arquivo não encontrado)`);
+        continue;
+      }
     }
-    const total = (await readFile(path.join(RAIZ, achado), 'utf8')).split('\n').length;
     for (const linha of linhas) {
+      const cabem = lista.filter((c) => linha <= linhasDe(c));
+      if (cabem.length > 0) {
+        // "Abreviada" = forma: o que serviu não é o caminho como escrito
+        // (`dicas.js` servido por `pages/api/admin/dicas.js`; `route.md` por
+        // `node_modules/next/dist/docs/...`). Sinaliza, não reprova.
+        const servico = cabem[0];
+        if (!diretos.includes(servico) && !abreviadas.some((a) => a.startsWith(`${alvo} ->`))) {
+          abreviadas.push(`${alvo} -> ${servico}`);
+        }
+        continue;
+      }
       // O arquivo pode ter sido EDITADO pela execução: a citação então aponta para
       // a linha no estado **novo**, e o disco já está no estado antigo (a restauração
       // do repo rodou). Comparar com o disco reprovaria citação certa.
       // Sinalizado, não reprovado — o acerto é julgamento humano, contra o gabarito.
-      if (linha > total) {
-        const editado = (meta.arquivosEditados || []).some((p) => p.replace(`${RAIZ}/`, '') === achado);
-        if (editado) {
-          citacoesPosArquivoEditado.push(`${alvo}:${linha} (arquivo editado pela execução)`);
-          continue;
-        }
-        invalidas.push(`${alvo}:${linha} (${achado} tem ${total} linhas)`);
+      const editado = (meta.arquivosEditados || []).some((p) => lista.some((c) => p.replace(`${RAIZ}/`, '') === c));
+      if (editado) {
+        citacoesPosArquivoEditado.push(`${alvo}:${linha} (arquivo editado pela execução)`);
+        continue;
       }
+      const detalhe = lista.map((c) => `${c} (${linhasDe(c)} linhas)`).join(' ou ');
+      invalidas.push(`${alvo}:${linha} (nenhum candidato tem a linha: ${detalhe})`);
     }
   }
 
@@ -196,6 +344,8 @@ async function conferir(arquivo) {
     tools: tools.length,
     contaminada: contaminada(tools),
     invalidas,
+    abreviadas,
+    externas,
     criadasRemovidas,
     citacoesPosArquivoEditado,
   };
@@ -223,7 +373,11 @@ async function main() {
   console.log('| execução | modelo | respondeu | editou | citações | contaminada |');
   console.log('|---|---|---|---|---|---|');
   for (const r of relatorios) {
-    const citacoes = r.invalidas.length > 0 ? `**${r.invalidas.length} inválida(s)**` : 'válidas';
+    const partes = [];
+    if (r.invalidas.length > 0) partes.push(`**${r.invalidas.length} inválida(s)**`);
+    if (r.abreviadas.length > 0) partes.push(`${r.abreviadas.length} abreviada(s)`);
+    if (r.externas.length > 0) partes.push(`${r.externas.length} externa(s)`);
+    const citacoes = partes.length > 0 ? partes.join(', ') : 'válidas';
     const editou = r.editados.length === 0 ? '**nenhum**' : r.editados.map((e) => `\`${e}\``).join(', ');
     console.log(`| ${r.arquivo} | ${String(r.modelo).replace('opencode/', '')} | ${r.len} chars | ${editou} | ${citacoes} | ${r.contaminada ? '**SIM**' : 'não'} |`);
   }
@@ -235,6 +389,8 @@ async function main() {
     `- tool calls: ${r.tools}`,
     `- arquivos editados: ${r.editados.length ? r.editados.join(', ') : 'nenhum'}`,
     `- citações inválidas: ${r.invalidas.length ? r.invalidas.join('; ') : 'nenhuma'}`,
+    ...(r.abreviadas.length > 0 ? [`- citações abreviadas (resolvidas além das raízes do projeto): ${r.abreviadas.join('; ')}`] : []),
+    ...(r.externas.length > 0 ? [`- citações de fonte externa ao disco (repo upstream/URL): ${r.externas.join('; ')}`] : []),
     '',
     '## Resposta',
     '',
