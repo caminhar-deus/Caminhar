@@ -44,6 +44,7 @@ apoio, não a fonte oficial; a decisão não é duplicada como página de memór
 | [0032](0032-site-name-unification-and-seo-cleanup.md) | Nome do site unificado no blog (settings do painel) e remoção do SEO morto | Aceito | 2026-10-30 |
 | [0033](0033-videos-posicionados-indice-e-ordenacao-alfabetica.md) | Vídeos ganham "Posicionados", índice para recent/oldest e A-Z independente da colação | Aceito | 2026-11-01 |
 | [0034](0034-standardize-admin-gestao-de-dicas-and-public-dicas-do-dia.md) | Padronização da nomenclatura "Gestão de Dicas" no ADMIN e "Dicas do Dia" no Site Público | Aceito | 2026-11-02 |
+| [0035](0035-full-ai-memory-activation-with-optional-llm.md) | Ativação completa do ai-memory no projeto, com LLM opcional por chave de ambiente | Aceito | 2026-11-06 |
 
 ## Quando criar um ADR
 

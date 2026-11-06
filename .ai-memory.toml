@@ -10,12 +10,12 @@ project = "caminhar"  # opcional; sem ele, project = nome da pasta
 
 # Multi-agente (slim): cada subagente gera sessões com captura por evento e pode inundar a memória.
 # "true" aceita mas NÃO grava capturas de subagentes deste projeto (sessões principais continuam gravadas).
-drop_subagent_captures = "true"
+drop_subagent_captures = "false"
 
 # Briefing no início de toda sessão (gasta tokens SEMPRE; deixe desligado em modelo local de contexto curto):
-# [briefing]
-# inject_on_session_start = "true"
-# max_chars = 4000
+[briefing]
+inject_on_session_start = "true"
+max_chars = 4000
 
 # Recall global (consulta sem escopo busca em todos os projetos): só para meta-repositórios.
 # [recall]
