@@ -1,0 +1,147 @@
+/**
+ * Ground truth do disco (scripts/bench/ground-truth.js) e preflight da regressão
+ * do S1 (scripts/bench/papeis/regressao-s1.js).
+ *
+ * Duas camadas:
+ * 1. funções puras contra uma fixture temporária — inventário, linhas, parser;
+ * 2. canário no repositório real — os instrumentos calibrados têm de continuar
+ *    `ok`, e o `designer` (sabidamente desatualizado, ADR-0008) tem de ser
+ *    detectado como P1/P3 até alguém recalibrá-lo.
+ */
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import {
+  mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync,
+} from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {
+  inventarioApi,
+  linhasDe,
+  linhaUnica,
+  extrairCitacoesDeInstrumento,
+  verificarInstrumento,
+  exigirInstrumentoValido,
+} from '../../../scripts/bench/ground-truth.js';
+import { aplicarRegressao, verificarRegressao } from '../../../scripts/bench/papeis/regressao-s1.js';
+
+const RAIZ_REPO = process.cwd();
+const CALIBRADOS = ['orchestrator', 'explorer', 'oracle', 'fixer'];
+
+let fixture;
+
+beforeAll(() => {
+  fixture = mkdtempSync(path.join(os.tmpdir(), 'bench-ground-truth-'));
+  mkdirSync(path.join(fixture, 'pages', 'api', 'nested'), { recursive: true });
+  mkdirSync(path.join(fixture, 'lib'), { recursive: true });
+  writeFileSync(path.join(fixture, 'pages', 'api', 'a.js'), 'export default function handler() {}\n');
+  writeFileSync(path.join(fixture, 'pages', 'api', 'nested', 'b.js'), 'export const config = {};\n');
+  writeFileSync(path.join(fixture, 'pages', 'api', '.oculto.js'), 'export default 1;\n');
+  writeFileSync(path.join(fixture, 'lib', 'foo.js'), [
+    'const a = 1;',
+    'const marcador = true;',
+    'const b = 2;',
+    'const marcador = true;',
+  ].join('\n'));
+});
+
+afterAll(() => {
+  rmSync(fixture, { recursive: true, force: true });
+});
+
+describe('inventário e linhas', () => {
+  it('conta arquivos e rotas de pages/api e ignora entradas ocultas', () => {
+    const inv = inventarioApi(fixture);
+    expect(inv.arquivos).toEqual(['pages/api/a.js', 'pages/api/nested/b.js']);
+    expect(inv.totalArquivos).toBe(2);
+    expect(inv.totalRotas).toBe(1);
+  });
+
+  it('linhasDe devolve todas as ocorrências e [] quando o arquivo não existe', () => {
+    expect(linhasDe(fixture, 'lib/foo.js', 'const marcador = true;')).toEqual([2, 4]);
+    expect(linhasDe(fixture, 'lib/inexistente.js', 'qualquer')).toEqual([]);
+  });
+
+  it('linhaUnica devolve a linha e falha alto em zero ou duas ocorrências', () => {
+    expect(linhaUnica(fixture, 'lib/foo.js', 'const b = 2;')).toBe(3);
+    expect(() => linhaUnica(fixture, 'lib/foo.js', 'const marcador = true;')).toThrow(/2 ocorrências/);
+    expect(() => linhaUnica(fixture, 'lib/foo.js', 'não existe')).toThrow(/nenhuma ocorrência/);
+  });
+});
+
+describe('parser de citações do instrumento', () => {
+  it('associa linhas ao último arquivo, mantém o contexto entre linhas e ignora proporções', () => {
+    const texto = [
+      'Prefixo `pages/api/a.js:2` e `lib/foo.js`',
+      '(:4-6) e (:9).',
+      'Contraste 1,36:1 não vira linha.',
+      '`fantasma.js`',
+      ':1',
+    ].join('\n');
+    const mapa = extrairCitacoesDeInstrumento(texto);
+
+    expect(mapa.get('pages/api/a.js')).toEqual([{ inicio: 2, fim: 2 }]);
+    expect(mapa.get('lib/foo.js')).toEqual([{ inicio: 4, fim: 6 }, { inicio: 9, fim: 9 }]);
+    expect(mapa.get('fantasma.js')).toEqual([{ inicio: 1, fim: 1 }]);
+  });
+});
+
+describe('verificarInstrumento', () => {
+  it('exige raiz e agente conhecido', () => {
+    expect(() => verificarInstrumento('orchestrator', {})).toThrow(/raiz/);
+    expect(() => verificarInstrumento('inexistente', { raiz: fixture })).toThrow(/agente desconhecido/);
+  });
+});
+
+describe('instrumentos contra o repositório real (canário)', () => {
+  it.each(CALIBRADOS)('%s está calibrado contra o disco', (agente) => {
+    const resultado = verificarInstrumento(agente, { raiz: RAIZ_REPO });
+    expect(resultado.problemas).toEqual([]);
+    expect(resultado.ok).toBe(true);
+  });
+
+  it('designer: calibrado ou divergência P1/P3 detectada', () => {
+    const resultado = verificarInstrumento('designer', { raiz: RAIZ_REPO });
+    expect(resultado.agente).toBe('designer');
+    if (resultado.ok) return; // recalibrado: o canário não tem o que cobrar
+    const detalhes = resultado.problemas.map((p) => p.detalhe).join('\n');
+    expect(detalhes).toMatch(/P1/);
+    expect(detalhes).toMatch(/P3/);
+  });
+
+  it('exigirInstrumentoValido transforma a divergência em erro com a lista', () => {
+    const resultado = verificarInstrumento('designer', { raiz: RAIZ_REPO });
+    if (resultado.ok) return; // recalibrado: nada a provar aqui
+    expect(() => exigirInstrumentoValido('designer', { raiz: RAIZ_REPO }))
+      .toThrow(/Instrumento do papel "designer" divergiu do disco/);
+  });
+});
+
+describe('regressão do S1', () => {
+  it('distingue corrigido, regredido, desconhecido e ausente', async () => {
+    await expect(verificarRegressao(RAIZ_REPO)).resolves.toMatchObject({ estado: 'corrigido' });
+
+    const copia = mkdtempSync(path.join(os.tmpdir(), 'bench-regressao-'));
+    try {
+      mkdirSync(path.join(copia, 'pages', 'api'), { recursive: true });
+      writeFileSync(
+        path.join(copia, 'pages', 'api', 'status.js'),
+        readFileSync(path.join(RAIZ_REPO, 'pages', 'api', 'status.js'))
+      );
+      expect((await verificarRegressao(copia)).estado).toBe('corrigido');
+      await aplicarRegressao(copia);
+      expect((await verificarRegressao(copia)).estado).toBe('regredido');
+    } finally {
+      rmSync(copia, { recursive: true, force: true });
+    }
+
+    const semBlocos = mkdtempSync(path.join(os.tmpdir(), 'bench-sem-blocos-'));
+    try {
+      mkdirSync(path.join(semBlocos, 'pages', 'api'), { recursive: true });
+      writeFileSync(path.join(semBlocos, 'pages', 'api', 'status.js'), 'conteúdo sem os blocos\n');
+      expect((await verificarRegressao(semBlocos)).estado).toBe('desconhecido');
+      expect((await verificarRegressao(path.join(semBlocos, 'raiz-inexistente'))).estado).toBe('ausente');
+    } finally {
+      rmSync(semBlocos, { recursive: true, force: true });
+    }
+  });
+});

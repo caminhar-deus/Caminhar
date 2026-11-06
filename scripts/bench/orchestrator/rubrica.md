@@ -15,17 +15,17 @@ nota do próprio modelo entra na conta. É o mesmo critério das baterias de 15/
 
 | Sinal | Como é medido | Por que importa |
 |---|---|---|
-| **Delegou** | A saída crua menciona a tool `subagent` | Sem delegação não houve orquestração, por definição |
+| **Delegou** | O NDJSON registra uma tool `subagent` (evento estruturado) | Sem delegação não houve orquestração, por definição |
 | **Citações válidas** | De cada `arquivo:linha` citado, o arquivo existe e tem a linha | Citação que não abre é erro verificável, o mesmo critério das outras baterias |
 | **Citações inventadas** | O inverso | O erro mais caro de um modelo free é o `arquivo:linha` que não existe |
-| **Contaminação** | A saída menciona `scripts/bench/` | Leitura do gabarito invalida a execução |
+| **Contaminação** | Alguma tool tocou `scripts/bench/` (campo de caminho/comando), não o texto | Leitura do gabarito invalida a execução |
 
 Contaminação não é "nota zero": é **execução descartada**. Um modelo que leu o gabarito
 parece perfeito e não mediu nada.
 
 ## Camada B — julgamento humano, contra o `gabarito.md`
 
-**B1. Pergunta 1 — contagem de rotas.** Acertou 31 arquivos e 31 rotas, e reconheceu que
+**B1. Pergunta 1 — contagem de rotas.** Acertou 32 arquivos e 32 rotas, e reconheceu que
 **todos** os arquivos de `pages/api/` agora são rota? Se inventar um "arquivo que não é
 rota" (o helper de paginação saiu de `pages/api/` em 21/10/2026), é erro.
 
@@ -86,7 +86,7 @@ outro sem ele não mede modelo, mede metodologia.
 
 ## Como transformar em veredito
 
-Anote os 6 sinais da Camada A, os 4 itens da Camada B e as 6 respostas da Camada C por
+Anote os 4 sinais da Camada A, os 4 itens da Camada B e as 6 respostas da Camada C por
 execução. Repita `--repeticoes 3` por modelo. O que interessa é a **mediana**, e o desvio
 entre execuções do mesmo modelo: um modelo que acerta 4/4 uma vez e 1/4 outra vez está
 medindo ruído, não capacidade.

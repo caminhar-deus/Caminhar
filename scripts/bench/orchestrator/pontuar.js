@@ -12,6 +12,7 @@
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import { fatosOrchestrator } from '../ground-truth.js';
 
 const RAIZ = path.resolve(import.meta.dirname, '..', '..', '..');
 const SAIDA = path.join(RAIZ, 'scripts', 'bench', 'orchestrator', 'resultados');
@@ -28,16 +29,17 @@ function texto(ndjson) {
   return partes.join('\n');
 }
 
-// Cada item: [rótulo, teste]. A verdade está conferida no código em 03/11/2026:
-// 32 arquivos em pages/api/, **todos** com `export default` (o helper de paginação
-// saiu de pages/api/ em 21/10/2026; `admin/categories.js` entrou depois, ADR-0024);
-// as 32 rotas incluem `uploads/[...path].js`, que é catch-all, e nenhuma responde 500.
+// Cada item: [rótulo, teste]. A verdade vem do disco em runtime:
+// `fatosOrchestrator` conta `pages/api/` (arquivo só é rota se tem
+// `export default`) e localiza o ponto de aplicação da autenticação, então o
+// rótulo e o teste acompanham o código — número gravado aqui envelhece sozinho.
+const FATOS = fatosOrchestrator(RAIZ);
 const ITENS = [
-  ['32 arquivos', (r) => /\b32\b/.test(r) && /arquivo/i.test(r)],
-  ['32 rotas/handler', (r) => /\b32\b/.test(r) && /(rota|handler)/i.test(r)],
+  [`${FATOS.arquivos} arquivos`, (r) => new RegExp(`\\b${FATOS.arquivos}\\b`).test(r) && /arquivo/i.test(r)],
+  [`${FATOS.rotas} rotas/handler`, (r) => new RegExp(`\\b${FATOS.rotas}\\b`).test(r) && /(rota|handler)/i.test(r)],
   ['todos são rota', (r) => !/não (é|e uma) rota|não-rota|não é handler/i.test(r)],
-  ['ponto de aplicação :305', (r) => r.includes('adminCrudHandler.js:305')],
-  ['ip-diagnostico :186', (r) => r.includes('ip-diagnostico.js:186')],
+  [`ponto de aplicação :${FATOS.withAuthHandler}`, (r) => r.includes(`adminCrudHandler.js:${FATOS.withAuthHandler}`)],
+  [`ip-diagnostico :${FATOS.ipDiagnostico}`, (r) => r.includes(`ip-diagnostico.js:${FATOS.ipDiagnostico}`)],
   ['cita o 405', (r) => r.includes('405')],
   ['uploads + next.config', (r) => r.includes('uploads') && r.includes('next.config.js')],
   ['proxy.js', (r) => r.includes('proxy.js')],

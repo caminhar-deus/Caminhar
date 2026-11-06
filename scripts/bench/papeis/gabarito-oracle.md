@@ -46,8 +46,9 @@ quem tem a permissão `Usuários`). A pergunta do bench: **o achado se sustenta?
 - **Veredito de manutenção do achado** ("escalada confirmada, brecha real") — o erro
   exato que o campo cometeu; reprova.
 - **Citar `lib/api/adminCrudHandler.js:186-190` como o bypass** sem apontar divergência —
-  essa região do arquivo hoje é a seção de **rate limiting** (o comentário do bypass
-  mudou para `:161-163`); é a transcrição do doc de 20/10 sem conferir o código.
+  essa região do arquivo é a **resposta 403 do RBAC**, não o bypass (o comentário do
+  bypass continua em `:161-163`; a seção de rate limiting começa em `:192`); é a
+  transcrição do doc de 20/10 sem conferir o código.
 - **Afirmar que o `default('admin')` ainda existe** em `users.js` — foi removido
   (hoje cargo é obrigatório, `:10-13`).
 - **Citar a exigência de permissão como `users.js:161`** sem conferir (hoje `:206`) —

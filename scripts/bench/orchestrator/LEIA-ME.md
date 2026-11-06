@@ -4,8 +4,9 @@ Mede o **papel do orchestrator**: o agente primário da sessão. Nenhuma outra b
 deste projeto mede esse papel — ele não existe como subagente, a tool `subagent` não o
 alcança, e as baterias de 15/10 e 16/10/2026 o exercitaram **por proxy** (outro agente
 fazendo o trabalho de orquestração). O `docs/adr/0008` registra essa medição por proxy
-como a evidência mais fraca da pilha, e é por isso que `space-bunny-free` continua
-primário sem ter sido medido no papel real.
+como a evidência mais fraca da pilha; o primário atual (`deepseek-v4.1-flash-free`) foi
+medido no papel real em 04/11/2026, e o bench continua existindo para não apontar um id
+novo sem medição — a regra "medir por papel antes de promover".
 
 ## Como rodar
 
@@ -23,23 +24,26 @@ npm run bench:orch:conferir
 Modelos específicos:
 
 ```bash
-npm run bench:orch:rodar -- --modelo opencode/space-bunny-free --repeticoes 3
+npm run bench:orch:rodar -- --modelo opencode/deepseek-v4.1-flash-free --repeticoes 3
 ```
 
 Outras opções:
 
 | Opção | Padrão | Para quê |
 |---|---|---|
+| `--turno 1\|2` | 1 | Turno 1 abre a sessão; turno 2 continua a sessão do turno 1 (ver abaixo). |
 | `--timeout-min N` | 20 | Corta a execução e mantém o parcial. Uma sessão travada não pode segurar o bench inteiro. |
 | `--sobrescrever` | — | Refaz uma execução já salva. |
-| `--dry-run` | — | Confere modelos e imprime o comando, sem gastar cota. |
+| `--dry-run` | — | Roda o preflight e o planejamento, confere os modelos e imprime os comandos reais (com o `sessionID` do turno 2), sem gastar cota nem criar arquivo. |
 
 A saída é gravada **em streaming**: uma execução morta no meio deixa no `.ndjson` o que
 deu certo até ali, e o `.meta.json` registra `excedeuTimeout: true`.
 
-Sem `-m`, roda `space-bunny-free` e `big-pickle` (o primário e a reserva). O runner
-confere cada id contra `opencode models` **antes** de executar: um id fora do catálogo
-falha em silêncio no spawn e a execução vazia pareceria uma falha do modelo.
+Sem `-m`, roda `deepseek-v4.1-flash-free` e `glm-5.3-flash-free` (o primário e a reserva
+do ADR-0008 em 04/11/2026). O runner confere cada id contra `opencode models` **antes** de
+executar: um id fora do catálogo falha em silêncio no spawn e a execução vazia pareceria
+uma falha do modelo. O default já esteve em `space-bunny-free`/`big-pickle`; os dois saíram
+do catálogo e o preflight passou a acusar isso antes de qualquer sessão.
 
 ## O que cada arquivo é
 
@@ -50,6 +54,35 @@ falha em silêncio no spawn e a execução vazia pareceria uma falha do modelo.
 | `rubrica.md` | Como pontuar: Camada A (automática), B (acerto) e C (orquestração). |
 | `rodar.js` | Executa e salva `resultados/<modelo>-<n>.ndjson` + `.meta.json`. |
 | `conferir.js` | Camada A: delega, citações válidas, contaminação. |
+| `../ground-truth.js` | Inventário de `pages/api/`, fatos do disco e verificação dos instrumentos (compartilhado com o bench de papéis). |
+| `../citacoes.js` | Resolvedor de citação `arquivo:linha` compartilhado entre conferidores e ground truth. |
+
+## Fail-fast: o instrumento é conferido antes do spawn
+
+Antes de chamar `opencode models` ou abrir qualquer sessão, `rodar.js` verifica o
+instrumento deste bench contra a árvore de trabalho (`verificarInstrumento` em
+`scripts/bench/ground-truth.js`). A bateria só começa se:
+
+- toda citação `arquivo:linha` de `gabarito.md` e `rubrica.md` resolver no disco
+  (projeto, `node_modules/next/dist`, abreviações e fontes externas pela mesma regra
+  do conferidor);
+- toda âncora declarada existir **e** estiver coberta por uma linha citada no
+  documento correspondente;
+- as contagens escritas baterem com o inventário real de `pages/api/` (arquivos e
+  rotas com `export default`);
+- as afirmações de conteúdo ainda descreverem o disco.
+
+Se algo divergir, o runner imprime a lista de problemas e sai com código 1 — sem
+gastar cota. A correção é recalibrar o instrumento na mesma rodada (ADR-0008), não
+afrouxar a checagem. O planejamento também é read-only e falha antes do primeiro
+`run` quando há colisão de nome de saída (dois modelos com o mesmo nome curto) ou,
+no turno 2, quando falta o `.meta.json` com `sessionID` de alguma execução do turno 1.
+
+Para ver o preflight sem executar:
+
+```bash
+npm run bench:orch:rodar -- --dry-run
+```
 
 ## O que ele faz, tecnicamente
 
@@ -147,4 +180,5 @@ O `rodar.js` já faz certo. Se você chamar `opencode run` por script, copie a l
    projeto. Use a **mediana** de 3 execuções; o que separa um modelo do outro é erro
    verificável na Camada B, e a Camada C é o desempate.
 3. Registrar em `docs/adr/0008` (seção datada) e no `CHANGELOG.md`. Só mexer no primário do
-   preset se a evidência sustentar — foi o que manteve `space-bunny-free` até hoje.
+   preset se a evidência sustentar — foi o critério que manteve o `space-bunny-free` no
+   primário até ele sair do catálogo.

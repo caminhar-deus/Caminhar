@@ -6,7 +6,9 @@ contaminação é detectada pelo `conferir.js`, que marca a execução se a saí
 `scripts/bench/`.
 
 Toda linha abaixo foi conferida abrindo o arquivo. Se o código mudar, este gabarito
-perde: confira de novo antes de comparar duas execuções.
+perde: confira de novo antes de comparar duas execuções. Desde 06/11/2026 o runner
+também confere contagem e âncoras contra o disco antes do spawn e bloqueia a execução
+quando a âncora mudou — o número velho deixa de pontuar antes de virar erro.
 
 > **Recalibrado em 21/10/2026**, depois das correções de segurança das rotas de API: o
 > helper de paginação saiu de `pages/api/`, o `POST` público de `/api/posts` foi removido e
@@ -17,6 +19,14 @@ perde: confira de novo antes de comparar duas execuções.
 > (ADR-0024), então são **32 arquivos e 32 rotas**. Os 31 voltaram a aparecer na
 > contagem no lugar dos 32, e por isso o número do §1 e o item correspondente de
 > `pontuar.js` foram atualizados juntos.
+>
+> **Recalibrado de novo em 06/11/2026**: as âncoras das tabelas do §2 foram
+> atualizadas para as linhas atuais do disco — o `POST` e o `PUT` de
+> `pages/api/settings.js` e o `requireAuth` de `pages/api/products.js` com seus usos
+> andaram com as passadas de segurança. O `pontuar.js` deixou de trazer número
+> escrito: contagem e ponto de aplicação saem do disco em runtime. E o runner agora
+> confere contagem e âncoras contra o disco antes do spawn — quando a âncora muda, a
+> execução é bloqueada antes de pontuar contra referência velha.
 
 ## 1. Quantos arquivos, quantas rotas
 
@@ -34,8 +44,8 @@ perde: confira de novo antes de comparar duas execuções.
 |---|---|---|
 | Admin via factory | 16 | `lib/api/adminCrudHandler.js:305` (`withAuth(handler)`), alcançado por `createAdminHandler` em cada rota |
 | `withAuth` direto | 2 | `pages/api/cleanup-test-data.js:26`, `pages/api/upload-image.js:170` |
-| `withAuth` parcial | 1 | `pages/api/settings.js` — GET público, POST (`:129`) e PUT (`:163`) com `withAuth` |
-| Autenticação manual | 4 | `pages/api/auth/check.js` (`:65`,`:74`), `pages/api/products.js` (`requireAuth` em `:81`, usado em `:302,308,313,318`), `pages/api/status.js` (`:34`,`:39` — só o diagnóstico; `?mode=health` em `:27` é público), `pages/api/settings.js` |
+| `withAuth` parcial | 1 | `pages/api/settings.js` — GET público, POST (`:130`) e PUT (`:164`) com `withAuth` |
+| Autenticação manual | 4 | `pages/api/auth/check.js` (`:65`,`:74`), `pages/api/products.js` (`requireAuth` em `:121`, usado em `:356,362,367,372`), `pages/api/status.js` (`:34`,`:39` — só o diagnóstico; `?mode=health` em `:27` é público), `pages/api/settings.js` |
 
 As 16 admin são as 15 de `pages/api/admin/` mais `pages/api/ip-diagnostico.js:186`.
 

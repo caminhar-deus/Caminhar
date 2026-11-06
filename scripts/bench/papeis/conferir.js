@@ -15,14 +15,22 @@
  * humano, contra `gabarito-<papel>.md`, como em todas as baterias deste projeto.
  */
 import { readdir, readFile, writeFile } from 'node:fs/promises';
-import { readFileSync, statSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { criarResolvedor, externaAoDisco } from '../citacoes.js';
 
 const RAIZ = path.resolve(import.meta.dirname, '..', '..', '..');
 const DIR = path.join(RAIZ, 'scripts', 'bench', 'papeis');
 const SAIDA = path.join(DIR, 'resultados');
 
+// O resolvedor de citações mora em `scripts/bench/citacoes.js` (Parte 1 da fonte
+// de verdade derivada do disco): o verificador de instrumentos
+// (`scripts/bench/ground-truth.js`) usa a MESMA regra — se este conferidor
+// guardasse a sua, a verdade derivaria do disco aqui e hardcoded lá.
+const resolvedor = criarResolvedor({ raiz: RAIZ });
+
+// O formato da resposta é `arquivo:linha` adjacente; o parser de citações do
+// instrumento (parênteses `(:129)`) é outra coisa e não serve aqui.
 const REGEX_CITACAO = /([A-Za-z0-9_.\-/[\]]+\.(?:js|cjs|mjs|jsx|json|md|mdx|yml|yaml|css|tsx|ts))[`'"]?:(\d+)/g;
 
 function extrairTexto(ndjson) {
@@ -49,145 +57,6 @@ function extrairTools(ndjson) {
     }
   }
   return tools;
-}
-
-function ehArquivo(caminho) {
-  try { return statSync(path.join(RAIZ, caminho)).isFile(); } catch { return false; }
-}
-
-/**
- * Índice basename -> caminhos do repositório que têm esse nome.
- *
- * O modelo escreve o caminho de forma relativa ao diretório que conhece: "MASTER.md"
- * para "design-system/MASTER.md", "Input.module.css" para
- * "components/UI/Input.module.css". Resolver por prefixo fixo erra — "MASTER.md"
- * resolveria para o gabarito do próprio bench, que fica em scripts/bench/, e a
- * citação boa seria marcada como inválida. Medido em 19/10/2026.
- */
-let indicePorNome = null;
-
-function constroiIndice() {
-  const indice = new Map();
-  const raizes = [
-    'pages', 'lib', 'components', 'hooks', 'utils', 'data',
-    'tests', 'docs', 'design-system', 'public',
-  ];
-  const pilha = raizes.map((r) => path.join(RAIZ, r));
-  while (pilha.length > 0) {
-    const atual = pilha.pop();
-    let entradas;
-    try { entradas = readdirSync(atual, { withFileTypes: true }); } catch { continue; }
-    for (const entrada of entradas) {
-      const completo = path.join(atual, entrada.name);
-      if (entrada.isDirectory()) { pilha.push(completo); continue; }
-      const chave = entrada.name;
-      if (!indice.has(chave)) indice.set(chave, []);
-      indice.get(chave).push(path.relative(RAIZ, completo));
-    }
-  }
-  return indice;
-}
-
-function sufixosPorNome(alvo) {
-  if (!indicePorNome) indicePorNome = constroiIndice();
-  return indicePorNome.get(path.posix.basename(alvo)) ?? [];
-}
-
-/* ---------------------------------------------------------------
- * Citações sobre o Next instalado e sobre o repo upstream (ADR-0008, 05/11/2026).
- * Medido nas baterias 9×5: os papeis citam docs e código do Next de propósito
- * (o AGENTS.md manda ler o guia instalado em `node_modules/next/dist/docs/`), e
- * o `constroiIndice` — que cobre só este repositório — reprovou citações reais:
- * - `route.md`, `headers.md`, `self-hosting.md` existem em
- *   `node_modules/next/dist/docs/01-app/...`;
- * - `incremental-cache/index.js:73` é de
- *   `node_modules/next/dist/server/lib/incremental-cache/index.js` (555 linhas) —
- *   a colisão por nome com `tests/mocks/index.js` puniu a linha certa;
- * - `packages/next/src/...` e URLs `//github.com/...` têm fonte FORA do disco.
- *
- * O pacote é resolvedor de RESERVA: entra após as raízes do projeto, nunca no
- * mesmo índice — o critério do `constroiIndice` (comentários acima, 19/10/2026)
- * não muda.
- */
-let caminhosProjetoMemo = null;
-let caminhosDistMemo = null;
-
-function caminhosProjeto() {
-  if (caminhosProjetoMemo) return caminhosProjetoMemo;
-  sufixosPorNome('-placeholder-');
-  caminhosProjetoMemo = [...new Set([...indicePorNome.values()].flat())].sort();
-  return caminhosProjetoMemo;
-}
-
-function caminhosNextDist() {
-  if (caminhosDistMemo) return caminhosDistMemo;
-  const arquivos = [];
-  const pilha = [path.join(RAIZ, 'node_modules', 'next', 'dist')];
-  while (pilha.length > 0) {
-    const atual = pilha.pop();
-    let entradas;
-    try { entradas = readdirSync(atual, { withFileTypes: true }); } catch { continue; }
-    for (const entrada of entradas) {
-      const completo = path.join(atual, entrada.name);
-      if (entrada.isDirectory()) { pilha.push(completo); continue; }
-      arquivos.push(path.relative(RAIZ, completo).split(path.sep).join('/'));
-    }
-  }
-  caminhosDistMemo = arquivos.sort();
-  return caminhosDistMemo;
-}
-
-function resolverEmNextDist(alvo) {
-  const arquivos = caminhosNextDist();
-  if (arquivos.length === 0) return [];
-  const partes = alvo.split('/');
-  for (let i = 0; i < partes.length; i += 1) {
-    const sufixo = partes.slice(i).join('/');
-    const achados = arquivos.filter((p) => p.endsWith(`/${sufixo}`));
-    if (achados.length > 0) {
-      // O mesmo módulo existe em build CJS (`server/lib/...`) e ESM (`esm/server/...`).
-      // A CJS tem prioridade na ordem: foi o layout da citação real testada.
-      const normais = achados.filter((p) => !p.includes('/esm/'));
-      const esm = achados.filter((p) => p.includes('/esm/'));
-      return [...normais, ...esm];
-    }
-  }
-  return [];
-}
-
-// "..." no caminho é forma escrita, não endereço: `node_modules/.../02-guides/
-// cdn-caching.md`, `.../15-route-handlers.md`, `docs/adr/0010-...md`. Vira padrão
-// que casa com arquivos reais; os "..." representam o trecho que o modelo cortou.
-function padraoAbreviado(alvo) {
-  if (!alvo.includes('...')) return null;
-  const corpo = alvo.split('...').map((pedaco) => pedaco.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*');
-  return new RegExp(`${corpo}$`);
-}
-
-function resolverPorPadrao(padrao) {
-  return caminhosProjeto().find((p) => padrao.test(p))
-    ?? caminhosNextDist().find((p) => padrao.test(p))
-    ?? null;
-}
-
-// Fonte fora do disco: layout do repo upstream (`packages/next/...`) e caminhos
-// extraídos de URL (`//github.com/...`). A bateria empurra o papel a buscar fora
-// (gh_grep, guia do repo upstream); nada no disco poderia validar — sinaliza.
-function externaAoDisco(alvo) {
-  return alvo.startsWith('//') || alvo.includes('github.com') || alvo.startsWith('packages/');
-}
-
-const linhasDeMemo = new Map();
-
-function linhasDe(caminhoRelativo) {
-  if (!linhasDeMemo.has(caminhoRelativo)) {
-    try {
-      linhasDeMemo.set(caminhoRelativo, readFileSync(path.join(RAIZ, caminhoRelativo), 'utf8').split('\n').length);
-    } catch {
-      linhasDeMemo.set(caminhoRelativo, 0);
-    }
-  }
-  return linhasDeMemo.get(caminhoRelativo);
 }
 
 function contaminada(tools) {
@@ -248,27 +117,16 @@ async function conferir(arquivo) {
     // e URLs (`//github.com/...`) fecham a lista antes de qualquer tentativa.
     if (externaAoDisco(alvo)) { externas.push(alvo); continue; }
 
-    const diretos = [alvo, path.posix.join('pages/api', alvo)];
-    const partes = alvo.split('/');
-    const sufixos = [];
-    for (let i = 1; i < partes.length; i += 1) {
-      const sufixo = partes.slice(i).join('/');
-      sufixos.push(sufixo, path.posix.join('pages/api', sufixo));
-    }
-
     // TODOS os candidatos existentes entram — o primeiro achado NÃO é campeão. É a
     // regra que o conferidor do orchestrator consertou em 19/10/2026 (comentário de
     // `resolverCitacao` lá) e que estas baterias repetiram: `roles.js:113` caiu no
     // `tests/helpers/roles.js` (22 linhas) enquanto `pages/api/admin/roles.js` (133)
     // tem a linha; `posts.js:152` caiu em `pages/api/posts.js` (85) com
     // `pages/api/admin/posts.js` (171) e `lib/domain/posts.js` (181) no disco.
-    const lista = [];
-    for (const c of [...diretos, ...sufixos]) {
-      if (ehArquivo(c) && !lista.includes(c)) lista.push(c);
-    }
-    for (const c of sufixosPorNome(alvo)) {
-      if (ehArquivo(c) && !lista.includes(c)) lista.push(c);
-    }
+    // A montagem (diretos + sufixos + índice por basename, filtrados por
+    // `ehArquivo`) está em `resolvedor.candidatosProjeto`; `diretos` volta sem
+    // filtro porque a decisão de "abreviada" compara com o caminho ESCRITO.
+    const { lista, diretos } = resolvedor.candidatosProjeto(alvo);
 
     if (lista.length === 0) {
       // Arquivo **novo**, criado pela própria execução, não está mais no disco: a
@@ -282,22 +140,16 @@ async function conferir(arquivo) {
       // instalado traz .md (a árvore instalada tem 0 .mdx) —, e fontes .ts do
       // upstream têm seu irmão .js/.d.ts no dist (`app-route.ts`). É fonte externa,
       // não citação inexistente — sinalizada, nunca reprovada.
-      const terminaTs = alvo.endsWith('.ts');
-      const origemTs = terminaTs
-        && (resolverEmNextDist(alvo.replace(/\.ts$/, '.js')).length > 0
-          || resolverEmNextDist(alvo.replace(/\.ts$/, '.d.ts')).length > 0);
-      if (alvo.endsWith('.mdx') || origemTs) {
+      if (resolvedor.origemExternaPorExtensao(alvo)) {
         externas.push(alvo);
         continue;
       }
       // Citação abreviada com "..." ou basename do Next instalado: forma escrita
       // comum nos papéis (`node_modules/.../02-guides/cdn-caching.md`, `route.md`,
       // `incremental-cache/index.js`). Resolve na raiz reserva e sinaliza — reprovar
-      // aqui puniu citações reais (ver o comentário de `caminhosNextDist`).
-      const padrao = padraoAbreviado(alvo);
-      const porPadrao = padrao ? resolverPorPadrao(padrao) : null;
-      const porDist = porPadrao ? [] : resolverEmNextDist(alvo);
-      const reservados = porPadrao ? [porPadrao] : porDist;
+      // aqui puniu citações reais (ver o comentário de `caminhosNextDist` em
+      // `scripts/bench/citacoes.js`).
+      const reservados = resolvedor.resolverReserva(alvo);
       if (reservados.length > 0) {
         lista.push(...reservados);
       } else {
@@ -306,7 +158,7 @@ async function conferir(arquivo) {
       }
     }
     for (const linha of linhas) {
-      const cabem = lista.filter((c) => linha <= linhasDe(c));
+      const cabem = lista.filter((c) => linha <= resolvedor.linhasDe(c));
       if (cabem.length > 0) {
         // "Abreviada" = forma: o que serviu não é o caminho como escrito
         // (`dicas.js` servido por `pages/api/admin/dicas.js`; `route.md` por
@@ -326,13 +178,10 @@ async function conferir(arquivo) {
         citacoesPosArquivoEditado.push(`${alvo}:${linha} (arquivo editado pela execução)`);
         continue;
       }
-      const detalhe = lista.map((c) => `${c} (${linhasDe(c)} linhas)`).join(' ou ');
+      const detalhe = lista.map((c) => `${c} (${resolvedor.linhasDe(c)} linhas)`).join(' ou ');
       invalidas.push(`${alvo}:${linha} (nenhum candidato tem a linha: ${detalhe})`);
     }
   }
-
-  const metaPath2 = path.join(SAIDA, arquivo.replace(/\.ndjson$/, '.meta.json'));
-  void metaPath2;
 
   return {
     arquivo,

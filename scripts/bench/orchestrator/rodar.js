@@ -12,8 +12,16 @@
  *
  * Uso:
  *   npm run bench:orch:rodar
- *   npm run bench:orch:rodar -- --modelo opencode/space-bunny-free --repeticoes 3
+ *   npm run bench:orch:rodar -- --modelo opencode/deepseek-v4.1-flash-free --repeticoes 3
+ *   npm run bench:orch:rodar -- --turno 2
  *   npm run bench:orch:rodar -- --dry-run
+ *
+ * Antes de qualquer spawn (inclusive `opencode models`), o instrumento é conferido
+ * contra o disco por `scripts/bench/ground-truth.js`: citação que não resolve,
+ * âncora que sumiu e contagem que não bate com `pages/api/` bloqueiam a bateria.
+ * O planejamento também é read-only e valida colisão de nome de saída e, no turno
+ * 2, a existência do `.meta.json` de TODAS as sessões antes da primeira execução —
+ * sem isso, uma bateria longa morria na metade por um arquivo que faltava.
  *
  * Não aceita `OPENCODE_API_KEY`: a execução passa pelo host do OpenCode, que já tem
  * credencial guardada (`opencode auth list`). O bench de 16/10/2026 exigia chave porque
@@ -21,17 +29,19 @@
  * within OpenCode").
  */
 import { spawn } from 'node:child_process';
-import { mkdir, writeFile, readFile, access } from 'node:fs/promises';
-import { createWriteStream, readFileSync, constants } from 'node:fs';
+import { mkdir, writeFile, readFile } from 'node:fs/promises';
+import { createWriteStream, readFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { exigirInstrumentoValido } from '../ground-truth.js';
+import { STDIO, classificarExistencia, resumirArgs } from '../runner-comum.js';
 
 const RAIZ = path.resolve(import.meta.dirname, '..', '..', '..');
 const DIR = path.join(RAIZ, 'scripts', 'bench', 'orchestrator');
 const SAIDA = path.join(DIR, 'resultados');
 const ARQ_TAREFA = path.join(DIR, 'tarefa.md');
 
-const PADRAO_MODELOS = ['opencode/space-bunny-free', 'opencode/big-pickle'];
+const PADRAO_MODELOS = ['opencode/deepseek-v4.1-flash-free', 'opencode/glm-5.3-flash-free'];
 const TIMEOUT_PADRAO_MIN = 20;
 
 // A tool `subagent` é assíncrono neste host: ela ignora `background` e sempre devolve
@@ -59,6 +69,7 @@ function parseArgs(argv) {
     modelos: [...PADRAO_MODELOS],
     repeticoes: 3,
     timeoutMin: TIMEOUT_PADRAO_MIN,
+    turno: 1,
     sobrescrever: false,
     dryRun: false,
   };
@@ -68,6 +79,7 @@ function parseArgs(argv) {
       const valor = argv[i + 1];
       if (!valor) throw new Error(`${arg} exige um valor`);
       opts.modelos = valor.split(',').map((m) => m.trim()).filter(Boolean);
+      if (opts.modelos.length === 0) throw new Error(`${arg} exige ao menos um id de modelo`);
       i += 1;
     } else if (arg === '--repeticoes' || arg === '-n') {
       const valor = Number.parseInt(argv[i + 1], 10);
@@ -98,8 +110,8 @@ function parseArgs(argv) {
 // `stdio[0] = 'ignore'` não é detalhe: com o padrão `'pipe'`, o filho herda um stdin que
 // ninguém escreve nem fecha, e o `opencode run` trava lendo stdin antes de abrir a
 // sessão: saem zero bytes e nenhum processo de sessão. Do bash o mesmo comando passa,
-// porque o shell entrega stdin já fechado. Medido em 19/10/2026.
-const STDIO = ['ignore', 'pipe', 'pipe'];
+// porque o shell entrega stdin já fechado. Medido em 19/10/2026. O `STDIO` é comum aos
+// dois runners (`../runner-comum.js`).
 
 /** Executa um comando e devolve { codigo, stdout, stderr }. */
 function executar(comando, args, opcoes = {}) {
@@ -200,8 +212,70 @@ function lerSessaoDoTurno1(base) {
   }
 }
 
+/**
+ * Planeja TODAS as execuções antes do primeiro spawn.
+ *
+ * Por que antes: a bateria gasta cota e escreve `.ndjson` em streaming. Descobrir
+ * no meio que dois modelos têm o mesmo nome curto (e gravariam no mesmo arquivo)
+ * ou que falta o `.meta.json` de uma sessão do turno 2 significa metade da
+ * bateria perdida. O planejamento é read-only; o catálogo e o dry-run vêm depois.
+ */
+function planejarJobs(opts) {
+  const jobs = [];
+  for (const modelo of opts.modelos) {
+    const curto = modelo.split('/').pop();
+    for (let n = 1; n <= opts.repeticoes; n += 1) {
+      const base = `${curto}-${n}`;
+      const sufixo = opts.turno === 2 ? '.t2' : '';
+      jobs.push({
+        modelo,
+        repeticao: n,
+        base,
+        nome: `${base}${sufixo}`,
+        arqSaida: path.join(SAIDA, `${base}${sufixo}.ndjson`),
+        arqMeta: path.join(SAIDA, `${base}${sufixo}.meta.json`),
+        titulo: opts.turno === 1 ? `bench-orch ${base}` : `bench-orch ${base} (turno 2)`,
+        args: null,
+      });
+    }
+  }
+
+  const porNome = new Map();
+  for (const job of jobs) {
+    const modelos = porNome.get(job.nome) ?? [];
+    modelos.push(job.modelo);
+    porNome.set(job.nome, modelos);
+  }
+  const colisoes = [...porNome].filter(([, modelos]) => modelos.length > 1);
+  if (colisoes.length > 0) {
+    throw new Error(
+      'Colisão de nome de saída: modelos diferentes com o mesmo nome curto gravariam no mesmo arquivo. ' +
+      `${colisoes.map(([nome, modelos]) => `${nome} <- ${modelos.join(', ')}`).join('; ')}. ` +
+      'Use nomes curtos distintos ou rode em baterias separadas.'
+    );
+  }
+  return jobs;
+}
+
+/**
+ * Monta os argumentos reais de cada job que vai rodar. No turno 2 a sessão do
+ * turno 1 é lida AQUI, para todas as execuções — não dentro do loop, depois de
+ * já ter gastado cota nas anteriores.
+ */
+function prepararArgs(job, opts, prompt) {
+  if (job.pular) return;
+  if (opts.turno === 1) {
+    job.args = ['run', '--model', job.modelo, '--title', job.titulo, '--format', 'json', '--auto', prompt];
+    return;
+  }
+  job.args = ['run', '--session', lerSessaoDoTurno1(job.base), '--model', job.modelo, '--format', 'json', '--auto', PROMPT_SEGUNDO_TURNO];
+}
+
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
+
+  // Fail-fast antes de qualquer spawn — inclusive o `opencode models`.
+  exigirInstrumentoValido('orchestrator', { raiz: RAIZ });
 
   const tarefa = await readFile(ARQ_TAREFA, 'utf8');
   if (!tarefa.trim()) throw new Error(`Tarefa vazia em ${ARQ_TAREFA}`);
@@ -209,6 +283,28 @@ async function main() {
   // A tarefa já pede para não ler scripts/bench/. Repetir aqui cobre o caso de alguém
   // editar o arquivo de tarefa e o runner rodar com o texto antigo em cache.
   const prompt = `${tarefa}\n\n---\nReforce: não abra nenhum arquivo em \`scripts/bench/\` — o gabarito está lá e ler invalida a medição.`;
+
+  const jobs = planejarJobs(opts);
+  await classificarExistencia(jobs, opts.sobrescrever);
+  for (const job of jobs) prepararArgs(job, opts, prompt);
+
+  const paraRodar = jobs.filter((job) => !job.pular);
+  for (const job of jobs.filter((j) => j.pular)) {
+    console.log(`[${job.nome}] já existe — pulando (use --sobrescrever para refazer)`);
+  }
+
+  console.log(`Bench do orchestrator — ${paraRodar.length} execução(ões) a rodar, turno ${opts.turno}`);
+  console.log(`Modelos: ${opts.modelos.join(', ')}`);
+  console.log(`Saída:   ${path.relative(RAIZ, SAIDA)}/`);
+  if (opts.turno === 2) {
+    console.log('Turno 2: continua a sessão do turno 1, onde os resultados dos subagentes já estão.');
+  }
+  console.log(`Cota Zen é por IP/dia (~200 req observadas). ${opts.repeticoes * opts.modelos.length} execuções são ${opts.repeticoes * opts.modelos.length} sessões, não requisições — mas cada sessão gasta várias.\n`);
+
+  if (paraRodar.length === 0) {
+    console.log('Nada a executar: todas as saídas já existem.');
+    return;
+  }
 
   const disponiveis = await catalogo();
   if (disponiveis) {
@@ -223,77 +319,45 @@ async function main() {
     console.warn('AVISO: não consegui ler `opencode models`; seguindo sem conferir o catálogo.');
   }
 
-  await mkdir(SAIDA, { recursive: true });
-
-  console.log(`Bench do orchestrator — ${opts.repeticoes} execução(ões) por modelo, turno ${opts.turno}`);
-  console.log(`Modelos: ${opts.modelos.join(', ')}`);
-  console.log(`Saída:   ${path.relative(RAIZ, SAIDA)}/`);
-  if (opts.turno === 2) {
-    console.log('Turno 2: continua a sessão do turno 1, onde os resultados dos subagentes já estão.');
-  }
-  console.log(`Cota Zen é por IP/dia (~200 req observadas). ${opts.repeticoes * opts.modelos.length} execuções são ${opts.repeticoes * opts.modelos.length} sessões, não requisições — mas cada sessão gasta várias.\n`);
-
   if (opts.dryRun) {
-    console.log('--dry-run: nada será executado. Comando que seria usado:');
-    if (opts.turno === 1) {
-      console.log('  opencode run --model <modelo> --title "bench-orch <modelo> #<n>" --format json --auto <prompt>');
-    } else {
-      console.log('  opencode run --session <sessionID do turno 1> --model <modelo> --format json --auto "<prompt do 2o turno>"');
-    }
+    console.log('--dry-run: nada será executado. Comandos reais:');
+    for (const job of paraRodar) console.log(`  ${resumirArgs(job.args)}`);
     return;
   }
 
-  for (const modelo of opts.modelos) {
-    const curto = modelo.split('/').pop();
-    for (let n = 1; n <= opts.repeticoes; n += 1) {
-      const base = `${curto}-${n}`;
-      const sufixo = opts.turno === 2 ? '.t2' : '';
-      const arqSaida = path.join(SAIDA, `${base}${sufixo}.ndjson`);
-      const arqMeta = path.join(SAIDA, `${base}${sufixo}.meta.json`);
+  await mkdir(SAIDA, { recursive: true });
 
-      const existe = await access(arqSaida, constants.F_OK).then(() => true, () => false);
-      if (existe && !opts.sobrescrever) {
-        console.log(`[${base}${sufixo}] já existe — pulando (use --sobrescrever para refazer)`);
-        continue;
-      }
+  for (const job of paraRodar) {
+    const { modelo, repeticao: n, nome, arqSaida, arqMeta, titulo, args } = job;
+    console.log(`[${nome}] rodando… (timeout ${opts.timeoutMin} min)`);
+    const inicio = Date.now();
+    const { codigo, sessionID, stderr, excedeu } = await executarSessao(args, arqSaida, opts.timeoutMin * 60 * 1000);
+    const duracao = Date.now() - inicio;
 
-      // No segundo turno o comando muda de forma: continua a MESMA sessão, para que o
-      // modelo tenha o resultado do subagente que disparou no turno anterior.
-      const args = opts.turno === 1
-        ? ['run', '--model', modelo, '--title', `bench-orch ${base}`, '--format', 'json', '--auto', prompt]
-        : ['run', '--session', lerSessaoDoTurno1(base), '--model', modelo, '--format', 'json', '--auto', PROMPT_SEGUNDO_TURNO];
+    await writeFile(arqMeta, JSON.stringify({
+      modelo,
+      repeticao: n,
+      turno: opts.turno,
+      titulo,
+      sessionID,
+      codigoSaida: codigo,
+      excedeuTimeout: excedeu,
+      duracaoMs: duracao,
+      executadoEm: new Date(inicio).toISOString(),
+      comando: resumirArgs(args),
+      stderr: stderr.slice(0, 2000),
+    }, null, 2), 'utf8');
 
-      const titulo = opts.turno === 1 ? `bench-orch ${base}` : `bench-orch ${base} (turno 2)`;
-      console.log(`[${base}${sufixo}] rodando… (timeout ${opts.timeoutMin} min)`);
-      const inicio = Date.now();
-      const { codigo, sessionID, stderr, excedeu } = await executarSessao(args, arqSaida, opts.timeoutMin * 60 * 1000);
-      const duracao = Date.now() - inicio;
+    const parcial = await readFile(arqSaida, 'utf8');
+    const temResposta = parcial.includes('"type":"text"');
+    const situacao = excedeu
+      ? `TIMEOUT depois de ${opts.timeoutMin} min`
+      : codigo === 0 ? 'ok' : `código ${codigo}`;
+    console.log(`[${nome}] ${situacao} em ${Math.round(duracao / 1000)}s — ${path.relative(RAIZ, arqSaida)}${temResposta ? '' : ' (SEM RESPOSTA)'}${sessionID ? ` session=${sessionID}` : ''}`);
+    if (codigo !== 0 && stderr) console.log(`         stderr: ${stderr.slice(0, 300)}`);
+    if (excedeu) console.log('         execução parcial: o .ndjson tem o que deu certo até o timeout; marque como incompleta na pontuação.');
 
-      await writeFile(arqMeta, JSON.stringify({
-        modelo,
-        repeticao: n,
-        turno: opts.turno,
-        titulo,
-        sessionID,
-        codigoSaida: codigo,
-        excedeuTimeout: excedeu,
-        duracaoMs: duracao,
-        executadoEm: new Date(inicio).toISOString(),
-        comando: args.map((a) => (a.length > 40 ? `<prompt ${a.length} chars>` : a)).join(' '),
-        stderr: stderr.slice(0, 2000),
-      }, null, 2), 'utf8');
-
-      const parcial = await readFile(arqSaida, 'utf8');
-      const temResposta = parcial.includes('"type":"text"');
-      const situacao = excedeu
-        ? `TIMEOUT depois de ${opts.timeoutMin} min`
-        : codigo === 0 ? 'ok' : `código ${codigo}`;
-      console.log(`[${base}] ${situacao} em ${Math.round(duracao / 1000)}s — ${path.relative(RAIZ, arqSaida)}${temResposta ? '' : ' (SEM RESPOSTA)'}${sessionID ? ` session=${sessionID}` : ''}`);
-      if (codigo !== 0 && stderr) console.log(`         stderr: ${stderr.slice(0, 300)}`);
-      if (excedeu) console.log('         execução parcial: o .ndjson tem o que deu certo até o timeout; marque como incompleta na pontuação.');
-
-      await limparEfeitosColaterais(base);
-    }
+    await limparEfeitosColaterais(nome);
   }
 
   console.log(`\nConferir com: npm run bench:orch:conferir`);

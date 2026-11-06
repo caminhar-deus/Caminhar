@@ -19,8 +19,9 @@
  * ADR-0008 (mudança de superfície em `pages/api/` obriga recalibrar instrumento na
  * mesma rodada).
  *
- * Uso (fora deste módulo): `aplicarRegressao()` em `rodar.js` antes do spawn do fixer e
- * em `conferir-fixer.js` antes de reaplicar as edições do candidato.
+ * Uso (fora deste módulo): `verificarRegressao()` como preflight em `rodar.js`,
+ * `aplicarRegressao()` em `rodar.js` antes do spawn do fixer e em
+ * `conferir-fixer.js` antes de reaplicar as edições do candidato.
  */
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -65,9 +66,29 @@ export async function aplicarRegressao(RAIZ = process.cwd()) {
   await writeFile(caminho, atual.replace(BLOCO_FIXADO, BLOCO_REGREDIDO), 'utf8');
 }
 
-/** O disco está com o bug do S1 plantado? (usado em testes e no conferidor) */
-export async function regressaoAplicada(RAIZ = process.cwd()) {
+/**
+ * Estado read-only da regressão do S1 no disco. **Não escreve nada.**
+ *
+ * O runner usa isto como preflight: só planta a regressão quando o disco está
+ * `corrigido`; `desconhecido` (o bloco mudou) e `ausente` bloqueiam a execução
+ * em vez de deixar `aplicarRegressao()` falhar no meio da bateria.
+ *
+ * @returns {{estado: 'corrigido'|'regredido'|'desconhecido'|'ausente', detalhe: string}}
+ */
+export async function verificarRegressao(RAIZ = process.cwd()) {
   const caminho = path.join(RAIZ, ALVO_RELATIVO);
-  const atual = await readFile(caminho, 'utf8');
-  return atual.includes(BLOCO_REGREDIDO) && !atual.includes(BLOCO_FIXADO);
+  let atual;
+  try {
+    atual = await readFile(caminho, 'utf8');
+  } catch {
+    return { estado: 'ausente', detalhe: `${ALVO_RELATIVO} não existe no disco` };
+  }
+  const corrigido = atual.includes(BLOCO_FIXADO);
+  const regredido = atual.includes(BLOCO_REGREDIDO);
+  if (corrigido && !regredido) return { estado: 'corrigido', detalhe: '' };
+  if (regredido && !corrigido) return { estado: 'regredido', detalhe: '' };
+  return {
+    estado: 'desconhecido',
+    detalhe: `nem o bloco corrigido nem o bloco do bug foram encontrados em ${ALVO_RELATIVO}; recalibre a regressão (ADR-0008)`,
+  };
 }

@@ -11,12 +11,22 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Adicionado
 
+- **Ground truth derivado do disco e fail-fast nos benches (06/11/2026):**
+  - `scripts/bench/ground-truth.js` (inventário de `pages/api/`, fatos, parser de citações e `verificarInstrumento`), `scripts/bench/citacoes.js` (resolvedor compartilhado) e `scripts/bench/runner-comum.js` (`STDIO`, classificação de saídas existentes e resumo de argumentos) — sem arquivo gerado ou cache: a verdade é lida da árvore de trabalho a cada execução.
+  - `scripts/bench/orchestrator/rodar.js` e `scripts/bench/papeis/rodar.js`: preflight do instrumento antes de qualquer spawn, planejamento read-only (colisão de nome de saída e sessões do turno 2), validação de argumentos, `--dry-run` com os comandos reais e aborto quando `restaurarArvore()` falha. O runner de papéis passou a checar `verificarRegressao()` antes de plantar o S1.
+  - `tests/unit/scripts/bench-ground-truth.test.js`: fixtures das funções puras + canário no repositório real (quatro instrumentos `ok`; `designer` detectado como P1/P3).
+
 - **Auditoria Técnica Semanal e Resiliência de Testes (04/11/2026):**
   - **Suíte de Testes de Tolerância a Nulos (`tests/unit/pages/api/admin/null-tolerance.edge.test.js`):** 9 testes parametrizados validando contratos Zod e tratamento de erros 400 descritivos diante de payloads vazios, nulos e corrompidos nos endpoints de posts, dicas, músicas e vídeos, garantindo prevenção de exceções 500.
   - **Relatório Semanal de Auditoria (`docs/retorno_da_semana.md`):** Documentação estruturada abrangendo logs locais, workflows de CI, análise de cobertura e histórico do ciclo semanal.
   - **Validação de Acesso à API do GitHub Actions:** Configuração e homologação de acesso via `GITHUB_TOKEN` em `.env.local` (HTTP 200, 360 workflow runs auditáveis).
 
 ### Corrigido
+
+- **Contagens e âncoras hardcoded nos benches (06/11/2026):**
+  - `orchestrator/pontuar.js` deriva contagem/linhas de `fatosOrchestrator`; `papeis/conferir.js` usa o resolvedor compartilhado. `gabarito.md`/`rubrica.md` recalibrados (32 arquivos/32 rotas; `settings.js:130/164`; `products.js:121` e usos `:356,362,367,372`) e `gabarito-oracle.md` corrigido (`adminCrudHandler.js:186-190` é resposta 403 do RBAC; rate limiting começa em `:192`).
+  - `gabarito-designer.md` segue desatualizado (ADR-0008): o preflight agora bloqueia o bench do designer e lista P1/P3 até a recalibração.
+  - Default do bench do orchestrator alinhado ao ADR-0008 (`deepseek-v4.1-flash-free`/`glm-5.3-flash-free`); `space-bunny-free` saiu do catálogo.
 
 - **Falsos Positivos do Validador de Citações dos Papéis (05/11/2026):**
   - `scripts/bench/papeis/conferir.js` reprovava citações reais nas baterias 9×5. Correção em três pontos: categoria `abreviada(s)` para formas escritas com reticências; resolução de reserva em `node_modules/next/dist`, com a regra de 19/10 ("inválida só quando nenhum candidato tem a linha citada") que o "primeiro achado" repetia em forma nova (`roles.js:113`, `posts.js:152`, `headers.md:399`); e categoria `externa(s)` para fontes fora do disco (repo upstream `packages/next/...`, URLs GitHub, extensão `.mdx`, `.ts` com irmão `.js`/`.d.ts` no dist).

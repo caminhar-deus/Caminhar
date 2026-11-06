@@ -1055,6 +1055,50 @@ regras de permissão/skills/MCP dos agentes não mudaram.
   (`:53`, `requireAdmin = false` só em 2 de 15 rotas). Pegar o id seguinte teria
   escolhido um modelo que não encontraria a escalada de privilégio real.
 
+### Ground truth do disco em runtime e fail-fast nos runners (06/11/2026)
+
+A pendência estrutural deixada em 05/11 — o instrumento do bench ainda guardava
+contagens e linhas fixas — foi fechada. `scripts/bench/ground-truth.js` deriva do
+disco, a cada execução: inventário de `pages/api/` (arquivos e rotas), linhas de
+âncora e cobertura das citações de `gabarito-*.md`/`rubrica.md`; `citacoes.js`
+concentra a resolução `arquivo:linha` usada pelo conferidor e pelo ground truth, e
+`runner-comum.js` fica com o plumbing idêntico dos dois runners (`STDIO`,
+classificação de saídas existentes e resumo de argumentos).
+Não há arquivo gerado nem cache: um número velho não sobrevive ao próximo `run`.
+
+`verificarInstrumento()` roda como preflight em `orchestrator/rodar.js` e
+`papeis/rodar.js` **antes de qualquer spawn** (`opencode models` incluído):
+citação que não resolve, âncora ausente/não coberta, contagem divergente ou
+afirmação de conteúdo que o disco desmente bloqueiam a bateria com a lista de
+problemas. Os runners também planejam antes de executar (colisão de nome de
+saída, `.meta.json` do turno 2), validam argumentos, imprimem os comandos reais
+no `--dry-run` e abortam quando `restaurarArvore()` não devolve a árvore ao estado
+anterior. O `fixer` ganhou `verificarRegressao()` read-only: `desconhecido` ou
+`ausente` bloqueiam antes do spawn; `regredido` é aceito sem reaplicar.
+
+Correções de instrumento encontradas no caminho: `gabarito.md`/`rubrica.md`
+(32 arquivos/32 rotas; `settings.js:130/164`; `products.js:121` e usos
+`:356,362,367,372`), `gabarito-oracle.md` (`adminCrudHandler.js:186-190` é a
+resposta 403 do RBAC; o rate limiting começa em `:192`) e a rubrica B1 (32/32).
+O `gabarito-designer.md` **não** foi recalibrado (decisão de 03/11): o preflight
+o detecta e bloqueia o bench do designer com P1/P3, o que impede promover
+candidato no papel enquanto o instrumento não descrever o disco.
+
+Validação: `tests/unit/scripts/bench-ground-truth.test.js` (12 testes; canário
+nos quatro instrumentos calibrados e detecção de P1/P3 no designer); dry-runs dos
+dois runners; `opencode` falso no `PATH` sem nenhum `run` quando o preflight do
+designer falha, e sem invocação alguma quando o gabarito do orchestrator é
+corrompido numa cópia da árvore. O default do bench do orchestrator foi alinhado
+ao ADR (`deepseek-v4.1-flash-free`/`glm-5.3-flash-free`), porque
+`space-bunny-free` saiu do catálogo.
+
+Risco pré-existente reafirmado na validação: `restaurarArvore()` devolve o repo ao
+commit e, por desenho, apaga arquivos não rastreados e reverte rastreados **fora de
+`scripts/bench`**. Rodar o bench com trabalho não commitado nessas áreas perde o
+trabalho. Em 06/11/2026 o teste com `opencode` falso apagou o próprio teste novo
+(recriado) e reverteu `CHANGELOG.md`/este ADR (reaplicados). A correção é commitar
+ou dar stash antes de uma execução real; o `--dry-run` não toca no disco.
+
 ## Consequências
 
 ### Positivas
@@ -1154,6 +1198,9 @@ se pagou.
   migrou para `--color-text-secondary` (`Input.module.css:165-168`). Enquanto o
   gabarito não for recalibrado, **nenhum** candidato pode ser promovido no papel — a
   execução `designer-pulse-alpha-free-1.ndjson` guarda a evidência da divergência.
+  Desde 06/11/2026 o preflight de `papeis/rodar.js` bloqueia a bateria do designer e
+  lista P1/P3 antes de qualquer spawn; o bloqueio some quando o gabarito for
+  recalibrado.
 - **Privacidade do `oracle` não verificada.** `nemotron-3.5-super-vl-free` é hoje o único
   dos cinco sem garantia de retenção registrada. Se isso for requisito, verificar antes do
   próximo uso com código sensível.
