@@ -27,7 +27,8 @@ Ativar o ai-memory por completo no projeto, com estas escolhas:
 4. **Habilitar LLM via provedor compatível com OpenAI** (`openai-compat`) apontando para o endpoint compatível do Google Gemini (`https://generativelanguage.googleapis.com/v1beta/openai`), com o modelo **`gemini-3.5-flash`** (validado por `ai-memory llm-test`), e a chave fornecida **apenas por arquivo de ambiente protegido** (`~/.config/ai-memory/llm.env`, `chmod 600`), nunca em linha de comando, prompt, `.env` versionado ou página de memória. Esta decisão **substitui** a de 2026-10-04 que mantinha o LLM desligado.
 5. **Manter `AI_MEMORY_CONSOLIDATE_ON_SESSION_END` desligado** (padrão): a consolidação automática ao fim da sessão fica sob demanda, para não gerar custo de LLM sem intenção explícita.
 6. **Higiene única**: encerrar sessões antigas, cancelar handoffs vencidos e remover projetos órfãos por `purge-project --confirm` (delete lógico). Não apagar páginas de sessão de bench só para zerar avisos de lint; elas são mantidas como histórico e o lint é informativo.
-7. **Manter o servidor em loopback** (`127.0.0.1:49374`), sem autenticação, por ser acesso local de um único operador. Expor a porta exigirá `ai-memory auth enable` antes.
+7. **Manter o servidor em loopback** (`127.0.0.1:49374`), sem autenticação, por ser acesso local de um único operador. Expor a porta exige, antes, `ai-memory auth enable`, restart do servidor e troca do MCP do OpenCode para o bridge stdio (`ai-memory mcp-bridge --server-url http://127.0.0.1:49374 --no-session-id`), porque o registro HTTP remoto não carrega token.
+8. **Backup diário do data dir**: script `~/.local/bin/ai-memory-backup.sh` + timer systemd de usuário `ai-memory-backup.timer` (03:00, `Persistent=true`, `RandomizedDelaySec=300`), com retenção de 14 dias em `~/.cache/ai-memory-backups/ai-memory-AAAA-MM-DD.tar.gz`. O script valida o tarball com `tar -tzf`, grava em arquivo temporário e só então renomeia (snapshot anterior preservado em caso de falha). O destino precisa ficar sob `$HOME` ou o diretório do projeto: o wrapper roda em container auxiliar e não monta `/tmp`.
 
 ## Alternativas consideradas
 
@@ -52,7 +53,7 @@ Ativar o ai-memory por completo no projeto, com estas escolhas:
 - **Privacidade**: trechos de memória serão enviados ao provedor de LLM; a chave fica em arquivo protegido, mas o conteúdo sai da máquina. Não usar provedor sem contrato de dados adequado.
 - **Contexto**: o briefing consome até 4000 caracteres em toda sessão; se o modelo local ficar apertado, reduzir ou desligar no marcador.
 - **Drift de versão** 3.4.2 (servidor) × 3.4.3 (cliente) permanece até o upstream publicar a imagem; monitorar o changelog.
-- **Sem backup automático**: o backup do banco é manual (`ai-memory backup --to`); não há agendamento.
+- **Backup automático cobre só o data dir**: o tar diário (~33 MB) inclui `wiki/`, `db/` e o `config.toml` interno; ficam de fora credenciais, configs externas (`~/.config/opencode/*`), ledgers crus, logs e a chave do LLM. A retenção de 14 dias ocupa ~460 MB. O teste de restore (`ai-memory restore --from <tar> --force`) ainda é manual.
 - **Delete lógico**: os projetos purgados somem da API e da busca, mas os bytes permanecem no arquivo SQLite até um `VACUUM`/`--compact`.
 
 ## Revisão
@@ -60,4 +61,6 @@ Ativar o ai-memory por completo no projeto, com estas escolhas:
 - Reavaliar quando a imagem 3.4.3 (ou superior) for publicada e o container puder ser atualizado.
 - Reavaliar custo/benefício do LLM após algumas semanas de uso real; se o custo ou a política de dados do provedor forem inaceitáveis, voltar ao modo sem LLM e registrar novo ADR.
 - Reavaliar `max_chars` do briefing se o contexto do modelo principal ficar apertado.
-- Se a porta deixar de ser loopback, habilitar autenticação antes de expor.
+- Se a porta deixar de ser loopback, habilitar autenticação antes de expor, com backup de `~/.config/opencode/opencode.json` e SHA256, `ai-memory auth enable`, restart do servidor, MCP do OpenCode no bridge stdio e hooks reaplicados.
+- Testar o restore do backup diário periodicamente (por exemplo, a cada trimestre) num data dir separado; o timer só prova que o tar é válido, não que o restore funciona.
+- Revisar a retenção de 14 dias se o volume de dados crescer muito.
