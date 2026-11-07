@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useApiFetch, useDebounce } from '@/hooks';
 import ProductCard from './ProductCard';
-import { inputStyle } from './styles';
 import styles from './styles/ProductList.module.css';
 import { ErrorMessage, LoadingMessage, EmptyMessage } from '../../UI/StateMessages';
 import { Spinner, Pagination } from '@/components/UI';
+import { AppIcon } from '@/components/UI/icons';
 
 // Spec design-system/pages/home.md §1.3 — ordem exata das opções do seletor.
 const SORT_OPTIONS = [
@@ -28,7 +28,10 @@ export default function ProductList() {
 
   // Unifica filtros em um único objeto com um único debounce
   // para evitar requisições desnecessárias ao backend
-  const filters = useMemo(() => ({ search: searchTerm, minPrice, maxPrice, category }), [searchTerm, minPrice, maxPrice, category]);
+  const filters = useMemo(
+    () => ({ search: searchTerm, minPrice, maxPrice, category }),
+    [searchTerm, minPrice, maxPrice, category]
+  );
   const debouncedFilters = useDebounce(filters, 500);
 
   // Reseta para página 1 quando os filtros debounced mudam
@@ -37,11 +40,20 @@ export default function ProductList() {
   }, [debouncedFilters]);
 
   // Verifica se há filtros ativos
-  const hasActiveFilters = debouncedFilters.search || debouncedFilters.minPrice || debouncedFilters.maxPrice || debouncedFilters.category;
+  const hasActiveFilters = Boolean(
+    debouncedFilters.search
+    || debouncedFilters.minPrice
+    || debouncedFilters.maxPrice
+    || debouncedFilters.category
+  );
 
   // Conta quantos filtros estão ativos
-  const activeFilterCount = [debouncedFilters.search, debouncedFilters.minPrice, debouncedFilters.maxPrice, debouncedFilters.category]
-    .filter(Boolean).length;
+  const activeFilterCount = [
+    debouncedFilters.search,
+    debouncedFilters.minPrice,
+    debouncedFilters.maxPrice,
+    debouncedFilters.category,
+  ].filter(Boolean).length;
 
   const limparFiltros = () => {
     setSearchTerm('');
@@ -82,6 +94,7 @@ export default function ProductList() {
       const timer = setTimeout(() => setPageLoading(false), 150);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [loading, pageLoading]);
 
   // Rola suavemente para o topo da lista ao trocar de página
@@ -104,64 +117,59 @@ export default function ProductList() {
   };
 
   return (
-    <div>
-      {/* Filtros de Busca e Preço */}
-      <div style={{ marginBottom: 'var(--spacing-8)', display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 'var(--spacing-4)' }}>
-        <div style={{ position: 'relative', width: '100%', maxWidth: '400px' }}>
-          <span style={{ position: 'absolute', left: 'var(--spacing-4)', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-secondary)', display: 'flex', pointerEvents: 'none' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
-            </svg>
+    <div className={styles.productListContainer}>
+      {/* Filtros de Busca, Preço, Categoria e Ordenação */}
+      <div className={styles.filtersBar}>
+        <div className={styles.searchWrapper}>
+          <span className={styles.searchIcon} aria-hidden="true">
+            <AppIcon name="search" size={18} />
           </span>
-          <input 
-            type="text" 
-            placeholder="Buscar produtos por nome..." 
+          <input
+            type="text"
+            placeholder="Buscar produtos por nome..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={inputStyle('46px')}
+            className={`${styles.searchInput} ${(searchTerm || hasActiveFilters) ? styles.searchInputWithControls : ''}`}
             aria-label="Buscar produtos por nome"
           />
-          {/* Indicador de filtro ativo */}
-          {hasActiveFilters && (
-            <span style={{
-              position: 'absolute',
-              right: 'var(--spacing-3)',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              backgroundColor: 'var(--color-primary-500)',
-              color: '#fff',
-              borderRadius: 'var(--border-radius-full)',
-              width: '20px',
-              height: '20px',
-              fontSize: '11px',
-              fontWeight: '700',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              pointerEvents: 'none',
-            }}>
-              {activeFilterCount}
-            </span>
+          {(searchTerm || hasActiveFilters) && (
+            <div className={styles.searchRightControls}>
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  className={styles.clearButton}
+                  aria-label="Limpar pesquisa"
+                >
+                  <AppIcon name="close" size={15} />
+                </button>
+              )}
+              {hasActiveFilters && (
+                <span className={styles.activeFilterBadge}>
+                  {activeFilterCount}
+                </span>
+              )}
+            </div>
           )}
         </div>
-        
-        <div style={{ display: 'flex', gap: '10px', width: '100%', maxWidth: '300px' }}>
-          <input 
-            type="number" 
-            placeholder="Mín (R$)" 
+
+        <div className={styles.priceGroup}>
+          <input
+            type="number"
+            placeholder="Mín (R$)"
             value={minPrice}
             onChange={(e) => setMinPrice(e.target.value)}
-            style={inputStyle()}
+            className={styles.priceInput}
             min="0"
             step="0.01"
             aria-label="Preço mínimo"
           />
-          <input 
-            type="number" 
-            placeholder="Máx (R$)" 
+          <input
+            type="number"
+            placeholder="Máx (R$)"
             value={maxPrice}
             onChange={(e) => setMaxPrice(e.target.value)}
-            style={inputStyle()}
+            className={styles.priceInput}
             min="0"
             step="0.01"
             aria-label="Preço máximo"
@@ -211,28 +219,12 @@ export default function ProductList() {
         {/* Botão limpar filtros — visível apenas quando há filtros ativos */}
         {hasActiveFilters && (
           <button
+            type="button"
             onClick={limparFiltros}
             className={styles.filterButton}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: 'var(--spacing-2) var(--spacing-4)',
-              borderRadius: 'var(--border-radius-md)',
-              border: 'var(--border-width-1) solid var(--color-border-light)',
-              color: 'var(--color-text-secondary)',
-              fontSize: 'var(--font-size-sm)',
-              fontWeight: 'var(--font-weight-medium)',
-              cursor: 'pointer',
-              transition: 'var(--transition-all)',
-              outline: 'none',
-              whiteSpace: 'nowrap',
-            }}
             aria-label="Limpar todos os filtros"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
+            <AppIcon name="close" size={14} />
             Limpar filtros
           </button>
         )}
@@ -250,32 +242,32 @@ export default function ProductList() {
       )}
 
       {/* Container com altura mínima para evitar Layout Shift */}
-      <div ref={listRef} style={{ minHeight: '600px' }}>
+      <div ref={listRef} className={styles.listViewport}>
         {/* Tratamento de Estados */}
         {error && <ErrorMessage message={error} />}
         {loading && !error && !pageLoading && <LoadingMessage text="Buscando produtos..." />}
         {!loading && !error && products.length === 0 && (
           <EmptyMessage message={hasActiveFilters ? 'Nenhum produto encontrado com estes filtros.' : 'Nenhum produto cadastrado no momento.'} />
         )}
-  
+
         {/* Listagem de Produtos */}
         {!error && products.length > 0 && (
           <>
             <div
               className={`${styles.productsGrid}${pageLoading ? ` ${styles.productsGridLoading}` : ''}`}
             >
-              {products.map(product => (
+              {products.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
 
             {/* Loading overlay para troca de página */}
             {pageLoading && (
-              <div style={{ display: 'flex', justifyContent: 'center', marginTop: '-120px', position: 'relative', zIndex: 1 }}>
+              <div className={styles.pageLoadingOverlay}>
                 <Spinner size="md" />
               </div>
             )}
-  
+
             {/* Paginação unificada no padrão das demais abas */}
             <Pagination
               currentPage={currentPage}
@@ -288,16 +280,8 @@ export default function ProductList() {
           </>
         )}
 
-        {/* Aviso de divulgação de afiliados (decisão D2 do dono, 28/10/2026) —
-            texto padrão sujeito a revisão do dono antes do commit */}
-        <p
-          style={{
-            marginTop: 'var(--spacing-8)',
-            textAlign: 'center',
-            fontSize: 'var(--font-size-xs)',
-            color: 'var(--color-text-secondary)',
-          }}
-        >
+        {/* Aviso de divulgação de afiliados (decisão D2 do dono, 28/10/2026) */}
+        <p className={styles.affiliateDisclaimer}>
           Alguns links são de afiliados: podemos receber uma comissão pelas compras realizadas, sem custo adicional para você.
         </p>
       </div>

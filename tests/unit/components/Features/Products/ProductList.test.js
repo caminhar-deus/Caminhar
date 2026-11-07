@@ -226,12 +226,22 @@ describe('Componentes Features - Products - ProductList', () => {
     expect(screen.getByPlaceholderText('Máx (R$)')).toBeInTheDocument();
   });
 
-  it('deve limpar os filtros ao clicar em "Limpar filtros"', () => {
+  it('deve limpar os filtros ao clicar em "Limpar filtros" e permitir limpar apenas a busca pelo botão interno', () => {
     setupApiMock();
 
     render(<ProductList />);
 
+    expect(screen.getByText('Ordenar por:')).toBeInTheDocument();
+
     const searchInput = screen.getByPlaceholderText('Buscar produtos por nome...');
+    fireEvent.change(searchInput, { target: { value: 'terço' } });
+
+    // Botão interno de limpar apenas a pesquisa
+    const clearSearchBtn = screen.getByLabelText('Limpar pesquisa');
+    expect(clearSearchBtn).toBeInTheDocument();
+    fireEvent.click(clearSearchBtn);
+    expect(searchInput).toHaveValue('');
+
     fireEvent.change(searchInput, { target: { value: 'produto' } });
 
     // Indicador de filtro ativo (badge com contagem) e botão de limpar visíveis

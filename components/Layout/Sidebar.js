@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import styles from './Sidebar.module.css';
 
+const DEFAULT_COLLAPSE_LABELS = {
+  expand: 'Expandir',
+  collapse: 'Colapsar',
+};
+
 /**
- * Sidebar - Layout com sidebar colapsável
+ * Sidebar - Layout com sidebar vertical recolhível/expansível
  * @param {ReactNode} sidebar - Conteúdo da sidebar
  * @param {ReactNode} children - Conteúdo principal
- * @param {boolean} collapsed - Estado colapsado
- * @param {function} onCollapse - Handler para colapsar
+ * @param {boolean} collapsed - Estado colapsado controlado (opcional)
+ * @param {boolean} defaultCollapsed - Estado inicial quando não controlado
+ * @param {function} onCollapse - Handler para colapsar/expandir
  * @param {string} position - 'left' | 'right'
  * @param {string} width - Largura da sidebar ('sm' | 'md' | 'lg')
  * @param {boolean} collapsible - Permite colapsar
@@ -15,11 +21,15 @@ import styles from './Sidebar.module.css';
  * @param {function} onMobileToggle - Handler para toggle mobile
  * @param {number} breakpoint - Breakpoint em px para modo mobile (default: 1024)
  * @param {boolean} persistCollapsed - Persistir estado colapsado no localStorage
+ * @param {object} collapseLabels - Rótulos acessíveis ({ expand, collapse })
+ * @param {string} mainId - ID do elemento <main> (ex.: 'main-content' para skip-link)
+ * @param {string} sidebarLabel - aria-label do elemento <aside>
  */
 export const Sidebar = ({
   sidebar,
   children,
-  collapsed: collapsedProp = false,
+  collapsed: collapsedProp,
+  defaultCollapsed = false,
   onCollapse,
   position = 'left',
   width = 'md',
@@ -29,31 +39,42 @@ export const Sidebar = ({
   onMobileToggle,
   breakpoint = 1024,
   persistCollapsed = false,
+  collapseLabels = DEFAULT_COLLAPSE_LABELS,
+  mainId,
+  sidebarLabel,
   className = '',
 }) => {
-  // Estado collapsed: se persistCollapsed, inicializa do localStorage
   const [internalCollapsed, setInternalCollapsed] = useState(() => {
-    if (persistCollapsed) {
+    const initialValue = collapsedProp !== undefined ? collapsedProp : defaultCollapsed;
+    if (persistCollapsed && typeof window !== 'undefined') {
       try {
         const saved = localStorage.getItem('sidebar-collapsed');
-        return saved !== null ? JSON.parse(saved) : collapsedProp;
+        return saved !== null ? Boolean(JSON.parse(saved)) : initialValue;
       } catch {
-        return collapsedProp;
+        return initialValue;
       }
     }
-    return collapsedProp;
+    return initialValue;
   });
 
-  // Sincroniza prop externa com estado interno
-  const collapsed = collapsedProp !== undefined ? collapsedProp : internalCollapsed;
+  const isCollapsedControlled = collapsedProp !== undefined;
+  const collapsed = isCollapsedControlled ? collapsedProp : internalCollapsed;
 
   const [internalMobileOpen, setInternalMobileOpen] = useState(false);
   const isMobileControlled = mobileOpenProp !== undefined;
   const mobileOpen = isMobileControlled ? mobileOpenProp : internalMobileOpen;
 
-  // Persiste estado collapsed quando muda (com debounce de 300ms)
+  const closeMobileMenu = () => {
+    if (isMobileControlled) {
+      onMobileToggle?.(false);
+    } else {
+      setInternalMobileOpen(false);
+    }
+  };
+
+  // Persiste estado collapsed quando muda (com debounce de 200ms)
   useEffect(() => {
-    if (!persistCollapsed) return;
+    if (!persistCollapsed) return undefined;
 
     const timer = setTimeout(() => {
       try {
@@ -61,10 +82,28 @@ export const Sidebar = ({
       } catch {
         // localStorage indisponível
       }
-    }, 300);
+    }, 200);
 
     return () => clearTimeout(timer);
   }, [collapsed, persistCollapsed]);
+
+  // Fecha a gaveta mobile ao pressionar Escape
+  useEffect(() => {
+    if (!mobileOpen) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        if (isMobileControlled) {
+          onMobileToggle?.(false);
+        } else {
+          setInternalMobileOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [mobileOpen, isMobileControlled, onMobileToggle]);
 
   // Calcula margem dinamicamente para evitar seletores CSS de irmãos frágeis
   const sidebarWidthMap = { sm: 200, md: 260, lg: 320 };
@@ -100,31 +139,38 @@ export const Sidebar = ({
 
   const handleCollapse = () => {
     const newCollapsed = !collapsed;
-    if (collapsedProp === undefined) {
+    if (!isCollapsedControlled) {
       setInternalCollapsed(newCollapsed);
     }
     onCollapse?.(newCollapsed);
   };
 
+  const toggleLabel = collapsed
+    ? (collapseLabels?.expand || DEFAULT_COLLAPSE_LABELS.expand)
+    : (collapseLabels?.collapse || DEFAULT_COLLAPSE_LABELS.collapse);
+
+  // Em position="left": expandido aponta para esquerda (recolher), recolhido aponta para direita (expandir)
+  const pointsLeft = position === 'left' ? !collapsed : collapsed;
+
   return (
     <div
       className={containerClasses}
       style={{ '--sidebar-breakpoint': `${breakpoint}px` }}
-      {...(mobileOpen ? { inert: true } : {})}
     >
       {/* Mobile Toggle Button */}
       {collapsible && (
         <button
+          type="button"
           className={styles.mobileToggle}
           onClick={handleMobileToggle}
           aria-label={mobileOpen ? 'Fechar menu' : 'Abrir menu'}
           aria-expanded={mobileOpen}
         >
-          <svg viewBox="0 0 24 24" fill="none" width="24" height="24">
+          <svg viewBox="0 0 24 24" fill="none" width="22" height="22" aria-hidden="true">
             {mobileOpen ? (
-              <path d="M18 6 6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M18 6 6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             ) : (
-              <path d="M4 12h16M4 6h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M4 12h16M4 6h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             )}
           </svg>
         </button>
@@ -134,33 +180,34 @@ export const Sidebar = ({
       {mobileOverlay && mobileOpen && (
         <div
           className={styles.overlay}
-          onClick={() => {
-            if (isMobileControlled) {
-              onMobileToggle?.(false);
-            } else {
-              setInternalMobileOpen(false);
-            }
-          }}
+          onClick={closeMobileMenu}
           aria-hidden="true"
         />
       )}
 
       {/* Sidebar */}
-      <aside className={sidebarClasses}>
+      <aside className={sidebarClasses} aria-label={sidebarLabel}>
         {collapsible && (
-          <button
-            className={styles.collapseButton}
-            onClick={handleCollapse}
-            aria-label={collapsed ? 'Expandir' : 'Colapsar'}
-          >
-            <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
-              {position === 'left' ? (
-                <path d={collapsed ? "M15 19l-7-7 7-7" : "M9 5l7 7-7 7"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              ) : (
-                <path d={collapsed ? "M9 5l7 7-7 7" : "M15 19l-7-7 7-7"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              )}
-            </svg>
-          </button>
+          <div className={styles.collapseBar}>
+            <button
+              type="button"
+              className={styles.collapseButton}
+              onClick={handleCollapse}
+              aria-label={toggleLabel}
+              aria-expanded={!collapsed}
+              title={toggleLabel}
+            >
+              <svg viewBox="0 0 24 24" fill="none" width="20" height="20" aria-hidden="true">
+                <path
+                  d={pointsLeft ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6'}
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
         )}
         <div className={styles.sidebarContent}>
           {sidebar}
@@ -169,8 +216,10 @@ export const Sidebar = ({
 
       {/* Main Content */}
       <main
+        id={mainId}
         className={`${styles.main} ${styles.mainContent}`}
         style={{ '--main-margin': `${currentWidth}px` }}
+        {...(mobileOpen ? { inert: true } : {})}
       >
         {children}
       </main>
@@ -181,14 +230,14 @@ export const Sidebar = ({
 /**
  * Sidebar.Nav - Navegação da sidebar
  */
-Sidebar.Nav = ({ children, className = '' }) => (
-  <nav className={`${styles.nav} ${className}`}>
+Sidebar.Nav = ({ children, className = '', ...props }) => (
+  <nav className={[styles.nav, className].filter(Boolean).join(' ')} {...props}>
     {children}
   </nav>
 );
 
 /**
- * Sidebar.NavItem - Item de navegação
+ * Sidebar.NavItem - Item de navegação (renderiza <a> com href ou <button> em abas client-side)
  * @param {boolean} active - Item ativo
  * @param {ReactNode} icon - Ícone do item
  * @param {string} label - Label do item
@@ -199,7 +248,11 @@ Sidebar.NavItem = ({
   icon,
   label,
   badge,
+  href,
+  title,
   className = '',
+  'aria-label': ariaLabel,
+  'aria-current': ariaCurrent,
   ...props
 }) => {
   const itemClasses = [
@@ -210,12 +263,24 @@ Sidebar.NavItem = ({
     .filter(Boolean)
     .join(' ');
 
+  const resolvedTitle = title !== undefined ? title : label;
+  const resolvedAriaCurrent = ariaCurrent !== undefined ? ariaCurrent : (active ? 'page' : undefined);
+  const Component = href !== undefined ? 'a' : 'button';
+
   return (
-    <a className={itemClasses} {...props}>
-      {icon && <span className={styles.navIcon}>{icon}</span>}
+    <Component
+      type={Component === 'button' ? 'button' : undefined}
+      href={href}
+      className={itemClasses}
+      aria-label={ariaLabel || label}
+      aria-current={resolvedAriaCurrent}
+      title={resolvedTitle}
+      {...props}
+    >
+      {icon && <span className={styles.navIcon} aria-hidden="true">{icon}</span>}
       <span className={styles.navLabel}>{label}</span>
       {badge && <span className={styles.navBadge}>{badge}</span>}
-    </a>
+    </Component>
   );
 };
 
@@ -223,7 +288,7 @@ Sidebar.NavItem = ({
  * Sidebar.Section - Seção na sidebar
  */
 Sidebar.Section = ({ title, children, className = '' }) => (
-  <div className={`${styles.section} ${className}`}>
+  <div className={[styles.section, className].filter(Boolean).join(' ')}>
     {title && <h4 className={styles.sectionTitle}>{title}</h4>}
     {children}
   </div>
@@ -233,7 +298,7 @@ Sidebar.Section = ({ title, children, className = '' }) => (
  * Sidebar.Header - Header da sidebar
  */
 Sidebar.Header = ({ children, className = '' }) => (
-  <div className={`${styles.header} ${className}`}>
+  <div className={[styles.header, className].filter(Boolean).join(' ')}>
     {children}
   </div>
 );
@@ -242,7 +307,7 @@ Sidebar.Header = ({ children, className = '' }) => (
  * Sidebar.Footer - Footer da sidebar
  */
 Sidebar.Footer = ({ children, className = '' }) => (
-  <div className={`${styles.footer} ${className}`}>
+  <div className={[styles.footer, className].filter(Boolean).join(' ')}>
     {children}
   </div>
 );

@@ -177,6 +177,7 @@ describe('Componente Front-End - MusicGallery', () => {
     });
 
     const sortSelect = screen.getByLabelText('Ordenar músicas');
+    expect(screen.getByText('Ordenar por:')).toBeInTheDocument();
     fireEvent.change(sortSelect, { target: { value: 'oldest' } });
 
     await waitFor(() => {

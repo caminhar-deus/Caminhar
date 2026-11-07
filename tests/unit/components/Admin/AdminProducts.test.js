@@ -63,7 +63,7 @@ describe('Componente Front-End - AdminProducts', () => {
       jest.fn()
     );
     render(CustomField);
-    expect(screen.getByText('⚡ Puxar Dados')).toBeInTheDocument();
+    expect(screen.getByText('Puxar Dados')).toBeInTheDocument();
     expect(screen.getByTestId('link-input')).toHaveValue('https://ml.com');
   });
 
@@ -85,7 +85,7 @@ describe('Componente Front-End - AdminProducts', () => {
       { name: 'link', component: (props) => <input {...props} /> }, { link: '' }, jest.fn(), jest.fn()
     );
     render(CustomField);
-    fireEvent.click(screen.getByText('⚡ Puxar Dados'));
+    fireEvent.click(screen.getByText('Puxar Dados'));
     expect(toast.error).toHaveBeenCalledWith('Cole o link do produto no campo primeiro!');
   });
 
@@ -102,7 +102,7 @@ describe('Componente Front-End - AdminProducts', () => {
     );
     render(CustomField);
     
-    fireEvent.click(screen.getByText('⚡ Puxar Dados'));
+    fireEvent.click(screen.getByText('Puxar Dados'));
     expect(toast.loading).toHaveBeenCalledWith('Puxando dados da loja...');
     
     await waitFor(() => {
@@ -124,7 +124,7 @@ describe('Componente Front-End - AdminProducts', () => {
       { name: 'link', component: (props) => <input {...props} /> }, { link: 'https://ml.com' }, jest.fn(), setFieldValue
     );
     render(CustomField);
-    fireEvent.click(screen.getByText('⚡ Puxar Dados'));
+    fireEvent.click(screen.getByText('Puxar Dados'));
     
     await waitFor(() => {
       expect(setFieldValue).not.toHaveBeenCalledWith('description', expect.anything());
@@ -141,7 +141,7 @@ describe('Componente Front-End - AdminProducts', () => {
     );
     render(CustomField);
     
-    fireEvent.click(screen.getByText('⚡ Puxar Dados'));
+    fireEvent.click(screen.getByText('Puxar Dados'));
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Erro do ML', expect.any(Object)));
   });
 
@@ -152,7 +152,7 @@ describe('Componente Front-End - AdminProducts', () => {
       { name: 'link', component: (props) => <input {...props} /> }, { link: 'https://ml.com' }, jest.fn(), jest.fn()
     );
     render(CustomField);
-    fireEvent.click(screen.getByText('⚡ Puxar Dados'));
+    fireEvent.click(screen.getByText('Puxar Dados'));
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Falha na busca.', expect.any(Object)));
   });
 
@@ -162,12 +162,12 @@ describe('Componente Front-End - AdminProducts', () => {
     
     render(<AdminProducts />);
     render(passedProps.renderCustomFormField({ name: 'link', component: 'input' }, { link: 'https://ml.com' }, jest.fn(), jest.fn()));
-    fireEvent.click(screen.getByText('⚡ Puxar Dados'));
+    fireEvent.click(screen.getByText('Puxar Dados'));
     
     const LoadingField = passedProps.renderCustomFormField({ name: 'link', component: 'input' }, { link: 'https://ml.com' }, jest.fn(), jest.fn());
     render(LoadingField);
     
-    expect(screen.getByText('⏳ Buscando...')).toBeInTheDocument();
+    expect(screen.getByText('Buscando...')).toBeInTheDocument();
     
     resolveApi({ ok: true, json: async () => ({ title: 'Teste', price: 10, images: 'img' }) });
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
@@ -220,7 +220,7 @@ describe('Componente Front-End - AdminProducts', () => {
       { name: 'link', component: (props) => <input {...props} /> }, { link: 'https://ml.com' }, jest.fn(), setFieldValue
     );
     render(CustomField);
-    fireEvent.click(screen.getByText('⚡ Puxar Dados'));
+    fireEvent.click(screen.getByText('Puxar Dados'));
 
     await waitFor(() => {
       // Nunca "0.00": um produto de graça iria para a vitrine

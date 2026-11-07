@@ -43,7 +43,7 @@ describe('Componente Front-End - AdminVideos', () => {
     
     render(youtubeCol.render({ url_youtube: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', titulo: 'Video Teste' }));
     
-    expect(screen.getByText('📺 Abrir no YouTube')).toHaveAttribute('href', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    expect(screen.getByText('Abrir no YouTube')).toHaveAttribute('href', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
     const iframe = await screen.findByTestId('embed-iframe');
     expect(iframe).toHaveAttribute('src', expect.stringContaining('embed/dQw4w9WgXcQ'));
   });
@@ -112,7 +112,7 @@ describe('Componente Front-End - AdminVideos', () => {
     );
     render(CustomField);
     
-    fireEvent.click(screen.getByText('⚡ Puxar Dados'));
+    fireEvent.click(screen.getByText('Puxar Dados'));
     expect(toast.error).toHaveBeenCalledWith('Cole um link válido do YouTube primeiro!');
   });
 
@@ -138,12 +138,12 @@ describe('Componente Front-End - AdminVideos', () => {
     render(<AdminVideos />);
     
     render(passedProps.renderCustomFormField({ name: 'url_youtube', component: 'input' }, { url_youtube: 'https://youtube.com/watch?v=123' }, jest.fn(), jest.fn()));
-    fireEvent.click(screen.getByText('⚡ Puxar Dados'));
+    fireEvent.click(screen.getByText('Puxar Dados'));
     
     const LoadingField = passedProps.renderCustomFormField({ name: 'url_youtube', component: 'input' }, { url_youtube: 'https://youtube.com/watch?v=123' }, jest.fn(), jest.fn());
     render(LoadingField);
     
-    expect(screen.getByText('⏳ Buscando...')).toBeInTheDocument();
+    expect(screen.getByText('Buscando...')).toBeInTheDocument();
     
     resolveApi({ ok: true, json: async () => ({ title: 'Teste' }) });
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
@@ -164,7 +164,7 @@ describe('Componente Front-End - AdminVideos', () => {
     
     render(passedProps.renderCustomFormField({ name: 'url_youtube', component: 'input' }, { url_youtube: 'https://youtube.com/watch?v=123' }, jest.fn(), setFieldValue));
     
-    fireEvent.click(screen.getByText('⚡ Puxar Dados'));
+    fireEvent.click(screen.getByText('Puxar Dados'));
     expect(toast.loading).toHaveBeenCalledWith('Buscando dados no YouTube...');
     
     await waitFor(() => {
@@ -179,7 +179,7 @@ describe('Componente Front-End - AdminVideos', () => {
     render(<AdminVideos />);
     render(passedProps.renderCustomFormField({ name: 'url_youtube', component: 'input' }, { url_youtube: 'https://youtube.com/watch?v=123' }, jest.fn(), jest.fn()));
     
-    fireEvent.click(screen.getByText('⚡ Puxar Dados'));
+    fireEvent.click(screen.getByText('Puxar Dados'));
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Vídeo privado', expect.any(Object)));
   });
 
@@ -189,7 +189,7 @@ describe('Componente Front-End - AdminVideos', () => {
     render(<AdminVideos />);
     render(passedProps.renderCustomFormField({ name: 'url_youtube', component: 'input' }, { url_youtube: 'https://youtube.com/watch?v=123' }, jest.fn(), jest.fn()));
     
-    fireEvent.click(screen.getByText('⚡ Puxar Dados'));
+    fireEvent.click(screen.getByText('Puxar Dados'));
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Falha na busca.', expect.any(Object)));
   });
 });

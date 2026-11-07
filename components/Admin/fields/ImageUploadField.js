@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
+import { AppIcon } from '@/components/UI/icons';
 import styles from '../styles/form.module.css';
 import toast from 'react-hot-toast';
 
@@ -105,9 +106,9 @@ export default function ImageUploadField({
     <div className={`${styles.formGroup} ${className}`}>
       <label htmlFor={name}>
         {label}
-        {required && <span style={{ color: '#dc3545', marginLeft: '4px' }}>*</span>}
+        {required && <span className={styles.requiredMark}>*</span>}
       </label>
-      <div style={{ display: 'flex', gap: '10px' }}>
+      <div className={styles.inlineUploadRow}>
         {multiple ? (
           <textarea
             id={name}
@@ -116,9 +117,8 @@ export default function ImageUploadField({
             onChange={onChange}
             placeholder={placeholder}
             required={required}
-            className={styles.input}
+            className={`${styles.input} ${styles.flexInput}`}
             rows={3}
-            style={{ flex: 1 }}
           />
         ) : (
           <input
@@ -129,66 +129,41 @@ export default function ImageUploadField({
             onChange={onChange}
             placeholder={placeholder}
             required={required}
-            className={styles.input}
-            style={{ flex: 1 }}
+            className={`${styles.input} ${styles.flexInput}`}
           />
         )}
-        <label 
-          className={styles.saveButton}
-          style={{ 
-            padding: '10px 16px',
-            cursor: uploading ? 'not-allowed' : 'pointer',
-            opacity: uploading ? 0.6 : 1,
-            display: 'flex',
-            alignItems: 'center'
-          }}
+        <label
+          className={`${styles.uploadLabelButton}${uploading ? ` ${styles.uploadLabelDisabled}` : ''}`}
         >
-          {uploading ? 'Enviando...' : (multiple ? 'Adicionar imagem' : 'Upload')}
+          <AppIcon name="upload" size={16} />
+          <span>{uploading ? 'Enviando...' : (multiple ? 'Adicionar imagem' : 'Upload')}</span>
           <input
             type="file"
             accept="image/*"
             onChange={handleFileChange}
             disabled={uploading}
-            style={{ display: 'none' }}
+            className={styles.hiddenFileInput}
           />
         </label>
       </div>
       
       {images.length > 0 && (
-        <div style={{ marginTop: '10px', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+        <div className={styles.uploadPreviewList}>
           {images.map((url, index) => (
-            <div key={`${url}-${index}`} style={{ position: 'relative' }}>
+            <div key={`${url}-${index}`} className={styles.uploadPreviewItem}>
               <img 
                 src={url} 
                 alt={multiple ? `Preview ${index + 1}` : 'Preview'} 
-                style={{ 
-                  maxWidth: '100%', 
-                  maxHeight: '200px', 
-                  objectFit: 'cover', 
-                  borderRadius: '6px',
-                  border: '1px solid #e9ecef'
-                }} 
+                className={styles.uploadPreviewImg}
               />
               {multiple && (
                 <button
                   type="button"
                   onClick={() => removeImage(url)}
                   aria-label={`Remover imagem ${index + 1}`}
-                  style={{
-                    position: 'absolute',
-                    top: '4px',
-                    right: '4px',
-                    border: 'none',
-                    borderRadius: '50%',
-                    width: '24px',
-                    height: '24px',
-                    cursor: 'pointer',
-                    backgroundColor: 'rgba(0,0,0,0.65)',
-                    color: '#fff',
-                    lineHeight: 1
-                  }}
+                  className={styles.removePreviewButton}
                 >
-                  ×
+                  <AppIcon name="close" size={14} />
                 </button>
               )}
             </div>
@@ -197,7 +172,7 @@ export default function ImageUploadField({
       )}
       
       {error && (
-        <small style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+        <small className={styles.fieldError}>
           {error}
         </small>
       )}

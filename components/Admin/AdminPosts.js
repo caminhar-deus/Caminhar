@@ -10,6 +10,7 @@ import { useApiFetch } from '@/hooks/useApiFetch';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import styles from './styles/adminPosts.module.css';
+import crudStyles from './styles/crud.module.css';
 
 /**
  * Schema de validação para posts
@@ -179,32 +180,21 @@ const columns = [
     key: 'title', 
     header: 'Título',
     render: (item) => (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div className={crudStyles.cellMediaRow}>
         {item.image_url && (
-          <img 
-            src={item.image_url} 
-            alt="" 
-            style={{ 
-              width: '40px', 
-              height: '40px', 
-              objectFit: 'cover', 
-              borderRadius: '4px',
-              border: '1px solid #e9ecef'
-            }} 
+          <img
+            src={item.image_url}
+            alt=""
+            className={crudStyles.cellThumb}
           />
         )}
-        <span style={{ fontWeight: 500 }}>{item.title}</span>
+        <span className={crudStyles.cellTitle}>{item.title}</span>
       </div>
     )
   },
   { 
     key: 'published', 
-    header: 'Status',
-    activeBgColor: '#e0f2fe', // Fundo azul claro
-    activeColor: '#0369a1', // Texto azul escuro
-    activeIcon: '📰', // Ícone de Jornal
-    inactiveBgColor: '#f3f4f6', // Fundo cinza padrão
-    inactiveIcon: '📝' // Ícone de rascunho
+    header: 'Status'
   },
   { 
     key: 'created_at', 

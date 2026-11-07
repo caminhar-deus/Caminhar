@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import styles from './styles/crud.module.css';
 import AdminCrudBase from './AdminCrudBase';
 import TextField from './fields/TextField';
 import TextAreaField from './fields/TextAreaField';
@@ -79,12 +80,7 @@ const columns = [
   { 
     key: 'published', 
     header: 'Status', 
-    width: '120px',
-    activeBgColor: '#fef3c7', // Fundo amarelo/laranja claro
-    activeColor: '#92400e', // Texto laranja escuro
-    activeIcon: '🛒',
-    inactiveBgColor: '#f3f4f6',
-    inactiveIcon: '📦'
+    width: '120px'
   },
   { 
     key: 'image_preview', 
@@ -93,13 +89,13 @@ const columns = [
     render: (item) => {
       const firstImage = item.image_url ? item.image_url.split('\n')[0].trim() : null;
       return firstImage ? (
-        <img 
-          src={firstImage} 
-          alt={item.name} 
-          style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #e2e8f0' }} 
+        <img
+          src={firstImage}
+          alt={item.name}
+          className={styles.cellThumb}
         />
       ) : (
-        <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>Sem foto</span>
+        <span className={styles.mutedText}>Sem foto</span>
       );
     }
   },
@@ -128,8 +124,6 @@ export default function AdminProducts() {
   // Configuração do botão "Puxar Dados" (Mercado Livre, Amazon e Shopee)
   const mlButtonConfig = {
     endpoint: '/api/admin/fetch-ml',
-    buttonColor: '#ffe600',
-    buttonTextColor: '#333',
     loadingMessage: 'Puxando dados da loja...',
     successMessage: 'Dados importados! Revise antes de salvar.',
     validateUrl: (url) => !!url,

@@ -58,7 +58,7 @@ describe('Componente Front-End - AdminMusicas', () => {
     
     render(spotifyCol.render({ url_spotify: 'https://open.spotify.com/track/12345?si=abc' }));
     
-    expect(screen.getByText('🎵 Abrir no Spotify')).toHaveAttribute('href', 'https://open.spotify.com/track/12345?si=abc');
+    expect(screen.getByText('Abrir no Spotify')).toHaveAttribute('href', 'https://open.spotify.com/track/12345?si=abc');
     expect(screen.getByTestId('embed-iframe')).toHaveAttribute('src', expect.stringContaining('embed/track/12345'));
   });
 
@@ -96,7 +96,7 @@ describe('Componente Front-End - AdminMusicas', () => {
     );
     render(CustomField);
     
-    fireEvent.click(screen.getByText('⚡ Puxar Dados'));
+    fireEvent.click(screen.getByText('Puxar Dados'));
     expect(toast.error).toHaveBeenCalledWith('Cole um link válido do Spotify primeiro!');
   });
 
@@ -122,12 +122,12 @@ describe('Componente Front-End - AdminMusicas', () => {
     render(<AdminMusicas />);
     
     render(passedProps.renderCustomFormField({ name: 'url_spotify', component: 'input' }, { url_spotify: 'https://spotify.com/track/abc' }, jest.fn(), jest.fn()));
-    fireEvent.click(screen.getByText('⚡ Puxar Dados'));
+    fireEvent.click(screen.getByText('Puxar Dados'));
     
     const LoadingField = passedProps.renderCustomFormField({ name: 'url_spotify', component: 'input' }, { url_spotify: 'https://spotify.com/track/abc' }, jest.fn(), jest.fn());
     render(LoadingField);
     
-    expect(screen.getByText('⏳ Buscando...')).toBeInTheDocument();
+    expect(screen.getByText('Buscando...')).toBeInTheDocument();
     
     resolveApi({ ok: true, json: async () => ({ title: 'Teste', artist: 'Teste' }) });
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
@@ -148,7 +148,7 @@ describe('Componente Front-End - AdminMusicas', () => {
     
     render(passedProps.renderCustomFormField({ name: 'url_spotify', component: 'input' }, { url_spotify: 'https://spotify.com/track/abc' }, jest.fn(), setFieldValue));
     
-    fireEvent.click(screen.getByText('⚡ Puxar Dados'));
+    fireEvent.click(screen.getByText('Puxar Dados'));
     expect(toast.loading).toHaveBeenCalledWith('Buscando dados no Spotify...');
     
     await waitFor(() => {
@@ -164,7 +164,7 @@ describe('Componente Front-End - AdminMusicas', () => {
     render(<AdminMusicas />);
     render(passedProps.renderCustomFormField({ name: 'url_spotify', component: 'input' }, { url_spotify: 'https://spotify.com/track/abc' }, jest.fn(), jest.fn()));
     
-    fireEvent.click(screen.getByText('⚡ Puxar Dados'));
+    fireEvent.click(screen.getByText('Puxar Dados'));
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Música privada', expect.any(Object)));
   });
 
@@ -174,7 +174,7 @@ describe('Componente Front-End - AdminMusicas', () => {
     render(<AdminMusicas />);
     render(passedProps.renderCustomFormField({ name: 'url_spotify', component: 'input' }, { url_spotify: 'https://spotify.com/track/abc' }, jest.fn(), jest.fn()));
     
-    fireEvent.click(screen.getByText('⚡ Puxar Dados'));
+    fireEvent.click(screen.getByText('Puxar Dados'));
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Falha na busca.', expect.any(Object)));
   });
 });

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import styles from './styles/crud.module.css';
+import { AppIcon } from '@/components/UI/icons';
 import AdminCrudBase from './AdminCrudBase';
 import TextField from './fields/TextField';
 import TextAreaField from './fields/TextAreaField';
@@ -87,12 +88,14 @@ const columns = [
           rel="noopener noreferrer"
           className={styles.spotifyLink}
         >
-          🎵 Abrir no Spotify
+          <AppIcon name="externalLink" size={14} />
+          Abrir no Spotify
         </a>
-        <div style={{ marginTop: '10px', minWidth: '300px' }}>
+        <div className={styles.embedPreviewWrap}>
           <iframe
             data-testid="embed-iframe"
-            style={{ borderRadius: '12px', overflow: 'hidden', background: 'transparent' }}
+            title={`Pré-visualização da música ${item.titulo || ''}`.trim()}
+            className={styles.embedIframe}
             src={`https://open.spotify.com/embed/track/${item.url_spotify.split('/').pop().split('?')[0]}?utm_source=generator&theme=0`}
             width="100%"
             height="152"
@@ -108,12 +111,7 @@ const columns = [
   },
   {
     key: 'published',
-    header: 'Status',
-    activeBgColor: '#dcfce3', // Fundo verde claro (Estilo Spotify)
-    activeColor: '#166534', // Texto verde escuro
-    activeIcon: '🎵',
-    inactiveBgColor: '#f3f4f6', // Fundo cinza padrão
-    inactiveIcon: '⏸️'
+    header: 'Status'
   }
 ];
 
@@ -140,8 +138,6 @@ export default function AdminMusicasNew() {
   // Configuração do botão "Puxar Dados" do Spotify
   const spotifyButtonConfig = {
     endpoint: '/api/admin/fetch-spotify',
-    buttonColor: '#1DB954',
-    buttonTextColor: '#fff',
     loadingMessage: 'Buscando dados no Spotify...',
     successMessage: 'Música encontrada!',
     validateUrl: (url) => url && url.includes('spotify'),

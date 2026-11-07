@@ -1,4 +1,5 @@
 import { BaseCard } from '@/components/UI';
+import { AppIcon } from '@/components/UI/icons';
 import LazyIframe from '../../Performance/LazyIframe';
 import { getSpotifyEmbedUrl } from '@/lib/media/spotify';
 import styles from './styles/MusicCard.module.css';
@@ -43,14 +44,16 @@ export default function MusicCard({ musica }) {
     >
       <h3 className={styles.musicTitle}>{musica.titulo}</h3>
       <p className={styles.musicArtist}>{musica.artista}</p>
-      
+
       {temSpotify && (
-        <button 
+        <button
+          type="button"
           onClick={handleSpotifyClick}
           aria-label={`Ouvir ${musica.titulo} no Spotify`}
           className={styles.spotifyButton}
         >
-          🎵 Ouvir no Spotify
+          <AppIcon name="music" size={16} />
+          Ouvir no Spotify
         </button>
       )}
     </BaseCard>

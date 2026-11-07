@@ -30,11 +30,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: var(--spacing-2);
   padding: var(--spacing-2) var(--spacing-4);
-  border-radius: var(--border-radius-md);
+  border-radius: var(--border-radius-lg);
   border: none;
   background-color: #1DB954;
-  color: var(--color-text-inverse);
+  color: var(--color-text-primary);
   font-weight: var(--font-weight-bold);
   cursor: pointer;
   font-size: var(--font-size-xs);
@@ -57,8 +58,8 @@
   align-items: center;
   justify-content: center;
   height: 152px;
-  background-color: var(--color-bg-secondary, #282828);
-  border-radius: var(--border-radius-xl, 12px);
-  color: var(--color-text-secondary, #525252);
-  font-size: var(--font-size-sm, 0.875rem);
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--border-radius-xl);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
 }

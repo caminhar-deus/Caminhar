@@ -76,10 +76,10 @@ describe('Componentes Admin - Tools - RateLimitViewer', () => {
     render(<RateLimitViewer />);
 
     expect(await screen.findByRole('heading', { level: 3, name: 'Rate Limiting' })).toBeInTheDocument();
-    expect(await screen.findByText('🔄 Atualizar')).toBeInTheDocument();
-    expect(screen.getByText('🔒 Bloqueados (0)')).toBeInTheDocument();
-    expect(screen.getByText('✅ Whitelist (0)')).toBeInTheDocument();
-    expect(screen.getByText('📋 Auditoria')).toBeInTheDocument();
+    expect(await screen.findByText('Atualizar')).toBeInTheDocument();
+    expect(screen.getByText('Bloqueados (0)')).toBeInTheDocument();
+    expect(screen.getByText('Whitelist (0)')).toBeInTheDocument();
+    expect(screen.getByText('Auditoria')).toBeInTheDocument();
 
     // As duas chamadas paralelas do fetch inicial usam credenciales
     await waitFor(() => {
@@ -95,7 +95,7 @@ describe('Componentes Admin - Tools - RateLimitViewer', () => {
 
     expect(await screen.findByText('1.2.3.4')).toBeInTheDocument();
     expect(screen.getByText('Tentativas: 7 | Desbloqueio em: 15 min')).toBeInTheDocument();
-    expect(screen.getByText('🔒 Bloqueados (1)')).toBeInTheDocument();
+    expect(screen.getByText('Bloqueados (1)')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Desbloquear' })).toBeInTheDocument();
   });
 
@@ -109,7 +109,7 @@ describe('Componentes Admin - Tools - RateLimitViewer', () => {
 
     expect(await screen.findByText('Nenhum IP bloqueado no momento.')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('✅ Whitelist (0)'));
+    fireEvent.click(screen.getByText('Whitelist (0)'));
     expect(await screen.findByText('Nenhum IP na whitelist.')).toBeInTheDocument();
   });
 
@@ -131,9 +131,9 @@ describe('Componentes Admin - Tools - RateLimitViewer', () => {
     setupRateLimitMock(fetchMock, { whitelist: ['8.8.8.8'] });
 
     render(<RateLimitViewer />);
-    await screen.findByText('🔄 Atualizar');
+    await screen.findByText('Atualizar');
 
-    fireEvent.click(screen.getByText('✅ Whitelist (1)'));
+    fireEvent.click(screen.getByText('Whitelist (1)'));
 
     expect(await screen.findByText('8.8.8.8')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Remover' })).toBeInTheDocument();
@@ -143,9 +143,9 @@ describe('Componentes Admin - Tools - RateLimitViewer', () => {
     setupRateLimitMock(fetchMock);
 
     render(<RateLimitViewer />);
-    await screen.findByText('🔄 Atualizar');
+    await screen.findByText('Atualizar');
 
-    fireEvent.click(screen.getByText('✅ Whitelist (0)'));
+    fireEvent.click(screen.getByText('Whitelist (0)'));
     const input = screen.getByPlaceholderText('Ex: 192.168.1.1');
     fireEvent.change(input, { target: { value: '10.0.0.1' } });
     fireEvent.click(screen.getByRole('button', { name: 'Adicionar' }));
@@ -165,22 +165,22 @@ describe('Componentes Admin - Tools - RateLimitViewer', () => {
     setupRateLimitMock(fetchMock, { post: { ok: false, status: 400, json: async () => ({ message: 'IP inválido' }) } });
 
     render(<RateLimitViewer />);
-    await screen.findByText('🔄 Atualizar');
+    await screen.findByText('Atualizar');
 
-    fireEvent.click(screen.getByText('✅ Whitelist (0)'));
+    fireEvent.click(screen.getByText('Whitelist (0)'));
     fireEvent.change(screen.getByPlaceholderText('Ex: 192.168.1.1'), { target: { value: '999.999.999.999' } });
     fireEvent.click(screen.getByRole('button', { name: 'Adicionar' }));
 
-    expect(await screen.findByText('❌ IP inválido')).toBeInTheDocument();
+    expect(await screen.findByText('IP inválido')).toBeInTheDocument();
   });
 
   it('deve não chamar a API quando o IP está vazio', async () => {
     setupRateLimitMock(fetchMock);
 
     render(<RateLimitViewer />);
-    await screen.findByText('🔄 Atualizar');
+    await screen.findByText('Atualizar');
 
-    fireEvent.click(screen.getByText('✅ Whitelist (0)'));
+    fireEvent.click(screen.getByText('Whitelist (0)'));
     const form = screen.getByText('Adicionar IP à Whitelist').closest('form');
     fireEvent.submit(form);
 
@@ -191,9 +191,9 @@ describe('Componentes Admin - Tools - RateLimitViewer', () => {
     setupRateLimitMock(fetchMock, { whitelist: ['8.8.8.8'] });
 
     render(<RateLimitViewer />);
-    await screen.findByText('🔄 Atualizar');
+    await screen.findByText('Atualizar');
 
-    fireEvent.click(screen.getByText('✅ Whitelist (1)'));
+    fireEvent.click(screen.getByText('Whitelist (1)'));
     await screen.findByText('8.8.8.8');
     fireEvent.click(screen.getByRole('button', { name: 'Remover' }));
 
@@ -210,13 +210,13 @@ describe('Componentes Admin - Tools - RateLimitViewer', () => {
     });
 
     render(<RateLimitViewer />);
-    await screen.findByText('🔄 Atualizar');
+    await screen.findByText('Atualizar');
 
-    fireEvent.click(screen.getByText('✅ Whitelist (1)'));
+    fireEvent.click(screen.getByText('Whitelist (1)'));
     await screen.findByText('8.8.8.8');
     fireEvent.click(screen.getByRole('button', { name: 'Remover' }));
 
-    expect(await screen.findByText('❌ Erro ao remover da whitelist')).toBeInTheDocument();
+    expect(await screen.findByText('Erro ao remover da whitelist')).toBeInTheDocument();
     expect(screen.getByText('8.8.8.8')).toBeInTheDocument();
   });
 
@@ -232,9 +232,9 @@ describe('Componentes Admin - Tools - RateLimitViewer', () => {
     });
 
     render(<RateLimitViewer />);
-    await screen.findByText('🔄 Atualizar');
+    await screen.findByText('Atualizar');
 
-    fireEvent.click(screen.getByText('📋 Auditoria'));
+    fireEvent.click(screen.getByText('Auditoria'));
 
     expect(await screen.findByText('Desbloqueo Manual')).toBeInTheDocument();
     expect(screen.getByText(/Usuário: admin/)).toBeInTheDocument();
@@ -245,9 +245,9 @@ describe('Componentes Admin - Tools - RateLimitViewer', () => {
     setupRateLimitMock(fetchMock);
 
     render(<RateLimitViewer />);
-    await screen.findByText('🔄 Atualizar');
+    await screen.findByText('Atualizar');
 
-    fireEvent.click(screen.getByText('📋 Auditoria'));
+    fireEvent.click(screen.getByText('Auditoria'));
     await screen.findByText('Nenhum log de auditoria encontrado.');
 
     fireEvent.change(screen.getByPlaceholderText('Buscar por IP ou usuário...'), { target: { value: '1.2.3' } });
@@ -273,9 +273,9 @@ describe('Componentes Admin - Tools - RateLimitViewer', () => {
     });
 
     render(<RateLimitViewer />);
-    await screen.findByText('🔄 Atualizar');
+    await screen.findByText('Atualizar');
 
-    fireEvent.click(screen.getByText('📋 Auditoria'));
+    fireEvent.click(screen.getByText('Auditoria'));
     await screen.findByText('Página 1 de 3');
 
     expect(screen.getByRole('button', { name: 'Anterior' })).toBeDisabled();
@@ -297,9 +297,9 @@ describe('Componentes Admin - Tools - RateLimitViewer', () => {
     setupRateLimitMock(fetchMock, { audit: { ok: false, status: 500, json: async () => ({ message: 'erro' }) } });
 
     render(<RateLimitViewer />);
-    await screen.findByText('🔄 Atualizar');
+    await screen.findByText('Atualizar');
 
-    fireEvent.click(screen.getByText('📋 Auditoria'));
+    fireEvent.click(screen.getByText('Auditoria'));
 
     await waitFor(() => expect(consoleErrorSpy).toHaveBeenCalled());
     consoleErrorSpy?.mockRestore();
@@ -312,7 +312,7 @@ describe('Componentes Admin - Tools - RateLimitViewer', () => {
 
     render(<RateLimitViewer />);
 
-    expect(await screen.findByText('❌ Erro ao carregar dados de rate limit')).toBeInTheDocument();
+    expect(await screen.findByText('Erro ao carregar dados de rate limit')).toBeInTheDocument();
     expect(screen.getByText('Falha ao carregar IPs bloqueados')).toBeInTheDocument();
 
     // Reintento exitoso
@@ -331,7 +331,7 @@ describe('Componentes Admin - Tools - RateLimitViewer', () => {
     // 401 interrompe o fluxo ANTES do throw: nada de estado de error.
     // O reload() real do jsdom é no-op e o finally de fetchData desliga o loading.
     await act(async () => { await global.wait(50); });
-    expect(screen.queryByText('❌ Erro ao carregar dados de rate limit')).not.toBeInTheDocument();
+    expect(screen.queryByText('Erro ao carregar dados de rate limit')).not.toBeInTheDocument();
     expect(screen.queryByText('Nenhum IP bloqueado no momento.')).toBeInTheDocument();
     consoleErrorSpy?.mockRestore();
   });
@@ -345,7 +345,7 @@ describe('Componentes Admin - Tools - RateLimitViewer', () => {
     // 401 interrompe o fluxo ANTES do throw: nada de estado de error.
     // O reload() real do jsdom é no-op e o finally de fetchData desliga o loading.
     await act(async () => { await global.wait(50); });
-    expect(screen.queryByText('❌ Erro ao carregar dados de rate limit')).not.toBeInTheDocument();
+    expect(screen.queryByText('Erro ao carregar dados de rate limit')).not.toBeInTheDocument();
     expect(screen.queryByText('Nenhum IP bloqueado no momento.')).toBeInTheDocument();
     consoleErrorSpy?.mockRestore();
   });
@@ -355,9 +355,9 @@ describe('Componentes Admin - Tools - RateLimitViewer', () => {
     setupRateLimitMock(fetchMock, { audit: { status: 401, ok: false, json: async () => ({}) } });
 
     render(<RateLimitViewer />);
-    await screen.findByText('🔄 Atualizar');
+    await screen.findByText('Atualizar');
 
-    fireEvent.click(screen.getByText('📋 Auditoria'));
+    fireEvent.click(screen.getByText('Auditoria'));
 
     // 401 detém o fluxo de fetchAuditLogs antes do throw. O jsdom emite um
     // jsdomError ("navigation not implemented") no console; o que importa é que
@@ -375,7 +375,7 @@ describe('Componentes Admin - Tools - RateLimitViewer', () => {
 
     render(<RateLimitViewer />);
 
-    expect(await screen.findByText('❌ Erro ao carregar dados de rate limit')).toBeInTheDocument();
+    expect(await screen.findByText('Erro ao carregar dados de rate limit')).toBeInTheDocument();
     expect(screen.getByText('Falha de rede')).toBeInTheDocument();
   });
 
@@ -383,18 +383,18 @@ describe('Componentes Admin - Tools - RateLimitViewer', () => {
     const config = setupRateLimitMock(fetchMock);
 
     render(<RateLimitViewer />);
-    await screen.findByText('🔄 Atualizar');
+    await screen.findByText('Atualizar');
 
     let resolveBlocked;
     const pendingBlocked = new Promise(resolve => { resolveBlocked = resolve; });
     config.blocked = pendingBlocked;
 
-    fireEvent.click(screen.getByRole('button', { name: '🔄 Atualizar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Atualizar' }));
 
     expect(screen.getByText('Atualizando...')).toBeInTheDocument();
 
     resolveBlocked({ ok: true, json: async () => [] });
-    await waitFor(() => expect(screen.getByText('🔄 Atualizar')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Atualizar')).toBeInTheDocument());
     expect(global.fetch).toHaveBeenCalledTimes(4);
   });
 

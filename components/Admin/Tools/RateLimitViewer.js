@@ -1,5 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
+import { AppIcon } from '@/components/UI/icons';
 import styles from '../styles/misc.module.css';
+import crudStyles from '../styles/crud.module.css';
 
 /**
  * Componente de visualização de Rate Limiting.
@@ -180,18 +182,14 @@ function RateLimitViewer() {
   // ── Loading State ──────────────────────────────────────────
   if (loading) {
     return (
-      <div>
-        <h3 style={{ marginBottom: '16px' }}>Rate Limiting</h3>
+      <div className={styles.toolCard}>
+        <div className={styles.toolHeader}>
+          <h3 className={styles.toolTitle}>Rate Limiting</h3>
+        </div>
         {[1, 2, 3].map(i => (
           <div
             key={i}
-            style={{
-              height: '60px',
-              marginBottom: '12px',
-              borderRadius: '8px',
-              backgroundColor: 'var(--color-bg-tertiary)',
-              animation: 'skeleton-pulse 1.5s ease-in-out infinite',
-            }}
+            className={`${crudStyles.skeletonBox} ${styles.skeletonCard}`}
           />
         ))}
       </div>
@@ -201,22 +199,20 @@ function RateLimitViewer() {
   // ── Error State ───────────────────────────────────────────
   if (error && blockedIps.length === 0) {
     return (
-      <div>
-        <h3 style={{ marginBottom: '16px' }}>Rate Limiting</h3>
-        <div style={{
-          padding: '20px',
-          backgroundColor: '#f8d7da',
-          border: '1px solid #f5c6cb',
-          borderRadius: '8px',
-          color: '#721c24',
-          textAlign: 'center',
-        }}>
-          <p style={{ margin: '0 0 12px 0', fontWeight: 600 }}>❌ Erro ao carregar dados de rate limit</p>
-          <p style={{ margin: '0 0 16px 0', fontSize: '0.9rem' }}>{error}</p>
+      <div className={styles.toolCard}>
+        <div className={styles.toolHeader}>
+          <h3 className={styles.toolTitle}>Rate Limiting</h3>
+        </div>
+        <div className={styles.statusAlertBox} role="alert">
+          <p className={styles.statusAlertTitle}>
+            <AppIcon name="xCircle" size={18} />
+            <span>Erro ao carregar dados de rate limit</span>
+          </p>
+          <p className={styles.statusAlertBody}>{error}</p>
           <button
+            type="button"
             onClick={() => { setLoading(true); fetchData(); }}
-            className={styles.button}
-            style={{ backgroundColor: '#721c24' }}
+            className={styles.dangerButton}
           >
             Tentar Novamente
           </button>
@@ -227,9 +223,9 @@ function RateLimitViewer() {
 
   // ── Abas internas ───────────────────────────────────────────
   const tabs = [
-    { key: 'blocked', label: '🔒 Bloqueados', count: blockedIps.length },
-    { key: 'whitelist', label: '✅ Whitelist', count: whitelist.length },
-    { key: 'audit', label: '📋 Auditoria' },
+    { key: 'blocked', label: 'Bloqueados', icon: 'lock', count: blockedIps.length },
+    { key: 'whitelist', label: 'Whitelist', icon: 'checkCircle', count: whitelist.length },
+    { key: 'audit', label: 'Auditoria', icon: 'clipboard' },
   ];
 
   const renderTabContent = () => {
@@ -238,61 +234,38 @@ function RateLimitViewer() {
         return (
           <div>
             {blockedIps.length === 0 ? (
-              <div style={{
-                padding: '24px',
-                textAlign: 'center',
-                color: '#6c757d',
-                backgroundColor: '#f8f9fa',
-                borderRadius: '8px',
-                border: '1px dashed #dee2e6',
-              }}>
-                <p style={{ fontSize: '1.2rem', margin: '0 0 8px 0' }}>🔒</p>
-                <p style={{ margin: 0, fontWeight: 500 }}>Nenhum IP bloqueado no momento.</p>
-                <p style={{ margin: '8px 0 0 0', fontSize: '0.85rem' }}>Todas as requisições estão dentro dos limites configurados.</p>
+              <div className={styles.dashedEmptyBox}>
+                <div className={styles.dashedEmptyIcon} aria-hidden="true">
+                  <AppIcon name="lock" size={24} />
+                </div>
+                <p className={styles.dashedEmptyTitle}>Nenhum IP bloqueado no momento.</p>
+                <p className={styles.dashedEmptyHint}>Todas as requisições estão dentro dos limites configurados.</p>
               </div>
             ) : (
               <div>
-                <p style={{ marginBottom: '12px', fontSize: '0.9rem', color: '#6c757d' }}>
+                <p className={styles.ipSummary}>
                   {blockedIps.length} IP(s) bloqueado(s) por exceder o limite de {blockedIps[0]?.count ? `${blockedIps[0].count - 1}+` : ''} tentativas.
                 </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div className={styles.stackList}>
                   {blockedIps.map(item => (
                     <div
                       key={item.ip}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '12px',
-                        backgroundColor: '#f8d7da',
-                        border: '1px solid #f5c6cb',
-                        borderRadius: '8px',
-                      }}
+                      className={`${styles.ipCard} ${styles.statusDanger}`}
                     >
                       <div>
-                        <code style={{ fontWeight: 600, color: '#721c24', fontSize: '0.9rem' }}>{item.ip}</code>
-                        <div style={{ fontSize: '0.8rem', color: '#856404', marginTop: '4px' }}>
+                        <code className={styles.ipCode}>{item.ip}</code>
+                        <div className={styles.ipMeta}>
                           Tentativas: {item.count} | Desbloqueio em: {item.ttl} min
                         </div>
                       </div>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button
-                          onClick={() => handleUnblock(item.ip)}
-                          disabled={actionLoading === item.ip}
-                          style={{
-                            padding: '6px 12px',
-                            backgroundColor: '#28a745',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: actionLoading === item.ip ? 'not-allowed' : 'pointer',
-                            fontSize: '0.8rem',
-                            opacity: actionLoading === item.ip ? 0.7 : 1,
-                          }}
-                        >
-                          {actionLoading === item.ip ? '...' : 'Desbloquear'}
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleUnblock(item.ip)}
+                        disabled={actionLoading === item.ip}
+                        className={styles.secondaryButton}
+                      >
+                        {actionLoading === item.ip ? '...' : 'Desbloquear'}
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -305,89 +278,60 @@ function RateLimitViewer() {
         return (
           <div>
             {/* Formulário para adicionar IP */}
-            <form onSubmit={handleAddToWhitelist} style={{ marginBottom: '16px' }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.85rem', fontWeight: 600, color: '#495057' }}>
+            <form onSubmit={handleAddToWhitelist} className={styles.inlineForm}>
+              <div className={styles.inlineFormRow}>
+                <div className={styles.inlineFormField}>
+                  <label htmlFor="rate-limit-whitelist-ip" className={styles.inlineLabel}>
                     Adicionar IP à Whitelist
                   </label>
                   <input
+                    id="rate-limit-whitelist-ip"
                     type="text"
                     value={newIp}
                     onChange={(e) => setNewIp(e.target.value)}
                     placeholder="Ex: 192.168.1.1"
                     aria-label="Endereço IP para adicionar à lista"
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      border: '1px solid #ced4da',
-                      borderRadius: '4px',
-                      fontSize: '0.9rem',
-                    }}
+                    className={styles.inlineInput}
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={actionLoading === 'add' || !newIp.trim()}
                   className={styles.button}
-                  style={{
-                    padding: '8px 16px',
-                    fontSize: '0.85rem',
-                    opacity: actionLoading === 'add' || !newIp.trim() ? 0.7 : 1,
-                    whiteSpace: 'nowrap',
-                  }}
                 >
                   {actionLoading === 'add' ? 'Adicionando...' : 'Adicionar'}
                 </button>
               </div>
               {actionError && (
-                <p style={{ color: '#721c24', fontSize: '0.85rem', marginTop: '8px' }}>❌ {actionError}</p>
+                <p className={styles.inlineError} role="alert">
+                  <AppIcon name="xCircle" size={16} />
+                  <span>{actionError}</span>
+                </p>
               )}
             </form>
 
             {/* Lista de whitelist */}
             {whitelist.length === 0 ? (
-              <div style={{
-                padding: '24px',
-                textAlign: 'center',
-                color: '#6c757d',
-                backgroundColor: '#f8f9fa',
-                borderRadius: '8px',
-                border: '1px dashed #dee2e6',
-              }}>
-                <p style={{ fontSize: '1.2rem', margin: '0 0 8px 0' }}>✅</p>
-                <p style={{ margin: 0, fontWeight: 500 }}>Nenhum IP na whitelist.</p>
-                <p style={{ margin: '8px 0 0 0', fontSize: '0.85rem' }}>Adicione IPs acima para liberar acesso irrestrito.</p>
+              <div className={styles.dashedEmptyBox}>
+                <div className={styles.dashedEmptyIcon} aria-hidden="true">
+                  <AppIcon name="checkCircle" size={24} />
+                </div>
+                <p className={styles.dashedEmptyTitle}>Nenhum IP na whitelist.</p>
+                <p className={styles.dashedEmptyHint}>Adicione IPs acima para liberar acesso irrestrito.</p>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div className={styles.stackList}>
                 {whitelist.map(ip => (
                   <div
                     key={ip}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '10px 12px',
-                      backgroundColor: '#d4edda',
-                      border: '1px solid #c3e6cb',
-                      borderRadius: '8px',
-                    }}
+                    className={`${styles.ipCard} ${styles.statusHealthy}`}
                   >
-                    <code style={{ fontWeight: 600, color: '#155724', fontSize: '0.9rem' }}>{ip}</code>
+                    <code className={styles.ipCode}>{ip}</code>
                     <button
+                      type="button"
                       onClick={() => handleRemoveFromWhitelist(ip)}
                       disabled={actionLoading === ip}
-                      style={{
-                        padding: '4px 10px',
-                        backgroundColor: '#dc3545',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: actionLoading === ip ? 'not-allowed' : 'pointer',
-                        fontSize: '0.8rem',
-                        opacity: actionLoading === ip ? 0.7 : 1,
-                      }}
+                      className={styles.dangerButton}
                     >
                       {actionLoading === ip ? '...' : 'Remover'}
                     </button>
@@ -402,61 +346,47 @@ function RateLimitViewer() {
         return (
           <div>
             {/* Busca */}
-            <form onSubmit={handleSearchAudit} style={{ marginBottom: '12px' }}>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Buscar por IP ou usuário..."
-                  aria-label="Buscar por IP ou usuário"
-                  style={{
-                    flex: 1,
-                    padding: '8px 12px',
-                    border: '1px solid #ced4da',
-                    borderRadius: '4px',
-                    fontSize: '0.9rem',
-                  }}
-                />
-                <button type="submit" className={styles.button} style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
-                  Buscar
+            <form onSubmit={handleSearchAudit} className={styles.inlineForm}>
+              <div className={styles.inlineFormRow}>
+                <div className={styles.inlineFormField}>
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Buscar por IP ou usuário..."
+                    aria-label="Buscar por IP ou usuário"
+                    className={styles.inlineInput}
+                  />
+                </div>
+                <button type="submit" className={styles.secondaryButton}>
+                  <AppIcon name="search" size={16} />
+                  <span>Buscar</span>
                 </button>
               </div>
             </form>
 
             {/* Lista de logs */}
             {auditLogs.length === 0 ? (
-              <div style={{
-                padding: '24px',
-                textAlign: 'center',
-                color: '#6c757d',
-                backgroundColor: '#f8f9fa',
-                borderRadius: '8px',
-                border: '1px dashed #dee2e6',
-              }}>
-                <p style={{ fontSize: '1.2rem', margin: '0 0 8px 0' }}>📋</p>
-                <p style={{ margin: 0, fontWeight: 500 }}>Nenhum log de auditoria encontrado.</p>
+              <div className={styles.dashedEmptyBox}>
+                <div className={styles.dashedEmptyIcon} aria-hidden="true">
+                  <AppIcon name="clipboard" size={24} />
+                </div>
+                <p className={styles.dashedEmptyTitle}>Nenhum log de auditoria encontrado.</p>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div className={styles.stackList}>
                 {auditLogs.map((log, idx) => (
                   <div
                     key={idx}
-                    style={{
-                      padding: '10px 12px',
-                      backgroundColor: '#f8f9fa',
-                      border: '1px solid #dee2e6',
-                      borderRadius: '6px',
-                      fontSize: '0.85rem',
-                    }}
+                    className={styles.logCard}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontWeight: 600 }}>{log.action}</span>
-                      <span style={{ color: '#6c757d', fontSize: '0.8rem' }}>
+                    <div className={styles.logHeader}>
+                      <span className={styles.logAction}>{log.action}</span>
+                      <span className={styles.logTime}>
                         {new Date(log.timestamp).toLocaleString('pt-BR')}
                       </span>
                     </div>
-                    <div style={{ marginTop: '4px', color: '#495057' }}>
+                    <div className={styles.logMeta}>
                       IP: <code>{log.ip}</code> | Usuário: {log.user}
                     </div>
                   </div>
@@ -466,23 +396,23 @@ function RateLimitViewer() {
 
             {/* Paginação */}
             {auditTotalPages > 1 && (
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '16px' }}>
+              <div className={styles.inlinePagination}>
                 <button
+                  type="button"
                   onClick={() => setAuditPage(p => Math.max(1, p - 1))}
                   disabled={auditPage <= 1}
-                  className={styles.button}
-                  style={{ padding: '6px 12px', fontSize: '0.85rem', opacity: auditPage <= 1 ? 0.5 : 1 }}
+                  className={styles.secondaryButton}
                 >
                   Anterior
                 </button>
-                <span style={{ display: 'flex', alignItems: 'center', fontSize: '0.9rem', color: '#6c757d' }}>
+                <span className={crudStyles.paginationInfo}>
                   Página {auditPage} de {auditTotalPages}
                 </span>
                 <button
+                  type="button"
                   onClick={() => setAuditPage(p => Math.min(auditTotalPages, p + 1))}
                   disabled={auditPage >= auditTotalPages}
-                  className={styles.button}
-                  style={{ padding: '6px 12px', fontSize: '0.85rem', opacity: auditPage >= auditTotalPages ? 0.5 : 1 }}
+                  className={styles.secondaryButton}
                 >
                   Próxima
                 </button>
@@ -497,38 +427,33 @@ function RateLimitViewer() {
   };
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h3 style={{ margin: 0 }}>Rate Limiting</h3>
+    <div className={styles.toolCard}>
+      <div className={styles.toolHeader}>
+        <h3 className={styles.toolTitle}>Rate Limiting</h3>
         <button
+          type="button"
           onClick={() => fetchData(true)}
-          className={styles.button}
+          className={styles.secondaryButton}
           disabled={refreshing}
-          style={{ padding: '6px 14px', fontSize: '0.85rem', opacity: refreshing ? 0.7 : 1 }}
         >
-          {refreshing ? 'Atualizando...' : '🔄 Atualizar'}
+          <AppIcon name="refresh" size={16} />
+          <span>{refreshing ? 'Atualizando...' : 'Atualizar'}</span>
         </button>
       </div>
 
       {/* Abas internas */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', borderBottom: '1px solid #dee2e6', paddingBottom: '8px' }}>
+      <div className={styles.rateTabs} role="tablist" aria-label="Seções de rate limiting">
         {tabs.map(tab => (
           <button
             key={tab.key}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === tab.key}
             onClick={() => { setActiveTab(tab.key); setActionError(null); }}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: activeTab === tab.key ? 'var(--color-primary-500)' : 'transparent',
-              color: activeTab === tab.key ? 'white' : '#495057',
-              border: activeTab === tab.key ? 'none' : '1px solid #dee2e6',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.85rem',
-              fontWeight: activeTab === tab.key ? 600 : 400,
-              transition: 'all 0.2s',
-            }}
+            className={`${styles.rateTabButton}${activeTab === tab.key ? ` ${styles.rateTabActive}` : ''}`}
           >
-            {tab.label} {tab.count !== undefined ? `(${tab.count})` : ''}
+            <AppIcon name={tab.icon} size={16} />
+            <span>{tab.label}{tab.count !== undefined ? ` (${tab.count})` : ''}</span>
           </button>
         ))}
       </div>
@@ -537,7 +462,7 @@ function RateLimitViewer() {
       {renderTabContent()}
 
       {/* Nota de auto-refresh */}
-      <div style={{ textAlign: 'right', fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: '12px' }}>
+      <div className={styles.timestampNote}>
         Atualização automática a cada 15s
       </div>
     </div>

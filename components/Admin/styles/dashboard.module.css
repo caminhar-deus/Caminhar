@@ -7,18 +7,44 @@
   flex: 1;
 }
 
+.contentMinHeight {
+  min-height: 520px;
+}
+
 .sectionHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: var(--spacing-5);
   padding-bottom: var(--spacing-4);
-  border-bottom: var(--border-width-2) solid var(--color-bg-tertiary);
+  border-bottom: var(--border-width-1) solid var(--color-border-light);
 }
 
 .sectionHeader h2 {
   margin: 0;
   color: var(--color-text-primary);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+}
+
+.statusState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2_5);
+  text-align: center;
+  padding: var(--spacing-12);
+  color: var(--color-text-secondary);
+}
+
+.errorState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2_5);
+  text-align: center;
+  padding: var(--spacing-12);
+  color: var(--color-error-600);
 }
 
 /* Stats Grid */
@@ -26,19 +52,19 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: var(--spacing-5);
-  margin-bottom: var(--spacing-10);
+  margin-bottom: var(--spacing-8);
 }
 
 .statCard {
   background: var(--color-bg-primary);
   padding: var(--spacing-6);
   border-radius: var(--border-radius-xl);
-  border: var(--border-width-1) solid var(--color-bg-tertiary);
+  border: var(--border-width-1) solid var(--color-border-light);
   box-shadow: var(--shadow-xs);
   display: flex;
   align-items: center;
   gap: var(--spacing-4);
-  transition: var(--transition-transform), var(--transition-box-shadow);
+  transition: var(--transition-transform), var(--transition-shadow), var(--transition-border);
   cursor: pointer;
   /* eslint-disable-next-line css/use-baseline */
   user-select: none;
@@ -46,6 +72,8 @@
 
 .statCard:hover {
   transform: translateY(-3px);
+  box-shadow: var(--shadow-cardHover);
+  border-color: var(--color-border-default);
 }
 
 .statCard:focus-visible {
@@ -55,10 +83,10 @@
 }
 
 .statIcon {
-  font-size: var(--font-size-5xl);
-  background: var(--color-bg-secondary);
-  width: 65px;
-  height: 65px;
+  background-color: var(--color-primary-50);
+  color: var(--color-primary-500);
+  width: 56px;
+  height: 56px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -69,27 +97,90 @@
 .statInfo {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .statNumber {
-  font-size: var(--font-size-4xl);
+  font-size: var(--font-size-3xl);
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
-  line-height: 1.2;
+  line-height: var(--line-height-tight);
 }
 
 .statLabel {
   color: var(--color-text-secondary);
-  font-size: 0.85rem;
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.statDetails {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-1);
+  font-weight: var(--font-weight-medium);
 }
 
 .chartSection {
   background: var(--color-bg-primary);
-  padding: var(--spacing-8);
+  padding: var(--spacing-6);
   border-radius: var(--border-radius-xl);
-  border: var(--border-width-1) solid var(--color-bg-tertiary);
+  border: var(--border-width-1) solid var(--color-border-light);
   box-shadow: var(--shadow-xs);
+}
+
+.chartTitle {
+  margin: 0 0 var(--spacing-6) 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.chartList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.chartRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.chartLabel {
+  width: 84px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.chartTrack {
+  flex: 1;
+  background-color: var(--color-bg-secondary);
+  height: 24px;
+  border-radius: var(--border-radius-full);
+  overflow: hidden;
+}
+
+.chartFill {
+  max-width: 100%;
+  min-width: fit-content;
+  box-sizing: border-box;
+  height: 100%;
+  border-radius: var(--border-radius-full);
+  transition: width var(--duration-slow) var(--easing-standard);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 var(--spacing-2_5);
+}
+
+.chartValue {
+  color: var(--color-text-inverse);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
 }

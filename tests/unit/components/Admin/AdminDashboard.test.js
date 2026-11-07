@@ -23,7 +23,7 @@ describe('Componente Front-End - AdminDashboard', () => {
     const setActiveTab = jest.fn();
     render(<AdminDashboard setActiveTab={setActiveTab} isAdmin={true} />);
     
-    expect(screen.getByText('⏳ Carregando painel de estatísticas...')).toBeInTheDocument();
+    expect(screen.getByText('Carregando painel de estatísticas...')).toBeInTheDocument();
     
     await waitFor(() => {
       expect(screen.getAllByText('Artigos')[0]).toBeInTheDocument();

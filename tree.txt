@@ -68,10 +68,9 @@
 │   │   ├── Products
 │   │   │   ├── ProductCard.js
 │   │   │   ├── ProductList.js
-│   │   │   ├── styles
-│   │   │   │   ├── ProductCard.module.css
-│   │   │   │   └── ProductList.module.css
-│   │   │   └── styles.js
+│   │   │   └── styles
+│   │   │       ├── ProductCard.module.css
+│   │   │       └── ProductList.module.css
 │   │   ├── Testimonials
 │   │   │   ├── Testimonials.module.css
 │   │   │   └── index.js
@@ -605,6 +604,7 @@
 ├── design-system
 │   ├── MASTER.md
 │   └── pages
+│       ├── admin.md
 │       ├── home.md
 │       ├── login.md
 │       └── posts.md
@@ -677,6 +677,8 @@
 │   │   ├── 0032-site-name-unification-and-seo-cleanup.md
 │   │   ├── 0033-videos-posicionados-indice-e-ordenacao-alfabetica.md
 │   │   ├── 0034-standardize-admin-gestao-de-dicas-and-public-dicas-do-dia.md
+│   │   ├── 0035-full-ai-memory-activation-with-optional-llm.md
+│   │   ├── 0036-shared-visual-standard-and-admin-collapsible-sidebar.md
 │   │   ├── README.md
 │   │   └── template.md
 │   ├── ai-memory-error.md
@@ -904,6 +906,9 @@
 ├── scripts
 │   ├── backup.js
 │   ├── bench
+│   │   ├── arvore.js
+│   │   ├── citacoes.js
+│   │   ├── ground-truth.js
 │   │   ├── orchestrator
 │   │   │   ├── LEIA-ME.md
 │   │   │   ├── conferir.js
@@ -954,53 +959,54 @@
 │   │   │   ├── rodar.js
 │   │   │   ├── rubrica.md
 │   │   │   └── tarefa.md
-│   │   └── papeis
-│   │       ├── conferir-fixer.js
-│   │       ├── conferir.js
-│   │       ├── gabarito-designer.md
-│   │       ├── gabarito-explorer.md
-│   │       ├── gabarito-fixer.md
-│   │       ├── gabarito-oracle.md
-│   │       ├── regressao-s1.js
-│   │       ├── resultados
-│   │       │   ├── conferencia.md
-│   │       │   ├── designer-beam-free-1.meta.json
-│   │       │   ├── designer-beam-free-1.ndjson
-│   │       │   ├── designer-deepseek-v4.1-flash-free-1.meta.json
-│   │       │   ├── designer-deepseek-v4.1-flash-free-1.ndjson
-│   │       │   ├── designer-glm-5.3-flash-free-1.meta.json
-│   │       │   ├── designer-glm-5.3-flash-free-1.ndjson
-│   │       │   ├── designer-longcat-2.5-preview-free-1.meta.json
-│   │       │   ├── designer-longcat-2.5-preview-free-1.ndjson
-│   │       │   ├── designer-minimax-m3.1-flash-free-1.meta.json
-│   │       │   ├── designer-minimax-m3.1-flash-free-1.ndjson
-│   │       │   ├── designer-pulse-alpha-free-1.meta.json
-│   │       │   ├── designer-pulse-alpha-free-1.ndjson
-│   │       │   ├── explorer-deepseek-v4.1-flash-free-1.meta.json
-│   │       │   ├── explorer-deepseek-v4.1-flash-free-1.ndjson
-│   │       │   ├── explorer-flint-40b-free-1.meta.json
-│   │       │   ├── explorer-flint-40b-free-1.ndjson
-│   │       │   ├── explorer-glm-5.3-flash-free-1.meta.json
-│   │       │   ├── explorer-glm-5.3-flash-free-1.ndjson
-│   │       │   ├── fixer-beam-free-1.meta.json
-│   │       │   ├── fixer-beam-free-1.ndjson
-│   │       │   ├── fixer-glm-5.3-flash-free-1-sem-objeto.meta.json
-│   │       │   ├── fixer-glm-5.3-flash-free-1-sem-objeto.ndjson
-│   │       │   ├── fixer-glm-5.3-flash-free-1.meta.json
-│   │       │   ├── fixer-glm-5.3-flash-free-1.ndjson
-│   │       │   ├── fixer-longcat-2.5-preview-free-1.meta.json
-│   │       │   ├── fixer-longcat-2.5-preview-free-1.ndjson
-│   │       │   ├── fixer-mimo-v2.6-flash-free-1.meta.json
-│   │       │   ├── fixer-mimo-v2.6-flash-free-1.ndjson
-│   │       │   ├── fixer-minimax-m3.1-flash-free-1.meta.json
-│   │       │   ├── fixer-minimax-m3.1-flash-free-1.ndjson
-│   │       │   ├── oracle-glm-5.3-flash-free-1.meta.json
-│   │       │   └── oracle-glm-5.3-flash-free-1.ndjson
-│   │       ├── rodar.js
-│   │       ├── tarefa-designer.md
-│   │       ├── tarefa-explorer.md
-│   │       ├── tarefa-fixer.md
-│   │       └── tarefa-oracle.md
+│   │   ├── papeis
+│   │   │   ├── conferir-fixer.js
+│   │   │   ├── conferir.js
+│   │   │   ├── gabarito-designer.md
+│   │   │   ├── gabarito-explorer.md
+│   │   │   ├── gabarito-fixer.md
+│   │   │   ├── gabarito-oracle.md
+│   │   │   ├── regressao-s1.js
+│   │   │   ├── resultados
+│   │   │   │   ├── conferencia.md
+│   │   │   │   ├── designer-beam-free-1.meta.json
+│   │   │   │   ├── designer-beam-free-1.ndjson
+│   │   │   │   ├── designer-deepseek-v4.1-flash-free-1.meta.json
+│   │   │   │   ├── designer-deepseek-v4.1-flash-free-1.ndjson
+│   │   │   │   ├── designer-glm-5.3-flash-free-1.meta.json
+│   │   │   │   ├── designer-glm-5.3-flash-free-1.ndjson
+│   │   │   │   ├── designer-longcat-2.5-preview-free-1.meta.json
+│   │   │   │   ├── designer-longcat-2.5-preview-free-1.ndjson
+│   │   │   │   ├── designer-minimax-m3.1-flash-free-1.meta.json
+│   │   │   │   ├── designer-minimax-m3.1-flash-free-1.ndjson
+│   │   │   │   ├── designer-pulse-alpha-free-1.meta.json
+│   │   │   │   ├── designer-pulse-alpha-free-1.ndjson
+│   │   │   │   ├── explorer-deepseek-v4.1-flash-free-1.meta.json
+│   │   │   │   ├── explorer-deepseek-v4.1-flash-free-1.ndjson
+│   │   │   │   ├── explorer-flint-40b-free-1.meta.json
+│   │   │   │   ├── explorer-flint-40b-free-1.ndjson
+│   │   │   │   ├── explorer-glm-5.3-flash-free-1.meta.json
+│   │   │   │   ├── explorer-glm-5.3-flash-free-1.ndjson
+│   │   │   │   ├── fixer-beam-free-1.meta.json
+│   │   │   │   ├── fixer-beam-free-1.ndjson
+│   │   │   │   ├── fixer-glm-5.3-flash-free-1-sem-objeto.meta.json
+│   │   │   │   ├── fixer-glm-5.3-flash-free-1-sem-objeto.ndjson
+│   │   │   │   ├── fixer-glm-5.3-flash-free-1.meta.json
+│   │   │   │   ├── fixer-glm-5.3-flash-free-1.ndjson
+│   │   │   │   ├── fixer-longcat-2.5-preview-free-1.meta.json
+│   │   │   │   ├── fixer-longcat-2.5-preview-free-1.ndjson
+│   │   │   │   ├── fixer-mimo-v2.6-flash-free-1.meta.json
+│   │   │   │   ├── fixer-mimo-v2.6-flash-free-1.ndjson
+│   │   │   │   ├── fixer-minimax-m3.1-flash-free-1.meta.json
+│   │   │   │   ├── fixer-minimax-m3.1-flash-free-1.ndjson
+│   │   │   │   ├── oracle-glm-5.3-flash-free-1.meta.json
+│   │   │   │   └── oracle-glm-5.3-flash-free-1.ndjson
+│   │   │   ├── rodar.js
+│   │   │   ├── tarefa-designer.md
+│   │   │   ├── tarefa-explorer.md
+│   │   │   ├── tarefa-fixer.md
+│   │   │   └── tarefa-oracle.md
+│   │   └── runner-comum.js
 │   ├── check-db-status.js
 │   ├── check-env.js
 │   ├── check-hardcoded-credentials.js
@@ -1021,6 +1027,7 @@
 │   │   └── connection.js
 │   ├── db-shell.js
 │   ├── diagnostics
+│   │   ├── check-github-actions.js
 │   │   ├── check-musicas-schema.js
 │   │   ├── check-videos-schema.js
 │   │   ├── count-posts.js
@@ -1123,6 +1130,7 @@
 │   │   ├── console.js
 │   │   ├── crud-test.js
 │   │   ├── db-test.js
+│   │   ├── esperar-arquivo.js
 │   │   ├── index.js
 │   │   ├── render.js
 │   │   └── roles.js
@@ -1261,8 +1269,7 @@
 │       │   │   │   └── MusicGallery.test.js
 │       │   │   ├── Products
 │       │   │   │   ├── ProductCard.test.js
-│       │   │   │   ├── ProductList.test.js
-│       │   │   │   └── styles.test.js
+│       │   │   │   └── ProductList.test.js
 │       │   │   ├── Testimonials
 │       │   │   │   └── index.test.js
 │       │   │   └── Video
@@ -1361,6 +1368,7 @@
 │       ├── next.config.test.js
 │       ├── pages
 │       │   ├── 404.test.js
+│       │   ├── admin.test.js
 │       │   ├── api
 │       │   │   ├── admin
 │       │   │   │   ├── dicas.edge.test.js
@@ -1380,6 +1388,11 @@
 │       │   └── index.test.js
 │       ├── scripts
 │       │   ├── backup.test.js
+│       │   ├── bench-arvore.test.js
+│       │   ├── bench-ground-truth.test.js
+│       │   ├── bench-isolation.test.js
+│       │   ├── bench-papeis-runner.test.js
+│       │   ├── bench-runner.test.js
 │       │   ├── check-hardcoded-credentials.test.js
 │       │   ├── check-sql-injection.test.js
 │       │   ├── clean-orphaned-images.test.js
@@ -1424,4 +1437,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-207 directories, 1218 files
+207 directories, 1231 files

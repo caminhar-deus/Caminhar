@@ -4,6 +4,7 @@ import { useAdminCrud } from '@/hooks/useAdminCrud';
 import { exportToCSV } from '@/utils/csvExport';
 import { Modal } from '@/components/UI/Modal';
 import { Button } from '@/components/UI/Button';
+import { AppIcon } from '@/components/UI/icons';
 import styles from './styles/crud.module.css';
 import toast from 'react-hot-toast';
 import CrudForm from './CrudForm';
@@ -258,26 +259,24 @@ export default function AdminCrudBase({
   };
 
   return (
-    <div className={styles.content} style={{ minHeight: '700px', display: 'flex', flexDirection: 'column' }}>
+    <div className={styles.content}>
       {/* Header */}
       <div className={styles.sectionHeader}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-          <h2 style={{ margin: 0 }}>{title}</h2>
+        <div className={styles.headerMeta}>
+          <h2>{title}</h2>
           {showItemCount && (
-            <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', fontWeight: '500' }}>
+            <span className={styles.totalCount}>
               Total: {totalItemCount} {totalItemCount === 1 ? itemNameSingular : itemNamePlural}
             </span>
           )}
         </div>
-        <div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className={styles.headerControls}>
           {searchable && (
-            <div style={{ position: 'relative' }}>
-              <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-tertiary)', display: 'flex' }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
-                </svg>
+            <div className={styles.searchWrapper}>
+              <span className={styles.searchIcon}>
+                <AppIcon name="search" size={16} />
               </span>
-              <input 
+              <input
                 type="text"
                 placeholder="Buscar item..."
                 aria-label="Buscar item"
@@ -288,15 +287,21 @@ export default function AdminCrudBase({
                   // ficar numa página vazia do conjunto filtrado.
                   if (usePagination) goToPage(1);
                 }}
-                style={{ 
-                  padding: '8px 12px 8px 34px', 
-                  borderRadius: '6px', 
-                  border: '1px solid var(--color-border-light)',
-                  fontSize: '0.9rem',
-                  outline: 'none',
-                  minWidth: '220px'
-                }}
+                className={styles.searchInput}
               />
+              {searchTerm && (
+                <button
+                  type="button"
+                  className={styles.searchClearButton}
+                  aria-label="Limpar busca"
+                  onClick={() => {
+                    setSearchTerm('');
+                    if (usePagination) goToPage(1);
+                  }}
+                >
+                  <AppIcon name="close" size={14} />
+                </button>
+              )}
             </div>
           )}
           <div className={styles.formActions}>

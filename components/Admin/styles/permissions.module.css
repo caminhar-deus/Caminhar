@@ -23,7 +23,7 @@
   border: var(--border-width-1) solid var(--color-border-light);
   border-radius: var(--border-radius-lg);
   background-color: var(--color-bg-secondary);
-  transition: border-color 0.2s ease-in-out;
+  transition: var(--transition-border);
 }
 
 .permissionsGridError {
@@ -46,6 +46,12 @@
   accent-color: var(--color-primary-500);
 }
 
+.permissionsCheckboxInput:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
+}
+
 .permissionsError {
   font-size: var(--font-size-xs);
   color: var(--color-error-500);
@@ -58,9 +64,9 @@
 }
 
 .permissionsBadge {
-  padding: var(--spacing-0_5) var(--spacing-1_5);
-  border-radius: var(--border-radius-sm);
-  font-size: 0.75rem;
+  padding: var(--spacing-0_5) var(--spacing-2);
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-xs);
   background-color: var(--color-info-50);
   color: var(--color-info-700);
   border: var(--border-width-1) solid var(--color-info-200);

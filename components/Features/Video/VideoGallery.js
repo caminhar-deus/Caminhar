@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useApiFetch, useDebounce } from '@/hooks';
 import { LoadingMessage, ErrorMessage } from '@/components/UI/StateMessages';
 import { Pagination } from '@/components/UI';
+import { AppIcon } from '@/components/UI/icons';
 import VideoCard from './VideoCard';
 import styles from './styles/VideoGallery.module.css';
 
@@ -61,6 +62,9 @@ export default function VideoGallery() {
       <div className={styles.searchContainer}>
         <div className={styles.searchRow}>
           <div className={styles.searchWrapper}>
+            <span className={styles.searchIcon} aria-hidden="true">
+              <AppIcon name="search" size={18} />
+            </span>
             <input
               type="text"
               placeholder="Pesquisar por título ou descrição..."
@@ -76,12 +80,12 @@ export default function VideoGallery() {
                 aria-label="Limpar pesquisa"
                 type="button"
               >
-                ✕
+                <AppIcon name="close" size={16} />
               </button>
             )}
           </div>
           <div className={styles.sortWrapper}>
-            <label htmlFor="sort-select-videos" className={styles.sortLabel}>Ordenar:</label>
+            <label htmlFor="sort-select-videos" className={styles.sortLabel}>Ordenar por:</label>
             <select
               id="sort-select-videos"
               value={sortBy}
@@ -113,7 +117,7 @@ export default function VideoGallery() {
       {error && (
         <>
           <ErrorMessage message={`${error}`} />
-          <div style={{ textAlign: 'center', marginTop: 'var(--spacing-4)' }}>
+          <div className={styles.retryWrapper}>
             <button onClick={refetch} className={styles.retryButton} type="button">
               Tentar novamente
             </button>
@@ -123,7 +127,9 @@ export default function VideoGallery() {
 
       {!loading && !error && videos.length === 0 && (
         <div className={styles.noResults}>
-          <div className={styles.noResultsIcon}>🎬</div>
+          <div className={styles.noResultsIcon} aria-hidden="true">
+            <AppIcon name="video" size={40} />
+          </div>
           <h3>Nenhum vídeo encontrado</h3>
           <p>
             {searchTerm

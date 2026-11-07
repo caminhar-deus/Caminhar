@@ -63,6 +63,9 @@ describe('Componente Front-End - AdminAudit', () => {
     fireEvent.change(screen.getByPlaceholderText(/Buscar ações/), { target: { value: 'CREATE' } });
     expect(screen.getByText('CREATE')).toBeInTheDocument();
     expect(screen.queryByText('DELETE')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText('Limpar busca'));
+    expect(screen.getByText('DELETE')).toBeInTheDocument();
   });
 
   it('deve exportar CSV escapando caracteres especiais', async () => {

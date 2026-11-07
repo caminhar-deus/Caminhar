@@ -1,6 +1,6 @@
 # Caminhar — Design System (MASTER)
 
-> Última atualização: 2026-10-21 (decisões D1–D5 do checklist front-end: rodapé do cartão de produto, foco dos seletores de ordenação, alvo de toque 44px, `aria-live` na paginação, guard global de `prefers-reduced-motion`).
+> Última atualização: 2026-11-07 (alinhamento visual unificado entre Site Público e Painel Administrativo — ADR-0036: raios padronizados em `8px` para controles/inputs/botões e `12px` para cartões/painéis, elevação discreta `-3px` em hover, controles de Músicas harmonizados em `--color-primary-500` com rótulo `"Ordenar por:"`, ícones SVG vetoriais uniformes via `AppIcon` e override do painel em `design-system/pages/admin.md`. Anterior: 2026-10-21, decisões D1–D5 do checklist front-end).
 > Fonte de verdade global de UI/UX do projeto. Gerado com a skill `ui-ux-pro-max`
 > (`--design-system`: estilo **Minimalism & Swiss**, par editorial **Newsreader + Roboto**,
 > buscas de `ux` para autenticação acessível e validação com resumo de erros) e
@@ -133,7 +133,8 @@ seletores de ordenação das três abas públicas (Produtos, Músicas, Vídeos) 
 - **Campo** (`Input.module.css`): `wrapper` em coluna com `gap: var(--spacing-1_5)`;
   `label` 14px `medium` em `--color-text-primary` + `*` obrigatório em
   `--color-error-500`; `input` altura 40 (`md`) / 48 (`lg`), borda 1px
-  `--color-border-light`, raio 12px; foco válido com borda `--color-primary-500` mais
+  `--color-border-light`, raio `--border-radius-lg` (8px); botão interno `clearButton`
+  (`--border-radius-full`, foco visível duplo) quando `clearable`; foco válido com borda `--color-primary-500` mais
   a declaração exata de foco do Botão (`outline: 2px solid var(--color-focus-primary);
   outline-offset: 2px; box-shadow: var(--color-focus-ring);` — substitui o anel
   `rgba(37,99,235,.1)` pelo halo tokenizado); campo inválido com borda
@@ -143,8 +144,8 @@ seletores de ordenação das três abas públicas (Produtos, Músicas, Vídeos) 
   só com borda + halo, sem `outline`. O `outline: none` da base do input é permitido
   porque cada `:focus` repõe o indicador. Erro com `.errorMessage` 12px em `--color-error-500` ligada por `aria-describedby`;
   desabilitado em `--color-bg-secondary`.
-- **Cartão**: fundo `--color-bg-primary`, raio `--border-radius-xl`, sombra
-  `--shadow-md`, padding 24 mobile / 32–40 desktop. O `.content` do `BaseCard`
+- **Cartão**: fundo `--color-bg-primary`, raio `--border-radius-xl` (12px), sombra
+  `--shadow-card` / `--shadow-md`, padding 24 mobile / 32–40 desktop; quando interativo (`hoverable`), elevação suave `translateY(-3px)` + `--shadow-cardHover` (sob `prefers-reduced-motion: no-preference`). O `.content` do `BaseCard`
   é `display: flex; flex-direction: column` com `flex: 1`, para que qualquer
   `.footer` (próprio do BaseCard ou da página) com `margin-top: auto` cole no
   fundo do cartão — padrão global, não restringir a um único tipo de cartão.
@@ -164,7 +165,7 @@ seletores de ordenação das três abas públicas (Produtos, Músicas, Vídeos) 
   itens)") recebe `aria-live="polite"` e `aria-atomic="true"`, para que a troca
   de página seja anunciada ao leitor de tela. Vale para as três abas (Produtos,
   Músicas, Vídeos). Snippet: `<span className={styles.pageInfo} aria-live="polite" aria-atomic="true">…</span>`.
-- **Seletor de ordenação (select de filtro em barra de filtros)**: controle `<select>` com altura 44px (decisão D3), raio `--border-radius-lg`, borda 1px `--color-border-light`, fundo `--color-bg-primary`, texto `--color-text-primary`, `font-size: var(--font-size-sm)`, `font-weight: var(--font-weight-medium)`, chevron SVG data-URI cor `--color-text-tertiary`, `appearance: none`. Hover: borda `--color-primary-500` (Músicas: borda verde Spotify `#1DB954` no hover, diferença de marca intencional). Focus: borda `--color-primary-500` mais a declaração exata de foco do Botão — `outline: 2px solid var(--color-focus-primary); outline-offset: 2px; box-shadow: var(--color-focus-ring);` — nunca só troca de borda, nunca `outline: none` seco. Músicas mantém a borda verde de marca no `:focus` (diferença de marca entre abas), mas o indicador de foco (outline + halo) permanece azul — único do sistema. Desabilitado durante troca de página (`pageLoading`): `opacity: var(--opacity-50)`, `cursor: not-allowed`, `pointer-events: none`. Regra replicada em 3 CSS Modules (`ProductList.module.css`, `MusicGallery.module.css`, `VideoGallery.module.css`); este é o contrato canônico — qualquer desvio é bug. Snippet literal do `:focus` (Músicas troca a borda por `#1DB954`):
+- **Seletor de ordenação (select de filtro em barra de filtros)**: controle `<select>` com rótulo visível `"Ordenar por:"`, altura 44px (decisão D3), raio `--border-radius-lg` (8px), borda 1px `--color-border-light`, fundo `--color-bg-primary`, texto `--color-text-primary`, `font-size: var(--font-size-sm)`, `font-weight: var(--font-weight-medium)`, chevron SVG data-URI cor `--color-text-tertiary`, `appearance: none`. Hover: borda `--color-primary-500`. Focus: borda `--color-primary-500` mais a declaração exata de foco do Botão — `outline: 2px solid var(--color-focus-primary); outline-offset: 2px; box-shadow: var(--color-focus-ring);` — nunca só troca de borda, nunca `outline: none` seco. Controles de busca, ordenação e contadores usam uniformemente `--color-primary-500` nas três abas públicas (Produtos, Músicas, Vídeos), reservando cores de marcas externas apenas à ação direta do serviço externo (ex.: `.spotifyButton`). Desabilitado durante troca de página (`pageLoading`): `opacity: var(--opacity-50)`, `cursor: not-allowed`, `pointer-events: none`. Regra replicada nos 3 CSS Modules (`ProductList.module.css`, `MusicGallery.module.css`, `VideoGallery.module.css`); este é o contrato canônico — qualquer desvio é bug. Snippet literal do `:focus`:
   ```css
   .sortSelect:focus {
     border-color: var(--color-primary-500);
@@ -179,9 +180,9 @@ seletores de ordenação das três abas públicas (Produtos, Músicas, Vídeos) 
   `:focus-visible`, pois o foco é movido via código; o `outline` azul tem 4,72:1
   sobre o fundo `--color-error-50`, então passa em 3:1 também aqui); sucesso pontual via
   `react-hot-toast` (já configurado em `_app.js`).
-- **Ícones**: SVG vetorial de família única e consistente (traço uniforme), nunca emoji
-  como ícone; decorativo com `aria-hidden="true"`, controle só-ícone com `aria-label`
-  e estado (`aria-pressed`) anunciado.
+- **Ícones**: SVG vetorial de família única e consistente (`AppIcon` em `components/UI/icons.js`, `viewBox="0 0 24 24"`, traço uniforme `strokeWidth="2"`), nunca emoji
+  como ícone; decorativo com `aria-hidden="true"` e `focusable="false"`, controle só-ícone com `aria-label`
+  e estado (`aria-pressed` / `aria-expanded` / `aria-current`) anunciado.
 
 ## 8. Formulários e autenticação (regras duras)
 

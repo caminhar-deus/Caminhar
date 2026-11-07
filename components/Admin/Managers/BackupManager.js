@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Modal, Button } from '@/components/UI';
+import { AppIcon } from '@/components/UI/icons';
+import styles from '../styles/misc.module.css';
 
 export default function AdminBackupManager() {
   const [latestBackup, setLatestBackup] = useState(null);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState('success');
   const [showConfirm, setShowConfirm] = useState(false);
 
   const fetchBackups = async () => {
@@ -39,57 +42,61 @@ export default function AdminBackupManager() {
       const data = await res.json();
       
       if (res.ok) {
-        setMessage('✅ Backup realizado com sucesso!');
+        setMessageType('success');
+        setMessage('Backup realizado com sucesso!');
         fetchBackups(); // Atualiza a lista para mostrar o novo backup
       } else {
-        setMessage(`❌ Erro: ${data.message}`);
+        setMessageType('error');
+        setMessage(`Erro: ${data.message}`);
       }
     } catch {
-      setMessage('❌ Erro de conexão ao criar backup');
+      setMessageType('error');
+      setMessage('Erro de conexão ao criar backup');
     } finally {
       setCreating(false);
     }
   };
 
   return (
-    <div style={{ padding: '20px', border: '1px solid var(--color-border-light)', borderRadius: '8px', marginTop: '20px', backgroundColor: 'var(--color-bg-primary)' }}>
-      <h3 style={{ marginTop: 0, color: 'var(--color-text-primary)' }}>Backup do Sistema</h3>
-      <p style={{ color: 'var(--color-text-secondary)', marginBottom: '20px', fontSize: '0.95rem' }}>
+    <div className={styles.toolCard}>
+      <div className={styles.toolHeader}>
+        <h3 className={styles.toolTitle}>Backup do Sistema</h3>
+      </div>
+      <p className={styles.toolSubtitle}>
         Gerencie os backups do banco de dados. O sistema realiza backups automáticos diariamente, mas você pode forçar um backup manual aqui.
       </p>
 
       {message && (
-        <div style={{ 
-          padding: '10px', 
-          marginBottom: '15px', 
-          backgroundColor: message.includes('Erro') || message.includes('❌') ? 'var(--color-error-50)' : 'var(--color-success-50)',
-          color: message.includes('Erro') || message.includes('❌') ? 'var(--color-error-700)' : 'var(--color-success-700)',
-          border: `1px solid ${message.includes('Erro') || message.includes('❌') ? 'var(--color-error-200)' : 'var(--color-success-200)'}`,
-          borderRadius: '4px',
-          fontWeight: '500'
-        }}>
-          {message}
+        <div
+          role={messageType === 'error' ? 'alert' : 'status'}
+          className={`${styles.feedbackBanner} ${messageType === 'error' ? styles.statusDanger : styles.statusHealthy}`}
+        >
+          <AppIcon name={messageType === 'error' ? 'xCircle' : 'checkCircle'} size={18} />
+          <span>{message}</span>
         </div>
       )}
 
-      <div style={{ marginBottom: '20px' }}>
-        <h4 style={{ marginBottom: '10px', fontSize: '1rem', color: 'var(--color-text-primary)' }}>Último Backup Realizado</h4>
+      <div className={styles.sectionBlock}>
+        <h4 className={styles.sectionSubtitle}>Último Backup Realizado</h4>
         {loading ? (
-          <p style={{ color: 'var(--color-text-secondary)' }}>Carregando informações...</p>
+          <p className={styles.toolSubtitle}>Carregando informações...</p>
         ) : latestBackup ? (
-          <div style={{ backgroundColor: 'var(--color-bg-secondary)', padding: '15px', borderRadius: '6px', border: '1px solid var(--color-border-light)' }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '5px', color: 'var(--color-text-primary)' }}>
-              📄 {latestBackup.name}
+          <div className={styles.backupMetaBox}>
+            <div className={`${styles.backupMetaRow} ${styles.backupFileName}`}>
+              <AppIcon name="fileText" size={16} />
+              <span>{latestBackup.name}</span>
             </div>
-            <div style={{ fontSize: '0.9em', color: 'var(--color-text-secondary)' }}>
-              📅 Data: {new Date(latestBackup.date).toLocaleString('pt-BR')}
+            <div className={styles.backupMetaRow}>
+              <AppIcon name="calendar" size={16} />
+              <span>Data: {new Date(latestBackup.date).toLocaleString('pt-BR')}</span>
             </div>
-            <div style={{ fontSize: '0.9em', color: 'var(--color-text-secondary)' }}>
-              💾 Tamanho: {(latestBackup.size / 1024).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KB
+            <div className={styles.backupMetaRow}>
+              <AppIcon name="hardDrive" size={16} />
+              <span>Tamanho: {(latestBackup.size / 1024).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KB</span>
             </div>
           </div>
         ) : (
-          <p style={{ color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>Nenhum backup encontrado.</p>
+          <p className={styles.toolSubtitle}>Nenhum backup encontrado.</p>
         )}
       </div>
 
@@ -98,7 +105,8 @@ export default function AdminBackupManager() {
         onClick={() => setShowConfirm(true)}
         disabled={creating}
       >
-        {creating ? '⏳ Criando Backup...' : '📥 Realizar Backup Agora'}
+        <AppIcon name={creating ? 'clock' : 'download'} size={16} />
+        <span>{creating ? 'Criando Backup...' : 'Realizar Backup Agora'}</span>
       </Button>
 
       <Modal
@@ -117,7 +125,7 @@ export default function AdminBackupManager() {
             <Button
               variant="primary"
               onClick={handleCreateBackup}
-              style={{ marginLeft: '8px' }}
+              className={styles.modalActionGap}
             >
               Confirmar
             </Button>

@@ -116,13 +116,14 @@
 /* Store link buttons */
 .linkButton {
   flex: 1;
-  display: flex;
+  min-height: 44px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: var(--spacing-1_5);
   min-width: 100px;
-  padding: var(--spacing-2);
-  border-radius: var(--border-radius-default);
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--border-radius-lg);
   border: none;
   text-decoration: none;
   font-weight: var(--font-weight-bold);
@@ -154,68 +155,13 @@
   transform: translateY(-1px);
 }
 
-/* Lightbox / Tela Cheia */
-.lightbox {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: var(--color-sp-overlay, rgba(0, 0, 0, 0.85));
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* eslint-disable-next-line css/use-baseline */
-  backdrop-filter: blur(5px);
-}
-
-.lightboxImage {
-  max-width: 90vw;
-  max-height: 90vh;
-  object-fit: contain;
-}
-
-.lightboxCloseButton {
-  position: absolute;
-  top: 20px;
-  right: 30px;
-  background: transparent;
-  border: none;
-  color: var(--color-text-inverse);
-  font-size: 40px;
-  cursor: pointer;
-  z-index: 10000;
-  outline: none;
-  padding: 8px;
-  transition: opacity 0.2s ease;
-}
-
-.lightboxCloseButton:hover {
-  opacity: 0.7;
-}
-
-.lightboxNavButton {
-  width: 50px;
-  height: 50px;
-  font-size: 24px;
-}
-
-/* Focus-visible global styles */
-.linkButton:focus-visible,
-.lightboxCloseButton:focus-visible,
-.lightboxNavButton:focus-visible {
-  /* eslint-disable-next-line css/no-important */
-  box-shadow: 0 0 0 3px var(--color-primary-700) !important;
-  /* eslint-disable-next-line css/no-important */
-  outline: 2px solid var(--color-primary-700) !important;
-  /* eslint-disable-next-line css/no-important */
-  outline-offset: 2px !important;
+.linkButton:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
 }
 
 .navButton:hover {
-  /* eslint-disable-next-line css/no-important */
-  background-color: var(--color-bg-primary, rgba(255, 255, 255, 0.95)) !important;
-  /* eslint-disable-next-line css/no-important */
-  transform: translateY(-50%) scale(1.1) !important;
+  background-color: var(--color-bg-primary);
+  transform: translateY(-50%) scale(1.05);
 }

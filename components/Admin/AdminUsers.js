@@ -1,10 +1,12 @@
 import { useState, Suspense, lazy } from 'react';
+import { Spinner } from '@/components/UI';
+import { AppIcon } from '@/components/UI/icons';
 import tabsStyles from './styles/tabs.module.css';
 import miscStyles from './styles/misc.module.css';
 
 // Mapeamento explícito para evitar conflito entre módulos
 const styles = {
-  adminPanel: tabsStyles.adminPanel,
+  subSectionWrap: tabsStyles.subSectionWrap,
   tabs: tabsStyles.tabs,
   tabButton: tabsStyles.tabButton,
   activeTab: tabsStyles.activeTab,
@@ -30,8 +32,8 @@ export default function AdminUsers() {
   const [activeTab, setActiveTab] = useState('users');
 
   const tabs = [
-    { id: 'users', label: 'Gestão de Usuários e Admins', icon: '👤' },
-    { id: 'roles', label: 'Gestão de Cargos', icon: '🛡️' }
+    { id: 'users', label: 'Gestão de Usuários e Admins', icon: 'user' },
+    { id: 'roles', label: 'Gestão de Cargos', icon: 'shield' }
   ];
 
   /**
@@ -57,8 +59,8 @@ export default function AdminUsers() {
   };
 
   return (
-    <div className={styles.adminPanel}>
-      {/* Cabeçalho de Navegação (Abas) */}
+    <div className={styles.subSectionWrap}>
+      {/* Cabeçalho de Navegação (Subabas de 2º nível) */}
       <div
         className={styles.tabs}
         role="tablist"
@@ -69,6 +71,7 @@ export default function AdminUsers() {
           <button
             key={tab.id}
             role="tab"
+            type="button"
             id={`tab-${tab.id}`}
             aria-selected={activeTab === tab.id}
             aria-controls={`tabpanel-${tab.id}`}
@@ -76,7 +79,9 @@ export default function AdminUsers() {
             className={`${styles.tabButton}${activeTab === tab.id ? ` ${styles.activeTab}` : ''}`}
             onClick={() => setActiveTab(tab.id)}
           >
-            <span className={styles.icon} aria-hidden="true">{tab.icon}</span>
+            <span className={styles.icon} aria-hidden="true">
+              <AppIcon name={tab.icon} size={18} />
+            </span>
             {tab.label}
           </button>
         ))}
@@ -87,7 +92,9 @@ export default function AdminUsers() {
         fallback={
           <div className={styles.placeholderContainer}>
             <div className={styles.placeholderCard}>
-              <div className={styles.placeholderIcon}>⏳</div>
+              <div className={styles.placeholderIcon}>
+                <Spinner size="md" />
+              </div>
               <h3>Carregando...</h3>
               <p>Aguardando carregamento do conteúdo</p>
             </div>

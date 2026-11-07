@@ -64,7 +64,7 @@
 }
 
 .dica-card:hover {
-  transform: translateY(-8px);
+  transform: translateY(-3px);
   box-shadow: var(--shadow-cardHover);
 }
 
@@ -89,55 +89,10 @@
   font-size: var(--font-size-base);
 }
 
-.testimonials-pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: var(--spacing-4);
-  margin-top: var(--spacing-8);
-}
-
-.pag-btn {
-  padding: var(--spacing-2_5) var(--spacing-5);
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  border: var(--border-width-1) solid var(--color-border-light);
-  border-radius: var(--border-radius-lg);
-  cursor: pointer;
-  font-weight: var(--font-weight-medium);
-  font-size: var(--font-size-sm);
-  transition: var(--transition-all);
-}
-
-.pag-btn:hover:not(.pag-disabled) {
-  background-color: var(--color-bg-secondary);
-  border-color: var(--color-border-default);
-}
-
-.pag-btn:focus-visible,
 .nav-button:focus-visible {
   outline: 2px solid var(--color-focus-primary);
   outline-offset: 2px;
   box-shadow: var(--color-focus-ring);
-}
-
-.pag-disabled {
-  /* eslint-disable-next-line css/no-important */
-  background-color: var(--color-bg-secondary) !important;
-  /* eslint-disable-next-line css/no-important */
-  color: var(--color-text-tertiary) !important;
-  /* eslint-disable-next-line css/no-important */
-  cursor: not-allowed !important;
-}
-
-.pag-info {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
 }
 
 .nav-button {

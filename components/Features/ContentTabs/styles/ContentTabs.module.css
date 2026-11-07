@@ -42,10 +42,11 @@
   transition: var(--transition-all);
   white-space: nowrap;
   position: relative;
-  margin: 0 5px;
-  border-radius: var(--border-radius-md);
+  margin: 0 var(--spacing-1);
+  min-height: 44px;
+  border-radius: var(--border-radius-lg);
   touch-action: manipulation;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: var(--spacing-2);
 }
@@ -58,11 +59,11 @@
 
 .tabButton:hover {
   color: var(--color-text-primary);
-  background-color: var(--alpha-ghost);
+  background-color: var(--color-bg-primary);
 }
 
 .tabButton:active {
-  background-color: var(--alpha-ghost);
+  background-color: var(--color-bg-primary);
 }
 
 .tabButton:disabled {
@@ -81,7 +82,7 @@
 .tabButton.active {
   color: var(--color-text-primary);
   font-weight: var(--font-weight-semibold);
-  background-color: var(--alpha-ghost);
+  background-color: var(--color-primary-50);
 }
 
 .tabButton.active::after {
@@ -97,9 +98,11 @@
 }
 
 .tabIcon {
-  font-size: var(--font-size-lg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: var(--spacing-5);
-  text-align: center;
+  height: var(--spacing-5);
   flex-shrink: 0;
 }
 

@@ -1,26 +1,176 @@
 /* ProductList Styles
- * Hover/foco dos botões de filtro, seletor de ordenação, contador de
- * resultados, grade 3/2/1 e paginação no padrão das demais abas
+ * Barra de filtros, busca, preço, seletor de ordenação, contador de
+ * resultados e grade 3/2/1 no padrão unificado das abas públicas
  * (spec design-system/pages/home.md §§1, 4 e 5). */
+
+.productListContainer {
+  width: 100%;
+  padding: var(--spacing-6) 0;
+}
+
+.filtersBar {
+  margin-bottom: var(--spacing-6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-3);
+}
+
+.searchWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 400px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: var(--spacing-3_5);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  pointer-events: none;
+}
+
+.searchInput,
+.priceInput {
+  width: 100%;
+  height: 44px;
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-primary);
+  border: var(--border-width-1) solid var(--color-border-light);
+  border-radius: var(--border-radius-lg);
+  transition: var(--transition-all);
+  outline: none;
+}
+
+.searchInput {
+  padding: var(--spacing-2_5) var(--spacing-4) var(--spacing-2_5) var(--spacing-10);
+}
+
+.searchInputWithControls {
+  padding-right: var(--spacing-16);
+}
+
+.priceInput {
+  padding: var(--spacing-2_5) var(--spacing-3);
+}
+
+.searchInput::placeholder,
+.priceInput::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.searchInput:hover,
+.priceInput:hover {
+  border-color: var(--color-primary-500);
+}
+
+.searchInput:focus,
+.priceInput:focus {
+  border-color: var(--color-primary-500);
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
+}
+
+.searchRightControls {
+  position: absolute;
+  right: var(--spacing-2);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1_5);
+}
+
+.clearButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--spacing-7);
+  height: var(--spacing-7);
+  padding: 0;
+  border: none;
+  border-radius: var(--border-radius-full);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: var(--transition-background), var(--transition-color);
+}
+
+.clearButton:hover {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+.clearButton:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
+}
+
+.activeFilterBadge {
+  background-color: var(--color-primary-500);
+  color: var(--color-text-inverse);
+  border-radius: var(--border-radius-full);
+  min-width: 20px;
+  height: 20px;
+  padding: 0 var(--spacing-1);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.priceGroup {
+  display: flex;
+  gap: var(--spacing-2_5);
+  width: 100%;
+  max-width: 280px;
+}
 
 /* Botão "Limpar filtros" */
 .filterButton {
-  background-color: transparent;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1_5);
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--border-radius-lg);
+  border: var(--border-width-1) solid var(--color-border-light);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: var(--transition-all);
+  white-space: nowrap;
 }
 
 .filterButton:hover {
   background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-default);
 }
 
-.filterButton:focus {
+.filterButton:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
   box-shadow: var(--color-focus-ring);
 }
 
-/* Seletor de ordenação (spec §1.2) */
+/* Seletor de ordenação e categoria (spec §1.2) */
 .sortWrapper {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--spacing-2);
 }
 
 .sortLabel {
@@ -37,6 +187,7 @@
   border-radius: var(--border-radius-lg);
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
+  font-family: inherit;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
@@ -83,19 +234,38 @@
   font-weight: var(--font-weight-medium);
 }
 
+.listViewport {
+  min-height: 600px;
+}
+
 /* Grade de produtos — 3 colunas no desktop, igualando Músicas/Vídeos (spec §5) */
 .productsGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 2rem;
-  padding: 20px clamp(8px, 2vw, 20px);
+  gap: var(--spacing-8);
+  padding: var(--spacing-5) clamp(var(--spacing-2), 2vw, var(--spacing-5));
 }
 
 /* Opacidade da grade durante a troca de página (decisão D5.1) */
 .productsGridLoading {
-  opacity: 0.4;
+  opacity: var(--opacity-40);
   pointer-events: none;
-  transition: opacity 0.2s ease;
+  transition: opacity var(--duration-moderate) var(--easing-standard);
+}
+
+.pageLoadingOverlay {
+  display: flex;
+  justify-content: center;
+  margin-top: -120px;
+  position: relative;
+  z-index: var(--layer-content);
+}
+
+.affiliateDisclaimer {
+  margin-top: var(--spacing-8);
+  text-align: center;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -108,7 +278,7 @@
 @media (max-width: 1024px) and (min-width: 769px) {
   .productsGrid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem;
+    gap: var(--spacing-6);
   }
 }
 
@@ -116,19 +286,23 @@
 @media (max-width: 768px) {
   .productsGrid {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: var(--spacing-6);
   }
 }
 
 /* Small mobile */
 @media (max-width: 360px) {
   .productsGrid {
-    gap: 1.25rem;
+    gap: var(--spacing-5);
   }
 }
 
-/* Mobile (≤ 640px): o seletor ocupa linha própria com a largura da busca */
+/* Mobile (<= 640px): controles ocupam largura da busca */
 @media (max-width: 640px) {
+  .priceGroup {
+    max-width: 400px;
+  }
+
   .sortWrapper {
     flex: 1 1 100%;
     max-width: 400px;
@@ -138,85 +312,4 @@
     width: 100%;
     max-width: none;
   }
-}
-
-/* Paginação no padrão único das abas (spec §4 / MASTER §7) */
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 2rem;
-  padding: 1rem 0;
-}
-
-.pageButton {
-  padding: 0.5rem 1.25rem;
-  min-height: 44px;
-  border: var(--border-width-1) solid var(--color-border-light);
-  border-radius: 50px;
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
-  transition: var(--transition-all);
-}
-
-.pageButton:hover:not(:disabled) {
-  border-color: var(--color-primary-500);
-  color: var(--color-primary-500);
-  background-color: var(--color-primary-50);
-}
-
-.pageButton:focus-visible {
-  outline: 2px solid var(--color-focus-primary);
-  outline-offset: 2px;
-  box-shadow: var(--color-focus-ring);
-}
-
-.pageButton:disabled {
-  opacity: var(--opacity-50);
-  cursor: not-allowed;
-}
-
-.pageButtonDisabled {
-  opacity: var(--opacity-50);
-  cursor: not-allowed;
-}
-
-.pageInfo {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  font-weight: var(--font-weight-medium);
-}
-
-.totalInfo {
-  color: var(--color-text-tertiary);
-  font-size: var(--font-size-xs);
-}
-
-/* Em ≤ 480px a informação de página ocupa linha própria acima dos botões */
-@media (max-width: 480px) {
-  .pagination {
-    flex-wrap: wrap;
-    gap: 0.75rem;
-  }
-
-  .pageButton {
-    padding: 0.4rem 1rem;
-    font-size: 0.8rem;
-  }
-
-  .pageInfo {
-    font-size: 0.8rem;
-    width: 100%;
-    text-align: center;
-    order: -1;
-  }
-}
-
-/* Mantido para outros usos (não é usado na paginação atual) */
-.pageButtonActive {
-  background-color: var(--color-primary-50);
 }

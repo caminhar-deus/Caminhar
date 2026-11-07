@@ -7,6 +7,8 @@ import tabsStyles from '../components/Admin/styles/tabs.module.css';
 import formStyles from '../components/Admin/styles/form.module.css';
 import miscStyles from '../components/Admin/styles/misc.module.css';
 import { toPermissionArray } from '../lib/domain/permissions.js';
+import { Sidebar } from '@/components/Layout/Sidebar';
+import { AppIcon } from '@/components/UI/icons';
 
 /**
  * Ponto único de normalização do estado `currentUser`.
@@ -19,33 +21,77 @@ import { toPermissionArray } from '../lib/domain/permissions.js';
 const normalizeCurrentUser = (user) =>
   user ? { ...user, permissions: toPermissionArray(user.permissions) } : user;
 
+// Ordem canônica das 10 abas principais (docs/ARQUITETURA_SITE_PRIVADO.md §2 e §9)
+const ADMIN_NAV_ITEMS = [
+  { key: 'dashboard', permission: 'Visão Geral', label: 'Visão Geral', icon: 'chart' },
+  { key: 'posts', permission: 'Posts/Artigos', label: 'Posts/Artigos', icon: 'fileText' },
+  { key: 'musicas', permission: 'Gestão de Músicas', label: 'Gestão de Músicas', icon: 'music' },
+  { key: 'videos', permission: 'Gestão de Vídeos', label: 'Gestão de Vídeos', icon: 'video' },
+  { key: 'projetos02', permission: 'Gestão de Produtos', label: 'Gestão de Produtos', icon: 'package' },
+  { key: 'dicas', permission: 'Gestão de Dicas', label: 'Gestão de Dicas', icon: 'lightbulb' },
+  { key: 'header', permission: 'Configuração de Cabeçalho', label: 'Configuração de Cabeçalho', icon: 'palette' },
+  { key: 'security', permission: 'Segurança', label: 'Segurança', icon: 'lock' },
+  { key: 'users', permission: 'Usuários', label: 'Usuários', icon: 'users' },
+  { key: 'logs', permission: 'Auditoria', label: 'Auditoria', icon: 'history' },
+];
+
+const SECURITY_SUBTABS = [
+  { key: 'integrity', icon: 'shield', label: 'Verificação de Integridade' },
+  { key: 'backup', icon: 'database', label: 'Backup do Sistema' },
+  { key: 'ratelimit', icon: 'lock', label: 'Rate Limiting' },
+  { key: 'cache', icon: 'zap', label: 'Cache do Sistema' },
+];
+
 // Mapeamento explícito para evitar conflito de classes com mesmo nome entre módulos
 const styles = {
   // login.module.css
   container: loginStyles.container,
-  main: loginStyles.main,
-  loginContainer: loginStyles.loginContainer,
-  loginForm: loginStyles.loginForm,
-  loginInput: loginStyles.loginInput,
-  button: loginStyles.button,
-  error: loginStyles.error,
+  authLoadingMain: loginStyles.authLoadingMain,
+  authLoadingCard: loginStyles.authLoadingCard,
+  authLoadingText: loginStyles.authLoadingText,
 
   // tabs.module.css
+  adminMainContainer: tabsStyles.adminMainContainer,
+  adminHeader: tabsStyles.adminHeader,
+  adminUserGroup: tabsStyles.adminUserGroup,
+  adminGreeting: tabsStyles.adminGreeting,
+  logoutButton: tabsStyles.logoutButton,
   adminPanel: tabsStyles.adminPanel,
   tabs: tabsStyles.tabs,
   tabButton: tabsStyles.tabButton,
   activeTab: tabsStyles.activeTab,
+  icon: tabsStyles.icon,
 
   // form.module.css
   formGroup: formStyles.formGroup,
   input: formStyles.input,
 
   // misc.module.css
+  button: miscStyles.button,
+  secondaryButton: miscStyles.secondaryButton,
   preview: miscStyles.preview,
   previewContent: miscStyles.previewContent,
   previewImage: miscStyles.previewImage,
   errorMessage: miscStyles.errorMessage,
+  alertTitle: miscStyles.alertTitle,
+  alertBody: miscStyles.alertBody,
   emptyState: miscStyles.emptyState,
+  emptyStateTitle: miscStyles.emptyStateTitle,
+  fileRow: miscStyles.fileRow,
+  fileName: miscStyles.fileName,
+  hiddenInput: miscStyles.hiddenInput,
+  cropperBox: miscStyles.cropperBox,
+  cropperStage: miscStyles.cropperStage,
+  cropperControls: miscStyles.cropperControls,
+  cropperZoomLabel: miscStyles.cropperZoomLabel,
+  cropperRange: miscStyles.cropperRange,
+  selectionPreview: miscStyles.selectionPreview,
+  selectionTitle: miscStyles.selectionTitle,
+  statsBox: miscStyles.statsBox,
+  statLine: miscStyles.statLine,
+  statSavings: miscStyles.statSavings,
+  selectionImage: miscStyles.selectionImage,
+  buttonGroup: miscStyles.buttonGroup,
 };
 import AdminPosts from '../components/Admin/AdminPosts';
 import RateLimitViewer from '../components/Admin/Tools/RateLimitViewer';
@@ -134,6 +180,7 @@ export default function Admin() {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [activeSecurityTab, setActiveSecurityTab] = useState('integrity');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
   const fileInputRef = useRef(null);
 
@@ -331,22 +378,10 @@ export default function Admin() {
     && Array.isArray(currentUser.permissions)
     && currentUser.permissions.length === 0;
 
-  // Permissão exigida por cada aba (espelha os `hasPermission(...)` da barra de abas).
-  // Serve só para apontar `aria-labelledby` do painel para um botão que existe no DOM;
-  // `undefined` omite o atributo quando a aba ativa não está visível.
-  const tabPermissionByValue = {
-    dashboard: 'Visão Geral',
-    posts: 'Posts/Artigos',
-    musicas: 'Gestão de Músicas',
-    videos: 'Gestão de Vídeos',
-    projetos02: 'Gestão de Produtos',
-    dicas: 'Gestão de Dicas',
-    header: 'Configuração de Cabeçalho',
-    security: 'Segurança',
-    users: 'Usuários',
-    logs: 'Auditoria',
-  };
-  const activeTabButtonId = hasPermission(tabPermissionByValue[activeTab])
+  // Aponta `aria-labelledby` da área de conteúdo para o item de navegação visível;
+  // `undefined` omite o atributo quando a aba ativa não está liberada ao cargo.
+  const activeNavItem = ADMIN_NAV_ITEMS.find((item) => item.key === activeTab);
+  const activeTabButtonId = activeNavItem && hasPermission(activeNavItem.permission)
     ? `admin-tab-${activeTab}`
     : undefined;
 
@@ -369,10 +404,10 @@ export default function Admin() {
           <title>Admin - O Caminhar com Deus</title>
         </Head>
 
-        <main className={styles.main} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-          <div style={{ textAlign: 'center' }}>
+        <main className={styles.authLoadingMain}>
+          <div className={styles.authLoadingCard}>
             <Spinner size="lg" />
-            <p style={{ marginTop: 'var(--spacing-4)', color: 'var(--color-text-secondary)' }}>
+            <p className={styles.authLoadingText}>
               Verificando permissões de acesso...
             </p>
           </div>
@@ -381,6 +416,24 @@ export default function Admin() {
     );
   }
 
+  const sidebarNavigation = (
+    <Sidebar.Nav aria-label="Seções do painel administrativo">
+      {ADMIN_NAV_ITEMS.filter((item) => hasPermission(item.permission)).map((item) => (
+        <Sidebar.NavItem
+          key={item.key}
+          id={`admin-tab-${item.key}`}
+          active={activeTab === item.key}
+          icon={<AppIcon name={item.icon} size={20} />}
+          label={item.label}
+          onClick={() => {
+            setActiveTab(item.key);
+            setMobileMenuOpen(false);
+          }}
+        />
+      ))}
+    </Sidebar.Nav>
+  );
+
   return (
     <div className={styles.container}>
       <a href="#main-content" className="skip-link">
@@ -388,37 +441,45 @@ export default function Admin() {
       </a>
       <Head>
         <title>Admin - O Caminhar com Deus</title>
-        <style>{`
-          /* Força a barra de rolagem para evitar o solavanco da página */
-          html, body {
-            overflow-y: scroll !important;
-          }
-        `}</style>
       </Head>
 
-      <main id="main-content" className={styles.main}>
-        <div className={styles.adminPanel}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
-            <h1 style={{ margin: 0 }}>Painel Administrativo</h1>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+      <Sidebar
+        position="left"
+        width="md"
+        persistCollapsed={true}
+        mobileOpen={mobileMenuOpen}
+        onMobileToggle={setMobileMenuOpen}
+        collapseLabels={{
+          expand: 'Expandir menu lateral',
+          collapse: 'Recolher menu lateral',
+        }}
+        mainId="main-content"
+        sidebarLabel="Navegação administrativa"
+        sidebar={sidebarNavigation}
+      >
+        <div className={styles.adminMainContainer}>
+          <header className={styles.adminHeader}>
+            <h1>Painel Administrativo</h1>
+            <div className={styles.adminUserGroup}>
               {currentUser && (
-                <span style={{ fontSize: '0.95rem', color: 'var(--color-text-secondary)', fontWeight: '500' }}>
+                <span className={styles.adminGreeting}>
                   Olá, <strong>{currentUser.username}</strong>
                 </span>
               )}
-              <button 
+              <button
+                type="button"
                 onClick={handleLogout}
-                style={{ backgroundColor: 'var(--color-error-500)', color: 'var(--color-text-inverse)', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.2s' }}
+                className={styles.logoutButton}
               >
                 Sair / Logout
               </button>
             </div>
-          </div>
+          </header>
 
           {permissionsLoadFailed && (
             <div className={styles.errorMessage} role="alert">
-              <strong style={{ display: 'block', marginBottom: '4px' }}>Não foi possível carregar suas permissões</strong>
-              <span style={{ display: 'block', marginBottom: '12px' }}>
+              <strong className={styles.alertTitle}>Não foi possível carregar suas permissões</strong>
+              <span className={styles.alertBody}>
                 Houve uma falha ao verificar as permissões do seu cargo. Se o problema continuar depois de tentar novamente, fale com um administrador.
               </span>
               <button type="button" className={styles.button} onClick={() => router.reload()}>
@@ -429,403 +490,280 @@ export default function Admin() {
 
           {hasNoPermissions && (
             <section className={styles.emptyState} aria-labelledby="admin-sem-permissao-titulo">
-              <h2 id="admin-sem-permissao-titulo" style={{ marginTop: 0, marginBottom: '8px', fontSize: 'var(--font-size-xl)' }}>Nenhuma permissão atribuída</h2>
-              <p style={{ color: 'var(--color-text-secondary)', marginBottom: 0 }}>
+              <h2 id="admin-sem-permissao-titulo" className={styles.emptyStateTitle}>Nenhuma permissão atribuída</h2>
+              <p>
                 O seu cargo ainda não tem acesso a nenhuma área do painel. Peça a um administrador para liberar as permissões.
               </p>
             </section>
           )}
 
-          <div className={styles.tabs} role="tablist" aria-label="Seções do painel administrativo">
-            {hasPermission('Visão Geral') && (
-              <button
-                role="tab"
-                id="admin-tab-dashboard"
-                aria-selected={activeTab === 'dashboard'}
-                aria-controls="admin-tabpanel"
-                className={`${styles.tabButton} ${activeTab === 'dashboard' ? styles.activeTab : ''}`}
-                onClick={() => setActiveTab('dashboard')}
-              >
-                <span className="icon" aria-hidden="true">📊</span>
-                Visão Geral
-              </button>
-            )}
-            
-            {hasPermission('Posts/Artigos') && (
-              <button
-                role="tab"
-                id="admin-tab-posts"
-                aria-selected={activeTab === 'posts'}
-                aria-controls="admin-tabpanel"
-                className={`${styles.tabButton} ${activeTab === 'posts' ? styles.activeTab : ''}`}
-                onClick={() => setActiveTab('posts')}
-              >
-                <span className="icon" aria-hidden="true">📝</span>
-                Posts/Artigos
-              </button>
-            )}
-            
-            {hasPermission('Gestão de Músicas') && (
-              <button
-                role="tab"
-                id="admin-tab-musicas"
-                aria-selected={activeTab === 'musicas'}
-                aria-controls="admin-tabpanel"
-                className={`${styles.tabButton} ${activeTab === 'musicas' ? styles.activeTab : ''}`}
-                onClick={() => setActiveTab('musicas')}
-              >
-                <span className="icon" aria-hidden="true">🎵</span>
-                Gestão de Músicas
-              </button>
-            )}
-            
-            {hasPermission('Gestão de Vídeos') && (
-              <button
-                role="tab"
-                id="admin-tab-videos"
-                aria-selected={activeTab === 'videos'}
-                aria-controls="admin-tabpanel"
-                className={`${styles.tabButton} ${activeTab === 'videos' ? styles.activeTab : ''}`}
-                onClick={() => setActiveTab('videos')}
-              >
-                <span className="icon" aria-hidden="true">🎬</span>
-                Gestão de Vídeos
-              </button>
-            )}
-            
-            {hasPermission('Gestão de Produtos') && (
-              <button
-                role="tab"
-                id="admin-tab-projetos02"
-                aria-selected={activeTab === 'projetos02'}
-                aria-controls="admin-tabpanel"
-                className={`${styles.tabButton} ${activeTab === 'projetos02' ? styles.activeTab : ''}`}
-                onClick={() => setActiveTab('projetos02')}
-              >
-                <span className="icon" aria-hidden="true">📦</span>
-                Gestão de Produtos
-              </button>
-            )}
+          <div className={styles.adminPanel}>
+            <section id="admin-tabpanel" aria-labelledby={activeTabButtonId}>
+              {activeTab === 'header' && hasPermission('Configuração de Cabeçalho') && (
+                <>
+                  <div className={styles.formGroup}>
+                    <label htmlFor="site-title-input">Título da Página</label>
+                    <input
+                      id="site-title-input"
+                      type="text"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      className={styles.input}
+                    />
+                  </div>
 
-            {hasPermission('Gestão de Dicas') && (
-              <button
-                role="tab"
-                id="admin-tab-dicas"
-                aria-selected={activeTab === 'dicas'}
-                aria-controls="admin-tabpanel"
-                className={`${styles.tabButton} ${activeTab === 'dicas' ? styles.activeTab : ''}`}
-                onClick={() => setActiveTab('dicas')}
-              >
-                <span className="icon" aria-hidden="true">💡</span>
-                Gestão de Dicas
-              </button>
-            )}
-            
-            {hasPermission('Configuração de Cabeçalho') && (
-              <button
-                role="tab"
-                id="admin-tab-header"
-                aria-selected={activeTab === 'header'}
-                aria-controls="admin-tabpanel"
-                className={`${styles.tabButton} ${activeTab === 'header' ? styles.activeTab : ''}`}
-                onClick={() => setActiveTab('header')}
-              >
-                <span className="icon" aria-hidden="true">🎨</span>
-                Configuração de Cabeçalho
-              </button>
-            )}
-            
-            {hasPermission('Segurança') && (
-              <button
-                role="tab"
-                id="admin-tab-security"
-                aria-selected={activeTab === 'security'}
-                aria-controls="admin-tabpanel"
-                className={`${styles.tabButton} ${activeTab === 'security' ? styles.activeTab : ''}`}
-                onClick={() => setActiveTab('security')}
-              >
-                <span className="icon" aria-hidden="true">🔒</span>
-                Segurança
-              </button>
-            )}
-            
-            {hasPermission('Usuários') && (
-              <button
-                role="tab"
-                id="admin-tab-users"
-                aria-selected={activeTab === 'users'}
-                aria-controls="admin-tabpanel"
-                className={`${styles.tabButton} ${activeTab === 'users' ? styles.activeTab : ''}`}
-                onClick={() => setActiveTab('users')}
-              >
-                <span className="icon" aria-hidden="true">👥</span>
-                Usuários
-              </button>
-            )}
-            
-            {hasPermission('Auditoria') && (
-              <button
-                role="tab"
-                id="admin-tab-logs"
-                aria-selected={activeTab === 'logs'}
-                aria-controls="admin-tabpanel"
-                className={`${styles.tabButton} ${activeTab === 'logs' ? styles.activeTab : ''}`}
-                onClick={() => setActiveTab('logs')}
-              >
-                <span className="icon" aria-hidden="true">📜</span>
-                Auditoria
-              </button>
-            )}
-          </div>
+                  <div className={styles.formGroup}>
+                    <label htmlFor="site-subtitle-input">Subtítulo</label>
+                    <input
+                      id="site-subtitle-input"
+                      type="text"
+                      value={subtitle}
+                      onChange={(e) => setSubtitle(e.target.value)}
+                      className={styles.input}
+                    />
+                  </div>
 
-          <div role="tabpanel" id="admin-tabpanel" aria-labelledby={activeTabButtonId}>
-          {activeTab === 'header' && hasPermission('Configuração de Cabeçalho') && (
-            <>
-              <div className={styles.formGroup}>
-                <label>Título da Página</label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className={styles.input}
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label>Subtítulo</label>
-                <input
-                  type="text"
-                  value={subtitle}
-                  onChange={(e) => setSubtitle(e.target.value)}
-                  className={styles.input}
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label htmlFor="banner-file-input">Imagem Principal (1100x320)</label>
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current && fileInputRef.current.click()}
-                    className={styles.button}
-                    style={{ padding: '10px 16px' }}
-                  >
-                    Escolher arquivo
-                  </button>
-                  <span aria-live="polite" style={{ fontSize: '0.9rem', color: '#666' }}>
-                    {imageFile ? imageFile.name : 'Nenhum arquivo escolhido'}
-                  </span>
-                </div>
-                <input
-                  ref={fileInputRef}
-                  id="banner-file-input"
-                  type="file"
-                  accept="image/*"
-                  onChange={async (e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                      // Limite de segurança para processamento no navegador (10MB)
-                      if (file.size > 10 * 1024 * 1024) {
-                        alert('O arquivo é muito grande para ser processado (>10MB).');
-                        e.target.value = '';
-                        setImageFile(null);
-                        setOriginalSize(0);
-                        return;
-                      }
-
-                      setOriginalSize(file.size);
-                      
-                      // Lê o arquivo para o Cropper
-                      const reader = new FileReader();
-                      reader.addEventListener('load', () => {
-                        setCropImageSrc(reader.result);
-                        setIsCropping(true);
-                      });
-                      reader.readAsDataURL(file);
-                    }
-                  }}
-                  style={{ display: 'none' }}
-                />
-                
-                {isCropping && cropImageSrc ? (
-                  <div style={{ margin: '20px 0', border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden' }}>
-                    <div style={{ position: 'relative', height: 400, width: '100%', background: '#333' }}>
-                      <Cropper
-                        image={cropImageSrc}
-                        crop={crop}
-                        zoom={zoom}
-                        aspect={1100 / 320}
-                        onCropChange={setCrop}
-                        onCropComplete={onCropComplete}
-                        onZoomChange={setZoom}
-                      />
-                    </div>
-                    <div style={{ padding: '15px', background: '#f8f9fa', display: 'flex', alignItems: 'center', gap: '15px' }}>
-                      <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>Zoom:</span>
-                      <input
-                        type="range"
-                        value={zoom}
-                        min={1}
-                        max={3}
-                        step={0.1}
-                        aria-labelledby="Zoom"
-                        onChange={(e) => setZoom(e.target.value)}
-                        style={{ flex: 1 }}
-                      />
-                      <button 
-                        onClick={handleCropConfirm}
-                        className={styles.button}
-                        style={{ padding: '8px 20px', fontSize: '0.9rem' }}
+                  <div className={styles.formGroup}>
+                    <label htmlFor="banner-file-input">Imagem Principal (1100x320)</label>
+                    <div className={styles.fileRow}>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                        className={styles.secondaryButton}
                       >
-                        Recortar & Confirmar
+                        Escolher arquivo
+                      </button>
+                      <span aria-live="polite" className={styles.fileName}>
+                        {imageFile ? imageFile.name : 'Nenhum arquivo escolhido'}
+                      </span>
+                    </div>
+                    <input
+                      ref={fileInputRef}
+                      id="banner-file-input"
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          // Limite de segurança para processamento no navegador (10MB)
+                          if (file.size > 10 * 1024 * 1024) {
+                            alert('O arquivo é muito grande para ser processado (>10MB).');
+                            e.target.value = '';
+                            setImageFile(null);
+                            setOriginalSize(0);
+                            return;
+                          }
+
+                          setOriginalSize(file.size);
+
+                          // Lê o arquivo para o Cropper
+                          const reader = new FileReader();
+                          reader.addEventListener('load', () => {
+                            setCropImageSrc(reader.result);
+                            setIsCropping(true);
+                          });
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className={styles.hiddenInput}
+                    />
+
+                    {isCropping && cropImageSrc ? (
+                      <div className={styles.cropperBox}>
+                        <div className={styles.cropperStage}>
+                          <Cropper
+                            image={cropImageSrc}
+                            crop={crop}
+                            zoom={zoom}
+                            aspect={1100 / 320}
+                            onCropChange={setCrop}
+                            onCropComplete={onCropComplete}
+                            onZoomChange={setZoom}
+                          />
+                        </div>
+                        <div className={styles.cropperControls}>
+                          <span id="banner-crop-zoom-label" className={styles.cropperZoomLabel}>Zoom:</span>
+                          <input
+                            type="range"
+                            value={zoom}
+                            min={1}
+                            max={3}
+                            step={0.1}
+                            aria-labelledby="banner-crop-zoom-label"
+                            onChange={(e) => setZoom(e.target.value)}
+                            className={styles.cropperRange}
+                          />
+                          <button
+                            type="button"
+                            onClick={handleCropConfirm}
+                            className={styles.button}
+                          >
+                            Recortar &amp; Confirmar
+                          </button>
+                        </div>
+                      </div>
+                    ) : imageFile && (
+                      <div className={styles.selectionPreview}>
+                        <p className={styles.selectionTitle}>Pré-visualização da seleção:</p>
+                        <div className={styles.statsBox}>
+                          <div className={styles.statLine}>
+                            <AppIcon name="package" size={16} />
+                            <span>
+                              <strong>Original:</strong> {(originalSize / 1024).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KB
+                            </span>
+                          </div>
+                          <div className={styles.statLine}>
+                            <AppIcon name="sparkles" size={16} />
+                            <span>
+                              <strong>Otimizado:</strong> {(imageFile.size / 1024).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KB
+                            </span>
+                          </div>
+                          <div className={styles.statSavings}>
+                            <AppIcon name="trendingDown" size={16} />
+                            <span>
+                              Economia de {originalSize > 0 ? ((1 - imageFile.size / originalSize) * 100).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : 0}%
+                            </span>
+                          </div>
+                        </div>
+                        <img
+                          src={URL.createObjectURL(imageFile)}
+                          alt="Pré-visualização"
+                          className={styles.selectionImage}
+                        />
+                      </div>
+                    )}
+                    {(imageFile || isCropping) && (
+                      <div className={styles.buttonGroup}>
+                        <button
+                          type="button"
+                          onClick={handleCancelSelection}
+                          className={styles.secondaryButton}
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <div className={styles.buttonGroup}>
+                      <button
+                        type="button"
+                        onClick={handleImageUpload}
+                        className={styles.secondaryButton}
+                        disabled={!imageFile || isCropping}
+                      >
+                        Atualizar Imagem
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveSettings}
+                        className={styles.button}
+                        disabled={saving}
+                      >
+                        {saving ? 'Salvando...' : 'Salvar Configurações'}
                       </button>
                     </div>
                   </div>
-                ) : imageFile && (
-                  <div style={{ margin: '15px 0' }}>
-                    <p style={{ marginBottom: '5px', fontSize: '0.9rem', color: '#666' }}>Pré-visualização da seleção:</p>
-                    <div style={{ fontSize: '0.85rem', color: '#555', marginBottom: '10px', background: '#f8f9fa', padding: '10px', borderRadius: '6px', border: '1px solid #e9ecef' }}>
-                      <div>📦 <strong>Original:</strong> {(originalSize / 1024).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KB</div>
-                      <div>✨ <strong>Otimizado:</strong> {(imageFile.size / 1024).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KB</div>
-                      <div style={{ color: '#28a745', marginTop: '4px', fontWeight: '600' }}>📉 Economia de {originalSize > 0 ? ((1 - imageFile.size / originalSize) * 100).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : 0}%</div>
+
+                  <div className={styles.preview}>
+                    <h3>Visualização</h3>
+                    <div className={styles.previewContent}>
+                      <h2>{title}</h2>
+                      <p>{subtitle}</p>
+                      {imageFile ? (
+                        <img
+                          src={URL.createObjectURL(imageFile)}
+                          alt="Preview"
+                          className={styles.previewImage}
+                        />
+                      ) : currentImageUrl && (
+                        <img
+                          src={currentImageUrl}
+                          alt="Current Header"
+                          className={styles.previewImage}
+                        />
+                      )}
                     </div>
-                    <img 
-                      src={URL.createObjectURL(imageFile)} 
-                      alt="Pré-visualização" 
-                      style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '4px', border: '1px solid #ccc' }}
-                    />
                   </div>
-                )}
-                {(imageFile || isCropping) && (
-                  <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-                    <button 
-                      onClick={handleCancelSelection} 
-                      className={styles.button}
-                      style={{ backgroundColor: '#6c757d' }}
-                    >
-                      Cancelar
-                    </button>
+                </>
+              )}
+
+              {activeTab === 'dashboard' && hasPermission('Visão Geral') && (
+                <AdminDashboard setActiveTab={setActiveTab} userPermissions={currentUser?.permissions || []} isAdmin={currentUser?.role === 'admin'} />
+              )}
+
+              {activeTab === 'posts' && hasPermission('Posts/Artigos') && (
+                <AdminPosts />
+              )}
+
+              {activeTab === 'security' && hasPermission('Segurança') && (
+                <>
+                  {/* Subabas horizontais de 2º nível da Segurança */}
+                  <div
+                    className={styles.tabs}
+                    role="tablist"
+                    aria-label="Ferramentas de segurança"
+                  >
+                    {SECURITY_SUBTABS.map((subTab) => (
+                      <button
+                        key={subTab.key}
+                        type="button"
+                        role="tab"
+                        id={`security-tab-${subTab.key}`}
+                        aria-selected={activeSecurityTab === subTab.key}
+                        aria-controls={`security-tabpanel-${subTab.key}`}
+                        className={`${styles.tabButton}${activeSecurityTab === subTab.key ? ` ${styles.activeTab}` : ''}`}
+                        onClick={() => setActiveSecurityTab(subTab.key)}
+                      >
+                        <span className={styles.icon}>
+                          <AppIcon name={subTab.icon} size={18} />
+                        </span>
+                        {subTab.label}
+                      </button>
+                    ))}
                   </div>
-                )}
-              </div>
 
-              <div className={styles.formGroup}>
-                <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-                  <button 
-                    onClick={handleImageUpload} 
-                    className={styles.button}
-                    disabled={!imageFile || isCropping}
+                  <div
+                    role="tabpanel"
+                    id={`security-tabpanel-${activeSecurityTab}`}
+                    aria-labelledby={`security-tab-${activeSecurityTab}`}
                   >
-                    Atualizar Imagem
-                  </button>
-                  <button
-                    onClick={handleSaveSettings}
-                    className={styles.button}
-                    disabled={saving}
-                  >
-                    {saving ? 'Salvando...' : 'Salvar Configurações'}
-                  </button>
-                </div>
-              </div>
+                    {activeSecurityTab === 'integrity' && <IntegrityCheck />}
+                    {activeSecurityTab === 'backup' && <BackupManager />}
+                    {activeSecurityTab === 'ratelimit' && <RateLimitViewer />}
+                    {activeSecurityTab === 'cache' && <CacheManager />}
+                  </div>
+                </>
+              )}
 
-              <div className={styles.preview}>
-                <h3>Visualização</h3>
-                <div className={styles.previewContent}>
-                  <h2>{title}</h2>
-                  <p>{subtitle}</p>
-                  {imageFile ? (
-                    <img
-                      src={URL.createObjectURL(imageFile)}
-                      alt="Preview"
-                      className={styles.previewImage}
-                    />
-                  ) : currentImageUrl && (
-                    <img
-                      src={currentImageUrl}
-                      alt="Current Header"
-                      className={styles.previewImage}
-                    />
-                  )}
-                </div>
-              </div>
-            </>
-          )}
-          
-          {activeTab === 'dashboard' && hasPermission('Visão Geral') && (
-            <AdminDashboard setActiveTab={setActiveTab} userPermissions={currentUser?.permissions || []} isAdmin={currentUser?.role === 'admin'} />
-          )}
+              {activeTab === 'users' && hasPermission('Usuários') && (
+                <AdminUsers />
+              )}
 
-          {activeTab === 'posts' && hasPermission('Posts/Artigos') && (
-            <AdminPosts />
-          )}
+              {activeTab === 'logs' && hasPermission('Auditoria') && (
+                <AdminAudit />
+              )}
 
-          {activeTab === 'security' && hasPermission('Segurança') && (
-            <>
-              {/* Abas internas da Segurança — mesmo padrão do AdminUsers.js */}
-              <div
-                className={styles.tabs}
-                role="tablist"
-                aria-label="Ferramentas de segurança"
-              >
-                {[
-                  { key: 'integrity', icon: '🛡️', label: 'Verificação de Integridade' },
-                  { key: 'backup', icon: '💾', label: 'Backup do Sistema' },
-                  { key: 'ratelimit', icon: '🔒', label: 'Rate Limiting' },
-                  { key: 'cache', icon: '⚡', label: 'Cache do Sistema' },
-                ].map(subTab => (
-                  <button
-                    key={subTab.key}
-                    role="tab"
-                    aria-selected={activeSecurityTab === subTab.key}
-                    aria-controls={`security-tabpanel-${subTab.key}`}
-                    className={`${styles.tabButton}${activeSecurityTab === subTab.key ? ` ${styles.activeTab}` : ''}`}
-                    onClick={() => setActiveSecurityTab(subTab.key)}
-                  >
-                    <span className="icon" aria-hidden="true">{subTab.icon}</span>
-                    {subTab.label}
-                  </button>
-                ))}
-              </div>
+              {activeTab === 'musicas' && hasPermission('Gestão de Músicas') && (
+                <AdminMusicas />
+              )}
 
-              <div
-                role="tabpanel"
-                id={`security-tabpanel-${activeSecurityTab}`}
-                aria-labelledby={activeSecurityTab}
-              >
-                {activeSecurityTab === 'integrity' && <IntegrityCheck />}
-                {activeSecurityTab === 'backup' && <BackupManager />}
-                {activeSecurityTab === 'ratelimit' && <RateLimitViewer />}
-                {activeSecurityTab === 'cache' && <CacheManager />}
-              </div>
-            </>
-          )}
-          
-          {activeTab === 'users' && hasPermission('Usuários') && (
-            <AdminUsers />
-          )}
-          
-          {activeTab === 'logs' && hasPermission('Auditoria') && (
-            <AdminAudit />
-          )}
+              {activeTab === 'videos' && hasPermission('Gestão de Vídeos') && (
+                <AdminVideos />
+              )}
 
-          {activeTab === 'musicas' && hasPermission('Gestão de Músicas') && (
-            <AdminMusicas />
-          )}
+              {activeTab === 'dicas' && hasPermission('Gestão de Dicas') && (
+                <AdminDicas />
+              )}
 
-          {activeTab === 'videos' && hasPermission('Gestão de Vídeos') && (
-            <AdminVideos />
-          )}
-
-          {activeTab === 'dicas' && hasPermission('Gestão de Dicas') && (
-            <AdminDicas />
-          )}
-
-          {activeTab === 'projetos02' && hasPermission('Gestão de Produtos') && (
-            <AdminProducts />
-          )}
+              {activeTab === 'projetos02' && hasPermission('Gestão de Produtos') && (
+                <AdminProducts />
+              )}
+            </section>
           </div>
         </div>
-      </main>
+      </Sidebar>
     </div>
   );
 }

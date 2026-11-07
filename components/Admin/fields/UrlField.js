@@ -112,7 +112,7 @@ export default function UrlField({
           <label>Pré-visualização</label>
           <iframe
             data-testid="embed-iframe"
-            style={{ borderRadius: '12px' }}
+            className={styles.spotifyPreviewIframe}
             src={`https://open.spotify.com/embed/track/${spotifyId}?utm_source=generator&theme=0`}
             width="100%"
             height="160"
@@ -120,6 +120,7 @@ export default function UrlField({
             allowFullScreen
             allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
             loading="lazy"
+            title="Preview do Spotify"
           />
         </div>
       );
@@ -139,7 +140,7 @@ export default function UrlField({
     <div className={`${styles.formGroup} ${className}`}>
       <label htmlFor={name}>
         {label}
-        {required && <span style={{ color: '#dc3545', marginLeft: '4px' }}>*</span>}
+        {required && <span className={styles.requiredMark}>*</span>}
       </label>
       <input
         id={name}
@@ -152,7 +153,7 @@ export default function UrlField({
         className={styles.input}
       />
       {(validationError || error) && (
-        <small style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+        <small className={styles.fieldError}>
           {validationError || error}
         </small>
       )}

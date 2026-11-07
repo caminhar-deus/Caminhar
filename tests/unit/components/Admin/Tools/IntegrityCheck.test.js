@@ -92,7 +92,7 @@ describe('Componentes Admin - Tools - IntegrityCheck', () => {
   it('deve exibir o status geral saudável', async () => {
     render(<IntegrityCheck />);
 
-    expect(await screen.findByText('✅ Sistema Saudável')).toBeInTheDocument();
+    expect(await screen.findByText('Sistema Saudável')).toBeInTheDocument();
   });
 
   it('deve listar os checks retornados pela API', async () => {
@@ -117,7 +117,7 @@ describe('Componentes Admin - Tools - IntegrityCheck', () => {
 
     render(<IntegrityCheck />);
 
-    expect(await screen.findByText('❌ Erro ao carregar verificação de integridade')).toBeInTheDocument();
+    expect(await screen.findByText('Erro ao carregar verificação de integridade')).toBeInTheDocument();
     expect(screen.getByText('Falha no servidor')).toBeInTheDocument();
 
     // Reintento exitoso
@@ -126,8 +126,8 @@ describe('Componentes Admin - Tools - IntegrityCheck', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Tentar Novamente' }));
 
-    expect(await screen.findByText('✅ Sistema Saudável')).toBeInTheDocument();
-    expect(screen.queryByText('❌ Erro ao carregar verificação de integridade')).not.toBeInTheDocument();
+    expect(await screen.findByText('Sistema Saudável')).toBeInTheDocument();
+    expect(screen.queryByText('Erro ao carregar verificação de integridade')).not.toBeInTheDocument();
   });
 
   it('deve usar mensagem de fallback quando o erro HTTP não traz message', async () => {
@@ -143,7 +143,7 @@ describe('Componentes Admin - Tools - IntegrityCheck', () => {
 
     render(<IntegrityCheck />);
 
-    expect(await screen.findByText('❌ Erro ao carregar verificação de integridade')).toBeInTheDocument();
+    expect(await screen.findByText('Erro ao carregar verificação de integridade')).toBeInTheDocument();
     expect(screen.getByText('Falha de rede')).toBeInTheDocument();
   });
 
@@ -179,8 +179,8 @@ describe('Componentes Admin - Tools - IntegrityCheck', () => {
 
     render(<IntegrityCheck />);
 
-    expect(await screen.findByText('🔄 Atualizar')).toBeInTheDocument();
-    expect(screen.queryByText('❌ Erro ao carregar verificação de integridade')).not.toBeInTheDocument();
+    expect(await screen.findByText('Atualizar')).toBeInTheDocument();
+    expect(screen.queryByText('Erro ao carregar verificação de integridade')).not.toBeInTheDocument();
 
     // Evidência observável de que a navegação foi de fato solicitada: sem o
     // reload (ou sem o branch 401), nenhum jsdomError de navegação é emitido.
@@ -212,7 +212,7 @@ describe('Componentes Admin - Tools - IntegrityCheck', () => {
     });
     global.fetch = refreshMock;
 
-    fireEvent.click(screen.getByRole('button', { name: '🔄 Atualizar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Atualizar' }));
 
     expect(await screen.findByText('v24.19.0')).toBeInTheDocument();
     expect(refreshMock).toHaveBeenCalledTimes(1);
@@ -220,19 +220,19 @@ describe('Componentes Admin - Tools - IntegrityCheck', () => {
 
     // O estado de refreshing deve ser encerrado no finally: sem isso o botão
     // permaneceria travado em "Atualizando..." e desabilitado para sempre.
-    expect(await screen.findByRole('button', { name: '🔄 Atualizar' })).toBeEnabled();
+    expect(await screen.findByRole('button', { name: 'Atualizar' })).toBeEnabled();
   });
 
   it('deve exibir "Atualizando..." e desabilitar o botão durante o refresh manual', async () => {
     render(<IntegrityCheck />);
-    expect(await screen.findByText('✅ Sistema Saudável')).toBeInTheDocument();
+    expect(await screen.findByText('Sistema Saudável')).toBeInTheDocument();
 
     // A resposta fica pendente em response.json() para observar o estado refreshing
     global.fetch = mockFetch(() => new Promise(() => {}), {
       headers: { 'content-type': 'application/json' },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: '🔄 Atualizar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Atualizar' }));
 
     expect(await screen.findByText('Atualizando...')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Atualizando...' })).toBeDisabled();

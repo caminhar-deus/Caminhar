@@ -1,5 +1,6 @@
 import { useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
+import { AppIcon } from '@/components/UI/icons';
 import styles from './styles/crud.module.css';
 
 /**
@@ -75,8 +76,8 @@ export default function CrudTable({
       const inactiveColor = column.inactiveColor || '';
       const activeText = column.activeText || 'Publicado';
       const inactiveText = column.inactiveText || 'Rascunho';
-      const activeIcon = column.activeIcon || '✅';
-      const inactiveIcon = column.inactiveIcon || '📝';
+      const activeIconName = column.activeIconName || 'checkCircle';
+      const inactiveIconName = column.inactiveIconName || 'fileText';
 
       const customStyle = {};
       if (value && activeBgColor) customStyle.backgroundColor = activeBgColor;
@@ -92,8 +93,8 @@ export default function CrudTable({
           style={Object.keys(customStyle).length > 0 ? customStyle : undefined}
           title="Clique para alterar o status rapidamente"
         >
-          <span style={{ display: 'flex', alignItems: 'center' }} aria-hidden="true">{value ? activeIcon : inactiveIcon}</span>
-          <span>{value ? activeText : inactiveText}</span>
+          <AppIcon name={value ? activeIconName : inactiveIconName} size={14} />
+          {value ? activeText : inactiveText}
         </button>
       );
     }
@@ -108,6 +109,7 @@ export default function CrudTable({
           className={styles.link}
         >
           Abrir link
+          <AppIcon name="externalLink" size={14} />
         </a>
       );
     }
@@ -118,17 +120,17 @@ export default function CrudTable({
 
   return (
     <>
-      <div className={styles.tableContainer} style={{ flex: 1, overflowY: 'auto', maxHeight: '600px' }}>
+      <div className={styles.tableContainer}>
         <table className={styles.table} aria-label={title}>
-          <thead style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'var(--color-bg-secondary)', boxShadow: 'inset 0 -2px 0 var(--color-border-light)' }}>
+          <thead className={styles.stickyThead}>
             <tr>
-              {reorderable && !searchTerm && <th scope="col" style={{ width: '40px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>☰</th>}
+              {reorderable && !searchTerm && <th scope="col" className={styles.dragHeaderCell}>☰</th>}
               {columns.map(col => (
-                <th key={col.key} scope="col" style={col.width ? { width: col.width } : {}}>
+                <th key={col.key} scope="col" style={col.width ? { width: col.width } : undefined}>
                   {col.header}
                 </th>
               ))}
-              {!readOnly && <th scope="col" style={{ width: '120px' }}>Ações</th>}
+              {!readOnly && <th scope="col" className={styles.actionsHeaderCell}>Ações</th>}
             </tr>
           </thead>
           <tbody>
@@ -136,18 +138,18 @@ export default function CrudTable({
               Array.from({ length: 5 }).map((_, index) => (
                 <tr key={`skeleton-${index}`}>
                   {reorderable && !searchTerm && (
-                    <td><div className={styles.skeletonBox} style={{ width: '20px', margin: '0 auto' }}></div></td>
+                    <td><div className={`${styles.skeletonBox} skeleton-box`} style={{ width: '20px', margin: '0 auto' }}></div></td>
                   )}
                   {columns.map(col => (
                     <td key={`skeleton-col-${col.key}`}>
-                      <div className={styles.skeletonBox} style={{ width: col.width ? '100%' : '80%' }}></div>
+                      <div className={`${styles.skeletonBox} skeleton-box`} style={{ width: col.width ? '100%' : '80%' }}></div>
                     </td>
                   ))}
                   {!readOnly && (
                     <td>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <div className={styles.skeletonBox} style={{ height: '32px', width: '60px' }}></div>
-                        <div className={styles.skeletonBox} style={{ height: '32px', width: '60px' }}></div>
+                      <div className={styles.actionButtons}>
+                        <div className={`${styles.skeletonBox} skeleton-box`} style={{ height: '32px', width: '60px' }}></div>
+                        <div className={`${styles.skeletonBox} skeleton-box`} style={{ height: '32px', width: '60px' }}></div>
                       </div>
                     </td>
                   )}
@@ -182,16 +184,14 @@ export default function CrudTable({
                       if (onReorder) onReorder(newItems, currentPage, itemsPerPage);
                     }
                   }}
-                  style={{
-                    cursor: reorderable && !searchTerm ? 'move' : 'default',
-                    backgroundColor: dragOverIndex === index ? 'var(--color-bg-secondary)' : '',
-                    borderTop: dragOverIndex === index ? '2px solid var(--color-primary-500)' : '',
-                    transition: 'background-color 0.2s ease'
-                  }}
+                  className={[
+                    reorderable && !searchTerm ? styles.draggableRow : '',
+                    dragOverIndex === index ? styles.dragOverRow : '',
+                  ].filter(Boolean).join(' ') || undefined}
                 >
                   {reorderable && !searchTerm && (
                     <td
-                      style={{ width: '40px', color: 'var(--color-text-tertiary)', textAlign: 'center', cursor: 'grab' }}
+                      className={styles.dragHandleCell}
                       aria-grabbed={dragOverIndex !== null}
                       aria-roledescription="Botão de ordenação por arrastar"
                       role="button"
@@ -299,8 +299,8 @@ CrudTable.propTypes = {
     inactiveColor: PropTypes.string,
     activeText: PropTypes.string,
     inactiveText: PropTypes.string,
-    activeIcon: PropTypes.string,
-    inactiveIcon: PropTypes.string
+    activeIconName: PropTypes.string,
+    inactiveIconName: PropTypes.string
   })).isRequired,
   items: PropTypes.array.isRequired,
   loading: PropTypes.bool,

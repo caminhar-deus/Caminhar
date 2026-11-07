@@ -1,4 +1,5 @@
 import { useState, Suspense } from 'react';
+import { AppIcon } from '@/components/UI/icons';
 import styles from './styles/ContentTabs.module.css';
 import BlogSection from '../Blog/BlogSection';
 import MusicGallery from '../Music/MusicGallery';
@@ -9,11 +10,11 @@ export default function ContentTabs() {
   const [activeTab, setActiveTab] = useState('reflexoes');
 
   const tabs = [
-    { id: 'reflexoes', label: 'Reflexões & Estudos', active: true, icon: '📖' },
-    { id: 'projeto1', label: 'Em Desenvolvimento', active: false, icon: '🏗️' },
-    { id: 'musicas', label: 'Músicas', active: false, icon: '🎵' },
-    { id: 'videos', label: 'Vídeos', active: false, icon: '🎬' },
-    { id: 'produtos', label: 'Produtos Religiosos', active: false, icon: '📦' }
+    { id: 'reflexoes', label: 'Reflexões & Estudos', active: true, icon: 'book' },
+    { id: 'projeto1', label: 'Em Desenvolvimento', active: false, icon: 'construction' },
+    { id: 'musicas', label: 'Músicas', active: false, icon: 'music' },
+    { id: 'videos', label: 'Vídeos', active: false, icon: 'video' },
+    { id: 'produtos', label: 'Produtos Religiosos', active: false, icon: 'package' },
   ];
 
   const renderContent = () => {
@@ -42,6 +43,7 @@ export default function ContentTabs() {
               key={tab.id}
               id={tab.id + '-tab'}
               role="tab"
+              type="button"
               className={`${styles.tabButton} ${
                 activeTab === tab.id ? styles.active : ''
               }`}
@@ -54,12 +56,14 @@ export default function ContentTabs() {
               aria-controls={tab.id + '-panel'}
               disabled={tab.id === 'projeto1'}
             >
-              <span className={styles.tabIcon} aria-hidden="true">{tab.icon}</span>
+              <span className={styles.tabIcon} aria-hidden="true">
+                <AppIcon name={tab.icon} size={20} />
+              </span>
               {tab.label}
             </button>
           ))}
         </div>
-        
+
         <div
           className={styles.contentContainer}
           role="tabpanel"

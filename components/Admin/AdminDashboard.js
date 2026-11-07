@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
+import { Spinner } from '@/components/UI';
+import { AppIcon } from '@/components/UI/icons';
 import styles from './styles/dashboard.module.css';
 
 const PERMISSION_ITEM_MAP = {
@@ -74,53 +76,53 @@ export default function AdminDashboard({ setActiveTab, userPermissions = [], isA
         key: 'posts', 
         label: 'Artigos', 
         count: stats.posts, 
-        icon: '📝', 
+        icon: 'fileText', 
         color: 'var(--color-primary-500)', 
         tabId: 'posts',
-        details: `✅ ${stats.postsPublished || 0} Pub | 📝 ${stats.postsDraft || 0} Rasc`
+        details: `${stats.postsPublished || 0} publicados • ${stats.postsDraft || 0} rascunhos`
       },
       { 
         key: 'musicas', 
         label: 'Músicas', 
         count: stats.musicas, 
-        icon: '🎵', 
-        color: '#1DB954', 
+        icon: 'music', 
+        color: 'var(--color-success-700)', 
         tabId: 'musicas',
-        details: `✅ ${stats.musicasPublished || 0} Pub | 📝 ${stats.musicasDraft || 0} Rasc`
+        details: `${stats.musicasPublished || 0} publicados • ${stats.musicasDraft || 0} rascunhos`
       },
       { 
         key: 'videos', 
         label: 'Vídeos', 
         count: stats.videos, 
-        icon: '🎬', 
-        color: 'var(--color-error-500)', 
+        icon: 'video', 
+        color: 'var(--color-error-600)', 
         tabId: 'videos',
-        details: `✅ ${stats.videosPublished || 0} Pub | 📝 ${stats.videosDraft || 0} Rasc`
+        details: `${stats.videosPublished || 0} publicados • ${stats.videosDraft || 0} rascunhos`
       },
       { 
         key: 'products', 
         label: 'Produtos', 
         count: stats.products, 
-        icon: '📦', 
-        color: '#ff9900', 
+        icon: 'package', 
+        color: 'var(--color-warning-700)', 
         tabId: 'projetos02',
-        details: `✅ ${stats.productsPublished || 0} Pub | 📝 ${stats.productsDraft || 0} Rasc`
+        details: `${stats.productsPublished || 0} publicados • ${stats.productsDraft || 0} rascunhos`
       },
       { 
         key: 'dicas', 
         label: 'Dicas', 
         count: stats.dicas || 0, 
-        icon: '💡', 
-        color: '#8B5CF6', 
+        icon: 'lightbulb', 
+        color: 'var(--color-secondary-700)', 
         tabId: 'dicas',
-        details: `✅ ${stats.dicasPublished || 0} Pub | 📝 ${stats.dicasDraft || 0} Rasc`
+        details: `${stats.dicasPublished || 0} publicados • ${stats.dicasDraft || 0} rascunhos`
       },
       { 
         key: 'users', 
         label: 'Usuários', 
         count: stats.users, 
-        icon: '👥', 
-        color: '#06B6D4', 
+        icon: 'users', 
+        color: 'var(--color-primary-700)', 
         tabId: 'users',
         details: `Ativos: Hoje (${stats.usersToday || 0}) • Mês (${stats.usersMonth || 0}) • Ano (${stats.usersYear || 0})`
       },
@@ -138,18 +140,20 @@ export default function AdminDashboard({ setActiveTab, userPermissions = [], isA
   // Renderização unificada de carregamento/erro para evitar "pulos" de tela (Layout Shift)
   if (loading || error || !stats) {
     return (
-      <div className={styles.content} style={{ minHeight: '600px' }}>
+      <div className={`${styles.content} ${styles.contentMinHeight}`}>
         <div className={styles.sectionHeader}>
           <h2>Visão Geral do Sistema</h2>
         </div>
         {loading && (
-          <div aria-live="polite" style={{ textAlign: 'center', padding: '50px', color: 'var(--color-text-secondary)' }}>
-            ⏳ Carregando painel de estatísticas...
+          <div aria-live="polite" className={styles.statusState}>
+            <Spinner size="sm" />
+            <span>Carregando painel de estatísticas...</span>
           </div>
         )}
         {error && (
-          <div role="alert" style={{ textAlign: 'center', padding: '50px', color: 'var(--color-error-500)' }}>
-            ❌ Erro: {error}
+          <div role="alert" className={styles.errorState}>
+            <AppIcon name="xCircle" size={18} />
+            <span>Erro: {error}</span>
           </div>
         )}
       </div>
@@ -178,13 +182,14 @@ export default function AdminDashboard({ setActiveTab, userPermissions = [], isA
             role={item.tabId ? 'button' : undefined}
             tabIndex={item.tabId ? 0 : undefined}
             aria-label={item.tabId ? `Ir para ${item.label}: ${item.count} itens cadastrados` : undefined}
-            style={{ cursor: item.tabId ? 'pointer' : 'default' }}
           >
-            <div className={styles.statIcon} aria-hidden="true">{item.icon}</div>
+            <div className={styles.statIcon} aria-hidden="true">
+              <AppIcon name={item.icon} size={24} />
+            </div>
             <div className={styles.statInfo}>
               <span className={styles.statNumber}>{item.count}</span>
               <span className={styles.statLabel}>{item.label}</span>
-              {item.details && <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: '4px', fontWeight: '500' }}>{item.details}</span>}
+              {item.details && <span className={styles.statDetails}>{item.details}</span>}
             </div>
           </div>
         ))}
@@ -192,31 +197,25 @@ export default function AdminDashboard({ setActiveTab, userPermissions = [], isA
 
       {/* Gráfico de Barras Horizontal Baseado em CSS */}
       <div className={styles.chartSection}>
-        <h3 style={{ margin: '0 0 25px 0', color: 'var(--color-text-primary)', fontSize: '1.2rem' }}>Distribuição de Conteúdo</h3>
+        <h3 className={styles.chartTitle}>Distribuição de Conteúdo</h3>
         
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div className={styles.chartList}>
           {statItems.map(item => {
             const widthPercent = (item.count / maxVal) * 100;
             return (
-              <div key={`chart-${item.key}`} style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                <div style={{ width: '80px', fontWeight: '600', color: 'var(--color-text-secondary)', fontSize: '0.9rem', textAlign: 'right' }}>
+              <div key={`chart-${item.key}`} className={styles.chartRow}>
+                <div className={styles.chartLabel}>
                   {item.label}
                 </div>
-                <div style={{ flex: 1, backgroundColor: 'var(--color-border-light)', height: '24px', borderRadius: '12px', overflow: 'hidden' }}>
+                <div className={styles.chartTrack}>
                   <div 
+                    className={styles.chartFill}
                     style={{ 
                       width: `${Math.max(widthPercent, 2)}%`,
-                      maxWidth: '100%',
-                      minWidth: 'fit-content',
-                      boxSizing: 'border-box',
-                      backgroundColor: item.color, 
-                      height: '100%', 
-                      borderRadius: '12px',
-                      transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '0 10px'
+                      backgroundColor: item.color,
                     }}
                   >
-                    {item.count > 0 && <span style={{ color: 'var(--color-text-inverse)', fontSize: '0.8rem', fontWeight: 'bold' }}>{item.count}</span>}
+                    {item.count > 0 && <span className={styles.chartValue}>{item.count}</span>}
                   </div>
                 </div>
               </div>

@@ -14,16 +14,16 @@
 - **Autenticação:** sessão logada via JWT em cookie `httpOnly`. O cabeçalho administrativo exibe saudação ao operador ("Olá, **admin**") e ação destrutiva "Sair / Logout".
 - **Autorização:** por cargos (roles) com permissões por aba (seção 6). Cada uma das 10 abas principais corresponde a uma permissão; abas sem permissão não são exibidas nem acessíveis na API.
 - **Infraestrutura vista na aba Segurança:** armazenamento de arquivos para uploads, backups criptografados (`.sql.gz.enc`), rate limiting por IP e log de auditoria. Banco de dados e cache: ver `docs/ARQUITETURA_SITE_PUBLICO.md` §1.
-- **Layout:** [PLANEJADO] interface administrativa estruturada com **barra de navegação vertical recolhível na lateral esquerda** (§2.2) + cabeçalho enxuto e área principal fluida à direita sobre fundo neutro claro (`--color-bg-secondary`), aproveitando adequadamente o espaço horizontal para tabelas e formulários. ([OBSERVADO] Estado atual no código: cartão branco central de `max-width: 1000px` com abas horizontais quebrando em 3 linhas — ver §8, item 17.)
+- **Layout:** interface administrativa estruturada com **barra de navegação vertical recolhível/expansível na lateral esquerda** (`Sidebar` em `components/Layout/Sidebar.js`, §2.2) + cabeçalho enxuto e área principal fluida (`min-width: 0`) à direita sobre fundo neutro claro (`--color-bg-secondary`), aproveitando integralmente o espaço horizontal para tabelas e formulários ([ADR-0036](adr/0036-shared-visual-standard-and-admin-collapsible-sidebar.md)).
 
 ### 1.1 Identidade visual e padrões de interface (alinhamento com o Site Público)
 
-O Site Privado compartilha integralmente a identidade visual definida com o Site Público (`docs/ARQUITETURA_SITE_PUBLICO.md` §1.1): proposta **clean, suave, minimalista, moderna, organizada e intuitiva**, ancorada nos tokens de `pages/styles/variables.css` e nas regras de `design-system/MASTER.md`. Diferenças em relação ao ambiente público existem apenas onde justificadas pela natureza operacional do painel (navegação lateral recolhível, listagens em tabelas densas com reordenação e formulários de gestão).
+O Site Privado compartilha integralmente a identidade visual definida com o Site Público (`docs/ARQUITETURA_SITE_PUBLICO.md` §1.1): proposta **clean, suave, minimalista, moderna, organizada e intuitiva**, ancorada nos tokens de `pages/styles/variables.css`, em `design-system/MASTER.md` e no override específico `design-system/pages/admin.md`. Diferenças em relação ao ambiente público existem apenas onde justificadas pela natureza operacional do painel (navegação lateral recolhível, listagens em tabelas densas com reordenação e formulários de gestão).
 
 1. **Cores e semântica:**
    - **Superfícies e bordas:** fundo da aplicação em `--color-bg-secondary` (`#f5f5f5`); barra lateral, cabeçalho, cartões de métrica, tabelas e campos em `--color-bg-primary` (`#fafafa`); cabeçalhos de tabela, áreas de formulário em destaque sutil e hover neutro em `--color-bg-secondary` / `--color-bg-tertiary` (`#e5e5e5`); bordas em `--color-border-light` (`#e5e5e5`) e `--color-border-default` (`#d4d4d4`).
    - **Identidade e estados:** azul primário `--color-primary-500` (`#2563eb`, realce `--color-primary-50`) para aba selecionada, ações principais, links e foco; sucesso/Publicado em `--color-success-500` (badge em `--color-success-50` + texto `--color-success-800`); alerta/Rascunho em `--color-warning-500` (badge em `--color-warning-50` + texto `--color-warning-800`); erro/exclusão/logout em `--color-error-500` (`#ef4444`).
-   - **Contraste e foco:** texto principal `--color-text-primary` (`#171717`) e secundário `--color-text-secondary` (`#525252`) com contraste AA (`≥ 4,5:1`); `--color-text-tertiary` restrito a placeholders. Todo controle interativo aplica o indicador de foco duplo do sistema (`outline: 2px solid var(--color-focus-primary); outline-offset: 2px; box-shadow: var(--color-focus-ring);`), exceto campos em erro focados (`--color-error-500` + `--color-error-halo`). Evita-se excesso de cores competitivas na mesma barra de ações (ver item 6 e §8, item 19).
+   - **Contraste e foco:** texto principal `--color-text-primary` (`#171717`) e secundário `--color-text-secondary` (`#525252`) com contraste AA (`≥ 4,5:1`); `--color-text-tertiary` restrito a placeholders. Todo controle interativo aplica o indicador de foco duplo do sistema (`outline: 2px solid var(--color-focus-primary); outline-offset: 2px; box-shadow: var(--color-focus-ring);`), exceto campos em erro focados (`--color-error-500` + `--color-error-halo`). Evita-se excesso de cores competitivas na mesma barra de ações (ver item 6).
 
 2. **Tipografia e textos:**
    - **Famílias:** `--font-family-body` (`"Inter"`, sistema, sans-serif) em toda a interface operacional do painel (abas, tabelas, formulários, métricas e modais); `--font-family-mono` para identificadores técnicos, slugs ou nomes de arquivo de backup quando aplicável.
@@ -31,28 +31,28 @@ O Site Privado compartilha integralmente a identidade visual definida com o Site
 
 3. **Abas e navegação:**
    - **Disposição exclusiva do painel:** navegação principal vertical na lateral esquerda com modos recolhido e expandido (§2.2), complementada por subabas horizontais enxutas no topo das seções que possuem subdivisão interna (§2.3) — distinta da navegação horizontal pública (`docs/ARQUITETURA_SITE_PUBLICO.md` §2).
-   - **Aparência e estados compartilhados:** ícones SVG vetoriais de traço uniforme, tipografia `--font-size-sm`, estado inativo em `--color-text-secondary` (`medium`), hover sutil em `--color-bg-secondary` + `--color-text-primary`, estado selecionado com destaque em `--color-primary-50` + texto/ícone `--color-primary-500` (`semibold`) + indicador ativo em `--color-primary-500`, e foco visível com anel duplo azul.
+   - **Aparência e estados compartilhados:** ícones SVG vetoriais de traço uniforme (`AppIcon` em `components/UI/icons.js`, `aria-hidden="true"`), tipografia `--font-size-sm`, estado inativo em `--color-text-secondary` (`medium`), hover sutil em `--color-bg-secondary` + `--color-text-primary`, estado selecionado com destaque em `--color-primary-50` + texto/ícone `--color-primary-500` (`semibold`) + indicador ativo em `--color-primary-500`, e foco visível com anel duplo azul.
 
 4. **Cards, painéis e tabelas:**
-   - **Cards administrativos:** usados na Visão Geral (6 cartões interativos de métricas e painel de distribuição) e em Segurança (cartões de status de Integridade, Backup e Cache), com fundo `--color-bg-primary`, borda `1px solid var(--color-border-light)`, sombra suave (`--shadow-xs` / `--shadow-card`), raio `--border-radius-xl` (`12px`), espaçamento interno `--spacing-6` (`24px`) e hover discreto (`translateY(-2px)` a `-3px`) quando clicáveis.
+   - **Cards administrativos:** usados na Visão Geral (6 cartões interativos de métricas e painel de distribuição) e em Segurança (cartões de status de Integridade, Backup e Cache), com fundo `--color-bg-primary`, borda `1px solid var(--color-border-light)`, sombra suave (`--shadow-xs` / `--shadow-card`), raio `--border-radius-xl` (`12px`), espaçamento interno `--spacing-6` (`24px`) e hover discreto (`translateY(-2px)`) quando clicáveis.
    - **Tabelas operacionais (particularidade funcional do painel):** enquanto o Site Público exibe catálogos em grades de cartões, as listagens administrativas (CRUDs e Auditoria) utilizam tabelas limpas em `--color-bg-primary`, cabeçalho `--color-bg-secondary`, linhas com hover suave, células alinhadas e paginação inferior padronizada.
 
 5. **Arredondamentos:**
-   - **Botões, inputs, campos de busca, seletores, células de ação e itens de navegação (lateral e subabas):** `--border-radius-lg` (`0.5rem` / `8px`). ([PLANEJADO] unificar valores avulsos de `4px`, `6px` e `12px` hoje espalhados nos estilos do painel e nos primitivos `components/UI/` — ver §8, item 20.)
+   - **Botões, inputs, campos de busca, seletores, células de ação e itens de navegação (lateral e subabas):** `--border-radius-lg` (`0.5rem` / `8px`).
    - **Cards de métricas, seções de formulário inline, containers de preview e modais:** `--border-radius-xl` (`0.75rem` / `12px`).
    - **Miniaturas de imagem em tabela (`60×60px`):** `--border-radius-md` (`0.375rem` / `6px`).
    - **Selos/badges compactos (status, permissões vinculadas) e botões circulares de ícone:** `--border-radius-full` (`9999px`) ou `--border-radius-md` consistente por família. Sem arredondamentos exagerados em campos ou botões.
 
 6. **Botões:**
    - **Dimensões e consistência:** altura padrão `40px–44px` em barras de ação e formulários (alvo de toque `≥ 44×44px`; variante compacta `sm` `32px` restrita a ações em linha de tabela com espaçamento seguro `gap: var(--spacing-2)`), fonte `--font-size-sm`, peso `medium`/`semibold`, raio `--border-radius-lg` (`8px`).
-   - **Hierarquia unificada com o Site Público:** [PLANEJADO] convergir as cores hoje fragmentadas no painel ([OBSERVADO] verde para criar/editar/exportar-auditoria, azul-info para exportar-CRUD, cinza sólido para cancelar/paginar — ver §8, item 19) para o padrão semântico do Design System:
+   - **Hierarquia unificada com o Site Público:**
      - **Primário (`--color-primary-500`):** ação principal da tela (`+ Novo ...`, `Salvar`, `Cadastrar ...`, `Realizar Backup Agora`).
-     - **Secundário (`--color-bg-primary` / `--color-bg-secondary` com borda `--color-border-light` e texto `--color-text-primary`):** ações auxiliares e neutras (`Cancelar`, `Exportar CSV`, `Atualizar`, `Escolher arquivo`, `Editar` em linha e botões de paginação `Anterior`/`Próxima`).
+     - **Secundário (`--color-bg-primary` / `--color-bg-secondary` com borda `--color-border-light` e texto `--color-text-primary`):** ações auxiliares e neutras (`Cancelar`, `Exportar CSV`, `Atualizar`, `Escolher arquivo`, `Puxar Dados`, `Editar` em linha e botões de paginação `Anterior`/`Próxima`).
      - **Perigo (`--color-error-500`):** ações destrutivas ou críticas (`Excluir`, `Limpar Cache Redis`, `Sair / Logout`).
    - **Estados:** hover suave, active discreto, `:focus-visible` com anel duplo azul, `loading` (spinner sem alterar largura + texto/estado acessível) e `disabled` (`opacity: var(--opacity-50)`, `cursor: not-allowed`).
 
 7. **Barras de pesquisa, filtros e opções:**
-   - **Padronização:** campos de busca com ícone de lupa SVG à esquerda, altura `40px–44px`, fundo `--color-bg-primary`, borda `1px solid var(--color-border-light)`, raio `--border-radius-lg` (`8px`), botão interno `×` para limpar busca quando preenchido e foco com anel duplo azul ([PLANEJADO] substituir estilos inline sem anel de foco em `AdminCrudBase.js` e `AdminAudit.js` — ver §8, item 20).
+   - **Padronização:** campos de busca em CSS Modules (`crud.module.css`) com ícone de lupa SVG à esquerda, altura `40px–44px`, fundo `--color-bg-primary`, borda `1px solid var(--color-border-light)`, raio `--border-radius-lg` (`8px`), botão interno circular de limpeza quando preenchido e foco com anel duplo azul (`AdminCrudBase.js` e `AdminAudit.js`).
    - **Organização:** nas telas de CRUD, busca alinhada na barra de cabeçalho à esquerda dos botões `Exportar CSV` e `+ Novo`; na Auditoria, busca acompanhada dos filtros de data/hora (`dd/mm/aaaa hh:mm`) e botões `Atualizar` / `Exportar CSV`, com quebra responsiva (`flex-wrap: wrap`) e retorno automático à página 1 ao filtrar.
 
 8. **Espaçamentos:**
@@ -65,20 +65,20 @@ O Site Privado compartilha integralmente a identidade visual definida com o Site
 
 As 10 abas principais seguem a ordem funcional abaixo (exibidas conforme as permissões do cargo do usuário logado):
 
-| # | Aba | Ícone atual [OBSERVADO] | Função |
+| # | Aba | Ícone SVG (`AppIcon`) | Função |
 |---|---|---|---|
-| 1 | Visão Geral | 📊 | Painel de contagens (aba padrão ao entrar) |
-| 2 | Posts/Artigos | 📝 | CRUD de reflexões e estudos + CRUD de categorias (toggle "Posts \| Categorias") |
-| 3 | Gestão de Músicas | 🎵 | CRUD de músicas (Spotify) |
-| 4 | Gestão de Vídeos | 🎬 | CRUD de vídeos (YouTube) |
-| 5 | Gestão de Produtos | 📦 | CRUD de produtos religiosos |
-| 6 | Gestão de Dicas | 💡 | CRUD de dicas |
-| 7 | Configuração de Cabeçalho | 🎨 | Título, subtítulo e banner do site público |
-| 8 | Segurança | 🔒 | Integridade, backup, rate limiting, cache |
-| 9 | Usuários | 👥 | Usuários/admins e cargos |
-| 10 | Auditoria | 📜 | Histórico global de ações |
+| 1 | Visão Geral | `chart` | Painel de contagens (aba padrão ao entrar) |
+| 2 | Posts/Artigos | `fileText` | CRUD de reflexões e estudos + CRUD de categorias (toggle "Posts \| Categorias") |
+| 3 | Gestão de Músicas | `music` | CRUD de músicas (Spotify) |
+| 4 | Gestão de Vídeos | `video` | CRUD de vídeos (YouTube) |
+| 5 | Gestão de Produtos | `package` | CRUD de produtos religiosos |
+| 6 | Gestão de Dicas | `lightbulb` | CRUD de dicas |
+| 7 | Configuração de Cabeçalho | `palette` | Título, subtítulo e banner do site público |
+| 8 | Segurança | `lock` | Integridade, backup, rate limiting, cache |
+| 9 | Usuários | `users` | Usuários/admins e cargos |
+| 10 | Auditoria | `history` | Histórico global de ações |
 
-> **Ícones das abas:** [PLANEJADO] substituir os emojis atuais [OBSERVADO] por **ícones SVG vetoriais** de família única e traço uniforme (`MASTER.md` §7), garantindo nitidez, alinhamento óptico preciso e identificação imediata especialmente quando a barra lateral estiver recolhida (ver §2.2 e §8, item 18).
+> **Ícones das abas:** todos os itens utilizam **ícones SVG vetoriais** de família única e traço uniforme (`AppIcon` em `components/UI/icons.js`, `24×24`, `strokeWidth="2"`, `aria-hidden="true"`), garantindo nitidez, alinhamento óptico preciso e identificação imediata tanto no modo expandido quanto no modo recolhido ([ADR-0036](adr/0036-shared-visual-standard-and-admin-collapsible-sidebar.md)).
 
 ### 2.1 Mapeamento entre abas (site privado × site público)
 
@@ -94,21 +94,19 @@ A correspondência entre as abas administrativas e suas abas públicas de exibi�
 
 Esse mapeamento deve ser mantido de forma consistente em toda a documentação.
 
-### 2.2 Particularidade exclusiva do Site Privado — Navegação lateral esquerda [PLANEJADO]
+### 2.2 Particularidade exclusiva do Site Privado — Navegação lateral esquerda
 
-Diferentemente do Site Público (que utiliza navegação horizontal abaixo do banner), o Site Privado adota **exclusivamente** uma **barra de navegação vertical posicionada na lateral esquerda da interface**, projetada para acomodar as 10 seções operacionais sem quebrar linhas no topo e liberar altura útil para tabelas e formulários.
-
-> **Estado atual vs. alvo:** no código atual (`pages/admin.js` + `components/Admin/styles/tabs.module.css`), as 10 abas ainda renderizam em barra horizontal superior que quebra em 3 linhas [OBSERVADO]. O repositório já dispõe do componente estrutural `components/Layout/Sidebar.js` (atualmente referenciado apenas em `pages/design-system.js`), que serve de base para implementar esta especificação (ver §8, item 17).
+Diferentemente do Site Público (que utiliza navegação horizontal abaixo do banner), o Site Privado adota **exclusivamente** uma **barra de navegação vertical posicionada na lateral esquerda da interface** (`pages/admin.js` + `components/Layout/Sidebar.js`, [ADR-0036](adr/0036-shared-visual-standard-and-admin-collapsible-sidebar.md)), projetada para acomodar as 10 seções operacionais sem quebrar linhas no topo e liberar altura e largura úteis para tabelas e formulários.
 
 1. **Modo recolhido:**
-   - Exibe **somente os ícones** correspondentes a cada aba liberada ao usuário (`width` compacta de ~`64px–72px`).
+   - Exibe **somente os ícones** correspondentes a cada aba liberada ao usuário (`width` compacta de `72px`).
    - Oculta completamente os nomes/textos das abas e eventuais rótulos auxiliares de seção.
-   - Mantém os ícones organizados verticalmente em coluna única centralizada, preservando alinhamento óptico e espaçamento vertical uniforme (`--spacing-1` a `--spacing-2`, alvo clicável `≥ 44×44px` por item).
-   - Garante identificação imediata de cada aba por meio de ícones SVG distintos e semânticos, `aria-label` com o nome completo da aba e dica visual discreta (`title`/tooltip acessível em hover e foco por teclado).
-   - Mantém indicação visual inequívoca da aba atualmente selecionada: fundo em realce suave (`--color-primary-50`), ícone na cor primária (`--color-primary-500`), marcador vertical ativo à esquerda em `--color-primary-500` e `aria-selected="true"` (ou `aria-current="page"`).
+   - Mantém os ícones organizados verticalmente em coluna única centralizada, preservando alinhamento óptico e espaçamento vertical uniforme (`--spacing-1`, alvo clicável `≥ 44×44px` por item).
+   - Garante identificação imediata de cada aba por meio de ícones SVG distintos e semânticos (`AppIcon`), `aria-label` com o nome completo da aba e dica visual discreta (`title` nativo em hover).
+   - Mantém indicação visual inequívoca da aba atualmente selecionada: fundo em realce suave (`--color-primary-50`), ícone na cor primária (`--color-primary-500`), marcador vertical ativo à esquerda em `--color-primary-500` e `aria-current="page"`.
 
 2. **Modo expandido:**
-   - Exibe os **ícones posicionados à esquerda** acompanhados dos **respectivos nomes completos das abas** à direita (`width` confortável de ~`240px–260px`, `gap: var(--spacing-3)`).
+   - Exibe os **ícones posicionados à esquerda** acompanhados dos **respectivos nomes completos das abas** à direita (`width` confortável de `260px`, `gap: var(--spacing-3)`).
    - Garante alinhamento vertical rigoroso entre todos os ícones e rótulos da lista, sem quebra desordenada em múltiplas linhas (`white-space: nowrap`, `text-overflow: ellipsis`).
    - Preserva a hierarquia visual com tipografia `--font-size-sm` (`14px`), peso `medium` (`500`) e cor `--color-text-secondary` nas abas inativas, hover sutil (`--color-bg-secondary` + `--color-text-primary`) e espaçamento interno confortável (`padding` vertical e horizontal adequados à leitura).
    - Mantém a identificação clara da aba selecionada (fundo `--color-primary-50`, ícone e texto em `--color-primary-500` com peso `semibold` `600` e marcador lateral ativo).
@@ -135,11 +133,11 @@ Subdivisões internas de segundo nível permanecem como controles horizontais en
 Todas são construídas sobre `AdminCrudBase` (`components/Admin/AdminCrudBase.js`) e seguem o mesmo fluxo operacional e visual:
 
 1. **Cabeçalho da seção:** título `h2` à esquerda ("Gerenciar Posts", "Gestão de Músicas", etc.) + contador "Total: N itens cadastrados" logo abaixo (`--color-text-secondary`).
-2. **Barra de ações (à direita, responsiva com `flex-wrap`):** campo de busca "Buscar item..." (com ícone de lupa SVG à esquerda) → botão secundário "Exportar CSV" → botão primário "+ Novo ..." ([OBSERVADO] hoje azul-info no CSV e verde no "+ Novo"; [PLANEJADO] padronizar conforme §1.1 item 6).
+2. **Barra de ações (à direita, responsiva com `flex-wrap`):** campo de busca "Buscar item..." (com ícone de lupa SVG à esquerda e botão circular interno de limpeza) → botão secundário neutro "Exportar CSV" → botão primário azul "+ Novo ..." (`--color-primary-500`).
 3. **Tabela de listagem:** superfície `--color-bg-primary`, raio `--border-radius-lg`, rolagem horizontal segura em telas pequenas (`overflow-x: auto`). Nas 4 abas com curadoria manual (Posts, Músicas, Vídeos e Produtos), a primeira coluna exibe a alça de reordenação por arrastar (`☰`, posições 1-based via `utils/reorder.js`); em Categorias, Dicas, Usuários e Cargos não há coluna `☰`. Seguem-se as colunas específicas e a coluna "Ações" ("Editar" / "Excluir"). Estado vazio centralizado em `--color-text-secondary`.
 4. **Formulário de criação/edição:** abre suavemente acima da tabela ao clicar em "+ Novo" ou "Editar", dentro de container `--color-bg-secondary` com borda `--color-border-light` e raio `--border-radius-xl` (`12px`). O botão de abertura alterna para "Cancelar" e o "Exportar CSV" permanece disponível.
-5. **Publicação:** checkbox no formulário + selo clicável de alternância rápida na tabela ("Rascunho" em tom âmbar / "Publicado" em tom verde, com atualização otimista e reversão em erro). **Apenas registros com status Publicado são exibidos no site público. Registros com status Rascunho permanecem disponíveis no painel administrativo, mas não são exibidos nas abas públicas correspondentes.**
-6. **Botão "Puxar Dados"** nos campos de link externo (Spotify em Músicas, YouTube em Vídeos, lojas em Produtos): importa metadados automaticamente a partir da URL informada ([OBSERVADO] com emoji `⚡` e cor por tipo; [PLANEJADO] ícone SVG vetorial e alinhamento ao sistema de botões do §1.1 item 6).
+5. **Publicação:** checkbox no formulário + selo clicável de alternância rápida na tabela ("Rascunho" em tom âmbar / "Publicado" em tom verde, com ícone SVG `AppIcon`, atualização otimista e reversão em erro). **Apenas registros com status Publicado são exibidos no site público. Registros com status Rascunho permanecem disponíveis no painel administrativo, mas não são exibidos nas abas públicas correspondentes.**
+6. **Botão "Puxar Dados"** nos campos de link externo (Spotify em Músicas, YouTube em Vídeos, lojas em Produtos): botão secundário padronizado com ícone SVG (`zap` / `clock`, `ExternalDataButton.js`) que importa metadados automaticamente a partir da URL informada.
 
 ### 3.1 Regras de cadastro e exibição
 
@@ -152,16 +150,16 @@ Todas são construídas sobre `AdminCrudBase` (`components/Admin/AdminCrudBase.j
 
 ### 4.1 Visão Geral
 - **Título:** "Visão Geral do Sistema".
-- **6 cartões interativos** (grade responsiva, clicáveis para navegar à respectiva aba quando o usuário possui a permissão correspondente) com ícone, número grande e rótulo:
+- **6 cartões interativos** (grade responsiva, clicáveis para navegar à respectiva aba quando o usuário possui a permissão correspondente) com ícone SVG (`AppIcon`), número grande e rótulo:
   | Cartão | Detalhe exibido |
   |---|---|
-  | Artigos | "✅ N Pub \| 📝 N Rasc" (publicados / rascunhos) |
+  | Artigos | "`N Pub` \| `N Rasc`" com ícones SVG `checkCircle` / `fileText` (publicados / rascunhos) |
   | Músicas | idem |
   | Vídeos | idem |
   | Produtos | idem |
   | Dicas | idem |
   | Usuários | "Ativos: Hoje (N) • Mês (N) • Ano (N)" |
-- **Distribuição de Conteúdo:** barras horizontais por categoria, com cor própria: Artigos (azul), Músicas (verde), Vídeos (vermelho), Produtos (laranja), Dicas (roxo), Usuários (ciano). Mostra o valor dentro da barra quando maior que zero.
+- **Distribuição de Conteúdo:** barras horizontais por categoria, com cores tokenizadas de contraste AA (`≥ 4,5:1` sobre texto branco): Artigos (`--color-primary-500`), Músicas (`--color-success-700`), Vídeos (`--color-error-600`), Produtos (`--color-warning-700`), Dicas (`--color-secondary-700`), Usuários (`--color-primary-700`). Mostra o valor dentro da barra quando maior que zero.
 - **Nota histórica:** nas capturas iniciais os contadores apareciam zerados (exceto Usuários = 1), situação esclarecida e validada em §8, item 1.
 
 ### 4.2 Posts/Artigos
@@ -176,7 +174,7 @@ Todas são construídas sobre `AdminCrudBase` (`components/Admin/AdminCrudBase.j
   | Slug (URL amigável) | Sim | "Usado na URL do post. Ex: meusite.com/blog/exemplo-de-slug" |
   | Resumo | Não | até 500 caracteres, contador "0 / 500"; "Aparece na listagem do blog" |
   | Conteúdo | Não | área grande de texto livre ("Conteúdo completo do post...") |
-  | Imagem de Capa | Não | URL (`https://...`) ou botão verde "Upload" |
+  | Imagem de Capa | Não | URL (`https://...`) ou botão secundário "Upload" (com ícone SVG `upload`) |
   | Categorias | Não | grupo de checkboxes com as categorias cadastradas; "Opcional. Selecione uma ou mais categorias." Sem categorias cadastradas, exibe "Nenhuma categoria cadastrada. Crie na aba \"Categorias\"." |
   | Publicar post imediatamente | — | desmarcado por padrão → "Rascunho"; "Se desmarcado, o post será salvo como rascunho." |
   Botão final: "Salvar".
@@ -204,10 +202,10 @@ Todas são construídas sobre `AdminCrudBase` (`components/Admin/AdminCrudBase.j
   - Título da Música * ("Nome da música")
   - Nome do Artista * ("Nome do artista")
   - Descrição (até 500 caracteres) — opcional, `TextAreaField` com contador (mesmo padrão de Vídeos)
-  - Link do Spotify * (formato `https://open.spotify.com/track/...`) + botão "⚡ Puxar Dados"
+  - Link do Spotify * (formato `https://open.spotify.com/track/...`) + botão "Puxar Dados" (com ícone SVG `zap`)
   - Publicar música imediatamente (desmarcado → Rascunho)
   - Botão "Cadastrar Música"
-- **Relação com o público:** o link Spotify gera o player incorporado e o botão "Ouvir no Spotify". Apenas **tracks** são suportados: o formulário, a API e o "⚡ Puxar Dados" recusam link não-track (playlist, álbum, episódio) com a mensagem "Apenas links de faixa (track) são suportados para embed." (decisão em [ADR-0023](adr/0023-spotify-embed-limitado-a-tracks-com-fallback.md)). No site público, URL não-track deixada de versões antigas exibe "Prévia indisponível" em vez de iframe quebrado (ver `docs/ARQUITETURA_SITE_PUBLICO.md` §3.3).
+- **Relação com o público:** o link Spotify gera o player incorporado e o botão "Ouvir no Spotify". Apenas **tracks** são suportados: o formulário, a API e o "Puxar Dados" recusam link não-track (playlist, álbum, episódio) com a mensagem "Apenas links de faixa (track) são suportados para embed." (decisão em [ADR-0023](adr/0023-spotify-embed-limitado-a-tracks-com-fallback.md)). No site público, URL não-track deixada de versões antigas exibe "Prévia indisponível" em vez de iframe quebrado (ver `docs/ARQUITETURA_SITE_PUBLICO.md` §3.3).
 
 ### 4.4 Gestão de Vídeos
 - **Botão:** "+ Novo Vídeo".
@@ -216,7 +214,7 @@ Todas são construídas sobre `AdminCrudBase` (`components/Admin/AdminCrudBase.j
 - **Formulário:**
   - Título do Vídeo * ("Nome do vídeo")
   - Descrição (até 500 caracteres)
-  - Link do YouTube * (`https://www.youtube.com/watch?v=...`) + botão "⚡ Puxar Dados"
+  - Link do YouTube * (`https://www.youtube.com/watch?v=...`) + botão "Puxar Dados" (com ícone SVG `zap`)
   - Capa Personalizada (URL ou "Upload"): "Opcional. Se vazio, usará a miniatura padrão do YouTube."
   - Publicar vídeo imediatamente (desmarcado → Rascunho)
   - Botão "Cadastrar Vídeo"
@@ -232,7 +230,7 @@ Todas são construídas sobre `AdminCrudBase` (`components/Admin/AdminCrudBase.j
   - Imagens do Produto * — upload pelo botão "Adicionar imagem" (preview com remoção) **ou** colar URLs, uma por linha; a primeira imagem é a capa e as demais formam o carrossel.
   - Descrição ("Detalhes sobre o produto...")
   - Categoria (ex.: "livros", "terços"; vazio vira "geral") — alimenta o filtro de categoria da vitrine.
-  - Link do Produto + botão amarelo "⚡ Puxar Dados" — aceita links da **Amazon, Mercado Livre e Shopee** e preenche nome, imagem e descrição lendo as meta tags da página. **O preço não é importado do Mercado Livre**: o botão deixa o campo vazio e avisa para digitar o valor. Motivo (confirmado em 29/10/2026): desde abr/2025 a API do ML exige token OAuth — sem credencial, `/items` responde 403 e `/products` 401, e o preview servido ao robô de link-preview não traz preço. Com `ML_ACCESS_TOKEN` configurado no ambiente, a rota consulta `/items/{wid}` e passa a trazer preço e carrossel. Amazon e Shopee também podem falhar por anti-bot (preenchimento manual nesse caso).
+  - Link do Produto + botão secundário "Puxar Dados" (com ícone SVG `zap`) — aceita links da **Amazon, Mercado Livre e Shopee** e preenche nome, imagem e descrição lendo as meta tags da página. **O preço não é importado do Mercado Livre**: o botão deixa o campo vazio e avisa para digitar o valor. Motivo (confirmado em 29/10/2026): desde abr/2025 a API do ML exige token OAuth — sem credencial, `/items` responde 403 e `/products` 401, e o preview servido ao robô de link-preview não traz preço. Com `ML_ACCESS_TOKEN` configurado no ambiente, a rota consulta `/items/{wid}` e passa a trazer preço e carrossel. Amazon e Shopee também podem falhar por anti-bot (preenchimento manual nesse caso).
   - Produto Publicado — **desmarcado por padrão** desde 29/10/2026 (ADR-0029: todo conteúdo nasce rascunho); marcar publica o produto na vitrine (selo "Publicado"). "Desmarque para transformar o produto em um Rascunho (ocultar da vitrine pública)."
   - Botão "Salvar Produto"
 - **Regra única de nascimento (ADR-0029, 29/10/2026):** todos os tipos de conteúdo — Posts, Músicas, Vídeos, Produtos e Dicas — nascem como **rascunho** (`DEFAULT false` no banco; toggle dos formulários desmarcado). Nada é publicado sem ação consciente do operador.
@@ -261,9 +259,9 @@ Todas são construídas sobre `AdminCrudBase` (`components/Admin/AdminCrudBase.j
 ## 5. Segurança, Usuários e Auditoria
 
 ### 5.1 Segurança — subabas
-Barra interna horizontal com 4 subabas ([OBSERVADO] com emojis; [PLANEJADO] ícones SVG vetoriais, ver §8, item 18): 🛡️ Verificação de Integridade | 💾 Backup do Sistema | 🔒 Rate Limiting | ⚡ Cache do Sistema.
+Barra interna horizontal com 4 subabas e ícones SVG vetoriais (`AppIcon`): `shield` Verificação de Integridade | `database` Backup do Sistema | `lock` Rate Limiting | `zap` Cache do Sistema.
 
-**Verificação de Integridade** (botão "🔄 Atualizar"; faixa verde "✅ Sistema Saudável"):
+**Verificação de Integridade** (botão secundário "Atualizar" com ícone `refresh`; faixa verde "Sistema Saudável" com ícone `checkCircle`):
 | Componente | Dados mostrados (valores observados) |
 |---|---|
 | Banco de Dados | Status Conectado; Latência 0 ms; Tamanho 9.3 MB; Conexões 5 |
@@ -272,12 +270,12 @@ Barra interna horizontal com 4 subabas ([OBSERVADO] com emojis; [PLANEJADO] íco
 
 **Backup do Sistema:**
 - Texto: backups automáticos diários; backup manual possível.
-- "Último Backup Realizado": nome do arquivo `.sql.gz.enc`, data extraída do próprio nome de criação do backup (`getAvailableBackups` — divergência histórica de `mtime` corrigida em 2026-10-27, ver §8, item 3) e tamanho em KB no formato pt-BR.
-- Botão "📥 Realizar Backup Agora".
+- "Último Backup Realizado": nome do arquivo `.sql.gz.enc` (com ícone SVG `file`), data extraída do próprio nome de criação do backup (`getAvailableBackups` — divergência histórica de `mtime` corrigida em 2026-10-27, ver §8, item 3) e tamanho em KB no formato pt-BR.
+- Botão primário "Realizar Backup Agora" (com ícone SVG `download`).
 
-**Rate Limiting:** botão "🔄 Atualizar"; filtros "🔒 Bloqueados (0)", "✅ Whitelist (0)", "📋 Auditoria". Vazio: "Nenhum IP bloqueado no momento. Todas as requisições estão dentro dos limites configurados." Rodapé: "Atualização automática a cada 15s".
+**Rate Limiting:** botão secundário "Atualizar" (ícone `refresh`); subfiltros com ícones SVG "Bloqueados (0)" (`lock`), "Whitelist (0)" (`checkCircle`), "Auditoria" (`history`). Vazio: "Nenhum IP bloqueado no momento. Todas as requisições estão dentro dos limites configurados." Rodapé: "Atualização automática a cada 15s".
 
-**Cache do Sistema:** explica que limpar o cache força buscar dados novos do banco ("use se as alterações não estiverem aparecendo no site"). Botão destrutivo vermelho "Limpar Cache Redis". Status: "✅ Redis Conectado", Erros 0, Fallbacks 0, Tamanho Local 0 entradas, Última Falha Nenhuma.
+**Cache do Sistema:** explica que limpar o cache força buscar dados novos do banco ("use se as alterações não estiverem aparecendo no site"). Botão destrutivo vermelho "Limpar Cache Redis". Status: "Redis Conectado" (com ícone `checkCircle`), Erros 0, Fallbacks 0, Tamanho Local 0 entradas, Última Falha Nenhuma.
 
 ### 5.2 Usuários — subabas
 **Gestão de Usuários e Admins:**
@@ -311,18 +309,18 @@ Barra interna horizontal com 4 subabas ([OBSERVADO] com emojis; [PLANEJADO] íco
 - **Padrão de ação:** `VERBO + OBJETO` em caixa alta (ex.: `CRIAR POST`, `ATUALIZAR PRODUTO`, `REORDENAR VÍDEOS`, `EXCLUIR CARGO`), sempre acompanhado de título/identificador real nos detalhes.
 
 ## 6. Mapa permissão → aba
-| Permissão | Aba do painel (ícone atual [OBSERVADO]) |
+| Permissão | Aba do painel (`AppIcon` + rótulo) |
 |---|---|
-| Visão Geral | 📊 Visão Geral |
-| Posts/Artigos | 📝 Posts/Artigos |
-| Gestão de Músicas | 🎵 Gestão de Músicas |
-| Gestão de Vídeos | 🎬 Gestão de Vídeos |
-| Gestão de Produtos | 📦 Gestão de Produtos |
-| Gestão de Dicas | 💡 Gestão de Dicas |
-| Configuração de Cabeçalho | 🎨 Configuração de Cabeçalho |
-| Segurança | 🔒 Segurança |
-| Usuários | 👥 Usuários |
-| Auditoria | 📜 Auditoria |
+| Visão Geral | `chart` — Visão Geral |
+| Posts/Artigos | `fileText` — Posts/Artigos |
+| Gestão de Músicas | `music` — Gestão de Músicas |
+| Gestão de Vídeos | `video` — Gestão de Vídeos |
+| Gestão de Produtos | `package` — Gestão de Produtos |
+| Gestão de Dicas | `lightbulb` — Gestão de Dicas |
+| Configuração de Cabeçalho | `palette` — Configuração de Cabeçalho |
+| Segurança | `lock` — Segurança |
+| Usuários | `users` — Usuários |
+| Auditoria | `history` — Auditoria |
 
 ## 7. Ligação entre painel e site público
 
@@ -376,14 +374,14 @@ A aba pública "Em Desenvolvimento" não tem gestão no painel.
 | 7 | **Senha mínima de 6 caracteres:** fraca. Considerar elevar para pelo menos 10 a 12 e exigir senha forte para admin. | **decidido e executado em 2026-10-30 (ADR-0031)** — política única em `lib/auth/password-policy.js`: mínimo de **12 caracteres** com letra maiúscula, minúscula e número, aplicada à criação e à troca de senha no painel de Usuários (server + client). A senha atual do admin continua válida até a próxima troca; o login não valida comprimento |
 | 16 | **Unificação da nomenclatura de publicação:** coluna `published` em todas as tabelas de conteúdo e default `false` (nada nasce publicado; formulários abrem com o toggle desmarcado) — executa a "evolução futura" registrada no ADR-0025 (item 3). | **decidido e executado em 2026-10-29 (ADR-0029)** — migration `020-unify-published-column` (rename `publicado`→`published` em musicas/videos, preservando dados; `SET DEFAULT false` em musicas, videos, dicas e products); sweep em lockstep no código, testes e schemas (guarda `schema-sources.test.js`); índices da migration 012 atualizados para replay pós `db:reset`. **Deploy: rodar `npm run migrate` no banco de produção** |
 
-**Alinhamento visual e navegação lateral ([PLANEJADO] — dependem de implementação no código)**
+**Alinhamento visual e navegação lateral**
 
 | # | Item | Status |
 |---|---|---|
-| 17 | **Navegação lateral esquerda recolhível/expansível:** substituir a barra horizontal de abas em 3 linhas e o cartão fixo de `1000px` (`pages/admin.js`, `components/Admin/styles/tabs.module.css`) pela barra vertical esquerda com modo recolhido (somente ícones), modo expandido (ícones à esquerda + nomes à direita), controle de alternância suave e adaptação fluida da área de conteúdo + gaveta responsiva em telas `≤ 1024px` (reaproveitando e alinhando `components/Layout/Sidebar.js`). | **[PLANEJADO] pendente de implementação** — especificado em §1 e §2.2 |
-| 18 | **Ícones vetoriais uniformes:** substituir emojis nas 10 abas principais, nas 4 subabas de Segurança, nos cartões da Visão Geral e nos botões de ação ("⚡ Puxar Dados", "🔄 Atualizar", "📥 Realizar Backup Agora") por ícones SVG de família única e traço consistente (`MASTER.md` §7). | **[PLANEJADO] pendente de implementação** — especificado em §2, §2.2 e §5.1 |
-| 19 | **Semântica unificada de botões:** convergir cores divergentes de botões no painel (`components/Admin/styles/crud.module.css`, `AdminAudit.js`, `pages/admin.js` — verde em criar/editar/exportar-auditoria, azul-info em exportar-CRUD, cinza sólido em cancelar/paginar) para o padrão compartilhado com o Site Público (primário `--color-primary-500`, secundário neutro com borda `--color-border-light`, perigo `--color-error-500`). | **[PLANEJADO] pendente de implementação** — especificado em §1.1 item 6 |
-| 20 | **Arredondamentos, barras de busca e estilos inline:** padronizar raios em `--border-radius-lg` (`8px`) para controles/botões/inputs (incluindo `components/UI/Button.module.css` e `Input.module.css`, hoje em `12px`) e `--border-radius-xl` (`12px`) para cards/painéis, migrando campos de busca e tabelas com estilos inline (`AdminCrudBase.js`, `AdminAudit.js`, `pages/admin.js`) para CSS Modules com lupa SVG, botão limpar e anel de foco duplo azul. | **[PLANEJADO] pendente de implementação** — especificado em §1.1 itens 5 e 7 |
+| 17 | **Navegação lateral esquerda recolhível/expansível:** substituir a barra horizontal de abas em 3 linhas e o cartão fixo de `1000px` (`pages/admin.js`, `components/Admin/styles/tabs.module.css`) pela barra vertical esquerda com modo recolhido (somente ícones), modo expandido (ícones à esquerda + nomes à direita), controle de alternância suave e adaptação fluida da área de conteúdo + gaveta responsiva em telas `≤ 1024px` (reaproveitando e alinhando `components/Layout/Sidebar.js`). | **implementado em 2026-11-07 (ADR-0036)** — `pages/admin.js` e `components/Layout/Sidebar.js` implementam a barra vertical esquerda (`72px` recolhida / `260px` expandida, persistência em `localStorage`, `aria-expanded`, `aria-current="page"`, área principal fluida com `min-width: 0` e gaveta responsiva `≤ 1024px` com `overlay`, `inert` no `<main>` e fechamento por `Escape` ou seleção de aba), mantendo horizontais apenas as subabas de 2º nível (Posts/Categorias, Segurança e Usuários/Cargos) e eliminando o aninhamento duplicado de `.adminPanel` em `AdminUsers.js` |
+| 18 | **Ícones vetoriais uniformes:** substituir emojis nas 10 abas principais, nas 4 subabas de Segurança, nos cartões da Visão Geral e nos botões de ação ("⚡ Puxar Dados", "🔄 Atualizar", "📥 Realizar Backup Agora") por ícones SVG de família única e traço consistente (`MASTER.md` §7). | **implementado em 2026-11-07 (ADR-0036)** — família `AppIcon` (`components/UI/icons.js`, SVG `24×24`, `strokeWidth="2"`, `aria-hidden="true"`) adotada nas 10 abas principais, subabas de Segurança e Usuários, cartões da Visão Geral, selos de status, links externos e ferramentas `ExternalDataButton`, `ImageUploadField`, `UrlField`, `IntegrityCheck`, `RateLimitViewer`, `BackupManager`, `CacheManager` e `AdminAudit` |
+| 19 | **Semântica unificada de botões:** convergir cores divergentes de botões no painel (`components/Admin/styles/crud.module.css`, `AdminAudit.js`, `pages/admin.js` — verde em criar/editar/exportar-auditoria, azul-info em exportar-CRUD, cinza sólido em cancelar/paginar) para o padrão compartilhado com o Site Público (primário `--color-primary-500`, secundário neutro com borda `--color-border-light`, perigo `--color-error-500`). | **implementado em 2026-11-07 (ADR-0036)** — todos os estilos administrativos (`crud.module.css`, `form.module.css`, `misc.module.css`, `tabs.module.css`, `login.module.css`) convergiram para primário `--color-primary-500`, secundário neutro com borda `--color-border-light` e perigo `--color-error-500` |
+| 20 | **Arredondamentos, barras de busca e estilos inline:** padronizar raios em `--border-radius-lg` (`8px`) para controles/botões/inputs (incluindo `components/UI/Button.module.css` e `Input.module.css`, hoje em `12px`) e `--border-radius-xl` (`12px`) para cards/painéis, migrando campos de busca e tabelas com estilos inline (`AdminCrudBase.js`, `AdminAudit.js`, `pages/admin.js`) para CSS Modules com lupa SVG, botão limpar e anel de foco duplo azul. | **implementado em 2026-11-07 (ADR-0036)** — raios padronizados em `8px`/`12px` nos primitivos `components/UI/` e CSS do painel; barras de busca, filtros e tabelas migrados de `style` inline para CSS Modules com lupa SVG, botão interno de limpeza e foco duplo azul; removidos seletores mortos duplicados em `misc.module.css` e `crud.module.css` |
 
 ## 9. Regras de proteção do painel administrativo
 - Não renomear abas, permissões nem a ordem das abas sem pedido; renomear uma permissão exige migração dos cargos já salvos.

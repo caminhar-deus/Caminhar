@@ -1,6 +1,21 @@
 import { useState, useCallback, useEffect } from 'react';
+import { AppIcon } from '@/components/UI/icons';
 import styles from '../styles/misc.module.css';
 import crudStyles from '../styles/crud.module.css';
+
+const CHECK_STATUS_CONFIG = {
+  ok: { className: styles.statusHealthy, icon: 'checkCircle', label: 'OK' },
+  error: { className: styles.statusDanger, icon: 'xCircle', label: 'Erro' },
+  warning: { className: styles.statusWarning, icon: 'alertTriangle', label: 'Atenção' },
+  degraded: { className: styles.statusWarning, icon: 'alertTriangle', label: 'Degradado' },
+  unknown: { className: styles.statusNeutral, icon: 'info', label: 'Desconhecido' },
+};
+
+const OVERALL_STATUS_CONFIG = {
+  healthy: { className: styles.statusHealthy, icon: 'checkCircle', label: 'Sistema Saudável' },
+  degraded: { className: styles.statusDanger, icon: 'xCircle', label: 'Sistema Degradado' },
+  warning: { className: styles.statusWarning, icon: 'alertTriangle', label: 'Sistema com Alertas' },
+};
 
 /**
  * Componente de Verificação de Integridade do Sistema.
@@ -59,43 +74,22 @@ function IntegrityCheck() {
   const renderCheckCard = (key, check) => {
     if (!check) return null;
 
-    const statusColors = {
-      ok: { bg: '#d4edda', text: '#155724', border: '#c3e6cb' },
-      error: { bg: '#f8d7da', text: '#721c24', border: '#f5c6cb' },
-      warning: { bg: '#fff3cd', text: '#856404', border: '#ffeeba' },
-      degraded: { bg: '#fff3cd', text: '#856404', border: '#ffeeba' },
-      unknown: { bg: '#e2e3e5', text: '#383d41', border: '#d6d8db' },
-    };
-
-    const colors = statusColors[check.status] || statusColors.unknown;
-    const statusLabels = {
-      ok: '✅ OK',
-      error: '❌ Erro',
-      warning: '⚠️ Atenção',
-      degraded: '⚠️ Degradado',
-      unknown: '❓ Desconhecido',
-    };
-
+    const statusMeta = CHECK_STATUS_CONFIG[check.status] || CHECK_STATUS_CONFIG.unknown;
     const details = check.details || {};
 
     return (
       <div
         key={key}
-        style={{
-          backgroundColor: colors.bg,
-          border: `1px solid ${colors.border}`,
-          borderRadius: '8px',
-          padding: '16px',
-          marginBottom: '12px',
-        }}
+        className={`${styles.checkCard} ${statusMeta.className}`}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-          <h4 style={{ margin: 0, color: colors.text }}>{check.label}</h4>
-          <span style={{ fontWeight: 600, fontSize: '0.9rem', color: colors.text }}>
-            {statusLabels[check.status] || '❓ Desconhecido'}
+        <div className={styles.checkCardHeader}>
+          <h4 className={styles.checkCardTitle}>{check.label}</h4>
+          <span className={styles.checkStatusPill}>
+            <AppIcon name={statusMeta.icon} size={16} />
+            <span>{statusMeta.label}</span>
           </span>
         </div>
-        <div style={{ fontSize: '0.9rem', color: colors.text }}>
+        <div className={styles.checkDetails}>
           {renderDetails(key, details)}
         </div>
       </div>
@@ -103,91 +97,89 @@ function IntegrityCheck() {
   };
 
   const renderDetails = (key, details) => {
-    if (!details || Object.keys(details).length === 0) return <p style={{ margin: 0 }}>Nenhum detalhe disponível.</p>;
+    if (!details || Object.keys(details).length === 0) {
+      return <p className={styles.dashedEmptyTitle}>Nenhum detalhe disponível.</p>;
+    }
 
     switch (key) {
       case 'database':
         return (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px' }}>
-            <span>Status:</span><span style={{ fontWeight: 600 }}>{details.connected ? 'Conectado' : 'Desconectado'}</span>
-            <span>Latência:</span><span style={{ fontWeight: 600 }}>{details.latency || '—'}</span>
-            <span>Tamanho:</span><span style={{ fontWeight: 600 }}>{details.size || '—'}</span>
-            <span>Conexões:</span><span style={{ fontWeight: 600 }}>{details.connections ?? '—'}</span>
+          <div className={styles.checkGrid}>
+            <span>Status:</span><span className={styles.checkValue}>{details.connected ? 'Conectado' : 'Desconectado'}</span>
+            <span>Latência:</span><span className={styles.checkValue}>{details.latency || '—'}</span>
+            <span>Tamanho:</span><span className={styles.checkValue}>{details.size || '—'}</span>
+            <span>Conexões:</span><span className={styles.checkValue}>{details.connections ?? '—'}</span>
           </div>
         );
 
       case 'cache':
         return (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px' }}>
-            <span>Status:</span><span style={{ fontWeight: 600 }}>{details.connected ? 'Conectado' : 'Desconectado'}</span>
-            <span>Tipo:</span><span style={{ fontWeight: 600 }}>{details.type || details.message || '—'}</span>
-            {details.error && <span style={{ gridColumn: '1 / -1', color: '#721c24' }}>Erro: {details.error}</span>}
+          <div className={styles.checkGrid}>
+            <span>Status:</span><span className={styles.checkValue}>{details.connected ? 'Conectado' : 'Desconectado'}</span>
+            <span>Tipo:</span><span className={styles.checkValue}>{details.type || details.message || '—'}</span>
+            {details.error && <span className={styles.checkSpanFull}>Erro: {details.error}</span>}
           </div>
         );
 
       case 'storage':
         return (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px' }}>
-            <span>Arquivos:</span><span style={{ fontWeight: 600 }}>{details.totalFiles ?? '—'}</span>
-            <span>Tamanho:</span><span style={{ fontWeight: 600 }}>{details.totalSize || '—'}</span>
-            <span>Disco Livre:</span><span style={{ fontWeight: 600 }}>{details.diskFree || '—'}</span>
-            <span>Disco Total:</span><span style={{ fontWeight: 600 }}>{details.diskTotal || '—'}</span>
-            {details.message && <span style={{ gridColumn: '1 / -1', color: '#856404' }}>{details.message}</span>}
+          <div className={styles.checkGrid}>
+            <span>Arquivos:</span><span className={styles.checkValue}>{details.totalFiles ?? '—'}</span>
+            <span>Tamanho:</span><span className={styles.checkValue}>{details.totalSize || '—'}</span>
+            <span>Disco Livre:</span><span className={styles.checkValue}>{details.diskFree || '—'}</span>
+            <span>Disco Total:</span><span className={styles.checkValue}>{details.diskTotal || '—'}</span>
+            {details.message && <span className={styles.checkSpanFull}>{details.message}</span>}
           </div>
         );
 
       case 'backup':
         return (
           <div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px', marginBottom: details.lastBackup ? '8px' : 0 }}>
-              <span>Total de Backups:</span><span style={{ fontWeight: 600 }}>{details.totalBackups ?? '—'}</span>
+            <div className={styles.checkGrid}>
+              <span>Total de Backups:</span><span className={styles.checkValue}>{details.totalBackups ?? '—'}</span>
             </div>
             {details.lastBackup && (
-              <div style={{ marginTop: '8px', padding: '8px', backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: '6px' }}>
+              <div className={styles.nestedDetailBox}>
                 <strong>Último backup:</strong><br />
-                <span style={{ fontSize: '0.85rem' }}>{details.lastBackup.name}</span><br />
-                <span style={{ fontSize: '0.85rem' }}>{details.lastBackup.size} — {details.lastBackup.age}</span>
+                <span>{details.lastBackup.name}</span><br />
+                <span>{details.lastBackup.size} — {details.lastBackup.age}</span>
               </div>
             )}
-            {details.message && <span style={{ color: '#856404', fontSize: '0.85rem' }}>{details.message}</span>}
+            {details.message && <p className={styles.dashedEmptyHint}>{details.message}</p>}
           </div>
         );
 
       case 'system':
         return (
           <div>
-            <p style={{ margin: '0 0 8px 0', fontWeight: 600, fontSize: '0.95rem' }}>Sistema operacional</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px' }}>
-              <span>Node.js:</span><span style={{ fontWeight: 600 }}>{details.nodeVersion || '—'}</span>
-              <span>Uptime:</span><span style={{ fontWeight: 600 }}>{details.uptime || '—'}</span>
-              <span>RAM:</span><span style={{ fontWeight: 600 }}>{details.memoryUsage || '—'}</span>
-              <span>CPU:</span><span style={{ fontWeight: 600 }}>{details.cpuCores ? `${details.cpuCores} cores` : '—'}</span>
-              <span>Plataforma:</span><span style={{ fontWeight: 600 }}>{details.platform || '—'} ({details.arch || '—'})</span>
-              <span>Ambiente:</span><span style={{ fontWeight: 600 }}>{details.env || '—'}</span>
+            <p className={styles.sectionSubtitle}>Sistema operacional</p>
+            <div className={styles.checkGrid}>
+              <span>Node.js:</span><span className={styles.checkValue}>{details.nodeVersion || '—'}</span>
+              <span>Uptime:</span><span className={styles.checkValue}>{details.uptime || '—'}</span>
+              <span>RAM:</span><span className={styles.checkValue}>{details.memoryUsage || '—'}</span>
+              <span>CPU:</span><span className={styles.checkValue}>{details.cpuCores ? `${details.cpuCores} cores` : '—'}</span>
+              <span>Plataforma:</span><span className={styles.checkValue}>{details.platform || '—'} ({details.arch || '—'})</span>
+              <span>Ambiente:</span><span className={styles.checkValue}>{details.env || '—'}</span>
             </div>
           </div>
         );
 
       default:
-        return <pre style={{ margin: 0, fontSize: '0.8rem' }}>{JSON.stringify(details, null, 2)}</pre>;
+        return <pre className={styles.checkDetails}>{JSON.stringify(details, null, 2)}</pre>;
     }
   };
 
   // ── Loading State ──────────────────────────────────────────
   if (loading) {
     return (
-      <div>
-        <h3 className={styles.subNavLink} style={{ marginBottom: '16px' }}>Verificação de Integridade</h3>
+      <div className={styles.toolCard}>
+        <div className={styles.toolHeader}>
+          <h3 className={styles.toolTitle}>Verificação de Integridade</h3>
+        </div>
         {[1, 2, 3, 4, 5].map(i => (
           <div
             key={i}
-            className={crudStyles.skeletonBox}
-            style={{
-              height: '80px',
-              marginBottom: '12px',
-              borderRadius: '8px',
-              backgroundColor: 'var(--color-bg-tertiary)',
-            }}
+            className={`${crudStyles.skeletonBox} ${styles.skeletonCard}`}
           />
         ))}
       </div>
@@ -197,22 +189,20 @@ function IntegrityCheck() {
   // ── Error State ───────────────────────────────────────────
   if (error && !data) {
     return (
-      <div>
-        <h3 style={{ marginBottom: '16px' }}>Verificação de Integridade</h3>
-        <div style={{
-          padding: '20px',
-          backgroundColor: '#f8d7da',
-          border: '1px solid #f5c6cb',
-          borderRadius: '8px',
-          color: '#721c24',
-          textAlign: 'center',
-        }}>
-          <p style={{ margin: '0 0 12px 0', fontWeight: 600 }}>❌ Erro ao carregar verificação de integridade</p>
-          <p style={{ margin: '0 0 16px 0', fontSize: '0.9rem' }}>{error}</p>
+      <div className={styles.toolCard}>
+        <div className={styles.toolHeader}>
+          <h3 className={styles.toolTitle}>Verificação de Integridade</h3>
+        </div>
+        <div className={styles.statusAlertBox} role="alert">
+          <p className={styles.statusAlertTitle}>
+            <AppIcon name="xCircle" size={18} />
+            <span>Erro ao carregar verificação de integridade</span>
+          </p>
+          <p className={styles.statusAlertBody}>{error}</p>
           <button
+            type="button"
             onClick={() => { setLoading(true); fetchIntegrity(); }}
-            className={styles.button}
-            style={{ backgroundColor: '#721c24' }}
+            className={styles.dangerButton}
           >
             Tentar Novamente
           </button>
@@ -223,51 +213,34 @@ function IntegrityCheck() {
 
   // ── Success State ─────────────────────────────────────────
   const overallStatus = data?.status || 'unknown';
-  const statusColors = {
-    healthy: { bg: '#d4edda', text: '#155724' },
-    degraded: { bg: '#f8d7da', text: '#721c24' },
-    warning: { bg: '#fff3cd', text: '#856404' },
-  };
-  const overallColors = statusColors[overallStatus] || statusColors.warning;
-  const overallLabels = {
-    healthy: '✅ Sistema Saudável',
-    degraded: '❌ Sistema Degradado',
-    warning: '⚠️ Sistema com Alertas',
-  };
+  const overallMeta = OVERALL_STATUS_CONFIG[overallStatus] || OVERALL_STATUS_CONFIG.warning;
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h3 style={{ margin: 0 }}>Verificação de Integridade</h3>
+    <div className={styles.toolCard}>
+      <div className={styles.toolHeader}>
+        <h3 className={styles.toolTitle}>Verificação de Integridade</h3>
         <button
+          type="button"
           onClick={() => fetchIntegrity(true)}
-          className={styles.button}
+          className={styles.secondaryButton}
           disabled={refreshing}
-          style={{ padding: '6px 14px', fontSize: '0.85rem', opacity: refreshing ? 0.7 : 1 }}
         >
-          {refreshing ? 'Atualizando...' : '🔄 Atualizar'}
+          <AppIcon name="refresh" size={16} />
+          <span>{refreshing ? 'Atualizando...' : 'Atualizar'}</span>
         </button>
       </div>
 
       {/* Status geral */}
-      <div style={{
-        padding: '16px',
-        backgroundColor: overallColors.bg,
-        borderRadius: '8px',
-        color: overallColors.text,
-        marginBottom: '16px',
-        textAlign: 'center',
-        fontWeight: 600,
-        fontSize: '1.1rem',
-      }}>
-        {overallLabels[overallStatus] || overallStatus}
+      <div className={`${styles.statusBanner} ${overallMeta.className}`}>
+        <AppIcon name={overallMeta.icon} size={20} />
+        <span>{OVERALL_STATUS_CONFIG[overallStatus]?.label || overallStatus}</span>
       </div>
 
       {/* Cards de cada verificação */}
       {data?.checks && Object.entries(data.checks).map(([key, check]) => renderCheckCard(key, check))}
 
       {/* Timestamp */}
-      <div style={{ textAlign: 'right', fontSize: '0.8rem', color: 'var(--color-text-tertiary)', marginTop: '8px' }}>
+      <div className={styles.timestampNote}>
         Última verificação: {data?.timestamp ? new Date(data.timestamp).toLocaleString('pt-BR') : '—'}
       </div>
     </div>

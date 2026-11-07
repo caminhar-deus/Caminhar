@@ -1,27 +1,29 @@
-/* Video Gallery Styles */
+/* Video Gallery Styles — alinhado ao MASTER e design-system/pages/home.md */
 .galleryContainer {
   width: 100%;
-  padding: var(--spacing-4) 0;
+  padding: var(--spacing-6) 0;
 }
 
+.galleryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-8);
+  width: 100%;
+}
+
+/* Search & Sort Bar */
 .searchContainer {
   margin-bottom: var(--spacing-8);
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--spacing-3);
 }
 
 .searchRow {
   display: flex;
-  gap: 1rem;
-  align-items: flex-start;
-}
-
-@media (max-width: 640px) {
-  .searchRow {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
+  gap: var(--spacing-4);
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .searchWrapper {
@@ -29,59 +31,28 @@
   display: flex;
   align-items: center;
   flex: 1;
-  min-width: 0;
+  min-width: 240px;
 }
 
-.sortWrapper {
-  display: flex;
+.searchIcon {
+  position: absolute;
+  left: var(--spacing-3_5);
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  flex-shrink: 0;
-}
-
-.sortLabel {
-  font-size: var(--font-size-sm, 0.875rem);
-  color: var(--color-text-secondary, #666);
-  font-weight: var(--font-weight-medium, 500);
-  white-space: nowrap;
-}
-
-.sortSelect {
-  height: 44px;
-  padding: 0.5rem 2rem 0.5rem 0.75rem;
-  border: var(--border-width-2) solid var(--color-border-light, #e0e0e0);
-  border-radius: 50px;
-  font-size: var(--font-size-sm, 0.875rem);
-  color: var(--color-text-primary, #333);
-  background-color: var(--color-bg-primary, #fff);
-  cursor: pointer;
-  outline: none;
-  transition: var(--transition-all, all 0.2s ease);
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  background-size: 12px;
-}
-
-.sortSelect:focus {
-  border-color: var(--color-primary-500);
-  outline: 2px solid var(--color-focus-primary);
-  outline-offset: 2px;
-  box-shadow: var(--color-focus-ring);
-}
-
-.sortSelect:hover {
-  border-color: var(--color-primary-500);
+  justify-content: center;
+  color: var(--color-text-secondary);
+  pointer-events: none;
 }
 
 .searchInput {
   width: 100%;
-  padding: var(--spacing-4) var(--spacing-12) var(--spacing-4) var(--spacing-6);
-  border: var(--border-width-2) solid var(--color-border-light);
-  border-radius: 50px;
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-medium);
+  height: 44px;
+  padding: var(--spacing-2_5) var(--spacing-10) var(--spacing-2_5) var(--spacing-10);
+  border: var(--border-width-1) solid var(--color-border-light);
+  border-radius: var(--border-radius-lg);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-normal);
   color: var(--color-text-primary);
   background-color: var(--color-bg-primary);
   transition: var(--transition-all);
@@ -91,27 +62,30 @@
 
 .searchInput::placeholder {
   color: var(--color-text-tertiary);
-  font-weight: var(--font-weight-normal);
+}
+
+.searchInput:hover {
+  border-color: var(--color-primary-500);
 }
 
 .searchInput:focus {
   border-color: var(--color-primary-500);
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-  transform: translateY(-1px);
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
 }
 
 .clearButton {
   position: absolute;
-  right: var(--spacing-4);
-  background: none;
+  right: var(--spacing-2);
+  background: transparent;
   border: none;
-  font-size: var(--font-size-xl);
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   cursor: pointer;
-  padding: var(--spacing-1);
+  padding: 0;
   border-radius: var(--border-radius-full);
-  transition: var(--transition-all);
-  display: flex;
+  transition: var(--transition-background), var(--transition-color);
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   width: var(--spacing-8);
@@ -122,21 +96,59 @@
 .clearButton:hover {
   background-color: var(--color-bg-secondary);
   color: var(--color-text-primary);
-  transform: scale(1.1);
 }
 
-.clearButton:active {
-  transform: scale(0.95);
+.clearButton:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
 }
 
-.galleryGrid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--spacing-8);
-  width: 100%;
+.sortWrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex-shrink: 0;
 }
 
-/* Search Info */
+.sortLabel {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+.sortSelect {
+  height: 44px;
+  padding: 0 var(--spacing-8) 0 var(--spacing-3);
+  border: var(--border-width-1) solid var(--color-border-light);
+  border-radius: var(--border-radius-lg);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-primary);
+  cursor: pointer;
+  outline: none;
+  transition: var(--transition-all);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a3a3a3' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--spacing-3) center;
+  background-size: 12px;
+}
+
+.sortSelect:hover {
+  border-color: var(--color-primary-500);
+}
+
+.sortSelect:focus {
+  border-color: var(--color-primary-500);
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
+}
+
 .searchInfo {
   display: flex;
   justify-content: space-between;
@@ -144,121 +156,105 @@
   padding: 0 var(--spacing-2);
 }
 
-.resultCount,
-.totalCount {
+.resultCount {
   font-size: var(--font-size-sm);
-  color: var(--color-text-tertiary);
+  color: var(--color-primary-500);
   font-weight: var(--font-weight-medium);
 }
 
-.resultCount {
-  color: var(--color-primary-500);
+/* Error Retry */
+.retryWrapper {
+  text-align: center;
+  margin-top: var(--spacing-4);
 }
 
-/* No Results Styles */
+.retryButton {
+  min-height: 44px;
+  padding: var(--spacing-2_5) var(--spacing-5);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  border: var(--border-width-1) solid var(--color-border-light);
+  border-radius: var(--border-radius-lg);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: var(--transition-all);
+}
+
+.retryButton:hover {
+  background-color: var(--color-bg-secondary);
+  border-color: var(--color-border-default);
+}
+
+.retryButton:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
+}
+
+/* Empty State */
 .noResults {
   grid-column: 1 / -1;
   text-align: center;
-  padding: var(--spacing-16) var(--spacing-8);
-  background: linear-gradient(135deg, var(--color-bg-secondary) 0%, var(--color-bg-primary) 100%);
-  border-radius: var(--border-radius-2xl);
+  padding: var(--spacing-12) var(--spacing-6);
+  background-color: var(--color-bg-primary);
+  border-radius: var(--border-radius-xl);
   border: var(--border-width-1) solid var(--color-border-light);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--spacing-6);
+  gap: var(--spacing-4);
 }
 
 .noResultsIcon {
-  font-size: var(--font-size-7xl);
-  opacity: var(--opacity-60);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-tertiary);
 }
 
 .noResults h3 {
   margin: 0;
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-xl);
   color: var(--color-text-primary);
   font-weight: var(--font-weight-semibold);
 }
 
 .noResults p {
   margin: 0;
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-base);
-  max-width: 400px;
+  max-width: 420px;
   line-height: var(--line-height-relaxed);
 }
 
 .clearSearchButton {
-  background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+  min-height: 44px;
+  background-color: var(--color-primary-500);
   color: var(--color-text-inverse);
   border: none;
-  padding: var(--spacing-3) var(--spacing-6);
+  padding: var(--spacing-2_5) var(--spacing-5);
   border-radius: var(--border-radius-lg);
-  font-weight: var(--font-weight-semibold);
+  font-family: inherit;
+  font-weight: var(--font-weight-medium);
   font-size: var(--font-size-sm);
   cursor: pointer;
   transition: var(--transition-all);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .clearSearchButton:hover {
-  background: linear-gradient(135deg, var(--color-primary-600), var(--color-primary-500));
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+  background-color: var(--color-hover-primary);
+  box-shadow: var(--shadow-buttonHover);
 }
 
-/* Pagination Styles */
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 1rem;
-  margin-top: var(--spacing-10);
-  padding-bottom: var(--spacing-5);
+.clearSearchButton:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
 }
 
-.pageButton {
-  padding: 0.5rem 1.25rem;
-  border: var(--border-width-2) solid var(--color-border-light);
-  border-radius: 50px;
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
-  transition: var(--transition-all);
-}
-
-.pageButton:hover:not(:disabled) {
-  border-color: var(--color-primary-500);
-  color: var(--color-primary-500);
-  background-color: rgba(52, 152, 219, 0.05);
-}
-
-.pageButton:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.pageButtonDisabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.pageInfo {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  font-weight: var(--font-weight-medium);
-}
-
-.totalInfo {
-  color: var(--color-text-tertiary, #999);
-  font-size: var(--font-size-xs, 0.75rem);
-}
-
-/* Tablet landscape */
+/* Responsive Breakpoints */
 @media (max-width: 1024px) and (min-width: 769px) {
   .galleryGrid {
     grid-template-columns: repeat(2, 1fr);
@@ -266,7 +262,6 @@
   }
 }
 
-/* Tablet */
 @media (max-width: 768px) {
   .galleryGrid {
     grid-template-columns: 1fr;
@@ -276,95 +271,39 @@
   .searchContainer {
     margin-bottom: var(--spacing-6);
   }
+}
 
-  .searchInput {
-    padding: 0.75rem 2.5rem 0.75rem 1.25rem;
-    font-size: 0.95rem;
+@media (max-width: 640px) {
+  .searchRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-3);
   }
 
-  .clearButton {
-    right: 0.75rem;
-    font-size: 1.1rem;
-    width: 1.75rem;
-    height: 1.75rem;
+  .searchWrapper {
+    min-width: 0;
+    width: 100%;
   }
 
-  .noResults {
-    padding: 3rem 1.5rem;
-    gap: 1rem;
+  .sortWrapper {
+    width: 100%;
   }
 
-  .noResultsIcon {
-    font-size: 3rem;
-  }
-
-  .noResults h3 {
-    font-size: 1.25rem;
-  }
-
-  .noResults p {
-    font-size: 0.9rem;
-  }
-
-  .pagination {
-    margin-top: var(--spacing-8);
+  .sortSelect {
+    flex: 1;
   }
 }
 
-/* Mobile */
 @media (max-width: 480px) {
   .galleryContainer {
-    padding: 1.5rem 0;
+    padding: var(--spacing-4) 0;
   }
 
   .galleryGrid {
-    grid-template-columns: 1fr;
     gap: var(--spacing-5);
   }
 
-  .searchInput {
-    padding: 0.75rem 2.25rem 0.75rem 1rem;
-    font-size: 0.9rem;
-  }
-
-  .clearButton {
-    right: 0.6rem;
-    font-size: 1rem;
-    width: 1.5rem;
-    height: 1.5rem;
-  }
-
   .noResults {
-    padding: 2.5rem 1rem;
-  }
-
-  .noResultsIcon {
-    font-size: 2.5rem;
-  }
-
-  .noResults h3 {
-    font-size: 1.1rem;
-  }
-
-  .noResults p {
-    font-size: 0.85rem;
-  }
-
-  .pagination {
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    margin-top: var(--spacing-6);
-  }
-
-  .pageButton {
-    padding: 0.4rem 1rem;
-    font-size: 0.8rem;
-  }
-
-  .pageInfo {
-    font-size: 0.8rem;
-    width: 100%;
-    text-align: center;
-    order: -1;
+    padding: var(--spacing-8) var(--spacing-4);
   }
 }

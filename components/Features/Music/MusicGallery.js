@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useApiFetch, useDebounce } from '@/hooks';
 import { LoadingMessage, ErrorMessage } from '@/components/UI/StateMessages';
 import { Pagination } from '@/components/UI';
+import { AppIcon } from '@/components/UI/icons';
 import MusicCard from './MusicCard';
 import styles from './styles/MusicGallery.module.css';
 
@@ -91,6 +92,9 @@ export default function MusicGallery() {
       <div className={styles.searchContainer}>
         <div className={styles.searchRow}>
           <div className={styles.searchWrapper}>
+            <span className={styles.searchIcon} aria-hidden="true">
+              <AppIcon name="search" size={18} />
+            </span>
             <input
               type="text"
               placeholder="Pesquisar por música ou artista..."
@@ -106,12 +110,12 @@ export default function MusicGallery() {
                 aria-label="Limpar pesquisa"
                 type="button"
               >
-                ✕
+                <AppIcon name="close" size={16} />
               </button>
             )}
           </div>
           <div className={styles.sortWrapper}>
-            <label htmlFor="sort-select" className={styles.sortLabel}>Ordenar:</label>
+            <label htmlFor="sort-select" className={styles.sortLabel}>Ordenar por:</label>
             <select
               id="sort-select"
               value={sortBy}
@@ -144,7 +148,9 @@ export default function MusicGallery() {
 
       {!loading && !error && musicas.length === 0 && (
         <div className={styles.noResults}>
-          <div className={styles.noResultsIcon}>🎵</div>
+          <div className={styles.noResultsIcon} aria-hidden="true">
+            <AppIcon name="music" size={40} />
+          </div>
           <h3>Nenhuma música encontrada</h3>
           <p>
             {searchTerm

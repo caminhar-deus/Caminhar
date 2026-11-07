@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import AdminCrudBase from './AdminCrudBase';
 import TextField from './fields/TextField';
+import formStyles from './styles/form.module.css';
+import crudStyles from './styles/crud.module.css';
 import { z } from 'zod';
 import { isValidPassword, passwordPolicyMessage, PASSWORD_MIN_LENGTH } from '@/lib/auth/password-policy';
 import toast from 'react-hot-toast';
@@ -38,7 +40,7 @@ const validateUser = (data) => {
 // Função para formatar a data de forma amigável
 const formatLastLogin = (dateString) => {
   if (!dateString) {
-    return <span style={{ color: '#888' }}>Nunca</span>;
+    return <span className={crudStyles.mutedText}>Nunca</span>;
   }
   try {
     // Formata a data para um formato relativo (ex: "há 2 horas")
@@ -47,7 +49,7 @@ const formatLastLogin = (dateString) => {
       locale: ptBR,    // Usa o formato em português
     });
   } catch {
-    return <span style={{ color: 'red' }}>Data inválida</span>;
+    return <span className={crudStyles.errorText}>Data inválida</span>;
   }
 };
 
@@ -111,8 +113,8 @@ const RoleSelectField = ({ name, value, onChange, label, error, hint, gridColumn
   const describedBy = [hint ? hintId : null, error ? errorId : null].filter(Boolean).join(' ') || undefined;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', gridColumn }}>
-      <label htmlFor={name} style={{ fontWeight: '600', fontSize: '0.9rem', color: '#374151' }}>{label}</label>
+    <div className={formStyles.roleFieldWrap} style={gridColumn ? { gridColumn } : undefined}>
+      <label htmlFor={name} className={formStyles.roleFieldLabel}>{label}</label>
       <select
         id={name}
         name={name}
@@ -121,10 +123,7 @@ const RoleSelectField = ({ name, value, onChange, label, error, hint, gridColumn
         aria-describedby={describedBy}
         aria-errormessage={error ? errorId : undefined}
         aria-invalid={error ? 'true' : undefined}
-        style={{
-          padding: '10px', borderRadius: '6px', backgroundColor: '#f9fafb',
-          border: `1px solid ${error ? '#ef4444' : '#d1d5db'}`, width: '100%', fontSize: '0.95rem'
-        }}
+        className={`${formStyles.select}${error ? ` ${formStyles.selectError}` : ''}`}
         disabled={loading}
       >
         <option value="">{loading ? 'Carregando cargos...' : 'Selecione um cargo'}</option>
@@ -139,8 +138,8 @@ const RoleSelectField = ({ name, value, onChange, label, error, hint, gridColumn
           <option key={r.id} value={r.name}>{r.name}</option>
         ))}
       </select>
-      {hint && <span id={hintId} style={{ fontSize: '0.8rem', color: '#6b7280' }}>{hint}</span>}
-      {error && <span id={errorId} role="alert" style={{ fontSize: '0.8rem', color: '#ef4444', marginTop: '2px' }}>{error}</span>}
+      {hint && <span id={hintId} className={formStyles.formHint}>{hint}</span>}
+      {error && <span id={errorId} role="alert" className={formStyles.fieldError}>{error}</span>}
     </div>
   );
 };
@@ -170,7 +169,7 @@ const columns = [
   { key: 'id', header: 'ID', width: '60px' },
   { key: 'username', header: 'Usuário', render: (item) => <strong>{item.username}</strong> },
   { key: 'role', header: 'Cargo', render: (item) => (
-      <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem', fontWeight: 'bold', backgroundColor: '#f3f4f6', color: '#374151' }}>
+      <span className={crudStyles.roleBadge}>
         {item.role}
       </span>
   )},

@@ -57,13 +57,7 @@ export default function AdminDicas() {
     {
       key: 'published',
       header: 'Status',
-      width: '120px',
-      activeBgColor: '#dcfce7',
-      activeColor: '#166534',
-      activeIcon: '✅',
-      inactiveBgColor: '#f3f4f6',
-      inactiveColor: '#4b5563',
-      inactiveIcon: '📝'
+      width: '120px'
     }
   ];
 

@@ -27,14 +27,8 @@ export default function ToggleField({
 }) {
   return (
     <div className={`${styles.formGroup} ${className}`}>
-      <label 
-        style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: '0.5rem', 
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          opacity: disabled ? 0.6 : 1
-        }}
+      <label
+        className={`${styles.toggleLabel}${disabled ? ` ${styles.toggleLabelDisabled}` : ''}`}
       >
         <input
           type="checkbox"
@@ -42,29 +36,17 @@ export default function ToggleField({
           checked={checked}
           onChange={onChange}
           disabled={disabled}
-          style={{ 
-            width: 'auto', 
-            margin: 0,
-            cursor: disabled ? 'not-allowed' : 'pointer'
-          }}
+          className={styles.toggleCheckbox}
         />
         <span>{label}</span>
         <span
-          style={{
-            padding: '2px 8px',
-            borderRadius: '12px',
-            fontSize: '0.75rem',
-            fontWeight: '600',
-            backgroundColor: checked ? '#d4edda' : '#fff3cd',
-            color: checked ? '#155724' : '#856404',
-            border: `1px solid ${checked ? '#c3e6cb' : '#ffeeba'}`
-          }}
+          className={`${styles.toggleBadge} ${checked ? styles.toggleBadgeActive : styles.toggleBadgeInactive}`}
         >
           {checked ? activeLabel : inactiveLabel}
         </span>
       </label>
       {description && (
-        <small className={styles.formHint} style={{ display: 'block', marginTop: '4px' }}>
+        <small className={styles.formHint}>
           {description}
         </small>
       )}

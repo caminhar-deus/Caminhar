@@ -1,55 +1,129 @@
 /* ==========================================
-   Tabs module - Admin
-   classes usadas por: AdminUsers.js
+   Tabs & Layout module - Admin
+   classes usadas por: pages/admin.js, AdminUsers.js
    ========================================== */
 
-/* Admin panel wrapper */
-.adminPanel {
-  max-width: 1000px;
-  margin: 0 auto;
-  background: var(--color-bg-primary);
-  padding: var(--spacing-10);
+/* Container fluido dentro do <main> da Sidebar */
+.adminMainContainer {
+  width: 100%;
+  max-width: 100%;
+  padding: var(--spacing-6) var(--spacing-8);
+  box-sizing: border-box;
+}
+
+/* Cabeçalho administrativo enxuto no topo da área principal */
+.adminHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-6);
+  padding: var(--spacing-4) var(--spacing-6);
+  background-color: var(--color-bg-primary);
+  border: var(--border-width-1) solid var(--color-border-light);
   border-radius: var(--border-radius-xl);
-  box-shadow: var(--shadow-md);
-  overflow-wrap: break-word;
-  word-wrap: break-word;
+  box-shadow: var(--shadow-xs);
 }
 
-.adminPanel h1 {
+.adminHeader h1 {
+  margin: 0;
   color: var(--color-text-primary);
-  margin-bottom: var(--spacing-8);
-  font-size: var(--font-size-4xl);
-  text-align: center;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
 }
 
-/* Tabs */
+.adminUserGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  flex-wrap: wrap;
+}
+
+.adminGreeting {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.logoutButton {
+  background-color: var(--color-error-500);
+  color: var(--color-text-inverse);
+  border: var(--border-width-1) solid transparent;
+  min-height: 40px;
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--border-radius-lg);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: var(--transition-background);
+}
+
+.logoutButton:hover {
+  background-color: var(--color-error-600);
+}
+
+.logoutButton:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
+}
+
+/* Painel principal fluido (sem trava de 1000px) */
+.adminPanel {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  background-color: var(--color-bg-primary);
+  padding: var(--spacing-6);
+  border-radius: var(--border-radius-xl);
+  border: var(--border-width-1) solid var(--color-border-light);
+  box-shadow: var(--shadow-xs);
+  overflow-wrap: break-word;
+}
+
+.subSectionWrap {
+  width: 100%;
+}
+
+/* Subabas horizontais de 2º nível (Segurança e Usuários) */
 .tabs {
   display: flex;
-  margin-bottom: var(--spacing-8);
-  border-bottom: var(--border-width-1) solid var(--color-border-light);
   flex-wrap: wrap;
-  gap: var(--spacing-2_5);
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-6);
+  border-bottom: var(--border-width-1) solid var(--color-border-light);
 }
 
 .tabButton {
-  background: none;
+  background-color: transparent;
   border: none;
-  padding: var(--spacing-4) var(--spacing-5);
+  border-bottom: 2px solid transparent;
+  min-height: 44px;
+  padding: var(--spacing-2_5) var(--spacing-4);
+  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
   cursor: pointer;
-  font-size: var(--font-size-base);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
-  transition: var(--transition-color), border-bottom 0.3s;
-  border-bottom: 3px solid transparent;
+  transition: var(--transition-background), var(--transition-color), var(--transition-border);
   position: relative;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: var(--spacing-2);
 }
 
-.tabButton span.icon {
-  font-size: var(--font-size-lg);
-  width: var(--spacing-5);
-  text-align: center;
+.tabButton:hover:not(:disabled) {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+.tabButton:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
 }
 
 .tabButton:disabled {
@@ -58,44 +132,48 @@
   opacity: var(--opacity-60);
 }
 
-.tabButton:disabled:hover {
-  color: var(--color-text-tertiary);
-  background-color: transparent;
-}
-
 .tabButton.activeTab {
   color: var(--color-primary-500);
-  border-bottom: 3px solid var(--color-primary-500);
-}
-
-/* Active tab indicator (left border) */
-.tabButton.activeTab::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: var(--border-width-4);
-  height: 60%;
-  background-color: var(--color-primary-500);
-  border-radius: var(--border-radius-sm);
+  background-color: var(--color-primary-50);
+  font-weight: var(--font-weight-semibold);
+  border-bottom-color: var(--color-primary-500);
 }
 
 /* Tab Panel */
 .tabPanel {
-  min-height: 500px;
+  min-height: 480px;
   position: relative;
 }
 
 .tabPanel:focus-visible {
-  outline: 2px solid var(--color-primary-500);
+  outline: 2px solid var(--color-focus-primary);
   outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
   border-radius: var(--border-radius-lg);
 }
 
-/* Icon class for tab emoji icons */
+/* Contêiner de ícone SVG para subabas */
 .icon {
-  font-size: var(--font-size-lg);
-  width: var(--spacing-5);
-  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1024px) {
+  .adminMainContainer {
+    padding: var(--spacing-4);
+  }
+
+  .adminHeader {
+    padding: var(--spacing-4);
+  }
+
+  .adminHeader h1 {
+    font-size: var(--font-size-xl);
+  }
+
+  .adminPanel {
+    padding: var(--spacing-4);
+  }
 }

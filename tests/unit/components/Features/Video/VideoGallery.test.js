@@ -195,7 +195,8 @@ describe('Componente Front-End - VideoGallery', () => {
     render(<VideoGallery />);
     await waitFor(() => expect(screen.getByText('Vídeo Teste 1')).toBeInTheDocument());
 
-    // Mesmo padrão de Músicas e Produtos: "Posicionados" na 2ª posição, no mesmo select.
+    // Mesmo padrão de Músicas e Produtos: "Ordenar por:" visível e "Posicionados" na 2ª posição.
+    expect(screen.getByText('Ordenar por:')).toBeInTheDocument();
     const select = screen.getByLabelText('Ordenar vídeos');
     expect(Array.from(select.options).map((o) => [o.value, o.textContent])).toEqual([
       ['recent', 'Padrão'],

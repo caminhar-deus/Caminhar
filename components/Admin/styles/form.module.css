@@ -1,6 +1,7 @@
 /* ==========================================
    Form Fields module - Admin fields/
-   classes usadas por: ToggleField.js, UrlField.js, ImageUploadField.js
+   classes usadas por: ToggleField.js, UrlField.js, ImageUploadField.js,
+   ExternalDataButton.js, AdminUsersTab.js, pages/admin.js
    ========================================== */
 
 .formGroup {
@@ -15,36 +16,64 @@
   font-size: var(--font-size-sm);
 }
 
-.input {
+.requiredMark {
+  color: var(--color-error-500);
+  margin-left: var(--spacing-1);
+}
+
+.input,
+.select {
   width: 100%;
-  padding: var(--spacing-3) var(--spacing-4);
+  min-height: 44px;
+  padding: var(--spacing-2_5) var(--spacing-3_5);
   border: var(--border-width-1) solid var(--color-border-light);
   border-radius: var(--border-radius-lg);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: inherit;
   font-size: var(--font-size-base);
-  transition: var(--transition-border);
+  transition: var(--transition-border), var(--transition-shadow);
   box-sizing: border-box;
 }
 
-.input:focus {
-  outline: none;
-  border-color: var(--color-primary-500);
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+.selectError {
+  border-color: var(--color-error-500);
 }
 
-.formGroup input {
+.input:focus-visible,
+.select:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  border-color: var(--color-focus-primary);
+  box-shadow: var(--color-focus-ring);
+}
+
+.selectError:focus-visible {
+  outline: 2px solid var(--color-error-500);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px var(--color-error-halo);
+}
+
+.formGroup input:not([type='checkbox']):not([type='range']):not([type='file']) {
   width: 100%;
-  padding: var(--spacing-3) var(--spacing-4);
+  min-height: 44px;
+  padding: var(--spacing-2_5) var(--spacing-3_5);
   border: var(--border-width-1) solid var(--color-border-light);
   border-radius: var(--border-radius-lg);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: inherit;
   font-size: var(--font-size-base);
-  transition: var(--transition-border);
+  transition: var(--transition-border), var(--transition-shadow);
+  box-sizing: border-box;
 }
 
-.formGroup input:focus,
-.formGroup textarea:focus {
-  outline: none;
-  border-color: var(--color-primary-500);
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+.formGroup input:not([type='checkbox']):not([type='range']):not([type='file']):focus-visible,
+.formGroup textarea:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  border-color: var(--color-focus-primary);
+  box-shadow: var(--color-focus-ring);
 }
 
 .formHint {
@@ -54,11 +83,228 @@
   font-size: var(--font-size-xs);
 }
 
+.fieldError {
+  display: block;
+  margin-top: var(--spacing-1);
+  color: var(--color-error-500);
+  font-size: var(--font-size-xs);
+}
+
+/* Campo de seleção de cargo (AdminUsersTab) */
+.roleFieldWrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.roleFieldLabel {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+/* Upload de imagem (ImageUploadField) */
+.inlineUploadRow {
+  display: flex;
+  gap: var(--spacing-2_5);
+  align-items: flex-start;
+}
+
+.flexInput {
+  flex: 1;
+}
+
+.uploadLabelButton {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  border: var(--border-width-1) solid var(--color-border-light);
+  min-height: 44px;
+  padding: var(--spacing-2_5) var(--spacing-4);
+  border-radius: var(--border-radius-lg);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  white-space: nowrap;
+  margin-bottom: 0;
+  transition: var(--transition-background), var(--transition-border), var(--transition-opacity);
+}
+
+.formGroup label.uploadLabelButton {
+  display: inline-flex;
+  margin-bottom: 0;
+}
+
+.uploadLabelButton:hover {
+  background-color: var(--color-bg-secondary);
+  border-color: var(--color-border-default);
+}
+
+.uploadLabelButton:focus-within {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
+}
+
+.uploadLabelDisabled {
+  opacity: var(--opacity-60);
+  cursor: not-allowed;
+}
+
+.hiddenFileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.uploadPreviewList {
+  margin-top: var(--spacing-2_5);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2_5);
+}
+
+.uploadPreviewItem {
+  position: relative;
+}
+
+.uploadPreviewImg {
+  max-width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: var(--border-radius-md);
+  border: var(--border-width-1) solid var(--color-border-light);
+}
+
+.removePreviewButton {
+  position: absolute;
+  top: var(--spacing-1);
+  right: var(--spacing-1);
+  border: none;
+  border-radius: var(--border-radius-full);
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background-color: var(--color-bg-inverse);
+  color: var(--color-text-inverse);
+  line-height: 1;
+}
+
+.removePreviewButton:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
+}
+
+/* ToggleField */
+.formGroup label.toggleLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  cursor: pointer;
+  margin-bottom: 0;
+}
+
+.toggleLabelDisabled {
+  cursor: not-allowed;
+  opacity: var(--opacity-60);
+}
+
+.toggleCheckbox {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+  /* eslint-disable-next-line css/use-baseline */
+  accent-color: var(--color-primary-500);
+}
+
+.toggleCheckbox:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
+}
+
+.toggleBadge {
+  padding: var(--spacing-0_5) var(--spacing-2_5);
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  border: var(--border-width-1) solid transparent;
+}
+
+.toggleBadgeActive {
+  background-color: var(--color-success-50);
+  color: var(--color-success-800);
+  border-color: var(--color-success-200);
+}
+
+.toggleBadgeInactive {
+  background-color: var(--color-warning-50);
+  color: var(--color-warning-800);
+  border-color: var(--color-warning-200);
+}
+
+/* ExternalDataButton ("Puxar Dados" secundário padronizado) */
+.externalFieldRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2_5);
+}
+
+.externalFetchButton {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  border: var(--border-width-1) solid var(--color-border-light);
+  min-height: 44px;
+  padding: var(--spacing-2) var(--spacing-3_5);
+  border-radius: var(--border-radius-lg);
+  font-family: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-1_5);
+  white-space: nowrap;
+  margin-top: 26px;
+  transition: var(--transition-background), var(--transition-border), var(--transition-opacity);
+}
+
+.externalFetchButton:hover:not(:disabled) {
+  background-color: var(--color-bg-secondary);
+  border-color: var(--color-border-default);
+}
+
+.externalFetchButton:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
+}
+
+.externalFetchButton:disabled {
+  opacity: var(--opacity-60);
+  cursor: not-allowed;
+}
+
 /* Preview section (usado por UrlField.js) */
 .previewSection {
   margin-top: var(--spacing-5);
   padding-top: var(--spacing-5);
-  border-top: var(--border-width-1) solid var(--color-bg-tertiary);
+  border-top: var(--border-width-1) solid var(--color-border-light);
 }
 
 .previewSection label {
@@ -70,31 +316,43 @@
 }
 
 .videoPreview {
-  background-color: #000;
-  border-radius: var(--border-radius-md);
+  background-color: var(--color-bg-inverse);
+  border-radius: var(--border-radius-lg);
   overflow: hidden;
-  border: var(--border-width-1) solid var(--color-bg-tertiary);
+  border: var(--border-width-1) solid var(--color-border-light);
   max-width: 100%;
   width: fit-content;
 }
 
-.saveButton {
-  background-color: var(--color-success-500);
-  color: var(--color-text-inverse);
+.spotifyPreviewIframe {
+  border-radius: var(--border-radius-xl);
   border: none;
+}
+
+.saveButton {
+  background-color: var(--color-primary-500);
+  color: var(--color-text-inverse);
+  border: var(--border-width-1) solid transparent;
+  min-height: 40px;
   padding: var(--spacing-2) var(--spacing-4);
-  border-radius: var(--border-radius-md);
+  border-radius: var(--border-radius-lg);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: var(--transition-background);
+  transition: var(--transition-background), var(--transition-opacity);
 }
 
-.saveButton:hover {
-  background-color: var(--color-success-600);
+.saveButton:hover:not(:disabled) {
+  background-color: var(--color-hover-primary);
+}
+
+.saveButton:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
 }
 
 .saveButton:disabled {
-  background-color: var(--color-neutral-500);
+  opacity: var(--opacity-50);
   cursor: not-allowed;
 }

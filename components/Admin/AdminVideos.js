@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import styles from './styles/crud.module.css';
+import { AppIcon } from '@/components/UI/icons';
 import AdminCrudBase from './AdminCrudBase';
 import TextField from './fields/TextField';
 import UrlField from './fields/UrlField';
@@ -80,21 +82,15 @@ const columns = [
     key: 'titulo', 
     header: 'Título',
     render: (item) => (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div className={styles.cellMediaRow}>
         {item.thumbnail && (
-          <img 
-            src={item.thumbnail} 
-            alt="Capa" 
-            style={{ 
-              width: '40px', 
-              height: '40px', 
-              objectFit: 'cover', 
-              borderRadius: '4px',
-              border: '1px solid #e9ecef'
-            }} 
+          <img
+            src={item.thumbnail}
+            alt="Capa"
+            className={styles.cellThumb}
           />
         )}
-        <span style={{ fontWeight: 500 }}>{item.titulo}</span>
+        <span className={styles.cellTitle}>{item.titulo}</span>
       </div>
     )
   },
@@ -106,16 +102,17 @@ const columns = [
       const videoId = extractYoutubeId(item.url_youtube);
       return (
         <div>
-          <a 
-            href={item.url_youtube} 
-            target="_blank" 
+          <a
+            href={item.url_youtube}
+            target="_blank"
             rel="noopener noreferrer"
-            style={{ color: '#ff0000', textDecoration: 'none', fontWeight: 500 }}
+            className={styles.externalMediaLink}
           >
-            📺 Abrir no YouTube
+            <AppIcon name="externalLink" size={14} />
+            Abrir no YouTube
           </a>
           {videoId && (
-            <div style={{ marginTop: '10px' }}>
+            <div className={styles.embedPreviewWrap}>
               <LazyIframe
                 src={`https://www.youtube.com/embed/${videoId}?autoplay=0`}
                 title={`Pré-visualização do vídeo ${item.titulo}`}
@@ -133,13 +130,7 @@ const columns = [
   },
   {
     key: 'published',
-    header: 'Status',
-    // Customizando as cores especificamente para a aba de Vídeos (Estilo Youtube)
-    activeBgColor: '#fee2e2', // Fundo vermelho claro
-    activeColor: '#991b1b', // Texto vermelho escuro
-    activeIcon: '🎬',
-    inactiveBgColor: '#f3f4f6', // Fundo cinza padrão
-    inactiveIcon: '⏸️'
+    header: 'Status'
   }
 ];
 
@@ -166,8 +157,6 @@ export default function AdminVideosNew() {
   // Configuração do botão "Puxar Dados" do YouTube
   const youtubeButtonConfig = {
     endpoint: '/api/admin/fetch-youtube',
-    buttonColor: '#ff0000',
-    buttonTextColor: '#fff',
     loadingMessage: 'Buscando dados no YouTube...',
     successMessage: 'Vídeo encontrado!',
     validateUrl: (url) => url && (url.includes('youtube.com') || url.includes('youtu.be')),

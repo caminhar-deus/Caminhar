@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Modal, Button } from '@/components/UI';
+import { AppIcon } from '@/components/UI/icons';
+import styles from '../styles/misc.module.css';
 
 export default function AdminCacheManager() {
   const [loading, setLoading] = useState(false);
@@ -55,11 +57,13 @@ export default function AdminCacheManager() {
   };
 
   return (
-    <div style={{ marginTop: '2rem', padding: '1.5rem', border: '1px solid var(--color-border-light)', borderRadius: '8px', backgroundColor: 'var(--color-bg-primary)' }}>
-      <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '0.5rem', color: 'var(--color-text-primary)' }}>
-        Cache do Sistema
-      </h2>
-      <p style={{ marginBottom: '1rem', color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
+    <div className={styles.toolCard}>
+      <div className={styles.toolHeader}>
+        <h2 className={styles.toolTitle}>
+          Cache do Sistema
+        </h2>
+      </div>
+      <p className={styles.toolSubtitle}>
         Limpar o cache força o sistema a buscar dados atualizados do banco de dados imediatamente. Use isso se as alterações não estiverem aparecendo no site.
       </p>
       
@@ -87,7 +91,7 @@ export default function AdminCacheManager() {
             <Button
               variant="danger"
               onClick={handleClearCache}
-              style={{ marginLeft: '8px' }}
+              className={styles.modalActionGap}
             >
               Confirmar
             </Button>
@@ -98,20 +102,33 @@ export default function AdminCacheManager() {
       </Modal>
 
       {cacheMetrics && (
-        <div style={{ marginTop: '1.5rem' }}>
-          <h3 style={{ fontSize: '1rem', marginBottom: '0.8rem', color: 'var(--color-text-primary)' }}>
-            <span aria-hidden="true" style={{ marginRight: '6px' }}>📊</span>
-            Status do Cache Redis
+        <div className={styles.sectionBlock} style={{ marginTop: 'var(--spacing-6)', marginBottom: 0 }}>
+          <h3 className={styles.sectionSubtitle}>
+            <AppIcon name="chart" size={18} />
+            <span>Status do Cache Redis</span>
           </h3>
-          <div style={{ backgroundColor: cacheMetrics.redisConnected ? 'var(--color-success-50)' : 'var(--color-error-50)', padding: '15px', borderRadius: '6px', border: `1px solid ${cacheMetrics.redisConnected ? 'var(--color-success-200)' : 'var(--color-error-200)'}` }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '8px', color: cacheMetrics.redisConnected ? 'var(--color-success-700)' : 'var(--color-error-700)' }}>
-              {cacheMetrics.redisConnected ? '✅ Redis Conectado' : '❌ Redis Desconectado'}
+          <div className={`${styles.metricsBox} ${cacheMetrics.redisConnected ? styles.statusHealthy : styles.statusDanger}`}>
+            <div className={styles.metricsStatus}>
+              <AppIcon name={cacheMetrics.redisConnected ? 'checkCircle' : 'xCircle'} size={18} />
+              <span>{cacheMetrics.redisConnected ? 'Redis Conectado' : 'Redis Desconectado'}</span>
             </div>
-            <div style={{ fontSize: '0.9em', color: 'var(--color-text-secondary)', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
-              <div>⚠️ Erros: {cacheMetrics.redisErrors}</div>
-              <div>🔄 Fallbacks: {cacheMetrics.fallbackActivations}</div>
-              <div>📍 Tamanho Local: {cacheMetrics.localMapSize} entradas</div>
-              <div>⏱️ Última Falha: {cacheMetrics.lastFallbackTime ? new Date(cacheMetrics.lastFallbackTime).toLocaleString('pt-BR') : 'Nenhuma'}</div>
+            <div className={styles.metricsGrid}>
+              <div className={styles.metricItem}>
+                <AppIcon name="alertTriangle" size={14} />
+                <span>Erros: {cacheMetrics.redisErrors}</span>
+              </div>
+              <div className={styles.metricItem}>
+                <AppIcon name="refresh" size={14} />
+                <span>Fallbacks: {cacheMetrics.fallbackActivations}</span>
+              </div>
+              <div className={styles.metricItem}>
+                <AppIcon name="database" size={14} />
+                <span>Tamanho Local: {cacheMetrics.localMapSize} entradas</span>
+              </div>
+              <div className={styles.metricItem}>
+                <AppIcon name="clock" size={14} />
+                <span>Última Falha: {cacheMetrics.lastFallbackTime ? new Date(cacheMetrics.lastFallbackTime).toLocaleString('pt-BR') : 'Nenhuma'}</span>
+              </div>
             </div>
           </div>
         </div>

@@ -15,6 +15,23 @@
   padding: var(--spacing-10) 0;
 }
 
+.authLoadingMain {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+}
+
+.authLoadingCard {
+  text-align: center;
+}
+
+.authLoadingText {
+  margin-top: var(--spacing-4);
+  color: var(--color-text-secondary);
+}
+
 /* Login styles */
 .loginContainer {
   max-width: 400px;
@@ -38,13 +55,15 @@
   border: var(--border-width-1) solid var(--color-border-light);
   border-radius: var(--border-radius-lg);
   font-size: var(--font-size-base);
-  transition: var(--transition-border);
+  transition: var(--transition-border), var(--transition-shadow);
+  box-sizing: border-box;
 }
 
-.loginInput:focus {
-  outline: none;
-  border-color: var(--color-primary-500);
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+.loginInput:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  border-color: var(--color-focus-primary);
+  box-shadow: var(--color-focus-ring);
 }
 
 .button {
@@ -128,7 +147,7 @@
   color: var(--color-text-inverse);
   border: none;
   padding: var(--spacing-2) var(--spacing-4);
-  border-radius: var(--border-radius-md);
+  border-radius: var(--border-radius-lg);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
@@ -137,6 +156,13 @@
 
 .logoutButton:hover {
   background-color: var(--color-error-600);
+}
+
+.logoutButton:focus-visible,
+.navLink:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
 }
 
 /* Navigation */

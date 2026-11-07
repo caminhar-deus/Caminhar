@@ -31,7 +31,7 @@
   color: var(--color-text-primary);
   background-color: var(--color-bg-primary);
   border: var(--border-width-1) solid var(--color-border-light);
-  border-radius: var(--border-radius-xl);
+  border-radius: var(--border-radius-lg);
   cursor: pointer;
   transition: var(--transition-all);
   outline: none;
@@ -162,7 +162,9 @@
 /* Focused state */
 .selectFocused {
   border-color: var(--color-primary-500);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
 }
 
 /* Arrow rotation when open */

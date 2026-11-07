@@ -1,6 +1,6 @@
 # Página pública inicial (home) — spec de implementação (override do MASTER)
 
-> Última atualização: 2026-11-02 (anotações SQL de ordenação de Músicas e Produtos alinhadas com `lower(unaccent(titulo))` e desempate por `id` — item AF, ADR-0033). Anterior: 2026-11-01 ("Posicionados" exposto também no seletor de Vídeos — item AE, ADR-0033, mesma decisão D6); 2026-10-21 (decisões D1–D5 do checklist front-end: rodapé do cartão de produto, foco dos seletores de ordenação, alvo de toque 44px, `aria-live` na paginação, guard global de `prefers-reduced-motion`; exposição de "Posicionados" no seletor de Produtos — F4.2 concluído, opção exposta, legenda auxiliar não implementada).
+> Última atualização: 2026-11-07 (alinhamento visual unificado — ADR-0036: abas `ContentTabs` e cartões com ícones SVG `AppIcon`, busca e seletores de Músicas/Vídeos/Produtos unificados com lupa SVG, botão limpar interno, raio `8px`, foco duplo azul, rótulo `"Ordenar por:"` e cor primária `--color-primary-500`, cartões em `12px` e hover `-3px`). Anterior: 2026-11-02 (anotações SQL de ordenação de Músicas e Produtos alinhadas com `lower(unaccent(titulo))` e desempate por `id` — item AF, ADR-0033); 2026-11-01 ("Posicionados" exposto também no seletor de Vídeos — item AE, ADR-0033, mesma decisão D6); 2026-10-21 (decisões D1–D5 do checklist front-end).
 > Override de `design-system/MASTER.md`. Tudo aqui vence o MASTER; o que não for mencionado segue o MASTER. Stack: Next.js Pages Router + React + CSS Modules + variáveis CSS (sem Tailwind). Idioma da interface: pt-BR. Tokens: sempre a variável, nunca hex.
 
 > Escopo: a página única com abas (`pages/index.js` + `components/Features/ContentTabs`). Esta spec cobre os 6 itens definidos no `docs/PLANO_ACAO_SITE_PUBLICO.md` (F1.3, F1.4, F1.6, F2.3 + decisões de design) e não toca lógica de negócio nem o painel administrativo.
@@ -77,9 +77,10 @@
 - "Posicionados" está exposto em Músicas e (desde 2026-10-21) em Produtos; a curadoria funciona no painel para ambas as abas. A ressalva "pode ser exposto hoje" não se aplica mais. Em Vídeos, a opção foi exposta em 2026-11-01 (item AE, ADR-0033), na 2ª posição do mesmo select e sob a mesma decisão D6 (sem legenda).
 
 ### 2.3 Demais ajustes visuais
-- Rótulo do controle permanece "Ordenar:" (label visível, `htmlFor="sort-select"`). `aria-label="Ordenar músicas"`.
-- Controle existente (pill, borda verde Spotify `#1DB954`) mantém-se para Músicas (cor de destaque da aba). Altura 44px (decisão D3), mesmo padrão de Produtos. Hover: verde Spotify. Focus: borda verde Spotify `#1DB954` no `:focus` (diferença de marca intencional, registrada) + indicador de foco azul do sistema — `outline: 2px solid var(--color-focus-primary); outline-offset: 2px; box-shadow: var(--color-focus-ring);` — nunca verde no indicador. A diferença de borda entre abas é intencional; o indicador de foco é único (azul).
-- Opções faltantes hoje ("Mais antigos", "Z-A") passam a existir (backend também precisa aceitar — fora do escopo da spec, mas o enum do endpoint deve ser atualizado).
+- Rótulo do controle unificado para **"Ordenar por:"** (label visível, `htmlFor="sort-select"`), alinhado a Vídeos e Produtos. `aria-label="Ordenar músicas"`.
+- Controle alinhado ao padrão global (raio `--border-radius-lg` 8px, borda `1px solid var(--color-border-light)`, altura 44px — decisão D3). Hover e Focus: borda `--color-primary-500` + indicador de foco azul do sistema (`outline: 2px solid var(--color-focus-primary); outline-offset: 2px; box-shadow: var(--color-focus-ring);`), harmonizando busca, seletor e contador em `--color-primary-500` (a cor de marca do Spotify fica restrita exclusivamente ao botão externo `.spotifyButton`, também com raio `--border-radius-lg` 8px e ícone SVG `AppIcon`).
+- Barra de busca de Músicas e Vídeos padronizada com ícone de lupa SVG à esquerda, botão interno de limpeza (`AppIcon name="close"`) quando há texto, raio `--border-radius-lg` (8px) e anel de foco duplo azul.
+- Opções ("Mais antigos", "Z-A") disponíveis no seletor e aceitas no endpoint.
 
 ---
 

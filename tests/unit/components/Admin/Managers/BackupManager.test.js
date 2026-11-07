@@ -31,7 +31,7 @@ describe('Componentes Admin - BackupManager', () => {
     expect(screen.getByText(/Carregando informações/i)).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(screen.getByText('📄 meubackup.sql')).toBeInTheDocument();
+      expect(screen.getByText('meubackup.sql')).toBeInTheDocument();
     });
     expect(screen.getByText(/2.00 KB/i)).toBeInTheDocument();
   });
@@ -83,8 +83,8 @@ describe('Componentes Admin - BackupManager', () => {
     fireEvent.click(screen.getByRole('button', { name: /Confirmar/i }));
     expect(screen.getByRole('button', { name: /Criando Backup/i })).toBeDisabled();
 
-    await waitFor(() => expect(screen.getByText('✅ Backup realizado com sucesso!')).toBeInTheDocument());
-    expect(screen.getByText('📄 novo.sql')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('Backup realizado com sucesso!')).toBeInTheDocument());
+    expect(screen.getByText('novo.sql')).toBeInTheDocument();
   });
 
   it('deve exibir erros retornados pela API (ex: falha de script de dump) e do Try/Catch', async () => {
@@ -96,7 +96,7 @@ describe('Componentes Admin - BackupManager', () => {
     global.fetch.mockRejectedValueOnce(new Error('Conexão perdida'));
     fireEvent.click(screen.getByRole('button', { name: /Realizar Backup Agora/i }));
     fireEvent.click(screen.getByRole('button', { name: /Confirmar/i }));
-    await waitFor(() => expect(screen.getByText('❌ Erro de conexão ao criar backup')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Erro de conexão ao criar backup')).toBeInTheDocument());
   });
 
   it('deve exibir mensagem de erro quando a API falha ao criar o backup (ok: false)', async () => {
@@ -109,6 +109,6 @@ describe('Componentes Admin - BackupManager', () => {
     fireEvent.click(screen.getByRole('button', { name: /Realizar Backup Agora/i }));
     fireEvent.click(screen.getByRole('button', { name: /Confirmar/i }));
 
-    await waitFor(() => expect(screen.getByText('❌ Erro: Espaço insuficiente no disco')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Erro: Espaço insuficiente no disco')).toBeInTheDocument());
   });
 });

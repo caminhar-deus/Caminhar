@@ -1,4 +1,6 @@
 import toast from 'react-hot-toast';
+import { AppIcon } from '@/components/UI/icons';
+import styles from '../styles/form.module.css';
 
 /**
  * Componente genérico para botão "Puxar Dados" de fontes externas (Spotify, YouTube, Mercado Livre).
@@ -15,8 +17,7 @@ import toast from 'react-hot-toast';
  * @param {Function} props.setIsFetching - Setter do estado de loading
  * @param {Object} props.config - Configuração do botão
  * @param {string} props.config.endpoint - Endpoint da API (ex: '/api/admin/fetch-spotify')
- * @param {string} props.config.buttonColor - Cor de fundo do botão (ex: '#1DB954')
- * @param {string} [props.config.buttonTextColor] - Cor do texto do botão (ex: '#fff')
+ * @param {string} [props.config.buttonTitle] - Tooltip opcional do botão secundário padronizado
  * @param {string} props.config.loadingMessage - Mensagem durante o loading (ex: 'Buscando dados...')
  * @param {string} props.config.successMessage - Mensagem de sucesso (ex: 'Dados encontrados!')
  * @param {Function} props.config.validateUrl - Função de validação da URL (ex: (url) => url.includes('youtube.com'))
@@ -79,33 +80,20 @@ export default function ExternalDataButton({
 
   return (
     <div key={fieldName} style={{ gridColumn: gridColumn || 'span 1' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-          <div style={{ flex: 1 }}>
-            {children}
-          </div>
-          <button
-            type="button"
-            onClick={handleFetch}
-            disabled={isFetching}
-            title={config.buttonTitle || `Puxar dados automaticamente`}
-            style={{
-              padding: '4px 10px',
-              backgroundColor: config.buttonColor || '#1DB954',
-              color: config.buttonTextColor || '#fff',
-              border: 'none',
-              borderRadius: '4px',
-              fontWeight: 'bold',
-              fontSize: '11px',
-              cursor: isFetching ? 'not-allowed' : 'pointer',
-              opacity: isFetching ? 0.7 : 1,
-              whiteSpace: 'nowrap',
-              marginTop: '24px' /* Alinha com o input abaixo do label */
-            }}
-          >
-            {isFetching ? '⏳ Buscando...' : '⚡ Puxar Dados'}
-          </button>
+      <div className={styles.externalFieldRow}>
+        <div className={styles.flexInput}>
+          {children}
         </div>
+        <button
+          type="button"
+          onClick={handleFetch}
+          disabled={isFetching}
+          title={config.buttonTitle || 'Puxar dados automaticamente'}
+          className={styles.externalFetchButton}
+        >
+          <AppIcon name={isFetching ? 'clock' : 'zap'} size={14} />
+          {isFetching ? 'Buscando...' : 'Puxar Dados'}
+        </button>
       </div>
     </div>
   );
