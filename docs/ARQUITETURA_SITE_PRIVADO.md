@@ -1,26 +1,71 @@
 # ARQUITETURA DO SITE — ÁREA PRIVADA (PAINEL ADMINISTRATIVO)
 
-> Escopo: painel administrativo em `/admin` (acesso só com login). A área pública está em `docs/ARQUITETURA_SITE_PUBLICO.md`.
-> Fonte: 23 capturas de tela do painel (ambiente local `localhost:3000/admin`).
-> Última atualização: 2026-11-02
-> Legenda: [PLANEJADO] = alvo ainda não implementado, informado pelo dono | [OBSERVADO] = visto nas imagens | [HIPÓTESE] = inferido, confirmar antes de assumir.
+> Escopo: painel administrativo em `/admin` (acesso só com login). A área pública está em `docs/ARQUITETURA_SITE_PUBLICO.md`. Ambos os ambientes compartilham a mesma identidade visual (`design-system/MASTER.md` e `pages/styles/variables.css`), mantendo estruturas de navegação e responsabilidades próprias.
+> Fonte: 23 capturas de tela do painel (`localhost:3000/admin`) + código-fonte atual + diretrizes do dono do projeto.
+> Última atualização: 2026-11-07
+> Legenda: [PLANEJADO] = alvo ainda não implementado, informado pelo dono | [OBSERVADO] = visto nas imagens/estado legado | [HIPÓTESE] = inferido, confirmar antes de assumir.
 
 ---
 
 ## 1. Visão geral
 
 - **Nome:** Painel Administrativo do "O Caminhar com Deus".
-- **URL:** `localhost:3000/admin`. Todas as telas e abas mostram a mesma URL [OBSERVADO], então a navegação é interna (abas controladas no cliente). [HIPÓTESE] Next.js, com página única `/admin`.
-- **Autenticação:** sessão logada. Cabeçalho mostra "Olá, **admin**" e botão vermelho "Sair / Logout".
-- **Autorização:** por cargos (roles) com permissões por aba (seção 6). Cada aba do painel corresponde a uma permissão.
+- **URL e tecnologia:** `/admin` (`pages/admin.js`, Next.js Pages Router). Todas as telas e abas mantêm a mesma URL, com navegação interna controlada no cliente; sessões não autenticadas são redirecionadas para `/login?next=/admin`.
+- **Autenticação:** sessão logada via JWT em cookie `httpOnly`. O cabeçalho administrativo exibe saudação ao operador ("Olá, **admin**") e ação destrutiva "Sair / Logout".
+- **Autorização:** por cargos (roles) com permissões por aba (seção 6). Cada uma das 10 abas principais corresponde a uma permissão; abas sem permissão não são exibidas nem acessíveis na API.
 - **Infraestrutura vista na aba Segurança:** armazenamento de arquivos para uploads, backups criptografados (`.sql.gz.enc`), rate limiting por IP e log de auditoria. Banco de dados e cache: ver `docs/ARQUITETURA_SITE_PUBLICO.md` §1.
-- **Layout:** cartão branco central (~1000 px) sobre fundo cinza claro; título "Painel Administrativo" à esquerda; usuário e logout à direita; abas com emoji e sublinhado azul na aba ativa; botões: azul (Exportar CSV, Atualizar), verde (criar/salvar), cinza (Cancelar), vermelho (Excluir, Logout, Limpar cache).
+- **Layout:** [PLANEJADO] interface administrativa estruturada com **barra de navegação vertical recolhível na lateral esquerda** (§2.2) + cabeçalho enxuto e área principal fluida à direita sobre fundo neutro claro (`--color-bg-secondary`), aproveitando adequadamente o espaço horizontal para tabelas e formulários. ([OBSERVADO] Estado atual no código: cartão branco central de `max-width: 1000px` com abas horizontais quebrando em 3 linhas — ver §8, item 17.)
+
+### 1.1 Identidade visual e padrões de interface (alinhamento com o Site Público)
+
+O Site Privado compartilha integralmente a identidade visual definida com o Site Público (`docs/ARQUITETURA_SITE_PUBLICO.md` §1.1): proposta **clean, suave, minimalista, moderna, organizada e intuitiva**, ancorada nos tokens de `pages/styles/variables.css` e nas regras de `design-system/MASTER.md`. Diferenças em relação ao ambiente público existem apenas onde justificadas pela natureza operacional do painel (navegação lateral recolhível, listagens em tabelas densas com reordenação e formulários de gestão).
+
+1. **Cores e semântica:**
+   - **Superfícies e bordas:** fundo da aplicação em `--color-bg-secondary` (`#f5f5f5`); barra lateral, cabeçalho, cartões de métrica, tabelas e campos em `--color-bg-primary` (`#fafafa`); cabeçalhos de tabela, áreas de formulário em destaque sutil e hover neutro em `--color-bg-secondary` / `--color-bg-tertiary` (`#e5e5e5`); bordas em `--color-border-light` (`#e5e5e5`) e `--color-border-default` (`#d4d4d4`).
+   - **Identidade e estados:** azul primário `--color-primary-500` (`#2563eb`, realce `--color-primary-50`) para aba selecionada, ações principais, links e foco; sucesso/Publicado em `--color-success-500` (badge em `--color-success-50` + texto `--color-success-800`); alerta/Rascunho em `--color-warning-500` (badge em `--color-warning-50` + texto `--color-warning-800`); erro/exclusão/logout em `--color-error-500` (`#ef4444`).
+   - **Contraste e foco:** texto principal `--color-text-primary` (`#171717`) e secundário `--color-text-secondary` (`#525252`) com contraste AA (`≥ 4,5:1`); `--color-text-tertiary` restrito a placeholders. Todo controle interativo aplica o indicador de foco duplo do sistema (`outline: 2px solid var(--color-focus-primary); outline-offset: 2px; box-shadow: var(--color-focus-ring);`), exceto campos em erro focados (`--color-error-500` + `--color-error-halo`). Evita-se excesso de cores competitivas na mesma barra de ações (ver item 6 e §8, item 19).
+
+2. **Tipografia e textos:**
+   - **Famílias:** `--font-family-body` (`"Inter"`, sistema, sans-serif) em toda a interface operacional do painel (abas, tabelas, formulários, métricas e modais); `--font-family-mono` para identificadores técnicos, slugs ou nomes de arquivo de backup quando aplicável.
+   - **Hierarquia:** título principal do painel `h1` único (`--font-size-2xl` a `3xl`, `bold`); títulos de seção `h2` (`--font-size-xl` a `2xl`, `semibold`/`bold`); subtítulos `h3` (`--font-size-lg`, `semibold`); textos de tabela, campos, botões e itens da navegação lateral (`--font-size-sm` `14px` a `--font-size-base` `16px`, pesos `normal` `400` para dados e `medium` `500` / `semibold` `600` para rótulos e cabeçalhos); contadores auxiliares, dicas de campo e mensagens de validação (`--font-size-xs` `12px` a `sm` `14px`). Labels sempre visíveis acima dos inputs, sem caixa alta em frases.
+
+3. **Abas e navegação:**
+   - **Disposição exclusiva do painel:** navegação principal vertical na lateral esquerda com modos recolhido e expandido (§2.2), complementada por subabas horizontais enxutas no topo das seções que possuem subdivisão interna (§2.3) — distinta da navegação horizontal pública (`docs/ARQUITETURA_SITE_PUBLICO.md` §2).
+   - **Aparência e estados compartilhados:** ícones SVG vetoriais de traço uniforme, tipografia `--font-size-sm`, estado inativo em `--color-text-secondary` (`medium`), hover sutil em `--color-bg-secondary` + `--color-text-primary`, estado selecionado com destaque em `--color-primary-50` + texto/ícone `--color-primary-500` (`semibold`) + indicador ativo em `--color-primary-500`, e foco visível com anel duplo azul.
+
+4. **Cards, painéis e tabelas:**
+   - **Cards administrativos:** usados na Visão Geral (6 cartões interativos de métricas e painel de distribuição) e em Segurança (cartões de status de Integridade, Backup e Cache), com fundo `--color-bg-primary`, borda `1px solid var(--color-border-light)`, sombra suave (`--shadow-xs` / `--shadow-card`), raio `--border-radius-xl` (`12px`), espaçamento interno `--spacing-6` (`24px`) e hover discreto (`translateY(-2px)` a `-3px`) quando clicáveis.
+   - **Tabelas operacionais (particularidade funcional do painel):** enquanto o Site Público exibe catálogos em grades de cartões, as listagens administrativas (CRUDs e Auditoria) utilizam tabelas limpas em `--color-bg-primary`, cabeçalho `--color-bg-secondary`, linhas com hover suave, células alinhadas e paginação inferior padronizada.
+
+5. **Arredondamentos:**
+   - **Botões, inputs, campos de busca, seletores, células de ação e itens de navegação (lateral e subabas):** `--border-radius-lg` (`0.5rem` / `8px`). ([PLANEJADO] unificar valores avulsos de `4px`, `6px` e `12px` hoje espalhados nos estilos do painel e nos primitivos `components/UI/` — ver §8, item 20.)
+   - **Cards de métricas, seções de formulário inline, containers de preview e modais:** `--border-radius-xl` (`0.75rem` / `12px`).
+   - **Miniaturas de imagem em tabela (`60×60px`):** `--border-radius-md` (`0.375rem` / `6px`).
+   - **Selos/badges compactos (status, permissões vinculadas) e botões circulares de ícone:** `--border-radius-full` (`9999px`) ou `--border-radius-md` consistente por família. Sem arredondamentos exagerados em campos ou botões.
+
+6. **Botões:**
+   - **Dimensões e consistência:** altura padrão `40px–44px` em barras de ação e formulários (alvo de toque `≥ 44×44px`; variante compacta `sm` `32px` restrita a ações em linha de tabela com espaçamento seguro `gap: var(--spacing-2)`), fonte `--font-size-sm`, peso `medium`/`semibold`, raio `--border-radius-lg` (`8px`).
+   - **Hierarquia unificada com o Site Público:** [PLANEJADO] convergir as cores hoje fragmentadas no painel ([OBSERVADO] verde para criar/editar/exportar-auditoria, azul-info para exportar-CRUD, cinza sólido para cancelar/paginar — ver §8, item 19) para o padrão semântico do Design System:
+     - **Primário (`--color-primary-500`):** ação principal da tela (`+ Novo ...`, `Salvar`, `Cadastrar ...`, `Realizar Backup Agora`).
+     - **Secundário (`--color-bg-primary` / `--color-bg-secondary` com borda `--color-border-light` e texto `--color-text-primary`):** ações auxiliares e neutras (`Cancelar`, `Exportar CSV`, `Atualizar`, `Escolher arquivo`, `Editar` em linha e botões de paginação `Anterior`/`Próxima`).
+     - **Perigo (`--color-error-500`):** ações destrutivas ou críticas (`Excluir`, `Limpar Cache Redis`, `Sair / Logout`).
+   - **Estados:** hover suave, active discreto, `:focus-visible` com anel duplo azul, `loading` (spinner sem alterar largura + texto/estado acessível) e `disabled` (`opacity: var(--opacity-50)`, `cursor: not-allowed`).
+
+7. **Barras de pesquisa, filtros e opções:**
+   - **Padronização:** campos de busca com ícone de lupa SVG à esquerda, altura `40px–44px`, fundo `--color-bg-primary`, borda `1px solid var(--color-border-light)`, raio `--border-radius-lg` (`8px`), botão interno `×` para limpar busca quando preenchido e foco com anel duplo azul ([PLANEJADO] substituir estilos inline sem anel de foco em `AdminCrudBase.js` e `AdminAudit.js` — ver §8, item 20).
+   - **Organização:** nas telas de CRUD, busca alinhada na barra de cabeçalho à esquerda dos botões `Exportar CSV` e `+ Novo`; na Auditoria, busca acompanhada dos filtros de data/hora (`dd/mm/aaaa hh:mm`) e botões `Atualizar` / `Exportar CSV`, com quebra responsiva (`flex-wrap: wrap`) e retorno automático à página 1 ao filtrar.
+
+8. **Espaçamentos:**
+   - **Ritmo espacial (`--spacing-*`, múltiplos de `4px`):** padding da área principal de conteúdo em `--spacing-6` a `--spacing-8` (`24px–32px`; `16px` no mobile); separação entre cabeçalho da seção, formulário/filtros e tabela em `--spacing-5` a `--spacing-6` (`20px–24px`); `gap` entre cartões da Visão Geral e campos de formulário em `--spacing-5` (`20px`); células de tabela com padding `--spacing-3` a `--spacing-4` (`12px–16px`); `gap` entre botões de ação em `--spacing-2` a `--spacing-3` (`8px–12px`).
+
+9. **Transições e fluidez:**
+   - **Movimento suave e contido:** transições de cor, fundo e borda em `150ms–200ms` (`--easing-standard`); expansão/recolhimento da barra lateral esquerda, troca entre abas/subabas e abertura de formulários/modais em `200ms–300ms`, sem saltos bruscos de layout; skeletons discretos durante carregamento inicial de tabelas e métricas; continuidade tipográfica e cromática na transição entre `/login`, `/admin` e o Site Público; conformidade obrigatória com `@media (prefers-reduced-motion: reduce)` em `pages/styles/globals.css`.
 
 ## 2. Navegação principal (10 abas)
 
-A barra quebra em 3 linhas. A ordem abaixo é a ordem visual.
+As 10 abas principais seguem a ordem funcional abaixo (exibidas conforme as permissões do cargo do usuário logado):
 
-| # | Aba | Emoji | Função |
+| # | Aba | Ícone atual [OBSERVADO] | Função |
 |---|---|---|---|
 | 1 | Visão Geral | 📊 | Painel de contagens (aba padrão ao entrar) |
 | 2 | Posts/Artigos | 📝 | CRUD de reflexões e estudos + CRUD de categorias (toggle "Posts \| Categorias") |
@@ -33,7 +78,7 @@ A barra quebra em 3 linhas. A ordem abaixo é a ordem visual.
 | 9 | Usuários | 👥 | Usuários/admins e cargos |
 | 10 | Auditoria | 📜 | Histórico global de ações |
 
-Subabas internas existem em Segurança (4) e Usuários (2).
+> **Ícones das abas:** [PLANEJADO] substituir os emojis atuais [OBSERVADO] por **ícones SVG vetoriais** de família única e traço uniforme (`MASTER.md` §7), garantindo nitidez, alinhamento óptico preciso e identificação imediata especialmente quando a barra lateral estiver recolhida (ver §2.2 e §8, item 18).
 
 ### 2.1 Mapeamento entre abas (site privado × site público)
 
@@ -49,16 +94,52 @@ A correspondência entre as abas administrativas e suas abas públicas de exibi�
 
 Esse mapeamento deve ser mantido de forma consistente em toda a documentação.
 
+### 2.2 Particularidade exclusiva do Site Privado — Navegação lateral esquerda [PLANEJADO]
+
+Diferentemente do Site Público (que utiliza navegação horizontal abaixo do banner), o Site Privado adota **exclusivamente** uma **barra de navegação vertical posicionada na lateral esquerda da interface**, projetada para acomodar as 10 seções operacionais sem quebrar linhas no topo e liberar altura útil para tabelas e formulários.
+
+> **Estado atual vs. alvo:** no código atual (`pages/admin.js` + `components/Admin/styles/tabs.module.css`), as 10 abas ainda renderizam em barra horizontal superior que quebra em 3 linhas [OBSERVADO]. O repositório já dispõe do componente estrutural `components/Layout/Sidebar.js` (atualmente referenciado apenas em `pages/design-system.js`), que serve de base para implementar esta especificação (ver §8, item 17).
+
+1. **Modo recolhido:**
+   - Exibe **somente os ícones** correspondentes a cada aba liberada ao usuário (`width` compacta de ~`64px–72px`).
+   - Oculta completamente os nomes/textos das abas e eventuais rótulos auxiliares de seção.
+   - Mantém os ícones organizados verticalmente em coluna única centralizada, preservando alinhamento óptico e espaçamento vertical uniforme (`--spacing-1` a `--spacing-2`, alvo clicável `≥ 44×44px` por item).
+   - Garante identificação imediata de cada aba por meio de ícones SVG distintos e semânticos, `aria-label` com o nome completo da aba e dica visual discreta (`title`/tooltip acessível em hover e foco por teclado).
+   - Mantém indicação visual inequívoca da aba atualmente selecionada: fundo em realce suave (`--color-primary-50`), ícone na cor primária (`--color-primary-500`), marcador vertical ativo à esquerda em `--color-primary-500` e `aria-selected="true"` (ou `aria-current="page"`).
+
+2. **Modo expandido:**
+   - Exibe os **ícones posicionados à esquerda** acompanhados dos **respectivos nomes completos das abas** à direita (`width` confortável de ~`240px–260px`, `gap: var(--spacing-3)`).
+   - Garante alinhamento vertical rigoroso entre todos os ícones e rótulos da lista, sem quebra desordenada em múltiplas linhas (`white-space: nowrap`, `text-overflow: ellipsis`).
+   - Preserva a hierarquia visual com tipografia `--font-size-sm` (`14px`), peso `medium` (`500`) e cor `--color-text-secondary` nas abas inativas, hover sutil (`--color-bg-secondary` + `--color-text-primary`) e espaçamento interno confortável (`padding` vertical e horizontal adequados à leitura).
+   - Mantém a identificação clara da aba selecionada (fundo `--color-primary-50`, ícone e texto em `--color-primary-500` com peso `semibold` `600` e marcador lateral ativo).
+
+3. **Controle de expansão e recolhimento:**
+   - Controle dedicado e sempre visível na estrutura da barra lateral que permite **expandir**, **recolher** e **alternar** a qualquer momento entre os dois modos de visualização (com persistência opcional da preferência do operador em `localStorage`).
+   - Acompanha `aria-expanded` refletindo o estado atual, `aria-label` descritivo ("Recolher menu lateral" / "Expandir menu lateral") e indicador de foco duplo azul.
+   - Executa a transição de largura e exibição dos rótulos de forma suave e fluida (`200ms–300ms`, `--easing-standard`), sem tremulação de texto e respeitando `prefers-reduced-motion: reduce`.
+
+4. **Comportamento, adaptação do conteúdo e usabilidade:**
+   - **Adaptação em desktop (`> 1024px`):** a área principal de conteúdo à direita adapta dinamicamente sua largura útil conforme a barra lateral alterna entre expandida e recolhida, preservando o espaço disponível para tabelas e formulários sem sobreposições, cortes laterais ou deslocamentos bruscos dos componentes internos.
+   - **Responsividade em telas menores (`≤ 1024px`):** para preservar todo o espaço horizontal do conteúdo principal, a barra lateral sai do fluxo fixo e opera como gaveta lateral retrátil (drawer) acionada por botão de menu no topo (`≥ 44×44px`), com `overlay` de fundo, modo expandido legível ao abrir e fechamento automático ao selecionar uma aba ou pressionar `Escape`. Em todos os tamanhos de tela e modos, os ícones mantêm proporção (`20px`), contraste e identificação visual consistente.
+   - **Escopo exclusivo:** esta estrutura de navegação vertical recolhível na lateral esquerda é **exclusiva do Site Privado** e não deve ser aplicada ao Site Público.
+
+### 2.3 Subabas internas de seção
+
+Subdivisões internas de segundo nível permanecem como controles horizontais enxutos no topo da área de conteúdo da respectiva aba principal (nunca aninhadas como árvore complexa na barra lateral):
+- **Posts/Artigos:** controle segmentado **"Posts | Categorias"** (§4.2).
+- **Segurança:** 4 subabas horizontais — Verificação de Integridade, Backup do Sistema, Rate Limiting e Cache do Sistema (§5.1).
+- **Usuários:** 2 subabas horizontais — Gestão de Usuários e Admins e Gestão de Cargos (§5.2).
+
 ## 3. Padrão comum das telas de conteúdo (Posts, Músicas, Vídeos, Produtos, Dicas)
 
-Todas seguem o mesmo modelo, com pequenas variações:
+Todas são construídas sobre `AdminCrudBase` (`components/Admin/AdminCrudBase.js`) e seguem o mesmo fluxo operacional e visual:
 
-1. **Cabeçalho da seção:** título ("Gerenciar Posts", "Gestão de Músicas", etc.) + "Total: N itens cadastrados".
-2. **Barra de ações (à direita):** campo "Buscar item..." (com lupa) → botão azul "Exportar CSV" → botão verde "+ Novo ...".
-3. **Tabela de listagem:** primeira coluna com ícone ☰ (indica reordenação por arrastar [HIPÓTESE]), depois colunas específicas e coluna "Ações". Estado vazio em itálico.
-4. **Formulário de criação/edição:** abre acima da tabela ao clicar em "+ Novo". O botão verde vira "Cancelar" (cinza) e o "Exportar CSV" permanece.
-5. **Publicação:** checkbox de publicar + selo de status ("Rascunho" amarelo / "Publicado" verde). **Apenas registros com status Publicado são exibidos no site público. Registros com status Rascunho permanecem disponíveis no painel administrativo, mas não são exibidos nas abas públicas correspondentes.**
-6. **Botão "⚡ Puxar Dados"** nos campos de link (Spotify, YouTube, Produto): preenche dados automaticamente a partir da URL [HIPÓTESE]. Cor do botão muda por tipo: verde (Spotify), vermelho (YouTube), amarelo (Produto).
+1. **Cabeçalho da seção:** título `h2` à esquerda ("Gerenciar Posts", "Gestão de Músicas", etc.) + contador "Total: N itens cadastrados" logo abaixo (`--color-text-secondary`).
+2. **Barra de ações (à direita, responsiva com `flex-wrap`):** campo de busca "Buscar item..." (com ícone de lupa SVG à esquerda) → botão secundário "Exportar CSV" → botão primário "+ Novo ..." ([OBSERVADO] hoje azul-info no CSV e verde no "+ Novo"; [PLANEJADO] padronizar conforme §1.1 item 6).
+3. **Tabela de listagem:** superfície `--color-bg-primary`, raio `--border-radius-lg`, rolagem horizontal segura em telas pequenas (`overflow-x: auto`). Nas 4 abas com curadoria manual (Posts, Músicas, Vídeos e Produtos), a primeira coluna exibe a alça de reordenação por arrastar (`☰`, posições 1-based via `utils/reorder.js`); em Categorias, Dicas, Usuários e Cargos não há coluna `☰`. Seguem-se as colunas específicas e a coluna "Ações" ("Editar" / "Excluir"). Estado vazio centralizado em `--color-text-secondary`.
+4. **Formulário de criação/edição:** abre suavemente acima da tabela ao clicar em "+ Novo" ou "Editar", dentro de container `--color-bg-secondary` com borda `--color-border-light` e raio `--border-radius-xl` (`12px`). O botão de abertura alterna para "Cancelar" e o "Exportar CSV" permanece disponível.
+5. **Publicação:** checkbox no formulário + selo clicável de alternância rápida na tabela ("Rascunho" em tom âmbar / "Publicado" em tom verde, com atualização otimista e reversão em erro). **Apenas registros com status Publicado são exibidos no site público. Registros com status Rascunho permanecem disponíveis no painel administrativo, mas não são exibidos nas abas públicas correspondentes.**
+6. **Botão "Puxar Dados"** nos campos de link externo (Spotify em Músicas, YouTube em Vídeos, lojas em Produtos): importa metadados automaticamente a partir da URL informada ([OBSERVADO] com emoji `⚡` e cor por tipo; [PLANEJADO] ícone SVG vetorial e alinhamento ao sistema de botões do §1.1 item 6).
 
 ### 3.1 Regras de cadastro e exibição
 
@@ -71,7 +152,7 @@ Todas seguem o mesmo modelo, com pequenas variações:
 
 ### 4.1 Visão Geral
 - **Título:** "Visão Geral do Sistema".
-- **6 cartões** (3 x 2) com ícone, número grande e rótulo:
+- **6 cartões interativos** (grade responsiva, clicáveis para navegar à respectiva aba quando o usuário possui a permissão correspondente) com ícone, número grande e rótulo:
   | Cartão | Detalhe exibido |
   |---|---|
   | Artigos | "✅ N Pub \| 📝 N Rasc" (publicados / rascunhos) |
@@ -81,7 +162,7 @@ Todas seguem o mesmo modelo, com pequenas variações:
   | Dicas | idem |
   | Usuários | "Ativos: Hoje (N) • Mês (N) • Ano (N)" |
 - **Distribuição de Conteúdo:** barras horizontais por categoria, com cor própria: Artigos (azul), Músicas (verde), Vídeos (vermelho), Produtos (laranja), Dicas (roxo), Usuários (ciano). Mostra o valor dentro da barra quando maior que zero.
-- **Estado observado:** tudo em 0, exceto Usuários = 1.
+- **Nota histórica:** nas capturas iniciais os contadores apareciam zerados (exceto Usuários = 1), situação esclarecida e validada em §8, item 1.
 
 ### 4.2 Posts/Artigos
 - **Título:** "Gerenciar Posts". Botão: "+ Novo Post".
@@ -99,7 +180,7 @@ Todas seguem o mesmo modelo, com pequenas variações:
   | Categorias | Não | grupo de checkboxes com as categorias cadastradas; "Opcional. Selecione uma ou mais categorias." Sem categorias cadastradas, exibe "Nenhuma categoria cadastrada. Crie na aba \"Categorias\"." |
   | Publicar post imediatamente | — | desmarcado por padrão → "Rascunho"; "Se desmarcado, o post será salvo como rascunho." |
   Botão final: "Salvar".
-- **Ligação com o site público:** o Resumo alimenta o cartão de Reflexões & Estudos; a Imagem de Capa é a capa do cartão; o Slug forma a URL da leitura; as Categorias aparecem como chips no cartão público. [HIPÓTESE] o editor de Conteúdo é texto simples (sem editor rico visível).
+- **Ligação com o site público:** o Resumo alimenta o cartão de Reflexões & Estudos; a Imagem de Capa é a capa do cartão; o Slug forma a URL da leitura; as Categorias aparecem como chips no cartão público. O campo de Conteúdo opera em área de texto simples (`TextAreaField`, sem editor rico).
 
 ### 4.2.1 Categorias (dentro da aba Posts/Artigos)
 - **API:** `/api/admin/categories` (CRUD completo; permissão **Posts/Artigos**; mutações invalidam o cache `posts:*`). `GET /api/admin/categories?all=1` devolve a lista completa sem paginação (usado pelo campo de seleção do formulário de post).
@@ -172,67 +253,65 @@ Todas seguem o mesmo modelo, com pequenas variações:
 - **Campos:**
   - Título da Página (valor canônico em `docs/ARQUITETURA_SITE_PUBLICO.md` §1 e §2)
   - Subtítulo (valor canônico em `docs/ARQUITETURA_SITE_PUBLICO.md` §1 e §2)
-  - Imagem Principal (1100×320) — seletor de arquivo ("Choose File")
-- **Botões:** "Atualizar Imagem" (envia só a imagem) e "Salvar Configurações" (salva título e subtítulo).
-- **Visualização:** prévia ao vivo com título e subtítulo (a imagem não aparece na prévia por enquanto).
-- **Relação com o público:** controla o cabeçalho e o banner que aparecem em todas as abas do site. O público exibe o título em caixa alta, provavelmente por CSS. [HIPÓTESE]
+  - Imagem Principal (`1100×320`) — botão em pt-BR "Escolher arquivo" (`aria-live="polite"` anunciando o arquivo selecionado ou "Nenhum arquivo escolhido", ver §8, item 9; limite de 10 MB no cliente). Ao selecionar um arquivo, abre ferramenta de recorte interativo (`Cropper` na proporção `1100/320` com controle de Zoom + "Recortar & Confirmar"), seguida de redimensionamento/otimização automática em WebP e resumo de tamanho original, otimizado e economia percentual.
+- **Botões:** "Atualizar Imagem" (envia a imagem recortada para `/api/upload-image`), "Cancelar" (descarta seleção/recorte em andamento) e "Salvar Configurações" (salva `site_title` e `site_subtitle` em `/api/settings`).
+- **Visualização:** bloco de prévia ao vivo exibindo título, subtítulo e a imagem principal (nova seleção ou banner atual salvo em `home_image_url`).
+- **Relação com o público:** controla o cabeçalho e o banner que aparecem em todas as abas do site (e `site_title` no SEO do blog — ADR-0032). O cabeçalho da home pública aplica caixa alta ao título via CSS (`text-transform: uppercase` em `Home.module.css`).
 
 ## 5. Segurança, Usuários e Auditoria
 
 ### 5.1 Segurança — subabas
-Barra interna com 4 subabas: 🛡️ Verificação de Integridade | 💾 Backup do Sistema | 🔒 Rate Limiting | ⚡ Cache do Sistema.
+Barra interna horizontal com 4 subabas ([OBSERVADO] com emojis; [PLANEJADO] ícones SVG vetoriais, ver §8, item 18): 🛡️ Verificação de Integridade | 💾 Backup do Sistema | 🔒 Rate Limiting | ⚡ Cache do Sistema.
 
 **Verificação de Integridade** (botão "🔄 Atualizar"; faixa verde "✅ Sistema Saudável"):
 | Componente | Dados mostrados (valores observados) |
 |---|---|
 | Banco de Dados | Status Conectado; Latência 0 ms; Tamanho 9.3 MB; Conexões 5 |
 | Cache/Redis | Status Conectado; Tipo Upstash Redis |
-| Armazenamento | Arquivos 0; Tamanho 0 B (continua abaixo; possivelmente há mais componentes) |
+| Armazenamento | Arquivos 0; Tamanho 0 B |
 
 **Backup do Sistema:**
 - Texto: backups automáticos diários; backup manual possível.
-- "Último Backup Realizado": arquivo `caminhar-pg-backup_2026-05-22T10-18-54Z.sql.gz.enc`, data exibida 02/10/2026 20:53:04, tamanho 4367.31 KB.
-- Botão azul "📥 Realizar Backup Agora".
-- **Incoerência:** o nome do arquivo traz 2026-05-22 mas a data exibida é 02/10/2026. Verificar se a data vem do arquivo ou do carimbo do servidor.
+- "Último Backup Realizado": nome do arquivo `.sql.gz.enc`, data extraída do próprio nome de criação do backup (`getAvailableBackups` — divergência histórica de `mtime` corrigida em 2026-10-27, ver §8, item 3) e tamanho em KB no formato pt-BR.
+- Botão "📥 Realizar Backup Agora".
 
 **Rate Limiting:** botão "🔄 Atualizar"; filtros "🔒 Bloqueados (0)", "✅ Whitelist (0)", "📋 Auditoria". Vazio: "Nenhum IP bloqueado no momento. Todas as requisições estão dentro dos limites configurados." Rodapé: "Atualização automática a cada 15s".
 
-**Cache do Sistema:** explica que limpar o cache força buscar dados novos do banco ("use se as alterações não estiverem aparecendo no site"). Botão vermelho "Limpar Cache Redis". Status: "✅ Redis Conectado", Erros 0, Fallbacks 0, Tamanho Local 0 entradas, Última Falha Nenhuma.
+**Cache do Sistema:** explica que limpar o cache força buscar dados novos do banco ("use se as alterações não estiverem aparecendo no site"). Botão destrutivo vermelho "Limpar Cache Redis". Status: "✅ Redis Conectado", Erros 0, Fallbacks 0, Tamanho Local 0 entradas, Última Falha Nenhuma.
 
 ### 5.2 Usuários — subabas
 **Gestão de Usuários e Admins:**
 - **Finalidade:** é onde se controlam os usuários e as senhas com acesso ao Painel Administrativo. Cada usuário é vinculado a um cargo, e é o cargo que define o que ele pode usar.
-- Botão "+ Novo Usuário"; "Total: 1 usuário cadastrado".
-- Tabela: ID | Usuário | Cargo (selo) | Último Login (tempo relativo, ex. "há 7 minutos") | Ações (verde "Editar", vermelho "Excluir").
-- Registro atual: ID 1, `admin`, cargo `admin`.
-- **Usuário `admin`:** [PLANEJADO] é o administrador raiz. Nasce e permanece vinculado ao cargo `admin`, e não pode nem deve ser excluído.
-- Formulário: Nome de Usuário / E-mail * (ex.: "novo.admin"); Senha (mínimo 6 caracteres, "armazenada com hash seguro"; em branco na edição mantém a atual); Cargo / Permissão (lista "Selecione um cargo", obrigatória — "O cargo define os níveis de acesso deste usuário no sistema"); botão "Salvar".
+- Botão "+ Novo Usuário"; "Total: N usuário(s) cadastrado(s)".
+- Tabela: ID | Usuário | Cargo (selo) | Último Login (tempo relativo, ex. "há 7 minutos") | Ações ("Editar", "Excluir").
+- Registro raiz: ID 1, `admin`, cargo `admin`.
+- **Usuário `admin` (implementado — ver §8, item 8 e §9):** é o administrador raiz. Nasce e permanece vinculado ao cargo `admin`, e não pode ser excluído nem ter seu cargo alterado (trava na API e ocultação do botão "Excluir" na tabela).
+- Formulário: Nome de Usuário / E-mail * (ex.: "novo.admin"); Senha (política unificada em `lib/auth/password-policy.js`, [ADR-0031](adr/0031-password-policy-12-complexity-shared-module.md), ver §8, item 7: **mínimo de 12 caracteres**, com letra maiúscula, minúscula e número; armazenada com hash seguro; em branco na edição mantém a senha atual); Cargo / Permissão (lista "Selecione um cargo", obrigatória — "O cargo define os níveis de acesso deste usuário no sistema"); botão "Salvar".
 
 **Gestão de Cargos:**
 - **Finalidade:** cada cargo reúne as permissões que liberam o acesso às ferramentas do Painel Administrativo. As permissões são as próprias abas do painel (seção 6): o que o cargo não listar, o usuário não vê.
-- Título "Gestão de Cargos e Permissões"; botão "+ Novo Cargo"; "Total: 1 cargo cadastrado".
+- Título "Gestão de Cargos e Permissões"; botão "+ Novo Cargo"; "Total: N cargo(s) cadastrado(s)".
 - Tabela: ID | Nome do Cargo | Permissões Vinculadas (etiquetas azuis) | Ações (Editar/Excluir).
-- Registro atual: ID 3, `admin`, com as 10 permissões.
-- **Cargo `admin`:** [PLANEJADO] é o único cargo que vem habilitado por padrão com todas as permissões existentes (as 10 da seção 6). Não pode nem deve ser excluído.
+- Registro raiz: ID 3, `admin`, com as 10 permissões.
+- **Cargo `admin` (implementado — ver §8, item 8 e §9):** é o único cargo que vem habilitado por padrão com todas as permissões existentes (as 10 da seção 6) e não pode ser excluído.
 - Formulário: Nome do Cargo * (ex.: "Editor de Conteúdo") + 10 caixas de permissão (pelo menos uma é obrigatória): Visão Geral, Posts/Artigos, Gestão de Músicas, Gestão de Vídeos, Gestão de Produtos, Gestão de Dicas, Configuração de Cabeçalho, Segurança, Usuários, Auditoria. Botão "Salvar".
-- A permissão "Gestão de Dicas" corresponde à aba administrativa "Gestão de Dicas", cujos registros publicados alimentam o bloco "Dicas do Dia" no site público.
+- A permissão "Gestão de Dicas" corresponde à aba administrativa "Gestão de Dicas", cujos registros publicados alimentam o bloco "Dicas do Dia" no site público ([ADR-0034](adr/0034-standardize-admin-gestao-de-dicas-and-public-dicas-do-dia.md)).
 - O ID 3 indica que os cargos 1 e 2 já existiram e foram removidos (a auditoria mostra a exclusão do cargo `user`).
 
 ### 5.3 Auditoria
 - **Título:** "Histórico Global de Auditoria".
-- **Filtros:** busca "Buscar ações, usuários ou detalhes...", data/hora inicial, data/hora final (inputs `datetime-local`, formato mm/dd/yyyy), botão verde "Exportar CSV", botão "Atualizar".
-- **Tabela rolável:** Data/Hora | Usuário | Ação Executada | Detalhes.
-- **Registros observados (20/10/2026):**
+- **Filtros:** campo de busca textual "Buscar ações, usuários ou detalhes...", campos de período inicial e final em formato pt-BR com máscara `dd/mm/aaaa hh:mm` (`DateTimeBRField`, ver §8, item 9), botão "Exportar CSV" e botão "Atualizar".
+- **Tabela rolável com cabeçalho fixo (`sticky`) e paginação:** colunas Data/Hora | Usuário | Ação Executada | Detalhes; paginada em **50 registros por página** (`Anterior | Página X de Y | Próxima` quando há mais de uma página).
+- **Registros históricos observados nas capturas iniciais (20/10/2026):**
   | Hora | Usuário | Ação | Detalhes |
   |---|---|---|---|
   | 17:16:44 | admin | EXCLUIR CARGO | Removeu o cargo: user |
   | 17:13:10 | admin | EXCLUIR DICA | Removeu a dica: Teste 10 |
-  | 17:13:05 até 17:12:56 | admin | EXCLUIR VÍDEO (6 registros) | Removeu o vídeo: undefined |
-- **Bug:** o log de exclusão de vídeo grava `undefined` no lugar do título. O código de exclusão de vídeos deve passar o título ao log.
-- **Padrão de ação:** `VERBO + OBJETO` em caixa alta (EXCLUIR CARGO/DICA/VÍDEO). Outras ações (criar, editar, login) provavelmente existem mais abaixo na lista. [HIPÓTESE]
+  | 17:13:05 até 17:12:56 | admin | EXCLUIR VÍDEO (6 registros) | Removeu o vídeo: undefined *(bug corrigido em 2026-10-21 — ver §8, item 2)* |
+- **Padrão de ação:** `VERBO + OBJETO` em caixa alta (ex.: `CRIAR POST`, `ATUALIZAR PRODUTO`, `REORDENAR VÍDEOS`, `EXCLUIR CARGO`), sempre acompanhado de título/identificador real nos detalhes.
 
 ## 6. Mapa permissão → aba
-| Permissão | Aba do painel |
+| Permissão | Aba do painel (ícone atual [OBSERVADO]) |
 |---|---|
 | Visão Geral | 📊 Visão Geral |
 | Posts/Artigos | 📝 Posts/Artigos |
@@ -297,8 +376,18 @@ A aba pública "Em Desenvolvimento" não tem gestão no painel.
 | 7 | **Senha mínima de 6 caracteres:** fraca. Considerar elevar para pelo menos 10 a 12 e exigir senha forte para admin. | **decidido e executado em 2026-10-30 (ADR-0031)** — política única em `lib/auth/password-policy.js`: mínimo de **12 caracteres** com letra maiúscula, minúscula e número, aplicada à criação e à troca de senha no painel de Usuários (server + client). A senha atual do admin continua válida até a próxima troca; o login não valida comprimento |
 | 16 | **Unificação da nomenclatura de publicação:** coluna `published` em todas as tabelas de conteúdo e default `false` (nada nasce publicado; formulários abrem com o toggle desmarcado) — executa a "evolução futura" registrada no ADR-0025 (item 3). | **decidido e executado em 2026-10-29 (ADR-0029)** — migration `020-unify-published-column` (rename `publicado`→`published` em musicas/videos, preservando dados; `SET DEFAULT false` em musicas, videos, dicas e products); sweep em lockstep no código, testes e schemas (guarda `schema-sources.test.js`); índices da migration 012 atualizados para replay pós `db:reset`. **Deploy: rodar `npm run migrate` no banco de produção** |
 
+**Alinhamento visual e navegação lateral ([PLANEJADO] — dependem de implementação no código)**
+
+| # | Item | Status |
+|---|---|---|
+| 17 | **Navegação lateral esquerda recolhível/expansível:** substituir a barra horizontal de abas em 3 linhas e o cartão fixo de `1000px` (`pages/admin.js`, `components/Admin/styles/tabs.module.css`) pela barra vertical esquerda com modo recolhido (somente ícones), modo expandido (ícones à esquerda + nomes à direita), controle de alternância suave e adaptação fluida da área de conteúdo + gaveta responsiva em telas `≤ 1024px` (reaproveitando e alinhando `components/Layout/Sidebar.js`). | **[PLANEJADO] pendente de implementação** — especificado em §1 e §2.2 |
+| 18 | **Ícones vetoriais uniformes:** substituir emojis nas 10 abas principais, nas 4 subabas de Segurança, nos cartões da Visão Geral e nos botões de ação ("⚡ Puxar Dados", "🔄 Atualizar", "📥 Realizar Backup Agora") por ícones SVG de família única e traço consistente (`MASTER.md` §7). | **[PLANEJADO] pendente de implementação** — especificado em §2, §2.2 e §5.1 |
+| 19 | **Semântica unificada de botões:** convergir cores divergentes de botões no painel (`components/Admin/styles/crud.module.css`, `AdminAudit.js`, `pages/admin.js` — verde em criar/editar/exportar-auditoria, azul-info em exportar-CRUD, cinza sólido em cancelar/paginar) para o padrão compartilhado com o Site Público (primário `--color-primary-500`, secundário neutro com borda `--color-border-light`, perigo `--color-error-500`). | **[PLANEJADO] pendente de implementação** — especificado em §1.1 item 6 |
+| 20 | **Arredondamentos, barras de busca e estilos inline:** padronizar raios em `--border-radius-lg` (`8px`) para controles/botões/inputs (incluindo `components/UI/Button.module.css` e `Input.module.css`, hoje em `12px`) e `--border-radius-xl` (`12px`) para cards/painéis, migrando campos de busca e tabelas com estilos inline (`AdminCrudBase.js`, `AdminAudit.js`, `pages/admin.js`) para CSS Modules com lupa SVG, botão limpar e anel de foco duplo azul. | **[PLANEJADO] pendente de implementação** — especificado em §1.1 itens 5 e 7 |
+
 ## 9. Regras de proteção do painel administrativo
 - Não renomear abas, permissões nem a ordem das abas sem pedido; renomear uma permissão exige migração dos cargos já salvos.
+- A navegação principal do painel segue o modelo exclusivo de **barra vertical na lateral esquerda** com modos recolhido (somente ícones) e expandido (ícones + nomes das abas) e controle suave de alternância (§2.2); não aplicar essa barra lateral automaticamente ao Site Público.
 - Toda nova aba do painel deve ter uma permissão correspondente em Gestão de Cargos e aparecer na tabela da seção 6.
 - **Proteção do `admin` (implementadas — ver §8, item 8):**
   - O usuário `admin` e o cargo `admin` não podem ser excluídos: a API deve recusar a exclusão e o painel não deve oferecer a ação.
@@ -306,5 +395,7 @@ A aba pública "Em Desenvolvimento" não tem gestão no painel.
   - O cargo `admin` é o único que vem habilitado por padrão com todas as permissões existentes; os demais cargos nascem com as permissões marcadas no formulário.
 - Toda ação de criar, editar, excluir ou configurar deve gerar um registro de Auditoria com título/identificador real (nunca `undefined`).
 - A reordenação por arrastar grava posições **1-based** (`utils/reorder.js`): a primeira posição da página 1 é `1`. Os schemas dos endpoints exigem `position` positiva — não voltar a 0-based.
-- Manter o padrão visual e de fluxo da seção 3 em novas telas de conteúdo.
+- Manter a identidade visual compartilhada com o Site Público (§1.1 e `design-system/MASTER.md`), utilizando exclusivamente os tokens de `pages/styles/variables.css`, e o padrão estrutural e de fluxo da seção 3 em novas telas de conteúdo.
 - Nunca expor senhas; manter o hash seguro. Não registrar senhas nos logs.
+
+> As regras de processo do agente estão em `AGENTS.md` §0.2.

@@ -11,27 +11,27 @@
 
 | Área | Arquivo | Quando ler |
 |---|---|---|
-| Site público (link aberto a qualquer pessoa) | `docs/ARQUITETURA_SITE_PUBLICO.md` | Antes de qualquer ajuste, correção ou melhoria que toque páginas, abas, componentes, textos, visual, APIs, dados, imagens, SEO ou infraestrutura do site público — leia por completo; em correção ou melhoria, veja também o §7 (pendências) |
-| Painel administrativo (`/admin`, só com login) | `docs/ARQUITETURA_SITE_PRIVADO.md` | Antes de qualquer ajuste, correção ou melhoria que toque o painel, suas abas, permissões, formulários, auditoria, uploads ou o cabeçalho/banner do site — leia por completo; em correção ou melhoria, veja também o §8 (estado atual e inconsistências) |
+| Site público (link aberto a qualquer pessoa) | `docs/ARQUITETURA_SITE_PUBLICO.md` | Antes de qualquer ajuste, correção ou melhoria que toque páginas, abas, navegação horizontal, componentes, cards, textos, identidade visual, APIs, dados, imagens, SEO ou infraestrutura do site público — leia por completo; em correção ou melhoria, veja também o §7 (pendências) |
+| Painel administrativo (`/admin`, só com login) | `docs/ARQUITETURA_SITE_PRIVADO.md` | Antes de qualquer ajuste, correção ou melhoria que toque o painel, sua navegação lateral e abas, componentes, cards, tabelas, formulários, identidade visual, permissões, auditoria, uploads ou o cabeçalho/banner do site — leia por completo; em correção ou melhoria, veja também o §8 (estado atual e inconsistências) |
 | Tarefa fora do site público e do painel (infra, ADR, pipeline, testes) | — | Só este arquivo |
 
-> **Mudança que cruza painel e site público:** leia os dois documentos — as regras de proteção de cada área se aplicam.
+> **Alinhamento entre ambientes e mudanças cruzadas:** Site Público e Painel Administrativo compartilham a mesma identidade visual (clean, suave, minimalista, moderna e consistente, ancorada em `design-system/MASTER.md` e `pages/styles/variables.css`), preservando estruturas de navegação e responsabilidades próprias (navegação horizontal em abas no site público; navegação lateral esquerda recolhível/expansível exclusiva no painel). Quando uma mudança cruzar os dois ambientes ou afetar componentes/tokens compartilhados (`components/UI/`, `pages/styles/`), leia os dois documentos — as regras de proteção e as particularidades de cada área se aplicam.
 
 ### 0.2 Como trabalhar com os documentos de arquitetura
 
-As regras de processo do agente ficam só neste arquivo; os documentos de arquitetura descrevem as áreas e trazem apenas as regras de proteção da área.
+As regras de processo do agente ficam só neste arquivo; os documentos de arquitetura descrevem a estrutura funcional, o padrão visual e de navegação de cada ambiente e trazem as regras de proteção da respectiva área.
 
-1. Regras de proteção do site público (ordem das abas, "Dicas do Dia", "Em Desenvolvimento", mídia externa): `docs/ARQUITETURA_SITE_PUBLICO.md` §8.
-2. Regras de proteção do painel (abas, permissões, auditoria, senhas, proteção do `admin`, padrão visual das telas): `docs/ARQUITETURA_SITE_PRIVADO.md` §9.
+1. Regras de proteção do site público (ordem das abas, navegação horizontal pública, "Dicas do Dia", "Em Desenvolvimento", mídia externa, padrão visual compartilhado): `docs/ARQUITETURA_SITE_PUBLICO.md` §8.
+2. Regras de proteção do painel (abas e navegação lateral esquerda recolhível, permissões, auditoria, senhas, proteção do `admin`, padrão visual compartilhado e de telas): `docs/ARQUITETURA_SITE_PRIVADO.md` §9.
 3. Itens `[HIPÓTESE]` só valem como fato depois de **serem** confirmados no código.
 4. Divergência entre documento e código: aponte ao usuário e aguarde a decisão antes de alterar algo.
-5. **Mudança estrutural** = a organização visível muda: aba, seção, campo de formulário, permissão, rota ou item de menu adicionado, removido ou renomeado. Nesse caso, atualize o documento da área afetada e a data de "Última atualização".
+5. **Mudança estrutural** = a organização visível muda: aba, disposição/modo de navegação, seção, campo de formulário, permissão, rota ou item de menu adicionado, removido ou renomeado. Nesse caso, atualize o documento da área afetada e a data de "Última atualização".
 6. Pedido do dono que conflita com uma regra de proteção: o pedido vence, a regra correspondente é atualizada no documento no mesmo passo e a decisão fica registrada em `docs/adr/`.
 
 ### 0.3 Como executar uma tarefa
 
 1. **Identifique a área** (site público, painel ou as duas) e leia o(s) documento(s) indicado(s) na tabela §0.1.
-2. **Leia a seção de regras** da área: `ARQUITETURA_SITE_PUBLICO.md` §8 ou `ARQUITETURA_SITE_PRIVADO.md` §9.
+2. **Leia a seção de regras e padrões visuais** da área: `ARQUITETURA_SITE_PUBLICO.md` (§1.1, §2 e §8) ou `ARQUITETURA_SITE_PRIVADO.md` (§1.1, §2 e §9).
 3. **Antes de corrigir ou melhorar**, veja as pendências conhecidas: §7 do documento público, §8 do documento privado.
 4. **Confirme no código** todo item `[HIPÓTESE]` e todo `[PLANEJADO]` — o `[PLANEJADO]` marca alvo ainda não implementado, então verifique se já foi feito antes de implementar de novo.
 5. **Implemente** e feche pelo §7 (Definição de pronto): atualize o documento e a data se a mudança foi estrutural.
@@ -63,9 +63,10 @@ Detalhes de operação do slim (matriz de pesquisa websearch/webfetch/gh_grep/co
 - Em chamadas MCP de escopo de projeto, enviar o `workspace` e o `project` exatos de `.ai-memory.toml`.
 
 ## 4. Design (ui-ux-pro-max)
-- Tela/página/componente novo: gerar ou ler o design system **antes** de codar.
-- Persistir em `design-system/MASTER.md`; overrides em `design-system/pages/<pagina>.md` (o override vence).
-- Respeitar os anti-padrões gerados (contraste, foco visível, `prefers-reduced-motion`, sem emoji como ícone).
+- Tela/página/componente novo ou alterado: gerar ou ler o design system **antes** de codar, alinhado ao padrão visual e estrutural do respectivo ambiente (`ARQUITETURA_SITE_PUBLICO.md` §1.1/§2 e `ARQUITETURA_SITE_PRIVADO.md` §1.1/§2).
+- Persistir em `design-system/MASTER.md`; overrides em `design-system/pages/<pagina>.md` (o override vence). Usar sempre os tokens CSS de `pages/styles/variables.css` (sem hex avulso nem Tailwind).
+- Manter identidade visual compartilhada entre Site Público e Painel Administrativo: estética clean, suave, minimalista, moderna e organizada, com hierarquia tipográfica clara, arredondamentos moderados, espaçamentos consistentes e transições discretas — preservando as particularidades funcionais de cada ambiente (ex.: navegação lateral esquerda recolhível exclusiva do painel).
+- Respeitar os anti-padrões gerados (contraste AA, foco visível duplo, `prefers-reduced-motion`, sem excesso de cores, sem arredondamentos exagerados, sem animações bruscas e sem emoji como ícone).
 - Os scripts da skill usam só Python stdlib. Nunca instalar software sem pedir.
 
 ## 5. Qualidade front-end (Front-End-Checklist)
