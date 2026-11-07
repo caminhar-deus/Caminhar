@@ -10,12 +10,13 @@
  * `scripts/bench` é preservado: os scripts, gabaritos e resultados são trabalho
  * do projeto, não sujeira da execução.
  */
-import { rm } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import { executar } from './runner-comum.js';
 
 const PROPRIOS = ['scripts/bench'];
+const TRAVA = ['scripts', 'bench', 'papeis', 'resultados', '.execucao-pendente.json'];
 
 function normalizar(caminho) {
   return caminho.split(path.sep).join('/');
@@ -223,4 +224,79 @@ export async function restaurarArvore(raiz = process.cwd(), { cabecaEsperada } =
     };
   }
   return { ok: true, motivo: '' };
+}
+
+/** Caminho da trava de execução pendente; fica sob `resultados/` (ignorado pelo git). */
+export function caminhoDaTrava(raiz = process.cwd()) {
+  return path.join(raiz, ...TRAVA);
+}
+
+/**
+ * Recusa uma nova bateria quando a anterior não concluiu.
+ *
+ * A trava grava o baseline da execução em curso. Sem ela, depois de um aborto
+ * (SIGINT, commit do agente, falha de spawn) só a mensagem do erro lembraria o
+ * HEAD de origem; a próxima execução encontraria a árvore suja — ou pior, limpa
+ * depois de um commit — e seguiria sem saber o que aconteceu. O arquivo fica em
+ * `scripts/bench/papeis/resultados/`, que o git ignora, então não aparecem
+ * alterações pendentes só por causa dele.
+ *
+ * @returns {Promise<null>} quando não há execução pendente.
+ * @throws {Error} quando a trava existe (concluída só por `concluirExecucao`).
+ */
+export async function exigirSemExecucaoPendente(raiz = process.cwd()) {
+  const arquivo = caminhoDaTrava(raiz);
+  let texto;
+  try {
+    texto = await readFile(arquivo, 'utf8');
+  } catch (erro) {
+    if (erro.code === 'ENOENT') return null;
+    throw new Error(
+      `Não consegui ler a trava de execução pendente (${arquivo}): ${erro.message}`,
+      { cause: erro }
+    );
+  }
+
+  let dados;
+  try {
+    dados = JSON.parse(texto);
+  } catch {
+    throw new Error(
+      `Trava de execução pendente ilegível em ${arquivo}. Se a cópia está no estado ` +
+      'desejado, apague o arquivo e rode de novo.'
+    );
+  }
+
+  const modelos = Array.isArray(dados.modelos) ? dados.modelos.join(', ') : dados.modelos ?? '?';
+  const detalhe = [
+    `agente ${dados.agente ?? '?'}`,
+    `modelos ${modelos}`,
+    `iniciada em ${dados.iniciadoEm ?? '?'}`,
+    `baseline ${dados.branch ?? '?'}@${String(dados.head ?? '?').slice(0, 12)}`,
+  ].join(', ');
+  throw new Error(
+    `Execução de bench pendente (${detalhe}). A bateria anterior não concluiu: confira ` +
+    '`git status` e `git log`, devolva a cópia ao baseline se precisar e apague ' +
+    `${arquivo} antes de rodar de novo.`
+  );
+}
+
+/** Grava a trava com o baseline da bateria que vai começar. */
+export async function registrarExecucao(raiz = process.cwd(), { head, branch, agente, modelos } = {}) {
+  const arquivo = caminhoDaTrava(raiz);
+  await mkdir(path.dirname(arquivo), { recursive: true });
+  const dados = {
+    head: head ?? null,
+    branch: branch ?? null,
+    agente: agente ?? null,
+    modelos: modelos ?? [],
+    iniciadoEm: new Date().toISOString(),
+  };
+  await writeFile(arquivo, JSON.stringify(dados, null, 2), 'utf8');
+  return dados;
+}
+
+/** Remove a trava quando a bateria terminou por inteiro. */
+export async function concluirExecucao(raiz = process.cwd()) {
+  await rm(caminhoDaTrava(raiz), { force: true });
 }

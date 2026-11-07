@@ -23,6 +23,17 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Corrigido
 
+- **Aviso de worker do Jest: saída do worker sob carga, não timer do app (07/11/2026).**
+  - O aviso `A worker process has failed to exit gracefully and has been force exited` voltou a aparecer em execução com cache frio (61 s, 4 workers), apesar do saneamento de 04/11/2026. A investigação descartou vazamento de timer do projeto: `--detectOpenHandles` (que roda *in-band* por definição) terminou sem handles, `--maxWorkers=1` não reproduziu o aviso e a instrumentação por arquivo (`async_hooks`) só encontrou timers já limpos no desmonte, `.unref()` no polyfill e `clearTimeout` no `finally` dos `fetch` com timeout.
+  - A medição no processo real do worker mostrou que, quando o `workerGracefulExitTimeout` de 500 ms dispara, não há timer/socket do projeto com `hasRef()`; o worker apenas ainda não drenou a saída. O default de 500 ms é curto para esta máquina (8 CPUs, ~7 GB, 4 workers com `jsdom`) e o Jest marca `forceExited` antes de o processo sair.
+  - Correção: `workerGracefulExitTimeout: 5000` em `jest.config.base.js`. O aviso continua sendo a rede de segurança para um vazamento real — que não drenaria nem em 5 s —, e o `clearAllTimers()`/`.unref()` de 04/11 permanecem válidos como higiene. Validado com `npm test` normal (sem `--runInBand`) em cache frio e quente: 213 suítes / 1699 testes, sem o aviso.
+
+- **Interrupção e baseline persistido nos benches (07/11/2026).**
+  - `scripts/bench/runner-comum.js`: `executarSessao()` aceita `AbortSignal` opcional e devolve `interrompido`; `lerTimeoutMin()`/`timeoutEmMs()` centralizam o parsing e a conversão de `--timeout-min`, usados pelos dois runners (a regex e o arredondamento estavam duplicados).
+  - `scripts/bench/arvore.js`: trava `scripts/bench/papeis/resultados/.execucao-pendente.json` com `{ head, branch, agente, modelos, iniciadoEm }` (`exigirSemExecucaoPendente`, `registrarExecucao`, `concluirExecucao`). Conclusão normal remove; interrupção, commit ou falha mantêm, e a próxima execução recusa antes de qualquer spawn.
+  - `scripts/bench/papeis/rodar.js`: `SIGINT`/`SIGTERM` abortam a sessão em curso, restauram a árvore no `finally` e saem com código 130 (o segundo sinal sai na hora); o `.meta.json` ganhou `interrompido`.
+  - Testes: unitários de `lerTimeoutMin`/`timeoutEmMs`/aborto, trava em `bench-arvore.test.js` e E2E do SIGINT e do bloqueio por execução pendente.
+
 - **Commit/troca de branch do agente e timeout provado no E2E (06/11/2026).**
   - `scripts/bench/arvore.js`: `exigirArvoreLimpa()` agora devolve o baseline `{ head, branch }`; `restaurarArvore(raiz, { cabecaEsperada })` compara HEAD/branch **antes** de qualquer escrita e falha fechada quando o agente commitou ou trocou de branch — os dois deixam `git status` limpo e antes passavam como `repoRestaurado: true`. O runner de papéis restaura em `finally`, então erro de spawn/leitura do `.ndjson` também devolve a árvore.
   - `--timeout-min` passou a aceitar fração positiva nos dois runners (`0.05` = 3 s) sem mudar a semântica de inteiros, o que permite exercitar o caminho de timeout em segundos.
@@ -44,6 +55,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   - Reprovações caíram de 8 execuções com citação reprovada para 2 justificadas restantes (a deliberada do `gabarito-designer.md` do `beam` e a genuína `docs/PROJECT_scripts.md:707` do `super-vl`). `orchestrator/conferir.js` e as classes mecânicas de execução intocadas. Ver ADR-0008 ("Validador de citações dos papéis").
 
 - **Vazamento de Workers no Jest e Impropriedade de Teardown (04/11/2026):**
+  - **Revisão em 07/11/2026:** a eliminação do aviso não se sustentou; ele voltou em execução com cache frio. A causa real era a saída do worker levar mais de 500 ms (default de `workerGracefulExitTimeout`), não um timer do app — ver a entrada de 07/11/2026 acima. O saneamento abaixo continua válido como higiene.
   - Eliminação do aviso `A worker process has failed to exit gracefully and has been force exited` ao final da execução dos testes. Saneados temporizadores assíncronos (`setTimeout`) em `Button.js` (efeito *ripple*), `Toast.js` (animação de saída) e `AdminCrudBase.js` / `CrudTable.js` (rolagem suave) com cancelamento explícito no desmonte (`useEffect`/`useRef`).
   - Adição de `.unref()` no polyfill de `IntersectionObserver` e inclusão de `jest.clearAllTimers()` no gancho `afterEach` de `tests/setup.js`.
   - Tempo de execução da suíte completa de testes (`npm test`) reduzido de 117s para 63s (208 suítes / 1654 testes aprovados).

@@ -100,25 +100,42 @@ A restauração é destrutiva por desenho, então o runner é **fail-closed** em
 - **commit ou troca de branch do agente falham fechado**: os dois deixam o
   `git status` limpo, então a restauração por caminho não veria nada. Cada
   `restaurarArvore()` compara HEAD/branch com o baseline antes de escrever e aborta a
-  bateria com o motivo; o commit fica para inspeção. Depois do aborto, devolva a cópia
-  ao HEAD anterior (o hash inicial aparece na mensagem) antes de rodar de novo — a
-  guarda não persiste o baseline entre execuções;
-- a restauração roda em `finally`: falha de spawn ou de leitura do `.ndjson` também
-  devolve a árvore, em vez de deixar a sujeira para a sessão seguinte;
+  bateria com o motivo; o commit fica para inspeção;
+- a restauração roda em `finally`: falha de spawn, de leitura do `.ndjson` ou sinal
+  também devolvem a árvore, em vez de deixar a sujeira para a sessão seguinte;
 - renomeação/cópia **falha fechada** em vez de adivinhar qual lado restaurar;
-- interrupção (`Ctrl+C`/SIGINT) não tem handler: a árvore fica suja e a próxima
-  execução real é bloqueada por `exigirArvoreLimpa()` — fail-safe, ao custo de limpar a
-  cópia descartável antes de continuar;
+- `Ctrl+C`/SIGINT (ou SIGTERM) aborta a sessão em curso pelo `AbortSignal`, restaura a
+  árvore e sai com **código 130**; o segundo sinal encerra imediatamente. A saída parcial
+  fica no `.ndjson` e o `.meta.json` registra `interrompido: true`;
 - `scripts/bench` inteiro é preservado: scripts, gabaritos e resultados são trabalho do
   projeto, não sujeira da execução.
+
+### Execução pendente (trava)
+
+Enquanto roda, a bateria mantém `scripts/bench/papeis/resultados/.execucao-pendente.json`
+com `{ head, branch, agente, modelos, iniciadoEm }`. Conclusão normal apaga o arquivo;
+interrupção, commit do agente ou falha o mantêm. A próxima execução real recusa antes de
+qualquer spawn, mostrando os dados da bateria anterior. Para liberar depois de conferir:
+
+```bash
+git status
+git log --oneline -5
+git checkout <head-do-baseline>   # a trava mostra o hash; a cópia é descartável
+rm scripts/bench/papeis/resultados/.execucao-pendente.json
+```
+
+O `--dry-run` não é bloqueado pela trava, porque não restaura nada.
 
 O caminho completo é coberto por `tests/unit/scripts/bench-papeis-runner.test.js`: o
 runner de papéis roda de verdade numa fixture git mínima com `opencode` falso e timeout
 de 3 s (`--timeout-min 0.05`), provando `TIMEOUT`, `excedeuTimeout`, `sessionID` e a
-restauração; um segundo cenário commita e prova o aborto fail-closed.
+restauração; um segundo cenário commita e prova o aborto fail-closed; um terceiro envia
+SIGINT e prova o código 130, `interrompido: true`, a restauração e a trava preservada; e
+uma trava pré-existente bloqueia antes de qualquer spawn.
 
-O runner de papéis grava no `.meta.json` o `sessionID` e `excedeuTimeout` — um timeout
-deixa de passar por execução normal e o turno seguinte tem a sessão para continuar.
+O runner de papéis grava no `.meta.json` o `sessionID`, `excedeuTimeout` e
+`interrompido` — timeout ou Ctrl+C deixam de passar por execução normal e o turno
+seguinte tem a sessão para continuar.
 
 ## O que cada arquivo é
 
@@ -131,8 +148,8 @@ deixa de passar por execução normal e o turno seguinte tem a sessão para cont
 | `conferir.js` | Camada A: delega, citações válidas, contaminação. |
 | `../ground-truth.js` | Inventário de `pages/api/`, fatos do disco e verificação dos instrumentos (compartilhado com o bench de papéis). |
 | `../citacoes.js` | Resolvedor de citação `arquivo:linha` compartilhado entre conferidores e ground truth. |
-| `../runner-comum.js` | Execução de comando/sessão (streaming, timeout e `sessionID`), catálogo de modelos, `STDIO` e guarda do marcador — usado pelos dois runners. |
-| `../arvore.js` | Guarda de árvore limpa e restauração do repo do bench de papéis (NUL-safe, preserva `scripts/bench`). |
+| `../runner-comum.js` | Execução de comando/sessão (streaming, timeout, `AbortSignal` e `sessionID`), catálogo de modelos, `STDIO`, timeout em minutos e guarda do marcador — usado pelos dois runners. |
+| `../arvore.js` | Guarda de árvore limpa, restauração do repo do bench de papéis (NUL-safe, preserva `scripts/bench`) e trava de execução pendente. |
 
 ## Fail-fast: o instrumento é conferido antes do spawn
 

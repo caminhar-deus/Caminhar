@@ -34,7 +34,8 @@ import path from 'node:path';
 import process from 'node:process';
 import { exigirInstrumentoValido } from '../ground-truth.js';
 import {
-  catalogo, classificarExistencia, exigirMarcadorDeBench, executar, executarSessao, resumirArgs,
+  catalogo, classificarExistencia, exigirMarcadorDeBench, executar, executarSessao,
+  lerTimeoutMin, resumirArgs, timeoutEmMs,
 } from '../runner-comum.js';
 
 const RAIZ = path.resolve(import.meta.dirname, '..', '..', '..');
@@ -93,12 +94,8 @@ function parseArgs(argv) {
       opts.turno = valor;
       i += 1;
     } else if (arg === '--timeout-min') {
-      const texto = argv[i + 1];
       // Fração é aceita para smoke test do caminho de timeout sem esperar 20 min.
-      if (!/^\d+(?:\.\d+)?$/.test(texto ?? '') || !(Number.parseFloat(texto) > 0)) {
-        throw new Error('--timeout-min exige um número > 0 (minutos; aceita fração, ex.: 0.05)');
-      }
-      opts.timeoutMin = Number.parseFloat(texto);
+      opts.timeoutMin = lerTimeoutMin(argv[i + 1]);
       i += 1;
     } else if (arg === '--sobrescrever') {
       opts.sobrescrever = true;
@@ -247,7 +244,7 @@ async function main() {
     console.log(`[${nome}] rodando… (timeout ${opts.timeoutMin} min)`);
     const inicio = Date.now();
     const { codigo, sessionID, stderr, excedeu } = await executarSessao(
-      RAIZ, args, arqSaida, Math.round(opts.timeoutMin * 60 * 1000)
+      RAIZ, args, arqSaida, timeoutEmMs(opts.timeoutMin)
     );
     const duracao = Date.now() - inicio;
 

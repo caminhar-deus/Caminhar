@@ -1129,16 +1129,24 @@ asserindo `TIMEOUT`, `sessionID`, `excedeuTimeout: true`, `repoRestaurado: true`
 arquivo rastreado restaurado e não rastreado removido; o segundo commitando e
 provando o aborto fail-closed.
 
-Limites conhecidos: não há handler de SIGINT — a interrupção deixa a árvore suja
-e a execução seguinte é bloqueada por `exigirArvoreLimpa()` (fail-safe, com
-limpeza manual na cópia descartável). Depois de um aborto por commit, a cópia
-precisa voltar ao HEAD anterior (o hash inicial aparece na mensagem) antes de
-uma nova bateria; a guarda detecta a mudança uma vez, não persiste o baseline
-entre execuções. Também não há backup dos arquivos descartados: o bench roda
-numa cópia descartável e a guarda exige a árvore limpa, então o que a restauração
-remove é a sujeira criada pela própria sessão — backup automático mascararia
-essa origem. A única perda possível é edição concorrente do operador durante a
-sessão, e é por isso que a cópia é isolada.
+Riscos residuais fechados em 07/11/2026 (terceira passada): (1) **SIGINT/SIGTERM
+deixavam a árvore suja e a sessão sem registro** — não havia handler, e a
+restauração só acontecia no fluxo normal. O runner de papéis agora instala um
+handler que aborta a sessão em curso via `AbortSignal`; a restauração roda no
+`finally` e a saída parcial permanece. O primeiro sinal encerra com código 130;
+o segundo sai na hora. (2) **o baseline `{ head, branch }` não sobrevivia entre
+execuções** — depois de um aborto, só a mensagem do erro lembrava o HEAD de
+origem. Uma trava em `scripts/bench/papeis/resultados/.execucao-pendente.json`
+grava `{ head, branch, agente, modelos, iniciadoEm }` enquanto a bateria roda:
+conclusão normal a remove; interrupção, commit ou falha a mantêm, e a próxima
+execução recusa antes de qualquer spawn. O procedimento de recuperação fica no
+LEIA-ME do bench, que é a fonte operacional.
+
+Limite que permanece, por desenho: não há backup dos arquivos descartados. O
+bench roda numa cópia descartável e a guarda exige a árvore limpa, então o que a
+restauração remove é a sujeira criada pela própria sessão — backup automático
+mascararia essa origem. A única perda possível é edição concorrente do operador
+durante a sessão, e é por isso que a cópia é isolada.
 
 ## Consequências
 

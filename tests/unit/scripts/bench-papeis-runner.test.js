@@ -17,12 +17,13 @@
  * O bench real nunca roda nesta fixture: `opencode` é um script `sh` no PATH.
  */
 import { describe, it, expect, afterAll } from '@jest/globals';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import {
   chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync,
 } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { esperarArquivo } from '../../helpers/esperar-arquivo.js';
 
 jest.setTimeout(60000);
 
@@ -102,16 +103,48 @@ function rodarRunner(raiz, modelo, timeoutMin = '0.05') {
       cwd: raiz,
       encoding: 'utf8',
       timeout: 45000,
-      env: {
-        ...process.env,
-        PATH: `${path.join(raiz, 'bin')}${path.delimiter}${process.env.PATH}`,
-      },
+      env: ambiente(raiz),
     }
   );
 }
 
 function lerMeta(raiz, base) {
   return JSON.parse(readFileSync(path.join(raiz, 'scripts', 'bench', 'papeis', 'resultados', `${base}.meta.json`), 'utf8'));
+}
+
+function caminhoTrava(raiz) {
+  return path.join(raiz, 'scripts', 'bench', 'papeis', 'resultados', '.execucao-pendente.json');
+}
+
+function ambiente(raiz) {
+  return {
+    ...process.env,
+    PATH: `${path.join(raiz, 'bin')}${path.delimiter}${process.env.PATH}`,
+  };
+}
+
+function rodarRunnerAssincrono(raiz, modelo, timeoutMin = '1') {
+  return spawn(
+    process.execPath,
+    [
+      'scripts/bench/papeis/rodar.js',
+      '--agente', 'designer',
+      '--modelo', modelo,
+      '--repeticoes', '1',
+      '--timeout-min', timeoutMin,
+    ],
+    { cwd: raiz, env: ambiente(raiz), stdio: ['ignore', 'pipe', 'pipe'] }
+  );
+}
+
+function coletar(filho) {
+  return new Promise((resolve) => {
+    let stdout = '';
+    let stderr = '';
+    filho.stdout.on('data', (d) => { stdout += d; });
+    filho.stderr.on('data', (d) => { stderr += d; });
+    filho.on('close', (codigo) => resolve({ status: codigo, stdout, stderr }));
+  });
 }
 
 describe('runner de papéis — E2E do timeout', () => {
@@ -145,6 +178,8 @@ exit 0
     expect(readFileSync(path.join(raiz, 'tracked.txt'), 'utf8')).toBe('base\n');
     expect(existsSync(path.join(raiz, 'nao-rastreado.txt'))).toBe(false);
     expect(git(raiz, 'status', '--porcelain=v1').trim()).toBe('');
+    // Bateria concluída (mesmo com timeout): a trava foi removida.
+    expect(existsSync(caminhoTrava(raiz))).toBe(false);
   });
 
   it('aborta a bateria quando o agente commita, sem mascarar o commit', () => {
@@ -177,5 +212,91 @@ exit 0
     // O commit do agente continua no lugar para inspeção — a guarda não o desfaz.
     expect(git(raiz, 'log', '-1', '--format=%s').trim()).toBe('commit do agente');
     expect(readFileSync(path.join(raiz, 'tracked.txt'), 'utf8')).toBe('trabalho do agente\n');
+    // Aborto não conclui a bateria: a trava guarda o HEAD de origem.
+    expect(existsSync(caminhoTrava(raiz))).toBe(true);
+    const trava = JSON.parse(readFileSync(caminhoTrava(raiz), 'utf8'));
+    expect(trava.head).toBe(git(raiz, 'rev-parse', 'HEAD~1').trim());
+  });
+});
+
+describe('runner de papéis — interrupção e trava', () => {
+  it('SIGINT aborta a sessão, restaura a árvore e preserva a trava', async () => {
+    const raiz = criarFixture(`#!/bin/sh
+if [ "$1" = "models" ]; then
+  printf 'opencode/fake-sigint\\n'
+  exit 0
+fi
+if [ "$1" = "run" ]; then
+  printf '{"type":"step_start","sessionID":"ses_fake_sigint"}\\n'
+  printf 'sujeira do sigint\\n' > tracked.txt
+  printf 'novo do sigint\\n' > nao-rastreado.txt
+  touch interrompido.marker
+  exec sleep 120
+fi
+exit 0
+`);
+
+    const filho = rodarRunnerAssincrono(raiz, 'opencode/fake-sigint');
+    const conclusao = coletar(filho);
+    await esperarArquivo(path.join(raiz, 'interrompido.marker'));
+    // SIGINT no runner (não no grupo): o handler aborta o `opencode` falso.
+    filho.kill('SIGINT');
+
+    const resultado = await conclusao;
+
+    expect(resultado.status).toBe(130);
+    expect(resultado.stderr).toMatch(/SIGINT recebido/);
+    expect(resultado.stdout).toMatch(/interrompido/);
+
+    const meta = lerMeta(raiz, 'designer-fake-sigint-1');
+    expect(meta.sessionID).toBe('ses_fake_sigint');
+    expect(meta.interrompido).toBe(true);
+    expect(meta.excedeuTimeout).toBe(false);
+    expect(meta.repoRestaurado).toBe(true);
+
+    expect(readFileSync(path.join(raiz, 'tracked.txt'), 'utf8')).toBe('base\n');
+    expect(existsSync(path.join(raiz, 'nao-rastreado.txt'))).toBe(false);
+    expect(git(raiz, 'status', '--porcelain=v1').trim()).toBe('');
+
+    // A trava registra o baseline e fica por causa do aborto.
+    const trava = JSON.parse(readFileSync(caminhoTrava(raiz), 'utf8'));
+    expect(trava.agente).toBe('designer');
+    expect(trava.modelos).toEqual(['opencode/fake-sigint']);
+    expect(trava.head).toBe(git(raiz, 'rev-parse', 'HEAD').trim());
+    expect(trava.branch).toBe(git(raiz, 'rev-parse', '--abbrev-ref', 'HEAD').trim());
+  });
+
+  it('recusa a bateria antes de qualquer spawn quando a trava anterior existe', () => {
+    const raiz = criarFixture(`#!/bin/sh
+if [ "$1" = "models" ]; then
+  printf 'opencode/fake-bloqueado\\n'
+  exit 0
+fi
+printf 'não deveria rodar\\n' > executou.txt
+exit 0
+`);
+
+    mkdirSync(path.dirname(caminhoTrava(raiz)), { recursive: true });
+    writeFileSync(caminhoTrava(raiz), JSON.stringify({
+      head: 'deadbeefcafe',
+      branch: 'main',
+      agente: 'designer',
+      modelos: ['opencode/antigo'],
+      iniciadoEm: '2026-11-07T00:00:00.000Z',
+    }));
+
+    const resultado = rodarRunner(raiz, 'opencode/fake-bloqueado', '1');
+
+    expect(resultado.status).toBe(1);
+    expect(resultado.stderr).toMatch(/Execução de bench pendente/);
+    expect(resultado.stderr).toMatch(/agente designer/);
+    expect(resultado.stderr).toMatch(/main@deadbeefcafe/);
+    // Fail-fast: nem o `opencode models` nem o `run` chegaram a rodar.
+    expect(existsSync(path.join(raiz, 'executou.txt'))).toBe(false);
+    expect(existsSync(path.join(
+      raiz, 'scripts', 'bench', 'papeis', 'resultados', 'designer-fake-bloqueado-1.ndjson'
+    ))).toBe(false);
+    // A trava não é removida por uma tentativa recusada.
+    expect(existsSync(caminhoTrava(raiz))).toBe(true);
   });
 });

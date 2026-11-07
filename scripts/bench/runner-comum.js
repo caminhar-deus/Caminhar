@@ -77,6 +77,19 @@ export function executar(raiz, comando, args, opcoes = {}) {
   });
 }
 
+/** Lê `--timeout-min` dos dois runners: número positivo, fração aceita. */
+export function lerTimeoutMin(valor, flag = '--timeout-min') {
+  if (!/^\d+(?:\.\d+)?$/.test(valor ?? '') || !(Number.parseFloat(valor) > 0)) {
+    throw new Error(`${flag} exige um número > 0 (minutos; aceita fração, ex.: 0.05)`);
+  }
+  return Number.parseFloat(valor);
+}
+
+/** Converte minutos para milissegundos inteiros (`setTimeout` não aceita fração). */
+export function timeoutEmMs(timeoutMin) {
+  return Math.round(timeoutMin * 60 * 1000);
+}
+
 /** Extrai o sessionID de uma linha de evento do `opencode run`. */
 export function sessionIdDaLinha(linha) {
   try {
@@ -91,11 +104,15 @@ export function sessionIdDaLinha(linha) {
  * Executa uma sessão do bench, escrevendo a saída em STREAMING.
  *
  * Streaming importa: uma execução morta no meio (ou por timeout) precisa deixar
- * evidência do que deu certo até ali. `excedeu` e `sessionID` sobem no retorno
- * para o `.meta.json` — sem eles, um timeout vira uma execução "normal" e o
- * turno 2 não tem sessão para continuar.
+ * evidência do que deu certo até ali. `excedeu`, `interrompido` e `sessionID`
+ * sobem no retorno para o `.meta.json` — sem eles, um timeout ou um Ctrl+C vira
+ * uma execução "normal" e o turno 2 não tem sessão para continuar.
+ *
+ * `signal` é opcional: quando aborta, a sessão recebe SIGTERM (SIGKILL depois de
+ * 5 s) e o retorno vem com `interrompido: true`; o runner restaura a árvore no
+ * `finally` e preserva a saída parcial.
  */
-export function executarSessao(raiz, args, arqSaida, timeoutMs) {
+export function executarSessao(raiz, args, arqSaida, timeoutMs, { signal } = {}) {
   return new Promise((resolve, reject) => {
     const fluxo = createWriteStream(arqSaida, { encoding: 'utf8' });
     const filho = spawn('opencode', args, { cwd: raiz, stdio: STDIO, env: process.env });
@@ -103,6 +120,24 @@ export function executarSessao(raiz, args, arqSaida, timeoutMs) {
     let sessionID = null;
     let stdoutParcial = '';
     let excedeu = false;
+    let interrompido = false;
+    let encerrado = false;
+
+    const matar = () => {
+      filho.kill('SIGTERM');
+      // Se o processo ignorar o TERM, não deixa o bench pendurado.
+      setTimeout(() => filho.kill('SIGKILL'), 5000).unref();
+    };
+    const aoAbortar = () => {
+      if (encerrado) return;
+      interrompido = true;
+      matar();
+    };
+    const finalizar = () => {
+      encerrado = true;
+      clearTimeout(temporizador);
+      signal?.removeEventListener('abort', aoAbortar);
+    };
 
     filho.stdout.on('data', (d) => {
       fluxo.write(d);
@@ -123,19 +158,19 @@ export function executarSessao(raiz, args, arqSaida, timeoutMs) {
 
     const temporizador = setTimeout(() => {
       excedeu = true;
-      filho.kill('SIGTERM');
-      // Se o processo ignorar o TERM, não deixa o bench pendurado.
-      setTimeout(() => filho.kill('SIGKILL'), 5000).unref();
+      matar();
     }, timeoutMs);
 
+    signal?.addEventListener('abort', aoAbortar, { once: true });
+
     filho.on('error', (erro) => {
-      clearTimeout(temporizador);
+      finalizar();
       fluxo.end();
       reject(erro);
     });
     filho.on('close', (codigo) => {
-      clearTimeout(temporizador);
-      fluxo.end(() => resolve({ codigo, sessionID, stderr, excedeu }));
+      finalizar();
+      fluxo.end(() => resolve({ codigo, sessionID, stderr, excedeu, interrompido }));
     });
   });
 }

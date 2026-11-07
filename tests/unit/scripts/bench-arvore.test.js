@@ -17,7 +17,10 @@ import {
 } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { exigirArvoreLimpa, restaurarArvore } from '../../../scripts/bench/arvore.js';
+import {
+  caminhoDaTrava, concluirExecucao, exigirArvoreLimpa, exigirSemExecucaoPendente,
+  registrarExecucao, restaurarArvore,
+} from '../../../scripts/bench/arvore.js';
 
 function git(raiz, ...args) {
   return execFileSync('git', args, { cwd: raiz, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
@@ -174,6 +177,45 @@ describe('restaurarArvore', () => {
     await comRepo(async (raiz) => {
       writeFileSync(path.join(raiz, 'scripts', 'bench', 'nota.md'), 'do bench\n');
       await expect(restaurarArvore(raiz)).resolves.toEqual({ ok: true, motivo: '' });
+    });
+  });
+});
+
+describe('trava de execução pendente', () => {
+  it('registra o baseline e recusa a próxima execução com os dados', async () => {
+    await comRepo(async (raiz) => {
+      await expect(exigirSemExecucaoPendente(raiz)).resolves.toBeNull();
+
+      await registrarExecucao(raiz, {
+        head: 'abc123def4567890', branch: 'main', agente: 'designer', modelos: ['opencode/x'],
+      });
+
+      expect(existsSync(caminhoDaTrava(raiz))).toBe(true);
+      await expect(exigirSemExecucaoPendente(raiz)).rejects.toThrow(
+        /agente designer.*opencode\/x.*main@abc123def456/s
+      );
+      const dados = JSON.parse(readFileSync(caminhoDaTrava(raiz), 'utf8'));
+      expect(dados.iniciadoEm).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    });
+  });
+
+  it('concluir remove a trava e libera a próxima execução', async () => {
+    await comRepo(async (raiz) => {
+      await registrarExecucao(raiz, { head: 'a', branch: 'main', agente: 'oracle', modelos: [] });
+      await concluirExecucao(raiz);
+      await expect(exigirSemExecucaoPendente(raiz)).resolves.toBeNull();
+      expect(existsSync(caminhoDaTrava(raiz))).toBe(false);
+      // Concluir de novo é idempotente.
+      await expect(concluirExecucao(raiz)).resolves.toBeUndefined();
+    });
+  });
+
+  it('falha fechada quando a trava está ilegível, citando o caminho', async () => {
+    await comRepo(async (raiz) => {
+      mkdirSync(path.dirname(caminhoDaTrava(raiz)), { recursive: true });
+      writeFileSync(caminhoDaTrava(raiz), '{quebrado');
+      await expect(exigirSemExecucaoPendente(raiz)).rejects.toThrow(/.execucao-pendente\.json/);
+      await expect(exigirSemExecucaoPendente(raiz)).rejects.toThrow(/ilegível/);
     });
   });
 });

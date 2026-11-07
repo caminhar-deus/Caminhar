@@ -16,8 +16,9 @@ import {
 import os from 'node:os';
 import path from 'node:path';
 import {
-  catalogo, executar, executarSessao, sessionIdDaLinha,
+  catalogo, executar, executarSessao, lerTimeoutMin, sessionIdDaLinha, timeoutEmMs,
 } from '../../../scripts/bench/runner-comum.js';
+import { esperarArquivo } from '../../helpers/esperar-arquivo.js';
 
 const temporarios = [];
 
@@ -45,6 +46,28 @@ function pastaLimpa() {
   temporarios.push(dir);
   return dir;
 }
+
+describe('lerTimeoutMin', () => {
+  it('aceita inteiro e fração positiva', () => {
+    expect(lerTimeoutMin('20')).toBe(20);
+    expect(lerTimeoutMin('0.05')).toBe(0.05);
+  });
+
+  it('recusa vazio, zero, negativo e texto, com o nome da flag na mensagem', () => {
+    for (const valor of [undefined, '', '0', '-1', 'abc', '.5', '1.2.3']) {
+      expect(() => lerTimeoutMin(valor)).toThrow(/--timeout-min exige um número > 0/);
+    }
+    expect(() => lerTimeoutMin('x', '--janela')).toThrow(/--janela exige um número > 0/);
+  });
+});
+
+describe('timeoutEmMs', () => {
+  it('converte minutos em milissegundos inteiros', () => {
+    expect(timeoutEmMs(20)).toBe(1200000);
+    expect(timeoutEmMs(0.05)).toBe(3000);
+    expect(Number.isInteger(timeoutEmMs(0.1 / 3))).toBe(true);
+  });
+});
 
 describe('sessionIdDaLinha', () => {
   it('extrai o sessionID de um evento e ignora linha inválida ou sem o campo', () => {
@@ -100,6 +123,36 @@ describe('executarSessao', () => {
       expect(resultado.codigo).not.toBe(0);
       expect(Date.now() - inicio).toBeLessThan(5000);
       expect(existsSync(arq)).toBe(true);
+    });
+  });
+
+  it('aborta a sessão pelo signal, preserva o parcial e devolve interrompido', async () => {
+    await comOpencodeFalso(`#!/bin/sh
+cat <<'EOF'
+{"type":"step_start","sessionID":"ses_abortado"}
+EOF
+touch marcador-abort
+exec sleep 30
+`, async () => {
+      const raiz = pastaLimpa();
+      const arq = path.join(raiz, 'abort.ndjson');
+      const controlador = new AbortController();
+
+      const promessa = executarSessao(
+        raiz, ['run', 'tarefa'], arq, 60000, { signal: controlador.signal }
+      );
+      await esperarArquivo(path.join(raiz, 'marcador-abort'));
+      controlador.abort();
+
+      const resultado = await promessa;
+
+      expect(resultado).toMatchObject({
+        interrompido: true,
+        sessionID: 'ses_abortado',
+        excedeu: false,
+      });
+      expect(resultado.codigo).not.toBe(0);
+      expect(readFileSync(arq, 'utf8')).toContain('ses_abortado');
     });
   });
 });

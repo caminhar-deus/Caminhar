@@ -37,6 +37,11 @@
  * (`../arvore.js`) e não pode apagar trabalho que já estava no disco. A guarda
  * devolve o baseline de HEAD/branch e cada restauração o reencontra — commit ou
  * troca de branch do agente abortam a bateria em vez de passar em silêncio.
+ * Enquanto roda, uma trava em `resultados/.execucao-pendente.json` guarda esse
+ * baseline; bateria concluída a apaga, interrupção ou falha a mantêm para a
+ * próxima execução recusar antes de qualquer spawn. `SIGINT`/`SIGTERM` abortam
+ * a sessão em curso e restauram a árvore no `finally` (código 130); o segundo
+ * sinal encerra na hora.
  *
  * `--timeout-min` aceita fração positiva (ex.: `0.05`) para exercitar o caminho
  * de timeout em segundos, sem esperar a janela real de 20 min.
@@ -45,9 +50,13 @@ import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import { exigirInstrumentoValido } from '../ground-truth.js';
-import { exigirArvoreLimpa, restaurarArvore } from '../arvore.js';
 import {
-  catalogo, classificarExistencia, exigirMarcadorDeBench, executarSessao, resumirArgs,
+  caminhoDaTrava, concluirExecucao, exigirArvoreLimpa, exigirSemExecucaoPendente,
+  registrarExecucao, restaurarArvore,
+} from '../arvore.js';
+import {
+  catalogo, classificarExistencia, exigirMarcadorDeBench, executarSessao, lerTimeoutMin,
+  resumirArgs, timeoutEmMs,
 } from '../runner-comum.js';
 import { aplicarRegressao, verificarRegressao } from './regressao-s1.js';
 
@@ -105,12 +114,8 @@ function parseArgs(argv) {
       }
       opts.repeticoes = Number.parseInt(v, 10);
     } else if (arg === '--timeout-min') {
-      const v = argv[++i];
       // Fração é aceita para smoke test do caminho de timeout sem esperar 20 min.
-      if (!/^\d+(?:\.\d+)?$/.test(v ?? '') || !(Number.parseFloat(v) > 0)) {
-        throw new Error('--timeout-min exige um número > 0 (minutos; aceita fração, ex.: 0.05)');
-      }
-      opts.timeoutMin = Number.parseFloat(v);
+      opts.timeoutMin = lerTimeoutMin(argv[++i]);
     } else if (arg === '--sobrescrever') {
       opts.sobrescrever = true;
     } else if (arg === '--dry-run') {
@@ -213,6 +218,11 @@ async function main() {
   // não restaura nada e continua inspecionável. O baseline devolvido aqui é o
   // que cada restauração precisa reencontrar: um commit do agente deixa o status
   // limpo e só a comparação de HEAD/branch detecta.
+  //
+  // A trava vem antes: se a bateria anterior não concluiu, é ela que explica o
+  // que aconteceu (baseline, agente, modelos). A guarda de árvore só diria
+  // "suja" ou, depois de um commit, não diria nada.
+  if (!opts.dryRun) await exigirSemExecucaoPendente(RAIZ);
   const cabecaInicial = opts.dryRun ? null : await exigirArvoreLimpa(RAIZ);
 
   // Fail-fast antes de qualquer spawn (inclusive `opencode models`): um instrumento
@@ -272,7 +282,31 @@ async function main() {
 
   await mkdir(SAIDA, { recursive: true });
 
+  // Ctrl+C durante a sessão aborta o `opencode`, restaura a árvore no `finally`
+  // e encerra com 130. A trava NÃO é apagada nesse caminho: a próxima execução
+  // recusa até o operador conferir `git status`/`git log` e remover o arquivo.
+  // O segundo sinal sai na hora, sem esperar a restauração.
+  const controlador = new AbortController();
+  const aoSinal = (sinal) => {
+    if (controlador.signal.aborted) {
+      console.error(`\n${sinal} de novo — saindo imediatamente.`);
+      process.exit(130);
+    }
+    console.error(`\n${sinal} recebido: abortando a sessão e restaurando a árvore…`);
+    controlador.abort();
+  };
+  process.on('SIGINT', aoSinal);
+  process.on('SIGTERM', aoSinal);
+
+  await registrarExecucao(RAIZ, {
+    head: cabecaInicial.head,
+    branch: cabecaInicial.branch,
+    agente: opts.agente,
+    modelos: opts.modelos,
+  });
+
   for (const job of paraRodar) {
+    if (controlador.signal.aborted) break;
     const { modelo, repeticao: n, base, arqSaida, arqMeta, args } = job;
 
     // O fixer mede hoje a correção do S1 com o bug REINTRODUZIDO no disco:
@@ -297,13 +331,15 @@ async function main() {
 
     console.log(`[${base}] rodando… (timeout ${opts.timeoutMin} min)`);
     const inicio = Date.now();
-    let resultado = { codigo: null, sessionID: null, stderr: '', excedeu: false };
+    let resultado = {
+      codigo: null, sessionID: null, stderr: '', excedeu: false, interrompido: false,
+    };
     let bruto = '';
     let falhaExecucao = null;
     let restaurado;
     try {
       resultado = await executarSessao(
-        RAIZ, args, arqSaida, Math.round(opts.timeoutMin * 60 * 1000)
+        RAIZ, args, arqSaida, timeoutEmMs(opts.timeoutMin), { signal: controlador.signal }
       );
       bruto = await readFile(arqSaida, 'utf8');
     } catch (erro) {
@@ -314,7 +350,7 @@ async function main() {
       restaurado = await restaurarArvore(RAIZ, { cabecaEsperada: cabecaInicial });
     }
     const duracao = Date.now() - inicio;
-    const { codigo, sessionID, stderr, excedeu } = resultado;
+    const { codigo, sessionID, stderr, excedeu, interrompido } = resultado;
 
     const resposta = extrairResposta(bruto);
     const editados = arquivosEditados(bruto);
@@ -327,6 +363,7 @@ async function main() {
       sessionID,
       codigoSaida: codigo,
       excedeuTimeout: excedeu,
+      interrompido,
       duracaoMs: duracao,
       executadoEm: new Date(inicio).toISOString(),
       comando: resumirArgs(args),
@@ -343,6 +380,14 @@ async function main() {
         'Bateria abortada para a próxima execução não herdar a sujeira.'
       );
     }
+    if (interrompido) {
+      console.log(
+        `[${base}] interrompido — saída parcial preservada e repo restaurado. ` +
+        `A trava ${path.relative(RAIZ, caminhoDaTrava(RAIZ))} fica para a próxima execução recusar até a conferência.`
+      );
+      process.exitCode = 130;
+      return;
+    }
     if (falhaExecucao) {
       throw new Error(
         `[${base}] execução não concluiu (${falhaExecucao.message}); repo restaurado.`,
@@ -357,7 +402,23 @@ async function main() {
     if (editados.length > 0) console.log(`         arquivos editados: ${editados.join(', ')}`);
     if (codigo !== 0 && stderr) console.log(`         stderr: ${stderr.slice(0, 300)}`);
     if (excedeu) console.log('         execução parcial: o .ndjson tem o que deu certo até o timeout; marque como incompleta na pontuação.');
+
+    // Sinal entre o fim da sessão e a próxima: a árvore já foi restaurada, mas a
+    // bateria não terminou — sai com 130 e mantém a trava.
+    if (controlador.signal.aborted) {
+      console.log('\nSinal recebido: bateria encerrada antes da próxima execução; repo restaurado.');
+      process.exitCode = 130;
+      return;
+    }
   }
+
+  if (controlador.signal.aborted) {
+    console.log('\nBateria interrompida; a trava de execução pendente foi preservada.');
+    process.exitCode = 130;
+    return;
+  }
+
+  await concluirExecucao(RAIZ);
 
   console.log(`\nConferir com: node scripts/bench/papeis/conferir.js`);
   console.log('Depois, pontuar contra scripts/bench/papeis/gabarito-<papel>.md.');

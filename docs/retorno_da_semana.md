@@ -27,10 +27,10 @@
 - **Identificação:** `WARN: A worker process has failed to exit gracefully and has been force exited.`
 - **Fonte:** `logs/tests-output.log`
 - **Data:** 04/11/2026
-- **Status:** **RESOLVIDO em 04/11/2026**
+- **Status:** **RESOLVIDO em 07/11/2026** (revisão; a primeira correção, de 04/11/2026, não se sustentou)
 - **Processo envolvido:** Execução de testes automatizados (Jest)
 - **Descrição:** Ao término dos testes, o processo worker do Jest não encerrava de forma limpa devido a timers ativos retidos no event loop.
-- **Causa Raiz:** Temporizadores de animação e scroll não limpos no desmonte em `Button.js`, `Toast.js`, `AdminCrudBase.js` e `CrudTable.js`, somados ao polyfill de `IntersectionObserver` sem `.unref()` em `tests/setup.js`.
+- **Causa Raiz (hipótese de 04/11/2026, não confirmada em 07/11/2026):** Temporizadores de animação e scroll não limpos no desmonte em `Button.js`, `Toast.js`, `AdminCrudBase.js` e `CrudTable.js`, somados ao polyfill de `IntersectionObserver` sem `.unref()` em `tests/setup.js`.
 - **Correção Aplicada:**
   1. `components/UI/Button.js`: Armazenamento de timeouts em `rippleTimersRef` e cancelamento no retorno de limpeza do `useEffect`.
   2. `components/UI/Toast.js`: Armazenamento do timeout de animação em `exitTimerRef` e limpeza no `useEffect`.
