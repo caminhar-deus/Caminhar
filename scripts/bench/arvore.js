@@ -69,11 +69,31 @@ async function statusForaDoBench(raiz) {
   return entradas;
 }
 
+/** Lê o baseline da execução: commit e branch correntes. */
+async function lerCabeca(raiz) {
+  const head = await executar(raiz, 'git', ['rev-parse', 'HEAD']);
+  if (head.codigo !== 0) {
+    throw new Error(`git rev-parse HEAD falhou: ${head.stderr.trim() || `código ${head.codigo}`}`);
+  }
+  const branch = await executar(raiz, 'git', ['rev-parse', '--abbrev-ref', 'HEAD']);
+  if (branch.codigo !== 0) {
+    throw new Error(`git rev-parse --abbrev-ref HEAD falhou: ${branch.stderr.trim() || `código ${branch.codigo}`}`);
+  }
+  return { head: head.stdout.trim(), branch: branch.stdout.trim() };
+}
+
 /**
- * Exige a árvore limpa fora de `scripts/bench` antes de uma execução real.
+ * Exige a árvore limpa fora de `scripts/bench` antes de uma execução real e
+ * devolve o baseline `{ head, branch }` que `restaurarArvore()` deve reencontrar.
  *
  * Sem esta guarda, `restaurarArvore()` apagaria trabalho não commitado que já
  * estava no disco antes da medição. O `--dry-run` é isento: ele não restaura nada.
+ *
+ * O baseline não é decoração: um agente que commita ou troca de branch deixa
+ * `git status` limpo, e a restauração por caminhos não veria nada a desfazer.
+ * Comparar HEAD/branch é o que transforma esse caso em falha fechada.
+ *
+ * @returns {Promise<{head: string, branch: string}>}
  */
 export async function exigirArvoreLimpa(raiz = process.cwd()) {
   let entradas;
@@ -91,6 +111,38 @@ export async function exigirArvoreLimpa(raiz = process.cwd()) {
       `esse trabalho. Commite ou dê stash antes de rodar.\n${lista}`
     );
   }
+  try {
+    return await lerCabeca(raiz);
+  } catch (erro) {
+    throw new Error(`Não consegui ler o baseline (HEAD/branch): ${erro.message}`, { cause: erro });
+  }
+}
+
+/**
+ * Compara a cabeça atual com o baseline da execução; devolve `null` se bateu.
+ *
+ * A checagem vem ANTES de qualquer escrita: com commit do agente ou branch
+ * trocada, restaurar os caminhos reportados pelo status não desfaria nada e
+ * ainda mascararia a causa (o status fica limpo depois do commit).
+ */
+async function conferirCabeca(raiz, cabecaEsperada) {
+  if (!cabecaEsperada) return null;
+  let atual;
+  try {
+    atual = await lerCabeca(raiz);
+  } catch (erro) {
+    return `não consegui reler HEAD/branch: ${erro.message}`;
+  }
+  if (atual.head !== cabecaEsperada.head) {
+    return 'HEAD mudou durante a execução: o agente commitou. Restauração abortada para ' +
+      `não mascarar o commit (${cabecaEsperada.head.slice(0, 12)} -> ${atual.head.slice(0, 12)}). ` +
+      'Inspecione `git log` e decida manualmente; a cópia do bench é descartável.';
+  }
+  if (atual.branch !== cabecaEsperada.branch) {
+    return 'branch mudou durante a execução: o agente trocou de branch. Restauração ' +
+      `abortada (${cabecaEsperada.branch} -> ${atual.branch}). Volte com \`git checkout\` e inspecione.`;
+  }
+  return null;
 }
 
 /**
@@ -101,9 +153,17 @@ export async function exigirArvoreLimpa(raiz = process.cwd()) {
  * renomeação não são confundidos com a sintaxe do status. Renomeação/cópia é
  * recusada: a restauração não tenta adivinhar o par original/novo.
  *
+ * @param {string} raiz
+ * @param {{cabecaEsperada?: {head: string, branch: string}}} [opcoes]
+ *   `cabecaEsperada` é o baseline devolvido por `exigirArvoreLimpa()`. Quando
+ *   presente, HEAD/branch são comparados antes de qualquer escrita e a
+ *   restauração falha fechada se o agente commitou ou trocou de branch.
  * @returns {Promise<{ok: boolean, motivo: string, restantes?: string[]}>}
  */
-export async function restaurarArvore(raiz = process.cwd()) {
+export async function restaurarArvore(raiz = process.cwd(), { cabecaEsperada } = {}) {
+  const mudouCabeca = await conferirCabeca(raiz, cabecaEsperada);
+  if (mudouCabeca) return { ok: false, motivo: mudouCabeca };
+
   let entradas;
   try {
     entradas = await statusForaDoBench(raiz);

@@ -1111,6 +1111,35 @@ renomeação/cópia. O runner também unificou `executar`, `catalogo`,
 de papéis deixou de ser silencioso (`excedeuTimeout`) e o `sessionID` passou a
 ser gravado no `.meta.json`.
 
+Riscos residuais fechados em 06/11/2026 (segunda passada): (1) **commit ou
+troca de branch do agente passavam como `ok: true`** — os dois deixam
+`git status` limpo, então a restauração por caminho não tinha o que desfazer e
+o commit ficava no histórico. Agora `exigirArvoreLimpa()` devolve o baseline
+`{ head, branch }` e cada `restaurarArvore(raiz, { cabecaEsperada })` o
+reencontra **antes** de qualquer escrita; HEAD ou branch diferentes abortam a
+bateria com motivo explícito, e o commit do agente permanece para inspeção em
+vez de ser mascarado. A restauração passou a rodar em `finally`: falha de
+spawn ou de leitura do `.ndjson` também devolve a árvore ao estado anterior.
+(2) **o caminho de timeout só era provado no teste unitário do runner comum.**
+`--timeout-min` passou a aceitar fração positiva nos dois runners (`0.05` = 3 s,
+sem mudar a semântica de inteiros) e
+`tests/unit/scripts/bench-papeis-runner.test.js` executa o runner de papéis de
+verdade numa fixture git mínima com `opencode` falso: o primeiro cenário
+asserindo `TIMEOUT`, `sessionID`, `excedeuTimeout: true`, `repoRestaurado: true`,
+arquivo rastreado restaurado e não rastreado removido; o segundo commitando e
+provando o aborto fail-closed.
+
+Limites conhecidos: não há handler de SIGINT — a interrupção deixa a árvore suja
+e a execução seguinte é bloqueada por `exigirArvoreLimpa()` (fail-safe, com
+limpeza manual na cópia descartável). Depois de um aborto por commit, a cópia
+precisa voltar ao HEAD anterior (o hash inicial aparece na mensagem) antes de
+uma nova bateria; a guarda detecta a mudança uma vez, não persiste o baseline
+entre execuções. Também não há backup dos arquivos descartados: o bench roda
+numa cópia descartável e a guarda exige a árvore limpa, então o que a restauração
+remove é a sujeira criada pela própria sessão — backup automático mascararia
+essa origem. A única perda possível é edição concorrente do operador durante a
+sessão, e é por isso que a cópia é isolada.
+
 ## Consequências
 
 ### Positivas

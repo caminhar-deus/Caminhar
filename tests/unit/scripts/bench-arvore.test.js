@@ -6,7 +6,9 @@
  * Os testes usam um repositório git temporário e cobrem o que a versão antiga
  * errava: caminho com espaço/acento (o `git status` sem `-z` cita o nome),
  * renomeação (antes restaurava o par errado em silêncio) e arquivo do próprio
- * bench (antes era apagado como "sujeira").
+ * bench (antes era apagado como "sujeira"). Também cobrem a falha fechada que
+ * a restauração por caminhos não vê: agente que commita (HEAD muda) ou troca
+ * de branch com o status limpo.
  */
 import { describe, it, expect } from '@jest/globals';
 import { execFileSync } from 'node:child_process';
@@ -47,12 +49,15 @@ async function comRepo(cenario) {
 }
 
 describe('exigirArvoreLimpa', () => {
-  it('aceita árvore limpa e ignora o que é do bench', async () => {
+  it('aceita árvore limpa, ignora o que é do bench e devolve HEAD/branch', async () => {
     await comRepo(async (raiz) => {
       writeFileSync(path.join(raiz, 'scripts', 'bench', 'anotacao.txt'), 'trabalho do projeto\n');
       mkdirSync(path.join(raiz, 'scripts', 'bench', 'resultados'), { recursive: true });
       writeFileSync(path.join(raiz, 'scripts', 'bench', 'resultados', 'x.ndjson'), '{}\n');
-      await expect(exigirArvoreLimpa(raiz)).resolves.toBeUndefined();
+      await expect(exigirArvoreLimpa(raiz)).resolves.toEqual({
+        head: git(raiz, 'rev-parse', 'HEAD').trim(),
+        branch: git(raiz, 'rev-parse', '--abbrev-ref', 'HEAD').trim(),
+      });
     });
   });
 
@@ -83,6 +88,7 @@ describe('exigirArvoreLimpa', () => {
 describe('restaurarArvore', () => {
   it('restaura rastreado alterado, remove não rastreado e preserva o bench', async () => {
     await comRepo(async (raiz) => {
+      const baseline = await exigirArvoreLimpa(raiz);
       writeFileSync(path.join(raiz, 'tracked.txt'), 'alterado\n');
       writeFileSync(path.join(raiz, 'docs', 'guia.md'), 'alterado\n');
       writeFileSync(path.join(raiz, 'rascunho com espaço.txt'), 'temporário\n');
@@ -91,7 +97,7 @@ describe('restaurarArvore', () => {
       writeFileSync(path.join(raiz, 'scripts', 'bench', 'anotacao.txt'), 'preservar\n');
       writeFileSync(path.join(raiz, 'scripts', 'bench', 'tracked.txt'), 'bench alterado\n');
 
-      await expect(restaurarArvore(raiz)).resolves.toEqual({ ok: true, motivo: '' });
+      await expect(restaurarArvore(raiz, { cabecaEsperada: baseline })).resolves.toEqual({ ok: true, motivo: '' });
 
       expect(readFileSync(path.join(raiz, 'tracked.txt'), 'utf8')).toBe('base\n');
       expect(readFileSync(path.join(raiz, 'docs', 'guia.md'), 'utf8')).toBe('base\n');
@@ -99,6 +105,41 @@ describe('restaurarArvore', () => {
       expect(existsSync(path.join(raiz, 'pasta nova'))).toBe(false);
       expect(readFileSync(path.join(raiz, 'scripts', 'bench', 'anotacao.txt'), 'utf8')).toBe('preservar\n');
       expect(readFileSync(path.join(raiz, 'scripts', 'bench', 'tracked.txt'), 'utf8')).toBe('bench alterado\n');
+      // Depois da restauração, a árvore volta a passar na guarda com o MESMO baseline.
+      await expect(exigirArvoreLimpa(raiz)).resolves.toEqual(baseline);
+    });
+  });
+
+  it('falha fechada quando o agente commita, sem mascarar o commit', async () => {
+    await comRepo(async (raiz) => {
+      const baseline = await exigirArvoreLimpa(raiz);
+      writeFileSync(path.join(raiz, 'tracked.txt'), 'trabalho do agente\n');
+      git(raiz, 'commit', '-qam', 'commit do agente');
+
+      const resultado = await restaurarArvore(raiz, { cabecaEsperada: baseline });
+
+      expect(resultado.ok).toBe(false);
+      expect(resultado.motivo).toMatch(/HEAD mudou/);
+      expect(resultado.motivo).toMatch(/commitou/);
+      // A restauração abortou ANTES de tocar em qualquer coisa: o commit e o
+      // conteúdo ficam para inspeção manual, em vez de sumirem em silêncio.
+      expect(git(raiz, 'rev-list', '--count', 'HEAD').trim()).toBe('2');
+      expect(git(raiz, 'log', '-1', '--format=%s').trim()).toBe('commit do agente');
+      expect(readFileSync(path.join(raiz, 'tracked.txt'), 'utf8')).toBe('trabalho do agente\n');
+    });
+  });
+
+  it('falha fechada quando o agente troca de branch', async () => {
+    await comRepo(async (raiz) => {
+      const baseline = await exigirArvoreLimpa(raiz);
+      git(raiz, 'checkout', '-qb', 'outra');
+
+      const resultado = await restaurarArvore(raiz, { cabecaEsperada: baseline });
+
+      expect(resultado.ok).toBe(false);
+      expect(resultado.motivo).toMatch(/branch mudou/);
+      expect(resultado.motivo).toMatch(/outra/);
+      expect(git(raiz, 'branch', '--show-current').trim()).toBe('outra');
     });
   });
 

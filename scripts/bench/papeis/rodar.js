@@ -34,7 +34,12 @@
  *
  * Em execução real (sem `--dry-run`), a árvore fora de `scripts/bench` precisa
  * estar limpa: o runner restaura o repositório ao HEAD depois de cada execução
- * (`../arvore.js`) e não pode apagar trabalho que já estava no disco.
+ * (`../arvore.js`) e não pode apagar trabalho que já estava no disco. A guarda
+ * devolve o baseline de HEAD/branch e cada restauração o reencontra — commit ou
+ * troca de branch do agente abortam a bateria em vez de passar em silêncio.
+ *
+ * `--timeout-min` aceita fração positiva (ex.: `0.05`) para exercitar o caminho
+ * de timeout em segundos, sem esperar a janela real de 20 min.
  */
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -101,10 +106,11 @@ function parseArgs(argv) {
       opts.repeticoes = Number.parseInt(v, 10);
     } else if (arg === '--timeout-min') {
       const v = argv[++i];
-      if (!/^\d+$/.test(v ?? '') || Number.parseInt(v, 10) < 1) {
-        throw new Error('--timeout-min exige um inteiro >= 1');
+      // Fração é aceita para smoke test do caminho de timeout sem esperar 20 min.
+      if (!/^\d+(?:\.\d+)?$/.test(v ?? '') || !(Number.parseFloat(v) > 0)) {
+        throw new Error('--timeout-min exige um número > 0 (minutos; aceita fração, ex.: 0.05)');
       }
-      opts.timeoutMin = Number.parseInt(v, 10);
+      opts.timeoutMin = Number.parseFloat(v);
     } else if (arg === '--sobrescrever') {
       opts.sobrescrever = true;
     } else if (arg === '--dry-run') {
@@ -204,8 +210,10 @@ async function main() {
 
   // Execução real restaura o repo depois de cada sessão; com trabalho não
   // commitado fora do bench, a restauração apagaria esse trabalho. O `--dry-run`
-  // não restaura nada e continua inspecionável.
-  if (!opts.dryRun) await exigirArvoreLimpa(RAIZ);
+  // não restaura nada e continua inspecionável. O baseline devolvido aqui é o
+  // que cada restauração precisa reencontrar: um commit do agente deixa o status
+  // limpo e só a comparação de HEAD/branch detecta.
+  const cabecaInicial = opts.dryRun ? null : await exigirArvoreLimpa(RAIZ);
 
   // Fail-fast antes de qualquer spawn (inclusive `opencode models`): um instrumento
   // que já não descreve o disco produz nota sem significado e queima cota à toa.
@@ -289,18 +297,27 @@ async function main() {
 
     console.log(`[${base}] rodando… (timeout ${opts.timeoutMin} min)`);
     const inicio = Date.now();
-    const { codigo, sessionID, stderr, excedeu } = await executarSessao(
-      RAIZ, args, arqSaida, opts.timeoutMin * 60 * 1000
-    );
+    let resultado = { codigo: null, sessionID: null, stderr: '', excedeu: false };
+    let bruto = '';
+    let falhaExecucao = null;
+    let restaurado;
+    try {
+      resultado = await executarSessao(
+        RAIZ, args, arqSaida, Math.round(opts.timeoutMin * 60 * 1000)
+      );
+      bruto = await readFile(arqSaida, 'utf8');
+    } catch (erro) {
+      falhaExecucao = erro;
+    } finally {
+      // O repo precisa voltar ao estado de antes mesmo quando o spawn ou a
+      // leitura do .ndjson lança: sem isso, a próxima sessão herda a sujeira.
+      restaurado = await restaurarArvore(RAIZ, { cabecaEsperada: cabecaInicial });
+    }
     const duracao = Date.now() - inicio;
+    const { codigo, sessionID, stderr, excedeu } = resultado;
 
-    const bruto = await readFile(arqSaida, 'utf8');
     const resposta = extrairResposta(bruto);
     const editados = arquivosEditados(bruto);
-
-    // O estado do repo ANTES da execução precisa voltar ao de antes. Sem isso, a
-    // execução seguinte herda o trabalho da anterior e a tarefa deixa de ter objeto.
-    const restaurado = await restaurarArvore(RAIZ);
 
     await writeFile(arqMeta, JSON.stringify({
       agente: opts.agente,
@@ -315,14 +332,21 @@ async function main() {
       comando: resumirArgs(args),
       arquivosEditados: editados,
       repoRestaurado: restaurado.ok,
+      ...(falhaExecucao ? { erro: falhaExecucao.message } : {}),
       stderr: stderr.slice(0, 2000),
     }, null, 2), 'utf8');
 
     if (!restaurado.ok) {
+      const restantes = restaurado.restantes?.length ? `: ${restaurado.restantes.join(', ')}` : '';
       throw new Error(
-        `[${base}] repo não restaurado (${restaurado.motivo}): ` +
-        `${restaurado.restantes?.join(', ') ?? 'sem detalhe'}. ` +
+        `[${base}] repo não restaurado (${restaurado.motivo})${restantes}. ` +
         'Bateria abortada para a próxima execução não herdar a sujeira.'
+      );
+    }
+    if (falhaExecucao) {
+      throw new Error(
+        `[${base}] execução não concluiu (${falhaExecucao.message}); repo restaurado.`,
+        { cause: falhaExecucao }
       );
     }
 

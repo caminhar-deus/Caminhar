@@ -32,7 +32,7 @@ Outras opções:
 | Opção | Padrão | Para quê |
 |---|---|---|
 | `--turno 1\|2` | 1 | Turno 1 abre a sessão; turno 2 continua a sessão do turno 1 (ver abaixo). |
-| `--timeout-min N` | 20 | Corta a execução e mantém o parcial. Uma sessão travada não pode segurar o bench inteiro. |
+| `--timeout-min N` | 20 | Corta a execução e mantém o parcial. Uma sessão travada não pode segurar o bench inteiro. Aceita fração positiva (`0.05` = 3 s) para smoke test do caminho de timeout. |
 | `--sobrescrever` | — | Refaz uma execução já salva. |
 | `--dry-run` | — | Roda o preflight e o planejamento, confere os modelos e imprime os comandos reais (com o `sessionID` do turno 2), sem gastar cota nem criar arquivo. |
 
@@ -91,14 +91,31 @@ A restauração é destrutiva por desenho, então o runner é **fail-closed** em
 `scripts/bench/arvore.js`:
 
 - antes de uma execução real, `exigirArvoreLimpa()` recusa a árvore com qualquer
-  alteração **fora de `scripts/bench`** (commit ou stash antes de rodar); o `--dry-run`
-  é isento porque não restaura nada;
+  alteração **fora de `scripts/bench`** (commit ou stash antes de rodar) e devolve o
+  baseline `{ head, branch }` da execução; o `--dry-run` é isento porque não restaura
+  nada;
 - depois da sessão, só os caminhos reportados por `git status --porcelain=v1 -z` são
   restaurados (`git checkout HEAD --`) ou removidos (não rastreados); espaço, acento e
   caminho citado deixam de ser ambíguos;
+- **commit ou troca de branch do agente falham fechado**: os dois deixam o
+  `git status` limpo, então a restauração por caminho não veria nada. Cada
+  `restaurarArvore()` compara HEAD/branch com o baseline antes de escrever e aborta a
+  bateria com o motivo; o commit fica para inspeção. Depois do aborto, devolva a cópia
+  ao HEAD anterior (o hash inicial aparece na mensagem) antes de rodar de novo — a
+  guarda não persiste o baseline entre execuções;
+- a restauração roda em `finally`: falha de spawn ou de leitura do `.ndjson` também
+  devolve a árvore, em vez de deixar a sujeira para a sessão seguinte;
 - renomeação/cópia **falha fechada** em vez de adivinhar qual lado restaurar;
+- interrupção (`Ctrl+C`/SIGINT) não tem handler: a árvore fica suja e a próxima
+  execução real é bloqueada por `exigirArvoreLimpa()` — fail-safe, ao custo de limpar a
+  cópia descartável antes de continuar;
 - `scripts/bench` inteiro é preservado: scripts, gabaritos e resultados são trabalho do
   projeto, não sujeira da execução.
+
+O caminho completo é coberto por `tests/unit/scripts/bench-papeis-runner.test.js`: o
+runner de papéis roda de verdade numa fixture git mínima com `opencode` falso e timeout
+de 3 s (`--timeout-min 0.05`), provando `TIMEOUT`, `excedeuTimeout`, `sessionID` e a
+restauração; um segundo cenário commita e prova o aborto fail-closed.
 
 O runner de papéis grava no `.meta.json` o `sessionID` e `excedeuTimeout` — um timeout
 deixa de passar por execução normal e o turno seguinte tem a sessão para continuar.

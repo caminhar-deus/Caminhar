@@ -23,6 +23,12 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Corrigido
 
+- **Commit/troca de branch do agente e timeout provado no E2E (06/11/2026).**
+  - `scripts/bench/arvore.js`: `exigirArvoreLimpa()` agora devolve o baseline `{ head, branch }`; `restaurarArvore(raiz, { cabecaEsperada })` compara HEAD/branch **antes** de qualquer escrita e falha fechada quando o agente commitou ou trocou de branch — os dois deixam `git status` limpo e antes passavam como `repoRestaurado: true`. O runner de papéis restaura em `finally`, então erro de spawn/leitura do `.ndjson` também devolve a árvore.
+  - `--timeout-min` passou a aceitar fração positiva nos dois runners (`0.05` = 3 s) sem mudar a semântica de inteiros, o que permite exercitar o caminho de timeout em segundos.
+  - `tests/unit/scripts/bench-papeis-runner.test.js`: E2E real do runner de papéis numa fixture git mínima com `opencode` falso. O cenário de timeout assere `TIMEOUT`, `sessionID`, `excedeuTimeout: true`, `repoRestaurado: true`, rastreado restaurado e não rastreado removido; o cenário de commit assere o aborto fail-closed com o commit preservado para inspeção. O teste unitário do runner comum continua provando `executarSessao()`, mas deixou de ser a única evidência do caminho.
+  - `scripts/bench/orchestrator/rodar.js` e `scripts/bench/papeis/rodar.js` arredondam o timeout para milissegundos inteiros (`Math.round`), evitando fração de ms em `setTimeout`.
+
 - **Restauração destrutiva e timeout silencioso nos benches (06/11/2026).**
   - `scripts/bench/papeis/rodar.js` restaurava o repo com `git status --porcelain` + `slice(3)` e apagava tudo fora de `scripts/bench`, inclusive trabalho não commitado anterior à execução; caminho com espaço/acento e renomeação quebravam a restauração em silêncio. **Agora:** `scripts/bench/arvore.js` exige a árvore limpa fora do bench antes da execução real (`--dry-run` isento), lê o status com `--porcelain=v1 -z`, restaura só o que o git reportou e falha fechada em renomeação/cópia. Os dois runners usam `executar`, `catalogo`, `executarSessao` e `sessionIdDaLinha` de `runner-comum.js`; o runner de papéis deixou de devolver `excedeu: false` fixo e passou a gravar `sessionID`/`excedeuTimeout` no `.meta.json`.
 

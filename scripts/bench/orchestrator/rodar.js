@@ -93,9 +93,12 @@ function parseArgs(argv) {
       opts.turno = valor;
       i += 1;
     } else if (arg === '--timeout-min') {
-      const valor = Number.parseInt(argv[i + 1], 10);
-      if (!Number.isInteger(valor) || valor < 1) throw new Error('--timeout-min exige um inteiro >= 1');
-      opts.timeoutMin = valor;
+      const texto = argv[i + 1];
+      // Fração é aceita para smoke test do caminho de timeout sem esperar 20 min.
+      if (!/^\d+(?:\.\d+)?$/.test(texto ?? '') || !(Number.parseFloat(texto) > 0)) {
+        throw new Error('--timeout-min exige um número > 0 (minutos; aceita fração, ex.: 0.05)');
+      }
+      opts.timeoutMin = Number.parseFloat(texto);
       i += 1;
     } else if (arg === '--sobrescrever') {
       opts.sobrescrever = true;
@@ -244,7 +247,7 @@ async function main() {
     console.log(`[${nome}] rodando… (timeout ${opts.timeoutMin} min)`);
     const inicio = Date.now();
     const { codigo, sessionID, stderr, excedeu } = await executarSessao(
-      RAIZ, args, arqSaida, opts.timeoutMin * 60 * 1000
+      RAIZ, args, arqSaida, Math.round(opts.timeoutMin * 60 * 1000)
     );
     const duracao = Date.now() - inicio;
 
