@@ -28,13 +28,14 @@
  * chamava a API do Zen de fora — caminho que o free tier recusa ("can only be used from
  * within OpenCode").
  */
-import { spawn } from 'node:child_process';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
-import { createWriteStream, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { exigirInstrumentoValido } from '../ground-truth.js';
-import { STDIO, classificarExistencia, exigirMarcadorDeBench, resumirArgs } from '../runner-comum.js';
+import {
+  catalogo, classificarExistencia, exigirMarcadorDeBench, executar, executarSessao, resumirArgs,
+} from '../runner-comum.js';
 
 const RAIZ = path.resolve(import.meta.dirname, '..', '..', '..');
 const DIR = path.join(RAIZ, 'scripts', 'bench', 'orchestrator');
@@ -105,96 +106,6 @@ function parseArgs(argv) {
     }
   }
   return opts;
-}
-
-// `stdio[0] = 'ignore'` não é detalhe: com o padrão `'pipe'`, o filho herda um stdin que
-// ninguém escreve nem fecha, e o `opencode run` trava lendo stdin antes de abrir a
-// sessão: saem zero bytes e nenhum processo de sessão. Do bash o mesmo comando passa,
-// porque o shell entrega stdin já fechado. Medido em 19/10/2026. O `STDIO` é comum aos
-// dois runners (`../runner-comum.js`).
-
-/** Executa um comando e devolve { codigo, stdout, stderr }. */
-function executar(comando, args, opcoes = {}) {
-  return new Promise((resolve, reject) => {
-    const filho = spawn(comando, args, { cwd: RAIZ, stdio: STDIO, ...opcoes });
-    let stdout = '';
-    let stderr = '';
-    filho.stdout?.on('data', (d) => { stdout += d; });
-    filho.stderr?.on('data', (d) => { stderr += d; });
-    filho.on('error', reject);
-    filho.on('close', (codigo) => resolve({ codigo, stdout, stderr }));
-  });
-}
-
-/**
- * Catálogo de modelos do host. Confere antes de rodar: um id fora do catálogo falha em
- * silêncio no spawn do agente, e a execução "vazia" parece uma falha do modelo.
- */
-async function catalogo() {
-  const { codigo, stdout } = await executar('opencode', ['models']);
-  if (codigo !== 0) return null;
-  const ids = stdout
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l.includes('/'));
-  return new Set(ids);
-}
-
-/** Extrai o sessionID de uma linha de evento do `opencode run`. */
-function sessionIdDaLinha(linha) {
-  try {
-    const evento = JSON.parse(linha);
-    return evento && typeof evento.sessionID === 'string' ? evento.sessionID : null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Executa uma sessão do bench, escrevendo a saída em STREAMING.
- *
- * Streaming importa: uma execução morta no meio (ou por timeout) precisa deixar
- * evidência do que deu certo até ali. Guardar tudo em memória e escrever no fim perde a
- * execução inteira por causa de um Ctrl-C.
- */
-function executarSessao(args, arqSaida, timeoutMs) {
-  return new Promise((resolve, reject) => {
-    const fluxo = createWriteStream(arqSaida, { encoding: 'utf8' });
-    const filho = spawn('opencode', args, { cwd: RAIZ, stdio: STDIO });
-    let stderr = '';
-    let sessionID = null;
-    let stdoutParcial = '';
-    let excedeu = false;
-
-    filho.stdout.on('data', (d) => {
-      fluxo.write(d);
-      stdoutParcial += d;
-      if (!sessionID) {
-        const achado = sessionIdDaLinha(stdoutParcial.split('\n')[0]);
-        if (achado) sessionID = achado;
-      }
-    });
-    filho.stderr.on('data', (d) => { stderr += d; });
-
-    const temporizador = setTimeout(() => {
-      excedeu = true;
-      filho.kill('SIGTERM');
-      // Se o processo ignorar o TERM, não deixa o bench pendurado.
-      setTimeout(() => filho.kill('SIGKILL'), 5000).unref();
-    }, timeoutMs);
-
-    filho.on('error', (erro) => {
-      clearTimeout(temporizador);
-      fluxo.end();
-      reject(erro);
-    });
-    filho.on('close', (codigo) => {
-      clearTimeout(temporizador);
-      fluxo.end(() => {
-        resolve({ codigo, sessionID, stderr, excedeu });
-      });
-    });
-  });
 }
 
 /** Lê o sessionID da execução do turno 1, que é a sessão a continuar no turno 2. */
@@ -307,7 +218,7 @@ async function main() {
     return;
   }
 
-  const disponiveis = await catalogo();
+  const disponiveis = await catalogo(RAIZ);
   if (disponiveis) {
     const fora = opts.modelos.filter((m) => !disponiveis.has(m));
     if (fora.length > 0) {
@@ -332,7 +243,9 @@ async function main() {
     const { modelo, repeticao: n, nome, arqSaida, arqMeta, titulo, args } = job;
     console.log(`[${nome}] rodando… (timeout ${opts.timeoutMin} min)`);
     const inicio = Date.now();
-    const { codigo, sessionID, stderr, excedeu } = await executarSessao(args, arqSaida, opts.timeoutMin * 60 * 1000);
+    const { codigo, sessionID, stderr, excedeu } = await executarSessao(
+      RAIZ, args, arqSaida, opts.timeoutMin * 60 * 1000
+    );
     const duracao = Date.now() - inicio;
 
     await writeFile(arqMeta, JSON.stringify({
@@ -384,7 +297,7 @@ async function limparEfeitosColaterais(base) {
 
   // 1. A página de memória com a resposta da tarefa.
   const pagina = 'notes/auditoria-auth-pages-api-2026-10-19.md';
-  const r = await executar('ai-memory', ['delete-page', '--path', pagina]);
+  const r = await executar(RAIZ, 'ai-memory', ['delete-page', '--path', pagina]);
   if (r.codigo === 0) relatorio.push(`memória: apagada ${pagina}`);
 
   // 2. Arquivos que o modelo criou no repositório. Só o que é descartável: um relatório
@@ -395,11 +308,11 @@ async function limparEfeitosColaterais(base) {
     'tests/integration/api/zzz-temp-authprobe.test.js',
   ];
   for (const padrao of padroes) {
-    const listagem = await executar('git', ['ls-files', '--others', '--exclude-standard', '--', padrao]);
+    const listagem = await executar(RAIZ, 'git', ['ls-files', '--others', '--exclude-standard', '--', padrao]);
     if (listagem.codigo !== 0) continue;
     const arquivos = listagem.stdout.split('\n').map((l) => l.trim()).filter(Boolean);
     for (const arquivo of arquivos) {
-      const removido = await executar('rm', ['-f', arquivo]);
+      const removido = await executar(RAIZ, 'rm', ['-f', arquivo]);
       if (removido.codigo === 0) relatorio.push(`repo: apagado ${arquivo}`);
     }
   }

@@ -2,13 +2,16 @@
  * Utilidades comuns aos runners de bench (`orchestrator/rodar.js` e `papeis/rodar.js`).
  *
  * Só entra aqui o que é idêntico nos dois e não depende do modo de execução:
- * stdin fechado, representação curta dos argumentos e classificação de saídas
- * já existentes. O planejamento de jobs fica em cada runner porque o do
+ * execução de comando e de sessão (streaming, timeout e `sessionID`), catálogo de
+ * modelos, stdin fechado, representação curta dos argumentos e classificação de
+ * saídas já existentes. O planejamento de jobs fica em cada runner porque o do
  * orchestrator tem turno/sessão e o de papéis tem agente/tarefa.
  */
+import { spawn } from 'node:child_process';
 import { access, readFile } from 'node:fs/promises';
-import { constants } from 'node:fs';
+import { constants, createWriteStream } from 'node:fs';
 import path from 'node:path';
+import process from 'node:process';
 
 /** Projeto de memória das medições. Nunca é o projeto real do repositório. */
 const PROJETO_BENCH = { workspace: 'default', project: 'bench' };
@@ -60,6 +63,89 @@ export async function exigirMarcadorDeBench(raiz) {
  * a sessão (medido em 19/10/2026: zero bytes, nenhum processo, nenhum erro).
  */
 export const STDIO = ['ignore', 'pipe', 'pipe'];
+
+/** Executa um comando e devolve { codigo, stdout, stderr }. */
+export function executar(raiz, comando, args, opcoes = {}) {
+  return new Promise((resolve, reject) => {
+    const filho = spawn(comando, args, { cwd: raiz, stdio: STDIO, env: process.env, ...opcoes });
+    let stdout = '';
+    let stderr = '';
+    filho.stdout?.on('data', (d) => { stdout += d; });
+    filho.stderr?.on('data', (d) => { stderr += d; });
+    filho.on('error', reject);
+    filho.on('close', (codigo) => resolve({ codigo, stdout, stderr }));
+  });
+}
+
+/** Extrai o sessionID de uma linha de evento do `opencode run`. */
+export function sessionIdDaLinha(linha) {
+  try {
+    const evento = JSON.parse(linha);
+    return evento && typeof evento.sessionID === 'string' ? evento.sessionID : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Executa uma sessão do bench, escrevendo a saída em STREAMING.
+ *
+ * Streaming importa: uma execução morta no meio (ou por timeout) precisa deixar
+ * evidência do que deu certo até ali. `excedeu` e `sessionID` sobem no retorno
+ * para o `.meta.json` — sem eles, um timeout vira uma execução "normal" e o
+ * turno 2 não tem sessão para continuar.
+ */
+export function executarSessao(raiz, args, arqSaida, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const fluxo = createWriteStream(arqSaida, { encoding: 'utf8' });
+    const filho = spawn('opencode', args, { cwd: raiz, stdio: STDIO, env: process.env });
+    let stderr = '';
+    let sessionID = null;
+    let stdoutParcial = '';
+    let excedeu = false;
+
+    filho.stdout.on('data', (d) => {
+      fluxo.write(d);
+      if (sessionID) return;
+      stdoutParcial += d;
+      for (const linha of stdoutParcial.split('\n')) {
+        const achado = sessionIdDaLinha(linha);
+        if (achado) {
+          sessionID = achado;
+          stdoutParcial = '';
+          break;
+        }
+      }
+      // O sessionID abre a sessão; se não veio nos primeiros 64 KB, não veio.
+      if (!sessionID && stdoutParcial.length > 64 * 1024) stdoutParcial = '';
+    });
+    filho.stderr.on('data', (d) => { stderr += d; });
+
+    const temporizador = setTimeout(() => {
+      excedeu = true;
+      filho.kill('SIGTERM');
+      // Se o processo ignorar o TERM, não deixa o bench pendurado.
+      setTimeout(() => filho.kill('SIGKILL'), 5000).unref();
+    }, timeoutMs);
+
+    filho.on('error', (erro) => {
+      clearTimeout(temporizador);
+      fluxo.end();
+      reject(erro);
+    });
+    filho.on('close', (codigo) => {
+      clearTimeout(temporizador);
+      fluxo.end(() => resolve({ codigo, sessionID, stderr, excedeu }));
+    });
+  });
+}
+
+/** Catálogo de modelos do host: um id fora do catálogo falha em silêncio no spawn. */
+export async function catalogo(raiz) {
+  const { codigo, stdout } = await executar(raiz, 'opencode', ['models']);
+  if (codigo !== 0) return null;
+  return new Set(stdout.split('\n').map((l) => l.trim()).filter((l) => l.includes('/')));
+}
 
 /** Representação curta dos argumentos (meta e dry-run) sem despejar o prompt inteiro. */
 export function resumirArgs(args) {

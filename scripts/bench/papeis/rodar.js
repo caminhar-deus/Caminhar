@@ -27,18 +27,23 @@
  * Antes de qualquer spawn (inclusive `opencode models`), o runner confere o
  * instrumento do papel contra o disco por `scripts/bench/ground-truth.js`:
  * citação que não resolve, âncora que sumiu ou contagem divergente bloqueiam a
- * bateria. O `gabarito-designer.md` é o caso sabidamente desatualizado do
- * ADR-0008 — o preflight o bloqueia e lista P1/P3 até a recalibração. O runner
- * também valida os argumentos, detecta colisão de nome de saída e, no `fixer`,
- * exige a regressão do S1 no estado esperado antes de plantar o bug.
+ * bateria. Os cinco instrumentos estão calibrados (o designer foi recalibrado em
+ * 06/11/2026). O runner também valida os argumentos, detecta colisão de nome de
+ * saída e, no `fixer`, exige a regressão do S1 no estado esperado antes de
+ * plantar o bug.
+ *
+ * Em execução real (sem `--dry-run`), a árvore fora de `scripts/bench` precisa
+ * estar limpa: o runner restaura o repositório ao HEAD depois de cada execução
+ * (`../arvore.js`) e não pode apagar trabalho que já estava no disco.
  */
-import { spawn } from 'node:child_process';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
-import { createWriteStream } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { exigirInstrumentoValido } from '../ground-truth.js';
-import { STDIO, classificarExistencia, exigirMarcadorDeBench, resumirArgs } from '../runner-comum.js';
+import { exigirArvoreLimpa, restaurarArvore } from '../arvore.js';
+import {
+  catalogo, classificarExistencia, exigirMarcadorDeBench, executarSessao, resumirArgs,
+} from '../runner-comum.js';
 import { aplicarRegressao, verificarRegressao } from './regressao-s1.js';
 
 const RAIZ = path.resolve(import.meta.dirname, '..', '..', '..');
@@ -67,21 +72,6 @@ const PADRAO_MODELOS = {
   // medição em catálogo vivo (fora os excluídos da rodada).
   oracle: ['opencode/glm-5.3-flash-free'],
 };
-
-/** Arquivos deste bench — nunca são tocados pela restauração do repo. */
-/**
- * Arquivos que são **do bench** e não podem ser restaurados como "sujeira" da
- * execução — nem apagados. `scripts/bench/` inteiro entra: os scripts e os
- * gabaritos são trabalho do projeto, e a restauração os apagaria.
- */
-const PROPRIOS = [
-  'scripts/bench',
-];
-
-/** O arquivo é do bench (não deve ser restaurado como "sujeira" da execução)? */
-function ehDoBench(caminho) {
-  return PROPRIOS.some((p) => caminho === p || caminho.startsWith(`${p}/`));
-}
 
 function parseArgs(argv) {
   const opts = {
@@ -134,30 +124,6 @@ function parseArgs(argv) {
   return opts;
 }
 
-// `stdio[0] = 'ignore'` não é detalhe: com 'pipe' o filho herda um stdin que ninguém
-// escreve nem fecha, e o `opencode run` trava lendo stdin antes de abrir a sessão
-// (medido em 19/10/2026: zero bytes, nenhum processo, nenhum erro). O `STDIO` é comum
-// aos dois runners (`../runner-comum.js`).
-
-function executar(comando, args, opcoes = {}) {
-  return new Promise((resolve, reject) => {
-    const filho = spawn(comando, args, { cwd: RAIZ, stdio: STDIO, ...opcoes });
-    let stdout = '';
-    let stderr = '';
-    filho.stdout?.on('data', (d) => { stdout += d; });
-    filho.stderr?.on('data', (d) => { stderr += d; });
-    filho.on('error', reject);
-    filho.on('close', (codigo) => resolve({ codigo, stdout, stderr }));
-  });
-}
-
-/** Catálogo de modelos do host: um id fora do catálogo falha em silêncio no spawn. */
-async function catalogo() {
-  const { codigo, stdout } = await executar('opencode', ['models']);
-  if (codigo !== 0) return null;
-  return new Set(stdout.split('\n').map((l) => l.trim()).filter((l) => l.includes('/')));
-}
-
 /**
  * Planeja TODAS as execuções antes do primeiro spawn. Read-only.
  *
@@ -202,25 +168,6 @@ function planejarJobs(opts, prompt) {
   return jobs;
 }
 
-function executarSessao(args, arqSaida, timeoutMs) {
-  return new Promise((resolve, reject) => {
-    const fluxo = createWriteStream(arqSaida, { encoding: 'utf8' });
-    const filho = spawn('opencode', args, { cwd: RAIZ, stdio: STDIO });
-    let stderr = '';
-    filho.stdout.on('data', (d) => fluxo.write(d));
-    filho.stderr.on('data', (d) => { stderr += d; });
-    const temporizador = setTimeout(() => {
-      filho.kill('SIGTERM');
-      setTimeout(() => filho.kill('SIGKILL'), 5000).unref();
-    }, timeoutMs);
-    filho.on('error', (erro) => { clearTimeout(temporizador); fluxo.end(); reject(erro); });
-    filho.on('close', (codigo) => {
-      clearTimeout(temporizador);
-      fluxo.end(() => resolve({ codigo, stderr, excedeu: false }));
-    });
-  });
-}
-
 /** Extrai a resposta final (partes de texto) do .ndjson bruto. */
 function extrairResposta(ndjson) {
   const partes = [];
@@ -251,60 +198,14 @@ function arquivosEditados(ndjson) {
   return [...vistos];
 }
 
-/**
- * Devolve o repositório ao commit — o estado em que a tarefa foi definida.
- *
- * A tarefa do `fixer` é corrigir um defeito **real** do código. Se a execução anterior
- * já corrigiu, a seguinte não tem o que fazer e o bench deixa de medir o papel: ela
- * passa a medir quem escreve teste para um arquivo já corrigido. Medido em 19/10/2026.
- *
- * Só `git checkout --` em arquivo **rastreado** e remoção em arquivo **não
- * rastreado** — nunca `git reset --hard`, que apagaria trabalho do usuário. E os
- * arquivos **deste bench** são preservados: eles são não rastreados por definição e
- * uma restauração indiscriminada os apagaria (foi o que aconteceu na primeira
- * tentativa).
- */
-/**
- * Desfaz as alterações da execução no repositório.
- *
- * Só `git checkout --` em arquivo **rastreado** e remoção em arquivo **não
- * rastreado** — nunca `git reset --hard`, que apagaria trabalho do usuário. E os
- * arquivos **do bench** são preservados: eles não são rastreados por definição e uma
- * restauração indiscriminada os apagaria.
- *
- * O caminho sai do status do git pela posição 3 **sem** `trim()` antes: o status
- * " M arquivo" tem 2 campos + espaço, e aparar a linha inteira come a primeira letra
- * do caminho — o `git checkout` falha com "pathspec did not match" e a restauração
- * vira um no-op silencioso. Medido em 19/10/2026.
- */
-async function restaurarArvore() {
-  const status = await executar('git', ['status', '--porcelain']);
-  if (status.codigo !== 0) return { ok: false, motivo: 'git status falhou' };
-  const linhas = status.stdout.split('\n').filter((l) => l.trim().length > 0);
-  for (const linha of linhas) {
-    const codigo = linha.slice(0, 2);
-    const caminho = linha.slice(3);
-    if (ehDoBench(caminho)) continue;
-    if (codigo.trim() === '??') {
-      await executar('rm', ['-rf', caminho]);
-    } else {
-      await executar('git', ['checkout', '--', caminho]);
-    }
-  }
-  const limpos = await executar('git', ['status', '--porcelain']);
-  const restantes = limpos.stdout.split('\n')
-    .filter((l) => l.trim().length > 0)
-    .map((l) => l.slice(3))
-    .filter((c) => !ehDoBench(c));
-  if (restantes.length > 0) {
-    return { ok: false, motivo: `restaram ${restantes.length} arquivo(s) modificado(s)`, restantes };
-  }
-  return { ok: true, motivo: '' };
-}
-
 async function main() {
   await exigirMarcadorDeBench(RAIZ);
   const opts = parseArgs(process.argv.slice(2));
+
+  // Execução real restaura o repo depois de cada sessão; com trabalho não
+  // commitado fora do bench, a restauração apagaria esse trabalho. O `--dry-run`
+  // não restaura nada e continua inspecionável.
+  if (!opts.dryRun) await exigirArvoreLimpa(RAIZ);
 
   // Fail-fast antes de qualquer spawn (inclusive `opencode models`): um instrumento
   // que já não descreve o disco produz nota sem significado e queima cota à toa.
@@ -342,7 +243,7 @@ async function main() {
     return;
   }
 
-  const disponiveis = await catalogo();
+  const disponiveis = await catalogo(RAIZ);
   if (disponiveis) {
     const fora = opts.modelos.filter((m) => !disponiveis.has(m));
     if (fora.length > 0) {
@@ -388,7 +289,9 @@ async function main() {
 
     console.log(`[${base}] rodando… (timeout ${opts.timeoutMin} min)`);
     const inicio = Date.now();
-    const { codigo, stderr } = await executarSessao(args, arqSaida, opts.timeoutMin * 60 * 1000);
+    const { codigo, sessionID, stderr, excedeu } = await executarSessao(
+      RAIZ, args, arqSaida, opts.timeoutMin * 60 * 1000
+    );
     const duracao = Date.now() - inicio;
 
     const bruto = await readFile(arqSaida, 'utf8');
@@ -397,14 +300,16 @@ async function main() {
 
     // O estado do repo ANTES da execução precisa voltar ao de antes. Sem isso, a
     // execução seguinte herda o trabalho da anterior e a tarefa deixa de ter objeto.
-    const restaurado = await restaurarArvore();
+    const restaurado = await restaurarArvore(RAIZ);
 
     await writeFile(arqMeta, JSON.stringify({
       agente: opts.agente,
       modelo,
       repeticao: n,
       tarefa: path.relative(RAIZ, caminhoTarefa),
+      sessionID,
       codigoSaida: codigo,
+      excedeuTimeout: excedeu,
       duracaoMs: duracao,
       executadoEm: new Date(inicio).toISOString(),
       comando: resumirArgs(args),
@@ -421,10 +326,13 @@ async function main() {
       );
     }
 
-    const situacao = codigo === 0 ? 'ok' : `código ${codigo}`;
-    console.log(`[${base}] ${situacao} em ${Math.round(duracao / 1000)}s — ${path.relative(RAIZ, arqSaida)} (resposta ${resposta.length} chars)`);
+    const situacao = excedeu
+      ? `TIMEOUT depois de ${opts.timeoutMin} min`
+      : codigo === 0 ? 'ok' : `código ${codigo}`;
+    console.log(`[${base}] ${situacao} em ${Math.round(duracao / 1000)}s — ${path.relative(RAIZ, arqSaida)} (resposta ${resposta.length} chars)${sessionID ? ` session=${sessionID}` : ''}`);
     if (editados.length > 0) console.log(`         arquivos editados: ${editados.join(', ')}`);
     if (codigo !== 0 && stderr) console.log(`         stderr: ${stderr.slice(0, 300)}`);
+    if (excedeu) console.log('         execução parcial: o .ndjson tem o que deu certo até o timeout; marque como incompleta na pontuação.');
   }
 
   console.log(`\nConferir com: node scripts/bench/papeis/conferir.js`);

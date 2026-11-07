@@ -4,9 +4,8 @@
  *
  * Duas camadas:
  * 1. funções puras contra uma fixture temporária — inventário, linhas, parser;
- * 2. canário no repositório real — os instrumentos calibrados têm de continuar
- *    `ok`, e o `designer` (sabidamente desatualizado, ADR-0008) tem de ser
- *    detectado como P1/P3 até alguém recalibrá-lo.
+ * 2. canário no repositório real — os cinco instrumentos têm de continuar `ok`
+ *    contra o disco (o designer foi recalibrado em 06/11/2026).
  */
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import {
@@ -25,7 +24,7 @@ import {
 import { aplicarRegressao, verificarRegressao } from '../../../scripts/bench/papeis/regressao-s1.js';
 
 const RAIZ_REPO = process.cwd();
-const CALIBRADOS = ['orchestrator', 'explorer', 'oracle', 'fixer'];
+const CALIBRADOS = ['orchestrator', 'explorer', 'oracle', 'fixer', 'designer'];
 
 let fixture;
 
@@ -99,20 +98,16 @@ describe('instrumentos contra o repositório real (canário)', () => {
     expect(resultado.ok).toBe(true);
   });
 
-  it('designer: calibrado ou divergência P1/P3 detectada', () => {
-    const resultado = verificarInstrumento('designer', { raiz: RAIZ_REPO });
-    expect(resultado.agente).toBe('designer');
-    if (resultado.ok) return; // recalibrado: o canário não tem o que cobrar
-    const detalhes = resultado.problemas.map((p) => p.detalhe).join('\n');
-    expect(detalhes).toMatch(/P1/);
-    expect(detalhes).toMatch(/P3/);
+  it('exigirInstrumentoValido lista os problemas e diz como recalibrar', () => {
+    // A fixture não tem os documentos de `scripts/bench/`: o verificador
+    // encontra problema e o fail-fast precisa transformá-lo em erro acionável.
+    expect(() => exigirInstrumentoValido('designer', { raiz: fixture }))
+      .toThrow(/Instrumento do papel "designer" divergiu do disco[\s\S]*não existe no disco/);
   });
 
-  it('exigirInstrumentoValido transforma a divergência em erro com a lista', () => {
-    const resultado = verificarInstrumento('designer', { raiz: RAIZ_REPO });
-    if (resultado.ok) return; // recalibrado: nada a provar aqui
-    expect(() => exigirInstrumentoValido('designer', { raiz: RAIZ_REPO }))
-      .toThrow(/Instrumento do papel "designer" divergiu do disco/);
+  it('exigirInstrumentoValido devolve ok quando o instrumento confere', () => {
+    const resultado = exigirInstrumentoValido('designer', { raiz: RAIZ_REPO });
+    expect(resultado.ok).toBe(true);
   });
 });
 

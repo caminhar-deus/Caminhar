@@ -151,8 +151,8 @@ export function extrairCitacoesDeInstrumento(texto) {
  *
  * `documentos` são caminhos relativos a `scripts/bench/`. Cada âncora declara
  * onde a citação DEVE aparecer; contagens casam número escrito contra
- * `inventarioApi`; afirmações conferem expectativa de texto do instrumento (o
- * designer é sabidamente desatualizado — ADR-0008 — e aqui só se DETECTA).
+ * `inventarioApi`; afirmações conferem expectativa de texto do instrumento
+ * (o designer foi recalibrado em 06/11/2026).
  */
 const INSTRUMENTOS = {
   orchestrator: {
@@ -262,32 +262,40 @@ const INSTRUMENTOS = {
       { arquivo: 'components/UI/Button.module.css', trecho: '.button:focus-visible {', documentos: ['papeis/gabarito-designer.md'] },
     ],
     contagens: [],
-    // O instrumento do designer está sabidamente desatualizado (ADR-0008): P1 e P3
-    // afirmam o estado de 22/10 e o disco já foi corrigido. NÃO recalibramos o
-    // conteúdo — só detectamos a divergência.
+    // Calibrado em 06/11/2026: o Button passou a ter o par completo e o
+    // `.helperText` usa `--color-text-secondary`. As afirmações falham se o
+    // código voltar atrás; o preflight então bloqueia a bateria.
     afirmacoes: [
       {
         tipo: 'bloco',
         arquivo: 'components/UI/Button.module.css',
         seletor: '.button:focus-visible',
-        padrao: /outline:\s*none/,
+        padrao: /outline:\s*2px solid var\(--color-focus-primary\)/,
         esperado: true,
-        problema: 'P1 desatualizado: o disco tem o par outline + box-shadow',
+        problema: 'P1 desatualizado: o Button perdeu o outline do par de foco',
+      },
+      {
+        tipo: 'bloco',
+        arquivo: 'components/UI/Button.module.css',
+        seletor: '.button:focus-visible',
+        padrao: /box-shadow:\s*var\(--color-focus-ring\)/,
+        esperado: true,
+        problema: 'P1 desatualizado: o Button perdeu o halo box-shadow do par',
       },
       {
         tipo: 'bloco',
         arquivo: 'components/UI/Input.module.css',
         seletor: '.helperText',
-        padrao: /--color-text-tertiary/,
+        padrao: /--color-text-secondary/,
         esperado: true,
-        problema: 'P3 desatualizado: .helperText não usa --color-text-tertiary',
+        problema: 'P3 desatualizado: .helperText não usa --color-text-secondary',
       },
       {
         tipo: 'contagem',
         arquivo: 'components/UI/Input.module.css',
         padrao: /--color-text-tertiary/g,
-        esperado: 4,
-        problema: (n) => `P3 desatualizado: o disco tem ${n} usos`,
+        esperado: 3,
+        problema: (n) => `P3 desatualizado: o disco tem ${n} usos (o instrumento espera 3)`,
       },
     ],
   },

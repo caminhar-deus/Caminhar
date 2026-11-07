@@ -83,6 +83,26 @@ apague páginas de sessão só para zerar aviso de lint (decisão registrada no 
 §"Isolamento do bench"). O `ai-memory audit-contamination` pode apontá-las depois da troca
 de projeto da cópia: é falso positivo histórico esperado.
 
+## Guarda de árvore do bench de papéis
+
+O bench de papéis (`papeis/rodar.js`) restaura o repo ao HEAD depois de cada sessão: a
+tarefa do `fixer` edita arquivos, e a execução seguinte precisa partir do mesmo estado.
+A restauração é destrutiva por desenho, então o runner é **fail-closed** em
+`scripts/bench/arvore.js`:
+
+- antes de uma execução real, `exigirArvoreLimpa()` recusa a árvore com qualquer
+  alteração **fora de `scripts/bench`** (commit ou stash antes de rodar); o `--dry-run`
+  é isento porque não restaura nada;
+- depois da sessão, só os caminhos reportados por `git status --porcelain=v1 -z` são
+  restaurados (`git checkout HEAD --`) ou removidos (não rastreados); espaço, acento e
+  caminho citado deixam de ser ambíguos;
+- renomeação/cópia **falha fechada** em vez de adivinhar qual lado restaurar;
+- `scripts/bench` inteiro é preservado: scripts, gabaritos e resultados são trabalho do
+  projeto, não sujeira da execução.
+
+O runner de papéis grava no `.meta.json` o `sessionID` e `excedeuTimeout` — um timeout
+deixa de passar por execução normal e o turno seguinte tem a sessão para continuar.
+
 ## O que cada arquivo é
 
 | Arquivo | Papel |
@@ -94,6 +114,8 @@ de projeto da cópia: é falso positivo histórico esperado.
 | `conferir.js` | Camada A: delega, citações válidas, contaminação. |
 | `../ground-truth.js` | Inventário de `pages/api/`, fatos do disco e verificação dos instrumentos (compartilhado com o bench de papéis). |
 | `../citacoes.js` | Resolvedor de citação `arquivo:linha` compartilhado entre conferidores e ground truth. |
+| `../runner-comum.js` | Execução de comando/sessão (streaming, timeout e `sessionID`), catálogo de modelos, `STDIO` e guarda do marcador — usado pelos dois runners. |
+| `../arvore.js` | Guarda de árvore limpa e restauração do repo do bench de papéis (NUL-safe, preserva `scripts/bench`). |
 
 ## Fail-fast: o instrumento é conferido antes do spawn
 

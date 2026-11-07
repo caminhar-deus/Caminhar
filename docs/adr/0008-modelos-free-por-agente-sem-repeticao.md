@@ -1063,7 +1063,8 @@ disco, a cada execução: inventário de `pages/api/` (arquivos e rotas), linhas
 âncora e cobertura das citações de `gabarito-*.md`/`rubrica.md`; `citacoes.js`
 concentra a resolução `arquivo:linha` usada pelo conferidor e pelo ground truth, e
 `runner-comum.js` fica com o plumbing idêntico dos dois runners (`STDIO`,
-classificação de saídas existentes e resumo de argumentos).
+execução de comando/sessão, catálogo de modelos, classificação de saídas
+existentes e resumo de argumentos).
 Não há arquivo gerado nem cache: um número velho não sobrevive ao próximo `run`.
 
 `verificarInstrumento()` roda como preflight em `orchestrator/rodar.js` e
@@ -1080,24 +1081,35 @@ Correções de instrumento encontradas no caminho: `gabarito.md`/`rubrica.md`
 (32 arquivos/32 rotas; `settings.js:130/164`; `products.js:121` e usos
 `:356,362,367,372`), `gabarito-oracle.md` (`adminCrudHandler.js:186-190` é a
 resposta 403 do RBAC; o rate limiting começa em `:192`) e a rubrica B1 (32/32).
-O `gabarito-designer.md` **não** foi recalibrado (decisão de 03/11): o preflight
-o detecta e bloqueia o bench do designer com P1/P3, o que impede promover
-candidato no papel enquanto o instrumento não descrever o disco.
+O `gabarito-designer.md` foi recalibrado em 06/11/2026: P1 passou a afirmar o
+foco **conforme** do `Button` (`Button.module.css:21-25`, com `outline` e
+`box-shadow`) e P3 descreve os **três** usos aceitáveis de
+`--color-text-tertiary` no `Input` (`:39`, `:51`, `:104`), com o `.helperText`
+em `--color-text-secondary` (`:167`). O bloqueio do bench do designer deixou de
+existir; os cinco instrumentos conferem contra o disco.
 
-Validação: `tests/unit/scripts/bench-ground-truth.test.js` (12 testes; canário
-nos quatro instrumentos calibrados e detecção de P1/P3 no designer); dry-runs dos
-dois runners; `opencode` falso no `PATH` sem nenhum `run` quando o preflight do
-designer falha, e sem invocação alguma quando o gabarito do orchestrator é
-corrompido numa cópia da árvore. O default do bench do orchestrator foi alinhado
-ao ADR (`deepseek-v4.1-flash-free`/`glm-5.3-flash-free`), porque
+Validação: `tests/unit/scripts/bench-ground-truth.test.js` (canário nos **cinco**
+instrumentos, incluindo o designer), `tests/unit/scripts/bench-arvore.test.js`
+(guarda e restauração num repo git temporário) e
+`tests/unit/scripts/bench-runner.test.js` (`opencode` falso: catálogo, captura
+de `sessionID` e timeout com `excedeu: true`); dry-runs dos dois runners (só
+`opencode models` no `PATH` falso); execução real falsa do runner de papéis com
+`sessionID`, `excedeuTimeout` e `repoRestaurado` no `.meta.json`; árvore suja
+bloqueada antes de qualquer invocação; e gabarito do orchestrator corrompido
+numa cópia da árvore sem invocação alguma. O default do bench do orchestrator
+foi alinhado ao ADR (`deepseek-v4.1-flash-free`/`glm-5.3-flash-free`), porque
 `space-bunny-free` saiu do catálogo.
 
-Risco pré-existente reafirmado na validação: `restaurarArvore()` devolve o repo ao
-commit e, por desenho, apaga arquivos não rastreados e reverte rastreados **fora de
-`scripts/bench`**. Rodar o bench com trabalho não commitado nessas áreas perde o
-trabalho. Em 06/11/2026 o teste com `opencode` falso apagou o próprio teste novo
-(recriado) e reverteu `CHANGELOG.md`/este ADR (reaplicados). A correção é commitar
-ou dar stash antes de uma execução real; o `--dry-run` não toca no disco.
+Risco residual fechado em 06/11/2026: `restaurarArvore()` era destrutiva e
+silenciosa — apagava trabalho não commitado fora de `scripts/bench` e errava
+caminho citado/renomeação. Agora `scripts/bench/arvore.js` exige a árvore limpa
+**antes** da execução real (`exigirArvoreLimpa`, isenta no `--dry-run`), lê o
+status com `git status --porcelain=v1 -z` (espaço/acento deixam de ser
+ambíguos), restaura só os caminhos reportados e falha fechada em
+renomeação/cópia. O runner também unificou `executar`, `catalogo`,
+`executarSessao` e `sessionIdDaLinha` em `runner-comum.js`: o timeout do runner
+de papéis deixou de ser silencioso (`excedeuTimeout`) e o `sessionID` passou a
+ser gravado no `.meta.json`.
 
 ## Consequências
 
@@ -1192,15 +1204,16 @@ se pagou.
   ao bench de fila** (duas sessões comparativas, a mesma fila de tarefas para os dois
   modelos): padrão suspeito no campo — degradação visível, erro repetido ao fim de dia
   longo, primário caindo no meio do trabalho. Até lá, não gastar cota.
-- **Instrumento do `designer` desatualizado — ABERTO em 03/11/2026.** O
-  `gabarito-designer.md` foi recalibrado em 22/10 e o código mudou depois: o foco do
-  `Button` passou a ter o par completo (`Button.module.css:21-25`) e o `.helperText`
-  migrou para `--color-text-secondary` (`Input.module.css:165-168`). Enquanto o
-  gabarito não for recalibrado, **nenhum** candidato pode ser promovido no papel — a
-  execução `designer-pulse-alpha-free-1.ndjson` guarda a evidência da divergência.
-  Desde 06/11/2026 o preflight de `papeis/rodar.js` bloqueia a bateria do designer e
-  lista P1/P3 antes de qualquer spawn; o bloqueio some quando o gabarito for
-  recalibrado.
+- **Instrumento do `designer` desatualizado — RESOLVIDO em 06/11/2026.** O
+  `gabarito-designer.md` foi recalibrado para o código atual: P1 afirma o foco
+  **conforme** do `Button` (`Button.module.css:21-25`, par `outline` +
+  `box-shadow`) e P3 descreve os três usos aceitáveis de `--color-text-tertiary`
+  no `Input` (`:39`, `:51`, `:104`), com `.helperText` em
+  `--color-text-secondary` (`:167`). O preflight de `papeis/rodar.js` voltou a
+  aceitar o papel, e `tests/unit/scripts/bench-ground-truth.test.js` mantém os
+  cinco instrumentos no canário. A execução
+  `designer-pulse-alpha-free-1.ndjson` continua como evidência histórica da
+  divergência de 03/11.
 - **Privacidade do `oracle` não verificada.** `nemotron-3.5-super-vl-free` é hoje o único
   dos cinco sem garantia de retenção registrada. Se isso for requisito, verificar antes do
   próximo uso com código sensível.
