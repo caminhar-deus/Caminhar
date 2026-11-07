@@ -3,7 +3,7 @@
 - **Status:** Aceito
 - **Data:** 2026-11-06
 - **Decisores:** dono do projeto (pacote de ações aprovado em sessão)
-- **Relacionados:** página de memória `decisions/2026-10-04-llm-provider-desativado.md` (decisão anterior, revertida aqui); `AGENTS.md` §3; `.ai-memory.toml`; `~/.config/opencode/plugins/ai-memory-opencode2.ts`; `~/.config/opencode/opencode.json`; `docs/ai-memory-error.md`
+- **Relacionados:** página de memória `decisions/2026-10-04-llm-provider-desativado.md` (decisão anterior, revertida aqui); `AGENTS.md` §3; `.ai-memory.toml`; `~/.config/opencode/plugins/ai-memory-opencode2.ts`; `~/.config/opencode/opencode.json`; `docs/ai-memory-error.md`; ADR-0008 (benches); `scripts/bench/runner-comum.js`; `scripts/bench/orchestrator/LEIA-ME.md`
 
 ## Contexto
 
@@ -29,6 +29,20 @@ Ativar o ai-memory por completo no projeto, com estas escolhas:
 6. **Higiene única**: encerrar sessões antigas, cancelar handoffs vencidos e remover projetos órfãos por `purge-project --confirm` (delete lógico). Não apagar páginas de sessão de bench só para zerar avisos de lint; elas são mantidas como histórico e o lint é informativo.
 7. **Manter o servidor em loopback** (`127.0.0.1:49374`), sem autenticação, por ser acesso local de um único operador. Expor a porta exige, antes, `ai-memory auth enable`, restart do servidor e troca do MCP do OpenCode para o bridge stdio (`ai-memory mcp-bridge --server-url http://127.0.0.1:49374 --no-session-id`), porque o registro HTTP remoto não carrega token.
 8. **Backup diário do data dir**: script `~/.local/bin/ai-memory-backup.sh` + timer systemd de usuário `ai-memory-backup.timer` (03:00, `Persistent=true`, `RandomizedDelaySec=300`), com retenção de 14 dias em `~/.cache/ai-memory-backups/ai-memory-AAAA-MM-DD.tar.gz`. O script valida o tarball com `tar -tzf`, grava em arquivo temporário e só então renomeia (snapshot anterior preservado em caso de falha). O destino precisa ficar sob `$HOME` ou o diretório do projeto: o wrapper roda em container auxiliar e não monta `/tmp`.
+
+## Isolamento do bench (2026-11-06)
+
+A ativação completa expôs um efeito colateral da captura: os benches do projeto abrem **sessões reais** do OpenCode, e o plugin grava cada sessão no projeto do `.ai-memory.toml` mais próximo do cwd. A bateria 9×5 (03–04/11/2026) rodou em `/var/tmp/free-matrix`, mas o marcador da cópia declarava `workspace = "pessoal"` e `project = "caminhar"`; por isso ~55 sessões de medição (36 de `/tmp/opencode/free-matrix`, hoje removida, e 19 de `/var/tmp/free-matrix`) entraram no histórico real e respondem pelos 15 avisos de título duplicado do lint.
+
+**Decisão:** o bench só roda numa **cópia isolada** cujo `.ai-memory.toml` declara `workspace = "default"` e `project = "bench"`, e essa alteração é **commitada na cópia** — os runners restauram arquivo rastreado com `git checkout --`, então um marcador apenas modificado voltaria ao valor antigo na primeira execução. Os dois runners (`scripts/bench/orchestrator/rodar.js` e `scripts/bench/papeis/rodar.js`) chamam `exigirMarcadorDeBench()` de `scripts/bench/runner-comum.js` antes de qualquer spawn, inclusive do `opencode models`; marcador diferente aborta a bateria com a instrução de correção. O procedimento de preparação da cópia está em `scripts/bench/orchestrator/LEIA-ME.md` §"Isolamento da memória".
+
+As sessões antigas permanecem em `pessoal/caminhar` como histórico, pela mesma decisão do item 6 de não apagar páginas para zerar lint. Depois da troca de projeto da cópia, o `ai-memory audit-contamination` pode apontar essas sessões históricas ao re-resolver o cwd: falso positivo histórico esperado.
+
+### Alternativas descartadas nesta subdecisão
+
+- **Apagar as ~55 páginas de sessão de bench:** destrói o mesmo histórico que o item 6 preservou; o lint é informativo, não gate.
+- **Desligar a captura dos spawns por variável de ambiente (`AI_MEMORY_CAPTURE_OWNER`):** o `opencode run` conecta ao serviço de background por padrão e o plugin roda no processo do serviço, sem herdar o ambiente do filho; só `--standalone` permitiria isso, e mudaria o modo de execução que o bench mede.
+- **Manter o marcador `pessoal/caminhar` na cópia e só filtrar o lint:** a poluição continua, e o recall do projeto real (`memory_query`, `answer=true`, briefing) passaria a devolver sessões de medição — confundidor já observado na bateria 9×5, quando execuções leram a página-resposta de uma execução anterior.
 
 ## Alternativas consideradas
 
@@ -61,6 +75,7 @@ Ativar o ai-memory por completo no projeto, com estas escolhas:
 - Reavaliar quando a imagem 3.4.3 (ou superior) for publicada e o container puder ser atualizado.
 - Reavaliar custo/benefício do LLM após algumas semanas de uso real; se o custo ou a política de dados do provedor forem inaceitáveis, voltar ao modo sem LLM e registrar novo ADR.
 - Reavaliar `max_chars` do briefing se o contexto do modelo principal ficar apertado.
+- Reavaliar o projeto de medição `default/bench` se o ai-memory publicar override de projeto por execução ou se os benches passarem a rodar em ambiente dedicado permanente; a regra permanece: nenhuma sessão de bench no projeto real.
 - Se a porta deixar de ser loopback, habilitar autenticação antes de expor, com backup de `~/.config/opencode/opencode.json` e SHA256, `ai-memory auth enable`, restart do servidor, MCP do OpenCode no bridge stdio e hooks reaplicados.
 - Testar o restore do backup diário periodicamente (por exemplo, a cada trimestre) num data dir separado; o timer só prova que o tar é válido, não que o restore funciona.
 - Revisar a retenção de 14 dias se o volume de dados crescer muito.

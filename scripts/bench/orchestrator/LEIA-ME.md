@@ -45,6 +45,44 @@ executar: um id fora do catálogo falha em silêncio no spawn e a execução vaz
 uma falha do modelo. O default já esteve em `space-bunny-free`/`big-pickle`; os dois saíram
 do catálogo e o preflight passou a acusar isso antes de qualquer sessão.
 
+## Isolamento da memória (ai-memory)
+
+O bench abre **sessões reais** do OpenCode, e o plugin do ai-memory grava cada sessão no
+projeto do `.ai-memory.toml` mais próximo do cwd. Rodar direto na cópia de trabalho do
+projeto enche o histórico real de sessões de medição — foi o que aconteceu na bateria 9×5:
+o marcador de `/var/tmp/free-matrix` declarava `pessoal/caminhar`, e ~55 sessões de bench
+entraram no histórico do projeto (15 avisos de título duplicado no lint).
+
+Por isso o bench só roda numa **cópia isolada** cujo marcador aponta para o projeto de
+medição:
+
+```toml
+workspace = "default"
+project = "bench"
+```
+
+Preparar uma cópia nova:
+
+```bash
+cp -a /home/gus/projetos/Caminhar /var/tmp/bench-copy
+cd /var/tmp/bench-copy
+# edite .ai-memory.toml: workspace = "default" e project = "bench"
+git add .ai-memory.toml
+git commit -m "chore: isolate bench memory in default/bench"
+```
+
+O commit importa: `restaurarArvore()` devolve arquivo **rastreado** com `git checkout --`,
+então um marcador só modificado voltaria ao valor do projeto real na primeira execução.
+Os dois runners chamam `exigirMarcadorDeBench()` (em `scripts/bench/runner-comum.js`) antes
+de qualquer spawn — inclusive do `opencode models` — e abortam com código 1 quando o
+marcador não é `default/bench`. Rodar de `/home/gus/projetos/Caminhar` deixa de ser
+possível, de propósito.
+
+As sessões antigas da bateria 9×5 continuam em `pessoal/caminhar` como histórico — não
+apague páginas de sessão só para zerar aviso de lint (decisão registrada no ADR-0035,
+§"Isolamento do bench"). O `ai-memory audit-contamination` pode apontá-las depois da troca
+de projeto da cópia: é falso positivo histórico esperado.
+
 ## O que cada arquivo é
 
 | Arquivo | Papel |

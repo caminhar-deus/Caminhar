@@ -34,7 +34,7 @@ import { createWriteStream, readFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { exigirInstrumentoValido } from '../ground-truth.js';
-import { STDIO, classificarExistencia, resumirArgs } from '../runner-comum.js';
+import { STDIO, classificarExistencia, exigirMarcadorDeBench, resumirArgs } from '../runner-comum.js';
 
 const RAIZ = path.resolve(import.meta.dirname, '..', '..', '..');
 const DIR = path.join(RAIZ, 'scripts', 'bench', 'orchestrator');
@@ -272,6 +272,7 @@ function prepararArgs(job, opts, prompt) {
 }
 
 async function main() {
+  await exigirMarcadorDeBench(RAIZ);
   const opts = parseArgs(process.argv.slice(2));
 
   // Fail-fast antes de qualquer spawn — inclusive o `opencode models`.

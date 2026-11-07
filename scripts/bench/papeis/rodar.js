@@ -38,7 +38,7 @@ import { createWriteStream } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { exigirInstrumentoValido } from '../ground-truth.js';
-import { STDIO, classificarExistencia, resumirArgs } from '../runner-comum.js';
+import { STDIO, classificarExistencia, exigirMarcadorDeBench, resumirArgs } from '../runner-comum.js';
 import { aplicarRegressao, verificarRegressao } from './regressao-s1.js';
 
 const RAIZ = path.resolve(import.meta.dirname, '..', '..', '..');
@@ -303,6 +303,7 @@ async function restaurarArvore() {
 }
 
 async function main() {
+  await exigirMarcadorDeBench(RAIZ);
   const opts = parseArgs(process.argv.slice(2));
 
   // Fail-fast antes de qualquer spawn (inclusive `opencode models`): um instrumento
