@@ -5,7 +5,8 @@
  * Duas camadas:
  * 1. funções puras contra uma fixture temporária — inventário, linhas, parser;
  * 2. canário no repositório real — os cinco instrumentos têm de continuar `ok`
- *    contra o disco (o designer foi recalibrado em 06/11/2026).
+ *    contra o disco (o designer foi recalibrado em 06/11/2026 e reconferido nas
+ *    linhas em 07/11/2026).
  */
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import {

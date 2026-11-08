@@ -1,13 +1,15 @@
 # Gabarito — papel do `designer` (conformidade de foco e contraste)
 
 Conferido no código em 19/10/2026, recalibrado em 22/10/2026 e **recalibrado de novo
-em 06/11/2026** — o foco do `Button` passou a ter o par completo e o `.helperText`
-migrou para `--color-text-secondary`. As citações desta versão conferem no código
-**de 06/11/2026**. **Nenhum modelo sob teste pode ler este arquivo.**
+em 06/11/2026** (o foco do `Button` passou a ter o par completo e o `.helperText` migrou
+para `--color-text-secondary`). **Recalibrado em 07/11/2026** apenas nas linhas: o HEAD
+`7955585` ("ATT - New Design") deslocou `Input.module.css` (bloco novo do `clearButton`)
+e duas faixas do `MASTER.md`. As citações desta versão conferem no código de
+**07/11/2026**. **Nenhum modelo sob teste pode ler este arquivo.**
 
 A fonte da verdade normativa é `design-system/MASTER.md` (`MASTER.md:36` tokens de
 foco, `:39-46` nota normativa, `:130` declaração do botão, `:50-52` proibição do
-texto terciário, `:201-204` anti-padrões de foco, `:212-214` checklist). O contrato
+texto terciário, `:202-205` anti-padrões de foco, `:213-215` checklist). O contrato
 concreto são os tokens de `pages/styles/variables.css` (`:95-97` bg/text,
 `:112-113` foco) e os componentes em `components/UI/`.
 
@@ -48,18 +50,18 @@ inverter: dizer que ele "passa" porque 3:1 basta.
 
 `components/UI/Input.module.css` usa o token em **três** lugares; os três são
 aceitáveis. O `.helperText` **não** usa esse token — migrou para
-`--color-text-secondary` (`Input.module.css:167`).
+`--color-text-secondary` (`Input.module.css:208`).
 
 | Linha | Regra | O que o texto representa | Aceitável? |
 |---|---|---|---|
 | `Input.module.css:39` | `.input::placeholder` | **placeholder** | **Sim** — é o uso permitido (`MASTER.md:50-51`) |
 | `Input.module.css:51` | `.input:disabled` | **texto desabilitado** | **Sim** — texto desabilitado não é informação; o contraste de texto desabilitado está fora da exigência de 4,5:1 do WCAG 2.2 SC 1.4.3. O projeto tem token próprio para isso: `--color-disabled-text` (`variables.css:115`), também `#a3a3a3` |
 | `Input.module.css:104` | `.leftAddon` / `.rightAddon` (ícone dentro do campo) | **ícone decorativo** (o `pointer-events: none` em `Input.module.css:105` mostra que não é interativo) | **Sim** — o `MASTER.md:51-52` exige ≥ 3:1 só para "ícones com função"; aqui não há função |
-| `Input.module.css:167` | `.helperText` | **texto de ajuda/erro** — é informação | **Sim** — usa `--color-text-secondary` (`Input.module.css:167`), 7,5:1 sobre `#fafafa` (`MASTER.md:49`); não é `--color-text-tertiary` |
+| `Input.module.css:208` | `.helperText` | **texto de ajuda/erro** — é informação | **Sim** — usa `--color-text-secondary` (`Input.module.css:208`), 7,5:1 sobre `#fafafa` (`MASTER.md:49`); não é `--color-text-tertiary` |
 
 Resposta que acerta: conta **três** usos de `--color-text-tertiary` no `Input`
 (`Input.module.css:39`, `:51`, `:104`), aceita os três e diz que o `.helperText`
-(`Input.module.css:165-168`) usa `--color-text-secondary` (`:167`), portanto não é
+(`Input.module.css:206-209`) usa `--color-text-secondary` (`:208`), portanto não é
 um quarto uso do token terciário.
 
 **Erro típico:** dizer que o `.helperText` usa `--color-text-tertiary` e reprová-lo
@@ -78,8 +80,9 @@ tratar os três usos como proibidos.
 2. Chamar `--color-text-tertiary` de "proibido" sem a ressalva do placeholder — o
    `MASTER.md:50-51` é o texto exato, e a ressalva é o que a tarefa pergunta.
 3. Citar `MASTER.md` sem linha, ou com linha do parágrafo errado (o §2 é
-   o bloco normativo `MASTER.md:48-52`; as proibições do §9 são `MASTER.md:200-204`).
+   o bloco normativo `MASTER.md:48-52`; as proibições do §9 são `MASTER.md:197-209`,
+   com o contraste em `:207-208`).
 4. Não ver que `Button.module.css:22-24` tem o par completo — o erro agora é o
    falso positivo, não a omissão do `outline`.
 5. Contar quatro usos de `--color-text-tertiary` no `Input` e incluir o
-   `.helperText` (`Input.module.css:167`), que usa `--color-text-secondary`.
+   `.helperText` (`Input.module.css:208`), que usa `--color-text-secondary`.

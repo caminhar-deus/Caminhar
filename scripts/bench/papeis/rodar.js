@@ -28,9 +28,9 @@
  * instrumento do papel contra o disco por `scripts/bench/ground-truth.js`:
  * citação que não resolve, âncora que sumiu ou contagem divergente bloqueiam a
  * bateria. Os cinco instrumentos estão calibrados (o designer foi recalibrado em
- * 06/11/2026). O runner também valida os argumentos, detecta colisão de nome de
- * saída e, no `fixer`, exige a regressão do S1 no estado esperado antes de
- * plantar o bug.
+ * 06/11/2026 e teve as linhas reconferidas em 07/11/2026). O runner também valida
+ * os argumentos, detecta colisão de nome de saída e, no `fixer`, exige a regressão
+ * do S1 no estado esperado antes de plantar o bug.
  *
  * Em execução real (sem `--dry-run`), a árvore fora de `scripts/bench` precisa
  * estar limpa: o runner restaura o repositório ao HEAD depois de cada execução

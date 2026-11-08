@@ -119,6 +119,15 @@
     // `flint-40b-free`, explorer `pulse-alpha-free`; designer `beam-free` e fixer
     // `mimo-v2.6-flash-free` mantidos. Ver ADR-0008 §"04/11/2026".
     //
+    // 07/11/2026: inventário reconferido — 11 modelos free: SAIU `pulse-alpha-free` (o id nem
+    // aparece mais em `opencode models`; era o explorer) e ENTRARAM `iceman-free` e
+    // `inkling-2-small-free`; `crouton-alpha-free`, estreante de 04/11, continua. Os três
+    // novos foram medidos nos 5 papéis em 07/11 (18 execuções + 1 rerun de 503; notas e
+    // citações conferidas fora do modelo) e TROCAM: explorer → `inkling-2-small-free`,
+    // designer → `crouton-alpha-free`, fixer → `iceman-free`. `orchestrator` (`deepseek` +
+    // reserva `glm`) e `oracle` (`flint`) ficam: nenhum dos novos superou o incumbent no
+    // papel. Ver ADR-0008 §"07/11/2026".
+    //
     // DEEPSEEK DEIXOU DE SER ÓRFÃO (22/10/2026): o longcat-2.5-preview-free — vencedor da
     // bateria de 19/10 no papel novo (7/7 e 16/16 aplicações; deepseek 7/7 e 15/16 naquela
     // rodada) — SAIU do catálogo, e a bateria do papel rodou de novo com gabarito recalibrado
@@ -152,6 +161,12 @@
     //                (:127-129), não 400, e que a branch :83-86 é inalcançável; achou também o mock
     //                de teste que fabricou a confiança (tests/integration/api/upload-image.test.js:148,168).
     "zen": {
+      // ORCHESTRATOR — 07/11/2026 (revisão de catálogo): a bateria dos três estreantes nos 5
+      // papéis não deu motivo para trocar o primário. O deepseek repetiu Camada B 8/8 no papel
+      // real (o único 8/8 da rodada); os três novos fizeram 7/8 — todos erram o mesmo item
+      // `405`, e o crouton erra também o Q4. O glm segue como reserva medida (7/8 em 22/10).
+      // Sem troca.
+      //
       // ORCHESTRATOR — 04/11/2026 (bateria 9×5, ADR-0008 §"04/11/2026"): o deepseek-v4.1-flash-free
       // assume o PRIMÁRIO; o glm-5.3-flash-free segue RESERVA (a reserva continua
       // obrigatoriamente FREE). Evidência com gabarito recalibrado (32 arquivos/32 rotas em
@@ -209,6 +224,12 @@
       // RETENÇÃO: nenhum dos dois tem zero-retention registrado — tratar como free tier comum
       // (ver ADR-0008).
       "orchestrator": { "model": ["opencode/deepseek-v4.1-flash-free", "opencode/glm-5.3-flash-free"] },
+      // ORACLE — 07/11/2026 (revisão de catálogo): o flint fica. No S8, crouton e iceman também
+      // deram o veredito correto ("não se sustenta") com 0 erros verificáveis; o inkling errou 2
+      // citações. Ninguém superou o incumbent, e os dois empatados têm papel próprio nesta
+      // distribuição (crouton designer, iceman fixer) — mantê-los separados preserva a regra de
+      // não repetir id entre primários. Sem troca.
+      //
       // ORACLE — 04/11/2026 (bateria 9×5): sai o nemotron-3.5-super-vl-free; entra o flint-40b-free.
       // Medido hoje: o flint entregou o caso S8 COMPLETO (veredito certo "não se sustenta" +
       // 3/3 âncoras + o drift documental users.js:161→206 mapeado) e até agora nunca caiu por
@@ -226,6 +247,14 @@
       // O 3.0.5 fundiu o librarian no explorer (MARKETPLACE_BUILTIN_RENAMES em dist/index.js).
       // O explorer carrega as duas responsabilidades: varredura do repo e doc externa
       // (context7/gh_grep, em "agents" abaixo).
+      //
+      // EXPLORER — 07/11/2026 (revisão de catálogo): o pulse-alpha-free SAIU do catálogo — o id
+      // não aparece mais em `opencode models`, e id fora do catálogo não spawna. Bateria do papel
+      // com os três estreantes: os três fizeram 6/6 âncoras de `withAuth`; inkling e crouton
+      // declararam ZERO `Cache-Control` na doc do Route Handler; o inkling foi o mais detalhado
+      // na Parte B (5 lacunas declaradas contra 3 do crouton). Entra o inkling; o crouton vai
+      // para o designer e o iceman para o fixer — um novo por papel, sem repetir id. Ver
+      // ADR-0008 §"07/11/2026".
       //
       // EXPLORER — 04/11/2026 (bateria 9×5): o deepseek-v4.1-flash-free sobe para o
       // orchestrator; entra o pulse-alpha-free — estreante de 03/11 que AGORA tem medição nos
@@ -249,7 +278,14 @@
       //                         ("Endpoint is unavailable") sem entregar as partes. Primeira
       //                         medição do estreante de 21/10 — reavaliar em rodada futura;
       //                         não confundir com o gatilho de fila da observação de campo.
-      "explorer":     { "model": "opencode/pulse-alpha-free" },
+      "explorer":     { "model": "opencode/inkling-2-small-free" },
+      // DESIGNER — 07/11/2026 (revisão de catálogo): o crouton assume. 0 erros verificáveis no
+      // papel — fechou os addons como decorativos citando `Input.js:97/125` e o foco do Button
+      // contra `MASTER.md:130` — em 134 s. O inkling também fez 0 erros (1 deslize de linha;
+      // 51 s) e o iceman ficou correto, mas hedgeado (2× `NÃO DETERMINADO` em usos aceitáveis;
+      // 52 s). O beam, incumbent, teve 1 erro verificável. O crouton fica; inkling e iceman vão
+      // para explorer/fixer, sem repetição.
+      //
       // 04/11/2026 (bateria 9×5): designer e fixer RECONFIRMADOS no papel — designer: todos os
       // 9 free com 3/3 dos pontos (beam é o único com citação `arquivo:linha` em tudo); fixer:
       // 7/7 candidatos com suíte Jest inteira verde (verificação fora do modelo; o
@@ -265,7 +301,13 @@
       // --color-text-tertiary, os 4 usos no Input) foram acertados por beam-free,
       // minimax, longcat e deepseek. O beam-free segue: é o único com DUAS medições neste
       // papel (16/10 e hoje) e é o mais curto — menos Tokens, menos cota.
-      "designer":     { "model": "opencode/beam-free", "skills_add": ["ui-ux-pro-max"] },
+      "designer":     { "model": "opencode/crouton-alpha-free", "skills_add": ["ui-ux-pro-max"] },
+      // FIXER — 07/11/2026 (revisão de catálogo): o iceman assume. Passou 4/4 no conferidor
+      // (corrigiu a produção; teste novo falha no original regredido, passa no corrigido; suíte
+      // inteira verde; não editou teste existente) em 91 s. Inkling (25 s) e crouton (293 s)
+      // também passaram 4/4 — a alocação usa um novo por papel, preservando a regra de não
+      // repetir id entre primários.
+      //
       // fixer: 19/10/2026, bateria de papel nova (scripts/bench/papeis/) neste mesmo papel.
       // Verificação FORA do modelo (a correção foi reaplicada e a suíte rodada de verdade):
       //   mimo-v2.6-flash-free  corrigiu a produção; teste novo FALHA no código original e
@@ -284,7 +326,7 @@
       // plantada do S1: teste novo falha no original regredido, passa no corrigido, suíte
       // inteira verde, não editou teste existente) — segundo candidato vivo ao papel; o mimo
       // segue, com medições de 15/10 e 19/10 no papel.
-      "fixer":        { "model": "opencode/mimo-v2.6-flash-free" }
+      "fixer":        { "model": "opencode/iceman-free" }
     }
     // Híbrido de exemplo (lembre de adicionar o provedor em enabled_providers no opencode.jsonc):
     // "hibrido": {

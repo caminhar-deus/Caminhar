@@ -1148,6 +1148,132 @@ restauração remove é a sujeira criada pela própria sessão — backup autom�
 mascararia essa origem. A única perda possível é edição concorrente do operador
 durante a sessão, e é por isso que a cópia é isolada.
 
+## 07/11/2026: revisão de catálogo — `pulse-alpha-free` saiu, três estreantes medidos e `explorer`, `designer` e `fixer` trocam
+
+O mantenedor pediu nova revisão dos modelos FREE por causa de "pequenas alterações
+recentes na lista, incluindo a adição de novos modelos", com o objetivo de levantar o
+catálogo, ver o que já foi medido, medir o que faltava e recomendar a distribuição. A
+recomendação foi aprovada e aplicada nesta data.
+
+### Inventário (07/11/2026) — 11 modelos free
+
+`beam-free`, `big-pickle`, `crouton-alpha-free`, `deepseek-v4.1-flash-free`,
+`flint-40b-free`, `glm-5.3-flash-free`, `iceman-free`, `inkling-2-small-free`,
+`mimo-v2.6-flash-free`, `nemotron-3.5-lightning-free`, `nemotron-3.5-super-vl-free`
+(conferido com `opencode models`).
+
+Diferença exata contra o inventário de 04/11/2026:
+
+- **saiu** `pulse-alpha-free`: o id não aparece mais em `opencode models`. Era o
+  `explorer` desde 04/11; um id fora do catálogo não spawna, então o papel estava parado;
+- **entraram** `iceman-free` e `inkling-2-small-free`, ambos sem medição;
+- `crouton-alpha-free`, estreante de 04/11, continua no catálogo — seguia sem medição.
+
+Os ids atribuídos antes da rodada (menos o `pulse`) continuam vivos: `deepseek` e `glm`
+(orchestrator), `flint` (oracle), `beam` (designer) e `mimo` (fixer).
+
+### Bateria de 07/11/2026 — os três novos nos 5 papéis
+
+18 execuções válidas (3 modelos × 5 papéis, uma por célula), mais uma repetição de uma
+execução que caiu com 503 e uma nova medição do `beam` no `designer` (incumbent, para
+comparar no mesmo dia). Tudo sequencial; o runner restaurou a árvore entre execuções.
+Citações e conteúdo foram conferidos **fora do modelo**, como nas baterias anteriores.
+
+| Papel | `crouton-alpha-free` | `iceman-free` | `inkling-2-small-free` | Referência |
+|---|---|---|---|---|
+| `orchestrator` (Camada B) | 7/8 (errou o `405` e o Q4) | 7/8 (só o `405`) | 7/8 (só o `405`) | `deepseek` 8/8 em 04/11 (não remedido) |
+| `oracle` (S8) | 0 erros | 0 erros | 2 citações de linha erradas | `flint` 0 erros em 04/11 (não remedido) |
+| `explorer` | 6/6; zero `Cache-Control` declarado | 6/6 | 6/6; zero `Cache-Control` e 5 lacunas declaradas | `pulse` fora do catálogo |
+| `designer` | **0 erros** (134 s) | correto, mas hedgeado (52 s) | 0 erros, 1 deslize de linha (51 s) | `beam` 1 erro (57 s) |
+| `fixer` | 4/4 (293 s) | **4/4** (91 s) | 4/4 (25 s) | `mimo` não remedido (evidência de 15/10 e 19/10) |
+
+**A leitura por papel:**
+
+- **`orchestrator` — sem troca.** O `deepseek` continua o único 8/8 da Camada B no
+  papel real (04/11); os três novos fizeram 7/8 e todos erram o mesmo item `405`, que
+  já é lacuna conhecida da série. O `crouton` erra também o Q4. O `glm` segue reserva
+  medida (7/8 em 22/10).
+- **`oracle` — sem troca.** `crouton` e `iceman` deram o veredito correto do S8 com 0
+  erros verificáveis; o `inkling` errou duas citações de linha (`permissions.js:47` e
+  `:52-55`; o código está em `:60-63` e `:55-58`). Ninguém superou o `flint`, e os dois
+  empatados têm papel próprio nesta distribuição — mantê-los separados preserva a regra
+  de não repetir id entre primários.
+- **`explorer` — `inkling` entra.** O `pulse` saiu do catálogo, então o papel precisava
+  de dono de qualquer forma. Os três fizeram 6/6 âncoras de `withAuth`; `inkling` e
+  `crouton` declararam explicitamente **zero** ocorrências de `Cache-Control` na doc do
+  Route Handler, e o `inkling` foi o mais detalhado na Parte B (5 lacunas declaradas
+  contra 3 do `crouton`).
+- **`designer` — `crouton` entra.** 0 erros verificáveis: fechou os addons como
+  decorativos citando `Input.js:97/125` (`aria-hidden`) e o foco do `Button` contra
+  `MASTER.md:130`. O `inkling` também fez 0 erros (1 deslize de linha, 51 s) e o
+  `iceman` ficou correto, mas hedgeado (dois `NÃO DETERMINADO` em usos que o gabarito
+  aceita; 52 s). O `beam`, incumbent, errou 1 ponto: tratou o addon de `:104` como
+  informação e reprovou um uso que o MASTER permite como decorativo. O `crouton` fica
+  com o papel; `inkling` e `iceman` vão para `explorer`/`fixer`, sem repetição.
+- **`fixer` — `iceman` entra.** Os três passaram 4/4 no conferidor (correção na
+  produção; teste novo falha no código original regredido, passa no corrigido; suíte
+  inteira verde; não editou teste existente). Tempos: `inkling` 25 s, `iceman` 91 s,
+  `crouton` 293 s. O `iceman` fica por ser o mais rápido entre os dois que sobram depois
+  de `inkling` (explorer) e `crouton` (designer) — a alocação preserva cinco primários
+  distintos. O `mimo` não foi remedido nesta rodada; a evidência dele é de 15/10 e
+  19/10, e os três novos têm medição no instrumento atual (regressão plantada).
+
+### Um defeito de instrumento registrado (designer)
+
+A cópia do bench (`/var/tmp/free-matrix`) está congelada em 04/11 e o
+`gabarito-designer.md` dela é o de **22/10**, que ainda espera o `Button` fora do
+padrão e o `.helperText` violando. O código do HEAD de 07/11 (`7955585`, "ATT - New
+Design") tem o foco **conforme** (`Button.module.css:21-25`) e o `.helperText` em
+`--color-text-secondary` (`Input.module.css:206-209`, cor em `:208` — o HEAD deslocou
+as linhas com o bloco novo do `clearButton`). A pontuação do `designer` nesta rodada
+foi feita **manualmente contra o conteúdo do HEAD**, não contra as linhas da cópia; os
+três novos e o `beam` foram julgados pelo mesmo critério. O gabarito do repo foi
+**recalibrado em 07/11/2026** para essas linhas (e para as faixas deslocadas do
+`MASTER.md`: `:202-205`, `:213-215` e §9 em `:197-209`); a cópia congelada precisa ser
+re-sincronizada a partir do repo antes da próxima execução, porque ela ainda tem o
+gabarito de 22/10.
+
+### Distribuição vigente (07/11/2026)
+
+| Agente | PRIMÁRIO | RESERVA |
+|---|---|---|
+| `orchestrator` | `opencode/deepseek-v4.1-flash-free` | `opencode/glm-5.3-flash-free` |
+| `oracle` | `opencode/flint-40b-free` | — |
+| `explorer` | `opencode/inkling-2-small-free` | — |
+| `designer` | `opencode/crouton-alpha-free` | — |
+| `fixer` | `opencode/iceman-free` | — |
+
+Nenhum id se repete entre os primários; a reserva do `orchestrator` não é primário de
+nenhum outro agente. O `small_model` da sessão (`opencode.jsonc`) segue o
+`mimo-v2.6-flash-free` (leve, inalterado).
+
+### Decisão
+
+Aplicado no preset `.opencode/oh-my-opencode-slim.json` (blocos `zen.explorer`,
+`zen.designer` e `zen.fixer`, com comentários datados; `zen.orchestrator` e `zen.oracle`
+ganharam a nota de confirmação de 07/11) e registrado no `CHANGELOG.md`. O `"model"` da
+sessão em `opencode.jsonc` continua `opencode/deepseek-v4.1-flash-free`; a config do
+slim é lida no start do host, então o `opencode debug agents` da sessão em curso ainda
+mostra os modelos antigos até reiniciar. As regras de permissão/skills/MCP não mudaram.
+
+### Alternativas descartadas nesta rodada
+
+- **Manter o `pulse-alpha-free` no `explorer`.** Descartado por impossibilidade: o id
+  não existe mais no catálogo e o host recusa o spawn (`provider.no-route`).
+- **Trocar o `orchestrator` por um dos novos.** Descartado: o `deepseek` segue 8/8 e os
+  três novos fizeram 7/8, todos com a mesma falha do `405`; trocar seria gastar cota e
+  perder a única execução completa do papel.
+- **Trocar o `oracle` por `crouton`/`iceman`.** Descartado: empataram com o `flint` em 0
+  erros; sem ganho verificável, o incumbent fica, e os dois têm papel próprio — usá-los
+  no `oracle` repetiria id entre primários.
+- **Trocar o `designer` pelo `beam` mais uma vez.** Descartado: o `beam` errou 1 ponto
+  no mesmo gabarito em que o `crouton` fez 0; a decisão de 04/11 (manter o `beam` por
+  histórico) perdeu a base quando o incumbent foi medido no mesmo dia e ficou atrás.
+- **Usar o `inkling` no `fixer` (25 s, mais rápido).** Descartado pela alocação: o
+  `inkling` é o `explorer` (melhor Parte B entre os novos) e o `iceman` é o fixer mais
+  rápido entre os que sobram (91 s contra 293 s do `crouton`), preservando cinco
+  primários distintos.
+
 ## Consequências
 
 ### Positivas
@@ -1160,13 +1286,12 @@ durante a sessão, e é por isso que a cópia é isolada.
 
 ### Negativas e riscos
 
-- **A garantia de privacidade vale só para o orchestrator.** `space-bunny-free` tem
-  `zero-retention` registrado (Cenário 3, pesquisa de 03/10/2026) — é por isso que ele é
-  o primário dele. **`nemotron-3.5-super-vl-free`, que o `oracle` passou a usar, não tem
-  essa propriedade verificada**: a bateria não a confirma, e ele é o único dos seis sem
-  garantia registrada. Tratar como free tier comum. Em qualquer dos casos, prompts e
-  código do projeto vão a servidores remotos (EUA) e podem ser usados para melhorar o
-  modelo — o aviso permanece em `opencode.jsonc`.
+- **Nenhum primário atual tem `zero-retention` registrado (revisão de 07/11/2026).** O
+  único registro do tipo era o do `space-bunny-free` (Cenário 3, pesquisa de 03/10/2026),
+  que saiu do catálogo; os cinco primários atuais e a reserva do `orchestrator` não têm
+  essa propriedade verificada. Tratar todos como free tier comum: prompts e código do
+  projeto vão a servidores remotos (EUA) e podem ser usados para melhorar o modelo — o
+  aviso permanece em `opencode.jsonc`.
 - **O orchestrator ficou sem reserva em 16/10/2026 até a segunda medição do dia.** Registrado
   assim porque `big-pickle` tinha saído do catálogo; a reserva foi **restaurada** no mesmo dia,
   quando o modelo voltou (ver "Re-análise de 16/10/2026"). A ressalva do parágrafo anterior
@@ -1181,7 +1306,7 @@ durante a sessão, e é por isso que a cópia é isolada.
 - **Cota Zen por IP/dia.** A bateria consumiu parte dela; execuções longas em paralelo
   podem esgotá-la.
 - **Modelos free podem desaparecer sem aviso.** Não há substituto automático: se um
-  dos seis sair do catálogo, o agente fica sem modelo até re-benchmarkar. **Já aconteceu:**
+  deles sair do catálogo, o agente fica sem modelo até re-benchmarkar. **Já aconteceu:**
   `step-5-preview-free` e `big-pickle` saíram em menos de 24 h (16/10/2026).
 - **A cadeia do orchestrator é uma mitigação estreita, e a medição de 19/10 delimitou
   o alcance.** Ela cobre rate limit, 401/403, 502/503/504 e timeout — os erros
@@ -1201,7 +1326,7 @@ durante a sessão, e é por isso que a cópia é isolada.
 
 ## Revisão
 
-Reavaliar quando: (a) algum dos seis sair do catálogo ou for marcado `deprecated`;
+Reavaliar quando: (a) algum dos modelos em uso sair do catálogo ou for marcado `deprecated`;
 (b) a cota do Zen mudar de ordem de grandeza; (c) o mantenedor decidir investir em
 modelo pago, o que muda a premissa de tudo; (d) o mantenedor **reconsiderar a decisão
 de não usar o preset `"local"`** — hoje declarada sem previsão de retomada, mas que
@@ -1251,9 +1376,19 @@ se pagou.
   cinco instrumentos no canário. A execução
   `designer-pulse-alpha-free-1.ndjson` continua como evidência histórica da
   divergência de 03/11.
-- **Privacidade do `oracle` não verificada.** `nemotron-3.5-super-vl-free` é hoje o único
-  dos cinco sem garantia de retenção registrada. Se isso for requisito, verificar antes do
-  próximo uso com código sensível.
+- **Privacidade dos primários não verificada — reaberta em 07/11/2026.** Nenhum dos cinco
+  primários atuais (`deepseek`/`glm`, `flint`, `inkling`, `crouton`, `iceman`) tem
+  `zero-retention` registrado; o único registro do tipo era o do `space-bunny-free`
+  (Cenário 3, pesquisa de 03/10/2026), que saiu do catálogo. Se a garantia for requisito
+  para código sensível, verificar antes do próximo uso.
+- **Instrumento do `designer` com linhas desatualizadas no HEAD — RESOLVIDO em
+  07/11/2026.** O conteúdo do `gabarito-designer.md` do repo (recalibrado em
+  06/11/2026) estava correto, mas o HEAD `7955585` ("ATT - New Design") deslocou
+  linhas: o `.helperText` foi para `Input.module.css:206-209` (cor em `:208`, antes
+  `:167`) e duas faixas do `MASTER.md` andaram (+1). O gabarito foi recalibrado e o
+  canário `tests/unit/scripts/bench-ground-truth.test.js` passa. A cópia congelada
+  `/var/tmp/free-matrix` ainda tem o gabarito de 22/10 e precisa ser re-sincronizada
+  do repo antes da próxima execução.
 - **Ruído de formato do `oracle`.** Ele não complyou o formato pedido numa das execuções.
   Se isso aparecer em revisão real, o critério de troca precisa considerar acabamento, não só
   capacidade de achado.

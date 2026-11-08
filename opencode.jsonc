@@ -23,6 +23,10 @@
   // (não medido no papel atual + cota morta 2× em 03–04/11) para o deepseek (único 8/8 na
   // Camada B do papel, revisão delegada a @oracle), e trocou também oracle e explorer — ver
   // ADR-0008 §"04/11/2026".
+  // 07/11/2026: revisão de catálogo — `explorer` → inkling-2-small-free, `designer` →
+  // crouton-alpha-free, `fixer` → iceman-free; `orchestrator` (deepseek + glm reserva) e
+  // `oracle` (flint) mantidos. O "model" da sessão continua deepseek-v4.1-flash-free; a config
+  // dos agentes vale no próximo start do host. Ver ADR-0008 §"07/11/2026".
   // 19/10/2026: este campo apontava para opencode/space-bunny-free, que SAIU do catálogo do
   // Zen. A sessão não caía na reserva do preset — caía no DEFAULT do provider, porque um id
   // fora do catálogo dá `provider.no-route`, que o slim NÃO classifica como failover. Trocado

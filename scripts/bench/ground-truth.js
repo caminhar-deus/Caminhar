@@ -152,7 +152,7 @@ export function extrairCitacoesDeInstrumento(texto) {
  * `documentos` são caminhos relativos a `scripts/bench/`. Cada âncora declara
  * onde a citação DEVE aparecer; contagens casam número escrito contra
  * `inventarioApi`; afirmações conferem expectativa de texto do instrumento
- * (o designer foi recalibrado em 06/11/2026).
+ * (o designer foi recalibrado em 06/11/2026 e reconferido nas linhas em 07/11/2026).
  */
 const INSTRUMENTOS = {
   orchestrator: {
