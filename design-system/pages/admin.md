@@ -1,6 +1,6 @@
 # Painel Administrativo (`/admin`) — spec de implementação (override do MASTER)
 
-> Última atualização: 2026-11-07 (criação da especificação unificada do painel administrativo: navegação vertical exclusiva na lateral esquerda com modos recolhido e expandido via `Sidebar`, ícones SVG `AppIcon`, hierarquia semântica de botões, raios `8px`/`12px`, barras de pesquisa e tabelas padronizadas — ADR-0036).
+> Última atualização: 2026-11-08 (inclusão da aba `Gestão de Vendas` na posição 6 da `Sidebar` com 2 subabas horizontais `Pedidos | Produtos Internos` e semântica dos selos de status de pagamento e pedido — ADR-0037. Anterior: 2026-11-07 — ADR-0036).
 > Override de `design-system/MASTER.md`. Tudo aqui vence o MASTER; o que não for mencionado segue o MASTER. Stack: Next.js Pages Router + React + CSS Modules + variáveis CSS (`pages/styles/variables.css`, sem Tailwind). Idioma da interface: pt-BR. Tokens: sempre a variável, nunca hex avulso.
 
 > Escopo: o ambiente administrativo em `/admin` (`pages/admin.js`, `components/Layout/Sidebar.js`, `components/Admin/**`). Compartilha a mesma identidade visual clean, suave, minimalista e moderna do Site Público, preservando suas particularidades funcionais (navegação vertical recolhível na lateral esquerda, listagens em tabelas densas com reordenação e formulários de gestão).
@@ -31,13 +31,14 @@ Diferentemente do Site Público (que utiliza navegação horizontal abaixo do ba
 - **Cabeçalho enxuto** no topo da área principal: `h1` único `"Painel Administrativo"` à esquerda; saudação `"Olá, {username}"` e botão destrutivo `"Sair / Logout"` à direita.
 - **Subabas de 2º nível** permanecem horizontais dentro da área principal da respectiva seção:
   - **Posts/Artigos:** controle segmentado `"Posts | Categorias"`.
+  - **Gestão de Vendas:** 2 subabas horizontais com `AppIcon` (`Pedidos`, `Produtos Internos`).
   - **Segurança:** 4 subabas horizontais com `AppIcon` (`Verificação de Integridade`, `Backup do Sistema`, `Rate Limiting`, `Cache do Sistema`).
   - **Usuários:** 2 subabas horizontais com `AppIcon` (`Gestão de Usuários e Admins`, `Gestão de Cargos`), sem cartão `max-width: 1000px` duplicado.
 
 ## 2. Ícones vetoriais (`AppIcon`)
 
 Proibido emoji como ícone em abas, subabas, cartões de métrica, tabelas, selos de status ou botões de ação. Todos usam `AppIcon` (`components/UI/icons.js`, `viewBox="0 0 24 24"`, `stroke="currentColor"`, `strokeWidth="2"`, `aria-hidden="true"`, `focusable="false"`):
-- **10 abas principais:** `chart` (Visão Geral), `fileText` (Posts/Artigos), `music` (Gestão de Músicas), `video` (Gestão de Vídeos), `package` (Gestão de Produtos), `lightbulb` (Gestão de Dicas), `palette` (Configuração de Cabeçalho), `lock` (Segurança), `users` (Usuários), `history` (Auditoria).
+- **11 abas principais:** `chart` (Visão Geral), `fileText` (Posts/Artigos), `music` (Gestão de Músicas), `video` (Gestão de Vídeos), `package` (Gestão de Produtos), `shoppingBag` (Gestão de Vendas), `lightbulb` (Gestão de Dicas), `palette` (Configuração de Cabeçalho), `lock` (Segurança), `users` (Usuários), `history` (Auditoria).
 - **Ações e estados:** `zap` (Puxar Dados / Cache), `refresh` (Atualizar), `download` (Realizar Backup Agora / Exportar), `search` (Busca), `close` (Limpar busca), `checkCircle` (Publicado / Saudável / Sucesso), `fileText` / `clock` (Rascunho / Histórico), `alertTriangle` / `xCircle` (Avisos / Erros), `externalLink` (Abrir no Spotify / Abrir no YouTube).
 
 ## 3. Hierarquia semântica de botões e arredondamentos

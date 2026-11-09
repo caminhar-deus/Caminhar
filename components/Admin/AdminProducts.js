@@ -25,7 +25,7 @@ const productSchema = z.object({
       // automática da loja não devolve o valor (preview do ML).
       .positive('Valor deve ser maior que zero')
   ),
-  link: z.string().url('URL inválida').optional().or(z.literal('')),
+  link: z.string().min(1, 'Link do marketplace é obrigatório').url('URL inválida'),
   // Paridade com a API: opcional; string vazia é aceita aqui e o servidor
   // aplica o default "geral" (o campo sempre existe no formulário).
   category: z.string().optional(),
@@ -57,7 +57,7 @@ const fields = [
   },
   {
     name: 'link', component: TextField, label: 'Link do Produto',
-    placeholder: 'https://...', gridColumn: 'span 2'
+    required: true, placeholder: 'https://...', gridColumn: 'span 2'
   },
   {
     name: 'category', component: TextField, label: 'Categoria',

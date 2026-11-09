@@ -25,7 +25,7 @@ parece perfeito e não mediu nada.
 
 ## Camada B — julgamento humano, contra o `gabarito.md`
 
-**B1. Pergunta 1 — contagem de rotas.** Acertou 32 arquivos e 32 rotas, e reconheceu que
+**B1. Pergunta 1 — contagem de rotas.** Acertou 38 arquivos e 38 rotas, e reconheceu que
 **todos** os arquivos de `pages/api/` agora são rota? Se inventar um "arquivo que não é
 rota" (o helper de paginação saiu de `pages/api/` em 21/10/2026), é erro.
 

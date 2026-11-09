@@ -99,6 +99,51 @@ describe('Componentes Features - Products - ProductCard', () => {
     const links = screen.getAllByRole('link');
     expect(links).toHaveLength(1);
     expect(links[0]).toHaveAttribute('href', 'https://mercadolivre.com.br/produto');
+    expect(links[0]).toHaveTextContent('Link para Mercado Livre');
+    expect(screen.getByText('Loja parceira')).toBeInTheDocument();
+  });
+
+  it('deve exibir rótulo específico para Shopee e Amazon em produtos de loja parceira', () => {
+    const { rerender } = render(
+      <ProductCard product={{ ...baseProduct, link: 'https://shopee.com.br/item-1' }} />
+    );
+    expect(screen.getByRole('link')).toHaveTextContent('Link para Shopee');
+
+    rerender(
+      <ProductCard product={{ ...baseProduct, link: 'https://www.amazon.com.br/dp/B001' }} />
+    );
+    expect(screen.getByRole('link')).toHaveTextContent('Link para Amazon');
+  });
+
+  it('deve exibir selo "Venda direta" e botão "Comprar" para produto interno com estoque', () => {
+    const internalProduct = {
+      ...baseProduct,
+      id: 42,
+      modality: 'internal',
+      stock: 5,
+    };
+    render(<ProductCard product={internalProduct} />);
+
+    expect(screen.getByText('Venda direta')).toBeInTheDocument();
+    expect(screen.getByText('5 em estoque')).toBeInTheDocument();
+    const buyLink = screen.getByRole('link', { name: 'Comprar Produto Teste' });
+    expect(buyLink).toHaveAttribute('href', '/checkout/42');
+    expect(buyLink).toHaveTextContent('Comprar');
+  });
+
+  it('deve exibir botão "Esgotado" desabilitado para produto interno sem estoque', () => {
+    const soldOutProduct = {
+      ...baseProduct,
+      id: 43,
+      modality: 'internal',
+      stock: 0,
+    };
+    render(<ProductCard product={soldOutProduct} />);
+
+    expect(screen.getByText('Venda direta')).toBeInTheDocument();
+    const soldOutBtn = screen.getByRole('button', { name: 'Esgotado' });
+    expect(soldOutBtn).toBeDisabled();
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 
   it('não deve exibir link quando não fornecido', () => {

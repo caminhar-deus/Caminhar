@@ -1,6 +1,6 @@
 # Página pública inicial (home) — spec de implementação (override do MASTER)
 
-> Última atualização: 2026-11-07 (alinhamento visual unificado — ADR-0036: abas `ContentTabs` e cartões com ícones SVG `AppIcon`, busca e seletores de Músicas/Vídeos/Produtos unificados com lupa SVG, botão limpar interno, raio `8px`, foco duplo azul, rótulo `"Ordenar por:"` e cor primária `--color-primary-500`, cartões em `12px` e hover `-3px`). Anterior: 2026-11-02 (anotações SQL de ordenação de Músicas e Produtos alinhadas com `lower(unaccent(titulo))` e desempate por `id` — item AF, ADR-0033); 2026-11-01 ("Posicionados" exposto também no seletor de Vídeos — item AE, ADR-0033, mesma decisão D6); 2026-10-21 (decisões D1–D5 do checklist front-end).
+> Última atualização: 2026-11-08 (duas modalidades de Produtos Religiosos — ADR-0037: filtro `"Modalidade:"`, selos discretos `"Loja parceira"` / `"Venda direta"`, botão externo `"Link para <site>"`, botão interno `"Comprar"` / `"Esgotado"` e botão de acesso `"Entrar"` / `"Minha Conta"` no cabeçalho público. Anterior: 2026-11-07, alinhamento visual unificado — ADR-0036).
 > Override de `design-system/MASTER.md`. Tudo aqui vence o MASTER; o que não for mencionado segue o MASTER. Stack: Next.js Pages Router + React + CSS Modules + variáveis CSS (sem Tailwind). Idioma da interface: pt-BR. Tokens: sempre a variável, nunca hex.
 
 > Escopo: a página única com abas (`pages/index.js` + `components/Features/ContentTabs`). Esta spec cobre os 6 itens definidos no `docs/PLANO_ACAO_SITE_PUBLICO.md` (F1.3, F1.4, F1.6, F2.3 + decisões de design) e não toca lógica de negócio nem o painel administrativo.
@@ -195,6 +195,12 @@
 
 ## 7. Textos de interface (PT-BR) — consolidado
 
+- Cabeçalho público — ação de conta à direita: **"Entrar"** (visitante não autenticado → `/entrar`) ou **"Minha Conta"** (visitante autenticado → `/minha-conta`), altura mínima `40px–44px`, raio `--border-radius-lg` (`8px`), foco duplo azul.
+- Produtos — filtro de modalidade: label `"Modalidade:"`, id `modality-filter-products`, opções `"Todos"` (`all`), `"Venda direta"` (`internal`), `"Lojas parceiras"` (`external`).
+- Produtos — selos discretos no cartão (`--border-radius-full`, `--font-size-xs`, `semibold`): `"Loja parceira"` (fundo `--color-bg-tertiary`, texto `--color-text-secondary`) na Modalidade A; `"Venda direta"` (fundo `--color-primary-50`, texto `--color-primary-700`) na Modalidade B.
+- Produtos — botões do cartão:
+  - Modalidade A (link externo): **"Link para Mercado Livre"**, **"Link para Shopee"** ou **"Link para Amazon"** (em nova aba, com ícone SVG `externalLink`).
+  - Modalidade B (venda interna): botão primário **"Comprar"** (`--color-primary-500`, texto `--color-text-inverse`) ou botão desabilitado **"Esgotado"** quando `stock <= 0`.
 - Produtos — label do seletor: "Ordenar por:"; aria-label do select: "Ordenar produtos"; id: `sort-select-products`.
 - Produtos — opções: "Padrão", "Posicionados", "Mais antigos", "Menor preço", "Maior preço" (expõe "Posicionados" desde 2026-10-21).
 - Produtos — contador: "Mostrando X de Y produto(s)" / "X resultado(s) para \"termo\"".

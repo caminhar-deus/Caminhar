@@ -13,6 +13,7 @@ export default function Home() {
   // servidor (quando a setting não existe).
   const [imageSrc, setImageSrc] = useState('/api/placeholder-image');
   const [settingsError, setSettingsError] = useState(false);
+  const [isCustomerLoggedIn, setIsCustomerLoggedIn] = useState(false);
 
   useEffect(() => {
     // Load settings from database. Sem cache em sessionStorage: o servidor já
@@ -53,6 +54,18 @@ export default function Home() {
         setSettingsError(true);
         // Valores padrão já estão definidos no useState, mantém os defaults
       }
+
+      try {
+        const authRes = await fetch('/api/customer/auth');
+        if (authRes && authRes.ok && typeof authRes.json === 'function') {
+          const authData = await authRes.json();
+          if (authData?.authenticated) {
+            setIsCustomerLoggedIn(true);
+          }
+        }
+      } catch {
+        // Silencioso: visitante permanece como não autenticado
+      }
     };
 
     loadSettings();
@@ -70,6 +83,14 @@ export default function Home() {
       </Head>
 
       <main id="main-content" className={styles.main}>
+        <div className={styles.accountTopRow}>
+          <a
+            href={isCustomerLoggedIn ? '/minha-conta' : '/entrar'}
+            className={styles.accountLink}
+          >
+            {isCustomerLoggedIn ? 'Minha Conta' : 'Entrar'}
+          </a>
+        </div>
         <div className={styles.header}>
           <h1 className={styles.title}>{title}</h1>
           <p className={styles.subtitle}>

@@ -2,7 +2,7 @@
 
 > Escopo: painel administrativo em `/admin` (acesso só com login). A área pública está em `docs/ARQUITETURA_SITE_PUBLICO.md`. Ambos os ambientes compartilham a mesma identidade visual (`design-system/MASTER.md` e `pages/styles/variables.css`), mantendo estruturas de navegação e responsabilidades próprias.
 > Fonte: 23 capturas de tela do painel (`localhost:3000/admin`) + código-fonte atual + diretrizes do dono do projeto.
-> Última atualização: 2026-11-07
+> Última atualização: 2026-11-08
 > Legenda: [PLANEJADO] = alvo ainda não implementado, informado pelo dono | [OBSERVADO] = visto nas imagens/estado legado | [HIPÓTESE] = inferido, confirmar antes de assumir.
 
 ---
@@ -11,8 +11,8 @@
 
 - **Nome:** Painel Administrativo do "O Caminhar com Deus".
 - **URL e tecnologia:** `/admin` (`pages/admin.js`, Next.js Pages Router). Todas as telas e abas mantêm a mesma URL, com navegação interna controlada no cliente; sessões não autenticadas são redirecionadas para `/login?next=/admin`.
-- **Autenticação:** sessão logada via JWT em cookie `httpOnly`. O cabeçalho administrativo exibe saudação ao operador ("Olá, **admin**") e ação destrutiva "Sair / Logout".
-- **Autorização:** por cargos (roles) com permissões por aba (seção 6). Cada uma das 10 abas principais corresponde a uma permissão; abas sem permissão não são exibidas nem acessíveis na API.
+- **Autenticação:** sessão logada via JWT em cookie `httpOnly`. O cabeçalho administrativo exibe saudação ao operador ("Olá, **admin**") e ação destrutiva "Sair / Logout". Essa autenticação é exclusiva dos operadores do painel; contas de visitante do Site Público ([PLANEJADO]) estão em `docs/ARQUITETURA_SITE_PUBLICO.md` §5.1.
+- **Autorização:** por cargos (roles) com permissões por aba (seção 6). Cada uma das 10 abas principais corresponde a uma permissão; abas sem permissão não são exibidas nem acessíveis na API. A aba planejada Gestão de Vendas (§4.8) terá permissão própria quando for implementada.
 - **Infraestrutura vista na aba Segurança:** armazenamento de arquivos para uploads, backups criptografados (`.sql.gz.enc`), rate limiting por IP e log de auditoria. Banco de dados e cache: ver `docs/ARQUITETURA_SITE_PUBLICO.md` §1.
 - **Layout:** interface administrativa estruturada com **barra de navegação vertical recolhível/expansível na lateral esquerda** (`Sidebar` em `components/Layout/Sidebar.js`, §2.2) + cabeçalho enxuto e área principal fluida (`min-width: 0`) à direita sobre fundo neutro claro (`--color-bg-secondary`), aproveitando integralmente o espaço horizontal para tabelas e formulários ([ADR-0036](adr/0036-shared-visual-standard-and-admin-collapsible-sidebar.md)).
 
@@ -71,12 +71,14 @@ As 10 abas principais seguem a ordem funcional abaixo (exibidas conforme as perm
 | 2 | Posts/Artigos | `fileText` | CRUD de reflexões e estudos + CRUD de categorias (toggle "Posts \| Categorias") |
 | 3 | Gestão de Músicas | `music` | CRUD de músicas (Spotify) |
 | 4 | Gestão de Vídeos | `video` | CRUD de vídeos (YouTube) |
-| 5 | Gestão de Produtos | `package` | CRUD de produtos religiosos |
+| 5 | Gestão de Produtos | `package` | CRUD de produtos divulgados por link externo (Mercado Livre, Shopee, Amazon) |
 | 6 | Gestão de Dicas | `lightbulb` | CRUD de dicas |
 | 7 | Configuração de Cabeçalho | `palette` | Título, subtítulo e banner do site público |
 | 8 | Segurança | `lock` | Integridade, backup, rate limiting, cache |
 | 9 | Usuários | `users` | Usuários/admins e cargos |
 | 10 | Auditoria | `history` | Histórico global de ações |
+
+> **Aba planejada — Gestão de Vendas [PLANEJADO]:** vendas internas do Site Público com pagamento pelo Mercado Pago (§4.8). Decisão do dono (2026-11-08): entrará na **posição 6** da barra lateral esquerda (logo abaixo de `Gestão de Produtos`, deslocando `Gestão de Dicas` a `Auditoria` para as posições 7 a 11), dividida em 2 subabas horizontais (**Pedidos | Produtos Internos**) e vinculada à permissão própria **`Gestão de Vendas`**. Ainda não existe no código nem em `lib/domain/permissions.js`.
 
 > **Ícones das abas:** todos os itens utilizam **ícones SVG vetoriais** de família única e traço uniforme (`AppIcon` em `components/UI/icons.js`, `24×24`, `strokeWidth="2"`, `aria-hidden="true"`), garantindo nitidez, alinhamento óptico preciso e identificação imediata tanto no modo expandido quanto no modo recolhido ([ADR-0036](adr/0036-shared-visual-standard-and-admin-collapsible-sidebar.md)).
 
@@ -89,10 +91,11 @@ A correspondência entre as abas administrativas e suas abas públicas de exibi�
 | Posts/Artigos | Reflexões & Estudos |
 | Gestão de Músicas | Músicas |
 | Gestão de Vídeos | Vídeos |
-| Gestão de Produtos | Produtos Religiosos |
+| Gestão de Produtos | Produtos Religiosos — Modalidade A (cartões com link externo de marketplace) |
+| Gestão de Vendas [PLANEJADO] | Produtos Religiosos — Modalidade B (venda interna) + consulta de compras do visitante |
 | Gestão de Dicas | Dicas do Dia |
 
-Esse mapeamento deve ser mantido de forma consistente em toda a documentação.
+Esse mapeamento deve ser mantido de forma consistente em toda a documentação. As duas modalidades de Produtos Religiosos estão descritas em `docs/ARQUITETURA_SITE_PUBLICO.md` §3.5.
 
 ### 2.2 Particularidade exclusiva do Site Privado — Navegação lateral esquerda
 
@@ -125,6 +128,7 @@ Diferentemente do Site Público (que utiliza navegação horizontal abaixo do ba
 
 Subdivisões internas de segundo nível permanecem como controles horizontais enxutos no topo da área de conteúdo da respectiva aba principal (nunca aninhadas como árvore complexa na barra lateral):
 - **Posts/Artigos:** controle segmentado **"Posts | Categorias"** (§4.2).
+- **Gestão de Vendas [PLANEJADO]:** 2 subabas horizontais — **Pedidos** e **Produtos Internos** (§4.8).
 - **Segurança:** 4 subabas horizontais — Verificação de Integridade, Backup do Sistema, Rate Limiting e Cache do Sistema (§5.1).
 - **Usuários:** 2 subabas horizontais — Gestão de Usuários e Admins e Gestão de Cargos (§5.2).
 
@@ -143,7 +147,7 @@ Todas são construídas sobre `AdminCrudBase` (`components/Admin/AdminCrudBase.j
 
 - **Quantidade ilimitada:** Nas abas **Posts/Artigos**, **Gestão de Músicas**, **Gestão de Vídeos**, **Gestão de Produtos** e **Gestão de Dicas**, **não há limite de registros cadastrados**. É permitido cadastrar quantos registros forem necessários, independentemente de estarem com status **Rascunho** ou **Publicado**.
 - **Exibição exclusiva por publicação:** Somente registros com status **Publicado** são exibidos na aba pública correspondente, conforme o mapeamento da seção 2.1. Registros em **Rascunho** não devem ser exibidos no site público.
-- **Sem mistura de conteúdos:** Cada aba pública exibe exclusivamente os registros publicados de sua respectiva aba administrativa, sem misturar conteúdos entre diferentes categorias.
+- **Sem mistura de conteúdos:** Cada aba pública exibe exclusivamente os registros publicados de sua respectiva aba administrativa, sem misturar conteúdos entre diferentes categorias. A exceção é Produtos Religiosos, que reunirá na mesma vitrine os produtos de link externo (Gestão de Produtos) e os de venda interna (Gestão de Vendas, [PLANEJADO]), sempre identificados como modalidades distintas (`docs/ARQUITETURA_SITE_PUBLICO.md` §3.5).
 - **Reflexo da publicação:** Ao alterar um registro de **Rascunho** para **Publicado** (ou vice-versa), essa mudança deve refletir na aba pública correspondente, respeitando as regras acima.
 
 ## 4. Detalhe das abas de conteúdo
@@ -221,6 +225,7 @@ Todas são construídas sobre `AdminCrudBase` (`components/Admin/AdminCrudBase.j
 - **Relação com o público:** a descrição aparece sob o título no cartão. O erro "Video unavailable" vem do vídeo em si (removido, privado, bloqueado por direitos autorais ou sem permissão de incorporação), não do formulário.
 
 ### 4.5 Gestão de Produtos
+- **Finalidade:** gerenciar **exclusivamente** os produtos divulgados por **link externo** de marketplace — **Mercado Livre, Shopee e Amazon** — que levam o visitante ao anúncio na plataforma (Modalidade A de Produtos Religiosos, `docs/ARQUITETURA_SITE_PUBLICO.md` §3.5). A compra acontece no marketplace: esta aba não gerencia vendas internas, pedidos, pagamentos nem o Mercado Pago, e cliques ou direcionamentos aos marketplaces não são vendas do Caminhar. Venda interna é da Gestão de Vendas (§4.8).
 - **Botão:** "+ Novo Produto".
 - **Tabela:** ☰ | ID | Status | Imagem | Produto | Valor | Link | Ações. Vazio: "Nenhum produto cadastrado. Comece adicionando um!"
 - **Listagem e busca (2026-10-31):** a lista é paginada em **10 itens por página** (`Anterior`/`Próxima`/`Página X de Y`, mesmo padrão de Vídeos), ordenada pela curadoria manual (`position ASC, id ASC`, espelhando `"Posicionados"` na vitrine pública), e a busca do cabeçalho é **server-side** em nome/descrição (`GET /api/products?search=...`, filtro `ILIKE` antes da contagem e da paginação). O contador do topo mostra o **total do conjunto filtrado** (todas as páginas), não apenas os itens da página; alterar a busca volta para a página 1. Antes, a API admin devolvia só a primeira página (10 itens) e ignorava `search`: o 11º produto ficava invisível e a busca parecia não filtrar.
@@ -230,7 +235,7 @@ Todas são construídas sobre `AdminCrudBase` (`components/Admin/AdminCrudBase.j
   - Imagens do Produto * — upload pelo botão "Adicionar imagem" (preview com remoção) **ou** colar URLs, uma por linha; a primeira imagem é a capa e as demais formam o carrossel.
   - Descrição ("Detalhes sobre o produto...")
   - Categoria (ex.: "livros", "terços"; vazio vira "geral") — alimenta o filtro de categoria da vitrine.
-  - Link do Produto + botão secundário "Puxar Dados" (com ícone SVG `zap`) — aceita links da **Amazon, Mercado Livre e Shopee** e preenche nome, imagem e descrição lendo as meta tags da página. **O preço não é importado do Mercado Livre**: o botão deixa o campo vazio e avisa para digitar o valor. Motivo (confirmado em 29/10/2026): desde abr/2025 a API do ML exige token OAuth — sem credencial, `/items` responde 403 e `/products` 401, e o preview servido ao robô de link-preview não traz preço. Com `ML_ACCESS_TOKEN` configurado no ambiente, a rota consulta `/items/{wid}` e passa a trazer preço e carrossel. Amazon e Shopee também podem falhar por anti-bot (preenchimento manual nesse caso).
+  - Link do Produto * ([PLANEJADO] — hoje ainda opcional no schema de `pages/api/products.js`; decidido pelo dono em 2026-11-08 torná-lo obrigatório para que nenhum cartão da Modalidade A fique sem botão, ver `docs/ARQUITETURA_SITE_PUBLICO.md` §7, item 22) + botão secundário "Puxar Dados" (com ícone SVG `zap`) — aceita links da **Amazon, Mercado Livre e Shopee** e preenche nome, imagem e descrição lendo as meta tags da página. **O preço não é importado do Mercado Livre**: o botão deixa o campo vazio e avisa para digitar o valor. Motivo (confirmado em 29/10/2026): desde abr/2025 a API do ML exige token OAuth — sem credencial, `/items` responde 403 e `/products` 401, e o preview servido ao robô de link-preview não traz preço. Com `ML_ACCESS_TOKEN` configurado no ambiente, a rota consulta `/items/{wid}` e passa a trazer preço e carrossel. Amazon e Shopee também podem falhar por anti-bot (preenchimento manual nesse caso).
   - Produto Publicado — **desmarcado por padrão** desde 29/10/2026 (ADR-0029: todo conteúdo nasce rascunho); marcar publica o produto na vitrine (selo "Publicado"). "Desmarque para transformar o produto em um Rascunho (ocultar da vitrine pública)."
   - Botão "Salvar Produto"
 - **Regra única de nascimento (ADR-0029, 29/10/2026):** todos os tipos de conteúdo — Posts, Músicas, Vídeos, Produtos e Dicas — nascem como **rascunho** (`DEFAULT false` no banco; toggle dos formulários desmarcado). Nada é publicado sem ação consciente do operador.
@@ -255,6 +260,26 @@ Todas são construídas sobre `AdminCrudBase` (`components/Admin/AdminCrudBase.j
 - **Botões:** "Atualizar Imagem" (envia a imagem recortada para `/api/upload-image`), "Cancelar" (descarta seleção/recorte em andamento) e "Salvar Configurações" (salva `site_title` e `site_subtitle` em `/api/settings`).
 - **Visualização:** bloco de prévia ao vivo exibindo título, subtítulo e a imagem principal (nova seleção ou banner atual salvo em `home_image_url`).
 - **Relação com o público:** controla o cabeçalho e o banner que aparecem em todas as abas do site (e `site_title` no SEO do blog — ADR-0032). O cabeçalho da home pública aplica caixa alta ao título via CSS (`text-transform: uppercase` em `Home.module.css`).
+
+### 4.8 Gestão de Vendas [PLANEJADO]
+- **Estado (2026-11-08):** não implementada. Não há aba, permissão, rota, tabela nem integração com o Mercado Pago no código.
+- **Finalidade:** gerenciar o **fluxo comercial interno** do projeto — as vendas feitas pelo próprio Site Público com os produtos oferecidos para compra direta na aba Produtos Religiosos (Modalidade B, `docs/ARQUITETURA_SITE_PUBLICO.md` §3.5).
+- **Escopo definido pelo dono:**
+  - cadastros relacionados às vendas internas — inclusive os produtos oferecidos para compra direta, já que a Gestão de Produtos é exclusiva de links externos (§4.5);
+  - consulta e gerenciamento das vendas realizadas pelo Site Público;
+  - acompanhamento das informações dos pedidos e da situação dos pagamentos;
+  - gerenciamento dos recebimentos por PIX, cartão de débito, cartão de crédito e boleto;
+  - integração com o **Mercado Pago** para processar e acompanhar os pagamentos.
+- **Fora do escopo:** compras feitas no Mercado Livre, na Shopee ou na Amazon e os cliques ou direcionamentos para essas plataformas (Modalidade A). Nunca misturá-los com os pedidos internos.
+- **Relação com o público:** os pedidos gerenciados aqui são os mesmos que o comprador consulta na sua conta (`docs/ARQUITETURA_SITE_PUBLICO.md` §5.1).
+- **Comportamento e estrutura definidos pelo dono (2026-11-08):**
+  - **Posição e permissão:** **posição 6** na barra lateral esquerda (logo abaixo de `Gestão de Produtos`), com permissão própria **`Gestão de Vendas`** em `lib/domain/permissions.js` e na Gestão de Cargos (§6 e §9).
+  - **Subaba 1 — "Pedidos":** listagem paginada (10 itens por página), busca server-side, filtros por status de pagamento, status do pedido e meio de pagamento (PIX, débito, crédito, boleto), exportação CSV e visão detalhada do pedido (comprador vinculado à tabela `customers`, endereço de entrega, item e quantidade, valor unitário, frete, valor total e identificador/transação do Mercado Pago).
+  - **Subaba 2 — "Produtos Internos":** CRUD completo dos produtos de venda direta (Modalidade B), construído sobre `AdminCrudBase` (§3), com curadoria por posição (`☰`, 1-based), nome *, valor * (`> 0`), imagens *, descrição, categoria, **estoque disponível** *, **configuração de frete** (grátis, valor fixo por produto ou calculado) e status `Rascunho` / `Publicado` (nascendo rascunho — ADR-0029). Na vitrine pública, esses produtos exibem o selo `"Venda direta"` e o botão **"Comprar"** (ou estado esgotado quando estoque = `0`).
+  - **Dois status independentes por venda:**
+    - **Status do Pagamento** (sincronizado com o Mercado Pago via Checkout Transparente / Payment Brick + Webhook): `Pendente`, `Aprovado`, `Recusado`, `Cancelado`, `Reembolsado`.
+    - **Status do Pedido / Entrega** (gerenciado pelo operador): `Aguardando pagamento`, `Em preparo`, `Enviado` (com campo para código de rastreio), `Entregue`, `Cancelado`.
+  - **Auditoria:** toda criação, edição, exclusão ou reordenação de produto interno e toda atualização operacional de pedido gera registro em `activity_logs` com identificador real (§5.3 e §9).
 
 ## 5. Segurança, Usuários e Auditoria
 
@@ -316,6 +341,7 @@ Barra interna horizontal com 4 subabas e ícones SVG vetoriais (`AppIcon`): `shi
 | Gestão de Músicas | `music` — Gestão de Músicas |
 | Gestão de Vídeos | `video` — Gestão de Vídeos |
 | Gestão de Produtos | `package` — Gestão de Produtos |
+| Gestão de Vendas | `shoppingBag` — Gestão de Vendas |
 | Gestão de Dicas | `lightbulb` — Gestão de Dicas |
 | Configuração de Cabeçalho | `palette` — Configuração de Cabeçalho |
 | Segurança | `lock` — Segurança |
@@ -329,15 +355,16 @@ Barra interna horizontal com 4 subabas e ícones SVG vetoriais (`AppIcon`): `shi
 | Posts/Artigos | Reflexões & Estudos | Somente registros **publicados** aparecem em cartões/páginas da aba Reflexões & Estudos. Registros em **Rascunho** não são exibidos. |
 | Gestão de Músicas | Músicas | Somente registros **publicados** aparecem na grade da aba Músicas. Registros em **Rascunho** não são exibidos. |
 | Gestão de Vídeos | Vídeos | Somente registros **publicados** aparecem na grade da aba Vídeos. Registros em **Rascunho** não são exibidos. |
-| Gestão de Produtos | Produtos Religiosos | Somente registros **publicados** aparecem na vitrine da aba Produtos Religiosos. Registros em **Rascunho** não são exibidos. |
+| Gestão de Produtos | Produtos Religiosos (Modalidade A) | Somente registros **publicados** aparecem na vitrine da aba Produtos Religiosos, como cartões com botão **"Link para `<site>`"** para Mercado Livre, Shopee ou Amazon. Registros em **Rascunho** não são exibidos. |
+| Gestão de Vendas | Produtos Religiosos (Modalidade B) e conta do visitante | Produtos de venda interna com botão "Comprar" e pagamento pelo Mercado Pago; os pedidos resultantes são gerenciados no painel e consultados pelo comprador na sua conta (`docs/ARQUITETURA_SITE_PUBLICO.md` §3.5 e §5.1). |
 | Gestão de Dicas | Dicas do Dia | Somente registros **publicados** aparecem no bloco "Dicas do Dia" no fim de todas as abas. Registros em **Rascunho** não são exibidos. |
 | Configuração de Cabeçalho | Todas as abas públicas | Título, subtítulo e banner 1100×320 de todas as abas |
 | Cache do Sistema | Todas as abas públicas | Se uma alteração não aparecer no site, limpar o cache Redis |
 
 **Regras gerais de exibição:**
-- Não há limite de quantidade de registros cadastrados nas cinco abas administrativas acima, seja o status **Rascunho** ou **Publicado**.
+- Não há limite de quantidade de registros cadastrados nas cinco abas administrativas de conteúdo acima (Posts/Artigos, Gestão de Músicas, Gestão de Vídeos, Gestão de Produtos e Gestão de Dicas), seja o status **Rascunho** ou **Publicado**.
 - A quantidade de registros **publicados** exibidos no site público não está sujeita a um limite definido por essas regras — são exibidos todos os registros com status **Publicado** de cada respectiva aba.
-- Cada aba pública apresenta exclusivamente os registros publicados de sua aba administrativa correspondente, sem mistura de conteúdos entre categorias diferentes.
+- Cada aba pública apresenta exclusivamente os registros publicados de sua aba administrativa correspondente, sem mistura de conteúdos entre categorias diferentes (exceção controlada: Produtos Religiosos, §3.1).
 
 A aba pública "Em Desenvolvimento" não tem gestão no painel.
 
@@ -383,10 +410,17 @@ A aba pública "Em Desenvolvimento" não tem gestão no painel.
 | 19 | **Semântica unificada de botões:** convergir cores divergentes de botões no painel (`components/Admin/styles/crud.module.css`, `AdminAudit.js`, `pages/admin.js` — verde em criar/editar/exportar-auditoria, azul-info em exportar-CRUD, cinza sólido em cancelar/paginar) para o padrão compartilhado com o Site Público (primário `--color-primary-500`, secundário neutro com borda `--color-border-light`, perigo `--color-error-500`). | **implementado em 2026-11-07 (ADR-0036)** — todos os estilos administrativos (`crud.module.css`, `form.module.css`, `misc.module.css`, `tabs.module.css`, `login.module.css`) convergiram para primário `--color-primary-500`, secundário neutro com borda `--color-border-light` e perigo `--color-error-500` |
 | 20 | **Arredondamentos, barras de busca e estilos inline:** padronizar raios em `--border-radius-lg` (`8px`) para controles/botões/inputs (incluindo `components/UI/Button.module.css` e `Input.module.css`, hoje em `12px`) e `--border-radius-xl` (`12px`) para cards/painéis, migrando campos de busca e tabelas com estilos inline (`AdminCrudBase.js`, `AdminAudit.js`, `pages/admin.js`) para CSS Modules com lupa SVG, botão limpar e anel de foco duplo azul. | **implementado em 2026-11-07 (ADR-0036)** — raios padronizados em `8px`/`12px` nos primitivos `components/UI/` e CSS do painel; barras de busca, filtros e tabelas migrados de `style` inline para CSS Modules com lupa SVG, botão interno de limpeza e foco duplo azul; removidos seletores mortos duplicados em `misc.module.css` e `crud.module.css` |
 
+**Vendas internas**
+
+| # | Item | Status |
+|---|---|---|
+| 21 | **Gestão de Vendas (§4.8):** aba administrativa de vendas internas, permissão `Gestão de Vendas`, subabas "Pedidos" e "Produtos Internos", tabelas `customers`/`orders`/`payment_webhook_events` e integração com o Mercado Pago. | **implementado em 2026-11-08 (ADR-0037)** — aba adicionada na posição 6 da barra lateral (`pages/admin.js`, `components/Admin/AdminSales.js`), rotas `/api/admin/orders` e `/api/admin/internal-products` protegidas por `Gestão de Vendas`, auditoria completa e sincronização via Mercado Pago + Webhook (`docs/ARQUITETURA_SITE_PUBLICO.md` §7, itens 20 a 22) |
+
 ## 9. Regras de proteção do painel administrativo
 - Não renomear abas, permissões nem a ordem das abas sem pedido; renomear uma permissão exige migração dos cargos já salvos.
 - A navegação principal do painel segue o modelo exclusivo de **barra vertical na lateral esquerda** com modos recolhido (somente ícones) e expandido (ícones + nomes das abas) e controle suave de alternância (§2.2); não aplicar essa barra lateral automaticamente ao Site Público.
 - Toda nova aba do painel deve ter uma permissão correspondente em Gestão de Cargos e aparecer na tabela da seção 6.
+- **Gestão de Produtos × Gestão de Vendas:** a Gestão de Produtos (§4.5) cuida só dos produtos com link externo de marketplace (Mercado Livre, Shopee, Amazon); a Gestão de Vendas (§4.8, [PLANEJADO]) cuida só das vendas internas pagas pelo Mercado Pago. Não misturar pedidos internos com compras, cliques ou direcionamentos para os marketplaces, nem levar pagamento ou pedido para a Gestão de Produtos.
 - **Proteção do `admin` (implementadas — ver §8, item 8):**
   - O usuário `admin` e o cargo `admin` não podem ser excluídos: a API deve recusar a exclusão e o painel não deve oferecer a ação.
   - O usuário `admin` vem e permanece vinculado ao cargo `admin`; esse vínculo não pode ser alterado.

@@ -44,6 +44,12 @@ jest.mock('../../../components/Admin/AdminProducts', () => {
   };
 });
 
+jest.mock('../../../components/Admin/AdminSales', () => {
+  return function DummyAdminSales() {
+    return <div data-testid="admin-sales">Painel Vendas</div>;
+  };
+});
+
 jest.mock('../../../components/Admin/AdminDicas', () => {
   return function DummyAdminDicas() {
     return <div data-testid="admin-dicas">Painel Dicas</div>;
@@ -94,6 +100,7 @@ const CANONICAL_TABS = [
   'Gestão de Músicas',
   'Gestão de Vídeos',
   'Gestão de Produtos',
+  'Gestão de Vendas',
   'Gestão de Dicas',
   'Configuração de Cabeçalho',
   'Segurança',

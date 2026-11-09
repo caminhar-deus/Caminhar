@@ -398,4 +398,19 @@ describe('Componentes Features - Products - ProductList', () => {
     expect(lastUrl).toContain('sort=positioned');
     expect(lastUrl).toContain('page=1');
   });
+
+  it('deve permitir filtrar por modalidade (Venda direta / Lojas parceiras)', () => {
+    setupApiMock();
+
+    render(<ProductList />);
+
+    const modalitySelect = screen.getByLabelText('Filtrar por modalidade');
+    expect(modalitySelect).toHaveValue('');
+
+    fireEvent.change(modalitySelect, { target: { value: 'internal' } });
+    expect(mockUseApiFetch.mock.calls.at(-1)?.[0]).toContain('&modality=internal');
+
+    fireEvent.change(modalitySelect, { target: { value: 'external' } });
+    expect(mockUseApiFetch.mock.calls.at(-1)?.[0]).toContain('&modality=external');
+  });
 });

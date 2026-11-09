@@ -43,14 +43,14 @@ describe('Utilitários CRUD genéricos (lib/crud/crud.js)', () => {
     it('deve montar a query de INSERT corretamente', async () => {
       query.mockResolvedValueOnce({ rows: [{ id: 10, name: 'John' }] });
       
-      // 'customers' não está no tableSchemas, então não há filtro de schema
+      // 'clients' não está no tableSchemas, então não há filtro de schema
       // Todos os campos passam direto
-      const result = await createRecord('customers', { name: 'John', age: 30 });
+      const result = await createRecord('clients', { name: 'John', age: 30 });
       
       expect(result).toEqual({ id: 10, name: 'John' }); // Retorna o primeiro item (rows[0])
       
       expect(query).toHaveBeenCalledWith(
-        expect.stringMatching(/INSERT INTO customers \(name, age\)\s+VALUES \(\$1, \$2\)\s+RETURNING \*/),
+        expect.stringMatching(/INSERT INTO clients \(name, age\)\s+VALUES \(\$1, \$2\)\s+RETURNING \*/),
         ['John', 30],
         { client: undefined }
       );
@@ -61,11 +61,11 @@ describe('Utilitários CRUD genéricos (lib/crud/crud.js)', () => {
     it('deve montar a query de UPDATE e o array de valores (data + where) corretamente', async () => {
       query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
       
-      // 'customers' não está no tableSchemas, então não há filtro de schema
-      await updateRecords('customers', { status: 'active', role: 'admin' }, { id: 1, tenant_id: 5 });
+      // 'clients' não está no tableSchemas, então não há filtro de schema
+      await updateRecords('clients', { status: 'active', role: 'admin' }, { id: 1, tenant_id: 5 });
       
       expect(query).toHaveBeenCalledWith(
-        expect.stringMatching(/UPDATE customers\s+SET status = \$1, role = \$2\s+WHERE id = \$3 AND tenant_id = \$4\s+RETURNING \*/),
+        expect.stringMatching(/UPDATE clients\s+SET status = \$1, role = \$2\s+WHERE id = \$3 AND tenant_id = \$4\s+RETURNING \*/),
         ['active', 'admin', 1, 5],
         { client: undefined }
       );

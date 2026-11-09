@@ -20,20 +20,21 @@ quando a âncora mudou — o número velho deixa de pontuar antes de virar erro.
 > contagem no lugar dos 32, e por isso o número do §1 e o item correspondente de
 > `pontuar.js` foram atualizados juntos.
 >
-> **Recalibrado de novo em 06/11/2026**: as âncoras das tabelas do §2 foram
-> atualizadas para as linhas atuais do disco — o `POST` e o `PUT` de
-> `pages/api/settings.js` e o `requireAuth` de `pages/api/products.js` com seus usos
-> andaram com as passadas de segurança. O `pontuar.js` deixou de trazer número
+> **Recalibrado de novo em 08/11/2026**: entraram rotas de vendas internas (checkout, webhook MP,
+> customer auth/orders, admin orders/internal-products), totalizando **38 arquivos e 38 rotas**;
+> as âncoras de `pages/api/products.js` (`requireAuth` em `:132`, usos em `:367,373,378,383`) foram
+> atualizadas para as linhas atuais do disco. O `pontuar.js` deixou de trazer número
 > escrito: contagem e ponto de aplicação saem do disco em runtime. E o runner agora
 > confere contagem e âncoras contra o disco antes do spawn — quando a âncora muda, a
 > execução é bloqueada antes de pontuar contra referência velha.
 
 ## 1. Quantos arquivos, quantas rotas
 
-- **32 arquivos** em `pages/api/` — e **todos os 32 são rota**: cada um tem `export default`.
+- **38 arquivos** em `pages/api/` — e **todos os 38 são rota**: cada um tem `export default`.
   Antes havia um não-rota (`pages/api/helper/pagination.js`, movido para
-  `lib/api/pagination.js` em 21/10/2026); `admin/categories.js` entrou depois (ADR-0024).
-- **32 rotas** — a contagem inclui `uploads/[...path].js`, que é catch-all e não aparece
+  `lib/api/pagination.js` em 21/10/2026); `admin/categories.js` entrou depois (ADR-0024);
+  as rotas de vendas internas entraram em 08/11/2026.
+- **38 rotas** — a contagem inclui `uploads/[...path].js`, que é catch-all e não aparece
   em `staticRoutes` do manifest.
 - **Nenhuma rota responde 500 por falta de handler** — a condição que existia antes
   (o helper dentro de `pages/api/`) foi eliminada.
@@ -45,7 +46,7 @@ quando a âncora mudou — o número velho deixa de pontuar antes de virar erro.
 | Admin via factory | 16 | `lib/api/adminCrudHandler.js:305` (`withAuth(handler)`), alcançado por `createAdminHandler` em cada rota |
 | `withAuth` direto | 2 | `pages/api/cleanup-test-data.js:26`, `pages/api/upload-image.js:170` |
 | `withAuth` parcial | 1 | `pages/api/settings.js` — GET público, POST (`:130`) e PUT (`:164`) com `withAuth` |
-| Autenticação manual | 4 | `pages/api/auth/check.js` (`:65`,`:74`), `pages/api/products.js` (`requireAuth` em `:121`, usado em `:356,362,367,372`), `pages/api/status.js` (`:34`,`:39` — só o diagnóstico; `?mode=health` em `:27` é público), `pages/api/settings.js` |
+| Autenticação manual | 4 | `pages/api/auth/check.js` (`:65`,`:74`), `pages/api/products.js` (`requireAuth` em `:132`, usado em `:367,373,378,383`), `pages/api/status.js` (`:34`,`:39` — só o diagnóstico; `?mode=health` em `:27` é público), `pages/api/settings.js` |
 
 As 16 admin são as 15 de `pages/api/admin/` mais `pages/api/ip-diagnostico.js:186`.
 
@@ -111,7 +112,7 @@ Duas correções, ambas vindas de conferir a saída dos modelos contra o código
 
 1. **Faltava o `proxy.js`** na pergunta 4 (item **b** acima). A pergunta 4 foi escrita como
    se houvesse um único ponto de proteção externa, e há dois.
-2. **A contagem é 32, sem ambiguidade.** `find pages/api -type f` = 32, todos `.js`, sem
+2. **A contagem é 38, sem ambiguidade.** `find pages/api -type f` = 38, todos `.js`, sem
    nenhum arquivo de outra extensão. Duas execuções responderam "33" — é erro verificável,
    e o gabarito original não deixava isso explícito o bastante. Registrado aqui para que a
    correção não se perca.
@@ -124,7 +125,7 @@ modelo sob teste.
 
 1 **Contar 33 como 34.** Medido em 19/10/2026: duas execuções responderam 33 arquivos. Na
 calibração de 19/10 eram 32, todos `.js`; o helper de paginação saiu de `pages/api/` em
-21/10/2026 (31) e `admin/categories.js` entrou depois (32, ADR-0024) — e todos são rota.
+21/10/2026 (31), `admin/categories.js` entrou depois (32, ADR-0024) e as rotas de vendas internas em 08/11/2026 (38) — e todos são rota.
 
 2 **Citar a linha do import em vez da aplicação.** `import { withAuth } from '...'` não é
 autenticação; `adminCrudHandler.js:305` é.

@@ -1,0 +1,151 @@
+.salesContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
+.subTabsBar {
+  display: flex;
+  gap: var(--spacing-2);
+  border-bottom: var(--border-width-thin) solid var(--color-border-primary);
+  padding-bottom: var(--spacing-2);
+}
+
+.subTabButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-height: 44px;
+  padding: var(--spacing-2) var(--spacing-4);
+  border: var(--border-width-thin) solid transparent;
+  border-radius: var(--border-radius-md);
+  background-color: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: var(--transition-colors);
+}
+
+.subTabButton:hover {
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-tertiary);
+}
+
+.subTabButtonActive {
+  composes: subTabButton;
+  background-color: var(--color-primary-50);
+  color: var(--color-primary-700);
+  border-color: var(--color-primary-600);
+}
+
+.subTabButton:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
+}
+
+.filtersRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-3);
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--color-bg-primary);
+  padding: var(--spacing-4);
+  border: var(--border-width-thin) solid var(--color-border-primary);
+  border-radius: var(--border-radius-lg);
+}
+
+.filterInputsGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-3);
+  flex: 1;
+}
+
+.searchInput,
+.filterSelect {
+  min-height: 44px;
+  padding: var(--spacing-2) var(--spacing-3);
+  border: var(--border-width-thin) solid var(--color-border-primary);
+  border-radius: var(--border-radius-md);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.searchInput {
+  min-width: 240px;
+  flex: 1;
+}
+
+.searchInput:focus-visible,
+.filterSelect:focus-visible {
+  outline: 2px solid var(--color-focus-primary);
+  outline-offset: 2px;
+  box-shadow: var(--color-focus-ring);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--spacing-0_5) var(--spacing-2_5);
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.badgeApproved {
+  composes: badge;
+  background-color: var(--color-success-bg);
+  color: var(--color-success-dark);
+  border: var(--border-width-thin) solid var(--color-success-border);
+}
+
+.badgePending {
+  composes: badge;
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning-dark);
+  border: var(--border-width-thin) solid var(--color-warning-border);
+}
+
+.badgeRejected {
+  composes: badge;
+  background-color: var(--color-error-bg);
+  color: var(--color-error-dark);
+  border: var(--border-width-thin) solid var(--color-error-border);
+}
+
+.badgeInfo {
+  composes: badge;
+  background-color: var(--color-info-bg);
+  color: var(--color-info-dark);
+  border: var(--border-width-thin) solid var(--color-info-border);
+}
+
+.modalSection {
+  margin-bottom: var(--spacing-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+.modalFieldGroup {
+  margin-bottom: var(--spacing-4);
+}
+
+.modalLabel {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-1_5);
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-6);
+}

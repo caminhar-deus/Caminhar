@@ -1,6 +1,6 @@
 # Caminhar — Design System (MASTER)
 
-> Última atualização: 2026-11-07 (alinhamento visual unificado entre Site Público e Painel Administrativo — ADR-0036: raios padronizados em `8px` para controles/inputs/botões e `12px` para cartões/painéis, elevação discreta `-3px` em hover, controles de Músicas harmonizados em `--color-primary-500` com rótulo `"Ordenar por:"`, ícones SVG vetoriais uniformes via `AppIcon` e override do painel em `design-system/pages/admin.md`. Anterior: 2026-10-21, decisões D1–D5 do checklist front-end).
+> Última atualização: 2026-11-08 (especificação das duas modalidades de Produtos Religiosos, páginas `/entrar`, `/minha-conta`, `/checkout/[id]` e aba administrativa `Gestão de Vendas` — ADR-0037. Anterior: 2026-11-07, alinhamento visual unificado entre Site Público e Painel Administrativo — ADR-0036).
 > Fonte de verdade global de UI/UX do projeto. Gerado com a skill `ui-ux-pro-max`
 > (`--design-system`: estilo **Minimalism & Swiss**, par editorial **Newsreader + Roboto**,
 > buscas de `ux` para autenticação acessível e validação com resumo de erros) e

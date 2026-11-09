@@ -24,7 +24,19 @@ export const EXPECTED_SCHEMA = {
     'id', 'titulo', 'artista', 'url_spotify', 'descricao', 'published', 'position', 'created_at', 'updated_at'
   ],
   products: [
-    'id', 'name', 'price', 'image_url', 'description', 'position', 'published', 'category', 'link', 'created_at', 'updated_at'
+    'id', 'name', 'price', 'image_url', 'description', 'position', 'published', 'category', 'link', 'modality', 'stock', 'shipping_type', 'shipping_cost', 'created_at', 'updated_at'
+  ],
+  customers: [
+    'id', 'name', 'email', 'password_hash', 'google_id', 'phone', 'address_json', 'last_login_at', 'created_at', 'updated_at'
+  ],
+  customer_refresh_tokens: [
+    'id', 'customer_id', 'token', 'expires_at', 'revoked', 'created_at'
+  ],
+  orders: [
+    'id', 'customer_id', 'product_id', 'product_name', 'unit_price', 'quantity', 'shipping_type', 'shipping_cost', 'total_amount', 'shipping_address', 'payment_method', 'payment_status', 'order_status', 'mp_payment_id', 'mp_payload', 'tracking_code', 'stock_restored', 'created_at', 'updated_at'
+  ],
+  payment_webhook_events: [
+    'id', 'event_key', 'mp_payment_id', 'action', 'processed_at'
   ],
   dicas: [
     'id', 'name', 'content', 'published', 'created_at', 'updated_at'

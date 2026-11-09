@@ -82,6 +82,43 @@
 }
 
 /* Card content */
+.modalityBadgeRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-2);
+}
+
+.modalityBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--spacing-0_5) var(--spacing-2_5);
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+.badgeInternal {
+  composes: modalityBadge;
+  background-color: var(--color-success-bg);
+  color: var(--color-success-dark);
+  border: var(--border-width-thin) solid var(--color-success-border);
+}
+
+.badgeExternal {
+  composes: modalityBadge;
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
+  border: var(--border-width-thin) solid var(--color-border-primary);
+}
+
+.stockHint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
 .productName {
   margin: 0 0 var(--spacing-2) 0;
   font-size: var(--font-size-xl);
@@ -148,6 +185,25 @@
   composes: linkButton;
   background-color: #ff9900;
   color: #fff;
+}
+
+.buyInternalButton {
+  composes: linkButton;
+  background-color: var(--color-primary-600);
+  color: var(--color-text-inverse);
+}
+
+.soldOutButton {
+  composes: linkButton;
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-tertiary);
+  border: var(--border-width-thin) solid var(--color-border-primary);
+  cursor: not-allowed;
+}
+
+.soldOutButton:hover {
+  opacity: 1;
+  transform: none;
 }
 
 .linkButton:hover {

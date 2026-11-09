@@ -14,6 +14,11 @@ const REQUIRED_VARS = [
 const OPTIONAL_VARS = [
   'ADMIN_USERNAME',
   'ADMIN_PASSWORD',
+  'MP_ACCESS_TOKEN',
+  'NEXT_PUBLIC_MP_PUBLIC_KEY',
+  'MP_WEBHOOK_SECRET',
+  'GOOGLE_CLIENT_ID',
+  'NEXT_PUBLIC_GOOGLE_CLIENT_ID',
   // 'UPSTASH_REDIS_REST_URL', // Opcional: Descomente se for usar Redis (Upstash)
   // 'UPSTASH_REDIS_REST_TOKEN' // Opcional: Descomente se for usar Redis (Upstash)
 ];

@@ -60,16 +60,24 @@ async function handlePublicGet(req, res) {
     }
     const sort = sortValidation.data;
 
+    // Valida modalidade opcional ('all' | 'internal' | 'external' | '')
+    const rawModality = typeof req.query.modality === 'string' ? req.query.modality : '';
+    if (rawModality && !['all', 'internal', 'external'].includes(rawModality)) {
+      return res.status(400).json({ error: 'Bad Request', message: INVALID_PARAMS_MESSAGE });
+    }
+    const modality = rawModality === 'internal' || rawModality === 'external' ? rawModality : '';
+
     // Extrai filtros opcionais da query string
     const filters = {
       search: req.query.search || '',
       minPrice: req.query.minPrice || '',
       maxPrice: req.query.maxPrice || '',
       category: req.query.category || '',
+      ...(modality ? { modality } : {}),
     };
 
-    // Inclui filtros E sort na cache key para evitar resultados incorretos em cache hits
-    const cacheKey = `products:public:${page}:${limit}:${sort}:${filters.search}:${filters.minPrice}:${filters.maxPrice}:${filters.category}`;
+    // Inclui filtros, modalidade E sort na cache key para evitar resultados incorretos em cache hits
+    const cacheKey = `products:public:${page}:${limit}:${sort}:${filters.search}:${filters.minPrice}:${filters.maxPrice}:${filters.category}:${modality || 'all'}`;
 
     // Rate limit ANTES do cache — garante proteção mesmo em cache hits
     const ip = getClientIP(req);
@@ -105,7 +113,10 @@ async function handleAdminGet(req, res) {
     // Busca server-side (antes era só local no painel e a API a ignorava).
     // `req.query.search` pode vir como array em querystrings duplicadas.
     const search = typeof req.query.search === 'string' ? req.query.search : '';
-    const result = await getAllProducts(page, limit, search);
+    const modality = typeof req.query.modality === 'string' ? req.query.modality : '';
+    const result = modality
+      ? await getAllProducts(page, limit, search, modality)
+      : await getAllProducts(page, limit, search);
     return res.status(200).json(result);
   } catch (error) {
     if (error.message === 'INVALID_PAGINATION_PARAMS') {

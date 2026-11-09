@@ -21,6 +21,7 @@ export default function ProductList() {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [category, setCategory] = useState('');
+  const [modality, setModality] = useState('');
   const [sortBy, setSortBy] = useState('default');
   const [pageLoading, setPageLoading] = useState(false);
   const listRef = useRef(null);
@@ -29,8 +30,8 @@ export default function ProductList() {
   // Unifica filtros em um único objeto com um único debounce
   // para evitar requisições desnecessárias ao backend
   const filters = useMemo(
-    () => ({ search: searchTerm, minPrice, maxPrice, category }),
-    [searchTerm, minPrice, maxPrice, category]
+    () => ({ search: searchTerm, minPrice, maxPrice, category, modality }),
+    [searchTerm, minPrice, maxPrice, category, modality]
   );
   const debouncedFilters = useDebounce(filters, 500);
 
@@ -45,6 +46,7 @@ export default function ProductList() {
     || debouncedFilters.minPrice
     || debouncedFilters.maxPrice
     || debouncedFilters.category
+    || debouncedFilters.modality
   );
 
   // Conta quantos filtros estão ativos
@@ -53,6 +55,7 @@ export default function ProductList() {
     debouncedFilters.minPrice,
     debouncedFilters.maxPrice,
     debouncedFilters.category,
+    debouncedFilters.modality,
   ].filter(Boolean).length;
 
   const limparFiltros = () => {
@@ -60,12 +63,14 @@ export default function ProductList() {
     setMinPrice('');
     setMaxPrice('');
     setCategory('');
+    setModality('');
   };
 
   let url = `/api/products?page=${currentPage}&limit=${itemsPerPage}&public=true&sort=${sortBy}&search=${encodeURIComponent(debouncedFilters.search)}`;
   if (debouncedFilters.minPrice) url += `&minPrice=${debouncedFilters.minPrice}`;
   if (debouncedFilters.maxPrice) url += `&maxPrice=${debouncedFilters.maxPrice}`;
   if (debouncedFilters.category) url += `&category=${encodeURIComponent(debouncedFilters.category)}`;
+  if (debouncedFilters.modality) url += `&modality=${encodeURIComponent(debouncedFilters.modality)}`;
 
   const { data: responseData, loading, error } = useApiFetch(url, {
     deps: [currentPage, debouncedFilters, sortBy],
@@ -174,6 +179,23 @@ export default function ProductList() {
             step="0.01"
             aria-label="Preço máximo"
           />
+        </div>
+
+        {/* Seletor de modalidade (Venda direta vs Lojas parceiras) */}
+        <div className={styles.sortWrapper}>
+          <label htmlFor="modality-filter-products" className={styles.sortLabel}>Modalidade:</label>
+          <select
+            id="modality-filter-products"
+            value={modality}
+            onChange={(e) => setModality(e.target.value)}
+            className={`${styles.sortSelect} ${pageLoading ? styles.sortSelectDisabled : ''}`}
+            aria-label="Filtrar por modalidade"
+            disabled={pageLoading}
+          >
+            <option value="">Todos</option>
+            <option value="internal">Venda direta</option>
+            <option value="external">Lojas parceiras</option>
+          </select>
         </div>
 
         {/* Seletor de categoria (facet da API) — antes da ordenação */}

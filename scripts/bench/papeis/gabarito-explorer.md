@@ -8,7 +8,7 @@ A passa de segurança de 21/10 mudou a superfície de `pages/api/`; a lista do g
 
 | # | Ponto | Evidência |
 |---|---|---|
-| 1 | Definição: `lib/auth/auth.js:324` | `export function withAuth(handler) {` |
+| 1 | Definição: `lib/auth/auth.js:329` | `export function withAuth(handler) {` |
 | 2 | `lib/api/adminCrudHandler.js:305` | `const authenticatedHandler = withAuth(handler);` — ponto único de entrada das rotas admin que usam o helper (comentário `:307-309`) |
 | 3 | `pages/api/upload-image.js:170` | `export default withAuth(handler);` |
 | 4 | `pages/api/settings.js:130` | `const handlePost = withAuth(async ...)` — usado pelo `POST` do handler default (`pages/api/settings.js:26`) |

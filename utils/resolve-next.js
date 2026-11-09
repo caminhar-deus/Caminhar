@@ -9,10 +9,10 @@
  * nem "\\", e ao resolver contra um host fixo precisa manter a mesma origem.
  * Qualquer outro valor cai para /admin (evita open redirect).
  */
-export function resolveNext(query) {
+export function resolveNext(query, defaultPath = '/admin') {
   const first = (value) => (Array.isArray(value) ? value[0] : value);
   const candidate = first(query?.next) || first(query?.returnUrl);
-  if (typeof candidate !== 'string') return '/admin';
+  if (typeof candidate !== 'string') return defaultPath;
   if (
     !candidate.startsWith('/') ||
     candidate.includes('//') ||
@@ -20,12 +20,12 @@ export function resolveNext(query) {
     // eslint-disable-next-line no-control-regex -- rejeição deliberada de controles (CRLF etc.)
     /[\x00-\x1F\x7F\\]/.test(candidate)
   ) {
-    return '/admin';
+    return defaultPath;
   }
   try {
     const resolved = new URL(candidate, 'https://x.local');
-    return resolved.origin === 'https://x.local' ? candidate : '/admin';
+    return resolved.origin === 'https://x.local' ? candidate : defaultPath;
   } catch {
-    return '/admin';
+    return defaultPath;
   }
 }

@@ -18,6 +18,7 @@
 │   │   ├── AdminPosts.js
 │   │   ├── AdminProducts.js
 │   │   ├── AdminRolesTab.js
+│   │   ├── AdminSales.js
 │   │   ├── AdminUsers.js
 │   │   ├── AdminUsersTab.js
 │   │   ├── AdminVideos.js
@@ -40,6 +41,7 @@
 │   │   │   └── UrlField.js
 │   │   ├── index.js
 │   │   ├── styles
+│   │   │   ├── AdminSales.module.css
 │   │   │   ├── adminPosts.module.css
 │   │   │   ├── crud.module.css
 │   │   │   ├── dashboard.module.css
@@ -154,6 +156,7 @@
 │   │   │   ├── AdminPosts.js.html
 │   │   │   ├── AdminProducts.js.html
 │   │   │   ├── AdminRolesTab.js.html
+│   │   │   ├── AdminSales.js.html
 │   │   │   ├── AdminUsers.js.html
 │   │   │   ├── AdminUsersTab.js.html
 │   │   │   ├── AdminVideos.js.html
@@ -282,6 +285,7 @@
 │   │   │   │   ├── AdminPosts.js.html
 │   │   │   │   ├── AdminProducts.js.html
 │   │   │   │   ├── AdminRolesTab.js.html
+│   │   │   │   ├── AdminSales.js.html
 │   │   │   │   ├── AdminUsers.js.html
 │   │   │   │   ├── AdminUsersTab.js.html
 │   │   │   │   ├── AdminVideos.js.html
@@ -398,6 +402,7 @@
 │   │   │   │   └── validate.js.html
 │   │   │   ├── auth
 │   │   │   │   ├── auth.js.html
+│   │   │   │   ├── customer-auth.js.html
 │   │   │   │   ├── index.html
 │   │   │   │   └── password-policy.js.html
 │   │   │   ├── cache
@@ -409,10 +414,12 @@
 │   │   │   ├── domain
 │   │   │   │   ├── audit.js.html
 │   │   │   │   ├── categories.js.html
+│   │   │   │   ├── customers.js.html
 │   │   │   │   ├── dicas.js.html
 │   │   │   │   ├── images.js.html
 │   │   │   │   ├── index.html
 │   │   │   │   ├── musicas.js.html
+│   │   │   │   ├── orders.js.html
 │   │   │   │   ├── permissions.js.html
 │   │   │   │   ├── posts.js.html
 │   │   │   │   ├── products.js.html
@@ -430,6 +437,9 @@
 │   │   │   │   ├── index.html
 │   │   │   │   ├── spotify.js.html
 │   │   │   │   └── youtube.js.html
+│   │   │   ├── payment
+│   │   │   │   ├── index.html
+│   │   │   │   └── mercadopago.js.html
 │   │   │   └── seo
 │   │   │       ├── config.js.html
 │   │   │       └── index.html
@@ -446,7 +456,9 @@
 │   │   │       │   ├── fetch-youtube.js.html
 │   │   │       │   ├── index.html
 │   │   │       │   ├── integrity.js.html
+│   │   │       │   ├── internal-products.js.html
 │   │   │       │   ├── musicas.js.html
+│   │   │       │   ├── orders.js.html
 │   │   │       │   ├── posts.js.html
 │   │   │       │   ├── rate-limit.js.html
 │   │   │       │   ├── roles.js.html
@@ -459,7 +471,12 @@
 │   │   │       │   ├── login.js.html
 │   │   │       │   ├── logout.js.html
 │   │   │       │   └── refresh.js.html
+│   │   │       ├── checkout.js.html
 │   │   │       ├── cleanup-test-data.js.html
+│   │   │       ├── customer
+│   │   │       │   ├── auth.js.html
+│   │   │       │   ├── index.html
+│   │   │       │   └── orders.js.html
 │   │   │       ├── dicas.js.html
 │   │   │       ├── helper
 │   │   │       │   ├── index.html
@@ -476,7 +493,10 @@
 │   │   │       ├── uploads
 │   │   │       │   ├── [...path].js.html
 │   │   │       │   └── index.html
-│   │   │       └── videos.js.html
+│   │   │       ├── videos.js.html
+│   │   │       └── webhooks
+│   │   │           ├── index.html
+│   │   │           └── mercadopago.js.html
 │   │   ├── prettify.css
 │   │   ├── prettify.js
 │   │   ├── sort-arrow-sprite.png
@@ -497,6 +517,7 @@
 │   │   │   └── validate.js.html
 │   │   ├── auth
 │   │   │   ├── auth.js.html
+│   │   │   ├── customer-auth.js.html
 │   │   │   ├── index.html
 │   │   │   └── password-policy.js.html
 │   │   ├── cache
@@ -508,10 +529,12 @@
 │   │   ├── domain
 │   │   │   ├── audit.js.html
 │   │   │   ├── categories.js.html
+│   │   │   ├── customers.js.html
 │   │   │   ├── dicas.js.html
 │   │   │   ├── images.js.html
 │   │   │   ├── index.html
 │   │   │   ├── musicas.js.html
+│   │   │   ├── orders.js.html
 │   │   │   ├── permissions.js.html
 │   │   │   ├── posts.js.html
 │   │   │   ├── products.js.html
@@ -529,6 +552,9 @@
 │   │   │   ├── index.html
 │   │   │   ├── spotify.js.html
 │   │   │   └── youtube.js.html
+│   │   ├── payment
+│   │   │   ├── index.html
+│   │   │   └── mercadopago.js.html
 │   │   └── seo
 │   │       ├── config.js.html
 │   │       └── index.html
@@ -545,7 +571,9 @@
 │   │       │   ├── fetch-youtube.js.html
 │   │       │   ├── index.html
 │   │       │   ├── integrity.js.html
+│   │       │   ├── internal-products.js.html
 │   │       │   ├── musicas.js.html
+│   │       │   ├── orders.js.html
 │   │       │   ├── posts.js.html
 │   │       │   ├── rate-limit.js.html
 │   │       │   ├── roles.js.html
@@ -558,7 +586,12 @@
 │   │       │   ├── login.js.html
 │   │       │   ├── logout.js.html
 │   │       │   └── refresh.js.html
+│   │       ├── checkout.js.html
 │   │       ├── cleanup-test-data.js.html
+│   │       ├── customer
+│   │       │   ├── auth.js.html
+│   │       │   ├── index.html
+│   │       │   └── orders.js.html
 │   │       ├── dicas.js.html
 │   │       ├── helper
 │   │       │   ├── index.html
@@ -575,7 +608,10 @@
 │   │       ├── uploads
 │   │       │   ├── [...path].js.html
 │   │       │   └── index.html
-│   │       └── videos.js.html
+│   │       ├── videos.js.html
+│   │       └── webhooks
+│   │           ├── index.html
+│   │           └── mercadopago.js.html
 │   ├── prettify.css
 │   ├── prettify.js
 │   ├── sort-arrow-sprite.png
@@ -679,6 +715,7 @@
 │   │   ├── 0034-standardize-admin-gestao-de-dicas-and-public-dicas-do-dia.md
 │   │   ├── 0035-full-ai-memory-activation-with-optional-llm.md
 │   │   ├── 0036-shared-visual-standard-and-admin-collapsible-sidebar.md
+│   │   ├── 0037-internal-sales-mercadopago-and-customer-accounts.md
 │   │   ├── README.md
 │   │   └── template.md
 │   ├── ai-memory-error.md
@@ -718,6 +755,7 @@
 │   │   └── utils.js
 │   ├── auth
 │   │   ├── auth.js
+│   │   ├── customer-auth.js
 │   │   └── password-policy.js
 │   ├── cache
 │   │   └── cache.js
@@ -726,9 +764,11 @@
 │   ├── domain
 │   │   ├── audit.js
 │   │   ├── categories.js
+│   │   ├── customers.js
 │   │   ├── dicas.js
 │   │   ├── images.js
 │   │   ├── musicas.js
+│   │   ├── orders.js
 │   │   ├── permissions.js
 │   │   ├── posts.js
 │   │   ├── products.js
@@ -744,6 +784,8 @@
 │   ├── media
 │   │   ├── spotify.js
 │   │   └── youtube.js
+│   ├── payment
+│   │   └── mercadopago.js
 │   └── seo
 │       └── config.js
 ├── load-tests
@@ -813,7 +855,9 @@
 │   │   │   ├── fetch-spotify.js
 │   │   │   ├── fetch-youtube.js
 │   │   │   ├── integrity.js
+│   │   │   ├── internal-products.js
 │   │   │   ├── musicas.js
+│   │   │   ├── orders.js
 │   │   │   ├── posts.js
 │   │   │   ├── rate-limit.js
 │   │   │   ├── roles.js
@@ -825,7 +869,11 @@
 │   │   │   ├── login.js
 │   │   │   ├── logout.js
 │   │   │   └── refresh.js
+│   │   ├── checkout.js
 │   │   ├── cleanup-test-data.js
+│   │   ├── customer
+│   │   │   ├── auth.js
+│   │   │   └── orders.js
 │   │   ├── dicas.js
 │   │   ├── ip-diagnostico.js
 │   │   ├── musicas.js
@@ -837,15 +885,22 @@
 │   │   ├── upload-image.js
 │   │   ├── uploads
 │   │   │   └── [...path].js
-│   │   └── videos.js
+│   │   ├── videos.js
+│   │   └── webhooks
+│   │       └── mercadopago.js
 │   ├── blog
 │   │   ├── Blog.module.css
 │   │   ├── [slug].js
 │   │   └── index.js
+│   ├── checkout
+│   │   └── [id].js
 │   ├── design-system.js
+│   ├── entrar.js
 │   ├── index.js
 │   ├── login.js
+│   ├── minha-conta.js
 │   └── styles
+│       ├── CustomerPages.module.css
 │       ├── DesignSystem.module.css
 │       ├── Home.module.css
 │       ├── Login.module.css
@@ -1074,6 +1129,7 @@
 │   │   ├── 020-unify-published-column.js
 │   │   ├── 021-videos-public-sort-support.js
 │   │   ├── 022-musicas-products-public-sort-support.js
+│   │   ├── 023-sales-customers-and-modalities.js
 │   │   ├── seed-migrations-table.js
 │   │   └── verify-applied.js
 │   ├── monitor-disk-space.js
@@ -1329,6 +1385,8 @@
 │       │   ├── api
 │       │   │   ├── helpers.ip.test.js
 │       │   │   └── permissions.test.js
+│       │   ├── auth
+│       │   │   └── customer-auth.test.js
 │       │   ├── auth.test.js
 │       │   ├── backup
 │       │   │   ├── backup.available.test.js
@@ -1351,12 +1409,15 @@
 │       │   ├── domain
 │       │   │   ├── categories.test.js
 │       │   │   ├── dicas.test.js
+│       │   │   ├── orders.test.js
 │       │   │   ├── permissions.test.js
 │       │   │   ├── products.test.js
 │       │   │   └── query-schemas.test.js
 │       │   ├── infra
 │       │   │   ├── logger.test.js
 │       │   │   └── redis.test.js
+│       │   ├── payment
+│       │   │   └── mercadopago.test.js
 │       │   ├── redis.test.js
 │       │   └── seo
 │       │       └── config.test.js
@@ -1385,7 +1446,10 @@
 │       │   │   └── upload-image.edge.test.js
 │       │   ├── blog.index.test.js
 │       │   ├── blog.slug.test.js
-│       │   └── index.test.js
+│       │   ├── checkout.test.js
+│       │   ├── entrar.test.js
+│       │   ├── index.test.js
+│       │   └── minha-conta.test.js
 │       ├── scripts
 │       │   ├── backup.test.js
 │       │   ├── bench-arvore.test.js
@@ -1437,4 +1501,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-207 directories, 1231 files
+219 directories, 1283 files

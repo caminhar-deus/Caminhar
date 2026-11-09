@@ -21,13 +21,14 @@ import { AppIcon } from '@/components/UI/icons';
 const normalizeCurrentUser = (user) =>
   user ? { ...user, permissions: toPermissionArray(user.permissions) } : user;
 
-// Ordem canônica das 10 abas principais (docs/ARQUITETURA_SITE_PRIVADO.md §2 e §9)
+// Ordem canônica das 11 abas principais (docs/ARQUITETURA_SITE_PRIVADO.md §2 e §9)
 const ADMIN_NAV_ITEMS = [
   { key: 'dashboard', permission: 'Visão Geral', label: 'Visão Geral', icon: 'chart' },
   { key: 'posts', permission: 'Posts/Artigos', label: 'Posts/Artigos', icon: 'fileText' },
   { key: 'musicas', permission: 'Gestão de Músicas', label: 'Gestão de Músicas', icon: 'music' },
   { key: 'videos', permission: 'Gestão de Vídeos', label: 'Gestão de Vídeos', icon: 'video' },
   { key: 'projetos02', permission: 'Gestão de Produtos', label: 'Gestão de Produtos', icon: 'package' },
+  { key: 'vendas', permission: 'Gestão de Vendas', label: 'Gestão de Vendas', icon: 'shoppingBag' },
   { key: 'dicas', permission: 'Gestão de Dicas', label: 'Gestão de Dicas', icon: 'lightbulb' },
   { key: 'header', permission: 'Configuração de Cabeçalho', label: 'Configuração de Cabeçalho', icon: 'palette' },
   { key: 'security', permission: 'Segurança', label: 'Segurança', icon: 'lock' },
@@ -101,6 +102,7 @@ import CacheManager from '../components/Admin/Managers/CacheManager';
 import AdminMusicas from '../components/Admin/AdminMusicas';
 import AdminVideos from '../components/Admin/AdminVideos';
 import AdminProducts from '../components/Admin/AdminProducts';
+import AdminSales from '../components/Admin/AdminSales';
 import AdminDicas from '../components/Admin/AdminDicas';
 import toast from 'react-hot-toast';
 import { Spinner } from '@/components/UI';
@@ -759,6 +761,10 @@ export default function Admin() {
 
               {activeTab === 'projetos02' && hasPermission('Gestão de Produtos') && (
                 <AdminProducts />
+              )}
+
+              {activeTab === 'vendas' && hasPermission('Gestão de Vendas') && (
+                <AdminSales />
               )}
             </section>
           </div>
