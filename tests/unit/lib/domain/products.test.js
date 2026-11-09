@@ -88,6 +88,24 @@ describe('Domínio - Products (lib/domain/products.js)', () => {
       );
       expect(result.pagination).toEqual({ page: 1, limit: 10, total: 2, totalPages: 1 });
     });
+
+    it('deve filtrar por modalidade (internal ou external) no WHERE', async () => {
+      query.mockResolvedValueOnce({ rows: [{ count: '1' }] });
+      query.mockResolvedValueOnce({ rows: [{ id: 5, name: 'Terço', modality: 'internal' }] });
+
+      const res = await getAllProducts(1, 10, 'Terço', 'internal');
+      expect(query.mock.calls[0][0]).toContain('modality = $2');
+      expect(query.mock.calls[0][1]).toEqual(['%Terço%', 'internal']);
+      expect(res.data).toHaveLength(1);
+
+      query.mockResolvedValueOnce({ rows: [{ count: '1' }] });
+      query.mockResolvedValueOnce({ rows: [{ id: 6, name: 'Externo', modality: 'external' }] });
+
+      const res2 = await getAllProducts(1, 10, '', 'external');
+      expect(query.mock.calls[2][0]).toContain('modality = $1');
+      expect(query.mock.calls[2][1]).toEqual(['external']);
+      expect(res2.data).toHaveLength(1);
+    });
   });
 
   describe('createProduct', () => {

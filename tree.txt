@@ -1202,7 +1202,9 @@
 │   │   │   │   ├── fetch-spotify.test.js
 │   │   │   │   ├── fetch-youtube.test.js
 │   │   │   │   ├── integrity.test.js
+│   │   │   │   ├── internal-products.test.js
 │   │   │   │   ├── musicas.test.js
+│   │   │   │   ├── orders.test.js
 │   │   │   │   ├── posts.test.js
 │   │   │   │   ├── rate-limit.test.js
 │   │   │   │   ├── roles.test.js
@@ -1215,7 +1217,11 @@
 │   │   │   │   ├── login.test.js
 │   │   │   │   ├── logout.test.js
 │   │   │   │   └── refresh.test.js
+│   │   │   ├── checkout.test.js
 │   │   │   ├── cleanup-test-data.test.js
+│   │   │   ├── customer
+│   │   │   │   ├── auth.test.js
+│   │   │   │   └── orders.test.js
 │   │   │   ├── dicas.test.js
 │   │   │   ├── ip-diagnostico.test.js
 │   │   │   ├── login.test.js
@@ -1247,7 +1253,9 @@
 │   │   │   ├── videos.flow.test.js
 │   │   │   ├── videos.integration.test.js
 │   │   │   ├── videos.pagination.api.test.js
-│   │   │   └── videos.test.js
+│   │   │   ├── videos.test.js
+│   │   │   └── webhooks
+│   │   │       └── mercadopago.test.js
 │   │   ├── auth
 │   │   │   └── auth.test.js
 │   │   └── domain
@@ -1408,6 +1416,7 @@
 │       │   ├── db.test.js
 │       │   ├── domain
 │       │   │   ├── categories.test.js
+│       │   │   ├── customers.test.js
 │       │   │   ├── dicas.test.js
 │       │   │   ├── orders.test.js
 │       │   │   ├── permissions.test.js
@@ -1501,4 +1510,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-219 directories, 1283 files
+221 directories, 1290 files
