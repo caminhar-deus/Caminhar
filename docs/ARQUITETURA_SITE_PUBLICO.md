@@ -2,7 +2,7 @@
 
 > Escopo: apenas a área pública (qualquer visitante). O painel administrativo está documentado em `docs/ARQUITETURA_SITE_PRIVADO.md`. Ambos os ambientes compartilham a mesma identidade visual (ancorada em `design-system/MASTER.md` e `pages/styles/variables.css`), preservando estruturas de navegação e responsabilidades próprias.
 > Fonte: 12 capturas de tela do site em desenvolvimento + código-fonte atual + diretrizes do dono do projeto.
-> Última atualização: 2026-11-08
+> Última atualização: 2026-11-09
 > Legenda: [PLANEJADO] = alvo ainda não implementado, informado pelo dono | [OBSERVADO] = visto nas imagens/estado legado | [HIPÓTESE] = inferido, confirmar antes de assumir.
 
 ---
@@ -15,10 +15,10 @@
 - **Idioma:** Português (pt-BR). Moeda: R$. Data no formato dd/mm/aaaa.
 - **Tecnologia:** Next.js com **Pages Router** (não existe App Router — decisão registrada em `docs/adr/0002-nextjs-pages-router.md`) e React. Estilização com **CSS Modules** e variáveis CSS (`pages/styles/variables.css`), sem Tailwind. A rota canônica de erro 404 (`pages/404.js`) trata requisições a rotas inexistentes e respostas SSR com `notFound: true`.
 - **Dados:** PostgreSQL acessado pelo pool `pg`, com SQL parametrizado e **sem ORM** (`docs/adr/0003-postgres-without-orm.md`); cache em dois níveis, Redis com fallback em memória (`docs/adr/0004-two-level-cache-with-memory-fallback.md`).
-- **Validação e autenticação:** Zod na validação de entrada; JWT em cookie http-only com RBAC (`docs/adr/0005-jwt-http-only-rbac.md`). Hoje essa autenticação atende **somente os operadores do painel**; contas de visitante estão planejadas (§5.1).
+- **Validação e autenticação:** Zod na validação de entrada; JWT em cookie http-only com RBAC (`docs/adr/0005-jwt-http-only-rbac.md`). Essa autenticação via `/login` atende os operadores do painel; contas de visitante do site público são gerenciadas via rotas dedicadas (`/entrar` e `/minha-conta` com tabela isolada `customers`, §5.1).
 - **Ferramentas de runtime e build:** Node.js e npm; next-sitemap na geração do sitemap e web-vitals nas métricas; `sharp` no processamento de imagens e `formidable` nos uploads.
 - **Qualidade e testes:** Jest e Testing Library nos testes unitários e de integração, Testcontainers para o PostgreSQL, Cypress no E2E e k6 em carga, performance e segurança; ESLint, dependency-cruiser e knip na qualidade do código.
-- **Rotas e layout geral:** página inicial única em `/` com navegação horizontal por abas trocadas no cliente, complementada pelas rotas públicas de leitura `/blog` (listagem paginada completa de reflexões) e `/blog/[slug]` (leitura individual do artigo) e pela rota de autenticação `/login` (ponte para o painel `/admin`, hoje exclusiva dos operadores; o acesso de visitantes é [PLANEJADO] — §5.1). Superfície clara sobre fundo cinza muito suave, tipografia editorial limpa e cartões brancos alinhados em grade responsiva.
+- **Rotas e layout geral:** página inicial única em `/` com navegação horizontal por abas trocadas no cliente, complementada pelas rotas públicas de leitura `/blog` (listagem paginada completa de reflexões) e `/blog/[slug]` (leitura individual do artigo), pela rota de autenticação `/login` (ponte para o painel `/admin`, exclusiva dos operadores) e pelas rotas de visitante `/entrar`, `/minha-conta` e `/checkout/[id]` (§5.1 e §3.5). Superfície clara sobre fundo cinza muito suave, tipografia editorial limpa e cartões brancos alinhados em grade responsiva.
 
 ### 1.1 Identidade visual e padrões de interface (alinhamento com o Site Privado)
 
@@ -71,7 +71,7 @@ O Site Público e o Site Privado (`docs/ARQUITETURA_SITE_PRIVADO.md` §1.1) segu
 
 Todas as abas da página inicial (`/`) compartilham o mesmo esqueleto:
 
-1. **Cabeçalho** — link de acessibilidade "Pular para o conteúdo principal" (`skip-link`), título "O CAMINHAR COM DEUS" (`h1` único, caixa alta via CSS, negrito, centralizado) + subtítulo centralizado (`--color-text-secondary`). Inclui a ação de acesso do visitante **"Entrar / Minha Conta"** ([PLANEJADO], §5.1).
+1. **Cabeçalho** — link de acessibilidade "Pular para o conteúdo principal" (`skip-link`), título "O CAMINHAR COM DEUS" (`h1` único, caixa alta via CSS, negrito, centralizado) + subtítulo centralizado (`--color-text-secondary`). Inclui a ação de acesso do visitante **"Entrar / Minha Conta"** (§5.1).
 2. **Banner principal (hero)** — área `1100×320 px` (`--border-radius-xl`, sombra `--shadow-md`). A imagem vem do painel admin: a home lê a configuração `home_image_url` (gravada pelo upload no painel) e a usa diretamente como `src` do `<img>`. Cada upload gera filename único (`hero-image-<uuid>.<ext>`), então a URL muda a cada troca e o cache do navegador por URL é seguro — a imagem nova aparece na próxima visita à home, sem janela de cache. Quando a setting não existe, o `<img>` usa o fallback `/api/placeholder-image`, que resolve o hero mais recente no servidor (cache HTTP curto, 5 min, sem `immutable`). É comum a todas as abas.
 3. **Barra de abas (navegação horizontal pública)** — posicionada horizontalmente e centralizada abaixo do banner (rolagem horizontal discreta sem barra aparente em telas estreitas), com 5 abas identificadas por ícone vetorial SVG à esquerda (`AppIcon`, `aria-hidden="true"`) e rótulo:
    | Ordem | Aba | Ícone SVG (`AppIcon`) | Estado |
@@ -85,7 +85,7 @@ Todas as abas da página inicial (`/`) compartilham o mesmo esqueleto:
 4. **Conteúdo da aba** (seção 3), renderizado em container `role="tabpanel"` vinculado por `aria-labelledby` à aba ativa, com altura mínima reservada para evitar deslocamento brusco do rodapé.
 5. **Dicas do Dia** — bloco fixo global, igual no encerramento de todas as abas (seção 4).
 
-> **Rotas públicas complementares:** `/blog` exibe a listagem paginada completa de Reflexões & Estudos e `/blog/[slug]` exibe a leitura integral de um artigo publicado, mantendo a mesma identidade tipográfica, cromática e de cartões da página inicial. Para a conta do visitante e compra interna ([PLANEJADO], §3.5 e §5.1), somam-se as rotas dedicadas `/entrar` (login/cadastro do visitante + Google) e `/minha-conta` (consulta de compras internas), mantendo `/login` exclusiva dos operadores do `/admin`.
+> **Rotas públicas complementares:** `/blog` exibe a listagem paginada completa de Reflexões & Estudos e `/blog/[slug]` exibe a leitura integral de um artigo publicado, mantendo a mesma identidade tipográfica, cromática e de cartões da página inicial. Para a conta do visitante e compra interna (§3.5 e §5.1), somam-se as rotas dedicadas `/entrar` (login/cadastro do visitante + Google), `/minha-conta` (consulta de compras internas) e `/checkout/[id]` (checkout transparente com Mercado Pago), mantendo `/login` exclusiva dos operadores do `/admin`.
 
 ### 2.1 Mapeamento entre abas (site privado × site público)
 
@@ -97,7 +97,7 @@ A correspondência entre as abas administrativas e suas abas públicas de exibi�
 | Gestão de Músicas | Músicas |
 | Gestão de Vídeos | Vídeos |
 | Gestão de Produtos | Produtos Religiosos — Modalidade A (cartões com link externo de marketplace) |
-| Gestão de Vendas [PLANEJADO] | Produtos Religiosos — Modalidade B (venda interna) + consulta de compras do visitante (§5.1) |
+| Gestão de Vendas | Produtos Religiosos — Modalidade B (venda interna) + consulta de compras do visitante (§5.1) |
 | Gestão de Dicas | Dicas do Dia |
 
 Esse mapeamento deve ser mantido de forma consistente em toda a documentação. Produtos Religiosos é a única aba pública com duas origens administrativas, e as duas não se misturam (§3.5).
@@ -144,24 +144,24 @@ Esse mapeamento deve ser mantido de forma consistente em toda a documentação. 
 ### 3.5 Produtos Religiosos
 - **Propósito:** vitrine de produtos religiosos com **duas modalidades de comercialização, sempre diferenciadas** — a Modalidade A leva o visitante a um marketplace externo; a Modalidade B vende pelo próprio site, com pagamento processado pelo Mercado Pago. Os itens de "Fonte de dados" até o aviso de afiliados descrevem a vitrine implementada hoje, que tem só a Modalidade A.
 
-| | Modalidade A — link externo de marketplace | Modalidade B — venda interna [PLANEJADO] |
+| | Modalidade A — link externo de marketplace | Modalidade B — venda interna |
 |---|---|---|
-| Estado | Implementada | Não implementada (nenhuma rota, tabela ou integração existe no código em 2026-11-08) |
+| Estado | Implementada | Implementada ([ADR-0037](adr/0037-internal-sales-mercadopago-and-customer-accounts.md), checkout transparente Mercado Pago, rotas `/checkout/[id]`, `/api/checkout` e `/api/webhooks/mercadopago`) |
 | Origem no painel | **Gestão de Produtos** (`docs/ARQUITETURA_SITE_PRIVADO.md` §4.5) | **Gestão de Vendas** (`docs/ARQUITETURA_SITE_PRIVADO.md` §4.8) |
-| Ação do cartão | Botão **"Link para `<site>`"** (ex.: "Link para Mercado Livre", "Link para Shopee", "Link para Amazon" — [PLANEJADO]; hoje no código ainda diz "Comprar") abre o anúncio em nova aba | Botão **Comprar** inicia o fluxo de compra do próprio site |
+| Ação do cartão | Botão **"Link para `<site>`"** (ex.: "Link para Mercado Livre", "Link para Shopee", "Link para Amazon") abre o anúncio em nova aba | Botão **Comprar** inicia o fluxo de compra do próprio site (ou exibe estado esgotado quando sem estoque) |
 | Onde a compra acontece | No marketplace de destino, que administra pedido, pagamento e entrega | No Site Público, com pagamento pelo Mercado Pago (PIX, cartão de débito, cartão de crédito, boleto bancário) |
 | Registro no Caminhar | Nenhum: não é venda interna, não é cobrança do Mercado Pago do projeto nem pedido consultável pelo visitante | Pedido gerenciado na Gestão de Vendas e consultável pelo comprador na sua conta (§5.1) |
 
 - **Fonte de dados (Modalidade A):** corresponde à aba administrativa **Gestão de Produtos** (§2.1). **Somente registros com status Publicado** são exibidos. Registros em **Rascunho** não são exibidos no site público.
 - **Cadastro ilimitado:** Não há limite de registros cadastrados na aba **Gestão de Produtos** do painel, seja qual for o status. Todos os registros **publicados** dessa aba são elegíveis para exibição nesta aba pública, sem limite definido por essas regras.
-- **Controles:** campo de busca "Buscar produtos por nome..." (com ícone de lupa); filtros de preço "Mín (R$)" e "Máx (R$)"; seletor "Categoria:" (aparece quando há categorias publicadas, com "Todas" como padrão); filtro de modalidade ("Todos", "Venda direta", "Lojas parceiras" — [PLANEJADO]); seletor "Ordenar por:" (depois do preço e antes do botão "Limpar filtros"). O filtro de categoria consulta o facet `categories` da API (categorias distintas dos produtos publicados).
+- **Controles:** campo de busca "Buscar produtos por nome..." (com ícone de lupa); filtros de preço "Mín (R$)" e "Máx (R$)"; seletor "Categoria:" (aparece quando há categorias publicadas, com "Todas" como padrão); filtro de modalidade ("Todos", "Venda direta", "Lojas parceiras"); seletor "Ordenar por:" (depois do preço e antes do botão "Limpar filtros"). O filtro de categoria consulta o facet `categories` da API (categorias distintas dos produtos publicados).
 - **Ordenação:** o seletor abre com a opção **Padrão** selecionada, que equivale a ordenar por "Mais recentes" (`created_at DESC, id DESC`); as demais opções são **"Posicionados"** (curadoria manual do painel, `position ASC, id ASC`), "Mais antigos" (`created_at ASC, id ASC`), "Menor preço" (`price ASC, id ASC`) e "Maior preço" (`price DESC, id DESC`). A ordenação é feita no **servidor** (parâmetro `sort` na API), não no cliente, com desempate determinístico por `id` em todas as opções. A opção "Posicionados" passou a ser exposta em 2026-10-21, depois de corrigido o reordenamento no painel (ver §7, item 11). Decisão registrada em [ADR-0016](adr/0016-seletor-de-ordenacao-de-produtos-no-servidor.md).
 - **Grade:** 3 colunas x 4 linhas = 12 itens por página (2 colunas em tablet, 1 coluna no mobile).
-- **Cartão de produto (Modalidade A):** imagem de capa/carrossel com abertura em lightbox → selo discreto de modalidade ("Loja parceira" — [PLANEJADO]) → título → descrição curta (`flex: 1`, até 3 linhas) → preço formatado (`R$ X,XX`) e botão/link externo para a loja parceira alinhados ao fundo do cartão (`BaseCard`). Decisão do dono (2026-11-08): na Gestão de Produtos o link externo passa a ser **obrigatório** e o botão do cartão deve exibir **"Link para `<site>`"** (ex.: "Link para Mercado Livre", "Link para Shopee", "Link para Amazon"), reservando o rótulo **"Comprar"** exclusivamente para a venda interna (Modalidade B). No código atual (`components/Features/Products/ProductCard.js` e `pages/api/products.js`), o botão externo ainda exibe "Comprar" e o `link` ainda é opcional (ver §7, item 22).
+- **Cartão de produto (Modalidade A):** imagem de capa/carrossel com abertura em lightbox → selo discreto de modalidade ("Loja parceira") → título → descrição curta (`flex: 1`, até 3 linhas) → preço formatado (`R$ X,XX`) e botão/link externo para a loja parceira alinhados ao fundo do cartão (`BaseCard`). Implementado em 2026-11-08 ([ADR-0037](adr/0037-internal-sales-mercadopago-and-customer-accounts.md)): na Gestão de Produtos o link externo é **obrigatório** e o botão do cartão exibe **"Link para `<site>`"** (ex.: "Link para Mercado Livre", "Link para Shopee", "Link para Amazon"), reservando o rótulo **"Comprar"** exclusivamente para a venda interna (Modalidade B).
 - **Contador:** "Mostrando X de Y produtos" ou "X resultados para \"termo\"" (quando há busca), em `--color-primary-500`.
 - **Paginação:** "❮ Anterior | Página X de Y (Z produtos) | Próxima ❯". "Anterior" fica desabilitado na página 1 e a "Próxima" na última; a paginação só aparece quando há mais de uma página.
 - **Cuidado:** links de afiliados exigem aviso de divulgação. Implementado em 2026-10-28 (decisão do dono): o rodapé da vitrine exibe "Alguns links são de afiliados: podemos receber uma comissão pelas compras realizadas, sem custo adicional para você." O aviso se refere à Modalidade A.
-- **Fluxo de compra interna (Modalidade B) [PLANEJADO — decisões do dono em 2026-11-08]:**
+- **Fluxo de compra interna (Modalidade B — ADR-0037):**
   1. O visitante acessa a aba Produtos Religiosos (podendo filtrar por `"Todos"`, `"Venda direta"` ou `"Lojas parceiras"`).
   2. Seleciona um produto de venda interna (identificado por selo discreto `"Venda direta"` e botão **"Comprar"**; se o estoque for `0`, o cartão exibe estado esgotado com botão desabilitado).
   3. Clica no botão **Comprar** e define a quantidade desejada (modelo de **compra direta do item**, sem carrinho multi-produto).
@@ -183,14 +183,12 @@ Esse mapeamento deve ser mantido de forma consistente em toda a documentação. 
 3. Em Reflexões: "Ler mais →" navega para `/blog/[slug]` (leitura completa); "Ver todas as postagens" navega para `/blog` (listagem paginada), preservando a mesma identidade visual.
 4. Em Músicas: busca, ordena, pagina; "Ouvir no Spotify" abre link externo em nova aba.
 5. Em Vídeos: busca, ordena, pagina; "Assistir no YouTube" abre o vídeo canônico em nova aba.
-6. Em Produtos: busca por nome, filtra por faixa de preço e categoria, ordena e pagina; nos cartões da Modalidade A, o clique abre a loja externa em nova aba. Nos cartões da Modalidade B [PLANEJADO], "Comprar" inicia a compra interna (§3.5).
+6. Em Produtos: busca por nome, filtra por faixa de preço e categoria, ordena e pagina; nos cartões da Modalidade A, o clique abre a loja externa em nova aba. Nos cartões da Modalidade B, "Comprar" inicia a compra interna (§3.5).
 7. Transição para área autenticada (`/login` → `/admin`): operadores que acessam o painel encontram a mesma família tipográfica, paleta clara e tokens de foco/componentes do site público, adaptados à estrutura lateral exclusiva do painel.
 
-### 5.1 Conta do visitante e consulta de compras [PLANEJADO]
+### 5.1 Conta do visitante e consulta de compras
 
-**Estado atual (2026-11-08):** não existe conta de visitante. A rota `/login` autentica apenas operadores do painel (`POST /api/auth/login` com `{ username, password }`; destino padrão `/admin`), a tabela `users` guarda os usuários do painel (`docs/ARQUITETURA_SITE_PRIVADO.md` §5.2) e a página inicial não tem ponto de entrada para login ou cadastro.
-
-**Alvo definido pelo dono (2026-11-08):**
+**Implementação ([ADR-0037](adr/0037-internal-sales-mercadopago-and-customer-accounts.md)):**
 - **Ponto de entrada e rotas públicas próprias:** botão **"Entrar"** (ou **"Minha Conta"** quando autenticado) no cabeçalho do Site Público (§2), que leva às rotas dedicadas `/entrar` (login e cadastro do visitante) e `/minha-conta` (painel de compras e dados do comprador), preservando `/login` exclusivamente para os operadores do `/admin`.
 - **Formas de acesso e cadastro em `/entrar`:**
   - Cadastro e autenticação convencionais do próprio site (nome, e-mail e senha com hash seguro).
@@ -201,13 +199,13 @@ Esse mapeamento deve ser mantido de forma consistente em toda a documentação. 
   - informações do pagamento (meio escolhido — PIX, débito, crédito ou boleto — e **status do pagamento** sincronizado do Mercado Pago: `Pendente`, `Aprovado`, `Recusado`, `Cancelado`, `Reembolsado`);
   - **andamento do pedido** (`Aguardando pagamento`, `Em preparo`, `Enviado` com código de rastreio e endereço de entrega, `Entregue`, `Cancelado`).
 - **Fora da consulta:** compras feitas no Mercado Livre, na Shopee ou na Amazon (Modalidade A) são administradas por essas plataformas e não aparecem como pedidos do Caminhar.
-- **Isolamento em relação ao painel (`/admin`):** clientes do site público ficam em tabela própria (`customers`, separada de `users`) e usam cookie/token de sessão exclusivo de cliente. Conta de visitante nunca concede acesso a `/admin` nem às rotas `/api/admin/*` (`docs/ARQUITETURA_SITE_PRIVADO.md` §5.2 e §9).
+- **Isolamento em relação ao painel (`/admin`):** clientes do site público ficam em tabela própria (`customers`, separada de `users`) e usam cookie/token de sessão exclusivo de cliente (`customerToken`, `scope: 'customer'`). Conta de visitante nunca concede acesso a `/admin` nem às rotas `/api/admin/*` (`docs/ARQUITETURA_SITE_PRIVADO.md` §5.2 e §9).
 
 ## 6. Origem dos dados
 - Banner, posts, músicas, vídeos, produtos e dicas são **todos** gerenciados pelo painel administrativo — cada um tem sua aba de CRUD lá (posts, músicas, vídeos, produtos, dicas, usuários e cargos). A hipótese foi confirmada no código.
 - **Fluxo de publicação:** Um registro é cadastrado em sua aba administrativa correspondente (Posts/Artigos, Gestão de Músicas, Gestão de Vídeos, Gestão de Produtos ou Gestão de Dicas). Pode permanecer como **Rascunho** ou ser alterado para **Publicado**. Enquanto em **Rascunho**, permanece disponível no painel, mas **não é exibido** na aba pública correspondente. Quando em **Publicado**, é **exibido** na aba pública correspondente (§2.1). Não há limite de cadastros nessas cinco abas, independentemente do status. A quantidade exibida no público corresponde a **todos os registros publicados** de cada respectiva aba, sem limite definido por essas regras.
 - Persistência: PostgreSQL, acessado pelo pool `pg` (ver §1).
-- **Vendas internas [PLANEJADO]:** produtos da Modalidade B, pedidos e pagamentos são gerenciados na aba **Gestão de Vendas** do painel (`docs/ARQUITETURA_SITE_PRIVADO.md` §4.8), com o status de pagamento vindo do Mercado Pago. Ainda não há tabela nem rota para esses dados.
+- **Vendas internas:** produtos da Modalidade B, pedidos e pagamentos são gerenciados na aba **Gestão de Vendas** do painel (`docs/ARQUITETURA_SITE_PRIVADO.md` §4.8), sincronizados com o Mercado Pago via webhook e persistidos nas tabelas `orders`, `customers` e `payment_webhook_events`.
 
 ## 7. Pendências e bugs conhecidos (prioridade)
 | # | Item | Prioridade | Status |

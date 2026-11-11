@@ -85,7 +85,7 @@ Detalhes de operação do slim (matriz de pesquisa websearch/webfetch/gh_grep/co
 - `codemap` e `clonedeps` (skills do slim) escrevem arquivos e o `clonedeps` clona repositórios: peça aprovação antes.
 
 ## 7. Definição de pronto
-1. Código compila/roda; testes existentes passam.
+1. Código compila/roda; testes existentes passam (incluindo testes de integração para APIs e fluxos críticos de pagamento/webhook e autenticação quando alterados).
 2. Design segue o MASTER (e o override da página).
 3. Correção ou melhoria: as pendências conhecidas da área (§0.3, passo 3) foram conferidas antes de propor a mudança.
 4. Revisão do checklist feita; pendências listadas.

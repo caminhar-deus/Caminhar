@@ -719,6 +719,7 @@
 │   │   ├── README.md
 │   │   └── template.md
 │   ├── ai-memory-error.md
+│   ├── melhoria_agente.md
 │   └── retorno_da_semana.md
 ├── eslint.config.js
 ├── estrutura.html
@@ -1462,6 +1463,7 @@
 │       ├── scripts
 │       │   ├── backup.test.js
 │       │   ├── bench-arvore.test.js
+│       │   ├── bench-citacoes.test.js
 │       │   ├── bench-ground-truth.test.js
 │       │   ├── bench-isolation.test.js
 │       │   ├── bench-papeis-runner.test.js
@@ -1510,4 +1512,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-221 directories, 1290 files
+221 directories, 1292 files

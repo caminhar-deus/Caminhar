@@ -1227,6 +1227,7 @@ tests/unit/pages/minha-conta.test.js → tests/helpers/index.js
 tests/unit/pages/minha-conta.test.js → tests/mocks/next-setup.js
 tests/unit/scripts/backup.test.js → scripts/backup.js
 tests/unit/scripts/bench-arvore.test.js → scripts/bench/arvore.js
+tests/unit/scripts/bench-citacoes.test.js → scripts/bench/citacoes.js
 tests/unit/scripts/bench-ground-truth.test.js → scripts/bench/ground-truth.js
 tests/unit/scripts/bench-ground-truth.test.js → scripts/bench/papeis/regressao-s1.js
 tests/unit/scripts/bench-isolation.test.js → scripts/bench/runner-comum.js

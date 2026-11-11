@@ -227,9 +227,12 @@ describe('Upload de imagem com disco real — ciclo completo do item U', () => {
     expect(fs.readdirSync(activeDir).filter((n) => n.startsWith('post-image-'))).toEqual([]);
     // O arquivo temporário do formidable é removido por um timer de ~1ms
     // (`PersistentFile.destroy` → `setTimeout` → `fs.unlink`), então a limpeza
-    // não é síncrona com o retorno do handler. Aguarde antes de exigir o
-    // diretório vazio.
-    await new Promise((r) => setTimeout(r, 100));
+    // não é síncrona com o retorno do handler. Polling com timeout teto garante
+    // que o teste não falhe intermitentemente em CI sob alta contenção de CPU/IO.
+    const deadline = Date.now() + 2000;
+    while (fs.readdirSync(activeDir).length > 0 && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 25));
+    }
     expect(fs.readdirSync(activeDir)).toEqual([]);
   });
 

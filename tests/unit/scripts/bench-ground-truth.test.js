@@ -18,6 +18,7 @@ import {
   inventarioApi,
   linhasDe,
   linhaUnica,
+  fatosOrchestrator,
   extrairCitacoesDeInstrumento,
   verificarInstrumento,
   exigirInstrumentoValido,
@@ -65,6 +66,21 @@ describe('inventário e linhas', () => {
     expect(linhaUnica(fixture, 'lib/foo.js', 'const b = 2;')).toBe(3);
     expect(() => linhaUnica(fixture, 'lib/foo.js', 'const marcador = true;')).toThrow(/2 ocorrências/);
     expect(() => linhaUnica(fixture, 'lib/foo.js', 'não existe')).toThrow(/nenhuma ocorrência/);
+  });
+});
+
+describe('fatosOrchestrator', () => {
+  it('deriva contagem de rotas e âncoras contra o repositório', () => {
+    const fatos = fatosOrchestrator(RAIZ_REPO);
+    expect(fatos.arquivos).toBeGreaterThan(0);
+    expect(fatos.rotas).toBeGreaterThan(0);
+    expect(fatos.withAuthHandler).toBeGreaterThan(0);
+    expect(fatos.ipDiagnostico).toBeGreaterThan(0);
+    expect(fatos.settingsPost).toBeGreaterThan(0);
+    expect(fatos.settingsPut).toBeGreaterThan(0);
+    expect(fatos.productsRequireAuth).toBeGreaterThan(0);
+    expect(Array.isArray(fatos.productsRequireAuthUsos)).toBe(true);
+    expect(fatos.productsRequireAuthUsos.length).toBeGreaterThan(0);
   });
 });
 
