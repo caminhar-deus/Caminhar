@@ -11,6 +11,13 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Adicionado
 
+- **Preflight de catálogo de modelos (12/11/2026):** `npm run models:check`
+  (`scripts/diagnostics/check-model-catalog.js` + funções puras em
+  `scripts/diagnostics/model-catalog.js`) cruza os modelos compilados dos agentes
+  (`opencode debug agents`) com `opencode models` e sai com código 1 listando os ids
+  mortos — id fora do catálogo não cai na reserva (`provider.no-route` não é failover).
+  Teste em `tests/unit/scripts/check-model-catalog.test.js`. Passo 6 do AGENTS.md §0.3.
+
 - **Ground truth derivado do disco e fail-fast nos benches (06/11/2026):**
   - `scripts/bench/ground-truth.js` (inventário de `pages/api/`, fatos, parser de citações e `verificarInstrumento`), `scripts/bench/citacoes.js` (resolvedor compartilhado), `scripts/bench/arvore.js` (guarda de árvore limpa e restauração NUL-safe) e `scripts/bench/runner-comum.js` (`STDIO`, execução de comando/sessão com timeout e `sessionID`, catálogo, classificação de saídas existentes e resumo de argumentos) — sem arquivo gerado ou cache: a verdade é lida da árvore de trabalho a cada execução.
   - `scripts/bench/orchestrator/rodar.js` e `scripts/bench/papeis/rodar.js`: preflight do instrumento antes de qualquer spawn, planejamento read-only (colisão de nome de saída e sessões do turno 2), validação de argumentos, `--dry-run` com os comandos reais e aborto quando `restaurarArvore()` falha. O runner de papéis passou a checar `verificarRegressao()` antes de plantar o S1 e grava `sessionID`/`excedeuTimeout` no `.meta.json`.
@@ -22,6 +29,11 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   - **Validação de Acesso à API do GitHub Actions:** Configuração e homologação de acesso via `GITHUB_TOKEN` em `.env.local` (HTTP 200, 360 workflow runs auditáveis).
 
 ### Alterado
+
+- **Retenção dos modelos conferida na fonte e `small_model` trocado (12/11/2026).**
+  - `opencode.jsonc`: `small_model` `mimo-v2.6-flash-free` → `minimax-m3.1-flash-free`. O mimo retém e usa os dados para treinar; o título de sessão é derivado do prompt. O minimax é zero-retention e já é o `oracle`.
+  - Verificação na página de modelos do Console: `deepseek`, `glm` e `minimax` (mais o `longcat`) são zero-retention; `big-pickle` (designer), `inkling` (explorer) e `iceman` (fixer) retêm e treinam. Papéis mantidos — a decisão e o risco aceito estão em `docs/adr/0008-modelos-free-por-agente-sem-repeticao.md` §"12/11/2026".
+  - O preset (`.opencode/oh-my-opencode-slim.json`) foi confirmado em vigor depois do restart: `oracle` → `minimax-m3.1-flash-free` e `designer` → `big-pickle`, com os cinco papéis spawnados e o `modelID` conferido no banco de sessões.
 
 - **Modelos FREE por agente — bateria 12×5 refeita e duas trocas (11/11/2026).**
   - Catálogo: 12 modelos free. Saiu `crouton-alpha-free` (o `designer` apontava para um id morto desde 07/11 e o papel estava parado), voltou `minimax-m3.1-flash-free` e entrou `longcat-2.5-free`.

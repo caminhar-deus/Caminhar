@@ -35,6 +35,7 @@ As regras de processo do agente ficam só neste arquivo; os documentos de arquit
 3. **Antes de corrigir ou melhorar**, veja as pendências conhecidas: §7 do documento público, §8 do documento privado.
 4. **Confirme no código** todo item `[HIPÓTESE]` e todo `[PLANEJADO]` — o `[PLANEJADO]` marca alvo ainda não implementado, então verifique se já foi feito antes de implementar de novo.
 5. **Implemente** e feche pelo §7 (Definição de pronto): atualize o documento e a data se a mudança foi estrutural.
+6. **Antes de confiar num modelo por papel**, rode `npm run models:check`: ele cruza os modelos compilados dos agentes com `opencode models` e falha listando os ids mortos. Id fora do catálogo falha em silêncio e a cadeia de reserva **não** assume (`provider.no-route` não é classificado como failover).
 
 ## 1. Idioma e estilo
 - Responder e comentar em português do Brasil. Código, nomes de arquivo e commits em inglês.

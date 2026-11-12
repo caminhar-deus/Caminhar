@@ -25,6 +25,7 @@
     "bench:orch:conferir": "node scripts/bench/orchestrator/conferir.js",
     "knip": "knip",
     "knip:watch": "knip --watch",
+    "models:check": "node scripts/diagnostics/check-model-catalog.js",
     "diag:actions": "node scripts/diagnostics/check-github-actions.js",
     "diag:lsp": "node scripts/diagnostics/lsp-reusable-workflow.js",
     "diag:reusable-workflow": "esbuild scripts/diagnostics/repro-reusable-workflow.js --bundle --platform=node --format=cjs --outfile=node_modules/.cache/diagnostics/repro-reusable-workflow.cjs --log-level=error && node node_modules/.cache/diagnostics/repro-reusable-workflow.cjs",

@@ -1467,6 +1467,69 @@ agentes depois de reiniciar.
   (`big-pickle` 107 s), os candidatos mais rápidos têm papel próprio e o `inkling` tem duas
   medições no papel.
 
+## 12/11/2026: retenção conferida na fonte e preflight de catálogo
+
+Duas pendências do ciclo anterior fecharam nesta data: a privacidade dos primários
+(reaberta em 07/11 e reconferida em 11/11 sem fonte) e o modo de falha "id saiu do
+catálogo" (registrado em 19/10, sem mecanismo).
+
+### Retenção por modelo (fonte: `opencode.ai/console/models`, lida em 12/11/2026)
+
+A página declara zero-retention para todos os modelos **exceto** uma lista nominal,
+em "Free models" e "Privacy". Conferido contra os ids em uso:
+
+| Modelo | Papel | Política declarada |
+|---|---|---|
+| `deepseek-v4.1-flash-free` | `orchestrator` (primário) | zero-retention, sem treinamento |
+| `glm-5.3-flash-free` | `orchestrator` (reserva) | zero-retention, sem treinamento |
+| `minimax-m3.1-flash-free` | `oracle` e `small_model` | zero-retention, sem treinamento |
+| `big-pickle` | `designer` | "collected data may be used to improve the model" |
+| `inkling-2-small-free` | `explorer` | retido; "may be used for ... model training" (Thinking Machines) |
+| `iceman-free` | `fixer` | "retained and used to improve the model" |
+| `longcat-2.5-free` | sem papel | zero-retention, sem treinamento (hospedado na China, 100 req/dia) |
+| `beam-free` | sem papel | não treina; retém 30 dias |
+| `flint-40b-free`, `mimo-v2.6-flash-free`, `nemotron-*` | sem papel | retêm e/ou usam para melhorar o modelo |
+
+Leitura: **três dos cinco papéis (`designer`, `explorer` e `fixer`) enviam código a
+provedores que retêm e usam os dados para treinar.** A garantia é declaração do
+fornecedor, não auditável neste repositório — o que muda é que agora está registrada
+por id, em vez de "não verificado".
+
+### Decisão
+
+1. **`small_model` → `opencode/minimax-m3.1-flash-free`** (`opencode.jsonc`). Era o
+   único ponto em que texto derivado do prompt (título de sessão) ia a um modelo que
+   treina: o `mimo` caiu na lista de exceções. O minimax é zero-retention, está no
+   catálogo e já é o `oracle` — não cria id novo e não fere a regra de não repetir id
+   entre **primários** (o `small_model` não é papel).
+2. **Papéis mantidos.** Só há três ids free zero-retention em uso (`deepseek`, `glm`,
+   `minimax`) e um sem papel (`longcat`, sem medição e com 100 req/dia). Reatribuir
+   `designer`/`explorer`/`fixer` exigiria promover `longcat` sem bateria — contra a
+   regra central deste ADR — ou repetir id, contra a regra de distribuição. A
+   pendência fica **resolvida como fato** e **aceita como risco** para código
+   sensível: a mitigação que existe é não colar segredo em prompt.
+3. **Preflight de catálogo: `npm run models:check`**
+   (`scripts/diagnostics/check-model-catalog.js`). Lê `opencode debug agents` (config
+   compilada, sem JSONC) e `opencode models`, compara e sai com código 1 listando os
+   ids mortos. Cobre os **primários** e o `small_model`; a cadeia de reserva não
+   aparece em `debug agents` (limite documentado no cabeçalho do script). Passa a ser
+   o passo 6 do AGENTS.md §0.3.
+4. **Reserva por papel não foi adotada como antídoto ao id morto.** A cadeia só
+   aciona no hook `v2.session.retry` para erro de failover (429, 401/403, 5xx,
+   timeout); `provider.no-route` chega com `failover: false`. Reserva cobre cota e
+   transporte — não remoção do catálogo. Para esse modo de falha, o mecanismo é o
+   preflight.
+
+### Evidência da sessão
+
+- `opencode debug agents` compilou `oracle → minimax-m3.1-flash-free` e
+  `designer → big-pickle`; os cinco papéis e o `title` foram spawnados de verdade
+  (`opencode run --agent <papel>`, sessões arquivadas) e o `modelID` lido do banco de
+  sessões bateu com o preset — prova de que o restart aplicou o preset.
+- `npm run models:check` → 13 ids no catálogo, 6 conferidos, `exit 0`.
+- Com catálogo falso de 2 ids: 4 ids reportados, `exit 1`
+  (`tests/unit/scripts/check-model-catalog.test.js` cobre as funções puras).
+
 ## Consequências
 
 ### Positivas
@@ -1479,12 +1542,12 @@ agentes depois de reiniciar.
 
 ### Negativas e riscos
 
-- **Nenhum primário atual tem `zero-retention` registrado (revisão de 07/11/2026).** O
-  único registro do tipo era o do `space-bunny-free` (Cenário 3, pesquisa de 03/10/2026),
-  que saiu do catálogo; os cinco primários atuais e a reserva do `orchestrator` não têm
-  essa propriedade verificada. Tratar todos como free tier comum: prompts e código do
-  projeto vão a servidores remotos (EUA) e podem ser usados para melhorar o modelo — o
-  aviso permanece em `opencode.jsonc`.
+- **Três dos cinco papéis enviam código a provedor que retém e treina — conferido em
+  12/11/2026.** `designer` (`big-pickle`), `explorer` (`inkling`) e `fixer` (`iceman`) estão
+  na lista de exceções da política do provedor; `orchestrator` (`deepseek`/`glm`) e `oracle`
+  (`minimax`) são zero-retention, e o `small_model` passou a `minimax` na mesma data. Ver
+  "12/11/2026". A garantia é declaração do fornecedor, não auditável neste repositório; para
+  código sensível, o risco está aceito e registrado.
 - **O orchestrator ficou sem reserva em 16/10/2026 até a segunda medição do dia.** Registrado
   assim porque `big-pickle` tinha saído do catálogo; a reserva foi **restaurada** no mesmo dia,
   quando o modelo voltou (ver "Re-análise de 16/10/2026"). A ressalva do parágrafo anterior
@@ -1569,11 +1632,11 @@ se pagou.
   cinco instrumentos no canário. A execução
   `designer-pulse-alpha-free-1.ndjson` continua como evidência histórica da
   divergência de 03/11.
-- **Privacidade dos primários não verificada — reaberta em 07/11/2026, reconferida em
-  11/11/2026.** Nenhum dos cinco primários atuais (`deepseek`/`glm`, `minimax`, `inkling`,
-  `big-pickle`, `iceman`) tem `zero-retention` registrado; o único registro do tipo era o do
-  `space-bunny-free` (Cenário 3, pesquisa de 03/10/2026), que saiu do catálogo. Se a garantia
-  for requisito para código sensível, verificar antes do próximo uso.
+- **Privacidade dos primários — RESOLVIDA como fato em 12/11/2026 (risco aceito).**
+  A pendência reaberta em 07/11 e reconferida em 11/11 sem fonte foi fechada contra a página
+  de modelos do Console: `deepseek`/`glm`/`minimax` são zero-retention; `big-pickle`,
+  `inkling` e `iceman` retêm e usam para treinar. Papéis mantidos e `small_model` trocado para
+  o `minimax`. Ver "12/11/2026" — a verificação por id substitui "não verificado".
 - **Instrumento do `designer` com linhas desatualizadas no HEAD — RESOLVIDO em
   07/11/2026.** O conteúdo do `gabarito-designer.md` do repo (recalibrado em
   06/11/2026) estava correto, mas o HEAD `7955585` ("ATT - New Design") deslocou

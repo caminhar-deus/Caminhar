@@ -61,11 +61,11 @@
     // "Revisão"). big-pickle já saiu do catálogo uma vez e voltou no mesmo dia — conferir com
     // `opencode models` antes de confiar na reserva; id fora do catálogo falha em silêncio.
     //
-    // PRIVACIDADE: space-bunny-free tem garantia registrada — "zero-retention" (Cenário 3, pesquisa
-    // @librarian de 03/10/2026). Nemotron-3.5-super-vl-free (oracle) NÃO tem essa propriedade
-    // verificada e a bateria não a confirma: tratar como free tier comum. Em qualquer dos casos,
-    // prompts e código do projeto vão a servidores remotos (EUA) e podem ser usados para melhorar
-    // o modelo — ver o aviso em opencode.jsonc.
+    // PRIVACIDADE (reconferida em 12/11/2026 na página de modelos do Console): zero-retention
+    // vale para deepseek, glm, minimax e longcat; big-pickle, inkling e iceman retêm e usam para
+    // treinar. Ver ADR-0008 §"12/11/2026" — o minimax substituiu o super-vl no oracle.
+    // Em qualquer caso, prompts e código do projeto vão a servidores remotos (EUA) — ver o aviso
+    // em opencode.jsonc.
     //
     // Cadeia ("model": [a,b]) FUNCIONA no host v2, mas pelo hook `v2.session.retry` do slim — a troca
     // atômica de turno continua desabilitada. Ela só age para erros que o slim classifica como
@@ -221,8 +221,9 @@
       // (nenhum `subagent` — mediu bem como analista, não como primário). A reserva mede a
       // sessão que ENTRA no lugar do primário, não a condução; big-pickle segue primário.
       // flint-40b-free (21/10) é candidato a bench; nemotron-3-ultra-free segue sem dono.
-      // RETENÇÃO: nenhum dos dois tem zero-retention registrado — tratar como free tier comum
-      // (ver ADR-0008).
+      // RETENÇÃO (conferida em 12/11/2026 na página de modelos do Console): deepseek e glm são
+      // zero-retention, sem uso para treinamento — ao contrário do que este comentário dizia até
+      // aqui. Ver ADR-0008 §"12/11/2026".
       // ORCHESTRATOR — 11/11/2026 (bateria 12×5): primário e reserva mantidos. O deepseek repetiu
       // 8/8 na Camada B (a 2ª medição viva do papel) em 28 s de turno 2; o glm repetiu 6/8 em
       // 47 s e segue como RESERVA — é o melhor medido que não é primário de outro agente. O
