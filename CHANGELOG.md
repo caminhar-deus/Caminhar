@@ -30,6 +30,15 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Alterado
 
+- **Segunda medição do `longcat-2.5-free` no papel — 2 de 5 células, sem troca (12/11/2026).**
+  O longcat é o único free sem papel e zero-retention; a regra do ADR-0008 é medir no papel
+  antes de promover. `designer` fechou com **0 erros verificáveis** (366 s) e `fixer` com
+  **4/4** (826 s, Jest real: teste novo falha no original e passa no corrigido, suíte verde);
+  `explorer`, `oracle` e `orchestrator` (t1+t2) morreram em `provider.free-limit` 429 e rodam
+  em cota nova. Nenhuma distribuição mudou: nas duas células medidas o longcat empata em
+  acerto com o titular e é ~7× mais lento (`big-pickle` 53 s, `iceman` 114 s). Ver
+  `docs/adr/0008-modelos-free-por-agente-sem-repeticao.md` §"12/11/2026".
+
 - **Retenção dos modelos conferida na fonte e `small_model` trocado (12/11/2026).**
   - `opencode.jsonc`: `small_model` `mimo-v2.6-flash-free` → `minimax-m3.1-flash-free`. O mimo retém e usa os dados para treinar; o título de sessão é derivado do prompt. O minimax é zero-retention e já é o `oracle`.
   - Verificação na página de modelos do Console: `deepseek`, `glm` e `minimax` (mais o `longcat`) são zero-retention; `big-pickle` (designer), `inkling` (explorer) e `iceman` (fixer) retêm e treinam. Papéis mantidos — a decisão e o risco aceito estão em `docs/adr/0008-modelos-free-por-agente-sem-repeticao.md` §"12/11/2026".
