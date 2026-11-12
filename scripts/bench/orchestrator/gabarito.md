@@ -43,12 +43,15 @@ quando a âncora mudou — o número velho deixa de pontuar antes de virar erro.
 
 | Grupo | Rotas | Onde a autenticação é aplicada |
 |---|---|---|
-| Admin via factory | 16 | `lib/api/adminCrudHandler.js:305` (`withAuth(handler)`), alcançado por `createAdminHandler` em cada rota |
+| Admin via factory | 17 | `lib/api/adminCrudHandler.js:305` (`withAuth(handler)`), alcançado por `createAdminHandler` em cada rota |
 | `withAuth` direto | 2 | `pages/api/cleanup-test-data.js:26`, `pages/api/upload-image.js:170` |
 | `withAuth` parcial | 1 | `pages/api/settings.js` — GET público, POST (`:130`) e PUT (`:164`) com `withAuth` |
-| Autenticação manual | 4 | `pages/api/auth/check.js` (`:65`,`:74`), `pages/api/products.js` (`requireAuth` em `:132`, usado em `:367,373,378,383`), `pages/api/status.js` (`:34`,`:39` — só o diagnóstico; `?mode=health` em `:27` é público), `pages/api/settings.js` |
+| Autenticação manual | 6 | `pages/api/auth/check.js` (`:65`,`:74`), `pages/api/products.js` (`requireAuth` em `:132`, usado em `:367,373,378,383`), `pages/api/status.js` (`:34`,`:39` — só o diagnóstico; `?mode=health` em `:27` é público), `pages/api/admin/internal-products.js` (`requireAuth` em `:62`, usado em `:98`), `pages/api/admin/orders.js` (`requireAuth` em `:28`, usado em `:64`), `pages/api/settings.js` |
 
-As 16 admin são as 15 de `pages/api/admin/` mais `pages/api/ip-diagnostico.js:186`.
+As **17** admin via factory são as **16** de `pages/api/admin/` mais
+`pages/api/ip-diagnostico.js:186`. As outras **2** de `pages/api/admin/`
+(`internal-products.js` e `orders.js`) não usam a factory: fazem `requireAuth` +
+`checkRolePermission` manuais, e por isso entram no grupo manual.
 
 Cuidado para o conferidor: `pages/api/settings.js` aparece em **dois** grupos. Isso é
 correto, não é contradição.

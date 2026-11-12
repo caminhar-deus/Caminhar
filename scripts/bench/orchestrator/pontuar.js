@@ -37,7 +37,15 @@ const FATOS = fatosOrchestrator(RAIZ);
 const ITENS = [
   [`${FATOS.arquivos} arquivos`, (r) => new RegExp(`\\b${FATOS.arquivos}\\b`).test(r) && /arquivo/i.test(r)],
   [`${FATOS.rotas} rotas/handler`, (r) => new RegExp(`\\b${FATOS.rotas}\\b`).test(r) && /(rota|handler)/i.test(r)],
-  ['todos são rota', (r) => !/não (é|e uma) rota|não-rota|não é handler/i.test(r)],
+  // A resposta certa aparece das duas formas: "38 são rotas" e "0 não-rotas" /
+  // "nenhum arquivo auxiliar/não-rota". O erro é AFIRMAR que algum arquivo não
+  // é rota — a palavra "não-rota" em si é negação, não erro. O regex antigo
+  // (`/não (é|e uma) rota|não-rota|não é handler/`) marcava erro em iceman,
+  // mimo e minimax na bateria de 11/11/2026, todos com a resposta correta.
+  ['todos são rota', (r) => !(
+    /(?:^|[\s|(])(?:[1-9]\d?)\s+(?:arquivos?\s+)?(?:deles\s+)?(?:n[ãa]o\s+(?:(?:é|e|s[ãa]o)\s+)?(?:uma\s+)?rotas?|n[ãa]o[-\s]?rotas?)/i.test(r)
+    || /[A-Za-z0-9_./[\]-]+\.(?:js|cjs|mjs|jsx|ts|tsx)`?\s+(?:n[ãa]o\s+(?:é|e)\s+(?:uma\s+)?(?:rota|handler))/i.test(r)
+  )],
   [`ponto de aplicação :${FATOS.withAuthHandler}`, (r) => r.includes(`adminCrudHandler.js:${FATOS.withAuthHandler}`)],
   [`ip-diagnostico :${FATOS.ipDiagnostico}`, (r) => r.includes(`ip-diagnostico.js:${FATOS.ipDiagnostico}`)],
   ['cita o 405', (r) => r.includes('405')],

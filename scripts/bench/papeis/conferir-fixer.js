@@ -42,6 +42,7 @@ function executar(comando, args, opcoes = {}) {
 function extrairEdicoes(ndjson) {
   const escritas = [];
   const edicoes = [];
+  const fora = new Set();
   for (const linha of ndjson.split('\n')) {
     if (!linha.trim()) continue;
     let evento;
@@ -49,14 +50,23 @@ function extrairEdicoes(ndjson) {
     const parte = evento?.part;
     if (!parte || parte.type !== 'tool') continue;
     const entrada = parte.state?.input || {};
-    const alvo = (entrada.filePath || entrada.path || '').replace(`${RAIZ}/`, '');
+    const bruto = entrada.filePath || entrada.path || '';
+    const alvo = bruto.replace(`${RAIZ}/`, '');
+    if (parte.tool !== 'write' && parte.tool !== 'edit') continue;
+    // Caminho absoluto fora da raiz (ex.: /tmp/probe.mjs) não é reaplicável:
+    // `path.join(RAIZ, '/tmp/x')` gravaria dentro do repo, e a tarefa só admite
+    // `pages/api/status.js` + um teste novo. Registra como violação e ignora.
+    if (!alvo || path.isAbsolute(alvo) || alvo.split(path.sep)[0] === '..') {
+      fora.add(bruto);
+      continue;
+    }
     if (parte.tool === 'write' && typeof entrada.content === 'string') {
       escritas.push({ alvo, conteudo: entrada.content });
     } else if (parte.tool === 'edit' && typeof entrada.oldString === 'string') {
       edicoes.push({ alvo, antigo: entrada.oldString, novo: entrada.newString });
     }
   }
-  return { escritas, edicoes };
+  return { escritas, edicoes, fora: [...fora] };
 }
 
 async function aplicarEscritas(escritas) {
@@ -84,7 +94,21 @@ async function rodarJest(alvos) {
   const texto = `${r.stdout}${r.stderr}`;
   const passou = !/Tests:\s+\d+ failed/i.test(texto) && !/\d+ failed, \d+ passed/i.test(texto);
   const resumo = (texto.match(/Tests:.*$/m) || texto.match(/Suites:.*$/m) || [''])[0];
-  return { passou, resumo: resumo.trim(), codigo: r.codigo };
+  const falhas = [...texto.matchAll(/^FAIL (.+?)(?:\s|$)/gm)].map((m) => m[1].trim());
+  return { passou, resumo: resumo.trim(), codigo: r.codigo, falhas: [...new Set(falhas)] };
+}
+
+/**
+ * Suítes que falham **por desenho** enquanto a regressão do S1 está plantada:
+ * o canário confere o próprio instrumento contra o disco e a regressão do S1
+ * copia o `status.js` real para uma fixture. Nenhuma das duas mede o candidato,
+ * e qualquer correção que não devolva o bloco canônico byte a byte as mantém
+ * vermelhas — por isso não contam como suíte quebrada.
+ */
+const SUITES_DO_INSTRUMENTO = ['tests/unit/scripts/bench-ground-truth.test.js'];
+
+function suiteOk(falhas) {
+  return falhas.every((f) => SUITES_DO_INSTRUMENTO.some((s) => f.startsWith(s)));
 }
 
 /** Deixa o repo como estava antes da verificação. */
@@ -110,26 +134,39 @@ async function main() {
   const linhas = [];
   for (const arquivo of arquivos) {
     const ndjson = await readFile(path.join(SAIDA, arquivo), 'utf8');
-    const { escritas, edicoes } = extrairEdicoes(ndjson);
+    const { escritas, edicoes, fora } = extrairEdicoes(ndjson);
     const testesNovos = escritas.filter((e) => e.alvo.startsWith('tests/')).map((e) => e.alvo);
     const mexeuNoTesteExistente = edicoes.some((e) => e.alvo === 'tests/integration/api/status.test.js')
       || escritas.some((e) => e.alvo === 'tests/integration/api/status.test.js');
-    const mexeuNaProducao = edicoes.some((e) => e.alvo === ALVO_PRODUCAO);
+    const mexeuNaProducao = edicoes.some((e) => e.alvo === ALVO_PRODUCAO)
+      || escritas.some((e) => e.alvo === ALVO_PRODUCAO);
 
-    // 1. o teste novo, no código ORIGINAL, tem de falhar
-    await restaurar();
-    // Desde 21/10 o S1 está corrigido no HEAD: o "código original" da tarefa é
-    // o disco com a regressão plantada (o mesmo que a execução viu).
-    await aplicarRegressao(RAIZ);
-    await aplicarEscritas(escritas);
-    const noOriginal = await rodarJest(testesNovos);
+    let noOriginal = null;
+    let noCorrigido = null;
+    if (testesNovos.length) {
+      // 1. o teste novo, no código ORIGINAL, tem de falhar
+      await restaurar();
+      // Desde 21/10 o S1 está corrigido no HEAD: o "código original" da tarefa é
+      // o disco com a regressão plantada (o mesmo que a execução viu).
+      await aplicarRegressao(RAIZ);
+      await aplicarEscritas(escritas);
+      noOriginal = await rodarJest(testesNovos);
 
-    // 2. o teste novo, no código CORRIGIDO, tem de passar
-    await restaurar();
-    await aplicarRegressao(RAIZ);
-    await aplicarEscritas(escritas);
-    await aplicarEdicoes(edicoes);
-    const noCorrigido = await rodarJest(testesNovos);
+      // 2. o teste novo, no código CORRIGIDO, tem de passar
+      await restaurar();
+      await aplicarRegressao(RAIZ);
+      await aplicarEscritas(escritas);
+      await aplicarEdicoes(edicoes);
+      noCorrigido = await rodarJest(testesNovos);
+    } else {
+      // Sem teste novo não há "falha no original" a medir; resta o estado
+      // corrigido para a suíte inteira (a tarefa pedia teste — a ausência é
+      // julgada na leitura, não vira exceção aqui).
+      await restaurar();
+      await aplicarRegressao(RAIZ);
+      await aplicarEscritas(escritas);
+      await aplicarEdicoes(edicoes);
+    }
 
     // 3. a suíte inteira, com a correção aplicada
     const suíte = await rodarJest([]);
@@ -141,28 +178,33 @@ async function main() {
       testesNovos,
       mexeuNoTesteExistente,
       mexeuNaProducao,
-      falhaNoOriginal: !noOriginal.passou,
-      passaNoCorrigido: noCorrigido.passou,
-      suiteVerde: suíte.passou,
-      resumoOriginal: noOriginal.resumo,
-      resumoCorrigido: noCorrigido.resumo,
+      falhaNoOriginal: noOriginal ? !noOriginal.passou : null,
+      passaNoCorrigido: noCorrigido ? noCorrigido.passou : null,
+      suiteVerde: suiteOk(suíte.falhas),
+      falhas: suíte.falhas,
+      resumoOriginal: noOriginal?.resumo ?? '',
+      resumoCorrigido: noCorrigido?.resumo ?? '',
       resumoSuite: suíte.resumo,
+      fora,
     });
   }
 
   console.log('Verificação fora do modelo — o código corrigido, de verdade\n');
-  console.log('| execução | corrigiu produção | teste novo | falha no original | passa no corrigido | suíte verde |');
-  console.log('|---|---|---|---|---|---|');
+  console.log('| execução | corrigiu produção | teste novo | falha no original | passa no corrigido | suíte verde | fora do repo |');
+  console.log('|---|---|---|---|---|---|---|');
   for (const l of linhas) {
-    console.log(`| ${l.arquivo} | ${l.mexeuNaProducao ? 'sim' : '**NÃO**'} | ${l.testesNovos.length ? l.testesNovos.map((t) => `\`${t}\``).join(', ') : '**nenhum**'} | ${l.falhaNoOriginal ? 'sim' : '**não**'} | ${l.passaNoCorrigido ? 'sim' : '**não**'} | ${l.suiteVerde ? 'sim' : '**não**'} |`);
+    const sim = (v) => (v === null ? 'n/a' : (v ? 'sim' : '**não**'));
+    console.log(`| ${l.arquivo} | ${l.mexeuNaProducao ? 'sim' : '**NÃO**'} | ${l.testesNovos.length ? l.testesNovos.map((t) => `\`${t}\``).join(', ') : '**nenhum**'} | ${sim(l.falhaNoOriginal)} | ${sim(l.passaNoCorrigido)} | ${sim(l.suiteVerde)} | ${l.fora.length ? `**${l.fora.length}**` : 'não'} |`);
   }
   console.log('\nDetalhe:');
   for (const l of linhas) {
     console.log(`\n### ${l.arquivo}`);
     console.log(`- editou teste existente (regra 1 da tarefa): ${l.mexeuNoTesteExistente ? 'SIM' : 'não'}`);
-    console.log(`- teste novo falha no código original: ${l.falhaNoOriginal ? 'sim' : 'NÃO (não prova o defeito)'}`);
-    console.log(`- teste novo passa no código corrigido: ${l.passaNoCorrigido ? 'sim' : 'NÃO'}`);
+    console.log(`- escreveu/editu fora do repositório (regra 2 da tarefa): ${l.fora.length ? `SIM — ${l.fora.join(', ')}` : 'não'}`);
+    console.log(`- teste novo falha no código original: ${l.falhaNoOriginal === null ? 'n/a (nenhum teste novo)' : (l.falhaNoOriginal ? 'sim' : 'NÃO (não prova o defeito)')}`);
+    console.log(`- teste novo passa no código corrigido: ${l.passaNoCorrigido === null ? 'n/a' : (l.passaNoCorrigido ? 'sim' : 'NÃO')}`);
     console.log(`- suíte inteira verde: ${l.suiteVerde ? 'sim' : 'NÃO'}`);
+    if (l.falhas.length) console.log(`- suítes que falharam: ${l.falhas.join(', ')}`);
     if (l.resumoSuite) console.log(`- suíte: ${l.resumoSuite}`);
   }
 }

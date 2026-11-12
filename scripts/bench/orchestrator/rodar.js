@@ -211,7 +211,7 @@ async function main() {
   if (opts.turno === 2) {
     console.log('Turno 2: continua a sessão do turno 1, onde os resultados dos subagentes já estão.');
   }
-  console.log(`Cota Zen é por IP/dia (~200 req observadas). ${opts.repeticoes * opts.modelos.length} execuções são ${opts.repeticoes * opts.modelos.length} sessões, não requisições — mas cada sessão gasta várias.\n`);
+  console.log(`Cota Zen é por MODELO (429 só no modelo esgotado; os demais seguem respondendo — observado em 11/11/2026). ${opts.repeticoes * opts.modelos.length} execuções são ${opts.repeticoes * opts.modelos.length} sessões, não requisições — mas cada sessão gasta várias.\n`);
 
   if (paraRodar.length === 0) {
     console.log('Nada a executar: todas as saídas já existem.');

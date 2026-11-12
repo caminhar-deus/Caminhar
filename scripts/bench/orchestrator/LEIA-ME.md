@@ -262,7 +262,8 @@ O `rodar.js` já faz certo. Se você chamar `opencode run` por script, copie a l
 
 ## O que NÃO medir
 
-- **Velocidade.** A cota do Zen é por IP/dia e a latência varia por servidor.
+- **Velocidade.** A cota do Zen é por modelo (429 só no modelo esgotado, observado em
+  11/11/2026) e a latência varia por servidor.
 - **Os outros agentes.** Eles ficam fixos no preset; só o primário muda.
 - **Sessão longa.** Uma execução é uma sessão curta, de uma tarefa. A diferença entre isso
   e um dia de trabalho continua sem medição — e é parte do que o ADR-0008 já apontava.

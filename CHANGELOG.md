@@ -21,7 +21,22 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   - **Relatório Semanal de Auditoria (`docs/retorno_da_semana.md`):** Documentação estruturada abrangendo logs locais, workflows de CI, análise de cobertura e histórico do ciclo semanal.
   - **Validação de Acesso à API do GitHub Actions:** Configuração e homologação de acesso via `GITHUB_TOKEN` em `.env.local` (HTTP 200, 360 workflow runs auditáveis).
 
+### Alterado
+
+- **Modelos FREE por agente — bateria 12×5 refeita e duas trocas (11/11/2026).**
+  - Catálogo: 12 modelos free. Saiu `crouton-alpha-free` (o `designer` apontava para um id morto desde 07/11 e o papel estava parado), voltou `minimax-m3.1-flash-free` e entrou `longcat-2.5-free`.
+  - `oracle`: `flint-40b-free` → `minimax-m3.1-flash-free` (6/6 no S8 em 66 s; o `flint` fez 6/6 em 334 s e morreu por cota 3× no dia).
+  - `designer`: `crouton-alpha-free` → `big-pickle` (0 erros verificáveis em 53 s).
+  - `orchestrator` mantém `deepseek-v4.1-flash-free` (8/8 na Camada B, 2ª medição) com reserva `glm-5.3-flash-free` (6/8); `explorer` (`inkling-2-small-free`) e `fixer` (`iceman-free`) mantidos.
+  - Todos os 12 modelos foram medidos nos 5 papéis, com verificação fora do modelo (Jest real no `fixer`); comparação e alternativas em `docs/adr/0008-modelos-free-por-agente-sem-repeticao.md` §"11/11/2026".
+
 ### Corrigido
+
+- **Instrumentos do bench corrigidos na bateria de 11/11/2026.**
+  - `scripts/bench/orchestrator/pontuar.js`: o regex de "todos são rota" não marca mais erro quando a resposta correta usa "não-rota" como negação (`iceman` 6→7/8, `mimo` 5→6/8, `minimax` 5→6/8).
+  - `scripts/bench/orchestrator/gabarito.md` §2: admin via factory = 17 (16 de `pages/api/admin/` + `ip-diagnostico.js:186`) e autenticação manual = 6 (inclui `internal-products.js:62/98` e `orders.js:28/64`).
+  - `scripts/bench/papeis/conferir-fixer.js`: caminho absoluto/fora da raiz vira violação da regra 2 (antes quebrava com `ENOENT`); "suíte verde" ignora a suíte do próprio instrumento (`bench-ground-truth.test.js` — canário e regressão do S1 falham por desenho com o bug plantado); execução sem teste novo marca `n/a`; `write` em `status.js` conta como produção.
+  - `scripts/bench/orchestrator/{rodar.js,rubrica.md,LEIA-ME.md}`: a cota do Zen está documentada como por modelo (429 só no modelo esgotado), como observado em 11/11/2026 — não mais "por IP/dia".
 
 - **Gabarito do papel `designer` recalibrado para o HEAD `7955585` (07/11/2026).** O recalibramento de 06/11/2026 estava correto no conteúdo, mas o HEAD "ATT - New Design" deslocou as linhas: o `.helperText` passou de `Input.module.css:167` para `:208` (bloco `:206-209`, por causa do novo `.clearButton`) e duas faixas do `MASTER.md` andaram uma linha (`:201-204`→`:202-205` nos anti-padrões de foco; `:212-214`→`:213-215` no checklist; §9 agora em `:197-209`, com o contraste em `:207-208`). Atualizados o gabarito e os comentários de calibração em `scripts/bench/ground-truth.js`, `scripts/bench/papeis/rodar.js` e `tests/unit/scripts/bench-ground-truth.test.js`; o canário do instrumento passa (13/13). A cópia congelada `/var/tmp/free-matrix` ainda tem o gabarito de 22/10 e precisa ser re-sincronizada antes da próxima execução.
 

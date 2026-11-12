@@ -96,8 +96,9 @@ baterias. A Camada C é o desempate.
 
 ## O que este bench NÃO mede
 
-- **Velocidade.** O tempo aparece no `.meta.json`, mas cota do Zen é por IP/dia e a latência
-  varia por servidor; não use como critério.
+- **Velocidade.** O tempo aparece no `.meta.json`, mas a cota do Zen é por modelo (429 só no
+  modelo esgotado, observado em 11/11/2026) e a latência varia por servidor; não use como
+  critério de Camada B.
 - **A bateria completa dos outros agentes.** Aqui só o modelo primário muda; `explorer`,
   `oracle`, `designer` e `fixer` continuam com os modelos do preset.
 - **Comportamento em sessão longa.** Uma execução é uma sessão curta. O ADR-0008 registra

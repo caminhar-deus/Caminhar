@@ -223,7 +223,18 @@
       // flint-40b-free (21/10) é candidato a bench; nemotron-3-ultra-free segue sem dono.
       // RETENÇÃO: nenhum dos dois tem zero-retention registrado — tratar como free tier comum
       // (ver ADR-0008).
+      // ORCHESTRATOR — 11/11/2026 (bateria 12×5): primário e reserva mantidos. O deepseek repetiu
+      // 8/8 na Camada B (a 2ª medição viva do papel) em 28 s de turno 2; o glm repetiu 6/8 em
+      // 47 s e segue como RESERVA — é o melhor medido que não é primário de outro agente. O
+      // inkling também fez 8/8, mas é o explorer: movê-lo para a reserva degradaria um papel de
+      // uso diário para melhorar uma cadeia de exceção. Ver ADR-0008 §"11/11/2026".
       "orchestrator": { "model": ["opencode/deepseek-v4.1-flash-free", "opencode/glm-5.3-flash-free"] },
+      // ORACLE — 11/11/2026 (bateria 12×5): sai o flint, entra o minimax-m3.1-flash-free. Os dois
+      // fizeram 6/6 no S8, mas o flint levou 334 s (o mais lento do grupo) e morreu por cota
+      // (`provider.free-limit`, 429) TRÊS vezes no mesmo dia — a premissa de 04/11 ("nunca caiu
+      // por cota") está falsificada. O minimax fez 6/6 em 66 s, o mais rápido do grupo, e voltou
+      // ao catálogo nesta data. Ver ADR-0008 §"11/11/2026".
+      //
       // ORACLE — 07/11/2026 (revisão de catálogo): o flint fica. No S8, crouton e iceman também
       // deram o veredito correto ("não se sustenta") com 0 erros verificáveis; o inkling errou 2
       // citações. Ninguém superou o incumbent, e os dois empatados têm papel próprio nesta
@@ -240,13 +251,19 @@
       // ORACLE — 22/10 (tarde): o glm-5.3-flash-free ESTREOU no papel (caso S8, veredito
       // correto "não se sustenta", 0 erros verificáveis, divergências doc×código reais) —
       // segundo candidato vivo; o nemotron-3.5-super-vl segue (medições de 15/10 e 16/10).
-      "oracle":       { "model": "opencode/flint-40b-free",
+      "oracle":       { "model": "opencode/minimax-m3.1-flash-free",
                         // Skill do Front-End-Checklist para a revisão (obrigatória no fluxo: oracle revisa sem editar):
                         "skills_add": ["frontend-checklist-global"]
                       },
       // O 3.0.5 fundiu o librarian no explorer (MARKETPLACE_BUILTIN_RENAMES em dist/index.js).
       // O explorer carrega as duas responsabilidades: varredura do repo e doc externa
       // (context7/gh_grep, em "agents" abaixo).
+      //
+      // EXPLORER — 11/11/2026 (bateria 12×5): o inkling fica. Todos os 12 free fizeram as 6/6
+      // âncoras de `withAuth` + zero `Cache-Control` declarado; o desempate é profundidade e
+      // tempo. O inkling repetiu 6/6 em 117 s (2ª medição) com Parte B detalhada; big-pickle
+      // (107 s) vai para o designer, iceman (119 s) para o fixer e minimax (182 s) para o
+      // oracle. Ver ADR-0008 §"11/11/2026".
       //
       // EXPLORER — 07/11/2026 (revisão de catálogo): o pulse-alpha-free SAIU do catálogo — o id
       // não aparece mais em `opencode models`, e id fora do catálogo não spawna. Bateria do papel
@@ -279,6 +296,12 @@
       //                         medição do estreante de 21/10 — reavaliar em rodada futura;
       //                         não confundir com o gatilho de fila da observação de campo.
       "explorer":     { "model": "opencode/inkling-2-small-free" },
+      // DESIGNER — 11/11/2026 (bateria 12×5): o crouton-alpha-free SAIU do catálogo — o id não
+      // aparece mais em `opencode models`, e o papel estava parado desde então. Entra o
+      // big-pickle: 0 erros verificáveis no gabarito atual em 53 s (o mais rápido do grupo de
+      // 0 erros), contra 61 s do deepseek (orchestrator) e 63 s do glm (reserva); os demais com
+      // 0 erros custam 174–553 s (minimax, flint, longcat, mimo). Ver ADR-0008 §"11/11/2026".
+      //
       // DESIGNER — 07/11/2026 (revisão de catálogo): o crouton assume. 0 erros verificáveis no
       // papel — fechou os addons como decorativos citando `Input.js:97/125` e o foco do Button
       // contra `MASTER.md:130` — em 134 s. O inkling também fez 0 erros (1 deslize de linha;
@@ -301,7 +324,14 @@
       // --color-text-tertiary, os 4 usos no Input) foram acertados por beam-free,
       // minimax, longcat e deepseek. O beam-free segue: é o único com DUAS medições neste
       // papel (16/10 e hoje) e é o mais curto — menos Tokens, menos cota.
-      "designer":     { "model": "opencode/crouton-alpha-free", "skills_add": ["ui-ux-pro-max"] },
+      "designer":     { "model": "opencode/big-pickle", "skills_add": ["ui-ux-pro-max"] },
+      // FIXER — 11/11/2026 (bateria 12×5): o iceman fica. 4/4 de novo (114 s) — correção na
+      // produção, teste novo falha no original regredido, passa no corrigido, suíte inteira
+      // verde. É um dos dois únicos do grupo 4/4 que rodaram a suíte COMPLETA e relataram as 2
+      // falhas conhecidas do próprio instrumento (o outro é o inkling, explorer). O beam fez
+      // 4/4 em 45 s, mas parou na suíte da rota e não rodou a completa; big-pickle (32 s) e
+      // deepseek (37 s) têm papel próprio. Ver ADR-0008 §"11/11/2026".
+      //
       // FIXER — 07/11/2026 (revisão de catálogo): o iceman assume. Passou 4/4 no conferidor
       // (corrigiu a produção; teste novo falha no original regredido, passa no corrigido; suíte
       // inteira verde; não editou teste existente) em 91 s. Inkling (25 s) e crouton (293 s)

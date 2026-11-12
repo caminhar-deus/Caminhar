@@ -36,8 +36,11 @@
   // small_model (títulos etc.) = mimo-v2.6-flash-free (leve). Login via `/connect` > OpenCode Zen ou OPENCODE_API_KEY.
   // 22/10/2026: minimax-m3.1-flash-free SAIU do catálogo do Zen (não aparece nem no inventário
   // completo); o primário da sessão passou a ser o do preset NAQUELA data (big-pickle, com glm
-  // reserva) — substituído pelo deepseek em 04/11/2026 (bloco acima). Conferir `opencode models`
-  // antes de confiar; id fora do catálogo falha em silêncio.
+  // reserva) — substituído pelo deepseek em 04/11/2026 (bloco acima). O minimax VOLTOU ao
+  // catálogo em 11/11/2026 e assumiu o `oracle` do preset. Conferir `opencode models` antes de
+  // confiar; id fora do catálogo falha em silêncio.
+  // 11/11/2026: o deepseek foi reconfirmado no papel de orchestrator (8/8 na Camada B, 2ª
+  // medição viva) — a sessão segue nele. Ver ADR-0008 §"11/11/2026".
   "model": "opencode/deepseek-v4.1-flash-free",
   "small_model": "opencode/mimo-v2.6-flash-free",
   // Para voltar ao Ollama local: comente as 2 linhas acima e descomente as 2 abaixo.

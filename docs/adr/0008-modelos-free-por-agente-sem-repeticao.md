@@ -1274,6 +1274,199 @@ mostra os modelos antigos até reiniciar. As regras de permissão/skills/MCP nã
   rápido entre os que sobram (91 s contra 293 s do `crouton`), preservando cinco
   primários distintos.
 
+## 11/11/2026: bateria 12×5 refeita — `oracle` e `designer` trocam, `orchestrator` mantém primário e reserva
+
+O mantenedor pediu nova revisão do catálogo FREE, com **reexecução dos testes em todos os
+modelos e em todos os agentes** (o processo de avaliação mudou desde 07/11), comparação com as
+rodadas anteriores e a definição de **dois modelos FREE para o `orchestrator`** — principal
+(ativo) e reserva. A recomendação foi aprovada e aplicada nesta data.
+
+### Inventário (11/11/2026) — 12 modelos free
+
+`beam-free`, `big-pickle`, `deepseek-v4.1-flash-free`, `flint-40b-free`,
+`glm-5.3-flash-free`, `iceman-free`, `inkling-2-small-free`, `longcat-2.5-free`,
+`mimo-v2.6-flash-free`, `minimax-m3.1-flash-free`, `nemotron-3.5-lightning-free`,
+`nemotron-3.5-super-vl-free` (conferido com `opencode models`).
+
+Diferença exata contra o inventário de 07/11/2026 (11 modelos):
+
+- **saiu** `crouton-alpha-free` — o id não aparece mais em `opencode models`. Era o `designer`
+  desde 07/11; como id fora do catálogo não spawna, **o papel estava parado** desde então;
+- **voltou** `minimax-m3.1-flash-free`, que tinha saído em 22/10;
+- **entrou** `longcat-2.5-free`, id novo — o `longcat-2.5-preview-free` havia saído em 22/10, e
+  não é o mesmo id.
+
+### Como mediu
+
+- Todo o bench viveu na cópia isolada `/var/tmp/bench-2026-11-11` (git próprio; o repositório
+  real não foi tocado pela bateria). Uma execução por célula: **12 modelos × 5 papéis**, sendo
+  quatro papéis pelo bench de papel (`scripts/bench/papeis/`) e o `orchestrator` pelo bench de
+  dois turnos (`scripts/bench/orchestrator/`). Repetição só de célula derrubada por
+  infraestrutura.
+- **Verificação fora do modelo** em todos os papéis: o conteúdo foi lido contra o gabarito; no
+  `fixer`, a correção foi reaplicada e rodada com **Jest real** (o teste novo tem de falhar no
+  código regredido, passar no corrigido e a suíte inteira ficar verde).
+- **A cota FREE é por modelo** (`provider.free-limit`, 429, `retryAfterMs` de ~5,5 h), não por
+  IP/dia: em 11/11, `flint` e `longcat` morreram enquanto os demais modelos respondiam. As 7
+  células perdidas voltaram depois do reset das ~21:13 e foram remedidas — `flint`/`longcat`:
+  oracle 334 s/185 s, explorer 528 s/319 s, fixer 383 s/timeout 600 s; `flint` no turno 2 do
+  orchestrator: 265 s. O `mimo` estourou 600 s no explorer e foi remedido com 15 min (325 s).
+- **Confundidores registrados**: (1) os subagentes do bench do orchestrator herdam o preset da
+  cópia — `@oracle` = `flint` (cota morta) e `@designer` = `crouton` (id morto); quem delegou a
+  `@oracle` no turno 1 estourou o timeout (`mimo`, `longcat`, `flint`), e o `deepseek` estourou
+  com duas chamadas de `@explorer` (uma cancelada e refeita em foreground). A Camada C fica
+  enviesada contra quem delega e **não foi usada como critério** nesta rodada; (2) o
+  `big-pickle` teve saída de `grep` ecoando caminhos de `scripts/bench/**` no explorer; as
+  chamadas de ferramenta não têm caminho de `scripts/bench/` (não abriu o gabarito), mas o
+  bench de papel não detecta isso automaticamente — a decisão de não descartar a célula fica
+  registrada, com o mesmo risco já documentado no `conferencia.md`; (3) modelos gravaram
+  artefatos na raiz que a limpeza do runner não cobre (ex.: `AUDIT_FINAL.md` do `lightning`),
+  bloqueando a bateria seguinte por "árvore suja fora de `scripts/bench`".
+
+### Instrumentos corrigidos nesta rodada (aplicados ao repo; canário 14/14)
+
+- `scripts/bench/orchestrator/pontuar.js`: o regex de "todos são rota" marcava erro quando a
+  resposta correta usava "não-rota" como negação. Efeito: `iceman` 6→7/8, `mimo` 5→6/8,
+  `minimax` 5→6/8.
+- `scripts/bench/orchestrator/gabarito.md` §2: admin via factory é **17** (16 de
+  `pages/api/admin/` + `ip-diagnostico.js:186`), e a autenticação **manual** é **6** (as 2 de
+  `admin/` — `internal-products.js:62/98` e `orders.js:28/64` — não usam a factory).
+- `scripts/bench/papeis/conferir-fixer.js`: caminho absoluto/fora da raiz passa a ser violação
+  da regra 2 (antes quebrava com `ENOENT`); "suíte verde" ignora a suíte do próprio instrumento
+  (`tests/unit/scripts/bench-ground-truth.test.js`, cujos 2 testes — canário do disco e
+  regressão do S1 — falham por desenho com o bug plantado); execução sem teste novo marca
+  `n/a` em "falha no original"; `write` em `status.js` conta como `mexeuNaProducao`.
+- `scripts/bench/orchestrator/{rodar.js,rubrica.md,LEIA-ME.md}`: a mensagem "cota por IP/dia"
+  foi corrigida para o comportamento observado (por modelo).
+
+### Resultado por papel (11/11/2026)
+
+Uma execução por célula; tempo entre parênteses é o da execução. No `explorer`, todos os 12
+fizeram as **6/6 âncoras** de `withAuth` e declararam **zero** `Cache-Control` na doc do Route
+Handler — a coluna mostra as âncoras, e o desempate está na leitura.
+
+| Modelo | orchestrator (Camada B) | oracle (S8) | explorer (âncoras) | designer | fixer (Jest real) |
+|---|---|---|---|---|---|
+| `beam-free` | 5/8 (t2 10 s) | 6/6 (84 s) | 6/6 (108 s) | 2 erros (98 s) | 4/4 (45 s) |
+| `big-pickle` | 6/8 (15 s) | 6/6 (150 s) | 6/6 (107 s) | **0 erros** (53 s) | 4/4 (32 s) |
+| `deepseek-v4.1-flash-free` | **8/8** (28 s) | 4/6 (70 s) | 6/6 (420 s) | 0 erros (61 s) | 4/4 (37 s) |
+| `flint-40b-free` | 6/8 (265 s) | 6/6 (334 s) | 6/6 (528 s) | 0 erros (414 s) | 3/4 (383 s) |
+| `glm-5.3-flash-free` | 6/8 (47 s) | 5/6 (58 s) | 6/6 (307 s) | 0 erros (63 s) | reprovado (169 s) |
+| `iceman-free` | 7/8 (84 s) | 6/6 (74 s) | 6/6 (119 s) | hedge (40 s) | **4/4** (114 s) |
+| `inkling-2-small-free` | **8/8** (49 s) | 6/6 (68 s) | **6/6** (117 s) | 1 erro (100 s) | 4/4 (131 s) |
+| `longcat-2.5-free` | 5/8 (122 s) | 5/6 (185 s) | 6/6 (319 s) | 0 erros (487 s) | 4/4, TIMEOUT (600 s) |
+| `mimo-v2.6-flash-free` | 6/8 (553 s) | 5/6 (322 s) | 6/6 (325 s) | 0 erros (553 s) | 4/4, TIMEOUT (600 s) |
+| `minimax-m3.1-flash-free` | 6/8 (29 s) | **6/6 (66 s)** | 6/6 (182 s) | 0 erros (174 s) | reprovado (600 s) |
+| `nemotron-3.5-lightning-free` | 1/8 (129 s) | 4/6 (90 s) | 6/6 (360 s) | hedge (146 s) | reprovado (64 s) |
+| `nemotron-3.5-super-vl-free` | 6/8 (101 s) | 6/6 (231 s) | 6/6 (484 s) | 1 erro (210 s) | reprovado (37 s) |
+
+No `designer`, "erro" é afirmação falsa contra o gabarito (reprovar um uso aceito ou contar
+quatro usos); "hedge" é resposta correta sem veredito firme nos usos aceitos. Omitir a cláusula
+do `.helperText` não contou como erro — só o `flint` a fechou. No `fixer`, "reprovado" cobre:
+teste que não prova o defeito e quebra na suíte completa (`glm`), ausência de teste novo
+(`minimax`, `lightning`, `super-vl`; o `minimax` ainda escreveu 2 arquivos fora do repo) e
+suíte final vermelha por causa do próprio teste novo (`flint`, 3/4).
+
+### Leitura por papel
+
+- **`orchestrator` — sem troca.** `deepseek` 8/8 (2ª medição viva; 28 s no turno 2) e `inkling`
+  8/8 (49 s) são os únicos sem erro na Camada B. O `iceman` fez 7/8 (só o `405`). O `glm`
+  repetiu 6/8 (47 s). Os demais 6/8 erram `ip-diagnostico:186` e o `405`; `beam`/`longcat` 5/8;
+  `lightning` 1/8 (insiste em 36 arquivos; a verdade é 38). O `flint` fez 6/8 no retry, com
+  turno 2 de 265 s (o mais lento). Primário e reserva ficam.
+- **`oracle` — `minimax` entra.** Sete modelos fizeram 6/6: `minimax` (66 s), `inkling` (68 s),
+  `iceman` (74 s), `beam` (84 s), `big-pickle` (150 s), `super-vl` (231 s) e `flint` (334 s).
+  `glm` e `mimo` ficaram 5/6 (sem `permissions:55-63`); `longcat` 5/6 (sem o drift);
+  `deepseek` e `lightning` 4/6. O `minimax` é o mais rápido do grupo 6/6 e voltou ao catálogo
+  nesta data; `inkling` é o explorer, `iceman` o fixer. O que decide contra o `flint` não é a
+  qualidade (6/6 de novo): é a cota — três quedas no mesmo dia para o papel usado em toda
+  entrega — somada a ser o mais lento do grupo (334 s). O `deepseek` (4/6) mostra que capacidade
+  de orchestrator não transfere para a triagem do S8.
+- **`explorer` — sem troca.** Os 12 fizeram as 6/6 âncoras e declararam zero `Cache-Control`;
+  nenhum caiu nas armadilhas. A profundidade da Parte B separa: `minimax` (16,7 mil
+  caracteres), `big-pickle`, `iceman`, `longcat` e `deepseek` declaram o que a doc não
+  documenta; `beam` e `flint` ficam no mínimo. O `inkling` repetiu 6/6 em 117 s com Parte B
+  detalhada e fica; os outros finalistas têm papel próprio e a diferença de tempo é de ~10 s
+  (`big-pickle` 107 s).
+- **`designer` — `big-pickle` entra.** Com o `crouton` fora do catálogo, o papel precisava de
+  dono. `big-pickle` fechou os três usos aceitos (`:39`, `:49-53`, `:98-106`) e o foco do
+  `Button` em **0 erros**, no menor tempo do grupo (53 s). `deepseek` (61 s) e `glm` (63 s)
+  também fizeram 0 erros, mas são orchestrator e reserva; `minimax` (174 s) é o oracle;
+  `flint` (414 s), `longcat` (487 s) e `mimo` (553 s) fizeram 0 erros, com custo alto e/ou cota
+  frágil. `inkling` (100 s) e `super-vl` (210 s) reprovaram o uso de `:51`; `beam` (98 s)
+  reprovou `:51` **e** `:104`; `iceman` (40 s) e `lightning` (146 s) ficaram corretos, mas
+  hedgeados.
+- **`fixer` — sem troca.** `big-pickle` 32 s, `deepseek` 37 s, `beam` 45 s, `iceman` 114 s e
+  `inkling` 131 s passaram 4/4; `mimo` (600 s) e `longcat` (600 s) fariam 4/4 no conteúdo, mas
+  estouraram o timeout; `flint` fez 3/4 (o teste novo dele quebra na suíte completa); `glm`,
+  `minimax`, `lightning` e `super-vl` reprovaram. O `iceman` fica: 4/4 de novo, rodou a suíte
+  **completa** e relatou as 2 falhas conhecidas do instrumento (só ele e o `inkling` fizeram
+  isso); o `beam` (45 s) parou na suíte da rota e não rodou a completa; `big-pickle` e
+  `deepseek` têm papel próprio.
+
+### Mudanças de comportamento contra 04/11 e 07/11
+
+- **`inkling` subiu de 7/8 para 8/8** no papel de orchestrator (achou o `405` que faltava em
+  07/11) e repetiu 6/6 no explorer — melhora real, não ruído de instrumento.
+- **`flint` caiu do pedestal de 04/11.** Continua 6/6 no S8, mas ficou o mais lento do grupo
+  (334 s) e morreu por cota 3× no dia. A justificativa de 04/11 ("até agora nunca caiu por
+  cota") deixou de valer — e era o principal argumento para mantê-lo no `oracle`.
+- **`crouton` saiu do catálogo.** A escolha de 07/11 para o `designer` ficou inválida; o papel
+  estava parado. O `designer` agora aponta para um id vivo e medido.
+- **`mimo` piorou em latência**: 7/8 em 04/11, 6/8 agora, e 553–600 s em designer/fixer (o
+  conteúdo continua bom; o tempo o desqualifica para papéis com orçamento).
+- **`minimax` voltou** ao catálogo e é o 6/6 mais rápido do `oracle` (66 s); em 22/10 tinha 7/8
+  no orchestrator e hoje fez 6/8.
+- **`deepseek` repetiu 8/8** (segunda medição viva), mas segue lento no explorer (420 s) e
+  fraco no oracle (4/6).
+- **`lightning` repetiu 1/8** e continua contando 36 arquivos em `pages/api/` (verdade: 38).
+- **`big-pickle`** repetiu o perfil de 04/11 no orchestrator (6/8), mas foi o mais rápido no
+  `fixer` (32 s) e no `designer` (53 s) — os papéis em que o modelo é mais útil.
+
+### Distribuição vigente (11/11/2026)
+
+| Agente | PRIMÁRIO | RESERVA |
+|---|---|---|
+| `orchestrator` | `opencode/deepseek-v4.1-flash-free` | `opencode/glm-5.3-flash-free` |
+| `oracle` | `opencode/minimax-m3.1-flash-free` | — |
+| `explorer` | `opencode/inkling-2-small-free` | — |
+| `designer` | `opencode/big-pickle` | — |
+| `fixer` | `opencode/iceman-free` | — |
+
+Nenhum id se repete entre os primários; a reserva do `orchestrator` não é primário de nenhum
+outro agente. O `small_model` da sessão (`opencode.jsonc`) segue o `mimo-v2.6-flash-free`.
+
+### Decisão
+
+Aplicado no preset `.opencode/oh-my-opencode-slim.json` (blocos `zen.orchestrator`,
+`zen.oracle`, `zen.explorer`, `zen.designer` e `zen.fixer`, com comentários datados), em
+`opencode.jsonc` (nota de reconfirmação do `deepseek`) e no `CHANGELOG.md`. As regras de
+permissão/skills/MCP não mudaram. O host lê o preset no start: a sessão em curso só troca os
+agentes depois de reiniciar.
+
+### Alternativas descartadas nesta rodada
+
+- **`inkling` como reserva do `orchestrator` (8/8, melhor que o `glm` 6/8).** Descartado: o
+  `inkling` é o `explorer` (117 s, 2ª medição) e movê-lo deixaria o papel de uso diário com
+  `minimax`/`iceman`, que têm 6/6 mas custam mais. A reserva só entra quando o primário morre;
+  trocar qualidade diária por qualidade de exceção não se paga.
+- **Manter o `flint` no `oracle`.** Descartado: 6/6, mas 334 s e 3 quedas de cota no dia; é o
+  papel mais usado em revisão de entrega, e um modelo que esgota a cota depois de ~3 sessões
+  não sustenta o dia.
+- **`beam` no `fixer` (45 s, 4/4).** Descartado: mesmo 4/4, mas ele parou na suíte da rota e não
+  rodou a completa (o `iceman` rodou e relatou as falhas conhecidas); e a evidência do `iceman`
+  no papel é a 2ª medição (91 s em 07/11, 114 s hoje).
+- **`big-pickle` no `fixer` (32 s, o mais rápido).** Descartado: o `big-pickle` é o `designer`
+  (0 erros, 53 s) e é o único 0-erro rápido que não está ocupado; trocá-lo deixaria o `designer`
+  com `flint`/`longcat`/`mimo` (414–553 s).
+- **`minimax` no `designer` (174 s, 0 erros).** Descartado: é o oracle mais rápido do grupo 6/6
+  (66 s); o `designer` tem um 0-erro mais rápido (`big-pickle`, 53 s).
+- **`deepseek` no `oracle` (4/6).** Descartado por medição: capacidade de orchestrator não
+  transfere para a triagem do S8.
+- **Trocar o `explorer` por um 6/6 mais rápido.** Descartado: a diferença é de ~10 s
+  (`big-pickle` 107 s), os candidatos mais rápidos têm papel próprio e o `inkling` tem duas
+  medições no papel.
+
 ## Consequências
 
 ### Positivas
@@ -1376,11 +1569,11 @@ se pagou.
   cinco instrumentos no canário. A execução
   `designer-pulse-alpha-free-1.ndjson` continua como evidência histórica da
   divergência de 03/11.
-- **Privacidade dos primários não verificada — reaberta em 07/11/2026.** Nenhum dos cinco
-  primários atuais (`deepseek`/`glm`, `flint`, `inkling`, `crouton`, `iceman`) tem
-  `zero-retention` registrado; o único registro do tipo era o do `space-bunny-free`
-  (Cenário 3, pesquisa de 03/10/2026), que saiu do catálogo. Se a garantia for requisito
-  para código sensível, verificar antes do próximo uso.
+- **Privacidade dos primários não verificada — reaberta em 07/11/2026, reconferida em
+  11/11/2026.** Nenhum dos cinco primários atuais (`deepseek`/`glm`, `minimax`, `inkling`,
+  `big-pickle`, `iceman`) tem `zero-retention` registrado; o único registro do tipo era o do
+  `space-bunny-free` (Cenário 3, pesquisa de 03/10/2026), que saiu do catálogo. Se a garantia
+  for requisito para código sensível, verificar antes do próximo uso.
 - **Instrumento do `designer` com linhas desatualizadas no HEAD — RESOLVIDO em
   07/11/2026.** O conteúdo do `gabarito-designer.md` do repo (recalibrado em
   06/11/2026) estava correto, mas o HEAD `7955585` ("ATT - New Design") deslocou
