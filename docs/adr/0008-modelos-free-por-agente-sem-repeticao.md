@@ -1558,7 +1558,7 @@ timeout). A medição desta data roda a segunda amostra, para decidir com duas e
 | `fixer` | **4/4** | 826 s | corrigiu produção e criou teste; `codigoSaida: 1` |
 | `explorer` | **não medido** | 1 s | `provider.free-limit` 429 |
 | `oracle` | **não medido** | 1 s | `provider.free-limit` 429 |
-| `orchestrator` (t1+t2) | **não medido** | — | `provider.free-limit` 429 |
+| `orchestrator` (t1+t2) | **não medido** | — | **não executado** — modelo já sem cota |
 
 - **designer:** P1 conforme (`Button.module.css:21-25`, par `outline` + `box-shadow`
   idêntico a `MASTER.md:130`); P2 na proibição de `MASTER.md:50-52`; P3 nos três usos de
@@ -1575,8 +1575,10 @@ timeout). A medição desta data roda a segunda amostra, para decidir com duas e
 
 Depois do `fixer`, toda célula nova do longcat morreu em ~1 s com `provider.free-limit`
 (429, "Free usage limit reached", `retryAfterMs` 37 333 000 ≈ 10 h 22; reset ≈ 21:13
-local). O limite é **por modelo**: os outros ids e o host respondiam normalmente no mesmo
-minuto. Duas consequências operacionais registradas:
+local) — `explorer` e `oracle` falharam assim. O bench do `orchestrator` nem chegou a
+ser iniciado: com o modelo sem cota, a sessão morreria no mesmo 429. O limite é **por
+modelo**: os outros ids e o host respondiam normalmente no mesmo minuto. Duas
+consequências operacionais registradas:
 
 1. O `fixer` entregou o trabalho **e só então** levou o 429 — a execução fecha com
    `codigoSaida: 1` mesmo com a correção completa. **Código de saída não é sinal de
@@ -1718,10 +1720,10 @@ se pagou.
   `inkling` e `iceman` retêm e usam para treinar. Papéis mantidos e `small_model` trocado para
   o `minimax`. Ver "12/11/2026" — a verificação por id substitui "não verificado".
 - **`longcat-2.5-free` com 2 de 5 células na segunda medição — ABERTA em 12/11/2026.**
-  `designer` (0 erros, 366 s) e `fixer` (4/4, 826 s) fecharam; `explorer`, `oracle` e
-  `orchestrator` (t1+t2) morreram no `provider.free-limit` e rodam em cota nova. Sem as
-  três, o longcat continua sem papel e a medição do papel é a de 11/11. Ver
-  "12/11/2026: `longcat-2.5-free` no papel".
+  `designer` (0 erros, 366 s) e `fixer` (4/4, 826 s) fecharam; `explorer` e `oracle`
+  morreram no `provider.free-limit` e o `orchestrator` (t1+t2) nem rodou, porque o modelo
+  ficou sem cota. Sem as três, o longcat continua sem papel e a medição do papel é a de
+  11/11. Ver "12/11/2026: `longcat-2.5-free` no papel".
 - **Instrumento do `designer` com linhas desatualizadas no HEAD — RESOLVIDO em
   07/11/2026.** O conteúdo do `gabarito-designer.md` do repo (recalibrado em
   06/11/2026) estava correto, mas o HEAD `7955585` ("ATT - New Design") deslocou

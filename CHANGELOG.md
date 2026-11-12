@@ -34,8 +34,8 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   O longcat é o único free sem papel e zero-retention; a regra do ADR-0008 é medir no papel
   antes de promover. `designer` fechou com **0 erros verificáveis** (366 s) e `fixer` com
   **4/4** (826 s, Jest real: teste novo falha no original e passa no corrigido, suíte verde);
-  `explorer`, `oracle` e `orchestrator` (t1+t2) morreram em `provider.free-limit` 429 e rodam
-  em cota nova. Nenhuma distribuição mudou: nas duas células medidas o longcat empata em
+  `explorer` e `oracle` morreram em `provider.free-limit` 429 e o `orchestrator` (t1+t2) nem
+  chegou a rodar — as três células seguem abertas, para cota nova. Nenhuma distribuição mudou: nas duas células medidas o longcat empata em
   acerto com o titular e é ~7× mais lento (`big-pickle` 53 s, `iceman` 114 s). Ver
   `docs/adr/0008-modelos-free-por-agente-sem-repeticao.md` §"12/11/2026".
 
