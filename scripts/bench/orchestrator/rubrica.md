@@ -30,7 +30,7 @@ parece perfeito e não mediu nada.
 rota" (o helper de paginação saiu de `pages/api/` em 21/10/2026), é erro.
 
 **B2. Pergunta 2 — grupos e ponto de aplicação.** Os quatro grupos estão lá, com as
-contagens certas (16 admin via factory, 2 com `withAuth` direto, 1 parcial, 4 manuais)? As
+contagens certas (17 admin via factory, 2 com `withAuth` direto, 1 parcial, 6 manuais)? As
 citações apontam para onde a autenticação é **aplicada** (`adminCrudHandler.js:305`) e não
 para o import? `settings.js` aparece nos dois grupos a que pertence?
 

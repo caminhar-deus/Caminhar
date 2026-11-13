@@ -1530,35 +1530,38 @@ por id, em vez de "não verificado".
 - Com catálogo falso de 2 ids: 4 ids reportados, `exit 1`
   (`tests/unit/scripts/check-model-catalog.test.js` cobre as funções puras).
 
-## 12/11/2026: `longcat-2.5-free` no papel — segunda medição, 2 de 5 células
+## 13/11/2026: `longcat-2.5-free` no papel — segunda medição, 4 de 5 células
 
 O `longcat-2.5-free` é o único modelo free do catálogo **sem papel** e um dos poucos
 zero-retention fora dos três já em uso. A regra central deste ADR — medir no papel antes
 de promover — é o que impede apontá-lo para `designer`, `explorer` ou `fixer` sem bateria.
 Em 11/11 ele tinha **uma** medição nos cinco papéis (5/8, 5/6, 6/6, 0 erros, 4/4 com
-timeout). A medição desta data roda a segunda amostra, para decidir com duas em vez de uma.
+timeout). A segunda amostra rodou em duas janelas de cota, 12/11 (designer e fixer) e
+13/11 (explorer e oracle); o `orchestrator` ficou aberto nas duas, porque a cota do
+modelo acaba antes — ver "A cota cortou a bateria".
 
 ### Como mediu
 
 - Cópia isolada `/var/tmp/bench-2026-11-12` (git próprio; `.ai-memory.toml` com
-  `workspace="default"`/`project="bench"` para não escrever na memória do projeto real).
-  O repositório real não foi tocado pela bateria.
-- Logs **fora** da cópia (`/var/tmp/bench-logs-2026-11-12/`): o runner restaura a árvore
-  entre execuções e aborta com "árvore suja fora de `scripts/bench`" — um arquivo de log na
-  raiz derrubou a primeira tentativa.
+  `workspace="default"`/`project="bench"` para não escrever na memória do projeto real),
+  congelada em `f15e9ae` — o repositório real tinha trabalho não commitado do mantenedor
+  na janela de 13/11, e a bateria não o incorporou. O repositório real não foi tocado.
+- Logs **fora** da cópia (`/var/tmp/bench-logs-2026-11-12/` e `-13/`): o runner restaura
+  a árvore entre execuções e aborta com "árvore suja fora de `scripts/bench`" — um arquivo
+  de log na raiz derrubou a primeira tentativa.
 - Uma execução por célula. Papéis pelo bench de papel (`--timeout-min 15`); `orchestrator`
   pelo bench de dois turnos. Instrumentos validados antes do spawn: `--dry-run` dos cinco
   papéis passou e o `ground-truth` abriu todas as âncoras citadas.
 
-### Resultado (12/11/2026)
+### Resultado (12–13/11/2026)
 
 | papel | resultado | tempo | observação |
 |---|---|---|---|
 | `designer` | **0 erros verificáveis** | 366 s | citações válidas, sem contaminação |
 | `fixer` | **4/4** | 826 s | corrigiu produção e criou teste; `codigoSaida: 1` |
-| `explorer` | **não medido** | 1 s | `provider.free-limit` 429 |
-| `oracle` | **não medido** | 1 s | `provider.free-limit` 429 |
-| `orchestrator` (t1+t2) | **não medido** | — | **não executado** — modelo já sem cota |
+| `explorer` | **6/6 âncoras + Parte B sem erro** | 339 s | citações válidas, sem contaminação |
+| `oracle` | **6/6** (veredito + 3 pontos obrigatórios) | 326 s | citações válidas, divergências doc→código apontadas |
+| `orchestrator` (t1+t2) | **não medido** | t1 507 s / t2 1 s | t1 sem delegação e sem resposta final; t2 morreu no 429 |
 
 - **designer:** P1 conforme (`Button.module.css:21-25`, par `outline` + `box-shadow`
   idêntico a `MASTER.md:130`); P2 na proibição de `MASTER.md:50-52`; P3 nos três usos de
@@ -1570,47 +1573,99 @@ timeout). A medição desta data roda a segunda amostra, para decidir com duas e
   (`conferir-fixer.js`, Jest real): teste novo **falha** no código original, **passa** no
   corrigido, suíte verde — a única falha é o canário
   `tests/unit/scripts/bench-ground-truth.test.js`, que falha por desenho.
+- **explorer:** as 6 âncoras de `withAuth` exatas (`lib/auth/auth.js:329`,
+  `lib/api/adminCrudHandler.js:305`, `upload-image.js:170`, `settings.js:130`/`:164`,
+  `cleanup-test-data.js:26`), com as armadilhas descartadas explicitamente (imports,
+  comentários, `status.js`) e a distinção correta das duas rotas admin que usam
+  `requireAuth` manual (`internal-products.js`, `orders.js`). Na Parte B declarou a lacuna
+  real — **zero** ocorrências de `Cache-Control` em `route.md` (conferido por grep) —,
+  separou doc de código-fonte (`cache-control.js:12-19` como fonte do mapeamento
+  `revalidate`→`s-maxage`) e marcou `NÃO DETERMINADO` onde a doc não fecha (valor do
+  header num Route Handler; interação com Cache Components). Todas as 15 citações da doc
+  instalada (Next **16.4.4**) foram conferidas linha a linha.
+- **oracle:** veredito correto (**não se sustenta**) com os três pontos obrigatórios na
+  linha certa (`lib/api/permissions.js:55-58` e `:60`; `users.js:14`, `:40-43`,
+  `:99`, `:103-108`, `:114`; `permission` em `:206`), as armadilhas evitadas — inclusive
+  dizer que `adminCrudHandler.js:186-190` é o **403**, não o bypass, que hoje vive em
+  `permissions.js` — e as divergências doc→código apontadas (S8 em
+  `PENDENCIAS_seguranca-rotas-api.md:132-135`, refs de linha do ADR-0010,
+  `UPGRADE_pages.md:573`). Registrou a ressalva honesta: o cenário exato "não-admin com
+  `Usuários` criando `admin`" não tem teste dedicado.
 
-### A cota cortou a bateria
+### A cota cortou a bateria (duas janelas)
 
-Depois do `fixer`, toda célula nova do longcat morreu em ~1 s com `provider.free-limit`
-(429, "Free usage limit reached", `retryAfterMs` 37 333 000 ≈ 10 h 22; reset ≈ 21:13
-local) — `explorer` e `oracle` falharam assim. O bench do `orchestrator` nem chegou a
-ser iniciado: com o modelo sem cota, a sessão morreria no mesmo 429. O limite é **por
-modelo**: os outros ids e o host respondiam normalmente no mesmo minuto. Duas
-consequências operacionais registradas:
+O limite é **por modelo** (`provider.free-limit`, 429) e reseta uma vez por dia, por volta
+das **21:10 local** — observado em 12/11 (`retryAfterMs` 37 333 000 ≈ 10 h 22) e de novo
+em 13/11 (`48 228 000` ≈ 13 h 24). Os outros ids e o host respondiam normalmente no mesmo
+minuto, o que descarta IP/dia:
+
+- **12/11:** `designer` e `fixer` fecharam; `explorer` e `oracle` morreram em ~1 s.
+- **13/11 (cota nova):** `explorer` (339 s) e `oracle` (326 s) fecharam. O `orchestrator`
+  t1 rodou **507 s** e terminou no 429; o t2 morreu em 1 s, sem resposta.
+
+Três consequências operacionais:
 
 1. O `fixer` entregou o trabalho **e só então** levou o 429 — a execução fecha com
    `codigoSaida: 1` mesmo com a correção completa. **Código de saída não é sinal de
    sucesso no `fixer`**; a nota vem do `conferir-fixer.js`.
-2. Célula derrubada por cota não é medição: as três restantes ficam abertas, com a
-   medição de 11/11 como a única amostra do papel.
+2. Célula derrubada por cota não é medição — e uma janela diária não cobre as cinco
+   células deste modelo. **O `orchestrator` tem de ser a primeira célula da janela**: é a
+   única de dois turnos e a que mais gasta requisições (cada `subagent` é uma sessão
+   aninhada). Nas duas tentativas ele ficou por último e não fechou.
+3. **O que o t1 mostrou antes de morrer** (registro, não nota): em 507 s e ~30 chamadas de
+   `shell`/`grep`/`read`, **nenhuma** chamada `subagent` e nenhuma resposta final — o
+   longcat fez a auditoria inteira na mão. É o mesmo padrão do 11/11, quando ele pontuou
+   5/8 na Camada B, e não contradiz o teto de cota: ele gastou a janela varrendo o
+   repositório sozinho.
 
 ### Leitura
 
-- **Nenhuma troca é justificada** pelas duas células medidas, e as três restantes não
-  mudam a distribuição por ausência de dado novo.
-- Nas duas células fechadas o longcat é **mais lento que o titular**: `designer` 366 s
-  contra 53 s do `big-pickle`; `fixer` 826 s contra 114 s do `iceman`. O acerto é igual
-  (0 erros nos dois no designer; 4/4 nos dois no fixer).
+- **Nenhuma troca é justificada.** Nas quatro células fechadas o longcat **empata em
+  acerto** com o titular e é mais lento em todas: `designer` 366 s contra 53 s do
+  `big-pickle` (6,9×); `fixer` 826 s contra 114 s do `iceman` (7,2×); `explorer` 339 s
+  contra 117 s do `inkling-2-small-free` (2,9×); `oracle` 326 s contra 66 s do
+  `minimax-m3.1-flash-free` (4,9×).
+- **O oracle subiu de 5/6 (11/11) para 6/6** e o explorer repetiu as 6/6 âncoras com a
+  Parte B completa. Duas amostras, sem repetição na mesma data — não é tendência; é o que
+  a regra de "uma execução por célula" permite dizer.
 - **Padrão de comportamento, não de tarefa:** no `fixer` o longcat gastou boa parte da
   sessão tentando "consertar" o canário `bench-ground-truth.test.js`, que falha por
-  desenho — o mesmo vício que o derrubou no timeout de 600 s em 11/11. Duas amostras,
-  mesmo comportamento.
+  desenho — o mesmo vício que o derrubou no timeout de 600 s em 11/11. No `orchestrator`,
+  não delegou nenhuma vez em 507 s. Três amostras, o mesmo perfil: resolve na mão e não
+  reconhece o próprio instrumento.
+
+### Instrumento (três observações desta bateria)
+
+- O cabeçalho de `gabarito-explorer.md` anota "Next 16.4.2 instalado"; o disco tem
+  **16.4.4**. As âncoras da Parte B continuam válidas (`route.md:270` e `:669`,
+  `route-handlers.md:51/85`, `route-segment-config/index.md:25`, `cache-control.js:12-19`),
+  mas a anotação de versão está velha e deve acompanhar o próximo recalibramento.
+- A revisão da **rubrica** do `orchestrator` (feita para pontuar a célula que falta)
+  mostrou que ela ficou para trás no recalibramento de 08/11/2026: o item B2 pedia "16
+  admin via factory … 4 manuais" enquanto o `gabarito.md` (a verdade) diz **17** e **6**.
+  A rubrica foi alinhada nesta data, antes da execução do `orchestrator` — sem isso, quem
+  pontuasse à mão marcaria como errada a resposta correta.
+- O resolvedor de citações do `conferir.js` desempata nome de arquivo ambíguo pelo
+  primeiro candidato: nesta bateria `orders.js` foi resolvido para `lib/domain/orders.js`
+  (o texto queria `pages/api/admin/orders.js`) e `route-segment-config/index.md` para
+  `client-side-data-fetching/index.md` (o arquivo certo é
+  `03-file-conventions/02-route-segment-config/index.md`). Nos dois casos a Camada A
+  reportou "citações válidas" com o arquivo errado — a conferência desta seção foi feita
+  **à mão, linha por linha**, e é a que vale. Corrigir o resolvedor exige preferir o
+  caminho mais específico do texto ou desambiguar por contexto; fica registrado como
+  defeito aberto do instrumento.
 
 ### Decisão
 
 1. **Distribuição inalterada** — nenhum papel aponta para o `longcat`, e nenhum papel
    muda de titular com a evidência de hoje.
-2. **As três células restantes rodam em cota nova** (`explorer`, `oracle`,
-   `orchestrator` t1+t2) e entram aqui como segunda amostra. Até lá, os valores de 11/11
-   (oracle 5/6 em 185 s; explorer 6/6 em 319 s; orchestrator 5/8 em 122 s) seguem como a
-   medição vigente do papel.
-3. **Critério para promover o `longcat`** (se as três fecharem): vencer o titular em erro
-   verificável no papel, não apenas empatar, já que ele é ~7× mais lento nas duas células
-   medidas (6,9× no `designer`, 7,2× no `fixer`). A única razão extra seria privacidade —
-   ele é zero-retention — e essa troca hoje custaria um id novo em papel sensível sem
-   vantagem medida.
+2. **Falta só o `orchestrator` (t1+t2)**, que roda em janela de cota nova e **como
+   primeira célula**, antes de qualquer outra. Até lá, o valor de 11/11 (5/8 na Camada B,
+   122 s) segue como a medição vigente do papel.
+3. **Critério para promover o `longcat`:** vencer o titular em erro verificável no papel,
+   não apenas empatar — hoje ele empata nas quatro células e é 2,9–7,2× mais lento. A
+   única razão extra seria privacidade (zero-retention), e essa troca custaria um id novo
+   em papel sensível sem vantagem medida.
 
 ## Consequências
 
@@ -1719,11 +1774,12 @@ se pagou.
   de modelos do Console: `deepseek`/`glm`/`minimax` são zero-retention; `big-pickle`,
   `inkling` e `iceman` retêm e usam para treinar. Papéis mantidos e `small_model` trocado para
   o `minimax`. Ver "12/11/2026" — a verificação por id substitui "não verificado".
-- **`longcat-2.5-free` com 2 de 5 células na segunda medição — ABERTA em 12/11/2026.**
-  `designer` (0 erros, 366 s) e `fixer` (4/4, 826 s) fecharam; `explorer` e `oracle`
-  morreram no `provider.free-limit` e o `orchestrator` (t1+t2) nem rodou, porque o modelo
-  ficou sem cota. Sem as três, o longcat continua sem papel e a medição do papel é a de
-  11/11. Ver "12/11/2026: `longcat-2.5-free` no papel".
+- **`longcat-2.5-free` com 4 de 5 células na segunda medição — ABERTA em 13/11/2026.**
+  `designer` (0 erros, 366 s), `fixer` (4/4, 826 s), `explorer` (6/6, 339 s) e `oracle`
+  (6/6, 326 s) fecharam; falta o `orchestrator` (t1+t2), cuja execução de 13/11 morreu no
+  `provider.free-limit` sem resposta final. Ele roda em janela de cota nova e **antes das
+  outras células**, porque a janela diária do modelo não cobre a bateria inteira. Sem ele,
+  a medição do papel é a de 11/11 (5/8). Ver "13/11/2026: `longcat-2.5-free` no papel".
 - **Instrumento do `designer` com linhas desatualizadas no HEAD — RESOLVIDO em
   07/11/2026.** O conteúdo do `gabarito-designer.md` do repo (recalibrado em
   06/11/2026) estava correto, mas o HEAD `7955585` ("ATT - New Design") deslocou
