@@ -29,6 +29,20 @@ function texto(ndjson) {
   return partes.join('\n');
 }
 
+// A resposta pode trazer o arquivo e a linha em células separadas de uma tabela
+// (`pages/api/x.js` | `:186`) — formato legítimo, que o teste de `arquivo:linha`
+// perdia: em 13/11/2026 o longcat acertou o `ip-diagnostico.js:186` assim e o
+// script marcou erro (6/8 contra 7/8 na conferência à mão). Normalizar as duas
+// formas é o suficiente para o sinal voltar a medir o que se propõe.
+function normalizarCitacoes(t) {
+  return t
+    .replace(/`/g, '')
+    .replace(/([A-Za-z0-9_./[\]@-]*\.[A-Za-z0-9]+)((?:[ \t]*\|[ \t]*:\d+)+)/g, (_, arquivo, cadeia) => {
+      const linhas = cadeia.match(/:\d+/g) ?? [];
+      return [arquivo, ...linhas.map((linha) => `${arquivo}${linha}`)].join(' ');
+    });
+}
+
 // Cada item: [rótulo, teste]. A verdade vem do disco em runtime:
 // `fatosOrchestrator` conta `pages/api/` (arquivo só é rota se tem
 // `export default`) e localiza o ponto de aplicação da autenticação, então o
@@ -65,7 +79,7 @@ async function main() {
   for (const arquivo of arquivos) {
     const base = arquivo.replace('.t2.ndjson', '');
     const modelo = base.replace(/-\d+$/, '');
-    const r = texto(await readFile(path.join(SAIDA, arquivo), 'utf8'));
+    const r = normalizarCitacoes(texto(await readFile(path.join(SAIDA, arquivo), 'utf8')));
     const acertos = ITENS.map(([, fn]) => fn(r));
     if (!porModelo.has(modelo)) porModelo.set(modelo, []);
     porModelo.get(modelo).push({ base, acertos });

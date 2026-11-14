@@ -37,14 +37,18 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   são de pagamento (ex.: `merchant_order`) respondem 200 sem processamento. Testes em
   `tests/integration/api/webhooks/mercadopago.test.js` e `tests/unit/lib/payment/mercadopago.test.js`.
 
-- **Segunda medição do `longcat-2.5-free` no papel — 2 de 5 células, sem troca (12/11/2026).**
+- **Segunda medição do `longcat-2.5-free` no papel — 5 de 5 células, sem troca (12–13/11/2026).**
   O longcat é o único free sem papel e zero-retention; a regra do ADR-0008 é medir no papel
-  antes de promover. `designer` fechou com **0 erros verificáveis** (366 s) e `fixer` com
-  **4/4** (826 s, Jest real: teste novo falha no original e passa no corrigido, suíte verde);
-  `explorer` e `oracle` morreram em `provider.free-limit` 429 e o `orchestrator` (t1+t2) nem
-  chegou a rodar — as três células seguem abertas, para cota nova. Nenhuma distribuição mudou: nas duas células medidas o longcat empata em
-  acerto com o titular e é ~7× mais lento (`big-pickle` 53 s, `iceman` 114 s). Ver
-  `docs/adr/0008-modelos-free-por-agente-sem-repeticao.md` §"12/11/2026".
+  antes de promover. As cinco células fecharam em três janelas de cota: `designer` com
+  **0 erros verificáveis** (366 s), `fixer` com **4/4** (826 s, Jest real: teste novo falha no
+  original e passa no corrigido, suíte verde), `explorer` com **6/6 âncoras** de `withAuth` +
+  Parte B (339 s), `oracle` com **6/6** (326 s) e `orchestrator` com **7/8** na Camada B
+  (1 580 s; o turno 1 estourou o teto de 15 min) — o único erro é não citar o `405` que
+  impede escrita anônima nas rotas de leitura. Nenhuma distribuição mudou: em quatro papéis
+  o longcat empata em acerto com o titular e é 2,9–7,2× mais lento, e no `orchestrator`
+  perde o item sem delegar **nenhuma** vez em três execuções (~35 min). Instrumento:
+  `pontuar.js` passou a aceitar citação em tabela (`arquivo | :1 | :186`), que dava falso
+  negativo. Ver `docs/adr/0008-modelos-free-por-agente-sem-repeticao.md` §"13/11/2026".
 
 - **Retenção dos modelos conferida na fonte e `small_model` trocado (12/11/2026).**
   - `opencode.jsonc`: `small_model` `mimo-v2.6-flash-free` → `minimax-m3.1-flash-free`. O mimo retém e usa os dados para treinar; o título de sessão é derivado do prompt. O minimax é zero-retention e já é o `oracle`.
