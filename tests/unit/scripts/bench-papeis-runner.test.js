@@ -70,6 +70,14 @@ function criarFixture(scriptOpencode) {
   }
 
   writeFileSync(path.join(raiz, '.ai-memory.toml'), 'workspace = "default"\nproject = "bench"\n');
+  // A guarda de isolamento exige o MCP `ai-memory` desligado na cópia, senão a
+  // bateria aborta antes do spawn e este E2E não chegaria ao caminho testado.
+  writeFileSync(
+    path.join(raiz, 'opencode.jsonc'),
+    '{\n  "mcp": {\n    "servers": {\n      "ai-memory": {\n' +
+    '        "type": "remote",\n        "url": "http://127.0.0.1:49374/mcp",\n' +
+    '        "oauth": false,\n        "disabled": true\n      }\n    }\n  }\n}\n'
+  );
   writeFileSync(
     path.join(raiz, '.gitignore'),
     'scripts/bench/orchestrator/resultados/*\nscripts/bench/papeis/resultados/*\n'
