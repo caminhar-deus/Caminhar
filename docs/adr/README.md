@@ -50,6 +50,7 @@ apoio, não a fonte oficial; a decisão não é duplicada como página de memór
 | [0038](0038-mercadopago-webhook-status-confirmado-na-api.md) | Webhook do Mercado Pago só aprova pedido com status confirmado na API | Aceito | 2026-11-12 |
 | [0039](0039-mercadopago-checkout-tokenizacao-e-alinhamento-de-schema.md) | Alinhamento de schema de pedidos/clientes, tokenização via SDK v2 do Mercado Pago e rollback atômico de estoque | Aceito | 2026-11-12 |
 | [0040](0040-integracao-mercadopago-orders-api.md) | Migração da integração de pagamentos para a Orders API (`/v1/orders`) do Mercado Pago | Aceito | 2026-11-12 |
+| [0041](0041-active-payment-reconciliation-and-webhook-fallback.md) | Reconciliação ativa de pagamentos pendentes e fallback de webhook por referência externa | Aceito | 2026-11-14 |
 
 ## Quando criar um ADR
 

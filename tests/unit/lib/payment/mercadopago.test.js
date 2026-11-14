@@ -2,7 +2,9 @@ import { createHmac } from 'crypto';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import {
   createMercadoPagoPayment,
+  fetchMercadoPagoPaymentDetails,
   fetchMercadoPagoPaymentStatus,
+  mapMercadoPagoStatus,
   verifyMercadoPagoWebhookSignature,
 } from '../../../../lib/payment/mercadopago.js';
 
@@ -253,6 +255,67 @@ describe('Integração Mercado Pago — lib/payment/mercadopago.js', () => {
     expect(preRes.paymentStatus).toBe('approved');
   });
 
+  it('normaliza ticket_url de /staging/payments/ para /sandbox/payments/ ao criar boleto preservando digitable_line e barcode_content', async () => {
+    process.env.MP_ACCESS_TOKEN = 'test-token-mp';
+    const stagingTicketUrl =
+      'https://www.mercadopago.com.br/staging/payments/189650364540/ticket?caller_id=3845624858&payment_method_id=bolbradesco&payment_id=189650364540&payment_method_reference_id=6010877038&hash=57246646-0bce-4389-89c6-5fc7b9542f44';
+    const expectedSandboxTicketUrl =
+      'https://www.mercadopago.com.br/sandbox/payments/189650364540/ticket?caller_id=3845624858&payment_method_id=bolbradesco&payment_id=189650364540&payment_method_reference_id=6010877038&hash=57246646-0bce-4389-89c6-5fc7b9542f44';
+
+    global.fetch = jest.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        id: 'ORDTST01M7DJXA5Q2GJ40TPX5DGVKP48',
+        status: 'action_required',
+        status_detail: 'waiting_payment',
+        transactions: {
+          payments: [
+            {
+              id: 'PAY01M7DJXA67SDK8PSMSPD8GRP2R',
+              status: 'action_required',
+              status_detail: 'waiting_payment',
+              payment_method: {
+                id: 'bolbradesco',
+                type: 'ticket',
+                ticket_url: stagingTicketUrl,
+                digitable_line: '23793380296060108770738006333306316330000000400',
+                barcode_content: '23793163300000004003380260601087703800633330',
+              },
+            },
+          ],
+        },
+      }),
+    });
+
+    const boletoRes = await createMercadoPagoPayment({
+      order: {
+        id: 21,
+        product_name: 'Livro Teste',
+        total_amount: 4,
+        delivery_address: {
+          cep: '01310-100',
+          street: 'Av Paulista',
+          number: '100',
+          neighborhood: 'Bela Vista',
+          city: 'São Paulo',
+          state: 'SP',
+        },
+      },
+      customer: sampleCustomer,
+      paymentMethod: 'ticket',
+      paymentDetails: { payerDocument: '191.191.191-00' },
+    });
+
+    expect(boletoRes.paymentStatus).toBe('pending');
+    expect(boletoRes.paymentPayload.ticket_url).toBe(expectedSandboxTicketUrl);
+    expect(boletoRes.paymentPayload.digitable_line).toBe(
+      '23793380296060108770738006333306316330000000400'
+    );
+    expect(boletoRes.paymentPayload.barcode_content).toBe(
+      '23793163300000004003380260601087703800633330'
+    );
+  });
+
   it('deve interpretar HTTP 402 com data de ordem recusada sem lançar exceção fatal', async () => {
     process.env.MP_ACCESS_TOKEN = 'test-token-mp';
 
@@ -485,6 +548,73 @@ describe('Integração Mercado Pago — lib/payment/mercadopago.js', () => {
         mpCauseCode: 'payment_method_not_allowed_for_collector',
         userMessage: expect.stringMatching(/não está habilitado/i),
       });
+    });
+  });
+
+  describe('mapMercadoPagoStatus() e fetchMercadoPagoPaymentDetails()', () => {
+    it('normaliza corretamente status e status_detail da Orders API (/v1/orders)', () => {
+      expect(mapMercadoPagoStatus('processed', 'accredited')).toBe('approved');
+      expect(mapMercadoPagoStatus('processed', 'refunded')).toBe('refunded');
+      expect(mapMercadoPagoStatus('processed', 'charged_back')).toBe('charged_back');
+      expect(mapMercadoPagoStatus('action_required', 'waiting_transfer')).toBe('pending');
+      expect(mapMercadoPagoStatus('action_required', 'expired')).toBe('cancelled');
+      expect(mapMercadoPagoStatus('canceled')).toBe('cancelled');
+      expect(mapMercadoPagoStatus('processing', 'waiting_capture')).toBe('authorized');
+    });
+
+    it('extrai paymentStatus, statusDetail, externalReference e transactionId no formato da Order #20', async () => {
+      process.env.MP_ACCESS_TOKEN = 'test-token-mp';
+      const mockFetch = jest.fn().mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          id: 'ORDTST01M7CT3ZAZKHHJXSER0A1GCTAR',
+          external_reference: '20',
+          status: 'processed',
+          status_detail: 'accredited',
+          total_amount: '0.01',
+          total_paid_amount: '0.01',
+          transactions: {
+            payments: [
+              {
+                id: 'PAY01M7CT3ZBCE8718PE0KR3DD7JR',
+                status: 'processed',
+                status_detail: 'accredited',
+                payment_method: { id: 'pix', installments: 0, type: 'bank_transfer' },
+              },
+            ],
+          },
+        }),
+      });
+      global.fetch = mockFetch;
+
+      const details = await fetchMercadoPagoPaymentDetails('ORDTST01M7CT3ZAZKHHJXSER0A1GCTAR');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.mercadopago.com/v1/orders/ORDTST01M7CT3ZAZKHHJXSER0A1GCTAR',
+        expect.objectContaining({
+          headers: { Authorization: 'Bearer test-token-mp' },
+        })
+      );
+      expect(details).toEqual({
+        paymentStatus: 'approved',
+        rawStatus: 'processed',
+        mpOrderStatus: 'processed',
+        statusDetail: 'accredited',
+        externalReference: '20',
+        transactionId: 'PAY01M7CT3ZBCE8718PE0KR3DD7JR',
+      });
+    });
+
+    it('lança MP_INVALID_RESPONSE quando a API responde sem campo status', async () => {
+      process.env.MP_ACCESS_TOKEN = 'test-token-mp';
+      global.fetch = jest.fn().mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ id: 'ORDTST_EMPTY' }),
+      });
+
+      await expect(fetchMercadoPagoPaymentDetails('ORDTST_EMPTY')).rejects.toThrow(
+        'MP_INVALID_RESPONSE'
+      );
     });
   });
 });

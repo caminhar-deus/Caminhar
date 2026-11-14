@@ -439,7 +439,9 @@
 │   │   │   │   └── youtube.js.html
 │   │   │   ├── payment
 │   │   │   │   ├── index.html
-│   │   │   │   └── mercadopago.js.html
+│   │   │   │   ├── mercadopago.js.html
+│   │   │   │   ├── payment-status-messages.js.html
+│   │   │   │   └── reconcile-orders.js.html
 │   │   │   └── seo
 │   │   │       ├── config.js.html
 │   │   │       └── index.html
@@ -554,7 +556,9 @@
 │   │   │   └── youtube.js.html
 │   │   ├── payment
 │   │   │   ├── index.html
-│   │   │   └── mercadopago.js.html
+│   │   │   ├── mercadopago.js.html
+│   │   │   ├── payment-status-messages.js.html
+│   │   │   └── reconcile-orders.js.html
 │   │   └── seo
 │   │       ├── config.js.html
 │   │       └── index.html
@@ -719,6 +723,7 @@
 │   │   ├── 0038-mercadopago-webhook-status-confirmado-na-api.md
 │   │   ├── 0039-mercadopago-checkout-tokenizacao-e-alinhamento-de-schema.md
 │   │   ├── 0040-integracao-mercadopago-orders-api.md
+│   │   ├── 0041-active-payment-reconciliation-and-webhook-fallback.md
 │   │   ├── README.md
 │   │   └── template.md
 │   ├── ai-memory-error.md
@@ -790,7 +795,8 @@
 │   │   └── youtube.js
 │   ├── payment
 │   │   ├── mercadopago.js
-│   │   └── payment-status-messages.js
+│   │   ├── payment-status-messages.js
+│   │   └── reconcile-orders.js
 │   └── seo
 │       └── config.js
 ├── load-tests
@@ -1435,7 +1441,8 @@
 │       │   │   └── redis.test.js
 │       │   ├── payment
 │       │   │   ├── mercadopago.test.js
-│       │   │   └── payment-status-messages.test.js
+│       │   │   ├── payment-status-messages.test.js
+│       │   │   └── reconcile-orders.test.js
 │       │   ├── redis.test.js
 │       │   └── seo
 │       │       └── config.test.js
@@ -1522,4 +1529,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-221 directories, 1302 files
+221 directories, 1309 files

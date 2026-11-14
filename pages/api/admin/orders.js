@@ -6,6 +6,7 @@ import { getClientIP, INVALID_PAGINATION_MESSAGE } from '../../../lib/api/helper
 import { checkRateLimit } from '../../../lib/cache/cache.js';
 import { logActivity } from '../../../lib/domain/audit.js';
 import { getAdminOrders, updateAdminOrder } from '../../../lib/domain/orders.js';
+import { reconcilePendingOrders } from '../../../lib/payment/reconcile-orders.js';
 import { logger } from '../../../lib/infra/logger.js';
 
 const SALES_PERMISSION = 'Gestão de Vendas';
@@ -81,7 +82,33 @@ export default async function handler(req, res) {
           orderStatus,
           paymentMethod,
         });
-        return res.status(200).json(result);
+
+        const shouldSync = req.query.sync !== '0';
+        const explicitSync = req.query.sync === '1';
+        const { orders: syncedData, syncedCount } = shouldSync
+          ? await reconcilePendingOrders(result.data)
+          : { orders: result.data, syncedCount: 0 };
+
+        if (explicitSync && syncedCount > 0) {
+          try {
+            await logActivity(
+              req.user.username,
+              'SINCRONIZAR PEDIDOS MP',
+              'ORDER',
+              null,
+              `Sincronizou ${syncedCount} pedido(s) pendente(s) com o Mercado Pago`,
+              getClientIP(req)
+            );
+          } catch {
+            // Falha no log de auditoria não deve impedir retorno dos pedidos sincronizados
+          }
+        }
+
+        return res.status(200).json({
+          ...result,
+          data: syncedData,
+          ...(explicitSync ? { syncedCount } : {}),
+        });
       } catch (err) {
         if (err.message === 'INVALID_PAGINATION_PARAMS') {
           return res.status(400).json({ error: 'Bad Request', message: INVALID_PAGINATION_MESSAGE });

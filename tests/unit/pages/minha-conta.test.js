@@ -91,4 +91,57 @@ describe('Página Minha Conta do Visitante (pages/minha-conta.js)', () => {
       expect.stringContaining('React expects the `children` prop of <title> tags to be a string')
     );
   });
+
+  it('normaliza link /staging/payments/ para /sandbox/payments/ em pedido com boleto pendente', async () => {
+    const stagingTicketUrl =
+      'https://www.mercadopago.com.br/staging/payments/189650364540/ticket?caller_id=3845624858&payment_method_id=bolbradesco&payment_id=189650364540&payment_method_reference_id=6010877038&hash=57246646-0bce-4389-89c6-5fc7b9542f44';
+    const expectedSandboxTicketUrl =
+      'https://www.mercadopago.com.br/sandbox/payments/189650364540/ticket?caller_id=3845624858&payment_method_id=bolbradesco&payment_id=189650364540&payment_method_reference_id=6010877038&hash=57246646-0bce-4389-89c6-5fc7b9542f44';
+
+    global.fetch.mockImplementation(async (url) => {
+      const urlStr = String(url);
+      if (urlStr.includes('/api/customer/auth')) {
+        return {
+          ok: true,
+          json: async () => ({
+            authenticated: true,
+            customer: { id: 9, name: 'Gustavo', email: 'gustavo@exemplo.com' },
+          }),
+        };
+      }
+      if (urlStr.includes('/api/customer/orders')) {
+        return {
+          ok: true,
+          json: async () => ({
+            orders: [
+              {
+                id: 21,
+                product_name: 'Livro Teste',
+                quantity: 1,
+                total_amount: 4,
+                formatted_total_amount: 'R$ 4,00',
+                payment_method: 'ticket',
+                payment_status: 'pending',
+                order_status: 'awaiting_payment',
+                created_at: '2026-11-14T16:40:00.000Z',
+                payment_payload: {
+                  ticket_url: stagingTicketUrl,
+                  digitable_line: '23793380296060108770738006333306316330000000400',
+                },
+              },
+            ],
+          }),
+        };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+
+    render(<MinhaContaPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Pedido #21/)).toBeInTheDocument();
+      const boletoLink = screen.getByRole('link', { name: /Abrir boleto para pagamento/i });
+      expect(boletoLink).toHaveAttribute('href', expectedSandboxTicketUrl);
+    });
+  });
 });

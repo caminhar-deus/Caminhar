@@ -4,16 +4,21 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Button } from '@/components/UI';
 import { AppIcon } from '@/components/UI/icons';
-import { getPaymentFeedback } from '../lib/payment/payment-status-messages.js';
+import {
+  getPaymentFeedback,
+  normalizeMercadoPagoTicketUrl,
+} from '../lib/payment/payment-status-messages.js';
 import styles from './styles/CustomerPages.module.css';
 
 const PAYMENT_STATUS_LABELS = {
   approved: { label: 'Pagamento aprovado', badgeClass: 'badgeSuccess' },
   pending: { label: 'Aguardando pagamento', badgeClass: 'badgeWarning' },
   in_process: { label: 'Em análise', badgeClass: 'badgeInfo' },
+  authorized: { label: 'Autorizado', badgeClass: 'badgeInfo' },
   rejected: { label: 'Pagamento recusado', badgeClass: 'badgeError' },
   cancelled: { label: 'Cancelado', badgeClass: 'badgeError' },
   refunded: { label: 'Reembolsado', badgeClass: 'badgeInfo' },
+  charged_back: { label: 'Contestado', badgeClass: 'badgeError' },
 };
 
 const ORDER_STATUS_LABELS = {
@@ -217,7 +222,11 @@ export default function MinhaContaPage() {
                       <strong>PIX Copia e Cola (pendente):</strong>
                       <div className={styles.codeBox}>{payload.qr_code}</div>
                       {payload.ticket_url && (
-                        <a href={payload.ticket_url} target="_blank" rel="noopener noreferrer">
+                        <a
+                          href={normalizeMercadoPagoTicketUrl(payload.ticket_url)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
                           Abrir comprovante/QR no Mercado Pago
                         </a>
                       )}
@@ -231,7 +240,11 @@ export default function MinhaContaPage() {
                         <div className={`${styles.codeBox} ${styles.mt4}`}>{payload.digitable_line}</div>
                       )}
                       {payload.ticket_url && (
-                        <a href={payload.ticket_url} target="_blank" rel="noopener noreferrer">
+                        <a
+                          href={normalizeMercadoPagoTicketUrl(payload.ticket_url)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
                           Abrir boleto para pagamento
                         </a>
                       )}

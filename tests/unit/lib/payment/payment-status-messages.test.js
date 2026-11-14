@@ -3,6 +3,7 @@ import {
   getPaymentFeedback,
   formatCpfCnpj,
   isValidCpfCnpjDigits,
+  normalizeMercadoPagoTicketUrl,
 } from '../../../../lib/payment/payment-status-messages.js';
 
 describe('payment-status-messages — feedback e validação de documento', () => {
@@ -76,5 +77,30 @@ describe('payment-status-messages — feedback e validação de documento', () =
     expect(isValidCpfCnpjDigits('12345678000195')).toBe(true);
     expect(isValidCpfCnpjDigits('11111111111')).toBe(false);
     expect(isValidCpfCnpjDigits('12345')).toBe(false);
+  });
+
+  it('normaliza URLs /staging/payments/ do Mercado Pago para /sandbox/payments/ preservando parâmetros e domínios válidos', () => {
+    const stagingUrl =
+      'https://www.mercadopago.com.br/staging/payments/189650364540/ticket?caller_id=3845624858&payment_method_id=bolbradesco&payment_id=189650364540&payment_method_reference_id=6010877038&hash=57246646-0bce-4389-89c6-5fc7b9542f44';
+    const expectedSandboxUrl =
+      'https://www.mercadopago.com.br/sandbox/payments/189650364540/ticket?caller_id=3845624858&payment_method_id=bolbradesco&payment_id=189650364540&payment_method_reference_id=6010877038&hash=57246646-0bce-4389-89c6-5fc7b9542f44';
+
+    expect(normalizeMercadoPagoTicketUrl(stagingUrl)).toBe(expectedSandboxUrl);
+    expect(normalizeMercadoPagoTicketUrl(`  ${stagingUrl}  `)).toBe(expectedSandboxUrl);
+    expect(normalizeMercadoPagoTicketUrl(expectedSandboxUrl)).toBe(expectedSandboxUrl);
+  });
+
+  it('preserva URLs de produção, domínios externos, rotas relativas e trata valores inválidos', () => {
+    const prodUrl =
+      'https://www.mercadopago.com.br/payments/189650364540/ticket?caller_id=3845624858&hash=abc';
+    const otherHostUrl = 'https://example.com/staging/payments/189650364540/ticket';
+
+    expect(normalizeMercadoPagoTicketUrl(prodUrl)).toBe(prodUrl);
+    expect(normalizeMercadoPagoTicketUrl(otherHostUrl)).toBe(otherHostUrl);
+    expect(normalizeMercadoPagoTicketUrl('/minha-conta?pedido=21')).toBe('/minha-conta?pedido=21');
+    expect(normalizeMercadoPagoTicketUrl('not a valid url')).toBe('not a valid url');
+    expect(normalizeMercadoPagoTicketUrl(null)).toBeNull();
+    expect(normalizeMercadoPagoTicketUrl('')).toBeNull();
+    expect(normalizeMercadoPagoTicketUrl('   ')).toBeNull();
   });
 });

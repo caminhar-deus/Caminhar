@@ -1,5 +1,6 @@
 import { getAuthenticatedCustomer } from '../../../lib/auth/customer-auth.js';
-import { getCustomerOrders } from '../../../lib/domain/orders.js';
+import { getCustomerOrderById, getCustomerOrders } from '../../../lib/domain/orders.js';
+import { reconcilePendingOrders } from '../../../lib/payment/reconcile-orders.js';
 import { logger } from '../../../lib/infra/logger.js';
 
 export default async function handler(req, res) {
@@ -16,7 +17,28 @@ export default async function handler(req, res) {
   }
 
   try {
-    const orders = await getCustomerOrders(session.customerId);
+    const shouldSync = req.query?.sync !== '0';
+
+    if (req.query?.orderId !== undefined) {
+      const orderId = Number(req.query.orderId);
+      if (!Number.isInteger(orderId) || orderId <= 0) {
+        return res.status(400).json({ error: 'Bad Request', message: 'Identificador de pedido inválido.' });
+      }
+      const order = await getCustomerOrderById(orderId, session.customerId);
+      if (!order) {
+        return res.status(404).json({ error: 'Not Found', message: 'Pedido não encontrado.' });
+      }
+      if (!shouldSync) {
+        return res.status(200).json({ order });
+      }
+      const { orders: synced } = await reconcilePendingOrders([order], { maxOrders: 1 });
+      return res.status(200).json({ order: synced[0] || order });
+    }
+
+    const rawOrders = await getCustomerOrders(session.customerId);
+    const { orders } = shouldSync
+      ? await reconcilePendingOrders(rawOrders)
+      : { orders: rawOrders };
     return res.status(200).json({ orders });
   } catch (error) {
     logger.error('CustomerOrders', 'Erro ao consultar compras do visitante:', error);

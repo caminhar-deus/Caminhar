@@ -294,4 +294,208 @@ describe('Página de Checkout do Visitante (pages/checkout/[id].js)', () => {
       ).toBeInTheDocument();
     });
   });
+
+  it('exibe botão "Verificar pagamento agora" no PIX pendente e atualiza para confirmado ao consultar /api/customer/orders?orderId=20', async () => {
+    fetchMock.mockImplementation(async (url, options = {}) => {
+      const urlStr = String(url);
+      if (urlStr.includes('/api/customer/auth')) {
+        return {
+          ok: true,
+          json: async () => ({
+            authenticated: true,
+            customer: {
+              id: 1,
+              name: 'Gustavo',
+              email: 'gustavo@exemplo.com',
+              default_address: {
+                cep: '01001000',
+                street: 'Praça da Sé',
+                number: '100',
+                neighborhood: 'Sé',
+                city: 'São Paulo',
+                state: 'SP',
+              },
+            },
+          }),
+        };
+      }
+      if (urlStr.includes('/api/checkout?productId=5')) {
+        return {
+          ok: true,
+          json: async () => ({
+            product: {
+              id: 5,
+              name: 'Livro Teste',
+              price: 0.01,
+              stock: 50,
+              shipping_type: 'free',
+              shipping_cost: 0,
+              formatted_price: 'R$ 0,01',
+            },
+          }),
+        };
+      }
+      if (urlStr.endsWith('/api/checkout') && options.method === 'POST') {
+        return {
+          ok: true,
+          status: 201,
+          json: async () => ({
+            order: {
+              id: 20,
+              product_name: 'Livro Teste',
+              quantity: 1,
+              total_amount: 0.01,
+              formatted_total_amount: 'R$ 0,01',
+              payment_method: 'pix',
+              payment_status: 'pending',
+              order_status: 'awaiting_payment',
+              payment_payload: {
+                qr_code: '000201010212PIXTESTE20',
+                status_detail: 'waiting_transfer',
+              },
+            },
+          }),
+        };
+      }
+      if (urlStr.includes('/api/customer/orders?orderId=20')) {
+        return {
+          ok: true,
+          json: async () => ({
+            order: {
+              id: 20,
+              product_name: 'Livro Teste',
+              quantity: 1,
+              total_amount: 0.01,
+              formatted_total_amount: 'R$ 0,01',
+              payment_method: 'pix',
+              payment_status: 'approved',
+              order_status: 'paid',
+              payment_payload: {
+                qr_code: '000201010212PIXTESTE20',
+                status_detail: 'accredited',
+                mp_order_status: 'processed',
+              },
+            },
+          }),
+        };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+
+    render(<CheckoutPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Livro Teste')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('radio', { name: /PIX/i }));
+    fireEvent.change(screen.getByLabelText(/CPF ou CNPJ do titular/i), {
+      target: { value: '19119119100' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar e Pagar' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Verificar pagamento agora/i })).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('000201010212PIXTESTE20')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Verificar pagamento agora/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Pedido #20 confirmado e pago!')).toBeInTheDocument();
+    });
+    expect(
+      screen.queryByRole('button', { name: /Verificar pagamento agora/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it('normaliza link /staging/payments/ para /sandbox/payments/ no boleto pendente exibido após finalizar compra', async () => {
+    const stagingTicketUrl =
+      'https://www.mercadopago.com.br/staging/payments/189650364540/ticket?caller_id=3845624858&payment_method_id=bolbradesco&payment_id=189650364540&payment_method_reference_id=6010877038&hash=57246646-0bce-4389-89c6-5fc7b9542f44';
+    const expectedSandboxTicketUrl =
+      'https://www.mercadopago.com.br/sandbox/payments/189650364540/ticket?caller_id=3845624858&payment_method_id=bolbradesco&payment_id=189650364540&payment_method_reference_id=6010877038&hash=57246646-0bce-4389-89c6-5fc7b9542f44';
+
+    fetchMock.mockImplementation(async (url, options = {}) => {
+      const urlStr = String(url);
+      if (urlStr.includes('/api/customer/auth')) {
+        return {
+          ok: true,
+          json: async () => ({
+            authenticated: true,
+            customer: {
+              id: 1,
+              name: 'Gustavo',
+              email: 'gustavo@exemplo.com',
+              default_address: {
+                cep: '01001000',
+                street: 'Praça da Sé',
+                number: '100',
+                neighborhood: 'Sé',
+                city: 'São Paulo',
+                state: 'SP',
+              },
+            },
+          }),
+        };
+      }
+      if (urlStr.includes('/api/checkout?productId=5')) {
+        return {
+          ok: true,
+          json: async () => ({
+            product: {
+              id: 5,
+              name: 'Livro Teste',
+              price: 4,
+              stock: 50,
+              shipping_type: 'free',
+              shipping_cost: 0,
+              formatted_price: 'R$ 4,00',
+            },
+          }),
+        };
+      }
+      if (urlStr.endsWith('/api/checkout') && options.method === 'POST') {
+        return {
+          ok: true,
+          status: 201,
+          json: async () => ({
+            order: {
+              id: 21,
+              product_name: 'Livro Teste',
+              quantity: 1,
+              total_amount: 4,
+              formatted_total_amount: 'R$ 4,00',
+              payment_method: 'ticket',
+              payment_status: 'pending',
+              order_status: 'awaiting_payment',
+              payment_payload: {
+                ticket_url: stagingTicketUrl,
+                digitable_line: '23793380296060108770738006333306316330000000400',
+                barcode_content: '23793163300000004003380260601087703800633330',
+              },
+            },
+          }),
+        };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+
+    render(<CheckoutPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Livro Teste')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('radio', { name: /Boleto/i }));
+    fireEvent.change(screen.getByLabelText(/CPF ou CNPJ/i), {
+      target: { value: '19119119100' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar e Pagar' }));
+
+    await waitFor(() => {
+      const boletoLink = screen.getByRole('link', { name: /Abrir boleto para pagamento/i });
+      expect(boletoLink).toHaveAttribute('href', expectedSandboxTicketUrl);
+    });
+  });
 });

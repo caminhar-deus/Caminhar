@@ -232,7 +232,13 @@ function getPaymentBadge(status) {
   if (status === 'approved') return { label: 'Aprovado', cls: salesStyles.badgeApproved };
   if (status === 'pending') return { label: 'Pendente', cls: salesStyles.badgePending };
   if (status === 'in_process') return { label: 'Em análise', cls: salesStyles.badgeInfo };
-  if (status === 'rejected' || status === 'cancelled') return { label: 'Recusado/Canc.', cls: salesStyles.badgeRejected };
+  if (status === 'authorized') return { label: 'Autorizado', cls: salesStyles.badgeInfo };
+  if (status === 'rejected' || status === 'cancelled' || status === 'charged_back') {
+    return {
+      label: status === 'charged_back' ? 'Contestado' : 'Recusado/Canc.',
+      cls: salesStyles.badgeRejected,
+    };
+  }
   if (status === 'refunded') return { label: 'Reembolsado', cls: salesStyles.badgeInfo };
   return { label: status || '-', cls: salesStyles.badgeInfo };
 }
@@ -262,9 +268,14 @@ export default function AdminSales({ readOnly = false }) {
   const [modalOrderStatus, setModalOrderStatus] = useState('awaiting_payment');
   const [modalTrackingCode, setModalTrackingCode] = useState('');
   const [savingOrder, setSavingOrder] = useState(false);
+  const [syncingOrders, setSyncingOrders] = useState(false);
 
-  const fetchOrders = useCallback(async () => {
-    setLoadingOrders(true);
+  const fetchOrders = useCallback(async ({ explicitSync = false } = {}) => {
+    if (explicitSync) {
+      setSyncingOrders(true);
+    } else {
+      setLoadingOrders(true);
+    }
     try {
       const params = new URLSearchParams({
         page: String(page),
@@ -274,6 +285,7 @@ export default function AdminSales({ readOnly = false }) {
       if (paymentStatus) params.set('paymentStatus', paymentStatus);
       if (orderStatus) params.set('orderStatus', orderStatus);
       if (paymentMethod) params.set('paymentMethod', paymentMethod);
+      if (explicitSync) params.set('sync', '1');
 
       const res = await fetch(`/api/admin/orders?${params.toString()}`);
       if (res.ok) {
@@ -281,6 +293,14 @@ export default function AdminSales({ readOnly = false }) {
         setOrders(data.data || []);
         setTotalPages(data.pagination?.totalPages || 1);
         setTotalOrders(data.pagination?.total || 0);
+        if (explicitSync) {
+          const updatedCount = Number(data.syncedCount || 0);
+          toast.success(
+            updatedCount > 0
+              ? `${updatedCount} pedido(s) atualizado(s) com o Mercado Pago.`
+              : 'Todos os pedidos desta página já estão sincronizados.'
+          );
+        }
       } else {
         toast.error('Erro ao carregar os pedidos internos.');
       }
@@ -288,6 +308,7 @@ export default function AdminSales({ readOnly = false }) {
       toast.error('Falha de conexão ao buscar pedidos.');
     } finally {
       setLoadingOrders(false);
+      setSyncingOrders(false);
     }
   }, [page, search, paymentStatus, orderStatus, paymentMethod]);
 
@@ -387,10 +408,21 @@ export default function AdminSales({ readOnly = false }) {
                 Acompanhamento de compras diretas realizadas no Site Público e processadas via Mercado Pago.
               </p>
             </div>
-            <Button variant="secondary" size="sm" onClick={handleExportOrdersCsv}>
-              <AppIcon name="download" size={16} />
-              Exportar CSV
-            </Button>
+            <div className={crudStyles.headerControls}>
+              <Button
+                variant="secondary"
+                size="sm"
+                loading={syncingOrders}
+                onClick={() => fetchOrders({ explicitSync: true })}
+              >
+                <AppIcon name="refresh" size={16} />
+                Sincronizar MP
+              </Button>
+              <Button variant="secondary" size="sm" onClick={handleExportOrdersCsv}>
+                <AppIcon name="download" size={16} />
+                Exportar CSV
+              </Button>
+            </div>
           </div>
 
           <div className={salesStyles.filtersRow}>

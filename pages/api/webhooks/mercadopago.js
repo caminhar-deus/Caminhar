@@ -2,6 +2,7 @@ import { invalidateCache } from '../../../lib/cache/cache.js';
 import { processMercadoPagoWebhookEvent } from '../../../lib/domain/orders.js';
 import {
   fetchMercadoPagoPaymentStatus,
+  mapMercadoPagoStatus,
   verifyMercadoPagoWebhookSignature,
 } from '../../../lib/payment/mercadopago.js';
 import { logger } from '../../../lib/infra/logger.js';
@@ -54,19 +55,19 @@ export default async function handler(req, res) {
     // (o corpo do webhook não é fonte confiável do status). Fora de produção, um status
     // explícito no corpo é aceito (testes/simulações) e, sem token, vale o modo sandbox local.
     const isProduction = process.env.NODE_ENV === 'production';
+    const txPayment = body?.data?.transactions?.payments?.[0] || null;
     const bodyStatus = body?.payment_status || body?.data?.status;
+    const bodyStatusDetail = txPayment?.status_detail || body?.data?.status_detail || '';
+    const resolvedOrderStatus = typeof body?.data?.status === 'string' ? body.data.status : null;
+    const resolvedTxId = txPayment?.id ? String(txPayment.id) : null;
+    const externalReference =
+      body?.data?.external_reference !== undefined && body?.data?.external_reference !== null
+        ? String(body.data.external_reference)
+        : null;
+
     let paymentStatus;
     if (!isProduction && bodyStatus) {
-      const normalizedBodyStatus = String(bodyStatus).trim().toLowerCase();
-      const simulatedOrderStatusMap = {
-        processed: 'approved',
-        processing: 'in_process',
-        action_required: 'pending',
-        created: 'pending',
-        failed: 'rejected',
-        canceled: 'cancelled',
-      };
-      paymentStatus = simulatedOrderStatusMap[normalizedBodyStatus] || bodyStatus;
+      paymentStatus = mapMercadoPagoStatus(bodyStatus, bodyStatusDetail);
     } else if (isProduction || process.env.MP_ACCESS_TOKEN) {
       try {
         paymentStatus = isOrderEvent
@@ -90,16 +91,20 @@ export default async function handler(req, res) {
       eventId: String(eventId),
       eventType: String(eventType),
       mpPaymentId: String(dataId),
+      ...(externalReference ? { externalReference } : {}),
       paymentStatus,
       paymentPayload: {
         last_webhook_event: String(eventType),
         last_webhook_action: typeof action === 'string' ? action : null,
         last_webhook_status: paymentStatus,
+        ...(bodyStatusDetail ? { status_detail: String(bodyStatusDetail) } : {}),
+        ...(resolvedOrderStatus ? { mp_order_status: resolvedOrderStatus } : {}),
+        ...(resolvedTxId ? { mp_transaction_id: resolvedTxId } : {}),
         webhook_received_at: new Date().toISOString(),
       },
     });
 
-    await invalidateCache('products:*');
+    await invalidateCache('products:*').catch(() => {});
 
     return res.status(200).json({
       received: true,

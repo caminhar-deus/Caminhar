@@ -12,8 +12,10 @@ import {
   attachOrderPaymentInfo,
   cancelFailedCheckoutOrder,
   getCustomerOrders,
+  getCustomerOrderById,
   getAdminOrders,
   updateAdminOrder,
+  syncOrderPaymentStatus,
   processMercadoPagoWebhookEvent,
 } from '../../../../lib/domain/orders.js';
 
@@ -215,6 +217,43 @@ describe('Domínio de Pedidos Internos — lib/domain/orders.js', () => {
       expect(orders).toHaveLength(1);
       expect(orders[0].formatted_total_amount).toContain('115');
       expect(orders[0].delivery_address.cep).toBe('01001-000');
+    });
+  });
+
+  describe('getCustomerOrderById()', () => {
+    it('normaliza payment_payload.ticket_url salvo como /staging/payments/ para /sandbox/payments/', async () => {
+      const stagingUrl =
+        'https://www.mercadopago.com.br/staging/payments/189650364540/ticket?caller_id=3845624858&hash=57246646';
+      const expectedSandboxUrl =
+        'https://www.mercadopago.com.br/sandbox/payments/189650364540/ticket?caller_id=3845624858&hash=57246646';
+
+      query.mockResolvedValueOnce({
+        rows: [
+          {
+            id: 21,
+            customer_id: 9,
+            product_id: 19,
+            product_name: 'Livro Teste',
+            unit_price: '4.00',
+            shipping_cost: '0.00',
+            total_amount: '4.00',
+            payment_method: 'ticket',
+            payment_status: 'pending',
+            order_status: 'awaiting_payment',
+            payment_payload: JSON.stringify({
+              ticket_url: stagingUrl,
+              digitable_line: '23793380296060108770738006333306316330000000400',
+            }),
+          },
+        ],
+      });
+
+      const order = await getCustomerOrderById(21, 9);
+      expect(order).not.toBeNull();
+      expect(order.payment_payload.ticket_url).toBe(expectedSandboxUrl);
+      expect(order.payment_payload.digitable_line).toBe(
+        '23793380296060108770738006333306316330000000400'
+      );
     });
   });
 
@@ -609,6 +648,243 @@ describe('Domínio de Pedidos Internos — lib/domain/orders.js', () => {
       const res = await cancelFailedCheckoutOrder(61, 'Timeout Mercado Pago');
       expect(res.order_status).toBe('cancelled');
       expect(res.stock_restored).toBe(true);
+    });
+  });
+
+  describe('getCustomerOrderById(), syncOrderPaymentStatus() e fallback por externalReference', () => {
+    it('getCustomerOrderById deve buscar pedido único do cliente autenticado e formatar valores', async () => {
+      query.mockResolvedValueOnce({
+        rows: [
+          {
+            id: 20,
+            customer_id: 1,
+            product_id: 19,
+            product_name: 'Livro Teste',
+            quantity: 1,
+            unit_price: '0.01',
+            shipping_cost: '0.00',
+            total_amount: '0.01',
+            payment_status: 'pending',
+            order_status: 'awaiting_payment',
+            mp_payment_id: 'ORDTST01M7CT3ZAZKHHJXSER0A1GCTAR',
+            mp_payload: JSON.stringify({ qr_code: 'pix-code', status_detail: 'waiting_transfer' }),
+          },
+        ],
+      });
+
+      const order = await getCustomerOrderById(20, 1);
+      expect(query).toHaveBeenCalledWith(
+        expect.stringMatching(/WHERE o\.id = \$1 AND o\.customer_id = \$2/i),
+        [20, 1]
+      );
+      expect(order).toMatchObject({
+        id: 20,
+        total_amount: 0.01,
+        payment_payload: { qr_code: 'pix-code', status_detail: 'waiting_transfer' },
+      });
+
+      query.mockResolvedValueOnce({ rows: [] });
+      await expect(getCustomerOrderById(999, 1)).resolves.toBeNull();
+    });
+
+    it('syncOrderPaymentStatus aprova pedido pendente preservando qr_code e atualizando metadados', async () => {
+      query
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 20,
+              product_id: 19,
+              quantity: 1,
+              unit_price: '0.01',
+              shipping_cost: '0.00',
+              total_amount: '0.01',
+              payment_status: 'pending',
+              order_status: 'awaiting_payment',
+              stock_restored: false,
+              mp_payment_id: 'ORDTST01M7CT3ZAZKHHJXSER0A1GCTAR',
+              mp_payload: JSON.stringify({
+                qr_code: '000201...',
+                status_detail: 'waiting_transfer',
+              }),
+            },
+          ],
+        })
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 20,
+              unit_price: '0.01',
+              shipping_cost: '0.00',
+              total_amount: '0.01',
+              payment_status: 'approved',
+              order_status: 'paid',
+              stock_restored: false,
+              mp_payment_id: 'ORDTST01M7CT3ZAZKHHJXSER0A1GCTAR',
+              mp_payload: JSON.stringify({
+                qr_code: '000201...',
+                status_detail: 'accredited',
+                mp_order_status: 'processed',
+                mp_transaction_id: 'PAY01M7CT3ZBCE8718PE0KR3DD7JR',
+              }),
+            },
+          ],
+        });
+
+      const updated = await syncOrderPaymentStatus(20, {
+        mpPaymentId: 'ORDTST01M7CT3ZAZKHHJXSER0A1GCTAR',
+        paymentStatus: 'approved',
+        paymentPayload: {
+          status_detail: 'accredited',
+          mp_order_status: 'processed',
+          mp_transaction_id: 'PAY01M7CT3ZBCE8718PE0KR3DD7JR',
+        },
+      });
+
+      expect(updated.payment_status).toBe('approved');
+      expect(updated.order_status).toBe('paid');
+      expect(updated.payment_payload).toMatchObject({
+        qr_code: '000201...',
+        status_detail: 'accredited',
+        mp_order_status: 'processed',
+        mp_transaction_id: 'PAY01M7CT3ZBCE8718PE0KR3DD7JR',
+      });
+
+      const updateArgs = query.mock.calls[1][1];
+      expect(JSON.parse(updateArgs[3])).toMatchObject({
+        qr_code: '000201...',
+        status_detail: 'accredited',
+      });
+    });
+
+    it('syncOrderPaymentStatus recusa atualização com mpPaymentId divergente e impede downgrade de rejected para pending', async () => {
+      query.mockResolvedValueOnce({
+        rows: [
+          {
+            id: 20,
+            mp_payment_id: 'ORDTST_A',
+            payment_status: 'pending',
+            order_status: 'awaiting_payment',
+          },
+        ],
+      });
+
+      await expect(
+        syncOrderPaymentStatus(20, { mpPaymentId: 'ORDTST_B', paymentStatus: 'approved' })
+      ).resolves.toBeNull();
+      expect(query).toHaveBeenCalledTimes(1);
+
+      query
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 21,
+              product_id: 5,
+              quantity: 1,
+              unit_price: '10.00',
+              shipping_cost: '0.00',
+              total_amount: '10.00',
+              mp_payment_id: 'ORDTST_21',
+              payment_status: 'rejected',
+              order_status: 'cancelled',
+              stock_restored: true,
+            },
+          ],
+        })
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 21,
+              unit_price: '10.00',
+              shipping_cost: '0.00',
+              total_amount: '10.00',
+              mp_payment_id: 'ORDTST_21',
+              payment_status: 'rejected',
+              order_status: 'cancelled',
+              stock_restored: true,
+            },
+          ],
+        });
+
+      const res = await syncOrderPaymentStatus(21, {
+        mpPaymentId: 'ORDTST_21',
+        paymentStatus: 'pending',
+      });
+      expect(res.payment_status).toBe('rejected');
+      expect(res.order_status).toBe('cancelled');
+    });
+
+    it('processMercadoPagoWebhookEvent usa fallback por externalReference quando mp_payment_id ainda não foi gravado e bloqueia conflito de id', async () => {
+      query
+        .mockResolvedValueOnce({ rows: [{ id: 1 }] })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 20,
+              product_id: 19,
+              quantity: 1,
+              unit_price: '0.01',
+              shipping_cost: '0.00',
+              total_amount: '0.01',
+              payment_status: 'pending',
+              order_status: 'awaiting_payment',
+              stock_restored: false,
+              mp_payment_id: null,
+            },
+          ],
+        })
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 20,
+              unit_price: '0.01',
+              shipping_cost: '0.00',
+              total_amount: '0.01',
+              payment_status: 'approved',
+              order_status: 'paid',
+              stock_restored: false,
+              mp_payment_id: 'ORDTST01M7CT3ZAZKHHJXSER0A1GCTAR',
+            },
+          ],
+        });
+
+      const okRes = await processMercadoPagoWebhookEvent({
+        eventId: 'evt_ext_ref_20',
+        eventType: 'order',
+        mpPaymentId: 'ORDTST01M7CT3ZAZKHHJXSER0A1GCTAR',
+        externalReference: '20',
+        paymentStatus: 'approved',
+        paymentPayload: { status_detail: 'accredited', mp_order_status: 'processed' },
+      });
+
+      expect(okRes.duplicate).toBe(false);
+      expect(okRes.order.payment_status).toBe('approved');
+      expect(okRes.order.order_status).toBe('paid');
+
+      query.mockReset();
+      query
+        .mockResolvedValueOnce({ rows: [{ id: 2 }] })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 20,
+              mp_payment_id: 'ORDTST_OUTRO_ID',
+              payment_status: 'pending',
+              order_status: 'awaiting_payment',
+            },
+          ],
+        });
+
+      const mismatchRes = await processMercadoPagoWebhookEvent({
+        eventId: 'evt_ext_ref_mismatch',
+        eventType: 'order',
+        mpPaymentId: 'ORDTST_NOVO',
+        externalReference: '20',
+        paymentStatus: 'approved',
+      });
+
+      expect(mismatchRes).toEqual({ duplicate: false, order: null });
     });
   });
 });

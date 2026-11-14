@@ -257,6 +257,7 @@ lib/domain/musicas.js → lib/crud/crud.js
 lib/domain/musicas.js → lib/infra/db.js
 lib/domain/musicas.js → lib/domain/shared-pagination.js
 lib/domain/orders.js → lib/infra/db.js
+lib/domain/orders.js → lib/payment/payment-status-messages.js
 lib/domain/posts.js → lib/crud/crud.js
 lib/domain/posts.js → lib/infra/db.js
 lib/domain/posts.js → lib/domain/audit.js
@@ -271,6 +272,11 @@ lib/domain/videos.js → lib/crud/crud.js
 lib/domain/videos.js → lib/infra/db.js
 lib/domain/videos.js → lib/infra/logger.js
 lib/domain/videos.js → lib/domain/shared-pagination.js
+lib/payment/mercadopago.js → lib/payment/payment-status-messages.js
+lib/payment/reconcile-orders.js → lib/cache/cache.js
+lib/payment/reconcile-orders.js → lib/domain/orders.js
+lib/payment/reconcile-orders.js → lib/infra/logger.js
+lib/payment/reconcile-orders.js → lib/payment/mercadopago.js
 pages/404.js → lib/seo/config.js
 pages/_app.js → hooks/index.js
 pages/_app.js → pages/styles/globals.css
@@ -341,6 +347,7 @@ pages/api/admin/orders.js → lib/cache/cache.js
 pages/api/admin/orders.js → lib/domain/audit.js
 pages/api/admin/orders.js → lib/domain/orders.js
 pages/api/admin/orders.js → lib/infra/logger.js
+pages/api/admin/orders.js → lib/payment/reconcile-orders.js
 pages/api/admin/posts.js → lib/api/adminCrudHandler.js
 pages/api/admin/posts.js → lib/crud/crud.js
 pages/api/admin/posts.js → lib/domain/posts.js
@@ -397,6 +404,7 @@ pages/api/customer/auth.js → lib/infra/logger.js
 pages/api/customer/orders.js → lib/auth/customer-auth.js
 pages/api/customer/orders.js → lib/domain/orders.js
 pages/api/customer/orders.js → lib/infra/logger.js
+pages/api/customer/orders.js → lib/payment/reconcile-orders.js
 pages/api/dicas.js → lib/api/helpers.js
 pages/api/dicas.js → lib/api/pagination.js
 pages/api/dicas.js → lib/cache/cache.js
@@ -574,6 +582,7 @@ tests/integration/api/admin/orders.test.js → lib/cache/cache.js
 tests/integration/api/admin/orders.test.js → lib/domain/audit.js
 tests/integration/api/admin/orders.test.js → lib/domain/orders.js
 tests/integration/api/admin/orders.test.js → lib/infra/db.js
+tests/integration/api/admin/orders.test.js → lib/payment/reconcile-orders.js
 tests/integration/api/admin/orders.test.js → pages/api/admin/orders.js
 tests/integration/api/admin/orders.test.js → tests/mocks/db-module.js
 tests/integration/api/admin/posts.test.js → lib/cache/cache.js
@@ -645,6 +654,7 @@ tests/integration/api/customer/auth.test.js → lib/domain/customers.js
 tests/integration/api/customer/auth.test.js → pages/api/customer/auth.js
 tests/integration/api/customer/orders.test.js → lib/auth/customer-auth.js
 tests/integration/api/customer/orders.test.js → lib/domain/orders.js
+tests/integration/api/customer/orders.test.js → lib/payment/reconcile-orders.js
 tests/integration/api/customer/orders.test.js → pages/api/customer/orders.js
 tests/integration/api/dicas.test.js → lib/cache/cache.js
 tests/integration/api/dicas.test.js → lib/infra/db.js
@@ -939,6 +949,11 @@ tests/unit/lib/infra/logger.test.js → lib/infra/logger.js
 tests/unit/lib/infra/redis.test.js → lib/infra/redis.js
 tests/unit/lib/payment/mercadopago.test.js → lib/payment/mercadopago.js
 tests/unit/lib/payment/payment-status-messages.test.js → lib/payment/payment-status-messages.js
+tests/unit/lib/payment/reconcile-orders.test.js → lib/cache/cache.js
+tests/unit/lib/payment/reconcile-orders.test.js → lib/domain/orders.js
+tests/unit/lib/payment/reconcile-orders.test.js → lib/infra/logger.js
+tests/unit/lib/payment/reconcile-orders.test.js → lib/payment/mercadopago.js
+tests/unit/lib/payment/reconcile-orders.test.js → lib/payment/reconcile-orders.js
 tests/unit/lib/redis.test.js → lib/infra/redis.js
 tests/unit/lib/seo/config.test.js → lib/seo/config.js
 tests/unit/pages/404.test.js → pages/404.js

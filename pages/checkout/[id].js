@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -8,6 +8,7 @@ import {
   getPaymentFeedback,
   formatCpfCnpj,
   isValidCpfCnpjDigits,
+  normalizeMercadoPagoTicketUrl,
 } from '../../lib/payment/payment-status-messages.js';
 import styles from '../styles/CustomerPages.module.css';
 
@@ -254,6 +255,75 @@ export default function CheckoutPage() {
 
   const [submitting, setSubmitting] = useState(false);
   const [completedOrder, setCompletedOrder] = useState(null);
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
+  const [statusCheckMessage, setStatusCheckMessage] = useState('');
+
+  const verifyOrderStatus = useCallback(
+    async ({ silent = false } = {}) => {
+      if (!completedOrder?.id) return;
+      if (!silent) {
+        setVerifyingPayment(true);
+        setStatusCheckMessage('');
+      }
+      try {
+        const res = await fetch(
+          `/api/customer/orders?orderId=${encodeURIComponent(completedOrder.id)}`
+        );
+        if (!res.ok) {
+          if (!silent) {
+            setStatusCheckMessage('Não foi possível consultar o status agora. Tente em instantes.');
+          }
+          return;
+        }
+        const data = await res.json().catch(() => ({}));
+        if (data?.order) {
+          setCompletedOrder(data.order);
+          const nextStatus = data.order.payment_status || 'pending';
+          if (
+            !silent &&
+            (nextStatus === 'pending' || nextStatus === 'in_process' || nextStatus === 'authorized')
+          ) {
+            setStatusCheckMessage(
+              'Pagamento ainda pendente de confirmação no Mercado Pago. Se você acabou de pagar, aguarde alguns segundos e tente novamente.'
+            );
+          } else if (nextStatus !== 'pending' && nextStatus !== 'in_process' && nextStatus !== 'authorized') {
+            setStatusCheckMessage('');
+          }
+        }
+      } catch {
+        if (!silent) {
+          setStatusCheckMessage('Falha de conexão ao verificar pagamento.');
+        }
+      } finally {
+        if (!silent) {
+          setVerifyingPayment(false);
+        }
+      }
+    },
+    [completedOrder?.id]
+  );
+
+  useEffect(() => {
+    if (!completedOrder?.id) return undefined;
+    const status = completedOrder.payment_status || 'pending';
+    const isTransient = status === 'pending' || status === 'in_process' || status === 'authorized';
+    const shouldAutoPoll =
+      isTransient && (completedOrder.payment_method === 'pix' || status !== 'pending');
+    if (!shouldAutoPoll) return undefined;
+
+    let attempts = 0;
+    const MAX_POLL_ATTEMPTS = 36;
+    const timer = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      attempts += 1;
+      verifyOrderStatus({ silent: true });
+      if (attempts >= MAX_POLL_ATTEMPTS) {
+        clearInterval(timer);
+      }
+    }, 5000);
+
+    return () => clearInterval(timer);
+  }, [completedOrder?.id, completedOrder?.payment_status, completedOrder?.payment_method, verifyOrderStatus]);
 
   useEffect(() => {
     if (!router.isReady || !id) return;
@@ -558,6 +628,7 @@ export default function CheckoutPage() {
       }
 
       setCardSecurityCode('');
+      setStatusCheckMessage('');
       setCompletedOrder(data.order);
     } catch (submitError) {
       setError(extractCheckoutErrorMessage(submitError));
@@ -617,6 +688,10 @@ export default function CheckoutPage() {
           const isFailed =
             completedOrder.payment_status === 'rejected' ||
             completedOrder.payment_status === 'cancelled';
+          const isTransient =
+            completedOrder.payment_status === 'pending' ||
+            completedOrder.payment_status === 'in_process' ||
+            completedOrder.payment_status === 'authorized';
 
           return (
             <div className={styles.sectionCard}>
@@ -659,7 +734,7 @@ export default function CheckoutPage() {
                       </Button>
                       {completedOrder.payment_payload.ticket_url && (
                         <a
-                          href={completedOrder.payment_payload.ticket_url}
+                          href={normalizeMercadoPagoTicketUrl(completedOrder.payment_payload.ticket_url)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className={styles.backLink}
@@ -698,7 +773,7 @@ export default function CheckoutPage() {
                       )}
                       {completedOrder.payment_payload?.ticket_url && (
                         <a
-                          href={completedOrder.payment_payload.ticket_url}
+                          href={normalizeMercadoPagoTicketUrl(completedOrder.payment_payload.ticket_url)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className={styles.backLink}
@@ -711,7 +786,25 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
+              {statusCheckMessage && (
+                <div className={`${styles.alertInfo} ${styles.mt4}`} role="status">
+                  {statusCheckMessage}
+                </div>
+              )}
+
               <div className={styles.actionRow}>
+                {isTransient && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="md"
+                    loading={verifyingPayment}
+                    onClick={() => verifyOrderStatus({ silent: false })}
+                  >
+                    <AppIcon name="refresh" size={16} />
+                    Verificar pagamento agora
+                  </Button>
+                )}
                 {isFailed && (
                   <Button
                     type="button"
@@ -719,6 +812,7 @@ export default function CheckoutPage() {
                     size="md"
                     onClick={() => {
                       setCompletedOrder(null);
+                      setStatusCheckMessage('');
                       setError('');
                     }}
                   >

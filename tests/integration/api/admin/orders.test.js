@@ -6,7 +6,7 @@ jest.mock('../../../../lib/infra/db.js', () => require('../../../mocks/db-module
 
 // Mocks de auditoria e domínio de pedidos
 jest.mock('../../../../lib/domain/audit.js', () => ({
-  logActivity: jest.fn(),
+  logActivity: jest.fn().mockResolvedValue(undefined),
 }));
 
 jest.mock('../../../../lib/cache/cache.js', () => ({
@@ -16,6 +16,10 @@ jest.mock('../../../../lib/cache/cache.js', () => ({
 jest.mock('../../../../lib/domain/orders.js', () => ({
   getAdminOrders: jest.fn(),
   updateAdminOrder: jest.fn(),
+}));
+
+jest.mock('../../../../lib/payment/reconcile-orders.js', () => ({
+  reconcilePendingOrders: jest.fn(async (orders) => ({ orders, syncedCount: 0 })),
 }));
 
 // Mocks de autenticação
@@ -29,11 +33,13 @@ import { query } from '../../../../lib/infra/db.js';
 import { checkRateLimit } from '../../../../lib/cache/cache.js';
 import { getAuthToken, verifyToken } from '../../../../lib/auth/auth.js';
 import { getAdminOrders, updateAdminOrder } from '../../../../lib/domain/orders.js';
+import { reconcilePendingOrders } from '../../../../lib/payment/reconcile-orders.js';
 import { logActivity } from '../../../../lib/domain/audit.js';
 
 describe('API Admin - Gestão de Vendas / Pedidos (/api/admin/orders)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    reconcilePendingOrders.mockImplementation(async (orders) => ({ orders, syncedCount: 0 }));
 
     getAuthToken.mockReturnValue('valid-admin-token');
     verifyToken.mockReturnValue({ userId: 1, username: 'admin_user', role: 'admin' });
@@ -161,6 +167,66 @@ describe('API Admin - Gestão de Vendas / Pedidos (/api/admin/orders)', () => {
 
       await handler(req, res);
       expect(res._getStatusCode()).toBe(400);
+    });
+
+    it('deve reconciliar pedidos pendentes com sync=1 e registrar auditoria quando houver atualização', async () => {
+      const pendingOrder = {
+        id: 20,
+        product_name: 'Livro Teste',
+        payment_status: 'pending',
+        order_status: 'awaiting_payment',
+        mp_payment_id: 'ORDTST01M7CT3ZAZKHHJXSER0A1GCTAR',
+      };
+      const syncedOrder = {
+        ...pendingOrder,
+        payment_status: 'approved',
+        order_status: 'paid',
+      };
+      getAdminOrders.mockResolvedValueOnce({
+        data: [pendingOrder],
+        pagination: { page: 1, limit: 10, total: 1, totalPages: 1 },
+      });
+      reconcilePendingOrders.mockResolvedValueOnce({
+        orders: [syncedOrder],
+        syncedCount: 1,
+      });
+
+      const { req, res } = createMocks({
+        method: 'GET',
+        query: { sync: '1' },
+      });
+
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      const data = JSON.parse(res._getData());
+      expect(data.syncedCount).toBe(1);
+      expect(data.data[0].payment_status).toBe('approved');
+      expect(logActivity).toHaveBeenCalledWith(
+        'admin_user',
+        'SINCRONIZAR PEDIDOS MP',
+        'ORDER',
+        null,
+        expect.stringContaining('1 pedido(s)'),
+        expect.any(String)
+      );
+    });
+
+    it('deve pular reconciliação automática quando sync=0', async () => {
+      getAdminOrders.mockResolvedValueOnce({
+        data: [{ id: 20, payment_status: 'pending' }],
+        pagination: { page: 1, limit: 10, total: 1, totalPages: 1 },
+      });
+
+      const { req, res } = createMocks({
+        method: 'GET',
+        query: { sync: '0' },
+      });
+
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      expect(reconcilePendingOrders).not.toHaveBeenCalled();
     });
   });
 

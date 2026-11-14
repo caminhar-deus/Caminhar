@@ -2,7 +2,7 @@
 
 > Escopo: painel administrativo em `/admin` (acesso só com login). A área pública está em `docs/ARQUITETURA_SITE_PUBLICO.md`. Ambos os ambientes compartilham a mesma identidade visual (`design-system/MASTER.md` e `pages/styles/variables.css`), mantendo estruturas de navegação e responsabilidades próprias.
 > Fonte: 23 capturas de tela do painel (`localhost:3000/admin`) + código-fonte atual + diretrizes do dono do projeto.
-> Última atualização: 2026-11-09
+> Última atualização: 2026-11-14
 > Legenda: [PLANEJADO] = alvo ainda não implementado, informado pelo dono | [OBSERVADO] = visto nas imagens/estado legado | [HIPÓTESE] = inferido, confirmar antes de assumir.
 
 ---
@@ -275,12 +275,12 @@ Todas são construídas sobre `AdminCrudBase` (`components/Admin/AdminCrudBase.j
 - **Relação com o público:** os pedidos gerenciados aqui são os mesmos que o comprador consulta na sua conta (`docs/ARQUITETURA_SITE_PUBLICO.md` §5.1).
 - **Comportamento e estrutura definidos pelo dono (2026-11-08):**
   - **Posição e permissão:** **posição 6** na barra lateral esquerda (logo abaixo de `Gestão de Produtos`), com permissão própria **`Gestão de Vendas`** em `lib/domain/permissions.js` e na Gestão de Cargos (§6 e §9).
-  - **Subaba 1 — "Pedidos":** listagem paginada (10 itens por página), busca server-side, filtros por status de pagamento, status do pedido e meio de pagamento (PIX, débito, crédito, boleto), exportação CSV e visão detalhada do pedido (comprador vinculado à tabela `customers`, endereço de entrega, item e quantidade, valor unitário, frete, valor total e identificador/transação do Mercado Pago).
+  - **Subaba 1 — "Pedidos":** listagem paginada (10 itens por página), busca server-side, filtros por status de pagamento, status do pedido e meio de pagamento (PIX, débito, crédito, boleto), botão **"Sincronizar MP"** (`GET /api/admin/orders?sync=1`) e reconciliação automática de pedidos pendentes/em análise junto ao Mercado Pago ([ADR-0041](adr/0041-active-payment-reconciliation-and-webhook-fallback.md)), exportação CSV e visão detalhada do pedido (comprador vinculado à tabela `customers`, endereço de entrega, item e quantidade, valor unitário, frete, valor total e identificador/transação do Mercado Pago).
   - **Subaba 2 — "Produtos Internos":** CRUD completo dos produtos de venda direta (Modalidade B), construído sobre `AdminCrudBase` (§3), com curadoria por posição (`☰`, 1-based), nome *, valor * (`> 0`), imagens *, descrição, categoria, **estoque disponível** *, **configuração de frete** (grátis, valor fixo por produto ou calculado) e status `Rascunho` / `Publicado` (nascendo rascunho — ADR-0029). Na vitrine pública, esses produtos exibem o selo `"Venda direta"` e o botão **"Comprar"** (ou estado esgotado quando estoque = `0`).
   - **Dois status independentes por venda:**
-    - **Status do Pagamento** (sincronizado com o Mercado Pago via Checkout Transparente / Payment Brick + Webhook): `Pendente`, `Aprovado`, `Recusado`, `Cancelado`, `Reembolsado`.
-    - **Status do Pedido / Entrega** (gerenciado pelo operador): `Aguardando pagamento`, `Em preparo`, `Enviado` (com campo para código de rastreio), `Entregue`, `Cancelado`.
-  - **Auditoria:** toda criação, edição, exclusão ou reordenação de produto interno e toda atualização operacional de pedido gera registro em `activity_logs` com identificador real (§5.3 e §9).
+    - **Status do Pagamento** (sincronizado com o Mercado Pago via Checkout Transparente, Webhook e reconciliação ativa): `Pendente`, `Em análise`, `Autorizado`, `Aprovado`, `Recusado`, `Cancelado`, `Reembolsado`, `Contestado`.
+    - **Status do Pedido / Entrega** (gerenciado pelo operador): `Aguardando pagamento`, `Pago`, `Em preparo`, `Enviado` (com campo para código de rastreio), `Entregue`, `Cancelado`.
+  - **Auditoria:** toda criação, edição, exclusão ou reordenação de produto interno, sincronização manual com o Mercado Pago (`SINCRONIZAR PEDIDOS MP`) e atualização operacional de pedido gera registro em `activity_logs` com identificador real (§5.3 e §9).
 
 ## 5. Segurança, Usuários e Auditoria
 

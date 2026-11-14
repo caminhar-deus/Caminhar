@@ -9,10 +9,14 @@ jest.mock('../../../../lib/domain/orders.js', () => ({
   processMercadoPagoWebhookEvent: jest.fn(),
 }));
 
-jest.mock('../../../../lib/payment/mercadopago.js', () => ({
-  verifyMercadoPagoWebhookSignature: jest.fn(),
-  fetchMercadoPagoPaymentStatus: jest.fn(),
-}));
+jest.mock('../../../../lib/payment/mercadopago.js', () => {
+  const actual = jest.requireActual('../../../../lib/payment/mercadopago.js');
+  return {
+    ...actual,
+    verifyMercadoPagoWebhookSignature: jest.fn(),
+    fetchMercadoPagoPaymentStatus: jest.fn(),
+  };
+});
 
 import handler from '../../../../pages/api/webhooks/mercadopago.js';
 import { invalidateCache } from '../../../../lib/cache/cache.js';
@@ -128,6 +132,53 @@ describe('API Webhook Mercado Pago (/api/webhooks/mercadopago)', () => {
       expect(res._getStatusCode()).toBe(503);
       expect(processMercadoPagoWebhookEvent).not.toHaveBeenCalled();
     });
+
+    it('processa evento order.processed sem id de topo consultando /v1/orders e repassando external_reference e transaction', async () => {
+      fetchMercadoPagoPaymentStatus.mockResolvedValueOnce('approved');
+      const { req, res } = signedPaymentRequest({
+        action: 'order.processed',
+        api_version: 'v1',
+        type: 'order',
+        data: {
+          id: 'ORDTST01M7CT3ZAZKHHJXSER0A1GCTAR',
+          external_reference: '20',
+          status: 'processed',
+          status_detail: 'accredited',
+          transactions: {
+            payments: [
+              {
+                id: 'PAY01M7CT3ZBCE8718PE0KR3DD7JR',
+                status: 'processed',
+                status_detail: 'accredited',
+              },
+            ],
+          },
+        },
+      });
+
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      expect(fetchMercadoPagoPaymentStatus).toHaveBeenCalledWith(
+        'ORDTST01M7CT3ZAZKHHJXSER0A1GCTAR',
+        { eventType: 'order' }
+      );
+      expect(processMercadoPagoWebhookEvent).toHaveBeenCalledWith({
+        eventId: 'order_order.processed_ORDTST01M7CT3ZAZKHHJXSER0A1GCTAR_approved',
+        eventType: 'order',
+        mpPaymentId: 'ORDTST01M7CT3ZAZKHHJXSER0A1GCTAR',
+        externalReference: '20',
+        paymentStatus: 'approved',
+        paymentPayload: expect.objectContaining({
+          last_webhook_event: 'order',
+          last_webhook_action: 'order.processed',
+          last_webhook_status: 'approved',
+          status_detail: 'accredited',
+          mp_order_status: 'processed',
+          mp_transaction_id: 'PAY01M7CT3ZBCE8718PE0KR3DD7JR',
+        }),
+      });
+    });
   });
 
   describe('fora de produção', () => {
@@ -181,6 +232,55 @@ describe('API Webhook Mercado Pago (/api/webhooks/mercadopago)', () => {
       expect(res._getStatusCode()).toBe(502);
       expect(processMercadoPagoWebhookEvent).not.toHaveBeenCalled();
     });
+  });
+
+  it('mapeia corretamente webhook order.processed com status_detail=accredited fora de produção', async () => {
+    verifyMercadoPagoWebhookSignature.mockReturnValue(true);
+    processMercadoPagoWebhookEvent.mockResolvedValueOnce({
+      duplicate: false,
+      order: { id: 20, order_status: 'paid' },
+    });
+
+    const { req, res } = signedPaymentRequest({
+      action: 'order.processed',
+      type: 'order',
+      data: {
+        id: 'ORDTST01M7CT3ZAZKHHJXSER0A1GCTAR',
+        external_reference: '20',
+        status: 'processed',
+        status_detail: 'accredited',
+        transactions: {
+          payments: [
+            {
+              id: 'PAY01M7CT3ZBCE8718PE0KR3DD7JR',
+              status: 'processed',
+              status_detail: 'accredited',
+            },
+          ],
+        },
+      },
+    });
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(200);
+    expect(JSON.parse(res._getData())).toEqual({
+      received: true,
+      duplicate: false,
+      orderId: 20,
+    });
+    expect(processMercadoPagoWebhookEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mpPaymentId: 'ORDTST01M7CT3ZAZKHHJXSER0A1GCTAR',
+        externalReference: '20',
+        paymentStatus: 'approved',
+        paymentPayload: expect.objectContaining({
+          status_detail: 'accredited',
+          mp_order_status: 'processed',
+          mp_transaction_id: 'PAY01M7CT3ZBCE8718PE0KR3DD7JR',
+        }),
+      })
+    );
   });
 
   it('confirma sem processar eventos que não são de pagamento', async () => {
