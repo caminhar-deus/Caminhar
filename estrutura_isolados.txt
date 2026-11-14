@@ -120,6 +120,7 @@ scripts/validate-schema.js → scripts/db/connection.js
 scripts/validate-schema.js → scripts/utils/load-env.js
 scripts/create-backup.js → scripts/backup.js
 scripts/create-backup.js → scripts/utils/load-env.js
+scripts/diagnostics/check-model-catalog.js → scripts/diagnostics/model-catalog.js
 scripts/diagnostics/count-posts.js → scripts/utils/constants.js
 scripts/generate-load-report.js → scripts/utils/constants.js
 scripts/init-backup.js → scripts/backup.js

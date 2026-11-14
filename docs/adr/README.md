@@ -47,6 +47,9 @@ apoio, não a fonte oficial; a decisão não é duplicada como página de memór
 | [0035](0035-full-ai-memory-activation-with-optional-llm.md) | Ativação completa do ai-memory no projeto, com LLM opcional por chave de ambiente | Aceito | 2026-11-06 |
 | [0036](0036-shared-visual-standard-and-admin-collapsible-sidebar.md) | Padrão visual compartilhado (público e privado) e barra lateral esquerda recolhível exclusiva no `/admin` | Aceito | 2026-11-07 |
 | [0037](0037-internal-sales-mercadopago-and-customer-accounts.md) | Duas modalidades em Produtos Religiosos, Gestão de Vendas com Mercado Pago e Conta do Visitante isolada | Aceito | 2026-11-08 |
+| [0038](0038-mercadopago-webhook-status-confirmado-na-api.md) | Webhook do Mercado Pago só aprova pedido com status confirmado na API | Aceito | 2026-11-12 |
+| [0039](0039-mercadopago-checkout-tokenizacao-e-alinhamento-de-schema.md) | Alinhamento de schema de pedidos/clientes, tokenização via SDK v2 do Mercado Pago e rollback atômico de estoque | Aceito | 2026-11-12 |
+| [0040](0040-integracao-mercadopago-orders-api.md) | Migração da integração de pagamentos para a Orders API (`/v1/orders`) do Mercado Pago | Aceito | 2026-11-12 |
 
 ## Quando criar um ADR
 

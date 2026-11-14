@@ -1,6 +1,9 @@
 import { invalidateCache } from '../../../lib/cache/cache.js';
 import { processMercadoPagoWebhookEvent } from '../../../lib/domain/orders.js';
-import { verifyMercadoPagoWebhookSignature } from '../../../lib/payment/mercadopago.js';
+import {
+  fetchMercadoPagoPaymentStatus,
+  verifyMercadoPagoWebhookSignature,
+} from '../../../lib/payment/mercadopago.js';
 import { logger } from '../../../lib/infra/logger.js';
 
 export default async function handler(req, res) {
@@ -10,8 +13,8 @@ export default async function handler(req, res) {
 
   try {
     const body = req.body || {};
+    const signatureDataId = req.query?.['data.id'] || body?.data?.id || req.query?.id || '';
     const dataId = body?.data?.id || req.query?.['data.id'] || req.query?.id || '';
-    const eventId = body?.id || `${body?.type || 'payment'}_${dataId}`;
     const eventType = body?.type || body?.action || 'payment';
 
     const signatureHeader = req.headers?.['x-signature'] || '';
@@ -20,7 +23,7 @@ export default async function handler(req, res) {
     const isSignatureValid = verifyMercadoPagoWebhookSignature({
       signatureHeader,
       requestIdHeader,
-      dataId: String(dataId),
+      dataId: String(signatureDataId),
     });
 
     if (!isSignatureValid) {
@@ -32,25 +35,68 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Bad Request', message: 'Identificador de pagamento ausente' });
     }
 
-    // Se MP_ACCESS_TOKEN estiver presente e o status não vier no corpo, consulta a API do Mercado Pago
-    let paymentStatus = body?.payment_status || body?.data?.status || 'approved';
-    const accessToken = process.env.MP_ACCESS_TOKEN;
-    if (accessToken && !body?.payment_status && !body?.data?.status && typeof global.fetch === 'function') {
-      const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${encodeURIComponent(dataId)}`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      if (mpRes.ok) {
-        const mpPayment = await mpRes.json();
-        paymentStatus = mpPayment.status || 'pending';
-      }
+    // Eventos de Orders API (`type: 'order'` / `action: 'order.*'`) e legado (`payment`)
+    // são validados na fonte oficial; tópicos alheios (ex.: `merchant_order`) são apenas confirmados.
+    const action = typeof body?.action === 'string' ? body.action : '';
+    const bodyType = typeof body?.type === 'string' ? body.type : '';
+    const isOrderEvent =
+      bodyType === 'order' ||
+      action.startsWith('order') ||
+      (!bodyType && !action && /^ORD/i.test(String(dataId)));
+    const isPaymentEvent =
+      isOrderEvent ||
+      ((!bodyType || bodyType === 'payment') && (!action || action.startsWith('payment')));
+    if (!isPaymentEvent) {
+      return res.status(200).json({ received: true, ignored: true });
     }
+
+    // O status do pagamento nunca é presumido. Em produção vem sempre da API do Mercado Pago
+    // (o corpo do webhook não é fonte confiável do status). Fora de produção, um status
+    // explícito no corpo é aceito (testes/simulações) e, sem token, vale o modo sandbox local.
+    const isProduction = process.env.NODE_ENV === 'production';
+    const bodyStatus = body?.payment_status || body?.data?.status;
+    let paymentStatus;
+    if (!isProduction && bodyStatus) {
+      const normalizedBodyStatus = String(bodyStatus).trim().toLowerCase();
+      const simulatedOrderStatusMap = {
+        processed: 'approved',
+        processing: 'in_process',
+        action_required: 'pending',
+        created: 'pending',
+        failed: 'rejected',
+        canceled: 'cancelled',
+      };
+      paymentStatus = simulatedOrderStatusMap[normalizedBodyStatus] || bodyStatus;
+    } else if (isProduction || process.env.MP_ACCESS_TOKEN) {
+      try {
+        paymentStatus = isOrderEvent
+          ? await fetchMercadoPagoPaymentStatus(String(dataId), { eventType: 'order' })
+          : await fetchMercadoPagoPaymentStatus(String(dataId));
+      } catch (lookupError) {
+        const notConfigured = lookupError?.message?.startsWith('MP_NOT_CONFIGURED');
+        logger.error('MPWebhook', 'Não foi possível confirmar o status do pagamento no Mercado Pago:', lookupError);
+        return res.status(notConfigured ? 503 : 502).json({
+          error: notConfigured ? 'Service Unavailable' : 'Bad Gateway',
+          message: 'Não foi possível confirmar o pagamento; o Mercado Pago tentará reenviar o evento',
+        });
+      }
+    } else {
+      paymentStatus = 'approved';
+    }
+
+    const eventId = body?.id || `${eventType}_${action || 'evt'}_${dataId}_${paymentStatus}`;
 
     const result = await processMercadoPagoWebhookEvent({
       eventId: String(eventId),
       eventType: String(eventType),
       mpPaymentId: String(dataId),
       paymentStatus,
-      paymentPayload: body,
+      paymentPayload: {
+        last_webhook_event: String(eventType),
+        last_webhook_action: typeof action === 'string' ? action : null,
+        last_webhook_status: paymentStatus,
+        webhook_received_at: new Date().toISOString(),
+      },
     });
 
     await invalidateCache('products:*');

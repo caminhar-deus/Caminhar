@@ -306,6 +306,26 @@ describe('Library - Cache & Rate Limit', () => {
       expect(limited).toBe(true);
     });
 
+    it('usa pipeline único no Redis quando disponível (1 viagem HTTP)', async () => {
+      const pipelineMock = {
+        incr: jest.fn().mockReturnThis(),
+        expire: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValueOnce([1, 1]),
+      };
+      mockGetRedisInstance.mockReturnValue({
+        pipeline: jest.fn(() => pipelineMock),
+      });
+
+      const limited = await checkRateLimit('200.200.0.5', 'api', 10, 60000);
+
+      expect(limited).toBe(false);
+      expect(pipelineMock.incr).toHaveBeenCalledWith('rate_limit:api:200.200.0.5');
+      expect(pipelineMock.expire).toHaveBeenCalledWith('rate_limit:api:200.200.0.5', 60, 'NX');
+      expect(pipelineMock.exec).toHaveBeenCalledTimes(1);
+      expect(mockRedisIncr).not.toHaveBeenCalled();
+      expect(mockRedisExpire).not.toHaveBeenCalled();
+    });
+
     it('usa fallback em memória quando Redis falha', async () => {
       mockRedisIncr.mockRejectedValue(new Error('Redis offline'));
 

@@ -10,6 +10,7 @@ import {
   calculateShippingCost,
   createInternalOrder,
   attachOrderPaymentInfo,
+  cancelFailedCheckoutOrder,
   getCustomerOrders,
   getAdminOrders,
   updateAdminOrder,
@@ -464,6 +465,150 @@ describe('Domínio de Pedidos Internos — lib/domain/orders.js', () => {
         [2, 2],
         expect.any(Object)
       );
+    });
+
+    it('não deve duplicar devolução de estoque se stock_restored já for true nem rebaixar pedido aprovado', async () => {
+      query
+        .mockResolvedValueOnce({ rows: [{ id: 2 }] })
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 52,
+              product_id: 2,
+              quantity: 2,
+              order_status: 'paid',
+              payment_status: 'approved',
+              stock_restored: false,
+              mp_payload: JSON.stringify({ qr_code: 'abc' }),
+            },
+          ],
+        })
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 52,
+              product_id: 2,
+              unit_price: '80.00',
+              shipping_cost: '0.00',
+              total_amount: '160.00',
+              order_status: 'paid',
+              payment_status: 'approved',
+              stock_restored: false,
+            },
+          ],
+        });
+
+      const stalePending = await processMercadoPagoWebhookEvent({
+        eventId: 'evt_stale_pending',
+        mpPaymentId: 'mp_52',
+        paymentStatus: 'pending',
+      });
+      expect(stalePending.order.payment_status).toBe('approved');
+      expect(stalePending.order.order_status).toBe('paid');
+
+      query.mockClear();
+      query
+        .mockResolvedValueOnce({ rows: [{ id: 3 }] })
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 53,
+              product_id: 2,
+              quantity: 2,
+              order_status: 'awaiting_payment',
+              payment_status: 'pending',
+              stock_restored: true,
+            },
+          ],
+        })
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 53,
+              product_id: 2,
+              unit_price: '80.00',
+              shipping_cost: '0.00',
+              total_amount: '160.00',
+              order_status: 'cancelled',
+              payment_status: 'cancelled',
+              stock_restored: true,
+            },
+          ],
+        });
+
+      await processMercadoPagoWebhookEvent({
+        eventId: 'evt_cancel_already_restored',
+        mpPaymentId: 'mp_53',
+        paymentStatus: 'cancelled',
+      });
+
+      expect(query).not.toHaveBeenCalledWith(
+        expect.stringMatching(/UPDATE products SET stock = stock \+/i),
+        expect.anything(),
+        expect.anything()
+      );
+    });
+  });
+
+  describe('recusa imediata e rollback de falha de checkout', () => {
+    it('attachOrderPaymentInfo deve cancelar e devolver estoque quando status inicial já for rejected', async () => {
+      query
+        .mockResolvedValueOnce({
+          rows: [{ id: 60, product_id: 7, quantity: 3, stock_restored: false }],
+        })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 60,
+              unit_price: '50.00',
+              shipping_cost: '0.00',
+              total_amount: '150.00',
+              order_status: 'cancelled',
+              payment_status: 'rejected',
+              stock_restored: true,
+            },
+          ],
+        });
+
+      const res = await attachOrderPaymentInfo(60, {
+        mpPaymentId: '991',
+        paymentStatus: 'rejected',
+        paymentPayload: { status_detail: 'cc_rejected_insufficient_amount' },
+      });
+
+      expect(res.order_status).toBe('cancelled');
+      expect(res.stock_restored).toBe(true);
+      expect(query).toHaveBeenCalledWith(
+        'UPDATE products SET stock = stock + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [3, 7],
+        expect.any(Object)
+      );
+    });
+
+    it('cancelFailedCheckoutOrder deve cancelar pedido órfão e devolver estoque', async () => {
+      query
+        .mockResolvedValueOnce({
+          rows: [{ id: 61, product_id: 8, quantity: 1, order_status: 'awaiting_payment', stock_restored: false }],
+        })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 61,
+              unit_price: '40.00',
+              shipping_cost: '0.00',
+              total_amount: '40.00',
+              order_status: 'cancelled',
+              payment_status: 'cancelled',
+              stock_restored: true,
+            },
+          ],
+        });
+
+      const res = await cancelFailedCheckoutOrder(61, 'Timeout Mercado Pago');
+      expect(res.order_status).toBe('cancelled');
+      expect(res.stock_restored).toBe(true);
     });
   });
 });

@@ -20,6 +20,7 @@ jest.mock('../../../lib/domain/customers.js', () => ({
 jest.mock('../../../lib/domain/orders.js', () => ({
   createInternalOrder: jest.fn(),
   attachOrderPaymentInfo: jest.fn(),
+  cancelFailedCheckoutOrder: jest.fn().mockResolvedValue({}),
   calculateShippingCost: jest.fn().mockReturnValue(15),
 }));
 
@@ -30,10 +31,11 @@ jest.mock('../../../lib/payment/mercadopago.js', () => ({
 import handler from '../../../pages/api/checkout.js';
 import { query } from '../../../lib/infra/db.js';
 import { getAuthenticatedCustomer } from '../../../lib/auth/customer-auth.js';
-import { getCustomerById } from '../../../lib/domain/customers.js';
+import { getCustomerById, updateCustomerProfile } from '../../../lib/domain/customers.js';
 import {
   createInternalOrder,
   attachOrderPaymentInfo,
+  cancelFailedCheckoutOrder,
   calculateShippingCost,
 } from '../../../lib/domain/orders.js';
 import { createMercadoPagoPayment } from '../../../lib/payment/mercadopago.js';
@@ -211,6 +213,213 @@ describe('API Checkout (/api/checkout)', () => {
 
       await handler(req, res);
       expect(res._getStatusCode()).toBe(400);
+    });
+
+    it('deve retornar 400 para boleto sem CPF/CNPJ do pagador', async () => {
+      getAuthenticatedCustomer.mockReturnValue({ customerId: 8 });
+      getCustomerById.mockResolvedValueOnce({ id: 8, name: 'Carlos', email: 'carlos@test.com' });
+
+      const { req, res } = createMocks({
+        method: 'POST',
+        body: {
+          productId: 25,
+          quantity: 1,
+          deliveryAddress: validAddress,
+          paymentMethod: 'ticket',
+        },
+      });
+
+      await handler(req, res);
+      expect(res._getStatusCode()).toBe(400);
+      expect(JSON.parse(res._getData()).message).toMatch(/CPF ou CNPJ/i);
+    });
+
+    it('deve exigir token e bandeira para cartão quando MP_ACCESS_TOKEN está configurado', async () => {
+      const prevToken = process.env.MP_ACCESS_TOKEN;
+      process.env.MP_ACCESS_TOKEN = 'TEST-token-sandbox';
+      try {
+        getAuthenticatedCustomer.mockReturnValue({ customerId: 8 });
+        getCustomerById.mockResolvedValueOnce({ id: 8, name: 'Carlos', email: 'carlos@test.com' });
+
+        const { req, res } = createMocks({
+          method: 'POST',
+          body: {
+            productId: 25,
+            quantity: 1,
+            deliveryAddress: validAddress,
+            paymentMethod: 'credit_card',
+            paymentDetails: { payerDocument: '19119119100' },
+          },
+        });
+
+        await handler(req, res);
+        expect(res._getStatusCode()).toBe(400);
+        expect(JSON.parse(res._getData()).message).toMatch(/Tokenização/i);
+      } finally {
+        if (prevToken === undefined) delete process.env.MP_ACCESS_TOKEN;
+        else process.env.MP_ACCESS_TOKEN = prevToken;
+      }
+    });
+
+    it('deve cancelar pedido e devolver estoque se o Mercado Pago falhar após reservar o pedido', async () => {
+      const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      try {
+        getAuthenticatedCustomer.mockReturnValue({ customerId: 8 });
+        getCustomerById.mockResolvedValueOnce({
+          id: 8,
+          name: 'Carlos',
+          email: 'carlos@test.com',
+        });
+        createInternalOrder.mockResolvedValueOnce({
+          id: 305,
+          customer_id: 8,
+          product_id: 25,
+          product_name: 'Terço',
+          total_amount: 90,
+        });
+        const mpErr = new Error('MP_API_ERROR: 401 Unauthorized use of live credentials');
+        mpErr.statusCode = 401;
+        mpErr.userMessage = 'Credenciais incompatíveis com ambiente de testes.';
+        createMercadoPagoPayment.mockRejectedValueOnce(mpErr);
+
+        const { req, res } = createMocks({
+          method: 'POST',
+          body: {
+            productId: 25,
+            quantity: 1,
+            deliveryAddress: validAddress,
+            paymentMethod: 'pix',
+            paymentDetails: { payerDocument: '19119119100' },
+          },
+        });
+
+        await handler(req, res);
+        expect(res._getStatusCode()).toBe(502);
+        expect(cancelFailedCheckoutOrder).toHaveBeenCalledWith(
+          305,
+          'Credenciais incompatíveis com ambiente de testes.'
+        );
+        expect(JSON.parse(res._getData()).message).toBe(
+          'Credenciais incompatíveis com ambiente de testes.'
+        );
+      } finally {
+        errSpy.mockRestore();
+      }
+    });
+
+    it('não deve chamar updateCustomerProfile quando default_address já coincide com deliveryAddress', async () => {
+      getAuthenticatedCustomer.mockReturnValue({ customerId: 8 });
+      getCustomerById.mockReset();
+      getCustomerById.mockResolvedValueOnce({
+        id: 8,
+        name: 'Carlos Oliveira',
+        email: 'carlos@test.com',
+        default_address: {
+          cep: '01001000',
+          street: ' Praça da Sé ',
+          number: '100',
+          complement: '',
+          neighborhood: 'Sé',
+          city: 'São Paulo',
+          state: 'sp',
+        },
+      });
+      createInternalOrder.mockResolvedValueOnce({
+        id: 210,
+        customer_id: 8,
+        product_id: 25,
+        product_name: 'Escapulário',
+        total_amount: 100,
+      });
+      createMercadoPagoPayment.mockResolvedValueOnce({
+        mpPaymentId: 'mp_pix_210_test',
+        mpPreferenceId: null,
+        paymentStatus: 'pending',
+        paymentPayload: { qr_code: 'BR.GOV.BCB.PIX...' },
+      });
+      attachOrderPaymentInfo.mockResolvedValueOnce({
+        id: 210,
+        total_amount: 100,
+        payment_status: 'pending',
+        order_status: 'awaiting_payment',
+        mp_payment_id: 'mp_pix_210_test',
+      });
+
+      const { req, res } = createMocks({
+        method: 'POST',
+        body: {
+          productId: 25,
+          quantity: 1,
+          deliveryAddress: validAddress,
+          paymentMethod: 'pix',
+        },
+      });
+
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(201);
+      expect(updateCustomerProfile).not.toHaveBeenCalled();
+    });
+
+    it('deve executar updateCustomerProfile em paralelo com createMercadoPagoPayment quando o endereço mudar', async () => {
+      getAuthenticatedCustomer.mockReturnValue({ customerId: 8 });
+      getCustomerById.mockReset();
+      getCustomerById.mockResolvedValueOnce({
+        id: 8,
+        name: 'Carlos Oliveira',
+        email: 'carlos@test.com',
+        default_address: { ...validAddress, number: '50' },
+      });
+      createInternalOrder.mockResolvedValueOnce({
+        id: 211,
+        customer_id: 8,
+        product_id: 25,
+        product_name: 'Escapulário',
+        total_amount: 100,
+      });
+
+      let resolveProfileUpdate;
+      updateCustomerProfile.mockImplementationOnce(
+        () => new Promise((resolve) => {
+          resolveProfileUpdate = resolve;
+        })
+      );
+
+      // Só libera o update de perfil depois que createMercadoPagoPayment já foi iniciado,
+      // provando que o pagamento não fica bloqueado aguardando o profile update.
+      createMercadoPagoPayment.mockImplementationOnce(async () => {
+        expect(updateCustomerProfile).toHaveBeenCalledTimes(1);
+        resolveProfileUpdate({});
+        return {
+          mpPaymentId: 'mp_pix_211_test',
+          mpPreferenceId: null,
+          paymentStatus: 'pending',
+          paymentPayload: { qr_code: 'BR.GOV.BCB.PIX...' },
+        };
+      });
+
+      attachOrderPaymentInfo.mockResolvedValueOnce({
+        id: 211,
+        total_amount: 100,
+        payment_status: 'pending',
+        order_status: 'awaiting_payment',
+        mp_payment_id: 'mp_pix_211_test',
+      });
+
+      const { req, res } = createMocks({
+        method: 'POST',
+        body: {
+          productId: 25,
+          quantity: 1,
+          deliveryAddress: validAddress,
+          paymentMethod: 'pix',
+        },
+      });
+
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(201);
+      expect(updateCustomerProfile).toHaveBeenCalledWith(8, { defaultAddress: validAddress });
     });
   });
 

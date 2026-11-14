@@ -385,6 +385,7 @@ pages/api/checkout.js → lib/domain/orders.js
 pages/api/checkout.js → lib/infra/db.js
 pages/api/checkout.js → lib/infra/logger.js
 pages/api/checkout.js → lib/payment/mercadopago.js
+pages/api/checkout.js → lib/payment/payment-status-messages.js
 pages/api/cleanup-test-data.js → lib/auth/auth.js
 pages/api/cleanup-test-data.js → lib/infra/db.js
 pages/api/cleanup-test-data.js → lib/infra/logger.js
@@ -458,6 +459,7 @@ pages/blog/index.js → lib/domain/posts.js
 pages/blog/index.js → lib/domain/settings.js
 pages/blog/index.js → lib/seo/config.js
 pages/blog/index.js → pages/blog/Blog.module.css
+pages/checkout/[id].js → lib/payment/payment-status-messages.js
 pages/checkout/[id].js → pages/styles/CustomerPages.module.css
 pages/checkout/[id].js → components/UI/index.js
 pages/checkout/[id].js → components/UI/icons.js
@@ -474,6 +476,7 @@ pages/index.js → pages/styles/Home.module.css
 pages/login.js → pages/styles/Login.module.css
 pages/login.js → components/UI/index.js
 pages/login.js → utils/resolve-next.js
+pages/minha-conta.js → lib/payment/payment-status-messages.js
 pages/minha-conta.js → pages/styles/CustomerPages.module.css
 pages/minha-conta.js → components/UI/index.js
 pages/minha-conta.js → components/UI/icons.js
@@ -878,6 +881,7 @@ tests/unit/hooks/useAdminCrud.test.js → hooks/useApiFetch.js
 tests/unit/hooks/useAdminCrud.test.js → tests/helpers/index.js
 tests/unit/hooks/useApiFetch.test.js → hooks/useApiFetch.js
 tests/unit/hooks/useApiFetch.test.js → tests/helpers/index.js
+tests/unit/hooks/usePerformanceMetrics.test.js → hooks/usePerformanceMetrics.js
 tests/unit/index.test.js → tests/mocks/next-setup.js
 tests/unit/lib/api/helpers.ip.test.js → lib/api/helpers.js
 tests/unit/lib/api/permissions.test.js → lib/api/permissions.js
@@ -934,6 +938,7 @@ tests/unit/lib/domain/query-schemas.test.js → lib/domain/query-schemas.js
 tests/unit/lib/infra/logger.test.js → lib/infra/logger.js
 tests/unit/lib/infra/redis.test.js → lib/infra/redis.js
 tests/unit/lib/payment/mercadopago.test.js → lib/payment/mercadopago.js
+tests/unit/lib/payment/payment-status-messages.test.js → lib/payment/payment-status-messages.js
 tests/unit/lib/redis.test.js → lib/infra/redis.js
 tests/unit/lib/seo/config.test.js → lib/seo/config.js
 tests/unit/pages/404.test.js → pages/404.js

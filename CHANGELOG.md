@@ -30,6 +30,13 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Alterado
 
+- **Webhook do Mercado Pago não presume mais `approved` (12/11/2026, ADR-0038):** em produção o status
+  do pagamento vem sempre de `GET /v1/payments/{id}` (`fetchMercadoPagoPaymentStatus`, timeout de 8 s) e o
+  status enviado no corpo é ignorado. Falha ao confirmar devolve 502 (API/rede/resposta inválida) ou 503
+  (`MP_ACCESS_TOKEN` ausente) sem processar o pedido, para o Mercado Pago reenviar o evento. Eventos que não
+  são de pagamento (ex.: `merchant_order`) respondem 200 sem processamento. Testes em
+  `tests/integration/api/webhooks/mercadopago.test.js` e `tests/unit/lib/payment/mercadopago.test.js`.
+
 - **Segunda medição do `longcat-2.5-free` no papel — 2 de 5 células, sem troca (12/11/2026).**
   O longcat é o único free sem papel e zero-retention; a regra do ADR-0008 é medir no papel
   antes de promover. `designer` fechou com **0 erros verificáveis** (366 s) e `fixer` com
@@ -52,6 +59,17 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   - Todos os 12 modelos foram medidos nos 5 papéis, com verificação fora do modelo (Jest real no `fixer`); comparação e alternativas em `docs/adr/0008-modelos-free-por-agente-sem-repeticao.md` §"11/11/2026".
 
 ### Corrigido
+
+- **Migração para Orders API (`/v1/orders`) do Mercado Pago e validação real no Sandbox (12/11/2026, ADR-0040):**
+  - `lib/payment/mercadopago.js`: emissão de pagamentos migrada de `POST /v1/payments` para `POST /v1/orders` (compatível com credenciais `APP_USR-` de "Checkout Transparente e Checkout Pro com Orders"), ajuste de `payer.address` (`state`, sem `country`/`federal_unit`), remoção de `notification_url` do corpo (rejeitada pela Orders API), suporte a `paymentTypeId` (`credit_card`, `debit_card` e `prepaid_card` sem `installments`), interpretação de recusas síncronas `HTTP 402` (`data.id`) preservando registro com devolução de estoque, e mapeamento completo dos status/erros da Orders API (`processed`, `processing`, `action_required`, `failed`, `canceled`, `refunded`, `payment_method_not_allowed_for_collector`).
+  - `pages/api/webhooks/mercadopago.js`: suporte a notificações `type: 'order'` / `action: 'order.*'` consultando `GET /v1/orders/{id}` (preservando compatibilidade com eventos `payment` legados).
+  - `pages/checkout/[id].js`, `pages/api/checkout.js` e `lib/payment/payment-status-messages.js`: propagação de `paymentTypeId` detectado pelo BIN no SDK v2 e mapeamento pt-BR dos novos códigos `status_detail` da Orders API (`insufficient_amount`, `rejected_by_issuer`, `bad_filled_card_data`, `required_call_for_authorize`).
+  - `tests/unit/lib/payment/mercadopago.test.js`, `tests/integration/api/webhooks/mercadopago.test.js` e `tests/unit/lib/payment/payment-status-messages.test.js`: cobertura completa para Orders API, `HTTP 402` e webhooks `order`/`payment`.
+
+- **Alinhamento de schema, tokenização SDK v2 do Mercado Pago, rollback de estoque e validação de fluxo de pagamentos (12/11/2026, ADR-0039):**
+  - `lib/domain/customers.js` e `lib/domain/orders.js`: consultas SQL alinhadas às colunas canônicas da migração `023-sales-customers-and-modalities.js` (`google_id`, `address_json`, `shipping_type`, `shipping_address`, `mp_payload`, `stock_restored`, `event_key`, `action`), mantendo aliases de saída JSON para frontend e painel.
+  - `lib/domain/orders.js` e `pages/api/checkout.js`: rollback atômico de pedido e estoque via `cancelFailedCheckoutOrder` quando o Mercado Pago falha após reserva; cancelamento e devolução de estoque imediatos quando `attachOrderPaymentInfo` recebe `rejected`/`cancelled`; guarda contra devolução dupla via `stock_restored`, proteção contra rebaixamento por notificações atrasadas (`pending` após `approved`) e mesclagem de `mp_payload` sem perda de QR Code/linha digitável.
+  - `lib/payment/mercadopago.js`, `pages/api/webhooks/mercadopago.js`, `pages/_document.js`, `pages/checkout/[id].js`, `pages/minha-conta.js` e `lib/payment/payment-status-messages.js`: integração real com `https://sdk.mercadopago.com/js/v2` no checkout (CSP atualizada, detecção de BIN, validade/CVV, CPF/CNPJ e tokenização client-side de cartão sem envio de PAN bruto quando `NEXT_PUBLIC_MP_PUBLIC_KEY` estiver configurada), envio de `payer.identification` e `payer.address` para boleto/PIX/cartão, normalização lowercase de `data.id` na validação HMAC v2 e feedback claro de recusa/pendência/QR Code/linha digitável nas telas públicas.
 
 - **Instrumentos do bench corrigidos na bateria de 11/11/2026.**
   - `scripts/bench/orchestrator/pontuar.js`: o regex de "todos são rota" não marca mais erro quando a resposta correta usa "não-rota" como negação (`iceman` 6→7/8, `mimo` 5→6/8, `minimax` 5→6/8).

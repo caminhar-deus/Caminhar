@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Button } from '@/components/UI';
 import { AppIcon } from '@/components/UI/icons';
+import { getPaymentFeedback } from '../lib/payment/payment-status-messages.js';
 import styles from './styles/CustomerPages.module.css';
 
 const PAYMENT_STATUS_LABELS = {
@@ -115,9 +116,15 @@ export default function MinhaContaPage() {
         </div>
 
         <section className={styles.sectionCard} aria-labelledby="orders-heading">
-          <h2 id="orders-heading" className={styles.sectionTitle}>
-            Minhas Compras Internas
-          </h2>
+          <div className={styles.sectionHeaderRow}>
+            <h2 id="orders-heading" className={styles.sectionTitle}>
+              Minhas Compras Internas
+            </h2>
+            <Button variant="secondary" size="sm" onClick={loadAccountData} disabled={loading}>
+              <AppIcon name="refresh" size={16} />
+              Atualizar status
+            </Button>
+          </div>
 
           {loading && <p>Carregando seus pedidos...</p>}
           {error && <div className={styles.alertError}>{error}</div>}
@@ -141,6 +148,15 @@ export default function MinhaContaPage() {
               };
               const addr = order.delivery_address || {};
               const payload = order.payment_payload || {};
+              const feedback = getPaymentFeedback(order);
+              const alertClass =
+                feedback.tone === 'success'
+                  ? styles.alertSuccess
+                  : feedback.tone === 'error'
+                    ? styles.alertError
+                    : feedback.tone === 'warning'
+                      ? styles.alertWarning
+                      : styles.alertInfo;
 
               return (
                 <article key={order.id} className={styles.orderCard} aria-label={`Pedido #${order.id}`}>
@@ -179,25 +195,46 @@ export default function MinhaContaPage() {
                   </div>
 
                   {addr.street && (
-                    <p style={{ marginTop: 'var(--spacing-3)', fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
+                    <p className={styles.helperText}>
                       <strong>Endereço de entrega:</strong> {addr.street}, {addr.number}
                       {addr.complement ? ` (${addr.complement})` : ''} — {addr.neighborhood}, {addr.city}/{addr.state} — CEP {addr.cep}
                     </p>
                   )}
 
+                  <div className={`${alertClass} ${styles.mt4}`}>
+                    {feedback.description}
+                  </div>
+
                   {order.payment_status === 'pending' && payload.qr_code && (
                     <div className={styles.pixBox}>
+                      {payload.qr_code_base64 && (
+                        <img
+                          src={`data:image/png;base64,${payload.qr_code_base64}`}
+                          alt={`QR Code PIX do pedido #${order.id}`}
+                          className={styles.qrImage}
+                        />
+                      )}
                       <strong>PIX Copia e Cola (pendente):</strong>
                       <div className={styles.codeBox}>{payload.qr_code}</div>
+                      {payload.ticket_url && (
+                        <a href={payload.ticket_url} target="_blank" rel="noopener noreferrer">
+                          Abrir comprovante/QR no Mercado Pago
+                        </a>
+                      )}
                     </div>
                   )}
 
-                  {order.payment_status === 'pending' && payload.ticket_url && (
+                  {order.payment_status === 'pending' && (payload.ticket_url || payload.digitable_line) && order.payment_method === 'ticket' && (
                     <div className={styles.pixBox}>
-                      <strong>Boleto bancário:</strong>{' '}
-                      <a href={payload.ticket_url} target="_blank" rel="noreferrer">
-                        Abrir boleto para pagamento
-                      </a>
+                      <strong>Boleto bancário:</strong>
+                      {payload.digitable_line && (
+                        <div className={`${styles.codeBox} ${styles.mt4}`}>{payload.digitable_line}</div>
+                      )}
+                      {payload.ticket_url && (
+                        <a href={payload.ticket_url} target="_blank" rel="noopener noreferrer">
+                          Abrir boleto para pagamento
+                        </a>
+                      )}
                     </div>
                   )}
                 </article>

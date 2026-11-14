@@ -202,7 +202,7 @@ describe('Domínio de Visitantes/Clientes — lib/domain/customers.js', () => {
 
       expect(customer.id).toBe(12);
       expect(query).toHaveBeenCalledWith(
-        expect.stringMatching(/UPDATE customers\s+SET google_sub = \$1/i),
+        expect.stringMatching(/UPDATE customers\s+SET google_id = \$1/i),
         ['sub_new', 12]
       );
     });
@@ -314,7 +314,7 @@ describe('Domínio de Visitantes/Clientes — lib/domain/customers.js', () => {
       expect(updated.default_address).toBeNull();
       expect(query).toHaveBeenNthCalledWith(
         2,
-        expect.stringMatching(/UPDATE customers\s+SET name = \$1, phone = \$2, default_address = \$3/i),
+        expect.stringMatching(/UPDATE customers\s+SET name = \$1, phone = \$2, address_json = \$3/i),
         ['Manter', '333', null, 41]
       );
     });

@@ -716,6 +716,9 @@
 │   │   ├── 0035-full-ai-memory-activation-with-optional-llm.md
 │   │   ├── 0036-shared-visual-standard-and-admin-collapsible-sidebar.md
 │   │   ├── 0037-internal-sales-mercadopago-and-customer-accounts.md
+│   │   ├── 0038-mercadopago-webhook-status-confirmado-na-api.md
+│   │   ├── 0039-mercadopago-checkout-tokenizacao-e-alinhamento-de-schema.md
+│   │   ├── 0040-integracao-mercadopago-orders-api.md
 │   │   ├── README.md
 │   │   └── template.md
 │   ├── ai-memory-error.md
@@ -786,7 +789,8 @@
 │   │   ├── spotify.js
 │   │   └── youtube.js
 │   ├── payment
-│   │   └── mercadopago.js
+│   │   ├── mercadopago.js
+│   │   └── payment-status-messages.js
 │   └── seo
 │       └── config.js
 ├── load-tests
@@ -1084,6 +1088,7 @@
 │   ├── db-shell.js
 │   ├── diagnostics
 │   │   ├── check-github-actions.js
+│   │   ├── check-model-catalog.js
 │   │   ├── check-musicas-schema.js
 │   │   ├── check-videos-schema.js
 │   │   ├── count-posts.js
@@ -1092,6 +1097,7 @@
 │   │   ├── lint-workflows.sh
 │   │   ├── list-last-posts.js
 │   │   ├── lsp-reusable-workflow.js
+│   │   ├── model-catalog.js
 │   │   └── repro-reusable-workflow.js
 │   ├── e2e-isolated.js
 │   ├── generate-load-report.js
@@ -1388,7 +1394,8 @@
 │       │   └── test-coverage-comment.test.js
 │       ├── hooks
 │       │   ├── useAdminCrud.test.js
-│       │   └── useApiFetch.test.js
+│       │   ├── useApiFetch.test.js
+│       │   └── usePerformanceMetrics.test.js
 │       ├── index.test.js
 │       ├── lib
 │       │   ├── api
@@ -1427,7 +1434,8 @@
 │       │   │   ├── logger.test.js
 │       │   │   └── redis.test.js
 │       │   ├── payment
-│       │   │   └── mercadopago.test.js
+│       │   │   ├── mercadopago.test.js
+│       │   │   └── payment-status-messages.test.js
 │       │   ├── redis.test.js
 │       │   └── seo
 │       │       └── config.test.js
@@ -1469,6 +1477,7 @@
 │       │   ├── bench-papeis-runner.test.js
 │       │   ├── bench-runner.test.js
 │       │   ├── check-hardcoded-credentials.test.js
+│       │   ├── check-model-catalog.test.js
 │       │   ├── check-sql-injection.test.js
 │       │   ├── clean-orphaned-images.test.js
 │       │   ├── clear-db.test.js
@@ -1505,6 +1514,7 @@
 │   ├── hero-image-c56bdc10-2a0e-4ed7-a1c2-186ae5b7ad23.webp
 │   ├── post-image-1676f90c-ea50-4930-978d-3c35cf0f4138.png
 │   ├── post-image-255714e9-57d2-46f8-8a97-b8e02b170861.png
+│   ├── post-image-30e1fee4-bb39-4a82-9fcb-af4de5fb01a7.png
 │   └── post-image-3c237d6b-ac1c-485e-a31f-338664c24808.png
 └── utils
     ├── csvExport.js
@@ -1512,4 +1522,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-221 directories, 1292 files
+221 directories, 1302 files

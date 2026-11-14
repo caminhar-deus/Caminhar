@@ -2,7 +2,7 @@
 
 > Escopo: apenas a área pública (qualquer visitante). O painel administrativo está documentado em `docs/ARQUITETURA_SITE_PRIVADO.md`. Ambos os ambientes compartilham a mesma identidade visual (ancorada em `design-system/MASTER.md` e `pages/styles/variables.css`), preservando estruturas de navegação e responsabilidades próprias.
 > Fonte: 12 capturas de tela do site em desenvolvimento + código-fonte atual + diretrizes do dono do projeto.
-> Última atualização: 2026-11-09
+> Última atualização: 2026-11-12
 > Legenda: [PLANEJADO] = alvo ainda não implementado, informado pelo dono | [OBSERVADO] = visto nas imagens/estado legado | [HIPÓTESE] = inferido, confirmar antes de assumir.
 
 ---
@@ -167,7 +167,7 @@ Esse mapeamento deve ser mantido de forma consistente em toda a documentação. 
   3. Clica no botão **Comprar** e define a quantidade desejada (modelo de **compra direta do item**, sem carrinho multi-produto).
   4. **Autenticação obrigatória antes do pagamento:** se o visitante ainda não estiver autenticado na sua conta, é redirecionado para `/entrar` (§5.1) e retorna automaticamente ao checkout do item após entrar ou criar a conta.
   5. **Entrega e frete:** informa o endereço de entrega completo para o produto físico; o checkout aplica o frete configurado no produto (grátis, valor fixo ou calculado) e reserva/valida o estoque.
-  6. **Pagamento no próprio site (Checkout Transparente / Payment Brick do Mercado Pago):** o comprador paga sem sair do Caminhar, escolhendo **PIX** (QR Code e código copia-e-cola na tela), **cartão de débito**, **cartão de crédito** ou **boleto bancário** (linha digitável e link). A confirmação do pagamento ocorre via **Webhook do Mercado Pago** validado no servidor. O Mercado Pago **só** participa da Modalidade B.
+  6. **Pagamento no próprio site (Checkout Transparente com Orders API `/v1/orders` e SDK v2 do Mercado Pago):** o comprador informa CPF/CNPJ do pagador e paga sem sair do Caminhar, escolhendo **PIX** (QR Code visual, código copia-e-cola e link), **cartão de débito/pré-pago**, **cartão de crédito** (validade, CVV e bandeira/BIN tokenizados no cliente via SDK v2 sem enviar o número bruto ao servidor) ou **boleto bancário** (linha digitável e link com endereço completo do pagador). Em caso de falha na comunicação com o Mercado Pago ou recusa imediata (`HTTP 402` / `rejected`), o estoque reservado é devolvido automaticamente. A confirmação assíncrona do pagamento ocorre via **Webhook do Mercado Pago** (tópico `Order`, consultando `GET /v1/orders/{id}`, além de compatibilidade com `payment`) validado no servidor ([ADR-0038](adr/0038-mercadopago-webhook-status-confirmado-na-api.md), [ADR-0039](adr/0039-mercadopago-checkout-tokenizacao-e-alinhamento-de-schema.md) e [ADR-0040](adr/0040-integracao-mercadopago-orders-api.md)). O Mercado Pago **só** participa da Modalidade B.
   7. **Pós-compra:** o pedido e o pagamento (com dois status independentes: status do pagamento no Mercado Pago e status logístico do pedido) ficam disponíveis na aba **Gestão de Vendas** do painel (`docs/ARQUITETURA_SITE_PRIVADO.md` §4.8) e para consulta pelo comprador em `/minha-conta` (§5.1).
 
 ## 4. Dicas do Dia (global)

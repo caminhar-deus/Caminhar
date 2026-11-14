@@ -57,13 +57,13 @@ export default function Document() {
           httpEquiv="Content-Security-Policy" 
           content="
             default-src 'self';
-            script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.youtube.com https://open.spotify.com;
+            script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.youtube.com https://open.spotify.com https://sdk.mercadopago.com https://*.mercadopago.com https://*.mercadolibre.com https://http2.mlstatic.com;
             style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
             font-src 'self' https://fonts.gstatic.com;
             img-src 'self' data: https: blob: https://img.youtube.com https://i.scdn.co https://*.googleusercontent.com;
             media-src 'self' https: blob:;
             connect-src 'self' https:;
-            frame-src 'self' https://www.youtube.com https://open.spotify.com https://*.youtube.com;
+            frame-src 'self' https://www.youtube.com https://open.spotify.com https://*.youtube.com https://*.mercadopago.com https://*.mercadolibre.com;
             object-src 'none';
             base-uri 'self';
             form-action 'self';

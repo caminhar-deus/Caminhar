@@ -2,6 +2,7 @@ import { createHmac } from 'crypto';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import {
   createMercadoPagoPayment,
+  fetchMercadoPagoPaymentStatus,
   verifyMercadoPagoWebhookSignature,
 } from '../../../../lib/payment/mercadopago.js';
 
@@ -84,23 +85,34 @@ describe('Integração Mercado Pago — lib/payment/mercadopago.js', () => {
     ).rejects.toThrow('MP_NOT_CONFIGURED');
   });
 
-  it('deve chamar API oficial do Mercado Pago quando MP_ACCESS_TOKEN estiver definido', async () => {
+  it('deve chamar Orders API (/v1/orders) do Mercado Pago quando MP_ACCESS_TOKEN estiver definido', async () => {
     process.env.MP_ACCESS_TOKEN = 'test-token-mp';
 
     const mockFetch = jest.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
-        id: 99887766,
-        collector_id: 112233,
-        status: 'pending',
-        point_of_interaction: {
-          transaction_data: {
-            qr_code: 'pix-code-123',
-            qr_code_base64: 'base64-image-string',
-            ticket_url: 'https://mp.com/ticket',
-          },
+        id: 'ORDTST01PIXEL01',
+        user_id: '112233',
+        status: 'action_required',
+        status_detail: 'waiting_transfer',
+        transactions: {
+          payments: [
+            {
+              id: 'PAY01TEST',
+              status: 'action_required',
+              status_detail: 'waiting_transfer',
+              date_of_expiration: '2026-11-13T22:00:00Z',
+              payment_method: {
+                id: 'pix',
+                type: 'bank_transfer',
+                qr_code: 'pix-code-123',
+                qr_code_base64: 'base64-image-string',
+                ticket_url: 'https://mp.com/ticket',
+                digitable_line: '123456789',
+              },
+            },
+          ],
         },
-        barcode: { content: '123456789' },
       }),
     });
     global.fetch = mockFetch;
@@ -109,23 +121,175 @@ describe('Integração Mercado Pago — lib/payment/mercadopago.js', () => {
       order: sampleOrder,
       customer: sampleCustomer,
       paymentMethod: 'pix',
-      paymentDetails: { token: 'card-token', installments: 2 },
+      paymentDetails: { payerDocument: '19119119100' },
     });
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.mercadopago.com/v1/payments',
+      'https://api.mercadopago.com/v1/orders',
       expect.objectContaining({
         method: 'POST',
         headers: expect.objectContaining({
           Authorization: 'Bearer test-token-mp',
+          'X-Idempotency-Key': 'caminhar-order-55',
         }),
       })
     );
 
-    expect(res.mpPaymentId).toBe('99887766');
+    const sentBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(sentBody.total_amount).toBe('120.50');
+    expect(sentBody.type).toBe('online');
+    expect(sentBody.processing_mode).toBe('automatic');
+    expect(sentBody.notification_url).toBeUndefined();
+    expect(sentBody.transactions.payments[0]).toEqual({
+      amount: '120.50',
+      payment_method: { id: 'pix', type: 'bank_transfer' },
+    });
+
+    expect(res.mpPaymentId).toBe('ORDTST01PIXEL01');
     expect(res.mpPreferenceId).toBe('112233');
+    expect(res.paymentStatus).toBe('pending');
     expect(res.paymentPayload.qr_code).toBe('pix-code-123');
     expect(res.paymentPayload.digitable_line).toBe('123456789');
+  });
+
+  it('deve enviar boleto sem country/federal_unit e cartão pré-pago sem installments na Orders API', async () => {
+    process.env.MP_ACCESS_TOKEN = 'test-token-mp';
+
+    const mockFetch = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          id: 'ORDTST_BOL',
+          status: 'action_required',
+          status_detail: 'waiting_payment',
+          transactions: {
+            payments: [
+              {
+                id: 'PAY_BOL',
+                status: 'action_required',
+                status_detail: 'waiting_payment',
+                payment_method: {
+                  id: 'bolbradesco',
+                  type: 'ticket',
+                  ticket_url: 'https://mp.com/boleto',
+                  digitable_line: '23793.38128',
+                },
+              },
+            ],
+          },
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          id: 'ORDTST_PRE',
+          status: 'processed',
+          status_detail: 'accredited',
+          transactions: {
+            payments: [
+              {
+                id: 'PAY_PRE',
+                status: 'processed',
+                status_detail: 'accredited',
+                payment_method: { id: 'elo', type: 'prepaid_card' },
+              },
+            ],
+          },
+        }),
+      });
+    global.fetch = mockFetch;
+
+    const boletoRes = await createMercadoPagoPayment({
+      order: {
+        id: 70,
+        product_name: 'Terço',
+        total_amount: 35,
+        delivery_address: {
+          cep: '01310-100',
+          street: 'Av Paulista',
+          number: '100',
+          neighborhood: 'Bela Vista',
+          city: 'São Paulo',
+          state: 'sp',
+        },
+      },
+      customer: sampleCustomer,
+      paymentMethod: 'ticket',
+      paymentDetails: { payerDocument: '191.191.191-00' },
+    });
+
+    const bolBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(bolBody.payer.address).toEqual({
+      zip_code: '01310100',
+      street_name: 'Av Paulista',
+      street_number: '100',
+      neighborhood: 'Bela Vista',
+      city: 'São Paulo',
+      state: 'SP',
+    });
+    expect(bolBody.payer.address.country).toBeUndefined();
+    expect(boletoRes.paymentStatus).toBe('pending');
+    expect(boletoRes.paymentPayload.digitable_line).toBe('23793.38128');
+
+    const preRes = await createMercadoPagoPayment({
+      order: { id: 71, product_name: 'Bíblia', total_amount: 80 },
+      customer: sampleCustomer,
+      paymentMethod: 'debit_card',
+      paymentDetails: {
+        token: 'tok_elo',
+        paymentMethodId: 'elo',
+        paymentTypeId: 'prepaid_card',
+        installments: 1,
+      },
+    });
+
+    const preBody = JSON.parse(mockFetch.mock.calls[1][1].body);
+    expect(preBody.transactions.payments[0].payment_method).toEqual({
+      id: 'elo',
+      type: 'prepaid_card',
+      token: 'tok_elo',
+    });
+    expect(preRes.paymentStatus).toBe('approved');
+  });
+
+  it('deve interpretar HTTP 402 com data de ordem recusada sem lançar exceção fatal', async () => {
+    process.env.MP_ACCESS_TOKEN = 'test-token-mp';
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 402,
+      text: async () =>
+        JSON.stringify({
+          errors: [{ code: 'failed', message: 'The following transactions failed' }],
+          data: {
+            id: 'ORDTST_FAILED_402',
+            status: 'failed',
+            status_detail: 'failed',
+            transactions: {
+              payments: [
+                {
+                  id: 'PAY_FAILED',
+                  status: 'failed',
+                  status_detail: 'insufficient_amount',
+                  payment_method: { id: 'visa', type: 'credit_card' },
+                },
+              ],
+            },
+          },
+        }),
+    });
+
+    const declined = await createMercadoPagoPayment({
+      order: sampleOrder,
+      customer: sampleCustomer,
+      paymentMethod: 'credit_card',
+      paymentDetails: { token: 'tok_fund', paymentMethodId: 'visa', installments: 1 },
+    });
+
+    expect(declined.mpPaymentId).toBe('ORDTST_FAILED_402');
+    expect(declined.paymentStatus).toBe('rejected');
+    expect(declined.paymentPayload.status_detail).toBe('insufficient_amount');
   });
 
   it('deve tratar erro HTTP retornado pela API oficial do Mercado Pago', async () => {
@@ -144,6 +308,81 @@ describe('Integração Mercado Pago — lib/payment/mercadopago.js', () => {
         paymentMethod: 'pix',
       })
     ).rejects.toThrow('MP_API_ERROR: 400 Invalid payment data');
+  });
+
+  describe('fetchMercadoPagoPaymentStatus()', () => {
+    it('retorna o status real do pagamento consultado na API legada e normaliza Orders API (/v1/orders)', async () => {
+      process.env.MP_ACCESS_TOKEN = 'test-token-mp';
+      const mockFetch = jest
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ id: 1, status: 'approved' }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            id: 'ORDTST01',
+            status: 'processed',
+            status_detail: 'accredited',
+          }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            id: 'ORDTST02',
+            status: 'processing',
+            transactions: { payments: [{ status_detail: 'in_process' }] },
+          }),
+        });
+      global.fetch = mockFetch;
+
+      await expect(fetchMercadoPagoPaymentStatus('1/2')).resolves.toBe('approved');
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        1,
+        'https://api.mercadopago.com/v1/payments/1%2F2',
+        expect.objectContaining({
+          headers: { Authorization: 'Bearer test-token-mp' },
+          signal: expect.anything(),
+        })
+      );
+
+      await expect(
+        fetchMercadoPagoPaymentStatus('ORDTST01', { eventType: 'order' })
+      ).resolves.toBe('approved');
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        2,
+        'https://api.mercadopago.com/v1/orders/ORDTST01',
+        expect.objectContaining({
+          headers: { Authorization: 'Bearer test-token-mp' },
+        })
+      );
+
+      await expect(fetchMercadoPagoPaymentStatus('ORDTST02')).resolves.toBe('in_process');
+    });
+
+    it('lança MP_NOT_CONFIGURED sem token', async () => {
+      delete process.env.MP_ACCESS_TOKEN;
+      await expect(fetchMercadoPagoPaymentStatus('1')).rejects.toThrow('MP_NOT_CONFIGURED');
+    });
+
+    it('lança MP_API_ERROR quando a API responde com erro HTTP', async () => {
+      process.env.MP_ACCESS_TOKEN = 'test-token-mp';
+      global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 503 });
+      await expect(fetchMercadoPagoPaymentStatus('1')).rejects.toThrow('MP_API_ERROR');
+    });
+
+    it('lança MP_API_ERROR em falha de rede ou timeout', async () => {
+      process.env.MP_ACCESS_TOKEN = 'test-token-mp';
+      global.fetch = jest.fn().mockRejectedValue(new Error('network down'));
+      await expect(fetchMercadoPagoPaymentStatus('1')).rejects.toThrow('MP_API_ERROR');
+    });
+
+    it('lança MP_INVALID_RESPONSE quando a resposta não traz status', async () => {
+      process.env.MP_ACCESS_TOKEN = 'test-token-mp';
+      global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({ id: 1 }) });
+      await expect(fetchMercadoPagoPaymentStatus('1')).rejects.toThrow('MP_INVALID_RESPONSE');
+    });
   });
 
   describe('verifyMercadoPagoWebhookSignature()', () => {
@@ -200,6 +439,52 @@ describe('Integração Mercado Pago — lib/payment/mercadopago.js', () => {
       expect(verifyMercadoPagoWebhookSignature({ signatureHeader: 'ts=123', secret })).toBe(false);
       expect(verifyMercadoPagoWebhookSignature({ signatureHeader: 'v1=123', secret })).toBe(false);
       expect(verifyMercadoPagoWebhookSignature({ signatureHeader: 'invalid-format', secret })).toBe(false);
+    });
+
+    it('deve normalizar dataId alfanumérico para minúsculas na verificação v2 e mapear erro payment_method_not_allowed_for_collector', async () => {
+      const secret = 'mp-secret';
+      const ts = '1700000100';
+      const reqId = 'req-alpha';
+      const dataId = 'ORDTST01ABC';
+      const manifest = `id:${dataId.toLowerCase()};request-id:${reqId};ts:${ts};`;
+      const v1 = createHmac('sha256', secret).update(manifest).digest('hex');
+
+      expect(
+        verifyMercadoPagoWebhookSignature({
+          signatureHeader: `ts=${ts},v1=${v1}`,
+          requestIdHeader: reqId,
+          dataId,
+          secret,
+        })
+      ).toBe(true);
+
+      process.env.MP_ACCESS_TOKEN = 'APP_USR-orders-sandbox';
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        text: async () =>
+          JSON.stringify({
+            errors: [
+              {
+                code: 'payment_method_not_allowed_for_collector',
+                message: 'The payment method is not allowed for this collector.',
+              },
+            ],
+          }),
+      });
+
+      await expect(
+        createMercadoPagoPayment({
+          order: { id: 99, product_name: 'Livro', total_amount: 35 },
+          customer: { email: 'comprador@test.com', name: 'Ana Maria' },
+          paymentMethod: 'debit_card',
+          paymentDetails: { token: 'tok_deb', paymentMethodId: 'debelo', payerDocument: '191.191.191-00' },
+        })
+      ).rejects.toMatchObject({
+        statusCode: 400,
+        mpCauseCode: 'payment_method_not_allowed_for_collector',
+        userMessage: expect.stringMatching(/não está habilitado/i),
+      });
     });
   });
 });

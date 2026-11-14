@@ -288,8 +288,8 @@ export function usePerformanceMetrics(options = {}) {
 
       // Resource loading times
       try {
-        // Domínios de terceiros que são naturalmente lentos (cross-origin iframes, CDNs externas)
-        // e não indicam problema real de performance na aplicação
+        // Domínios de terceiros que são naturalmente lentos (cross-origin iframes, CDNs externas,
+        // tokenização e SDKs de pagamento) e não indicam problema real de performance na aplicação
         const THIRD_PARTY_DOMAINS = [
           'youtube.com',
           'ytimg.com',
@@ -300,15 +300,42 @@ export function usePerformanceMetrics(options = {}) {
           'gstatic.com',
           'facebook.com',
           'instagram.com',
+          'mercadopago.com',
+          'mercadopago.com.br',
+          'mercadolibre.com',
+          'mercadolivre.com',
+          'mlstatic.com',
         ];
 
-        const isThirdPartyResource = (url) => {
+        // Rotas transacionais que executam chamadas síncronas a gateways externos,
+        // provedores OAuth ou processamento/upload de imagem possuem orçamento maior.
+        const GATEWAY_SLOW_RESOURCE_THRESHOLD_MS = 5000;
+        const DEFAULT_SLOW_RESOURCE_THRESHOLD_MS = 1000;
+        const GATEWAY_PATH_PREFIXES = ['/api/checkout', '/api/customer/auth', '/api/upload-image'];
+
+        const parseResourceUrl = (url) => {
           try {
-            const parsed = new URL(url);
-            return THIRD_PARTY_DOMAINS.some((domain) => parsed.hostname.includes(domain));
+            return new URL(url, window.location.origin);
           } catch {
-            return false;
+            return null;
           }
+        };
+
+        const isThirdPartyResource = (url) => {
+          const parsed = parseResourceUrl(url);
+          if (!parsed) return false;
+          return THIRD_PARTY_DOMAINS.some((domain) => parsed.hostname.includes(domain));
+        };
+
+        const getSlowResourceThresholdMs = (url) => {
+          const parsed = parseResourceUrl(url);
+          if (!parsed) return DEFAULT_SLOW_RESOURCE_THRESHOLD_MS;
+          const matchesGatewayRoute = GATEWAY_PATH_PREFIXES.some(
+            (prefix) => parsed.pathname === prefix || parsed.pathname.startsWith(`${prefix}/`)
+          );
+          return matchesGatewayRoute
+            ? GATEWAY_SLOW_RESOURCE_THRESHOLD_MS
+            : DEFAULT_SLOW_RESOURCE_THRESHOLD_MS;
         };
 
         // Recursos iniciados dentro desta janela pertencem à inicialização:
@@ -319,8 +346,10 @@ export function usePerformanceMetrics(options = {}) {
         const resourceObserver = new PerformanceObserver((list) => {
           const entries = list.getEntries();
           entries.forEach((entry) => {
-            // Report slow resources — ignora recursos de terceiros
-            if (entry.duration > 1000 && !isThirdPartyResource(entry.name)) {
+            if (isThirdPartyResource(entry.name)) return;
+            const thresholdMs = getSlowResourceThresholdMs(entry.name);
+            // Report slow resources conforme o orçamento da rota
+            if (entry.duration > thresholdMs) {
               // Suprime o warning durante a janela de cold start (dev apenas, pois
               // o debug é falso em produção), preservando o alerta para lentidão real.
               if (debug && entry.startTime >= coldStartEnd) {
