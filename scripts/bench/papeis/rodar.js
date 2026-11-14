@@ -55,7 +55,7 @@ import {
   registrarExecucao, restaurarArvore,
 } from '../arvore.js';
 import {
-  catalogo, classificarExistencia, exigirMarcadorDeBench, executarSessao, lerTimeoutMin,
+  catalogo, classificarExistencia, exigirIsolamentoDeBench, executarSessao, lerTimeoutMin,
   resumirArgs, timeoutEmMs,
 } from '../runner-comum.js';
 import { aplicarRegressao, verificarRegressao } from './regressao-s1.js';
@@ -210,7 +210,7 @@ function arquivosEditados(ndjson) {
 }
 
 async function main() {
-  await exigirMarcadorDeBench(RAIZ);
+  await exigirIsolamentoDeBench(RAIZ);
   const opts = parseArgs(process.argv.slice(2));
 
   // Execução real restaura o repo depois de cada sessão; com trabalho não

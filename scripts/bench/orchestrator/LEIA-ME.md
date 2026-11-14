@@ -73,15 +73,43 @@ git commit -m "chore: isolate bench memory in default/bench"
 
 O commit importa: `restaurarArvore()` devolve arquivo **rastreado** com `git checkout --`,
 então um marcador só modificado voltaria ao valor do projeto real na primeira execução.
-Os dois runners chamam `exigirMarcadorDeBench()` (em `scripts/bench/runner-comum.js`) antes
-de qualquer spawn — inclusive do `opencode models` — e abortam com código 1 quando o
-marcador não é `default/bench`. Rodar de `/home/gus/projetos/Caminhar` deixa de ser
-possível, de propósito.
+Os dois runners chamam `exigirIsolamentoDeBench()` (em `scripts/bench/runner-comum.js`)
+antes de qualquer spawn — inclusive do `opencode models` — e abortam com código 1 quando
+o marcador não é `default/bench` **ou** quando o MCP `ai-memory` está ligado na cópia
+(`exigirMarcadorDeBench()` + `exigirMemoriaDesligada()`). Rodar de
+`/home/gus/projetos/Caminhar` deixa de ser possível, de propósito.
 
 As sessões antigas da bateria 9×5 continuam em `pessoal/caminhar` como histórico — não
 apague páginas de sessão só para zerar aviso de lint (decisão registrada no ADR-0035,
 §"Isolamento do bench"). O `ai-memory audit-contamination` pode apontá-las depois da troca
 de projeto da cópia: é falso positivo histórico esperado.
+
+### O modelo não pode LER a memória do bench
+
+O marcador impede sujar o histórico real, mas não o contrário: o projeto `default/bench`
+acumula as **páginas de sessão de quem já rodou a tarefa**, com o título dela, e uma
+`memory_query` as devolve. Em 13/11/2026 o `longcat-2.5-free` consultou a memória antes de
+abrir o código e recebeu títulos de execuções anteriores da mesma auditoria — e o
+`conferir.js` não marca isso, porque só olha tool cujo caminho toque `scripts/bench/`.
+
+Por isso a cópia desliga o MCP `ai-memory` no `opencode.jsonc`:
+
+```jsonc
+"mcp": { "servers": { "ai-memory": {
+  "type": "remote", "url": "http://127.0.0.1:49374/mcp", "oauth": false, "disabled": true
+} } }
+```
+
+Os dois runners chamam `exigirIsolamentoDeBench()` antes de qualquer spawn: sem o marcador
+`default/bench` **e** sem essa entrada, a bateria aborta com código 1 —
+`tests/unit/scripts/bench-isolation.test.js` cobre os dois lados. Commite o
+`opencode.jsonc` na cópia pelo mesmo motivo do marcador (`restaurarArvore()` devolve
+arquivo rastreado ao HEAD).
+
+Se a memória voltar a ser ligada na cópia, **apague antes as páginas do projeto**
+(`ai-memory delete-page`, ou `memory_delete_page` pelo MCP) e registre a mudança: a
+comparação com as baterias de 11/11 e 12–13/11 passa a ter essa diferença de ambiente —
+elas rodaram com a memória disponível.
 
 ## Guarda de árvore do bench de papéis
 

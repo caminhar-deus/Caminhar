@@ -34,7 +34,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { exigirInstrumentoValido } from '../ground-truth.js';
 import {
-  catalogo, classificarExistencia, exigirMarcadorDeBench, executar, executarSessao,
+  catalogo, classificarExistencia, exigirIsolamentoDeBench, executar, executarSessao,
   lerTimeoutMin, resumirArgs, timeoutEmMs,
 } from '../runner-comum.js';
 
@@ -183,7 +183,7 @@ function prepararArgs(job, opts, prompt) {
 }
 
 async function main() {
-  await exigirMarcadorDeBench(RAIZ);
+  await exigirIsolamentoDeBench(RAIZ);
   const opts = parseArgs(process.argv.slice(2));
 
   // Fail-fast antes de qualquer spawn — inclusive o `opencode models`.

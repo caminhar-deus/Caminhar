@@ -48,7 +48,9 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   o longcat empata em acerto com o titular e é 2,9–7,2× mais lento, e no `orchestrator`
   perde o item sem delegar **nenhuma** vez em três execuções (~35 min). Instrumento:
   `pontuar.js` passou a aceitar citação em tabela (`arquivo | :1 | :186`), que dava falso
-  negativo. Ver `docs/adr/0008-modelos-free-por-agente-sem-repeticao.md` §"13/11/2026".
+  negativo, e a cópia do bench passou a desligar o MCP `ai-memory` — o projeto de medição
+  acumulava as respostas das execuções anteriores e os modelos conseguiam lê-las. Ver
+  `docs/adr/0008-modelos-free-por-agente-sem-repeticao.md` §"13/11/2026".
 
 - **Retenção dos modelos conferida na fonte e `small_model` trocado (12/11/2026).**
   - `opencode.jsonc`: `small_model` `mimo-v2.6-flash-free` → `minimax-m3.1-flash-free`. O mimo retém e usa os dados para treinar; o título de sessão é derivado do prompt. O minimax é zero-retention e já é o `oracle`.

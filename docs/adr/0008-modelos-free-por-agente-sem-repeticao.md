@@ -1701,9 +1701,14 @@ Quatro consequências operacionais:
   as sessões do próprio bench, com títulos iguais ao da tarefa ("Tarefa do bench —
   auditoria de autenticação das rotas de API"). Uma `memory_query` genérica devolve essas
   páginas, e quem abrir uma delas lê a auditoria de um modelo anterior. O `conferir.js`
-  não vê isso: ele só olha tool cujo caminho toque `scripts/bench/`. **Antes da próxima
-  bateria:** apontar a cópia para um projeto descartável (ou desligar o MCP `ai-memory`
-  nela) e recriar a cópia sem as sessões antigas.
+  não vê isso: ele só olha tool cujo caminho toque `scripts/bench/`. **Corrigido em
+  14/11/2026:** a cópia passa a desligar o MCP `ai-memory` no `opencode.jsonc`, e os dois
+  runners falham antes do spawn quando ele está ligado (`exigirIsolamentoDeBench`, coberto
+  por `tests/unit/scripts/bench-isolation.test.js`). Verificação: o mesmo pedido ao
+  `deepseek-v4.1-flash-free` lista **27** tools `memory_*` no repositório real e
+  **nenhuma** na cópia. As páginas antigas de `default/bench` ficam como histórico
+  (ADR-0035) e ficam inertes porque ninguém as lê; a bateria de 11/11 rodou com a memória
+  disponível, então essa diferença de ambiente acompanha a comparação entre datas.
 
 ### Decisão
 
@@ -1832,10 +1837,10 @@ se pagou.
   13/11/2026.** `designer` (0 erros, 366 s), `fixer` (4/4, 826 s), `explorer` (6/6,
   339 s), `oracle` (6/6, 326 s) e `orchestrator` (Camada B **7/8**, t1 cortado pelo teto
   de 15 min e t2 completo em 680 s, **nenhuma** delegação). A segunda amostra não muda a
-  distribuição: nenhum papel aponta para o longcat. Fica um defeito aberto do instrumento —
-  a memória da cópia do bench guarda as respostas das execuções anteriores e é devolvida
-  por `memory_query`; corrigir antes da próxima bateria. Ver "13/11/2026:
-  `longcat-2.5-free` no papel".
+  distribuição: nenhum papel aponta para o longcat. O defeito de instrumento encontrado
+  (a memória da cópia do bench guardava as respostas das execuções anteriores e era
+  devolvida por `memory_query`) foi corrigido em 14/11/2026 — ver "Instrumento". Ver
+  "13/11/2026: `longcat-2.5-free` no papel".
 - **Instrumento do `designer` com linhas desatualizadas no HEAD — RESOLVIDO em
   07/11/2026.** O conteúdo do `gabarito-designer.md` do repo (recalibrado em
   06/11/2026) estava correto, mas o HEAD `7955585` ("ATT - New Design") deslocou

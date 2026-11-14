@@ -57,6 +57,60 @@ export async function exigirMarcadorDeBench(raiz) {
   }
 }
 
+/** Configs de projeto que o OpenCode lê na raiz do cwd (a cópia do bench). */
+const CONFIGS_DO_PROJETO = ['opencode.jsonc', 'opencode.json'];
+
+/**
+ * O isolamento do marcador impede sujar o histórico real, mas não impede o
+ * contrário: o projeto `default/bench` acumula as páginas de sessão de **quem já
+ * rodou a tarefa**, e uma `memory_query` as devolve. Em 13/11/2026 o longcat
+ * consultou a memória antes de abrir o código e recebeu títulos de execuções
+ * anteriores da mesma auditoria — o `conferir.js` não vê isso, porque ele só
+ * olha tool cujo caminho toque `scripts/bench/`. Por isso a cópia desliga o MCP
+ * `ai-memory` no `opencode.jsonc` e a guarda falha fechada se ele estiver ligado.
+ */
+export async function exigirMemoriaDesligada(raiz) {
+  let texto = null;
+  let arquivo = null;
+  for (const nome of CONFIGS_DO_PROJETO) {
+    const candidato = path.join(raiz, nome);
+    try {
+      texto = await readFile(candidato, 'utf8');
+      arquivo = candidato;
+      break;
+    } catch {
+      // tenta o próximo
+    }
+  }
+  if (!texto) {
+    throw new Error(
+      `Bench sem ${CONFIGS_DO_PROJETO.join('/')} na raiz (${raiz}): sem desligar o MCP ` +
+      '"ai-memory", os modelos leem as respostas das execuções anteriores. ' +
+      'Ver scripts/bench/orchestrator/LEIA-ME.md, "Isolamento da memória".'
+    );
+  }
+
+  // Aceita a entrada dentro de "mcp.servers" com `"disabled": true`; comentário
+  // antes da entrada não conta, porque a busca fica entre as chaves dela.
+  if (!/"ai-memory"\s*:\s*\{[^}]*"disabled"\s*:\s*true/.test(texto)) {
+    throw new Error(
+      `Bench com a memória legível: ${arquivo} não desliga o MCP "ai-memory". O projeto ` +
+      `${PROJETO_BENCH.workspace}/${PROJETO_BENCH.project} guarda as páginas de sessão das ` +
+      'execuções anteriores, com o título da própria tarefa, e `memory_query` as devolve — ' +
+      'a medição deixa de ser do modelo. Acrescente em "mcp.servers" da cópia: ' +
+      '"ai-memory": { "type": "remote", "url": "http://127.0.0.1:49374/mcp", "oauth": false, ' +
+      '"disabled": true } e commite o arquivo. Ver scripts/bench/orchestrator/LEIA-ME.md, ' +
+      '"Isolamento da memória".'
+    );
+  }
+}
+
+/** Guarda única chamada pelos dois runners antes de qualquer spawn. */
+export async function exigirIsolamentoDeBench(raiz) {
+  await exigirMarcadorDeBench(raiz);
+  await exigirMemoriaDesligada(raiz);
+}
+
 /**
  * `stdio[0] = 'ignore'` não é detalhe: com 'pipe' o filho herda um stdin que
  * ninguém escreve nem fecha, e o `opencode run` trava lendo stdin antes de abrir
