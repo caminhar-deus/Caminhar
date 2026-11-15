@@ -15,10 +15,20 @@ nota do próprio modelo entra na conta. É o mesmo critério das baterias de 15/
 
 | Sinal | Como é medido | Por que importa |
 |---|---|---|
-| **Delegou** | O NDJSON registra uma tool `subagent` (evento estruturado) | Sem delegação não houve orquestração, por definição |
+| **Delegou** | O NDJSON do **turno 1** registra uma tool `subagent` (evento estruturado) | Sem delegação não houve orquestração, por definição. O turno 2 é de reconciliação: delegar ali não é o esperado e o silêncio dele não conta como falha |
 | **Citações válidas** | De cada `arquivo:linha` citado, o arquivo existe e tem a linha | Citação que não abre é erro verificável, o mesmo critério das outras baterias |
 | **Citações inventadas** | O inverso | O erro mais caro de um modelo free é o `arquivo:linha` que não existe |
 | **Contaminação** | Alguma tool tocou `scripts/bench/` (campo de caminho/comando), não o texto | Leitura do gabarito invalida a execução |
+
+O conferidor dá **três veredictos** para uma citação, e eles não se somam:
+
+- **inválida** — nenhum arquivo candidato tem a linha, ou o caminho escrito existe e não
+  chega nela (`pages/api/posts.js:152` num arquivo de 86 linhas). É erro do modelo.
+- **ambígua** — o modelo escreveu só o nome-base (`login.js:51`) e mais de um arquivo do
+  repositório tem essa linha. Não é erro: é indeterminação da forma escrita, resolvida à
+  mão na Camada B.
+- **abreviada** — o caminho existe fora do diretório auditado (`adminCrudHandler.js` é
+  `lib/api/adminCrudHandler.js`). É forma, não erro.
 
 Contaminação não é "nota zero": é **execução descartada**. Um modelo que leu o gabarito
 parece perfeito e não mediu nada.
@@ -65,6 +75,10 @@ Achado do primeiro smoke test (19/10/2026, `beam-free`): o modelo delegou a varr
 `subagent(..., background: true)`, disse que aguardaria a notificação, e **o `opencode run`
 devolveu em 8 segundos**, com a resposta final sendo só "lançei o agente, aguardo". O
 resultado do subagente chega depois, na sessão — não dentro daquela execução.
+
+Reconferido em 14/11/2026 (host v2.3.0 + slim 3.0.7): `background: false` também devolve o
+aviso de background. Não existe caminho de turno único neste host, apesar da descrição da
+tool prometer o contrário.
 
 Isso é comportamento do host, não defeito do bench, e tem duas leituras:
 

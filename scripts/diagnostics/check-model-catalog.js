@@ -7,16 +7,26 @@
  * não cai na reserva — ele quebra em silêncio ou cai no default do provider.
  * A única proteção contra esse modo de falha é conferir o catálogo antes.
  *
- * Fonte de verdade do que os agentes vão usar: `opencode debug agents` (config
- * COMPILADA do serviço em execução, já sem comentários JSONC). O catálogo vem
- * de `opencode models`.
+ * Duas fontes, de propósito:
+ * - `opencode debug agents` (config COMPILADA do serviço em execução, já sem
+ *   comentários JSONC) diz o que o host vai usar como PRIMÁRIO de cada agente;
+ * - o preset `.opencode/oh-my-opencode-slim.json` é a única fonte da CADEIA DE
+ *   RESERVA (`"model": [primário, reserva]`), que não aparece em `debug agents`
+ *   nem em `debug config`. Antes de 15/11/2026 um id de reserva morto passava
+ *   despercebido por aqui; o custo desse buraco é justamente o modo de falha que
+ *   este script existe para pegar.
  *
- * Limite conhecido: `debug agents` expõe só o PRIMÁRIO de cada agente; a cadeia
- * de reserva (array no preset) não aparece. Um id de reserva morto não é pego
- * aqui — só no dia em que ela for acionada.
+ * O catálogo vem de `opencode models`.
  */
+import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { agentModels, missingModels, parseCatalog } from './model-catalog.js';
+import path from 'node:path';
+import {
+  agentModels, missingModels, parseCatalog, parseJsonc, presetModels,
+} from './model-catalog.js';
+
+const RAIZ = path.resolve(import.meta.dirname, '..', '..');
+const PRESET = path.join(RAIZ, '.opencode', 'oh-my-opencode-slim.json');
 
 function run(args) {
   return execFileSync('opencode', args, { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
@@ -56,6 +66,41 @@ function main() {
   }
 
   console.log('\ntodos os primários estão no catálogo.');
+
+  // A cadeia de reserva vem do preset: é a única fonte dela.
+  let presets;
+  try {
+    presets = presetModels(parseJsonc(readFileSync(PRESET, 'utf8')));
+  } catch (error) {
+    console.error('\nmodels:check — não foi possível ler a cadeia de reserva do preset.');
+    console.error(`  arquivo: ${path.relative(RAIZ, PRESET)}`);
+    console.error(`  motivo: ${error.message.split('\n')[0]}`);
+    process.exit(1);
+  }
+
+  if (presets.agentes.length === 0) {
+    console.error('\nmodels:check — o preset não declara modelo nenhum; nada a conferir na cadeia.');
+    process.exit(1);
+  }
+
+  console.log(`\ncadeia de reserva (preset \`${presets.preset}\`):`);
+  const reservas = presets.agentes.filter(({ posicao }) => posicao > 0);
+  for (const { agent, id, posicao } of reservas) {
+    const rotulo = posicao === 1 ? 'reserva' : `reserva #${posicao}`;
+    console.log(`  ${agent.padEnd(13)} ${id.padEnd(38)} ${catalog.has(id) ? 'ok' : 'FORA DO CATÁLOGO'} (${rotulo})`);
+  }
+  if (reservas.length === 0) {
+    console.log('  (nenhuma — o preset declara só primários)');
+  }
+
+  const reservasMortas = missingModels(reservas, catalog);
+  if (reservasMortas.length > 0) {
+    console.error(`\n${reservasMortas.length} id(s) de RESERVA fora do catálogo:`);
+    for (const { agent, id } of reservasMortas) console.error(`  - ${agent}: ${id}`);
+    console.error('\nA cadeia não cobre id morto (`provider.no-route` não é failover):');
+    console.error('trocar a reserva no preset, ou removê-la e assumir o default do provider.');
+    process.exit(1);
+  }
 }
 
 main();

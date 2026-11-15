@@ -11,6 +11,8 @@ import {
   agentModels,
   missingModels,
   parseCatalog,
+  parseJsonc,
+  presetModels,
 } from '../../../scripts/diagnostics/model-catalog.js';
 
 describe('parseCatalog', () => {
@@ -42,6 +44,71 @@ describe('missingModels', () => {
     ]);
     expect(missingModels(models, catalog)).toEqual([
       { agent: 'designer', id: 'opencode/crouton-alpha-free' },
+    ]);
+  });
+});
+
+describe('parseJsonc', () => {
+  it('remove comentário de linha e de bloco e vírgula final', () => {
+    const texto = `{
+      // primário do orchestrator
+      "preset": "zen", /* bloco
+      comentado */
+      "presets": { "zen": { "orchestrator": { "model": ["opencode/a", "opencode/b",] }, }, },
+    }`;
+    expect(parseJsonc(texto)).toEqual({
+      preset: 'zen',
+      presets: { zen: { orchestrator: { model: ['opencode/a', 'opencode/b'] } } },
+    });
+  });
+
+  it('preserva `//` dentro de string e aspas escapadas', () => {
+    const texto = '{ "url": "https://exemplo.test/a", "aspas": "diz \\"oi\\" // nao e comentario" }';
+    expect(parseJsonc(texto)).toEqual({
+      url: 'https://exemplo.test/a',
+      aspas: 'diz "oi" // nao e comentario',
+    });
+  });
+
+  it('explode em JSON inválido em vez de devolver preset meio-lido', () => {
+    expect(() => parseJsonc('{ "preset": "zen" ')).toThrow();
+  });
+});
+
+describe('presetModels', () => {
+  const config = {
+    preset: 'zen',
+    presets: {
+      local: { orchestrator: { model: 'ollama/qwen3-coder:30b' } },
+      zen: {
+        orchestrator: { model: ['opencode/deepseek-v4.1-flash-free', 'opencode/glm-5.3-flash-free'] },
+        oracle: { model: 'opencode/minimax-m3.1-flash-free' },
+        fixer: { mcps: {} },
+      },
+    },
+  };
+
+  it('lê só o preset ativo, na ordem, marcando a reserva pela posição', () => {
+    expect(presetModels(config).agentes).toEqual([
+      { agent: 'orchestrator', id: 'opencode/deepseek-v4.1-flash-free', posicao: 0 },
+      { agent: 'orchestrator', id: 'opencode/glm-5.3-flash-free', posicao: 1 },
+      { agent: 'oracle', id: 'opencode/minimax-m3.1-flash-free', posicao: 0 },
+    ]);
+  });
+
+  it('devolve vazio quando o preset ativo não tem bloco', () => {
+    expect(presetModels({ preset: 'inexistente', presets: {} })).toEqual({
+      preset: 'inexistente', agentes: [],
+    });
+    expect(presetModels({})).toEqual({ preset: null, agentes: [] });
+  });
+
+  it('a reserva morta é pega pela mesma checagem do primário', () => {
+    const { agentes } = presetModels(config);
+    const catalog = parseCatalog('opencode/deepseek-v4.1-flash-free\nopencode/minimax-m3.1-flash-free\n');
+    const reservas = agentes.filter(({ posicao }) => posicao > 0);
+    expect(missingModels(reservas, catalog)).toEqual([
+      { agent: 'orchestrator', id: 'opencode/glm-5.3-flash-free', posicao: 1 },
     ]);
   });
 });

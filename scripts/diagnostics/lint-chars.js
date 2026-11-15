@@ -28,6 +28,17 @@ const IGNORADOS = new Set([
   '.opencode', '.agents',
 ]);
 
+// Saídas geradas pelos benches (relatórios e `.ndjson` das execuções). São artefato de
+// execução, gitignored, e contêm o TEXTO produzido pelos modelos — inclusive tokens
+// corrompidos, que são justamente o que o bench mede. Lintá-los faz o `lint:chars` reprovar
+// por causa de uma execução antiga, sem que haja nada a corrigir no repositório. Mesmo
+// precedente do `ignores` do `eslint.config.js`, que lista estes dois diretórios.
+// Passar o arquivo explicitamente na linha de comando continua valendo: só a varredura pula.
+const IGNORADOS_CAMINHOS = new Set([
+  path.normalize('scripts/bench/orchestrator/resultados'),
+  path.normalize('scripts/bench/papeis/resultados'),
+]);
+
 const EXTENSOES = new Set([
   '.js', '.mjs', '.cjs', '.jsx', '.json', '.jsonc', '.md', '.yml', '.yaml', '.css',
 ]);
@@ -53,8 +64,10 @@ function* walk(dir) {
   for (const entrada of fs.readdirSync(dir, { withFileTypes: true })) {
     if (IGNORADOS.has(entrada.name)) continue;
     const completo = path.join(dir, entrada.name);
-    if (entrada.isDirectory()) yield* walk(completo);
-    else if (EXTENSOES.has(path.extname(entrada.name))) yield completo;
+    if (entrada.isDirectory()) {
+      if (IGNORADOS_CAMINHOS.has(path.relative(RAIZ, completo))) continue;
+      yield* walk(completo);
+    } else if (EXTENSOES.has(path.extname(entrada.name))) yield completo;
   }
 }
 

@@ -15,7 +15,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 
 /** Raízes da travessia do índice (mesma lista do conferidor original). */
-const RAIZES_PADRAO = [
+export const RAIZES_PADRAO = [
   'pages', 'lib', 'components', 'hooks', 'utils', 'data',
   'tests', 'docs', 'design-system', 'public',
 ];
@@ -187,16 +187,25 @@ export function criarResolvedor({ raiz, raizes = RAIZES_PADRAO, incluirNextDist 
   }
 
   /**
-   * Candidatos de um alvo no projeto: a união deduplicada de `alvo`,
-   * `pages/api/<alvo>`, todos os sufixos de caminho (a partir de cada `/`) e
-   * `pages/api/<sufixo>`, e depois os caminhos do índice por basename — só os
-   * que existem no disco.
+   * Candidatos de um alvo separados por **camada de resolução**.
    *
-   * `diretos` é o par `[alvo, pages/api/alvo]` SEM filtrar: o conferidor usa para
-   * decidir se o serviço foi "abreviado" (o caminho servido não é o escrito).
+   * As camadas existem porque a mesma citação tem três leituras possíveis, em ordem de
+   * força: o caminho que o modelo escreveu (e ele a partir de `pages/api/`, que é a forma
+   * natural de quem fala de "as rotas"); um sufixo dele (`admin/users.js` -> `users.js`);
+   * e por último o nome-base (`dicas.js` -> qualquer `dicas.js` do repositório).
+   *
+   * Quem consome decide a política: `candidatosProjeto()` achata as três em `lista` (as
+   * baterias de papel perguntam "algum candidato tem a linha?"), enquanto o conferidor do
+   * orchestrator as avalia em ordem — só desce uma camada quando a anterior não tem a
+   * linha citada. Achatar antes de decidir foi o defeito que marcou 13 de 20 execuções
+   * como "citação ambígua" em 14/11/2026 (um caminho completo era acusado por causa do
+   * irmão em `pages/api/admin/`).
+   *
+   * Só arquivos que existem no disco entram, e cada um já vem com a contagem de linhas.
+   * A lista pode repetir um caminho entre camadas; desduplicar é da política.
    */
-  function candidatosProjeto(alvo) {
-    const diretos = [alvo, path.posix.join('pages/api', alvo)];
+  function camadasDe(alvo) {
+    const escritos = [alvo, path.posix.join('pages/api', alvo)];
     const partes = alvo.split('/');
     const sufixos = [];
     for (let i = 1; i < partes.length; i += 1) {
@@ -204,20 +213,37 @@ export function criarResolvedor({ raiz, raizes = RAIZES_PADRAO, incluirNextDist 
       sufixos.push(sufixo, path.posix.join('pages/api', sufixo));
     }
 
-    // TODOS os candidatos existentes entram — o primeiro achado NÃO é campeão. É a
-    // regra que o conferidor do orchestrator consertou em 19/10/2026 (comentário de
-    // `resolverCitacao` lá) e que estas baterias repetiram: `roles.js:113` caiu no
-    // `tests/helpers/roles.js` (22 linhas) enquanto `pages/api/admin/roles.js` (133)
-    // tem a linha; `posts.js:152` caiu em `pages/api/posts.js` (85) com
-    // `pages/api/admin/posts.js` (171) e `lib/domain/posts.js` (181) no disco.
+    const existentes = (caminhos) => [...new Set(caminhos)]
+      .filter(ehArquivo)
+      .map((caminho) => ({ caminho, linhas: linhasDe(caminho) }));
+
+    return {
+      escritos: existentes(escritos),
+      sufixos: existentes(sufixos),
+      porNome: existentes(sufixosPorNome(alvo)),
+    };
+  }
+
+  /**
+   * Candidatos de um alvo no projeto: as três camadas achatadas, na ordem, sem repetir.
+   *
+   * TODOS os candidatos existentes entram — o primeiro achado NÃO é campeão. É a regra
+   * que o conferidor do orchestrator consertou em 19/10/2026 e que estas baterias
+   * repetiram: `roles.js:113` caiu no `tests/helpers/roles.js` (22 linhas) enquanto
+   * `pages/api/admin/roles.js` (133) tem a linha; `posts.js:152` caiu em
+   * `pages/api/posts.js` (85) com `pages/api/admin/posts.js` (171) e
+   * `lib/domain/posts.js` (181) no disco.
+   *
+   * `diretos` é o par `[alvo, pages/api/alvo]` SEM filtrar: o conferidor usa para decidir
+   * se o serviço foi "abreviado" (o caminho servido não é o escrito).
+   */
+  function candidatosProjeto(alvo) {
+    const camadas = camadasDe(alvo);
     const lista = [];
-    for (const c of [...diretos, ...sufixos]) {
-      if (ehArquivo(c) && !lista.includes(c)) lista.push(c);
+    for (const { caminho } of [...camadas.escritos, ...camadas.sufixos, ...camadas.porNome]) {
+      if (!lista.includes(caminho)) lista.push(caminho);
     }
-    for (const c of sufixosPorNome(alvo)) {
-      if (ehArquivo(c) && !lista.includes(c)) lista.push(c);
-    }
-    return { lista, diretos };
+    return { lista, diretos: [alvo, path.posix.join('pages/api', alvo)] };
   }
 
   /**
@@ -259,6 +285,7 @@ export function criarResolvedor({ raiz, raizes = RAIZES_PADRAO, incluirNextDist 
     resolverPorPadrao,
     linhasDe,
     conteudoDe,
+    camadasDe,
     candidatosProjeto,
     resolverReserva,
     origemExternaPorExtensao,

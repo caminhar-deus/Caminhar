@@ -11,6 +11,16 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Adicionado
 
+- **`models:check` passou a validar a cadeia de reserva (15/11/2026, ADR-0008 §"14/11/2026").**
+  `opencode debug agents` expõe só o primário; a reserva (`"model": [primário, reserva]`) vive
+  no preset e não aparecia em nenhum comando do host — um id de reserva morto passava
+  despercebido, embora `provider.no-route` não seja failover. O preflight agora lê
+  `.opencode/oh-my-opencode-slim.json` com `parseJsonc` e `presetModels`
+  (`scripts/diagnostics/model-catalog.js`, ambos testados) e reprova reserva fora do catálogo
+  com mensagem própria. Rodada atual: `orchestrator` → `glm-5.3-flash-free` `ok`, e o preset
+  registra que a reserva cobre rate limit/5xx **sem** conduzir (0 `subagent` na execução de
+  14/11) — foi mantida por integridade de cota, não por orquestração.
+
 - **Preflight de catálogo de modelos (12/11/2026):** `npm run models:check`
   (`scripts/diagnostics/check-model-catalog.js` + funções puras em
   `scripts/diagnostics/model-catalog.js`) cruza os modelos compilados dos agentes
@@ -30,6 +40,22 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Alterado
 
+- **Bench do `orchestrator` parou de acusar falha que a rubrica não pede (14/11/2026, ADR-0008 §"14/11/2026").**
+  O diagnóstico de "falha de designação" mostrou 13 execuções acusadas de não delegar; 11 eram
+  `.t2.ndjson` (turno de reconciliação, que não delega por desenho) e 2 eram perfil de modelo
+  (`glm` 0/1, `longcat` 0/3) — distribuição de papéis **inalterada**. `conferir.js` passou a
+  cobrar delegação só no turno 1, a distinguir resposta vazia por `excedeuTimeout` do
+  `.meta.json` (deepseek 905 s, longcat 900 s) e a resolver citação em camadas — caminho
+  escrito, depois sufixo, depois nome-base: as ambíguas caíram de **13 para 4** execuções, e
+  caminho completo com linha inexistente (`pages/api/posts.js:152`) virou inválida em vez de
+  "válida" apontando para um homônimo. Política pura e testada em
+  `scripts/bench/orchestrator/conferencia.js` (13 casos) e regra dos três veredictos na `rubrica.md`.
+- **Resolvedor de citações dos benches consolidado em um só (15/11/2026).** O `conferir.js` do
+  orchestrator tinha cópia própria do índice por nome-base, do cache de linhas e das camadas;
+  `scripts/bench/citacoes.js` — extraído dele em 05/11 — ganhou `camadasDe()` e passou a ser a
+  única fonte, com `candidatosProjeto()` achatando as camadas na mesma lista de antes. A
+  conferência das 20 execuções saiu idêntica (156 772 bytes, mesmas 4 ambíguas, mesmas
+  inválidas); `scripts/bench/papeis` e `ground-truth` não mudaram de comportamento.
 - **Webhook do Mercado Pago não presume mais `approved` (12/11/2026, ADR-0038):** em produção o status
   do pagamento vem sempre de `GET /v1/payments/{id}` (`fetchMercadoPagoPaymentStatus`, timeout de 8 s) e o
   status enviado no corpo é ignorado. Falha ao confirmar devolve 502 (API/rede/resposta inválida) ou 503
@@ -65,6 +91,14 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   - Todos os 12 modelos foram medidos nos 5 papéis, com verificação fora do modelo (Jest real no `fixer`); comparação e alternativas em `docs/adr/0008-modelos-free-por-agente-sem-repeticao.md` §"11/11/2026".
 
 ### Corrigido
+
+- **`lint:chars` deixa de reprovar por saída gerada de bench (15/11/2026).** A varredura
+  passou a pular `scripts/bench/orchestrator/resultados/` e `scripts/bench/papeis/resultados/`
+  — os mesmos dois diretórios que o `ignores` do `eslint.config.js` já exclui. São artefatos
+  gitignored que contêm o texto produzido pelos modelos, inclusive os tokens corrompidos que
+  o bench mede: um token CJK (`U+7C89`) em `conferencia.md` reprovava o linter local até a próxima execução,
+  sem nada a corrigir no repositório. Passar o arquivo explicitamente na linha de comando
+  continua conferindo o arquivo — só a varredura pula.
 
 - **Migração para Orders API (`/v1/orders`) do Mercado Pago e validação real no Sandbox (12/11/2026, ADR-0040):**
   - `lib/payment/mercadopago.js`: emissão de pagamentos migrada de `POST /v1/payments` para `POST /v1/orders` (compatível com credenciais `APP_USR-` de "Checkout Transparente e Checkout Pro com Orders"), ajuste de `payer.address` (`state`, sem `country`/`federal_unit`), remoção de `notification_url` do corpo (rejeitada pela Orders API), suporte a `paymentTypeId` (`credit_card`, `debit_card` e `prepaid_card` sem `installments`), interpretação de recusas síncronas `HTTP 402` (`data.id`) preservando registro com devolução de estoque, e mapeamento completo dos status/erros da Orders API (`processed`, `processing`, `action_required`, `failed`, `canceled`, `refunded`, `payment_method_not_allowed_for_collector`).

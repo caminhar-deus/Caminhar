@@ -129,6 +129,49 @@ describe('criarResolvedor — resolução de arquivos e candidatos', () => {
   });
 });
 
+describe('criarResolvedor — camadas de resolução', () => {
+  it('separa caminho escrito, sufixo e nome-base, com a contagem de linhas', () => {
+    const resolvedor = criarResolvedor({ raiz: fixture, incluirNextDist: false });
+    const { escritos, sufixos, porNome } = resolvedor.camadasDe('posts.js');
+
+    // `posts.js` não existe na raiz; o par escrito é resolvido por `pages/api/`.
+    expect(escritos).toEqual([{ caminho: path.normalize('pages/api/posts.js'), linhas: 3 }]);
+    expect(sufixos).toEqual([]);
+    expect(porNome).toHaveLength(3);
+    expect(porNome.map((c) => c.caminho)).toEqual(expect.arrayContaining([
+      path.normalize('pages/api/posts.js'),
+      path.normalize('pages/api/admin/posts.js'),
+      path.normalize('lib/domain/posts.js'),
+    ]));
+    expect(porNome.find((c) => c.caminho.endsWith('admin/posts.js')).linhas).toBe(5);
+  });
+
+  it('joga o sufixo para a camada do meio em vez de tratar como caminho escrito', () => {
+    const resolvedor = criarResolvedor({ raiz: fixture, incluirNextDist: false });
+    const { escritos, sufixos } = resolvedor.camadasDe('admin/posts.js');
+
+    // `admin/posts.js` não existe na raiz; `pages/api/admin/posts.js` é o par escrito.
+    expect(escritos.map((c) => c.caminho)).toEqual([path.normalize('pages/api/admin/posts.js')]);
+    // `posts.js` é sufixo do caminho escrito, não nome-base: `pages/api/posts.js` entra aqui.
+    expect(sufixos.map((c) => c.caminho)).toEqual([path.normalize('pages/api/posts.js')]);
+  });
+
+  it('não inventa camadas para arquivo inexistente', () => {
+    const resolvedor = criarResolvedor({ raiz: fixture, incluirNextDist: false });
+    expect(resolvedor.camadasDe('inexistente.js')).toEqual({
+      escritos: [], sufixos: [], porNome: [],
+    });
+  });
+
+  it('candidatosProjeto achata as camadas na ordem delas, sem repetir', () => {
+    const resolvedor = criarResolvedor({ raiz: fixture, incluirNextDist: false });
+    const { lista } = resolvedor.candidatosProjeto('posts.js');
+
+    expect(lista[0]).toBe(path.normalize('pages/api/posts.js'));
+    expect(new Set(lista).size).toBe(lista.length);
+  });
+});
+
 describe('criarResolvedor — leitura, linhas e memoização', () => {
   it('linhasDe conta as linhas do arquivo e tolera inexistentes com zero', () => {
     const resolvedor = criarResolvedor({ raiz: fixture, incluirNextDist: false });

@@ -1726,6 +1726,91 @@ Quatro consequências operacionais:
    execução completa. Um modelo que resolve tudo na mão não substitui um orquestrador: no
    papel, o que se mede é a condução, e a nota dele ali é a única que não empata.
 
+## 14/11/2026: a "falha de designação do orchestrator" era dois modelos e um instrumento
+
+O pedido veio como diagnóstico: o bench acusava falhas do `orchestrator` ao designar e
+distribuir tarefas, e a pergunta era se o modelo vinculado ao agente estava morto, se a
+delegação estava quebrada ou se as melhorias recentes tinham mudado o comportamento.
+Nenhuma das três. A distribuição de papéis fica **inalterada**; o que precisou de conserto
+foi o instrumento, que contava como falha de orquestração o que a rubrica não pede.
+
+### O que foi verificado — e não era modelo
+
+- **Catálogo e agentes:** `npm run models:check` sai **0** com os 13 ids do catálogo e os
+  seis papéis compilados (`designer` `big-pickle`, `explorer` `inkling-2-small-free`,
+  `fixer` `iceman-free`, `oracle` `minimax-m3.1-flash-free`, `orchestrator`
+  `deepseek-v4.1-flash-free`, `title` `minimax-m3.1-flash-free` — todos `ok`). Os agentes
+  compilados (`opencode debug agents`), o preset e o prompt do plugin (slim 3.0.7) batem
+  com a distribuição registrada: nenhum id morto, nenhuma permissão faltando.
+- **A conta de "13 execuções sem delegação" estava inflada:** 11 eram arquivos
+  `.t2.ndjson`, o turno de reconciliação — ele **existe** para fechar o que já foi
+  delegado, e o silêncio dele não é falha. Só **duas** execuções de turno 1 não delegaram:
+  `glm-5.3-flash-free-1` (reserva do `orchestrator`: uma execução, respondeu na mão) e
+  `longcat-2.5-free` (três execuções, 0 `subagent`, cortado em 900 s).
+- **Resposta final vazia não era `background`:** o `deepseek-v4.1-flash-free-1.meta.json`
+  tem `excedeuTimeout: true` (905 s) e o longcat bateu 900 s. Era o teto do runner.
+- **Sondagem ao vivo (14/11, host `v2.3.0` + slim `3.0.7`):** a tool `subagent` ignora
+  `background: false` e devolve o aviso de background nas três formas — o retorno inline que
+  o registro de 11/11 mostra não se reproduz hoje, e o protocolo de dois turnos continua
+  necessário. A `task_report` funciona (a sessão filha usa `kind`/`message`); o erro de
+  "identidade de sessão não verificável" de 11/11 também não se reproduz.
+
+### O que era instrumento (corrigido)
+
+1. **Turno 2 contado como não-orquestração.** `conferir.js` somava os `.t2.ndjson` na conta
+   de "sem delegação"; agora o sinal vale só no turno 1 e a coluna mostra `n/a (turno 2)`.
+2. **Resposta vazia atribuída ao `background`.** O conferidor passou a ler o `.meta.json`
+   irmão: `excedeuTimeout: true` vira "execução incompleta (timeout)", separado de "a
+   delegação encerrou o turno".
+3. **Citação ambígua em massa.** A primeira versão da correção marcou **13 das 20**
+   execuções como ambíguas — inclusive caminhos completos (`pages/api/dicas.js:3`), só
+   porque o irmão `pages/api/admin/dicas.js` também tem a linha 3. A resolução agora é em
+   **camadas**: caminho escrito (e ele a partir de `pages/api/`), depois sufixo, depois
+   nome-base. Na mesma bateria o número caiu para **4**, todas com nome-base escrito
+   (`login.js:51`, `cache.js:21`, `posts.js:152`) — indeterminação real da forma escrita.
+4. **Caminho completo com linha inexistente saía como válida.** `pages/api/posts.js:152`
+   era resolvido por um homônimo — o defeito aberto registrado em 13/11. Agora, quando o
+   **caminho escrito existe** e não chega na linha, a citação é inválida com o tamanho
+   real: `pages/api/posts.js:152 (o arquivo escrito tem 86 linha(s))`. O desempate por
+   homônimo só entra quando o caminho escrito **não** existe.
+
+Arquivos: `scripts/bench/orchestrator/conferencia.js` (novo módulo puro, sem `import.meta`
+pelo mesmo motivo de `scripts/bench/citacoes.js`), `conferir.js` (consome os helpers),
+`tests/unit/scripts/bench-conferencia.test.js` (13 casos), `LEIA-ME.md` e `rubrica.md`
+(regra dos três veredictos).
+
+### Decisão
+
+1. **Distribuição inalterada** — os seis ids estão no catálogo e nada no diagnóstico aponta
+   modelo morto ou pipeline quebrado.
+2. **`longcat` e `glm` continuam sem papel no `orchestrator`** por comportamento medido
+   (0 delegação em 3 e em 1 execuções), como já registrado em 13/11. Não é defeito de
+   delegação: é o perfil do modelo, que é justamente o que o bench mede.
+3. **A cadeia de reserva passou a entrar no preflight (15/11/2026).** `opencode debug
+   agents` expõe só o primário compilado; a reserva vive no preset e nenhum comando do
+   host a mostra — era o buraco que deixava um id morto passar. O `models:check` agora lê
+   `.opencode/oh-my-opencode-slim.json` (JSONC com parser próprio, testado) e valida
+   **também** a cadeia, reprovando reserva fora do catálogo com mensagem própria — porque
+   `provider.no-route` não é failover e a queda silenciosa é justamente o modo de falha que
+   o script existe para pegar.
+   - **O trade-off da reserva atual fica explícito:** o `glm-5.3-flash-free` foi escolhido
+     por **integridade de cota** (nenhum outro papel o usa) e mede bem o conteúdo (7/8 em
+     22/10), mas **não conduz** — 0 `subagent` na execução de 14/11. A alternativa óbvia
+     seria o `minimax`, que delega 3/3 no papel, mas ele já carrega `oracle`, `title` e o
+     próprio default do provider; somar reserva a um id usado em toda sessão é o tipo de
+     escolha que morre por cota (foi o que derrubou o `flint` em 11/11). A reserva continua
+     sendo mitigação de rate limit/5xx, **não** garantia de condução — e agora está dito
+     no preset, não só no ADR.
+4. **Resolvedor de citações consolidado (15/11/2026).** O `conferir.js` do orchestrator
+   deixou de manter cópia própria do resolvedor: `scripts/bench/citacoes.js` ganhou
+   `camadasDe()` (as três camadas com a contagem de linhas) e `candidatosProjeto()` passou
+   a achatá-las preservando exatamente a lista anterior. Quem decide a política é o
+   consumidor — o bench de papel pergunta "algum candidato tem a linha?" (lista plana), o
+   orchestrator avalia em ordem (camadas). O índice do orchestrator inclui `scripts`
+   (raiz extra no construtor) para não perder candidato que existia antes. Verificação: a
+   conferência das 20 execuções saiu **idêntica** antes e depois (156 772 bytes, as mesmas
+   4 ambíguas e as mesmas inválidas).
+
 ## Consequências
 
 ### Positivas

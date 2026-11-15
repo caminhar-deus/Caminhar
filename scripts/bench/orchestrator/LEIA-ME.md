@@ -249,6 +249,13 @@ A tool `subagent`, neste host, **ignora o parâmetro `background`**: tanto
 > The subagent is working in the background (sessionID: `ses_...`). You will be notified
 > automatically when it finishes. DO NOT sleep, poll for progress…
 
+**Reconferido em 14/11/2026 (host v2.3.0 + oh-my-opencode-slim 3.0.7), com probe real:**
+`background: false` também devolve exatamente esse aviso — o parâmetro continua ignorado
+nas três formas. O resultado chega como notificação, não dentro do turno. A descrição da
+tool promete o contrário ("Foreground (background: false) runs the subagent to completion"),
+e é essa promessa que o registro de 11/11 ainda mostrava cumprida; não confie nela sem
+probe. O protocolo de dois turnos continua necessário.
+
 O resultado chega depois, como notificação, e **`opencode run` já devolveu**. Nas 6
 execuções da série, todas terminaram com a resposta final sendo só o aviso de que a
 delegação tinha sido disparada. Nenhum modelo conseguiu reconciliar dentro do turno.
@@ -298,7 +305,10 @@ O `rodar.js` já faz certo. Se você chamar `opencode run` por script, copie a l
 
 ## Depois de rodar
 
-1. `npm run bench:orch:conferir` e abrir `resultados/conferencia.md`.
+1. `npm run bench:orch:conferir` e abrir `resultados/conferencia.md`. O sinal "delegou"
+   só conta no **turno 1**: o turno 2 é o de reconciliação, e o silêncio dele não é
+   "não orquestrou". Resposta vazia com `excedeuTimeout` no `.meta.json` é corte do
+   runner, não delegação em background.
 2. Julgar as Camadas B e C da `rubrica.md` — fora do modelo, como em toda bateria deste
    projeto. Use a **mediana** de 3 execuções; o que separa um modelo do outro é erro
    verificável na Camada B, e a Camada C é o desempate.

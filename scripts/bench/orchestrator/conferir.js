@@ -18,9 +18,22 @@ import { readdir, readFile, writeFile, stat } from 'node:fs/promises';
 import { statSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import {
+  avaliarCitacao, rotuloDelegacao, rotuloTimeout, turnoDaExecucao,
+} from './conferencia.js';
+import { criarResolvedor, RAIZES_PADRAO } from '../citacoes.js';
 
 const RAIZ = path.resolve(import.meta.dirname, '..', '..', '..');
 const SAIDA = path.join(RAIZ, 'scripts', 'bench', 'orchestrator', 'resultados');
+
+// Resolvedor de citações compartilhado com as baterias de papel (`scripts/bench/citacoes.js`).
+//
+// Antes havia uma cópia própria aqui: índice por nome-base, cache de linhas e resolução em
+// camadas. `citacoes.js` foi extraído DESTE conferidor em 05/11/2026 e os dois divergiram —
+// consolidado em 15/11/2026, com o resolvedor como única fonte. A diferença de raízes é
+// deliberada: o bench de papel audita componentes e docs, este audita `pages/api/` e pode
+// citar `scripts/` (o índice dele sempre incluiu essa raiz).
+const resolvedor = criarResolvedor({ raiz: RAIZ, raizes: [...RAIZES_PADRAO, 'scripts'] });
 
 // `arquivo.ext:123`, com ou sem crase/aspas em volta. Só as extensões típicas de código e
 // doc do projeto entram; o que vier com caminho relativo ou com `/` é resolvido por
@@ -28,85 +41,6 @@ const SAIDA = path.join(RAIZ, 'scripts', 'bench', 'orchestrator', 'resultados');
 // em prosa, não uma citação de linha, e em 19/10/2026 essa regex acusou duas citações
 // válidas como apontando para a linha 401 de um arquivo de 109 linhas.
 const REGEX_CITACAO = /([A-Za-z0-9_.\-/[\]]+\.(?:js|cjs|mjs|jsx|json|md|mdx|yml|yaml|css|tsx|ts))[`'"]?:(\d+)/g;
-
-// Caminho de uma citação pode ser escrito relativo ao diretório auditado. Os modelos
-// escrevem `admin/users.js` para `pages/api/admin/users.js` — que é a forma natural
-// quando se está falando de "as rotas". Resolver só a partir da raiz marca essas citações
-// como inexistentes, e é o que aconteceu em 19/10/2026: 16 "caminhos não encontrados"
-// numa execução cujo texto estava correto.
-const DIRETORIO_AUDITADO = 'pages/api';
-
-// Cache de arquivos já lidos: a mesma citação aparece várias vezes na resposta.
-const cacheLinhas = new Map();
-let indiceBasename = null;
-
-/**
- * Todos os arquivos que podem ser o alvo de uma citação, na ordem em que são tentados.
- *
- * Os modelos escrevem o caminho relativo ao diretório auditado — `admin/users.js` para
- * `pages/api/admin/users.js`, `settings.js` para `pages/api/settings.js` — que é a forma
- * natural quando se está falando de "as rotas". Resolver só a partir da raiz marca essas
- * citações como inexistentes: em 19/10/2026 isso produziu 16 "caminhos não encontrados"
- * numa execução cujo texto estava correto.
- */
-function candidatosDe(alvo) {
-  const candidatos = [alvo, path.posix.join(DIRETORIO_AUDITADO, alvo)];
-  // Também tenta cada sufixo do caminho: `admin/users.js` -> `users.js`.
-  const partes = alvo.split('/');
-  for (let i = 1; i < partes.length; i += 1) {
-    const sufixo = partes.slice(i).join('/');
-    candidatos.push(sufixo, path.posix.join(DIRETORIO_AUDITADO, sufixo));
-  }
-  return candidatos;
-}
-
-/**
- * Resolve uma citação para os arquivos que podem ser o alvo, com a contagem de linhas
- * de cada um.
- *
- * São dois conjuntos, com papéis diferentes:
- * - `diretos`: o caminho como escrito, ou com o prefixo `pages/api/`, ou um sufixo dele.
- *   É o que decide "abreviada": se o modelo escreveu `adminCrudHandler.js` e o arquivo
- *   está em `lib/api/`, o caminho está abreviado — e o modelo tinha o mesmo ponto de
- *   Vista, só que abreviado.
- * - `porNome`: todos os arquivos do repositório com o mesmo nome-base. É o que
- *   desambigua `dicas.js` entre `pages/api/dicas.js` e `pages/api/admin/dicas.js`.
- *
- * Devolver só o primeiro candidato foi um erro do conferidor: em 19/10/2026 a citação
- * `dicas.js:97` (que o modelo escreveu na lista de permissões das rotas de `admin/`)
- * resolveu para `pages/api/dicas.js` — 53 linhas — e foi marcada como inválida, quando o
- * alvo real era `pages/api/admin/dicas.js:97`, que existe e tem exatamente o conteúdo
- * alegado. O critério certo é: a citação é inválida quando NENHUM dos candidatos tem a
- * linha citada.
- */
-async function resolverCitacao(alvo, indice) {
-  const diretos = [];
-  const porNome = [];
-  const vistos = new Set();
-
-  const registrar = async (caminho, destino) => {
-    if (vistos.has(caminho)) return;
-    vistos.add(caminho);
-    if (cacheLinhas.has(caminho)) {
-      const guardado = cacheLinhas.get(caminho);
-      if (guardado !== null) destino.push({ caminho, linhas: guardado });
-      return;
-    }
-    let total;
-    try {
-      total = (await readFile(path.join(RAIZ, caminho), 'utf8')).split('\n').length;
-    } catch {
-      total = null;
-    }
-    cacheLinhas.set(caminho, total);
-    if (total !== null) destino.push({ caminho, linhas: total });
-  };
-
-  for (const candidato of candidatosDe(alvo)) await registrar(candidato, diretos);
-  for (const relativo of indice.get(path.posix.basename(alvo)) ?? []) await registrar(relativo, porNome);
-
-  return { diretos, porNome };
-}
 
 /** Separa o texto do modelo dos eventos de log: só as partes `text` viram resposta. */
 function extrairTexto(ndjson) {
@@ -127,7 +61,7 @@ function extrairTexto(ndjson) {
   return partes.join('\n');
 }
 
-// Campos querepresentsem um ARQUIVO sendo aberto. Só eles provam leitura do gabarito.
+// Campos que representam um ARQUIVO sendo aberto. Só eles provam leitura do gabarito.
 // Texto em prosa (`prompt`, `description`) não conta: em 19/10/2026 o modelo repassou
 // ao subagente a própria proibição de ler `scripts/bench/`, e uma busca em qualquer
 // campo marcava toda execução como contaminada.
@@ -139,7 +73,7 @@ const CAMPOS_ALVO = ['path', 'filePath', 'file', 'pattern', 'query', 'command'];
 // Medido em 19/10/2026: o detector marcou como contaminada uma execução cujo único
 // comando com `scripts/bench/` era `ls scripts/bench/ | head -3`, feito para confirmar
 // que o diretório existia — o próprio comando dizia "nenhum arquivo aberto". Era o
-// terceiro falso positivo dessa detectoria (o de 19/10: o modelo repassou ao subagente
+// terceiro falso positivo desse detector (o de 19/10: o modelo repassou ao subagente
 // a própria proibição; o mesmo dia: caminho relativo ao diretório auditado; e agora:
 // listagem de diretório). Regra nova: só conta leitura de ARQUIVO.
 const REGEX_CAMINHO_BENCH = /scripts\/bench\/[A-Za-z0-9_.\-/[\]]*/g;
@@ -239,48 +173,12 @@ function extrairTools(ndjson) {
   return tools;
 }
 
-/**
- * Índice basename -> caminho, para distinguir "citou um caminho que não existe" de
- * "citou um caminho abreviado que existe em outro lugar".
- *
- * `adminCrudHandler.js` não existe na raiz nem em `pages/api/` — o arquivo real é
- * `lib/api/adminCrudHandler.js`. Chamar isso de citação inválida seria cobrar do modelo
- * algo que ele não errou: o ponto do arquivo está certo, o caminho está abreviado. Já
- * `arquivo.js:999` num arquivo de 100 linhas é erro de conteúdo, e esse continua inválido.
- */
-async function indicePorBasename() {
-  if (indiceBasename) return indiceBasename;
-  indiceBasename = new Map();
-  const raizes = ['pages', 'lib', 'components', 'hooks', 'utils', 'data', 'tests', 'docs', 'scripts'];
-  for (const raiz of raizes) {
-    const pilha = [path.join(RAIZ, raiz)];
-    while (pilha.length > 0) {
-      const atual = pilha.pop();
-      let entradas;
-      try {
-        entradas = await readdir(atual, { withFileTypes: true });
-      } catch {
-        continue;
-      }
-      for (const entrada of entradas) {
-        const completo = path.join(atual, entrada.name);
-        if (entrada.isDirectory()) {
-          pilha.push(completo);
-          continue;
-        }
-        const chave = entrada.name;
-        if (!indiceBasename.has(chave)) indiceBasename.set(chave, []);
-        indiceBasename.get(chave).push(path.relative(RAIZ, completo));
-      }
-    }
-  }
-  return indiceBasename;
-}
-
 async function analisar(arquivo) {
   const ndjson = await readFile(path.join(SAIDA, arquivo), 'utf8');
   const resposta = extrairTexto(ndjson);
   const tools = extrairTools(ndjson);
+  const turno = turnoDaExecucao(arquivo);
+  const meta = await lerMeta(arquivo);
 
   const delegacoes = tools.filter((t) => t.nome === 'subagent');
   const contaminado = houveContaminacao(tools);
@@ -295,35 +193,28 @@ async function analisar(arquivo) {
   }
 
   const invalidas = [];
+  const ambiguas = [];
   const abreviadas = [];
-  const indice = await indicePorBasename();
   for (const [alvo, linhas] of citadas) {
-    const { diretos, porNome } = await resolverCitacao(alvo, indice);
-    const todos = [...diretos, ...porNome];
-    if (todos.length === 0) {
-      invalidas.push(`${alvo} (nenhum arquivo do repositório tem esse nome)`);
-      continue;
-    }
+    const camadas = resolvedor.camadasDe(alvo);
     // A citação é inválida quando NENHUM dos candidatos possíveis tem a linha citada.
-    // Ver o comentário de `resolverCitacao`: em 19/10/2026 uma citação correta
+    // Ver o comentário de `camadasDe`: em 19/10/2026 uma citação correta
     // (`dicas.js:97` = `pages/api/admin/dicas.js:97`) foi reprovada porque o primeiro
     // candidato encontrado (`pages/api/dicas.js`, 53 linhas) era outro arquivo.
-    let alvoReal = null;
-    for (const linha of linhas) {
-      const cabem = todos.filter((e) => linha <= e.linhas);
-      if (cabem.length === 0) {
-        const detalhe = todos.map((e) => `${e.caminho} (${e.linhas} linhas)`).join(' ou ');
-        invalidas.push(`${alvo}:${linha} (nenhum candidato tem a linha: ${detalhe})`);
-      } else {
-        alvoReal ??= cabem[0].caminho;
-      }
-    }
+    //
+    // A camada `porNome` só é consultada quando o caminho escrito não explica a linha:
+    // quando mais de um homônimo tem a linha, o caminho real é indeterminado e a
+    // conferência registra "ambígua" em vez de escolher um e chamar de válida. Foi o
+    // caso de `orders.js` resolvido para `lib/domain/orders.js` (ADR-0008).
+    const avaliacao = avaliarCitacao(alvo, linhas, camadas);
+    invalidas.push(...avaliacao.invalidas);
+    ambiguas.push(...avaliacao.ambiguas);
     // "Abreviada" = o caminho escrito não aponta para o arquivo que tem a linha citada.
     // É forma, não erro: `admin/users.js` é `pages/api/admin/users.js` e `dicas.js` na
     // lista de `admin/` é `pages/api/admin/dicas.js`.
-    if (alvoReal && !diretos.some((e) => e.caminho === alvoReal)) {
+    if (avaliacao.alvoReal && !camadas.escritos.some((e) => e.caminho === avaliacao.alvoReal)) {
       if (!abreviadas.some((a) => a.startsWith(`${alvo} ->`))) {
-        abreviadas.push(`${alvo} -> ${alvoReal}`);
+        abreviadas.push(`${alvo} -> ${avaliacao.alvoReal}`);
       }
     }
   }
@@ -340,8 +231,28 @@ async function analisar(arquivo) {
     citacoes: citadas.size,
     linhasCitadas: [...citadas.values()].reduce((t, s) => t + s.size, 0),
     invalidas,
+    ambiguas,
     abreviadas,
+    turno,
+    excedeuTimeout: meta?.excedeuTimeout === true,
   };
+}
+
+/**
+ * Lê o `.meta.json` irmão da execução (gravado por `rodar.js`).
+ *
+ * A conferência não pode inferir a causa de uma resposta vazia: `excedeuTimeout`
+ * é o dado que separa "cortado pelo teto do runner" de "delegação encerrou o
+ * turno". Sem o meta, a mensagem de resumo acusava a segunda causa em execuções
+ * que o runner registrou como timeout.
+ */
+async function lerMeta(arquivo) {
+  const alvo = path.join(SAIDA, arquivo.replace(/\.ndjson$/, '.meta.json'));
+  try {
+    return JSON.parse(await readFile(alvo, 'utf8'));
+  } catch {
+    return null;
+  }
 }
 
 const TAMANHO_MINIMO_RESPOSTA = 600;
@@ -351,13 +262,21 @@ function linhaRelatorio(r) {
   const tamanho = r.resposta.trim().length;
   const problemas = [];
   if (r.invalidas.length > 0) problemas.push(`${r.invalidas.length} citação(ões) inválida(s)`);
+  if (r.ambiguas.length > 0) problemas.push(`${r.ambiguas.length} citação(ões) ambígua(s)`);
   if (r.abreviadas.length > 0) problemas.push(`${r.abreviadas.length} abreviada(s)`);
-  if (tamanho === 0) problemas.push('**sem resposta final**');
-  else if (tamanho < TAMANHO_MINIMO_RESPOSTA) problemas.push(`resposta curta (${tamanho} caracteres)`);
+  if (tamanho === 0) {
+    const timeout = rotuloTimeout(r.excedeuTimeout);
+    problemas.push(timeout ? `sem resposta final — ${timeout}` : '**sem resposta final**');
+  } else if (tamanho < TAMANHO_MINIMO_RESPOSTA) {
+    const timeout = rotuloTimeout(r.excedeuTimeout);
+    problemas.push(`resposta curta (${tamanho} caracteres)${timeout ? ` — ${timeout}` : ''}`);
+  } else if (rotuloTimeout(r.excedeuTimeout)) {
+    problemas.push('**execução incompleta (timeout)**');
+  }
   if (r.memoriaContaminante) problemas.push('leu a resposta da tarefa na memória do projeto');
   const suja = r.contaminado || r.memoriaContaminante;
   return [
-    `| ${r.arquivo} | ${r.delegou ? `sim (${r.delegacoes.length})` : '**não**'} | ${citacoes} | ${problemas.length ? problemas.join('; ') : '—'} | ${suja ? '**SIM — descartar**' : 'não'} |`,
+    `| ${r.arquivo} | ${rotuloDelegacao(r.turno, r.delegacoes.length)} | ${citacoes} | ${problemas.length ? problemas.join('; ') : '—'} | ${suja ? '**SIM — descartar**' : 'não'} |`,
   ].join('\n');
 }
 
@@ -398,13 +317,24 @@ async function main() {
   if (consultou.length > 0) {
     console.log(`\n${consultou.length} execução(ões) consultaram a memória do projeto sem ler a resposta da tarefa — é o confundidor conhecido do ADR-0008. Anote na Camada C: comparar com um modelo que não consultou não isola o modelo.`);
   }
-  const semDelegar = relatorios.filter((r) => !r.delegou);
+  const semDelegar = relatorios.filter((r) => r.turno === 1 && !r.delegou);
   if (semDelegar.length > 0) {
-    console.log(`${semDelegar.length} execução(ões) sem delegação — o modelo respondeu na mão. Anotar como Camada C = não orquestrou, independente de acertar o gabarito.`);
+    console.log(`${semDelegar.length} execução(ões) de TURNO 1 sem delegação — o modelo respondeu na mão. Anotar como Camada C = não orquestrou, independente de acertar o gabarito. O turno 2 não entra nesta conta: ele existe para reconciliar o que já foi delegado.`);
   }
   const semResposta = relatorios.filter((r) => !r.resposta.trim());
   if (semResposta.length > 0) {
-    console.log(`${semResposta.length} execução(ões) sem resposta final. Causa comum: delegação em \`background\` encerra o turno, e o \`opencode run\` devolve quando o turno acaba (ver rubrica.md §"Delegação em background").`);
+    const porTimeout = semResposta.filter((r) => r.excedeuTimeout);
+    const restantes = semResposta.length - porTimeout.length;
+    if (porTimeout.length > 0) {
+      console.log(`${porTimeout.length} execução(ões) sem resposta final por TIMEOUT do runner (\`excedeuTimeout\` no .meta.json) — a execução foi cortada no teto, não é o modelo que encerrou o turno.`);
+    }
+    if (restantes > 0) {
+      console.log(`${restantes} execução(ões) sem resposta final e SEM timeout registrado. Causa comum: delegação em \`background\` encerra o turno, e o \`opencode run\` devolve quando o turno acaba (ver rubrica.md §"Delegação em background").`);
+    }
+  }
+  const ambiguas = relatorios.filter((r) => r.ambiguas.length > 0);
+  if (ambiguas.length > 0) {
+    console.log(`${ambiguas.length} execução(ões) com citação AMBÍGUA — mais de um arquivo do repositório tem a linha citada, então o caminho real é indeterminado. Não conta como erro; confira à mão no detalhe.`);
   }
 
   const detalhe = relatorios.map((r) => {
@@ -422,10 +352,11 @@ async function main() {
     const linhas = [
       `# ${r.arquivo}`,
       '',
-      `- delegou: ${r.delegou ? `sim, ${r.delegacoes.length} vez(es)` : 'não'}`,
+      `- turno: ${r.turno}${r.turno === 2 ? ' (reconciliação — delegar aqui não é o esperado)' : ''}`,
+      `- delegou: ${r.turno === 2 ? 'n/a' : r.delegou ? `sim, ${r.delegacoes.length} vez(es)` : 'não'}`,
       `- contaminada: ${r.contaminado ? 'sim' : 'não'}`,
       `- citações: ${r.linhasCitadas} linha(s) em ${r.citacoes} arquivo(s)`,
-      `- resposta final: ${r.resposta.trim() ? `${r.resposta.trim().length} caracteres` : '**VAZIA**'}`,
+      `- resposta final: ${r.resposta.trim() ? `${r.resposta.trim().length} caracteres` : '**VAZIA**'}${r.excedeuTimeout ? ' — execução cortada por TIMEOUT (`excedeuTimeout` no meta)' : ''}`,
       '',
       '## Delegações',
       '',
@@ -438,6 +369,10 @@ async function main() {
       '## Citação(ões) inválida(s)',
       '',
       r.invalidas.length > 0 ? r.invalidas.map((c) => `- \`${c}\``).join('\n') : 'nenhuma',
+      '',
+      '## Citação(ões) ambígua(s)',
+      '',
+      r.ambiguas.length > 0 ? r.ambiguas.map((c) => `- \`${c}\``).join('\n') : 'nenhuma',
       '',
       '## Resposta do modelo',
       '',

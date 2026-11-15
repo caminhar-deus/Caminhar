@@ -229,6 +229,14 @@
       // 47 s e segue como RESERVA — é o melhor medido que não é primário de outro agente. O
       // inkling também fez 8/8, mas é o explorer: movê-lo para a reserva degradaria um papel de
       // uso diário para melhorar uma cadeia de exceção. Ver ADR-0008 §"11/11/2026".
+      // ORCHESTRATOR — 14/11/2026 (diagnóstico de "falha de designação"): primário e reserva
+      // mantidos. O bench acusava 13 execuções sem delegação; 11 eram o turno 2 de
+      // reconciliação (não delega por desenho) e 2 eram perfil de modelo (`glm` 0/1,
+      // `longcat` 0/3) — nenhuma mudança de distribuição. Aviso para quem for acionar a
+      // reserva: o `glm` NÃO conduz (0 `subagent` na execução de 14/11), então a sessão que
+      // entrar no lugar do deepseek faz o trabalho na mão. Ele continua como reserva por
+      // integridade de cota (nenhum outro papel o usa), não por condução — ver ADR-0008
+      // §"14/11/2026". `npm run models:check` passou a validar os dois ids da cadeia.
       "orchestrator": { "model": ["opencode/deepseek-v4.1-flash-free", "opencode/glm-5.3-flash-free"] },
       // ORACLE — 11/11/2026 (bateria 12×5): sai o flint, entra o minimax-m3.1-flash-free. Os dois
       // fizeram 6/6 no S8, mas o flint levou 334 s (o mais lento do grupo) e morreu por cota
