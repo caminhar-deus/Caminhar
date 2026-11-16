@@ -134,7 +134,7 @@ describe('Checkout Transparente e Minha Conta (Modalidade B)', () => {
       body: { authenticated: true, customer: MOCK_CUSTOMER },
     }).as('getCustomerAuth');
 
-    cy.intercept('GET', { pathname: '/api/customer/orders', query: {} }, {
+    cy.intercept('GET', '/api/customer/orders', {
       statusCode: 200,
       body: {
         orders: [
