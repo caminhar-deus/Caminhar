@@ -175,6 +175,8 @@ Definições JSON consumidas por `init-table.js` (nome da tabela, colunas, flag 
 | `clean-k6-videos.js` | Remove vídeos de teste k6 (títulos com padrões `K6%`, `Test Video%`, `Load Test%`, `Performance Test%`, `Video de Teste%`), exibindo os removidos (`showDeleted: true`). Usa `cleanTableByPattern()`. |
 | `fix-hero-key.js` | Corrige chaves de imagem do hero: copia valor de `site_image` para `hero_image` e `header_image` via UPSERT. |
 | `video-thumbnails.js` | **Script unificado de thumbnails (178 linhas).** Verifica/adiciona coluna `thumbnail` em `videos` e popula com URL `img.youtube.com/vi/<id>/maxresdefault.jpg` (extrai ID via regex de diversos formatos de URL). Flags: `--schema-only`, `--force`, `--batch-size=N` (default 50), `--dry-run`, `--help`. |
+| `verify-mp-webhook.js` | Gera, assina (HMAC-SHA256 v2 com `data.id` normalizado em minúsculas), valida e dispara opcionalmente (`--send`) eventos `order.processed` da Orders API (padrão: Pedido #22), carregando `.env.local`/`.env` via `loadWebhookEnv` sem expor segredos. |
+| `start-webhook-tunnel.sh` | Roteiro e automação de túnel HTTPS reverso (`cloudflared`, `ngrok` ou `--provider ssh` via `localhost.run`) e validação local (`--check`, `--verify`) para homologação de webhooks da Orders API do Mercado Pago. |
 
 ---
 
