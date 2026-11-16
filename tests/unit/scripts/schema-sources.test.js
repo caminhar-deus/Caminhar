@@ -118,4 +118,64 @@ describe('Consistência das fontes de schema (JSONs × tableSchemas × PUBLIC_SE
       }
     }
   });
+
+  it('todas as tabelas compartilhadas entre tableSchemas e EXPECTED_SCHEMA têm drift zero (incluindo customers e orders)', () => {
+    const KNOWN_VALIDATE_ONLY = { posts: ['views'] };
+    const sharedTables = Object.keys(tableSchemas).filter((table) => Boolean(EXPECTED_SCHEMA[table]));
+
+    expect(sharedTables).toEqual(expect.arrayContaining(['customers', 'orders', 'products', 'posts']));
+
+    for (const table of sharedTables) {
+      const crud = new Set(tableSchemas[table]);
+      const validate = new Set(EXPECTED_SCHEMA[table]);
+      const known = KNOWN_VALIDATE_ONLY[table] || [];
+
+      const onlyInCrud = [...crud].filter((col) => !validate.has(col));
+      const onlyInValidate = [...validate].filter((col) => !crud.has(col) && !known.includes(col));
+
+      expect({ table, onlyInCrud, onlyInValidate }).toEqual({
+        table,
+        onlyInCrud: [],
+        onlyInValidate: [],
+      });
+    }
+  });
+
+  it('consultas INSERT/UPDATE em lib/domain/customers.js e lib/domain/orders.js referenciam apenas colunas existentes em EXPECTED_SCHEMA (prevenção estática ADR-0039)', () => {
+    const domainFiles = ['lib/domain/customers.js', 'lib/domain/orders.js'];
+    let inspectedStatements = 0;
+
+    for (const relPath of domainFiles) {
+      const source = readFileSync(path.resolve(__dirname, '../../../', relPath), 'utf8');
+
+      for (const match of source.matchAll(/\bINSERT\s+INTO\s+([a-z_][a-z0-9_]*)\s*\(([^)]+)\)/gi)) {
+        const table = match[1];
+        if (!EXPECTED_SCHEMA[table]) continue;
+        inspectedStatements += 1;
+        const columns = match[2].split(',').map((col) => col.trim()).filter(Boolean);
+        for (const column of columns) {
+          expect({ relPath, table, column, valid: EXPECTED_SCHEMA[table].includes(column) })
+            .toEqual({ relPath, table, column, valid: true });
+        }
+      }
+
+      for (const match of source.matchAll(/\bUPDATE\s+([a-z_][a-z0-9_]*)\s+SET\s+([\s\S]*?)\s+WHERE\b/gi)) {
+        const table = match[1];
+        if (!EXPECTED_SCHEMA[table]) continue;
+        inspectedStatements += 1;
+        let setClause = match[2];
+        while (/\([^()]*\)/.test(setClause)) {
+          setClause = setClause.replace(/\([^()]*\)/g, '');
+        }
+        const assignments = setClause.split(',').map((part) => part.trim()).filter(Boolean);
+        for (const assignment of assignments) {
+          const column = assignment.split(/\s*=\s*/)[0].trim();
+          expect({ relPath, table, column, valid: EXPECTED_SCHEMA[table].includes(column) })
+            .toEqual({ relPath, table, column, valid: true });
+        }
+      }
+    }
+
+    expect(inspectedStatements).toBeGreaterThan(0);
+  });
 });

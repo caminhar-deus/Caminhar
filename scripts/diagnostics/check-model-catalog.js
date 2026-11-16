@@ -22,7 +22,12 @@ import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import {
-  agentModels, missingModels, parseCatalog, parseJsonc, presetModels,
+  agentModels,
+  formatCatalogReadError,
+  missingModels,
+  parseCatalog,
+  parseJsonc,
+  presetModels,
 } from './model-catalog.js';
 
 const RAIZ = path.resolve(import.meta.dirname, '..', '..');
@@ -32,7 +37,17 @@ function run(args) {
   return execFileSync('opencode', args, { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
 }
 
+function readLocalPreset() {
+  try {
+    return { presets: presetModels(parseJsonc(readFileSync(PRESET, 'utf8'))), presetError: null };
+  } catch (error) {
+    return { presets: null, presetError: error };
+  }
+}
+
 function main() {
+  const { presets, presetError } = readLocalPreset();
+
   let agents;
   let catalog;
   try {
@@ -40,9 +55,15 @@ function main() {
     catalog = parseCatalog(run(['models']));
   } catch (error) {
     // Fail-closed: sem catálogo não há como afirmar que os ids existem.
-    console.error('models:check — não foi possível ler o catálogo do OpenCode.');
-    console.error(`  motivo: ${error.message.split('\n')[0]}`);
-    console.error('  conferir: `opencode debug agents` e `opencode models` respondem?');
+    const presetSummary = presetError
+      ? { error: presetError.message.split('\n')[0] }
+      : {
+          preset: presets?.preset ?? null,
+          total: presets?.agentes?.length ?? 0,
+          reservas: presets?.agentes?.filter(({ posicao }) => posicao > 0).length ?? 0,
+        };
+    const { lines } = formatCatalogReadError(error, presetSummary);
+    for (const line of lines) console.error(line);
     process.exit(1);
   }
 
@@ -68,13 +89,10 @@ function main() {
   console.log('\ntodos os primários estão no catálogo.');
 
   // A cadeia de reserva vem do preset: é a única fonte dela.
-  let presets;
-  try {
-    presets = presetModels(parseJsonc(readFileSync(PRESET, 'utf8')));
-  } catch (error) {
+  if (presetError) {
     console.error('\nmodels:check — não foi possível ler a cadeia de reserva do preset.');
     console.error(`  arquivo: ${path.relative(RAIZ, PRESET)}`);
-    console.error(`  motivo: ${error.message.split('\n')[0]}`);
+    console.error(`  motivo: ${presetError.message.split('\n')[0]}`);
     process.exit(1);
   }
 

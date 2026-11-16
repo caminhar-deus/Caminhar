@@ -124,3 +124,42 @@ export function presetModels(config) {
   }
   return { preset, agentes };
 }
+
+/**
+ * Formata a falha de leitura do catálogo vivo do OpenCode diferenciando
+ * ausência do binário (`ENOENT` → `NAO_VERIFICADO`) de erros reais da CLI (`ERRO`).
+ *
+ * @param {Error|{code?: string, message?: string}} error Erro capturado ao invocar `opencode`.
+ * @param {{preset?: string|null, total?: number, reservas?: number, error?: string}|null} [presetSummary]
+ * @returns {{status: 'NAO_VERIFICADO'|'ERRO', lines: string[]}}
+ */
+export function formatCatalogReadError(error, presetSummary = null) {
+  const rawMessage = String(error?.message || error || 'erro desconhecido');
+  const reason = rawMessage.split('\n')[0];
+  const isEnoent = error?.code === 'ENOENT' || /\bENOENT\b/.test(rawMessage);
+
+  if (isEnoent) {
+    const lines = [
+      'models:check — não foi possível ler o catálogo do OpenCode (status: NÃO VERIFICADO).',
+      `  motivo: ${reason}`,
+    ];
+    if (presetSummary?.error) {
+      lines.push(`  preset local (.opencode/oh-my-opencode-slim.json): ERRO — ${presetSummary.error}`);
+    } else if (presetSummary?.preset) {
+      lines.push(
+        `  preset local (.opencode/oh-my-opencode-slim.json): sintaxe válida (preset \`${presetSummary.preset}\`, ${presetSummary.total ?? 0} modelo(s), ${presetSummary.reservas ?? 0} reserva(s)), mas o catálogo vivo NÃO foi consultado.`
+      );
+    }
+    lines.push('  conferir: `opencode debug agents` e `opencode models` respondem no host do OpenCode?');
+    return { status: 'NAO_VERIFICADO', lines };
+  }
+
+  return {
+    status: 'ERRO',
+    lines: [
+      'models:check — não foi possível ler o catálogo do OpenCode.',
+      `  motivo: ${reason}`,
+      '  conferir: `opencode debug agents` e `opencode models` respondem?',
+    ],
+  };
+}

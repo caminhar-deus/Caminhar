@@ -9,6 +9,7 @@
 import { describe, it, expect } from '@jest/globals';
 import {
   agentModels,
+  formatCatalogReadError,
   missingModels,
   parseCatalog,
   parseJsonc,
@@ -110,5 +111,44 @@ describe('presetModels', () => {
     expect(missingModels(reservas, catalog)).toEqual([
       { agent: 'orchestrator', id: 'opencode/glm-5.3-flash-free', posicao: 1 },
     ]);
+  });
+});
+
+describe('formatCatalogReadError', () => {
+  it('classifica ENOENT como NAO_VERIFICADO preservando motivo e resumindo o preset local válido', () => {
+    const error = Object.assign(new Error('spawnSync opencode ENOENT'), { code: 'ENOENT' });
+    const result = formatCatalogReadError(error, { preset: 'zen', total: 6, reservas: 1 });
+
+    expect(result.status).toBe('NAO_VERIFICADO');
+    expect(result.lines.join('\n')).toContain('status: NÃO VERIFICADO');
+    expect(result.lines.join('\n')).toContain('motivo: spawnSync opencode ENOENT');
+    expect(result.lines.join('\n')).toContain(
+      'sintaxe válida (preset `zen`, 6 modelo(s), 1 reserva(s)), mas o catálogo vivo NÃO foi consultado.'
+    );
+  });
+
+  it('reporta erro de sintaxe do preset local quando ENOENT ocorre com presetSummary.error', () => {
+    const error = new Error('spawnSync opencode ENOENT');
+    const result = formatCatalogReadError(error, { error: 'Unexpected token } in JSON' });
+
+    expect(result.status).toBe('NAO_VERIFICADO');
+    expect(result.lines.join('\n')).toContain(
+      'preset local (.opencode/oh-my-opencode-slim.json): ERRO — Unexpected token } in JSON'
+    );
+  });
+
+  it('classifica falhas diferentes de ENOENT como ERRO mantendo a mensagem padrão', () => {
+    const error = Object.assign(new Error('Command failed: opencode models\ntimeout'), { code: 'ETIMEDOUT' });
+    const result = formatCatalogReadError(error, { preset: 'zen', total: 6, reservas: 1 });
+
+    expect(result.status).toBe('ERRO');
+    expect(result).toEqual({
+      status: 'ERRO',
+      lines: [
+        'models:check — não foi possível ler o catálogo do OpenCode.',
+        '  motivo: Command failed: opencode models',
+        '  conferir: `opencode debug agents` e `opencode models` respondem?',
+      ],
+    });
   });
 });
