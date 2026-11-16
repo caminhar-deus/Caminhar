@@ -2,7 +2,7 @@
 
 > Escopo: apenas a área pública (qualquer visitante). O painel administrativo está documentado em `docs/ARQUITETURA_SITE_PRIVADO.md`. Ambos os ambientes compartilham a mesma identidade visual (ancorada em `design-system/MASTER.md` e `pages/styles/variables.css`), preservando estruturas de navegação e responsabilidades próprias.
 > Fonte: 12 capturas de tela do site em desenvolvimento + código-fonte atual + diretrizes do dono do projeto.
-> Última atualização: 2026-11-14
+> Última atualização: 2026-11-16
 > Legenda: [PLANEJADO] = alvo ainda não implementado, informado pelo dono | [OBSERVADO] = visto nas imagens/estado legado | [HIPÓTESE] = inferido, confirmar antes de assumir.
 
 ---
@@ -243,6 +243,7 @@ Esse mapeamento deve ser mantido de forma consistente em toda a documentação. 
 - A aba "Em Desenvolvimento" não é habilitada nem implementada sem pedido explícito do dono.
 - Músicas levam ao Spotify e vídeos ao YouTube — não hospedar mídia própria.
 - Produtos Religiosos mantém as duas modalidades separadas (§3.5): a Modalidade A leva a Amazon/Mercado Livre/Shopee e não gera pedido nem cobrança no Caminhar; só a Modalidade B (venda interna) usa o Mercado Pago e aparece na Gestão de Vendas e na conta do visitante.
+- Pedido só passa a pago com status confirmado na API do Mercado Pago (webhook ou reconciliação ativa — ADR-0038 e ADR-0041). Em produção, nunca assumir `approved` por fallback, erro de rede ou status vindo só do corpo do webhook; fora de produção vale o modo sandbox descrito no ADR-0038.
 - Manter a identidade visual compartilhada com o painel administrativo (§1.1 e `design-system/MASTER.md`), utilizando exclusivamente os tokens de `pages/styles/variables.css`.
 
 > As regras de processo do agente estão em `AGENTS.md` §0.2.

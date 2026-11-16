@@ -1,6 +1,6 @@
 # AGENTS.md — regras do projeto
 
-> Lido por OpenCode, oh-my-opencode-slim e (via `CLAUDE.md`) Claude Code. Mantenha curto: tudo aqui consome contexto em toda sessão.
+> Lido por OpenCode, oh-my-opencode-slim, Antigravity e (via `CLAUDE.md`) Claude Code. Mantenha curto: tudo aqui consome contexto em toda sessão.
 > Blocos entre marcadores (ai-memory, clonedeps) são gerenciados por ferramentas: não edite dentro deles.
 
 ## 0. Contexto do projeto e mapa de consulta
@@ -35,7 +35,7 @@ As regras de processo do agente ficam só neste arquivo; os documentos de arquit
 3. **Antes de corrigir ou melhorar**, veja as pendências conhecidas: §7 do documento público, §8 do documento privado.
 4. **Confirme no código** todo item `[HIPÓTESE]` e todo `[PLANEJADO]` — o `[PLANEJADO]` marca alvo ainda não implementado, então verifique se já foi feito antes de implementar de novo.
 5. **Implemente** e feche pelo §7 (Definição de pronto): atualize o documento e a data se a mudança foi estrutural.
-6. **Antes de confiar num modelo por papel**, rode `npm run models:check`: ele cruza os modelos compilados dos agentes com `opencode models` e falha listando os ids mortos. Id fora do catálogo falha em silêncio e a cadeia de reserva **não** assume (`provider.no-route` não é classificado como failover).
+6. **Antes de confiar num modelo por papel**, rode `npm run models:check`: ele cruza os modelos compilados dos agentes **e a cadeia de reserva do preset** com `opencode models` e falha listando os ids mortos. Id fora do catálogo falha em silêncio e a cadeia de reserva **não** assume (`provider.no-route` não é classificado como failover). O comando exige o CLI `opencode` no PATH: fora do host do OpenCode (ex.: Antigravity, CI) ele sai com `spawnSync opencode ENOENT`, o que significa **"não verificado"**, não "modelo morto" nem "aprovado". Relate assim e não troque por testes unitários, que não consultam o catálogo.
 
 ## 1. Idioma e estilo
 - Responder e comentar em português do Brasil. Código, nomes de arquivo e commits em inglês.
@@ -51,6 +51,7 @@ As regras de processo do agente ficam só neste arquivo; os documentos de arquit
 | oracle | Revisa arquitetura, bugs e conformidade com o checklist | Implementar em massa |
 
 Desempate: aparência/UX → designer; verificação → oracle; código → fixer. Só o designer decide o design final.
+Fora do `oh-my-opencode-slim` (ex.: Antigravity, Claude Code), o agente executa o ciclo de ponta a ponta acumulando esses papéis na ordem (planejamento/memória → design → implementação → revisão), aplicando integralmente as regras das seções 0, 1 e 3 a 7.
 
 Detalhes de operação do slim (matriz de pesquisa websearch/webfetch/gh_grep/context7/ai-memory, regras de `mcps`, onde ficam as chaves, e o que houve com o `librarian`): `docs/AGENTS_OPERACAO.md`.
 
@@ -73,7 +74,7 @@ Detalhes de operação do slim (matriz de pesquisa websearch/webfetch/gh_grep/co
 ## 5. Qualidade front-end (Front-End-Checklist)
 - Revisar **depois** de implementar, só no que mudou (acessibilidade, performance, SEO, segurança, i18n).
 - Listar violações com arquivo, regra, gravidade e correção.
-- Fonte: o MCP remoto `frontend-checklist` (ligado em 23/10/2026, ADR-0022) tem 11 ferramentas só de leitura (`review_code`, `audit_url`, `get_rule`, `fix_rule`, `explain_rule`, `check_rule`, `search_rules`, `get_workflow`, `get_checklist_rules`, `get_quick_reference`, `list_categories`), sem autenticação. Só **orchestrator e oracle** o usam; a revisão de entrega é sempre do oracle.
+- Fonte: o MCP remoto `frontend-checklist` (ligado em 23/10/2026, ADR-0022) tem 11 ferramentas só de leitura (`review_code`, `audit_url`, `get_rule`, `fix_rule`, `explain_rule`, `check_rule`, `search_rules`, `get_workflow`, `get_checklist_rules`, `get_quick_reference`, `list_categories`), sem autenticação. No slim, só **orchestrator e oracle** o usam e a revisão de entrega é sempre do oracle; no Antigravity (sem esse MCP remoto configurado), seguir os guardrails locais de `frontend-checklist-global` e do `MASTER.md`.
 - Custos e limites reais: `review_code` envia o trecho de código ao servidor do fornecedor e `audit_url` envia a URL pública — **nunca com código sensível** (segredos, `.env`, credenciais). A skill local `frontend-checklist-global` só roteia para as ferramentas e traz os guardrails de revisão: **não** carrega o texto das regras. Em 23/10/2026 as 390 skills locais do corpus (388 de regra + `improve-rule` + `find-npm-packages`) foram removidas de `.agents/skills` (ADR-0022, §Poda), então o texto de regra vem do MCP (`get_rule`/`search_rules`) e **exige rede** — é a única consulta de regra que sobra.
 - `review_code` e `audit_url` só entram em cena quando o pedido for revisar código ou auditar URL — nunca por iniciativa própria, e nunca com código sensível. Consulta de regra (`get_rule`, `search_rules`, `fix_rule`) não envia código do projeto e é sempre segura.
 
@@ -86,7 +87,7 @@ Detalhes de operação do slim (matriz de pesquisa websearch/webfetch/gh_grep/co
 - `codemap` e `clonedeps` (skills do slim) escrevem arquivos e o `clonedeps` clona repositórios: peça aprovação antes.
 
 ## 7. Definição de pronto
-1. Código compila/roda; testes existentes passam (incluindo testes de integração para APIs e fluxos críticos de pagamento/webhook e autenticação quando alterados).
+1. Código compila/roda; testes existentes passam (incluindo testes de integração para APIs e fluxos críticos de pagamento/webhook e autenticação quando alterados). SQL novo ou alterado em `lib/domain/` ou em migration: teste unitário com `lib/infra/db.js` mockado **não** prova que as colunas existem (ADR-0039). Rode `npm run test:db:container` (PostgreSQL real) ou deixe para o job `test-db-coverage.yml` do CI; se a tabela não tiver `*.db.test.js`, registre o risco no resumo. `npm run validate-schema` só compara o banco com `EXPECTED_SCHEMA` e não cobre as consultas.
 2. Design segue o MASTER (e o override da página).
 3. Correção ou melhoria: as pendências conhecidas da área (§0.3, passo 3) foram conferidas antes de propor a mudança.
 4. Revisão do checklist feita; pendências listadas.
