@@ -97,6 +97,8 @@ scripts/backup.js → scripts/utils/constants.js
 scripts/backup.js → scripts/utils/date-format.js
 scripts/bench/arvore.js → scripts/bench/runner-comum.js
 scripts/bench/ground-truth.js → scripts/bench/citacoes.js
+scripts/bench/orchestrator/conferir.js → scripts/bench/citacoes.js
+scripts/bench/orchestrator/conferir.js → scripts/bench/orchestrator/conferencia.js
 scripts/bench/orchestrator/pontuar.js → scripts/bench/ground-truth.js
 scripts/bench/orchestrator/rodar.js → scripts/bench/ground-truth.js
 scripts/bench/orchestrator/rodar.js → scripts/bench/runner-comum.js

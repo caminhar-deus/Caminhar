@@ -746,7 +746,11 @@ tests/integration/api/webhooks/mercadopago.test.js → lib/cache/cache.js
 tests/integration/api/webhooks/mercadopago.test.js → lib/domain/orders.js
 tests/integration/api/webhooks/mercadopago.test.js → lib/payment/mercadopago.js
 tests/integration/api/webhooks/mercadopago.test.js → pages/api/webhooks/mercadopago.js
+tests/integration/domain/customers.db.test.js → lib/domain/customers.js
+tests/integration/domain/customers.db.test.js → tests/helpers/db-test.js
 tests/integration/domain/musicas.db.test.js → tests/helpers/db-test.js
+tests/integration/domain/orders.db.test.js → lib/domain/orders.js
+tests/integration/domain/orders.db.test.js → tests/helpers/db-test.js
 tests/integration/domain/permissions.db.test.js → lib/api/adminCrudHandler.js
 tests/integration/domain/permissions.db.test.js → lib/domain/permissions.js
 tests/integration/domain/permissions.db.test.js → tests/helpers/db-test.js

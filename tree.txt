@@ -623,17 +623,16 @@
 ├── cypress
 │   ├── e2e
 │   │   ├── blog.cy.js
+│   │   ├── checkout.cy.js
 │   │   ├── home.cy.js
 │   │   ├── image_zoom.cy.js
 │   │   ├── navigation.cy.js
 │   │   └── post.cy.js
 │   ├── fixtures
 │   │   └── posts.json
-│   ├── screenshots
-│   ├── support
-│   │   ├── commands.js
-│   │   └── e2e.js
-│   └── videos
+│   └── support
+│       ├── commands.js
+│       └── e2e.js
 ├── cypress.config.js
 ├── data
 │   └── backups
@@ -728,6 +727,7 @@
 │   │   └── template.md
 │   ├── ai-memory-error.md
 │   ├── melhoria_agente.md
+│   ├── melhoria_mercadopago.md
 │   └── retorno_da_semana.md
 ├── eslint.config.js
 ├── estrutura.html
@@ -977,6 +977,7 @@
 │   │   ├── ground-truth.js
 │   │   ├── orchestrator
 │   │   │   ├── LEIA-ME.md
+│   │   │   ├── conferencia.js
 │   │   │   ├── conferir.js
 │   │   │   ├── gabarito.md
 │   │   │   ├── pontuar.js
@@ -1272,7 +1273,9 @@
 │   │   ├── auth
 │   │   │   └── auth.test.js
 │   │   └── domain
+│   │       ├── customers.db.test.js
 │   │       ├── musicas.db.test.js
+│   │       ├── orders.db.test.js
 │   │       ├── permissions.db.test.js
 │   │       ├── posts.db.test.js
 │   │       ├── products.db.test.js
@@ -1479,6 +1482,7 @@
 │       │   ├── backup.test.js
 │       │   ├── bench-arvore.test.js
 │       │   ├── bench-citacoes.test.js
+│       │   ├── bench-conferencia.test.js
 │       │   ├── bench-ground-truth.test.js
 │       │   ├── bench-isolation.test.js
 │       │   ├── bench-papeis-runner.test.js
@@ -1529,4 +1533,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-221 directories, 1309 files
+219 directories, 1315 files

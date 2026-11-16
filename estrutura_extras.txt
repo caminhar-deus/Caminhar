@@ -588,6 +588,8 @@ pages/minha-conta.js → components/UI/index.js
 pages/minha-conta.js → components/UI/icons.js
 scripts/bench/arvore.js → scripts/bench/runner-comum.js
 scripts/bench/ground-truth.js → scripts/bench/citacoes.js
+scripts/bench/orchestrator/conferir.js → scripts/bench/citacoes.js
+scripts/bench/orchestrator/conferir.js → scripts/bench/orchestrator/conferencia.js
 scripts/bench/orchestrator/pontuar.js → scripts/bench/ground-truth.js
 scripts/bench/orchestrator/rodar.js → scripts/bench/ground-truth.js
 scripts/bench/orchestrator/rodar.js → scripts/bench/runner-comum.js
@@ -957,7 +959,11 @@ tests/integration/api/webhooks/mercadopago.test.js → lib/cache/cache.js
 tests/integration/api/webhooks/mercadopago.test.js → lib/domain/orders.js
 tests/integration/api/webhooks/mercadopago.test.js → lib/payment/mercadopago.js
 tests/integration/api/webhooks/mercadopago.test.js → pages/api/webhooks/mercadopago.js
+tests/integration/domain/customers.db.test.js → lib/domain/customers.js
+tests/integration/domain/customers.db.test.js → tests/helpers/db-test.js
 tests/integration/domain/musicas.db.test.js → tests/helpers/db-test.js
+tests/integration/domain/orders.db.test.js → lib/domain/orders.js
+tests/integration/domain/orders.db.test.js → tests/helpers/db-test.js
 tests/integration/domain/permissions.db.test.js → lib/api/adminCrudHandler.js
 tests/integration/domain/permissions.db.test.js → lib/domain/permissions.js
 tests/integration/domain/permissions.db.test.js → scripts/migrations/018-seed-default-roles.js
@@ -1249,6 +1255,7 @@ tests/unit/pages/minha-conta.test.js → tests/mocks/next-setup.js
 tests/unit/scripts/backup.test.js → scripts/backup.js
 tests/unit/scripts/bench-arvore.test.js → scripts/bench/arvore.js
 tests/unit/scripts/bench-citacoes.test.js → scripts/bench/citacoes.js
+tests/unit/scripts/bench-conferencia.test.js → scripts/bench/orchestrator/conferencia.js
 tests/unit/scripts/bench-ground-truth.test.js → scripts/bench/ground-truth.js
 tests/unit/scripts/bench-ground-truth.test.js → scripts/bench/papeis/regressao-s1.js
 tests/unit/scripts/bench-isolation.test.js → scripts/bench/runner-comum.js
