@@ -8,10 +8,11 @@
  *
  * Nunca imprime `MP_WEBHOOK_SECRET` ou `MP_ACCESS_TOKEN` na saída.
  */
-import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
+import { createHmac, randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
+import { verifyMercadoPagoWebhookSignature } from '../../lib/payment/mercadopago.js';
 
 export const DEFAULT_ORDER_22_EVENT = Object.freeze({
   orderId: '22',
@@ -139,49 +140,7 @@ export function signMercadoPagoWebhook({
   };
 }
 
-export function verifyMercadoPagoWebhookSignature({
-  signatureHeader,
-  requestIdHeader = '',
-  dataId = '',
-  secret = process.env.MP_WEBHOOK_SECRET,
-}) {
-  if (!secret) {
-    return process.env.NODE_ENV !== 'production';
-  }
-  if (!signatureHeader || typeof signatureHeader !== 'string') {
-    return false;
-  }
-
-  const parts = {};
-  for (const piece of signatureHeader.split(',')) {
-    const trimmed = piece.trim();
-    const eqIndex = trimmed.indexOf('=');
-    if (eqIndex > 0) {
-      const k = trimmed.slice(0, eqIndex).trim();
-      const v = trimmed.slice(eqIndex + 1).trim();
-      if (k && v) parts[k] = v;
-    }
-  }
-
-  const ts = parts.ts;
-  const v1 = parts.v1;
-  if (!ts || !v1) {
-    return false;
-  }
-
-  const normalizedDataId = String(dataId || '').toLowerCase();
-  const manifest = `id:${normalizedDataId};request-id:${requestIdHeader};ts:${ts};`;
-  const computed = createHmac('sha256', secret).update(manifest).digest('hex');
-
-  try {
-    const bufA = Buffer.from(computed, 'hex');
-    const bufB = Buffer.from(v1, 'hex');
-    if (bufA.length !== bufB.length) return false;
-    return timingSafeEqual(bufA, bufB);
-  } catch {
-    return false;
-  }
-}
+export { verifyMercadoPagoWebhookSignature };
 
 export function parseCliArgs(argv = process.argv.slice(2)) {
   const options = {

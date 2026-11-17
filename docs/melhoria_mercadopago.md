@@ -181,19 +181,19 @@ Durante a janela de análise (09/11 a 16/11), as intervenções executadas pelos
 ### Problema 02 (Validação Externa): Validação Final de Cartão de Crédito no Sandbox com Valor Válido
 - **Identificação:** MP-PEND-02-CARD-SANDBOX-EXECUTION
 - **Descrição:** No teste inicial de cartão de crédito no sandbox foi utilizado um produto fictício com valor de R$ 0,01. O Mercado Pago exige o valor mínimo de transação de R$ 0,50 para cartão e R$ 4,00 para boleto, gerando `invalid_transaction_amount`.
-- **Evidências:** Em 16/11/2026 foi executado e validado o **Pedido #22** (`ORDTST01M7JZQWF8JS91B32MM9DRDETA`, pagamento `PAY01M7JZQWFXWQE3K0CHK70QYX77`, Mastercard `credit_card`, `1x`, valor `R$ 0,50`, status `processed` / `accredited`).
+- **Evidências:** Executado e validado o **Pedido #22** (`ORDTST01M7JZQWF8JS91B32MM9DRDETA`, pagamento `PAY01M7JZQWFXWQE3K0CHK70QYX77`, Mastercard `credit_card`, `1x`, valor `R$ 0,50`, status `processed` / `accredited`), confirmado na tabela `orders` do PostgreSQL (`id = 22`, `payment_status = 'approved'`, `order_status = 'paid'`).
 - **Causa:** Regra de negócio do gateway em relação a valores mínimos de transação.
 - **Impacto:** Baixo (resolvido para cartão de crédito; débito direto segue dependente de habilitação comercial do recebedor no Mercado Pago).
-- **Situação Atual:** **Concluído e Validado para Cartão de Crédito em 16/11/2026.**
+- **Situação Atual:** **Concluído e Validado no Sandbox e no PostgreSQL (16/11–17/11/2026).**
 - **Prioridade:** Alta (P1).
 
 ### Problema 03 (Infraestrutura de Testes): Validação de Webhook Real via Túnel HTTPS
 - **Identificação:** MP-PEND-03-REAL-WEBHOOK-DELIVERY
 - **Descrição:** Em ambiente local, a entrega real originada dos servidores do Mercado Pago na nuvem exigia roteiro e utilitários para túnel público HTTPS e verificação de assinatura HMAC-SHA256 v2.
-- **Evidências:** ADR-0041 e scripts criados e validados em `scratch/` em 16/11/2026 (`start-webhook-tunnel.sh`, `verify-mp-webhook.js` e `verify-mp-webhook.test.js`), aguardando apenas cópia para o repositório e disparo ao vivo no ambiente local do operador com servidor ativo.
+- **Evidências:** Scripts integrados ao repositório no commit `dbcbbc0` (`scripts/maintenance/start-webhook-tunnel.sh`, `scripts/maintenance/verify-mp-webhook.js` e `tests/unit/scripts/verify-mp-webhook.test.js`) e validados ao vivo em 17/11/2026 com túnel HTTPS `cloudflared` (`trycloudflare.com`), recebendo tanto o envio assinado com teste de idempotência (`payment_webhook_events.id = 14`, `"duplicate": true`) quanto o disparo oficial do Simulador de Notificações do painel do Mercado Pago (`payment_webhook_events.id = 16`, `event_key = 'order_order.processed_22_approved'`, `processed_at = '2026-11-17T20:30:07.782Z'`).
 - **Causa:** Impossibilidade de o Mercado Pago disparar requisições para `localhost` sem túnel reverso.
 - **Impacto:** Baixo (mitigado pela Reconciliação Ativa implementada no ADR-0041 e pelos scripts de homologação).
-- **Situação Atual:** **Ferramental Implementado e Validado em 16/11/2026** (pronto para cópia no repositório e abertura do túnel com `npm run dev` ativo).
+- **Situação Atual:** **Concluído e Validado de Ponta a Ponta em 17/11/2026.**
 - **Prioridade:** Média (P2).
 
 ---
@@ -203,7 +203,7 @@ Durante a janela de análise (09/11 a 16/11), as intervenções executadas pelos
 ### Ação 01: Validação Prática de Cartão de Crédito no Sandbox (Valor >= R$ 0,50) — CONCLUÍDA E VALIDADA (16/11/2026)
 - **Objetivo:** Concluir a homologação no Sandbox oficial do Mercado Pago para cartão de crédito com parcelamento e aprovação imediata.
 - **Componentes:** `pages/checkout/[id].js`, `pages/api/checkout.js`, `lib/payment/mercadopago.js`.
-- **Resultado Executado:** Validado ponta a ponta no Sandbox oficial com o **Pedido #22** (`ORDTST01M7JZQWF8JS91B32MM9DRDETA`, pagamento `PAY01M7JZQWFXWQE3K0CHK70QYX77`, Mastercard `credit_card`, `1x`, `R$ 0,50`, `status: "processed"`, `status_detail: "accredited"`).
+- **Resultado Executado:** Validado ponta a ponta no Sandbox oficial e confirmado na tabela `orders` do PostgreSQL com o **Pedido #22** (`ORDTST01M7JZQWF8JS91B32MM9DRDETA`, pagamento `PAY01M7JZQWFXWQE3K0CHK70QYX77`, Mastercard `credit_card`, `1x`, `R$ 0,50`, `payment_status: "approved"`, `order_status: "paid"`).
 - **Critérios de Validação:** Aprovado (`processed` / `accredited` na Orders API v1 com `external_reference: "22"`).
 
 ### Ação 02: Implementação de Teste E2E de Checkout no Cypress — CONCLUÍDA E VALIDADA (16/11/2026)
@@ -212,17 +212,16 @@ Durante a janela de análise (09/11 a 16/11), as intervenções executadas pelos
 - **Resultado Executado:** Spec implementada no commit `dc77185` e corrigida no intercept de `/api/customer/orders` no commit `01a4a3f`, cobrindo redirecionamento para `/entrar`, formulário com endereço padrão, finalização via PIX com reconciliação ativa e exibição em `/minha-conta` (`4 passing`, ESLint limpo).
 - **Critérios de Validação:** Aprovado (`npx cypress run --spec cypress/e2e/checkout.cy.js` e `npx eslint cypress/e2e/checkout.cy.js`).
 
-### Ação 03: Roteiro e Script de Homologação de Webhook com Túnel Seguro — CONCLUÍDA E VALIDADA (16/11/2026)
+### Ação 03: Roteiro e Script de Homologação de Webhook com Túnel Seguro — CONCLUÍDA E VALIDADA (17/11/2026)
 - **Objetivo:** Facilitar a homologação de webhooks reais enviados pelo Mercado Pago em ambiente de desenvolvimento e validar assinaturas HMAC-SHA256 v2.
-- **Componentes Entregues (em `scratch/` da sessão para cópia no repositório):**
-  - `verify-mp-webhook.js` (destino sugerido: `scripts/maintenance/verify-mp-webhook.js`)
-  - `start-webhook-tunnel.sh` (destino sugerido: `scripts/maintenance/start-webhook-tunnel.sh`)
-  - `verify-mp-webhook.test.js` (destino sugerido: `tests/unit/scripts/verify-mp-webhook.test.js`)
+- **Componentes no Repositório:**
+  - `scripts/maintenance/verify-mp-webhook.js` (reutilizando `verifyMercadoPagoWebhookSignature` de `lib/payment/mercadopago.js`)
+  - `scripts/maintenance/start-webhook-tunnel.sh`
+  - `tests/unit/scripts/verify-mp-webhook.test.js` (6 testes unitários aprovados)
 - **Resultado Executado:**
-  - `node verify-mp-webhook.js`: gerou payload `order.processed` do Pedido #22, normalizou `data.id` para minúsculas no manifesto HMAC v2 e confirmou `Assinatura HMAC-SHA256 v2: VÁLIDA (true)`.
-  - `bash start-webhook-tunnel.sh --check`: diagnosticou `ssh` (`/usr/bin/ssh`) e `node` (`v24.22.0`), apontou ausência de `cloudflared`/`ngrok` no `PATH` e exibiu o roteiro oficial do painel *Suas integrações* do Mercado Pago.
-  - `bash start-webhook-tunnel.sh --verify`: executou a validação integrada retornando assinatura válida (`true`).
-  - `lint-chars.js`: aprovado em todos os arquivos gerados sem caracteres inesperados.
+  - Entrega local e via túnel `cloudflared` (`https://provided-lights-explains-hopes.trycloudflare.com/api/webhooks/mercadopago`) com `MP_WEBHOOK_SECRET` real: `HTTP 200` (`{"received":true,"duplicate":false,"orderId":22}` no 1º envio, `payment_webhook_events.id = 14`; e `{"received":true,"duplicate":true,"orderId":null}` na reentrega pelo túnel Cloudflare).
+  - Disparo real a partir do **Simulador de Notificações do painel do Mercado Pago** (`application_id: "516565028360615"`, `action: "order.processed"`): recebido pelo túnel `cloudflared`, validado por `x-signature` HMAC-SHA256 v2 e gravado em `payment_webhook_events` (`id = 16`, `event_key = 'order_order.processed_22_approved'`, `processed_at = '2026-11-17T20:30:07.782Z'`).
+  - CI no GitHub Actions (commit `dbcbbc0`): `Lint & Test Coverage Gate` (Run `#147`), `E2E Isolated (Cypress)` (Run `#141`) e `Test Coverage Gate (banco real)` (Run `#132`) 100% aprovados.
 
 ---
 
@@ -234,24 +233,24 @@ Durante a janela de análise (09/11 a 16/11), as intervenções executadas pelos
 
 [Fase 2 - Prioridade Média (P2)]
 ├── Ação 02: Construção da suíte E2E Cypress (/checkout/[id])   ──► CONCLUÍDA (commits dc77185 / 01a4a3f)
-└── Ação 03: Roteiro e scripts de homologação de Webhook/Túnel  ──► CONCLUÍDA (scripts gerados e validados em scratch/)
+└── Ação 03: Roteiro e scripts de homologação de Webhook/Túnel  ──► CONCLUÍDA (validado com cloudflared + painel MP + PostgreSQL)
 ```
 
 ---
 
 ## 9. Limitações da Auditoria e Execução
 
-1. **Restrição de Workspace Ativo / Permissão de Escrita no Repositório:** Como a sessão foi iniciada sem workspace ativo configurado na IDE, a gravação direta de arquivos em `/home/gus/projetos/Caminhar` foi bloqueada pelo controle de permissões. Em conformidade com as regras de segurança, os arquivos da Ação 03 foram criados e validados no diretório `scratch/` da sessão para cópia direta pelo operador.
-2. **Disponibilidade de Binários e Servidor Local:** `cloudflared` e `ngrok` não estão instalados no `PATH` atual (restando `ssh` via `localhost.run` como opção nativa sem instalação), e não há servidor Next.js/PostgreSQL local ativo neste ambiente de sandbox para receber o disparo `--send` em rede.
+1. **Habilitação Comercial de Débito Direto (`debit_card`):** Pagamentos por cartão de débito tradicional (`debelo`/`debvisa`/`debmaster`) na Orders API dependem de habilitação comercial específica na conta do recebedor no Mercado Pago (tratado no código com mensagem clara para `payment_method_not_allowed_for_collector`).
+2. **Ambiente de Produção:** As validações foram realizadas no ambiente de Sandbox (`live_mode: false`), restando apenas a configuração das chaves e URL definitiva de produção quando do deploy público.
 
 ---
 
 ## 10. Conclusão e Registro de Conformidade
 
-- **Caminho deste documento atualizado:** `/home/gus/.gemini/antigravity/brain/c9274f6f-a3ce-4e74-a6ae-a517e35d5b36/melhoria_mercadopago.md`
-- **Arquivos da Ação 03 gerados e validados:**
-  - `/home/gus/.gemini/antigravity/brain/c9274f6f-a3ce-4e74-a6ae-a517e35d5b36/scratch/verify-mp-webhook.js`
-  - `/home/gus/.gemini/antigravity/brain/c9274f6f-a3ce-4e74-a6ae-a517e35d5b36/scratch/start-webhook-tunnel.sh`
-  - `/home/gus/.gemini/antigravity/brain/c9274f6f-a3ce-4e74-a6ae-a517e35d5b36/scratch/verify-mp-webhook.test.js`
-- **Integridade do repositório:** Nenhum arquivo de código-fonte do projeto `/home/gus/projetos/Caminhar` foi alterado nesta execução.
-- **Resultado:** Todas as 3 ações planejadas (Pedido #22 no Sandbox, suíte E2E Cypress `checkout.cy.js` e scripts de homologação de webhook/túnel) encontram-se concluídas e validadas.
+- **Caminho deste documento no repositório:** `/home/gus/projetos/Caminhar/docs/melhoria_mercadopago.md`
+- **Arquivos da Ação 03 integrados e validados no repositório:**
+  - `/home/gus/projetos/Caminhar/scripts/maintenance/verify-mp-webhook.js`
+  - `/home/gus/projetos/Caminhar/scripts/maintenance/start-webhook-tunnel.sh`
+  - `/home/gus/projetos/Caminhar/tests/unit/scripts/verify-mp-webhook.test.js`
+- **Evidências de Banco e CI:** `orders.id = 22` (`approved` / `paid`), `payment_webhook_events` (`id = 14` e `id = 16`) e GitHub Actions Runs `#147`, `#141` e `#132` (`success`).
+- **Resultado:** Todas as 3 ações planejadas (Pedido #22 no Sandbox, suíte E2E Cypress `checkout.cy.js` e homologação real de webhook via túnel `cloudflared`) encontram-se 100% concluídas, documentadas e validadas.
