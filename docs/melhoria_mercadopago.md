@@ -141,7 +141,7 @@ Avaliação da implementação real confrontada com os requisitos arquiteturais:
 | **3. Idempotência de Transações** | **Implementado e validado** | Header `X-Idempotency-Key: caminhar-order-<id>` em todas as criações. |
 | **4. Pagamentos via PIX** | **Implementado e validado** | Suporte a `qr_code` (cópia e cola) e `qr_code_base64`. Testado ponta a ponta no Sandbox (Pedido #20). |
 | **5. Pagamentos via Boleto Bancário** | **Implementado e validado** | Suporte a linha digitável, código de barras e normalização de `ticket_url`. Validado no Sandbox (Pedido #21). |
-| **6. Pagamentos via Cartão de Crédito** | **Implementado e validado no Sandbox** | Tokenização client-side via SDK v2, parcelamento, tratamento de HTTP 402. Validado ponta a ponta no Sandbox com o **Pedido #22** (`ORDTST01M7JZQWF8JS91B32MM9DRDETA`, Mastercard `credit_card`, R$ 0,50, `processed`/`accredited`) em 16/11/2026. |
+| **6. Pagamentos via Cartão de Crédito** | **Implementado e validado no Sandbox** | Tokenização client-side via SDK v2, parcelamento, tratamento de HTTP 402. Validado ponta a ponta no Sandbox para aprovação com o **Pedido #22** (`ORDTST01M7JZQWF8JS91B32MM9DRDETA`, Mastercard `credit_card`, R$ 0,50, `processed`/`accredited`) em 16/11/2026 e para recusa pelo emissor com o **Pedido #23** (`ORDTST01M7R579Z0GF1MHJKT03XKPZ34`, `PAY01M7R579ZQ3WDBPEZAG598G8NG`, Mastercard `credit_card`, R$ 0,50, `failed`/`rejected_by_issuer`, `stock_restored = true` sem dupla devolução após webhook `order.failed` em `payment_webhook_events.id = 17`) em 18/11/2026. |
 | **7. Pagamentos via Débito / Pré-pago** | **Implementado, com restrição comercial do provedor** | `prepaid_card` suportado sem parcelamento. `debit_card` direto (`debelo`) tratado contra erro `payment_method_not_allowed_for_collector`. |
 | **8. Reconciliação Ativa (Pull)** | **Implementado e validado** | `lib/payment/reconcile-orders.js` sincroniza pedidos transitórios via polling ou disparo no `/admin`. |
 | **9. Processamento de Webhooks (Push)** | **Implementado e validado em testes** | Suporte dual a eventos `order` e `payment`, com fallback de `external_reference`. Homologação local/túnel assistida por `verify-mp-webhook.js` e `start-webhook-tunnel.sh`. |
@@ -181,7 +181,7 @@ Durante a janela de análise (09/11 a 16/11), as intervenções executadas pelos
 ### Problema 02 (Validação Externa): Validação Final de Cartão de Crédito no Sandbox com Valor Válido
 - **Identificação:** MP-PEND-02-CARD-SANDBOX-EXECUTION
 - **Descrição:** No teste inicial de cartão de crédito no sandbox foi utilizado um produto fictício com valor de R$ 0,01. O Mercado Pago exige o valor mínimo de transação de R$ 0,50 para cartão e R$ 4,00 para boleto, gerando `invalid_transaction_amount`.
-- **Evidências:** Executado e validado o **Pedido #22** (`ORDTST01M7JZQWF8JS91B32MM9DRDETA`, pagamento `PAY01M7JZQWFXWQE3K0CHK70QYX77`, Mastercard `credit_card`, `1x`, valor `R$ 0,50`, status `processed` / `accredited`), confirmado na tabela `orders` do PostgreSQL (`id = 22`, `payment_status = 'approved'`, `order_status = 'paid'`).
+- **Evidências:** Executado e validado o **Pedido #22** (`ORDTST01M7JZQWF8JS91B32MM9DRDETA`, pagamento `PAY01M7JZQWFXWQE3K0CHK70QYX77`, Mastercard `credit_card`, `1x`, valor `R$ 0,50`, status `processed` / `accredited`), confirmado na tabela `orders` do PostgreSQL (`id = 22`, `payment_status = 'approved'`, `order_status = 'paid'`), e o **Pedido #23** em 18/11/2026 para o fluxo de recusa (`ORDTST01M7R579Z0GF1MHJKT03XKPZ34`, pagamento `PAY01M7R579ZQ3WDBPEZAG598G8NG`, Mastercard `credit_card`, `1x`, `R$ 0,50`, status `failed` / `rejected_by_issuer`), confirmado em `orders` (`id = 23`, `payment_status = 'rejected'`, `order_status = 'cancelled'`, `stock_restored = true` com estoque de `products.id = 19` mantido em `50000`) e no processamento idempotente do webhook `order.failed` assinado com HMAC-SHA256 v2 (`payment_webhook_events.id = 17`, `event_key = 'order_order.failed_ORDTST01M7R579Z0GF1MHJKT03XKPZ34_rejected'`, `"duplicate": true` no reenvio sem nova devolução de estoque).
 - **Causa:** Regra de negócio do gateway em relação a valores mínimos de transação.
 - **Impacto:** Baixo (resolvido para cartão de crédito; débito direto segue dependente de habilitação comercial do recebedor no Mercado Pago).
 - **Situação Atual:** **Concluído e Validado no Sandbox e no PostgreSQL (16/11–17/11/2026).**
@@ -200,11 +200,13 @@ Durante a janela de análise (09/11 a 16/11), as intervenções executadas pelos
 
 ## 7. Plano de Ação e Melhorias Recomendadas
 
-### Ação 01: Validação Prática de Cartão de Crédito no Sandbox (Valor >= R$ 0,50) — CONCLUÍDA E VALIDADA (16/11/2026)
-- **Objetivo:** Concluir a homologação no Sandbox oficial do Mercado Pago para cartão de crédito com parcelamento e aprovação imediata.
-- **Componentes:** `pages/checkout/[id].js`, `pages/api/checkout.js`, `lib/payment/mercadopago.js`.
-- **Resultado Executado:** Validado ponta a ponta no Sandbox oficial e confirmado na tabela `orders` do PostgreSQL com o **Pedido #22** (`ORDTST01M7JZQWF8JS91B32MM9DRDETA`, pagamento `PAY01M7JZQWFXWQE3K0CHK70QYX77`, Mastercard `credit_card`, `1x`, `R$ 0,50`, `payment_status: "approved"`, `order_status: "paid"`).
-- **Critérios de Validação:** Aprovado (`processed` / `accredited` na Orders API v1 com `external_reference: "22"`).
+### Ação 01: Validação Prática de Cartão de Crédito no Sandbox (Valor >= R$ 0,50) — CONCLUÍDA E VALIDADA (16/11/2026; recusa homologada em 18/11/2026)
+- **Objetivo:** Concluir a homologação no Sandbox oficial do Mercado Pago para cartão de crédito com parcelamento e aprovação imediata (e validar recusa `HTTP 402` / `order.failed` com restauração atômica de estoque).
+- **Componentes:** `pages/checkout/[id].js`, `pages/api/checkout.js`, `lib/payment/mercadopago.js`, `lib/domain/orders.js`, `pages/api/webhooks/mercadopago.js`.
+- **Resultado Executado:**
+  - Aprovação: validada ponta a ponta no Sandbox oficial e confirmada na tabela `orders` do PostgreSQL com o **Pedido #22** (`ORDTST01M7JZQWF8JS91B32MM9DRDETA`, pagamento `PAY01M7JZQWFXWQE3K0CHK70QYX77`, Mastercard `credit_card`, `1x`, `R$ 0,50`, `payment_status: "approved"`, `order_status: "paid"`).
+  - Recusa pelo emissor (18/11/2026): validada com o **Pedido #23** (`ORDTST01M7R579Z0GF1MHJKT03XKPZ34`, pagamento `PAY01M7R579ZQ3WDBPEZAG598G8NG`, Mastercard `credit_card`, `1x`, `R$ 0,50`, `status: "failed"`, `status_detail: "rejected_by_issuer"`), confirmado no PostgreSQL (`payment_status: "rejected"`, `order_status: "cancelled"`, `stock_restored: true`, estoque do produto `id = 19` preservado em `50000`) e com webhook `order.failed` assinado HMAC-SHA256 v2 registrado em `payment_webhook_events.id = 17` (`"duplicate": false` no 1º envio e `"duplicate": true` no reenvio, mesclando `last_webhook_action: "order.failed"` em `mp_payload` sem dupla devolução de estoque).
+- **Critérios de Validação:** Aprovado (`processed` / `accredited` com `external_reference: "22"`) e recusado com rollback atômico (`failed` / `rejected_by_issuer` com `external_reference: "23"`).
 
 ### Ação 02: Implementação de Teste E2E de Checkout no Cypress — CONCLUÍDA E VALIDADA (16/11/2026)
 - **Objetivo:** Blindar a interface do checkout e a jornada do visitante contra regressões de navegação.
@@ -252,5 +254,5 @@ Durante a janela de análise (09/11 a 16/11), as intervenções executadas pelos
   - `/home/gus/projetos/Caminhar/scripts/maintenance/verify-mp-webhook.js`
   - `/home/gus/projetos/Caminhar/scripts/maintenance/start-webhook-tunnel.sh`
   - `/home/gus/projetos/Caminhar/tests/unit/scripts/verify-mp-webhook.test.js`
-- **Evidências de Banco e CI:** `orders.id = 22` (`approved` / `paid`), `payment_webhook_events` (`id = 14` e `id = 16`) e GitHub Actions Runs `#147`, `#141` e `#132` (`success`).
+- **Evidências de Banco e CI:** `orders.id = 22` (`approved` / `paid`), `orders.id = 23` (`rejected` / `cancelled`, `stock_restored = true`), `payment_webhook_events` (`id = 14`, `id = 16` e `id = 17`) e GitHub Actions Runs `#147`, `#141` e `#132` (`success`).
 - **Resultado:** Todas as 3 ações planejadas (Pedido #22 no Sandbox, suíte E2E Cypress `checkout.cy.js` e homologação real de webhook via túnel `cloudflared`) encontram-se 100% concluídas, documentadas e validadas.
