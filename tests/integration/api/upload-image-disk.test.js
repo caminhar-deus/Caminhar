@@ -76,8 +76,10 @@ const buildRes = () => ({
     this.body = payload;
     return this;
   },
-  end() {
+  // A rota de serviço envia o arquivo por `res.end(buffer)` (não `res.send`).
+  end(payload) {
     this.ended = true;
+    if (payload !== undefined) this.body = payload;
     return this;
   },
 });

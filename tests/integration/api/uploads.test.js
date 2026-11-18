@@ -39,16 +39,18 @@ describe('API de Upload — rota de serviço /api/uploads/[...path]', () => {
   );
 
   /**
-   * Monta um req/res mínimo no formato que o handler consome. `res.send`
-   * recebe o buffer; os headers ficam disponíveis para asserção.
+   * Monta um req/res mínimo no formato que o handler consome. O corpo binário
+   * chega por `res.end(buffer)` (a rota NÃO usa `res.send` para Buffer; ver o
+   * teste de regressão abaixo), e os headers ficam disponíveis para asserção.
    */
-  const buildReqRes = (method, segments) => {
-    const req = { method, query: { path: segments } };
+  const buildReqRes = (method, segments, headers = {}) => {
+    const req = { method, query: { path: segments }, headers };
     const res = {
       statusCode: null,
       headers: {},
       body: undefined,
       ended: false,
+      sendCalls: 0,
       setHeader(key, value) {
         this.headers[key.toLowerCase()] = value;
       },
@@ -61,11 +63,13 @@ describe('API de Upload — rota de serviço /api/uploads/[...path]', () => {
         return this;
       },
       send(payload) {
+        this.sendCalls += 1;
         this.body = payload;
         return this;
       },
-      end() {
+      end(payload) {
         this.ended = true;
+        if (payload !== undefined) this.body = payload;
         return this;
       },
     };
@@ -229,5 +233,137 @@ describe('API de Upload — rota de serviço /api/uploads/[...path]', () => {
     expect(rewrites).toEqual([
       { source: '/uploads/:path*', destination: '/api/uploads/:path*' },
     ]);
+  });
+
+  // -------------------------------------------------------------------------
+  // Desempenho e revalidação condicional.
+  //
+  // `res.send(buffer)` do Next trata Buffer como JSON e faz
+  // `JSON.stringify(buffer)` + hash FNV-1a só para gerar o ETag: ~100 ms de
+  // CPU síncrona por PNG de 2 MB, bloqueando o event loop (origem do
+  // `[Performance] Slow resource` em `/uploads/*` e em `/api/products`). A rota
+  // passou a enviar o corpo por `res.end` e a revalidar com um ETag fraco
+  // derivado do `stat`.
+  // -------------------------------------------------------------------------
+  describe('revalidação condicional (ETag fraco por stat)', () => {
+    const ETAG_PATTERN = /^W\/"[0-9a-f]+-[0-9a-f]+"$/;
+
+    const serve = async (headers = {}, method = 'GET', name = 'post-image-cache.gif') => {
+      const { req, res } = buildReqRes(method, [name], headers);
+      await handler(req, res);
+      return res;
+    };
+
+    test('envia o corpo binário por res.end, nunca por res.send (regressão de CPU)', async () => {
+      writeAsset(activeDir, 'post-image-cache.gif');
+
+      const res = await serve();
+
+      expect(res.statusCode).toBe(200);
+      expect(res.sendCalls).toBe(0);
+      expect(res.ended).toBe(true);
+      expect(res.body.equals(GIF_BYTES)).toBe(true);
+    });
+
+    test('expõe ETag fraco derivado de tamanho e mtime', async () => {
+      const target = writeAsset(activeDir, 'post-image-cache.gif');
+      const stats = fs.statSync(target);
+
+      const res = await serve();
+
+      expect(res.headers.etag).toMatch(ETAG_PATTERN);
+      expect(res.headers.etag).toBe(
+        `W/"${stats.size.toString(16)}-${Math.floor(stats.mtimeMs).toString(16)}"`
+      );
+    });
+
+    test('If-None-Match igual → 304 sem corpo, sem Content-Type/Length e sem ler o arquivo', async () => {
+      writeAsset(activeDir, 'post-image-cache.gif');
+      const { headers: { etag } } = await serve();
+
+      const readSpy = jest.spyOn(fs.promises, 'readFile');
+      try {
+        const res = await serve({ 'if-none-match': etag });
+
+        expect(res.statusCode).toBe(304);
+        expect(res.ended).toBe(true);
+        expect(res.body).toBeUndefined();
+        expect(readSpy).not.toHaveBeenCalled();
+        // Headers de validação seguem no 304 (RFC 9110 §15.4.5)...
+        expect(res.headers.etag).toBe(etag);
+        expect(res.headers['cache-control']).toBe('public, max-age=3600');
+        expect(res.headers['last-modified']).toBeDefined();
+        // ...mas os de representação, não.
+        expect(res.headers['content-type']).toBeUndefined();
+        expect(res.headers['content-length']).toBeUndefined();
+      } finally {
+        readSpy.mockRestore();
+      }
+    });
+
+    test('If-None-Match aceita lista, comparação fraca (sem W/) e "*"', async () => {
+      writeAsset(activeDir, 'post-image-cache.gif');
+      const { headers: { etag } } = await serve();
+      const strong = etag.replace(/^W\//, '');
+
+      expect((await serve({ 'if-none-match': `"outro", ${etag}` })).statusCode).toBe(304);
+      expect((await serve({ 'if-none-match': strong })).statusCode).toBe(304);
+      expect((await serve({ 'if-none-match': '*' })).statusCode).toBe(304);
+    });
+
+    test('If-None-Match diferente → 200 com o arquivo', async () => {
+      writeAsset(activeDir, 'post-image-cache.gif');
+
+      const res = await serve({ 'if-none-match': 'W/"0-0"' });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.equals(GIF_BYTES)).toBe(true);
+    });
+
+    test('If-Modified-Since igual ou posterior ao mtime → 304; anterior ou inválido → 200', async () => {
+      const target = writeAsset(activeDir, 'post-image-cache.gif');
+      const mtime = fs.statSync(target).mtime;
+      const lastModified = new Date(Math.floor(mtime.getTime() / 1000) * 1000);
+
+      expect((await serve({ 'if-modified-since': lastModified.toUTCString() })).statusCode).toBe(304);
+      expect(
+        (await serve({ 'if-modified-since': new Date(lastModified.getTime() + 60_000).toUTCString() })).statusCode
+      ).toBe(304);
+      expect(
+        (await serve({ 'if-modified-since': new Date(lastModified.getTime() - 60_000).toUTCString() })).statusCode
+      ).toBe(200);
+      expect((await serve({ 'if-modified-since': 'data-invalida' })).statusCode).toBe(200);
+    });
+
+    test('If-None-Match tem precedência sobre If-Modified-Since (RFC 9110 §13.1.3)', async () => {
+      const target = writeAsset(activeDir, 'post-image-cache.gif');
+      const future = new Date(fs.statSync(target).mtime.getTime() + 60_000).toUTCString();
+
+      // IMS sozinho daria 304; com um ETag que não bate, a resposta é 200.
+      const res = await serve({ 'if-none-match': 'W/"0-0"', 'if-modified-since': future });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.equals(GIF_BYTES)).toBe(true);
+    });
+
+    test('HEAD condicional também responde 304', async () => {
+      writeAsset(activeDir, 'post-image-cache.gif');
+      const { headers: { etag } } = await serve();
+
+      const res = await serve({ 'if-none-match': etag }, 'HEAD');
+
+      expect(res.statusCode).toBe(304);
+      expect(res.body).toBeUndefined();
+    });
+
+    test('o handler não devolve valor (Next em dev avisaria "should not return a value")', async () => {
+      writeAsset(activeDir, 'post-image-cache.gif');
+      const { headers: { etag } } = await serve();
+
+      for (const [method, headers] of [['GET', {}], ['HEAD', {}], ['GET', { 'if-none-match': etag }]]) {
+        const { req, res } = buildReqRes(method, ['post-image-cache.gif'], headers);
+        await expect(handler(req, res)).resolves.toBeUndefined();
+      }
+    });
   });
 });

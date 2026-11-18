@@ -1248,16 +1248,17 @@ Antes desta rodada a rota **não tinha nenhum teste**. Uma regressão ali seria 
 - `next.config.js` — só a asserção da `rewrites()`
 
 #### Resumo
-10 testes com **fs real** sobre diretórios temporários: serve do diretório ativo, serve do legado, prioridade do ativo quando o mesmo nome existe nos dois, 404 para inexistente, 404 sem caminho, 405 com `Allow: GET, HEAD`, HEAD 200 sem corpo, bloqueio de path traversal, bloqueio de caminho absoluto e null byte, e o invariante da URL pública (`rewrites()` mapeia `/uploads/:path*` → `/api/uploads/:path*`).
+19 testes com **fs real** sobre diretórios temporários: os 10 testes originais de serviço e segurança (serve do diretório ativo, serve do legado, prioridade do ativo quando o mesmo nome existe nos dois, 404 para inexistente, 404 sem caminho, 405 com `Allow: GET, HEAD`, HEAD 200 sem corpo, bloqueio de path traversal, bloqueio de caminho absoluto e null byte, e o invariante da URL pública `rewrites()` mapeando `/uploads/:path*` → `/api/uploads/:path*`) + 9 testes do bloco `revalidação condicional (ETag fraco por stat)` (guarda de regressão que impede o envio do buffer por `res.send`, formato do `ETag` fraco `W/"<size>-<mtimeMs>"`, resposta `304` sem ler o arquivo via `fs.promises.readFile` em `If-None-Match` exato/lista/fraco/`*`, resposta `200` quando o `ETag` diverge, `If-Modified-Since`, precedência de `If-None-Match` conforme RFC 9110 §13.1.3, `HEAD` condicional e ausência de retorno do handler).
 
 #### Sandbox
 O sandbox inteiro mora num temp dir e o cwd é apontado para ele, de modo que o legado vira `<tmp>/public/uploads` e o `public/uploads` **real** do projeto nunca é lido nem alterado. `UPLOADS_DIR` é sobrescrito e restaurado no `afterEach`. Mesmo padrão de `tests/unit/scripts/clear-db.test.js`.
 
 #### Verificação por mutação
-A guarda de path traversal foi removida deliberadamente (`resolveInside()` sem a checagem `startsWith(baseDir + path.sep)`): **2 dos 10 testes reprovaram** e voltaram a passar com a guarda restaurada. Os testes de traversal não são decorativos — detectam a remoção da proteção.
+- A guarda de path traversal foi removida deliberadamente (`resolveInside()` sem a checagem `startsWith(baseDir + path.sep)`): **2 dos 10 testes reprovaram** e voltaram a passar com a guarda restaurada. Os testes de traversal não são decorativos — detectam a remoção da proteção.
+- Em 18/11/2026, o envio em `pages/api/uploads/[...path].js` foi temporariamente revertido de `res.status(200).end(buffer)` para `res.status(200).send(buffer)`: o teste `envia o corpo binário por res.end, nunca por res.send (regressão de CPU)` falhou (1 falha / 18 passes) e voltou a passar ao restaurar `res.end(buffer)`.
 
 #### Problemas
-- Nenhum conhecido. Os 10 testes passam e a mutação acima foi revertida.
+- Nenhum conhecido. Os 19 testes passam e as mutações acima foram revertidas.
 
 ---
 

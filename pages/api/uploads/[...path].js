@@ -73,6 +73,57 @@ async function findFile(relativePath) {
 }
 
 /**
+ * ETag fraco derivado do `stat` (tamanho + mtime), como o `serve-static`/`send`.
+ *
+ * Motivo: `res.send(buffer)` do Next trata Buffer como JSON (`typeof` é
+ * `'object'`) e faz `JSON.stringify(buffer)` + hash FNV-1a caractere a
+ * caractere só para gerar o ETag. Para um PNG de 2 MB isso é uma string de
+ * ~7,8 milhões de caracteres e ~100 ms de CPU síncrona por request,
+ * bloqueando o event loop. Com várias imagens em paralelo, qualquer outra
+ * rota (ex.: `/api/products`) esperava na fila, e era isso que disparava o
+ * `[Performance] Slow resource` do `hooks/usePerformanceMetrics.js`.
+ *
+ * É fraco (`W/`) porque não promete igualdade byte a byte. Basta para
+ * revalidar: o nome de cada upload tem UUID e qualquer regravação muda
+ * `size`/`mtime`.
+ * @param {fs.Stats} stats - Metadados do arquivo.
+ * @returns {string} ETag fraco.
+ */
+function weakEtagFromStats(stats) {
+  return `W/"${stats.size.toString(16)}-${Math.floor(stats.mtimeMs).toString(16)}"`;
+}
+
+/**
+ * Decide se a cópia do cliente ainda vale (resposta 304), conforme RFC 9110 §13.1.
+ * `If-None-Match` tem precedência; `If-Modified-Since` só conta sem ele.
+ * @param {Record<string, string|undefined>} headers - Headers da requisição.
+ * @param {string} etag - ETag atual do arquivo.
+ * @param {fs.Stats} stats - Metadados do arquivo.
+ * @returns {boolean} `true` quando o cliente já tem a versão atual.
+ */
+function isClientCacheFresh(headers, etag, stats) {
+  const ifNoneMatch = headers['if-none-match'];
+  if (ifNoneMatch) {
+    if (ifNoneMatch.trim() === '*') return true;
+    // Comparação fraca (§8.8.3.2): ignora o prefixo `W/` dos dois lados.
+    const current = etag.replace(/^W\//, '');
+    return ifNoneMatch
+      .split(',')
+      .some((tag) => tag.trim().replace(/^W\//, '') === current);
+  }
+
+  const ifModifiedSince = headers['if-modified-since'];
+  if (ifModifiedSince) {
+    const since = Date.parse(ifModifiedSince);
+    if (Number.isNaN(since)) return false;
+    // O header HTTP tem precisão de segundos; trunca o mtime para comparar.
+    return Math.floor(stats.mtimeMs / 1000) * 1000 <= since;
+  }
+
+  return false;
+}
+
+/**
  * Handler da rota `/api/uploads/<arquivo>`.
  * @param {import('next').NextApiRequest} req - Requisição.
  * @param {import('next').NextApiResponse} res - Resposta.
@@ -95,10 +146,11 @@ async function handler(req, res) {
 
     const contentType = CONTENT_TYPES[path.extname(found.filepath).toLowerCase()]
       || 'application/octet-stream';
+    const etag = weakEtagFromStats(found.stats);
 
-    res.setHeader('Content-Type', contentType);
+    // Headers de validação/cache vão também no 304 (RFC 9110 §15.4.5).
+    res.setHeader('ETag', etag);
     res.setHeader('Cache-Control', 'public, max-age=3600');
-    res.setHeader('Content-Length', found.stats.size);
     res.setHeader('Last-Modified', found.stats.mtime.toUTCString());
     // Hardening de conteúdo enviado pelo usuário fica em `next.config.js`
     // (`headers()` com `source: '/uploads/:path*'`), e NÃO aqui: essa regra roda
@@ -107,20 +159,37 @@ async function handler(req, res) {
     // Um `setHeader` aqui duplicaria a fonte e cobriria só um dos caminhos.
     // O mesmo vale para `X-Content-Type-Options`, que vem da regra global.
 
+    // Revalidação condicional resolvida só com o `stat`: o arquivo nem é lido.
+    // Nos `res.end(...)` abaixo não há `return res.end(...)`: `end` devolve o
+    // próprio `res` e o Next em dev avisa "API handler should not return a value".
+    if (isClientCacheFresh(req.headers || {}, etag, found.stats)) {
+      res.status(304).end();
+      return;
+    }
+
+    res.setHeader('Content-Type', contentType);
+
     if (req.method === 'HEAD') {
-      return res.status(200).end();
+      res.setHeader('Content-Length', found.stats.size);
+      res.status(200).end();
+      return;
     }
 
     // Uploads são imagens com limite de tamanho definido em `MAX_UPLOAD_BYTES`
     // (`lib/infra/storage.js`) e aplicado em `upload-image.js`; ler em buffer
     // evita corrida entre stat e open, que um stream deixaria a resposta meio
-    // enviada. Em erro, respondemos 500 limpo.
+    // enviada. Em erro, respondemos 500 limpo. `Content-Length` vem do buffer
+    // lido, não do `stat`, pela mesma razão.
     const buffer = await fs.promises.readFile(found.filepath);
-    return res.status(200).send(buffer);
+    res.setHeader('Content-Length', buffer.length);
+    // `res.end`, e NÃO `res.send`: o `send` do Next serializaria o Buffer como
+    // JSON para gerar o ETag (ver `weakEtagFromStats`). Não troque de volta.
+    res.status(200).end(buffer);
   } catch (error) {
     logger.error('Uploads', 'Erro ao servir arquivo de upload:', error);
     if (res.headersSent) {
-      return res.end();
+      res.end();
+      return;
     }
     return res.status(500).json({ error: 'Internal Server Error', message: 'Erro ao servir o arquivo' });
   }
