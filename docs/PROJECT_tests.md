@@ -345,6 +345,14 @@ Testes de integração com PostgreSQL real via Testcontainers (arquivos `*.db.te
 | `LazyIframe.test.js` | Iframe com lazy loading |
 | `PreloadResources.test.js` | Pré-carregamento de recursos |
 
+> **Convenção (jsdom ≥ 31):** ao verificar valores CSS que contenham `url()` relativa, leia a
+> **declaração inline** (`element.style.backgroundImage`): o `toHaveStyle` compara com o
+> `getComputedStyle`, e o jsdom 31 resolve `url()` relativo contra `document.baseURI`
+> (`http://localhost/` no Jest), como o navegador — o esperado montado pelo jest-dom continua
+> relativo e a comparação falha. Não é defeito do componente. Foi o que quebrou
+> `LazyIframe.test.js` no bump para `jsdom@31.0.1` (histórico do override em
+> `docs/PROJECT_raiz.md` §6.2).
+
 ### 5.6 Componentes de SEO (`/tests/unit/components/SEO/`)
 
 | Arquivo | Propósito |

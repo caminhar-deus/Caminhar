@@ -40,6 +40,21 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Alterado
 
+- **Bump de dependências com jsdom 31 e ajuste do teste do LazyIframe (18/11/2026, commit `8b5da20`).**
+  `jsdom` subiu de `^30.1.3` para `^31.0.1` na dependência direta e no `overrides` (que segue
+  deduplicando a cópia aninhada do `jest-environment-jsdom`), junto com o pacote de manutenção:
+  `next`/`@next/env` 16.4.6, `@babel/core`/`@babel/eslint-parser` 8.1.2, `eslint` 10.15.0,
+  `@eslint/markdown` 9.0.0, `cypress` 16.3.0, `knip` 6.45.1, `dependency-cruiser` 18.8.0,
+  `@testing-library/user-event` 14.6.12, `dotenv` 18.0.10, `react-easy-crop` 6.2.5 e
+  `eslint-plugin-cypress` 7.0.5. O CSSOM próprio do jsdom 31 passou a resolver `url()` relativo
+  no `getComputedStyle` (`lib/jsdom/living/css/resolve.js:1962`), como o navegador, e
+  `tests/unit/components/Performance/LazyIframe.test.js` comparava esse valor computado
+  (`url("http://localhost/custom.jpg")`) com a grafia inline (`url("custom.jpg")`) — passava só
+  pela limitação do jsdom 30. A asserção agora lê a declaração inline
+  (`element.style.backgroundImage`) e usa um ID de vídeo de 11 caracteres para o cenário
+  "thumbnail customizada sobrescreve a nativa" ser real. Suíte completa verde: 233/241 suítes,
+  1932 passed + 96 skipped, 6 snapshots, thresholds de cobertura preservados (exit 0).
+
 - **Bench do `orchestrator` parou de acusar falha que a rubrica não pede (14/11/2026, ADR-0008 §"14/11/2026").**
   O diagnóstico de "falha de designação" mostrou 13 execuções acusadas de não delegar; 11 eram
   `.t2.ndjson` (turno de reconciliação, que não delega por desenho) e 2 eram perfil de modelo
