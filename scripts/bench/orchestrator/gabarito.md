@@ -27,6 +27,12 @@ quando a âncora mudou — o número velho deixa de pontuar antes de virar erro.
 > escrito: contagem e ponto de aplicação saem do disco em runtime. E o runner agora
 > confere contagem e âncoras contra o disco antes do spawn — quando a âncora muda, a
 > execução é bloqueada antes de pontuar contra referência velha.
+>
+> **Recalibrado de novo em 18/11/2026**: as âncoras de `pages/api/uploads/[...path].js` no §4
+> (`HEAD` em `:172` e comentário de hardening em `:155-160`, deslocados pela revalidação
+> condicional `ETag`/`304` do ajuste de `[Performance] Slow resource` no commit `6e94332`),
+> além das linhas de `pages/api/admin/orders.js` no §2 (`requireAuth` em `:29`, usado em `:65`)
+> e `pages/api/videos.js` no §3 (`405` em `:37-39`), foram atualizadas para as linhas atuais do disco.
 
 ## 1. Quantos arquivos, quantas rotas
 
@@ -46,7 +52,7 @@ quando a âncora mudou — o número velho deixa de pontuar antes de virar erro.
 | Admin via factory | 17 | `lib/api/adminCrudHandler.js:305` (`withAuth(handler)`), alcançado por `createAdminHandler` em cada rota |
 | `withAuth` direto | 2 | `pages/api/cleanup-test-data.js:26`, `pages/api/upload-image.js:170` |
 | `withAuth` parcial | 1 | `pages/api/settings.js` — GET público, POST (`:130`) e PUT (`:164`) com `withAuth` |
-| Autenticação manual | 6 | `pages/api/auth/check.js` (`:65`,`:74`), `pages/api/products.js` (`requireAuth` em `:132`, usado em `:367,373,378,383`), `pages/api/status.js` (`:34`,`:39` — só o diagnóstico; `?mode=health` em `:27` é público), `pages/api/admin/internal-products.js` (`requireAuth` em `:62`, usado em `:98`), `pages/api/admin/orders.js` (`requireAuth` em `:28`, usado em `:64`), `pages/api/settings.js` |
+| Autenticação manual | 6 | `pages/api/auth/check.js` (`:65`,`:74`), `pages/api/products.js` (`requireAuth` em `:132`, usado em `:367,373,378,383`), `pages/api/status.js` (`:34`,`:39` — só o diagnóstico; `?mode=health` em `:27` é público), `pages/api/admin/internal-products.js` (`requireAuth` em `:62`, usado em `:98`), `pages/api/admin/orders.js` (`requireAuth` em `:29`, usado em `:65`), `pages/api/settings.js` |
 
 As **17** admin via factory são as **16** de `pages/api/admin/` mais
 `pages/api/ip-diagnostico.js:186`. As outras **2** de `pages/api/admin/`
@@ -68,7 +74,7 @@ correto, não é contradição.
 `GET`, o que impede escrita anônima:
 
 - `pages/api/musicas.js:79-83`
-- `pages/api/videos.js:21-23`
+- `pages/api/videos.js:37-39`
 - `pages/api/dicas.js:8-11`
 - `pages/api/posts.js:18` (o `GET`; o `POST` da mesma rota tem `withAuth`)
 
@@ -86,8 +92,8 @@ modelos o citaram em 19/10/2026 — a primeira versão deste gabarito esquecia d
 está registrado como correção abaixo.
 
 **a) `pages/api/uploads/[...path].js`** — a rota não autentica ninguém e não limita método
-além de tratar `HEAD` (`:110`); ela serve o arquivo do disco. A proteção está em outro
-lugar, e o próprio arquivo registra isso em `:103-107`:
+além de tratar `HEAD` (`:172`); ela serve o arquivo do disco. A proteção está em outro
+lugar, e o próprio arquivo registra isso em `:155-160`:
 
 - `next.config.js:175-180` — `Content-Security-Policy: default-src 'none'; sandbox` para
   `/uploads/:path*`.
