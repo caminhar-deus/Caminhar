@@ -636,6 +636,7 @@ scripts/maintenance/backup-posts.js → lib/infra/db.js
 scripts/maintenance/clean-k6-videos.js → scripts/utils/cleanup.js
 scripts/maintenance/fix-hero-key.js → lib/infra/db.js
 scripts/maintenance/restore-posts.js → lib/infra/db.js
+scripts/maintenance/verify-mp-webhook.js → lib/payment/mercadopago.js
 scripts/maintenance/video-thumbnails.js → lib/infra/db.js
 scripts/migrate.js → scripts/db/connection.js
 scripts/migrate.js → scripts/utils/load-env.js
@@ -1297,6 +1298,7 @@ tests/unit/scripts/utils/date-format.test.js → scripts/utils/date-format.js
 tests/unit/scripts/utils/load-env.test.js → scripts/utils/load-env.js
 tests/unit/scripts/validate-schema.test.js → scripts/utils/load-env.js
 tests/unit/scripts/validate-schema.test.js → scripts/validate-schema.js
+tests/unit/scripts/verify-mp-webhook.test.js → scripts/maintenance/verify-mp-webhook.js
 tests/unit/settings.cache.test.js → tests/mocks/db-module.js
 tests/unit/utils/reorder.test.js → utils/reorder.js
 tests/unit/utils/reorder.test.js → tests/helpers/index.js

@@ -58,10 +58,20 @@ describe('Componente de Performance - LazyIframe', () => {
   });
 
   it('deve aceitar thumbnail customizada que sobrescreve a nativa', () => {
+    // ID válido (11 caracteres) de propósito: garante que existe uma capa nativa
+    // do YouTube para ser sobrescrita, em vez de comparar com "nada".
     const { container } = render(
-      <LazyIframe src="https://youtube.com/watch?v=123" title="YT" provider="youtube" thumbnail="custom.jpg" />
+      <LazyIframe src="https://youtube.com/watch?v=dQw4w9WgXcQ" title="YT" provider="youtube" thumbnail="custom.jpg" />
     );
-    expect(container.firstChild.firstChild).toHaveStyle('background-image: url(custom.jpg)');
+
+    // Lê o valor *especificado* (declaração inline), não o estilo computado.
+    // Desde o jsdom 31 o getComputedStyle() resolve url() relativo contra
+    // document.baseURI (como os navegadores fazem), então `toHaveStyle` veria
+    // `url("http://localhost/custom.jpg")` enquanto o esperado é o valor inline.
+    // Este teste verifica qual thumbnail o componente escolheu, não a resolução do CSS.
+    const { backgroundImage } = container.firstChild.firstChild.style;
+    expect(backgroundImage).toContain('custom.jpg');
+    expect(backgroundImage).not.toContain('img.youtube.com');
   });
 
   it('deve chamar onLoad quando o iframe carregar e esconder a opacidade 0', async () => {

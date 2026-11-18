@@ -1118,6 +1118,8 @@
 │   │   ├── clean-k6-videos.js
 │   │   ├── fix-hero-key.js
 │   │   ├── restore-posts.js
+│   │   ├── start-webhook-tunnel.sh
+│   │   ├── verify-mp-webhook.js
 │   │   └── video-thumbnails.js
 │   ├── migrate.js
 │   ├── migrations
@@ -1509,7 +1511,8 @@
 │       │   │   ├── constants.test.js
 │       │   │   ├── date-format.test.js
 │       │   │   └── load-env.test.js
-│       │   └── validate-schema.test.js
+│       │   ├── validate-schema.test.js
+│       │   └── verify-mp-webhook.test.js
 │       ├── settings.cache.test.js
 │       ├── tests-hygiene
 │       │   └── console-no-global-assignment.test.js
@@ -1533,4 +1536,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-219 directories, 1315 files
+219 directories, 1318 files
