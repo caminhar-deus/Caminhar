@@ -13,6 +13,21 @@ function getGoogleClientId() {
   return (process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '').trim();
 }
 
+function resolveGoogleButtonWidth(hostEl) {
+  const measuredWidth = hostEl?.clientWidth || hostEl?.parentElement?.clientWidth || 0;
+  if (measuredWidth > 0) {
+    return Math.max(200, Math.min(400, Math.floor(measuredWidth)));
+  }
+  const viewportWidth =
+    typeof window !== 'undefined' && Number.isFinite(window.innerWidth) && window.innerWidth > 0
+      ? window.innerWidth
+      : 0;
+  if (viewportWidth > 0) {
+    return Math.max(200, Math.min(360, Math.floor(viewportWidth - 96)));
+  }
+  return 320;
+}
+
 function attachScriptListeners(scriptEl, resolve, reject) {
   scriptEl.addEventListener(
     'load',
@@ -161,8 +176,7 @@ export default function EntrarPage() {
           cancel_on_tap_outside: true,
         });
 
-        const rawWidth = googleButtonRef.current.clientWidth || 360;
-        const buttonWidth = Math.max(240, Math.min(400, rawWidth));
+        const buttonWidth = resolveGoogleButtonWidth(googleButtonRef.current);
 
         // Evita duplicação caso o React StrictMode re-execute o efeito em dev
         googleButtonRef.current.innerHTML = '';
@@ -227,7 +241,7 @@ export default function EntrarPage() {
     );
   };
 
-  const isGoogleHostVisible = googleStatus === 'loading' || googleStatus === 'ready';
+  const isGoogleHostVisible = googleStatus !== 'unconfigured' && googleStatus !== 'error';
   const googleHostClassName = !isGoogleHostVisible
     ? styles.googleButtonHostHidden
     : submitting

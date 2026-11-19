@@ -76,6 +76,10 @@ describe('Página de Acesso do Visitante (pages/entrar.js)', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Acesse sua conta' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Já tenho conta', selected: true })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Entrar' })).toBeInTheDocument();
+
+    const backIcon = screen.getByRole('link', { name: /Voltar ao site/i }).querySelector('svg');
+    expect(backIcon?.querySelector('polyline')).toHaveAttribute('points', '15 18 9 12 15 6');
+    expect(backIcon?.querySelector('circle')).toBeNull();
   });
 
   it('alterna para o modo criar conta ao clicar na aba correspondente', async () => {
@@ -244,5 +248,48 @@ describe('Página de Acesso do Visitante (pages/entrar.js)', () => {
       expect(renderButtonMock).toHaveBeenCalledTimes(2);
     });
     expect(screen.queryByText('Carregando acesso com Google...')).not.toBeInTheDocument();
+  });
+
+  it('em viewport < 380px com window.google já em cache, mantém o container visível e ajusta width <= 280', async () => {
+    process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID = 'google-client-id-123.apps.googleusercontent.com';
+    const initializeMock = jest.fn();
+    const renderButtonMock = jest.fn();
+    window.google = {
+      accounts: {
+        id: {
+          initialize: initializeMock,
+          renderButton: renderButtonMock,
+        },
+      },
+    };
+
+    const originalInnerWidth = window.innerWidth;
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      writable: true,
+      value: 360,
+    });
+
+    try {
+      const { container } = render(<EntrarPage />);
+      const host = container.querySelector('[aria-busy]');
+      expect(host).not.toBeNull();
+      expect(host.hidden).toBe(false);
+
+      await waitFor(() => {
+        expect(renderButtonMock).toHaveBeenCalledWith(
+          expect.any(HTMLElement),
+          expect.objectContaining({
+            width: 264,
+          })
+        );
+      });
+    } finally {
+      Object.defineProperty(window, 'innerWidth', {
+        configurable: true,
+        writable: true,
+        value: originalInnerWidth,
+      });
+    }
   });
 });

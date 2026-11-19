@@ -865,6 +865,7 @@ tests/integration/api/cleanup-test-data.test.js → pages/api/cleanup-test-data.
 tests/integration/api/cleanup-test-data.test.js → tests/mocks/db-module.js
 tests/integration/api/customer/auth.test.js → lib/auth/customer-auth.js
 tests/integration/api/customer/auth.test.js → lib/domain/customers.js
+tests/integration/api/customer/auth.test.js → lib/infra/logger.js
 tests/integration/api/customer/auth.test.js → pages/api/customer/auth.js
 tests/integration/api/customer/orders.test.js → lib/auth/customer-auth.js
 tests/integration/api/customer/orders.test.js → lib/domain/orders.js

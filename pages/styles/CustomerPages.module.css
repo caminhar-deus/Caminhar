@@ -5,15 +5,15 @@
 }
 
 .container {
-  max-width: var(--max-width-xl);
+  max-width: var(--container-xl);
   margin: 0 auto;
 }
 
 .narrowCard {
-  max-width: var(--max-width-md);
+  max-width: 480px;
   margin: var(--spacing-6) auto;
   background-color: var(--color-bg-primary);
-  border: var(--border-width-thin) solid var(--color-border-primary);
+  border: var(--border-width-1) solid var(--color-border-light);
   border-radius: var(--border-radius-xl);
   padding: var(--spacing-8);
   box-shadow: var(--shadow-md);
@@ -39,7 +39,7 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   border-radius: var(--border-radius-md);
-  transition: var(--transition-colors);
+  transition: var(--transition-background), var(--transition-color);
 }
 
 .backLink:hover {
@@ -71,7 +71,7 @@
   display: flex;
   gap: var(--spacing-2);
   margin-bottom: var(--spacing-6);
-  border-bottom: var(--border-width-thin) solid var(--color-border-primary);
+  border-bottom: var(--border-width-1) solid var(--color-border-light);
   padding-bottom: var(--spacing-2);
 }
 
@@ -79,14 +79,14 @@
   flex: 1;
   min-height: 44px;
   padding: var(--spacing-2) var(--spacing-4);
-  border: var(--border-width-thin) solid transparent;
+  border: var(--border-width-1) solid transparent;
   border-radius: var(--border-radius-md);
   background-color: transparent;
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: var(--transition-colors);
+  transition: var(--transition-background), var(--transition-color), var(--transition-border);
 }
 
 .modeTabButtonActive {
@@ -129,12 +129,12 @@
   width: 100%;
   min-height: 44px;
   padding: var(--spacing-2_5) var(--spacing-3);
-  border: var(--border-width-thin) solid var(--color-border-primary);
+  border: var(--border-width-1) solid var(--color-border-default);
   border-radius: var(--border-radius-md);
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
   font-size: var(--font-size-base);
-  transition: var(--transition-colors);
+  transition: var(--transition-border), var(--transition-background), var(--transition-color);
 }
 
 .input:focus-visible,
@@ -148,9 +148,9 @@
   padding: var(--spacing-3) var(--spacing-4);
   margin-bottom: var(--spacing-4);
   border-radius: var(--border-radius-md);
-  background-color: var(--color-error-bg);
-  color: var(--color-error-dark);
-  border: var(--border-width-thin) solid var(--color-error-border);
+  background-color: var(--color-error-50);
+  color: var(--color-error-800);
+  border: var(--border-width-1) solid var(--color-error-200);
   font-size: var(--font-size-sm);
 }
 
@@ -158,9 +158,9 @@
   padding: var(--spacing-3) var(--spacing-4);
   margin-bottom: var(--spacing-4);
   border-radius: var(--border-radius-md);
-  background-color: var(--color-info-bg);
-  color: var(--color-info-dark);
-  border: var(--border-width-thin) solid var(--color-info-border);
+  background-color: var(--color-info-50);
+  color: var(--color-info-800);
+  border: var(--border-width-1) solid var(--color-info-200);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-relaxed);
 }
@@ -169,9 +169,9 @@
   padding: var(--spacing-3) var(--spacing-4);
   margin-bottom: var(--spacing-4);
   border-radius: var(--border-radius-md);
-  background-color: var(--color-success-bg);
-  color: var(--color-success-dark);
-  border: var(--border-width-thin) solid var(--color-success-border);
+  background-color: var(--color-success-50);
+  color: var(--color-success-800);
+  border: var(--border-width-1) solid var(--color-success-200);
   font-size: var(--font-size-sm);
 }
 
@@ -179,9 +179,9 @@
   padding: var(--spacing-3) var(--spacing-4);
   margin-bottom: var(--spacing-4);
   border-radius: var(--border-radius-md);
-  background-color: var(--color-warning-bg);
-  color: var(--color-warning-dark);
-  border: var(--border-width-thin) solid var(--color-warning-border);
+  background-color: var(--color-warning-50);
+  color: var(--color-warning-800);
+  border: var(--border-width-1) solid var(--color-warning-200);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-relaxed);
 }
@@ -200,7 +200,7 @@
   content: '';
   flex: 1;
   height: 1px;
-  background-color: var(--color-border-primary);
+  background-color: var(--color-border-light);
 }
 
 .googleSection {
@@ -271,7 +271,7 @@
 
 .sectionCard {
   background-color: var(--color-bg-primary);
-  border: var(--border-width-thin) solid var(--color-border-primary);
+  border: var(--border-width-1) solid var(--color-border-light);
   border-radius: var(--border-radius-xl);
   padding: var(--spacing-6);
   margin-bottom: var(--spacing-6);
@@ -286,7 +286,7 @@
 }
 
 .orderCard {
-  border: var(--border-width-thin) solid var(--color-border-primary);
+  border: var(--border-width-1) solid var(--color-border-light);
   border-radius: var(--border-radius-lg);
   padding: var(--spacing-5);
   margin-bottom: var(--spacing-4);
@@ -301,7 +301,7 @@
   flex-wrap: wrap;
   margin-bottom: var(--spacing-3);
   padding-bottom: var(--spacing-3);
-  border-bottom: var(--border-width-thin) solid var(--color-border-primary);
+  border-bottom: var(--border-width-1) solid var(--color-border-light);
 }
 
 .badgeGroup {
@@ -321,30 +321,30 @@
 
 .badgeSuccess {
   composes: statusBadge;
-  background-color: var(--color-success-bg);
-  color: var(--color-success-dark);
-  border: var(--border-width-thin) solid var(--color-success-border);
+  background-color: var(--color-success-50);
+  color: var(--color-success-800);
+  border: var(--border-width-1) solid var(--color-success-200);
 }
 
 .badgeWarning {
   composes: statusBadge;
-  background-color: var(--color-warning-bg);
-  color: var(--color-warning-dark);
-  border: var(--border-width-thin) solid var(--color-warning-border);
+  background-color: var(--color-warning-50);
+  color: var(--color-warning-800);
+  border: var(--border-width-1) solid var(--color-warning-200);
 }
 
 .badgeError {
   composes: statusBadge;
-  background-color: var(--color-error-bg);
-  color: var(--color-error-dark);
-  border: var(--border-width-thin) solid var(--color-error-border);
+  background-color: var(--color-error-50);
+  color: var(--color-error-800);
+  border: var(--border-width-1) solid var(--color-error-200);
 }
 
 .badgeInfo {
   composes: statusBadge;
-  background-color: var(--color-info-bg);
-  color: var(--color-info-dark);
-  border: var(--border-width-thin) solid var(--color-info-border);
+  background-color: var(--color-info-50);
+  color: var(--color-info-800);
+  border: var(--border-width-1) solid var(--color-info-200);
 }
 
 .orderDetailsGrid {
@@ -375,14 +375,14 @@
   align-items: center;
   gap: var(--spacing-2);
   padding: var(--spacing-3);
-  border: var(--border-width-thin) solid var(--color-border-primary);
+  border: var(--border-width-1) solid var(--color-border-default);
   border-radius: var(--border-radius-md);
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: var(--transition-colors);
+  transition: var(--transition-background), var(--transition-color), var(--transition-border);
 }
 
 .paymentMethodOptionActive {
@@ -413,7 +413,7 @@
   align-items: center;
   margin-top: var(--spacing-4);
   padding-top: var(--spacing-4);
-  border-top: var(--border-width-thin) solid var(--color-border-primary);
+  border-top: var(--border-width-1) solid var(--color-border-light);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
@@ -424,7 +424,7 @@
   padding: var(--spacing-4);
   border-radius: var(--border-radius-md);
   background-color: var(--color-bg-primary);
-  border: var(--border-width-thin) solid var(--color-border-primary);
+  border: var(--border-width-1) solid var(--color-border-light);
 }
 
 .codeBox {
@@ -433,7 +433,7 @@
   font-family: var(--font-family-mono);
   font-size: var(--font-size-xs);
   background-color: var(--color-bg-tertiary);
-  border: var(--border-width-thin) solid var(--color-border-primary);
+  border: var(--border-width-1) solid var(--color-border-light);
   border-radius: var(--border-radius-sm);
   word-break: break-all;
   margin-bottom: var(--spacing-3);
@@ -444,7 +444,7 @@
   width: 200px;
   height: 200px;
   margin: 0 auto var(--spacing-4);
-  border: var(--border-width-thin) solid var(--color-border-primary);
+  border: var(--border-width-1) solid var(--color-border-light);
   border-radius: var(--border-radius-md);
   background-color: var(--color-bg-primary);
   padding: var(--spacing-2);
@@ -498,5 +498,15 @@
 
   .formGroupFull {
     grid-column: span 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .narrowCard {
+    padding: var(--spacing-6);
+  }
+
+  .sectionCard {
+    padding: var(--spacing-5);
   }
 }

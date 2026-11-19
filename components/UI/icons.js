@@ -153,6 +153,16 @@ const ICON_PATHS = {
   close: (
     <path d="M18 6 6 18M6 6l12 12" />
   ),
+  chevronLeft: (
+    <polyline points="15 18 9 12 15 6" />
+  ),
+  logout: (
+    <>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </>
+  ),
   checkCircle: (
     <>
       <circle cx="12" cy="12" r="10" />
