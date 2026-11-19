@@ -478,6 +478,7 @@ describe('Integração Mercado Pago — lib/payment/mercadopago.js', () => {
 
     it('deve aceitar assinatura vazia em ambiente de dev quando secret não estiver configurado', () => {
       process.env.NODE_ENV = 'test';
+      delete process.env.MP_WEBHOOK_SECRET;
       expect(
         verifyMercadoPagoWebhookSignature({
           signatureHeader: '',
@@ -488,6 +489,7 @@ describe('Integração Mercado Pago — lib/payment/mercadopago.js', () => {
 
     it('deve rejeitar em produção se secret não estiver configurado', () => {
       process.env.NODE_ENV = 'production';
+      delete process.env.MP_WEBHOOK_SECRET;
       expect(
         verifyMercadoPagoWebhookSignature({
           signatureHeader: 'ts=1,v1=abc',

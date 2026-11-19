@@ -33,9 +33,13 @@ describe('Infra - Redis (lib/infra/redis.js)', () => {
   });
 
   afterAll(() => {
-    process.env.UPSTASH_REDIS_REST_URL = savedEnv.UPSTASH_REDIS_REST_URL;
-    process.env.UPSTASH_REDIS_REST_TOKEN = savedEnv.UPSTASH_REDIS_REST_TOKEN;
-    process.env.REDIS_URL = savedEnv.REDIS_URL;
+    for (const key of ['UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN', 'REDIS_URL']) {
+      if (savedEnv[key] === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = savedEnv[key];
+      }
+    }
   });
 
   beforeEach(() => {
@@ -110,5 +114,50 @@ describe('Infra - Redis (lib/infra/redis.js)', () => {
 
     const redis = await loadFreshRedis();
     expect(redis.getRedisInstance()).toBeNull();
+  });
+
+  it('clearRedisMemoryCache deve limpar chave exata, padrão com wildcard e limpeza total', async () => {
+    const redis = await loadFreshRedis();
+
+    await redis.redisSet('dicas:1', 'v1');
+    await redis.redisSet('dicas:2', 'v2');
+    await redis.redisSet('posts:1', 'p1');
+
+    redis.clearRedisMemoryCache('dicas:1');
+    await expect(redis.redisGet('dicas:1')).resolves.toBeNull();
+    await expect(redis.redisGet('dicas:2')).resolves.toBe('v2');
+
+    redis.clearRedisMemoryCache('dicas:*');
+    await expect(redis.redisGet('dicas:2')).resolves.toBeNull();
+    await expect(redis.redisGet('posts:1')).resolves.toBe('p1');
+
+    redis.clearRedisMemoryCache();
+    await expect(redis.redisGet('posts:1')).resolves.toBeNull();
+  });
+
+  it('closeRedis não deve inicializar cliente quando inativo e deve lidar com ausência ou presença de quit()', async () => {
+    // Caso 1: sem inicialização prévia, closeRedis não cria instância mesmo com variáveis definidas
+    process.env.UPSTASH_REDIS_REST_URL = 'https://upstash.example.com';
+    process.env.UPSTASH_REDIS_REST_TOKEN = 'tokenteste123';
+    const { Redis } = await import('@upstash/redis');
+
+    let redis = await loadFreshRedis();
+    await redis.closeRedis();
+    expect(mockRedisCtor).not.toHaveBeenCalled();
+
+    // Caso 2: cliente REST real (@upstash/redis sem .quit())
+    const restMockInstance = { get: jest.fn(), set: jest.fn() };
+    Redis.mockImplementationOnce(() => restMockInstance);
+    redis = await loadFreshRedis();
+    expect(redis.getRedisInstance()).toBe(restMockInstance);
+    await expect(redis.closeRedis()).resolves.toBeUndefined();
+
+    // Caso 3: cliente com .quit() (ex.: mock ou cliente compatível) tem quit() chamado
+    const quitMock = jest.fn(async () => {});
+    const tcpMockInstance = { quit: quitMock };
+    Redis.mockImplementationOnce(() => tcpMockInstance);
+    expect(redis.getRedisInstance()).toBe(tcpMockInstance);
+    await redis.closeRedis();
+    expect(quitMock).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,4 +1,4 @@
-import { getRedisInstance } from './lib/infra/redis.js';
+import { closeRedis } from './lib/infra/redis.js';
 import { closeDatabase } from './lib/infra/db.js';
 import { cleanupRateLimitTimer } from './lib/cache/cache.js';
 import { setupAsyncPolyfills } from './tests/helpers/async-polyfills.js';
@@ -12,19 +12,28 @@ export default async function globalTeardown() {
     // Limpar timer de cleanup periódico do cache em memória
     cleanupRateLimitTimer();
 
-    // Fechar conexão do Redis (se houver instância ativa)
-    const redisInstance = getRedisInstance();
-    if (redisInstance) {
-      await redisInstance.quit();
+    // Fechar conexão do Redis (se houver instância ativa) e limpar fallback em memória
+    try {
+      await closeRedis();
+    } catch (error) {
+      console.warn('⚠️ Aviso ao encerrar Redis durante limpeza global dos testes:', error.message);
     }
 
     // Fechar todas as conexões do pool PostgreSQL
-    await closeDatabase();
+    try {
+      await closeDatabase();
+    } catch (error) {
+      console.warn('⚠️ Aviso ao fechar banco durante limpeza global dos testes:', error.message);
+    }
 
     // Parar container do banco de testes, se existir
     if (global.__TEST_DB_CONTAINER__) {
-      await global.__TEST_DB_CONTAINER__.stop();
-      console.log('✅ Container PostgreSQL de teste finalizado.');
+      try {
+        await global.__TEST_DB_CONTAINER__.stop();
+        console.log('✅ Container PostgreSQL de teste finalizado.');
+      } catch (error) {
+        console.warn('⚠️ Aviso ao parar container PostgreSQL de teste:', error.message);
+      }
     }
 
     // Aguardar finalização de eventuais callbacks assíncronos residuais

@@ -21,6 +21,8 @@ export default {
 
   moduleFileExtensions: ['js', 'jsx', 'json', 'node'],
 
+  setupFiles: ['<rootDir>/tests/setup-env.js'],
+
   clearMocks: true,
   restoreMocks: true,
   verbose: true,

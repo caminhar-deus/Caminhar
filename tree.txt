@@ -403,6 +403,7 @@
 │   │   │   ├── auth
 │   │   │   │   ├── auth.js.html
 │   │   │   │   ├── customer-auth.js.html
+│   │   │   │   ├── google-id-token.js.html
 │   │   │   │   ├── index.html
 │   │   │   │   └── password-policy.js.html
 │   │   │   ├── cache
@@ -520,6 +521,7 @@
 │   │   ├── auth
 │   │   │   ├── auth.js.html
 │   │   │   ├── customer-auth.js.html
+│   │   │   ├── google-id-token.js.html
 │   │   │   ├── index.html
 │   │   │   └── password-policy.js.html
 │   │   ├── cache
@@ -728,6 +730,7 @@
 │   │   └── template.md
 │   ├── ai-memory-error.md
 │   ├── melhoria_agente.md
+│   ├── melhoria_google.md
 │   ├── melhoria_mercadopago.md
 │   └── retorno_da_semana.md
 ├── eslint.config.js
@@ -1301,6 +1304,7 @@
 │   │   ├── next-setup.js
 │   │   ├── next.js
 │   │   └── next.test.js
+│   ├── setup-env.js
 │   ├── setup.db.js
 │   ├── setup.js
 │   └── unit
@@ -1540,4 +1544,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-219 directories, 1322 files
+219 directories, 1326 files

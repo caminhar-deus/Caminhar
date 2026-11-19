@@ -1,5 +1,5 @@
 {
   "css.lint.unknownProperties": "ignore",
   "python.analysis.typeCheckingMode": "strict",
-  "python.terminal.useEnvFile": true
+  "python.terminal.useEnvFile": false
 }

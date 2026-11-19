@@ -12,6 +12,7 @@ jest.mock('../../../lib/infra/redis.js', () => {
   const mockRedisIncr = jest.fn();
   const mockRedisExpire = jest.fn();
   const mockRedisFlushdb = jest.fn();
+  const mockClearRedisMemoryCache = jest.fn();
   const mockCheckRedisHealth = jest.fn();
   const mockGetRedisInstance = jest.fn();
 
@@ -24,6 +25,7 @@ jest.mock('../../../lib/infra/redis.js', () => {
     _mockRedisIncr: mockRedisIncr,
     _mockRedisExpire: mockRedisExpire,
     _mockRedisFlushdb: mockRedisFlushdb,
+    _mockClearRedisMemoryCache: mockClearRedisMemoryCache,
     _mockCheckRedisHealth: mockCheckRedisHealth,
     _mockGetRedisInstance: mockGetRedisInstance,
     get redis() { return mockGetRedisInstance() ? {} : null; },
@@ -35,6 +37,7 @@ jest.mock('../../../lib/infra/redis.js', () => {
     redisIncr: mockRedisIncr,
     redisExpire: mockRedisExpire,
     redisFlushdb: mockRedisFlushdb,
+    clearRedisMemoryCache: mockClearRedisMemoryCache,
     checkRedisHealth: mockCheckRedisHealth,
   };
 });
@@ -51,13 +54,14 @@ jest.mock('../../../lib/infra/logger.js', () => ({
 
 // Referências para os mocks serão obtidas via require manual
 let mockRedisGet, mockRedisSet, mockRedisDel, mockRedisScan;
-let mockRedisIncr, mockRedisExpire, mockRedisFlushdb, mockGetRedisInstance;
+let mockRedisIncr, mockRedisExpire, mockRedisFlushdb, mockClearRedisMemoryCache, mockGetRedisInstance;
 
 import { jest as jestObj } from '@jest/globals';
 import {
   getOrSetCache,
   invalidateCache,
   clearAllCache,
+  clearAppMemoryCache,
   checkRateLimit,
   getCacheMetrics,
   cleanupRateLimitTimer,
@@ -73,6 +77,7 @@ describe('Library - Cache & Rate Limit', () => {
     mockRedisIncr = redisMock._mockRedisIncr;
     mockRedisExpire = redisMock._mockRedisExpire;
     mockRedisFlushdb = redisMock._mockRedisFlushdb;
+    mockClearRedisMemoryCache = redisMock._mockClearRedisMemoryCache;
     mockGetRedisInstance = redisMock._mockGetRedisInstance;
   });
 
@@ -238,7 +243,28 @@ describe('Library - Cache & Rate Limit', () => {
 
       await invalidateCache('key');
 
+      expect(mockClearRedisMemoryCache).toHaveBeenCalledWith('key');
       expect(mockRedisDel).not.toHaveBeenCalled();
+    });
+
+    it('limpa o fallback em memória com wildcard mesmo quando SCAN retorna vazio e aceita cursor numérico 0', async () => {
+      mockRedisScan.mockResolvedValueOnce([0, []]);
+
+      await invalidateCache('dicas:public:*');
+
+      expect(mockClearRedisMemoryCache).toHaveBeenCalledWith('dicas:public:*');
+      expect(mockRedisScan).toHaveBeenCalledTimes(1);
+      expect(mockRedisDel).not.toHaveBeenCalled();
+    });
+  });
+
+  // ─── clearAppMemoryCache ─────────────────────────────────────────
+
+  describe('clearAppMemoryCache', () => {
+    it('limpa tanto o cache em memória da aplicação quanto o fallback do Redis', () => {
+      clearAppMemoryCache();
+      expect(mockClearRedisMemoryCache).toHaveBeenCalledTimes(1);
+      expect(mockClearRedisMemoryCache).toHaveBeenCalledWith();
     });
   });
 
@@ -385,7 +411,11 @@ describe('Library - Cache & Rate Limit', () => {
       expect(limited).toBe(false);
       expect(mockRedisIncr).not.toHaveBeenCalled();
 
-      process.env.DISABLE_RATE_LIMIT = originalVal;
+      if (originalVal === undefined) {
+        delete process.env.DISABLE_RATE_LIMIT;
+      } else {
+        process.env.DISABLE_RATE_LIMIT = originalVal;
+      }
     });
 
     it('lazy eviction funciona sem crash quando entrada expira', async () => {

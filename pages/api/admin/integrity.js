@@ -11,8 +11,6 @@ import { uploadsRoot, legacyUploadsRoot } from '../../../lib/infra/storage.js';
  * GET /api/admin/integrity — Retorna diagnóstico completo do sistema
  */
 
-const REDIS_AVAILABLE = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
-
 async function handleGet(req, res) {
   const checks = {
     database: { status: 'unknown', label: 'Banco de Dados', details: {} },
@@ -55,7 +53,8 @@ async function handleGet(req, res) {
   }
 
   // ── 2. Verificação do Redis/Cache ─────────────────────────────
-  if (REDIS_AVAILABLE) {
+  const redisAvailable = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
+  if (redisAvailable) {
     try {
       const { Redis } = await import('@upstash/redis');
       const redis = new Redis({
