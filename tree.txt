@@ -723,6 +723,7 @@
 │   │   ├── 0039-mercadopago-checkout-tokenizacao-e-alinhamento-de-schema.md
 │   │   ├── 0040-integracao-mercadopago-orders-api.md
 │   │   ├── 0041-active-payment-reconciliation-and-webhook-fallback.md
+│   │   ├── 0042-google-id-token-local-jwks-verification.md
 │   │   ├── README.md
 │   │   └── template.md
 │   ├── ai-memory-error.md
@@ -765,6 +766,7 @@
 │   ├── auth
 │   │   ├── auth.js
 │   │   ├── customer-auth.js
+│   │   ├── google-id-token.js
 │   │   └── password-policy.js
 │   ├── cache
 │   │   └── cache.js
@@ -1413,7 +1415,8 @@
 │       │   │   ├── helpers.ip.test.js
 │       │   │   └── permissions.test.js
 │       │   ├── auth
-│       │   │   └── customer-auth.test.js
+│       │   │   ├── customer-auth.test.js
+│       │   │   └── google-id-token.test.js
 │       │   ├── auth.test.js
 │       │   ├── backup
 │       │   │   ├── backup.available.test.js
@@ -1537,4 +1540,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-219 directories, 1319 files
+219 directories, 1322 files

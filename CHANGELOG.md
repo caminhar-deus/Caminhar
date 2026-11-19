@@ -40,6 +40,11 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Alterado
 
+- **Validação local de ID tokens do Google via JWKS (`RS256`) sem novas dependências (19/11/2026, ADR-0042):**
+  - `lib/auth/google-id-token.js`: novo verificador criptográfico local usando `node:crypto.createPublicKey` + `jsonwebtoken` (`RS256` fixo) sobre `https://www.googleapis.com/oauth2/v3/certs`, com cache em memória respeitando `Cache-Control: max-age` (`[5 min, 24 h]`, ignorando `s-maxage`, clamp de `max-age=0` em `5 min` e fallback `1 h`, expiração *lazy* sem `setInterval`), *single-flight* em concorrência, atualização sob rotação de `kid` protegida por cooldown de `60 s` (preservado após falha upstream e sem fetch duplo em cache frio/TTL expirado), normalização de erros de decode como `INVALID_GOOGLE_TOKEN`, aviso sem vazamento quando `GOOGLE_CLIENT_ID` e `NEXT_PUBLIC_GOOGLE_CLIENT_ID` diferem e validação fail-closed (`aud` escalar estrito ou `azp` correspondente, `iss`, `exp`, `email_verified`, `sub`, `email`, `name` estritamente string).
+  - `pages/api/customer/auth.js`: migrou `verifyGoogleCredential` de `oauth2.googleapis.com/tokeninfo` para `verifyGoogleIdToken`, preservando o atalho de dev apenas fora de produção, mapeando falhas de upstream (`GOOGLE_UPSTREAM_UNAVAILABLE`) para HTTP `503` e isolando erros de persistência no banco (`upsertGoogleCustomer`) como HTTP `500`. Fluxo completo de login/logout/reentrada validado ao vivo em `http://localhost:3000` (`npm run dev`).
+  - Testes e documentação: criada suíte unitária com chaves RSA-2048 dinâmicas (`tests/unit/lib/auth/google-id-token.test.js`), atualizada a integração de `/api/customer/auth` (`tests/integration/api/customer/auth.test.js`) para tokens `RS256` e endpoint JWKS mockado, e registrados os detalhes em `docs/adr/0042-google-id-token-local-jwks-verification.md`, `docs/ARQUITETURA_SITE_PUBLICO.md`, `docs/PROJECT_lib.md` e `docs/PROJECT_raiz.md`.
+
 - **Bump de dependências com jsdom 31 e ajuste do teste do LazyIframe (18/11/2026, commit `8b5da20`).**
   `jsdom` subiu de `^30.1.3` para `^31.0.1` na dependência direta e no `overrides` (que segue
   deduplicando a cópia aninhada do `jest-environment-jsdom`), junto com o pacote de manutenção:

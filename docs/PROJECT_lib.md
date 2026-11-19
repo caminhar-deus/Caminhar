@@ -14,6 +14,7 @@
    - [1.3 `lib/api/utils.js`](#13-libapiutilsjs)
 2. [Subpasta `lib/auth/`](#2-subpasta-libauth)
    - [2.1 `lib/auth/auth.js`](#21-libauthauthjs)
+   - [2.2 `lib/auth/google-id-token.js`](#22-libauthgoogle-id-tokenjs)
 3. [Subpasta `lib/cache/`](#3-subpasta-libcache)
    - [3.1 `lib/cache/cache.js`](#31-libcachecachejs)
 4. [Subpasta `lib/crud/`](#4-subpasta-libcrud)
@@ -175,6 +176,25 @@ Camada de API: factory de handlers administrativos, helpers de IP e utilitários
 - Os parâmetros `ADMIN_USERNAME` e `ADMIN_PASSWORD` são obrigatórios para a inicialização.
 - O `withAuth` deste módulo retorna `{ message }` simples, divergente do formato padronizado da API (ver UPGRADE 1.10).
 - `authenticateAndGenerateToken` não aplica mais rate limit internamente — o limite de login (5 tentativas/min, chave `api:auth:login`) passou a ser contado em ponto único no middleware `proxy.js` (antes cada tentativa era contada duas vezes, na função e no proxy).
+
+### 2.2 `lib/auth/google-id-token.js`
+
+**Localização:** `/lib/auth/google-id-token.js`
+
+**Propósito:** Verificação criptográfica local de ID tokens (`RS256`) emitidos pelo Sign in with Google via endpoint JWKS (`https://www.googleapis.com/oauth2/v3/certs`), eliminando round-trip síncrono a `oauth2.googleapis.com/tokeninfo` por login e sem novas dependências npm (`ADR-0042`).
+
+**Funções exportadas:**
+
+| Função | Descrição |
+|--------|-----------|
+| `createGoogleIdTokenVerifier(options)` | Factory que instancia verificador isolado (aceita `forcedRefreshCooldownMs`, `fetchFn`, `now` para testes) retornando `{ verify }` |
+| `verifyGoogleIdToken(credential)` | Função principal consumida por `pages/api/customer/auth.js` usando instância singleton de módulo; retorna `{ googleSub, email, name }` |
+
+**Mecanismos e invariantes (`ADR-0042`):**
+- **Criptografia:** usa `node:crypto.createPublicKey({ key: jwk, format: 'jwk' })` + `jsonwebtoken.verify` travado em `algorithms: ['RS256']`, rejeitando `alg=none`, `HS256` e tokens malformados (erro de `jwt.decode` normalizado para `INVALID_GOOGLE_TOKEN`).
+- **Cache JWKS:** em memória por processo, respeita `Cache-Control: max-age` (ignorando `s-maxage`) dentro do intervalo `[5 min, 24 h]` (`clamp` de `max-age=0` para `5 min`; fallback `1 h`), com expiração *lazy* (sem `setInterval` para não prender workers Jest).
+- **Single-flight e rotação de `kid`:** requisições simultâneas compartilham `inflightFetch`; quando surge `kid` ausente no cache válido, dispara no máximo 1 atualização forçada respeitando cooldown de `60 s` (preservado mesmo após falha upstream) e evitando refetch duplo após busca recente.
+- **Validação fail-closed e códigos de erro:** exige `GOOGLE_CLIENT_ID` (ou fallback `NEXT_PUBLIC_GOOGLE_CLIENT_ID` com aviso via `logger.warn` sem expor valores quando divergirem) antes de consultar o JWKS; valida `aud` escalar estrito (ou `azp` correspondente quando array), `iss` (`https://accounts.google.com` ou `accounts.google.com`), `exp` finito e não expirado, `email_verified` (`true`/`'true'`) e tipos estritamente `string` em `kid`, `sub`, `email` e `name`. Falhas de rede/timeout/HTTP/JSON/JWKS lançam `GOOGLE_UPSTREAM_UNAVAILABLE` (HTTP `503` em `pages/api/customer/auth.js`).
 
 ---
 
@@ -611,6 +631,7 @@ Utilitários de extração de IDs de plataformas de mídia.
 | **API — Helpers** | `api/helpers.js` | Extração de IP e detecção de spoofing |
 | **API — Utilitários** | `api/utils.js` | Parse de imagens |
 | **Autenticação** | `auth/auth.js` | JWT, bcrypt, cookies, refresh tokens, login com rate limit |
+| **Autenticação** | `auth/google-id-token.js` | Verificação local `RS256` de ID tokens do Google via JWKS com cache, single-flight e cooldown (ADR-0042) |
 | **Cache** | `cache/cache.js` | Cache multi-nível (memória + Redis) + rate limit |
 | **CRUD Genérico** | `crud/crud.js` | Operações SQL genéricas parametrizadas com validação de schema |
 | **Domínio** | `domain/audit.js` | Log de auditoria |
@@ -639,6 +660,7 @@ pages/api/ → lib/domain/*.js → lib/crud/crud.js, lib/infra/db.js, lib/domain
 lib/domain/*.js → lib/crud/crud.js → lib/infra/db.js
 lib/api/*.js → lib/infra/logger.js, lib/infra/db.js, lib/auth/auth.js, lib/cache/cache.js
 pages/api/{uploads/[...path],upload-image,placeholder-image,admin/integrity}.js → lib/infra/storage.js
+pages/api/customer/auth.js → lib/auth/google-id-token.js → lib/infra/logger.js
 lib/cache/cache.js → lib/infra/redis.js, lib/infra/logger.js
 ```
 

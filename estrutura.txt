@@ -244,6 +244,7 @@ lib/api/permissions.js → lib/domain/permissions.js
 lib/api/permissions.js → lib/infra/db.js
 lib/api/permissions.js → lib/infra/logger.js
 lib/auth/customer-auth.js → lib/infra/logger.js
+lib/auth/google-id-token.js → lib/infra/logger.js
 lib/crud/crud.js → lib/infra/db.js
 lib/crud/crud.js → lib/infra/logger.js
 lib/domain/categories.js → lib/crud/crud.js
@@ -398,6 +399,7 @@ pages/api/cleanup-test-data.js → lib/infra/db.js
 pages/api/cleanup-test-data.js → lib/infra/logger.js
 pages/api/customer/auth.js → lib/api/helpers.js
 pages/api/customer/auth.js → lib/auth/customer-auth.js
+pages/api/customer/auth.js → lib/auth/google-id-token.js
 pages/api/customer/auth.js → lib/cache/cache.js
 pages/api/customer/auth.js → lib/domain/customers.js
 pages/api/customer/auth.js → lib/infra/logger.js
@@ -909,6 +911,8 @@ tests/unit/lib/auth.test.js → tests/helpers/console.js
 tests/unit/lib/auth.test.js → tests/mocks/db-module.js
 tests/unit/lib/auth/customer-auth.test.js → lib/auth/auth.js
 tests/unit/lib/auth/customer-auth.test.js → lib/auth/customer-auth.js
+tests/unit/lib/auth/google-id-token.test.js → lib/auth/google-id-token.js
+tests/unit/lib/auth/google-id-token.test.js → lib/infra/logger.js
 tests/unit/lib/cache.test.js → lib/cache/cache.js
 tests/unit/lib/crud.test.js → lib/crud/crud.js
 tests/unit/lib/crud.test.js → lib/infra/db.js

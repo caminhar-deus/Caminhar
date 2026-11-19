@@ -1,4 +1,6 @@
-import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { generateKeyPairSync } from 'node:crypto';
+import jwt from 'jsonwebtoken';
+import { jest, describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals';
 import { createMocks } from 'node-mocks-http';
 
 jest.mock('../../../../lib/cache/cache.js', () => ({
@@ -37,6 +39,8 @@ import {
 
 describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)', () => {
   const originalFetch = global.fetch;
+  const originalGoogleClientId = process.env.GOOGLE_CLIENT_ID;
+  const originalPublicGoogleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -48,6 +52,19 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
     global.fetch = originalFetch;
     delete process.env.GOOGLE_CLIENT_ID;
     delete process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  });
+
+  afterAll(() => {
+    if (originalGoogleClientId === undefined) {
+      delete process.env.GOOGLE_CLIENT_ID;
+    } else {
+      process.env.GOOGLE_CLIENT_ID = originalGoogleClientId;
+    }
+    if (originalPublicGoogleClientId === undefined) {
+      delete process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    } else {
+      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID = originalPublicGoogleClientId;
+    }
   });
 
   describe('GET - Perfil autenticado', () => {
@@ -202,46 +219,99 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
     });
   });
 
-  describe('POST - action=google com id_token (verifyGoogleCredential)', () => {
-    const futureExp = String(Math.floor(Date.now() / 1000) + 3600);
+  describe('POST - action=google com id_token RS256 (JWKS local)', () => {
+    const KID = 'auth-int-key-1';
+    let rsaKeyPair;
+    let rsaPublicJwk;
+    let otherKeyPair;
+    let fakeNowMs = 1_700_000_000_000;
+    let dateNowSpy;
 
-    const buildTokenInfo = (overrides = {}) => ({
-      aud: 'client-prod.apps.googleusercontent.com',
-      iss: 'https://accounts.google.com',
-      email_verified: 'true',
-      sub: 'google-sub-default',
-      email: 'user@gmail.com',
-      exp: futureExp,
-      ...overrides,
+    beforeAll(() => {
+      rsaKeyPair = generateKeyPairSync('rsa', { modulusLength: 2048 });
+      otherKeyPair = generateKeyPairSync('rsa', { modulusLength: 2048 });
+      rsaPublicJwk = {
+        ...rsaKeyPair.publicKey.export({ format: 'jwk' }),
+        kid: KID,
+        use: 'sig',
+        alg: 'RS256',
+      };
     });
 
-    it('deve validar id_token no tokeninfo usando GOOGLE_CLIENT_ID, criar sessão e retornar 200', async () => {
-      process.env.GOOGLE_CLIENT_ID = 'client-prod.apps.googleusercontent.com';
-      global.fetch = jest.fn().mockResolvedValueOnce({
+    const mockJwksFetch = (jwks = [rsaPublicJwk], cacheControl = 'public, max-age=3600') =>
+      jest.fn().mockResolvedValue({
         ok: true,
-        json: async () =>
-          buildTokenInfo({
-            sub: 'google-sub-001',
-            email: 'Maria.Silva@gmail.com',
-            name: 'Maria Silva',
-          }),
+        status: 200,
+        headers: {
+          get: (name) => (String(name).toLowerCase() === 'cache-control' ? cacheControl : null),
+        },
+        json: async () => ({ keys: jwks }),
       });
+
+    const signGoogleToken = (
+      payloadOverrides = {},
+      { privateKey = rsaKeyPair.privateKey, kid = KID, includeExp = true } = {}
+    ) => {
+      const nowSec = Math.floor(fakeNowMs / 1000);
+      const payload = {
+        aud: 'client-prod.apps.googleusercontent.com',
+        iss: 'https://accounts.google.com',
+        email_verified: 'true',
+        sub: 'google-sub-default',
+        email: 'user@gmail.com',
+        iat: nowSec,
+        ...(includeExp ? { exp: nowSec + 3600 } : {}),
+        ...payloadOverrides,
+      };
+      Object.keys(payload).forEach((key) => {
+        if (payload[key] === undefined) {
+          delete payload[key];
+        }
+      });
+      return jwt.sign(payload, privateKey, {
+        algorithm: 'RS256',
+        keyid: kid,
+        noTimestamp: true,
+      });
+    };
+
+    beforeEach(() => {
+      fakeNowMs += 25 * 60 * 60 * 1000;
+      dateNowSpy = jest.spyOn(Date, 'now').mockImplementation(() => fakeNowMs);
+      global.fetch = mockJwksFetch();
+    });
+
+    afterEach(() => {
+      dateNowSpy?.mockRestore();
+    });
+
+    it('deve validar id_token RS256 via JWKS usando GOOGLE_CLIENT_ID, criar sessão e retornar 200', async () => {
+      process.env.GOOGLE_CLIENT_ID = 'client-prod.apps.googleusercontent.com';
+      const jwksFetch = mockJwksFetch();
+      global.fetch = jwksFetch;
+
       upsertGoogleCustomer.mockResolvedValueOnce({
         id: 31,
         name: 'Maria Silva',
         email: 'maria.silva@gmail.com',
       });
 
+      const credential = signGoogleToken({
+        sub: 'google-sub-001',
+        email: 'Maria.Silva@gmail.com',
+        name: 'Maria Silva',
+      });
+
       const { req, res } = createMocks({
         method: 'POST',
-        body: { action: 'google', credential: 'valid.google.jwt' },
+        body: { action: 'google', credential },
       });
 
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(200);
-      expect(global.fetch).toHaveBeenCalledWith(
-        'https://oauth2.googleapis.com/tokeninfo?id_token=valid.google.jwt',
+      expect(jwksFetch).toHaveBeenCalledWith(
+        'https://www.googleapis.com/oauth2/v3/certs',
         expect.any(Object)
       );
       expect(upsertGoogleCustomer).toHaveBeenCalledWith({
@@ -254,26 +324,23 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
 
     it('deve aceitar fallback para NEXT_PUBLIC_GOOGLE_CLIENT_ID quando GOOGLE_CLIENT_ID estiver ausente', async () => {
       process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID = 'client-public.apps.googleusercontent.com';
-      global.fetch = jest.fn().mockResolvedValueOnce({
-        ok: true,
-        json: async () =>
-          buildTokenInfo({
-            aud: 'client-public.apps.googleusercontent.com',
-            iss: 'accounts.google.com',
-            email_verified: true,
-            sub: 'google-sub-002',
-            email: 'joao@gmail.com',
-          }),
-      });
       upsertGoogleCustomer.mockResolvedValueOnce({
         id: 32,
         name: 'joao',
         email: 'joao@gmail.com',
       });
 
+      const credential = signGoogleToken({
+        aud: 'client-public.apps.googleusercontent.com',
+        iss: 'accounts.google.com',
+        email_verified: true,
+        sub: 'google-sub-002',
+        email: 'joao@gmail.com',
+      });
+
       const { req, res } = createMocks({
         method: 'POST',
-        body: { action: 'google', credential: 'valid.fallback.jwt' },
+        body: { action: 'google', credential },
       });
 
       await handler(req, res);
@@ -295,24 +362,21 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
 
       const warnSpy = jest.spyOn(logger, 'warn').mockImplementation(() => {});
       try {
-        global.fetch = jest.fn().mockResolvedValueOnce({
-          ok: true,
-          json: async () =>
-            buildTokenInfo({
-              aud: serverClientId,
-              sub: 'google-sub-warn',
-              email: 'warn@gmail.com',
-            }),
-        });
         upsertGoogleCustomer.mockResolvedValueOnce({
           id: 33,
           name: 'warn',
           email: 'warn@gmail.com',
         });
 
+        const credential = signGoogleToken({
+          aud: serverClientId,
+          sub: 'google-sub-warn',
+          email: 'warn@gmail.com',
+        });
+
         const { req, res } = createMocks({
           method: 'POST',
-          body: { action: 'google', credential: 'valid.mismatch-env.jwt' },
+          body: { action: 'google', credential },
         });
 
         await handler(req, res);
@@ -331,23 +395,25 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
     });
 
     it('deve falhar fechado (401) sem chamar fetch quando nenhum Client ID está configurado', async () => {
-      global.fetch = jest.fn();
+      const noCallFetch = jest.fn();
+      global.fetch = noCallFetch;
 
       const { req, res } = createMocks({
         method: 'POST',
-        body: { action: 'google', credential: 'valid.google.jwt' },
+        body: { action: 'google', credential: signGoogleToken() },
       });
 
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(401);
-      expect(global.fetch).not.toHaveBeenCalled();
+      expect(noCallFetch).not.toHaveBeenCalled();
       expect(upsertGoogleCustomer).not.toHaveBeenCalled();
     });
 
     it('deve bloquear atalho de desenvolvimento (googleSub + email sem credential) em NODE_ENV=production', async () => {
       const originalEnv = process.env.NODE_ENV;
       process.env.NODE_ENV = 'production';
+      const warnSpy = jest.spyOn(logger, 'warn').mockImplementation(() => {});
       try {
         const { req, res } = createMocks({
           method: 'POST',
@@ -363,21 +429,26 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
 
         expect(res._getStatusCode()).toBe(401);
         expect(upsertGoogleCustomer).not.toHaveBeenCalled();
+        expect(warnSpy).toHaveBeenCalledWith(
+          'CustomerAuth',
+          'Falha na autenticação Google:',
+          'GOOGLE_NOT_CONFIGURED'
+        );
       } finally {
+        warnSpy.mockRestore();
         process.env.NODE_ENV = originalEnv;
       }
     });
 
     it('deve retornar 401 quando aud for divergente do Client ID esperado', async () => {
       process.env.GOOGLE_CLIENT_ID = 'client-prod.apps.googleusercontent.com';
-      global.fetch = jest.fn().mockResolvedValueOnce({
-        ok: true,
-        json: async () => buildTokenInfo({ aud: 'outro-client.apps.googleusercontent.com' }),
-      });
 
       const { req, res } = createMocks({
         method: 'POST',
-        body: { action: 'google', credential: 'wrong-aud.jwt' },
+        body: {
+          action: 'google',
+          credential: signGoogleToken({ aud: 'outro-client.apps.googleusercontent.com' }),
+        },
       });
 
       await handler(req, res);
@@ -388,14 +459,13 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
 
     it('deve retornar 401 quando iss for inválido', async () => {
       process.env.GOOGLE_CLIENT_ID = 'client-prod.apps.googleusercontent.com';
-      global.fetch = jest.fn().mockResolvedValueOnce({
-        ok: true,
-        json: async () => buildTokenInfo({ iss: 'https://evil.example.com' }),
-      });
 
       const { req, res } = createMocks({
         method: 'POST',
-        body: { action: 'google', credential: 'wrong-iss.jwt' },
+        body: {
+          action: 'google',
+          credential: signGoogleToken({ iss: 'https://evil.example.com' }),
+        },
       });
 
       await handler(req, res);
@@ -404,39 +474,69 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
       expect(upsertGoogleCustomer).not.toHaveBeenCalled();
     });
 
-    it('deve retornar 401 quando email_verified for falso ou ausente', async () => {
+    it('deve retornar 401 quando email_verified for falso', async () => {
       process.env.GOOGLE_CLIENT_ID = 'client-prod.apps.googleusercontent.com';
-      global.fetch = jest.fn().mockResolvedValueOnce({
-        ok: true,
-        json: async () => buildTokenInfo({ email_verified: 'false' }),
-      });
 
       const { req, res } = createMocks({
         method: 'POST',
-        body: { action: 'google', credential: 'unverified-email.jwt' },
+        body: {
+          action: 'google',
+          credential: signGoogleToken({ email_verified: 'false' }),
+        },
       });
 
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(401);
+      expect(upsertGoogleCustomer).not.toHaveBeenCalled();
+    });
+
+    it('deve retornar 401 para assinatura inválida ou algoritmo não-RS256 (HS256)', async () => {
+      process.env.GOOGLE_CLIENT_ID = 'client-prod.apps.googleusercontent.com';
+
+      const invalidSigToken = signGoogleToken({}, { privateKey: otherKeyPair.privateKey });
+      const { req: req1, res: res1 } = createMocks({
+        method: 'POST',
+        body: { action: 'google', credential: invalidSigToken },
+      });
+      await handler(req1, res1);
+      expect(res1._getStatusCode()).toBe(401);
+
+      const hs256Token = jwt.sign(
+        {
+          aud: 'client-prod.apps.googleusercontent.com',
+          iss: 'https://accounts.google.com',
+          email_verified: true,
+          sub: 'sub-hs',
+          email: 'hs@gmail.com',
+          exp: Math.floor(fakeNowMs / 1000) + 3600,
+        },
+        'hs-secret',
+        { algorithm: 'HS256', keyid: KID }
+      );
+      const { req: req2, res: res2 } = createMocks({
+        method: 'POST',
+        body: { action: 'google', credential: hs256Token },
+      });
+      await handler(req2, res2);
+      expect(res2._getStatusCode()).toBe(401);
       expect(upsertGoogleCustomer).not.toHaveBeenCalled();
     });
 
     it.each([
-      ['passado', String(Math.floor(Date.now() / 1000) - 60)],
-      ['ausente', undefined],
-      ['zero', '0'],
-      ['não numérico', 'not-a-number'],
-    ])('deve retornar 401 (fail-closed) quando exp for %s', async (_label, expValue) => {
+      ['passado', { exp: -60 }],
+      ['ausente', { includeExp: false }],
+    ])('deve retornar 401 (fail-closed) quando exp for %s', async (_label, opts) => {
       process.env.GOOGLE_CLIENT_ID = 'client-prod.apps.googleusercontent.com';
-      global.fetch = jest.fn().mockResolvedValueOnce({
-        ok: true,
-        json: async () => buildTokenInfo({ exp: expValue }),
-      });
+      const nowSec = Math.floor(fakeNowMs / 1000);
+      const credential =
+        opts.includeExp === false
+          ? signGoogleToken({}, { includeExp: false })
+          : signGoogleToken({ exp: nowSec + opts.exp });
 
       const { req, res } = createMocks({
         method: 'POST',
-        body: { action: 'google', credential: 'invalid-exp.jwt' },
+        body: { action: 'google', credential },
       });
 
       await handler(req, res);
@@ -448,16 +548,12 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
     it.each([
       ['sub ausente', { sub: '' }],
       ['email ausente', { email: '' }],
-    ])('deve retornar 401 quando %s no tokeninfo', async (_label, overrides) => {
+    ])('deve retornar 401 quando %s no payload do token', async (_label, overrides) => {
       process.env.GOOGLE_CLIENT_ID = 'client-prod.apps.googleusercontent.com';
-      global.fetch = jest.fn().mockResolvedValueOnce({
-        ok: true,
-        json: async () => buildTokenInfo(overrides),
-      });
 
       const { req, res } = createMocks({
         method: 'POST',
-        body: { action: 'google', credential: 'incomplete-profile.jwt' },
+        body: { action: 'google', credential: signGoogleToken(overrides) },
       });
 
       await handler(req, res);
@@ -466,43 +562,73 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
       expect(upsertGoogleCustomer).not.toHaveBeenCalled();
     });
 
-    it('deve retornar 401 quando /tokeninfo responder com status HTTP 400', async () => {
+    it.each([
+      ['TimeoutError', () => Object.assign(new Error('Timed out'), { name: 'TimeoutError' })],
+      ['AbortError', () => Object.assign(new Error('Aborted'), { name: 'AbortError' })],
+      ['TypeError (erro de rede)', () => new TypeError('fetch failed')],
+    ])('deve retornar 503 quando a consulta ao JWKS falhar com %s', async (_label, makeErr) => {
+      process.env.GOOGLE_CLIENT_ID = 'client-prod.apps.googleusercontent.com';
+      global.fetch = jest.fn().mockRejectedValueOnce(makeErr());
+
+      const { req, res } = createMocks({
+        method: 'POST',
+        body: { action: 'google', credential: signGoogleToken() },
+      });
+
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(503);
+      expect(upsertGoogleCustomer).not.toHaveBeenCalled();
+    });
+
+    it('deve retornar 503 quando o endpoint JWKS responder com HTTP 500', async () => {
       process.env.GOOGLE_CLIENT_ID = 'client-prod.apps.googleusercontent.com';
       global.fetch = jest.fn().mockResolvedValueOnce({
         ok: false,
-        status: 400,
+        status: 500,
       });
 
       const { req, res } = createMocks({
         method: 'POST',
-        body: { action: 'google', credential: 'invalid-tokeninfo.jwt' },
+        body: { action: 'google', credential: signGoogleToken() },
       });
 
       await handler(req, res);
 
-      expect(res._getStatusCode()).toBe(401);
+      expect(res._getStatusCode()).toBe(503);
       expect(upsertGoogleCustomer).not.toHaveBeenCalled();
     });
 
-    it.each(['TimeoutError', 'AbortError'])(
-      'deve retornar 503 quando a consulta ao /tokeninfo falhar com %s',
-      async (errorName) => {
-        process.env.GOOGLE_CLIENT_ID = 'client-prod.apps.googleusercontent.com';
-        const abortOrTimeout = new Error(`Fetch failed: ${errorName}`);
-        abortOrTimeout.name = errorName;
-        global.fetch = jest.fn().mockRejectedValueOnce(abortOrTimeout);
+    it('deve retornar 500 (e não 401) quando upsertGoogleCustomer falhar no banco após token válido', async () => {
+      process.env.GOOGLE_CLIENT_ID = 'client-prod.apps.googleusercontent.com';
+      upsertGoogleCustomer.mockRejectedValueOnce(new Error('DB connection lost'));
+      const errorSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
 
+      try {
         const { req, res } = createMocks({
           method: 'POST',
-          body: { action: 'google', credential: `${errorName}.jwt` },
+          body: {
+            action: 'google',
+            credential: signGoogleToken({
+              sub: 'google-sub-db-err',
+              email: 'dberr@gmail.com',
+              name: 'DB Error User',
+            }),
+          },
         });
 
         await handler(req, res);
 
-        expect(res._getStatusCode()).toBe(503);
-        expect(upsertGoogleCustomer).not.toHaveBeenCalled();
+        expect(res._getStatusCode()).toBe(500);
+        expect(errorSpy).toHaveBeenCalledWith(
+          'CustomerAuth',
+          'Erro na rota de autenticação do visitante:',
+          expect.any(Error)
+        );
+      } finally {
+        errorSpy.mockRestore();
       }
-    );
+    });
   });
 
   describe('PUT - Atualização de perfil', () => {

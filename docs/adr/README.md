@@ -51,6 +51,7 @@ apoio, não a fonte oficial; a decisão não é duplicada como página de memór
 | [0039](0039-mercadopago-checkout-tokenizacao-e-alinhamento-de-schema.md) | Alinhamento de schema de pedidos/clientes, tokenização via SDK v2 do Mercado Pago e rollback atômico de estoque | Aceito | 2026-11-12 |
 | [0040](0040-integracao-mercadopago-orders-api.md) | Migração da integração de pagamentos para a Orders API (`/v1/orders`) do Mercado Pago | Aceito | 2026-11-12 |
 | [0041](0041-active-payment-reconciliation-and-webhook-fallback.md) | Reconciliação ativa de pagamentos pendentes e fallback de webhook por referência externa | Aceito | 2026-11-14 |
+| [0042](0042-google-id-token-local-jwks-verification.md) | Validação local de ID tokens do Google via JWKS (`RS256`) | Aceito | 2026-11-19 |
 
 ## Quando criar um ADR
 
