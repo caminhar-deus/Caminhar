@@ -295,6 +295,7 @@ export function usePerformanceMetrics(options = {}) {
           'ytimg.com',
           'spotify.com',
           'scdn.co',
+          'accounts.google.com',
           'googleusercontent.com',
           'googleapis.com',
           'gstatic.com',

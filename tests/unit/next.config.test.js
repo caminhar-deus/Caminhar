@@ -57,3 +57,13 @@ describe('next.config.js — hardening de /uploads/*', () => {
     ]);
   });
 });
+
+describe('next.config.js — headers de /entrar (Google Identity Services)', () => {
+  test('aplica Cross-Origin-Opener-Policy: same-origin-allow-popups na rota /entrar', async () => {
+    const headers = await nextConfig.headers();
+    const entrarRule = headers.find((r) => r.source === '/entrar');
+    expect(entrarRule).toBeDefined();
+    const coop = entrarRule.headers.find((h) => h.key === 'Cross-Origin-Opener-Policy');
+    expect(coop?.value).toBe('same-origin-allow-popups');
+  });
+});

@@ -85,6 +85,11 @@ describe('Hook - usePerformanceMetrics (resource observer thresholds)', () => {
         duration: 5400,
         startTime: 25_200,
       },
+      {
+        name: 'https://accounts.google.com/gsi/client',
+        duration: 4200,
+        startTime: 25_300,
+      },
     ]);
     expect(warnSpy).not.toHaveBeenCalled();
 

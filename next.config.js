@@ -178,6 +178,12 @@ const nextConfig = {
           { key: 'Content-Security-Policy', value: "default-src 'none'; sandbox" },
         ],
       },
+      {
+        source: '/entrar',
+        headers: [
+          { key: 'Cross-Origin-Opener-Policy', value: 'same-origin-allow-popups' },
+        ],
+      },
     ];
   },
 };

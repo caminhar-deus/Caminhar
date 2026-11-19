@@ -32,11 +32,14 @@ const loginSchema = z.object({
 
 const googleSchema = z.object({
   action: z.literal('google'),
-  credential: z.string().optional(),
+  credential: z.string().trim().min(1).optional(),
   email: z.string().trim().email('E-mail inválido').optional(),
   name: z.string().trim().optional(),
   googleSub: z.string().trim().optional(),
 });
+
+const VALID_GOOGLE_ISSUERS = new Set(['https://accounts.google.com', 'accounts.google.com']);
+const GOOGLE_TOKENINFO_TIMEOUT_MS = 8000;
 
 const profileUpdateSchema = z.object({
   name: z.string().trim().min(2, 'Informe seu nome completo').optional(),
@@ -54,21 +57,60 @@ const profileUpdateSchema = z.object({
 
 async function verifyGoogleCredential(payload) {
   if (payload.credential && typeof global.fetch === 'function') {
+    const serverClientId = String(process.env.GOOGLE_CLIENT_ID || '').trim();
+    const publicClientId = String(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '').trim();
+    if (serverClientId && publicClientId && serverClientId !== publicClientId) {
+      logger.warn(
+        'CustomerAuth',
+        'GOOGLE_CLIENT_ID e NEXT_PUBLIC_GOOGLE_CLIENT_ID possuem valores diferentes; usando GOOGLE_CLIENT_ID na validação.'
+      );
+    }
+
+    const expectedClientId = serverClientId || publicClientId;
+    if (!expectedClientId) {
+      throw new Error('GOOGLE_NOT_CONFIGURED');
+    }
+
+    const fetchOptions =
+      typeof AbortSignal?.timeout === 'function'
+        ? { signal: AbortSignal.timeout(GOOGLE_TOKENINFO_TIMEOUT_MS) }
+        : {};
     const res = await fetch(
-      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(payload.credential)}`
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(payload.credential)}`,
+      fetchOptions
     );
     if (!res.ok) {
       throw new Error('INVALID_GOOGLE_TOKEN');
     }
+
     const tokenInfo = await res.json();
-    const expectedClientId = process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (expectedClientId && tokenInfo.aud !== expectedClientId) {
+    if (!tokenInfo || typeof tokenInfo !== 'object') {
+      throw new Error('INVALID_GOOGLE_TOKEN');
+    }
+    if (tokenInfo.aud !== expectedClientId) {
       throw new Error('GOOGLE_AUDIENCE_MISMATCH');
     }
+    if (!VALID_GOOGLE_ISSUERS.has(tokenInfo.iss)) {
+      throw new Error('INVALID_GOOGLE_ISSUER');
+    }
+    if (!(tokenInfo.email_verified === true || tokenInfo.email_verified === 'true')) {
+      throw new Error('GOOGLE_EMAIL_NOT_VERIFIED');
+    }
+    const exp = Number(tokenInfo.exp);
+    if (!Number.isFinite(exp) || exp * 1000 <= Date.now()) {
+      throw new Error('GOOGLE_TOKEN_EXPIRED');
+    }
+
+    const googleSub = String(tokenInfo.sub || '').trim();
+    const email = String(tokenInfo.email || '').trim().toLowerCase();
+    if (!googleSub || !email) {
+      throw new Error('INCOMPLETE_GOOGLE_PROFILE');
+    }
+
     return {
-      googleSub: tokenInfo.sub,
-      email: tokenInfo.email,
-      name: tokenInfo.name || tokenInfo.email?.split('@')[0] || 'Visitante',
+      googleSub,
+      email,
+      name: String(tokenInfo.name || email.split('@')[0] || 'Visitante').trim(),
     };
   }
 
@@ -196,7 +238,13 @@ export default async function handler(req, res) {
         setCustomerAuthCookie(res, token);
         return res.status(200).json({ customer });
       } catch (err) {
-        logger.warn('CustomerAuth', 'Falha na autenticação Google:', err.message);
+        logger.warn('CustomerAuth', 'Falha na autenticação Google:', err?.message || err?.name || 'UnknownError');
+        if (err?.name === 'TimeoutError' || err?.name === 'AbortError') {
+          return res.status(503).json({
+            error: 'Service Unavailable',
+            message: 'Serviço de autenticação do Google temporariamente indisponível. Tente novamente ou use seu e-mail e senha.',
+          });
+        }
         return res.status(401).json({
           error: 'Unauthorized',
           message: 'Não foi possível autenticar com o Google. Verifique a configuração ou use seu e-mail e senha.',

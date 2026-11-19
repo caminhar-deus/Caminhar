@@ -203,6 +203,39 @@
   background-color: var(--color-border-primary);
 }
 
+.googleSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-2);
+  width: 100%;
+}
+
+.googleButtonHost {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 44px;
+  width: 100%;
+}
+
+.googleButtonHostDisabled {
+  composes: googleButtonHost;
+  pointer-events: none;
+  opacity: var(--opacity-50);
+}
+
+.googleButtonHostHidden {
+  display: none;
+}
+
+.googleLoadingText {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
 .googleButton {
   width: 100%;
   min-height: 44px;
@@ -213,16 +246,21 @@
   padding: var(--spacing-2_5) var(--spacing-4);
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
-  border: var(--border-width-thin) solid var(--color-border-secondary);
-  border-radius: var(--border-radius-md);
+  border: var(--border-width-1) solid var(--color-border-default);
+  border-radius: var(--border-radius-lg);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: var(--transition-colors), var(--transition-shadow);
+  transition: var(--transition-background), var(--transition-color), var(--transition-shadow);
 }
 
-.googleButton:hover {
+.googleButton:hover:not(:disabled) {
   background-color: var(--color-bg-tertiary);
+}
+
+.googleButton:disabled {
+  opacity: var(--opacity-50);
+  cursor: not-allowed;
 }
 
 .googleButton:focus-visible {

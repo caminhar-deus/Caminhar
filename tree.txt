@@ -1477,6 +1477,7 @@
 │       │   ├── blog.index.test.js
 │       │   ├── blog.slug.test.js
 │       │   ├── checkout.test.js
+│       │   ├── document-csp.test.js
 │       │   ├── entrar.test.js
 │       │   ├── index.test.js
 │       │   └── minha-conta.test.js
@@ -1536,4 +1537,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-219 directories, 1318 files
+219 directories, 1319 files

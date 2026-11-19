@@ -56,7 +56,7 @@ Vamos estruturar a comercialização, os pagamentos e a autenticação pública 
 ### Negativas e riscos
 
 - Aumento do número de tabelas e rotas, exigindo atualização coordenada de `lib/crud/crud.js`, `scripts/validate-schema.js` e `tests/unit/scripts/schema-sources.test.js`.
-- Dependência de variáveis de ambiente externas (`MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`) em produção, tratadas como opcionais no boot local/CI com degradação controlada.
+- Dependência de variáveis de ambiente externas (`MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `GOOGLE_CLIENT_ID`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID`) em produção, tratadas como opcionais no boot local/CI com degradação controlada.
 
 ## Revisão
 

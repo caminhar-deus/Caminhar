@@ -1024,6 +1024,7 @@ tests/unit/pages/blog.slug.test.js → tests/helpers/index.js
 tests/unit/pages/checkout.test.js → pages/checkout/[id].js
 tests/unit/pages/checkout.test.js → tests/helpers/index.js
 tests/unit/pages/checkout.test.js → tests/mocks/next-setup.js
+tests/unit/pages/document-csp.test.js → pages/_document.js
 tests/unit/pages/entrar.test.js → pages/entrar.js
 tests/unit/pages/entrar.test.js → tests/helpers/index.js
 tests/unit/pages/entrar.test.js → tests/mocks/next-setup.js
