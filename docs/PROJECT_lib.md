@@ -211,12 +211,12 @@ Camada de API: factory de handlers administrativos, helpers de IP e utilitários
 | Função | Descrição |
 |--------|-----------|
 | `getOrSetCache(key, fetchFunction, ttlSeconds)` | Cache-Aside: memória L1 → Redis L2 → fetch. TTL padrão 1h. Serializa dados uma única vez e reutiliza para Redis e memória |
-| `invalidateCache(keyPattern)` | Invalida por chave exata ou padrão com `*` (usa SCAN no Redis). Sempre limpa também do cache em memória |
+| `invalidateCache(keyPattern)` | Invalida por chave exata ou padrão com `*` (usa `SCAN` no Redis aceitando cursor numérico/string via `String(cursor)`). Sempre limpa também o cache L1 e o fallback `memoryCache` (`clearRedisMemoryCache`) |
 | `clearAllCache(options)` | FLUSHDB com proteção — requer `{ confirm: true }`. Retorna `{ success, error? }` |
 | `checkRateLimit(ip, endpoint, limit, windowMs)` | Rate limit via Redis INCR+EXPIRE com fallback em Map local. Contadores sob `rate_limit:${endpoint}:${ip}` (namespace único `rate_limit:*`, alinhado às chaves de whitelist/auditoria). Aceita `limit` como função. Whitelist para localhost e redes privadas |
 | `getCacheMetrics()` | Métricas: hits/misses/erros Redis e memória, tamanhos dos maps, status Redis, single-flight hits |
 | `cleanupRateLimitTimer()` | Limpa o timer de safety net (uso em testes) |
-| `clearAppMemoryCache()` | Limpa cache de aplicação em memória (uso em testes) |
+| `clearAppMemoryCache()` | Limpa cache L1 da aplicação e o fallback `memoryCache` do Redis (uso em testes) |
 
 **Mecanismos internos:**
 
@@ -525,9 +525,11 @@ Módulos de infraestrutura: conexão com banco, logging estruturado, cache distr
 |------------|-----------|
 | `redis` | Sempre `null` — use `getRedisInstance()` |
 | `getRedisInstance()` | Retorna instância Redis, inicializando sob demanda (lazy, apenas uma vez) |
+| `clearRedisMemoryCache(keyPattern?)` | Limpa o cache em memória de fallback (chave exata, padrão com `*` ou tudo se `keyPattern` for omitido) |
+| `closeRedis()` | Encerra a instância Redis ativa (chamando `.quit()` quando disponível), zera o estado singleton (`redisInstance`/`initializationAttempted`) e limpa `memoryCache`, sem disparar inicialização lazy no teardown |
 | `redisGet(key)` | Obtém valor — tenta Redis uma única vez; fallback direto em memória |
 | `redisSet(key, value, ttlSeconds)` | Salva valor no Redis com fallback em memória |
-| `redisDel(...keys)` | Deleta chave(s) do Redis e da memória; suporta wildcard na memória |
+| `redisDel(...keys)` | Deleta chave(s) do Redis e delega a limpeza em memória para `clearRedisMemoryCache` (suporta wildcard) |
 | `redisScan(cursor, options)` | Escaneia chaves no Redis (fallback: `['0', []]`) |
 | `redisIncr(key)` | Incrementa chave (rate limit) com fallback em memória |
 | `redisExpire(key, seconds, nx?)` | Define expiração em chave |

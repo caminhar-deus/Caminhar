@@ -24,6 +24,7 @@ A estrutura é organizada em camadas:
 
 ```
 tests/
+├── setup-env.js                      # Isolamento de process.env (setupFiles compartilhado)
 ├── setup.js                          # Bootstrap global (jsdom)
 ├── setup.db.js                       # Bootstrap para banco real (node)
 ├── global-setup.db.js                # GlobalSetup: container PostgreSQL (Testcontainers)
@@ -65,6 +66,10 @@ tests/
 ---
 
 ## 2. Configuração Global
+
+### `tests/setup-env.js`
+**Localização:** `/tests/setup-env.js`
+**Propósito:** Isolamento prévio de variáveis de ambiente carregado via `setupFiles` em `jest.config.base.js` (compartilhado entre `jest.config.js` e `jest.config.db.js`), executando antes da importação de qualquer módulo da aplicação e de `tests/setup.js`/`tests/setup.db.js`. Força `process.env.NODE_ENV = 'test'` e remove variáveis externas herdadas do shell/ambiente local (`UPSTASH_REDIS_REST_*`, `REDIS_URL`, `MP_*`, `GOOGLE_CLIENT_ID`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `DATABASE_SSL`, `LOG_LEVEL`, `LOG_FILE_PATH`, `DISABLE_RATE_LIMIT`, `TRUST_PROXY`, `UPLOADS_DIR`), preservando `TEST_DATABASE_URL` e `DATABASE_URL` para os testes com PostgreSQL real.
 
 ### `tests/setup.js`
 **Localização:** `/tests/setup.js`
@@ -540,7 +545,7 @@ As suítes `clear-db`, `clear-musicas`, `reset-password` e `seed-all` agora **im
 
 | Categoria | Quantidade |
 |-----------|:----------:|
-| **Configuração Global** | 3 arquivos |
+| **Configuração Global** | 4 arquivos |
 | **Factories** | 6 arquivos |
 | **Helpers** | 9 arquivos |
 | **Matchers** | 6 arquivos |
@@ -552,7 +557,7 @@ As suítes `clear-db`, `clear-musicas`, `reset-password` e `seed-all` agora **im
 | **Testes de Integração — Auth v1** | 1 arquivo |
 | **Testes de Integração — Domínio (DB real)** | 6 arquivos |
 | **Testes Unitários** | 138 arquivos |
-| **Total Geral** | **232 arquivos** |
+| **Total Geral** | **233 arquivos** |
 
 ---
 
@@ -563,3 +568,5 @@ As suítes `clear-db`, `clear-musicas`, `reset-password` e `seed-all` agora **im
 > Este quadro é a **única fonte de contagem** do projeto. `docs/UPGRADE_tests.md` não repete números globais — remete para cá — para não haver duas contagens divergindo.
 >
 > Duas linhas abaixo do §5.13 refletem a refatoração dos testes de scripts de 12/10/2026 (itens X e Y de `docs/PENDENCIAS_scripts_testes.md`): `tests/unit/scripts/` passou de 8 testes tautológicos para **25** que executam o script sob teste. No mesmo dia o diretório ganhou o 16º arquivo (`check-hardcoded-credentials.test.js`, +7 testes) — total de **16 arquivos / 123 testes** na suíte.
+>
+> **Acréscimo de 19/11/2026:** `Configuração Global` passou de 3 para **4 arquivos** (e o `Total Geral` da tabela base de 232 para **233**) com a criação de `tests/setup-env.js`; as demais linhas da tabela preservam os números do recount de 22/10/2026 (não refeito aqui).

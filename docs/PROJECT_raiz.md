@@ -29,7 +29,7 @@ Este documento registra a análise individual de todos os arquivos localizados n
 A raiz do projeto concentra **35 arquivos** (excluindo subpastas). Eles se dividem em:
 
 - **Configuração principal** — `package.json`, `next.config.js`, `next-sitemap.config.js`, `proxy.js`, `.env`, `.env.example`.
-- **Configuração de testes** — `jest.config.base.js`, `jest.config.js`, `jest.config.db.js`, `jest.teardown.js`, `babel.jest.config.js`, `cypress.config.js` (com setup padronizado em `tests/setup.js`).
+- **Configuração de testes** — `jest.config.base.js`, `jest.config.js`, `jest.config.db.js`, `jest.teardown.js`, `babel.jest.config.js`, `cypress.config.js` (com isolamento de ambiente em `tests/setup-env.js` e setup padronizado em `tests/setup.js`).
 - **Qualidade/estática** — `eslint.config.js`, `jsconfig.json`, `knip.json`, `schema.knip.json`, `.dependency-cruiser.cjs`, `.dependency-cruiser.core.cjs`, `.dependency-cruiser.extras.cjs`, `.dependency-cruiser.isolados.cjs`.
 - **Documentação/contexto** — `README.md`, `CHANGELOG.md`, `tree.txt`.
 - **Arquivos gerados (análise estática)** — `estrutura.html`, `estrutura.txt`, `estrutura_extras.html`, `estrutura_extras.txt`, `estrutura_isolados.html`, `estrutura_isolados.txt`.
@@ -195,9 +195,9 @@ Subpastas existentes na raiz (fora do escopo, citadas como contexto ao longo do 
 
 **Caminho:** `/home/gus/Projetos/Caminhar/jest.config.base.js`
 
-**Arquivos acionados/relacionados:** `babel.jest.config.js` (referenciado em `transform` via `babel-jest` com `configFile`); importado por `jest.config.js` e `jest.config.db.js`; `package.json` (scripts `test`, `test:ci`, `test:db:container` usam indiretamente esta base).
+**Arquivos acionados/relacionados:** `babel.jest.config.js` (referenciado em `transform` via `babel-jest` com `configFile`); `tests/setup-env.js` (registrado em `setupFiles`); importado por `jest.config.js` e `jest.config.db.js`; `package.json` (scripts `test`, `test:ci`, `test:db:container` usam indiretamente esta base).
 
-**Resumo:** Configuração base compartilhada do Jest (36 linhas, ES Module). O cabeçalho documenta seu papel: propriedades comuns entre `jest.config.js` e `jest.config.db.js`, que importam este base e sobrescrevem/estendem conforme a necessidade. Define: `transform` (Babel via `babel-jest` apontando para `babel.jest.config.js`), `moduleNameMapper` com 6 aliases (`@/` → raiz, `@tests/` → `tests/`, `@factories/` → `tests/factories/`, `@helpers/` → `tests/helpers/`, `@mocks/` → `tests/mocks/`, `@matchers/` → `tests/matchers/`), `moduleFileExtensions` (`js`, `jsx`, `json`, `node`), `clearMocks: true`, `restoreMocks: true`, `verbose: true`, `maxWorkers: '50%'` e `workerGracefulExitTimeout: 5000` (folga para a saída do worker sob carga; o default de 500 ms gerava o aviso de *force exit* — ver CHANGELOG de 07/11/2026).
+**Resumo:** Configuração base compartilhada do Jest (39 linhas, ES Module). O cabeçalho documenta seu papel: propriedades comuns entre `jest.config.js` e `jest.config.db.js`, que importam este base e sobrescrevem/estendem conforme a necessidade. Define: `transform` (Babel via `babel-jest` apontando para `babel.jest.config.js`), `moduleNameMapper` com 6 aliases (`@/` → raiz, `@tests/` → `tests/`, `@factories/` → `tests/factories/`, `@helpers/` → `tests/helpers/`, `@mocks/` → `tests/mocks/`, `@matchers/` → `tests/matchers/`), `moduleFileExtensions` (`js`, `jsx`, `json`, `node`), `setupFiles` (`['<rootDir>/tests/setup-env.js']`, para isolar `NODE_ENV='test'` e limpar variáveis externas antes da carga dos módulos), `clearMocks: true`, `restoreMocks: true`, `verbose: true`, `maxWorkers: '50%'` e `workerGracefulExitTimeout: 5000` (folga para a saída do worker sob carga; o default de 500 ms gerava o aviso de *force exit* — ver CHANGELOG de 07/11/2026).
 
 ---
 
@@ -239,9 +239,9 @@ Subpastas existentes na raiz (fora do escopo, citadas como contexto ao longo do 
 
 **Caminho:** `/home/gus/Projetos/Caminhar/jest.teardown.js`
 
-**Arquivos acionados/relacionados:** `lib/infra/redis.js` (`getRedisInstance`), `lib/infra/db.js` (`closeDatabase`), `lib/cache/cache.js` (`cleanupRateLimitTimer`), `tests/helpers/async-polyfills.js` (`setupAsyncPolyfills`); referenciado como `globalTeardown` por `jest.config.js` e `jest.config.db.js`.
+**Arquivos acionados/relacionados:** `lib/infra/redis.js` (`closeRedis`), `lib/infra/db.js` (`closeDatabase`), `lib/cache/cache.js` (`cleanupRateLimitTimer`), `tests/helpers/async-polyfills.js` (`setupAsyncPolyfills`); referenciado como `globalTeardown` por `jest.config.js` e `jest.config.db.js`.
 
-**Resumo:** Teardown global do Jest (51 linhas), compartilhado pelas duas suítes (principal e db). Na ordem: aguarda resolução dos polyfills assíncronos (`setupAsyncPolyfills`), limpa o timer periódico do cache em memória (`cleanupRateLimitTimer`), fecha a instância do Redis (`quit()`), encerra o pool PostgreSQL (`closeDatabase`), para o container de testes (`global.__TEST_DB_CONTAINER__.stop()`) e aguarda callbacks residuais com `Promise.race` entre `setImmediate` e timeout de segurança de 5s — cancelado via `clearTimeout` no `.finally()` assim que o race resolve, evitando que o timer pendente segure o processo do Jest. Erros são capturados com `console.warn` (não falham a suíte).
+**Resumo:** Teardown global do Jest (60 linhas), compartilhado pelas duas suítes (principal e db). Na ordem: aguarda resolução dos polyfills assíncronos (`setupAsyncPolyfills`), limpa o timer periódico do cache em memória (`cleanupRateLimitTimer`), e executa em blocos `try/catch` independentes o encerramento seguro do Redis (`closeRedis()`, que só chama `.quit()` se disponível e limpa o fallback em memória sem inicializar cliente inativo), o fechamento do pool PostgreSQL (`closeDatabase()`) e a parada do container de testes (`global.__TEST_DB_CONTAINER__.stop()`), garantindo que uma falha em uma etapa não aborte as demais. Ao final, aguarda callbacks residuais com `Promise.race` entre `setImmediate` e timeout de segurança de 5s — cancelado via `clearTimeout` no `.finally()` assim que o race resolve, evitando que o timer pendente segure o processo do Jest. Erros são capturados com `console.warn` (não falham a suíte).
 
 ---
 
