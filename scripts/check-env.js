@@ -43,6 +43,20 @@ function checkEnv() {
     console.log('\x1b[32m%s\x1b[0m', '✅ Todas as variáveis de ambiente verificadas estão definidas.');
   }
 
+  const googleServerClientId = String(process.env.GOOGLE_CLIENT_ID || '').trim();
+  const googlePublicClientId = String(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '').trim();
+  if (googleServerClientId && googlePublicClientId && googleServerClientId !== googlePublicClientId) {
+    console.warn(
+      '\x1b[33m%s\x1b[0m',
+      '⚠️  Aviso: GOOGLE_CLIENT_ID e NEXT_PUBLIC_GOOGLE_CLIENT_ID possuem valores diferentes; o login com Google pode falhar com GOOGLE_AUDIENCE_MISMATCH.'
+    );
+  } else if (googleServerClientId && !googlePublicClientId) {
+    console.warn(
+      '\x1b[33m%s\x1b[0m',
+      '⚠️  Aviso: GOOGLE_CLIENT_ID está definida sem NEXT_PUBLIC_GOOGLE_CLIENT_ID; o botão "Continuar com o Google" permanecerá oculto na interface pública.'
+    );
+  }
+
   console.log('\x1b[32m%s\x1b[0m', '✅ Ambiente validado com sucesso.\n');
 }
 

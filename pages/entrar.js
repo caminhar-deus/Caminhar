@@ -235,12 +235,6 @@ export default function EntrarPage() {
     }
   };
 
-  const handleGoogleFallbackClick = () => {
-    setErrorMessage(
-      'O acesso rápido com Google requer a configuração de NEXT_PUBLIC_GOOGLE_CLIENT_ID no ambiente. Utilize seu e-mail e senha abaixo.'
-    );
-  };
-
   const isGoogleHostVisible = googleStatus !== 'unconfigured' && googleStatus !== 'error';
   const googleHostClassName = !isGoogleHostVisible
     ? styles.googleButtonHostHidden
@@ -382,7 +376,7 @@ export default function EntrarPage() {
           </Button>
         </form>
 
-        <div className={styles.divider}>ou</div>
+        {googleStatus !== 'unconfigured' && <div className={styles.divider}>ou</div>}
 
         <div className={styles.googleSection}>
           <div
@@ -415,35 +409,6 @@ export default function EntrarPage() {
                 Tentar novamente com Google
               </button>
             </>
-          )}
-
-          {googleStatus === 'unconfigured' && (
-            <button
-              type="button"
-              onClick={handleGoogleFallbackClick}
-              disabled={submitting}
-              className={styles.googleButton}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path
-                  fill="currentColor"
-                  d="M21.35 11.1h-9.17v2.73h6.51c-.33 1.81-1.5 3.34-3.2 4.37v3.62h5.18c3.03-2.79 4.78-6.9 4.78-11.77 0-.8-.08-1.57-.22-2.32Z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M12.18 22c4.32 0 7.95-1.43 10.6-3.88l-5.18-3.62c-1.43.96-3.27 1.53-5.42 1.53-4.17 0-7.7-2.81-8.96-6.6H0v3.73C2.64 18.4 7.04 22 12.18 22Z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M3.22 13.43a6.06 6.06 0 0 1 0-3.86V5.84H0a10.02 10.02 0 0 0 0 9.32l3.22-1.73Z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M12.18 5.97c1.77 0 3.35.61 4.6 1.8l3.45-3.45C18.12 2.38 15.4 1.5 12.18 1.5 7.04 1.5 2.64 5.1 0 9.84l3.22 2.49c1.26-3.79 4.79-6.36 8.96-6.36Z"
-                />
-              </svg>
-              Sign in with Google
-            </button>
           )}
         </div>
       </main>

@@ -42,3 +42,10 @@ Vamos substituir a chamada por requisição ao `/tokeninfo` pela **verificação
 ## Revisão
 
 Reavaliar caso a plataforma passe a exigir validação multi-algoritmo além de `RS256` ou suporte a fluxos OAuth server-side com `code` / refresh tokens do Google (onde `google-auth-library` ou cache compartilhado em Redis passariam a agregar valor).
+
+## Operação e Configuração (Runbook)
+
+1. **Google Cloud Console:** criar credencial **ID do cliente OAuth 2.0** do tipo **Aplicativo da Web** (não há `client_secret` usado no fluxo GIS). Configurar **Origens JavaScript autorizadas** incluindo `http://localhost:3000` (desenvolvimento) e o domínio HTTPS de produção; nenhuma URI de redirecionamento é exigida no `ux_mode: 'popup'`. Manter a **Tela de permissão OAuth** publicada em produção (o status *Em teste* restringe o login a usuários de teste cadastrados).
+2. **Variáveis de ambiente e rebuild:** definir `NEXT_PUBLIC_GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_ID` com o **mesmo** Client ID. Alterações em `NEXT_PUBLIC_GOOGLE_CLIENT_ID` são embutidas no bundle do cliente e exigem reiniciar `npm run dev` ou gerar novo build (`npm run build`). O script `npm run check-env` alerta divergências sem exibir os valores.
+3. **Cabeçalhos de navegador (CSP e COOP):** `pages/_document.js` libera exclusivamente as origens do GIS (`https://accounts.google.com/gsi/client` em `script-src`, `https://accounts.google.com/gsi/style` em `style-src` e `https://accounts.google.com/gsi/` em `frame-src`), e `next.config.js` envia `Cross-Origin-Opener-Policy: same-origin-allow-popups` restrito à rota `/entrar` para permitir a comunicação com o popup sem relaxar as demais rotas.
+4. **Vínculo de contas e atalho de desenvolvimento:** ao vincular uma conta existente pelo e-mail pela primeira vez, `upsertGoogleCustomer` (`lib/domain/customers.js`) anula `password_hash` para impedir pré-sequestro por cadastro local sem verificação de e-mail e rejeita troca de `google_id` com `GOOGLE_ACCOUNT_CONFLICT` (`HTTP 409`). O atalho sem `credential` em `pages/api/customer/auth.js` só funciona fora de produção **e** com `ALLOW_GOOGLE_DEV_BYPASS=true`.

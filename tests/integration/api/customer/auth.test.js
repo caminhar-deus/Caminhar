@@ -41,17 +41,20 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
   const originalFetch = global.fetch;
   const originalGoogleClientId = process.env.GOOGLE_CLIENT_ID;
   const originalPublicGoogleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  const originalAllowGoogleDevBypass = process.env.ALLOW_GOOGLE_DEV_BYPASS;
 
   beforeEach(() => {
     jest.clearAllMocks();
     delete process.env.GOOGLE_CLIENT_ID;
     delete process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    delete process.env.ALLOW_GOOGLE_DEV_BYPASS;
   });
 
   afterEach(() => {
     global.fetch = originalFetch;
     delete process.env.GOOGLE_CLIENT_ID;
     delete process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    delete process.env.ALLOW_GOOGLE_DEV_BYPASS;
   });
 
   afterAll(() => {
@@ -64,6 +67,11 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
       delete process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     } else {
       process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID = originalPublicGoogleClientId;
+    }
+    if (originalAllowGoogleDevBypass === undefined) {
+      delete process.env.ALLOW_GOOGLE_DEV_BYPASS;
+    } else {
+      process.env.ALLOW_GOOGLE_DEV_BYPASS = originalAllowGoogleDevBypass;
     }
   });
 
@@ -192,7 +200,8 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
       expect(clearCustomerAuthCookie).toHaveBeenCalledWith(res);
     });
 
-    it('action=google: deve vincular ou autenticar conta do Google', async () => {
+    it('action=google: deve vincular ou autenticar conta do Google quando ALLOW_GOOGLE_DEV_BYPASS=true fora de produção', async () => {
+      process.env.ALLOW_GOOGLE_DEV_BYPASS = 'true';
       upsertGoogleCustomer.mockResolvedValueOnce({
         id: 20,
         name: 'Google User',
@@ -394,26 +403,82 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
       }
     });
 
-    it('deve falhar fechado (401) sem chamar fetch quando nenhum Client ID está configurado', async () => {
+    it('deve falhar fechado (401), registrar erro de configuração em logger.error sem expor ID e sem chamar fetch quando nenhum Client ID está configurado', async () => {
       const noCallFetch = jest.fn();
       global.fetch = noCallFetch;
+      const warnSpy = jest.spyOn(logger, 'warn').mockImplementation(() => {});
+      const errorSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
 
-      const { req, res } = createMocks({
-        method: 'POST',
-        body: { action: 'google', credential: signGoogleToken() },
-      });
+      try {
+        const { req, res } = createMocks({
+          method: 'POST',
+          body: { action: 'google', credential: signGoogleToken() },
+        });
 
-      await handler(req, res);
+        await handler(req, res);
 
-      expect(res._getStatusCode()).toBe(401);
-      expect(noCallFetch).not.toHaveBeenCalled();
-      expect(upsertGoogleCustomer).not.toHaveBeenCalled();
+        expect(res._getStatusCode()).toBe(401);
+        const data = JSON.parse(res._getData());
+        expect(data.message).not.toContain('Verifique a configuração');
+        expect(noCallFetch).not.toHaveBeenCalled();
+        expect(upsertGoogleCustomer).not.toHaveBeenCalled();
+        expect(errorSpy).toHaveBeenCalledWith(
+          'CustomerAuth',
+          'Erro de configuração na autenticação Google:',
+          'GOOGLE_NOT_CONFIGURED'
+        );
+      } finally {
+        warnSpy.mockRestore();
+        errorSpy.mockRestore();
+      }
     });
 
-    it('deve bloquear atalho de desenvolvimento (googleSub + email sem credential) em NODE_ENV=production', async () => {
+    it.each(['production', 'development', 'test'])(
+      'deve bloquear atalho de desenvolvimento (googleSub + email sem credential) em NODE_ENV=%s sem ALLOW_GOOGLE_DEV_BYPASS=true',
+      async (envName) => {
+        const originalEnv = process.env.NODE_ENV;
+        process.env.NODE_ENV = envName;
+        const warnSpy = jest.spyOn(logger, 'warn').mockImplementation(() => {});
+        const errorSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
+        try {
+          const { req, res } = createMocks({
+            method: 'POST',
+            body: {
+              action: 'google',
+              googleSub: 'sub-dev-only',
+              email: 'bypass@gmail.com',
+              name: 'Dev Bypass',
+            },
+          });
+
+          await handler(req, res);
+
+          expect(res._getStatusCode()).toBe(401);
+          expect(upsertGoogleCustomer).not.toHaveBeenCalled();
+          expect(warnSpy).toHaveBeenCalledWith(
+            'CustomerAuth',
+            'Falha na autenticação Google:',
+            'GOOGLE_NOT_CONFIGURED'
+          );
+          expect(errorSpy).toHaveBeenCalledWith(
+            'CustomerAuth',
+            'Erro de configuração na autenticação Google:',
+            'GOOGLE_NOT_CONFIGURED'
+          );
+        } finally {
+          warnSpy.mockRestore();
+          errorSpy.mockRestore();
+          process.env.NODE_ENV = originalEnv;
+        }
+      }
+    );
+
+    it('deve bloquear atalho de desenvolvimento em NODE_ENV=production mesmo com ALLOW_GOOGLE_DEV_BYPASS=true', async () => {
       const originalEnv = process.env.NODE_ENV;
       process.env.NODE_ENV = 'production';
+      process.env.ALLOW_GOOGLE_DEV_BYPASS = 'true';
       const warnSpy = jest.spyOn(logger, 'warn').mockImplementation(() => {});
+      const errorSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
       try {
         const { req, res } = createMocks({
           method: 'POST',
@@ -429,32 +494,77 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
 
         expect(res._getStatusCode()).toBe(401);
         expect(upsertGoogleCustomer).not.toHaveBeenCalled();
-        expect(warnSpy).toHaveBeenCalledWith(
-          'CustomerAuth',
-          'Falha na autenticação Google:',
-          'GOOGLE_NOT_CONFIGURED'
-        );
       } finally {
         warnSpy.mockRestore();
+        errorSpy.mockRestore();
         process.env.NODE_ENV = originalEnv;
       }
     });
 
-    it('deve retornar 401 quando aud for divergente do Client ID esperado', async () => {
+    it('deve registrar INVALID_GOOGLE_TOKEN (e não GOOGLE_NOT_CONFIGURED) quando Client ID estiver configurado mas credential for omitido', async () => {
       process.env.GOOGLE_CLIENT_ID = 'client-prod.apps.googleusercontent.com';
+      const warnSpy = jest.spyOn(logger, 'warn').mockImplementation(() => {});
+      const errorSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
+      try {
+        const { req, res } = createMocks({
+          method: 'POST',
+          body: {
+            action: 'google',
+            googleSub: 'sub-dev-only',
+            email: 'bypass@gmail.com',
+          },
+        });
 
-      const { req, res } = createMocks({
-        method: 'POST',
-        body: {
-          action: 'google',
-          credential: signGoogleToken({ aud: 'outro-client.apps.googleusercontent.com' }),
-        },
-      });
+        await handler(req, res);
 
-      await handler(req, res);
+        expect(res._getStatusCode()).toBe(401);
+        expect(upsertGoogleCustomer).not.toHaveBeenCalled();
+        expect(warnSpy).toHaveBeenCalledWith(
+          'CustomerAuth',
+          'Falha na autenticação Google:',
+          'INVALID_GOOGLE_TOKEN'
+        );
+        expect(errorSpy).not.toHaveBeenCalled();
+      } finally {
+        warnSpy.mockRestore();
+        errorSpy.mockRestore();
+      }
+    });
 
-      expect(res._getStatusCode()).toBe(401);
-      expect(upsertGoogleCustomer).not.toHaveBeenCalled();
+    it('deve retornar 401 e registrar erro de configuração em logger.error sem vazar Client IDs quando aud for divergente', async () => {
+      const serverClientId = 'client-prod.apps.googleusercontent.com';
+      const wrongClientId = 'outro-client.apps.googleusercontent.com';
+      process.env.GOOGLE_CLIENT_ID = serverClientId;
+      const warnSpy = jest.spyOn(logger, 'warn').mockImplementation(() => {});
+      const errorSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
+
+      try {
+        const { req, res } = createMocks({
+          method: 'POST',
+          body: {
+            action: 'google',
+            credential: signGoogleToken({ aud: wrongClientId }),
+          },
+        });
+
+        await handler(req, res);
+
+        expect(res._getStatusCode()).toBe(401);
+        const data = JSON.parse(res._getData());
+        expect(data.message).not.toContain('Verifique a configuração');
+        expect(upsertGoogleCustomer).not.toHaveBeenCalled();
+        expect(errorSpy).toHaveBeenCalledWith(
+          'CustomerAuth',
+          'Erro de configuração na autenticação Google:',
+          'GOOGLE_AUDIENCE_MISMATCH'
+        );
+        const loggedArgs = errorSpy.mock.calls.flat().join(' ');
+        expect(loggedArgs).not.toContain(serverClientId);
+        expect(loggedArgs).not.toContain(wrongClientId);
+      } finally {
+        warnSpy.mockRestore();
+        errorSpy.mockRestore();
+      }
     });
 
     it('deve retornar 401 quando iss for inválido', async () => {
@@ -627,6 +737,41 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
         );
       } finally {
         errorSpy.mockRestore();
+      }
+    });
+
+    it('deve retornar 409 quando upsertGoogleCustomer detectar conflito de vínculo de conta Google (GOOGLE_ACCOUNT_CONFLICT)', async () => {
+      process.env.GOOGLE_CLIENT_ID = 'client-prod.apps.googleusercontent.com';
+      const conflictErr = Object.assign(new Error('GOOGLE_ACCOUNT_CONFLICT'), {
+        code: 'GOOGLE_ACCOUNT_CONFLICT',
+      });
+      upsertGoogleCustomer.mockRejectedValueOnce(conflictErr);
+      const warnSpy = jest.spyOn(logger, 'warn').mockImplementation(() => {});
+
+      try {
+        const { req, res } = createMocks({
+          method: 'POST',
+          body: {
+            action: 'google',
+            credential: signGoogleToken({
+              sub: 'google-sub-conflict',
+              email: 'conflict@gmail.com',
+              name: 'Conflict User',
+            }),
+          },
+        });
+
+        await handler(req, res);
+
+        expect(res._getStatusCode()).toBe(409);
+        expect(setCustomerAuthCookie).not.toHaveBeenCalled();
+        expect(warnSpy).toHaveBeenCalledWith(
+          'CustomerAuth',
+          'Conflito de vínculo de conta Google:',
+          'GOOGLE_ACCOUNT_CONFLICT'
+        );
+      } finally {
+        warnSpy.mockRestore();
       }
     });
   });

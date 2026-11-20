@@ -184,14 +184,14 @@ describe('Domínio de Visitantes/Clientes — lib/domain/customers.js', () => {
       );
     });
 
-    it('deve vincular google_sub a uma conta existente que tinha apenas e-mail', async () => {
+    it('deve vincular google_sub a uma conta existente que tinha apenas e-mail e anular password_hash com guarda google_id IS NULL', async () => {
       query
         .mockResolvedValueOnce({ rows: [] })
         .mockResolvedValueOnce({
-          rows: [{ id: 12, name: 'Conta Normal', email: 'normal@exemplo.com' }],
+          rows: [{ id: 12, name: 'Conta Normal', email: 'normal@exemplo.com', google_id: null }],
         })
         .mockResolvedValueOnce({
-          rows: [{ id: 12, name: 'Conta Normal', email: 'normal@exemplo.com', google_sub: 'sub_new' }],
+          rows: [{ id: 12, name: 'Conta Normal', email: 'normal@exemplo.com', google_id: 'sub_new' }],
         });
 
       const customer = await upsertGoogleCustomer({
@@ -201,10 +201,43 @@ describe('Domínio de Visitantes/Clientes — lib/domain/customers.js', () => {
       });
 
       expect(customer.id).toBe(12);
-      expect(query).toHaveBeenCalledWith(
-        expect.stringMatching(/UPDATE customers\s+SET google_id = \$1/i),
-        ['sub_new', 12]
-      );
+      const updateCall = query.mock.calls[2];
+      expect(updateCall[0]).toMatch(/UPDATE customers\s+SET google_id = \$1,\s*password_hash = NULL/i);
+      expect(updateCall[0]).toMatch(/WHERE id = \$2 AND \(google_id IS NULL OR google_id = \$1\)/i);
+      expect(updateCall[1]).toEqual(['sub_new', 12]);
+    });
+
+    it('deve lançar GOOGLE_ACCOUNT_CONFLICT quando conta encontrada por e-mail já possuir outro google_id ou UPDATE condicional não atualizar', async () => {
+      query
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({
+          rows: [{ id: 15, name: 'Já Vinculada', email: 'vinculada@exemplo.com', google_id: 'sub_antigo' }],
+        });
+
+      await expect(
+        upsertGoogleCustomer({
+          googleSub: 'sub_diferente',
+          email: 'vinculada@exemplo.com',
+          name: 'Outro',
+        })
+      ).rejects.toMatchObject({ code: 'GOOGLE_ACCOUNT_CONFLICT' });
+      expect(query).toHaveBeenCalledTimes(2);
+
+      query.mockReset();
+      query
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({
+          rows: [{ id: 16, name: 'Corrida', email: 'corrida@exemplo.com', google_id: null }],
+        })
+        .mockResolvedValueOnce({ rows: [] });
+
+      await expect(
+        upsertGoogleCustomer({
+          googleSub: 'sub_corrida',
+          email: 'corrida@exemplo.com',
+          name: 'Corrida',
+        })
+      ).rejects.toMatchObject({ code: 'GOOGLE_ACCOUNT_CONFLICT' });
     });
 
     it('deve cadastrar nova conta com fallback de nome para parte antes do arroba ou Visitante', async () => {

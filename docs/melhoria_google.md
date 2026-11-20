@@ -385,20 +385,62 @@ Rotinas recorrentes: **nenhuma rotina agendada própria do Google** (o JWKS é r
 | Ciclo | Data | Período | Status | Novas ações |
 |---|---|---|---|---|
 | 1 | 19/11/2026 16:42 BRT | 12/11/2026 16:42 → 19/11/2026 16:42 | Concluído (somente análise) | MG-01 a MG-10 (todas **Abertas**) |
+| 2 | 19/11/2026 21:48–22:05 BRT | Confronto do Ciclo 1 × estado pós-`cca0956` + implementação | Concluído (código, testes e docs validados; DB real e E2E ao vivo pendentes) | NI-01 a NI-04 tratadas |
 
 **Status das ações (atualizar apenas com evidência):**
 
 | ID | Prioridade | Status |
 |---|---|---|
-| MG-01 | Alta | Aberta |
-| MG-02 | Média-Alta | Aberta (aguarda decisão do dono) |
-| MG-03 | Média | Aberta |
-| MG-04 | Baixa-Média | Aberta |
-| MG-05 | Baixa | Aberta |
-| MG-06 | Média | Aberta |
-| MG-07 | Baixa | Aberta |
-| MG-08 | Alta (item 1) / Média | Aberta |
-| MG-09 | Baixa | Aberta (opcional) |
-| MG-10 | Baixa | Aberta (opcional) |
+| MG-01 | Alta | **Concluída** (19/11/2026: `ALLOW_GOOGLE_DEV_BYPASS === 'true'` obrigatório em `pages/api/customer/auth.js`, isolado em `tests/setup-env.js` e coberto em `tests/integration/api/customer/auth.test.js`) |
+| MG-02 | Média-Alta | **Parcialmente concluída / aguardando validação em DB real** (19/11/2026: `upsertGoogleCustomer` em `lib/domain/customers.js` passa a anular `password_hash = NULL` no vínculo por e-mail e rejeitar troca de `google_id` com `GOOGLE_ACCOUNT_CONFLICT` / HTTP `409`; testes unitários e de API passaram; `customers.db.test.js` aguarda execução no CI `test-db-coverage.yml` ou ambiente com Docker) |
+| MG-03 | Média | **Concluída** (19/11/2026: `GOOGLE_NOT_CONFIGURED` e `GOOGLE_AUDIENCE_MISMATCH` registrados via `logger.error` por código sem expor valores e mensagem 401 neutra ao visitante em `pages/api/customer/auth.js`; divergência também verificada em `scripts/check-env.js`) |
+| MG-04 | Baixa-Média | **Concluída** (19/11/2026: removidos o botão substituto morto, `handleGoogleFallbackClick` e a exposição de `NEXT_PUBLIC_GOOGLE_CLIENT_ID` em `pages/entrar.js`, mantendo o divisor `"ou"` oculto quando não configurado) |
+| MG-05 | Baixa | **Desatualizada / Encerrada sem alteração** (19/11/2026: o código atual preserva cache válido no cooldown de `60 s` em rotação de `kid` e falha fechado em `503` após expirar `max-age`, conforme contrato fail-closed do `ADR-0042` e testes vigentes) |
+| MG-06 | Média | **Concluída** (19/11/2026: seção `Operação e Configuração (Runbook)` adicionada ao `ADR-0042` e detalhada em `.env.example`) |
+| MG-07 | Baixa | **Concluída** (19/11/2026: nota de substituição adicionada à entrada de `/tokeninfo` no `CHANGELOG.md`, corrigida referência a `/checkout/[id]` em `.env.example`, e regras de CSP/COOP consolidadas no `ADR-0042`) |
+| MG-08 | Alta (item 1) / Média | **Parcialmente concluída** (19/11/2026: item 1 já resolvido em `7d68032`/`3946444` e suíte completa `npm test` validada com 235/243 suítes aprovadas; itens 2–3 implementados em testes unitários/API/DB; `customers.db.test.js` e E2E com GIS mockado permanecem pendentes de ambiente com Docker/decisão) |
+| MG-09 | Baixa | **Encerrada sem alteração** (19/11/2026: verificado no código e testes que as checagens de `azp` e `exp` pós-`jwt.verify` não são duplicidade — cobrem lacunas reais do `jsonwebtoken.verify` contra OIDC Core §3.1.3.7) |
+| MG-10 | Baixa | Aberta (diretriz operacional de commits/sessões; fora de escopo de código) |
 
 > Este é o primeiro ciclo; não havia auditoria anterior do Google nem arquivo prévio. Nos próximos ciclos: ler este documento, verificar o status acima com evidências (commits/testes), e acrescentar `# Ciclo N` sem duplicar descobertas.
+
+---
+
+# Ciclo 2 — Validação, Confronto e Implementação do Plano de Ação (19/11/2026)
+
+## 1. Identificação e confronto com o estado atual
+
+- **Data e horário:** 19/11/2026, 21:48–22:05 (`America/Sao_Paulo`, BRT).
+- **Commit base confrontado:** `cca0956` (incluindo os commits `7d68032` e `3946444` realizados após o Ciclo 1).
+- **Objetivo:** confrontar cada achado do Ciclo 1 com o código atual, descartar o que já estava resolvido ou desatualizado e implementar apenas os ajustes necessários e validados.
+
+### 1.1 Resultado do confronto
+
+| Item do Ciclo 1 | Estado encontrado antes da implementação | Ação tomada |
+|---|---|---|
+| **MG-08.1** (linha de base e isolamento de env no Jest) | **Resolvido** anteriormente nos commits `7d68032` e `3946444` (`tests/setup-env.js`, `jest.config.base.js`, `logs/` de 19/11 21:38–21:41). | Nenhuma reimplementação; apenas incluído `ALLOW_GOOGLE_DEV_BYPASS` em `tests/setup-env.js`. |
+| **P5 / MG-05** (reuso de chaves JWKS vencidas) | **Desatualizado / comportamento validado**: `lib/auth/google-id-token.js` preserva chaves durante o cooldown de 60 s e aplica fail-closed (`503`) após vencimento de `max-age`, conforme `ADR-0042` e testes vigentes. | Nenhuma alteração em `lib/auth/google-id-token.js`. |
+| **§3.5 / H3 / MG-09** (checagens de `aud` e `exp` pós-`jwt.verify`) | **Resolvido / comportamento obrigatório**: `jsonwebtoken.verify` aceita `aud` array sem validar `azp` e não exige `exp` quando omitido no payload; as checagens manuais em `google-id-token.js` L221–233 fecham essas brechas. | Nenhuma alteração em `lib/auth/google-id-token.js`. |
+| **P1 / MG-01** (atalho dev sem credencial) | **Pendente** (`pages/api/customer/auth.js` L61–67). **NI-01** confirmou que `scripts/maintenance/start-webhook-tunnel.sh` L35–40 orienta expor `npm run dev` via túnel. | Implementado opt-in explícito `ALLOW_GOOGLE_DEV_BYPASS === 'true'` + correção **NI-03** (`INVALID_GOOGLE_TOKEN` quando Client ID existe e `credential` foi omitido). |
+| **P2 / MG-02** (vínculo por e-mail mantendo senha / sobrescrevendo `google_id`) | **Pendente** (`lib/domain/customers.js` L93–103). **NI-02** confirmou inexistência de redefinição de senha para `customers` e ausência de tratamento HTTP `409` na API. | Implementado `password_hash = NULL` no vínculo inicial por e-mail, guarda `WHERE ... AND (google_id IS NULL OR google_id = $1)`, erro `GOOGLE_ACCOUNT_CONFLICT` e resposta HTTP `409` em `pages/api/customer/auth.js`. |
+| **P3 / MG-03** (erros de configuração sem `logger.error` + texto ao visitante) | **Pendente** (`pages/api/customer/auth.js` L182–196). **NI-04** constatou que `scripts/check-env.js` não alertava divergência entre os dois Client IDs. | Adicionado `logger.error` para `GOOGLE_NOT_CONFIGURED` e `GOOGLE_AUDIENCE_MISMATCH`, mensagem neutra ao visitante e verificação de paridade em `scripts/check-env.js`. |
+| **P4 / MG-04** (botão morto `"Sign in with Google"` expondo variável) | **Pendente** (`pages/entrar.js` L238–242, L385, L420–447). | Removidos o botão substituto, `handleGoogleFallbackClick` e o divisor `"ou"` no estado `unconfigured`. |
+| **P6 / MG-06 / MG-07** (runbook e inconsistências documentais) | **Pendente** (`.env.example`, `CHANGELOG.md`, `ADR-0042`). | Documentação alinhada em `.env.example`, `CHANGELOG.md`, `docs/adr/0042-google-id-token-local-jwks-verification.md` e `docs/PROJECT_tests.md`. |
+| **MG-08.2 / MG-08.3** (cobertura de testes) | **Pendente** nos testes unitários, de API e de banco real. | Atualizados e ampliados os testes de `auth.test.js`, `customers.test.js`, `customers.db.test.js` e `entrar.test.js`. |
+
+## 2. Alterações aplicadas (resumo por arquivo)
+
+- [`pages/api/customer/auth.js`](file:///home/gus/projetos/Caminhar/pages/api/customer/auth.js): opt-in `ALLOW_GOOGLE_DEV_BYPASS === 'true'` no atalho dev; distinção entre `INVALID_GOOGLE_TOKEN` e `GOOGLE_NOT_CONFIGURED`; `logger.error` para erros de configuração sem vazar IDs; mensagem neutra no `401`; captura de `GOOGLE_ACCOUNT_CONFLICT` devolvendo HTTP `409`.
+- [`lib/domain/customers.js`](file:///home/gus/projetos/Caminhar/lib/domain/customers.js): `upsertGoogleCustomer` agora anula `password_hash = NULL` ao vincular conta por e-mail pela primeira vez, aplica `AND (google_id IS NULL OR google_id = $1)` e lança `GOOGLE_ACCOUNT_CONFLICT` quando há conflito de `google_id`.
+- [`pages/entrar.js`](file:///home/gus/projetos/Caminhar/pages/entrar.js): removidos `handleGoogleFallbackClick` e o botão substituto em `googleStatus === 'unconfigured'`, exibindo o divisor `"ou"` apenas quando o Google está configurado.
+- [`scripts/check-env.js`](file:///home/gus/projetos/Caminhar/scripts/check-env.js): aviso preventivo sem exposição de valores para divergência entre `GOOGLE_CLIENT_ID` e `NEXT_PUBLIC_GOOGLE_CLIENT_ID` ou ausência de `NEXT_PUBLIC_GOOGLE_CLIENT_ID` com `GOOGLE_CLIENT_ID` definido.
+- [`tests/setup-env.js`](file:///home/gus/projetos/Caminhar/tests/setup-env.js), [`tests/integration/api/customer/auth.test.js`](file:///home/gus/projetos/Caminhar/tests/integration/api/customer/auth.test.js), [`tests/unit/lib/domain/customers.test.js`](file:///home/gus/projetos/Caminhar/tests/unit/lib/domain/customers.test.js), [`tests/integration/domain/customers.db.test.js`](file:///home/gus/projetos/Caminhar/tests/integration/domain/customers.db.test.js) e [`tests/unit/pages/entrar.test.js`](file:///home/gus/projetos/Caminhar/tests/unit/pages/entrar.test.js): cobertura dos novos guardas e preservação dos comportamentos existentes (em `entrar.test.js`, o seletor do host do botão Google foi ajustado para `div[aria-busy]` para não colidir com `aria-busy` do componente `<Button>`).
+- [`.env.example`](file:///home/gus/projetos/Caminhar/.env.example), [`CHANGELOG.md`](file:///home/gus/projetos/Caminhar/CHANGELOG.md), [`docs/adr/0042-google-id-token-local-jwks-verification.md`](file:///home/gus/projetos/Caminhar/docs/adr/0042-google-id-token-local-jwks-verification.md) e [`docs/PROJECT_tests.md`](file:///home/gus/projetos/Caminhar/docs/PROJECT_tests.md): runbook operacional, nota de substituição de `/tokeninfo` por JWKS local e atualização da documentação de isolamento de testes.
+
+## 3. Validações executadas e pendências remanescentes
+
+- **Suítes direcionadas (Jest):** `7 passed, 7 total` (`88 passed, 88 total`) — `google-id-token.test.js`, `customer/auth.test.js`, `customers.test.js`, `entrar.test.js`, `document-csp.test.js`, `next.config.test.js` e `schema-sources.test.js`.
+- **Suíte completa (`npm test`):** `235 passed, 8 skipped (243 total)`, `1998 passed, 96 skipped (2094 total)`, `6 snapshots passed`.
+- **Gates estáticos (`npm run lint`, `npm run knip`, `npm run lint:workflows`, `npm run lint:chars`):** todos executados e aprovados com exit code `0`.
+- **Testes em PostgreSQL real (`npm run test:db:container -- tests/integration/domain/customers.db.test.js`):** **ignorado/skipped** (`1 skipped`, `6 skipped`) porque não há daemon Docker/container runtime disponível no ambiente de execução (`Could not find a working container runtime strategy`). Fica pendente de validação no CI (`test-db-coverage.yml`) ou em ambiente local com Docker ativo, conforme `AGENTS.md` §7 item 1.
+- **Pendente fora do escopo automático:** validação manual pós-deploy no navegador (incluindo verificação do Console Google Cloud em produção) e eventual avaliação de `nonce` (H1) ou redefinição de senha para visitantes.

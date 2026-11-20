@@ -53,12 +53,19 @@ const profileUpdateSchema = z.object({
   }).optional(),
 });
 
+const GOOGLE_CONFIG_ERROR_CODES = new Set(['GOOGLE_NOT_CONFIGURED', 'GOOGLE_AUDIENCE_MISMATCH']);
+
 async function verifyGoogleCredential(payload) {
   if (payload.credential) {
     return verifyGoogleIdToken(payload.credential);
   }
 
-  if (payload.googleSub && payload.email && process.env.NODE_ENV !== 'production') {
+  if (
+    payload.googleSub &&
+    payload.email &&
+    process.env.NODE_ENV !== 'production' &&
+    process.env.ALLOW_GOOGLE_DEV_BYPASS === 'true'
+  ) {
     return {
       googleSub: payload.googleSub,
       email: payload.email,
@@ -66,7 +73,13 @@ async function verifyGoogleCredential(payload) {
     };
   }
 
-  throw new Error('GOOGLE_NOT_CONFIGURED');
+  const hasClientId = Boolean(
+    String(process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '').trim()
+  );
+  const errorCode = hasClientId ? 'INVALID_GOOGLE_TOKEN' : 'GOOGLE_NOT_CONFIGURED';
+  const err = new Error(errorCode);
+  err.code = errorCode;
+  throw err;
 }
 
 export default async function handler(req, res) {
@@ -179,11 +192,11 @@ export default async function handler(req, res) {
       try {
         googleProfile = await verifyGoogleCredential(validation.data);
       } catch (err) {
-        logger.warn(
-          'CustomerAuth',
-          'Falha na autenticação Google:',
-          err?.code || err?.message || err?.name || 'UnknownError'
-        );
+        const reason = err?.code || err?.message || err?.name || 'UnknownError';
+        logger.warn('CustomerAuth', 'Falha na autenticação Google:', reason);
+        if (GOOGLE_CONFIG_ERROR_CODES.has(reason)) {
+          logger.error('CustomerAuth', 'Erro de configuração na autenticação Google:', reason);
+        }
         if (err?.code === 'GOOGLE_UPSTREAM_UNAVAILABLE') {
           return res.status(503).json({
             error: 'Service Unavailable',
@@ -192,10 +205,22 @@ export default async function handler(req, res) {
         }
         return res.status(401).json({
           error: 'Unauthorized',
-          message: 'Não foi possível autenticar com o Google. Verifique a configuração ou use seu e-mail e senha.',
+          message: 'Não foi possível autenticar com o Google. Tente novamente ou use seu e-mail e senha.',
         });
       }
-      const customer = await upsertGoogleCustomer(googleProfile);
+      let customer;
+      try {
+        customer = await upsertGoogleCustomer(googleProfile);
+      } catch (err) {
+        if (err?.code === 'GOOGLE_ACCOUNT_CONFLICT' || err?.message === 'GOOGLE_ACCOUNT_CONFLICT') {
+          logger.warn('CustomerAuth', 'Conflito de vínculo de conta Google:', 'GOOGLE_ACCOUNT_CONFLICT');
+          return res.status(409).json({
+            error: 'Conflict',
+            message: 'Este e-mail já está vinculado a outra conta Google.',
+          });
+        }
+        throw err;
+      }
       const token = generateCustomerToken(customer);
       setCustomerAuthCookie(res, token);
       return res.status(200).json({ customer });

@@ -100,17 +100,21 @@ describe('Página de Acesso do Visitante (pages/entrar.js)', () => {
     );
   });
 
-  it('sem NEXT_PUBLIC_GOOGLE_CLIENT_ID não injeta script GSI e exibe alerta informativo ao clicar no botão fallback', async () => {
-    render(<EntrarPage />);
+  it('sem NEXT_PUBLIC_GOOGLE_CLIENT_ID não injeta script GSI e oculta opção do Google sem expor variável interna', async () => {
+    const { container } = render(<EntrarPage />);
 
-    expect(document.querySelector('script[data-google-gsi="true"]')).toBeNull();
+    await waitFor(() => {
+      expect(document.querySelector('script[data-google-gsi="true"]')).toBeNull();
+    });
 
-    const fallbackButton = await screen.findByRole('button', { name: 'Sign in with Google' });
-    fireEvent.click(fallbackButton);
+    expect(screen.queryByRole('button', { name: /Sign in with Google/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Google/i })).not.toBeInTheDocument();
+    expect(screen.queryByText('ou')).not.toBeInTheDocument();
+    expect(container.textContent).not.toContain('NEXT_PUBLIC_GOOGLE_CLIENT_ID');
 
-    const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('NEXT_PUBLIC_GOOGLE_CLIENT_ID');
-    expect(document.querySelector('script[data-google-gsi="true"]')).toBeNull();
+    const host = container.querySelector('div[aria-busy]');
+    expect(host).not.toBeNull();
+    expect(host.hidden).toBe(true);
   });
 
   it('com NEXT_PUBLIC_GOOGLE_CLIENT_ID injeta script GSI, inicializa popup, renderiza botão e autentica via POST /api/customer/auth', async () => {

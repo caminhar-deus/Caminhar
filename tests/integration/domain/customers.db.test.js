@@ -160,8 +160,28 @@ describeIf('Clientes (customers) — Integração com PostgreSQL Real', () => {
     });
     expect(linked.id).toBe(existing.id);
 
-    const rawLinked = await tx.query('SELECT google_id FROM customers WHERE id = $1', [existing.id]);
+    const rawLinked = await tx.query('SELECT google_id, password_hash FROM customers WHERE id = $1', [existing.id]);
     expect(rawLinked.rows[0].google_id).toBe(googleSub1);
+    expect(rawLinked.rows[0].password_hash).toBeNull();
+
+    // Senha cadastrada antes da vinculação é invalidada para prevenir pré-sequestro
+    const oldPasswordAttempt = await authenticateCustomer({
+      email: emailExisting,
+      password: 'SenhaInicial@123',
+    });
+    expect(oldPasswordAttempt).toBeNull();
+
+    // Tentativa de vínculo com mesmo e-mail e outro google_id é rejeitada com GOOGLE_ACCOUNT_CONFLICT
+    await expect(
+      upsertGoogleCustomer({
+        googleSub: `google-sub-conflict-${Date.now()}`,
+        email: emailExisting,
+        name: 'Impostor',
+      })
+    ).rejects.toMatchObject({ code: 'GOOGLE_ACCOUNT_CONFLICT' });
+
+    const rawAfterConflict = await tx.query('SELECT google_id FROM customers WHERE id = $1', [existing.id]);
+    expect(rawAfterConflict.rows[0].google_id).toBe(googleSub1);
 
     const relogin = await upsertGoogleCustomer({
       googleSub: googleSub1,

@@ -69,7 +69,7 @@ tests/
 
 ### `tests/setup-env.js`
 **Localização:** `/tests/setup-env.js`
-**Propósito:** Isolamento prévio de variáveis de ambiente carregado via `setupFiles` em `jest.config.base.js` (compartilhado entre `jest.config.js` e `jest.config.db.js`), executando antes da importação de qualquer módulo da aplicação e de `tests/setup.js`/`tests/setup.db.js`. Força `process.env.NODE_ENV = 'test'` e remove variáveis externas herdadas do shell/ambiente local (`UPSTASH_REDIS_REST_*`, `REDIS_URL`, `MP_*`, `GOOGLE_CLIENT_ID`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `DATABASE_SSL`, `LOG_LEVEL`, `LOG_FILE_PATH`, `DISABLE_RATE_LIMIT`, `TRUST_PROXY`, `UPLOADS_DIR`), preservando `TEST_DATABASE_URL` e `DATABASE_URL` para os testes com PostgreSQL real.
+**Propósito:** Isolamento prévio de variáveis de ambiente carregado via `setupFiles` em `jest.config.base.js` (compartilhado entre `jest.config.js` e `jest.config.db.js`), executando antes da importação de qualquer módulo da aplicação e de `tests/setup.js`/`tests/setup.db.js`. Força `process.env.NODE_ENV = 'test'` e remove variáveis externas herdadas do shell/ambiente local (`UPSTASH_REDIS_REST_*`, `REDIS_URL`, `MP_*`, `GOOGLE_CLIENT_ID`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `ALLOW_GOOGLE_DEV_BYPASS`, `DATABASE_SSL`, `LOG_LEVEL`, `LOG_FILE_PATH`, `DISABLE_RATE_LIMIT`, `TRUST_PROXY`, `UPLOADS_DIR`), preservando `TEST_DATABASE_URL` e `DATABASE_URL` para os testes com PostgreSQL real.
 
 ### `tests/setup.js`
 **Localização:** `/tests/setup.js`
