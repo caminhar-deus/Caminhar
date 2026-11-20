@@ -102,21 +102,21 @@
 
 .badgeInternal {
   composes: modalityBadge;
-  background-color: var(--color-success-bg);
-  color: var(--color-success-dark);
-  border: var(--border-width-thin) solid var(--color-success-border);
+  background-color: var(--color-success-50);
+  color: var(--color-success-800);
+  border: var(--border-width-1) solid var(--color-success-200);
 }
 
 .badgeExternal {
   composes: modalityBadge;
   background-color: var(--color-bg-tertiary);
   color: var(--color-text-secondary);
-  border: var(--border-width-thin) solid var(--color-border-primary);
+  border: var(--border-width-1) solid var(--color-border-light);
 }
 
 .stockHint {
   font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
 }
 
 .productName {
@@ -163,8 +163,8 @@
   border-radius: var(--border-radius-lg);
   border: none;
   text-decoration: none;
-  font-weight: var(--font-weight-bold);
-  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
   cursor: pointer;
   transition: var(--transition-shadow), var(--transition-opacity);
 }
@@ -172,19 +172,19 @@
 .linkMercadoLivre {
   composes: linkButton;
   background-color: #ffe600;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .linkShopee {
   composes: linkButton;
-  background-color: #ee4d2d;
-  color: #fff;
+  background-color: #c53316;
+  color: var(--color-text-inverse);
 }
 
 .linkAmazon {
   composes: linkButton;
   background-color: #ff9900;
-  color: #fff;
+  color: var(--color-text-primary);
 }
 
 .buyInternalButton {
@@ -197,7 +197,7 @@
   composes: linkButton;
   background-color: var(--color-bg-tertiary);
   color: var(--color-text-tertiary);
-  border: var(--border-width-thin) solid var(--color-border-primary);
+  border: var(--border-width-1) solid var(--color-border-light);
   cursor: not-allowed;
 }
 

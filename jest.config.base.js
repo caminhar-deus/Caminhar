@@ -36,4 +36,12 @@ export default {
   // 5 s dão folga para a saída normal e mantêm o aviso como rede de segurança
   // para um vazamento real, que não drenaria nem nesse prazo.
   workerGracefulExitTimeout: 5000,
+
+  // Recicla o worker ocioso entre suítes quando o heap ultrapassar 400 MB.
+  // Sob `--coverage` (`coverageProvider: 'v8'` + `jsdom`), workers sem limite
+  // acumulam até ~664 MB de heap (~3,5-4,5 GB RSS somados nos 4 workers),
+  // disparando congelamentos de 64-80 s por pressão de RAM/swap e timeouts
+  // aleatórios (ex.: ContentTabs.test.js). Com `'400MB'`, a cobertura V8 é
+  // coletada antes da reciclagem, o pico fica <= 393 MB e o tempo cai ~56%.
+  workerIdleMemoryLimit: '400MB',
 };

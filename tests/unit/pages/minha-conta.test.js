@@ -1,6 +1,4 @@
 import React from 'react';
-import fs from 'node:fs';
-import path from 'node:path';
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import '../../mocks/next-setup.js';
@@ -178,21 +176,5 @@ describe('Página Minha Conta do Visitante (pages/minha-conta.js)', () => {
     const logoutIcon = screen.getByRole('button', { name: /Sair da conta/i }).querySelector('svg');
     expect(logoutIcon?.querySelector('polyline')).toHaveAttribute('points', '16 17 21 12 16 7');
     expect(logoutIcon?.querySelector('circle')).toBeNull();
-  });
-
-  it('garante que todos os tokens CSS de CustomerPages.module.css existem em variables.css', () => {
-    const rootDir = process.cwd();
-    const variablesCss = fs.readFileSync(path.join(rootDir, 'pages/styles/variables.css'), 'utf8');
-    const customerCss = fs.readFileSync(path.join(rootDir, 'pages/styles/CustomerPages.module.css'), 'utf8');
-
-    const definedTokens = new Set(
-      [...variablesCss.matchAll(/(--[a-zA-Z0-9_-]+)\s*:/g)].map((m) => m[1])
-    );
-    const usedTokens = new Set(
-      [...customerCss.matchAll(/var\((--[a-zA-Z0-9_-]+)/g)].map((m) => m[1])
-    );
-    const missingTokens = [...usedTokens].filter((token) => !definedTokens.has(token));
-
-    expect(missingTokens).toEqual([]);
   });
 });

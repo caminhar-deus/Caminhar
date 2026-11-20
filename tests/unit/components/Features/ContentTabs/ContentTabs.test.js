@@ -13,30 +13,30 @@ describe('Componente Front-End - ContentTabs', () => {
     jest.restoreAllMocks();
   });
 
-  it('deve renderizar a aba de Reflexões por padrão', async () => {
+  it('deve renderizar a aba de Reflexões por padrão', () => {
     render(<ContentTabs />);
-    await expect(screen.findByTestId('blog')).resolves.toBeInTheDocument();
+    expect(screen.getByTestId('blog')).toBeInTheDocument();
   });
 
-  it('deve alternar para as abas Músicas, Vídeos e Produtos ao clicar', async () => {
+  it('deve alternar para as abas Músicas, Vídeos e Produtos ao clicar', () => {
     render(<ContentTabs />);
-    
+
     fireEvent.click(screen.getByText(/Músicas/i));
-    await expect(screen.findByTestId('music')).resolves.toBeInTheDocument();
+    expect(screen.getByTestId('music')).toBeInTheDocument();
 
     fireEvent.click(screen.getByText(/Vídeos/i));
-    await expect(screen.findByTestId('video')).resolves.toBeInTheDocument();
+    expect(screen.getByTestId('video')).toBeInTheDocument();
 
     fireEvent.click(screen.getByText(/Produtos Religiosos/i));
-    await expect(screen.findByTestId('products')).resolves.toBeInTheDocument();
+    expect(screen.getByTestId('products')).toBeInTheDocument();
   });
 
-  it('não deve mudar de aba ao clicar no projeto bloqueado', async () => {
+  it('não deve mudar de aba ao clicar no projeto bloqueado', () => {
     render(<ContentTabs />);
     const projBtn = screen.getByText('Em Desenvolvimento').closest('button');
-    
+
     fireEvent.click(projBtn);
-    await expect(screen.findByTestId('blog')).resolves.toBeInTheDocument();
+    expect(screen.getByTestId('blog')).toBeInTheDocument();
   });
 
   it('deve usar o default do switch para abas desconhecidas (fallback) e para projetos futuros', () => {

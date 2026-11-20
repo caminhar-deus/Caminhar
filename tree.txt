@@ -646,6 +646,7 @@
 │   ├── MASTER.md
 │   └── pages
 │       ├── admin.md
+│       ├── customer.md
 │       ├── home.md
 │       ├── login.md
 │       └── posts.md
@@ -730,6 +731,7 @@
 │   │   └── template.md
 │   ├── ai-memory-error.md
 │   ├── melhoria_agente.md
+│   ├── melhoria_design.md
 │   ├── melhoria_google.md
 │   ├── melhoria_mercadopago.md
 │   └── retorno_da_semana.md
@@ -1523,7 +1525,9 @@
 │       │   └── verify-mp-webhook.test.js
 │       ├── settings.cache.test.js
 │       ├── tests-hygiene
-│       │   └── console-no-global-assignment.test.js
+│       │   ├── console-no-global-assignment.test.js
+│       │   ├── css-tokens.test.js
+│       │   └── jest-config.test.js
 │       ├── utils
 │       │   ├── reorder.test.js
 │       │   └── resolve-next.test.js
@@ -1544,4 +1548,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-219 directories, 1326 files
+219 directories, 1330 files

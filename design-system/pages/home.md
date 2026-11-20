@@ -1,6 +1,6 @@
 # Página pública inicial (home) — spec de implementação (override do MASTER)
 
-> Última atualização: 2026-11-08 (duas modalidades de Produtos Religiosos — ADR-0037: filtro `"Modalidade:"`, selos discretos `"Loja parceira"` / `"Venda direta"`, botão externo `"Link para <site>"`, botão interno `"Comprar"` / `"Esgotado"` e botão de acesso `"Entrar"` / `"Minha Conta"` no cabeçalho público. Anterior: 2026-11-07, alinhamento visual unificado — ADR-0036).
+> Última atualização: 2026-11-19 (contraste AA e tipografia `--font-size-sm` dos botões de marketplace em `ProductCard.module.css` e alinhamento do selo `"Venda direta"` aos tokens `--color-success-*`. Anterior: 2026-11-08, duas modalidades de Produtos Religiosos — ADR-0037).
 > Override de `design-system/MASTER.md`. Tudo aqui vence o MASTER; o que não for mencionado segue o MASTER. Stack: Next.js Pages Router + React + CSS Modules + variáveis CSS (sem Tailwind). Idioma da interface: pt-BR. Tokens: sempre a variável, nunca hex.
 
 > Escopo: a página única com abas (`pages/index.js` + `components/Features/ContentTabs`). Esta spec cobre os 6 itens definidos no `docs/PLANO_ACAO_SITE_PUBLICO.md` (F1.3, F1.4, F1.6, F2.3 + decisões de design) e não toca lógica de negócio nem o painel administrativo.
@@ -197,10 +197,10 @@
 
 - Cabeçalho público — ação de conta à direita: **"Entrar"** (visitante não autenticado → `/entrar`) ou **"Minha Conta"** (visitante autenticado → `/minha-conta`), altura mínima `40px–44px`, raio `--border-radius-lg` (`8px`), foco duplo azul.
 - Produtos — filtro de modalidade: label `"Modalidade:"`, id `modality-filter-products`, opções `"Todos"` (`all`), `"Venda direta"` (`internal`), `"Lojas parceiras"` (`external`).
-- Produtos — selos discretos no cartão (`--border-radius-full`, `--font-size-xs`, `semibold`): `"Loja parceira"` (fundo `--color-bg-tertiary`, texto `--color-text-secondary`) na Modalidade A; `"Venda direta"` (fundo `--color-primary-50`, texto `--color-primary-700`) na Modalidade B.
-- Produtos — botões do cartão:
-  - Modalidade A (link externo): **"Link para Mercado Livre"**, **"Link para Shopee"** ou **"Link para Amazon"** (em nova aba, com ícone SVG `externalLink`).
-  - Modalidade B (venda interna): botão primário **"Comprar"** (`--color-primary-500`, texto `--color-text-inverse`) ou botão desabilitado **"Esgotado"** quando `stock <= 0`.
+- Produtos — selos discretos no cartão (`--border-radius-full`, `--font-size-xs`, `semibold`): `"Loja parceira"` (fundo `--color-bg-tertiary`, texto `--color-text-secondary`, borda `--color-border-light`) na Modalidade A; `"Venda direta"` (fundo `--color-success-50`, texto `--color-success-800`, borda `--color-success-200`) na Modalidade B.
+- Produtos — botões do cartão (`--font-size-sm`, `semibold`, `min-height: 44px`, `--border-radius-lg`):
+  - Modalidade A (link externo; exceção de cor de marca externa autorizada pelo `MASTER.md` §7 exclusivamente para a ação direta ao serviço externo, com contraste WCAG AA ≥ 4,5:1 verificado): **"Link para Mercado Livre"** (`#ffe600` + `--color-text-primary`, 14,15:1), **"Link para Shopee"** (`#c53316` + `--color-text-inverse`, 5,21:1) ou **"Link para Amazon"** (`#ff9900` + `--color-text-primary`, 8,37:1), em nova aba, com ícone SVG `externalLink`.
+  - Modalidade B (venda interna): botão primário **"Comprar"** (`--color-primary-600`, texto `--color-text-inverse`) ou botão desabilitado **"Esgotado"** (`--color-bg-tertiary`, texto `--color-text-tertiary`, borda `--color-border-light`) quando `stock <= 0`.
 - Produtos — label do seletor: "Ordenar por:"; aria-label do select: "Ordenar produtos"; id: `sort-select-products`.
 - Produtos — opções: "Padrão", "Posicionados", "Mais antigos", "Menor preço", "Maior preço" (expõe "Posicionados" desde 2026-10-21).
 - Produtos — contador: "Mostrando X de Y produto(s)" / "X resultado(s) para \"termo\"".

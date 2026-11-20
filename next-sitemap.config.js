@@ -22,6 +22,7 @@ export default {
           '/admin/*',
           '/api/*',
           '/_next/*',
+          '/design-system',
           '/404',
           '/500',
         ],
@@ -30,13 +31,13 @@ export default {
         // Googlebot tem acesso total
         userAgent: 'Googlebot',
         allow: ['/'],
-        disallow: ['/admin', '/admin/*', '/api/*'],
+        disallow: ['/admin', '/admin/*', '/api/*', '/design-system'],
       },
       {
         // Bingbot
         userAgent: 'Bingbot',
         allow: ['/'],
-        disallow: ['/admin', '/admin/*', '/api/*'],
+        disallow: ['/admin', '/admin/*', '/api/*', '/design-system'],
       },
     ],
   },
@@ -46,6 +47,7 @@ export default {
     '/admin',
     '/admin/*',
     '/api/*',
+    '/design-system',
     '/404',
     '/500',
     '/_next/*',

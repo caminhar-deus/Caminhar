@@ -996,7 +996,7 @@ export default function CheckoutPage() {
                   const minUnitsNeeded = unitPrice > 0 ? Math.ceil(minRequired / unitPrice) : 0;
                   const canAdjustQuantity = minUnitsNeeded > 1 && minUnitsNeeded <= Number(product.stock || 0);
                   return (
-                    <div className={styles.alertWarning} role="status" style={{ marginTop: 'var(--spacing-3)' }}>
+                    <div className={`${styles.alertWarning} ${styles.mt3}`} role="status">
                       <div>
                         <strong>Valor mínimo do Mercado Pago para esta modalidade: {formatBrl(minRequired)}</strong>
                         <div className={styles.mt4}>
@@ -1005,7 +1005,7 @@ export default function CheckoutPage() {
                           {formatBrl(totalValue)}, selecione <strong>PIX</strong>, altere o valor do produto no painel ou ajuste a quantidade.
                         </div>
                         {canAdjustQuantity && (
-                          <div style={{ marginTop: 'var(--spacing-3)' }}>
+                          <div className={styles.mt3}>
                             <Button
                               type="button"
                               variant="secondary"
@@ -1126,7 +1126,7 @@ export default function CheckoutPage() {
 
             <aside className={styles.sectionCard} aria-label="Resumo do pedido">
               <h2 className={styles.sectionTitle}>Resumo do Pedido</h2>
-              <p style={{ fontWeight: 'var(--font-weight-semibold)', marginBottom: 'var(--spacing-3)' }}>
+              <p className={styles.summaryProductName}>
                 {product.name}
               </p>
 
@@ -1166,12 +1166,12 @@ export default function CheckoutPage() {
               </div>
 
               {error && (
-                <div className={styles.alertError} role="alert" style={{ marginTop: 'var(--spacing-4)' }}>
+                <div className={`${styles.alertError} ${styles.mt4}`} role="alert">
                   {error}
                 </div>
               )}
 
-              <div style={{ marginTop: 'var(--spacing-6)' }}>
+              <div className={styles.mt6}>
                 <Button
                   type="submit"
                   variant="primary"

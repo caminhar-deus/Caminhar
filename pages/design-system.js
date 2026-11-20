@@ -23,6 +23,7 @@ export default function DesignSystem() {
       <Head>
         <title>Design System | O Caminhar com Deus</title>
         <meta name="description" content="Design System do site O Caminhar com Deus" />
+        <meta name="robots" content="noindex, nofollow" />
       </Head>
 
       <div className={styles.page}>

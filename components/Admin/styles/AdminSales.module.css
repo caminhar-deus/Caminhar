@@ -7,7 +7,7 @@
 .subTabsBar {
   display: flex;
   gap: var(--spacing-2);
-  border-bottom: var(--border-width-thin) solid var(--color-border-primary);
+  border-bottom: var(--border-width-1) solid var(--color-border-light);
   padding-bottom: var(--spacing-2);
 }
 
@@ -17,14 +17,14 @@
   gap: var(--spacing-2);
   min-height: 44px;
   padding: var(--spacing-2) var(--spacing-4);
-  border: var(--border-width-thin) solid transparent;
+  border: var(--border-width-1) solid transparent;
   border-radius: var(--border-radius-md);
   background-color: transparent;
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: var(--transition-colors);
+  transition: var(--transition-background), var(--transition-color), var(--transition-border);
 }
 
 .subTabButton:hover {
@@ -53,7 +53,7 @@
   justify-content: space-between;
   background-color: var(--color-bg-primary);
   padding: var(--spacing-4);
-  border: var(--border-width-thin) solid var(--color-border-primary);
+  border: var(--border-width-1) solid var(--color-border-light);
   border-radius: var(--border-radius-lg);
 }
 
@@ -68,8 +68,8 @@
 .filterSelect {
   min-height: 44px;
   padding: var(--spacing-2) var(--spacing-3);
-  border: var(--border-width-thin) solid var(--color-border-primary);
-  border-radius: var(--border-radius-md);
+  border: var(--border-width-1) solid var(--color-border-light);
+  border-radius: var(--border-radius-lg);
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
@@ -98,30 +98,30 @@
 
 .badgeApproved {
   composes: badge;
-  background-color: var(--color-success-bg);
-  color: var(--color-success-dark);
-  border: var(--border-width-thin) solid var(--color-success-border);
+  background-color: var(--color-success-50);
+  color: var(--color-success-800);
+  border: var(--border-width-1) solid var(--color-success-200);
 }
 
 .badgePending {
   composes: badge;
-  background-color: var(--color-warning-bg);
-  color: var(--color-warning-dark);
-  border: var(--border-width-thin) solid var(--color-warning-border);
+  background-color: var(--color-warning-50);
+  color: var(--color-warning-800);
+  border: var(--border-width-1) solid var(--color-warning-200);
 }
 
 .badgeRejected {
   composes: badge;
-  background-color: var(--color-error-bg);
-  color: var(--color-error-dark);
-  border: var(--border-width-thin) solid var(--color-error-border);
+  background-color: var(--color-error-50);
+  color: var(--color-error-800);
+  border: var(--border-width-1) solid var(--color-error-200);
 }
 
 .badgeInfo {
   composes: badge;
-  background-color: var(--color-info-bg);
-  color: var(--color-info-dark);
-  border: var(--border-width-thin) solid var(--color-info-border);
+  background-color: var(--color-info-50);
+  color: var(--color-info-800);
+  border: var(--border-width-1) solid var(--color-info-200);
 }
 
 .modalSection {
@@ -148,4 +148,36 @@
   justify-content: flex-end;
   gap: var(--spacing-3);
   margin-top: var(--spacing-6);
+}
+
+.fieldWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1_5);
+}
+
+.fieldLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.fieldHint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.ordersTableContainer {
+  margin-top: var(--spacing-4);
+}
+
+.ordersStatusMessage {
+  padding: var(--spacing-6);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.fullWidthControl {
+  width: 100%;
+  box-sizing: border-box;
 }

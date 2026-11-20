@@ -478,12 +478,22 @@
   margin-bottom: 0;
 }
 
+.mt3 {
+  margin-top: var(--spacing-3);
+}
+
 .mt4 {
   margin-top: var(--spacing-4);
 }
 
 .mt6 {
   margin-top: var(--spacing-6);
+}
+
+.summaryProductName {
+  font-weight: var(--font-weight-semibold);
+  margin: 0 0 var(--spacing-3) 0;
+  color: var(--color-text-primary);
 }
 
 @media (max-width: 768px) {

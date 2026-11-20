@@ -1,6 +1,6 @@
 # Caminhar — Design System (MASTER)
 
-> Última atualização: 2026-11-08 (especificação das duas modalidades de Produtos Religiosos, páginas `/entrar`, `/minha-conta`, `/checkout/[id]` e aba administrativa `Gestão de Vendas` — ADR-0037. Anterior: 2026-11-07, alinhamento visual unificado entre Site Público e Painel Administrativo — ADR-0036).
+> Última atualização: 2026-11-19 (overrides para `/entrar`, `/minha-conta` e `/checkout/[id]` em `design-system/pages/customer.md` e especificação de `Gestão de Vendas` em `design-system/pages/admin.md`; tokens em `Home`, `ProductCard` e `AdminSales` alinhados a `variables.css`. Anterior: 2026-11-08 — ADR-0037 e 2026-11-07 — ADR-0036).
 > Fonte de verdade global de UI/UX do projeto. Gerado com a skill `ui-ux-pro-max`
 > (`--design-system`: estilo **Minimalism & Swiss**, par editorial **Newsreader + Roboto**,
 > buscas de `ux` para autenticação acessível e validação com resumo de erros) e

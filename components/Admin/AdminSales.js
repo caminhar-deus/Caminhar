@@ -17,8 +17,8 @@ import salesStyles from './styles/AdminSales.module.css';
 
 function ShippingTypeSelect({ name, label, value, onChange, hint }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-1_5)' }}>
-      <label htmlFor={name} style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)' }}>
+    <div className={salesStyles.fieldWrapper}>
+      <label htmlFor={name} className={salesStyles.fieldLabel}>
         {label}
       </label>
       <select
@@ -32,7 +32,7 @@ function ShippingTypeSelect({ name, label, value, onChange, hint }) {
         <option value="fixed">Valor fixo</option>
         <option value="calculated">Calculado no checkout</option>
       </select>
-      {hint && <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)' }}>{hint}</span>}
+      {hint && <span className={salesStyles.fieldHint}>{hint}</span>}
     </div>
   );
 }
@@ -486,11 +486,11 @@ export default function AdminSales({ readOnly = false }) {
             </div>
           </div>
 
-          <div className={crudStyles.tableContainer} style={{ marginTop: 'var(--spacing-4)' }}>
+          <div className={`${crudStyles.tableContainer} ${salesStyles.ordersTableContainer}`}>
             {loadingOrders ? (
-              <p style={{ padding: 'var(--spacing-6)' }}>Carregando pedidos...</p>
+              <p className={salesStyles.ordersStatusMessage}>Carregando pedidos...</p>
             ) : orders.length === 0 ? (
-              <p style={{ padding: 'var(--spacing-6)', color: 'var(--color-text-secondary)' }}>
+              <p className={salesStyles.ordersStatusMessage}>
                 Nenhum pedido interno encontrado para os filtros selecionados.
               </p>
             ) : (
@@ -596,8 +596,7 @@ export default function AdminSales({ readOnly = false }) {
                     id="modal-order-status"
                     value={modalOrderStatus}
                     onChange={(e) => setModalOrderStatus(e.target.value)}
-                    className={salesStyles.filterSelect}
-                    style={{ width: '100%' }}
+                    className={`${salesStyles.filterSelect} ${salesStyles.fullWidthControl}`}
                   >
                     {ORDER_STATUS_OPTIONS.filter((o) => o.value !== '').map((opt) => (
                       <option key={opt.value} value={opt.value}>
@@ -617,8 +616,7 @@ export default function AdminSales({ readOnly = false }) {
                     value={modalTrackingCode}
                     onChange={(e) => setModalTrackingCode(e.target.value)}
                     placeholder="Ex.: BR123456789BR"
-                    className={salesStyles.searchInput}
-                    style={{ width: '100%' }}
+                    className={`${salesStyles.searchInput} ${salesStyles.fullWidthControl}`}
                   />
                 </div>
 
