@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { notifyAdminUnauthorized } from '../utils/adminSession';
 
 /**
  * @typedef {Object} ApiFetchOptions
@@ -130,6 +131,10 @@ export const useApiFetch = (url, config = {}) => {
           await sleep(retryAfterMs);
           response = await fetch(url, request);
         }
+      }
+
+      if (response?.status === 401 && notifyAdminUnauthorized('expired')) {
+        return;
       }
 
       if (!response.ok && response.status !== 304) {

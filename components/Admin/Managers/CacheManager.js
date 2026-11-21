@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Modal, Button } from '@/components/UI';
 import { AppIcon } from '@/components/UI/icons';
+import { notifyAdminUnauthorized } from '@/utils/adminSession';
 import styles from '../styles/misc.module.css';
 
 export default function AdminCacheManager() {
@@ -14,6 +15,9 @@ export default function AdminCacheManager() {
     const fetchMetrics = async () => {
       try {
         const res = await fetch('/api/admin/cache', { credentials: 'include' });
+        if (res?.status === 401 && notifyAdminUnauthorized('expired')) {
+          return;
+        }
         if (res.ok) {
           const data = await res.json();
           setCacheMetrics(data);
@@ -40,6 +44,11 @@ export default function AdminCacheManager() {
         },
         credentials: 'include',
       });
+
+      if (response?.status === 401 && notifyAdminUnauthorized('expired')) {
+        toast.dismiss?.(toastId);
+        return;
+      }
 
       const data = await response.json();
 

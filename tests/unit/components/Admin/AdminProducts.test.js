@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import AdminProducts from '../../../../components/Admin/AdminProducts.js';
+import { subscribeAdminUnauthorized } from '../../../../utils/adminSession.js';
 import toast from 'react-hot-toast';
 import { mockGlobalFetch } from '../../../helpers/index.js';
 
@@ -229,5 +230,34 @@ describe('Componente Front-End - AdminProducts', () => {
       expect(setFieldValue).not.toHaveBeenCalledWith('price', '0.00');
       expect(toast).toHaveBeenCalledWith('A loja não informou o preço — digite o valor antes de salvar.');
     });
+  });
+
+  it('handleFetchML: deve notificar o barramento admin quando receber HTTP 401 com assinante ativo', async () => {
+    const onUnauthorized = jest.fn();
+    const unsubscribe = subscribeAdminUnauthorized(onUnauthorized);
+    try {
+      global.fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        json: async () => ({ message: 'Não autenticado' }),
+      });
+
+      render(<AdminProducts />);
+      const CustomField = passedProps.renderCustomFormField(
+        { name: 'link', component: (props) => <input {...props} /> },
+        { link: 'https://ml.com' },
+        jest.fn(),
+        jest.fn()
+      );
+      render(CustomField);
+      fireEvent.click(screen.getByText('Puxar Dados'));
+
+      await waitFor(() => {
+        expect(onUnauthorized).toHaveBeenCalledWith('expired');
+      });
+      expect(toast.error).not.toHaveBeenCalled();
+    } finally {
+      unsubscribe();
+    }
   });
 });

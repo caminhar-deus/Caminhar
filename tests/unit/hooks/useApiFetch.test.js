@@ -1,6 +1,7 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import { useApiFetch } from '../../../hooks/useApiFetch.js';
+import { subscribeAdminUnauthorized } from '../../../utils/adminSession.js';
 import { mockGlobalFetch } from '../../helpers/index.js';
 
 /**
@@ -222,6 +223,47 @@ describe('Hook - useApiFetch (requestId e retry de 503)', () => {
       expect(onError).toHaveBeenCalledTimes(1);
       await flushMicrotasks();
       expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('tratamento de HTTP 401 com barramento admin', () => {
+    it('notifica o barramento e suprime erro local quando há assinante ativo', async () => {
+      const onUnauthorized = jest.fn();
+      const unsubscribe = subscribeAdminUnauthorized(onUnauthorized);
+      const onError = jest.fn();
+
+      try {
+        fetchMock.mockResolvedValueOnce(
+          makeResponse({
+            status: 401,
+            body: { message: 'Não autenticado' },
+          })
+        );
+
+        const { result } = renderHook(() => useApiFetch('/api/admin/dicas', { onError }));
+
+        await waitFor(() => expect(result.current.loading).toBe(false));
+        expect(onUnauthorized).toHaveBeenCalledWith('expired');
+        expect(onError).not.toHaveBeenCalled();
+        expect(result.current.error).toBeNull();
+      } finally {
+        unsubscribe();
+      }
+    });
+
+    it('mantém o erro padrão quando não há assinante ativo no barramento', async () => {
+      const onError = jest.fn();
+      fetchMock.mockResolvedValueOnce(
+        makeResponse({
+          status: 401,
+          body: { message: 'Não autenticado' },
+        })
+      );
+
+      const { result } = renderHook(() => useApiFetch('/api/admin/dicas', { onError }));
+
+      await waitFor(() => expect(onError).toHaveBeenCalledTimes(1));
+      expect(result.current.error).toBe('Não autenticado');
     });
   });
 });

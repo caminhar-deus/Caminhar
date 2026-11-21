@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { AppIcon } from '@/components/UI/icons';
+import { notifyAdminUnauthorized } from '@/utils/adminSession';
 import styles from '../styles/misc.module.css';
 import crudStyles from '../styles/crud.module.css';
 
@@ -35,6 +36,7 @@ function RateLimitViewer() {
       ]);
 
       if (blockedRes.status === 401 || whitelistRes.status === 401) {
+        if (notifyAdminUnauthorized('expired')) return;
         // Sessão expirada — recarrega a página para voltar ao login
         window.location.reload();
         return;
@@ -66,6 +68,7 @@ function RateLimitViewer() {
       });
 
       if (response.status === 401) {
+        if (notifyAdminUnauthorized('expired')) return;
         // Sessão expirada — recarrega a página para voltar ao login
         window.location.reload();
         return;
@@ -107,6 +110,10 @@ function RateLimitViewer() {
         credentials: 'include',
       });
 
+      if (response?.status === 401 && notifyAdminUnauthorized('expired')) {
+        return;
+      }
+
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
         throw new Error(err.message || 'Erro ao desbloquear IP');
@@ -135,6 +142,10 @@ function RateLimitViewer() {
         credentials: 'include',
       });
 
+      if (response?.status === 401 && notifyAdminUnauthorized('expired')) {
+        return;
+      }
+
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
         throw new Error(err.message || 'Erro ao adicionar à whitelist');
@@ -159,6 +170,10 @@ function RateLimitViewer() {
         method: 'DELETE',
         credentials: 'include',
       });
+
+      if (response?.status === 401 && notifyAdminUnauthorized('expired')) {
+        return;
+      }
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));

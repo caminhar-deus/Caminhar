@@ -1,3 +1,5 @@
+import { notifyAdminUnauthorized } from './adminSession';
+
 /**
  * Helper compartilhado para reordenação (Drag & Drop) de itens no Admin.
  *
@@ -26,7 +28,9 @@ export async function handleReorder(endpoint, reorderedItems, currentPage = 1, i
   const response = await fetch(endpoint, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'reorder', items: payload })
+    body: JSON.stringify({ action: 'reorder', items: payload }),
+    credentials: 'include',
   });
+  if (response?.status === 401 && notifyAdminUnauthorized('expired')) return;
   if (!response.ok) throw new Error('Falha ao reordenar');
 }

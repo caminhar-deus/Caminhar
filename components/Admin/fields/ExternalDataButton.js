@@ -1,5 +1,6 @@
 import toast from 'react-hot-toast';
 import { AppIcon } from '@/components/UI/icons';
+import { notifyAdminUnauthorized } from '@/utils/adminSession';
 import styles from '../styles/form.module.css';
 
 /**
@@ -50,8 +51,14 @@ export default function ExternalDataButton({
       const res = await fetch(config.endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url })
+        body: JSON.stringify({ url }),
+        credentials: 'include',
       });
+
+      if (res?.status === 401 && notifyAdminUnauthorized('expired')) {
+        toast.dismiss?.(loadingToast);
+        return;
+      }
 
       if (!res.ok) {
         const err = await res.json();

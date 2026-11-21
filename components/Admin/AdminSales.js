@@ -11,6 +11,7 @@ import { Button, Modal, Pagination } from '@/components/UI';
 import { AppIcon } from '@/components/UI/icons';
 import { handleReorder } from '@/utils/reorder';
 import { exportToCSV } from '@/utils/csvExport';
+import { notifyAdminUnauthorized } from '@/utils/adminSession';
 import { normalizePrice } from '@/lib/api/utils';
 import crudStyles from './styles/crud.module.css';
 import salesStyles from './styles/AdminSales.module.css';
@@ -301,7 +302,12 @@ export default function AdminSales({ readOnly = false, initialSubTab = 'orders' 
       if (paymentMethod) params.set('paymentMethod', paymentMethod);
       if (explicitSync) params.set('sync', '1');
 
-      const res = await fetch(`/api/admin/orders?${params.toString()}`);
+      const res = await fetch(`/api/admin/orders?${params.toString()}`, {
+        credentials: 'include',
+      });
+      if (res?.status === 401 && notifyAdminUnauthorized('expired')) {
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         setOrders(data.data || []);
@@ -348,6 +354,7 @@ export default function AdminSales({ readOnly = false, initialSubTab = 'orders' 
     try {
       const res = await fetch('/api/admin/orders', {
         method: 'PUT',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: selectedOrder.id,
@@ -355,6 +362,9 @@ export default function AdminSales({ readOnly = false, initialSubTab = 'orders' 
           tracking_code: modalTrackingCode,
         }),
       });
+      if (res?.status === 401 && notifyAdminUnauthorized('expired')) {
+        return;
+      }
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         toast.error(errData.message || 'Não foi possível atualizar o pedido.');

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Spinner } from '@/components/UI';
 import { AppIcon } from '@/components/UI/icons';
+import { notifyAdminUnauthorized } from '@/utils/adminSession';
 import styles from './styles/dashboard.module.css';
 
 const PERMISSION_ITEM_MAP = {
@@ -44,6 +45,14 @@ export default function AdminDashboard({ setActiveTab, setActiveSalesSubTab, use
         }
 
         const response = await fetch('/api/admin/stats', { credentials: 'include' });
+        if (response?.status === 401) {
+          try {
+            sessionStorage.removeItem(CACHE_KEY);
+          } catch {
+            // sessionStorage pode estar indisponível; ignora
+          }
+          if (notifyAdminUnauthorized('expired')) return;
+        }
         if (!response.ok) throw new Error('Falha ao carregar estatísticas');
 
         // Verifica se a resposta é JSON válido

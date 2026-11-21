@@ -9,6 +9,12 @@ import miscStyles from '../components/Admin/styles/misc.module.css';
 import { toPermissionArray } from '../lib/domain/permissions.js';
 import { Sidebar } from '@/components/Layout/Sidebar';
 import { AppIcon } from '@/components/UI/icons';
+import { useAdminInactivityTimeout } from '../hooks/useAdminInactivityTimeout';
+import {
+  buildAdminLoginUrl,
+  clearAdminSessionStorage,
+  subscribeAdminUnauthorized,
+} from '../utils/adminSession';
 
 /**
  * Ponto único de normalização do estado `currentUser`.
@@ -185,6 +191,9 @@ export default function Admin() {
   const [activeSecurityTab, setActiveSecurityTab] = useState('integrity');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
+  const routerRef = useRef(router);
+  routerRef.current = router;
+  const sessionEndingRef = useRef(false);
   const fileInputRef = useRef(null);
 
   // Estados para o Cropper
@@ -193,6 +202,81 @@ export default function Admin() {
   const [isCropping, setIsCropping] = useState(false);
   const [cropImageSrc, setCropImageSrc] = useState(null);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+
+  const endSessionAndRedirect = useCallback(async ({ reason = null, skipServerLogout = false } = {}) => {
+    if (sessionEndingRef.current) return;
+    sessionEndingRef.current = true;
+
+    clearAdminSessionStorage({ broadcastLogout: !skipServerLogout });
+
+    if (!skipServerLogout) {
+      try {
+        await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+      } catch (error) {
+        console.error('Erro ao sair:', error);
+      }
+    }
+
+    setIsAuthenticated(false);
+    setCurrentUser(null);
+
+    if (reason === 'inactivity') {
+      toast.error('Sessão encerrada por inatividade (1 hora). Faça login novamente.', {
+        id: 'admin-session-expired',
+      });
+    } else if (reason === 'expired') {
+      toast.error('Sua sessão expirou. Faça login novamente.', {
+        id: 'admin-session-expired',
+      });
+    }
+
+    routerRef.current.replace(buildAdminLoginUrl(reason));
+  }, []);
+
+  const handleSessionRefresh = useCallback(async () => {
+    try {
+      const response = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (response.status === 401) {
+        await endSessionAndRedirect({ reason: 'expired' });
+        return false;
+      }
+
+      if (!response.ok) {
+        return false;
+      }
+
+      const contentType = response.headers?.get?.('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json().catch(() => null);
+        const userData = data?.data?.user || data?.user;
+        if (userData) {
+          setCurrentUser(normalizeCurrentUser(userData));
+        }
+      }
+
+      return true;
+    } catch {
+      return false;
+    }
+  }, [endSessionAndRedirect]);
+
+  const { checkNow: checkAdminInactivity } = useAdminInactivityTimeout({
+    enabled: isAuthenticated,
+    onTimeout: () => endSessionAndRedirect({ reason: 'inactivity' }),
+    onExternalLogout: () => endSessionAndRedirect({ reason: null, skipServerLogout: true }),
+    onSessionRefresh: handleSessionRefresh,
+  });
+
+  useEffect(() => {
+    if (!isAuthenticated) return undefined;
+    return subscribeAdminUnauthorized((reason) => {
+      endSessionAndRedirect({ reason });
+    });
+  }, [isAuthenticated, endSessionAndRedirect]);
 
   // Check authentication status on component mount
   useEffect(() => {
@@ -208,6 +292,7 @@ export default function Admin() {
         });
 
         if (response.ok) {
+          sessionEndingRef.current = false;
           const contentType = response.headers.get('content-type');
           if (contentType && contentType.includes('application/json')) {
             const data = await response.json();
@@ -219,7 +304,7 @@ export default function Admin() {
           setIsAuthenticated(true);
           await loadSettings();
         } else {
-          router.replace('/login?next=/admin');
+          routerRef.current.replace('/login?next=/admin');
         }
       } catch (error) {
         if (error.name === 'AbortError') {
@@ -227,7 +312,7 @@ export default function Admin() {
           console.log('Verificação de autenticação cancelada pelo React.');
         } else {
           console.error('Auth check failed:', error);
-          router.replace('/login?next=/admin');
+          routerRef.current.replace('/login?next=/admin');
         }
       }
     };
@@ -271,6 +356,11 @@ export default function Admin() {
         body: formData,
         credentials: 'include',
       });
+
+      if (response.status === 401) {
+        await endSessionAndRedirect({ reason: 'expired' });
+        return;
+      }
 
       if (response.ok) {
         const contentType = response.headers.get('content-type');
@@ -326,7 +416,7 @@ export default function Admin() {
     setSaving(true);
     try {
       // Save title setting
-      await fetch('/api/settings', {
+      const titleRes = await fetch('/api/settings', {
         method: 'PUT',
         credentials: 'include',
         headers: {
@@ -340,8 +430,17 @@ export default function Admin() {
         }),
       });
 
+      if (titleRes.status === 401) {
+        await endSessionAndRedirect({ reason: 'expired' });
+        return;
+      }
+      if (!titleRes.ok) {
+        const errData = await titleRes.json().catch(() => ({}));
+        throw new Error(errData.message || errData.error || 'Erro ao salvar configurações');
+      }
+
       // Save subtitle setting
-      await fetch('/api/settings', {
+      const subtitleRes = await fetch('/api/settings', {
         method: 'PUT',
         credentials: 'include',
         headers: {
@@ -355,10 +454,19 @@ export default function Admin() {
         }),
       });
 
+      if (subtitleRes.status === 401) {
+        await endSessionAndRedirect({ reason: 'expired' });
+        return;
+      }
+      if (!subtitleRes.ok) {
+        const errData = await subtitleRes.json().catch(() => ({}));
+        throw new Error(errData.message || errData.error || 'Erro ao salvar configurações');
+      }
+
       toast.success('Configurações salvas com sucesso!');
     } catch (error) {
       console.error('Error saving settings:', error);
-      toast.error('Erro ao salvar configurações');
+      toast.error(error.message || 'Erro ao salvar configurações');
     } finally {
       setSaving(false);
     }
@@ -389,16 +497,23 @@ export default function Admin() {
     : undefined;
 
   // Função responsável por encerrar a sessão
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-    } catch (error) {
-      console.error('Erro ao sair:', error);
-    }
-    setIsAuthenticated(false);
-    setCurrentUser(null);
-    router.replace('/login?next=/admin');
-  };
+  const handleLogout = () => endSessionAndRedirect({ reason: null });
+
+  const handleSelectTab = useCallback((tabKey) => {
+    if (checkAdminInactivity()) return;
+    setActiveTab(tabKey);
+    setMobileMenuOpen(false);
+  }, [checkAdminInactivity]);
+
+  const handleSelectSalesSubTab = useCallback((subTabKey) => {
+    if (checkAdminInactivity()) return;
+    setActiveSalesSubTab(subTabKey);
+  }, [checkAdminInactivity]);
+
+  const handleSelectSecurityTab = useCallback((subTabKey) => {
+    if (checkAdminInactivity()) return;
+    setActiveSecurityTab(subTabKey);
+  }, [checkAdminInactivity]);
 
   if (!isAuthenticated) {
     return (
@@ -429,11 +544,11 @@ export default function Admin() {
           icon={<AppIcon name={item.icon} size={20} />}
           label={item.label}
           onClick={() => {
+            if (checkAdminInactivity()) return;
             if (item.key === 'vendas') {
               setActiveSalesSubTab('orders');
             }
-            setActiveTab(item.key);
-            setMobileMenuOpen(false);
+            handleSelectTab(item.key);
           }}
         />
       ))}
@@ -697,8 +812,8 @@ export default function Admin() {
 
               {activeTab === 'dashboard' && hasPermission('Visão Geral') && (
                 <AdminDashboard
-                  setActiveTab={setActiveTab}
-                  setActiveSalesSubTab={setActiveSalesSubTab}
+                  setActiveTab={handleSelectTab}
+                  setActiveSalesSubTab={handleSelectSalesSubTab}
                   userPermissions={currentUser?.permissions || []}
                   isAdmin={currentUser?.role === 'admin'}
                 />
@@ -725,7 +840,7 @@ export default function Admin() {
                         aria-selected={activeSecurityTab === subTab.key}
                         aria-controls={`security-tabpanel-${subTab.key}`}
                         className={`${styles.tabButton}${activeSecurityTab === subTab.key ? ` ${styles.activeTab}` : ''}`}
-                        onClick={() => setActiveSecurityTab(subTab.key)}
+                        onClick={() => handleSelectSecurityTab(subTab.key)}
                       >
                         <span className={styles.icon}>
                           <AppIcon name={subTab.icon} size={18} />

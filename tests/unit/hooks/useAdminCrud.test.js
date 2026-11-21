@@ -3,6 +3,7 @@ import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals
 import toast from 'react-hot-toast';
 import { useAdminCrud } from '../../../hooks/useAdminCrud.js';
 import { useApiFetch } from '../../../hooks/useApiFetch.js';
+import { subscribeAdminUnauthorized } from '../../../utils/adminSession.js';
 import { mockGlobalFetch } from '../../helpers/index.js';
 
 // Mock do useApiFetch (usado pelo hook para a listagem), evitando chamadas reais
@@ -230,5 +231,46 @@ describe('Hook - useAdminCrud (total do conjunto)', () => {
 
     expect(fetchMock).toHaveBeenCalledWith('/api/products', expect.objectContaining({ method: 'POST' }));
     fetchMock.mockRestore();
+  });
+});
+
+describe('Hook - useAdminCrud (guarda 401 com barramento admin)', () => {
+  it('notifica o barramento e não exibe toast de falha ao receber 401 em mutação com assinante ativo', async () => {
+    const fetchMock = mockGlobalFetch();
+    const onUnauthorized = jest.fn();
+    const unsubscribe = subscribeAdminUnauthorized(onUnauthorized);
+    const onError = jest.fn();
+
+    try {
+      fetchMock.mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: async () => ({ message: 'Não autenticado' }),
+      });
+
+      const { result } = renderHook(() =>
+        useAdminCrud({
+          apiEndpoint: '/api/admin/dicas',
+          initialFormData: { name: 'Teste' },
+          autoFetch: false,
+          onError,
+          onConfirmDelete: jest.fn().mockResolvedValue(true),
+        })
+      );
+
+      await act(async () => {
+        await result.current.handleSubmit({ preventDefault: jest.fn() }, null);
+        await result.current.handleDelete(1);
+        await result.current.toggleField({ id: 1, published: false }, 'published', false);
+      });
+
+      expect(onUnauthorized).toHaveBeenCalledTimes(3);
+      expect(onUnauthorized).toHaveBeenCalledWith('expired');
+      expect(toast.error).not.toHaveBeenCalled();
+      expect(onError).not.toHaveBeenCalled();
+    } finally {
+      unsubscribe();
+      fetchMock.mockRestore();
+    }
   });
 });

@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 
 import { handleReorder } from '../../../utils/reorder.js';
+import { subscribeAdminUnauthorized } from '../../../utils/adminSession.js';
 import { mockGlobalFetch } from '../../helpers/index.js';
 
 /**
@@ -56,6 +57,7 @@ describe('utils/reorder - handleReorder', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(endpoint).toBe('/api/products');
     expect(init.method).toBe('PUT');
+    expect(init.credentials).toBe('include');
     expect(init.headers).toEqual({ 'Content-Type': 'application/json' });
     // `position` enviada pelo chamador é sobrescrito pelo cálculo 1-based
     expect(body).toEqual({
@@ -69,6 +71,29 @@ describe('utils/reorder - handleReorder', () => {
 
     await expect(
       handleReorder('/api/admin/videos', [{ id: 1 }], 1, 10)
+    ).rejects.toThrow('Falha ao reordenar');
+  });
+
+  it('notifica o barramento admin em HTTP 401 com assinante ativo e resolve sem lançar erro', async () => {
+    const onUnauthorized = jest.fn();
+    const unsubscribe = subscribeAdminUnauthorized(onUnauthorized);
+    try {
+      fetchMock.mockResolvedValueOnce({ ok: false, status: 401 });
+
+      await expect(
+        handleReorder('/api/admin/posts', [{ id: 1 }], 1, 10)
+      ).resolves.toBeUndefined();
+      expect(onUnauthorized).toHaveBeenCalledWith('expired');
+    } finally {
+      unsubscribe();
+    }
+  });
+
+  it('em HTTP 401 sem assinante ativo mantém o erro padrão "Falha ao reordenar"', async () => {
+    fetchMock.mockResolvedValueOnce({ ok: false, status: 401 });
+
+    await expect(
+      handleReorder('/api/admin/posts', [{ id: 1 }], 1, 10)
     ).rejects.toThrow('Falha ao reordenar');
   });
 });

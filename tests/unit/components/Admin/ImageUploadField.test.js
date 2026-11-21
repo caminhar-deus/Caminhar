@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import ImageUploadField from '../../../../components/Admin/fields/ImageUploadField.js';
 import CrudForm from '../../../../components/Admin/CrudForm.js';
+import { subscribeAdminUnauthorized } from '../../../../utils/adminSession.js';
 import { mockGlobalFetch } from '../../../helpers/index.js';
 import toast from 'react-hot-toast';
 
@@ -282,6 +283,32 @@ describe('ImageUploadField Component', () => {
       expect(consoleErrorSpy).not.toHaveBeenCalled();
     } finally {
       consoleErrorSpy.mockRestore();
+    }
+  });
+
+  it('deve notificar o barramento admin ao receber 401 no upload padrão sem disparar toast de erro', async () => {
+    const onUnauthorized = jest.fn();
+    const unsubscribe = subscribeAdminUnauthorized(onUnauthorized);
+    try {
+      global.fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        json: async () => ({ message: 'Não autenticado' }),
+      });
+
+      const onChange = jest.fn();
+      render(<ImageUploadField name="image" label="Imagem" value="" onChange={onChange} />);
+
+      const file = new File(['data'], 'foto.png', { type: 'image/png' });
+      fireEvent.change(document.querySelector('input[type="file"]'), { target: { files: [file] } });
+
+      await waitFor(() => {
+        expect(onUnauthorized).toHaveBeenCalledWith('expired');
+      });
+      expect(onChange).not.toHaveBeenCalled();
+      expect(toast.error).not.toHaveBeenCalled();
+    } finally {
+      unsubscribe();
     }
   });
 });

@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import { exportToCSV } from '@/utils/csvExport';
 import { useUnauthorized } from '@/hooks/useUnauthorized';
 import { AppIcon } from '@/components/UI/icons';
+import { notifyAdminUnauthorized } from '@/utils/adminSession';
 import crudStyles from './styles/crud.module.css';
 import DateTimeBRField from './fields/DateTimeBRField';
 
@@ -29,6 +30,9 @@ export default function AdminAudit() {
     fetch(`/api/admin/audit?${params.toString()}`, { credentials: 'include' })
       .then(async res => {
         if (res.status === 401) {
+          if (notifyAdminUnauthorized('expired')) {
+            return new Promise(() => {});
+          }
           // Aguarda 500ms para o toast aparecer antes do reload
           return useUnauthorized(router, 500);
         }

@@ -51,7 +51,8 @@ Página (`min-height: 100vh`, fundo `--color-bg-secondary`, `display: flex`,
    `var(--font-family-display)`, `var(--font-size-3xl)` 30px, `tight`, margem
    `var(--spacing-2)` 8px abaixo do eyebrow; subtítulo `p` 14px
    `--color-text-secondary` ("Acesse sua conta para continuar.").
-3. Resumo de erros (só quando há erro de submit): bloco no topo do `form`,
+3. Aviso de sessão encerrada/expirada (opcional, exibido no topo do `form` quando `!summary` e `?reason=inactivity` ou `?reason=expired`): bloco `.sessionNotice` com `role="status"` e `id="login-sessao-aviso"`, fundo `--color-warning-50`, borda 1px `--color-warning-200`, raio `--border-radius-md` 6px, padding `--spacing-3` 12px, texto `--font-size-sm` 14px `medium` (`--line-height-normal`) em `--color-warning-800`.
+4. Resumo de erros (só quando há erro de submit): bloco no topo do `form`,
    `role="alert"`, `tabindex="-1"`, `id="login-erro-resumo"`, fundo
    `--color-error-50`, borda 1px `--color-error-200`, raio `--border-radius-md` 6px,
    padding `var(--spacing-2_5)` 10px, texto 14px `medium` em `--color-error-800`
@@ -62,21 +63,21 @@ Página (`min-height: 100vh`, fundo `--color-bg-secondary`, `display: flex`,
    depender do `line-height`; `gap` da lista (`var(--spacing-1)`), `margin-top`,
    `padding-left` e o marcador do `li` ficam inalterados (o `li` continua
    `list-item`).
-4. Campo Usuário: `label htmlFor="login-usuario"` "Usuário" + `*`; `input`
+5. Campo Usuário: `label htmlFor="login-usuario"` "Usuário" + `*`; `input`
    `id="login-usuario"`, `name="username"`, `type="text"`, `autoComplete="username"`,
    `required`, `aria-invalid` + `aria-describedby="login-usuario-erro"` quando inválido,
    placeholder "Seu nome de usuário", altura `--spacing-12` 48px.
    Erro inline `p#login-usuario-erro` 12px `--color-error-700`.
-5. Campo Senha: mesma estrutura (`id/name="login-senha"`, `type="password"`,
+6. Campo Senha: mesma estrutura (`id/name="login-senha"`, `type="password"`,
    `autoComplete="current-password"`, placeholder "Sua senha"); botão "mostrar senha"
    só-ícone **dentro** do campo à direita (`type="button"`, 44×44px,
    `aria-label="Mostrar senha"` fixo + `aria-pressed` para o estado, ícone SVG que
    troca; ao alternar, manter o foco no input e não limpar o valor). **Não bloquear colar.**
-6. Linha auxiliar: link "Esqueci minha senha" (`href="/esqueci-senha"`, 14px,
+7. Linha auxiliar: link "Esqueci minha senha" (`href="/esqueci-senha"`, 14px,
    `--color-text-link`, hover `--color-text-link-hover` + sublinhado) alinhado à
    direita, acima do botão. Pendência assumida: a rota ainda não existe — é link
    simples, não quebra nada; registrar como pendência em vez de improvisar destino.
-7. Botão submit: `type="submit"`, variante `primary`, tamanho `lg` (48px), `fullWidth`,
+8. Botão submit: `type="submit"`, variante `primary`, tamanho `lg` (48px), `fullWidth`,
    texto "Entrar". Loading: desabilita botão + inputs, mostra spinner (padrão
    `Button.module.css`) e troca o texto do `span` persistente com
    `aria-live="polite"` ("Entrando…"). **Anunciador único**: só esse `span` anuncia
@@ -88,7 +89,7 @@ Página (`min-height: 100vh`, fundo `--color-bg-secondary`, `display: flex`,
    para quem enxerga sem gerar duplo anúncio; o `span` persistente (só o texto
    muda) é o anunciador confiável, pois live region montada junto com o conteúdo
    não é anunciada de forma confiável.
-8. Rodapé do cartão: `p` 14px `--color-text-secondary` "Ainda não tem conta? " + link
+9. Rodapé do cartão: `p` 14px `--color-text-secondary` "Ainda não tem conta? " + link
    "Voltar ao início" (`href="/"`) — sem cadastro público nesta entrega.
 
 Espaçamento vertical do `form`: `display: flex`, `flex-direction: column`,
@@ -116,7 +117,7 @@ Espaçamento vertical do `form`: `display: flex`, `flex-direction: column`,
 - **Loading**: `disabled` em botão + inputs; botão com `opacity: var(--opacity-50)` e
   `cursor: not-allowed`; `aria-busy="true"` no `form`; spinner gira (`spin 1s linear
   infinite`, `aria-hidden`, sem anúncio próprio); com `reduced-motion`, spinner
-  parado + texto visível "Entrando…" no `p` com `aria-hidden` (item 3.7); o anúncio
+  parado + texto visível "Entrando…" no `p` com `aria-hidden` (item 3.8); o anúncio
   para leitor de tela vem só do `span` com `aria-live` dentro do botão.
 - **Erro de validação**: borda `--color-error-500` + anel `0 0 0 3px
   rgba(239,68,68,.1)` no campo, `.errorMessage` abaixo (12px `--color-error-700`),
@@ -172,6 +173,7 @@ Labels "Usuário" / "Senha" (com `*`, nota "campos obrigatórios" via `aria` —
 "Usuário ou senha incorretos. Tente de novo." (401), "Muitas tentativas. Aguarde um
 minuto e tente de novo." (429), "Não foi possível entrar. Tente de novo em instantes."
 (500/400/403), "Sem conexão. Verifique sua internet e tente de novo." (rede).
+Aviso de sessão (`role="status"`): "Sua sessão foi encerrada automaticamente após 1 hora de inatividade. Entre novamente para continuar." (`?reason=inactivity`) e "Sua sessão expirou. Entre novamente para continuar." (`?reason=expired`).
 
 ## 7. Acessibilidade
 
@@ -183,10 +185,10 @@ halo — indicador ≥ 3:1; no campo inválido, `outline` em `--color-error-500`
 texto `#171717`/`#525252` sobre `#fafafa`, botão `#fafafa` sobre `#2563eb`,
 erros `#991b1b` sobre `#fee2e2` (todos ≥ 4.5:1); `prefers-reduced-motion` desliga
 transição, fade do erro e giro do spinner; toque ≥ 44px (botão 48px, toggle 44×44px,
-links do resumo com `min-height: 44px` — item 3.3); erro nunca só por cor
+links do resumo com `min-height: 44px` — item 3.4); erro nunca só por cor
 (texto + borda); `aria-busy` no loading; anunciador único do loading:
 `aria-live="polite"` no `span` persistente do botão, texto visível em `p` com
-`aria-hidden` (sem `role="status"`, sem segunda live region — item 3.7).
+`aria-hidden` (sem `role="status"`, sem segunda live region — item 3.8).
 
 ## 8. Responsividade
 

@@ -2,6 +2,7 @@ components/Admin/AdminAudit.js → components/Admin/fields/DateTimeBRField.js
 components/Admin/AdminAudit.js → components/Admin/styles/crud.module.css
 components/Admin/AdminAudit.js → components/UI/icons.js
 components/Admin/AdminAudit.js → hooks/useUnauthorized.js
+components/Admin/AdminAudit.js → utils/adminSession.js
 components/Admin/AdminAudit.js → utils/csvExport.js
 components/Admin/fields/DateTimeBRField.js → components/Admin/fields/DateTimeBRField.module.css
 components/Admin/AdminCategories.js → components/Admin/AdminCrudBase.js
@@ -45,11 +46,14 @@ components/UI/Spinner.js → components/UI/Spinner.module.css
 components/UI/TextArea.js → components/UI/TextArea.module.css
 components/UI/Toast.js → components/UI/icons.js
 components/UI/Toast.js → components/UI/Toast.module.css
+hooks/useAdminCrud.js → utils/adminSession.js
 hooks/useAdminCrud.js → hooks/useApiFetch.js
+hooks/useApiFetch.js → utils/adminSession.js
 components/Admin/fields/TextField.js → components/UI/index.js
 components/Admin/AdminDashboard.js → components/Admin/styles/dashboard.module.css
 components/Admin/AdminDashboard.js → components/UI/index.js
 components/Admin/AdminDashboard.js → components/UI/icons.js
+components/Admin/AdminDashboard.js → utils/adminSession.js
 components/Admin/AdminDicas.js → components/Admin/AdminCrudBase.js
 components/Admin/AdminDicas.js → components/Admin/fields/TextAreaField.js
 components/Admin/AdminDicas.js → components/Admin/fields/TextField.js
@@ -67,9 +71,11 @@ components/Admin/AdminMusicas.js → components/UI/icons.js
 components/Admin/AdminMusicas.js → utils/reorder.js
 components/Admin/fields/ExternalDataButton.js → components/Admin/styles/form.module.css
 components/Admin/fields/ExternalDataButton.js → components/UI/icons.js
+components/Admin/fields/ExternalDataButton.js → utils/adminSession.js
 components/Admin/fields/UrlField.js → components/Admin/styles/form.module.css
 components/Admin/fields/UrlField.js → lib/media/spotify.js
 components/Admin/fields/UrlField.js → lib/media/youtube.js
+utils/reorder.js → utils/adminSession.js
 components/Admin/AdminPosts.js → components/Admin/AdminCategories.js
 components/Admin/AdminPosts.js → components/Admin/AdminCrudBase.js
 components/Admin/AdminPosts.js → components/Admin/fields/ImageUploadField.js
@@ -82,6 +88,7 @@ components/Admin/AdminPosts.js → hooks/useApiFetch.js
 components/Admin/AdminPosts.js → utils/reorder.js
 components/Admin/fields/ImageUploadField.js → components/Admin/styles/form.module.css
 components/Admin/fields/ImageUploadField.js → components/UI/icons.js
+components/Admin/fields/ImageUploadField.js → utils/adminSession.js
 components/Admin/AdminProducts.js → components/Admin/AdminCrudBase.js
 components/Admin/AdminProducts.js → components/Admin/fields/ExternalDataButton.js
 components/Admin/AdminProducts.js → components/Admin/fields/ImageUploadField.js
@@ -105,6 +112,7 @@ components/Admin/AdminSales.js → components/Admin/styles/crud.module.css
 components/Admin/AdminSales.js → components/UI/index.js
 components/Admin/AdminSales.js → components/UI/icons.js
 components/Admin/AdminSales.js → lib/api/utils.js
+components/Admin/AdminSales.js → utils/adminSession.js
 components/Admin/AdminSales.js → utils/csvExport.js
 components/Admin/AdminSales.js → utils/reorder.js
 components/Admin/AdminUsers.js → components/Admin/AdminRolesTab.js
@@ -119,6 +127,7 @@ components/Admin/AdminUsersTab.js → components/Admin/styles/crud.module.css
 components/Admin/AdminUsersTab.js → components/Admin/styles/form.module.css
 components/Admin/AdminUsersTab.js → hooks/useUnauthorized.js
 components/Admin/AdminUsersTab.js → lib/auth/password-policy.js
+components/Admin/AdminUsersTab.js → utils/adminSession.js
 components/Admin/AdminVideos.js → components/Admin/AdminCrudBase.js
 components/Admin/AdminVideos.js → components/Admin/fields/ExternalDataButton.js
 components/Admin/AdminVideos.js → components/Admin/fields/ImageUploadField.js
@@ -134,15 +143,19 @@ components/Performance/LazyIframe.js → lib/media/youtube.js
 components/Admin/Managers/BackupManager.js → components/Admin/styles/misc.module.css
 components/Admin/Managers/BackupManager.js → components/UI/index.js
 components/Admin/Managers/BackupManager.js → components/UI/icons.js
+components/Admin/Managers/BackupManager.js → utils/adminSession.js
 components/Admin/Managers/CacheManager.js → components/Admin/styles/misc.module.css
 components/Admin/Managers/CacheManager.js → components/UI/index.js
 components/Admin/Managers/CacheManager.js → components/UI/icons.js
+components/Admin/Managers/CacheManager.js → utils/adminSession.js
 components/Admin/Tools/IntegrityCheck.js → components/Admin/styles/crud.module.css
 components/Admin/Tools/IntegrityCheck.js → components/Admin/styles/misc.module.css
 components/Admin/Tools/IntegrityCheck.js → components/UI/icons.js
+components/Admin/Tools/IntegrityCheck.js → utils/adminSession.js
 components/Admin/Tools/RateLimitViewer.js → components/Admin/styles/crud.module.css
 components/Admin/Tools/RateLimitViewer.js → components/Admin/styles/misc.module.css
 components/Admin/Tools/RateLimitViewer.js → components/UI/icons.js
+components/Admin/Tools/RateLimitViewer.js → utils/adminSession.js
 components/Admin/index.js → components/Admin/AdminCategories.js
 components/Admin/index.js → components/Admin/AdminCrudBase.js
 components/Admin/index.js → components/Admin/AdminMusicas.js
@@ -225,6 +238,7 @@ components/Layout/index.js → components/Layout/Grid.js
 components/Layout/index.js → components/Layout/Sidebar.js
 components/Layout/index.js → components/Layout/Stack.js
 hooks/AuthProvider.js → hooks/AuthContext.js
+hooks/useAdminInactivityTimeout.js → utils/adminSession.js
 lib/api/adminCrudHandler.js → lib/auth/auth.js
 lib/api/adminCrudHandler.js → lib/cache/cache.js
 lib/api/adminCrudHandler.js → lib/domain/audit.js
@@ -300,7 +314,9 @@ pages/admin.js → components/Admin/styles/misc.module.css
 pages/admin.js → components/Admin/styles/tabs.module.css
 pages/admin.js → components/Admin/Tools/IntegrityCheck.js
 pages/admin.js → components/Admin/Tools/RateLimitViewer.js
+pages/admin.js → hooks/useAdminInactivityTimeout.js
 pages/admin.js → lib/domain/permissions.js
+pages/admin.js → utils/adminSession.js
 pages/admin.js → components/Layout/Sidebar.js
 pages/admin.js → components/UI/index.js
 pages/admin.js → components/UI/icons.js
@@ -485,6 +501,7 @@ pages/index.js → components/Features/Testimonials/index.js
 pages/index.js → pages/styles/Home.module.css
 pages/login.js → pages/styles/Login.module.css
 pages/login.js → components/UI/index.js
+pages/login.js → utils/adminSession.js
 pages/login.js → utils/resolve-next.js
 pages/minha-conta.js → lib/payment/payment-status-messages.js
 pages/minha-conta.js → pages/styles/CustomerPages.module.css
@@ -794,6 +811,7 @@ tests/unit/components/Admin/AdminMusicas.test.js → tests/helpers/index.js
 tests/unit/components/Admin/AdminPosts.test.js → components/Admin/AdminPosts.js
 tests/unit/components/Admin/AdminPosts.test.js → tests/helpers/index.js
 tests/unit/components/Admin/AdminProducts.test.js → components/Admin/AdminProducts.js
+tests/unit/components/Admin/AdminProducts.test.js → utils/adminSession.js
 tests/unit/components/Admin/AdminProducts.test.js → tests/helpers/index.js
 tests/unit/components/Admin/AdminRolesTab.test.js → components/Admin/AdminRolesTab.js
 tests/unit/components/Admin/AdminRolesTab.test.js → components/Admin/CrudTable.js
@@ -806,6 +824,7 @@ tests/unit/components/Admin/AdminVideos.test.js → components/Admin/AdminVideos
 tests/unit/components/Admin/AdminVideos.test.js → tests/helpers/index.js
 tests/unit/components/Admin/ImageUploadField.test.js → components/Admin/CrudForm.js
 tests/unit/components/Admin/ImageUploadField.test.js → components/Admin/fields/ImageUploadField.js
+tests/unit/components/Admin/ImageUploadField.test.js → utils/adminSession.js
 tests/unit/components/Admin/ImageUploadField.test.js → tests/helpers/index.js
 tests/unit/components/Admin/Managers/BackupManager.test.js → components/Admin/Managers/BackupManager.js
 tests/unit/components/Admin/Managers/BackupManager.test.js → tests/helpers/index.js
@@ -895,8 +914,12 @@ tests/unit/domain/videos.test.js → lib/infra/db.js
 tests/unit/domain/videos.test.js → tests/mocks/db-module.js
 tests/unit/hooks/useAdminCrud.test.js → hooks/useAdminCrud.js
 tests/unit/hooks/useAdminCrud.test.js → hooks/useApiFetch.js
+tests/unit/hooks/useAdminCrud.test.js → utils/adminSession.js
 tests/unit/hooks/useAdminCrud.test.js → tests/helpers/index.js
+tests/unit/hooks/useAdminInactivityTimeout.test.js → hooks/useAdminInactivityTimeout.js
+tests/unit/hooks/useAdminInactivityTimeout.test.js → utils/adminSession.js
 tests/unit/hooks/useApiFetch.test.js → hooks/useApiFetch.js
+tests/unit/hooks/useApiFetch.test.js → utils/adminSession.js
 tests/unit/hooks/useApiFetch.test.js → tests/helpers/index.js
 tests/unit/hooks/usePerformanceMetrics.test.js → hooks/usePerformanceMetrics.js
 tests/unit/index.test.js → tests/mocks/next-setup.js
@@ -967,6 +990,7 @@ tests/unit/lib/redis.test.js → lib/infra/redis.js
 tests/unit/lib/seo/config.test.js → lib/seo/config.js
 tests/unit/pages/404.test.js → pages/404.js
 tests/unit/pages/admin.test.js → pages/admin.js
+tests/unit/pages/admin.test.js → utils/adminSession.js
 tests/unit/pages/admin.test.js → tests/helpers/index.js
 tests/unit/pages/admin.test.js → tests/mocks/next-setup.js
 tests/unit/pages/api/admin/dicas.edge.test.js → lib/domain/audit.js
@@ -1035,6 +1059,10 @@ tests/unit/pages/entrar.test.js → tests/helpers/index.js
 tests/unit/pages/entrar.test.js → tests/mocks/next-setup.js
 tests/unit/pages/index.test.js → pages/index.js
 tests/unit/pages/index.test.js → tests/helpers/index.js
+tests/unit/pages/login.test.js → pages/login.js
+tests/unit/pages/login.test.js → utils/adminSession.js
+tests/unit/pages/login.test.js → tests/helpers/index.js
+tests/unit/pages/login.test.js → tests/mocks/next-setup.js
 tests/unit/pages/minha-conta.test.js → pages/minha-conta.js
 tests/unit/pages/minha-conta.test.js → tests/helpers/index.js
 tests/unit/pages/minha-conta.test.js → tests/mocks/next-setup.js
@@ -1045,6 +1073,8 @@ tests/unit/scripts/schema-sources.test.js → lib/crud/crud.js
 tests/unit/scripts/schema-sources.test.js → lib/domain/shared-pagination.js
 tests/unit/scripts/seed-settings.test.js → tests/helpers/console.js
 tests/unit/settings.cache.test.js → tests/mocks/db-module.js
+tests/unit/utils/adminSession.test.js → utils/adminSession.js
+tests/unit/utils/reorder.test.js → utils/adminSession.js
 tests/unit/utils/reorder.test.js → utils/reorder.js
 tests/unit/utils/reorder.test.js → tests/helpers/index.js
 tests/unit/utils/resolve-next.test.js → utils/resolve-next.js

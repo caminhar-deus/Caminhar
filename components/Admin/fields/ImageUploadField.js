@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { AppIcon } from '@/components/UI/icons';
+import { notifyAdminUnauthorized } from '@/utils/adminSession';
 import styles from '../styles/form.module.css';
 import toast from 'react-hot-toast';
 
@@ -81,7 +82,11 @@ export default function ImageUploadField({
         body: formData,
         credentials: 'include'
       });
-      
+
+      if (res?.status === 401 && notifyAdminUnauthorized('expired')) {
+        return;
+      }
+
       if (res.ok) {
         const data = await res.json();
         onChange({ target: { name, value: applyUploadedUrl(data.path) } });

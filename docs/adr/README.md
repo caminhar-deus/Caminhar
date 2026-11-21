@@ -52,6 +52,7 @@ apoio, não a fonte oficial; a decisão não é duplicada como página de memór
 | [0040](0040-integracao-mercadopago-orders-api.md) | Migração da integração de pagamentos para a Orders API (`/v1/orders`) do Mercado Pago | Aceito | 2026-11-12 |
 | [0041](0041-active-payment-reconciliation-and-webhook-fallback.md) | Reconciliação ativa de pagamentos pendentes e fallback de webhook por referência externa | Aceito | 2026-11-14 |
 | [0042](0042-google-id-token-local-jwks-verification.md) | Validação local de ID tokens do Google via JWKS (`RS256`) | Aceito | 2026-11-19 |
+| [0043](0043-admin-inactivity-timeout-and-unified-401-session-guard.md) | Expiração automática por 1h de inatividade no `/admin` e guarda unificada de HTTP 401 | Aceito | 2026-11-21 |
 
 ## Quando criar um ADR
 

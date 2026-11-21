@@ -1,9 +1,10 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import { mockGlobalFetch, suppressConsoleError } from '../../helpers/index.js';
 import '../../mocks/next-setup.js';
 import { useRouter } from 'next/router';
+import { notifyAdminUnauthorized } from '../../../utils/adminSession.js';
 
 const mockReplace = jest.fn();
 const mockReload = jest.fn();
@@ -150,6 +151,7 @@ describe('pages/admin.js — Navegação lateral esquerda recolhível e RBAC', (
   });
 
   afterEach(() => {
+    jest.useRealTimers();
     fetchMock?.mockRestore();
     consoleErrorSpy?.mockRestore();
     localStorage.clear();
@@ -265,5 +267,272 @@ describe('pages/admin.js — Navegação lateral esquerda recolhível e RBAC', (
     await waitFor(() => {
       expect(mockReplace).toHaveBeenCalledWith('/login?next=/admin');
     });
+  });
+
+  it('encerra a sessão e volta para o login após 1 hora de inatividade em qualquer área do painel', async () => {
+    jest.useFakeTimers();
+    const flushMicrotasks = async () => {
+      await act(async () => {
+        for (let i = 0; i < 20; i += 1) await Promise.resolve();
+      });
+    };
+
+    setupAuthAndSettings(fetchMock, {
+      id: 1,
+      username: 'admin',
+      role: 'admin',
+      permissions: CANONICAL_TABS,
+      permissionsLoaded: true,
+    });
+
+    const { unmount } = render(<Admin />);
+    try {
+      await flushMicrotasks();
+      expect(screen.getByTestId('admin-dashboard')).toBeInTheDocument();
+
+      // Alterna para outra área do painel (Posts/Artigos)
+      const sidebarNav = screen.getByRole('navigation', { name: 'Seções do painel administrativo' });
+      fireEvent.click(within(sidebarNav).getByRole('button', { name: 'Posts/Artigos' }));
+      expect(screen.getByTestId('admin-posts')).toBeInTheDocument();
+
+      // Simula 1 hora inteira de inatividade
+      act(() => {
+        jest.advanceTimersByTime(60 * 60 * 1000);
+      });
+      await flushMicrotasks();
+
+      expect(fetchMock).toHaveBeenCalledWith('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      expect(mockReplace).toHaveBeenCalledWith('/login?next=/admin&reason=inactivity');
+    } finally {
+      unmount();
+    }
+  });
+
+  it('deduplica múltiplos 401 concorrentes vindos dos módulos do painel e redireciona para o login', async () => {
+    setupAuthAndSettings(fetchMock, {
+      id: 1,
+      username: 'admin',
+      role: 'admin',
+      permissions: CANONICAL_TABS,
+      permissionsLoaded: true,
+    });
+
+    render(<Admin />);
+    expect(await screen.findByTestId('admin-dashboard')).toBeInTheDocument();
+
+    act(() => {
+      expect(notifyAdminUnauthorized('expired')).toBe(true);
+      expect(notifyAdminUnauthorized('expired')).toBe(true);
+    });
+
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith('/login?next=/admin&reason=expired');
+    });
+
+    const logoutCalls = fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/auth/logout'));
+    expect(logoutCalls).toHaveLength(1);
+    expect(mockReplace).toHaveBeenCalledTimes(1);
+  });
+
+  it('redireciona ao login quando Configuração de Cabeçalho recebe 401 ao salvar configurações', async () => {
+    fetchMock.mockImplementation(async (url, options = {}) => {
+      const urlStr = String(url);
+      if (urlStr.includes('/api/auth/check')) {
+        return {
+          ok: true,
+          headers: { get: () => 'application/json' },
+          json: async () => ({
+            success: true,
+            data: {
+              user: {
+                id: 1,
+                username: 'admin',
+                role: 'admin',
+                permissions: CANONICAL_TABS,
+                permissionsLoaded: true,
+              },
+            },
+          }),
+        };
+      }
+      if (urlStr.includes('/api/settings') && options.method === 'PUT') {
+        return {
+          ok: false,
+          status: 401,
+          headers: { get: () => 'application/json' },
+          json: async () => ({ error: 'Unauthorized', message: 'Token inválido ou expirado' }),
+        };
+      }
+      if (urlStr.includes('/api/settings')) {
+        return {
+          ok: true,
+          headers: { get: () => 'application/json' },
+          json: async () => ({
+            site_title: 'O Caminhar com Deus',
+            site_subtitle: 'Subtítulo',
+          }),
+        };
+      }
+      return { ok: true, headers: { get: () => 'application/json' }, json: async () => ({}) };
+    });
+
+    render(<Admin />);
+    expect(await screen.findByTestId('admin-dashboard')).toBeInTheDocument();
+
+    const sidebarNav = screen.getByRole('navigation', { name: 'Seções do painel administrativo' });
+    fireEvent.click(within(sidebarNav).getByRole('button', { name: 'Configuração de Cabeçalho' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar Configurações' }));
+
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith('/login?next=/admin&reason=expired');
+    });
+  });
+
+  it('renova a sessão silenciosamente via /api/auth/refresh quando o operador está ativo após 45 min e continua no painel', async () => {
+    jest.useFakeTimers();
+    const flushMicrotasks = async () => {
+      await act(async () => {
+        for (let i = 0; i < 20; i += 1) await Promise.resolve();
+      });
+    };
+
+    setupAuthAndSettings(fetchMock, {
+      id: 1,
+      username: 'admin',
+      role: 'admin',
+      permissions: CANONICAL_TABS,
+      permissionsLoaded: true,
+    });
+
+    const { unmount } = render(<Admin />);
+    try {
+      await flushMicrotasks();
+      expect(screen.getByTestId('admin-dashboard')).toBeInTheDocument();
+
+      await act(async () => {
+        jest.advanceTimersByTime(46 * 60 * 1000);
+        window.dispatchEvent(new Event('pointerdown'));
+      });
+      await flushMicrotasks();
+
+      expect(fetchMock).toHaveBeenCalledWith('/api/auth/refresh', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      expect(screen.getByTestId('admin-dashboard')).toBeInTheDocument();
+      expect(mockReplace).not.toHaveBeenCalled();
+    } finally {
+      unmount();
+    }
+  });
+
+  it('encerra a sessão e redireciona ao login com reason=expired se /api/auth/refresh responder 401', async () => {
+    jest.useFakeTimers();
+    const flushMicrotasks = async () => {
+      await act(async () => {
+        for (let i = 0; i < 20; i += 1) await Promise.resolve();
+      });
+    };
+
+    fetchMock.mockImplementation(async (url) => {
+      const urlStr = String(url);
+      if (urlStr.includes('/api/auth/check')) {
+        return {
+          ok: true,
+          headers: { get: () => 'application/json' },
+          json: async () => ({
+            success: true,
+            data: {
+              user: {
+                id: 1,
+                username: 'admin',
+                role: 'admin',
+                permissions: CANONICAL_TABS,
+                permissionsLoaded: true,
+              },
+            },
+          }),
+        };
+      }
+      if (urlStr.includes('/api/settings')) {
+        return {
+          ok: true,
+          headers: { get: () => 'application/json' },
+          json: async () => ({ site_title: 'O Caminhar com Deus', site_subtitle: 'Subtítulo' }),
+        };
+      }
+      if (urlStr.includes('/api/auth/refresh')) {
+        return {
+          ok: false,
+          status: 401,
+          headers: { get: () => 'application/json' },
+          json: async () => ({ error: 'Unauthorized', message: 'Refresh token inválido ou expirado' }),
+        };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+
+    const { unmount } = render(<Admin />);
+    try {
+      await flushMicrotasks();
+      expect(screen.getByTestId('admin-dashboard')).toBeInTheDocument();
+
+      await act(async () => {
+        jest.advanceTimersByTime(46 * 60 * 1000);
+        window.dispatchEvent(new Event('pointerdown'));
+      });
+      await flushMicrotasks();
+
+      expect(fetchMock).toHaveBeenCalledWith('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      expect(mockReplace).toHaveBeenCalledWith('/login?next=/admin&reason=expired');
+    } finally {
+      unmount();
+    }
+  });
+
+  it('bloqueia troca de aba após hibernação acima de 1 hora e retorna ao login por inatividade', async () => {
+    jest.useFakeTimers();
+    const flushMicrotasks = async () => {
+      await act(async () => {
+        for (let i = 0; i < 20; i += 1) await Promise.resolve();
+      });
+    };
+
+    setupAuthAndSettings(fetchMock, {
+      id: 1,
+      username: 'admin',
+      role: 'admin',
+      permissions: CANONICAL_TABS,
+      permissionsLoaded: true,
+    });
+
+    const { unmount } = render(<Admin />);
+    try {
+      await flushMicrotasks();
+      expect(screen.getByTestId('admin-dashboard')).toBeInTheDocument();
+
+      const start = Date.now();
+      jest.setSystemTime(start + 60 * 60 * 1000 + 5000);
+
+      const sidebarNav = screen.getByRole('navigation', { name: 'Seções do painel administrativo' });
+      fireEvent.click(within(sidebarNav).getByRole('button', { name: 'Posts/Artigos' }));
+      await flushMicrotasks();
+
+      expect(screen.queryByTestId('admin-posts')).not.toBeInTheDocument();
+      expect(fetchMock).toHaveBeenCalledWith('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      expect(mockReplace).toHaveBeenCalledWith('/login?next=/admin&reason=inactivity');
+    } finally {
+      unmount();
+    }
   });
 });

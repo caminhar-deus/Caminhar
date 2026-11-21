@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { AppIcon } from '@/components/UI/icons';
+import { notifyAdminUnauthorized } from '@/utils/adminSession';
 import styles from '../styles/misc.module.css';
 import crudStyles from '../styles/crud.module.css';
 
@@ -38,6 +39,7 @@ function IntegrityCheck() {
       });
 
       if (response.status === 401) {
+        if (notifyAdminUnauthorized('expired')) return;
         // Sessão expirada — recarrega a página para voltar ao login
         window.location.reload();
         return;

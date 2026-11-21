@@ -10,6 +10,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useRouter } from 'next/router';
 import { useUnauthorized } from '@/hooks/useUnauthorized';
+import { notifyAdminUnauthorized } from '@/utils/adminSession';
 
 const userSchema = z.object({
   username: z.string().min(3, 'O usuário/email deve ter no mínimo 3 caracteres'),
@@ -84,6 +85,9 @@ const RoleSelectField = ({ name, value, onChange, label, error, hint, gridColumn
     fetch('/api/admin/roles', { credentials: 'include' })
       .then(async res => {
         if (res.status === 401) {
+          if (notifyAdminUnauthorized('expired')) {
+            return new Promise(() => {});
+          }
           return useUnauthorized(router);
         }
         if (!res.ok) {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Modal, Button } from '@/components/UI';
 import { AppIcon } from '@/components/UI/icons';
+import { notifyAdminUnauthorized } from '@/utils/adminSession';
 import styles from '../styles/misc.module.css';
 
 export default function AdminBackupManager() {
@@ -15,6 +16,9 @@ export default function AdminBackupManager() {
     setLoading(true);
     try {
       const res = await fetch('/api/admin/backups', { credentials: 'include' });
+      if (res?.status === 401 && notifyAdminUnauthorized('expired')) {
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         setLatestBackup(data.latest);
@@ -39,6 +43,9 @@ export default function AdminBackupManager() {
         method: 'POST',
         credentials: 'include'
       });
+      if (res?.status === 401 && notifyAdminUnauthorized('expired')) {
+        return;
+      }
       const data = await res.json();
       
       if (res.ok) {

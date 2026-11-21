@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/UI';
 import { resolveNext } from '@/utils/resolve-next';
+import { touchAdminActivity, touchAdminRefresh } from '@/utils/adminSession';
 import styles from './styles/Login.module.css';
 
 /**
@@ -19,6 +20,8 @@ const MSG = {
   network: 'Sem conexão. Verifique sua internet e tente de novo.',
   emptyUsername: 'Informe seu nome de usuário.',
   emptyPassword: 'Informe sua senha.',
+  sessionInactivity: 'Sua sessão foi encerrada automaticamente após 1 hora de inatividade. Entre novamente para continuar.',
+  sessionExpired: 'Sua sessão expirou. Entre novamente para continuar.',
 };
 
 /** Valida um campo individualmente (usado no blur e no submit). */
@@ -82,6 +85,14 @@ export default function LoginPage() {
   const summaryRef = useRef(null);
   const passwordRef = useRef(null);
 
+  const rawReason = router?.query?.reason;
+  const reason = Array.isArray(rawReason) ? rawReason[0] : rawReason;
+  const sessionNoticeMessage = reason === 'inactivity'
+    ? MSG.sessionInactivity
+    : reason === 'expired'
+      ? MSG.sessionExpired
+      : null;
+
   // Foco programático no resumo após falha no submit
   useEffect(() => {
     if (summary) {
@@ -131,6 +142,9 @@ export default function LoginPage() {
       const data = await res.json().catch(() => ({}));
 
       if (res.ok && data.success) {
+        const now = Date.now();
+        touchAdminActivity(now);
+        touchAdminRefresh(now);
         await router.push(resolveNext(router.query));
         return;
       }
@@ -167,6 +181,12 @@ export default function LoginPage() {
         </header>
 
         <form className={styles.form} onSubmit={handleSubmit} noValidate aria-busy={loading}>
+          {!summary && sessionNoticeMessage && (
+            <div className={styles.sessionNotice} role="status" id="login-sessao-aviso">
+              <p>{sessionNoticeMessage}</p>
+            </div>
+          )}
+
           {summary && (
             <div
               className={styles.errorSummary}

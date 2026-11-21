@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { useApiFetch } from './useApiFetch';
+import { notifyAdminUnauthorized } from '../utils/adminSession';
 
 /**
  * @typedef {Object} AdminCrudConfig
@@ -205,7 +206,13 @@ export const useAdminCrud = ({
         method,
         headers: { 'Content-Type': 'application/json' },
         body,
+        credentials: 'include',
       });
+
+      if (response?.status === 401 && notifyAdminUnauthorized('expired')) {
+        toast.dismiss?.(loadingToastId);
+        return;
+      }
 
       const data = await response.json();
 
@@ -266,8 +273,13 @@ export const useAdminCrud = ({
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
+        credentials: 'include',
         signal: abortController.signal,
       });
+      if (response?.status === 401 && notifyAdminUnauthorized('expired')) {
+        toast.dismiss?.(loadingToastId);
+        return;
+      }
       if (!response.ok) throw new Error('Falha ao excluir');
       
       toast.success('Item excluído com sucesso!', { id: loadingToastId });
@@ -304,8 +316,14 @@ export const useAdminCrud = ({
       const response = await fetch(apiEndpoint, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        credentials: 'include',
       });
+
+      if (response?.status === 401 && notifyAdminUnauthorized('expired')) {
+        toast.dismiss?.(loadingToast);
+        return;
+      }
 
       if (!response.ok) {
         let errorMsg = 'Falha na API';
