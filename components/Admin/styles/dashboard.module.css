@@ -82,6 +82,11 @@
   box-shadow: var(--color-focus-ring);
 }
 
+.statCardWide {
+  grid-column: span 2;
+  align-items: flex-start;
+}
+
 .statIcon {
   background-color: var(--color-primary-50);
   color: var(--color-primary-500);
@@ -97,6 +102,7 @@
 .statInfo {
   display: flex;
   flex-direction: column;
+  flex: 1;
   min-width: 0;
 }
 
@@ -120,6 +126,42 @@
   color: var(--color-text-secondary);
   margin-top: var(--spacing-1);
   font-weight: var(--font-weight-medium);
+}
+
+.statColumns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-2_5);
+  padding-top: var(--spacing-2_5);
+  border-top: var(--border-width-1) solid var(--color-border-light);
+  width: 100%;
+}
+
+.statColumn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.statColumn + .statColumn {
+  border-left: var(--border-width-1) solid var(--color-border-default);
+  padding-left: var(--spacing-4);
+}
+
+.statColumnTitle {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-0_5);
+}
+
+.statColumnItem {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-snug);
 }
 
 .chartSection {
@@ -150,7 +192,7 @@
 }
 
 .chartLabel {
-  width: 84px;
+  width: 148px;
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
@@ -183,4 +225,28 @@
   color: var(--color-text-inverse);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-bold);
+}
+
+@media (max-width: 640px) {
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .statCardWide {
+    grid-column: span 1;
+    flex-direction: column;
+    padding: var(--spacing-4);
+  }
+
+  .statColumns {
+    gap: var(--spacing-3);
+  }
+
+  .statColumn + .statColumn {
+    padding-left: var(--spacing-3);
+  }
+
+  .chartLabel {
+    width: 110px;
+  }
 }

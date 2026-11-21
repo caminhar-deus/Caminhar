@@ -161,5 +161,93 @@ describe('API de Estatísticas (/api/admin/stats)', () => {
     expect(stats.usersToday).toBe(0);
     expect(stats.usersMonth).toBe(0);
     expect(stats.usersYear).toBe(0);
+    expect(stats.sales).toBe(0);
+    expect(stats.internalProducts).toBe(0);
+  });
+
+  it('deve retornar contagens detalhadas de Gestão de Vendas e Produtos Internos separadas de Produtos externos', async () => {
+    getAuthToken.mockReturnValue('valid-token');
+    verifyToken.mockReturnValue({ userId: 1, role: 'admin' });
+
+    query.mockImplementation(async (sql) => {
+      if (sql === "SELECT COUNT(*) FROM products WHERE modality = 'external'") {
+        return { rows: [{ count: '11' }] };
+      }
+      if (sql === "SELECT COUNT(*) FROM products WHERE modality = 'external' AND published = true") {
+        return { rows: [{ count: '9' }] };
+      }
+      if (sql === "SELECT COUNT(*) FROM products WHERE modality = 'external' AND published = false") {
+        return { rows: [{ count: '2' }] };
+      }
+      if (sql === "SELECT COUNT(*) FROM products WHERE modality = 'internal'") {
+        return { rows: [{ count: '7' }] };
+      }
+      if (sql === "SELECT COUNT(*) FROM products WHERE modality = 'internal' AND published = true") {
+        return { rows: [{ count: '5' }] };
+      }
+      if (sql === "SELECT COUNT(*) FROM products WHERE modality = 'internal' AND published = false") {
+        return { rows: [{ count: '2' }] };
+      }
+      if (sql === 'SELECT COUNT(*) FROM orders') {
+        return { rows: [{ count: '15' }] };
+      }
+      if (sql === "SELECT COUNT(*) FROM orders WHERE payment_method = 'pix'") {
+        return { rows: [{ count: '4' }] };
+      }
+      if (sql === "SELECT COUNT(*) FROM orders WHERE payment_method = 'credit_card'") {
+        return { rows: [{ count: '6' }] };
+      }
+      if (sql === "SELECT COUNT(*) FROM orders WHERE payment_method = 'debit_card'") {
+        return { rows: [{ count: '2' }] };
+      }
+      if (sql === "SELECT COUNT(*) FROM orders WHERE payment_method IN ('ticket', 'bolbradesco')") {
+        return { rows: [{ count: '3' }] };
+      }
+      if (sql === "SELECT COUNT(*) FROM orders WHERE order_status = 'awaiting_payment'") {
+        return { rows: [{ count: '4' }] };
+      }
+      if (sql === "SELECT COUNT(*) FROM orders WHERE order_status = 'paid'") {
+        return { rows: [{ count: '3' }] };
+      }
+      if (sql === "SELECT COUNT(*) FROM orders WHERE order_status = 'preparing'") {
+        return { rows: [{ count: '2' }] };
+      }
+      if (sql === "SELECT COUNT(*) FROM orders WHERE order_status = 'shipped'") {
+        return { rows: [{ count: '1' }] };
+      }
+      if (sql === "SELECT COUNT(*) FROM orders WHERE order_status = 'delivered'") {
+        return { rows: [{ count: '2' }] };
+      }
+      if (sql === "SELECT COUNT(*) FROM orders WHERE order_status = 'cancelled'") {
+        return { rows: [{ count: '3' }] };
+      }
+      return { rows: [{ count: '1' }] };
+    });
+
+    const { req, res } = createMocks({ method: 'GET' });
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(200);
+    const stats = res._getJSONData();
+
+    expect(stats.products).toBe(11);
+    expect(stats.productsPublished).toBe(9);
+    expect(stats.productsDraft).toBe(2);
+
+    expect(stats.internalProducts).toBe(7);
+    expect(stats.internalProductsPublished).toBe(5);
+    expect(stats.internalProductsDraft).toBe(2);
+
+    expect(stats.sales).toBe(15);
+    expect(stats.salesPaymentPix).toBe(4);
+    expect(stats.salesPaymentCreditCard).toBe(6);
+    expect(stats.salesPaymentDebitCard).toBe(2);
+    expect(stats.salesPaymentTicket).toBe(3);
+    expect(stats.salesOrderAwaitingPayment).toBe(4);
+    expect(stats.salesOrderPaid).toBe(3);
+    expect(stats.salesOrderPreparing).toBe(2);
+    expect(stats.salesOrderShipped).toBe(1);
+    expect(stats.salesOrderDelivered).toBe(2);
+    expect(stats.salesOrderCancelled).toBe(3);
   });
 });

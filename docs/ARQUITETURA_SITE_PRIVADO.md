@@ -2,7 +2,7 @@
 
 > Escopo: painel administrativo em `/admin` (acesso só com login). A área pública está em `docs/ARQUITETURA_SITE_PUBLICO.md`. Ambos os ambientes compartilham a mesma identidade visual (`design-system/MASTER.md` e `pages/styles/variables.css`), mantendo estruturas de navegação e responsabilidades próprias.
 > Fonte: 23 capturas de tela do painel (`localhost:3000/admin`) + código-fonte atual + diretrizes do dono do projeto.
-> Última atualização: 2026-11-14
+> Última atualização: 2026-11-21
 > Legenda: [PLANEJADO] = alvo ainda não implementado, informado pelo dono | [OBSERVADO] = visto nas imagens/estado legado | [HIPÓTESE] = inferido, confirmar antes de assumir.
 
 ---
@@ -34,7 +34,7 @@ O Site Privado compartilha integralmente a identidade visual definida com o Site
    - **Aparência e estados compartilhados:** ícones SVG vetoriais de traço uniforme (`AppIcon` em `components/UI/icons.js`, `aria-hidden="true"`), tipografia `--font-size-sm`, estado inativo em `--color-text-secondary` (`medium`), hover sutil em `--color-bg-secondary` + `--color-text-primary`, estado selecionado com destaque em `--color-primary-50` + texto/ícone `--color-primary-500` (`semibold`) + indicador ativo em `--color-primary-500`, e foco visível com anel duplo azul.
 
 4. **Cards, painéis e tabelas:**
-   - **Cards administrativos:** usados na Visão Geral (6 cartões interativos de métricas e painel de distribuição) e em Segurança (cartões de status de Integridade, Backup e Cache), com fundo `--color-bg-primary`, borda `1px solid var(--color-border-light)`, sombra suave (`--shadow-xs` / `--shadow-card`), raio `--border-radius-xl` (`12px`), espaçamento interno `--spacing-6` (`24px`) e hover discreto (`translateY(-2px)`) quando clicáveis.
+   - **Cards administrativos:** usados na Visão Geral (8 cartões interativos de métricas e painel de distribuição) e em Segurança (cartões de status de Integridade, Backup e Cache), com fundo `--color-bg-primary`, borda `1px solid var(--color-border-light)`, sombra suave (`--shadow-xs` / `--shadow-card`), raio `--border-radius-xl` (`12px`), espaçamento interno `--spacing-6` (`24px`) e hover discreto (`translateY(-2px)`) quando clicáveis.
    - **Tabelas operacionais (particularidade funcional do painel):** enquanto o Site Público exibe catálogos em grades de cartões, as listagens administrativas (CRUDs e Auditoria) utilizam tabelas limpas em `--color-bg-primary`, cabeçalho `--color-bg-secondary`, linhas com hover suave, células alinhadas e paginação inferior padronizada.
 
 5. **Arredondamentos:**
@@ -155,16 +155,18 @@ Todas são construídas sobre `AdminCrudBase` (`components/Admin/AdminCrudBase.j
 
 ### 4.1 Visão Geral
 - **Título:** "Visão Geral do Sistema".
-- **6 cartões interativos** (grade responsiva, clicáveis para navegar à respectiva aba quando o usuário possui a permissão correspondente) com ícone SVG (`AppIcon`), número grande e rótulo:
+- **8 cartões interativos** (grade responsiva, clicáveis para navegar à respectiva aba/subaba quando o usuário possui a permissão correspondente) com ícone SVG (`AppIcon`), número grande e rótulo:
   | Cartão | Detalhe exibido |
   |---|---|
-  | Artigos | "`N Pub` \| `N Rasc`" com ícones SVG `checkCircle` / `fileText` (publicados / rascunhos) |
+  | Artigos | "`N` publicados • `N` rascunhos" |
   | Músicas | idem |
   | Vídeos | idem |
-  | Produtos | idem |
-  | Dicas | idem |
+  | Produtos | idem (produtos externos de marketplace, `modality = 'external'`) |
+  | Gestão de Vendas | Duas colunas lado a lado separadas por traço vertical: **Pagamento** (`PIX (N)`, `Cartão de crédito (N)`, `Cartão de débito (N)`, `Boleto bancário (N)`) e **Andamento** (`Aguardando pagamento (N)`, `Pago (N)`, `Em separação (N)`, `Enviado (N)`, `Entregue (N)`, `Cancelado (N)`) (ícone `shoppingBag`; navega para a subaba Pedidos) |
+  | Produtos Internos | "`N` publicados • `N` rascunhos" (`modality = 'internal'`, ícone `package`; navega para a subaba Produtos Internos em Gestão de Vendas) |
+  | Dicas | "`N` publicados • `N` rascunhos" |
   | Usuários | "Ativos: Hoje (N) • Mês (N) • Ano (N)" |
-- **Distribuição de Conteúdo:** barras horizontais por categoria, com cores tokenizadas de contraste AA (`≥ 4,5:1` sobre texto branco): Artigos (`--color-primary-500`), Músicas (`--color-success-700`), Vídeos (`--color-error-600`), Produtos (`--color-warning-700`), Dicas (`--color-secondary-700`), Usuários (`--color-primary-700`). Mostra o valor dentro da barra quando maior que zero.
+- **Distribuição de Conteúdo:** 8 barras horizontais por categoria, com cores tokenizadas de contraste AA (`≥ 4,5:1` sobre texto branco): Artigos (`--color-primary-500`), Músicas (`--color-success-700`), Vídeos (`--color-error-600`), Produtos (`--color-warning-700`), Gestão de Vendas (`--color-info-700`), Produtos Internos (`--color-warning-800`), Dicas (`--color-secondary-700`), Usuários (`--color-primary-700`). Mostra o valor dentro da barra quando maior que zero.
 - **Nota histórica:** nas capturas iniciais os contadores apareciam zerados (exceto Usuários = 1), situação esclarecida e validada em §8, item 1.
 
 ### 4.2 Posts/Artigos

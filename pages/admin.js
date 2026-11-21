@@ -181,6 +181,7 @@ export default function Admin() {
   const [currentImageUrl, setCurrentImageUrl] = useState('');
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeSalesSubTab, setActiveSalesSubTab] = useState('orders');
   const [activeSecurityTab, setActiveSecurityTab] = useState('integrity');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
@@ -428,6 +429,9 @@ export default function Admin() {
           icon={<AppIcon name={item.icon} size={20} />}
           label={item.label}
           onClick={() => {
+            if (item.key === 'vendas') {
+              setActiveSalesSubTab('orders');
+            }
             setActiveTab(item.key);
             setMobileMenuOpen(false);
           }}
@@ -692,7 +696,12 @@ export default function Admin() {
               )}
 
               {activeTab === 'dashboard' && hasPermission('Visão Geral') && (
-                <AdminDashboard setActiveTab={setActiveTab} userPermissions={currentUser?.permissions || []} isAdmin={currentUser?.role === 'admin'} />
+                <AdminDashboard
+                  setActiveTab={setActiveTab}
+                  setActiveSalesSubTab={setActiveSalesSubTab}
+                  userPermissions={currentUser?.permissions || []}
+                  isAdmin={currentUser?.role === 'admin'}
+                />
               )}
 
               {activeTab === 'posts' && hasPermission('Posts/Artigos') && (
@@ -764,7 +773,7 @@ export default function Admin() {
               )}
 
               {activeTab === 'vendas' && hasPermission('Gestão de Vendas') && (
-                <AdminSales />
+                <AdminSales initialSubTab={activeSalesSubTab} />
               )}
             </section>
           </div>

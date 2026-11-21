@@ -252,8 +252,22 @@ function getOrderBadge(status) {
   return { label, cls: salesStyles.badgeInfo };
 }
 
-export default function AdminSales({ readOnly = false }) {
-  const [activeSubTab, setActiveSubTab] = useState('orders');
+function invalidateDashboardStatsCache() {
+  try {
+    sessionStorage.removeItem('admin_dashboard_stats');
+  } catch {
+    // sessionStorage pode estar indisponível; ignora erro de limpeza de cache
+  }
+}
+
+export default function AdminSales({ readOnly = false, initialSubTab = 'orders' }) {
+  const [activeSubTab, setActiveSubTab] = useState(initialSubTab);
+
+  useEffect(() => {
+    if (initialSubTab) {
+      setActiveSubTab(initialSubTab);
+    }
+  }, [initialSubTab]);
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [page, setPage] = useState(1);
@@ -295,6 +309,9 @@ export default function AdminSales({ readOnly = false }) {
         setTotalOrders(data.pagination?.total || 0);
         if (explicitSync) {
           const updatedCount = Number(data.syncedCount || 0);
+          if (updatedCount > 0) {
+            invalidateDashboardStatsCache();
+          }
           toast.success(
             updatedCount > 0
               ? `${updatedCount} pedido(s) atualizado(s) com o Mercado Pago.`
@@ -344,6 +361,7 @@ export default function AdminSales({ readOnly = false }) {
         setSavingOrder(false);
         return;
       }
+      invalidateDashboardStatsCache();
       toast.success(`Pedido #${selectedOrder.id} atualizado com sucesso!`);
       setSelectedOrder(null);
       fetchOrders();
@@ -675,4 +693,5 @@ export default function AdminSales({ readOnly = false }) {
 
 AdminSales.propTypes = {
   readOnly: PropTypes.bool,
+  initialSubTab: PropTypes.oneOf(['orders', 'internal-products']),
 };

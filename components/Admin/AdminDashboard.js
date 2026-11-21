@@ -8,11 +8,13 @@ const PERMISSION_ITEM_MAP = {
   musicas: 'Gestão de Músicas',
   videos: 'Gestão de Vídeos',
   products: 'Gestão de Produtos',
+  sales: 'Gestão de Vendas',
+  internalProducts: 'Gestão de Vendas',
   dicas: 'Gestão de Dicas',
   users: 'Usuários',
 };
 
-export default function AdminDashboard({ setActiveTab, userPermissions = [], isAdmin = false }) {
+export default function AdminDashboard({ setActiveTab, setActiveSalesSubTab, userPermissions = [], isAdmin = false }) {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -27,7 +29,14 @@ export default function AdminDashboard({ setActiveTab, userPermissions = [], isA
         const cached = sessionStorage.getItem(CACHE_KEY);
         if (cached) {
           const { data, timestamp } = JSON.parse(cached);
-          if (Date.now() - timestamp < CACHE_TTL) {
+          const hasValidSalesSchema = Boolean(
+            data &&
+            'sales' in data &&
+            'salesPaymentPix' in data &&
+            'salesOrderPaid' in data &&
+            'internalProducts' in data
+          );
+          if (Date.now() - timestamp < CACHE_TTL && hasValidSalesSchema) {
             setStats(data);
             setLoading(false);
             return;
@@ -66,7 +75,17 @@ export default function AdminDashboard({ setActiveTab, userPermissions = [], isA
   // Hooks useMemo devem vir antes de qualquer early return
   const maxVal = useMemo(() => {
     if (!stats) return 1;
-    return Math.max(stats.posts || 0, stats.musicas || 0, stats.videos || 0, stats.products || 0, stats.users || 0, stats.dicas || 0, 1);
+    return Math.max(
+      stats.posts || 0,
+      stats.musicas || 0,
+      stats.videos || 0,
+      stats.products || 0,
+      stats.sales || 0,
+      stats.internalProducts || 0,
+      stats.users || 0,
+      stats.dicas || 0,
+      1
+    );
   }, [stats]);
 
   const allStatItems = useMemo(() => {
@@ -107,6 +126,47 @@ export default function AdminDashboard({ setActiveTab, userPermissions = [], isA
         color: 'var(--color-warning-700)', 
         tabId: 'projetos02',
         details: `${stats.productsPublished || 0} publicados • ${stats.productsDraft || 0} rascunhos`
+      },
+      {
+        key: 'sales',
+        label: 'Gestão de Vendas',
+        count: stats.sales || 0,
+        icon: 'shoppingBag',
+        color: 'var(--color-info-700)',
+        tabId: 'vendas',
+        subTabId: 'orders',
+        detailColumns: [
+          {
+            title: 'Pagamento',
+            items: [
+              `PIX (${stats.salesPaymentPix || 0})`,
+              `Cartão de crédito (${stats.salesPaymentCreditCard || 0})`,
+              `Cartão de débito (${stats.salesPaymentDebitCard || 0})`,
+              `Boleto bancário (${stats.salesPaymentTicket || 0})`,
+            ],
+          },
+          {
+            title: 'Andamento',
+            items: [
+              `Aguardando pagamento (${stats.salesOrderAwaitingPayment || 0})`,
+              `Pago (${stats.salesOrderPaid || 0})`,
+              `Em separação (${stats.salesOrderPreparing || 0})`,
+              `Enviado (${stats.salesOrderShipped || 0})`,
+              `Entregue (${stats.salesOrderDelivered || 0})`,
+              `Cancelado (${stats.salesOrderCancelled || 0})`,
+            ],
+          },
+        ],
+      },
+      {
+        key: 'internalProducts',
+        label: 'Produtos Internos',
+        count: stats.internalProducts || 0,
+        icon: 'package',
+        color: 'var(--color-warning-800)',
+        tabId: 'vendas',
+        subTabId: 'internal-products',
+        details: `${stats.internalProductsPublished || 0} publicados • ${stats.internalProductsDraft || 0} rascunhos`,
       },
       { 
         key: 'dicas', 
@@ -160,6 +220,14 @@ export default function AdminDashboard({ setActiveTab, userPermissions = [], isA
     );
   }
 
+  const handleCardActivate = (item) => {
+    if (!item.tabId || !setActiveTab) return;
+    if (item.subTabId && setActiveSalesSubTab) {
+      setActiveSalesSubTab(item.subTabId);
+    }
+    setActiveTab(item.tabId);
+  };
+
   return (
     <div className={styles.content}>
       <div className={styles.sectionHeader}>
@@ -171,12 +239,12 @@ export default function AdminDashboard({ setActiveTab, userPermissions = [], isA
         {statItems.map(item => (
           <div 
             key={item.key} 
-            className={styles.statCard} 
-            onClick={() => item.tabId && setActiveTab && setActiveTab(item.tabId)}
+            className={`${styles.statCard}${item.detailColumns ? ` ${styles.statCardWide}` : ''}`} 
+            onClick={() => handleCardActivate(item)}
             onKeyDown={(e) => {
               if (item.tabId && setActiveTab && (e.key === 'Enter' || e.key === ' ')) {
                 e.preventDefault();
-                setActiveTab(item.tabId);
+                handleCardActivate(item);
               }
             }}
             role={item.tabId ? 'button' : undefined}
@@ -189,7 +257,20 @@ export default function AdminDashboard({ setActiveTab, userPermissions = [], isA
             <div className={styles.statInfo}>
               <span className={styles.statNumber}>{item.count}</span>
               <span className={styles.statLabel}>{item.label}</span>
-              {item.details && <span className={styles.statDetails}>{item.details}</span>}
+              {item.detailColumns ? (
+                <div className={styles.statColumns}>
+                  {item.detailColumns.map((col) => (
+                    <div key={col.title} className={styles.statColumn}>
+                      <span className={styles.statColumnTitle}>{col.title}</span>
+                      {col.items.map((entry) => (
+                        <span key={entry} className={styles.statColumnItem}>{entry}</span>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                item.details && <span className={styles.statDetails}>{item.details}</span>
+              )}
             </div>
           </div>
         ))}
