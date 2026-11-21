@@ -25,6 +25,7 @@ export default function ProductList() {
   const [sortBy, setSortBy] = useState('default');
   const [pageLoading, setPageLoading] = useState(false);
   const listRef = useRef(null);
+  const shouldScrollOnPageChange = useRef(false);
   const itemsPerPage = 12;
 
   // Unifica filtros em um único objeto com um único debounce
@@ -37,6 +38,7 @@ export default function ProductList() {
 
   // Reseta para página 1 quando os filtros debounced mudam
   useEffect(() => {
+    shouldScrollOnPageChange.current = false;
     setCurrentPage(1);
   }, [debouncedFilters]);
 
@@ -102,20 +104,23 @@ export default function ProductList() {
     return undefined;
   }, [loading, pageLoading]);
 
-  // Rola suavemente para o topo da lista ao trocar de página
+  // Rola suavemente para o topo da lista apenas ao trocar de página na paginação
   useEffect(() => {
-    if (!loading && listRef.current) {
+    if (!loading && shouldScrollOnPageChange.current && listRef.current) {
+      shouldScrollOnPageChange.current = false;
       listRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [currentPage, loading]);
 
   const handlePageChange = (newPage) => {
     if (newPage === currentPage || newPage < 1 || newPage > totalPages) return;
+    shouldScrollOnPageChange.current = true;
     setPageLoading(true);
     setCurrentPage(newPage);
   };
 
   const handleSortChange = (e) => {
+    shouldScrollOnPageChange.current = false;
     setSortBy(e.target.value);
     // Trocar a ordenação sempre volta para a primeira página
     setCurrentPage(1);

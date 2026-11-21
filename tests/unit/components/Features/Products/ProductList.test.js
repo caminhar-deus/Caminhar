@@ -47,12 +47,10 @@ jest.mock('../../../../../hooks/useApiFetch', () => ({
 describe('Componentes Features - Products - ProductList', () => {
   let consoleErrorSpy;
   let fetchMock;
+  let originalScrollIntoView;
 
   beforeAll(() => {
-    // Polyfill: jsdom não implementa scrollIntoView
-    if (typeof HTMLElement !== 'undefined' && !HTMLElement.prototype.scrollIntoView) {
-      HTMLElement.prototype.scrollIntoView = jest.fn();
-    }
+    originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
   });
 
   beforeEach(() => {
@@ -61,12 +59,18 @@ describe('Componentes Features - Products - ProductList', () => {
     // clearAllMocks preserva implementações definidas com mockReturnValue;
     // mockReset é necessário para evitar vazamento de retorno entre testes.
     mockUseApiFetch.mockReset();
+    // Polyfill/mock isolado por teste: jsdom não implementa scrollIntoView
+    HTMLElement.prototype.scrollIntoView = jest.fn();
   });
 
   afterEach(() => {
     consoleErrorSpy?.mockRestore();
     fetchMock?.mockRestore();
     jest.useRealTimers();
+  });
+
+  afterAll(() => {
+    HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
   });
 
   const defaultApiResponse = {
@@ -412,5 +416,50 @@ describe('Componentes Features - Products - ProductList', () => {
 
     fireEvent.change(modalitySelect, { target: { value: 'external' } });
     expect(mockUseApiFetch.mock.calls.at(-1)?.[0]).toContain('&modality=external');
+  });
+
+  it('não deve chamar scrollIntoView ao montar ou alterar filtros/ordenação, apenas ao paginar', () => {
+    jest.useFakeTimers();
+
+    // 1. Carregamento inicial (loading true -> false) não deve rolar a página
+    mockUseApiFetch.mockReturnValue({
+      data: null,
+      loading: true,
+      error: null,
+    });
+    const { rerender } = render(<ProductList />);
+    expect(HTMLElement.prototype.scrollIntoView).not.toHaveBeenCalled();
+
+    setupPaginatedApiMock(3);
+    rerender(<ProductList />);
+    expect(HTMLElement.prototype.scrollIntoView).not.toHaveBeenCalled();
+
+    // 2. Alterar filtros e ordenação não deve chamar scrollIntoView
+    fireEvent.change(screen.getByPlaceholderText('Buscar produtos por nome...'), {
+      target: { value: 'terço' },
+    });
+    fireEvent.change(screen.getByLabelText('Filtrar por modalidade'), {
+      target: { value: 'internal' },
+    });
+    fireEvent.change(screen.getByLabelText('Ordenar produtos'), {
+      target: { value: 'price_asc' },
+    });
+    expect(HTMLElement.prototype.scrollIntoView).not.toHaveBeenCalled();
+
+    // 3. Trocar de página na paginação deve chamar scrollIntoView exatamente 1 vez
+    fireEvent.click(screen.getByLabelText('Próxima página'));
+    advancePageLoadingTimer();
+
+    expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalledTimes(1);
+    expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalledWith({
+      behavior: 'smooth',
+      block: 'start',
+    });
+
+    // 4. Alterar ordenação após paginar (voltando à página 1) também não deve rolar
+    fireEvent.change(screen.getByLabelText('Ordenar produtos'), {
+      target: { value: 'default' },
+    });
+    expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalledTimes(1);
   });
 });
