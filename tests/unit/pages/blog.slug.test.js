@@ -3,6 +3,12 @@ import { render, screen } from '@testing-library/react';
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { suppressConsoleError } from '../../helpers/index.js';
 
+jest.mock('../../../pages/blog/Blog.module.css', () => ({
+  container: 'container',
+  postBackLinkWrapper: 'postBackLinkWrapper',
+  backLink: 'backLink',
+  article: 'article',
+}));
 jest.mock('../../../lib/infra/db.js', () => ({
   query: jest.fn(),
 }));
@@ -97,7 +103,13 @@ describe('pages/blog/[slug].js (SSR e componente)', () => {
 
       expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Post de Teste');
       expect(screen.getByText('Conteúdo completo do post de teste.')).toBeInTheDocument();
-      expect(screen.getByText('← Voltar')).toBeInTheDocument();
+
+      const backLink = screen.getByRole('link', { name: '← Voltar' });
+      expect(backLink).toBeInTheDocument();
+      expect(backLink).toHaveAttribute('href', '/');
+      expect(backLink).toHaveClass('backLink');
+      expect(backLink.parentElement).toHaveClass('postBackLinkWrapper');
+      expect(screen.getByRole('article')).toHaveClass('article');
     });
   });
 });

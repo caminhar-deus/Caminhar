@@ -35,7 +35,7 @@ export default function BlogPost({ post, siteTitle }) {
     : `${siteUrl}/default-og-image.jpg`;
 
   return (
-    <div className={styles.container} style={{ padding: '40px 20px' }}>
+    <div className={styles.container}>
       <Head>
         <title>{`${post.title} | ${siteName}`}</title>
         <meta name="description" content={post.excerpt || post.content?.substring(0, 160)} />
@@ -57,13 +57,13 @@ export default function BlogPost({ post, siteTitle }) {
         <meta name="twitter:image" content={imageUrl} />
       </Head>
 
-      <div style={{ marginBottom: '30px' }}>
-        <Link href="/" style={{ color: 'var(--color-text-secondary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px' }}>
+      <div className={styles.postBackLinkWrapper}>
+        <Link href="/" className={styles.backLink}>
           ← Voltar
         </Link>
       </div>
 
-      <article style={{ maxWidth: '800px', margin: '0 auto' }}>
+      <article className={styles.article}>
         <header style={{ marginBottom: '30px', textAlign: 'center' }}>
           <h1 style={{ fontSize: '2.5rem', color: 'var(--color-text-primary)', marginBottom: '15px' }}>{post.title}</h1>
           <div style={{ color: 'var(--color-text-tertiary)', fontSize: '0.9rem' }}>
