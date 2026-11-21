@@ -1,6 +1,6 @@
 # Página pública inicial (home) — spec de implementação (override do MASTER)
 
-> Última atualização: 2026-11-19 (contraste AA e tipografia `--font-size-sm` dos botões de marketplace em `ProductCard.module.css` e alinhamento do selo `"Venda direta"` aos tokens `--color-success-*`. Anterior: 2026-11-08, duas modalidades de Produtos Religiosos — ADR-0037).
+> Última atualização: 2026-11-21 (alinhamento em linha única da barra de filtros de `ProductList` em desktop com `Modalidade`, `Categoria` e `Ordenar por`. Anterior: 2026-11-19 — contraste AA e tipografia `--font-size-sm` dos botões de marketplace em `ProductCard.module.css` e alinhamento do selo `"Venda direta"` aos tokens `--color-success-*`; 2026-11-08 — duas modalidades de Produtos Religiosos — ADR-0037).
 > Override de `design-system/MASTER.md`. Tudo aqui vence o MASTER; o que não for mencionado segue o MASTER. Stack: Next.js Pages Router + React + CSS Modules + variáveis CSS (sem Tailwind). Idioma da interface: pt-BR. Tokens: sempre a variável, nunca hex.
 
 > Escopo: a página única com abas (`pages/index.js` + `components/Features/ContentTabs`). Esta spec cobre os 6 itens definidos no `docs/PLANO_ACAO_SITE_PUBLICO.md` (F1.3, F1.4, F1.6, F2.3 + decisões de design) e não toca lógica de negócio nem o painel administrativo.
@@ -20,8 +20,8 @@
 ## 1. Seletor de ordenação de Produtos (novo) — F1.2 + design
 
 ### 1.1 Posição na tela
-- Mesma barra de filtros existente (`ProductList`), em `searchRow` equivalente: **Busca** (max 400px) → **Preço Mín/Máx** (max 300px) → **Ordenar por:** → **Limpar filtros** (quando houver filtro ativo).
-- O seletor entra **após** os campos de preço e **antes** do botão "Limpar filtros", na mesma linha, com `flex-wrap: wrap` no container (já existe).
+- Mesma barra de filtros existente (`ProductList`), em `searchRow` equivalente: **Busca** (`flex: 1 1 160px`, `min-width: 160px`, `max-width: 360px`) → **Preço Mín/Máx** (`flex: 0 1 176px`, `min-width: 172px`, `max-width: 192px`, `appearance: textfield`) → **Modalidade:** (`flex-shrink: 0`) → **Categoria:** (`flex-shrink: 0`) → **Ordenar por:** (`flex-shrink: 0`) → **Limpar filtros** (quando houver filtro ativo), na mesma linha com `flex-wrap: wrap` e `gap: var(--spacing-2)`.
+- O seletor entra **após** os campos de preço, **Modalidade:** e **Categoria:** (quando exibida) e **antes** do botão "Limpar filtros", na mesma linha em desktop (e em mobile `≤ 640px`, cada grupo ocupa `flex: 1 1 100%; max-width: 400px`).
 - Não criar uma segunda linha dedicada em desktop.
 
 ### 1.2 Rótulo e controle

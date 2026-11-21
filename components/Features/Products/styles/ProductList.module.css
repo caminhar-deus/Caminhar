@@ -14,20 +14,21 @@
   justify-content: center;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--spacing-3);
+  gap: var(--spacing-2);
 }
 
 .searchWrapper {
   position: relative;
   display: flex;
   align-items: center;
-  width: 100%;
-  max-width: 400px;
+  flex: 1 1 160px;
+  min-width: 160px;
+  max-width: 360px;
 }
 
 .searchIcon {
   position: absolute;
-  left: var(--spacing-3_5);
+  left: var(--spacing-3);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -50,7 +51,7 @@
 }
 
 .searchInput {
-  padding: var(--spacing-2_5) var(--spacing-4) var(--spacing-2_5) var(--spacing-10);
+  padding: var(--spacing-2_5) var(--spacing-3) var(--spacing-2_5) var(--spacing-9);
 }
 
 .searchInputWithControls {
@@ -58,7 +59,16 @@
 }
 
 .priceInput {
-  padding: var(--spacing-2_5) var(--spacing-3);
+  min-width: 0;
+  padding: var(--spacing-2_5) var(--spacing-2);
+  appearance: textfield;
+}
+
+.priceInput::-webkit-outer-spin-button,
+.priceInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
 }
 
 .searchInput::placeholder,
@@ -130,9 +140,10 @@
 
 .priceGroup {
   display: flex;
-  gap: var(--spacing-2_5);
-  width: 100%;
-  max-width: 280px;
+  gap: var(--spacing-2);
+  flex: 0 1 176px;
+  min-width: 172px;
+  max-width: 192px;
 }
 
 /* Botão "Limpar filtros" */
@@ -141,7 +152,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-1_5);
-  padding: var(--spacing-2) var(--spacing-4);
+  padding: var(--spacing-2) var(--spacing-3);
   border-radius: var(--border-radius-lg);
   border: var(--border-width-1) solid var(--color-border-light);
   background-color: var(--color-bg-primary);
@@ -152,6 +163,7 @@
   cursor: pointer;
   transition: var(--transition-all);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .filterButton:hover {
@@ -170,7 +182,8 @@
 .sortWrapper {
   display: flex;
   align-items: center;
-  gap: var(--spacing-2);
+  gap: var(--spacing-1_5);
+  flex-shrink: 0;
 }
 
 .sortLabel {
@@ -182,7 +195,7 @@
 
 .sortSelect {
   height: 44px;
-  padding: 0 var(--spacing-8) 0 var(--spacing-3);
+  padding: 0 var(--spacing-6) 0 var(--spacing-2_5);
   border: var(--border-width-1) solid var(--color-border-light);
   border-radius: var(--border-radius-lg);
   background-color: var(--color-bg-primary);
@@ -194,10 +207,10 @@
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a3a3a3' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right var(--spacing-3) center;
+  background-position: right var(--spacing-2) center;
   background-size: 12px;
   transition: var(--transition-all);
-  max-width: 300px;
+  max-width: 200px;
 }
 
 .sortSelect:hover:not(:disabled) {
@@ -299,10 +312,12 @@
 
 /* Mobile (<= 640px): controles ocupam largura da busca */
 @media (max-width: 640px) {
-  .priceGroup {
-    max-width: 400px;
+  .filtersBar {
+    gap: var(--spacing-3);
   }
 
+  .searchWrapper,
+  .priceGroup,
   .sortWrapper {
     flex: 1 1 100%;
     max-width: 400px;
