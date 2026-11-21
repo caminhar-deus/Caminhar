@@ -758,4 +758,16 @@ describe('Componente Front-End - AdminCrudBase', () => {
 
     expect(screen.getByText('Total: 1 item')).toBeInTheDocument();
   });
+
+  it('deve repassar queryParams para o hook useAdminCrud', () => {
+    const queryParams = { modality: 'external' };
+    render(<AdminCrudBase {...defaultProps} queryParams={queryParams} />);
+
+    expect(useAdminCrud).toHaveBeenCalledWith(
+      expect.objectContaining({
+        apiEndpoint: '/api/test',
+        queryParams,
+      })
+    );
+  });
 });

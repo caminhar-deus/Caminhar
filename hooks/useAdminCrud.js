@@ -9,6 +9,7 @@ import { useApiFetch } from './useApiFetch';
  * @property {boolean} [usePagination=false] - Habilita lógica de paginação
  * @property {number} [itemsPerPage=10] - Itens por página
  * @property {boolean} [autoFetch=true] - Habilita fetch automático na montagem
+ * @property {Object.<string, string|number|boolean>} [queryParams] - Parâmetros extras aplicados apenas à listagem GET
  * @property {function} [onSuccess] - Callback após operação bem sucedida
  * @property {function} [onError] - Callback executado em caso de erro
  * @property {function} [onConfirmDelete] - Função assíncrona opcional para confirmação de exclusão.
@@ -73,6 +74,7 @@ export const useAdminCrud = ({
   onError,
   onConfirmDelete,
   searchTerm = '',
+  queryParams = null,
 }) => {
   const [formData, setFormData] = useState(initialFormData);
   const [isEditing, setIsEditing] = useState(false);
@@ -83,9 +85,20 @@ export const useAdminCrud = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Monta a URL com paginação e busca para o useApiFetch
+  const extraQueryString = (() => {
+    if (!queryParams || typeof queryParams !== 'object') return '';
+    const extra = new URLSearchParams();
+    Object.entries(queryParams).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        extra.set(key, String(value));
+      }
+    });
+    return extra.toString();
+  })();
+
+  // Monta a URL com filtros extras, paginação e busca para o useApiFetch
   const buildUrl = useCallback((page) => {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams(extraQueryString);
     if (usePagination) {
       params.set('page', page);
       params.set('limit', itemsPerPage);
@@ -94,8 +107,9 @@ export const useAdminCrud = ({
       params.set('search', searchTerm);
     }
     const queryString = params.toString();
-    return queryString ? `${apiEndpoint}?${queryString}` : apiEndpoint;
-  }, [apiEndpoint, usePagination, itemsPerPage, searchTerm]);
+    if (!queryString) return apiEndpoint;
+    return `${apiEndpoint}${apiEndpoint.includes('?') ? '&' : '?'}${queryString}`;
+  }, [apiEndpoint, extraQueryString, usePagination, itemsPerPage, searchTerm]);
 
   // useApiFetch gerencia o fetch e os estados loading/error de forma centralizada
   const {

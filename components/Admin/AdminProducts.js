@@ -118,6 +118,8 @@ const initialFormData = {
   published: false
 };
 
+const EXTERNAL_PRODUCTS_QUERY = { modality: 'external' };
+
 export default function AdminProducts() {
   const [isFetchingML, setIsFetchingML] = useState(false);
 
@@ -178,6 +180,7 @@ export default function AdminProducts() {
     <AdminCrudBase
       // Aponta para a API que criamos no próximo passo
       apiEndpoint="/api/products"
+      queryParams={EXTERNAL_PRODUCTS_QUERY}
       title="Gestão de Produtos"
       fields={fields}
       columns={columns}

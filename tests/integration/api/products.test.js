@@ -178,6 +178,25 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       expect(getAllProducts).toHaveBeenCalledWith(1, 10, 'Bíblia');
     });
 
+    it('deve repassar modality=external quando filtrado pela aba Gestão de Produtos', async () => {
+      const adminUser = userFactory({ role: 'admin' });
+      getAuthToken.mockReturnValue('admin-token');
+      verifyToken.mockReturnValue({ userId: adminUser.id, role: adminUser.role });
+      getAllProducts.mockResolvedValueOnce({
+        data: [{ id: 3, name: 'Bíblia Externa', modality: 'external' }],
+        pagination: { page: 1, limit: 10, total: 1, totalPages: 1 }
+      });
+
+      const { req, res } = createMocks({
+        method: 'GET',
+        query: { modality: 'external', search: 'Bíblia' }
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      expect(getAllProducts).toHaveBeenCalledWith(1, 10, 'Bíblia', 'external');
+    });
+
     it('deve retornar 401 no GET admin se não enviar token', async () => {
       getAuthToken.mockReturnValueOnce(null);
       const { req, res } = createMocks({ method: 'GET' });

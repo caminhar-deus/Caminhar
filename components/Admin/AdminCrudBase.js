@@ -44,6 +44,7 @@ import CrudTable from './CrudTable';
  * @param {boolean} [props.readOnly=false] - Desativa formulário e edição (Somente Leitura)
  * @param {Function} [props.canDelete] - Decide se a linha pode ser excluída (default `() => true`); linhas protegidas escondem só o "Excluir"
  * @param {Function} [props.mapItemToFormData] - Mapeia o item antes de preencher o formulário na edição (ex.: `post.categories` → `category_ids` em AdminPosts)
+ * @param {Object} [props.queryParams] - Parâmetros de query extras aplicados apenas à listagem GET
  */
 export default function AdminCrudBase({
   apiEndpoint,
@@ -72,7 +73,8 @@ export default function AdminCrudBase({
   itemNamePlural = 'itens',
   readOnly = false,
   canDelete,
-  mapItemToFormData
+  mapItemToFormData,
+  queryParams
 }) {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -126,6 +128,7 @@ export default function AdminCrudBase({
     usePagination,
     itemsPerPage,
     searchTerm,
+    queryParams,
     onSuccess: handleSuccessWrapper,
     onConfirmDelete: (id) =>
       new Promise((resolve) => {
@@ -485,5 +488,6 @@ AdminCrudBase.propTypes = {
   itemNamePlural: PropTypes.string,
   readOnly: PropTypes.bool,
   canDelete: PropTypes.func,
-  mapItemToFormData: PropTypes.func
+  mapItemToFormData: PropTypes.func,
+  queryParams: PropTypes.object
 };

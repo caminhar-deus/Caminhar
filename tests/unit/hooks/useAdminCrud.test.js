@@ -203,4 +203,32 @@ describe('Hook - useAdminCrud (total do conjunto)', () => {
 
     expect(result.current.totalItems).toBe(2);
   });
+
+  it('deve anexar queryParams na URL de listagem sem alterar o endpoint das mutações', async () => {
+    const fetchMock = mockGlobalFetch();
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ id: 1 }) });
+
+    const { result } = renderHook(() =>
+      useAdminCrud({
+        apiEndpoint: '/api/products',
+        initialFormData: { name: 'Bíblia' },
+        usePagination: true,
+        itemsPerPage: 10,
+        searchTerm: 'Biblia',
+        queryParams: { modality: 'external', ignoredNull: null, ignoredEmpty: '' },
+      })
+    );
+
+    expect(useApiFetch).toHaveBeenLastCalledWith(
+      '/api/products?modality=external&page=1&limit=10&search=Biblia',
+      expect.any(Object)
+    );
+
+    await act(async () => {
+      await result.current.handleSubmit({ preventDefault: jest.fn() }, null);
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/products', expect.objectContaining({ method: 'POST' }));
+    fetchMock.mockRestore();
+  });
 });
