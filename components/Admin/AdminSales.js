@@ -383,10 +383,6 @@ export default function AdminSales({ readOnly = false, initialSubTab = 'orders' 
   };
 
   const handleExportOrdersCsv = () => {
-    if (orders.length === 0) {
-      toast.error('Não há pedidos para exportar.');
-      return;
-    }
     const exportColumns = [
       { key: 'id', header: 'ID' },
       { key: 'customer_name', header: 'Cliente' },
@@ -399,7 +395,12 @@ export default function AdminSales({ readOnly = false, initialSubTab = 'orders' 
       { key: 'order_status', header: 'Status Pedido' },
       { key: 'tracking_code', header: 'Rastreio' },
     ];
-    exportToCSV(orders, exportColumns, 'pedidos_vendas_internas');
+    exportToCSV({
+      data: orders,
+      columns: exportColumns,
+      filename: 'pedidos_vendas_internas',
+      onEmpty: () => toast.error('Não há pedidos para exportar.'),
+    });
   };
 
   return (
@@ -422,33 +423,43 @@ export default function AdminSales({ readOnly = false, initialSubTab = 'orders' 
           className={activeSubTab === 'internal-products' ? salesStyles.subTabButtonActive : salesStyles.subTabButton}
           onClick={() => setActiveSubTab('internal-products')}
         >
-          <AppIcon name="products" size={16} />
+          <AppIcon name="package" size={16} />
           Produtos Internos
         </button>
       </div>
 
       {activeSubTab === 'orders' ? (
         <div>
-          <div className={crudStyles.headerRow}>
-            <div>
-              <h2 className={crudStyles.title}>Gestão de Vendas — Pedidos Internos</h2>
-              <p className={crudStyles.itemCount}>
+          <div className={crudStyles.sectionHeader}>
+            <div className={`${crudStyles.headerMeta} ${salesStyles.ordersHeaderMeta}`}>
+              <h2>Gestão de Vendas — Pedidos Internos</h2>
+              <p className={salesStyles.ordersSubtitle}>
                 Acompanhamento de compras diretas realizadas no Site Público e processadas via Mercado Pago.
               </p>
             </div>
-            <div className={crudStyles.headerControls}>
+            <div className={salesStyles.ordersHeaderActions}>
               <Button
                 variant="secondary"
-                size="sm"
+                size="md"
                 loading={syncingOrders}
+                className={salesStyles.headerActionButton}
                 onClick={() => fetchOrders({ explicitSync: true })}
               >
-                <AppIcon name="refresh" size={16} />
-                Sincronizar MP
+                <span className={salesStyles.buttonLabel}>
+                  <AppIcon name="refresh" size={16} />
+                  <span>Sincronizar MP</span>
+                </span>
               </Button>
-              <Button variant="secondary" size="sm" onClick={handleExportOrdersCsv}>
-                <AppIcon name="download" size={16} />
-                Exportar CSV
+              <Button
+                variant="secondary"
+                size="md"
+                className={salesStyles.headerActionButton}
+                onClick={handleExportOrdersCsv}
+              >
+                <span className={salesStyles.buttonLabel}>
+                  <AppIcon name="download" size={16} />
+                  <span>Exportar CSV</span>
+                </span>
               </Button>
             </div>
           </div>
