@@ -23,6 +23,7 @@ jest.mock('../../../../lib/domain/customers.js', () => ({
 }));
 
 import handler from '../../../../pages/api/customer/auth.js';
+import { checkRateLimit } from '../../../../lib/cache/cache.js';
 import { logger } from '../../../../lib/infra/logger.js';
 import {
   setCustomerAuthCookie,
@@ -818,6 +819,21 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
 
       await handler(req, res);
       expect(res._getStatusCode()).toBe(401);
+    });
+
+    it('deve retornar 429 no PUT quando exceder o rate limit do perfil', async () => {
+      getAuthenticatedCustomer.mockReturnValue({ customerId: 10, email: 'maria@test.com' });
+      checkRateLimit.mockResolvedValueOnce(true);
+
+      const { req, res } = createMocks({
+        method: 'PUT',
+        body: { phone: '11988887777' },
+        socket: { remoteAddress: '203.0.113.46' },
+      });
+
+      await handler(req, res);
+      expect(res._getStatusCode()).toBe(429);
+      expect(updateCustomerProfile).not.toHaveBeenCalled();
     });
   });
 

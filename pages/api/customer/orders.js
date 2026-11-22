@@ -1,6 +1,8 @@
 import { getAuthenticatedCustomer } from '../../../lib/auth/customer-auth.js';
 import { getCustomerOrderById, getCustomerOrders } from '../../../lib/domain/orders.js';
 import { reconcilePendingOrders } from '../../../lib/payment/reconcile-orders.js';
+import { checkRateLimit } from '../../../lib/cache/cache.js';
+import { getClientIP } from '../../../lib/api/helpers.js';
 import { logger } from '../../../lib/infra/logger.js';
 
 export default async function handler(req, res) {
@@ -13,6 +15,14 @@ export default async function handler(req, res) {
     return res.status(401).json({
       error: 'Unauthorized',
       message: 'Faça login para visualizar suas compras.',
+    });
+  }
+
+  const ip = getClientIP(req);
+  if (await checkRateLimit(ip, 'api:customer:orders', 60, 60000)) {
+    return res.status(429).json({
+      error: 'Too Many Requests',
+      message: 'Muitas consultas em sequência. Aguarde um instante e tente novamente.',
     });
   }
 

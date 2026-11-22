@@ -91,6 +91,15 @@ const checkoutPostSchema = z
 export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
+      const ip = getClientIP(req);
+      const isGetLimited = await checkRateLimit(ip, 'api:public:checkout:get', 60, 60000);
+      if (isGetLimited) {
+        return res.status(429).json({
+          error: 'Too Many Requests',
+          message: 'Muitas consultas em sequência. Aguarde um instante e tente novamente.',
+        });
+      }
+
       const productId = parseInt(req.query?.productId, 10);
       if (Number.isNaN(productId) || productId <= 0) {
         return res.status(400).json({ error: 'Bad Request', message: 'ID do produto inválido.' });

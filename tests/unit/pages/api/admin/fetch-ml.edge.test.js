@@ -393,4 +393,41 @@ describe('API Admin - Fetch ML (Edge Cases)', () => {
     expect(res._getStatusCode()).toBe(200);
     expect(res._getJSONData().title).toBe('Produto UP');
   });
+
+  it('deve rejeitar URLs para loopback, metadata cloud e rede privada com 400 sem executar fetch (anti-SSRF)', async () => {
+    const ssrfUrls = [
+      'http://127.0.0.1:8080/internal?MLB123456',
+      'http://localhost:3000/api/status?MLB123456',
+      'http://169.254.169.254/latest/meta-data/?MLB123456',
+      'http://10.0.0.5:9200/_cluster/health?MLB123456',
+      'http://[::1]:8080/?MLB123456',
+    ];
+
+    for (const url of ssrfUrls) {
+      const { req, res } = createMocks({
+        method: 'POST',
+        body: { url },
+        socket: { remoteAddress: '203.0.113.101' },
+      });
+      await handler(req, res);
+      expect(res._getStatusCode()).toBe(400);
+    }
+
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('não deve executar scraping HTML contra host desconhecido mesmo que possua código MLB (trustedHost: false)', async () => {
+    delete process.env.ML_ACCESS_TOKEN;
+
+    const { req, res } = createMocks({
+      method: 'POST',
+      body: { url: 'https://host-desconhecido.example.com/item?MLB999888' },
+      socket: { remoteAddress: '203.0.113.102' },
+    });
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(502);
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
 });

@@ -1,6 +1,6 @@
 import { getRecentPosts } from '../../lib/domain/posts.js';
 import { getOrSetCache, checkRateLimit } from '../../lib/cache/cache.js';
-import { getClientIP, INVALID_PAGINATION_MESSAGE } from '../../lib/api/helpers.js';
+import { getClientIP, INVALID_PAGINATION_MESSAGE, INVALID_PARAMS_MESSAGE } from '../../lib/api/helpers.js';
 import { logger } from '../../lib/infra/logger.js';
 
 /**
@@ -35,6 +35,10 @@ async function handleGet(req, res) {
 
     if (page < 1 || limit < 1 || limit > 100) {
       return res.status(400).json({ error: 'Bad Request', message: INVALID_PAGINATION_MESSAGE });
+    }
+
+    if (typeof search === 'string' && search.length > 200) {
+      return res.status(400).json({ error: 'Bad Request', message: INVALID_PARAMS_MESSAGE });
     }
 
     // Chave de cache mais eficiente: separa listagem de busca

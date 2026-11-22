@@ -211,6 +211,15 @@ describe('API Admin - Dicas (/api/admin/dicas)', () => {
   describe('DELETE - Excluir Dica', () => {
     const body = { id: 10 };
 
+    it('deve retornar 400 se o ID não for informado no DELETE', async () => {
+      const { req, res } = getAuthenticatedMocks({ method: 'DELETE', body: {} });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(400);
+      expect(JSON.parse(res._getData())).toEqual({ message: 'ID é obrigatório' });
+      expect(query).toHaveBeenCalledTimes(1); // apenas SELECT permissions do RBAC
+    });
+
     it('deve retornar 200, excluir a dica e registrar log pegando o nome da dica original', async () => {
       query.mockResolvedValueOnce({ rows: [{ name: 'Dica Para Excluir' }] }); // Consulta prévia do nome
       query.mockResolvedValueOnce({ rowCount: 1 }); // A deleção em si

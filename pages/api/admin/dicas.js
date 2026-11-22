@@ -94,7 +94,10 @@ async function handlePut(req, res) {
 }
 
 async function handleDelete(req, res) {
-  const { id } = req.body;
+  const id = req.body?.id ?? req.query?.id;
+  if (id === undefined || id === null || id === '') {
+    return res.status(400).json({ message: 'ID é obrigatório' });
+  }
   const dicaQueryToDel = await query('SELECT name FROM dicas WHERE id = $1', [id]);
   const nameDica = dicaQueryToDel.rows[0]?.name || id;
   await query('DELETE FROM dicas WHERE id = $1', [id]);

@@ -3,6 +3,7 @@ import { createMocks } from 'node-mocks-http';
 import handler from '../../../../../pages/api/admin/fetch-spotify.js';
 import * as auth from '../../../../../lib/auth/auth.js';
 import { logger } from '../../../../../lib/infra/logger.js';
+import { logActivity } from '../../../../../lib/domain/audit.js';
 
 jest.mock('../../../../../lib/auth/auth.js', () => ({
   getAuthToken: jest.fn(),
@@ -94,5 +95,58 @@ describe('API - Admin - Fetch Spotify (Edge Cases)', () => {
       'Erro interno inesperado ao buscar dados da música:',
       expect.any(Error),
     );
+  });
+
+  it('deve rejeitar URL que embute spotify.com/track/ em domínio arbitrário ou loopback (anti-SSRF)', async () => {
+    auth.getAuthToken.mockReturnValue('valid_token');
+    auth.verifyToken.mockReturnValue({ role: 'admin' });
+
+    const maliciousUrls = [
+      'http://127.0.0.1:8080/spotify.com/track/123456789',
+      'https://169.254.169.254/latest/meta-data/spotify.com/track/123456789',
+      'https://evil.example.com/https://open.spotify.com/track/123456789',
+    ];
+
+    for (const url of maliciousUrls) {
+      const { req, res } = createMocks({
+        method: 'POST',
+        body: { url },
+        socket: { remoteAddress: '203.0.113.103' },
+      });
+      req.user = { role: 'admin' };
+
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(400);
+    }
+
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('deve usar sempre a URL canônica https://open.spotify.com/track/<id> na Estratégia 3', async () => {
+    auth.getAuthToken.mockReturnValue('valid_token');
+    auth.verifyToken.mockReturnValue({ role: 'admin' });
+    logActivity.mockResolvedValueOnce(true);
+
+    global.fetch
+      .mockResolvedValueOnce({ ok: false })
+      .mockResolvedValueOnce({ ok: false })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => '<html><head><meta property="og:description" content="Padre Fábio · Song · 2025" /></head></html>',
+      });
+
+    const { req, res } = createMocks({
+      method: 'POST',
+      body: { url: 'https://open.spotify.com/intl-pt/track/4cOdK2wGLETKBW3PvgPWqT?si=tracking123' },
+      socket: { remoteAddress: '203.0.113.104' },
+    });
+    req.user = { role: 'admin' };
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(200);
+    expect(res._getJSONData().artist).toBe('Padre Fábio');
+    expect(global.fetch.mock.calls[2][0]).toBe('https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT');
   });
 });

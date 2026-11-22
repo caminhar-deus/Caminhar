@@ -136,8 +136,12 @@ describe('API Admin - Rate Limit (/api/admin/rate-limit)', () => {
   });
 
   describe('GET - Consultas', () => {
-    it('deve retornar o IP atual quando type=current_ip', async () => {
-      const { req, res } = getAuthenticatedMocks({ method: 'GET', query: { type: 'current_ip' } });
+    it('deve retornar o IP atual quando type=current_ip e ignorar x-forwarded-for sem TRUST_PROXY', async () => {
+      const { req, res } = getAuthenticatedMocks({
+        method: 'GET',
+        query: { type: 'current_ip' },
+        headers: { 'x-forwarded-for': '8.8.8.8' },
+      });
       await handler(req, res);
       expect(res._getStatusCode()).toBe(200);
       expect(JSON.parse(res._getData()).ip).toBe('127.0.0.1');

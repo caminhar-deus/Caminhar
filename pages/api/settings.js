@@ -1,6 +1,8 @@
 import { getSettings, getSetting, updateSetting, getAllSettingsRaw } from '../../lib/domain/settings.js';
 import { withAuth, getAuthToken, verifyToken } from '../../lib/auth/auth.js';
 import { getOrSetCache, invalidateCache, checkRateLimit } from '../../lib/cache/cache.js';
+import { checkRolePermission } from '../../lib/api/permissions.js';
+import { logActivity } from '../../lib/domain/audit.js';
 import { z } from 'zod';
 import { getClientIP, INVALID_PARAMS_MESSAGE } from '../../lib/api/helpers.js';
 import { logger } from '../../lib/infra/logger.js';
@@ -12,8 +14,8 @@ const SETTINGS_CACHE_TTL = 7200; // 2 horas
  *
  * GET  /api/settings — Retorna configurações públicas
  * GET  /api/settings?key=x — Retorna configuração específica (autenticado)
- * POST /api/settings — Cria nova configuração (admin)
- * PUT  /api/settings — Atualiza configuração (admin/editor)
+ * POST /api/settings — Cria nova configuração (requer permissão Configuração de Cabeçalho)
+ * PUT  /api/settings — Atualiza configuração (requer permissão Configuração de Cabeçalho)
  *
  * Query params:
  *   ?response=v1 — Formata resposta no padrão { success, data, ... } (compatível com v1)
@@ -50,9 +52,12 @@ async function handleGet(req, res) {
       return res.status(401).json({ error: 'Unauthorized', message: 'Token inválido ou expirado' });
     }
 
-    // Verifica permissões
+    // Verifica permissões (admin/editor ou cargo com permissão de cabeçalho)
     if (decoded.role !== 'admin' && decoded.role !== 'editor') {
-      return res.status(403).json({ error: 'Forbidden', message: 'Acesso negado - permissões insuficientes' });
+      const permissionCheck = await checkRolePermission(decoded.role, 'Configuração de Cabeçalho');
+      if (!permissionCheck.allowed) {
+        return res.status(403).json({ error: 'Forbidden', message: 'Acesso negado - permissões insuficientes' });
+      }
     }
 
     try {
@@ -91,14 +96,18 @@ async function handleGet(req, res) {
   try {
     ip = getClientIP(req);
 
-    // Rate limit em paralelo mas isolado: se falhar, não derruba a resposta dos settings
-    checkRateLimit(ip, 'api:public:settings', 600, 60000).catch(() => {
-      // Falha no rate limit não deve abortar a resposta
-    });
+    // Verifica rate limit dentro do callback de cache para preservar latência L1 em hits
+    const fetchPublicSettings = async () => {
+      const isLimited = await checkRateLimit(ip, 'api:public:settings', 600, 60000);
+      if (isLimited) {
+        throw new Error('RATE_LIMIT_EXCEEDED');
+      }
+      return req.query.response === 'v1' ? await getAllSettingsRaw() : await getSettings();
+    };
 
     const settings = req.query.response === 'v1'
-      ? await getOrSetCache('settings:v1:all', () => getAllSettingsRaw(), SETTINGS_CACHE_TTL)
-      : await getOrSetCache('settings:all', () => getSettings(), SETTINGS_CACHE_TTL);
+      ? await getOrSetCache('settings:v1:all', fetchPublicSettings, SETTINGS_CACHE_TTL)
+      : await getOrSetCache('settings:all', fetchPublicSettings, SETTINGS_CACHE_TTL);
 
     res.setHeader('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=600');
 
@@ -108,6 +117,9 @@ async function handleGet(req, res) {
 
     return res.status(200).json(settings);
   } catch (error) {
+    if (error.message === 'RATE_LIMIT_EXCEEDED') {
+      return res.status(429).json({ error: 'Too Many Requests', message: 'Muitas requisições. Tente novamente mais tarde.' });
+    }
     logger.error('Settings', 'Erro ao buscar configurações', {
       error: error.message,
       stack: error.stack,
@@ -128,8 +140,17 @@ const postSchema = z.object({
 });
 
 const handlePost = withAuth(async (req, res) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ error: 'Forbidden', message: 'Acesso negado - requer permissões de administrador' });
+  const permissionCheck = await checkRolePermission(req.user?.role, 'Configuração de Cabeçalho');
+  if (!permissionCheck.allowed) {
+    if (permissionCheck.reason === 'error') {
+      logger.error('Settings', 'Falha ao verificar permissões no POST /api/settings (fail-closed):', permissionCheck.error);
+    }
+    return res.status(403).json({ error: 'Forbidden', message: 'Acesso negado - requer permissão: Configuração de Cabeçalho' });
+  }
+
+  const ip = getClientIP(req);
+  if (await checkRateLimit(ip, 'api:admin:settings', 30, 60000)) {
+    return res.status(429).json({ error: 'Too Many Requests', message: 'Muitas requisições. Tente novamente mais tarde.' });
   }
 
   const validation = postSchema.safeParse(req.body);
@@ -151,6 +172,10 @@ const handlePost = withAuth(async (req, res) => {
     await invalidateCache('settings:all');
     await invalidateCache('settings:v1:all');
 
+    if (req.user?.username) {
+      await logActivity(req.user.username, 'CRIAR CONFIGURAÇÃO', 'SETTINGS', null, `Configuração criada: ${key}`, ip).catch(() => {});
+    }
+
     return res.status(201).json({ success: true, data: { key, value: result }, message: 'Configuração criada com sucesso' });
   } catch (error) {
     logger.error('Settings', 'Erro ao criar configuração:', error);
@@ -159,9 +184,22 @@ const handlePost = withAuth(async (req, res) => {
 });
 
 /**
- * PUT: Atualiza configuração existente (autenticado, admin/editor)
+ * PUT: Atualiza configuração existente (autenticado com permissão Configuração de Cabeçalho)
  */
 const handlePut = withAuth(async (req, res) => {
+  const permissionCheck = await checkRolePermission(req.user?.role, 'Configuração de Cabeçalho');
+  if (!permissionCheck.allowed) {
+    if (permissionCheck.reason === 'error') {
+      logger.error('Settings', 'Falha ao verificar permissões no PUT /api/settings (fail-closed):', permissionCheck.error);
+    }
+    return res.status(403).json({ error: 'Forbidden', message: 'Acesso negado - requer permissão: Configuração de Cabeçalho' });
+  }
+
+  const ip = getClientIP(req);
+  if (await checkRateLimit(ip, 'api:admin:settings', 30, 60000)) {
+    return res.status(429).json({ error: 'Too Many Requests', message: 'Muitas requisições. Tente novamente mais tarde.' });
+  }
+
   // Título e subtítulo alimentam o cabeçalho do site público: valor vazio (ou
   // só espaços) deixaria a home sem título. As demais chaves seguem aceitando
   // qualquer valor (`z.any()` — números, booleanos etc.).
@@ -195,6 +233,10 @@ const handlePut = withAuth(async (req, res) => {
     await invalidateCache(`settings:${key}`);
     await invalidateCache('settings:all');
     await invalidateCache('settings:v1:all');
+
+    if (req.user?.username) {
+      await logActivity(req.user.username, 'ATUALIZAR CONFIGURAÇÃO', 'SETTINGS', null, `Configuração atualizada: ${key}`, ip).catch(() => {});
+    }
 
     return res.status(200).json({ success: true });
   } catch (error) {

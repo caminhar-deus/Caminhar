@@ -33,6 +33,10 @@ quando a âncora mudou — o número velho deixa de pontuar antes de virar erro.
 > condicional `ETag`/`304` do ajuste de `[Performance] Slow resource` no commit `6e94332`),
 > além das linhas de `pages/api/admin/orders.js` no §2 (`requireAuth` em `:29`, usado em `:65`)
 > e `pages/api/videos.js` no §3 (`405` em `:37-39`), foram atualizadas para as linhas atuais do disco.
+>
+> **Recalibrado de novo em 22/11/2026**: após endurecimento de segurança em `pages/api/settings.js`
+> e `pages/api/upload-image.js`, as âncoras de `withAuth` foram atualizadas para `upload-image.js:219`
+> e `settings.js` (`:142` e `:189`).
 
 ## 1. Quantos arquivos, quantas rotas
 
@@ -50,8 +54,8 @@ quando a âncora mudou — o número velho deixa de pontuar antes de virar erro.
 | Grupo | Rotas | Onde a autenticação é aplicada |
 |---|---|---|
 | Admin via factory | 17 | `lib/api/adminCrudHandler.js:305` (`withAuth(handler)`), alcançado por `createAdminHandler` em cada rota |
-| `withAuth` direto | 2 | `pages/api/cleanup-test-data.js:26`, `pages/api/upload-image.js:170` |
-| `withAuth` parcial | 1 | `pages/api/settings.js` — GET público, POST (`:130`) e PUT (`:164`) com `withAuth` |
+| `withAuth` direto | 2 | `pages/api/cleanup-test-data.js:26`, `pages/api/upload-image.js:219` |
+| `withAuth` parcial | 1 | `pages/api/settings.js` — GET público, POST (`:142`) e PUT (`:189`) com `withAuth` |
 | Autenticação manual | 6 | `pages/api/auth/check.js` (`:65`,`:74`), `pages/api/products.js` (`requireAuth` em `:132`, usado em `:367,373,378,383`), `pages/api/status.js` (`:34`,`:39` — só o diagnóstico; `?mode=health` em `:27` é público), `pages/api/admin/internal-products.js` (`requireAuth` em `:62`, usado em `:98`), `pages/api/admin/orders.js` (`requireAuth` em `:29`, usado em `:65`), `pages/api/settings.js` |
 
 As **17** admin via factory são as **16** de `pages/api/admin/` mais

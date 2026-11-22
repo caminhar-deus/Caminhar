@@ -102,6 +102,13 @@ export default async function handler(req, res) {
       if (!session) {
         return res.status(401).json({ error: 'Unauthorized', message: 'Faça login para atualizar seus dados.' });
       }
+      const ip = getClientIP(req);
+      if (await checkRateLimit(ip, 'api:customer:profile', 30, 60000)) {
+        return res.status(429).json({
+          error: 'Too Many Requests',
+          message: 'Muitas tentativas. Aguarde um minuto e tente novamente.',
+        });
+      }
       const validation = profileUpdateSchema.safeParse(req.body || {});
       if (!validation.success) {
         return res.status(400).json({

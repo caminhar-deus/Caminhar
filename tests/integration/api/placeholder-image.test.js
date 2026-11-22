@@ -105,6 +105,13 @@ describe('API - Placeholder Image (/api/placeholder-image)', () => {
     expect(res.getHeader('Content-Type')).toBe('image/webp');
   });
 
+  it('deve retornar 405 para métodos diferentes de GET e HEAD', async () => {
+    const { req, res } = createMocks({ method: 'POST' });
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(405);
+  });
+
   it('deve retornar o SVG padrão se não houver configuração nem arquivo na pasta (fallback 2)', async () => {
     getSetting.mockResolvedValueOnce(null);
     fsPromises.readdir.mockRejectedValueOnce(new Error('Dir não existe'));

@@ -71,6 +71,14 @@ testPublicGetEndpoint(handler, {
       expect(res._getJSONData()).toEqual({ error: 'Bad Request', message: 'Parâmetros de paginação inválidos' });
     });
 
+    it('deve retornar 400 se o parâmetro search exceder 200 caracteres', async () => {
+      const { req, res } = cm({ method: 'GET', query: { search: 'a'.repeat(201) } });
+      await h(req, res);
+
+      expect(res._getStatusCode()).toBe(400);
+      expect(res._getJSONData()).toEqual({ error: 'Bad Request', message: 'Parâmetros inválidos.' });
+    });
+
     it('deve retornar 500 em caso de erro interno no servidor ou banco de dados', async () => {
       getRecentPosts.mockRejectedValue(new Error('Falha no banco de dados simulada'));
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});

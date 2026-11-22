@@ -5,6 +5,10 @@ import { logger } from '../../lib/infra/logger.js';
 import { uploadRoots } from '../../lib/infra/storage.js';
 
 export default async function handler(req, res) {
+  if (req.method && req.method !== 'GET' && req.method !== 'HEAD') {
+    res.setHeader('Allow', ['GET', 'HEAD']);
+    return res.status(405).json({ error: 'Method Not Allowed', message: 'Método não permitido' });
+  }
   try {
     // Diretórios de upload: o ativo vive FORA de `public/` (snapshot do
     // `next start` — ver pages/api/upload-image.js) e `public/uploads` segue

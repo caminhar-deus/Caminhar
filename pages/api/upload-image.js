@@ -5,6 +5,10 @@ import crypto from 'crypto';
 import sharp from 'sharp';
 import { updateSetting } from '../../lib/domain/settings.js';
 import { withAuth } from '../../lib/auth/auth.js';
+import { checkRolePermission } from '../../lib/api/permissions.js';
+import { checkRateLimit, invalidateCache } from '../../lib/cache/cache.js';
+import { getClientIP } from '../../lib/api/helpers.js';
+import { logActivity } from '../../lib/domain/audit.js';
 import { logger } from '../../lib/infra/logger.js';
 import { uploadsRoot, MAX_UPLOAD_BYTES } from '../../lib/infra/storage.js';
 
@@ -55,6 +59,27 @@ function ehErroDeTamanho(error) {
 async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed', message: 'Método não permitido' });
+  }
+
+  const ip = getClientIP(req);
+  if (await checkRateLimit(ip, 'api:admin:upload-image', 30, 60000)) {
+    return res.status(429).json({ error: 'Too Many Requests', message: 'Muitas requisições. Tente novamente mais tarde.' });
+  }
+
+  if (req.user?.role) {
+    const uploadPerm = await checkRolePermission(req.user.role, [
+      'Posts/Artigos',
+      'Gestão de Vídeos',
+      'Gestão de Produtos',
+      'Gestão de Vendas',
+      'Configuração de Cabeçalho',
+    ]);
+    if (!uploadPerm.allowed) {
+      if (uploadPerm.reason === 'error') {
+        logger.error('Upload', 'Falha ao verificar permissões no upload-image (fail-closed):', uploadPerm.error);
+      }
+      return res.status(403).json({ error: 'Forbidden', message: 'Acesso negado - sem permissão para upload de imagens' });
+    }
   }
 
   try {
@@ -137,6 +162,18 @@ async function handler(req, res) {
 
     // Check upload type to decide filename prefix
     const uploadType = Array.isArray(fields.uploadType) ? fields.uploadType[0] : fields.uploadType;
+
+    if (uploadType === 'setting_home_image' && req.user?.role) {
+      const headerPerm = await checkRolePermission(req.user.role, 'Configuração de Cabeçalho');
+      if (!headerPerm.allowed) {
+        if (headerPerm.reason === 'error') {
+          logger.error('Upload', 'Falha ao verificar permissão de cabeçalho no upload-image (fail-closed):', headerPerm.error);
+        }
+        await safeUnlink(imageFile.filepath);
+        return res.status(403).json({ error: 'Forbidden', message: 'Acesso negado - requer permissão: Configuração de Cabeçalho' });
+      }
+    }
+
     const prefix = uploadType === 'setting_home_image' ? 'hero-image-' : 'post-image-';
 
     // Gera nome aleatório seguro com UUID + extensão validada
@@ -152,6 +189,18 @@ async function handler(req, res) {
     if (uploadType === 'setting_home_image') {
       // Update setting in database only for site header
       await updateSetting('home_image_url', publicPath, 'image', 'Imagem principal da home');
+      await invalidateCache('settings:*').catch(() => {});
+    }
+
+    if (req.user?.username) {
+      await logActivity(
+        req.user.username,
+        uploadType === 'setting_home_image' ? 'ATUALIZAR IMAGEM CABEÇALHO' : 'UPLOAD IMAGEM',
+        'UPLOAD',
+        null,
+        `Upload de imagem: ${newFilename}`,
+        ip
+      ).catch(() => {});
     }
 
     return res.status(200).json({ success: true, path: publicPath, imageUrl: publicPath });

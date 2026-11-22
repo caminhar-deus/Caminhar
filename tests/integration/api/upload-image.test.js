@@ -30,6 +30,12 @@ jest.mock('fs', () => ({
   mkdirSync: jest.fn(),
 }));
 
+// Mock do DB e auditoria
+jest.mock('../../../lib/infra/db.js', () => require('../../mocks/db-module').mockDb());
+jest.mock('../../../lib/domain/audit.js', () => ({
+  logActivity: jest.fn().mockResolvedValue(true),
+}));
+
 // Mock do middleware de autenticação
 jest.mock('../../../lib/auth/auth.js', () => ({
   withAuth: (handler) => handler,
@@ -43,6 +49,8 @@ jest.mock('../../../lib/domain/settings.js', () => ({
 import handler from '../../../pages/api/upload-image.js';
 import formidable from 'formidable';
 import fs from 'fs';
+import { query } from '../../../lib/infra/db.js';
+import { logActivity } from '../../../lib/domain/audit.js';
 import { updateSetting } from '../../../lib/domain/settings.js';
 
 describe('API de Upload de Imagem (/api/upload-image)', () => {
@@ -284,5 +292,118 @@ describe('API de Upload de Imagem (/api/upload-image)', () => {
     const { req, res } = createMocks({ method: 'GET' });
     await handler(req, res);
     expect(res._getStatusCode()).toBe(405);
+  });
+
+  test('Deve retornar 403 se usuário não tiver nenhuma permissão de upload', async () => {
+    query.mockResolvedValueOnce({ rows: [{ permissions: ['Visão Geral'] }] });
+
+    const { req, res } = createMocks({
+      method: 'POST',
+      socket: { remoteAddress: '203.0.113.21' },
+    });
+    req.user = { userId: 2, username: 'viewer', role: 'viewer' };
+
+    await handler(req, res);
+    expect(res._getStatusCode()).toBe(403);
+    expect(formidable).not.toHaveBeenCalled();
+  });
+
+  test('Deve retornar 403 e limpar arquivo temporário se tentar uploadType=setting_home_image sem permissão Configuração de Cabeçalho', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ permissions: ['Posts/Artigos'] }] })
+      .mockResolvedValueOnce({ rows: [{ permissions: ['Posts/Artigos'] }] });
+
+    const mockFile = {
+      originalFilename: 'hero.jpg',
+      filepath: '/tmp/hero.jpg',
+      newFilename: 'hero.jpg',
+      mimetype: 'image/jpeg',
+      size: 1024,
+    };
+
+    formidable.mockImplementation(() => ({
+      parse: jest.fn((req, cb) => {
+        cb(null, { uploadType: 'setting_home_image' }, { image: [mockFile] });
+      }),
+    }));
+
+    const { req, res } = createMocks({
+      method: 'POST',
+      socket: { remoteAddress: '203.0.113.22' },
+    });
+    req.user = { userId: 3, username: 'editor_posts', role: 'editor' };
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(403);
+    expect(fs.promises.unlink).toHaveBeenCalledWith('/tmp/hero.jpg');
+    expect(fs.promises.rename).not.toHaveBeenCalled();
+    expect(updateSetting).not.toHaveBeenCalled();
+  });
+
+  test('Deve permitir setting_home_image e registrar logActivity para usuário com permissão Configuração de Cabeçalho', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ permissions: ['Configuração de Cabeçalho'] }] })
+      .mockResolvedValueOnce({ rows: [{ permissions: ['Configuração de Cabeçalho'] }] });
+
+    const mockFile = {
+      originalFilename: 'hero.jpg',
+      filepath: '/tmp/hero.jpg',
+      newFilename: 'hero.jpg',
+      mimetype: 'image/jpeg',
+      size: 1024,
+    };
+
+    formidable.mockImplementation(() => ({
+      parse: jest.fn((req, cb) => {
+        cb(null, { uploadType: 'setting_home_image' }, { image: [mockFile] });
+      }),
+    }));
+
+    const { req, res } = createMocks({
+      method: 'POST',
+      socket: { remoteAddress: '203.0.113.23' },
+    });
+    req.user = { userId: 4, username: 'designer', role: 'designer' };
+
+    await handler(req, res);
+
+    expect(res._getStatusCode()).toBe(200);
+    expect(updateSetting).toHaveBeenCalledTimes(1);
+    expect(logActivity).toHaveBeenCalledWith(
+      'designer',
+      'ATUALIZAR IMAGEM CABEÇALHO',
+      'UPLOAD',
+      null,
+      expect.stringContaining('Upload de imagem: hero-image-'),
+      '203.0.113.23'
+    );
+  });
+
+  test('Deve retornar 429 ao exceder o rate limit do upload', async () => {
+    const mockFile = {
+      originalFilename: 'rl.jpg',
+      filepath: '/tmp/rl.jpg',
+      newFilename: 'rl.jpg',
+      mimetype: 'image/jpeg',
+      size: 1024,
+    };
+
+    formidable.mockImplementation(() => ({
+      parse: jest.fn((req, cb) => {
+        cb(null, { uploadType: 'post' }, { image: [mockFile] });
+      }),
+    }));
+
+    const clientIp = '203.0.113.29';
+    for (let i = 0; i < 30; i++) {
+      const { req, res } = createMocks({ method: 'POST', socket: { remoteAddress: clientIp } });
+      await handler(req, res);
+      expect(res._getStatusCode()).toBe(200);
+    }
+
+    const { req, res } = createMocks({ method: 'POST', socket: { remoteAddress: clientIp } });
+    await handler(req, res);
+    expect(res._getStatusCode()).toBe(429);
   });
 });

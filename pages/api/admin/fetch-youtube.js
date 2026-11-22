@@ -49,4 +49,5 @@ export default createAdminHandler({
   permission: 'Gestão de Vídeos',
   allowedMethods: ['POST'],
   handlers: { POST: handlePost },
+  rateLimit: { max: 30, window: 60000 },
 });

@@ -1,7 +1,7 @@
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
 import { z } from 'zod';
 import { logger } from '../../../lib/infra/logger.js';
-import { isSpotifyTrackUrl } from '../../../lib/media/spotify.js';
+import { extractSpotifyId } from '../../../lib/media/spotify.js';
 
 const FETCH_TIMEOUT = 8000; // 8 segundos
 
@@ -47,10 +47,17 @@ async function handlePost(req, res) {
   }
 
   const { url } = validation.data;
+  const trackId = extractSpotifyId(url);
 
-  if (!isSpotifyTrackUrl(url)) {
-    throw new BusinessError('Apenas links de faixa (track) do Spotify são suportados para pré-visualização/embeb.');
+  if (!trackId) {
+    return res.status(400).json({
+      error: 'URL inválida',
+      message: 'Apenas links de faixa (track) oficiais do Spotify são suportados para pré-visualização/embed.',
+    });
   }
+
+  // URL canônica sempre no domínio oficial do Spotify (mitiga SSRF em oEmbed/scraping)
+  const canonicalTrackUrl = `https://open.spotify.com/track/${trackId}`;
 
   try {
     let title = '';
@@ -58,7 +65,7 @@ async function handlePost(req, res) {
 
     // Estratégia 1: API oEmbed Oficial do Spotify (Sempre retorna o título com 100% de precisão)
     try {
-      const oembedRes = await fetchWithTimeout(`https://open.spotify.com/oembed?url=${encodeURIComponent(url)}`);
+      const oembedRes = await fetchWithTimeout(`https://open.spotify.com/oembed?url=${encodeURIComponent(canonicalTrackUrl)}`);
       if (oembedRes.ok) {
         const data = await oembedRes.json();
         title = data.title || '';
@@ -68,37 +75,34 @@ async function handlePost(req, res) {
     }
 
     // Estratégia 2: Extrair do código-fonte do Iframe de Embed (Forma mais estável para obter o Artista)
-    const trackMatch = url.match(/(?:track|episode)\/([a-zA-Z0-9]+)/);
-    if (trackMatch) {
-      try {
-        const embedRes = await fetchWithTimeout(`https://open.spotify.com/embed/track/${trackMatch[1]}`, {
-          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
-        });
+    try {
+      const embedRes = await fetchWithTimeout(`https://open.spotify.com/embed/track/${trackId}`, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+      });
 
-        if (embedRes.ok) {
-          const embedHtml = await embedRes.text();
-          // O HTML do Embed possui scripts internos com os dados exatos da música em JSON
-          const artistsMatch = embedHtml.match(/"artists"\s*:\s*\[\s*{\s*"name"\s*:\s*"([^"]+)"/i) ||
-                               embedHtml.match(/"artists":\[\{"name":"([^&]+)"/i);
+      if (embedRes.ok) {
+        const embedHtml = await embedRes.text();
+        // O HTML do Embed possui scripts internos com os dados exatos da música em JSON
+        const artistsMatch = embedHtml.match(/"artists"\s*:\s*\[\s*{\s*"name"\s*:\s*"([^"]+)"/i) ||
+                             embedHtml.match(/"artists":\[\{"name":"([^&]+)"/i);
 
-          if (artistsMatch && artistsMatch[1]) {
-            artist = artistsMatch[1];
-          }
-
-          if (!title) {
-            const titleMatch = embedHtml.match(/"name"\s*:\s*"([^"]+)"/i);
-            if (titleMatch) title = titleMatch[1];
-          }
+        if (artistsMatch && artistsMatch[1]) {
+          artist = artistsMatch[1];
         }
-      } catch (e) {
-        logger.error('FetchSpotify', 'Falha na leitura do Iframe:', e);
+
+        if (!title) {
+          const titleMatch = embedHtml.match(/"name"\s*:\s*"([^"]+)"/i);
+          if (titleMatch) title = titleMatch[1];
+        }
       }
+    } catch (e) {
+      logger.error('FetchSpotify', 'Falha na leitura do Iframe:', e);
     }
 
-    // Estratégia 3: Scraping das Tags Meta (SEO). O uso do "Googlebot" força o Spotify a entregar os dados
+    // Estratégia 3: Scraping das Tags Meta (SEO) na URL canônica oficial do Spotify
     if (!artist) {
       try {
-        const htmlRes = await fetchWithTimeout(url, {
+        const htmlRes = await fetchWithTimeout(canonicalTrackUrl, {
           headers: {
             'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
             'Accept-Language': 'en-US,en;q=0.9'
@@ -148,4 +152,5 @@ export default createAdminHandler({
   permission: 'Gestão de Músicas',
   allowedMethods: ['POST'],
   handlers: { POST: handlePost },
+  rateLimit: { max: 30, window: 60000 },
 });

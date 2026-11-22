@@ -1,6 +1,7 @@
 import { Redis } from '@upstash/redis';
 import { createAdminHandler } from '../../../lib/api/adminCrudHandler.js';
 import { z } from 'zod';
+import { getClientIP } from '../../../lib/api/helpers.js';
 import { logger } from '../../../lib/infra/logger.js';
 import { redisScan } from '../../../lib/infra/redis.js';
 
@@ -119,9 +120,9 @@ async function handleGet(req, res) {
 
   const { type } = req.query;
 
-  // Retornar IP atual do requisitante
+  // Retornar IP atual do requisitante (respeitando TRUST_PROXY via getClientIP)
   if (type === 'current_ip') {
-    const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
+    const ip = getClientIP(req) || 'unknown';
     return res.status(200).json({ ip: ip === '::1' ? '127.0.0.1' : ip });
   }
 
@@ -313,4 +314,5 @@ export default createAdminHandler({
     POST: handlePost,
     DELETE: handleDelete,
   },
+  rateLimit: { max: 30, window: 60000 },
 });

@@ -133,4 +133,28 @@ describe('API Visitante/Cliente - Meus Pedidos (/api/customer/orders)', () => {
     await handler(nfReq, nfRes);
     expect(nfRes._getStatusCode()).toBe(404);
   });
+
+  it('deve retornar 429 ao exceder o rate limit de consultas de pedidos', async () => {
+    getAuthenticatedCustomer.mockReturnValue({ customerId: 5 });
+    getCustomerOrders.mockResolvedValue([]);
+    const clientIp = '203.0.113.150';
+
+    for (let i = 0; i < 60; i++) {
+      const { req, res } = createMocks({
+        method: 'GET',
+        query: { sync: '0' },
+        socket: { remoteAddress: clientIp },
+      });
+      await handler(req, res);
+      expect(res._getStatusCode()).toBe(200);
+    }
+
+    const { req, res } = createMocks({
+      method: 'GET',
+      query: { sync: '0' },
+      socket: { remoteAddress: clientIp },
+    });
+    await handler(req, res);
+    expect(res._getStatusCode()).toBe(429);
+  });
 });

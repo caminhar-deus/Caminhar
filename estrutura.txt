@@ -370,6 +370,7 @@ pages/api/admin/posts.js → lib/crud/crud.js
 pages/api/admin/posts.js → lib/domain/posts.js
 pages/api/admin/posts.js → lib/infra/db.js
 pages/api/admin/rate-limit.js → lib/api/adminCrudHandler.js
+pages/api/admin/rate-limit.js → lib/api/helpers.js
 pages/api/admin/rate-limit.js → lib/infra/logger.js
 pages/api/admin/rate-limit.js → lib/infra/redis.js
 pages/api/admin/roles.js → lib/api/adminCrudHandler.js
@@ -419,7 +420,9 @@ pages/api/customer/auth.js → lib/auth/google-id-token.js
 pages/api/customer/auth.js → lib/cache/cache.js
 pages/api/customer/auth.js → lib/domain/customers.js
 pages/api/customer/auth.js → lib/infra/logger.js
+pages/api/customer/orders.js → lib/api/helpers.js
 pages/api/customer/orders.js → lib/auth/customer-auth.js
+pages/api/customer/orders.js → lib/cache/cache.js
 pages/api/customer/orders.js → lib/domain/orders.js
 pages/api/customer/orders.js → lib/infra/logger.js
 pages/api/customer/orders.js → lib/payment/reconcile-orders.js
@@ -451,13 +454,19 @@ pages/api/products.js → lib/domain/audit.js
 pages/api/products.js → lib/domain/products.js
 pages/api/products.js → lib/infra/logger.js
 pages/api/settings.js → lib/api/helpers.js
+pages/api/settings.js → lib/api/permissions.js
 pages/api/settings.js → lib/auth/auth.js
 pages/api/settings.js → lib/cache/cache.js
+pages/api/settings.js → lib/domain/audit.js
 pages/api/settings.js → lib/domain/settings.js
 pages/api/settings.js → lib/infra/logger.js
 pages/api/status.js → lib/auth/auth.js
 pages/api/status.js → lib/infra/db.js
+pages/api/upload-image.js → lib/api/helpers.js
+pages/api/upload-image.js → lib/api/permissions.js
 pages/api/upload-image.js → lib/auth/auth.js
+pages/api/upload-image.js → lib/cache/cache.js
+pages/api/upload-image.js → lib/domain/audit.js
 pages/api/upload-image.js → lib/domain/settings.js
 pages/api/upload-image.js → lib/infra/logger.js
 pages/api/upload-image.js → lib/infra/storage.js
@@ -659,6 +668,7 @@ tests/integration/api/auth/refresh.test.js → lib/infra/logger.js
 tests/integration/api/auth/refresh.test.js → pages/api/auth/refresh.js
 tests/integration/api/auth/refresh.test.js → tests/mocks/cache.js
 tests/integration/api/checkout.test.js → lib/auth/customer-auth.js
+tests/integration/api/checkout.test.js → lib/cache/cache.js
 tests/integration/api/checkout.test.js → lib/domain/customers.js
 tests/integration/api/checkout.test.js → lib/domain/orders.js
 tests/integration/api/checkout.test.js → lib/infra/db.js
@@ -669,6 +679,7 @@ tests/integration/api/cleanup-test-data.test.js → lib/infra/db.js
 tests/integration/api/cleanup-test-data.test.js → pages/api/cleanup-test-data.js
 tests/integration/api/cleanup-test-data.test.js → tests/mocks/db-module.js
 tests/integration/api/customer/auth.test.js → lib/auth/customer-auth.js
+tests/integration/api/customer/auth.test.js → lib/cache/cache.js
 tests/integration/api/customer/auth.test.js → lib/domain/customers.js
 tests/integration/api/customer/auth.test.js → lib/infra/logger.js
 tests/integration/api/customer/auth.test.js → pages/api/customer/auth.js
@@ -729,8 +740,11 @@ tests/integration/api/products.test.js → tests/mocks/db-module.js
 tests/integration/api/settings.general.test.js → tests/mocks/db-module.js
 tests/integration/api/settings.test.js → lib/auth/auth.js
 tests/integration/api/settings.test.js → lib/cache/cache.js
+tests/integration/api/settings.test.js → lib/domain/audit.js
 tests/integration/api/settings.test.js → lib/domain/settings.js
+tests/integration/api/settings.test.js → lib/infra/db.js
 tests/integration/api/settings.test.js → pages/api/settings.js
+tests/integration/api/settings.test.js → tests/mocks/db-module.js
 tests/integration/api/stats.test.js → lib/auth/auth.js
 tests/integration/api/stats.test.js → lib/infra/db.js
 tests/integration/api/stats.test.js → pages/api/admin/stats.js
@@ -740,8 +754,11 @@ tests/integration/api/status.test.js → pages/api/status.js
 tests/integration/api/status.test.js → tests/mocks/db-module.js
 tests/integration/api/upload-image-disk.test.js → pages/api/upload-image.js
 tests/integration/api/upload-image-disk.test.js → pages/api/uploads/[...path].js
+tests/integration/api/upload-image.test.js → lib/domain/audit.js
 tests/integration/api/upload-image.test.js → lib/domain/settings.js
+tests/integration/api/upload-image.test.js → lib/infra/db.js
 tests/integration/api/upload-image.test.js → pages/api/upload-image.js
+tests/integration/api/upload-image.test.js → tests/mocks/db-module.js
 tests/integration/api/uploads.test.js → pages/api/uploads/[...path].js
 tests/integration/api/videos.flow.test.js → lib/domain/audit.js
 tests/integration/api/videos.flow.test.js → lib/domain/videos.js
@@ -1005,6 +1022,7 @@ tests/unit/pages/api/admin/fetch-ml.edge.test.js → lib/infra/logger.js
 tests/unit/pages/api/admin/fetch-ml.edge.test.js → pages/api/admin/fetch-ml.js
 tests/unit/pages/api/admin/fetch-ml.edge.test.js → tests/helpers/index.js
 tests/unit/pages/api/admin/fetch-spotify.edge.test.js → lib/auth/auth.js
+tests/unit/pages/api/admin/fetch-spotify.edge.test.js → lib/domain/audit.js
 tests/unit/pages/api/admin/fetch-spotify.edge.test.js → lib/infra/logger.js
 tests/unit/pages/api/admin/fetch-spotify.edge.test.js → pages/api/admin/fetch-spotify.js
 tests/unit/pages/api/admin/fetch-spotify.edge.test.js → tests/helpers/index.js

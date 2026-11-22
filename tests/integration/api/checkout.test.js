@@ -30,6 +30,7 @@ jest.mock('../../../lib/payment/mercadopago.js', () => ({
 
 import handler from '../../../pages/api/checkout.js';
 import { query } from '../../../lib/infra/db.js';
+import { checkRateLimit } from '../../../lib/cache/cache.js';
 import { getAuthenticatedCustomer } from '../../../lib/auth/customer-auth.js';
 import { getCustomerById, updateCustomerProfile } from '../../../lib/domain/customers.js';
 import {
@@ -96,6 +97,20 @@ describe('API Checkout (/api/checkout)', () => {
 
       await handler(req, res);
       expect(res._getStatusCode()).toBe(404);
+    });
+
+    it('deve retornar 429 no GET quando checkRateLimit indicar excesso de requisições', async () => {
+      checkRateLimit.mockResolvedValueOnce(true);
+
+      const { req, res } = createMocks({
+        method: 'GET',
+        query: { productId: '25' },
+        socket: { remoteAddress: '203.0.113.45' },
+      });
+
+      await handler(req, res);
+      expect(res._getStatusCode()).toBe(429);
+      expect(query).not.toHaveBeenCalled();
     });
   });
 

@@ -88,7 +88,57 @@ const LINK_PREVIEW_HEADERS = {
 };
 
 /**
- * Detecta a loja a partir da URL. Retorna { key, label, decodedUrl } ou null.
+ * Verifica se o hostname aponta para loopback, rede privada ou link-local (anti-SSRF).
+ */
+function isPrivateOrLocalHost(hostname) {
+  const host = String(hostname || '').toLowerCase().replace(/^\[|\]$/g, '').replace(/\.$/, '');
+  if (!host) return true;
+  if (
+    host === 'localhost' ||
+    host.endsWith('.localhost') ||
+    host.endsWith('.local') ||
+    host.endsWith('.internal') ||
+    host === '::' ||
+    host === '::1' ||
+    host === '0.0.0.0'
+  ) {
+    return true;
+  }
+
+  if (host.includes(':')) {
+    if (/^(?:fc|fd)[0-9a-f]{2}:/i.test(host) || /^fe[89ab][0-9a-f]:/i.test(host)) {
+      return true;
+    }
+    const mappedV4 = host.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i);
+    if (mappedV4) {
+      return isPrivateOrLocalHost(mappedV4[1]);
+    }
+    if (/^::ffff:/i.test(host)) {
+      return true;
+    }
+  }
+
+  const ipv4Match = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (ipv4Match) {
+    const [, a, b] = ipv4Match.map(Number);
+    if (
+      a === 0 ||
+      a === 10 ||
+      a === 127 ||
+      (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168) ||
+      (a === 100 && b >= 64 && b <= 127)
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Detecta a loja a partir da URL. Retorna { key, label, decodedUrl, trustedHost } ou null.
  */
 function detectStore(rawUrl) {
   let decodedUrl;
@@ -97,22 +147,33 @@ function detectStore(rawUrl) {
   } catch {
     decodedUrl = rawUrl;
   }
-  let host;
+  let parsed;
   try {
-    host = new URL(decodedUrl).hostname.replace(/^www\./, '');
+    parsed = new URL(decodedUrl);
   } catch {
     return null;
   }
+
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    return null;
+  }
+
+  if (isPrivateOrLocalHost(parsed.hostname)) {
+    return null;
+  }
+
+  const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
   for (const [key, store] of Object.entries(STORES)) {
     if (store.hosts.some((h) => host === h || host.endsWith(`.${h}`))) {
-      return { key, label: store.label, decodedUrl };
+      return { key, label: store.label, decodedUrl, trustedHost: true };
     }
   }
 
-  // Compatibilidade: URL de host desconhecido que carrega um código MLB é
-  // tratada como Mercado Livre (o identificador MLB é exclusivo da loja).
+  // Compatibilidade: URL pública de host desconhecido que carrega um código MLB é
+  // tratada como Mercado Livre APENAS via API oficial (`api.mercadolibre.com`),
+  // nunca via scraping HTML direto (`trustedHost: false`).
   if (/MLB[-_]?\d+/i.test(decodedUrl)) {
-    return { key: 'mercadolivre', label: STORES.mercadolivre.label, decodedUrl };
+    return { key: 'mercadolivre', label: STORES.mercadolivre.label, decodedUrl, trustedHost: false };
   }
 
   return null;
@@ -235,7 +296,7 @@ function extractMercadoLivreCodes(decodedUrl) {
  * configurado (`ML_ACCESS_TOKEN`), não gastamos requisições condenadas: o
  * caminho que funciona é o preview da página.
  */
-async function fetchMercadoLivre(decodedUrl) {
+async function fetchMercadoLivre(decodedUrl, { trustedHost = true } = {}) {
   const token = (process.env.ML_ACCESS_TOKEN || '').trim();
   const { itemCodes } = extractMercadoLivreCodes(decodedUrl);
 
@@ -295,8 +356,8 @@ async function fetchMercadoLivre(decodedUrl) {
     }
   }
 
-  // 3. Preview da página: título, imagem e descrição (o preço vem `null`).
-  if (!foundData) {
+  // 3. Preview da página: título, imagem e descrição (apenas em domínios confiáveis do ML).
+  if (!foundData && trustedHost) {
     try {
       foundData = await scrapeFromHtml(decodedUrl, {
         headers: LINK_PREVIEW_HEADERS,
@@ -373,7 +434,7 @@ async function handlePost(req, res) {
   try {
     let foundData;
     if (store.key === 'mercadolivre') {
-      foundData = await fetchMercadoLivre(store.decodedUrl);
+      foundData = await fetchMercadoLivre(store.decodedUrl, { trustedHost: store.trustedHost });
     } else if (store.key === 'amazon') {
       foundData = await fetchFromHtmlStore(store.label, store.decodedUrl, (title) =>
         title.replace(/\s*[:|]\s*Amazon.*$/i, '').trim()
@@ -404,4 +465,5 @@ export default createAdminHandler({
   permission: 'Gestão de Produtos',
   allowedMethods: ['POST'],
   handlers: { POST: handlePost },
+  rateLimit: { max: 30, window: 60000 },
 });
