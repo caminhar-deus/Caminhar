@@ -1030,6 +1030,8 @@ tests/unit/components/Admin/AdminProducts.test.js → utils/adminSession.js
 tests/unit/components/Admin/AdminProducts.test.js → tests/helpers/index.js
 tests/unit/components/Admin/AdminRolesTab.test.js → components/Admin/AdminRolesTab.js
 tests/unit/components/Admin/AdminRolesTab.test.js → components/Admin/CrudTable.js
+tests/unit/components/Admin/AdminSales.test.js → components/Admin/AdminSales.js
+tests/unit/components/Admin/AdminSales.test.js → tests/helpers/index.js
 tests/unit/components/Admin/AdminUsers.test.js → components/Admin/AdminUsers.js
 tests/unit/components/Admin/AdminUsersTab.test.js → components/Admin/AdminUsersTab.js
 tests/unit/components/Admin/AdminUsersTab.test.js → components/Admin/CrudTable.js

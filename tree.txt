@@ -1326,6 +1326,7 @@
 │       │   │   ├── AdminPosts.test.js
 │       │   │   ├── AdminProducts.test.js
 │       │   │   ├── AdminRolesTab.test.js
+│       │   │   ├── AdminSales.test.js
 │       │   │   ├── AdminUsers.test.js
 │       │   │   ├── AdminUsersTab.test.js
 │       │   │   ├── AdminVideos.test.js
@@ -1554,4 +1555,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-219 directories, 1336 files
+219 directories, 1337 files
