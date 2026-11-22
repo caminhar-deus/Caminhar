@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
@@ -273,7 +273,8 @@ export default function AdminSales({ readOnly = false, initialSubTab = 'orders' 
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalOrders, setTotalOrders] = useState(0);
+  const [totalOrders, setTotalOrders] = useState(null);
+  const hasOrdersCountRef = useRef(false);
   const [search, setSearch] = useState('');
   const [paymentStatus, setPaymentStatus] = useState('');
   const [orderStatus, setOrderStatus] = useState('');
@@ -310,9 +311,10 @@ export default function AdminSales({ readOnly = false, initialSubTab = 'orders' 
       }
       if (res.ok) {
         const data = await res.json();
+        hasOrdersCountRef.current = true;
         setOrders(data.data || []);
         setTotalPages(data.pagination?.totalPages || 1);
-        setTotalOrders(data.pagination?.total || 0);
+        setTotalOrders(data.pagination?.total ?? 0);
         if (explicitSync) {
           const updatedCount = Number(data.syncedCount || 0);
           if (updatedCount > 0) {
@@ -340,6 +342,41 @@ export default function AdminSales({ readOnly = false, initialSubTab = 'orders' 
       fetchOrders();
     }
   }, [activeSubTab, fetchOrders]);
+
+  // Pré-carrega apenas a contagem da subaba Pedidos quando o painel abre em Produtos Internos
+  useEffect(() => {
+    if (activeSubTab === 'orders' || hasOrdersCountRef.current) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    const preloadOrdersCount = async () => {
+      try {
+        const res = await fetch('/api/admin/orders?page=1&limit=1&sync=0', {
+          credentials: 'include',
+        });
+        if (cancelled) return;
+        if (res?.status === 401 && notifyAdminUnauthorized('expired')) {
+          return;
+        }
+        if (!res.ok) return;
+
+        const data = await res.json();
+        if (cancelled) return;
+        hasOrdersCountRef.current = true;
+        setTotalOrders(data.pagination?.total ?? 0);
+      } catch {
+        // Falha silenciosa para não exibir toast intrusivo enquanto opera em Produtos Internos
+      }
+    };
+
+    preloadOrdersCount();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeSubTab]);
 
   const openManageOrder = (order) => {
     setSelectedOrder(order);
@@ -414,7 +451,7 @@ export default function AdminSales({ readOnly = false, initialSubTab = 'orders' 
           onClick={() => setActiveSubTab('orders')}
         >
           <AppIcon name="shoppingBag" size={16} />
-          Pedidos ({totalOrders})
+          {totalOrders === null ? 'Pedidos' : `Pedidos (${totalOrders})`}
         </button>
         <button
           type="button"
@@ -591,7 +628,7 @@ export default function AdminSales({ readOnly = false, initialSubTab = 'orders' 
           <Pagination
             currentPage={page}
             totalPages={totalPages}
-            totalItems={totalOrders}
+            totalItems={totalOrders ?? 0}
             itemLabel="pedido"
             onPageChange={setPage}
           />

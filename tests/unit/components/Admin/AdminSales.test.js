@@ -31,6 +31,7 @@ jest.mock('../../../../__mocks__/styleMock.js', () => {
 jest.mock('react-hot-toast', () => ({ error: jest.fn(), success: jest.fn() }));
 
 import AdminSales from '../../../../components/Admin/AdminSales.js';
+import { subscribeAdminUnauthorized } from '../../../../utils/adminSession.js';
 import { mockGlobalFetch } from '../../../helpers/index.js';
 
 function extractCssModuleClasses(cssFilePath) {
@@ -296,5 +297,170 @@ describe('Componente Front-End - AdminSales', () => {
     expect(missingCrudClasses).toEqual([]);
     expect(missingSalesClasses).toEqual([]);
     expect(missingIcons).toEqual([]);
+  });
+
+  it('pré-carrega a contagem real de pedidos ao abrir diretamente em Produtos Internos e mantém Pedidos (13) ao clicar na subaba', async () => {
+    let resolveOrdersCount;
+    const ordersCountPromise = new Promise((resolve) => {
+      resolveOrdersCount = resolve;
+    });
+
+    global.fetch.mockImplementation((url) => {
+      const urlStr = String(url);
+      if (urlStr.includes('/api/admin/orders')) {
+        if (urlStr.includes('sync=0')) {
+          return ordersCountPromise;
+        }
+        return Promise.resolve({
+          ok: true,
+          headers: { get: () => 'application/json' },
+          json: async () => ({
+            data: [],
+            pagination: { page: 1, limit: 10, total: 13, totalPages: 2 },
+          }),
+        });
+      }
+      if (urlStr.includes('/api/admin/internal-products')) {
+        return Promise.resolve({
+          ok: true,
+          headers: { get: () => 'application/json' },
+          json: async () => ({
+            data: [],
+            pagination: { page: 1, limit: 10, total: 0, totalPages: 1 },
+          }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        headers: { get: () => 'application/json' },
+        json: async () => ({}),
+      });
+    });
+
+    render(<AdminSales initialSubTab="internal-products" />);
+
+    expect(screen.queryByRole('tab', { name: /Pedidos \(0\)/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /^Pedidos$/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Produtos Internos/i })).toHaveAttribute('aria-selected', 'true');
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/api/admin/orders?page=1&limit=1&sync=0',
+      { credentials: 'include' }
+    );
+
+    resolveOrdersCount({
+      ok: true,
+      headers: { get: () => 'application/json' },
+      json: async () => ({
+        data: [],
+        pagination: { page: 1, limit: 1, total: 13, totalPages: 13 },
+      }),
+    });
+
+    const ordersTab = await screen.findByRole('tab', { name: /Pedidos \(13\)/i });
+    expect(ordersTab).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Produtos Internos/i })).toHaveAttribute('aria-selected', 'true');
+
+    fireEvent.click(ordersTab);
+
+    await waitFor(() => {
+      expect(ordersTab).toHaveAttribute('aria-selected', 'true');
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/admin/orders?page=1&limit=10',
+        { credentials: 'include' }
+      );
+    });
+    expect(screen.getByRole('tab', { name: /Pedidos \(13\)/i })).toBeInTheDocument();
+  });
+
+  it('não dispara refetch redundante da contagem ao abrir em Pedidos e trocar para Produtos Internos', async () => {
+    global.fetch.mockImplementation((url) => {
+      const urlStr = String(url);
+      if (urlStr.includes('/api/admin/orders')) {
+        return Promise.resolve({
+          ok: true,
+          headers: { get: () => 'application/json' },
+          json: async () => ({
+            data: [],
+            pagination: { page: 1, limit: 10, total: 13, totalPages: 2 },
+          }),
+        });
+      }
+      if (urlStr.includes('/api/admin/internal-products')) {
+        return Promise.resolve({
+          ok: true,
+          headers: { get: () => 'application/json' },
+          json: async () => ({
+            data: [],
+            pagination: { page: 1, limit: 10, total: 0, totalPages: 1 },
+          }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        headers: { get: () => 'application/json' },
+        json: async () => ({}),
+      });
+    });
+
+    render(<AdminSales />);
+
+    const ordersTab = await screen.findByRole('tab', { name: /Pedidos \(13\)/i });
+    expect(ordersTab).toHaveAttribute('aria-selected', 'true');
+
+    const internalProductsTab = screen.getByRole('tab', { name: /Produtos Internos/i });
+    fireEvent.click(internalProductsTab);
+
+    await waitFor(() => {
+      expect(internalProductsTab).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByRole('heading', { name: 'Produtos Internos (Venda Direta)' })).toBeInTheDocument();
+    });
+
+    const ordersCalls = global.fetch.mock.calls.filter(([url]) => String(url).includes('/api/admin/orders'));
+    expect(ordersCalls).toHaveLength(1);
+    expect(String(ordersCalls[0][0])).not.toContain('sync=0');
+    expect(screen.getByRole('tab', { name: /Pedidos \(13\)/i })).toBeInTheDocument();
+  });
+
+  it('notifica sessão expirada quando o pré-carregamento da contagem recebe HTTP 401', async () => {
+    const onUnauthorized = jest.fn();
+    const unsubscribe = subscribeAdminUnauthorized(onUnauthorized);
+
+    global.fetch.mockImplementation((url) => {
+      const urlStr = String(url);
+      if (urlStr.includes('/api/admin/orders')) {
+        return Promise.resolve({
+          ok: false,
+          status: 401,
+          headers: { get: () => 'application/json' },
+          json: async () => ({ error: 'Unauthorized' }),
+        });
+      }
+      if (urlStr.includes('/api/admin/internal-products')) {
+        return Promise.resolve({
+          ok: true,
+          headers: { get: () => 'application/json' },
+          json: async () => ({
+            data: [],
+            pagination: { page: 1, limit: 10, total: 0, totalPages: 1 },
+          }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        headers: { get: () => 'application/json' },
+        json: async () => ({}),
+      });
+    });
+
+    try {
+      render(<AdminSales initialSubTab="internal-products" />);
+
+      await waitFor(() => {
+        expect(onUnauthorized).toHaveBeenCalledWith('expired');
+      });
+    } finally {
+      unsubscribe();
+    }
   });
 });
