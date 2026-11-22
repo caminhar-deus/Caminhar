@@ -39,7 +39,7 @@ import handler from '../../../pages/api/settings.js';
 import { query } from '../../../lib/infra/db.js';
 import { logActivity } from '../../../lib/domain/audit.js';
 import { getAuthToken, verifyToken } from '../../../lib/auth/auth';
-import { getSettings, updateSetting } from '../../../lib/domain/settings.js';
+import { getSettings, getSetting, getAllSettingsRaw, updateSetting } from '../../../lib/domain/settings.js';
 import { clearAppMemoryCache } from '../../../lib/cache/cache.js';
 
 describe('API Administrativa de Configurações (/api/settings)', () => {
@@ -98,6 +98,95 @@ describe('API Administrativa de Configurações (/api/settings)', () => {
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
       const { req, res } = createMocks({ method: 'GET' });
       await handler(req, res);
+      expect(res._getStatusCode()).toBe(500);
+      consoleSpy.mockRestore();
+    });
+
+    it('deve retornar formato v1 em GET ?response=v1 sem key', async () => {
+      const rawSettings = [{ key: 'site_title', value: 'O Caminhar com Deus' }];
+      getAllSettingsRaw.mockResolvedValueOnce(rawSettings);
+
+      const { req, res } = createMocks({ method: 'GET', query: { response: 'v1' } });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      const data = JSON.parse(res._getData());
+      expect(data.success).toBe(true);
+      expect(data.data).toEqual(rawSettings);
+      expect(data.count).toBe(1);
+      expect(typeof data.timestamp).toBe('string');
+    });
+
+    it('deve retornar 401 no GET ?key= quando sem token ou token inválido', async () => {
+      getAuthToken.mockReturnValueOnce(null);
+      const { req: req1, res: res1 } = createMocks({ method: 'GET', query: { key: 'site_title' } });
+      await handler(req1, res1);
+      expect(res1._getStatusCode()).toBe(401);
+
+      getAuthToken.mockReturnValueOnce('bad-token');
+      verifyToken.mockReturnValueOnce(null);
+      const { req: req2, res: res2 } = createMocks({ method: 'GET', query: { key: 'site_title' } });
+      await handler(req2, res2);
+      expect(res2._getStatusCode()).toBe(401);
+    });
+
+    it('deve retornar 403 no GET ?key= quando cargo não for admin/editor nem possuir Configuração de Cabeçalho', async () => {
+      verifyToken.mockReturnValueOnce({ userId: 2, username: 'viewer', role: 'viewer' });
+
+      const { req, res } = createMocks({ method: 'GET', query: { key: 'site_title' } });
+      await handler(req, res);
+      expect(res._getStatusCode()).toBe(403);
+      expect(getSetting).not.toHaveBeenCalled();
+    });
+
+    it('deve permitir GET ?key= para cargo com permissão Configuração de Cabeçalho e retornar 200 (v1)', async () => {
+      verifyToken.mockReturnValueOnce({ userId: 3, username: 'designer', role: 'designer' });
+      getSetting.mockResolvedValueOnce('Título Personalizado');
+
+      const { req, res } = createMocks({
+        method: 'GET',
+        query: { key: 'site_title', response: 'v1' },
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      const data = JSON.parse(res._getData());
+      expect(data.success).toBe(true);
+      expect(data.data).toEqual({ key: 'site_title', value: 'Título Personalizado' });
+      expect(typeof data.timestamp).toBe('string');
+    });
+
+    it('deve retornar fallback padrão (fromDefault: true) quando setting conhecida não existir no banco', async () => {
+      getSetting.mockResolvedValueOnce(null);
+
+      const { req, res } = createMocks({ method: 'GET', query: { key: 'site_title' } });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      const data = JSON.parse(res._getData());
+      expect(data).toEqual({
+        success: true,
+        data: { key: 'site_title', value: 'O Caminhar com Deus' },
+        fromDefault: true,
+      });
+    });
+
+    it('deve retornar 404 no GET ?key= quando chave desconhecida não existir no banco nem no fallback', async () => {
+      getSetting.mockResolvedValueOnce(null);
+
+      const { req, res } = createMocks({ method: 'GET', query: { key: 'chave_inexistente' } });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(404);
+    });
+
+    it('deve retornar 500 no GET ?key= se ocorrer erro ao consultar o banco', async () => {
+      getSetting.mockRejectedValueOnce(new Error('Falha de leitura'));
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      const { req, res } = createMocks({ method: 'GET', query: { key: 'site_title' } });
+      await handler(req, res);
+
       expect(res._getStatusCode()).toBe(500);
       consoleSpy.mockRestore();
     });
@@ -242,6 +331,56 @@ describe('API Administrativa de Configurações (/api/settings)', () => {
       expect(res._getStatusCode()).toBe(400);
       expect(JSON.parse(res._getData()).errors).toHaveProperty('value');
       expect(updateSetting).not.toHaveBeenCalled();
+    });
+
+    it('deve criar configuração via POST com sucesso (201) e registrar log de auditoria', async () => {
+      updateSetting.mockResolvedValueOnce('Novo Título');
+
+      const { req, res } = createMocks({
+        method: 'POST',
+        body: { key: 'site_title', value: 'Novo Título', type: 'string', description: 'Título' },
+        socket: { remoteAddress: '203.0.113.11' },
+      });
+
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(201);
+      expect(updateSetting).toHaveBeenCalledWith('site_title', 'Novo Título', 'string', 'Título');
+      expect(logActivity).toHaveBeenCalledWith(
+        'admin',
+        'CRIAR CONFIGURAÇÃO',
+        'SETTINGS',
+        null,
+        'Configuração criada: site_title',
+        '203.0.113.11'
+      );
+    });
+
+    it('deve retornar 400 no POST quando payload for inválido', async () => {
+      const { req, res } = createMocks({
+        method: 'POST',
+        body: { key: '', value: '' },
+      });
+
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(400);
+      expect(updateSetting).not.toHaveBeenCalled();
+    });
+
+    it('deve retornar 500 no POST quando updateSetting falhar', async () => {
+      updateSetting.mockRejectedValueOnce(new Error('Falha ao gravar'));
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      const { req, res } = createMocks({
+        method: 'POST',
+        body: { key: 'site_title', value: 'Título Válido' },
+      });
+
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(500);
+      consoleSpy.mockRestore();
     });
 
     it('deve retornar 500 se ocorrer um erro interno ao atualizar', async () => {

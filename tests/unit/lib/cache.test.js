@@ -352,6 +352,54 @@ describe('Library - Cache & Rate Limit', () => {
       expect(mockRedisExpire).not.toHaveBeenCalled();
     });
 
+    it('isenta IP da whitelist dinâmica no Redis (rate_limit:whitelist) em pipeline único (1 viagem HTTP)', async () => {
+      const pipelineMock = {
+        sismember: jest.fn().mockReturnThis(),
+        incr: jest.fn().mockReturnThis(),
+        expire: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValueOnce([1, 999, 0]),
+      };
+      mockGetRedisInstance.mockReturnValue({
+        pipeline: jest.fn(() => pipelineMock),
+      });
+
+      const limited = await checkRateLimit('::ffff:200.200.0.10', 'api', 10, 60000);
+
+      expect(limited).toBe(false);
+      expect(pipelineMock.sismember).toHaveBeenCalledWith('rate_limit:whitelist', '200.200.0.10');
+      expect(pipelineMock.incr).toHaveBeenCalledWith('rate_limit:api:::ffff:200.200.0.10');
+      expect(pipelineMock.exec).toHaveBeenCalledTimes(1);
+    });
+
+    it('bloqueia normalmente quando IP não está em rate_limit:whitelist e contador excede o limite no pipeline', async () => {
+      const pipelineMock = {
+        sismember: jest.fn().mockReturnThis(),
+        incr: jest.fn().mockReturnThis(),
+        expire: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValueOnce([0, 11, 0]),
+      };
+      mockGetRedisInstance.mockReturnValue({
+        pipeline: jest.fn(() => pipelineMock),
+      });
+
+      const limited = await checkRateLimit('200.200.0.11', 'api', 10, 60000);
+
+      expect(limited).toBe(true);
+    });
+
+    it('isenta IP presente em rate_limit:whitelist via fallback sismember quando sem pipeline', async () => {
+      const mockSismember = jest.fn().mockResolvedValueOnce(1);
+      mockGetRedisInstance.mockReturnValue({
+        sismember: mockSismember,
+      });
+      mockRedisIncr.mockResolvedValueOnce(25);
+
+      const limited = await checkRateLimit('200.200.0.12', 'api', 10, 60000);
+
+      expect(limited).toBe(false);
+      expect(mockSismember).toHaveBeenCalledWith('rate_limit:whitelist', '200.200.0.12');
+    });
+
     it('usa fallback em memória quando Redis falha', async () => {
       mockRedisIncr.mockRejectedValue(new Error('Redis offline'));
 
