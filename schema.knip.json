@@ -184,7 +184,14 @@
     },
     "preprocessor": {
       "title": "Preprocess the results before providing them to the reporter(s)",
-      "oneOf": [{ "type": "string" }, { "$ref": "#/definitions/list" }]
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "$ref": "#/definitions/list"
+        }
+      ]
     },
     "preprocessorOptions": {
       "title": "Extra options to pass to the preprocessor",
@@ -556,6 +563,10 @@
           "title": "Drizzle plugin configuration (https://knip.dev/reference/plugins/drizzle)",
           "$ref": "#/definitions/plugin"
         },
+        "electron-builder": {
+          "title": "electron-builder plugin configuration (https://knip.dev/reference/plugins/electron-builder)",
+          "$ref": "#/definitions/plugin"
+        },
         "electron-forge": {
           "title": "Electron Forge plugin configuration (https://knip.dev/reference/plugins/electron-forge)",
           "$ref": "#/definitions/plugin"
@@ -566,6 +577,22 @@
         },
         "eleventy": {
           "title": "eleventy plugin configuration (https://knip.dev/reference/plugins/eleventy)",
+          "$ref": "#/definitions/plugin"
+        },
+        "ember": {
+          "title": "ember plugin configuration (https://knip.dev/reference/plugins/ember)",
+          "$ref": "#/definitions/plugin"
+        },
+        "ember-template-lint": {
+          "title": "ember-template-lint plugin configuration (https://knip.dev/reference/plugins/ember-template-lint)",
+          "$ref": "#/definitions/plugin"
+        },
+        "env": {
+          "title": "env plugin configuration (https://knip.dev/reference/plugins/env)",
+          "$ref": "#/definitions/plugin"
+        },
+        "env-cmd": {
+          "title": "env-cmd plugin configuration (https://knip.dev/reference/plugins/env-cmd)",
           "$ref": "#/definitions/plugin"
         },
         "esbuild": {
@@ -606,6 +633,10 @@
         },
         "filesystem-routing": {
           "title": "filesystem-routing plugin configuration (https://knip.dev/reference/plugins/filesystem-routing)",
+          "$ref": "#/definitions/plugin"
+        },
+        "firebase": {
+          "title": "firebase plugin configuration (https://knip.dev/reference/plugins/firebase)",
           "$ref": "#/definitions/plugin"
         },
         "flue": {
@@ -704,6 +735,10 @@
           "title": "lunaria plugin configuration (https://knip.dev/reference/plugins/lunaria)",
           "$ref": "#/definitions/plugin"
         },
+        "maestro": {
+          "title": "maestro plugin configuration (https://knip.dev/reference/plugins/maestro)",
+          "$ref": "#/definitions/plugin"
+        },
         "markdownlint": {
           "title": "markdownlint plugin configuration (https://knip.dev/reference/plugins/markdownlint)",
           "$ref": "#/definitions/plugin"
@@ -728,12 +763,12 @@
           "title": "mdxlint plugin configuration (https://knip.dev/reference/plugins/mdxlint)",
           "$ref": "#/definitions/plugin"
         },
-        "mikro-orm": {
-          "title": "mikro-orm plugin configuration (https://knip.dev/reference/plugins/mikro-orm)",
-          "$ref": "#/definitions/plugin"
-        },
         "metro": {
           "title": "metro plugin configuration (https://knip.dev/reference/plugins/metro)",
+          "$ref": "#/definitions/plugin"
+        },
+        "mikro-orm": {
+          "title": "mikro-orm plugin configuration (https://knip.dev/reference/plugins/mikro-orm)",
           "$ref": "#/definitions/plugin"
         },
         "mise": {
@@ -968,6 +1003,10 @@
           "title": "rslib plugin configuration (https://knip.dev/reference/plugins/rslib)",
           "$ref": "#/definitions/plugin"
         },
+        "rslint": {
+          "title": "rslint plugin configuration (https://knip.dev/reference/plugins/rslint)",
+          "$ref": "#/definitions/plugin"
+        },
         "rspack": {
           "title": "rspack plugin configuration (https://knip.dev/reference/plugins/rspack)",
           "$ref": "#/definitions/plugin"
@@ -1010,6 +1049,10 @@
         },
         "starlight": {
           "title": "starlight plugin configuration (https://knip.dev/reference/plugins/starlight)",
+          "$ref": "#/definitions/plugin"
+        },
+        "start-server-and-test": {
+          "title": "start-server-and-test plugin configuration (https://knip.dev/reference/plugins/start-server-and-test)",
           "$ref": "#/definitions/plugin"
         },
         "stencil": {
@@ -1084,8 +1127,16 @@
           "title": "travis plugin configuration (https://knip.dev/reference/plugins/travis)",
           "$ref": "#/definitions/plugin"
         },
+        "trigger-dev": {
+          "title": "trigger-dev plugin configuration (https://knip.dev/reference/plugins/trigger-dev)",
+          "$ref": "#/definitions/plugin"
+        },
         "ts-node": {
           "title": "ts-node plugin configuration (https://knip.dev/reference/plugins/ts-node)",
+          "$ref": "#/definitions/plugin"
+        },
+        "ts-node-dev": {
+          "title": "ts-node-dev plugin configuration (https://knip.dev/reference/plugins/ts-node-dev)",
           "$ref": "#/definitions/plugin"
         },
         "tsd": {
@@ -1174,6 +1225,10 @@
         },
         "vite": {
           "title": "vite plugin configuration (https://knip.dev/reference/plugins/vite)",
+          "$ref": "#/definitions/plugin"
+        },
+        "vite-node": {
+          "title": "vite-node plugin configuration (https://knip.dev/reference/plugins/vite-node)",
           "$ref": "#/definitions/plugin"
         },
         "vite-plugin-pages": {
