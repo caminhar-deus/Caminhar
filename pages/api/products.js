@@ -39,7 +39,7 @@ const productFieldSchemas = {
   // categorias da vitrine listaria um bucket vazio).
   category: z.string().trim().optional()
     .transform((value) => (value && value.length > 0 ? value : undefined)),
-  link: z.string().url('URL inválida').optional().or(z.literal('')),
+  link: z.string().trim().min(1, 'Link do marketplace é obrigatório').url('URL inválida'),
   published: z.boolean().optional(),
 };
 

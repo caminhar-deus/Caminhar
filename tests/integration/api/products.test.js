@@ -221,7 +221,10 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       getAuthToken.mockReturnValue('valid-token');
       verifyToken.mockReturnValue({ username: 'admin' });
       checkRateLimit.mockResolvedValueOnce(true);
-      const { req, res } = createMocks({ method: 'POST', body: { name: 'Camisa', price: '89.90', image_url: 'https://img.jpg' } });
+      const { req, res } = createMocks({
+        method: 'POST',
+        body: { name: 'Camisa', price: '89.90', image_url: 'https://img.jpg', link: 'https://www.mercadolivre.com.br/produto-teste' },
+      });
       await handler(req, res);
       expect(res._getStatusCode()).toBe(429);
     });
@@ -250,11 +253,18 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
 
     it('deve criar o produto e registrar log', async () => {
       createProduct.mockResolvedValueOnce({ id: 10, name: 'Camisa', price: '89.90' });
-      const { req, res } = createMocks({ method: 'POST', body: { name: 'Camisa', price: '89.90', image_url: 'https://img.jpg' } });
+      const { req, res } = createMocks({
+        method: 'POST',
+        body: { name: 'Camisa', price: '89.90', image_url: 'https://img.jpg', link: 'https://www.mercadolivre.com.br/produto-teste' },
+      });
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(201);
-      expect(createProduct).toHaveBeenCalledWith(expect.objectContaining({ name: 'Camisa', price: 89.9 }));
+      expect(createProduct).toHaveBeenCalledWith(expect.objectContaining({
+        name: 'Camisa',
+        price: 89.9,
+        link: 'https://www.mercadolivre.com.br/produto-teste',
+      }));
       // A descrição do log precisa carregar o NOME do produto. Antes o handler
       // usava a variável livre `name` (inexistente no escopo do Node; no jsdom
       // resolvia para `window.name` = ""), então em produção a linha lançava
@@ -269,10 +279,32 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       expect(res._getStatusCode()).toBe(400);
     });
 
+    it('deve rejeitar POST sem link ou com link vazio (400)', async () => {
+      const { req: reqMissing, res: resMissing } = createMocks({
+        method: 'POST',
+        body: { name: 'Terço', price: '49,90', image_url: 'https://img.jpg' },
+      });
+      await handler(reqMissing, resMissing);
+
+      expect(resMissing._getStatusCode()).toBe(400);
+      expect(resMissing._getJSONData().errors).toHaveProperty('link');
+      expect(createProduct).not.toHaveBeenCalled();
+
+      const { req: reqEmpty, res: resEmpty } = createMocks({
+        method: 'POST',
+        body: { name: 'Terço', price: '49,90', image_url: 'https://img.jpg', link: '' },
+      });
+      await handler(reqEmpty, resEmpty);
+
+      expect(resEmpty._getStatusCode()).toBe(400);
+      expect(resEmpty._getJSONData().errors.link[0]).toContain('Link do marketplace é obrigatório');
+      expect(createProduct).not.toHaveBeenCalled();
+    });
+
     it('deve rejeitar preço zero (400) — preço zero não é preço', async () => {
       const { req, res } = createMocks({
         method: 'POST',
-        body: { name: 'Brinde', price: 0, image_url: 'https://img.jpg' }
+        body: { name: 'Brinde', price: 0, image_url: 'https://img.jpg', link: 'https://www.mercadolivre.com.br/produto-teste' }
       });
       await handler(req, res);
 
@@ -287,7 +319,14 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       createProduct.mockResolvedValueOnce({ id: 11, name: 'Crucifixo' });
       const { req, res } = createMocks({
         method: 'POST',
-        body: { name: 'Crucifixo', price: '149,90', image_url: 'https://img.jpg', category: '', published: true }
+        body: {
+          name: 'Crucifixo',
+          price: '149,90',
+          image_url: 'https://img.jpg',
+          link: 'https://www.mercadolivre.com.br/produto-teste',
+          category: '',
+          published: true,
+        }
       });
       await handler(req, res);
 
@@ -329,6 +368,15 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       expect(res._getStatusCode()).toBe(200);
       const arg = updateProduct.mock.calls.at(-1)[1];
       expect(arg.category).toBeUndefined();
+    });
+
+    it('deve rejeitar PUT que envia link vazio (400)', async () => {
+      const { req, res } = createMocks({ method: 'PUT', body: { id: 1, link: '' } });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(400);
+      expect(res._getJSONData().errors.link[0]).toContain('Link do marketplace é obrigatório');
+      expect(updateProduct).not.toHaveBeenCalled();
     });
   });
 
@@ -438,7 +486,10 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
     });
 
     it('POST sem "Gestão de Produtos" deve retornar 403 sem criar o produto', async () => {
-      const { req, res } = createMocks({ method: 'POST', body: { name: 'Camisa', price: '89.90', image_url: 'https://img.jpg' } });
+      const { req, res } = createMocks({
+        method: 'POST',
+        body: { name: 'Camisa', price: '89.90', image_url: 'https://img.jpg', link: 'https://www.mercadolivre.com.br/produto-teste' },
+      });
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(403);
@@ -510,7 +561,10 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       });
       createProduct.mockResolvedValueOnce({ id: 10, name: 'Camisa', price: '89.90' });
 
-      const { req, res } = createMocks({ method: 'POST', body: { name: 'Camisa', price: '89.90', image_url: 'https://img.jpg' } });
+      const { req, res } = createMocks({
+        method: 'POST',
+        body: { name: 'Camisa', price: '89.90', image_url: 'https://img.jpg', link: 'https://www.mercadolivre.com.br/produto-teste' },
+      });
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(201);
@@ -524,7 +578,10 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       query.mockResolvedValueOnce({ rows: [{ permissions: '["Visão Geral"]' }] });
       createProduct.mockResolvedValueOnce({ id: 11, name: 'Boné', price: '29.90' });
 
-      const { req, res } = createMocks({ method: 'POST', body: { name: 'Boné', price: '29.90', image_url: 'https://img.jpg' } });
+      const { req, res } = createMocks({
+        method: 'POST',
+        body: { name: 'Boné', price: '29.90', image_url: 'https://img.jpg', link: 'https://www.mercadolivre.com.br/produto-teste' },
+      });
       await handler(req, res);
 
       expect(res._getStatusCode()).toBe(201);

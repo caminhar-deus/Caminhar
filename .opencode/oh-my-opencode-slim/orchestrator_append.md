@@ -4,4 +4,4 @@
 - Depois de implementar UI, delegue ao @oracle uma revisão pelo Front-End-Checklist (skill local; MCP remoto só com aprovação do usuário).
 - Modelo local: execução sequencial; não dispare mais de um especialista ao mesmo tempo.
 - `codemap` e `clonedeps` só com aprovação do usuário (escrevem arquivos / clonam repositórios).
-- Ao concluir trabalho relevante, registre a decisão na memória e, se a sessão terminar incompleta, crie o handoff.
+- Ao concluir trabalho relevante, registre a decisão como ADR em `docs/adr/` (fonte oficial; não duplicar na memória) e, se a sessão terminar incompleta, crie o handoff no `ai-memory`.

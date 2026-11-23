@@ -386,21 +386,27 @@ Rotinas recorrentes: **nenhuma rotina agendada própria do Google** (o JWKS é r
 |---|---|---|---|---|
 | 1 | 19/11/2026 16:42 BRT | 12/11/2026 16:42 → 19/11/2026 16:42 | Concluído (somente análise) | MG-01 a MG-10 (todas **Abertas**) |
 | 2 | 19/11/2026 21:48–22:05 BRT | Confronto do Ciclo 1 × estado pós-`cca0956` + implementação | Concluído (código, testes e docs validados; DB real e E2E ao vivo pendentes) | NI-01 a NI-04 tratadas |
+| 3 | 23/11/2026 11:00 BRT | 16/11/2026 11:00 → 23/11/2026 11:00 | Concluído (somente análise) | MG-11 a MG-15 (**Abertas**); MG-10 encerrada por decisão 1A; linha de base pós-`f161227`/`28b6b17` confirmada nos logs de 22/11 |
 
 **Status das ações (atualizar apenas com evidência):**
 
 | ID | Prioridade | Status |
 |---|---|---|
-| MG-01 | Alta | **Concluída** (19/11/2026: `ALLOW_GOOGLE_DEV_BYPASS === 'true'` obrigatório em `pages/api/customer/auth.js`, isolado em `tests/setup-env.js` e coberto em `tests/integration/api/customer/auth.test.js`) |
-| MG-02 | Média-Alta | **Parcialmente concluída / aguardando validação em DB real** (19/11/2026: `upsertGoogleCustomer` em `lib/domain/customers.js` passa a anular `password_hash = NULL` no vínculo por e-mail e rejeitar troca de `google_id` com `GOOGLE_ACCOUNT_CONFLICT` / HTTP `409`; testes unitários e de API passaram; `customers.db.test.js` aguarda execução no CI `test-db-coverage.yml` ou ambiente com Docker) |
-| MG-03 | Média | **Concluída** (19/11/2026: `GOOGLE_NOT_CONFIGURED` e `GOOGLE_AUDIENCE_MISMATCH` registrados via `logger.error` por código sem expor valores e mensagem 401 neutra ao visitante em `pages/api/customer/auth.js`; divergência também verificada em `scripts/check-env.js`) |
-| MG-04 | Baixa-Média | **Concluída** (19/11/2026: removidos o botão substituto morto, `handleGoogleFallbackClick` e a exposição de `NEXT_PUBLIC_GOOGLE_CLIENT_ID` em `pages/entrar.js`, mantendo o divisor `"ou"` oculto quando não configurado) |
-| MG-05 | Baixa | **Desatualizada / Encerrada sem alteração** (19/11/2026: o código atual preserva cache válido no cooldown de `60 s` em rotação de `kid` e falha fechado em `503` após expirar `max-age`, conforme contrato fail-closed do `ADR-0042` e testes vigentes) |
-| MG-06 | Média | **Concluída** (19/11/2026: seção `Operação e Configuração (Runbook)` adicionada ao `ADR-0042` e detalhada em `.env.example`) |
-| MG-07 | Baixa | **Concluída** (19/11/2026: nota de substituição adicionada à entrada de `/tokeninfo` no `CHANGELOG.md`, corrigida referência a `/checkout/[id]` em `.env.example`, e regras de CSP/COOP consolidadas no `ADR-0042`) |
-| MG-08 | Alta (item 1) / Média | **Parcialmente concluída** (19/11/2026: item 1 já resolvido em `7d68032`/`3946444` e suíte completa `npm test` validada com 235/243 suítes aprovadas; itens 2–3 implementados em testes unitários/API/DB; `customers.db.test.js` e E2E com GIS mockado permanecem pendentes de ambiente com Docker/decisão) |
-| MG-09 | Baixa | **Encerrada sem alteração** (19/11/2026: verificado no código e testes que as checagens de `azp` e `exp` pós-`jwt.verify` não são duplicidade — cobrem lacunas reais do `jsonwebtoken.verify` contra OIDC Core §3.1.3.7) |
-| MG-10 | Baixa | Aberta (diretriz operacional de commits/sessões; fora de escopo de código) |
+| MG-01 | Alta | **Concluída** (19/11/2026, commit `f161227`: `ALLOW_GOOGLE_DEV_BYPASS === 'true'` obrigatório em `pages/api/customer/auth.js`, isolado em `tests/setup-env.js`; reconfirmada em 22/11 nos logs de `auth.test.js` — 35/35) |
+| MG-02 | Média-Alta | **Parcialmente concluída / aguardando validação em DB real** (19/11/2026, commit `f161227`: `upsertGoogleCustomer` anula `password_hash = NULL` no vínculo por e-mail e rejeita troca de `google_id` com `GOOGLE_ACCOUNT_CONFLICT` / HTTP `409`; unitários e API verdes no log de 22/11; `customers.db.test.js` segue `skipped` localmente sem Docker e sem confirmação remota de `test-db-coverage.yml` pós-`f161227`) |
+| MG-03 | Média | **Concluída** (19/11/2026, commit `f161227`: `GOOGLE_NOT_CONFIGURED` e `GOOGLE_AUDIENCE_MISMATCH` via `logger.error` sem expor IDs, mensagem 401 neutra e aviso de paridade em `scripts/check-env.js`; reconfirmada em 22/11 — ver MG-15 para remover duplicidade de `warn`+`error`) |
+| MG-04 | Baixa-Média | **Concluída** (19/11/2026, commit `f161227`: removidos botão substituto morto, `handleGoogleFallbackClick` e exposição de `NEXT_PUBLIC_GOOGLE_CLIENT_ID` em `pages/entrar.js`, ocultando `"ou"` em `unconfigured`; reconfirmada em 22/11 — ver MG-14 para flash inicial SSR) |
+| MG-05 | Baixa | **Desatualizada / Encerrada sem alteração** (19/11/2026: preserva cache válido no cooldown de `60 s` em rotação de `kid` e falha fechado em `503` após expirar `max-age`, conforme `ADR-0042` e testes vigentes) |
+| MG-06 | Média | **Concluída** (19/11/2026, commit `f161227`: seção `Operação e Configuração (Runbook)` adicionada ao `ADR-0042` e detalhada em `.env.example`) |
+| MG-07 | Baixa | **Concluída** (19/11/2026, commit `f161227`: nota de substituição em `CHANGELOG.md`, referência a `/checkout/[id]` corrigida em `.env.example` e CSP/COOP consolidados no `ADR-0042`) |
+| MG-08 | Alta (item 1) / Média | **Parcialmente concluída** (22/11/2026: linha de base pós-`f161227` e `28b6b17` confirmada em `logs/tests-output.log` e `logs/coverage-output.log` com 241/249 suítes e 105/105 asserções nas 11 suítes relacionadas ao Google; pendentes: execução remota de `customers.db.test.js` em DB real pós-`f161227` e decisão sobre E2E com GIS mockado) |
+| MG-09 | Baixa | **Encerrada sem alteração** (19/11/2026: checagens de `azp` e `exp` pós-`jwt.verify` cobrem lacunas reais contra OIDC Core §3.1.3.7) |
+| MG-10 | Baixa | **Encerrada por decisão do dono** (20/11/2026: evidência em `docs/melhoria_design.md` §6.8 item 3 e §6.10 M-04 — dono escolheu Opção 1A, mantendo padrão `ATT - ...` sem nova regra em `AGENTS.md`) |
+| MG-11 | Alta | **Aberta** (23/11/2026, Ciclo 3: proteger `parseCookie` contra `URIError` em `lib/auth/customer-auth.js` e posicionar `getAuthenticatedCustomer` dentro do `try/catch` em `pages/api/customer/orders.js`) |
+| MG-12 | Média | **Aberta** (23/11/2026, Ciclo 3: tornar `upsertGoogleCustomer` resiliente a concorrência `23505` no primeiro login Google + trava de submissão concorrente em `pages/entrar.js`) |
+| MG-13 | Média-Alta | **Aberta** (23/11/2026, Ciclo 3: rate limit e `Cache-Control: no-store` em `GET /api/customer/auth`, tratamento de cliente inexistente em `PUT`, `algorithms: ['HS256']` em `verifyCustomerToken` e fechamento das lacunas de cobertura em `customer-auth.js`, `customer/auth.js` e `scripts/check-env.js`) |
+| MG-14 | Média-Baixa | **Aberta** (23/11/2026, Ciclo 3: eliminar flash SSR/CLS de `"ou"` no estado `unconfigured`, adicionar timeout no carregamento do SDK GIS e aplicar `inert`/guard de submissão em `pages/entrar.js`) |
+| MG-15 | Baixa | **Aberta** (23/11/2026, Ciclo 3: remover log duplicado `warn`+`error` em `pages/api/customer/auth.js` e alinhar inventários técnicos `PROJECT_pages.md`, `PROJECT_lib.md`, `PROJECT_scripts.md`, `PROJECT_raiz.md` e nota de `connect-src`/Referrer) |
 
 > Este é o primeiro ciclo; não havia auditoria anterior do Google nem arquivo prévio. Nos próximos ciclos: ler este documento, verificar o status acima com evidências (commits/testes), e acrescentar `# Ciclo N` sem duplicar descobertas.
 
@@ -444,3 +450,320 @@ Rotinas recorrentes: **nenhuma rotina agendada própria do Google** (o JWKS é r
 - **Gates estáticos (`npm run lint`, `npm run knip`, `npm run lint:workflows`, `npm run lint:chars`):** todos executados e aprovados com exit code `0`.
 - **Testes em PostgreSQL real (`npm run test:db:container -- tests/integration/domain/customers.db.test.js`):** **ignorado/skipped** (`1 skipped`, `6 skipped`) porque não há daemon Docker/container runtime disponível no ambiente de execução (`Could not find a working container runtime strategy`). Fica pendente de validação no CI (`test-db-coverage.yml`) ou em ambiente local com Docker ativo, conforme `AGENTS.md` §7 item 1.
 - **Pendente fora do escopo automático:** validação manual pós-deploy no navegador (incluindo verificação do Console Google Cloud em produção) e eventual avaliação de `nonce` (H1) ou redefinição de senha para visitantes.
+
+---
+
+# Ciclo 3 — 23/11/2026
+
+## 1. Identificação da auditoria
+
+- **Data e horário da execução:** 23/11/2026, 11:00 (`America/Sao_Paulo`, BRT, `-03:00`).
+- **Período exato analisado:** de **16/11/2026 11:00** até **23/11/2026 11:00** (7 dias móveis, 168 h).
+- **Executor:** Antigravity (rotina semanal automática — somente análise, diagnóstico, validação e Plano de Ação; **nenhum outro arquivo foi modificado**).
+- **Objetivo e escopo:** auditar toda a evolução, os processos, os testes, a segurança e as dependências diretas/indiretas da Integração com o Google (**Sign in with Google / GIS** + verificação local JWKS `RS256` + sessão de visitante em `/entrar`, `/minha-conta`, `/checkout/[id]`, `/api/customer/auth`, `/api/customer/orders`, `lib/auth/*`, `lib/domain/customers.js`, CSP/COOP, `scripts/check-env.js`, design e documentação) nos últimos 7 dias, confrontando o estado atual com os Ciclos 1 e 2 sem duplicar achados já registrados. O painel `/admin` permanece isolado e não utiliza autenticação Google (`docs/ARQUITETURA_SITE_PRIVADO.md` §1).
+- **Fontes consultadas (somente leitura):**
+  - **Documentos principais protegidos:** `AGENTS.md` (§0 a §7), `docs/ARQUITETURA_SITE_PUBLICO.md` (integral, atualizado em 23/11/2026), `docs/ARQUITETURA_SITE_PRIVADO.md` (integral, atualizado em 23/11/2026).
+  - **Histórico anterior da auditoria:** `docs/melhoria_google.md` (Ciclos 1 e 2, lido integralmente).
+  - **Git:** `git log --since='2026-11-16 11:00:23 -0300'` (**40 commits** na janela, de `b37c9f1` em 16/11 11:58 a `ee4ed2e` em 22/11 17:18), diffs completos de `f161227`, `a681cc5`, `28b6b17`, `7d68032`, `3946444` e estatísticas de `80478dd`, `75fb1cb`, `fad08f6`; `git status` e `git diff` dos 19 arquivos modificados localmente no working tree em 23/11; `git check-ignore -v .env .env.local`.
+  - **Código-fonte (direto e indireto):** `lib/auth/google-id-token.js`, `lib/auth/customer-auth.js`, `lib/auth/auth.js` (comparação de isolamento/cookie), `lib/domain/customers.js`, `pages/api/customer/auth.js`, `pages/api/customer/orders.js`, `pages/api/checkout.js`, `pages/entrar.js`, `pages/minha-conta.js`, `pages/index.js`, `pages/_document.js`, `next.config.js`, `next-sitemap.config.js`, `proxy.js`, `hooks/usePerformanceMetrics.js`, `utils/resolve-next.js`, `scripts/check-env.js`, `scripts/validate-schema.js`, `scripts/migrations/023-sales-customers-and-modalities.js`, `scripts/maintenance/start-webhook-tunnel.sh`, `lib/crud/crud.js`, `pages/styles/CustomerPages.module.css`, `.env.example`, `jest.config.js`, `jest.config.base.js`, `tests/setup-env.js`.
+  - **Testes (inspecionados estaticamente, sem execução):** `tests/unit/lib/auth/google-id-token.test.js`, `tests/unit/lib/auth/customer-auth.test.js`, `tests/integration/api/customer/auth.test.js`, `tests/integration/domain/customers.db.test.js`, `tests/unit/lib/domain/customers.test.js`, `tests/unit/pages/entrar.test.js`, `tests/unit/pages/document-csp.test.js`, `tests/unit/next.config.test.js`, `tests/unit/scripts/schema-sources.test.js`, `tests/unit/scripts/bench-ground-truth.test.js`, `cypress/e2e/checkout.cy.js`.
+  - **Logs locais pós-implementação:** `logs/tests-output.log` (22/11/2026 17:16), `logs/coverage-output.log` (22/11/2026 17:18) e `logs/eslint.log` (21/11/2026 18:09, 0 bytes).
+  - **Documentação técnica, design e auditorias irmãs:** `docs/adr/0037`, `docs/adr/0042`, `CHANGELOG.md`, `design-system/pages/customer.md`, `docs/PROJECT_lib.md`, `docs/PROJECT_pages.md`, `docs/PROJECT_raiz.md`, `docs/PROJECT_scripts.md`, `docs/PROJECT_hooks.md`, `docs/PROJECT_tests.md`, `docs/melhoria_design.md`, `docs/melhoria_agente.md`, `docs/melhoria_mercadopago.md`, `docs/retorno_da_semana.md`.
+  - **CI local:** `.github/workflows/test-db-coverage.yml`, `test-coverage.yml`, `test-base.yml`, `e2e.yml` (nenhum alterado na janela).
+- **Limitações encontradas (nada presumido a partir delas):**
+  1. **MCP `ai-memory` negado nesta sessão** (`permission check failed` para `memory_briefing`, `memory_query`, `memory_read_page`): respeitando `AGENTS.md` §3, não houve contorno por shell nem leitura de arquivos internos da memória. Apenas o resumo injetado no `SessionStart` foi visível (o qual também sinalizou **20 avisos** em `_lint/report.md` não legíveis nesta sessão).
+  2. **Histórico de sessões do OpenCode e conversas anteriores do Antigravity indisponíveis:** todos os 40 commits da janela possuem o mesmo autor Git (`caminhar`), impossibilitando atribuir commits específicos a OpenCode vs Antigravity ou comprovar por log quais documentos cada agente leu antes de editar.
+  3. **Execução de testes/linters proibida por restrição da auditoria (§10 item 13):** não foram executados comandos que alteram estado. Entretanto, diferentemente do Ciclo 1, **há logs locais recentes** (`logs/tests-output.log` e `logs/coverage-output.log` de **22/11/2026 17:16–17:18**), produzidos **após** todos os commits do Google da semana (`80478dd` a `28b6b17`), servindo como evidência objetiva da suíte Jest mockada e da cobertura V8.
+  4. **GitHub Actions sem acesso à rede no sandbox:** não foi possível consultar runs remotos de `test-db-coverage.yml`, `test-coverage.yml` ou `e2e.yml` posteriores a `f161227` (19/11) e `28b6b17` (22/11). Em particular, os novos testes de `customers.db.test.js` (`MG-02`) continuam sem confirmação em PostgreSQL real.
+  5. **`.env` / `.env.local` não lidos (`AGENTS.md` §6)** e **Google Cloud Console externo não consultado:** estado das credenciais reais, origens autorizadas e publicação da tela de consentimento em produção seguem fora do alcance desta auditoria.
+  6. **Working tree com 19 arquivos previamente modificados em 23/11:** presentes antes desta auditoria (nenhum altera código-fonte do fluxo Google; apenas documentos de arquitetura, `AGENTS.md`, `CHANGELOG.md`, auditorias irmãs, configs do OpenCode e `/api/products`), preservados intactos.
+
+---
+
+## 2. Resumo do fluxo identificado (evolução na janela 16/11 → 23/11)
+
+### 2.1 Funcionamento geral atualizado
+
+O fluxo base descrito no Ciclo 1 permanece estruturalmente válido, agora endurecido pelas entregas de `f161227` (19/11), `a681cc5` (20/11) e `28b6b17` (22/11):
+
+1. **Entrada e carregamento GIS (`pages/index.js`, `pages/checkout/[id].js`, `pages/entrar.js`):** o visitante acessa `/entrar` (ou é redirecionado por `/checkout/[id]` via `?next=/checkout/<id>`, sanitizado por `utils/resolve-next.js`). Quando `NEXT_PUBLIC_GOOGLE_CLIENT_ID` está definido, `pages/entrar.js` carrega dinamicamente `https://accounts.google.com/gsi/client` (com CSP liberada em `pages/_document.js` e `Cross-Origin-Opener-Policy: same-origin-allow-popups` restrito a `/entrar` em `next.config.js`), inicializa `ux_mode: 'popup'` e renderiza o botão oficial; quando não configurado, oculta a seção Google e o divisor `"ou"` sem expor nomes de variáveis.
+2. **Validação local e criação de sessão (`pages/api/customer/auth.js`, `lib/auth/google-id-token.js`, `lib/domain/customers.js`, `lib/auth/customer-auth.js`):** `POST /api/customer/auth` (`action: 'google'`) aplica rate limit `20 req/min` por IP (`getClientIP`), exige `credential` `RS256` validado localmente contra o JWKS do Google (cache `[5 min, 24 h]`, single-flight, cooldown `60 s`, fail-closed sem Client ID) — aceitando bypass sem `credential` apenas fora de `production` **e** com `ALLOW_GOOGLE_DEV_BYPASS === 'true'`. Em seguida, `upsertGoogleCustomer` localiza por `google_id`, ou vincula por `LOWER(email)` **anulando `password_hash = NULL`** com guarda `AND (google_id IS NULL OR google_id = $1)` (lançando `GOOGLE_ACCOUNT_CONFLICT` → HTTP `409` em conflito de `sub`), ou cria novo registro em `customers`. Por fim, emite o JWT `scope: 'customer'` (24 h) no cookie `HttpOnly; SameSite=Lax` (`Secure` em produção) `customerToken`.
+3. **Consumo pós-login (`pages/minha-conta.js`, `pages/api/customer/orders.js`, `pages/api/checkout.js`):** a sessão `customerToken` autentica a consulta de compras internas (`/api/customer/orders`, agora com rate limit `60 req/min`), o perfil (`PUT /api/customer/auth`, agora com rate limit `30 req/min`) e o checkout transparente (`/api/checkout`), permanecendo completamente isolada do JWT e RBAC do `/admin` (`verifyToken` rejeita `scope === 'customer'`).
+
+### 2.2 Rotinas, etapas e sequência executadas nos últimos 7 dias
+
+| Data/hora (BRT) | Commit / Artefato | Etapa no ciclo | O que mudou na integração Google (direto ou indireto) |
+|---|---|---|---|
+| 16/11 11:58 | `b37c9f1` | Qualidade / DB real | Criação de `tests/integration/domain/customers.db.test.js` (274 linhas, cobrindo `upsertGoogleCustomer` contra PostgreSQL real). |
+| 16/11 12:24 | `dc77185` | Qualidade / E2E e Schema | Guarda estática `INSERT`/`UPDATE` de `customers.js` em `schema-sources.test.js` e spec `cypress/e2e/checkout.cy.js` (redirecionamento para `/entrar`). |
+| 19/11 11:41 | `80478dd` | Implementação (Ciclo 1) | Ativação do GIS em `/entrar`, CSP em `_document.js`, COOP em `next.config.js`, `accounts.google.com` em `usePerformanceMetrics.js`, endurecimento inicial de `/api/customer/auth`. |
+| 19/11 12:13 | `75fb1cb` | Design / Standards (Ciclo 1) | Largura responsiva `resolveGoogleButtonWidth`, visibilidade do host e alinhamento de `CustomerPages.module.css` aos tokens. |
+| 19/11 15:37 | `fad08f6` | Refinamento / Arquitetura (Ciclo 1) | **ADR-0042:** criação de `lib/auth/google-id-token.js` (JWKS local `RS256`) + 721 linhas de testes unitários; separação `401`/`503`/`500`. |
+| 19/11 16:42 | `7d68032` (19:35) | Auditoria Ciclo 1 + Isolamento Jest | Registro do Ciclo 1 em `docs/melhoria_google.md`; criação de `tests/setup-env.js` limpando `GOOGLE_CLIENT_ID`/`NEXT_PUBLIC_GOOGLE_CLIENT_ID` após contaminação por `.env` (`60acbc2`). |
+| 19/11 20:40 | `3946444` | Documentação | Atualização de `CHANGELOG.md`, `PROJECT_lib.md`, `PROJECT_raiz.md`, `PROJECT_tests.md`. |
+| **19/11 22:28** | **`f161227`** | **Implementação Ciclo 2 (pós-Ciclo 1)** | **Fechou `MG-01`, `MG-03`, `MG-04`, `MG-06`, `MG-07` e parte de `MG-02`/`MG-08`:** `ALLOW_GOOGLE_DEV_BYPASS`, `password_hash = NULL` + HTTP `409`, `logger.error` por código, remoção do botão morto, aviso de paridade em `scripts/check-env.js`, runbook no `ADR-0042` e `.env.example`, ampliação de 4 suítes de teste e registro do Ciclo 2. |
+| **20/11 01:07** | **`a681cc5`** | **Design / Governança (pós-Ciclo 2)** | Criou `design-system/pages/customer.md` (override oficial de `/entrar`, `/minha-conta`, `/checkout/[id]`), corrigiu tokens de `.accountLink` (`Home.module.css`) e adicionou o guard global `tests/unit/tests-hygiene/css-tokens.test.js` (7 invariantes cobrindo `CustomerPages.module.css`). |
+| **22/11 10:14** | **`28b6b17`** | **Segurança de APIs (pós-Ciclo 2)** | Adicionou rate limit em `PUT /api/customer/auth` (`30 req/min`, `api:customer:profile`), `GET /api/customer/orders` (`60 req/min`) e `GET /api/checkout` (`60 req/min`); atualizou `auth.test.js`, `ARQUITETURA_SITE_PUBLICO.md` (§5.1, §7 item 26, §8) e `AGENTS.md` (§0.1, §6). |
+| **22/11 17:16–17:18** | `logs/{tests,coverage}-output.log` | Validação local | Execução completa do Jest + cobertura V8 pós-todos os commits Google/API: `241 passed / 8 skipped` suítes (`2090 passed / 96 skipped` testes), incluindo **11 suítes / 105 asserções** da cadeia do Google 100% verdes. |
+| **23/11** | Working tree (não commitado) | Auditorias e alinhamento doc | Atualizações em `AGENTS.md`, `ARQUITETURA_SITE_PUBLICO.md`, `ARQUITETURA_SITE_PRIVADO.md`, `CHANGELOG.md` e `docs/retorno_da_semana.md` (sem alterações em código Google). |
+
+- **Rotinas recorrentes e dependências:** não há cron interno nem polling ligado ao Google (renovação JWKS permanece *lazy* em `getJwks`). O fluxo Google depende de: `pages/_document.js` (CSP) + `next.config.js` (COOP) → `pages/entrar.js` (GIS) → `pages/api/customer/auth.js` → `lib/auth/google-id-token.js` + `lib/domain/customers.js` + `lib/auth/customer-auth.js` + `lib/cache/cache.js` (`checkRateLimit`) + `lib/api/helpers.js` (`getClientIP`). A auditoria semanal automática é executada via agendamento do Antigravity.
+- **Relação entre os documentos-guia (`AGENTS.md` × Arquitetura Pública × Arquitetura Privada):** `AGENTS.md` §0.1 aciona `ARQUITETURA_SITE_PUBLICO.md` (§3.5, §5.1, §7 item 21/26, §8) para todo o fluxo de visitante/Google e `ARQUITETURA_SITE_PRIVADO.md` (§1, §4.8, §9) para fronteiras compartilhadas (isolamento `customers` × `users`, identidade visual compartilhada, pedidos da Modalidade B). As atualizações de `28b6b17` e `a681cc5` respeitaram essa divisão e mantiveram intactas todas as regras de proteção (§8 público e §9 privado).
+
+---
+
+## 3. Diagnóstico e validação do fluxo
+
+### 3.1 Validação frente aos 13 critérios arquiteturais e operacionais
+
+| # | Critério validado | Classificação | Evidência / Observação |
+|---|---|---|---|
+| 1 | Consulta aos arquivos de orientação pelos agentes | **Indício favorável** | `ARQUITETURA_SITE_PUBLICO.md`, `ADR-0042`, `design-system/pages/customer.md` e `AGENTS.md` foram mantidos sincronizados nos commits `80478dd`, `fad08f6`, `f161227`, `a681cc5` e `28b6b17`; sem logs de sessão/MCP `ai-memory`, não é possível comprovar leitura prévia turno a turno. |
+| 2 | Distribuição de responsabilidades (OpenCode × Antigravity) | **Indício / limitação** | Autor Git único (`caminhar`) e ausência de transcripts impedem atribuir commits a cada ferramenta ou aos papéis do slim. |
+| 3 | Sequência lógica das etapas | **Processo validado** | Evolução ordenada: testes DB → GIS/CSP/COOP → Standards → JWKS ADR-0042 → isolamento Jest → hardening Ciclo 2 (`f161227`) → design/guard CSS (`a681cc5`) → hardening de APIs (`28b6b17`) → bateria Jest completa (`22/11`). |
+| 4 | Execução correta dos processos | **Processo validado (com ressalvas)** | Fluxo feliz e principais guardas comprovados em `logs/tests-output.log` (22/11, 105 asserções nas 11 suítes ligadas ao Google); ressalvas abertas em P8–P12 e DB real remoto. |
+| 5 | Duplicidades e procedimentos desnecessários | **Problema confirmado (baixo impacto)** | Log duplo (`warn` + `error`) no mesmo evento em `pages/api/customer/auth.js:203-206`; tabela `customer_refresh_tokens` sem consumidor; `parseCookie`/`serializeCookie` replicados entre `lib/auth/auth.js` e `lib/auth/customer-auth.js`. |
+| 6 | Respeito às dependências entre componentes | **Processo validado** | Fronteiras limpas; zero dependências npm novas (ADR-0042); isolamento `customers` × `users` mantido; `bench-ground-truth` preservado. |
+| 7 | Comunicação com serviços do Google | **Processo validado (backend) / Problema confirmado (frontend)** | Backend JWKS com timeout 8 s, single-flight, cooldown 60 s e HTTP `503` validado (`google-id-token.test.js` 19/19); frontend `loadGoogleIdentityScript` (`pages/entrar.js:55-92`) não possui timeout para bloqueio silencioso de rede (P11). |
+| 8 | Segurança de autenticação, autorização e credenciais | **Processo validado (núcleo) / Problemas confirmados (bordas)** | Núcleo sólido (`RS256` fixo, fail-closed, `ALLOW_GOOGLE_DEV_BYPASS` opt-in bloqueado em produção, `password_hash = NULL` + `409`, `scope: 'customer'`, `.env` fora do Git). Bordas com falha: P8 (`parseCookie` `URIError`), P9 (corrida `23505`), P10 (`GET /api/customer/auth` sem rate limit/`no-store` e `verifyCustomerToken` sem `algorithms: ['HS256']`). |
+| 9 | Identificação e tratamento de erros | **Parcialmente validado / Problemas confirmados** | Separação `401`/`409`/`503`/`500` no `POST action=google` validada; lacunas em P8 (`URIError` gera `500` em `auth.js`/`checkout.js` e exceção não capturada em `orders.js`), P9 (`23505` gera `500`) e P10 (`PUT` devolve `200 { customer: null }` se conta não existir). |
+| 10 | Efetividade das correções realizadas | **Processo validado (Ciclo 2 + 28b6b17) / Parcial (MG-02)** | `MG-01`, `MG-03`, `MG-04`, `MG-06`, `MG-07`, `a681cc5` e `28b6b17` confirmados em código e logs de 22/11; `MG-02` segue pendente de confirmação em PostgreSQL real (`customers.db.test.js`). |
+| 11 | Suficiência dos testes | **Problema confirmado (lacunas)** | 11 suítes locais verdes (105 asserções), mas cobertura de branches baixa em `customer-auth.js` (**52,63%**) e lacunas em `pages/api/customer/auth.js` (**85,47% L / 77,58% B**, incluindo `POST 429` e `google 400` descobertos), ausência de testes unitários para `scripts/check-env.js`, ausência de E2E do fluxo Google e `customers.db.test.js` sem run remoto confirmado pós-`f161227`. |
+| 12 | Lacunas de documentação e validação | **Problema confirmado (docs auxiliares)** | Docs canônicos (`ARQUITETURA_SITE_PUBLICO.md`, `ADR-0042`, `customer.md`, `.env.example`, `CHANGELOG.md`) estão alinhados; inventários `PROJECT_pages.md`, `PROJECT_lib.md`, `PROJECT_scripts.md` e `PROJECT_raiz.md` estão defasados para os arquivos do Google (P12). |
+| 13 | Preservação do funcionamento atual pelas melhorias propostas | **Processo validado** | `MG-11` a `MG-15` são incrementais, sem novas dependências npm e preservam 100% do fluxo feliz e das regras de proteção. |
+
+### 3.2 Processos validados (evidência de código + logs de 22/11/2026)
+
+Além dos itens `V1`–`V12` do Ciclo 1 (preservados), ficam validados com evidência de execução local em `logs/tests-output.log` (22/11 17:16) e `logs/coverage-output.log` (22/11 17:18):
+
+| # | Processo validado | Evidência objetiva |
+|---|---|---|
+| V13 | Endurecimento do Ciclo 2 (`f161227`): opt-in `ALLOW_GOOGLE_DEV_BYPASS === 'true'` (bloqueado em `production` mesmo se `true`), anulação de `password_hash = NULL` no vínculo inicial por e-mail + conflito `GOOGLE_ACCOUNT_CONFLICT` (`409`), logs `logger.error` por código sem vazamento, ocultação do Google em `unconfigured` sem expor nome de env. | `pages/api/customer/auth.js:58-83,190-234`, `lib/domain/customers.js:83-124`, `pages/entrar.js:238-243,379-413`; `logs/tests-output.log` (`customer/auth.test.js`: 35/35, `customers.test.js`: 14/14, `entrar.test.js`: 8/8, `google-id-token.test.js`: 19/19). |
+| V14 | Rate limit de atualização de perfil (`PUT /api/customer/auth`, `30 req/min`) e de consulta de compras (`GET /api/customer/orders`, `60 req/min`) introduzidos em `28b6b17`. | `pages/api/customer/auth.js:105-111`, `pages/api/customer/orders.js:21-27`; `logs/tests-output.log` (`customer/auth.test.js`: 35/35; `orders.js`: 100% linhas / 95,23% branches). |
+| V15 | Alinhamento visual, override de design e higiene CSS das páginas de visitante (`/entrar`, `/minha-conta`, `/checkout/[id]`). | `design-system/pages/customer.md` (`a681cc5`), `pages/styles/CustomerPages.module.css`; `logs/tests-output.log` (`css-tokens.test.js`: 7/7, `minha-conta.test.js`: 4/4). |
+| V16 | Isolamento de ambiente Jest (`tests/setup-env.js`) impedindo contaminação por `.env` local (incluindo `GOOGLE_CLIENT_ID`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `ALLOW_GOOGLE_DEV_BYPASS`) e guarda estática de colunas SQL de `customers.js`. | `tests/setup-env.js:25-27`, `jest.config.base.js:24`; `logs/tests-output.log` (`schema-sources.test.js`: 7/7). |
+
+### 3.3 Novos problemas confirmados, indícios e hipóteses (não repetidos dos Ciclos 1–2)
+
+**P8 — `parseCookie` em `lib/auth/customer-auth.js` lança `URIError` não tratado em cookie malformado, gerando HTTP `500` em `/api/customer/auth` e exceção não capturada em `/api/customer/orders`** — *Problema confirmado (código)*
+- **Evidência:** `lib/auth/customer-auth.js:5-15` executa `decodeURIComponent(trimmed.slice(idx + 1))` sem `try/catch`. Qualquer cookie presente no header `Cookie` com sequência `%` inválida (mesmo um cookie terceiro não relacionado ao `customerToken`) dispara `URIError` dentro de `getAuthenticatedCustomer(req)`.
+- **Impacto:** em `pages/api/customer/auth.js:88,101` (`GET`/`PUT`) e `pages/api/checkout.js` o erro cai no `catch` externo devolvendo **HTTP 500** (impedindo a checagem de sessão em `/`, `/entrar` e `/minha-conta`); em `pages/api/customer/orders.js:13`, `getAuthenticatedCustomer(req)` é chamado **fora do `try/catch` (que começa na linha 29)**, causando rejeição não tratada do handler! *(Nota: o mesmo padrão existe em `lib/auth/auth.js:16` na área admin, fora do escopo desta auditoria.)*
+
+**P9 — Condição de corrida (`23505 unique_violation`) em logins Google concorrentes de primeira vez (`upsertGoogleCustomer`)** — *Problema confirmado (código); impacto prático sob concorrência é Indício*
+- **Evidência:** `lib/domain/customers.js:83-124` executa `SELECT` por `google_id`, depois `SELECT` por `LOWER(email)` e finalmente `INSERT INTO customers (name, email, google_id, ...)`. Não há `ON CONFLICT` nem tratamento de `err?.code === '23505'` (violação das constraints `UNIQUE` de `email` e `google_id` na migration `023`). Duas requisições simultâneas para o mesmo usuário novo (clique duplo, retry de rede ou abas simultâneas) colidem no `INSERT` e resultam em **HTTP 500** (`pages/api/customer/auth.js:229,239`).
+- **Agravante no cliente:** `pages/entrar.js:128-155` não protege `handleGoogleCredentialResponse` com um ref de submissão em andamento (`submittingRef`), e `.googleButtonHostDisabled` (`pages/styles/CustomerPages.module.css:222-226`) bloqueia apenas eventos de ponteiro (`pointer-events: none`), sem bloquear ativação via teclado no iframe do GIS.
+
+**P10 — Lacunas de segurança defensiva em `GET`/`PUT /api/customer/auth` e `verifyCustomerToken`, além de cobertura insuficiente de branches e testes ausentes** — *Problema confirmado (código e `logs/coverage-output.log` de 22/11)*
+- **Evidências:**
+  1. **`GET /api/customer/auth` (`pages/api/customer/auth.js:87-98`):** consulta PostgreSQL (`getCustomerById`) sempre que há `customerToken` válido (disparado inclusive em todo carregamento de `/` via `pages/index.js:59`), **sem rate limit** (em contraste com `GET /api/auth/check` `60 req/min` e `GET /api/customer/orders` `60 req/min`) e **sem `Cache-Control: no-store`** mesmo retornando dados pessoais do visitante.
+  2. **`PUT /api/customer/auth` (`pages/api/customer/auth.js:120-121`):** quando `updateCustomerProfile` retorna `null` (conta removida após emissão do JWT), responde `200 { customer: null }` em vez de `404` + `clearCustomerAuthCookie(res)` (inconsistente com `GET` L93-96).
+  3. **`lib/auth/customer-auth.js:69`:** `jwt.verify(token, JWT_SECRET_OR_FALLBACK)` não fixa `{ algorithms: ['HS256'] }` (embora o `jsonwebtoken` v9 limite segredos simétricos a `HS*`, fixar explicitamente `HS256` segue a prática adotada em `google-id-token.js` e reforça defesa em profundidade).
+  4. **Cobertura V8 real em `logs/coverage-output.log` (22/11 17:18):**
+     - `lib/auth/customer-auth.js`: **93,57% linhas / 52,63% branches** (L32-33, L38-39, L75-77 descobertas; sem teste para token inválido/expirado, `parseCookie` malformado, flag `Secure` em produção ou falta de `JWT_SECRET`).
+     - `pages/api/customer/auth.js`: **85,47% linhas / 77,58% branches** (descobertas: L94-96 `GET` conta removida, L114-119 `PUT` 400, **L138-142 `POST` 429 rate limit inclusive para `action: 'google'`**, L147-152, L165-166, L172-177, **L193-197 `POST action=google` payload inválido `400`**, L235-236).
+     - `lib/auth/google-id-token.js`: **96,59% linhas / 88,03% branches** (excelente; apenas L26-27, L30-31, L51, L103-104, L172-173 sem cobertura).
+     - `scripts/check-env.js`: lógica de paridade `GOOGLE_CLIENT_ID` × `NEXT_PUBLIC_GOOGLE_CLIENT_ID` adicionada em `f161227` **sem nenhum teste unitário** em `tests/unit/scripts/`.
+     - `jest.config.js:27-35`: `pages/entrar.js`, `pages/minha-conta.js` e `hooks/usePerformanceMetrics.js` ficam fora de `collectCoverageFrom` (observação estrutural já sinalizada em `docs/retorno_da_semana.md` de 23/11).
+
+**P11 — Flash inicial (CLS) em estado `unconfigured` e falta de timeout no carregamento do SDK GIS em `pages/entrar.js`** — *Problema confirmado (código)*
+- **Evidência:**
+  1. `pages/entrar.js:103,157-162,379`: `googleStatus` inicia como `'idle'`, de modo que, quando `NEXT_PUBLIC_GOOGLE_CLIENT_ID` está vazio, o SSR e o primeiro render exibem o divisor `"ou"` e o contêiner `.googleButtonHost` (`min-height: 44px`), que desaparecem imediatamente no `useEffect` (causando layout shift desnecessário).
+  2. `pages/entrar.js:31-92`: `loadGoogleIdentityScript()` depende apenas dos eventos `load` e `error` do `<script>`, sem timeout. Se um firewall corporativo ou bloqueador silencioso descartar pacotes para `accounts.google.com`, o visitante vê `"Carregando acesso com Google..."` indefinidamente sem transição para `'error'` / retry.
+
+**P12 — Duplicidade de log em erros de configuração Google e defasagem nos inventários técnicos `docs/PROJECT_*.md`** — *Problema confirmado (código e documentação)*
+- **Evidência:**
+  1. `pages/api/customer/auth.js:203-206`: quando ocorre `GOOGLE_NOT_CONFIGURED` ou `GOOGLE_AUDIENCE_MISMATCH`, são gravados **dois logs** para o mesmo evento (`logger.warn` na L203 e `logger.error` na L205).
+  2. Inventários `docs/PROJECT_*.md` desatualizados na camada do Google: `docs/PROJECT_pages.md` omite `pages/entrar.js`, `pages/minha-conta.js`, `pages/api/customer/auth.js` e ainda cita CSP antiga + `"Montserrat"` em `_document.js` (L133-134); `docs/PROJECT_lib.md` documenta `google-id-token.js` (§2.2) mas omite `lib/auth/customer-auth.js` e `lib/domain/customers.js`; `docs/PROJECT_scripts.md` (L7, L256) não reflete a checagem de paridade Google em `check-env.js` nem a migration `023`; `docs/PROJECT_raiz.md` (L169) omite `ALLOW_GOOGLE_DEV_BYPASS` adicionada em `f161227`.
+  3. Pequenas inconsistências de cabeçalho/CSP: `pages/_document.js:53` usa `<meta name="referrer" content="origin-when-cross-origin" />`, enquanto `next.config.js:77` envia `Referrer-Policy: strict-origin-when-cross-origin`; e `pages/_document.js:65` libera `https://accounts.google.com/gsi/` em `connect-src` apenas indiretamente via `https:` (se `connect-src` for restringido no futuro, o GIS quebrará caso a origem não esteja listada explicitamente).
+
+**Hipóteses mantidas e novas (não confirmadas como erro):**
+- **H1 (`nonce` contra replay de ID token)** e **H2 (cache JWKS por processo)** e **H4 (configuração real de produção / Google Cloud Console):** mantidos do Ciclo 1 sem novos dados.
+- **H5 (status remoto de `test-db-coverage.yml` pós-`f161227`):** `customers.db.test.js` foi ampliado em `f161227` (19/11), mas sem acesso à API do GitHub Actions nesta sessão não há confirmação de que o workflow remoto rodou e passou depois desse commit.
+- **H6 (atrito de UX pós-`MG-02` sem "esqueci minha senha"):** visitante legítimo que criou conta com senha e depois usou "Continuar com o Google" tem `password_hash` anulado silenciosamente (`customers.js:106`). Como não há fluxo de redefinição de senha nem indicação em `/minha-conta` de que a conta está vinculada ao Google, uma futura tentativa de login por senha retorna `"E-mail ou senha incorretos."` sem orientar o usuário a entrar com Google. Depende de decisão de produto do dono.
+- **H7 (tabela `customer_refresh_tokens` inativa):** criada na migration `023` (`scripts/migrations/023-sales-customers-and-modalities.js:37-44`) sem uso em `lib/auth/customer-auth.js` (que emite apenas JWT stateless de 24 h). Avaliar futuramente se a sessão de cliente precisa de revogação/refresh server-side ou se a tabela permanece reservada.
+
+### 3.4 Erros, falhas, prevenção e correções na janela (16/11 → 23/11)
+
+- **Erros/falhas ocorridos na janela:**
+  - *Contaminação de ambiente Jest (`60acbc2`, 19/11 10:29):* ativação de `"python.terminal.useEnvFile": true` em `.vscode/settings.json` injetou variáveis do `.env` nos terminais integrados, derrubando 13 suítes (27 testes). **Resolvido em `7d68032` (19/11 19:35)** com `tests/setup-env.js` e `"python.terminal.useEnvFile": false` (confirmado nos logs de 22/11).
+  - *Falhas de design/segurança identificadas no Ciclo 1 (`P1`–`P4`, `P6`):* **resolvidas em `f161227` (19/11 22:28)** (detalhadas no Ciclo 2).
+  - *Tokens CSS inexistentes em arquivos irmãos do fluxo de visitante (`Home.module.css` `.accountLink` e `ProductCard`/`AdminSales`):* **resolvidos em `a681cc5` (20/11 01:07)** com guard global `css-tokens.test.js`.
+  - *Ausência de rate limit em `PUT /api/customer/auth`, `GET /api/customer/orders` e `GET /api/checkout`:* **resolvida em `28b6b17` (22/11 10:14)**.
+  - *Erros de runtime em produção/dev no fluxo Google:* **sem evidência disponível** (nenhum log de runtime do servidor da janela).
+- **Prevenção (o que manter vs evitar):**
+  - *Manter:* verificação local JWKS `RS256` fail-closed sem novas dependências (`ADR-0042`); `ALLOW_GOOGLE_DEV_BYPASS` desligado por padrão e bloqueado em `production`; anulação de `password_hash` + `409` em conflito de `google_id`; isolamento `customers` × `users`; limpeza de variáveis Google em `tests/setup-env.js`; guard global `css-tokens.test.js`; `schema-sources.test.js` validando SQL estático; atualização simultânea de `ARQUITETURA_SITE_PUBLICO.md` e ADRs.
+  - *Evitar:* habilitar `python.terminal.useEnvFile` ou vazar `.env` em testes; expor nomes de variáveis internas na UI pública; chamar `getAuthenticatedCustomer(req)` fora de `try/catch` ou decodificar cookies sem proteção contra `URIError`; executar `SELECT` → `INSERT` sem tratamento de `23505` em tabelas com constraint `UNIQUE`; omitir rate limit/`no-store` em endpoints de sessão que acessam o banco.
+- **Resultado das correções da janela:** todas as correções de código/teste/documentação (`7d68032`, `f161227`, `a681cc5`, `28b6b17`) foram confirmadas pelos logs de `22/11/2026 17:16–17:18` (`241/249` suítes, `2090` testes passando, `0` falhas; `eslint.log` vazio). Risco de regressão residual concentra-se exclusivamente na confirmação pendente de `customers.db.test.js` em PostgreSQL real (CI remoto) e na ausência de smoke manual pós-`f161227`.
+
+---
+
+## 4. Melhorias propostas (Ciclo 3)
+
+> Todas preservam integralmente o comportamento atual do fluxo feliz e não introduzem dependências npm novas.
+
+### MG-11 — Proteger `parseCookie` contra `URIError` e enquadrar `getAuthenticatedCustomer` no `try/catch`
+- **Problema / necessidade:** P8 (`URIError` em qualquer cookie com `%` malformado derruba `/api/customer/auth` com `500` e gera rejeição não capturada em `/api/customer/orders`).
+- **Evidências:** `lib/auth/customer-auth.js:12` (`decodeURIComponent` sem `try/catch`); `pages/api/customer/orders.js:13` (chamada antes do `try` da linha 29).
+- **Benefício esperado:** visitantes com cookies corrompidos/terceiros continuam operando normalmente sem erro `500` nem crash de handler.
+- **Arquivos envolvidos:** `lib/auth/customer-auth.js`, `pages/api/customer/orders.js`, `tests/unit/lib/auth/customer-auth.test.js`, `tests/integration/api/customer/orders.test.js`.
+- **Impactos e dependências:** nenhum impacto no fluxo feliz; se apenas um cookie alheio estiver malformado, o `try/catch` por par preserva a leitura do `customerToken` válido (fallback para valor bruto ou descarte apenas do par inválido).
+- **Riscos:** baixíssimo; garantir que um `customerToken` malformado continue retornando `null` (não autenticado).
+- **Prioridade sugerida:** **Alta.**
+
+### MG-12 — Resiliência a concorrência (`23505`) no primeiro login Google e guarda contra dupla submissão em `/entrar`
+- **Problema / necessidade:** P9 (`INSERT` concorrente em `upsertGoogleCustomer` gera `23505` → HTTP `500`; `handleGoogleCredentialResponse` não bloqueia invocação simultânea).
+- **Evidências:** `lib/domain/customers.js:117-123`; `pages/entrar.js:128-155`.
+- **Benefício esperado:** elimina erros `500` espúrios em clique duplo, retry automático ou login simultâneo em múltiplas abas.
+- **Arquivos envolvidos:** `lib/domain/customers.js`, `pages/entrar.js`, `tests/unit/lib/domain/customers.test.js`, `tests/integration/domain/customers.db.test.js`, `tests/unit/pages/entrar.test.js`.
+- **Impactos e dependências:** ao capturar `err?.code === '23505'` no `INSERT`, reconsultar por `google_id` (sucesso idempotente) ou por `LOWER(email)` (aplicando a mesma regra de conflito `GOOGLE_ACCOUNT_CONFLICT` caso outro `google_id` já tenha vencido a corrida). Exige validação em PostgreSQL real (`AGENTS.md` §7 item 1 / ADR-0039).
+- **Riscos:** baixo; manter rigorosamente a proteção `GOOGLE_ACCOUNT_CONFLICT` (`409`) e `password_hash = NULL`.
+- **Prioridade sugerida:** **Média.**
+
+### MG-13 — Endurecer `GET`/`PUT /api/customer/auth` + `verifyCustomerToken` e fechar lacunas de cobertura de testes
+- **Problema / necessidade:** P10 (`GET /api/customer/auth` sem rate limit e sem `Cache-Control: no-store`; `PUT` devolve `200 { customer: null }` para cliente inexistente; `verifyCustomerToken` sem `algorithms: ['HS256']`; cobertura de branches de `customer-auth.js` em 52,63%, `customer/auth.js` em 77,58% com `POST 429` e `google 400` descobertos; `scripts/check-env.js` sem testes unitários).
+- **Evidências:** `pages/api/customer/auth.js:87-122,135-142,191-197`, `lib/auth/customer-auth.js:66-78`, `scripts/check-env.js:46-58`, `logs/coverage-output.log:5282,5356`.
+- **Benefício esperado:** reduz vetor de sobrecarga no PostgreSQL via `GET /api/customer/auth`, impede caching indevido de dados de sessão em proxies, padroniza `404` + limpeza de cookie em `PUT` e eleva a confiança de regressão na camada de autenticação do visitante.
+- **Arquivos envolvidos:** `pages/api/customer/auth.js`, `lib/auth/customer-auth.js`, `tests/integration/api/customer/auth.test.js`, `tests/unit/lib/auth/customer-auth.test.js`, novo `tests/unit/scripts/check-env.test.js` (quando autorizado), `docs/ARQUITETURA_SITE_PUBLICO.md` (§5.1 se o rate limit de `GET /api/customer/auth` for documentado).
+- **Impactos e dependências:** escolher um limite generoso para `GET /api/customer/auth` (ex.: `120 req/min` por IP, `api:customer:session`) para não impactar navegação rápida entre `/`, `/entrar`, `/minha-conta` e `/checkout/[id]`; em `GET`, só aplicar rate limit (ou aplicá-lo antes do banco) com `Cache-Control: no-store, private`. `scripts/check-env.js` precisa exportar funções puras (`checkEnv`) sem disparar `process.exit` no import para ser testado de forma limpa (verificar `knip` após exportar).
+- **Riscos:** rate limit excessivamente baixo em `GET /api/customer/auth` causaria falso deslogamento visual na home; manter teto confortável (`≥ 120 req/min`) e cobrir em teste.
+- **Prioridade sugerida:** **Média-Alta.**
+
+### MG-14 — Eliminar flash inicial (CLS) em `unconfigured` e adicionar timeout/acessibilidade de bloqueio no carregamento GIS em `pages/entrar.js`
+- **Problema / necessidade:** P11 (divisor `"ou"` e host de 44 px piscam no render inicial sem `NEXT_PUBLIC_GOOGLE_CLIENT_ID`; script GIS sem timeout fica preso em `"Carregando..."` sob bloqueio silencioso; `pointer-events: none` não bloqueia teclado durante `submitting`).
+- **Evidências:** `pages/entrar.js:31-92,103,157-162,238-243,379-387`.
+- **Benefício esperado:** zero CLS quando o Google estiver desabilitado, recuperação previsível (botão "Tentar novamente com Google") sob bloqueio silencioso de rede e prevenção de submissão dupla via teclado.
+- **Arquivos envolvidos:** `pages/entrar.js`, `tests/unit/pages/entrar.test.js`.
+- **Impactos e dependências:** inicializar `googleStatus` com `useState(() => (getGoogleClientId() ? 'loading' : 'unconfigured'))`; adicionar timeout (ex.: `10_000 ms`, limpando o `setTimeout` no `load`/`error`/unmount para não vazar timers no Jest) em `attachScriptListeners`; aplicar `inert={submitting || undefined}` no host do botão Google.
+- **Riscos:** timer mal limpo poderia gerar aviso de handle aberto no Jest (`jest.config.base.js` `workerGracefulExitTimeout`); garantir `clearTimeout` em todos os caminhos (`load`, `error`, cleanup do `useEffect`) e testar com fake timers.
+- **Prioridade sugerida:** **Média-Baixa.**
+
+### MG-15 — Eliminar log duplo (`warn`+`error`) e sincronizar inventários técnicos `docs/PROJECT_*.md` e nota de CSP/Referrer
+- **Problema / necessidade:** P12 (log duplicado no mesmo erro em `pages/api/customer/auth.js:203-206`; defasagem em `PROJECT_pages.md`, `PROJECT_lib.md`, `PROJECT_scripts.md`, `PROJECT_raiz.md`; nota de `connect-src` e divergência de `<meta name="referrer">` em `pages/_document.js`).
+- **Evidências:** `pages/api/customer/auth.js:203-206`, `pages/_document.js:53,65`, `next.config.js:77`, `docs/PROJECT_pages.md:133-134`, `docs/PROJECT_lib.md`, `docs/PROJECT_scripts.md:7,256`, `docs/PROJECT_raiz.md:118,169`.
+- **Benefício esperado:** logs mais limpos para alertas operacionais e documentação de referência fiel ao código real para agentes e desenvolvedores.
+- **Arquivos envolvidos:** `pages/api/customer/auth.js`, `tests/integration/api/customer/auth.test.js`, `pages/_document.js` (opcional para `Referrer-Policy` / `connect-src` explícito), `tests/unit/pages/document-csp.test.js`, `docs/PROJECT_pages.md`, `docs/PROJECT_lib.md`, `docs/PROJECT_scripts.md`, `docs/PROJECT_raiz.md`, `docs/adr/0042-google-id-token-local-jwks-verification.md`.
+- **Impactos e dependências:** em `auth.test.js:459-468`, o teste de `GOOGLE_NOT_CONFIGURED` hoje asserta tanto `warnSpy` quanto `errorSpy` — precisará ser atualizado para esperar exclusivamente `errorSpy` em erros de configuração e `warnSpy` nos demais erros `401`.
+- **Riscos:** baixo; manter o teste do canário `bench-ground-truth.test.js` verde caso qualquer linha observada mude.
+- **Prioridade sugerida:** **Baixa.**
+
+---
+
+## 5. Plano de execução por arquivo ou componente (para implementação futura)
+
+*(Somente arquivos com alteração proposta no Ciclo 3. Nada foi alterado nesta auditoria.)*
+
+### 5.1 `/home/gus/projetos/Caminhar/lib/auth/customer-auth.js`
+- **Situação atual:** `parseCookie` (L12) chama `decodeURIComponent` sem `try/catch`; `verifyCustomerToken` (L69) chama `jwt.verify(token, JWT_SECRET_OR_FALLBACK)` sem restringir `algorithms`.
+- **Alteração proposta:** MG-11 (envolver `decodeURIComponent` por par em `try/catch`, ignorando apenas o valor corrompido ou preservando o bruto de cookies alheios) e MG-13 (passar `{ algorithms: ['HS256'] }` em `jwt.verify`).
+- **Justificativa técnica:** P8 e P10.
+- **Impactos:** `pages/api/customer/auth.js`, `pages/api/customer/orders.js`, `pages/api/checkout.js`.
+- **Dependências:** nenhuma.
+- **Cuidados:** preservar o isolamento estrito `decoded.scope === 'customer'`, `HttpOnly`, `SameSite=Lax`, `Secure` em produção e falha fechada sem `JWT_SECRET` fora de dev/test.
+
+### 5.2 `/home/gus/projetos/Caminhar/pages/api/customer/orders.js`
+- **Situação atual:** `getAuthenticatedCustomer(req)` (L13) é executado fora do bloco `try/catch` (L29-59).
+- **Alteração proposta:** MG-11 (mover a verificação de sessão para dentro do `try/catch` ou manter defesa em profundidade junto com `parseCookie` seguro).
+- **Justificativa técnica:** P8.
+- **Impactos:** nenhum no contrato HTTP (`405`/`401`/`429`/`200`).
+- **Dependências:** MG-11 em `customer-auth.js`.
+- **Cuidados:** preservar rate limit `60 req/min` (`api:customer:orders`), isolamento anti-IDOR por `session.customerId` e reconciliação ativa (ADR-0041).
+
+### 5.3 `/home/gus/projetos/Caminhar/lib/domain/customers.js`
+- **Situação atual:** `upsertGoogleCustomer` (L83-124) faz `SELECT` → `SELECT` → `INSERT` sem tratar `23505` em concorrência.
+- **Alteração proposta:** MG-12 (tratar `err?.code === '23505'` no `INSERT`, reconsultando por `google_id` ou por `LOWER(email)` com validação de conflito `GOOGLE_ACCOUNT_CONFLICT`).
+- **Justificativa técnica:** P9.
+- **Impactos:** `pages/api/customer/auth.js`, `tests/unit/lib/domain/customers.test.js`, `tests/integration/domain/customers.db.test.js`.
+- **Dependências:** execução de `npm run test:db:container` (ou CI `test-db-coverage.yml`) por envolver SQL/constraint real (ADR-0039).
+- **Cuidados:** manter `password_hash = NULL` no vínculo por e-mail, guarda `google_id IS NULL OR google_id = $1`, `sanitizeCustomer` e paridade com `schema-sources.test.js`.
+
+### 5.4 `/home/gus/projetos/Caminhar/pages/api/customer/auth.js`
+- **Situação atual:** `GET` (L87-98) sem rate limit e sem `Cache-Control: no-store`; `PUT` (L120-121) não trata `updated === null`; `POST action=google` (L203-206) emite `logger.warn` e `logger.error` duplicados para `GOOGLE_CONFIG_ERROR_CODES`.
+- **Alteração proposta:** MG-13 (adicionar `res.setHeader('Cache-Control', 'no-store, private')` e rate limit confortável ex. `120 req/min` em `GET`; tratar `!updated` em `PUT` limpando cookie e retornando `404`) e MG-15 (usar `if (GOOGLE_CONFIG_ERROR_CODES.has(reason)) { logger.error(...) } else { logger.warn(...) }`).
+- **Justificativa técnica:** P10 e P12.
+- **Impactos:** `tests/integration/api/customer/auth.test.js`, `pages/index.js`, `pages/entrar.js`, `pages/minha-conta.js`.
+- **Dependências:** atualizar asserções de log em `auth.test.js` (MG-15); verificar `bench-ground-truth.test.js` (`AGENTS.md` §7 item 1).
+- **Cuidados:** preservar integralmente a separação `401`/`409`/`503`/`500`, `ALLOW_GOOGLE_DEV_BYPASS` bloqueado em produção, mensagens genéricas sem vazamento e `upsertGoogleCustomer` fora do `try/catch` de verificação JWKS.
+
+### 5.5 `/home/gus/projetos/Caminhar/pages/entrar.js`
+- **Situação atual:** `googleStatus` inicia em `'idle'` (L103), `loadGoogleIdentityScript` (L31-92) não possui timeout, `handleGoogleCredentialResponse` (L128) não tem trava contra dupla invocação concorrente e o host do botão não recebe `inert` durante `submitting`.
+- **Alteração proposta:** MG-12 (ref `submittingRef` impedindo submissão concorrente) e MG-14 (estado inicial derivado sincronamente de `getGoogleClientId()`, timeout de 10 s com `clearTimeout` garantido no carregamento do script GIS e `inert={submitting || undefined}` no host).
+- **Justificativa técnica:** P9 e P11.
+- **Impactos:** `tests/unit/pages/entrar.test.js`.
+- **Dependências:** nenhuma.
+- **Cuidados:** manter o contêiner `googleButtonRef` sempre montado (compatibilidade React 19 + retry), respeitar `design-system/pages/customer.md` e `css-tokens.test.js`, e não vazar timers no Jest.
+
+### 5.6 `/home/gus/projetos/Caminhar/scripts/check-env.js`
+- **Situação atual:** executa `checkEnv()` e `process.exit(...)` no nível superior do módulo (L93-100), dificultando testes unitários da checagem de paridade Google.
+- **Alteração proposta:** MG-13 (extrair/exportar `checkEnv` com guarda de entrypoint CLI, permitindo suíte unitária sem side-effects no import).
+- **Justificativa técnica:** P10.
+- **Impactos:** `npm run check-env`, `npm run dev`/`build`/`start`, `.github/workflows/test-coverage.yml`, `npm run knip`.
+- **Dependências:** criar `tests/unit/scripts/check-env.test.js`.
+- **Cuidados:** preservar integralmente o comportamento CLI (exit code `0`/`1`, `CHECK_ENV_STRICT=true`, avisos sem exibir valores de Client ID) e validar `npm run knip`.
+
+### 5.7 Documentação e testes correspondentes
+- `/home/gus/projetos/Caminhar/pages/_document.js` e `/home/gus/projetos/Caminhar/tests/unit/pages/document-csp.test.js`: opcional em MG-15 (alinhar `<meta name="referrer">` a `strict-origin-when-cross-origin` e explicitar/testar cobertura de `https://accounts.google.com/gsi/` em `connect-src`).
+- `/home/gus/projetos/Caminhar/docs/PROJECT_pages.md`, `docs/PROJECT_lib.md`, `docs/PROJECT_scripts.md`, `docs/PROJECT_raiz.md` e `docs/adr/0042-google-id-token-local-jwks-verification.md`: MG-15 (sincronizar inventários com os arquivos reais do fluxo Google).
+- `/home/gus/projetos/Caminhar/tests/unit/lib/auth/customer-auth.test.js`: MG-11 e MG-13 (cookie malformado, token inválido/expirado, `Secure` em produção, algoritmo divergente, ausência de `JWT_SECRET` fora de dev/test).
+- `/home/gus/projetos/Caminhar/tests/integration/api/customer/auth.test.js`: MG-13 e MG-15 (`GET 429` + `Cache-Control: no-store`, `GET` cliente inexistente limpando cookie, `PUT` cliente inexistente `404` + validação `400`, `POST 429` em `action: 'google'`, `POST action: 'google'` payload inválido `400`, log único `error` vs `warn`).
+- `/home/gus/projetos/Caminhar/tests/integration/api/customer/orders.test.js`: MG-11 (cookie malformado não gera rejeição/500).
+- `/home/gus/projetos/Caminhar/tests/unit/lib/domain/customers.test.js` e `/home/gus/projetos/Caminhar/tests/integration/domain/customers.db.test.js`: MG-12 (simulação/execução de corrida `23505`).
+- `/home/gus/projetos/Caminhar/tests/unit/pages/entrar.test.js`: MG-12 e MG-14 (zero divisor `"ou"` no primeiro render `unconfigured`, timeout de carregamento do script GSI com transição para retry, proteção contra dupla invocação).
+- `/home/gus/projetos/Caminhar/tests/unit/scripts/check-env.test.js`: MG-13 (cenários de paridade, divergência e `GOOGLE_CLIENT_ID` sem `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, sem vazamento dos valores).
+
+---
+
+## 6. Sequência recomendada de implementação
+
+1. **Etapa 0 — Fechar validação pendente do Ciclo 2 (`MG-02` / `MG-08`):** verificar no GitHub Actions (ou ambiente com Docker) o run de `test-db-coverage.yml` pós-`f161227` executando `tests/integration/domain/customers.db.test.js`. *Critério:* 6/6 testes de `customers.db.test.js` aprovados em PostgreSQL real.
+2. **Etapa 1 — `MG-11` (Alta):** endurecer `parseCookie` em `lib/auth/customer-auth.js` e proteger `pages/api/customer/orders.js` + testes unitário e de integração. *Critério:* cookie com `%ZZ` nunca produz `500` nem exceção não capturada.
+3. **Etapa 2 — `MG-13` (Média-Alta):** aplicar `algorithms: ['HS256']`, rate limit + `no-store` em `GET /api/customer/auth`, `404` + limpeza de cookie em `PUT` sem registro, e fechar lacunas de cobertura em `customer-auth.js`, `customer/auth.js` e `scripts/check-env.js`. *Critério:* cobertura de branches de `customer-auth.js` `≥ 85%` e `pages/api/customer/auth.js` `≥ 90%` linhas / `≥ 85%` branches; novos testes de `check-env` verdes.
+4. **Etapa 3 — `MG-12` (Média):** resiliência a `23505` em `upsertGoogleCustomer` + trava de concorrência em `pages/entrar.js`, seguida de validação em PostgreSQL real. *Critério:* concorrência de primeiro login retorna `200` idempotente (ou `409` em `sub` conflitante), nunca `500`.
+5. **Etapa 4 — `MG-14` (Média-Baixa):** inicializar `googleStatus` sem flash SSR, timeout 10 s no loader GSI e `inert` no host em `pages/entrar.js`. *Critério:* `entrar.test.js` verde sem timers pendentes e `css-tokens.test.js` verde.
+6. **Etapa 5 — `MG-15` (Baixa):** remover log duplo `warn`+`error` em `pages/api/customer/auth.js` e sincronizar `docs/PROJECT_*.md` e nota de CSP/Referrer.
+7. **Etapa 6 — Fechamento (`AGENTS.md` §7):** rodar `npm test`, `npm run test:db:container` (ou conferir `test-db-coverage.yml`), `npm run lint`, `npm run knip`, `npm run lint:workflows`, `npm run lint:chars`, `npm run security:check-sql`, `npm run security:check-credentials` e `npx jest tests/unit/scripts/bench-ground-truth.test.js`; atualizar `docs/ARQUITETURA_SITE_PUBLICO.md` (se contrato de API mudar) e registrar o fechamento em `CHANGELOG.md` e no próximo ciclo de `docs/melhoria_google.md`.
+
+---
+
+## 7. Critérios de validação (Ciclo 3)
+
+| Ação | Testes necessários | Cenários verificados | Critério objetivo de conclusão |
+|---|---|---|---|
+| **MG-02 / MG-08 (pendente)** | `test-db-coverage.yml` (CI) ou `npm run test:db:container -- tests/integration/domain/customers.db.test.js` | Vínculo por e-mail com `password_hash = NULL`, rejeição de senha antiga, conflito `GOOGLE_ACCOUNT_CONFLICT` sem sobrescrever `google_id` | 100% dos testes de `customers.db.test.js` executados e aprovados (0 skipped) em PostgreSQL real |
+| **MG-11** | `npx jest tests/unit/lib/auth/customer-auth.test.js tests/integration/api/customer/auth.test.js tests/integration/api/customer/orders.test.js` | Header `Cookie: bad=%ZZ; customerToken=<valido>` e `Cookie: customerToken=%ZZ` em `GET/PUT /api/customer/auth` e `GET /api/customer/orders` | Zero `URIError` / `500`; cookie válido preservado quando cookie alheio está malformado; `customerToken` inválido retorna não autenticado (`200 authenticated:false` ou `401`) |
+| **MG-12** | `npx jest tests/unit/lib/domain/customers.test.js tests/unit/pages/entrar.test.js` + `customers.db.test.js` em DB real | Duas chamadas paralelas `Promise.all` de `upsertGoogleCustomer` para o mesmo novo usuário; conflito `23505` por e-mail com `sub` diferente; disparo duplo do callback GIS | Mesmo `customer.id` retornado sem `500` em corrida idêntica; `GOOGLE_ACCOUNT_CONFLICT` (`409`) preservado para `sub` divergente; apenas 1 `POST /api/customer/auth` disparado na UI |
+| **MG-13** | `npx jest tests/unit/lib/auth/customer-auth.test.js tests/integration/api/customer/auth.test.js tests/unit/scripts/check-env.test.js --coverage` | `GET /api/customer/auth` com `Cache-Control: no-store` e `429`; `GET`/`PUT` para conta removida; `POST 429` em `action=google`; `POST action=google` payload inválido `400`; `verifyCustomerToken` com token expirado/inválido/`HS384`; `checkEnv` com IDs divergentes/ausentes | Todos os testes verdes; `customer-auth.js` branches `≥ 85%`; `pages/api/customer/auth.js` linhas `≥ 90%` e branches `≥ 85%`; zero vazamento de IDs nos logs |
+| **MG-14** | `npx jest tests/unit/pages/entrar.test.js tests/unit/tests-hygiene/css-tokens.test.js` | Render inicial sem `NEXT_PUBLIC_GOOGLE_CLIENT_ID` (sem `"ou"` antes do effect); script GSI sem `load`/`error` por `10 s` (fake timers) → estado `'error'` + retry funcional; `inert` durante `submitting` | Todos verdes, zero open handles/timers no Jest, zero violações de CSS/tokens |
+| **MG-15** | `npx jest tests/integration/api/customer/auth.test.js tests/unit/pages/document-csp.test.js tests/unit/scripts/bench-ground-truth.test.js` + revisão documental | `GOOGLE_NOT_CONFIGURED`/`GOOGLE_AUDIENCE_MISMATCH` chamam apenas `logger.error` (não `logger.warn`); inventários `PROJECT_*.md` conferidos contra arquivos reais | Testes e canário verdes; zero contradições entre `PROJECT_*.md` e código atual |
+| **Gates globais** | `npm test`, `npm run lint`, `npm run knip`, `npm run lint:workflows`, `npm run lint:chars`, `npm run security:check-sql`, `npm run security:check-credentials` | Regressão global do repositório | Todos com exit code `0` e zero alertas novos |
+
+---
+
+## 8. Pendências e pontos de atenção
+
+**Investigações adicionais necessárias**
+1. **Confirmação remota do CI (`H5`):** verificar os runs de `test-db-coverage.yml`, `test-coverage.yml` e `e2e.yml` no GitHub Actions após `f161227` (19/11) e `28b6b17` (22/11) assim que houver acesso à rede/API do GitHub.
+2. **Smoke test manual pós-`f161227` (`H4`):** validar em navegador real (local e produção) o fluxo `/entrar` → Google → `/minha-conta` → reload → logout, confirmando origens autorizadas e tela de consentimento publicada no Google Cloud Console.
+3. **Decisão de produto sobre UX pós-`MG-02` (`H6`):** definir com o dono se `/minha-conta` deve exibir indicação de conta vinculada ao Google e se haverá fluxo futuro de criação/redefinição de senha para clientes cuja senha local foi anulada no vínculo inicial.
+4. **Decisões arquiteturais adiadas (`H1`, `H7`):** avaliar se compensa adicionar `nonce` no fluxo GIS (`H1`) e qual será o destino da tabela `customer_refresh_tokens` criada na migration `023` sem uso atual (`H7`).
+5. **Saúde da memória (`_lint/report.md`):** o `SessionStart` acusou 20 avisos em `_lint/report.md` (não legíveis por negativa do MCP `ai-memory`); revisar em sessão com MCP liberado.
+
+**Processos sem evidência suficiente neste ciclo**
+- Execuções remotas de GitHub Actions da janela; logs de runtime em servidor real; histórico de sessões do OpenCode e conversas anteriores do Antigravity; valores de `.env`/`.env.local` e configurações do Console do Google Cloud.
+
+**Dependências externas e riscos a monitorar**
+- Disponibilidade de `https://accounts.google.com/gsi/client` e `https://www.googleapis.com/oauth2/v3/certs`, política de rotação de chaves e algoritmos do Google, bloqueadores de script/cookies de terceiros nos navegadores, e manutenção da permissão de `https://accounts.google.com/gsi/` caso `connect-src` em `pages/_document.js` seja restringido futuramente.
+- **Working tree local de 23/11:** os 19 arquivos previamente modificados antes desta auditoria aguardam fechamento/commit separado pelo fluxo responsável; monitorar no Ciclo 4 que nenhum deles reintroduza divergência na área de visitante/Google.
+
+---
+
+## 9. Conclusão
+
+**Avaliação geral:** na janela de **16/11/2026 a 23/11/2026**, a Integração com o Google atingiu **maturidade técnica alta**: o núcleo de verificação local JWKS `RS256` (ADR-0042), as correções de segurança do Ciclo 2 (`f161227`), a formalização visual (`a681cc5`) e o endurecimento de APIs (`28b6b17`) estão implementados, coerentes com a arquitetura pública/privada e sustentados por **11 suítes locais verdes (105 asserções)** registradas nos logs de 22/11/2026. Os pontos residuais identificados neste Ciclo 3 são **bordas de resiliência, defesa em profundidade e cobertura**, não defeitos estruturais no fluxo OIDC/GIS.
+
+- **Correções necessárias (prioridade):**
+  1. **MG-11 (Alta):** blindar `parseCookie` contra `URIError` (`lib/auth/customer-auth.js`) e mover `getAuthenticatedCustomer` para dentro do `try/catch` em `pages/api/customer/orders.js`.
+  2. **MG-13 (Média-Alta):** adicionar rate limit + `Cache-Control: no-store` em `GET /api/customer/auth`, tratar cliente inexistente em `PUT`, fixar `algorithms: ['HS256']` e fechar as lacunas de cobertura (`customer-auth.js`, `customer/auth.js`, `check-env.js`).
+  3. **MG-12 (Média):** tratar corrida `23505` em `upsertGoogleCustomer` e dupla submissão em `pages/entrar.js`.
+- **Melhorias recomendadas:** **MG-14** (eliminar flash SSR de `"ou"` em `unconfigured`, timeout de 10 s no loader GIS e `inert` no host) e **MG-15** (remover log duplicado `warn`+`error` e atualizar inventários `docs/PROJECT_*.md`).
+- **Investigações pendentes:** confirmação remota do `test-db-coverage.yml` pós-`f161227` (`MG-02`/`MG-08`/`H5`), smoke manual + conferência do Google Cloud Console em produção (`H4`), decisão de UX para contas com senha anulada após vínculo Google (`H6`), avaliação de `nonce` (`H1`) e destino de `customer_refresh_tokens` (`H7`).
+- **Processos corretos a preservar:** verificação local JWKS `RS256` fail-closed sem novas dependências (ADR-0042); single-flight e cooldown de 60 s; separação `401`/`409`/`503`/`500` sem vazamento de segredos/IDs; `ALLOW_GOOGLE_DEV_BYPASS` opt-in bloqueado em produção; prevenção de pré-sequestro (`password_hash = NULL` + guarda `google_id`); isolamento `customers` × `users` e cookie `customerToken`; CSP/COOP restritos ao GIS e `/entrar`; isolamento Jest em `tests/setup-env.js`; override `design-system/pages/customer.md` e guard global `css-tokens.test.js`; documentação de arquitetura e ADRs atualizados junto com as entregas.

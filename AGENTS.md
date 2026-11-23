@@ -34,7 +34,7 @@ As regras de processo do agente ficam só neste arquivo; os documentos de arquit
 2. **Leia a seção de regras e padrões visuais** da área: `ARQUITETURA_SITE_PUBLICO.md` (§1.1, §2 e §8) ou `ARQUITETURA_SITE_PRIVADO.md` (§1.1, §2 e §9).
 3. **Antes de corrigir ou melhorar**, veja as pendências conhecidas: §7 do documento público, §8 do documento privado.
 4. **Confirme no código** todo item `[HIPÓTESE]` e todo `[PLANEJADO]` — o `[PLANEJADO]` marca alvo ainda não implementado, então verifique se já foi feito antes de implementar de novo.
-5. **Implemente** e feche pelo §7 (Definição de pronto): atualize o documento e a data se a mudança foi estrutural.
+5. **Implemente** e feche pelo §7 (Definição de pronto): ao ajustar telas administrativas com abas/subabas cruzadas ou helpers compartilhados (`AdminCrudBase`, `exportToCSV`, `AppIcon`), confira filtros de modalidade, assinaturas e atalhos consumidores; atualize o documento e a data se a mudança foi estrutural.
 6. **Antes de confiar num modelo por papel**, rode `npm run models:check`: ele cruza os modelos compilados dos agentes **e a cadeia de reserva do preset** com `opencode models` e falha listando os ids mortos — e também falha quando os papéis do preset **não compilaram** (plugin que não carregou), em vez de conferir só o que sobrou. Id fora do catálogo falha em silêncio e a cadeia de reserva **não** assume (`provider.no-route` não é classificado como failover). O comando exige o CLI `opencode` no PATH: fora do host do OpenCode (ex.: Antigravity, CI) ele sai com `spawnSync opencode ENOENT`, o que significa **"não verificado"**, não "modelo morto" nem "aprovado". Relate assim e não troque por testes unitários, que não consultam o catálogo.
 
 ## 1. Idioma e estilo
@@ -52,6 +52,7 @@ As regras de processo do agente ficam só neste arquivo; os documentos de arquit
 
 Desempate: aparência/UX → designer; verificação → oracle; código → fixer. Só o designer decide o design final.
 Fora do `oh-my-opencode-slim` (ex.: Antigravity, Claude Code), o agente executa o ciclo de ponta a ponta acumulando esses papéis na ordem (planejamento/memória → design → implementação → revisão), aplicando integralmente as regras das seções 0, 1 e 3 a 7.
+Em caso de conflito entre este arquivo e anexos locais em `.opencode/oh-my-opencode-slim/`, `AGENTS.md` e os documentos em `docs/` prevalecem.
 
 Detalhes de operação do slim (matriz de pesquisa websearch/webfetch/gh_grep/context7/ai-memory, regras de `mcps`, onde ficam as chaves, e o que houve com o `librarian`): `docs/AGENTS_OPERACAO.md`.
 
@@ -63,6 +64,7 @@ Detalhes de operação do slim (matriz de pesquisa websearch/webfetch/gh_grep/co
 - Regras de todo turno ficam aqui, não só na wiki.
 - Nunca gravar segredos, tokens, chaves, `.env` ou dados pessoais; não cole segredos em prompts (prompts são capturados).
 - Em chamadas MCP de escopo de projeto, enviar o `workspace` e o `project` exatos de `.ai-memory.toml`.
+- Se o MCP `ai-memory` estiver negado ou indisponível na sessão, nunca contornar por shell nem ler arquivos internos da memória: trabalhar com o contexto injetado no `SessionStart` + código/Git/ADRs e registrar explicitamente a limitação (sinalizando também avisos em `_lint/report.md`).
 
 ## 4. Design (ui-ux-pro-max)
 - Tela/página/componente novo ou alterado: gerar ou ler o design system **antes** de codar, alinhado ao padrão visual e estrutural do respectivo ambiente (`ARQUITETURA_SITE_PUBLICO.md` §1.1/§2 e `ARQUITETURA_SITE_PRIVADO.md` §1.1/§2).
@@ -88,12 +90,12 @@ Detalhes de operação do slim (matriz de pesquisa websearch/webfetch/gh_grep/co
 - **Padrão de segurança em rotas (`pages/api/`):** reutilizar sempre os mecanismos centralizados do projeto — nunca criar middlewares duplicados: `createAdminHandler` (ou `withAuth` + `checkRolePermission` em modo fail-closed), `checkRateLimit` com IP resolvido via `getClientIP(req)` (modelo `TRUST_PROXY`), validação de entrada com Zod, `logActivity` nas mutações administrativas, respostas HTTP `500` sem `error.message` cru e bloqueio anti-SSRF (protocolo/domínio oficial + negação de loopback/redes privadas) em requisições externas iniciadas pelo servidor.
 
 ## 7. Definição de pronto
-1. Código compila/roda; testes existentes passam (incluindo testes de integração para APIs e fluxos críticos de pagamento/webhook e autenticação quando alterados). SQL novo ou alterado em `lib/domain/` ou em migration: teste unitário com `lib/infra/db.js` mockado **não** prova que as colunas existem (ADR-0039). Rode `npm run test:db:container` (PostgreSQL real) ou deixe para o job `test-db-coverage.yml` do CI; se a tabela não tiver `*.db.test.js`, registre o risco no resumo. `npm run validate-schema` só compara o banco com `EXPECTED_SCHEMA` e não cobre as consultas. Alterações em `pages/api/` que adicionem/removam rotas ou desloquem linhas de `withAuth`/`requireAuth`/`createAdminHandler` são conferidas pelo canário `tests/unit/scripts/bench-ground-truth.test.js` — se falhar, recalibre `scripts/bench/` na mesma rodada (ADR-0008).
-2. Design segue o MASTER (e o override da página).
+1. Código compila/roda; testes existentes passam (incluindo testes de integração para APIs e fluxos críticos de pagamento/webhook e autenticação quando alterados). SQL novo ou alterado em `lib/domain/` ou em migration: teste unitário com `lib/infra/db.js` mockado **não** prova que as colunas existem (ADR-0039). Rode `npm run test:db:container` (PostgreSQL real) ou deixe para o job `test-db-coverage.yml` do CI; se a tabela não tiver `*.db.test.js`, registre o risco no resumo. `npm run validate-schema` só compara o banco com `EXPECTED_SCHEMA` e não cobre as consultas. Alterações em arquivos vigiados pelo canário `tests/unit/scripts/bench-ground-truth.test.js` (rotas em `pages/api/`, `proxy.js`, `next.config.js`, `lib/auth/auth.js`, `lib/api/`, `design-system/MASTER.md`, `pages/styles/variables.css`, `components/UI/{Button,Input,BaseCard}.module.css`) exigem mantê-lo verde — se falhar, recalibre `scripts/bench/` na mesma rodada (ADR-0008). Specs Cypress novas/alteradas exigem `npx cypress run --spec <arquivo>` (ou registro explícito de pendência); alterações em configs de ambiente/ferramentas (`.vscode/settings.json`, `jest.config*`, `next.config.js`, `package.json`) também exigem rodar `npm test`.
+2. Design segue o MASTER (e o override em `design-system/pages/<pagina>.md`, mantendo-o sincronizado em telas novas/alteradas); ao ajustar CSS ou tokens, verificar arquivos irmãos (nunca correção isolada) e garantir `tests/unit/tests-hygiene/css-tokens.test.js` verde.
 3. Correção ou melhoria: as pendências conhecidas da área (§0.3, passo 3) foram conferidas antes de propor a mudança.
 4. Revisão do checklist feita; pendências listadas.
 5. Área tocada (site público ou painel): as regras de proteção do documento de arquitetura dessa área foram respeitadas (§0.2, regras 1 e 2) e, em mudança estrutural, o arquivo de arquitetura e a data de "Última atualização" foram atualizados (§0.2, regra 5).
-6. Se houve decisão de arquitetura relevante: registrada em `docs/adr/` (ver §3). Senão, nada a registrar. Handoff criado se a sessão terminar incompleta.
+6. Se houve decisão de arquitetura relevante: registrada em `docs/adr/` (ver §3); entregas funcionais ou de segurança notáveis registradas sob `## [Não publicado]` em `CHANGELOG.md`. Handoff criado se a sessão terminar incompleta.
 7. Resumo curto do que mudou e do que ficou pendente.
 8. Gate de código morto, workflows e segurança estática: `npm run knip` e `npm run lint:workflows` sem erros (o CI reprova nos dois — `coverage-report` em `.github/workflows/test-coverage.yml`; `knip.json` tem `treatConfigHintsAsErrors: true`, logo export sem consumidor e ignore de diretório removido são erros); ao alterar APIs, queries SQL ou autenticação, rodar também `npm run security:check-sql` e `npm run security:check-credentials`.
 

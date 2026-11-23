@@ -1,7 +1,7 @@
 ## Regras de pesquisa (anexo)
 > Estas regras vinham do agente `librarian`. O slim 3.0.5 fundiu o librarian no explorer
 > (`MARKETPLACE_BUILTIN_RENAMES`: `librarian -> explorer`), então o explorer carrega hoje as duas
-> duas responsabilidades: **varredura do repositório** e **documentação externa**.
+> responsabilidades: **varredura do repositório** e **documentação externa**.
 
 ### Documentação externa
 - Se a URL da documentação já é conhecida, use o webfetch direto nela em vez de buscar: cada URL pede aprovação (`ask`) e não depende de provedor de busca. Não use o parâmetro `prompt` dele, que delega a um modelo secundário e pode devolver a página inteira sem extrair nada.

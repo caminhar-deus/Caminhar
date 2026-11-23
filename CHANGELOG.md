@@ -11,6 +11,10 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Adicionado
 
+- **Expiração automática por 1h de inatividade no `/admin` e guarda unificada de HTTP `401` (21/11/2026, ADR-0043, commit `e934811`):** adicionados `hooks/useAdminInactivityTimeout.js` e o barramento `utils/adminSession.js` com renovação silenciosa em uso ativo (`POST /api/auth/refresh`), sincronização entre abas, tratamento unificado de `401` nos hooks/componentes administrativos e avisos `?reason=inactivity` / `?reason=expired` em `pages/login.js`.
+
+- **Guard global de higiene de CSS/Design System e override das telas de visitante (20/11/2026, commit `a681cc5`):** criado `tests/unit/tests-hygiene/css-tokens.test.js` (7 invariantes cobrindo os 43 `.css`, foco duplo, `prefers-reduced-motion`, ausência de `style={{` e contraste AA) e `design-system/pages/customer.md`, além de `noindex, nofollow` em `pages/design-system.js` e exclusão no sitemap.
+
 - **`models:check` passou a validar a cadeia de reserva (15/11/2026, ADR-0008 §"14/11/2026").**
   `opencode debug agents` expõe só o primário; a reserva (`"model": [primário, reserva]`) vive
   no preset e não aparecia em nenhum comando do host — um id de reserva morto passava
@@ -39,6 +43,8 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   - **Validação de Acesso à API do GitHub Actions:** Configuração e homologação de acesso via `GITHUB_TOKEN` em `.env.local` (HTTP 200, 360 workflow runs auditáveis).
 
 ### Alterado
+
+- **Visão Geral do `/admin` ampliada para 8 cartões/barras e ajustes de navegação pública (21/11/2026, commits `25081d9`, `c1dd831`, `c64424a`, `54ed1f3`):** `AdminDashboard` e `GET /api/admin/stats` passaram a incluir os cartões e barras de `Gestão de Vendas` (quebrados por pagamento e andamento) e `Produtos Internos`; na área pública, refinados ordenação/filtros e rolagem de paginação em `ProductList` e o botão Voltar em `pages/blog/[slug].js`.
 
 - **Validação local de ID tokens do Google via JWKS (`RS256`) sem novas dependências (19/11/2026, ADR-0042):**
   - `lib/auth/google-id-token.js`: novo verificador criptográfico local usando `node:crypto.createPublicKey` + `jsonwebtoken` (`RS256` fixo) sobre `https://www.googleapis.com/oauth2/v3/certs`, com cache em memória respeitando `Cache-Control: max-age` (`[5 min, 24 h]`, ignorando `s-maxage`, clamp de `max-age=0` em `5 min` e fallback `1 h`, expiração *lazy* sem `setInterval`), *single-flight* em concorrência, atualização sob rotação de `kid` protegida por cooldown de `60 s` (preservado após falha upstream e sem fetch duplo em cache frio/TTL expirado), normalização de erros de decode como `INVALID_GOOGLE_TOKEN`, aviso sem vazamento quando `GOOGLE_CLIENT_ID` e `NEXT_PUBLIC_GOOGLE_CLIENT_ID` diferem e validação fail-closed (`aud` escalar estrito ou `azp` correspondente, `iss`, `exp`, `email_verified`, `sub`, `email`, `name` estritamente string).
@@ -113,6 +119,12 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Corrigido
 
 - **Host voltou a carregar o `oh-my-opencode-slim` e os cinco papéis foram realocados para ids vivos (23/11/2026, ADR-0008 §"23/11/2026"):** o slim **3.0.8** passou a abortar a carga de `.opencode/oh-my-opencode-slim.json` com `UnsupportedHostConfigError` por `backgroundJobs.wallClockTimeoutMs` e `backgroundJobs.concurrency.defaultConcurrency` — chaves do lifecycle gerenciado que o host v2 não honra e que o 3.0.7 ainda tolerava com aviso. O bloco virou `"backgroundJobs": { "mode": "native" }` (default do host, sem mudança de comportamento) e o doctor do plugin fecha `✓`. No mesmo dia o catálogo perdeu `minimax-m3.1-flash-free` (oracle/`small_model`), `inkling-2-small-free` (explorer) e `glm-5.3-flash-free` (reserva); as realocações usam só medições da bateria 12×5 de 11/11 — `oracle` → `beam-free` (6/6, 84 s), `explorer` → `mimo-v2.6-flash-free` (6/6, 325 s) e reserva → `nemotron-3.5-super-vl-free` (6/8, 101 s); `small_model` passa a `beam-free`. `npm run models:check` agora também sai 1 quando os papéis do preset não compilam (plugin não carregado), fechando o ponto cego que fez o preflight conferir só o `title`.
+
+- **Paridade de `link` obrigatório em `/api/products`, alinhamento das documentações de arquitetura e anexos do OpenCode (23/11/2026):** `pages/api/products.js` passou a exigir `link` obrigatório na criação (em paridade com `AdminProducts.js` e ADR-0037); eliminadas contradições em `ARQUITETURA_SITE_PRIVADO.md`, `ARQUITETURA_SITE_PUBLICO.md`, `AGENTS.md`, `AGENTS_OPERACAO.md` e `.opencode/oh-my-opencode-slim/*_append.md`.
+
+- **Endurecimento de segurança das APIs e integração da whitelist de rate limit (22/11/2026, commits `28b6b17`, `0091855`):** aplicado RBAC (`checkRolePermission`), rate limit e auditoria em `POST`/`PUT /api/settings` e `POST /api/upload-image`; corrigido descarte de `checkRateLimit` em `GET /api/settings`; adicionado bloqueio anti-SSRF e rate limit em `fetch-ml`, `fetch-spotify` e `fetch-youtube`; aplicado `getClientIP(req)` em `rate-limit`, `id` obrigatório no `DELETE /api/admin/dicas`, limites de busca/rate limit em rotas públicas/visitante (`posts`, `placeholder-image`, `checkout`, `customer/orders`, `customer/auth`), atualização de `AGENTS.md` e gabaritos do bench, e integração de `rate_limit:whitelist` no pipeline Redis em `lib/cache/cache.js`.
+
+- **Paridade e acabamento de `Gestão de Produtos`, `Gestão de Vendas` e tokens CSS (20–22/11/2026, commits `a681cc5`, `00758a7`, `c676098`, `ee4ed2e`):** corrigidas 24 declarações com tokens CSS inexistentes, contrastes AA dos botões de marketplace e estilos inline em `AdminSales`/`checkout`; aplicado `?modality=external` em `AdminProducts`; corrigidos ícone `package`, cabeçalho/botões, assinatura de `exportToCSV` e pré-carregamento da contagem `Pedidos` em `AdminSales`.
 
 - **Endurecimento da integração Google Sign-In, proteção contra pré-sequestro e limpeza de interface (19/11/2026):**
   - **Atalho de desenvolvimento opt-in (`pages/api/customer/auth.js`, `tests/setup-env.js`):** o atalho sem `credential` (`googleSub` + `email`) agora exige `NODE_ENV !== 'production'` **e** `ALLOW_GOOGLE_DEV_BYPASS === 'true'`, eliminando exposição acidental em ambientes de desenvolvimento ou túneis públicos (`start-webhook-tunnel.sh`); quando um Client ID está configurado e `credential` é omitido, a API registra `INVALID_GOOGLE_TOKEN` em vez de `GOOGLE_NOT_CONFIGURED`.
