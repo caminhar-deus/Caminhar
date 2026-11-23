@@ -1811,6 +1811,110 @@ pelo mesmo motivo de `scripts/bench/citacoes.js`), `conferir.js` (consome os hel
    conferência das 20 execuções saiu **idêntica** antes e depois (156 772 bytes, as mesmas
    4 ambíguas e as mesmas inválidas).
 
+## 23/11/2026: o slim 3.0.8 recusou a config do projeto e o catálogo perdeu três ids em uso
+
+### O plugin não carregava — e não era modelo
+
+O OpenCode v2.4.0 subiu com `oh-my-opencode-slim@3.0.8` em estado `failed`:
+`UnsupportedHostConfigError` em `.opencode/oh-my-opencode-slim.json` por
+`backgroundJobs.wallClockTimeoutMs = 900000` e
+`backgroundJobs.concurrency.defaultConcurrency = 1`.
+
+- As chaves existiam desde 03/10/2026 (`fdae62a`), de quando o slim ainda geria o lifecycle
+  de background jobs. Com o **3.0.7** o host carregava normalmente: os logs de 19–21/11 mostram
+  o plugin ativo e apenas avisos para chaves já aposentadas (`abortGraceMs`,
+  `orchestratorWake is v1-only and ignored on OpenCode v2`) — nenhum aviso sobre
+  `wallClockTimeoutMs`/`concurrency` aparece ali, então a tolerância dessas duas no 3.0.7 é
+  inferida do plugin ter carregado, não de uma mensagem específica. O **3.0.8** (`buildTime`
+  22/11/2026) passou a **abortar** a carga: no host v2, limite `> 0` que o slim não honra é erro
+  (`validateExplicitHostConfig`). Não foi dependência, credencial nem versão do host.
+- Correção aplicada: o bloco virou `"backgroundJobs": { "mode": "native" }`. `native` já era o
+  default (o bloco não declarava `mode`), então **não há mudança de comportamento**; as outras
+  chaves (`sameProviderPolicy`, `abortGraceMs`, `orchestratorWake`) já eram descartadas na
+  carga. Validação: `oh-my-opencode-slim doctor` → projeto `✓`, preset `zen` `✓`, sem avisos.
+- O slim **não recarrega config a quente**: o efeito aparece no próximo start do serviço.
+
+Modo de falha que faltava no instrumento: com o plugin fora, `opencode debug agents` compila
+só `build`, `plan` e `title`. O `npm run models:check` conferiu apenas o `title` (o
+`small_model`) e não percebeu os cinco papéis ausentes — só reprovou por coincidência, porque
+o `title` também apontava para id morto. `expectedAgents()`
+(`scripts/diagnostics/model-catalog.js`) agora tira os nomes do preset ativo + bloco `agents`
+raiz e o script sai 1 quando algum papel não compila, mandando rodar o doctor e reiniciar.
+O `title` **continua** sendo conferido de propósito: em 12/11 ele foi adotado como a checagem
+do `small_model`.
+
+### Catálogo: de 13 para 11–12 ids no mesmo dia, com três em uso mortos
+
+`opencode models` (reconferido com `--standalone`, lista idêntica) perdeu
+`minimax-m3.1-flash-free` (oracle + `small_model`), `inkling-2-small-free` (explorer),
+`glm-5.3-flash-free` (reserva do orchestrator) e `longcat-2.5-free` (sem papel). Hoje:
+`beam-free`, `big-pickle`, `deepseek-v4.1-flash-free`, `flint-40b-free`, `hy4-flash-free`,
+`iceman-free`, `mimo-v2.6-flash-free`, `nemotron-3.5-lightning-free`,
+`nemotron-3.5-super-vl-free`, `qwen4-max-free`, `tidepool-alpha-free` e o local
+`ollama/qwen3-coder:30b`. O `qwen4-max-free` saiu entre as duas leituras do dia — a lista muda
+com frequência e por isso o preflight é obrigatório antes de confiar em id.
+
+`hy4-flash-free`, `qwen4-max-free` e `tidepool-alpha-free` são estreantes **sem medição** e
+não foram promovidos.
+
+### Reatribuição — só com medição de papel já existente
+
+Sem bateria nova: os três substitutos saem da bateria 12×5 de 11/11, medida no papel em que
+vão atuar. Nenhum primário repete id e a reserva não é primário de outro agente.
+
+| papel | antes | agora | evidência (11/11) |
+|---|---|---|---|
+| `oracle` | `minimax-m3.1-flash-free` | `beam-free` | 6/6 no S8 em **84 s** — o mais rápido do grupo 6/6 ainda vivo |
+| `explorer` | `inkling-2-small-free` | `mimo-v2.6-flash-free` | 6/6 âncoras em **325 s**, sem queda de cota — mas o 325 s é remedição depois de estourar 600 s |
+| reserva do `orchestrator` | `glm-5.3-flash-free` | `nemotron-3.5-super-vl-free` | 6/8 na Camada B em **101 s**; não é primário de ninguém |
+| `small_model` | `minimax-m3.1-flash-free` | `beam-free` | mesmo id do `oracle`, como em 12/11 (o `small_model` não é papel) |
+
+- **`explorer` custa ~3× o anterior** (325 s contra 117 s do inkling) **e é volátil**: na
+  bateria o `mimo` estourou 600 s no papel e só foi remedido com teto de 15 min. O `beam` é mais
+  rápido (108 s), mas na mesma bateria ficou com a **Parte B no mínimo** e é o novo `oracle`; os
+  6/6 com Parte B detalhada estão todos em outro papel (`big-pickle` designer, `iceman` fixer,
+  `deepseek` orchestrator). Trocar qualquer um desses degradaria um papel de uso diário para
+  melhorar outro. **Sinal de alarme para o campo:** se o `explorer` estourar o tempo com
+  frequência, a próxima bateria deve medir a latência antes do acerto — o papel tem orçamento.
+- **Reserva preteriu o `flint`** (6/8, 265 s) pela cota frágil — três quedas em 11/11. A cadeia
+  só age em erro de failover; `provider.no-route` não a aciona.
+- **Privacidade:** o `oracle` e o `small_model` saem de zero-retention (`minimax`) para o
+  `beam`, que **não treina e retém 30 dias** (fonte de 12/11). O único free zero-retention
+  **conhecido** que sobrou é o `deepseek`, primário do orchestrator — dividir a cota dele com
+  títulos é pior para o papel mais crítico. O `explorer` troca `inkling` por `mimo`; os dois
+  retêm e treinam, sem regressão.
+
+### Distribuição vigente (23/11/2026)
+
+| Agente | PRIMÁRIO | RESERVA |
+|---|---|---|
+| `orchestrator` | `opencode/deepseek-v4.1-flash-free` | `opencode/nemotron-3.5-super-vl-free` |
+| `oracle` | `opencode/beam-free` | — |
+| `explorer` | `opencode/mimo-v2.6-flash-free` | — |
+| `designer` | `opencode/big-pickle` | — |
+| `fixer` | `opencode/iceman-free` | — |
+
+`small_model` (`opencode.jsonc`) segue `opencode/beam-free`; o `model` da sessão segue o
+primário do `orchestrator`.
+
+### Alternativas descartadas
+
+- **Zerar só os dois limites (`= 0`).** Passa no doctor, mas deixa cinco avisos de chaves
+  aposentadas e um bloco que não faz nada. Remover o bloco morto descreve a realidade.
+- **Filtrar o `title` do preflight.** Seria "consertar" o sintoma apagando a única checagem do
+  `small_model`.
+- **Promover `hy4`/`qwen4-max`/`tidepool`.** Contra a regra central deste ADR (medir por papel
+  antes de apontar).
+- **Manter os ids mortos até uma bateria nova.** Deixaria o host inteiro sem plugin, e havia
+  medição de papel válida para os três substitutos.
+
+### Pendências
+
+- `npm run models:check` só reflete a config **depois do restart do serviço** (o slim não
+  recarrega a quente). Nesta rodada o serviço recarregou o plugin e o preflight fechou `EXIT=0`
+  com os cinco papéis compilados; em outra máquina, reiniciar antes de confiar no resultado.
+- Os três free estreantes continuam sem medição; qualquer promoção exige bateria por papel.
+
 ## Consequências
 
 ### Positivas
@@ -1828,7 +1932,11 @@ pelo mesmo motivo de `scripts/bench/citacoes.js`), `conferir.js` (consome os hel
   na lista de exceções da política do provedor; `orchestrator` (`deepseek`/`glm`) e `oracle`
   (`minimax`) são zero-retention, e o `small_model` passou a `minimax` na mesma data. Ver
   "12/11/2026". A garantia é declaração do fornecedor, não auditável neste repositório; para
-  código sensível, o risco está aceito e registrado.
+  código sensível, o risco está aceito e registrado. **Atualizado em 23/11/2026:** com a saída
+  de `minimax`/`inkling`/`glm`, o `oracle` e o `small_model` passaram ao `beam` (não treina,
+  retém 30 dias) e o `explorer` ao `mimo` (retém e treina); a nova **reserva**
+  (`nemotron-3.5-super-vl-free`) também retém e usa para treinar, mas só entra em erro de
+  failover. Detalhe na seção "23/11/2026".
 - **O orchestrator ficou sem reserva em 16/10/2026 até a segunda medição do dia.** Registrado
   assim porque `big-pickle` tinha saído do catálogo; a reserva foi **restaurada** no mesmo dia,
   quando o modelo voltou (ver "Re-análise de 16/10/2026"). A ressalva do parágrafo anterior

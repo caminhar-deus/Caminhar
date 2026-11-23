@@ -328,7 +328,7 @@ Executar uma análise profunda, completa e criteriosa de todo o fluxo de trabalh
 
 ## 6. Compreensão da Estrutura Atual dos Agentes
 - **Papéis Especializados (oh-my-opencode-slim):**
-  - `orchestrator`: Planeja, consulta a memória, delega para as lanes e reconcilia as entregas. Não implementa trechos grandes. Modelo primário: `deepseek-v4.1-flash-free` (reserva: `glm-5.3-flash-free`).
+  - `orchestrator`: Planeja, consulta a memória, delega para as lanes e reconcilia as entregas. Não implementa trechos grandes. Modelo primário: `deepseek-v4.1-flash-free` (reserva: `nemotron-3.5-super-vl-free`, desde 23/11/2026 — o `glm-5.3-flash-free` saiu do catálogo).
   - `explorer`: Mapeia o repositório e realiza pesquisas externas. Não edita arquivos.
   - `designer`: Responsável pela consistência de UI/UX segundo o `design-system/MASTER.md` e tokens de `pages/styles/variables.css`.
   - `fixer`: Implementa tarefas bem delimitadas e codifica com precisão. Não toma decisões estruturais de arquitetura ou design.

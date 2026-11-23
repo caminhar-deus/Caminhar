@@ -9,6 +9,7 @@
 import { describe, it, expect } from '@jest/globals';
 import {
   agentModels,
+  expectedAgents,
   formatCatalogReadError,
   missingModels,
   parseCatalog,
@@ -32,6 +33,38 @@ describe('agentModels', () => {
     ])).toEqual([
       { agent: 'designer', id: 'opencode/big-pickle' },
       { agent: 'legado', id: 'opencode/iceman-free' },
+    ]);
+  });
+});
+
+describe('expectedAgents', () => {
+  const config = {
+    preset: 'zen',
+    presets: {
+      local: { orchestrator: { model: 'ollama/qwen3-coder:30b' } },
+      zen: {
+        extends: 'local',
+        marketplace: { enabled: true },
+        agents: { orchestrator: { mcps: [] } },
+        orchestrator: { model: ['opencode/a', 'opencode/b'] },
+        oracle: { model: 'opencode/c' },
+      },
+    },
+    agents: { explorer: { mcps: [] }, fixer: { mcps: [] } },
+  };
+
+  it('lê os papéis do preset ativo e do bloco agents raiz, sem extends/marketplace', () => {
+    expect(expectedAgents(config).sort()).toEqual(['explorer', 'fixer', 'oracle', 'orchestrator']);
+  });
+
+  it('devolve vazio quando o preset ativo não existe', () => {
+    expect(expectedAgents({ preset: 'inexistente', presets: {}, agents: {} })).toEqual([]);
+  });
+
+  it('pega o plugin que não carregou: só title/build/plan compilados', () => {
+    const compilados = new Set(['build', 'plan', 'title']);
+    expect(expectedAgents(config).filter((agent) => !compilados.has(agent)).sort()).toEqual([
+      'explorer', 'fixer', 'oracle', 'orchestrator',
     ]);
   });
 });

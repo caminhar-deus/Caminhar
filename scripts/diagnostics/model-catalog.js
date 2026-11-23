@@ -42,6 +42,37 @@ export function missingModels(models, catalog) {
 }
 
 /**
+ * Nomes dos agentes que o preset gerencia — bloco do preset ativo + `agents` raiz.
+ *
+ * Serve para o caminho negativo que faltava: quando o plugin NÃO carrega, o host
+ * compila só os agentes próprios e a checagem de primários vira uma varredura
+ * vazia (em 23/11/2026 o slim abortou na carga da config e `debug agents` mostrou
+ * apenas `build`/`plan`/`title`). Sem esta lista, o preflight podia sair 0 sem ter
+ * conferido papel nenhum.
+ *
+ * `extends`/`marketplace`/`agents` não são papéis e ficam fora.
+ *
+ * @param {object} config Objeto do preset já parseado (`parseJsonc`).
+ * @returns {string[]} Nomes esperados de agentes compilados.
+ */
+export function expectedAgents(config) {
+  const nomes = new Set();
+  const fora = new Set(['extends', 'marketplace', 'agents']);
+  const preset = typeof config?.preset === 'string' ? config.preset : null;
+  const bloco = preset ? config?.presets?.[preset] : null;
+
+  if (bloco && typeof bloco === 'object') {
+    for (const [chave, definicao] of Object.entries(bloco)) {
+      if (!fora.has(chave) && definicao && typeof definicao === 'object') nomes.add(chave);
+    }
+  }
+  if (config?.agents && typeof config.agents === 'object') {
+    for (const chave of Object.keys(config.agents)) nomes.add(chave);
+  }
+  return [...nomes];
+}
+
+/**
  * Converte o preset do slim (JSONC, com comentários e vírgula final) em objeto.
  *
  * O preset é a única fonte da CADEIA DE RESERVA: `opencode debug agents` expõe só o

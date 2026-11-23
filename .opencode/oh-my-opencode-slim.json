@@ -237,7 +237,15 @@
       // entrar no lugar do deepseek faz o trabalho na mão. Ele continua como reserva por
       // integridade de cota (nenhum outro papel o usa), não por condução — ver ADR-0008
       // §"14/11/2026". `npm run models:check` passou a validar os dois ids da cadeia.
-      "orchestrator": { "model": ["opencode/deepseek-v4.1-flash-free", "opencode/glm-5.3-flash-free"] },
+      //
+      // 23/11/2026: `glm-5.3-flash-free` SAIU do catálogo (o inventário do dia ficou em 11–12
+      // ids e mudou entre duas leituras). Entra o
+      // `nemotron-3.5-super-vl-free` como RESERVA: 6/8 na Camada B em 101 s (bateria 12×5 de
+      // 11/11), melhor medido que não é primário de nenhum papel e a reserva segue FREE.
+      // O `flint` (6/8, 265 s) foi preterido pela cota frágil (3 quedas em 11/11). Reserva só
+      // entra em erro de failover — `provider.no-route` não aciona a cadeia. Ver ADR-0008
+      // §"23/11/2026".
+      "orchestrator": { "model": ["opencode/deepseek-v4.1-flash-free", "opencode/nemotron-3.5-super-vl-free"] },
       // ORACLE — 11/11/2026 (bateria 12×5): sai o flint, entra o minimax-m3.1-flash-free. Os dois
       // fizeram 6/6 no S8, mas o flint levou 334 s (o mais lento do grupo) e morreu por cota
       // (`provider.free-limit`, 429) TRÊS vezes no mesmo dia — a premissa de 04/11 ("nunca caiu
@@ -260,7 +268,15 @@
       // ORACLE — 22/10 (tarde): o glm-5.3-flash-free ESTREOU no papel (caso S8, veredito
       // correto "não se sustenta", 0 erros verificáveis, divergências doc×código reais) —
       // segundo candidato vivo; o nemotron-3.5-super-vl segue (medições de 15/10 e 16/10).
-      "oracle":       { "model": "opencode/minimax-m3.1-flash-free",
+      //
+      // ORACLE — 23/11/2026: `minimax-m3.1-flash-free` SAIU do catálogo. Entra o `beam-free`:
+      // 6/6 no S8 em 84 s (bateria 12×5 de 11/11), o 6/6 mais rápido ainda vivo que não é
+      // primário de outro papel. Preteridos: `nemotron-3.5-super-vl` (6/6, 231 s — foi para a
+      // reserva do orchestrator) e `flint` (6/6, 334 s, cota frágil). Privacidade: o beam NÃO
+      // treina (retém 30 dias), contra zero-retention do minimax; o código de revisão continua
+      // indo a provedor que retém — mesma classe de risco já aceita em 12/11. Ver ADR-0008
+      // §"23/11/2026".
+      "oracle":       { "model": "opencode/beam-free",
                         // Skill do Front-End-Checklist para a revisão (obrigatória no fluxo: oracle revisa sem editar):
                         "skills_add": ["frontend-checklist-global"]
                       },
@@ -304,7 +320,19 @@
       //                         ("Endpoint is unavailable") sem entregar as partes. Primeira
       //                         medição do estreante de 21/10 — reavaliar em rodada futura;
       //                         não confundir com o gatilho de fila da observação de campo.
-      "explorer":     { "model": "opencode/inkling-2-small-free" },
+      //
+      // EXPLORER — 23/11/2026: `inkling-2-small-free` SAIU do catálogo. Entra o
+      // `mimo-v2.6-flash-free`: 6/6 âncoras de `withAuth` na bateria 12×5 de 11/11, sem queda de
+      // cota — mas o 325 s é REMEDIÇÃO: a primeira execução estourou 600 s e foi repetida com
+      // teto de 15 min. Latência volátil; se o papel estourar tempo no campo, o próximo passo é
+      // medir latência antes de acerto, não trocar por palpite.
+      // Preteridos por medição: `beam-free` (6/6 em 108 s, mas Parte B fica no mínimo — e ele
+      // assumiu o oracle), `nemotron-3.5-super-vl` (484 s, foi para a reserva) e `flint`
+      // (528 s, cota frágil). Custo aceito: ~3× o tempo do inkling (117 s), porque os modelos
+      // 6/6 com Parte B detalhada estão todos em outro papel (`big-pickle` designer,
+      // `iceman` fixer, `deepseek` orchestrator). O mimo retém e usa para treinar — o inkling
+      // também retinha, então não há regressão de privacidade. Ver ADR-0008 §"23/11/2026".
+      "explorer":     { "model": "opencode/mimo-v2.6-flash-free" },
       // DESIGNER — 11/11/2026 (bateria 12×5): o crouton-alpha-free SAIU do catálogo — o id não
       // aparece mais em `opencode models`, e o papel estava parado desde então. Entra o
       // big-pickle: 0 erros verificáveis no gabarito atual em 53 s (o mais rápido do grupo de
@@ -439,18 +467,13 @@
   // Fallback só faz sentido com cadeia de modelos (array). Em v2 o plugin o desativa de qualquer forma.
   "fallback": { "enabled": true, "maxRetries": 3 },
 
-  "backgroundJobs": {
-    // Um backend local único degrada com sessões grandes simultâneas: converte background em foreground (sequencial).
-    // Com o preset "zen" (remoto) essa regra do ollama não se aplica; defaultConcurrency=1 abaixo segue valendo (pode subir se quiser).
-    "sameProviderPolicy": { "ollama": "foreground" },
-    "concurrency": { "defaultConcurrency": 1 },
-    // Sem timeout, uma tarefa travada prende o slot para sempre quando há limite de concorrência.
-    "wallClockTimeoutMs": 900000,
-    "abortGraceMs": 10000,
-    // Padrão é LIGADO: acorda o orquestrador ocioso a cada 5 min se houver todos incompletos.
-    // Em modelo local isso gera prompts extras e custo de GPU não pedidos; desligado aqui.
-    "orchestratorWake": { "enabled": false }
-  },
+  // Em OpenCode v2 o slim 3.0.8 aposentou o lifecycle de background jobs gerenciado: só "mode"
+  // sobrevive ("native" | "off"). wallClockTimeoutMs, concurrency, sameProviderPolicy,
+  // abortGraceMs e orchestratorWake continuam aceitos na leitura mas são DESCARTADOS na carga —
+  // e os dois primeiros ABORTAM o plugin quando > 0 (UnsupportedHostConfigError, ver ADR-0008
+  // §"23/11/2026").
+  // "native" é o default do host; declarar aqui é só explicitar que não usamos o modo "off".
+  "backgroundJobs": { "mode": "native" },
 
   "multiplexer": { "type": "none" }   // "tmux" etc. só se você usa multiplexador no WSL
 }

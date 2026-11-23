@@ -17,12 +17,18 @@
  *   este script existe para pegar.
  *
  * O catálogo vem de `opencode models`.
+ *
+ * Terceiro modo de falha (23/11/2026): plugin que NÃO carrega. Nesse caso o host
+ * compila só os agentes próprios e `debug agents` não traz os papéis do preset —
+ * a checagem precisa falhar em vez de conferir o que sobrou. Os nomes esperados
+ * saem do próprio preset (`expectedAgents`).
  */
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import {
   agentModels,
+  expectedAgents,
   formatCatalogReadError,
   missingModels,
   parseCatalog,
@@ -39,14 +45,15 @@ function run(args) {
 
 function readLocalPreset() {
   try {
-    return { presets: presetModels(parseJsonc(readFileSync(PRESET, 'utf8'))), presetError: null };
+    const config = parseJsonc(readFileSync(PRESET, 'utf8'));
+    return { config, presets: presetModels(config), presetError: null };
   } catch (error) {
-    return { presets: null, presetError: error };
+    return { config: null, presets: null, presetError: error };
   }
 }
 
 function main() {
-  const { presets, presetError } = readLocalPreset();
+  const { config, presets, presetError } = readLocalPreset();
 
   let agents;
   let catalog;
@@ -74,6 +81,21 @@ function main() {
   }
 
   console.log(`catálogo: ${catalog.size} ids (\`opencode models\`)`);
+
+  // Fail-closed para o outro modo de falha: plugin que não carrega. O host compila
+  // só os agentes próprios, e sem esta checagem o preflight conferiria pouca coisa
+  // (ou nada) e poderia sair 0 — o caso de 23/11/2026, slim 3.0.8 abortando na config.
+  const esperados = config ? expectedAgents(config) : [];
+  const compilados = new Set(models.map(({ agent }) => agent));
+  const naoCompilados = esperados.filter((agent) => !compilados.has(agent));
+  if (naoCompilados.length > 0) {
+    console.error('\nmodels:check — agentes do preset NÃO compilaram no host:');
+    for (const agent of naoCompilados) console.error(`  - ${agent}`);
+    console.error('\nSinal de plugin que não carregou: rode `oh-my-opencode-slim doctor`');
+    console.error('e reinicie o serviço do OpenCode (o slim não recarrega config a quente).');
+    process.exit(1);
+  }
+
   for (const { agent, id } of models) {
     console.log(`  ${agent.padEnd(13)} ${id.padEnd(38)} ${catalog.has(id) ? 'ok' : 'FORA DO CATÁLOGO'}`);
   }
