@@ -1495,6 +1495,13 @@ provedores que retêm e usam os dados para treinar.** A garantia é declaração
 fornecedor, não auditável neste repositório — o que muda é que agora está registrada
 por id, em vez de "não verificado".
 
+**Releitura de 23/11/2026:** a lista de exceções mudou — `hy4-flash-free` (novo `explorer`)
+não aparece nela, logo cai na regra de zero-retention; `mimo-v2.6-flash-free` também não
+aparece, mas como em 12/11 ele **era** exceção, o status dele fica **divergente** (não tem
+papel, então não precisa ser resolvido agora); `beam-free` continua na exceção (não treina,
+retém 30 dias). Isso **não** reescreve o veredito de 12/11, que fica como registro da leitura
+daquele dia. Quadro vigente em "Negativas e riscos".
+
 ### Decisão
 
 1. **`small_model` → `opencode/minimax-m3.1-flash-free`** (`opencode.jsonc`). Era o
@@ -1882,12 +1889,12 @@ vão atuar. Nenhum primário repete id e a reserva não é primário de outro ag
 - **Reserva preteriu o `flint`** (6/8, 265 s) pela cota frágil — três quedas em 11/11. A cadeia
   só age em erro de failover; `provider.no-route` não a aciona.
 - **Privacidade:** o `oracle` e o `small_model` saem de zero-retention (`minimax`) para o
-  `beam`, que **não treina e retém 30 dias** (fonte de 12/11). O único free zero-retention
-  **conhecido** que sobrou é o `deepseek`, primário do orchestrator — dividir a cota dele com
-  títulos é pior para o papel mais crítico. O `explorer` troca `inkling` (retém e treina) por
-  `mimo` (idem) e, na noite desta data, por `hy4`, cuja retenção é **NÃO DETERMINADA** — sem
-  regressão comprovada, mas sem verificação. Quadro vigente e decisão de aceitar a regressão
-  em "Negativas e riscos".
+  `beam`, que **não treina e retém 30 dias por segurança** (confirmado na releitura da fonte
+  em 23/11). O único free zero-retention que sobrou é o `deepseek`, primário do orchestrator —
+  dividir a cota dele com títulos é pior para o papel mais crítico. O `explorer` troca
+  `inkling` (retém e treina) por `mimo` (idem) e, na noite desta data, por `hy4`, que está
+  **fora da lista de exceções** — zero-retention, portanto a troca melhora a privacidade.
+  Quadro vigente em "Negativas e riscos".
 
 ### Bateria de latência do `explorer` (23/11/2026, noite)
 
@@ -1914,12 +1921,13 @@ vantagem em nada), `mimo` (timeout no dia; só ficaria se nada fosse mais rápid
 lentos no papel. O `mimo` deixa de ter papel, mas não sai do catálogo.
 
 Ressalvas registradas: (a) o `hy4` tem **duas** execuções no papel — o piso histórico é uma,
-mas a promoção acontece com 2/2; (b) a **retenção do provedor para o `hy4` é NÃO DETERMINADO**
-— o `mimo` retém e treina, então não há regressão comprovada, apenas ausência de verificação;
-(c) a config do slim vale no próximo start do host e o `npm run models:check` lê a config
-**compilada do serviço**, então até o restart ele segue mostrando o `mimo`; nesta rodada o
-`opencode debug agents --standalone` (compila do disco, sem o serviço) já mostrou
-`explorer → opencode/hy4-flash-free`.
+mas a promoção acontece com 2/2; (b) a retenção do provedor para o `hy4` era **NÃO
+DETERMINADA** na promoção; a releitura da fonte em 23/11 o coloca **fora da lista de
+exceções** — zero-retention, sem treinamento —, então a troca **melhora** a privacidade em
+relação ao `mimo` (ver "Negativas e riscos"); (c) a config do slim só vale no host depois do
+restart; o preflight já confere a config **do disco** (`--standalone`, padrão desde o fim desta
+data) e `--service` mostra o que o host em execução usa — depois do restart, o serviço passou a
+compilar `explorer → opencode/hy4-flash-free`.
 
 ### Distribuição vigente (23/11/2026)
 
@@ -1956,12 +1964,16 @@ não por 429.)
 (título derivado do prompt) e o `oracle` é ocasional; não há evidência de disputa. Separar custa
 algo em qualquer direção:
 
-1. **Id livre, sem papel** — `tidepool-alpha-free`, `nemotron-3.5-lightning-free`, `flint-40b-free`
-   e `mimo-v2.6-flash-free` (liberado pelo `explorer` na noite de hoje). Resolve a cota sem
-   tocar papel crítico, mas a retenção desses ids é **NÃO DETERMINADA** (só o `mimo` tem fato:
-   retém e **treina**), então exige conferir a página de modelos do Console antes de apontar; o
-   `flint` é ainda frágil de cota (três quedas em 11/11). O `mimo` é o candidato tecnicamente
-   mais barato e o pior em privacidade — título carrega texto do prompt.
+1. **Id livre, sem papel** — `nemotron-3.5-lightning-free`, `flint-40b-free`,
+   `tidepool-alpha-free` e `mimo-v2.6-flash-free` (liberado pelo `explorer` na noite de hoje).
+   Resolve a cota sem tocar papel crítico, mas **todos pioram a privacidade em relação ao
+   `beam`**: `tidepool` (como o `iceman`, que já é do `fixer`) retém e usa para melhorar o
+   modelo; `flint` pode ser usado para melhorar e retém 30 dias; `nemotron-3.5-lightning` é
+   endpoint de teste da NVIDIA com uso registrado para segurança e melhoria (não vinculado à
+   identidade). O `mimo` era exceção na leitura de 12/11 e **não aparece** na de 23/11 — status
+   divergente, não herdar. Como o título carrega texto do prompt, separar é **troca de cota por
+   privacidade**, não ganho: se o gatilho disparar, o menos ruim é `nemotron-3.5-lightning-free`
+   e a decisão precisa dizer isso. O `flint` é ainda frágil de cota (três quedas em 11/11).
 2. **`deepseek-v4.1-flash-free`** — o único free zero-retention **conhecido** que sobrou, mas é
    o primário do `orchestrator` e é justamente quem estourou a cota nas duas ocorrências acima:
    dividir a cota dele com títulos piora o papel mais crítico. Rejeitado salvo se 1 não servir.
@@ -2067,31 +2079,41 @@ as camadas antes de resolver. A mitigação é declarar no projeto todo preset u
 
 ### Negativas e riscos
 
-- **Privacidade: a distribuição de 23/11 piorou de propósito, e o risco fica aceito.** O
-  `minimax` (zero-retention) saiu do catálogo e o `oracle`/`small_model` foram para o `beam`,
-  que não treina mas **retém 30 dias**; o `explorer` passou por `mimo` (retém e treina) e
-  chegou ao `hy4`, de retenção **NÃO DETERMINADA**. Quadro dos seis ids em uso — fonte
-  `opencode.ai/console/models`, lida em 12/11/2026; `hy4` entrou depois e segue sem fato:
+- **Privacidade: a distribuição de 23/11 piorou de propósito só em `oracle`/`small_model`;
+  no `explorer` ela melhorou.** Fonte: `opencode.ai/console/models`, relida em **23/11/2026**.
+  A regra da página: todos os modelos hospedados nos EUA/UE seguem zero-retention e não usam
+  dados para treino, **exceto** uma lista nominal (Big Pickle, Tidepool Alpha, Iceman, Flint
+  40B, Nemotron 3.5 Lightning/Super VL e as APIs pagas OpenAI/Anthropic/Mistral/Google/xAI/
+  Beam). Quadro dos seis ids em uso:
 
   | id | papel | política declarada |
   |---|---|---|
-  | `deepseek-v4.1-flash-free` | `orchestrator` | zero-retention, sem treinamento |
-  | `beam-free` | `oracle` e `small_model` | não treina; retém 30 dias |
-  | `hy4-flash-free` | `explorer` | **NÃO DETERMINADO** |
-  | `big-pickle` | `designer` | dados podem ser usados para melhorar o modelo |
-  | `iceman-free` | `fixer` | retido e usado para melhorar o modelo |
-  | `nemotron-3.5-super-vl-free` | reserva do `orchestrator` | retém e/ou usa para melhorar (só em failover) |
+  | `deepseek-v4.1-flash-free` | `orchestrator` | fora das exceções → zero-retention, sem treinamento |
+  | `beam-free` | `oracle` e `small_model` | exceção: não treina; retido 30 dias por segurança |
+  | `hy4-flash-free` | `explorer` | fora das exceções → zero-retention, sem treinamento |
+  | `big-pickle` | `designer` | exceção: no período free, os dados podem ser usados para melhorar o modelo |
+  | `iceman-free` | `fixer` | exceção: no período free, retido e usado para melhorar o modelo |
+  | `nemotron-3.5-super-vl-free` | reserva do `orchestrator` | exceção NVIDIA: uso de teste, "não envie dados pessoais ou confidenciais"; uso registrado para segurança e melhoria, não vinculado à identidade (só em failover) |
 
-  **Por que não reverter:** o único free zero-retention **conhecido** que restou é o
-  `deepseek`, primário do `orchestrator` — dividir a cota dele com títulos piora o papel mais
-  crítico. Não há substituto free zero-retention para `oracle`/`small_model` no catálogo, e
-  trocar o `oracle` por outro id de retenção conhecida não muda a classe do risco.
-  **O que o risco significa na prática:** o texto do prompt (o título da sessão é derivado
-  dele) e o código lido pelos papéis acima saem para provedor que declara retenção; segredos
-  não entram em prompt por regra (`AGENTS.md` §3/§6). A declaração do fornecedor não é
-  auditável neste repositório: reconferir a página do Console a cada troca de id — `hy4`,
-  `tidepool` e os demais estreantes estão sem verificação. O histórico da leitura de 12/11
-  está na seção "12/11/2026".
+  **O que mudou:** `oracle` e `small_model` saíram de `minimax` (zero-retention) para `beam`
+  (30 dias, sem treino) — é a regressão deliberada da data, mantida porque não há substituto
+  free zero-retention. Já o `explorer` saiu de `inkling` (retinha e usava para treinar) para
+  `mimo` (idem) e depois `hy4` (**zero-retention**): a troca da noite **melhora** a privacidade.
+  A ressalva "retenção NÃO DETERMINADA" da promoção do `hy4` caiu com esta releitura.
+  **Por que não reverter o par `oracle`/`small_model`:** o único free zero-retention restante é
+  o `deepseek`, primário do `orchestrator` — dividir a cota dele com títulos piora o papel mais
+  crítico; e os candidatos livres **pioram** a privacidade em relação ao `beam` (ver
+  "o `oracle` e `small_model` no mesmo id"). O risco fica aceito: a garantia é declaração do
+  fornecedor, não auditável neste repositório.
+  **A lista de exceções muda sem aviso:** na leitura de 12/11 o `mimo-v2.6-flash-free` era
+  exceção (retinha e treinava); na de 23/11 ele **não aparece**. Por isso a regra é reler a
+  página a cada troca de id, não herdar o veredito anterior. O histórico de 12/11 está na
+  seção "12/11/2026".
+- **A reserva do `orchestrator` é endpoint de teste com aviso explícito.**
+  `nemotron-3.5-super-vl-free` (NVIDIA) declara "trial use only — do not submit personal or
+  confidential data" e registra o uso. Ela só entra em failover de cota/5xx do `deepseek`, mas
+  quando entra recebe o contexto da sessão. Fica registrado como risco: o gatilho da reserva
+  deve ser tratado como incidente, não como operação normal.
 - **O orchestrator ficou sem reserva em 16/10/2026 até a segunda medição do dia.** Registrado
   assim porque `big-pickle` tinha saído do catálogo; a reserva foi **restaurada** no mesmo dia,
   quando o modelo voltou (ver "Re-análise de 16/10/2026"). A ressalva do parágrafo anterior

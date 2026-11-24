@@ -328,9 +328,9 @@
       // lacunas da doc, em 63 s e 91 s; `tidepool-alpha-free` 6/6 em 281 s; `mimo` ESTOUROU o
       // teto de 15 min com ZERO resposta — 2ª vez (a 1ª foi na bateria 12×5, remedida em 325 s).
       // O hy4 é 3,5–5× mais rápido que o mimo remedido e não é primário nem reserva de outro papel.
-      // Custo aceito: estreante com duas execuções no papel e retenção do provedor NÃO
-      // DETERMINADO — o mimo retém e treina, então não há regressão comprovada, só ausência de
-      // verificação. Ver ADR-0008 §"23/11/2026".
+      // Privacidade conferida em 23/11: o `hy4` não está na lista de exceções do provedor
+      // (zero-retention, sem treino) — melhor que o mimo, que retém e treina. Custo aceito:
+      // estreante com duas execuções no papel. Ver ADR-0008 §"Negativas e riscos".
       //
       // EXPLORER — 23/11/2026 (manhã): `inkling-2-small-free` SAIU do catálogo. Entrou o
       // `mimo-v2.6-flash-free`: 6/6 âncoras de `withAuth` na bateria 12×5 de 11/11, sem queda de
