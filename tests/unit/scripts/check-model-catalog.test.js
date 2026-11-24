@@ -46,30 +46,50 @@ describe('expectedAgents', () => {
   const config = {
     preset: 'zen',
     presets: {
-      local: { orchestrator: { model: 'ollama/qwen3-coder:30b' } },
+      base: { orchestrator: { model: 'ollama/x' }, explorer: { model: 'ollama/x' } },
+      local: { extends: 'base', oracle: { model: 'ollama/x' } },
       zen: {
         extends: 'local',
         marketplace: { enabled: true },
-        agents: { orchestrator: { mcps: [] } },
-        orchestrator: { model: ['opencode/a', 'opencode/b'] },
-        oracle: { model: 'opencode/c' },
+        // forma canônica convivendo com a plana, como `normalizePreset` aceita
+        agents: { designer: { mcps: [] } },
+        fixer: { model: ['opencode/a', 'opencode/b'] },
       },
+      solto: { conciliador: { model: 'opencode/c' } },
     },
-    agents: { explorer: { mcps: [] }, fixer: { mcps: [] } },
+    agents: { librarian: { mcps: [] }, auditor: { mcps: [] } },
   };
 
-  it('lê os papéis do preset ativo e do bloco agents raiz, sem extends/marketplace', () => {
-    expect(expectedAgents(config).sort()).toEqual(['explorer', 'fixer', 'oracle', 'orchestrator']);
+  it('soma a cadeia de extends, as duas sintaxes do preset e o bloco agents raiz', () => {
+    expect(expectedAgents(config).sort()).toEqual([
+      'auditor', 'designer', 'explorer', 'fixer', 'oracle', 'orchestrator',
+    ]);
   });
 
-  it('devolve vazio quando o preset ativo não existe', () => {
-    expect(expectedAgents({ preset: 'inexistente', presets: {}, agents: {} })).toEqual([]);
+  it('não confunde preset irmão com herança e devolve só o agents raiz sem preset ativo', () => {
+    expect(expectedAgents(config)).not.toContain('conciliador');
+    expect(expectedAgents({ preset: 'inexistente', presets: {}, agents: { auditor: {} } })).toEqual(['auditor']);
+  });
+
+  it('descarta disabled_agents com alias, mas mantém papéis protegidos', () => {
+    const comDesligados = { ...config, disabled_agents: ['explore', 'designer', 'orchestrator', 'councillor'] };
+    const nomes = expectedAgents(comDesligados);
+
+    expect(nomes).not.toContain('explorer');
+    expect(nomes).not.toContain('designer');
+    expect(nomes).toContain('orchestrator');
+    expect(nomes).toContain('oracle');
+  });
+
+  it('aplica o default do host: observer fica fora mesmo sem disabled_agents', () => {
+    const comObserver = { preset: 'x', presets: { x: { observer: { model: 'a/b' }, oracle: { model: 'a/b' } } } };
+    expect(expectedAgents(comObserver)).toEqual(['oracle']);
   });
 
   it('pega o plugin que não carregou: só title/build/plan compilados', () => {
     const compilados = new Set(['build', 'plan', 'title']);
     expect(expectedAgents(config).filter((agent) => !compilados.has(agent)).sort()).toEqual([
-      'explorer', 'fixer', 'oracle', 'orchestrator',
+      'auditor', 'designer', 'explorer', 'fixer', 'oracle', 'orchestrator',
     ]);
   });
 });

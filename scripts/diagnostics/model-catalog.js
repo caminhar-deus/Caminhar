@@ -41,8 +41,89 @@ export function missingModels(models, catalog) {
   return models.filter(({ id }) => !catalog.has(id));
 }
 
+/** Aliases que o plugin canonicaliza antes de instanciar (`AGENT_ALIASES` do slim 3.0.8). */
+const AGENT_ALIASES = {
+  explore: 'explorer',
+  librarian: 'explorer',
+  'frontend-ui-ux-engineer': 'designer',
+};
+
+/** `disabled_agents` não consegue desligar estes papéis: o host os protege. */
+const PROTECTED_AGENTS = new Set(['orchestrator', 'councillor']);
+
+/** Chaves de um bloco de preset que não são nome de agente. */
+const CAMPOS_DO_PRESET = new Set(['extends', 'agents', 'marketplace']);
+
+function nomeCanonico(nome) {
+  return AGENT_ALIASES[nome] ?? nome;
+}
+
 /**
- * Nomes dos agentes que o preset gerencia — bloco do preset ativo + `agents` raiz.
+ * Nomes de agente de UM bloco de preset, cobrindo as duas sintaxes que o host
+ * normaliza (`normalizePreset`): a forma canônica `{ agents: {...} }` e a forma
+ * plana legada (`{ oracle: {...} }`), inclusive quando as duas aparecem juntas.
+ */
+function nomesDaDefinicao(definicao) {
+  if (!definicao || typeof definicao !== 'object' || Array.isArray(definicao)) return [];
+  const nomes = new Set();
+
+  for (const [chave, valor] of Object.entries(definicao)) {
+    if (CAMPOS_DO_PRESET.has(chave)) continue;
+    if (valor && typeof valor === 'object' && !Array.isArray(valor)) nomes.add(nomeCanonico(chave));
+  }
+
+  const bloco = definicao.agents;
+  if (bloco && typeof bloco === 'object' && !Array.isArray(bloco)) {
+    for (const chave of Object.keys(bloco)) nomes.add(nomeCanonico(chave));
+  }
+
+  return [...nomes];
+}
+
+/**
+ * Nomes do preset ATIVO somando a cadeia de `extends` (ancestral primeiro).
+ *
+ * O host resolve `extends` recursivamente e mescla os agentes; sem percorrer a
+ * cadeia, um papel herdado do preset pai passava fora da checagem — o único jeito
+ * de cobri-lo era repeti-lo no bloco `agents` raiz.
+ *
+ * Ciclo é tratado como fim de cadeia: o host aborta a resolução inteira
+ * (`PresetResolutionError`), então nenhum papel do preset compila e a checagem de
+ * "não compilaram" já reprova.
+ */
+function nomesDoPreset(nome, presets, visitados = new Set()) {
+  if (visitados.has(nome)) return [];
+  if (!presets || typeof presets !== 'object' || !Object.hasOwn(presets, nome)) return [];
+  visitados.add(nome);
+
+  const definicao = presets[nome];
+  const ancestral =
+    definicao && typeof definicao === 'object' && typeof definicao.extends === 'string'
+      ? nomesDoPreset(definicao.extends, presets, visitados)
+      : [];
+
+  return [...ancestral, ...nomesDaDefinicao(definicao)];
+}
+
+/**
+ * Agentes que o host NÃO instancia: `disabled_agents` (default `["observer"]`)
+ * canonicalizado, menos os protegidos. Sem isso, um agente desligado de propósito
+ * aparecia como "não compilou" e reprovava o preflight.
+ */
+function nomesDesabilitados(config) {
+  const lista = Array.isArray(config?.disabled_agents) ? config.disabled_agents : ['observer'];
+  const nomes = new Set();
+  for (const nome of lista) {
+    if (typeof nome !== 'string') continue;
+    const alvo = nomeCanonico(nome);
+    if (!PROTECTED_AGENTS.has(alvo)) nomes.add(alvo);
+  }
+  return nomes;
+}
+
+/**
+ * Nomes dos agentes que o preset gerencia — bloco do preset ativo (com a cadeia
+ * de `extends`) + `agents` raiz, menos `disabled_agents`.
  *
  * Serve para o caminho negativo que faltava: quando o plugin NÃO carrega, o host
  * compila só os agentes próprios e a checagem de primários vira uma varredura
@@ -50,25 +131,27 @@ export function missingModels(models, catalog) {
  * apenas `build`/`plan`/`title`). Sem esta lista, o preflight podia sair 0 sem ter
  * conferido papel nenhum.
  *
- * `extends`/`marketplace`/`agents` não são papéis e ficam fora.
+ * `extends`/`marketplace` não são papéis e ficam fora; aliases são canonicalizados
+ * porque o id compilado é o nome canônico.
  *
  * @param {object} config Objeto do preset já parseado (`parseJsonc`).
  * @returns {string[]} Nomes esperados de agentes compilados.
  */
 export function expectedAgents(config) {
   const nomes = new Set();
-  const fora = new Set(['extends', 'marketplace', 'agents']);
   const preset = typeof config?.preset === 'string' ? config.preset : null;
-  const bloco = preset ? config?.presets?.[preset] : null;
 
-  if (bloco && typeof bloco === 'object') {
-    for (const [chave, definicao] of Object.entries(bloco)) {
-      if (!fora.has(chave) && definicao && typeof definicao === 'object') nomes.add(chave);
-    }
+  if (preset) {
+    for (const nome of nomesDoPreset(preset, config?.presets)) nomes.add(nome);
   }
-  if (config?.agents && typeof config.agents === 'object') {
-    for (const chave of Object.keys(config.agents)) nomes.add(chave);
+
+  const raiz = config?.agents;
+  if (raiz && typeof raiz === 'object' && !Array.isArray(raiz)) {
+    for (const chave of Object.keys(raiz)) nomes.add(nomeCanonico(chave));
   }
+
+  for (const desabilitado of nomesDesabilitados(config)) nomes.delete(desabilitado);
+
   return [...nomes];
 }
 

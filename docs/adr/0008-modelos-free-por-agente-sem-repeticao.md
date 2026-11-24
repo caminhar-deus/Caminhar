@@ -1998,6 +1998,39 @@ Com isso cai a necessidade de reiniciar o serviço para conferir a config editad
 continua obrigatório para o **host** passar a usar a config nova, que é outra pergunta e é o
 que `--service` responde.
 
+### Limites conhecidos do `expectedAgents` fechados (23/11/2026, noite)
+
+O instrumento endurecido na mesma data tinha dois pontos cegos registrados:
+
+1. **`extends`.** A primeira versão lia só o bloco do preset ativo + `agents` raiz. Com preset
+   filho herdando de um pai, um papel declarado apenas no ancestral não entrava na lista de
+   esperados — só era coberto se fosse repetido no `agents` raiz.
+2. **`disabled_agents`.** Agente desligado de propósito continuava na lista, e o preflight
+   reprovava "agentes do preset NÃO compilaram" contra uma configuração correta.
+
+Correção em `expectedAgents` (`scripts/diagnostics/model-catalog.js`), espelhando o
+`normalizePreset`/`resolvePresetDefinition` do slim 3.0.8:
+
+- percorre a cadeia de `extends` (ancestral primeiro, com guarda de ciclo — o host aborta a
+  resolução inteira, então a reprovação por "não compilou" continua correta);
+- lê as duas sintaxes do bloco de preset, inclusive juntas: `{ agents: {...} }` (canônica) e
+  `{ oracle: {...} }` (plana legada);
+- canonicaliza aliases (`explore`/`librarian` → `explorer`, `frontend-ui-ux-engineer` →
+  `designer`), porque o id compilado é o canônico;
+- desconta `disabled_agents`, aplicando o default do host (`["observer"]`) quando a chave
+  falta, mantendo `councillor`/`orchestrator` protegidos e canonicalizando o alias antes da
+  exclusão.
+
+Testes: `tests/unit/scripts/check-model-catalog.test.js` agora cobre herança de duas gerações,
+sintaxe canônica + plana no mesmo bloco, alias, agente desabilitado e o default `observer`
+(22 testes no arquivo). Verificação na data: `npm run models:check` → `EXIT=0` com os cinco
+papéis e o `title`.
+
+**Limite que permanece:** o script lê só o preset do projeto. Se um preset do projeto fizer
+`extends` de um preset declarado apenas na config global
+(`~/.config/opencode/oh-my-opencode-slim.json`), o ancestral não entra na conta — o host mescla
+as camadas antes de resolver. A mitigação é declarar no projeto todo preset usado na cadeia.
+
 ### Alternativas descartadas
 
 - **Zerar só os dois limites (`= 0`).** Passa no doctor, mas deixa cinco avisos de chaves
