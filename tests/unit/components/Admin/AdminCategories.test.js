@@ -137,4 +137,60 @@ describe('Componente Front-End - AdminCategories', () => {
     await waitFor(() => expect(toast.error).toHaveBeenCalled());
     expect(screen.getByLabelText(/Slug/)).toBeInTheDocument();
   });
+
+  it('cobre blur com nome vazio, preservação de slug manual, não repetição do toast e erros de validação nos campos', async () => {
+    toast.success.mockClear();
+    toast.error.mockClear();
+
+    render(<AdminCategories />);
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: '+ Nova Categoria' })).toBeEnabled()
+    );
+    fireEvent.click(screen.getByText('+ Nova Categoria'));
+
+    const nameInput = screen.getByLabelText(/Nome/);
+    const slugInput = screen.getByLabelText(/Slug/);
+
+    // 1. Blur com nome vazio: não gera slug e não dispara toast
+    fireEvent.blur(nameInput);
+    expect(slugInput).toHaveValue('');
+    expect(toast.success).not.toHaveBeenCalled();
+
+    // 2. Slug preenchido manualmente não é sobrescrito no blur do nome
+    fireEvent.change(slugInput, { target: { value: 'slug-manual' } });
+    fireEvent.change(nameInput, { target: { value: 'Novo Nome' } });
+    fireEvent.blur(nameInput);
+    expect(slugInput).toHaveValue('slug-manual');
+    expect(toast.success).not.toHaveBeenCalled();
+
+    // 3. Primeira geração automática dispara toast; segunda (após limpar slug) regenera sem repetir toast
+    fireEvent.change(slugInput, { target: { value: '' } });
+    fireEvent.blur(nameInput);
+    expect(slugInput).toHaveValue('novo-nome');
+    expect(toast.success).toHaveBeenCalledTimes(1);
+
+    fireEvent.change(slugInput, { target: { value: '' } });
+    fireEvent.change(nameInput, { target: { value: 'Outro Nome' } });
+    fireEvent.blur(nameInput);
+    expect(slugInput).toHaveValue('outro-nome');
+    expect(toast.success).toHaveBeenCalledTimes(1);
+
+    // 4. Resposta 400 da API com erros por campo exibe fieldError em ambos os campos (linhas 86 e 105)
+    fetchMock.mockResolvedValueOnce(makeResponse({
+      status: 400,
+      body: {
+        message: 'Dados inválidos',
+        errors: {
+          name: ['Nome reservado pelo sistema'],
+          slug: ['Slug reservado pelo sistema'],
+        },
+      },
+    }));
+
+    fireEvent.submit(slugInput.closest('form'));
+    await waitFor(() => {
+      expect(screen.getByText('Nome reservado pelo sistema')).toBeInTheDocument();
+      expect(screen.getByText('Slug reservado pelo sistema')).toBeInTheDocument();
+    });
+  });
 });

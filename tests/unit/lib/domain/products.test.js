@@ -13,6 +13,7 @@ jest.mock('../../../../lib/crud/crud.js', () => ({
 
 import {
   getPaginatedProducts,
+  getProductCategories,
   getAllProducts,
   createProduct,
   updateProduct,
@@ -179,6 +180,79 @@ describe('Domínio - Products (lib/domain/products.js)', () => {
 
       expect(deleteRecords).toHaveBeenCalledWith('products', { id: 7 });
       expect(result).toEqual({ id: 7 });
+    });
+  });
+
+  describe('getProductCategories e campos de modalidade/frete/ordenação', () => {
+    it('deve retornar as categorias distintas dos produtos publicados', async () => {
+      query.mockResolvedValueOnce({ rows: [{ category: 'livros' }, { category: 'terços' }] });
+      const categories = await getProductCategories();
+      expect(categories).toEqual(['livros', 'terços']);
+    });
+
+    it('deve filtrar por category e modality em getPaginatedProducts', async () => {
+      query
+        .mockResolvedValueOnce({ rows: [{ count: '1' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 10, name: 'Terço Interno', price: '50.00' }] });
+
+      await getPaginatedProducts(1, 12, { category: 'terços', modality: 'internal' }, 'price_desc');
+      const sql = query.mock.calls[0][0];
+      expect(sql).toContain('category = $1');
+      expect(sql).toContain('modality = $2');
+      expect(query.mock.calls[0][1]).toEqual(['terços', 'internal', 12, 0]);
+      expect(query.mock.calls[1][0]).toContain('ORDER BY price DESC, id DESC');
+    });
+
+    it('deve propagar campos completos em createProduct e updateProduct (modality, stock, shipping_type, shipping_cost, published)', async () => {
+      query.mockResolvedValueOnce({ rows: [{ max_pos: 2 }] });
+      createRecord.mockResolvedValueOnce({ id: 99, name: 'Interno' });
+
+      await createProduct({
+        name: 'Interno',
+        price: '45.00',
+        published: true,
+        modality: 'internal',
+        stock: '15',
+        shipping_type: 'fixed',
+        shipping_cost: '12.50',
+      });
+
+      expect(createRecord).toHaveBeenCalledWith('products', expect.objectContaining({
+        published: true,
+        modality: 'internal',
+        stock: 15,
+        shipping_type: 'fixed',
+        shipping_cost: 12.5,
+      }));
+
+      updateRecords.mockResolvedValueOnce([{ id: 99, name: 'Atualizado' }]);
+      await updateProduct(99, {
+        description: 'Nova desc',
+        image_url: 'https://img.jpg',
+        category: 'geral',
+        link: 'https://link.com',
+        published: false,
+        modality: 'external',
+        stock: -3,
+        shipping_type: 'free',
+        shipping_cost: '',
+      });
+
+      expect(updateRecords).toHaveBeenCalledWith(
+        'products',
+        expect.objectContaining({
+          description: 'Nova desc',
+          image_url: 'https://img.jpg',
+          category: 'geral',
+          link: 'https://link.com',
+          published: false,
+          modality: 'external',
+          stock: 0,
+          shipping_type: 'free',
+          shipping_cost: 0,
+        }),
+        { id: 99 }
+      );
     });
   });
 });

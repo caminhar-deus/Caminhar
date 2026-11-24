@@ -104,6 +104,18 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
       const data = JSON.parse(res._getData());
       expect(data.customer.name).toBe('Maria Silva');
     });
+
+    it('deve limpar cookie e retornar authenticated: false quando cliente não existir mais no banco', async () => {
+      getAuthenticatedCustomer.mockReturnValue({ customerId: 999, email: 'removido@test.com' });
+      getCustomerById.mockResolvedValueOnce(null);
+
+      const { req, res } = createMocks({ method: 'GET' });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      expect(clearCustomerAuthCookie).toHaveBeenCalledWith(res);
+      expect(JSON.parse(res._getData())).toEqual({ authenticated: false, customer: null });
+    });
   });
 
   describe('POST - Registro, Login e Logout', () => {
@@ -837,11 +849,121 @@ describe('API Visitante/Cliente - Autenticação e Perfil (/api/customer/auth)',
     });
   });
 
-  describe('Métodos não permitidos', () => {
+  describe('Métodos não permitidos e validações de borda', () => {
     it('deve retornar 405 para DELETE', async () => {
       const { req, res } = createMocks({ method: 'DELETE' });
       await handler(req, res);
       expect(res._getStatusCode()).toBe(405);
+    });
+
+    it('PUT: deve retornar 400 quando dados de perfil forem inválidos', async () => {
+      getAuthenticatedCustomer.mockReturnValue({ customerId: 10, email: 'maria@test.com' });
+
+      const { req, res } = createMocks({
+        method: 'PUT',
+        body: { name: 'A', defaultAddress: { cep: '123', state: 'SPP' } },
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(400);
+      expect(updateCustomerProfile).not.toHaveBeenCalled();
+    });
+
+    it('POST: deve retornar 429 quando rate limit exceder no POST', async () => {
+      checkRateLimit.mockResolvedValueOnce(true);
+
+      const { req, res } = createMocks({
+        method: 'POST',
+        body: { action: 'login', email: 'a@b.com', password: '123' },
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(429);
+    });
+
+    it('POST action=register: deve retornar 400 em payload inválido e 500 em erro inesperado', async () => {
+      const { req: badReq, res: badRes } = createMocks({
+        method: 'POST',
+        body: { action: 'register', name: 'A', email: 'invalido', password: '123' },
+      });
+      await handler(badReq, badRes);
+      expect(badRes._getStatusCode()).toBe(400);
+
+      const errSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
+      try {
+        registerCustomer.mockRejectedValueOnce(new Error('DB connection lost'));
+        const { req, res } = createMocks({
+          method: 'POST',
+          body: {
+            action: 'register',
+            name: 'Carlos Silva',
+            email: 'carlos@test.com',
+            password: 'senha_segura_123',
+          },
+        });
+        await handler(req, res);
+
+        expect(res._getStatusCode()).toBe(500);
+        expect(JSON.parse(res._getData())).toEqual({
+          error: 'Internal Server Error',
+          message: 'Erro interno no servidor.',
+        });
+      } finally {
+        errSpy.mockRestore();
+      }
+    });
+
+    it('POST action=login: deve retornar 400 em payload inválido', async () => {
+      const { req, res } = createMocks({
+        method: 'POST',
+        body: { action: 'login', email: 'nao-e-email', password: '' },
+      });
+      await handler(req, res);
+      expect(res._getStatusCode()).toBe(400);
+    });
+
+    it('POST action=google: deve retornar 400 para schema inválido e derivar nome do e-mail no dev bypass sem name', async () => {
+      const { req: badReq, res: badRes } = createMocks({
+        method: 'POST',
+        body: { action: 'google', email: 'invalido' },
+      });
+      await handler(badReq, badRes);
+      expect(badRes._getStatusCode()).toBe(400);
+
+      process.env.ALLOW_GOOGLE_DEV_BYPASS = 'true';
+      upsertGoogleCustomer.mockResolvedValueOnce({
+        id: 30,
+        name: 'peregrino',
+        email: 'peregrino@gmail.com',
+      });
+
+      const { req, res } = createMocks({
+        method: 'POST',
+        body: {
+          action: 'google',
+          googleSub: 'sub-no-name',
+          email: 'peregrino@gmail.com',
+        },
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(200);
+      expect(upsertGoogleCustomer).toHaveBeenCalledWith({
+        googleSub: 'sub-no-name',
+        email: 'peregrino@gmail.com',
+        name: 'peregrino',
+      });
+    });
+
+    it('POST action desconhecida: deve retornar 400', async () => {
+      const { req, res } = createMocks({
+        method: 'POST',
+        body: { action: 'desconhecida' },
+      });
+      await handler(req, res);
+
+      expect(res._getStatusCode()).toBe(400);
+      expect(JSON.parse(res._getData()).message).toBe('Ação inválida.');
     });
   });
 });

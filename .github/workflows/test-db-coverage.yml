@@ -1,7 +1,7 @@
 name: Test Coverage Gate (banco real)
 
-# Suíte com PostgreSQL real via Testcontainers — os 8 arquivos `*.db.test.js`,
-# 96 asserções, que hoje rodam APENAS localmente (`npm run test:db:container`).
+# Suíte com PostgreSQL real via Testcontainers — os 12 arquivos `*.db.test.js`,
+# 106 asserções, que hoje rodam APENAS localmente (`npm run test:db:container`).
 # O job `coverage` de `test-coverage.yml` não as executa: lá a suíte roda em
 # `jsdom`, que não consome nada de banco (item J do `docs/PENDENCIAS_scripts_testes.md`).
 #
@@ -44,7 +44,7 @@ permissions:
 jobs:
   coverage-db:
     runs-on: ubuntu-latest
-    # Folga para `npm ci` + startup do container + 96 asserções com
+    # Folga para `npm ci` + startup do container + 106 asserções com
     # `testTimeout: 30000` cada (`jest.config.db.js:18`); teto para derrubar um
     # runner travado em vez de queimar os 360 min do default da plataforma.
     timeout-minutes: 20

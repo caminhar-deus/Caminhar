@@ -68,6 +68,9 @@ export const EXPECTED_SCHEMA = {
   ],
   images: [
     'id', 'filename', 'path', 'type', 'size', 'user_id', 'uploaded_at'
+  ],
+  activity_logs: [
+    'id', 'username', 'action', 'entity_type', 'entity_id', 'details', 'ip_address', 'created_at'
   ]
 };
 

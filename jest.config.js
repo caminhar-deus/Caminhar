@@ -28,6 +28,9 @@ export default {
     'lib/**/*.js',
     'pages/api/**/*.js',
     'components/**/*.js',
+    'hooks/**/*.js',
+    'utils/**/*.js',
+    '!utils/empty-browser-module.js',
     '!**/*.test.js',
     '!**/node_modules/**',
     '!**/coverage/**',
@@ -50,14 +53,38 @@ export default {
       statements: 90
     },
     'lib/domain/': {
-      branches: 78,
+      branches: 82,
       functions: 95,
       lines: 95,
       statements: 95
     },
     'pages/api/admin/': {
+      branches: 82,
+      functions: 95,
+      lines: 90,
+      statements: 90
+    },
+    'pages/api/auth/': {
+      branches: 90,
+      functions: 95,
+      lines: 95,
+      statements: 95
+    },
+    'pages/api/customer/': {
+      branches: 85,
+      functions: 95,
+      lines: 95,
+      statements: 95
+    },
+    'lib/payment/': {
       branches: 80,
       functions: 95,
+      lines: 90,
+      statements: 90
+    },
+    'components/Admin/': {
+      branches: 82,
+      functions: 85,
       lines: 90,
       statements: 90
     },
@@ -72,6 +99,18 @@ export default {
       functions: 80,
       lines: 75,
       statements: 75
+    },
+    'hooks/': {
+      branches: 72,
+      functions: 75,
+      lines: 80,
+      statements: 80
+    },
+    'utils/': {
+      branches: 75,
+      functions: 90,
+      lines: 90,
+      statements: 90
     }
   },
 

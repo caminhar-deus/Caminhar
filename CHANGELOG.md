@@ -9,7 +9,16 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Não publicado]
 
+### Corrigido
+
+- **Alinhamento de schema da tabela `activity_logs` (24/11/2026):** corrigida a chave `audit_log` → `activity_logs` em `tableSchemas` (`lib/crud/crud.js`) e adicionada `activity_logs` a `EXPECTED_SCHEMA` (`scripts/validate-schema.js`), zerando a deriva entre as `16` tabelas compartilhadas e permitindo validação estática de `lib/domain/audit.js`.
+
 ### Adicionado
+
+- **Fechamento das melhorias de cobertura, banco real e thresholds da auditoria semanal (`5.6`–`5.10`, 24/11/2026):**
+  - Cobertura de `components/Admin/AdminSales.js` elevada para `99,73% Lines | 86,87% Branch | 96,77% Funcs` e ampliação de branches negativas/borda em `AdminCategories.test.js`, `customer-auth.test.js`, `customer/auth.test.js`, `checkout.test.js`, `mercadopago.test.js`, `integrity.test.js`, `products.test.js` e `lib/domain/products.test.js`.
+  - Expansão da guarda estática ADR-0039 em `tests/unit/scripts/schema-sources.test.js` para todos os 14 módulos de `lib/domain/*.js` (`INSERT`/`UPDATE` + CRUD/`paginate`) e criação das 4 novas suítes `tests/integration/domain/{categories,audit,dicas,images}.db.test.js` (`12 arquivos *.db.test.js, 106 asserções` documentados em `.github/workflows/test-db-coverage.yml`).
+  - Inclusão de `hooks/**/*.js`, `utils/**/*.js` e `!utils/empty-browser-module.js` em `collectCoverageFrom`, nova suíte `tests/unit/hooks/PerformanceProvider.test.js` e adição/reforço de `coverageThreshold` por diretório em `jest.config.js` (`pages/api/auth/`, `pages/api/customer/`, `lib/payment/`, `components/Admin/`, `hooks/`, `utils/`, `lib/domain/` e `pages/api/admin/`), elevando a suíte para `245` aprovadas (+`12 .db`), `2.169` testes aprovados (+`106 .db`) e `96,46% Lines | 88,79% Branch | 95,51% Funcs`.
 
 - **Expiração automática por 1h de inatividade no `/admin` e guarda unificada de HTTP `401` (21/11/2026, ADR-0043, commit `e934811`):** adicionados `hooks/useAdminInactivityTimeout.js` e o barramento `utils/adminSession.js` com renovação silenciosa em uso ativo (`POST /api/auth/refresh`), sincronização entre abas, tratamento unificado de `401` nos hooks/componentes administrativos e avisos `?reason=inactivity` / `?reason=expired` em `pages/login.js`.
 

@@ -37,9 +37,14 @@ jest.mock('../../../../lib/auth/auth.js', () => {
   return mockModule;
 });
 
+jest.mock('@upstash/redis', () => ({
+  Redis: jest.fn(),
+}));
+
 import handler from '../../../../pages/api/admin/integrity.js';
 import { query } from '../../../../lib/infra/db.js';
 import { getAuthToken, verifyToken } from '../../../../lib/auth/auth.js';
+import { Redis } from '@upstash/redis';
 import fs from 'fs';
 
 const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
@@ -53,6 +58,9 @@ describe('API Admin - Integridade (/api/admin/integrity)', () => {
 
     getAuthToken.mockReturnValue('fake-token');
     verifyToken.mockReturnValue(USER);
+    fs.existsSync.mockImplementation(() => true);
+    fs.statfsSync.mockImplementation(() => ({ bsize: 4096, bavail: 100, blocks: 200 }));
+    fs.statSync.mockImplementation(() => ({ size: 128, mtime: new Date('2026-01-01T00:00:00.000Z') }));
 
     // RBAC (tabela roles consultada pelo createAdminHandler) + banco (SELECT 1 / pg_database_size)
     query.mockImplementation(async (sql) => {
@@ -168,5 +176,119 @@ describe('API Admin - Integridade (/api/admin/integrity)', () => {
 
     const body = JSON.parse(res._getData());
     expect(body.checks.backup.status).toBe('warning');
+  });
+
+  it('deve testar Redis saudável (status geral healthy), Redis degradado e erro ao conectar Redis', async () => {
+    const prevUrl = process.env.UPSTASH_REDIS_REST_URL;
+    const prevToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+    try {
+      process.env.UPSTASH_REDIS_REST_URL = 'https://redis.upstash.io';
+      process.env.UPSTASH_REDIS_REST_TOKEN = 'test-redis-token';
+
+      // 1. Redis PONG -> healthy
+      Redis.mockImplementation(() => ({ ping: jest.fn().mockResolvedValue('PONG') }));
+      const { req: reqOk, res: resOk } = createMocks({ method: 'GET' });
+      await handler(reqOk, resOk);
+      const bodyOk = JSON.parse(resOk._getData());
+      expect(bodyOk.checks.cache.status).toBe('ok');
+      expect(bodyOk.checks.cache.details.connected).toBe(true);
+      expect(bodyOk.status).toBe('healthy');
+
+      // 2. Redis retorna algo diferente de PONG -> degraded
+      Redis.mockImplementation(() => ({ ping: jest.fn().mockResolvedValue('ERR') }));
+      const { req: reqBadPing, res: resBadPing } = createMocks({ method: 'GET' });
+      await handler(reqBadPing, resBadPing);
+      const bodyBadPing = JSON.parse(resBadPing._getData());
+      expect(bodyBadPing.checks.cache.status).toBe('degraded');
+      expect(bodyBadPing.checks.cache.details.connected).toBe(false);
+
+      // 3. Redis lança exceção -> degraded
+      Redis.mockImplementation(() => ({ ping: jest.fn().mockRejectedValue(new Error('Redis timeout')) }));
+      const { req: reqThrow, res: resThrow } = createMocks({ method: 'GET' });
+      await handler(reqThrow, resThrow);
+      const bodyThrow = JSON.parse(resThrow._getData());
+      expect(bodyThrow.checks.cache.status).toBe('degraded');
+      expect(bodyThrow.checks.cache.details.error).toBe('Redis timeout');
+    } finally {
+      if (prevUrl === undefined) delete process.env.UPSTASH_REDIS_REST_URL;
+      else process.env.UPSTASH_REDIS_REST_URL = prevUrl;
+      if (prevToken === undefined) delete process.env.UPSTASH_REDIS_REST_TOKEN;
+      else process.env.UPSTASH_REDIS_REST_TOKEN = prevToken;
+    }
+  });
+
+  it('deve cobrir subdiretórios recursivos em uploads, db_size nulo, pasta de backups vazia, erros de fs e formatação de uptime/age', async () => {
+    const subDir = path.join(uploadsDir, 'sub');
+    const uptimeSpy = jest.spyOn(process, 'uptime').mockReturnValue(90065); // 1d 1h 1m
+
+    try {
+      query.mockImplementation(async (sql) => {
+        if (sql.includes('SELECT permissions FROM roles')) {
+          return { rows: [{ permissions: ['Segurança'] }] };
+        }
+        if (sql.includes('SELECT 1')) {
+          return { rows: [{ count: 1 }] };
+        }
+        if (sql.includes('pg_database_size')) {
+          return { rows: [{ db_size: null, connections: null }] };
+        }
+        return { rows: [] };
+      });
+
+      // Subdiretório em uploads + backup recente (<1h)
+      fs.readdirSync.mockImplementation((dir, opts) => {
+        if (dir === uploadsDir && opts?.withFileTypes) {
+          return [{ name: 'sub', isFile: () => false, isDirectory: () => true }];
+        }
+        if (dir === subDir && opts?.withFileTypes) {
+          return [{ name: 'inner.png', isFile: () => true, isDirectory: () => false }];
+        }
+        if (dir === uploadsDir) return ['sub'];
+        if (dir === backupsDir) return [];
+        return [];
+      });
+
+      const { req, res } = createMocks({ method: 'GET' });
+      await handler(req, res);
+      const body = JSON.parse(res._getData());
+      expect(body.checks.database.details.size).toBe('Desconhecido');
+      expect(body.checks.storage.status).toBe('ok');
+      expect(body.checks.backup.status).toBe('warning');
+      expect(body.checks.backup.details.lastBackup).toBeNull();
+      expect(body.checks.system.details.uptime).toBe('1d 1h 1m');
+
+      // Erro em statfsSync + erro em readdirSync de backups + backup de horas atrás
+      fs.statfsSync.mockImplementationOnce(() => {
+        throw new Error('Disk stat error');
+      });
+      fs.readdirSync.mockImplementation((dir) => {
+        if (dir === backupsDir) throw new Error('Backups unreadable');
+        return [];
+      });
+
+      const { req: reqErr, res: resErr } = createMocks({ method: 'GET' });
+      await handler(reqErr, resErr);
+      const bodyErr = JSON.parse(resErr._getData());
+      expect(bodyErr.checks.storage.status).toBe('warning');
+      expect(bodyErr.checks.storage.details.error).toBe('Disk stat error');
+      expect(bodyErr.checks.backup.status).toBe('warning');
+      expect(bodyErr.checks.backup.details.error).toBe('Backups unreadable');
+
+      // Backup com <1h e outro com <24h (integrity.js chama statSync duas vezes por arquivo)
+      const now = Date.now();
+      fs.statSync.mockImplementation(() => ({ size: 0, mtime: new Date(now - 5 * 60 * 1000) }));
+      fs.readdirSync.mockImplementation((dir) => (dir === backupsDir ? ['recente.sql'] : []));
+      const { req: reqRecent, res: resRecent } = createMocks({ method: 'GET' });
+      await handler(reqRecent, resRecent);
+      expect(JSON.parse(resRecent._getData()).checks.backup.details.lastBackup.age).toBe('Menos de 1 hora atrás');
+
+      fs.statSync.mockImplementation(() => ({ size: 512, mtime: new Date(now - 3 * 3600 * 1000) }));
+      const { req: reqHours, res: resHours } = createMocks({ method: 'GET' });
+      await handler(reqHours, resHours);
+      expect(JSON.parse(resHours._getData()).checks.backup.details.lastBackup.age).toBe('3 hora(s) atrás');
+    } finally {
+      uptimeSpy.mockRestore();
+    }
   });
 });

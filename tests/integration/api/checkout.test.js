@@ -436,6 +436,130 @@ describe('API Checkout (/api/checkout)', () => {
       expect(res._getStatusCode()).toBe(201);
       expect(updateCustomerProfile).toHaveBeenCalledWith(8, { defaultAddress: validAddress });
     });
+
+    it('deve retornar 429 no POST quando checkRateLimit bloquear', async () => {
+      getAuthenticatedCustomer.mockReturnValue({ customerId: 8 });
+      checkRateLimit.mockResolvedValueOnce(true);
+
+      const { req, res } = createMocks({
+        method: 'POST',
+        body: { productId: 25, quantity: 1, deliveryAddress: validAddress, paymentMethod: 'pix' },
+      });
+      await handler(req, res);
+      expect(res._getStatusCode()).toBe(429);
+    });
+
+    it('deve validar CPF/CNPJ inválido (400) e exigir bandeira de cartão quando token está presente com MP_ACCESS_TOKEN', async () => {
+      getAuthenticatedCustomer.mockReturnValue({ customerId: 8 });
+
+      const { req: cpfReq, res: cpfRes } = createMocks({
+        method: 'POST',
+        body: {
+          productId: 25,
+          quantity: 1,
+          deliveryAddress: validAddress,
+          paymentMethod: 'pix',
+          paymentDetails: { payerDocument: '11111111111' },
+        },
+      });
+      await handler(cpfReq, cpfRes);
+      expect(cpfRes._getStatusCode()).toBe(400);
+      expect(JSON.parse(cpfRes._getData()).message).toMatch(/CPF.*CNPJ/i);
+
+      const prevToken = process.env.MP_ACCESS_TOKEN;
+      process.env.MP_ACCESS_TOKEN = 'TEST-token-sandbox';
+      try {
+        const { req: cardReq, res: cardRes } = createMocks({
+          method: 'POST',
+          body: {
+            productId: 25,
+            quantity: 1,
+            deliveryAddress: validAddress,
+            paymentMethod: 'debit_card',
+            paymentDetails: { token: 'tok_card_123' },
+          },
+        });
+        await handler(cardReq, cardRes);
+        expect(cardRes._getStatusCode()).toBe(400);
+        expect(JSON.parse(cardRes._getData()).message).toMatch(/Bandeira\/meio de pagamento/i);
+      } finally {
+        if (prevToken === undefined) delete process.env.MP_ACCESS_TOKEN;
+        else process.env.MP_ACCESS_TOKEN = prevToken;
+      }
+    });
+
+    it('deve retornar 401 se o cliente autenticado no JWT não existir no banco', async () => {
+      getAuthenticatedCustomer.mockReturnValue({ customerId: 999 });
+      getCustomerById.mockResolvedValueOnce(null);
+
+      const { req, res } = createMocks({
+        method: 'POST',
+        body: { productId: 25, quantity: 1, deliveryAddress: validAddress, paymentMethod: 'pix' },
+      });
+      await handler(req, res);
+      expect(res._getStatusCode()).toBe(401);
+    });
+
+    it('deve retornar 404 para PRODUCT_NOT_FOUND / PRODUCT_NOT_INTERNAL e 500 para erro inesperado', async () => {
+      getAuthenticatedCustomer.mockReturnValue({ customerId: 8 });
+      getCustomerById.mockResolvedValue({ id: 8, name: 'Carlos', email: 'carlos@test.com' });
+
+      createInternalOrder.mockRejectedValueOnce(new Error('PRODUCT_NOT_INTERNAL'));
+      const { req: req404, res: res404 } = createMocks({
+        method: 'POST',
+        body: { productId: 25, quantity: 1, deliveryAddress: validAddress, paymentMethod: 'pix' },
+      });
+      await handler(req404, res404);
+      expect(res404._getStatusCode()).toBe(404);
+
+      const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      try {
+        createInternalOrder.mockRejectedValueOnce(new Error('DB unexpected failure'));
+        const { req: req500, res: res500 } = createMocks({
+          method: 'POST',
+          body: { productId: 25, quantity: 1, deliveryAddress: validAddress, paymentMethod: 'pix' },
+        });
+        await handler(req500, res500);
+        expect(res500._getStatusCode()).toBe(500);
+      } finally {
+        errSpy.mockRestore();
+      }
+    });
+
+    it('deve atualizar endereço quando apenas o CEP divergir e retornar 422 padrão quando MP falhar com status 422 sem userMessage', async () => {
+      const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      try {
+        getAuthenticatedCustomer.mockReturnValue({ customerId: 8 });
+        getCustomerById.mockResolvedValueOnce({
+          id: 8,
+          name: 'Carlos',
+          email: 'carlos@test.com',
+          default_address: { ...validAddress, cep: '99999-999' },
+        });
+        createInternalOrder.mockResolvedValueOnce({
+          id: 399,
+          customer_id: 8,
+          product_id: 25,
+          product_name: 'Terço',
+          total_amount: 50,
+        });
+        const mpErr = new Error('MP 422 raw');
+        mpErr.statusCode = 422;
+        createMercadoPagoPayment.mockRejectedValueOnce(mpErr);
+
+        const { req, res } = createMocks({
+          method: 'POST',
+          body: { productId: 25, quantity: 1, deliveryAddress: validAddress, paymentMethod: 'pix' },
+        });
+        await handler(req, res);
+
+        expect(updateCustomerProfile).toHaveBeenCalledWith(8, { defaultAddress: validAddress });
+        expect(res._getStatusCode()).toBe(422);
+        expect(JSON.parse(res._getData()).message).toMatch(/Não foi possível processar o pagamento junto ao Mercado Pago/i);
+      } finally {
+        errSpy.mockRestore();
+      }
+    });
   });
 
   describe('Métodos não permitidos', () => {

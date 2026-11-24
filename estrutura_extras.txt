@@ -1004,8 +1004,16 @@ tests/integration/api/webhooks/mercadopago.test.js → lib/cache/cache.js
 tests/integration/api/webhooks/mercadopago.test.js → lib/domain/orders.js
 tests/integration/api/webhooks/mercadopago.test.js → lib/payment/mercadopago.js
 tests/integration/api/webhooks/mercadopago.test.js → pages/api/webhooks/mercadopago.js
+tests/integration/domain/audit.db.test.js → lib/domain/audit.js
+tests/integration/domain/audit.db.test.js → tests/helpers/db-test.js
+tests/integration/domain/categories.db.test.js → lib/domain/categories.js
+tests/integration/domain/categories.db.test.js → tests/helpers/db-test.js
 tests/integration/domain/customers.db.test.js → lib/domain/customers.js
 tests/integration/domain/customers.db.test.js → tests/helpers/db-test.js
+tests/integration/domain/dicas.db.test.js → lib/domain/dicas.js
+tests/integration/domain/dicas.db.test.js → tests/helpers/db-test.js
+tests/integration/domain/images.db.test.js → lib/domain/images.js
+tests/integration/domain/images.db.test.js → tests/helpers/db-test.js
 tests/integration/domain/musicas.db.test.js → tests/helpers/db-test.js
 tests/integration/domain/orders.db.test.js → lib/domain/orders.js
 tests/integration/domain/orders.db.test.js → tests/helpers/db-test.js
@@ -1154,6 +1162,10 @@ tests/unit/domain/videos.test.js → lib/crud/crud.js
 tests/unit/domain/videos.test.js → lib/domain/videos.js
 tests/unit/domain/videos.test.js → lib/infra/db.js
 tests/unit/domain/videos.test.js → tests/mocks/db-module.js
+tests/unit/hooks/PerformanceProvider.test.js → hooks/AuthContext.js
+tests/unit/hooks/PerformanceProvider.test.js → hooks/PerformanceProvider.js
+tests/unit/hooks/PerformanceProvider.test.js → hooks/usePerformance.js
+tests/unit/hooks/PerformanceProvider.test.js → tests/helpers/console.js
 tests/unit/hooks/useAdminCrud.test.js → hooks/useAdminCrud.js
 tests/unit/hooks/useAdminCrud.test.js → hooks/useApiFetch.js
 tests/unit/hooks/useAdminCrud.test.js → utils/adminSession.js

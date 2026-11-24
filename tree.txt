@@ -137,6 +137,8 @@
 │   │       ├── TextField.js.html
 │   │       ├── UrlField.js.html
 │   │       └── index.html
+│   ├── AdminCategories.js.html
+│   ├── AdminSales.js.html
 │   ├── UI
 │   │   ├── Input.js.html
 │   │   ├── Select.js.html
@@ -257,6 +259,21 @@
 │   ├── db.js.html
 │   ├── dicas.js.html
 │   ├── favicon.png
+│   ├── hooks
+│   │   ├── AuthContext.js.html
+│   │   ├── AuthProvider.js.html
+│   │   ├── PerformanceContext.js.html
+│   │   ├── PerformanceProvider.js.html
+│   │   ├── index.html
+│   │   ├── index.js.html
+│   │   ├── useAdminAuth.js.html
+│   │   ├── useAdminCrud.js.html
+│   │   ├── useAdminInactivityTimeout.js.html
+│   │   ├── useApiFetch.js.html
+│   │   ├── useDebounce.js.html
+│   │   ├── usePerformance.js.html
+│   │   ├── usePerformanceMetrics.js.html
+│   │   └── useUnauthorized.js.html
 │   ├── index.html
 │   ├── lcov-report
 │   │   ├── Admin
@@ -266,6 +283,8 @@
 │   │   │       ├── TextField.js.html
 │   │   │       ├── UrlField.js.html
 │   │   │       └── index.html
+│   │   ├── AdminCategories.js.html
+│   │   ├── AdminSales.js.html
 │   │   ├── UI
 │   │   │   ├── Input.js.html
 │   │   │   ├── Select.js.html
@@ -386,6 +405,21 @@
 │   │   ├── db.js.html
 │   │   ├── dicas.js.html
 │   │   ├── favicon.png
+│   │   ├── hooks
+│   │   │   ├── AuthContext.js.html
+│   │   │   ├── AuthProvider.js.html
+│   │   │   ├── PerformanceContext.js.html
+│   │   │   ├── PerformanceProvider.js.html
+│   │   │   ├── index.html
+│   │   │   ├── index.js.html
+│   │   │   ├── useAdminAuth.js.html
+│   │   │   ├── useAdminCrud.js.html
+│   │   │   ├── useAdminInactivityTimeout.js.html
+│   │   │   ├── useApiFetch.js.html
+│   │   │   ├── useDebounce.js.html
+│   │   │   ├── usePerformance.js.html
+│   │   │   ├── usePerformanceMetrics.js.html
+│   │   │   └── useUnauthorized.js.html
 │   │   ├── index.html
 │   │   ├── lib
 │   │   │   ├── api
@@ -504,7 +538,13 @@
 │   │   ├── prettify.css
 │   │   ├── prettify.js
 │   │   ├── sort-arrow-sprite.png
-│   │   └── sorter.js
+│   │   ├── sorter.js
+│   │   └── utils
+│   │       ├── adminSession.js.html
+│   │       ├── csvExport.js.html
+│   │       ├── index.html
+│   │       ├── reorder.js.html
+│   │       └── resolve-next.js.html
 │   ├── lcov.info
 │   ├── lib
 │   │   ├── api
@@ -623,7 +663,13 @@
 │   ├── prettify.css
 │   ├── prettify.js
 │   ├── sort-arrow-sprite.png
-│   └── sorter.js
+│   ├── sorter.js
+│   └── utils
+│       ├── adminSession.js.html
+│       ├── csvExport.js.html
+│       ├── index.html
+│       ├── reorder.js.html
+│       └── resolve-next.js.html
 ├── cypress
 │   ├── e2e
 │   │   ├── blog.cy.js
@@ -1290,7 +1336,11 @@
 │   │   ├── auth
 │   │   │   └── auth.test.js
 │   │   └── domain
+│   │       ├── audit.db.test.js
+│   │       ├── categories.db.test.js
 │   │       ├── customers.db.test.js
+│   │       ├── dicas.db.test.js
+│   │       ├── images.db.test.js
 │   │       ├── musicas.db.test.js
 │   │       ├── orders.db.test.js
 │   │       ├── permissions.db.test.js
@@ -1421,6 +1471,7 @@
 │       │   ├── k6-version-pin.test.js
 │       │   └── test-coverage-comment.test.js
 │       ├── hooks
+│       │   ├── PerformanceProvider.test.js
 │       │   ├── useAdminCrud.test.js
 │       │   ├── useAdminInactivityTimeout.test.js
 │       │   ├── useApiFetch.test.js
@@ -1564,4 +1615,4 @@
     ├── reorder.js
     └── resolve-next.js
 
-219 directories, 1346 files
+223 directories, 1393 files

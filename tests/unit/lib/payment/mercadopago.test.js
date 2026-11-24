@@ -618,5 +618,154 @@ describe('Integração Mercado Pago — lib/payment/mercadopago.js', () => {
         'MP_INVALID_RESPONSE'
       );
     });
+
+    it('cobre todos os status de mapMercadoPagoStatus, CNPJ, endereço incompleto, collector_id, erro 401/500/invalid_transaction_amount/rede e assinatura hex inválida', async () => {
+      // mapMercadoPagoStatus completo
+      expect(mapMercadoPagoStatus('processed', 'partially_refunded')).toBe('refunded');
+      expect(mapMercadoPagoStatus('processed', 'in_mediation')).toBe('charged_back');
+      expect(mapMercadoPagoStatus('action_required', 'waiting_capture')).toBe('authorized');
+      expect(mapMercadoPagoStatus('action_required', 'waiting_retry')).toBe('in_process');
+      expect(mapMercadoPagoStatus('created')).toBe('pending');
+      expect(mapMercadoPagoStatus('failed')).toBe('rejected');
+      expect(mapMercadoPagoStatus('refunded')).toBe('refunded');
+      expect(mapMercadoPagoStatus('charged_back')).toBe('charged_back');
+      expect(mapMercadoPagoStatus('')).toBe('pending');
+      expect(mapMercadoPagoStatus('status_desconhecido')).toBe('status_desconhecido');
+
+      // verifyMercadoPagoWebhookSignature com tamanho diferente e hex inválido
+      const secret = 'mp-secret';
+      expect(
+        verifyMercadoPagoWebhookSignature({
+          signatureHeader: 'ts=1700000100,v1=abcd',
+          requestIdHeader: 'req-1',
+          dataId: '10',
+          secret,
+        })
+      ).toBe(false);
+      expect(
+        verifyMercadoPagoWebhookSignature({
+          signatureHeader: 'ts=1700000100,v1=zzzz',
+          requestIdHeader: 'req-1',
+          dataId: '10',
+          secret,
+        })
+      ).toBe(false);
+
+      process.env.MP_ACCESS_TOKEN = 'test-token-mp';
+
+      // CNPJ (14 dígitos), endereço incompleto (ignorado em PIX porque requireComplete=true), e collector_id fallback
+      const mockFetch = jest.fn().mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          id: 'ORD_CNPJ_01',
+          collector_id: 987654,
+          status: 'processed',
+          status_detail: 'accredited',
+          transactions: { payments: [{ id: 'PAY_CNPJ', status: 'processed', payment_method: { id: 'pix' } }] },
+        }),
+      });
+      global.fetch = mockFetch;
+
+      const cnpjRes = await createMercadoPagoPayment({
+        order: { id: 88, product_name: 'Kit', total_amount: 100, delivery_address: { city: 'SP' } },
+        customer: sampleCustomer,
+        paymentMethod: 'pix',
+        paymentDetails: {
+          payerDocument: '11.222.333/0001-81',
+          address: { cep: '01001-000', street: 'Praça da Sé', state: 'SP' }, // falta city -> requireComplete null
+        },
+      });
+      const sentBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(sentBody.payer.identification).toEqual({ type: 'CNPJ', number: '11222333000181' });
+      expect(sentBody.payer.address).toBeUndefined();
+      expect(cnpjRes.mpPreferenceId).toBe('987654');
+
+      // Erro invalid_transaction_amount via cause legado
+      global.fetch = jest.fn().mockResolvedValueOnce({
+        ok: false,
+        status: 422,
+        text: async () => JSON.stringify({ cause: [{ code: 'invalid_transaction_amount' }] }),
+      });
+      await expect(
+        createMercadoPagoPayment({ order: sampleOrder, customer: sampleCustomer, paymentMethod: 'ticket' })
+      ).rejects.toMatchObject({
+        statusCode: 422,
+        mpCauseCode: 'invalid_transaction_amount',
+        userMessage: expect.stringMatching(/fora dos limites/i),
+      });
+
+      // Erro HTTP 401
+      global.fetch = jest.fn().mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        text: async () => JSON.stringify({ message: 'Unauthorized' }),
+      });
+      await expect(
+        createMercadoPagoPayment({ order: sampleOrder, customer: sampleCustomer, paymentMethod: 'pix' })
+      ).rejects.toMatchObject({
+        statusCode: 401,
+        userMessage: expect.stringMatching(/autenticação nas credenciais/i),
+      });
+
+      // Erro HTTP 500
+      global.fetch = jest.fn().mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        text: async () => 'Internal error',
+      });
+      await expect(
+        createMercadoPagoPayment({ order: sampleOrder, customer: sampleCustomer, paymentMethod: 'pix' })
+      ).rejects.toMatchObject({
+        statusCode: 500,
+        userMessage: expect.stringMatching(/Erro de comunicação/i),
+      });
+
+      // Falha de rede no POST /v1/orders
+      global.fetch = jest.fn().mockRejectedValueOnce(new Error('ECONNRESET'));
+      await expect(
+        createMercadoPagoPayment({ order: sampleOrder, customer: sampleCustomer, paymentMethod: 'pix' })
+      ).rejects.toMatchObject({
+        statusCode: 502,
+        userMessage: expect.stringMatching(/Falha de conexão com o Mercado Pago/i),
+      });
+
+      // Fallback legado (point_of_interaction, barcode, collector_id ausente), ordem sem ID (UUID),
+      // cliente sem nome completo, e erro 422 genérico sem rawCode
+      expect(mapMercadoPagoStatus('action_required', 'cancelled')).toBe('cancelled');
+      const legacyFetch = jest.fn().mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          id: 'ORD_LEGACY_FB',
+          status: 'processed',
+          date_of_expiration: '2026-12-31T23:59:59Z',
+          point_of_interaction: { transaction_data: { qr_code: 'legacy-qr', qr_code_base64: 'legacy-b64' } },
+          transaction_details: { external_resource_url: 'https://www.mercadopago.com.br/staging/payments/99/ticket' },
+          barcode: { content: '999888' },
+        }),
+      });
+      global.fetch = legacyFetch;
+      const legacyRes = await createMercadoPagoPayment({
+        order: { total_amount: 10 },
+        customer: { name: '', email: 'semnome@test.com' },
+        paymentMethod: 'debit_card',
+        paymentDetails: {},
+      });
+      expect(legacyRes.mpPreferenceId).toBeNull();
+      expect(legacyRes.paymentPayload.qr_code).toBe('legacy-qr');
+      expect(legacyRes.paymentPayload.ticket_url).toBe('https://www.mercadopago.com.br/sandbox/payments/99/ticket');
+      expect(legacyRes.paymentPayload.digitable_line).toBe('999888');
+
+      global.fetch = jest.fn().mockResolvedValueOnce({
+        ok: false,
+        status: 422,
+        text: async () => JSON.stringify({ message: 'Invalid payer' }),
+      });
+      await expect(
+        createMercadoPagoPayment({ order: sampleOrder, customer: sampleCustomer, paymentMethod: 'credit_card' })
+      ).rejects.toMatchObject({
+        statusCode: 422,
+        userMessage: expect.stringMatching(/recusados pelo Mercado Pago/i),
+      });
+    });
   });
 });

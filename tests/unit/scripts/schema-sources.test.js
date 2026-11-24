@@ -1,5 +1,5 @@
 import { jest, describe, it, expect } from '@jest/globals';
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync } from 'fs';
 import path from 'path';
 
 // validate-schema.js chama loadEnv() no top-level — mockado para o import
@@ -119,11 +119,16 @@ describe('Consistência das fontes de schema (JSONs × tableSchemas × PUBLIC_SE
     }
   });
 
-  it('todas as tabelas compartilhadas entre tableSchemas e EXPECTED_SCHEMA têm drift zero (incluindo customers e orders)', () => {
+  it('todas as tabelas compartilhadas entre tableSchemas e EXPECTED_SCHEMA têm drift zero (incluindo activity_logs, customers e orders)', () => {
     const KNOWN_VALIDATE_ONLY = { posts: ['views'] };
+    const missingInValidate = Object.keys(tableSchemas).filter((table) => !EXPECTED_SCHEMA[table]);
+    expect(missingInValidate).toEqual([]);
+
     const sharedTables = Object.keys(tableSchemas).filter((table) => Boolean(EXPECTED_SCHEMA[table]));
 
-    expect(sharedTables).toEqual(expect.arrayContaining(['customers', 'orders', 'products', 'posts']));
+    expect(sharedTables).toEqual(
+      expect.arrayContaining(['activity_logs', 'customers', 'orders', 'products', 'posts', 'categories', 'dicas', 'images'])
+    );
 
     for (const table of sharedTables) {
       const crud = new Set(tableSchemas[table]);
@@ -141,16 +146,25 @@ describe('Consistência das fontes de schema (JSONs × tableSchemas × PUBLIC_SE
     }
   });
 
-  it('consultas INSERT/UPDATE em lib/domain/customers.js e lib/domain/orders.js referenciam apenas colunas existentes em EXPECTED_SCHEMA (prevenção estática ADR-0039)', () => {
-    const domainFiles = ['lib/domain/customers.js', 'lib/domain/orders.js'];
+  it('consultas INSERT/UPDATE e chamadas CRUD/paginate em TODOS os módulos lib/domain/*.js referenciam apenas tabelas e colunas válidas (prevenção estática ADR-0039)', () => {
+    const domainDir = path.resolve(__dirname, '../../../lib/domain');
+    const domainFiles = readdirSync(domainDir)
+      .filter((name) => name.endsWith('.js'))
+      .sort()
+      .map((name) => `lib/domain/${name}`);
+
+    expect(domainFiles.length).toBeGreaterThanOrEqual(10);
+
     let inspectedStatements = 0;
+    let inspectedCrudCalls = 0;
 
     for (const relPath of domainFiles) {
       const source = readFileSync(path.resolve(__dirname, '../../../', relPath), 'utf8');
 
       for (const match of source.matchAll(/\bINSERT\s+INTO\s+([a-z_][a-z0-9_]*)\s*\(([^)]+)\)/gi)) {
         const table = match[1];
-        if (!EXPECTED_SCHEMA[table]) continue;
+        expect({ relPath, table, hasExpectedSchema: Boolean(EXPECTED_SCHEMA[table]) })
+          .toEqual({ relPath, table, hasExpectedSchema: true });
         inspectedStatements += 1;
         const columns = match[2].split(',').map((col) => col.trim()).filter(Boolean);
         for (const column of columns) {
@@ -161,7 +175,8 @@ describe('Consistência das fontes de schema (JSONs × tableSchemas × PUBLIC_SE
 
       for (const match of source.matchAll(/\bUPDATE\s+([a-z_][a-z0-9_]*)\s+SET\s+([\s\S]*?)\s+WHERE\b/gi)) {
         const table = match[1];
-        if (!EXPECTED_SCHEMA[table]) continue;
+        expect({ relPath, table, hasExpectedSchema: Boolean(EXPECTED_SCHEMA[table]) })
+          .toEqual({ relPath, table, hasExpectedSchema: true });
         inspectedStatements += 1;
         let setClause = match[2];
         while (/\([^()]*\)/.test(setClause)) {
@@ -174,8 +189,25 @@ describe('Consistência das fontes de schema (JSONs × tableSchemas × PUBLIC_SE
             .toEqual({ relPath, table, column, valid: true });
         }
       }
+
+      for (const match of source.matchAll(/\b(?:createRecord|updateRecords|deleteRecords|upsertRecord|paginate)\s*\(\s*['"]([a-z_][a-z0-9_]*)['"]/g)) {
+        const table = match[1];
+        inspectedCrudCalls += 1;
+        expect({
+          relPath,
+          table,
+          inTableSchemas: Boolean(tableSchemas[table]),
+          inExpectedSchema: Boolean(EXPECTED_SCHEMA[table]),
+        }).toEqual({
+          relPath,
+          table,
+          inTableSchemas: true,
+          inExpectedSchema: true,
+        });
+      }
     }
 
     expect(inspectedStatements).toBeGreaterThan(0);
+    expect(inspectedCrudCalls).toBeGreaterThan(0);
   });
 });

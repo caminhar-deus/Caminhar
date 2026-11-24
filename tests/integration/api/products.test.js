@@ -635,5 +635,102 @@ describe('API Pública/Admin - Produtos (/api/products)', () => {
       expect(res._getStatusCode()).toBe(200);
       expect(getPaginatedProducts).toHaveBeenCalledWith(1, 10, { search: 'teste', minPrice: '', maxPrice: '', category: '' }, 'default');
     });
+
+    it('deve validar modality no GET público (400 inválida / 200 internal), aplicar rate limit (429) e tratar falhas internas/fail-closed RBAC', async () => {
+      // Modality inválida -> 400
+      const { req: reqBadMod, res: resBadMod } = createMocks({
+        method: 'GET',
+        query: { public: 'true', modality: 'desconhecida' },
+      });
+      await handler(reqBadMod, resBadMod);
+      expect(resBadMod._getStatusCode()).toBe(400);
+
+      // Modality válida -> 200
+      getPaginatedProducts.mockResolvedValueOnce({ data: [], pagination: { total: 0 } });
+      const { req: reqIntMod, res: resIntMod } = createMocks({
+        method: 'GET',
+        query: { public: 'true', modality: 'internal' },
+      });
+      await handler(reqIntMod, resIntMod);
+      expect(resIntMod._getStatusCode()).toBe(200);
+      expect(getPaginatedProducts).toHaveBeenCalledWith(
+        1,
+        10,
+        { search: '', minPrice: '', maxPrice: '', category: '', modality: 'internal' },
+        'default'
+      );
+
+      // Rate limit no GET público -> 429
+      checkRateLimit.mockResolvedValueOnce(true);
+      const { req: reqGetRl, res: resGetRl } = createMocks({
+        method: 'GET',
+        query: { public: 'true' },
+      });
+      await handler(reqGetRl, resGetRl);
+      expect(resGetRl._getStatusCode()).toBe(429);
+
+      // Fail-closed quando query de permissão falha (reason: 'error' -> 403)
+      getAuthToken.mockReset();
+      getAuthToken.mockReturnValue('valid-token');
+      verifyToken.mockReturnValue({ username: 'editor', role: 'editor' });
+      query.mockRejectedValueOnce(new Error('DB role check fail'));
+      const { req: reqRbacErr, res: resRbacErr } = createMocks({ method: 'GET' });
+      await handler(reqRbacErr, resRbacErr);
+      expect(resRbacErr._getStatusCode()).toBe(403);
+      expect(resRbacErr._getJSONData().message).toBe('Acesso negado. Não foi possível verificar permissões.');
+
+      // Admin autenticado com permissão
+      verifyToken.mockReturnValue({ username: 'admin', role: 'admin' });
+      query.mockResolvedValue({ rows: [{ permissions: '["Gestão de Produtos"]' }] });
+
+      // Erro inesperado no POST -> 500
+      createProduct.mockRejectedValueOnce(new Error('Insert failure'));
+      const { req: reqPost500, res: resPost500 } = createMocks({
+        method: 'POST',
+        body: { name: 'Terço', price: '40,00', image_url: 'https://img.jpg', link: 'https://loja.com/1' },
+      });
+      await handler(reqPost500, resPost500);
+      expect(resPost500._getStatusCode()).toBe(500);
+
+      // PUT: rate limit (429), ID inválido (400), reorder inválido e NO_DATA_TO_UPDATE (400) e erro 500
+      checkRateLimit.mockResolvedValueOnce(true);
+      const { req: reqPutRl, res: resPutRl } = createMocks({ method: 'PUT', body: { id: 1 } });
+      await handler(reqPutRl, resPutRl);
+      expect(resPutRl._getStatusCode()).toBe(429);
+
+      const { req: reqPutId, res: resPutId } = createMocks({ method: 'PUT', body: { id: 'abc' } });
+      await handler(reqPutId, resPutId);
+      expect(resPutId._getStatusCode()).toBe(400);
+
+      updateProduct.mockRejectedValueOnce(new Error('NO_DATA_TO_UPDATE'));
+      const { req: reqPutNoData, res: resPutNoData } = createMocks({ method: 'PUT', body: { id: 1 } });
+      await handler(reqPutNoData, resPutNoData);
+      expect(resPutNoData._getStatusCode()).toBe(400);
+
+      updateProduct.mockRejectedValueOnce(new Error('Update failure'));
+      const { req: reqPut500, res: resPut500 } = createMocks({ method: 'PUT', body: { id: 1, name: 'Novo' } });
+      await handler(reqPut500, resPut500);
+      expect(resPut500._getStatusCode()).toBe(500);
+
+      // DELETE: rate limit (429), ID inválido (400), erro 500
+      checkRateLimit.mockResolvedValueOnce(true);
+      const { req: reqDelRl, res: resDelRl } = createMocks({ method: 'DELETE', body: { id: 1 } });
+      await handler(reqDelRl, resDelRl);
+      expect(resDelRl._getStatusCode()).toBe(429);
+
+      const { req: reqDelId, res: resDelId } = createMocks({ method: 'DELETE', body: { id: 'nao-numerico' } });
+      await handler(reqDelId, resDelId);
+      expect(resDelId._getStatusCode()).toBe(400);
+
+      deleteProduct.mockRejectedValueOnce(new Error('Delete failure'));
+      const { req: reqDel500, res: resDel500 } = createMocks({ method: 'DELETE', body: { id: 1 } });
+      await handler(reqDel500, resDel500);
+      expect(resDel500._getStatusCode()).toBe(500);
+
+      // Erro inesperado no catch externo (req sem query -> 500)
+      const { res: resTop500 } = createMocks({ method: 'GET' });
+      await handler({ method: 'GET' }, resTop500);
+      expect(resTop500._getStatusCode()).toBe(500);
+    });
   });
 });

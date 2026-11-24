@@ -28,7 +28,12 @@ jest.mock('../../../../__mocks__/styleMock.js', () => {
   };
 });
 
-jest.mock('react-hot-toast', () => ({ error: jest.fn(), success: jest.fn() }));
+jest.mock('react-hot-toast', () => ({
+  error: jest.fn(),
+  success: jest.fn(),
+  loading: jest.fn().mockReturnValue('toast-id'),
+  dismiss: jest.fn(),
+}));
 
 import AdminSales from '../../../../components/Admin/AdminSales.js';
 import { subscribeAdminUnauthorized } from '../../../../utils/adminSession.js';
@@ -503,6 +508,382 @@ describe('Componente Front-End - AdminSales', () => {
       });
     } finally {
       unsubscribe();
+    }
+  });
+
+  it('cobre todos os badges de pagamento/andamento, filtros, erros 401/500/rede e sincronização sem alterações', async () => {
+    const onUnauthorized = jest.fn();
+    const unsubscribe = subscribeAdminUnauthorized(onUnauthorized);
+
+    global.fetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [
+            { id: 1, customer_name: 'C1', customer_email: 'c1@t.com', product_name: 'P1', quantity: 1, formatted_total_amount: 'R$ 10,00', payment_method: 'pix', payment_status: 'pending', order_status: 'awaiting_payment', tracking_code: '' },
+            { id: 2, customer_name: 'C2', customer_email: 'c2@t.com', product_name: 'P2', quantity: 1, formatted_total_amount: 'R$ 20,00', payment_method: 'credit_card', payment_status: 'in_process', order_status: 'preparing', tracking_code: '' },
+            { id: 3, customer_name: 'C3', customer_email: 'c3@t.com', product_name: 'P3', quantity: 1, formatted_total_amount: 'R$ 30,00', payment_method: 'debit_card', payment_status: 'authorized', order_status: 'shipped', tracking_code: 'TRK3' },
+            { id: 4, customer_name: 'C4', customer_email: 'c4@t.com', product_name: 'P4', quantity: 1, formatted_total_amount: 'R$ 40,00', payment_method: 'ticket', payment_status: 'rejected', order_status: 'cancelled', tracking_code: '' },
+            { id: 5, customer_name: 'C5', customer_email: 'c5@t.com', product_name: 'P5', quantity: 1, formatted_total_amount: 'R$ 50,00', payment_method: 'pix', payment_status: 'cancelled', order_status: 'delivered', tracking_code: '' },
+            { id: 6, customer_name: 'C6', customer_email: 'c6@t.com', product_name: 'P6', quantity: 1, formatted_total_amount: 'R$ 60,00', payment_method: 'pix', payment_status: 'charged_back', order_status: 'status_custom', tracking_code: '' },
+            { id: 7, customer_name: 'C7', customer_email: 'c7@t.com', product_name: 'P7', quantity: 1, formatted_total_amount: 'R$ 70,00', payment_method: 'pix', payment_status: 'refunded', order_status: '', tracking_code: '' },
+            { id: 8, customer_name: 'C8', customer_email: 'c8@t.com', product_name: 'P8', quantity: 1, formatted_total_amount: 'R$ 80,00', payment_method: 'pix', payment_status: '', order_status: 'paid', tracking_code: '' },
+          ],
+          pagination: { totalPages: 2, total: 12 },
+        }),
+      })
+      // Filtro de busca
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: [], pagination: { totalPages: 1, total: 0 } }),
+      })
+      // Filtro de pagamento
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: [], pagination: { totalPages: 1, total: 0 } }),
+      })
+      // Filtro de situação do pedido
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: [], pagination: { totalPages: 1, total: 0 } }),
+      })
+      // Filtro de forma de pagamento + sync com 0 alterações
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: [], pagination: { totalPages: 1, total: 0 }, syncedCount: 0 }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: [], pagination: { totalPages: 1, total: 0 }, syncedCount: 0 }),
+      })
+      // Sync recebendo HTTP 500 (!res.ok)
+      .mockResolvedValueOnce({ ok: false, status: 500 })
+      // Sync rejeitando rede
+      .mockRejectedValueOnce(new Error('Network down'))
+      // Sync recebendo HTTP 401
+      .mockResolvedValueOnce({ ok: false, status: 401 });
+
+    try {
+      render(<AdminSales />);
+
+      await waitFor(() => {
+        expect(screen.getByText('C1')).toBeInTheDocument();
+        expect(screen.getByText('Pendente')).toBeInTheDocument();
+        expect(screen.getAllByText('Em análise').length).toBeGreaterThanOrEqual(2);
+        expect(screen.getByText('Autorizado')).toBeInTheDocument();
+        expect(screen.getByText('Contestado')).toBeInTheDocument();
+        expect(screen.getAllByText('Recusado/Canc.').length).toBeGreaterThanOrEqual(2);
+        expect(screen.getAllByText('Reembolsado').length).toBeGreaterThanOrEqual(2);
+        expect(screen.getByText('status_custom')).toBeInTheDocument();
+        expect(screen.getByText('TRK3')).toBeInTheDocument();
+      });
+
+      // Exercita todos os filtros (resetam page=1)
+      fireEvent.change(screen.getByLabelText('Buscar pedidos'), { target: { value: 'Maria' } });
+      await waitFor(() => {
+        expect(String(global.fetch.mock.calls.at(-1)[0])).toContain('search=Maria');
+      });
+
+      fireEvent.change(screen.getByLabelText('Filtrar por status do pagamento'), { target: { value: 'approved' } });
+      await waitFor(() => {
+        expect(String(global.fetch.mock.calls.at(-1)[0])).toContain('paymentStatus=approved');
+      });
+
+      fireEvent.change(screen.getByLabelText('Filtrar por situação do pedido'), { target: { value: 'preparing' } });
+      await waitFor(() => {
+        expect(String(global.fetch.mock.calls.at(-1)[0])).toContain('orderStatus=preparing');
+      });
+
+      fireEvent.change(screen.getByLabelText('Filtrar por forma de pagamento'), { target: { value: 'pix' } });
+      await waitFor(() => {
+        expect(String(global.fetch.mock.calls.at(-1)[0])).toContain('paymentMethod=pix');
+      });
+
+      // Sincronizar MP sem alterações
+      const syncBtn = screen.getByRole('button', { name: /Sincronizar MP/i });
+      fireEvent.click(syncBtn);
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith('Todos os pedidos desta página já estão sincronizados.');
+      });
+
+      // Falha HTTP 500
+      fireEvent.click(syncBtn);
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith('Erro ao carregar os pedidos internos.');
+      });
+
+      // Falha de rede
+      fireEvent.click(syncBtn);
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith('Falha de conexão ao buscar pedidos.');
+      });
+
+      // HTTP 401 no fetchOrders
+      fireEvent.click(syncBtn);
+      await waitFor(() => {
+        expect(onUnauthorized).toHaveBeenCalledWith('expired');
+      });
+    } finally {
+      unsubscribe();
+    }
+  });
+
+  it('cobre o modal de gerenciamento de pedido: abertura com endereço, cancelar, salvar 200 (limpando cache), erros 400/rede e 401', async () => {
+    const onUnauthorized = jest.fn();
+    const unsubscribe = subscribeAdminUnauthorized(onUnauthorized);
+    sessionStorage.setItem('admin_dashboard_stats', '{"cached":true}');
+
+    const sampleOrder = {
+      id: 55,
+      customer_name: 'Ana Paula',
+      customer_email: 'ana@exemplo.com',
+      product_name: 'Terço de Madeira',
+      quantity: 2,
+      formatted_total_amount: 'R$ 99,80',
+      formatted_shipping_cost: 'R$ 10,00',
+      mp_payment_id: '',
+      payment_method: 'pix',
+      payment_status: 'approved',
+      order_status: '',
+      tracking_code: '',
+      delivery_address: {
+        street: 'Rua da Paz',
+        number: '123',
+        neighborhood: 'Centro',
+        city: 'São Paulo',
+        state: 'SP',
+        cep: '01001-000',
+      },
+    };
+
+    global.fetch.mockImplementation((url, opts = {}) => {
+      if (String(url).startsWith('/api/admin/orders') && (!opts.method || opts.method === 'GET')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            data: [sampleOrder],
+            pagination: { totalPages: 1, total: 1 },
+          }),
+        });
+      }
+      if (String(url) === '/api/admin/orders' && opts.method === 'PUT') {
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ success: true }) });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({}) });
+    });
+
+    try {
+      render(<AdminSales />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Ana Paula')).toBeInTheDocument();
+      });
+
+      // Abre e fecha pelo botão Cancelar
+      fireEvent.click(screen.getByRole('button', { name: 'Gerenciar' }));
+      expect(screen.getByText(/Gerenciar Pedido #55/i)).toBeInTheDocument();
+      expect(screen.getByText(/Aguardando geração/i)).toBeInTheDocument();
+      expect(screen.getByText(/Rua da Paz, 123 — Centro, São Paulo\/SP — CEP 01001-000/i)).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+      await waitFor(() => {
+        expect(screen.queryByText(/Gerenciar Pedido #55/i)).not.toBeInTheDocument();
+      });
+
+      // Reabre, altera status + rastreio e salva com sucesso (200 OK)
+      fireEvent.click(screen.getByRole('button', { name: 'Gerenciar' }));
+      fireEvent.change(screen.getByLabelText('Situação Logística do Pedido'), { target: { value: 'shipped' } });
+      fireEvent.change(screen.getByLabelText('Código de Rastreio'), { target: { value: 'BR999888777BR' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Salvar Alterações' }));
+
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith('Pedido #55 atualizado com sucesso!');
+      });
+      expect(sessionStorage.getItem('admin_dashboard_stats')).toBeNull();
+      const putCall = global.fetch.mock.calls.find(([, opts]) => opts?.method === 'PUT');
+      expect(JSON.parse(putCall[1].body)).toEqual({
+        id: 55,
+        order_status: 'shipped',
+        tracking_code: 'BR999888777BR',
+      });
+
+      // Erro 400 da API no PUT
+      global.fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        json: async () => ({ message: 'Status inválido para este pedido' }),
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Gerenciar' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Salvar Alterações' }));
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith('Status inválido para este pedido');
+      });
+
+      // Erro de rede no PUT
+      global.fetch.mockRejectedValueOnce(new Error('PUT network failure'));
+      fireEvent.click(screen.getByRole('button', { name: 'Salvar Alterações' }));
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith('Erro ao salvar alterações do pedido.');
+      });
+
+      // HTTP 401 no PUT
+      global.fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        json: async () => ({ error: 'Unauthorized' }),
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Salvar Alterações' }));
+      await waitFor(() => {
+        expect(onUnauthorized).toHaveBeenCalledWith('expired');
+      });
+    } finally {
+      unsubscribe();
+    }
+  });
+
+  it('cobre Produtos Internos: colunas customizadas, ShippingTypeSelect, validação schema, mapItemToFormData e onReorder', async () => {
+    Element.prototype.scrollIntoView = jest.fn();
+
+    const internalProducts = [
+      {
+        id: 10,
+        name: 'Terço Artesanal',
+        image_url: 'https://cdn.exemplo.com/terco1.jpg\nhttps://cdn.exemplo.com/terco2.jpg',
+        description: 'Feito à mão',
+        price: 49.9,
+        stock: 8,
+        shipping_type: 'fixed',
+        shipping_cost: 15.5,
+        category: 'terços',
+        published: true,
+      },
+      {
+        id: 11,
+        name: 'Escapulário Simples',
+        image_url: '',
+        description: '',
+        price: null,
+        stock: 0,
+        shipping_type: 'calculated',
+        shipping_cost: null,
+        category: 'geral',
+        published: false,
+      },
+      {
+        id: 12,
+        name: 'Livro Devocional',
+        image_url: 'https://cdn.exemplo.com/livro.jpg',
+        description: '',
+        price: 35,
+        stock: null,
+        shipping_type: 'free',
+        shipping_cost: '',
+        category: 'livros',
+        published: true,
+      },
+    ];
+
+    global.fetch.mockImplementation((url, opts = {}) => {
+      const urlStr = String(url);
+      if (urlStr.includes('/api/admin/orders')) {
+        return Promise.resolve({
+          ok: true,
+          headers: { get: () => 'application/json' },
+          json: async () => ({ data: [], pagination: { page: 1, limit: 1, total: 0, totalPages: 1 } }),
+        });
+      }
+      if (urlStr.includes('/api/admin/internal-products')) {
+        if (opts.method === 'POST' || opts.method === 'PUT') {
+          return Promise.resolve({
+            ok: true,
+            status: opts.method === 'POST' ? 201 : 200,
+            headers: { get: () => 'application/json' },
+            json: async () => ({ data: internalProducts[0] }),
+          });
+        }
+        return Promise.resolve({
+          ok: true,
+          headers: { get: () => 'application/json' },
+          json: async () => ({
+            data: internalProducts,
+            pagination: { page: 1, limit: 10, total: 3, totalPages: 1 },
+          }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        headers: { get: () => 'application/json' },
+        json: async () => ({}),
+      });
+    });
+
+    render(<AdminSales initialSubTab="internal-products" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Terço Artesanal')).toBeInTheDocument();
+      expect(screen.getByText('Escapulário Simples')).toBeInTheDocument();
+      expect(screen.getByText('Livro Devocional')).toBeInTheDocument();
+    });
+
+    // Colunas customizadas de Produtos Internos
+    expect(screen.getByAltText('Terço Artesanal')).toHaveAttribute('src', 'https://cdn.exemplo.com/terco1.jpg');
+    expect(screen.getByText('Sem foto')).toBeInTheDocument();
+    expect(screen.getByText('R$ 49,90')).toBeInTheDocument();
+    expect(screen.getByText('8 un.')).toBeInTheDocument();
+    expect(screen.getAllByText('0 un.')).toHaveLength(2);
+    expect(screen.getByText('Fixo')).toBeInTheDocument();
+    expect(screen.getByText('Calculado')).toBeInTheDocument();
+    expect(screen.getByText('Grátis')).toBeInTheDocument();
+
+    // Edição de item com valores preenchidos e com valores nulos (cobre mapItemToFormData + ShippingTypeSelect)
+    const editButtons = screen.getAllByRole('button', { name: 'Editar' });
+    fireEvent.click(editButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Modalidade de Frete')).toHaveValue('fixed');
+    });
+    expect(screen.getByLabelText(/Valor Unitário/i)).toHaveValue('R$ 49,90');
+    expect(screen.getByLabelText(/Valor Base de Frete/i)).toHaveValue('R$ 15,50');
+    expect(screen.getByText('Define como o frete é calculado no checkout do site público.')).toBeInTheDocument();
+
+    // Edição de item com valores nulos para cobrir os fallbacks do mapItemToFormData e preprocess
+    fireEvent.click(editButtons[1]);
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Nome do Produto \(Venda Interna\)/i)).toHaveValue('Escapulário Simples');
+    });
+    expect(screen.getByLabelText(/Valor Unitário/i)).toHaveValue('');
+    expect(screen.getByLabelText(/Valor Base de Frete/i)).toHaveValue('0,00');
+
+    // Altera campos + ShippingTypeSelect e submete para exercitar os preprocessors do internalProductSchema
+    fireEvent.change(screen.getByLabelText('Modalidade de Frete'), { target: { value: 'calculated' } });
+    fireEvent.change(screen.getByLabelText(/Valor Unitário/i), { target: { value: '29,90' } });
+    fireEvent.change(screen.getByLabelText(/Estoque Disponível/i), { target: { value: '' } });
+    fireEvent.change(screen.getByLabelText(/Valor Base de Frete/i), { target: { value: '' } });
+    fireEvent.change(screen.getByPlaceholderText(/Cole as URLs/i), { target: { value: 'https://cdn.exemplo.com/esc.jpg' } });
+
+    const form = screen.getByLabelText('Modalidade de Frete').closest('form');
+    fireEvent.submit(form);
+
+    await waitFor(() => {
+      const putCall = global.fetch.mock.calls.find(
+        ([url, opts]) => String(url).includes('/api/admin/internal-products') && opts?.method === 'PUT'
+      );
+      expect(putCall).toBeDefined();
+    });
+
+    // Reordenação via drag & drop na tabela de Produtos Internos (exercita onReorder)
+    const rows = screen.getAllByRole('row');
+    if (rows.length >= 3) {
+      fireEvent.dragStart(rows[1], { dataTransfer: { effectAllowed: 'move', setData: jest.fn() } });
+      fireEvent.dragOver(rows[2], { dataTransfer: { dropEffect: 'move' } });
+      fireEvent.drop(rows[2], { dataTransfer: { getData: () => '0' } });
+
+      await waitFor(() => {
+        const reorderCall = global.fetch.mock.calls.find(
+          ([url, opts]) => String(url) === '/api/admin/internal-products' && opts?.method === 'PUT'
+        );
+        expect(reorderCall).toBeDefined();
+      });
     }
   });
 });
