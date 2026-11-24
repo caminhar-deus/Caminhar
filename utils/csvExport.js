@@ -39,6 +39,13 @@ export function exportToCSV({ data, columns, filename, onEmpty }) {
     return;
   }
 
+  if (!Array.isArray(columns) || columns.length === 0) {
+    if (onEmpty) {
+      onEmpty();
+    }
+    return;
+  }
+
   // Prepara os cabeçalhos
   const headers = columns.map(col => col.header);
 
@@ -69,6 +76,10 @@ export function exportToCSV({ data, columns, filename, onEmpty }) {
   const link = document.createElement('a');
   link.href = url;
   link.setAttribute('download', `${filename}.csv`);
+  if (typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent || '')) {
+    // No jsdom 31, o clique nativo em <a href="blob:..."> dispara navegação não implementada.
+    link.addEventListener('click', (event) => event.preventDefault(), { once: true });
+  }
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

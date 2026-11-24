@@ -1,7 +1,12 @@
 /**
- * Helpers puros para auditoria paginada do GitHub Actions e parsing/metadados de logs locais.
+ * Helpers puros para auditoria paginada do GitHub Actions, snapshots offline e parsing/metadados de logs locais.
  * Sem side effects no top-level nem `import.meta`, para uso direto em Node ESM e Jest.
  */
+
+export const DEFAULT_ACTIONS_SNAPSHOT_REL = 'logs/github-actions-snapshot.json';
+export const DEFAULT_MAX_SNAPSHOT_AGE_HOURS = 24;
+
+const SPEC_RESULT_LINE_RE = /^\s*(?:✓|✕|×|○)\s/;
 
 /**
  * Monta o caminho da API REST de workflow runs do GitHub filtrado pela data inicial.
@@ -15,6 +20,78 @@
 export function buildRunsApiPath({ repo, sinceDateIso, page = 1, perPage = 100 }) {
   const createdFilter = encodeURIComponent(`>=${String(sinceDateIso).slice(0, 10)}`);
   return `/repos/${repo}/actions/runs?per_page=${perPage}&created=${createdFilter}&page=${page}`;
+}
+
+/**
+ * Interpreta argumentos de linha de comando do script `check-github-actions.js`.
+ * @param {string[]} [argv=[]]
+ * @returns {{writeSnapshotPath: string|null, fromSnapshotPath: string|null, maxAgeHours: number}}
+ */
+export function parseDiagnosticsCliArgs(argv = []) {
+  let writeSnapshotPath = null;
+  let fromSnapshotPath = null;
+  let maxAgeHours = DEFAULT_MAX_SNAPSHOT_AGE_HOURS;
+
+  const args = Array.isArray(argv) ? argv : [];
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = String(args[i]);
+
+    if (arg === '--write-snapshot') {
+      const next = args[i + 1];
+      if (next && !String(next).startsWith('--')) {
+        writeSnapshotPath = String(next);
+        i += 1;
+      } else {
+        writeSnapshotPath = DEFAULT_ACTIONS_SNAPSHOT_REL;
+      }
+      continue;
+    }
+
+    if (arg.startsWith('--write-snapshot=')) {
+      const value = arg.slice('--write-snapshot='.length).trim();
+      writeSnapshotPath = value || DEFAULT_ACTIONS_SNAPSHOT_REL;
+      continue;
+    }
+
+    if (arg === '--from-snapshot') {
+      const next = args[i + 1];
+      if (next && !String(next).startsWith('--')) {
+        fromSnapshotPath = String(next);
+        i += 1;
+      } else {
+        fromSnapshotPath = DEFAULT_ACTIONS_SNAPSHOT_REL;
+      }
+      continue;
+    }
+
+    if (arg.startsWith('--from-snapshot=')) {
+      const value = arg.slice('--from-snapshot='.length).trim();
+      fromSnapshotPath = value || DEFAULT_ACTIONS_SNAPSHOT_REL;
+      continue;
+    }
+
+    if (arg === '--max-snapshot-age-hours') {
+      const next = Number(args[i + 1]);
+      if (Number.isFinite(next) && next > 0) {
+        maxAgeHours = next;
+        i += 1;
+      }
+      continue;
+    }
+
+    if (arg.startsWith('--max-snapshot-age-hours=')) {
+      const value = Number(arg.slice('--max-snapshot-age-hours='.length));
+      if (Number.isFinite(value) && value > 0) {
+        maxAgeHours = value;
+      }
+    }
+  }
+
+  return {
+    writeSnapshotPath,
+    fromSnapshotPath,
+    maxAgeHours,
+  };
 }
 
 /**
@@ -97,6 +174,171 @@ export async function fetchRecentWorkflowRuns({
 }
 
 /**
+ * Agrupa runs por conclusão/status e separa as execuções com falha.
+ * @param {Array<Object>} [recentRuns=[]]
+ * @returns {{runsByConclusion: Record<string, number>, failedRuns: Array<Object>}}
+ */
+export function summarizeWorkflowRuns(recentRuns = []) {
+  const runsByConclusion = {};
+  const failedRuns = [];
+
+  for (const run of Array.isArray(recentRuns) ? recentRuns : []) {
+    const conc = run?.conclusion || run?.status || 'unknown';
+    runsByConclusion[conc] = (runsByConclusion[conc] || 0) + 1;
+    if (run?.conclusion === 'failure') {
+      failedRuns.push(run);
+    }
+  }
+
+  return { runsByConclusion, failedRuns };
+}
+
+function sanitizeWorkflowRun(run) {
+  if (!run || typeof run !== 'object') return null;
+  return {
+    id: run.id ?? null,
+    run_number: run.run_number ?? null,
+    name: run.name ?? null,
+    event: run.event ?? null,
+    head_branch: run.head_branch ?? null,
+    conclusion: run.conclusion ?? null,
+    status: run.status ?? null,
+    created_at: run.created_at ?? null,
+    html_url: run.html_url ?? null,
+    head_commit: run.head_commit
+      ? {
+          id: run.head_commit.id ?? null,
+          message: typeof run.head_commit.message === 'string'
+            ? run.head_commit.message.split('\n')[0]
+            : null,
+        }
+      : null,
+  };
+}
+
+/**
+ * Monta payload sanitizado de snapshot offline das execuções do GitHub Actions (sem tokens ou headers).
+ */
+export function buildActionsSnapshot({
+  repo,
+  capturedAt = new Date(),
+  sevenDaysAgo,
+  runsResult,
+  failedRunDetails = [],
+}) {
+  return {
+    schemaVersion: 1,
+    repo,
+    capturedAt: new Date(capturedAt).toISOString(),
+    windowSince: sevenDaysAgo ? new Date(sevenDaysAgo).toISOString() : null,
+    totalCount: Number(runsResult?.totalCount ?? 0),
+    pagesFetched: Number(runsResult?.pagesFetched ?? 0),
+    truncated: Boolean(runsResult?.truncated),
+    recentRuns: (Array.isArray(runsResult?.recentRuns) ? runsResult.recentRuns : [])
+      .map(sanitizeWorkflowRun)
+      .filter(Boolean),
+    latestRunOverall: runsResult?.latestRunOverall
+      ? sanitizeWorkflowRun(runsResult.latestRunOverall)
+      : null,
+    failedRunDetails: Array.isArray(failedRunDetails) ? failedRunDetails : [],
+  };
+}
+
+/**
+ * Valida estrutura, repositório de origem e frescor de um snapshot offline do GitHub Actions.
+ * @param {string|Object} rawSnapshot
+ * @param {Object} options
+ * @param {string} options.expectedRepo
+ * @param {Date} [options.now]
+ * @param {number} [options.maxAgeHours]
+ * @returns {{valid: boolean, stale: boolean, ageHours: number|null, reason: string|null, snapshot: Object|null}}
+ */
+export function evaluateActionsSnapshot(
+  rawSnapshot,
+  { expectedRepo, now = new Date(), maxAgeHours = DEFAULT_MAX_SNAPSHOT_AGE_HOURS }
+) {
+  let snapshot = rawSnapshot;
+  if (typeof rawSnapshot === 'string') {
+    try {
+      snapshot = JSON.parse(rawSnapshot);
+    } catch {
+      return {
+        valid: false,
+        stale: false,
+        ageHours: null,
+        reason: 'JSON inválido no snapshot do GitHub Actions.',
+        snapshot: null,
+      };
+    }
+  }
+
+  if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) {
+    return {
+      valid: false,
+      stale: false,
+      ageHours: null,
+      reason: 'Estrutura de snapshot inválida.',
+      snapshot: null,
+    };
+  }
+
+  if (snapshot.schemaVersion !== 1) {
+    return {
+      valid: false,
+      stale: false,
+      ageHours: null,
+      reason: `Versão de schema não suportada (${snapshot.schemaVersion}).`,
+      snapshot: null,
+    };
+  }
+
+  if (snapshot.repo !== expectedRepo) {
+    return {
+      valid: false,
+      stale: false,
+      ageHours: null,
+      reason: `Repositório divergente no snapshot (esperado: ${expectedRepo}, recebido: ${snapshot.repo}).`,
+      snapshot: null,
+    };
+  }
+
+  if (!Array.isArray(snapshot.recentRuns)) {
+    return {
+      valid: false,
+      stale: false,
+      ageHours: null,
+      reason: 'Campo recentRuns ausente ou inválido no snapshot.',
+      snapshot: null,
+    };
+  }
+
+  const capturedMs = Date.parse(snapshot.capturedAt);
+  if (!snapshot.capturedAt || Number.isNaN(capturedMs)) {
+    return {
+      valid: false,
+      stale: false,
+      ageHours: null,
+      reason: 'Timestamp capturedAt ausente ou inválido no snapshot.',
+      snapshot: null,
+    };
+  }
+
+  const nowMs = new Date(now).getTime();
+  const ageHours = Math.max(0, (nowMs - capturedMs) / (1000 * 60 * 60));
+  const stale = ageHours > maxAgeHours;
+
+  return {
+    valid: true,
+    stale,
+    ageHours,
+    reason: stale
+      ? `Snapshot expirado (${ageHours.toFixed(1)}h > limite de ${maxAgeHours}h).`
+      : null,
+    snapshot,
+  };
+}
+
+/**
  * Formata a linha inicial de metadados de execução para arquivos de log locais.
  */
 export function formatLogMetaStart({ startedAt, gitSha, command }) {
@@ -158,7 +400,8 @@ export function parseLogMeta(content) {
 }
 
 /**
- * Resume o conteúdo de um log de execução do Jest (`tests-output.log` ou `coverage-output.log`).
+ * Resume o conteúdo de um log de execução do Jest (`tests-output.log` ou `coverage-output.log`)
+ * e contabiliza ruídos de console (`console.error`, `console.warn`, `act(...)` e navegação jsdom).
  */
 export function summarizeJestLog(content) {
   const text = String(content || '');
@@ -169,18 +412,34 @@ export function summarizeJestLog(content) {
   let testsLine = null;
   let timeLine = null;
   let allFilesCoverageLine = null;
+  let consoleErrors = 0;
+  let consoleWarns = 0;
+  let actWarnings = 0;
+  let jsdomNavigationErrors = 0;
 
   for (const line of lines) {
     if (line.includes('Test Suites:')) suitesLine = line.trim();
     if (line.includes('Tests:')) testsLine = line.trim();
     if (line.includes('Time:')) timeLine = line.trim();
     if (/^\s*All files\s*\|/.test(line)) allFilesCoverageLine = line.trim();
+
+    if (/^\s*console\.error\b/.test(line)) consoleErrors += 1;
+    if (/^\s*console\.warn\b/.test(line)) consoleWarns += 1;
+
+    if (!SPEC_RESULT_LINE_RE.test(line)) {
+      if (line.includes('not wrapped in act(')) actWarnings += 1;
+      if (line.includes('Not implemented: navigation')) jsdomNavigationErrors += 1;
+    }
   }
 
   const failed = Boolean(
     (meta.exitCode !== null && meta.exitCode !== 0)
     || /^FAIL\s/m.test(text)
     || (suitesLine && /\bfailed\b/i.test(suitesLine))
+  );
+
+  const hasConsoleNoise = Boolean(
+    consoleErrors > 0 || consoleWarns > 0 || actWarnings > 0 || jsdomNavigationErrors > 0
   );
 
   return {
@@ -190,6 +449,11 @@ export function summarizeJestLog(content) {
     timeLine,
     allFilesCoverageLine,
     failed,
+    consoleErrors,
+    consoleWarns,
+    actWarnings,
+    jsdomNavigationErrors,
+    hasConsoleNoise,
   };
 }
 

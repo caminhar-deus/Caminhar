@@ -105,6 +105,11 @@ export const useApiFetch = (url, config = {}) => {
     const seq = ++requestSeqRef.current;
     const isCurrent = () => isMountedRef.current && seq === requestSeqRef.current;
 
+    if (!url || String(url).trim() === '') {
+      setLoading(false);
+      return;
+    }
+
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       setRequestId(null);
       setError('Sem conexão com a internet');
@@ -224,7 +229,7 @@ export const useApiFetch = (url, config = {}) => {
         window.removeEventListener('online', handleOnline);
       }
     };
-    }, [fetchData, staleTime]);
+  }, [fetchData, staleTime]);
 
   return { data, loading, error, requestId, refetch: fetchData, setData };
 };

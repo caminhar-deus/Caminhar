@@ -322,5 +322,20 @@ describe('Hook - useApiFetch (requestId e retry de 503)', () => {
 
       expect(result.current.data).toEqual({ data: ['atual'] });
     });
+
+    it('não dispara fetch quando url é vazia e finaliza loading sem erro ou aviso de console', async () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      try {
+        const { result } = renderHook(() => useApiFetch('', { initialData: { data: [] } }));
+
+        await waitFor(() => expect(result.current.loading).toBe(false));
+        expect(fetchMock).not.toHaveBeenCalled();
+        expect(result.current.error).toBeNull();
+        expect(result.current.data).toEqual({ data: [] });
+        expect(consoleErrorSpy).not.toHaveBeenCalled();
+      } finally {
+        consoleErrorSpy.mockRestore();
+      }
+    });
   });
 });

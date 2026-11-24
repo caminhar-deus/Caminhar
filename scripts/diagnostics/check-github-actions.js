@@ -2,17 +2,27 @@
 
 /**
  * Script de diagnóstico e auditoria dos logs e execuções do GitHub Actions.
- * Lê o GITHUB_TOKEN de .env.local e consulta a API REST do GitHub com paginação.
+ * Lê o GITHUB_TOKEN de .env.local e consulta a API REST do GitHub com paginação,
+ * oferecendo snapshot offline auditável e contingência local de logs/workflows.
  */
 
 import fs from 'fs';
 import path from 'path';
 import https from 'https';
 import {
+  DEFAULT_ACTIONS_SNAPSHOT_REL,
+  buildActionsSnapshot,
+  evaluateActionsSnapshot,
   fetchRecentWorkflowRuns,
+  parseDiagnosticsCliArgs,
   summarizeEslintLog,
   summarizeJestLog,
+  summarizeWorkflowRuns,
 } from './github-actions-helper.js';
+
+const REPO = 'caminhar-deus/Caminhar';
+const REQUEST_TIMEOUT_MS = 10_000;
+const SEVEN_DAYS_AGO = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
 // 1. Carrega GITHUB_TOKEN de .env.local
 let token = process.env.GITHUB_TOKEN;
@@ -30,9 +40,6 @@ if (!token) {
     console.error('Erro ao ler .env.local:', err.message);
   }
 }
-
-const REPO = 'caminhar-deus/Caminhar';
-const SEVEN_DAYS_AGO = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
 function formatMetaSummary(meta) {
   const parts = [];
@@ -57,19 +64,20 @@ function printJestSummary(label, filePath) {
     if (summary.testsLine) console.log(`   ${summary.testsLine}`);
     if (summary.timeLine) console.log(`   ${summary.timeLine}`);
     if (summary.allFilesCoverageLine) console.log(`   Cobertura: ${summary.allFilesCoverageLine}`);
+    if (summary.hasConsoleNoise) {
+      console.log(
+        `   ⚠️ Ruído de console: console.error=${summary.consoleErrors}, console.warn=${summary.consoleWarns}, act=${summary.actWarnings}, jsdom_nav=${summary.jsdomNavigationErrors}`
+      );
+    } else {
+      console.log('   Ruído de console: ✅ 0 console.error/warn (0 act, 0 jsdom nav)');
+    }
     console.log(`   Status Geral: ${summary.failed ? '❌ Falhas detectadas' : '✅ 100% Aprovado'}`);
   } catch (e) {
     console.log(`   Erro ao ler ${path.basename(filePath)}: ${e.message}`);
   }
 }
 
-function diagnosticoLocal(motivo) {
-  console.log(`\n======================================================`);
-  console.log(`⚠️ MODO DE CONTINGÊNCIA: DIAGNÓSTICO LOCAL DE LOGS E WORKFLOWS`);
-  console.log(`GitHub Actions remoto: status: NÃO VERIFICADO (contingência local)`);
-  console.log(`Motivo: ${motivo}`);
-  console.log(`======================================================\n`);
-
+function printLocalLogsAndWorkflows() {
   const logsDir = path.resolve(process.cwd(), 'logs');
   const workflowsDir = path.resolve(process.cwd(), '.github', 'workflows');
 
@@ -111,8 +119,41 @@ function diagnosticoLocal(motivo) {
       console.log(`   Erro ao ler diretório de workflows: ${e.message}`);
     }
   }
+}
+
+function tryReadLocalSnapshot(snapshotPath, maxAgeHours) {
+  if (!snapshotPath || !fs.existsSync(snapshotPath)) {
+    return { exists: false, valid: false, stale: false, reason: 'Snapshot inexistente', snapshot: null };
+  }
+  const raw = fs.readFileSync(snapshotPath, 'utf8');
+  return {
+    exists: true,
+    ...evaluateActionsSnapshot(raw, { expectedRepo: REPO, maxAgeHours }),
+  };
+}
+
+function diagnosticoLocal(motivo, snapshotNotice = null) {
+  console.log(`\n======================================================`);
+  console.log(`⚠️ MODO DE CONTINGÊNCIA: DIAGNÓSTICO LOCAL DE LOGS E WORKFLOWS`);
+  console.log(`GitHub Actions remoto: status: NÃO VERIFICADO (contingência local)`);
+  console.log(`Motivo: ${motivo}`);
+  if (snapshotNotice) {
+    console.log(`Snapshot offline: ${snapshotNotice}`);
+  }
+  console.log(`Dica: em host com rede, execute \`npm run diag:actions:snapshot\` para gerar ${DEFAULT_ACTIONS_SNAPSHOT_REL}.`);
+  console.log(`======================================================\n`);
+
+  printLocalLogsAndWorkflows();
 
   console.log('\n✅ Diagnóstico local concluído (remoto: NÃO VERIFICADO).');
+}
+
+function attachTimeout(req, hostname) {
+  req.setTimeout(REQUEST_TIMEOUT_MS, () => {
+    const timeoutErr = new Error(`Timeout após ${REQUEST_TIMEOUT_MS}ms ao consultar ${hostname}`);
+    timeoutErr.code = 'ETIMEDOUT';
+    req.destroy(timeoutErr);
+  });
 }
 
 function requestGitHub(apiPath) {
@@ -142,32 +183,209 @@ function requestGitHub(apiPath) {
         };
         const redirReq = https.request(redirOptions, (redirRes) => {
           let redirData = '';
-          redirRes.on('data', chunk => redirData += chunk);
-          redirRes.on('end', () => resolve({ statusCode: redirRes.statusCode, data: redirData, headers: redirRes.headers }));
+          redirRes.on('data', (chunk) => { redirData += chunk; });
+          redirRes.on('end', () => resolve({
+            statusCode: redirRes.statusCode,
+            data: redirData,
+            headers: redirRes.headers,
+          }));
         });
+        attachTimeout(redirReq, redirectUrl.hostname);
         redirReq.on('error', reject);
         redirReq.end();
         return;
       }
 
       let data = '';
-      res.on('data', chunk => data += chunk);
+      res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => resolve({ statusCode: res.statusCode, data, headers: res.headers }));
     });
 
+    attachTimeout(req, options.hostname);
     req.on('error', reject);
     req.end();
   });
 }
 
+async function collectFailedRunDetails(failedRuns) {
+  const details = [];
+  for (const run of failedRuns) {
+    const failedJobs = [];
+    const jobsRes = await requestGitHub(`/repos/${REPO}/actions/runs/${run.id}/jobs`);
+    if (jobsRes.statusCode === 200) {
+      const jobsJson = JSON.parse(jobsRes.data || '{}');
+      const jobs = jobsJson.jobs || [];
+
+      for (const job of jobs) {
+        const failedSteps = (job.steps || [])
+          .filter((step) => step.conclusion === 'failure')
+          .map((step) => ({ number: step.number, name: step.name }));
+
+        let tailErrors = [];
+        if (job.conclusion === 'failure') {
+          const logsRes = await requestGitHub(`/repos/${REPO}/actions/jobs/${job.id}/logs`);
+          if (logsRes.statusCode === 200 && logsRes.data) {
+            const lines = logsRes.data.split('\n');
+            tailErrors = lines
+              .filter((line) => /error|fail|exception|fatal|reprov/i.test(line))
+              .slice(-15)
+              .map((line) => line.trim());
+          }
+        }
+
+        failedJobs.push({
+          id: job.id,
+          name: job.name,
+          status: job.status,
+          conclusion: job.conclusion,
+          failedSteps,
+          tailErrors,
+        });
+      }
+    }
+
+    details.push({
+      runId: run.id,
+      jobs: failedJobs,
+    });
+  }
+  return details;
+}
+
+function printRunsReport({
+  recentRuns,
+  latestRunOverall,
+  totalCount,
+  pagesFetched,
+  truncated,
+  failedRunDetails = [],
+}) {
+  console.log(`Total de execuções retornadas pelo filtro na API: ${totalCount}`);
+  console.log(`Páginas consultadas: ${pagesFetched}`);
+  console.log(`Execuções nos últimos 7 dias: ${recentRuns.length}\n`);
+
+  if (truncated) {
+    console.log('⚠️ Aviso: limite de paginação atingido — há mais execuções nos últimos 7 dias além do teto de páginas configurado.\n');
+  }
+
+  if (recentRuns.length === 0) {
+    console.log('ℹ️ Nenhuma execução encontrada nos últimos 7 dias.');
+    if (latestRunOverall) {
+      console.log(`A última execução registrada foi em ${latestRunOverall.created_at} (ID: ${latestRunOverall.id}, Workflow: "${latestRunOverall.name}", Conclusão: ${latestRunOverall.conclusion}).`);
+    }
+    return;
+  }
+
+  const { runsByConclusion, failedRuns } = summarizeWorkflowRuns(recentRuns);
+
+  console.log('📊 Resumo das execuções nos últimos 7 dias por status:');
+  for (const [status, count] of Object.entries(runsByConclusion)) {
+    const icon = status === 'success' ? '✅' : status === 'failure' ? '❌' : '⏳';
+    console.log(`  ${icon} ${status}: ${count}`);
+  }
+  console.log('');
+
+  console.log('📋 Lista das execuções dos últimos 7 dias:');
+  for (const run of recentRuns) {
+    const icon = run.conclusion === 'success' ? '✅' : run.conclusion === 'failure' ? '❌' : '⚠️';
+    console.log(`  ${icon} Run #${run.run_number} (ID: ${run.id}) — ${run.name}`);
+    console.log(`     Evento: ${run.event} | Branch: ${run.head_branch} | Conclusão: ${run.conclusion} | Data: ${run.created_at}`);
+  }
+  console.log('');
+
+  if (failedRuns.length > 0) {
+    const detailsByRunId = new Map(failedRunDetails.map((entry) => [entry.runId, entry.jobs || []]));
+    console.log(`======================================================`);
+    console.log(`❌ INVESTIGAÇÃO DETALHADA DAS FALHAS (${failedRuns.length} falhas):`);
+    console.log(`======================================================\n`);
+
+    for (const run of failedRuns) {
+      console.log(`------------------------------------------------------`);
+      console.log(`🔎 Falha no Run #${run.run_number} (ID: ${run.id}) — Workflow: "${run.name}"`);
+      console.log(`Commit: ${run.head_commit?.id?.slice(0, 7)} — "${run.head_commit?.message?.split('\n')[0]}"`);
+      console.log(`Data: ${run.created_at} | URL: ${run.html_url}`);
+
+      const jobs = detailsByRunId.get(run.id) || [];
+      for (const job of jobs) {
+        const jobIcon = job.conclusion === 'success' ? '✅' : job.conclusion === 'failure' ? '❌' : '⚠️';
+        console.log(`  ${jobIcon} Job: "${job.name}" (Status: ${job.status}, Conclusão: ${job.conclusion})`);
+
+        if (job.conclusion === 'failure') {
+          for (const step of job.failedSteps || []) {
+            console.log(`     ↳ Step que falhou: "${step.name}" (Step #${step.number})`);
+          }
+          if (job.tailErrors && job.tailErrors.length > 0) {
+            console.log(`     📄 Amostra de erros no log (últimas linhas relevantes):`);
+            for (const line of job.tailErrors) {
+              console.log(`        ${line}`);
+            }
+          }
+        }
+      }
+      console.log('');
+    }
+  } else {
+    console.log('✅ Nenhuma falha identificada nas execuções dos últimos 7 dias!');
+  }
+}
+
+function handleContingency(motivo, defaultSnapshotAbsPath, maxAgeHours) {
+  const snapEval = tryReadLocalSnapshot(defaultSnapshotAbsPath, maxAgeHours);
+  if (snapEval.valid && !snapEval.stale) {
+    console.log(`⚠️ API ao vivo indisponível (${motivo}).`);
+    console.log(`📦 FONTE REMOTA: SNAPSHOT LOCAL PRÉ-COLETADO (${path.relative(process.cwd(), defaultSnapshotAbsPath)}, capturado em ${snapEval.snapshot.capturedAt}, idade=${snapEval.ageHours.toFixed(1)}h)\n`);
+    printRunsReport(snapEval.snapshot);
+    console.log('');
+    printLocalLogsAndWorkflows();
+    return;
+  }
+
+  const notice = snapEval.exists ? snapEval.reason : null;
+  diagnosticoLocal(motivo, notice);
+}
+
 async function main() {
+  const cli = parseDiagnosticsCliArgs(process.argv.slice(2));
+  const defaultSnapshotAbsPath = path.resolve(process.cwd(), DEFAULT_ACTIONS_SNAPSHOT_REL);
+
   console.log(`\n======================================================`);
   console.log(`🔍 AUDITORIA DO GITHUB ACTIONS — REPOSITÓRIO: ${REPO}`);
   console.log(`Período analisado: Últimos 7 dias (desde ${SEVEN_DAYS_AGO.toISOString()})`);
   console.log(`======================================================\n`);
 
+  if (cli.fromSnapshotPath) {
+    const snapAbsPath = path.resolve(process.cwd(), cli.fromSnapshotPath);
+    if (!fs.existsSync(snapAbsPath)) {
+      console.error(`❌ Snapshot não encontrado: ${cli.fromSnapshotPath}`);
+      process.exit(1);
+    }
+
+    const snapEval = evaluateActionsSnapshot(fs.readFileSync(snapAbsPath, 'utf8'), {
+      expectedRepo: REPO,
+      maxAgeHours: cli.maxAgeHours,
+    });
+    if (!snapEval.valid) {
+      console.error(`❌ Snapshot inválido (${cli.fromSnapshotPath}): ${snapEval.reason}`);
+      process.exit(1);
+    }
+
+    console.log(`📦 FONTE: SNAPSHOT LOCAL (${path.relative(process.cwd(), snapAbsPath)}, capturado em ${snapEval.snapshot.capturedAt}, idade=${snapEval.ageHours.toFixed(1)}h)`);
+    if (snapEval.stale) {
+      console.log(`⚠️ Aviso: ${snapEval.reason}`);
+    }
+    console.log('');
+    printRunsReport(snapEval.snapshot);
+    console.log('');
+    printLocalLogsAndWorkflows();
+    return;
+  }
+
   if (!token) {
-    diagnosticoLocal('GITHUB_TOKEN não encontrado no ambiente nem em .env.local.');
+    handleContingency(
+      'GITHUB_TOKEN não encontrado no ambiente nem em .env.local.',
+      defaultSnapshotAbsPath,
+      cli.maxAgeHours
+    );
     return;
   }
 
@@ -179,111 +397,35 @@ async function main() {
     });
 
     if (!runsResult.ok) {
-      diagnosticoLocal(`Erro ao consultar runs da API (HTTP ${runsResult.statusCode})`);
+      handleContingency(
+        `Erro ao consultar runs da API (HTTP ${runsResult.statusCode})`,
+        defaultSnapshotAbsPath,
+        cli.maxAgeHours
+      );
       return;
     }
 
-    const {
-      recentRuns,
-      latestRunOverall,
-      totalCount,
-      pagesFetched,
-      truncated,
-    } = runsResult;
+    const { failedRuns } = summarizeWorkflowRuns(runsResult.recentRuns);
+    const failedRunDetails = await collectFailedRunDetails(failedRuns);
 
-    console.log(`Total de execuções retornadas pelo filtro na API: ${totalCount}`);
-    console.log(`Páginas consultadas: ${pagesFetched}`);
-    console.log(`Execuções nos últimos 7 dias: ${recentRuns.length}\n`);
-
-    if (truncated) {
-      console.log('⚠️ Aviso: limite de paginação atingido — há mais execuções nos últimos 7 dias além do teto de páginas configurado.\n');
+    if (cli.writeSnapshotPath) {
+      const writeAbsPath = path.resolve(process.cwd(), cli.writeSnapshotPath);
+      fs.mkdirSync(path.dirname(writeAbsPath), { recursive: true });
+      const snapshotPayload = buildActionsSnapshot({
+        repo: REPO,
+        capturedAt: new Date(),
+        sevenDaysAgo: SEVEN_DAYS_AGO,
+        runsResult,
+        failedRunDetails,
+      });
+      fs.writeFileSync(writeAbsPath, `${JSON.stringify(snapshotPayload, null, 2)}\n`, 'utf8');
+      console.log(`💾 Snapshot salvo em ${path.relative(process.cwd(), writeAbsPath)}\n`);
     }
 
-    if (recentRuns.length === 0) {
-      console.log('ℹ️ Nenhuma execução encontrada nos últimos 7 dias.');
-      if (latestRunOverall) {
-        console.log(`A última execução registrada foi em ${latestRunOverall.created_at} (ID: ${latestRunOverall.id}, Workflow: "${latestRunOverall.name}", Conclusão: ${latestRunOverall.conclusion}).`);
-      }
-      return;
-    }
-
-    const runsByConclusion = {};
-    const failedRuns = [];
-
-    for (const run of recentRuns) {
-      const conc = run.conclusion || run.status;
-      runsByConclusion[conc] = (runsByConclusion[conc] || 0) + 1;
-      if (run.conclusion === 'failure') {
-        failedRuns.push(run);
-      }
-    }
-
-    console.log('📊 Resumo das execuções nos últimos 7 dias por status:');
-    for (const [status, count] of Object.entries(runsByConclusion)) {
-      const icon = status === 'success' ? '✅' : status === 'failure' ? '❌' : '⏳';
-      console.log(`  ${icon} ${status}: ${count}`);
-    }
-    console.log('');
-
-    // Listagem resumida dos runs recentes
-    console.log('📋 Lista das execuções dos últimos 7 dias:');
-    for (const run of recentRuns) {
-      const icon = run.conclusion === 'success' ? '✅' : run.conclusion === 'failure' ? '❌' : '⚠️';
-      console.log(`  ${icon} Run #${run.run_number} (ID: ${run.id}) — ${run.name}`);
-      console.log(`     Evento: ${run.event} | Branch: ${run.head_branch} | Conclusão: ${run.conclusion} | Data: ${run.created_at}`);
-    }
-    console.log('');
-
-    // Investigação detalhada dos runs com falha
-    if (failedRuns.length > 0) {
-      console.log(`======================================================`);
-      console.log(`❌ INVESTIGAÇÃO DETALDHADA DAS FALHAS (${failedRuns.length} falhas):`);
-      console.log(`======================================================\n`);
-
-      for (const run of failedRuns) {
-        console.log(`------------------------------------------------------`);
-        console.log(`🔎 Falha no Run #${run.run_number} (ID: ${run.id}) — Workflow: "${run.name}"`);
-        console.log(`Commit: ${run.head_commit?.id?.slice(0, 7)} — "${run.head_commit?.message?.split('\n')[0]}"`);
-        console.log(`Data: ${run.created_at} | URL: ${run.html_url}`);
-
-        // Busca jobs deste run
-        const jobsRes = await requestGitHub(`/repos/${REPO}/actions/runs/${run.id}/jobs`);
-        if (jobsRes.statusCode === 200) {
-          const jobsJson = JSON.parse(jobsRes.data);
-          const jobs = jobsJson.jobs || [];
-
-          for (const job of jobs) {
-            const jobIcon = job.conclusion === 'success' ? '✅' : job.conclusion === 'failure' ? '❌' : '⚠️';
-            console.log(`  ${jobIcon} Job: "${job.name}" (Status: ${job.status}, Conclusão: ${job.conclusion})`);
-
-            if (job.conclusion === 'failure') {
-              const failedSteps = (job.steps || []).filter(s => s.conclusion === 'failure');
-              for (const step of failedSteps) {
-                console.log(`     ↳ Step que falhou: "${step.name}" (Step #${step.number})`);
-              }
-
-              // Tenta baixar snippet do log do job com falha
-              console.log(`     📥 Buscando trecho do log do job ${job.id}...`);
-              const logsRes = await requestGitHub(`/repos/${REPO}/actions/jobs/${job.id}/logs`);
-              if (logsRes.statusCode === 200 && logsRes.data) {
-                const lines = logsRes.data.split('\n');
-                // Procura linhas com erro
-                const errorLines = lines.filter(l => /error|fail|exception|fatal|reprov/i.test(l));
-                console.log(`     📄 Amostra de erros no log (últimas linhas relevantes):`);
-                const tailErrors = errorLines.slice(-15);
-                for (const el of tailErrors) {
-                  console.log(`        ${el.trim()}`);
-                }
-              }
-            }
-          }
-        }
-        console.log('');
-      }
-    } else {
-      console.log('✅ Nenhuma falha identificada nas execuções dos últimos 7 dias!');
-    }
-
+    printRunsReport({
+      ...runsResult,
+      failedRunDetails,
+    });
   } catch (err) {
     if (
       err.code === 'EAI_AGAIN'
@@ -292,7 +434,11 @@ async function main() {
       || err.code === 'ETIMEDOUT'
       || err.message?.includes('getaddrinfo')
     ) {
-      diagnosticoLocal(`Rede indisponível ou isolamento de sandbox (${err.code || err.message})`);
+      handleContingency(
+        `Rede indisponível ou isolamento de sandbox (${err.code || err.message})`,
+        defaultSnapshotAbsPath,
+        cli.maxAgeHours
+      );
       return;
     }
     console.error('❌ Erro inesperado durante a execução:', err);

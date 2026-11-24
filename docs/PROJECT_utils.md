@@ -32,19 +32,22 @@ Helper compartilhado para exportação de dados para **CSV** no lado do cliente.
 ### Arquivos Acionados/Relacionados
 - `/components/Admin/AdminCrudBase.js` — importa e utiliza `exportToCSV`
 - `/components/Admin/AdminAudit.js` — importa e utiliza `exportToCSV`
-- `/tests/unit/components/Admin/AdminCrudBase.test.js` — testa exportação indiretamente
-- `/tests/unit/components/Admin/AdminAudit.test.js` — testa exportação indiretamente
+- `/components/Admin/AdminSales.js` — importa e utiliza `exportToCSV`
+- `/tests/unit/utils/csvExport.test.js` — testa diretamente geração, escape, validação de colunas, revogação de Blob e proteção no jsdom 31
+- `/tests/unit/components/Admin/AdminCrudBase.test.js` — testa exportação via CRUD
+- `/tests/unit/components/Admin/AdminAudit.test.js` — testa exportação na auditoria
+- `/tests/unit/components/Admin/AdminSales.test.js` — testa exportação na Gestão de Vendas
 
 ### Funcionalidades
 
 | Função | Descrição |
 |---|---|
 | `escapeCSV(val)` | Função interna que escapa valores para o formato CSV, tratando aspas duplas (`"` → `""`), vírgulas e quebras de linha. Valores com caracteres especiais são envolvidos em aspas. |
-| `exportToCSV({ data, columns, filename, onEmpty })` | Função principal de exportação. Recebe os dados, a configuração de colunas, o nome base do arquivo e um callback opcional para lista vazia. |
+| `exportToCSV({ data, columns, filename, onEmpty })` | Função principal de exportação. Recebe os dados, a configuração de colunas, o nome base do arquivo e um callback opcional para lista/colunas vazias. |
 
 ### Comportamento detalhado de `exportToCSV`
 
-1. **Validação de dados vazios** — Se `data` estiver vazio ou ausente, chama o callback `onEmpty` (se fornecido) e encerra sem criar o arquivo.
+1. **Validação de dados e colunas vazios** — Se `data` estiver vazio/ausente ou se `columns` não for um array não vazio, chama `onEmpty` (se fornecido) e encerra sem criar o arquivo.
 2. **Geração de cabeçalhos** — Mapeia `columns[].header` para a primeira linha do CSV.
 3. **Processamento das linhas** — Para cada item, extrai o valor pela chave `col.key` e aplica:
    - **Formatador customizado** (`col.format`) — função opcional para formatar o valor (ex.: `Date` → `'dd/mm/aaaa'`).
@@ -52,7 +55,7 @@ Helper compartilhado para exportação de dados para **CSV** no lado do cliente.
    - **Tratamento de `null`/`undefined`** — convertidos para string vazia.
    - **Escape CSV** — via `escapeCSV()`.
 4. **Geração do arquivo** — Concatena cabeçalhos e linhas com `\n`, cria Blob com prefixo `\uFEFF` (BOM UTF-8) e `type: 'text/csv;charset=utf-8;'` para garantir compatibilidade com Excel.
-5. **Download** — Cria elemento `<a>` temporário com atributo `download`, anexa ao DOM, dispara o clique e remove do DOM.
+5. **Download (com guarda jsdom 31)** — Cria elemento `<a>` temporário com atributo `download`, aplica listener `{ once: true }` chamando `event.preventDefault()` quando `navigator.userAgent` corresponde a `jsdom` (evitando erro `Not implemented: navigation to another Document` em testes sem afetar navegadores reais), anexa ao DOM, dispara o clique e remove do DOM.
 6. **Liberação de memória** — Chama `URL.revokeObjectURL()` de forma assíncrona (com `setTimeout` de 1000ms), exceto em ambiente de teste onde é síncrono para evitar que timers mantenham o event loop aberto.
 
 ### Dependências
@@ -64,12 +67,13 @@ Helper compartilhado para exportação de dados para **CSV** no lado do cliente.
 |---|---|---|
 | `AdminCrudBase.js` | `/components/Admin/AdminCrudBase.js` | Exportação genérica de qualquer CRUD com `exportable={true}`, mapeando `columns` recebidas via props e gerando nome de arquivo a partir do `title`. |
 | `AdminAudit.js` | `/components/Admin/AdminAudit.js` | Exportação de logs de auditoria com colunas específicas e nome de arquivo com data (`auditoria_export_YYYY-MM-DD`). |
+| `AdminSales.js` | `/components/Admin/AdminSales.js` | Exportação CSV dos pedidos internos na subaba Pedidos (`pedidos_vendas_internas.csv`). |
 
 ### Cobertura de testes
 
-Não existem testes unitários diretos para `utils/csvExport.js`. A cobertura é **indireta** através de:
-- `tests/unit/components/Admin/AdminCrudBase.test.js` — valida escape de aspas/quebras de linha, exportação sem caracteres especiais, e toast de erro quando não há dados.
-- `tests/unit/components/Admin/AdminAudit.test.js` — valida escape de caracteres especiais, geração de Blob, e erro ao exportar sem dados.
+Cobertura direta e de integração nos consumidores:
+- `tests/unit/utils/csvExport.test.js` — valida `data`/`columns` vazias, BOM UTF-8, escape de vírgulas/aspas/quebras (`\n` e `\r\n`), formatadores, booleanos, nulos, atributo `download`, `revokeObjectURL` em `test` vs. `production` e ausência de erro jsdom 31 sem mock de âncora.
+- `tests/unit/components/Admin/AdminCrudBase.test.js`, `AdminAudit.test.js` e `AdminSales.test.js` — validam a integração do botão "Exportar CSV" nos fluxos do painel.
 
 ---
 

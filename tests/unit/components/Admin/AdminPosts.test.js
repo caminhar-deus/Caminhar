@@ -12,20 +12,25 @@ jest.mock('../../../../components/Admin/AdminCrudBase', () => {
   };
 });
 
-/** Renderiza `AdminPosts` drenando o fetch inicial de categorias dentro de `act`. */
+/** Renderiza `AdminPosts` aguardando deterministicamente o fetch inicial de categorias. */
 async function renderAdminPosts() {
   const utils = render(<AdminPosts />);
-  await act(async () => {
-    await Promise.resolve();
-    await Promise.resolve();
+  await waitFor(() => {
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/api/admin/categories?all=1',
+      expect.objectContaining({ credentials: 'include' })
+    );
   });
+  await act(async () => {});
   return utils;
 }
 
 describe('Componente Front-End - AdminPosts', () => {
   let fetchMock;
+  let consoleErrorSpy;
 
   beforeEach(() => {
+    consoleErrorSpy = jest.spyOn(console, 'error');
     fetchMock = mockGlobalFetch();
     // Resposta padrão: o AdminPosts agora busca as categorias no mount
     // (`GET /api/admin/categories?all=1`) além das demais chamadas.
@@ -38,7 +43,14 @@ describe('Componente Front-End - AdminPosts', () => {
   });
 
   afterEach(() => {
+    const calls = consoleErrorSpy ? [...consoleErrorSpy.mock.calls] : [];
+    consoleErrorSpy?.mockRestore();
     fetchMock?.mockRestore();
+    const actErrors = calls.filter((args) => {
+      const msg = args.map((item) => String(item)).join(' ');
+      return msg.includes('not wrapped in act') || msg.includes('AdminPostsNew');
+    });
+    expect(actErrors).toEqual([]);
   });
 
   it('deve renderizar e repassar as configurações para o AdminCrudBase', async () => {

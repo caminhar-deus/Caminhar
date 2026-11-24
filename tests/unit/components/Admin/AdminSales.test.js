@@ -259,6 +259,48 @@ describe('Componente Front-End - AdminSales', () => {
     }
   });
 
+  it('deve exportar CSV em jsdom 31 sem mock manual de âncora e sem emitir console.error', async () => {
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        data: [
+          {
+            id: 202,
+            customer_name: 'João Silva',
+            customer_email: 'joao@exemplo.com',
+            product_name: 'Bíblia Pastoral',
+            quantity: 1,
+            formatted_total_amount: 'R$ 75,00',
+            payment_method: 'pix',
+            payment_status: 'approved',
+            order_status: 'paid',
+            tracking_code: '',
+          },
+        ],
+        pagination: { totalPages: 1, total: 1 },
+      }),
+    });
+
+    global.URL.createObjectURL = jest.fn(() => 'blob:orders-real-anchor');
+
+    try {
+      render(<AdminSales />);
+
+      await waitFor(() => {
+        expect(screen.getByText('João Silva')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /Exportar CSV/i }));
+      await new Promise((resolve) => setTimeout(resolve, 30));
+
+      expect(global.URL.createObjectURL).toHaveBeenCalledTimes(1);
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    } finally {
+      consoleErrorSpy.mockRestore();
+    }
+  });
+
   it('garante que todas as classes CSS Modules e ícones AppIcon usados em AdminSales.js existem', () => {
     const root = process.cwd();
     const adminSalesSource = fs.readFileSync(
